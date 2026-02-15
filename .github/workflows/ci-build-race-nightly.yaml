@@ -1,0 +1,24 @@
+name: CI Race Detector Nightly
+
+on:
+  schedule:
+    - cron: '0 5 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test-suites:
+    name: Test Suites (Race)
+    uses: ./.github/workflows/reusable-ci-tests.yaml
+    with:
+      run-unit-tests: true
+      run-e2e-tests: true
+      race-enabled: true
+      upload-coverage: false
+    secrets: inherit

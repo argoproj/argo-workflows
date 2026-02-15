@@ -1,0 +1,379 @@
+name: Reusable CI Test Suites
+
+on:
+  workflow_call:
+    inputs:
+      run-unit-tests:
+        required: true
+        type: boolean
+      run-e2e-tests:
+        required: true
+        type: boolean
+      race-enabled:
+        required: false
+        default: false
+        type: boolean
+      upload-coverage:
+        required: false
+        default: true
+        type: boolean
+    secrets:
+      CODECOV_TOKEN:
+        required: false
+
+jobs:
+  tests:
+    name: Unit Tests${{ inputs.race-enabled && ' (Race)' || '' }}
+    if: ${{ inputs.run-unit-tests }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: ${{ inputs.race-enabled && 40 || 20 }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        with:
+          go-version: "1.25"
+          cache: true
+      - run: make test STATIC_FILES=false${{ inputs.race-enabled && ' GO_TEST_RACE=true' || '' }}
+      - name: Upload test results
+        if: ${{ always() }}
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: test-results-unit
+          path: test/reports/json/unit.json
+          if-no-files-found: warn
+          retention-days: 10
+      - name: Upload coverage report
+        # engineers just ignore this in PRs, so lets not even run it
+        if: ${{ !inputs.race-enabled && inputs.upload-coverage && github.ref == 'refs/heads/main' }}
+        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
+        with:
+          fail_ci_if_error: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  tests-windows:
+    name: Windows Unit Tests${{ inputs.race-enabled && ' (Race)' || '' }}
+    if: ${{ inputs.run-unit-tests }}
+    runs-on: windows-2022
+    timeout-minutes: ${{ inputs.race-enabled && 40 || 20 }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        with:
+          go-version: "1.25"
+          cache: true
+      # windows run does not use makefile target because it does a lot more than just testing and is not cross-platform compatible
+      - if: ${{ !inputs.race-enabled }}
+        run: if (!(Test-Path "ui/dist/app/index.html")) { New-Item -ItemType Directory -Force -Path "ui/dist/app" | Out-Null; New-Item -ItemType File -Path "ui/dist/app/placeholder" | Out-Null }; go test -p 20 -covermode=atomic -coverprofile='coverage.out' $(go list ./... | select-string -Pattern 'github.com/argoproj/argo-workflows/v3/workflow/controller' , 'github.com/argoproj/argo-workflows/v3/server' -NotMatch)
+        env:
+          KUBECONFIG: /dev/null
+      - if: ${{ inputs.race-enabled }}
+        run: if (!(Test-Path "ui/dist/app/index.html")) { New-Item -ItemType Directory -Force -Path "ui/dist/app" | Out-Null; New-Item -ItemType File -Path "ui/dist/app/placeholder" | Out-Null }; go test -race -p 20 $(go list ./... | select-string -Pattern 'github.com/argoproj/argo-workflows/v3/workflow/controller' , 'github.com/argoproj/argo-workflows/v3/server' -NotMatch)
+        env:
+          KUBECONFIG: /dev/null
+      - name: Upload coverage report
+        # engineers just ignore this in PRs, so lets not even run it
+        if: ${{ !inputs.race-enabled && inputs.upload-coverage && github.ref == 'refs/heads/main' }}
+        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
+        with:
+          fail_ci_if_error: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  build-binaries:
+    name: Build Binaries
+    if: ${{ inputs.run-e2e-tests }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: controller
+          - target: cli
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        with:
+          go-version: "1.25"
+          cache: true
+      - name: Build
+        run: make ${{ matrix.target }}
+      - name: Upload
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: ${{ matrix.target }}
+          path: dist
+          if-no-files-found: error
+
+  argo-images:
+    name: argo-images
+    if: ${{ inputs.run-e2e-tests }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: argoexec
+          - image: argocli
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+      - name: Build and export
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: .
+          tags: quay.io/argoproj/${{ matrix.image }}:latest
+          outputs: type=docker,dest=/tmp/${{ matrix.image }}_image.tar
+          target: ${{ matrix.image }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Upload
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: ${{ matrix.image }}_image.tar
+          path: /tmp/${{ matrix.image }}_image.tar
+          if-no-files-found: error
+
+  e2e-tests:
+    name: E2E Tests${{ inputs.race-enabled && ' (Race)' || '' }}
+    needs: [ argo-images, build-binaries ]
+    if: ${{ inputs.run-e2e-tests }}
+    runs-on: ubuntu-24.04
+    # These tests usually finish in ~25m, but occasionally they take much longer due to resource
+    # contention on the runner, which we have no control over.
+    timeout-minutes: ${{ inputs.race-enabled && 120 || 60 }}
+    env:
+      KUBECONFIG: /home/runner/.kube/config
+      E2E_ENV_FACTOR: 2
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - test: test-artifacts
+            profile: minimal
+            use-api: false
+          - test: test-executor
+            profile: minimal
+            use-api: false
+          - test: test-corefunctional
+            profile: minimal
+            use-api: false
+          - test: test-functional
+            profile: minimal
+            use-api: false
+          - test: test-api
+            profile: mysql
+            use-api: true
+          - test: test-api
+            profile: postgres
+            use-api: true
+          - test: test-metrics
+            profile: mysql
+            use-api: true
+          - test: test-metrics
+            profile: postgres
+            use-api: true
+          - test: test-cli
+            profile: mysql
+            use-api: true
+          # Cron tests are not retryable without a controller restart
+          - test: test-cron
+            profile: minimal
+            use-api: false
+            retries: 0
+          - test: test-examples
+            profile: minimal
+            use-api: false
+            retries: 0
+          - test: test-plugins
+            profile: plugins
+            use-api: false
+          - test: test-go-sdk
+            profile: minimal
+            use-api: true
+            secure: true
+          - test: test-java-sdk
+            profile: minimal
+            use-api: true
+          - test: test-artifacts
+            k8s_version: min
+            profile: minimal
+            use-api: false
+          - test: test-executor
+            k8s_version: min
+            profile: minimal
+            use-api: false
+          - test: test-corefunctional
+            k8s_version: min
+            profile: minimal
+            use-api: false
+          - test: test-functional
+            k8s_version: min
+            profile: minimal
+            use-api: false
+          - test: test-dbsemaphore
+            k8s_version: min
+            profile: mysql
+            use-api: false
+          - test: test-dbsemaphore
+            k8s_version: min
+            profile: postgres
+            use-api: false
+    steps:
+      - name: Free up unused disk space
+        run: |
+          printf "==> Available space before cleanup\n"
+          df -h
+          # these directories are not used by E2E tests
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
+          printf "==> Available space after cleanup\n"
+          df -h
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        with:
+          go-version: "1.25"
+          cache: true
+      - name: Install Java for the SDK
+        if: ${{ matrix.test == 'test-java-sdk' }}
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          java-version: '8'
+          distribution: adopt
+          cache: maven
+      - name: Install socat (needed by Kubernetes) and kit
+        # socat is needed for "kubectl port-forward" to work when using cri-dockerd: https://github.com/k3s-io/cri-dockerd/blob/4995f339edcffdf890406b3f1477d34e38477f18/streaming/streaming_others.go#L46
+        # Both cri-o and containerd removed it as a dependency awhile ago, but that hasn't been ported to cri-dockerd.
+        # Running "make kit" isn't strictly necessary, since it would be installed automatically by "make start",
+        # but it's noisy and makes the logs for "Start controller/API" hard to follow.
+        run: sudo apt-get -y install socat && make kit
+      - name: Install and start K3S
+        env:
+          K8S_VERSION: ${{ matrix.k8s_version || 'max' }}
+          TEST_RETRIES: ${{ matrix.retries || '2' }}
+        run: |
+          . hack/k8s-versions.sh
+          export INSTALL_K3S_VERSION="${K8S_VERSIONS[$K8S_VERSION]}+k3s1"
+
+          curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=stable \
+            INSTALL_K3S_EXEC="--docker --kubelet-arg=config=${GITHUB_WORKSPACE}/test/e2e/manifests/kubelet-configuration.yaml" \
+            K3S_KUBECONFIG_MODE=644 \
+            sh -
+          until kubectl --kubeconfig=/etc/rancher/k3s/k3s.yaml cluster-info ; do sleep 10s ; done
+          mkdir -p .kube
+          cp /etc/rancher/k3s/k3s.yaml /home/runner/.kube/config
+          echo "- name: fake_token_user" >> $KUBECONFIG
+          echo "  user:" >> $KUBECONFIG
+          echo "    token: xxxxxx" >> $KUBECONFIG
+          until kubectl cluster-info ; do sleep 10s ; done
+      - name: Download images
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          pattern: '*_image.tar'
+          path: /tmp
+      - name: Load images
+        run: |
+          set -eux
+          docker load < /tmp/argoexec_image.tar/argoexec_image.tar
+          docker load < /tmp/argocli_image.tar/argocli_image.tar
+      - name: Download controller
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: controller
+          path: dist/
+      - name: Download CLI
+        if: ${{ matrix.use-api }}
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: cli
+          path: dist/
+      - name: Prepare binaries
+        run: chmod +x dist/* && make --touch dist/*
+      - name: Set-up /etc/hosts
+        run: |
+          echo '127.0.0.1 dex'      | sudo tee -a /etc/hosts
+          echo '127.0.0.1 minio'    | sudo tee -a /etc/hosts
+          echo '127.0.0.1 postgres' | sudo tee -a /etc/hosts
+          echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
+          echo '127.0.0.1 azurite'  | sudo tee -a /etc/hosts
+      - name: Start controller/API
+        run: |
+          make start PROFILE=${{ matrix.profile }} \
+            AUTH_MODE=client STATIC_FILES=false \
+            LOG_LEVEL=info \
+            API=${{ matrix.use-api }} \
+            UI=false \
+            SECURE=${{ matrix.secure || 'false' }} \
+            POD_STATUS_CAPTURE_FINALIZER=true 2>&1 | tee /tmp/argo.log &
+          make wait PROFILE=${{ matrix.profile }} API=${{ matrix.use-api }} SECURE=${{ matrix.secure || 'false' }}
+        timeout-minutes: 5
+      - name: Validate release manifests
+        run: make manifests-validate
+      - name: Run tests ${{ matrix.test }}
+        run: make ${{ matrix.test }} E2E_SUITE_TIMEOUT=${{ inputs.race-enabled && '45m' || '30m' }} STATIC_FILES=false${{ inputs.race-enabled && ' GO_TEST_RACE=true' || '' }}
+      - name: Upload test results
+        if: ${{ always() }}
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: test-results-${{ matrix.test }}-${{ matrix.profile }}-k8s-${{ matrix.k8s_version || 'max' }}
+          path: test/reports/json/${{ matrix.test }}.json
+          if-no-files-found: warn
+          retention-days: 10
+
+      # failure debugging below
+      - name: Failure debug - k3s logs
+        if: ${{ failure() }}
+        run: journalctl -u k3s
+      - name: Failure debug - describe MinIO/Database deployment
+        if: ${{ failure() }}
+        run: |
+          set -eux
+          kubectl get deploy
+          kubectl describe deploy
+      - name: Failure debug - describe MinIO/Database pods
+        if: ${{ failure() }}
+        run: |
+          set -eux
+          kubectl get pods -l '!workflows.argoproj.io/workflow'
+          kubectl describe pods -l '!workflows.argoproj.io/workflow'
+      - name: Failure debug - MinIO/MySQL logs
+        if: ${{ failure() }}
+        run: kubectl logs -l '!workflows.argoproj.io/workflow' --prefix
+      - name: Failure debug - Controller/API logs
+        if: ${{ failure() }}
+        run: |
+          [ -e /tmp/argo.log ] && cat /tmp/argo.log
+      - if: ${{ failure() }}
+        name: Failure debug - describe Workflows
+        run: |
+          set -eux
+          kubectl get wf
+          kubectl describe wf
+      - name: Failure debug - describe Workflow pods
+        if: ${{ failure() }}
+        run: |
+          set -eux
+          kubectl get pods -l workflows.argoproj.io/workflow
+          kubectl describe pods -l workflows.argoproj.io/workflow
+      - name: Failure debug - Workflow Pod logs
+        if: ${{ failure() }}
+        run: kubectl logs --all-containers -l workflows.argoproj.io/workflow --prefix
+
+  # workaround for status checks -- check this one job instead of each individual E2E job in the matrix
+  # this allows us to skip the entire matrix when it doesn't need to run while still having accurate status checks
+  # see https://github.com/orgs/community/discussions/9141#discussioncomment-2296809 and https://github.com/orgs/community/discussions/26822#discussioncomment-3305794
+  e2e-tests-composite-result:
+    name: E2E Tests - Composite result
+    needs: [ e2e-tests ]
+    if: ${{ always() && inputs.run-e2e-tests }}
+    runs-on: ubuntu-24.04
+    steps:
+      - run: |
+          result="${{ needs.e2e-tests.result }}"
+          # mark as successful even if skipped
+          if [[ $result == "success" || $result == "skipped" ]]; then
+            exit 0
+          else
+            exit 1
+          fi
