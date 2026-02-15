@@ -194,12 +194,17 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 	}
 
 	// verify if we have permission to list Workflows
-	allowed, err := auth.CanI(ctx, "list", workflow.WorkflowPlural, options.Namespace, "")
+	targetNamespace := options.Namespace
+	if options.NamespaceFilter == "NotEquals" {
+		targetNamespace = ""
+	}
+	allowed, err := auth.CanI(ctx, "list", workflow.WorkflowPlural, targetNamespace, "")
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
+
 	if !allowed {
-		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("Permission denied, you are not allowed to list workflows in namespace \"%s\". Maybe you want to specify a namespace with query parameter `.namespace=%s`?", options.Namespace, options.Namespace))
+		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("Permission denied, you are not allowed to list workflows in namespace \"%s\". Maybe you want to specify a namespace with query parameter `.namespace=%s`?", targetNamespace, targetNamespace))
 	}
 
 	var wfs wfv1.Workflows

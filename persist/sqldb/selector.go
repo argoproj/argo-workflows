@@ -10,8 +10,13 @@ import (
 )
 
 func BuildArchivedWorkflowSelector(selector db.Selector, tableName, labelTableName string, t sqldb.DBType, options utils.ListOptions, count bool) (db.Selector, error) {
+	if options.NamespaceFilter == "NotEquals" {
+		selector = selector.And(namespaceNotEqual(options.Namespace))
+	} else {
+		selector = selector.And(namespaceEqual(options.Namespace))
+	}
+
 	selector = selector.
-		And(namespaceEqual(options.Namespace)).
 		And(namePrefixClause(options.NamePrefix)).
 		And(startedAtFromClause(options.MinStartedAt)).
 		And(startedAtToClause(options.MaxStartedAt)).
@@ -59,7 +64,11 @@ func BuildArchivedWorkflowSelector(selector db.Selector, tableName, labelTableNa
 func BuildWorkflowSelector(in string, inArgs []any, tableName, labelTableName string, t sqldb.DBType, options utils.ListOptions, count bool) (out string, outArgs []any, err error) {
 	var clauses []*db.RawExpr
 	if options.Namespace != "" {
-		clauses = append(clauses, db.Raw("namespace = ?", options.Namespace))
+		if options.NamespaceFilter == "NotEquals" {
+			clauses = append(clauses, db.Raw("namespace != ?", options.Namespace))
+		} else {
+			clauses = append(clauses, db.Raw("namespace = ?", options.Namespace))
+		}
 	}
 	if options.Name != "" {
 		nameFilter := options.NameFilter
