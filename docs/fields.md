@@ -889,7 +889,7 @@ WorkflowSpec is the specification of a Workflow.
 |`dnsPolicy`|`string`|Set DNS policy for workflow pods. Defaults to "ClusterFirst". Valid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'. DNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy. To have DNS options set along with hostNetwork, you have to specify DNS policy explicitly to 'ClusterFirstWithHostNet'.|
 |`entrypoint`|`string`|Entrypoint is a template reference to the starting point of the io.argoproj.workflow.v1alpha1.|
 |`executor`|[`ExecutorConfig`](#executorconfig)|Executor holds configurations of executor containers of the io.argoproj.workflow.v1alpha1.|
-|`executorPlugins`|`Array<`[`ExecutorPlugin`](#executorplugin)`>`|ExecutorPlugins specifies a list of executor plugins at the workflow level. If any plugin is defined here, the corresponding settings from the ConfigMap are ignored.|
+|`executorPlugins`|`Array<`[`ExecutorPlugin`](#executorplugin)`>`|Specifies executor plugins at the workflow level. This field is effective only when the ARGO_WORKFLOW_LEVEL_EXECUTOR_PLUGINS feature gate is enabled. If this field is present (even if empty), executor plugin settings from the controller ConfigMap are ignored. If this field is not set, the controller falls back to the ConfigMap configuration.|
 |`hooks`|[`LifecycleHook`](#lifecyclehook)|Hooks holds the lifecycle hook which is invoked at lifecycle of step, irrespective of the success, failure, or error status of the primary step|
 |`hostAliases`|`Array<`[`HostAlias`](#hostalias)`>`|_No description available_|
 |`hostNetwork`|`boolean`|Host networking requested for this workflow pod. Default to false.|
@@ -1660,11 +1660,12 @@ ExecutorConfig holds configurations of an executor container.
 
 ## ExecutorPlugin
 
-ExecutorPlugin describe workflow level executor plugin settings
+ExecutorPlugin describes workflow-level executor plugin
 
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
+|`metadata`|[`ObjectMeta`](#objectmeta)|_No description available_|
 |`spec`|[`ExecutorPluginSpec`](#executorpluginspec)|_No description available_|
 
 ## LifecycleHook
@@ -3947,7 +3948,7 @@ _No description available_
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`automountServiceAccountToken`|`boolean`|AutomountServiceAccount mounts the service account's token. The service account must have the same name as the plugin.|
-|`container`|[`Container`](#container)|_No description available_|
+|`container`|[`Container`](#container)|Container defines the Kubernetes container specification for the sidecar.|
 
 ## Counter
 

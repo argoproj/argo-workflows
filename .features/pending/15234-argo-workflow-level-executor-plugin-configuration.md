@@ -4,7 +4,7 @@ Component: General
 Issues: 15234
 
 This PR allows configuring the Argo Workflow Executor Plugin for a specific Argo Workflow directly within the Workflow spec.
-This feature enable via `ARGO_WORKFLOW_LEVEL_EXECUTOR_PLUGINS=true` controller env variable
+This feature is enabled via the `ARGO_WORKFLOW_LEVEL_EXECUTOR_PLUGINS=true` controller env variable
 
 
     apiVersion: apps/v1
@@ -30,7 +30,9 @@ Sample executor plugin definition in the Argo workflow spec:
     spec:
       entrypoint: hello-hello-hello
       executorPlugins:
-        - spec:
+        - metadata:
+            name: print-message-plugin
+        spec:
             sidecar:
               container:
                 name: print-message-plugin

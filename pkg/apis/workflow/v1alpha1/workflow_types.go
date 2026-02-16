@@ -471,8 +471,16 @@ type WorkflowSpec struct {
 	// unless Artifact.ArtifactGC is specified, which overrides this)
 	ArtifactGC *WorkflowLevelArtifactGC `json:"artifactGC,omitempty" protobuf:"bytes,43,opt,name=artifactGC"`
 
-	// ExecutorPlugins specifies a list of executor plugins at the workflow level.
-	// If any plugin is defined here, the corresponding settings from the ConfigMap are ignored.
+	// Specifies executor plugins at the workflow level.
+	//
+	// This field is effective only when the ARGO_WORKFLOW_LEVEL_EXECUTOR_PLUGINS
+	// feature gate is enabled.
+	//
+	// If this field is present (even if empty), executor plugin settings from
+	// the controller ConfigMap are ignored.
+	//
+	// If this field is not set, the controller falls back to the ConfigMap
+	// configuration.
 	ExecutorPlugins []ExecutorPlugin `json:"executorPlugins,omitempty" protobuf:"bytes,44,rep,name=executorPlugins"`
 }
 
@@ -528,9 +536,18 @@ func (wfs WorkflowSpec) GetTTLStrategy() *TTLStrategy {
 	return wfs.TTLStrategy
 }
 
-func (wfs WorkflowSpec) AsExecutorPluginSpec() []execplugin.Plugin {
+// AsExecutorPluginSpec maps proto models to v3/pkg/plugins/spec models.
+func (wfs WorkflowSpec) AsExecutorPluginSpec() ([]execplugin.Plugin, error) {
 	plugins := make([]execplugin.Plugin, 0, len(wfs.ExecutorPlugins))
 	for _, plugin := range wfs.ExecutorPlugins {
+		sidecar := execplugin.Sidecar{
+			AutomountServiceAccountToken: plugin.Spec.Sidecar.AutomountServiceAccountToken,
+			Container:                    plugin.Spec.Sidecar.Container,
+		}
+		err := sidecar.Validate()
+		if err != nil {
+			return nil, err
+		}
 		spec := execplugin.PluginSpec{
 			Sidecar: execplugin.Sidecar{
 				AutomountServiceAccountToken: plugin.Spec.Sidecar.AutomountServiceAccountToken,
@@ -539,10 +556,11 @@ func (wfs WorkflowSpec) AsExecutorPluginSpec() []execplugin.Plugin {
 		}
 
 		plugins = append(plugins, execplugin.Plugin{
-			Spec: spec,
+			ObjectMeta: plugin.ObjectMeta,
+			Spec:       spec,
 		})
 	}
-	return plugins
+	return plugins, nil
 }
 
 // GetSemaphoreKeys will return list of semaphore configmap keys which are configured in the workflow
@@ -1239,9 +1257,10 @@ type WorkflowLevelArtifactGC struct {
 	PodSpecPatch string `json:"podSpecPatch,omitempty" protobuf:"bytes,3,opt,name=podSpecPatch"`
 }
 
-// ExecutorPlugin describe workflow level executor plugin settings
+// ExecutorPlugin describes workflow-level executor plugin
 type ExecutorPlugin struct {
-	Spec ExecutorPluginSpec `json:"spec" protobuf:"bytes,1,opt,name=spec"`
+	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,2,opt,name=metadata"`
+	Spec              ExecutorPluginSpec `json:"spec" protobuf:"bytes,1,opt,name=spec"`
 }
 
 type ExecutorPluginSpec struct {
@@ -1250,8 +1269,9 @@ type ExecutorPluginSpec struct {
 
 type ExecutorPluginSidecar struct {
 	// AutomountServiceAccount mounts the service account's token. The service account must have the same name as the plugin.
-	AutomountServiceAccountToken bool            `json:"automountServiceAccountToken,omitempty" protobuf:"varint,1,opt,name=automountServiceAccountToken"`
-	Container                    apiv1.Container `json:"container" protobuf:"bytes,2,opt,name=container"`
+	AutomountServiceAccountToken bool `json:"automountServiceAccountToken,omitempty" protobuf:"varint,1,opt,name=automountServiceAccountToken"`
+	// Container defines the Kubernetes container specification for the sidecar.
+	Container apiv1.Container `json:"container" protobuf:"bytes,2,opt,name=container"`
 }
 
 // ArtifactGC describes how to delete artifacts from completed Workflows - this is embedded into the WorkflowLevelArtifactGC, and also used for individual Artifacts to override that as needed

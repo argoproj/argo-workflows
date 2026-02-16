@@ -183,25 +183,26 @@ spec:
     nodeName: virtual-node
   entrypoint: main
   executorPlugins:
-     - spec:
-        sidecar:
-          container:
-            name: test-sidecar
-            image: busybox:1.35
-            ports:
-              - containerPort: 8080
-            resources:
-              requests:
-                cpu: "100m"
-                memory: "128Mi"
-              limits:
-                cpu: "200m"
-                memory: "256Mi"
-            securityContext:
-              runAsUser: 1000
-              runAsGroup: 1000
-              runAsNonRoot: true
-
+  - spec:
+      sidecar:
+        container:
+          name: test-sidecar
+          image: busybox:1.35
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            runAsNonRoot: true
+    metadata:
+      name: test-sidecar
   templates:
     - name: main
       steps:

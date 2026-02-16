@@ -676,7 +676,7 @@ ifneq ($(PLUGINS),true)
 	@echo "⚠️  not starting plugins. If you want to test plugins, run 'make start PROFILE=plugins' to start it"
 endif
 ifneq ($(WORKFLOW_LEVEL_PLUGINS),true)
-	@echo "⚠️  not starting worklow-level plugins. If you want to test plugins, run 'make start WORKFLOW_LEVEL_PLUGINS=true' to start it"
+	@echo "⚠️  not starting workflow-level plugins. If you want to test workflow-level plugins, run 'make start WORKFLOW_LEVEL_PLUGINS=true' to start it"
 endif
 	# Check dex, minio, postgres and mysql are in hosts file
 ifeq ($(AUTH_MODE),sso)

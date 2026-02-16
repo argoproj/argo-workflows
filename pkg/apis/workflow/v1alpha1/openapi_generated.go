@@ -2715,9 +2715,15 @@ func schema_pkg_apis_workflow_v1alpha1_ExecutorPlugin(ref common.ReferenceCallba
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "ExecutorPlugin describe workflow level executor plugin settings",
+				Description: "ExecutorPlugin describes workflow-level executor plugin",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
+					"metadata": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+						},
+					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
@@ -2725,11 +2731,11 @@ func schema_pkg_apis_workflow_v1alpha1_ExecutorPlugin(ref common.ReferenceCallba
 						},
 					},
 				},
-				Required: []string{"spec"},
+				Required: []string{"metadata", "spec"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ExecutorPluginSpec"},
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ExecutorPluginSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
@@ -2748,8 +2754,9 @@ func schema_pkg_apis_workflow_v1alpha1_ExecutorPluginSidecar(ref common.Referenc
 					},
 					"container": {
 						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("k8s.io/api/core/v1.Container"),
+							Description: "Container defines the Kubernetes container specification for the sidecar.",
+							Default:     map[string]interface{}{},
+							Ref:         ref("k8s.io/api/core/v1.Container"),
 						},
 					},
 				},
@@ -8204,7 +8211,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 					},
 					"executorPlugins": {
 						SchemaProps: spec.SchemaProps{
-							Description: "ExecutorPlugins specifies a list of executor plugins at the workflow level. If any plugin is defined here, the corresponding settings from the ConfigMap are ignored.",
+							Description: "Specifies executor plugins at the workflow level.\n\nThis field is effective only when the ARGO_WORKFLOW_LEVEL_EXECUTOR_PLUGINS feature gate is enabled.\n\nIf this field is present (even if empty), executor plugin settings from the controller ConfigMap are ignored.\n\nIf this field is not set, the controller falls back to the ConfigMap configuration.",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{

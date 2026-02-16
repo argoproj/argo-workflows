@@ -272,7 +272,10 @@ func (woc *wfOperationCtx) getExecutorPlugins(ctx context.Context) ([]apiv1.Cont
 	namespaces := map[string]bool{} // de-dupes executorPlugins when their namespaces are the same
 	namespaces[woc.controller.namespace] = true
 	namespaces[woc.wf.Namespace] = true
-	wFPlugins := woc.execWf.Spec.AsExecutorPluginSpec()
+	wFPlugins, err := woc.execWf.Spec.AsExecutorPluginSpec()
+	if err != nil {
+		return nil, nil, err
+	}
 	isGetPluginsFromWorkflow := len(wFPlugins) > 0
 	if isGetPluginsFromWorkflow && !woc.controller.enableWorkflowLevelExecutorPlugins {
 		return nil, nil, fmt.Errorf(
