@@ -657,7 +657,6 @@ func Test_createWorkflowPod_containerName(t *testing.T) {
 var emissaryCmd = []string{"/var/run/argo/argoexec", "emissary"}
 
 func Test_createWorkflowPod_emissary(t *testing.T) {
-
 	t.Run("NoCommand", func(t *testing.T) {
 		ctx := logging.TestContext(t.Context())
 		woc := newWoc(ctx)
@@ -1584,7 +1583,6 @@ func TestMainContainerCustomization(t *testing.T) {
 		}
 		pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 		assert.Equal(t, "0.900", pod.Spec.Containers[1].Resources.Limits.Cpu().AsDec().String())
-
 	})
 	// If script template has limits then they take precedence over config in controller
 	t.Run("ScriptPrecedence", func(t *testing.T) {

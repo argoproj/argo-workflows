@@ -197,7 +197,6 @@ func TestInferSelfLink(t *testing.T) {
 		Kind:    "Namespace",
 	})
 	assert.Equal(t, "api/v1/namespaces/test-name", inferObjectSelfLink(obj))
-
 }
 
 // TestResourceExecRetry tests whether Exec retries transitive errors

@@ -30,7 +30,6 @@ func TestCleaner_WillExclude(t *testing.T) {
 		assert.False(t, NewCleaner("foo").WillExclude("foo.bar"))
 		assert.True(t, NewCleaner("foo").WillExclude("bar"))
 		assert.False(t, NewCleaner("foo.bar.baz").WillExclude("foo.bar"))
-
 	})
 	t.Run("Exclude", func(t *testing.T) {
 		assert.True(t, NewCleaner("-foo").WillExclude("foo"))

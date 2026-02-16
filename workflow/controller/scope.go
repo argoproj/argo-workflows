@@ -104,7 +104,6 @@ func (s *wfScope) resolveArtifact(ctx context.Context, art *wfv1.Artifact) (*wfv
 		if err != nil {
 			return nil, err
 		}
-
 	} else {
 		val, err = s.resolveVar(art.From)
 	}

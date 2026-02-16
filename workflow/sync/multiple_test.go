@@ -314,7 +314,6 @@ func TestMutexAndSemaphore(t *testing.T) {
 		assert.Empty(t, failedLockName)
 		assert.True(t, status)
 		assert.True(t, wfUpdate)
-
 	})
 }
 func TestPriority(t *testing.T) {

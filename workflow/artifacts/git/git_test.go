@@ -27,7 +27,6 @@ func TestGitArtifactDriver_Load(t *testing.T) {
 		assert.DirExists(t, path)
 	})
 	t.Run("PrivateRepo", func(t *testing.T) {
-
 		// TODO: temp - skip private repo test for everyone
 		t.SkipNow()
 

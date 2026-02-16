@@ -39,7 +39,6 @@ var _ artifactscommon.ArtifactDriver = &ArtifactDriver{}
 // The container client is created with the default azblob.ClientOptions which does include retry behavior
 // for failed requests.
 func (azblobDriver *ArtifactDriver) newAzureContainerClient(ctx context.Context) (*container.Client, error) {
-
 	containerURL, err := url.Parse(azblobDriver.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse Azure Blob Storage endpoint url %s: %w", azblobDriver.Endpoint, err)

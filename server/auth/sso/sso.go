@@ -360,7 +360,6 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	finalRedirectURL := cookie.Value
 	if !isValidFinalRedirectURL(cookie.Value) {
 		finalRedirectURL = s.baseHRef
-
 	}
 	http.Redirect(w, r, finalRedirectURL, http.StatusFound)
 }

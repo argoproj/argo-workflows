@@ -308,7 +308,6 @@ func (s *ArtifactsSuite) TestStoppedWorkflow() {
 			WaitForWorkflow(
 				fixtures.WorkflowCompletionOkay(true),
 				fixtures.Condition(func(wf *wfv1.Workflow) (bool, string) {
-
 					condition := "for artifacts to exist"
 
 					_, err1 := c.StatObject(ctx, "my-bucket-3", "on-deletion-wf-stopped-1", minio.StatObjectOptions{})
@@ -394,7 +393,6 @@ func (s *ArtifactsSuite) TestDeleteWorkflowPlugin() {
 }
 
 func (s *ArtifactsSuite) TestArtifactGC() {
-
 	s.Given().
 		WorkflowTemplate("@testdata/artifactgc/artgc-template.yaml").
 		WorkflowTemplate("@testdata/artifactgc/artgc-template-2.yaml").

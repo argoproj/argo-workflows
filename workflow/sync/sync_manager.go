@@ -238,7 +238,6 @@ func (sm *Manager) Initialize(ctx context.Context, wfs []wfv1.Workflow) {
 						sm.log.WithFields(logging.Fields{"key": key, "semaphore": holding.Semaphore}).Info(ctx, "Lock acquired")
 					}
 				}
-
 			}
 		}
 

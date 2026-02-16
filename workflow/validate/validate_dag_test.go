@@ -664,7 +664,6 @@ spec:
 func TestDAGNonExistantTarget(t *testing.T) {
 	err := validate(logging.TestContext(t.Context()), dagNonexistantTarget)
 	require.ErrorContains(t, err, "target 'DOESNTEXIST' is not defined")
-
 }
 
 var dagTargetSubstitution = `

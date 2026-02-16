@@ -45,7 +45,6 @@ func apiServerDeleteClusterWorkflowTemplates(ctx context.Context, allWFs bool, w
 		for _, cwfTmpl := range cwftmplList.Items {
 			delWFTmplNames = append(delWFTmplNames, cwfTmpl.Name)
 		}
-
 	} else {
 		delWFTmplNames = wfTmplNames
 	}

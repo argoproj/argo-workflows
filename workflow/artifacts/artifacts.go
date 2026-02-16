@@ -31,7 +31,6 @@ func NewDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 		return nil, err
 	}
 	return logging.New(drv), nil
-
 }
 
 func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (common.ArtifactDriver, error) {
@@ -207,7 +206,6 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 			Client:   &gohttp.Client{},
 		}
 		return &driver, nil
-
 	}
 	if art.HDFS != nil {
 		return hdfs.CreateDriver(ctx, ri, art.HDFS)

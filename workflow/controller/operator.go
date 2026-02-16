@@ -603,7 +603,6 @@ func (woc *wfOperationCtx) updateWorkflowMetadata(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-
 	}
 	return nil
 }
@@ -1262,7 +1261,6 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (bool, error) 
 		// In case in the absence of nodes, collect metrics.
 		woc.controller.metrics.PodMissingEnsure(ctx, recentlyStarted, string(node.Phase))
 		if _, ok := seenPods[nodeID]; !ok {
-
 			// grace-period to allow informer sync
 			woc.log.WithFields(logging.Fields{"nodeName": node.Name, "nodePhase": node.Phase, "recentlyStarted": recentlyStarted}).Info(ctx, "Workflow pod is missing")
 			woc.controller.metrics.PodMissingInc(ctx, recentlyStarted, string(node.Phase))
@@ -1740,7 +1738,6 @@ func (woc *wfOperationCtx) inferFailedReason(ctx context.Context, pod *apiv1.Pod
 	waitContainerSucceeded := false
 
 	for _, ctr := range ctrs {
-
 		// Virtual Kubelet environment will not set the terminate on waiting container
 		// https://github.com/argoproj/argo-workflows/issues/3879
 		// https://github.com/virtual-kubelet/virtual-kubelet/blob/7f2a02291530d2df14905702e6d51500dd57640a/node/sync.go#L195-L208
@@ -2696,7 +2693,6 @@ func (woc *wfOperationCtx) hasDaemonNodes() bool {
 }
 
 func (woc *wfOperationCtx) childrenFulfilledHelper(node *wfv1.NodeStatus, cache map[string]bool) bool {
-
 	res, has := cache[node.ID]
 	if has {
 		return res
@@ -3832,7 +3828,6 @@ func (woc *wfOperationCtx) resolveInputFieldsForSuspendNode(ctx context.Context,
 	parameters := node.Inputs.Parameters
 	for i, parameter := range parameters {
 		if parameter.Value != nil {
-
 			value := parameter.Value.String()
 			tempParameter := wfv1.Parameter{}
 
@@ -3904,7 +3899,6 @@ func processItem(ctx context.Context, tmpl template.Template, name string, index
 		for itemKey, itemVal := range mapVal {
 			replaceMap[fmt.Sprintf("item.%s", itemKey)] = fmt.Sprintf("%v", itemVal)
 			vals = append(vals, fmt.Sprintf("%s:%v", itemKey, itemVal))
-
 		}
 		jsonByteVal, err := json.Marshal(mapVal)
 		if err != nil {
@@ -4054,7 +4048,6 @@ func (woc *wfOperationCtx) createTemplateContext(ctx context.Context, scope wfv1
 
 func (woc *wfOperationCtx) computeMetrics(ctx context.Context, metricList []*wfv1.Prometheus, localScope map[string]string, realTimeScope map[string]func() float64, realTimeOnly bool) {
 	for _, metricTmpl := range metricList {
-
 		// Don't process real time metrics after execution
 		if realTimeOnly && !metricTmpl.IsRealtime() {
 			continue

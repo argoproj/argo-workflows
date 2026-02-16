@@ -169,7 +169,6 @@ func TestUnmarshalJSON(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-
 		claims := &Claims{}
 		err := json.Unmarshal([]byte(test.data), &claims)
 
@@ -179,7 +178,6 @@ func TestUnmarshalJSON(t *testing.T) {
 }
 
 func TestGetCustomGroup(t *testing.T) {
-
 	t.Run("NoCustomGroupSet", func(t *testing.T) {
 		claims := &Claims{}
 		_, err := claims.GetCustomGroup(("ad_groups"))

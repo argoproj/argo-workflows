@@ -225,7 +225,6 @@ func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req 
 
 	_, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Get(ctx, wf.Name, metav1.GetOptions{})
 	if apierr.IsNotFound(err) {
-
 		wf, podsToDelete, err := util.FormulateRetryWorkflow(ctx, wf, req.RestartSuccessful, req.NodeFieldSelector, req.Parameters)
 		if err != nil {
 			return nil, sutils.ToStatusError(err, codes.Internal)

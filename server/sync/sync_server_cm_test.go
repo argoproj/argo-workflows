@@ -127,7 +127,6 @@ func Test_syncServer_CreateSyncLimit(t *testing.T) {
 	})
 
 	t.Run("ConfigMap exists with nil Data", func(t *testing.T) {
-
 		existingCM := &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "nil-data-cm",
@@ -207,7 +206,6 @@ func Test_syncServer_GetSyncLimit(t *testing.T) {
 	})
 
 	t.Run("Key doesn't exist", func(t *testing.T) {
-
 		existingCM := &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "existing-cm",
@@ -237,7 +235,6 @@ func Test_syncServer_GetSyncLimit(t *testing.T) {
 	})
 
 	t.Run("Invalid size limit format", func(t *testing.T) {
-
 		existingCM := &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "existing-cm",
@@ -367,7 +364,6 @@ func Test_syncServer_UpdateSyncLimit(t *testing.T) {
 	})
 
 	t.Run("Key doesn't exist", func(t *testing.T) {
-
 		existingCM := &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "existing-cm",

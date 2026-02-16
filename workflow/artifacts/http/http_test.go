@@ -118,7 +118,6 @@ func TestSaveHTTPArtifactRedirect(t *testing.T) {
 
 			w.WriteHeader(http.StatusCreated)
 		}
-
 	}))
 	defer svr.Close()
 
@@ -137,5 +136,4 @@ func TestSaveHTTPArtifactRedirect(t *testing.T) {
 		err := driver.Save(ctx, tempFile, &art)
 		require.NoError(t, err)
 	})
-
 }

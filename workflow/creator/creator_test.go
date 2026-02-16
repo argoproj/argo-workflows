@@ -139,7 +139,6 @@ func TestLabelCreator(t *testing.T) {
 					assert.Falsef(t, ok, "should not have the creator label, \"%s\"", creatorLabelKey)
 				}
 			})
-
 		}
 	})
 }

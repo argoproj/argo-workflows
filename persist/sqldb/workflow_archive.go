@@ -662,7 +662,6 @@ func (r *workflowArchive) GetWorkflowForEstimator(ctx context.Context, namespace
 			FinishedAt: v1.Time{Time: awf.FinishedAt},
 		},
 	}, nil
-
 }
 
 func (r *workflowArchive) DeleteWorkflow(ctx context.Context, uid string) error {
