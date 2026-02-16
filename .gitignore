@@ -57,3 +57,6 @@ result
 .*-vendor
 proto_vendor
 .github.com
+.go/
+.goenv/
+.gocache/

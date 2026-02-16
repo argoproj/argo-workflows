@@ -46,6 +46,7 @@ rec {
   argoServer = {
     env = {
       UPPERIO_DB_DEBUG = "${env.UPPERIO_DB_DEBUG}";
+      CI_ONLY_DISABLE_ARTIFACT_SERVER_CHECKS = "true";
     };
     args = "--loglevel ${env.LOG_LEVEL} server --namespaced=${env.NAMESPACED} --auth-mode ${env.AUTH_MODE} --secure=${env.SECURE} --x-frame-options=SAMEORIGIN";
   };

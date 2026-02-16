@@ -2,13 +2,17 @@
 
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     flake-parts = { url = "github:hercules-ci/flake-parts"; inputs.nixpkgs-lib.follows = "nixpkgs"; };
     devenv = {
       url = "github:cachix/devenv/v1.6.1";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nix-filter.url = "github:numtide/nix-filter";
+    gomod2nix = {
+      url = "github:nix-community/gomod2nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     treefmt-nix.url = "github:numtide/treefmt-nix";
     rust-overlay.url = "github:oxalica/rust-overlay";
     rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
@@ -62,7 +66,7 @@
             inherit (pkgs) fetchurl nix-gitignore stdenv lib fetchgit;
             inherit nodeEnv;
           };
-          pythonPkgs = pkgs.python310Packages;
+          pythonPkgs = pkgs.python312Packages;
           mkdocs = with pythonPkgs; # upgrade this in the Makefile if upgraded here
             buildPythonPackage rec {
               pname = "mkdocs";
@@ -120,11 +124,12 @@
           editdistpy = with pythonPkgs;
             buildPythonPackage rec {
               pname = "editdistpy";
-              version = "0.1.3";
+              version = "0.1.6";
               src = fetchPypi {
                 inherit pname version;
-                hash = "sha256-s8rQcxnXn+izumv5IpPelikykX2I6cYk33tqRL3fHcw=";
+                hash = "sha256-M87zqCxusAftwCr2XYyZ1nt1zo6cmAEF2kvYJWvLSyU=";
               };
+              buildInputs = [ cython ];
             };
           symspellpy = with pythonPkgs;
             buildPythonPackage rec {
@@ -154,7 +159,7 @@
                 symspellpy
               ];
             };
-          pythonEnv = pkgs.python310.withPackages (ps: [
+          pythonEnv = pkgs.python312.withPackages (ps: [
             ps.pytest
             ps.typing-extensions
             ps.mypy
@@ -184,16 +189,17 @@
           _module.args = import inputs.nixpkgs {
             inherit system;
             overlays = [
+              inputs.gomod2nix.overlays.default
               inputs.rust-overlay.overlays.default
               (self: super: {
-                go = super.go_1_24;
-                buildGoModule = super.buildGo124Module;
+                go = super.go_1_25;
+                buildGoModule = super.buildGo125Module;
               })
             ];
           };
 
           packages = {
-            ${package.name} = pkgs.buildGoModule {
+            ${package.name} = pkgs.buildGoApplication {
               pname = package.name;
               inherit (package) version;
               src = pkgs.runCommand "${package.name}-src-with-placeholder-ui" {
@@ -211,7 +217,7 @@
                   echo "<html><body>Placeholder UI for Nix build</body></html>" > $out/ui/dist/app/index.html
                   echo "This is a placeholder file for Nix build." > $out/ui/dist/app/README.txt
                 '';
-              vendorHash = "sha256-zUfxtBSLyygW0UwVG8dodU8MPdP2hEezvwXa34EyqKU=";
+              modules = ./gomod2nix.toml;
               doCheck = false;
             };
 
@@ -228,14 +234,15 @@
             };
 
             mockery = pkgs.go-mockery.overrideAttrs(old: rec {
-              version = "2.53.3";
+              version = "3.5.1";
               src = pkgs.fetchFromGitHub {
                 owner = "vektra";
                 repo = "mockery";
                 rev = "v${version}";
-                sha256 = "sha256-X0cHpv4o6pzgjg7+ULCuFkspeff95WFtJbVHqy4LxAg=";
+                sha256 = "sha256-x7WniZ4wpnuzUHM2ZC2P7Ns67bIp4V4F9f4xQEJONEk=";
               };
-              vendorHash = "sha256-AQY4x2bLqMwHIjoKHzEm1hebR29gRs3LJN8i00Uup5o=";
+              vendorHash = "sha256-cNMknwlU7ENwN67CtyU1YgYIXCJbh4b7Z3oUK7kkEkk=";
+              doCheck = false;
             });
 
             protoc-gen-gogo-all = pkgs.buildGoModule rec {
@@ -266,38 +273,38 @@
             };
 
             go-swagger = pkgs.go-swagger.overrideAttrs (old: rec {
-              version = "0.31.0";
+              version = "0.33.1";
               src = pkgs.fetchFromGitHub {
                 owner = "go-swagger";
                 repo = "go-swagger";
                 rev = "v${version}";
-                sha256 = "sha256-PeH9bkRObsw4+ttuWhaPfPQQTOAw8pwlgTEtPoUBiIQ=";
+                sha256 = "sha256-CVfGKkqneNgSJZOptQrywCioSZwJP0XGspVM3S45Q/k=";
               };
-              vendorHash = "sha256-PBzJMXPZ2gVdrW3ZeerhR1BeT9vWIIS1vCTjz3UFHes=";
+              vendorHash = "sha256-x3fTIXmI5NnOKph1D84MHzf1Kod+WLYn1JtnWLr4x+U=";
             });
 
             controller-tools = pkgs.kubernetes-controller-tools.overrideAttrs (old: rec {
-              version = "0.17.2";
+              version = "0.18.0";
               src = pkgs.fetchFromGitHub {
                 owner = "kubernetes-sigs";
                 repo = "controller-tools";
                 rev = "v${version}";
-                sha256 = "sha256-AUYduzIEWCJDskoChXmQViR5ON4YZr4MKvFys03hBkY=";  # Replace with correct hash
+                sha256 = "sha256-zrh6GWFivs1fqkvaN6MSiYoCuPbiTQ6mJz4d69Wb7lo=";
               };
-              vendorHash = "sha256-Y7xYmD3fxAIo/NyLzBuSdbHIrduJ33SpK2I6LfOzNac=";
+              vendorHash = "sha256-criu2UyNkGaVQnIxrjzIU4D389DbCcjG/kn3kfoD5yE=";
             });
 
             k8sio-tools = pkgs.buildGoModule rec {
               pname = "k8sio-tools";
-              version = "0.21.5"; # upgrade this in the Makefile if upgraded here
+              version = "0.33.1"; # upgrade this in the Makefile if upgraded here
 
               src = pkgs.fetchFromGitHub {
                 owner = "kubernetes";
                 repo = "code-generator";
                 rev = "v${version}";
-                sha256 = "sha256-x05eAO2oAq/jm1SBgwjKo6JRt/j4eMn7oA0cwswLxk8=";
+                sha256 = "sha256-RiIKV95ZsUrEmaknCQ2GkGfl9xayib3ZIDiL1GBD4zo=";
               };
-              vendorHash = "sha256-Re8Voj2nO8geLCrbDPqD5rLyiUqE7APcgOnAEJzlkOk=";
+              vendorHash = "sha256-qVttsdms5jQ9dNtiFDQB2RnbEXngGcuv5htKUxDEm3k=";
               doCheck = false;
             };
 
@@ -327,6 +334,46 @@
               doCheck = false;
             };
 
+            buf = pkgs.buildGoModule rec {
+              pname = "buf";
+              version = "1.65.0";
+              src = pkgs.fetchFromGitHub {
+                owner = "bufbuild";
+                repo = "buf";
+                rev = "v${version}";
+                sha256 = "1vgwp4nm1kqisrywph6wdp6rvc3wsbzldvvdh8wnd7gd303j255s";
+              };
+              vendorHash = "sha256-8Vh6txDsPOGad6rsW9hkahT+3Dku+aECaWpkGHgW7fs=";
+              doCheck = false;
+            };
+
+            openapi-gen = pkgs.buildGoModule rec {
+              pname = "openapi-gen";
+              version = "0.0.0-20220124234850-424119656bbf";
+              src = pkgs.fetchFromGitHub {
+                owner = "kubernetes";
+                repo = "kube-openapi";
+                rev = "424119656bbf";
+                hash = "sha256-rkI7r75euOv9c0QpGpLTfatFq5S3npynmKKNlflAHug=";
+              };
+              subPackages = [ "cmd/openapi-gen" ];
+              vendorHash = "sha256-2PETLn3oDGIsyUQS7cY0XGTdMZvr7LCCc9fcltP0L80=";
+              doCheck = false;
+            };
+
+            snipdoc = pkgs.rustPlatform.buildRustPackage rec {
+              pname = "snipdoc";
+              version = "0.1.12";
+              src = pkgs.fetchFromGitHub {
+                owner = "kaplanelad";
+                repo = "snipdoc";
+                rev = "v${version}";
+                hash = "sha256-3tF871gZouZMJ3LOzlucaxEy3q8TNoc08GVCT0aYOUk=";
+              };
+              cargoHash = "sha256-chi8q+zTewc7xpyvQbnMU7Lmd0Y4qFrIFCSh7IBITxU=";
+              doCheck = false;
+            };
+
             default = config.packages.${package.name};
           };
 
@@ -351,6 +398,9 @@
                 config.packages.k8sio-tools
                 config.packages.goreman
                 config.packages.stern
+                config.packages.buf
+                config.packages.openapi-gen
+                config.packages.snipdoc
                 config.packages.${package.name}
                 config.packages.kubeauto
                 nodePackages.shell.nodeDependencies
@@ -365,6 +415,15 @@
                 myyarn
                 diffutils
                 kustomize
+                gomod2nix
+                gotestsum
+                golangci-lint
+                gotools
+                kubectl
+                k3d
+                docker
+                gettext
+                lsof
               ];
             };
 
@@ -383,6 +442,9 @@
                     config.packages.k8sio-tools
                     config.packages.goreman
                     config.packages.stern
+                    config.packages.buf
+                    config.packages.openapi-gen
+                    config.packages.snipdoc
                     config.packages.kubeauto
                     nodePackages.shell.nodeDependencies
                     gopls
@@ -397,6 +459,14 @@
                     diffutils
                     config.packages.${package.name}
                     kustomize
+                    gotestsum
+                    golangci-lint
+                    gotools
+                    kubectl
+                    k3d
+                    docker
+                    gettext
+                    lsof
                   ];
                   enterShell = ''
                     unset GOPATH;
