@@ -20,7 +20,7 @@ jobs:
         with:
           # Use the default ref (the branch that was pushed)
           token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@04702edda442b2e678b25b537cec683a1493fcb9
         with:
           go-version: '1.24.10'  # Match project version
       - uses: nixbuild/nix-quick-install-action@v29
