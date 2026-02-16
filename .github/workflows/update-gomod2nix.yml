@@ -31,7 +31,7 @@ jobs:
         run: gomod2nix
 
       - name: Commit and push changes
-        uses: stefanzweifel/git-auto-commit-action@v5
+        uses: stefanzweifel/git-auto-commit-action@v7.1.0
         with:
           commit_message: "chore(nix): update gomod2nix.toml"
           file_pattern: gomod2nix.toml
