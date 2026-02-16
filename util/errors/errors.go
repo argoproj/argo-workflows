@@ -17,13 +17,6 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
-func IgnoreContainerNotFoundErr(err error) error {
-	if err != nil && strings.Contains(err.Error(), "container not found") {
-		return nil
-	}
-	return err
-}
-
 // IsTransientErr reports whether the error is transient and logs it.
 func IsTransientErr(ctx context.Context, err error) bool {
 	isTransient := IsTransientErrQuiet(ctx, err)

@@ -119,10 +119,6 @@ func (s *gatekeeper) Context(ctx context.Context) (context.Context, error) {
 	return s.ContextWithRequest(ctx, nil)
 }
 
-func GetDynamicClient(ctx context.Context) dynamic.Interface {
-	return ctx.Value(DynamicKey).(dynamic.Interface)
-}
-
 func GetWfClient(ctx context.Context) workflow.Interface {
 	return ctx.Value(WfKey).(workflow.Interface)
 }

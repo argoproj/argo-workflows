@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"net/url"
-	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -53,16 +52,6 @@ func PrintVersionMismatchWarning(ctx context.Context, clientVersion wfv1.Version
 	if serverVersion != "" && clientVersion.GitTag != "" && serverVersion != clientVersion.Version {
 		log.WithFields(logging.Fields{"clientVersion": clientVersion.Version, "serverVersion": serverVersion}).Warn(ctx, "CLI version does not match server version. This can lead to unexpected behavior.")
 	}
-}
-
-// MustIsDir returns whether or not the given filePath is a directory. Exits if path does not exist
-func MustIsDir(ctx context.Context, filePath string) bool {
-	log := logging.RequireLoggerFromContext(ctx)
-	fileInfo, err := os.Stat(filePath)
-	if err != nil {
-		log.WithError(err).WithFatal().Error(ctx, "Failed to check if file is a directory")
-	}
-	return fileInfo.IsDir()
 }
 
 // IsURL returns whether a string is a URL
