@@ -2953,6 +2953,111 @@ func TestSuspendResumeAfterTemplateNoWait(t *testing.T) {
 	assert.Empty(t, pods.Items)
 }
 
+var suspendWithInputDefaultsTemplate = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: suspend-with-input-defaults
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: wait
+        template: wait
+    - - name: print
+        template: print
+        arguments:
+          parameters:
+          - name: input
+            value: "{{steps.wait.outputs.parameters.input}}"
+          - name: select
+            value: "{{steps.wait.outputs.parameters.select}}"
+  - name: wait
+    suspend:
+      duration: "0s"
+    inputs:
+      parameters:
+        - name: input
+          default: "Hello World"
+        - name: select
+          default: "default"
+          enum:
+            - default
+            - option1
+            - option2
+    outputs:
+      parameters:
+        - name: input
+          valueFrom:
+            supplied: {}
+        - name: select
+          valueFrom:
+            supplied: {}
+  - name: print
+    inputs:
+      parameters:
+        - name: input
+        - name: select
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["{{inputs.parameters.input}} - {{inputs.parameters.select}}"]
+`
+
+// TestSuspendTimeoutWithInputDefaults tests that when a suspend node times out,
+// output parameters get their default values from matching input parameters
+func TestSuspendTimeoutWithInputDefaults(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	ctx := t.Context()
+	wf := wfv1.MustUnmarshalWorkflow(suspendWithInputDefaultsTemplate)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	// operate the workflow - it should create the suspend node and immediately timeout (duration: 0s)
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	wf, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
+	require.NoError(t, err)
+
+	// Get the suspend node and verify outputs have defaults from inputs
+	waitNode := wf.Status.Nodes.FindByDisplayName("wait")
+	require.NotNil(t, waitNode)
+	require.NotNil(t, waitNode.Outputs)
+	require.Len(t, waitNode.Outputs.Parameters, 2)
+
+	// Verify "input" output parameter got the default "Hello World" from input
+	var inputParam, selectParam *wfv1.Parameter
+	for i := range waitNode.Outputs.Parameters {
+		p := &waitNode.Outputs.Parameters[i]
+		switch p.Name {
+		case "input":
+			inputParam = p
+		case "select":
+			selectParam = p
+		}
+	}
+
+	require.NotNil(t, inputParam, "input parameter should exist in outputs")
+	require.NotNil(t, inputParam.Value, "input parameter should have a value")
+	assert.Equal(t, "Hello World", inputParam.Value.String())
+
+	// Verify "select" output parameter got the default "default" from input
+	require.NotNil(t, selectParam, "select parameter should exist in outputs")
+	require.NotNil(t, selectParam.Value, "select parameter should have a value")
+	assert.Equal(t, "default", selectParam.Value.String())
+
+	// Verify the workflow eventually succeeds (continues to next step)
+	woc = newWorkflowOperationCtx(wf, controller)
+	woc.operate(ctx)
+	pods, err := listPods(woc)
+	require.NoError(t, err)
+	assert.Len(t, pods.Items, 1)
+}
+
 var volumeWithParam = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
