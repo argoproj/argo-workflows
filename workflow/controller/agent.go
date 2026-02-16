@@ -9,6 +9,7 @@ import (
 	"os"
 	"slices"
 	"sort"
+	"strings"
 
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -32,11 +33,9 @@ import (
 func (woc *wfOperationCtx) getAgentPodName() string {
 	agentConfig := woc.controller.Config.Agent
 	if agentConfig == nil || !agentConfig.RunMultipleWorkflow {
-		// Per-workflow agent (current behavior)
 		return woc.wf.NodeID("agent") + "-agent"
 	}
 
-	// Global agent: one per service account
 	serviceAccountName := woc.execWf.Spec.ServiceAccountName
 	if serviceAccountName == "" {
 		serviceAccountName = "default"
@@ -103,49 +102,31 @@ func (woc *wfOperationCtx) secretExists(ctx context.Context, name string) (bool,
 	return true, nil
 }
 
-// computeAgentPodSpecHash computes a hash of the agent pod spec
-// to detect when plugins or configuration changes
 func (woc *wfOperationCtx) computeAgentPodSpecHash(ctx context.Context) (string, error) {
 	pluginSidecars, _, err := woc.getExecutorPlugins(ctx)
 	if err != nil {
 		return "", err
 	}
 
-	agentConfig := woc.controller.Config.Agent
-	if agentConfig == nil {
-		agentConfig = &config.AgentConfig{}
-		agentConfig.SetDefaults()
-	}
+	sort.Slice(pluginSidecars, func(i, j int) bool {
+		return pluginSidecars[i].Name < pluginSidecars[j].Name
+	})
 
-	// Create a stable representation of the spec
-	specData := struct {
-		ExecutorImage   string
-		PluginNames     []string
-		PluginImages    []string
-		Resources       *apiv1.ResourceRequirements
-		SecurityContext *apiv1.SecurityContext
-	}{
-		ExecutorImage:   woc.controller.executorImage(),
-		PluginNames:     make([]string, 0, len(pluginSidecars)),
-		PluginImages:    make([]string, 0, len(pluginSidecars)),
-		Resources:       agentConfig.Resources,
-		SecurityContext: agentConfig.SecurityContext,
-	}
-
+	// remove fields that are not relevant to the spec hash
 	for _, c := range pluginSidecars {
-		specData.PluginNames = append(specData.PluginNames, c.Name)
-		specData.PluginImages = append(specData.PluginImages, c.Image)
+		for i := range c.VolumeMounts {
+			if c.VolumeMounts[i].Name == volumeMountVarArgo.Name || strings.HasPrefix(c.VolumeMounts[i].Name, "kube-api-access-") {
+				c.VolumeMounts[i].MountPath = ""
+				c.VolumeMounts[i].SubPath = ""
+				c.VolumeMounts[i].Name = ""
+			}
+		}
 	}
 
-	// Sort for consistency
-	sort.Strings(specData.PluginNames)
-	sort.Strings(specData.PluginImages)
-
-	specJSON, err := json.Marshal(specData)
+	specJSON, err := json.Marshal(pluginSidecars)
 	if err != nil {
 		return "", err
 	}
-
 	hash := sha256.Sum256(specJSON)
 	return hex.EncodeToString(hash[:]), nil
 }
@@ -182,9 +163,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		agentConfig.SetDefaults()
 	}
 
-	// Check if controller should create pods
 	if !agentConfig.ShouldCreatePod() {
-		// External operator manages agent pods, skip creation
 		woc.log.Debug(ctx, "Agent pod creation disabled, skipping")
 		return nil, nil
 	}
@@ -192,36 +171,30 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	podName := woc.getAgentPodName()
 	ctx, log := woc.log.WithField("podName", podName).InContext(ctx)
 
-	// Compute current spec hash
 	currentHash, err := woc.computeAgentPodSpecHash(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compute agent spec hash: %w", err)
 	}
 
-	// Check if agent pod already exists
 	pod, err := woc.controller.PodController.GetPod(woc.wf.Namespace, podName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pod from informer store: %w", err)
 	}
 
 	if pod != nil {
-		// Agent pod exists - check if spec changed
 		existingHash := pod.Annotations[common.AnnotationKeyAgentPodSpecHash]
 
 		if existingHash == currentHash {
-			// Spec unchanged, reuse existing pod
 			log.Debug(ctx, "Reusing existing agent pod")
 			return pod, nil
 		}
 
-		// Spec changed (e.g., new plugin added), need to recreate
 		log.Info(ctx, "Agent pod spec changed, deleting to recreate")
 		err = woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).Delete(
 			ctx, podName, metav1.DeleteOptions{})
 		if err != nil && !apierr.IsNotFound(err) {
 			return nil, fmt.Errorf("failed to delete outdated agent pod: %w", err)
 		}
-
 		// Requeue workflow for next reconciliation to create new pod
 		woc.requeue()
 		return nil, nil
@@ -242,13 +215,10 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		serviceAccountName = "default"
 	}
 
-	// Set label selector environment variable for agent
 	var labelSelector string
 	if agentConfig.RunMultipleWorkflow {
-		// Global agent: watch all TaskSets with matching service account
 		labelSelector = fmt.Sprintf("%s=%s", common.LabelKeyWorkflowServiceAccount, serviceAccountName)
 	} else {
-		// Per-workflow agent: watch only this workflow's TaskSet
 		labelSelector = fmt.Sprintf("%s=%s", common.LabelKeyWorkflowName, woc.wf.Name)
 	}
 
@@ -284,7 +254,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		podVolumes = append(podVolumes, *certVolume)
 		podVolumeMounts = append(podVolumeMounts, *certVolumeMount)
 	}
-	// Apply configured resources or use defaults
+
 	var agentResources apiv1.ResourceRequirements
 	if agentConfig.Resources != nil {
 		agentResources = *agentConfig.Resources
@@ -301,7 +271,6 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		}
 	}
 
-	// Apply configured security context or use defaults
 	var agentSecurityContext *apiv1.SecurityContext
 	if agentConfig.SecurityContext != nil {
 		agentSecurityContext = agentConfig.SecurityContext
@@ -327,25 +296,21 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	agentMainCtr.Name = common.MainContainerName
 	agentMainCtr.Args = append([]string{"agent", "main"}, woc.getExecutorLogOpts(ctx)...)
 
-	// Build pod labels
 	podLabels := map[string]string{
-		common.LabelKeyWorkflow:  woc.wf.Name, // Allows filtering by pods related to specific workflow
-		common.LabelKeyCompleted: "false",     // Allows filtering by incomplete workflow pods
-		common.LabelKeyComponent: "agent",     // Allows you to identify agent pods and use a different NetworkPolicy on them
+		common.LabelKeyWorkflow:  woc.wf.Name,
+		common.LabelKeyCompleted: "false",
+		common.LabelKeyComponent: "agent",
 	}
 
-	// Add service account label for global agent
 	if agentConfig.RunMultipleWorkflow {
 		podLabels[common.LabelKeyAgentServiceAccount] = serviceAccountName
 	}
 
-	// Build pod annotations
 	podAnnotations := map[string]string{
 		common.AnnotationKeyDefaultContainer: common.MainContainerName,
 		common.AnnotationKeyAgentPodSpecHash: currentHash,
 	}
 
-	// Handle owner references based on configuration
 	var ownerReferences []metav1.OwnerReference
 	if agentConfig.RunMultipleWorkflow {
 		// Global agent: remove workflow owner reference (pod outlives workflows)
@@ -467,8 +432,6 @@ func names(containers []apiv1.Container) []string {
 	return pluginNames
 }
 
-// cleanupAgentPodIfUnused checks if agent pod is still needed by other workflows
-// and deletes it if not (only when configured to do so)
 func (woc *wfOperationCtx) cleanupAgentPod(ctx context.Context) bool {
 	woc.log.Info(ctx, "cleanupAgentPod check")
 	hasNodes := woc.hasTaskSetNodes()
@@ -501,12 +464,10 @@ func (woc *wfOperationCtx) hasRunningWorkflowsUsingSameAgentPod(ctx context.Cont
 		serviceAccountName = "default"
 	}
 	woc.log.WithField("serviceAccountName", serviceAccountName).Info(ctx, "Checking for other workflows using same agent pod")
-	// Create selector for incomplete workflows
 	selector := labels.Set{
 		common.LabelKeyCompleted: "false",
 	}.AsSelector()
 
-	// Get all workflows from the informer and filter by namespace and selector
 	objs := woc.controller.wfInformer.GetIndexer().List()
 	var err error
 	for _, obj := range objs {
@@ -514,35 +475,33 @@ func (woc *wfOperationCtx) hasRunningWorkflowsUsingSameAgentPod(ctx context.Cont
 		if !ok {
 			continue
 		}
-		// Filter by namespace
+
 		if un.GetNamespace() != woc.wf.Namespace {
 			continue
 		}
-		// Filter by selector
+
 		if !selector.Matches(labels.Set(un.GetLabels())) {
 			continue
 		}
-		// Convert to Workflow
+
 		var wf wfv1.Workflow
 		err = util.FromUnstructuredObj(un, &wf)
 		if err != nil {
 			continue
 		}
 
-		// Skip current workflow
 		if wf.Name == woc.wf.Name {
 			continue
 		}
 
-		// Check if workflow uses same SA
 		wfSA := wf.Spec.ServiceAccountName
 		if wfSA == "" {
 			wfSA = "default"
 		}
+
 		if wfSA == serviceAccountName {
 			return true
 		}
-
 	}
 
 	return false

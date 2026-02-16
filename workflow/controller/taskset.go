@@ -173,13 +173,11 @@ func (woc *wfOperationCtx) createTaskSet(ctx context.Context) error {
 
 	woc.log.Info(ctx, "Creating TaskSet")
 
-	// Get service account name for labeling
 	serviceAccountName := woc.execWf.Spec.ServiceAccountName
 	if serviceAccountName == "" {
 		serviceAccountName = "default"
 	}
 
-	// Create labels for TaskSet
 	taskSetLabels := map[string]string{
 		common.LabelKeyWorkflowServiceAccount: serviceAccountName,
 		common.LabelKeyWorkflowName:           woc.wf.Name,

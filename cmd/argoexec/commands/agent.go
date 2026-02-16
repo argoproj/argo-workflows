@@ -109,7 +109,6 @@ func initAgentExecutor(ctx context.Context) *executor.AgentExecutor {
 
 	restClient := clientSet.RESTClient()
 
-	// For backwards compatibility, we allow the workflow name to be optional
 	workflowName, workflowNameFound := os.LookupEnv(common.EnvVarWorkflowName)
 	labelSelector, ok := os.LookupEnv(common.EnvVarTaskSetLabelSelector)
 	if !ok && !workflowNameFound {

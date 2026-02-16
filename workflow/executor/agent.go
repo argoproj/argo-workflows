@@ -64,14 +64,14 @@ func NewAgentExecutor(clientSet kubernetes.Interface, restClient rest.Interface,
 type task struct {
 	NodeID      string
 	Template    wfv1.Template
-	TaskSetName string // TaskSet name (same as workflow name)
-	WorkflowUID string // UID from taskset owner reference
+	TaskSetName string
+	WorkflowUID string
 }
 
 type response struct {
 	NodeID      string
 	Result      *wfv1.NodeResult
-	TaskSetName string // TaskSet name for patching
+	TaskSetName string
 }
 
 func (ae *AgentExecutor) Agent(ctx context.Context) error {
@@ -203,7 +203,6 @@ func (ae *AgentExecutor) patchWorker(ctx context.Context, taskSetInterface v1alp
 	ticker := time.NewTicker(requeueTime)
 	defer ticker.Stop()
 
-	// Group results by TaskSet (TaskSet name = workflow name)
 	taskSetResults := make(map[string]map[string]wfv1.NodeResult)
 
 	logger := logging.RequireLoggerFromContext(ctx)
@@ -220,7 +219,6 @@ func (ae *AgentExecutor) patchWorker(ctx context.Context, taskSetInterface v1alp
 				continue
 			}
 
-			// Patch each TaskSet's results separately
 			for taskSetName, nodeResults := range taskSetResults {
 				patch, err := json.Marshal(map[string]any{"status": wfv1.WorkflowTaskSetStatus{Nodes: nodeResults}})
 				if err != nil {
@@ -265,7 +263,6 @@ func (ae *AgentExecutor) patchWorker(ctx context.Context, taskSetInterface v1alp
 				logger.WithField("taskSet", taskSetName).Info(ctx, "Patched TaskSet")
 			}
 
-			// Clear results after patching
 			taskSetResults = make(map[string]map[string]wfv1.NodeResult)
 		}
 	}

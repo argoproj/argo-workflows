@@ -2664,8 +2664,6 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 			}
 		}
 		woc.updated = true
-		// Check agent config to determine if pod should be deleted
-		// This respects RunMultipleWorkflow, DeleteAfterCompletion, and CreatePod settings
 		if woc.cleanupAgentPod(ctx) {
 			woc.controller.PodController.DeletePod(ctx, woc.wf.Namespace, woc.getAgentPodName())
 		}
