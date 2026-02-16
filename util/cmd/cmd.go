@@ -121,6 +121,10 @@ func CmdContextWithLogger(cmd *cobra.Command, logLevel, logType string) (context
 	logger := logging.NewSlogLogger(level, format)
 	ctx = logging.WithLogger(ctx, logger)
 
+	// Configure logrus for argoproj/pkg which uses it internally
+	SetLogrusLevel(level)
+	SetLogrusFormatter(format)
+
 	cmd.SetContext(ctx)
 	return ctx, logger, nil
 }
