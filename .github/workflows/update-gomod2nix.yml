@@ -23,7 +23,7 @@ jobs:
       - uses: actions/setup-go@04702edda442b2e678b25b537cec683a1493fcb9
         with:
           go-version: '1.24.10'  # Match project version
-      - uses: nixbuild/nix-quick-install-action@v29
+      - uses: nixbuild/nix-quick-install-action@2c9db80fb984ceb1bcaa77cdda3fdf8cfba92035
       - name: Install gomod2nix
         run: nix profile install github:nix-community/gomod2nix
 
@@ -31,7 +31,7 @@ jobs:
         run: gomod2nix
 
       - name: Commit and push changes
-        uses: stefanzweifel/git-auto-commit-action@v7.1.0
+        uses: stefanzweifel/git-auto-commit-action@04702edda442b2e678b25b537cec683a1493fcb9
         with:
           commit_message: "chore(nix): update gomod2nix.toml"
           file_pattern: gomod2nix.toml
