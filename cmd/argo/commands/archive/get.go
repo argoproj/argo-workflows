@@ -54,7 +54,6 @@ func NewGetCommand() *cobra.Command {
 }
 
 func printWorkflow(wf *wfv1.Workflow, output string) {
-
 	switch output {
 	case "json":
 		output, err := json.Marshal(wf)
@@ -96,5 +95,4 @@ func printWorkflow(wf *wfv1.Workflow, output string) {
 			fmt.Printf(fmtStr, "Duration:", humanize.RelativeDuration(wf.Status.StartedAt.Time, wf.Status.FinishedAt.Time))
 		}
 	}
-
 }

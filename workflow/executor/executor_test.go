@@ -592,7 +592,6 @@ func TestReportOutputs(t *testing.T) {
 		require.NoError(t, err)
 		assert.Empty(t, we.errors)
 	})
-
 }
 
 func TestUntarMaliciousSymlink(t *testing.T) {

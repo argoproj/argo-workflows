@@ -19,7 +19,6 @@ type cliCreateOpts struct {
 }
 
 func NewCreateCommand() *cobra.Command {
-
 	var cliCreateOpts = cliCreateOpts{}
 
 	command := &cobra.Command{

@@ -235,7 +235,6 @@ func testSyncManagersContendingForSemaphore(t *testing.T, dbType sqldb.DBType) {
 	if maxLockCount > 1 {
 		t.Errorf("Multiple locks were held simultaneously: %d", maxLockCount)
 	}
-
 }
 
 func TestSyncManagersContendingForSemaphore(t *testing.T) {

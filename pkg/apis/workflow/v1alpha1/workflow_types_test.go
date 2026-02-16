@@ -167,7 +167,6 @@ func TestWorkflowGetArtifactGCStrategy(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			workflowSpec := fmt.Sprintf(`
             apiVersion: argoproj.io/v1alpha1
             kind: Workflow
@@ -196,7 +195,6 @@ func TestWorkflowGetArtifactGCStrategy(t *testing.T) {
 			assert.Equal(t, tt.expectedStrategy, gcStrategy)
 		})
 	}
-
 }
 
 func TestArtifact_ValidatePath(t *testing.T) {
@@ -1467,7 +1465,6 @@ func TestParameterGetValue(t *testing.T) {
 	assert.NotEmpty(t, value.GetValue())
 	assert.Equal(t, "Test", value.GetValue())
 	assert.True(t, valueFrom.HasValue())
-
 }
 
 func TestTemplateIsLeaf(t *testing.T) {
@@ -1499,7 +1496,6 @@ func TestTemplateIsLeaf(t *testing.T) {
 		Steps: []ParallelSteps{},
 	}
 	assert.False(t, tmpl.IsLeaf())
-
 }
 
 func TestTemplateGetType(t *testing.T) {
@@ -1532,7 +1528,6 @@ func TestStepSpecGetExitHook(t *testing.T) {
 	step = WorkflowStep{Name: "A", Hooks: LifecycleHooks{"exit": LifecycleHook{Template: "hook"}}}
 	hooks = step.GetExitHook(step.Arguments)
 	assert.Equal(t, "hook", hooks.Template)
-
 }
 
 func TestTemplate_RetryStrategy(t *testing.T) {

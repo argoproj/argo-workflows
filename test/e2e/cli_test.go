@@ -1860,7 +1860,6 @@ func (s *CLISuite) TestConfigMapSyncCLI() {
 				assert.Contains(t, output, "Sync limit deleted")
 			})
 	})
-
 }
 
 func (s *CLISuite) TestDBSyncCLI() {
@@ -1904,7 +1903,6 @@ func (s *CLISuite) TestDBSyncCLI() {
 				assert.Contains(t, output, "Sync limit deleted")
 			})
 	})
-
 }
 
 func (s *CLISuite) TestArchiveLabel() {

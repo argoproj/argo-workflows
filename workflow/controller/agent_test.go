@@ -170,5 +170,4 @@ func TestAssessAgentPodStatus(t *testing.T) {
 		assert.Equal(t, wfv1.NodePhase(""), nodeStatus)
 		assert.Empty(t, msg)
 	})
-
 }

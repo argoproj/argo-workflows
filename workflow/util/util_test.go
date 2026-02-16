@@ -718,7 +718,6 @@ func TestFormulateResubmitWorkflow(t *testing.T) {
 		assert.Emptyf(t, wf.Labels[common.LabelKeyCreator], "should not %s label when a workflow is resubmitted by an unauthenticated request", common.LabelKeyCreator)
 		assert.Emptyf(t, wf.Labels[common.LabelKeyCreatorEmail], "should not %s label when a workflow is resubmitted by an unauthenticated request", common.LabelKeyCreatorEmail)
 		assert.Emptyf(t, wf.Labels[common.LabelKeyCreatorPreferredUsername], "should not %s label when a workflow is resubmitted by an unauthenticated request", common.LabelKeyCreatorPreferredUsername)
-
 	})
 	t.Run("OverrideParams", func(t *testing.T) {
 		wf := &wfv1.Workflow{
@@ -1158,7 +1157,6 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		wf, _, err := FormulateRetryWorkflow(logging.TestContext(t.Context()), wf, false, "", []string{"message=modified"})
 		require.NoError(t, err)
 		assert.Equal(t, "modified", wf.Spec.Arguments.Parameters[0].Value.String())
-
 	})
 
 	t.Run("OverrideParamsSubmitFromWfTmpl", func(t *testing.T) {
@@ -1187,7 +1185,6 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, "modified", wf.Spec.Arguments.Parameters[0].Value.String())
 		assert.Equal(t, "modified", wf.Status.StoredWorkflowSpec.Arguments.Parameters[0].Value.String())
-
 	})
 
 	t.Run("Fail on running workflow", func(t *testing.T) {
@@ -2295,7 +2292,6 @@ func TestStepsRetryWorkflow(t *testing.T) {
 			assert.Equal(wfv1.NodeSucceeded, node.Phase)
 		}
 	}
-
 }
 
 func TestDagConversion(t *testing.T) {
@@ -3016,7 +3012,6 @@ func TestOnExitWorkflowRetry(t *testing.T) {
 			assert.Equal(wfv1.NodeSucceeded, node.Phase)
 		}
 	}
-
 }
 
 const onExitWorkflow = `
@@ -3161,7 +3156,6 @@ func TestOnExitWorkflow(t *testing.T) {
 	assert.Len(podsToDelete, 1)
 	assert.Len(newWf.Status.Nodes, 1)
 	assert.Equal(wfv1.NodeSucceeded, newWf.Status.Nodes["retry-workflow-with-failed-exit-handler"].Phase)
-
 }
 
 const nestedDAG = `apiVersion: argoproj.io/v1alpha1
@@ -3917,7 +3911,6 @@ func TestNestedDAG(t *testing.T) {
 			assert.Equal(wfv1.NodeSucceeded, node.Phase)
 		}
 	}
-
 }
 
 const onExitPanic = `apiVersion: argoproj.io/v1alpha1

@@ -211,7 +211,6 @@ func Test_archivedWorkflowServer(t *testing.T) {
 		require.NoError(t, err)
 		assert.Len(t, resp.Items, 1)
 		assert.Equal(t, "1", resp.Continue)
-
 	})
 	t.Run("GetArchivedWorkflow", func(t *testing.T) {
 		allowed = false

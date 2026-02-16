@@ -209,7 +209,6 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 
 		key, _ := artifact.GetKey()
 		for _, object := range objects {
-
 			// object is prefixed by the key, we must trim it
 			dir, file := path.Split(strings.TrimPrefix(object, key+"/"))
 
@@ -240,7 +239,6 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 			a.httpFromError(ctx, err, w)
 		}
 	}
-
 }
 
 func (a *ArtifactServer) renderDirectoryListing(objects []string, key string) ([]byte, error) {
@@ -257,7 +255,6 @@ func (a *ArtifactServer) renderDirectoryListing(objects []string, key string) ([
 	}
 
 	for _, object := range objects {
-
 		// object is prefixed the key, we must trim it
 		dir, file := path.Split(strings.TrimPrefix(object, key+"/"))
 

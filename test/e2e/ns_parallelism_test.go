@@ -37,7 +37,6 @@ spec:
 `
 
 func (s *NamespaceParallelismSuite) TestNamespaceParallelism() {
-
 	s.Given().
 		Workflow(wf).
 		When().

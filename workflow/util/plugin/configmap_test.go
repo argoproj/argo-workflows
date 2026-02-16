@@ -57,7 +57,6 @@ func TestToConfigMap(t *testing.T) {
 			"sidecar.automountServiceAccountToken": "true",
 			"sidecar.container":                    "name: \"\"\nports:\n- containerPort: 1234\nresources: {}\nsecurityContext: {}\n",
 		}, cm.Data)
-
 	})
 }
 

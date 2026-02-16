@@ -107,7 +107,6 @@ func (woc *wfOperationCtx) processPodSpecPatch(ctx context.Context, tmpl *wfv1.T
 		podSpecPatches = append(podSpecPatches, processedTmpl.PodSpecPatch)
 	}
 	return podSpecPatches, nil
-
 }
 
 func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName string, mainCtrs []apiv1.Container, tmpl *wfv1.Template, opts *createWorkflowPodOpts) (*apiv1.Pod, error) {
@@ -1640,6 +1639,5 @@ func mirrorVolumeMounts(ctx context.Context, sourceContainer, targetContainer *a
 		}
 		logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"name": volMnt.Name, "containerName": targetContainer.Name}).Debug(ctx, "Adding volume mount")
 		targetContainer.VolumeMounts = append(targetContainer.VolumeMounts, volMnt)
-
 	}
 }

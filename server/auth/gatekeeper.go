@@ -83,7 +83,6 @@ func NewGatekeeper(modes Modes, clients *servertypes.Clients, restConfig *rest.C
 		namespaced,
 		cache,
 	}, nil
-
 }
 
 func (s *gatekeeper) UnaryServerInterceptor() grpc.UnaryServerInterceptor {

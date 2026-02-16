@@ -44,7 +44,6 @@ func Test_submitWorkflows(t *testing.T) {
 			assert.Fail(t, "type is not WorkflowCreateRequest")
 		}
 		assert.Equal(t, priority, *wfC.Workflow.Spec.Priority)
-
 	})
 
 	t.Run("Submit workflow with priority set from cli", func(t *testing.T) {

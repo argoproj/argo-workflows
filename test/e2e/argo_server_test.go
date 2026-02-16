@@ -1798,7 +1798,6 @@ func (s *ArgoServerSuite) artifactServerRetrievalTests(name string, uid types.UI
 
 		resp.Header("X-Frame-Options").
 			IsEqual("SAMEORIGIN")
-
 	})
 
 	// In this case, the filename specified in the request is actually a directory
@@ -1810,7 +1809,6 @@ func (s *ArgoServerSuite) artifactServerRetrievalTests(name string, uid types.UI
 		resp.Body().
 			Contains("<a href=\"./sub-file-1\">sub-file-1</a>").
 			Contains("<a href=\"./sub-file-2\">sub-file-2</a>")
-
 	})
 
 	// In this case, the filename specified in the request is a subdirectory file
@@ -2211,7 +2209,6 @@ spec:
 			Length().
 			IsEqual(1)
 	})
-
 }
 
 // A test can simply reproduce the problem mentioned in the link https://github.com/argoproj/argo-workflows/pull/12574
@@ -2773,7 +2770,6 @@ spec:
 	j.
 		Path("$.spec.templates[0].container.args[1]").
 		IsEqual("hello \u0000")
-
 }
 
 func (s *ArgoServerSuite) TestSyncConfigmapService() {

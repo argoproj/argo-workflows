@@ -503,7 +503,6 @@ func TestArtifactServer_GetArtifactFile(t *testing.T) {
 				} else {
 					assert.Equal(t, "my-data", string(all))
 				}
-
 			}
 		})
 	}

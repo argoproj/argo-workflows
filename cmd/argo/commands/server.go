@@ -137,7 +137,6 @@ See %s`, help.ArgoServer()),
 						return err
 					}
 				}
-
 			} else {
 				logger.Warn(ctx, "You are running in insecure mode. Learn how to enable transport layer security: https://argo-workflows.readthedocs.io/en/latest/tls/")
 			}

@@ -548,7 +548,6 @@ func updateSuspendedNode(ctx context.Context, wfIf v1alpha1.WorkflowInterface, h
 		for nodeID, node := range wf.Status.Nodes {
 			if node.IsActiveSuspendNode() {
 				if SelectorMatchesNode(selector, node) {
-
 					// Update phase
 					if values.Phase != "" {
 						node.Phase = values.Phase
@@ -1056,7 +1055,6 @@ func resetPath(allNodes []*dagNode, startNode string) (map[string]bool, map[stri
 	}
 
 	for curr != nil {
-
 		switch {
 		case isGroupNodeType(curr.n.Type):
 			addToReset(curr.n.ID)
@@ -1148,7 +1146,6 @@ func dagSortedNodes(nodes []*dagNode, rootNodeName string) []*dagNode {
 // obtain singular path to each $node
 // reset all "reset points" to $node
 func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string, parameters []string) (*wfv1.Workflow, []string, error) {
-
 	switch wf.Status.Phase {
 	case wfv1.WorkflowFailed, wfv1.WorkflowError:
 	case wfv1.WorkflowSucceeded:
@@ -1285,7 +1282,6 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 		}
 	}
 	for id, oldWfNode := range wf.Status.Nodes {
-
 		if !newWf.Status.Nodes.Has(id) {
 			continue
 		}

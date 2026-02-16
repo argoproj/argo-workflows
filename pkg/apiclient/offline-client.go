@@ -84,7 +84,6 @@ func newOfflineClient(ctx context.Context, paths []string) (context.Context, Cli
 					}
 					getter.(*offlineWorkflowTemplateNamespacedGetter).workflowTemplates[objName] = v
 				}
-
 			}
 			return nil
 		})

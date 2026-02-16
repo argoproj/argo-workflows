@@ -456,7 +456,6 @@ func TestProcessArtifactGCStrategy(t *testing.T) {
 	assert.Contains(t, wfat2.Spec.ArtifactsByNode, "two-artgc-8tcvt-802059674")
 	assert.Contains(t, wfat2.Spec.ArtifactsByNode["two-artgc-8tcvt-802059674"].Artifacts, "first-on-completion-2")
 	assert.NotContains(t, wfat2.Spec.ArtifactsByNode["two-artgc-8tcvt-802059674"].Artifacts, "on-deletion")
-
 }
 
 var artgcTask = `apiVersion: argoproj.io/v1alpha1
@@ -598,7 +597,6 @@ func TestProcessCompletedWorkflowArtifactGCTask(t *testing.T) {
 			true,
 		},
 	} {
-
 		node := woc.wf.Status.Nodes[expectedArtifact.nodeName]
 		artifact := node.Outputs.Artifacts.GetArtifactByName(expectedArtifact.artifactName)
 		if artifact == nil {
@@ -619,7 +617,6 @@ func TestProcessCompletedWorkflowArtifactGCTask(t *testing.T) {
 			assert.Contains(t, gcFailureCondition.Message, "something went wrong")
 		}
 	}
-
 }
 
 func TestWorkflowHasArtifactGC(t *testing.T) {
@@ -689,7 +686,6 @@ func TestWorkflowHasArtifactGC(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			workflowSpec := fmt.Sprintf(`
             apiVersion: argoproj.io/v1alpha1
             kind: Workflow
@@ -723,7 +719,6 @@ func TestWorkflowHasArtifactGC(t *testing.T) {
 			assert.Equal(t, tt.expectedResult, hasArtifact)
 		})
 	}
-
 }
 
 func TestArtifactGCPodWithPlugins(t *testing.T) {

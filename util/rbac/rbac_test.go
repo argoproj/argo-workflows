@@ -15,7 +15,6 @@ import (
 )
 
 func TestRBAC_AccessClusterWorkflowTemplates(t *testing.T) {
-
 	t.Run("has full access", func(t *testing.T) {
 		kubeclientset := &kubefake.Clientset{}
 		allowedVerbs := []string{"get", "list", "watch"}

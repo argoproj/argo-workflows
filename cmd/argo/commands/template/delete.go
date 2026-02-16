@@ -54,7 +54,6 @@ func apiServerDeleteWorkflowTemplates(ctx context.Context, allWFs bool, wfTmplNa
 		for _, wfTmpl := range wftmplList.Items {
 			delWFTmplNames = append(delWFTmplNames, wfTmpl.Name)
 		}
-
 	} else {
 		delWFTmplNames = wfTmplNames
 	}
