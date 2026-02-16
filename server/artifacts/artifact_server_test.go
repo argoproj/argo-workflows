@@ -159,7 +159,7 @@ func (a *fakeArtifactDriver) ListObjects(_ context.Context, artifact *wfv1.Artif
 func newServer(t *testing.T) *ArtifactServer {
 	t.Helper()
 	gatekeeper := &authmocks.Gatekeeper{}
-	kube := kubefake.NewSimpleClientset()
+	kube := kubefake.NewClientset()
 	instanceID := "my-instanceid"
 	wf := &wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Name: "my-wf", Labels: map[string]string{
@@ -355,7 +355,7 @@ func newServer(t *testing.T) *ArtifactServer {
 			},
 		},
 	}
-	argo := fakewfv1.NewSimpleClientset(wf, &wfv1.Workflow{
+	argo := fakewfv1.NewClientset(wf, &wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Name: "your-wf"},
 	})
 	ctx := context.WithValue(context.WithValue(logging.TestContext(t.Context()), auth.KubeKey, kube), auth.WfKey, argo)

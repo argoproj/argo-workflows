@@ -319,7 +319,7 @@ func newWorkflowPodWatch(ctx context.Context, clientSet kubernetes.Interface, in
 
 func newInformer(ctx context.Context, clientSet kubernetes.Interface, instanceID, namespace *string) cache.SharedIndexInformer {
 	source := newWorkflowPodWatch(ctx, clientSet, instanceID, namespace)
-	informer := cache.NewSharedIndexInformer(source, &apiv1.Pod{}, podResyncPeriod, cache.Indexers{
+	informer := cache.NewSharedIndexInformer(cache.ToListWatcherWithWatchListSemantics(source, clientSet), &apiv1.Pod{}, podResyncPeriod, cache.Indexers{
 		indexes.WorkflowIndex: indexes.MetaWorkflowIndexFunc,
 		indexes.NodeIDIndex:   indexes.MetaNodeIDIndexFunc,
 		indexes.PodPhaseIndex: indexes.PodPhaseIndexFunc,

@@ -20,10 +20,10 @@ import (
 )
 
 func TestController(t *testing.T) {
-	clientset := fake.NewSimpleClientset()
+	clientset := fake.NewClientset()
 	ctx := context.WithValue(logging.TestContext(t.Context()), auth.WfKey, clientset)
 	instanceIDService := instanceid.NewService("my-instanceid")
-	eventRecorderManager := events.NewEventRecorderManager(fakekube.NewSimpleClientset())
+	eventRecorderManager := events.NewEventRecorderManager(fakekube.NewClientset())
 	newController := func(asyncDispatch bool) *Controller {
 		return NewController(ctx, instanceIDService, eventRecorderManager, 1, 1, asyncDispatch)
 	}

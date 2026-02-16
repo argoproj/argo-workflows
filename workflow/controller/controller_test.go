@@ -265,11 +265,11 @@ func newController(ctx context.Context, options ...any) (context.CancelFunc, *Wo
 			objects = append(objects, v)
 		}
 	}
-	wfclientset := fakewfclientset.NewSimpleClientset(objects...)
+	wfclientset := fakewfclientset.NewClientset(objects...)
 	dynamicClient := dynamicfake.NewSimpleDynamicClient(scheme.Scheme, objects...)
 	informerFactory := wfextv.NewSharedInformerFactory(wfclientset, 0)
 	ctx, cancel := context.WithCancel(ctx)
-	kube := fake.NewSimpleClientset(coreObjects...)
+	kube := fake.NewClientset(coreObjects...)
 	wfc := &WorkflowController{
 		Config: config.Config{
 			Images: map[string]config.Image{
