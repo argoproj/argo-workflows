@@ -374,6 +374,8 @@
               doCheck = false;
             };
 
+            nodeDependencies = nodePackages.shell.nodeDependencies;
+
             default = config.packages.${package.name};
           };
 

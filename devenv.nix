@@ -39,6 +39,7 @@ in
     argoFlakePackages.goreman
     argoFlakePackages.stern
     argoFlakePackages.buf
+    argoFlakePackages.nodeDependencies
     golangci-lint
   ];
 
