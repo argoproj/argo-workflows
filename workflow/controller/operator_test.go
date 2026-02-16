@@ -3008,17 +3008,17 @@ spec:
 // TestSuspendTimeoutWithInputDefaults tests that when a suspend node times out,
 // output parameters get their default values from matching input parameters
 func TestSuspendTimeoutWithInputDefaults(t *testing.T) {
-	cancel, controller := newController(logging.TestContext(t.Context()))
+	cancel, controller := newController()
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-	ctx := logging.TestContext(t.Context())
+	ctx := t.Context()
 	wf := wfv1.MustUnmarshalWorkflow(suspendWithInputDefaultsTemplate)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	// operate the workflow - it should create the suspend node and immediately timeout (duration: 0s)
-	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 	wf, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
 	require.NoError(t, err)
@@ -3051,9 +3051,9 @@ func TestSuspendTimeoutWithInputDefaults(t *testing.T) {
 	assert.Equal(t, "default", selectParam.Value.String())
 
 	// Verify the workflow eventually succeeds (continues to next step)
-	woc = newWorkflowOperationCtx(ctx, wf, controller)
+	woc = newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
-	pods, err := listPods(ctx, woc)
+	pods, err := listPods(woc)
 	require.NoError(t, err)
 	assert.Len(t, pods.Items, 1)
 }
