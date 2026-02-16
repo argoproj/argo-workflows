@@ -236,7 +236,7 @@ func (s *sso) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 	if !isValidFinalRedirectURL(finalRedirectURL) {
 		finalRedirectURL = s.baseHRef
 	}
-	state, err := pkgrand.RandString(10)
+	state, err := pkgrand.String(10)
 	if err != nil {
 		s.logger.WithError(err).Error(r.Context(), "failed to create state")
 		w.WriteHeader(http.StatusInternalServerError)

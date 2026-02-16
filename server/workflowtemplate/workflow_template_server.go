@@ -21,23 +21,23 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/validate"
 )
 
-type WorkflowTemplateServer struct {
+type Server struct {
 	instanceIDService instanceid.Service
 	wftmplStore       servertypes.WorkflowTemplateStore
 	cwftmplStore      servertypes.ClusterWorkflowTemplateStore
 }
 
-func NewWorkflowTemplateServer(instanceIDService instanceid.Service, wftmplStore servertypes.WorkflowTemplateStore, cwftmplStore servertypes.ClusterWorkflowTemplateStore) workflowtemplatepkg.WorkflowTemplateServiceServer {
+func NewServer(instanceIDService instanceid.Service, wftmplStore servertypes.WorkflowTemplateStore, cwftmplStore servertypes.ClusterWorkflowTemplateStore) workflowtemplatepkg.WorkflowTemplateServiceServer {
 	if wftmplStore == nil {
-		wftmplStore = NewWorkflowTemplateClientStore()
+		wftmplStore = NewClientStore()
 	}
 	if cwftmplStore == nil {
-		cwftmplStore = clusterworkflowtemplate.NewClusterWorkflowTemplateClientStore()
+		cwftmplStore = clusterworkflowtemplate.NewClientStore()
 	}
-	return &WorkflowTemplateServer{instanceIDService, wftmplStore, cwftmplStore}
+	return &Server{instanceIDService, wftmplStore, cwftmplStore}
 }
 
-func (wts *WorkflowTemplateServer) CreateWorkflowTemplate(ctx context.Context, req *workflowtemplatepkg.WorkflowTemplateCreateRequest) (*v1alpha1.WorkflowTemplate, error) {
+func (wts *Server) CreateWorkflowTemplate(ctx context.Context, req *workflowtemplatepkg.WorkflowTemplateCreateRequest) (*v1alpha1.WorkflowTemplate, error) {
 	wfClient := auth.GetWfClient(ctx)
 	if req.Template == nil {
 		return nil, sutils.ToStatusError(fmt.Errorf("workflow template was not found in the request body"), codes.InvalidArgument)
@@ -46,7 +46,7 @@ func (wts *WorkflowTemplateServer) CreateWorkflowTemplate(ctx context.Context, r
 	creator.LabelCreator(ctx, req.Template)
 	wftmplGetter := wts.wftmplStore.Getter(ctx, req.Namespace)
 	cwftmplGetter := wts.cwftmplStore.Getter(ctx)
-	err := validate.ValidateWorkflowTemplate(ctx, wftmplGetter, cwftmplGetter, req.Template, nil, validate.ValidateOpts{})
+	err := validate.WorkflowTemplate(ctx, wftmplGetter, cwftmplGetter, req.Template, nil, validate.Opts{})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
 	}
@@ -57,7 +57,7 @@ func (wts *WorkflowTemplateServer) CreateWorkflowTemplate(ctx context.Context, r
 	return wfTmpl, nil
 }
 
-func (wts *WorkflowTemplateServer) GetWorkflowTemplate(ctx context.Context, req *workflowtemplatepkg.WorkflowTemplateGetRequest) (*v1alpha1.WorkflowTemplate, error) {
+func (wts *Server) GetWorkflowTemplate(ctx context.Context, req *workflowtemplatepkg.WorkflowTemplateGetRequest) (*v1alpha1.WorkflowTemplate, error) {
 	wfTmpl, err := wts.getTemplateAndValidate(ctx, req.Namespace, req.Name)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
@@ -65,7 +65,7 @@ func (wts *WorkflowTemplateServer) GetWorkflowTemplate(ctx context.Context, req 
 	return wfTmpl, nil
 }
 
-func (wts *WorkflowTemplateServer) getTemplateAndValidate(ctx context.Context, namespace string, name string) (*v1alpha1.WorkflowTemplate, error) {
+func (wts *Server) getTemplateAndValidate(ctx context.Context, namespace string, name string) (*v1alpha1.WorkflowTemplate, error) {
 	wfTmpl, err := wts.wftmplStore.Getter(ctx, namespace).Get(ctx, name)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
@@ -120,7 +120,7 @@ func cursorPaginationByResourceVersion(items []v1alpha1.WorkflowTemplate, resour
 	}
 }
 
-func (wts *WorkflowTemplateServer) ListWorkflowTemplates(ctx context.Context, req *workflowtemplatepkg.WorkflowTemplateListRequest) (*v1alpha1.WorkflowTemplateList, error) {
+func (wts *Server) ListWorkflowTemplates(ctx context.Context, req *workflowtemplatepkg.WorkflowTemplateListRequest) (*v1alpha1.WorkflowTemplateList, error) {
 	wfClient := auth.GetWfClient(ctx)
 	k8sOptions := &v1.ListOptions{}
 
@@ -162,7 +162,7 @@ func (wts *WorkflowTemplateServer) ListWorkflowTemplates(ctx context.Context, re
 	return wfList, nil
 }
 
-func (wts *WorkflowTemplateServer) DeleteWorkflowTemplate(ctx context.Context, req *workflowtemplatepkg.WorkflowTemplateDeleteRequest) (*workflowtemplatepkg.WorkflowTemplateDeleteResponse, error) {
+func (wts *Server) DeleteWorkflowTemplate(ctx context.Context, req *workflowtemplatepkg.WorkflowTemplateDeleteRequest) (*workflowtemplatepkg.WorkflowTemplateDeleteResponse, error) {
 	wfClient := auth.GetWfClient(ctx)
 	_, err := wts.getTemplateAndValidate(ctx, req.Namespace, req.Name)
 	if err != nil {
@@ -175,19 +175,19 @@ func (wts *WorkflowTemplateServer) DeleteWorkflowTemplate(ctx context.Context, r
 	return &workflowtemplatepkg.WorkflowTemplateDeleteResponse{}, nil
 }
 
-func (wts *WorkflowTemplateServer) LintWorkflowTemplate(ctx context.Context, req *workflowtemplatepkg.WorkflowTemplateLintRequest) (*v1alpha1.WorkflowTemplate, error) {
+func (wts *Server) LintWorkflowTemplate(ctx context.Context, req *workflowtemplatepkg.WorkflowTemplateLintRequest) (*v1alpha1.WorkflowTemplate, error) {
 	wts.instanceIDService.Label(req.Template)
 	creator.LabelCreator(ctx, req.Template)
 	wftmplGetter := wts.wftmplStore.Getter(ctx, req.Namespace)
 	cwftmplGetter := wts.cwftmplStore.Getter(ctx)
-	err := validate.ValidateWorkflowTemplate(ctx, wftmplGetter, cwftmplGetter, req.Template, nil, validate.ValidateOpts{Lint: true})
+	err := validate.WorkflowTemplate(ctx, wftmplGetter, cwftmplGetter, req.Template, nil, validate.Opts{Lint: true})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
 	}
 	return req.Template, nil
 }
 
-func (wts *WorkflowTemplateServer) UpdateWorkflowTemplate(ctx context.Context, req *workflowtemplatepkg.WorkflowTemplateUpdateRequest) (*v1alpha1.WorkflowTemplate, error) {
+func (wts *Server) UpdateWorkflowTemplate(ctx context.Context, req *workflowtemplatepkg.WorkflowTemplateUpdateRequest) (*v1alpha1.WorkflowTemplate, error) {
 	if req.Template == nil {
 		return nil, sutils.ToStatusError(fmt.Errorf("WorkflowTemplate is not found in Request body"), codes.InvalidArgument)
 	}
@@ -199,7 +199,7 @@ func (wts *WorkflowTemplateServer) UpdateWorkflowTemplate(ctx context.Context, r
 	wfClient := auth.GetWfClient(ctx)
 	wftmplGetter := wts.wftmplStore.Getter(ctx, req.Namespace)
 	cwftmplGetter := wts.cwftmplStore.Getter(ctx)
-	err = validate.ValidateWorkflowTemplate(ctx, wftmplGetter, cwftmplGetter, req.Template, nil, validate.ValidateOpts{})
+	err = validate.WorkflowTemplate(ctx, wftmplGetter, cwftmplGetter, req.Template, nil, validate.Opts{})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
 	}

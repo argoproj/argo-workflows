@@ -7,7 +7,7 @@ import (
 
 type formatterSimple struct{}
 
-func (f formatterSimple) Format(l *LintResult) string {
+func (f formatterSimple) Format(l *Result) string {
 	if !l.Linted {
 		return ""
 	}
@@ -24,7 +24,7 @@ func (f formatterSimple) Format(l *LintResult) string {
 	return sb.String()
 }
 
-func (f formatterSimple) Summarize(l *LintResults) string {
+func (f formatterSimple) Summarize(l *Results) string {
 	if l.Success {
 		return "no linting errors found!\n"
 	}

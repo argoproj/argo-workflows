@@ -59,7 +59,7 @@ func generateCronWorkflows(ctx context.Context, filePaths []string, strict bool)
 // unmarshalCronWorkflows unmarshals the input bytes as either json or yaml
 func unmarshalCronWorkflows(ctx context.Context, wfBytes []byte, strict bool) []v1alpha1.CronWorkflow {
 	var cronWf v1alpha1.CronWorkflow
-	var jsonOpts []argoJson.JSONOpt
+	var jsonOpts []argoJson.Opt
 	if strict {
 		jsonOpts = append(jsonOpts, argoJson.DisallowUnknownFields)
 	}

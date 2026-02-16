@@ -13,8 +13,8 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/sqldb"
 )
 
-// DBConfig holds database configuration for sync operations.
-type DBConfig struct {
+// Config holds database configuration for sync operations.
+type Config struct {
 	LimitTable                string
 	StateTable                string
 	ControllerTable           string
@@ -24,8 +24,8 @@ type DBConfig struct {
 	SkipMigration             bool
 }
 
-type DBInfo struct {
-	Config  DBConfig
+type Info struct {
+	Config  Config
 	Session db.Session
 }
 
@@ -55,7 +55,7 @@ func SecondsToDurationWithDefault(value *int, defaultSeconds int) time.Duration 
 	return dur
 }
 
-func (d *DBInfo) Migrate(ctx context.Context) {
+func (d *Info) Migrate(ctx context.Context) {
 	if d.Session == nil {
 		return
 	}
@@ -75,11 +75,11 @@ func (d *DBInfo) Migrate(ctx context.Context) {
 	}
 }
 
-func DBConfigFromConfig(config *config.SyncConfig) DBConfig {
+func ConfigFromConfig(config *config.SyncConfig) Config {
 	if config == nil {
-		return DBConfig{}
+		return Config{}
 	}
-	return DBConfig{
+	return Config{
 		LimitTable:      defaultTable(config.LimitTableName, defaultLimitTableName),
 		StateTable:      defaultTable(config.StateTableName, defaultStateTableName),
 		ControllerTable: defaultTable(config.ControllerTableName, defaultControllerTableName),
@@ -91,7 +91,7 @@ func DBConfigFromConfig(config *config.SyncConfig) DBConfig {
 	}
 }
 
-func DBSessionFromConfigWithCreds(config *config.SyncConfig, username, password string) db.Session {
+func SessionFromConfigWithCreds(config *config.SyncConfig, username, password string) db.Session {
 	if config == nil {
 		return nil
 	}
@@ -103,7 +103,7 @@ func DBSessionFromConfigWithCreds(config *config.SyncConfig, username, password 
 	return dbSession
 }
 
-func DBSessionFromConfig(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, config *config.SyncConfig) db.Session {
+func SessionFromConfig(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, config *config.SyncConfig) db.Session {
 	if config == nil {
 		return nil
 	}

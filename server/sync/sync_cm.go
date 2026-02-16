@@ -16,7 +16,7 @@ import (
 
 type configMapSyncProvider struct{}
 
-var _ SyncConfigProvider = &configMapSyncProvider{}
+var _ ConfigProvider = &configMapSyncProvider{}
 
 func (s *configMapSyncProvider) createSyncLimit(ctx context.Context, req *syncpkg.CreateSyncLimitRequest) (*syncpkg.SyncLimitResponse, error) {
 	if req.Limit <= 0 {

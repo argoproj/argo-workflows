@@ -156,7 +156,7 @@ func (a *argoKubeClient) startStores(ctx context.Context, restConfig *restclient
 		wftmplInformer.Run(ctx, a.opts.CachingCloseCh)
 		a.wfTmplStore = wftmplInformer
 	} else {
-		a.wfTmplStore = workflowtemplateserver.NewWorkflowTemplateClientStore()
+		a.wfTmplStore = workflowtemplateserver.NewClientStore()
 	}
 
 	if rbacutil.HasAccessToClusterWorkflowTemplates(ctx, a.kubeClient) {
@@ -168,7 +168,7 @@ func (a *argoKubeClient) startStores(ctx context.Context, restConfig *restclient
 			cwftmplInformer.Run(ctx, a.opts.CachingCloseCh)
 			a.cwfTmplStore = cwftmplInformer
 		} else {
-			a.cwfTmplStore = clusterworkflowtmplserver.NewClusterWorkflowTemplateClientStore()
+			a.cwfTmplStore = clusterworkflowtmplserver.NewClientStore()
 		}
 	} else {
 		a.cwfTmplStore = clusterworkflowtmplserver.NewNullClusterWorkflowTemplate()
@@ -179,7 +179,7 @@ func (a *argoKubeClient) startStores(ctx context.Context, restConfig *restclient
 
 func (a *argoKubeClient) NewWorkflowServiceClient(ctx context.Context) workflowpkg.WorkflowServiceClient {
 	wfArchive := sqldb.NullWorkflowArchive
-	wfServer := workflowserver.NewWorkflowServer(ctx, a.instanceIDService, argoKubeOffloadNodeStatusRepo, wfArchive, a.wfClient, a.wfLister, a.wfStore, a.wfTmplStore, a.cwfTmplStore, nil, &a.namespace)
+	wfServer := workflowserver.NewServer(ctx, a.instanceIDService, argoKubeOffloadNodeStatusRepo, wfArchive, a.wfClient, a.wfLister, a.wfStore, a.wfTmplStore, a.cwfTmplStore, nil, &a.namespace)
 	go wfServer.Run(a.opts.CachingCloseCh)
 	return &errorTranslatingWorkflowServiceClient{&argoKubeWorkflowServiceClient{wfServer}}
 }
@@ -189,7 +189,7 @@ func (a *argoKubeClient) NewCronWorkflowServiceClient() (cronworkflow.CronWorkfl
 }
 
 func (a *argoKubeClient) NewWorkflowTemplateServiceClient() (workflowtemplate.WorkflowTemplateServiceClient, error) {
-	return &errorTranslatingWorkflowTemplateServiceClient{&argoKubeWorkflowTemplateServiceClient{workflowtemplateserver.NewWorkflowTemplateServer(a.instanceIDService, a.wfTmplStore, a.cwfTmplStore)}}, nil
+	return &errorTranslatingWorkflowTemplateServiceClient{&argoKubeWorkflowTemplateServiceClient{workflowtemplateserver.NewServer(a.instanceIDService, a.wfTmplStore, a.cwfTmplStore)}}, nil
 }
 
 func (a *argoKubeClient) NewArchivedWorkflowServiceClient() (workflowarchivepkg.ArchivedWorkflowServiceClient, error) {

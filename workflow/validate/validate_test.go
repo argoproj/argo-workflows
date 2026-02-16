@@ -46,14 +46,14 @@ func deleteWorkflowTemplate(ctx context.Context, name string) error {
 // its validation result.
 func validate(ctx context.Context, yamlStr string) error {
 	wf := unmarshalWf(yamlStr)
-	return ValidateWorkflow(ctx, wftmplGetter, cwftmplGetter, wf, nil, ValidateOpts{})
+	return Workflow(ctx, wftmplGetter, cwftmplGetter, wf, nil, Opts{})
 }
 
 // validateWorkflowTemplate is a test helper to accept WorkflowTemplate YAML as a string and return
 // its validation result.
-func validateWorkflowTemplate(ctx context.Context, yamlStr string, opts ValidateOpts) error {
+func validateWorkflowTemplate(ctx context.Context, yamlStr string, opts Opts) error {
 	wftmpl := unmarshalWftmpl(yamlStr)
-	err := ValidateWorkflowTemplate(ctx, wftmplGetter, cwftmplGetter, wftmpl, nil, opts)
+	err := WorkflowTemplate(ctx, wftmplGetter, cwftmplGetter, wftmpl, nil, opts)
 	return err
 }
 
@@ -1116,14 +1116,14 @@ func TestVolumeMountArtifactPathCollision(t *testing.T) {
 	// ensure we detect and reject path collisions
 	wf := unmarshalWf(volumeMountArtifactPathCollision)
 
-	err := ValidateWorkflow(ctx, wftmplGetter, cwftmplGetter, wf, nil, ValidateOpts{})
+	err := Workflow(ctx, wftmplGetter, cwftmplGetter, wf, nil, Opts{})
 
 	require.ErrorContains(t, err, "already mounted")
 
 	// tweak the mount path and validation should now be successful
 	wf.Spec.Templates[0].Container.VolumeMounts[0].MountPath = "/differentpath"
 
-	err = ValidateWorkflow(ctx, wftmplGetter, cwftmplGetter, wf, nil, ValidateOpts{})
+	err = Workflow(ctx, wftmplGetter, cwftmplGetter, wf, nil, Opts{})
 
 	require.NoError(t, err)
 }
@@ -1340,7 +1340,7 @@ func TestPodNameVariable(t *testing.T) {
 }
 
 func TestGlobalParamWithVariable(t *testing.T) {
-	err := ValidateWorkflow(logging.TestContext(t.Context()), wftmplGetter, cwftmplGetter, wfv1.MustUnmarshalWorkflow("@../../test/e2e/functional/global-outputs-variable.yaml"), nil, ValidateOpts{})
+	err := Workflow(logging.TestContext(t.Context()), wftmplGetter, cwftmplGetter, wfv1.MustUnmarshalWorkflow("@../../test/e2e/functional/global-outputs-variable.yaml"), nil, Opts{})
 
 	require.NoError(t, err)
 }
@@ -1368,9 +1368,9 @@ func TestSpecArgumentNoValue(t *testing.T) {
 	wf := unmarshalWf(specArgumentNoValue)
 
 	ctx := logging.TestContext(t.Context())
-	err := ValidateWorkflow(ctx, wftmplGetter, cwftmplGetter, wf, nil, ValidateOpts{Lint: true})
+	err := Workflow(ctx, wftmplGetter, cwftmplGetter, wf, nil, Opts{Lint: true})
 	require.NoError(t, err)
-	err = ValidateWorkflow(ctx, wftmplGetter, cwftmplGetter, wf, nil, ValidateOpts{})
+	err = Workflow(ctx, wftmplGetter, cwftmplGetter, wf, nil, Opts{})
 
 	require.Error(t, err)
 }
@@ -1406,7 +1406,7 @@ spec:
 // TestSpecArgumentSnakeCase we allow parameter and artifact names to be snake case
 func TestSpecArgumentSnakeCase(t *testing.T) {
 	wf := unmarshalWf(specArgumentSnakeCase)
-	err := ValidateWorkflow(logging.TestContext(t.Context()), wftmplGetter, cwftmplGetter, wf, nil, ValidateOpts{Lint: true})
+	err := Workflow(logging.TestContext(t.Context()), wftmplGetter, cwftmplGetter, wf, nil, Opts{Lint: true})
 	require.NoError(t, err)
 }
 
@@ -1441,7 +1441,7 @@ spec:
 // TestSpecBadSequenceCountAndEnd verifies both count and end cannot be defined
 func TestSpecBadSequenceCountAndEnd(t *testing.T) {
 	wf := unmarshalWf(specBadSequenceCountAndEnd)
-	err := ValidateWorkflow(logging.TestContext(t.Context()), wftmplGetter, cwftmplGetter, wf, nil, ValidateOpts{Lint: true})
+	err := Workflow(logging.TestContext(t.Context()), wftmplGetter, cwftmplGetter, wf, nil, Opts{Lint: true})
 	require.Error(t, err)
 }
 
@@ -1461,7 +1461,7 @@ spec:
 // TestCustomTemplateVariable verifies custom template variable
 func TestCustomTemplateVariable(t *testing.T) {
 	wf := unmarshalWf(customVariableInput)
-	err := ValidateWorkflow(logging.TestContext(t.Context()), wftmplGetter, cwftmplGetter, wf, nil, ValidateOpts{Lint: true})
+	err := Workflow(logging.TestContext(t.Context()), wftmplGetter, cwftmplGetter, wf, nil, Opts{Lint: true})
 	require.NoError(t, err)
 }
 
@@ -1479,7 +1479,7 @@ spec:
 `
 
 func TestWorkflowTemplate(t *testing.T) {
-	err := validateWorkflowTemplate(logging.TestContext(t.Context()), templateRefTarget, ValidateOpts{})
+	err := validateWorkflowTemplate(logging.TestContext(t.Context()), templateRefTarget, Opts{})
 	require.NoError(t, err)
 }
 
@@ -1497,7 +1497,7 @@ spec:
 `
 
 func TestWorkflowTemplateWithGlobalParams(t *testing.T) {
-	err := validateWorkflowTemplate(logging.TestContext(t.Context()), templateWithGlobalParams, ValidateOpts{})
+	err := validateWorkflowTemplate(logging.TestContext(t.Context()), templateWithGlobalParams, Opts{})
 	require.NoError(t, err)
 }
 
@@ -1635,7 +1635,7 @@ spec:
 // TestValidResourceWorkflow verifies a workflow of a valid resource.
 func TestValidResourceWorkflow(t *testing.T) {
 	wf := unmarshalWf(validResourceWorkflow)
-	err := ValidateWorkflow(logging.TestContext(t.Context()), wftmplGetter, cwftmplGetter, wf, nil, ValidateOpts{})
+	err := Workflow(logging.TestContext(t.Context()), wftmplGetter, cwftmplGetter, wf, nil, Opts{})
 	require.NoError(t, err)
 }
 
@@ -1679,11 +1679,11 @@ spec:
 func TestInvalidResourceWorkflow(t *testing.T) {
 	wf := unmarshalWf(invalidResourceWorkflow)
 	ctx := logging.TestContext(t.Context())
-	err := ValidateWorkflow(ctx, wftmplGetter, cwftmplGetter, wf, nil, ValidateOpts{})
+	err := Workflow(ctx, wftmplGetter, cwftmplGetter, wf, nil, Opts{})
 	require.EqualError(t, err, "templates.whalesay.resource.manifest must be a valid yaml")
 
 	wf = unmarshalWf(invalidActionResourceWorkflow)
-	err = ValidateWorkflow(ctx, wftmplGetter, cwftmplGetter, wf, nil, ValidateOpts{})
+	err = Workflow(ctx, wftmplGetter, cwftmplGetter, wf, nil, Opts{})
 	require.EqualError(t, err, "templates.whalesay.resource.action must be one of: get, create, apply, delete, replace, patch")
 }
 
@@ -1703,7 +1703,7 @@ spec:
 // TestIncorrectPodGCStrategy verifies pod gc strategy is correct.
 func TestIncorrectPodGCStrategy(t *testing.T) {
 	wf := unmarshalWf(invalidPodGC)
-	err := ValidateWorkflow(logging.TestContext(t.Context()), wftmplGetter, cwftmplGetter, wf, nil, ValidateOpts{})
+	err := Workflow(logging.TestContext(t.Context()), wftmplGetter, cwftmplGetter, wf, nil, Opts{})
 	require.EqualError(t, err, "podGC.strategy unknown strategy 'Foo'")
 }
 
@@ -1722,7 +1722,7 @@ spec:
     container:
       image: docker/whalesay
 `)
-	err := ValidateWorkflow(logging.TestContext(t.Context()), wftmplGetter, cwftmplGetter, wf, nil, ValidateOpts{})
+	err := Workflow(logging.TestContext(t.Context()), wftmplGetter, cwftmplGetter, wf, nil, Opts{})
 	require.EqualError(t, err, "podGC.labelSelector invalid: \"InvalidOperator\" is not a valid label selector operator")
 }
 
@@ -1824,7 +1824,7 @@ spec:
 func TestAllowPlaceholderInVariableTakenFromInputs(t *testing.T) {
 	{
 		wf := unmarshalWf(allowPlaceholderInVariableTakenFromInputs)
-		err := ValidateWorkflow(logging.TestContext(t.Context()), wftmplGetter, cwftmplGetter, wf, nil, ValidateOpts{})
+		err := Workflow(logging.TestContext(t.Context()), wftmplGetter, cwftmplGetter, wf, nil, Opts{})
 		require.NoError(t, err)
 	}
 }
@@ -1882,7 +1882,7 @@ spec:
 // TestRuntimeResolutionOfVariableNames verifies an error against a workflow of an invalid resource.
 func TestRuntimeResolutionOfVariableNames(t *testing.T) {
 	wf := unmarshalWf(runtimeResolutionOfVariableNames)
-	err := ValidateWorkflow(logging.TestContext(t.Context()), wftmplGetter, cwftmplGetter, wf, nil, ValidateOpts{})
+	err := Workflow(logging.TestContext(t.Context()), wftmplGetter, cwftmplGetter, wf, nil, Opts{})
 	require.NoError(t, err)
 }
 
@@ -2159,7 +2159,7 @@ spec:
 `
 
 func TestWorkflowTemplateWithEntrypoint(t *testing.T) {
-	err := validateWorkflowTemplate(logging.TestContext(t.Context()), wfTemplateWithEntrypoint, ValidateOpts{})
+	err := validateWorkflowTemplate(logging.TestContext(t.Context()), wfTemplateWithEntrypoint, Opts{})
 	require.NoError(t, err)
 }
 
@@ -2502,7 +2502,7 @@ spec:
 `
 
 func TestWorkflowTemplateLabels(t *testing.T) {
-	err := validateWorkflowTemplate(logging.TestContext(t.Context()), testWorkflowTemplateLabels, ValidateOpts{})
+	err := validateWorkflowTemplate(logging.TestContext(t.Context()), testWorkflowTemplateLabels, Opts{})
 	require.NoError(t, err)
 }
 
@@ -2701,38 +2701,38 @@ spec:
 `
 
 func TestWorkflowTemplateWithEnumValue(t *testing.T) {
-	err := validateWorkflowTemplate(logging.TestContext(t.Context()), workflowTeamplateWithEnumValues, ValidateOpts{})
+	err := validateWorkflowTemplate(logging.TestContext(t.Context()), workflowTeamplateWithEnumValues, Opts{})
 	require.NoError(t, err)
-	err = validateWorkflowTemplate(logging.TestContext(t.Context()), workflowTeamplateWithEnumValues, ValidateOpts{Lint: true})
+	err = validateWorkflowTemplate(logging.TestContext(t.Context()), workflowTeamplateWithEnumValues, Opts{Lint: true})
 	require.NoError(t, err)
-	err = validateWorkflowTemplate(logging.TestContext(t.Context()), workflowTeamplateWithEnumValues, ValidateOpts{Submit: true})
+	err = validateWorkflowTemplate(logging.TestContext(t.Context()), workflowTeamplateWithEnumValues, Opts{Submit: true})
 	require.NoError(t, err)
 }
 
 func TestWorkflowTemplateWithEmptyEnumList(t *testing.T) {
-	err := validateWorkflowTemplate(logging.TestContext(t.Context()), workflowTemplateWithEmptyEnumList, ValidateOpts{})
+	err := validateWorkflowTemplate(logging.TestContext(t.Context()), workflowTemplateWithEmptyEnumList, Opts{})
 	require.EqualError(t, err, "spec.arguments.message.enum should contain at least one value")
-	err = validateWorkflowTemplate(logging.TestContext(t.Context()), workflowTemplateWithEmptyEnumList, ValidateOpts{Lint: true})
+	err = validateWorkflowTemplate(logging.TestContext(t.Context()), workflowTemplateWithEmptyEnumList, Opts{Lint: true})
 	require.EqualError(t, err, "spec.arguments.message.enum should contain at least one value")
-	err = validateWorkflowTemplate(logging.TestContext(t.Context()), workflowTemplateWithEmptyEnumList, ValidateOpts{Submit: true})
+	err = validateWorkflowTemplate(logging.TestContext(t.Context()), workflowTemplateWithEmptyEnumList, Opts{Submit: true})
 	require.EqualError(t, err, "spec.arguments.message.enum should contain at least one value")
 }
 
 func TestWorkflowTemplateWithArgumentValueNotFromEnumList(t *testing.T) {
-	err := validateWorkflowTemplate(logging.TestContext(t.Context()), workflowTemplateWithArgumentValueNotFromEnumList, ValidateOpts{})
+	err := validateWorkflowTemplate(logging.TestContext(t.Context()), workflowTemplateWithArgumentValueNotFromEnumList, Opts{})
 	require.EqualError(t, err, "spec.arguments.message.value should be present in spec.arguments.message.enum list")
-	err = validateWorkflowTemplate(logging.TestContext(t.Context()), workflowTemplateWithArgumentValueNotFromEnumList, ValidateOpts{Lint: true})
+	err = validateWorkflowTemplate(logging.TestContext(t.Context()), workflowTemplateWithArgumentValueNotFromEnumList, Opts{Lint: true})
 	require.EqualError(t, err, "spec.arguments.message.value should be present in spec.arguments.message.enum list")
-	err = validateWorkflowTemplate(logging.TestContext(t.Context()), workflowTemplateWithArgumentValueNotFromEnumList, ValidateOpts{Submit: true})
+	err = validateWorkflowTemplate(logging.TestContext(t.Context()), workflowTemplateWithArgumentValueNotFromEnumList, Opts{Submit: true})
 	require.EqualError(t, err, "spec.arguments.message.value should be present in spec.arguments.message.enum list")
 }
 
 func TestWorkflowTemplateWithEnumValueWithoutValue(t *testing.T) {
-	err := validateWorkflowTemplate(logging.TestContext(t.Context()), workflowTeamplateWithEnumValuesWithoutValue, ValidateOpts{})
+	err := validateWorkflowTemplate(logging.TestContext(t.Context()), workflowTeamplateWithEnumValuesWithoutValue, Opts{})
 	require.NoError(t, err)
-	err = validateWorkflowTemplate(logging.TestContext(t.Context()), workflowTeamplateWithEnumValuesWithoutValue, ValidateOpts{Lint: true})
+	err = validateWorkflowTemplate(logging.TestContext(t.Context()), workflowTeamplateWithEnumValuesWithoutValue, Opts{Lint: true})
 	require.NoError(t, err)
-	err = validateWorkflowTemplate(logging.TestContext(t.Context()), workflowTeamplateWithEnumValuesWithoutValue, ValidateOpts{Submit: true})
+	err = validateWorkflowTemplate(logging.TestContext(t.Context()), workflowTeamplateWithEnumValuesWithoutValue, Opts{Submit: true})
 	require.EqualError(t, err, "spec.arguments.message.value or spec.arguments.message.valueFrom is required")
 }
 
@@ -2844,25 +2844,25 @@ spec:
 `
 
 func TestValidActiveDeadlineSecondsArgoVariable(t *testing.T) {
-	err := validateWorkflowTemplate(logging.TestContext(t.Context()), validActiveDeadlineSecondsArgoVariable, ValidateOpts{})
+	err := validateWorkflowTemplate(logging.TestContext(t.Context()), validActiveDeadlineSecondsArgoVariable, Opts{})
 	require.NoError(t, err)
 }
 
 func TestMaxLengthName(t *testing.T) {
 	wf := &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: strings.Repeat("a", 70)}}
-	err := ValidateWorkflow(logging.TestContext(t.Context()), wftmplGetter, cwftmplGetter, wf, nil, ValidateOpts{})
+	err := Workflow(logging.TestContext(t.Context()), wftmplGetter, cwftmplGetter, wf, nil, Opts{})
 	require.EqualError(t, err, "workflow name \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" must not be more than 63 characters long (currently 70)")
 
 	wftmpl := &wfv1.WorkflowTemplate{ObjectMeta: metav1.ObjectMeta{Name: strings.Repeat("a", 70)}}
-	err = ValidateWorkflowTemplate(logging.TestContext(t.Context()), wftmplGetter, cwftmplGetter, wftmpl, nil, ValidateOpts{})
+	err = WorkflowTemplate(logging.TestContext(t.Context()), wftmplGetter, cwftmplGetter, wftmpl, nil, Opts{})
 	require.EqualError(t, err, "workflow template name \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" must not be more than 63 characters long (currently 70)")
 
 	cwftmpl := &wfv1.ClusterWorkflowTemplate{ObjectMeta: metav1.ObjectMeta{Name: strings.Repeat("a", 70)}}
-	err = ValidateClusterWorkflowTemplate(logging.TestContext(t.Context()), wftmplGetter, cwftmplGetter, cwftmpl, nil, ValidateOpts{})
+	err = ClusterWorkflowTemplate(logging.TestContext(t.Context()), wftmplGetter, cwftmplGetter, cwftmpl, nil, Opts{})
 	require.EqualError(t, err, "cluster workflow template name \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" must not be more than 63 characters long (currently 70)")
 
 	cwf := &wfv1.CronWorkflow{ObjectMeta: metav1.ObjectMeta{Name: strings.Repeat("a", 60)}}
-	err = ValidateCronWorkflow(logging.TestContext(t.Context()), wftmplGetter, cwftmplGetter, cwf, nil)
+	err = CronWorkflow(logging.TestContext(t.Context()), wftmplGetter, cwftmplGetter, cwf, nil)
 	require.EqualError(t, err, "cron workflow name \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" must not be more than 52 characters long (currently 60)")
 }
 
@@ -2959,7 +2959,7 @@ spec:
 		invalidContainerSetTemplateWithOutputParams,
 	}
 	for _, manifest := range invalidManifests {
-		err := validateWorkflowTemplate(logging.TestContext(t.Context()), manifest, ValidateOpts{})
+		err := validateWorkflowTemplate(logging.TestContext(t.Context()), manifest, Opts{})
 		require.ErrorContains(t, err, "containerSet.containers must have a container named \"main\" for input or output")
 	}
 }
@@ -3333,7 +3333,7 @@ func TestSubstituteGlobalVariablesLabelsAnnotations(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			err = ValidateWorkflow(ctx, wftmplGetter, cwftmplGetter, wf, &wfDefaults, ValidateOpts{})
+			err = Workflow(ctx, wftmplGetter, cwftmplGetter, wf, &wfDefaults, Opts{})
 			if tt.expectedSuccess {
 				require.NoError(t, err)
 			} else {
@@ -3429,7 +3429,7 @@ func TestDynamicWorkflowTemplateRef(t *testing.T) {
 	err = createWorkflowTemplate(ctx, wftmplB)
 	require.NoError(t, err)
 
-	err = ValidateWorkflow(ctx, wftmplGetter, cwftmplGetter, wf, nil, ValidateOpts{})
+	err = Workflow(ctx, wftmplGetter, cwftmplGetter, wf, nil, Opts{})
 	require.NoError(t, err)
 
 	_ = deleteWorkflowTemplate(ctx, wftmplA.Name)

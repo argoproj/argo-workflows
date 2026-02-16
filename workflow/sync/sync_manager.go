@@ -33,7 +33,7 @@ type Manager struct {
 	getSyncLimit      GetSyncLimit
 	syncLimitCacheTTL time.Duration
 	workflowExists    WorkflowExists
-	dbInfo            syncdb.DBInfo
+	dbInfo            syncdb.Info
 	queries           syncdb.SyncQueries
 	log               logging.Logger
 }
@@ -46,7 +46,7 @@ const (
 )
 
 func NewLockManager(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, config *config.SyncConfig, getSyncLimit GetSyncLimit, nextWorkflow NextWorkflow, workflowExists WorkflowExists) *Manager {
-	return createLockManager(ctx, syncdb.DBSessionFromConfig(ctx, kubectlConfig, namespace, config), config, getSyncLimit, nextWorkflow, workflowExists)
+	return createLockManager(ctx, syncdb.SessionFromConfig(ctx, kubectlConfig, namespace, config), config, getSyncLimit, nextWorkflow, workflowExists)
 }
 
 func createLockManager(ctx context.Context, dbSession db.Session, config *config.SyncConfig, getSyncLimit GetSyncLimit, nextWorkflow NextWorkflow, workflowExists WorkflowExists) *Manager {
@@ -57,9 +57,9 @@ func createLockManager(ctx context.Context, dbSession db.Session, config *config
 	ctx, log := logging.RequireLoggerFromContext(ctx).WithField("component", "lock_manager").InContext(ctx)
 
 	log.WithField("syncLimitCacheTTL", syncLimitCacheTTL).Info(ctx, "Sync manager ttl")
-	dbInfo := syncdb.DBInfo{
+	dbInfo := syncdb.Info{
 		Session: dbSession,
-		Config:  syncdb.DBConfigFromConfig(config),
+		Config:  syncdb.ConfigFromConfig(config),
 	}
 	sm := &Manager{
 		syncLockMap:       make(map[string]semaphore),
@@ -127,7 +127,7 @@ func (sm *Manager) CheckWorkflowExistence(ctx context.Context) {
 	}
 }
 
-func getUpgradedKey(wf *wfv1.Workflow, key string, level SyncLevelType) string {
+func getUpgradedKey(wf *wfv1.Workflow, key string, level LevelType) string {
 	if wfv1.CheckHolderKeyVersion(key) == wfv1.HoldingNameV1 {
 		if level == WorkflowLevel {
 			return getHolderKey(wf, "")
@@ -137,12 +137,12 @@ func getUpgradedKey(wf *wfv1.Workflow, key string, level SyncLevelType) string {
 	return key
 }
 
-type SyncLevelType int
+type LevelType int
 
 const (
-	WorkflowLevel SyncLevelType = 1
-	TemplateLevel SyncLevelType = 2
-	ErrorLevel    SyncLevelType = 3
+	WorkflowLevel LevelType = 1
+	TemplateLevel LevelType = 2
+	ErrorLevel    LevelType = 3
 )
 
 // HoldingNameV1 keys can be of the form
@@ -166,7 +166,7 @@ const (
 // a synchronization exists both at the template level
 // and at the workflow level -> impossible to upgrade correctly
 // due to ambiguity. Currently we just assume workflow level.
-func getWorkflowSyncLevelByName(ctx context.Context, wf *wfv1.Workflow, lockName string) (SyncLevelType, error) {
+func getWorkflowSyncLevelByName(ctx context.Context, wf *wfv1.Workflow, lockName string) (LevelType, error) {
 	if wf.Spec.Synchronization != nil {
 		syncItems, err := allSyncItems(wf.Spec.Synchronization)
 		if err != nil {

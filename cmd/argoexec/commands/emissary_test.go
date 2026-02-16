@@ -197,7 +197,7 @@ func TestEmissary(t *testing.T) {
 
 func run(script string) error {
 	cmd := NewEmissaryCommand()
-	_, _, err := cmdutil.CmdContextWithLogger(cmd, string(logging.Info), string(logging.Text))
+	_, _, err := cmdutil.ContextWithLogger(cmd, string(logging.Info), string(logging.Text))
 	if err != nil {
 		return err
 	}

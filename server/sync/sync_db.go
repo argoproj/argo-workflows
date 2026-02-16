@@ -20,7 +20,7 @@ type dbSyncProvider struct {
 	db syncdb.SyncQueries
 }
 
-var _ SyncConfigProvider = &dbSyncProvider{}
+var _ ConfigProvider = &dbSyncProvider{}
 
 func (s *dbSyncProvider) createSyncLimit(ctx context.Context, req *syncpkg.CreateSyncLimitRequest) (*syncpkg.SyncLimitResponse, error) {
 	// since there's no permission system for db sync limits, we use the k8s RBAC check to see if the request is reasonable

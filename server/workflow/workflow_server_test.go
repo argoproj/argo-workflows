@@ -660,9 +660,9 @@ func getWorkflowServer(t *testing.T) (workflowpkg.WorkflowServiceServer, context
 		panic(err)
 	}
 	namespaceAll := metav1.NamespaceAll
-	wftmplStore := workflowtemplate.NewWorkflowTemplateClientStore()
-	cwftmplStore := clusterworkflowtemplate.NewClusterWorkflowTemplateClientStore()
-	server := NewWorkflowServer(ctx, instanceIDSvc, offloadNodeStatusRepo, archivedRepo, wfClientset, wfStore, wfStore, wftmplStore, cwftmplStore, nil, &namespaceAll)
+	wftmplStore := workflowtemplate.NewClientStore()
+	cwftmplStore := clusterworkflowtemplate.NewClientStore()
+	server := NewServer(ctx, instanceIDSvc, offloadNodeStatusRepo, archivedRepo, wfClientset, wfStore, wfStore, wftmplStore, cwftmplStore, nil, &namespaceAll)
 	return server, ctx
 }
 

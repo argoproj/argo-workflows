@@ -173,7 +173,7 @@ func TestIsDirectory(t *testing.T) {
 
 func TestExists(t *testing.T) {
 	assert.True(t, file.Exists("/"))
-	path, err := rand.RandString(10)
+	path, err := rand.String(10)
 	require.NoError(t, err)
 	randFilePath := fmt.Sprintf("/%s", path)
 	assert.False(t, file.Exists(randFilePath))

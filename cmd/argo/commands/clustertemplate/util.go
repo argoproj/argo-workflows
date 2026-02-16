@@ -40,7 +40,7 @@ func generateClusterWorkflowTemplates(ctx context.Context, filePaths []string, s
 // unmarshalClusterWorkflowTemplates unmarshals the input bytes as either json or yaml
 func unmarshalClusterWorkflowTemplates(ctx context.Context, wfBytes []byte, strict bool) ([]wfv1.ClusterWorkflowTemplate, error) {
 	var cwft wfv1.ClusterWorkflowTemplate
-	var jsonOpts []argoJson.JSONOpt
+	var jsonOpts []argoJson.Opt
 	if strict {
 		jsonOpts = append(jsonOpts, argoJson.DisallowUnknownFields)
 	}

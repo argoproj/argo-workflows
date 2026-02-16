@@ -176,9 +176,9 @@ func getWorkflowTemplateServer(t *testing.T) (workflowtemplatepkg.WorkflowTempla
 	kubeClientSet := fake.NewSimpleClientset()
 	wfClientset := wftFake.NewSimpleClientset(&unlabelledObj, &wftObj1, &wftObj2)
 	ctx := context.WithValue(context.WithValue(context.WithValue(logging.TestContext(t.Context()), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}, Email: "my-sub@your.org"})
-	wftmplStore := NewWorkflowTemplateClientStore()
-	cwftmplStore := clusterworkflowtemplate.NewClusterWorkflowTemplateClientStore()
-	return NewWorkflowTemplateServer(instanceid.NewService("my-instanceid"), wftmplStore, cwftmplStore), ctx
+	wftmplStore := NewClientStore()
+	cwftmplStore := clusterworkflowtemplate.NewClientStore()
+	return NewServer(instanceid.NewService("my-instanceid"), wftmplStore, cwftmplStore), ctx
 }
 
 func TestWorkflowTemplateServer_CreateWorkflowTemplate(t *testing.T) {

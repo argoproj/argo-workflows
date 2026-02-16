@@ -57,8 +57,8 @@ metadata:
 `, &unlabelled)
 
 	wfClientset := wftFake.NewSimpleClientset(&unlabelled)
-	wftmplStore := workflowtemplate.NewWorkflowTemplateClientStore()
-	cwftmplStore := clusterworkflowtemplate.NewClusterWorkflowTemplateClientStore()
+	wftmplStore := workflowtemplate.NewClientStore()
+	cwftmplStore := clusterworkflowtemplate.NewClientStore()
 	server := NewCronWorkflowServer(instanceid.NewService("my-instanceid"), wftmplStore, cwftmplStore, nil)
 	ctx := context.WithValue(logging.TestContext(t.Context()), auth.WfKey, wfClientset)
 	ctx = context.WithValue(ctx, auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}, Email: "my-sub@your.org"})

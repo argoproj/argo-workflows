@@ -28,7 +28,7 @@ func createTestInternalSemaphore(ctx context.Context, t *testing.T, name, namesp
 }
 
 // createTestDatabaseSemaphore creates a database-backed semaphore for testing, used elsewhere
-func createTestDatabaseSemaphore(ctx context.Context, t *testing.T, name, namespace string, limit int, cacheTTL time.Duration, nextWorkflow NextWorkflow, dbType sqldb.DBType) (*databaseSemaphore, syncdb.DBInfo, func()) {
+func createTestDatabaseSemaphore(ctx context.Context, t *testing.T, name, namespace string, limit int, cacheTTL time.Duration, nextWorkflow NextWorkflow, dbType sqldb.DBType) (*databaseSemaphore, syncdb.Info, func()) {
 	t.Helper()
 	info, deferfunc, _, err := createTestDBSession(ctx, t, dbType)
 	require.NoError(t, err)

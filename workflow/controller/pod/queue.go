@@ -63,7 +63,7 @@ func (c *Controller) signalContainers(ctx context.Context, namespace string, pod
 			continue
 		}
 		// problems are already logged at info level, so we just ignore errors here
-		_ = signal.SignalContainer(ctx, c.restConfig, pod, container.Name, sig)
+		_ = signal.Container(ctx, c.restConfig, pod, container.Name, sig)
 	}
 	if pod.Spec.TerminationGracePeriodSeconds == nil {
 		return 30 * time.Second, nil
