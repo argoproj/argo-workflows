@@ -128,6 +128,14 @@ jobs:
           go-version: "1.25"
           cache: true
       - run: make test STATIC_FILES=false GOTEST='go test -p 20 -covermode=atomic -coverprofile=coverage.out'
+      - name: Upload test results
+        if: ${{ always() }}
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: test-results-unit
+          path: test/reports/json/unit.json
+          if-no-files-found: warn
+          retention-days: 10
       - name: Upload coverage report
         # engineers just ignore this in PRs, so lets not even run it
         if: github.ref == 'refs/heads/main'
@@ -395,6 +403,14 @@ jobs:
         run: make manifests-validate
       - name: Run tests ${{matrix.test}}
         run: make ${{matrix.test}} E2E_SUITE_TIMEOUT=30m STATIC_FILES=false
+      - name: Upload test results
+        if: ${{ always() }}
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: test-results-${{matrix.test}}-${{matrix.profile}}-k8s-${{matrix.k8s_version || 'max'}}
+          path: test/reports/json/${{matrix.test}}.json
+          if-no-files-found: warn
+          retention-days: 10
 
       # failure debugging below
       - name: Failure debug - k3s logs
