@@ -671,7 +671,7 @@ message ExecutorConfig {
 
 // ExecutorPlugin describes workflow-level executor plugin
 message ExecutorPlugin {
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 2;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 2;
 
   optional ExecutorPluginSpec spec = 1;
 }
@@ -681,7 +681,7 @@ message ExecutorPluginSidecar {
   optional bool automountServiceAccountToken = 1;
 
   // Container defines the Kubernetes container specification for the sidecar.
-  optional k8s.io.api.core.v1.Container container = 2;
+  optional .k8s.io.api.core.v1.Container container = 2;
 }
 
 message ExecutorPluginSpec {
