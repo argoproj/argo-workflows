@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -739,4 +740,66 @@ func TestDisallowedComboOptions(t *testing.T) {
 		_, err := NewClient(ctx, opts)
 		assert.Error(t, err)
 	})
+}
+
+func TestISORegions(t *testing.T) {
+	tests := map[string]struct {
+		region string
+		isISO  bool
+	}{
+		"Test ISO region-us-iso-east-1":     {region: "us-iso-east-1", isISO: true},
+		"Test ISO region-us-iso-west-1":     {region: "us-iso-west-1", isISO: true},
+		"Test ISO region-us-isob-east-1":    {region: "us-isob-east-1", isISO: true},
+		"Test Non-ISO region-us-east-1":     {region: "us-east-1", isISO: false},
+		"Test Non-ISO region-us-west-2":     {region: "us-west-2", isISO: false},
+		"Test Non-ISO region-eu-west-1":     {region: "eu-west-1", isISO: false},
+		"Test Non-ISO region-us-gov-west-1": {region: "us-gov-west-1", isISO: false},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			assert.Equal(t, tc.isISO, isoRegions[tc.region])
+		})
+	}
+}
+
+func TestNewClientISORegions(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	tests := map[string]struct {
+		region    string
+		dualstack bool
+	}{
+		"Test ISO region-us-iso-east-1":     {region: "us-iso-east-1", dualstack: false},
+		"Test ISO region-us-iso-west-1":     {region: "us-iso-west-1", dualstack: false},
+		"Test ISO region-us-isob-east-1":    {region: "us-isob-east-1", dualstack: false},
+		"Test Non-ISO region-us-east-1":     {region: "us-east-1", dualstack: true},
+		"Test Non-ISO region-us-west-2":     {region: "us-west-2", dualstack: true},
+		"Test Non-ISO region-eu-west-1":     {region: "eu-west-1", dualstack: true},
+		"Test Non-ISO region-us-gov-west-1": {region: "us-gov-west-1", dualstack: true},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			opts := ClientOpts{
+				Endpoint:  "s3.amazonaws.com",
+				Region:    tc.region,
+				Secure:    true,
+				Transport: http.DefaultTransport,
+				AccessKey: "test-access-key",
+				SecretKey: "test-secret-key",
+			}
+
+			s3If, err := NewClient(ctx, opts)
+			require.NoError(t, err)
+
+			s3cli := s3If.(*s3client)
+			assert.Equal(t, tc.region, s3cli.Region)
+
+			clientVal := reflect.ValueOf(s3cli.minioClient).Elem()
+			dualstackField := clientVal.FieldByName("s3DualstackEnabled")
+			require.True(t, dualstackField.IsValid())
+			assert.Equal(t, tc.dualstack, dualstackField.Bool())
+		})
+	}
 }
