@@ -244,7 +244,7 @@ spec:
 		assert.Nil(t, volumes)
 	})
 
-	t.Run("AgentPodCreatedWithExecutorPluginSidecar", func(t *testing.T) {
+	t.Run("AgentPodCreatedSuccessfully", func(t *testing.T) {
 		ctx := logging.TestContext(t.Context())
 		var ts wfv1.WorkflowTaskSet
 		cancel, controller := newController(ctx, wf, ts, defaultServiceAccount)
@@ -267,5 +267,25 @@ spec:
 		}
 		assert.NotNil(t, pod.Spec.Volumes)
 		assert.NotNil(t, executorSidecar)
+	})
+
+	t.Run("AgentPodPluginFailedDueToSAMount", func(t *testing.T) {
+		// NOTE: We do NOT create a ServiceAccount beforehand.
+		// This test verifies that CreateAgentPod attempts to select
+		// the correct ServiceAccount if the plugin has AutomountServiceAccountToken set
+		wfCopy := wf.DeepCopy()
+		var ts wfv1.WorkflowTaskSet
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx, wfCopy, ts, defaultServiceAccount)
+		defer cancel()
+
+		wfCopy.Spec.ExecutorPlugins[0].Spec.Sidecar.AutomountServiceAccountToken = true
+		controller.Config.InstanceID = "testID"
+		woc := newWorkflowOperationCtx(ctx, wfCopy, controller)
+		pod, err := woc.createAgentPod(ctx)
+		// agent tried to mount the service account with the correct name "test-sidecar-executor-plugin",
+		// according to executorPlugin.metadata.name.
+		require.ErrorContains(t, err, "serviceaccounts \"test-sidecar-executor-plugin\" not found")
+		require.Nil(t, pod)
 	})
 }
