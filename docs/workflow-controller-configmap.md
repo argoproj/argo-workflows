@@ -206,6 +206,16 @@ PostgreSQLConfig contains PostgreSQL-specific database configuration
 | `PasswordSecret` | [`apiv1.SecretKeySelector`](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#secretkeyselector-v1-core) | PasswordSecret references a secret containing the database password       |
 | `SSL`            | `bool`                                                                                                                      | SSL enables SSL connection to the database                                |
 | `SSLMode`        | `string`                                                                                                                    | SSLMode specifies the SSL mode (disable, require, verify-ca, verify-full) |
+| `AzureToken`     | [`AzureTokenConfig`](#azuretokenconfig)                                                                                     | AzureToken specifies if the password should be fetched as an Azure token  |
+
+## AzureTokenConfig
+
+### Fields
+
+| Field Name | Field Type |                                                       Description                                                       |
+|------------|------------|-------------------------------------------------------------------------------------------------------------------------|
+| `Enabled`  | `bool`     | Enabled enables Azure token fetching                                                                                    |
+| `Scope`    | `string`   | Scope is the scope to request the token for. Defaults to "https://ossrdbms-aad.database.windows.net/.default" if empty. |
 
 ## MySQLConfig
 

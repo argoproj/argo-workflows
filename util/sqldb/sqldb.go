@@ -2,6 +2,7 @@ package sqldb
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"time"
 
@@ -40,6 +41,11 @@ func createPostGresDBSession(ctx context.Context, kubectlConfig kubernetes.Inter
 	if err != nil {
 		return nil, err
 	}
+
+	if cfg.AzureToken != nil && cfg.AzureToken.Enabled {
+		return createPostGresDBSessionWithAzure(cfg, persistPool, string(userNameByte))
+	}
+
 	passwordByte, err := util.GetSecrets(ctx, kubectlConfig, namespace, cfg.PasswordSecret.Name, cfg.PasswordSecret.Key)
 	if err != nil {
 		return nil, err
@@ -60,6 +66,43 @@ func createMySQLDBSession(ctx context.Context, kubectlConfig kubernetes.Interfac
 	}
 
 	return createMySQLDBSessionWithCreds(cfg, persistPool, string(userNameByte), string(passwordByte))
+}
+
+// createPostGresDBSessionWithAzure creates postgresDB session with azure token
+func createPostGresDBSessionWithAzure(cfg *config.PostgreSQLConfig, persistPool *config.ConnectionPool, username string) (db.Session, error) {
+	settings := postgresqladp.ConnectionURL{
+		User:     username,
+		Host:     cfg.GetHostname(),
+		Database: cfg.Database,
+	}
+
+	if cfg.SSL {
+		if cfg.SSLMode != "" {
+			options := map[string]string{
+				"sslmode": cfg.SSLMode,
+			}
+			settings.Options = options
+		}
+	}
+
+	scope := cfg.AzureToken.Scope
+	if scope == "" {
+		scope = "https://ossrdbms-aad.database.windows.net/.default"
+	}
+
+	connector := &azureConnector{
+		dsn:   settings.String(),
+		scope: scope,
+	}
+
+	sqlDB := sql.OpenDB(connector)
+
+	session, err := postgresqladp.New(sqlDB)
+	if err != nil {
+		return nil, err
+	}
+	session = ConfigureDBSession(session, persistPool)
+	return session, nil
 }
 
 // createPostGresDBSessionWithCreds creates postgresDB session with direct credentials
