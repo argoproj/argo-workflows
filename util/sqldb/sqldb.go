@@ -15,7 +15,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util"
 )
 
-// CreateDBSession creates the dB session and returns the session along with its database type
+// CreateDBSession creates the DB session and returns the session along with its database type
 func CreateDBSession(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, dbConfig config.DBConfig) (db.Session, DBType, error) {
 	if dbConfig.PostgreSQL != nil {
 		session, err := createPostGresDBSession(ctx, kubectlConfig, namespace, dbConfig.PostgreSQL, dbConfig.ConnectionPool)
