@@ -544,17 +544,21 @@ func (wfs WorkflowSpec) AsExecutorPluginSpec() ([]execplugin.Plugin, error) {
 			AutomountServiceAccountToken: plugin.Spec.Sidecar.AutomountServiceAccountToken,
 			Container:                    plugin.Spec.Sidecar.Container,
 		}
+
+		if plugin.Name == "" {
+			return nil, fmt.Errorf("executor plugin metadata name is mandatory")
+		}
 		err := sidecar.Validate()
 		if err != nil {
 			return nil, err
 		}
+
 		spec := execplugin.PluginSpec{
 			Sidecar: execplugin.Sidecar{
 				AutomountServiceAccountToken: plugin.Spec.Sidecar.AutomountServiceAccountToken,
 				Container:                    plugin.Spec.Sidecar.Container,
 			},
 		}
-
 		plugins = append(plugins, execplugin.Plugin{
 			ObjectMeta: plugin.ObjectMeta,
 			Spec:       spec,
