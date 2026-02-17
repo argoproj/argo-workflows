@@ -207,7 +207,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		}
 	}()
 
-	woc.log.WithFields(logging.Fields{"Phase": woc.wf.Status.Phase, "ResourceVersion": woc.wf.ObjectMeta.ResourceVersion}).Info(ctx, "Processing workflow")
+	woc.log.WithFields(logging.Fields{"phase": woc.wf.Status.Phase, "resourceVersion": woc.wf.ObjectMeta.ResourceVersion, "lastSeenVersion": woc.wf.GetAnnotations()[common.AnnotationKeyLastSeenVersion]}).Info(ctx, "Processing workflow")
 
 	// Set the Execute workflow spec for execution
 	// ExecWF is a runtime execution spec which merged from Wf, WFT and Wfdefault
@@ -802,7 +802,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		panic("workflow should be hydrated")
 	}
 
-	woc.log.WithFields(logging.Fields{"resourceVersion": woc.wf.ResourceVersion, "phase": woc.wf.Status.Phase}).Info(ctx, "Workflow update successful")
+	woc.log.WithFields(logging.Fields{"resourceVersion": woc.wf.ResourceVersion, "phase": woc.wf.Status.Phase, "lastSeenVersion": woc.wf.GetAnnotations()[common.AnnotationKeyLastSeenVersion]}).Info(ctx, "Workflow update successful")
 
 	switch os.Getenv("INFORMER_WRITE_BACK") {
 	// this does not reduce errors, but does reduce
