@@ -309,7 +309,7 @@ func (s *databaseSemaphore) checkAcquire(ctx context.Context, holderKey string, 
 	if !isSameWorkflowNodeKeys(holderKey, queue[0].Key) {
 		// Enqueue the queue[0] workflow if lock is available
 		if len(holders) < limit {
-			s.nextWorkflow(queue[0].Key)
+			s.nextWorkflow(workflowKey(queue[0].Key))
 		}
 		logger.WithFields(logging.Fields{
 			"key":          holderKey,
