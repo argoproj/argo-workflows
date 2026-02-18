@@ -6,6 +6,7 @@ const (
 	MySQL    DBType = "mysql"
 	Postgres DBType = "postgres"
 	SQLite   DBType = "sqlite"
+	Invalid  DBType = "invalid"
 )
 
 func (t DBType) IntType() string {

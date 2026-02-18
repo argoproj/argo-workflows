@@ -19,9 +19,15 @@ import (
 func CreateDBSession(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, dbConfig config.DBConfig) (db.Session, DBType, error) {
 	if dbConfig.PostgreSQL != nil {
 		session, err := createPostGresDBSession(ctx, kubectlConfig, namespace, dbConfig.PostgreSQL, dbConfig.ConnectionPool)
-		return session, Postgres, err
+		if err != nil {
+			return nil, Invalid, err
+		}
+		return session, Postgres, nil
 	} else if dbConfig.MySQL != nil {
 		session, err := createMySQLDBSession(ctx, kubectlConfig, namespace, dbConfig.MySQL, dbConfig.ConnectionPool)
+		if err != nil {
+			return nil, Invalid, err
+		}
 		return session, MySQL, err
 	}
 	return nil, "", fmt.Errorf("no databases are configured")
@@ -31,9 +37,15 @@ func CreateDBSession(ctx context.Context, kubectlConfig kubernetes.Interface, na
 func CreateDBSessionWithCreds(dbConfig config.DBConfig, username, password string) (db.Session, DBType, error) {
 	if dbConfig.PostgreSQL != nil {
 		session, err := createPostGresDBSessionWithCreds(dbConfig.PostgreSQL, dbConfig.ConnectionPool, username, password)
+		if err != nil {
+			return nil, Invalid, err
+		}
 		return session, Postgres, err
 	} else if dbConfig.MySQL != nil {
 		session, err := createMySQLDBSessionWithCreds(dbConfig.MySQL, dbConfig.ConnectionPool, username, password)
+		if err != nil {
+			return nil, Invalid, err
+		}
 		return session, MySQL, err
 	}
 	return nil, "", fmt.Errorf("no databases are configured")

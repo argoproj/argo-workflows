@@ -100,6 +100,9 @@ func createDBSession(dsn string) (db.Session, sqldb.DBType, error) {
 			return nil, "", err
 		}
 		session, err := postgresqladp.Open(url)
+		if err != nil {
+			return nil, sqldb.Invalid, err
+		}
 		return session, sqldb.Postgres, err
 	} else {
 		url, err := mysqladp.ParseURL(dsn)
@@ -107,6 +110,9 @@ func createDBSession(dsn string) (db.Session, sqldb.DBType, error) {
 			return nil, "", err
 		}
 		session, err := mysqladp.Open(url)
+		if err != nil {
+			return nil, sqldb.Invalid, err
+		}
 		return session, sqldb.MySQL, err
 	}
 }
