@@ -397,7 +397,7 @@ func (s *databaseSemaphore) checkAcquire(holderKey string, tx *transaction) (boo
 	if !isSameWorkflowNodeKeys(holderKey, queue[0].Key) {
 		// Enqueue the queue[0] workflow if lock is available
 		if len(holders) < limit {
-			s.nextWorkflow(queue[0].Key)
+			s.nextWorkflow(workflowKey(queue[0].Key))
 		}
 		s.log.WithFields(log.Fields{
 			"key":          holderKey,
