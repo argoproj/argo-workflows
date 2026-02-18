@@ -265,6 +265,7 @@ nav:
           - offloading-large-workflows.md
           - workflow-archive.md
           - metrics.md
+          - tracing.md
           - deprecations.md
           - workflow-executors.md
           - workflow-restrictions.md

@@ -22,6 +22,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/emissary"
+	"github.com/argoproj/argo-workflows/v3/workflow/tracing"
 )
 
 //nolint:contextcheck
@@ -36,6 +37,7 @@ func Init(ctx context.Context, clientConfig clientcmd.ClientConfig, varRunArgo s
 	//nolint:contextcheck
 	bgCtx := logger.NewBackgroundContext()
 	logs.AddK8SLogTransportWrapper(bgCtx, config) // lets log all request as we should typically do < 5 per pod, so this is will show up problems
+	tracing.AddTracingTransportWrapper(bgCtx, config)
 
 	namespace, _, err := clientConfig.Namespace()
 	CheckErr(err)
@@ -76,7 +78,7 @@ func Init(ctx context.Context, clientConfig clientcmd.ClientConfig, varRunArgo s
 	cre, err := emissary.New()
 	CheckErr(err)
 
-	wfExecutor := executor.NewExecutor(
+	wfExecutor, err := executor.NewExecutor(
 		ctx,
 		clientset,
 		versioned.NewForConfigOrDie(config).ArgoprojV1alpha1().WorkflowTaskResults(namespace),
@@ -94,6 +96,7 @@ func Init(ctx context.Context, clientConfig clientcmd.ClientConfig, varRunArgo s
 		annotationPatchTickDuration,
 		progressFileTickDuration,
 	)
+	CheckErr(err)
 
 	logger.
 		WithFields(version.Fields()).

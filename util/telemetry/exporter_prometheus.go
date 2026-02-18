@@ -35,7 +35,7 @@ const (
 	DefaultPrometheusServerPath = "/metrics"
 )
 
-func (config *Config) prometheusMetricsExporter(namespace string) (*prometheus.Exporter, error) {
+func (config *MetricsConfig) prometheusMetricsExporter(namespace string) (*prometheus.Exporter, error) {
 	// Use an exporter that mimics the legacy prometheus exporter
 	// We cannot namespace here, because custom metrics are not namespaced
 	// in the legacy version, so they cannot be here
@@ -47,14 +47,14 @@ func (config *Config) prometheusMetricsExporter(namespace string) (*prometheus.E
 	)
 }
 
-func (config *Config) path() string {
+func (config *MetricsConfig) path() string {
 	if config.Path == "" {
 		return DefaultPrometheusServerPath
 	}
 	return config.Path
 }
 
-func (config *Config) port() int {
+func (config *MetricsConfig) port() int {
 	if config.Port == 0 {
 		return DefaultPrometheusServerPort
 	}

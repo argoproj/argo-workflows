@@ -19,7 +19,7 @@ type Metrics struct {
 	fallbackLogger    logging.Logger // use a logger from context if available
 }
 
-func New(ctx context.Context, serviceName, prometheusName string, config *telemetry.Config, callbacks Callbacks, extraOpts ...metricsdk.Option) (*Metrics, error) {
+func New(ctx context.Context, serviceName, prometheusName string, config *telemetry.MetricsConfig, callbacks Callbacks, extraOpts ...metricsdk.Option) (*Metrics, error) {
 	m, err := telemetry.NewMetrics(ctx, serviceName, prometheusName, config, extraOpts...)
 	if err != nil {
 		return nil, err

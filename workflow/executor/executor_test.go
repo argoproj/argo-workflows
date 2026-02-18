@@ -27,6 +27,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/mocks"
+	"github.com/argoproj/argo-workflows/v3/workflow/executor/tracing"
 )
 
 const (
@@ -78,14 +79,17 @@ func TestWorkflowExecutor_LoadArtifacts(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			ctx := logging.TestContext(t.Context())
+			tracing, err := tracing.New(ctx, `argoexec`) // TODO arguments here
+			require.NoError(t, err)
 			we := WorkflowExecutor{
 				Template: wfv1.Template{
 					Inputs: wfv1.Inputs{
 						Artifacts: []wfv1.Artifact{test.artifact},
 					},
 				},
+				Tracing: tracing,
 			}
-			err := we.loadArtifacts(ctx, "")
+			err = we.loadArtifacts(ctx, "")
 			require.EqualError(t, err, test.error)
 		})
 	}
@@ -445,6 +449,9 @@ func TestSaveArtifacts(t *testing.T) {
 			},
 		},
 	}
+	ctx := logging.TestContext(t.Context())
+	tracing, err := tracing.New(ctx, `argoexec`) // TODO arguments here
+	require.NoError(t, err)
 	tests := []struct {
 		workflowExecutor WorkflowExecutor
 		expectError      bool
@@ -457,6 +464,7 @@ func TestSaveArtifacts(t *testing.T) {
 				Namespace:        fakeNamespace,
 				RuntimeExecutor:  &mockRuntimeExecutor,
 				taskResultClient: mockTaskResultClient,
+				Tracing:          tracing,
 			},
 			expectError: false,
 		},
@@ -468,6 +476,7 @@ func TestSaveArtifacts(t *testing.T) {
 				Namespace:        fakeNamespace,
 				RuntimeExecutor:  &mockRuntimeExecutor,
 				taskResultClient: mockTaskResultClient,
+				Tracing:          tracing,
 			},
 			expectError: true,
 		},
@@ -479,6 +488,7 @@ func TestSaveArtifacts(t *testing.T) {
 				Namespace:        fakeNamespace,
 				RuntimeExecutor:  &mockRuntimeExecutor,
 				taskResultClient: mockTaskResultClient,
+				Tracing:          tracing,
 			},
 			expectError: false,
 		},
@@ -509,7 +519,7 @@ func TestMonitorProgress(t *testing.T) {
 		},
 	})
 	taskResults := wfFake.ArgoprojV1alpha1().WorkflowTaskResults(fakeNamespace)
-	we := NewExecutor(
+	we, err := NewExecutor(
 		ctx,
 		nil,
 		taskResults,
@@ -527,10 +537,11 @@ func TestMonitorProgress(t *testing.T) {
 		annotationPackTickDuration,
 		readProgressFileTickDuration,
 	)
+	require.NoError(t, err)
 
 	go we.monitorProgress(ctx, progressFile)
 
-	err := os.WriteFile(progressFile, []byte("100/100\n"), os.ModePerm)
+	err = os.WriteFile(progressFile, []byte("100/100\n"), os.ModePerm)
 	require.NoError(t, err)
 
 	time.Sleep(time.Second)
@@ -547,6 +558,9 @@ func TestSaveLogs(t *testing.T) {
 	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
 	mockRuntimeExecutor.On("GetOutputStream", mock.Anything, mock.AnythingOfType("string"), true).Return(io.NopCloser(strings.NewReader("hello world")), nil)
 	t.Run("Simple Pod node", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		tracing, err := tracing.New(ctx, `argoexec`)
+		require.NoError(t, err)
 		templateWithArchiveLogs := wfv1.Template{
 			ArchiveLocation: &wfv1.ArtifactLocation{
 				ArchiveLogs: ptr.To(true),
@@ -555,9 +569,9 @@ func TestSaveLogs(t *testing.T) {
 		we := WorkflowExecutor{
 			Template:        templateWithArchiveLogs,
 			RuntimeExecutor: &mockRuntimeExecutor,
+			Tracing:         tracing,
 		}
 
-		ctx := logging.TestContext(t.Context())
 		logArtifacts := we.SaveLogs(ctx)
 
 		require.EqualError(t, we.errors[0], artStorageError)
@@ -580,14 +594,17 @@ func TestReportOutputs(t *testing.T) {
 				Artifacts: artifacts,
 			},
 		}
+		ctx := logging.TestContext(t.Context())
+		tracing, err := tracing.New(ctx, `argoexec`) // TODO arguments here
+		require.NoError(t, err)
 		we := WorkflowExecutor{
 			Template:         templateWithArtifacts,
 			RuntimeExecutor:  &mockRuntimeExecutor,
 			taskResultClient: mockTaskResultClient,
+			Tracing:          tracing,
 		}
 
-		ctx := logging.TestContext(t.Context())
-		err := we.ReportOutputs(ctx, artifacts)
+		err = we.ReportOutputs(ctx, artifacts)
 
 		require.NoError(t, err)
 		assert.Empty(t, we.errors)
