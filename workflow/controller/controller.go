@@ -301,6 +301,11 @@ func (wfc *WorkflowController) ShutdownTracing(ctx context.Context) error {
 	return wfc.tracing.Shutdown(ctx)
 }
 
+// ShutdownMetrics flushes any remaining metrics and shuts down the meter provider.
+func (wfc *WorkflowController) ShutdownMetrics(ctx context.Context) error {
+	return wfc.metrics.Shutdown(ctx)
+}
+
 // Run starts a Workflow resource controller
 func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWorkers, podCleanupWorkers, cronWorkflowWorkers, wfArchiveWorkers int) {
 	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
