@@ -362,7 +362,7 @@ type DatabaseConfig struct {
 	// UsernameSecret references a secret containing the database username
 	UsernameSecret apiv1.SecretKeySelector `json:"userNameSecret,omitempty"`
 	// PasswordSecret references a secret containing the database password
-	PasswordSecret apiv1.SecretKeySelector `json:"passwordSecret,omitempty"`
+	PasswordSecret apiv1.SecretKeySelector `json:"passwordSecret,omitzero"`
 }
 
 func (c DatabaseConfig) GetHostname() string {
