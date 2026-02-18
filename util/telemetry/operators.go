@@ -10,7 +10,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
-func (m *Metrics) AddInt(ctx context.Context, name string, val int64, attribs InstAttribs) {
+func (m *Metrics) AddInt(ctx context.Context, name string, val int64, attribs Attributes) {
 	if instrument := m.GetInstrument(name); instrument != nil {
 		instrument.AddInt(ctx, val, attribs)
 	} else {
@@ -18,7 +18,7 @@ func (m *Metrics) AddInt(ctx context.Context, name string, val int64, attribs In
 	}
 }
 
-func (i *Instrument) AddInt(ctx context.Context, val int64, attribs InstAttribs) {
+func (i *Instrument) AddInt(ctx context.Context, val int64, attribs Attributes) {
 	switch inst := i.otel.(type) {
 	case *metric.Int64UpDownCounter:
 		(*inst).Add(ctx, val, i.attributes(ctx, attribs))
@@ -29,7 +29,7 @@ func (i *Instrument) AddInt(ctx context.Context, val int64, attribs InstAttribs)
 	}
 }
 
-func (m *Metrics) Record(ctx context.Context, name string, val float64, attribs InstAttribs) {
+func (m *Metrics) Record(ctx context.Context, name string, val float64, attribs Attributes) {
 	if instrument := m.GetInstrument(name); instrument != nil {
 		instrument.Record(ctx, val, attribs)
 	} else {
@@ -37,7 +37,7 @@ func (m *Metrics) Record(ctx context.Context, name string, val float64, attribs 
 	}
 }
 
-func (i *Instrument) Record(ctx context.Context, val float64, attribs InstAttribs) {
+func (i *Instrument) Record(ctx context.Context, val float64, attribs Attributes) {
 	switch inst := i.otel.(type) {
 	case *metric.Float64Histogram:
 		(*inst).Record(ctx, val, i.attributes(ctx, attribs))
@@ -62,7 +62,7 @@ func (i *Instrument) RegisterCallback(m *Metrics, f metric.Callback) error {
 	}
 }
 
-func (i *Instrument) ObserveInt(ctx context.Context, o metric.Observer, val int64, attribs InstAttribs) {
+func (i *Instrument) ObserveInt(ctx context.Context, o metric.Observer, val int64, attribs Attributes) {
 	switch inst := i.otel.(type) {
 	case *metric.Int64ObservableGauge:
 		o.ObserveInt64(*inst, val, i.attributes(ctx, attribs))
@@ -74,7 +74,7 @@ func (i *Instrument) ObserveInt(ctx context.Context, o metric.Observer, val int6
 	}
 }
 
-func (i *Instrument) ObserveFloat(ctx context.Context, o metric.Observer, val float64, attribs InstAttribs) {
+func (i *Instrument) ObserveFloat(ctx context.Context, o metric.Observer, val float64, attribs Attributes) {
 	switch inst := i.otel.(type) {
 	case *metric.Float64ObservableGauge:
 		o.ObserveFloat64(*inst, val, i.attributes(ctx, attribs))
@@ -94,7 +94,7 @@ type InstAttrib struct {
 	Value any
 }
 
-func (i *Instrument) attributes(ctx context.Context, labels InstAttribs) metric.MeasurementOption {
+func (i *Instrument) attributes(ctx context.Context, labels Attributes) metric.MeasurementOption {
 	attribs := make([]attribute.KeyValue, 0)
 	for _, label := range labels {
 		switch value := label.Value.(type) {

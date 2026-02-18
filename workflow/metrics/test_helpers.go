@@ -20,7 +20,7 @@ var sharedTE *telemetry.TestMetricsExporter
 // create workqueues with https://godocs.io/k8s.io/client-go/util/workqueue#NewRateLimitingQueueWithConfig
 func getSharedMetrics(ctx context.Context) (*Metrics, *telemetry.TestMetricsExporter, error) {
 	if sharedMetrics == nil {
-		config := telemetry.Config{
+		config := telemetry.MetricsConfig{
 			Enabled: true,
 			TTL:     1 * time.Second,
 		}
@@ -38,13 +38,13 @@ func getSharedMetrics(ctx context.Context) (*Metrics, *telemetry.TestMetricsExpo
 // CreateDefaultTestMetrics creates a boring testExporter enabled
 // metrics, suitable for many tests
 func CreateDefaultTestMetrics(ctx context.Context) (*Metrics, *telemetry.TestMetricsExporter, error) {
-	config := telemetry.Config{
+	config := telemetry.MetricsConfig{
 		Enabled: true,
 	}
 	return createTestMetrics(ctx, &config, Callbacks{})
 }
 
-func createTestMetrics(ctx context.Context, config *telemetry.Config, callbacks Callbacks) (*Metrics, *telemetry.TestMetricsExporter, error) {
+func createTestMetrics(ctx context.Context, config *telemetry.MetricsConfig, callbacks Callbacks) (*Metrics, *telemetry.TestMetricsExporter, error) {
 	te := telemetry.NewTestMetricsExporter()
 
 	m, err := New(ctx, telemetry.TestScopeName, telemetry.TestScopeName, config, callbacks, metric.WithReader(te))

@@ -166,6 +166,7 @@ func (g *Given) checkImages(wf any, isExample bool) {
 			image == "argoproj/argosay:v1" ||
 			image == "argoproj/argosay:v2" ||
 			image == "quay.io/argoproj/argocli:latest" ||
+			image == "ghcr.io/equinix-labs/otel-cli:v0.4.5" ||
 			(isExample && (image == "busybox" ||
 				image == "python:alpine3.23" ||
 				image == "golang:1.18" ||

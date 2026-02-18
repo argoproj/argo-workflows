@@ -56,10 +56,10 @@ type realtimeTracker struct {
 	key  string
 }
 
-func (cmv *customMetricValue) getLabels() telemetry.InstAttribs {
-	labels := make(telemetry.InstAttribs, len(cmv.labels))
+func (cmv *customMetricValue) getLabels() telemetry.Attributes {
+	labels := make(telemetry.Attributes, len(cmv.labels))
 	for i := range cmv.labels {
-		labels[i] = telemetry.InstAttrib{Name: cmv.labels[i].Key, Value: cmv.labels[i].Value}
+		labels[i] = telemetry.Attribute{Name: cmv.labels[i].Key, Value: cmv.labels[i].Value}
 	}
 	return labels
 }

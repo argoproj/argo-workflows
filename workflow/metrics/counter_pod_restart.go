@@ -20,7 +20,7 @@ func addPodRestartCounter(_ context.Context, m *Metrics) error {
 func (m *Metrics) RecordPodRestart(ctx context.Context, reason, message, namespace string) {
 	condition := extractConditionFromMessage(message)
 
-	opts := []telemetry.PodRestartsTotalOption{}
+	opts := []telemetry.PodRestartsTotalMetricOption{}
 	if condition != "" {
 		opts = append(opts, telemetry.WithPodRestartCondition(condition))
 	}

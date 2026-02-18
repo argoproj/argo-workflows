@@ -67,6 +67,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
 	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
 	"github.com/argoproj/argo-workflows/v3/workflow/sync"
+	"github.com/argoproj/argo-workflows/v3/workflow/tracing"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 	"github.com/argoproj/argo-workflows/v3/workflow/util/plugin"
 )
@@ -142,6 +143,7 @@ type WorkflowController struct {
 	estimatorFactory      estimation.EstimatorFactory
 	syncManager           *sync.Manager
 	metrics               *metrics.Metrics
+	tracing               *tracing.Tracing
 	eventRecorderManager  events.EventRecorderManager
 	archiveLabelSelector  labels.Selector
 	cacheFactory          controllercache.Factory
@@ -239,6 +241,10 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 	if err != nil {
 		return nil, err
 	}
+	wfc.tracing, err = tracing.New(ctx, `workflows-controller`)
+	if err != nil {
+		return nil, err
+	}
 
 	deprecation.Initialize(wfc.metrics.DeprecatedFeature)
 	wfc.entrypoint = entrypoint.New(kubeclientset, wfc.Config.Images)
@@ -288,6 +294,11 @@ var indexers = cache.Indexers{
 	indexes.ConditionsIndex:              indexes.ConditionsIndexFunc,
 	indexes.UIDIndex:                     indexes.MetaUIDFunc,
 	cache.NamespaceIndex:                 cache.MetaNamespaceIndexFunc,
+}
+
+// ShutdownTracing flushes any remaining spans and shuts down the trace provider.
+func (wfc *WorkflowController) ShutdownTracing(ctx context.Context) error {
+	return wfc.tracing.Shutdown(ctx)
 }
 
 // Run starts a Workflow resource controller
@@ -1248,18 +1259,18 @@ func (wfc *WorkflowController) getMaxStackDepth() int {
 	return maxAllowedStackDepth
 }
 
-func (wfc *WorkflowController) getMetricsServerConfig() *telemetry.Config {
+func (wfc *WorkflowController) getMetricsServerConfig() *telemetry.MetricsConfig {
 	// Metrics config
-	modifiers := make(map[string]telemetry.Modifier)
+	modifiers := make(map[string]telemetry.MetricsModifier)
 	for name, modifier := range wfc.Config.MetricsConfig.Modifiers {
-		modifiers[name] = telemetry.Modifier{
+		modifiers[name] = telemetry.MetricsModifier{
 			Disabled:           modifier.Disabled,
 			DisabledAttributes: modifier.DisabledAttributes,
 			HistogramBuckets:   modifier.HistogramBuckets,
 		}
 	}
 
-	metricsConfig := telemetry.Config{
+	metricsConfig := telemetry.MetricsConfig{
 		Enabled:      wfc.Config.MetricsConfig.Enabled == nil || *wfc.Config.MetricsConfig.Enabled,
 		Path:         wfc.Config.MetricsConfig.Path,
 		Port:         wfc.Config.MetricsConfig.Port,

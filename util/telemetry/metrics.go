@@ -13,26 +13,13 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 	"go.opentelemetry.io/otel/metric"
 	metricsdk "go.opentelemetry.io/otel/sdk/metric"
-	"go.opentelemetry.io/otel/sdk/resource"
-	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
 
 	"github.com/argoproj/argo-workflows/v3/util/logging"
 )
 
-type Config struct {
-	Enabled      bool
-	Path         string
-	Port         int
-	TTL          time.Duration
-	IgnoreErrors bool
-	Secure       bool
-	Modifiers    map[string]Modifier
-	Temporality  metricsdk.TemporalitySelector
-}
-
 type Metrics struct {
 	otelMeter *metric.Meter
-	config    *Config
+	config    *MetricsConfig
 
 	// Ensures mutual exclusion in instruments
 	mutex       sync.RWMutex
@@ -64,21 +51,14 @@ func (m *Metrics) IterateROInstruments(fn func(i *Instrument)) {
 	}
 }
 
-func NewMetrics(ctx context.Context, serviceName, prometheusName string, config *Config, extraOpts ...metricsdk.Option) (*Metrics, error) {
-	res := resource.NewWithAttributes(
-		semconv.SchemaURL,
-		semconv.ServiceName(serviceName),
-	)
-
+func NewMetrics(ctx context.Context, serviceName, prometheusName string, config *MetricsConfig, extraOpts ...metricsdk.Option) (*Metrics, error) {
 	options := make([]metricsdk.Option, 0)
-	options = append(options, metricsdk.WithResource(res))
+	options = append(options, metricsdk.WithResource(workflowsResource(ctx, serviceName)))
 	_, otlpEnabled := os.LookupEnv(`OTEL_EXPORTER_OTLP_ENDPOINT`)
 	_, otlpMetricsEnabled := os.LookupEnv(`OTEL_EXPORTER_OTLP_METRICS_ENDPOINT`)
 	logger := logging.RequireLoggerFromContext(ctx)
 
 	if otlpEnabled || otlpMetricsEnabled {
-		logger.Info(ctx, "Starting OTLP metrics exporter")
-
 		// NOTE: The OTel SDK default changed from gRPC to http/protobuf. For backwards compatibility,
 		// gRPC is preserved as the default in workflows controller, but http/protobuf can be opted-in
 		// to by setting the _PROTOCOL env var explicitly.
@@ -87,15 +67,21 @@ func NewMetrics(ctx context.Context, serviceName, prometheusName string, config 
 		if otlpProtocol == "" {
 			otlpProtocol = os.Getenv(`OTEL_EXPORTER_OTLP_PROTOCOL`)
 		}
+		endpoint := os.Getenv(`OTEL_EXPORTER_OTLP_METRICS_ENDPOINT`)
+		if endpoint == "" {
+			endpoint = os.Getenv(`OTEL_EXPORTER_OTLP_ENDPOINT`)
+		}
 
 		switch {
 		case otlpProtocol == "" || otlpProtocol == "grpc":
+			logger.WithFields(logging.Fields{"protocol": "grpc", "endpoint": endpoint}).Info(ctx, "Starting OTLP metrics exporter")
 			grpcExporter, err := otlpmetricgrpc.New(ctx, otlpmetricgrpc.WithTemporalitySelector(config.Temporality))
 			if err != nil {
 				return nil, err
 			}
 			options = append(options, metricsdk.WithReader(metricsdk.NewPeriodicReader(grpcExporter)))
 		case strings.HasPrefix(otlpProtocol, "http/"):
+			logger.WithFields(logging.Fields{"protocol": "http", "endpoint": endpoint}).Info(ctx, "Starting OTLP metrics exporter")
 			httpExporter, err := otlpmetrichttp.New(ctx, otlpmetrichttp.WithTemporalitySelector(config.Temporality))
 			if err != nil {
 				return nil, err

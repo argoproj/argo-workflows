@@ -348,7 +348,7 @@ func newTTLController(t *testing.T) *Controller {
 	wfclientset := fakewfclientset.NewSimpleClientset()
 	wfInformer := cache.NewSharedIndexInformer(nil, nil, 0, nil)
 	ctx := logging.TestContext(t.Context())
-	gcMetrics, err := metrics.New(ctx, telemetry.TestScopeName, telemetry.TestScopeName, &telemetry.Config{}, metrics.Callbacks{})
+	gcMetrics, err := metrics.New(ctx, telemetry.TestScopeName, telemetry.TestScopeName, &telemetry.MetricsConfig{}, metrics.Callbacks{})
 	require.NoError(t, err)
 	return &Controller{
 		wfclientset: wfclientset,

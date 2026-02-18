@@ -53,7 +53,7 @@ func TestErrors(t *testing.T) {
 }
 
 func TestMetricGC(t *testing.T) {
-	config := telemetry.Config{
+	config := telemetry.MetricsConfig{
 		Enabled: true,
 		Path:    telemetry.DefaultPrometheusServerPath,
 		Port:    telemetry.DefaultPrometheusServerPort,
@@ -97,7 +97,7 @@ func TestMetricGC(t *testing.T) {
 }
 
 func TestRealtimeMetricGC(t *testing.T) {
-	config := telemetry.Config{
+	config := telemetry.MetricsConfig{
 		Enabled: true,
 		Path:    telemetry.DefaultPrometheusServerPath,
 		Port:    telemetry.DefaultPrometheusServerPort,
@@ -170,7 +170,7 @@ func TestWorkflowQueueMetrics(t *testing.T) {
 }
 
 func TestRealTimeMetricDeletion(t *testing.T) {
-	config := telemetry.Config{
+	config := telemetry.MetricsConfig{
 		Enabled: true,
 		Path:    telemetry.DefaultPrometheusServerPath,
 		Port:    telemetry.DefaultPrometheusServerPort,

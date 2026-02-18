@@ -43,6 +43,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/workflow/events"
 	hydratorfake "github.com/argoproj/argo-workflows/v3/workflow/hydrator/fake"
 	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
+	"github.com/argoproj/argo-workflows/v3/workflow/tracing"
 	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
@@ -317,6 +318,7 @@ func newController(ctx context.Context, options ...any) (context.CancelFunc, *Wo
 		wfc.throttler = wfc.newThrottler()
 		wfc.rateLimiter = wfc.newRateLimiter()
 	}
+	wfc.tracing, _ = tracing.New(ctx, telemetry.TestScopeName)
 
 	// always compare to WorkflowController.Run to see what this block of code should be doing
 	{

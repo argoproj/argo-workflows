@@ -4,18 +4,25 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"net/url"
 	"time"
 
+	"github.com/XSAM/otelsql"
+	"github.com/go-sql-driver/mysql"
 	"github.com/upper/db/v4"
 	mysqladp "github.com/upper/db/v4/adapter/mysql"
 	postgresqladp "github.com/upper/db/v4/adapter/postgresql"
+	"go.opentelemetry.io/otel/attribute"
+	semconv "go.opentelemetry.io/otel/semconv/v1.38.0"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/argoproj/argo-workflows/v3/config"
 	"github.com/argoproj/argo-workflows/v3/util"
+
+	// Database drivers - imported for side effects
+	_ "github.com/lib/pq"
 )
 
-// CreateDBSession creates the DB session and returns the session along with its database type
 func CreateDBSession(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, dbConfig config.DBConfig) (db.Session, DBType, error) {
 	if dbConfig.PostgreSQL != nil {
 		session, err := createPostGresDBSession(ctx, kubectlConfig, namespace, dbConfig.PostgreSQL, dbConfig.ConnectionPool)
@@ -111,55 +118,70 @@ func createPostGresDBSessionWithAzure(cfg *config.PostgreSQLConfig, persistPool 
 		scope: scope,
 	}
 
-	sqlDB := sql.OpenDB(connector)
-
-	session, err := postgresqladp.New(sqlDB)
-	if err != nil {
-		return nil, err
-	}
-	session = ConfigureDBSession(session, persistPool)
-	return session, nil
+	sqlDB := otelsql.OpenDB(connector, otelSQLOptions(semconv.DBSystemNamePostgreSQL, cfg.Database)...)
+	return newPostgresSession(sqlDB, persistPool)
 }
 
 // createPostGresDBSessionWithCreds creates postgresDB session with direct credentials
 func createPostGresDBSessionWithCreds(cfg *config.PostgreSQLConfig, persistPool *config.ConnectionPool, username, password string) (db.Session, error) {
-	settings := postgresqladp.ConnectionURL{
-		User:     username,
-		Password: password,
-		Host:     cfg.GetHostname(),
-		Database: cfg.Database,
+	// Build PostgreSQL DSN using url.URL for safe percent-encoding of credentials
+	connURL := url.URL{
+		Scheme: "postgres",
+		User:   url.UserPassword(username, password),
+		Host:   cfg.GetHostname(),
+		Path:   cfg.Database,
 	}
-
-	if cfg.SSL {
-		if cfg.SSLMode != "" {
-			options := map[string]string{
-				"sslmode": cfg.SSLMode,
-			}
-			settings.Options = options
-		}
+	query := url.Values{}
+	switch {
+	case !cfg.SSL:
+		query.Set("sslmode", "disable")
+	case cfg.SSLMode != "":
+		query.Set("sslmode", cfg.SSLMode)
+	default:
+		// Preserve the default behavior of the upper/db postgresql adapter,
+		// which used sslmode=prefer. lib/pq defaults to sslmode=require.
+		query.Set("sslmode", "prefer")
 	}
+	connURL.RawQuery = query.Encode()
+	dsn := connURL.String()
 
-	session, err := postgresqladp.Open(settings)
+	// Create traced *sql.DB using otelsql
+	sqlDB, err := otelsql.Open("postgres", dsn, otelSQLOptions(semconv.DBSystemNamePostgreSQL, cfg.Database)...)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to open traced postgres connection: %w", err)
 	}
-	session = ConfigureDBSession(session, persistPool)
-	return session, nil
+	return newPostgresSession(sqlDB, persistPool)
 }
 
 // createMySQLDBSessionWithCreds creates MySQL DB session with direct credentials
 func createMySQLDBSessionWithCreds(cfg *config.MySQLConfig, persistPool *config.ConnectionPool, username, password string) (db.Session, error) {
-	session, err := mysqladp.Open(mysqladp.ConnectionURL{
-		User:     username,
-		Password: password,
-		Host:     cfg.GetHostname(),
-		Database: cfg.Database,
-		Options:  cfg.Options,
-	})
-	if err != nil {
-		return nil, err
+	// Build MySQL DSN using mysql.Config to safely handle special characters in credentials
+	mysqlCfg := mysql.Config{
+		User:      username,
+		Passwd:    password,
+		Net:       "tcp",
+		Addr:      cfg.GetHostname(),
+		DBName:    cfg.Database,
+		ParseTime: true,
+		Params:    cfg.Options,
 	}
+	dsn := mysqlCfg.FormatDSN()
+
+	// Create traced *sql.DB using otelsql
+	sqlDB, err := otelsql.Open("mysql", dsn, otelSQLOptions(semconv.DBSystemNameMySQL, cfg.Database)...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open traced mysql connection: %w", err)
+	}
+
+	// Wrap with upper/db
+	session, err := mysqladp.New(sqlDB)
+	if err != nil {
+		sqlDB.Close()
+		return nil, fmt.Errorf("failed to create upper/db session: %w", err)
+	}
+
 	session = ConfigureDBSession(session, persistPool)
+
 	// this is needed to make MySQL run in a Golang-compatible UTF-8 character set.
 	_, err = session.SQL().Exec("SET NAMES 'utf8mb4'")
 	if err != nil {
@@ -169,6 +191,24 @@ func createMySQLDBSessionWithCreds(cfg *config.MySQLConfig, persistPool *config.
 	if err != nil {
 		return nil, err
 	}
+	return session, nil
+}
+
+// otelSQLOptions returns the common otelsql tracing options for a database connection.
+func otelSQLOptions(systemName attribute.KeyValue, database string) []otelsql.Option {
+	return []otelsql.Option{
+		otelsql.WithAttributes(systemName, semconv.DBNamespace(database)),
+	}
+}
+
+// newPostgresSession wraps a *sql.DB with the upper/db PostgreSQL adapter and configures pooling.
+func newPostgresSession(sqlDB *sql.DB, persistPool *config.ConnectionPool) (db.Session, error) {
+	session, err := postgresqladp.New(sqlDB)
+	if err != nil {
+		sqlDB.Close()
+		return nil, fmt.Errorf("failed to create upper/db session: %w", err)
+	}
+	session = ConfigureDBSession(session, persistPool)
 	return session, nil
 }
 
