@@ -59,6 +59,7 @@ E2E_WAIT_TIMEOUT      ?= 90s # timeout for wait conditions
 E2E_PARALLEL          ?= 20
 E2E_SUITE_TIMEOUT     ?= 30m
 TEST_RETRIES          ?= 2
+GO_TEST_RACE          ?=
 JSON_TEST_OUTPUT      := test/reports/json
 # gotest function: gotest(packages, name, parameters)
 # packages: passed to gotestsum via --packages parameter
@@ -68,7 +69,7 @@ $(JSON_TEST_OUTPUT):
 	mkdir -p $(JSON_TEST_OUTPUT)
 
 define gotest
-	$(TOOL_GOTESTSUM) --rerun-fails=$(TEST_RETRIES) --jsonfile=$(JSON_TEST_OUTPUT)/$(2).json --format=testname --packages $(1) -- $(3)
+	$(TOOL_GOTESTSUM) --rerun-fails=$(TEST_RETRIES) --jsonfile=$(JSON_TEST_OUTPUT)/$(2).json --format=testname --packages $(1) -- $(if $(GO_TEST_RACE),-race,) $(3)
 endef
 ALL_BUILD_TAGS        ?= api,cli,cron,executor,examples,corefunctional,functional,plugins
 BENCHMARK_COUNT       ?= 6
