@@ -809,9 +809,9 @@ func (s *ArgoServerSuite) TestCreateWorkflowDryRun() {
 }
 
 func (s *ArgoServerSuite) TestWorkflowService() {
-	var name string
+	var name, uid string
 	s.Run("Create", func() {
-		name = s.e().POST("/api/v1/workflows/argo").
+		jsonResp := s.e().POST("/api/v1/workflows/argo").
 			WithBytes([]byte(`{
   "workflow": {
     "metadata": {
@@ -836,8 +836,12 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 }`)).
 			Expect().
 			Status(200).
-			JSON().
-			Path("$.metadata.name").
+			JSON()
+		name = jsonResp.Path("$.metadata.name").
+			NotNull().
+			String().
+			Raw()
+		uid = jsonResp.Path("$.metadata.uid").
 			NotNull().
 			String().
 			Raw()
@@ -889,6 +893,16 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 		s.e().GET("/api/v1/workflows/argo/not-found").
 			Expect().
 			Status(404)
+	})
+
+	s.Run("GetByUid", func() {
+		j := s.e().GET("/api/v1/workflows/argo/"+name).
+			WithQuery("uid", uid).
+			Expect().
+			Status(200).
+			JSON()
+		j.Path("$.status.nodes").
+			NotNull()
 	})
 
 	s.Run("GetWithFields", func() {
