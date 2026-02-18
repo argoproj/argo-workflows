@@ -149,5 +149,4 @@ func Test_Template_Replace(t *testing.T) {
 		require.NoError(t, err)
 		assert.JSONEq(t, `{"key": "final"}`, pass3)
 	})
-
 }

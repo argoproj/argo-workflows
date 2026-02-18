@@ -99,7 +99,6 @@ func Test_CompareSimpleReplace(t *testing.T) {
 }
 
 func Test_SimpleReplace(t *testing.T) {
-
 	ctx := logging.TestContext(t.Context())
 
 	tests := []struct {

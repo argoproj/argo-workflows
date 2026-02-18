@@ -150,7 +150,6 @@ func expressionReplace(ctx context.Context, w io.Writer, expression string, env 
 }
 
 func expressionReplaceCore(ctx context.Context, w io.Writer, expression string, env map[string]any, allowUnresolved bool) (int, error) {
-
 	shouldAllowFailure := false
 
 	maps.VisitMap(env, func(key string, value any) bool {
