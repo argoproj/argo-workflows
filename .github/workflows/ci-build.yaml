@@ -269,6 +269,10 @@ jobs:
           - test: test-tracing
             profile: telemetry
             use-api: false
+          - test: test-telemetry
+            profile: telemetry-stack
+            use-api: false
+            retries: 0
           - test: test-cli
             profile: mysql
             use-api: true
