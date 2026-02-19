@@ -17,6 +17,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/config"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v3/util/sqldb"
 	syncdb "github.com/argoproj/argo-workflows/v3/util/sync/db"
 )
 
@@ -46,10 +47,11 @@ const (
 )
 
 func NewLockManager(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, config *config.SyncConfig, getSyncLimit GetSyncLimit, nextWorkflow NextWorkflow, workflowExists WorkflowExists) *Manager {
-	return createLockManager(ctx, syncdb.SessionFromConfig(ctx, kubectlConfig, namespace, config), config, getSyncLimit, nextWorkflow, workflowExists)
+	dbSession, dbType := syncdb.SessionFromConfig(ctx, kubectlConfig, namespace, config)
+	return createLockManager(ctx, dbSession, dbType, config, getSyncLimit, nextWorkflow, workflowExists)
 }
 
-func createLockManager(ctx context.Context, dbSession db.Session, config *config.SyncConfig, getSyncLimit GetSyncLimit, nextWorkflow NextWorkflow, workflowExists WorkflowExists) *Manager {
+func createLockManager(ctx context.Context, dbSession db.Session, dbType sqldb.DBType, config *config.SyncConfig, getSyncLimit GetSyncLimit, nextWorkflow NextWorkflow, workflowExists WorkflowExists) *Manager {
 	syncLimitCacheTTL := time.Duration(0)
 	if config != nil && config.SemaphoreLimitCacheSeconds != nil {
 		syncLimitCacheTTL = time.Duration(*config.SemaphoreLimitCacheSeconds) * time.Second
@@ -59,6 +61,7 @@ func createLockManager(ctx context.Context, dbSession db.Session, config *config
 	log.WithField("syncLimitCacheTTL", syncLimitCacheTTL).Info(ctx, "Sync manager ttl")
 	dbInfo := syncdb.Info{
 		Session: dbSession,
+		DBType:  dbType,
 		Config:  syncdb.ConfigFromConfig(config),
 	}
 	sm := &Manager{

@@ -15,24 +15,40 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util"
 )
 
-// CreateDBSession creates the dB session
-func CreateDBSession(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, dbConfig config.DBConfig) (db.Session, error) {
+// CreateDBSession creates the DB session and returns the session along with its database type
+func CreateDBSession(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, dbConfig config.DBConfig) (db.Session, DBType, error) {
 	if dbConfig.PostgreSQL != nil {
-		return createPostGresDBSession(ctx, kubectlConfig, namespace, dbConfig.PostgreSQL, dbConfig.ConnectionPool)
+		session, err := createPostGresDBSession(ctx, kubectlConfig, namespace, dbConfig.PostgreSQL, dbConfig.ConnectionPool)
+		if err != nil {
+			return nil, Invalid, err
+		}
+		return session, Postgres, nil
 	} else if dbConfig.MySQL != nil {
-		return createMySQLDBSession(ctx, kubectlConfig, namespace, dbConfig.MySQL, dbConfig.ConnectionPool)
+		session, err := createMySQLDBSession(ctx, kubectlConfig, namespace, dbConfig.MySQL, dbConfig.ConnectionPool)
+		if err != nil {
+			return nil, Invalid, err
+		}
+		return session, MySQL, err
 	}
-	return nil, fmt.Errorf("no databases are configured")
+	return nil, "", fmt.Errorf("no databases are configured")
 }
 
 // CreateDBSessionWithCreds creates a database session using direct username and password
-func CreateDBSessionWithCreds(dbConfig config.DBConfig, username, password string) (db.Session, error) {
+func CreateDBSessionWithCreds(dbConfig config.DBConfig, username, password string) (db.Session, DBType, error) {
 	if dbConfig.PostgreSQL != nil {
-		return createPostGresDBSessionWithCreds(dbConfig.PostgreSQL, dbConfig.ConnectionPool, username, password)
+		session, err := createPostGresDBSessionWithCreds(dbConfig.PostgreSQL, dbConfig.ConnectionPool, username, password)
+		if err != nil {
+			return nil, Invalid, err
+		}
+		return session, Postgres, err
 	} else if dbConfig.MySQL != nil {
-		return createMySQLDBSessionWithCreds(dbConfig.MySQL, dbConfig.ConnectionPool, username, password)
+		session, err := createMySQLDBSessionWithCreds(dbConfig.MySQL, dbConfig.ConnectionPool, username, password)
+		if err != nil {
+			return nil, Invalid, err
+		}
+		return session, MySQL, err
 	}
-	return nil, fmt.Errorf("no databases are configured")
+	return nil, "", fmt.Errorf("no databases are configured")
 }
 
 // createPostGresDBSession creates postgresDB session

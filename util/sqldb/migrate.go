@@ -22,8 +22,7 @@ func ByType(dbType DBType, changes TypedChanges) Change {
 	return nil
 }
 
-func Migrate(ctx context.Context, session db.Session, versionTableName string, changes []Change) error {
-	dbType := DBTypeFor(session)
+func Migrate(ctx context.Context, session db.Session, dbType DBType, versionTableName string, changes []Change) error {
 	ctx, logger := logging.RequireLoggerFromContext(ctx).WithField("dbType", dbType).InContext(ctx)
 	logger.Info(ctx, "Migrating database schema")
 
