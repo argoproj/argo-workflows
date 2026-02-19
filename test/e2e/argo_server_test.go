@@ -2402,6 +2402,8 @@ func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
 }`)).Expect().Status(200)
 	})
 
+	time.Sleep(1 * time.Second) // wait for informer cache to sync
+
 	s.Run("SubmitWFT", func() {
 		s.e().POST("/api/v1/workflows/argo/submit").
 			WithBytes([]byte(`{
@@ -2484,6 +2486,8 @@ func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
   }
 }`)).Expect().Status(200)
 	})
+
+	time.Sleep(1 * time.Second) // wait for informer cache to sync
 
 	s.Run("SubmitCWFT", func() {
 		s.e().POST("/api/v1/workflows/argo/submit").
