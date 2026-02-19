@@ -105,7 +105,7 @@ This is a concise list of new features.
   containing an annotated logging object. This allows context aware logging from
   deep within the codebase.
 
-- Support metadata.name= and metadata.name!= in field selectors by [Miltiadis Alexis](https://github.com/miltalex) ([#13468](https://github.com/argoproj/argo-workflows/issues/13468))
+- Support `metadata.name=` and `metadata.name!=` in field selectors by [Miltiadis Alexis](https://github.com/miltalex) ([#13468](https://github.com/argoproj/argo-workflows/issues/13468))
   Field selectors for `metadata.name` now support the `==` and `!=` operators, giving you more flexible control over resource filtering.
   Use the `==` operator to match resources with an exact name, or use `!=` to exclude resources by name.
   This brings field selector behavior in line with native Kubernetes functionality and enables more precise resource queries.
@@ -125,7 +125,7 @@ This is a concise list of new features.
   Verified manually by deleting a CronWorkflow in the Workflows UI and confirming the message renders correctly
 
 - Add label query parameter sync with URL in WorkflowTemplates UI to match Workflows list behavior for consistent filtering. by [puretension](https://github.com/puretension) ([#14807](https://github.com/argoproj/argo-workflows/issues/14807))
-  WorkflowTemplates UI now properly handles label query parameters (e.g., ?label=key%3Dvalue)
+  WorkflowTemplates UI now properly handles label query parameters (e.g., `?label=key%3Dvalue`)
   Combined URL updates and localStorage persistence in single useEffect
   Enables custom UI links for filtered template views
   Verified that URL updates when changing filters and filters persist on page refresh
