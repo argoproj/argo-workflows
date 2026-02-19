@@ -149,6 +149,7 @@ SageMaker
 Schemaless
 ServiceAccount
 Sharding
+Shimako55
 Shuangkun
 Singer.io
 Snyk
@@ -354,6 +355,7 @@ webhook
 webhooks
 webpack-dev-server
 workflow-controller-configmap
+workflowTemplateRef
 workqueue
 yaml
 yun
