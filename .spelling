@@ -35,6 +35,7 @@ ArgoLabs
 Artifactory
 BlackRock
 Breitgand
+CEL
 CRD
 CRDs
 CloudSQL
@@ -43,6 +44,7 @@ ClusterRoles
 ClusterWorkflowTemplate
 ClusterWorkflowTemplates
 Codespaces
+ConcurrencyPolicy
 ConfigMap
 ConfigMaps
 ContainerSet
@@ -50,14 +52,18 @@ Couler
 CronWorkflow
 CronWorkflows
 CustomResource
+DAG
 DataDog
 Dataflow
+DefaultAzureCredential
 DevOps
 Devenv
 Dex
 EditorConfig
+Entra
 EtcD
 EventRouter
+GRPC
 Generator
 GitOps
 Github
@@ -113,6 +119,7 @@ Ploomber
 PostgreSQL
 Postgres
 Pre-fill
+PreserveUnknownFields
 PriorityClass
 RCs
 Risc-V
@@ -120,6 +127,7 @@ Roadmap
 RoleBinding
 SDKs
 SageMaker
+Schemaless
 ServiceAccount
 Sharding
 Singer.io
@@ -158,6 +166,7 @@ buildkit
 changelog
 codebase
 config
+continueOn
 cpu
 cron
 daemoned
@@ -175,6 +184,7 @@ env
 errored
 expr
 fibonacci
+fieldSelector
 filename
 finalizer
 gRPC
@@ -195,12 +205,15 @@ k8s-jobs
 kube
 kube-apiserver
 kube-scheduler
+kubebuilder
 kubeconfig
 kubectl
 kubelet
 kubernetes
+listOptions
 liveness
 localhost
+manifestFrom
 marshaled
 maxFailures
 maxSuccess
@@ -212,12 +225,14 @@ metadata
 minikube
 mutex
 mutexes
+nameFilter
 namespace
 namespaces
 natively
 nix.conf
 non-member
 p.m.
+parallelism
 parameterizing
 params
 pprof
