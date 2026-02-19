@@ -25,7 +25,7 @@ func isUID(s string, forceUID bool, forceName bool) bool {
 	if forceName {
 		return false
 	}
-	return uuidRegex.MatchString(strings.ToLower(s))
+	return uuidRegex.MatchString(s)
 }
 
 func resolveUID(ctx context.Context, serviceClient workflowarchivepkg.ArchivedWorkflowServiceClient, identifier string, namespace string, forceUID bool, forceName bool) (string, error) {
