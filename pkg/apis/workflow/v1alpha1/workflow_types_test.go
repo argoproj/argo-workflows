@@ -800,7 +800,7 @@ func TestNodes_Map(t *testing.T) {
 // TestInputs_NoArtifacts makes sure that the code doesn't panic when trying to get artifacts from a node status
 // without any artifacts
 func TestInputs_NoArtifacts(t *testing.T) {
-	s := NodeStatus{ID: "node_1", Inputs: nil, Outputs: nil}
+	s := NodeStatus{Inputs: nil, Outputs: nil}
 	inArt := s.Inputs.GetArtifactByName("test-artifact")
 	assert.Nil(t, inArt)
 	outArt := s.Outputs.GetArtifactByName("test-artifact")
