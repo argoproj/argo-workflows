@@ -62,6 +62,9 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.DataSource":                    schema_pkg_apis_workflow_v1alpha1_DataSource(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Event":                         schema_pkg_apis_workflow_v1alpha1_Event(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ExecutorConfig":                schema_pkg_apis_workflow_v1alpha1_ExecutorConfig(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ExecutorPlugin":                schema_pkg_apis_workflow_v1alpha1_ExecutorPlugin(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ExecutorPluginSidecar":         schema_pkg_apis_workflow_v1alpha1_ExecutorPluginSidecar(ref),
+		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ExecutorPluginSpec":            schema_pkg_apis_workflow_v1alpha1_ExecutorPluginSpec(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GCSArtifact":                   schema_pkg_apis_workflow_v1alpha1_GCSArtifact(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GCSArtifactRepository":         schema_pkg_apis_workflow_v1alpha1_GCSArtifactRepository(ref),
 		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GCSBucket":                     schema_pkg_apis_workflow_v1alpha1_GCSBucket(ref),
@@ -2705,6 +2708,84 @@ func schema_pkg_apis_workflow_v1alpha1_ExecutorConfig(ref common.ReferenceCallba
 				},
 			},
 		},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_ExecutorPlugin(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "ExecutorPlugin describes workflow-level executor plugin",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"metadata": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+						},
+					},
+					"spec": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ExecutorPluginSpec"),
+						},
+					},
+				},
+				Required: []string{"metadata", "spec"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ExecutorPluginSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_ExecutorPluginSidecar(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"automountServiceAccountToken": {
+						SchemaProps: spec.SchemaProps{
+							Description: "AutomountServiceAccount mounts the service account's token. The service account must have the same name as the plugin.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"container": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Container defines the Kubernetes container specification for the sidecar.",
+							Default:     map[string]interface{}{},
+							Ref:         ref("k8s.io/api/core/v1.Container"),
+						},
+					},
+				},
+				Required: []string{"container"},
+			},
+		},
+		Dependencies: []string{
+			"k8s.io/api/core/v1.Container"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_ExecutorPluginSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"sidecar": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ExecutorPluginSidecar"),
+						},
+					},
+				},
+				Required: []string{"sidecar"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ExecutorPluginSidecar"},
 	}
 }
 
@@ -8128,11 +8209,25 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowLevelArtifactGC"),
 						},
 					},
+					"executorPlugins": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Specifies executor plugins at the workflow level.\n\nThis field is effective only when the ARGO_WORKFLOW_LEVEL_EXECUTOR_PLUGINS feature gate is enabled.\n\nIf this field is present (even if empty), executor plugin settings from the controller ConfigMap are ignored.\n\nIf this field is not set, the controller falls back to the ConfigMap configuration.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ExecutorPlugin"),
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRef", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ExecutorConfig", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.LifecycleHook", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metadata", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metrics", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.PodGC", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RetryStrategy", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Synchronization", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.TTLStrategy", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Template", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.VolumeClaimGC", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowLevelArtifactGC", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowMetadata", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PersistentVolumeClaim", "k8s.io/api/core/v1.PodDNSConfig", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume", "k8s.io/api/policy/v1.PodDisruptionBudgetSpec"},
+			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRef", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ExecutorConfig", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ExecutorPlugin", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.LifecycleHook", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metadata", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metrics", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.PodGC", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RetryStrategy", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Synchronization", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.TTLStrategy", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Template", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.VolumeClaimGC", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowLevelArtifactGC", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowMetadata", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PersistentVolumeClaim", "k8s.io/api/core/v1.PodDNSConfig", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume", "k8s.io/api/policy/v1.PodDisruptionBudgetSpec"},
 	}
 }
 

@@ -154,8 +154,9 @@ type WorkflowController struct {
 	progressPatchTickDuration time.Duration
 	// progressFileTickDuration defines how often the progress file is read.
 	// Default is 3s and can be configured using the env var ARGO_PROGRESS_FILE_TICK_DURATION
-	progressFileTickDuration time.Duration
-	executorPlugins          map[string]map[string]*spec.Plugin // namespace -> name -> plugin
+	progressFileTickDuration           time.Duration
+	executorPlugins                    map[string]map[string]*spec.Plugin // namespace -> name -> plugin
+	enableWorkflowLevelExecutorPlugins bool
 
 	recentCompletions recentCompletions
 	// lastUnreconciledWorkflows is a map of workflows that have been recently unreconciled
@@ -192,7 +193,7 @@ func init() {
 }
 
 // NewWorkflowController instantiates a new WorkflowController
-func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, executorLogFormat, configMap string, executorPlugins bool) (*WorkflowController, error) {
+func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, executorLogFormat, configMap string, executorPlugins bool, workflowLevelExecutorPlugins bool) (*WorkflowController, error) {
 	dynamicInterface, err := dynamic.NewForConfig(restConfig)
 	if err != nil {
 		return nil, err
@@ -223,6 +224,8 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 	if executorPlugins {
 		wfc.executorPlugins = map[string]map[string]*spec.Plugin{}
 	}
+
+	wfc.enableWorkflowLevelExecutorPlugins = workflowLevelExecutorPlugins
 
 	wfc.UpdateConfig(ctx)
 	wfc.maxStackDepth = wfc.getMaxStackDepth()

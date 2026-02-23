@@ -2,9 +2,14 @@
 
 ## Configuration
 
-Executor Plugins are disabled by default in the Workflow Controller.
-To enable them, start the Controller with `ARGO_EXECUTOR_PLUGINS=true`.
-For example:
+Executor Plugins are disabled by default.
+They can be enabled either globally via the Workflow Controller ConfigMap or per workflow.
+Use the corresponding flags to enable them:
+`ARGO_EXECUTOR_PLUGINS=true` - enables the use of Executor Plugins defined globally in the controller’s ConfigMap.
+`ARGO_WORKFLOW_LEVEL_EXECUTOR_PLUGINS=true` - allows using Executor Plugin settings specified directly in the workflow spec. These settings take precedence over the global ones.
+These two options are independent of each other: you can enable only the global plugins, only the workflow-level plugins, or both at the same time.
+
+For example, to enable both modes in the Workflow Controller deployment:
 
 ```yaml
 apiVersion: apps/v1
@@ -19,6 +24,8 @@ spec:
           env:
             - name: ARGO_EXECUTOR_PLUGINS
               value: "true"
+            - name: ARGO_WORKFLOW_LEVEL_EXECUTOR_PLUGINS
+              value: "true"
 ```
 
 When using the [Helm chart](https://github.com/argoproj/argo-helm/tree/master/charts/argo-workflows), add this to your `values.yaml`:
@@ -27,6 +34,8 @@ When using the [Helm chart](https://github.com/argoproj/argo-helm/tree/master/ch
 controller:
   extraEnv:
     - name: ARGO_EXECUTOR_PLUGINS
+      value: "true"
+    - name: ARGO_WORKFLOW_LEVEL_EXECUTOR_PLUGINS
       value: "true"
 ```
 

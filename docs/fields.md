@@ -889,6 +889,7 @@ WorkflowSpec is the specification of a Workflow.
 |`dnsPolicy`|`string`|Set DNS policy for workflow pods. Defaults to "ClusterFirst". Valid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'. DNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy. To have DNS options set along with hostNetwork, you have to specify DNS policy explicitly to 'ClusterFirstWithHostNet'.|
 |`entrypoint`|`string`|Entrypoint is a template reference to the starting point of the io.argoproj.workflow.v1alpha1.|
 |`executor`|[`ExecutorConfig`](#executorconfig)|Executor holds configurations of executor containers of the io.argoproj.workflow.v1alpha1.|
+|`executorPlugins`|`Array<`[`ExecutorPlugin`](#executorplugin)`>`|Specifies executor plugins at the workflow level. This field is effective only when the ARGO_WORKFLOW_LEVEL_EXECUTOR_PLUGINS feature gate is enabled. If this field is present (even if empty), executor plugin settings from the controller ConfigMap are ignored. If this field is not set, the controller falls back to the ConfigMap configuration.|
 |`hooks`|[`LifecycleHook`](#lifecyclehook)|Hooks holds the lifecycle hook which is invoked at lifecycle of step, irrespective of the success, failure, or error status of the primary step|
 |`hostAliases`|`Array<`[`HostAlias`](#hostalias)`>`|_No description available_|
 |`hostNetwork`|`boolean`|Host networking requested for this workflow pod. Default to false.|
@@ -1656,6 +1657,16 @@ ExecutorConfig holds configurations of an executor container.
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`serviceAccountName`|`string`|ServiceAccountName specifies the service account name of the executor container.|
+
+## ExecutorPlugin
+
+ExecutorPlugin describes workflow-level executor plugin
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`metadata`|[`ObjectMeta`](#objectmeta)|_No description available_|
+|`spec`|[`ExecutorPluginSpec`](#executorpluginspec)|_No description available_|
 
 ## LifecycleHook
 
@@ -2509,6 +2520,15 @@ Parameter indicate a passed string parameter to a service template with an optio
 |`name`|`string`|Name is the parameter name|
 |`value`|`string`|Value is the literal value to use for the parameter. If specified in the context of an input parameter, any passed values take precedence over the specified value|
 |`valueFrom`|[`ValueFrom`](#valuefrom)|ValueFrom is the source for the output parameter's value|
+
+## ExecutorPluginSpec
+
+_No description available_
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`sidecar`|[`ExecutorPluginSidecar`](#executorpluginsidecar)|_No description available_|
 
 ## TemplateRef
 
@@ -3919,6 +3939,16 @@ ValueFrom describes a location in which to obtain the value to a parameter
 |`parameter`|`string`|Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. '{{steps.mystep.outputs.myparam}}')|
 |`path`|`string`|Path in the container to retrieve an output parameter value from in container templates|
 |`supplied`|[`SuppliedValueFrom`](#suppliedvaluefrom)|Supplied value to be filled in directly, either through the CLI, API, etc.|
+
+## ExecutorPluginSidecar
+
+_No description available_
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`automountServiceAccountToken`|`boolean`|AutomountServiceAccount mounts the service account's token. The service account must have the same name as the plugin.|
+|`container`|[`Container`](#container)|Container defines the Kubernetes container specification for the sidecar.|
 
 ## Counter
 

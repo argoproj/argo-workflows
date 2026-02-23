@@ -81,13 +81,14 @@ STATIC_FILES          ?= $(shell [ $(DEV_BRANCH) = true ] && echo false || echo 
 endif
 
 # -- install & run options
-PROFILE               ?= minimal
-KUBE_NAMESPACE        ?= argo # namespace where Kubernetes resources/RBAC will be installed
-PLUGINS               ?= $(shell [ $(PROFILE) = plugins ] && echo true || echo false)
-UI                    ?= false # start the UI with HTTP
-UI_SECURE             ?= false # start the UI with HTTPS
-API                   ?= $(UI) # start the Argo Server
-TASKS                 := controller
+PROFILE               	?= minimal
+KUBE_NAMESPACE        	?= argo # namespace where Kubernetes resources/RBAC will be installed
+PLUGINS               	?= $(shell [ $(PROFILE) = plugins ] && echo true || echo false)
+WORKFLOW_LEVEL_PLUGINS  ?= false
+UI                    	?= false # start the UI with HTTP
+UI_SECURE             	?= false # start the UI with HTTPS
+API                   	?= $(UI) # start the Argo Server
+TASKS                 	:= controller
 ifeq ($(API),true)
 TASKS                 := controller server
 endif
@@ -674,6 +675,9 @@ endif
 ifneq ($(PLUGINS),true)
 	@echo "⚠️  not starting plugins. If you want to test plugins, run 'make start PROFILE=plugins' to start it"
 endif
+ifneq ($(WORKFLOW_LEVEL_PLUGINS),true)
+	@echo "⚠️  not starting workflow-level plugins. If you want to test workflow-level plugins, run 'make start WORKFLOW_LEVEL_PLUGINS=true' to start it"
+endif
 	# Check dex, minio, postgres and mysql are in hosts file
 ifeq ($(AUTH_MODE),sso)
 	grep '127.0.0.1.*dex' /etc/hosts
@@ -683,7 +687,7 @@ endif
 	grep '127.0.0.1.*postgres' /etc/hosts
 	grep '127.0.0.1.*mysql' /etc/hosts
 ifeq ($(RUN_MODE),local)
-	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) ARGO_SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) ARGO_LOGLEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) ARGO_AUTH_MODE=$(AUTH_MODE) ARGO_NAMESPACED=$(NAMESPACED) ARGO_NAMESPACE=$(KUBE_NAMESPACE) ARGO_MANAGED_NAMESPACE=$(MANAGED_NAMESPACE) ARGO_EXECUTOR_PLUGINS=$(PLUGINS) ARGO_POD_STATUS_CAPTURE_FINALIZER=$(POD_STATUS_CAPTURE_FINALIZER) ARGO_UI_SECURE=$(UI_SECURE) ARGO_BASE_HREF=$(BASE_HREF) PROFILE=$(PROFILE) kit $(TASKS)
+	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) ARGO_SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) ARGO_LOGLEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) ARGO_AUTH_MODE=$(AUTH_MODE) ARGO_NAMESPACED=$(NAMESPACED) ARGO_NAMESPACE=$(KUBE_NAMESPACE) ARGO_MANAGED_NAMESPACE=$(MANAGED_NAMESPACE) ARGO_EXECUTOR_PLUGINS=$(PLUGINS) ARGO_WORKFLOW_LEVEL_EXECUTOR_PLUGINS=$(WORKFLOW_LEVEL_PLUGINS) ARGO_POD_STATUS_CAPTURE_FINALIZER=$(POD_STATUS_CAPTURE_FINALIZER) ARGO_UI_SECURE=$(UI_SECURE) ARGO_BASE_HREF=$(BASE_HREF) PROFILE=$(PROFILE) kit $(TASKS)
 endif
 
 .PHONY: wait

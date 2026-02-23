@@ -669,6 +669,25 @@ message ExecutorConfig {
   optional string serviceAccountName = 1;
 }
 
+// ExecutorPlugin describes workflow-level executor plugin
+message ExecutorPlugin {
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 2;
+
+  optional ExecutorPluginSpec spec = 1;
+}
+
+message ExecutorPluginSidecar {
+  // AutomountServiceAccount mounts the service account's token. The service account must have the same name as the plugin.
+  optional bool automountServiceAccountToken = 1;
+
+  // Container defines the Kubernetes container specification for the sidecar.
+  optional .k8s.io.api.core.v1.Container container = 2;
+}
+
+message ExecutorPluginSpec {
+  optional ExecutorPluginSidecar sidecar = 1;
+}
+
 // GCSArtifact is the location of a GCS artifact
 message GCSArtifact {
   optional GCSBucket gCSBucket = 1;
@@ -2217,6 +2236,18 @@ message WorkflowSpec {
   // ArtifactGC describes the strategy to use when deleting artifacts from completed or deleted workflows (applies to all output Artifacts
   // unless Artifact.ArtifactGC is specified, which overrides this)
   optional WorkflowLevelArtifactGC artifactGC = 43;
+
+  // Specifies executor plugins at the workflow level.
+  //
+  // This field is effective only when the ARGO_WORKFLOW_LEVEL_EXECUTOR_PLUGINS
+  // feature gate is enabled.
+  //
+  // If this field is present (even if empty), executor plugin settings from
+  // the controller ConfigMap are ignored.
+  //
+  // If this field is not set, the controller falls back to the ConfigMap
+  // configuration.
+  repeated ExecutorPlugin executorPlugins = 44;
 }
 
 // WorkflowStatus contains overall status information about a workflow

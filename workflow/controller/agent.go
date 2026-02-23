@@ -12,6 +12,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 
+	"github.com/argoproj/argo-workflows/v3/pkg/plugins/spec"
+
 	"github.com/argoproj/argo-workflows/v3/errors"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -270,29 +272,63 @@ func (woc *wfOperationCtx) getExecutorPlugins(ctx context.Context) ([]apiv1.Cont
 	namespaces := map[string]bool{} // de-dupes executorPlugins when their namespaces are the same
 	namespaces[woc.controller.namespace] = true
 	namespaces[woc.wf.Namespace] = true
-	for namespace := range namespaces {
-		for _, plug := range woc.controller.executorPlugins[namespace] {
-			s := plug.Spec.Sidecar
-			c := s.Container.DeepCopy()
-			c.VolumeMounts = append(c.VolumeMounts, apiv1.VolumeMount{
-				Name:      volumeMountVarArgo.Name,
-				MountPath: volumeMountVarArgo.MountPath,
-				ReadOnly:  true,
-				// only mount the token for this plugin, not others
-				SubPath: c.Name,
-			})
-			if s.AutomountServiceAccountToken {
-				volume, volumeMount, err := woc.getServiceAccountTokenVolume(ctx, plug.Name+"-executor-plugin")
+	wFPlugins, err := woc.execWf.Spec.AsExecutorPluginSpec()
+	if err != nil {
+		return nil, nil, err
+	}
+	isGetPluginsFromWorkflow := len(wFPlugins) > 0
+	if isGetPluginsFromWorkflow && !woc.controller.enableWorkflowLevelExecutorPlugins {
+		return nil, nil, fmt.Errorf(
+			"workflow-level executor plugins are disabled in the controller. To enable them, set the environment variable ARGO_WORKFLOW_LEVEL_EXECUTOR_PLUGINS=true",
+		)
+	}
+	if isGetPluginsFromWorkflow {
+		for _, plugin := range wFPlugins {
+			sidecar, pluginVolume, err := woc.getExecutorPluginComponents(ctx, plugin)
+			if err != nil {
+				return nil, nil, err
+			}
+			sidecars = append(sidecars, *sidecar)
+			if pluginVolume != nil {
+				volumes = append(volumes, *pluginVolume)
+			}
+		}
+	} else {
+		for namespace := range namespaces {
+			for _, plug := range woc.controller.executorPlugins[namespace] {
+				sidecar, pluginVolume, err := woc.getExecutorPluginComponents(ctx, *plug)
 				if err != nil {
 					return nil, nil, err
 				}
-				volumes = append(volumes, *volume)
-				c.VolumeMounts = append(c.VolumeMounts, *volumeMount)
+				sidecars = append(sidecars, *sidecar)
+				if pluginVolume != nil {
+					volumes = append(volumes, *pluginVolume)
+				}
 			}
-			sidecars = append(sidecars, *c)
 		}
 	}
 	return sidecars, volumes, nil
+}
+
+func (woc *wfOperationCtx) getExecutorPluginComponents(ctx context.Context, plug spec.Plugin) (*apiv1.Container, *apiv1.Volume, error) {
+	s := plug.Spec.Sidecar
+	c := s.Container.DeepCopy()
+	c.VolumeMounts = append(c.VolumeMounts, apiv1.VolumeMount{
+		Name:      volumeMountVarArgo.Name,
+		MountPath: volumeMountVarArgo.MountPath,
+		ReadOnly:  true,
+		// only mount the token for this plugin, not others
+		SubPath: c.Name,
+	})
+	if !s.AutomountServiceAccountToken {
+		return c, nil, nil
+	}
+	volume, volumeMount, err := woc.getServiceAccountTokenVolume(ctx, plug.Name+"-executor-plugin")
+	if err != nil {
+		return nil, nil, err
+	}
+	c.VolumeMounts = append(c.VolumeMounts, *volumeMount)
+	return c, volume, nil
 }
 
 func addresses(containers []apiv1.Container) []string {
