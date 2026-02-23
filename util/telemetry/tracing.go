@@ -82,7 +82,6 @@ func (s *Span) ExpectedChildren() []string {
 }
 
 type Tracing struct {
-	//	config   *Config
 	provider *tracesdk.TracerProvider
 	tracer   trace.Tracer
 }

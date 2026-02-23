@@ -23,7 +23,7 @@ func New(ctx context.Context, serviceName string) (*Tracing, error) {
 }
 
 func InjectTraceContext(ctx context.Context) context.Context {
-	carrier := telemetry.EnvironmentCarrier{}
+	carrier := telemetry.Carrier{}
 	prop := propagation.TraceContext{}
 	return prop.Extract(ctx, carrier)
 }
