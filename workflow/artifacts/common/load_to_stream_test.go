@@ -107,7 +107,6 @@ func TestLoadToStream(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-
 			// need to verify that a new file doesn't get written so check the /tmp directory ahead of time
 			filesBefore, err := filteredFiles(t)
 			if err != nil {

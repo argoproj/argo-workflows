@@ -10,11 +10,27 @@ import (
 )
 
 func NewDeleteCommand() *cobra.Command {
+	var (
+		forceName bool
+		forceUID  bool
+	)
 	command := &cobra.Command{
-		Use:   "delete UID...",
+		Use:   "delete WORKFLOW...",
 		Short: "delete a workflow in the archive",
-		Example: `# Delete an archived workflow by its UID:
-  argo archive delete abc123-def456-ghi789-jkl012
+		Example: `# Delete an archived workflow by name:
+  argo archive delete my-workflow
+
+# Delete an archived workflow by UID (auto-detected):
+  argo archive delete a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11
+
+# Delete multiple archived workflows:
+  argo archive delete my-workflow my-other-workflow
+
+# Delete an archived workflow by name (forced):
+  argo archive delete my-workflow --name
+
+# Delete an archived workflow by UID (forced):
+  argo archive delete a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11 --uid
 `,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
@@ -25,14 +41,22 @@ func NewDeleteCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			for _, uid := range args {
+			namespace := client.Namespace(ctx)
+			for _, identifier := range args {
+				uid, err := resolveUID(ctx, serviceClient, identifier, namespace, forceUID, forceName)
+				if err != nil {
+					return fmt.Errorf("resolve UID: %w", err)
+				}
 				if _, err = serviceClient.DeleteArchivedWorkflow(ctx, &workflowarchivepkg.DeleteArchivedWorkflowRequest{Uid: uid}); err != nil {
 					return err
 				}
-				fmt.Printf("Archived workflow '%s' deleted\n", uid)
+				fmt.Printf("Archived workflow '%s' deleted\n", identifier)
 			}
 			return nil
 		},
 	}
+	command.Flags().BoolVar(&forceName, "name", false, "force the argument to be treated as a name")
+	command.Flags().BoolVar(&forceUID, "uid", false, "force the argument to be treated as a UID")
+	command.MarkFlagsMutuallyExclusive("name", "uid")
 	return command
 }

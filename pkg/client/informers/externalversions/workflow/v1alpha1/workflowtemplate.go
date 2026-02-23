@@ -3,13 +3,13 @@
 package v1alpha1
 
 import (
-	"context"
+	context "context"
 	time "time"
 
-	workflowv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	apisworkflowv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	versioned "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
 	internalinterfaces "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/internalinterfaces"
-	v1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/listers/workflow/v1alpha1"
+	workflowv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/listers/workflow/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -20,7 +20,7 @@ import (
 // WorkflowTemplates.
 type WorkflowTemplateInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1alpha1.WorkflowTemplateLister
+	Lister() workflowv1alpha1.WorkflowTemplateLister
 }
 
 type workflowTemplateInformer struct {
@@ -46,16 +46,28 @@ func NewFilteredWorkflowTemplateInformer(client versioned.Interface, namespace s
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.ArgoprojV1alpha1().WorkflowTemplates(namespace).List(context.TODO(), options)
+				return client.ArgoprojV1alpha1().WorkflowTemplates(namespace).List(context.Background(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.ArgoprojV1alpha1().WorkflowTemplates(namespace).Watch(context.TODO(), options)
+				return client.ArgoprojV1alpha1().WorkflowTemplates(namespace).Watch(context.Background(), options)
+			},
+			ListWithContextFunc: func(ctx context.Context, options v1.ListOptions) (runtime.Object, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.ArgoprojV1alpha1().WorkflowTemplates(namespace).List(ctx, options)
+			},
+			WatchFuncWithContext: func(ctx context.Context, options v1.ListOptions) (watch.Interface, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.ArgoprojV1alpha1().WorkflowTemplates(namespace).Watch(ctx, options)
 			},
 		},
-		&workflowv1alpha1.WorkflowTemplate{},
+		&apisworkflowv1alpha1.WorkflowTemplate{},
 		resyncPeriod,
 		indexers,
 	)
@@ -66,9 +78,9 @@ func (f *workflowTemplateInformer) defaultInformer(client versioned.Interface, r
 }
 
 func (f *workflowTemplateInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&workflowv1alpha1.WorkflowTemplate{}, f.defaultInformer)
+	return f.factory.InformerFor(&apisworkflowv1alpha1.WorkflowTemplate{}, f.defaultInformer)
 }
 
-func (f *workflowTemplateInformer) Lister() v1alpha1.WorkflowTemplateLister {
-	return v1alpha1.NewWorkflowTemplateLister(f.Informer().GetIndexer())
+func (f *workflowTemplateInformer) Lister() workflowv1alpha1.WorkflowTemplateLister {
+	return workflowv1alpha1.NewWorkflowTemplateLister(f.Informer().GetIndexer())
 }

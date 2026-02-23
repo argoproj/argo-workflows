@@ -29,7 +29,6 @@ func NewFilesServer(baseHRef string, hsts bool, xframeOpts string, corsAllowOrig
 }
 
 func (s *FilesServer) ServerFiles(w http.ResponseWriter, r *http.Request) {
-
 	if s.xframeOpts != "" {
 		w.Header().Set("X-Frame-Options", s.xframeOpts)
 	}

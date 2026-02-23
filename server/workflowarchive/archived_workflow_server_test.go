@@ -75,7 +75,7 @@ func Test_archivedWorkflowServer(t *testing.T) {
 	repo.On("CountWorkflows", mock.Anything, sutils.ListOptions{Namespace: "", Name: "my-name", NamePrefix: "my-", MinStartedAt: minStartAt, MaxStartedAt: maxStartAt, Limit: 2, Offset: 0, ShowRemainingItemCount: true}).Return(int64(5), nil)
 	repo.On("GetWorkflow", mock.Anything, "", "", "").Return(nil, nil)
 	repo.On("GetWorkflow", mock.Anything, "my-uid", "", "").Return(&v1alpha1.Workflow{
-		ObjectMeta: metav1.ObjectMeta{Name: "my-name"},
+		ObjectMeta: metav1.ObjectMeta{Name: "my-name", UID: "my-uid"},
 		Spec: v1alpha1.WorkflowSpec{
 			Entrypoint: "my-entrypoint",
 			Templates: []v1alpha1.Template{
@@ -211,7 +211,6 @@ func Test_archivedWorkflowServer(t *testing.T) {
 		require.NoError(t, err)
 		assert.Len(t, resp.Items, 1)
 		assert.Equal(t, "1", resp.Continue)
-
 	})
 	t.Run("GetArchivedWorkflow", func(t *testing.T) {
 		allowed = false

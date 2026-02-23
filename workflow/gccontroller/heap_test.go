@@ -90,5 +90,4 @@ metadata:
 	assert.Equal(t, 0, queue.Len())
 	heap.Push(queue, wf)
 	assert.Equal(t, 1, queue.Len())
-
 }

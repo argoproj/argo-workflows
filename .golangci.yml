@@ -40,6 +40,7 @@ linters:
     - usestdlibvars
     - usetesting
     - wastedassign
+    - whitespace
   settings:
     revive:
       rules:

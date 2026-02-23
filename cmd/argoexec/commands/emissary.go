@@ -172,7 +172,6 @@ func NewEmissaryCommand() *cobra.Command {
 			}
 
 			cmdErr := retry.OnError(backoff, func(error) bool { return true }, func() error {
-
 				command, closer, err := startCommand(ctx, name, args, template)
 				if err != nil {
 					return fmt.Errorf("failed to start command: %w", err)
@@ -225,7 +224,6 @@ func NewEmissaryCommand() *cobra.Command {
 				}
 
 				return osspecific.Wait(command.Process)
-
 			})
 			logger.WithError(cmdErr).Info(ctx, "sub-process exited")
 

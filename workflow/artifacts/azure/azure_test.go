@@ -113,7 +113,6 @@ func TestArtifactDriver_WithSASToken_DownloadDirectory_Subdir(t *testing.T) {
 
 	// test read/write operations to the azurite container  using the container client
 	testContainerClientReadWriteOperations(t, containerClient, driver)
-
 }
 
 func testContainerClientReadWriteOperations(t *testing.T, containerClient *container.Client, driver ArtifactDriver) {

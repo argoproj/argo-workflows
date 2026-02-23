@@ -1,5 +1,39 @@
 # Changelog
 
+## v4.0.1 (2026-02-16)
+
+Full Changelog: [v4.0.0...v4.0.1](https://github.com/argoproj/argo-workflows/compare/v4.0.0...v4.0.1)
+
+### Selected Changes
+
+* [73cf19d22](https://github.com/argoproj/argo-workflows/commit/73cf19d222553a90a5c05ef58b8468c554a4c9df) fix: configure logrus for `argoproj/pkg` internal usage (cherry-pick #15563 for 4.0) (#15569)
+* [898ba41aa](https://github.com/argoproj/argo-workflows/commit/898ba41aa972903d85327e0b0dd83727c07f4f4a) chore(deps): update dependency qs to v6.14.2 [security] (release-4.0) (#15561)
+* [db17a6c82](https://github.com/argoproj/argo-workflows/commit/db17a6c82aaf0d9db7b397c80978ee33c679e51f) fix: support large container args (cherry-pick #15265 for 4.0) (#15520)
+* [0ed630ec2](https://github.com/argoproj/argo-workflows/commit/0ed630ec261303624268efd93b74b068341d9599) fix: emissary deadline handling (cherry-pick #15352 for 4.0) (#15553)
+* [eb5508a3a](https://github.com/argoproj/argo-workflows/commit/eb5508a3a2ebc10ebfe828cffcf8ee34b04c1260) fix: change RLock to Lock in sync manager methods (cherry-pick #15546 for 4.0) (#15549)
+* [e1c300172](https://github.com/argoproj/argo-workflows/commit/e1c300172f8a8edbaeecc662febdfc4556d002f4) chore(deps): update module github.com/go-git/go-git/v5 to v5.16.5 [security] (release-4.0) (#15544)
+* [abebb174a](https://github.com/argoproj/argo-workflows/commit/abebb174a22934144c310690996a1f4c7d7efd8f) chore(deps): update github.com/knetic/govaluate digest to 7625b7f (release-4.0) (#15499)
+* [0e9f4881b](https://github.com/argoproj/argo-workflows/commit/0e9f4881beecf376ef2e37029e5a69332266f6bb) chore(deps): update sigs.k8s.io/json digest to 2d32026 (release-4.0) (#15505)
+* [b9e88dffb](https://github.com/argoproj/argo-workflows/commit/b9e88dffb7f762f62a95dd057dd2d1b411bed1e8) fix: prevent int64 overflow in retry backoff calculation (cherry-pick #15277 for 4.0) (#15508)
+* [32eecf6c4](https://github.com/argoproj/argo-workflows/commit/32eecf6c4f510628975c8dedaab6cdadaa75f3fc) chore(deps): update k8s.io/gengo digest to 5ee0d03 (release-4.0) (#15501)
+* [f8c5b1114](https://github.com/argoproj/argo-workflows/commit/f8c5b11143e3aa16c2b35ff3eb56c80bdb8aa8c9) chore(deps): update k8s.io/utils digest to 914a6e7 (release-4.0) (#15503)
+* [a9df572a4](https://github.com/argoproj/argo-workflows/commit/a9df572a4870a2e78083bc6737833d3c2c90e5d1) chore(deps): update google.golang.org/genproto/googleapis/api digest to 546029d (release-4.0) (#15500)
+* [8b6ffe8e4](https://github.com/argoproj/argo-workflows/commit/8b6ffe8e47752c4f92b68f3a08b222eb04b3839e) fix: Add instanceID label to WorkflowTaskSet. Fixes #15219 (cherry-pick #15220 for 4.0) (#15481)
+* [ef75c9d6d](https://github.com/argoproj/argo-workflows/commit/ef75c9d6d5b0d31a580a5caaddeeebabcd52b8b3) fix: use input.defaults for suspend templates (cherry-pick #15240 for 4.0) (#15482)
+* [01c6cb72e](https://github.com/argoproj/argo-workflows/commit/01c6cb72e1420ecd6ea629484c41b65bc06c0d50) fix: sync example is wrong for mutexes (cherry-pick #15431 for 4.0) (#15507)
+* [2f608d5b3](https://github.com/argoproj/argo-workflows/commit/2f608d5b32bee1c47ee9075fc3aa90237f3c7f87) chore(deps): update lycheeverse/lychee-action digest to 631725a (release-4.0) (#15504)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Aaron Mell
+* Alan Clucas
+* AnaySh
+* Anay Sharma
+* Andre Kurait
+* Uziel David Sulkies
+
+</details>
+
 ## v4.0.0 (2026-02-04)
 
 Full Changelog: [v4.0.0-rc4...v4.0.0](https://github.com/argoproj/argo-workflows/compare/v4.0.0-rc4...v4.0.0)
@@ -111,7 +145,7 @@ Full Changelog: [v4.0.0-rc1...v4.0.0-rc2](https://github.com/argoproj/argo-workf
 
 ## v4.0.0-rc1 (2025-12-11)
 
-Full Changelog: [v3.7.9...v4.0.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.7.9...v4.0.0-rc1)
+Full Changelog: [v3.7.10...v4.0.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.7.10...v4.0.0-rc1)
 
 ### Selected Changes
 
@@ -298,6 +332,31 @@ Full Changelog: [v3.7.9...v4.0.0-rc1](https://github.com/argoproj/argo-workflows
 * William Van Hevelingen
 * Xavier Hardy
 * Yuan Tang
+
+</details>
+
+## v3.7.10 (2026-02-16)
+
+Full Changelog: [v3.7.9...v3.7.10](https://github.com/argoproj/argo-workflows/compare/v3.7.9...v3.7.10)
+
+### Selected Changes
+
+* [879b52667](https://github.com/argoproj/argo-workflows/commit/879b526675f57b7dd5eac1a49f444fb5b4d879eb) fix: use input.defaults for suspend templates (cherry-pick #15240 for 3.7) (#15483)
+* [214d4da0a](https://github.com/argoproj/argo-workflows/commit/214d4da0af44b662c156b40eda3211e4e8f8ee5c) fix: emissary deadline handling (cherry-pick #15352 for 3.7) (#15554)
+* [72e17f3b8](https://github.com/argoproj/argo-workflows/commit/72e17f3b88220cb80abd3c73a0a95d70594b9819) chore(deps): update dependency qs to v6.14.2 [security] (release-3.7) (#15560)
+* [24e1f5cb2](https://github.com/argoproj/argo-workflows/commit/24e1f5cb23ae9ee5f6baa00b2fad6c599e984045) fix: change RLock to Lock in sync manager methods (cherry-pick #15546 for 3.7) (#15552)
+* [93897c52a](https://github.com/argoproj/argo-workflows/commit/93897c52a242b737449d4fe3a171d8ce92a2b416) fix: support large container args (cherry pick 15265 to release 3.7) (#15523)
+* [46825ffe6](https://github.com/argoproj/argo-workflows/commit/46825ffe6c2db7cb1c611ac9bc2263bc87c4362e) chore(deps): update module github.com/go-git/go-git/v5 to v5.16.5 [security] (release-3.7) (#15543)
+* [21a14fcee](https://github.com/argoproj/argo-workflows/commit/21a14fcee242c1714e796129e402fdc1824fc00f) chore(deps): update google.golang.org/genproto/googleapis/api digest to 546029d (release-3.7) (#15497)
+* [fd9cbb209](https://github.com/argoproj/argo-workflows/commit/fd9cbb20946bc73b7fbf1316872859a0e84f30d1) fix: Add instanceID label to WorkflowTaskSet. Fixes #15219 (cherry-pick #15220 for 3.7) (#15496)
+* [47581e249](https://github.com/argoproj/argo-workflows/commit/47581e2497b462582db5d6a10a16b80929294124) fix: sync example is wrong for mutexes (cherry-pick #15431 for 3.7) (#15453)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* AnaySh
+* Anay Sharma
+* Uziel David Sulkies
 
 </details>
 
@@ -658,7 +717,7 @@ Full Changelog: [v3.7.0-rc1...v3.7.0-rc2](https://github.com/argoproj/argo-workf
 
 ## v3.7.0-rc1 (2025-06-04)
 
-Full Changelog: [v3.6.18...v3.7.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.6.18...v3.7.0-rc1)
+Full Changelog: [v3.6.19...v3.7.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.6.19...v3.7.0-rc1)
 
 ### Selected Changes
 
@@ -865,6 +924,23 @@ Full Changelog: [v3.6.18...v3.7.0-rc1](https://github.com/argoproj/argo-workflow
 * Yuan Tang
 * Yulin Li
 * Yusuke Abe
+
+</details>
+
+## v3.6.19 (2026-02-16)
+
+Full Changelog: [v3.6.18...v3.6.19](https://github.com/argoproj/argo-workflows/compare/v3.6.18...v3.6.19)
+
+### Selected Changes
+
+* [c66a734c9](https://github.com/argoproj/argo-workflows/commit/c66a734c911a25a1e0f626af5995a222d6267e37) fix: use input.defaults for suspend templates (cherry-pick #15240 for 3.6) (#15484)
+* [62da0f671](https://github.com/argoproj/argo-workflows/commit/62da0f671a72a4092409365c6030c034ddbb19ba) fix: emissary deadline handling (cherry-pick #15352 for 3.6) (#15555)
+* [94c1a4696](https://github.com/argoproj/argo-workflows/commit/94c1a4696df45283c5d831daa990482d9e45dc76) fix: Add instanceID label to WorkflowTaskSet. Fixes #15219 (cherry-pick #15220 for 3.6) (#15509)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Uziel David Sulkies
 
 </details>
 

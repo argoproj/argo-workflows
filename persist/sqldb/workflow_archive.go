@@ -102,8 +102,8 @@ func (r *workflowArchive) IsEnabled() bool {
 }
 
 // NewWorkflowArchive returns a new workflowArchive
-func NewWorkflowArchive(session db.Session, clusterName, managedNamespace string, instanceIDService instanceid.Service) WorkflowArchive {
-	return &workflowArchive{session: session, clusterName: clusterName, managedNamespace: managedNamespace, instanceIDService: instanceIDService, dbType: sqldb.DBTypeFor(session)}
+func NewWorkflowArchive(session db.Session, clusterName, managedNamespace string, instanceIDService instanceid.Service, dbType sqldb.DBType) WorkflowArchive {
+	return &workflowArchive{session: session, clusterName: clusterName, managedNamespace: managedNamespace, instanceIDService: instanceIDService, dbType: dbType}
 }
 
 func (r *workflowArchive) ArchiveWorkflow(ctx context.Context, wf *wfv1.Workflow) error {
@@ -662,7 +662,6 @@ func (r *workflowArchive) GetWorkflowForEstimator(ctx context.Context, namespace
 			FinishedAt: v1.Time{Time: awf.FinishedAt},
 		},
 	}, nil
-
 }
 
 func (r *workflowArchive) DeleteWorkflow(ctx context.Context, uid string) error {

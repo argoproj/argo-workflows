@@ -115,7 +115,6 @@ func GenerateX509KeyPair() (*tls.Certificate, error) {
 }
 
 func GenerateX509KeyPairTLSConfig(tlsMinVersion uint16) (*tls.Config, error) {
-
 	cer, err := GenerateX509KeyPair()
 	if err != nil {
 		return nil, err

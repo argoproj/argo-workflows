@@ -511,7 +511,6 @@ func (tctx *templateValidationCtx) validateTemplate(ctx context.Context, tmpl *w
 		if err == nil {
 			return fmt.Errorf("%s has invalid duration format in timeout", newTmpl.Name)
 		}
-
 	}
 
 	templateScope := tmplCtx.GetTemplateScope()
@@ -821,7 +820,6 @@ func (tctx *templateValidationCtx) validateLeaf(scope map[string]any, tmplCtx *t
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.containerSet.containers must have a container named \"main\" for input or output", tmpl.Name)
 			}
 		}
-
 	}
 	if tmpl.Resource != nil {
 		if !placeholderGenerator.IsPlaceholder(tmpl.Resource.Action) {
@@ -1373,7 +1371,6 @@ func (tctx *templateValidationCtx) validateDAG(ctx context.Context, scope map[st
 
 	// Verify dependencies for all tasks can be resolved as well as template names
 	for _, task := range tmpl.DAG.Tasks {
-
 		if (usingDepends || len(task.Dependencies) > 0) && '0' <= task.Name[0] && task.Name[0] <= '9' {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s name cannot begin with a digit when using either 'depends' or 'dependencies'", tmpl.Name, task.Name)
 		}

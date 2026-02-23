@@ -138,7 +138,6 @@ func (e emissary) Kill(ctx context.Context, containerNames []string, termination
 	logger := logging.RequireLoggerFromContext(ctx)
 	logger.WithFields(logging.Fields{"terminationGracePeriodDuration": terminationGracePeriodDuration, "containerNames": containerNames}).Info(ctx, "emissary: killing containers")
 	for _, containerName := range containerNames {
-
 		// allow write-access by other users, because other containers
 		// should delete the signal after receiving it
 		signalPath := filepath.Join(common.VarRunArgoPath, "ctr", containerName, "signal")

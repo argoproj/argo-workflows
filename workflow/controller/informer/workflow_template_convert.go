@@ -46,7 +46,6 @@ type WorkflowTemplateFromInformerGetter struct {
 }
 
 func (getter *WorkflowTemplateFromInformerGetter) Get(_ context.Context, name string) (*wfv1.WorkflowTemplate, error) {
-
 	obj, exists, err := getter.wftmplInformer.Informer().GetStore().GetByKey(getter.namespace + "/" + name)
 	if err != nil {
 		return nil, err

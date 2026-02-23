@@ -30,7 +30,6 @@ func (c *Controller) EnactAnyPodCleanup(
 	default:
 		c.queuePodForCleanup(ctx, pod.Namespace, pod.Name, action)
 	}
-
 }
 
 func determinePodCleanupAction(

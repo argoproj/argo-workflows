@@ -66,7 +66,6 @@ func GeneratePodName(workflowName, nodeName, templateName, nodeID string, versio
 	_, _ = h.Write([]byte(nodeName))
 
 	return fmt.Sprintf("%s-%v", prefix, h.Sum32())
-
 }
 
 func ensurePodNamePrefixLength(prefix string) string {

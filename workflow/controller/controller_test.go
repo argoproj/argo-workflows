@@ -356,7 +356,6 @@ func newController(ctx context.Context, options ...any) (context.CancelFunc, *Wo
 				time.Sleep(5 * time.Millisecond)
 			}
 		}
-
 	}
 	return cancel, wfc
 }

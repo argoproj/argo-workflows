@@ -595,7 +595,6 @@ spec:
 `
 
 func TestWorkflowTemplateUpdateScenario(t *testing.T) {
-
 	wf := wfv1.MustUnmarshalWorkflow(wfWithTmplRef)
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx, wf, wfv1.MustUnmarshalWorkflowTemplate(wfTmpl))

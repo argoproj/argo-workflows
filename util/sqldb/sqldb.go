@@ -2,6 +2,7 @@ package sqldb
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"time"
 
@@ -14,24 +15,40 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util"
 )
 
-// CreateDBSession creates the dB session
-func CreateDBSession(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, dbConfig config.DBConfig) (db.Session, error) {
+// CreateDBSession creates the DB session and returns the session along with its database type
+func CreateDBSession(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, dbConfig config.DBConfig) (db.Session, DBType, error) {
 	if dbConfig.PostgreSQL != nil {
-		return createPostGresDBSession(ctx, kubectlConfig, namespace, dbConfig.PostgreSQL, dbConfig.ConnectionPool)
+		session, err := createPostGresDBSession(ctx, kubectlConfig, namespace, dbConfig.PostgreSQL, dbConfig.ConnectionPool)
+		if err != nil {
+			return nil, Invalid, err
+		}
+		return session, Postgres, nil
 	} else if dbConfig.MySQL != nil {
-		return createMySQLDBSession(ctx, kubectlConfig, namespace, dbConfig.MySQL, dbConfig.ConnectionPool)
+		session, err := createMySQLDBSession(ctx, kubectlConfig, namespace, dbConfig.MySQL, dbConfig.ConnectionPool)
+		if err != nil {
+			return nil, Invalid, err
+		}
+		return session, MySQL, err
 	}
-	return nil, fmt.Errorf("no databases are configured")
+	return nil, "", fmt.Errorf("no databases are configured")
 }
 
 // CreateDBSessionWithCreds creates a database session using direct username and password
-func CreateDBSessionWithCreds(dbConfig config.DBConfig, username, password string) (db.Session, error) {
+func CreateDBSessionWithCreds(dbConfig config.DBConfig, username, password string) (db.Session, DBType, error) {
 	if dbConfig.PostgreSQL != nil {
-		return createPostGresDBSessionWithCreds(dbConfig.PostgreSQL, dbConfig.ConnectionPool, username, password)
+		session, err := createPostGresDBSessionWithCreds(dbConfig.PostgreSQL, dbConfig.ConnectionPool, username, password)
+		if err != nil {
+			return nil, Invalid, err
+		}
+		return session, Postgres, err
 	} else if dbConfig.MySQL != nil {
-		return createMySQLDBSessionWithCreds(dbConfig.MySQL, dbConfig.ConnectionPool, username, password)
+		session, err := createMySQLDBSessionWithCreds(dbConfig.MySQL, dbConfig.ConnectionPool, username, password)
+		if err != nil {
+			return nil, Invalid, err
+		}
+		return session, MySQL, err
 	}
-	return nil, fmt.Errorf("no databases are configured")
+	return nil, "", fmt.Errorf("no databases are configured")
 }
 
 // createPostGresDBSession creates postgresDB session
@@ -40,6 +57,11 @@ func createPostGresDBSession(ctx context.Context, kubectlConfig kubernetes.Inter
 	if err != nil {
 		return nil, err
 	}
+
+	if cfg.AzureToken != nil && cfg.AzureToken.Enabled {
+		return createPostGresDBSessionWithAzure(cfg, persistPool, string(userNameByte))
+	}
+
 	passwordByte, err := util.GetSecrets(ctx, kubectlConfig, namespace, cfg.PasswordSecret.Name, cfg.PasswordSecret.Key)
 	if err != nil {
 		return nil, err
@@ -60,6 +82,43 @@ func createMySQLDBSession(ctx context.Context, kubectlConfig kubernetes.Interfac
 	}
 
 	return createMySQLDBSessionWithCreds(cfg, persistPool, string(userNameByte), string(passwordByte))
+}
+
+// createPostGresDBSessionWithAzure creates postgresDB session with azure token
+func createPostGresDBSessionWithAzure(cfg *config.PostgreSQLConfig, persistPool *config.ConnectionPool, username string) (db.Session, error) {
+	settings := postgresqladp.ConnectionURL{
+		User:     username,
+		Host:     cfg.GetHostname(),
+		Database: cfg.Database,
+	}
+
+	if cfg.SSL {
+		if cfg.SSLMode != "" {
+			options := map[string]string{
+				"sslmode": cfg.SSLMode,
+			}
+			settings.Options = options
+		}
+	}
+
+	scope := cfg.AzureToken.Scope
+	if scope == "" {
+		scope = "https://ossrdbms-aad.database.windows.net/.default"
+	}
+
+	connector := &azureConnector{
+		dsn:   settings.String(),
+		scope: scope,
+	}
+
+	sqlDB := sql.OpenDB(connector)
+
+	session, err := postgresqladp.New(sqlDB)
+	if err != nil {
+		return nil, err
+	}
+	session = ConfigureDBSession(session, persistPool)
+	return session, nil
 }
 
 // createPostGresDBSessionWithCreds creates postgresDB session with direct credentials

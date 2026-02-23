@@ -161,7 +161,7 @@ type LegacyWorkflow struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
 	Spec              LegacyWorkflowSpec  `json:"spec"`
-	Status            wfv1.WorkflowStatus `json:"status,omitempty"`
+	Status            wfv1.WorkflowStatus `json:"status,omitzero"`
 }
 
 // ToCurrent converts a LegacyWorkflow to the current Workflow type

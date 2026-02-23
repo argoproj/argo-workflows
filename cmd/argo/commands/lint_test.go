@@ -292,5 +292,4 @@ spec:
 		require.NoError(t, err)
 		assert.False(t, fatal, "should not have exited")
 	})
-
 }

@@ -1,0 +1,33 @@
+version: v1
+dependencies:
+  github.com/gogo/protobuf:
+    owner: gogo
+    name: protobuf
+    buf:
+      ref: v1.3.2
+  k8s.io:
+    bundle:
+      api:
+        owner: kubernetes
+        name: api
+        ref: v0.33.1
+      apimachinery:
+        owner: kubernetes
+        name: apimachinery
+        ref: v0.33.1
+  googleapis:
+    owner: googleapis
+    name: googleapis
+    buf:
+      ref: 004180b77378443887d3b55cabc00384
+  github.com/argoproj/argo-events:
+    bundle:
+      "":
+        owner: argoproj
+        name: argo-events
+        ref: v1.9.10
+  protobufs:
+    owner: protocolbuffers
+    name: wellknowntypes
+    buf:
+      ref: v33.5

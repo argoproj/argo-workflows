@@ -311,7 +311,6 @@ status:
 			assert.Empty(t, ts.Spec.Tasks)
 			assert.Empty(t, ts.Status.Nodes)
 		}
-
 	})
 }
 

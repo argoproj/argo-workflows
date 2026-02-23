@@ -25,7 +25,7 @@ func TarGzToWriter(ctx context.Context, sourcePath string, level int, w io.Write
 		return errors.InternalErrorf("getting absolute path: %v", err)
 	}
 	logger := logging.RequireLoggerFromContext(ctx)
-	logger.WithField("source", sourcePath).Info(ctx, "taring")
+	logger.WithField("source", sourcePath).Info(ctx, "tarring")
 	sourceFi, err := os.Stat(sourcePath)
 	if err != nil {
 		if os.IsNotExist(err) {

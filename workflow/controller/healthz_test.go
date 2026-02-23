@@ -15,7 +15,6 @@ import (
 )
 
 func TestHealthz(t *testing.T) {
-
 	veryOldUnreconciledWF := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 	veryOldUnreconciledWF.SetCreationTimestamp(metav1.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)) // a long time ago
 	veryOldUnreconciledWF.SetName(veryOldUnreconciledWF.Name + "-1")
@@ -104,5 +103,4 @@ func TestHealthz(t *testing.T) {
 			}
 		})
 	}
-
 }

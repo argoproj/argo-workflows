@@ -920,7 +920,6 @@ func TestTriggerWFWithAvailableLock(t *testing.T) {
 			assert.True(status)
 			assert.True(wfUpdate)
 			wfs = append(wfs, *wf)
-
 		}
 		for i := range 3 {
 			wf := wfv1.MustUnmarshalWorkflow(wfWithSemaphore)
@@ -1264,7 +1263,6 @@ status:
 		require.NotNil(t, wf.Status.Synchronization)
 		require.NotNil(t, wf.Status.Synchronization.Semaphore)
 	})
-
 }
 
 const wfV2MutexMigrationWorkflowLevel = `apiVersion: argoproj.io/v1alpha1
@@ -1598,7 +1596,6 @@ func getHoldingNameV1(holderKey string) string {
 }
 
 func TestCheckHolderVersion(t *testing.T) {
-
 	t.Run("CheckHolderKeyWithNodeName", func(t *testing.T) {
 		assert := assert.New(t)
 		wfMutex := wfv1.MustUnmarshalWorkflow(wfWithMutex)
@@ -1611,7 +1608,6 @@ func TestCheckHolderVersion(t *testing.T) {
 		keyv1 := getHoldingNameV1(key)
 		version = wfv1.CheckHolderKeyVersion(keyv1)
 		assert.Equal(wfv1.HoldingNameV1, version)
-
 	})
 
 	t.Run("CheckHolderKeyWithoutNodeName", func(t *testing.T) {
@@ -1630,7 +1626,6 @@ func TestCheckHolderVersion(t *testing.T) {
 }
 
 func TestBackgroundNotifierClearsExpiredLocks(t *testing.T) {
-
 	if runtime.GOOS == "windows" {
 		t.Skip("Skipping test on Windows platforms")
 	}
@@ -1819,7 +1814,7 @@ func TestUnconfiguredSemaphores(t *testing.T) {
 				defer cleanup()
 
 				// Configure sync manager
-				syncManager := createLockManager(ctx, info.Session, &syncConfig, nil, func(key string) {
+				syncManager := createLockManager(ctx, info.Session, dbType, &syncConfig, nil, func(key string) {
 				}, WorkflowExistenceFunc)
 				require.NotNil(t, syncManager)
 				require.NotNil(t, syncManager.dbInfo.Session)

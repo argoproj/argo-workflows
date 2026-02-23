@@ -184,7 +184,6 @@ func ProcessArgs(ctx context.Context, tmpl *wfv1.Template, args wfv1.ArgumentsPr
 	// Performs substitutions of input artifacts
 	artifacts := newTmpl.Inputs.Artifacts
 	for i, inArt := range artifacts {
-
 		argArt := args.GetArtifactByName(inArt.Name)
 
 		if !inArt.Optional && !inArt.HasLocationOrKey() {

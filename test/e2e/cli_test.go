@@ -1770,6 +1770,7 @@ func (s *CLISuite) TestAuthToken() {
 
 func (s *CLISuite) TestArchive() {
 	var uid types.UID
+	var name string
 	s.Given().
 		Workflow("@smoke/basic.yaml").
 		When().
@@ -1778,6 +1779,7 @@ func (s *CLISuite) TestArchive() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			uid = metadata.UID
+			name = metadata.Name
 		})
 	s.Run("List", func() {
 		s.Given().
@@ -1805,6 +1807,27 @@ func (s *CLISuite) TestArchive() {
 				assert.Contains(t, output, "Started:")
 				assert.Contains(t, output, "Finished:")
 				assert.Contains(t, output, "Duration:")
+			})
+	})
+	s.Run("GetByUIDFlag", func() {
+		s.Given().
+			RunCli([]string{"archive", "get", "--uid", string(uid)}, func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				assert.Contains(t, output, "Name:")
+			})
+	})
+	s.Run("GetByNameFlag", func() {
+		s.Given().
+			RunCli([]string{"archive", "get", "--name", name}, func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				assert.Contains(t, output, "Name:")
+			})
+	})
+	s.Run("GetByNameFlagWithUID", func() {
+		s.Given().
+			RunCli([]string{"archive", "get", "--name", string(uid)}, func(t *testing.T, output string, err error) {
+				require.Error(t, err)
+				assert.Contains(t, output, "not found")
 			})
 	})
 	s.Run("Delete", func() {
@@ -1860,7 +1883,6 @@ func (s *CLISuite) TestConfigMapSyncCLI() {
 				assert.Contains(t, output, "Sync limit deleted")
 			})
 	})
-
 }
 
 func (s *CLISuite) TestDBSyncCLI() {
@@ -1904,7 +1926,6 @@ func (s *CLISuite) TestDBSyncCLI() {
 				assert.Contains(t, output, "Sync limit deleted")
 			})
 	})
-
 }
 
 func (s *CLISuite) TestArchiveLabel() {

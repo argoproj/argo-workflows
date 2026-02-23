@@ -305,6 +305,10 @@ data:
       # sslMode must be one of: disable, require, verify-ca, verify-full
       # you can find more information about those ssl options here: https://godoc.org/github.com/lib/pq
       sslMode: require
+      # azureToken specifies if the password should be fetched as an Azure token
+      # azureToken:
+      #   enabled: true
+      #   scope: https://ossrdbms-aad.database.windows.net/.default
 
     # Optional config for mysql:
     # mysql:
@@ -369,6 +373,10 @@ data:
         key: password
       ssl: true
       sslMode: require
+      # azureToken specifies if the password should be fetched as an Azure token
+      # azureToken:
+      #   enabled: true
+      #   scope: https://ossrdbms-aad.database.windows.net/.default
 
     # MySQL database configuration (alternative to PostgreSQL)
     # mysql:

@@ -90,7 +90,6 @@ func TestNewSsoWithIssuerAlias(t *testing.T) {
 	}
 	_, err := newSso(logging.TestContext(t.Context()), fakeOidcFactory, config, fakeClient, "/", false)
 	require.NoError(t, err)
-
 }
 func TestLoadSsoClientIdFromDifferentSecret(t *testing.T) {
 	clientIDSecret := &apiv1.Secret{

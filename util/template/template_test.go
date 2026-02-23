@@ -89,5 +89,4 @@ func Test_Template_Replace(t *testing.T) {
 			})
 		}
 	})
-
 }

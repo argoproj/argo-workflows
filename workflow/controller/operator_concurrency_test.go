@@ -925,7 +925,6 @@ func TestSynchronizationWithStepRetry(t *testing.T) {
 			}
 		}
 	})
-
 }
 
 const pendingWfWithShutdownStrategy = `apiVersion: argoproj.io/v1alpha1
