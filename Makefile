@@ -840,7 +840,7 @@ endif
 .PHONY: docs-spellcheck
 docs-spellcheck: $(TOOL_MDSPELL) docs/metrics.md ## Spell check docs
 	# check docs for spelling mistakes
-	$(TOOL_MDSPELL) --ignore-numbers --ignore-acronyms --en-us --no-suggestions --report $(shell find docs -name '*.md' -not -name upgrading.md -not -name README.md -not -name fields.md -not -name workflow-controller-configmap.md -not -name upgrading.md -not -name executor_swagger.md -not -path '*/cli/*' -not -name tested-kubernetes-versions.md -not -name new-features.md)
+	$(TOOL_MDSPELL) --ignore-numbers --ignore-acronyms --en-us --no-suggestions --report $(shell find docs -name '*.md' -not -name upgrading.md -not -name README.md -not -name fields.md -not -name workflow-controller-configmap.md -not -name upgrading.md -not -name executor_swagger.md -not -path '*/cli/*' -not -name tested-kubernetes-versions.md)
 	# alphabetize spelling file -- ignore first line (comment), then sort the rest case-sensitive and remove duplicates
 	$(shell cat .spelling | awk 'NR<2{ print $0; next } { print $0 | "LC_COLLATE=C sort" }' | uniq > .spelling.tmp && mv .spelling.tmp .spelling)
 
@@ -925,10 +925,12 @@ feature-new: hack/featuregen/featuregen
 	$< new --filename $(FEATURE_FILENAME)
 
 .PHONY: features-validate
-features-validate: hack/featuregen/featuregen $(TOOL_MARKDOWNLINT)
+features-validate: hack/featuregen/featuregen $(TOOL_MARKDOWNLINT) $(TOOL_MDSPELL)
 	# Validate all pending feature documentation files
 	$< validate
 	$< update --dry |  tail +4 | $(TOOL_MARKDOWNLINT) -s
+	# Spell check pending feature files
+	$(TOOL_MDSPELL) --ignore-numbers --ignore-acronyms --en-us --no-suggestions --report $(shell find .features/pending -name '*.md' 2>/dev/null)
 
 .PHONY: features-preview
 features-preview: hack/featuregen/featuregen
@@ -937,18 +939,20 @@ features-preview: hack/featuregen/featuregen
 	$< update --dry
 
 .PHONY: features-update
-features-update: hack/featuregen/featuregen $(TOOL_MARKDOWNLINT) 
+features-update: hack/featuregen/featuregen $(TOOL_MARKDOWNLINT) $(TOOL_MDSPELL)
 	# Update the features documentation, but keep the feature files in the pending directory
 	# Updates docs/new-features.md for release-candidates
 	$< update --version $(VERSION)
 	$(TOOL_MARKDOWNLINT) ./docs/new-features.md
+	$(TOOL_MDSPELL) --ignore-numbers --ignore-acronyms --en-us --no-suggestions --report ./docs/new-features.md
 
 .PHONY: features-release
-features-release: hack/featuregen/featuregen $(TOOL_MARKDOWNLINT) 
+features-release: hack/featuregen/featuregen $(TOOL_MARKDOWNLINT) $(TOOL_MDSPELL)
 	# Update the features documentation AND move the feature files to the released directory
 	# Use this for the final update when releasing a version
 	$< update --version $(VERSION) --final
 	$(TOOL_MARKDOWNLINT) ./docs/new-features.md
+	$(TOOL_MDSPELL) --ignore-numbers --ignore-acronyms --en-us --no-suggestions --report ./docs/new-features.md
 
 hack/featuregen/featuregen: hack/featuregen/main.go hack/featuregen/contents.go hack/featuregen/contents_test.go hack/featuregen/main_test.go
 	go test ./hack/featuregen
