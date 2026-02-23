@@ -437,9 +437,9 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 		configmapsIf := wfc.kubeclientset.CoreV1().ConfigMaps(lockName.GetNamespace())
 		var configMap *apiv1.ConfigMap
 		err = waitutil.Backoff(retry.DefaultRetry(ctx), func() (bool, error) {
-			var err error
-			configMap, err = configmapsIf.Get(ctx, lockName.GetResourceName(), metav1.GetOptions{})
-			return !errors.IsTransientErr(ctx, err), err
+			var getErr error
+			configMap, getErr = configmapsIf.Get(ctx, lockName.GetResourceName(), metav1.GetOptions{})
+			return !errors.IsTransientErr(ctx, getErr), getErr
 		})
 		if err != nil {
 			return 0, err
@@ -1058,14 +1058,14 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 		},
 		Handler: cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj any) {
-				key, err := cache.MetaNamespaceKeyFunc(obj)
-				if err == nil {
+				key, keyErr := cache.MetaNamespaceKeyFunc(obj)
+				if keyErr == nil {
 					wfc.wfArchiveQueue.Add(key)
 				}
 			},
 			UpdateFunc: func(_, obj any) {
-				key, err := cache.MetaNamespaceKeyFunc(obj)
-				if err == nil {
+				key, keyErr := cache.MetaNamespaceKeyFunc(obj)
+				if keyErr == nil {
 					wfc.wfArchiveQueue.Add(key)
 				}
 			},

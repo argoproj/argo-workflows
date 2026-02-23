@@ -133,17 +133,17 @@ func (o *Operation) dispatch(ctx context.Context, wfeb wfv1.WorkflowEventBinding
 				if p.ValueFrom == nil {
 					return nil, fmt.Errorf("malformed workflow template parameter \"%s\": valueFrom is nil", p.Name)
 				}
-				program, err := expr.Compile(p.ValueFrom.Event, expr.Env(o.env))
-				if err != nil {
-					return nil, fmt.Errorf("failed to compile workflow template parameter %s expression: %w", p.Name, err)
+				program, compileErr := expr.Compile(p.ValueFrom.Event, expr.Env(o.env))
+				if compileErr != nil {
+					return nil, fmt.Errorf("failed to compile workflow template parameter %s expression: %w", p.Name, compileErr)
 				}
-				result, err := expr.Run(program, o.env)
-				if err != nil {
-					return nil, fmt.Errorf("failed to evaluate workflow template parameter \"%s\" expression: %w", p.Name, err)
+				result, runErr := expr.Run(program, o.env)
+				if runErr != nil {
+					return nil, fmt.Errorf("failed to evaluate workflow template parameter \"%s\" expression: %w", p.Name, runErr)
 				}
-				data, err := json.Marshal(result)
-				if err != nil {
-					return nil, fmt.Errorf("failed to convert result to JSON \"%s\" expression: %w", p.Name, err)
+				data, marshalErr := json.Marshal(result)
+				if marshalErr != nil {
+					return nil, fmt.Errorf("failed to convert result to JSON \"%s\" expression: %w", p.Name, marshalErr)
 				}
 				wf.Spec.Arguments.Parameters = append(wf.Spec.Arguments.Parameters, wfv1.Parameter{Name: p.Name, Value: wfv1.AnyStringPtr(wfv1.Item{Value: data})})
 			}

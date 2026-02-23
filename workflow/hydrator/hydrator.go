@@ -78,9 +78,10 @@ func (h hydrator) Hydrate(ctx context.Context, wf *wfv1.Workflow) error {
 	}
 	if wf.Status.IsOffloadNodeStatus() {
 		var offloadedNodes wfv1.Nodes
-		err := waitutil.Backoff(readRetry, func() (bool, error) {
-			offloadedNodes, err = h.offloadNodeStatusRepo.Get(ctx, string(wf.UID), wf.GetOffloadNodeStatusVersion())
-			return !errorsutil.IsTransientErr(ctx, err), err
+		err = waitutil.Backoff(readRetry, func() (bool, error) {
+			var getErr error
+			offloadedNodes, getErr = h.offloadNodeStatusRepo.Get(ctx, string(wf.UID), wf.GetOffloadNodeStatusVersion())
+			return !errorsutil.IsTransientErr(ctx, getErr), getErr
 		})
 		if err != nil {
 			return err

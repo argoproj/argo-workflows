@@ -174,8 +174,8 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 			groupedByPod[podName] = make(templatesToArtifacts)
 		}
 		// get the Template for the Artifact
-		node, err := woc.wf.Status.Nodes.Get(artifactSearchResult.NodeID)
-		if err != nil {
+		node, nodeErr := woc.wf.Status.Nodes.Get(artifactSearchResult.NodeID)
+		if nodeErr != nil {
 			woc.log.WithField("nodeID", artifactSearchResult.NodeID).Error(ctx, "Was unable to obtain node")
 			return fmt.Errorf("can't process Artifact GC Strategy %s: node ID %q not found in Status", strategy, artifactSearchResult.NodeID)
 		}
@@ -444,9 +444,9 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 		woc.log.WithFields(logging.Fields{"driver": driver}).Info(ctx, "artifact GC driver")
 		volumes = append(volumes, driver.Name.Volume())
 		volumeMounts = append(volumeMounts, driver.Name.VolumeMount())
-		ctr, err := woc.artifactSidecarGCContainer(ctx, &artifactDriverTmpl, driver)
-		if err != nil {
-			return nil, err
+		ctr, ctrErr := woc.artifactSidecarGCContainer(ctx, &artifactDriverTmpl, driver)
+		if ctrErr != nil {
+			return nil, ctrErr
 		}
 		ctr.VolumeMounts = append(ctr.VolumeMounts, volumeMountVarArgo)
 		artifactPluginSidecars[i] = *ctr
@@ -518,9 +518,9 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 	}
 
 	if podInfo.podSpecPatch != "" {
-		patchedPodSpec, err := util.ApplyPodSpecPatch(pod.Spec, podInfo.podSpecPatch)
-		if err != nil {
-			return nil, err
+		patchedPodSpec, patchErr := util.ApplyPodSpecPatch(pod.Spec, podInfo.podSpecPatch)
+		if patchErr != nil {
+			return nil, patchErr
 		}
 		pod.Spec = *patchedPodSpec
 	}

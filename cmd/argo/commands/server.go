@@ -118,7 +118,8 @@ See %s`, help.ArgoServer()),
 
 			var tlsConfig *tls.Config
 			if secure {
-				tlsMinVersion, err := env.GetInt("TLS_MIN_VERSION", tls.VersionTLS12)
+				var tlsMinVersion int
+				tlsMinVersion, err = env.GetInt("TLS_MIN_VERSION", tls.VersionTLS12)
 				if err != nil {
 					return err
 				}
@@ -143,8 +144,7 @@ See %s`, help.ArgoServer()),
 
 			modes := auth.Modes{}
 			for _, mode := range authModes {
-				err := modes.Add(mode)
-				if err != nil {
+				if err = modes.Add(mode); err != nil {
 					return err
 				}
 			}
@@ -176,9 +176,8 @@ See %s`, help.ArgoServer()),
 			if enableOpenBrowser {
 				browserOpenFunc = func(url string) {
 					logger.WithField("url", url).Info(ctx, "Argo UI is available")
-					err := browser.OpenURL(url)
-					if err != nil {
-						logger.WithError(err).Warn(ctx, "Unable to open the browser")
+					if browserErr := browser.OpenURL(url); browserErr != nil {
+						logger.WithError(browserErr).Warn(ctx, "Unable to open the browser")
 					}
 				}
 			}

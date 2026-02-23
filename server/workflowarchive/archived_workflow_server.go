@@ -249,7 +249,8 @@ func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req 
 
 	_, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Get(ctx, wf.Name, metav1.GetOptions{})
 	if apierr.IsNotFound(err) {
-		wf, podsToDelete, err := util.FormulateRetryWorkflow(ctx, wf, req.RestartSuccessful, req.NodeFieldSelector, req.Parameters)
+		var podsToDelete []string
+		wf, podsToDelete, err = util.FormulateRetryWorkflow(ctx, wf, req.RestartSuccessful, req.NodeFieldSelector, req.Parameters)
 		if err != nil {
 			return nil, sutils.ToStatusError(err, codes.Internal)
 		}
@@ -257,9 +258,9 @@ func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req 
 		logger := logging.RequireLoggerFromContext(ctx)
 		for _, podName := range podsToDelete {
 			logger.WithField("podDeleted", podName).Info(ctx, "Deleting pod")
-			err := kubeClient.CoreV1().Pods(wf.Namespace).Delete(ctx, podName, metav1.DeleteOptions{})
-			if err != nil && !apierr.IsNotFound(err) {
-				return nil, sutils.ToStatusError(err, codes.Internal)
+			deleteErr := kubeClient.CoreV1().Pods(wf.Namespace).Delete(ctx, podName, metav1.DeleteOptions{})
+			if deleteErr != nil && !apierr.IsNotFound(deleteErr) {
+				return nil, sutils.ToStatusError(deleteErr, codes.Internal)
 			}
 		}
 
@@ -272,19 +273,19 @@ func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req 
 
 		wf.ResourceVersion = ""
 		wf.UID = ""
-		result, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Create(ctx, wf, metav1.CreateOptions{})
-		if err != nil {
-			return nil, sutils.ToStatusError(err, codes.Internal)
+		result, createErr := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+		if createErr != nil {
+			return nil, sutils.ToStatusError(createErr, codes.Internal)
 		}
 		// if the Workflow was dehydrated before, we need to capture and maintain its previous state for the new Workflow
 		if !w.hydrator.IsHydrated(wf) {
-			offloadedNodes, err := w.offloadNodeStatusRepo.Get(ctx, string(oriUID), wf.GetOffloadNodeStatusVersion())
-			if err != nil {
-				return nil, sutils.ToStatusError(err, codes.Internal)
+			offloadedNodes, getErr := w.offloadNodeStatusRepo.Get(ctx, string(oriUID), wf.GetOffloadNodeStatusVersion())
+			if getErr != nil {
+				return nil, sutils.ToStatusError(getErr, codes.Internal)
 			}
-			_, err = w.offloadNodeStatusRepo.Save(ctx, string(result.UID), wf.Namespace, offloadedNodes)
-			if err != nil {
-				return nil, sutils.ToStatusError(err, codes.Internal)
+			_, saveErr := w.offloadNodeStatusRepo.Save(ctx, string(result.UID), wf.Namespace, offloadedNodes)
+			if saveErr != nil {
+				return nil, sutils.ToStatusError(saveErr, codes.Internal)
 			}
 		}
 

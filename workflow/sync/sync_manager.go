@@ -292,9 +292,9 @@ func (sm *Manager) TryAcquire(ctx context.Context, wf *wfv1.Workflow, nodeName s
 
 	lockKeys := make([]string, len(syncItems))
 	for i, syncItem := range syncItems {
-		syncLockName, err := syncItem.lockName(wf.Namespace)
-		if err != nil {
-			return false, false, "", failedLockName, fmt.Errorf("requested configuration is invalid: %w", err)
+		syncLockName, lockNameErr := syncItem.lockName(wf.Namespace)
+		if lockNameErr != nil {
+			return false, false, "", failedLockName, fmt.Errorf("requested configuration is invalid: %w", lockNameErr)
 		}
 		sm.log.WithField("syncLockName", syncLockName).Info(ctx, "TryAcquire")
 		lockKeys[i] = syncLockName.String(ctx)

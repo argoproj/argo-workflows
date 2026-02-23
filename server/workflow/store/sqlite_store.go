@@ -112,9 +112,9 @@ where instanceid = ?
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			wf := stmt.ColumnText(0)
 			w := wfv1.Workflow{}
-			err := json.Unmarshal([]byte(wf), &w)
-			if err != nil {
-				logging.RequireLoggerFromContext(ctx).WithError(err).WithField("workflow", wf).Error(ctx, "unable to unmarshal workflow from database")
+			unmarshalErr := json.Unmarshal([]byte(wf), &w)
+			if unmarshalErr != nil {
+				logging.RequireLoggerFromContext(ctx).WithError(unmarshalErr).WithField("workflow", wf).Error(ctx, "unable to unmarshal workflow from database")
 			} else {
 				workflows = append(workflows, w)
 			}
@@ -304,7 +304,8 @@ func (s *SQLiteStore) replaceWorkflows(workflows []*wfv1.Workflow) error {
 		stmt.BindText(5, string(wf.Status.Phase))
 		stmt.BindText(6, wf.Status.StartedAt.String())
 		stmt.BindText(7, wf.Status.FinishedAt.String())
-		workflow, err := json.Marshal(wf)
+		var workflow []byte
+		workflow, err = json.Marshal(wf)
 		if err != nil {
 			return err
 		}

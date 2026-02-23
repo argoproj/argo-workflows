@@ -136,7 +136,8 @@ func retryArchivedWorkflows(ctx context.Context, archiveServiceClient workflowar
 
 	// Add workflows from args - auto-detect UID vs NAME
 	for _, identifier := range args {
-		uid, err := resolveUID(ctx, archiveServiceClient, identifier, retryOpts.namespace, retryOpts.forceUID, retryOpts.forceName)
+		var uid string
+		uid, err = resolveUID(ctx, archiveServiceClient, identifier, retryOpts.namespace, retryOpts.forceUID, retryOpts.forceName)
 		if err != nil {
 			return fmt.Errorf("resolve UID: %w", err)
 		}

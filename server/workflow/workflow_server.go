@@ -128,9 +128,9 @@ func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.Wo
 		return req.Workflow, nil
 	}
 	if req.ServerDryRun {
-		workflow, err := util.CreateServerDryRun(ctx, req.Workflow, wfClient)
-		if err != nil {
-			return nil, sutils.ToStatusError(err, codes.InvalidArgument)
+		workflow, dryRunErr := util.CreateServerDryRun(ctx, req.Workflow, wfClient)
+		if dryRunErr != nil {
+			return nil, sutils.ToStatusError(dryRunErr, codes.InvalidArgument)
 		}
 		return workflow, nil
 	}
@@ -340,8 +340,8 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 
 	clean := func(x *wfv1.Workflow) (*wfv1.Workflow, error) {
 		y := &wfv1.Workflow{}
-		if clean, err := cleaner.Clean(x, y); err != nil {
-			return nil, sutils.ToStatusError(err, codes.Internal)
+		if clean, cleanErr := cleaner.Clean(x, y); cleanErr != nil {
+			return nil, sutils.ToStatusError(cleanErr, codes.Internal)
 		} else if clean {
 			return y, nil
 		}
@@ -451,9 +451,9 @@ func (s *workflowServer) DeleteWorkflow(ctx context.Context, req *workflowpkg.Wo
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
 	}
 	if req.Force {
-		_, err := auth.GetWfClient(ctx).ArgoprojV1alpha1().Workflows(wf.Namespace).Patch(ctx, wf.Name, types.MergePatchType, []byte("{\"metadata\":{\"finalizers\":null}}"), metav1.PatchOptions{})
-		if err != nil {
-			return nil, sutils.ToStatusError(err, codes.Internal)
+		_, patchErr := auth.GetWfClient(ctx).ArgoprojV1alpha1().Workflows(wf.Namespace).Patch(ctx, wf.Name, types.MergePatchType, []byte("{\"metadata\":{\"finalizers\":null}}"), metav1.PatchOptions{})
+		if patchErr != nil {
+			return nil, sutils.ToStatusError(patchErr, codes.Internal)
 		}
 	}
 	err = auth.GetWfClient(ctx).ArgoprojV1alpha1().Workflows(wf.Namespace).Delete(ctx, wf.Name, metav1.DeleteOptions{PropagationPolicy: argoutil.GetDeletePropagation()})
@@ -502,9 +502,9 @@ func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.Wor
 	for _, podName := range podsToDelete {
 		logger.WithFields(logging.Fields{"podDeleted": podName}).Info(ctx, "Deleting pod")
 		wg.Go(func() {
-			err := kubeClient.CoreV1().Pods(wf.Namespace).Delete(ctx, podName, metav1.DeleteOptions{})
-			if err != nil && !apierr.IsNotFound(err) {
-				errCh <- err
+			deleteErr := kubeClient.CoreV1().Pods(wf.Namespace).Delete(ctx, podName, metav1.DeleteOptions{})
+			if deleteErr != nil && !apierr.IsNotFound(deleteErr) {
+				errCh <- deleteErr
 				return
 			}
 		})
@@ -849,9 +849,9 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 		if wf.Namespace == "" {
 			wf.Namespace = req.Namespace
 		}
-		workflow, err := util.CreateServerDryRun(ctx, wf, wfClient)
-		if err != nil {
-			return nil, sutils.ToStatusError(err, codes.InvalidArgument)
+		workflow, dryRunErr := util.CreateServerDryRun(ctx, wf, wfClient)
+		if dryRunErr != nil {
+			return nil, sutils.ToStatusError(dryRunErr, codes.InvalidArgument)
 		}
 		return workflow, nil
 	}

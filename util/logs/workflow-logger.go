@@ -124,14 +124,14 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 			wg.Go(func() {
 				logger.Debug(ctx, "Streaming pod logs")
 				defer logger.Debug(ctx, "Pod logs stream done")
-				stream, err := podInterface.GetLogs(podName, &podLogStreamOptions).Stream(ctx)
-				if err != nil {
-					logger.WithError(err).Error(ctx, "Failed to get pod logs")
+				stream, streamErr := podInterface.GetLogs(podName, &podLogStreamOptions).Stream(ctx)
+				if streamErr != nil {
+					logger.WithError(streamErr).Error(ctx, "Failed to get pod logs")
 					return
 				}
 				defer func() {
-					if err := stream.Close(); err != nil {
-						logger.WithError(err).Warn(ctx, "Failed to close stream")
+					if closeErr := stream.Close(); closeErr != nil {
+						logger.WithError(closeErr).Warn(ctx, "Failed to close stream")
 					}
 				}()
 				scanner := bufio.NewScanner(stream)
@@ -151,9 +151,9 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 						if len(parts) > 1 {
 							content = parts[1]
 						}
-						timestamp, err := time.Parse(time.RFC3339, parts[0])
-						if err != nil {
-							logger.WithError(err).Error(ctx, "Failed to decode or infer timestamp from log line")
+						timestamp, parseErr := time.Parse(time.RFC3339, parts[0])
+						if parseErr != nil {
+							logger.WithError(parseErr).Error(ctx, "Failed to decode or infer timestamp from log line")
 							// The current timestamp is the next best substitute. This won't be shown, but will be used
 							// for sorting
 							timestamp = time.Now()

@@ -95,12 +95,12 @@ func (s *wfScope) resolveArtifact(ctx context.Context, art *wfv1.Artifact) (*wfv
 	var val any
 
 	if art.FromExpression != "" {
-		env := env.GetFuncMap(s.scope)
-		program, err := expr.Compile(art.FromExpression, expr.Env(env))
-		if err != nil {
-			return nil, err
+		envMap := env.GetFuncMap(s.scope)
+		program, compileErr := expr.Compile(art.FromExpression, expr.Env(envMap))
+		if compileErr != nil {
+			return nil, compileErr
 		}
-		val, err = expr.Run(program, env)
+		val, err = expr.Run(program, envMap)
 		if err != nil {
 			return nil, err
 		}

@@ -194,11 +194,11 @@ func (ae *AgentExecutor) patchWorker(ctx context.Context, taskSetInterface v1alp
 				Jitter:   0.1,
 				Steps:    5,
 				Cap:      30 * time.Second,
-			}, func(err error) bool {
-				return errors.IsTransientErr(ctx, err)
+			}, func(retryErr error) bool {
+				return errors.IsTransientErr(ctx, retryErr)
 			}, func() error {
-				_, err := taskSetInterface.Patch(ctx, ae.WorkflowName, types.MergePatchType, patch, metav1.PatchOptions{}, "status")
-				return err
+				_, patchErr := taskSetInterface.Patch(ctx, ae.WorkflowName, types.MergePatchType, patch, metav1.PatchOptions{}, "status")
+				return patchErr
 			})
 
 			if err != nil && !errors.IsTransientErr(ctx, err) {
@@ -338,9 +338,9 @@ func (ae *AgentExecutor) executeHTTPTemplateRequest(ctx context.Context, httpTem
 	for _, header := range httpTemplate.Headers {
 		value := header.Value
 		if header.ValueFrom != nil && header.ValueFrom.SecretKeyRef != nil {
-			secret, err := util.GetSecrets(ctx, ae.ClientSet, ae.Namespace, header.ValueFrom.SecretKeyRef.Name, header.ValueFrom.SecretKeyRef.Key)
-			if err != nil {
-				return nil, err
+			secret, secretErr := util.GetSecrets(ctx, ae.ClientSet, ae.Namespace, header.ValueFrom.SecretKeyRef.Name, header.ValueFrom.SecretKeyRef.Key)
+			if secretErr != nil {
+				return nil, secretErr
 			}
 			value = string(secret)
 		}

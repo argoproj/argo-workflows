@@ -129,7 +129,7 @@ func NewEmissaryCommand() *cobra.Command {
 				return fmt.Errorf("failed to read template: %w", err)
 			}
 
-			if err := json.Unmarshal(data, template); err != nil {
+			if err = json.Unmarshal(data, template); err != nil {
 				return fmt.Errorf("failed to unmarshal template: %w", err)
 			}
 
@@ -184,7 +184,7 @@ func NewEmissaryCommand() *cobra.Command {
 					// User can create the file: /ctr/NAME_OF_THE_CONTAINER/before
 					// in order to break out of the sleep and release the container from
 					// the debugging state.
-					if _, err := os.Stat(varRunArgo + "/ctr/" + containerName + "/before"); os.IsNotExist(err) {
+					if _, statErr := os.Stat(varRunArgo + "/ctr/" + containerName + "/before"); os.IsNotExist(statErr) {
 						time.Sleep(time.Second)
 						continue
 					}
@@ -404,8 +404,8 @@ func saveParameter(ctx context.Context, srcPath string) error {
 		"dst": dstPath,
 	}).Info(ctx, "saving parameter")
 	z := filepath.Dir(dstPath)
-	if err := os.MkdirAll(z, 0o755); err != nil { // chmod rwxr-xr-x
-		return fmt.Errorf("failed to create directory %s: %w", z, err)
+	if mkdirErr := os.MkdirAll(z, 0o755); mkdirErr != nil { // chmod rwxr-xr-x
+		return fmt.Errorf("failed to create directory %s: %w", z, mkdirErr)
 	}
 	dst, err := os.Create(dstPath)
 	if err != nil {
