@@ -113,7 +113,7 @@ The SDK provides two ways to interact with Argo Workflows:
 Used in: `basic-workflow/`, `watch-workflow/`, `workflow-template/`, `alternate_auth/`
 
 ```go
-import wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
+import wfclientset "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
 
 config, _ := clientcmd.BuildConfigFromFlags("", kubeconfig)
 wfClient := wfclientset.NewForConfigOrDie(config).
@@ -132,7 +132,7 @@ wfClient := wfclientset.NewForConfigOrDie(config).
 Used in: `grpc-client/`
 
 ```go
-import "github.com/argoproj/argo-workflows/v3/pkg/apiclient"
+import "github.com/argoproj/argo-workflows/v4/pkg/apiclient"
 
 ctx, client, _ := apiclient.NewClientFromOptsWithContext(ctx, apiclient.Opts{
     ArgoServerOpts: apiclient.ArgoServerOpts{URL: "localhost:2746"},
@@ -250,7 +250,7 @@ Common environment variables used in examples:
 
 - [Go SDK Guide](../../docs/go-sdk-guide.md) - Comprehensive SDK documentation
 - [Migration Guide](../../docs/go-sdk-migration-guide.md) - Migrating to v3.7+
-- [API Reference](https://pkg.go.dev/github.com/argoproj/argo-workflows/v3)
+- [API Reference](https://pkg.go.dev/github.com/argoproj/argo-workflows/v4)
 - [Argo Workflows Docs](https://argo-workflows.readthedocs.io/)
 
 ## Getting Help

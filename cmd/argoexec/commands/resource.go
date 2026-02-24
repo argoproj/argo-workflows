@@ -6,10 +6,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 
-	"github.com/argoproj/argo-workflows/v3/cmd/argoexec/executor"
+	"github.com/argoproj/argo-workflows/v4/cmd/argoexec/executor"
 )
 
 func NewResourceCommand() *cobra.Command {

@@ -5,8 +5,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	client "github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
-	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
+	client "github.com/argoproj/argo-workflows/v4/cmd/argo/commands/client"
+	workflowarchivepkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflowarchive"
 )
 
 func NewDeleteCommand() *cobra.Command {

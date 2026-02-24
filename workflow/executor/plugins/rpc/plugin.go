@@ -6,8 +6,8 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	executorplugins "github.com/argoproj/argo-workflows/v3/pkg/plugins/executor"
-	rpc "github.com/argoproj/argo-workflows/v3/workflow/util/plugin"
+	executorplugins "github.com/argoproj/argo-workflows/v4/pkg/plugins/executor"
+	rpc "github.com/argoproj/argo-workflows/v4/workflow/util/plugin"
 )
 
 type plugin struct{ rpc.Client }

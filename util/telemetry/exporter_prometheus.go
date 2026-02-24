@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 
 	promgo "github.com/prometheus/client_golang/prometheus"
 	prommodel "github.com/prometheus/common/model"
@@ -19,7 +19,7 @@ import (
 	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/utils/env"
 
-	tlsutils "github.com/argoproj/argo-workflows/v3/util/tls"
+	tlsutils "github.com/argoproj/argo-workflows/v4/util/tls"
 )
 
 // by default prometheus has NameValidationScheme set to UTF8Validation which allows metrics names to keep original delimiters (e.g. .),

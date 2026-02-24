@@ -4,8 +4,8 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/utils/env"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	wfretry "github.com/argoproj/argo-workflows/v3/workflow/util/retry"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	wfretry "github.com/argoproj/argo-workflows/v4/workflow/util/retry"
 )
 
 // RetryTweak is a 2nd order function interface for tweaking the retry

@@ -4,7 +4,7 @@ import (
 	"context"
 	"regexp"
 
-	"github.com/argoproj/argo-workflows/v3/util/telemetry"
+	"github.com/argoproj/argo-workflows/v4/util/telemetry"
 )
 
 // conditionRegex extracts the condition from pod status messages like

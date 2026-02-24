@@ -7,7 +7,7 @@ import (
 
 	"k8s.io/utils/ptr"
 
-	"github.com/argoproj/argo-workflows/v3/workflow/data"
+	"github.com/argoproj/argo-workflows/v4/workflow/data"
 )
 
 func (we *WorkflowExecutor) Data(ctx context.Context) error {

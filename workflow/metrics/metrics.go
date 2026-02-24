@@ -4,8 +4,8 @@ import (
 	"context"
 	"sync"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/util/telemetry"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/telemetry"
 
 	metricsdk "go.opentelemetry.io/otel/sdk/metric"
 )

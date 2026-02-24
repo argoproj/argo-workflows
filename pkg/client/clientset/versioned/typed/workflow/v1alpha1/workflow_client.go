@@ -5,8 +5,8 @@ package v1alpha1
 import (
 	http "net/http"
 
-	workflowv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	scheme "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/scheme"
+	workflowv1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	scheme "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/scheme"
 	rest "k8s.io/client-go/rest"
 )
 
