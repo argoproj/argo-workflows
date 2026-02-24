@@ -209,7 +209,8 @@ func (sm *Manager) Initialize(ctx context.Context, wfs []wfv1.Workflow) {
 			for _, holding := range wf.Status.Synchronization.Semaphore.Holding {
 				semaphore := sm.syncLockMap[holding.Semaphore]
 				if semaphore == nil {
-					semaphore, err := sm.initializeSemaphore(holding.Semaphore)
+					var err error
+					semaphore, err = sm.initializeSemaphore(holding.Semaphore)
 					if err != nil {
 						log.Warnf("cannot initialize semaphore '%s': %v", holding.Semaphore, err)
 						continue
@@ -237,7 +238,8 @@ func (sm *Manager) Initialize(ctx context.Context, wfs []wfv1.Workflow) {
 			for _, holding := range wf.Status.Synchronization.Mutex.Holding {
 				mutex := sm.syncLockMap[holding.Mutex]
 				if mutex == nil {
-					mutex, err := sm.initializeMutex(holding.Mutex)
+					var err error
+					mutex, err = sm.initializeMutex(holding.Mutex)
 					if err != nil {
 						log.Warnf("cannot initialize mutex '%s': %v", holding.Mutex, err)
 						continue

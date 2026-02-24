@@ -383,6 +383,48 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		syncManager.Initialize(ctx, wfList.Items)
 		assert.Empty(t, syncManager.syncLockMap)
 	})
+	t.Run("InitializeMultipleWorkflowsHolding", func(t *testing.T) {
+		// This test verifies that when multiple workflows claim to hold the same semaphore
+		// (which can happen with stale status after a controller restart), ALL of their
+		// holders are registered during Initialize, not just those after the first workflow.
+		// This was a bug caused by variable shadowing in Initialize (PR #3141).
+
+		// Create a ConfigMap with semaphore limit of 3 to allow multiple holders
+		kubeClient := fake.NewSimpleClientset()
+		_, err := kubeClient.CoreV1().ConfigMaps("default").Create(ctx, &v1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{Name: "my-config"},
+			Data:       map[string]string{"workflow": "3"},
+		}, metav1.CreateOptions{})
+		require.NoError(t, err)
+
+		syncManager := NewLockManager(ctx, kubeClient, "", nil, GetSyncLimitFunc(kubeClient), func(key string) {
+		}, WorkflowExistenceFunc)
+
+		// Create first workflow claiming to hold the semaphore
+		wf1 := wfv1.MustUnmarshalWorkflow(wfWithStatus)
+		wf1.Name = "hello-world-one"
+		wf1.Status.Synchronization.Semaphore.Holding[0].Holders = []string{"default/hello-world-one"}
+
+		// Create second workflow also claiming to hold the same semaphore
+		wf2 := wfv1.MustUnmarshalWorkflow(wfWithStatus)
+		wf2.Name = "hello-world-two"
+		wf2.Status.Synchronization.Semaphore.Holding[0].Holders = []string{"default/hello-world-two"}
+
+		// Initialize with both workflows
+		syncManager.Initialize(ctx, []wfv1.Workflow{*wf1, *wf2})
+
+		// Verify the semaphore was created
+		assert.Len(t, syncManager.syncLockMap, 1)
+
+		// Verify BOTH holders are registered (the bug would only register the second one)
+		sem := syncManager.syncLockMap["default/ConfigMap/my-config/workflow"]
+		require.NotNil(t, sem)
+		holders, err := sem.getCurrentHolders()
+		require.NoError(t, err)
+		assert.Len(t, holders, 2, "both workflows should be registered as holders")
+		assert.Contains(t, holders, "default/hello-world-one")
+		assert.Contains(t, holders, "default/hello-world-two")
+	})
 
 	t.Run("WfLevelAcquireAndRelease", func(t *testing.T) {
 		var nextKey string
