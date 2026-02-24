@@ -21,7 +21,7 @@ import (
 const testScopeName string = "argo-workflows-test"
 
 func TestDisablePrometheusServer(t *testing.T) {
-	config := Config{
+	config := MetricsConfig{
 		Enabled: false,
 		Path:    DefaultPrometheusServerPath,
 		Port:    DefaultPrometheusServerPort,
@@ -42,7 +42,7 @@ func TestDisablePrometheusServer(t *testing.T) {
 
 func TestPrometheusServer(t *testing.T) {
 	var wg sync.WaitGroup
-	config := Config{
+	config := MetricsConfig{
 		Enabled: true,
 		Path:    DefaultPrometheusServerPath,
 		Port:    DefaultPrometheusServerPort,
@@ -74,7 +74,7 @@ func TestPrometheusServer(t *testing.T) {
 
 func TestDummyPrometheusServer(t *testing.T) {
 	var wg sync.WaitGroup
-	config := Config{
+	config := MetricsConfig{
 		Enabled: true,
 		Path:    DefaultPrometheusServerPath,
 		Port:    DefaultPrometheusServerPort,

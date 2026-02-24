@@ -32,10 +32,12 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/logs"
 	pprofutil "github.com/argoproj/argo-workflows/v4/util/pprof"
+	"github.com/argoproj/argo-workflows/v4/util/telemetry/ratelimiter"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/controller"
 	"github.com/argoproj/argo-workflows/v4/workflow/events"
 	"github.com/argoproj/argo-workflows/v4/workflow/metrics"
+	"github.com/argoproj/argo-workflows/v4/workflow/tracing"
 )
 
 const (
@@ -96,7 +98,8 @@ func NewRootCommand() *cobra.Command {
 
 			logs.AddK8SLogTransportWrapper(ctx, config)
 			metrics.AddMetricsTransportWrapper(ctx, config)
-			metrics.AddRateLimiterWrapper(ctx, config)
+			ratelimiter.AddRateLimiterWrapper(ctx, config)
+			tracing.AddTracingTransportWrapper(ctx, config)
 
 			namespace, _, err := clientConfig.Namespace()
 			if err != nil {
@@ -118,6 +121,11 @@ func NewRootCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			defer func() {
+				if err := wfController.ShutdownTracing(context.WithoutCancel(ctx)); err != nil {
+					log.WithError(err).Error(ctx, "Failed to shutdown tracing")
+				}
+			}()
 
 			leaderElectionOff := os.Getenv("LEADER_ELECTION_DISABLE")
 			if leaderElectionOff == "true" {

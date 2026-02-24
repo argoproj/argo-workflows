@@ -15,7 +15,7 @@ func TestIsLeader(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	_, te, err := createTestMetrics(
 		ctx,
-		&telemetry.Config{},
+		&telemetry.MetricsConfig{},
 		Callbacks{
 			IsLeader: func() bool {
 				return true
@@ -34,7 +34,7 @@ func TestNotLeader(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	_, te, err := createTestMetrics(
 		ctx,
-		&telemetry.Config{},
+		&telemetry.MetricsConfig{},
 		Callbacks{
 			IsLeader: func() bool {
 				return false

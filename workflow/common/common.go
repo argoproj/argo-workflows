@@ -67,6 +67,11 @@ const (
 	// the strategy for the pod, in case the pod is orphaned from its workflow
 	AnnotationKeyPodGCStrategy = workflow.WorkflowFullName + "/pod-gc-strategy"
 
+	// AnnotationKeyTraceID is added as an annotation to workflows and pods for the topmost telemetry trace-id
+	AnnotationKeyTraceID = workflow.WorkflowFullName + "/trace-id"
+	// AnnotationKeySpanID is added as an annotation to workflows and pods for their span-id
+	AnnotationKeySpanID = workflow.WorkflowFullName + "/span-id"
+
 	// LabelKeyControllerInstanceID is the label the controller will carry forward to workflows/pod labels
 	// for the purposes of workflow segregation
 	LabelKeyControllerInstanceID = workflow.WorkflowFullName + "/controller-instanceid"

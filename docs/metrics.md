@@ -282,10 +282,10 @@ Incidents of deprecated feature being used.
 Deprecated features are [explained here](deprecations.md).
 🚨 This counter may go up much more than once for a single use of the feature.
 
-|  attribute  |              explanation              |
-|-------------|---------------------------------------|
-| `feature`   | The name of the feature used          |
-| `namespace` | The namespace that the Workflow is in |
+|       attribute        |              explanation              |
+|------------------------|---------------------------------------|
+| `feature`              | The name of the feature used          |
+| `namespace` (optional) | The namespace that the Workflow is in |
 
 `feature` will be one of:
 
@@ -400,11 +400,11 @@ Total number of pods automatically restarted due to infrastructure failures befo
 This counter tracks pods that were automatically restarted by the [failed pod restart](pod-restarts.md) feature.
 These are infrastructure-level failures (like node eviction) that occur before the main container enters the Running state.
 
-|  attribute  |                                                 explanation                                                 |
-|-------------|-------------------------------------------------------------------------------------------------------------|
-| `reason`    | The infrastructure failure reason: `Evicted`, `NodeShutdown`, `NodeAffinity`, or `UnexpectedAdmissionError` |
-| `condition` | The node condition that caused the pod restart, e.g., `DiskPressure`, `MemoryPressure`                      |
-| `namespace` | The namespace that the pod is in                                                                            |
+|       attribute        |                                                 explanation                                                 |
+|------------------------|-------------------------------------------------------------------------------------------------------------|
+| `reason`               | The infrastructure failure reason: `Evicted`, `NodeShutdown`, `NodeAffinity`, or `UnexpectedAdmissionError` |
+| `condition` (optional) | The node condition that caused the pod restart, e.g., `DiskPressure`, `MemoryPressure`                      |
+| `namespace`            | The namespace that the pod is in                                                                            |
 
 `reason` will be one of:
 

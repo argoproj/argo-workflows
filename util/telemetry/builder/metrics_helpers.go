@@ -13,7 +13,7 @@ var funcMap = template.FuncMap{
 	"join":             strings.Join,
 }
 
-var fileHeaderTmpl = template.Must(template.New("header").Parse(`{{.Banner}}
+var metricHeaderTmpl = template.Must(template.New("header").Parse(`{{.Banner}}
     //
     //go:generate go run ./builder --metricsHelpersGo {{.Filename}}
     package telemetry
@@ -23,23 +23,6 @@ var fileHeaderTmpl = template.Must(template.New("header").Parse(`{{.Banner}}
 
     	"go.opentelemetry.io/otel/metric"
     )
-
-`))
-
-var optionTypeTmpl = template.Must(template.New("optionType").Parse(`// {{.OptionTypeName}} is a functional option for configuring optional attributes on {{.MetricName}}
-type {{.OptionTypeName}} func(*InstAttribs)
-
-`))
-
-var optionFuncTmpl = template.Must(template.New("optionFunc").Parse(`// {{.FuncName}} sets the {{.DisplayName}} attribute
-func {{.FuncName}}({{.ParamName}} {{.ParamType}}) {{.OptionTypeName}} {
-	return func(a *InstAttribs) {
-		*a = append(*a, InstAttrib{
-			Name:  Attrib{{.AttrName}},
-			Value: {{.ParamName}},
-		})
-	}
-}
 
 `))
 
@@ -66,30 +49,34 @@ func (m *Metrics) {{.MethodName}}({{.Params}}) {
 
 `))
 
-func createMetricsHelpersGo(filename string, metrics *metricsList, attributes *attributesList) {
-	writeMetricsHelpersGo(filename, metrics, attributes)
-	goFmtFile(filename)
+func createMetricsHelpersGo(filename string, metrics *metricsList, attributes *attributesList) error {
+	err := writeMetricsHelpersGo(filename, metrics, attributes)
+	if err != nil {
+		return err
+	}
+	return goFmtFile(filename)
 }
 
-func writeMetricsHelpersGo(filename string, metrics *metricsList, attributes *attributesList) {
+func writeMetricsHelpersGo(filename string, metrics *metricsList, attributes *attributesList) error {
 	f, err := os.Create(filename)
 	if err != nil {
-		recordError(err)
-		return
+		return err
 	}
 	defer f.Close()
 
 	// Write file header
-	fileHeaderTmpl.Execute(f, map[string]string{"Banner": generatedBanner, "Filename": filename})
+	err = metricHeaderTmpl.Execute(f, map[string]string{"Banner": generatedBanner, "Filename": filename})
+	if err != nil {
+		return err
+	}
 
 	// Generate option types and functions for metrics with optional attributes
-	generatedOptions := make(map[string]bool)
 	for _, metric := range *metrics {
-		if hasOptionalAttributes(&metric) {
-			optionTypeName := fmt.Sprintf("%sOption", metric.Name)
-			if !generatedOptions[optionTypeName] {
-				generateOptionType(f, &metric, optionTypeName, attributes)
-				generatedOptions[optionTypeName] = true
+		if hasOptionalAttributes(&metric.Attributes) {
+			optionTypeName := fmt.Sprintf("%s%sOption", metric.Name, metricType)
+			err = generateMetricOption(f, &metric.common, optionTypeName, attributes)
+			if err != nil {
+				return err
 			}
 		}
 	}
@@ -98,127 +85,47 @@ func writeMetricsHelpersGo(filename string, metrics *metricsList, attributes *at
 	for _, metric := range *metrics {
 		switch metric.Type {
 		case "Int64Counter", "Int64UpDownCounter":
-			generateCounterHelper(f, &metric, attributes)
+			err = generateCounterHelper(f, &metric, attributes)
 		case "Float64Histogram":
-			generateHistogramHelper(f, &metric, attributes)
+			err = generateHistogramHelper(f, &metric, attributes)
 		case "Int64ObservableGauge", "Float64ObservableGauge":
-			generateObservableHelper(f, &metric, attributes)
+			err = generateObservableHelper(f, &metric, attributes)
 		}
-	}
-}
-
-func hasOptionalAttributes(m *metric) bool {
-	for _, attr := range m.Attributes {
-		if attr.Optional {
-			return true
+		if err != nil {
+			return err
 		}
+
 	}
-	return false
+	return nil
 }
 
-func generateOptionType(f io.Writer, m *metric, optionTypeName string, attributes *attributesList) {
-	// Generate the option type
-	optionTypeTmpl.Execute(f, map[string]string{
-		"OptionTypeName": optionTypeName,
-		"MetricName":     m.Name,
-	})
-
-	// Generate option functions for each optional attribute
-	for _, attr := range m.Attributes {
-		if attr.Optional {
-			attribDef := getAttribByName(attr.Name, attributes)
-			paramName := toLowerCamelCase(attr.Name)
-			paramType := attribDef.attrType()
-			funcName := fmt.Sprintf("With%s", attr.Name)
-
-			optionFuncTmpl.Execute(f, map[string]string{
-				"FuncName":       funcName,
-				"DisplayName":    attribDef.displayName(),
-				"ParamName":      paramName,
-				"ParamType":      paramType,
-				"OptionTypeName": optionTypeName,
-				"AttrName":       attr.Name,
-			})
-		}
-	}
-}
-
-func buildParameterList(baseParams []string, m *metric, attributes *attributesList) []string {
-	params := baseParams
-	requiredAttrs := getRequiredAttributes(m)
-
-	for _, attr := range requiredAttrs {
-		attribDef := getAttribByName(attr.Name, attributes)
-		paramName := toLowerCamelCase(attr.Name)
-		paramType := attribDef.attrType()
-		params = append(params, fmt.Sprintf("%s %s", paramName, paramType))
-	}
-
-	if hasOptionalAttributes(m) {
-		optionTypeName := fmt.Sprintf("%sOption", m.Name)
-		params = append(params, fmt.Sprintf("opts ...%s", optionTypeName))
-	}
-
-	return params
-}
-
-func buildAttributesCode(m *metric) string {
-	requiredAttrs := getRequiredAttributes(m)
-	var b strings.Builder
-
-	if len(requiredAttrs) > 0 || hasOptionalAttributes(m) {
-		b.WriteString("\tattribs := InstAttribs{\n")
-		for _, attr := range requiredAttrs {
-			paramName := toLowerCamelCase(attr.Name)
-			fmt.Fprintf(&b, "\t\t{Name: Attrib%s, Value: %s},\n", attr.Name, paramName)
-		}
-		b.WriteString("\t}\n")
-
-		if hasOptionalAttributes(m) {
-			b.WriteString("\tfor _, opt := range opts {\n")
-			b.WriteString("\t\topt(&attribs)\n")
-			b.WriteString("\t}\n")
-		}
-	}
-
-	return b.String()
-}
-
-func buildMethodCall(methodCall string, m *metric) string {
-	requiredAttrs := getRequiredAttributes(m)
-	if len(requiredAttrs) > 0 || hasOptionalAttributes(m) {
-		return fmt.Sprintf("\t%s, attribs)", methodCall)
-	}
-	return fmt.Sprintf("\t%s, InstAttribs{})", methodCall)
-}
-
-func generateCounterHelper(f io.Writer, m *metric, attributes *attributesList) {
+func generateCounterHelper(f io.Writer, m *metric, attributes *attributesList) error {
 	methodName := fmt.Sprintf("Add%s", m.Name)
-	params := buildParameterList([]string{"ctx context.Context", "val int64"}, m, attributes)
+	params := buildParameterList([]string{"ctx context.Context", "val int64"}, &m.common, metricType, attributes)
 	methodCall := fmt.Sprintf("m.AddInt(ctx, Instrument%s.Name(), val", m.Name)
 
-	counterHelperTmpl.Execute(f, map[string]string{
+	return counterHelperTmpl.Execute(f, map[string]string{
 		"MethodName":     methodName,
 		"DisplayName":    m.displayName(),
 		"Params":         strings.Join(params, ", "),
-		"AttributesCode": buildAttributesCode(m) + buildMethodCall(methodCall, m),
+		"AttributesCode": buildMetricsAttributesCode(&m.Attributes) + buildMetricsMethodCall(methodCall, &m.common),
 	})
 }
 
-func generateHistogramHelper(f io.Writer, m *metric, attributes *attributesList) {
+func generateHistogramHelper(f io.Writer, m *metric, attributes *attributesList) error {
 	methodName := fmt.Sprintf("Record%s", m.Name)
-	params := buildParameterList([]string{"ctx context.Context", "val float64"}, m, attributes)
+	params := buildParameterList([]string{"ctx context.Context", "val float64"}, &m.common, metricType, attributes)
 	methodCall := fmt.Sprintf("m.Record(ctx, Instrument%s.Name(), val", m.Name)
 
-	histogramHelperTmpl.Execute(f, map[string]string{
+	return histogramHelperTmpl.Execute(f, map[string]string{
 		"MethodName":     methodName,
 		"DisplayName":    m.displayName(),
 		"Params":         strings.Join(params, ", "),
-		"AttributesCode": buildAttributesCode(m) + buildMethodCall(methodCall, m),
+		"AttributesCode": buildMetricsAttributesCode(&m.Attributes) + buildMetricsMethodCall(methodCall, &m.common),
 	})
 }
 
-func generateObservableHelper(f io.Writer, m *metric, attributes *attributesList) {
+func generateObservableHelper(f io.Writer, m *metric, attributes *attributesList) error {
 	methodName := fmt.Sprintf("Observe%s", m.Name)
 
 	// Determine value type based on metric type
@@ -229,33 +136,95 @@ func generateObservableHelper(f io.Writer, m *metric, attributes *attributesList
 		observeMethod = "ObserveFloat"
 	}
 
-	params := buildParameterList([]string{"ctx context.Context", "o metric.Observer", fmt.Sprintf("val %s", valueType)}, m, attributes)
+	params := buildParameterList([]string{"ctx context.Context", "o metric.Observer", fmt.Sprintf("val %s", valueType)}, &m.common, metricType, attributes)
 	methodCall := fmt.Sprintf("inst.%s(ctx, o, val", observeMethod)
 
-	observableHelperTmpl.Execute(f, map[string]string{
+	return observableHelperTmpl.Execute(f, map[string]string{
 		"MethodName":     methodName,
 		"DisplayName":    m.displayName(),
 		"MetricName":     m.Name,
 		"Params":         strings.Join(params, ", "),
-		"AttributesCode": buildAttributesCode(m) + buildMethodCall(methodCall, m),
+		"AttributesCode": buildMetricsAttributesCode(&m.Attributes) + buildMetricsMethodCall(methodCall, &m.common),
 	})
 }
 
-func getRequiredAttributes(m *metric) []allowedAttribute {
-	var required []allowedAttribute
-	for _, attr := range m.Attributes {
-		if !attr.Optional {
-			required = append(required, attr)
+func buildMetricsAttributesCode(attributes *allowedAttributeList) string {
+	requiredAttrs := getRequiredAttributes(attributes)
+	var b strings.Builder
+
+	if len(requiredAttrs) > 0 || hasOptionalAttributes(attributes) {
+		b.WriteString("\tattribs := Attributes{\n")
+		for _, attr := range requiredAttrs {
+			paramName := toLowerCamelCase(attr.Name)
+			fmt.Fprintf(&b, "\t\t{Name: %s, Value: %s},\n", attr.AttribName(), paramName)
+		}
+		b.WriteString("\t}\n")
+
+		if hasOptionalAttributes(attributes) {
+			b.WriteString("\tfor _, opt := range opts {\n")
+			b.WriteString("\t\topt(&attribs)\n")
+			b.WriteString("\t}\n")
 		}
 	}
-	return required
+
+	return b.String()
 }
 
-func toLowerCamelCase(s string) string {
-	if s == "" {
-		return s
+func buildMetricsMethodCall(methodCall string, c *common) string {
+	requiredAttrs := getRequiredAttributes(&c.Attributes)
+	if len(requiredAttrs) > 0 || hasOptionalAttributes(&c.Attributes) {
+		return fmt.Sprintf("\t%s, attribs)", methodCall)
 	}
-	runes := []rune(s)
-	runes[0] = rune(strings.ToLower(string(runes[0]))[0])
-	return string(runes)
+	return fmt.Sprintf("\t%s, Attributes{})", methodCall)
+}
+
+var metricOptionTmpl = template.Must(template.New("optionType").Parse(`// {{.OptionTypeName}} is a functional option for configuring optional attributes on {{.MetricName}}
+type {{.OptionTypeName}} func(*Attributes)
+
+`))
+
+var metricOptionFuncTmpl = template.Must(template.New("optionFunc").Parse(`// {{.FuncName}} sets the {{.DisplayName}} attribute
+func {{.FuncName}}({{.ParamName}} {{.ParamType}}) {{.OptionTypeName}} {
+	return func(a *Attributes) {
+		*a = append(*a, Attribute{
+			Name:  Attrib{{.AttrName}},
+			Value: {{.ParamName}},
+		})
+	}
+}
+
+`))
+
+func generateMetricOption(f io.Writer, c *common, optionTypeName string, attributes *attributesList) error {
+	// Generate the option type
+	err := metricOptionTmpl.Execute(f, map[string]string{
+		"OptionTypeName": optionTypeName,
+		"MetricName":     c.Name,
+	})
+	if err != nil {
+		return err
+	}
+
+	// Generate option functions for each optional attribute
+	for _, attr := range c.Attributes {
+		if attr.Optional {
+			attribDef := getAttribByName(attr.Name, attributes)
+			paramName := toLowerCamelCase(attr.Name)
+			paramType := attribDef.attrType()
+			funcName := fmt.Sprintf("With%s", attr.Name)
+
+			err = metricOptionFuncTmpl.Execute(f, map[string]string{
+				"FuncName":       funcName,
+				"DisplayName":    attribDef.displayName(),
+				"ParamName":      paramName,
+				"ParamType":      paramType,
+				"OptionTypeName": optionTypeName,
+				"AttrName":       attr.Name,
+			})
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

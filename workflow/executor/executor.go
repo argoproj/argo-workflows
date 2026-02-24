@@ -23,8 +23,6 @@ import (
 
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 
-	"github.com/argoproj/argo-workflows/v4/util/file"
-
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,6 +31,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	retryutil "k8s.io/client-go/util/retry"
+
+	"github.com/argoproj/argo-workflows/v4/util/file"
 
 	argoerrs "github.com/argoproj/argo-workflows/v4/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
@@ -46,6 +46,7 @@ import (
 	artifactcommon "github.com/argoproj/argo-workflows/v4/workflow/artifacts/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	executorretry "github.com/argoproj/argo-workflows/v4/workflow/executor/retry"
+	"github.com/argoproj/argo-workflows/v4/workflow/executor/tracing"
 )
 
 const (
@@ -68,6 +69,7 @@ type WorkflowExecutor struct {
 	RESTClient          rest.Interface
 	Namespace           string
 	RuntimeExecutor     ContainerRuntimeExecutor
+	Tracing             *tracing.Tracing
 
 	// memoized configmaps
 	memoizedConfigMaps map[string]string
@@ -110,6 +112,11 @@ type ContainerRuntimeExecutor interface {
 	Kill(ctx context.Context, containerNames []string, terminationGracePeriodDuration time.Duration) error
 }
 
+// WorkflowName returns the name of the workflow being executed
+func (we *WorkflowExecutor) WorkflowName() string {
+	return we.workflow
+}
+
 // NewExecutor instantiates a new workflow executor
 func NewExecutor(
 	ctx context.Context,
@@ -126,7 +133,7 @@ func NewExecutor(
 	includeScriptOutput bool,
 	deadline time.Time,
 	annotationPatchTickDuration, readProgressFileTickDuration time.Duration,
-) WorkflowExecutor {
+) (WorkflowExecutor, error) {
 	retry := executorretry.ExecutorRetry(ctx)
 	logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{
 		"Steps":    retry.Steps,
@@ -134,6 +141,7 @@ func NewExecutor(
 		"Factor":   retry.Factor,
 		"Jitter":   retry.Jitter,
 	}).Info(ctx, "Using executor retry strategy")
+	tracing, err := tracing.New(ctx, `argoexec`)
 	return WorkflowExecutor{
 		PodName:                      podName,
 		podUID:                       podUID,
@@ -148,12 +156,13 @@ func NewExecutor(
 		Template:                     template,
 		IncludeScriptOutput:          includeScriptOutput,
 		Deadline:                     deadline,
+		Tracing:                      tracing,
 		memoizedConfigMaps:           map[string]string{},
 		memoizedSecrets:              map[string][]byte{},
 		errors:                       []error{},
 		annotationPatchTickDuration:  annotationPatchTickDuration,
 		readProgressFileTickDuration: readProgressFileTickDuration,
-	}
+	}, err
 }
 
 // HandleError is a helper to annotate the pod with the error message upon a unexpected executor panic or error.
@@ -188,128 +197,144 @@ func (we *WorkflowExecutor) loadArtifacts(ctx context.Context, pluginName wfv1.A
 	logger := logging.RequireLoggerFromContext(ctx)
 	logger.WithFields(logging.Fields{"pluginName": pluginName}).Info(ctx, "Start loading input artifacts...")
 	for _, art := range we.Template.Inputs.Artifacts {
-		logger.WithField("name", art.Name).Info(ctx, "Downloading artifact")
-
-		if !art.HasLocationOrKey() {
-			if art.Optional {
-				logger.WithField("name", art.Name).Warn(ctx, "Ignoring optional artifact which was not supplied")
-				continue
-			}
-			return argoerrs.Errorf(argoerrs.CodeNotFound, "required artifact '%s' not supplied", art.Name)
-		}
-		err := art.CleanPath()
+		err := we.loadArtifact(ctx, pluginName, art)
 		if err != nil {
 			return err
-		}
-		driverArt, err := we.newDriverArt(&art)
-		if err != nil {
-			return fmt.Errorf("failed to load artifact '%s': %w", art.Name, err)
-		}
-		switch pluginName {
-		// If no plugin is specified only load non-plugin artifacts
-		case "":
-			if driverArt.Plugin != nil {
-				logger.Info(ctx, "Skipping artifact that is from a plugin")
-				continue
-			}
-			// If a plugin is specified only load artifacts from that plugin
-		default:
-			if driverArt.Plugin == nil || driverArt.Plugin.Name != pluginName {
-				logger.WithFields(logging.Fields{"name": driverArt.Name, "plugin": driverArt.Plugin}).Info(ctx, "Skipping artifact that is not from the specified plugin")
-				continue
-			}
-		}
-
-		artDriver, err := we.InitDriver(ctx, driverArt)
-		if err != nil {
-			return err
-		}
-		// Determine the file path of where to load the artifact
-		var artPath string
-		mnt := common.FindOverlappingVolume(&we.Template, art.Path)
-		if mnt == nil {
-			artPath = path.Join(common.ExecutorArtifactBaseDir, art.Name)
-		} else {
-			// If we get here, it means the input artifact path overlaps with a user-specified
-			// volumeMount in the container. Because we also implement input artifacts as volume
-			// mounts, we need to load the artifact into the user specified volume mount,
-			// as opposed to the `input-artifacts` volume that is an implementation detail
-			// unbeknownst to the user.
-			logger.WithFields(logging.Fields{"path": art.Path, "mountPath": mnt.MountPath}).Info(ctx, "Specified artifact path overlaps with volume mount, extracting to volume mount")
-			artPath = path.Join(common.ExecutorMainFilesystemDir, art.Path)
-		}
-
-		// The artifact is downloaded to a temporary location, after which we determine if
-		// the file is a tarball or not. If it is, it is first extracted then renamed to
-		// the desired location. If not, it is simply renamed to the location.
-		tempArtPath := artPath + ".tmp"
-		// Ensure parent directory exist, create if missing
-		tempArtDir := filepath.Dir(tempArtPath)
-		if err := os.MkdirAll(tempArtDir, 0o700); err != nil {
-			return fmt.Errorf("failed to create artifact temporary parent directory %s: %w", tempArtDir, err)
-		}
-		err = artDriver.Load(ctx, driverArt, tempArtPath)
-		if err != nil {
-			if art.Optional && argoerrs.IsCode(argoerrs.CodeNotFound, err) {
-				logger.WithField("name", art.Name).Info(ctx, "Skipping optional input artifact that was not found")
-				continue
-			}
-			return fmt.Errorf("artifact %s failed to load: %w", art.Name, err)
-		}
-
-		isTar := false
-		isZip := false
-		switch {
-		case art.GetArchive().None != nil:
-			// explicitly not a tar
-			isTar = false
-			isZip = false
-		case art.GetArchive().Tar != nil:
-			// explicitly a tar
-			isTar = true
-		case art.GetArchive().Zip != nil:
-			// explicitly a zip
-			isZip = true
-		default:
-			// auto-detect if tarball
-			// (don't try to autodetect zip files for backwards compatibility)
-			isTar, err = isTarball(ctx, tempArtPath)
-			if err != nil {
-				return err
-			}
-		}
-
-		switch {
-		case isTar:
-			err = untar(tempArtPath, artPath)
-			_ = os.Remove(tempArtPath)
-		case isZip:
-			err = unzip(ctx, tempArtPath, artPath)
-			_ = os.Remove(tempArtPath)
-		default:
-			err = os.Rename(tempArtPath, artPath)
-		}
-		if err != nil {
-			return err
-		}
-
-		logger.WithField("path", artPath).Info(ctx, "Successfully download file")
-		if art.Mode != nil {
-			err = chmod(artPath, *art.Mode, art.RecurseMode)
-			if err != nil {
-				return err
-			}
-		} else if driverArt.Plugin != nil {
-			// For plugin artifacts without explicit mode, ensure the file is writable
-			// by setting mode to 0666 so the main container can read/write it
-			err = chmod(artPath, 0666, art.RecurseMode)
-			if err != nil {
-				logger.WithError(err).Error(ctx, "Failed to chmod plugin artifact")
-				return err
-			}
 		}
 	}
 	return nil
+}
+
+func (we *WorkflowExecutor) loadArtifact(ctx context.Context, pluginName wfv1.ArtifactPluginName, art wfv1.Artifact) error {
+	logger := logging.RequireLoggerFromContext(ctx)
+	logger.WithField("name", art.Name).Info(ctx, "Downloading artifact")
+
+	if !art.HasLocationOrKey() {
+		if art.Optional {
+			logger.WithField("name", art.Name).Warn(ctx, "Ignoring optional artifact which was not supplied")
+			return nil
+		}
+		return argoerrs.Errorf(argoerrs.CodeNotFound, "required artifact '%s' not supplied", art.Name)
+	}
+	err := art.CleanPath()
+	if err != nil {
+		return err
+	}
+	driverArt, err := we.newDriverArt(&art)
+	if err != nil {
+		return fmt.Errorf("failed to load artifact '%s': %w", art.Name, err)
+	}
+	switch pluginName {
+	// If no plugin is specified only load non-plugin artifacts
+	case "":
+		if driverArt.Plugin != nil {
+			logger.Info(ctx, "Skipping artifact that is from a plugin")
+			return nil
+		}
+		// If a plugin is specified only load artifacts from that plugin
+	default:
+		if driverArt.Plugin == nil || driverArt.Plugin.Name != pluginName {
+			logger.WithFields(logging.Fields{"name": driverArt.Name, "plugin": driverArt.Plugin}).Info(ctx, "Skipping artifact that is not from the specified plugin")
+			return nil
+		}
+	}
+
+	artDriver, err := we.InitDriver(ctx, driverArt)
+	if err != nil {
+		return err
+	}
+	// Determine the file path of where to load the artifact
+	var artPath string
+	mnt := common.FindOverlappingVolume(&we.Template, art.Path)
+	if mnt == nil {
+		artPath = path.Join(common.ExecutorArtifactBaseDir, art.Name)
+	} else {
+		// If we get here, it means the input artifact path overlaps with a user-specified
+		// volumeMount in the container. Because we also implement input artifacts as volume
+		// mounts, we need to load the artifact into the user specified volume mount,
+		// as opposed to the `input-artifacts` volume that is an implementation detail
+		// unbeknownst to the user.
+		logger.WithFields(logging.Fields{"path": art.Path, "mountPath": mnt.MountPath}).Info(ctx, "Specified artifact path overlaps with volume mount, extracting to volume mount")
+		artPath = path.Join(common.ExecutorMainFilesystemDir, art.Path)
+	}
+
+	// The artifact is downloaded to a temporary location, after which we determine if
+	// the file is a tarball or not. If it is, it is first extracted then renamed to
+	// the desired location. If not, it is simply renamed to the location.
+	tempArtPath := artPath + ".tmp"
+	// Ensure parent directory exist, create if missing
+	tempArtDir := filepath.Dir(tempArtPath)
+	if err := os.MkdirAll(tempArtDir, 0o700); err != nil {
+		return fmt.Errorf("failed to create artifact temporary parent directory %s: %w", tempArtDir, err)
+	}
+	err = artDriver.Load(ctx, driverArt, tempArtPath)
+	if err != nil {
+		if art.Optional && argoerrs.IsCode(argoerrs.CodeNotFound, err) {
+			logger.WithField("name", art.Name).Info(ctx, "Skipping optional input artifact that was not found")
+			return nil
+		}
+		return fmt.Errorf("artifact %s failed to load: %w", art.Name, err)
+	}
+
+	err = we.unarchiveArtifact(ctx, art, tempArtPath, artPath)
+	if err != nil {
+		return err
+	}
+
+	logger.WithField("path", artPath).Info(ctx, "Successfully download file")
+	if art.Mode != nil {
+		err = chmod(artPath, *art.Mode, art.RecurseMode)
+		if err != nil {
+			return err
+		}
+	} else if driverArt.Plugin != nil {
+		// For plugin artifacts without explicit mode, ensure the file is writable
+		// by setting mode to 0666 so the main container can read/write it
+		err = chmod(artPath, 0666, art.RecurseMode)
+		if err != nil {
+			logger.WithError(err).Error(ctx, "Failed to chmod plugin artifact")
+			return err
+		}
+	}
+	return nil
+}
+
+func (we *WorkflowExecutor) unarchiveArtifact(ctx context.Context, art wfv1.Artifact, tempArtPath, artPath string) error {
+	isTar := false
+	isZip := false
+	var err error
+
+	switch {
+	case art.GetArchive().None != nil:
+		// explicitly not a tar
+		isTar = false
+		isZip = false
+	case art.GetArchive().Tar != nil:
+		// explicitly a tar
+		isTar = true
+	case art.GetArchive().Zip != nil:
+		// explicitly a zip
+		isZip = true
+	default:
+		// auto-detect if tarball
+		// (don't try to autodetect zip files for backwards compatibility)
+		isTar, err = isTarball(ctx, tempArtPath)
+		if err != nil {
+			return err
+		}
+	}
+
+	switch {
+	case isTar:
+		err = untar(tempArtPath, artPath)
+		_ = os.Remove(tempArtPath)
+	case isZip:
+		err = unzip(ctx, tempArtPath, artPath)
+		_ = os.Remove(tempArtPath)
+	default:
+		err = os.Rename(tempArtPath, artPath)
+	}
+	return err
 }
 
 // StageFiles will create any files required by script/resource templates
