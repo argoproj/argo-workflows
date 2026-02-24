@@ -76,9 +76,12 @@ func TestStoreOperation(t *testing.T) {
 		conn:            conn,
 		instanceService: instanceIDSvc,
 	}
+	// Use a fixed reference time to avoid flaky boundary comparisons between
+	// workflow timestamps and filter parameters.
+	now := time.Now().UTC()
 	t.Run("TestAddWorkflow", func(t *testing.T) {
 		for i := 0; i < 10; i++ {
-			require.NoError(t, store.Add(generateWorkflow(i)))
+			require.NoError(t, store.Add(generateWorkflow(now, i)))
 		}
 		num, err := store.CountWorkflows(context.Background(), "argo", "", "", "", metav1.ListOptions{})
 		require.NoError(t, err)
@@ -92,7 +95,7 @@ func TestStoreOperation(t *testing.T) {
 		}))
 	})
 	t.Run("TestUpdateWorkflow", func(t *testing.T) {
-		wf := generateWorkflow(0)
+		wf := generateWorkflow(now, 0)
 		wf.Labels["test-label-2"] = "value-2"
 		require.NoError(t, store.Update(wf))
 		// workflow is updated
@@ -112,7 +115,7 @@ func TestStoreOperation(t *testing.T) {
 		}))
 	})
 	t.Run("TestDeleteWorkflow", func(t *testing.T) {
-		wf := generateWorkflow(0)
+		wf := generateWorkflow(now, 0)
 		require.NoError(t, store.Delete(wf))
 		// workflow is deleted
 		require.NoError(t, sqlitex.Execute(conn, `select count(*) from argo_workflows where uid = 'uid-0'`, &sqlitex.ExecOptions{
@@ -175,43 +178,43 @@ func TestStoreOperation(t *testing.T) {
 	})
 	t.Run("TestListWorkflows finishedBefore", func(t *testing.T) {
 		// Finished before today
-		wfList, err := store.ListWorkflows(context.Background(), "argo", "", "", time.Now().Format(time.RFC3339), metav1.ListOptions{})
+		wfList, err := store.ListWorkflows(context.Background(), "argo", "", "", now.Format(time.RFC3339), metav1.ListOptions{})
 		require.NoError(t, err)
 		assert.Len(t, wfList.Items, 9)
 
 		// Finished before 1 day ago
-		wfList, err = store.ListWorkflows(context.Background(), "argo", "", "", time.Now().Add(-24*time.Hour).Format(time.RFC3339), metav1.ListOptions{})
+		wfList, err = store.ListWorkflows(context.Background(), "argo", "", "", now.Add(-24*time.Hour).Format(time.RFC3339), metav1.ListOptions{})
 		require.NoError(t, err)
 		assert.Len(t, wfList.Items, 8)
 
 		// Finished before 5 days ago
-		wfList, err = store.ListWorkflows(context.Background(), "argo", "", "", time.Now().Add(-5*24*time.Hour).Format(time.RFC3339), metav1.ListOptions{})
+		wfList, err = store.ListWorkflows(context.Background(), "argo", "", "", now.Add(-5*24*time.Hour).Format(time.RFC3339), metav1.ListOptions{})
 		require.NoError(t, err)
 		assert.Len(t, wfList.Items, 4)
 
 		// Finished before 10 days ago
-		wfList, err = store.ListWorkflows(context.Background(), "argo", "", "", time.Now().Add(-24*10*time.Hour).Format(time.RFC3339), metav1.ListOptions{})
+		wfList, err = store.ListWorkflows(context.Background(), "argo", "", "", now.Add(-24*10*time.Hour).Format(time.RFC3339), metav1.ListOptions{})
 		require.NoError(t, err)
 		assert.Empty(t, wfList.Items)
 	})
 	t.Run("TestListWorkflows createdAfter", func(t *testing.T) {
 		// Created after today
-		wfList, err := store.ListWorkflows(context.Background(), "argo", "", time.Now().UTC().Format(time.RFC3339), "", metav1.ListOptions{})
+		wfList, err := store.ListWorkflows(context.Background(), "argo", "", now.Format(time.RFC3339), "", metav1.ListOptions{})
 		require.NoError(t, err)
 		assert.Empty(t, wfList.Items)
 
 		// Created after 1 day ago
-		wfList, err = store.ListWorkflows(context.Background(), "argo", "", time.Now().UTC().Add(-24*time.Hour).Format(time.RFC3339), "", metav1.ListOptions{})
+		wfList, err = store.ListWorkflows(context.Background(), "argo", "", now.Add(-24*time.Hour).Format(time.RFC3339), "", metav1.ListOptions{})
 		require.NoError(t, err)
 		assert.Len(t, wfList.Items, 1)
 
 		// Created after 3 days ago
-		wfList, err = store.ListWorkflows(context.Background(), "argo", "", time.Now().UTC().Add(-3*24*time.Hour).Format(time.RFC3339), "", metav1.ListOptions{})
+		wfList, err = store.ListWorkflows(context.Background(), "argo", "", now.Add(-3*24*time.Hour).Format(time.RFC3339), "", metav1.ListOptions{})
 		require.NoError(t, err)
 		assert.Len(t, wfList.Items, 3)
 
 		// Created after 10 days ago
-		wfList, err = store.ListWorkflows(context.Background(), "argo", "", time.Now().UTC().Add(-10*24*time.Hour).Format(time.RFC3339), "", metav1.ListOptions{})
+		wfList, err = store.ListWorkflows(context.Background(), "argo", "", now.Add(-10*24*time.Hour).Format(time.RFC3339), "", metav1.ListOptions{})
 		require.NoError(t, err)
 		assert.Len(t, wfList.Items, 9)
 	})
@@ -222,17 +225,18 @@ func TestStoreOperation(t *testing.T) {
 	})
 }
 
-func generateWorkflow(uid int) *wfv1.Workflow {
+func generateWorkflow(now time.Time, uid int) *wfv1.Workflow {
+	ts := now.Add(-24 * time.Duration(uid) * time.Hour)
 	return &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{
 		UID:               types.UID(fmt.Sprintf("uid-%d", uid)),
 		Name:              fmt.Sprintf("workflow-%d", uid),
 		Namespace:         "argo",
-		CreationTimestamp: metav1.Time{Time: time.Now().Add(-24 * time.Duration(uid) * time.Hour)},
+		CreationTimestamp: metav1.Time{Time: ts},
 		Labels: map[string]string{
 			"workflows.argoproj.io/completed":             "true",
 			"workflows.argoproj.io/phase":                 "Succeeded",
 			"workflows.argoproj.io/controller-instanceid": "my-instanceid",
 			"test-label": fmt.Sprintf("label-%d", uid),
 		},
-	}, Status: wfv1.WorkflowStatus{FinishedAt: metav1.NewTime(time.Now().Add(-24 * time.Duration(uid) * time.Hour))}}
+	}, Status: wfv1.WorkflowStatus{FinishedAt: metav1.NewTime(ts)}}
 }
