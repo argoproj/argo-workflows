@@ -5,7 +5,7 @@ import (
 
 	"go.opentelemetry.io/otel/propagation"
 
-	"github.com/argoproj/argo-workflows/v3/util/telemetry"
+	"github.com/argoproj/argo-workflows/v4/util/telemetry"
 )
 
 type Tracing struct {

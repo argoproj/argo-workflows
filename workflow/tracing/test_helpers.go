@@ -5,7 +5,7 @@ import (
 
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
 
-	"github.com/argoproj/argo-workflows/v3/util/telemetry"
+	"github.com/argoproj/argo-workflows/v4/util/telemetry"
 )
 
 // CreateDefaultTestTracing creates a Tracing instance with a TestTracingExporter for testing.

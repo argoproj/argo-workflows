@@ -46,7 +46,7 @@ import (
 	artifactcommon "github.com/argoproj/argo-workflows/v4/workflow/artifacts/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	executorretry "github.com/argoproj/argo-workflows/v4/workflow/executor/retry"
-	"github.com/argoproj/argo-workflows/v3/workflow/executor/tracing"
+	"github.com/argoproj/argo-workflows/v4/workflow/executor/tracing"
 )
 
 const (

@@ -9,7 +9,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"k8s.io/client-go/rest"
 
-	"github.com/argoproj/argo-workflows/v3/util/k8s"
+	"github.com/argoproj/argo-workflows/v4/util/k8s"
 )
 
 // k8sAttributeTransport adds k8s-specific attributes to spans created by otelhttp

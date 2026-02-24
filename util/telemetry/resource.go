@@ -7,8 +7,8 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.38.0"
 
-	"github.com/argoproj/argo-workflows/v3"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 func workflowsResource(ctx context.Context, serviceName string) *resource.Resource {

@@ -22,7 +22,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/emissary"
-	"github.com/argoproj/argo-workflows/v3/workflow/tracing"
+	"github.com/argoproj/argo-workflows/v4/workflow/tracing"
 )
 
 //nolint:contextcheck

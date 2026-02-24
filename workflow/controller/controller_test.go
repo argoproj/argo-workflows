@@ -43,7 +43,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/events"
 	hydratorfake "github.com/argoproj/argo-workflows/v4/workflow/hydrator/fake"
 	"github.com/argoproj/argo-workflows/v4/workflow/metrics"
-	"github.com/argoproj/argo-workflows/v3/workflow/tracing"
+	"github.com/argoproj/argo-workflows/v4/workflow/tracing"
 	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 

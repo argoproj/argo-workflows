@@ -67,9 +67,9 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
 	"github.com/argoproj/argo-workflows/v4/workflow/metrics"
 	"github.com/argoproj/argo-workflows/v4/workflow/sync"
+	"github.com/argoproj/argo-workflows/v4/workflow/tracing"
 	"github.com/argoproj/argo-workflows/v4/workflow/util"
 	"github.com/argoproj/argo-workflows/v4/workflow/util/plugin"
-	"github.com/argoproj/argo-workflows/v3/workflow/tracing"
 )
 
 const maxAllowedStackDepth = 100

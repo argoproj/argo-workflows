@@ -21,7 +21,7 @@ var tracingHeaderTmpl = template.Must(template.New("header").Parse(`{{.Banner}}
         sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	    "go.opentelemetry.io/otel/attribute"
 
-	    "github.com/argoproj/argo-workflows/v3/util/logging"
+	    "github.com/argoproj/argo-workflows/v4/util/logging"
     )
 
 func AllNoParentSpans() Spans {

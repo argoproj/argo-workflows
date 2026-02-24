@@ -27,7 +27,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/mocks"
-	"github.com/argoproj/argo-workflows/v3/workflow/executor/tracing"
+	"github.com/argoproj/argo-workflows/v4/workflow/executor/tracing"
 )
 
 const (

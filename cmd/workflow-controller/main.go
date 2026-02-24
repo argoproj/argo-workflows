@@ -32,12 +32,12 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/logs"
 	pprofutil "github.com/argoproj/argo-workflows/v4/util/pprof"
-	"github.com/argoproj/argo-workflows/v3/util/telemetry/ratelimiter"
+	"github.com/argoproj/argo-workflows/v4/util/telemetry/ratelimiter"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/controller"
 	"github.com/argoproj/argo-workflows/v4/workflow/events"
 	"github.com/argoproj/argo-workflows/v4/workflow/metrics"
-	"github.com/argoproj/argo-workflows/v3/workflow/tracing"
+	"github.com/argoproj/argo-workflows/v4/workflow/tracing"
 )
 
 const (

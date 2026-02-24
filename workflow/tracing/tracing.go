@@ -7,9 +7,9 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.opentelemetry.io/otel/trace/noop"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/telemetry"
-	"github.com/argoproj/argo-workflows/v3/util/telemetry/ratelimiter"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/telemetry"
+	"github.com/argoproj/argo-workflows/v4/util/telemetry/ratelimiter"
 )
 
 type nodeSpans struct {

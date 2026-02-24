@@ -26,7 +26,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/executor"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/emissary"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/osspecific"
-	"github.com/argoproj/argo-workflows/v3/workflow/executor/tracing"
+	"github.com/argoproj/argo-workflows/v4/workflow/executor/tracing"
 )
 
 var (
