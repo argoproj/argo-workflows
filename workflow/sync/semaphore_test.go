@@ -211,3 +211,39 @@ func TestNotifyWorkflowFromTemplateSemaphore(t *testing.T) {
 		})
 	}
 }
+
+// testCheckAcquireNotifiesCorrectKeyForTemplateSemaphore verifies that when a non-front workflow
+// calls checkAcquire, the front workflow is re-queued using the workflow-level key
+// (namespace/workflow), not the raw template-level key (namespace/workflow/nodeid).
+func testCheckAcquireNotifiesCorrectKeyForTemplateSemaphore(t *testing.T, factory semaphoreFactory) {
+	t.Helper()
+	notified := make(map[string]bool)
+	nextWorkflow := func(key string) {
+		notified[key] = true
+	}
+
+	s, dbSession, cleanup := factory(t, "bar", "foo", 2, nextWorkflow)
+	defer cleanup()
+
+	now := time.Now()
+	require.NoError(t, s.addToQueue("foo/wf-01/node-aaa", 0, now))
+	require.NoError(t, s.addToQueue("foo/wf-02/node-bbb", 0, now.Add(time.Second)))
+
+	tx := &transaction{db: &dbSession}
+	// wf-02 is not first in queue, so checkAcquire should notify the front (wf-01)
+	// via nextWorkflow with the workflow-level key, not the template-level key
+	acquired, _, _ := s.checkAcquire("foo/wf-02/node-bbb", tx)
+	assert.False(t, acquired)
+
+	assert.True(t, notified["foo/wf-01"], "nextWorkflow should receive workflow key 'foo/wf-01', not template key 'foo/wf-01/node-aaa'")
+	assert.False(t, notified["foo/wf-01/node-aaa"], "nextWorkflow should not receive raw template-level key")
+}
+
+// TestCheckAcquireNotifiesCorrectKeyForTemplateSemaphore runs the checkAcquire template key test for all implementations
+func TestCheckAcquireNotifiesCorrectKeyForTemplateSemaphore(t *testing.T) {
+	for name, factory := range semaphoreFactories {
+		t.Run(name, func(t *testing.T) {
+			testCheckAcquireNotifiesCorrectKeyForTemplateSemaphore(t, factory)
+		})
+	}
+}
