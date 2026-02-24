@@ -150,3 +150,21 @@ func GetServerTLSConfigFromSecret(ctx context.Context, kubectlConfig kubernetes.
 		NextProtos:   []string{"h2"},
 	}, nil
 }
+
+// GetTLSConfig creates a TLS configuration for client connections.
+// If clientCert and clientKey are provided, they will be loaded and included in the configuration.
+// The insecureSkipVerify parameter controls whether the server's certificate will be verified.
+func GetTLSConfig(clientCert, clientKey string, insecureSkipVerify bool) (*tls.Config, error) {
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: insecureSkipVerify,
+	}
+	// Load client certificate if paths are provided
+	if clientCert != "" && clientKey != "" {
+		cert, err := tls.LoadX509KeyPair(clientCert, clientKey)
+		if err != nil {
+			return nil, err
+		}
+		tlsConfig.Certificates = []tls.Certificate{cert}
+	}
+	return tlsConfig, nil
+}

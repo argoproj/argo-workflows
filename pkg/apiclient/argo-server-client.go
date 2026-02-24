@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"crypto/tls"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -18,6 +17,7 @@ import (
 	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
 	grpcutil "github.com/argoproj/argo-workflows/v3/util/grpc"
 	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v3/util/tls"
 )
 
 const (
@@ -70,7 +70,11 @@ func (a *argoServerClient) NewSyncServiceClient(_ context.Context) (syncpkg.Sync
 func newClientConn(opts ArgoServerOpts) (*grpc.ClientConn, error) {
 	creds := grpc.WithTransportCredentials(insecure.NewCredentials())
 	if opts.Secure {
-		creds = grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{InsecureSkipVerify: opts.InsecureSkipVerify}))
+		tlsConfig, err := tls.GetTLSConfig(opts.ClientCert, opts.ClientKey, opts.InsecureSkipVerify)
+		if err != nil {
+			return nil, err
+		}
+		creds = grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig))
 	}
 	conn, err := grpc.NewClient(opts.URL,
 		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(MaxClientGRPCMessageSize)),
