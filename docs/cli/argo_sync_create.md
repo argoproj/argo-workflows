@@ -12,7 +12,7 @@ argo sync create [flags]
 
 # Create a database sync limit:
 	argo sync create my-key --type database --limit 10
-		
+
 # Create a configmap sync limit:
 	argo sync create my-key --type configmap --cm-name my-configmap --limit 10
 

@@ -194,11 +194,11 @@ func SubmitWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, wfClie
 	case opts.DryRun:
 		return wf, nil
 	case opts.ServerDryRun:
-		wf, err := CreateServerDryRun(ctx, wf, wfClientset)
-		if err != nil {
-			return nil, err
+		createWf, createErr := CreateServerDryRun(ctx, wf, wfClientset)
+		if createErr != nil {
+			return nil, createErr
 		}
-		return wf, err
+		return createWf, createErr
 	default:
 		var runWf *wfv1.Workflow
 		err = waitutil.Backoff(retry.DefaultRetry(ctx), func() (bool, error) {

@@ -8386,9 +8386,9 @@ spec:
 		// Updating Pod state
 		makePodsPhase(ctx, woc, apiv1.PodPending)
 		// Simulate the Stop command
-		wf1 := woc.wf
-		wf1.Spec.Shutdown = wfv1.ShutdownStrategyStop
-		woc1 := newWorkflowOperationCtx(ctx, wf1, controller)
+		wfstop := woc.wf
+		wfstop.Spec.Shutdown = wfv1.ShutdownStrategyStop
+		woc1 := newWorkflowOperationCtx(ctx, wfstop, controller)
 		woc1.operate(ctx)
 
 		node := woc1.wf.Status.Nodes.FindByDisplayName("whalesay")

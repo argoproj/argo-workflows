@@ -158,7 +158,7 @@ func NewEmissaryCommand() *cobra.Command {
 								}
 							default:
 								data, _ := os.ReadFile(filepath.Clean(varRunArgo + "/ctr/" + y + "/exitcode"))
-								exitCode, err := strconv.Atoi(string(data))
+								exitCode, err = strconv.Atoi(string(data))
 								if err != nil {
 									time.Sleep(time.Second)
 									continue
@@ -216,9 +216,9 @@ func NewEmissaryCommand() *cobra.Command {
 					}
 				}()
 				pid := command.Process.Pid
-				ctx, cancel := context.WithCancel(ctx)
+				innerCtx, cancel := context.WithCancel(ctx)
 				defer cancel()
-				startFileSignalHandler(ctx, pid)
+				startFileSignalHandler(innerCtx, pid)
 				for _, sidecarName := range template.GetSidecarNames() {
 					if sidecarName == containerName {
 						em, err := emissary.New()
@@ -228,20 +228,20 @@ func NewEmissaryCommand() *cobra.Command {
 
 						go func() {
 							mainContainerNames := template.GetMainContainerNames()
-							err = em.Wait(ctx, mainContainerNames)
+							err = em.Wait(innerCtx, mainContainerNames)
 							if err != nil {
 								logger.WithError(err).WithFields(logging.Fields{
 									"mainContainerNames": mainContainerNames,
-								}).Error(ctx, "failed to wait for main container(s)")
+								}).Error(innerCtx, "failed to wait for main container(s)")
 							}
 
 							logger.WithFields(logging.Fields{
 								"mainContainerNames": mainContainerNames,
 								"containerName":      containerName,
-							}).Info(ctx, "main container(s) exited, terminating container")
-							err = em.Kill(ctx, []string{containerName}, executor.GetTerminationGracePeriodDuration())
+							}).Info(innerCtx, "main container(s) exited, terminating container")
+							err = em.Kill(innerCtx, []string{containerName}, executor.GetTerminationGracePeriodDuration())
 							if err != nil {
-								logger.WithField("containerName", containerName).WithError(err).Error(ctx, "failed to terminate/kill container")
+								logger.WithField("containerName", containerName).WithError(err).Error(innerCtx, "failed to terminate/kill container")
 							}
 						}()
 

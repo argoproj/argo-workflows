@@ -127,7 +127,8 @@ func (g *ArtifactDriver) Load(ctx context.Context, inputArtifact *wfv1.Artifact,
 	r, err := git.PlainClone(path, false, cloneOptions)
 	if errors.Is(err, transport.ErrEmptyRemoteRepository) {
 		logging.RequireLoggerFromContext(ctx).Info(ctx, "Cloned an empty repository")
-		r, initErr := git.PlainInit(path, false)
+		var initErr error
+		r, initErr = git.PlainInit(path, false)
 		if initErr != nil {
 			return fmt.Errorf("failed to plain init: %w", initErr)
 		}

@@ -181,14 +181,14 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 	isDir := strings.HasSuffix(r.URL.Path, "/")
 
 	if !isDir {
-		isDir, err := driver.IsDirectory(ctx, artifact)
-		if err != nil {
-			if !argoerrors.IsCode(argoerrors.CodeNotImplemented, err) {
-				a.serverInternalError(ctx, err, w)
+		driverDir, driverErr := driver.IsDirectory(ctx, artifact)
+		if driverErr != nil {
+			if !argoerrors.IsCode(argoerrors.CodeNotImplemented, driverErr) {
+				a.serverInternalError(ctx, driverErr, w)
 				return
 			}
 		}
-		if isDir {
+		if driverDir {
 			http.Redirect(w, r, r.URL.String()+"/", http.StatusTemporaryRedirect)
 			return
 		}

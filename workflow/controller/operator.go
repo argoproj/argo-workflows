@@ -780,8 +780,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 
 	oldRV := woc.wf.ResourceVersion
 	woc.updateLastSeenVersionAnnotation(oldRV)
-	wf, err := wfClient.Update(ctx, woc.wf, metav1.UpdateOptions{})
-	if err != nil {
+	if wf, err := wfClient.Update(ctx, woc.wf, metav1.UpdateOptions{}); err != nil {
 		woc.log.WithField("error", err).WithField("reason", apierr.ReasonForError(err)).Warn(ctx, "Error updating workflow")
 		if argokubeerr.IsRequestEntityTooLargeErr(err) {
 			woc.persistWorkflowSizeLimitErr(ctx, wfClient, err)
@@ -791,7 +790,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 			return
 		}
 		woc.log.Info(ctx, "Re-applying updates on latest version and retrying update")
-		wf, err := woc.reapplyUpdate(ctx, wfClient, nodes)
+		wf, err = woc.reapplyUpdate(ctx, wfClient, nodes)
 		if err != nil {
 			woc.wf.Labels[common.LabelKeyReApplyFailed] = "true"
 			woc.log.WithError(err).Info(ctx, "Failed to re-apply update")
@@ -838,7 +837,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		}
 	}
 	// If Finalizer exists, requeue to make sure Finalizer can be removed.
-	if woc.wf.Status.Fulfilled() && len(wf.GetFinalizers()) > 0 {
+	if woc.wf.Status.Fulfilled() && len(woc.wf.GetFinalizers()) > 0 {
 		woc.requeueAfter(5 * time.Second)
 	}
 
@@ -2048,14 +2047,14 @@ func getRetryNodeChildrenIds(node *wfv1.NodeStatus, nodes wfv1.Nodes) []string {
 	// To resume the traversal, we look at the children of the last child node and of any on exit nodes.
 	var childrenIds []string
 	for i := -1; i >= -len(node.Children); i-- {
-		node := getChildNodeIndex(node, nodes, i)
-		if node == nil {
+		childNode := getChildNodeIndex(node, nodes, i)
+		if childNode == nil {
 			continue
 		}
-		if node.NodeFlag != nil && node.NodeFlag.Hooked {
-			childrenIds = append(childrenIds, node.ID)
-		} else if len(node.Children) > 0 {
-			childrenIds = append(childrenIds, node.Children...)
+		if childNode.NodeFlag != nil && childNode.NodeFlag.Hooked {
+			childrenIds = append(childrenIds, childNode.ID)
+		} else if len(childNode.Children) > 0 {
+			childrenIds = append(childrenIds, childNode.Children...)
 		}
 	}
 	return childrenIds
@@ -2375,8 +2374,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			if processedTmpl.Synchronization != nil {
 				woc.controller.syncManager.Release(ctx, woc.wf, node.ID, processedTmpl.Synchronization)
 			}
-			_, lastChildNode := getChildNodeIdsAndLastRetriedNode(retryParentNode, woc.wf.Status.Nodes)
-			if lastChildNode != nil {
+			if _, lastChild := getChildNodeIdsAndLastRetriedNode(retryParentNode, woc.wf.Status.Nodes); lastChild != nil {
 				retryParentNode.Outputs = lastChildNode.Outputs.DeepCopy()
 				woc.wf.Status.Nodes.Set(ctx, node.ID, *retryParentNode)
 			}
@@ -3848,10 +3846,6 @@ func (woc *wfOperationCtx) executeSuspend(ctx context.Context, nodeName string, 
 	var requeueTime *time.Time
 
 	if tmpl.Suspend.Duration != "" {
-		node, err := woc.wf.GetNodeByName(nodeName)
-		if err != nil {
-			return nil, err
-		}
 		suspendDuration, err := wfv1.ParseStringToDuration(tmpl.Suspend.Duration)
 		if err != nil {
 			return node, err

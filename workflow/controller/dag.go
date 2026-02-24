@@ -520,12 +520,12 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 				depNode := dagCtx.getTaskNode(ctx, depName)
 				outboundNodeIDs := woc.getOutboundNodes(ctx, depNode.ID)
 				for _, outNodeID := range outboundNodeIDs {
-					nodeName, err := woc.wf.Status.Nodes.GetName(outNodeID)
+					outNodeName, err := woc.wf.Status.Nodes.GetName(outNodeID)
 					if err != nil {
 						woc.log.WithField("nodeID", outNodeID).Error(ctx, "was unable to obtain node for nodeID")
 						return
 					}
-					woc.addChildNode(ctx, nodeName, taskNodeName)
+					woc.addChildNode(ctx, outNodeName, taskNodeName)
 				}
 			}
 		}
