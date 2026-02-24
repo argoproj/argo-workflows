@@ -13,9 +13,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	cmdutil "github.com/argoproj/argo-workflows/v3/util/cmd"
-	"github.com/argoproj/argo-workflows/v3/util/errors"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	cmdutil "github.com/argoproj/argo-workflows/v4/util/cmd"
+	"github.com/argoproj/argo-workflows/v4/util/errors"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 func TestEmissary(t *testing.T) {

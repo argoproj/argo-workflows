@@ -7,7 +7,7 @@ import (
 	"github.com/argoproj/pkg/stats"
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo-workflows/v3/cmd/argoexec/executor"
+	"github.com/argoproj/argo-workflows/v4/cmd/argoexec/executor"
 )
 
 func NewInitCommand() *cobra.Command {

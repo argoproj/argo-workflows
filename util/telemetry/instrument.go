@@ -6,7 +6,7 @@ import (
 
 	"go.opentelemetry.io/otel/metric"
 
-	"github.com/argoproj/argo-workflows/v3/util/help"
+	"github.com/argoproj/argo-workflows/v4/util/help"
 )
 
 type Instrument struct {

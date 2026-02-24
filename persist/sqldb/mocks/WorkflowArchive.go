@@ -8,8 +8,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/server/utils"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/server/utils"
 	mock "github.com/stretchr/testify/mock"
 	"k8s.io/apimachinery/pkg/labels"
 )

@@ -14,13 +14,13 @@ import (
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
 
-	fakewfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
-	ssomocks "github.com/argoproj/argo-workflows/v3/server/auth/sso/mocks"
-	authTypes "github.com/argoproj/argo-workflows/v3/server/auth/types"
-	"github.com/argoproj/argo-workflows/v3/server/cache"
-	servertypes "github.com/argoproj/argo-workflows/v3/server/types"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	fakewfclientset "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
+	ssomocks "github.com/argoproj/argo-workflows/v4/server/auth/sso/mocks"
+	authTypes "github.com/argoproj/argo-workflows/v4/server/auth/types"
+	"github.com/argoproj/argo-workflows/v4/server/cache"
+	servertypes "github.com/argoproj/argo-workflows/v4/server/types"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 func TestServer_GetWFClient(t *testing.T) {

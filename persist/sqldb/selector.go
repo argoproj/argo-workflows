@@ -5,8 +5,8 @@ import (
 
 	"github.com/upper/db/v4"
 
-	"github.com/argoproj/argo-workflows/v3/server/utils"
-	"github.com/argoproj/argo-workflows/v3/util/sqldb"
+	"github.com/argoproj/argo-workflows/v4/server/utils"
+	"github.com/argoproj/argo-workflows/v4/util/sqldb"
 )
 
 func BuildArchivedWorkflowSelector(selector db.Selector, tableName, labelTableName string, t sqldb.DBType, options utils.ListOptions, count bool) (db.Selector, error) {

@@ -12,9 +12,9 @@ import (
 	testpostgres "github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
 
-	"github.com/argoproj/argo-workflows/v3/config"
-	"github.com/argoproj/argo-workflows/v3/util/sqldb"
-	syncdb "github.com/argoproj/argo-workflows/v3/util/sync/db"
+	"github.com/argoproj/argo-workflows/v4/config"
+	"github.com/argoproj/argo-workflows/v4/util/sqldb"
+	syncdb "github.com/argoproj/argo-workflows/v4/util/sync/db"
 )
 
 const (

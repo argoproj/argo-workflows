@@ -22,18 +22,18 @@ import (
 
 	"os"
 
-	"github.com/argoproj/argo-workflows/v3"
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
-	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo-workflows/v3/server/apiserver"
-	"github.com/argoproj/argo-workflows/v3/server/auth"
-	"github.com/argoproj/argo-workflows/v3/server/types"
-	cmdutil "github.com/argoproj/argo-workflows/v3/util/cmd"
-	"github.com/argoproj/argo-workflows/v3/util/help"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	pprofutil "github.com/argoproj/argo-workflows/v3/util/pprof"
-	tlsutils "github.com/argoproj/argo-workflows/v3/util/tls"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v4"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/client"
+	wfclientset "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo-workflows/v4/server/apiserver"
+	"github.com/argoproj/argo-workflows/v4/server/auth"
+	"github.com/argoproj/argo-workflows/v4/server/types"
+	cmdutil "github.com/argoproj/argo-workflows/v4/util/cmd"
+	"github.com/argoproj/argo-workflows/v4/util/help"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	pprofutil "github.com/argoproj/argo-workflows/v4/util/pprof"
+	tlsutils "github.com/argoproj/argo-workflows/v4/util/tls"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 func NewServerCommand() *cobra.Command {

@@ -9,7 +9,7 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/utils/ptr"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 func TestArtifactPluginName(t *testing.T) {

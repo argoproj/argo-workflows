@@ -9,8 +9,8 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 func checkServiceAccountExists(saList []*v1.ServiceAccount, name string) bool {

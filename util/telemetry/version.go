@@ -3,7 +3,7 @@ package telemetry
 import (
 	"context"
 
-	"github.com/argoproj/argo-workflows/v3"
+	"github.com/argoproj/argo-workflows/v4"
 )
 
 func AddVersion(ctx context.Context, m *Metrics) error {

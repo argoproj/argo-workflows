@@ -1,4 +1,4 @@
-module github.com/argoproj/argo-workflows/v3
+module github.com/argoproj/argo-workflows/v4
 
 go 1.24.10
 

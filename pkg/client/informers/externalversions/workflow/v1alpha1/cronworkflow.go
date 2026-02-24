@@ -3,13 +3,13 @@
 package v1alpha1
 
 import (
-	"context"
+	context "context"
 	time "time"
 
-	workflowv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	versioned "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
-	internalinterfaces "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/internalinterfaces"
-	v1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/listers/workflow/v1alpha1"
+	apisworkflowv1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	versioned "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
+	internalinterfaces "github.com/argoproj/argo-workflows/v4/pkg/client/informers/externalversions/internalinterfaces"
+	workflowv1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/client/listers/workflow/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -20,7 +20,7 @@ import (
 // CronWorkflows.
 type CronWorkflowInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1alpha1.CronWorkflowLister
+	Lister() workflowv1alpha1.CronWorkflowLister
 }
 
 type cronWorkflowInformer struct {
@@ -46,16 +46,28 @@ func NewFilteredCronWorkflowInformer(client versioned.Interface, namespace strin
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.ArgoprojV1alpha1().CronWorkflows(namespace).List(context.TODO(), options)
+				return client.ArgoprojV1alpha1().CronWorkflows(namespace).List(context.Background(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.ArgoprojV1alpha1().CronWorkflows(namespace).Watch(context.TODO(), options)
+				return client.ArgoprojV1alpha1().CronWorkflows(namespace).Watch(context.Background(), options)
+			},
+			ListWithContextFunc: func(ctx context.Context, options v1.ListOptions) (runtime.Object, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.ArgoprojV1alpha1().CronWorkflows(namespace).List(ctx, options)
+			},
+			WatchFuncWithContext: func(ctx context.Context, options v1.ListOptions) (watch.Interface, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.ArgoprojV1alpha1().CronWorkflows(namespace).Watch(ctx, options)
 			},
 		},
-		&workflowv1alpha1.CronWorkflow{},
+		&apisworkflowv1alpha1.CronWorkflow{},
 		resyncPeriod,
 		indexers,
 	)
@@ -66,9 +78,9 @@ func (f *cronWorkflowInformer) defaultInformer(client versioned.Interface, resyn
 }
 
 func (f *cronWorkflowInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&workflowv1alpha1.CronWorkflow{}, f.defaultInformer)
+	return f.factory.InformerFor(&apisworkflowv1alpha1.CronWorkflow{}, f.defaultInformer)
 }
 
-func (f *cronWorkflowInformer) Lister() v1alpha1.CronWorkflowLister {
-	return v1alpha1.NewCronWorkflowLister(f.Informer().GetIndexer())
+func (f *cronWorkflowInformer) Lister() workflowv1alpha1.CronWorkflowLister {
+	return workflowv1alpha1.NewCronWorkflowLister(f.Informer().GetIndexer())
 }

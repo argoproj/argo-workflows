@@ -3,19 +3,20 @@ package controller
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/expr/argoexpr"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/util/template"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	controllercache "github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
-	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
+	argoerrors "github.com/argoproj/argo-workflows/v4/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/expr/argoexpr"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/template"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	controllercache "github.com/argoproj/argo-workflows/v4/workflow/controller/cache"
+	"github.com/argoproj/argo-workflows/v4/workflow/templateresolution"
 )
 
 // dagContext holds context information about this context's DAG
@@ -227,7 +228,6 @@ func (d *dagContext) assessDAGPhase(ctx context.Context, targetTasks []string, n
 }
 
 func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmplCtx *templateresolution.TemplateContext, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
-
 	node, err := woc.wf.GetNodeByName(nodeName)
 	if err != nil {
 		node = woc.initializeExecutableNode(ctx, nodeName, wfv1.NodeTypeDAG, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodeRunning, opts.nodeFlag, true)
@@ -357,7 +357,7 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 			err := woc.processAggregateNodeOutputs(scope, prefix, childNodes)
 			if err != nil {
 				woc.log.Error(ctx, "unable to processAggregateNodeOutputs")
-				return nil, errors.InternalWrapError(err)
+				return nil, argoerrors.InternalWrapError(err)
 			}
 		}
 		woc.buildLocalScope(scope, prefix, taskNode)
@@ -616,16 +616,18 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 		// Finally execute the template
 		node, err = woc.executeTemplate(ctx, taskNodeName, &t, dagCtx.tmplCtx, t.Arguments, &executeTemplateOpts{boundaryID: dagCtx.boundaryID, onExitTemplate: dagCtx.onExitTemplate})
 		if err != nil {
-			switch err {
-			case ErrDeadlineExceeded:
+			switch {
+			case errors.Is(err, ErrDeadlineExceeded):
 				return
-			case ErrParallelismReached:
-			case ErrMaxDepthExceeded:
-			case ErrTimeout:
+			case errors.Is(err, ErrParallelismReached):
+				// continue
+			case errors.Is(err, ErrMaxDepthExceeded):
+				// continue
+			case errors.Is(err, ErrTimeout):
 				_ = woc.markNodePhase(ctx, taskNodeName, wfv1.NodeFailed, err.Error())
 				return
 			default:
-				_ = woc.markNodeError(ctx, taskNodeName, fmt.Errorf("task '%s' errored: %v", taskNodeName, err))
+				_ = woc.markNodeError(ctx, taskNodeName, fmt.Errorf("task '%s' errored: %w", taskNodeName, err))
 				return
 			}
 		}
@@ -673,7 +675,7 @@ func (woc *wfOperationCtx) buildLocalScopeFromTask(ctx context.Context, dagCtx *
 	for _, ancestor := range ancestors {
 		ancestorNode := dagCtx.getTaskNode(ctx, ancestor)
 		if ancestorNode == nil {
-			return nil, errors.InternalErrorf("Ancestor task node %s not found", ancestor)
+			return nil, argoerrors.InternalErrorf("Ancestor task node %s not found", ancestor)
 		}
 		prefix := fmt.Sprintf("tasks.%s", ancestor)
 		if ancestorNode.Type == wfv1.NodeTypeTaskGroup {
@@ -685,7 +687,7 @@ func (woc *wfOperationCtx) buildLocalScopeFromTask(ctx context.Context, dagCtx *
 			}
 			_, _, templateStored, err := dagCtx.tmplCtx.ResolveTemplate(ctx, ancestorNode)
 			if err != nil {
-				return nil, errors.InternalWrapError(err)
+				return nil, argoerrors.InternalWrapError(err)
 			}
 			// A new template was stored during resolution, persist it
 			if templateStored {
@@ -694,7 +696,7 @@ func (woc *wfOperationCtx) buildLocalScopeFromTask(ctx context.Context, dagCtx *
 
 			err = woc.processAggregateNodeOutputs(scope, prefix, ancestorNodes)
 			if err != nil {
-				return nil, errors.InternalWrapError(err)
+				return nil, argoerrors.InternalWrapError(err)
 			}
 		} else {
 			woc.buildLocalScope(scope, prefix, ancestorNode)
@@ -721,7 +723,7 @@ func (woc *wfOperationCtx) resolveDependencyReferences(ctx context.Context, dagC
 	// Replace task's parameters
 	taskBytes, err := json.Marshal(task)
 	if err != nil {
-		return nil, errors.InternalWrapError(err)
+		return nil, argoerrors.InternalWrapError(err)
 	}
 	newTaskStr, err := template.Replace(ctx, string(taskBytes), woc.globalParams.Merge(scope.getParameters()), true)
 	if err != nil {
@@ -730,7 +732,7 @@ func (woc *wfOperationCtx) resolveDependencyReferences(ctx context.Context, dagC
 	var newTask wfv1.DAGTask
 	err = json.Unmarshal([]byte(newTaskStr), &newTask)
 	if err != nil {
-		return nil, errors.InternalWrapError(err)
+		return nil, argoerrors.InternalWrapError(err)
 	}
 
 	// If we are not executing, don't attempt to resolve any artifact references. We only check if we are executing after
@@ -740,11 +742,10 @@ func (woc *wfOperationCtx) resolveDependencyReferences(ctx context.Context, dagC
 		// If we got an error, it might be because our "when" clause contains a task-expansion parameter (e.g. {{item}}).
 		// Since we don't perform task-expansion until later and task-expansion parameters won't get resolved here,
 		// we continue execution as normal
-		if newTask.ShouldExpand() {
-			proceed = true
-		} else {
+		if !newTask.ShouldExpand() {
 			return nil, err
 		}
+		proceed = true
 	}
 	if !proceed {
 		// We can simply return here; the fact that this task won't execute will be reconciled later on in execution
@@ -802,17 +803,18 @@ func (d *dagContext) findLeafTaskNames(ctx context.Context, tasks []wfv1.DAGTask
 func expandTask(ctx context.Context, task wfv1.DAGTask, globalScope map[string]string) ([]wfv1.DAGTask, error) {
 	var err error
 	var items []wfv1.Item
-	if len(task.WithItems) > 0 {
+	switch {
+	case len(task.WithItems) > 0:
 		items = task.WithItems
-	} else if task.WithParam != "" {
+	case task.WithParam != "":
 		err = json.Unmarshal([]byte(task.WithParam), &items)
 		if err != nil {
 			mustExec, mustExecErr := shouldExecute(task.When)
 			if mustExecErr != nil || mustExec {
-				return nil, errors.Errorf(errors.CodeBadRequest, "withParam value could not be parsed as a JSON list: %s: %v", strings.TrimSpace(task.WithParam), err)
+				return nil, argoerrors.Errorf(argoerrors.CodeBadRequest, "withParam value could not be parsed as a JSON list: %s: %v", strings.TrimSpace(task.WithParam), err)
 			}
 		}
-	} else if task.WithSequence != nil {
+	case task.WithSequence != nil:
 		items, err = expandSequence(task.WithSequence)
 		if err != nil {
 			mustExec, mustExecErr := shouldExecute(task.When)
@@ -820,13 +822,13 @@ func expandTask(ctx context.Context, task wfv1.DAGTask, globalScope map[string]s
 				return nil, err
 			}
 		}
-	} else {
+	default:
 		return []wfv1.DAGTask{task}, nil
 	}
 
 	taskBytes, err := json.Marshal(task)
 	if err != nil {
-		return nil, errors.InternalWrapError(err)
+		return nil, argoerrors.InternalWrapError(err)
 	}
 
 	// these fields can be very large (>100m) and marshalling 10k x 100m = 6GB of memory used and
@@ -875,7 +877,6 @@ func (d *dagContext) evaluateDependsLogic(ctx context.Context, taskName string) 
 	evalScope := make(map[string]TaskResults)
 
 	for _, taskName := range d.GetTaskDependencies(ctx, taskName) {
-
 		// If the task is still running, we should not proceed.
 		depNode := d.getTaskNode(ctx, taskName)
 		if depNode == nil || !depNode.Fulfilled() || !common.CheckAllHooksFullfilled(depNode, d.wf.Status.Nodes) {
@@ -891,7 +892,6 @@ func (d *dagContext) evaluateDependsLogic(ctx context.Context, taskName string) 
 		allFailed := false
 
 		if depNode.Type == wfv1.NodeTypeTaskGroup {
-
 			allFailed = len(depNode.Children) > 0
 
 			for _, childNodeID := range depNode.Children {
@@ -921,7 +921,7 @@ func (d *dagContext) evaluateDependsLogic(ctx context.Context, taskName string) 
 	evalLogic := strings.ReplaceAll(d.GetTaskDependsLogic(ctx, taskName), "-", "_")
 	execute, err := argoexpr.EvalBool(evalLogic, evalScope)
 	if err != nil {
-		return false, false, fmt.Errorf("unable to evaluate expression '%s': %s", evalLogic, err)
+		return false, false, fmt.Errorf("unable to evaluate expression '%s': %w", evalLogic, err)
 	}
 	return execute, true, nil
 }

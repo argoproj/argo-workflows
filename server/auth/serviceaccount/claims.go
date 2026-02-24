@@ -12,7 +12,7 @@ import (
 	"github.com/go-jose/go-jose/v3/jwt"
 	"k8s.io/client-go/rest"
 
-	"github.com/argoproj/argo-workflows/v3/server/auth/types"
+	"github.com/argoproj/argo-workflows/v4/server/auth/types"
 )
 
 func ClaimSetFor(restConfig *rest.Config) (*types.Claims, error) {

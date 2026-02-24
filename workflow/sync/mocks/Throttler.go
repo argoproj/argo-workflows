@@ -7,8 +7,8 @@ package mocks
 import (
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/sync"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/workflow/sync"
 	mock "github.com/stretchr/testify/mock"
 )
 

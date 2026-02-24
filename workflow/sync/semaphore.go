@@ -8,7 +8,7 @@ import (
 
 	sema "golang.org/x/sync/semaphore"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 type prioritySemaphore struct {

@@ -6,13 +6,13 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/argoproj/argo-workflows/v3/util/errors"
+	"github.com/argoproj/argo-workflows/v4/util/errors"
 
 	// load authentication plugin for obtaining credentials from cloud providers.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
-	"github.com/argoproj/argo-workflows/v3/cmd/argoexec/commands"
-	"github.com/argoproj/argo-workflows/v3/util"
+	"github.com/argoproj/argo-workflows/v4/cmd/argoexec/commands"
+	"github.com/argoproj/argo-workflows/v4/util"
 )
 
 func main() {

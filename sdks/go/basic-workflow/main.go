@@ -12,8 +12,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/clientcmd"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	wfclientset "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
 )
 
 func main() {

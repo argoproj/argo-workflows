@@ -7,20 +7,20 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
 
-	"github.com/argoproj/argo-workflows/v3"
-	argoexecex "github.com/argoproj/argo-workflows/v3/cmd/argoexec/executor"
-	executorplugins "github.com/argoproj/argo-workflows/v3/pkg/plugins/executor"
-	"github.com/argoproj/argo-workflows/v3/util/logs"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/executor"
-	"github.com/argoproj/argo-workflows/v3/workflow/executor/plugins/rpc"
+	"github.com/argoproj/argo-workflows/v4"
+	argoexecex "github.com/argoproj/argo-workflows/v4/cmd/argoexec/executor"
+	executorplugins "github.com/argoproj/argo-workflows/v4/pkg/plugins/executor"
+	"github.com/argoproj/argo-workflows/v4/util/logs"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/executor"
+	"github.com/argoproj/argo-workflows/v4/workflow/executor/plugins/rpc"
 )
 
 func NewAgentCommand() *cobra.Command {

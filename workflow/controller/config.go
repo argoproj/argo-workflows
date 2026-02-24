@@ -9,13 +9,13 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo-workflows/v3"
-	persist "github.com/argoproj/argo-workflows/v3/persist/sqldb"
-	"github.com/argoproj/argo-workflows/v3/util/instanceid"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/util/sqldb"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
-	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
+	"github.com/argoproj/argo-workflows/v4"
+	persist "github.com/argoproj/argo-workflows/v4/persist/sqldb"
+	"github.com/argoproj/argo-workflows/v4/util/instanceid"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/sqldb"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifactrepositories"
+	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
 )
 
 func (wfc *WorkflowController) updateConfig(ctx context.Context) error {

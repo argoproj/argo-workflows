@@ -3,7 +3,7 @@
 
 syntax = "proto2";
 
-package github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1;
+package github.com.argoproj.argo_workflows.v4.pkg.apis.workflow.v1alpha1;
 
 import "k8s.io/api/core/v1/generated.proto";
 import "k8s.io/api/policy/v1/generated.proto";
@@ -13,7 +13,7 @@ import "k8s.io/apimachinery/pkg/runtime/schema/generated.proto";
 import "k8s.io/apimachinery/pkg/util/intstr/generated.proto";
 
 // Package-wide variables from generator "generated".
-option go_package = "v1alpha1";
+option go_package = "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1";
 
 // Amount represent a numeric amount.
 // +kubebuilder:validation:Type=number
@@ -294,10 +294,10 @@ message ArtifactoryArtifactRepository {
 // ArtifactoryAuth describes the secret selectors required for authenticating to artifactory
 message ArtifactoryAuth {
   // UsernameSecret is the secret selector to the repository username
-  optional k8s.io.api.core.v1.SecretKeySelector usernameSecret = 1;
+  optional .k8s.io.api.core.v1.SecretKeySelector usernameSecret = 1;
 
   // PasswordSecret is the secret selector to the repository password
-  optional k8s.io.api.core.v1.SecretKeySelector passwordSecret = 2;
+  optional .k8s.io.api.core.v1.SecretKeySelector passwordSecret = 2;
 }
 
 // AzureArtifact is the location of an Azure Storage artifact
@@ -325,7 +325,7 @@ message AzureBlobContainer {
   optional string container = 2;
 
   // AccountKeySecret is the secret selector to the Azure Blob Storage account access key
-  optional k8s.io.api.core.v1.SecretKeySelector accountKeySecret = 3;
+  optional .k8s.io.api.core.v1.SecretKeySelector accountKeySecret = 3;
 
   // UseSDKCreds tells the driver to figure out credentials based on sdk defaults.
   optional bool useSDKCreds = 4;
@@ -337,7 +337,7 @@ message Backoff {
   optional string duration = 1;
 
   // Factor is a factor to multiply the base duration after each failed retry
-  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString factor = 2;
+  optional .k8s.io.apimachinery.pkg.util.intstr.IntOrString factor = 2;
 
   // MaxDuration is the maximum amount of time allowed for a workflow in the backoff strategy.
   // It is important to note that if the workflow template includes activeDeadlineSeconds, the pod's deadline is initially set with activeDeadlineSeconds.
@@ -354,23 +354,23 @@ message Backoff {
 // BasicAuth describes the secret selectors required for basic authentication
 message BasicAuth {
   // UsernameSecret is the secret selector to the repository username
-  optional k8s.io.api.core.v1.SecretKeySelector usernameSecret = 1;
+  optional .k8s.io.api.core.v1.SecretKeySelector usernameSecret = 1;
 
   // PasswordSecret is the secret selector to the repository password
-  optional k8s.io.api.core.v1.SecretKeySelector passwordSecret = 2;
+  optional .k8s.io.api.core.v1.SecretKeySelector passwordSecret = 2;
 }
 
 // Cache is the configuration for the type of cache to be used
 message Cache {
   // ConfigMap sets a ConfigMap-based cache
-  optional k8s.io.api.core.v1.LocalObjectReference configMap = 1;
+  optional .k8s.io.api.core.v1.LocalObjectReference configMap = 1;
 }
 
 // ClientCertAuth holds necessary information for client authentication via certificates
 message ClientCertAuth {
-  optional k8s.io.api.core.v1.SecretKeySelector clientCertSecret = 1;
+  optional .k8s.io.api.core.v1.SecretKeySelector clientCertSecret = 1;
 
-  optional k8s.io.api.core.v1.SecretKeySelector clientKeySecret = 2;
+  optional .k8s.io.api.core.v1.SecretKeySelector clientKeySecret = 2;
 }
 
 // ClusterWorkflowTemplate is the definition of a workflow template resource in cluster scope
@@ -380,7 +380,7 @@ message ClientCertAuth {
 // +kubebuilder:resource:scope=Cluster,shortName=clusterwftmpl;cwft
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 message ClusterWorkflowTemplate {
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
   optional WorkflowSpec spec = 2;
 }
@@ -388,7 +388,7 @@ message ClusterWorkflowTemplate {
 // ClusterWorkflowTemplateList is list of ClusterWorkflowTemplate resources
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 message ClusterWorkflowTemplateList {
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
 
   repeated ClusterWorkflowTemplate items = 2;
 }
@@ -419,7 +419,7 @@ message Condition {
 }
 
 message ContainerNode {
-  optional k8s.io.api.core.v1.Container container = 1;
+  optional .k8s.io.api.core.v1.Container container = 1;
 
   repeated string dependencies = 2;
 }
@@ -432,13 +432,13 @@ message ContainerSetRetryStrategy {
 
   // Retries is the maximum number of retry attempts for each container. It does not include the
   // first, original attempt; the maximum number of total attempts will be `retries + 1`.
-  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString retries = 2;
+  optional .k8s.io.apimachinery.pkg.util.intstr.IntOrString retries = 2;
 }
 
 message ContainerSetTemplate {
   repeated ContainerNode containers = 4;
 
-  repeated k8s.io.api.core.v1.VolumeMount volumeMounts = 3;
+  repeated .k8s.io.api.core.v1.VolumeMount volumeMounts = 3;
 
   // RetryStrategy describes how to retry container nodes if the container set fails.
   // Note that this works differently from the template-level `retryStrategy` as it is a process-level retry that does not create new Pods or containers.
@@ -474,7 +474,7 @@ message CreateS3BucketOptions {
 // +kubebuilder:resource:shortName=cwf;cronwf
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 message CronWorkflow {
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
   optional CronWorkflowSpec spec = 2;
 
@@ -484,7 +484,7 @@ message CronWorkflow {
 // CronWorkflowList is list of CronWorkflow resources
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 message CronWorkflowList {
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
 
   repeated CronWorkflow items = 2;
 }
@@ -515,7 +515,7 @@ message CronWorkflowSpec {
   optional string timezone = 8;
 
   // WorkflowMetadata contains some metadata of the workflow to be run
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta workflowMeta = 9;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta workflowMeta = 9;
 
   // v3.6 and after: StopStrategy defines if the CronWorkflow should stop scheduling based on a condition
   optional StopStrategy stopStrategy = 10;
@@ -533,11 +533,11 @@ message CronWorkflowSpec {
 message CronWorkflowStatus {
   // Active is a list of active workflows stemming from this CronWorkflow
   // +optional
-  repeated k8s.io.api.core.v1.ObjectReference active = 1;
+  repeated .k8s.io.api.core.v1.ObjectReference active = 1;
 
   // LastScheduleTime is the last time the CronWorkflow was scheduled
   // +optional
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.Time lastScheduledTime = 2;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.Time lastScheduledTime = 2;
 
   // Conditions is a list of conditions the CronWorkflow may have
   // +optional
@@ -609,7 +609,8 @@ message DAGTask {
   // OnExit is a template reference which is invoked at the end of the
   // template, irrespective of the success, failure, or error of the
   // primary template.
-  // DEPRECATED: Use Hooks[exit].Template instead.
+  //
+  // Deprecated: Use Hooks[exit].Template instead.
   optional string onExit = 11;
 
   // Depends are name of other targets which this depends on
@@ -690,7 +691,7 @@ message GCSBucket {
   optional string bucket = 1;
 
   // ServiceAccountKeySecret is the secret selector to the bucket's service account key
-  optional k8s.io.api.core.v1.SecretKeySelector serviceAccountKeySecret = 2;
+  optional .k8s.io.api.core.v1.SecretKeySelector serviceAccountKeySecret = 2;
 }
 
 // Gauge is a Gauge prometheus metric
@@ -727,13 +728,13 @@ message GitArtifact {
   repeated string fetch = 4;
 
   // UsernameSecret is the secret selector to the repository username
-  optional k8s.io.api.core.v1.SecretKeySelector usernameSecret = 5;
+  optional .k8s.io.api.core.v1.SecretKeySelector usernameSecret = 5;
 
   // PasswordSecret is the secret selector to the repository password
-  optional k8s.io.api.core.v1.SecretKeySelector passwordSecret = 6;
+  optional .k8s.io.api.core.v1.SecretKeySelector passwordSecret = 6;
 
   // SSHPrivateKeySecret is the secret selector to the repository ssh private key
-  optional k8s.io.api.core.v1.SecretKeySelector sshPrivateKeySecret = 7;
+  optional .k8s.io.api.core.v1.SecretKeySelector sshPrivateKeySecret = 7;
 
   // InsecureIgnoreHostKey disables SSH strict host key checking during git clone
   optional bool insecureIgnoreHostKey = 8;
@@ -793,11 +794,11 @@ message HDFSConfig {
 message HDFSKrbConfig {
   // KrbCCacheSecret is the secret selector for Kerberos ccache
   // Either ccache or keytab can be set to use Kerberos.
-  optional k8s.io.api.core.v1.SecretKeySelector krbCCacheSecret = 1;
+  optional .k8s.io.api.core.v1.SecretKeySelector krbCCacheSecret = 1;
 
   // KrbKeytabSecret is the secret selector for Kerberos keytab
   // Either ccache or keytab can be set to use Kerberos.
-  optional k8s.io.api.core.v1.SecretKeySelector krbKeytabSecret = 2;
+  optional .k8s.io.api.core.v1.SecretKeySelector krbKeytabSecret = 2;
 
   // KrbUsername is the Kerberos username used with Kerberos keytab
   // It must be set if keytab is used.
@@ -809,7 +810,7 @@ message HDFSKrbConfig {
 
   // KrbConfig is the configmap selector for Kerberos config as string
   // It must be set if either ccache or keytab is used.
-  optional k8s.io.api.core.v1.ConfigMapKeySelector krbConfigConfigMap = 5;
+  optional .k8s.io.api.core.v1.ConfigMapKeySelector krbConfigConfigMap = 5;
 
   // KrbServicePrincipalName is the principal name of Kerberos service
   // It must be set if either ccache or keytab is used.
@@ -876,7 +877,7 @@ message HTTPHeader {
 }
 
 message HTTPHeaderSource {
-  optional k8s.io.api.core.v1.SecretKeySelector secretKeyRef = 1;
+  optional .k8s.io.api.core.v1.SecretKeySelector secretKeyRef = 1;
 }
 
 // Header indicate a key-value request header to be used when fetching artifacts over HTTP
@@ -1116,10 +1117,10 @@ message NodeStatus {
   optional string message = 9;
 
   // Time at which this node started
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.Time startedAt = 10;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.Time startedAt = 10;
 
   // Time at which this node completed
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.Time finishedAt = 11;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.Time finishedAt = 11;
 
   // EstimatedDuration in seconds.
   optional int64 estimatedDuration = 24;
@@ -1198,11 +1199,11 @@ message NoneStrategy {
 
 // OAuth2Auth holds all information for client authentication via OAuth2 tokens
 message OAuth2Auth {
-  optional k8s.io.api.core.v1.SecretKeySelector clientIDSecret = 1;
+  optional .k8s.io.api.core.v1.SecretKeySelector clientIDSecret = 1;
 
-  optional k8s.io.api.core.v1.SecretKeySelector clientSecretSecret = 2;
+  optional .k8s.io.api.core.v1.SecretKeySelector clientSecretSecret = 2;
 
-  optional k8s.io.api.core.v1.SecretKeySelector tokenURLSecret = 3;
+  optional .k8s.io.api.core.v1.SecretKeySelector tokenURLSecret = 3;
 
   repeated string scopes = 5;
 
@@ -1243,10 +1244,10 @@ message OSSBucket {
   optional string bucket = 2;
 
   // AccessKeySecret is the secret selector to the bucket's access key
-  optional k8s.io.api.core.v1.SecretKeySelector accessKeySecret = 3;
+  optional .k8s.io.api.core.v1.SecretKeySelector accessKeySecret = 3;
 
   // SecretKeySecret is the secret selector to the bucket's secret key
-  optional k8s.io.api.core.v1.SecretKeySelector secretKeySecret = 4;
+  optional .k8s.io.api.core.v1.SecretKeySelector secretKeySecret = 4;
 
   // CreateBucketIfNotPresent tells the driver to attempt to create the OSS bucket for output artifacts, if it doesn't exist
   optional bool createBucketIfNotPresent = 5;
@@ -1366,7 +1367,7 @@ message PodGC {
   optional string strategy = 1;
 
   // LabelSelector is the label selector to check if the pods match the labels before being added to the pod GC queue.
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector labelSelector = 2;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector labelSelector = 2;
 
   // DeleteDelayDuration specifies the duration before pods in the GC queue get deleted.
   optional string deleteDelayDuration = 3;
@@ -1456,7 +1457,7 @@ message RetryNodeAntiAffinity {
 message RetryStrategy {
   // Limit is the maximum number of retry attempts when retrying a container. It does not include the original
   // container; the maximum number of total attempts will be `limit + 1`.
-  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString limit = 1;
+  optional .k8s.io.apimachinery.pkg.util.intstr.IntOrString limit = 1;
 
   // RetryPolicy is a policy of NodePhase statuses that will be retried
   optional string retryPolicy = 2;
@@ -1488,7 +1489,8 @@ message S3ArtifactRepository {
   optional string keyFormat = 2;
 
   // KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts.
-  // DEPRECATED. Use KeyFormat instead
+  //
+  // Deprecated: Use KeyFormat instead.
   optional string keyPrefix = 3;
 }
 
@@ -1507,13 +1509,13 @@ message S3Bucket {
   optional bool insecure = 4;
 
   // AccessKeySecret is the secret selector to the bucket's access key
-  optional k8s.io.api.core.v1.SecretKeySelector accessKeySecret = 5;
+  optional .k8s.io.api.core.v1.SecretKeySelector accessKeySecret = 5;
 
   // SecretKeySecret is the secret selector to the bucket's secret key
-  optional k8s.io.api.core.v1.SecretKeySelector secretKeySecret = 6;
+  optional .k8s.io.api.core.v1.SecretKeySelector secretKeySecret = 6;
 
   // SessionTokenSecret is used for ephemeral credentials like an IAM assume role or S3 access grant
-  optional k8s.io.api.core.v1.SecretKeySelector sessionTokenSecret = 12;
+  optional .k8s.io.api.core.v1.SecretKeySelector sessionTokenSecret = 12;
 
   // RoleARN is the Amazon Resource Name (ARN) of the role to assume.
   optional string roleARN = 7;
@@ -1527,7 +1529,7 @@ message S3Bucket {
   optional S3EncryptionOptions encryptionOptions = 10;
 
   // CASecret specifies the secret that contains the CA, used to verify the TLS connection
-  optional k8s.io.api.core.v1.SecretKeySelector caSecret = 11;
+  optional .k8s.io.api.core.v1.SecretKeySelector caSecret = 11;
 }
 
 // S3EncryptionOptions used to determine encryption options during s3 operations
@@ -1542,12 +1544,12 @@ message S3EncryptionOptions {
   optional bool enableEncryption = 3;
 
   // ServerSideCustomerKeySecret tells the driver to encrypt the output artifacts using SSE-C with the specified secret.
-  optional k8s.io.api.core.v1.SecretKeySelector serverSideCustomerKeySecret = 4;
+  optional .k8s.io.api.core.v1.SecretKeySelector serverSideCustomerKeySecret = 4;
 }
 
 // ScriptTemplate is a template subtype to enable scripting through code steps
 message ScriptTemplate {
-  optional k8s.io.api.core.v1.Container container = 1;
+  optional .k8s.io.api.core.v1.Container container = 1;
 
   // Source contains the source code of the script to execute
   // +optional
@@ -1566,7 +1568,7 @@ message SemaphoreHolding {
 // SemaphoreRef is a reference of Semaphore
 message SemaphoreRef {
   // ConfigMapKeyRef is a configmap selector for Semaphore configuration
-  optional k8s.io.api.core.v1.ConfigMapKeySelector configMapKeyRef = 1;
+  optional .k8s.io.api.core.v1.ConfigMapKeySelector configMapKeyRef = 1;
 
   // Namespace is the namespace of the configmap, default: [namespace of workflow]
   optional string namespace = 2;
@@ -1587,13 +1589,13 @@ message SemaphoreStatus {
 // +kubebuilder:validation:XValidation:rule="!(has(self.count) && has(self.end))",message="only one of count or end can be defined"
 message Sequence {
   // Count is number of elements in the sequence (default: 0). Not to be used with end
-  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString count = 1;
+  optional .k8s.io.apimachinery.pkg.util.intstr.IntOrString count = 1;
 
   // Number at which to start the sequence (default: 0)
-  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString start = 2;
+  optional .k8s.io.apimachinery.pkg.util.intstr.IntOrString start = 2;
 
   // Number at which to end the sequence (default: 0). Not to be used with Count
-  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString end = 3;
+  optional .k8s.io.apimachinery.pkg.util.intstr.IntOrString end = 3;
 
   // Format is a printf format string to format the value in the sequence
   optional string format = 4;
@@ -1611,7 +1613,7 @@ message Submit {
   optional WorkflowTemplateRef workflowTemplateRef = 1;
 
   // Metadata optional means to customize select fields of the workflow metadata
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 3;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 3;
 
   // Arguments extracted from the event and then set as arguments to the workflow created.
   optional Arguments arguments = 2;
@@ -1644,7 +1646,7 @@ message SubmitOpts {
   optional string labels = 10;
 
   // OwnerReference creates a metadata.ownerReference
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference ownerReference = 11;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference ownerReference = 11;
 
   // Annotations adds to metadata.labels
   optional string annotations = 12;
@@ -1728,7 +1730,7 @@ message Template {
 
   // Affinity sets the pod's scheduling constraints
   // Overrides the affinity set at the workflow level (if any)
-  optional k8s.io.api.core.v1.Affinity affinity = 8;
+  optional .k8s.io.api.core.v1.Affinity affinity = 8;
 
   // Metadata sets the pods's metadata, i.e. annotations and labels
   optional Metadata metadata = 9;
@@ -1741,7 +1743,7 @@ message Template {
   repeated ParallelSteps steps = 11;
 
   // Container is the main container image to run in the pod
-  optional k8s.io.api.core.v1.Container container = 12;
+  optional .k8s.io.api.core.v1.Container container = 12;
 
   // ContainerSet groups multiple containers within a single pod.
   optional ContainerSetTemplate containerSet = 40;
@@ -1773,7 +1775,7 @@ message Template {
   // Volumes is a list of volumes that can be mounted by containers in a template.
   // +patchStrategy=merge
   // +patchMergeKey=name
-  repeated k8s.io.api.core.v1.Volume volumes = 17;
+  repeated .k8s.io.api.core.v1.Volume volumes = 17;
 
   // InitContainers is a list of containers which run before the main container.
   // +patchStrategy=merge
@@ -1795,7 +1797,7 @@ message Template {
   // Optional duration in seconds relative to the StartTime that the pod may be active on a node
   // before the system actively tries to terminate the pod; value must be positive integer
   // This field is only applicable to container and script templates.
-  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString activeDeadlineSeconds = 21;
+  optional .k8s.io.apimachinery.pkg.util.intstr.IntOrString activeDeadlineSeconds = 21;
 
   // RetryStrategy describes how to retry a template when it fails
   optional RetryStrategy retryStrategy = 22;
@@ -1813,7 +1815,7 @@ message Template {
   // Tolerations to apply to workflow pods.
   // +patchStrategy=merge
   // +patchMergeKey=key
-  repeated k8s.io.api.core.v1.Toleration tolerations = 24;
+  repeated .k8s.io.api.core.v1.Toleration tolerations = 24;
 
   // If specified, the pod will be dispatched by specified scheduler.
   // Or it will be dispatched by workflow scope scheduler if specified.
@@ -1837,12 +1839,12 @@ message Template {
   // HostAliases is an optional list of hosts and IPs that will be injected into the pod spec
   // +patchStrategy=merge
   // +patchMergeKey=ip
-  repeated k8s.io.api.core.v1.HostAlias hostAliases = 29;
+  repeated .k8s.io.api.core.v1.HostAlias hostAliases = 29;
 
   // SecurityContext holds pod-level security attributes and common container settings.
   // Optional: Defaults to empty.  See type description for default values of each field.
   // +optional
-  optional k8s.io.api.core.v1.PodSecurityContext securityContext = 30;
+  optional .k8s.io.api.core.v1.PodSecurityContext securityContext = 30;
 
   // PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
   // container fields which are not strings (e.g. resource limits).
@@ -1884,7 +1886,7 @@ message TransformationStep {
 
 // UserContainer is a container specified by a user.
 message UserContainer {
-  optional k8s.io.api.core.v1.Container container = 1;
+  optional .k8s.io.api.core.v1.Container container = 1;
 
   // MirrorVolumeMounts will mount the same volumes specified in the main container
   // to the container (including artifacts), at the same mountPaths. This enables
@@ -1915,7 +1917,7 @@ message ValueFrom {
   optional SuppliedValueFrom supplied = 6;
 
   // ConfigMapKeyRef is configmap selector for input parameter configuration
-  optional k8s.io.api.core.v1.ConfigMapKeySelector configMapKeyRef = 9;
+  optional .k8s.io.api.core.v1.ConfigMapKeySelector configMapKeyRef = 9;
 
   // Default specifies a value to be used if retrieving the value from the specified source fails
   optional string default = 5;
@@ -1957,7 +1959,7 @@ message VolumeClaimGC {
 // +kubebuilder:printcolumn:name="Message",type="string",JSONPath=".status.message",description="Human readable message indicating details about why the workflow is in this condition."
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 message Workflow {
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
   optional WorkflowSpec spec  = 2;
 
@@ -1970,7 +1972,7 @@ message Workflow {
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:subresource:status
 message WorkflowArtifactGCTask {
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
   optional ArtifactGCSpec spec = 2;
 
@@ -1980,7 +1982,7 @@ message WorkflowArtifactGCTask {
 // WorkflowArtifactGCTaskList is list of WorkflowArtifactGCTask resources
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 message WorkflowArtifactGCTaskList {
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
 
   repeated WorkflowArtifactGCTask items = 2;
 }
@@ -1991,7 +1993,7 @@ message WorkflowArtifactGCTaskList {
 // +kubebuilder:resource:shortName=wfeb
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 message WorkflowEventBinding {
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
   optional WorkflowEventBindingSpec spec = 2;
 }
@@ -2000,7 +2002,7 @@ message WorkflowEventBinding {
 // +kubebuilder:resource:shortName=wfebs
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 message WorkflowEventBindingList {
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
 
   repeated WorkflowEventBinding items = 2;
 }
@@ -2028,7 +2030,7 @@ message WorkflowLevelArtifactGC {
 // WorkflowList is list of Workflow resources
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 message WorkflowList {
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
 
   repeated Workflow items = 2;
 }
@@ -2074,12 +2076,12 @@ message WorkflowSpec {
   // Volumes is a list of volumes that can be mounted by containers in a workflow.
   // +patchStrategy=merge
   // +patchMergeKey=name
-  repeated k8s.io.api.core.v1.Volume volumes = 5;
+  repeated .k8s.io.api.core.v1.Volume volumes = 5;
 
   // VolumeClaimTemplates is a list of claims that containers are allowed to reference.
   // The Workflow controller will create the claims at the beginning of the workflow
   // and delete the claims upon completion of the workflow
-  repeated k8s.io.api.core.v1.PersistentVolumeClaim volumeClaimTemplates = 6;
+  repeated .k8s.io.api.core.v1.PersistentVolumeClaim volumeClaimTemplates = 6;
 
   // Parallelism limits the max total parallel pods that can execute at the same time in a workflow
   // +kubebuilder:validation:Minimum=1
@@ -2098,12 +2100,12 @@ message WorkflowSpec {
 
   // Affinity sets the scheduling constraints for all pods in the workflow.
   // Can be overridden by an affinity specified in the template
-  optional k8s.io.api.core.v1.Affinity affinity = 11;
+  optional .k8s.io.api.core.v1.Affinity affinity = 11;
 
   // Tolerations to apply to workflow pods.
   // +patchStrategy=merge
   // +patchMergeKey=key
-  repeated k8s.io.api.core.v1.Toleration tolerations = 12;
+  repeated .k8s.io.api.core.v1.Toleration tolerations = 12;
 
   // ImagePullSecrets is a list of references to secrets in the same namespace to use for pulling any images
   // in pods that reference this ServiceAccount. ImagePullSecrets are distinct from Secrets because Secrets
@@ -2111,7 +2113,7 @@ message WorkflowSpec {
   // More info: https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
   // +patchStrategy=merge
   // +patchMergeKey=name
-  repeated k8s.io.api.core.v1.LocalObjectReference imagePullSecrets = 13;
+  repeated .k8s.io.api.core.v1.LocalObjectReference imagePullSecrets = 13;
 
   // Host networking requested for this workflow pod. Default to false.
   optional bool hostNetwork = 14;
@@ -2126,7 +2128,7 @@ message WorkflowSpec {
 
   // PodDNSConfig defines the DNS parameters of a pod in addition to
   // those generated from DNSPolicy.
-  optional k8s.io.api.core.v1.PodDNSConfig dnsConfig = 16;
+  optional .k8s.io.api.core.v1.PodDNSConfig dnsConfig = 16;
 
   // OnExit is a template reference which is invoked at the end of the
   // workflow, irrespective of the success, failure, or error of the
@@ -2161,12 +2163,12 @@ message WorkflowSpec {
 
   // +patchStrategy=merge
   // +patchMergeKey=ip
-  repeated k8s.io.api.core.v1.HostAlias hostAliases = 25;
+  repeated .k8s.io.api.core.v1.HostAlias hostAliases = 25;
 
   // SecurityContext holds pod-level security attributes and common container settings.
   // Optional: Defaults to empty.  See type description for default values of each field.
   // +optional
-  optional k8s.io.api.core.v1.PodSecurityContext securityContext = 26;
+  optional .k8s.io.api.core.v1.PodSecurityContext securityContext = 26;
 
   // PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
   // container fields which are not strings (e.g. resource limits).
@@ -2176,7 +2178,7 @@ message WorkflowSpec {
   // Controller will automatically add the selector with workflow name, if selector is empty.
   // Optional: Defaults to empty.
   // +optional
-  optional k8s.io.api.policy.v1.PodDisruptionBudgetSpec podDisruptionBudget = 31;
+  optional .k8s.io.api.policy.v1.PodDisruptionBudgetSpec podDisruptionBudget = 31;
 
   // Metrics are a list of metrics emitted from this Workflow
   optional Metrics metrics = 32;
@@ -2225,10 +2227,10 @@ message WorkflowStatus {
   optional string phase = 1;
 
   // Time at which this workflow started
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.Time startedAt = 2;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.Time startedAt = 2;
 
   // Time at which this workflow completed
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.Time finishedAt = 3;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.Time finishedAt = 3;
 
   // EstimatedDuration in seconds.
   optional int64 estimatedDuration = 16;
@@ -2254,7 +2256,7 @@ message WorkflowStatus {
 
   // PersistentVolumeClaims tracks all PVCs that were created as part of the workflow.
   // The contents of this list are drained at the end of the workflow.
-  repeated k8s.io.api.core.v1.Volume persistentVolumeClaims = 7;
+  repeated .k8s.io.api.core.v1.Volume persistentVolumeClaims = 7;
 
   // Outputs captures output values and artifact locations produced by the workflow via global outputs
   optional Outputs outputs = 8;
@@ -2329,7 +2331,8 @@ message WorkflowStep {
   // OnExit is a template reference which is invoked at the end of the
   // template, irrespective of the success, failure, or error of the
   // primary template.
-  // DEPRECATED: Use Hooks[exit].Template instead.
+  //
+  // Deprecated: Use Hooks[exit].Template instead.
   optional string onExit = 11;
 
   // Hooks holds the lifecycle hook which is invoked at lifecycle of
@@ -2343,14 +2346,14 @@ message WorkflowStep {
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 message WorkflowTaskResult {
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
   optional NodeResult nodeResult = 2;
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 message WorkflowTaskResultList {
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
 
   repeated WorkflowTaskResult items = 2;
 }
@@ -2360,7 +2363,7 @@ message WorkflowTaskResultList {
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:subresource:status
 message WorkflowTaskSet {
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
   optional WorkflowTaskSetSpec spec = 2;
 
@@ -2369,7 +2372,7 @@ message WorkflowTaskSet {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 message WorkflowTaskSetList {
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
 
   repeated WorkflowTaskSet items = 2;
 }
@@ -2388,7 +2391,7 @@ message WorkflowTaskSetStatus {
 // +kubebuilder:resource:shortName=wftmpl
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 message WorkflowTemplate {
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
   optional WorkflowSpec spec = 2;
 }
@@ -2396,7 +2399,7 @@ message WorkflowTemplate {
 // WorkflowTemplateList is list of WorkflowTemplate resources
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 message WorkflowTemplateList {
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
 
   repeated WorkflowTemplate items = 2;
 }

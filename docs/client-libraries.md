@@ -29,7 +29,7 @@ The [Go SDK](./go-sdk-guide.md) is a fully-featured client for Argo Workflows. I
 
 * [Go SDK Guide](./go-sdk-guide.md) - Comprehensive documentation
 * [Examples](https://github.com/argoproj/argo-workflows/blob/main/sdks/go/) - Working code examples
-* [API Reference](https://pkg.go.dev/github.com/argoproj/argo-workflows/v3)
+* [API Reference](https://pkg.go.dev/github.com/argoproj/argo-workflows/v4)
 
 ### Java SDK
 
