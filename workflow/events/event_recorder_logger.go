@@ -6,7 +6,7 @@ import (
 	"github.com/go-logr/logr"
 	"k8s.io/klog/v2"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 // go-logr levels don't match our logging levels, so we need to map them

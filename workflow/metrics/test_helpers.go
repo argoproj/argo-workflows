@@ -7,7 +7,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric"
 	"k8s.io/client-go/util/workqueue"
 
-	"github.com/argoproj/argo-workflows/v3/util/telemetry"
+	"github.com/argoproj/argo-workflows/v4/util/telemetry"
 )
 
 var sharedMetrics *Metrics

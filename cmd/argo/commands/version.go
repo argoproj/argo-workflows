@@ -5,10 +5,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo-workflows/v3"
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
-	infopkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/info"
-	cmdutil "github.com/argoproj/argo-workflows/v3/util/cmd"
+	"github.com/argoproj/argo-workflows/v4"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/client"
+	infopkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/info"
+	cmdutil "github.com/argoproj/argo-workflows/v4/util/cmd"
 )
 
 // NewVersionCommand returns a new `version` command to be used as a sub-command to root

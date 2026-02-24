@@ -8,8 +8,8 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/flowcontrol"
 
-	"github.com/argoproj/argo-workflows/v3/util/k8s"
-	"github.com/argoproj/argo-workflows/v3/util/telemetry"
+	"github.com/argoproj/argo-workflows/v4/util/k8s"
+	"github.com/argoproj/argo-workflows/v4/util/telemetry"
 )
 
 func addK8sRequests(_ context.Context, m *Metrics) error {

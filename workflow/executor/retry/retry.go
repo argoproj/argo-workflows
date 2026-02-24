@@ -6,7 +6,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	"github.com/argoproj/argo-workflows/v3/util/env"
+	"github.com/argoproj/argo-workflows/v4/util/env"
 )
 
 // ExecutorRetry is a retry backoff settings for WorkflowExecutor

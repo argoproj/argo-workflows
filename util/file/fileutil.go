@@ -16,7 +16,7 @@ import (
 	"github.com/klauspost/pgzip"
 	"k8s.io/utils/env"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 var (

@@ -4,12 +4,12 @@ import (
 	"context"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/util/telemetry"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/telemetry"
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	envutil "github.com/argoproj/argo-workflows/v3/util/env"
+	envutil "github.com/argoproj/argo-workflows/v4/util/env"
 )
 
 const (

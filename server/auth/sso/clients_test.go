@@ -105,6 +105,7 @@ func TestCreateHTTPClient_DefaultConfig(t *testing.T) {
 
 	if client == nil {
 		t.Fatal("createHTTPClient() returned nil client")
+		return
 	}
 
 	// Should have custom transport with system cert pool loaded
@@ -141,6 +142,7 @@ func TestCreateHTTPClient_InsecureSkipVerify(t *testing.T) {
 
 	if client == nil {
 		t.Fatal("createHTTPClient() returned nil client")
+		return
 	}
 
 	// Should have custom transport with InsecureSkipVerify = true
@@ -181,6 +183,7 @@ func TestCreateHTTPClient_WithRootCAString(t *testing.T) {
 
 	if client == nil {
 		t.Fatal("createHTTPClient() returned nil client")
+		return
 	}
 
 	// Should have custom transport with RootCAs set
@@ -237,6 +240,7 @@ func TestCreateHTTPClient_AllOptionsEnabled(t *testing.T) {
 
 	if client == nil {
 		t.Fatal("createHTTPClient() returned nil client")
+		return
 	}
 
 	// Should have custom transport with both InsecureSkipVerify and RootCAs set
