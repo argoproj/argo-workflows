@@ -14,7 +14,6 @@ require (
 	github.com/aliyun/aliyun-oss-go-sdk v3.0.2+incompatible
 	github.com/aliyun/credentials-go v1.4.11
 	github.com/argoproj/argo-events v1.9.10
-	github.com/argoproj/argo-workflows/v3 v3.7.10
 	github.com/argoproj/pkg v0.13.7-0.20250123033407-65f2d4777bfd
 	github.com/blushft/go-diagrams v0.0.0-20250322201119-d91ac4ca5de4
 	github.com/colinmarc/hdfs/v2 v2.4.0

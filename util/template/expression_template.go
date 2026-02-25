@@ -116,7 +116,7 @@ func getMemberPath(node *ast.MemberNode) (string, bool) {
 		}
 		parts = append([]string{prop.Value}, parts...)
 
-		if id, ok := curr.Node.(*ast.IdentifierNode); ok {
+		if id, isIdent := curr.Node.(*ast.IdentifierNode); isIdent {
 			parts = append([]string{id.Value}, parts...)
 			return strings.Join(parts, "."), true
 		}
