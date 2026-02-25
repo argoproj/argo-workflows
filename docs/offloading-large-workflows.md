@@ -29,7 +29,7 @@ above or look for ways to reduce the size of your workflow manifest:
 
 ## Container Arguments Offloading
 
-> v4.0 and after
+> v3.7 and after
 
 When container arguments are extremely large, Argo automatically offloads them to avoid exceeding system limits. This feature addresses two types of argument size issues:
 

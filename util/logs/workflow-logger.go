@@ -17,11 +17,11 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 
-	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	workflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 // The goal of this class is to stream the logs of the workflow you want.
@@ -83,12 +83,10 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 	// we add selector if cli specify the pod selector when using logs
 	if req.GetSelector() != "" {
 		podListOptions = metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + req.GetName() + "," + req.GetSelector()}
-
 	} else {
 		// we create a watch on the pods labelled with the workflow name,
 		// but we also filter by pod name if that was requested
 		podListOptions = metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + req.GetName()}
-
 	}
 
 	if req.GetPodName() != "" {

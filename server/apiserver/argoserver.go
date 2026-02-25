@@ -32,51 +32,51 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/utils/env"
 
-	argo "github.com/argoproj/argo-workflows/v3"
-	"github.com/argoproj/argo-workflows/v3/config"
-	persist "github.com/argoproj/argo-workflows/v3/persist/sqldb"
-	clusterwftemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
-	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
-	eventpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/event"
-	eventsourcepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/eventsource"
-	infopkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/info"
-	sensorpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/sensor"
-	syncpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/sync"
-	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
-	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
-	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/server/apiserver/accesslog"
-	"github.com/argoproj/argo-workflows/v3/server/artifacts"
-	"github.com/argoproj/argo-workflows/v3/server/auth"
-	"github.com/argoproj/argo-workflows/v3/server/auth/sso"
-	"github.com/argoproj/argo-workflows/v3/server/auth/webhook"
-	"github.com/argoproj/argo-workflows/v3/server/cache"
-	"github.com/argoproj/argo-workflows/v3/server/clusterworkflowtemplate"
-	"github.com/argoproj/argo-workflows/v3/server/cronworkflow"
-	"github.com/argoproj/argo-workflows/v3/server/event"
-	"github.com/argoproj/argo-workflows/v3/server/eventsource"
-	"github.com/argoproj/argo-workflows/v3/server/info"
-	"github.com/argoproj/argo-workflows/v3/server/sensor"
-	"github.com/argoproj/argo-workflows/v3/server/static"
-	serversync "github.com/argoproj/argo-workflows/v3/server/sync"
-	"github.com/argoproj/argo-workflows/v3/server/types"
-	"github.com/argoproj/argo-workflows/v3/server/workflow"
-	"github.com/argoproj/argo-workflows/v3/server/workflow/store"
-	"github.com/argoproj/argo-workflows/v3/server/workflowarchive"
-	"github.com/argoproj/argo-workflows/v3/server/workflowtemplate"
-	"github.com/argoproj/argo-workflows/v3/ui"
-	grpcutil "github.com/argoproj/argo-workflows/v3/util/grpc"
-	"github.com/argoproj/argo-workflows/v3/util/instanceid"
-	"github.com/argoproj/argo-workflows/v3/util/json"
-	k8sutil "github.com/argoproj/argo-workflows/v3/util/k8s"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	rbacutil "github.com/argoproj/argo-workflows/v3/util/rbac"
-	"github.com/argoproj/argo-workflows/v3/util/sqldb"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/plugin"
-	"github.com/argoproj/argo-workflows/v3/workflow/events"
-	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
+	argo "github.com/argoproj/argo-workflows/v4"
+	"github.com/argoproj/argo-workflows/v4/config"
+	persist "github.com/argoproj/argo-workflows/v4/persist/sqldb"
+	clusterwftemplatepkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/clusterworkflowtemplate"
+	cronworkflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/cronworkflow"
+	eventpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/event"
+	eventsourcepkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/eventsource"
+	infopkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/info"
+	sensorpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/sensor"
+	syncpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/sync"
+	workflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow"
+	workflowarchivepkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflowarchive"
+	workflowtemplatepkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflowtemplate"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/server/apiserver/accesslog"
+	"github.com/argoproj/argo-workflows/v4/server/artifacts"
+	"github.com/argoproj/argo-workflows/v4/server/auth"
+	"github.com/argoproj/argo-workflows/v4/server/auth/sso"
+	"github.com/argoproj/argo-workflows/v4/server/auth/webhook"
+	"github.com/argoproj/argo-workflows/v4/server/cache"
+	"github.com/argoproj/argo-workflows/v4/server/clusterworkflowtemplate"
+	"github.com/argoproj/argo-workflows/v4/server/cronworkflow"
+	"github.com/argoproj/argo-workflows/v4/server/event"
+	"github.com/argoproj/argo-workflows/v4/server/eventsource"
+	"github.com/argoproj/argo-workflows/v4/server/info"
+	"github.com/argoproj/argo-workflows/v4/server/sensor"
+	"github.com/argoproj/argo-workflows/v4/server/static"
+	serversync "github.com/argoproj/argo-workflows/v4/server/sync"
+	"github.com/argoproj/argo-workflows/v4/server/types"
+	"github.com/argoproj/argo-workflows/v4/server/workflow"
+	"github.com/argoproj/argo-workflows/v4/server/workflow/store"
+	"github.com/argoproj/argo-workflows/v4/server/workflowarchive"
+	"github.com/argoproj/argo-workflows/v4/server/workflowtemplate"
+	"github.com/argoproj/argo-workflows/v4/ui"
+	grpcutil "github.com/argoproj/argo-workflows/v4/util/grpc"
+	"github.com/argoproj/argo-workflows/v4/util/instanceid"
+	"github.com/argoproj/argo-workflows/v4/util/json"
+	k8sutil "github.com/argoproj/argo-workflows/v4/util/k8s"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	rbacutil "github.com/argoproj/argo-workflows/v4/util/rbac"
+	"github.com/argoproj/argo-workflows/v4/util/sqldb"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifactrepositories"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/plugin"
+	"github.com/argoproj/argo-workflows/v4/workflow/events"
+	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
 )
 
 var MaxGRPCMessageSize int
@@ -243,7 +243,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	wfArchive := persist.NullWorkflowArchive
 	persistence := config.Persistence
 	if persistence != nil {
-		session, err := sqldb.CreateDBSession(ctx, as.clients.Kubernetes, as.namespace, persistence.DBConfig)
+		session, dbType, err := sqldb.CreateDBSession(ctx, as.clients.Kubernetes, as.namespace, persistence.DBConfig)
 		if err != nil {
 			log.WithFatal().Error(ctx, err.Error())
 		}
@@ -259,7 +259,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		}
 		// we always enable the archive for the Argo Server, as the Argo Server does not write records, so you can
 		// disable the archiving - and still read old records
-		wfArchive = persist.NewWorkflowArchive(session, persistence.GetClusterName(), as.managedNamespace, instanceIDService)
+		wfArchive = persist.NewWorkflowArchive(session, persistence.GetClusterName(), as.managedNamespace, instanceIDService, dbType)
 	}
 	resourceCacheNamespace := getResourceCacheNamespace(as.managedNamespace)
 	wftmplStore, err := workflowtemplate.NewInformer(as.restConfig, resourceCacheNamespace)
@@ -267,7 +267,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		log.WithFatal().Error(ctx, err.Error())
 	}
 	kubeclientset := kubernetes.NewForConfigOrDie(as.restConfig)
-	var cwftmplInformer clusterworkflowtemplate.ClusterWorkflowTemplateInformer
+	var cwftmplInformer clusterworkflowtemplate.Informer
 	if rbacutil.HasAccessToClusterWorkflowTemplates(ctx, kubeclientset) {
 		cwftmplInformer, err = clusterworkflowtemplate.NewInformer(as.restConfig)
 		if err != nil {
@@ -287,7 +287,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	if err != nil {
 		log.WithFatal().Error(ctx, err.Error())
 	}
-	workflowServer := workflow.NewWorkflowServer(ctx, instanceIDService, offloadRepo, wfArchive, as.clients.Workflow, wfStore, wfStore, wftmplStore, cwftmplInformer, config.WorkflowDefaults, &resourceCacheNamespace)
+	workflowServer := workflow.NewServer(ctx, instanceIDService, offloadRepo, wfArchive, as.clients.Workflow, wfStore, wfStore, wftmplStore, cwftmplInformer, config.WorkflowDefaults, &resourceCacheNamespace)
 	grpcServer := as.newGRPCServer(ctx, instanceIDService, workflowServer, wftmplStore, cwftmplInformer, wfArchiveServer, syncServer, eventServer, config.Links, config.Columns, config.NavColor, config.WorkflowDefaults)
 	httpServer := as.newHTTPServer(ctx, port, artifactServer)
 
@@ -375,7 +375,7 @@ func (as *argoServer) newGRPCServer(ctx context.Context, instanceIDService insta
 	eventsourcepkg.RegisterEventSourceServiceServer(grpcServer, eventsource.NewEventSourceServer())
 	sensorpkg.RegisterSensorServiceServer(grpcServer, sensor.NewSensorServer())
 	workflowpkg.RegisterWorkflowServiceServer(grpcServer, workflowServer)
-	workflowtemplatepkg.RegisterWorkflowTemplateServiceServer(grpcServer, workflowtemplate.NewWorkflowTemplateServer(instanceIDService, wftmplStore, cwftmplStore))
+	workflowtemplatepkg.RegisterWorkflowTemplateServiceServer(grpcServer, workflowtemplate.NewServer(instanceIDService, wftmplStore, cwftmplStore))
 	cronworkflowpkg.RegisterCronWorkflowServiceServer(grpcServer, cronworkflow.NewCronWorkflowServer(instanceIDService, wftmplStore, cwftmplStore, wfDefaults))
 	workflowarchivepkg.RegisterArchivedWorkflowServiceServer(grpcServer, wfArchiveServer)
 	clusterwftemplatepkg.RegisterClusterWorkflowTemplateServiceServer(grpcServer, clusterworkflowtemplate.NewClusterWorkflowTemplateServer(instanceIDService, cwftmplStore, wfDefaults))
@@ -415,7 +415,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
 
-	webhookInterceptor := webhook.NewWebhookInterceptor(log).Interceptor(as.clients.Kubernetes)
+	webhookInterceptor := webhook.NewInterceptor(log).Interceptor(as.clients.Kubernetes)
 
 	// HTTP 1.1+JSON Server
 	// grpc-ecosystem/grpc-gateway is used to proxy HTTP requests to the corresponding gRPC call
@@ -423,7 +423,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	// golang/protobuf. Which does not support types such as time.Time. gogo/protobuf does support
 	// time.Time, but does not support custom UnmarshalJSON() and MarshalJSON() methods. Therefore
 	// we use our own Marshaler
-	gwMuxOpts := runtime.WithMarshalerOption(runtime.MIMEWildcard, new(json.JSONMarshaler))
+	gwMuxOpts := runtime.WithMarshalerOption(runtime.MIMEWildcard, new(json.Marshaler))
 	gwmux := runtime.NewServeMux(gwMuxOpts,
 		runtime.WithIncomingHeaderMatcher(grpcutil.IncomingHeaderMatcher),
 		runtime.WithProtoErrorHandler(runtime.DefaultHTTPProtoErrorHandler),

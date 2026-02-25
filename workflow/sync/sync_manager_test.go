@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -18,12 +18,12 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/utils/ptr"
 
-	"github.com/argoproj/argo-workflows/v3/config"
-	argoErr "github.com/argoproj/argo-workflows/v3/errors"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	fakewfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo-workflows/v3/util/sqldb"
-	syncdb "github.com/argoproj/argo-workflows/v3/util/sync/db"
+	"github.com/argoproj/argo-workflows/v4/config"
+	argoErr "github.com/argoproj/argo-workflows/v4/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	fakewfclientset "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo-workflows/v4/util/sqldb"
+	syncdb "github.com/argoproj/argo-workflows/v4/util/sync/db"
 )
 
 const configMap = `
@@ -384,6 +384,48 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		require.NoError(t, err)
 		syncManager.Initialize(ctx, wfList.Items)
 		assert.Empty(t, syncManager.syncLockMap)
+	})
+	t.Run("InitializeMultipleWorkflowsHolding", func(t *testing.T) {
+		// This test verifies that when multiple workflows claim to hold the same semaphore
+		// (which can happen with stale status after a controller restart), ALL of their
+		// holders are registered during Initialize, not just those after the first workflow.
+		// This was a bug caused by variable shadowing in Initialize (PR #3141).
+
+		// Create a ConfigMap with semaphore limit of 3 to allow multiple holders
+		kubeClient := fake.NewSimpleClientset()
+		_, err := kubeClient.CoreV1().ConfigMaps("default").Create(ctx, &v1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{Name: "my-config"},
+			Data:       map[string]string{"workflow": "3"},
+		}, metav1.CreateOptions{})
+		require.NoError(t, err)
+
+		syncManager := NewLockManager(ctx, kubeClient, "", nil, GetSyncLimitFunc(kubeClient), func(key string) {
+		}, WorkflowExistenceFunc)
+
+		// Create first workflow claiming to hold the semaphore
+		wf1 := wfv1.MustUnmarshalWorkflow(wfWithStatus)
+		wf1.Name = "hello-world-one"
+		wf1.Status.Synchronization.Semaphore.Holding[0].Holders = []string{"default/hello-world-one"}
+
+		// Create second workflow also claiming to hold the same semaphore
+		wf2 := wfv1.MustUnmarshalWorkflow(wfWithStatus)
+		wf2.Name = "hello-world-two"
+		wf2.Status.Synchronization.Semaphore.Holding[0].Holders = []string{"default/hello-world-two"}
+
+		// Initialize with both workflows
+		syncManager.Initialize(ctx, []wfv1.Workflow{*wf1, *wf2})
+
+		// Verify the semaphore was created
+		assert.Len(t, syncManager.syncLockMap, 1)
+
+		// Verify BOTH holders are registered (the bug would only register the second one)
+		sem := syncManager.syncLockMap["default/ConfigMap/my-config/workflow"]
+		require.NotNil(t, sem)
+		holders, err := sem.getCurrentHolders(ctx)
+		require.NoError(t, err)
+		assert.Len(t, holders, 2, "both workflows should be registered as holders")
+		assert.Contains(t, holders, "default/hello-world-one")
+		assert.Contains(t, holders, "default/hello-world-two")
 	})
 
 	t.Run("WfLevelAcquireAndRelease", func(t *testing.T) {
@@ -920,7 +962,6 @@ func TestTriggerWFWithAvailableLock(t *testing.T) {
 			assert.True(status)
 			assert.True(wfUpdate)
 			wfs = append(wfs, *wf)
-
 		}
 		for i := range 3 {
 			wf := wfv1.MustUnmarshalWorkflow(wfWithSemaphore)
@@ -1264,7 +1305,6 @@ status:
 		require.NotNil(t, wf.Status.Synchronization)
 		require.NotNil(t, wf.Status.Synchronization.Semaphore)
 	})
-
 }
 
 const wfV2MutexMigrationWorkflowLevel = `apiVersion: argoproj.io/v1alpha1
@@ -1598,7 +1638,6 @@ func getHoldingNameV1(holderKey string) string {
 }
 
 func TestCheckHolderVersion(t *testing.T) {
-
 	t.Run("CheckHolderKeyWithNodeName", func(t *testing.T) {
 		assert := assert.New(t)
 		wfMutex := wfv1.MustUnmarshalWorkflow(wfWithMutex)
@@ -1611,7 +1650,6 @@ func TestCheckHolderVersion(t *testing.T) {
 		keyv1 := getHoldingNameV1(key)
 		version = wfv1.CheckHolderKeyVersion(keyv1)
 		assert.Equal(wfv1.HoldingNameV1, version)
-
 	})
 
 	t.Run("CheckHolderKeyWithoutNodeName", func(t *testing.T) {
@@ -1630,7 +1668,6 @@ func TestCheckHolderVersion(t *testing.T) {
 }
 
 func TestBackgroundNotifierClearsExpiredLocks(t *testing.T) {
-
 	if runtime.GOOS == "windows" {
 		t.Skip("Skipping test on Windows platforms")
 	}
@@ -1819,7 +1856,7 @@ func TestUnconfiguredSemaphores(t *testing.T) {
 				defer cleanup()
 
 				// Configure sync manager
-				syncManager := createLockManager(ctx, info.Session, &syncConfig, nil, func(key string) {
+				syncManager := createLockManager(ctx, info.Session, dbType, &syncConfig, nil, func(key string) {
 				}, WorkflowExistenceFunc)
 				require.NotNil(t, syncManager)
 				require.NotNil(t, syncManager.dbInfo.Session)

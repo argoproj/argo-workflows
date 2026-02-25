@@ -22,18 +22,18 @@ import (
 
 	"os"
 
-	"github.com/argoproj/argo-workflows/v3"
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
-	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo-workflows/v3/server/apiserver"
-	"github.com/argoproj/argo-workflows/v3/server/auth"
-	"github.com/argoproj/argo-workflows/v3/server/types"
-	cmdutil "github.com/argoproj/argo-workflows/v3/util/cmd"
-	"github.com/argoproj/argo-workflows/v3/util/help"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	pprofutil "github.com/argoproj/argo-workflows/v3/util/pprof"
-	tlsutils "github.com/argoproj/argo-workflows/v3/util/tls"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v4"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/client"
+	wfclientset "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo-workflows/v4/server/apiserver"
+	"github.com/argoproj/argo-workflows/v4/server/auth"
+	"github.com/argoproj/argo-workflows/v4/server/types"
+	cmdutil "github.com/argoproj/argo-workflows/v4/util/cmd"
+	"github.com/argoproj/argo-workflows/v4/util/help"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	pprofutil "github.com/argoproj/argo-workflows/v4/util/pprof"
+	tlsutils "github.com/argoproj/argo-workflows/v4/util/tls"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 func NewServerCommand() *cobra.Command {
@@ -67,7 +67,7 @@ func NewServerCommand() *cobra.Command {
 		Example: fmt.Sprintf(`
 See %s`, help.ArgoServer()),
 		RunE: func(c *cobra.Command, args []string) error {
-			ctx, logger, err := cmdutil.CmdContextWithLogger(c, logLevel, logFormat)
+			ctx, logger, err := cmdutil.ContextWithLogger(c, logLevel, logFormat)
 			if err != nil {
 				return err
 			}
@@ -137,7 +137,6 @@ See %s`, help.ArgoServer()),
 						return err
 					}
 				}
-
 			} else {
 				logger.Warn(ctx, "You are running in insecure mode. Learn how to enable transport layer security: https://argo-workflows.readthedocs.io/en/latest/tls/")
 			}
@@ -222,7 +221,7 @@ See %s`, help.ArgoServer()),
 	viper.SetEnvPrefix("ARGO")
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_", ".", "_"))
 	// bind flags to env vars (https://github.com/spf13/viper/tree/v1.17.0#working-with-flags)
-	ctx, logger, err := cmdutil.CmdContextWithLogger(&command, logLevel, logFormat)
+	ctx, logger, err := cmdutil.ContextWithLogger(&command, logLevel, logFormat)
 	if err != nil {
 		logging.InitLogger().WithError(err).WithFatal().Error(ctx, "Failed to create server logger")
 	}

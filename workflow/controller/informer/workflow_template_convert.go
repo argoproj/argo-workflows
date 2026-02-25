@@ -8,10 +8,10 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/client/informers/externalversions/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/workflow/templateresolution"
+	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
 func objectToWorkflowTemplate(object runtime.Object) (*wfv1.WorkflowTemplate, error) {
@@ -46,7 +46,6 @@ type WorkflowTemplateFromInformerGetter struct {
 }
 
 func (getter *WorkflowTemplateFromInformerGetter) Get(_ context.Context, name string) (*wfv1.WorkflowTemplate, error) {
-
 	obj, exists, err := getter.wftmplInformer.Informer().GetStore().GetByKey(getter.namespace + "/" + name)
 	if err != nil {
 		return nil, err

@@ -118,7 +118,6 @@ containers:
 `
 	err := validateContainerSetTemplate(invalidContainerSetDuplicateNames)
 	require.ErrorContains(t, err, "containers[1].name 'a' is not unique")
-
 }
 
 func TestInvalidContainerSetDependencyNotFound(t *testing.T) {

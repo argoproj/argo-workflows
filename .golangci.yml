@@ -40,6 +40,7 @@ linters:
     - usestdlibvars
     - usetesting
     - wastedassign
+    - whitespace
   settings:
     revive:
       rules:
@@ -53,6 +54,7 @@ linters:
         - name: error-return
         - name: error-strings
         - name: errorf
+        - name: exported
         - name: increment-decrement
         - name: indent-error-flow
         - name: package-comments
@@ -65,8 +67,6 @@ linters:
         - name: unreachable-code
         - name: var-declaration
         # disabled defaults due to large number of fixes required for now - PRs welcome
-        - name: exported
-          disabled: true
         - name: unused-parameter
           disabled: true
         - name: var-naming

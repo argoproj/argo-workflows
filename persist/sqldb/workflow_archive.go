@@ -16,13 +16,13 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
-	"github.com/argoproj/argo-workflows/v3/util/env"
-	"github.com/argoproj/argo-workflows/v3/util/instanceid"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/util/sqldb"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	sutils "github.com/argoproj/argo-workflows/v4/server/utils"
+	"github.com/argoproj/argo-workflows/v4/util/env"
+	"github.com/argoproj/argo-workflows/v4/util/instanceid"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/sqldb"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 const (
@@ -102,8 +102,8 @@ func (r *workflowArchive) IsEnabled() bool {
 }
 
 // NewWorkflowArchive returns a new workflowArchive
-func NewWorkflowArchive(session db.Session, clusterName, managedNamespace string, instanceIDService instanceid.Service) WorkflowArchive {
-	return &workflowArchive{session: session, clusterName: clusterName, managedNamespace: managedNamespace, instanceIDService: instanceIDService, dbType: sqldb.DBTypeFor(session)}
+func NewWorkflowArchive(session db.Session, clusterName, managedNamespace string, instanceIDService instanceid.Service, dbType sqldb.DBType) WorkflowArchive {
+	return &workflowArchive{session: session, clusterName: clusterName, managedNamespace: managedNamespace, instanceIDService: instanceIDService, dbType: dbType}
 }
 
 func (r *workflowArchive) ArchiveWorkflow(ctx context.Context, wf *wfv1.Workflow) error {
@@ -293,8 +293,15 @@ func (r *workflowArchive) CountWorkflows(ctx context.Context, options sutils.Lis
 		selector := r.session.SQL().
 			Select(db.Raw("count(*) as total")).
 			From(archiveTableName).
-			Where(r.clusterManagedNamespaceAndInstanceID()).
-			And(namespaceEqual(options.Namespace)).
+			Where(r.clusterManagedNamespaceAndInstanceID())
+
+		if options.NamespaceFilter == "NotEquals" {
+			selector = selector.And(namespaceNotEqual(options.Namespace))
+		} else {
+			selector = selector.And(namespaceEqual(options.Namespace))
+		}
+
+		selector = selector.
 			And(namePrefixClause(options.NamePrefix)).
 			And(startedAtFromClause(options.MinStartedAt)).
 			And(startedAtToClause(options.MaxStartedAt)).
@@ -348,8 +355,15 @@ func (r *workflowArchive) countWorkflowsOptimized(options sutils.ListOptions) (i
 	sampleSelector := r.session.SQL().
 		Select(db.Raw("count(*) as total")).
 		From(archiveTableName).
-		Where(r.clusterManagedNamespaceAndInstanceID()).
-		And(namespaceEqual(options.Namespace)).
+		Where(r.clusterManagedNamespaceAndInstanceID())
+
+	if options.NamespaceFilter == "NotEquals" {
+		sampleSelector = sampleSelector.And(namespaceNotEqual(options.Namespace))
+	} else {
+		sampleSelector = sampleSelector.And(namespaceEqual(options.Namespace))
+	}
+
+	sampleSelector = sampleSelector.
 		And(namePrefixClause(options.NamePrefix)).
 		And(startedAtFromClause(options.MinStartedAt)).
 		And(startedAtToClause(options.MaxStartedAt)).
@@ -405,8 +419,15 @@ func (r *workflowArchive) HasMoreWorkflows(ctx context.Context, options sutils.L
 	selector := r.session.SQL().
 		Select("uid").
 		From(archiveTableName).
-		Where(r.clusterManagedNamespaceAndInstanceID()).
-		And(namespaceEqual(options.Namespace)).
+		Where(r.clusterManagedNamespaceAndInstanceID())
+
+	if options.NamespaceFilter == "NotEquals" {
+		selector = selector.And(namespaceNotEqual(options.Namespace))
+	} else {
+		selector = selector.And(namespaceEqual(options.Namespace))
+	}
+
+	selector = selector.
 		And(namePrefixClause(options.NamePrefix)).
 		And(startedAtFromClause(options.MinStartedAt)).
 		And(startedAtToClause(options.MaxStartedAt)).
@@ -490,6 +511,13 @@ func startedAtToClause(to time.Time) db.Cond {
 func namespaceEqual(namespace string) db.Cond {
 	if namespace != "" {
 		return db.Cond{"namespace": namespace}
+	}
+	return db.Cond{}
+}
+
+func namespaceNotEqual(namespace string) db.Cond {
+	if namespace != "" {
+		return db.Cond{"namespace !=": namespace}
 	}
 	return db.Cond{}
 }
@@ -634,7 +662,6 @@ func (r *workflowArchive) GetWorkflowForEstimator(ctx context.Context, namespace
 			FinishedAt: v1.Time{Time: awf.FinishedAt},
 		},
 	}, nil
-
 }
 
 func (r *workflowArchive) DeleteWorkflow(ctx context.Context, uid string) error {

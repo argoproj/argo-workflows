@@ -9,16 +9,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 
-	"github.com/argoproj/argo-workflows/v3/util/sqldb"
+	"github.com/argoproj/argo-workflows/v4/util/sqldb"
 )
 
 const wfWithDatabaseSemaphore = `
@@ -70,12 +70,12 @@ func setupMultipleLockManagers(t *testing.T, dbType sqldb.DBType, semaphoreSize 
 	require.NoError(t, err)
 
 	// Create two sync managers with the same database session
-	syncMgr1 := createLockManager(ctx, info.Session, &cfg, func(_ context.Context, _ string) (int, error) { return 2, nil }, func(key string) {}, WorkflowExistenceFunc)
+	syncMgr1 := createLockManager(ctx, info.Session, dbType, &cfg, func(_ context.Context, _ string) (int, error) { return 2, nil }, func(key string) {}, WorkflowExistenceFunc)
 	require.NotNil(t, syncMgr1)
 	require.NotNil(t, syncMgr1.dbInfo.Session)
 	// Second controller
 	cfg.ControllerName = "test2"
-	syncMgr2 := createLockManager(ctx, info.Session, &cfg, func(_ context.Context, _ string) (int, error) { return 2, nil }, func(key string) {}, WorkflowExistenceFunc)
+	syncMgr2 := createLockManager(ctx, info.Session, dbType, &cfg, func(_ context.Context, _ string) (int, error) { return 2, nil }, func(key string) {}, WorkflowExistenceFunc)
 	require.NotNil(t, syncMgr2)
 	require.NotNil(t, syncMgr2.dbInfo.Session)
 	return ctx, deferfn2, syncMgr1, syncMgr2
@@ -235,7 +235,6 @@ func testSyncManagersContendingForSemaphore(t *testing.T, dbType sqldb.DBType) {
 	if maxLockCount > 1 {
 		t.Errorf("Multiple locks were held simultaneously: %d", maxLockCount)
 	}
-
 }
 
 func TestSyncManagersContendingForSemaphore(t *testing.T) {

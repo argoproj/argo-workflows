@@ -11,9 +11,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	argoerrors "github.com/argoproj/argo-workflows/v3/errors"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	argoerrors "github.com/argoproj/argo-workflows/v4/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 func TestHTTPArtifactDriver_Load(t *testing.T) {
@@ -118,7 +118,6 @@ func TestSaveHTTPArtifactRedirect(t *testing.T) {
 
 			w.WriteHeader(http.StatusCreated)
 		}
-
 	}))
 	defer svr.Close()
 
@@ -137,5 +136,4 @@ func TestSaveHTTPArtifactRedirect(t *testing.T) {
 		err := driver.Save(ctx, tempFile, &art)
 		require.NoError(t, err)
 	})
-
 }

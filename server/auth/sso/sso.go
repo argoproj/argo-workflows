@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/config"
+	"github.com/argoproj/argo-workflows/v4/config"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/go-jose/go-jose/v3"
@@ -23,9 +23,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
-	"github.com/argoproj/argo-workflows/v3/server/auth/types"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	pkgrand "github.com/argoproj/argo-workflows/v3/util/rand"
+	"github.com/argoproj/argo-workflows/v4/server/auth/types"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	pkgrand "github.com/argoproj/argo-workflows/v4/util/rand"
 )
 
 const (
@@ -236,7 +236,7 @@ func (s *sso) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 	if !isValidFinalRedirectURL(finalRedirectURL) {
 		finalRedirectURL = s.baseHRef
 	}
-	state, err := pkgrand.RandString(10)
+	state, err := pkgrand.String(10)
 	if err != nil {
 		s.logger.WithError(err).Error(r.Context(), "failed to create state")
 		w.WriteHeader(http.StatusInternalServerError)
@@ -360,7 +360,6 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	finalRedirectURL := cookie.Value
 	if !isValidFinalRedirectURL(cookie.Value) {
 		finalRedirectURL = s.baseHRef
-
 	}
 	http.Redirect(w, r, finalRedirectURL, http.StatusFound)
 }

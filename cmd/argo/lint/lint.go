@@ -9,16 +9,16 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/apiclient"
-	clusterworkflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
-	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
-	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
-	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
-	wf "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	fileutil "github.com/argoproj/argo-workflows/v3/util/file"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/pkg/apiclient"
+	clusterworkflowtemplatepkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/clusterworkflowtemplate"
+	cronworkflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/cronworkflow"
+	workflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow"
+	workflowtemplatepkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflowtemplate"
+	wf "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	fileutil "github.com/argoproj/argo-workflows/v4/util/file"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 type ServiceClients struct {
@@ -28,7 +28,7 @@ type ServiceClients struct {
 	ClusterWorkflowTemplateClient clusterworkflowtemplatepkg.ClusterWorkflowTemplateServiceClient
 }
 
-type LintOptions struct {
+type Options struct {
 	Files            []string
 	Strict           bool
 	DefaultNamespace string
@@ -40,16 +40,16 @@ type LintOptions struct {
 	Printer io.Writer
 }
 
-// LintResult represents the result of linting objects from a single source
-type LintResult struct {
+// Result represents the result of linting objects from a single source
+type Result struct {
 	File   string
 	Errs   []error
 	Linted bool
 }
 
-// LintResults represents the result of linting objects from multiple sources
-type LintResults struct {
-	Results        []*LintResult
+// Results represents the result of linting objects from multiple sources
+type Results struct {
+	Results        []*Result
 	Success        bool
 	msg            string
 	fmtr           Formatter
@@ -57,8 +57,8 @@ type LintResults struct {
 }
 
 type Formatter interface {
-	Format(*LintResult) string
-	Summarize(*LintResults) string
+	Format(*Result) string
+	Summarize(*Results) string
 }
 
 var (
@@ -80,7 +80,7 @@ func GetFormatter(fmtr string) (Formatter, error) {
 
 // RunLint lints the specified kinds in the specified files and prints the results to os.Stdout.
 // If linting fails it will exit with status code 1.
-func RunLint(ctx context.Context, client apiclient.Client, kinds []string, output string, offline bool, opts LintOptions) error {
+func RunLint(ctx context.Context, client apiclient.Client, kinds []string, output string, offline bool, opts Options) error {
 	fmtr, err := GetFormatter(output)
 	if err != nil {
 		return err
@@ -108,7 +108,7 @@ func RunLint(ctx context.Context, client apiclient.Client, kinds []string, outpu
 
 // Lint reads all files, returns linting errors of all of the enitities of the specified kinds.
 // Entities of other kinds are ignored.
-func Lint(ctx context.Context, opts *LintOptions) (*LintResults, error) {
+func Lint(ctx context.Context, opts *Options) (*Results, error) {
 	var fmtr Formatter = defaultFormatter
 	var w = io.Discard
 	if opts.Formatter != nil {
@@ -118,8 +118,8 @@ func Lint(ctx context.Context, opts *LintOptions) (*LintResults, error) {
 		w = opts.Printer
 	}
 
-	results := &LintResults{
-		Results: []*LintResult{},
+	results := &Results{
+		Results: []*Result{},
 		fmtr:    fmtr,
 	}
 
@@ -141,8 +141,8 @@ func Lint(ctx context.Context, opts *LintOptions) (*LintResults, error) {
 	return results, err
 }
 
-func lintData(ctx context.Context, src string, data []byte, opts *LintOptions) *LintResult {
-	res := &LintResult{
+func lintData(ctx context.Context, src string, data []byte, opts *Options) *Result {
+	res := &Result{
 		File: src,
 		Errs: []error{},
 	}
@@ -226,12 +226,12 @@ func lintData(ctx context.Context, src string, data []byte, opts *LintOptions) *
 	return res
 }
 
-func (l *LintResults) Msg() string {
+func (l *Results) Msg() string {
 	return l.msg
 }
 
 // evaluate must be called before checking the value of l.Success and l.String()
-func (l *LintResults) evaluate() *LintResults {
+func (l *Results) evaluate() *Results {
 	success := true
 	l.anythingLinted = false
 
@@ -257,7 +257,7 @@ func (l *LintResults) evaluate() *LintResults {
 	return l
 }
 
-func (l *LintResults) buildMsg() string {
+func (l *Results) buildMsg() string {
 	sb := &strings.Builder{}
 	for _, r := range l.Results {
 		sb.WriteString(l.fmtr.Format(r))

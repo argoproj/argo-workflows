@@ -12,13 +12,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/workflow/executor/osspecific"
+	"github.com/argoproj/argo-workflows/v4/workflow/executor/osspecific"
 
-	argoerrors "github.com/argoproj/argo-workflows/v3/errors"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/executor"
+	argoerrors "github.com/argoproj/argo-workflows/v4/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/executor"
 )
 
 /*
@@ -138,7 +138,6 @@ func (e emissary) Kill(ctx context.Context, containerNames []string, termination
 	logger := logging.RequireLoggerFromContext(ctx)
 	logger.WithFields(logging.Fields{"terminationGracePeriodDuration": terminationGracePeriodDuration, "containerNames": containerNames}).Info(ctx, "emissary: killing containers")
 	for _, containerName := range containerNames {
-
 		// allow write-access by other users, because other containers
 		// should delete the signal after receiving it
 		signalPath := filepath.Join(common.VarRunArgoPath, "ctr", containerName, "signal")

@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -95,7 +95,6 @@ func (msts mockServerStream) SetHeader(md metadata.MD) error {
 func (mockServerStream) SendHeader(md metadata.MD) error { return nil }
 func (mockServerStream) SetTrailer(md metadata.MD)       {}
 func (mockServerStream) Context() context.Context {
-
 	return logging.TestContext(context.Background())
 }
 func (mockServerStream) SendMsg(m any) error { return nil }

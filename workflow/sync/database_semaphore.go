@@ -8,8 +8,8 @@ import (
 
 	"github.com/upper/db/v4"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	syncdb "github.com/argoproj/argo-workflows/v3/util/sync/db"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	syncdb "github.com/argoproj/argo-workflows/v4/util/sync/db"
 )
 
 type databaseSemaphore struct {
@@ -18,14 +18,14 @@ type databaseSemaphore struct {
 	shortDBKey   string
 	nextWorkflow NextWorkflow
 	logger       loggerFn
-	info         syncdb.DBInfo
+	info         syncdb.Info
 	queries      syncdb.SyncQueries
 	isMutex      bool
 }
 
 var _ semaphore = &databaseSemaphore{}
 
-func newDatabaseSemaphore(ctx context.Context, name string, dbKey string, nextWorkflow NextWorkflow, info syncdb.DBInfo, syncLimitCacheTTL time.Duration) (*databaseSemaphore, error) {
+func newDatabaseSemaphore(ctx context.Context, name string, dbKey string, nextWorkflow NextWorkflow, info syncdb.Info, syncLimitCacheTTL time.Duration) (*databaseSemaphore, error) {
 	logger := syncLogger{
 		name:     name,
 		lockType: lockTypeSemaphore,
@@ -54,10 +54,6 @@ func (s *databaseSemaphore) longDBKey() string {
 		return "mtx/" + s.shortDBKey
 	}
 	return "sem/" + s.shortDBKey
-}
-
-func (s *databaseSemaphore) getName() string {
-	return s.name
 }
 
 func (s *databaseSemaphore) getLimitFromDB(ctx context.Context, _ string) (int, error) {
@@ -309,7 +305,7 @@ func (s *databaseSemaphore) checkAcquire(ctx context.Context, holderKey string, 
 	if !isSameWorkflowNodeKeys(holderKey, queue[0].Key) {
 		// Enqueue the queue[0] workflow if lock is available
 		if len(holders) < limit {
-			s.nextWorkflow(queue[0].Key)
+			s.nextWorkflow(workflowKey(queue[0].Key))
 		}
 		logger.WithFields(logging.Fields{
 			"key":          holderKey,

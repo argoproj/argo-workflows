@@ -18,16 +18,15 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/util/retry"
 
-	"github.com/argoproj/argo-workflows/v3/workflow/executor"
-	"github.com/argoproj/argo-workflows/v3/workflow/executor/emissary"
-
-	"github.com/argoproj/argo-workflows/v3/util/archive"
-	"github.com/argoproj/argo-workflows/v3/util/errors"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/executor/osspecific"
-
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/archive"
+	"github.com/argoproj/argo-workflows/v4/util/errors"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/executor"
+	"github.com/argoproj/argo-workflows/v4/workflow/executor/emissary"
+	"github.com/argoproj/argo-workflows/v4/workflow/executor/osspecific"
+	"github.com/argoproj/argo-workflows/v4/workflow/executor/tracing"
 )
 
 var (
@@ -52,6 +51,18 @@ func NewEmissaryCommand() *cobra.Command {
 					logger.WithError(err).Error(ctx, "failed to write exit code")
 				}
 			}()
+
+			tracer, err := tracing.New(ctx, `argoexec`)
+			if err != nil {
+				logger.WithFatal().WithError(err).Error(ctx, "failed to initialize tracing")
+				return err
+			}
+			defer func() {
+				if err := tracer.Shutdown(context.WithoutCancel(ctx)); err != nil {
+					logger.WithError(err).Error(ctx, "Failed to shutdown tracing")
+				}
+			}()
+			_ = tracer // tracing will be wired in a follow-up change
 
 			osspecific.AllowGrantingAccessToEveryone()
 
@@ -172,7 +183,6 @@ func NewEmissaryCommand() *cobra.Command {
 			}
 
 			cmdErr := retry.OnError(backoff, func(error) bool { return true }, func() error {
-
 				command, closer, err := startCommand(ctx, name, args, template)
 				if err != nil {
 					return fmt.Errorf("failed to start command: %w", err)
@@ -225,7 +235,6 @@ func NewEmissaryCommand() *cobra.Command {
 				}
 
 				return osspecific.Wait(command.Process)
-
 			})
 			logger.WithError(cmdErr).Info(ctx, "sub-process exited")
 

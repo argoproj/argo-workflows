@@ -19,14 +19,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 
-	"github.com/argoproj/argo-workflows/v3/config"
-	"github.com/argoproj/argo-workflows/v3/errors"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/test/util"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	armocks "github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories/mocks"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	wfutil "github.com/argoproj/argo-workflows/v3/workflow/util"
+	"github.com/argoproj/argo-workflows/v4/config"
+	"github.com/argoproj/argo-workflows/v4/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/test/util"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	armocks "github.com/argoproj/argo-workflows/v4/workflow/artifactrepositories/mocks"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	wfutil "github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
 // Deprecated
@@ -657,7 +657,6 @@ func Test_createWorkflowPod_containerName(t *testing.T) {
 var emissaryCmd = []string{"/var/run/argo/argoexec", "emissary"}
 
 func Test_createWorkflowPod_emissary(t *testing.T) {
-
 	t.Run("NoCommand", func(t *testing.T) {
 		ctx := logging.TestContext(t.Context())
 		woc := newWoc(ctx)
@@ -1584,7 +1583,6 @@ func TestMainContainerCustomization(t *testing.T) {
 		}
 		pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 		assert.Equal(t, "0.900", pod.Spec.Containers[1].Resources.Limits.Cpu().AsDec().String())
-
 	})
 	// If script template has limits then they take precedence over config in controller
 	t.Run("ScriptPrecedence", func(t *testing.T) {

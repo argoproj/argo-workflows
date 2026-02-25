@@ -8,13 +8,13 @@ import (
 
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/argoproj/argo-workflows/v3/config"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/util/sqldb"
+	"github.com/argoproj/argo-workflows/v4/config"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/sqldb"
 )
 
-// DBConfig holds database configuration for sync operations.
-type DBConfig struct {
+// Config holds database configuration for sync operations.
+type Config struct {
 	LimitTable                string
 	StateTable                string
 	ControllerTable           string
@@ -24,9 +24,10 @@ type DBConfig struct {
 	SkipMigration             bool
 }
 
-type DBInfo struct {
-	Config  DBConfig
+type Info struct {
+	Config  Config
 	Session db.Session
+	DBType  sqldb.DBType
 }
 
 const (
@@ -55,14 +56,14 @@ func SecondsToDurationWithDefault(value *int, defaultSeconds int) time.Duration 
 	return dur
 }
 
-func (d *DBInfo) Migrate(ctx context.Context) {
+func (d *Info) Migrate(ctx context.Context) {
 	if d.Session == nil {
 		return
 	}
 	logger := logging.RequireLoggerFromContext(ctx)
 	logger.Info(ctx, "Setting up sync manager database")
 	if !d.Config.SkipMigration {
-		err := migrate(ctx, d.Session, &d.Config)
+		err := migrate(ctx, d.Session, d.DBType, &d.Config)
 		if err != nil {
 			// Carry on anyway, but database sync locks won't work
 			logger.WithError(err).Warn(ctx, "cannot initialize semaphore database, database sync locks won't work")
@@ -75,11 +76,11 @@ func (d *DBInfo) Migrate(ctx context.Context) {
 	}
 }
 
-func DBConfigFromConfig(config *config.SyncConfig) DBConfig {
+func ConfigFromConfig(config *config.SyncConfig) Config {
 	if config == nil {
-		return DBConfig{}
+		return Config{}
 	}
-	return DBConfig{
+	return Config{
 		LimitTable:      defaultTable(config.LimitTableName, defaultLimitTableName),
 		StateTable:      defaultTable(config.StateTableName, defaultStateTableName),
 		ControllerTable: defaultTable(config.ControllerTableName, defaultControllerTableName),
@@ -91,26 +92,26 @@ func DBConfigFromConfig(config *config.SyncConfig) DBConfig {
 	}
 }
 
-func DBSessionFromConfigWithCreds(config *config.SyncConfig, username, password string) db.Session {
+func SessionFromConfigWithCreds(config *config.SyncConfig, username, password string) (db.Session, sqldb.DBType) {
 	if config == nil {
-		return nil
+		return nil, ""
 	}
-	dbSession, err := sqldb.CreateDBSessionWithCreds(config.DBConfig, username, password)
+	dbSession, dbType, err := sqldb.CreateDBSessionWithCreds(config.DBConfig, username, password)
 	if err != nil {
 		// Carry on anyway, but database sync locks won't work
-		return nil
+		return nil, ""
 	}
-	return dbSession
+	return dbSession, dbType
 }
 
-func DBSessionFromConfig(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, config *config.SyncConfig) db.Session {
+func SessionFromConfig(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, config *config.SyncConfig) (db.Session, sqldb.DBType) {
 	if config == nil {
-		return nil
+		return nil, ""
 	}
-	dbSession, err := sqldb.CreateDBSession(ctx, kubectlConfig, namespace, config.DBConfig)
+	dbSession, dbType, err := sqldb.CreateDBSession(ctx, kubectlConfig, namespace, config.DBConfig)
 	if err != nil {
 		// Carry on anyway, but database sync locks won't work
-		return nil
+		return nil, ""
 	}
-	return dbSession
+	return dbSession, dbType
 }

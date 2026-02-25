@@ -9,18 +9,18 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	syncpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/sync"
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
-	"github.com/argoproj/argo-workflows/v3/server/auth"
-	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
-	syncdb "github.com/argoproj/argo-workflows/v3/util/sync/db"
+	syncpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/sync"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
+	"github.com/argoproj/argo-workflows/v4/server/auth"
+	sutils "github.com/argoproj/argo-workflows/v4/server/utils"
+	syncdb "github.com/argoproj/argo-workflows/v4/util/sync/db"
 )
 
 type dbSyncProvider struct {
 	db syncdb.SyncQueries
 }
 
-var _ SyncConfigProvider = &dbSyncProvider{}
+var _ ConfigProvider = &dbSyncProvider{}
 
 func (s *dbSyncProvider) createSyncLimit(ctx context.Context, req *syncpkg.CreateSyncLimitRequest) (*syncpkg.SyncLimitResponse, error) {
 	// since there's no permission system for db sync limits, we use the k8s RBAC check to see if the request is reasonable

@@ -11,11 +11,11 @@ import (
 	"github.com/robfig/cron/v3"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/humanize"
-	argoJson "github.com/argoproj/argo-workflows/v3/util/json"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/humanize"
+	argoJson "github.com/argoproj/argo-workflows/v4/util/json"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
 // GetNextRuntime returns the next time the workflow should run in local time. It assumes the workflow-controller is in
@@ -59,7 +59,7 @@ func generateCronWorkflows(ctx context.Context, filePaths []string, strict bool)
 // unmarshalCronWorkflows unmarshals the input bytes as either json or yaml
 func unmarshalCronWorkflows(ctx context.Context, wfBytes []byte, strict bool) []v1alpha1.CronWorkflow {
 	var cronWf v1alpha1.CronWorkflow
-	var jsonOpts []argoJson.JSONOpt
+	var jsonOpts []argoJson.Opt
 	if strict {
 		jsonOpts = append(jsonOpts, argoJson.DisallowUnknownFields)
 	}

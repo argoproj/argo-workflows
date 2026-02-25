@@ -3,7 +3,7 @@
 package v1alpha1
 
 import (
-	internalinterfaces "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/internalinterfaces"
+	internalinterfaces "github.com/argoproj/argo-workflows/v4/pkg/client/informers/externalversions/internalinterfaces"
 )
 
 // Interface provides access to all the informers in this group version.

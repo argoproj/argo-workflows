@@ -10,14 +10,14 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo-workflows/v3/util/humanize"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/util/telemetry"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo-workflows/v4/util/humanize"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/telemetry"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/metrics"
+	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
 var scheduledWf = `
@@ -260,7 +260,7 @@ func TestCronWorkflowConditionSubmissionError(t *testing.T) {
 	v1alpha1.MustUnmarshal([]byte(invalidWf), &cronWf)
 
 	cs := fake.NewSimpleClientset()
-	testMetrics, err := metrics.New(logging.TestContext(t.Context()), telemetry.TestScopeName, telemetry.TestScopeName, &telemetry.Config{}, metrics.Callbacks{})
+	testMetrics, err := metrics.New(logging.TestContext(t.Context()), telemetry.TestScopeName, telemetry.TestScopeName, &telemetry.MetricsConfig{}, metrics.Callbacks{})
 	require.NoError(t, err)
 	woc := &cronWfOperationCtx{
 		wfClientset:       cs,
@@ -318,7 +318,7 @@ func TestSpecError(t *testing.T) {
 
 	cs := fake.NewSimpleClientset()
 	ctx := logging.TestContext(t.Context())
-	testMetrics, err := metrics.New(ctx, telemetry.TestScopeName, telemetry.TestScopeName, &telemetry.Config{}, metrics.Callbacks{})
+	testMetrics, err := metrics.New(ctx, telemetry.TestScopeName, telemetry.TestScopeName, &telemetry.MetricsConfig{}, metrics.Callbacks{})
 	require.NoError(t, err)
 	woc := &cronWfOperationCtx{
 		wfClientset: cs,
@@ -344,7 +344,7 @@ func TestScheduleTimeParam(t *testing.T) {
 	v1alpha1.MustUnmarshal([]byte(scheduledWf), &cronWf)
 
 	cs := fake.NewSimpleClientset()
-	testMetrics, _ := metrics.New(ctx, telemetry.TestScopeName, telemetry.TestScopeName, &telemetry.Config{}, metrics.Callbacks{})
+	testMetrics, _ := metrics.New(ctx, telemetry.TestScopeName, telemetry.TestScopeName, &telemetry.MetricsConfig{}, metrics.Callbacks{})
 	woc := &cronWfOperationCtx{
 		wfClientset:       cs,
 		wfClient:          cs.ArgoprojV1alpha1().Workflows(""),
@@ -397,7 +397,7 @@ func TestLastUsedSchedule(t *testing.T) {
 	v1alpha1.MustUnmarshal([]byte(lastUsedSchedule), &cronWf)
 
 	cs := fake.NewSimpleClientset()
-	testMetrics, err := metrics.New(ctx, telemetry.TestScopeName, telemetry.TestScopeName, &telemetry.Config{}, metrics.Callbacks{})
+	testMetrics, err := metrics.New(ctx, telemetry.TestScopeName, telemetry.TestScopeName, &telemetry.MetricsConfig{}, metrics.Callbacks{})
 	require.NoError(t, err)
 	woc := &cronWfOperationCtx{
 		wfClientset:       cs,
@@ -528,7 +528,7 @@ func TestMultipleSchedules(t *testing.T) {
 	v1alpha1.MustUnmarshal([]byte(multipleSchedulesWf), &cronWf)
 
 	cs := fake.NewSimpleClientset()
-	testMetrics, err := metrics.New(ctx, telemetry.TestScopeName, telemetry.TestScopeName, &telemetry.Config{}, metrics.Callbacks{})
+	testMetrics, err := metrics.New(ctx, telemetry.TestScopeName, telemetry.TestScopeName, &telemetry.MetricsConfig{}, metrics.Callbacks{})
 	require.NoError(t, err)
 	woc := &cronWfOperationCtx{
 		wfClientset:       cs,
@@ -589,7 +589,7 @@ func TestSpecErrorWithEmptySchedules(t *testing.T) {
 
 	cs := fake.NewSimpleClientset()
 	ctx := logging.TestContext(t.Context())
-	testMetrics, err := metrics.New(ctx, telemetry.TestScopeName, telemetry.TestScopeName, &telemetry.Config{}, metrics.Callbacks{})
+	testMetrics, err := metrics.New(ctx, telemetry.TestScopeName, telemetry.TestScopeName, &telemetry.MetricsConfig{}, metrics.Callbacks{})
 	require.NoError(t, err)
 	woc := &cronWfOperationCtx{
 		wfClientset: cs,
@@ -650,7 +650,7 @@ func TestSpecErrorWithValidAndInvalidSchedules(t *testing.T) {
 
 	cs := fake.NewSimpleClientset()
 	ctx := logging.TestContext(t.Context())
-	testMetrics, err := metrics.New(ctx, telemetry.TestScopeName, telemetry.TestScopeName, &telemetry.Config{}, metrics.Callbacks{})
+	testMetrics, err := metrics.New(ctx, telemetry.TestScopeName, telemetry.TestScopeName, &telemetry.MetricsConfig{}, metrics.Callbacks{})
 	require.NoError(t, err)
 	woc := &cronWfOperationCtx{
 		wfClientset: cs,

@@ -8,7 +8,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/util/sync/db"
+	"github.com/argoproj/argo-workflows/v4/util/sync/db"
 	mock "github.com/stretchr/testify/mock"
 	db0 "github.com/upper/db/v4"
 )

@@ -5,15 +5,15 @@ import (
 
 	"github.com/upper/db/v4"
 
-	"github.com/argoproj/argo-workflows/v3/util/sqldb"
+	"github.com/argoproj/argo-workflows/v4/util/sqldb"
 )
 
 const (
 	versionTable = "sync_schema_history"
 )
 
-func migrate(ctx context.Context, session db.Session, config *DBConfig) (err error) {
-	return sqldb.Migrate(ctx, session, versionTable, []sqldb.Change{
+func migrate(ctx context.Context, session db.Session, dbType sqldb.DBType, config *Config) (err error) {
+	return sqldb.Migrate(ctx, session, dbType, versionTable, []sqldb.Change{
 		sqldb.AnsiSQLChange(`create table if not exists ` + config.LimitTable + ` (
     name varchar(256) not null,
     sizelimit int,

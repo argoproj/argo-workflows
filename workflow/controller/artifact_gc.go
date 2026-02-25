@@ -16,12 +16,12 @@ import (
 	"k8s.io/utils/env"
 	"k8s.io/utils/ptr"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/controller/indexes"
+	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
 const artifactGCComponent = "artifact-gc"
@@ -56,7 +56,6 @@ func (woc *wfOperationCtx) addArtifactGCFinalizer(ctx context.Context) {
 }
 
 func (woc *wfOperationCtx) garbageCollectArtifacts(ctx context.Context) error {
-
 	if !artifactGCEnabled {
 		return nil
 	}
@@ -128,7 +127,6 @@ type templatesToArtifacts map[string]wfv1.ArtifactSearchResults
 
 // Artifact GC Strategy is ready: start up Pods to handle it
 func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strategy wfv1.ArtifactGCStrategy) error {
-
 	defer func() {
 		woc.wf.Status.ArtifactGCStatus.SetArtifactGCStrategyProcessed(strategy, true)
 		woc.updated = true
@@ -341,10 +339,8 @@ func (woc *wfOperationCtx) addTemplateArtifactsToTasks(ctx context.Context, podN
 		}
 
 		artifactNodeSpec.Artifacts[artifactSearchResult.Name] = artifactSearchResult.Artifact
-
 	}
 	woc.log.WithFields(logging.Fields{"template": template.Name, "task": currentTask.Name, "artifacts": artifactsByNode}).Debug(ctx, "list of artifacts pertaining to template")
-
 }
 
 // find WorkflowArtifactGCTask CRD object by name
@@ -362,7 +358,6 @@ func (woc *wfOperationCtx) getArtifactTask(taskName string) (*wfv1.WorkflowArtif
 
 // create WorkflowArtifactGCTask CRD object
 func (woc *wfOperationCtx) createWorkflowArtifactGCTask(ctx context.Context, task *wfv1.WorkflowArtifactGCTask) (*wfv1.WorkflowArtifactGCTask, error) {
-
 	// first make sure it doesn't already exist
 	foundTask, err := woc.getArtifactTask(task.Name)
 	if err != nil {
@@ -384,7 +379,6 @@ func (woc *wfOperationCtx) createWorkflowArtifactGCTask(ctx context.Context, tas
 // create the Pod which will do the deletions
 func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv1.ArtifactGCStrategy, tasks []*wfv1.WorkflowArtifactGCTask,
 	podInfo podInfo, podName string, templatesToArtList templatesToArtifacts, templatesByName map[string]*wfv1.Template) (*corev1.Pod, error) {
-
 	woc.log.WithFields(logging.Fields{"strategy": strategy, "podName": podName}).Info(ctx, "creating pod to delete artifacts")
 
 	// Pod is owned by WorkflowArtifactGCTasks, so it will die automatically when all of them have died
@@ -624,16 +618,13 @@ func (woc *wfOperationCtx) allArtifactsDeleted() bool {
 }
 
 func (woc *wfOperationCtx) findArtifactsToGC(strategy wfv1.ArtifactGCStrategy) wfv1.ArtifactSearchResults {
-
 	var results wfv1.ArtifactSearchResults
 
 	for _, n := range woc.wf.Status.Nodes {
-
 		if n.Type != wfv1.NodeTypePod {
 			continue
 		}
 		for _, a := range n.GetOutputs().GetArtifacts() {
-
 			// artifact strategy is either based on overall Workflow ArtifactGC Strategy, or
 			// if it's specified on the individual artifact level that takes priority
 			artifactStrategy := woc.execWf.GetArtifactGCStrategy(&a)
@@ -680,7 +671,6 @@ func (woc *wfOperationCtx) processCompletedArtifactGCPod(ctx context.Context, po
 				woc.log.WithField("name", task.Name).WithError(err).Error(ctx, "error deleting WorkflowArtifactGCTask")
 			}
 		}
-
 	}
 	return nil
 }
@@ -722,7 +712,6 @@ func (woc *wfOperationCtx) processCompletedWorkflowArtifactGCTask(ctx context.Co
 				}
 			}
 		}
-
 	}
 
 	return !foundGCFailure, nil
@@ -755,7 +744,6 @@ func (woc *wfOperationCtx) getArtifactGCPodInfo(artifact *wfv1.Artifact) podInfo
 
 // propagate the information from artifactGC into the podInfo
 func (woc *wfOperationCtx) updateArtifactGCPodInfo(artifactGC *wfv1.ArtifactGC, podInfo *podInfo) {
-
 	if artifactGC.ServiceAccountName != "" {
 		podInfo.serviceAccount = artifactGC.ServiceAccountName
 	}
@@ -769,5 +757,4 @@ func (woc *wfOperationCtx) updateArtifactGCPodInfo(artifactGC *wfv1.ArtifactGC, 
 		}
 		maps.Copy(podInfo.podMetadata.Annotations, artifactGC.PodMetadata.Annotations)
 	}
-
 }

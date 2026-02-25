@@ -3,18 +3,20 @@ package apiclient
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"net/url"
 
 	"k8s.io/client-go/tools/clientcmd"
 
-	clusterworkflowtmplpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
-	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
-	infopkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/info"
-	syncpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/sync"
-	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
-	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
-	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
-	"github.com/argoproj/argo-workflows/v3/util/instanceid"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	clusterworkflowtmplpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/clusterworkflowtemplate"
+	cronworkflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/cronworkflow"
+	infopkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/info"
+	syncpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/sync"
+	workflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow"
+	workflowarchivepkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflowarchive"
+	workflowtemplatepkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflowtemplate"
+	"github.com/argoproj/argo-workflows/v4/util/instanceid"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 type Client interface {
@@ -42,6 +44,7 @@ type Opts struct {
 	Context   context.Context
 	LogLevel  string
 	LogFormat string
+	Proxy     func(*http.Request) (*url.URL, error)
 }
 
 func (o Opts) String() string {
@@ -74,7 +77,7 @@ func NewClientFromOptsWithContext(ctx context.Context, opts Opts) (context.Conte
 		if opts.AuthSupplier == nil {
 			return nil, nil, fmt.Errorf("AuthSupplier cannot be empty when connecting to Argo Server")
 		}
-		return newHTTP1Client(ctx, opts.ArgoServerOpts.GetURL(), opts.AuthSupplier(), opts.ArgoServerOpts.InsecureSkipVerify, opts.ArgoServerOpts.Headers, opts.ArgoServerOpts.HTTP1Client)
+		return newHTTP1Client(ctx, opts.ArgoServerOpts.GetURL(), opts.AuthSupplier(), opts.ArgoServerOpts.InsecureSkipVerify, opts.ArgoServerOpts.Headers, opts.ArgoServerOpts.HTTP1Client, opts.Proxy)
 	case opts.ArgoServerOpts.URL != "":
 		if opts.AuthSupplier == nil {
 			return nil, nil, fmt.Errorf("AuthSupplier cannot be empty when connecting to Argo Server")

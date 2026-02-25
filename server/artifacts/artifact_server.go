@@ -19,18 +19,18 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/env"
 
-	argoerrors "github.com/argoproj/argo-workflows/v3/errors"
-	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/server/auth"
-	"github.com/argoproj/argo-workflows/v3/server/types"
-	"github.com/argoproj/argo-workflows/v3/util/instanceid"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
+	argoerrors "github.com/argoproj/argo-workflows/v4/errors"
+	"github.com/argoproj/argo-workflows/v4/persist/sqldb"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/server/auth"
+	"github.com/argoproj/argo-workflows/v4/server/types"
+	"github.com/argoproj/argo-workflows/v4/util/instanceid"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifactrepositories"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
+	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
 type ArtifactServer struct {
@@ -209,7 +209,6 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 
 		key, _ := artifact.GetKey()
 		for _, object := range objects {
-
 			// object is prefixed by the key, we must trim it
 			dir, file := path.Split(strings.TrimPrefix(object, key+"/"))
 
@@ -240,7 +239,6 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 			a.httpFromError(ctx, err, w)
 		}
 	}
-
 }
 
 func (a *ArtifactServer) renderDirectoryListing(objects []string, key string) ([]byte, error) {
@@ -257,7 +255,6 @@ func (a *ArtifactServer) renderDirectoryListing(objects []string, key string) ([
 	}
 
 	for _, object := range objects {
-
 		// object is prefixed the key, we must trim it
 		dir, file := path.Split(strings.TrimPrefix(object, key+"/"))
 

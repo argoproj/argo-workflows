@@ -3,15 +3,16 @@ package apiclient
 import (
 	"context"
 	"net/http"
+	"net/url"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
-	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
-	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/http1"
-	infopkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/info"
-	syncpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/sync"
-	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
-	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
-	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
+	"github.com/argoproj/argo-workflows/v4/pkg/apiclient/clusterworkflowtemplate"
+	cronworkflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/cronworkflow"
+	"github.com/argoproj/argo-workflows/v4/pkg/apiclient/http1"
+	infopkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/info"
+	syncpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/sync"
+	workflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow"
+	workflowarchivepkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflowarchive"
+	workflowtemplatepkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflowtemplate"
 )
 
 type httpClient http1.Facade
@@ -46,6 +47,6 @@ func (h httpClient) NewSyncServiceClient(_ context.Context) (syncpkg.SyncService
 	return http1.SyncServiceClient(h), nil
 }
 
-func newHTTP1Client(ctx context.Context, baseURL string, auth string, insecureSkipVerify bool, headers []string, customHTTPClient *http.Client) (context.Context, Client, error) {
-	return ctx, httpClient(http1.NewFacade(baseURL, auth, insecureSkipVerify, headers, customHTTPClient)), nil
+func newHTTP1Client(ctx context.Context, baseURL string, auth string, insecureSkipVerify bool, headers []string, customHTTPClient *http.Client, proxy func(*http.Request) (*url.URL, error)) (context.Context, Client, error) {
+	return ctx, httpClient(http1.NewFacade(baseURL, auth, insecureSkipVerify, headers, customHTTPClient, proxy)), nil
 }

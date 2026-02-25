@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 func TestUnmarshalJSON(t *testing.T) {
@@ -169,7 +169,6 @@ func TestUnmarshalJSON(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-
 		claims := &Claims{}
 		err := json.Unmarshal([]byte(test.data), &claims)
 
@@ -179,7 +178,6 @@ func TestUnmarshalJSON(t *testing.T) {
 }
 
 func TestGetCustomGroup(t *testing.T) {
-
 	t.Run("NoCustomGroupSet", func(t *testing.T) {
 		claims := &Claims{}
 		_, err := claims.GetCustomGroup(("ad_groups"))

@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/util/secrets"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/secrets"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -34,16 +34,16 @@ var webhookParsers = map[string]matcher{
 
 const pathPrefix = "/api/v1/events/"
 
-type WebhookInterceptor struct {
+type Interceptor struct {
 	logger logging.Logger
 }
 
-func NewWebhookInterceptor(logger logging.Logger) *WebhookInterceptor {
-	return &WebhookInterceptor{logger: logger}
+func NewInterceptor(logger logging.Logger) *Interceptor {
+	return &Interceptor{logger: logger}
 }
 
 // Interceptor creates an annotator that verifies webhook signatures and adds the appropriate access token to the request.
-func (i *WebhookInterceptor) Interceptor(client kubernetes.Interface) func(w http.ResponseWriter, r *http.Request, next http.Handler) {
+func (i *Interceptor) Interceptor(client kubernetes.Interface) func(w http.ResponseWriter, r *http.Request, next http.Handler) {
 	return func(w http.ResponseWriter, r *http.Request, next http.Handler) {
 		err := i.addWebhookAuthorization(r, client)
 		if err != nil {
@@ -57,7 +57,7 @@ func (i *WebhookInterceptor) Interceptor(client kubernetes.Interface) func(w htt
 	}
 }
 
-func (i *WebhookInterceptor) addWebhookAuthorization(r *http.Request, kube kubernetes.Interface) error {
+func (i *Interceptor) addWebhookAuthorization(r *http.Request, kube kubernetes.Interface) error {
 	// try and exit quickly before we do anything API calls
 	if r.Method != http.MethodPost || len(r.Header["Authorization"]) > 0 || !strings.HasPrefix(r.URL.Path, pathPrefix) {
 		return nil

@@ -51,6 +51,7 @@ tasks:
     dependencies:
     - build-controller
     - port-forward
+    - otel-port-forward
     env:
       ALWAYS_OFFLOAD_NODE_STATUS: "false"
       ARCHIVED_WORKFLOW_GC_PERIOD: 30s
@@ -66,8 +67,15 @@ tasks:
       OFFLOAD_NODE_STATUS_TTL: 30s
       UPPERIO_DB_DEBUG: "1"
       WORKFLOW_GC_PERIOD: 30s
+      # OpenTelemetry tracing - collector runs in k8s, port-forwarded to localhost
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://localhost:4317
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
     ports:
     - "9090"
+  otel-port-forward:
+    sh: kubectl port-forward -n argo svc/otel-collector 4317:4317 2>/dev/null || true
+    ports:
+    - "4317"
   example:
     command:
     - kubectl

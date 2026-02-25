@@ -9,9 +9,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 func TestWorkflowTemplateRef(t *testing.T) {
@@ -595,7 +595,6 @@ spec:
 `
 
 func TestWorkflowTemplateUpdateScenario(t *testing.T) {
-
 	wf := wfv1.MustUnmarshalWorkflow(wfWithTmplRef)
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx, wf, wfv1.MustUnmarshalWorkflowTemplate(wfTmpl))

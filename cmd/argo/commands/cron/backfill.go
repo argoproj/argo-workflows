@@ -8,18 +8,18 @@ import (
 	"os"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
+	"github.com/argoproj/argo-workflows/v4/workflow/util"
 
 	cron "github.com/robfig/cron/v3"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
-	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
-	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/rand"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v4/pkg/apiclient/cronworkflow"
+	"github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/rand"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 type backfillOpts struct {
@@ -46,7 +46,7 @@ func NewBackfillCommand() *cobra.Command {
 				os.Exit(0)
 			}
 			if cliOps.name == "" {
-				name, err := rand.RandString(5)
+				name, err := rand.String(5)
 				if err != nil {
 					return err
 				}

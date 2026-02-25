@@ -11,11 +11,10 @@ import (
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	k8stesting "k8s.io/client-go/testing"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 func TestRBAC_AccessClusterWorkflowTemplates(t *testing.T) {
-
 	t.Run("has full access", func(t *testing.T) {
 		kubeclientset := &kubefake.Clientset{}
 		allowedVerbs := []string{"get", "list", "watch"}

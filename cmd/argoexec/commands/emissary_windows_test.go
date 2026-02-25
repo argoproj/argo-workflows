@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	cmdutil "github.com/argoproj/argo-workflows/v3/util/cmd"
-	"github.com/argoproj/argo-workflows/v3/util/errors"
+	cmdutil "github.com/argoproj/argo-workflows/v4/util/cmd"
+	"github.com/argoproj/argo-workflows/v4/util/errors"
 )
 
 func TestEmissary(t *testing.T) {
@@ -46,7 +46,7 @@ func TestEmissary(t *testing.T) {
 
 func run(script string) error {
 	cmd := NewEmissaryCommand()
-	_, _, err := cmdutil.CmdContextWithLogger(cmd, "info", "text")
+	_, _, err := cmdutil.ContextWithLogger(cmd, "info", "text")
 	if err != nil {
 		return err
 	}

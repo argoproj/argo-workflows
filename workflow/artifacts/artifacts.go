@@ -5,19 +5,19 @@ import (
 	"fmt"
 	gohttp "net/http"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/azure"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/gcs"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/git"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/hdfs"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/http"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/oss"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/plugin"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/raw"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/resource"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/s3"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/azure"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/gcs"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/git"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/hdfs"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/http"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/oss"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/plugin"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/raw"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/resource"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/s3"
 )
 
 var ErrUnsupportedDriver = fmt.Errorf("unsupported artifact driver")
@@ -31,7 +31,6 @@ func NewDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 		return nil, err
 	}
 	return logging.New(drv), nil
-
 }
 
 func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (common.ArtifactDriver, error) {
@@ -207,7 +206,6 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 			Client:   &gohttp.Client{},
 		}
 		return &driver, nil
-
 	}
 	if art.HDFS != nil {
 		return hdfs.CreateDriver(ctx, ri, art.HDFS)

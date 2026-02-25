@@ -14,10 +14,10 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/util/template"
+	"github.com/argoproj/argo-workflows/v4/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/template"
 )
 
 // FindOverlappingVolume looks an artifact path, checks if it overlaps with any
@@ -184,7 +184,6 @@ func ProcessArgs(ctx context.Context, tmpl *wfv1.Template, args wfv1.ArgumentsPr
 	// Performs substitutions of input artifacts
 	artifacts := newTmpl.Inputs.Artifacts
 	for i, inArt := range artifacts {
-
 		argArt := args.GetArtifactByName(inArt.Name)
 
 		if !inArt.Optional && !inArt.HasLocationOrKey() {

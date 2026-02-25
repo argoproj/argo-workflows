@@ -14,10 +14,11 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/argoproj/argo-workflows/v3/config"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	syncdb "github.com/argoproj/argo-workflows/v3/util/sync/db"
+	"github.com/argoproj/argo-workflows/v4/config"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/sqldb"
+	syncdb "github.com/argoproj/argo-workflows/v4/util/sync/db"
 )
 
 type (
@@ -33,7 +34,7 @@ type Manager struct {
 	getSyncLimit      GetSyncLimit
 	syncLimitCacheTTL time.Duration
 	workflowExists    WorkflowExists
-	dbInfo            syncdb.DBInfo
+	dbInfo            syncdb.Info
 	queries           syncdb.SyncQueries
 	log               logging.Logger
 }
@@ -46,10 +47,11 @@ const (
 )
 
 func NewLockManager(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, config *config.SyncConfig, getSyncLimit GetSyncLimit, nextWorkflow NextWorkflow, workflowExists WorkflowExists) *Manager {
-	return createLockManager(ctx, syncdb.DBSessionFromConfig(ctx, kubectlConfig, namespace, config), config, getSyncLimit, nextWorkflow, workflowExists)
+	dbSession, dbType := syncdb.SessionFromConfig(ctx, kubectlConfig, namespace, config)
+	return createLockManager(ctx, dbSession, dbType, config, getSyncLimit, nextWorkflow, workflowExists)
 }
 
-func createLockManager(ctx context.Context, dbSession db.Session, config *config.SyncConfig, getSyncLimit GetSyncLimit, nextWorkflow NextWorkflow, workflowExists WorkflowExists) *Manager {
+func createLockManager(ctx context.Context, dbSession db.Session, dbType sqldb.DBType, config *config.SyncConfig, getSyncLimit GetSyncLimit, nextWorkflow NextWorkflow, workflowExists WorkflowExists) *Manager {
 	syncLimitCacheTTL := time.Duration(0)
 	if config != nil && config.SemaphoreLimitCacheSeconds != nil {
 		syncLimitCacheTTL = time.Duration(*config.SemaphoreLimitCacheSeconds) * time.Second
@@ -57,9 +59,10 @@ func createLockManager(ctx context.Context, dbSession db.Session, config *config
 	ctx, log := logging.RequireLoggerFromContext(ctx).WithField("component", "lock_manager").InContext(ctx)
 
 	log.WithField("syncLimitCacheTTL", syncLimitCacheTTL).Info(ctx, "Sync manager ttl")
-	dbInfo := syncdb.DBInfo{
+	dbInfo := syncdb.Info{
 		Session: dbSession,
-		Config:  syncdb.DBConfigFromConfig(config),
+		DBType:  dbType,
+		Config:  syncdb.ConfigFromConfig(config),
 	}
 	sm := &Manager{
 		syncLockMap:       make(map[string]semaphore),
@@ -96,8 +99,8 @@ func (sm *Manager) getWorkflowKey(key string) (string, error) {
 func (sm *Manager) CheckWorkflowExistence(ctx context.Context) {
 	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
 
-	sm.lock.RLock()
-	defer sm.lock.RUnlock()
+	sm.lock.Lock()
+	defer sm.lock.Unlock()
 
 	sm.log.Debug(ctx, "Check the workflow existence")
 	for _, lock := range sm.syncLockMap {
@@ -127,7 +130,7 @@ func (sm *Manager) CheckWorkflowExistence(ctx context.Context) {
 	}
 }
 
-func getUpgradedKey(wf *wfv1.Workflow, key string, level SyncLevelType) string {
+func getUpgradedKey(wf *wfv1.Workflow, key string, level LevelType) string {
 	if wfv1.CheckHolderKeyVersion(key) == wfv1.HoldingNameV1 {
 		if level == WorkflowLevel {
 			return getHolderKey(wf, "")
@@ -137,12 +140,12 @@ func getUpgradedKey(wf *wfv1.Workflow, key string, level SyncLevelType) string {
 	return key
 }
 
-type SyncLevelType int
+type LevelType int
 
 const (
-	WorkflowLevel SyncLevelType = 1
-	TemplateLevel SyncLevelType = 2
-	ErrorLevel    SyncLevelType = 3
+	WorkflowLevel LevelType = 1
+	TemplateLevel LevelType = 2
+	ErrorLevel    LevelType = 3
 )
 
 // HoldingNameV1 keys can be of the form
@@ -166,7 +169,7 @@ const (
 // a synchronization exists both at the template level
 // and at the workflow level -> impossible to upgrade correctly
 // due to ambiguity. Currently we just assume workflow level.
-func getWorkflowSyncLevelByName(ctx context.Context, wf *wfv1.Workflow, lockName string) (SyncLevelType, error) {
+func getWorkflowSyncLevelByName(ctx context.Context, wf *wfv1.Workflow, lockName string) (LevelType, error) {
 	if wf.Spec.Synchronization != nil {
 		syncItems, err := allSyncItems(wf.Spec.Synchronization)
 		if err != nil {
@@ -218,7 +221,8 @@ func (sm *Manager) Initialize(ctx context.Context, wfs []wfv1.Workflow) {
 			for _, holding := range wf.Status.Synchronization.Semaphore.Holding {
 				semaphore := sm.syncLockMap[holding.Semaphore]
 				if semaphore == nil {
-					semaphore, err := sm.initializeSemaphore(ctx, holding.Semaphore)
+					var err error
+					semaphore, err = sm.initializeSemaphore(ctx, holding.Semaphore)
 					if err != nil {
 						sm.log.WithField("semaphore", holding.Semaphore).WithError(err).Warn(ctx, "cannot initialize semaphore")
 						continue
@@ -238,7 +242,6 @@ func (sm *Manager) Initialize(ctx context.Context, wfs []wfv1.Workflow) {
 						sm.log.WithFields(logging.Fields{"key": key, "semaphore": holding.Semaphore}).Info(ctx, "Lock acquired")
 					}
 				}
-
 			}
 		}
 
@@ -246,7 +249,8 @@ func (sm *Manager) Initialize(ctx context.Context, wfs []wfv1.Workflow) {
 			for _, holding := range wf.Status.Synchronization.Mutex.Holding {
 				mutex := sm.syncLockMap[holding.Mutex]
 				if mutex == nil {
-					mutex, err := sm.initializeMutex(ctx, holding.Mutex)
+					var err error
+					mutex, err = sm.initializeMutex(ctx, holding.Mutex)
 					if err != nil {
 						sm.log.WithField("mutex", holding.Mutex).WithError(err).Warn(ctx, "cannot initialize mutex")
 						continue
@@ -468,8 +472,8 @@ func (sm *Manager) Release(ctx context.Context, wf *wfv1.Workflow, nodeName stri
 		return
 	}
 
-	sm.lock.RLock()
-	defer sm.lock.RUnlock()
+	sm.lock.Lock()
+	defer sm.lock.Unlock()
 
 	holderKey := getHolderKey(wf, nodeName)
 	sm.log.WithField("holderKey", holderKey).Info(ctx, "Release")
@@ -496,8 +500,8 @@ func (sm *Manager) Release(ctx context.Context, wf *wfv1.Workflow, nodeName stri
 }
 
 func (sm *Manager) ReleaseAll(ctx context.Context, wf *wfv1.Workflow) bool {
-	sm.lock.RLock()
-	defer sm.lock.RUnlock()
+	sm.lock.Lock()
+	defer sm.lock.Unlock()
 
 	if wf.Status.Synchronization == nil {
 		return true

@@ -33,37 +33,37 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/yaml"
 
-	argoerrors "github.com/argoproj/argo-workflows/v3/errors"
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util"
-	"github.com/argoproj/argo-workflows/v3/util/diff"
-	envutil "github.com/argoproj/argo-workflows/v3/util/env"
-	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
-	"github.com/argoproj/argo-workflows/v3/util/expr/argoexpr"
-	"github.com/argoproj/argo-workflows/v3/util/expr/env"
-	"github.com/argoproj/argo-workflows/v3/util/help"
-	"github.com/argoproj/argo-workflows/v3/util/humanize"
-	"github.com/argoproj/argo-workflows/v3/util/intstr"
-	argokubeerr "github.com/argoproj/argo-workflows/v3/util/kube/errors"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/util/resource"
-	"github.com/argoproj/argo-workflows/v3/util/retry"
-	argoruntime "github.com/argoproj/argo-workflows/v3/util/runtime"
-	"github.com/argoproj/argo-workflows/v3/util/secrets"
-	"github.com/argoproj/argo-workflows/v3/util/strftime"
-	"github.com/argoproj/argo-workflows/v3/util/template"
-	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	controllercache "github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
-	"github.com/argoproj/argo-workflows/v3/workflow/controller/estimation"
-	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
-	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
-	"github.com/argoproj/argo-workflows/v3/workflow/progress"
-	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
-	wfutil "github.com/argoproj/argo-workflows/v3/workflow/util"
-	"github.com/argoproj/argo-workflows/v3/workflow/validate"
+	argoerrors "github.com/argoproj/argo-workflows/v4/errors"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util"
+	"github.com/argoproj/argo-workflows/v4/util/diff"
+	envutil "github.com/argoproj/argo-workflows/v4/util/env"
+	errorsutil "github.com/argoproj/argo-workflows/v4/util/errors"
+	"github.com/argoproj/argo-workflows/v4/util/expr/argoexpr"
+	"github.com/argoproj/argo-workflows/v4/util/expr/env"
+	"github.com/argoproj/argo-workflows/v4/util/help"
+	"github.com/argoproj/argo-workflows/v4/util/humanize"
+	"github.com/argoproj/argo-workflows/v4/util/intstr"
+	argokubeerr "github.com/argoproj/argo-workflows/v4/util/kube/errors"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/resource"
+	"github.com/argoproj/argo-workflows/v4/util/retry"
+	argoruntime "github.com/argoproj/argo-workflows/v4/util/runtime"
+	"github.com/argoproj/argo-workflows/v4/util/secrets"
+	"github.com/argoproj/argo-workflows/v4/util/strftime"
+	"github.com/argoproj/argo-workflows/v4/util/template"
+	waitutil "github.com/argoproj/argo-workflows/v4/util/wait"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	controllercache "github.com/argoproj/argo-workflows/v4/workflow/controller/cache"
+	"github.com/argoproj/argo-workflows/v4/workflow/controller/estimation"
+	"github.com/argoproj/argo-workflows/v4/workflow/controller/indexes"
+	"github.com/argoproj/argo-workflows/v4/workflow/metrics"
+	"github.com/argoproj/argo-workflows/v4/workflow/progress"
+	"github.com/argoproj/argo-workflows/v4/workflow/templateresolution"
+	wfutil "github.com/argoproj/argo-workflows/v4/workflow/util"
+	"github.com/argoproj/argo-workflows/v4/workflow/validate"
 )
 
 // wfOperationCtx is the context for evaluation and operation of a single workflow
@@ -603,7 +603,6 @@ func (woc *wfOperationCtx) updateWorkflowMetadata(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-
 	}
 	return nil
 }
@@ -1262,7 +1261,6 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (bool, error) 
 		// In case in the absence of nodes, collect metrics.
 		woc.controller.metrics.PodMissingEnsure(ctx, recentlyStarted, string(node.Phase))
 		if _, ok := seenPods[nodeID]; !ok {
-
 			// grace-period to allow informer sync
 			woc.log.WithFields(logging.Fields{"nodeName": node.Name, "nodePhase": node.Phase, "recentlyStarted": recentlyStarted}).Info(ctx, "Workflow pod is missing")
 			woc.controller.metrics.PodMissingInc(ctx, recentlyStarted, string(node.Phase))
@@ -1740,7 +1738,6 @@ func (woc *wfOperationCtx) inferFailedReason(ctx context.Context, pod *apiv1.Pod
 	waitContainerSucceeded := false
 
 	for _, ctr := range ctrs {
-
 		// Virtual Kubelet environment will not set the terminate on waiting container
 		// https://github.com/argoproj/argo-workflows/issues/3879
 		// https://github.com/virtual-kubelet/virtual-kubelet/blob/7f2a02291530d2df14905702e6d51500dd57640a/node/sync.go#L195-L208
@@ -2696,7 +2693,6 @@ func (woc *wfOperationCtx) hasDaemonNodes() bool {
 }
 
 func (woc *wfOperationCtx) childrenFulfilledHelper(node *wfv1.NodeStatus, cache map[string]bool) bool {
-
 	res, has := cache[node.ID]
 	if has {
 		return res
@@ -3832,7 +3828,6 @@ func (woc *wfOperationCtx) resolveInputFieldsForSuspendNode(ctx context.Context,
 	parameters := node.Inputs.Parameters
 	for i, parameter := range parameters {
 		if parameter.Value != nil {
-
 			value := parameter.Value.String()
 			tempParameter := wfv1.Parameter{}
 
@@ -3904,7 +3899,6 @@ func processItem(ctx context.Context, tmpl template.Template, name string, index
 		for itemKey, itemVal := range mapVal {
 			replaceMap[fmt.Sprintf("item.%s", itemKey)] = fmt.Sprintf("%v", itemVal)
 			vals = append(vals, fmt.Sprintf("%s:%v", itemKey, itemVal))
-
 		}
 		jsonByteVal, err := json.Marshal(mapVal)
 		if err != nil {
@@ -4054,7 +4048,6 @@ func (woc *wfOperationCtx) createTemplateContext(ctx context.Context, scope wfv1
 
 func (woc *wfOperationCtx) computeMetrics(ctx context.Context, metricList []*wfv1.Prometheus, localScope map[string]string, realTimeScope map[string]func() float64, realTimeOnly bool) {
 	for _, metricTmpl := range metricList {
-
 		// Don't process real time metrics after execution
 		if realTimeOnly && !metricTmpl.IsRealtime() {
 			continue
@@ -4280,6 +4273,7 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 		}
 		woc.execWf = &wfv1.Workflow{Spec: *woc.wf.Status.StoredWorkflowSpec.DeepCopy()}
 		woc.volumes = woc.execWf.Spec.DeepCopy().Volumes
+		setWfTemplateLabel(woc.wf)
 	case woc.controller.Config.WorkflowRestrictions.MustUseReference():
 		err := fmt.Errorf("workflows must use workflowTemplateRef to be executed when the controller is in reference mode")
 		woc.markWorkflowError(ctx, err)
@@ -4295,14 +4289,14 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 
 	// Perform one-time workflow validation
 	if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
-		validateOpts := validate.ValidateOpts{}
+		validateOpts := validate.Opts{}
 		wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates(woc.wf.Namespace))
 		cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 
 		// Validate the execution wfSpec
 		err := waitutil.Backoff(retry.DefaultRetry(ctx),
 			func() (bool, error) {
-				validationErr := validate.ValidateWorkflow(ctx, wftmplGetter, cwftmplGetter, woc.wf, woc.controller.Config.WorkflowDefaults, validateOpts)
+				validationErr := validate.Workflow(ctx, wftmplGetter, cwftmplGetter, woc.wf, woc.controller.Config.WorkflowDefaults, validateOpts)
 				if validationErr != nil {
 					return !errorsutil.IsTransientErr(ctx, validationErr), validationErr
 				}
@@ -4506,6 +4500,21 @@ func setWfPodNamesAnnotation(wf *wfv1.Workflow) {
 	}
 
 	wf.Annotations[common.AnnotationKeyPodNameVersion] = podNameVersion.String()
+}
+
+func setWfTemplateLabel(wf *wfv1.Workflow) {
+	if wf.Spec.WorkflowTemplateRef == nil {
+		return
+	}
+	if wf.Labels == nil {
+		wf.Labels = map[string]string{}
+	}
+
+	if wf.Spec.WorkflowTemplateRef.ClusterScope {
+		wf.Labels[common.LabelKeyClusterWorkflowTemplate] = wf.Spec.WorkflowTemplateRef.Name
+	} else {
+		wf.Labels[common.LabelKeyWorkflowTemplate] = wf.Spec.WorkflowTemplateRef.Name
+	}
 }
 
 // getChildNodeIdsAndLastRetriedNode returns child node ids and last retried node, which are marked as `NodeStatus.NodeFlag.Retried=true`.

@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 type SimpleValue struct {
@@ -89,5 +89,4 @@ func Test_Template_Replace(t *testing.T) {
 			})
 		}
 	})
-
 }

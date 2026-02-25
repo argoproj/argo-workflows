@@ -9,8 +9,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/plugins/spec"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/pkg/plugins/spec"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 func TestToConfigMap(t *testing.T) {
@@ -57,7 +57,6 @@ func TestToConfigMap(t *testing.T) {
 			"sidecar.automountServiceAccountToken": "true",
 			"sidecar.container":                    "name: \"\"\nports:\n- containerPort: 1234\nresources: {}\nsecurityContext: {}\n",
 		}, cm.Data)
-
 	})
 }
 

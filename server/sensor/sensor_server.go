@@ -11,10 +11,10 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	sensorpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/sensor"
-	"github.com/argoproj/argo-workflows/v3/server/auth"
-	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
-	"github.com/argoproj/argo-workflows/v3/util/logs"
+	sensorpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/sensor"
+	"github.com/argoproj/argo-workflows/v4/server/auth"
+	sutils "github.com/argoproj/argo-workflows/v4/server/utils"
+	"github.com/argoproj/argo-workflows/v4/util/logs"
 )
 
 type sensorServer struct{}

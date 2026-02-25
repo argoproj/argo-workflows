@@ -9,10 +9,10 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo-workflows/v3/config"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/config"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 func TestExecuteTaskSet(t *testing.T) {
@@ -171,7 +171,6 @@ func TestAssessAgentPodStatus(t *testing.T) {
 		assert.Equal(t, wfv1.NodePhase(""), nodeStatus)
 		assert.Empty(t, msg)
 	})
-
 }
 
 func TestGetAgentPodName(t *testing.T) {

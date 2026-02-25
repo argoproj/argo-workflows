@@ -11,18 +11,18 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/bloberror"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
 
-	argoerrors "github.com/argoproj/argo-workflows/v3/errors"
-	"github.com/argoproj/argo-workflows/v3/util/file"
+	argoerrors "github.com/argoproj/argo-workflows/v4/errors"
+	"github.com/argoproj/argo-workflows/v4/util/file"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	artifactscommon "github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	artifactscommon "github.com/argoproj/argo-workflows/v4/workflow/artifacts/common"
 )
 
 // ArtifactDriver is a driver for Azure Blob Storage
@@ -39,7 +39,6 @@ var _ artifactscommon.ArtifactDriver = &ArtifactDriver{}
 // The container client is created with the default azblob.ClientOptions which does include retry behavior
 // for failed requests.
 func (azblobDriver *ArtifactDriver) newAzureContainerClient(ctx context.Context) (*container.Client, error) {
-
 	containerURL, err := url.Parse(azblobDriver.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse Azure Blob Storage endpoint url %s: %w", azblobDriver.Endpoint, err)

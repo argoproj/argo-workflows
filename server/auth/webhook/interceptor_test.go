@@ -12,7 +12,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 type testHTTPHandler struct{}
@@ -125,7 +125,7 @@ func intercept(ctx context.Context, method string, target string, headers map[st
 			Data:       map[string][]byte{"token": []byte("my-gitlab-token")},
 		},
 	)
-	i := NewWebhookInterceptor(logging.RequireLoggerFromContext(ctx)).Interceptor(k)
+	i := NewInterceptor(logging.RequireLoggerFromContext(ctx)).Interceptor(k)
 	w := httptest.NewRecorder()
 	b := &bytes.Buffer{}
 	b.WriteString("{}")

@@ -8,13 +8,13 @@ import (
 
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/argoproj/argo-workflows/v3/config"
-	syncpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/sync"
-	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
-	syncdb "github.com/argoproj/argo-workflows/v3/util/sync/db"
+	"github.com/argoproj/argo-workflows/v4/config"
+	syncpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/sync"
+	sutils "github.com/argoproj/argo-workflows/v4/server/utils"
+	syncdb "github.com/argoproj/argo-workflows/v4/util/sync/db"
 )
 
-type SyncConfigProvider interface {
+type ConfigProvider interface {
 	createSyncLimit(ctx context.Context, req *syncpkg.CreateSyncLimitRequest) (*syncpkg.SyncLimitResponse, error)
 	getSyncLimit(ctx context.Context, req *syncpkg.GetSyncLimitRequest) (*syncpkg.SyncLimitResponse, error)
 	updateSyncLimit(ctx context.Context, req *syncpkg.UpdateSyncLimitRequest) (*syncpkg.SyncLimitResponse, error)
@@ -22,19 +22,19 @@ type SyncConfigProvider interface {
 }
 
 type syncServer struct {
-	providers map[syncpkg.SyncConfigType]SyncConfigProvider
+	providers map[syncpkg.SyncConfigType]ConfigProvider
 }
 
 func NewSyncServer(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, syncConfig *config.SyncConfig) syncpkg.SyncServiceServer {
 	server := &syncServer{
-		providers: make(map[syncpkg.SyncConfigType]SyncConfigProvider),
+		providers: make(map[syncpkg.SyncConfigType]ConfigProvider),
 	}
 
 	server.providers[syncpkg.SyncConfigType_CONFIGMAP] = &configMapSyncProvider{}
 
 	if syncConfig != nil && syncConfig.EnableAPI {
-		session := syncdb.DBSessionFromConfig(ctx, kubectlConfig, namespace, syncConfig)
-		server.providers[syncpkg.SyncConfigType_DATABASE] = &dbSyncProvider{db: syncdb.NewSyncQueries(session, syncdb.DBConfigFromConfig(syncConfig))}
+		session, _ := syncdb.SessionFromConfig(ctx, kubectlConfig, namespace, syncConfig)
+		server.providers[syncpkg.SyncConfigType_DATABASE] = &dbSyncProvider{db: syncdb.NewSyncQueries(session, syncdb.ConfigFromConfig(syncConfig))}
 	}
 
 	return server

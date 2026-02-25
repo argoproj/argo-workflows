@@ -8,9 +8,9 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
 func (c *Controller) EnactAnyPodCleanup(
@@ -30,7 +30,6 @@ func (c *Controller) EnactAnyPodCleanup(
 	default:
 		c.queuePodForCleanup(ctx, pod.Namespace, pod.Name, action)
 	}
-
 }
 
 func determinePodCleanupAction(

@@ -5,8 +5,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 var dagCycle = `
@@ -664,7 +664,6 @@ spec:
 func TestDAGNonExistantTarget(t *testing.T) {
 	err := validate(logging.TestContext(t.Context()), dagNonexistantTarget)
 	require.ErrorContains(t, err, "target 'DOESNTEXIST' is not defined")
-
 }
 
 var dagTargetSubstitution = `
@@ -1219,7 +1218,7 @@ func TestDagWithItemTemplateRefTmpl(t *testing.T) {
 	err := createWorkflowTemplate(ctx, wftmpl)
 	require.NoError(t, err)
 
-	err = ValidateWorkflow(ctx, wftmplGetter, cwftmplGetter, wf, nil, ValidateOpts{})
+	err = Workflow(ctx, wftmplGetter, cwftmplGetter, wf, nil, Opts{})
 	require.NoError(t, err)
 
 	_ = deleteWorkflowTemplate(ctx, wftmpl.Name)

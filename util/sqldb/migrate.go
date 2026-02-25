@@ -6,7 +6,7 @@ import (
 
 	"github.com/upper/db/v4"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 type Change interface {
@@ -22,8 +22,7 @@ func ByType(dbType DBType, changes TypedChanges) Change {
 	return nil
 }
 
-func Migrate(ctx context.Context, session db.Session, versionTableName string, changes []Change) error {
-	dbType := DBTypeFor(session)
+func Migrate(ctx context.Context, session db.Session, dbType DBType, versionTableName string, changes []Change) error {
 	ctx, logger := logging.RequireLoggerFromContext(ctx).WithField("dbType", dbType).InContext(ctx)
 	logger.Info(ctx, "Migrating database schema")
 

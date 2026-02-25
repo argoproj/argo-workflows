@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -19,14 +19,14 @@ import (
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	k8stesting "k8s.io/client-go/testing"
 
-	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
-	"github.com/argoproj/argo-workflows/v3/persist/sqldb/mocks"
-	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	argofake "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo-workflows/v3/server/auth"
-	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/persist/sqldb"
+	"github.com/argoproj/argo-workflows/v4/persist/sqldb/mocks"
+	workflowarchivepkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflowarchive"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	argofake "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo-workflows/v4/server/auth"
+	sutils "github.com/argoproj/argo-workflows/v4/server/utils"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 func Test_archivedWorkflowServer(t *testing.T) {
@@ -68,12 +68,14 @@ func Test_archivedWorkflowServer(t *testing.T) {
 	repo.On("ListWorkflows", mock.Anything, sutils.ListOptions{Namespace: "", Name: "my-name", NamePrefix: "my-", MinStartedAt: minStartAt, MaxStartedAt: maxStartAt, Limit: 2, Offset: 0, ShowRemainingItemCount: true}).Return(v1alpha1.Workflows{{}}, nil)
 	repo.On("ListWorkflows", mock.Anything, sutils.ListOptions{Namespace: "", Name: "excluded-name", NameFilter: "NotEquals", MinStartedAt: minStartAt, MaxStartedAt: maxStartAt, Limit: 2, Offset: 0}).Return(v1alpha1.Workflows{{}}, nil)
 	repo.On("ListWorkflows", mock.Anything, sutils.ListOptions{Namespace: "", Name: "exact-name", NameFilter: "", MinStartedAt: minStartAt, MaxStartedAt: maxStartAt, Limit: 2, Offset: 0}).Return(v1alpha1.Workflows{{}}, nil)
+	repo.On("ListWorkflows", mock.Anything, sutils.ListOptions{Namespace: "excluded-ns", NamespaceFilter: "NotEquals", Name: "", NamePrefix: "", MinStartedAt: time.Time{}, MaxStartedAt: time.Time{}, Limit: 2, Offset: 0}).Return(v1alpha1.Workflows{{}, {}}, nil)
+	repo.On("ListWorkflows", mock.Anything, sutils.ListOptions{Namespace: "user-ns", Name: "", NamePrefix: "", MinStartedAt: time.Time{}, MaxStartedAt: time.Time{}, Limit: 1, Offset: 0}).Return(v1alpha1.Workflows{{}}, nil)
 	repo.On("ListWorkflows", mock.Anything, sutils.ListOptions{Namespace: "user-ns", Name: "", NamePrefix: "", MinStartedAt: time.Time{}, MaxStartedAt: time.Time{}, Limit: 2, Offset: 0}).Return(v1alpha1.Workflows{{}, {}}, nil)
 	repo.On("CountWorkflows", mock.Anything, sutils.ListOptions{Namespace: "", Name: "my-name", NamePrefix: "my-", MinStartedAt: minStartAt, MaxStartedAt: maxStartAt, Limit: 2, Offset: 0}).Return(int64(5), nil)
 	repo.On("CountWorkflows", mock.Anything, sutils.ListOptions{Namespace: "", Name: "my-name", NamePrefix: "my-", MinStartedAt: minStartAt, MaxStartedAt: maxStartAt, Limit: 2, Offset: 0, ShowRemainingItemCount: true}).Return(int64(5), nil)
 	repo.On("GetWorkflow", mock.Anything, "", "", "").Return(nil, nil)
 	repo.On("GetWorkflow", mock.Anything, "my-uid", "", "").Return(&v1alpha1.Workflow{
-		ObjectMeta: metav1.ObjectMeta{Name: "my-name"},
+		ObjectMeta: metav1.ObjectMeta{Name: "my-name", UID: "my-uid"},
 		Spec: v1alpha1.WorkflowSpec{
 			Entrypoint: "my-entrypoint",
 			Templates: []v1alpha1.Template{
@@ -198,6 +200,17 @@ func Test_archivedWorkflowServer(t *testing.T) {
 		_, err = w.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{Namespace: "user-ns", ListOptions: &metav1.ListOptions{Limit: 1, FieldSelector: "metadata.namespace=other-ns"}})
 		assert.Equal(t, err, status.Error(codes.InvalidArgument, "'namespace' query param (\"user-ns\") and fieldselector 'metadata.namespace' (\"other-ns\") are both specified and contradict each other"))
 
+		// namespace NotEquals
+		resp, err = w.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{ListOptions: &metav1.ListOptions{Limit: 1, FieldSelector: "metadata.namespace!=excluded-ns"}})
+		require.NoError(t, err)
+		assert.Len(t, resp.Items, 1)
+		assert.Equal(t, "1", resp.Continue)
+
+		// namespace DoubleEquals
+		resp, err = w.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{ListOptions: &metav1.ListOptions{Limit: 1, FieldSelector: "metadata.namespace==user-ns"}})
+		require.NoError(t, err)
+		assert.Len(t, resp.Items, 1)
+		assert.Equal(t, "1", resp.Continue)
 	})
 	t.Run("GetArchivedWorkflow", func(t *testing.T) {
 		allowed = false

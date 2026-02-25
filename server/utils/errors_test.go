@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	argoerrors "github.com/argoproj/argo-workflows/v3/errors"
+	argoerrors "github.com/argoproj/argo-workflows/v4/errors"
 )
 
 type testArgoError struct {
@@ -65,7 +65,6 @@ func TestNilStatus(t *testing.T) {
 }
 
 func TestArgoError(t *testing.T) {
-
 	t.Run("CodeBadRequest", func(t *testing.T) {
 		argoErr := testArgoError{argoerrors.CodeBadRequest}
 		newErr := ToStatusError(argoErr, codes.Internal)
@@ -86,7 +85,6 @@ func TestArgoError(t *testing.T) {
 		stat := status.Convert(newErr)
 		assert.Equal(t, codes.Internal, stat.Code())
 	})
-
 }
 
 func TestHTTPToStatusError(t *testing.T) {

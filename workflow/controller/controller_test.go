@@ -24,26 +24,27 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/utils/ptr"
 
-	"github.com/argoproj/argo-workflows/v3/config"
-	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	fakewfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/scheme"
-	wfextv "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions"
-	envutil "github.com/argoproj/argo-workflows/v3/util/env"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/util/telemetry"
-	armocks "github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories/mocks"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	controllercache "github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
-	"github.com/argoproj/argo-workflows/v3/workflow/controller/entrypoint"
-	"github.com/argoproj/argo-workflows/v3/workflow/controller/estimation"
-	"github.com/argoproj/argo-workflows/v3/workflow/controller/pod"
-	"github.com/argoproj/argo-workflows/v3/workflow/events"
-	hydratorfake "github.com/argoproj/argo-workflows/v3/workflow/hydrator/fake"
-	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
+	"github.com/argoproj/argo-workflows/v4/config"
+	"github.com/argoproj/argo-workflows/v4/persist/sqldb"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	fakewfclientset "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/scheme"
+	wfextv "github.com/argoproj/argo-workflows/v4/pkg/client/informers/externalversions"
+	envutil "github.com/argoproj/argo-workflows/v4/util/env"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/telemetry"
+	armocks "github.com/argoproj/argo-workflows/v4/workflow/artifactrepositories/mocks"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	controllercache "github.com/argoproj/argo-workflows/v4/workflow/controller/cache"
+	"github.com/argoproj/argo-workflows/v4/workflow/controller/entrypoint"
+	"github.com/argoproj/argo-workflows/v4/workflow/controller/estimation"
+	"github.com/argoproj/argo-workflows/v4/workflow/controller/pod"
+	"github.com/argoproj/argo-workflows/v4/workflow/events"
+	hydratorfake "github.com/argoproj/argo-workflows/v4/workflow/hydrator/fake"
+	"github.com/argoproj/argo-workflows/v4/workflow/metrics"
+	"github.com/argoproj/argo-workflows/v4/workflow/tracing"
+	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
 var helloWorldWf = `
@@ -317,6 +318,7 @@ func newController(ctx context.Context, options ...any) (context.CancelFunc, *Wo
 		wfc.throttler = wfc.newThrottler()
 		wfc.rateLimiter = wfc.newRateLimiter()
 	}
+	wfc.tracing, _ = tracing.New(ctx, telemetry.TestScopeName)
 
 	// always compare to WorkflowController.Run to see what this block of code should be doing
 	{
@@ -356,7 +358,6 @@ func newController(ctx context.Context, options ...any) (context.CancelFunc, *Wo
 				time.Sleep(5 * time.Millisecond)
 			}
 		}
-
 	}
 	return cancel, wfc
 }

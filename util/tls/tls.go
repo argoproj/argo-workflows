@@ -19,7 +19,7 @@ import (
 
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/argoproj/argo-workflows/v3/util"
+	"github.com/argoproj/argo-workflows/v4/util"
 )
 
 const (
@@ -115,7 +115,6 @@ func GenerateX509KeyPair() (*tls.Certificate, error) {
 }
 
 func GenerateX509KeyPairTLSConfig(tlsMinVersion uint16) (*tls.Config, error) {
-
 	cer, err := GenerateX509KeyPair()
 	if err != nil {
 		return nil, err

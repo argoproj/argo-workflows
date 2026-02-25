@@ -13,7 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 const testNamespace = "argo"
@@ -90,7 +90,6 @@ func TestNewSsoWithIssuerAlias(t *testing.T) {
 	}
 	_, err := newSso(logging.TestContext(t.Context()), fakeOidcFactory, config, fakeClient, "/", false)
 	require.NoError(t, err)
-
 }
 func TestLoadSsoClientIdFromDifferentSecret(t *testing.T) {
 	clientIDSecret := &apiv1.Secret{

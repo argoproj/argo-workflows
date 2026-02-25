@@ -33,41 +33,43 @@ import (
 	apiwatch "k8s.io/client-go/tools/watch"
 	"k8s.io/client-go/util/workqueue"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 
-	"github.com/argoproj/argo-workflows/v3"
-	"github.com/argoproj/argo-workflows/v3/config"
-	argoErr "github.com/argoproj/argo-workflows/v3/errors"
-	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions"
-	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/pkg/plugins/spec"
-	wfctx "github.com/argoproj/argo-workflows/v3/util/context"
-	"github.com/argoproj/argo-workflows/v3/util/deprecation"
-	"github.com/argoproj/argo-workflows/v3/util/env"
-	"github.com/argoproj/argo-workflows/v3/util/errors"
-	rbacutil "github.com/argoproj/argo-workflows/v3/util/rbac"
-	"github.com/argoproj/argo-workflows/v3/util/retry"
-	"github.com/argoproj/argo-workflows/v3/util/telemetry"
-	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	controllercache "github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
-	"github.com/argoproj/argo-workflows/v3/workflow/controller/entrypoint"
-	"github.com/argoproj/argo-workflows/v3/workflow/controller/estimation"
-	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
-	"github.com/argoproj/argo-workflows/v3/workflow/controller/informer"
-	"github.com/argoproj/argo-workflows/v3/workflow/controller/pod"
-	"github.com/argoproj/argo-workflows/v3/workflow/cron"
-	"github.com/argoproj/argo-workflows/v3/workflow/events"
-	"github.com/argoproj/argo-workflows/v3/workflow/gccontroller"
-	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
-	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
-	"github.com/argoproj/argo-workflows/v3/workflow/sync"
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
-	"github.com/argoproj/argo-workflows/v3/workflow/util/plugin"
+	"github.com/argoproj/argo-workflows/v4"
+	"github.com/argoproj/argo-workflows/v4/config"
+	argoErr "github.com/argoproj/argo-workflows/v4/errors"
+	"github.com/argoproj/argo-workflows/v4/persist/sqldb"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	wfclientset "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo-workflows/v4/pkg/client/informers/externalversions"
+	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/client/informers/externalversions/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/pkg/plugins/spec"
+	wfctx "github.com/argoproj/argo-workflows/v4/util/context"
+	"github.com/argoproj/argo-workflows/v4/util/deprecation"
+	"github.com/argoproj/argo-workflows/v4/util/env"
+	"github.com/argoproj/argo-workflows/v4/util/errors"
+	rbacutil "github.com/argoproj/argo-workflows/v4/util/rbac"
+	"github.com/argoproj/argo-workflows/v4/util/retry"
+	utilsqldb "github.com/argoproj/argo-workflows/v4/util/sqldb"
+	"github.com/argoproj/argo-workflows/v4/util/telemetry"
+	waitutil "github.com/argoproj/argo-workflows/v4/util/wait"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifactrepositories"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	controllercache "github.com/argoproj/argo-workflows/v4/workflow/controller/cache"
+	"github.com/argoproj/argo-workflows/v4/workflow/controller/entrypoint"
+	"github.com/argoproj/argo-workflows/v4/workflow/controller/estimation"
+	"github.com/argoproj/argo-workflows/v4/workflow/controller/indexes"
+	"github.com/argoproj/argo-workflows/v4/workflow/controller/informer"
+	"github.com/argoproj/argo-workflows/v4/workflow/controller/pod"
+	"github.com/argoproj/argo-workflows/v4/workflow/cron"
+	"github.com/argoproj/argo-workflows/v4/workflow/events"
+	"github.com/argoproj/argo-workflows/v4/workflow/gccontroller"
+	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
+	"github.com/argoproj/argo-workflows/v4/workflow/metrics"
+	"github.com/argoproj/argo-workflows/v4/workflow/sync"
+	"github.com/argoproj/argo-workflows/v4/workflow/tracing"
+	"github.com/argoproj/argo-workflows/v4/workflow/util"
+	"github.com/argoproj/argo-workflows/v4/workflow/util/plugin"
 )
 
 const maxAllowedStackDepth = 100
@@ -134,12 +136,14 @@ type WorkflowController struct {
 	throttler             sync.Throttler
 	workflowKeyLock       syncpkg.KeyLock // used to lock workflows for exclusive modification or access
 	session               db.Session
+	dbType                utilsqldb.DBType
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	hydrator              hydrator.Interface
 	wfArchive             sqldb.WorkflowArchive
 	estimatorFactory      estimation.EstimatorFactory
 	syncManager           *sync.Manager
 	metrics               *metrics.Metrics
+	tracing               *tracing.Tracing
 	eventRecorderManager  events.EventRecorderManager
 	archiveLabelSelector  labels.Selector
 	cacheFactory          controllercache.Factory
@@ -237,6 +241,10 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 	if err != nil {
 		return nil, err
 	}
+	wfc.tracing, err = tracing.New(ctx, `workflows-controller`)
+	if err != nil {
+		return nil, err
+	}
 
 	deprecation.Initialize(wfc.metrics.DeprecatedFeature)
 	wfc.entrypoint = entrypoint.New(kubeclientset, wfc.Config.Images)
@@ -286,6 +294,11 @@ var indexers = cache.Indexers{
 	indexes.ConditionsIndex:              indexes.ConditionsIndexFunc,
 	indexes.UIDIndex:                     indexes.MetaUIDFunc,
 	cache.NamespaceIndex:                 cache.MetaNamespaceIndexFunc,
+}
+
+// ShutdownTracing flushes any remaining spans and shuts down the trace provider.
+func (wfc *WorkflowController) ShutdownTracing(ctx context.Context) error {
+	return wfc.tracing.Shutdown(ctx)
 }
 
 // Run starts a Workflow resource controller
@@ -1246,18 +1259,18 @@ func (wfc *WorkflowController) getMaxStackDepth() int {
 	return maxAllowedStackDepth
 }
 
-func (wfc *WorkflowController) getMetricsServerConfig() *telemetry.Config {
+func (wfc *WorkflowController) getMetricsServerConfig() *telemetry.MetricsConfig {
 	// Metrics config
-	modifiers := make(map[string]telemetry.Modifier)
+	modifiers := make(map[string]telemetry.MetricsModifier)
 	for name, modifier := range wfc.Config.MetricsConfig.Modifiers {
-		modifiers[name] = telemetry.Modifier{
+		modifiers[name] = telemetry.MetricsModifier{
 			Disabled:           modifier.Disabled,
 			DisabledAttributes: modifier.DisabledAttributes,
 			HistogramBuckets:   modifier.HistogramBuckets,
 		}
 	}
 
-	metricsConfig := telemetry.Config{
+	metricsConfig := telemetry.MetricsConfig{
 		Enabled:      wfc.Config.MetricsConfig.Enabled == nil || *wfc.Config.MetricsConfig.Enabled,
 		Path:         wfc.Config.MetricsConfig.Path,
 		Port:         wfc.Config.MetricsConfig.Port,

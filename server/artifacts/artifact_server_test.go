@@ -16,7 +16,7 @@ import (
 
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 
-	argoerrors "github.com/argoproj/argo-workflows/v3/errors"
+	argoerrors "github.com/argoproj/argo-workflows/v4/errors"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -24,18 +24,18 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 
-	sqldbmocks "github.com/argoproj/argo-workflows/v3/persist/sqldb/mocks"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	fakewfv1 "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo-workflows/v3/server/auth"
-	authmocks "github.com/argoproj/argo-workflows/v3/server/auth/mocks"
-	"github.com/argoproj/argo-workflows/v3/util/instanceid"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	armocks "github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories/mocks"
-	artifactscommon "github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/resource"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	hydratorfake "github.com/argoproj/argo-workflows/v3/workflow/hydrator/fake"
+	sqldbmocks "github.com/argoproj/argo-workflows/v4/persist/sqldb/mocks"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	fakewfv1 "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo-workflows/v4/server/auth"
+	authmocks "github.com/argoproj/argo-workflows/v4/server/auth/mocks"
+	"github.com/argoproj/argo-workflows/v4/util/instanceid"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	armocks "github.com/argoproj/argo-workflows/v4/workflow/artifactrepositories/mocks"
+	artifactscommon "github.com/argoproj/argo-workflows/v4/workflow/artifacts/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/resource"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	hydratorfake "github.com/argoproj/argo-workflows/v4/workflow/hydrator/fake"
 )
 
 func mustParse(text string) *url.URL {
@@ -503,7 +503,6 @@ func TestArtifactServer_GetArtifactFile(t *testing.T) {
 				} else {
 					assert.Equal(t, "my-data", string(all))
 				}
-
 			}
 		})
 	}

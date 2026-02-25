@@ -9,9 +9,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
-	"github.com/argoproj/argo-workflows/v3/util"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/errors"
+	"github.com/argoproj/argo-workflows/v4/util"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 type flusher interface {
@@ -25,7 +25,7 @@ func TarGzToWriter(ctx context.Context, sourcePath string, level int, w io.Write
 		return errors.InternalErrorf("getting absolute path: %v", err)
 	}
 	logger := logging.RequireLoggerFromContext(ctx)
-	logger.WithField("source", sourcePath).Info(ctx, "taring")
+	logger.WithField("source", sourcePath).Info(ctx, "tarring")
 	sourceFi, err := os.Stat(sourcePath)
 	if err != nil {
 		if os.IsNotExist(err) {

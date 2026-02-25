@@ -12,9 +12,9 @@ import (
 	testpostgres "github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
 
-	"github.com/argoproj/argo-workflows/v3/config"
-	"github.com/argoproj/argo-workflows/v3/util/sqldb"
-	syncdb "github.com/argoproj/argo-workflows/v3/util/sync/db"
+	"github.com/argoproj/argo-workflows/v4/config"
+	"github.com/argoproj/argo-workflows/v4/util/sqldb"
+	syncdb "github.com/argoproj/argo-workflows/v4/util/sync/db"
 )
 
 const (
@@ -24,7 +24,7 @@ const (
 )
 
 // createTestDBSession creates a test database session
-func createTestDBSession(ctx context.Context, t *testing.T, dbType sqldb.DBType) (syncdb.DBInfo, func(), config.SyncConfig, error) {
+func createTestDBSession(ctx context.Context, t *testing.T, dbType sqldb.DBType) (syncdb.Info, func(), config.SyncConfig, error) {
 	t.Helper()
 
 	var cfg config.SyncConfig
@@ -41,9 +41,11 @@ func createTestDBSession(ctx context.Context, t *testing.T, dbType sqldb.DBType)
 		t.Fatalf("failed to start container: %s", err)
 	}
 
-	info := syncdb.DBInfo{
-		Config:  syncdb.DBConfigFromConfig(&cfg),
-		Session: syncdb.DBSessionFromConfigWithCreds(&cfg, testDBUser, testDBPassword),
+	session, dbType := syncdb.SessionFromConfigWithCreds(&cfg, testDBUser, testDBPassword)
+	info := syncdb.Info{
+		Config:  syncdb.ConfigFromConfig(&cfg),
+		Session: session,
+		DBType:  dbType,
 	}
 	require.NotNil(t, info.Session, "failed to create database session")
 	deferfn := func() {

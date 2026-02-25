@@ -3,7 +3,7 @@ package estimation
 import (
 	"context"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
 type dummyEstimatorFactory struct{}

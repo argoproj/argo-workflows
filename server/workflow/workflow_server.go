@@ -20,26 +20,26 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/tools/cache"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
-	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
-	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo-workflows/v3/server/auth"
-	servertypes "github.com/argoproj/argo-workflows/v3/server/types"
-	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
-	"github.com/argoproj/argo-workflows/v3/server/workflow/store"
-	argoutil "github.com/argoproj/argo-workflows/v3/util"
-	"github.com/argoproj/argo-workflows/v3/util/fields"
-	"github.com/argoproj/argo-workflows/v3/util/instanceid"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/util/logs"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/creator"
-	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
-	"github.com/argoproj/argo-workflows/v3/workflow/validate"
+	"github.com/argoproj/argo-workflows/v4/errors"
+	"github.com/argoproj/argo-workflows/v4/persist/sqldb"
+	workflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo-workflows/v4/server/auth"
+	servertypes "github.com/argoproj/argo-workflows/v4/server/types"
+	sutils "github.com/argoproj/argo-workflows/v4/server/utils"
+	"github.com/argoproj/argo-workflows/v4/server/workflow/store"
+	argoutil "github.com/argoproj/argo-workflows/v4/util"
+	"github.com/argoproj/argo-workflows/v4/util/fields"
+	"github.com/argoproj/argo-workflows/v4/util/instanceid"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logs"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/creator"
+	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
+	"github.com/argoproj/argo-workflows/v4/workflow/util"
+	"github.com/argoproj/argo-workflows/v4/workflow/validate"
 )
 
 const (
@@ -48,8 +48,8 @@ const (
 	workflowTemplateResyncPeriod = 20 * time.Minute
 )
 
-// WorkflowServer is the interface for the workflow server.
-type WorkflowServer interface {
+// Server is the interface for the workflow server.
+type Server interface {
 	workflowpkg.WorkflowServiceServer
 	Run(stopCh <-chan struct{})
 }
@@ -66,10 +66,10 @@ type workflowServer struct {
 	wfDefaults            *wfv1.Workflow
 }
 
-var _ WorkflowServer = &workflowServer{}
+var _ Server = &workflowServer{}
 
-// NewWorkflowServer returns a new WorkflowServer
-func NewWorkflowServer(ctx context.Context, instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, wfClientSet versioned.Interface, wfLister store.WorkflowLister, wfStore store.WorkflowStore, wftmplStore servertypes.WorkflowTemplateStore, cwftmplStore servertypes.ClusterWorkflowTemplateStore, wfDefaults *wfv1.Workflow, namespace *string) WorkflowServer {
+// NewServer returns a new Server
+func NewServer(ctx context.Context, instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, wfClientSet versioned.Interface, wfLister store.WorkflowLister, wfStore store.WorkflowStore, wftmplStore servertypes.WorkflowTemplateStore, cwftmplStore servertypes.ClusterWorkflowTemplateStore, wfDefaults *wfv1.Workflow, namespace *string) Server {
 	ws := &workflowServer{
 		instanceIDService:     instanceIDService,
 		offloadNodeStatusRepo: offloadNodeStatusRepo,
@@ -118,7 +118,7 @@ func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.Wo
 	wftmplGetter := s.wftmplStore.Getter(ctx, req.Workflow.Namespace)
 	cwftmplGetter := s.cwftmplStore.Getter(ctx)
 
-	err := validate.ValidateWorkflow(ctx, wftmplGetter, cwftmplGetter, req.Workflow, s.wfDefaults, validate.ValidateOpts{})
+	err := validate.Workflow(ctx, wftmplGetter, cwftmplGetter, req.Workflow, s.wfDefaults, validate.Opts{})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
 	}
@@ -194,12 +194,17 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 	}
 
 	// verify if we have permission to list Workflows
-	allowed, err := auth.CanI(ctx, "list", workflow.WorkflowPlural, options.Namespace, "")
+	targetNamespace := options.Namespace
+	if options.NamespaceFilter == "NotEquals" {
+		targetNamespace = ""
+	}
+	allowed, err := auth.CanI(ctx, "list", workflow.WorkflowPlural, targetNamespace, "")
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
+
 	if !allowed {
-		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("Permission denied, you are not allowed to list workflows in namespace \"%s\". Maybe you want to specify a namespace with query parameter `.namespace=%s`?", options.Namespace, options.Namespace))
+		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("Permission denied, you are not allowed to list workflows in namespace \"%s\". Maybe you want to specify a namespace with query parameter `.namespace=%s`?", targetNamespace, targetNamespace))
 	}
 
 	var wfs wfv1.Workflows
@@ -568,7 +573,6 @@ func (s *workflowServer) ResumeWorkflow(ctx context.Context, req *workflowpkg.Wo
 		logger := logging.RequireLoggerFromContext(ctx)
 		logger.WithFields(logging.Fields{"name": wf.Name}).WithError(err).Warn(ctx, "Failed to resume")
 		return nil, sutils.ToStatusError(err, codes.Internal)
-
 	}
 
 	wf, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Get(ctx, wf.Name, metav1.GetOptions{})
@@ -706,7 +710,7 @@ func (s *workflowServer) LintWorkflow(ctx context.Context, req *workflowpkg.Work
 	s.instanceIDService.Label(req.Workflow)
 	creator.LabelCreator(ctx, req.Workflow)
 
-	err := validate.ValidateWorkflow(ctx, wftmplGetter, cwftmplGetter, req.Workflow, s.wfDefaults, validate.ValidateOpts{Lint: true})
+	err := validate.Workflow(ctx, wftmplGetter, cwftmplGetter, req.Workflow, s.wfDefaults, validate.Opts{Lint: true})
 	if err != nil {
 		return nil, err
 	}
@@ -831,7 +835,7 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 	wftmplGetter := s.wftmplStore.Getter(ctx, req.Namespace)
 	cwftmplGetter := s.cwftmplStore.Getter(ctx)
 
-	err = validate.ValidateWorkflow(ctx, wftmplGetter, cwftmplGetter, wf, s.wfDefaults, validate.ValidateOpts{Submit: true})
+	err = validate.Workflow(ctx, wftmplGetter, cwftmplGetter, wf, s.wfDefaults, validate.Opts{Submit: true})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
 	}

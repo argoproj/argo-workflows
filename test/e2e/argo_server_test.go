@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/util/secrets"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/secrets"
 
 	"github.com/gavv/httpexpect/v2"
 	"github.com/stretchr/testify/assert"
@@ -22,11 +22,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	syncpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/sync"
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	syncpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/sync"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/test/e2e/fixtures"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 const baseURL = "http://localhost:2746"
@@ -554,6 +554,48 @@ func (s *ArgoServerSuite) TestPermission() {
 			IsEqual(1)
 	})
 
+	// Test list workflows with the original token and NotEquals namespace.
+	// We need the original token because it has the ClusterRoleBinding needed to list workflows in all namespaces
+	s.bearerToken = token
+	s.Run("ListWFsGoodTokenNotEqualsNamespace", func() {
+		s.e().GET("/api/v1/workflows/").
+			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test").
+			WithQuery("listOptions.fieldSelector", "metadata.namespace!="+nsName).
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			IsNull()
+	})
+
+	// Test list workflows with good token and NotEquals a non-existent namespace
+	s.Run("ListWFsGoodTokenNotEqualsNamespaceExcluded", func() {
+		s.e().GET("/api/v1/workflows/").
+			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test").
+			WithQuery("listOptions.fieldSelector", "metadata.namespace!="+nsName+"-excluded").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			Array().
+			Length().
+			IsEqual(1)
+	})
+
+	// Test list workflows with good token and Equals namespace
+	s.Run("ListWFsGoodTokenDoubleEqualsNamespace", func() {
+		s.e().GET("/api/v1/workflows/").
+			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test").
+			WithQuery("listOptions.fieldSelector", "metadata.namespace=="+nsName).
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			Array().
+			Length().
+			IsEqual(1)
+	})
+
 	s.Given().
 		When().
 		WaitForWorkflow(fixtures.ToBeArchived)
@@ -583,6 +625,13 @@ func (s *ArgoServerSuite) TestPermission() {
     }
   }
 }`)).
+			Expect().
+			Status(403)
+	})
+
+	s.Run("ListWFsBadTokenNotEqualsNamespace", func() {
+		s.e().GET("/api/v1/workflows/").
+			WithQuery("listOptions.fieldSelector", "metadata.namespace!="+nsName+"-excluded").
 			Expect().
 			Status(403)
 	})
@@ -1749,7 +1798,6 @@ func (s *ArgoServerSuite) artifactServerRetrievalTests(name string, uid types.UI
 
 		resp.Header("X-Frame-Options").
 			IsEqual("SAMEORIGIN")
-
 	})
 
 	// In this case, the filename specified in the request is actually a directory
@@ -1761,7 +1809,6 @@ func (s *ArgoServerSuite) artifactServerRetrievalTests(name string, uid types.UI
 		resp.Body().
 			Contains("<a href=\"./sub-file-1\">sub-file-1</a>").
 			Contains("<a href=\"./sub-file-2\">sub-file-2</a>")
-
 	})
 
 	// In this case, the filename specified in the request is a subdirectory file
@@ -2162,7 +2209,6 @@ spec:
 			Length().
 			IsEqual(1)
 	})
-
 }
 
 // A test can simply reproduce the problem mentioned in the link https://github.com/argoproj/argo-workflows/pull/12574
@@ -2356,6 +2402,8 @@ func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
 }`)).Expect().Status(200)
 	})
 
+	time.Sleep(1 * time.Second) // wait for informer cache to sync
+
 	s.Run("SubmitWFT", func() {
 		s.e().POST("/api/v1/workflows/argo/submit").
 			WithBytes([]byte(`{
@@ -2438,6 +2486,8 @@ func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
   }
 }`)).Expect().Status(200)
 	})
+
+	time.Sleep(1 * time.Second) // wait for informer cache to sync
 
 	s.Run("SubmitCWFT", func() {
 		s.e().POST("/api/v1/workflows/argo/submit").
@@ -2724,7 +2774,6 @@ spec:
 	j.
 		Path("$.spec.templates[0].container.args[1]").
 		IsEqual("hello \u0000")
-
 }
 
 func (s *ArgoServerSuite) TestSyncConfigmapService() {

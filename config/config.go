@@ -13,7 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
 type ResourceRateLimit struct {
@@ -419,7 +419,7 @@ type DatabaseConfig struct {
 	// UsernameSecret references a secret containing the database username
 	UsernameSecret apiv1.SecretKeySelector `json:"userNameSecret,omitempty"`
 	// PasswordSecret references a secret containing the database password
-	PasswordSecret apiv1.SecretKeySelector `json:"passwordSecret,omitempty"`
+	PasswordSecret apiv1.SecretKeySelector `json:"passwordSecret,omitzero"`
 }
 
 func (c DatabaseConfig) GetHostname() string {
@@ -436,6 +436,15 @@ type PostgreSQLConfig struct {
 	SSL bool `json:"ssl,omitempty"`
 	// SSLMode specifies the SSL mode (disable, require, verify-ca, verify-full)
 	SSLMode string `json:"sslMode,omitempty"`
+	// AzureToken specifies if the password should be fetched as an Azure token
+	AzureToken *AzureTokenConfig `json:"azureToken,omitempty"`
+}
+
+type AzureTokenConfig struct {
+	// Enabled enables Azure token fetching
+	Enabled bool `json:"enabled,omitempty"`
+	// Scope is the scope to request the token for. Defaults to "https://ossrdbms-aad.database.windows.net/.default" if empty.
+	Scope string `json:"scope,omitempty"`
 }
 
 // MySQLConfig contains MySQL-specific database configuration
@@ -449,7 +458,7 @@ type MySQLConfig struct {
 type MetricModifier struct {
 	// Disabled disables the emission of this metric completely
 	Disabled bool `json:"disabled,omitempty"`
-	// DisabledAttributes lists labels for this metric to remove that attributes to save on cardinality
+	// DisabledAttributes lists labels for this metric to remove those attributes to save on cardinality
 	DisabledAttributes []string `json:"disabledAttributes"`
 	// HistogramBuckets allow configuring of the buckets used in a histogram
 	// Has no effect on non-histogram buckets

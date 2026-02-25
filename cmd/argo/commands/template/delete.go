@@ -6,8 +6,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
-	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/client"
+	workflowtemplatepkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflowtemplate"
 )
 
 // NewDeleteCommand returns a new instance of an `argo delete` command
@@ -54,7 +54,6 @@ func apiServerDeleteWorkflowTemplates(ctx context.Context, allWFs bool, wfTmplNa
 		for _, wfTmpl := range wftmplList.Items {
 			delWFTmplNames = append(delWFTmplNames, wfTmpl.Name)
 		}
-
 	} else {
 		delWFTmplNames = wfTmplNames
 	}

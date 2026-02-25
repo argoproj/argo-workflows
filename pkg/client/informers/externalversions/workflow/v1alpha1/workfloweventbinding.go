@@ -3,13 +3,13 @@
 package v1alpha1
 
 import (
-	"context"
+	context "context"
 	time "time"
 
-	workflowv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	versioned "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
-	internalinterfaces "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/internalinterfaces"
-	v1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/listers/workflow/v1alpha1"
+	apisworkflowv1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	versioned "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
+	internalinterfaces "github.com/argoproj/argo-workflows/v4/pkg/client/informers/externalversions/internalinterfaces"
+	workflowv1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/client/listers/workflow/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -20,7 +20,7 @@ import (
 // WorkflowEventBindings.
 type WorkflowEventBindingInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1alpha1.WorkflowEventBindingLister
+	Lister() workflowv1alpha1.WorkflowEventBindingLister
 }
 
 type workflowEventBindingInformer struct {
@@ -46,16 +46,28 @@ func NewFilteredWorkflowEventBindingInformer(client versioned.Interface, namespa
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.ArgoprojV1alpha1().WorkflowEventBindings(namespace).List(context.TODO(), options)
+				return client.ArgoprojV1alpha1().WorkflowEventBindings(namespace).List(context.Background(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.ArgoprojV1alpha1().WorkflowEventBindings(namespace).Watch(context.TODO(), options)
+				return client.ArgoprojV1alpha1().WorkflowEventBindings(namespace).Watch(context.Background(), options)
+			},
+			ListWithContextFunc: func(ctx context.Context, options v1.ListOptions) (runtime.Object, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.ArgoprojV1alpha1().WorkflowEventBindings(namespace).List(ctx, options)
+			},
+			WatchFuncWithContext: func(ctx context.Context, options v1.ListOptions) (watch.Interface, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.ArgoprojV1alpha1().WorkflowEventBindings(namespace).Watch(ctx, options)
 			},
 		},
-		&workflowv1alpha1.WorkflowEventBinding{},
+		&apisworkflowv1alpha1.WorkflowEventBinding{},
 		resyncPeriod,
 		indexers,
 	)
@@ -66,9 +78,9 @@ func (f *workflowEventBindingInformer) defaultInformer(client versioned.Interfac
 }
 
 func (f *workflowEventBindingInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&workflowv1alpha1.WorkflowEventBinding{}, f.defaultInformer)
+	return f.factory.InformerFor(&apisworkflowv1alpha1.WorkflowEventBinding{}, f.defaultInformer)
 }
 
-func (f *workflowEventBindingInformer) Lister() v1alpha1.WorkflowEventBindingLister {
-	return v1alpha1.NewWorkflowEventBindingLister(f.Informer().GetIndexer())
+func (f *workflowEventBindingInformer) Lister() workflowv1alpha1.WorkflowEventBindingLister {
+	return workflowv1alpha1.NewWorkflowEventBindingLister(f.Informer().GetIndexer())
 }

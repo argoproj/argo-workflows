@@ -2,11 +2,8 @@ package common
 
 import (
 	"bytes"
-	"compress/gzip"
 	"context"
 	"fmt"
-	"os"
-	"path/filepath"
 	"slices"
 	"strings"
 	"syscall"
@@ -14,22 +11,9 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 
-	envutil "github.com/argoproj/argo-workflows/v3/util/env"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	envutil "github.com/argoproj/argo-workflows/v4/util/env"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
-
-const (
-	containerShimPrefix = "://"
-)
-
-// GetContainerID returns container ID of a ContainerStatus resource
-func GetContainerID(container string) string {
-	_, after, ok := strings.Cut(container, containerShimPrefix)
-	if !ok {
-		return container
-	}
-	return after
-}
 
 // KubernetesClientInterface is the interface to implement getContainerStatus method
 type KubernetesClientInterface interface {
@@ -146,29 +130,4 @@ func KillGracefully(ctx context.Context, c KubernetesClientInterface, containerN
 	}
 	log.WithFields(logging.Fields{"containers": strings.Join(containerNames, ",")}).Info(ctx, "Containers successfully killed")
 	return nil
-}
-
-// CopyArchive downloads files and directories as a tarball and saves it to a specified path.
-func CopyArchive(ctx context.Context, c KubernetesClientInterface, containerName, sourcePath, destPath string) error {
-	log := logging.RequireLoggerFromContext(ctx)
-	log.WithFields(logging.Fields{"container": containerName, "source": sourcePath, "dest": destPath}).Info(ctx, "Archiving")
-	b, err := c.CreateArchive(ctx, containerName, sourcePath)
-	if err != nil {
-		return err
-	}
-	f, err := os.OpenFile(filepath.Clean(destPath), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o600)
-	if err != nil {
-		return err
-	}
-	w := gzip.NewWriter(f)
-	_, err = w.Write(b.Bytes())
-	if err != nil {
-		return err
-	}
-	err = w.Flush()
-	if err != nil {
-		return err
-	}
-	err = w.Close()
-	return err
 }

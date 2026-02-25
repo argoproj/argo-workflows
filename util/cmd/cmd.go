@@ -5,14 +5,13 @@ import (
 	"context"
 	"fmt"
 	"net/url"
-	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo-workflows/v3"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 // NewVersionCmd returns a new `version` command to be used as a sub-command to root
@@ -55,16 +54,6 @@ func PrintVersionMismatchWarning(ctx context.Context, clientVersion wfv1.Version
 	}
 }
 
-// MustIsDir returns whether or not the given filePath is a directory. Exits if path does not exist
-func MustIsDir(ctx context.Context, filePath string) bool {
-	log := logging.RequireLoggerFromContext(ctx)
-	fileInfo, err := os.Stat(filePath)
-	if err != nil {
-		log.WithError(err).WithFatal().Error(ctx, "Failed to check if file is a directory")
-	}
-	return fileInfo.IsDir()
-}
-
 // IsURL returns whether a string is a URL
 func IsURL(u string) bool {
 	var parsedURL *url.URL
@@ -104,7 +93,7 @@ func ParseLabels(labelSpec any) (map[string]string, error) {
 }
 
 // Ensures we have a logger at the specified level
-func CmdContextWithLogger(cmd *cobra.Command, logLevel, logType string) (context.Context, logging.Logger, error) {
+func ContextWithLogger(cmd *cobra.Command, logLevel, logType string) (context.Context, logging.Logger, error) {
 	ctx := cmd.Context()
 	if ctx == nil {
 		ctx = context.Background()
@@ -120,6 +109,10 @@ func CmdContextWithLogger(cmd *cobra.Command, logLevel, logType string) (context
 	}
 	logger := logging.NewSlogLogger(level, format)
 	ctx = logging.WithLogger(ctx, logger)
+
+	// Configure logrus for argoproj/pkg which uses it internally
+	SetLogrusLevel(level)
+	SetLogrusFormatter(format)
 
 	cmd.SetContext(ctx)
 	return ctx, logger, nil

@@ -8,7 +8,7 @@ import (
 
 	sema "golang.org/x/sync/semaphore"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 type prioritySemaphore struct {
@@ -43,10 +43,6 @@ func newInternalSemaphore(ctx context.Context, name string, nextWorkflow NextWor
 		err = fmt.Errorf("failed to initialize semaphore %s with limit", name)
 	}
 	return sem, err
-}
-
-func (s *prioritySemaphore) getName() string {
-	return s.name
 }
 
 func (s *prioritySemaphore) getLimit(ctx context.Context) int {
