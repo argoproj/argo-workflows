@@ -36,9 +36,9 @@ func TestUnsupportedTemplateTaskWorker(t *testing.T) {
 		},
 	}
 
-	response := <-responseQueue
-	assert.Equal(t, v1alpha1.NodeError, response.Result.Phase)
-	assert.Contains(t, response.Result.Message, "agent cannot execute: unknown task type")
+	resp := <-responseQueue
+	assert.Equal(t, v1alpha1.NodeError, resp.Result.Phase)
+	assert.Contains(t, resp.Result.Message, "agent cannot execute: unknown task type")
 }
 
 func TestAgentPluginExecuteTaskSet(t *testing.T) {
@@ -109,21 +109,22 @@ func TestAgentExecutorWithLabelSelector(t *testing.T) {
 		}
 
 		assert.Equal(t, labelSelector, ae.LabelSelector)
+		assert.NotNil(t, ae.consideredTasks)
 	})
 }
 
 func TestTaskWithWorkflowName(t *testing.T) {
 	t.Run("Task includes TaskSetName and WorkflowUID", func(t *testing.T) {
-		task := task{
+		wfTask := task{
 			NodeID:      "node-123",
 			Template:    v1alpha1.Template{},
 			TaskSetName: "my-workflow",
 			WorkflowUID: "workflow-uid-123",
 		}
 
-		assert.Equal(t, "my-workflow", task.TaskSetName)
-		assert.Equal(t, "node-123", task.NodeID)
-		assert.Equal(t, "workflow-uid-123", task.WorkflowUID)
+		assert.Equal(t, "my-workflow", wfTask.TaskSetName)
+		assert.Equal(t, "node-123", wfTask.NodeID)
+		assert.Equal(t, "workflow-uid-123", wfTask.WorkflowUID)
 	})
 }
 
@@ -137,6 +138,7 @@ func TestResponseWithWorkflowName(t *testing.T) {
 			TaskSetName: "my-workflow",
 		}
 
+		assert.Equal(t, "node-123", resp.NodeID)
 		assert.Equal(t, "my-workflow", resp.TaskSetName)
 		assert.Equal(t, v1alpha1.NodeSucceeded, resp.Result.Phase)
 	})

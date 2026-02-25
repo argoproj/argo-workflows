@@ -301,10 +301,16 @@ func (wfc *WorkflowController) ShutdownTracing(ctx context.Context) error {
 	return wfc.tracing.Shutdown(ctx)
 }
 
+// ShutdownMetrics flushes any remaining metrics and shuts down the meter provider.
+func (wfc *WorkflowController) ShutdownMetrics(ctx context.Context) error {
+	return wfc.metrics.Shutdown(ctx)
+}
+
 // Run starts a Workflow resource controller
 func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWorkers, podCleanupWorkers, cronWorkflowWorkers, wfArchiveWorkers int) {
 	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
 
+	ctx, span := wfc.tracing.StartStartupController(ctx)
 	logger := logging.RequireLoggerFromContext(ctx)
 	// init DB after leader election (if enabled)
 	if err := wfc.initDB(ctx); err != nil {
@@ -381,6 +387,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	go wfc.runPodController(ctx, podCleanupWorkers)
 
 	// Wait for all involved caches to be synced, before processing items from the queue is started
+	_, syncSpan := wfc.tracing.StartStartupCacheSync(ctx)
 	if !cache.WaitForCacheSync(
 		ctx.Done(),
 		wfc.wfInformer.HasSynced,
@@ -394,6 +401,9 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	) {
 		logger.WithFatal().Error(ctx, "Timed out waiting for caches to sync")
 	}
+	syncSpan.End()
+	span.End()
+	ctx = wfc.tracing.BreakTrace(ctx)
 
 	go wfc.workflowGarbageCollector(ctx)
 	go wfc.archivedWorkflowGarbageCollector(ctx)
@@ -432,9 +442,9 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 		configmapsIf := wfc.kubeclientset.CoreV1().ConfigMaps(lockName.GetNamespace())
 		var configMap *apiv1.ConfigMap
 		err = waitutil.Backoff(retry.DefaultRetry(ctx), func() (bool, error) {
-			var err error
-			configMap, err = configmapsIf.Get(ctx, lockName.GetResourceName(), metav1.GetOptions{})
-			return !errors.IsTransientErr(ctx, err), err
+			var getErr error
+			configMap, getErr = configmapsIf.Get(ctx, lockName.GetResourceName(), metav1.GetOptions{})
+			return !errors.IsTransientErr(ctx, getErr), getErr
 		})
 		if err != nil {
 			return 0, err
@@ -783,7 +793,7 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	if (!woc.GetShutdownStrategy().Enabled() || woc.GetShutdownStrategy() != wfv1.ShutdownStrategyTerminate) && !wfc.throttler.Admit(key) {
 		woc.log.WithField("key", key).Info(ctx, "Workflow processing has been postponed due to max parallelism limit")
 		if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
-			woc.markWorkflowPhase(ctx, wfv1.WorkflowPending, "Workflow processing has been postponed because too many workflows are already running")
+			ctx = woc.markWorkflowPhase(ctx, wfv1.WorkflowPending, "Workflow processing has been postponed because too many workflows are already running")
 			woc.persistUpdates(ctx)
 		}
 		return true
@@ -800,7 +810,7 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	err = wfc.hydrator.Hydrate(ctx, woc.wf)
 	if err != nil {
 		woc.log.WithError(err).Error(ctx, "hydration failed")
-		woc.markWorkflowError(ctx, err)
+		ctx = woc.markWorkflowError(ctx, err)
 		woc.persistUpdates(ctx)
 		return true
 	}
@@ -1053,14 +1063,14 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 		},
 		Handler: cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj any) {
-				key, err := cache.MetaNamespaceKeyFunc(obj)
-				if err == nil {
+				key, keyErr := cache.MetaNamespaceKeyFunc(obj)
+				if keyErr == nil {
 					wfc.wfArchiveQueue.Add(key)
 				}
 			},
 			UpdateFunc: func(_, obj any) {
-				key, err := cache.MetaNamespaceKeyFunc(obj)
-				if err == nil {
+				key, keyErr := cache.MetaNamespaceKeyFunc(obj)
+				if keyErr == nil {
 					wfc.wfArchiveQueue.Add(key)
 				}
 			},

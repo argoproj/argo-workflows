@@ -219,15 +219,15 @@ func (sm *Manager) Initialize(ctx context.Context, wfs []wfv1.Workflow) {
 
 		if wf.Status.Synchronization.Semaphore != nil {
 			for _, holding := range wf.Status.Synchronization.Semaphore.Holding {
-				semaphore := sm.syncLockMap[holding.Semaphore]
-				if semaphore == nil {
+				sem := sm.syncLockMap[holding.Semaphore]
+				if sem == nil {
 					var err error
-					semaphore, err = sm.initializeSemaphore(ctx, holding.Semaphore)
+					sem, err = sm.initializeSemaphore(ctx, holding.Semaphore)
 					if err != nil {
 						sm.log.WithField("semaphore", holding.Semaphore).WithError(err).Warn(ctx, "cannot initialize semaphore")
 						continue
 					}
-					sm.syncLockMap[holding.Semaphore] = semaphore
+					sm.syncLockMap[holding.Semaphore] = sem
 				}
 
 				for _, holders := range holding.Holders {
@@ -238,7 +238,7 @@ func (sm *Manager) Initialize(ctx context.Context, wfs []wfv1.Workflow) {
 					}
 					key := getUpgradedKey(&wf, holders, level)
 					tx := &transaction{db: &sm.dbInfo.Session}
-					if semaphore != nil && semaphore.acquire(ctx, key, tx) {
+					if sem != nil && sem.acquire(ctx, key, tx) {
 						sm.log.WithFields(logging.Fields{"key": key, "semaphore": holding.Semaphore}).Info(ctx, "Lock acquired")
 					}
 				}
@@ -292,16 +292,16 @@ func (sm *Manager) TryAcquire(ctx context.Context, wf *wfv1.Workflow, nodeName s
 
 	lockKeys := make([]string, len(syncItems))
 	for i, syncItem := range syncItems {
-		syncLockName, err := syncItem.lockName(wf.Namespace)
-		if err != nil {
-			return false, false, "", failedLockName, fmt.Errorf("requested configuration is invalid: %w", err)
+		syncLockName, lockNameErr := syncItem.lockName(wf.Namespace)
+		if lockNameErr != nil {
+			return false, false, "", failedLockName, fmt.Errorf("requested configuration is invalid: %w", lockNameErr)
 		}
 		sm.log.WithField("syncLockName", syncLockName).Info(ctx, "TryAcquire")
 		lockKeys[i] = syncLockName.String(ctx)
 	}
 
-	if ok, msg, failedLockName, err := sm.prepAcquire(ctx, wf, holderKey, syncItems, lockKeys); !ok {
-		return false, false, msg, failedLockName, err
+	if ok, msg, prepLockName, prepErr := sm.prepAcquire(ctx, wf, holderKey, syncItems, lockKeys); !ok {
+		return false, false, msg, prepLockName, prepErr
 	}
 
 	needDB, err := needDBSession(ctx, lockKeys)
@@ -315,7 +315,6 @@ func (sm *Manager) TryAcquire(ctx context.Context, wf *wfv1.Workflow, nodeName s
 		var updated bool
 		var already bool
 		var msg string
-		var failedLockName string
 		var lastErr error
 		for retryCounter := range 5 {
 			err := sm.dbInfo.Session.TxContext(ctx, func(sess db.Session) error {
@@ -432,7 +431,8 @@ func (sm *Manager) tryAcquireImpl(ctx context.Context, wf *wfv1.Workflow, tx *tr
 		updated := false
 		for i, lockKey := range lockKeys {
 			lock := sm.syncLockMap[lockKey]
-			acquired, msg := lock.tryAcquire(ctx, holderKey, tx)
+			var acquired bool
+			acquired, msg = lock.tryAcquire(ctx, holderKey, tx)
 			if !acquired {
 				return false, false, "", failedLockName, fmt.Errorf("bug: failed to acquire something that should have been checked: %s", msg)
 			}

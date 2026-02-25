@@ -353,9 +353,9 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	woc.addDNSConfig(pod)
 
 	if woc.execWf.Spec.HasPodSpecPatch() {
-		patchedPodSpec, err := util.ApplyPodSpecPatch(pod.Spec, woc.execWf.Spec.PodSpecPatch)
-		if err != nil {
-			return nil, errors.Wrap(err, "", "Error applying PodSpecPatch")
+		patchedPodSpec, patchErr := util.ApplyPodSpecPatch(pod.Spec, woc.execWf.Spec.PodSpecPatch)
+		if patchErr != nil {
+			return nil, errors.Wrap(patchErr, "", "Error applying PodSpecPatch")
 		}
 		pod.Spec = *patchedPodSpec
 	}
@@ -371,7 +371,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		log.WithError(err).Info(ctx, "Failed to create Agent pod")
 		if apierr.IsAlreadyExists(err) {
 			// get a reference to the currently existing Pod since the created pod returned before was nil.
-			if existing, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Get(ctx, pod.Name, metav1.GetOptions{}); err == nil {
+			if existing, getErr := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Get(ctx, pod.Name, metav1.GetOptions{}); getErr == nil {
 				return existing, nil
 			}
 		}

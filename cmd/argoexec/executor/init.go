@@ -57,11 +57,13 @@ func Init(ctx context.Context, clientConfig clientcmd.ClientConfig, varRunArgo s
 	envVarTemplateValue, ok := os.LookupEnv(common.EnvVarTemplate)
 	// wait container reads template from the file written by init container, instead of from environment variable.
 	if !ok {
-		data, err := os.ReadFile(varRunArgo + "/template")
+		var data []byte
+		data, err = os.ReadFile(varRunArgo + "/template")
 		CheckErr(err)
 		envVarTemplateValue = string(data)
 	} else if envVarTemplateValue == common.EnvVarTemplateOffloaded {
-		data, err := os.ReadFile(filepath.Join(common.EnvConfigMountPath, common.EnvVarTemplate))
+		var data []byte
+		data, err = os.ReadFile(filepath.Join(common.EnvConfigMountPath, common.EnvVarTemplate))
 		CheckErr(err)
 		envVarTemplateValue = string(data)
 	}

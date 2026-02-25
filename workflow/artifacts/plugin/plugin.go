@@ -9,6 +9,7 @@ import (
 	"os"
 	"time"
 
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials/insecure"
@@ -94,6 +95,8 @@ func NewDriver(ctx context.Context, pluginName wfv1.ArtifactPluginName, socketPa
 			dialer := &net.Dialer{Timeout: connectionTimeout}
 			return dialer.DialContext(ctx, "unix", addr)
 		}),
+		// Add OpenTelemetry tracing for gRPC calls
+		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to dial plugin %s at %q: %w", pluginName, socketPath, err)

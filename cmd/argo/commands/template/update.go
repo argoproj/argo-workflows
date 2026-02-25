@@ -17,27 +17,27 @@ type cliUpdateOpts struct {
 }
 
 func NewUpdateCommand() *cobra.Command {
-	var cliUpdateOpts = cliUpdateOpts{output: common.NewPrintWorkflowOutputValue("")}
+	opts := cliUpdateOpts{output: common.NewPrintWorkflowOutputValue("")}
 	command := &cobra.Command{
 		Use:   "update FILE1 FILE2...",
 		Short: "update a workflow template",
 		Example: `# Update a Workflow Template:
   argo template update FILE1
-	
+
 # Update a Workflow Template and print it as YAML:
   argo template update FILE1 --output yaml
-  
+
 # Update a Workflow Template with relaxed validation:
   argo template update FILE1 --strict false
 `,
 		Args: cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			return updateWorkflowTemplates(ctx, args, &cliUpdateOpts)
+			return updateWorkflowTemplates(ctx, args, &opts)
 		},
 	}
-	command.Flags().VarP(&cliUpdateOpts.output, "output", "o", "Output format. "+cliUpdateOpts.output.Usage())
-	command.Flags().BoolVar(&cliUpdateOpts.strict, "strict", true, "perform strict workflow validation")
+	command.Flags().VarP(&opts.output, "output", "o", "Output format. "+opts.output.Usage())
+	command.Flags().BoolVar(&opts.strict, "strict", true, "perform strict workflow validation")
 	return command
 }
 

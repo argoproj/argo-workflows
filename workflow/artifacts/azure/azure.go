@@ -50,12 +50,12 @@ func (azblobDriver *ArtifactDriver) newAzureContainerClient(ctx context.Context)
 	containerURL.Path += azblobDriver.Container
 
 	if azblobDriver.UseSDKCreds {
-		credential, err := azidentity.NewDefaultAzureCredential(nil)
-		if err != nil {
-			return nil, fmt.Errorf("unable to create default Azure credential: %w", err)
+		credential, credErr := azidentity.NewDefaultAzureCredential(nil)
+		if credErr != nil {
+			return nil, fmt.Errorf("unable to create default Azure credential: %w", credErr)
 		}
-		containerClient, err := container.NewClient(containerURL.String(), credential, nil)
-		return containerClient, err
+		containerClient, clientErr := container.NewClient(containerURL.String(), credential, nil)
+		return containerClient, clientErr
 	}
 	if azblobDriver.AccountKey == "" {
 		return nil, fmt.Errorf("accountKey secret is required for Azure Blob Storage if useSDKCreds is false")
@@ -65,8 +65,8 @@ func (azblobDriver *ArtifactDriver) newAzureContainerClient(ctx context.Context)
 		logger := logging.RequireLoggerFromContext(ctx)
 		logger.Info(ctx, "Provided account key is a SAS token. Using no-credential client.")
 		serviceURL := fmt.Sprintf("%s?%s", containerURL.String(), azblobDriver.AccountKey)
-		containerClient, err := container.NewClientWithNoCredential(serviceURL, nil)
-		return containerClient, err
+		containerClient, clientErr := container.NewClientWithNoCredential(serviceURL, nil)
+		return containerClient, clientErr
 	}
 
 	accountName, err := determineAccountName(containerURL)
@@ -126,9 +126,9 @@ func (azblobDriver *ArtifactDriver) Load(ctx context.Context, artifact *wfv1.Art
 	var isEmptyFile bool
 	origErr := DownloadFile(ctx, containerClient, artifact.Azure.Blob, path)
 	if origErr == nil {
-		fileInfo, err := os.Lstat(path)
-		if err != nil {
-			return fmt.Errorf("unable to retrieve stats for downloaded file %s: %w", path, err)
+		fileInfo, lstatErr := os.Lstat(path)
+		if lstatErr != nil {
+			return fmt.Errorf("unable to retrieve stats for downloaded file %s: %w", path, lstatErr)
 		}
 
 		// Empty file means it could be an ADLS Gen 2 account and we downloaded the
@@ -181,9 +181,9 @@ func DownloadFile(ctx context.Context, containerClient *container.Client, blobNa
 		return fmt.Errorf("unable to create file %s: %w", path, err)
 	}
 	defer func() {
-		if err := outFile.Close(); err != nil {
+		if closeErr := outFile.Close(); closeErr != nil {
 			logger := logging.RequireLoggerFromContext(ctx)
-			logger.WithFatal().WithError(err).Warn(ctx, "unable to close file")
+			logger.WithFatal().WithError(closeErr).Warn(ctx, "unable to close file")
 		}
 	}()
 
@@ -313,9 +313,9 @@ func PutFile(ctx context.Context, containerClient *container.Client, blobName, p
 		return fmt.Errorf("unable to open file %s: %w", path, err)
 	}
 	defer func() {
-		if err := file.Close(); err != nil {
+		if closeErr := file.Close(); closeErr != nil {
 			logger := logging.RequireLoggerFromContext(ctx)
-			logger.WithError(err).Warn(ctx, "unable to close file")
+			logger.WithError(closeErr).Warn(ctx, "unable to close file")
 		}
 	}()
 

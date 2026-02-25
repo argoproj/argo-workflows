@@ -345,11 +345,10 @@ func (w *When) WaitForWorkflow(options ...any) *When {
 	for {
 		select {
 		case event := <-watch.ResultChan():
-			wf, ok := event.Object.(*wfv1.Workflow)
-			if ok {
+			if wf, ok := event.Object.(*wfv1.Workflow); ok {
 				w.hydrateWorkflow(wf)
 				printWorkflow(wf)
-				if ok, message := condition(wf); ok {
+				if condOk, message := condition(wf); condOk {
 					_, _ = fmt.Printf("Condition %q met after %s\n", message, time.Since(start).Truncate(time.Second))
 					w.wf = wf
 					return w

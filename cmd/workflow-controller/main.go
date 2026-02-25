@@ -125,6 +125,9 @@ func NewRootCommand() *cobra.Command {
 				if err := wfController.ShutdownTracing(context.WithoutCancel(ctx)); err != nil {
 					log.WithError(err).Error(ctx, "Failed to shutdown tracing")
 				}
+				if err := wfController.ShutdownMetrics(context.WithoutCancel(ctx)); err != nil {
+					log.WithError(err).Error(ctx, "Failed to shutdown metrics")
+				}
 			}()
 
 			leaderElectionOff := os.Getenv("LEADER_ELECTION_DISABLE")

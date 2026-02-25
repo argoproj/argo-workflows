@@ -171,9 +171,9 @@ func downloadObject(ctx context.Context, client *storage.Client, bucket, key, ob
 		return fmt.Errorf("os create %s: %w", localPath, err)
 	}
 	defer func() {
-		if err := out.Close(); err != nil {
+		if closeErr := out.Close(); closeErr != nil {
 			logger := logging.RequireLoggerFromContext(ctx)
-			logger.WithField("path", localPath).WithError(err).Error(ctx, "Error closing file")
+			logger.WithField("path", localPath).WithError(closeErr).Error(ctx, "Error closing file")
 		}
 	}()
 	_, err = io.Copy(out, rc)
@@ -273,9 +273,9 @@ func uploadObjects(ctx context.Context, client *storage.Client, bucket, key, pat
 	if isDir {
 		dirName := filepath.Clean(path) + string(os.PathSeparator)
 		keyPrefix := filepath.Clean(key) + "/"
-		fileRelPaths, err := listFileRelPaths(dirName, "")
-		if err != nil {
-			return err
+		fileRelPaths, listErr := listFileRelPaths(dirName, "")
+		if listErr != nil {
+			return listErr
 		}
 		for _, relPath := range fileRelPaths {
 			fullKey := keyPrefix + relPath
@@ -308,9 +308,9 @@ func uploadObject(ctx context.Context, client *storage.Client, bucket, key, loca
 		return fmt.Errorf("os open: %w", err)
 	}
 	defer func() {
-		if err := f.Close(); err != nil {
+		if closeErr := f.Close(); closeErr != nil {
 			logger := logging.RequireLoggerFromContext(ctx)
-			logger.WithField("path", localPath).WithError(err).Error(ctx, "Error closing file")
+			logger.WithField("path", localPath).WithError(closeErr).Error(ctx, "Error closing file")
 		}
 	}()
 	wc := client.Bucket(bucket).Object(key).NewWriter(ctx)

@@ -19,32 +19,32 @@ type cliUpdateOpts struct {
 }
 
 func NewUpdateCommand() *cobra.Command {
-	var cliUpdateOpts = cliUpdateOpts{}
+	opts := cliUpdateOpts{}
 
 	command := &cobra.Command{
 		Use:   "update",
 		Short: "Update a configmap sync limit",
 		Args:  cobra.ExactArgs(1),
-		Example: ` 
+		Example: `
 # Update a database sync limit
 	argo sync update my-key --type database --size-limit 20
-		
+
 # Update a configmap sync limit
 	argo sync update my-key --type configmap --cm-name my-configmap --size-limit 20
 `,
 
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			cliUpdateOpts.syncType = strings.ToUpper(cliUpdateOpts.syncType)
-			return validateFlags(cliUpdateOpts.syncType, cliUpdateOpts.cmName)
+			opts.syncType = strings.ToUpper(opts.syncType)
+			return validateFlags(opts.syncType, opts.cmName)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return UpdateSyncLimitCommand(cmd.Context(), args[0], &cliUpdateOpts)
+			return UpdateSyncLimitCommand(cmd.Context(), args[0], &opts)
 		},
 	}
 
-	command.Flags().StringVar(&cliUpdateOpts.cmName, "cm-name", "", "ConfigMap name (required if type is configmap)")
-	command.Flags().Int32Var(&cliUpdateOpts.limit, "limit", 0, "Limit of the sync limit")
-	command.Flags().StringVar(&cliUpdateOpts.syncType, "type", "", "Type of sync limit (database or configmap)")
+	command.Flags().StringVar(&opts.cmName, "cm-name", "", "ConfigMap name (required if type is configmap)")
+	command.Flags().Int32Var(&opts.limit, "limit", 0, "Limit of the sync limit")
+	command.Flags().StringVar(&opts.syncType, "type", "", "Type of sync limit (database or configmap)")
 
 	ctx := command.Context()
 	err := command.MarkFlagRequired("type")

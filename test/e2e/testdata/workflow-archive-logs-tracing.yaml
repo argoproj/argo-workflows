@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: archive-logs-tracing-
+  labels:
+    workflows.argoproj.io/test: "true"
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      # Explicit S3 archive location with archiveLogs to trigger saveLogs/saveContainerLogs spans
+      archiveLocation:
+        archiveLogs: true
+        s3:
+          bucket: my-bucket
+          endpoint: minio:9000
+          insecure: true
+          accessKeySecret:
+            name: my-minio-cred
+            key: accesskey
+          secretKeySecret:
+            name: my-minio-cred
+            key: secretkey
+      container:
+        image: argoproj/argosay:v2
+        args: ["echo", "hello from archived logs test"]

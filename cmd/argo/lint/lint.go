@@ -158,7 +158,8 @@ func lintData(ctx context.Context, src string, data []byte, opts *Options) *Resu
 			namespace = opts.DefaultNamespace
 		}
 		objName := ""
-		ctx, logger := logging.RequireLoggerFromContext(ctx).WithField("objectName", objName).InContext(ctx)
+		var logger logging.Logger
+		ctx, logger = logging.RequireLoggerFromContext(ctx).WithField("objectName", objName).InContext(ctx)
 		switch v := obj.(type) {
 		case *wfv1.ClusterWorkflowTemplate:
 			objName = getObjectName(wf.ClusterWorkflowTemplateKind, v, i)

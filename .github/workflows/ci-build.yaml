@@ -266,6 +266,9 @@ jobs:
           - test: test-metrics
             profile: postgres
             use-api: true
+          - test: test-tracing
+            profile: telemetry
+            use-api: false
           - test: test-cli
             profile: mysql
             use-api: true

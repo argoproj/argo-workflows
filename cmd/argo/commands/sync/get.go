@@ -18,30 +18,30 @@ type cliGetOpts struct {
 }
 
 func NewGetCommand() *cobra.Command {
-	var cliGetOpts = cliGetOpts{}
+	opts := cliGetOpts{}
 	command := &cobra.Command{
 		Use:   "get",
 		Short: "Get a sync limit",
 		Args:  cobra.ExactArgs(1),
-		Example: ` 
+		Example: `
 # Get a database sync limit
 	argo sync get my-key --type database
-		
+
 # Get a configmap sync limit
 	argo sync get my-key --type configmap --cm-name my-configmap
 `,
 
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			cliGetOpts.syncType = strings.ToUpper(cliGetOpts.syncType)
-			return validateFlags(cliGetOpts.syncType, cliGetOpts.cmName)
+			opts.syncType = strings.ToUpper(opts.syncType)
+			return validateFlags(opts.syncType, opts.cmName)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return GetSyncLimitCommand(cmd.Context(), args[0], &cliGetOpts)
+			return GetSyncLimitCommand(cmd.Context(), args[0], &opts)
 		},
 	}
 
-	command.Flags().StringVar(&cliGetOpts.syncType, "type", "", "Type of sync limit (database or configmap)")
-	command.Flags().StringVar(&cliGetOpts.cmName, "cm-name", "", "ConfigMap name (required if type is configmap)")
+	command.Flags().StringVar(&opts.syncType, "type", "", "Type of sync limit (database or configmap)")
+	command.Flags().StringVar(&opts.cmName, "cm-name", "", "ConfigMap name (required if type is configmap)")
 
 	err := command.MarkFlagRequired("type")
 	errors.CheckError(command.Context(), err)

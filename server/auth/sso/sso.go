@@ -287,8 +287,8 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	c := &types.Claims{}
-	if err := idToken.Claims(c); err != nil {
-		s.logger.WithError(err).Error(r.Context(), "failed to get claims from the id token")
+	if claimsErr := idToken.Claims(c); claimsErr != nil {
+		s.logger.WithError(claimsErr).Error(r.Context(), "failed to get claims from the id token")
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}

@@ -218,7 +218,8 @@ func (ossDriver *ArtifactDriver) OpenStream(ctx context.Context, inputArtifact *
 func (ossDriver *ArtifactDriver) Save(ctx context.Context, path string, outputArtifact *wfv1.Artifact) error {
 	err := waitutil.Backoff(defaultRetry,
 		func() (bool, error) {
-			ctx, logger := logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"path": path, "key": outputArtifact.OSS.Key}).InContext(ctx)
+			var logger logging.Logger
+			ctx, logger = logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"path": path, "key": outputArtifact.OSS.Key}).InContext(ctx)
 			logger.Info(ctx, "OSS Save")
 			osscli, err := ossDriver.newOSSClient(ctx)
 			if err != nil {
@@ -235,9 +236,9 @@ func (ossDriver *ArtifactDriver) Save(ctx context.Context, path string, outputAr
 				return !isTransientOSSErr(ctx, err), err
 			}
 			if outputArtifact.OSS.CreateBucketIfNotPresent {
-				exists, err := osscli.IsBucketExist(bucketName)
-				if err != nil {
-					return !isTransientOSSErr(ctx, err), fmt.Errorf("failed to check if bucket %s exists: %w", bucketName, err)
+				exists, existsErr := osscli.IsBucketExist(bucketName)
+				if existsErr != nil {
+					return !isTransientOSSErr(ctx, existsErr), fmt.Errorf("failed to check if bucket %s exists: %w", bucketName, existsErr)
 				}
 				if !exists {
 					err = osscli.CreateBucket(bucketName)
@@ -442,15 +443,15 @@ func multipartUpload(ctx context.Context, bucket *oss.Bucket, objectName, path s
 	// Upload the chunks.
 	var parts []oss.UploadPart
 	for _, chunk := range chunks {
-		_, err := fd.Seek(chunk.Offset, io.SeekStart)
-		if err != nil {
-			return err
+		_, seekErr := fd.Seek(chunk.Offset, io.SeekStart)
+		if seekErr != nil {
+			return seekErr
 		}
 		// Call the UploadPart method to upload each chunck.
-		part, err := bucket.UploadPart(imur, fd, chunk.Size, chunk.Number)
-		if err != nil {
-			logger.WithError(err).Warn(ctx, "Upload part error")
-			return err
+		part, uploadErr := bucket.UploadPart(imur, fd, chunk.Size, chunk.Number)
+		if uploadErr != nil {
+			logger.WithError(uploadErr).Warn(ctx, "Upload part error")
+			return uploadErr
 		}
 		logger.WithFields(logging.Fields{"partNumber": part.PartNumber, "etag": part.ETag}).Info(ctx, "Upload part")
 		parts = append(parts, part)
