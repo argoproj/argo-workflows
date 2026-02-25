@@ -82,7 +82,7 @@ func (h *ArtifactDriver) newGCSClient(ctx context.Context) (*storage.Client, err
 }
 
 func newGCSClientWithCredential(ctx context.Context, serviceAccountJSON string) (*storage.Client, error) {
-	creds, err := google.CredentialsFromJSONWithType(ctx, []byte(serviceAccountJSON), google.ServiceAccount, storage.ScopeReadWrite)
+	creds, err := google.CredentialsFromJSON(ctx, []byte(serviceAccountJSON), storage.ScopeReadWrite)
 	if err != nil {
 		return nil, fmt.Errorf("GCS client CredentialsFromJSONWithType: %w", err)
 	}

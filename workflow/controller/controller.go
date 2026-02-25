@@ -50,7 +50,6 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/errors"
 	rbacutil "github.com/argoproj/argo-workflows/v4/util/rbac"
 	"github.com/argoproj/argo-workflows/v4/util/retry"
-	utilsqldb "github.com/argoproj/argo-workflows/v4/util/sqldb"
 	"github.com/argoproj/argo-workflows/v4/util/telemetry"
 	waitutil "github.com/argoproj/argo-workflows/v4/util/wait"
 	"github.com/argoproj/argo-workflows/v4/workflow/artifactrepositories"
@@ -68,7 +67,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/metrics"
 	"github.com/argoproj/argo-workflows/v4/workflow/sync"
 	"github.com/argoproj/argo-workflows/v4/workflow/util"
-	"github.com/argoproj/argo-workflows/v4/workflow/util/plugin"
+	plugin "github.com/argoproj/argo-workflows/v4/workflow/util/plugins"
 )
 
 const maxAllowedStackDepth = 100
@@ -135,7 +134,6 @@ type WorkflowController struct {
 	throttler             sync.Throttler
 	workflowKeyLock       syncpkg.KeyLock // used to lock workflows for exclusive modification or access
 	session               db.Session
-	dbType                utilsqldb.DBType
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	hydrator              hydrator.Interface
 	wfArchive             sqldb.WorkflowArchive
@@ -418,20 +416,20 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 		if err != nil {
 			return 0, err
 		}
-		configmapsIf := wfc.kubeclientset.CoreV1().ConfigMaps(lockName.GetNamespace())
+		configmapsIf := wfc.kubeclientset.CoreV1().ConfigMaps(lockName.Namespace)
 		var configMap *apiv1.ConfigMap
 		err = waitutil.Backoff(retry.DefaultRetry(ctx), func() (bool, error) {
 			var err error
-			configMap, err = configmapsIf.Get(ctx, lockName.GetResourceName(), metav1.GetOptions{})
+			configMap, err = configmapsIf.Get(ctx, lockName.ResourceName, metav1.GetOptions{})
 			return !errors.IsTransientErr(ctx, err), err
 		})
 		if err != nil {
 			return 0, err
 		}
 
-		value, found := configMap.Data[lockName.GetKey()]
+		value, found := configMap.Data[lockName.Key]
 		if !found {
-			return 0, argoErr.New(argoErr.CodeBadRequest, fmt.Sprintf("Sync configuration key '%s' not found in ConfigMap", lockName.GetKey()))
+			return 0, argoErr.New(argoErr.CodeBadRequest, fmt.Sprintf("Sync configuration key '%s' not found in ConfigMap", lockName.Key))
 		}
 		return strconv.Atoi(value)
 	}

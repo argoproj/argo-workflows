@@ -498,13 +498,15 @@ func (woc *wfOperationCtx) resolveReferences(ctx context.Context, stepGroup []wf
 	var wg sync.WaitGroup
 	for i, step := range stepGroup {
 		parallelStepNum <- step.Name
-		wg.Go(func() {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
 			if err := resolveStepReferences(i, step, newStepGroup); err != nil {
 				woc.log.WithFields(logging.Fields{"stepName": step.Name}).WithError(err).Error(ctx, "Failed to resolve references")
 				errCh <- err
 			}
 			<-parallelStepNum
-		})
+		}()
 	}
 	wg.Wait()
 

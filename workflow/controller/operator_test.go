@@ -11327,7 +11327,7 @@ func TestWorkflowNeedReconcile(t *testing.T) {
 	for _, node := range woc.wf.Status.Nodes {
 		woc.wf.Status.MarkTaskResultIncomplete(ctx, node.ID)
 	}
-	err, podReconciliationCompleted := woc.podReconciliation(ctx)
+	podReconciliationCompleted, err := woc.podReconciliation(ctx)
 	require.NoError(t, err)
 	assert.False(t, podReconciliationCompleted)
 
@@ -11345,7 +11345,7 @@ func TestWorkflowNeedReconcile(t *testing.T) {
 			woc.wf.Status.MarkTaskResultComplete(ctx, node.ID)
 		}
 	}
-	err, podReconciliationCompleted = woc.podReconciliation(ctx)
+	podReconciliationCompleted, err = woc.podReconciliation(ctx)
 	require.NoError(t, err)
 	assert.True(t, podReconciliationCompleted)
 	woc.operate(ctx)

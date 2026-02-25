@@ -189,8 +189,7 @@ func newWorkflowOperationCtx(ctx context.Context, wf *wfv1.Workflow, wfc *Workfl
 // later time
 // As you must not call `persistUpdates` twice, you must not call `operate` twice.
 func (woc *wfOperationCtx) operate(ctx context.Context) {
-	panicHandler := argoruntime.RecoverFromPanic(ctx, woc.log)
-	defer panicHandler()
+	defer argoruntime.RecoverFromPanic(ctx, woc.log)
 
 	defer func() {
 		woc.persistUpdates(ctx)
@@ -1231,11 +1230,13 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (bool, error) 
 
 	for _, pod := range podList {
 		parallelPodNum <- pod.Name
-		wg.Go(func() {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
 			performAssessment(pod)
 			woc.applyExecutionControl(ctx, pod, wfNodesLock)
 			<-parallelPodNum
-		})
+		}()
 	}
 
 	wg.Wait()
@@ -4289,14 +4290,14 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 
 	// Perform one-time workflow validation
 	if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
-		validateOpts := validate.Opts{}
+		validateOpts := validate.ValidateOpts{}
 		wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates(woc.wf.Namespace))
 		cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 
 		// Validate the execution wfSpec
 		err := waitutil.Backoff(retry.DefaultRetry(ctx),
 			func() (bool, error) {
-				validationErr := validate.Workflow(ctx, wftmplGetter, cwftmplGetter, woc.wf, woc.controller.Config.WorkflowDefaults, validateOpts)
+				validationErr := validate.ValidateWorkflow(ctx, wftmplGetter, cwftmplGetter, woc.wf, woc.controller.Config.WorkflowDefaults, validateOpts)
 				if validationErr != nil {
 					return !errorsutil.IsTransientErr(ctx, validationErr), validationErr
 				}

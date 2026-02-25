@@ -17,7 +17,6 @@ import (
 	"github.com/argoproj/argo-workflows/v4/config"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
-	"github.com/argoproj/argo-workflows/v4/util/sqldb"
 	syncdb "github.com/argoproj/argo-workflows/v4/util/sync/db"
 )
 
@@ -34,7 +33,7 @@ type Manager struct {
 	getSyncLimit      GetSyncLimit
 	syncLimitCacheTTL time.Duration
 	workflowExists    WorkflowExists
-	dbInfo            syncdb.Info
+	dbInfo            syncdb.DBInfo
 	queries           syncdb.SyncQueries
 	log               logging.Logger
 }
@@ -47,11 +46,11 @@ const (
 )
 
 func NewLockManager(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, config *config.SyncConfig, getSyncLimit GetSyncLimit, nextWorkflow NextWorkflow, workflowExists WorkflowExists) *Manager {
-	dbSession, dbType := syncdb.SessionFromConfig(ctx, kubectlConfig, namespace, config)
-	return createLockManager(ctx, dbSession, dbType, config, getSyncLimit, nextWorkflow, workflowExists)
+	dbSession := syncdb.DBSessionFromConfig(ctx, kubectlConfig, namespace, config)
+	return createLockManager(ctx, dbSession, config, getSyncLimit, nextWorkflow, workflowExists)
 }
 
-func createLockManager(ctx context.Context, dbSession db.Session, dbType sqldb.DBType, config *config.SyncConfig, getSyncLimit GetSyncLimit, nextWorkflow NextWorkflow, workflowExists WorkflowExists) *Manager {
+func createLockManager(ctx context.Context, dbSession db.Session, config *config.SyncConfig, getSyncLimit GetSyncLimit, nextWorkflow NextWorkflow, workflowExists WorkflowExists) *Manager {
 	syncLimitCacheTTL := time.Duration(0)
 	if config != nil && config.SemaphoreLimitCacheSeconds != nil {
 		syncLimitCacheTTL = time.Duration(*config.SemaphoreLimitCacheSeconds) * time.Second
@@ -59,10 +58,9 @@ func createLockManager(ctx context.Context, dbSession db.Session, dbType sqldb.D
 	ctx, log := logging.RequireLoggerFromContext(ctx).WithField("component", "lock_manager").InContext(ctx)
 
 	log.WithField("syncLimitCacheTTL", syncLimitCacheTTL).Info(ctx, "Sync manager ttl")
-	dbInfo := syncdb.Info{
+	dbInfo := syncdb.DBInfo{
 		Session: dbSession,
-		DBType:  dbType,
-		Config:  syncdb.ConfigFromConfig(config),
+		Config:  syncdb.DBConfigFromConfig(config),
 	}
 	sm := &Manager{
 		syncLockMap:       make(map[string]semaphore),
@@ -615,16 +613,16 @@ func (sm *Manager) initializeSemaphore(ctx context.Context, semaphoreName string
 	if err != nil {
 		return nil, err
 	}
-	switch lock.getKind() {
+	switch lock.Kind {
 	case lockKindConfigMap:
 		return newInternalSemaphore(ctx, semaphoreName, sm.nextWorkflow, sm.getSyncLimit, sm.syncLimitCacheTTL)
 	case lockKindDatabase:
 		if sm.dbInfo.Session == nil {
 			return nil, fmt.Errorf("database session is not available for semaphore %s", semaphoreName)
 		}
-		return newDatabaseSemaphore(ctx, semaphoreName, lock.getDBKey(), sm.nextWorkflow, sm.dbInfo, sm.syncLimitCacheTTL)
+		return newDatabaseSemaphore(ctx, semaphoreName, lock.dbKey(), sm.nextWorkflow, sm.dbInfo, sm.syncLimitCacheTTL)
 	default:
-		return nil, fmt.Errorf("invalid lock kind %s when initializing semaphore", lock.getKind())
+		return nil, fmt.Errorf("invalid lock kind %s when initializing semaphore", lock.Kind)
 	}
 }
 
@@ -633,16 +631,16 @@ func (sm *Manager) initializeMutex(ctx context.Context, mutexName string) (semap
 	if err != nil {
 		return nil, err
 	}
-	switch lock.getKind() {
+	switch lock.Kind {
 	case lockKindMutex:
 		return newInternalMutex(mutexName, sm.nextWorkflow), nil
 	case lockKindDatabase:
 		if sm.dbInfo.Session == nil {
 			return nil, fmt.Errorf("database session is not available for mutex %s", mutexName)
 		}
-		return newDatabaseMutex(mutexName, lock.getDBKey(), sm.nextWorkflow, sm.dbInfo), nil
+		return newDatabaseMutex(mutexName, lock.dbKey(), sm.nextWorkflow, sm.dbInfo), nil
 	default:
-		return nil, fmt.Errorf("invalid lock kind %s when initializing mutex", lock.getKind())
+		return nil, fmt.Errorf("invalid lock kind %s when initializing mutex", lock.Kind)
 	}
 }
 
