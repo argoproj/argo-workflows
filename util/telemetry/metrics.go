@@ -20,6 +20,7 @@ import (
 type Metrics struct {
 	otelMeter *metric.Meter
 	config    *MetricsConfig
+	provider  *metricsdk.MeterProvider
 
 	// Ensures mutual exclusion in instruments
 	mutex       sync.RWMutex
@@ -49,6 +50,14 @@ func (m *Metrics) IterateROInstruments(fn func(i *Instrument)) {
 	for _, i := range m.instruments {
 		fn(i)
 	}
+}
+
+// Shutdown flushes any remaining metrics and shuts down the meter provider.
+func (m *Metrics) Shutdown(ctx context.Context) error {
+	if m.provider != nil {
+		return m.provider.Shutdown(ctx)
+	}
+	return nil
 }
 
 func NewMetrics(ctx context.Context, serviceName, prometheusName string, config *MetricsConfig, extraOpts ...metricsdk.Option) (*Metrics, error) {
@@ -116,6 +125,7 @@ func NewMetrics(ctx context.Context, serviceName, prometheusName string, config 
 	metrics := &Metrics{
 		otelMeter:   &meter,
 		config:      config,
+		provider:    provider,
 		instruments: make(map[string]*Instrument),
 	}
 
