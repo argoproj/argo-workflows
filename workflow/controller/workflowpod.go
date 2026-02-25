@@ -14,6 +14,8 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,6 +29,7 @@ import (
 	errorsutil "github.com/argoproj/argo-workflows/v4/util/errors"
 	"github.com/argoproj/argo-workflows/v4/util/intstr"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/telemetry"
 	"github.com/argoproj/argo-workflows/v4/util/template"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/entrypoint"
@@ -125,6 +128,9 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		return existing, nil
 	}
 
+	ctx, span := woc.controller.tracing.StartCreateWorkflowPod(ctx, nodeID)
+	defer span.End()
+
 	if !woc.GetShutdownStrategy().ShouldExecute(opts.onExitPod) {
 		// Do not create pods if we are shutting down
 		woc.markNodePhase(ctx, nodeName, wfv1.NodeFailed, fmt.Sprintf("workflow shutdown with strategy: %s", woc.GetShutdownStrategy()))
@@ -192,7 +198,6 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			}
 		}
 	}
-
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      util.GeneratePodName(woc.wf.Name, nodeName, tmpl.Name, nodeID, util.GetWorkflowPodNameVersion(woc.wf)),
@@ -215,6 +220,12 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			ActiveDeadlineSeconds: activeDeadlineSeconds,
 			ImagePullSecrets:      woc.execWf.Spec.ImagePullSecrets,
 		},
+	}
+
+	// Only set trace/span ID annotations when the span context is valid to avoid writing all-zero IDs
+	if sc := trace.SpanFromContext(ctx).SpanContext(); sc.IsValid() {
+		pod.Annotations[common.AnnotationKeyTraceID] = sc.TraceID().String()
+		pod.Annotations[common.AnnotationKeySpanID] = sc.SpanID().String()
 	}
 
 	if os.Getenv(common.EnvVarPodStatusCaptureFinalizer) == "true" {
@@ -338,10 +349,17 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		{Name: common.EnvVarNodeID, Value: nodeID},
 		{Name: common.EnvVarIncludeScriptOutput, Value: strconv.FormatBool(opts.includeScriptOutput)},
 		{Name: common.EnvVarDeadline, Value: woc.getDeadline(opts).Format(time.RFC3339)},
+		{Name: common.EnvVarWorkflowName, Value: woc.wf.Name},
 	}
 
+	carrier := telemetry.Carrier{SetEnvFunc: func(key, value string) {
+		envVars = append(envVars, apiv1.EnvVar{Name: key, Value: value})
+	}}
+	prop := propagation.TraceContext{}
+	prop.Inject(ctx, carrier)
 	// only set tick durations/EnvVarProgressFile if progress is enabled.
 	// The progress is only monitored if the tick durations are >0.
+
 	if woc.controller.progressPatchTickDuration != 0 && woc.controller.progressFileTickDuration != 0 {
 		envVars = append(envVars,
 			apiv1.EnvVar{

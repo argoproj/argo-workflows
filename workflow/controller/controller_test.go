@@ -817,7 +817,7 @@ func TestCheckAndInitWorkflowTmplRef(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
-	err := woc.setExecWorkflow(ctx)
+	_, err := woc.setExecWorkflow(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, wftmpl.Spec.Templates, woc.execWf.Spec.Templates)
 }
@@ -870,14 +870,14 @@ func TestInvalidWorkflowMetadata(t *testing.T) {
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
-	err := woc.setExecWorkflow(ctx)
+	_, err := woc.setExecWorkflow(ctx)
 	require.ErrorContains(t, err, "invalid label value")
 
 	wf = wfv1.MustUnmarshalWorkflow(wfWithInvalidMetadataLabels)
 	cancel, controller = newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 	woc = newWorkflowOperationCtx(ctx, wf, controller)
-	err = woc.setExecWorkflow(ctx)
+	_, err = woc.setExecWorkflow(ctx)
 	require.ErrorContains(t, err, "invalid label value")
 }
 

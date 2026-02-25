@@ -21,8 +21,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v4/util/logging"
-
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,14 +32,14 @@ import (
 	"k8s.io/client-go/rest"
 	retryutil "k8s.io/client-go/util/retry"
 
-	"github.com/argoproj/argo-workflows/v4/util/file"
-
 	argoerrs "github.com/argoproj/argo-workflows/v4/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	argoprojv1 "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util"
 	"github.com/argoproj/argo-workflows/v4/util/archive"
 	errorsutil "github.com/argoproj/argo-workflows/v4/util/errors"
+	"github.com/argoproj/argo-workflows/v4/util/file"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/retry"
 	waitutil "github.com/argoproj/argo-workflows/v4/util/wait"
 	"github.com/argoproj/argo-workflows/v4/workflow/artifacts"
@@ -196,6 +196,8 @@ func (we *WorkflowExecutor) LoadArtifactsFromPlugin(ctx context.Context, pluginN
 func (we *WorkflowExecutor) loadArtifacts(ctx context.Context, pluginName wfv1.ArtifactPluginName) error {
 	logger := logging.RequireLoggerFromContext(ctx)
 	logger.WithFields(logging.Fields{"pluginName": pluginName}).Info(ctx, "Start loading input artifacts...")
+	ctx, span := we.Tracing.StartLoadArtifacts(ctx)
+	defer span.End()
 	for _, art := range we.Template.Inputs.Artifacts {
 		err := we.loadArtifact(ctx, pluginName, art)
 		if err != nil {
@@ -267,6 +269,8 @@ func (we *WorkflowExecutor) loadArtifact(ctx context.Context, pluginName wfv1.Ar
 	if err := os.MkdirAll(tempArtDir, 0o700); err != nil {
 		return fmt.Errorf("failed to create artifact temporary parent directory %s: %w", tempArtDir, err)
 	}
+	ctx, span := we.Tracing.StartLoadArtifact(ctx, artPath)
+	defer span.End()
 	err = artDriver.Load(ctx, driverArt, tempArtPath)
 	if err != nil {
 		if art.Optional && argoerrs.IsCode(argoerrs.CodeNotFound, err) {
@@ -324,12 +328,15 @@ func (we *WorkflowExecutor) unarchiveArtifact(ctx context.Context, art wfv1.Arti
 		}
 	}
 
+	unarchiveCtx, span := we.Tracing.StartUnarchiveArtifact(ctx, artifactArchiveWord(isZip, isTar))
+	defer span.End()
+
 	switch {
 	case isTar:
 		err = untar(tempArtPath, artPath)
 		_ = os.Remove(tempArtPath)
 	case isZip:
-		err = unzip(ctx, tempArtPath, artPath)
+		err = unzip(unarchiveCtx, tempArtPath, artPath)
 		_ = os.Remove(tempArtPath)
 	default:
 		err = os.Rename(tempArtPath, artPath)
@@ -337,8 +344,21 @@ func (we *WorkflowExecutor) unarchiveArtifact(ctx context.Context, art wfv1.Arti
 	return err
 }
 
+func artifactArchiveWord(zip, tar bool) string {
+	switch {
+	case zip:
+		return "zip"
+	case tar:
+		return "tar"
+	}
+	return "none"
+}
+
 // StageFiles will create any files required by script/resource templates
 func (we *WorkflowExecutor) StageFiles(ctx context.Context) error {
+	ctx, span := we.Tracing.StartStageFiles(ctx)
+	defer span.End()
+
 	var filePath string
 	var body []byte
 	logger := logging.RequireLoggerFromContext(ctx)
@@ -371,6 +391,8 @@ func (we *WorkflowExecutor) StageFiles(ctx context.Context) error {
 func (we *WorkflowExecutor) SaveArtifacts(ctx context.Context) (wfv1.Artifacts, error) {
 	logger := logging.RequireLoggerFromContext(ctx)
 	artifacts := wfv1.Artifacts{}
+	ctx, span := we.Tracing.StartSaveArtifacts(ctx)
+	defer span.End()
 	if len(we.Template.Outputs.Artifacts) == 0 {
 		logger.Info(ctx, "No output artifacts")
 		return artifacts, nil
@@ -384,6 +406,8 @@ func (we *WorkflowExecutor) SaveArtifacts(ctx context.Context) (wfv1.Artifacts, 
 
 	aggregateError := ""
 	for _, art := range we.Template.Outputs.Artifacts {
+		span.AddEvent("upload artifact",
+			trace.WithAttributes(attribute.KeyValue{Key: "file", Value: attribute.StringValue(art.Name)}))
 		saved, err := we.saveArtifact(ctx, common.MainContainerName, &art)
 		if err != nil {
 			aggregateError += err.Error() + "; "
@@ -407,6 +431,8 @@ func (we *WorkflowExecutor) saveArtifact(ctx context.Context, containerName stri
 	if err != nil {
 		return false, err
 	}
+	ctx, span := we.Tracing.StartSaveArtifact(ctx)
+	defer span.End()
 	fileName, localArtPath, err := we.stageArchiveFile(ctx, containerName, art)
 	if err != nil {
 		if art.Optional && argoerrs.IsCode(argoerrs.CodeNotFound, err) {
@@ -484,6 +510,8 @@ func (we *WorkflowExecutor) maybeDeleteLocalArtPath(ctx context.Context, localAr
 // to the SaveArtifacts call and may be a directory or file.
 func (we *WorkflowExecutor) stageArchiveFile(ctx context.Context, containerName string, art *wfv1.Artifact) (string, string, error) {
 	logger := logging.RequireLoggerFromContext(ctx)
+	ctx, span := we.Tracing.StartArchiveArtifact(ctx)
+	defer span.End()
 	logger.WithField("name", art.Name).Info(ctx, "Staging artifact")
 	strategy := art.Archive
 	if strategy == nil {
@@ -685,6 +713,9 @@ func (we *WorkflowExecutor) SaveParameters(ctx context.Context) error {
 }
 
 func (we *WorkflowExecutor) SaveLogs(ctx context.Context) []wfv1.Artifact {
+	ctx, span := we.Tracing.StartSaveLogs(ctx)
+	defer span.End()
+
 	var logArtifacts []wfv1.Artifact
 	tempLogsDir := "/tmp/argo/outputs/logs"
 
@@ -713,6 +744,9 @@ func (we *WorkflowExecutor) SaveLogs(ctx context.Context) []wfv1.Artifact {
 
 // saveContainerLogs saves a single container's log into a file
 func (we *WorkflowExecutor) saveContainerLogs(ctx context.Context, tempLogsDir, containerName string) (*wfv1.Artifact, error) {
+	ctx, span := we.Tracing.StartSaveContainerLogs(ctx, containerName)
+	defer span.End()
+
 	fileName := containerName + ".log"
 	filePath := path.Join(tempLogsDir, fileName)
 	err := we.saveLogToFile(ctx, containerName, filePath)
@@ -812,6 +846,9 @@ func GetTerminationGracePeriodDuration() time.Duration {
 
 // CaptureScriptResult will add the stdout of a script template as output result
 func (we *WorkflowExecutor) CaptureScriptResult(ctx context.Context) error {
+	ctx, span := we.Tracing.StartCaptureScriptResult(ctx)
+	defer span.End()
+
 	logger := logging.RequireLoggerFromContext(ctx)
 	if !we.IncludeScriptOutput {
 		logger.Info(ctx, "No Script output reference in workflow. Capturing script output ignored")
@@ -1236,6 +1273,8 @@ func chmod(artPath string, mode int32, recurse bool) error {
 // Upon completion, kills any sidecars after it finishes.
 func (we *WorkflowExecutor) Wait(ctx context.Context) error {
 	logger := logging.RequireLoggerFromContext(ctx)
+	ctx, span := we.Tracing.StartWaitWorkload(ctx)
+	defer span.End()
 	containerNames := we.Template.GetMainContainerNames()
 	// only monitor progress if both tick durations are >0
 	if we.annotationPatchTickDuration != 0 && we.readProgressFileTickDuration != 0 {

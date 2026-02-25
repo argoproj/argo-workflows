@@ -524,7 +524,7 @@ func TestRealtimeWorkflowMetric(t *testing.T) {
 	t.Logf("%v new %v old", value1, value)
 	assert.Greater(t, value1, value)
 
-	woc.markWorkflowSuccess(ctx)
+	ctx = woc.markWorkflowSuccess(ctx)
 	value2, err := testExporter.GetFloat64GaugeValue(ctx, woc.wf.Spec.Metrics.Prometheus[0].Name, &attribs)
 	require.NoError(t, err)
 	time.Sleep(10 * time.Millisecond)
