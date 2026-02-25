@@ -5,6 +5,15 @@ For the upgrading guide to a specific version of workflows change the documentat
 Breaking changes  typically (sometimes we don't realise they are breaking) have "!" in the commit message, as per
 the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summary).
 
+## Upgrading to v4.1
+
+### INFORMER_WRITE_BACK environment variable removed
+
+The `INFORMER_WRITE_BACK` environment variable has been removed.
+This variable controlled whether to write workflow updates back to the informer cache (`true`) or sleep for 1 second (`false`, the default) after persisting updates.
+Alternative mechanisms now prevent reprocessing, making both behaviors unnecessary.
+If you have this variable set, it can be safely removed from your configuration.
+
 ## Upgrading to v4.0
 
 ### Deprecations
