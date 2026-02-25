@@ -14,14 +14,6 @@ import (
 
 var matchAllRegex = regexp.MustCompile(".*")
 
-func simpleReplace(ctx context.Context, w io.Writer, tag string, replaceMap map[string]any, allowUnresolved bool) (int, error) {
-	var strictRegex *regexp.Regexp
-	if !allowUnresolved {
-		strictRegex = matchAllRegex
-	}
-	return simpleReplaceStrict(ctx, w, tag, replaceMap, strictRegex, allowUnresolved)
-}
-
 func simpleReplaceStrict(ctx context.Context, w io.Writer, tag string, replaceMap map[string]any, strictRegex *regexp.Regexp, allowUnresolvedArtifacts bool) (int, error) {
 	replacement, ok := replaceMap[strings.TrimSpace(tag)]
 	if !ok {

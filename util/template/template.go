@@ -34,16 +34,16 @@ type impl struct {
 	*fasttemplate.Template
 }
 
-func (t *impl) replace(ctx context.Context, replaceMap map[string]any, simpleStrictRegex, expressionStrictRegex *regexp.Regexp, allowUnresolvedArtifacts bool) (string, error) {
+func (t *impl) replace(ctx context.Context, replaceMap map[string]any, regex *regexp.Regexp, allowUnresolvedArtifacts bool) (string, error) {
 	replacedTmpl := &bytes.Buffer{}
 	_, err := t.ExecuteFunc(replacedTmpl, func(w io.Writer, tag string) (int, error) {
 		kind, expression := parseTag(tag)
 		switch kind {
 		case kindExpression:
 			env := exprenv.GetFuncMap(replaceMap)
-			return expressionReplaceStrict(ctx, w, expression, env, expressionStrictRegex)
+			return expressionReplaceStrict(ctx, w, expression, env, regex)
 		default:
-			return simpleReplaceStrict(ctx, w, tag, replaceMap, simpleStrictRegex, allowUnresolvedArtifacts)
+			return simpleReplaceStrict(ctx, w, tag, replaceMap, regex, allowUnresolvedArtifacts)
 		}
 	})
 	return replacedTmpl.String(), err
@@ -54,10 +54,10 @@ func (t *impl) Replace(ctx context.Context, replaceMap map[string]any, allowUnre
 	if !allowUnresolved {
 		regex = matchAllRegex
 	}
-	return t.replace(ctx, replaceMap, regex, regex, allowUnresolved)
+	return t.replace(ctx, replaceMap, regex, allowUnresolved)
 }
 
-func GetStrictRegex(strictPrefixes []string) *regexp.Regexp {
+func getStrictRegex(strictPrefixes []string) *regexp.Regexp {
 	if len(strictPrefixes) == 0 {
 		return nil
 	}
@@ -72,6 +72,6 @@ func GetStrictRegex(strictPrefixes []string) *regexp.Regexp {
 }
 
 func (t *impl) ReplaceStrict(ctx context.Context, replaceMap map[string]any, strictPrefixes []string) (string, error) {
-	strictRegex := GetStrictRegex(strictPrefixes)
-	return t.replace(ctx, replaceMap, strictRegex, strictRegex, true)
+	strictRegex := getStrictRegex(strictPrefixes)
+	return t.replace(ctx, replaceMap, strictRegex, true)
 }

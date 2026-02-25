@@ -22,8 +22,6 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/templateresolution"
 )
 
-var ErrRequeue = errors.New("requeue")
-
 // stepsContext holds context information about this context's steps
 type stepsContext struct {
 	// boundaryID is the node ID of the boundary which all immediate child steps are bound to

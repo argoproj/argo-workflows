@@ -128,6 +128,8 @@ var (
 	ErrTimeout = argoerrors.New(argoerrors.CodeTimeout, "timeout")
 	// ErrMaxDepthExceeded indicates that the maximum recursion depth was exceeded
 	ErrMaxDepthExceeded = argoerrors.New(argoerrors.CodeTimeout, fmt.Sprintf("Maximum recursion depth exceeded. See %s", help.ConfigureMaximumRecursionDepth()))
+	// ErrRequeue indicates the workflow should be requeued for later processing
+	ErrRequeue = errors.New("requeue")
 )
 
 // maxOperationTime is the maximum time a workflow operation is allowed to run
@@ -213,7 +215,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	// ExecWF is a runtime execution spec which merged from Wf, WFT and Wfdefault
 	ctx, err := woc.setExecWorkflow(ctx)
 	if err != nil {
-		woc.log.WithError(err).WithField("stack", debug.Stack()).Error(ctx, "Unable to set ExecWorkflow")
+		woc.log.WithError(err).Error(ctx, "Unable to set ExecWorkflow")
 		return
 	}
 	// For new workflows, create the workflow span first to ensure reconcileWorkflow

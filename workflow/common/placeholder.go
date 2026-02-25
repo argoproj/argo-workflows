@@ -1,9 +1,6 @@
 package common
 
-import (
-	"fmt"
-	"strings"
-)
+import "github.com/argoproj/argo-workflows/v4/util/template"
 
 // PlaceholderGenerator is the interface for generating placeholder strings.
 type PlaceholderGenerator interface {
@@ -11,7 +8,7 @@ type PlaceholderGenerator interface {
 	IsPlaceholder(s string) bool
 }
 
-// placeholderGenerator is to generate dynamically-generated placeholder strings.
+// placeholderGenerator generates dynamically-indexed placeholder strings.
 type placeholderGenerator struct {
 	index int
 }
@@ -21,13 +18,13 @@ func NewPlaceholderGenerator() PlaceholderGenerator {
 	return &placeholderGenerator{}
 }
 
-// NextPlaceholder returns an arbitrary string to perform mock substitution of variables
+// NextPlaceholder returns an arbitrary string to perform mock substitution of variables.
 func (p *placeholderGenerator) NextPlaceholder() string {
-	s := fmt.Sprintf("__argo__internal__placeholder-%d", p.index)
+	s := template.NewPlaceholder(p.index)
 	p.index++
 	return s
 }
 
 func (p *placeholderGenerator) IsPlaceholder(s string) bool {
-	return strings.HasPrefix(s, "__argo__internal__placeholder-")
+	return template.IsPlaceholder(s)
 }
