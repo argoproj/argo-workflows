@@ -12,7 +12,7 @@ Check the [upgrading guide](https://argo-workflows.readthedocs.io/en/latest/upgr
 
 ### CLI
 
-#### Mac / Linux
+#### Manually with curl (Mac / Linux)
 
 Available via `curl`
 
@@ -37,6 +37,14 @@ mv "./argo-$ARGO_OS-amd64" /usr/local/bin/argo
 
 # Test installation
 argo version
+```
+
+#### Using mise
+
+If you are an enthustiac user of [mise](https://github.com/jdx/mise) the polyglot software tool manager, you can install it with something like (sample for last version):
+
+```bash
+mise use -g argo@latest
 ```
 
 ### Controller and Server
