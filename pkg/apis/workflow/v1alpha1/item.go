@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
-	jsonutil "github.com/argoproj/argo-workflows/v3/util/json"
+	jsonutil "github.com/argoproj/argo-workflows/v4/util/json"
 )
 
 // Type represents the stored type of Item.

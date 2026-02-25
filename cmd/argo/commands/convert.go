@@ -12,11 +12,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
-	wf "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
-	fileutil "github.com/argoproj/argo-workflows/v3/util/file"
-	jsonpkg "github.com/argoproj/argo-workflows/v3/util/json"
-	"github.com/argoproj/argo-workflows/v3/workflow/convert"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/common"
+	wf "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
+	fileutil "github.com/argoproj/argo-workflows/v4/util/file"
+	jsonpkg "github.com/argoproj/argo-workflows/v4/util/json"
+	"github.com/argoproj/argo-workflows/v4/workflow/convert"
 )
 
 func NewConvertCommand() *cobra.Command {

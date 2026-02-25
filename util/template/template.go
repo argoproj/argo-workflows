@@ -7,7 +7,7 @@ import (
 
 	"github.com/valyala/fasttemplate"
 
-	exprenv "github.com/argoproj/argo-workflows/v3/util/expr/env"
+	exprenv "github.com/argoproj/argo-workflows/v4/util/expr/env"
 )
 
 const (

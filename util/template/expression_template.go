@@ -14,7 +14,7 @@ import (
 	"github.com/expr-lang/expr/file"
 	"github.com/expr-lang/expr/parser/lexer"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 func init() {

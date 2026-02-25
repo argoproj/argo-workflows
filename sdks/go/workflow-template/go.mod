@@ -1,11 +1,11 @@
-module github.com/argoproj/argo-workflows/v3/sdks/go/workflow-template
+module github.com/argoproj/argo-workflows/v4/sdks/go/workflow-template
 
 go 1.24.10
 
-replace github.com/argoproj/argo-workflows/v3 => ../../..
+replace github.com/argoproj/argo-workflows/v4 => ../../..
 
 require (
-	github.com/argoproj/argo-workflows/v3 v3.0.0-00010101000000-000000000000
+	github.com/argoproj/argo-workflows/v4 v3.0.0-00010101000000-000000000000
 	k8s.io/api v0.33.1
 	k8s.io/apimachinery v0.33.1
 	k8s.io/client-go v0.33.1

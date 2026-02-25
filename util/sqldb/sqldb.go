@@ -10,8 +10,8 @@ import (
 	postgresqladp "github.com/upper/db/v4/adapter/postgresql"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/argoproj/argo-workflows/v3/config"
-	"github.com/argoproj/argo-workflows/v3/util"
+	"github.com/argoproj/argo-workflows/v4/config"
+	"github.com/argoproj/argo-workflows/v4/util"
 )
 
 // CreateDBSession creates the dB session

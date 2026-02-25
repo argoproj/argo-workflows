@@ -7,7 +7,7 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 func (woc *wfOperationCtx) getServiceAccountTokenVolume(ctx context.Context, serviceAccountName string) (*apiv1.Volume, *apiv1.VolumeMount, error) {
