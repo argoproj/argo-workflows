@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/argoproj/argo-workflows/v3/util/telemetry"
+	"github.com/argoproj/argo-workflows/v4/util/telemetry"
 )
 
 func addPodPendingCounter(_ context.Context, m *Metrics) error {

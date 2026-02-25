@@ -12,7 +12,7 @@ package deprecation
 import (
 	"context"
 
-	wfctx "github.com/argoproj/argo-workflows/v3/util/context"
+	wfctx "github.com/argoproj/argo-workflows/v4/util/context"
 )
 
 type metricsFunc func(context.Context, string, string)

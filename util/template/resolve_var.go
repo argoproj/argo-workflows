@@ -5,7 +5,7 @@ import (
 
 	"github.com/expr-lang/expr"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
+	"github.com/argoproj/argo-workflows/v4/errors"
 )
 
 func ResolveVar(s string, m map[string]interface{}) (interface{}, error) {

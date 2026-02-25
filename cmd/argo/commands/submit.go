@@ -11,15 +11,15 @@ import (
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
-	common "github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
-	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	cmdutil "github.com/argoproj/argo-workflows/v3/util/cmd"
-	argoJson "github.com/argoproj/argo-workflows/v3/util/json"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	wfcommon "github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/client"
+	common "github.com/argoproj/argo-workflows/v4/cmd/argo/commands/common"
+	workflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	cmdutil "github.com/argoproj/argo-workflows/v4/util/cmd"
+	argoJson "github.com/argoproj/argo-workflows/v4/util/json"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	wfcommon "github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
 func NewSubmitCommand() *cobra.Command {

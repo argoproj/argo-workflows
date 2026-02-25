@@ -8,7 +8,7 @@ import (
 	"github.com/TwiN/go-color"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/common"
 )
 
 func TestPrettySummarize(t *testing.T) {

@@ -180,13 +180,13 @@ print-variables: ## Print Makefile variables
 	@echo RUN_MODE=$(RUN_MODE) PROFILE=$(PROFILE) AUTH_MODE=$(AUTH_MODE) SECURE=$(SECURE) STATIC_FILES=$(STATIC_FILES) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) LOG_LEVEL=$(LOG_LEVEL) NAMESPACED=$(NAMESPACED) BASE_HREF=$(BASE_HREF)
 
 override LDFLAGS += \
-  -X github.com/argoproj/argo-workflows/v3.version=$(VERSION) \
-  -X github.com/argoproj/argo-workflows/v3.buildDate=$(BUILD_DATE) \
-  -X github.com/argoproj/argo-workflows/v3.gitCommit=$(GIT_COMMIT) \
-  -X github.com/argoproj/argo-workflows/v3.gitTreeState=$(GIT_TREE_STATE)
+  -X github.com/argoproj/argo-workflows/v4.version=$(VERSION) \
+  -X github.com/argoproj/argo-workflows/v4.buildDate=$(BUILD_DATE) \
+  -X github.com/argoproj/argo-workflows/v4.gitCommit=$(GIT_COMMIT) \
+  -X github.com/argoproj/argo-workflows/v4.gitTreeState=$(GIT_TREE_STATE)
 
 ifneq ($(GIT_TAG),)
-override LDFLAGS += -X github.com/argoproj/argo-workflows/v3.gitTag=${GIT_TAG}
+override LDFLAGS += -X github.com/argoproj/argo-workflows/v4.gitTag=${GIT_TAG}
 endif
 
 # -- file lists
@@ -195,15 +195,15 @@ endif
 ifneq (,$(filter dist/argoexec dist/workflow-controller dist/argo dist/argo-% docs/cli/argo.md,$(MAKECMDGOALS)))
 HACK_PKG_FILES_AS_PKGS ?= false
 ifeq ($(HACK_PKG_FILES_AS_PKGS),false)
-	ARGOEXEC_PKG_FILES        := $(shell go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/ |  grep 'argoproj/argo-workflows/v3/' | xargs go list -f '{{ range $$file := .GoFiles }}{{ print $$.ImportPath "/" $$file "\n" }}{{ end }}' | cut -c 39-)
-	CLI_PKG_FILES             := $(shell [ -f ui/dist/app/index.html ] || (mkdir -p ui/dist/app && touch ui/dist/app/placeholder); go list -f '{{ join .Deps "\n" }}' ./cmd/argo/ |  grep 'argoproj/argo-workflows/v3/' | xargs go list -f '{{ range $$file := .GoFiles }}{{ print $$.ImportPath "/" $$file "\n" }}{{ end }}' | cut -c 39-)
-	CONTROLLER_PKG_FILES      := $(shell go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ |  grep 'argoproj/argo-workflows/v3/' | xargs go list -f '{{ range $$file := .GoFiles }}{{ print $$.ImportPath "/" $$file "\n" }}{{ end }}' | cut -c 39-)
+	ARGOEXEC_PKG_FILES        := $(shell go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/ |  grep 'argoproj/argo-workflows/v4/' | xargs go list -f '{{ range $$file := .GoFiles }}{{ print $$.ImportPath "/" $$file "\n" }}{{ end }}' | cut -c 39-)
+	CLI_PKG_FILES             := $(shell [ -f ui/dist/app/index.html ] || (mkdir -p ui/dist/app && touch ui/dist/app/placeholder); go list -f '{{ join .Deps "\n" }}' ./cmd/argo/ |  grep 'argoproj/argo-workflows/v4/' | xargs go list -f '{{ range $$file := .GoFiles }}{{ print $$.ImportPath "/" $$file "\n" }}{{ end }}' | cut -c 39-)
+	CONTROLLER_PKG_FILES      := $(shell go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ |  grep 'argoproj/argo-workflows/v4/' | xargs go list -f '{{ range $$file := .GoFiles }}{{ print $$.ImportPath "/" $$file "\n" }}{{ end }}' | cut -c 39-)
 else
 # Building argoexec on windows cannot rebuild the openapi, we need to fall back to the old
 # behaviour where we fake dependencies and therefore don't rebuild
-	ARGOEXEC_PKG_FILES    := $(shell echo cmd/argoexec            && go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/            | grep 'argoproj/argo-workflows/v3/' | cut -c 39-)
-	CLI_PKG_FILES         := $(shell echo cmd/argo                && go list -f '{{ join .Deps "\n" }}' ./cmd/argo/                | grep 'argoproj/argo-workflows/v3/' | cut -c 39-)
-	CONTROLLER_PKG_FILES  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo-workflows/v3/' | cut -c 39-)
+	ARGOEXEC_PKG_FILES    := $(shell echo cmd/argoexec            && go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/            | grep 'argoproj/argo-workflows/v4/' | cut -c 39-)
+	CLI_PKG_FILES         := $(shell echo cmd/argo                && go list -f '{{ join .Deps "\n" }}' ./cmd/argo/                | grep 'argoproj/argo-workflows/v4/' | cut -c 39-)
+	CONTROLLER_PKG_FILES  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo-workflows/v4/' | cut -c 39-)
 endif
 else
 	ARGOEXEC_PKG_FILES    :=
@@ -232,6 +232,7 @@ GENERATED_DOCS := docs/fields.md docs/cli/argo.md docs/workflow-controller-confi
 define protoc
 	# protoc $(1)
     [ -e ./vendor ] || go mod vendor
+    [ -e ./v4 ] || ln -s . v4
     protoc \
       -I /usr/local/include \
       -I $(CURDIR) \
@@ -243,7 +244,7 @@ define protoc
       --grpc-gateway_out=logtostderr=true:$(GOPATH)/src \
       --swagger_out=logtostderr=true,fqn_for_swagger_name=true:. \
       $(1)
-    perl -i -pe 's|argoproj/argo-workflows/|argoproj/argo-workflows/v3/|g' `echo "$(1)" | sed 's/proto/pb.go/g'`
+    perl -i -pe 's|argoproj/argo-workflows/(?!v\d+/)|argoproj/argo-workflows/v4/|g' `echo "$(1)" | sed 's/proto/pb.go/g'`
 
 endef
 
@@ -467,8 +468,8 @@ endif
 
 # go-to-protobuf fails with mysterious errors on code that doesn't compile, hence lint-go as a dependency here
 pkg/apis/workflow/v1alpha1/generated.proto: $(TOOL_GO_TO_PROTOBUF) $(PROTO_BINARIES) $(TYPES) $(GOPATH)/src/github.com/gogo/protobuf lint-go
-	# These files are generated on a v3/ folder by the tool. Link them to the root folder
-	[ -e ./v3 ] || ln -s . v3
+	# These files are generated on a v4/ folder by the tool. Link them to the root folder
+	[ -e ./v4 ] || ln -s . v4
 	# Format proto files. Formatting changes generated code, so we do it here, rather that at lint time.
 	# Why clang-format? Google uses it.
 	@echo "*** This will fail if your code has compilation errors, without reporting those as the cause."
@@ -476,11 +477,11 @@ pkg/apis/workflow/v1alpha1/generated.proto: $(TOOL_GO_TO_PROTOBUF) $(PROTO_BINAR
 	find pkg/apiclient -name '*.proto'|xargs clang-format -i
 	$(TOOL_GO_TO_PROTOBUF) \
 		--go-header-file=./hack/custom-boilerplate.go.txt \
-		--packages=github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1 \
+		--packages=github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1 \
 		--apimachinery-packages=+k8s.io/apimachinery/pkg/util/intstr,+k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/runtime/schema,+k8s.io/apimachinery/pkg/runtime,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/api/core/v1,k8s.io/api/policy/v1 \
 		--proto-import $(GOPATH)/src
 	# Delete the link
-	[ -e ./v3 ] && rm -rf v3
+	[ -e ./v4 ] && rm -rf v4
 	touch $@
 
 # this target will also create a .pb.go and a .pb.gw.go file, but in Make 3 we cannot use _grouped target_, instead we must choose
@@ -568,7 +569,7 @@ $(TOOL_GOLANGCI_LINT): Makefile
 .PHONY: lint lint-go lint-ui
 lint: lint-go lint-ui features-validate ## Lint the project
 lint-go: $(TOOL_GOLANGCI_LINT) ui/dist/app/index.html
-	rm -Rf v3 vendor
+	rm -Rf v4 vendor
 	# If you're using `woc.wf.Spec` or `woc.execWf.Status` your code probably won't work with WorkflowTemplate.
 	# * Change `woc.wf.Spec` to `woc.execWf.Spec`.
 	# * Change `woc.execWf.Status` to `woc.wf.Status`.
@@ -727,7 +728,7 @@ Benchmark%: $(TOOL_GOTESTSUM) $(JSON_TEST_OUTPUT)
 .PHONY: clean
 clean: ## Clean the directory of build files
 	go clean
-	rm -Rf test/reports test-results node_modules vendor v2 v3 argoexec-linux-amd64 dist/* ui/dist
+	rm -Rf test/reports test-results node_modules vendor v2 v3 v4 argoexec-linux-amd64 dist/* ui/dist
 
 # Build telemetry files
 TELEMETRY_BUILDER := $(shell find util/telemetry/builder -type f -name '*.go')
@@ -749,33 +750,33 @@ util/telemetry/metrics_helpers.go: $(TELEMETRY_BUILDER) util/telemetry/builder/v
 
 # swagger
 pkg/apis/workflow/v1alpha1/openapi_generated.go: $(TOOL_OPENAPI_GEN) $(TYPES)
-	# These files are generated on a v3/ folder by the tool. Link them to the root folder
-	[ -e ./v3 ] || ln -s . v3
+	# These files are generated on a v4/ folder by the tool. Link them to the root folder
+	[ -e ./v4 ] || ln -s . v4
 	$(TOOL_OPENAPI_GEN) \
 	  --go-header-file ./hack/custom-boilerplate.go.txt \
-	  --input-dirs github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1 \
-	  --output-package github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1 \
+	  --input-dirs github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1 \
+	  --output-package github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1 \
 	  --report-filename pkg/apis/api-rules/violation_exceptions.list
 	# Force the timestamp to be up to date
 	touch $@
 	# Delete the link
-	[ -e ./v3 ] && rm -rf v3
+	[ -e ./v4 ] && rm -rf v4
 
 
 # generates many other files (listers, informers, client etc).
 .PRECIOUS: pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go
 pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TOOL_GO_TO_PROTOBUF) $(TYPES)
-	# These files are generated on a v3/ folder by the tool. Link them to the root folder
-	[ -e ./v3 ] || ln -s . v3
+	# These files are generated on a v4/ folder by the tool. Link them to the root folder
+	[ -e ./v4 ] || ln -s . v4
 	bash $(GOPATH)/pkg/mod/k8s.io/code-generator@v0.21.5/generate-groups.sh \
 	    "deepcopy,client,informer,lister" \
-	    github.com/argoproj/argo-workflows/v3/pkg/client github.com/argoproj/argo-workflows/v3/pkg/apis \
+	    github.com/argoproj/argo-workflows/v4/pkg/client github.com/argoproj/argo-workflows/v4/pkg/apis \
 	    workflow:v1alpha1 \
 	    --go-header-file ./hack/custom-boilerplate.go.txt
 	# Force the timestamp to be up to date
 	touch $@
 	# Delete the link
-	[ -e ./v3 ] && rm -rf v3
+	[ -e ./v4 ] && rm -rf v4
 
 dist/kubernetes.swagger.json: Makefile
 	@mkdir -p dist
@@ -784,7 +785,7 @@ dist/kubernetes.swagger.json: Makefile
 	./hack/recurl.sh $@ https://raw.githubusercontent.com/kubernetes/kubernetes/v1.33.1/api/openapi-spec/swagger.json
 
 pkg/apiclient/_.secondary.swagger.json: hack/api/swagger/secondaryswaggergen.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
-	rm -Rf v3 vendor
+	rm -Rf v3 v4 vendor
 	# We have `hack/api/swagger` so that most hack script do not depend on the whole code base and are therefore slow.
 	go run ./hack/api/swagger secondaryswaggergen
 

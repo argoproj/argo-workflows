@@ -8,8 +8,8 @@ import (
 
 	"github.com/upper/db/v4"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	syncdb "github.com/argoproj/argo-workflows/v3/util/sync/db"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	syncdb "github.com/argoproj/argo-workflows/v4/util/sync/db"
 )
 
 type databaseSemaphore struct {

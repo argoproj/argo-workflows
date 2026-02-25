@@ -41,6 +41,7 @@ git-ask-pass.sh
 /go-diagrams/
 /.run/
 /v3/
+/v4/
 /cmd/argoexec/commands/test.txt
 /db-dumps/
 .spelling.tmp

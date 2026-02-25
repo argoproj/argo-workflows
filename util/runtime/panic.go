@@ -4,7 +4,7 @@ import (
 	"context"
 	"runtime"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 // RecoverFromPanic recovers from a panic and logs the panic and call stack

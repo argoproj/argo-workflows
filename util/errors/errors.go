@@ -13,8 +13,8 @@ import (
 
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 
-	argoerrs "github.com/argoproj/argo-workflows/v3/errors"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	argoerrs "github.com/argoproj/argo-workflows/v4/errors"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 func IgnoreContainerNotFoundErr(err error) error {

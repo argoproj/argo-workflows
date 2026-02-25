@@ -8,7 +8,7 @@ import (
 
 	cc "golang.org/x/oauth2/clientcredentials"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
 func CreateClientWithCertificate(clientCert, clientKey []byte) (*http.Client, error) {

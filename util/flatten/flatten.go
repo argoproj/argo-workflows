@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"reflect"
 
-	jsonutil "github.com/argoproj/argo-workflows/v3/util/json"
+	jsonutil "github.com/argoproj/argo-workflows/v4/util/json"
 )
 
 func toMap(in interface{}) map[string]interface{} {
