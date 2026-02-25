@@ -49,8 +49,8 @@ func (l *LazyInstrumentation) StartWaitSpan(ctx context.Context) (context.Contex
 	fn := l.startWaitSpan
 	l.mu.RUnlock()
 	if fn != nil {
-		ctx, span := fn(ctx)
-		return ctx, func() { span.End() }
+		newCtx, span := fn(ctx)
+		return newCtx, func() { span.End() }
 	}
 	return ctx, func() {} // no-op
 }

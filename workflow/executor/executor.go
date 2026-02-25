@@ -207,7 +207,6 @@ func (we *WorkflowExecutor) loadArtifacts(ctx context.Context, pluginName wfv1.A
 	return nil
 }
 
-
 func (we *WorkflowExecutor) loadArtifact(ctx context.Context, pluginName wfv1.ArtifactPluginName, art wfv1.Artifact) error {
 	logger := logging.RequireLoggerFromContext(ctx)
 	logger.WithField("name", art.Name).Info(ctx, "Downloading artifact")

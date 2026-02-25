@@ -67,8 +67,8 @@ func NewEmissaryCommand() *cobra.Command {
 				return err
 			}
 			defer func() {
-				if err := tracer.Shutdown(context.WithoutCancel(ctx)); err != nil {
-					logger.WithError(err).Error(ctx, "Failed to shutdown tracing")
+				if deferErr := tracer.Shutdown(context.WithoutCancel(ctx)); deferErr != nil {
+					logger.WithError(deferErr).Error(ctx, "Failed to shutdown tracing")
 				}
 			}()
 
@@ -85,7 +85,7 @@ func NewEmissaryCommand() *cobra.Command {
 			// Note it's important varRunArgo+"/ctr/" folder is writable by all, because multiple containers may want to
 			// write to it with different users.
 			// This also indicates we've started.
-			if err := os.MkdirAll(varRunArgo+"/ctr/"+containerName, 0o777); err != nil {
+			if err = os.MkdirAll(varRunArgo+"/ctr/"+containerName, 0o777); err != nil {
 				return fmt.Errorf("failed to create ctr directory: %w", err)
 			}
 
@@ -94,12 +94,12 @@ func NewEmissaryCommand() *cobra.Command {
 			// Check if args were offloaded to a file (for large args that exceed exec limit)
 			if argsFile := os.Getenv(common.EnvVarContainerArgsFile); argsFile != "" {
 				logger.WithField("argsFile", argsFile).Info(ctx, "Reading container args from file")
-				argsData, err := os.ReadFile(argsFile)
-				if err != nil {
-					return fmt.Errorf("failed to read container args file %s: %w", argsFile, err)
+				argsData, readErr := os.ReadFile(argsFile)
+				if readErr != nil {
+					return fmt.Errorf("failed to read container args file %s: %w", argsFile, readErr)
 				}
 				var fileArgs []string
-				if err := json.Unmarshal(argsData, &fileArgs); err != nil {
+				if err = json.Unmarshal(argsData, &fileArgs); err != nil {
 					return fmt.Errorf("failed to unmarshal container args: %w", err)
 				}
 				args = append(args, fileArgs...)
@@ -111,7 +111,7 @@ func NewEmissaryCommand() *cobra.Command {
 				for i := 0; i < len(args); i++ {
 					if len(args[i]) > common.MaxEnvVarLen {
 						filePath := fmt.Sprintf("/tmp/argo_arg_%d.txt", i)
-						if err := os.WriteFile(filePath, []byte(args[i]), 0o644); err != nil {
+						if err = os.WriteFile(filePath, []byte(args[i]), 0o644); err != nil {
 							return fmt.Errorf("failed to write large arg %d to file: %w", i, err)
 						}
 						logger.WithFields(logging.Fields{

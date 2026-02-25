@@ -34,8 +34,8 @@ func (trc *Tracing) expectWorkflow(id string) (*workflowSpans, error) {
 	wf, ok := trc.workflows[id]
 	trc.mutex.RUnlock()
 	if !ok {
-		wf, _ := trc.createWorkflow(id)
-		return wf, errors.New("no existing trace for a running workflow")
+		createWf, _ := trc.createWorkflow(id)
+		return createWf, errors.New("no existing trace for a running workflow")
 	}
 	return wf, nil
 }
@@ -49,8 +49,8 @@ func (trc *Tracing) expectWorkflowNode(wfid, nodeid string) (*workflowSpans, *no
 	node, ok := wfs.nodes[nodeid]
 	wfs.mutex.RUnlock()
 	if !ok {
-		node, _ := wfs.createNode(nodeid)
-		return wfs, &node, errors.New("no existing trace for a running node")
+		createNode, _ := wfs.createNode(nodeid)
+		return wfs, &createNode, errors.New("no existing trace for a running node")
 	}
 	return wfs, &node, nil
 }
