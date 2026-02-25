@@ -116,22 +116,23 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 	ensureWeAreStreaming := func(pod *corev1.Pod) {
 		streamedPodsGuard.Lock()
 		defer streamedPodsGuard.Unlock()
-		ctx, logger := logger.WithField("podName", pod.GetName()).InContext(ctx)
-		logger.WithFields(logging.Fields{"podPhase": pod.Status.Phase, "alreadyStreaming": streamedPods[pod.UID]}).Debug(ctx, "Ensuring pod logs stream")
+		var podLogger logging.Logger
+		ctx, podLogger = logger.WithField("podName", pod.GetName()).InContext(ctx)
+		podLogger.WithFields(logging.Fields{"podPhase": pod.Status.Phase, "alreadyStreaming": streamedPods[pod.UID]}).Debug(ctx, "Ensuring pod logs stream")
 		if pod.Status.Phase != corev1.PodPending && !streamedPods[pod.UID] {
 			streamedPods[pod.UID] = true
 			podName := pod.GetName()
 			wg.Go(func() {
-				logger.Debug(ctx, "Streaming pod logs")
-				defer logger.Debug(ctx, "Pod logs stream done")
-				stream, err := podInterface.GetLogs(podName, &podLogStreamOptions).Stream(ctx)
-				if err != nil {
-					logger.WithError(err).Error(ctx, "Failed to get pod logs")
+				podLogger.Debug(ctx, "Streaming pod logs")
+				defer podLogger.Debug(ctx, "Pod logs stream done")
+				stream, streamErr := podInterface.GetLogs(podName, &podLogStreamOptions).Stream(ctx)
+				if streamErr != nil {
+					podLogger.WithError(streamErr).Error(ctx, "Failed to get pod logs")
 					return
 				}
 				defer func() {
-					if err := stream.Close(); err != nil {
-						logger.WithError(err).Warn(ctx, "Failed to close stream")
+					if closeErr := stream.Close(); closeErr != nil {
+						podLogger.WithError(closeErr).Warn(ctx, "Failed to close stream")
 					}
 				}()
 				scanner := bufio.NewScanner(stream)
@@ -151,9 +152,9 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 						if len(parts) > 1 {
 							content = parts[1]
 						}
-						timestamp, err := time.Parse(time.RFC3339, parts[0])
-						if err != nil {
-							logger.WithError(err).Error(ctx, "Failed to decode or infer timestamp from log line")
+						timestamp, parseErr := time.Parse(time.RFC3339, parts[0])
+						if parseErr != nil {
+							podLogger.WithError(parseErr).Error(ctx, "Failed to decode or infer timestamp from log line")
 							// The current timestamp is the next best substitute. This won't be shown, but will be used
 							// for sorting
 							timestamp = time.Now()
@@ -165,12 +166,12 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 							content = line
 						}
 						if rx.MatchString(content) { // this means we filter the lines in the server, but will still incur the cost of retrieving them from Kubernetes
-							logger.WithFields(logging.Fields{"timestamp": timestamp, "content": content}).Debug(ctx, "Log line")
+							podLogger.WithFields(logging.Fields{"timestamp": timestamp, "content": content}).Debug(ctx, "Log line")
 							unsortedEntries <- logEntry{podName: podName, content: content, timestamp: timestamp}
 						}
 					}
 				}
-				logger.Debug(ctx, "No more log lines to stream")
+				podLogger.Debug(ctx, "No more log lines to stream")
 				// out of data, we do not want to start watching again
 			})
 		}

@@ -157,9 +157,9 @@ func Workflow(ctx context.Context, wftmplGetter templateresolution.WorkflowTempl
 	hasWorkflowTemplateRef := wf.Spec.WorkflowTemplateRef != nil
 
 	if hasWorkflowTemplateRef {
-		err := WorkflowTemplateRefFields(wf.Spec)
-		if err != nil {
-			return err
+		refErr := WorkflowTemplateRefFields(wf.Spec)
+		if refErr != nil {
+			return refErr
 		}
 		if wf.Spec.WorkflowTemplateRef.ClusterScope {
 			wfSpecHolder, err = cwftmplGetter.Get(ctx, wf.Spec.WorkflowTemplateRef.Name)
@@ -463,8 +463,8 @@ func (tctx *templateValidationCtx) validateTemplate(ctx context.Context, tmpl *w
 		return err
 	}
 
-	if err := tctx.validateInitContainers(tmpl.InitContainers); err != nil {
-		return err
+	if initErr := tctx.validateInitContainers(tmpl.InitContainers); initErr != nil {
+		return initErr
 	}
 
 	localParams := make(map[string]string)
@@ -507,8 +507,8 @@ func (tctx *templateValidationCtx) validateTemplate(ctx context.Context, tmpl *w
 			return fmt.Errorf("%s template doesn't support timeout field", newTmpl.GetType())
 		}
 		// Check timeout should not be a whole number
-		_, err := strconv.Atoi(newTmpl.Timeout)
-		if err == nil {
+		_, atoiErr := strconv.Atoi(newTmpl.Timeout)
+		if atoiErr == nil {
 			return fmt.Errorf("%s has invalid duration format in timeout", newTmpl.Name)
 		}
 	}
@@ -1383,10 +1383,10 @@ func (tctx *templateValidationCtx) validateDAG(ctx context.Context, scope map[st
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s cannot use 'continueOn' when using 'depends'. Instead use 'dep-task.Failed'/'dep-task.Errored'", tmpl.Name)
 		}
 
-		resolvedTmpl, err := tctx.validateTemplateHolder(ctx, &task, tmplCtx, &FakeArguments{}, workflowTemplateValidation)
+		resolvedTmpl, validateErr := tctx.validateTemplateHolder(ctx, &task, tmplCtx, &FakeArguments{}, workflowTemplateValidation)
 
-		if err != nil {
-			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
+		if validateErr != nil {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, validateErr.Error())
 		}
 
 		resolvedTemplates[task.Name] = resolvedTmpl

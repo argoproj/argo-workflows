@@ -55,8 +55,8 @@ func (s backfillNodes) Apply(ctx context.Context, session db.Session) (err error
 		if err != nil {
 			return err
 		}
-		ctx, logger := logger.WithFields(logging.Fields{"name": wf.Name, "namespace": wf.Namespace, "version": version}).InContext(ctx)
-		logger.Info(ctx, "Back-filling node status")
+		bfCtx, bfLogger := logger.WithFields(logging.Fields{"name": wf.Name, "namespace": wf.Namespace, "version": version}).InContext(ctx)
+		bfLogger.Info(bfCtx, "Back-filling node status")
 		res, err := session.SQL().Update(archiveTableName).
 			Set("version", wf.ResourceVersion).
 			Set("nodes", marshalled).
@@ -71,7 +71,7 @@ func (s backfillNodes) Apply(ctx context.Context, session db.Session) (err error
 			return err
 		}
 		if rowsAffected != 1 {
-			logger.WithField("rowsAffected", rowsAffected).Warn(ctx, "Expected exactly one row affected")
+			bfLogger.WithField("rowsAffected", rowsAffected).Warn(bfCtx, "Expected exactly one row affected")
 		}
 	}
 	return nil

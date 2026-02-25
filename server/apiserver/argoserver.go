@@ -226,13 +226,13 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	// lets just have a way to disable the checks in argo-server
 	if os.Getenv("CI_ONLY_DISABLE_ARTIFACT_SERVER_CHECKS") != "true" {
 		// Validate artifact driver images against server pod images
-		if err := as.validateArtifactDriverImages(ctx, config); err != nil {
-			log.WithFatal().WithError(err).Error(ctx, "failed to validate artifact driver images")
+		if validateErr := as.validateArtifactDriverImages(ctx, config); validateErr != nil {
+			log.WithFatal().WithError(validateErr).Error(ctx, "failed to validate artifact driver images")
 		}
 
 		// Validate artifact driver connections
-		if err := as.validateArtifactDriverConnections(ctx, config); err != nil {
-			log.WithFatal().WithError(err).Error(ctx, "failed to validate artifact driver connections")
+		if validateErr := as.validateArtifactDriverConnections(ctx, config); validateErr != nil {
+			log.WithFatal().WithError(validateErr).Error(ctx, "failed to validate artifact driver connections")
 		}
 	}
 
@@ -243,13 +243,13 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	wfArchive := persist.NullWorkflowArchive
 	persistence := config.Persistence
 	if persistence != nil {
-		session, dbType, err := sqldb.CreateDBSession(ctx, as.clients.Kubernetes, as.namespace, persistence.DBConfig)
-		if err != nil {
-			log.WithFatal().Error(ctx, err.Error())
+		session, dbType, sessionErr := sqldb.CreateDBSession(ctx, as.clients.Kubernetes, as.namespace, persistence.DBConfig)
+		if sessionErr != nil {
+			log.WithFatal().Error(ctx, sessionErr.Error())
 		}
-		tableName, err := persist.GetTableName(persistence)
-		if err != nil {
-			log.WithFatal().Error(ctx, err.Error())
+		tableName, tableErr := persist.GetTableName(persistence)
+		if tableErr != nil {
+			log.WithFatal().Error(ctx, tableErr.Error())
 		}
 		// we always enable node offload, as this is read-only for the Argo Server, i.e. you can turn it off if you
 		// like and the controller won't offload newly created workflows, but you can still read them

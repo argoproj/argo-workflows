@@ -96,8 +96,8 @@ func (e emissary) CopyFile(ctx context.Context, containerName string, sourcePath
 	}
 	defer func() { _ = dst.Close() }()
 	_, err = io.Copy(dst, src)
-	if err := dst.Close(); err != nil {
-		return err
+	if closeErr := dst.Close(); closeErr != nil {
+		return closeErr
 	}
 	return err
 }

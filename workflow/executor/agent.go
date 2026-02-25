@@ -122,12 +122,13 @@ func (ae *AgentExecutor) Agent(ctx context.Context) error {
 
 func (ae *AgentExecutor) taskWorker(ctx context.Context, taskQueue chan task, responseQueue chan response) {
 	for {
-		task, ok := <-taskQueue
+		workTask, ok := <-taskQueue
 		if !ok {
 			break
 		}
-		nodeID, tmpl := task.NodeID, task.Template
-		ctx, logger := logging.RequireLoggerFromContext(ctx).WithField("nodeID", nodeID).InContext(ctx)
+		nodeID, tmpl := workTask.NodeID, workTask.Template
+		var logger logging.Logger
+		ctx, logger = logging.RequireLoggerFromContext(ctx).WithField("nodeID", nodeID).InContext(ctx)
 
 		// Do not work on tasks that have already been considered once, to prevent calling an endpoint more
 		// than once unintentionally.
@@ -160,7 +161,7 @@ func (ae *AgentExecutor) taskWorker(ctx context.Context, taskQueue chan task, re
 			time.AfterFunc(requeue, func() {
 				ae.consideredTasks.Delete(nodeID)
 
-				taskQueue <- task
+				taskQueue <- workTask
 			})
 		}
 	}
@@ -194,11 +195,11 @@ func (ae *AgentExecutor) patchWorker(ctx context.Context, taskSetInterface v1alp
 				Jitter:   0.1,
 				Steps:    5,
 				Cap:      30 * time.Second,
-			}, func(err error) bool {
-				return errors.IsTransientErr(ctx, err)
+			}, func(retryErr error) bool {
+				return errors.IsTransientErr(ctx, retryErr)
 			}, func() error {
-				_, err := taskSetInterface.Patch(ctx, ae.WorkflowName, types.MergePatchType, patch, metav1.PatchOptions{}, "status")
-				return err
+				_, patchErr := taskSetInterface.Patch(ctx, ae.WorkflowName, types.MergePatchType, patch, metav1.PatchOptions{}, "status")
+				return patchErr
 			})
 
 			if err != nil && !errors.IsTransientErr(ctx, err) {
@@ -338,9 +339,9 @@ func (ae *AgentExecutor) executeHTTPTemplateRequest(ctx context.Context, httpTem
 	for _, header := range httpTemplate.Headers {
 		value := header.Value
 		if header.ValueFrom != nil && header.ValueFrom.SecretKeyRef != nil {
-			secret, err := util.GetSecrets(ctx, ae.ClientSet, ae.Namespace, header.ValueFrom.SecretKeyRef.Name, header.ValueFrom.SecretKeyRef.Key)
-			if err != nil {
-				return nil, err
+			secret, secretErr := util.GetSecrets(ctx, ae.ClientSet, ae.Namespace, header.ValueFrom.SecretKeyRef.Name, header.ValueFrom.SecretKeyRef.Key)
+			if secretErr != nil {
+				return nil, secretErr
 			}
 			value = string(secret)
 		}

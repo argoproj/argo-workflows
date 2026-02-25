@@ -266,8 +266,8 @@ func (we *WorkflowExecutor) loadArtifact(ctx context.Context, pluginName wfv1.Ar
 	tempArtPath := artPath + ".tmp"
 	// Ensure parent directory exist, create if missing
 	tempArtDir := filepath.Dir(tempArtPath)
-	if err := os.MkdirAll(tempArtDir, 0o700); err != nil {
-		return fmt.Errorf("failed to create artifact temporary parent directory %s: %w", tempArtDir, err)
+	if mkdirErr := os.MkdirAll(tempArtDir, 0o700); mkdirErr != nil {
+		return fmt.Errorf("failed to create artifact temporary parent directory %s: %w", tempArtDir, mkdirErr)
 	}
 	ctx, span := we.Tracing.StartLoadArtifact(ctx, artPath)
 	defer span.End()
@@ -1018,8 +1018,8 @@ func isTarball(ctx context.Context, filePath string) (bool, error) {
 		return false, err
 	}
 	defer func() {
-		if err := f.Close(); err != nil {
-			logger.WithFatal().WithField("path", filePath).WithError(err).Error(ctx, "Error closing file")
+		if closeErr := f.Close(); closeErr != nil {
+			logger.WithFatal().WithField("path", filePath).WithError(closeErr).Error(ctx, "Error closing file")
 		}
 	}()
 	gzr, err := gzip.NewReader(f)
@@ -1094,22 +1094,22 @@ func untar(tarPath string, destPath string) error {
 				}
 
 				// Check if parent exists and if so, verify it doesn't resolve outside dest
-				if _, err := os.Lstat(parentDir); err == nil {
+				if _, lstatErr := os.Lstat(parentDir); lstatErr == nil {
 					// Parent exists, resolve it to check for symlink traversal
-					resolvedParent, err := filepath.EvalSymlinks(parentDir)
-					if err != nil {
-						return err
+					resolvedParent, evalErr := filepath.EvalSymlinks(parentDir)
+					if evalErr != nil {
+						return evalErr
 					}
 					// Check if resolved parent is outside dest
 					if !strings.HasPrefix(resolvedParent+string(os.PathSeparator), resolvedDest+string(os.PathSeparator)) && resolvedParent != resolvedDest {
 						return fmt.Errorf("illegal file path after symlink resolution: %s resolves outside destination", header.Name)
 					}
-				} else if !os.IsNotExist(err) {
-					return err
+				} else if !os.IsNotExist(lstatErr) {
+					return lstatErr
 				} else {
 					// Parent doesn't exist, create it
-					if err := os.MkdirAll(parentDir, 0o755); err != nil {
-						return err
+					if mkdirErr := os.MkdirAll(parentDir, 0o755); mkdirErr != nil {
+						return mkdirErr
 					}
 				}
 
@@ -1154,8 +1154,8 @@ func unzip(ctx context.Context, zipPath string, destPath string) error {
 				return err
 			}
 			defer func() {
-				if err := rc.Close(); err != nil {
-					panic(err)
+				if closeErr := rc.Close(); closeErr != nil {
+					panic(closeErr)
 				}
 			}()
 
@@ -1172,17 +1172,17 @@ func unzip(ctx context.Context, zipPath string, destPath string) error {
 				if err = os.MkdirAll(filepath.Dir(path), f.Mode()); err != nil {
 					return err
 				}
-				f, err := os.OpenFile(filepath.Clean(path), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
-				if err != nil {
-					return err
+				outFile, openErr := os.OpenFile(filepath.Clean(path), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
+				if openErr != nil {
+					return openErr
 				}
 				defer func() {
-					if err := f.Close(); err != nil {
-						panic(err)
+					if closeErr := outFile.Close(); closeErr != nil {
+						panic(closeErr)
 					}
 				}()
 
-				_, err = io.Copy(f, rc)
+				_, err = io.Copy(outFile, rc)
 				if err != nil {
 					return err
 				}

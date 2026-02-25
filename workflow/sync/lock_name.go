@@ -101,12 +101,12 @@ func DecodeLockName(ctx context.Context, name string) (LockName, error) {
 	}
 
 	var lock lockName
-	lockKind := lockKind(items[1])
+	kind := lockKind(items[1])
 	namespace := items[0]
 
-	switch lockKind {
+	switch kind {
 	case lockKindMutex, lockKindDatabase:
-		lock = lockName{namespace: namespace, kind: lockKind, resourceName: items[2]}
+		lock = lockName{namespace: namespace, kind: kind, resourceName: items[2]}
 	case lockKindConfigMap:
 		components := strings.Split(items[2], "/")
 
@@ -114,9 +114,9 @@ func DecodeLockName(ctx context.Context, name string) (LockName, error) {
 			return nil, errors.New(errors.CodeBadRequest, "Invalid ConfigMap lock key: unknown format")
 		}
 
-		lock = lockName{namespace: namespace, kind: lockKind, resourceName: components[0], key: components[1]}
+		lock = lockName{namespace: namespace, kind: kind, resourceName: components[0], key: components[1]}
 	default:
-		return nil, errors.New(errors.CodeBadRequest, fmt.Sprintf("Invalid lock key, unexpected kind: %s", lockKind))
+		return nil, errors.New(errors.CodeBadRequest, fmt.Sprintf("Invalid lock key, unexpected kind: %s", kind))
 	}
 
 	err := lock.validate()

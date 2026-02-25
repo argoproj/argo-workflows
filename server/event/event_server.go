@@ -53,8 +53,7 @@ func (s *Controller) Run(ctx context.Context, stopCh <-chan struct{}) {
 	for w := 0; w < s.workerCount; w++ {
 		wg.Go(func() {
 			for operation := range s.operationQueue {
-				ctx := operation.Context()
-				_ = operation.Dispatch(ctx)
+				_ = operation.Dispatch(operation.Context())
 			}
 		})
 	}

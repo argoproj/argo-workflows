@@ -17,17 +17,17 @@ type cliCreateOpts struct {
 }
 
 func NewCreateCommand() *cobra.Command {
-	var cliCreateOpts = cliCreateOpts{output: common.NewPrintWorkflowOutputValue("")}
+	opts := cliCreateOpts{output: common.NewPrintWorkflowOutputValue("")}
 	command := &cobra.Command{
 		Use:   "create FILE1 FILE2...",
 		Short: "create a workflow template",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return CreateWorkflowTemplates(cmd.Context(), args, &cliCreateOpts)
+			return CreateWorkflowTemplates(cmd.Context(), args, &opts)
 		},
 	}
-	command.Flags().VarP(&cliCreateOpts.output, "output", "o", "Output format. "+cliCreateOpts.output.Usage())
-	command.Flags().BoolVar(&cliCreateOpts.strict, "strict", true, "perform strict workflow validation")
+	command.Flags().VarP(&opts.output, "output", "o", "Output format. "+opts.output.Usage())
+	command.Flags().BoolVar(&opts.strict, "strict", true, "perform strict workflow validation")
 	return command
 }
 

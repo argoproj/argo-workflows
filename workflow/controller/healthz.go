@@ -57,8 +57,8 @@ func (wfc *WorkflowController) Healthz(w http.ResponseWriter, r *http.Request) {
 			// Informer holds Workflows as type *Unstructured
 			un := m.(*unstructured.Unstructured)
 			// verify it's of type *Workflow (if not, it's an incorrectly formatted Workflow spec)
-			wf, err := util.FromUnstructured(un)
-			if err != nil {
+			wf, convErr := util.FromUnstructured(un)
+			if convErr != nil {
 				logger.WithField("name", un.GetName()).WithField("namespace", un.GetNamespace()).Warn(ctx, "Healthz check found an incorrectly formatted Workflow")
 				return
 			}

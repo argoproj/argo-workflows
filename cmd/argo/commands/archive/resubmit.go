@@ -131,7 +131,8 @@ func resubmitArchivedWorkflows(ctx context.Context, archiveServiceClient workflo
 
 	// Add workflows from args - auto-detect UID vs NAME
 	for _, identifier := range args {
-		uid, err := resolveUID(ctx, archiveServiceClient, identifier, resubmitOpts.namespace, resubmitOpts.forceUID, resubmitOpts.forceName)
+		var uid string
+		uid, err = resolveUID(ctx, archiveServiceClient, identifier, resubmitOpts.namespace, resubmitOpts.forceUID, resubmitOpts.forceName)
 		if err != nil {
 			return fmt.Errorf("resolve UID: %w", err)
 		}

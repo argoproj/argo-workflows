@@ -17,27 +17,27 @@ type cliCreateOpts struct {
 }
 
 func NewCreateCommand() *cobra.Command {
-	var cliCreateOpts = cliCreateOpts{output: common.NewPrintWorkflowOutputValue("")}
+	var opts = cliCreateOpts{output: common.NewPrintWorkflowOutputValue("")}
 	command := &cobra.Command{
 		Use:   "create FILE1 FILE2...",
 		Short: "create a cluster workflow template",
 		Example: `# Create a Cluster Workflow Template:
   argo cluster-template create FILE1
-	
+
 # Create a Cluster Workflow Template and print it as YAML:
   argo cluster-template create FILE1 --output yaml
-	
+
 # Create a Cluster Workflow Template with relaxed validation:
   argo cluster-template create FILE1 --strict false
 `,
 
 		Args: cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return createClusterWorkflowTemplates(cmd.Context(), args, &cliCreateOpts)
+			return createClusterWorkflowTemplates(cmd.Context(), args, &opts)
 		},
 	}
-	command.Flags().VarP(&cliCreateOpts.output, "output", "o", "Output format. "+cliCreateOpts.output.Usage())
-	command.Flags().BoolVar(&cliCreateOpts.strict, "strict", true, "perform strict workflow validation")
+	command.Flags().VarP(&opts.output, "output", "o", "Output format. "+opts.output.Usage())
+	command.Flags().BoolVar(&opts.strict, "strict", true, "perform strict workflow validation")
 	return command
 }
 

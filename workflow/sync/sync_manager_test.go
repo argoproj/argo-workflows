@@ -780,8 +780,8 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		assert.True(t, wfUpdate)
 		assert.Equal(t, 1, mock.callCount)
 
-		semaphore := syncManager.syncLockMap["default/ConfigMap/my-config/workflow"]
-		assert.Equal(t, 10, semaphore.getLimit(ctx))
+		sem := syncManager.syncLockMap["default/ConfigMap/my-config/workflow"]
+		assert.Equal(t, 10, sem.getLimit(ctx))
 
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
 		require.NoError(t, err)
@@ -791,8 +791,8 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		assert.Empty(t, msg)
 		assert.Equal(t, 1, mock.callCount)
 
-		semaphore = syncManager.syncLockMap["default/ConfigMap/my-config/workflow"]
-		assert.Equal(t, 10, semaphore.getLimit(ctx))
+		sem = syncManager.syncLockMap["default/ConfigMap/my-config/workflow"]
+		assert.Equal(t, 10, sem.getLimit(ctx))
 
 		mockedNow = mockedNow.Add(1 * time.Second)
 
@@ -804,8 +804,8 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		assert.Empty(t, msg)
 		assert.Equal(t, 2, mock.callCount)
 
-		semaphore = syncManager.syncLockMap["default/ConfigMap/my-config/workflow"]
-		assert.Equal(t, 10, semaphore.getLimit(ctx))
+		sem = syncManager.syncLockMap["default/ConfigMap/my-config/workflow"]
+		assert.Equal(t, 10, sem.getLimit(ctx))
 
 		// semaphore age should be updated to now
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
@@ -816,8 +816,8 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		assert.Empty(t, msg)
 		assert.Equal(t, 2, mock.callCount)
 
-		semaphore = syncManager.syncLockMap["default/ConfigMap/my-config/workflow"]
-		assert.Equal(t, 10, semaphore.getLimit(ctx))
+		sem = syncManager.syncLockMap["default/ConfigMap/my-config/workflow"]
+		assert.Equal(t, 10, sem.getLimit(ctx))
 
 		mockedNow = mockedNow.Add(1 * time.Second)
 		mock.outputSize = 20
@@ -830,8 +830,8 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		assert.Empty(t, msg)
 		assert.Equal(t, 3, mock.callCount)
 
-		semaphore = syncManager.syncLockMap["default/ConfigMap/my-config/workflow"]
-		assert.Equal(t, 20, semaphore.getLimit(ctx))
+		sem = syncManager.syncLockMap["default/ConfigMap/my-config/workflow"]
+		assert.Equal(t, 20, sem.getLimit(ctx))
 
 		// semaphore age should be updated to now again
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
@@ -842,8 +842,8 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		assert.Empty(t, msg)
 		assert.Equal(t, 3, mock.callCount)
 
-		semaphore = syncManager.syncLockMap["default/ConfigMap/my-config/workflow"]
-		assert.Equal(t, 20, semaphore.getLimit(ctx))
+		sem = syncManager.syncLockMap["default/ConfigMap/my-config/workflow"]
+		assert.Equal(t, 20, sem.getLimit(ctx))
 	})
 
 	t.Run("TemplateLevelAcquireAndRelease", func(t *testing.T) {
@@ -867,8 +867,8 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		assert.True(t, wfUpdate)
 		assert.Equal(t, 1, mock.callCount)
 
-		semaphore := syncManager.syncLockMap["default/ConfigMap/my-config/template"]
-		assert.Equal(t, 10, semaphore.getLimit(ctx))
+		sem := syncManager.syncLockMap["default/ConfigMap/my-config/template"]
+		assert.Equal(t, 10, sem.getLimit(ctx))
 
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf, "semaphore-tmpl-level-xjvln-3448864205", tmpl.Synchronization)
 		require.NoError(t, err)
@@ -878,8 +878,8 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		assert.Empty(t, msg)
 		assert.Equal(t, 1, mock.callCount)
 
-		semaphore = syncManager.syncLockMap["default/ConfigMap/my-config/template"]
-		assert.Equal(t, 10, semaphore.getLimit(ctx))
+		sem = syncManager.syncLockMap["default/ConfigMap/my-config/template"]
+		assert.Equal(t, 10, sem.getLimit(ctx))
 
 		mockedNow = mockedNow.Add(1 * time.Second)
 
@@ -891,8 +891,8 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		assert.Empty(t, msg)
 		assert.Equal(t, 2, mock.callCount)
 
-		semaphore = syncManager.syncLockMap["default/ConfigMap/my-config/template"]
-		assert.Equal(t, 10, semaphore.getLimit(ctx))
+		sem = syncManager.syncLockMap["default/ConfigMap/my-config/template"]
+		assert.Equal(t, 10, sem.getLimit(ctx))
 
 		// semaphore age should be updated to now
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf, "semaphore-tmpl-level-xjvln-3448864205", tmpl.Synchronization)
@@ -903,8 +903,8 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		assert.Empty(t, msg)
 		assert.Equal(t, 2, mock.callCount)
 
-		semaphore = syncManager.syncLockMap["default/ConfigMap/my-config/template"]
-		assert.Equal(t, 10, semaphore.getLimit(ctx))
+		sem = syncManager.syncLockMap["default/ConfigMap/my-config/template"]
+		assert.Equal(t, 10, sem.getLimit(ctx))
 
 		mockedNow = mockedNow.Add(1 * time.Second)
 		mock.outputSize = 20
@@ -917,8 +917,8 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		assert.Empty(t, msg)
 		assert.Equal(t, 3, mock.callCount)
 
-		semaphore = syncManager.syncLockMap["default/ConfigMap/my-config/template"]
-		assert.Equal(t, 20, semaphore.getLimit(ctx))
+		sem = syncManager.syncLockMap["default/ConfigMap/my-config/template"]
+		assert.Equal(t, 20, sem.getLimit(ctx))
 
 		// semaphore age should be updated to now again
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf, "semaphore-tmpl-level-xjvln-3448864205", tmpl.Synchronization)
@@ -929,8 +929,8 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		assert.Empty(t, msg)
 		assert.Equal(t, 3, mock.callCount)
 
-		semaphore = syncManager.syncLockMap["default/ConfigMap/my-config/template"]
-		assert.Equal(t, 20, semaphore.getLimit(ctx))
+		sem = syncManager.syncLockMap["default/ConfigMap/my-config/template"]
+		assert.Equal(t, 20, sem.getLimit(ctx))
 	})
 }
 
@@ -1093,7 +1093,7 @@ func TestCheckWorkflowExistence(t *testing.T) {
 		_, _, _, _, _ = syncManager.TryAcquire(ctx, wfSema, "", wfSema.Spec.Synchronization)
 		_, _, _, _, _ = syncManager.TryAcquire(ctx, wfSema1, "", wfSema.Spec.Synchronization)
 		mutex := syncManager.syncLockMap["default/Mutex/my-mutex"].(*prioritySemaphore)
-		semaphore := syncManager.syncLockMap["default/ConfigMap/my-config/workflow"]
+		sem := syncManager.syncLockMap["default/ConfigMap/my-config/workflow"]
 
 		// Pre-state: mutex has 1 holder (hello-world) and 1 pending (test1)
 		holders, err := mutex.getCurrentHolders(ctx)
@@ -1104,10 +1104,10 @@ func TestCheckWorkflowExistence(t *testing.T) {
 		assert.Len(t, pending, 1)
 
 		// Pre-state: semaphore has 1 holder (hello-world) and 1 pending (test2)
-		holders, err = semaphore.getCurrentHolders(ctx)
+		holders, err = sem.getCurrentHolders(ctx)
 		require.NoError(t, err)
 		assert.Len(t, holders, 1)
-		pending, err = semaphore.getCurrentPending(ctx)
+		pending, err = sem.getCurrentPending(ctx)
 		require.NoError(t, err)
 		assert.Len(t, pending, 1)
 
@@ -1122,10 +1122,10 @@ func TestCheckWorkflowExistence(t *testing.T) {
 		assert.Len(t, pending, 1)
 
 		// Post-state: semaphore holder (hello-world) and pending (test2) both removed
-		holders, err = semaphore.getCurrentHolders(ctx)
+		holders, err = sem.getCurrentHolders(ctx)
 		require.NoError(t, err)
 		assert.Empty(t, holders)
-		pending, err = semaphore.getCurrentPending(ctx)
+		pending, err = sem.getCurrentPending(ctx)
 		require.NoError(t, err)
 		assert.Empty(t, pending)
 	})

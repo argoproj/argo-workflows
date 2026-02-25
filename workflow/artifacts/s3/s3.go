@@ -314,17 +314,17 @@ func saveS3Artifact(ctx context.Context, s3cli Client, path string, outputArtifa
 	createBucketIfNotPresent := outputArtifact.S3.CreateBucketIfNotPresent
 	if createBucketIfNotPresent != nil {
 		log.WithField("bucket", outputArtifact.S3.Bucket).Info(ctx, "creating bucket")
-		err := s3cli.MakeBucket(outputArtifact.S3.Bucket, minio.MakeBucketOptions{
+		makeBucketErr := s3cli.MakeBucket(outputArtifact.S3.Bucket, minio.MakeBucketOptions{
 			Region:        outputArtifact.S3.Region,
 			ObjectLocking: outputArtifact.S3.CreateBucketIfNotPresent.ObjectLocking,
 		})
-		alreadyExists := bucketAlreadyExistsErr(err)
+		alreadyExists := bucketAlreadyExistsErr(makeBucketErr)
 		log.WithField("bucket", outputArtifact.S3.Bucket).
 			WithField("alreadyExists", alreadyExists).
-			WithError(err).
+			WithError(makeBucketErr).
 			Info(ctx, "create bucket failed")
-		if err != nil && !alreadyExists {
-			return !isTransientS3Err(ctx, err), fmt.Errorf("failed to create bucket %s: %w", outputArtifact.S3.Bucket, err)
+		if makeBucketErr != nil && !alreadyExists {
+			return !isTransientS3Err(ctx, makeBucketErr), fmt.Errorf("failed to create bucket %s: %w", outputArtifact.S3.Bucket, makeBucketErr)
 		}
 	}
 
@@ -790,9 +790,9 @@ func (e *EncryptOpts) buildServerSideEnc(bucket, key string) (encrypt.ServerSide
 
 		if encryptionCtx == nil {
 			// To overcome a limitation in Minio which checks interface{} == nil.
-			kms, err := encrypt.NewSSEKMS(e.KmsKeyID, nil)
-			if err != nil {
-				return nil, err
+			kms, kmsErr := encrypt.NewSSEKMS(e.KmsKeyID, nil)
+			if kmsErr != nil {
+				return nil, kmsErr
 			}
 
 			return kms, nil

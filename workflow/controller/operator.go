@@ -226,18 +226,18 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	defer span.End()
 
 	if woc.wf.Status.ArtifactRepositoryRef == nil {
-		ref, err := woc.controller.artifactRepositories.Resolve(reconcileCtx, woc.execWf.Spec.ArtifactRepositoryRef, woc.wf.Namespace)
-		if err != nil {
-			ctx = woc.markWorkflowError(ctx, fmt.Errorf("failed to resolve artifact repository: %w", err))
+		ref, resolveErr := woc.controller.artifactRepositories.Resolve(reconcileCtx, woc.execWf.Spec.ArtifactRepositoryRef, woc.wf.Namespace)
+		if resolveErr != nil {
+			ctx = woc.markWorkflowError(ctx, fmt.Errorf("failed to resolve artifact repository: %w", resolveErr))
 			return
 		}
 		woc.wf.Status.ArtifactRepositoryRef = ref
 		woc.updated = true
 	}
 
-	repo, err := woc.controller.artifactRepositories.Get(reconcileCtx, woc.wf.Status.ArtifactRepositoryRef)
-	if err != nil {
-		ctx = woc.markWorkflowError(ctx, fmt.Errorf("failed to get artifact repository: %w", err))
+	repo, repoErr := woc.controller.artifactRepositories.Get(reconcileCtx, woc.wf.Status.ArtifactRepositoryRef)
+	if repoErr != nil {
+		woc.markWorkflowError(ctx, fmt.Errorf("failed to get artifact repository: %w", repoErr))
 		return
 	}
 	woc.artifactRepository = repo
@@ -249,8 +249,8 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 	// Do artifact GC if task result reconciliation is complete.
 	if woc.wf.Status.Fulfilled() {
-		if err := woc.garbageCollectArtifacts(reconcileCtx); err != nil {
-			woc.log.WithError(err).Error(reconcileCtx, "failed to GC artifacts")
+		if gcErr := woc.garbageCollectArtifacts(reconcileCtx); gcErr != nil {
+			woc.log.WithError(gcErr).Error(reconcileCtx, "failed to GC artifacts")
 			return
 		}
 	} else {
@@ -264,12 +264,12 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	// Workflow Level Synchronization lock
 	if woc.execWf.Spec.Synchronization != nil {
 		lockCtx, lockSpan := woc.controller.tracing.StartTryAcquireLock(ctx, "workflow-sync", false)
-		acquired, wfUpdate, msg, failedLockName, err := woc.controller.syncManager.TryAcquire(lockCtx, woc.wf, "", woc.execWf.Spec.Synchronization)
+		acquired, wfUpdate, msg, failedLockName, syncErr := woc.controller.syncManager.TryAcquire(lockCtx, woc.wf, "", woc.execWf.Spec.Synchronization)
 		lockSpan.SetAttributes(attribute.Bool("LockAcquired", acquired))
 		lockSpan.End()
-		if err != nil {
+		if syncErr != nil {
 			woc.log.WithField("lockName", failedLockName).Warn(ctx, "Failed to acquire the lock")
-			woc.markWorkflowFailed(ctx, fmt.Sprintf("Failed to acquire the synchronization lock. %s", err.Error()))
+			woc.markWorkflowFailed(ctx, fmt.Sprintf("Failed to acquire the synchronization lock. %s", syncErr.Error()))
 			return
 		}
 		woc.updated = woc.updated || wfUpdate
@@ -297,9 +297,9 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	}
 
 	if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
-		err := woc.createPDBResource(ctx)
-		if err != nil {
-			woc.log.WithError(err).WithField("workflow", woc.wf.Name).Error(ctx, "PDB creation failed")
+		pdbErr := woc.createPDBResource(ctx)
+		if pdbErr != nil {
+			woc.log.WithError(pdbErr).WithField("workflow", woc.wf.Name).Error(ctx, "PDB creation failed")
 			woc.requeue()
 			return
 		}
@@ -318,16 +318,16 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		woc.wf.Status.EstimatedDuration = woc.estimateWorkflowDuration(ctx)
 	} else {
 		woc.workflowDeadline = woc.getWorkflowDeadline()
-		podReconciliationCompleted, err := woc.podReconciliation(reconcileCtx)
-		if err == nil {
+		podReconciliationCompleted, podReconcErr := woc.podReconciliation(reconcileCtx)
+		if podReconcErr == nil {
 			// Execution control has been applied to the nodes with created pods after pod reconciliation.
 			// However, pending and suspended nodes do not have created pods, and taskset nodes use the agent pod.
 			// Apply execution control to these nodes now since pod reconciliation does not take effect on them.
 			woc.failNodesWithoutCreatedPodsAfterDeadlineOrShutdown(reconcileCtx)
 		}
 
-		if err != nil {
-			woc.log.WithError(err).WithField("workflow", woc.wf.ObjectMeta.Name).Error(reconcileCtx, "workflow timeout")
+		if podReconcErr != nil {
+			woc.log.WithError(podReconcErr).WithField("workflow", woc.wf.ObjectMeta.Name).Error(reconcileCtx, "workflow timeout")
 			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowTimedOut", "Workflow timed out")
 			// TODO: we need to re-add to the workqueue, but should happen in caller
 			return
@@ -396,8 +396,8 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 				woc.markWorkflowError(ctx, x)
 
 				// Garbage collect PVCs if Entrypoint template execution returns error
-				if err := woc.deletePVCs(ctx); err != nil {
-					woc.log.WithError(err).Warn(ctx, "failed to delete PVCs")
+				if deletePVCErr := woc.deletePVCs(ctx); deletePVCErr != nil {
+					woc.log.WithError(deletePVCErr).Warn(ctx, "failed to delete PVCs")
 				}
 			}
 		}
@@ -479,8 +479,8 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 						woc.markWorkflowError(ctx, x)
 
 						// Garbage collect PVCs if Onexit template execution returns error
-						if err := woc.deletePVCs(ctx); err != nil {
-							woc.log.WithError(err).Warn(ctx, "failed to delete PVCs")
+						if deletePVCErr := woc.deletePVCs(ctx); deletePVCErr != nil {
+							woc.log.WithError(deletePVCErr).Warn(ctx, "failed to delete PVCs")
 						}
 					}
 				}
@@ -780,8 +780,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 
 	oldRV := woc.wf.ResourceVersion
 	woc.updateLastSeenVersionAnnotation(oldRV)
-	wf, err := wfClient.Update(ctx, woc.wf, metav1.UpdateOptions{})
-	if err != nil {
+	if wf, err := wfClient.Update(ctx, woc.wf, metav1.UpdateOptions{}); err != nil {
 		woc.log.WithField("error", err).WithField("reason", apierr.ReasonForError(err)).Warn(ctx, "Error updating workflow")
 		if argokubeerr.IsRequestEntityTooLargeErr(err) {
 			woc.persistWorkflowSizeLimitErr(ctx, wfClient, err)
@@ -791,7 +790,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 			return
 		}
 		woc.log.Info(ctx, "Re-applying updates on latest version and retrying update")
-		wf, err := woc.reapplyUpdate(ctx, wfClient, nodes)
+		wf, err = woc.reapplyUpdate(ctx, wfClient, nodes)
 		if err != nil {
 			woc.wf.Labels[common.LabelKeyReApplyFailed] = "true"
 			woc.log.WithError(err).Info(ctx, "Failed to re-apply update")
@@ -838,7 +837,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		}
 	}
 	// If Finalizer exists, requeue to make sure Finalizer can be removed.
-	if woc.wf.Status.Fulfilled() && len(wf.GetFinalizers()) > 0 {
+	if woc.wf.Status.Fulfilled() && len(woc.wf.GetFinalizers()) > 0 {
 		woc.requeueAfter(5 * time.Second)
 	}
 
@@ -942,8 +941,8 @@ func (woc *wfOperationCtx) reapplyUpdate(ctx context.Context, wfClient v1alpha1.
 			return nil, err
 		}
 		for id, node := range woc.wf.Status.Nodes {
-			currNode, err := currWf.Status.Nodes.Get(id)
-			if (err == nil) && currNode.Fulfilled() && node.Phase != currNode.Phase {
+			currNode, nodeErr := currWf.Status.Nodes.Get(id)
+			if (nodeErr == nil) && currNode.Fulfilled() && node.Phase != currNode.Phase {
 				return nil, fmt.Errorf("must never update completed node %s", id)
 			}
 		}
@@ -2048,14 +2047,14 @@ func getRetryNodeChildrenIds(node *wfv1.NodeStatus, nodes wfv1.Nodes) []string {
 	// To resume the traversal, we look at the children of the last child node and of any on exit nodes.
 	var childrenIds []string
 	for i := -1; i >= -len(node.Children); i-- {
-		node := getChildNodeIndex(node, nodes, i)
-		if node == nil {
+		childNode := getChildNodeIndex(node, nodes, i)
+		if childNode == nil {
 			continue
 		}
-		if node.NodeFlag != nil && node.NodeFlag.Hooked {
-			childrenIds = append(childrenIds, node.ID)
-		} else if len(node.Children) > 0 {
-			childrenIds = append(childrenIds, node.Children...)
+		if childNode.NodeFlag != nil && childNode.NodeFlag.Hooked {
+			childrenIds = append(childrenIds, childNode.ID)
+		} else if len(childNode.Children) > 0 {
+			childrenIds = append(childrenIds, childNode.Children...)
 		}
 	}
 	return childrenIds
@@ -2214,20 +2213,20 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	}
 
 	// Check if we exceeded template or workflow parallelism and immediately return if we did
-	if err := woc.checkParallelism(ctx, processedTmpl, node, opts.boundaryID); err != nil {
-		return node, err
+	if parallelismErr := woc.checkParallelism(ctx, processedTmpl, node, opts.boundaryID); parallelismErr != nil {
+		return node, parallelismErr
 	}
 
 	unlockedNode := false
 
 	if processedTmpl.Synchronization != nil {
 		lockCtx, lockSpan := woc.controller.tracing.StartTryAcquireLock(ctx, woc.wf.NodeID(nodeName), false)
-		lockAcquired, wfUpdated, msg, failedLockName, err := woc.controller.syncManager.TryAcquire(lockCtx, woc.wf, woc.wf.NodeID(nodeName), processedTmpl.Synchronization)
+		lockAcquired, wfUpdated, msg, failedLockName, syncErr := woc.controller.syncManager.TryAcquire(lockCtx, woc.wf, woc.wf.NodeID(nodeName), processedTmpl.Synchronization)
 		lockSpan.SetAttributes(attribute.Bool("LockAcquired", lockAcquired))
 		lockSpan.End()
-		if err != nil {
-			errNode := woc.initializeNodeOrMarkError(ctx, node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err)
-			return errNode, err
+		if syncErr != nil {
+			errNode := woc.initializeNodeOrMarkError(ctx, node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, syncErr)
+			return errNode, syncErr
 		}
 		if !lockAcquired {
 			if node == nil {
@@ -2255,26 +2254,24 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		if node == nil || unlockedNode {
 			memoizationCache := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, processedTmpl.Memoize.Cache.ConfigMap.Name)
 			if memoizationCache == nil {
-				err := fmt.Errorf("cache could not be found or created")
-				woc.log.WithFields(logging.Fields{"cacheName": processedTmpl.Memoize.Cache.ConfigMap.Name}).WithError(err)
-				errNode := woc.initializeNodeOrMarkError(ctx, node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err)
-				return errNode, err
+				cacheErr := fmt.Errorf("cache could not be found or created")
+				woc.log.WithFields(logging.Fields{"cacheName": processedTmpl.Memoize.Cache.ConfigMap.Name}).WithError(cacheErr)
+				errNode := woc.initializeNodeOrMarkError(ctx, node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, cacheErr)
+				return errNode, cacheErr
 			}
 
-			entry, err := memoizationCache.Load(ctx, processedTmpl.Memoize.Key)
-			if err != nil {
-				errNode := woc.initializeNodeOrMarkError(ctx, node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err)
-				return errNode, err
+			entry, loadErr := memoizationCache.Load(ctx, processedTmpl.Memoize.Key)
+			if loadErr != nil {
+				return woc.initializeNodeOrMarkError(ctx, node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, loadErr), loadErr
 			}
 
 			hit := entry.Hit()
 			var outputs *wfv1.Outputs
 			if processedTmpl.Memoize.MaxAge != "" {
-				maxAge, err := time.ParseDuration(processedTmpl.Memoize.MaxAge)
-				if err != nil {
-					err := fmt.Errorf("invalid maxAge: %w", err)
-					errNode := woc.initializeNodeOrMarkError(ctx, node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err)
-					return errNode, err
+				maxAge, parseErr := time.ParseDuration(processedTmpl.Memoize.MaxAge)
+				if parseErr != nil {
+					maxAgeErr := fmt.Errorf("invalid maxAge: %w", parseErr)
+					return woc.initializeNodeOrMarkError(ctx, node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, maxAgeErr), maxAgeErr
 				}
 				maxAgeOutputs, ok := entry.GetOutputsWithMaxAge(maxAge)
 				if !ok {
@@ -2346,9 +2343,9 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			opts.nodeFlag = &wfv1.NodeFlag{}
 		}
 		opts.nodeFlag.Retried = true
-		processedRetryParentNode, continueExecution, err := woc.processNodeRetries(ctx, retryParentNode, *woc.retryStrategy(processedTmpl), opts)
-		if err != nil {
-			return woc.markNodeError(ctx, retryNodeName, err), err
+		processedRetryParentNode, continueExecution, retryErr := woc.processNodeRetries(ctx, retryParentNode, *woc.retryStrategy(processedTmpl), opts)
+		if retryErr != nil {
+			return woc.markNodeError(ctx, retryNodeName, retryErr), retryErr
 		} else if !continueExecution {
 			// We are still waiting for a retry delay to finish
 			return retryParentNode, nil
@@ -2377,8 +2374,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			if processedTmpl.Synchronization != nil {
 				woc.controller.syncManager.Release(ctx, woc.wf, node.ID, processedTmpl.Synchronization)
 			}
-			_, lastChildNode := getChildNodeIdsAndLastRetriedNode(retryParentNode, woc.wf.Status.Nodes)
-			if lastChildNode != nil {
+			if _, lastChild := getChildNodeIdsAndLastRetriedNode(retryParentNode, woc.wf.Status.Nodes); lastChild != nil {
 				retryParentNode.Outputs = lastChildNode.Outputs.DeepCopy()
 				woc.wf.Status.Nodes.Set(ctx, node.ID, *retryParentNode)
 			}
@@ -2493,23 +2489,23 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		woc.controller.syncManager.Release(ctx, woc.wf, node.ID, processedTmpl.Synchronization)
 	}
 
-	retrieveNode, err := woc.wf.GetNodeByName(node.Name)
-	if err != nil {
-		err := fmt.Errorf("no Node found by the name of %s;  wf.Status.Nodes=%+v", node.Name, woc.wf.Status.Nodes)
-		woc.log.Error(ctx, err.Error())
-		woc.markWorkflowError(ctx, err)
-		return node, err
+	retrieveNode, retrieveErr := woc.wf.GetNodeByName(node.Name)
+	if retrieveErr != nil {
+		nodeErr := fmt.Errorf("no Node found by the name of %s;  wf.Status.Nodes=%+v", node.Name, woc.wf.Status.Nodes)
+		woc.log.Error(ctx, nodeErr.Error())
+		woc.markWorkflowError(ctx, nodeErr)
+		return node, nodeErr
 	}
 	node = retrieveNode
 
 	// Swap the node back to retry node
 	if retryNodeName != "" {
-		retryNode, err := woc.wf.GetNodeByName(retryNodeName)
-		if err != nil {
-			err := fmt.Errorf("no Retry Node found by the name of %s;  wf.Status.Nodes=%+v", retryNodeName, woc.wf.Status.Nodes)
-			woc.log.Error(ctx, err.Error())
-			woc.markWorkflowError(ctx, err)
-			return node, err
+		retryNode, getErr := woc.wf.GetNodeByName(retryNodeName)
+		if getErr != nil {
+			retryErr := fmt.Errorf("no Retry Node found by the name of %s;  wf.Status.Nodes=%+v", retryNodeName, woc.wf.Status.Nodes)
+			woc.log.Error(ctx, retryErr.Error())
+			woc.markWorkflowError(ctx, retryErr)
+			return node, retryErr
 		}
 
 		if !retryNode.Phase.Fulfilled(retryNode.TaskResultSynced) && node.Phase.Fulfilled(node.TaskResultSynced) { // if the retry child has completed we need to update the parent's status
@@ -3790,16 +3786,16 @@ func (woc *wfOperationCtx) executeResource(ctx context.Context, nodeName string,
 
 	if tmpl.Resource.SetOwnerReference {
 		obj := unstructured.Unstructured{}
-		err := yaml.Unmarshal([]byte(tmpl.Resource.Manifest), &obj)
-		if err != nil {
-			return node, err
+		unmarshalErr := yaml.Unmarshal([]byte(tmpl.Resource.Manifest), &obj)
+		if unmarshalErr != nil {
+			return node, unmarshalErr
 		}
 
 		ownerReferences := obj.GetOwnerReferences()
 		obj.SetOwnerReferences(append(ownerReferences, *metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind))))
-		bytes, err := yaml.Marshal(obj.Object)
-		if err != nil {
-			return node, err
+		bytes, marshalErr := yaml.Marshal(obj.Object)
+		if marshalErr != nil {
+			return node, marshalErr
 		}
 		tmpl.Resource.Manifest = string(bytes)
 	}
@@ -3850,10 +3846,6 @@ func (woc *wfOperationCtx) executeSuspend(ctx context.Context, nodeName string, 
 	var requeueTime *time.Time
 
 	if tmpl.Suspend.Duration != "" {
-		node, err := woc.wf.GetNodeByName(nodeName)
-		if err != nil {
-			return nil, err
-		}
 		suspendDuration, err := wfv1.ParseStringToDuration(tmpl.Suspend.Duration)
 		if err != nil {
 			return node, err

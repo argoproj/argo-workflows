@@ -234,13 +234,13 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 	}
 
 	defer func() {
-		node, err := woc.wf.Status.Nodes.Get(node.ID)
-		if err != nil {
+		deferNode, nodeErr := woc.wf.Status.Nodes.Get(node.ID)
+		if nodeErr != nil {
 			// CRITICAL ERROR IF THIS BRANCH IS REACHED -> PANIC
 			panic(fmt.Sprintf("expected node for %s due to preceded initializeExecutableNode but couldn't find it", node.ID))
 		}
-		if node.Fulfilled() {
-			woc.killDaemonedChildren(ctx, node.ID)
+		if deferNode.Fulfilled() {
+			woc.killDaemonedChildren(ctx, deferNode.ID)
 		}
 	}()
 
@@ -290,22 +290,23 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 
 		if taskNode != nil {
 			task := dagCtx.GetTask(ctx, taskName)
-			scope, err := woc.buildLocalScopeFromTask(ctx, dagCtx, task)
-			if err != nil {
-				woc.markNodeError(ctx, node.Name, err)
-				return node, err
+			scope, scopeErr := woc.buildLocalScopeFromTask(ctx, dagCtx, task)
+			if scopeErr != nil {
+				woc.markNodeError(ctx, node.Name, scopeErr)
+				return node, scopeErr
 			}
 			scope.addParamToScope(fmt.Sprintf("tasks.%s.status", task.Name), string(taskNode.Phase))
-			_, err = woc.executeTmplLifeCycleHook(ctx, scope, dagCtx.GetTask(ctx, taskName).Hooks, taskNode, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName)
-			if err != nil {
-				woc.markNodeError(ctx, node.Name, err)
-				return node, err
+			var hookErr error
+			_, hookErr = woc.executeTmplLifeCycleHook(ctx, scope, dagCtx.GetTask(ctx, taskName).Hooks, taskNode, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName)
+			if hookErr != nil {
+				woc.markNodeError(ctx, node.Name, hookErr)
+				return node, hookErr
 			}
 			if taskNode.Fulfilled() {
 				if taskNode.Completed() {
-					hasOnExitNode, onExitNode, err := woc.runOnExitNode(ctx, dagCtx.GetTask(ctx, taskName).GetExitHook(woc.execWf.Spec.Arguments), taskNode, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName, scope)
-					if err != nil {
-						return node, err
+					hasOnExitNode, onExitNode, exitErr := woc.runOnExitNode(ctx, dagCtx.GetTask(ctx, taskName).GetExitHook(woc.execWf.Spec.Arguments), taskNode, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName, scope)
+					if exitErr != nil {
+						return node, exitErr
 					}
 					if hasOnExitNode && (onExitNode == nil || !onExitNode.Fulfilled()) {
 						onExitCompleted = false
@@ -347,17 +348,17 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 		if taskNode.Type == wfv1.NodeTypeTaskGroup {
 			childNodes := make([]wfv1.NodeStatus, len(taskNode.Children))
 			for i, childID := range taskNode.Children {
-				childNode, err := woc.wf.Status.Nodes.Get(childID)
-				if err != nil {
+				childNode, childErr := woc.wf.Status.Nodes.Get(childID)
+				if childErr != nil {
 					woc.log.WithField("nodeID", childID).Error(ctx, "was unable to obtain node for nodeID")
 					return nil, fmt.Errorf("critical error; unable to find %s", childID)
 				}
 				childNodes[i] = *childNode
 			}
-			err := woc.processAggregateNodeOutputs(scope, prefix, childNodes)
-			if err != nil {
+			aggErr := woc.processAggregateNodeOutputs(scope, prefix, childNodes)
+			if aggErr != nil {
 				woc.log.Error(ctx, "unable to processAggregateNodeOutputs")
-				return nil, argoerrors.InternalWrapError(err)
+				return nil, argoerrors.InternalWrapError(aggErr)
 			}
 		}
 		woc.buildLocalScope(scope, prefix, taskNode)
@@ -379,9 +380,9 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 	}
 	if node.MemoizationStatus != nil {
 		c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, node.MemoizationStatus.CacheName)
-		err := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs)
-		if err != nil {
-			woc.log.WithField("nodeID", node.ID).WithError(err).Error(ctx, "Failed to save node outputs to cache")
+		saveErr := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs)
+		if saveErr != nil {
+			woc.log.WithField("nodeID", node.ID).WithError(saveErr).Error(ctx, "Failed to save node outputs to cache")
 			node.Phase = wfv1.NodeError
 		}
 	}
@@ -519,12 +520,12 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 				depNode := dagCtx.getTaskNode(ctx, depName)
 				outboundNodeIDs := woc.getOutboundNodes(ctx, depNode.ID)
 				for _, outNodeID := range outboundNodeIDs {
-					nodeName, err := woc.wf.Status.Nodes.GetName(outNodeID)
+					outNodeName, err := woc.wf.Status.Nodes.GetName(outNodeID)
 					if err != nil {
 						woc.log.WithField("nodeID", outNodeID).Error(ctx, "was unable to obtain node for nodeID")
 						return
 					}
-					woc.addChildNode(ctx, nodeName, taskNodeName)
+					woc.addChildNode(ctx, outNodeName, taskNodeName)
 				}
 			}
 		}
@@ -601,9 +602,9 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 			connectDependencies(taskNodeName)
 
 			// Check the task's when clause to decide if it should execute
-			proceed, err := shouldExecute(t.When)
-			if err != nil {
-				_, _ = woc.initializeNode(ctx, taskNodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, &wfv1.NodeFlag{}, true, err.Error())
+			proceed, whenErr := shouldExecute(t.When)
+			if whenErr != nil {
+				_, _ = woc.initializeNode(ctx, taskNodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, &wfv1.NodeFlag{}, true, whenErr.Error())
 				continue
 			}
 			if !proceed {

@@ -41,9 +41,9 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 			return err
 		}
 		if wfc.session == nil {
-			session, dbType, err := sqldb.CreateDBSession(ctx, wfc.kubeclientset, wfc.namespace, persistence.DBConfig)
-			if err != nil {
-				return err
+			session, dbType, sessionErr := sqldb.CreateDBSession(ctx, wfc.kubeclientset, wfc.namespace, persistence.DBConfig)
+			if sessionErr != nil {
+				return sessionErr
 			}
 			logger.Info(ctx, "Persistence Session created successfully")
 			wfc.session = session

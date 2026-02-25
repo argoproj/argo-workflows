@@ -182,9 +182,9 @@ func (woc *cronWfOperationCtx) patch(ctx context.Context, patch map[string]any) 
 		return
 	}
 	err = waitutil.Backoff(retry.DefaultRetry(ctx), func() (bool, error) {
-		cronWf, err := woc.cronWfIf.Patch(ctx, woc.cronWf.Name, types.MergePatchType, data, v1.PatchOptions{})
-		if err != nil {
-			return !errorsutil.IsTransientErr(ctx, err), err
+		cronWf, patchErr := woc.cronWfIf.Patch(ctx, woc.cronWf.Name, types.MergePatchType, data, v1.PatchOptions{})
+		if patchErr != nil {
+			return !errorsutil.IsTransientErr(ctx, patchErr), patchErr
 		}
 		woc.cronWf = cronWf
 		return true, nil

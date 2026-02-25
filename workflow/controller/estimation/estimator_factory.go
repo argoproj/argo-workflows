@@ -69,9 +69,9 @@ func (f *estimatorFactory) NewEstimator(ctx context.Context, wf *wfv1.Workflow) 
 				}
 			}
 			if newestUn != nil {
-				newestWf, err := util.FromUnstructured(newestUn)
-				if err != nil {
-					return defaultEstimator, fmt.Errorf("failed convert unstructured to workflow: %w", err)
+				newestWf, convErr := util.FromUnstructured(newestUn)
+				if convErr != nil {
+					return defaultEstimator, fmt.Errorf("failed convert unstructured to workflow: %w", convErr)
 				}
 				err = f.hydrator.Hydrate(ctx, newestWf)
 				if err != nil {

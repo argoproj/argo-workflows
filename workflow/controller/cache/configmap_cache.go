@@ -173,9 +173,9 @@ func (c *configMapCache) save(ctx context.Context, key string, nodeID string, va
 			return fmt.Errorf("could not save to config map cache: %w", err)
 		}
 	} else {
-		err := c.validateConfigmap(ctx, cache)
-		if err != nil {
-			return err
+		validateErr := c.validateConfigmap(ctx, cache)
+		if validateErr != nil {
+			return validateErr
 		}
 	}
 
