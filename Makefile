@@ -232,6 +232,7 @@ GENERATED_DOCS := docs/fields.md docs/cli/argo.md docs/workflow-controller-confi
 define protoc
 	# protoc $(1)
     [ -e ./vendor ] || go mod vendor
+    [ -e ./v4 ] || ln -s . v4
     protoc \
       -I /usr/local/include \
       -I $(CURDIR) \
@@ -243,7 +244,7 @@ define protoc
       --grpc-gateway_out=logtostderr=true:$(GOPATH)/src \
       --swagger_out=logtostderr=true,fqn_for_swagger_name=true:. \
       $(1)
-    perl -i -pe 's|argoproj/argo-workflows/|argoproj/argo-workflows/v4/|g' `echo "$(1)" | sed 's/proto/pb.go/g'`
+    perl -i -pe 's|argoproj/argo-workflows/(?!v\d+/)|argoproj/argo-workflows/v4/|g' `echo "$(1)" | sed 's/proto/pb.go/g'`
 
 endef
 
