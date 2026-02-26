@@ -517,6 +517,10 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 			// Otherwise, add all outbound nodes of our dependencies as parents to this node
 			for _, depName := range taskDependencies {
 				depNode := dagCtx.getTaskNode(ctx, depName)
+				if depNode == nil {
+					// Dependency node may not exist yet due to short-circuit evaluation
+					continue
+				}
 				outboundNodeIDs := woc.getOutboundNodes(ctx, depNode.ID)
 				for _, outNodeID := range outboundNodeIDs {
 					nodeName, err := woc.wf.Status.Nodes.GetName(outNodeID)
@@ -675,7 +679,8 @@ func (woc *wfOperationCtx) buildLocalScopeFromTask(ctx context.Context, dagCtx *
 	for _, ancestor := range ancestors {
 		ancestorNode := dagCtx.getTaskNode(ctx, ancestor)
 		if ancestorNode == nil {
-			return nil, argoerrors.InternalErrorf("Ancestor task node %s not found", ancestor)
+			// Ancestor node may not exist yet due to short-circuit evaluation
+			continue
 		}
 		prefix := fmt.Sprintf("tasks.%s", ancestor)
 		if ancestorNode.Type == wfv1.NodeTypeTaskGroup {
@@ -875,15 +880,16 @@ func (d *dagContext) evaluateDependsLogic(ctx context.Context, taskName string) 
 	}
 
 	evalScope := make(map[string]TaskResults)
+	var pendingDeps []string
 
-	for _, taskName := range d.GetTaskDependencies(ctx, taskName) {
-		// If the task is still running, we should not proceed.
-		depNode := d.getTaskNode(ctx, taskName)
+	for _, depName := range d.GetTaskDependencies(ctx, taskName) {
+		depNode := d.getTaskNode(ctx, depName)
 		if depNode == nil || !depNode.Fulfilled() || !common.CheckAllHooksFullfilled(depNode, d.wf.Status.Nodes) {
-			return false, false, nil
+			pendingDeps = append(pendingDeps, depName)
+			continue
 		}
 
-		evalTaskName := strings.ReplaceAll(taskName, "-", "_")
+		evalTaskName := strings.ReplaceAll(depName, "-", "_")
 		if _, ok := evalScope[evalTaskName]; ok {
 			continue
 		}
@@ -919,9 +925,59 @@ func (d *dagContext) evaluateDependsLogic(ctx context.Context, taskName string) 
 	}
 
 	evalLogic := strings.ReplaceAll(d.GetTaskDependsLogic(ctx, taskName), "-", "_")
-	execute, err := argoexpr.EvalBool(evalLogic, evalScope)
+
+	// If there are no pending dependencies, evaluate normally
+	if len(pendingDeps) == 0 {
+		execute, err := argoexpr.EvalBool(evalLogic, evalScope)
+		if err != nil {
+			return false, false, fmt.Errorf("unable to evaluate expression '%s': %w", evalLogic, err)
+		}
+		return execute, true, nil
+	}
+
+	// Short-circuit evaluation: attempt to determine the result without waiting for all dependencies.
+	// We evaluate the expression twice with boundary values for pending dependencies:
+	// 1. All pending deps' results set to false (no result achieved yet)
+	// 2. All pending deps' results set to true (every possible result achieved)
+	// If both evaluations agree, the result is determined regardless of what pending deps resolve to.
+	allFalseScope := copyEvalScope(evalScope)
+	allTrueScope := copyEvalScope(evalScope)
+	for _, dep := range pendingDeps {
+		evalTaskName := strings.ReplaceAll(dep, "-", "_")
+		allFalseScope[evalTaskName] = TaskResults{}
+		allTrueScope[evalTaskName] = TaskResults{
+			Succeeded: true, Failed: true, Errored: true,
+			Skipped: true, Omitted: true, Daemoned: true,
+			AnySucceeded: true, AllFailed: true,
+		}
+	}
+
+	allFalseResult, err := argoexpr.EvalBool(evalLogic, allFalseScope)
 	if err != nil {
 		return false, false, fmt.Errorf("unable to evaluate expression '%s': %w", evalLogic, err)
 	}
-	return execute, true, nil
+	allTrueResult, err := argoexpr.EvalBool(evalLogic, allTrueScope)
+	if err != nil {
+		return false, false, fmt.Errorf("unable to evaluate expression '%s': %w", evalLogic, err)
+	}
+
+	// If both boundary evaluations agree, the expression result is determined
+	if allFalseResult && allTrueResult {
+		return true, true, nil
+	}
+	if !allFalseResult && !allTrueResult {
+		return false, true, nil
+	}
+
+	// The result depends on pending dependencies, we cannot short-circuit
+	return false, false, nil
+}
+
+// copyEvalScope creates a shallow copy of an eval scope map.
+func copyEvalScope(scope map[string]TaskResults) map[string]TaskResults {
+	result := make(map[string]TaskResults, len(scope))
+	for k, v := range scope {
+		result[k] = v
+	}
+	return result
 }
