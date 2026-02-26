@@ -15,7 +15,7 @@ const (
 // Migrate runs the migrations
 func Migrate(ctx context.Context, session db.Session, clusterName, tableName string) (err error) {
 	dbType := sqldb.DBTypeFor(session)
-	return sqldb.Migrate(ctx, session, versionTable, []sqldb.Change{
+	return sqldb.Migrate(ctx, session, dbType, versionTable, []sqldb.Change{
 		sqldb.AnsiSQLChange(`create table if not exists ` + tableName + ` (
     id varchar(128) ,
     name varchar(256),

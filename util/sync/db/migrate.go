@@ -11,7 +11,7 @@ const (
 )
 
 func migrate(ctx context.Context, sessionProxy *sqldb.SessionProxy, config *DBConfig) (err error) {
-	return sqldb.Migrate(ctx, sessionProxy.Session(), versionTable, []sqldb.Change{
+	return sqldb.Migrate(ctx, sessionProxy.Session(), sqldb.DBTypeFor(sessionProxy.Session()), versionTable, []sqldb.Change{
 		sqldb.AnsiSQLChange(`create table if not exists ` + config.LimitTable + ` (
     name varchar(256) not null,
     sizelimit int,

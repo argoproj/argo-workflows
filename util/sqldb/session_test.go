@@ -14,8 +14,8 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"github.com/upper/db/v4"
 
-	"github.com/argoproj/argo-workflows/v3/config"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/config"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 const (

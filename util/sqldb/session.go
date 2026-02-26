@@ -14,8 +14,8 @@ import (
 	"github.com/upper/db/v4"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/argoproj/argo-workflows/v3/config"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/config"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 // SessionProxy is a wrapper for upperdb sessions that provides automatic reconnection
@@ -158,10 +158,10 @@ func (sp *SessionProxy) connect(ctx context.Context) error {
 	switch {
 	case sp.kubectlConfig != nil && sp.namespace != "" && sp.dbConfig != nil:
 		// Use Kubernetes secrets for authentication
-		sess, err = CreateDBSession(ctx, sp.kubectlConfig, sp.namespace, *sp.dbConfig)
+		sess, _, err = CreateDBSession(ctx, sp.kubectlConfig, sp.namespace, *sp.dbConfig)
 	case sp.username != "" && sp.password != "" && sp.dbConfig != nil:
 		// Use direct credentials
-		sess, err = CreateDBSessionWithCreds(*sp.dbConfig, sp.username, sp.password)
+		sess, _, err = CreateDBSessionWithCreds(*sp.dbConfig, sp.username, sp.password)
 	default:
 		return fmt.Errorf("insufficient authentication information provided")
 	}
