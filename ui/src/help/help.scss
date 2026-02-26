@@ -1,19 +1,31 @@
 @import 'node_modules/argo-ui/src/styles/config';
+@import 'node_modules/argo-ui/src/styles/theme';
 
 .help-box {
     min-height: 530px;
     margin: 30px 10px;
     padding: 80px 40px;
     text-align: center;
-    background-color: #fff;
-    box-shadow: 0 0 3px rgba(#000,.3);
+
+    @include themify($themes) {
+        background-color: themed('background-2');
+        box-shadow: 0 0 3px themed('shadow');
+    }
 
     &__ico {
         width: 180px;
         height: 180px;
         margin: 0 auto;
         background-size: 100%;
-        opacity: .5;
+
+        .theme-light & {
+            opacity: .5;
+        }
+
+        .theme-dark & {
+            opacity: .7;
+            filter: invert(1);
+        }
 
         &--manual {
             background-image: url('assets/images/User-Manual-200.png');
@@ -37,6 +49,10 @@
     h3 {
         margin: 40px 0 60px;
         font-size: 22px;
+
+        @include themify($themes) {
+            color: themed('text-1');
+        }
     }
 
     a {

@@ -1,15 +1,19 @@
 @import 'node_modules/argo-ui/src/styles/config';
+@import 'node_modules/argo-ui/src/styles/theme';
 
 .wf-summary-container {
-    color:  $argo-color-gray-6;
     padding: 5px 0px;
     overflow: visible;
     position: relative;
     border-radius: 5px;
-    box-shadow: 1px 1px 3px #8fa4b1;
     padding: 0 1em 0.75em 1em;
     margin: 12px 0;
-    background-color: white;
+
+    @include themify($themes) {
+        color: themed('text-1');
+        box-shadow: 1px 1px 3px themed('shadow');
+        background-color: themed('background-2');
+    }
 
     &__title {
         width: 100%;
@@ -20,8 +24,11 @@
         border: 0;
         margin: 0;
         margin-top: 1em;
-        color: #6d7f8b;
         text-transform: uppercase;
+
+        @include themify($themes) {
+            color: themed('light-argo-gray-6');
+        }
     }
 
     &__text{

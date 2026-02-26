@@ -1,4 +1,5 @@
 @import 'node_modules/argo-ui/src/styles/config';
+@import 'node_modules/argo-ui/src/styles/theme';
 @import 'node_modules/@fortawesome/fontawesome-free/scss/variables';
 @import 'node_modules/@fortawesome/fontawesome-free/scss/mixins';
 
@@ -7,18 +8,27 @@
   margin: 10px;
   padding: 10px;
   display: inline-block;
-  background-color: white;
-  box-shadow: 1px 1px 3px $argo-color-gray-5;
+
+  @include themify($themes) {
+    background-color: themed('background-2');
+    box-shadow: 1px 1px 3px themed('shadow');
+  }
 
   a {
     padding: 10px;
-    color: $argo-color-gray-6;
+
+    @include themify($themes) {
+      color: themed('light-argo-gray-6');
+    }
 
     &.active {
-      background-color: $argo-color-gray-3;
-      border: 1px solid $argo-color-gray-4;
       border-radius: 5px;
       cursor: default;
+
+      @include themify($themes) {
+        background-color: themed('background-1');
+        border: 1px solid themed('border');
+      }
     }
   }
 }
@@ -41,6 +51,10 @@
     text-anchor: middle;
     font-family: sans-serif;
     text-rendering: optimizeLegibility;
+
+    @include themify($themes) {
+      fill: themed('text-1');
+    }
   }
 
   .node {

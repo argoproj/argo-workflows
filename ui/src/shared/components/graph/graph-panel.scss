@@ -1,4 +1,5 @@
 @import 'node_modules/argo-ui/src/styles/config';
+@import 'node_modules/argo-ui/src/styles/theme';
 
 @keyframes pulse {
   0% {
@@ -33,19 +34,27 @@
   margin: 10px;
   padding: 10px;
   display: inline-block;
-  background-color: white;
-  box-shadow: 1px 1px 3px $argo-color-gray-5;
   position: fixed;
+
+  @include themify($themes) {
+    background-color: themed('background-2');
+    box-shadow: 1px 1px 3px themed('shadow');
+  }
 
   div.argo-dropdown, a {
     padding: 5px;
-    color: $argo-color-gray-6;
     border: 1px solid transparent;
     border-radius: 5px;
 
+    @include themify($themes) {
+      color: themed('light-argo-gray-6');
+    }
+
     &.active {
-      background-color: $argo-color-gray-3;
-      border: 1px solid $argo-color-gray-4;
+      @include themify($themes) {
+        background-color: themed('background-1');
+        border: 1px solid themed('border');
+      }
     }
   }
 }
@@ -67,7 +76,9 @@
     dominant-baseline: central;
 
     &.node-label {
-      fill: $argo-color-gray-8;
+      @include themify($themes) {
+        fill: themed('text-2');
+      }
     }
   }
 
@@ -138,7 +149,9 @@
 
   .edge {
     text {
-      fill: $argo-color-gray-8;
+      @include themify($themes) {
+        fill: themed('text-2');
+      }
     }
 
     .line {

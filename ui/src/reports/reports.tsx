@@ -17,6 +17,7 @@ import {Footnote} from '../shared/footnote';
 import {historyUrl} from '../shared/history';
 import * as nsUtils from '../shared/namespaces';
 import {services} from '../shared/services';
+import {useThemeContext} from '../shared/theme-context';
 import {useCollectEvent} from '../shared/use-collect-event';
 import {ReportFilters} from './reports-filters';
 import {workflowsToChartData} from './workflows-to-chart-data';
@@ -31,6 +32,8 @@ const limit = 100;
 export function Reports({match, location, history}: RouteComponentProps<any>) {
     const queryParams = new URLSearchParams(location.search);
     const {navigation} = useContext(Context);
+    const {resolvedTheme} = useThemeContext();
+    const chartFontColor = resolvedTheme === 'dark' ? '#e0e0e0' : '#666';
 
     // state for URL, query, and label parameters
     const isFirstRender = useRef(true);
@@ -70,14 +73,14 @@ export function Reports({match, location, history}: RouteComponentProps<any>) {
                     'items.status.finishedAt',
                     'items.status.resourcesDuration'
                 ]);
-                const newCharts = workflowsToChartData(list.items || [], limit);
+                const newCharts = workflowsToChartData(list.items || [], limit, chartFontColor);
                 setCharts(newCharts);
                 setError(null);
             } catch (newError) {
                 setError(newError);
             }
         })();
-    }, [namespace, labels.toString()]); // referential equality, so use values, not refs
+    }, [namespace, labels.toString(), chartFontColor]); // referential equality, so use values, not refs
 
     useCollectEvent('openedReports');
 
