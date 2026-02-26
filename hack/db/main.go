@@ -20,7 +20,10 @@ import (
 	utilsqldb "github.com/argoproj/argo-workflows/v4/util/sqldb"
 )
 
-var session db.Session
+var (
+	session db.Session
+	dbType  utilsqldb.DBType
+)
 
 func main() {
 	var dsn string
@@ -29,7 +32,7 @@ func main() {
 		Short: "CLI for developers to use when working on the DB locally",
 	}
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) (err error) {
-		session, err = createDBSession(dsn)
+		session, dbType, err = createDBSession(dsn)
 		if err != nil {
 			return err
 		}
@@ -50,7 +53,7 @@ func NewMigrateCommand() *cobra.Command {
 		Use:   "migrate",
 		Short: "Force DB migration for given cluster/table",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return persistsqldb.Migrate(cmd.Context(), session, cluster, table)
+			return persistsqldb.Migrate(cmd.Context(), session, cluster, table, dbType)
 		},
 	}
 	migrationCmd.Flags().StringVar(&cluster, "cluster", "default", "Cluster name")
@@ -94,27 +97,27 @@ func NewFakeDataCommand() *cobra.Command {
 	return fakeDataCmd
 }
 
-func createDBSession(dsn string) (db.Session, error) {
+func createDBSession(dsn string) (db.Session, utilsqldb.DBType, error) {
 	if strings.HasPrefix(dsn, "postgres") {
 		url, err := postgresqladp.ParseURL(dsn)
 		if err != nil {
-			return nil, err
+			return nil, utilsqldb.Invalid, err
 		}
 		session, err := postgresqladp.Open(url)
 		if err != nil {
-			return nil, err
+			return nil, utilsqldb.Invalid, err
 		}
-		return session, err
+		return session, utilsqldb.Postgres, nil
 	} else {
 		url, err := mysqladp.ParseURL(dsn)
 		if err != nil {
-			return nil, err
+			return nil, utilsqldb.Invalid, err
 		}
 		session, err := mysqladp.Open(url)
 		if err != nil {
-			return nil, err
+			return nil, utilsqldb.Invalid, err
 		}
-		return session, err
+		return session, utilsqldb.MySQL, nil
 	}
 }
 

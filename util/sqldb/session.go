@@ -27,6 +27,7 @@ type SessionProxy struct {
 	dbConfig      *config.DBConfig
 	username      string
 	password      string
+	dbType        DBType
 
 	// Current session and state
 	sess   db.Session
@@ -72,12 +73,14 @@ func validateProxyParams(proxy *SessionProxy) error {
 
 // NewSessionProxy creates a new SessionProxy with the given configuration
 func NewSessionProxy(ctx context.Context, config SessionProxyConfig) (*SessionProxy, error) {
+	dbType := dbTypeFromConfig(&config.DBConfig)
 	proxy := &SessionProxy{
 		kubectlConfig: config.KubectlConfig,
 		namespace:     config.Namespace,
 		dbConfig:      &config.DBConfig,
 		username:      config.Username,
 		password:      config.Password,
+		dbType:        dbType,
 		maxRetries:    config.MaxRetries,
 		baseDelay:     config.BaseDelay,
 		maxDelay:      config.MaxDelay,
@@ -126,6 +129,7 @@ func NewSessionProxyFromSession(sess db.Session, dbConfig *config.DBConfig, user
 		dbConfig:      dbConfig,
 		username:      username,
 		password:      password,
+		dbType:        dbTypeFromConfig(dbConfig),
 		maxRetries:    5,
 		baseDelay:     100 * time.Millisecond,
 		maxDelay:      30 * time.Second,
@@ -133,20 +137,51 @@ func NewSessionProxyFromSession(sess db.Session, dbConfig *config.DBConfig, user
 	}
 }
 
+// DBType returns the database type for this session proxy.
+func (sp *SessionProxy) DBType() DBType {
+	return sp.dbType
+}
+
 // Tx marks the sessionproxy as being part of a transaction.
 // This ensures we do not retry/reconnect
 func (sp *SessionProxy) Tx() *SessionProxy {
-	s := SessionProxy{sp.kubectlConfig, sp.namespace, sp.dbConfig, sp.username, sp.password, sp.Session(), sync.RWMutex{}, sp.closed, sp.maxRetries, sp.baseDelay, sp.maxDelay, sp.retryMultiple, sp.insideTransaction}
-	s.insideTransaction = true
-	return &s
+	return &SessionProxy{
+		kubectlConfig:     sp.kubectlConfig,
+		namespace:         sp.namespace,
+		dbConfig:          sp.dbConfig,
+		username:          sp.username,
+		password:          sp.password,
+		dbType:            sp.dbType,
+		sess:              sp.Session(),
+		closed:            sp.closed,
+		maxRetries:        sp.maxRetries,
+		baseDelay:         sp.baseDelay,
+		maxDelay:          sp.maxDelay,
+		retryMultiple:     sp.retryMultiple,
+		insideTransaction: true,
+	}
 }
 
 // TxWith runs a With transaction
 func (sp *SessionProxy) TxWith(ctx context.Context, fn func(*SessionProxy) error, opts *sql.TxOptions) error {
 	return sp.With(ctx, func(s db.Session) error {
 		return s.TxContext(ctx, func(sess db.Session) error {
-			newSp := SessionProxy{sp.kubectlConfig, sp.namespace, sp.dbConfig, sp.username, sp.password, sess, sync.RWMutex{}, sp.closed, sp.maxRetries, sp.baseDelay, sp.maxDelay, sp.retryMultiple, true}
-			return fn(&newSp)
+			newSp := &SessionProxy{
+				kubectlConfig:     sp.kubectlConfig,
+				namespace:         sp.namespace,
+				dbConfig:          sp.dbConfig,
+				username:          sp.username,
+				password:          sp.password,
+				dbType:            sp.dbType,
+				sess:              sess,
+				closed:            sp.closed,
+				maxRetries:        sp.maxRetries,
+				baseDelay:         sp.baseDelay,
+				maxDelay:          sp.maxDelay,
+				retryMultiple:     sp.retryMultiple,
+				insideTransaction: true,
+			}
+			return fn(newSp)
 		}, opts)
 	})
 }

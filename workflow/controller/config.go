@@ -103,7 +103,7 @@ func (wfc *WorkflowController) initDB(ctx context.Context) error {
 		return err
 	}
 
-	return persist.Migrate(ctx, wfc.sessionProxy.Session(), persistence.GetClusterName(), tableName)
+	return persist.Migrate(ctx, wfc.sessionProxy.Session(), persistence.GetClusterName(), tableName, wfc.sessionProxy.DBType())
 }
 
 func (wfc *WorkflowController) newRateLimiter() *rate.Limiter {
