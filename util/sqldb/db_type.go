@@ -1,6 +1,6 @@
 package sqldb
 
-import "github.com/upper/db/v4"
+import "github.com/argoproj/argo-workflows/v4/config"
 
 type DBType string
 
@@ -11,23 +11,23 @@ const (
 	Invalid  DBType = "invalid"
 )
 
-// DBTypeFor returns the DBType for a given database session by inspecting its adapter name.
-func DBTypeFor(session db.Session) DBType {
-	switch session.Name() {
-	case "postgresql":
-		return Postgres
-	case "mysql":
-		return MySQL
-	case "sqlite3":
-		return SQLite
-	default:
-		return Invalid
-	}
-}
-
 func (t DBType) IntType() string {
 	if t == MySQL {
 		return "signed"
 	}
 	return "int"
+}
+
+// dbTypeFromConfig determines the DBType from a DBConfig.
+func dbTypeFromConfig(cfg *config.DBConfig) DBType {
+	if cfg == nil {
+		return Invalid
+	}
+	if cfg.PostgreSQL != nil {
+		return Postgres
+	}
+	if cfg.MySQL != nil {
+		return MySQL
+	}
+	return Invalid
 }

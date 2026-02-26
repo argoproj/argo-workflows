@@ -103,7 +103,7 @@ func (r *workflowArchive) IsEnabled() bool {
 
 // NewWorkflowArchive returns a new workflowArchive
 func NewWorkflowArchive(sessionProxy *sqldb.SessionProxy, clusterName, managedNamespace string, instanceIDService instanceid.Service) WorkflowArchive {
-	return &workflowArchive{sessionProxy: sessionProxy, clusterName: clusterName, managedNamespace: managedNamespace, instanceIDService: instanceIDService, dbType: sqldb.DBTypeFor(sessionProxy.Session())}
+	return &workflowArchive{sessionProxy: sessionProxy, clusterName: clusterName, managedNamespace: managedNamespace, instanceIDService: instanceIDService, dbType: sessionProxy.DBType()}
 }
 
 func (r *workflowArchive) ArchiveWorkflow(ctx context.Context, wf *wfv1.Workflow) error {
