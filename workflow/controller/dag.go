@@ -3,12 +3,13 @@ package controller
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v4/errors"
+	argoerrors "github.com/argoproj/argo-workflows/v4/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/expr/argoexpr"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
@@ -357,7 +358,7 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 			err := woc.processAggregateNodeOutputs(scope, prefix, childNodes)
 			if err != nil {
 				woc.log.Error(ctx, "unable to processAggregateNodeOutputs")
-				return nil, errors.InternalWrapError(err)
+				return nil, argoerrors.InternalWrapError(err)
 			}
 		}
 		woc.buildLocalScope(scope, prefix, taskNode)
@@ -557,6 +558,9 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 	// First resolve/substitute params/artifacts from our dependencies
 	newTask, err := woc.resolveDependencyReferences(ctx, dagCtx, task)
 	if err != nil {
+		if errors.Is(err, ErrRequeue) {
+			return
+		}
 		woc.initializeNode(ctx, nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, &wfv1.NodeFlag{}, true, err.Error())
 		connectDependencies(nodeName)
 		return
@@ -673,7 +677,7 @@ func (woc *wfOperationCtx) buildLocalScopeFromTask(ctx context.Context, dagCtx *
 	for _, ancestor := range ancestors {
 		ancestorNode := dagCtx.getTaskNode(ctx, ancestor)
 		if ancestorNode == nil {
-			return nil, errors.InternalErrorf("Ancestor task node %s not found", ancestor)
+			return nil, argoerrors.InternalErrorf("Ancestor task node %s not found", ancestor)
 		}
 		prefix := fmt.Sprintf("tasks.%s", ancestor)
 		if ancestorNode.Type == wfv1.NodeTypeTaskGroup {
@@ -685,7 +689,7 @@ func (woc *wfOperationCtx) buildLocalScopeFromTask(ctx context.Context, dagCtx *
 			}
 			_, _, templateStored, err := dagCtx.tmplCtx.ResolveTemplate(ctx, ancestorNode)
 			if err != nil {
-				return nil, errors.InternalWrapError(err)
+				return nil, argoerrors.InternalWrapError(err)
 			}
 			// A new template was stored during resolution, persist it
 			if templateStored {
@@ -694,7 +698,7 @@ func (woc *wfOperationCtx) buildLocalScopeFromTask(ctx context.Context, dagCtx *
 
 			err = woc.processAggregateNodeOutputs(scope, prefix, ancestorNodes)
 			if err != nil {
-				return nil, errors.InternalWrapError(err)
+				return nil, argoerrors.InternalWrapError(err)
 			}
 		} else {
 			woc.buildLocalScope(scope, prefix, ancestorNode)
@@ -719,19 +723,35 @@ func (woc *wfOperationCtx) resolveDependencyReferences(ctx context.Context, dagC
 	}
 
 	// Replace task's parameters
-	taskBytes, err := json.Marshal(task)
+	// We shallow copy the task to avoid modifying the input pointer, and nil out Hooks to prevent
+	// premature resolution of self-references (e.g. {{tasks.self.outputs...}} in Exit Handlers).
+	tempTask := *task
+	originalHooks := tempTask.Hooks
+	tempTask.Hooks = nil
+
+	taskBytes, err := json.Marshal(tempTask)
 	if err != nil {
-		return nil, errors.InternalWrapError(err)
+		return nil, argoerrors.InternalWrapError(err)
 	}
-	newTaskStr, err := template.Replace(ctx, string(taskBytes), woc.globalParams.Merge(scope.getParameters()), true)
+	// We use ReplaceStrict to ensure that any references to dependencies (tasks.*, steps.*) are resolved.
+	// If they are not resolved, it indicates a missing output (e.g. due to race condition), and we should error out
+	// rather than leaving the tag unresolved (which would result in incorrect workflow execution).
+	// We allow other variables (like {{item}}) to remain unresolved for later expansion.
+	newTaskStr, err := template.ReplaceStrict(ctx, string(taskBytes), woc.globalParams.Merge(scope.getParameters()), []string{"tasks", "steps"})
 	if err != nil {
+		if template.IsMissingVariableErr(err) {
+			woc.requeue()
+			return nil, ErrRequeue
+		}
 		return nil, err
 	}
 	var newTask wfv1.DAGTask
 	err = json.Unmarshal([]byte(newTaskStr), &newTask)
 	if err != nil {
-		return nil, errors.InternalWrapError(err)
+		return nil, argoerrors.InternalWrapError(err)
 	}
+	// Restore Hooks
+	newTask.Hooks = originalHooks
 
 	// If we are not executing, don't attempt to resolve any artifact references. We only check if we are executing after
 	// the initial parameter resolution, since it's likely that the "when" clause will contain parameter references.
@@ -809,7 +829,7 @@ func expandTask(ctx context.Context, task wfv1.DAGTask, globalScope map[string]s
 		if err != nil {
 			mustExec, mustExecErr := shouldExecute(task.When)
 			if mustExecErr != nil || mustExec {
-				return nil, errors.Errorf(errors.CodeBadRequest, "withParam value could not be parsed as a JSON list: %s: %v", strings.TrimSpace(task.WithParam), err)
+				return nil, argoerrors.Errorf(argoerrors.CodeBadRequest, "withParam value could not be parsed as a JSON list: %s: %v", strings.TrimSpace(task.WithParam), err)
 			}
 		}
 	} else if task.WithSequence != nil {
@@ -826,7 +846,7 @@ func expandTask(ctx context.Context, task wfv1.DAGTask, globalScope map[string]s
 
 	taskBytes, err := json.Marshal(task)
 	if err != nil {
-		return nil, errors.InternalWrapError(err)
+		return nil, argoerrors.InternalWrapError(err)
 	}
 
 	// these fields can be very large (>100m) and marshalling 10k x 100m = 6GB of memory used and

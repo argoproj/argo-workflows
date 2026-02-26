@@ -87,7 +87,7 @@ func Test_Replace(t *testing.T) {
 			})
 			t.Run("Disallowed", func(t *testing.T) {
 				_, err := Replace(ctx, toJSONString("{{=foo}}"), nil, false)
-				require.EqualError(t, err, "failed to evaluate expression: unknown name foo (1:1)\n | foo\n | ^")
+				require.EqualError(t, err, "failed to evaluate expression: foo is missing")
 			})
 			t.Run("DisallowedWorkflowStatus", func(t *testing.T) {
 				_, err := Replace(ctx, toJSONString(`{{=workflow.status == "Succeeded" ? "SUCCESSFUL" : "FAILED"}}`), nil, false)

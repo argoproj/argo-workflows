@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -12,7 +13,7 @@ import (
 	"github.com/Knetic/govaluate"
 	v1 "k8s.io/api/core/v1"
 
-	"github.com/argoproj/argo-workflows/v4/errors"
+	argoerrors "github.com/argoproj/argo-workflows/v4/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/template"
@@ -242,6 +243,9 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 	// First, resolve any references to outputs from previous steps, and perform substitution
 	stepGroup, err = woc.resolveReferences(ctx, stepGroup, stepsCtx.scope)
 	if err != nil {
+		if errors.Is(err, ErrRequeue) {
+			return node, nil
+		}
 		return woc.markNodeError(ctx, sgNodeName, err), nil
 	}
 
@@ -374,9 +378,9 @@ func shouldExecute(when string) (bool, error) {
 	expression, err := govaluate.NewEvaluableExpression(when)
 	if err != nil {
 		if strings.Contains(err.Error(), "Invalid token") {
-			return false, errors.Errorf(errors.CodeBadRequest, "Invalid 'when' expression '%s': %v (hint: try wrapping the affected expression in quotes (\"))", when, err)
+			return false, argoerrors.Errorf(argoerrors.CodeBadRequest, "Invalid 'when' expression '%s': %v (hint: try wrapping the affected expression in quotes (\"))", when, err)
 		}
-		return false, errors.Errorf(errors.CodeBadRequest, "Invalid 'when' expression '%s': %v", when, err)
+		return false, argoerrors.Errorf(argoerrors.CodeBadRequest, "Invalid 'when' expression '%s': %v", when, err)
 	}
 	// The following loop converts govaluate variables (which we don't use), into strings. This
 	// allows us to have expressions like: "foo != bar" without requiring foo and bar to be quoted.
@@ -392,15 +396,15 @@ func shouldExecute(when string) (bool, error) {
 	}
 	expression, err = govaluate.NewEvaluableExpressionFromTokens(tokens)
 	if err != nil {
-		return false, errors.InternalWrapErrorf(err, "Failed to parse 'when' expression '%s': %v", when, err)
+		return false, argoerrors.InternalWrapErrorf(err, "Failed to parse 'when' expression '%s': %v", when, err)
 	}
 	result, err := expression.Evaluate(nil)
 	if err != nil {
-		return false, errors.InternalWrapErrorf(err, "Failed to evaluate 'when' expresion '%s': %v", when, err)
+		return false, argoerrors.InternalWrapErrorf(err, "Failed to evaluate 'when' expresion '%s': %v", when, err)
 	}
 	boolRes, ok := result.(bool)
 	if !ok {
-		return false, errors.Errorf(errors.CodeBadRequest, "Expected boolean evaluation for '%s'. Got %v", when, result)
+		return false, argoerrors.Errorf(argoerrors.CodeBadRequest, "Expected boolean evaluation for '%s'. Got %v", when, result)
 	}
 	return boolRes, nil
 }
@@ -434,19 +438,29 @@ func (woc *wfOperationCtx) resolveReferences(ctx context.Context, stepGroup []wf
 	// Resolve a Step's References and add it to newStepGroup
 	resolveStepReferences := func(i int, step wfv1.WorkflowStep, newStepGroup []wfv1.WorkflowStep) error {
 		// Step 1: replace all parameter scope references in the step
+		// We nil out Hooks to prevent premature resolution of self-references (e.g. {{steps.self.outputs...}} in Exit Handlers).
+		originalHooks := step.Hooks
+		step.Hooks = nil
+
 		stepBytes, err := json.Marshal(step)
 		if err != nil {
-			return errors.InternalWrapError(err)
+			return argoerrors.InternalWrapError(err)
 		}
-		newStepStr, err := template.Replace(ctx, string(stepBytes), woc.globalParams.Merge(scope.getParameters()), true)
+		newStepStr, err := template.ReplaceStrict(ctx, string(stepBytes), woc.globalParams.Merge(scope.getParameters()), []string{"steps", "tasks"})
 		if err != nil {
+			if template.IsMissingVariableErr(err) {
+				woc.requeue()
+				return ErrRequeue
+			}
 			return err
 		}
 		var newStep wfv1.WorkflowStep
 		err = json.Unmarshal([]byte(newStepStr), &newStep)
 		if err != nil {
-			return errors.InternalWrapError(err)
+			return argoerrors.InternalWrapError(err)
 		}
+		// Restore Hooks
+		newStep.Hooks = originalHooks
 
 		// If we are not executing, don't attempt to resolve any artifact references. We only check if we are executing after
 		// the initial parameter resolution, since it's likely that the "when" clause will contain parameter references.
@@ -510,6 +524,9 @@ func (woc *wfOperationCtx) resolveReferences(ctx context.Context, stepGroup []wf
 
 	err = errorFromChannel(errCh) // fetch the first error during resolveStepReferences
 	if err != nil {
+		if errors.Is(err, ErrRequeue) {
+			return nil, err
+		}
 		return nil, fmt.Errorf("failed to resolve references: %s", err)
 	}
 	return newStepGroup, nil
@@ -558,7 +575,7 @@ func (woc *wfOperationCtx) expandStep(ctx context.Context, step wfv1.WorkflowSte
 		if err != nil {
 			mustExec, mustExecErr := shouldExecute(step.When)
 			if mustExecErr != nil || mustExec {
-				return nil, errors.Errorf(errors.CodeBadRequest, "withParam value could not be parsed as a JSON list: %s: %v", strings.TrimSpace(step.WithParam), err)
+				return nil, argoerrors.Errorf(argoerrors.CodeBadRequest, "withParam value could not be parsed as a JSON list: %s: %v", strings.TrimSpace(step.WithParam), err)
 			}
 		}
 	} else if step.WithSequence != nil {
@@ -571,7 +588,7 @@ func (woc *wfOperationCtx) expandStep(ctx context.Context, step wfv1.WorkflowSte
 		}
 	} else {
 		// this should have been prevented in expandStepGroup()
-		return nil, errors.InternalError("expandStep() was called with withItems and withParam empty")
+		return nil, argoerrors.InternalError("expandStep() was called with withItems and withParam empty")
 	}
 
 	// these fields can be very large (>100m) and marshalling 10k x 100m = 6GB of memory used and
@@ -582,7 +599,7 @@ func (woc *wfOperationCtx) expandStep(ctx context.Context, step wfv1.WorkflowSte
 
 	stepBytes, err := json.Marshal(step)
 	if err != nil {
-		return nil, errors.InternalWrapError(err)
+		return nil, argoerrors.InternalWrapError(err)
 	}
 	t, err := template.NewTemplate(string(stepBytes))
 	if err != nil {
