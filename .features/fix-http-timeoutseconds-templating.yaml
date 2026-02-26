@@ -1,0 +1,18 @@
+issue: 15024
+component: workflow
+kind: bugfix
+
+tldr: Add support for templated string values for http.timeoutSeconds.
+
+previousBehavior: |
+  The `timeoutSeconds` field only accepted numeric JSON values.
+  When templated parameters resolved to strings (e.g. `"1800"` instead of `1800`),
+  unmarshalling failed with:
+  `json: cannot unmarshal string into Go struct field HTTP.timeoutSeconds of type int64`.
+
+newBehavior: |
+  The `HTTP` type now accepts both numeric and string representations for `timeoutSeconds`.
+  A custom JSON unmarshaller converts string integer values into `int64`,
+  making templated parameters fully supported while keeping the public API unchanged.
+
+backwardsCompatible: true
