@@ -1,6 +1,7 @@
 package template
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -18,21 +19,14 @@ func TestExpressionReplaceCore_PlaceholderBehavior(t *testing.T) {
 	}
 	expression := "foo"
 
-	t.Run("AllowUnresolved=true", func(t *testing.T) {
-		var b strings.Builder
-		_, err := expressionReplaceCore(ctx, &b, expression, env, true)
+	for _, allowUnresolved := range []bool{true, false} {
+		t.Run(fmt.Sprintf("AllowUnresolved=%v", allowUnresolved), func(t *testing.T) {
+			var b strings.Builder
+			_, err := expressionReplaceCore(ctx, &b, expression, env, allowUnresolved)
 
-		t.Logf("Result: %q, Error: %v", b.String(), err)
-		assert.Equal(t, "__argo__internal__placeholder-1", b.String())
-		require.NoError(t, err)
-	})
-
-	t.Run("AllowUnresolved=false", func(t *testing.T) {
-		var b strings.Builder
-		_, err := expressionReplaceCore(ctx, &b, expression, env, false)
-
-		t.Logf("Result: %q, Error: %v", b.String(), err)
-		assert.Equal(t, "__argo__internal__placeholder-1", b.String())
-		require.NoError(t, err)
-	})
+			t.Logf("Result: %q, Error: %v", b.String(), err)
+			assert.Equal(t, "__argo__internal__placeholder-1", b.String())
+			require.NoError(t, err)
+		})
+	}
 }

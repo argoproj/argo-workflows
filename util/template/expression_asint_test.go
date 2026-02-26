@@ -1,6 +1,7 @@
 package template
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -20,22 +21,15 @@ func TestExpressionReplaceCore_AsIntPlaceholder(t *testing.T) {
 
 	expression := "asInt(foo)"
 
-	t.Run("AllowUnresolved=true", func(t *testing.T) {
-		var b strings.Builder
-		_, err := expressionReplaceCore(ctx, &b, expression, e, true)
+	for _, allowUnresolved := range []bool{true, false} {
+		t.Run(fmt.Sprintf("AllowUnresolved=%v", allowUnresolved), func(t *testing.T) {
+			var b strings.Builder
+			_, err := expressionReplaceCore(ctx, &b, expression, e, allowUnresolved)
 
-		t.Logf("Result: %q, Error: %v", b.String(), err)
-		require.NoError(t, err)
-		assert.Equal(t, "{{=asInt(foo)}}", b.String())
-	})
-
-	t.Run("AllowUnresolved=false", func(t *testing.T) {
-		var b strings.Builder
-		_, err := expressionReplaceCore(ctx, &b, expression, e, false)
-
-		t.Logf("Result: %q, Error: %v", b.String(), err)
-		// Even with allowUnresolved=false, placeholders cause it to allow unresolved.
-		require.NoError(t, err)
-		assert.Equal(t, "{{=asInt(foo)}}", b.String())
-	})
+			t.Logf("Result: %q, Error: %v", b.String(), err)
+			// Even with allowUnresolved=false, placeholders cause it to allow unresolved.
+			require.NoError(t, err)
+			assert.Equal(t, "{{=asInt(foo)}}", b.String())
+		})
+	}
 }
