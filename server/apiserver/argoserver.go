@@ -243,9 +243,14 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	wfArchive := persist.NullWorkflowArchive
 	persistence := config.Persistence
 	if persistence != nil {
-		session, dbType, sessionErr := sqldb.CreateDBSession(ctx, as.clients.Kubernetes, as.namespace, persistence.DBConfig)
-		if sessionErr != nil {
-			log.WithFatal().Error(ctx, sessionErr.Error())
+		var sessionProxy *sqldb.SessionProxy
+		sessionProxy, err = sqldb.NewSessionProxy(ctx, sqldb.SessionProxyConfig{
+			KubectlConfig: as.clients.Kubernetes,
+			Namespace:     as.namespace,
+			DBConfig:      persistence.DBConfig,
+		})
+		if err != nil {
+			log.WithFatal().Error(ctx, err.Error())
 		}
 		tableName, tableErr := persist.GetTableName(persistence)
 		if tableErr != nil {
@@ -253,13 +258,13 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		}
 		// we always enable node offload, as this is read-only for the Argo Server, i.e. you can turn it off if you
 		// like and the controller won't offload newly created workflows, but you can still read them
-		offloadRepo, err = persist.NewOffloadNodeStatusRepo(ctx, log, session, persistence.GetClusterName(), tableName)
+		offloadRepo, err = persist.NewOffloadNodeStatusRepo(ctx, log, sessionProxy, persistence.GetClusterName(), tableName)
 		if err != nil {
 			log.WithError(err).WithFatal().Error(ctx, err.Error())
 		}
 		// we always enable the archive for the Argo Server, as the Argo Server does not write records, so you can
 		// disable the archiving - and still read old records
-		wfArchive = persist.NewWorkflowArchive(session, persistence.GetClusterName(), as.managedNamespace, instanceIDService, dbType)
+		wfArchive = persist.NewWorkflowArchive(sessionProxy, persistence.GetClusterName(), as.managedNamespace, instanceIDService)
 	}
 	resourceCacheNamespace := getResourceCacheNamespace(as.managedNamespace)
 	wftmplStore, err := workflowtemplate.NewInformer(as.restConfig, resourceCacheNamespace)

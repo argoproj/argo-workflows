@@ -6,9 +6,8 @@ import (
 	"slices"
 	"time"
 
-	"github.com/upper/db/v4"
-
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/sqldb"
 	syncdb "github.com/argoproj/argo-workflows/v4/util/sync/db"
 )
 
@@ -37,7 +36,7 @@ func newDatabaseSemaphore(ctx context.Context, name string, dbKey string, nextWo
 		nextWorkflow: nextWorkflow,
 		logger:       logger.get,
 		info:         info,
-		queries:      syncdb.NewSyncQueries(info.Session, info.Config),
+		queries:      syncdb.NewSyncQueries(info.SessionProxy, info.Config),
 		isMutex:      false,
 	}
 	sem.limitGetter = newCachedLimit(sem.getLimitFromDB, syncLimitCacheTTL)
@@ -84,9 +83,9 @@ func (s *databaseSemaphore) getLimit(ctx context.Context) int {
 	return limit
 }
 
-func (s *databaseSemaphore) currentState(ctx context.Context, session db.Session, held bool) ([]string, error) {
+func (s *databaseSemaphore) currentState(ctx context.Context, sessionProxy *sqldb.SessionProxy, held bool) ([]string, error) {
 	logger := s.logger(ctx)
-	states, err := s.queries.GetCurrentState(ctx, session, s.longDBKey(), held)
+	states, err := s.queries.GetCurrentState(ctx, sessionProxy, s.longDBKey(), held)
 	if err != nil {
 		logger.WithField("held", held).WithError(err).Error(ctx, "Failed to get current state")
 		return nil, err
@@ -99,15 +98,15 @@ func (s *databaseSemaphore) currentState(ctx context.Context, session db.Session
 }
 
 func (s *databaseSemaphore) getCurrentPending(ctx context.Context) ([]string, error) {
-	return s.currentState(ctx, s.info.Session, false)
+	return s.currentState(ctx, s.info.SessionProxy, false)
 }
 
 func (s *databaseSemaphore) getCurrentHolders(ctx context.Context) ([]string, error) {
-	return s.currentHoldersSession(ctx, s.info.Session)
+	return s.currentHoldersSession(ctx, s.info.SessionProxy)
 }
 
-func (s *databaseSemaphore) currentHoldersSession(ctx context.Context, session db.Session) ([]string, error) {
-	return s.currentState(ctx, session, true)
+func (s *databaseSemaphore) currentHoldersSession(ctx context.Context, sessionProxy *sqldb.SessionProxy) ([]string, error) {
+	return s.currentState(ctx, sessionProxy, true)
 }
 
 func (s *databaseSemaphore) lock(ctx context.Context) bool {
@@ -155,9 +154,9 @@ func (s *databaseSemaphore) release(ctx context.Context, key string) bool {
 	}
 }
 
-func (s *databaseSemaphore) queueOrdered(ctx context.Context, session db.Session) ([]syncdb.StateRecord, error) {
+func (s *databaseSemaphore) queueOrdered(ctx context.Context, sessionProxy *sqldb.SessionProxy) ([]syncdb.StateRecord, error) {
 	logger := s.logger(ctx)
-	queue, err := s.queries.GetOrderedQueue(ctx, session, s.longDBKey(), s.info.Config.InactiveControllerTimeout)
+	queue, err := s.queries.GetOrderedQueue(ctx, sessionProxy, s.longDBKey(), s.info.Config.InactiveControllerTimeout)
 	if err != nil {
 		logger.WithError(err).Error(ctx, "Failed to get ordered queue for semaphore notification")
 		return nil, err
@@ -178,7 +177,7 @@ func (s *databaseSemaphore) notifyWaiters(ctx context.Context) {
 	}
 	holdCount := len(holders)
 
-	pending, err := s.queueOrdered(ctx, s.info.Session)
+	pending, err := s.queueOrdered(ctx, s.info.SessionProxy)
 	if err != nil {
 		return
 	}
@@ -238,7 +237,7 @@ func (s *databaseSemaphore) checkAcquire(ctx context.Context, holderKey string, 
 	}
 	// Limit changes are eventually consistent, not inside the tx
 	limit := s.getLimit(ctx)
-	holders, err := s.currentHoldersSession(ctx, *tx.db)
+	holders, err := s.currentHoldersSession(ctx, tx.sessionProxy)
 	if err != nil {
 		logger.WithFields(logging.Fields{
 			"key":          holderKey,
@@ -273,7 +272,7 @@ func (s *databaseSemaphore) checkAcquire(ctx context.Context, holderKey string, 
 	// If it is in front position, it will allow to acquire lock.
 	// If it is not a front key, it needs to wait for its turn.
 	// Only live controllers are considered
-	queue, err := s.queueOrdered(ctx, *tx.db)
+	queue, err := s.queueOrdered(ctx, tx.sessionProxy)
 	if err != nil {
 		logger.WithFields(logging.Fields{
 			"key":          holderKey,
@@ -327,19 +326,19 @@ func (s *databaseSemaphore) checkAcquire(ctx context.Context, holderKey string, 
 func (s *databaseSemaphore) acquire(ctx context.Context, holderKey string, tx *transaction) bool {
 	logger := s.logger(ctx)
 	limit := s.getLimit(ctx)
-	existing, err := s.currentHoldersSession(ctx, *tx.db)
+	existing, err := s.currentHoldersSession(ctx, tx.sessionProxy)
 	if err != nil {
 		logger.WithField("key", holderKey).WithError(err).Error(ctx, "Failed to acquire lock")
 		return false
 	}
 	if len(existing) < limit {
-		pending, err := s.queries.GetPendingInQueueWithSession(ctx, *tx.db, s.longDBKey(), holderKey, s.info.Config.ControllerName)
+		pending, err := s.queries.GetPendingInQueueWithSession(ctx, tx.sessionProxy, s.longDBKey(), holderKey, s.info.Config.ControllerName)
 		if err != nil {
 			logger.WithField("key", holderKey).WithError(err).Error(ctx, "Failed to acquire lock")
 			return false
 		}
 		if len(pending) > 0 {
-			err := s.queries.UpdateStateToHeldWithSession(ctx, *tx.db, s.longDBKey(), holderKey, s.info.Config.ControllerName)
+			err := s.queries.UpdateStateToHeldWithSession(ctx, tx.sessionProxy, s.longDBKey(), holderKey, s.info.Config.ControllerName)
 			if err != nil {
 				logger.WithField("key", holderKey).WithError(err).Error(ctx, "Failed to acquire lock")
 				return false
@@ -351,7 +350,7 @@ func (s *databaseSemaphore) acquire(ctx context.Context, holderKey string, tx *t
 				Controller: s.info.Config.ControllerName,
 				Held:       true,
 			}
-			err := s.queries.InsertHeldStateWithSession(ctx, *tx.db, record)
+			err := s.queries.InsertHeldStateWithSession(ctx, tx.sessionProxy, record)
 			if err != nil {
 				logger.WithField("key", holderKey).WithError(err).Error(ctx, "Failed to acquire lock")
 				return false

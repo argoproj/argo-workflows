@@ -1,5 +1,7 @@
 package sqldb
 
+import "github.com/argoproj/argo-workflows/v4/config"
+
 type DBType string
 
 const (
@@ -14,4 +16,18 @@ func (t DBType) IntType() string {
 		return "signed"
 	}
 	return "int"
+}
+
+// dbTypeFromConfig determines the DBType from a DBConfig.
+func dbTypeFromConfig(cfg *config.DBConfig) DBType {
+	if cfg == nil {
+		return Invalid
+	}
+	if cfg.PostgreSQL != nil {
+		return Postgres
+	}
+	if cfg.MySQL != nil {
+		return MySQL
+	}
+	return Invalid
 }

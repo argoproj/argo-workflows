@@ -1,9 +1,9 @@
 package sync
 
 import (
-	"github.com/upper/db/v4"
+	"github.com/argoproj/argo-workflows/v4/util/sqldb"
 )
 
 type transaction struct {
-	db *db.Session
+	sessionProxy *sqldb.SessionProxy
 }
