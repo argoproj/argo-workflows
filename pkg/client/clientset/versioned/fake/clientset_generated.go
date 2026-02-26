@@ -3,9 +3,9 @@
 package fake
 
 import (
-	clientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
-	argoprojv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	fakeargoprojv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1/fake"
+	clientset "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
+	argoprojv1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	fakeargoprojv1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/typed/workflow/v1alpha1/fake"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"

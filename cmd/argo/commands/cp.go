@@ -14,11 +14,11 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
-	"github.com/argoproj/argo-workflows/v3/pkg/apiclient"
-	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	wfutil "github.com/argoproj/argo-workflows/v3/workflow/util"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v4/pkg/apiclient"
+	workflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	wfutil "github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
 func NewCpCommand() *cobra.Command {
@@ -83,17 +83,17 @@ func NewCpCommand() *cobra.Command {
 			}
 
 			for _, artifact := range artifactSearchResults {
-				customPath := filepath.Join(outputDir, customPath)
+				outputPath := filepath.Join(outputDir, customPath)
 				nodeInfo := workflow.Status.Nodes.Find(func(n v1alpha1.NodeStatus) bool { return n.ID == artifact.NodeID })
 				if nodeInfo == nil {
 					return fmt.Errorf("could not get node status for node ID %s", artifact.NodeID)
 				}
-				customPath = strings.Replace(customPath, "{templateName}", wfutil.GetTemplateFromNode(*nodeInfo), 1)
-				customPath = strings.Replace(customPath, "{namespace}", namespace, 1)
-				customPath = strings.Replace(customPath, "{workflowName}", workflowName, 1)
-				customPath = strings.Replace(customPath, "{nodeId}", artifact.NodeID, 1)
-				customPath = strings.Replace(customPath, "{artifactName}", artifact.Name, 1)
-				err = os.MkdirAll(customPath, os.ModePerm)
+				outputPath = strings.Replace(outputPath, "{templateName}", wfutil.GetTemplateFromNode(*nodeInfo), 1)
+				outputPath = strings.Replace(outputPath, "{namespace}", namespace, 1)
+				outputPath = strings.Replace(outputPath, "{workflowName}", workflowName, 1)
+				outputPath = strings.Replace(outputPath, "{nodeId}", artifact.NodeID, 1)
+				outputPath = strings.Replace(outputPath, "{artifactName}", artifact.Name, 1)
+				err = os.MkdirAll(outputPath, os.ModePerm)
 				if err != nil {
 					return fmt.Errorf("failed to create folder path: %w", err)
 				}
@@ -101,7 +101,7 @@ func NewCpCommand() *cobra.Command {
 				if err != nil {
 					return fmt.Errorf("error getting key for artifact: %w", err)
 				}
-				err = getAndStoreArtifactData(ctx, namespace, workflowName, artifact.NodeID, artifact.Name, path.Base(key), customPath, c, client.ArgoServerOpts)
+				err = getAndStoreArtifactData(ctx, namespace, workflowName, artifact.NodeID, artifact.Name, path.Base(key), outputPath, c, client.ArgoServerOpts)
 				if err != nil {
 					return fmt.Errorf("failed to get and store artifact data: %w", err)
 				}

@@ -150,10 +150,10 @@ func GetBearerToken(ctx context.Context, in *restclient.Config, explicitKubeConf
 
 		var cluster *clientauthenticationapi.Cluster
 		if in.ExecProvider.ProvideClusterInfo {
-			var err error
-			cluster, err = ConfigToExecCluster(ctx, in)
-			if err != nil {
-				return "", err
+			var clusterErr error
+			cluster, clusterErr = ConfigToExecCluster(ctx, in)
+			if clusterErr != nil {
+				return "", clusterErr
 			}
 		}
 		auth, err := exec.GetAuthenticator(in.ExecProvider, cluster)

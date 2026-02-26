@@ -9,10 +9,10 @@ argo sync delete [flags]
 ### Examples
 
 ```
- 
+
 # Delete a database sync limit
 	argo sync delete my-key --type database
-		
+
 # Delete a configmap sync limit
 	argo sync delete my-key --type configmap --cm-name my-configmap
 

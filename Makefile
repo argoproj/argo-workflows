@@ -189,13 +189,13 @@ proto_vendor: argo-proto.yaml $(TOOL_BUF)
 .PHONY: proto-vendor
 proto-vendor: proto_vendor
 override LDFLAGS += \
-  -X github.com/argoproj/argo-workflows/v3.version=$(VERSION) \
-  -X github.com/argoproj/argo-workflows/v3.buildDate=$(BUILD_DATE) \
-  -X github.com/argoproj/argo-workflows/v3.gitCommit=$(GIT_COMMIT) \
-  -X github.com/argoproj/argo-workflows/v3.gitTreeState=$(GIT_TREE_STATE)
+  -X github.com/argoproj/argo-workflows/v4.version=$(VERSION) \
+  -X github.com/argoproj/argo-workflows/v4.buildDate=$(BUILD_DATE) \
+  -X github.com/argoproj/argo-workflows/v4.gitCommit=$(GIT_COMMIT) \
+  -X github.com/argoproj/argo-workflows/v4.gitTreeState=$(GIT_TREE_STATE)
 
 ifneq ($(GIT_TAG),)
-override LDFLAGS += -X github.com/argoproj/argo-workflows/v3.gitTag=${GIT_TAG}
+override LDFLAGS += -X github.com/argoproj/argo-workflows/v4.gitTag=${GIT_TAG}
 endif
 
 # -- file lists
@@ -204,15 +204,15 @@ endif
 ifneq (,$(filter dist/argoexec dist/workflow-controller dist/argo dist/argo-% docs/cli/argo.md,$(MAKECMDGOALS)))
 HACK_PKG_FILES_AS_PKGS ?= false
 ifeq ($(HACK_PKG_FILES_AS_PKGS),false)
-	ARGOEXEC_PKG_FILES        := $(shell go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/ |  grep 'argoproj/argo-workflows/v3/' | xargs go list -f '{{ range $$file := .GoFiles }}{{ print $$.ImportPath "/" $$file "\n" }}{{ end }}' | cut -c 39-)
-	CLI_PKG_FILES             := $(shell [ -f ui/dist/app/index.html ] || (mkdir -p ui/dist/app && touch ui/dist/app/placeholder); go list -f '{{ join .Deps "\n" }}' ./cmd/argo/ |  grep 'argoproj/argo-workflows/v3/' | xargs go list -f '{{ range $$file := .GoFiles }}{{ print $$.ImportPath "/" $$file "\n" }}{{ end }}' | cut -c 39-)
-	CONTROLLER_PKG_FILES      := $(shell go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ |  grep 'argoproj/argo-workflows/v3/' | xargs go list -f '{{ range $$file := .GoFiles }}{{ print $$.ImportPath "/" $$file "\n" }}{{ end }}' | cut -c 39-)
+	ARGOEXEC_PKG_FILES        := $(shell go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/ |  grep 'argoproj/argo-workflows/v4/' | xargs go list -f '{{ range $$file := .GoFiles }}{{ print $$.ImportPath "/" $$file "\n" }}{{ end }}' | cut -c 39-)
+	CLI_PKG_FILES             := $(shell [ -f ui/dist/app/index.html ] || (mkdir -p ui/dist/app && touch ui/dist/app/placeholder); go list -f '{{ join .Deps "\n" }}' ./cmd/argo/ |  grep 'argoproj/argo-workflows/v4/' | xargs go list -f '{{ range $$file := .GoFiles }}{{ print $$.ImportPath "/" $$file "\n" }}{{ end }}' | cut -c 39-)
+	CONTROLLER_PKG_FILES      := $(shell go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ |  grep 'argoproj/argo-workflows/v4/' | xargs go list -f '{{ range $$file := .GoFiles }}{{ print $$.ImportPath "/" $$file "\n" }}{{ end }}' | cut -c 39-)
 else
 # Building argoexec on windows cannot rebuild the openapi, we need to fall back to the old
 # behaviour where we fake dependencies and therefore don't rebuild
-	ARGOEXEC_PKG_FILES    := $(shell echo cmd/argoexec            && go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/            | grep 'argoproj/argo-workflows/v3/' | cut -c 39-)
-	CLI_PKG_FILES         := $(shell echo cmd/argo                && go list -f '{{ join .Deps "\n" }}' ./cmd/argo/                | grep 'argoproj/argo-workflows/v3/' | cut -c 39-)
-	CONTROLLER_PKG_FILES  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo-workflows/v3/' | cut -c 39-)
+	ARGOEXEC_PKG_FILES    := $(shell echo cmd/argoexec            && go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/            | grep 'argoproj/argo-workflows/v4/' | cut -c 39-)
+	CLI_PKG_FILES         := $(shell echo cmd/argo                && go list -f '{{ join .Deps "\n" }}' ./cmd/argo/                | grep 'argoproj/argo-workflows/v4/' | cut -c 39-)
+	CONTROLLER_PKG_FILES  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo-workflows/v4/' | cut -c 39-)
 endif
 else
 	ARGOEXEC_PKG_FILES    :=
@@ -244,7 +244,7 @@ define protoc
     [ -e ./proto_vendor ] || $(MAKE) proto-vendor
     mkdir -p github.com/argoproj
     [ -e github.com/argoproj/argo-workflows ] || ln -s ../.. github.com/argoproj/argo-workflows
-    [ -e v3 ] || ln -s . v3
+    [ -e v4 ] || ln -s . v4
     protoc \
       -I /usr/local/include \
       -I $(CURDIR) \
@@ -253,8 +253,8 @@ define protoc
       --grpc-gateway_out=logtostderr=true:$(GOPATH)/src \
       --swagger_out=logtostderr=true,fqn_for_swagger_name=true:. \
       $(1)
-    perl -i -pe 's|argoproj/argo-workflows/(?!v3/)|argoproj/argo-workflows/v3/|g' `echo "$(1)" | sed 's/proto/pb.go/g'`
-    rm -rf github.com v3
+    perl -i -pe 's|argoproj/argo-workflows/(?!v4/)|argoproj/argo-workflows/v4/|g' `echo "$(1)" | sed 's/proto/pb.go/g'`
+    rm -rf github.com v4
 endef
 
 # cli
@@ -472,10 +472,10 @@ endif
 
 # go-to-protobuf fails with mysterious errors on code that doesn't compile
 pkg/apis/workflow/v1alpha1/generated.proto: $(TOOL_GO_TO_PROTOBUF) $(PROTO_BINARIES) $(TYPES) proto-vendor
-	# These files are generated on a v3/ folder by the tool. Link them to the root folder
+	# These files are generated on a v4/ folder by the tool. Link them to the root folder
 	mkdir -p github.com/argoproj
 	[ -e github.com/argoproj/argo-workflows ] || ln -s ../.. github.com/argoproj/argo-workflows
-	[ -e v3 ] || ln -s . v3
+	[ -e v4 ] || ln -s . v4
 	# Format proto files. Formatting changes generated code, so we do it here, rather that at lint time.
 	# Why clang-format? Google uses it.
 	@echo "*** This will fail if your code has compilation errors, without reporting those as the cause."
@@ -484,12 +484,12 @@ pkg/apis/workflow/v1alpha1/generated.proto: $(TOOL_GO_TO_PROTOBUF) $(PROTO_BINAR
 	[ -e ./vendor ] || go mod vendor
 	GOFLAGS="-mod=vendor" $(TOOL_GO_TO_PROTOBUF) \
 		--go-header-file=$(CURDIR)/hack/custom-boilerplate.go.txt \
-		--packages=github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1 \
+		--packages=github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1 \
 		--apimachinery-packages=+k8s.io/apimachinery/pkg/util/intstr,+k8s.io/apimachinery/pkg/api/resource,+k8s.io/apimachinery/pkg/runtime/schema,+k8s.io/apimachinery/pkg/runtime,+k8s.io/apimachinery/pkg/apis/meta/v1,+k8s.io/api/core/v1,+k8s.io/api/policy/v1 \
 		--proto-import $(CURDIR) \
 		--proto-import $(CURDIR)/proto_vendor
 	# Delete the link and created k8s.io directory
-	rm -rf github.com v3 k8s.io
+	rm -rf github.com v4 k8s.io
 	# Restore vendor if go-to-protobuf deleted files
 	go mod vendor
 	touch $@
@@ -738,7 +738,7 @@ Benchmark%: $(TOOL_GOTESTSUM) $(JSON_TEST_OUTPUT)
 .PHONY: clean
 clean: ## Clean the directory of build files
 	go clean
-	rm -Rf test/reports test-results node_modules vendor v2 v3 argoexec-linux-amd64 dist/* ui/dist
+	rm -Rf test/reports test-results node_modules vendor v2 v3 v4 argoexec-linux-amd64 dist/* ui/dist
 
 # Build telemetry files
 # Telemetry Go files generated via go generate, run as part of codegen.
@@ -748,19 +748,23 @@ docs/metrics.md: $(TELEMETRY_BUILDER) util/telemetry/builder/values.yaml
 	@echo Rebuilding $@
 	go run ./util/telemetry/builder --metricsDocs $@
 
+docs/tracing.md: $(TELEMETRY_BUILDER) util/telemetry/builder/values.yaml
+	@echo Rebuilding $@
+	go run ./util/telemetry/builder --tracingDocs $@
+
 # swagger
 pkg/apis/workflow/v1alpha1/openapi_generated.go: $(TOOL_OPENAPI_GEN) $(TYPES)
-	# These files are generated on a v3/ folder by the tool. Link them to the root folder
-	[ -e ./v3 ] || ln -s . v3
+	# These files are generated on a v4/ folder by the tool. Link them to the root folder
+	[ -e ./v4 ] || ln -s . v4
 	$(TOOL_OPENAPI_GEN) \
 	  --go-header-file ./hack/custom-boilerplate.go.txt \
-	  --input-dirs github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1 \
-	  --output-package github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1 \
+	  --input-dirs github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1 \
+	  --output-package github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1 \
 	  --report-filename pkg/apis/api-rules/violation_exceptions.list
 	# Force the timestamp to be up to date
 	touch $@
 	# Delete the link
-	[ -e ./v3 ] && rm -rf v3
+	[ -e ./v4 ] && rm -rf v4
 
 
 # generates many other files (listers, informers, client etc).
@@ -773,7 +777,7 @@ pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TOOL_GO_TO_PROTOBUF) $(TY
 		kube::codegen::gen_client \
 			--boilerplate ./hack/custom-boilerplate.go.txt \
 			--output-dir ./pkg/client \
-			--output-pkg github.com/argoproj/argo-workflows/v3/pkg/client \
+			--output-pkg github.com/argoproj/argo-workflows/v4/pkg/client \
 			--with-watch \
 			./pkg/apis'
 	# Force the timestamp to be up to date
@@ -937,14 +941,14 @@ features-preview: hack/featuregen/featuregen
 	$< update --dry
 
 .PHONY: features-update
-features-update: hack/featuregen/featuregen $(TOOL_MARKDOWNLINT) 
+features-update: hack/featuregen/featuregen $(TOOL_MARKDOWNLINT)
 	# Update the features documentation, but keep the feature files in the pending directory
 	# Updates docs/new-features.md for release-candidates
 	$< update --version $(VERSION)
 	$(TOOL_MARKDOWNLINT) ./docs/new-features.md
 
 .PHONY: features-release
-features-release: hack/featuregen/featuregen $(TOOL_MARKDOWNLINT) 
+features-release: hack/featuregen/featuregen $(TOOL_MARKDOWNLINT)
 	# Update the features documentation AND move the feature files to the released directory
 	# Use this for the final update when releasing a version
 	$< update --version $(VERSION) --final

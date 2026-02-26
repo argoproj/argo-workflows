@@ -32,51 +32,51 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/utils/env"
 
-	argo "github.com/argoproj/argo-workflows/v3"
-	"github.com/argoproj/argo-workflows/v3/config"
-	persist "github.com/argoproj/argo-workflows/v3/persist/sqldb"
-	clusterwftemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
-	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
-	eventpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/event"
-	eventsourcepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/eventsource"
-	infopkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/info"
-	sensorpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/sensor"
-	syncpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/sync"
-	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
-	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
-	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/server/apiserver/accesslog"
-	"github.com/argoproj/argo-workflows/v3/server/artifacts"
-	"github.com/argoproj/argo-workflows/v3/server/auth"
-	"github.com/argoproj/argo-workflows/v3/server/auth/sso"
-	"github.com/argoproj/argo-workflows/v3/server/auth/webhook"
-	"github.com/argoproj/argo-workflows/v3/server/cache"
-	"github.com/argoproj/argo-workflows/v3/server/clusterworkflowtemplate"
-	"github.com/argoproj/argo-workflows/v3/server/cronworkflow"
-	"github.com/argoproj/argo-workflows/v3/server/event"
-	"github.com/argoproj/argo-workflows/v3/server/eventsource"
-	"github.com/argoproj/argo-workflows/v3/server/info"
-	"github.com/argoproj/argo-workflows/v3/server/sensor"
-	"github.com/argoproj/argo-workflows/v3/server/static"
-	serversync "github.com/argoproj/argo-workflows/v3/server/sync"
-	"github.com/argoproj/argo-workflows/v3/server/types"
-	"github.com/argoproj/argo-workflows/v3/server/workflow"
-	"github.com/argoproj/argo-workflows/v3/server/workflow/store"
-	"github.com/argoproj/argo-workflows/v3/server/workflowarchive"
-	"github.com/argoproj/argo-workflows/v3/server/workflowtemplate"
-	"github.com/argoproj/argo-workflows/v3/ui"
-	grpcutil "github.com/argoproj/argo-workflows/v3/util/grpc"
-	"github.com/argoproj/argo-workflows/v3/util/instanceid"
-	"github.com/argoproj/argo-workflows/v3/util/json"
-	k8sutil "github.com/argoproj/argo-workflows/v3/util/k8s"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	rbacutil "github.com/argoproj/argo-workflows/v3/util/rbac"
-	"github.com/argoproj/argo-workflows/v3/util/sqldb"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/plugin"
-	"github.com/argoproj/argo-workflows/v3/workflow/events"
-	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
+	argo "github.com/argoproj/argo-workflows/v4"
+	"github.com/argoproj/argo-workflows/v4/config"
+	persist "github.com/argoproj/argo-workflows/v4/persist/sqldb"
+	clusterwftemplatepkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/clusterworkflowtemplate"
+	cronworkflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/cronworkflow"
+	eventpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/event"
+	eventsourcepkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/eventsource"
+	infopkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/info"
+	sensorpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/sensor"
+	syncpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/sync"
+	workflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow"
+	workflowarchivepkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflowarchive"
+	workflowtemplatepkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflowtemplate"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/server/apiserver/accesslog"
+	"github.com/argoproj/argo-workflows/v4/server/artifacts"
+	"github.com/argoproj/argo-workflows/v4/server/auth"
+	"github.com/argoproj/argo-workflows/v4/server/auth/sso"
+	"github.com/argoproj/argo-workflows/v4/server/auth/webhook"
+	"github.com/argoproj/argo-workflows/v4/server/cache"
+	"github.com/argoproj/argo-workflows/v4/server/clusterworkflowtemplate"
+	"github.com/argoproj/argo-workflows/v4/server/cronworkflow"
+	"github.com/argoproj/argo-workflows/v4/server/event"
+	"github.com/argoproj/argo-workflows/v4/server/eventsource"
+	"github.com/argoproj/argo-workflows/v4/server/info"
+	"github.com/argoproj/argo-workflows/v4/server/sensor"
+	"github.com/argoproj/argo-workflows/v4/server/static"
+	serversync "github.com/argoproj/argo-workflows/v4/server/sync"
+	"github.com/argoproj/argo-workflows/v4/server/types"
+	"github.com/argoproj/argo-workflows/v4/server/workflow"
+	"github.com/argoproj/argo-workflows/v4/server/workflow/store"
+	"github.com/argoproj/argo-workflows/v4/server/workflowarchive"
+	"github.com/argoproj/argo-workflows/v4/server/workflowtemplate"
+	"github.com/argoproj/argo-workflows/v4/ui"
+	grpcutil "github.com/argoproj/argo-workflows/v4/util/grpc"
+	"github.com/argoproj/argo-workflows/v4/util/instanceid"
+	"github.com/argoproj/argo-workflows/v4/util/json"
+	k8sutil "github.com/argoproj/argo-workflows/v4/util/k8s"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	rbacutil "github.com/argoproj/argo-workflows/v4/util/rbac"
+	"github.com/argoproj/argo-workflows/v4/util/sqldb"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifactrepositories"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/plugin"
+	"github.com/argoproj/argo-workflows/v4/workflow/events"
+	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
 )
 
 var MaxGRPCMessageSize int
@@ -226,13 +226,13 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	// lets just have a way to disable the checks in argo-server
 	if os.Getenv("CI_ONLY_DISABLE_ARTIFACT_SERVER_CHECKS") != "true" {
 		// Validate artifact driver images against server pod images
-		if err := as.validateArtifactDriverImages(ctx, config); err != nil {
-			log.WithFatal().WithError(err).Error(ctx, "failed to validate artifact driver images")
+		if validateErr := as.validateArtifactDriverImages(ctx, config); validateErr != nil {
+			log.WithFatal().WithError(validateErr).Error(ctx, "failed to validate artifact driver images")
 		}
 
 		// Validate artifact driver connections
-		if err := as.validateArtifactDriverConnections(ctx, config); err != nil {
-			log.WithFatal().WithError(err).Error(ctx, "failed to validate artifact driver connections")
+		if validateErr := as.validateArtifactDriverConnections(ctx, config); validateErr != nil {
+			log.WithFatal().WithError(validateErr).Error(ctx, "failed to validate artifact driver connections")
 		}
 	}
 
@@ -243,13 +243,13 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	wfArchive := persist.NullWorkflowArchive
 	persistence := config.Persistence
 	if persistence != nil {
-		session, dbType, err := sqldb.CreateDBSession(ctx, as.clients.Kubernetes, as.namespace, persistence.DBConfig)
-		if err != nil {
-			log.WithFatal().Error(ctx, err.Error())
+		session, dbType, sessionErr := sqldb.CreateDBSession(ctx, as.clients.Kubernetes, as.namespace, persistence.DBConfig)
+		if sessionErr != nil {
+			log.WithFatal().Error(ctx, sessionErr.Error())
 		}
-		tableName, err := persist.GetTableName(persistence)
-		if err != nil {
-			log.WithFatal().Error(ctx, err.Error())
+		tableName, tableErr := persist.GetTableName(persistence)
+		if tableErr != nil {
+			log.WithFatal().Error(ctx, tableErr.Error())
 		}
 		// we always enable node offload, as this is read-only for the Argo Server, i.e. you can turn it off if you
 		// like and the controller won't offload newly created workflows, but you can still read them

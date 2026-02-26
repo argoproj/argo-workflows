@@ -6,10 +6,10 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/argoproj/argo-workflows/v3/cmd/argoexec/commands/artifact"
-	cmdutil "github.com/argoproj/argo-workflows/v3/util/cmd"
-	kubecli "github.com/argoproj/argo-workflows/v3/util/kube/cli"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/cmd/argoexec/commands/artifact"
+	cmdutil "github.com/argoproj/argo-workflows/v4/util/cmd"
+	kubecli "github.com/argoproj/argo-workflows/v4/util/kube/cli"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 const (

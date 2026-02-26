@@ -8,10 +8,10 @@ import (
 
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/argoproj/argo-workflows/v3/config"
-	syncpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/sync"
-	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
-	syncdb "github.com/argoproj/argo-workflows/v3/util/sync/db"
+	"github.com/argoproj/argo-workflows/v4/config"
+	syncpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/sync"
+	sutils "github.com/argoproj/argo-workflows/v4/server/utils"
+	syncdb "github.com/argoproj/argo-workflows/v4/util/sync/db"
 )
 
 type ConfigProvider interface {

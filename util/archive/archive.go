@@ -9,9 +9,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
-	"github.com/argoproj/argo-workflows/v3/util"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/errors"
+	"github.com/argoproj/argo-workflows/v4/util"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 type flusher interface {
@@ -97,9 +97,9 @@ func tarDir(ctx context.Context, sourcePath string, tw *tar.Writer) error {
 
 		var header *tar.Header
 		if (info.Mode() & os.ModeSymlink) != 0 {
-			linkTarget, err := os.Readlink(fpath)
-			if err != nil {
-				return errors.InternalWrapError(err)
+			linkTarget, linkErr := os.Readlink(fpath)
+			if linkErr != nil {
+				return errors.InternalWrapError(linkErr)
 			}
 			header, err = tar.FileInfoHeader(info, filepath.ToSlash(linkTarget))
 			if err != nil {

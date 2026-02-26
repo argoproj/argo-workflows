@@ -20,26 +20,26 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/tools/cache"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
-	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
-	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo-workflows/v3/server/auth"
-	servertypes "github.com/argoproj/argo-workflows/v3/server/types"
-	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
-	"github.com/argoproj/argo-workflows/v3/server/workflow/store"
-	argoutil "github.com/argoproj/argo-workflows/v3/util"
-	"github.com/argoproj/argo-workflows/v3/util/fields"
-	"github.com/argoproj/argo-workflows/v3/util/instanceid"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/util/logs"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/creator"
-	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
-	"github.com/argoproj/argo-workflows/v3/workflow/validate"
+	"github.com/argoproj/argo-workflows/v4/errors"
+	"github.com/argoproj/argo-workflows/v4/persist/sqldb"
+	workflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo-workflows/v4/server/auth"
+	servertypes "github.com/argoproj/argo-workflows/v4/server/types"
+	sutils "github.com/argoproj/argo-workflows/v4/server/utils"
+	"github.com/argoproj/argo-workflows/v4/server/workflow/store"
+	argoutil "github.com/argoproj/argo-workflows/v4/util"
+	"github.com/argoproj/argo-workflows/v4/util/fields"
+	"github.com/argoproj/argo-workflows/v4/util/instanceid"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logs"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/creator"
+	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
+	"github.com/argoproj/argo-workflows/v4/workflow/util"
+	"github.com/argoproj/argo-workflows/v4/workflow/validate"
 )
 
 const (
@@ -128,9 +128,9 @@ func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.Wo
 		return req.Workflow, nil
 	}
 	if req.ServerDryRun {
-		workflow, err := util.CreateServerDryRun(ctx, req.Workflow, wfClient)
-		if err != nil {
-			return nil, sutils.ToStatusError(err, codes.InvalidArgument)
+		workflow, dryRunErr := util.CreateServerDryRun(ctx, req.Workflow, wfClient)
+		if dryRunErr != nil {
+			return nil, sutils.ToStatusError(dryRunErr, codes.InvalidArgument)
 		}
 		return workflow, nil
 	}
@@ -340,8 +340,8 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 
 	clean := func(x *wfv1.Workflow) (*wfv1.Workflow, error) {
 		y := &wfv1.Workflow{}
-		if clean, err := cleaner.Clean(x, y); err != nil {
-			return nil, sutils.ToStatusError(err, codes.Internal)
+		if clean, cleanErr := cleaner.Clean(x, y); cleanErr != nil {
+			return nil, sutils.ToStatusError(cleanErr, codes.Internal)
 		} else if clean {
 			return y, nil
 		}
@@ -451,9 +451,9 @@ func (s *workflowServer) DeleteWorkflow(ctx context.Context, req *workflowpkg.Wo
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
 	}
 	if req.Force {
-		_, err := auth.GetWfClient(ctx).ArgoprojV1alpha1().Workflows(wf.Namespace).Patch(ctx, wf.Name, types.MergePatchType, []byte("{\"metadata\":{\"finalizers\":null}}"), metav1.PatchOptions{})
-		if err != nil {
-			return nil, sutils.ToStatusError(err, codes.Internal)
+		_, patchErr := auth.GetWfClient(ctx).ArgoprojV1alpha1().Workflows(wf.Namespace).Patch(ctx, wf.Name, types.MergePatchType, []byte("{\"metadata\":{\"finalizers\":null}}"), metav1.PatchOptions{})
+		if patchErr != nil {
+			return nil, sutils.ToStatusError(patchErr, codes.Internal)
 		}
 	}
 	err = auth.GetWfClient(ctx).ArgoprojV1alpha1().Workflows(wf.Namespace).Delete(ctx, wf.Name, metav1.DeleteOptions{PropagationPolicy: argoutil.GetDeletePropagation()})
@@ -502,9 +502,9 @@ func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.Wor
 	for _, podName := range podsToDelete {
 		logger.WithFields(logging.Fields{"podDeleted": podName}).Info(ctx, "Deleting pod")
 		wg.Go(func() {
-			err := kubeClient.CoreV1().Pods(wf.Namespace).Delete(ctx, podName, metav1.DeleteOptions{})
-			if err != nil && !apierr.IsNotFound(err) {
-				errCh <- err
+			deleteErr := kubeClient.CoreV1().Pods(wf.Namespace).Delete(ctx, podName, metav1.DeleteOptions{})
+			if deleteErr != nil && !apierr.IsNotFound(deleteErr) {
+				errCh <- deleteErr
 				return
 			}
 		})
@@ -849,9 +849,9 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 		if wf.Namespace == "" {
 			wf.Namespace = req.Namespace
 		}
-		workflow, err := util.CreateServerDryRun(ctx, wf, wfClient)
-		if err != nil {
-			return nil, sutils.ToStatusError(err, codes.InvalidArgument)
+		workflow, dryRunErr := util.CreateServerDryRun(ctx, wf, wfClient)
+		if dryRunErr != nil {
+			return nil, sutils.ToStatusError(dryRunErr, codes.InvalidArgument)
 		}
 		return workflow, nil
 	}

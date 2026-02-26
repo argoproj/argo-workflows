@@ -8,11 +8,11 @@ import (
 
 	"github.com/expr-lang/expr"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/expr/env"
-	"github.com/argoproj/argo-workflows/v3/util/template"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/expr/env"
+	"github.com/argoproj/argo-workflows/v4/util/template"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 // wfScope contains the current scope of variables available when executing a template
@@ -95,12 +95,12 @@ func (s *wfScope) resolveArtifact(ctx context.Context, art *wfv1.Artifact) (*wfv
 	var val any
 
 	if art.FromExpression != "" {
-		env := env.GetFuncMap(s.scope)
-		program, err := expr.Compile(art.FromExpression, expr.Env(env))
-		if err != nil {
-			return nil, err
+		envMap := env.GetFuncMap(s.scope)
+		program, compileErr := expr.Compile(art.FromExpression, expr.Env(envMap))
+		if compileErr != nil {
+			return nil, compileErr
 		}
-		val, err = expr.Run(program, env)
+		val, err = expr.Run(program, envMap)
 		if err != nil {
 			return nil, err
 		}

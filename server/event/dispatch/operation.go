@@ -13,19 +13,19 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/retry"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/server/auth"
-	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
-	"github.com/argoproj/argo-workflows/v3/util/expr/argoexpr"
-	exprenv "github.com/argoproj/argo-workflows/v3/util/expr/env"
-	"github.com/argoproj/argo-workflows/v3/util/instanceid"
-	jsonutil "github.com/argoproj/argo-workflows/v3/util/json"
-	"github.com/argoproj/argo-workflows/v3/util/labels"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/creator"
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/server/auth"
+	errorsutil "github.com/argoproj/argo-workflows/v4/util/errors"
+	"github.com/argoproj/argo-workflows/v4/util/expr/argoexpr"
+	exprenv "github.com/argoproj/argo-workflows/v4/util/expr/env"
+	"github.com/argoproj/argo-workflows/v4/util/instanceid"
+	jsonutil "github.com/argoproj/argo-workflows/v4/util/json"
+	"github.com/argoproj/argo-workflows/v4/util/labels"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	waitutil "github.com/argoproj/argo-workflows/v4/util/wait"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/creator"
+	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
 type Operation struct {
@@ -133,17 +133,17 @@ func (o *Operation) dispatch(ctx context.Context, wfeb wfv1.WorkflowEventBinding
 				if p.ValueFrom == nil {
 					return nil, fmt.Errorf("malformed workflow template parameter \"%s\": valueFrom is nil", p.Name)
 				}
-				program, err := expr.Compile(p.ValueFrom.Event, expr.Env(o.env))
-				if err != nil {
-					return nil, fmt.Errorf("failed to compile workflow template parameter %s expression: %w", p.Name, err)
+				program, compileErr := expr.Compile(p.ValueFrom.Event, expr.Env(o.env))
+				if compileErr != nil {
+					return nil, fmt.Errorf("failed to compile workflow template parameter %s expression: %w", p.Name, compileErr)
 				}
-				result, err := expr.Run(program, o.env)
-				if err != nil {
-					return nil, fmt.Errorf("failed to evaluate workflow template parameter \"%s\" expression: %w", p.Name, err)
+				result, runErr := expr.Run(program, o.env)
+				if runErr != nil {
+					return nil, fmt.Errorf("failed to evaluate workflow template parameter \"%s\" expression: %w", p.Name, runErr)
 				}
-				data, err := json.Marshal(result)
-				if err != nil {
-					return nil, fmt.Errorf("failed to convert result to JSON \"%s\" expression: %w", p.Name, err)
+				data, marshalErr := json.Marshal(result)
+				if marshalErr != nil {
+					return nil, fmt.Errorf("failed to convert result to JSON \"%s\" expression: %w", p.Name, marshalErr)
 				}
 				wf.Spec.Arguments.Parameters = append(wf.Spec.Arguments.Parameters, wfv1.Parameter{Name: p.Name, Value: wfv1.AnyStringPtr(wfv1.Item{Value: data})})
 			}

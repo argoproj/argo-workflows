@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/config"
+	"github.com/argoproj/argo-workflows/v4/config"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/go-jose/go-jose/v3"
@@ -23,9 +23,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
-	"github.com/argoproj/argo-workflows/v3/server/auth/types"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	pkgrand "github.com/argoproj/argo-workflows/v3/util/rand"
+	"github.com/argoproj/argo-workflows/v4/server/auth/types"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	pkgrand "github.com/argoproj/argo-workflows/v4/util/rand"
 )
 
 const (
@@ -287,8 +287,8 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	c := &types.Claims{}
-	if err := idToken.Claims(c); err != nil {
-		s.logger.WithError(err).Error(r.Context(), "failed to get claims from the id token")
+	if claimsErr := idToken.Claims(c); claimsErr != nil {
+		s.logger.WithError(claimsErr).Error(r.Context(), "failed to get claims from the id token")
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}

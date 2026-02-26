@@ -12,13 +12,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/workflow/executor/osspecific"
+	"github.com/argoproj/argo-workflows/v4/workflow/executor/osspecific"
 
-	argoerrors "github.com/argoproj/argo-workflows/v3/errors"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/executor"
+	argoerrors "github.com/argoproj/argo-workflows/v4/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/executor"
 )
 
 /*
@@ -96,8 +96,8 @@ func (e emissary) CopyFile(ctx context.Context, containerName string, sourcePath
 	}
 	defer func() { _ = dst.Close() }()
 	_, err = io.Copy(dst, src)
-	if err := dst.Close(); err != nil {
-		return err
+	if closeErr := dst.Close(); closeErr != nil {
+		return closeErr
 	}
 	return err
 }

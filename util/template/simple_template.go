@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/errors"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 func simpleReplace(ctx context.Context, w io.Writer, tag string, replaceMap map[string]any, allowUnresolved bool) (int, error) {
@@ -18,12 +18,12 @@ func simpleReplace(ctx context.Context, w io.Writer, tag string, replaceMap map[
 		if index := strings.LastIndex(tag, "{{"); index > 0 {
 			nestedTagPrefix := tag[:index]
 			nestedTag := tag[index+2:]
-			if replacement, ok := replaceMap[nestedTag]; ok {
-				replacement, isStr := replacement.(string)
+			if replNested, replOk := replaceMap[nestedTag]; replOk {
+				replStr, isStr := replNested.(string)
 				if isStr {
-					replacement = strconv.Quote(replacement)
-					replacement = replacement[1 : len(replacement)-1]
-					return w.Write([]byte("{{" + nestedTagPrefix + replacement))
+					replStr = strconv.Quote(replStr)
+					replStr = replStr[1 : len(replStr)-1]
+					return w.Write([]byte("{{" + nestedTagPrefix + replStr))
 				}
 			}
 		}
