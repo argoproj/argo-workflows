@@ -8217,6 +8217,75 @@ func TestRetryOnNodeAntiAffinity(t *testing.T) {
 	assert.Equal(t, sourceNodeSelectorRequirement, targetNodeSelectorRequirement)
 }
 
+var nodeAntiAffinityStepsWorkflow = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: retry-fail
+spec:
+  entrypoint: retry-fail
+  templates:
+    - name: retry-fail
+      steps:
+      - - name: fail
+          template: fail
+    - name: fail
+      retryStrategy:
+        limit: "1"
+        affinity:
+          nodeAntiAffinity: {}
+      container:
+        image: alpine:latest
+        command: [ sh, -c ]
+        args: [ "exit 1" ]
+`
+
+func TestRetryOnNodeAntiAffinitySteps(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(nodeAntiAffinityStepsWorkflow)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
+	defer cancel()
+
+	ctx := logging.TestContext(t.Context())
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	pods, err := listPods(ctx, woc)
+	require.NoError(t, err)
+	assert.Len(t, pods.Items, 1)
+
+	pod := pods.Items[0]
+	pod.Spec.NodeName = "node0"
+	_, err = controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace()).Update(ctx, &pod, metav1.UpdateOptions{})
+	require.NoError(t, err)
+	makePodsPhase(ctx, woc, apiv1.PodFailed)
+	woc.operate(ctx)
+
+	node := woc.wf.Status.Nodes.FindByDisplayName("fail(0)")
+	require.NotNil(t, node)
+	assert.Equal(t, wfv1.NodeFailed, node.Phase)
+	assert.Equal(t, "node0", node.HostNodeName)
+
+	pods, err = listPods(ctx, woc)
+	require.NoError(t, err)
+	assert.Len(t, pods.Items, 2)
+
+	var podRetry1 apiv1.Pod
+	for _, p := range pods.Items {
+		if p.Name != pod.GetName() {
+			podRetry1 = p
+		}
+	}
+
+	hostSelector := "kubernetes.io/hostname"
+	targetNodeSelectorRequirement := podRetry1.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0].MatchExpressions[0]
+	sourceNodeSelectorRequirement := apiv1.NodeSelectorRequirement{
+		Key:      hostSelector,
+		Operator: apiv1.NodeSelectorOpNotIn,
+		Values:   []string{node.HostNodeName},
+	}
+	assert.Equal(t, sourceNodeSelectorRequirement, targetNodeSelectorRequirement)
+}
+
 var noPodsWhenShutdown = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -8754,6 +8823,67 @@ func TestRootRetryStrategyCompletes(t *testing.T) {
 	woc.operate(ctx)
 
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+}
+
+const rootRetryStrategyWithInlineTemplateCompletes = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world-inline
+spec:
+  entrypoint: whalesay
+  retryStrategy:
+    limit: 1
+  templates:
+  - name: whalesay
+    steps:
+    - - name: hello
+        inline:
+          script:
+            image: python:alpine
+            command: [python]
+            source: |
+              print("hello")
+status:
+  nodes:
+    hello-world-inline:
+      children:
+      - hello-world-inline-643409622
+      displayName: hello-world-inline
+      finishedAt: null
+      id: hello-world-inline
+      name: hello-world-inline
+      phase: Running
+      startedAt: "2021-03-23T14:53:39Z"
+      templateName: whalesay
+      templateScope: local/hello-world-inline
+      type: Retry
+    hello-world-inline-643409622:
+      displayName: hello-world-inline(0)
+      finishedAt: null
+      hostNodeName: k3d-k3s-default-server-0
+      id: hello-world-inline-643409622
+      name: hello-world-inline(0)
+      phase: Failed
+      message: Pod failed
+      startedAt: "2021-03-23T14:53:39Z"
+      templateName: whalesay
+      templateScope: local/hello-world-inline
+      type: Pod
+  phase: Running
+  startedAt: "2021-03-23T14:53:39Z"
+`
+
+func TestRootRetryStrategyWithInlineTemplateRetries(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(rootRetryStrategyWithInlineTemplateCompletes)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
+	defer cancel()
+
+	ctx := logging.TestContext(t.Context())
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 }
 
 const testGlobalParamSubstitute = `
