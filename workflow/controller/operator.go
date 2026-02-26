@@ -128,6 +128,8 @@ var (
 	ErrTimeout = argoerrors.New(argoerrors.CodeTimeout, "timeout")
 	// ErrMaxDepthExceeded indicates that the maximum recursion depth was exceeded
 	ErrMaxDepthExceeded = argoerrors.New(argoerrors.CodeTimeout, fmt.Sprintf("Maximum recursion depth exceeded. See %s", help.ConfigureMaximumRecursionDepth()))
+	// ErrRequeue indicates the workflow should be requeued for later processing
+	ErrRequeue = errors.New("requeue")
 )
 
 // maxOperationTime is the maximum time a workflow operation is allowed to run

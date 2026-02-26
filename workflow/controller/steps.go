@@ -246,6 +246,9 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 	var resolveErr error
 	stepGroup, resolveErr = woc.resolveReferences(ctx, stepGroup, stepsCtx.scope)
 	if resolveErr != nil {
+		if errors.Is(resolveErr, ErrRequeue) {
+			return node, nil
+		}
 		return woc.markNodeError(ctx, sgNodeName, resolveErr), nil
 	}
 
@@ -443,12 +446,20 @@ func (woc *wfOperationCtx) resolveReferences(ctx context.Context, stepGroup []wf
 	// Resolve a Step's References and add it to newStepGroup
 	resolveStepReferences := func(i int, step wfv1.WorkflowStep, newStepGroup []wfv1.WorkflowStep) error {
 		// Step 1: replace all parameter scope references in the step
+		// We nil out Hooks to prevent premature resolution of self-references (e.g. {{steps.self.outputs...}} in Exit Handlers).
+		originalHooks := step.Hooks
+		step.Hooks = nil
+
 		stepBytes, err := json.Marshal(step)
 		if err != nil {
 			return argoerrors.InternalWrapError(err)
 		}
-		newStepStr, err := template.Replace(ctx, string(stepBytes), woc.globalParams.Merge(scope.getParameters()), true)
+		newStepStr, err := template.ReplaceStrict(ctx, string(stepBytes), woc.globalParams.Merge(scope.getParameters()), []string{"steps", "tasks"})
 		if err != nil {
+			if template.IsMissingVariableErr(err) {
+				woc.requeue()
+				return ErrRequeue
+			}
 			return err
 		}
 		var newStep wfv1.WorkflowStep
@@ -456,6 +467,8 @@ func (woc *wfOperationCtx) resolveReferences(ctx context.Context, stepGroup []wf
 		if err != nil {
 			return argoerrors.InternalWrapError(err)
 		}
+		// Restore Hooks
+		newStep.Hooks = originalHooks
 
 		// If we are not executing, don't attempt to resolve any artifact references. We only check if we are executing after
 		// the initial parameter resolution, since it's likely that the "when" clause will contain parameter references.
@@ -515,6 +528,9 @@ func (woc *wfOperationCtx) resolveReferences(ctx context.Context, stepGroup []wf
 	wg.Wait()
 
 	if err := errorFromChannel(errCh); err != nil { // fetch the first error during resolveStepReferences
+		if errors.Is(err, ErrRequeue) {
+			return nil, err
+		}
 		return nil, fmt.Errorf("failed to resolve references: %w", err)
 	}
 	return newStepGroup, nil
