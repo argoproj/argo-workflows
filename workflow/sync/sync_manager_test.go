@@ -403,8 +403,9 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		}, metav1.CreateOptions{})
 		require.NoError(t, err)
 
-		syncManager := NewLockManager(ctx, kubeClient, "", nil, GetSyncLimitFunc(kubeClient), func(key string) {
-		}, WorkflowExistenceFunc)
+		syncManager, err := NewLockManager(ctx, kubeClient, "", nil, GetSyncLimitFunc(kubeClient), func(key string) {
+		}, WorkflowExistenceFunc, false)
+		require.NoError(t, err)
 
 		// Create first workflow claiming to hold the semaphore
 		wf1 := wfv1.MustUnmarshalWorkflow(wfWithStatus)
