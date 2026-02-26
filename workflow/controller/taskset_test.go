@@ -408,3 +408,92 @@ status:
 		assert.NotEmpty(t, memo.Data["cache-demo-1"])
 	})
 }
+
+func TestCreateTaskSetWithLabels(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: http-template
+  namespace: default
+spec:
+  serviceAccountName: custom-sa
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: test
+            template: http
+            arguments:
+              parameters: [{name: url, value: "http://example.com"}]
+    - name: http
+      inputs:
+        parameters:
+          - name: url
+      http:
+       url: "{{inputs.parameters.url}}"
+`)
+	ctx := logging.TestContext(t.Context())
+
+	t.Run("TaskSet includes service account and workflow name labels", func(t *testing.T) {
+		cancel, controller := newController(ctx, wf)
+		defer cancel()
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		woc.operate(ctx)
+
+		tslist, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").List(ctx, v1.ListOptions{})
+		require.NoError(t, err)
+		assert.NotEmpty(t, tslist.Items)
+
+		for _, ts := range tslist.Items {
+			// Check that labels are set
+			assert.Equal(t, "custom-sa", ts.Labels[common.LabelKeyWorkflowServiceAccount])
+			assert.Equal(t, "http-template", ts.Labels[common.LabelKeyWorkflowName])
+		}
+	})
+
+	t.Run("TaskSet uses default service account when not specified", func(t *testing.T) {
+		wfNoSA := wf.DeepCopy()
+		wfNoSA.Spec.ServiceAccountName = ""
+
+		cancel, controller := newController(ctx, wfNoSA)
+		defer cancel()
+		woc := newWorkflowOperationCtx(ctx, wfNoSA, controller)
+		woc.operate(ctx)
+
+		tslist, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").List(ctx, v1.ListOptions{})
+		require.NoError(t, err)
+		assert.NotEmpty(t, tslist.Items)
+
+		for _, ts := range tslist.Items {
+			// Should use "default" when SA not specified
+			assert.Equal(t, "default", ts.Labels[common.LabelKeyWorkflowServiceAccount])
+		}
+	})
+
+	t.Run("TaskSet labels are updated on patch", func(t *testing.T) {
+		cancel, controller := newController(ctx, wf)
+		defer cancel()
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+		// Create initial TaskSet
+		woc.operate(ctx)
+
+		// Simulate a second reconciliation (patch operation)
+		woc2 := newWorkflowOperationCtx(ctx, wf, controller)
+		woc2.taskSet = map[string]wfv1.Template{
+			"new-task": {},
+		}
+		err := woc2.createTaskSet(ctx)
+		require.NoError(t, err)
+
+		// Verify labels are preserved after patch
+		tslist, err := woc2.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").List(ctx, v1.ListOptions{})
+		require.NoError(t, err)
+		assert.NotEmpty(t, tslist.Items)
+
+		for _, ts := range tslist.Items {
+			assert.Equal(t, "custom-sa", ts.Labels[common.LabelKeyWorkflowServiceAccount])
+			assert.Equal(t, "http-template", ts.Labels[common.LabelKeyWorkflowName])
+		}
+	})
+}
