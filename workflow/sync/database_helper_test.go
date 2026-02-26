@@ -24,7 +24,7 @@ const (
 )
 
 // createTestDBSession creates a test database session
-func createTestDBSession(ctx context.Context, t *testing.T, dbType sqldb.DBType) (syncdb.DBInfo, func(), config.SyncConfig, error) {
+func createTestDBSession(ctx context.Context, t *testing.T, dbType sqldb.DBType) (syncdb.Info, func(), config.SyncConfig, error) {
 	t.Helper()
 
 	var cfg config.SyncConfig
@@ -52,11 +52,11 @@ func createTestDBSession(ctx context.Context, t *testing.T, dbType sqldb.DBType)
 	})
 	if err != nil {
 		termContainerFn()
-		return syncdb.DBInfo{}, func() {}, cfg, err
+		return syncdb.Info{}, func() {}, cfg, err
 	}
 
-	info := syncdb.DBInfo{
-		Config:       syncdb.DBConfigFromConfig(&cfg),
+	info := syncdb.Info{
+		Config:       syncdb.ConfigFromConfig(&cfg),
 		SessionProxy: sessionProxy,
 	}
 	require.NotNil(t, info.SessionProxy, "failed to create database session proxy")

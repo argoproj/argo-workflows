@@ -41,7 +41,8 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 			return err
 		}
 		if wfc.sessionProxy == nil {
-			sessionProxy, err := sqldb.NewSessionProxy(ctx, sqldb.SessionProxyConfig{
+			var sessionProxy *sqldb.SessionProxy
+			sessionProxy, err = sqldb.NewSessionProxy(ctx, sqldb.SessionProxyConfig{
 				KubectlConfig: wfc.kubeclientset,
 				Namespace:     wfc.namespace,
 				DBConfig:      persistence.DBConfig,

@@ -34,7 +34,7 @@ type Manager struct {
 	getSyncLimit      GetSyncLimit
 	syncLimitCacheTTL time.Duration
 	workflowExists    WorkflowExists
-	dbInfo            syncdb.DBInfo
+	dbInfo            syncdb.Info
 	queries           syncdb.SyncQueries
 	log               logging.Logger
 }
@@ -67,9 +67,9 @@ func createLockManager(ctx context.Context, sessionProxy *sqldb.SessionProxy, co
 	ctx, log := logging.RequireLoggerFromContext(ctx).WithField("component", "lock_manager").InContext(ctx)
 
 	log.WithField("syncLimitCacheTTL", syncLimitCacheTTL).Info(ctx, "Sync manager ttl")
-	dbInfo := syncdb.DBInfo{
+	dbInfo := syncdb.Info{
 		SessionProxy: sessionProxy,
-		Config:       syncdb.DBConfigFromConfig(config),
+		Config:       syncdb.ConfigFromConfig(config),
 	}
 	sm := &Manager{
 		syncLockMap:       make(map[string]semaphore),

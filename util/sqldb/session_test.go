@@ -123,5 +123,4 @@ func TestSessionReconnect(t *testing.T) {
 	assert.Equal(t, cfg.PostgreSQL.Port, newDBConfig.PostgreSQL.Port)
 	<-doneChan
 	cancel()
-
 }

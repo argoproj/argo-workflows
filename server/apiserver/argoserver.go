@@ -243,7 +243,8 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	wfArchive := persist.NullWorkflowArchive
 	persistence := config.Persistence
 	if persistence != nil {
-		sessionProxy, err := sqldb.NewSessionProxy(ctx, sqldb.SessionProxyConfig{
+		var sessionProxy *sqldb.SessionProxy
+		sessionProxy, err = sqldb.NewSessionProxy(ctx, sqldb.SessionProxyConfig{
 			KubectlConfig: as.clients.Kubernetes,
 			Namespace:     as.namespace,
 			DBConfig:      persistence.DBConfig,
