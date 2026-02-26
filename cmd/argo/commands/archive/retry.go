@@ -10,11 +10,11 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/types"
 
-	client "github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
-	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
-	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	client "github.com/argoproj/argo-workflows/v4/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/common"
+	workflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow"
+	workflowarchivepkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflowarchive"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
 type retryOps struct {
@@ -136,7 +136,8 @@ func retryArchivedWorkflows(ctx context.Context, archiveServiceClient workflowar
 
 	// Add workflows from args - auto-detect UID vs NAME
 	for _, identifier := range args {
-		uid, err := resolveUID(ctx, archiveServiceClient, identifier, retryOpts.namespace, retryOpts.forceUID, retryOpts.forceName)
+		var uid string
+		uid, err = resolveUID(ctx, archiveServiceClient, identifier, retryOpts.namespace, retryOpts.forceUID, retryOpts.forceName)
 		if err != nil {
 			return fmt.Errorf("resolve UID: %w", err)
 		}

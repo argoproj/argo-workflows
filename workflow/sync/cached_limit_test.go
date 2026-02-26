@@ -65,7 +65,8 @@ func TestGetLimitMultipleCalls(t *testing.T) {
 	cl := newCachedLimit(mockGetter, ttl)
 
 	// First call to populate cache
-	firstLimit, changed, _ := cl.get(ctx, "test-key")
+	firstLimit, changed, err := cl.get(ctx, "test-key")
+	require.NoError(t, err, "Should not error with first value")
 	assert.Equal(t, initialLimit+1, firstLimit, "First limit should be initialLimit+1")
 	assert.True(t, changed, "First call should indicate limit changed")
 	assert.Equal(t, 1, callCount, "Getter should be called once initially")
@@ -75,7 +76,8 @@ func TestGetLimitMultipleCalls(t *testing.T) {
 		// Advance time slightly but stay within TTL
 		advanceTime(1 * time.Minute)
 
-		cachedLimit, changed, err := cl.get(ctx, "test-key")
+		var cachedLimit int
+		cachedLimit, changed, err = cl.get(ctx, "test-key")
 		require.NoError(t, err, "Should not error with cached value")
 		assert.Equal(t, firstLimit, cachedLimit, "Should return cached limit")
 		assert.False(t, changed, "Cached value should not indicate change")
@@ -88,7 +90,8 @@ func TestGetLimitMultipleCalls(t *testing.T) {
 	advanceTime(6 * time.Minute)
 
 	// This call should refresh the cache
-	secondLimit, changed, err := cl.get(ctx, "test-key")
+	var secondLimit int
+	secondLimit, changed, err = cl.get(ctx, "test-key")
 	require.NoError(t, err, "Should not error when refreshing")
 	assert.Equal(t, initialLimit+2, secondLimit, "New limit should be initialLimit+2")
 	assert.True(t, changed, "Second refresh should indicate limit changed")
@@ -99,7 +102,8 @@ func TestGetLimitMultipleCalls(t *testing.T) {
 		// Advance time slightly but stay within new TTL
 		advanceTime(2 * time.Minute)
 
-		cachedLimit, changed, err := cl.get(ctx, "test-key")
+		var cachedLimit int
+		cachedLimit, changed, err = cl.get(ctx, "test-key")
 		require.NoError(t, err, "Should not error with new cached value")
 		assert.Equal(t, secondLimit, cachedLimit, "Should return new cached limit")
 		assert.False(t, changed, "Cached value should not indicate change")

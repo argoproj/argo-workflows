@@ -9,19 +9,19 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
-	"github.com/argoproj/argo-workflows/v3"
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/archive"
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/auth"
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/clustertemplate"
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/cron"
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/executorplugin"
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/sync"
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/template"
+	"github.com/argoproj/argo-workflows/v4"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/archive"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/auth"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/clustertemplate"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/cron"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/executorplugin"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/sync"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/template"
 
-	cmdutil "github.com/argoproj/argo-workflows/v3/util/cmd"
-	grpcutil "github.com/argoproj/argo-workflows/v3/util/grpc"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	cmdutil "github.com/argoproj/argo-workflows/v4/util/cmd"
+	grpcutil "github.com/argoproj/argo-workflows/v4/util/grpc"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 const (

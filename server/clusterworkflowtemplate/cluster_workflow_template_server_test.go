@@ -9,15 +9,15 @@ import (
 	"github.com/stretchr/testify/require"
 	"k8s.io/client-go/kubernetes/fake"
 
-	clusterwftmplpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	wftFake "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo-workflows/v3/server/auth"
-	"github.com/argoproj/argo-workflows/v3/server/auth/types"
-	"github.com/argoproj/argo-workflows/v3/util/instanceid"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/creator"
+	clusterwftmplpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/clusterworkflowtemplate"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	wftFake "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo-workflows/v4/server/auth"
+	"github.com/argoproj/argo-workflows/v4/server/auth/types"
+	"github.com/argoproj/argo-workflows/v4/util/instanceid"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/creator"
 )
 
 var unlabelled, cwftObj2, cwftObj3 v1alpha1.ClusterWorkflowTemplate

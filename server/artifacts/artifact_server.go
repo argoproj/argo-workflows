@@ -19,18 +19,18 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/env"
 
-	argoerrors "github.com/argoproj/argo-workflows/v3/errors"
-	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/server/auth"
-	"github.com/argoproj/argo-workflows/v3/server/types"
-	"github.com/argoproj/argo-workflows/v3/util/instanceid"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
+	argoerrors "github.com/argoproj/argo-workflows/v4/errors"
+	"github.com/argoproj/argo-workflows/v4/persist/sqldb"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/server/auth"
+	"github.com/argoproj/argo-workflows/v4/server/types"
+	"github.com/argoproj/argo-workflows/v4/util/instanceid"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifactrepositories"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
+	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
 type ArtifactServer struct {
@@ -181,14 +181,14 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 	isDir := strings.HasSuffix(r.URL.Path, "/")
 
 	if !isDir {
-		isDir, err := driver.IsDirectory(ctx, artifact)
-		if err != nil {
-			if !argoerrors.IsCode(argoerrors.CodeNotImplemented, err) {
-				a.serverInternalError(ctx, err, w)
+		driverDir, driverErr := driver.IsDirectory(ctx, artifact)
+		if driverErr != nil {
+			if !argoerrors.IsCode(argoerrors.CodeNotImplemented, driverErr) {
+				a.serverInternalError(ctx, driverErr, w)
 				return
 			}
 		}
-		if isDir {
+		if driverDir {
 			http.Redirect(w, r, r.URL.String()+"/", http.StatusTemporaryRedirect)
 			return
 		}
@@ -197,9 +197,9 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 	if isDir {
 		// return an html page to the user
 
-		objects, err := driver.ListObjects(ctx, artifact)
-		if err != nil {
-			a.httpFromError(ctx, err, w)
+		objects, listErr := driver.ListObjects(ctx, artifact)
+		if listErr != nil {
+			a.httpFromError(ctx, listErr, w)
 			return
 		}
 		a.logger.WithFields(logging.Fields{
@@ -221,9 +221,9 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 			}
 		}
 		a.setSecurityHeaders(w)
-		output, err := a.renderDirectoryListing(objects, key)
-		if err != nil {
-			a.serverInternalError(ctx, err, w)
+		output, renderErr := a.renderDirectoryListing(objects, key)
+		if renderErr != nil {
+			a.serverInternalError(ctx, renderErr, w)
 			return
 		}
 		w.WriteHeader(http.StatusOK)
@@ -489,9 +489,9 @@ func (a *ArtifactServer) getArtifactAndDriver(ctx context.Context, nodeID, artif
 	}
 
 	if templateName == "" || !archiveLocation.HasLocation() {
-		ar, err := a.artifactRepositories.Get(ctx, wf.Status.ArtifactRepositoryRef) // this should handle cases 2, 3 and 5
-		if err != nil {
-			return art, nil, err
+		ar, arErr := a.artifactRepositories.Get(ctx, wf.Status.ArtifactRepositoryRef) // this should handle cases 2, 3 and 5
+		if arErr != nil {
+			return art, nil, arErr
 		}
 		archiveLocation = ar.ToArtifactLocation()
 	}
@@ -537,8 +537,8 @@ func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWrit
 	}
 
 	defer func() {
-		if err := stream.Close(); err != nil {
-			logger.WithError(err).WithField("stream", stream).Warn(ctx, "Error closing stream")
+		if closeErr := stream.Close(); closeErr != nil {
+			logger.WithError(closeErr).WithField("stream", stream).Warn(ctx, "Error closing stream")
 		}
 	}()
 

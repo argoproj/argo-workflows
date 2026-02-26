@@ -11,10 +11,10 @@ argo cluster-template update FILE1 FILE2... [flags]
 ```
 # Update a Cluster Workflow Template:
   argo cluster-template update FILE1
-	
+
 # Update a Cluster Workflow Template and print it as YAML:
   argo cluster-template update FILE1 --output yaml
-  
+
 # Update a Cluster Workflow Template with relaxed validation:
   argo cluster-template update FILE1 --strict false
 

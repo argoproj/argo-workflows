@@ -12,14 +12,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/env"
-	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
+	"github.com/argoproj/argo-workflows/v4/errors"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/env"
+	errorsutil "github.com/argoproj/argo-workflows/v4/util/errors"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
 func (woc *wfOperationCtx) getAgentPodName() string {
@@ -232,9 +232,9 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	woc.addDNSConfig(pod)
 
 	if woc.execWf.Spec.HasPodSpecPatch() {
-		patchedPodSpec, err := util.ApplyPodSpecPatch(pod.Spec, woc.execWf.Spec.PodSpecPatch)
-		if err != nil {
-			return nil, errors.Wrap(err, "", "Error applying PodSpecPatch")
+		patchedPodSpec, patchErr := util.ApplyPodSpecPatch(pod.Spec, woc.execWf.Spec.PodSpecPatch)
+		if patchErr != nil {
+			return nil, errors.Wrap(patchErr, "", "Error applying PodSpecPatch")
 		}
 		pod.Spec = *patchedPodSpec
 	}
@@ -250,7 +250,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		log.WithError(err).Info(ctx, "Failed to create Agent pod")
 		if apierr.IsAlreadyExists(err) {
 			// get a reference to the currently existing Pod since the created pod returned before was nil.
-			if existing, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Get(ctx, pod.Name, metav1.GetOptions{}); err == nil {
+			if existing, getErr := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Get(ctx, pod.Name, metav1.GetOptions{}); getErr == nil {
 				return existing, nil
 			}
 		}

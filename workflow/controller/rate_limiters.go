@@ -5,9 +5,9 @@ import (
 
 	"k8s.io/client-go/util/workqueue"
 
-	"github.com/argoproj/argo-workflows/v3/util/env"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/util/env"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 var envRequeueTime = env.LookupEnvDurationOr(logging.InitLoggerInContext(), common.EnvVarDefaultRequeueTime, 10*time.Second)

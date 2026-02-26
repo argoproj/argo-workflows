@@ -7,10 +7,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
-	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/common"
+	"github.com/argoproj/argo-workflows/v4/pkg/apiclient/clusterworkflowtemplate"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
 func NewListCommand() *cobra.Command {

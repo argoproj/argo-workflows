@@ -6,11 +6,11 @@ import (
 	"github.com/upper/db/v4"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/argoproj/argo-workflows/v3/config"
-	persist "github.com/argoproj/argo-workflows/v3/persist/sqldb"
-	"github.com/argoproj/argo-workflows/v3/util/instanceid"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/util/sqldb"
+	"github.com/argoproj/argo-workflows/v4/config"
+	persist "github.com/argoproj/argo-workflows/v4/persist/sqldb"
+	"github.com/argoproj/argo-workflows/v4/util/instanceid"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/sqldb"
 )
 
 type Persistence struct {

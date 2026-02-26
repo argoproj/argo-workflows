@@ -5,8 +5,8 @@ import (
 	"sync/atomic"
 	"unsafe"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/util/telemetry"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/telemetry"
 )
 
 type logMetricsHelper struct {

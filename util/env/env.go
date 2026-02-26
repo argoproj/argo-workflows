@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 func LookupEnvDurationOr(ctx context.Context, key string, o time.Duration) time.Duration {

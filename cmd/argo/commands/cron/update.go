@@ -6,11 +6,11 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
-	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/common"
+	cronworkflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/cronworkflow"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
 type cliUpdateOpts struct {
@@ -20,19 +20,19 @@ type cliUpdateOpts struct {
 
 func NewUpdateCommand() *cobra.Command {
 	var (
-		cliUpdateOpts  = cliUpdateOpts{output: common.NewPrintWorkflowOutputValue("")}
 		submitOpts     wfv1.SubmitOpts
 		parametersFile string
 	)
+	opts := cliUpdateOpts{output: common.NewPrintWorkflowOutputValue("")}
 	command := &cobra.Command{
 		Use:   "update FILE1 FILE2...",
 		Short: "update a cron workflow",
 		Example: `# Update a Cron Workflow Template:
   argo cron update FILE1
-	
+
 # Update a Cron Workflow Template and print it as YAML:
   argo cron update FILE1 --output yaml
-  
+
 # Update a Cron Workflow Template with relaxed validation:
   argo cron update FILE1 --strict false
 `,
@@ -44,13 +44,13 @@ func NewUpdateCommand() *cobra.Command {
 					return err
 				}
 			}
-			return updateCronWorkflows(cmd.Context(), args, &cliUpdateOpts, &submitOpts)
+			return updateCronWorkflows(cmd.Context(), args, &opts, &submitOpts)
 		},
 	}
 
 	util.PopulateSubmitOpts(command, &submitOpts, &parametersFile, false)
-	command.Flags().VarP(&cliUpdateOpts.output, "output", "o", "Output format. "+cliUpdateOpts.output.Usage())
-	command.Flags().BoolVar(&cliUpdateOpts.strict, "strict", true, "perform strict workflow validation")
+	command.Flags().VarP(&opts.output, "output", "o", "Output format. "+opts.output.Usage())
+	command.Flags().BoolVar(&opts.strict, "strict", true, "perform strict workflow validation")
 	return command
 }
 

@@ -9,14 +9,14 @@ import (
 	"strings"
 	"time"
 
-	argoerrors "github.com/argoproj/argo-workflows/v3/errors"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/expr/argoexpr"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/util/template"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	controllercache "github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
-	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
+	argoerrors "github.com/argoproj/argo-workflows/v4/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/expr/argoexpr"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/template"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	controllercache "github.com/argoproj/argo-workflows/v4/workflow/controller/cache"
+	"github.com/argoproj/argo-workflows/v4/workflow/templateresolution"
 )
 
 // dagContext holds context information about this context's DAG
@@ -230,17 +230,17 @@ func (d *dagContext) assessDAGPhase(ctx context.Context, targetTasks []string, n
 func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmplCtx *templateresolution.TemplateContext, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	node, err := woc.wf.GetNodeByName(nodeName)
 	if err != nil {
-		node = woc.initializeExecutableNode(ctx, nodeName, wfv1.NodeTypeDAG, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodeRunning, opts.nodeFlag, true)
+		_, node = woc.initializeExecutableNode(ctx, nodeName, wfv1.NodeTypeDAG, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodeRunning, opts.nodeFlag, true)
 	}
 
 	defer func() {
-		node, err := woc.wf.Status.Nodes.Get(node.ID)
-		if err != nil {
+		deferNode, nodeErr := woc.wf.Status.Nodes.Get(node.ID)
+		if nodeErr != nil {
 			// CRITICAL ERROR IF THIS BRANCH IS REACHED -> PANIC
 			panic(fmt.Sprintf("expected node for %s due to preceded initializeExecutableNode but couldn't find it", node.ID))
 		}
-		if node.Fulfilled() {
-			woc.killDaemonedChildren(ctx, node.ID)
+		if deferNode.Fulfilled() {
+			woc.killDaemonedChildren(ctx, deferNode.ID)
 		}
 	}()
 
@@ -290,22 +290,23 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 
 		if taskNode != nil {
 			task := dagCtx.GetTask(ctx, taskName)
-			scope, err := woc.buildLocalScopeFromTask(ctx, dagCtx, task)
-			if err != nil {
-				woc.markNodeError(ctx, node.Name, err)
-				return node, err
+			scope, scopeErr := woc.buildLocalScopeFromTask(ctx, dagCtx, task)
+			if scopeErr != nil {
+				woc.markNodeError(ctx, node.Name, scopeErr)
+				return node, scopeErr
 			}
 			scope.addParamToScope(fmt.Sprintf("tasks.%s.status", task.Name), string(taskNode.Phase))
-			_, err = woc.executeTmplLifeCycleHook(ctx, scope, dagCtx.GetTask(ctx, taskName).Hooks, taskNode, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName)
-			if err != nil {
-				woc.markNodeError(ctx, node.Name, err)
-				return node, err
+			var hookErr error
+			_, hookErr = woc.executeTmplLifeCycleHook(ctx, scope, dagCtx.GetTask(ctx, taskName).Hooks, taskNode, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName)
+			if hookErr != nil {
+				woc.markNodeError(ctx, node.Name, hookErr)
+				return node, hookErr
 			}
 			if taskNode.Fulfilled() {
 				if taskNode.Completed() {
-					hasOnExitNode, onExitNode, err := woc.runOnExitNode(ctx, dagCtx.GetTask(ctx, taskName).GetExitHook(woc.execWf.Spec.Arguments), taskNode, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName, scope)
-					if err != nil {
-						return node, err
+					hasOnExitNode, onExitNode, exitErr := woc.runOnExitNode(ctx, dagCtx.GetTask(ctx, taskName).GetExitHook(woc.execWf.Spec.Arguments), taskNode, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName, scope)
+					if exitErr != nil {
+						return node, exitErr
 					}
 					if hasOnExitNode && (onExitNode == nil || !onExitNode.Fulfilled()) {
 						onExitCompleted = false
@@ -347,17 +348,17 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 		if taskNode.Type == wfv1.NodeTypeTaskGroup {
 			childNodes := make([]wfv1.NodeStatus, len(taskNode.Children))
 			for i, childID := range taskNode.Children {
-				childNode, err := woc.wf.Status.Nodes.Get(childID)
-				if err != nil {
+				childNode, childErr := woc.wf.Status.Nodes.Get(childID)
+				if childErr != nil {
 					woc.log.WithField("nodeID", childID).Error(ctx, "was unable to obtain node for nodeID")
 					return nil, fmt.Errorf("critical error; unable to find %s", childID)
 				}
 				childNodes[i] = *childNode
 			}
-			err := woc.processAggregateNodeOutputs(scope, prefix, childNodes)
-			if err != nil {
+			aggErr := woc.processAggregateNodeOutputs(scope, prefix, childNodes)
+			if aggErr != nil {
 				woc.log.Error(ctx, "unable to processAggregateNodeOutputs")
-				return nil, argoerrors.InternalWrapError(err)
+				return nil, argoerrors.InternalWrapError(aggErr)
 			}
 		}
 		woc.buildLocalScope(scope, prefix, taskNode)
@@ -379,9 +380,9 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 	}
 	if node.MemoizationStatus != nil {
 		c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, node.MemoizationStatus.CacheName)
-		err := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs)
-		if err != nil {
-			woc.log.WithField("nodeID", node.ID).WithError(err).Error(ctx, "Failed to save node outputs to cache")
+		saveErr := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs)
+		if saveErr != nil {
+			woc.log.WithField("nodeID", node.ID).WithError(saveErr).Error(ctx, "Failed to save node outputs to cache")
 			node.Phase = wfv1.NodeError
 		}
 	}
@@ -523,12 +524,12 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 				}
 				outboundNodeIDs := woc.getOutboundNodes(ctx, depNode.ID)
 				for _, outNodeID := range outboundNodeIDs {
-					nodeName, err := woc.wf.Status.Nodes.GetName(outNodeID)
+					outNodeName, err := woc.wf.Status.Nodes.GetName(outNodeID)
 					if err != nil {
 						woc.log.WithField("nodeID", outNodeID).Error(ctx, "was unable to obtain node for nodeID")
 						return
 					}
-					woc.addChildNode(ctx, nodeName, taskNodeName)
+					woc.addChildNode(ctx, outNodeName, taskNodeName)
 				}
 			}
 		}
@@ -541,7 +542,7 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 		}
 		execute, proceed, err := dagCtx.evaluateDependsLogic(ctx, taskName)
 		if err != nil {
-			woc.initializeNode(ctx, nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, &wfv1.NodeFlag{}, true, err.Error())
+			_, _ = woc.initializeNode(ctx, nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, &wfv1.NodeFlag{}, true, err.Error())
 			connectDependencies(nodeName)
 			return
 		}
@@ -551,7 +552,7 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 		}
 		if !execute {
 			// Given the results of this node's dependencies, this node should not be executed. Mark it omitted
-			woc.initializeNode(ctx, nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeOmitted, &wfv1.NodeFlag{}, true, "omitted: depends condition not met")
+			_, _ = woc.initializeNode(ctx, nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeOmitted, &wfv1.NodeFlag{}, true, "omitted: depends condition not met")
 			connectDependencies(nodeName)
 			return
 		}
@@ -561,7 +562,10 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 	// First resolve/substitute params/artifacts from our dependencies
 	newTask, err := woc.resolveDependencyReferences(ctx, dagCtx, task)
 	if err != nil {
-		woc.initializeNode(ctx, nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, &wfv1.NodeFlag{}, true, err.Error())
+		if errors.Is(err, ErrRequeue) {
+			return
+		}
+		_, _ = woc.initializeNode(ctx, nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, &wfv1.NodeFlag{}, true, err.Error())
 		connectDependencies(nodeName)
 		return
 	}
@@ -570,13 +574,13 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 	// expandedTasks will be a single element list of the same task
 	scope, err := woc.buildLocalScopeFromTask(ctx, dagCtx, newTask)
 	if err != nil {
-		woc.initializeNode(ctx, nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, &wfv1.NodeFlag{}, true, err.Error())
+		_, _ = woc.initializeNode(ctx, nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, &wfv1.NodeFlag{}, true, err.Error())
 		connectDependencies(nodeName)
 		return
 	}
 	expandedTasks, err := expandTask(ctx, *newTask, woc.globalParams.Merge(scope.getParameters()))
 	if err != nil {
-		woc.initializeNode(ctx, nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, &wfv1.NodeFlag{}, true, err.Error())
+		_, _ = woc.initializeNode(ctx, nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, &wfv1.NodeFlag{}, true, err.Error())
 		connectDependencies(nodeName)
 		return
 	}
@@ -588,11 +592,11 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 		// DAG task with empty withParams list should be skipped
 		if len(expandedTasks) == 0 {
 			skipReason := "Skipped, empty params"
-			woc.initializeNode(ctx, nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeSkipped, &wfv1.NodeFlag{}, true, skipReason)
+			_, _ = woc.initializeNode(ctx, nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeSkipped, &wfv1.NodeFlag{}, true, skipReason)
 			connectDependencies(nodeName)
 		} else if taskGroupNode == nil {
 			connectDependencies(nodeName)
-			taskGroupNode = woc.initializeNode(ctx, nodeName, wfv1.NodeTypeTaskGroup, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeRunning, &wfv1.NodeFlag{}, true, "")
+			_, taskGroupNode = woc.initializeNode(ctx, nodeName, wfv1.NodeTypeTaskGroup, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeRunning, &wfv1.NodeFlag{}, true, "")
 		}
 	}
 
@@ -605,14 +609,14 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 			connectDependencies(taskNodeName)
 
 			// Check the task's when clause to decide if it should execute
-			proceed, err := shouldExecute(t.When)
-			if err != nil {
-				woc.initializeNode(ctx, taskNodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, &wfv1.NodeFlag{}, true, err.Error())
+			proceed, whenErr := shouldExecute(t.When)
+			if whenErr != nil {
+				_, _ = woc.initializeNode(ctx, taskNodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, &wfv1.NodeFlag{}, true, whenErr.Error())
 				continue
 			}
 			if !proceed {
 				skipReason := fmt.Sprintf("when '%s' evaluated false", t.When)
-				woc.initializeNode(ctx, taskNodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeSkipped, &wfv1.NodeFlag{}, true, skipReason)
+				_, _ = woc.initializeNode(ctx, taskNodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeSkipped, &wfv1.NodeFlag{}, true, skipReason)
 				continue
 			}
 		}
@@ -726,12 +730,26 @@ func (woc *wfOperationCtx) resolveDependencyReferences(ctx context.Context, dagC
 	}
 
 	// Replace task's parameters
-	taskBytes, err := json.Marshal(task)
+	// We shallow copy the task to avoid modifying the input pointer, and nil out Hooks to prevent
+	// premature resolution of self-references (e.g. {{tasks.self.outputs...}} in Exit Handlers).
+	tempTask := *task
+	originalHooks := tempTask.Hooks
+	tempTask.Hooks = nil
+
+	taskBytes, err := json.Marshal(tempTask)
 	if err != nil {
 		return nil, argoerrors.InternalWrapError(err)
 	}
-	newTaskStr, err := template.Replace(ctx, string(taskBytes), woc.globalParams.Merge(scope.getParameters()), true)
+	// We use ReplaceStrict to ensure that any references to dependencies (tasks.*, steps.*) are resolved.
+	// If they are not resolved, it indicates a missing output (e.g. due to race condition), and we should error out
+	// rather than leaving the tag unresolved (which would result in incorrect workflow execution).
+	// We allow other variables (like {{item}}) to remain unresolved for later expansion.
+	newTaskStr, err := template.ReplaceStrict(ctx, string(taskBytes), woc.globalParams.Merge(scope.getParameters()), []string{"tasks", "steps"})
 	if err != nil {
+		if template.IsMissingVariableErr(err) {
+			woc.requeue()
+			return nil, ErrRequeue
+		}
 		return nil, err
 	}
 	var newTask wfv1.DAGTask
@@ -739,6 +757,8 @@ func (woc *wfOperationCtx) resolveDependencyReferences(ctx context.Context, dagC
 	if err != nil {
 		return nil, argoerrors.InternalWrapError(err)
 	}
+	// Restore Hooks
+	newTask.Hooks = originalHooks
 
 	// If we are not executing, don't attempt to resolve any artifact references. We only check if we are executing after
 	// the initial parameter resolution, since it's likely that the "when" clause will contain parameter references.

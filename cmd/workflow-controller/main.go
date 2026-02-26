@@ -24,18 +24,20 @@ import (
 	"k8s.io/client-go/tools/leaderelection"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 
-	"github.com/argoproj/argo-workflows/v3"
-	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
-	cmdutil "github.com/argoproj/argo-workflows/v3/util/cmd"
-	"github.com/argoproj/argo-workflows/v3/util/env"
-	kubecli "github.com/argoproj/argo-workflows/v3/util/kube/cli"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/util/logs"
-	pprofutil "github.com/argoproj/argo-workflows/v3/util/pprof"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/controller"
-	"github.com/argoproj/argo-workflows/v3/workflow/events"
-	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
+	"github.com/argoproj/argo-workflows/v4"
+	wfclientset "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
+	cmdutil "github.com/argoproj/argo-workflows/v4/util/cmd"
+	"github.com/argoproj/argo-workflows/v4/util/env"
+	kubecli "github.com/argoproj/argo-workflows/v4/util/kube/cli"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logs"
+	pprofutil "github.com/argoproj/argo-workflows/v4/util/pprof"
+	"github.com/argoproj/argo-workflows/v4/util/telemetry/ratelimiter"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/controller"
+	"github.com/argoproj/argo-workflows/v4/workflow/events"
+	"github.com/argoproj/argo-workflows/v4/workflow/metrics"
+	"github.com/argoproj/argo-workflows/v4/workflow/tracing"
 )
 
 const (
@@ -96,7 +98,8 @@ func NewRootCommand() *cobra.Command {
 
 			logs.AddK8SLogTransportWrapper(ctx, config)
 			metrics.AddMetricsTransportWrapper(ctx, config)
-			metrics.AddRateLimiterWrapper(ctx, config)
+			ratelimiter.AddRateLimiterWrapper(ctx, config)
+			tracing.AddTracingTransportWrapper(ctx, config)
 
 			namespace, _, err := clientConfig.Namespace()
 			if err != nil {
@@ -118,6 +121,14 @@ func NewRootCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			defer func() {
+				if err := wfController.ShutdownTracing(context.WithoutCancel(ctx)); err != nil {
+					log.WithError(err).Error(ctx, "Failed to shutdown tracing")
+				}
+				if err := wfController.ShutdownMetrics(context.WithoutCancel(ctx)); err != nil {
+					log.WithError(err).Error(ctx, "Failed to shutdown metrics")
+				}
+			}()
 
 			leaderElectionOff := os.Getenv("LEADER_ELECTION_DISABLE")
 			if leaderElectionOff == "true" {

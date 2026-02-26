@@ -11,12 +11,12 @@ import (
 
 	"k8s.io/apimachinery/pkg/selection"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
-	envutil "github.com/argoproj/argo-workflows/v3/util/env"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/client/informers/externalversions/workflow/v1alpha1"
+	envutil "github.com/argoproj/argo-workflows/v4/util/env"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/controller/indexes"
 )
 
 var (
@@ -80,6 +80,8 @@ func (woc *wfOperationCtx) taskResultReconciliation(ctx context.Context) {
 	objs, _ := woc.controller.taskResultInformer.GetIndexer().ByIndex(indexes.WorkflowIndex, woc.wf.Namespace+"/"+woc.wf.Name)
 	woc.log.WithField("numObjs", len(objs)).Info(ctx, "Task-result reconciliation")
 
+	ctx, span := woc.controller.tracing.StartReconcileTaskResults(ctx)
+	defer span.End()
 	for _, obj := range objs {
 		result := obj.(*wfv1.WorkflowTaskResult)
 		resultName := result.GetName()
@@ -88,6 +90,7 @@ func (woc *wfOperationCtx) taskResultReconciliation(ctx context.Context) {
 		woc.log.WithField("resultName", resultName).Debug(ctx, "task result name")
 
 		label := result.Labels[common.LabelKeyReportOutputsCompleted]
+		_, span := woc.controller.tracing.StartReconcileTaskResult(ctx, resultName, label == "true")
 		// If the task result is completed, set the state to true.
 		switch label {
 		case "true":
@@ -101,6 +104,7 @@ func (woc *wfOperationCtx) taskResultReconciliation(ctx context.Context) {
 		nodeID := result.Name
 		old, err := woc.wf.Status.Nodes.Get(nodeID)
 		if err != nil {
+			span.End()
 			continue
 		}
 		// Mark task result as completed if it has no chance to be completed, we use phase here to avoid caring about the sync status.
@@ -111,6 +115,7 @@ func (woc *wfOperationCtx) taskResultReconciliation(ctx context.Context) {
 				// In this case, the workflow will only be requeued after the resync period (20m). This means
 				// workflow will not update for 20m. Requeuing here prevents that happening.
 				woc.requeue()
+				span.End()
 				continue
 			}
 			woc.log.WithField("nodeID", nodeID).Info(ctx, "Marking task result as completed because pod has been deleted for a while.")
@@ -136,5 +141,6 @@ func (woc *wfOperationCtx) taskResultReconciliation(ctx context.Context) {
 			woc.wf.Status.Nodes.Set(ctx, nodeID, *newNode)
 			woc.updated = true
 		}
+		span.End()
 	}
 }

@@ -21,13 +21,13 @@ import (
 
 	"github.com/upper/db/v4"
 
-	"github.com/argoproj/argo-workflows/v3/config"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/util/sqldb"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
+	"github.com/argoproj/argo-workflows/v4/config"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/sqldb"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
 )
 
 type When struct {
@@ -345,11 +345,10 @@ func (w *When) WaitForWorkflow(options ...any) *When {
 	for {
 		select {
 		case event := <-watch.ResultChan():
-			wf, ok := event.Object.(*wfv1.Workflow)
-			if ok {
+			if wf, ok := event.Object.(*wfv1.Workflow); ok {
 				w.hydrateWorkflow(wf)
 				printWorkflow(wf)
-				if ok, message := condition(wf); ok {
+				if condOk, message := condition(wf); condOk {
 					_, _ = fmt.Printf("Condition %q met after %s\n", message, time.Since(start).Truncate(time.Second))
 					w.wf = wf
 					return w

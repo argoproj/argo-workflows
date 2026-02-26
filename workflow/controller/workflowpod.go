@@ -14,25 +14,28 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 
-	"github.com/argoproj/argo-workflows/v3/config"
-	"github.com/argoproj/argo-workflows/v3/errors"
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	cmdutil "github.com/argoproj/argo-workflows/v3/util/cmd"
-	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
-	"github.com/argoproj/argo-workflows/v3/util/intstr"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/util/template"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/controller/entrypoint"
-	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
-	"github.com/argoproj/argo-workflows/v3/workflow/validate"
+	"github.com/argoproj/argo-workflows/v4/config"
+	"github.com/argoproj/argo-workflows/v4/errors"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	cmdutil "github.com/argoproj/argo-workflows/v4/util/cmd"
+	errorsutil "github.com/argoproj/argo-workflows/v4/util/errors"
+	"github.com/argoproj/argo-workflows/v4/util/intstr"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/telemetry"
+	"github.com/argoproj/argo-workflows/v4/util/template"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/controller/entrypoint"
+	"github.com/argoproj/argo-workflows/v4/workflow/controller/indexes"
+	"github.com/argoproj/argo-workflows/v4/workflow/util"
+	"github.com/argoproj/argo-workflows/v4/workflow/validate"
 )
 
 var (
@@ -125,6 +128,9 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		return existing, nil
 	}
 
+	ctx, span := woc.controller.tracing.StartCreateWorkflowPod(ctx, nodeID)
+	defer span.End()
+
 	if !woc.GetShutdownStrategy().ShouldExecute(opts.onExitPod) {
 		// Do not create pods if we are shutting down
 		woc.markNodePhase(ctx, nodeName, wfv1.NodeFailed, fmt.Sprintf("workflow shutdown with strategy: %s", woc.GetShutdownStrategy()))
@@ -142,22 +148,25 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		// Allow customization of main container resources.
 		if ctrDefaults := woc.controller.Config.MainContainer; ctrDefaults != nil {
 			// essentially merge the defaults, then the template, into the container
-			a, err := json.Marshal(ctrDefaults)
+			var a []byte
+			a, err = json.Marshal(ctrDefaults)
 			if err != nil {
 				return nil, err
 			}
-			b, err := json.Marshal(c)
+			var b []byte
+			b, err = json.Marshal(c)
 			if err != nil {
 				return nil, err
 			}
 
-			mergedContainerByte, err := strategicpatch.StrategicMergePatch(a, b, apiv1.Container{})
+			var mergedContainerByte []byte
+			mergedContainerByte, err = strategicpatch.StrategicMergePatch(a, b, apiv1.Container{})
 			if err != nil {
 				return nil, err
 			}
 			c = apiv1.Container{}
-			if err := json.Unmarshal(mergedContainerByte, &c); err != nil {
-				return nil, err
+			if unmarshalErr := json.Unmarshal(mergedContainerByte, &c); unmarshalErr != nil {
+				return nil, unmarshalErr
 			}
 		}
 
@@ -192,7 +201,6 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			}
 		}
 	}
-
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      util.GeneratePodName(woc.wf.Name, nodeName, tmpl.Name, nodeID, util.GetWorkflowPodNameVersion(woc.wf)),
@@ -215,6 +223,12 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			ActiveDeadlineSeconds: activeDeadlineSeconds,
 			ImagePullSecrets:      woc.execWf.Spec.ImagePullSecrets,
 		},
+	}
+
+	// Only set trace/span ID annotations when the span context is valid to avoid writing all-zero IDs
+	if sc := trace.SpanFromContext(ctx).SpanContext(); sc.IsValid() {
+		pod.Annotations[common.AnnotationKeyTraceID] = sc.TraceID().String()
+		pod.Annotations[common.AnnotationKeySpanID] = sc.SpanID().String()
 	}
 
 	if os.Getenv(common.EnvVarPodStatusCaptureFinalizer) == "true" {
@@ -289,8 +303,8 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	// Set initial progress from pod metadata if exists.
 	if x, ok := pod.Annotations[common.AnnotationKeyProgress]; ok {
 		if p, ok := wfv1.ParseProgress(x); ok {
-			node, err := woc.wf.Status.Nodes.Get(nodeID)
-			if err != nil {
+			node, getNodeErr := woc.wf.Status.Nodes.Get(nodeID)
+			if getNodeErr != nil {
 				log.WithPanic().Error(ctx, "was unable to obtain node")
 			}
 			node.Progress = p
@@ -338,10 +352,17 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		{Name: common.EnvVarNodeID, Value: nodeID},
 		{Name: common.EnvVarIncludeScriptOutput, Value: strconv.FormatBool(opts.includeScriptOutput)},
 		{Name: common.EnvVarDeadline, Value: woc.getDeadline(opts).Format(time.RFC3339)},
+		{Name: common.EnvVarWorkflowName, Value: woc.wf.Name},
 	}
 
+	carrier := telemetry.Carrier{SetEnvFunc: func(key, value string) {
+		envVars = append(envVars, apiv1.EnvVar{Name: key, Value: value})
+	}}
+	prop := propagation.TraceContext{}
+	prop.Inject(ctx, carrier)
 	// only set tick durations/EnvVarProgressFile if progress is enabled.
 	// The progress is only monitored if the tick durations are >0.
+
 	if woc.controller.progressPatchTickDuration != 0 && woc.controller.progressFileTickDuration != 0 {
 		envVars = append(envVars,
 			apiv1.EnvVar{
@@ -407,7 +428,8 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		return nil, err
 	}
 	if len(podSpecPatchs) > 0 {
-		patchedPodSpec, err := util.ApplyPodSpecPatch(pod.Spec, podSpecPatchs...)
+		var patchedPodSpec *apiv1.PodSpec
+		patchedPodSpec, err = util.ApplyPodSpecPatch(pod.Spec, podSpecPatchs...)
 		if err != nil {
 			return nil, errors.Wrap(err, "", "Error applying PodSpecPatch")
 		}
@@ -418,7 +440,8 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		if !common.IsArgoSidecar(c.Name) {
 			// https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#notes
 			if len(c.Command) == 0 {
-				x, err := woc.controller.entrypoint.Lookup(ctx, c.Image, entrypoint.Options{
+				var x *entrypoint.Image
+				x, err = woc.controller.entrypoint.Lookup(ctx, c.Image, entrypoint.Options{
 					Namespace: woc.wf.Namespace, ServiceAccountName: woc.execWf.Spec.ServiceAccountName, ImagePullSecrets: woc.execWf.Spec.ImagePullSecrets,
 				})
 				if err != nil {
@@ -467,7 +490,8 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			continue
 		}
 		if c.Args != nil {
-			argsJSON, err := json.Marshal(c.Args)
+			var argsJSON []byte
+			argsJSON, err = json.Marshal(c.Args)
 			if err != nil {
 				return nil, fmt.Errorf("failed to marshal container args for %s: %w", c.Name, err)
 			}
@@ -522,7 +546,8 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 			},
 			Data: cmData,
 		}
-		created, err := woc.controller.kubeclientset.CoreV1().ConfigMaps(woc.wf.ObjectMeta.Namespace).Create(ctx, cm, metav1.CreateOptions{})
+		var created *apiv1.ConfigMap
+		created, err = woc.controller.kubeclientset.CoreV1().ConfigMaps(woc.wf.ObjectMeta.Namespace).Create(ctx, cm, metav1.CreateOptions{})
 		if err != nil {
 			if !apierr.IsAlreadyExists(err) {
 				return nil, err
@@ -592,8 +617,8 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		return nil, err
 	}
 
-	if err := woc.scheduleOnDifferentHost(ctx, node, pod); err != nil {
-		return nil, err
+	if scheduleErr := woc.scheduleOnDifferentHost(ctx, node, pod); scheduleErr != nil {
+		return nil, scheduleErr
 	}
 
 	if templateDeadline != nil && (pod.Spec.ActiveDeadlineSeconds == nil || time.Since(*templateDeadline).Seconds() < float64(*pod.Spec.ActiveDeadlineSeconds)) {
@@ -1453,7 +1478,8 @@ func (woc *wfOperationCtx) addArtifactPlugins(ctx context.Context, pod *apiv1.Po
 	sidecarNames := make([]string, len(drivers))
 	for i, driver := range drivers {
 		logging.RequireLoggerFromContext(ctx).WithField("name", driver.Name).Debug(ctx, "Adding artifact plugin")
-		ctr, err := woc.artifactSidecarContainer(ctx, tmpl, driver)
+		var ctr *apiv1.Container
+		ctr, err = woc.artifactSidecarContainer(ctx, tmpl, driver)
 		if err != nil {
 			return err
 		}

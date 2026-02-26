@@ -22,18 +22,18 @@ import (
 
 	"os"
 
-	"github.com/argoproj/argo-workflows/v3"
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
-	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo-workflows/v3/server/apiserver"
-	"github.com/argoproj/argo-workflows/v3/server/auth"
-	"github.com/argoproj/argo-workflows/v3/server/types"
-	cmdutil "github.com/argoproj/argo-workflows/v3/util/cmd"
-	"github.com/argoproj/argo-workflows/v3/util/help"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	pprofutil "github.com/argoproj/argo-workflows/v3/util/pprof"
-	tlsutils "github.com/argoproj/argo-workflows/v3/util/tls"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v4"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/client"
+	wfclientset "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo-workflows/v4/server/apiserver"
+	"github.com/argoproj/argo-workflows/v4/server/auth"
+	"github.com/argoproj/argo-workflows/v4/server/types"
+	cmdutil "github.com/argoproj/argo-workflows/v4/util/cmd"
+	"github.com/argoproj/argo-workflows/v4/util/help"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	pprofutil "github.com/argoproj/argo-workflows/v4/util/pprof"
+	tlsutils "github.com/argoproj/argo-workflows/v4/util/tls"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 func NewServerCommand() *cobra.Command {
@@ -118,7 +118,8 @@ See %s`, help.ArgoServer()),
 
 			var tlsConfig *tls.Config
 			if secure {
-				tlsMinVersion, err := env.GetInt("TLS_MIN_VERSION", tls.VersionTLS12)
+				var tlsMinVersion int
+				tlsMinVersion, err = env.GetInt("TLS_MIN_VERSION", tls.VersionTLS12)
 				if err != nil {
 					return err
 				}
@@ -143,8 +144,7 @@ See %s`, help.ArgoServer()),
 
 			modes := auth.Modes{}
 			for _, mode := range authModes {
-				err := modes.Add(mode)
-				if err != nil {
+				if err = modes.Add(mode); err != nil {
 					return err
 				}
 			}
@@ -176,9 +176,8 @@ See %s`, help.ArgoServer()),
 			if enableOpenBrowser {
 				browserOpenFunc = func(url string) {
 					logger.WithField("url", url).Info(ctx, "Argo UI is available")
-					err := browser.OpenURL(url)
-					if err != nil {
-						logger.WithError(err).Warn(ctx, "Unable to open the browser")
+					if browserErr := browser.OpenURL(url); browserErr != nil {
+						logger.WithError(browserErr).Warn(ctx, "Unable to open the browser")
 					}
 				}
 			}

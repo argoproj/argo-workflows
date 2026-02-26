@@ -6,7 +6,7 @@ import (
 
 	"github.com/expr-lang/expr"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
 func ProcessData(ctx context.Context, data *wfv1.Data, processor wfv1.DataSourceProcessor) (any, error) {

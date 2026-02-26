@@ -16,18 +16,18 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"go.opentelemetry.io/otel/propagation"
 	"k8s.io/client-go/util/retry"
 
-	"github.com/argoproj/argo-workflows/v3/workflow/executor"
-	"github.com/argoproj/argo-workflows/v3/workflow/executor/emissary"
-
-	"github.com/argoproj/argo-workflows/v3/util/archive"
-	"github.com/argoproj/argo-workflows/v3/util/errors"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/executor/osspecific"
-
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/archive"
+	"github.com/argoproj/argo-workflows/v4/util/errors"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/executor"
+	"github.com/argoproj/argo-workflows/v4/workflow/executor/emissary"
+	"github.com/argoproj/argo-workflows/v4/workflow/executor/osspecific"
+	"github.com/argoproj/argo-workflows/v4/workflow/executor/tracing"
 )
 
 var (
@@ -37,6 +37,15 @@ var (
 	template            = &wfv1.Template{}
 )
 
+func injectTraceParent(ctx context.Context) {
+	carrier := propagation.MapCarrier{}
+	propagation.TraceContext{}.Inject(ctx, carrier)
+
+	for k, v := range carrier {
+		os.Setenv(strings.ToUpper(k), v)
+	}
+}
+
 func NewEmissaryCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:          "emissary",
@@ -45,7 +54,6 @@ func NewEmissaryCommand() *cobra.Command {
 			exitCode := 64
 			ctx := cmd.Context()
 			logger := logging.RequireLoggerFromContext(ctx)
-
 			defer func() {
 				err := os.WriteFile(varRunArgo+"/ctr/"+containerName+"/exitcode", []byte(strconv.Itoa(exitCode)), 0o644)
 				if err != nil {
@@ -53,13 +61,31 @@ func NewEmissaryCommand() *cobra.Command {
 				}
 			}()
 
+			tracer, err := tracing.New(ctx, `argoexec`)
+			if err != nil {
+				logger.WithFatal().WithError(err).Error(ctx, "failed to initialize tracing")
+				return err
+			}
+			defer func() {
+				if deferErr := tracer.Shutdown(context.WithoutCancel(ctx)); deferErr != nil {
+					logger.WithError(deferErr).Error(ctx, "Failed to shutdown tracing")
+				}
+			}()
+
+			ctx = tracing.InjectTraceContext(ctx)
+			workflowName := os.Getenv(common.EnvVarWorkflowName)
+			namespace, _ := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
+			ctx, span := tracer.StartRunMainContainer(ctx, workflowName, string(namespace))
+			defer span.End()
+			injectTraceParent(ctx)
+
 			osspecific.AllowGrantingAccessToEveryone()
 
 			// Dir permission set to rwxrwxrwx, so that non-root wait container can also write kill signal to the folder.
 			// Note it's important varRunArgo+"/ctr/" folder is writable by all, because multiple containers may want to
 			// write to it with different users.
 			// This also indicates we've started.
-			if err := os.MkdirAll(varRunArgo+"/ctr/"+containerName, 0o777); err != nil {
+			if err = os.MkdirAll(varRunArgo+"/ctr/"+containerName, 0o777); err != nil {
 				return fmt.Errorf("failed to create ctr directory: %w", err)
 			}
 
@@ -68,12 +94,12 @@ func NewEmissaryCommand() *cobra.Command {
 			// Check if args were offloaded to a file (for large args that exceed exec limit)
 			if argsFile := os.Getenv(common.EnvVarContainerArgsFile); argsFile != "" {
 				logger.WithField("argsFile", argsFile).Info(ctx, "Reading container args from file")
-				argsData, err := os.ReadFile(argsFile)
-				if err != nil {
-					return fmt.Errorf("failed to read container args file %s: %w", argsFile, err)
+				argsData, readErr := os.ReadFile(argsFile)
+				if readErr != nil {
+					return fmt.Errorf("failed to read container args file %s: %w", argsFile, readErr)
 				}
 				var fileArgs []string
-				if err := json.Unmarshal(argsData, &fileArgs); err != nil {
+				if err = json.Unmarshal(argsData, &fileArgs); err != nil {
 					return fmt.Errorf("failed to unmarshal container args: %w", err)
 				}
 				args = append(args, fileArgs...)
@@ -85,7 +111,7 @@ func NewEmissaryCommand() *cobra.Command {
 				for i := 0; i < len(args); i++ {
 					if len(args[i]) > common.MaxEnvVarLen {
 						filePath := fmt.Sprintf("/tmp/argo_arg_%d.txt", i)
-						if err := os.WriteFile(filePath, []byte(args[i]), 0o644); err != nil {
+						if err = os.WriteFile(filePath, []byte(args[i]), 0o644); err != nil {
 							return fmt.Errorf("failed to write large arg %d to file: %w", i, err)
 						}
 						logger.WithFields(logging.Fields{
@@ -103,7 +129,7 @@ func NewEmissaryCommand() *cobra.Command {
 				return fmt.Errorf("failed to read template: %w", err)
 			}
 
-			if err := json.Unmarshal(data, template); err != nil {
+			if err = json.Unmarshal(data, template); err != nil {
 				return fmt.Errorf("failed to unmarshal template: %w", err)
 			}
 
@@ -132,7 +158,7 @@ func NewEmissaryCommand() *cobra.Command {
 								}
 							default:
 								data, _ := os.ReadFile(filepath.Clean(varRunArgo + "/ctr/" + y + "/exitcode"))
-								exitCode, err := strconv.Atoi(string(data))
+								exitCode, err = strconv.Atoi(string(data))
 								if err != nil {
 									time.Sleep(time.Second)
 									continue
@@ -158,7 +184,7 @@ func NewEmissaryCommand() *cobra.Command {
 					// User can create the file: /ctr/NAME_OF_THE_CONTAINER/before
 					// in order to break out of the sleep and release the container from
 					// the debugging state.
-					if _, err := os.Stat(varRunArgo + "/ctr/" + containerName + "/before"); os.IsNotExist(err) {
+					if _, statErr := os.Stat(varRunArgo + "/ctr/" + containerName + "/before"); os.IsNotExist(statErr) {
 						time.Sleep(time.Second)
 						continue
 					}
@@ -190,9 +216,9 @@ func NewEmissaryCommand() *cobra.Command {
 					}
 				}()
 				pid := command.Process.Pid
-				ctx, cancel := context.WithCancel(ctx)
+				innerCtx, cancel := context.WithCancel(ctx)
 				defer cancel()
-				startFileSignalHandler(ctx, pid)
+				startFileSignalHandler(innerCtx, pid)
 				for _, sidecarName := range template.GetSidecarNames() {
 					if sidecarName == containerName {
 						em, err := emissary.New()
@@ -202,20 +228,20 @@ func NewEmissaryCommand() *cobra.Command {
 
 						go func() {
 							mainContainerNames := template.GetMainContainerNames()
-							err = em.Wait(ctx, mainContainerNames)
+							err = em.Wait(innerCtx, mainContainerNames)
 							if err != nil {
 								logger.WithError(err).WithFields(logging.Fields{
 									"mainContainerNames": mainContainerNames,
-								}).Error(ctx, "failed to wait for main container(s)")
+								}).Error(innerCtx, "failed to wait for main container(s)")
 							}
 
 							logger.WithFields(logging.Fields{
 								"mainContainerNames": mainContainerNames,
 								"containerName":      containerName,
-							}).Info(ctx, "main container(s) exited, terminating container")
-							err = em.Kill(ctx, []string{containerName}, executor.GetTerminationGracePeriodDuration())
+							}).Info(innerCtx, "main container(s) exited, terminating container")
+							err = em.Kill(innerCtx, []string{containerName}, executor.GetTerminationGracePeriodDuration())
 							if err != nil {
-								logger.WithField("containerName", containerName).WithError(err).Error(ctx, "failed to terminate/kill container")
+								logger.WithField("containerName", containerName).WithError(err).Error(innerCtx, "failed to terminate/kill container")
 							}
 						}()
 
@@ -378,8 +404,8 @@ func saveParameter(ctx context.Context, srcPath string) error {
 		"dst": dstPath,
 	}).Info(ctx, "saving parameter")
 	z := filepath.Dir(dstPath)
-	if err := os.MkdirAll(z, 0o755); err != nil { // chmod rwxr-xr-x
-		return fmt.Errorf("failed to create directory %s: %w", z, err)
+	if mkdirErr := os.MkdirAll(z, 0o755); mkdirErr != nil { // chmod rwxr-xr-x
+		return fmt.Errorf("failed to create directory %s: %w", z, mkdirErr)
 	}
 	dst, err := os.Create(dstPath)
 	if err != nil {
