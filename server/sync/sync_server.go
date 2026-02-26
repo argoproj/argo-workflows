@@ -40,7 +40,7 @@ func NewSyncServer(ctx context.Context, kubectlConfig kubernetes.Interface, name
 			DBConfig:      syncConfig.DBConfig,
 		})
 		if err == nil {
-			server.providers[syncpkg.SyncConfigType_DATABASE] = &dbSyncProvider{db: syncdb.NewSyncQueries(sessionProxy, syncdb.DBConfigFromConfig(syncConfig))}
+			server.providers[syncpkg.SyncConfigType_DATABASE] = &dbSyncProvider{db: syncdb.NewSyncQueries(sessionProxy, syncdb.ConfigFromConfig(syncConfig))}
 		}
 	}
 

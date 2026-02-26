@@ -10,7 +10,7 @@ const (
 	versionTable = "sync_schema_history"
 )
 
-func migrate(ctx context.Context, sessionProxy *sqldb.SessionProxy, config *DBConfig) (err error) {
+func migrate(ctx context.Context, sessionProxy *sqldb.SessionProxy, config *Config) (err error) {
 	return sqldb.Migrate(ctx, sessionProxy.Session(), sessionProxy.DBType(), versionTable, []sqldb.Change{
 		sqldb.AnsiSQLChange(`create table if not exists ` + config.LimitTable + ` (
     name varchar(256) not null,

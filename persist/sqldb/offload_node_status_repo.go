@@ -91,12 +91,12 @@ func (wdc *nodeOffloadRepo) Save(ctx context.Context, uid, namespace string, nod
 	logCtx.Debug(ctx, "Offloading nodes")
 
 	err = wdc.sessionProxy.With(ctx, func(session db.Session) error {
-		_, err := session.Collection(wdc.tableName).Insert(record)
-		if err != nil {
+		_, insertErr := session.Collection(wdc.tableName).Insert(record)
+		if insertErr != nil {
 			// if we have a duplicate, then it must have the same clustername+uid+version, which MUST mean that we
 			// have already written this record
-			if !isDuplicateKeyError(err) {
-				return err
+			if !isDuplicateKeyError(insertErr) {
+				return insertErr
 			}
 			logCtx.WithField("err", err).Debug(ctx, "Ignoring duplicate key error")
 		}

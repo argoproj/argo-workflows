@@ -11,8 +11,8 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/sqldb"
 )
 
-// DBConfig holds database configuration for sync operations.
-type DBConfig struct {
+// Config holds database configuration for sync operations.
+type Config struct {
 	LimitTable                string
 	StateTable                string
 	ControllerTable           string
@@ -22,8 +22,8 @@ type DBConfig struct {
 	SkipMigration             bool
 }
 
-type DBInfo struct {
-	Config       DBConfig
+type Info struct {
+	Config       Config
 	SessionProxy *sqldb.SessionProxy
 }
 
@@ -53,7 +53,7 @@ func SecondsToDurationWithDefault(value *int, defaultSeconds int) time.Duration 
 	return dur
 }
 
-func (d *DBInfo) Migrate(ctx context.Context) {
+func (d *Info) Migrate(ctx context.Context) {
 	if d.SessionProxy == nil {
 		return
 	}
@@ -73,11 +73,11 @@ func (d *DBInfo) Migrate(ctx context.Context) {
 	}
 }
 
-func DBConfigFromConfig(syncConfig *config.SyncConfig) DBConfig {
+func ConfigFromConfig(syncConfig *config.SyncConfig) Config {
 	if syncConfig == nil {
-		return DBConfig{}
+		return Config{}
 	}
-	return DBConfig{
+	return Config{
 		LimitTable:      defaultTable(syncConfig.LimitTableName, defaultLimitTableName),
 		StateTable:      defaultTable(syncConfig.StateTableName, defaultStateTableName),
 		ControllerTable: defaultTable(syncConfig.ControllerTableName, defaultControllerTableName),
@@ -89,14 +89,14 @@ func DBConfigFromConfig(syncConfig *config.SyncConfig) DBConfig {
 	}
 }
 
-func DBSessionFromConfigWithCreds(syncConfig *config.SyncConfig, username, password string) *sqldb.SessionProxy {
+func SessionFromConfigWithCreds(syncConfig *config.SyncConfig, username, password string) *sqldb.SessionProxy {
 	if syncConfig == nil {
 		return nil
 	}
 	sessionProxy, err := sqldb.NewSessionProxy(context.Background(), sqldb.SessionProxyConfig{
-		DBConfig:  syncConfig.DBConfig,
-		Username:  username,
-		Password:  password,
+		DBConfig: syncConfig.DBConfig,
+		Username: username,
+		Password: password,
 	})
 	if err != nil {
 		// Carry on anyway, but database sync locks won't work
@@ -105,7 +105,7 @@ func DBSessionFromConfigWithCreds(syncConfig *config.SyncConfig, username, passw
 	return sessionProxy
 }
 
-func DBSessionFromConfig(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, syncConfig *config.SyncConfig) *sqldb.SessionProxy {
+func SessionFromConfig(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, syncConfig *config.SyncConfig) *sqldb.SessionProxy {
 	if syncConfig == nil {
 		return nil
 	}

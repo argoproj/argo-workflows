@@ -1569,9 +1569,9 @@ func TestMutexMigration(t *testing.T) {
 
 	syncLimitFunc := GetSyncLimitFunc(kube)
 
-	syncMgr, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
+	syncMgr, mgrErr := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
 	}, WorkflowExistenceFunc, false)
-	require.NoError(err)
+	require.NoError(mgrErr)
 
 	wfMutex := wfv1.MustUnmarshalWorkflow(wfWithMutex)
 
@@ -1611,9 +1611,9 @@ func TestMutexMigration(t *testing.T) {
 		assert.True(status)
 	})
 
-	syncMgr, err = NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
+	syncMgr, mgrErr = NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
 	}, WorkflowExistenceFunc, false)
-	require.NoError(err)
+	require.NoError(mgrErr)
 
 	t.Run("RunMigrationTemplateLevel", func(t *testing.T) {
 		syncMgr.syncLockMap = make(map[string]semaphore)
