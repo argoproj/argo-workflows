@@ -13,6 +13,9 @@ Metrics can also be scraped using Prometheus.
 This is common configuration for metrics and tracing.
 
 To enable the OpenTelemetry protocol you must set the environment variable `OTEL_EXPORTER_OTLP_ENDPOINT`, or the signal-specific endpoints `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT` and `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`.
+This must be set on the workflow-controller, and ideally on all the containers (`main`, `init`, and `wait`) in the workload.
+You can use the [OpenTelemetry operator](https://opentelemetry.io/docs/kubernetes/operator/) to setup the collector and instrument the workflow-controller.
+The OpenTelemetry operator can also instrument your workload pods so that they emit spans as part of workflow tracing and this is the recommended setup.
 It will not be enabled if left blank, unlike some other implementations.
 
 You can configure the protocol using the environment variables documented in the [OpenTelemetry standard environment variables](https://opentelemetry.io/docs/languages/sdk-configuration/otlp-exporter/).
@@ -28,9 +31,6 @@ receivers:
       grpc:
         endpoint: 0.0.0.0:4317
 ```
-
-You can use the [OpenTelemetry operator](https://opentelemetry.io/docs/kubernetes/operator/) to setup the collector and instrument the workflow-controller.
-The OpenTelemetry operator can also instrument your workload pods so that they emit spans as part of workflow tracing and this is the recommended setup.
 
 ## Metrics
 
@@ -52,7 +52,7 @@ The [configuration options](#common-metrics-settings) `metricsTTL`, `modifiers` 
 
 ### Prometheus Scraping
 
-A metrics service is not installed as part of [the default installation](quick-start.md) so you will need to add one if you wish to use a Prometheus Service Monitor.
+A metrics service is not installed as part of the installation of Argo so you will need to add one if you wish to use a Prometheus Service Monitor.
 If you have more than one controller pod, using one as a [hot-standby](high-availability.md), you should use [a headless service](https://kubernetes.io/docs/concepts/services-networking/service/#headless-services) to ensure that each pod is being scraped so that no metrics are missed.
 
 ```yaml
@@ -105,7 +105,6 @@ metricsConfig: |
   ignoreErrors: false
 
   # Use a self-signed cert for TLS
-  # >= 3.6: default true
   secure: true
 ```
 
@@ -122,7 +121,7 @@ kubectl -n argo port-forward deploy/workflow-controller 9090:9090
 ```
 
 !!! Note "UTF-8 in Prometheus metrics"
-    Version `v3.7` upgraded the `github.com/prometheus/client_golang` library, changing the `NameValidationScheme` to `UTF8Validation`. This allows metric names to retain their original delimiters (e.g., .), instead of replacing them with underscores. To maintain the legacy behavior, you can set the environment variable `PROMETHEUS_LEGACY_NAME_VALIDATION_SCHEME`. For more details, refer to the official [Prometheus documentation](https://prometheus.io/docs/guides/utf8/).
+    Version `v3.7` of Argo upgraded the `github.com/prometheus/client_golang` library, changing the `NameValidationScheme` to `UTF8Validation`. This allows metric names to retain their original delimiters (e.g., .), instead of replacing them with underscores. To maintain the legacy behavior, you can set the environment variable `PROMETHEUS_LEGACY_NAME_VALIDATION_SCHEME`. For more details, refer to the official [Prometheus documentation](https://prometheus.io/docs/guides/utf8/).
 
 ### Common Metrics Settings
 

@@ -20,7 +20,7 @@ Metrics can be collected using the OpenTelemetry protocol or via Prometheus comp
 Metrics can be collected via OpenTelemetry protocol or Prometheus scraping.
 See [telemetry configuration](telemetry-configuration.md#metrics) for setup details.
 
-## Metrics and metrics in Argo
+## Metrics in Argo
 
 There are two kinds of metrics emitted by Argo: **controller metrics** and **custom metrics**.
 
@@ -531,4 +531,4 @@ This is how these metrics are "linked" as belonging to the same series.
 
 ### Grafana Dashboard for Argo Controller Metrics
 
-Please see the [Argo Workflows metrics](https://grafana.com/grafana/dashboards/20348-argo-workflows-metrics/) Grafana dashboard.
+Please see the [Argo Workflows metrics](https://grafana.com/grafana/dashboards/21393-argo-workflows-metrics-3-6/) Grafana dashboard.
