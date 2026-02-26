@@ -35,5 +35,5 @@ spec:
       container:
         image: busybox
         command: [echo]
-        args: ["{{user.username}}"]
+        args: ["{{message.value}} not working, got value: {{inputs.parameters.message}}"]
 ```
