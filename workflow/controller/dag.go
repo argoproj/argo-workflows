@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"sort"
 	"strings"
 	"time"
@@ -996,8 +997,6 @@ func (d *dagContext) evaluateDependsLogic(ctx context.Context, taskName string) 
 // copyEvalScope creates a shallow copy of an eval scope map.
 func copyEvalScope(scope map[string]TaskResults) map[string]TaskResults {
 	result := make(map[string]TaskResults, len(scope))
-	for k, v := range scope {
-		result[k] = v
-	}
+	maps.Copy(result, scope)
 	return result
 }
