@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"encoding/json"
+	stderrors "errors"
 	"fmt"
 	"math"
 	"os"
@@ -125,6 +126,8 @@ var (
 	ErrTimeout = errors.New(errors.CodeTimeout, "timeout")
 	// ErrMaxDepthExceeded indicates that the maximum recursion depth was exceeded
 	ErrMaxDepthExceeded = errors.New(errors.CodeTimeout, fmt.Sprintf("Maximum recursion depth exceeded. See %s", help.ConfigureMaximumRecursionDepth()))
+	// ErrRequeue indicates the workflow should be requeued for later processing
+	ErrRequeue = stderrors.New("requeue")
 )
 
 // maxOperationTime is the maximum time a workflow operation is allowed to run
