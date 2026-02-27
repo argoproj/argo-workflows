@@ -2,7 +2,9 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"os"
 
 	"golang.org/x/time/rate"
 	apiv1 "k8s.io/api/core/v1"
@@ -50,6 +52,9 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 			wfc.dbType = dbType
 		}
 		sqldb.ConfigureDBSession(wfc.session, persistence.ConnectionPool)
+		if os.Getenv("ALWAYS_OFFLOAD_NODE_STATUS") == "true" && !persistence.NodeStatusOffload {
+			return errors.New("persistence.NodeStatusOffload must be defined when ALWAYS_OFFLOAD_NODE_STATUS is true")
+		}
 		if persistence.NodeStatusOffload {
 			wfc.offloadNodeStatusRepo, err = persist.NewOffloadNodeStatusRepo(ctx, logger, wfc.session, persistence.GetClusterName(), tableName)
 			if err != nil {
