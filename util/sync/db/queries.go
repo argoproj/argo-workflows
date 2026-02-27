@@ -7,7 +7,7 @@ import (
 	"github.com/upper/db/v4"
 )
 
-// Record types for database operations
+// LimitRecord is a record type for database synchronization limit operations.
 type LimitRecord struct {
 	Name      string `db:"name"`
 	SizeLimit int    `db:"sizelimit"`

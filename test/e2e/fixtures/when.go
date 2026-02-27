@@ -231,9 +231,9 @@ var (
 	ToBePending = ToHavePhase(wfv1.WorkflowPending)
 )
 
-// `ToBeDone` replaces `ToFinish` which also makes sure the workflow is both complete not pending archiving.
-// This additional check is not needed for most use case, however in `AfterTest` we delete the workflow and this
-// creates a lot of warning messages in the logs that are cause by misuse rather than actual problems.
+// ToBeDone replaces `ToFinish` and also makes sure the workflow is both complete and not pending archiving.
+// This additional check is not needed for most use cases, however in `AfterTest` we delete the workflow and this
+// creates a lot of warning messages in the logs that are caused by misuse rather than actual problems.
 var ToBeDone Condition = func(wf *wfv1.Workflow) (bool, string) {
 	toBeCompleted, _ := ToBeCompleted(wf)
 	return toBeCompleted && wf.Labels[common.LabelKeyWorkflowArchivingStatus] != "Pending", "to be done"
@@ -295,7 +295,7 @@ func describeListOptions(opts metav1.ListOptions) string {
 	return out
 }
 
-// Wait for a workflow to meet a condition:
+// WaitForWorkflow waits for a workflow to meet a condition.
 // Options:
 // * `time.Duration` - change the timeout - 30s by default
 //
@@ -372,7 +372,7 @@ func (w *When) WaitForWorkflow(options ...any) *When {
 	}
 }
 
-// Waits for workflow to be created with different name than the current one
+// WaitForNewWorkflow waits for a workflow to be created with a different name than the current one.
 func (w *When) WaitForNewWorkflow(condition Condition) *When {
 	w.t.Helper()
 	if w.wf == nil {
@@ -900,7 +900,7 @@ func (w *When) ShutdownWorkflow(strategy wfv1.ShutdownStrategy) *When {
 	return w
 }
 
-// test condition function on Workflow
+// WorkflowCondition tests a condition function on the current Workflow.
 func (w *When) WorkflowCondition(condition func(wf *wfv1.Workflow) bool) bool {
 	return condition(w.wf)
 }

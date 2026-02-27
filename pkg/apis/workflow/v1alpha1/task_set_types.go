@@ -4,6 +4,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// WorkflowTaskSet holds a set of tasks to be executed as part of a workflow.
 // +genclient
 // +kubebuilder:resource:shortName=wfts
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -23,6 +24,7 @@ type WorkflowTaskSetStatus struct {
 	Nodes map[string]NodeResult `json:"nodes,omitempty" protobuf:"bytes,1,rep,name=nodes"`
 }
 
+// WorkflowTaskSetList is a list of WorkflowTaskSet resources.
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type WorkflowTaskSetList struct {
 	metav1.TypeMeta `json:",inline"`

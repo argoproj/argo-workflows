@@ -8,7 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-// These are utility functions when using IntOrString to hold either an Int or an Argo Variable
+// Int extracts an int value from an IntOrString, which may hold either an Int or an Argo Variable.
 func Int(is *intstr.IntOrString) (*int, error) {
 	if is == nil {
 		return nil, nil
