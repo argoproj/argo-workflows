@@ -2,7 +2,7 @@
 
 # IoArgoprojWorkflowV1alpha1Link
 
-A link to another app.
+Link is a link to another app.
 
 ## Properties
 

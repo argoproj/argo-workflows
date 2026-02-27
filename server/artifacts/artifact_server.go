@@ -68,7 +68,7 @@ func (a *ArtifactServer) GetInputArtifact(w http.ResponseWriter, r *http.Request
 	a.getArtifact(w, r, true)
 }
 
-// single endpoint to be able to handle serving directories as well as files, both those that have been archived and those that haven't
+// GetArtifactFile is a single endpoint to handle serving directories as well as files, both those that have been archived and those that haven't.
 // Valid requests:
 //
 //	/artifact-files/{namespace}/[archived-workflows|workflows]/{id}/{nodeID}/[inputs|outputs]/{artifactName}

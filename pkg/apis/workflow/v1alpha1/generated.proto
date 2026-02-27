@@ -211,6 +211,7 @@ message ArtifactRepository {
   optional PluginArtifactRepository plugin = 8;
 }
 
+// ArtifactRepositoryRef is a reference to an artifact repository config map.
 // +protobuf.options.(gogoproto.goproto_stringer)=false
 message ArtifactRepositoryRef {
   // The name of the config map. Defaults to "artifact-repositories".
@@ -220,6 +221,7 @@ message ArtifactRepositoryRef {
   optional string key = 2;
 }
 
+// ArtifactRepositoryRefStatus is the resolved artifact repository reference with namespace info.
 // +protobuf.options.(gogoproto.goproto_stringer)=false
 message ArtifactRepositoryRefStatus {
   optional ArtifactRepositoryRef artifactRepositoryRef = 1;
@@ -931,7 +933,7 @@ message LabelValueFrom {
   optional string expression = 1;
 }
 
-// Labels is list of workflow labels
+// LabelValues is a list of workflow labels.
 message LabelValues {
   repeated string items = 1;
 }
@@ -951,7 +953,7 @@ message LifecycleHook {
   optional string expression = 4;
 }
 
-// A link to another app.
+// Link is a link to another app.
 // +patchStrategy=merge
 // +patchMergeKey=name
 message Link {
@@ -985,7 +987,7 @@ message MemoizationStatus {
   optional string cacheName = 3;
 }
 
-// Memoization enables caching for the Outputs of the template
+// Memoize enables caching for the Outputs of the template.
 message Memoize {
   // Key is the key to use as the caching key
   optional string key = 1;
@@ -998,7 +1000,7 @@ message Memoize {
   optional string maxAge = 3;
 }
 
-// Pod metadata
+// Metadata is pod metadata.
 message Metadata {
   map<string, string> annotations = 1;
 
@@ -1210,7 +1212,7 @@ message OAuth2Auth {
   repeated OAuth2EndpointParam endpointParams = 6;
 }
 
-// EndpointParam is for requesting optional fields that should be sent in the oauth request
+// OAuth2EndpointParam is an optional field that should be sent in the OAuth request.
 message OAuth2EndpointParam {
   // Name is the header name
   optional string key = 1;
@@ -1271,6 +1273,7 @@ message OSSLifecycleRule {
   optional int32 markDeletionAfterDays = 2;
 }
 
+// Object represents a JSON object value.
 // +kubebuilder:validation:Type=object
 message Object {
   optional bytes value = 1;
@@ -1295,6 +1298,7 @@ message Outputs {
   optional string exitCode = 4;
 }
 
+// ParallelSteps is a list of workflow steps that run in parallel.
 // swagger:ignore
 message ParallelSteps {
   // Note: the `json:"steps"` part exists to workaround kubebuilder limitations.
@@ -2351,6 +2355,7 @@ message WorkflowTaskResult {
   optional NodeResult nodeResult = 2;
 }
 
+// WorkflowTaskResultList is a list of WorkflowTaskResult resources.
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 message WorkflowTaskResultList {
   optional .k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
@@ -2358,6 +2363,7 @@ message WorkflowTaskResultList {
   repeated WorkflowTaskResult items = 2;
 }
 
+// WorkflowTaskSet holds a set of tasks to be executed as part of a workflow.
 // +genclient
 // +kubebuilder:resource:shortName=wfts
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -2370,6 +2376,7 @@ message WorkflowTaskSet {
   optional WorkflowTaskSetStatus status = 3;
 }
 
+// WorkflowTaskSetList is a list of WorkflowTaskSet resources.
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 message WorkflowTaskSetList {
   optional .k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
