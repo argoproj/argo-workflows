@@ -789,7 +789,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 			woc.persistWorkflowSizeLimitErr(ctx, wfClient, err)
 			return
 		}
-		if !apierr.IsConflict(err) {
+		if !apierr.IsConflict(err) && !errorsutil.IsTransientErr(err) {
 			return
 		}
 		woc.log.Info(ctx, "Re-applying updates on latest version and retrying update")
