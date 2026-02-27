@@ -2,7 +2,7 @@
 
 # IoArgoprojWorkflowV1alpha1OAuth2EndpointParam
 
-EndpointParam is for requesting optional fields that should be sent in the oauth request
+OAuth2EndpointParam is an optional field that should be sent in the OAuth request.
 
 ## Properties
 

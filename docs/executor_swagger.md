@@ -48,12 +48,12 @@ POST /api/v1/template.execute
 #### All responses
 | Code | Status | Description | Has headers | Schema |
 |------|--------|-------------|:-----------:|--------|
-| [200](#execute-template-200) | OK |  |  | [schema](#execute-template-200-schema) |
+| [200](#execute-template-200) | OK | ExecuteTemplateResponse is the response object for template execution. |  | [schema](#execute-template-200-schema) |
 
 #### Responses
 
 
-##### <span id="execute-template-200"></span> 200
+##### <span id="execute-template-200"></span> 200 - ExecuteTemplateResponse is the response object for template execution.
 Status: OK
 
 ###### <span id="execute-template-200-schema"></span> Schema
@@ -2111,10 +2111,7 @@ that the fieldset applies to.
 ### <span id="memoize"></span> Memoize
 
 
-> Memoization enables caching for the Outputs of the template
   
-
-
 
 
 
@@ -2131,10 +2128,7 @@ that the fieldset applies to.
 ### <span id="metadata"></span> Metadata
 
 
-> Pod metadata
   
-
-
 
 
 
@@ -2400,10 +2394,7 @@ save/load the directory appropriately.
 ### <span id="o-auth2-endpoint-param"></span> OAuth2EndpointParam
 
 
-> EndpointParam is for requesting optional fields that should be sent in the oauth request
   
-
-
 
 
 

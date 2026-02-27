@@ -30,6 +30,7 @@ type CronWorkflowList struct {
 	Items           []CronWorkflow `json:"items" protobuf:"bytes,2,rep,name=items"`
 }
 
+// ConcurrencyPolicy defines how to treat concurrent executions of a CronWorkflow.
 // +kubebuilder:validation:Enum=Allow;Forbid;Replace
 type ConcurrencyPolicy string
 
@@ -145,8 +146,8 @@ func (c *CronWorkflowSpec) GetScheduleString() string {
 	return c.getScheduleString(false)
 }
 
-// GetScheduleString returns the schedule expression with timezone, if available. If multiple
-// expressions are configured it returns a comma separated list of cron expressions
+// GetScheduleWithTimezoneString returns the schedule expression with timezone, if available. If multiple
+// expressions are configured it returns a comma separated list of cron expressions.
 func (c *CronWorkflowSpec) GetScheduleWithTimezoneString() string {
 	return c.getScheduleString(true)
 }

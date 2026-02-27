@@ -1,6 +1,6 @@
 package v1alpha1
 
-// A link to another app.
+// Link is a link to another app.
 // +patchStrategy=merge
 // +patchMergeKey=name
 type Link struct {

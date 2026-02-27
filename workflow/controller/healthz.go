@@ -28,7 +28,7 @@ func LogMiddleware(logger logging.Logger, next http.Handler) http.Handler {
 	})
 }
 
-// https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/#define-a-liveness-http-request
+// Healthz is a liveness probe handler per https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/#define-a-liveness-http-request.
 // If we are in a state where there are any workflows that have not been reconciled in the last 2m, we've gone wrong.
 func (wfc *WorkflowController) Healthz(w http.ResponseWriter, r *http.Request) {
 	logger := logging.RequireLoggerFromContext(r.Context())

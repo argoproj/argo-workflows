@@ -200,11 +200,22 @@ linters:
   exclusions:
     generated: lax
     presets:
-      - comments
-      - common-false-positives
-      - legacy
       - std-error-handling
     rules:
+      # Selectively suppress revive comment rules (large fix count — PRs welcome)
+      - linters: [revive]
+        text: "exported (.+) should have comment( \\(or a comment on this block\\))? or be unexported"
+      - linters: [revive]
+        text: "package comment should be of the form \"(.+)\\.\\.\\.\""
+      - linters: [revive]
+        text: "comment on exported (.+) should be of the form \"(.+)\\.\\.\\.\""
+      - linters: [revive]
+        text: "should have a package comment"
+      # Suppress ST1000 (package-level doc comments) for now
+      - linters: [staticcheck]
+        text: "ST1000:"
+      - linters: [gosec]
+        text: "G304:"
       - path: server/artifacts/artifact_server_test.go
         text: response body must be closed
       - path: server/apiserver/argoserver.go

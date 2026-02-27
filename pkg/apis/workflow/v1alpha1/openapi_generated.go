@@ -933,7 +933,8 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactRepositoryRef(ref common.Referenc
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "ArtifactRepositoryRef is a reference to an artifact repository config map.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"configMap": {
 						SchemaProps: spec.SchemaProps{
@@ -959,7 +960,8 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactRepositoryRefStatus(ref common.Re
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "ArtifactRepositoryRefStatus is the resolved artifact repository reference with namespace info.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"configMap": {
 						SchemaProps: spec.SchemaProps{
@@ -3694,7 +3696,7 @@ func schema_pkg_apis_workflow_v1alpha1_LabelValues(ref common.ReferenceCallback)
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "Labels is list of workflow labels",
+				Description: "LabelValues is a list of workflow labels.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"items": {
@@ -3762,7 +3764,7 @@ func schema_pkg_apis_workflow_v1alpha1_Link(ref common.ReferenceCallback) common
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "A link to another app.",
+				Description: "Link is a link to another app.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"name": {
@@ -3873,7 +3875,7 @@ func schema_pkg_apis_workflow_v1alpha1_Memoize(ref common.ReferenceCallback) com
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "Memoization enables caching for the Outputs of the template",
+				Description: "Memoize enables caching for the Outputs of the template.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"key": {
@@ -3911,7 +3913,7 @@ func schema_pkg_apis_workflow_v1alpha1_Metadata(ref common.ReferenceCallback) co
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "Pod metadata",
+				Description: "Metadata is pod metadata.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"annotations": {
@@ -4510,7 +4512,7 @@ func schema_pkg_apis_workflow_v1alpha1_OAuth2EndpointParam(ref common.ReferenceC
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "EndpointParam is for requesting optional fields that should be sent in the oauth request",
+				Description: "OAuth2EndpointParam is an optional field that should be sent in the OAuth request.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"key": {
@@ -4786,8 +4788,9 @@ func schema_pkg_apis_workflow_v1alpha1_Object(ref common.ReferenceCallback) comm
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type:   Object{}.OpenAPISchemaType(),
-				Format: Object{}.OpenAPISchemaFormat(),
+				Description: "Object represents a JSON object value.",
+				Type:        Object{}.OpenAPISchemaType(),
+				Format:      Object{}.OpenAPISchemaFormat(),
 			},
 		},
 	}
@@ -4866,7 +4869,7 @@ func schema_pkg_apis_workflow_v1alpha1_ParallelSteps(ref common.ReferenceCallbac
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "swagger:ignore",
+				Description: "ParallelSteps is a list of workflow steps that run in parallel. swagger:ignore",
 				Type:        ParallelSteps{}.OpenAPISchemaType(),
 				Format:      ParallelSteps{}.OpenAPISchemaFormat(),
 			},
@@ -8500,7 +8503,8 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTaskResultList(ref common.Referen
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "WorkflowTaskResultList is a list of WorkflowTaskResult resources.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{
@@ -8548,7 +8552,8 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTaskSet(ref common.ReferenceCallb
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "WorkflowTaskSet holds a set of tasks to be executed as part of a workflow.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{
@@ -8595,7 +8600,8 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTaskSetList(ref common.ReferenceC
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "WorkflowTaskSetList is a list of WorkflowTaskSet resources.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{
