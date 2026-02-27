@@ -8,7 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
@@ -74,7 +73,7 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 
 	cronWf.Status.LastScheduledTime = &v1.Time{Time: time.Now().Add(-1 * time.Minute)}
 	// StartingDeadlineSeconds is after the current second, so cron should be run
-	cronWf.Spec.StartingDeadlineSeconds = ptr.To(int64(35))
+	cronWf.Spec.StartingDeadlineSeconds = new(int64(35))
 	woc := &cronWfOperationCtx{
 		cronWf: &cronWf,
 		log:    logging.RequireLoggerFromContext(ctx),
@@ -86,7 +85,7 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 	assert.Equal(t, inferScheduledTime(ctx).Unix(), missedExecutionTime.Unix())
 
 	// StartingDeadlineSeconds is not after the current second, so cron should not be run
-	cronWf.Spec.StartingDeadlineSeconds = ptr.To(int64(25))
+	cronWf.Spec.StartingDeadlineSeconds = new(int64(25))
 	woc = &cronWfOperationCtx{
 		cronWf: &cronWf,
 		log:    logging.RequireLoggerFromContext(ctx),
@@ -112,7 +111,7 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 	cronWf.Status.LastScheduledTime = &v1.Time{Time: cronWf.Status.LastScheduledTime.In(testLocation)}
 
 	// StartingDeadlineSeconds is after the current second, so cron should be run
-	cronWf.Spec.StartingDeadlineSeconds = ptr.To(int64(35))
+	cronWf.Spec.StartingDeadlineSeconds = new(int64(35))
 	woc = &cronWfOperationCtx{
 		cronWf: &cronWf,
 		log:    logging.RequireLoggerFromContext(ctx),
@@ -125,7 +124,7 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 	assert.Equal(t, inferScheduledTime(ctx).Unix(), missedExecutionTime.Unix())
 
 	// StartingDeadlineSeconds is not after the current second, so cron should not be run
-	cronWf.Spec.StartingDeadlineSeconds = ptr.To(int64(25))
+	cronWf.Spec.StartingDeadlineSeconds = new(int64(25))
 	woc = &cronWfOperationCtx{
 		cronWf: &cronWf,
 		log:    logging.RequireLoggerFromContext(ctx),

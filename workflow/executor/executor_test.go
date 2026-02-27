@@ -20,7 +20,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
-	"k8s.io/utils/ptr"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	argofake "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
@@ -563,7 +562,7 @@ func TestSaveLogs(t *testing.T) {
 		require.NoError(t, err)
 		templateWithArchiveLogs := wfv1.Template{
 			ArchiveLocation: &wfv1.ArtifactLocation{
-				ArchiveLogs: ptr.To(true),
+				ArchiveLogs: new(true),
 			},
 		}
 		we := WorkflowExecutor{

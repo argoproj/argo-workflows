@@ -19,7 +19,6 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
 	"github.com/argoproj/argo-workflows/v4/config"
 	"github.com/argoproj/argo-workflows/v4/errors"
@@ -895,7 +894,7 @@ func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *a
 		// TODO: always set RO FS once #10787 is fixed
 		exec.SecurityContext.ReadOnlyRootFilesystem = nil
 		if exec.Name != common.InitContainerName && exec.Name != common.WaitContainerName {
-			exec.SecurityContext.ReadOnlyRootFilesystem = ptr.To(true)
+			exec.SecurityContext.ReadOnlyRootFilesystem = new(true)
 		}
 	}
 	if woc.controller.Config.KubeConfig != nil {

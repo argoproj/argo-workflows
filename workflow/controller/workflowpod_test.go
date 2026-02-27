@@ -17,7 +17,6 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
 	"github.com/argoproj/argo-workflows/v4/config"
 	"github.com/argoproj/argo-workflows/v4/errors"
@@ -514,7 +513,7 @@ func TestConditionalAddArchiveLocationArchiveLogs(t *testing.T) {
 			},
 			KeyFormat: "path/in/bucket",
 		},
-		ArchiveLogs: ptr.To(true),
+		ArchiveLogs: new(true),
 	})
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
@@ -586,12 +585,12 @@ func TestConditionalAddArchiveLocationTemplateArchiveLogs(t *testing.T) {
 			wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 			if tt.workflowArchiveLog != "" {
 				workflowArchiveLog, _ := strconv.ParseBool(tt.workflowArchiveLog)
-				wf.Spec.ArchiveLogs = ptr.To(workflowArchiveLog)
+				wf.Spec.ArchiveLogs = new(workflowArchiveLog)
 			}
 			if tt.templateArchiveLog != "" {
 				templateArchiveLog, _ := strconv.ParseBool(tt.templateArchiveLog)
 				wf.Spec.Templates[0].ArchiveLocation = &wfv1.ArtifactLocation{
-					ArchiveLogs: ptr.To(templateArchiveLog),
+					ArchiveLogs: new(templateArchiveLog),
 				}
 			}
 			ctx := logging.TestContext(t.Context())
@@ -599,7 +598,7 @@ func TestConditionalAddArchiveLocationTemplateArchiveLogs(t *testing.T) {
 			defer cancel()
 			woc := newWorkflowOperationCtx(ctx, wf, controller)
 			setArtifactRepository(woc.controller, &wfv1.ArtifactRepository{
-				ArchiveLogs: ptr.To(tt.controllerArchiveLog),
+				ArchiveLogs: new(tt.controllerArchiveLog),
 				S3: &wfv1.S3ArtifactRepository{
 					S3Bucket: wfv1.S3Bucket{
 						Bucket: "foo",
@@ -1464,7 +1463,7 @@ func TestPodSpecPatch(t *testing.T) {
 	woc = newWoc(ctx, *wf)
 	mainCtr = woc.execWf.Spec.Templates[0].Container
 	pod, _ = woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
-	assert.Equal(t, ptr.To(true), pod.Spec.Containers[1].SecurityContext.RunAsNonRoot)
+	assert.Equal(t, new(true), pod.Spec.Containers[1].SecurityContext.RunAsNonRoot)
 	assert.Equal(t, apiv1.Capability("ALL"), pod.Spec.Containers[1].SecurityContext.Capabilities.Add[0])
 	assert.Equal(t, []apiv1.Capability(nil), pod.Spec.Containers[1].SecurityContext.Capabilities.Drop)
 

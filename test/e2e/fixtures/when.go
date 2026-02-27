@@ -17,7 +17,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"k8s.io/utils/ptr"
 
 	"github.com/upper/db/v4"
 
@@ -551,7 +550,7 @@ func (w *When) WaitForPod(condition PodCondition) *When {
 	timeout := defaultTimeout
 	watch, err := w.kubeClient.CoreV1().Pods(Namespace).Watch(
 		ctx,
-		metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + w.wf.Name, TimeoutSeconds: ptr.To(int64(timeout.Seconds()))},
+		metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + w.wf.Name, TimeoutSeconds: new(int64(timeout.Seconds()))},
 	)
 	if err != nil {
 		w.t.Fatal(err)

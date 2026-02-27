@@ -22,7 +22,6 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
-	"k8s.io/utils/ptr"
 
 	"github.com/argoproj/argo-workflows/v4/config"
 	"github.com/argoproj/argo-workflows/v4/persist/sqldb"
@@ -365,7 +364,7 @@ func newController(ctx context.Context, options ...any) (context.CancelFunc, *Wo
 func newControllerWithDefaults(ctx context.Context) (context.CancelFunc, *WorkflowController) {
 	cancel, controller := newController(ctx, func(controller *WorkflowController) {
 		controller.Config.WorkflowDefaults = &wfv1.Workflow{
-			Spec: wfv1.WorkflowSpec{HostNetwork: ptr.To(true)},
+			Spec: wfv1.WorkflowSpec{HostNetwork: new(true)},
 		}
 	})
 	return cancel, controller
@@ -383,13 +382,13 @@ func newControllerWithComplexDefaults(ctx context.Context) (context.CancelFunc, 
 				},
 			},
 			Spec: wfv1.WorkflowSpec{
-				HostNetwork:        ptr.To(true),
+				HostNetwork:        new(true),
 				Entrypoint:         "good_entrypoint",
 				ServiceAccountName: "my_service_account",
 				TTLStrategy: &wfv1.TTLStrategy{
-					SecondsAfterCompletion: ptr.To(int32(10)),
-					SecondsAfterSuccess:    ptr.To(int32(10)),
-					SecondsAfterFailure:    ptr.To(int32(10)),
+					SecondsAfterCompletion: new(int32(10)),
+					SecondsAfterSuccess:    new(int32(10)),
+					SecondsAfterFailure:    new(int32(10)),
 				},
 			},
 		}
@@ -412,7 +411,7 @@ func newControllerWithDefaultsVolumeClaimTemplate(ctx context.Context) (context.
 								apiv1.ResourceStorage: resource.MustParse("1Mi"),
 							},
 						},
-						StorageClassName: ptr.To("local-path"),
+						StorageClassName: new("local-path"),
 					},
 				}},
 			},
