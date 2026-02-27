@@ -241,7 +241,6 @@ data:
     # IgnoreErrors is a flag that instructs prometheus to ignore metric emission errors. Default is "false"
     ignoreErrors: false
     # Use a self-signed cert for TLS
-    # >= 3.6: default true
     secure: true
     # Options for configuring individual metrics
     options:
@@ -329,7 +328,7 @@ data:
   synchronization: |
     # Enable or disable database synchronization API (default: false)
     enableAPI: false
-    
+
     # Connection pool settings, similar to persistence connectionPool
     connectionPool:
       maxIdleConns: 100
