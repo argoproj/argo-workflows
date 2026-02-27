@@ -399,7 +399,7 @@ swagger: \
 $(TOOL_MOCKERY): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	GOTOOLCHAIN=go1.25.6 go install github.com/vektra/mockery/v3@v3.5.1
+	GOTOOLCHAIN=go1.26.0 go install github.com/vektra/mockery/v3@v3.5.1
 endif
 $(TOOL_CONTROLLER_GEN): Makefile
 # update this in Nix when upgrading it here
@@ -574,7 +574,7 @@ manifests-validate:
 	kubectl apply --server-side --validate=strict --dry-run=server -f 'manifests/*.yaml'
 
 $(TOOL_GOLANGCI_LINT): Makefile
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v2.8.0
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v2.10.1
 
 .PHONY: lint lint-go lint-ui
 lint: lint-go lint-ui features-validate ## Lint the project

@@ -24,7 +24,6 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/utils/ptr"
 
 	argoerrs "github.com/argoproj/argo-workflows/v4/errors"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
@@ -608,8 +607,8 @@ func (p *ParallelSteps) UnmarshalJSON(value []byte) error {
 	// Generate a list of all the available JSON fields of the WorkflowStep struct
 	availableFields := map[string]bool{}
 	reflectType := reflect.TypeFor[WorkflowStep]()
-	for i := 0; i < reflectType.NumField(); i++ {
-		cleanString := strings.ReplaceAll(reflectType.Field(i).Tag.Get("json"), ",omitempty", "")
+	for field := range reflectType.Fields() {
+		cleanString := strings.ReplaceAll(field.Tag.Get("json"), ",omitempty", "")
 		availableFields[cleanString] = true
 	}
 
@@ -2158,7 +2157,7 @@ func (in *WorkflowStatus) MarkTaskResultIncomplete(ctx context.Context, name str
 		return
 	}
 	if node.TaskResultSynced != nil {
-		node.TaskResultSynced = ptr.To(bool(false))
+		node.TaskResultSynced = new(bool(false))
 	}
 	in.Nodes.Set(ctx, name, *node)
 }
@@ -2174,7 +2173,7 @@ func (in *WorkflowStatus) MarkTaskResultComplete(ctx context.Context, name strin
 		return
 	}
 	if node.TaskResultSynced != nil {
-		node.TaskResultSynced = ptr.To(bool(true))
+		node.TaskResultSynced = new(bool(true))
 	}
 	in.Nodes.Set(ctx, name, *node)
 }
@@ -2401,14 +2400,14 @@ func (cs *Conditions) DisplayString(fmtStr string, iconMap map[ConditionType]str
 		return fmt.Sprintf(fmtStr, "Conditions:", "None")
 	}
 	var out strings.Builder
-	out.WriteString(fmt.Sprintf(fmtStr, "Conditions:", ""))
+	fmt.Fprintf(&out, fmtStr, "Conditions:", "")
 	for _, condition := range *cs {
 		conditionMessage := condition.Message
 		if conditionMessage == "" {
 			conditionMessage = string(condition.Status)
 		}
 		conditionPrefix := fmt.Sprintf("%s %s", iconMap[condition.Type], string(condition.Type))
-		out.WriteString(fmt.Sprintf(fmtStr, conditionPrefix, conditionMessage))
+		fmt.Fprintf(&out, fmtStr, conditionPrefix, conditionMessage)
 	}
 	return out.String()
 }

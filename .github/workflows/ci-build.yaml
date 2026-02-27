@@ -125,7 +125,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
         with:
-          go-version: "1.25"
+          go-version: "1.26"
           cache: true
       - run: make test STATIC_FILES=false GOTEST='go test -p 20 -covermode=atomic -coverprofile=coverage.out'
       - name: Upload test results
@@ -155,7 +155,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
         with:
-          go-version: "1.25"
+          go-version: "1.26"
           cache: true
       # windows run does not use makefile target because it does a lot more than just testing and is not cross-platform compatible
       - run: if (!(Test-Path "ui/dist/app/index.html")) { New-Item -ItemType Directory -Force -Path "ui/dist/app" | Out-Null; New-Item -ItemType File -Path "ui/dist/app/placeholder" | Out-Null }; go test -p 20 -covermode=atomic -coverprofile='coverage.out' $(go list ./... | select-string -Pattern 'github.com/argoproj/argo-workflows/v4/workflow/controller' , 'github.com/argoproj/argo-workflows/v4/server' -NotMatch)
@@ -186,7 +186,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
         with:
-          go-version: "1.25"
+          go-version: "1.26"
           cache: true
       - name: Build
         run: make ${{matrix.target}}
@@ -327,7 +327,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
         with:
-          go-version: "1.25"
+          go-version: "1.26"
           cache: true
       - name: Install Java for the SDK
         if: ${{matrix.test == 'test-java-sdk'}}
@@ -484,7 +484,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
         with:
-          go-version: "1.25"
+          go-version: "1.26"
           cache: true
       - name: Install protoc
         run: |
@@ -521,7 +521,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
         with:
-          go-version: "1.25"
+          go-version: "1.26"
           cache: true
       - run: make lint STATIC_FILES=false
       # if lint makes changes that are not in the PR, fail the build

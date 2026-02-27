@@ -1,6 +1,6 @@
 module github.com/argoproj/argo-workflows/v4/sdks/go/watch-workflow
 
-go 1.25.6
+go 1.26.0
 
 replace github.com/argoproj/argo-workflows/v4 => ../../..
 
