@@ -40,6 +40,24 @@ export const NAME_FILTER_KEYS = NAME_FILTERS.map(item => item.id);
 
 export type NameFilterKeys = (typeof NAME_FILTER_KEYS)[number];
 
+export function matchesNameFilter(workflowName: string, nameValue: string, nameFilter: NameFilterKeys): boolean {
+    if (!nameValue) {
+        return true;
+    }
+    switch (nameFilter) {
+        case 'Contains':
+            return workflowName.includes(nameValue);
+        case 'Prefix':
+            return workflowName.startsWith(nameValue);
+        case 'Exact':
+            return workflowName === nameValue;
+        case 'NotEquals':
+            return workflowName !== nameValue;
+        default:
+            return true;
+    }
+}
+
 interface WorkflowFilterProps {
     workflows: models.Workflow[];
     namespace: string;
