@@ -185,7 +185,7 @@ const (
 	EnvVarDefaultRequeueTime = "DEFAULT_REQUEUE_TIME"
 	// EnvVarPodStatusCaptureFinalizer is used to prevent pod garbage collected before argo captures its exit status
 	EnvVarPodStatusCaptureFinalizer = "ARGO_POD_STATUS_CAPTURE_FINALIZER"
-	// Number of threads for artifact upload through S3. Default: 4.
+	// EnvAgentS3UploadThreads is the number of threads for artifact upload through S3. Default: 4.
 	EnvAgentS3UploadThreads = "ARGO_AGENT_S3_UPLOAD_THREADS"
 	// EnvAgentS3UploadPartSizeMiB is the size in MiB of the part of a MultiPartUpload. Default: let Minio calculate automatically (16MiB for file <= 156GiB).
 	EnvAgentS3UploadPartSizeMiB = "ARGO_AGENT_S3_UPLOAD_PART_SIZE_MIB"
