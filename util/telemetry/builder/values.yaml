@@ -524,6 +524,8 @@ spans:
       - name: WorkflowNamespace
       - name: NodeType
     parents: [Workflow]
+    kind: Producer
+    deterministic: true
   - name: NodePhase
     description: The phase of one node as observed by the controller in the DAG of a workflow
     attributes:
@@ -532,7 +534,7 @@ spans:
       - name: Message
         optional: true
     parents: [Node]
-    kind: Producer
+    deterministic: true
   - name: PatchTaskResult
     description: Patching the WorkflowTaskResult
     parents: [RunWaitContainer, RunMainContainer]
@@ -634,8 +636,10 @@ spans:
       - name: WorkflowName
       - name: WorkflowNamespace
     root: true
+    deterministic: true
   - name: WorkflowPhase
     description: One phase of the lifetime of a workflow
     attributes:
       - name: WorkflowPhase
     parents: [Workflow]
+    deterministic: true
