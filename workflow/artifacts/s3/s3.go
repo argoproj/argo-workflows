@@ -593,9 +593,8 @@ func (s *s3client) getCheckedPartSize(path string, configuredPartSizeMiB int64) 
 		// Part size is bigger than file so ignoring it.
 		logging.RequireLoggerFromContext(s.ctx).WithFields(logging.Fields{"fileSize": fileSize, "configuredPartSizeBytes": configuredPartSizeBytes}).Warn(s.ctx, "Ignoring configured part size from env var because this must be true: configuredPartSizeBytes <= fileSize.")
 		return -6, nil
-	} else {
-		return configuredPartSizeBytes, nil
 	}
+	return configuredPartSizeBytes, nil
 }
 
 // PutFile puts a single file to a bucket at the specified key
