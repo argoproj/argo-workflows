@@ -41,7 +41,7 @@ func Test_metaData(t *testing.T) {
 
 func TestNewOperation(t *testing.T) {
 	// set-up
-	client := fake.NewSimpleClientset(
+	client := fake.NewClientset(
 		&wfv1.ClusterWorkflowTemplate{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-cwft", Labels: map[string]string{common.LabelKeyControllerInstanceID: "my-instanceid"}},
 		},
@@ -201,7 +201,7 @@ func TestNewOperation(t *testing.T) {
 
 func Test_populateWorkflowMetadata(t *testing.T) {
 	// set-up
-	client := fake.NewSimpleClientset(
+	client := fake.NewClientset(
 		&wfv1.WorkflowTemplate{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-wft", Namespace: "my-ns", Labels: map[string]string{common.LabelKeyControllerInstanceID: "my-instanceid"}},
 		},

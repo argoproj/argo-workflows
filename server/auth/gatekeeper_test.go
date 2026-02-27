@@ -26,8 +26,8 @@ import (
 func TestServer_GetWFClient(t *testing.T) {
 	// prevent using local KUBECONFIG - which will fail on CI
 	t.Setenv("KUBECONFIG", "/dev/null")
-	wfClient := fakewfclientset.NewSimpleClientset()
-	kubeClient := kubefake.NewSimpleClientset(
+	wfClient := fakewfclientset.NewClientset()
+	kubeClient := kubefake.NewClientset(
 		&corev1.ServiceAccount{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "my-other-sa", Namespace: "my-ns",

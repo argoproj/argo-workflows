@@ -191,7 +191,7 @@ func TestValidateArtifactDriverImages(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create fake Kubernetes client
-			fakeClient := fake.NewSimpleClientset()
+			fakeClient := fake.NewClientset()
 
 			// Create the argoServer instance
 			as := &argoServer{

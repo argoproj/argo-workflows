@@ -70,10 +70,9 @@ func bundleDependencies(config ArgoProto) error {
 		for name, bundleCfg := range dep.Bundle {
 			targetDir := filepath.Join(moduleDir, name)
 
-			// Check if already exists and has content
-			if entries, err := os.ReadDir(targetDir); err == nil && len(entries) > 0 {
-				fmt.Printf("  %s already exists and is not empty, skipping clone.\n", targetDir)
-				continue
+			// Always start fresh to pick up ref changes in argo-proto.yaml
+			if err := os.RemoveAll(targetDir); err != nil {
+				return fmt.Errorf("failed to remove %s: %w", targetDir, err)
 			}
 
 			repoURL := fmt.Sprintf("https://github.com/%s/%s", bundleCfg.Owner, bundleCfg.Name)
