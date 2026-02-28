@@ -291,3 +291,63 @@ func TestAnalyzePodForRestart(t *testing.T) {
 		})
 	}
 }
+
+func TestIsResourceTemplateInfraFailure(t *testing.T) {
+	tests := []struct {
+		name     string
+		pod      *apiv1.Pod
+		expected bool
+	}{
+		{
+			name:     "evicted pod",
+			pod:      &apiv1.Pod{Status: apiv1.PodStatus{Reason: "Evicted"}},
+			expected: true,
+		},
+		{
+			name: "OOMKilled main container",
+			pod: &apiv1.Pod{Status: apiv1.PodStatus{ContainerStatuses: []apiv1.ContainerStatus{
+				{Name: common.MainContainerName, State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 137, Reason: "OOMKilled"}}},
+			}}},
+			expected: true,
+		},
+		{
+			name: "signal killed (exit 137)",
+			pod: &apiv1.Pod{Status: apiv1.PodStatus{ContainerStatuses: []apiv1.ContainerStatus{
+				{Name: common.MainContainerName, State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 137}}},
+			}}},
+			expected: true,
+		},
+		{
+			name: "normal exit code 1 — not infra",
+			pod: &apiv1.Pod{Status: apiv1.PodStatus{ContainerStatuses: []apiv1.ContainerStatus{
+				{Name: common.MainContainerName, State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 1}}},
+			}}},
+			expected: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, isResourceTemplateInfraFailure(tt.pod))
+		})
+	}
+}
+
+func TestReplaceGenerateNameWithDeterministic(t *testing.T) {
+	manifest := "apiVersion: batch/v1\nkind: Job\nmetadata:\n  generateName: test-job-\n"
+
+	// Replaces generateName with deterministic name
+	result := replaceGenerateNameWithDeterministic(manifest, "my-workflow-123")
+	assert.NotEqual(t, manifest, result)
+	assert.NotContains(t, result, "generateName")
+	assert.Contains(t, result, "name: test-job-")
+
+	// Deterministic: same inputs → same output
+	assert.Equal(t, result, replaceGenerateNameWithDeterministic(manifest, "my-workflow-123"))
+
+	// Different nodeID → different name
+	assert.NotEqual(t, result, replaceGenerateNameWithDeterministic(manifest, "my-workflow-456"))
+
+	// Fixed name left unchanged
+	fixed := "apiVersion: batch/v1\nkind: Job\nmetadata:\n  name: my-job\n"
+	assert.Equal(t, fixed, replaceGenerateNameWithDeterministic(fixed, "my-workflow-123"))
+}

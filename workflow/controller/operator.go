@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"hash/fnv"
 	"math"
 	"os"
 	"reflect"
@@ -1278,6 +1279,23 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (bool, error) 
 				node.Daemoned = nil
 				woc.updated = true
 			}
+
+			// For resource template nodes, re-create the executor pod instead of failing.
+			// The executor is just infrastructure — the underlying resource may still be healthy.
+			if woc.shouldRestartResourceTemplatePod(ctx, &node) {
+				node.FailedPodRestarts++
+				node.Phase = wfv1.NodePending
+				node.Message = fmt.Sprintf("executor pod missing, re-creating (attempt %d)", node.FailedPodRestarts)
+				woc.log.WithFields(logging.Fields{
+					"nodeName":     node.Name,
+					"restartCount": node.FailedPodRestarts,
+				}).Info(ctx, "Resource template executor pod missing - marking as pending for re-creation")
+				woc.wf.Status.Nodes.Set(ctx, nodeID, node)
+				woc.updated = true
+				woc.requeue()
+				continue
+			}
+
 			woc.markNodeError(ctx, node.Name, argoerrors.New("", "pod deleted"))
 			// Mark all its children(container) as deleted if pod deleted
 			woc.markAllContainersDeleted(ctx, node.ID)
@@ -1449,6 +1467,21 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 			}
 			// Issue a delete request by UID here in case we lost the delete request
 			// since the last call to operate() (for example: controller restart)
+			woc.controller.PodController.DeletePodByUID(ctx, pod.Namespace, pod.Name, podUID)
+		} else if woc.shouldRestartResourceTemplatePod(ctx, old) && isResourceTemplateInfraFailure(pod) {
+			// Resource template executor pod failed due to infrastructure (OOM, signal kill, eviction).
+			// The underlying resource may still be healthy — re-create the executor to resume monitoring.
+			if podUID != old.RestartingPodUID {
+				updated.FailedPodRestarts++
+				updated.RestartingPodUID = podUID
+				updated.Phase = wfv1.NodePending
+				updated.Message = fmt.Sprintf("executor pod failed (%s), re-creating (attempt %d)", pod.Status.Reason, updated.FailedPodRestarts)
+				woc.log.WithFields(logging.Fields{
+					"nodeName":     old.Name,
+					"reason":       pod.Status.Reason,
+					"restartCount": updated.FailedPodRestarts,
+				}).Info(ctx, "Resource template executor pod infra failure - marking as pending for re-creation")
+			}
 			woc.controller.PodController.DeletePodByUID(ctx, pod.Namespace, pod.Name, podUID)
 		}
 	case apiv1.PodRunning:
@@ -1848,6 +1881,56 @@ func (woc *wfOperationCtx) shouldAutoRestartPod(ctx context.Context, pod *apiv1.
 	}
 
 	return true
+}
+
+// shouldRestartResourceTemplatePod checks if a resource template's executor pod should be re-created.
+// Uses the same configurable max restart limit as FailedPodRestart (defaults to 3).
+func (woc *wfOperationCtx) shouldRestartResourceTemplatePod(ctx context.Context, node *wfv1.NodeStatus) bool {
+	if node.FailedPodRestarts >= woc.controller.Config.FailedPodRestart.GetMaxRestarts() {
+		return false
+	}
+	tmpl, err := woc.GetNodeTemplate(ctx, node)
+	return err == nil && tmpl != nil && tmpl.GetType() == wfv1.TemplateTypeResource
+}
+
+// isResourceTemplateInfraFailure checks if a pod failed due to infrastructure (OOM, signal, eviction)
+// rather than a legitimate executor error like an invalid manifest.
+func isResourceTemplateInfraFailure(pod *apiv1.Pod) bool {
+	if isRestartableReason(pod.Status.Reason) {
+		return true
+	}
+	for _, cs := range pod.Status.ContainerStatuses {
+		if cs.Name == common.MainContainerName && cs.State.Terminated != nil {
+			return cs.State.Terminated.Reason == "OOMKilled" || cs.State.Terminated.ExitCode >= 128
+		}
+	}
+	return false
+}
+
+// replaceGenerateNameWithDeterministic replaces generateName with a deterministic name
+// derived from the node ID, enabling idempotent kubectl apply on executor pod restart.
+// Uses the same fnv32a hashing pattern as GeneratePodName and Workflow.NodeID.
+func replaceGenerateNameWithDeterministic(manifest, nodeID string) string {
+	obj := unstructured.Unstructured{}
+	if err := yaml.Unmarshal([]byte(manifest), &obj); err != nil {
+		return manifest
+	}
+	if obj.GetName() != "" || obj.GetGenerateName() == "" {
+		return manifest
+	}
+	h := fnv.New32a()
+	_, _ = h.Write([]byte(nodeID))
+	name := fmt.Sprintf("%s%08x", obj.GetGenerateName(), h.Sum32())
+	if len(name) > 63 {
+		name = name[:63]
+	}
+	obj.SetName(name)
+	obj.SetGenerateName("")
+	bytes, err := yaml.Marshal(obj.Object)
+	if err != nil {
+		return manifest
+	}
+	return string(bytes)
 }
 
 func (woc *wfOperationCtx) createPVCs(ctx context.Context) error {
@@ -3778,8 +3861,23 @@ func (woc *wfOperationCtx) executeResource(ctx context.Context, nodeName string,
 		tmpl.Resource.Manifest = string(bytes)
 	}
 
+	// For create actions with inline manifests, replace generateName with a deterministic name
+	// derived from the node ID and use kubectl apply instead of create. This makes resource
+	// creation idempotent: if the executor pod dies and restarts, apply is a no-op on the
+	// already-created resource. Skip for manifestFrom templates since the manifest is loaded
+	// by the executor from an artifact at runtime and isn't available to the controller.
+	// See https://kubernetes.io/docs/reference/kubectl/generated/kubectl_apply/
+	action := tmpl.Resource.Action
+	if action == "create" && tmpl.Resource.ManifestFrom == nil {
+		tmpl.Resource.Manifest = replaceGenerateNameWithDeterministic(tmpl.Resource.Manifest, woc.wf.NodeID(nodeName))
+		action = "apply"
+		woc.log.WithFields(logging.Fields{
+			"nodeName": nodeName,
+		}).Info(ctx, "Using kubectl apply with deterministic resource naming for create action")
+	}
+
 	mainCtr := woc.newExecContainer(common.MainContainerName, tmpl)
-	mainCtr.Command = append([]string{"argoexec", "resource", tmpl.Resource.Action}, woc.getExecutorLogOpts(ctx)...)
+	mainCtr.Command = append([]string{"argoexec", "resource", action}, woc.getExecutorLogOpts(ctx)...)
 	_, err = woc.createWorkflowPod(ctx, nodeName, []apiv1.Container{*mainCtr}, tmpl, &createWorkflowPodOpts{onExitPod: opts.onExitTemplate, executionDeadline: opts.executionDeadline})
 	if err != nil {
 		return woc.requeueIfTransientErr(ctx, err, node.Name)
