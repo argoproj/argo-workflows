@@ -46,8 +46,8 @@ jobs:
       - name: No ./.features/*.md addition
         if: steps.check-type.outputs.is_feat == 'true' && steps.changed-files.outputs.added_files_count == 0
         run: |
-          echo "No feature description was added to the ./.features/ directory for this feature PR."
-          echo "Please add a .md file to the ./.features/ directory."
+          echo "No feature description was added to the ./.features/pending/ directory for this feature PR."
+          echo "Please add a .md file to the ./.features/pending/ directory."
           echo "See docs/running-locally.md for more details."
           false
 
