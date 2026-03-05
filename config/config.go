@@ -27,10 +27,10 @@ type ResourceRateLimit struct {
 // as read from the ConfigMap called workflow-controller-configmap
 type Config struct {
 	// NodeEvents configures how node events are emitted
-	NodeEvents NodeEvents `json:"nodeEvents,omitempty"`
+	NodeEvents NodeEvents `json:"nodeEvents,omitzero"`
 
 	// WorkflowEvents configures how workflow events are emitted
-	WorkflowEvents WorkflowEvents `json:"workflowEvents,omitempty"`
+	WorkflowEvents WorkflowEvents `json:"workflowEvents,omitzero"`
 
 	// Executor holds container customizations for the executor to use when running pods
 	Executor *apiv1.Container `json:"executor,omitempty"`
@@ -42,7 +42,7 @@ type Config struct {
 	KubeConfig *KubeConfig `json:"kubeConfig,omitempty"`
 
 	// ArtifactRepository contains the default location of an artifact repository for container artifacts
-	ArtifactRepository wfv1.ArtifactRepository `json:"artifactRepository,omitempty"`
+	ArtifactRepository wfv1.ArtifactRepository `json:"artifactRepository,omitzero"`
 
 	// Namespace is a label selector filter to limit the controller's watch to a specific namespace
 	Namespace string `json:"namespace,omitempty"`
@@ -59,11 +59,11 @@ type Config struct {
 
 	// MetricsConfig specifies configuration for metrics emission. Metrics are enabled and emitted on localhost:9090/metrics
 	// by default.
-	MetricsConfig MetricsConfig `json:"metricsConfig,omitempty"`
+	MetricsConfig MetricsConfig `json:"metricsConfig,omitzero"`
 
 	// TelemetryConfig specifies configuration for telemetry emission. Telemetry is enabled and emitted in the same endpoint
 	// as metrics by default, but can be overridden using this config.
-	TelemetryConfig MetricsConfig `json:"telemetryConfig,omitempty"`
+	TelemetryConfig MetricsConfig `json:"telemetryConfig,omitzero"`
 
 	// Parallelism limits the max total parallel workflows that can execute at the same time
 	Parallelism int `json:"parallelism,omitempty"`
@@ -87,7 +87,7 @@ type Config struct {
 	WorkflowDefaults *wfv1.Workflow `json:"workflowDefaults,omitempty"`
 
 	// PodSpecLogStrategy enables the logging of podspec on controller log.
-	PodSpecLogStrategy PodSpecLogStrategy `json:"podSpecLogStrategy,omitempty"`
+	PodSpecLogStrategy PodSpecLogStrategy `json:"podSpecLogStrategy,omitzero"`
 
 	// PodGCGracePeriodSeconds specifies the duration in seconds before a terminating pod is forcefully killed.
 	// Value must be non-negative integer. A zero value indicates that the pod will be forcefully terminated immediately.
@@ -103,7 +103,7 @@ type Config struct {
 	WorkflowRestrictions *WorkflowRestrictions `json:"workflowRestrictions,omitempty"`
 
 	// Adds configurable initial delay (for K8S clusters with mutating webhooks) to prevent workflow getting modified by MWC.
-	InitialDelay metav1.Duration `json:"initialDelay,omitempty"`
+	InitialDelay metav1.Duration `json:"initialDelay,omitzero"`
 
 	// The command/args for each image, needed when the command is not specified and the emissary executor is used.
 	// https://argo-workflows.readthedocs.io/en/latest/workflow-executors/#emissary-emissary
@@ -116,7 +116,7 @@ type Config struct {
 	NavColor string `json:"navColor,omitempty"`
 
 	// SSO in settings for single-sign on
-	SSO SSOConfig `json:"sso,omitempty"`
+	SSO SSOConfig `json:"sso,omitzero"`
 
 	// Synchronization via databases config
 	Synchronization *SyncConfig `json:"synchronization,omitempty"`
@@ -360,7 +360,7 @@ type DatabaseConfig struct {
 	// TableName is the name of the table to use, must be set
 	TableName string `json:"tableName,omitempty"`
 	// UsernameSecret references a secret containing the database username
-	UsernameSecret apiv1.SecretKeySelector `json:"userNameSecret,omitempty"`
+	UsernameSecret apiv1.SecretKeySelector `json:"userNameSecret,omitzero"`
 	// PasswordSecret references a secret containing the database password
 	PasswordSecret apiv1.SecretKeySelector `json:"passwordSecret,omitzero"`
 }
