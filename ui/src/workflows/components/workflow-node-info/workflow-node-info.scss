@@ -1,4 +1,5 @@
 @import 'node_modules/argo-ui/src/styles/config';
+@import 'node_modules/argo-ui/src/styles/theme';
 
 .workflow-node-info {
     height: calc(100vh - 2 * #{$top-bar-height});
@@ -54,9 +55,12 @@
 
     &__sidecar {
         text-transform: uppercase;
-        border-top: 1px solid $argo-color-gray-5;
         cursor: pointer;
         font-size: 0.8em;
+
+        @include themify($themes) {
+            border-top: 1px solid themed('border');
+        }
 
         span {
             color: $argo-color-teal-5;
@@ -68,21 +72,27 @@
         }
 
         &:last-child {
-            border-bottom: 1px solid $argo-color-gray-5;
             padding: 1em 0;
+
+            @include themify($themes) {
+                border-bottom: 1px solid themed('border');
+            }
         }
     }
 
     .row.header {
-        color: $argo-color-gray-8;
-        background-color: $argo-color-gray-1;
-        border-bottom: 1px solid $argo-color-gray-5;
         display: flex;
         line-height: 1.2em;
         padding: 4px 0;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+
+        @include themify($themes) {
+            color: themed('text-2');
+            background-color: themed('background-1');
+            border-bottom: 1px solid themed('border');
+        }
 
         &:hover {
             overflow: visible;
@@ -127,14 +137,19 @@
     }
 
     .artifact-row {
-        color: $argo-color-gray-8;
         display: flex;
-        border-bottom: 1px solid $argo-color-gray-5;
         padding: 8px 0;
         text-align: left;
 
+        @include themify($themes) {
+            color: themed('text-2');
+            border-bottom: 1px solid themed('border');
+        }
+
         &:hover {
-            background-color: $argo-color-gray-3;
+            @include themify($themes) {
+                background-color: themed('background-1');
+            }
         }
 
         .columns {

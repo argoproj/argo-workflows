@@ -1,3 +1,5 @@
+@import 'node_modules/argo-ui/src/styles/theme';
+
 .workflow-logs-viewer {
   .select {
     width: auto;
@@ -9,7 +11,10 @@
   max-height: 800px;
   padding: 10px;
   margin: 10px;
-  background-color: white;
+
+  @include themify($themes) {
+    background-color: themed('background-2');
+  }
 }
 
 .log-menu {

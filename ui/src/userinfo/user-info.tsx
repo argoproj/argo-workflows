@@ -5,6 +5,7 @@ import {useEffect, useState} from 'react';
 import {uiUrl} from '../shared/base';
 import {ErrorNotice} from '../shared/components/error-notice';
 import {Notice} from '../shared/components/notice';
+import {ThemeSelector} from '../shared/components/theme-selector';
 import {GetUserInfoResponse} from '../shared/models';
 import {services} from '../shared/services';
 import {CliHelp} from './cli-help';
@@ -87,6 +88,12 @@ export function UserInfo() {
                 <a className='argo-button argo-button--base-o' href={uiUrl('login')}>
                     <i className='fa fa-shield-alt' /> Login / Logout
                 </a>
+            </Notice>
+            <Notice>
+                <h3>
+                    <i className='fa fa-palette' /> Theme
+                </h3>
+                <ThemeSelector />
             </Notice>
             <CliHelp />
         </Page>
