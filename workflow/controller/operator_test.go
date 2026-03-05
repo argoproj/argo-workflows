@@ -1931,6 +1931,138 @@ func TestAssessNodeStatus(t *testing.T) {
 	}
 }
 
+// TestGetNodeTemplateUsesStoredTemplates verifies that GetNodeTemplate checks storedTemplates
+// before falling back to the live CWT informer cache. This prevents assessNodeStatus from
+// spuriously marking a node as Error when the CWT is modified after the workflow starts.
+func TestGetNodeTemplateUsesStoredTemplates(t *testing.T) {
+	// A minimal workflow whose storedTemplates holds a cluster-scoped template.
+	// The CWT passed to newController intentionally does NOT contain the template,
+	// simulating the template having been removed from the CWT mid-run.
+	const wfYAML = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: cwt-templateref-bug
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: hello-task
+        templateRef:
+          name: cwt-helper
+          template: say-hello
+          clusterScope: true
+status:
+  storedTemplates:
+    cluster/cwt-helper/say-hello:
+      name: say-hello
+      script:
+        image: alpine:3.18
+        command: [sh]
+        source: echo hello
+`
+	// CWT with the template removed (simulates post-creation mutation).
+	const cwftYAML = `
+apiVersion: argoproj.io/v1alpha1
+kind: ClusterWorkflowTemplate
+metadata:
+  name: cwt-helper
+spec:
+  templates: []
+`
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(wfYAML)
+	cwft := wfv1.MustUnmarshalClusterWorkflowTemplate(cwftYAML)
+
+	cancel, controller := newController(ctx, wf, cwft)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	node := &wfv1.NodeStatus{
+		Name:          "cwt-templateref-bug.hello-task",
+		TemplateScope: "cluster/cwt-helper",
+		TemplateRef: &wfv1.TemplateRef{
+			Name:         "cwt-helper",
+			Template:     "say-hello",
+			ClusterScope: true,
+		},
+	}
+
+	tmpl, err := woc.GetNodeTemplate(ctx, node)
+	require.NoError(t, err, "GetNodeTemplate should return template from storedTemplates, not fail because CWT no longer has it")
+	require.NotNil(t, tmpl)
+	assert.Equal(t, "say-hello", tmpl.Name)
+}
+
+// TestAssessNodeStatusWithTemplateRefUsesStoredTemplates verifies that assessNodeStatus
+// correctly resolves the phase from the pod when a cross-CWT templateRef node's template
+// has been removed from the CWT after pod creation. The node must not be marked Error.
+func TestAssessNodeStatusWithTemplateRefUsesStoredTemplates(t *testing.T) {
+	const wfYAML = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: cwt-templateref-bug
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: hello-task
+        templateRef:
+          name: cwt-helper
+          template: say-hello
+          clusterScope: true
+status:
+  storedTemplates:
+    cluster/cwt-helper/say-hello:
+      name: say-hello
+      script:
+        image: alpine:3.18
+        command: [sh]
+        source: echo hello
+`
+	const cwftYAML = `
+apiVersion: argoproj.io/v1alpha1
+kind: ClusterWorkflowTemplate
+metadata:
+  name: cwt-helper
+spec:
+  templates: []
+`
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(wfYAML)
+	cwft := wfv1.MustUnmarshalClusterWorkflowTemplate(cwftYAML)
+
+	cancel, controller := newController(ctx, wf, cwft)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	pod := &apiv1.Pod{
+		Status: apiv1.PodStatus{
+			Phase: apiv1.PodSucceeded,
+		},
+	}
+	node := &wfv1.NodeStatus{
+		Name:          "cwt-templateref-bug.hello-task",
+		TemplateScope: "cluster/cwt-helper",
+		TemplateRef: &wfv1.TemplateRef{
+			Name:         "cwt-helper",
+			Template:     "say-hello",
+			ClusterScope: true,
+		},
+	}
+
+	updated := woc.assessNodeStatus(ctx, pod, node)
+	require.NotNil(t, updated, "assessNodeStatus must not return nil when template is in storedTemplates")
+	assert.Equal(t, wfv1.NodeSucceeded, updated.Phase, "node should be Succeeded, not Error, when pod succeeded and template is in storedTemplates")
+}
+
 func getPodTemplate(pod *apiv1.Pod) (*wfv1.Template, error) {
 	tmpl := &wfv1.Template{}
 	for _, c := range pod.Spec.InitContainers {
