@@ -50,6 +50,7 @@ func isTransientErr(err error) bool {
 		apierr.IsTimeout(err) ||
 		apierr.IsServiceUnavailable(err) ||
 		isTransientEtcdErr(err) ||
+		isTransientInterruptionErr(err) ||
 		matchTransientErrPattern(err) ||
 		errors.Is(err, NewErrTransient("")) ||
 		isTransientSqbErr(err)
@@ -91,6 +92,22 @@ func isTransientEtcdErr(err error) bool {
 	default:
 		return false
 	}
+}
+
+func isTransientInterruptionErr(err error) bool {
+	// Handle transient node/resource related errors
+	if strings.Contains(err.Error(), "imminent node shutdown") {
+		return true
+	} else if strings.Contains(err.Error(), "node was low on resource") {
+		return true
+	} else if strings.Contains(err.Error(), "pod deleted") {
+		return true
+	} else if strings.Contains(err.Error(), "node is shutting down") {
+		return true
+	} else if strings.Contains(err.Error(), "Deadline exceeded") {
+		return true
+	}
+	return false
 }
 
 func isTransientNetworkErr(err error) bool {
