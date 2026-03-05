@@ -44,7 +44,6 @@ import (
 	"github.com/argoproj/argo-workflows/v4/pkg/client/informers/externalversions"
 	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/client/informers/externalversions/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/pkg/plugins/spec"
-	wfctx "github.com/argoproj/argo-workflows/v4/util/context"
 	"github.com/argoproj/argo-workflows/v4/util/deprecation"
 	"github.com/argoproj/argo-workflows/v4/util/env"
 	"github.com/argoproj/argo-workflows/v4/util/errors"
@@ -53,6 +52,7 @@ import (
 	utilsqldb "github.com/argoproj/argo-workflows/v4/util/sqldb"
 	"github.com/argoproj/argo-workflows/v4/util/telemetry"
 	waitutil "github.com/argoproj/argo-workflows/v4/util/wait"
+	"github.com/argoproj/argo-workflows/v4/util/wfcontext"
 	"github.com/argoproj/argo-workflows/v4/workflow/artifactrepositories"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	controllercache "github.com/argoproj/argo-workflows/v4/workflow/controller/cache"
@@ -814,7 +814,7 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 		woc.persistUpdates(ctx)
 		return true
 	}
-	ctx = wfctx.InjectObjectMeta(ctx, &woc.wf.ObjectMeta)
+	ctx = wfcontext.InjectObjectMeta(ctx, &woc.wf.ObjectMeta)
 	startTime := time.Now()
 	woc.operate(ctx)
 	wfc.metrics.OperationCompleted(ctx, time.Since(startTime).Seconds())
