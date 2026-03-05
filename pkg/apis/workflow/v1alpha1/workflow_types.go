@@ -241,8 +241,8 @@ func (w *Workflow) GetExecSpec() *WorkflowSpec {
 	return &w.Spec
 }
 
-// return the ultimate ArtifactGCStrategy for the Artifact
-// (defined on the Workflow level but can be overridden on the Artifact level)
+// GetArtifactGCStrategy returns the ultimate ArtifactGCStrategy for the Artifact
+// (defined on the Workflow level but can be overridden on the Artifact level).
 func (w *Workflow) GetArtifactGCStrategy(a *Artifact) ArtifactGCStrategy {
 	artifactStrategy := a.GetArtifactGC().GetStrategy()
 	wfStrategy := w.Spec.GetArtifactGC().GetStrategy()
@@ -509,7 +509,7 @@ func (wfs WorkflowSpec) GetVolumeClaimGC() *VolumeClaimGC {
 	return wfs.VolumeClaimGC
 }
 
-// ArtifactGC returns the ArtifactGC that was defined in the workflow spec.  If none was provided, a default value is returned.
+// GetArtifactGC returns the ArtifactGC that was defined in the workflow spec. If none was provided, a default value is returned.
 func (wfs WorkflowSpec) GetArtifactGC() *ArtifactGC {
 	if wfs.ArtifactGC == nil {
 		return &ArtifactGC{Strategy: ArtifactGCStrategyUndefined}
@@ -585,6 +585,7 @@ func (s ShutdownStrategy) ShouldExecute(isOnExitPod bool) bool {
 	}
 }
 
+// ParallelSteps is a list of workflow steps that run in parallel.
 // swagger:ignore
 type ParallelSteps struct {
 	// Note: the `json:"steps"` part exists to workaround kubebuilder limitations.
@@ -593,8 +594,8 @@ type ParallelSteps struct {
 	Steps []WorkflowStep `json:"steps" protobuf:"bytes,1,rep,name=steps"`
 }
 
-// WorkflowStep is an anonymous list inside of ParallelSteps (i.e. it does not have a key), so it needs its own
-// custom Unmarshaller
+// UnmarshalJSON implements a custom unmarshaller for ParallelSteps. WorkflowStep is an anonymous list inside
+// of ParallelSteps (i.e. it does not have a key), so it needs its own custom unmarshaller.
 func (p *ParallelSteps) UnmarshalJSON(value []byte) error {
 	// Since we are writing a custom unmarshaller, we have to enforce the "DisallowUnknownFields" requirement manually.
 
@@ -990,7 +991,7 @@ func (in Inputs) IsEmpty() bool {
 	return len(in.Parameters) == 0 && len(in.Artifacts) == 0
 }
 
-// Pod metadata
+// Metadata is pod metadata.
 type Metadata struct {
 	Annotations map[string]string `json:"annotations,omitempty" protobuf:"bytes,1,opt,name=annotations"`
 	Labels      map[string]string `json:"labels,omitempty" protobuf:"bytes,2,opt,name=labels"`
@@ -1120,7 +1121,7 @@ type Artifact struct {
 	Deleted bool `json:"deleted,omitempty" protobuf:"varint,13,opt,name=deleted"`
 }
 
-// ArtifactGC returns the ArtifactGC that was defined by the artifact.  If none was provided, a default value is returned.
+// GetArtifactGC returns the ArtifactGC that was defined by the artifact. If none was provided, a default value is returned.
 func (a *Artifact) GetArtifactGC() *ArtifactGC {
 	if a.ArtifactGC == nil {
 		return &ArtifactGC{Strategy: ArtifactGCStrategyUndefined}
@@ -1387,7 +1388,7 @@ func (a *ArtifactLocation) HasKey() bool {
 	return key != ""
 }
 
-// set the key to a new value, use path.Join to combine items
+// SetKey sets the key to a new value; use path.Join to combine items.
 func (a *ArtifactLocation) SetKey(key string) error {
 	v, err := a.Get()
 	if err != nil {
@@ -1440,6 +1441,7 @@ func (a *ArtifactLocation) GetKey() (string, error) {
 	return v.GetKey()
 }
 
+// ArtifactRepositoryRef is a reference to an artifact repository config map.
 // +protobuf.options.(gogoproto.goproto_stringer)=false
 type ArtifactRepositoryRef struct {
 	// The name of the config map. Defaults to "artifact-repositories".
@@ -1469,6 +1471,7 @@ func (r *ArtifactRepositoryRef) String() string {
 	return fmt.Sprintf("%s#%s", r.ConfigMap, r.Key)
 }
 
+// ArtifactRepositoryRefStatus is the resolved artifact repository reference with namespace info.
 // +protobuf.options.(gogoproto.goproto_stringer)=false
 type ArtifactRepositoryRefStatus struct {
 	ArtifactRepositoryRef `json:",inline" protobuf:"bytes,1,opt,name=artifactRepositoryRef"`
@@ -1933,13 +1936,13 @@ func (n Nodes) Get(key string) (*NodeStatus, error) {
 	return &val, nil
 }
 
-// Check if the Nodes map has a key entry
+// Has checks if the Nodes map has a key entry.
 func (n Nodes) Has(key string) bool {
 	_, err := n.Get(key)
 	return err == nil
 }
 
-// Get the Phase of a Node
+// GetPhase returns the Phase of a Node by key.
 func (n Nodes) GetPhase(key string) (*NodePhase, error) {
 	val, err := n.Get(key)
 	if err != nil {
@@ -1978,7 +1981,7 @@ func (n Nodes) Delete(ctx context.Context, key string) {
 	delete(n, key)
 }
 
-// Get the name of a node by key
+// GetName returns the name of a node by key.
 func (n Nodes) GetName(key string) (string, error) {
 	val, err := n.Get(key)
 	if err != nil {
@@ -2232,6 +2235,7 @@ func (w *Workflow) GetOffloadNodeStatusVersion() string {
 	return w.Status.GetOffloadNodeStatusVersion()
 }
 
+// RetryPolicy defines the policy for retrying workflow steps.
 // +kubebuilder:validation:Enum=Always;OnFailure;OnError;OnTransientError
 type RetryPolicy string
 
@@ -2303,7 +2307,7 @@ func (s RetryStrategy) RetryPolicyActual() RetryPolicy {
 	return RetryPolicyAlways
 }
 
-// The amount of requested resource * the duration that request was used.
+// ResourceDuration is the amount of requested resource * the duration that request was used.
 // This is represented as duration in seconds, so can be converted to and from
 // duration (with loss of precision).
 type ResourceDuration int64
@@ -2320,8 +2324,8 @@ func (in ResourceDuration) String() string {
 	return in.Duration().String()
 }
 
-// This contains each duration by request requested.
-// e.g. 100m CPU * 1h, 1Gi memory * 1h
+// ResourcesDuration contains each duration by resource requested,
+// e.g. 100m CPU * 1h, 1Gi memory * 1h.
 type ResourcesDuration map[apiv1.ResourceName]ResourceDuration
 
 func (in ResourcesDuration) Add(o ResourcesDuration) ResourcesDuration {
@@ -2899,9 +2903,7 @@ type ArtifactoryArtifact struct {
 	ArtifactoryAuth `json:",inline" protobuf:"bytes,2,opt,name=artifactoryAuth"`
 }
 
-//	func (a *ArtifactoryArtifact) String() string {
-//		return a.URL
-//	}
+// GetKey returns the URL path of the ArtifactoryArtifact as its key.
 func (a *ArtifactoryArtifact) GetKey() (string, error) {
 	u, err := url.Parse(a.URL)
 	if err != nil {
@@ -3078,7 +3080,7 @@ type OAuth2Auth struct {
 	EndpointParams     []OAuth2EndpointParam    `json:"endpointParams,omitempty" protobuf:"bytes,6,rep,name=endpointParams"`
 }
 
-// EndpointParam is for requesting optional fields that should be sent in the oauth request
+// OAuth2EndpointParam is an optional field that should be sent in the OAuth request.
 type OAuth2EndpointParam struct {
 	// Name is the header name
 	Key string `json:"key" protobuf:"bytes,1,opt,name=key"`
@@ -3453,7 +3455,7 @@ func (tmpl *Template) IsDaemon() bool {
 	return tmpl != nil && tmpl.Daemon != nil && *tmpl.Daemon
 }
 
-// if logs should be saved as an artifact
+// SaveLogsAsArtifact reports whether logs should be saved as an artifact.
 func (tmpl *Template) SaveLogsAsArtifact() bool {
 	return tmpl != nil && tmpl.ArchiveLocation.IsArchiveLogs()
 }
@@ -4048,7 +4050,7 @@ type Counter struct {
 	Value string `json:"value" protobuf:"bytes,1,opt,name=value"`
 }
 
-// Memoization enables caching for the Outputs of the template
+// Memoize enables caching for the Outputs of the template.
 type Memoize struct {
 	// Key is the key to use as the caching key
 	Key string `json:"key" protobuf:"bytes,1,opt,name=key"`

@@ -240,7 +240,7 @@ func PopulateSubmitOpts(command *cobra.Command, submitOpts *wfv1.SubmitOpts, par
 	}
 }
 
-// Apply the Submit options into workflow object
+// ApplySubmitOpts applies the submit options to a workflow object.
 func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 	if wf == nil {
 		return fmt.Errorf("workflow cannot be nil")
@@ -1451,7 +1451,7 @@ func SetWorkflow(ctx context.Context, wfClient v1alpha1.WorkflowInterface, hydra
 	return fmt.Errorf("'set' currently only targets suspend nodes, use a node field selector to target them")
 }
 
-// Reads from stdin
+// ReadFromStdin reads from stdin.
 func ReadFromStdin() ([]byte, error) {
 	reader := bufio.NewReader(os.Stdin)
 	body, err := io.ReadAll(reader)
@@ -1461,7 +1461,7 @@ func ReadFromStdin() ([]byte, error) {
 	return body, err
 }
 
-// Reads the content of a url
+// ReadFromURL reads the content of a URL.
 func ReadFromURL(ctx context.Context, url string) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {

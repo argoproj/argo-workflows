@@ -4384,6 +4384,7 @@
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.ArtifactRepositoryRef": {
+      "description": "ArtifactRepositoryRef is a reference to an artifact repository config map.",
       "properties": {
         "configMap": {
           "description": "The name of the config map. Defaults to \"artifact-repositories\".",
@@ -4397,6 +4398,7 @@
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.ArtifactRepositoryRefStatus": {
+      "description": "ArtifactRepositoryRefStatus is the resolved artifact repository reference with namespace io.argoproj.workflow.v1alpha1.",
       "properties": {
         "artifactRepository": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactRepository",
@@ -5824,7 +5826,7 @@
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.LabelValues": {
-      "description": "Labels is list of workflow labels",
+      "description": "LabelValues is a list of workflow labels.",
       "properties": {
         "items": {
           "items": {
@@ -5857,7 +5859,7 @@
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.Link": {
-      "description": "A link to another app.",
+      "description": "Link is a link to another app.",
       "properties": {
         "name": {
           "description": "The name of the link, E.g. \"Workflow Logs\" or \"Pod Logs\"",
@@ -5944,7 +5946,7 @@
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.Memoize": {
-      "description": "Memoization enables caching for the Outputs of the template",
+      "description": "Memoize enables caching for the Outputs of the template.",
       "properties": {
         "cache": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Cache",
@@ -5967,7 +5969,7 @@
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.Metadata": {
-      "description": "Pod metadata",
+      "description": "Metadata is pod metadata.",
       "properties": {
         "annotations": {
           "additionalProperties": {
@@ -6258,7 +6260,7 @@
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.OAuth2EndpointParam": {
-      "description": "EndpointParam is for requesting optional fields that should be sent in the oauth request",
+      "description": "OAuth2EndpointParam is an optional field that should be sent in the OAuth request.",
       "properties": {
         "key": {
           "description": "Name is the header name",

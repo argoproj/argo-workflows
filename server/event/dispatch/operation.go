@@ -56,8 +56,8 @@ func NewOperation(ctx context.Context, instanceIDService instanceid.Service, eve
 	}, nil
 }
 
-// not to be converted with sutils, parent calling function should handle this
-// responsibility
+// Dispatch executes the event dispatch. It is not to be converted with sutils;
+// the parent calling function should handle that responsibility.
 func (o *Operation) Dispatch(ctx context.Context) error {
 	logger := logging.RequireLoggerFromContext(ctx)
 
