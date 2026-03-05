@@ -55,7 +55,7 @@ func (wfc *WorkflowController) newNamespaceInformer(ctx context.Context, kubecli
 	}
 
 	source := &cache.ListWatch{ListFunc: listFunc, WatchFunc: watchFunc}
-	informer := cache.NewSharedIndexInformer(source, &apiv1.Namespace{}, nsResyncPeriod, cache.Indexers{})
+	informer := cache.NewSharedIndexInformer(cache.ToListWatcherWithWatchListSemantics(source, kubeclientset), &apiv1.Namespace{}, nsResyncPeriod, cache.Indexers{})
 
 	_, err := informer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{

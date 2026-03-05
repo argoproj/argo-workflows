@@ -96,7 +96,7 @@ func TestWorkflowExecutor_LoadArtifacts(t *testing.T) {
 }
 
 func TestSaveParameters(t *testing.T) {
-	fakeClientset := fake.NewSimpleClientset()
+	fakeClientset := fake.NewClientset()
 	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
 	templateWithOutParam := wfv1.Template{
 		Outputs: wfv1.Outputs{
@@ -182,7 +182,7 @@ func TestIsBaseImagePath(t *testing.T) {
 }
 
 func TestDefaultParameters(t *testing.T) {
-	fakeClientset := fake.NewSimpleClientset()
+	fakeClientset := fake.NewClientset()
 	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
 	templateWithOutParam := wfv1.Template{
 		Outputs: wfv1.Outputs{
@@ -213,7 +213,7 @@ func TestDefaultParameters(t *testing.T) {
 }
 
 func TestDefaultParametersEmptyString(t *testing.T) {
-	fakeClientset := fake.NewSimpleClientset()
+	fakeClientset := fake.NewClientset()
 	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
 	templateWithOutParam := wfv1.Template{
 		Outputs: wfv1.Outputs{
@@ -386,9 +386,9 @@ func TestChmod(t *testing.T) {
 }
 
 func TestSaveArtifacts(t *testing.T) {
-	fakeClientset := fake.NewSimpleClientset()
+	fakeClientset := fake.NewClientset()
 	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
-	mockTaskResultClient := argofake.NewSimpleClientset().ArgoprojV1alpha1().WorkflowTaskResults(fakeNamespace)
+	mockTaskResultClient := argofake.NewClientset().ArgoprojV1alpha1().WorkflowTaskResults(fakeNamespace)
 	templateWithOutParam := wfv1.Template{
 		Inputs: wfv1.Inputs{
 			Artifacts: []wfv1.Artifact{
@@ -512,7 +512,7 @@ func TestMonitorProgress(t *testing.T) {
 	readProgressFileTickDuration := time.Millisecond
 	progressFile := "/tmp/progress"
 
-	wfFake := argofake.NewSimpleClientset(&wfv1.WorkflowTaskSet{
+	wfFake := argofake.NewClientset(&wfv1.WorkflowTaskSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: fakeNamespace,
 			Name:      fakeWorkflow,
@@ -581,7 +581,7 @@ func TestSaveLogs(t *testing.T) {
 
 func TestReportOutputs(t *testing.T) {
 	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
-	mockTaskResultClient := argofake.NewSimpleClientset().ArgoprojV1alpha1().WorkflowTaskResults(fakeNamespace)
+	mockTaskResultClient := argofake.NewClientset().ArgoprojV1alpha1().WorkflowTaskResults(fakeNamespace)
 	t.Run("Simple report output", func(t *testing.T) {
 		artifacts := []wfv1.Artifact{
 			{

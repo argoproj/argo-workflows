@@ -112,13 +112,13 @@ status:
 
 func TestMutexLock(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	kube := fake.NewSimpleClientset()
+	kube := fake.NewClientset()
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("InitializeSynchronization", func(t *testing.T) {
 		syncManager := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
 		}, WorkflowExistenceFunc)
 		wf := wfv1.MustUnmarshalWorkflow(mutexwfstatus)
-		wfclientset := fakewfclientset.NewSimpleClientset(wf)
+		wfclientset := fakewfclientset.NewClientset(wf)
 
 		wfList, err := wfclientset.ArgoprojV1alpha1().Workflows("default").List(ctx, metav1.ListOptions{})
 		require.NoError(t, err)
@@ -394,7 +394,7 @@ status:
 
 func TestMutexTmplLevel(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	kube := fake.NewSimpleClientset()
+	kube := fake.NewClientset()
 
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("TemplateLevelAcquireAndRelease", func(t *testing.T) {

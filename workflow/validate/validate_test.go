@@ -20,7 +20,7 @@ import (
 )
 
 var (
-	wfClientset   = fakewfclientset.NewSimpleClientset()
+	wfClientset   = fakewfclientset.NewClientset()
 	wftmplGetter  = templateresolution.WrapWorkflowTemplateInterface(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault))
 	cwftmplGetter = templateresolution.WrapClusterWorkflowTemplateInterface(wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 )

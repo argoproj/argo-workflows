@@ -152,8 +152,8 @@ const userEmailLabel = "my-sub.at.your.org"
 
 func getClusterWorkflowTemplateServer(t *testing.T) (clusterwftmplpkg.ClusterWorkflowTemplateServiceServer, context.Context) {
 	t.Helper()
-	kubeClientSet := fake.NewSimpleClientset()
-	wfClientset := wftFake.NewSimpleClientset(&unlabelled, &cwftObj2, &cwftObj3)
+	kubeClientSet := fake.NewClientset()
+	wfClientset := wftFake.NewClientset(&unlabelled, &cwftObj2, &cwftObj3)
 	ctx := context.WithValue(logging.TestContext(t.Context()), auth.WfKey, wfClientset)
 	ctx = context.WithValue(ctx, auth.KubeKey, kubeClientSet)
 	ctx = context.WithValue(ctx, auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}, Email: "my-sub@your.org"})
