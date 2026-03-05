@@ -12,6 +12,7 @@ const (
 	versionTable = "schema_history"
 )
 
+// Migrate runs the migrations
 func Migrate(ctx context.Context, session db.Session, clusterName, tableName string, dbType sqldb.DBType) (err error) {
 	return sqldb.Migrate(ctx, session, dbType, versionTable, []sqldb.Change{
 		sqldb.AnsiSQLChange(`create table if not exists ` + tableName + ` (
