@@ -32,6 +32,7 @@ const (
 	AttribMessage             string = `message`
 	AttribNodeID              string = `node_id`
 	AttribNodePhase           string = `node_phase`
+	AttribNodeTemplateName    string = `template_name`
 	AttribNodeType            string = `node_type`
 	AttribPodNamespace        string = `namespace`
 	AttribPodPendingReason    string = `reason`

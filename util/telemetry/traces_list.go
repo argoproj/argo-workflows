@@ -176,11 +176,14 @@ var SpanNode = Span{
 		{
 			name: AttribNodeType,
 		},
+		{
+			name: AttribNodeTemplateName,
+		},
 	},
 }
 
 // StartNode starts a node span
-func (t *Tracing) StartNode(ctx context.Context, nodeID string, workflowName string, workflowNamespace string, nodeType string) (context.Context, trace.Span) {
+func (t *Tracing) StartNode(ctx context.Context, nodeID string, workflowName string, workflowNamespace string, nodeType string, nodeTemplateName string) (context.Context, trace.Span) {
 	parent := trace.SpanFromContext(ctx)
 	if roParent, ok := parent.(sdktrace.ReadOnlySpan); ok {
 		parentName := roParent.Name()
@@ -193,6 +196,7 @@ func (t *Tracing) StartNode(ctx context.Context, nodeID string, workflowName str
 		attribute.String(AttribWorkflowName, workflowName),
 		attribute.String(AttribWorkflowNamespace, workflowNamespace),
 		attribute.String(AttribNodeType, nodeType),
+		attribute.String(AttribNodeTemplateName, nodeTemplateName),
 	}
 
 	return t.tracer.Start(ctx, "node", trace.WithAttributes(attribs...), trace.WithSpanKind(trace.SpanKindInternal))
