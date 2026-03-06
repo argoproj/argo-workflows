@@ -1931,6 +1931,57 @@ func TestAssessNodeStatus(t *testing.T) {
 	}
 }
 
+func TestGetNodeTemplate_StoredTemplateUsedBeforeLiveCWT(t *testing.T) {
+	storedTmpl := wfv1.Template{
+		Name: "say-hello",
+		Script: &wfv1.ScriptTemplate{
+			Container: apiv1.Container{
+				Image:   "alpine:3.18",
+				Command: []string{"sh"},
+			},
+			Source: `echo "hello"`,
+		},
+	}
+
+	const storedKey = "cluster/cwt-helper/say-hello"
+
+	wf := &wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "cwt-templateref-bug-test",
+			Namespace: "default",
+		},
+		Spec: wfv1.WorkflowSpec{
+			Entrypoint: "main",
+		},
+		Status: wfv1.WorkflowStatus{
+			StoredTemplates: map[string]wfv1.Template{
+				storedKey: storedTmpl,
+			},
+		},
+	}
+
+	node := &wfv1.NodeStatus{
+		Name: "cwt-templateref-bug-test[0].hello-task",
+		TemplateRef: &wfv1.TemplateRef{
+			Name:         "cwt-helper",
+			Template:     "say-hello",
+			ClusterScope: true,
+		},
+		TemplateScope: "cluster/cwt-helper",
+	}
+
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	tmpl, err := woc.GetNodeTemplate(ctx, node)
+
+	require.NoError(t, err, "GetNodeTemplate must not error when template is in storedTemplates")
+	require.NotNil(t, tmpl, "GetNodeTemplate must return the stored template")
+	assert.Equal(t, "say-hello", tmpl.Name)
+}
+
 func getPodTemplate(pod *apiv1.Pod) (*wfv1.Template, error) {
 	tmpl := &wfv1.Template{}
 	for _, c := range pod.Spec.InitContainers {

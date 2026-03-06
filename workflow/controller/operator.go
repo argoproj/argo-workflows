@@ -2757,8 +2757,11 @@ func (woc *wfOperationCtx) childrenFulfilled(node *wfv1.NodeStatus) bool {
 
 func (woc *wfOperationCtx) GetNodeTemplate(ctx context.Context, node *wfv1.NodeStatus) (*wfv1.Template, error) {
 	if node.TemplateRef != nil {
-		scope, name := node.GetTemplateScope()
-		tmplCtx, err := woc.createTemplateContext(ctx, scope, name)
+		scope, resourceName := node.GetTemplateScope()
+		if tmpl := woc.wf.GetStoredTemplate(scope, resourceName, node); tmpl != nil {
+			return tmpl, nil
+		}
+		tmplCtx, err := woc.createTemplateContext(ctx, scope, resourceName)
 		if err != nil {
 			woc.markNodeError(ctx, node.Name, err)
 			return nil, err
