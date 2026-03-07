@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"encoding/json"
+	stderrors "errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -553,6 +554,9 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 	// First resolve/substitute params/artifacts from our dependencies
 	newTask, err := woc.resolveDependencyReferences(dagCtx, task)
 	if err != nil {
+		if stderrors.Is(err, ErrRequeue) {
+			return
+		}
 		woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, &wfv1.NodeFlag{}, true, err.Error())
 		connectDependencies(nodeName)
 		return
@@ -715,12 +719,26 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 	}
 
 	// Replace task's parameters
-	taskBytes, err := json.Marshal(task)
+	// We shallow copy the task to avoid modifying the input pointer, and nil out Hooks to prevent
+	// premature resolution of self-references (e.g. {{tasks.self.outputs...}} in Exit Handlers).
+	tempTask := *task
+	originalHooks := tempTask.Hooks
+	tempTask.Hooks = nil
+
+	taskBytes, err := json.Marshal(tempTask)
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
 	}
-	newTaskStr, err := template.Replace(string(taskBytes), woc.globalParams.Merge(scope.getParameters()), true)
+	// We use ReplaceStrict to ensure that any references to dependencies (tasks.*, steps.*) are resolved.
+	// If they are not resolved, it indicates a missing output (e.g. due to race condition), and we should error out
+	// rather than leaving the tag unresolved (which would result in incorrect workflow execution).
+	// We allow other variables (like {{item}}) to remain unresolved for later expansion.
+	newTaskStr, err := template.ReplaceStrict(string(taskBytes), woc.globalParams.Merge(scope.getParameters()), []string{"tasks", "steps"})
 	if err != nil {
+		if template.IsMissingVariableErr(err) {
+			woc.requeue()
+			return nil, ErrRequeue
+		}
 		return nil, err
 	}
 	var newTask wfv1.DAGTask
@@ -728,6 +746,8 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
 	}
+	// Restore Hooks
+	newTask.Hooks = originalHooks
 
 	// If we are not executing, don't attempt to resolve any artifact references. We only check if we are executing after
 	// the initial parameter resolution, since it's likely that the "when" clause will contain parameter references.
