@@ -1357,6 +1357,15 @@ func TestToUnstructured(t *testing.T) {
 	assert.Equal(t, workflow.Version, gv.Version)
 }
 
+func TestCronToUnstructured(t *testing.T) {
+	un, err := CronToUnstructured(&wfv1.CronWorkflow{})
+	require.NoError(t, err)
+	gv := un.GetObjectKind().GroupVersionKind()
+	assert.Equal(t, workflow.CronWorkflowKind, gv.Kind)
+	assert.Equal(t, workflow.Group, gv.Group)
+	assert.Equal(t, workflow.Version, gv.Version)
+}
+
 func TestGetTemplateFromNode(t *testing.T) {
 	cases := []struct {
 		inputNode            wfv1.NodeStatus
