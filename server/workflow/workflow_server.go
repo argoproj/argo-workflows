@@ -862,16 +862,16 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 		var tmplArtifacts []wfv1.Artifact
 		var artifactRepositoryRef *wfv1.ArtifactRepositoryRef
 		if wf.Spec.WorkflowTemplateRef.ClusterScope {
-			cwftmpl, err := wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates().Get(ctx, wf.Spec.WorkflowTemplateRef.Name, metav1.GetOptions{})
-			if err != nil {
-				return nil, sutils.ToStatusError(fmt.Errorf("failed to get ClusterWorkflowTemplate for artifact override: %w", err), codes.Internal)
+			cwftmpl, getErr := wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates().Get(ctx, wf.Spec.WorkflowTemplateRef.Name, metav1.GetOptions{})
+			if getErr != nil {
+				return nil, sutils.ToStatusError(fmt.Errorf("failed to get ClusterWorkflowTemplate for artifact override: %w", getErr), codes.Internal)
 			}
 			tmplArtifacts = cwftmpl.Spec.Arguments.Artifacts
 			artifactRepositoryRef = cwftmpl.Spec.ArtifactRepositoryRef
 		} else {
-			wftmpl, err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace).Get(ctx, wf.Spec.WorkflowTemplateRef.Name, metav1.GetOptions{})
-			if err != nil {
-				return nil, sutils.ToStatusError(fmt.Errorf("failed to get WorkflowTemplate for artifact override: %w", err), codes.Internal)
+			wftmpl, getErr := wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace).Get(ctx, wf.Spec.WorkflowTemplateRef.Name, metav1.GetOptions{})
+			if getErr != nil {
+				return nil, sutils.ToStatusError(fmt.Errorf("failed to get WorkflowTemplate for artifact override: %w", getErr), codes.Internal)
 			}
 			tmplArtifacts = wftmpl.Spec.Arguments.Artifacts
 			artifactRepositoryRef = wftmpl.Spec.ArtifactRepositoryRef
@@ -900,13 +900,13 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 				// If the artifact doesn't have a full location, try to resolve from default artifact repository
 				// This handles cases where the template artifact relies on the default repository configuration
 				if !artCopy.HasLocation() && s.artifactRepositories != nil {
-					repoRef, err := s.artifactRepositories.Resolve(ctx, artifactRepositoryRef, req.Namespace)
-					if err != nil {
-						logger.WithError(err).Debug(ctx, "Failed to resolve artifact repository for artifact override")
+					repoRef, resolveErr := s.artifactRepositories.Resolve(ctx, artifactRepositoryRef, req.Namespace)
+					if resolveErr != nil {
+						logger.WithError(resolveErr).Debug(ctx, "Failed to resolve artifact repository for artifact override")
 					} else {
-						repo, err := s.artifactRepositories.Get(ctx, repoRef)
-						if err != nil {
-							logger.WithError(err).Debug(ctx, "Failed to get artifact repository for artifact override")
+						repo, getErr := s.artifactRepositories.Get(ctx, repoRef)
+						if getErr != nil {
+							logger.WithError(getErr).Debug(ctx, "Failed to get artifact repository for artifact override")
 						} else if repo != nil {
 							archiveLocation := repo.ToArtifactLocation()
 							if archiveLocation != nil && archiveLocation.HasLocation() {
@@ -920,8 +920,8 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 					}
 				}
 
-				if err := artCopy.SetKey(newKey); err != nil {
-					return nil, sutils.ToStatusError(fmt.Errorf("failed to set key for artifact %s: %w", tmplArt.Name, err), codes.Internal)
+				if setErr := artCopy.SetKey(newKey); setErr != nil {
+					return nil, sutils.ToStatusError(fmt.Errorf("failed to set key for artifact %s: %w", tmplArt.Name, setErr), codes.Internal)
 				}
 				wf.Spec.Arguments.Artifacts = append(wf.Spec.Arguments.Artifacts, *artCopy)
 
