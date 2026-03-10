@@ -254,12 +254,10 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 		} else {
 			totalCount = archivedCount
 		}
-	} else {
+	} else if fetchLive {
 		// For pagination without remaining count, we can use a more efficient approach
 		// Just check if there are more items beyond the current page
-		if fetchLive {
-			totalCount = liveWfCount // Start with live count, will be updated if needed
-		}
+		totalCount = liveWfCount // Start with live count, will be updated if needed
 	}
 
 	// fetch live workflows

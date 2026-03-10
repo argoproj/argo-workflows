@@ -96,7 +96,7 @@ export function WorkflowFilters(props: WorkflowFilterProps) {
         const nonArchived = props.workflows.length - archived;
         return [
             {name: 'true', count: archived},
-            {name: 'false', count: nonArchived},
+            {name: 'false', count: nonArchived}
         ];
     }, [props.workflows]);
 

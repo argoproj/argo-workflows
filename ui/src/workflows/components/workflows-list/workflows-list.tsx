@@ -168,7 +168,19 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
 
     useEffect(() => {
         const listWatch = new ListWatch(
-            () => services.workflows.list(namespace, phases, labels, pagination, undefined, nameValue, nameFilter, createdAfter, finishedBefore, archived),
+            () =>
+                services.workflows.list(
+                    namespace,
+                    phases,
+                    labels,
+                    pagination,
+                    undefined,
+                    nameValue,
+                    nameFilter,
+                    createdAfter,
+                    finishedBefore,
+                    archived?.map(s => s === 'true')
+                ),
             (resourceVersion: string) => services.workflows.watchFields({namespace, phases, labels, resourceVersion}),
             metadata => {
                 setError(null);
