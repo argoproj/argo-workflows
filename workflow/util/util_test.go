@@ -5007,7 +5007,6 @@ func TestFormulateRetryWorkflowDeterministicReset(t *testing.T) {
 }
 
 func TestOverrideArtifacts(t *testing.T) {
-
 	t.Run("Override artifact key in workflow arguments", func(t *testing.T) {
 		wf := &wfv1.Workflow{
 			Spec: wfv1.WorkflowSpec{
@@ -5154,7 +5153,6 @@ func TestOverrideArtifacts(t *testing.T) {
 }
 
 func TestApplySubmitOptsWithArtifacts(t *testing.T) {
-
 	t.Run("Apply submit opts with artifact overrides", func(t *testing.T) {
 		wf := &wfv1.Workflow{
 			Spec: wfv1.WorkflowSpec{
