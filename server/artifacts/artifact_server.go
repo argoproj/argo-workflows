@@ -107,8 +107,8 @@ func (a *ArtifactServer) UploadInputArtifact(w http.ResponseWriter, r *http.Requ
 	}).Info(ctx, "Upload artifact")
 
 	// Parse multipart form (max 32MB in memory, rest on disk)
-	if err := r.ParseMultipartForm(32 << 20); err != nil {
-		http.Error(w, "Failed to parse multipart form: "+err.Error(), http.StatusBadRequest)
+	if parseErr := r.ParseMultipartForm(32 << 20); parseErr != nil {
+		http.Error(w, "Failed to parse multipart form: "+parseErr.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -158,13 +158,13 @@ func (a *ArtifactServer) UploadInputArtifact(w http.ResponseWriter, r *http.Requ
 		// 1. WorkflowTemplate specifies artifactRepositoryRef explicitly
 		// 2. Namespace has artifact-repositories ConfigMap
 		// 3. workflow-controller-configmap has default artifactRepository
-		repoRef, err := a.artifactRepositories.Resolve(ctx, wfTemplate.Spec.ArtifactRepositoryRef, namespace)
-		if err != nil {
-			a.logger.WithError(err).Debug(ctx, "Failed to resolve artifact repository, will check if artifact has location anyway")
+		repoRef, resolveErr := a.artifactRepositories.Resolve(ctx, wfTemplate.Spec.ArtifactRepositoryRef, namespace)
+		if resolveErr != nil {
+			a.logger.WithError(resolveErr).Debug(ctx, "Failed to resolve artifact repository, will check if artifact has location anyway")
 		} else {
-			repo, err := a.artifactRepositories.Get(ctx, repoRef)
-			if err != nil {
-				a.logger.WithError(err).Debug(ctx, "Failed to get artifact repository")
+			repo, getErr := a.artifactRepositories.Get(ctx, repoRef)
+			if getErr != nil {
+				a.logger.WithError(getErr).Debug(ctx, "Failed to get artifact repository")
 			} else if repo != nil {
 				// Get the default artifact location from the repository
 				// We don't use Relocate() because it requires an existing key,
@@ -196,8 +196,8 @@ func (a *ArtifactServer) UploadInputArtifact(w http.ResponseWriter, r *http.Requ
 
 	// Create a copy of the artifact for uploading (using artifactCopy which has resolved location)
 	outputArtifact := artifactCopy.DeepCopy()
-	if err := outputArtifact.SetKey(newKey); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to set artifact key: %v", err), http.StatusInternalServerError)
+	if setErr := outputArtifact.SetKey(newKey); setErr != nil {
+		http.Error(w, fmt.Sprintf("Failed to set artifact key: %v", setErr), http.StatusInternalServerError)
 		return
 	}
 
