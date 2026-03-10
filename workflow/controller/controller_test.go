@@ -462,7 +462,8 @@ func withOutputs(ctx context.Context, outputs wfv1.Outputs) with {
 				Kind:       workflow.WorkflowTaskResultKind,
 			},
 			ObjectMeta: metav1.ObjectMeta{
-				Name: nodeID,
+				Name:      nodeID,
+				Namespace: woc.wf.Namespace,
 				Labels: map[string]string{
 					common.LabelKeyWorkflow:               woc.wf.Name,
 					common.LabelKeyReportOutputsCompleted: "true",
@@ -480,6 +481,12 @@ func withOutputs(ctx context.Context, outputs wfv1.Outputs) with {
 				metav1.CreateOptions{},
 			)
 		if err != nil {
+			panic(err)
+		}
+		// Also add the task result directly to the informer's index so that
+		// taskResultReconciliation can find it immediately without waiting for
+		// the informer's watch goroutine to sync.
+		if err := woc.controller.taskResultInformer.GetIndexer().Add(taskResult); err != nil {
 			panic(err)
 		}
 	}
