@@ -127,6 +127,36 @@ func (s *mockClient) MakeBucket(bucketName string, opts minio.MakeBucketOptions)
 	return s.getMockedErr("MakeBucket")
 }
 
+// PutStream puts a stream to a bucket at the specified key
+func (s *mockClient) PutStream(bucket, key string, reader io.Reader, size int64) error {
+	return s.getMockedErr("PutStream")
+}
+
+// S3Client is an interface for s3 clients that support streaming
+type S3Client interface {
+	PutStream(bucket, key string, reader io.Reader, size int64) error
+}
+
+type mockS3Client struct {
+	files      map[string][]string
+	mockedErrs map[string]error
+}
+
+func newMockS3Client(files map[string][]string, mockedErrs map[string]error) S3Client {
+	return &mockS3Client{
+		files:      files,
+		mockedErrs: mockedErrs,
+	}
+}
+
+func (s *mockS3Client) getMockedErr(funcName string) error {
+	err, ok := s.mockedErrs[funcName]
+	if !ok {
+		return nil
+	}
+	return err
+}
+
 // PutStream uploads data from a reader to a bucket at the specified key
 func (s *mockS3Client) PutStream(bucket, key string, reader io.Reader, size int64) error {
 	return s.getMockedErr("PutStream")
