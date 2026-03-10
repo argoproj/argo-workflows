@@ -94,6 +94,11 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
     const [nameFilter, setNameFilter] = useState<NameFilterKeys>(() => {
         return NAME_FILTER_KEYS.find(key => queryParams.get(key)) || 'Contains';
     });
+    const [archived, setArchived] = useState<string[]>(() => {
+        const savedOptions = storage.getItem('options', {});
+        const archivedQueryParam = queryParams.getAll('archived');
+        return archivedQueryParam.length > 0 ? archivedQueryParam : savedOptions.archived || ['true', 'false'];
+    });
 
     const batchActionDisabled = useMemo<Actions.OperationDisabled>(() => {
         const nowDisabled: any = {...allBatchActionsEnabled};
@@ -142,6 +147,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
         const params = new URLSearchParams(history.location.search);
         phases?.forEach(phase => params.append('phase', phase));
         labels?.forEach(label => params.append('label', label));
+        archived?.forEach(archivedOption => params.append('archived', archivedOption));
         if (pagination.offset) {
             params.append('offset', pagination.offset);
         }
@@ -158,11 +164,11 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
             params.append('finishedBefore', finishedBefore.toISOString());
         }
         history.push(historyUrl('workflows' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {namespace, extraSearchParams: params}));
-    }, [namespace, phases.toString(), labels.toString(), pagination.limit, pagination.offset, nameValue, nameFilter, createdAfter, finishedBefore]); // referential equality, so use values, not refs
+    }, [namespace, phases.toString(), labels.toString(), pagination.limit, pagination.offset, nameValue, nameFilter, archived, createdAfter, finishedBefore]); // referential equality, so use values, not refs
 
     useEffect(() => {
         const listWatch = new ListWatch(
-            () => services.workflows.list(namespace, phases, labels, pagination, undefined, nameValue, nameFilter, createdAfter, finishedBefore),
+            () => services.workflows.list(namespace, phases, labels, pagination, undefined, nameValue, nameFilter, createdAfter, finishedBefore, archived),
             (resourceVersion: string) => services.workflows.watchFields({namespace, phases, labels, resourceVersion}),
             metadata => {
                 setError(null);
@@ -180,7 +186,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
             clearSelectedWorkflows();
             listWatch.stop();
         };
-    }, [namespace, phases.toString(), labels.toString(), pagination.limit, pagination.offset, nameValue, nameFilter, createdAfter, finishedBefore]); // referential equality, so use values, not refs
+    }, [namespace, phases.toString(), labels.toString(), pagination.limit, pagination.offset, nameValue, nameFilter, archived, createdAfter, finishedBefore]); // referential equality, so use values, not refs
 
     useCollectEvent('openedWorkflowList');
 
@@ -243,6 +249,8 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                             nameValue={nameValue}
                             setNameFilter={setNameFilter}
                             setNameValue={setNameValue}
+                            archived={archived}
+                            setArchived={setArchived}
                         />
                     </div>
                 </div>
