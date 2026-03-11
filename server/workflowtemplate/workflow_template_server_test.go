@@ -251,9 +251,9 @@ func TestWorkflowTemplateServer_GetWorkflowTemplate(t *testing.T) {
 			auth.WfKey, wfClientset),
 			auth.KubeKey, kubeClientSet),
 			auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
-		wftmplStore := NewWorkflowTemplateClientStore()
-		cwftmplStore := clusterworkflowtemplate.NewClusterWorkflowTemplateClientStore()
-		server := NewWorkflowTemplateServer(instanceid.NewService("my-instanceid"), wftmplStore, cwftmplStore)
+		wftmplStore := NewClientStore()
+		cwftmplStore := clusterworkflowtemplate.NewClientStore()
+		server := NewServer(instanceid.NewService("my-instanceid"), wftmplStore, cwftmplStore)
 		_, err := server.GetWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateGetRequest{
 			Name:      "workflow-template-whalesay-template2",
 			Namespace: "default",
