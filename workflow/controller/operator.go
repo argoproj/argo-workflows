@@ -4303,6 +4303,14 @@ func (woc *wfOperationCtx) retryStrategy(tmpl *wfv1.Template) *wfv1.RetryStrateg
 func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) (context.Context, error) {
 	switch {
 	case woc.wf.Spec.WorkflowTemplateRef != nil: // not-woc-misuse
+		// When workflow restrictions require template referencing (Strict/Secure mode),
+		// reject workflows that include a podSpecPatch as it could override security
+		// settings defined in the WorkflowTemplate.
+		if woc.controller.Config.WorkflowRestrictions.MustUseReference() && woc.wf.Spec.HasPodSpecPatch() { // not-woc-misuse: intentionally checking the user-submitted spec
+			err := fmt.Errorf("podSpecPatch is not permitted when using workflowTemplateRef with templateReferencing restriction")
+			ctx = woc.markWorkflowError(ctx, err)
+			return ctx, err
+		}
 		err := woc.setStoredWfSpec(ctx)
 		if err != nil {
 			ctx = woc.markWorkflowError(ctx, err)
