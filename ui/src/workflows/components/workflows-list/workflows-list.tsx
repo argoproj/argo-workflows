@@ -97,7 +97,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
     const [archived, setArchived] = useState<string[]>(() => {
         const savedOptions = storage.getItem('options', {});
         const archivedQueryParam = queryParams.getAll('archived');
-        return archivedQueryParam.length > 0 ? archivedQueryParam : savedOptions.archived || ['true', 'false'];
+        return archivedQueryParam.length > 0 ? archivedQueryParam : savedOptions.archived || [];
     });
 
     const batchActionDisabled = useMemo<Actions.OperationDisabled>(() => {
