@@ -5660,15 +5660,14 @@ func TestReferenceModeBlocksPodSpecPatch(t *testing.T) {
 	t.Run("Strict rejects podSpecPatch", func(t *testing.T) {
 		wfWithPatch := wf.DeepCopy()
 		wfWithPatch.Spec.PodSpecPatch = `{"containers":[{"name":"main","securityContext":{"privileged":true}}]}`
-		cancel, controller := newController(logging.TestContext(t.Context()), wfWithPatch, wfTmpl)
+		cancel, controller := newController(wfWithPatch, wfTmpl)
 		defer cancel()
 
-		ctx := logging.TestContext(t.Context())
 		controller.Config.WorkflowRestrictions = &config.WorkflowRestrictions{
 			TemplateReferencing: config.TemplateReferencingStrict,
 		}
-		woc := newWorkflowOperationCtx(ctx, wfWithPatch, controller)
-		woc.operate(ctx)
+		woc := newWorkflowOperationCtx(wfWithPatch, controller)
+		woc.operate(t.Context())
 		assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
 		assert.Contains(t, woc.wf.Status.Message, "podSpecPatch is not permitted")
 	})
@@ -5676,15 +5675,14 @@ func TestReferenceModeBlocksPodSpecPatch(t *testing.T) {
 	t.Run("Secure rejects podSpecPatch", func(t *testing.T) {
 		wfWithPatch := wf.DeepCopy()
 		wfWithPatch.Spec.PodSpecPatch = `{"containers":[{"name":"main","securityContext":{"runAsUser":0}}]}`
-		cancel, controller := newController(logging.TestContext(t.Context()), wfWithPatch, wfTmpl)
+		cancel, controller := newController(wfWithPatch, wfTmpl)
 		defer cancel()
 
-		ctx := logging.TestContext(t.Context())
 		controller.Config.WorkflowRestrictions = &config.WorkflowRestrictions{
 			TemplateReferencing: config.TemplateReferencingSecure,
 		}
-		woc := newWorkflowOperationCtx(ctx, wfWithPatch, controller)
-		woc.operate(ctx)
+		woc := newWorkflowOperationCtx(wfWithPatch, controller)
+		woc.operate(t.Context())
 		assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
 		assert.Contains(t, woc.wf.Status.Message, "podSpecPatch is not permitted")
 	})
@@ -5692,26 +5690,24 @@ func TestReferenceModeBlocksPodSpecPatch(t *testing.T) {
 	t.Run("No restrictions allows podSpecPatch", func(t *testing.T) {
 		wfWithPatch := wf.DeepCopy()
 		wfWithPatch.Spec.PodSpecPatch = `{"containers":[{"name":"main","resources":{"limits":{"cpu":"1"}}}]}`
-		cancel, controller := newController(logging.TestContext(t.Context()), wfWithPatch, wfTmpl)
+		cancel, controller := newController(wfWithPatch, wfTmpl)
 		defer cancel()
 
-		ctx := logging.TestContext(t.Context())
 		controller.Config.WorkflowRestrictions = nil
-		woc := newWorkflowOperationCtx(ctx, wfWithPatch, controller)
-		woc.operate(ctx)
+		woc := newWorkflowOperationCtx(wfWithPatch, controller)
+		woc.operate(t.Context())
 		assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	})
 
 	t.Run("Without podSpecPatch still works in Strict mode", func(t *testing.T) {
-		cancel, controller := newController(logging.TestContext(t.Context()), wf, wfTmpl)
+		cancel, controller := newController(wf, wfTmpl)
 		defer cancel()
 
-		ctx := logging.TestContext(t.Context())
 		controller.Config.WorkflowRestrictions = &config.WorkflowRestrictions{
 			TemplateReferencing: config.TemplateReferencingStrict,
 		}
-		woc := newWorkflowOperationCtx(ctx, wf, controller)
-		woc.operate(ctx)
+		woc := newWorkflowOperationCtx(wf, controller)
+		woc.operate(t.Context())
 		assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	})
 }
