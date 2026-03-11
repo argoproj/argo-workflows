@@ -183,7 +183,7 @@ func (r *workflowArchive) ListWorkflows(ctx context.Context, options sutils.List
 				db.Raw("coalesce(workflow->'$.metadata.annotations', '{}') as annotations"),
 				db.Raw("coalesce(workflow->>'$.status.progress', '') as progress"),
 				db.Raw("workflow->>'$.spec.suspend'"),
-				db.Raw("coalesce(workflow->'$.spec.arguments', '{}') as arguments"),
+				db.Raw("coalesce(workflow->>'$.spec.arguments', '{}') as arguments"),
 				db.Raw("coalesce(workflow->>'$.status.message', '') as message"),
 				db.Raw("coalesce(workflow->>'$.status.estimatedDuration', '0') as estimatedduration"),
 				db.Raw("coalesce(workflow->'$.status.resourcesDuration', '{}') as resourcesduration"),
@@ -261,8 +261,10 @@ func (r *workflowArchive) ListWorkflows(ctx context.Context, options sutils.List
 		}
 
 		arguments := wfv1.Arguments{}
-		if err := json.Unmarshal([]byte(md.Arguments), &arguments); err != nil {
-			return nil, err
+		if md.Arguments != "" {
+			if err := json.Unmarshal([]byte(md.Arguments), &arguments); err != nil {
+				return nil, err
+			}
 		}
 
 		wfs[i] = wfv1.Workflow{
