@@ -7,8 +7,11 @@ import (
 	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	authorizationv1 "k8s.io/api/authorization/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
+	k8stesting "k8s.io/client-go/testing"
 
 	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
 	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -171,6 +174,11 @@ func getWorkflowTemplateServer() (workflowtemplatepkg.WorkflowTemplateServiceSer
 	v1alpha1.MustUnmarshal(wftStr2, &wftObj1)
 	v1alpha1.MustUnmarshal(wftStr3, &wftObj2)
 	kubeClientSet := fake.NewSimpleClientset()
+	kubeClientSet.PrependReactor("create", "selfsubjectaccessreviews", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		return true, &authorizationv1.SelfSubjectAccessReview{
+			Status: authorizationv1.SubjectAccessReviewStatus{Allowed: true},
+		}, nil
+	})
 	wfClientset := wftFake.NewSimpleClientset(&unlabelledObj, &wftObj1, &wftObj2)
 	ctx := context.WithValue(context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}, Email: "my-sub@your.org"})
 	wftmplStore := NewWorkflowTemplateClientStore()
@@ -225,6 +233,30 @@ func TestWorkflowTemplateServer_GetWorkflowTemplate(t *testing.T) {
 	t.Run("Unlabelled", func(t *testing.T) {
 		_, err := server.GetWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateGetRequest{Name: "unlabelled", Namespace: "default"})
 		require.Error(t, err)
+	})
+	t.Run("Unauthorized", func(t *testing.T) {
+		kubeClientSet := fake.NewSimpleClientset()
+		kubeClientSet.PrependReactor("create", "selfsubjectaccessreviews", func(action k8stesting.Action) (bool, runtime.Object, error) {
+			return true, &authorizationv1.SelfSubjectAccessReview{
+				Status: authorizationv1.SubjectAccessReviewStatus{Allowed: false},
+			}, nil
+		})
+		var wftObj1 v1alpha1.WorkflowTemplate
+		v1alpha1.MustUnmarshal(wftStr2, &wftObj1)
+		wfClientset := wftFake.NewSimpleClientset(&wftObj1)
+		ctx := context.WithValue(context.WithValue(context.WithValue(context.TODO(),
+			auth.WfKey, wfClientset),
+			auth.KubeKey, kubeClientSet),
+			auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
+		wftmplStore := NewWorkflowTemplateClientStore()
+		cwftmplStore := clusterworkflowtemplate.NewClusterWorkflowTemplateClientStore()
+		server := NewWorkflowTemplateServer(instanceid.NewService("my-instanceid"), wftmplStore, cwftmplStore)
+		_, err := server.GetWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateGetRequest{
+			Name:      "workflow-template-whalesay-template2",
+			Namespace: "default",
+		})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "PermissionDenied")
 	})
 }
 
