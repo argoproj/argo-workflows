@@ -322,6 +322,21 @@ func Workflow(ctx context.Context, wftmplGetter templateresolution.WorkflowTempl
 	if err != nil {
 		return err
 	}
+	// validate hook if it is an exit hook
+	for hookName, hook := range wf.Spec.Hooks {
+		if hookName != wfv1.ExitLifecycleEvent {
+			continue
+		}
+		tmplHolder = &wfv1.WorkflowStep{Template: hook.Template}
+		if hook.TemplateRef != nil {
+			tmplHolder = &wfv1.WorkflowStep{TemplateRef: hook.TemplateRef}
+		}
+		ctx.globalParams[common.GlobalVarWorkflowFailures] = placeholderGenerator.NextPlaceholder()
+		_, err = ctx.validateTemplateHolder(tmplHolder, tmplCtx, &hook.Arguments, opts.WorkflowTemplateValidation)
+		if err != nil {
+			return err
+		}
+	}
 
 	if !wf.Spec.PodGC.GetStrategy().IsValid() {
 		return errors.Errorf(errors.CodeBadRequest, "podGC.strategy unknown strategy '%s'", wf.Spec.PodGC.Strategy)
