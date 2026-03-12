@@ -49,6 +49,7 @@ type archivedWorkflowMetadata struct {
 	Labels            string `db:"labels,omitempty"`
 	Annotations       string `db:"annotations,omitempty"`
 	Suspend           *bool  `db:"suspend,omitempty"`
+	Arguments         string `db:"arguments,omitempty"`
 	Message           string `db:"message,omitempty"`
 	Progress          string `db:"progress,omitempty"`
 	EstimatedDuration int    `db:"estimatedduration,omitempty"`
@@ -182,6 +183,7 @@ func (r *workflowArchive) ListWorkflows(ctx context.Context, options sutils.List
 				db.Raw("coalesce(workflow->'$.metadata.annotations', '{}') as annotations"),
 				db.Raw("coalesce(workflow->>'$.status.progress', '') as progress"),
 				db.Raw("workflow->>'$.spec.suspend'"),
+				db.Raw("coalesce(workflow->>'$.spec.arguments', '{}') as arguments"),
 				db.Raw("coalesce(workflow->>'$.status.message', '') as message"),
 				db.Raw("coalesce(workflow->>'$.status.estimatedDuration', '0') as estimatedduration"),
 				db.Raw("coalesce(workflow->'$.status.resourcesDuration', '{}') as resourcesduration"),
@@ -206,6 +208,7 @@ func (r *workflowArchive) ListWorkflows(ctx context.Context, options sutils.List
 				db.Raw("coalesce(workflow->'metadata', '{}') as metadata"),
 				db.Raw("coalesce(workflow->'status', '{}') as status"),
 				db.Raw("workflow->'spec'->>'suspend' as suspend"),
+				db.Raw("coalesce(workflow->'spec'->'arguments', '{}') as arguments"),
 			).
 			From(archiveTableName).
 			Where(r.clusterManagedNamespaceAndInstanceID())
@@ -220,6 +223,7 @@ func (r *workflowArchive) ListWorkflows(ctx context.Context, options sutils.List
 			db.Raw("coalesce(metadata->>'annotations', '{}') as annotations"),
 			db.Raw("coalesce(status->>'progress', '') as progress"),
 			"suspend",
+			db.Raw("coalesce(arguments::text, '{}') as arguments"),
 			db.Raw("coalesce(status->>'message', '') as message"),
 			db.Raw("coalesce(status->>'estimatedDuration', '0') as estimatedduration"),
 			db.Raw("coalesce(status->>'resourcesDuration', '{}') as resourcesduration"),
@@ -256,6 +260,13 @@ func (r *workflowArchive) ListWorkflows(ctx context.Context, options sutils.List
 			return nil, err
 		}
 
+		arguments := wfv1.Arguments{}
+		if md.Arguments != "" {
+			if err := json.Unmarshal([]byte(md.Arguments), &arguments); err != nil {
+				return nil, err
+			}
+		}
+
 		wfs[i] = wfv1.Workflow{
 			ObjectMeta: v1.ObjectMeta{
 				Name:              md.Name,
@@ -266,7 +277,8 @@ func (r *workflowArchive) ListWorkflows(ctx context.Context, options sutils.List
 				Annotations:       annotations,
 			},
 			Spec: wfv1.WorkflowSpec{
-				Suspend: md.Suspend,
+				Suspend:   md.Suspend,
+				Arguments: arguments,
 			},
 			Status: wfv1.WorkflowStatus{
 				Phase:             md.Phase,
