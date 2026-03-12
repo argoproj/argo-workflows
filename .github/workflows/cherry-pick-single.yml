@@ -25,6 +25,9 @@ on:
       CHERRYPICK_APP_PRIVATE_KEY:
         required: true
 
+permissions:
+  contents: read
+
 jobs:
   cherry-pick:
     name: Cherry Pick to ${{ inputs.version_number }}
