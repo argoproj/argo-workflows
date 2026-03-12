@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -2864,6 +2865,30 @@ func TestMaxLengthName(t *testing.T) {
 	cwf := &wfv1.CronWorkflow{ObjectMeta: metav1.ObjectMeta{Name: strings.Repeat("a", 60)}}
 	err = CronWorkflow(logging.TestContext(t.Context()), wftmplGetter, cwftmplGetter, cwf, nil)
 	require.EqualError(t, err, "cron workflow name \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" must not be more than 52 characters long (currently 60)")
+}
+
+func TestCronWorkflowInvalidTimezoneRejected(t *testing.T) {
+	cwf := &wfv1.CronWorkflow{
+		ObjectMeta: metav1.ObjectMeta{Name: "my-cron-wf", Namespace: metav1.NamespaceDefault},
+		Spec: wfv1.CronWorkflowSpec{
+			Schedules: []string{"0 * * * *"},
+			Timezone:  "Not/A_Real_Timezone",
+			WorkflowSpec: wfv1.WorkflowSpec{
+				Entrypoint: "whalesay",
+				Templates: []wfv1.Template{
+					{
+						Name: "whalesay",
+						Container: &corev1.Container{
+							Image:   "docker/whalesay:latest",
+							Command: []string{"cowsay"},
+						},
+					},
+				},
+			},
+		},
+	}
+	err := CronWorkflow(logging.TestContext(t.Context()), wftmplGetter, cwftmplGetter, cwf, nil)
+	require.ErrorContains(t, err, `invalid timezone "Not/A_Real_Timezone"`)
 }
 
 var invalidContainerSetDependencyNotFound = `
