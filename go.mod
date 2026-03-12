@@ -75,9 +75,9 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.40.0
 	go.opentelemetry.io/otel/trace v1.42.0
 	go.uber.org/mock v0.6.0
-	golang.org/x/crypto v0.48.0
+	golang.org/x/crypto v0.49.0
 	golang.org/x/oauth2 v0.36.0
-	golang.org/x/sync v0.19.0
+	golang.org/x/sync v0.20.0
 	golang.org/x/time v0.15.0
 	google.golang.org/api v0.265.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20260203192932-546029d2fa20
@@ -358,10 +358,10 @@ require (
 	github.com/yalp/jsonpath v0.0.0-20180802001716-5cc68e5049a0 // indirect
 	github.com/yudai/gojsondiff v1.0.0 // indirect
 	github.com/yudai/golcs v0.0.0-20170316035057-ecda9a501e82 // indirect
-	golang.org/x/net v0.51.0
+	golang.org/x/net v0.52.0
 	golang.org/x/sys v0.42.0
 	golang.org/x/term v0.41.0
-	golang.org/x/text v0.34.0 // indirect
+	golang.org/x/text v0.35.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
