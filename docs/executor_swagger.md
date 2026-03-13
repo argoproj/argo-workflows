@@ -3465,6 +3465,7 @@ cause implementors to also use a fixed point implementation.
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | accessKeySecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
+| addressingStyle | string| `string` |  | | AddressingStyle defines how buckets are addressed by the S3 client.</br>This is required for some S3-compatible providers that only support</br>virtual-hosted-style bucket addressing.</br></br>Valid values are:</br>"" (default, auto-detect)</br>"path"</br>"virtual-hosted"</br></br>+kubebuilder:validation:Enum="";path;virtual-hosted |  |
 | bucket | string| `string` |  | | Bucket is the name of the bucket |  |
 | caSecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
 | createBucketIfNotPresent | [CreateS3BucketOptions](#create-s3-bucket-options)| `CreateS3BucketOptions` |  | |  |  |
