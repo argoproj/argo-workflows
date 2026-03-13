@@ -131,9 +131,21 @@ type ArtifactDriver struct {
 	KmsEncryptionContext  string
 	EnableEncryption      bool
 	ServerSideCustomerKey string
+	AddressingStyle       string
 }
 
 var _ artifactscommon.ArtifactDriver = &ArtifactDriver{}
+
+func parseAddressingStyle(s string) AddressingStyle {
+	switch s {
+	case "path":
+		return PathStyle
+	case "virtual-hosted":
+		return VirtualHostedStyle
+	default:
+		return AutoDetectStyle
+	}
+}
 
 // newClient instantiates a new S3 client object.
 func (s3Driver *ArtifactDriver) newClient(ctx context.Context) (Client, error) {
@@ -153,7 +165,8 @@ func (s3Driver *ArtifactDriver) newClient(ctx context.Context) (Client, error) {
 			Enabled:               s3Driver.EnableEncryption,
 			ServerSideCustomerKey: s3Driver.ServerSideCustomerKey,
 		},
-		SendContentMd5: true,
+		SendContentMd5:  true,
+		AddressingStyle: parseAddressingStyle(s3Driver.AddressingStyle),
 	}
 
 	if tr, err := GetDefaultTransport(opts); err == nil {

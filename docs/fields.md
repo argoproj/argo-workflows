@@ -3838,6 +3838,7 @@ S3Artifact is the location of an S3 artifact
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`accessKeySecret`|[`SecretKeySelector`](#secretkeyselector)|AccessKeySecret is the secret selector to the bucket's access key|
+|`addressingStyle`|`string`|AddressingStyle defines how buckets are addressed by the S3 client. This is required for some S3-compatible providers that only support virtual-hosted-style bucket addressing. Valid values are: - "" (default, auto-detect) - "path" - "virtual-hosted"|
 |`bucket`|`string`|Bucket is the name of the bucket|
 |`caSecret`|[`SecretKeySelector`](#secretkeyselector)|CASecret specifies the secret that contains the CA, used to verify the TLS connection|
 |`createBucketIfNotPresent`|[`CreateS3BucketOptions`](#creates3bucketoptions)|CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist. Setting Enabled Encryption will apply either SSE-S3 to the bucket if KmsKeyId is not set or SSE-KMS if it is.|
@@ -4561,6 +4562,7 @@ S3ArtifactRepository defines the controller configuration for an S3 artifact rep
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`accessKeySecret`|[`SecretKeySelector`](#secretkeyselector)|AccessKeySecret is the secret selector to the bucket's access key|
+|`addressingStyle`|`string`|AddressingStyle defines how buckets are addressed by the S3 client. This is required for some S3-compatible providers that only support virtual-hosted-style bucket addressing. Valid values are: - "" (default, auto-detect) - "path" - "virtual-hosted"|
 |`bucket`|`string`|Bucket is the name of the bucket|
 |`caSecret`|[`SecretKeySelector`](#secretkeyselector)|CASecret specifies the secret that contains the CA, used to verify the TLS connection|
 |`createBucketIfNotPresent`|[`CreateS3BucketOptions`](#creates3bucketoptions)|CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist. Setting Enabled Encryption will apply either SSE-S3 to the bucket if KmsKeyId is not set or SSE-KMS if it is.|
