@@ -112,6 +112,41 @@ var _ wfv1.ArgumentsProvider = &FakeArguments{}
 
 var resourceManifestExpressionPattern = regexp.MustCompile(`{{\s*=\s*(.+?)\s*}}`)
 
+// resourceManifestSimpleTagPattern matches simple {{tag}} tags. Expression tags like {{=expr}}
+// (without space before =) are excluded by [^=]. Expression tags with a space before = (e.g.,
+// {{ = expr }}) may match, but are handled downstream by template.Validate which skips expressions.
+var resourceManifestSimpleTagPattern = regexp.MustCompile(`{{\s*([^=].*?)\s*}}`)
+
+// substituteUnresolvableManifestTags replaces {{...}} tags in a resource manifest with placeholders,
+// but only for tags that cannot be resolved in the outer workflow's scope. Tags that exist in
+// the outer scope (e.g., {{workflow.name}}) are left intact so they continue to be validated.
+// This allows workflow-of-workflows patterns where the inner workflow has its own template tags
+// (e.g., {{inputs.parameters.msg}}) that should not be validated against the outer scope.
+//
+// Note: this intentionally weakens validation for Resource manifests — tags not in the outer scope
+// are silently allowed (they may belong to an inner resource). Typos in outer-scope variable
+// references within manifests will only be caught at runtime, not at submission time.
+func substituteUnresolvableManifestTags(manifest string, scope map[string]any) string {
+	return resourceManifestSimpleTagPattern.ReplaceAllStringFunc(manifest, func(match string) string {
+		// Extract the tag content from {{tag}}
+		submatch := resourceManifestSimpleTagPattern.FindStringSubmatch(match)
+		if len(submatch) < 2 {
+			return match
+		}
+		tag := strings.TrimSpace(submatch[1])
+
+		// If the tag is in scope, keep it for validation.
+		// Note: scope already includes globalParams (merged in validateTemplate).
+		if _, ok := scope[tag]; ok {
+			return match
+		}
+
+		// Tag is not resolvable in outer scope — replace with placeholder
+		// to prevent false validation errors (it likely belongs to inner resource)
+		return placeholderGenerator.NextPlaceholder()
+	})
+}
+
 func SubstituteResourceManifestExpressions(manifest string) string {
 	var substitutions = make(map[string]string)
 	for _, match := range resourceManifestExpressionPattern.FindAllStringSubmatch(manifest, -1) {
@@ -772,7 +807,18 @@ func validateNonLeaf(tmpl *wfv1.Template) error {
 }
 
 func (tctx *templateValidationCtx) validateLeaf(scope map[string]any, tmplCtx *templateresolution.TemplateContext, tmpl *wfv1.Template, workflowTemplateValidation bool) error {
-	tmplBytes, err := json.Marshal(tmpl)
+	// For Resource templates, replace unresolvable {{...}} tags in the manifest with placeholders
+	// before variable validation. This prevents the outer workflow's validation from failing on
+	// tags that belong to the inner resource (e.g., workflow-of-workflows pattern where the inner
+	// workflow has its own {{inputs.parameters.*}} references). Tags that DO exist in the outer
+	// scope are kept intact so they continue to be validated normally.
+	tmplToValidate := tmpl
+	if tmpl.Resource != nil && tmpl.Resource.Manifest != "" {
+		tmplCopy := tmpl.DeepCopy()
+		tmplCopy.Resource.Manifest = substituteUnresolvableManifestTags(tmplCopy.Resource.Manifest, scope)
+		tmplToValidate = tmplCopy
+	}
+	tmplBytes, err := json.Marshal(tmplToValidate)
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
