@@ -160,6 +160,7 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 				} else {
 					woc.log.WithField("childNode", childNode).Info(ctx, "Step has no expanded child nodes")
 				}
+				woc.buildLocalScope(stepsCtx.scope, prefix, sgNode)
 			} else {
 				woc.buildLocalScope(stepsCtx.scope, prefix, childNode)
 			}
@@ -458,6 +459,7 @@ func (woc *wfOperationCtx) resolveReferences(ctx context.Context, stepGroup []wf
 		if err != nil {
 			if template.IsMissingVariableErr(err) {
 				woc.requeue()
+				woc.log.WithError(err).Warn(ctx, "was unable to find variable")
 				return ErrRequeue
 			}
 			return err

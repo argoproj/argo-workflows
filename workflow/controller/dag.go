@@ -702,9 +702,8 @@ func (woc *wfOperationCtx) buildLocalScopeFromTask(ctx context.Context, dagCtx *
 			if err != nil {
 				return nil, argoerrors.InternalWrapError(err)
 			}
-		} else {
-			woc.buildLocalScope(scope, prefix, ancestorNode)
 		}
+		woc.buildLocalScope(scope, prefix, ancestorNode)
 	}
 	return scope, nil
 }
