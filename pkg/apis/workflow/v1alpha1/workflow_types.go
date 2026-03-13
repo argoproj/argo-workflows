@@ -2780,6 +2780,18 @@ type S3Bucket struct {
 
 	// CASecret specifies the secret that contains the CA, used to verify the TLS connection
 	CASecret *apiv1.SecretKeySelector `json:"caSecret,omitempty" protobuf:"bytes,11,opt,name=caSecret"`
+
+	// AddressingStyle defines how buckets are addressed by the S3 client.
+	// This is required for some S3-compatible providers that only support
+	// virtual-hosted-style bucket addressing.
+	//
+	// Valid values are:
+	// - "" (default, auto-detect)
+	// - "path"
+	// - "virtual-hosted"
+	//
+	// +kubebuilder:validation:Enum="";path;virtual-hosted
+	AddressingStyle string `json:"addressingStyle,omitempty" protobuf:"bytes,13,opt,name=addressingStyle"`
 }
 
 // S3EncryptionOptions used to determine encryption options during s3 operations
