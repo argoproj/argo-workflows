@@ -1276,6 +1276,16 @@ func addOutputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.Template) {
 			if util.IsWindowsUNCPath(mnt.MountPath, tmpl) {
 				continue
 			}
+			isConfigMapVolume := false
+			for _, vol := range pod.Spec.Volumes {
+				if vol.Name == mnt.Name && vol.ConfigMap != nil && vol.Name != "argo-env-config" {
+					isConfigMapVolume = true
+					break
+				}
+			}
+			if isConfigMapVolume {
+				continue
+			}
 			mnt.MountPath = filepath.Join(common.ExecutorMainFilesystemDir, mnt.MountPath)
 			// ReadOnly is needed to be false for overlapping volume mounts
 			mnt.ReadOnly = false
