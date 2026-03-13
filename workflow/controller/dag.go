@@ -742,6 +742,7 @@ func (woc *wfOperationCtx) resolveDependencyReferences(ctx context.Context, dagC
 	if err != nil {
 		if template.IsMissingVariableErr(err) {
 			woc.requeue()
+			woc.log.WithError(err).Warn(ctx, "was unable to find variable")
 			return nil, ErrRequeue
 		}
 		return nil, err
