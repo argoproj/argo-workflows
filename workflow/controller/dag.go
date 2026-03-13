@@ -702,9 +702,8 @@ func (woc *wfOperationCtx) buildLocalScopeFromTask(ctx context.Context, dagCtx *
 			if err != nil {
 				return nil, argoerrors.InternalWrapError(err)
 			}
-		} else {
-			woc.buildLocalScope(scope, prefix, ancestorNode)
 		}
+		woc.buildLocalScope(scope, prefix, ancestorNode)
 	}
 	return scope, nil
 }
@@ -743,6 +742,7 @@ func (woc *wfOperationCtx) resolveDependencyReferences(ctx context.Context, dagC
 	if err != nil {
 		if template.IsMissingVariableErr(err) {
 			woc.requeue()
+			woc.log.WithError(err).Warn(ctx, "was unable to find variable")
 			return nil, ErrRequeue
 		}
 		return nil, err

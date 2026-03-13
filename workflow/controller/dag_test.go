@@ -3778,3 +3778,152 @@ func TestDagWftmplHookWithRetry(t *testing.T) {
 	finishNode := woc.wf.Status.Nodes.FindByDisplayName("finish")
 	assert.Equal(t, wfv1.NodeOmitted, finishNode.Phase)
 }
+
+// Regression test: referencing {{tasks.<taskgroup>.id}} where the ancestor is a TaskGroup
+// (created by withParam expansion). Before the fix, buildLocalScope was only called for
+// non-TaskGroup ancestors, so tasks.<taskgroup>.id was unavailable and caused a requeue.
+var dagTaskGroupIDRef = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-taskgroup-id-ref
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: generate
+        template: gen-list
+      - name: fanout
+        dependencies: [generate]
+        template: echo
+        arguments:
+          parameters:
+          - name: msg
+            value: '{{item}}'
+        withParam: '{{tasks.generate.outputs.result}}'
+      - name: use-id
+        dependencies: [fanout]
+        template: echo
+        arguments:
+          parameters:
+          - name: msg
+            value: '{{tasks.fanout.id}}'
+  - name: gen-list
+    script:
+      image: python:alpine3.23
+      command: [python]
+      source: |
+        import json, sys
+        json.dump([0, 1], sys.stdout)
+  - name: echo
+    inputs:
+      parameters:
+      - name: msg
+    container:
+      image: alpine:3.23
+      command: [echo, '{{inputs.parameters.msg}}']
+status:
+  nodes:
+    dag-taskgroup-id-ref:
+      id: dag-taskgroup-id-ref
+      name: dag-taskgroup-id-ref
+      displayName: dag-taskgroup-id-ref
+      type: DAG
+      templateName: main
+      templateScope: local/dag-taskgroup-id-ref
+      phase: Running
+      startedAt: "2020-04-20T16:39:00Z"
+      children:
+      - dag-taskgroup-id-ref-455800905
+    dag-taskgroup-id-ref-455800905:
+      id: dag-taskgroup-id-ref-455800905
+      name: dag-taskgroup-id-ref.generate
+      displayName: generate
+      type: Pod
+      templateName: gen-list
+      templateScope: local/dag-taskgroup-id-ref
+      boundaryID: dag-taskgroup-id-ref
+      phase: Succeeded
+      startedAt: "2020-04-20T16:39:00Z"
+      finishedAt: "2020-04-20T16:39:02Z"
+      children:
+      - dag-taskgroup-id-ref-2094038697
+      outputs:
+        result: '[0, 1]'
+        exitCode: "0"
+    dag-taskgroup-id-ref-2094038697:
+      id: dag-taskgroup-id-ref-2094038697
+      name: dag-taskgroup-id-ref.fanout
+      displayName: fanout
+      type: TaskGroup
+      templateName: echo
+      templateScope: local/dag-taskgroup-id-ref
+      boundaryID: dag-taskgroup-id-ref
+      phase: Succeeded
+      startedAt: "2020-04-20T16:39:03Z"
+      finishedAt: "2020-04-20T16:39:09Z"
+      children:
+      - dag-taskgroup-id-ref-2700861446
+      - dag-taskgroup-id-ref-3319419394
+    dag-taskgroup-id-ref-2700861446:
+      id: dag-taskgroup-id-ref-2700861446
+      name: dag-taskgroup-id-ref.fanout(0:0)
+      displayName: fanout(0:0)
+      type: Pod
+      templateName: echo
+      templateScope: local/dag-taskgroup-id-ref
+      boundaryID: dag-taskgroup-id-ref
+      phase: Succeeded
+      startedAt: "2020-04-20T16:39:03Z"
+      finishedAt: "2020-04-20T16:39:06Z"
+      inputs:
+        parameters:
+        - name: msg
+          value: "0"
+      outputs:
+        exitCode: "0"
+    dag-taskgroup-id-ref-3319419394:
+      id: dag-taskgroup-id-ref-3319419394
+      name: dag-taskgroup-id-ref.fanout(1:1)
+      displayName: fanout(1:1)
+      type: Pod
+      templateName: echo
+      templateScope: local/dag-taskgroup-id-ref
+      boundaryID: dag-taskgroup-id-ref
+      phase: Succeeded
+      startedAt: "2020-04-20T16:39:03Z"
+      finishedAt: "2020-04-20T16:39:07Z"
+      inputs:
+        parameters:
+        - name: msg
+          value: "1"
+      outputs:
+        exitCode: "0"
+  phase: Running
+  startedAt: "2020-04-20T16:39:00Z"
+`
+
+func TestDAGTaskGroupIDReference(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	wf := wfv1.MustUnmarshalWorkflow(dagTaskGroupIDRef)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	woc.operate(ctx)
+
+	// Verify the use-id task was created (not stuck in requeue due to missing variable)
+	useIDNode := woc.wf.Status.Nodes.FindByDisplayName("use-id")
+	require.NotNil(t, useIDNode, "use-id node should be created when tasks.fanout.id is resolvable")
+
+	// Verify the resolved value of tasks.fanout.id matches the TaskGroup node's ID
+	require.NotNil(t, useIDNode.Inputs)
+	require.Len(t, useIDNode.Inputs.Parameters, 1)
+	assert.Equal(t, "dag-taskgroup-id-ref-2094038697", useIDNode.Inputs.Parameters[0].Value.String())
+}
