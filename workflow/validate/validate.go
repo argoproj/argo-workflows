@@ -424,6 +424,12 @@ func CronWorkflow(ctx context.Context, wftmplGetter templateresolution.WorkflowT
 		}
 	}
 
+	if cronWf.Spec.Timezone != "" {
+		if _, err := time.LoadLocation(cronWf.Spec.Timezone); err != nil {
+			return errors.Errorf(errors.CodeBadRequest, "invalid timezone %q: %s", cronWf.Spec.Timezone, err)
+		}
+	}
+
 	switch cronWf.Spec.ConcurrencyPolicy {
 	case wfv1.AllowConcurrent, wfv1.ForbidConcurrent, wfv1.ReplaceConcurrent, "":
 		// Do nothing
