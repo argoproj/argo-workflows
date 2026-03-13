@@ -1,6 +1,6 @@
 Description: S3 virtual-hosted-style bucket addressing
 Author: [Himesh Panchal](https://github.com/himeshp)
-Component: Artifacts
+Component: General
 Issues: 10851
 
 S3 artifact storage now supports configuring the bucket addressing style via the `addressingStyle` field.
