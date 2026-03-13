@@ -130,7 +130,7 @@ jobs:
       - run: make test STATIC_FILES=false GOTEST='go test -p 20 -covermode=atomic -coverprofile=coverage.out'
       - name: Upload test results
         if: ${{ always() }}
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: test-results-unit
           path: test/reports/json/unit.json
@@ -191,7 +191,7 @@ jobs:
       - name: Build
         run: make ${{matrix.target}}
       - name: Upload
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: ${{matrix.target}}
           path: dist
@@ -221,7 +221,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Upload
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: ${{matrix.image}}_image.tar
           path: /tmp/${{matrix.image}}_image.tar
@@ -408,7 +408,7 @@ jobs:
         run: make ${{matrix.test}} E2E_SUITE_TIMEOUT=30m STATIC_FILES=false
       - name: Upload test results
         if: ${{ always() }}
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: test-results-${{matrix.test}}-${{matrix.profile}}-k8s-${{matrix.k8s_version || 'max'}}
           path: test/reports/json/${{matrix.test}}.json
