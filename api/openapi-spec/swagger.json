@@ -2777,6 +2777,97 @@
         }
       }
     },
+    "/api/v1/workflow-templates": {
+      "get": {
+        "tags": [
+          "WorkflowTemplateService"
+        ],
+        "operationId": "WorkflowTemplateService_ListWorkflowTemplates",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "namePattern",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "A selector to restrict the list of returned objects by their labels.\nDefaults to everything.\n+optional.",
+            "name": "listOptions.labelSelector",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "A selector to restrict the list of returned objects by their fields.\nDefaults to everything.\n+optional.",
+            "name": "listOptions.fieldSelector",
+            "in": "query"
+          },
+          {
+            "type": "boolean",
+            "description": "Watch for changes to the described resources and return them as a stream of\nadd, update, and remove notifications. Specify resourceVersion.\n+optional.",
+            "name": "listOptions.watch",
+            "in": "query"
+          },
+          {
+            "type": "boolean",
+            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\n+optional.",
+            "name": "listOptions.allowWatchBookmarks",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "resourceVersion sets a constraint on what resource versions a request may be served from.\nSee https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for\ndetails.\n\nDefaults to unset\n+optional",
+            "name": "listOptions.resourceVersion",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "resourceVersionMatch determines how resourceVersion is applied to list calls.\nIt is highly recommended that resourceVersionMatch be set for list calls where\nresourceVersion is set\nSee https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for\ndetails.\n\nDefaults to unset\n+optional",
+            "name": "listOptions.resourceVersionMatch",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "format": "int64",
+            "description": "Timeout for the list/watch call.\nThis limits the duration of the call, regardless of any activity or inactivity.\n+optional.",
+            "name": "listOptions.timeoutSeconds",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "format": "int64",
+            "description": "limit is a maximum number of responses to return for a list call. If more items exist, the\nserver will set the `continue` field on the list metadata to a value that can be used with the\nsame initial query to retrieve the next set of results. Setting a limit may return fewer than\nthe requested amount of items (up to zero items) in the event all requested objects are\nfiltered out and clients should only use the presence of the continue field to determine whether\nmore results are available. Servers may choose not to support the limit argument and will return\nall of the available results. If limit is specified and the continue field is empty, clients may\nassume that no more results are available. This field is not supported if watch is true.\n\nThe server guarantees that the objects returned when using continue will be identical to issuing\na single list call without a limit - that is, no objects created, modified, or deleted after the\nfirst request is issued will be included in any subsequent continued requests. This is sometimes\nreferred to as a consistent snapshot, and ensures that a client that is using limit to receive\nsmaller chunks of a very large result can ensure they see all possible objects. If objects are\nupdated during a chunked list the version of the object that was present at the time the first list\nresult was calculated is returned.",
+            "name": "listOptions.limit",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "The continue option should be set when retrieving more results from the server. Since this value is\nserver defined, clients may only use the continue value from a previous query result with identical\nquery parameters (except for the value of continue) and the server may reject a continue value it\ndoes not recognize. If the specified continue value is no longer valid whether due to expiration\n(generally five to fifteen minutes) or a configuration change on the server, the server will\nrespond with a 410 ResourceExpired error together with a continue token. If the client needs a\nconsistent list, it must restart their list without the continue field. Otherwise, the client may\nsend another list request with the token received with the 410 error, the server will respond with\na list starting from the next key, but from the latest snapshot, which is inconsistent from the\nprevious list results - objects that are created, modified, or deleted after the first list request\nwill be included in the response, as long as their keys are after the \"next key\".\n\nThis field is not supported when watch is true. Clients may start a watch from the last\nresourceVersion value returned by the server and not miss any modifications.",
+            "name": "listOptions.continue",
+            "in": "query"
+          },
+          {
+            "type": "boolean",
+            "description": "`sendInitialEvents=true` may be set together with `watch=true`.\nIn that case, the watch stream will begin with synthetic events to\nproduce the current state of objects in the collection. Once all such\nevents have been sent, a synthetic \"Bookmark\" event  will be sent.\nThe bookmark will report the ResourceVersion (RV) corresponding to the\nset of objects, and be marked with `\"io.k8s.initial-events-end\": \"true\"` annotation.\nAfterwards, the watch stream will proceed as usual, sending watch events\ncorresponding to changes (subsequent to the RV) to objects watched.\n\nWhen `sendInitialEvents` option is set, we require `resourceVersionMatch`\noption to also be set. The semantic of the watch request is as following:\n- `resourceVersionMatch` = NotOlderThan\n  is interpreted as \"data at least as new as the provided `resourceVersion`\"\n  and the bookmark event is send when the state is synced\n  to a `resourceVersion` at least as fresh as the one provided by the ListOptions.\n  If `resourceVersion` is unset, this is interpreted as \"consistent read\" and the\n  bookmark event is send when the state is synced at least to the moment\n  when request started being processed.\n- `resourceVersionMatch` set to any other value or unset\n  Invalid error is returned.\n\nDefaults to true if `resourceVersion=\"\"` or `resourceVersion=\"0\"` (for backward\ncompatibility reasons) and to false otherwise.\n+optional",
+            "name": "listOptions.sendInitialEvents",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplateList"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+            }
+          }
+        }
+      }
+    },
     "/api/v1/workflow-templates/{namespace}": {
       "get": {
         "tags": [
