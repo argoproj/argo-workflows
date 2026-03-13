@@ -38,6 +38,13 @@ import (
 
 const nullIAMEndpoint = ""
 
+// isoRegions defines AWS ISO regions (C2S/SC2S) where dual-stack is not supported
+var isoRegions = map[string]bool{
+	"us-iso-east-1":  true,
+	"us-iso-west-1":  true,
+	"us-isob-east-1": true,
+}
+
 type Client interface {
 	// PutFile puts a single file to a bucket at the specified key
 	PutFile(bucket, key, path string) error
@@ -496,6 +503,13 @@ func NewClient(ctx context.Context, opts ClientOpts) (Client, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// minioClient by default enables DualStack endpoints but dualStack endpoints are not supported in ISO regions.
+	// If the region is an ISO region, set dualstack to false.
+	if isoRegions[s3cli.Region] {
+		minioClient.SetS3EnableDualstack(false)
+	}
+
 	if opts.Trace {
 		minioClient.TraceOn(os.Stderr)
 	}
