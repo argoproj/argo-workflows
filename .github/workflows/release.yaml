@@ -180,7 +180,7 @@ jobs:
           password: ${{ secrets.QUAYIO_PASSWORD }}
 
       - name: Install cosign
-        uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
+        uses: sigstore/cosign-installer@ba7bc0a3fef59531c69a25acd34668d6d3fe6f22 # v4.1.0
         with:
           cosign-release: 'v2.2.3'
 
@@ -395,7 +395,7 @@ jobs:
         with:
           go-version: "1.25"
       - name: Install cosign
-        uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
+        uses: sigstore/cosign-installer@ba7bc0a3fef59531c69a25acd34668d6d3fe6f22 # v4.1.0
         with:
           cosign-release: 'v2.2.3'
       # https://stackoverflow.com/questions/58033366/how-to-get-current-branch-within-github-actions
