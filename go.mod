@@ -42,7 +42,7 @@ require (
 	github.com/klauspost/pgzip v1.2.6
 	github.com/lib/pq v1.11.2
 	github.com/minio/minio-go/v7 v7.0.99
-	github.com/nao1215/markdown v0.10.0
+	github.com/nao1215/markdown v0.13.0
 	github.com/prometheus/client_golang v1.23.2
 	github.com/prometheus/common v0.67.5
 	github.com/prometheus/otlptranslator v1.0.0
@@ -105,7 +105,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/signin v1.0.7 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sns v1.39.13 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sqs v1.42.23 // indirect
-	github.com/clipperhouse/displaywidth v0.3.1 // indirect
+	github.com/clipperhouse/displaywidth v0.6.2 // indirect
 	github.com/clipperhouse/stringish v0.1.1 // indirect
 	github.com/clipperhouse/uax29/v2 v2.3.0 // indirect
 	github.com/containerd/errdefs v1.0.0 // indirect
@@ -115,7 +115,7 @@ require (
 	github.com/klauspost/crc32 v1.3.0 // indirect
 	github.com/olekukonko/cat v0.0.0-20250911104152-50322a0618f6 // indirect
 	github.com/olekukonko/errors v1.1.0 // indirect
-	github.com/olekukonko/ll v0.1.2 // indirect
+	github.com/olekukonko/ll v0.1.4-0.20260115111900-9e59c2286df0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/stoewer/go-strcase v1.3.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.42.0 // indirect
@@ -194,7 +194,7 @@ require (
 	github.com/moby/sys/userns v0.1.0 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/ncruces/go-strftime v0.1.9 // indirect
-	github.com/olekukonko/tablewriter v1.1.1 // indirect
+	github.com/olekukonko/tablewriter v1.1.3 // indirect
 	github.com/philhofer/fwd v1.2.0 // indirect
 	github.com/pjbgf/sha1cd v0.3.2 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
