@@ -1341,6 +1341,16 @@ func (woc *wfOperationCtx) failNodesWithoutCreatedPodsAfterDeadlineOrShutdown(ct
 				woc.markNodePhase(ctx, node.Name, wfv1.NodeFailed, message)
 				continue
 			}
+			// fail retry wrapper nodes whose children are all fulfilled but the wrapper
+			// itself was left Running because processNodeRetries returned early while a
+			// child pod was still running at the moment of shutdown
+			if node.Type == wfv1.NodeTypeRetry {
+				if woc.childrenFulfilled(&node) {
+					message := fmt.Sprintf("Stopped with strategy '%s'", woc.GetShutdownStrategy())
+					woc.markNodePhase(ctx, node.Name, wfv1.NodeFailed, message)
+					continue
+				}
+			}
 		}
 
 		// fail pending and suspended nodes that are not part of exit handler when exceeding deadline
