@@ -8693,6 +8693,7 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.ArtifactRepositoryRef": {
+      "description": "ArtifactRepositoryRef is a reference to an artifact repository config map.",
       "type": "object",
       "properties": {
         "configMap": {
@@ -8706,6 +8707,7 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.ArtifactRepositoryRefStatus": {
+      "description": "ArtifactRepositoryRefStatus is the resolved artifact repository reference with namespace io.argoproj.workflow.v1alpha1.",
       "type": "object",
       "properties": {
         "artifactRepository": {
@@ -10115,7 +10117,7 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.LabelValues": {
-      "description": "Labels is list of workflow labels",
+      "description": "LabelValues is a list of workflow labels.",
       "type": "object",
       "properties": {
         "items": {
@@ -10148,7 +10150,7 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.Link": {
-      "description": "A link to another app.",
+      "description": "Link is a link to another app.",
       "type": "object",
       "required": [
         "name",
@@ -10235,7 +10237,7 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.Memoize": {
-      "description": "Memoization enables caching for the Outputs of the template",
+      "description": "Memoize enables caching for the Outputs of the template.",
       "type": "object",
       "required": [
         "key",
@@ -10258,7 +10260,7 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.Metadata": {
-      "description": "Pod metadata",
+      "description": "Metadata is pod metadata.",
       "type": "object",
       "properties": {
         "annotations": {
@@ -10549,7 +10551,7 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.OAuth2EndpointParam": {
-      "description": "EndpointParam is for requesting optional fields that should be sent in the oauth request",
+      "description": "OAuth2EndpointParam is an optional field that should be sent in the OAuth request.",
       "type": "object",
       "required": [
         "key"

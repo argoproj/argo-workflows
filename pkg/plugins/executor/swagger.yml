@@ -58,7 +58,7 @@ definitions:
         description: |-
             It will unmarshall int64, int32, float64, float32, boolean, a plain string and represents it as string.
             It will marshall back to string - marshalling is not symmetric.
-        title: It's JSON type is just string.
+        title: AnyString is a string type whose JSON type is just string.
         type: string
     AppArmorProfile:
         description: +union
@@ -2295,7 +2295,6 @@ definitions:
                 $ref: '#/definitions/Artifact'
         type: object
     Memoize:
-        description: Memoization enables caching for the Outputs of the template
         properties:
             cache:
                 $ref: '#/definitions/Cache'
@@ -2307,9 +2306,9 @@ definitions:
                     MaxAge is the maximum age (e.g. "180s", "24h") of an entry that is still considered valid. If an entry is older
                     than the MaxAge, it will be ignored.
                 type: string
+        title: Memoize enables caching for the Outputs of the template.
         type: object
     Metadata:
-        description: Pod metadata
         properties:
             annotations:
                 additionalProperties:
@@ -2319,6 +2318,7 @@ definitions:
                 additionalProperties:
                     type: string
                 type: object
+        title: Metadata is pod metadata.
         type: object
     MetricLabel:
         description: MetricLabel is a single label for a prometheus metric
@@ -2509,7 +2509,6 @@ definitions:
                 $ref: '#/definitions/SecretKeySelector'
         type: object
     OAuth2EndpointParam:
-        description: EndpointParam is for requesting optional fields that should be sent in the oauth request
         properties:
             key:
                 description: Name is the header name
@@ -2517,6 +2516,7 @@ definitions:
             value:
                 description: Value is the literal value to use for the header
                 type: string
+        title: OAuth2EndpointParam is an optional field that should be sent in the OAuth request.
         type: object
     OSSArtifact:
         description: OSSArtifact is the location of an Alibaba Cloud OSS artifact
@@ -2640,7 +2640,8 @@ definitions:
             uid:
                 $ref: '#/definitions/UID'
         type: object
-    ParallelSteps: {}
+    ParallelSteps:
+        title: ParallelSteps is a list of workflow steps that run in parallel.
     Parameter:
         description: Parameter indicate a passed string parameter to a service template with an optional default value
         properties:
@@ -3676,6 +3677,7 @@ definitions:
         type: object
     RetryPolicy:
         description: +kubebuilder:validation:Enum=Always;OnFailure;OnError;OnTransientError
+        title: RetryPolicy defines the policy for retrying workflow steps.
         type: string
     RetryStrategy:
         description: RetryStrategy provides controls on how to retry a workflow step
@@ -5175,7 +5177,7 @@ produces:
     - application/json
 responses:
     executeTemplate:
-        description: ""
+        description: ExecuteTemplateResponse is the response object for template execution.
         schema:
             $ref: '#/definitions/ExecuteTemplateReply'
 schemes:

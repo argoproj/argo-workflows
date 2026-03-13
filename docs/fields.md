@@ -1393,7 +1393,7 @@ Column is a custom column that will be exposed in the Workflow List View.
 
 ## Link
 
-A link to another app.
+Link is a link to another app.
 
 ### Fields
 | Field Name | Field Type | Description   |
@@ -1634,7 +1634,7 @@ WorkflowLevelArtifactGC describes how to delete artifacts from completed Workflo
 
 ## ArtifactRepositoryRef
 
-_No description available_
+ArtifactRepositoryRef is a reference to an artifact repository config map.
 
 <details markdown>
 <summary>Examples with this field (click to open)</summary>
@@ -1723,7 +1723,7 @@ PodGC describes how to delete completed pods as they complete
 
 ## Metadata
 
-Pod metadata
+Metadata is pod metadata.
 
 <details markdown>
 <summary>Examples with this field (click to open)</summary>
@@ -1951,7 +1951,7 @@ ArtGCStatus maintains state related to ArtifactGC
 
 ## ArtifactRepositoryRefStatus
 
-_No description available_
+ArtifactRepositoryRefStatus is the resolved artifact repository reference with namespace io.argoproj.workflow.v1alpha1.
 
 <details markdown>
 <summary>Examples with this field (click to open)</summary>
@@ -3089,7 +3089,7 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 ## Memoize
 
-Memoization enables caching for the Outputs of the template
+Memoize enables caching for the Outputs of the template.
 
 <details markdown>
 <summary>Examples with this field (click to open)</summary>
@@ -4859,7 +4859,7 @@ OAuth2Auth holds all information for client authentication via OAuth2 tokens
 
 ## OAuth2EndpointParam
 
-EndpointParam is for requesting optional fields that should be sent in the oauth request
+OAuth2EndpointParam is an optional field that should be sent in the OAuth request.
 
 <details markdown>
 <summary>Examples with this field (click to open)</summary>
