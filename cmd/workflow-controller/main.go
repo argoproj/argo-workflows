@@ -9,6 +9,11 @@ import (
 	"sync"
 	"time"
 
+	// Embed timezone database into the binary so that cron schedules with
+	// timezone abbreviations (e.g. "CET") work regardless of which timezone
+	// files the base container image ships. See #15653.
+	_ "time/tzdata"
+
 	"github.com/argoproj/pkg/stats"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
