@@ -58,9 +58,10 @@ export const WorkflowsService = {
         name?: string,
         nameFilter?: NameFilterKeys,
         createdAfter?: Date,
-        finishedBefore?: Date
+        finishedBefore?: Date,
+        archived?: boolean[]
     ) {
-        const params = queryParams({phases, labels, pagination, name, nameFilter, createdAfter, finishedBefore});
+        const params = queryParams({phases, labels, pagination, name, nameFilter, createdAfter, finishedBefore, archived});
         params.push(`fields=${fields.join(',')}`);
         return requests.get(`api/v1/workflows/${namespace}?${params.join('&')}`).then(res => res.body as WorkflowList);
     },

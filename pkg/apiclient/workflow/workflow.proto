@@ -39,6 +39,7 @@ message WorkflowListRequest {
   string nameFilter = 4;
   string createdAfter = 5;
   string finishedBefore = 6;
+  repeated bool archived = 7;
 }
 
 message WorkflowResubmitRequest {

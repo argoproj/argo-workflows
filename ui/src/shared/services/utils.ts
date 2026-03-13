@@ -11,6 +11,7 @@ export function queryParams(filter: {
     labels?: Array<string>;
     createdAfter?: Date;
     finishedBefore?: Date;
+    archived?: Array<boolean>;
     pagination?: Pagination;
     resourceVersion?: string;
 }) {
@@ -48,6 +49,9 @@ export function queryParams(filter: {
     }
     if (filter.finishedBefore) {
         queryParams.push(`finishedBefore=${filter.finishedBefore.toISOString()}`);
+    }
+    if (filter.archived) {
+        filter.archived.forEach(archived => queryParams.push(`archived=${archived}`));
     }
     return queryParams;
 }

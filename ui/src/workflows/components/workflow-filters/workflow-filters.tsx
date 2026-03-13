@@ -57,6 +57,8 @@ interface WorkflowFilterProps {
     nameValue: string;
     setNameFilter: (nameFilter: NameFilterKeys) => void;
     setNameValue: (nameValue: string) => void;
+    archived: string[];
+    setArchived: (archivedOptions: string[]) => void;
 }
 
 export function WorkflowFilters(props: WorkflowFilterProps) {
@@ -88,6 +90,15 @@ export function WorkflowFilters(props: WorkflowFilterProps) {
         });
         return results;
     }, [props.workflows, props.phaseItems]);
+
+    const archiveSelector = useMemo(() => {
+        const archived = props.workflows.filter(wf => models.isArchivedWorkflow(wf)).length;
+        const nonArchived = props.workflows.length - archived;
+        return [
+            {name: 'true', count: archived},
+            {name: 'false', count: nonArchived}
+        ];
+    }, [props.workflows]);
 
     function handleNameFilterChange(item: {title: string; id: string}) {
         props.setNameFilter(item.id as NameFilterKeys);
@@ -148,6 +159,10 @@ export function WorkflowFilters(props: WorkflowFilterProps) {
                 <div className='columns small-4 xlarge-12'>
                     <p className='wf-filters-container__title'>Phases</p>
                     <CheckboxFilter selected={props.phases} onChange={props.setPhases} items={phaseItems} type='phase' />
+                </div>
+                <div className='columns small-4 xlarge-12'>
+                    <p className='wf-filters-container__title'>Archived</p>
+                    <CheckboxFilter selected={props.archived} onChange={props.setArchived} items={archiveSelector} type='archived' />
                 </div>
                 <div className='columns small-5 xlarge-12'>
                     <p className='wf-filters-container__title'>Created Since</p>
