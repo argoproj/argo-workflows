@@ -2038,6 +2038,19 @@ func getRetryNodeChildrenIds(node *wfv1.NodeStatus, nodes wfv1.Nodes) []string {
 	return childrenIds
 }
 
+func (woc *wfOperationCtx) hasRetryParent(node *wfv1.NodeStatus) bool {
+	for _, n := range woc.wf.Status.Nodes {
+		if n.Type == wfv1.NodeTypeRetry {
+			for _, childID := range n.Children {
+				if childID == node.ID {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
 func buildRetryStrategyLocalScope(node *wfv1.NodeStatus, nodes wfv1.Nodes) map[string]any {
 	localScope := make(map[string]any)
 
@@ -2538,8 +2551,10 @@ func (woc *wfOperationCtx) handleNodeFulfilled(ctx context.Context, nodeName str
 		// Check if this node completed between executions. If it did, emit metrics.
 		// We can infer that this node completed during the current operation, emit metrics
 		if prevNodeStatus, ok := woc.preExecutionNodeStatuses[node.ID]; ok && !prevNodeStatus.Fulfilled() {
-			localScope, realTimeScope := woc.prepareMetricScope(node)
-			woc.computeMetrics(ctx, processedTmpl.Metrics.Prometheus, localScope, realTimeScope, false)
+			if !woc.hasRetryParent(node) {
+				localScope, realTimeScope := woc.prepareMetricScope(node)
+				woc.computeMetrics(ctx, processedTmpl.Metrics.Prometheus, localScope, realTimeScope, false)
+			}
 		}
 	}
 	return node
