@@ -73,6 +73,10 @@ func (h Facade) EventStreamReader(ctx context.Context, in any, path string) (*bu
 		return nil, err
 	}
 	req.Header = headers
+	host := headers.Get("Host")
+	if host != "" {
+		req.Host = strings.TrimSpace(host)
+	}
 	req.Header.Set("Accept", "text/event-stream")
 	req.Header.Set("Authorization", h.authorization)
 	log.WithField("url", u).Debug(ctx, "curl -H 'Accept: text/event-stream' -H 'Authorization: ******'")
@@ -126,6 +130,10 @@ func (h Facade) do(ctx context.Context, in any, out any, method string, path str
 		return err
 	}
 	req.Header = headers
+	host := headers.Get("Host")
+	if host != "" {
+		req.Host = strings.TrimSpace(host)
+	}
 	req.Header.Set("Authorization", h.authorization)
 	log.WithFields(logging.Fields{"url": u, "method": method, "data": string(data)}).Debug(ctx, "curl -X")
 	proxyURL, err := h.proxyFunc()(req)
