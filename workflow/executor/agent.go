@@ -36,8 +36,8 @@ import (
 )
 
 type AgentExecutor struct {
+	LabelSelector     string
 	WorkflowName      string
-	workflowUID       string
 	ClientSet         kubernetes.Interface
 	WorkflowInterface workflow.Interface
 	RESTClient        rest.Interface
@@ -46,15 +46,15 @@ type AgentExecutor struct {
 	plugins           []executorplugins.TemplateExecutor
 }
 
-type templateExecutor = func(ctx context.Context, tmpl wfv1.Template, result *wfv1.NodeResult) (time.Duration, error)
+type templateExecutor = func(ctx context.Context, workflowName string, workflowUID string, tmpl wfv1.Template, result *wfv1.NodeResult) (time.Duration, error)
 
-func NewAgentExecutor(clientSet kubernetes.Interface, restClient rest.Interface, config *rest.Config, namespace, workflowName, workflowUID string, plugins []executorplugins.TemplateExecutor) *AgentExecutor {
+func NewAgentExecutor(clientSet kubernetes.Interface, restClient rest.Interface, config *rest.Config, namespace, labelSelector, workflowName string, plugins []executorplugins.TemplateExecutor) *AgentExecutor {
 	return &AgentExecutor{
 		ClientSet:         clientSet,
 		RESTClient:        restClient,
 		Namespace:         namespace,
+		LabelSelector:     labelSelector,
 		WorkflowName:      workflowName,
-		workflowUID:       workflowUID,
 		WorkflowInterface: workflow.NewForConfigOrDie(config),
 		consideredTasks:   &sync.Map{},
 		plugins:           plugins,
@@ -62,13 +62,16 @@ func NewAgentExecutor(clientSet kubernetes.Interface, restClient rest.Interface,
 }
 
 type task struct {
-	NodeID   string
-	Template wfv1.Template
+	NodeID      string
+	Template    wfv1.Template
+	TaskSetName string
+	WorkflowUID string
 }
 
 type response struct {
-	NodeID string
-	Result *wfv1.NodeResult
+	NodeID      string
+	Result      *wfv1.NodeResult
+	TaskSetName string
 }
 
 func (ae *AgentExecutor) Agent(ctx context.Context) error {
@@ -77,7 +80,8 @@ func (ae *AgentExecutor) Agent(ctx context.Context) error {
 	taskWorkers := env.LookupEnvIntOr(ctx, common.EnvAgentTaskWorkers, 16)
 	requeueTime := env.LookupEnvDurationOr(ctx, common.EnvAgentPatchRate, 10*time.Second)
 	logger := logging.RequireLoggerFromContext(ctx)
-	logger.WithField("taskWorkers", taskWorkers).
+	logger.WithField("labelSelector", ae.LabelSelector).
+		WithField("taskWorkers", taskWorkers).
 		WithField("requeueTime", requeueTime).
 		Info(ctx, "Starting Agent")
 
@@ -91,7 +95,19 @@ func (ae *AgentExecutor) Agent(ctx context.Context) error {
 	}
 
 	for {
-		wfWatch, err := taskSetInterface.Watch(ctx, metav1.ListOptions{FieldSelector: "metadata.name=" + ae.WorkflowName})
+		// Use label selector from environment variable (set by controller) or workflow name
+		var wfWatch watch.Interface
+		var err error
+		if ae.LabelSelector == "" {
+			wfWatch, err = taskSetInterface.Watch(ctx, metav1.ListOptions{
+				FieldSelector: "metadata.name=" + ae.WorkflowName,
+			})
+		} else {
+			wfWatch, err = taskSetInterface.Watch(ctx, metav1.ListOptions{
+				LabelSelector: ae.LabelSelector,
+			})
+		}
+
 		if err != nil {
 			return err
 		}
@@ -100,21 +116,35 @@ func (ae *AgentExecutor) Agent(ctx context.Context) error {
 			logger.WithField("event_type", event.Type).Info(ctx, "TaskSet Event")
 
 			if event.Type == watch.Deleted {
-				// We're done if the task set is deleted
-				return nil
+				// TaskSet deleted, but continue watching for others
+				continue
 			}
 
 			taskSet, ok := event.Object.(*wfv1.WorkflowTaskSet)
 			if !ok {
 				return apierr.FromObject(event.Object)
 			}
+
+			taskSetName := taskSet.Name
+
 			if IsWorkflowCompleted(taskSet) {
-				logger.Info(ctx, "Workflow completed... stopping agent")
-				return nil
+				logger.WithField("taskSet", taskSetName).Info(ctx, "Workflow completed, skipping tasks")
+				continue
+			}
+
+			// Extract workflow UID from owner references
+			var workflowUID string
+			if len(taskSet.OwnerReferences) > 0 {
+				workflowUID = string(taskSet.OwnerReferences[0].UID)
 			}
 
 			for nodeID, tmpl := range taskSet.Spec.Tasks {
-				taskQueue <- task{NodeID: nodeID, Template: tmpl}
+				taskQueue <- task{
+					NodeID:      nodeID,
+					Template:    tmpl,
+					TaskSetName: taskSetName,
+					WorkflowUID: workflowUID,
+				}
 			}
 		}
 	}
@@ -138,14 +168,13 @@ func (ae *AgentExecutor) taskWorker(ctx context.Context, taskQueue chan task, re
 		}
 
 		logger.Info(ctx, "Processing task")
-		result, requeue, err := ae.processTask(ctx, tmpl)
+		result, requeue, err := ae.processTask(ctx, workTask.TaskSetName, workTask.WorkflowUID, tmpl)
 		if err != nil {
 			logger.WithError(err).Error(ctx, "Error in agent task")
 			result = &wfv1.NodeResult{
 				Phase:   wfv1.NodeError,
-				Message: fmt.Sprintf("error processing task: %s", err),
+				Message: err.Error(),
 			}
-			// Do not return or continue here, the "errored" result still needs to be propagated to the responseQueue below
 		}
 
 		logger.
@@ -155,8 +184,13 @@ func (ae *AgentExecutor) taskWorker(ctx context.Context, taskQueue chan task, re
 			Info(ctx, "Sending result")
 
 		if result.Phase != "" {
-			responseQueue <- response{NodeID: nodeID, Result: result}
+			responseQueue <- response{
+				NodeID:      nodeID,
+				Result:      result,
+				TaskSetName: workTask.TaskSetName,
+			}
 		}
+
 		if requeue > 0 {
 			time.AfterFunc(requeue, func() {
 				ae.consideredTasks.Delete(nodeID)
@@ -170,64 +204,73 @@ func (ae *AgentExecutor) taskWorker(ctx context.Context, taskQueue chan task, re
 func (ae *AgentExecutor) patchWorker(ctx context.Context, taskSetInterface v1alpha1.WorkflowTaskSetInterface, responseQueue chan response, requeueTime time.Duration) {
 	ticker := time.NewTicker(requeueTime)
 	defer ticker.Stop()
-	nodeResults := map[string]wfv1.NodeResult{}
+
+	taskSetResults := make(map[string]map[string]wfv1.NodeResult)
+
 	logger := logging.RequireLoggerFromContext(ctx)
 	for {
 		select {
 		case res := <-responseQueue:
-			nodeResults[res.NodeID] = *res.Result
+			if taskSetResults[res.TaskSetName] == nil {
+				taskSetResults[res.TaskSetName] = make(map[string]wfv1.NodeResult)
+			}
+			taskSetResults[res.TaskSetName][res.NodeID] = *res.Result
+
 		case <-ticker.C:
-			if len(nodeResults) == 0 {
+			if len(taskSetResults) == 0 {
 				continue
 			}
 
-			patch, err := json.Marshal(map[string]any{"status": wfv1.WorkflowTaskSetStatus{Nodes: nodeResults}})
-			if err != nil {
-				logger.WithError(err).Error(ctx, "Generating Patch Failed")
-				continue
-			}
-
-			logger.Info(ctx, "Processing Patch")
-
-			err = retry.OnError(wait.Backoff{
-				Duration: time.Second,
-				Factor:   2,
-				Jitter:   0.1,
-				Steps:    5,
-				Cap:      30 * time.Second,
-			}, func(retryErr error) bool {
-				return errors.IsTransientErr(ctx, retryErr)
-			}, func() error {
-				_, patchErr := taskSetInterface.Patch(ctx, ae.WorkflowName, types.MergePatchType, patch, metav1.PatchOptions{}, "status")
-				return patchErr
-			})
-
-			if err != nil && !errors.IsTransientErr(ctx, err) {
-				logger.WithError(err).
-					Error(ctx, "TaskSet Patch Failed")
-
-				// If this is not a transient error, then it's likely that the contents of the patch have caused the error.
-				// To avoid a deadlock with the workflow overall, or an infinite loop, fail and propagate the error messages
-				// to the nodes.
-				// If this is a transient error, then simply do nothing and another patch will be retried in the next tick.
-				for node := range nodeResults {
-					nodeResults[node] = wfv1.NodeResult{
-						Phase:   wfv1.NodeError,
-						Message: fmt.Sprintf("HTTP request completed successfully but an error occurred when patching its result: %s", err),
-					}
+			for taskSetName, nodeResults := range taskSetResults {
+				patch, err := json.Marshal(map[string]any{"status": wfv1.WorkflowTaskSetStatus{Nodes: nodeResults}})
+				if err != nil {
+					logger.WithError(err).WithField("taskSet", taskSetName).Error(ctx, "Generating Patch Failed")
+					continue
 				}
-				continue
+
+				logger.WithField("taskSet", taskSetName).
+					WithField("nodeCount", len(nodeResults)).
+					Info(ctx, "Processing Patch")
+
+				err = retry.OnError(wait.Backoff{
+					Duration: time.Second,
+					Factor:   2,
+					Jitter:   0.1,
+					Steps:    5,
+					Cap:      30 * time.Second,
+				}, func(err error) bool {
+					return errors.IsTransientErr(ctx, err)
+				}, func() error {
+					_, err = taskSetInterface.Patch(ctx, taskSetName, types.MergePatchType, patch, metav1.PatchOptions{}, "status")
+					return err
+				})
+
+				if err != nil && !errors.IsTransientErr(ctx, err) {
+					logger.WithError(err).WithField("taskSet", taskSetName).
+						Error(ctx, "TaskSet Patch Failed")
+
+					// If this is not a transient error, then it's likely that the contents of the patch have caused the error.
+					// To avoid a deadlock with the workflow overall, or an infinite loop, fail and propagate the error messages
+					// to the nodes.
+					// If this is a transient error, then simply do nothing and another patch will be retried in the next tick.
+					for node := range nodeResults {
+						nodeResults[node] = wfv1.NodeResult{
+							Phase:   wfv1.NodeError,
+							Message: fmt.Sprintf("HTTP request completed successfully but an error occurred when patching its result: %s", err),
+						}
+					}
+					continue
+				}
+
+				logger.WithField("taskSet", taskSetName).Info(ctx, "Patched TaskSet")
 			}
 
-			// Patch was successful, clear nodeResults for next iteration
-			nodeResults = map[string]wfv1.NodeResult{}
-
-			logger.Info(ctx, "Patched TaskSet")
+			taskSetResults = make(map[string]map[string]wfv1.NodeResult)
 		}
 	}
 }
 
-func (ae *AgentExecutor) processTask(ctx context.Context, tmpl wfv1.Template) (*wfv1.NodeResult, time.Duration, error) {
+func (ae *AgentExecutor) processTask(ctx context.Context, workflowName string, workflowUID string, tmpl wfv1.Template) (*wfv1.NodeResult, time.Duration, error) {
 	var executeTemplate templateExecutor
 	switch {
 	case tmpl.HTTP != nil:
@@ -238,7 +281,7 @@ func (ae *AgentExecutor) processTask(ctx context.Context, tmpl wfv1.Template) (*
 		return nil, 0, fmt.Errorf("agent cannot execute: unknown task type: %v", tmpl.GetType())
 	}
 	result := &wfv1.NodeResult{}
-	requeue, err := executeTemplate(ctx, tmpl, result)
+	requeue, err := executeTemplate(ctx, workflowName, workflowUID, tmpl, result)
 	if err != nil {
 		result.Phase = wfv1.NodeFailed
 		result.Message = err.Error()
@@ -246,7 +289,7 @@ func (ae *AgentExecutor) processTask(ctx context.Context, tmpl wfv1.Template) (*
 	return result, requeue, nil
 }
 
-func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Template, result *wfv1.NodeResult) (time.Duration, error) {
+func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, workflowName string, workflowUID string, tmpl wfv1.Template, result *wfv1.NodeResult) (time.Duration, error) {
 	if tmpl.HTTP == nil {
 		return 0, nil
 	}
@@ -360,13 +403,13 @@ func (ae *AgentExecutor) executeHTTPTemplateRequest(ctx context.Context, httpTem
 	return response, nil
 }
 
-func (ae *AgentExecutor) executePluginTemplate(ctx context.Context, tmpl wfv1.Template, result *wfv1.NodeResult) (time.Duration, error) {
+func (ae *AgentExecutor) executePluginTemplate(ctx context.Context, workflowName string, workflowUID string, tmpl wfv1.Template, result *wfv1.NodeResult) (time.Duration, error) {
 	args := executorplugins.ExecuteTemplateArgs{
 		Workflow: &executorplugins.Workflow{
 			ObjectMeta: executorplugins.ObjectMeta{
-				Name:      ae.WorkflowName,
+				Name:      workflowName,
 				Namespace: ae.Namespace,
-				UID:       ae.workflowUID,
+				UID:       workflowUID,
 			},
 		},
 		Template: &tmpl,

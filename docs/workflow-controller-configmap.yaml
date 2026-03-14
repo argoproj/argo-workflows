@@ -265,6 +265,38 @@ data:
     port: 8080
     secure: true  # Use a self-signed cert for TLS, default false
 
+  agent: |
+    # Main container resources (overrides hardcoded values)
+    resources:
+      requests:
+        cpu: 10m
+        memory: 64Mi
+      limits:
+        cpu: 100m
+        memory: 256Mi
+    
+    # Main container security context
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 8737
+      capabilities:
+        drop:
+          - ALL
+    
+    # RunMultipleWorkflow enables sharing agent pod between workflows 
+    # When true, agent pod is named: argo-agent-${serviceAccountName}
+    # When false, agent pod is named: ${workflowName}-agent
+    runMultipleWorkflow: true
+
+    # DeleteAfterCompletion determines if agent pod should be deleted after workflow completes
+	  # Only applies when RunMultipleWorkflow is true
+	  # When false, agent pod persists for subsequent workflows
+    deleteAfterCompletion: false
+
+    # CreatePod determines if controller should create agent pods
+	  # When false, external operator/agent manages pods, controller only updates TaskSets
+	  createPod: true
+
   # enable persistence using postgres
   persistence: |
     connectionPool:
