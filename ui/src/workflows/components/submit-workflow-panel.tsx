@@ -31,10 +31,23 @@ const defaultTemplate: Template = {
 
 export function SubmitWorkflowPanel(props: Props) {
     const {navigation} = useContext(Context);
-    const [entrypoint, setEntrypoint] = useState(props.entrypoint || workflowEntrypoint);
+    const queryParams = new URLSearchParams(props.history.location.search);
+    const getInitialEntrypoint = () => {
+        const urlEntrypoint = queryParams.get('entrypoint');
+        return urlEntrypoint || props.entrypoint || workflowEntrypoint;
+    };
+    const getInitialLabels = () => {
+        const urlLabels = queryParams.get('labels');
+        if (urlLabels) {
+            return urlLabels.split(',').filter(l => l.trim());
+        }
+        return ['submit-from-ui=true'];
+    };
+
+    const [entrypoint, setEntrypoint] = useState(getInitialEntrypoint);
     const [parameters, setParameters] = useState<Parameter[]>([]);
     const [workflowParameters, setWorkflowParameters] = useState<Parameter[]>(JSON.parse(JSON.stringify(props.workflowParameters)));
-    const [labels, setLabels] = useState(['submit-from-ui=true']);
+    const [labels, setLabels] = useState(getInitialLabels);
     const [error, setError] = useState<Error>();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -47,6 +60,15 @@ export function SubmitWorkflowPanel(props: Props) {
         }));
         setWorkflowParameters(updatedParams);
     }, [props.history, setWorkflowParameters]);
+    useEffect(() => {
+        const urlEntrypoint = queryParams.get('entrypoint');
+        if (urlEntrypoint && urlEntrypoint !== workflowEntrypoint) {
+            const selectedTemp = props.templates.find(t => t.name === urlEntrypoint);
+            if (selectedTemp?.inputs?.parameters) {
+                setParameters(selectedTemp.inputs.parameters);
+            }
+        }
+    }, [props.templates]);
 
     const templates = useMemo(() => {
         return [defaultTemplate].concat(props.templates);
