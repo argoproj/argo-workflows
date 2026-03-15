@@ -616,8 +616,8 @@ func (tctx *templateValidationCtx) validateTemplateHolder(ctx context.Context, t
 	if err != nil {
 		var argoerr errors.ArgoError
 		if stderrors.As(err, &argoerr) && argoerr.Code() == errors.CodeNotFound {
-			if tmplRef != nil && strings.Contains(tmplRef.Template, "placeholder") {
-				// placeholder indicate this is a dynamic template, skip validation
+			if tmplRef != nil && strings.Contains(tmplRef.Template, template.PlaceholderPrefix) {
+				// internal placeholder indicates this is a dynamic template, skip validation
 				return nil, nil
 			}
 			if tmplRef != nil {
