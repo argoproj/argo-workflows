@@ -8829,49 +8829,84 @@ const rootRetryStrategyWithInlineTemplateCompletes = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: hello-world-inline
+  name: steps-inline-2bq8s
 spec:
-  entrypoint: whalesay
+  entrypoint: main
   retryStrategy:
     limit: 1
+    retryPolicy: OnTransientError
   templates:
-  - name: whalesay
+  - name: main
     steps:
     - - name: hello
         inline:
           script:
-            image: python:alpine
             command: [python]
+            image: python:alpine
             source: |
               print("hello")
 status:
   nodes:
-    hello-world-inline:
+    steps-inline-2bq8s:
       children:
-      - hello-world-inline-643409622
-      displayName: hello-world-inline
-      finishedAt: null
-      id: hello-world-inline
-      name: hello-world-inline
+      - steps-inline-2bq8s-319341924
+      displayName: steps-inline-2bq8s
+      id: steps-inline-2bq8s
+      name: steps-inline-2bq8s
       phase: Running
-      startedAt: "2021-03-23T14:53:39Z"
-      templateName: whalesay
-      templateScope: local/hello-world-inline
+      startedAt: "2026-02-25T04:45:34Z"
+      templateName: main
+      templateScope: local/steps-inline-2bq8s
       type: Retry
-    hello-world-inline-643409622:
-      displayName: hello-world-inline(0)
-      finishedAt: null
-      hostNodeName: k3d-k3s-default-server-0
-      id: hello-world-inline-643409622
-      name: hello-world-inline(0)
-      phase: Failed
-      message: Pod failed
-      startedAt: "2021-03-23T14:53:39Z"
-      templateName: whalesay
-      templateScope: local/hello-world-inline
+    steps-inline-2bq8s-319341924:
+      children:
+      - steps-inline-2bq8s-552579726
+      displayName: steps-inline-2bq8s(0)
+      id: steps-inline-2bq8s-319341924
+      name: steps-inline-2bq8s(0)
+      nodeFlag:
+        retried: true
+      phase: Running
+      startedAt: "2026-02-25T04:45:34Z"
+      templateName: main
+      templateScope: local/steps-inline-2bq8s
+      type: Steps
+    steps-inline-2bq8s-552579726:
+      boundaryID: steps-inline-2bq8s-319341924
+      children:
+      - steps-inline-2bq8s-3183619224
+      displayName: '[0]'
+      id: steps-inline-2bq8s-552579726
+      name: steps-inline-2bq8s(0)[0]
+      phase: Running
+      startedAt: "2026-02-25T04:45:34Z"
+      templateScope: local/steps-inline-2bq8s
+      type: StepGroup
+    steps-inline-2bq8s-1818864107:
+      boundaryID: steps-inline-2bq8s-319341924
+      displayName: hello(0)
+      id: steps-inline-2bq8s-1818864107
+      name: steps-inline-2bq8s(0)[0].hello(0)
+      nodeFlag:
+        retried: true
+      phase: Pending
+      startedAt: "2026-02-25T04:45:34Z"
+      taskResultSynced: true
+      templateScope: local/steps-inline-2bq8s
       type: Pod
+    steps-inline-2bq8s-3183619224:
+      boundaryID: steps-inline-2bq8s-319341924
+      children:
+      - steps-inline-2bq8s-1818864107
+      displayName: hello
+      id: steps-inline-2bq8s-3183619224
+      name: steps-inline-2bq8s(0)[0].hello
+      phase: Running
+      startedAt: "2026-02-25T04:45:34Z"
+      templateScope: local/steps-inline-2bq8s
+      type: Retry
   phase: Running
-  startedAt: "2021-03-23T14:53:39Z"
+  startedAt: "2026-02-25T04:45:34Z"
 `
 
 func TestRootRetryStrategyWithInlineTemplateRetries(t *testing.T) {
@@ -8884,6 +8919,7 @@ func TestRootRetryStrategyWithInlineTemplateRetries(t *testing.T) {
 	woc.operate(ctx)
 
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.NodePending, woc.wf.Status.Nodes.FindByDisplayName("hello(0)").Phase)
 }
 
 const testGlobalParamSubstitute = `

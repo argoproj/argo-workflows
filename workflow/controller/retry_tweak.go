@@ -13,17 +13,12 @@ type RetryTweak = func(retryStrategy wfv1.RetryStrategy, nodes wfv1.Nodes, pod *
 
 // FindRetryNode locates the closest retry node ancestor to nodeID
 func FindRetryNode(nodes wfv1.Nodes, nodeID string) *wfv1.NodeStatus {
+	if parentNode := nodes.FindRetryNodeByChild(nodeID); parentNode != nil {
+		return parentNode
+	}
 	boundaryID := nodes[nodeID].BoundaryID
-	boundaryNode := nodes[boundaryID]
-	for _, node := range nodes {
-		if node.Type != wfv1.NodeTypeRetry || (node.TemplateName == "" && node.TemplateRef == nil) {
-			continue
-		}
-		if node.HasChild(nodeID) ||
-			(boundaryNode.TemplateName != "" && node.TemplateName == boundaryNode.TemplateName) ||
-			(boundaryNode.TemplateRef != nil && node.TemplateRef != nil && node.TemplateRef.Name == boundaryNode.TemplateRef.Name && node.TemplateRef.Template == boundaryNode.TemplateRef.Template) {
-			return &node
-		}
+	if parentNode := nodes.FindRetryNodeByChild(boundaryID); parentNode != nil {
+		return parentNode
 	}
 	return nil
 }
