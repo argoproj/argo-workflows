@@ -1931,6 +1931,83 @@ func TestAssessNodeStatus(t *testing.T) {
 	}
 }
 
+func TestGetNodeTemplate_TemplateRef(t *testing.T) {
+	storedTmpl := wfv1.Template{
+		Name: "say-hello",
+		Script: &wfv1.ScriptTemplate{
+			Container: apiv1.Container{
+				Image:   "alpine:3.18",
+				Command: []string{"sh"},
+			},
+			Source: `echo "hello"`,
+		},
+	}
+
+	node := &wfv1.NodeStatus{
+		Name: "cwt-templateref-bug-test[0].hello-task",
+		TemplateRef: &wfv1.TemplateRef{
+			Name:         "cwt-helper",
+			Template:     "say-hello",
+			ClusterScope: true,
+		},
+		TemplateScope: "cluster/cwt-helper",
+	}
+
+	ctx := logging.TestContext(t.Context())
+
+	t.Run("returns template from storedTemplates when present", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{Name: "cwt-templateref-bug-test", Namespace: "default"},
+			Spec:       wfv1.WorkflowSpec{Entrypoint: "main"},
+			Status: wfv1.WorkflowStatus{
+				StoredTemplates: map[string]wfv1.Template{
+					"cluster/cwt-helper/say-hello": storedTmpl,
+				},
+			},
+		}
+		cancel, controller := newController(ctx, wf)
+		defer cancel()
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+		tmpl, err := woc.GetNodeTemplate(ctx, node)
+
+		require.NoError(t, err)
+		require.NotNil(t, tmpl)
+		assert.Equal(t, "say-hello", tmpl.Name)
+	})
+
+	t.Run("falls back to live CWT informer when storedTemplates is empty", func(t *testing.T) {
+		cwt := wfv1.MustUnmarshalClusterWorkflowTemplate(`
+apiVersion: argoproj.io/v1alpha1
+kind: ClusterWorkflowTemplate
+metadata:
+  name: cwt-helper
+spec:
+  templates:
+    - name: say-hello
+      script:
+        image: alpine:3.18
+        command: [sh]
+        source: |
+          echo "hello"
+`)
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{Name: "cwt-templateref-bug-test", Namespace: "default"},
+			Spec:       wfv1.WorkflowSpec{Entrypoint: "main"},
+			Status:     wfv1.WorkflowStatus{},
+		}
+		cancel, controller := newController(ctx, wf, cwt)
+		defer cancel()
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+		tmpl, err := woc.GetNodeTemplate(ctx, node)
+
+		require.NoError(t, err)
+		require.NotNil(t, tmpl)
+		assert.Equal(t, "say-hello", tmpl.Name)
+	})
+}
+
 func getPodTemplate(pod *apiv1.Pod) (*wfv1.Template, error) {
 	tmpl := &wfv1.Template{}
 	for _, c := range pod.Spec.InitContainers {
