@@ -917,16 +917,16 @@ func TestListWorkflowPaginationWithoutArchive(t *testing.T) {
 	})
 	require.NoError(t, err)
 	assert.Len(t, page1.Items, 2)
-	assert.NotEmpty(t, page1.ListMeta.Continue, "Next page must be available when there are more live workflows")
+	assert.NotEmpty(t, page1.Continue, "Next page must be available when there are more live workflows")
 
 	// Page 2: use the Continue token — should return the remaining 1 workflow with no further Continue.
 	page2, err := server.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{
 		Namespace:   "workflows",
-		ListOptions: &metav1.ListOptions{Limit: 2, Continue: page1.ListMeta.Continue},
+		ListOptions: &metav1.ListOptions{Limit: 2, Continue: page1.Continue},
 	})
 	require.NoError(t, err)
 	assert.Len(t, page2.Items, 1)
-	assert.Empty(t, page2.ListMeta.Continue, "No next page on last page")
+	assert.Empty(t, page2.Continue, "No next page on last page")
 }
 
 // TestListWorkflowPaginationMixedLiveAndArchive tests the live/archive boundary: a page that
@@ -969,16 +969,16 @@ func TestListWorkflowPaginationMixedLiveAndArchive(t *testing.T) {
 	})
 	require.NoError(t, err)
 	assert.Len(t, page1.Items, 5)
-	assert.NotEmpty(t, page1.ListMeta.Continue, "Next page must be available when live+archive spans multiple pages")
+	assert.NotEmpty(t, page1.Continue, "Next page must be available when live+archive spans multiple pages")
 
 	// Page 2: use Continue token → returns remaining 2 archived, no further Continue.
 	page2, err := server.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{
 		Namespace:   "workflows",
-		ListOptions: &metav1.ListOptions{Limit: 5, Continue: page1.ListMeta.Continue},
+		ListOptions: &metav1.ListOptions{Limit: 5, Continue: page1.Continue},
 	})
 	require.NoError(t, err)
 	assert.Len(t, page2.Items, 2)
-	assert.Empty(t, page2.ListMeta.Continue, "No next page on last page")
+	assert.Empty(t, page2.Continue, "No next page on last page")
 
 	archivedRepo.AssertExpectations(t)
 }
