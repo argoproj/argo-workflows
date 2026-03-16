@@ -31,7 +31,7 @@ Then, copy the commands below to apply the quick-start manifest:
 
 ```bash
 kubectl create namespace argo
-kubectl apply -n argo -f "https://github.com/argoproj/argo-workflows/releases/download/${ARGO_WORKFLOWS_VERSION}/quick-start-minimal.yaml"
+kubectl apply --server-side -n argo -f "https://github.com/argoproj/argo-workflows/releases/download/${ARGO_WORKFLOWS_VERSION}/quick-start-minimal.yaml"
 ```
 
 ## Install the Argo Workflows CLI

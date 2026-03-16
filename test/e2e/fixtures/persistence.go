@@ -6,11 +6,11 @@ import (
 	"github.com/upper/db/v4"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/argoproj/argo-workflows/v3/config"
-	persist "github.com/argoproj/argo-workflows/v3/persist/sqldb"
-	"github.com/argoproj/argo-workflows/v3/util/instanceid"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/util/sqldb"
+	"github.com/argoproj/argo-workflows/v4/config"
+	persist "github.com/argoproj/argo-workflows/v4/persist/sqldb"
+	"github.com/argoproj/argo-workflows/v4/util/instanceid"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/sqldb"
 )
 
 type Persistence struct {
@@ -28,7 +28,7 @@ func NewPersistence(ctx context.Context, kubeClient kubernetes.Interface, wcConf
 		if persistence.MySQL != nil {
 			persistence.MySQL.Host = "localhost"
 		}
-		session, err := sqldb.CreateDBSession(ctx, kubeClient, Namespace, persistence.DBConfig)
+		session, dbType, err := sqldb.CreateDBSession(ctx, kubeClient, Namespace, persistence.DBConfig)
 		if err != nil {
 			panic(err)
 		}
@@ -42,7 +42,7 @@ func NewPersistence(ctx context.Context, kubeClient kubernetes.Interface, wcConf
 			panic(err)
 		}
 		instanceIDService := instanceid.NewService(wcConfig.InstanceID)
-		workflowArchive := persist.NewWorkflowArchive(session, persistence.GetClusterName(), Namespace, instanceIDService)
+		workflowArchive := persist.NewWorkflowArchive(session, persistence.GetClusterName(), Namespace, instanceIDService, dbType)
 		return &Persistence{workflowArchive, session, offloadNodeStatusRepo}
 	}
 	return &Persistence{OffloadNodeStatusRepo: persist.ExplosiveOffloadNodeStatusRepo, WorkflowArchive: persist.NullWorkflowArchive}

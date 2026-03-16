@@ -5,10 +5,10 @@ import (
 
 	"google.golang.org/grpc"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
-	"github.com/argoproj/argo-workflows/v3/workflow/validate"
+	"github.com/argoproj/argo-workflows/v4/pkg/apiclient/cronworkflow"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/workflow/templateresolution"
+	"github.com/argoproj/argo-workflows/v4/workflow/validate"
 )
 
 type OfflineCronWorkflowServiceClient struct {

@@ -3,7 +3,15 @@
 //go:generate go run ./builder --attributesGo attributes.go
 package telemetry
 
+type Attributes []Attribute
+type Attribute struct {
+	Name  string
+	Value interface{}
+}
+
 const (
+	AttribArtifactArchive     string = `archive`
+	AttribArtifactPath        string = `path`
 	AttribBuildCompiler       string = `compiler`
 	AttribBuildDate           string = `build_date`
 	AttribBuildGitCommit      string = `git_commit`
@@ -13,12 +21,18 @@ const (
 	AttribBuildPlatform       string = `platform`
 	AttribBuildVersion        string = `version`
 	AttribConcurrencyPolicy   string = `concurrency_policy`
+	AttribContainerName       string = `container_name`
 	AttribCronWFName          string = `name`
 	AttribCronWFNamespace     string = `namespace`
 	AttribDeprecatedFeature   string = `feature`
 	AttribErrorCause          string = `cause`
+	AttribLockAcquired        string = `acquired`
+	AttribLockName            string = `lock_name`
 	AttribLogLevel            string = `level`
+	AttribMessage             string = `message`
+	AttribNodeID              string = `node_id`
 	AttribNodePhase           string = `node_phase`
+	AttribNodeType            string = `node_type`
 	AttribPodNamespace        string = `namespace`
 	AttribPodPendingReason    string = `reason`
 	AttribPodPhase            string = `phase`
@@ -29,10 +43,13 @@ const (
 	AttribRequestCode         string = `status_code`
 	AttribRequestKind         string = `kind`
 	AttribRequestVerb         string = `verb`
+	AttribTaskResultCompleted string = `completed`
+	AttribTaskResultName      string = `name`
 	AttribTemplateCluster     string = `cluster_scope`
 	AttribTemplateName        string = `name`
 	AttribTemplateNamespace   string = `namespace`
 	AttribWorkerType          string = `worker_type`
+	AttribWorkflowName        string = `name`
 	AttribWorkflowNamespace   string = `namespace`
 	AttribWorkflowPhase       string = `phase`
 	AttribWorkflowStatus      string = `status`

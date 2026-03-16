@@ -33,8 +33,8 @@ func (f Cleaner) Clean(x, y any) (bool, error) {
 		return false, err
 	}
 	data := make(map[string]any)
-	if err := json.Unmarshal(v, &data); err != nil {
-		return false, err
+	if unmarshalErr := json.Unmarshal(v, &data); unmarshalErr != nil {
+		return false, unmarshalErr
 	}
 	f.cleanItem([]string{}, data)
 	w, err := json.Marshal(data)

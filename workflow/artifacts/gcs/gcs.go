@@ -17,14 +17,14 @@ import (
 	"google.golang.org/api/option"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 
-	argoerrors "github.com/argoproj/argo-workflows/v3/errors"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	errutil "github.com/argoproj/argo-workflows/v3/util/errors"
-	"github.com/argoproj/argo-workflows/v3/util/file"
-	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
+	argoerrors "github.com/argoproj/argo-workflows/v4/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	errutil "github.com/argoproj/argo-workflows/v4/util/errors"
+	"github.com/argoproj/argo-workflows/v4/util/file"
+	waitutil "github.com/argoproj/argo-workflows/v4/util/wait"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/common"
 )
 
 // ArtifactDriver is a driver for GCS
@@ -82,9 +82,9 @@ func (h *ArtifactDriver) newGCSClient(ctx context.Context) (*storage.Client, err
 }
 
 func newGCSClientWithCredential(ctx context.Context, serviceAccountJSON string) (*storage.Client, error) {
-	creds, err := google.CredentialsFromJSON(ctx, []byte(serviceAccountJSON), storage.ScopeReadWrite)
+	creds, err := google.CredentialsFromJSONWithType(ctx, []byte(serviceAccountJSON), google.ServiceAccount, storage.ScopeReadWrite)
 	if err != nil {
-		return nil, fmt.Errorf("GCS client CredentialsFromJSON: %w", err)
+		return nil, fmt.Errorf("GCS client CredentialsFromJSONWithType: %w", err)
 	}
 	client, err := storage.NewClient(ctx, option.WithCredentials(creds))
 	if err != nil {
@@ -171,9 +171,9 @@ func downloadObject(ctx context.Context, client *storage.Client, bucket, key, ob
 		return fmt.Errorf("os create %s: %w", localPath, err)
 	}
 	defer func() {
-		if err := out.Close(); err != nil {
+		if closeErr := out.Close(); closeErr != nil {
 			logger := logging.RequireLoggerFromContext(ctx)
-			logger.WithField("path", localPath).WithError(err).Error(ctx, "Error closing file")
+			logger.WithField("path", localPath).WithError(closeErr).Error(ctx, "Error closing file")
 		}
 	}()
 	_, err = io.Copy(out, rc)
@@ -273,9 +273,9 @@ func uploadObjects(ctx context.Context, client *storage.Client, bucket, key, pat
 	if isDir {
 		dirName := filepath.Clean(path) + string(os.PathSeparator)
 		keyPrefix := filepath.Clean(key) + "/"
-		fileRelPaths, err := listFileRelPaths(dirName, "")
-		if err != nil {
-			return err
+		fileRelPaths, listErr := listFileRelPaths(dirName, "")
+		if listErr != nil {
+			return listErr
 		}
 		for _, relPath := range fileRelPaths {
 			fullKey := keyPrefix + relPath
@@ -308,9 +308,9 @@ func uploadObject(ctx context.Context, client *storage.Client, bucket, key, loca
 		return fmt.Errorf("os open: %w", err)
 	}
 	defer func() {
-		if err := f.Close(); err != nil {
+		if closeErr := f.Close(); closeErr != nil {
 			logger := logging.RequireLoggerFromContext(ctx)
-			logger.WithField("path", localPath).WithError(err).Error(ctx, "Error closing file")
+			logger.WithField("path", localPath).WithError(closeErr).Error(ctx, "Error closing file")
 		}
 	}()
 	wc := client.Bucket(bucket).Object(key).NewWriter(ctx)

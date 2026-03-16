@@ -37,24 +37,24 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo-workflows/v3/workflow/creator"
+	"github.com/argoproj/argo-workflows/v4/workflow/creator"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	cmdutil "github.com/argoproj/argo-workflows/v3/util/cmd"
-	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/util/retry"
-	unstructutil "github.com/argoproj/argo-workflows/v3/util/unstructured"
-	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
-	"github.com/argoproj/argo-workflows/v3/workflow/packer"
-	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
-	"github.com/argoproj/argo-workflows/v3/workflow/validate"
+	"github.com/argoproj/argo-workflows/v4/errors"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	wfclientset "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	cmdutil "github.com/argoproj/argo-workflows/v4/util/cmd"
+	errorsutil "github.com/argoproj/argo-workflows/v4/util/errors"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/retry"
+	unstructutil "github.com/argoproj/argo-workflows/v4/util/unstructured"
+	waitutil "github.com/argoproj/argo-workflows/v4/util/wait"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
+	"github.com/argoproj/argo-workflows/v4/workflow/packer"
+	"github.com/argoproj/argo-workflows/v4/workflow/templateresolution"
+	"github.com/argoproj/argo-workflows/v4/workflow/validate"
 )
 
 // NewWorkflowInformer returns the workflow informer used by the controller. This is actually
@@ -145,9 +145,9 @@ func FromUnstructuredObj(un *unstructured.Unstructured, v any) error {
 	err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, v)
 	if err != nil {
 		if err.Error() == "cannot convert int64 to v1alpha1.AnyString" {
-			data, err := json.Marshal(un)
-			if err != nil {
-				return err
+			data, marshalErr := json.Marshal(un)
+			if marshalErr != nil {
+				return marshalErr
 			}
 			return json.Unmarshal(data, v)
 		}
@@ -194,17 +194,17 @@ func SubmitWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, wfClie
 	case opts.DryRun:
 		return wf, nil
 	case opts.ServerDryRun:
-		wf, err := CreateServerDryRun(ctx, wf, wfClientset)
-		if err != nil {
-			return nil, err
+		createWf, createErr := CreateServerDryRun(ctx, wf, wfClientset)
+		if createErr != nil {
+			return nil, createErr
 		}
-		return wf, err
+		return createWf, createErr
 	default:
 		var runWf *wfv1.Workflow
 		err = waitutil.Backoff(retry.DefaultRetry(ctx), func() (bool, error) {
-			var err error
-			runWf, err = wfIf.Create(ctx, wf, metav1.CreateOptions{})
-			return !errorsutil.IsTransientErr(ctx, err), err
+			var createErr error
+			runWf, createErr = wfIf.Create(ctx, wf, metav1.CreateOptions{})
+			return !errorsutil.IsTransientErr(ctx, createErr), createErr
 		})
 		return runWf, err
 	}
@@ -534,14 +534,14 @@ func updateSuspendedNode(ctx context.Context, wfIf v1alpha1.WorkflowInterface, h
 		return err
 	}
 	err = waitutil.Backoff(retry.DefaultRetry(ctx), func() (bool, error) {
-		wf, err := wfIf.Get(ctx, workflowName, metav1.GetOptions{})
-		if err != nil {
-			return !errorsutil.IsTransientErr(ctx, err), err
+		wf, getErr := wfIf.Get(ctx, workflowName, metav1.GetOptions{})
+		if getErr != nil {
+			return !errorsutil.IsTransientErr(ctx, getErr), getErr
 		}
 
-		err = hydrator.Hydrate(ctx, wf)
-		if err != nil {
-			return false, err
+		hydrateErr := hydrator.Hydrate(ctx, wf)
+		if hydrateErr != nil {
+			return false, hydrateErr
 		}
 
 		nodeUpdated := false
@@ -1428,18 +1428,18 @@ func patchShutdownStrategy(ctx context.Context, wfClient v1alpha1.WorkflowInterf
 		return errors.InternalWrapError(err)
 	}
 	err = waitutil.Backoff(retry.DefaultRetry(ctx), func() (bool, error) {
-		wf, err := wfClient.Get(ctx, name, metav1.GetOptions{})
-		if err != nil {
-			return !errorsutil.IsTransientErr(ctx, err), err
+		wf, getErr := wfClient.Get(ctx, name, metav1.GetOptions{})
+		if getErr != nil {
+			return !errorsutil.IsTransientErr(ctx, getErr), getErr
 		}
 		if wf.Status.Fulfilled() {
 			return true, AlreadyShutdownError{wf.Name, wf.Namespace}
 		}
-		_, err = wfClient.Patch(ctx, name, types.MergePatchType, patch, metav1.PatchOptions{})
-		if apierr.IsConflict(err) {
+		_, patchErr := wfClient.Patch(ctx, name, types.MergePatchType, patch, metav1.PatchOptions{})
+		if apierr.IsConflict(patchErr) {
 			return false, nil
 		}
-		return !errorsutil.IsTransientErr(ctx, err), err
+		return !errorsutil.IsTransientErr(ctx, patchErr), patchErr
 	})
 	return err
 }
@@ -1506,7 +1506,8 @@ func ReadManifest(ctx context.Context, manifestPaths ...string) ([][]byte, error
 	var manifestContents [][]byte
 	var err error
 	if len(manifestPaths) == 1 && manifestPaths[0] == "-" {
-		body, err := ReadFromStdin()
+		var body []byte
+		body, err = ReadFromStdin()
 		if err != nil {
 			return [][]byte{}, err
 		}
@@ -1544,14 +1545,14 @@ func ApplyPodSpecPatch(podSpec apiv1.PodSpec, podSpecPatchYamls ...string) (*api
 
 	for _, podSpecPatchYaml := range podSpecPatchYamls {
 		// must convert to json because PodSpec has only json tags
-		podSpecPatchJSON, err := ConvertYAMLToJSON(podSpecPatchYaml)
-		if err != nil {
-			return nil, errors.Wrap(err, "", "Failed to convert the PodSpecPatch yaml to json")
+		podSpecPatchJSON, convertErr := ConvertYAMLToJSON(podSpecPatchYaml)
+		if convertErr != nil {
+			return nil, errors.Wrap(convertErr, "", "Failed to convert the PodSpecPatch yaml to json")
 		}
 
 		// validate the patch to be a PodSpec
-		if err := json.Unmarshal([]byte(podSpecPatchJSON), &apiv1.PodSpec{}); err != nil {
-			return nil, fmt.Errorf("invalid podSpecPatch %q: %w", podSpecPatchYaml, err)
+		if unmarshalErr := json.Unmarshal([]byte(podSpecPatchJSON), &apiv1.PodSpec{}); unmarshalErr != nil {
+			return nil, fmt.Errorf("invalid podSpecPatch %q: %w", podSpecPatchYaml, unmarshalErr)
 		}
 
 		podSpecJSON, err = strategicpatch.StrategicMergePatch(podSpecJSON, []byte(podSpecPatchJSON), apiv1.PodSpec{})

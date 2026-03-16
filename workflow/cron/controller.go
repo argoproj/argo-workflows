@@ -23,17 +23,17 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
-	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
-	wfctx "github.com/argoproj/argo-workflows/v3/util/context"
-	"github.com/argoproj/argo-workflows/v3/util/env"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/events"
-	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
+	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/client/informers/externalversions/workflow/v1alpha1"
+	wfctx "github.com/argoproj/argo-workflows/v4/util/context"
+	"github.com/argoproj/argo-workflows/v4/util/env"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/events"
+	"github.com/argoproj/argo-workflows/v4/workflow/metrics"
+	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
 // Controller is a controller for cron workflows

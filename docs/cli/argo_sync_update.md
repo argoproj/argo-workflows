@@ -9,10 +9,10 @@ argo sync update [flags]
 ### Examples
 
 ```
- 
+
 # Update a database sync limit
 	argo sync update my-key --type database --size-limit 20
-		
+
 # Update a configmap sync limit
 	argo sync update my-key --type configmap --cm-name my-configmap --size-limit 20
 

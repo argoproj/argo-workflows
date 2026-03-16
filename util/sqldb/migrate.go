@@ -6,7 +6,7 @@ import (
 
 	"github.com/upper/db/v4"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 type Change interface {
@@ -22,8 +22,7 @@ func ByType(dbType DBType, changes TypedChanges) Change {
 	return nil
 }
 
-func Migrate(ctx context.Context, session db.Session, versionTableName string, changes []Change) error {
-	dbType := DBTypeFor(session)
+func Migrate(ctx context.Context, session db.Session, dbType DBType, versionTableName string, changes []Change) error {
 	ctx, logger := logging.RequireLoggerFromContext(ctx).WithField("dbType", dbType).InContext(ctx)
 	logger.Info(ctx, "Migrating database schema")
 
@@ -56,12 +55,12 @@ func Migrate(ctx context.Context, session db.Session, versionTableName string, c
 			}
 		}()
 		if !rows.Next() {
-			_, err := session.SQL().Exec(fmt.Sprintf("alter table %s add primary key(schema_version)", versionTableName))
-			if err != nil {
-				return err
+			_, alterErr := session.SQL().Exec(fmt.Sprintf("alter table %s add primary key(schema_version)", versionTableName))
+			if alterErr != nil {
+				return alterErr
 			}
-		} else if err := rows.Err(); err != nil {
-			return err
+		} else if rowsErr := rows.Err(); rowsErr != nil {
+			return rowsErr
 		}
 
 		rs, err := session.SQL().Query(fmt.Sprintf("select schema_version from %s", versionTableName))

@@ -5,19 +5,20 @@ import (
 	"fmt"
 	gohttp "net/http"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/azure"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/gcs"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/git"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/hdfs"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/http"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/oss"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/plugin"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/raw"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/resource"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/s3"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/azure"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/gcs"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/git"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/hdfs"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/http"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/oss"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/plugin"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/raw"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/resource"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/s3"
+	"github.com/argoproj/argo-workflows/v4/workflow/tracing"
 )
 
 var ErrUnsupportedDriver = fmt.Errorf("unsupported artifact driver")
@@ -158,7 +159,8 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 		if client == nil {
 			client = &gohttp.Client{}
 		}
-		driver.Client = client
+		// Wrap HTTP client with OpenTelemetry tracing
+		driver.Client = tracing.WrapHTTPArtifactClient(client, "http")
 		return &driver, nil
 	}
 	if art.Git != nil {
@@ -203,7 +205,7 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 		driver := http.ArtifactDriver{
 			Username: usernameBytes,
 			Password: passwordBytes,
-			Client:   &gohttp.Client{},
+			Client:   tracing.WrapHTTPArtifactClient(&gohttp.Client{}, "artifactory"),
 		}
 		return &driver, nil
 	}

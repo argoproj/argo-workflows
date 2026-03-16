@@ -7,9 +7,9 @@ import (
 	"github.com/stretchr/testify/require"
 	apiv1 "k8s.io/api/core/v1"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	intstrutil "github.com/argoproj/argo-workflows/v3/util/intstr"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	intstrutil "github.com/argoproj/argo-workflows/v4/util/intstr"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 const stepWf = `
@@ -142,7 +142,7 @@ func TestSetTemplateDefault(t *testing.T) {
 	t.Run("tmplDefaultInConfig", func(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow(defaultWf)
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
-		err := woc.setExecWorkflow(ctx)
+		_, err := woc.setExecWorkflow(ctx)
 		require.NoError(t, err)
 		tmpl := woc.execWf.Spec.Templates[0]
 		err = woc.mergedTemplateDefaultsInto(&tmpl)
@@ -169,7 +169,7 @@ func TestSetTemplateDefault(t *testing.T) {
 			},
 		}
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
-		err := woc.setExecWorkflow(ctx)
+		_, err := woc.setExecWorkflow(ctx)
 		require.NoError(t, err)
 		tmpl := woc.execWf.Spec.Templates[0]
 		err = woc.mergedTemplateDefaultsInto(&tmpl)
@@ -199,7 +199,7 @@ func TestSetTemplateDefault(t *testing.T) {
 			},
 		}
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
-		err := woc.setExecWorkflow(ctx)
+		_, err := woc.setExecWorkflow(ctx)
 		require.NoError(t, err)
 		tmpl := woc.execWf.Spec.Templates[0]
 		err = woc.mergedTemplateDefaultsInto(&tmpl)
@@ -240,7 +240,7 @@ func TestSetTemplateDefault(t *testing.T) {
 			},
 		}
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
-		err := woc.setExecWorkflow(ctx)
+		_, err := woc.setExecWorkflow(ctx)
 		require.NoError(t, err)
 		tmpl := woc.execWf.Spec.Templates[0]
 		err = woc.mergedTemplateDefaultsInto(&tmpl)
@@ -278,7 +278,7 @@ func TestSetTemplateDefault(t *testing.T) {
 			},
 		}
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
-		err := woc.setExecWorkflow(ctx)
+		_, err := woc.setExecWorkflow(ctx)
 		require.NoError(t, err)
 		tmpl := woc.execWf.Spec.Templates[0]
 		err = woc.mergedTemplateDefaultsInto(&tmpl)

@@ -181,6 +181,8 @@ nav:
           - use-cases/machine-learning.md
           - use-cases/stream-processing.md
           - use-cases/other.md # other should always be last
+      - Workflow Telemetry:
+          - workflow-telemetry.md
       - FAQ: faq.md
       - kubectl.md
       - ide-setup.md
@@ -264,7 +266,7 @@ nav:
           - default-workflow-specs.md
           - offloading-large-workflows.md
           - workflow-archive.md
-          - metrics.md
+          - telemetry-configuration.md
           - deprecations.md
           - workflow-executors.md
           - workflow-restrictions.md
@@ -284,6 +286,10 @@ nav:
           - scaling.md
           - cost-optimisation.md
       - windows.md
+  - Telemetry:
+      - telemetry.md
+      - metrics.md
+      - tracing.md
   - Developer Guide:
       - CONTRIBUTING.md
       - running-nix.md

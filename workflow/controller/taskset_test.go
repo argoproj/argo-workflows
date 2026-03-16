@@ -5,14 +5,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 func TestCreateTaskSet(t *testing.T) {

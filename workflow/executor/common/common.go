@@ -11,8 +11,8 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 
-	envutil "github.com/argoproj/argo-workflows/v3/util/env"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	envutil "github.com/argoproj/argo-workflows/v4/util/env"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 // KubernetesClientInterface is the interface to implement getContainerStatus method

@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
+	"github.com/argoproj/argo-workflows/v4/errors"
 )
 
 // TestErrorf tests the initializer of error package

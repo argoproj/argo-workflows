@@ -13,15 +13,16 @@ import (
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/argoproj/argo-workflows/v3"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo-workflows/v3/util"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/util/logs"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/executor"
-	"github.com/argoproj/argo-workflows/v3/workflow/executor/emissary"
+	"github.com/argoproj/argo-workflows/v4"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo-workflows/v4/util"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logs"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/executor"
+	"github.com/argoproj/argo-workflows/v4/workflow/executor/emissary"
+	"github.com/argoproj/argo-workflows/v4/workflow/tracing"
 )
 
 //nolint:contextcheck
@@ -36,6 +37,7 @@ func Init(ctx context.Context, clientConfig clientcmd.ClientConfig, varRunArgo s
 	//nolint:contextcheck
 	bgCtx := logger.NewBackgroundContext()
 	logs.AddK8SLogTransportWrapper(bgCtx, config) // lets log all request as we should typically do < 5 per pod, so this is will show up problems
+	tracing.AddTracingTransportWrapper(bgCtx, config)
 
 	namespace, _, err := clientConfig.Namespace()
 	CheckErr(err)
@@ -55,11 +57,13 @@ func Init(ctx context.Context, clientConfig clientcmd.ClientConfig, varRunArgo s
 	envVarTemplateValue, ok := os.LookupEnv(common.EnvVarTemplate)
 	// wait container reads template from the file written by init container, instead of from environment variable.
 	if !ok {
-		data, err := os.ReadFile(varRunArgo + "/template")
+		var data []byte
+		data, err = os.ReadFile(varRunArgo + "/template")
 		CheckErr(err)
 		envVarTemplateValue = string(data)
 	} else if envVarTemplateValue == common.EnvVarTemplateOffloaded {
-		data, err := os.ReadFile(filepath.Join(common.EnvConfigMountPath, common.EnvVarTemplate))
+		var data []byte
+		data, err = os.ReadFile(filepath.Join(common.EnvConfigMountPath, common.EnvVarTemplate))
 		CheckErr(err)
 		envVarTemplateValue = string(data)
 	}
@@ -76,7 +80,7 @@ func Init(ctx context.Context, clientConfig clientcmd.ClientConfig, varRunArgo s
 	cre, err := emissary.New()
 	CheckErr(err)
 
-	wfExecutor := executor.NewExecutor(
+	wfExecutor, err := executor.NewExecutor(
 		ctx,
 		clientset,
 		versioned.NewForConfigOrDie(config).ArgoprojV1alpha1().WorkflowTaskResults(namespace),
@@ -94,6 +98,7 @@ func Init(ctx context.Context, clientConfig clientcmd.ClientConfig, varRunArgo s
 		annotationPatchTickDuration,
 		progressFileTickDuration,
 	)
+	CheckErr(err)
 
 	logger.
 		WithFields(version.Fields()).

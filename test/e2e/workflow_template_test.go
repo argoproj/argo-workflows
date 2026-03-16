@@ -11,9 +11,9 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/test/e2e/fixtures"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 type WorkflowTemplateSuite struct {

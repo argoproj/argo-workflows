@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 
 	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/stretchr/testify/assert"
@@ -19,15 +19,15 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo-workflows/v3/server/auth"
-	"github.com/argoproj/argo-workflows/v3/server/auth/types"
+	"github.com/argoproj/argo-workflows/v4/server/auth"
+	"github.com/argoproj/argo-workflows/v4/server/auth/types"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	argofake "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/creator"
-	hydratorfake "github.com/argoproj/argo-workflows/v3/workflow/hydrator/fake"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	argofake "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/creator"
+	hydratorfake "github.com/argoproj/argo-workflows/v4/workflow/hydrator/fake"
 )
 
 // TestSubmitDryRun

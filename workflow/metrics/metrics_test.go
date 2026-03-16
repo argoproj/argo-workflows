@@ -11,9 +11,9 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/utils/ptr"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/util/telemetry"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/telemetry"
 )
 
 func TestMetrics(t *testing.T) {
@@ -53,7 +53,7 @@ func TestErrors(t *testing.T) {
 }
 
 func TestMetricGC(t *testing.T) {
-	config := telemetry.Config{
+	config := telemetry.MetricsConfig{
 		Enabled: true,
 		Path:    telemetry.DefaultPrometheusServerPath,
 		Port:    telemetry.DefaultPrometheusServerPort,
@@ -97,7 +97,7 @@ func TestMetricGC(t *testing.T) {
 }
 
 func TestRealtimeMetricGC(t *testing.T) {
-	config := telemetry.Config{
+	config := telemetry.MetricsConfig{
 		Enabled: true,
 		Path:    telemetry.DefaultPrometheusServerPath,
 		Port:    telemetry.DefaultPrometheusServerPort,
@@ -170,7 +170,7 @@ func TestWorkflowQueueMetrics(t *testing.T) {
 }
 
 func TestRealTimeMetricDeletion(t *testing.T) {
-	config := telemetry.Config{
+	config := telemetry.MetricsConfig{
 		Enabled: true,
 		Path:    telemetry.DefaultPrometheusServerPath,
 		Port:    telemetry.DefaultPrometheusServerPort,

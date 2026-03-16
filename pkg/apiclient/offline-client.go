@@ -4,17 +4,17 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
-	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
-	infopkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/info"
-	syncpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/sync"
-	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
-	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
-	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/file"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
+	"github.com/argoproj/argo-workflows/v4/pkg/apiclient/clusterworkflowtemplate"
+	"github.com/argoproj/argo-workflows/v4/pkg/apiclient/cronworkflow"
+	infopkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/info"
+	syncpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/sync"
+	workflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow"
+	workflowarchivepkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflowarchive"
+	"github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflowtemplate"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/file"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/templateresolution"
 )
 
 type offlineWorkflowTemplateGetterMap map[string]templateresolution.WorkflowTemplateNamespacedGetter

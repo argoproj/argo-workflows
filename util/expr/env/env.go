@@ -7,7 +7,7 @@ import (
 	"github.com/evilmonkeyinc/jsonpath"
 	"github.com/expr-lang/expr/builtin"
 
-	"github.com/argoproj/argo-workflows/v3/util/expand"
+	"github.com/argoproj/argo-workflows/v4/util/expand"
 )
 
 var sprigFuncMap = sprig.GenericFuncMap() // a singleton for better performance

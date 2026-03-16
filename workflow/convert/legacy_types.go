@@ -3,7 +3,7 @@ package convert
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
 // Legacy types for parsing manifests with deprecated fields.
@@ -161,7 +161,7 @@ type LegacyWorkflow struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
 	Spec              LegacyWorkflowSpec  `json:"spec"`
-	Status            wfv1.WorkflowStatus `json:"status,omitempty"`
+	Status            wfv1.WorkflowStatus `json:"status,omitzero"`
 }
 
 // ToCurrent converts a LegacyWorkflow to the current Workflow type

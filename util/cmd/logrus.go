@@ -3,7 +3,7 @@ package cmd
 import (
 	log "github.com/sirupsen/logrus"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 // SetLogrusLevel sets the logrus log level to match the given logging.Level.

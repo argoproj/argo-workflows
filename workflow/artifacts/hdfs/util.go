@@ -35,9 +35,9 @@ func createKrbClient(krbOptions *KrbOptions) (*krb.Client, error) {
 	}
 
 	if krbOptions.CCacheOptions != nil {
-		client, err := krb.NewFromCCache(&krbOptions.CCacheOptions.CCache, krbConfig)
-		if err != nil {
-			return nil, err
+		client, cacheErr := krb.NewFromCCache(&krbOptions.CCacheOptions.CCache, krbConfig)
+		if cacheErr != nil {
+			return nil, cacheErr
 		}
 		return client, nil
 	} else if krbOptions.KeytabOptions != nil {

@@ -7,7 +7,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	argoerrors "github.com/argoproj/argo-workflows/v3/errors"
+	argoerrors "github.com/argoproj/argo-workflows/v4/errors"
 
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 )

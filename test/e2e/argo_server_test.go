@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/util/secrets"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/secrets"
 
 	"github.com/gavv/httpexpect/v2"
 	"github.com/stretchr/testify/assert"
@@ -22,11 +22,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	syncpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/sync"
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	syncpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/sync"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/test/e2e/fixtures"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 const baseURL = "http://localhost:2746"
@@ -1029,9 +1029,9 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 }
 
 func (s *ArgoServerSuite) TestWorkflowServiceListArchived() {
-	var bobWf *httpexpect.Value
+	var uidBobWf, nameBobWf string
 	s.Run("CreateArchivedBobWf", func() {
-		bobWf = (s.e().POST("/api/v1/workflows/argo").
+		bobWf := s.e().POST("/api/v1/workflows/argo").
 			WithBytes([]byte(`{
 				  "workflow": {
 					"metadata": {
@@ -1054,16 +1054,14 @@ func (s *ArgoServerSuite) TestWorkflowServiceListArchived() {
 					}
 				  }
 				}`)).
-			Expect().Status(200).JSON())
+			Expect().Status(200).JSON()
+		uidBobWf = bobWf.Path("$.metadata.uid").NotNull().String().Raw()
+		nameBobWf = bobWf.Path("$.metadata.name").NotNull().String().Raw()
 	})
-	var uidBobWf = bobWf.Path("$.metadata.uid").
-		NotNull().String().Raw()
-	var nameBobWf = bobWf.Path("$.metadata.name").
-		NotNull().String().Raw()
 
-	var aliceWf *httpexpect.Value
+	var uidAliceWf, nameAliceWf string
 	s.Run("CreateAlice", func() {
-		aliceWf = (s.e().POST("/api/v1/workflows/argo").
+		aliceWf := s.e().POST("/api/v1/workflows/argo").
 			WithBytes([]byte(`{
 				  "workflow": {
 					"metadata": {
@@ -1086,12 +1084,10 @@ func (s *ArgoServerSuite) TestWorkflowServiceListArchived() {
 					}
 				  }
 				}`)).
-			Expect().Status(200).JSON())
+			Expect().Status(200).JSON()
+		uidAliceWf = aliceWf.Path("$.metadata.uid").NotNull().String().Raw()
+		nameAliceWf = aliceWf.Path("$.metadata.name").NotNull().String().Raw()
 	})
-	var uidAliceWf = aliceWf.Path("$.metadata.uid").
-		NotNull().String().Raw()
-	var nameAliceWf = aliceWf.Path("$.metadata.name").
-		NotNull().String().Raw()
 
 	s.Given().When().
 		WaitForWorkflow(fixtures.ToBeArchived, metav1.ListOptions{FieldSelector: "metadata.name=" + nameBobWf}).
@@ -1215,9 +1211,9 @@ func (s *ArgoServerSuite) TestWorkflowServiceListArchived() {
 }
 
 func (s *ArgoServerSuite) TestWorkflowArchiveServiceList() {
-	var bobWf *httpexpect.Value
+	var uidBobWf, nameBobWf string
 	s.Run("CreateArchivedBobWf", func() {
-		bobWf = (s.e().POST("/api/v1/workflows/argo").
+		bobWf := s.e().POST("/api/v1/workflows/argo").
 			WithBytes([]byte(`{
 				  "workflow": {
 					"metadata": {
@@ -1240,16 +1236,14 @@ func (s *ArgoServerSuite) TestWorkflowArchiveServiceList() {
 					}
 				  }
 				}`)).
-			Expect().Status(200).JSON())
+			Expect().Status(200).JSON()
+		uidBobWf = bobWf.Path("$.metadata.uid").NotNull().String().Raw()
+		nameBobWf = bobWf.Path("$.metadata.name").NotNull().String().Raw()
 	})
-	var uidBobWf = bobWf.Path("$.metadata.uid").
-		NotNull().String().Raw()
-	var nameBobWf = bobWf.Path("$.metadata.name").
-		NotNull().String().Raw()
 
-	var aliceWf *httpexpect.Value
+	var uidAliceWf, nameAliceWf string
 	s.Run("CreateAlice", func() {
-		aliceWf = (s.e().POST("/api/v1/workflows/argo").
+		aliceWf := s.e().POST("/api/v1/workflows/argo").
 			WithBytes([]byte(`{
 				  "workflow": {
 					"metadata": {
@@ -1272,12 +1266,10 @@ func (s *ArgoServerSuite) TestWorkflowArchiveServiceList() {
 					}
 				  }
 				}`)).
-			Expect().Status(200).JSON())
+			Expect().Status(200).JSON()
+		uidAliceWf = aliceWf.Path("$.metadata.uid").NotNull().String().Raw()
+		nameAliceWf = aliceWf.Path("$.metadata.name").NotNull().String().Raw()
 	})
-	var uidAliceWf = aliceWf.Path("$.metadata.uid").
-		NotNull().String().Raw()
-	var nameAliceWf = aliceWf.Path("$.metadata.name").
-		NotNull().String().Raw()
 
 	s.Given().When().
 		WaitForWorkflow(fixtures.ToBeArchived, metav1.ListOptions{FieldSelector: "metadata.name=" + nameBobWf}).
@@ -2402,6 +2394,8 @@ func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
 }`)).Expect().Status(200)
 	})
 
+	time.Sleep(1 * time.Second) // wait for informer cache to sync
+
 	s.Run("SubmitWFT", func() {
 		s.e().POST("/api/v1/workflows/argo/submit").
 			WithBytes([]byte(`{
@@ -2484,6 +2478,8 @@ func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
   }
 }`)).Expect().Status(200)
 	})
+
+	time.Sleep(1 * time.Second) // wait for informer cache to sync
 
 	s.Run("SubmitCWFT", func() {
 		s.e().POST("/api/v1/workflows/argo/submit").

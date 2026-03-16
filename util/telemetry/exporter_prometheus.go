@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 
 	promgo "github.com/prometheus/client_golang/prometheus"
 	prommodel "github.com/prometheus/common/model"
@@ -19,7 +19,7 @@ import (
 	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/utils/env"
 
-	tlsutils "github.com/argoproj/argo-workflows/v3/util/tls"
+	tlsutils "github.com/argoproj/argo-workflows/v4/util/tls"
 )
 
 // by default prometheus has NameValidationScheme set to UTF8Validation which allows metrics names to keep original delimiters (e.g. .),
@@ -35,7 +35,7 @@ const (
 	DefaultPrometheusServerPath = "/metrics"
 )
 
-func (config *Config) prometheusMetricsExporter(namespace string) (*prometheus.Exporter, error) {
+func (config *MetricsConfig) prometheusMetricsExporter(namespace string) (*prometheus.Exporter, error) {
 	// Use an exporter that mimics the legacy prometheus exporter
 	// We cannot namespace here, because custom metrics are not namespaced
 	// in the legacy version, so they cannot be here
@@ -47,14 +47,14 @@ func (config *Config) prometheusMetricsExporter(namespace string) (*prometheus.E
 	)
 }
 
-func (config *Config) path() string {
+func (config *MetricsConfig) path() string {
 	if config.Path == "" {
 		return DefaultPrometheusServerPath
 	}
 	return config.Path
 }
 
-func (config *Config) port() int {
+func (config *MetricsConfig) port() int {
 	if config.Port == 0 {
 		return DefaultPrometheusServerPort
 	}

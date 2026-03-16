@@ -7,7 +7,7 @@ The Argo Workflows Go SDK allows you to interact with Argo Workflows programmati
 Add the Argo Workflows SDK to your Go project:
 
 ```bash
-go get github.com/argoproj/argo-workflows/v3@latest
+go get github.com/argoproj/argo-workflows/v4@latest
 ```
 
 ### Minimum Requirements
@@ -35,8 +35,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/clientcmd"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	wfclientset "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
 )
 
 func main() {
@@ -125,11 +125,11 @@ The Argo Workflows Go SDK provides two different client approaches for different
 - You want native Kubernetes API patterns
 - You need watch/list operations with field selectors
 
-**Package:** `github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned`
+**Package:** `github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned`
 
 ```go
 import (
-    wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
+    wfclientset "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
     "k8s.io/client-go/tools/clientcmd"
 )
 
@@ -152,11 +152,11 @@ clientset := wfclientset.NewForConfigOrDie(config)
 - You need service-oriented operations (retry, stop, suspend)
 - Working with archived workflows
 
-**Package:** `github.com/argoproj/argo-workflows/v3/pkg/apiclient`
+**Package:** `github.com/argoproj/argo-workflows/v4/pkg/apiclient`
 
 ```go
 import (
-    "github.com/argoproj/argo-workflows/v3/pkg/apiclient"
+    "github.com/argoproj/argo-workflows/v4/pkg/apiclient"
 )
 
 ctx, client, err := apiclient.NewClientFromOptsWithContext(ctx, apiclient.Opts{
@@ -193,7 +193,7 @@ serviceClient := client.NewWorkflowServiceClient(ctx)
 ```go
 import (
     "k8s.io/client-go/tools/clientcmd"
-    wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
+    wfclientset "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
 )
 
 // Default kubeconfig location
@@ -212,7 +212,7 @@ clientset := wfclientset.NewForConfig(config)
 ```go
 import (
     "k8s.io/client-go/rest"
-    wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
+    wfclientset "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
 )
 
 config, err := rest.InClusterConfig()
@@ -266,7 +266,7 @@ subjects:
 ```go
 import (
     "os"
-    "github.com/argoproj/argo-workflows/v3/pkg/apiclient"
+    "github.com/argoproj/argo-workflows/v4/pkg/apiclient"
 )
 
 ctx, client, err := apiclient.NewClientFromOptsWithContext(ctx, apiclient.Opts{
@@ -285,7 +285,7 @@ ctx, client, err := apiclient.NewClientFromOptsWithContext(ctx, apiclient.Opts{
 ```go
 import (
     "k8s.io/client-go/tools/clientcmd"
-    "github.com/argoproj/argo-workflows/v3/pkg/apiclient"
+    "github.com/argoproj/argo-workflows/v4/pkg/apiclient"
 )
 
 ctx, client, err := apiclient.NewClientFromOptsWithContext(ctx, apiclient.Opts{
@@ -726,7 +726,7 @@ Informers provide efficient caching and watching of resources:
 ```go
 import (
     "k8s.io/client-go/tools/cache"
-    wfinformers "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions"
+    wfinformers "github.com/argoproj/argo-workflows/v4/pkg/client/informers/externalversions"
 )
 
 // Create informer factory
@@ -763,7 +763,7 @@ informerFactory.WaitForCacheSync(stopCh)
 
 ```go
 import (
-    wflisters "github.com/argoproj/argo-workflows/v3/pkg/client/listers/workflow/v1alpha1"
+    wflisters "github.com/argoproj/argo-workflows/v4/pkg/client/listers/workflow/v1alpha1"
 )
 
 // Create lister from informer
@@ -780,7 +780,7 @@ wf, err := lister.Workflows(namespace).Get("workflow-name")
 
 ```go
 import (
-    fakewfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
+    fakewfclientset "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
 )
 
 // Create fake clientset for testing
@@ -836,7 +836,7 @@ workflow := &wfv1.Workflow{
 
 ## Additional Resources
 
-- [API Reference](https://pkg.go.dev/github.com/argoproj/argo-workflows/v3)
+- [API Reference](https://pkg.go.dev/github.com/argoproj/argo-workflows/v4)
 - [Workflow Examples](https://github.com/argoproj/argo-workflows/tree/main/examples/) - YAML examples of workflows
 - [Argo Workflows Documentation](https://argo-workflows.readthedocs.io/)
 

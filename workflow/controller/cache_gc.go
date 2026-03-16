@@ -10,11 +10,11 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo-workflows/v3/util/env"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	controllercache "github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
-	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
+	"github.com/argoproj/argo-workflows/v4/util/env"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	controllercache "github.com/argoproj/argo-workflows/v4/workflow/controller/cache"
+	"github.com/argoproj/argo-workflows/v4/workflow/controller/indexes"
 )
 
 var gcAfterNotHitDuration = env.LookupEnvDurationOr(logging.InitLoggerInContext(), "CACHE_GC_AFTER_NOT_HIT_DURATION", 30*time.Second)

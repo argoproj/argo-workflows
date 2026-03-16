@@ -10,8 +10,8 @@ import (
 
 	"go.opentelemetry.io/otel/metric"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/telemetry"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/telemetry"
 )
 
 type RealTimeValueFunc func() float64
@@ -56,10 +56,10 @@ type realtimeTracker struct {
 	key  string
 }
 
-func (cmv *customMetricValue) getLabels() telemetry.InstAttribs {
-	labels := make(telemetry.InstAttribs, len(cmv.labels))
+func (cmv *customMetricValue) getLabels() telemetry.Attributes {
+	labels := make(telemetry.Attributes, len(cmv.labels))
 	for i := range cmv.labels {
-		labels[i] = telemetry.InstAttrib{Name: cmv.labels[i].Key, Value: cmv.labels[i].Value}
+		labels[i] = telemetry.Attribute{Name: cmv.labels[i].Key, Value: cmv.labels[i].Value}
 	}
 	return labels
 }

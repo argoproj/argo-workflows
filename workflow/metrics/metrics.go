@@ -4,8 +4,8 @@ import (
 	"context"
 	"sync"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/util/telemetry"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/telemetry"
 
 	metricsdk "go.opentelemetry.io/otel/sdk/metric"
 )
@@ -19,7 +19,7 @@ type Metrics struct {
 	fallbackLogger    logging.Logger // use a logger from context if available
 }
 
-func New(ctx context.Context, serviceName, prometheusName string, config *telemetry.Config, callbacks Callbacks, extraOpts ...metricsdk.Option) (*Metrics, error) {
+func New(ctx context.Context, serviceName, prometheusName string, config *telemetry.MetricsConfig, callbacks Callbacks, extraOpts ...metricsdk.Option) (*Metrics, error) {
 	m, err := telemetry.NewMetrics(ctx, serviceName, prometheusName, config, extraOpts...)
 	if err != nil {
 		return nil, err

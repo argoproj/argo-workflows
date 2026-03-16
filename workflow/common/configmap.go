@@ -5,7 +5,7 @@ import (
 
 	apiv1 "k8s.io/api/core/v1"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
+	"github.com/argoproj/argo-workflows/v4/errors"
 )
 
 type ConfigMapStore interface {

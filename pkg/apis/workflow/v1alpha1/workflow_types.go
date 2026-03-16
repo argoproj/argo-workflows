@@ -26,8 +26,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/ptr"
 
-	argoerrs "github.com/argoproj/argo-workflows/v3/errors"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	argoerrs "github.com/argoproj/argo-workflows/v4/errors"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 // Note on CEL validation costs

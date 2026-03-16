@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3"
-	"github.com/argoproj/argo-workflows/v3/ui"
+	"github.com/argoproj/argo-workflows/v4"
+	"github.com/argoproj/argo-workflows/v4/ui"
 )
 
 type FilesServer struct {

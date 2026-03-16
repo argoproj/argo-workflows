@@ -14,9 +14,9 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/util/retry"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/executor/mocks"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/executor/mocks"
 )
 
 // TestResourceFlags tests whether Resource Flags

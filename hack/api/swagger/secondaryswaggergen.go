@@ -8,7 +8,7 @@ import (
 	"github.com/go-openapi/jsonreference"
 	"k8s.io/kube-openapi/pkg/validation/spec"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
 /*

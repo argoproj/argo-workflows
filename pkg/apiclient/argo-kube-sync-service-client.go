@@ -5,7 +5,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	syncpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/sync"
+	syncpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/sync"
 )
 
 type argoKubeSyncServiceClient struct {

@@ -9,12 +9,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
 type fakeArtifactDriver struct {
@@ -36,8 +36,8 @@ func (a *fakeArtifactDriver) Load(ctx context.Context, _ *wfv1.Artifact, path st
 	err := a.getMockedErr("Load")
 	if err == nil {
 		// actually write a file to disk
-		_, err := os.Create(path)
-		if err != nil {
+		_, createErr := os.Create(path)
+		if createErr != nil {
 			panic(fmt.Sprintf("can't create file at path %s", path))
 		}
 		return nil
@@ -120,9 +120,9 @@ func TestLoadToStream(t *testing.T) {
 				stream.Close()
 
 				// make sure the new file got deleted when we called stream.Close() above
-				filesAfter, err := filteredFiles(t)
-				if err != nil {
-					panic(err)
+				filesAfter, filesErr := filteredFiles(t)
+				if filesErr != nil {
+					panic(filesErr)
 				}
 				assert.Len(t, filesAfter, len(filesBefore))
 			} else {

@@ -12,9 +12,9 @@ import (
 	testpostgres "github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
 
-	"github.com/argoproj/argo-workflows/v3/config"
-	"github.com/argoproj/argo-workflows/v3/util/sqldb"
-	syncdb "github.com/argoproj/argo-workflows/v3/util/sync/db"
+	"github.com/argoproj/argo-workflows/v4/config"
+	"github.com/argoproj/argo-workflows/v4/util/sqldb"
+	syncdb "github.com/argoproj/argo-workflows/v4/util/sync/db"
 )
 
 const (
@@ -41,9 +41,11 @@ func createTestDBSession(ctx context.Context, t *testing.T, dbType sqldb.DBType)
 		t.Fatalf("failed to start container: %s", err)
 	}
 
+	session, dbType := syncdb.SessionFromConfigWithCreds(&cfg, testDBUser, testDBPassword)
 	info := syncdb.Info{
 		Config:  syncdb.ConfigFromConfig(&cfg),
-		Session: syncdb.SessionFromConfigWithCreds(&cfg, testDBUser, testDBPassword),
+		Session: session,
+		DBType:  dbType,
 	}
 	require.NotNil(t, info.Session, "failed to create database session")
 	deferfn := func() {

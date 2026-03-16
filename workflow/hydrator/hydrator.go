@@ -8,12 +8,12 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
-	"github.com/argoproj/argo-workflows/v3/workflow/packer"
+	"github.com/argoproj/argo-workflows/v4/persist/sqldb"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	errorsutil "github.com/argoproj/argo-workflows/v4/util/errors"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	waitutil "github.com/argoproj/argo-workflows/v4/util/wait"
+	"github.com/argoproj/argo-workflows/v4/workflow/packer"
 )
 
 type Interface interface {
@@ -78,9 +78,10 @@ func (h hydrator) Hydrate(ctx context.Context, wf *wfv1.Workflow) error {
 	}
 	if wf.Status.IsOffloadNodeStatus() {
 		var offloadedNodes wfv1.Nodes
-		err := waitutil.Backoff(readRetry, func() (bool, error) {
-			offloadedNodes, err = h.offloadNodeStatusRepo.Get(ctx, string(wf.UID), wf.GetOffloadNodeStatusVersion())
-			return !errorsutil.IsTransientErr(ctx, err), err
+		err = waitutil.Backoff(readRetry, func() (bool, error) {
+			var getErr error
+			offloadedNodes, getErr = h.offloadNodeStatusRepo.Get(ctx, string(wf.UID), wf.GetOffloadNodeStatusVersion())
+			return !errorsutil.IsTransientErr(ctx, getErr), getErr
 		})
 		if err != nil {
 			return err

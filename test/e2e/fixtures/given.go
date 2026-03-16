@@ -13,11 +13,11 @@ import (
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo-workflows/v3/config"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
+	"github.com/argoproj/argo-workflows/v4/config"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
 )
 
 func NewGiven(
@@ -166,6 +166,7 @@ func (g *Given) checkImages(wf any, isExample bool) {
 			image == "argoproj/argosay:v1" ||
 			image == "argoproj/argosay:v2" ||
 			image == "quay.io/argoproj/argocli:latest" ||
+			image == "ghcr.io/equinix-labs/otel-cli:v0.4.5" ||
 			(isExample && (image == "busybox" ||
 				image == "python:alpine3.23" ||
 				image == "golang:1.18" ||

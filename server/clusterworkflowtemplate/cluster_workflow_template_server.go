@@ -6,17 +6,18 @@ import (
 	"sort"
 
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	clusterwftmplpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/server/auth"
-	servertypes "github.com/argoproj/argo-workflows/v3/server/types"
-	"github.com/argoproj/argo-workflows/v3/util/instanceid"
-	"github.com/argoproj/argo-workflows/v3/workflow/creator"
-	"github.com/argoproj/argo-workflows/v3/workflow/validate"
+	clusterwftmplpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/clusterworkflowtemplate"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/server/auth"
+	servertypes "github.com/argoproj/argo-workflows/v4/server/types"
+	"github.com/argoproj/argo-workflows/v4/util/instanceid"
+	"github.com/argoproj/argo-workflows/v4/workflow/creator"
+	"github.com/argoproj/argo-workflows/v4/workflow/validate"
 
-	serverutils "github.com/argoproj/argo-workflows/v3/server/utils"
+	serverutils "github.com/argoproj/argo-workflows/v4/server/utils"
 )
 
 type Server struct {
@@ -52,6 +53,13 @@ func (cwts *Server) CreateClusterWorkflowTemplate(ctx context.Context, req *clus
 }
 
 func (cwts *Server) GetClusterWorkflowTemplate(ctx context.Context, req *clusterwftmplpkg.ClusterWorkflowTemplateGetRequest) (*v1alpha1.ClusterWorkflowTemplate, error) {
+	allowed, err := auth.CanI(ctx, "get", "clusterworkflowtemplates", "", req.Name)
+	if err != nil {
+		return nil, serverutils.ToStatusError(err, codes.Internal)
+	}
+	if !allowed {
+		return nil, status.Error(codes.PermissionDenied, "permission denied")
+	}
 	wfTmpl, err := cwts.getTemplateAndValidate(ctx, req.Name)
 	if err != nil {
 		return nil, serverutils.ToStatusError(err, codes.Internal)

@@ -1,5 +1,37 @@
 # Changelog
 
+## v4.0.2 (2026-03-11)
+
+Full Changelog: [v4.0.1...v4.0.2](https://github.com/argoproj/argo-workflows/compare/v4.0.1...v4.0.2)
+
+### Selected Changes
+
+* [32afec3c4](https://github.com/argoproj/argo-workflows/commit/32afec3c401c0920517bf1e890fa7dba6170cdf2) Merge commit from fork
+* [4cac12c75](https://github.com/argoproj/argo-workflows/commit/4cac12c75de720889ad2cae8a6cc63c566b1d8d8) Merge commit from fork
+* [9f32c3843](https://github.com/argoproj/argo-workflows/commit/9f32c384364c35094c6d8862c1927c17c2304ace) fix: requeue workflow if expected variables are missing. Fixes #15513 (cherry-pick #15442 for 4.0) (#15656)
+* [c0b7f2f87](https://github.com/argoproj/argo-workflows/commit/c0b7f2f87b6b32e859482588b3dab5a27fa4ed52) fix(docs): use server-side apply in quick-start guide for v4.0+ compatibility (cherry-pick #15650 for 4.0) (#15651)
+* [5adb9bd30](https://github.com/argoproj/argo-workflows/commit/5adb9bd3011051e7f032a0cb9d0f6242f7ff9edd) chore(deps): update module github.com/cloudflare/circl to v1.6.3 [security] (release-4.0) (#15635)
+* [069bc11ed](https://github.com/argoproj/argo-workflows/commit/069bc11ed14ae105015e700b567ab4ebdc3eed9e) fix: update go paths to v4 (cherry-pick #15622 for 4.0) (#15626)
+* [35f6c11f7](https://github.com/argoproj/argo-workflows/commit/35f6c11f7dd93d4216c0c9e1e61f0a90bbe9e061) fix: use fixed reference time in SQLite store tests to prevent flakiness (cherry-pick #15599 for 4.0) (#15618)
+* [35cd9236f](https://github.com/argoproj/argo-workflows/commit/35cd9236f3352c97cbd858dcbbc47d22a9c85d10) fix: use workflow key for semaphore nextWorkflow callback (cherry-pick #15558 for 4.0) (#15620)
+* [c85c2efee](https://github.com/argoproj/argo-workflows/commit/c85c2efeefa34e10df272a6476e1ff80de3f5180) fix(sync): variable shadowing causes semaphore holders to be lost on restart (cherry-pick #15609 for 4.0) (#15612)
+* [a917fd688](https://github.com/argoproj/argo-workflows/commit/a917fd68876b75a05fe68a77831d27142fa69fbe) chore(deps): update lycheeverse/lychee-action digest to 8646ba3 (release-4.0) (#15611)
+* [bf91ab96b](https://github.com/argoproj/argo-workflows/commit/bf91ab96b88388c3a8067f802711e666142bd594) chore(deps): update module filippo.io/edwards25519 to v1.1.1 [security] (release-4.0) (#15605)
+* [f22cdadaa](https://github.com/argoproj/argo-workflows/commit/f22cdadaaa0f40cabbcf0f18259c4c562e82c4bd) chore(deps): update module go.opentelemetry.io/otel/sdk to v1.40.0 [security] (release-4.0) (#15606)
+* [bb301ad54](https://github.com/argoproj/argo-workflows/commit/bb301ad545d5a4cb75e8b009ad67ca9cc869cc32) chore(deps): update module go.opentelemetry.io/otel/sdk to v1.40.0 [security] (release-4.0) (#15603)
+* [2b4dc19b0](https://github.com/argoproj/argo-workflows/commit/2b4dc19b023476aea3c80ddb7ca86b3daef3a273) fix: Add optional UID query parameter to GetWorkflow (cherry-pick #15251 for 4.0) (#15579)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Claude Opus 4.5
+* Eduardo Rodrigues
+* Isitha Subasinghe
+* Nancy Sangani
+* Ville Vesilehto
+
+</details>
+
 ## v4.0.1 (2026-02-16)
 
 Full Changelog: [v4.0.0...v4.0.1](https://github.com/argoproj/argo-workflows/compare/v4.0.0...v4.0.1)
@@ -145,7 +177,7 @@ Full Changelog: [v4.0.0-rc1...v4.0.0-rc2](https://github.com/argoproj/argo-workf
 
 ## v4.0.0-rc1 (2025-12-11)
 
-Full Changelog: [v3.7.10...v4.0.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.7.10...v4.0.0-rc1)
+Full Changelog: [v3.7.11...v4.0.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.7.11...v4.0.0-rc1)
 
 ### Selected Changes
 
@@ -332,6 +364,32 @@ Full Changelog: [v3.7.10...v4.0.0-rc1](https://github.com/argoproj/argo-workflow
 * William Van Hevelingen
 * Xavier Hardy
 * Yuan Tang
+
+</details>
+
+## v3.7.11 (2026-03-11)
+
+Full Changelog: [v3.7.10...v3.7.11](https://github.com/argoproj/argo-workflows/compare/v3.7.10...v3.7.11)
+
+### Selected Changes
+
+* [8f505a558](https://github.com/argoproj/argo-workflows/commit/8f505a558176debfa46959ff7c4ee1aee2dd1769) Merge commit from fork
+* [9064c7f89](https://github.com/argoproj/argo-workflows/commit/9064c7f89e657165b83eaa011068ec14602f550d) Merge commit from fork
+* [91dfc0aa9](https://github.com/argoproj/argo-workflows/commit/91dfc0aa9ada1a9dc658c4822af9b84f4f807732) fix: Add optional UID query parameter to GetWorkflow (cherry pick 15265 to release 3.7) (#15643)
+* [477442702](https://github.com/argoproj/argo-workflows/commit/477442702ef20e6e5c9e344bf6bd368ea96b55ae) fix: requeue workflow if expected variables are missing. Fixes #15513 (cherry-pick #15442 for 3.7) (#15657)
+* [322d067a1](https://github.com/argoproj/argo-workflows/commit/322d067a18392bdffe6d09545fe884c21620b021) chore(deps): update module github.com/cloudflare/circl to v1.6.3 [security] (release-3.7) (#15634)
+* [3b2a55298](https://github.com/argoproj/argo-workflows/commit/3b2a5529837e1d2304aae53d61d2a3ca659b48f7) fix(sync): variable shadowing causes semaphore holders to be lost on restart (cherry-pick #15609 for 3.7) (#15617)
+* [0a7fa6790](https://github.com/argoproj/argo-workflows/commit/0a7fa6790bb8a5294afbbebe4579939137d3493e) fix: use fixed reference time in SQLite store tests to prevent flakiness (cherry-pick #15599 for 3.7) (#15619)
+* [1164dc5ed](https://github.com/argoproj/argo-workflows/commit/1164dc5ed70ce062e473a8bb723a815209b9f373) fix: use workflow key for semaphore nextWorkflow callback (cherry-pick #15558 for 3.7) (#15621)
+* [5499fb823](https://github.com/argoproj/argo-workflows/commit/5499fb82359890dd1c89dd8b85162404d2a1a25f) chore(deps): update module filippo.io/edwards25519 to v1.1.1 [security] (release-3.7) (#15604)
+* [2c007afc7](https://github.com/argoproj/argo-workflows/commit/2c007afc70e7fffc3bac2565c69cc077cdcfdab0) chore(deps): update module go.opentelemetry.io/otel/sdk to v1.40.0 [security] (release-3.7) (#15602)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Eduardo Rodrigues
+* Isitha Subasinghe
+* Ville Vesilehto
 
 </details>
 

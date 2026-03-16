@@ -9,11 +9,11 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 
-	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/server/types"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/controller/informer"
-	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
+	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/client/informers/externalversions/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/server/types"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/controller/informer"
+	"github.com/argoproj/argo-workflows/v4/workflow/templateresolution"
 )
 
 const (

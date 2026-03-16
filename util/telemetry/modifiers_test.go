@@ -3,7 +3,7 @@ package telemetry
 import (
 	"testing"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -13,8 +13,8 @@ import (
 func TestViewDisable(t *testing.T) {
 	// Same metric as TestMetrics, but disabled by a view
 	ctx := logging.TestContext(t.Context())
-	m, te, err := createTestMetrics(ctx, &Config{
-		Modifiers: map[string]Modifier{
+	m, te, err := createTestMetrics(ctx, &MetricsConfig{
+		Modifiers: map[string]MetricsModifier{
 			nameTestingHistogram: {
 				Disabled: true,
 			},
@@ -30,8 +30,8 @@ func TestViewDisable(t *testing.T) {
 func TestViewDisabledAttributes(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	// Disable the error cause attribute
-	m, te, err := createTestMetrics(ctx, &Config{
-		Modifiers: map[string]Modifier{
+	m, te, err := createTestMetrics(ctx, &MetricsConfig{
+		Modifiers: map[string]MetricsModifier{
 			nameTestingCounter: {
 				DisabledAttributes: []string{AttribErrorCause},
 			},
@@ -57,8 +57,8 @@ func TestViewHistogramBuckets(t *testing.T) {
 	// Same metric as TestMetrics, but buckets changed
 	bounds := []float64{1.0, 3.0, 5.0, 10.0}
 	ctx := logging.TestContext(t.Context())
-	m, te, err := createTestMetrics(ctx, &Config{
-		Modifiers: map[string]Modifier{
+	m, te, err := createTestMetrics(ctx, &MetricsConfig{
+		Modifiers: map[string]MetricsModifier{
 			nameTestingHistogram: {
 				HistogramBuckets: bounds,
 			},

@@ -11,9 +11,9 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 // TestDagXfail verifies a DAG can fail properly
@@ -3659,7 +3659,7 @@ func TestRetryTypeDagTaskRunExitNodeAfterCompleted(t *testing.T) {
 	// run ExitNode
 	woc.operate(ctx)
 	onExitNode := woc.wf.Status.Nodes.FindByDisplayName("printA.onExit")
-	assert.NotNil(t, onExitNode)
+	require.NotNil(t, onExitNode)
 	assert.Equal(t, wfv1.NodeRunning, onExitNode.Phase)
 	assert.True(t, onExitNode.NodeFlag.Hooked)
 
@@ -3673,7 +3673,7 @@ func TestRetryTypeDagTaskRunExitNodeAfterCompleted(t *testing.T) {
 	// run next DAGTask
 	woc.operate(ctx)
 	nextDAGTaskNode := woc.wf.Status.Nodes.FindByDisplayName("dependencyTesting")
-	assert.NotNil(t, nextDAGTaskNode)
+	require.NotNil(t, nextDAGTaskNode)
 	assert.Equal(t, wfv1.NodeRunning, nextDAGTaskNode.Phase)
 }
 

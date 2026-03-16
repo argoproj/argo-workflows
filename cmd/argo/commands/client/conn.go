@@ -11,10 +11,10 @@ import (
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/argoproj/argo-workflows/v3"
-	"github.com/argoproj/argo-workflows/v3/pkg/apiclient"
-	"github.com/argoproj/argo-workflows/v3/util/kubeconfig"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4"
+	"github.com/argoproj/argo-workflows/v4/pkg/apiclient"
+	"github.com/argoproj/argo-workflows/v4/util/kubeconfig"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 var (

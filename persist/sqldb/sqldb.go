@@ -1,8 +1,8 @@
 package sqldb
 
 import (
-	"github.com/argoproj/argo-workflows/v3/config"
-	"github.com/argoproj/argo-workflows/v3/errors"
+	"github.com/argoproj/argo-workflows/v4/config"
+	"github.com/argoproj/argo-workflows/v4/errors"
 )
 
 func GetTableName(persistConfig *config.PersistConfig) (string, error) {

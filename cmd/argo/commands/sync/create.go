@@ -7,9 +7,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
-	syncpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/sync"
-	"github.com/argoproj/argo-workflows/v3/util/errors"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/client"
+	syncpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/sync"
+	"github.com/argoproj/argo-workflows/v4/util/errors"
 )
 
 type cliCreateOpts struct {
@@ -19,7 +19,7 @@ type cliCreateOpts struct {
 }
 
 func NewCreateCommand() *cobra.Command {
-	var cliCreateOpts = cliCreateOpts{}
+	opts := cliCreateOpts{}
 
 	command := &cobra.Command{
 		Use:   "create",
@@ -28,23 +28,23 @@ func NewCreateCommand() *cobra.Command {
 		Example: `
 # Create a database sync limit:
 	argo sync create my-key --type database --limit 10
-		
+
 # Create a configmap sync limit:
 	argo sync create my-key --type configmap --cm-name my-configmap --limit 10
 `,
 
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			cliCreateOpts.syncType = strings.ToUpper(cliCreateOpts.syncType)
-			return validateFlags(cliCreateOpts.syncType, cliCreateOpts.cmName)
+			opts.syncType = strings.ToUpper(opts.syncType)
+			return validateFlags(opts.syncType, opts.cmName)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return CreateSyncLimitCommand(cmd.Context(), args[0], &cliCreateOpts)
+			return CreateSyncLimitCommand(cmd.Context(), args[0], &opts)
 		},
 	}
 
-	command.Flags().Int32Var(&cliCreateOpts.limit, "limit", 0, "Sync limit")
-	command.Flags().StringVar(&cliCreateOpts.syncType, "type", "", "Type of sync limit (database or configmap)")
-	command.Flags().StringVar(&cliCreateOpts.cmName, "cm-name", "", "ConfigMap name (required if type is configmap)")
+	command.Flags().Int32Var(&opts.limit, "limit", 0, "Sync limit")
+	command.Flags().StringVar(&opts.syncType, "type", "", "Type of sync limit (database or configmap)")
+	command.Flags().StringVar(&opts.cmName, "cm-name", "", "ConfigMap name (required if type is configmap)")
 
 	ctx := command.Context()
 

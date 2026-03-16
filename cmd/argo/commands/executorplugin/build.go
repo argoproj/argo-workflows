@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo-workflows/v3/workflow/util/plugin"
+	"github.com/argoproj/argo-workflows/v4/workflow/util/plugin"
 )
 
 func NewBuildCommand() *cobra.Command {

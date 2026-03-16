@@ -9,26 +9,26 @@ import (
 	"go.opentelemetry.io/otel/metric"
 )
 
-// DeprecatedFeatureOption is a functional option for configuring optional attributes on DeprecatedFeature
-type DeprecatedFeatureOption func(*InstAttribs)
+// DeprecatedFeatureMetricOption is a functional option for configuring optional attributes on DeprecatedFeature
+type DeprecatedFeatureMetricOption func(*Attributes)
 
 // WithWorkflowNamespace sets the namespace attribute
-func WithWorkflowNamespace(workflowNamespace string) DeprecatedFeatureOption {
-	return func(a *InstAttribs) {
-		*a = append(*a, InstAttrib{
+func WithWorkflowNamespace(workflowNamespace string) DeprecatedFeatureMetricOption {
+	return func(a *Attributes) {
+		*a = append(*a, Attribute{
 			Name:  AttribWorkflowNamespace,
 			Value: workflowNamespace,
 		})
 	}
 }
 
-// PodRestartsTotalOption is a functional option for configuring optional attributes on PodRestartsTotal
-type PodRestartsTotalOption func(*InstAttribs)
+// PodRestartsTotalMetricOption is a functional option for configuring optional attributes on PodRestartsTotal
+type PodRestartsTotalMetricOption func(*Attributes)
 
 // WithPodRestartCondition sets the condition attribute
-func WithPodRestartCondition(podRestartCondition string) PodRestartsTotalOption {
-	return func(a *InstAttribs) {
-		*a = append(*a, InstAttrib{
+func WithPodRestartCondition(podRestartCondition string) PodRestartsTotalMetricOption {
+	return func(a *Attributes) {
+		*a = append(*a, Attribute{
 			Name:  AttribPodRestartCondition,
 			Value: podRestartCondition,
 		})
@@ -37,12 +37,12 @@ func WithPodRestartCondition(podRestartCondition string) PodRestartsTotalOption 
 
 // RecordClientRateLimiterLatency records a value to the client_rate_limiter_latency histogram
 func (m *Metrics) RecordClientRateLimiterLatency(ctx context.Context, val float64) {
-	m.Record(ctx, InstrumentClientRateLimiterLatency.Name(), val, InstAttribs{})
+	m.Record(ctx, InstrumentClientRateLimiterLatency.Name(), val, Attributes{})
 }
 
 // AddCronworkflowsConcurrencypolicyTriggered adds a value to the cronworkflows_concurrencypolicy_triggered counter
 func (m *Metrics) AddCronworkflowsConcurrencypolicyTriggered(ctx context.Context, val int64, cronWFName string, cronWFNamespace string, concurrencyPolicy string) {
-	attribs := InstAttribs{
+	attribs := Attributes{
 		{Name: AttribCronWFName, Value: cronWFName},
 		{Name: AttribCronWFNamespace, Value: cronWFNamespace},
 		{Name: AttribConcurrencyPolicy, Value: concurrencyPolicy},
@@ -52,7 +52,7 @@ func (m *Metrics) AddCronworkflowsConcurrencypolicyTriggered(ctx context.Context
 
 // AddCronworkflowsTriggeredTotal adds a value to the cronworkflows_triggered_total counter
 func (m *Metrics) AddCronworkflowsTriggeredTotal(ctx context.Context, val int64, cronWFName string, cronWFNamespace string) {
-	attribs := InstAttribs{
+	attribs := Attributes{
 		{Name: AttribCronWFName, Value: cronWFName},
 		{Name: AttribCronWFNamespace, Value: cronWFNamespace},
 	}
@@ -60,8 +60,8 @@ func (m *Metrics) AddCronworkflowsTriggeredTotal(ctx context.Context, val int64,
 }
 
 // AddDeprecatedFeature adds a value to the deprecated_feature counter
-func (m *Metrics) AddDeprecatedFeature(ctx context.Context, val int64, deprecatedFeature string, opts ...DeprecatedFeatureOption) {
-	attribs := InstAttribs{
+func (m *Metrics) AddDeprecatedFeature(ctx context.Context, val int64, deprecatedFeature string, opts ...DeprecatedFeatureMetricOption) {
+	attribs := Attributes{
 		{Name: AttribDeprecatedFeature, Value: deprecatedFeature},
 	}
 	for _, opt := range opts {
@@ -72,7 +72,7 @@ func (m *Metrics) AddDeprecatedFeature(ctx context.Context, val int64, deprecate
 
 // AddErrorCount adds a value to the error_count counter
 func (m *Metrics) AddErrorCount(ctx context.Context, val int64, errorCause string) {
-	attribs := InstAttribs{
+	attribs := Attributes{
 		{Name: AttribErrorCause, Value: errorCause},
 	}
 	m.AddInt(ctx, InstrumentErrorCount.Name(), val, attribs)
@@ -85,7 +85,7 @@ func (m *Metrics) ObserveGauge(ctx context.Context, o metric.Observer, val int64
 	if inst == nil {
 		return
 	}
-	attribs := InstAttribs{
+	attribs := Attributes{
 		{Name: AttribWorkflowPhase, Value: workflowPhase},
 	}
 	inst.ObserveInt(ctx, o, val, attribs)
@@ -98,12 +98,12 @@ func (m *Metrics) ObserveIsLeader(ctx context.Context, o metric.Observer, val in
 	if inst == nil {
 		return
 	}
-	inst.ObserveInt(ctx, o, val, InstAttribs{})
+	inst.ObserveInt(ctx, o, val, Attributes{})
 }
 
 // RecordK8sRequestDuration records a value to the k8s_request_duration histogram
 func (m *Metrics) RecordK8sRequestDuration(ctx context.Context, val float64, requestKind string, requestVerb string, requestCode int) {
-	attribs := InstAttribs{
+	attribs := Attributes{
 		{Name: AttribRequestKind, Value: requestKind},
 		{Name: AttribRequestVerb, Value: requestVerb},
 		{Name: AttribRequestCode, Value: requestCode},
@@ -113,7 +113,7 @@ func (m *Metrics) RecordK8sRequestDuration(ctx context.Context, val float64, req
 
 // AddK8sRequestTotal adds a value to the k8s_request_total counter
 func (m *Metrics) AddK8sRequestTotal(ctx context.Context, val int64, requestKind string, requestVerb string, requestCode int) {
-	attribs := InstAttribs{
+	attribs := Attributes{
 		{Name: AttribRequestKind, Value: requestKind},
 		{Name: AttribRequestVerb, Value: requestVerb},
 		{Name: AttribRequestCode, Value: requestCode},
@@ -123,7 +123,7 @@ func (m *Metrics) AddK8sRequestTotal(ctx context.Context, val int64, requestKind
 
 // AddLogMessages adds a value to the log_messages counter
 func (m *Metrics) AddLogMessages(ctx context.Context, val int64, logLevel string) {
-	attribs := InstAttribs{
+	attribs := Attributes{
 		{Name: AttribLogLevel, Value: logLevel},
 	}
 	m.AddInt(ctx, InstrumentLogMessages.Name(), val, attribs)
@@ -131,12 +131,12 @@ func (m *Metrics) AddLogMessages(ctx context.Context, val int64, logLevel string
 
 // RecordOperationDurationSeconds records a value to the operation_duration_seconds histogram
 func (m *Metrics) RecordOperationDurationSeconds(ctx context.Context, val float64) {
-	m.Record(ctx, InstrumentOperationDurationSeconds.Name(), val, InstAttribs{})
+	m.Record(ctx, InstrumentOperationDurationSeconds.Name(), val, Attributes{})
 }
 
 // AddPodMissing adds a value to the pod_missing counter
 func (m *Metrics) AddPodMissing(ctx context.Context, val int64, nodePhase string, recentlyStarted bool) {
-	attribs := InstAttribs{
+	attribs := Attributes{
 		{Name: AttribNodePhase, Value: nodePhase},
 		{Name: AttribRecentlyStarted, Value: recentlyStarted},
 	}
@@ -145,7 +145,7 @@ func (m *Metrics) AddPodMissing(ctx context.Context, val int64, nodePhase string
 
 // AddPodPendingCount adds a value to the pod_pending_count counter
 func (m *Metrics) AddPodPendingCount(ctx context.Context, val int64, podPendingReason string, podNamespace string) {
-	attribs := InstAttribs{
+	attribs := Attributes{
 		{Name: AttribPodPendingReason, Value: podPendingReason},
 		{Name: AttribPodNamespace, Value: podNamespace},
 	}
@@ -153,8 +153,8 @@ func (m *Metrics) AddPodPendingCount(ctx context.Context, val int64, podPendingR
 }
 
 // AddPodRestartsTotal adds a value to the pod_restarts_total counter
-func (m *Metrics) AddPodRestartsTotal(ctx context.Context, val int64, podRestartReason string, podNamespace string, opts ...PodRestartsTotalOption) {
-	attribs := InstAttribs{
+func (m *Metrics) AddPodRestartsTotal(ctx context.Context, val int64, podRestartReason string, podNamespace string, opts ...PodRestartsTotalMetricOption) {
+	attribs := Attributes{
 		{Name: AttribPodRestartReason, Value: podRestartReason},
 		{Name: AttribPodNamespace, Value: podNamespace},
 	}
@@ -171,7 +171,7 @@ func (m *Metrics) ObservePodsGauge(ctx context.Context, o metric.Observer, val i
 	if inst == nil {
 		return
 	}
-	attribs := InstAttribs{
+	attribs := Attributes{
 		{Name: AttribPodPhase, Value: podPhase},
 	}
 	inst.ObserveInt(ctx, o, val, attribs)
@@ -179,7 +179,7 @@ func (m *Metrics) ObservePodsGauge(ctx context.Context, o metric.Observer, val i
 
 // AddPodsTotalCount adds a value to the pods_total_count counter
 func (m *Metrics) AddPodsTotalCount(ctx context.Context, val int64, podPhase string, podNamespace string) {
-	attribs := InstAttribs{
+	attribs := Attributes{
 		{Name: AttribPodPhase, Value: podPhase},
 		{Name: AttribPodNamespace, Value: podNamespace},
 	}
@@ -188,7 +188,7 @@ func (m *Metrics) AddPodsTotalCount(ctx context.Context, val int64, podPhase str
 
 // AddQueueAddsCount adds a value to the queue_adds_count counter
 func (m *Metrics) AddQueueAddsCount(ctx context.Context, val int64, queueName string) {
-	attribs := InstAttribs{
+	attribs := Attributes{
 		{Name: AttribQueueName, Value: queueName},
 	}
 	m.AddInt(ctx, InstrumentQueueAddsCount.Name(), val, attribs)
@@ -196,7 +196,7 @@ func (m *Metrics) AddQueueAddsCount(ctx context.Context, val int64, queueName st
 
 // AddQueueDepthGauge adds a value to the queue_depth_gauge counter
 func (m *Metrics) AddQueueDepthGauge(ctx context.Context, val int64, queueName string) {
-	attribs := InstAttribs{
+	attribs := Attributes{
 		{Name: AttribQueueName, Value: queueName},
 	}
 	m.AddInt(ctx, InstrumentQueueDepthGauge.Name(), val, attribs)
@@ -204,7 +204,7 @@ func (m *Metrics) AddQueueDepthGauge(ctx context.Context, val int64, queueName s
 
 // RecordQueueDuration records a value to the queue_duration histogram
 func (m *Metrics) RecordQueueDuration(ctx context.Context, val float64, queueName string) {
-	attribs := InstAttribs{
+	attribs := Attributes{
 		{Name: AttribQueueName, Value: queueName},
 	}
 	m.Record(ctx, InstrumentQueueDuration.Name(), val, attribs)
@@ -212,7 +212,7 @@ func (m *Metrics) RecordQueueDuration(ctx context.Context, val float64, queueNam
 
 // RecordQueueLatency records a value to the queue_latency histogram
 func (m *Metrics) RecordQueueLatency(ctx context.Context, val float64, queueName string) {
-	attribs := InstAttribs{
+	attribs := Attributes{
 		{Name: AttribQueueName, Value: queueName},
 	}
 	m.Record(ctx, InstrumentQueueLatency.Name(), val, attribs)
@@ -225,7 +225,7 @@ func (m *Metrics) ObserveQueueLongestRunning(ctx context.Context, o metric.Obser
 	if inst == nil {
 		return
 	}
-	attribs := InstAttribs{
+	attribs := Attributes{
 		{Name: AttribQueueName, Value: queueName},
 	}
 	inst.ObserveFloat(ctx, o, val, attribs)
@@ -233,7 +233,7 @@ func (m *Metrics) ObserveQueueLongestRunning(ctx context.Context, o metric.Obser
 
 // AddQueueRetries adds a value to the queue_retries counter
 func (m *Metrics) AddQueueRetries(ctx context.Context, val int64, queueName string) {
-	attribs := InstAttribs{
+	attribs := Attributes{
 		{Name: AttribQueueName, Value: queueName},
 	}
 	m.AddInt(ctx, InstrumentQueueRetries.Name(), val, attribs)
@@ -246,7 +246,7 @@ func (m *Metrics) ObserveQueueUnfinishedWork(ctx context.Context, o metric.Obser
 	if inst == nil {
 		return
 	}
-	attribs := InstAttribs{
+	attribs := Attributes{
 		{Name: AttribQueueName, Value: queueName},
 	}
 	inst.ObserveFloat(ctx, o, val, attribs)
@@ -254,12 +254,12 @@ func (m *Metrics) ObserveQueueUnfinishedWork(ctx context.Context, o metric.Obser
 
 // RecordResourceRateLimiterLatency records a value to the resource_rate_limiter_latency histogram
 func (m *Metrics) RecordResourceRateLimiterLatency(ctx context.Context, val float64) {
-	m.Record(ctx, InstrumentResourceRateLimiterLatency.Name(), val, InstAttribs{})
+	m.Record(ctx, InstrumentResourceRateLimiterLatency.Name(), val, Attributes{})
 }
 
 // AddTotalCount adds a value to the total_count counter
 func (m *Metrics) AddTotalCount(ctx context.Context, val int64, workflowPhase string, workflowNamespace string) {
-	attribs := InstAttribs{
+	attribs := Attributes{
 		{Name: AttribWorkflowPhase, Value: workflowPhase},
 		{Name: AttribWorkflowNamespace, Value: workflowNamespace},
 	}
@@ -268,7 +268,7 @@ func (m *Metrics) AddTotalCount(ctx context.Context, val int64, workflowPhase st
 
 // AddVersion adds a value to the version counter
 func (m *Metrics) AddVersion(ctx context.Context, val int64, buildVersion string, buildPlatform string, buildGoVersion string, buildDate string, buildCompiler string, buildGitCommit string, buildGitTreeState string, buildGitTag string) {
-	attribs := InstAttribs{
+	attribs := Attributes{
 		{Name: AttribBuildVersion, Value: buildVersion},
 		{Name: AttribBuildPlatform, Value: buildPlatform},
 		{Name: AttribBuildGoVersion, Value: buildGoVersion},
@@ -283,7 +283,7 @@ func (m *Metrics) AddVersion(ctx context.Context, val int64, buildVersion string
 
 // AddWorkersBusyCount adds a value to the workers_busy_count counter
 func (m *Metrics) AddWorkersBusyCount(ctx context.Context, val int64, workerType string) {
-	attribs := InstAttribs{
+	attribs := Attributes{
 		{Name: AttribWorkerType, Value: workerType},
 	}
 	m.AddInt(ctx, InstrumentWorkersBusyCount.Name(), val, attribs)
@@ -296,7 +296,7 @@ func (m *Metrics) ObserveWorkflowCondition(ctx context.Context, o metric.Observe
 	if inst == nil {
 		return
 	}
-	attribs := InstAttribs{
+	attribs := Attributes{
 		{Name: AttribWorkflowType, Value: workflowType},
 		{Name: AttribWorkflowStatus, Value: workflowStatus},
 	}
@@ -305,7 +305,7 @@ func (m *Metrics) ObserveWorkflowCondition(ctx context.Context, o metric.Observe
 
 // RecordWorkflowtemplateRuntime records a value to the workflowtemplate_runtime histogram
 func (m *Metrics) RecordWorkflowtemplateRuntime(ctx context.Context, val float64, templateName string, templateNamespace string, templateCluster bool) {
-	attribs := InstAttribs{
+	attribs := Attributes{
 		{Name: AttribTemplateName, Value: templateName},
 		{Name: AttribTemplateNamespace, Value: templateNamespace},
 		{Name: AttribTemplateCluster, Value: templateCluster},
@@ -315,7 +315,7 @@ func (m *Metrics) RecordWorkflowtemplateRuntime(ctx context.Context, val float64
 
 // AddWorkflowtemplateTriggeredTotal adds a value to the workflowtemplate_triggered_total counter
 func (m *Metrics) AddWorkflowtemplateTriggeredTotal(ctx context.Context, val int64, templateName string, templateNamespace string, templateCluster bool, workflowPhase string) {
-	attribs := InstAttribs{
+	attribs := Attributes{
 		{Name: AttribTemplateName, Value: templateName},
 		{Name: AttribTemplateNamespace, Value: templateNamespace},
 		{Name: AttribTemplateCluster, Value: templateCluster},

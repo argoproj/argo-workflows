@@ -9,7 +9,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	testutil "github.com/argoproj/argo-workflows/v3/test/util"
+	testutil "github.com/argoproj/argo-workflows/v4/test/util"
 )
 
 func TestPriorityQueue(t *testing.T) {

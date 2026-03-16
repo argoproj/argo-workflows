@@ -7,7 +7,7 @@ package mocks
 import (
 	"net/http"
 
-	"github.com/argoproj/argo-workflows/v3/server/auth/types"
+	"github.com/argoproj/argo-workflows/v4/server/auth/types"
 	mock "github.com/stretchr/testify/mock"
 )
 

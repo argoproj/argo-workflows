@@ -9,10 +9,10 @@ argo sync get [flags]
 ### Examples
 
 ```
- 
+
 # Get a database sync limit
 	argo sync get my-key --type database
-		
+
 # Get a configmap sync limit
 	argo sync get my-key --type configmap --cm-name my-configmap
 

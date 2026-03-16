@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 type LoggingInterceptor struct {

@@ -12,8 +12,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/rest"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 func Container(ctx context.Context, restConfig *rest.Config, pod *corev1.Pod, container string, s syscall.Signal) error {

@@ -7,15 +7,15 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/util/telemetry"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/telemetry"
 )
 
 func TestIsLeader(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	_, te, err := createTestMetrics(
 		ctx,
-		&telemetry.Config{},
+		&telemetry.MetricsConfig{},
 		Callbacks{
 			IsLeader: func() bool {
 				return true
@@ -34,7 +34,7 @@ func TestNotLeader(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	_, te, err := createTestMetrics(
 		ctx,
-		&telemetry.Config{},
+		&telemetry.MetricsConfig{},
 		Callbacks{
 			IsLeader: func() bool {
 				return false

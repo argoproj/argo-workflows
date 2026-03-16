@@ -9,8 +9,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/plugins/spec"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/pkg/plugins/spec"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 func ToConfigMap(p *spec.Plugin) (*apiv1.ConfigMap, error) {

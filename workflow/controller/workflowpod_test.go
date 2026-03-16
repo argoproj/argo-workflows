@@ -19,14 +19,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 
-	"github.com/argoproj/argo-workflows/v3/config"
-	"github.com/argoproj/argo-workflows/v3/errors"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/test/util"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	armocks "github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories/mocks"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	wfutil "github.com/argoproj/argo-workflows/v3/workflow/util"
+	"github.com/argoproj/argo-workflows/v4/config"
+	"github.com/argoproj/argo-workflows/v4/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/test/util"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	armocks "github.com/argoproj/argo-workflows/v4/workflow/artifactrepositories/mocks"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	wfutil "github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
 // Deprecated
@@ -1237,7 +1237,7 @@ func Test_createSecretVolumesFromArtifactLocations_SSECUsed(t *testing.T) {
 		MountPath: path.Join(common.SecretVolMountPath, "enckey"),
 	}
 
-	err := woc.setExecWorkflow(ctx)
+	_, err := woc.setExecWorkflow(ctx)
 	require.NoError(t, err)
 	woc.operate(ctx)
 
@@ -1325,7 +1325,7 @@ func TestCreateSecretVolumesFromArtifactLocationsSessionToken(t *testing.T) {
 		MountPath: path.Join(common.SecretVolMountPath, "sessiontoken"),
 	}
 
-	err := woc.setExecWorkflow(ctx)
+	ctx, err := woc.setExecWorkflow(ctx)
 	require.NoError(t, err)
 	woc.operate(ctx)
 
@@ -1860,7 +1860,7 @@ func TestPodMetadataWithWorkflowDefaults(t *testing.T) {
 
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
-	err := woc.setExecWorkflow(ctx)
+	_, err := woc.setExecWorkflow(ctx)
 	require.NoError(t, err)
 	mainCtr := woc.execWf.Spec.Templates[0].Container
 	pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
@@ -1882,7 +1882,7 @@ func TestPodMetadataWithWorkflowDefaults(t *testing.T) {
 	}
 	wf = wfv1.MustUnmarshalWorkflow(wfWithPodMetadata)
 	woc = newWorkflowOperationCtx(ctx, wf, controller)
-	err = woc.setExecWorkflow(ctx)
+	ctx, err = woc.setExecWorkflow(ctx)
 	require.NoError(t, err)
 	mainCtr = woc.execWf.Spec.Templates[0].Container
 	pod, _ = woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
@@ -1900,7 +1900,8 @@ func TestPodExists(t *testing.T) {
 
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
-	err := woc.setExecWorkflow(ctx)
+	_, err := woc.setExecWorkflow(ctx)
+
 	require.NoError(t, err)
 	mainCtr := woc.execWf.Spec.Templates[0].Container
 	pod, err := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
@@ -1928,7 +1929,8 @@ func TestPodFinalizerExits(t *testing.T) {
 
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
-	err := woc.setExecWorkflow(ctx)
+	_, err := woc.setExecWorkflow(ctx)
+
 	require.NoError(t, err)
 	mainCtr := woc.execWf.Spec.Templates[0].Container
 	pod, err := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
@@ -1946,7 +1948,7 @@ func TestPodFinalizerDoesNotExist(t *testing.T) {
 
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
-	err := woc.setExecWorkflow(ctx)
+	ctx, err := woc.setExecWorkflow(ctx)
 	require.NoError(t, err)
 	mainCtr := woc.execWf.Spec.Templates[0].Container
 	pod, err := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
@@ -1963,7 +1965,7 @@ func TestProgressEnvVars(t *testing.T) {
 
 		wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
-		err := woc.setExecWorkflow(ctx)
+		_, err := woc.setExecWorkflow(ctx)
 		require.NoError(t, err)
 		mainCtr := woc.execWf.Spec.Templates[0].Container
 		pod, err := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
@@ -2087,7 +2089,7 @@ func TestMergeEnvVars(t *testing.T) {
 
 		wf := wfv1.MustUnmarshalWorkflow(helloWorldWfWithEnvReferSecret)
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
-		err := woc.setExecWorkflow(ctx)
+		_, err := woc.setExecWorkflow(ctx)
 		require.NoError(t, err)
 		mainCtrSpec := &apiv1.Container{
 			Name:            common.MainContainerName,
@@ -2221,7 +2223,7 @@ func TestArtifactPluginSidecar(t *testing.T) {
 
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
 
-		err := woc.setExecWorkflow(ctx)
+		ctx, err := woc.setExecWorkflow(ctx)
 		require.NoError(t, err)
 
 		err = woc.addArtifactPlugins(ctx, pod, tmpl, cfg)

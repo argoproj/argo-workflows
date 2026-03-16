@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/argoproj/argo-workflows/v3/util/secrets"
+	"github.com/argoproj/argo-workflows/v4/util/secrets"
 
 	events "github.com/argoproj/argo-events/pkg/client/clientset/versioned"
 	"google.golang.org/grpc"
@@ -22,17 +22,17 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	workflow "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo-workflows/v3/server/auth/serviceaccount"
-	"github.com/argoproj/argo-workflows/v3/server/auth/sso"
-	authTypes "github.com/argoproj/argo-workflows/v3/server/auth/types"
-	"github.com/argoproj/argo-workflows/v3/server/cache"
-	servertypes "github.com/argoproj/argo-workflows/v3/server/types"
-	"github.com/argoproj/argo-workflows/v3/util/expr/argoexpr"
-	jsonutil "github.com/argoproj/argo-workflows/v3/util/json"
-	"github.com/argoproj/argo-workflows/v3/util/kubeconfig"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	workflow "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo-workflows/v4/server/auth/serviceaccount"
+	"github.com/argoproj/argo-workflows/v4/server/auth/sso"
+	authTypes "github.com/argoproj/argo-workflows/v4/server/auth/types"
+	"github.com/argoproj/argo-workflows/v4/server/cache"
+	servertypes "github.com/argoproj/argo-workflows/v4/server/types"
+	"github.com/argoproj/argo-workflows/v4/util/expr/argoexpr"
+	jsonutil "github.com/argoproj/argo-workflows/v4/util/json"
+	"github.com/argoproj/argo-workflows/v4/util/kubeconfig"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 type ContextKey string

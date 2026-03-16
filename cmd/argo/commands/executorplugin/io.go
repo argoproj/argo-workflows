@@ -9,7 +9,7 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/plugins/spec"
+	"github.com/argoproj/argo-workflows/v4/pkg/plugins/spec"
 )
 
 func loadPluginManifest(pluginDir string) (*spec.Plugin, error) {

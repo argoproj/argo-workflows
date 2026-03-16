@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"k8s.io/utils/ptr"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 func TestKillDaemonChildrenUnmarkPod(t *testing.T) {
