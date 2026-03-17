@@ -735,11 +735,13 @@ func (woc *wfOperationCtx) resolveDependencyReferences(ctx context.Context, dagC
 	// Resolve the "when" clause first to check if this task should execute before resolving the full task.
 	// This avoids unnecessary requeues when a task won't execute but other fields have unresolved references.
 	if tempTask.When != "" {
-		whenBytes, err := json.Marshal(tempTask.When)
+		var whenBytes []byte
+		whenBytes, err = json.Marshal(tempTask.When)
 		if err != nil {
 			return nil, argoerrors.InternalWrapError(err)
 		}
-		resolvedWhenStr, err := template.ReplaceStrict(ctx, string(whenBytes), mergedParams, []string{"tasks", "steps"})
+		var resolvedWhenStr string
+		resolvedWhenStr, err = template.ReplaceStrict(ctx, string(whenBytes), mergedParams, []string{"tasks", "steps"})
 		if err != nil {
 			if template.IsMissingVariableErr(err) {
 				woc.requeue()
@@ -752,7 +754,8 @@ func (woc *wfOperationCtx) resolveDependencyReferences(ctx context.Context, dagC
 		if err != nil {
 			return nil, argoerrors.InternalWrapError(err)
 		}
-		proceed, err := shouldExecute(resolvedWhen)
+		var proceed bool
+		proceed, err = shouldExecute(resolvedWhen)
 		if err != nil {
 			// If we got an error, it might be because our "when" clause contains a task-expansion parameter (e.g. {{item}}).
 			// Since we don't perform task-expansion until later and task-expansion parameters won't get resolved here,
