@@ -3486,6 +3486,88 @@ func TestDynamicWorkflowTemplateRef(t *testing.T) {
 	_ = deleteWorkflowTemplate(ctx, wftmplB.Name)
 }
 
+var inlineWorkflowTemplate14329 = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: test-inline-template-14329
+spec:
+  templates:
+  - inputs:
+      parameters:
+      - name: params1
+      - name: params2
+    name: main
+    steps:
+    - - name: inline-main
+        arguments:
+          parameters:
+          - name: params1
+            value: '{{inputs.parameters.params1}}'
+          - name: params2
+            value: '{{inputs.parameters.params2}}'
+        inline:
+          inputs:
+            parameters:
+            - name: params1
+            - name: params2
+          script:
+            command:
+            - sh
+            image: alpine:3.18
+            source: |
+              echo PARAM1={{inputs.parameters.params1}}
+              echo PARAM2={{inputs.parameters.params2}}
+`
+
+var inlineWorkflow14329 = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: test-inline-
+spec:
+  arguments:
+    parameters:
+    - name: params1
+      value: foo1
+    - name: params2
+      value: bar1
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - arguments:
+          parameters:
+          - name: params1
+            value: '{{workflow.parameters.params1}}'
+          - name: params2
+            value: '{{workflow.parameters.params2}}'
+        name: inline
+        templateRef:
+          name: test-inline-template-14329
+          template: main
+`
+
+func TestInlineTemplateNotContaminatedByPlaceholders(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(inlineWorkflowTemplate14329)
+	err := createWorkflowTemplate(ctx, wftmpl)
+	require.NoError(t, err)
+	defer func() { _ = deleteWorkflowTemplate(ctx, wftmpl.Name) }()
+
+	wf := wfv1.MustUnmarshalWorkflow(inlineWorkflow14329)
+	err = Workflow(ctx, wftmplGetter, cwftmplGetter, wf, nil, Opts{})
+	require.NoError(t, err)
+
+	for key, tmpl := range wf.Status.StoredTemplates {
+		if tmpl.Script != nil {
+			if strings.Contains(tmpl.Script.Source, "placeholder") {
+				t.Errorf("stored template %q has placeholder-contaminated script source: %s", key, tmpl.Script.Source)
+			}
+		}
+	}
+}
+
 var parameterizedGlobalArtifactsWorkflow = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
