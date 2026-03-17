@@ -2877,7 +2877,7 @@ func TestCronWorkflowInvalidTimezoneRejected(t *testing.T) {
 			},
 		},
 	}
-	err := CronWorkflow(logging.TestContext(t.Context()), wftmplGetter, cwftmplGetter, cwf, nil)
+	err := ValidateCronWorkflow(t.Context(), wftmplGetter, cwftmplGetter, cwf, nil)
 	require.ErrorContains(t, err, `invalid timezone "Not/A_Real_Timezone"`)
 }
 
