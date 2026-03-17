@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -1614,6 +1615,31 @@ func TestUndefinedTemplateRef(t *testing.T) {
 	require.ErrorContains(t, err, "not found")
 }
 
+// templateRefWithPlaceholderInName references a non-existent template whose
+// name contains the word "placeholder". Before the fix, the substring check
+// at validateTemplateHolder would silently skip validation for this reference
+// instead of returning a "not found" error.
+var templateRefWithPlaceholderInName = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: placeholder-name-ref-
+spec:
+  entrypoint: A
+  templates:
+  - name: A
+    steps:
+      - - name: call-A
+          templateRef:
+            name: foo
+            template: run-placeholder-task
+`
+
+func TestTemplateRefWithPlaceholderInNameIsNotSkipped(t *testing.T) {
+	err := validate(logging.TestContext(t.Context()), templateRefWithPlaceholderInName)
+	require.ErrorContains(t, err, "not found")
+}
+
 var validResourceWorkflow = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -2866,6 +2892,30 @@ func TestMaxLengthName(t *testing.T) {
 	require.EqualError(t, err, "cron workflow name \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" must not be more than 52 characters long (currently 60)")
 }
 
+func TestCronWorkflowInvalidTimezoneRejected(t *testing.T) {
+	cwf := &wfv1.CronWorkflow{
+		ObjectMeta: metav1.ObjectMeta{Name: "my-cron-wf", Namespace: metav1.NamespaceDefault},
+		Spec: wfv1.CronWorkflowSpec{
+			Schedules: []string{"0 * * * *"},
+			Timezone:  "Not/A_Real_Timezone",
+			WorkflowSpec: wfv1.WorkflowSpec{
+				Entrypoint: "whalesay",
+				Templates: []wfv1.Template{
+					{
+						Name: "whalesay",
+						Container: &corev1.Container{
+							Image:   "docker/whalesay:latest",
+							Command: []string{"cowsay"},
+						},
+					},
+				},
+			},
+		},
+	}
+	err := CronWorkflow(logging.TestContext(t.Context()), wftmplGetter, cwftmplGetter, cwf, nil)
+	require.ErrorContains(t, err, `invalid timezone "Not/A_Real_Timezone"`)
+}
+
 var invalidContainerSetDependencyNotFound = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -3434,6 +3484,88 @@ func TestDynamicWorkflowTemplateRef(t *testing.T) {
 
 	_ = deleteWorkflowTemplate(ctx, wftmplA.Name)
 	_ = deleteWorkflowTemplate(ctx, wftmplB.Name)
+}
+
+var inlineWorkflowTemplate14329 = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: test-inline-template-14329
+spec:
+  templates:
+  - inputs:
+      parameters:
+      - name: params1
+      - name: params2
+    name: main
+    steps:
+    - - name: inline-main
+        arguments:
+          parameters:
+          - name: params1
+            value: '{{inputs.parameters.params1}}'
+          - name: params2
+            value: '{{inputs.parameters.params2}}'
+        inline:
+          inputs:
+            parameters:
+            - name: params1
+            - name: params2
+          script:
+            command:
+            - sh
+            image: alpine:3.18
+            source: |
+              echo PARAM1={{inputs.parameters.params1}}
+              echo PARAM2={{inputs.parameters.params2}}
+`
+
+var inlineWorkflow14329 = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: test-inline-
+spec:
+  arguments:
+    parameters:
+    - name: params1
+      value: foo1
+    - name: params2
+      value: bar1
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - arguments:
+          parameters:
+          - name: params1
+            value: '{{workflow.parameters.params1}}'
+          - name: params2
+            value: '{{workflow.parameters.params2}}'
+        name: inline
+        templateRef:
+          name: test-inline-template-14329
+          template: main
+`
+
+func TestInlineTemplateNotContaminatedByPlaceholders(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(inlineWorkflowTemplate14329)
+	err := createWorkflowTemplate(ctx, wftmpl)
+	require.NoError(t, err)
+	defer func() { _ = deleteWorkflowTemplate(ctx, wftmpl.Name) }()
+
+	wf := wfv1.MustUnmarshalWorkflow(inlineWorkflow14329)
+	err = Workflow(ctx, wftmplGetter, cwftmplGetter, wf, nil, Opts{})
+	require.NoError(t, err)
+
+	for key, tmpl := range wf.Status.StoredTemplates {
+		if tmpl.Script != nil {
+			if strings.Contains(tmpl.Script.Source, "placeholder") {
+				t.Errorf("stored template %q has placeholder-contaminated script source: %s", key, tmpl.Script.Source)
+			}
+		}
+	}
 }
 
 var parameterizedGlobalArtifactsWorkflow = `

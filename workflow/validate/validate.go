@@ -424,6 +424,12 @@ func CronWorkflow(ctx context.Context, wftmplGetter templateresolution.WorkflowT
 		}
 	}
 
+	if cronWf.Spec.Timezone != "" {
+		if _, err := time.LoadLocation(cronWf.Spec.Timezone); err != nil {
+			return errors.Errorf(errors.CodeBadRequest, "invalid timezone %q: %s", cronWf.Spec.Timezone, err)
+		}
+	}
+
 	switch cronWf.Spec.ConcurrencyPolicy {
 	case wfv1.AllowConcurrent, wfv1.ForbidConcurrent, wfv1.ReplaceConcurrent, "":
 		// Do nothing
@@ -610,8 +616,8 @@ func (tctx *templateValidationCtx) validateTemplateHolder(ctx context.Context, t
 	if err != nil {
 		var argoerr errors.ArgoError
 		if stderrors.As(err, &argoerr) && argoerr.Code() == errors.CodeNotFound {
-			if tmplRef != nil && strings.Contains(tmplRef.Template, "placeholder") {
-				// placeholder indicate this is a dynamic template, skip validation
+			if tmplRef != nil && strings.Contains(tmplRef.Template, template.PlaceholderPrefix) {
+				// internal placeholder indicates this is a dynamic template, skip validation
 				return nil, nil
 			}
 			if tmplRef != nil {

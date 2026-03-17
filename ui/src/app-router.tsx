@@ -140,7 +140,7 @@ export function AppRouter({popupManager, history, notificationsManager}: {popupM
                                 iconClassName: 'fa fa-chart-bar'
                             },
                             {
-                                title: 'User',
+                                title: 'User Info',
                                 path: userInfoUrl,
                                 iconClassName: 'fa fa-user-alt'
                             },
