@@ -1615,6 +1615,31 @@ func TestUndefinedTemplateRef(t *testing.T) {
 	require.ErrorContains(t, err, "not found")
 }
 
+// templateRefWithPlaceholderInName references a non-existent template whose
+// name contains the word "placeholder". Before the fix, the substring check
+// at validateTemplateHolder would silently skip validation for this reference
+// instead of returning a "not found" error.
+var templateRefWithPlaceholderInName = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: placeholder-name-ref-
+spec:
+  entrypoint: A
+  templates:
+  - name: A
+    steps:
+      - - name: call-A
+          templateRef:
+            name: foo
+            template: run-placeholder-task
+`
+
+func TestTemplateRefWithPlaceholderInNameIsNotSkipped(t *testing.T) {
+	err := validate(logging.TestContext(t.Context()), templateRefWithPlaceholderInName)
+	require.ErrorContains(t, err, "not found")
+}
+
 var validResourceWorkflow = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
