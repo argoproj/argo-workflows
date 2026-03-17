@@ -3927,3 +3927,68 @@ func TestDAGTaskGroupIDReference(t *testing.T) {
 	require.Len(t, useIDNode.Inputs.Parameters, 1)
 	assert.Equal(t, "dag-taskgroup-id-ref-2094038697", useIDNode.Inputs.Parameters[0].Value.String())
 }
+
+var dagWhenSkipNoRequeue = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-when-skip-no-requeue-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: A
+        template: script-echo
+        when: "false"
+      - name: B
+        dependencies: [A]
+        when: "{{tasks.A.status}} == Succeeded"
+        template: echo-with-param
+        arguments:
+          parameters:
+          - name: msg
+            value: "{{tasks.A.outputs.result}}"
+  - name: script-echo
+    script:
+      image: alpine:3.23
+      command: [sh]
+      source: |
+        echo hello
+  - name: echo-with-param
+    inputs:
+      parameters:
+      - name: msg
+    container:
+      image: alpine:3.23
+      command: [echo, "{{inputs.parameters.msg}}"]
+`
+
+// TestDAGWhenSkipNoRequeue verifies that a DAG task with a "when" clause that evaluates to false
+// does not cause a requeue even when other fields in the task reference outputs that don't exist.
+// Scenario: A is skipped (when: "false"), so A's outputs don't exist. B depends on A and has
+// when: "{{tasks.A.status}} == Succeeded" which evaluates to false ("Skipped == Succeeded").
+// B also references {{tasks.A.outputs.result}} which is unresolvable since A was skipped.
+// Without the fix, the full ReplaceStrict would fail on the missing output and requeue.
+// With the fix, the when clause is resolved first, evaluates to false, and B is skipped early.
+func TestDAGWhenSkipNoRequeue(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	wf := wfv1.MustUnmarshalWorkflow(dagWhenSkipNoRequeue)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	woc.operate(ctx)
+
+	// Workflow should succeed: A was skipped, B's when evaluated false so B was also skipped
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+
+	nodeB := woc.wf.Status.Nodes.FindByDisplayName("B")
+	require.NotNil(t, nodeB)
+	assert.Equal(t, wfv1.NodeSkipped, nodeB.Phase)
+}
