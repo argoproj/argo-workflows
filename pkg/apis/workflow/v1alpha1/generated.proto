@@ -360,6 +360,11 @@ message BasicAuth {
   optional .k8s.io.api.core.v1.SecretKeySelector passwordSecret = 2;
 }
 
+// BearerAuth holds the bearer token for HTTP authentication
+message BearerAuth {
+  optional .k8s.io.api.core.v1.SecretKeySelector tokenSecret = 1;
+}
+
 // Cache is the configuration for the type of cache to be used
 message Cache {
   // ConfigMap sets a ConfigMap-based cache
@@ -861,6 +866,8 @@ message HTTPAuth {
   optional OAuth2Auth oauth2 = 2;
 
   optional BasicAuth basicAuth = 3;
+
+  optional BearerAuth bearer = 4;
 }
 
 // HTTPBodySource contains the source of the HTTP body.

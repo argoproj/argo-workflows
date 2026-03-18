@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: bearer-auth-artifact-http-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    inputs:
+        artifacts:
+        - name: my-art
+          path: /my-artifact
+          http:
+            url: http://httpbin:9100/bearer
+            auth:
+              bearer:
+                tokenSecret:
+                  name: my-httpbin-cred
+                  key: token
+    container:
+      image: argoproj/argosay:v2
+      command: [cat, "/my-artifact"]

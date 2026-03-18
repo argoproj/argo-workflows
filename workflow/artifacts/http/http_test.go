@@ -93,6 +93,31 @@ func TestArtifactoryArtifactDriver_Load(t *testing.T) {
 	})
 }
 
+func TestHTTPArtifactDriver_BearerToken(t *testing.T) {
+	const token = "my-service-account-token"
+
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "Bearer "+token, r.Header.Get("Authorization"))
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("content"))
+	}))
+	defer svr.Close()
+
+	driver := &ArtifactDriver{
+		BearerToken: token,
+		Client:      &http.Client{},
+	}
+	tempFile := filepath.Join(t.TempDir(), "out")
+	ctx := logging.TestContext(t.Context())
+	err := driver.Load(ctx, &wfv1.Artifact{
+		ArtifactLocation: wfv1.ArtifactLocation{
+			HTTP: &wfv1.HTTPArtifact{URL: svr.URL},
+		},
+	}, tempFile)
+	require.NoError(t, err)
+	assert.FileExists(t, tempFile)
+}
+
 func TestSaveHTTPArtifactRedirect(t *testing.T) {
 	tempDir := t.TempDir()
 

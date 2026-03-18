@@ -8856,6 +8856,15 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.BearerAuth": {
+      "description": "BearerAuth holds the bearer token for HTTP authentication",
+      "type": "object",
+      "properties": {
+        "tokenSecret": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.BasicAuth": {
       "description": "BasicAuth describes the secret selectors required for basic authentication",
       "type": "object",
@@ -9951,6 +9960,9 @@
       "properties": {
         "basicAuth": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.BasicAuth"
+        },
+        "bearer": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.BearerAuth"
         },
         "clientCert": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClientCertAuth"

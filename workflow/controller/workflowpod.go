@@ -1608,6 +1608,7 @@ func createSecretVolumesFromArtifactLocations(volMap map[string]apiv1.Volume, ar
 			createSecretVal(volMap, artifactLocation.HTTP.Auth.OAuth2.ClientIDSecret, keyMap)
 			createSecretVal(volMap, artifactLocation.HTTP.Auth.OAuth2.ClientSecretSecret, keyMap)
 			createSecretVal(volMap, artifactLocation.HTTP.Auth.OAuth2.TokenURLSecret, keyMap)
+			createSecretVal(volMap, artifactLocation.HTTP.Auth.Bearer.TokenSecret, keyMap)
 		case artifactLocation.Azure != nil:
 			createSecretVal(volMap, artifactLocation.Azure.AccountKeySecret, keyMap)
 		}

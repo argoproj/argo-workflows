@@ -15,9 +15,10 @@ import (
 
 // ArtifactDriver is the artifact driver for artifactory and http URLs
 type ArtifactDriver struct {
-	Username string
-	Password string
-	Client   *http.Client
+	Username    string
+	Password    string
+	BearerToken string
+	Client      *http.Client
 }
 
 var _ common.ArtifactDriver = &ArtifactDriver{}
@@ -45,6 +46,9 @@ func (h *ArtifactDriver) retrieveContent(ctx context.Context, inputArtifact *wfv
 		}
 		if h.Username != "" && h.Password != "" {
 			req.SetBasicAuth(h.Username, h.Password)
+		}
+		if h.BearerToken != "" {
+			req.Header.Set("Authorization", "Bearer "+h.BearerToken)
 		}
 	default:
 		return http.Response{}, errors.InternalErrorf("Either Artifactory or HTTP artifact needs to be configured")
@@ -120,6 +124,9 @@ func (h *ArtifactDriver) Save(ctx context.Context, path string, outputArtifact *
 		}
 		if h.Username != "" && h.Password != "" {
 			req.SetBasicAuth(h.Username, h.Password)
+		}
+		if h.BearerToken != "" {
+			req.Header.Set("Authorization", "Bearer "+h.BearerToken)
 		}
 	}
 	// we set the GetBody func of the request in order to enable following 307 POST/PUT redirects, needed e.g. for webHDFS

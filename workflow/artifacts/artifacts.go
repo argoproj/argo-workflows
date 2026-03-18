@@ -127,6 +127,13 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 			}
 			driver.Password = passwordBytes
 		}
+		if art.HTTP.Auth != nil && art.HTTP.Auth.Bearer.TokenSecret != nil {
+			token, err := ri.GetSecret(ctx, art.HTTP.Auth.Bearer.TokenSecret.Name, art.HTTP.Auth.Bearer.TokenSecret.Key)
+			if err != nil {
+				return nil, err
+			}
+			driver.BearerToken = token
+		}
 		if art.HTTP.Auth != nil && art.HTTP.Auth.OAuth2.ClientIDSecret != nil && art.HTTP.Auth.OAuth2.ClientSecretSecret != nil && art.HTTP.Auth.OAuth2.TokenURLSecret != nil {
 			clientID, err := ri.GetSecret(ctx, art.HTTP.Auth.OAuth2.ClientIDSecret.Name, art.HTTP.Auth.OAuth2.ClientIDSecret.Key)
 			if err != nil {
