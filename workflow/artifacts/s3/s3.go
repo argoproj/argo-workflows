@@ -617,7 +617,10 @@ func (s *s3client) PutFile(bucket, key, path string) error {
 
 	partSizeMiB := s.getFromEnvS3UploadPartSizeMiB()
 	if partSizeMiB > 0 {
-		checkedPartSize, _ := s.getCheckedPartSize(path, partSizeMiB)
+		checkedPartSize, err := s.getCheckedPartSize(path, partSizeMiB)
+		if err != nil {
+			return err
+		}
 		if checkedPartSize > 0 {
 			logging.RequireLoggerFromContext(s.ctx).WithFields(logging.Fields{"checkedPartSize": checkedPartSize}).Info(s.ctx, "Part size MiB for S3 multipart upload")
 			opts.PartSize = uint64(checkedPartSize)
