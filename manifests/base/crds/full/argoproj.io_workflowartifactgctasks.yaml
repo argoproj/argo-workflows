@@ -292,6 +292,22 @@ spec:
                                       type: object
                                       x-kubernetes-map-type: atomic
                                   type: object
+                                bearer:
+                                  properties:
+                                    tokenSecret:
+                                      properties:
+                                        key:
+                                          type: string
+                                        name:
+                                          default: ""
+                                          type: string
+                                        optional:
+                                          type: boolean
+                                      required:
+                                      - key
+                                      type: object
+                                      x-kubernetes-map-type: atomic
+                                  type: object
                                 clientCert:
                                   properties:
                                     clientCertSecret:
@@ -853,6 +869,22 @@ spec:
                                         type: object
                                         x-kubernetes-map-type: atomic
                                       usernameSecret:
+                                        properties:
+                                          key:
+                                            type: string
+                                          name:
+                                            default: ""
+                                            type: string
+                                          optional:
+                                            type: boolean
+                                        required:
+                                        - key
+                                        type: object
+                                        x-kubernetes-map-type: atomic
+                                    type: object
+                                  bearer:
+                                    properties:
+                                      tokenSecret:
                                         properties:
                                           key:
                                             type: string

@@ -407,6 +407,12 @@ definitions:
             usernameSecret:
                 $ref: '#/definitions/SecretKeySelector'
         type: object
+    BearerAuth:
+        description: BearerAuth holds the bearer token for HTTP authentication
+        properties:
+            tokenSecret:
+                $ref: '#/definitions/SecretKeySelector'
+        type: object
     CSIVolumeSource:
         description: Represents a source location of a volume to mount, managed by an external CSI driver
         properties:
@@ -1965,13 +1971,21 @@ definitions:
                 type: string
         type: object
     HTTPAuth:
+        description: |-
+            When more than one method is set, the Authorization header comes from
+            OAuth2 if set, otherwise from Bearer, otherwise from BasicAuth.
+            ClientCert replaces the HTTP client, so setting it disables OAuth2;
+            it combines with a Bearer or BasicAuth header.
         properties:
             basicAuth:
                 $ref: '#/definitions/BasicAuth'
+            bearer:
+                $ref: '#/definitions/BearerAuth'
             clientCert:
                 $ref: '#/definitions/ClientCertAuth'
             oauth2:
                 $ref: '#/definitions/OAuth2Auth'
+        title: HTTPAuth describes how to authenticate to an HTTP artifact server.
         type: object
     HTTPBodySource:
         properties:

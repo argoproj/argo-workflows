@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	gohttp "net/http"
+	"strings"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/azure"
@@ -127,6 +128,15 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 				return nil, err
 			}
 			driver.Password = passwordBytes
+		}
+		if art.HTTP.Auth != nil && art.HTTP.Auth.Bearer.TokenSecret != nil {
+			token, err := ri.GetSecret(ctx, art.HTTP.Auth.Bearer.TokenSecret.Name, art.HTTP.Auth.Bearer.TokenSecret.Key)
+			if err != nil {
+				return nil, err
+			}
+			// Secrets created from files often end in a newline, which is not
+			// valid in a header value.
+			driver.BearerToken = strings.TrimSpace(token)
 		}
 		if art.HTTP.Auth != nil && art.HTTP.Auth.OAuth2.ClientIDSecret != nil && art.HTTP.Auth.OAuth2.ClientSecretSecret != nil && art.HTTP.Auth.OAuth2.TokenURLSecret != nil {
 			clientID, err := ri.GetSecret(ctx, art.HTTP.Auth.OAuth2.ClientIDSecret.Name, art.HTTP.Auth.OAuth2.ClientIDSecret.Key)

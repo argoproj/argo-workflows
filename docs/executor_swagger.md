@@ -506,6 +506,24 @@ of a single workflow step, which the executor will use as a default location to 
 
 
 
+### <span id="bearer-auth"></span> BearerAuth
+
+
+> BearerAuth holds the bearer token for HTTP authentication
+  
+
+
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| tokenSecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
+
+
+
 ### <span id="c-s-i-volume-source"></span> CSIVolumeSource
 
 
@@ -1692,7 +1710,13 @@ into the Pod's container.
 ### <span id="http-auth"></span> HTTPAuth
 
 
+> When more than one method is set, the Authorization header comes from
+OAuth2 if set, otherwise from Bearer, otherwise from BasicAuth.
+ClientCert replaces the HTTP client, so setting it disables OAuth2;
+it combines with a Bearer or BasicAuth header.
   
+
+
 
 
 
@@ -1701,6 +1725,7 @@ into the Pod's container.
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | basicAuth | [BasicAuth](#basic-auth)| `BasicAuth` |  | |  |  |
+| bearer | [BearerAuth](#bearer-auth)| `BearerAuth` |  | |  |  |
 | clientCert | [ClientCertAuth](#client-cert-auth)| `ClientCertAuth` |  | |  |  |
 | oauth2 | [OAuth2Auth](#o-auth2-auth)| `OAuth2Auth` |  | |  |  |
 

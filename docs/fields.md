@@ -5233,7 +5233,7 @@ ZipStrategy will unzip zipped input artifacts
 
 ## HTTPAuth
 
-_No description available_
+HTTPAuth describes how to authenticate to an HTTP artifact server. When more than one method is set, the Authorization header comes from OAuth2 if set, otherwise from Bearer, otherwise from BasicAuth. ClientCert replaces the HTTP client, so setting it disables OAuth2; it combines with a Bearer or BasicAuth header.
 
 <details markdown>
 <summary>Examples with this field (click to open)</summary>
@@ -5245,6 +5245,7 @@ _No description available_
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`basicAuth`|[`BasicAuth`](#basicauth)|_No description available_|
+|`bearer`|[`BearerAuth`](#bearerauth)|_No description available_|
 |`clientCert`|[`ClientCertAuth`](#clientcertauth)|_No description available_|
 |`oauth2`|[`OAuth2Auth`](#oauth2auth)|_No description available_|
 
@@ -5432,6 +5433,15 @@ BasicAuth describes the secret selectors required for basic authentication
 |:----------:|:----------:|---------------|
 |`passwordSecret`|[`SecretKeySelector`](#secretkeyselector)|PasswordSecret is the secret selector to the repository password|
 |`usernameSecret`|[`SecretKeySelector`](#secretkeyselector)|UsernameSecret is the secret selector to the repository username|
+
+## BearerAuth
+
+BearerAuth holds the bearer token for HTTP authentication
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`tokenSecret`|[`SecretKeySelector`](#secretkeyselector)|_No description available_|
 
 ## ClientCertAuth
 

@@ -11,6 +11,7 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/http"
 	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/s3"
 )
 
@@ -83,6 +84,46 @@ func TestNewDriverS3AddressingStyle(t *testing.T) {
 			require.NoError(t, err)
 			artDriver := got.(*s3.ArtifactDriver)
 			assert.Equal(t, style, artDriver.AddressingStyle)
+		})
+	}
+}
+
+type valueResourceInterface struct {
+	value string
+}
+
+func (r *valueResourceInterface) GetSecret(ctx context.Context, name, key string) (string, error) {
+	return r.value, nil
+}
+
+func (*valueResourceInterface) GetConfigMapKey(ctx context.Context, name, key string) (string, error) {
+	return "", nil
+}
+
+// TestNewDriverHTTPBearerToken checks that the bearer token is trimmed of surrounding whitespace.
+func TestNewDriverHTTPBearerToken(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	art := &wfv1.Artifact{
+		ArtifactLocation: wfv1.ArtifactLocation{HTTP: &wfv1.HTTPArtifact{
+			URL: "https://example.com/art",
+			Auth: &wfv1.HTTPAuth{
+				Bearer: wfv1.BearerAuth{
+					TokenSecret: &apiv1.SecretKeySelector{
+						LocalObjectReference: apiv1.LocalObjectReference{
+							Name: "token",
+						},
+						Key: "token",
+					},
+				},
+			},
+		}},
+	}
+	for _, value := range []string{"my-token", "my-token\n", "my-token\r\n", " my-token \n"} {
+		t.Run(value, func(t *testing.T) {
+			got, err := newDriver(ctx, art, &valueResourceInterface{value: value})
+			require.NoError(t, err)
+			artDriver := got.(*http.ArtifactDriver)
+			assert.Equal(t, "my-token", artDriver.BearerToken)
 		})
 	}
 }

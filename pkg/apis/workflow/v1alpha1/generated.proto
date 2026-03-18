@@ -362,6 +362,11 @@ message BasicAuth {
   optional .k8s.io.api.core.v1.SecretKeySelector passwordSecret = 2;
 }
 
+// BearerAuth holds the bearer token for HTTP authentication
+message BearerAuth {
+  optional .k8s.io.api.core.v1.SecretKeySelector tokenSecret = 1;
+}
+
 // Cache is the configuration for the type of cache to be used
 message Cache {
   // ConfigMap sets a ConfigMap-based cache
@@ -883,12 +888,19 @@ message HTTPArtifact {
   optional bool saveStreamViaFile = 4;
 }
 
+// HTTPAuth describes how to authenticate to an HTTP artifact server.
+// When more than one method is set, the Authorization header comes from
+// OAuth2 if set, otherwise from Bearer, otherwise from BasicAuth.
+// ClientCert replaces the HTTP client, so setting it disables OAuth2;
+// it combines with a Bearer or BasicAuth header.
 message HTTPAuth {
   optional ClientCertAuth clientCert = 1;
 
   optional OAuth2Auth oauth2 = 2;
 
   optional BasicAuth basicAuth = 3;
+
+  optional BearerAuth bearer = 4;
 }
 
 // HTTPBodySource contains the source of the HTTP body.
