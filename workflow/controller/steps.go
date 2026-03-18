@@ -160,6 +160,7 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 				} else {
 					woc.log.WithField("childNode", childNode).Info(ctx, "Step has no expanded child nodes")
 				}
+				woc.buildLocalScope(stepsCtx.scope, prefix, sgNode)
 			} else {
 				woc.buildLocalScope(stepsCtx.scope, prefix, childNode)
 			}
@@ -450,14 +451,54 @@ func (woc *wfOperationCtx) resolveReferences(ctx context.Context, stepGroup []wf
 		originalHooks := step.Hooks
 		step.Hooks = nil
 
+		mergedParams := woc.globalParams.Merge(scope.getParameters())
+
+		// Resolve the "when" clause first to check if this step should execute before resolving the full step.
+		// This avoids unnecessary requeues when a step won't execute but other fields have unresolved references.
+		if step.When != "" {
+			whenBytes, err := json.Marshal(step.When)
+			if err != nil {
+				return argoerrors.InternalWrapError(err)
+			}
+			resolvedWhenStr, err := template.ReplaceStrict(ctx, string(whenBytes), mergedParams, []string{"steps", "tasks"})
+			if err != nil {
+				if template.IsMissingVariableErr(err) {
+					woc.requeue()
+					return ErrRequeue
+				}
+				return err
+			}
+			var resolvedWhen string
+			err = json.Unmarshal([]byte(resolvedWhenStr), &resolvedWhen)
+			if err != nil {
+				return argoerrors.InternalWrapError(err)
+			}
+			proceed, err := shouldExecute(resolvedWhen)
+			if err != nil {
+				// If we got an error, it might be because our "when" clause contains a task-expansion parameter (e.g. {{item}}).
+				// Since we don't perform task-expansion until later and task-expansion parameters won't get resolved here,
+				// we continue execution as normal
+				if !step.ShouldExpand() {
+					return err
+				}
+			} else if !proceed {
+				// Step won't execute; return early without resolving the rest of the step
+				step.When = resolvedWhen
+				step.Hooks = originalHooks
+				newStepGroup[i] = step
+				return nil
+			}
+		}
+
 		stepBytes, err := json.Marshal(step)
 		if err != nil {
 			return argoerrors.InternalWrapError(err)
 		}
-		newStepStr, err := template.ReplaceStrict(ctx, string(stepBytes), woc.globalParams.Merge(scope.getParameters()), []string{"steps", "tasks"})
+		newStepStr, err := template.ReplaceStrict(ctx, string(stepBytes), mergedParams, []string{"steps", "tasks"})
 		if err != nil {
 			if template.IsMissingVariableErr(err) {
 				woc.requeue()
+				woc.log.WithError(err).Warn(ctx, "was unable to find variable")
 				return ErrRequeue
 			}
 			return err
@@ -469,24 +510,6 @@ func (woc *wfOperationCtx) resolveReferences(ctx context.Context, stepGroup []wf
 		}
 		// Restore Hooks
 		newStep.Hooks = originalHooks
-
-		// If we are not executing, don't attempt to resolve any artifact references. We only check if we are executing after
-		// the initial parameter resolution, since it's likely that the "when" clause will contain parameter references.
-		proceed, err := shouldExecute(newStep.When)
-		if err != nil {
-			// If we got an error, it might be because our "when" clause contains a task-expansion parameter (e.g. {{item}}).
-			// Since we don't perform task-expansion until later and task-expansion parameters won't get resolved here,
-			// we continue execution as normal
-			if !newStep.ShouldExpand() {
-				return err
-			}
-			proceed = true
-		}
-		if !proceed {
-			// We can simply return this WorkflowStep; the fact that it won't execute will be reconciled later on in execution
-			newStepGroup[i] = newStep
-			return nil
-		}
 
 		artifacts := wfv1.Artifacts{}
 		// Step 2: replace all artifact references
