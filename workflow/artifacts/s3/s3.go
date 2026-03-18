@@ -510,15 +510,15 @@ func (s *s3client) getFromEnvS3UploadNbThreads() int {
 	// Minio default threads: https://github.com/minio/minio-go/blob/v7.0.98/constants.go#L58
 	const defaultThreads = 4
 
-	nbThreadsStr := os.Getenv(common.EnvAgentS3UploadThreads)
+	nbThreadsStr := os.Getenv(common.EnvVarS3UploadThreads)
 	var nbThreads int
 	if nbThreadsStr != "" {
 		var err error
-		logging.RequireLoggerFromContext(s.ctx).WithFields(logging.Fields{"envvar": common.EnvAgentS3UploadThreads, "nbThreads": nbThreadsStr}).Info(s.ctx, "Number of threads or s3 multipart upload detected")
+		logging.RequireLoggerFromContext(s.ctx).WithFields(logging.Fields{"envvar": common.EnvVarS3UploadThreads, "nbThreads": nbThreadsStr}).Info(s.ctx, "Number of threads or s3 multipart upload detected")
 
 		nbThreads, err = strconv.Atoi(nbThreadsStr)
 		if err != nil || nbThreads < 1 {
-			logging.RequireLoggerFromContext(s.ctx).WithFields(logging.Fields{"envvar": common.EnvAgentS3UploadThreads, "nbThreads": nbThreadsStr}).Error(s.ctx, "Could not convert to uint the env var. Ignoring and using default value of 4")
+			logging.RequireLoggerFromContext(s.ctx).WithFields(logging.Fields{"envvar": common.EnvVarS3UploadThreads, "nbThreads": nbThreadsStr}).Error(s.ctx, "Could not convert to uint the env var. Ignoring and using default value of 4")
 			nbThreads = defaultThreads
 		}
 	} else {
@@ -535,14 +535,14 @@ func (s *s3client) getFromEnvS3UploadPartSizeMiB() int64 {
 	// However if the object size is <= 156GiB, then the part size is always the default Minio min part size of 16MiB.
 	const defaultPartSizeMiB = -1
 
-	partSizeMiBStr := os.Getenv(common.EnvAgentS3UploadPartSizeMiB)
+	partSizeMiBStr := os.Getenv(common.EnvVarS3UploadPartSizeMiB)
 	var partSizeMiB int64
 	if partSizeMiBStr != "" {
-		logging.RequireLoggerFromContext(s.ctx).WithFields(logging.Fields{"envvar": common.EnvAgentS3UploadPartSizeMiB, "partSizeMiB": partSizeMiBStr}).Info(s.ctx, "Size of S3 multipart upload part size detected from env.")
+		logging.RequireLoggerFromContext(s.ctx).WithFields(logging.Fields{"envvar": common.EnvVarS3UploadPartSizeMiB, "partSizeMiB": partSizeMiBStr}).Info(s.ctx, "Size of S3 multipart upload part size detected from env.")
 		partSizeMiBInt, err := strconv.Atoi(partSizeMiBStr)
 		partSizeMiB = int64(partSizeMiBInt)
 		if err != nil {
-			logging.RequireLoggerFromContext(s.ctx).WithFields(logging.Fields{"envvar": common.EnvAgentS3UploadPartSizeMiB, "partSizeMiB": partSizeMiBStr}).Error(s.ctx, "Could not convert to int the env key. Ignoring and using empty value.")
+			logging.RequireLoggerFromContext(s.ctx).WithFields(logging.Fields{"envvar": common.EnvVarS3UploadPartSizeMiB, "partSizeMiB": partSizeMiBStr}).Error(s.ctx, "Could not convert to int the env key. Ignoring and using empty value.")
 			partSizeMiB = defaultPartSizeMiB
 		}
 	} else {
