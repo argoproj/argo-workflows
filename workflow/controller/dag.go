@@ -700,9 +700,8 @@ func (woc *wfOperationCtx) buildLocalScopeFromTask(ctx context.Context, dagCtx *
 			if err != nil {
 				return nil, argoerrors.InternalWrapError(err)
 			}
-		} else {
-			woc.buildLocalScope(scope, prefix, ancestorNode)
 		}
+		woc.buildLocalScope(scope, prefix, ancestorNode)
 	}
 	return scope, nil
 }
@@ -729,6 +728,47 @@ func (woc *wfOperationCtx) resolveDependencyReferences(ctx context.Context, dagC
 	originalHooks := tempTask.Hooks
 	tempTask.Hooks = nil
 
+	mergedParams := woc.globalParams.Merge(scope.getParameters())
+
+	// Resolve the "when" clause first to check if this task should execute before resolving the full task.
+	// This avoids unnecessary requeues when a task won't execute but other fields have unresolved references.
+	if tempTask.When != "" {
+		var whenBytes []byte
+		whenBytes, err = json.Marshal(tempTask.When)
+		if err != nil {
+			return nil, argoerrors.InternalWrapError(err)
+		}
+		var resolvedWhenStr string
+		resolvedWhenStr, err = template.ReplaceStrict(ctx, string(whenBytes), mergedParams, []string{"tasks", "steps"})
+		if err != nil {
+			if template.IsMissingVariableErr(err) {
+				woc.requeue()
+				return nil, ErrRequeue
+			}
+			return nil, err
+		}
+		var resolvedWhen string
+		err = json.Unmarshal([]byte(resolvedWhenStr), &resolvedWhen)
+		if err != nil {
+			return nil, argoerrors.InternalWrapError(err)
+		}
+		var proceed bool
+		proceed, err = shouldExecute(resolvedWhen)
+		if err != nil {
+			// If we got an error, it might be because our "when" clause contains a task-expansion parameter (e.g. {{item}}).
+			// Since we don't perform task-expansion until later and task-expansion parameters won't get resolved here,
+			// we continue execution as normal
+			if !tempTask.ShouldExpand() {
+				return nil, err
+			}
+		} else if !proceed {
+			// Task won't execute; return early without resolving the rest of the task
+			tempTask.When = resolvedWhen
+			tempTask.Hooks = originalHooks
+			return &tempTask, nil
+		}
+	}
+
 	taskBytes, err := json.Marshal(tempTask)
 	if err != nil {
 		return nil, argoerrors.InternalWrapError(err)
@@ -737,10 +777,11 @@ func (woc *wfOperationCtx) resolveDependencyReferences(ctx context.Context, dagC
 	// If they are not resolved, it indicates a missing output (e.g. due to race condition), and we should error out
 	// rather than leaving the tag unresolved (which would result in incorrect workflow execution).
 	// We allow other variables (like {{item}}) to remain unresolved for later expansion.
-	newTaskStr, err := template.ReplaceStrict(ctx, string(taskBytes), woc.globalParams.Merge(scope.getParameters()), []string{"tasks", "steps"})
+	newTaskStr, err := template.ReplaceStrict(ctx, string(taskBytes), mergedParams, []string{"tasks", "steps"})
 	if err != nil {
 		if template.IsMissingVariableErr(err) {
 			woc.requeue()
+			woc.log.WithError(err).Warn(ctx, "was unable to find variable")
 			return nil, ErrRequeue
 		}
 		return nil, err
@@ -752,24 +793,6 @@ func (woc *wfOperationCtx) resolveDependencyReferences(ctx context.Context, dagC
 	}
 	// Restore Hooks
 	newTask.Hooks = originalHooks
-
-	// If we are not executing, don't attempt to resolve any artifact references. We only check if we are executing after
-	// the initial parameter resolution, since it's likely that the "when" clause will contain parameter references.
-	proceed, err := shouldExecute(newTask.When)
-	if err != nil {
-		// If we got an error, it might be because our "when" clause contains a task-expansion parameter (e.g. {{item}}).
-		// Since we don't perform task-expansion until later and task-expansion parameters won't get resolved here,
-		// we continue execution as normal
-		if newTask.ShouldExpand() {
-			proceed = true
-		} else {
-			return nil, err
-		}
-	}
-	if !proceed {
-		// We can simply return here; the fact that this task won't execute will be reconciled later on in execution
-		return &newTask, nil
-	}
 
 	artifacts := wfv1.Artifacts{}
 	// replace all artifact references
