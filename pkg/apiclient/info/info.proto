@@ -16,6 +16,8 @@ message InfoResponse {
   map<string, bool> modals = 3;
   string navColor = 4;
   repeated github.com.argoproj.argo_workflows.v4.pkg.apis.workflow.v1alpha1.Column columns = 5;
+  // hiddenColumns is a list of default column names to hide from the Workflow List View.
+  repeated string hiddenColumns = 6;
 }
 
 message GetVersionRequest {

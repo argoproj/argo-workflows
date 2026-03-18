@@ -87,6 +87,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
     const [workflows, setWorkflows] = useState<Workflow[]>();
     const [links, setLinks] = useState<models.Link[]>([]);
     const [columns, setColumns] = useState<models.Column[]>([]);
+    const [hiddenColumns, setHiddenColumns] = useState<string[]>([]);
     const [error, setError] = useState<Error>();
     const [nameValue, setNameValue] = useState<string>(() => {
         return queryParams.get(NAME_FILTER_KEYS.find(key => queryParams.get(key))) || '';
@@ -121,6 +122,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
             const info = await services.info.getInfo();
             setLinks((info.links || []).filter(link => link.scope === 'workflow-list'));
             setColumns(info.columns);
+            setHiddenColumns(info.hiddenColumns || []);
         })();
     }, []);
 
@@ -285,24 +287,28 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                                         />
                                     </div>
                                     <div className='row small-11'>
-                                        <div className='columns small-2'>NAME</div>
-                                        <div className='columns small-1'>NAMESPACE</div>
-                                        <div className='columns small-1'>
-                                            STARTED{' '}
-                                            <TimestampSwitch storedDisplayISOFormat={storedDisplayISOFormatStart} setStoredDisplayISOFormat={setStoredDisplayISOFormatStart} />
-                                        </div>
-                                        <div className='columns small-1'>
-                                            FINISHED{' '}
-                                            <TimestampSwitch
-                                                storedDisplayISOFormat={storedDisplayISOFormatFinished}
-                                                setStoredDisplayISOFormat={setStoredDisplayISOFormatFinished}
-                                            />
-                                        </div>
-                                        <div className='columns small-1'>DURATION</div>
-                                        <div className='columns small-1'>PROGRESS</div>
-                                        <div className='columns small-2'>MESSAGE</div>
-                                        <div className='columns small-1'>DETAILS</div>
-                                        <div className='columns small-1'>ARCHIVED</div>
+                                        {!hiddenColumns.includes('name') && <div className='columns small-2'>NAME</div>}
+                                        {!hiddenColumns.includes('namespace') && <div className='columns small-1'>NAMESPACE</div>}
+                                        {!hiddenColumns.includes('started') && (
+                                            <div className='columns small-1'>
+                                                STARTED{' '}
+                                                <TimestampSwitch storedDisplayISOFormat={storedDisplayISOFormatStart} setStoredDisplayISOFormat={setStoredDisplayISOFormatStart} />
+                                            </div>
+                                        )}
+                                        {!hiddenColumns.includes('finished') && (
+                                            <div className='columns small-1'>
+                                                FINISHED{' '}
+                                                <TimestampSwitch
+                                                    storedDisplayISOFormat={storedDisplayISOFormatFinished}
+                                                    setStoredDisplayISOFormat={setStoredDisplayISOFormatFinished}
+                                                />
+                                            </div>
+                                        )}
+                                        {!hiddenColumns.includes('duration') && <div className='columns small-1'>DURATION</div>}
+                                        {!hiddenColumns.includes('progress') && <div className='columns small-1'>PROGRESS</div>}
+                                        {!hiddenColumns.includes('message') && <div className='columns small-2'>MESSAGE</div>}
+                                        {!hiddenColumns.includes('details') && <div className='columns small-1'>DETAILS</div>}
+                                        {!hiddenColumns.includes('archived') && <div className='columns small-1'>ARCHIVED</div>}
                                         {(columns || []).map(col => {
                                             return (
                                                 <div className='columns small-1' key={col.key}>
@@ -319,6 +325,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                                             key={wf.metadata.uid}
                                             checked={selectedWorkflows.has(wf.metadata.uid)}
                                             columns={columns}
+                                            hiddenColumns={hiddenColumns}
                                             onChange={key => {
                                                 const value = `${key}=${wf.metadata?.labels[key]}`;
                                                 let newLabels: string[];

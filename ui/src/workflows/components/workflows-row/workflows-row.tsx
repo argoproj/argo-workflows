@@ -23,6 +23,7 @@ interface WorkflowsRowProps {
     select: (wf: Workflow) => void;
     checked: boolean;
     columns: models.Column[];
+    hiddenColumns: string[];
     displayISOFormatStart: boolean;
     displayISOFormatFinished: boolean;
 }
@@ -30,6 +31,7 @@ interface WorkflowsRowProps {
 export function WorkflowsRow(props: WorkflowsRowProps) {
     const [hideDrawer, setHideDrawer] = useState(true);
     const wf = props.workflow;
+    const hidden = props.hiddenColumns || [];
     // title + description vars
     const title = (wf.metadata.annotations?.[ANNOTATION_TITLE] && `${escapeInvalidMarkdown(wf.metadata.annotations[ANNOTATION_TITLE])}`) ?? wf.metadata.name;
     const description = (wf.metadata.annotations?.[ANNOTATION_DESCRIPTION] && `\n${escapeInvalidMarkdown(wf.metadata.annotations[ANNOTATION_DESCRIPTION])}`) || '';
@@ -54,50 +56,60 @@ export function WorkflowsRow(props: WorkflowsRowProps) {
                     <PhaseIcon value={wf.status.phase} />
                 </div>
                 <div className='small-11 row'>
-                    <Link
-                        to={{
-                            pathname: uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`),
-                            search: `?uid=${wf.metadata.uid}`
-                        }}
-                        className='columns small-2'>
-                        <div className={description.length ? 'wf-rows-name' : ''} aria-valuetext={markdown}>
-                            <SuspenseReactMarkdownGfm markdown={markdown} />
+                    {!hidden.includes('name') && (
+                        <Link
+                            to={{
+                                pathname: uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`),
+                                search: `?uid=${wf.metadata.uid}`
+                            }}
+                            className='columns small-2'>
+                            <div className={description.length ? 'wf-rows-name' : ''} aria-valuetext={markdown}>
+                                <SuspenseReactMarkdownGfm markdown={markdown} />
+                            </div>
+                        </Link>
+                    )}
+                    {!hidden.includes('namespace') && <div className='columns small-1'>{wf.metadata.namespace}</div>}
+                    {!hidden.includes('started') && (
+                        <div className={`columns small-1 ${props.displayISOFormatStart ? 'workflows-list__timestamp' : ''}`}>
+                            <Timestamp date={wf.status.startedAt} displayISOFormat={props.displayISOFormatStart} />
                         </div>
-                    </Link>
-                    <div className='columns small-1'>{wf.metadata.namespace}</div>
-                    <div className={`columns small-1 ${props.displayISOFormatStart ? 'workflows-list__timestamp' : ''}`}>
-                        <Timestamp date={wf.status.startedAt} displayISOFormat={props.displayISOFormatStart} />
-                    </div>
-                    <div className={`columns small-1 ${props.displayISOFormatFinished ? 'workflows-list__timestamp' : ''}`}>
-                        <Timestamp date={wf.status.finishedAt} displayISOFormat={props.displayISOFormatFinished} />
-                    </div>
-                    <div className='columns small-1'>
-                        <Ticker>{() => <DurationPanel phase={wf.status.phase} duration={wfDuration(wf.status)} estimatedDuration={wf.status.estimatedDuration} />}</Ticker>
-                    </div>
-                    <div className='columns small-1'>{wf.status.progress || '-'}</div>
+                    )}
+                    {!hidden.includes('finished') && (
+                        <div className={`columns small-1 ${props.displayISOFormatFinished ? 'workflows-list__timestamp' : ''}`}>
+                            <Timestamp date={wf.status.finishedAt} displayISOFormat={props.displayISOFormatFinished} />
+                        </div>
+                    )}
+                    {!hidden.includes('duration') && (
+                        <div className='columns small-1'>
+                            <Ticker>{() => <DurationPanel phase={wf.status.phase} duration={wfDuration(wf.status)} estimatedDuration={wf.status.estimatedDuration} />}</Ticker>
+                        </div>
+                    )}
+                    {!hidden.includes('progress') && <div className='columns small-1'>{wf.status.progress || '-'}</div>}
                     {/* CSS has text-overflow, but sometimes it's still too long for the column for some reason, so slice it too. 180 chars are not visible on a 4k screen */}
-                    <div className='columns small-2'>{wf.status.message?.slice(0, 180) || '-'}</div>
-                    <div className='columns small-1'>
-                        <div className='workflows-list__labels-container'>
-                            <div
-                                onClick={e => {
-                                    e.preventDefault();
-                                    setHideDrawer(!hideDrawer);
-                                }}
-                                className={`workflows-row__action workflows-row__action--${hideDrawer ? 'show' : 'hide'}`}>
-                                {hideDrawer ? (
-                                    <span>
-                                        SHOW <i className='fas fa-caret-down' />{' '}
-                                    </span>
-                                ) : (
-                                    <span>
-                                        HIDE <i className='fas fa-caret-up' />
-                                    </span>
-                                )}
+                    {!hidden.includes('message') && <div className='columns small-2'>{wf.status.message?.slice(0, 180) || '-'}</div>}
+                    {!hidden.includes('details') && (
+                        <div className='columns small-1'>
+                            <div className='workflows-list__labels-container'>
+                                <div
+                                    onClick={e => {
+                                        e.preventDefault();
+                                        setHideDrawer(!hideDrawer);
+                                    }}
+                                    className={`workflows-row__action workflows-row__action--${hideDrawer ? 'show' : 'hide'}`}>
+                                    {hideDrawer ? (
+                                        <span>
+                                            SHOW <i className='fas fa-caret-down' />{' '}
+                                        </span>
+                                    ) : (
+                                        <span>
+                                            HIDE <i className='fas fa-caret-up' />
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div className='columns small-1'>{isArchivedWorkflow(wf) ? 'true' : 'false'}</div>
+                    )}
+                    {!hidden.includes('archived') && <div className='columns small-1'>{isArchivedWorkflow(wf) ? 'true' : 'false'}</div>}
                     {(props.columns || []).map(column => {
                         // best not to make any assumptions and wait until this data is filled
                         const value = (column.type === 'label' ? wf?.metadata?.labels?.[column.key] : wf?.metadata?.annotations?.[column.key]) ?? 'unknown';

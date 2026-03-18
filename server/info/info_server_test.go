@@ -39,7 +39,8 @@ func Test_infoServer_GetInfo(t *testing.T) {
 			columns: []*wfv1.Column{
 				{Name: "Workflow Completed", Type: "label", Key: "workflows.argoproj.io/completed"},
 			},
-			navColor: "red",
+			navColor:      "red",
+			hiddenColumns: []string{"archived", "namespace"},
 		}
 		ctx := logging.TestContext(t.Context())
 		info, err := i.GetInfo(ctx, nil)
@@ -50,6 +51,7 @@ func Test_infoServer_GetInfo(t *testing.T) {
 		assert.Equal(t, "Workflow Completed", info.Columns[0].Name)
 		assert.Equal(t, "label", info.Columns[0].Type)
 		assert.Equal(t, "workflows.argoproj.io/completed", info.Columns[0].Key)
+		assert.Equal(t, []string{"archived", "namespace"}, info.HiddenColumns)
 	})
 
 	t.Run("Min Fields", func(t *testing.T) {
@@ -61,5 +63,6 @@ func Test_infoServer_GetInfo(t *testing.T) {
 		assert.Empty(t, info.Links)
 		assert.Empty(t, info.Columns)
 		assert.Empty(t, info.NavColor)
+		assert.Empty(t, info.HiddenColumns)
 	})
 }

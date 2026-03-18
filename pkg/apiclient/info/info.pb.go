@@ -74,6 +74,7 @@ type InfoResponse struct {
 	Modals               map[string]bool    `protobuf:"bytes,3,rep,name=modals,proto3" json:"modals,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"varint,2,opt,name=value,proto3"`
 	NavColor             string             `protobuf:"bytes,4,opt,name=navColor,proto3" json:"navColor,omitempty"`
 	Columns              []*v1alpha1.Column `protobuf:"bytes,5,rep,name=columns,proto3" json:"columns,omitempty"`
+	HiddenColumns        []string           `protobuf:"bytes,6,rep,name=hiddenColumns,proto3" json:"hiddenColumns,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
 	XXX_unrecognized     []byte             `json:"-"`
 	XXX_sizecache        int32              `json:"-"`
@@ -143,6 +144,13 @@ func (m *InfoResponse) GetNavColor() string {
 func (m *InfoResponse) GetColumns() []*v1alpha1.Column {
 	if m != nil {
 		return m.Columns
+	}
+	return nil
+}
+
+func (m *InfoResponse) GetHiddenColumns() []string {
+	if m != nil {
+		return m.HiddenColumns
 	}
 	return nil
 }
@@ -713,6 +721,15 @@ func (m *InfoResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i -= len(m.XXX_unrecognized)
 		copy(dAtA[i:], m.XXX_unrecognized)
 	}
+	if len(m.HiddenColumns) > 0 {
+		for iNdEx := len(m.HiddenColumns) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.HiddenColumns[iNdEx])
+			copy(dAtA[i:], m.HiddenColumns[iNdEx])
+			i = encodeVarintInfo(dAtA, i, uint64(len(m.HiddenColumns[iNdEx])))
+			i--
+			dAtA[i] = 0x32
+		}
+	}
 	if len(m.Columns) > 0 {
 		for iNdEx := len(m.Columns) - 1; iNdEx >= 0; iNdEx-- {
 			{
@@ -1037,6 +1054,12 @@ func (m *InfoResponse) Size() (n int) {
 	if len(m.Columns) > 0 {
 		for _, e := range m.Columns {
 			l = e.Size()
+			n += 1 + l + sovInfo(uint64(l))
+		}
+	}
+	if len(m.HiddenColumns) > 0 {
+		for _, s := range m.HiddenColumns {
+			l = len(s)
 			n += 1 + l + sovInfo(uint64(l))
 		}
 	}
@@ -1475,6 +1498,38 @@ func (m *InfoResponse) Unmarshal(dAtA []byte) error {
 			if err := m.Columns[len(m.Columns)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field HiddenColumns", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowInfo
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthInfo
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthInfo
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.HiddenColumns = append(m.HiddenColumns, string(dAtA[iNdEx:postIndex]))
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

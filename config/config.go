@@ -115,6 +115,10 @@ type Config struct {
 	// NavColor is an ui navigation bar background color
 	NavColor string `json:"navColor,omitempty"`
 
+	// HiddenColumns is a list of default columns to hide from the Workflow List View.
+	// Supported values: "name", "namespace", "started", "finished", "duration", "progress", "message", "details", "archived".
+	HiddenColumns []string `json:"hiddenColumns,omitempty"`
+
 	// SSO in settings for single-sign on
 	SSO SSOConfig `json:"sso,omitzero"`
 

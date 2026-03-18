@@ -16,6 +16,7 @@ export interface Info {
     links?: Link[];
     navColor?: string;
     columns: Column[];
+    hiddenColumns?: string[];
 }
 
 export interface Version {

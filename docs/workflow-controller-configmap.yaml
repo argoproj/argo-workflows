@@ -102,6 +102,12 @@ data:
   # uncomment following lines if you want to change navigation bar background color
   # navColor: red
 
+  # HiddenColumns is a list of default columns to hide from the Workflow List View.
+  # Supported values: "name", "namespace", "started", "finished", "duration", "progress", "message", "details", "archived".
+  # hiddenColumns: |
+  #   - archived
+  #   - namespace
+
   # ArtifactDrivers are plugin drivers for artifacts which must be configured
   # here and added to the argo-server manually as sidecars.
   # artifactDrivers: |
