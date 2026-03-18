@@ -7,7 +7,6 @@ import (
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
 	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/client"
 	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/common"
@@ -67,7 +66,7 @@ func NewLogsCommand() *cobra.Command {
 			}
 
 			if since > 0 {
-				logOptions.SinceSeconds = ptr.To(int64(since.Seconds()))
+				logOptions.SinceSeconds = new(int64(since.Seconds()))
 			}
 
 			if sinceTime != "" {
@@ -80,7 +79,7 @@ func NewLogsCommand() *cobra.Command {
 			}
 
 			if tailLines >= 0 {
-				logOptions.TailLines = ptr.To(tailLines)
+				logOptions.TailLines = new(tailLines)
 			}
 
 			// set-up

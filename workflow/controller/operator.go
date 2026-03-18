@@ -31,7 +31,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/yaml"
 
 	argoerrors "github.com/argoproj/argo-workflows/v4/errors"
@@ -982,7 +981,7 @@ func (woc *wfOperationCtx) processNodeRetries(ctx context.Context, node *wfv1.No
 	}
 
 	if lastChildNode.IsDaemoned() {
-		node.Daemoned = ptr.To(true)
+		node.Daemoned = new(true)
 	}
 
 	if !lastChildNode.Phase.Fulfilled(lastChildNode.TaskResultSynced) {
@@ -992,7 +991,7 @@ func (woc *wfOperationCtx) processNodeRetries(ctx context.Context, node *wfv1.No
 		// last child node is still running.
 		node = woc.markNodePhase(ctx, node.Name, lastChildNode.Phase)
 		if lastChildNode.IsDaemoned() { // markNodePhase doesn't pass the Daemoned field
-			node.Daemoned = ptr.To(true)
+			node.Daemoned = new(true)
 		}
 		return node, true, nil
 	}
@@ -1465,7 +1464,7 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 				}
 				// proceed to mark node as running and daemoned
 				updated.Phase = wfv1.NodeRunning
-				updated.Daemoned = ptr.To(true)
+				updated.Daemoned = new(true)
 				if !old.IsDaemoned() {
 					woc.log.WithField("nodeId", old.ID).Info(ctx, "Node became daemoned")
 				}
@@ -1534,7 +1533,7 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		if updated.Outputs == nil {
 			updated.Outputs = &wfv1.Outputs{}
 		}
-		updated.Outputs.ExitCode = ptr.To(fmt.Sprint(*exitCode))
+		updated.Outputs.ExitCode = new(fmt.Sprint(*exitCode))
 	}
 
 	waitContainerCleanedUp := true
@@ -1631,7 +1630,7 @@ func hasRequiredArtifacts(artifacts []wfv1.Artifact) bool {
 func getExitCode(pod *apiv1.Pod) *int32 {
 	for _, c := range pod.Status.ContainerStatuses {
 		if c.Name == common.MainContainerName && c.State.Terminated != nil {
-			return ptr.To(c.State.Terminated.ExitCode)
+			return new(c.State.Terminated.ExitCode)
 		}
 	}
 	return nil
@@ -2496,7 +2495,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		if !node.Phase.Fulfilled(node.TaskResultSynced) && node.IsDaemoned() {
 			retryNode = woc.markNodePhase(ctx, retryNodeName, node.Phase)
 			if node.IsDaemoned() { // markNodePhase doesn't pass the Daemoned field
-				retryNode.Daemoned = ptr.To(true)
+				retryNode.Daemoned = new(true)
 			}
 		}
 		node = retryNode

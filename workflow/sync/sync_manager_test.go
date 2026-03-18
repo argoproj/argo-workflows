@@ -16,7 +16,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
-	"k8s.io/utils/ptr"
 
 	"github.com/argoproj/argo-workflows/v4/config"
 	argoErr "github.com/argoproj/argo-workflows/v4/errors"
@@ -466,7 +465,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		assert.True(t, wfUpdate)
 
 		wf2.Name = "three"
-		wf2.Spec.Priority = ptr.To(int32(5))
+		wf2.Spec.Priority = new(int32(5))
 		holderKey2 := getHolderKey(wf2, "")
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf2, "", wf2.Spec.Synchronization)
 		require.NoError(t, err)
@@ -763,7 +762,7 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		mock := mockGetSyncLimit{}
 		mock.outputSize = 10
 		config := config.SyncConfig{
-			SemaphoreLimitCacheSeconds: ptr.To(int64(1)),
+			SemaphoreLimitCacheSeconds: new(int64(1)),
 		}
 
 		syncManager := NewLockManager(ctx, kube, "", &config, mock.getSyncLimit, func(key string) {
@@ -851,7 +850,7 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		mock.outputSize = 10
 
 		config := config.SyncConfig{
-			SemaphoreLimitCacheSeconds: ptr.To(int64(1)),
+			SemaphoreLimitCacheSeconds: new(int64(1)),
 		}
 
 		syncManager := NewLockManager(ctx, kube, "", &config, mock.getSyncLimit, func(key string) {

@@ -10,7 +10,6 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
 	"github.com/argoproj/argo-workflows/v4/errors"
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
@@ -214,7 +213,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 			ImagePullSecrets:             woc.execWf.Spec.ImagePullSecrets,
 			SecurityContext:              common.MinimalPodSC(),
 			ServiceAccountName:           serviceAccountName,
-			AutomountServiceAccountToken: ptr.To(false),
+			AutomountServiceAccountToken: new(false),
 			Volumes:                      podVolumes,
 			InitContainers: []apiv1.Container{
 				*agentInitCtr,
