@@ -149,6 +149,15 @@ func (d *dagContext) assessDAGPhase(ctx context.Context, targetTasks []string, n
 		targetTaskPhases[d.taskNodeID(task)] = ""
 	}
 
+	// dagTaskNodeIDs is the set of node IDs that correspond to DAG tasks. The BFS traverses the
+	// full node tree, which includes internal nodes (step groups, individual steps, retry attempts,
+	// etc.) that live inside a DAG task's template. Only DAG task nodes are allowed to
+	// overwrite the branchPhase. Internal nodes inherit their parent's phase without modification.
+	dagTaskNodeIDs := make(map[string]struct{}, len(d.tmpl.DAG.Tasks))
+	for _, task := range d.tmpl.DAG.Tasks {
+		dagTaskNodeIDs[d.taskNodeID(task.Name)] = struct{}{}
+	}
+
 	boundaryNode, err := nodes.Get(d.boundaryID)
 	if err != nil {
 		return "", err
@@ -172,9 +181,13 @@ func (d *dagContext) assessDAGPhase(ctx context.Context, targetTasks []string, n
 			return wfv1.NodeRunning, nil
 		}
 
-		// Only overwrite the branchPhase if this node completed. (If it didn't we can just inherit our parent's branchPhase).
+		// Only overwrite the branchPhase if this node is a completed DAG task. Internal nodes
+		// (step groups, steps, etc.) inherit their parent's branchPhase so that a task's
+		// Error/Failed phase is not lost when its internal children completed successfully.
 		if node.Completed() {
-			branchPhase = node.Phase
+			if _, isDAGTask := dagTaskNodeIDs[node.ID]; isDAGTask {
+				branchPhase = node.Phase
+			}
 		}
 
 		// This node is a target task, so it will not have any children. Store or deduce its phase

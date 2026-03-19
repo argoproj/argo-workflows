@@ -3992,3 +3992,84 @@ func TestDAGWhenSkipNoRequeue(t *testing.T) {
 	require.NotNil(t, nodeB)
 	assert.Equal(t, wfv1.NodeSkipped, nodeB.Phase)
 }
+
+// TestAssessDAGPhaseErrorNodeOmittedDependent verifies that a DAG is marked Error when a non-target
+// task errors and its dependent target task is Omitted. This is a regression test for
+// https://github.com/argoproj/argo-workflows/issues/10994
+func TestAssessDAGPhaseErrorNodeOmittedDependent(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	// DAG: A -> B (B depends on A). B is the target/leaf task.
+	// A errors (e.g. output expression evaluation failure), B is Omitted.
+	dagTasks := []wfv1.DAGTask{
+		{Name: "A"},
+		{Name: "B", Depends: "A"},
+	}
+	tmpl := &wfv1.Template{
+		DAG: &wfv1.DAGTemplate{
+			Tasks: dagTasks,
+		},
+	}
+	d := &dagContext{
+		boundaryName: "test",
+		tasks:        dagTasks,
+		tmpl:         tmpl,
+		wf:           &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "test-wf"}},
+		dependencies: make(map[string][]string),
+		dependsLogic: make(map[string]string),
+		log:          logging.RequireLoggerFromContext(ctx),
+	}
+
+	boundaryID := "test"
+	d.boundaryID = boundaryID
+
+	aNodeID := d.taskNodeID("A")
+	bNodeID := d.taskNodeID("B")
+
+	// Simulate the node tree as it appears during the bug:
+	// Boundary -> A_steps (Error) -> step_group (Succeeded) -> placeholder (Skipped) -> B (Omitted)
+	// The step group's Succeeded phase overwrites branchPhase during BFS, losing A's Error.
+	stepGroupID := "step-group-1"
+	placeholderID := "placeholder-1"
+
+	nodes := wfv1.Nodes{
+		boundaryID: {
+			ID:       boundaryID,
+			Phase:    wfv1.NodeRunning,
+			Type:     wfv1.NodeTypeDAG,
+			Children: []string{aNodeID},
+		},
+		aNodeID: {
+			ID:       aNodeID,
+			Name:     "test.A",
+			Phase:    wfv1.NodeError,
+			Type:     wfv1.NodeTypeSteps,
+			Children: []string{stepGroupID},
+			Message:  "expression evaluation error",
+		},
+		stepGroupID: {
+			ID:       stepGroupID,
+			Phase:    wfv1.NodeSucceeded,
+			Type:     wfv1.NodeTypeStepGroup,
+			Children: []string{placeholderID},
+		},
+		placeholderID: {
+			ID:       placeholderID,
+			Phase:    wfv1.NodeSkipped,
+			Type:     wfv1.NodeTypeSkipped,
+			Children: []string{bNodeID},
+		},
+		bNodeID: {
+			ID:    bNodeID,
+			Name:  "test.B",
+			Phase: wfv1.NodeOmitted,
+			Type:  wfv1.NodeTypeSkipped,
+		},
+	}
+
+	targetTasks := []string{"B"}
+
+	phase, err := d.assessDAGPhase(ctx, targetTasks, nodes, false)
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeError, phase, "DAG should be Error when a non-target task errors and target task is Omitted")
+}
