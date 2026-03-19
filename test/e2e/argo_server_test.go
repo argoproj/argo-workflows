@@ -430,8 +430,11 @@ func (s *ArgoServerSuite) createServiceAccount(name string) {
 	secret, err := s.KubeClient.CoreV1().Secrets(fixtures.Namespace).Create(ctx, secrets.NewTokenSecret(name), metav1.CreateOptions{})
 	s.Require().NoError(err)
 	s.T().Cleanup(func() {
-		_ = s.KubeClient.CoreV1().Secrets(fixtures.Namespace).Delete(ctx, secret.Name, metav1.DeleteOptions{})
-		_ = s.KubeClient.CoreV1().ServiceAccounts(fixtures.Namespace).Delete(ctx, name, metav1.DeleteOptions{})
+		ctx := logging.TestContext(s.T().Context())
+		err := s.KubeClient.CoreV1().Secrets(fixtures.Namespace).Delete(ctx, secret.Name, metav1.DeleteOptions{})
+		s.Require().NoError(err)
+		err = s.KubeClient.CoreV1().ServiceAccounts(fixtures.Namespace).Delete(ctx, name, metav1.DeleteOptions{})
+		s.Require().NoError(err)
 	})
 }
 
