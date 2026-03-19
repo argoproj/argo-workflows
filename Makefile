@@ -71,7 +71,7 @@ $(JSON_TEST_OUTPUT):
 	mkdir -p $(JSON_TEST_OUTPUT)
 
 define gotest
-	$(TOOL_GOTESTSUM) --rerun-fails=$(TEST_RETRIES) --jsonfile=$(JSON_TEST_OUTPUT)/$(2).json --format=testname --packages $(1) -- $(3)
+	$(TOOL_GOTESTSUM) --rerun-fails-run-root-test --rerun-fails=$(TEST_RETRIES) --jsonfile=$(JSON_TEST_OUTPUT)/$(2).json --format=testname --packages $(1) -- $(3)
 endef
 ALL_BUILD_TAGS        ?= api,cli,cron,executor,examples,corefunctional,functional,plugins
 BENCHMARK_COUNT       ?= 6
