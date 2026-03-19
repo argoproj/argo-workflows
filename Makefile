@@ -545,11 +545,13 @@ manifests: \
 	manifests/quick-start-minimal.yaml \
 	manifests/quick-start-mysql.yaml \
 	manifests/quick-start-postgres.yaml \
+	manifests/quick-start-telemetry.yaml \
 	dist/manifests/install.yaml \
 	dist/manifests/namespace-install.yaml \
 	dist/manifests/quick-start-minimal.yaml \
 	dist/manifests/quick-start-mysql.yaml \
-	dist/manifests/quick-start-postgres.yaml
+	dist/manifests/quick-start-postgres.yaml \
+	dist/manifests/quick-start-telemetry.yaml
 
 .PHONY: manifests/install.yaml
 manifests/install.yaml: /dev/null
@@ -570,6 +572,10 @@ manifests/quick-start-mysql.yaml: /dev/null
 .PHONY: manifests/quick-start-postgres.yaml
 manifests/quick-start-postgres.yaml: /dev/null
 	kubectl kustomize --load-restrictor=LoadRestrictionsNone manifests/quick-start/postgres | ./hack/manifests/auto-gen-msg.sh > manifests/quick-start-postgres.yaml
+
+.PHONY: manifests/quick-start-telemetry.yaml
+manifests/quick-start-telemetry.yaml: /dev/null
+	kubectl kustomize --load-restrictor=LoadRestrictionsNone manifests/quick-start/telemetry | ./hack/manifests/auto-gen-msg.sh > manifests/quick-start-telemetry.yaml
 
 dist/manifests/%: manifests/%
 	@mkdir -p dist/manifests
