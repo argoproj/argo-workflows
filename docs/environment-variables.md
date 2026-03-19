@@ -101,6 +101,8 @@ spec:
 |----------------------------------------|-----------------|---------|--------------------------------------------------------------------------------------------------------|
 | `ARGO_DEBUG_PAUSE_AFTER`               | `bool`          | `false` | Enable [Debug Pause](debug-pause.md) after step execution
 | `ARGO_DEBUG_PAUSE_BEFORE`              | `bool`          | `false` | Enable [Debug Pause](debug-pause.md) before step execution
+| `ARTIFACT_S3_UPLOAD_THREADS`           | `int`               | `4`                                                                                         | Number of threads for artifact upload through S3. Default: 4.                                                                                                                                                                                                            |
+| `ARTIFACT_S3_UPLOAD_PART_SIZE_MIB`     | `int`               | ``                                                                                          | Size in MiB of the part of a Multipart upload. Default: let MinIO calculate automatically (16 MiB for file <= 156 GiB).                                                                                                                                                     |
 | `EXECUTOR_RETRY_BACKOFF_DURATION`      | `time.Duration` | `1s`    | The retry back-off duration when the workflow executor performs retries.                               |
 | `EXECUTOR_RETRY_BACKOFF_FACTOR`        | `float`         | `1.6`   | The retry back-off factor when the workflow executor performs retries.                                 |
 | `EXECUTOR_RETRY_BACKOFF_JITTER`        | `float`         | `0.5`   | The retry back-off jitter when the workflow executor performs retries.                                 |
@@ -108,8 +110,6 @@ spec:
 | `REMOVE_LOCAL_ART_PATH`                | `bool`          | `false` | Whether to remove local artifacts.                                                                     |
 | `RESOURCE_STATE_CHECK_INTERVAL`        | `time.Duration` | `5s`    | The time interval between resource status checks against the specified success and failure conditions. |
 | `WAIT_CONTAINER_STATUS_CHECK_INTERVAL` | `time.Duration` | `5s`    | The time interval for wait container to check whether the containers have completed.                   |
-| `WAIT_CONTAINER_S3_UPLOAD_THREADS`           | `int`               | `4`                                                                                         | Number of threads for artifact upload through S3. Default: 4.                                                                                                                                                                                                            |
-| `WAIT_CONTAINER_S3_UPLOAD_PART_SIZE_MIB`     | `int`               | ``                                                                                          | Size in MiB of the part of a Multipart upload. Default: let MinIO calculate automatically (16 MiB for file <= 156 GiB).                                                                                                                                                     |
 
 You can set environment variables for the Executor in your [`workflow-controller-configmap`](workflow-controller-configmap.md) like the following:
 
