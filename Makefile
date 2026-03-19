@@ -71,7 +71,7 @@ $(JSON_TEST_OUTPUT):
 	mkdir -p $(JSON_TEST_OUTPUT)
 
 define gotest
-	$(TOOL_GOTESTSUM) --rerun-fails=$(TEST_RETRIES) --jsonfile=$(JSON_TEST_OUTPUT)/$(2).json --format=testname --packages $(1) -- $(3)
+	$(TOOL_GOTESTSUM) --rerun-fails-run-root-test --rerun-fails=$(TEST_RETRIES) --jsonfile=$(JSON_TEST_OUTPUT)/$(2).json --format=testname --packages $(1) -- $(3)
 endef
 ALL_BUILD_TAGS        ?= api,cli,cron,executor,examples,corefunctional,functional,plugins
 BENCHMARK_COUNT       ?= 6
@@ -402,7 +402,7 @@ swagger: \
 $(TOOL_MOCKERY): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	GOTOOLCHAIN=go1.25.6 go install github.com/vektra/mockery/v3@v3.5.1
+	GOTOOLCHAIN=go1.26.1 go install github.com/vektra/mockery/v3@v3.5.1
 endif
 $(TOOL_CONTROLLER_GEN): Makefile
 # update this in Nix when upgrading it here
@@ -582,7 +582,7 @@ manifests-validate:
 	kubectl apply --server-side --validate=strict --dry-run=server -f 'manifests/*.yaml'
 
 $(TOOL_GOLANGCI_LINT): Makefile
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v2.8.0
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v2.11.3
 
 .PHONY: lint lint-go lint-ui
 lint: lint-go lint-ui features-validate ## Lint the project
