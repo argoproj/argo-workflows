@@ -453,6 +453,7 @@ func (s *ArgoServerSuite) TestPermission() {
 		_, err = s.KubeClient.RbacV1().Roles(nsName).Create(ctx, role, metav1.CreateOptions{})
 		s.Require().NoError(err)
 	})
+	s.Require().NotEmpty(roleName, "LoadRoleYaml must succeed")
 	defer func() {
 		_ = s.KubeClient.RbacV1().Roles(nsName).Delete(ctx, roleName, metav1.DeleteOptions{})
 	}()
@@ -502,6 +503,10 @@ func (s *ArgoServerSuite) TestPermission() {
 		badToken = string(secret.Data["token"])
 	})
 
+	// Stop early if token retrieval failed to prevent cascading failures
+	s.Require().NotEmpty(goodToken, "GetGoodSAToken must succeed")
+	s.Require().NotEmpty(badToken, "GetBadSAToken must succeed")
+
 	// fake / spoofed token
 	fakeToken := "faketoken"
 
@@ -540,6 +545,9 @@ func (s *ArgoServerSuite) TestPermission() {
 			Path("$.metadata.uid").
 			Raw().(string)
 	})
+
+	// Stop early if workflow creation failed to prevent cascading failures
+	s.Require().NotEmpty(uid, "CreateWFGoodToken must succeed")
 
 	// Test list workflows with good token
 	s.Run("ListWFsGoodToken", func() {
@@ -896,6 +904,9 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 			Raw()
 	})
 
+	// Stop early if workflow creation failed to prevent cascading failures
+	s.Require().NotEmpty(name, "Create must succeed")
+
 	s.Given().
 		When().
 		WaitForWorkflow(fixtures.ToBeRunning)
@@ -1089,6 +1100,10 @@ func (s *ArgoServerSuite) TestWorkflowServiceListArchived() {
 		nameAliceWf = aliceWf.Path("$.metadata.name").NotNull().String().Raw()
 	})
 
+	// Stop early if workflow creation failed to prevent cascading failures
+	s.Require().NotEmpty(nameBobWf, "CreateArchivedBobWf must succeed")
+	s.Require().NotEmpty(nameAliceWf, "CreateAlice must succeed")
+
 	s.Given().When().
 		WaitForWorkflow(fixtures.ToBeArchived, metav1.ListOptions{FieldSelector: "metadata.name=" + nameBobWf}).
 		WaitForWorkflow(fixtures.ToBeArchived, metav1.ListOptions{FieldSelector: "metadata.name=" + nameAliceWf})
@@ -1270,6 +1285,10 @@ func (s *ArgoServerSuite) TestWorkflowArchiveServiceList() {
 		uidAliceWf = aliceWf.Path("$.metadata.uid").NotNull().String().Raw()
 		nameAliceWf = aliceWf.Path("$.metadata.name").NotNull().String().Raw()
 	})
+
+	// Stop early if workflow creation failed to prevent cascading failures
+	s.Require().NotEmpty(nameBobWf, "CreateArchivedBobWf must succeed")
+	s.Require().NotEmpty(nameAliceWf, "CreateAlice must succeed")
 
 	s.Given().When().
 		WaitForWorkflow(fixtures.ToBeArchived, metav1.ListOptions{FieldSelector: "metadata.name=" + nameBobWf}).
@@ -1627,6 +1646,8 @@ spec:
 			String().
 			Raw()
 	})
+
+	s.Require().NotEmpty(resourceVersion, "Get must return resourceVersion")
 
 	s.Run("Update", func() {
 		s.e().PUT("/api/v1/cron-workflows/argo/test").
@@ -2327,6 +2348,8 @@ func (s *ArgoServerSuite) TestWorkflowTemplateService() {
 			Raw()
 	})
 
+	s.Require().NotEmpty(resourceVersion, "Get must return resourceVersion")
+
 	s.Run("Update", func() {
 		s.e().PUT("/api/v1/workflow-templates/argo/test").
 			WithBytes([]byte(`{"template": {
@@ -2559,6 +2582,9 @@ func (s *ArgoServerSuite) TestEventSourcesService() {
 			String().
 			Raw()
 	})
+
+	s.Require().NotEmpty(resourceVersion, "GetEventSource must return resourceVersion")
+
 	s.Run("UpdateEventSource", func() {
 		s.e().PUT("/api/v1/event-sources/argo/test-event-source").
 			WithBytes([]byte(`
