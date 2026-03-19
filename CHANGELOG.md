@@ -1,5 +1,34 @@
 # Changelog
 
+## v4.0.3 (2026-03-18)
+
+Full Changelog: [v4.0.2...v4.0.3](https://github.com/argoproj/argo-workflows/compare/v4.0.2...v4.0.3)
+
+### Selected Changes
+
+* [8cae17b6f](https://github.com/argoproj/argo-workflows/commit/8cae17b6fb49f077eeb269fcf21ce021b37a97f1) chore(deps): go 1.24.10->1.25.7 (release-4.0) (#15759)
+* [c459b9817](https://github.com/argoproj/argo-workflows/commit/c459b9817285b12e4356f58cf929e7c3f01a545c) fix: add stepgroup and taskgroup to scope. Fixes #15737 (#15736). (cherry-pick #15736 for 4.0) (#15757)
+* [341f3ae5d](https://github.com/argoproj/argo-workflows/commit/341f3ae5d1f99bb119c9b33d77425e8ede41702b) fix(cron): embed tzdata and validate timezone (cherry-pick #15732 for 4.0) (#15739)
+* [d0919730c](https://github.com/argoproj/argo-workflows/commit/d0919730c286e5c3ce1f897ed60950f8ccaaae7b) chore(deps): pin distroless base to debian13 (cherry-pick #15741 for 4.0) (#15751)
+* [658b43198](https://github.com/argoproj/argo-workflows/commit/658b4319856d6204cd2190691ca5b05d6c52be80) chore(deps): update k8s.io/utils digest to b8788ab (release-4.0) (#15731)
+* [e8df68c81](https://github.com/argoproj/argo-workflows/commit/e8df68c819ebc8ee8674e28c0eb6b346214f1b87) fix: optimize index to prevent 'out of sort memory' error Fixes #14240 (cherry-pick #15250 for 4.0) (#15675)
+* [4f58ea73b](https://github.com/argoproj/argo-workflows/commit/4f58ea73b926129c1a432194cb4dd83f05203722) fix: include spec.arguments in archived and live workflow list responses. Fixes #13946 (cherry-pick #15669 for 4.0) (#15678)
+* [5df42c4f0](https://github.com/argoproj/argo-workflows/commit/5df42c4f06cc0e8170c60a5821e8c25c01000bac) fix: correct TTL strategy precedence comment in gc-ttl example (cherry-pick #15654 for 4.0) (#15672)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Claude Sonnet 4.6
+* downfa11
+* heitor
+* Heitor Pinto
+* himeshp
+* Himesh Panchal
+* Isitha Subasinghe
+* Ville Vesilehto
+
+</details>
+
 ## v4.0.2 (2026-03-11)
 
 Full Changelog: [v4.0.1...v4.0.2](https://github.com/argoproj/argo-workflows/compare/v4.0.1...v4.0.2)
@@ -177,7 +206,7 @@ Full Changelog: [v4.0.0-rc1...v4.0.0-rc2](https://github.com/argoproj/argo-workf
 
 ## v4.0.0-rc1 (2025-12-11)
 
-Full Changelog: [v3.7.11...v4.0.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.7.11...v4.0.0-rc1)
+Full Changelog: [v3.7.12...v4.0.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.7.12...v4.0.0-rc1)
 
 ### Selected Changes
 
@@ -364,6 +393,35 @@ Full Changelog: [v3.7.11...v4.0.0-rc1](https://github.com/argoproj/argo-workflow
 * William Van Hevelingen
 * Xavier Hardy
 * Yuan Tang
+
+</details>
+
+## v3.7.12 (2026-03-18)
+
+Full Changelog: [v3.7.11...v3.7.12](https://github.com/argoproj/argo-workflows/compare/v3.7.11...v3.7.12)
+
+### Selected Changes
+
+* [dbb6c3419](https://github.com/argoproj/argo-workflows/commit/dbb6c34199d252de7e3aa169310c3f3e4919ae52) fix: add stepgroup and taskgroup to scope. Fixes #15737 (#15736) (cherry-pick #15736 for 3.7) (#15758)
+* [d87479c35](https://github.com/argoproj/argo-workflows/commit/d87479c3501a83c860619d32de0623435c4c1976) chore(deps): upgrade go to 1.25.7 (release-3.7) (#15760)
+* [1a083fdeb](https://github.com/argoproj/argo-workflows/commit/1a083fdebf320a52d915feb5a766c2cd69650a12) fix(cron): embed tzdata and validate timezone (cherry-pick #15732 for 3.7) (#15738)
+* [49a0dd097](https://github.com/argoproj/argo-workflows/commit/49a0dd097061e4db0b36a2e11345ac776f2ba411) chore(deps): pin distroless base to debian13 (cherry-pick #15741 for 3.7) (#15752)
+* [09cfeac38](https://github.com/argoproj/argo-workflows/commit/09cfeac381caef035de51cdbdd54af393ddf537b) fix: include spec.arguments in archived and live workflow list responses. Fixes #13946 (cherry-pick #15669 for 3.7) (#15677)
+* [107ad76b8](https://github.com/argoproj/argo-workflows/commit/107ad76b87fb09be65e1f3f9c38b3376664d30fc) chore(deps): update golang.org/x/exp digest to 3dfff04 (release-3.7) (#15730)
+* [94d46cad5](https://github.com/argoproj/argo-workflows/commit/94d46cad51abcc8094b140ec53319b953db65c57) fix: optimize index to prevent 'out of sort memory' error Fixes #14240 (cherry-pick #15250 for 3.7) (#15676)
+* [e8ebb8ccc](https://github.com/argoproj/argo-workflows/commit/e8ebb8ccc6a8d8c6d709a59aeea2f5429ce84f3a) fix: correct TTL strategy precedence comment in gc-ttl example (cherry-pick #15654 for 3.7) (#15671)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Claude Sonnet 4.6
+* downfa11
+* heitor
+* Heitor Pinto
+* himeshp
+* Himesh Panchal
+* Isitha Subasinghe
+* Ville Vesilehto
 
 </details>
 
