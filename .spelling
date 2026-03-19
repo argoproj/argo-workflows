@@ -123,6 +123,7 @@ Node.JS.
 OAuth
 OAuth2
 OIDC
+OTel
 Okta
 OpenAPI
 OpenTelemetry
@@ -191,6 +192,7 @@ booleans
 bradfordwagner
 buildkit
 changelog
+cli
 codebase
 config
 configmap
@@ -303,6 +305,7 @@ temporality
 tolerations
 triaged
 triaging
+uid
 un-reconciled
 useEffect
 v1
