@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"k8s.io/utils/ptr"
-
 	"github.com/argoproj/argo-workflows/v4/workflow/data"
 )
 
@@ -31,7 +29,7 @@ func (we *WorkflowExecutor) Data(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	we.Template.Outputs.Result = ptr.To(string(out))
+	we.Template.Outputs.Result = new(string(out))
 	err = we.ReportOutputs(ctx, nil)
 	if err != nil {
 		return err
