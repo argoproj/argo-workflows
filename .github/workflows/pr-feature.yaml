@@ -27,7 +27,7 @@ jobs:
       - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         if: steps.check-type.outputs.is_feat == 'true'
         with:
-          go-version: "1.25"
+          go-version: "1.26"
           cache: true
       - name: Checkout
         if: steps.check-type.outputs.is_feat == 'true'

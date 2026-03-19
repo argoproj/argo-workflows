@@ -129,7 +129,7 @@ func intercept(ctx context.Context, method string, target string, headers map[st
 	w := httptest.NewRecorder()
 	b := &bytes.Buffer{}
 	b.WriteString("{}")
-	r := httptest.NewRequest(method, target, b)
+	r := httptest.NewRequestWithContext(ctx, method, target, b)
 	for k, v := range headers {
 		r.Header.Set(k, v)
 	}
