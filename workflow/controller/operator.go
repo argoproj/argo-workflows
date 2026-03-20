@@ -31,7 +31,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/yaml"
 
 	argoerrors "github.com/argoproj/argo-workflows/v4/errors"
@@ -128,6 +127,8 @@ var (
 	ErrTimeout = argoerrors.New(argoerrors.CodeTimeout, "timeout")
 	// ErrMaxDepthExceeded indicates that the maximum recursion depth was exceeded
 	ErrMaxDepthExceeded = argoerrors.New(argoerrors.CodeTimeout, fmt.Sprintf("Maximum recursion depth exceeded. See %s", help.ConfigureMaximumRecursionDepth()))
+	// ErrRequeue indicates the workflow should be requeued for later processing
+	ErrRequeue = errors.New("requeue")
 )
 
 // maxOperationTime is the maximum time a workflow operation is allowed to run
@@ -208,7 +209,8 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		}
 	}()
 
-	woc.log.WithFields(logging.Fields{"Phase": woc.wf.Status.Phase, "ResourceVersion": woc.wf.ObjectMeta.ResourceVersion}).Info(ctx, "Processing workflow")
+	woc.log.WithFields(logging.Fields{"phase": woc.wf.Status.Phase, "resourceVersion": woc.wf.ObjectMeta.ResourceVersion, "lastSeenVersion": woc.wf.GetAnnotations()[common.AnnotationKeyLastSeenVersion]}).Info(ctx, "Processing workflow")
+
 	// Set the Execute workflow spec for execution
 	// ExecWF is a runtime execution spec which merged from Wf, WFT and Wfdefault
 	ctx, err := woc.setExecWorkflow(ctx)
@@ -814,20 +816,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		panic("workflow should be hydrated")
 	}
 
-	woc.log.WithFields(logging.Fields{"resourceVersion": woc.wf.ResourceVersion, "phase": woc.wf.Status.Phase}).Info(ctx, "Workflow update successful")
-
-	switch os.Getenv("INFORMER_WRITE_BACK") {
-	// this does not reduce errors, but does reduce
-	// conflicts and therefore we log fewer warning messages.
-	case "true":
-		if err := woc.writeBackToInformer(); err != nil {
-			_ = woc.markWorkflowError(ctx, err)
-			return
-		}
-	// no longer write back to informer cache as default (as per v4.0)
-	case "", "false":
-		time.Sleep(1 * time.Second)
-	}
+	woc.log.WithFields(logging.Fields{"resourceVersion": woc.wf.ResourceVersion, "phase": woc.wf.Status.Phase, "lastSeenVersion": woc.wf.GetAnnotations()[common.AnnotationKeyLastSeenVersion]}).Info(ctx, "Workflow update successful")
 
 	// Make sure the workflow completed.
 	if woc.wf.Status.Fulfilled() {
@@ -866,18 +855,6 @@ func (woc *wfOperationCtx) deleteTaskResults(ctx context.Context) error {
 				ResourceVersion: "0",
 			},
 		)
-}
-
-func (woc *wfOperationCtx) writeBackToInformer() error {
-	un, err := wfutil.ToUnstructured(woc.wf)
-	if err != nil {
-		return fmt.Errorf("failed to convert workflow to unstructured: %w", err)
-	}
-	err = woc.controller.wfInformer.GetStore().Update(un)
-	if err != nil {
-		return fmt.Errorf("failed to update informer store: %w", err)
-	}
-	return nil
 }
 
 // persistWorkflowSizeLimitErr will fail a the workflow with an error when we hit the resource size limit
@@ -1004,7 +981,7 @@ func (woc *wfOperationCtx) processNodeRetries(ctx context.Context, node *wfv1.No
 	}
 
 	if lastChildNode.IsDaemoned() {
-		node.Daemoned = ptr.To(true)
+		node.Daemoned = new(true)
 	}
 
 	if !lastChildNode.Phase.Fulfilled(lastChildNode.TaskResultSynced) {
@@ -1014,7 +991,7 @@ func (woc *wfOperationCtx) processNodeRetries(ctx context.Context, node *wfv1.No
 		// last child node is still running.
 		node = woc.markNodePhase(ctx, node.Name, lastChildNode.Phase)
 		if lastChildNode.IsDaemoned() { // markNodePhase doesn't pass the Daemoned field
-			node.Daemoned = ptr.To(true)
+			node.Daemoned = new(true)
 		}
 		return node, true, nil
 	}
@@ -1487,7 +1464,7 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 				}
 				// proceed to mark node as running and daemoned
 				updated.Phase = wfv1.NodeRunning
-				updated.Daemoned = ptr.To(true)
+				updated.Daemoned = new(true)
 				if !old.IsDaemoned() {
 					woc.log.WithField("nodeId", old.ID).Info(ctx, "Node became daemoned")
 				}
@@ -1556,7 +1533,7 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		if updated.Outputs == nil {
 			updated.Outputs = &wfv1.Outputs{}
 		}
-		updated.Outputs.ExitCode = ptr.To(fmt.Sprint(*exitCode))
+		updated.Outputs.ExitCode = new(fmt.Sprint(*exitCode))
 	}
 
 	waitContainerCleanedUp := true
@@ -1653,7 +1630,7 @@ func hasRequiredArtifacts(artifacts []wfv1.Artifact) bool {
 func getExitCode(pod *apiv1.Pod) *int32 {
 	for _, c := range pod.Status.ContainerStatuses {
 		if c.Name == common.MainContainerName && c.State.Terminated != nil {
-			return ptr.To(c.State.Terminated.ExitCode)
+			return new(c.State.Terminated.ExitCode)
 		}
 	}
 	return nil
@@ -2518,7 +2495,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		if !node.Phase.Fulfilled(node.TaskResultSynced) && node.IsDaemoned() {
 			retryNode = woc.markNodePhase(ctx, retryNodeName, node.Phase)
 			if node.IsDaemoned() { // markNodePhase doesn't pass the Daemoned field
-				retryNode.Daemoned = ptr.To(true)
+				retryNode.Daemoned = new(true)
 			}
 		}
 		node = retryNode
@@ -4325,6 +4302,14 @@ func (woc *wfOperationCtx) retryStrategy(tmpl *wfv1.Template) *wfv1.RetryStrateg
 func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) (context.Context, error) {
 	switch {
 	case woc.wf.Spec.WorkflowTemplateRef != nil: // not-woc-misuse
+		// When workflow restrictions require template referencing (Strict/Secure mode),
+		// reject workflows that include a podSpecPatch as it could override security
+		// settings defined in the WorkflowTemplate.
+		if woc.controller.Config.WorkflowRestrictions.MustUseReference() && woc.wf.Spec.HasPodSpecPatch() { // not-woc-misuse: intentionally checking the user-submitted spec
+			err := fmt.Errorf("podSpecPatch is not permitted when using workflowTemplateRef with templateReferencing restriction")
+			ctx = woc.markWorkflowError(ctx, err)
+			return ctx, err
+		}
 		err := woc.setStoredWfSpec(ctx)
 		if err != nil {
 			ctx = woc.markWorkflowError(ctx, err)

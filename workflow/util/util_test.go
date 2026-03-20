@@ -49,7 +49,7 @@ spec:
 `
 	wf := wfv1.MustUnmarshalWorkflow(workflowYaml)
 	newWf := wf.DeepCopy()
-	wfClientSet := argofake.NewSimpleClientset()
+	wfClientSet := argofake.NewClientset()
 	ctx := logging.TestContext(t.Context())
 	newWf, err := SubmitWorkflow(ctx, nil, wfClientSet, "test-namespace", newWf, nil, &wfv1.SubmitOpts{DryRun: true})
 	require.NoError(t, err)
@@ -248,7 +248,7 @@ status:
 
 func TestResumeWorkflowByNodeName(t *testing.T) {
 	t.Run("Withought user info", func(t *testing.T) {
-		wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
+		wfIf := argofake.NewClientset().ArgoprojV1alpha1().Workflows("")
 		origWf := wfv1.MustUnmarshalWorkflow(suspendedWf)
 
 		ctx := logging.TestContext(t.Context())
@@ -275,7 +275,7 @@ func TestResumeWorkflowByNodeName(t *testing.T) {
 	})
 
 	t.Run("With user info", func(t *testing.T) {
-		wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
+		wfIf := argofake.NewClientset().ArgoprojV1alpha1().Workflows("")
 		origWf := wfv1.MustUnmarshalWorkflow(suspendedWf)
 
 		ctx := logging.TestContext(t.Context())
@@ -307,7 +307,7 @@ func TestResumeWorkflowByNodeName(t *testing.T) {
 }
 
 func TestStopWorkflowByNodeName(t *testing.T) {
-	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
+	wfIf := argofake.NewClientset().ArgoprojV1alpha1().Workflows("")
 	origWf := wfv1.MustUnmarshalWorkflow(suspendedWf)
 
 	ctx := logging.TestContext(t.Context())
@@ -466,7 +466,7 @@ status:
 `
 
 func TestUpdateSuspendedNode(t *testing.T) {
-	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
+	wfIf := argofake.NewClientset().ArgoprojV1alpha1().Workflows("")
 	origWf := wfv1.MustUnmarshalWorkflow(susWorkflow)
 
 	ctx := logging.TestContext(t.Context())
@@ -885,7 +885,7 @@ status:
 `
 
 func TestDeepDeleteNodes(t *testing.T) {
-	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
+	wfIf := argofake.NewClientset().ArgoprojV1alpha1().Workflows("")
 	origWf := wfv1.MustUnmarshalWorkflow(deepDeleteOfNodes)
 
 	ctx := logging.TestContext(t.Context())
@@ -1015,7 +1015,7 @@ status:
 `
 
 func TestRetryExitHandler(t *testing.T) {
-	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
+	wfIf := argofake.NewClientset().ArgoprojV1alpha1().Workflows("")
 	origWf := wfv1.MustUnmarshalWorkflow(exitHandler)
 
 	ctx := logging.TestContext(t.Context())
@@ -1031,7 +1031,7 @@ func TestRetryExitHandler(t *testing.T) {
 
 func TestFormulateRetryWorkflow(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	wfClient := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("my-ns")
+	wfClient := argofake.NewClientset().ArgoprojV1alpha1().Workflows("my-ns")
 	t.Run("DAG", func(t *testing.T) {
 		wf := &wfv1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{
@@ -4181,7 +4181,7 @@ func TestRegressions(t *testing.T) {
 func TestFormulateRetryWorkflowWithParams(t *testing.T) {
 	// Test from issue #14769
 	ctx := logging.TestContext(t.Context())
-	wfClientSet := argofake.NewSimpleClientset()
+	wfClientSet := argofake.NewClientset()
 
 	// Use the workflow from out.yaml as test input
 	workflowYaml := `apiVersion: argoproj.io/v1alpha1

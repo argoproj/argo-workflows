@@ -4,6 +4,20 @@
 
 Argo Workflows supports distributed tracing using the OpenTelemetry protocol.
 
+## Beta
+
+Tracing is not considered finished, it is likely to change in incompatible ways in future minor releases of workflows.
+For example: we'd like to adopt OpenTelemetry Semantic Conventions.
+Feedback is very welcome on how this is useful or how it could be made more useful.
+
+Spans that start in one workflow controller and end in a different workflow controller (because the controller has restarted) will be incomplete.
+There is ongoing work to define how to manage long-running spans like this.
+
+## Configuration
+
+Tracing is configured via OpenTelemetry environment variables.
+See [Telemetry Configuration](telemetry-configuration.md#tracing) for setup details.
+
 ## Spans
 
 <!-- Generated documentation BEGIN -->

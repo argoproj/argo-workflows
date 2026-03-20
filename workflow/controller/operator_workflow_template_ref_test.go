@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/require"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util"
@@ -442,7 +441,7 @@ func TestWorkflowTemplateRefWithShutdownAndSuspend(t *testing.T) {
 		wf1 := woc.wf.DeepCopy()
 		// Updating Pod state
 		makePodsPhase(ctx, woc, apiv1.PodPending)
-		wf1.Spec.Suspend = ptr.To(true)
+		wf1.Spec.Suspend = new(true)
 		woc1 := newWorkflowOperationCtx(ctx, wf1, controller)
 		woc1.operate(ctx)
 		assert.NotNil(t, woc1.wf.Status.StoredWorkflowSpec.Suspend)

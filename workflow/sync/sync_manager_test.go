@@ -16,7 +16,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
-	"k8s.io/utils/ptr"
 
 	"github.com/argoproj/argo-workflows/v4/config"
 	argoErr "github.com/argoproj/argo-workflows/v4/errors"
@@ -353,7 +352,7 @@ func GetSyncLimitFunc(kube *fake.Clientset) func(context.Context, string) (int, 
 }
 
 func TestSemaphoreWfLevel(t *testing.T) {
-	kube := fake.NewSimpleClientset()
+	kube := fake.NewClientset()
 	var cm v1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
 
@@ -366,7 +365,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		syncManager := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
 		}, WorkflowExistenceFunc)
 		wf := wfv1.MustUnmarshalWorkflow(wfWithStatus)
-		wfclientset := fakewfclientset.NewSimpleClientset(wf)
+		wfclientset := fakewfclientset.NewClientset(wf)
 
 		wfList, err := wfclientset.ArgoprojV1alpha1().Workflows("default").List(ctx, metav1.ListOptions{})
 		require.NoError(t, err)
@@ -379,7 +378,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow(wfWithStatus)
 		invalidSync := []wfv1.SemaphoreHolding{{Semaphore: "default/configmap/my-config1/workflow", Holders: []string{"hello-world-vcrg5"}}}
 		wf.Status.Synchronization.Semaphore.Holding = invalidSync
-		wfclientset := fakewfclientset.NewSimpleClientset(wf)
+		wfclientset := fakewfclientset.NewClientset(wf)
 		wfList, err := wfclientset.ArgoprojV1alpha1().Workflows("default").List(ctx, metav1.ListOptions{})
 		require.NoError(t, err)
 		syncManager.Initialize(ctx, wfList.Items)
@@ -392,7 +391,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		// This was a bug caused by variable shadowing in Initialize (PR #3141).
 
 		// Create a ConfigMap with semaphore limit of 3 to allow multiple holders
-		kubeClient := fake.NewSimpleClientset()
+		kubeClient := fake.NewClientset()
 		_, err := kubeClient.CoreV1().ConfigMaps("default").Create(ctx, &v1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-config"},
 			Data:       map[string]string{"workflow": "3"},
@@ -466,7 +465,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		assert.True(t, wfUpdate)
 
 		wf2.Name = "three"
-		wf2.Spec.Priority = ptr.To(int32(5))
+		wf2.Spec.Priority = new(int32(5))
 		holderKey2 := getHolderKey(wf2, "")
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf2, "", wf2.Spec.Synchronization)
 		require.NoError(t, err)
@@ -600,7 +599,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 }
 
 func TestResizeSemaphoreSize(t *testing.T) {
-	kube := fake.NewSimpleClientset()
+	kube := fake.NewClientset()
 	var cm v1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
 
@@ -675,7 +674,7 @@ func TestResizeSemaphoreSize(t *testing.T) {
 }
 
 func TestSemaphoreTmplLevel(t *testing.T) {
-	kube := fake.NewSimpleClientset()
+	kube := fake.NewClientset()
 	var cm v1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
 
@@ -749,7 +748,7 @@ func (m *mockGetSyncLimit) getSyncLimit(_ context.Context, s string) (int, error
 
 func TestSemaphoreSizeCache(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	kube := fake.NewSimpleClientset()
+	kube := fake.NewClientset()
 
 	mockedNow := time.Now()
 	nowFn = func() time.Time {
@@ -763,7 +762,7 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		mock := mockGetSyncLimit{}
 		mock.outputSize = 10
 		config := config.SyncConfig{
-			SemaphoreLimitCacheSeconds: ptr.To(int64(1)),
+			SemaphoreLimitCacheSeconds: new(int64(1)),
 		}
 
 		syncManager := NewLockManager(ctx, kube, "", &config, mock.getSyncLimit, func(key string) {
@@ -851,7 +850,7 @@ func TestSemaphoreSizeCache(t *testing.T) {
 		mock.outputSize = 10
 
 		config := config.SyncConfig{
-			SemaphoreLimitCacheSeconds: ptr.To(int64(1)),
+			SemaphoreLimitCacheSeconds: new(int64(1)),
 		}
 
 		syncManager := NewLockManager(ctx, kube, "", &config, mock.getSyncLimit, func(key string) {
@@ -936,7 +935,7 @@ func TestSemaphoreSizeCache(t *testing.T) {
 
 func TestTriggerWFWithAvailableLock(t *testing.T) {
 	assert := assert.New(t)
-	kube := fake.NewSimpleClientset()
+	kube := fake.NewClientset()
 	var cm v1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
 	cm.Data["workflow"] = "3"
@@ -982,7 +981,7 @@ func TestTriggerWFWithAvailableLock(t *testing.T) {
 
 func TestMutexWfLevel(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	kube := fake.NewSimpleClientset()
+	kube := fake.NewClientset()
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("WorkflowLevelMutexAcquireAndRelease", func(t *testing.T) {
 		// var nextKey string
@@ -1067,7 +1066,7 @@ func TestMutexWfLevel(t *testing.T) {
 
 func TestCheckWorkflowExistence(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	kube := fake.NewSimpleClientset()
+	kube := fake.NewClientset()
 	var cm v1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
 	cm.Data["workflow"] = "1"
@@ -1133,7 +1132,7 @@ func TestCheckWorkflowExistence(t *testing.T) {
 
 func TestTriggerWFWithSemaphoreAndMutex(t *testing.T) {
 	assert := assert.New(t)
-	kube := fake.NewSimpleClientset()
+	kube := fake.NewClientset()
 	var cm v1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
 	cm.Data["test-sem"] = "1"
@@ -1540,7 +1539,7 @@ func TestMutexMigration(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	assert := assert.New(t)
 	require := require.New(t)
-	kube := fake.NewSimpleClientset()
+	kube := fake.NewClientset()
 
 	syncLimitFunc := GetSyncLimitFunc(kube)
 
@@ -1752,7 +1751,7 @@ func TestBackgroundNotifierClearsExpiredLocks(t *testing.T) {
 
 func TestUnconfiguredSemaphores(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	kube := fake.NewSimpleClientset()
+	kube := fake.NewClientset()
 	t.Run("UnconfiguredConfigMapSemaphore", func(t *testing.T) {
 		// Setup with a fake k8s client but no ConfigMap created
 		syncLimitFunc := GetSyncLimitFunc(kube)

@@ -34,7 +34,6 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/informers/internalinterfaces"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v4/workflow/creator"
@@ -374,7 +373,7 @@ func SuspendWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, workf
 			return false, errSuspendedCompletedWorkflow
 		}
 		if wf.Spec.Suspend == nil || !*wf.Spec.Suspend {
-			wf.Spec.Suspend = ptr.To(true)
+			wf.Spec.Suspend = new(true)
 			creator.LabelActor(ctx, wf, creator.ActionSuspend)
 			_, err := wfIf.Update(ctx, wf, metav1.UpdateOptions{})
 			if apierr.IsConflict(err) {

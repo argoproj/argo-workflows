@@ -30,8 +30,8 @@ New minor versions are released roughly every 6 months.
 Release Candidates (RCs) for major and minor versions are available roughly 4-6 weeks before General Availability (GA).
 
 Features may be added in subsequent RCs.
-If they are, the RC will be available for at least 2 weeks to ensure sufficient testing before GA.
-If bugs are found with a feature and not resolved within the 2 week period, it will be rolled back and a new RC will be released before GA.
+If they are, the RC will be available for at least 1 week to ensure sufficient testing before GA.
+If bugs are found with a feature and not resolved within the 1 week period, it will be rolled back and a new RC will be released before GA.
 
 Otherwise, we typically release every two weeks:
 

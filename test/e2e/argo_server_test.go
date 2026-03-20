@@ -430,8 +430,11 @@ func (s *ArgoServerSuite) createServiceAccount(name string) {
 	secret, err := s.KubeClient.CoreV1().Secrets(fixtures.Namespace).Create(ctx, secrets.NewTokenSecret(name), metav1.CreateOptions{})
 	s.Require().NoError(err)
 	s.T().Cleanup(func() {
-		_ = s.KubeClient.CoreV1().Secrets(fixtures.Namespace).Delete(ctx, secret.Name, metav1.DeleteOptions{})
-		_ = s.KubeClient.CoreV1().ServiceAccounts(fixtures.Namespace).Delete(ctx, name, metav1.DeleteOptions{})
+		ctx := logging.TestContext(s.T().Context())
+		err := s.KubeClient.CoreV1().Secrets(fixtures.Namespace).Delete(ctx, secret.Name, metav1.DeleteOptions{})
+		s.Require().NoError(err)
+		err = s.KubeClient.CoreV1().ServiceAccounts(fixtures.Namespace).Delete(ctx, name, metav1.DeleteOptions{})
+		s.Require().NoError(err)
 	})
 }
 
@@ -453,6 +456,7 @@ func (s *ArgoServerSuite) TestPermission() {
 		_, err = s.KubeClient.RbacV1().Roles(nsName).Create(ctx, role, metav1.CreateOptions{})
 		s.Require().NoError(err)
 	})
+	s.Require().NotEmpty(roleName, "LoadRoleYaml must succeed")
 	defer func() {
 		_ = s.KubeClient.RbacV1().Roles(nsName).Delete(ctx, roleName, metav1.DeleteOptions{})
 	}()
@@ -502,6 +506,10 @@ func (s *ArgoServerSuite) TestPermission() {
 		badToken = string(secret.Data["token"])
 	})
 
+	// Stop early if token retrieval failed to prevent cascading failures
+	s.Require().NotEmpty(goodToken, "GetGoodSAToken must succeed")
+	s.Require().NotEmpty(badToken, "GetBadSAToken must succeed")
+
 	// fake / spoofed token
 	fakeToken := "faketoken"
 
@@ -540,6 +548,9 @@ func (s *ArgoServerSuite) TestPermission() {
 			Path("$.metadata.uid").
 			Raw().(string)
 	})
+
+	// Stop early if workflow creation failed to prevent cascading failures
+	s.Require().NotEmpty(uid, "CreateWFGoodToken must succeed")
 
 	// Test list workflows with good token
 	s.Run("ListWFsGoodToken", func() {
@@ -896,6 +907,9 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 			Raw()
 	})
 
+	// Stop early if workflow creation failed to prevent cascading failures
+	s.Require().NotEmpty(name, "Create must succeed")
+
 	s.Given().
 		When().
 		WaitForWorkflow(fixtures.ToBeRunning)
@@ -1029,9 +1043,9 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 }
 
 func (s *ArgoServerSuite) TestWorkflowServiceListArchived() {
-	var bobWf *httpexpect.Value
+	var uidBobWf, nameBobWf string
 	s.Run("CreateArchivedBobWf", func() {
-		bobWf = (s.e().POST("/api/v1/workflows/argo").
+		bobWf := s.e().POST("/api/v1/workflows/argo").
 			WithBytes([]byte(`{
 				  "workflow": {
 					"metadata": {
@@ -1054,16 +1068,14 @@ func (s *ArgoServerSuite) TestWorkflowServiceListArchived() {
 					}
 				  }
 				}`)).
-			Expect().Status(200).JSON())
+			Expect().Status(200).JSON()
+		uidBobWf = bobWf.Path("$.metadata.uid").NotNull().String().Raw()
+		nameBobWf = bobWf.Path("$.metadata.name").NotNull().String().Raw()
 	})
-	var uidBobWf = bobWf.Path("$.metadata.uid").
-		NotNull().String().Raw()
-	var nameBobWf = bobWf.Path("$.metadata.name").
-		NotNull().String().Raw()
 
-	var aliceWf *httpexpect.Value
+	var uidAliceWf, nameAliceWf string
 	s.Run("CreateAlice", func() {
-		aliceWf = (s.e().POST("/api/v1/workflows/argo").
+		aliceWf := s.e().POST("/api/v1/workflows/argo").
 			WithBytes([]byte(`{
 				  "workflow": {
 					"metadata": {
@@ -1086,12 +1098,14 @@ func (s *ArgoServerSuite) TestWorkflowServiceListArchived() {
 					}
 				  }
 				}`)).
-			Expect().Status(200).JSON())
+			Expect().Status(200).JSON()
+		uidAliceWf = aliceWf.Path("$.metadata.uid").NotNull().String().Raw()
+		nameAliceWf = aliceWf.Path("$.metadata.name").NotNull().String().Raw()
 	})
-	var uidAliceWf = aliceWf.Path("$.metadata.uid").
-		NotNull().String().Raw()
-	var nameAliceWf = aliceWf.Path("$.metadata.name").
-		NotNull().String().Raw()
+
+	// Stop early if workflow creation failed to prevent cascading failures
+	s.Require().NotEmpty(nameBobWf, "CreateArchivedBobWf must succeed")
+	s.Require().NotEmpty(nameAliceWf, "CreateAlice must succeed")
 
 	s.Given().When().
 		WaitForWorkflow(fixtures.ToBeArchived, metav1.ListOptions{FieldSelector: "metadata.name=" + nameBobWf}).
@@ -1215,9 +1229,9 @@ func (s *ArgoServerSuite) TestWorkflowServiceListArchived() {
 }
 
 func (s *ArgoServerSuite) TestWorkflowArchiveServiceList() {
-	var bobWf *httpexpect.Value
+	var uidBobWf, nameBobWf string
 	s.Run("CreateArchivedBobWf", func() {
-		bobWf = (s.e().POST("/api/v1/workflows/argo").
+		bobWf := s.e().POST("/api/v1/workflows/argo").
 			WithBytes([]byte(`{
 				  "workflow": {
 					"metadata": {
@@ -1240,16 +1254,14 @@ func (s *ArgoServerSuite) TestWorkflowArchiveServiceList() {
 					}
 				  }
 				}`)).
-			Expect().Status(200).JSON())
+			Expect().Status(200).JSON()
+		uidBobWf = bobWf.Path("$.metadata.uid").NotNull().String().Raw()
+		nameBobWf = bobWf.Path("$.metadata.name").NotNull().String().Raw()
 	})
-	var uidBobWf = bobWf.Path("$.metadata.uid").
-		NotNull().String().Raw()
-	var nameBobWf = bobWf.Path("$.metadata.name").
-		NotNull().String().Raw()
 
-	var aliceWf *httpexpect.Value
+	var uidAliceWf, nameAliceWf string
 	s.Run("CreateAlice", func() {
-		aliceWf = (s.e().POST("/api/v1/workflows/argo").
+		aliceWf := s.e().POST("/api/v1/workflows/argo").
 			WithBytes([]byte(`{
 				  "workflow": {
 					"metadata": {
@@ -1272,12 +1284,14 @@ func (s *ArgoServerSuite) TestWorkflowArchiveServiceList() {
 					}
 				  }
 				}`)).
-			Expect().Status(200).JSON())
+			Expect().Status(200).JSON()
+		uidAliceWf = aliceWf.Path("$.metadata.uid").NotNull().String().Raw()
+		nameAliceWf = aliceWf.Path("$.metadata.name").NotNull().String().Raw()
 	})
-	var uidAliceWf = aliceWf.Path("$.metadata.uid").
-		NotNull().String().Raw()
-	var nameAliceWf = aliceWf.Path("$.metadata.name").
-		NotNull().String().Raw()
+
+	// Stop early if workflow creation failed to prevent cascading failures
+	s.Require().NotEmpty(nameBobWf, "CreateArchivedBobWf must succeed")
+	s.Require().NotEmpty(nameAliceWf, "CreateAlice must succeed")
 
 	s.Given().When().
 		WaitForWorkflow(fixtures.ToBeArchived, metav1.ListOptions{FieldSelector: "metadata.name=" + nameBobWf}).
@@ -1635,6 +1649,8 @@ spec:
 			String().
 			Raw()
 	})
+
+	s.Require().NotEmpty(resourceVersion, "Get must return resourceVersion")
 
 	s.Run("Update", func() {
 		s.e().PUT("/api/v1/cron-workflows/argo/test").
@@ -2335,6 +2351,8 @@ func (s *ArgoServerSuite) TestWorkflowTemplateService() {
 			Raw()
 	})
 
+	s.Require().NotEmpty(resourceVersion, "Get must return resourceVersion")
+
 	s.Run("Update", func() {
 		s.e().PUT("/api/v1/workflow-templates/argo/test").
 			WithBytes([]byte(`{"template": {
@@ -2567,6 +2585,9 @@ func (s *ArgoServerSuite) TestEventSourcesService() {
 			String().
 			Raw()
 	})
+
+	s.Require().NotEmpty(resourceVersion, "GetEventSource must return resourceVersion")
+
 	s.Run("UpdateEventSource", func() {
 		s.e().PUT("/api/v1/event-sources/argo/test-event-source").
 			WithBytes([]byte(`

@@ -774,7 +774,7 @@ ConfigMap volumes support ownership management and SELinux relabeling.
 | args | []string| `[]string` |  | | Arguments to the entrypoint.</br>The container image's CMD is used if this is not provided.</br>Variable references $(VAR_NAME) are expanded using the container's environment. If a variable</br>cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced</br>to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will</br>produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless</br>of whether the variable exists or not. Cannot be updated.</br>More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell</br>+optional</br>+listType=atomic |  |
 | command | []string| `[]string` |  | | Entrypoint array. Not executed within a shell.</br>The container image's ENTRYPOINT is used if this is not provided.</br>Variable references $(VAR_NAME) are expanded using the container's environment. If a variable</br>cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced</br>to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will</br>produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless</br>of whether the variable exists or not. Cannot be updated.</br>More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell</br>+optional</br>+listType=atomic |  |
 | env | [][EnvVar](#env-var)| `[]*EnvVar` |  | | List of environment variables to set in the container.</br>Cannot be updated.</br>+optional</br>+patchMergeKey=name</br>+patchStrategy=merge</br>+listType=map</br>+listMapKey=name |  |
-| envFrom | [][EnvFromSource](#env-from-source)| `[]*EnvFromSource` |  | | List of sources to populate environment variables in the container.</br>The keys defined within a source must be a C_IDENTIFIER. All invalid keys</br>will be reported as an event when the container is starting. When a key exists in multiple</br>sources, the value associated with the last source will take precedence.</br>Values defined by an Env with a duplicate key will take precedence.</br>Cannot be updated.</br>+optional</br>+listType=atomic |  |
+| envFrom | [][EnvFromSource](#env-from-source)| `[]*EnvFromSource` |  | | List of sources to populate environment variables in the container.</br>The keys defined within a source may consist of any printable ASCII characters except '='.</br>When a key exists in multiple</br>sources, the value associated with the last source will take precedence.</br>Values defined by an Env with a duplicate key will take precedence.</br>Cannot be updated.</br>+optional</br>+listType=atomic |  |
 | image | string| `string` |  | | Container image name.</br>More info: https://kubernetes.io/docs/concepts/containers/images</br>This field is optional to allow higher level config management to default or override</br>container images in workload controllers like Deployments and StatefulSets.</br>+optional |  |
 | imagePullPolicy | [PullPolicy](#pull-policy)| `PullPolicy` |  | |  |  |
 | lifecycle | [Lifecycle](#lifecycle)| `Lifecycle` |  | |  |  |
@@ -782,9 +782,10 @@ ConfigMap volumes support ownership management and SELinux relabeling.
 | name | string| `string` |  | | Name of the container specified as a DNS_LABEL.</br>Each container in a pod must have a unique name (DNS_LABEL).</br>Cannot be updated. |  |
 | ports | [][ContainerPort](#container-port)| `[]*ContainerPort` |  | | List of ports to expose from the container. Not specifying a port here</br>DOES NOT prevent that port from being exposed. Any port which is</br>listening on the default "0.0.0.0" address inside a container will be</br>accessible from the network.</br>Modifying this array with strategic merge patch may corrupt the data.</br>For more information See https://github.com/kubernetes/kubernetes/issues/108255.</br>Cannot be updated.</br>+optional</br>+patchMergeKey=containerPort</br>+patchStrategy=merge</br>+listType=map</br>+listMapKey=containerPort</br>+listMapKey=protocol |  |
 | readinessProbe | [Probe](#probe)| `Probe` |  | |  |  |
-| resizePolicy | [][ContainerResizePolicy](#container-resize-policy)| `[]*ContainerResizePolicy` |  | | Resources resize policy for the container.</br>+featureGate=InPlacePodVerticalScaling</br>+optional</br>+listType=atomic |  |
+| resizePolicy | [][ContainerResizePolicy](#container-resize-policy)| `[]*ContainerResizePolicy` |  | | Resources resize policy for the container.</br>This field cannot be set on ephemeral containers.</br>+featureGate=InPlacePodVerticalScaling</br>+optional</br>+listType=atomic |  |
 | resources | [ResourceRequirements](#resource-requirements)| `ResourceRequirements` |  | |  |  |
 | restartPolicy | [ContainerRestartPolicy](#container-restart-policy)| `ContainerRestartPolicy` |  | |  |  |
+| restartPolicyRules | [][ContainerRestartRule](#container-restart-rule)| `[]*ContainerRestartRule` |  | | Represents a list of rules to be checked to determine if the</br>container should be restarted on exit. The rules are evaluated in</br>order. Once a rule matches a container exit condition, the remaining</br>rules are ignored. If no rule matches the container exit condition,</br>the Container-level restart policy determines the whether the container</br>is restarted or not. Constraints on the rules:</br>At most 20 rules are allowed.</br>Rules can have the same action.</br>Identical rules are not forbidden in validations.</br>When rules are specified, container MUST set RestartPolicy explicitly</br>even it if matches the Pod's RestartPolicy.</br>+featureGate=ContainerRestartRules</br>+optional</br>+listType=atomic |  |
 | securityContext | [SecurityContext](#security-context)| `SecurityContext` |  | |  |  |
 | startupProbe | [Probe](#probe)| `Probe` |  | |  |  |
 | stdin | boolean| `bool` |  | | Whether this container should allocate a buffer for stdin in the container runtime. If this</br>is not set, reads from stdin in the container will always result in EOF.</br>Default is false.</br>+optional |  |
@@ -813,7 +814,7 @@ ConfigMap volumes support ownership management and SELinux relabeling.
 | command | []string| `[]string` |  | | Entrypoint array. Not executed within a shell.</br>The container image's ENTRYPOINT is used if this is not provided.</br>Variable references $(VAR_NAME) are expanded using the container's environment. If a variable</br>cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced</br>to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will</br>produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless</br>of whether the variable exists or not. Cannot be updated.</br>More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell</br>+optional</br>+listType=atomic |  |
 | dependencies | []string| `[]string` |  | |  |  |
 | env | [][EnvVar](#env-var)| `[]*EnvVar` |  | | List of environment variables to set in the container.</br>Cannot be updated.</br>+optional</br>+patchMergeKey=name</br>+patchStrategy=merge</br>+listType=map</br>+listMapKey=name |  |
-| envFrom | [][EnvFromSource](#env-from-source)| `[]*EnvFromSource` |  | | List of sources to populate environment variables in the container.</br>The keys defined within a source must be a C_IDENTIFIER. All invalid keys</br>will be reported as an event when the container is starting. When a key exists in multiple</br>sources, the value associated with the last source will take precedence.</br>Values defined by an Env with a duplicate key will take precedence.</br>Cannot be updated.</br>+optional</br>+listType=atomic |  |
+| envFrom | [][EnvFromSource](#env-from-source)| `[]*EnvFromSource` |  | | List of sources to populate environment variables in the container.</br>The keys defined within a source may consist of any printable ASCII characters except '='.</br>When a key exists in multiple</br>sources, the value associated with the last source will take precedence.</br>Values defined by an Env with a duplicate key will take precedence.</br>Cannot be updated.</br>+optional</br>+listType=atomic |  |
 | image | string| `string` |  | | Container image name.</br>More info: https://kubernetes.io/docs/concepts/containers/images</br>This field is optional to allow higher level config management to default or override</br>container images in workload controllers like Deployments and StatefulSets.</br>+optional |  |
 | imagePullPolicy | [PullPolicy](#pull-policy)| `PullPolicy` |  | |  |  |
 | lifecycle | [Lifecycle](#lifecycle)| `Lifecycle` |  | |  |  |
@@ -821,9 +822,10 @@ ConfigMap volumes support ownership management and SELinux relabeling.
 | name | string| `string` |  | | Name of the container specified as a DNS_LABEL.</br>Each container in a pod must have a unique name (DNS_LABEL).</br>Cannot be updated. |  |
 | ports | [][ContainerPort](#container-port)| `[]*ContainerPort` |  | | List of ports to expose from the container. Not specifying a port here</br>DOES NOT prevent that port from being exposed. Any port which is</br>listening on the default "0.0.0.0" address inside a container will be</br>accessible from the network.</br>Modifying this array with strategic merge patch may corrupt the data.</br>For more information See https://github.com/kubernetes/kubernetes/issues/108255.</br>Cannot be updated.</br>+optional</br>+patchMergeKey=containerPort</br>+patchStrategy=merge</br>+listType=map</br>+listMapKey=containerPort</br>+listMapKey=protocol |  |
 | readinessProbe | [Probe](#probe)| `Probe` |  | |  |  |
-| resizePolicy | [][ContainerResizePolicy](#container-resize-policy)| `[]*ContainerResizePolicy` |  | | Resources resize policy for the container.</br>+featureGate=InPlacePodVerticalScaling</br>+optional</br>+listType=atomic |  |
+| resizePolicy | [][ContainerResizePolicy](#container-resize-policy)| `[]*ContainerResizePolicy` |  | | Resources resize policy for the container.</br>This field cannot be set on ephemeral containers.</br>+featureGate=InPlacePodVerticalScaling</br>+optional</br>+listType=atomic |  |
 | resources | [ResourceRequirements](#resource-requirements)| `ResourceRequirements` |  | |  |  |
 | restartPolicy | [ContainerRestartPolicy](#container-restart-policy)| `ContainerRestartPolicy` |  | |  |  |
+| restartPolicyRules | [][ContainerRestartRule](#container-restart-rule)| `[]*ContainerRestartRule` |  | | Represents a list of rules to be checked to determine if the</br>container should be restarted on exit. The rules are evaluated in</br>order. Once a rule matches a container exit condition, the remaining</br>rules are ignored. If no rule matches the container exit condition,</br>the Container-level restart policy determines the whether the container</br>is restarted or not. Constraints on the rules:</br>At most 20 rules are allowed.</br>Rules can have the same action.</br>Identical rules are not forbidden in validations.</br>When rules are specified, container MUST set RestartPolicy explicitly</br>even it if matches the Pod's RestartPolicy.</br>+featureGate=ContainerRestartRules</br>+optional</br>+listType=atomic |  |
 | securityContext | [SecurityContext](#security-context)| `SecurityContext` |  | |  |  |
 | startupProbe | [Probe](#probe)| `Probe` |  | |  |  |
 | stdin | boolean| `bool` |  | | Whether this container should allocate a buffer for stdin in the container runtime. If this</br>is not set, reads from stdin in the container will always result in EOF.</br>Default is false.</br>+optional |  |
@@ -875,14 +877,80 @@ ConfigMap volumes support ownership management and SELinux relabeling.
 ### <span id="container-restart-policy"></span> ContainerRestartPolicy
 
 
-> This may only be set for init containers and only allowed value is "Always".
+> The only allowed values are "Always", "Never", and "OnFailure".
   
 
 
 
 | Name | Type | Go type | Default | Description | Example |
 |------|------|---------| ------- |-------------|---------|
-| ContainerRestartPolicy | string| string | | This may only be set for init containers and only allowed value is "Always". |  |
+| ContainerRestartPolicy | string| string | | The only allowed values are "Always", "Never", and "OnFailure". |  |
+
+
+
+### <span id="container-restart-rule"></span> ContainerRestartRule
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| action | [ContainerRestartRuleAction](#container-restart-rule-action)| `ContainerRestartRuleAction` |  | |  |  |
+| exitCodes | [ContainerRestartRuleOnExitCodes](#container-restart-rule-on-exit-codes)| `ContainerRestartRuleOnExitCodes` |  | |  |  |
+
+
+
+### <span id="container-restart-rule-action"></span> ContainerRestartRuleAction
+
+
+> ContainerRestartRuleAction describes the action to take when the
+container exits.
+  
+
+
+
+| Name | Type | Go type | Default | Description | Example |
+|------|------|---------| ------- |-------------|---------|
+| ContainerRestartRuleAction | string| string | | ContainerRestartRuleAction describes the action to take when the</br>container exits. |  |
+
+
+
+### <span id="container-restart-rule-on-exit-codes"></span> ContainerRestartRuleOnExitCodes
+
+
+> ContainerRestartRuleOnExitCodes describes the condition
+for handling an exited container based on its exit codes.
+  
+
+
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| operator | [ContainerRestartRuleOnExitCodesOperator](#container-restart-rule-on-exit-codes-operator)| `ContainerRestartRuleOnExitCodesOperator` |  | |  |  |
+| values | []int32 (formatted integer)| `[]int32` |  | | Specifies the set of values to check for container exit codes.</br>At most 255 elements are allowed.</br>+optional</br>+listType=set |  |
+
+
+
+### <span id="container-restart-rule-on-exit-codes-operator"></span> ContainerRestartRuleOnExitCodesOperator
+
+
+> ContainerRestartRuleOnExitCodesOperator describes the operator
+to take for the exit codes.
+  
+
+
+
+| Name | Type | Go type | Default | Description | Example |
+|------|------|---------| ------- |-------------|---------|
+| ContainerRestartRuleOnExitCodesOperator | string| string | | ContainerRestartRuleOnExitCodesOperator describes the operator</br>to take for the exit codes. |  |
 
 
 
@@ -1174,7 +1242,7 @@ can be used as map keys in json.
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | configMapRef | [ConfigMapEnvSource](#config-map-env-source)| `ConfigMapEnvSource` |  | |  |  |
-| prefix | string| `string` |  | | Optional text to prepend to the name of each environment variable. Must be a C_IDENTIFIER.</br>+optional |  |
+| prefix | string| `string` |  | | Optional text to prepend to the name of each environment variable.</br>May consist of any printable ASCII characters except '='.</br>+optional |  |
 | secretRef | [SecretEnvSource](#secret-env-source)| `SecretEnvSource` |  | |  |  |
 
 
@@ -1190,7 +1258,7 @@ can be used as map keys in json.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| name | string| `string` |  | | Name of the environment variable. Must be a C_IDENTIFIER. |  |
+| name | string| `string` |  | | Name of the environment variable.</br>May consist of any printable ASCII characters except '='. |  |
 | value | string| `string` |  | | Variable references $(VAR_NAME) are expanded</br>using the previously defined environment variables in the container and</br>any service environment variables. If a variable cannot be resolved,</br>the reference in the input string will be unchanged. Double $$ are reduced</br>to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e.</br>"$$(VAR_NAME)" will produce the string literal "$(VAR_NAME)".</br>Escaped references will never be expanded, regardless of whether the variable</br>exists or not.</br>Defaults to "".</br>+optional |  |
 | valueFrom | [EnvVarSource](#env-var-source)| `EnvVarSource` |  | |  |  |
 
@@ -1209,6 +1277,7 @@ can be used as map keys in json.
 |------|------|---------|:--------:| ------- |-------------|---------|
 | configMapKeyRef | [ConfigMapKeySelector](#config-map-key-selector)| `ConfigMapKeySelector` |  | |  |  |
 | fieldRef | [ObjectFieldSelector](#object-field-selector)| `ObjectFieldSelector` |  | |  |  |
+| fileKeyRef | [FileKeySelector](#file-key-selector)| `FileKeySelector` |  | |  |  |
 | resourceFieldRef | [ResourceFieldSelector](#resource-field-selector)| `ResourceFieldSelector` |  | |  |  |
 | secretKeyRef | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
 
@@ -1332,6 +1401,27 @@ The exact format is defined in sigs.k8s.io/structured-merge-diff
 
 
 `any`
+
+### <span id="file-key-selector"></span> FileKeySelector
+
+
+> +structType=atomic
+  
+
+
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| key | string| `string` |  | | The key within the env file. An invalid key will prevent the pod from starting.</br>The keys defined within a source may consist of any printable ASCII characters except '='.</br>During Alpha stage of the EnvFiles feature gate, the key size is limited to 128 characters.</br>+required |  |
+| optional | boolean| `bool` |  | | Specify whether the file or its key must be defined. If the file or key</br>does not exist, then the env var is not published.</br>If optional is set to true and the specified key does not exist,</br>the environment variable will not be set in the Pod's containers.</br></br>If optional is set to false and the specified key does not exist,</br>an error will be returned during Pod creation.</br>+optional</br>+default=false |  |
+| path | string| `string` |  | | The path within the volume from which to select the file.</br>Must be relative and may not contain the '..' path or start with '..'.</br>+required |  |
+| volumeName | string| `string` |  | | The name of the volume mount containing the env file.</br>+required |  |
+
+
 
 ### <span id="flex-volume-source"></span> FlexVolumeSource
 
@@ -1536,7 +1626,7 @@ into the Pod's container.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| endpoints | string| `string` |  | | endpoints is the endpoint name that details Glusterfs topology.</br>More info: https://examples.k8s.io/volumes/glusterfs/README.md#create-a-pod |  |
+| endpoints | string| `string` |  | | endpoints is the endpoint name that details Glusterfs topology. |  |
 | path | string| `string` |  | | path is the Glusterfs volume path.</br>More info: https://examples.k8s.io/volumes/glusterfs/README.md#create-a-pod |  |
 | readOnly | boolean| `bool` |  | | readOnly here will force the Glusterfs volume to be mounted with read-only permissions.</br>Defaults to false.</br>More info: https://examples.k8s.io/volumes/glusterfs/README.md#create-a-pod</br>+optional |  |
 
@@ -1863,6 +1953,7 @@ ISCSI volumes support ownership management and SELinux relabeling.
 > +protobuf=true
 +protobuf.options.(gogoproto.goproto_stringer)=false
 +k8s:openapi-gen=true
++k8s:openapi-model-package=io.k8s.apimachinery.pkg.util.intstr
   
 
 
@@ -2610,7 +2701,7 @@ and allows a Source for provider-specific attributes
 | resources | [VolumeResourceRequirements](#volume-resource-requirements)| `VolumeResourceRequirements` |  | |  |  |
 | selector | [LabelSelector](#label-selector)| `LabelSelector` |  | |  |  |
 | storageClassName | string| `string` |  | | storageClassName is the name of the StorageClass required by the claim.</br>More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1</br>+optional |  |
-| volumeAttributesClassName | string| `string` |  | | volumeAttributesClassName may be used to set the VolumeAttributesClass used by this claim.</br>If specified, the CSI driver will create or update the volume with the attributes defined</br>in the corresponding VolumeAttributesClass. This has a different purpose than storageClassName,</br>it can be changed after the claim is created. An empty string value means that no VolumeAttributesClass</br>will be applied to the claim but it's not allowed to reset this field to empty string once it is set.</br>If unspecified and the PersistentVolumeClaim is unbound, the default VolumeAttributesClass</br>will be set by the persistentvolume controller if it exists.</br>If the resource referred to by volumeAttributesClass does not exist, this PersistentVolumeClaim will be</br>set to a Pending state, as reflected by the modifyVolumeStatus field, until such as a resource</br>exists.</br>More info: https://kubernetes.io/docs/concepts/storage/volume-attributes-classes/</br>(Beta) Using this field requires the VolumeAttributesClass feature gate to be enabled (off by default).</br>+featureGate=VolumeAttributesClass</br>+optional |  |
+| volumeAttributesClassName | string| `string` |  | | volumeAttributesClassName may be used to set the VolumeAttributesClass used by this claim.</br>If specified, the CSI driver will create or update the volume with the attributes defined</br>in the corresponding VolumeAttributesClass. This has a different purpose than storageClassName,</br>it can be changed after the claim is created. An empty string or nil value indicates that no</br>VolumeAttributesClass will be applied to the claim. If the claim enters an Infeasible error state,</br>this field can be reset to its previous value (including nil) to cancel the modification.</br>If the resource referred to by volumeAttributesClass does not exist, this PersistentVolumeClaim will be</br>set to a Pending state, as reflected by the modifyVolumeStatus field, until such as a resource</br>exists.</br>More info: https://kubernetes.io/docs/concepts/storage/volume-attributes-classes/</br>+featureGate=VolumeAttributesClass</br>+optional |  |
 | volumeMode | [PersistentVolumeMode](#persistent-volume-mode)| `PersistentVolumeMode` |  | |  |  |
 | volumeName | string| `string` |  | | volumeName is the binding reference to the PersistentVolume backing this claim.</br>+optional |  |
 
@@ -2787,8 +2878,33 @@ a pod of the set of pods is running
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| preferredDuringSchedulingIgnoredDuringExecution | [][WeightedPodAffinityTerm](#weighted-pod-affinity-term)| `[]*WeightedPodAffinityTerm` |  | | The scheduler will prefer to schedule pods to nodes that satisfy</br>the anti-affinity expressions specified by this field, but it may choose</br>a node that violates one or more of the expressions. The node that is</br>most preferred is the one with the greatest sum of weights, i.e.</br>for each node that meets all of the scheduling requirements (resource</br>request, requiredDuringScheduling anti-affinity expressions, etc.),</br>compute a sum by iterating through the elements of this field and adding</br>"weight" to the sum if the node has pods which matches the corresponding podAffinityTerm; the</br>node(s) with the highest sum are the most preferred.</br>+optional</br>+listType=atomic |  |
+| preferredDuringSchedulingIgnoredDuringExecution | [][WeightedPodAffinityTerm](#weighted-pod-affinity-term)| `[]*WeightedPodAffinityTerm` |  | | The scheduler will prefer to schedule pods to nodes that satisfy</br>the anti-affinity expressions specified by this field, but it may choose</br>a node that violates one or more of the expressions. The node that is</br>most preferred is the one with the greatest sum of weights, i.e.</br>for each node that meets all of the scheduling requirements (resource</br>request, requiredDuringScheduling anti-affinity expressions, etc.),</br>compute a sum by iterating through the elements of this field and subtracting</br>"weight" from the sum if the node has pods which matches the corresponding podAffinityTerm; the</br>node(s) with the highest sum are the most preferred.</br>+optional</br>+listType=atomic |  |
 | requiredDuringSchedulingIgnoredDuringExecution | [][PodAffinityTerm](#pod-affinity-term)| `[]*PodAffinityTerm` |  | | If the anti-affinity requirements specified by this field are not met at</br>scheduling time, the pod will not be scheduled onto the node.</br>If the anti-affinity requirements specified by this field cease to be met</br>at some point during pod execution (e.g. due to a pod label update), the</br>system may or may not try to eventually evict the pod from its node.</br>When there are multiple elements, the lists of nodes corresponding to each</br>podAffinityTerm are intersected, i.e. all terms must be satisfied.</br>+optional</br>+listType=atomic |  |
+
+
+
+### <span id="pod-certificate-projection"></span> PodCertificateProjection
+
+
+> PodCertificateProjection provides a private key and X.509 certificate in the
+pod filesystem.
+  
+
+
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| certificateChainPath | string| `string` |  | | Write the certificate chain at this path in the projected volume.</br></br>Most applications should use credentialBundlePath.  When using keyPath</br>and certificateChainPath, your application needs to check that the key</br>and leaf certificate are consistent, because it is possible to read the</br>files mid-rotation.</br></br>+optional |  |
+| credentialBundlePath | string| `string` |  | | Write the credential bundle at this path in the projected volume.</br></br>The credential bundle is a single file that contains multiple PEM blocks.</br>The first PEM block is a PRIVATE KEY block, containing a PKCS#8 private</br>key.</br></br>The remaining blocks are CERTIFICATE blocks, containing the issued</br>certificate chain from the signer (leaf and any intermediates).</br></br>Using credentialBundlePath lets your Pod's application code make a single</br>atomic read that retrieves a consistent key and certificate chain.  If you</br>project them to separate files, your application code will need to</br>additionally check that the leaf certificate was issued to the key.</br></br>+optional |  |
+| keyPath | string| `string` |  | | Write the key at this path in the projected volume.</br></br>Most applications should use credentialBundlePath.  When using keyPath</br>and certificateChainPath, your application needs to check that the key</br>and leaf certificate are consistent, because it is possible to read the</br>files mid-rotation.</br></br>+optional |  |
+| keyType | string| `string` |  | | The type of keypair Kubelet will generate for the pod.</br></br>Valid values are "RSA3072", "RSA4096", "ECDSAP256", "ECDSAP384",</br>"ECDSAP521", and "ED25519".</br></br>+required |  |
+| maxExpirationSeconds | int32 (formatted integer)| `int32` |  | | maxExpirationSeconds is the maximum lifetime permitted for the</br>certificate.</br></br>Kubelet copies this value verbatim into the PodCertificateRequests it</br>generates for this projection.</br></br>If omitted, kube-apiserver will set it to 86400(24 hours). kube-apiserver</br>will reject values shorter than 3600 (1 hour).  The maximum allowable</br>value is 7862400 (91 days).</br></br>The signer implementation is then free to issue a certificate with any</br>lifetime *shorter* than MaxExpirationSeconds, but no shorter than 3600</br>seconds (1 hour).  This constraint is enforced by kube-apiserver.</br>`kubernetes.io` signers will never issue certificates with a lifetime</br>longer than 24 hours.</br></br>+optional |  |
+| signerName | string| `string` |  | | Kubelet's generated CSRs will be addressed to this signer.</br></br>+required |  |
+| userAnnotations | map of string| `map[string]string` |  | | userAnnotations allow pod authors to pass additional information to</br>the signer implementation.  Kubernetes does not restrict or validate this</br>metadata in any way.</br></br>These values are copied verbatim into the `spec.unverifiedUserAnnotations` field of</br>the PodCertificateRequest objects that Kubelet creates.</br></br>Entries are subject to the same validation as object metadata annotations,</br>with the addition that all keys must be domain-prefixed. No restrictions</br>are placed on values, except an overall size limitation on the entire field.</br></br>Signers should document the keys and values they support. Signers should</br>deny requests that contain keys they do not recognize. |  |
 
 
 
@@ -3080,6 +3196,7 @@ cause implementors to also use a fixed point implementation.
 +protobuf.options.(gogoproto.goproto_stringer)=false
 +k8s:deepcopy-gen=true
 +k8s:openapi-gen=true
++k8s:openapi-model-package=io.k8s.apimachinery.pkg.api.resource
   
 
 
@@ -3229,7 +3346,7 @@ cause implementors to also use a fixed point implementation.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| claims | [][ResourceClaim](#resource-claim)| `[]*ResourceClaim` |  | | Claims lists the names of resources, defined in spec.resourceClaims,</br>that are used by this container.</br></br>This is an alpha field and requires enabling the</br>DynamicResourceAllocation feature gate.</br></br>This field is immutable. It can only be set for containers.</br></br>+listType=map</br>+listMapKey=name</br>+featureGate=DynamicResourceAllocation</br>+optional |  |
+| claims | [][ResourceClaim](#resource-claim)| `[]*ResourceClaim` |  | | Claims lists the names of resources, defined in spec.resourceClaims,</br>that are used by this container.</br></br>This field depends on the</br>DynamicResourceAllocation feature gate.</br></br>This field is immutable. It can only be set for containers.</br></br>+listType=map</br>+listMapKey=name</br>+featureGate=DynamicResourceAllocation</br>+optional |  |
 | limits | [ResourceList](#resource-list)| `ResourceList` |  | |  |  |
 | requests | [ResourceList](#resource-list)| `ResourceList` |  | |  |  |
 
@@ -3449,7 +3566,7 @@ cause implementors to also use a fixed point implementation.
 | args | []string| `[]string` |  | | Arguments to the entrypoint.</br>The container image's CMD is used if this is not provided.</br>Variable references $(VAR_NAME) are expanded using the container's environment. If a variable</br>cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced</br>to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will</br>produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless</br>of whether the variable exists or not. Cannot be updated.</br>More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell</br>+optional</br>+listType=atomic |  |
 | command | []string| `[]string` |  | | Entrypoint array. Not executed within a shell.</br>The container image's ENTRYPOINT is used if this is not provided.</br>Variable references $(VAR_NAME) are expanded using the container's environment. If a variable</br>cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced</br>to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will</br>produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless</br>of whether the variable exists or not. Cannot be updated.</br>More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell</br>+optional</br>+listType=atomic |  |
 | env | [][EnvVar](#env-var)| `[]*EnvVar` |  | | List of environment variables to set in the container.</br>Cannot be updated.</br>+optional</br>+patchMergeKey=name</br>+patchStrategy=merge</br>+listType=map</br>+listMapKey=name |  |
-| envFrom | [][EnvFromSource](#env-from-source)| `[]*EnvFromSource` |  | | List of sources to populate environment variables in the container.</br>The keys defined within a source must be a C_IDENTIFIER. All invalid keys</br>will be reported as an event when the container is starting. When a key exists in multiple</br>sources, the value associated with the last source will take precedence.</br>Values defined by an Env with a duplicate key will take precedence.</br>Cannot be updated.</br>+optional</br>+listType=atomic |  |
+| envFrom | [][EnvFromSource](#env-from-source)| `[]*EnvFromSource` |  | | List of sources to populate environment variables in the container.</br>The keys defined within a source may consist of any printable ASCII characters except '='.</br>When a key exists in multiple</br>sources, the value associated with the last source will take precedence.</br>Values defined by an Env with a duplicate key will take precedence.</br>Cannot be updated.</br>+optional</br>+listType=atomic |  |
 | image | string| `string` |  | | Container image name.</br>More info: https://kubernetes.io/docs/concepts/containers/images</br>This field is optional to allow higher level config management to default or override</br>container images in workload controllers like Deployments and StatefulSets.</br>+optional |  |
 | imagePullPolicy | [PullPolicy](#pull-policy)| `PullPolicy` |  | |  |  |
 | lifecycle | [Lifecycle](#lifecycle)| `Lifecycle` |  | |  |  |
@@ -3457,9 +3574,10 @@ cause implementors to also use a fixed point implementation.
 | name | string| `string` |  | | Name of the container specified as a DNS_LABEL.</br>Each container in a pod must have a unique name (DNS_LABEL).</br>Cannot be updated. |  |
 | ports | [][ContainerPort](#container-port)| `[]*ContainerPort` |  | | List of ports to expose from the container. Not specifying a port here</br>DOES NOT prevent that port from being exposed. Any port which is</br>listening on the default "0.0.0.0" address inside a container will be</br>accessible from the network.</br>Modifying this array with strategic merge patch may corrupt the data.</br>For more information See https://github.com/kubernetes/kubernetes/issues/108255.</br>Cannot be updated.</br>+optional</br>+patchMergeKey=containerPort</br>+patchStrategy=merge</br>+listType=map</br>+listMapKey=containerPort</br>+listMapKey=protocol |  |
 | readinessProbe | [Probe](#probe)| `Probe` |  | |  |  |
-| resizePolicy | [][ContainerResizePolicy](#container-resize-policy)| `[]*ContainerResizePolicy` |  | | Resources resize policy for the container.</br>+featureGate=InPlacePodVerticalScaling</br>+optional</br>+listType=atomic |  |
+| resizePolicy | [][ContainerResizePolicy](#container-resize-policy)| `[]*ContainerResizePolicy` |  | | Resources resize policy for the container.</br>This field cannot be set on ephemeral containers.</br>+featureGate=InPlacePodVerticalScaling</br>+optional</br>+listType=atomic |  |
 | resources | [ResourceRequirements](#resource-requirements)| `ResourceRequirements` |  | |  |  |
 | restartPolicy | [ContainerRestartPolicy](#container-restart-policy)| `ContainerRestartPolicy` |  | |  |  |
+| restartPolicyRules | [][ContainerRestartRule](#container-restart-rule)| `[]*ContainerRestartRule` |  | | Represents a list of rules to be checked to determine if the</br>container should be restarted on exit. The rules are evaluated in</br>order. Once a rule matches a container exit condition, the remaining</br>rules are ignored. If no rule matches the container exit condition,</br>the Container-level restart policy determines the whether the container</br>is restarted or not. Constraints on the rules:</br>At most 20 rules are allowed.</br>Rules can have the same action.</br>Identical rules are not forbidden in validations.</br>When rules are specified, container MUST set RestartPolicy explicitly</br>even it if matches the Pod's RestartPolicy.</br>+featureGate=ContainerRestartRules</br>+optional</br>+listType=atomic |  |
 | securityContext | [SecurityContext](#security-context)| `SecurityContext` |  | |  |  |
 | source | string| `string` |  | | Source contains the source code of the script to execute</br>+optional |  |
 | startupProbe | [Probe](#probe)| `Probe` |  | |  |  |
@@ -4150,7 +4268,7 @@ intent and helps make sure that UIDs and names do not get conflated.
 | args | []string| `[]string` |  | | Arguments to the entrypoint.</br>The container image's CMD is used if this is not provided.</br>Variable references $(VAR_NAME) are expanded using the container's environment. If a variable</br>cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced</br>to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will</br>produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless</br>of whether the variable exists or not. Cannot be updated.</br>More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell</br>+optional</br>+listType=atomic |  |
 | command | []string| `[]string` |  | | Entrypoint array. Not executed within a shell.</br>The container image's ENTRYPOINT is used if this is not provided.</br>Variable references $(VAR_NAME) are expanded using the container's environment. If a variable</br>cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced</br>to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will</br>produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless</br>of whether the variable exists or not. Cannot be updated.</br>More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell</br>+optional</br>+listType=atomic |  |
 | env | [][EnvVar](#env-var)| `[]*EnvVar` |  | | List of environment variables to set in the container.</br>Cannot be updated.</br>+optional</br>+patchMergeKey=name</br>+patchStrategy=merge</br>+listType=map</br>+listMapKey=name |  |
-| envFrom | [][EnvFromSource](#env-from-source)| `[]*EnvFromSource` |  | | List of sources to populate environment variables in the container.</br>The keys defined within a source must be a C_IDENTIFIER. All invalid keys</br>will be reported as an event when the container is starting. When a key exists in multiple</br>sources, the value associated with the last source will take precedence.</br>Values defined by an Env with a duplicate key will take precedence.</br>Cannot be updated.</br>+optional</br>+listType=atomic |  |
+| envFrom | [][EnvFromSource](#env-from-source)| `[]*EnvFromSource` |  | | List of sources to populate environment variables in the container.</br>The keys defined within a source may consist of any printable ASCII characters except '='.</br>When a key exists in multiple</br>sources, the value associated with the last source will take precedence.</br>Values defined by an Env with a duplicate key will take precedence.</br>Cannot be updated.</br>+optional</br>+listType=atomic |  |
 | image | string| `string` |  | | Container image name.</br>More info: https://kubernetes.io/docs/concepts/containers/images</br>This field is optional to allow higher level config management to default or override</br>container images in workload controllers like Deployments and StatefulSets.</br>+optional |  |
 | imagePullPolicy | [PullPolicy](#pull-policy)| `PullPolicy` |  | |  |  |
 | lifecycle | [Lifecycle](#lifecycle)| `Lifecycle` |  | |  |  |
@@ -4159,9 +4277,10 @@ intent and helps make sure that UIDs and names do not get conflated.
 | name | string| `string` |  | | Name of the container specified as a DNS_LABEL.</br>Each container in a pod must have a unique name (DNS_LABEL).</br>Cannot be updated. |  |
 | ports | [][ContainerPort](#container-port)| `[]*ContainerPort` |  | | List of ports to expose from the container. Not specifying a port here</br>DOES NOT prevent that port from being exposed. Any port which is</br>listening on the default "0.0.0.0" address inside a container will be</br>accessible from the network.</br>Modifying this array with strategic merge patch may corrupt the data.</br>For more information See https://github.com/kubernetes/kubernetes/issues/108255.</br>Cannot be updated.</br>+optional</br>+patchMergeKey=containerPort</br>+patchStrategy=merge</br>+listType=map</br>+listMapKey=containerPort</br>+listMapKey=protocol |  |
 | readinessProbe | [Probe](#probe)| `Probe` |  | |  |  |
-| resizePolicy | [][ContainerResizePolicy](#container-resize-policy)| `[]*ContainerResizePolicy` |  | | Resources resize policy for the container.</br>+featureGate=InPlacePodVerticalScaling</br>+optional</br>+listType=atomic |  |
+| resizePolicy | [][ContainerResizePolicy](#container-resize-policy)| `[]*ContainerResizePolicy` |  | | Resources resize policy for the container.</br>This field cannot be set on ephemeral containers.</br>+featureGate=InPlacePodVerticalScaling</br>+optional</br>+listType=atomic |  |
 | resources | [ResourceRequirements](#resource-requirements)| `ResourceRequirements` |  | |  |  |
 | restartPolicy | [ContainerRestartPolicy](#container-restart-policy)| `ContainerRestartPolicy` |  | |  |  |
+| restartPolicyRules | [][ContainerRestartRule](#container-restart-rule)| `[]*ContainerRestartRule` |  | | Represents a list of rules to be checked to determine if the</br>container should be restarted on exit. The rules are evaluated in</br>order. Once a rule matches a container exit condition, the remaining</br>rules are ignored. If no rule matches the container exit condition,</br>the Container-level restart policy determines the whether the container</br>is restarted or not. Constraints on the rules:</br>At most 20 rules are allowed.</br>Rules can have the same action.</br>Identical rules are not forbidden in validations.</br>When rules are specified, container MUST set RestartPolicy explicitly</br>even it if matches the Pod's RestartPolicy.</br>+featureGate=ContainerRestartRules</br>+optional</br>+listType=atomic |  |
 | securityContext | [SecurityContext](#security-context)| `SecurityContext` |  | |  |  |
 | startupProbe | [Probe](#probe)| `Probe` |  | |  |  |
 | stdin | boolean| `bool` |  | | Whether this container should allocate a buffer for stdin in the container runtime. If this</br>is not set, reads from stdin in the container will always result in EOF.</br>Default is false.</br>+optional |  |
@@ -4300,6 +4419,7 @@ intent and helps make sure that UIDs and names do not get conflated.
 | clusterTrustBundle | [ClusterTrustBundleProjection](#cluster-trust-bundle-projection)| `ClusterTrustBundleProjection` |  | |  |  |
 | configMap | [ConfigMapProjection](#config-map-projection)| `ConfigMapProjection` |  | |  |  |
 | downwardAPI | [DownwardAPIProjection](#downward-api-projection)| `DownwardAPIProjection` |  | |  |  |
+| podCertificate | [PodCertificateProjection](#pod-certificate-projection)| `PodCertificateProjection` |  | |  |  |
 | secret | [SecretProjection](#secret-projection)| `SecretProjection` |  | |  |  |
 | serviceAccountToken | [ServiceAccountTokenProjection](#service-account-token-projection)| `ServiceAccountTokenProjection` |  | |  |  |
 

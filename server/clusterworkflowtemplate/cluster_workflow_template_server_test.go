@@ -7,7 +7,10 @@ import (
 	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	authorizationv1 "k8s.io/api/authorization/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
+	k8stesting "k8s.io/client-go/testing"
 
 	clusterwftmplpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/clusterworkflowtemplate"
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
@@ -152,8 +155,13 @@ const userEmailLabel = "my-sub.at.your.org"
 
 func getClusterWorkflowTemplateServer(t *testing.T) (clusterwftmplpkg.ClusterWorkflowTemplateServiceServer, context.Context) {
 	t.Helper()
-	kubeClientSet := fake.NewSimpleClientset()
-	wfClientset := wftFake.NewSimpleClientset(&unlabelled, &cwftObj2, &cwftObj3)
+	kubeClientSet := fake.NewClientset()
+	kubeClientSet.PrependReactor("create", "selfsubjectaccessreviews", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		return true, &authorizationv1.SelfSubjectAccessReview{
+			Status: authorizationv1.SubjectAccessReviewStatus{Allowed: true},
+		}, nil
+	})
+	wfClientset := wftFake.NewClientset(&unlabelled, &cwftObj2, &cwftObj3)
 	ctx := context.WithValue(logging.TestContext(t.Context()), auth.WfKey, wfClientset)
 	ctx = context.WithValue(ctx, auth.KubeKey, kubeClientSet)
 	ctx = context.WithValue(ctx, auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}, Email: "my-sub@your.org"})
@@ -206,6 +214,25 @@ func TestWorkflowTemplateServer_GetClusterWorkflowTemplate(t *testing.T) {
 			Name: "cluster-workflow-template-whalesay-template",
 		})
 		require.Error(t, err)
+	})
+	t.Run("Unauthorized", func(t *testing.T) {
+		kubeClientSet := fake.NewClientset()
+		kubeClientSet.PrependReactor("create", "selfsubjectaccessreviews", func(action k8stesting.Action) (bool, runtime.Object, error) {
+			return true, &authorizationv1.SelfSubjectAccessReview{
+				Status: authorizationv1.SubjectAccessReviewStatus{Allowed: false},
+			}, nil
+		})
+		wfClientset := wftFake.NewClientset(&cwftObj2)
+		ctx := context.WithValue(context.WithValue(context.WithValue(logging.TestContext(t.Context()),
+			auth.WfKey, wfClientset),
+			auth.KubeKey, kubeClientSet),
+			auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
+		server := NewClusterWorkflowTemplateServer(instanceid.NewService("my-instanceid"), nil, nil)
+		_, err := server.GetClusterWorkflowTemplate(ctx, &clusterwftmplpkg.ClusterWorkflowTemplateGetRequest{
+			Name: "cluster-workflow-template-whalesay-template2",
+		})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "PermissionDenied")
 	})
 }
 

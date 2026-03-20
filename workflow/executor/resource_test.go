@@ -23,7 +23,7 @@ import (
 // are properly passed to `kubectl` command
 func TestResourceFlags(t *testing.T) {
 	manifestPath := "../../examples/hello-world.yaml"
-	fakeClientset := fake.NewSimpleClientset()
+	fakeClientset := fake.NewClientset()
 	fakeFlags := []string{"--fake=true"}
 
 	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
@@ -66,7 +66,7 @@ func TestResourceFlags(t *testing.T) {
 // are properly passed to `kubectl patch` command
 func TestResourcePatchFlags(t *testing.T) {
 	fakeFlags := []string{"pod", "mypod"}
-	fakeClientset := fake.NewSimpleClientset()
+	fakeClientset := fake.NewClientset()
 	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
 
 	tests := []struct {
@@ -204,7 +204,7 @@ func TestResourceExecRetry(t *testing.T) {
 	we := WorkflowExecutor{
 		PodName:         fakePodName,
 		Template:        wfv1.Template{},
-		ClientSet:       fake.NewSimpleClientset(),
+		ClientSet:       fake.NewClientset(),
 		Namespace:       fakeNamespace,
 		RuntimeExecutor: &mocks.ContainerRuntimeExecutor{},
 	}
