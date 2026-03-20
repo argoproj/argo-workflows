@@ -1111,15 +1111,32 @@ func (s *ArgoServerSuite) TestWorkflowServiceListArchived() {
 		WaitForWorkflow(fixtures.ToBeArchived, metav1.ListOptions{FieldSelector: "metadata.name=" + nameBobWf}).
 		WaitForWorkflow(fixtures.ToBeArchived, metav1.ListOptions{FieldSelector: "metadata.name=" + nameAliceWf})
 
+	// Poll until the API server's internal SQLite cache has converged.
+	// WaitForWorkflow(ToBeArchived) watches K8s labels directly, but the
+	// list endpoint merges a SQLite live-store (fed by a separate informer)
+	// with the archive DB. The informer may lag behind the test's watch,
+	// causing workflows to still appear with "Pending" status from the
+	// live store instead of "Persisted" from the archive.
 	s.Run("ListAll", func() {
-		s.e().GET("/api/v1/workflows/argo").
-			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test=subject-1").
-			Expect().
-			Status(200).
-			JSON().
-			Path(`$.items[*].metadata.labels["workflows.argoproj.io/workflow-archiving-status"]`).
-			Array().
-			IsEqual([]any{"Persisted", "Persisted"})
+		s.Eventually(func() bool {
+			statuses := s.e().GET("/api/v1/workflows/argo").
+				WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test=subject-1").
+				Expect().
+				Status(200).
+				JSON().
+				Path(`$.items[*].metadata.labels["workflows.argoproj.io/workflow-archiving-status"]`).
+				Array().
+				Raw()
+			if len(statuses) != 2 {
+				return false
+			}
+			for _, v := range statuses {
+				if v != "Persisted" {
+					return false
+				}
+			}
+			return true
+		}, 30*time.Second, time.Second, "expected both workflows to have Persisted archiving status")
 	})
 
 	s.Run("ListNameContainsAlice", func() {
