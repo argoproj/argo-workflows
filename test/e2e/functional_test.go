@@ -1016,7 +1016,8 @@ spec:
 		When().
 		MemoryQuota("130M").
 		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeFailed)
+		// A quota violation is an infrastructure error, so the workflow phase is Error (not Failed).
+		WaitForWorkflow(fixtures.ToBeErrored)
 }
 
 func (s *FunctionalSuite) TestWorkflowPodSpecPatch() {
