@@ -843,7 +843,10 @@ func (wfc *WorkflowController) processNextArchiveItem(ctx context.Context) bool 
 		return true
 	}
 
-	wfc.archiveWorkflow(ctx, obj)
+	if err := wfc.archiveWorkflow(ctx, obj); err != nil {
+		logger.WithField("key", key).WithError(err).Warn(ctx, "failed to archive workflow, requeuing")
+		wfc.wfArchiveQueue.AddRateLimited(key)
+	}
 	return true
 }
 
@@ -1099,24 +1102,26 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 	return nil
 }
 
-func (wfc *WorkflowController) archiveWorkflow(ctx context.Context, obj any) {
+func (wfc *WorkflowController) archiveWorkflow(ctx context.Context, obj any) error {
 	logger := logging.RequireLoggerFromContext(ctx)
 	key, err := cache.MetaNamespaceKeyFunc(obj)
 	if err != nil {
 		logger.Error(ctx, "failed to get key for object")
-		return
+		return nil // non-retryable
 	}
 	wfc.workflowKeyLock.Lock(key)
 	defer wfc.workflowKeyLock.Unlock(key)
 	key, err = cache.MetaNamespaceKeyFunc(obj)
 	if err != nil {
 		logger.Error(ctx, "failed to get key for object after locking")
-		return
+		return nil // non-retryable
 	}
 	err = wfc.archiveWorkflowAux(ctx, obj)
 	if err != nil {
 		logger.WithField("key", key).WithError(err).Error(ctx, "failed to archive workflow")
+		return nil // non-retryable
 	}
+	return wfc.archiveWorkflowAux(ctx, obj)
 }
 
 func (wfc *WorkflowController) archiveWorkflowAux(ctx context.Context, obj any) error {
