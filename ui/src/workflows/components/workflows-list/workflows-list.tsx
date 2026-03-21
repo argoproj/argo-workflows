@@ -153,10 +153,8 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
 
         phases?.forEach(phase => params.append('phase', phase));
 
-        // labels
         labels?.forEach(label => params.append('label', label));
 
-        // pagination
         if (pagination.offset) {
             params.set('offset', pagination.offset);
         }
@@ -164,12 +162,10 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
             params.set('limit', pagination.limit.toString());
         }
 
-        // name filter
         if (nameValue) {
             params.set(nameFilter, nameValue);
         }
 
-        // date filters
         if (createdAfter) {
             params.set('createdAfter', createdAfter.toISOString());
         }
