@@ -151,7 +151,6 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
             }
         });
 
-        // phases
         phases?.forEach(phase => params.append('phase', phase));
 
         // labels
