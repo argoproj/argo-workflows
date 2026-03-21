@@ -141,7 +141,6 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
 
         const params = new URLSearchParams();
 
-        // Preserve parameters not managed by this useEffect (e.g., sidePanel)
         const preserveKeys = ['sidePanel'];
         const currentParams = new URLSearchParams(history.location.search);
         preserveKeys.forEach(key => {
