@@ -18,11 +18,11 @@ type cachedLimit struct {
 	getter         GetSyncLimit
 }
 
-func newCachedLimit(getter GetSyncLimit, TTL time.Duration) *cachedLimit {
+func newCachedLimit(getter GetSyncLimit, ttl time.Duration) *cachedLimit {
 	return &cachedLimit{
 		limit:          0,
 		limitTimestamp: time.Time{}, // very long ago, so first use will update
-		TTL:            TTL,
+		TTL:            ttl,
 		getter:         getter,
 	}
 }

@@ -10,12 +10,12 @@ import (
 func Test_ResolveVar(t *testing.T) {
 	t.Run("Simple", func(t *testing.T) {
 		t.Run("Valid", func(t *testing.T) {
-			v, err := ResolveVar("{{foo}}", map[string]interface{}{"foo": "bar"})
+			v, err := ResolveVar("{{foo}}", map[string]any{"foo": "bar"})
 			require.NoError(t, err)
 			assert.Equal(t, "bar", v)
 		})
 		t.Run("Whitespace", func(t *testing.T) {
-			v, err := ResolveVar("{{ foo }}", map[string]interface{}{"foo": "bar"})
+			v, err := ResolveVar("{{ foo }}", map[string]any{"foo": "bar"})
 			require.NoError(t, err)
 			assert.Equal(t, "bar", v)
 		})
@@ -26,7 +26,7 @@ func Test_ResolveVar(t *testing.T) {
 	})
 	t.Run("Expression", func(t *testing.T) {
 		t.Run("Valid", func(t *testing.T) {
-			v, err := ResolveVar("{{=foo}}", map[string]interface{}{"foo": "bar"})
+			v, err := ResolveVar("{{=foo}}", map[string]any{"foo": "bar"})
 			require.NoError(t, err)
 			assert.Equal(t, "bar", v)
 		})

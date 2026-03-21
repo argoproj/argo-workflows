@@ -9,16 +9,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 
-	"github.com/argoproj/argo-workflows/v3/util/sqldb"
+	"github.com/argoproj/argo-workflows/v4/util/sqldb"
 )
 
 const wfWithDatabaseSemaphore = `
@@ -70,12 +69,12 @@ func setupMultipleLockManagers(t *testing.T, dbType sqldb.DBType, semaphoreSize 
 	require.NoError(t, err)
 
 	// Create two sync managers with the same database session
-	syncMgr1 := createLockManager(ctx, info.Session, &cfg, func(_ context.Context, _ string) (int, error) { return 2, nil }, func(key string) {}, WorkflowExistenceFunc)
+	syncMgr1 := createLockManager(ctx, info.Session, dbType, &cfg, func(_ context.Context, _ string) (int, error) { return 2, nil }, func(key string) {}, WorkflowExistenceFunc)
 	require.NotNil(t, syncMgr1)
 	require.NotNil(t, syncMgr1.dbInfo.Session)
 	// Second controller
 	cfg.ControllerName = "test2"
-	syncMgr2 := createLockManager(ctx, info.Session, &cfg, func(_ context.Context, _ string) (int, error) { return 2, nil }, func(key string) {}, WorkflowExistenceFunc)
+	syncMgr2 := createLockManager(ctx, info.Session, dbType, &cfg, func(_ context.Context, _ string) (int, error) { return 2, nil }, func(key string) {}, WorkflowExistenceFunc)
 	require.NotNil(t, syncMgr2)
 	require.NotNil(t, syncMgr2.dbInfo.Session)
 	return ctx, deferfn2, syncMgr1, syncMgr2
@@ -128,20 +127,20 @@ func testSyncManagersSemaphoreAcquisitionWithPriorityForDB(t *testing.T, dbType 
 	// Create 4 workflows
 	wf01 := wfv1.MustUnmarshalWorkflow(wfWithDatabaseSemaphore)
 	wf01.CreationTimestamp = metav1.Time{Time: time.Now().Add(-4 * time.Second)}
-	wf01.Spec.Priority = ptr.To(int32(1))
+	wf01.Spec.Priority = new(int32(1))
 	wf01.Name = "wf-01"
 	wf02 := wf01.DeepCopy()
 	wf02.CreationTimestamp = metav1.Time{Time: time.Now().Add(-3 * time.Second)}
 	wf02.Name = "wf-02"
-	wf02.Spec.Priority = ptr.To(int32(2))
+	wf02.Spec.Priority = new(int32(2))
 	wf03 := wf01.DeepCopy()
 	wf03.CreationTimestamp = metav1.Time{Time: time.Now().Add(-2 * time.Second)}
 	wf03.Name = "wf-03"
-	wf03.Spec.Priority = ptr.To(int32(3))
+	wf03.Spec.Priority = new(int32(3))
 	wf04 := wf01.DeepCopy()
 	wf04.CreationTimestamp = metav1.Time{Time: time.Now().Add(-1 * time.Second)}
 	wf04.Name = "wf-04"
-	wf04.Spec.Priority = ptr.To(int32(4))
+	wf04.Spec.Priority = new(int32(4))
 
 	// wf-01 acquires lock as first to appear
 	checkCanAcquire(ctx, t, syncMgr1, wf01)
@@ -187,7 +186,6 @@ func testSyncManagersContendingForSemaphore(t *testing.T, dbType sqldb.DBType) {
 
 	// Function to run workflows for a sync manager
 	runWorkflows := func(sm *Manager, name string, count int) {
-		defer wg.Done()
 		for testCounter := range count {
 			wfCopy := wfbase.DeepCopy()
 			wfName := fmt.Sprintf("%s-%d", name, testCounter)
@@ -206,7 +204,7 @@ func testSyncManagersContendingForSemaphore(t *testing.T, dbType sqldb.DBType) {
 
 				if acquired {
 					testMtx.Lock()
-					lockCount += 1
+					lockCount++
 					t.Log(lockCount)
 					if lockCount >= maxLockCount {
 						maxLockCount = lockCount
@@ -219,7 +217,7 @@ func testSyncManagersContendingForSemaphore(t *testing.T, dbType sqldb.DBType) {
 					// Release lock with a mutex to ensure we won't have lockCount at +1 after release
 					testMtx.Lock()
 					sm.Release(ctx, wfCopy, wfCopy.Name, wfCopy.Spec.Synchronization)
-					lockCount -= 1
+					lockCount--
 					testMtx.Unlock()
 				}
 			}
@@ -228,16 +226,14 @@ func testSyncManagersContendingForSemaphore(t *testing.T, dbType sqldb.DBType) {
 
 	const iterationCount = 5
 	// Start two goroutines
-	wg.Add(2)
-	go runWorkflows(syncMgr1, "wf1", iterationCount)
-	go runWorkflows(syncMgr2, "wf2", iterationCount)
+	wg.Go(func() { runWorkflows(syncMgr1, "wf1", iterationCount) })
+	wg.Go(func() { runWorkflows(syncMgr2, "wf2", iterationCount) })
 	wg.Wait()
 
 	// Verify that at no point were multiple locks held
 	if maxLockCount > 1 {
 		t.Errorf("Multiple locks were held simultaneously: %d", maxLockCount)
 	}
-
 }
 
 func TestSyncManagersContendingForSemaphore(t *testing.T) {

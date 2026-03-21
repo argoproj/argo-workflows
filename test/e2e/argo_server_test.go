@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/util/secrets"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/secrets"
 
 	"github.com/gavv/httpexpect/v2"
 	"github.com/stretchr/testify/assert"
@@ -22,11 +22,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	syncpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/sync"
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	syncpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/sync"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/test/e2e/fixtures"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 const baseURL = "http://localhost:2746"
@@ -430,8 +430,11 @@ func (s *ArgoServerSuite) createServiceAccount(name string) {
 	secret, err := s.KubeClient.CoreV1().Secrets(fixtures.Namespace).Create(ctx, secrets.NewTokenSecret(name), metav1.CreateOptions{})
 	s.Require().NoError(err)
 	s.T().Cleanup(func() {
-		_ = s.KubeClient.CoreV1().Secrets(fixtures.Namespace).Delete(ctx, secret.Name, metav1.DeleteOptions{})
-		_ = s.KubeClient.CoreV1().ServiceAccounts(fixtures.Namespace).Delete(ctx, name, metav1.DeleteOptions{})
+		ctx := logging.TestContext(s.T().Context())
+		err := s.KubeClient.CoreV1().Secrets(fixtures.Namespace).Delete(ctx, secret.Name, metav1.DeleteOptions{})
+		s.Require().NoError(err)
+		err = s.KubeClient.CoreV1().ServiceAccounts(fixtures.Namespace).Delete(ctx, name, metav1.DeleteOptions{})
+		s.Require().NoError(err)
 	})
 }
 
@@ -453,6 +456,7 @@ func (s *ArgoServerSuite) TestPermission() {
 		_, err = s.KubeClient.RbacV1().Roles(nsName).Create(ctx, role, metav1.CreateOptions{})
 		s.Require().NoError(err)
 	})
+	s.Require().NotEmpty(roleName, "LoadRoleYaml must succeed")
 	defer func() {
 		_ = s.KubeClient.RbacV1().Roles(nsName).Delete(ctx, roleName, metav1.DeleteOptions{})
 	}()
@@ -502,6 +506,10 @@ func (s *ArgoServerSuite) TestPermission() {
 		badToken = string(secret.Data["token"])
 	})
 
+	// Stop early if token retrieval failed to prevent cascading failures
+	s.Require().NotEmpty(goodToken, "GetGoodSAToken must succeed")
+	s.Require().NotEmpty(badToken, "GetBadSAToken must succeed")
+
 	// fake / spoofed token
 	fakeToken := "faketoken"
 
@@ -541,10 +549,55 @@ func (s *ArgoServerSuite) TestPermission() {
 			Raw().(string)
 	})
 
+	// Stop early if workflow creation failed to prevent cascading failures
+	s.Require().NotEmpty(uid, "CreateWFGoodToken must succeed")
+
 	// Test list workflows with good token
 	s.Run("ListWFsGoodToken", func() {
 		s.e().GET("/api/v1/workflows/"+nsName).
 			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			Array().
+			Length().
+			IsEqual(1)
+	})
+
+	// Test list workflows with the original token and NotEquals namespace.
+	// We need the original token because it has the ClusterRoleBinding needed to list workflows in all namespaces
+	s.bearerToken = token
+	s.Run("ListWFsGoodTokenNotEqualsNamespace", func() {
+		s.e().GET("/api/v1/workflows/").
+			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test").
+			WithQuery("listOptions.fieldSelector", "metadata.namespace!="+nsName).
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			IsNull()
+	})
+
+	// Test list workflows with good token and NotEquals a non-existent namespace
+	s.Run("ListWFsGoodTokenNotEqualsNamespaceExcluded", func() {
+		s.e().GET("/api/v1/workflows/").
+			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test").
+			WithQuery("listOptions.fieldSelector", "metadata.namespace!="+nsName+"-excluded").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			Array().
+			Length().
+			IsEqual(1)
+	})
+
+	// Test list workflows with good token and Equals namespace
+	s.Run("ListWFsGoodTokenDoubleEqualsNamespace", func() {
+		s.e().GET("/api/v1/workflows/").
+			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test").
+			WithQuery("listOptions.fieldSelector", "metadata.namespace=="+nsName).
 			Expect().
 			Status(200).
 			JSON().
@@ -583,6 +636,13 @@ func (s *ArgoServerSuite) TestPermission() {
     }
   }
 }`)).
+			Expect().
+			Status(403)
+	})
+
+	s.Run("ListWFsBadTokenNotEqualsNamespace", func() {
+		s.e().GET("/api/v1/workflows/").
+			WithQuery("listOptions.fieldSelector", "metadata.namespace!="+nsName+"-excluded").
 			Expect().
 			Status(403)
 	})
@@ -809,9 +869,9 @@ func (s *ArgoServerSuite) TestCreateWorkflowDryRun() {
 }
 
 func (s *ArgoServerSuite) TestWorkflowService() {
-	var name string
+	var name, uid string
 	s.Run("Create", func() {
-		name = s.e().POST("/api/v1/workflows/argo").
+		jsonResp := s.e().POST("/api/v1/workflows/argo").
 			WithBytes([]byte(`{
   "workflow": {
     "metadata": {
@@ -836,12 +896,19 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 }`)).
 			Expect().
 			Status(200).
-			JSON().
-			Path("$.metadata.name").
+			JSON()
+		name = jsonResp.Path("$.metadata.name").
+			NotNull().
+			String().
+			Raw()
+		uid = jsonResp.Path("$.metadata.uid").
 			NotNull().
 			String().
 			Raw()
 	})
+
+	// Stop early if workflow creation failed to prevent cascading failures
+	s.Require().NotEmpty(name, "Create must succeed")
 
 	s.Given().
 		When().
@@ -889,6 +956,16 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 		s.e().GET("/api/v1/workflows/argo/not-found").
 			Expect().
 			Status(404)
+	})
+
+	s.Run("GetByUid", func() {
+		j := s.e().GET("/api/v1/workflows/argo/"+name).
+			WithQuery("uid", uid).
+			Expect().
+			Status(200).
+			JSON()
+		j.Path("$.status.nodes").
+			NotNull()
 	})
 
 	s.Run("GetWithFields", func() {
@@ -966,9 +1043,9 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 }
 
 func (s *ArgoServerSuite) TestWorkflowServiceListArchived() {
-	var bobWf *httpexpect.Value
+	var uidBobWf, nameBobWf string
 	s.Run("CreateArchivedBobWf", func() {
-		bobWf = (s.e().POST("/api/v1/workflows/argo").
+		bobWf := s.e().POST("/api/v1/workflows/argo").
 			WithBytes([]byte(`{
 				  "workflow": {
 					"metadata": {
@@ -991,16 +1068,14 @@ func (s *ArgoServerSuite) TestWorkflowServiceListArchived() {
 					}
 				  }
 				}`)).
-			Expect().Status(200).JSON())
+			Expect().Status(200).JSON()
+		uidBobWf = bobWf.Path("$.metadata.uid").NotNull().String().Raw()
+		nameBobWf = bobWf.Path("$.metadata.name").NotNull().String().Raw()
 	})
-	var uidBobWf = bobWf.Path("$.metadata.uid").
-		NotNull().String().Raw()
-	var nameBobWf = bobWf.Path("$.metadata.name").
-		NotNull().String().Raw()
 
-	var aliceWf *httpexpect.Value
+	var uidAliceWf, nameAliceWf string
 	s.Run("CreateAlice", func() {
-		aliceWf = (s.e().POST("/api/v1/workflows/argo").
+		aliceWf := s.e().POST("/api/v1/workflows/argo").
 			WithBytes([]byte(`{
 				  "workflow": {
 					"metadata": {
@@ -1023,26 +1098,45 @@ func (s *ArgoServerSuite) TestWorkflowServiceListArchived() {
 					}
 				  }
 				}`)).
-			Expect().Status(200).JSON())
+			Expect().Status(200).JSON()
+		uidAliceWf = aliceWf.Path("$.metadata.uid").NotNull().String().Raw()
+		nameAliceWf = aliceWf.Path("$.metadata.name").NotNull().String().Raw()
 	})
-	var uidAliceWf = aliceWf.Path("$.metadata.uid").
-		NotNull().String().Raw()
-	var nameAliceWf = aliceWf.Path("$.metadata.name").
-		NotNull().String().Raw()
+
+	// Stop early if workflow creation failed to prevent cascading failures
+	s.Require().NotEmpty(nameBobWf, "CreateArchivedBobWf must succeed")
+	s.Require().NotEmpty(nameAliceWf, "CreateAlice must succeed")
 
 	s.Given().When().
 		WaitForWorkflow(fixtures.ToBeArchived, metav1.ListOptions{FieldSelector: "metadata.name=" + nameBobWf}).
 		WaitForWorkflow(fixtures.ToBeArchived, metav1.ListOptions{FieldSelector: "metadata.name=" + nameAliceWf})
 
+	// Poll until the API server's internal SQLite cache has converged.
+	// WaitForWorkflow(ToBeArchived) watches K8s labels directly, but the
+	// list endpoint merges a SQLite live-store (fed by a separate informer)
+	// with the archive DB. The informer may lag behind the test's watch,
+	// causing workflows to still appear with "Pending" status from the
+	// live store instead of "Persisted" from the archive.
 	s.Run("ListAll", func() {
-		s.e().GET("/api/v1/workflows/argo").
-			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test=subject-1").
-			Expect().
-			Status(200).
-			JSON().
-			Path(`$.items[*].metadata.labels["workflows.argoproj.io/workflow-archiving-status"]`).
-			Array().
-			IsEqual([]interface{}{"Persisted", "Persisted"})
+		s.Eventually(func() bool {
+			statuses := s.e().GET("/api/v1/workflows/argo").
+				WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test=subject-1").
+				Expect().
+				Status(200).
+				JSON().
+				Path(`$.items[*].metadata.labels["workflows.argoproj.io/workflow-archiving-status"]`).
+				Array().
+				Raw()
+			if len(statuses) != 2 {
+				return false
+			}
+			for _, v := range statuses {
+				if v != "Persisted" {
+					return false
+				}
+			}
+			return true
+		}, 30*time.Second, time.Second, "expected both workflows to have Persisted archiving status")
 	})
 
 	s.Run("ListNameContainsAlice", func() {
@@ -1054,7 +1148,7 @@ func (s *ArgoServerSuite) TestWorkflowServiceListArchived() {
 			JSON().
 			Path("$.items[*].metadata.uid").
 			Array().
-			IsEqualUnordered([]interface{}{uidAliceWf})
+			IsEqualUnordered([]any{uidAliceWf})
 	})
 
 	s.Run("ListNameContainsNoMatch", func() {
@@ -1077,7 +1171,7 @@ func (s *ArgoServerSuite) TestWorkflowServiceListArchived() {
 			JSON().
 			Path("$.items[*].metadata.uid").
 			Array().
-			IsEqualUnordered([]interface{}{uidBobWf})
+			IsEqualUnordered([]any{uidBobWf})
 	})
 
 	s.Run("ListNamePrefixBobNoMatch", func() {
@@ -1101,7 +1195,7 @@ func (s *ArgoServerSuite) TestWorkflowServiceListArchived() {
 			JSON().
 			Path("$.items[*].metadata.uid").
 			Array().
-			IsEqualUnordered([]interface{}{uidAliceWf})
+			IsEqualUnordered([]any{uidAliceWf})
 	})
 
 	s.Run("ListNameExactAliceNoMatch", func() {
@@ -1124,7 +1218,7 @@ func (s *ArgoServerSuite) TestWorkflowServiceListArchived() {
 			JSON().
 			Path("$.items[*].metadata.uid").
 			Array().
-			IsEqualUnordered([]interface{}{uidBobWf})
+			IsEqualUnordered([]any{uidBobWf})
 	})
 
 	s.Run("ListNameDoubleEqualsBob", func() {
@@ -1135,7 +1229,7 @@ func (s *ArgoServerSuite) TestWorkflowServiceListArchived() {
 			JSON().
 			Path("$.items[*].metadata.uid").
 			Array().
-			IsEqualUnordered([]interface{}{uidBobWf})
+			IsEqualUnordered([]any{uidBobWf})
 	})
 
 	s.Run("ListNameContainsTest", func() {
@@ -1147,14 +1241,14 @@ func (s *ArgoServerSuite) TestWorkflowServiceListArchived() {
 			JSON().
 			Path("$.items[*].metadata.uid").
 			Array().
-			IsEqualUnordered([]interface{}{uidAliceWf, uidBobWf})
+			IsEqualUnordered([]any{uidAliceWf, uidBobWf})
 	})
 }
 
 func (s *ArgoServerSuite) TestWorkflowArchiveServiceList() {
-	var bobWf *httpexpect.Value
+	var uidBobWf, nameBobWf string
 	s.Run("CreateArchivedBobWf", func() {
-		bobWf = (s.e().POST("/api/v1/workflows/argo").
+		bobWf := s.e().POST("/api/v1/workflows/argo").
 			WithBytes([]byte(`{
 				  "workflow": {
 					"metadata": {
@@ -1177,16 +1271,14 @@ func (s *ArgoServerSuite) TestWorkflowArchiveServiceList() {
 					}
 				  }
 				}`)).
-			Expect().Status(200).JSON())
+			Expect().Status(200).JSON()
+		uidBobWf = bobWf.Path("$.metadata.uid").NotNull().String().Raw()
+		nameBobWf = bobWf.Path("$.metadata.name").NotNull().String().Raw()
 	})
-	var uidBobWf = bobWf.Path("$.metadata.uid").
-		NotNull().String().Raw()
-	var nameBobWf = bobWf.Path("$.metadata.name").
-		NotNull().String().Raw()
 
-	var aliceWf *httpexpect.Value
+	var uidAliceWf, nameAliceWf string
 	s.Run("CreateAlice", func() {
-		aliceWf = (s.e().POST("/api/v1/workflows/argo").
+		aliceWf := s.e().POST("/api/v1/workflows/argo").
 			WithBytes([]byte(`{
 				  "workflow": {
 					"metadata": {
@@ -1209,12 +1301,14 @@ func (s *ArgoServerSuite) TestWorkflowArchiveServiceList() {
 					}
 				  }
 				}`)).
-			Expect().Status(200).JSON())
+			Expect().Status(200).JSON()
+		uidAliceWf = aliceWf.Path("$.metadata.uid").NotNull().String().Raw()
+		nameAliceWf = aliceWf.Path("$.metadata.name").NotNull().String().Raw()
 	})
-	var uidAliceWf = aliceWf.Path("$.metadata.uid").
-		NotNull().String().Raw()
-	var nameAliceWf = aliceWf.Path("$.metadata.name").
-		NotNull().String().Raw()
+
+	// Stop early if workflow creation failed to prevent cascading failures
+	s.Require().NotEmpty(nameBobWf, "CreateArchivedBobWf must succeed")
+	s.Require().NotEmpty(nameAliceWf, "CreateAlice must succeed")
 
 	s.Given().When().
 		WaitForWorkflow(fixtures.ToBeArchived, metav1.ListOptions{FieldSelector: "metadata.name=" + nameBobWf}).
@@ -1228,7 +1322,7 @@ func (s *ArgoServerSuite) TestWorkflowArchiveServiceList() {
 			JSON().
 			Path(`$.items[*].metadata.labels["workflows.argoproj.io/workflow-archiving-status"]`).
 			Array().
-			IsEqual([]interface{}{"Persisted", "Persisted"})
+			IsEqual([]any{"Persisted", "Persisted"})
 	})
 
 	s.Run("ArchiveNameContainsAlice", func() {
@@ -1240,7 +1334,7 @@ func (s *ArgoServerSuite) TestWorkflowArchiveServiceList() {
 			JSON().
 			Path("$.items[*].metadata.uid").
 			Array().
-			IsEqualUnordered([]interface{}{uidAliceWf})
+			IsEqualUnordered([]any{uidAliceWf})
 	})
 
 	s.Run("ArchiveNameContainsNoMatch", func() {
@@ -1263,7 +1357,7 @@ func (s *ArgoServerSuite) TestWorkflowArchiveServiceList() {
 			JSON().
 			Path("$.items[*].metadata.uid").
 			Array().
-			IsEqualUnordered([]interface{}{uidBobWf})
+			IsEqualUnordered([]any{uidBobWf})
 	})
 
 	s.Run("ArchiveNamePrefixBobNoMatch", func() {
@@ -1287,7 +1381,7 @@ func (s *ArgoServerSuite) TestWorkflowArchiveServiceList() {
 			JSON().
 			Path("$.items[*].metadata.uid").
 			Array().
-			IsEqualUnordered([]interface{}{uidAliceWf})
+			IsEqualUnordered([]any{uidAliceWf})
 	})
 
 	s.Run("ArchiveNameExactAliceNoMatch", func() {
@@ -1310,7 +1404,7 @@ func (s *ArgoServerSuite) TestWorkflowArchiveServiceList() {
 			JSON().
 			Path("$.items[*].metadata.uid").
 			Array().
-			IsEqualUnordered([]interface{}{uidBobWf})
+			IsEqualUnordered([]any{uidBobWf})
 	})
 
 	s.Run("ArchiveNameDoubleEqualsBob", func() {
@@ -1321,7 +1415,7 @@ func (s *ArgoServerSuite) TestWorkflowArchiveServiceList() {
 			JSON().
 			Path("$.items[*].metadata.uid").
 			Array().
-			IsEqualUnordered([]interface{}{uidBobWf})
+			IsEqualUnordered([]any{uidBobWf})
 	})
 
 	s.Run("ArchiveNameContainsTest", func() {
@@ -1333,7 +1427,7 @@ func (s *ArgoServerSuite) TestWorkflowArchiveServiceList() {
 			JSON().
 			Path("$.items[*].metadata.uid").
 			Array().
-			IsEqualUnordered([]interface{}{uidAliceWf, uidBobWf})
+			IsEqualUnordered([]any{uidAliceWf, uidBobWf})
 	})
 
 	s.Run("ArchiveNamePrefixNameFilterContainsBobTest", func() {
@@ -1346,7 +1440,7 @@ func (s *ArgoServerSuite) TestWorkflowArchiveServiceList() {
 			JSON().
 			Path("$.items[*].metadata.uid").
 			Array().
-			IsEqualUnordered([]interface{}{uidBobWf})
+			IsEqualUnordered([]any{uidBobWf})
 	})
 
 	s.Run("ArchiveNamePrefixNameFilterEmptyTest", func() {
@@ -1391,7 +1485,7 @@ func (s *ArgoServerSuite) TestWorkflowArchiveServiceList() {
 			JSON().
 			Path("$.items[*].metadata.uid").
 			Array().
-			IsEqualUnordered([]interface{}{uidBobWf, uidAliceWf})
+			IsEqualUnordered([]any{uidBobWf, uidAliceWf})
 	})
 
 	s.Run("ListNameNotEqualsAlice", func() {
@@ -1403,7 +1497,7 @@ func (s *ArgoServerSuite) TestWorkflowArchiveServiceList() {
 			JSON().
 			Path("$.items[*].metadata.uid").
 			Array().
-			IsEqualUnordered([]interface{}{uidBobWf})
+			IsEqualUnordered([]any{uidBobWf})
 	})
 
 	s.Run("ListNameNotEqualsNoMatch", func() {
@@ -1415,7 +1509,7 @@ func (s *ArgoServerSuite) TestWorkflowArchiveServiceList() {
 			JSON().
 			Path("$.items[*].metadata.uid").
 			Array().
-			IsEqualUnordered([]interface{}{uidAliceWf, uidBobWf})
+			IsEqualUnordered([]any{uidAliceWf, uidBobWf})
 	})
 
 	s.Run("ListNameNotEqualsPrecedence", func() {
@@ -1427,7 +1521,7 @@ func (s *ArgoServerSuite) TestWorkflowArchiveServiceList() {
 			JSON().
 			Path("$.items[*].metadata.uid").
 			Array().
-			IsEqualUnordered([]interface{}{uidBobWf})
+			IsEqualUnordered([]any{uidBobWf})
 	})
 
 	s.Run("ArchiveNameNotEqualsAlice", func() {
@@ -1439,7 +1533,7 @@ func (s *ArgoServerSuite) TestWorkflowArchiveServiceList() {
 			JSON().
 			Path("$.items[*].metadata.uid").
 			Array().
-			IsEqualUnordered([]interface{}{uidBobWf})
+			IsEqualUnordered([]any{uidBobWf})
 	})
 
 	s.Run("ArchiveNameNotEqualsNoMatch", func() {
@@ -1451,7 +1545,7 @@ func (s *ArgoServerSuite) TestWorkflowArchiveServiceList() {
 			JSON().
 			Path("$.items[*].metadata.uid").
 			Array().
-			IsEqualUnordered([]interface{}{uidBobWf, uidAliceWf})
+			IsEqualUnordered([]any{uidBobWf, uidAliceWf})
 	})
 
 	s.Run("ArchiveNameNotEqualsPrecedence", func() {
@@ -1463,7 +1557,7 @@ func (s *ArgoServerSuite) TestWorkflowArchiveServiceList() {
 			JSON().
 			Path("$.items[*].metadata.uid").
 			Array().
-			IsEqualUnordered([]interface{}{uidBobWf})
+			IsEqualUnordered([]any{uidBobWf})
 	})
 }
 
@@ -1572,6 +1666,8 @@ spec:
 			String().
 			Raw()
 	})
+
+	s.Require().NotEmpty(resourceVersion, "Get must return resourceVersion")
 
 	s.Run("Update", func() {
 		s.e().PUT("/api/v1/cron-workflows/argo/test").
@@ -1728,8 +1824,13 @@ func (s *ArgoServerSuite) artifactServerRetrievalTests(name string, uid types.UI
 			Status(200)
 
 		resp.Body().
-			Contains("<a href=\"subdirectory/\">subdirectory/</a>")
+			Contains("<a href=\"./subdirectory/\">subdirectory/</a>")
 
+		resp.Header("Content-Security-Policy").
+			IsEqual("sandbox; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self' 'unsafe-inline'")
+
+		resp.Header("X-Frame-Options").
+			IsEqual("SAMEORIGIN")
 	})
 
 	// In this case, the filename specified in the request is actually a directory
@@ -1739,9 +1840,8 @@ func (s *ArgoServerSuite) artifactServerRetrievalTests(name string, uid types.UI
 			Status(200)
 
 		resp.Body().
-			Contains("<a href=\"sub-file-1\">sub-file-1</a>").
-			Contains("<a href=\"sub-file-2\">sub-file-2</a>")
-
+			Contains("<a href=\"./sub-file-1\">sub-file-1</a>").
+			Contains("<a href=\"./sub-file-2\">sub-file-2</a>")
 	})
 
 	// In this case, the filename specified in the request is a subdirectory file
@@ -2142,7 +2242,6 @@ spec:
 			Length().
 			IsEqual(1)
 	})
-
 }
 
 // A test can simply reproduce the problem mentioned in the link https://github.com/argoproj/argo-workflows/pull/12574
@@ -2269,6 +2368,8 @@ func (s *ArgoServerSuite) TestWorkflowTemplateService() {
 			Raw()
 	})
 
+	s.Require().NotEmpty(resourceVersion, "Get must return resourceVersion")
+
 	s.Run("Update", func() {
 		s.e().PUT("/api/v1/workflow-templates/argo/test").
 			WithBytes([]byte(`{"template": {
@@ -2335,6 +2436,8 @@ func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
   }
 }`)).Expect().Status(200)
 	})
+
+	time.Sleep(1 * time.Second) // wait for informer cache to sync
 
 	s.Run("SubmitWFT", func() {
 		s.e().POST("/api/v1/workflows/argo/submit").
@@ -2419,6 +2522,8 @@ func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
 }`)).Expect().Status(200)
 	})
 
+	time.Sleep(1 * time.Second) // wait for informer cache to sync
+
 	s.Run("SubmitCWFT", func() {
 		s.e().POST("/api/v1/workflows/argo/submit").
 			WithBytes([]byte(`{
@@ -2497,6 +2602,9 @@ func (s *ArgoServerSuite) TestEventSourcesService() {
 			String().
 			Raw()
 	})
+
+	s.Require().NotEmpty(resourceVersion, "GetEventSource must return resourceVersion")
+
 	s.Run("UpdateEventSource", func() {
 		s.e().PUT("/api/v1/event-sources/argo/test-event-source").
 			WithBytes([]byte(`
@@ -2704,7 +2812,6 @@ spec:
 	j.
 		Path("$.spec.templates[0].container.args[1]").
 		IsEqual("hello \u0000")
-
 }
 
 func (s *ArgoServerSuite) TestSyncConfigmapService() {

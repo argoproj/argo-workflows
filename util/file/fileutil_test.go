@@ -14,9 +14,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/argoproj/argo-workflows/v3/util/file"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/util/rand"
+	"github.com/argoproj/argo-workflows/v4/util/file"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/rand"
 )
 
 // TestCompressContentString ensures compressing then decompressing a content string works as expected
@@ -173,7 +173,7 @@ func TestIsDirectory(t *testing.T) {
 
 func TestExists(t *testing.T) {
 	assert.True(t, file.Exists("/"))
-	path, err := rand.RandString(10)
+	path, err := rand.String(10)
 	require.NoError(t, err)
 	randFilePath := fmt.Sprintf("/%s", path)
 	assert.False(t, file.Exists(randFilePath))

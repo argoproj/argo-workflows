@@ -6,7 +6,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	envutil "github.com/argoproj/argo-workflows/v3/util/env"
+	envutil "github.com/argoproj/argo-workflows/v4/util/env"
 )
 
 // DefaultRetry is a default retry backoff settings when retrying API calls

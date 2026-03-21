@@ -7,30 +7,30 @@ template-data:
   unroll-variadic: true
 
 packages:
-  github.com/argoproj/argo-workflows/v3/persist/sqldb:
+  github.com/argoproj/argo-workflows/v4/persist/sqldb:
     interfaces:
       WorkflowArchive: {}
-  github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow:
+  github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow:
     interfaces:
       WorkflowServiceClient: {}
-  github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate:
+  github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflowtemplate:
     interfaces:
       WorkflowTemplateServiceClient: {}
-  github.com/argoproj/argo-workflows/v3/server/auth:
+  github.com/argoproj/argo-workflows/v4/server/auth:
     interfaces:
       Gatekeeper: {}
-  github.com/argoproj/argo-workflows/v3/server/auth/sso:
+  github.com/argoproj/argo-workflows/v4/server/auth/sso:
     interfaces:
       Interface: {}
-  github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories:
+  github.com/argoproj/argo-workflows/v4/workflow/artifactrepositories:
     interfaces:
       Interface: {}
-  github.com/argoproj/argo-workflows/v3/workflow/executor:
+  github.com/argoproj/argo-workflows/v4/workflow/executor:
     interfaces:
       ContainerRuntimeExecutor: {}
-  github.com/argoproj/argo-workflows/v3/workflow/sync:
+  github.com/argoproj/argo-workflows/v4/workflow/sync:
     interfaces:
       Throttler: {}
-  github.com/argoproj/argo-workflows/v3/util/sync/db:
+  github.com/argoproj/argo-workflows/v4/util/sync/db:
     interfaces:
       SyncQueries: {}

@@ -7,14 +7,14 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
 func TestDeterminePodCleanupAction(t *testing.T) {
 	finalizersNotOurs := []string{}
-	finalizersOurs := append(finalizersNotOurs, common.FinalizerPodStatus)
+	finalizersOurs := []string{common.FinalizerPodStatus}
 	assert.Equal(t, labelPodCompleted, determinePodCleanupAction(labels.Nothing(), nil, wfv1.PodGCOnPodCompletion, wfv1.WorkflowSucceeded, apiv1.PodSucceeded, finalizersOurs))
 	assert.Equal(t, labelPodCompleted, determinePodCleanupAction(labels.Everything(), nil, wfv1.PodGCOnPodNone, wfv1.WorkflowSucceeded, apiv1.PodSucceeded, finalizersOurs))
 

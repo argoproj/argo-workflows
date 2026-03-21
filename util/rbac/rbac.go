@@ -5,8 +5,8 @@ import (
 
 	"k8s.io/client-go/kubernetes"
 
-	authutil "github.com/argoproj/argo-workflows/v3/util/auth"
-	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
+	authutil "github.com/argoproj/argo-workflows/v4/util/auth"
+	errorsutil "github.com/argoproj/argo-workflows/v4/util/errors"
 )
 
 func HasAccessToClusterWorkflowTemplates(ctx context.Context, kubeclientset kubernetes.Interface) bool {

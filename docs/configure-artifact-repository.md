@@ -24,6 +24,12 @@ The actual repository used by a workflow is chosen by the following rules:
 2. From a config map named `artifact-repositories` if it has the `workflows.argoproj.io/default-artifact-repository` annotation in the workflow's namespace.
 3. From a workflow controller config-map.
 
+## Security
+
+You should ensure that the credentials provided to your workflow limits access to the artifacts you wish users to be able to access.
+
+Argo-workflows explicitly allows path traversal where a key containing "../" may allow users to traverse up the "directory structure".
+
 ## Configuring MinIO
 
 You can install MinIO into your cluster via Helm.

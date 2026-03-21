@@ -10,9 +10,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/apiclient"
-	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/pkg/apiclient"
+	workflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
 func main() {
@@ -35,7 +35,7 @@ func main() {
 	// Create Argo Server client
 	fmt.Printf("Connecting to Argo Server at %s...\n", *argoServer)
 
-	// <snip id="grpc-client-operations">
+	// <embed id="grpc-client-operations">
 	ctx, client, err := apiclient.NewClientFromOptsWithContext(ctx, apiclient.Opts{
 		ArgoServerOpts: apiclient.ArgoServerOpts{
 			URL:                *argoServer,
@@ -130,7 +130,7 @@ func main() {
 	for i, wf := range list.Items {
 		fmt.Printf("  %d. %s (%s)\n", i+1, wf.Name, wf.Status.Phase)
 	}
-	// </snip>
+	// </embed>
 
 	fmt.Printf("\nView workflow with:\n")
 	fmt.Printf("  argo get %s -n %s\n", created.Name, *namespace)

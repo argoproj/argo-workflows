@@ -18,23 +18,23 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	ktesting "k8s.io/client-go/testing"
 
-	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
-	"github.com/argoproj/argo-workflows/v3/persist/sqldb/mocks"
-	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
-	v1alpha "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo-workflows/v3/server/auth"
-	"github.com/argoproj/argo-workflows/v3/server/auth/types"
-	"github.com/argoproj/argo-workflows/v3/server/clusterworkflowtemplate"
-	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
-	"github.com/argoproj/argo-workflows/v3/server/workflow/store"
-	"github.com/argoproj/argo-workflows/v3/server/workflowtemplate"
-	"github.com/argoproj/argo-workflows/v3/util"
-	"github.com/argoproj/argo-workflows/v3/util/instanceid"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/creator"
+	"github.com/argoproj/argo-workflows/v4/persist/sqldb"
+	"github.com/argoproj/argo-workflows/v4/persist/sqldb/mocks"
+	workflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
+	v1alpha "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo-workflows/v4/server/auth"
+	"github.com/argoproj/argo-workflows/v4/server/auth/types"
+	"github.com/argoproj/argo-workflows/v4/server/clusterworkflowtemplate"
+	sutils "github.com/argoproj/argo-workflows/v4/server/utils"
+	"github.com/argoproj/argo-workflows/v4/server/workflow/store"
+	"github.com/argoproj/argo-workflows/v4/server/workflowtemplate"
+	"github.com/argoproj/argo-workflows/v4/util"
+	"github.com/argoproj/argo-workflows/v4/util/instanceid"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/creator"
 )
 
 const unlabelled = `{
@@ -611,6 +611,17 @@ func getWorkflowServer(t *testing.T) (workflowpkg.WorkflowServiceServer, context
 	archivedRepo.On("GetWorkflow", mock.Anything, "", "test", "unlabelled").Return(nil, nil)
 	archivedRepo.On("GetWorkflow", mock.Anything, "", "workflows", "latest").Return(nil, nil)
 	archivedRepo.On("GetWorkflow", mock.Anything, "", "workflows", "hello-world-9tql2-not").Return(nil, nil)
+	// Mock for UID-based lookups on archive
+	archivedRepo.On("GetWorkflow", mock.Anything, "91066a6c-1ddc-11ea-b443-42010aa80099", "test", "hello-world-9tql2-test").Return(&v1alpha1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "hello-world-9tql2-test",
+			Namespace: "test",
+			UID:       "91066a6c-1ddc-11ea-b443-42010aa80099",
+			Labels: map[string]string{
+				common.LabelKeyControllerInstanceID: "my-instanceid", // necessary to pass validation
+			},
+		},
+	}, nil)
 	r, err := labels.ParseToRequirements("workflows.argoproj.io/controller-instanceid=my-instanceid")
 	if err != nil {
 		panic(err)
@@ -622,13 +633,13 @@ func getWorkflowServer(t *testing.T) (workflowpkg.WorkflowServiceServer, context
 	archivedRepo.On("ListWorkflows", mock.Anything, sutils.ListOptions{Namespace: "test", Limit: -1, LabelRequirements: r}).Return(v1alpha1.Workflows{wfObj4}, nil)
 	archivedRepo.On("HasMoreWorkflows", mock.Anything, sutils.ListOptions{Namespace: "test", LabelRequirements: r}).Return(false, nil)
 
-	kubeClientSet := fake.NewSimpleClientset()
+	kubeClientSet := fake.NewClientset()
 	kubeClientSet.PrependReactor("create", "selfsubjectaccessreviews", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
 		return true, &authorizationv1.SelfSubjectAccessReview{
 			Status: authorizationv1.SubjectAccessReviewStatus{Allowed: true},
 		}, nil
 	})
-	wfClientset := v1alpha.NewSimpleClientset(&unlabelledObj, &wfObj1, &wfObj2, &wfObj3, &wfObj4, &wfObj5, &failedWfObj, &wftmpl, &cronwfObj, &cwfTmpl)
+	wfClientset := v1alpha.NewClientset(&unlabelledObj, &wfObj1, &wfObj2, &wfObj3, &wfObj4, &wfObj5, &failedWfObj, &wftmpl, &cronwfObj, &cwfTmpl)
 	wfClientset.PrependReactor("create", "workflows", generateNameReactor)
 	ctx := logging.TestContext(t.Context())
 	ctx = context.WithValue(context.WithValue(context.WithValue(ctx, auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}, Email: "my-sub@your.org"})
@@ -649,9 +660,9 @@ func getWorkflowServer(t *testing.T) (workflowpkg.WorkflowServiceServer, context
 		panic(err)
 	}
 	namespaceAll := metav1.NamespaceAll
-	wftmplStore := workflowtemplate.NewWorkflowTemplateClientStore()
-	cwftmplStore := clusterworkflowtemplate.NewClusterWorkflowTemplateClientStore()
-	server := NewWorkflowServer(ctx, instanceIDSvc, offloadNodeStatusRepo, archivedRepo, wfClientset, wfStore, wfStore, wftmplStore, cwftmplStore, nil, &namespaceAll)
+	wftmplStore := workflowtemplate.NewClientStore()
+	cwftmplStore := clusterworkflowtemplate.NewClientStore()
+	server := NewServer(ctx, instanceIDSvc, offloadNodeStatusRepo, archivedRepo, wfClientset, wfStore, wfStore, wftmplStore, cwftmplStore, nil, &namespaceAll)
 	return server, ctx
 }
 
@@ -750,10 +761,10 @@ func TestGetWorkflow(t *testing.T) {
 	server, ctx := getWorkflowServer(t)
 	s := server.(*workflowServer)
 	wfClient := auth.GetWfClient(ctx)
-	wf, err := s.getWorkflow(ctx, wfClient, "test", "hello-world-9tql2-test", metav1.GetOptions{})
+	wf, err := s.getWorkflow(ctx, wfClient, "test", "hello-world-9tql2-test", "", metav1.GetOptions{})
 	require.NoError(t, err)
 	assert.NotNil(t, wf)
-	wf, err = s.getWorkflow(ctx, wfClient, "test", "hello-world-9tql2-test", metav1.GetOptions{})
+	wf, err = s.getWorkflow(ctx, wfClient, "test", "hello-world-9tql2-test", "", metav1.GetOptions{})
 	require.NoError(t, err)
 	assert.NotNil(t, wf)
 }
@@ -762,9 +773,79 @@ func TestValidateWorkflow(t *testing.T) {
 	server, ctx := getWorkflowServer(t)
 	s := server.(*workflowServer)
 	wfClient := auth.GetWfClient(ctx)
-	wf, err := s.getWorkflow(ctx, wfClient, "test", "hello-world-9tql2-test", metav1.GetOptions{})
+	wf, err := s.getWorkflow(ctx, wfClient, "test", "hello-world-9tql2-test", "", metav1.GetOptions{})
 	require.NoError(t, err)
 	require.NoError(t, s.validateWorkflow(wf))
+}
+
+func TestGetWorkflowByUID(t *testing.T) {
+	server, ctx := getWorkflowServer(t)
+	s := server.(*workflowServer)
+	wfClient := auth.GetWfClient(ctx)
+
+	t.Run("GetWorkflowWithValidUID", func(t *testing.T) {
+		wf, err := s.getWorkflow(ctx, wfClient, "test", "hello-world-9tql2-test", "6522aff1-1e01-11ea-b443-42010aa80074", metav1.GetOptions{})
+		require.NoError(t, err)
+		assert.NotNil(t, wf)
+		assert.Equal(t, "hello-world-9tql2-test", wf.Name)
+		assert.Equal(t, "6522aff1-1e01-11ea-b443-42010aa80074", string(wf.UID))
+	})
+
+	t.Run("GetWorkflowWithUIDMatchesClusterUID", func(t *testing.T) {
+		wfWithUID, err := s.getWorkflow(ctx, wfClient, "test", "hello-world-9tql2-test", "6522aff1-1e01-11ea-b443-42010aa80074", metav1.GetOptions{})
+		require.NoError(t, err)
+		assert.NotNil(t, wfWithUID)
+		wfWithoutUID, err := s.getWorkflow(ctx, wfClient, "test", "hello-world-9tql2-test", "", metav1.GetOptions{})
+		require.NoError(t, err)
+		assert.NotNil(t, wfWithoutUID)
+		assert.Equal(t, wfWithoutUID, wfWithUID)
+	})
+
+	t.Run("GetWorkflowWithMismatchedUID", func(t *testing.T) {
+		// The cluster has uid "6522aff1-1e01-11ea-b443-42010aa80074"
+		// archive has uid "91066a6c-1ddc-11ea-b443-42010aa80099"
+		wf, err := s.getWorkflow(ctx, wfClient, "test", "hello-world-9tql2-test", "91066a6c-1ddc-11ea-b443-42010aa80099", metav1.GetOptions{})
+		require.NoError(t, err)
+		assert.NotNil(t, wf)
+		assert.Equal(t, "91066a6c-1ddc-11ea-b443-42010aa80099", string(wf.UID))
+	})
+
+	t.Run("GetClusterWorkflowViaAPI", func(t *testing.T) {
+		// Test the full API with UID parameter
+		wf, err := server.GetWorkflow(ctx, &workflowpkg.WorkflowGetRequest{
+			Name:      "hello-world-9tql2-test",
+			Namespace: "test",
+			Uid:       "6522aff1-1e01-11ea-b443-42010aa80074",
+		})
+		require.NoError(t, err)
+		assert.NotNil(t, wf)
+		assert.Equal(t, "hello-world-9tql2-test", wf.Name)
+		assert.Equal(t, "6522aff1-1e01-11ea-b443-42010aa80074", string(wf.UID))
+	})
+
+	t.Run("GetClusterWorkflowViaAPIWithoutUID", func(t *testing.T) {
+		// Test the full API without UID parameter
+		wf, err := server.GetWorkflow(ctx, &workflowpkg.WorkflowGetRequest{
+			Name:      "hello-world-9tql2-test",
+			Namespace: "test",
+			Uid:       "",
+		})
+		require.NoError(t, err)
+		assert.NotNil(t, wf)
+		assert.Equal(t, "hello-world-9tql2-test", wf.Name)
+		assert.Equal(t, "6522aff1-1e01-11ea-b443-42010aa80074", string(wf.UID))
+	})
+
+	t.Run("GetArchivedWorkflowViaAPI", func(t *testing.T) {
+		wf, err := server.GetWorkflow(ctx, &workflowpkg.WorkflowGetRequest{
+			Name:      "hello-world-9tql2-test",
+			Namespace: "test",
+			Uid:       "91066a6c-1ddc-11ea-b443-42010aa80099",
+		})
+		require.NoError(t, err)
+		assert.NotNil(t, wf)
+		assert.Equal(t, "91066a6c-1ddc-11ea-b443-42010aa80099", string(wf.UID))
+	})
 }
 
 func TestListWorkflow(t *testing.T) {
@@ -802,6 +883,7 @@ func TestRetryWorkflow(t *testing.T) {
 		retried, err := server.RetryWorkflow(ctx, &workflowpkg.WorkflowRetryRequest{Name: "failed", Namespace: "workflows"})
 		require.NoError(t, err)
 		assert.NotNil(t, retried)
+		assert.Equal(t, string(creator.ActionRetry), retried.Labels[common.LabelKeyAction])
 	})
 	t.Run("Unlabelled", func(t *testing.T) {
 		_, err := server.RetryWorkflow(ctx, &workflowpkg.WorkflowRetryRequest{Name: "unlabelled", Namespace: "workflows"})

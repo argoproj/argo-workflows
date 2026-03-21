@@ -5,14 +5,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 func TestCreateTaskSet(t *testing.T) {
@@ -103,6 +103,7 @@ spec:
 			assert.Equal(t, ts.Name, wf.Name)
 			assert.Equal(t, ts.Namespace, wf.Namespace)
 			assert.Len(t, ts.Spec.Tasks, 1)
+			assert.Equal(t, "testID", ts.Labels[common.LabelKeyControllerInstanceID], "WorkflowTaskSet should have instanceID label")
 		}
 		pods, err := woc.controller.kubeclientset.CoreV1().Pods("default").List(ctx, v1.ListOptions{})
 		require.NoError(t, err)
@@ -310,7 +311,6 @@ status:
 			assert.Empty(t, ts.Spec.Tasks)
 			assert.Empty(t, ts.Status.Nodes)
 		}
-
 	})
 }
 

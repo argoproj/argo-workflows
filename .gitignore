@@ -8,6 +8,7 @@ dist/
 # delve debug binaries
 cmd/**/debug
 hack/**/debug
+hack/embeddoc/embeddoc
 hack/featuregen/featuregen
 /argo
 /argoexec
@@ -53,3 +54,6 @@ node_modules
 result
 .devenv
 .devenv.flake.nix
+.*-vendor
+proto_vendor
+.github.com

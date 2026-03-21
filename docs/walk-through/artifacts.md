@@ -399,3 +399,9 @@ spec:
     forceFinalizerRemoval: true
 
 ```
+
+## Security
+
+You should ensure that the credentials provided to your workflow limits access to the artifacts you wish users to be able to access.
+
+Argo-workflows explicitly allows path traversal where a key containing "../" may allow users to traverse up the "directory structure".

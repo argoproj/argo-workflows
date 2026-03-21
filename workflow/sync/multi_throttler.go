@@ -7,7 +7,7 @@ import (
 
 	"k8s.io/client-go/tools/cache"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
 // Throttler allows the controller to limit number of items it is processing in parallel.
@@ -255,7 +255,7 @@ func (pq priorityQueue) Swap(i, j int) {
 	pq.items[j].index = j
 }
 
-func (pq *priorityQueue) Push(x interface{}) {
+func (pq *priorityQueue) Push(x any) {
 	n := len(pq.items)
 	item := x.(*item)
 	item.index = n
@@ -263,7 +263,7 @@ func (pq *priorityQueue) Push(x interface{}) {
 	pq.itemByKey[item.key] = item
 }
 
-func (pq *priorityQueue) Pop() interface{} {
+func (pq *priorityQueue) Pop() any {
 	old := pq.items
 	n := len(old)
 	item := old[n-1]

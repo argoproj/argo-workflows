@@ -13,8 +13,8 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/test/e2e/fixtures"
 )
 
 type DBSemaphoreSuite struct {
@@ -184,7 +184,7 @@ func (s *DBSemaphoreSuite) TestSynchronizationCases() {
 
 	// Iterate over tests in sorted order
 	for testName, testCase := range tests {
-		s.T().Run(testName, func(t *testing.T) {
+		s.Run(testName, func() {
 			workflowName := testName
 			for i := 0; i < len(workflowName); i++ {
 				if i > 0 && workflowName[i] >= 'A' && workflowName[i] <= 'Z' {

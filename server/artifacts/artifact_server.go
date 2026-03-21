@@ -1,9 +1,11 @@
 package artifacts
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"html/template"
 	"io"
 	"mime"
 	"net/http"
@@ -17,18 +19,18 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/env"
 
-	argoerrors "github.com/argoproj/argo-workflows/v3/errors"
-	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/server/auth"
-	"github.com/argoproj/argo-workflows/v3/server/types"
-	"github.com/argoproj/argo-workflows/v3/util/instanceid"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
+	argoerrors "github.com/argoproj/argo-workflows/v4/errors"
+	"github.com/argoproj/argo-workflows/v4/persist/sqldb"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/server/auth"
+	"github.com/argoproj/argo-workflows/v4/server/types"
+	"github.com/argoproj/argo-workflows/v4/util/instanceid"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifactrepositories"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
+	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
 type ArtifactServer struct {
@@ -56,12 +58,12 @@ func newArtifactServer(authN auth.Gatekeeper, hydrator hydrator.Interface, wfArc
 	return &ArtifactServer{authN, hydrator, wfArchive, instanceIDService, artDriverFactory, artifactRepositories, logger}
 }
 
-// nolint: contextcheck
+//nolint:contextcheck
 func (a *ArtifactServer) GetOutputArtifact(w http.ResponseWriter, r *http.Request) {
 	a.getArtifact(w, r, false)
 }
 
-// nolint: contextcheck
+//nolint:contextcheck
 func (a *ArtifactServer) GetInputArtifact(w http.ResponseWriter, r *http.Request) {
 	a.getArtifact(w, r, true)
 }
@@ -74,7 +76,8 @@ func (a *ArtifactServer) GetInputArtifact(w http.ResponseWriter, r *http.Request
 //	/artifact-files/{namespace}/[archived-workflows|workflows]/{id}/{nodeID}/[inputs|outputs]/{artifactName}/{fileDir}/.../{fileName}
 //
 // 'id' field represents 'uid' for archived workflows and 'name' for non-archived
-// nolint: contextcheck
+//
+//nolint:contextcheck
 func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request) {
 	const (
 		namespaceIndex      = 2
@@ -178,14 +181,14 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 	isDir := strings.HasSuffix(r.URL.Path, "/")
 
 	if !isDir {
-		isDir, err := driver.IsDirectory(ctx, artifact)
-		if err != nil {
-			if !argoerrors.IsCode(argoerrors.CodeNotImplemented, err) {
-				a.serverInternalError(ctx, err, w)
+		driverDir, driverErr := driver.IsDirectory(ctx, artifact)
+		if driverErr != nil {
+			if !argoerrors.IsCode(argoerrors.CodeNotImplemented, driverErr) {
+				a.serverInternalError(ctx, driverErr, w)
 				return
 			}
 		}
-		if isDir {
+		if driverDir {
 			http.Redirect(w, r, r.URL.String()+"/", http.StatusTemporaryRedirect)
 			return
 		}
@@ -194,9 +197,9 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 	if isDir {
 		// return an html page to the user
 
-		objects, err := driver.ListObjects(ctx, artifact)
-		if err != nil {
-			a.httpFromError(ctx, err, w)
+		objects, listErr := driver.ListObjects(ctx, artifact)
+		if listErr != nil {
+			a.httpFromError(ctx, listErr, w)
 			return
 		}
 		a.logger.WithFields(logging.Fields{
@@ -206,7 +209,6 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 
 		key, _ := artifact.GetKey()
 		for _, object := range objects {
-
 			// object is prefixed by the key, we must trim it
 			dir, file := path.Split(strings.TrimPrefix(object, key+"/"))
 
@@ -218,31 +220,14 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 				return
 			}
 		}
-
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("<html><body><ul>\n"))
-
-		dirs := map[string]bool{} // to de-dupe sub-dirs
-
-		_, _ = fmt.Fprintf(w, "<li><a href=\"%s\">%s</a></li>\n", "..", "..")
-
-		for _, object := range objects {
-
-			// object is prefixed the key, we must trim it
-			dir, file := path.Split(strings.TrimPrefix(object, key+"/"))
-
-			// if dir is empty string, we are in the root dir
-			if dir == "" {
-				_, _ = fmt.Fprintf(w, "<li><a href=\"%s\">%s</a></li>\n", file, file)
-			} else if dirs[dir] {
-				continue
-			} else {
-				_, _ = fmt.Fprintf(w, "<li><a href=\"%s\">%s</a></li>\n", dir, dir)
-				dirs[dir] = true
-			}
+		a.setSecurityHeaders(w)
+		output, renderErr := a.renderDirectoryListing(objects, key)
+		if renderErr != nil {
+			a.serverInternalError(ctx, renderErr, w)
+			return
 		}
-		_, _ = w.Write([]byte("</ul></body></html>"))
-
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(output)
 	} else { // stream the file itself
 		a.logger.WithFields(logging.Fields{
 			"artifact": artifact,
@@ -254,7 +239,42 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 			a.httpFromError(ctx, err, w)
 		}
 	}
+}
 
+func (a *ArtifactServer) renderDirectoryListing(objects []string, key string) ([]byte, error) {
+	output := bytes.NewBufferString("<html><body><ul>\n<li><a href=\"..\">..</a></li>\n")
+
+	dirs := map[string]bool{} // to de-dupe sub-dirs
+
+	// Use html/template to prevent XSS attacks.
+	// The "./" prefix is necessary so the template engine recognizes it as a relative URL.
+	// Without that, a file called "javascript:alert(1)" would be escaped to "#ZgotmplZ" by the urlFilter.
+	tmpl, err := template.New("list").Parse("<li><a href=\"./{{.}}\">{{.}}</a></li>\n")
+	if err != nil {
+		return nil, err
+	}
+
+	for _, object := range objects {
+		// object is prefixed the key, we must trim it
+		dir, file := path.Split(strings.TrimPrefix(object, key+"/"))
+
+		// if dir is empty string, we are in the root dir
+		switch {
+		case dir == "":
+			if err = tmpl.Execute(output, file); err != nil {
+				return nil, err
+			}
+		case dirs[dir]:
+			continue
+		default:
+			if err = tmpl.Execute(output, dir); err != nil {
+				return nil, err
+			}
+			dirs[dir] = true
+		}
+	}
+	_, _ = output.WriteString("</ul></body></html>")
+	return output.Bytes(), nil
 }
 
 func (a *ArtifactServer) getArtifact(w http.ResponseWriter, r *http.Request, isInput bool) {
@@ -309,7 +329,7 @@ func (a *ArtifactServer) GetInputArtifactByUID(w http.ResponseWriter, r *http.Re
 	a.getArtifactByUID(w, r, true)
 }
 
-// nolint: contextcheck
+//nolint:contextcheck
 func (a *ArtifactServer) getArtifactByUID(w http.ResponseWriter, r *http.Request, isInput bool) {
 	requestPath := strings.SplitN(r.URL.Path, "/", 5)
 	if len(requestPath) != 5 {
@@ -368,7 +388,7 @@ func (a *ArtifactServer) gateKeeping(r *http.Request, ns types.NamespacedRequest
 	if token == "" {
 		cookie, err := r.Cookie("authorization")
 		if err != nil {
-			if err != http.ErrNoCookie {
+			if !errors.Is(err, http.ErrNoCookie) {
 				return nil, err
 			}
 		} else {
@@ -413,8 +433,8 @@ func (a *ArtifactServer) httpFromError(ctx context.Context, err error, w http.Re
 		statusCode = int(e.Status().Code)
 	} else {
 		// check if it's an internal ArgoError
-		argoerr, typeOkay := err.(argoerrors.ArgoError)
-		if typeOkay {
+		var argoerr argoerrors.ArgoError
+		if errors.As(err, &argoerr) {
 			statusCode = argoerr.HTTPCode()
 		}
 	}
@@ -457,7 +477,7 @@ func (a *ArtifactServer) getArtifactAndDriver(ctx context.Context, nodeID, artif
 	templateNode, err := wf.Status.Nodes.Get(nodeID)
 	if err != nil {
 		logger.WithError(err).WithField("nodeID", nodeID).Error(ctx, "was unable to retrieve node")
-		return nil, nil, fmt.Errorf("unable to get artifact and driver; could not get node for %s: %v", nodeID, err)
+		return nil, nil, fmt.Errorf("unable to get artifact and driver; could not get node for %s: %w", nodeID, err)
 	}
 	templateName := util.GetTemplateFromNode(*templateNode)
 	if templateName != "" {
@@ -469,9 +489,9 @@ func (a *ArtifactServer) getArtifactAndDriver(ctx context.Context, nodeID, artif
 	}
 
 	if templateName == "" || !archiveLocation.HasLocation() {
-		ar, err := a.artifactRepositories.Get(ctx, wf.Status.ArtifactRepositoryRef) // this should handle cases 2, 3 and 5
-		if err != nil {
-			return art, nil, err
+		ar, arErr := a.artifactRepositories.Get(ctx, wf.Status.ArtifactRepositoryRef) // this should handle cases 2, 3 and 5
+		if arErr != nil {
+			return art, nil, arErr
 		}
 		archiveLocation = ar.ToArtifactLocation()
 	}
@@ -483,7 +503,7 @@ func (a *ArtifactServer) getArtifactAndDriver(ctx context.Context, nodeID, artif
 	if fileName != nil {
 		err = art.AppendToKey(*fileName)
 		if err != nil {
-			return art, nil, fmt.Errorf("error appending filename %s to key of artifact %+v: err: %v", *fileName, art, err)
+			return art, nil, fmt.Errorf("error appending filename %s to key of artifact %+v: err: %w", *fileName, art, err)
 		}
 		logger.WithFields(logging.Fields{
 			"fileName": *fileName,
@@ -502,6 +522,13 @@ func (a *ArtifactServer) getArtifactAndDriver(ctx context.Context, nodeID, artif
 	return art, driver, nil
 }
 
+func (a *ArtifactServer) setSecurityHeaders(w http.ResponseWriter) {
+	// Set strict CSP headers for defense-in-depth against XSS: https://web.dev/articles/strict-csp
+	w.Header().Add("Content-Security-Policy", env.GetString("ARGO_ARTIFACT_CONTENT_SECURITY_POLICY", "sandbox; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self' 'unsafe-inline'"))
+	// Mitigate clickjacking attacks
+	w.Header().Add("X-Frame-Options", env.GetString("ARGO_ARTIFACT_X_FRAME_OPTIONS", "SAMEORIGIN"))
+}
+
 func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWriter, art *wfv1.Artifact, driver common.ArtifactDriver) error {
 	logger := logging.RequireLoggerFromContext(ctx)
 	stream, err := driver.OpenStream(ctx, art)
@@ -510,26 +537,23 @@ func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWrit
 	}
 
 	defer func() {
-		if err := stream.Close(); err != nil {
-			logger.WithError(err).WithField("stream", stream).Warn(ctx, "Error closing stream")
+		if closeErr := stream.Close(); closeErr != nil {
+			logger.WithError(closeErr).WithField("stream", stream).Warn(ctx, "Error closing stream")
 		}
 	}()
 
 	key, _ := art.GetKey()
 	w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s"`, path.Base(key)))
 	w.Header().Add("Content-Type", mime.TypeByExtension(path.Ext(key)))
-	w.Header().Add("Content-Security-Policy", env.GetString("ARGO_ARTIFACT_CONTENT_SECURITY_POLICY", "sandbox; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self' 'unsafe-inline'"))
-	w.Header().Add("X-Frame-Options", env.GetString("ARGO_ARTIFACT_X_FRAME_OPTIONS", "SAMEORIGIN"))
+	a.setSecurityHeaders(w)
 
 	_, err = io.Copy(w, stream)
 	if err != nil {
 		errStr := fmt.Sprintf("failed to stream artifact: %v", err)
 		http.Error(w, errStr, http.StatusInternalServerError)
 		return errors.New(errStr)
-	} else {
-		w.WriteHeader(http.StatusOK)
 	}
-
+	w.WriteHeader(http.StatusOK)
 	return nil
 }
 

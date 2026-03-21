@@ -10,8 +10,8 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 var basicMetric = `
@@ -524,7 +524,7 @@ func TestRealtimeWorkflowMetric(t *testing.T) {
 	t.Logf("%v new %v old", value1, value)
 	assert.Greater(t, value1, value)
 
-	woc.markWorkflowSuccess(ctx)
+	ctx = woc.markWorkflowSuccess(ctx)
 	value2, err := testExporter.GetFloat64GaugeValue(ctx, woc.wf.Spec.Metrics.Prometheus[0].Name, &attribs)
 	require.NoError(t, err)
 	time.Sleep(10 * time.Millisecond)

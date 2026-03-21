@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
-	jsonutil "github.com/argoproj/argo-workflows/v3/util/json"
+	jsonutil "github.com/argoproj/argo-workflows/v4/util/json"
 )
 
 // Type represents the stored type of Item.
@@ -43,11 +43,11 @@ func (i *Item) GetType() Type {
 	if _, err := strconv.ParseBool(strValue); err == nil {
 		return Bool
 	}
-	var list []interface{}
+	var list []any
 	if err := json.Unmarshal(i.Value, &list); err == nil {
 		return List
 	}
-	var object map[string]interface{}
+	var object map[string]any
 	if err := json.Unmarshal(i.Value, &object); err == nil {
 		return Map
 	}

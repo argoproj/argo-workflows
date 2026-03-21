@@ -3,7 +3,7 @@ package clusterworkflowtemplate
 import (
 	"context"
 
-	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
+	"github.com/argoproj/argo-workflows/v4/workflow/templateresolution"
 )
 
 // NullClusterWorkflowTemplateStore is a no-op implementation of ClusterWorkflowTemplateStore

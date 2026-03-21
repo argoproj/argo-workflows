@@ -46,7 +46,8 @@ Some content here
 Component: Invalid second component
 Issues: 5678
 Description: Invalid second description
-Authors: [Another Author](https://github.com/another)`,
+Authors: [Another Author](https://github.com/another)
+`,
 			wantValid: false,
 			want: feature{
 				Component:   "UI",
@@ -116,9 +117,10 @@ Test Details`,
 			},
 		},
 		{
-			name:      "Empty content",
-			source:    "empty.md",
-			content:   ``,
+			name:   "Empty content",
+			source: "empty.md",
+			content: `
+		`,
 			wantValid: false,
 			want: feature{
 				Component:   "",
@@ -260,7 +262,6 @@ This is a concise list of new features.
 
 - Test Description by [Alan Clucas](https://github.com/Joibel) ([#1234](https://github.com/argoproj/argo-workflows/issues/1234))
   Test Details
-
 `,
 		},
 		{
@@ -285,7 +286,6 @@ This is a concise list of new features.
   Test Details
   - Point 1
   - Point 2
-
 `,
 		},
 		{
@@ -319,7 +319,6 @@ This is a concise list of new features.
 
 - Description 2 by [Alan Clucas](https://github.com/Joibel) ([#5678](https://github.com/argoproj/argo-workflows/issues/5678))
   Details 2
-
 `,
 		},
 		{
@@ -350,7 +349,6 @@ This is a concise list of new features.
 - First CLI feature by [Alan Clucas](https://github.com/Joibel) ([#1234](https://github.com/argoproj/argo-workflows/issues/1234))
 
 - Second CLI feature by [Alan Clucas](https://github.com/Joibel) ([#5678](https://github.com/argoproj/argo-workflows/issues/5678))
-
 `,
 		},
 	}

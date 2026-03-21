@@ -15,9 +15,9 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/utils/ptr"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
-	v1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	wfclientset "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
+	v1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 )
 
 func main() {
@@ -80,7 +80,7 @@ func main() {
 	}
 }
 
-// <snip id="watch-workflow">
+// <embed id="watch-workflow">
 func watchWorkflow(ctx context.Context, wfClient v1alpha1.WorkflowInterface, name string) error {
 	// Create field selector to watch only this workflow
 	fieldSelector := fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", name))
@@ -163,7 +163,7 @@ func watchWorkflow(ctx context.Context, wfClient v1alpha1.WorkflowInterface, nam
 		}
 	}
 }
-// </snip>
+// </embed>
 
 func formatDuration(d time.Duration) string {
 	d = d.Round(time.Second)

@@ -14,7 +14,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/utils/ptr"
 )
 
 func TestWorkflows(t *testing.T) {
@@ -167,7 +166,6 @@ func TestWorkflowGetArtifactGCStrategy(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			workflowSpec := fmt.Sprintf(`
             apiVersion: argoproj.io/v1alpha1
             kind: Workflow
@@ -196,7 +194,6 @@ func TestWorkflowGetArtifactGCStrategy(t *testing.T) {
 			assert.Equal(t, tt.expectedStrategy, gcStrategy)
 		})
 	}
-
 }
 
 func TestArtifact_ValidatePath(t *testing.T) {
@@ -316,8 +313,8 @@ func TestArtifactLocation_IsArchiveLogs(t *testing.T) {
 	var l *ArtifactLocation
 	assert.False(t, l.IsArchiveLogs())
 	assert.False(t, (&ArtifactLocation{}).IsArchiveLogs())
-	assert.False(t, (&ArtifactLocation{ArchiveLogs: ptr.To(false)}).IsArchiveLogs())
-	assert.True(t, (&ArtifactLocation{ArchiveLogs: ptr.To(true)}).IsArchiveLogs())
+	assert.False(t, (&ArtifactLocation{ArchiveLogs: new(false)}).IsArchiveLogs())
+	assert.True(t, (&ArtifactLocation{ArchiveLogs: new(true)}).IsArchiveLogs())
 }
 
 func TestArtifactLocation_HasLocation(t *testing.T) {
@@ -790,10 +787,10 @@ func TestNodes_Map(t *testing.T) {
 		"node_2": NodeStatus{ID: "node_2", HostNodeName: "host_2"},
 	}
 	t.Run("Empty", func(t *testing.T) {
-		assert.Empty(t, Nodes{}.Map(func(x NodeStatus) interface{} { return x.HostNodeName }))
+		assert.Empty(t, Nodes{}.Map(func(x NodeStatus) any { return x.HostNodeName }))
 	})
 	t.Run("Exist", func(t *testing.T) {
-		n := nodes.Map(func(x NodeStatus) interface{} { return x.HostNodeName })
+		n := nodes.Map(func(x NodeStatus) any { return x.HostNodeName })
 		assert.Equal(t, "host_1", n["node_1"])
 		assert.Equal(t, "host_2", n["node_2"])
 	})
@@ -802,7 +799,7 @@ func TestNodes_Map(t *testing.T) {
 // TestInputs_NoArtifacts makes sure that the code doesn't panic when trying to get artifacts from a node status
 // without any artifacts
 func TestInputs_NoArtifacts(t *testing.T) {
-	s := NodeStatus{ID: "node_1", Inputs: nil, Outputs: nil}
+	s := NodeStatus{Inputs: nil, Outputs: nil}
 	inArt := s.Inputs.GetArtifactByName("test-artifact")
 	assert.Nil(t, inArt)
 	outArt := s.Outputs.GetArtifactByName("test-artifact")
@@ -905,7 +902,7 @@ func TestPrometheus_GetDescIsStable(t *testing.T) {
 		},
 	}
 	stableDesc := metric.GetKey()
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		require.Equal(t, stableDesc, metric.GetKey())
 	}
 }
@@ -1082,7 +1079,7 @@ func TestWorkflowSpec_GetVolumeGC(t *testing.T) {
 }
 
 func TestGetTTLStrategy(t *testing.T) {
-	spec := WorkflowSpec{TTLStrategy: &TTLStrategy{SecondsAfterCompletion: ptr.To(int32(20))}}
+	spec := WorkflowSpec{TTLStrategy: &TTLStrategy{SecondsAfterCompletion: new(int32(20))}}
 	ttl := spec.GetTTLStrategy()
 	assert.Equal(t, int32(20), *ttl.SecondsAfterCompletion)
 }
@@ -1090,11 +1087,11 @@ func TestGetTTLStrategy(t *testing.T) {
 func TestWfGetTTLStrategy(t *testing.T) {
 	wf := Workflow{}
 
-	wf.Status.StoredWorkflowSpec = &WorkflowSpec{TTLStrategy: &TTLStrategy{SecondsAfterCompletion: ptr.To(int32(20))}}
+	wf.Status.StoredWorkflowSpec = &WorkflowSpec{TTLStrategy: &TTLStrategy{SecondsAfterCompletion: new(int32(20))}}
 	result := wf.GetTTLStrategy()
 	assert.Equal(t, int32(20), *result.SecondsAfterCompletion)
 
-	wf.Spec.TTLStrategy = &TTLStrategy{SecondsAfterCompletion: ptr.To(int32(30))}
+	wf.Spec.TTLStrategy = &TTLStrategy{SecondsAfterCompletion: new(int32(30))}
 	result = wf.GetTTLStrategy()
 	assert.Equal(t, int32(30), *result.SecondsAfterCompletion)
 }
@@ -1280,7 +1277,7 @@ func TestTemplate_SaveLogsAsArtifact(t *testing.T) {
 		assert.False(t, x.SaveLogsAsArtifact())
 	})
 	t.Run("IsArchiveLogs", func(t *testing.T) {
-		x := &Template{ArchiveLocation: &ArtifactLocation{ArchiveLogs: ptr.To(true)}}
+		x := &Template{ArchiveLocation: &ArtifactLocation{ArchiveLogs: new(true)}}
 		assert.True(t, x.SaveLogsAsArtifact())
 	})
 }
@@ -1299,7 +1296,7 @@ func TestTemplate_ExcludeTemplateTypes(t *testing.T) {
 		Steps:     []ParallelSteps{steps},
 		Script:    &ScriptTemplate{Source: "test"},
 		Container: &corev1.Container{Name: "container"},
-		DAG:       &DAGTemplate{FailFast: ptr.To(true)},
+		DAG:       &DAGTemplate{FailFast: new(true)},
 		Resource:  &ResourceTemplate{Action: "Create"},
 		Data:      &Data{Source: DataSource{ArtifactPaths: &ArtifactPaths{}}},
 		Suspend:   &SuspendTemplate{Duration: "10s"},
@@ -1467,7 +1464,6 @@ func TestParameterGetValue(t *testing.T) {
 	assert.NotEmpty(t, value.GetValue())
 	assert.Equal(t, "Test", value.GetValue())
 	assert.True(t, valueFrom.HasValue())
-
 }
 
 func TestTemplateIsLeaf(t *testing.T) {
@@ -1499,7 +1495,6 @@ func TestTemplateIsLeaf(t *testing.T) {
 		Steps: []ParallelSteps{},
 	}
 	assert.False(t, tmpl.IsLeaf())
-
 }
 
 func TestTemplateGetType(t *testing.T) {
@@ -1532,7 +1527,6 @@ func TestStepSpecGetExitHook(t *testing.T) {
 	step = WorkflowStep{Name: "A", Hooks: LifecycleHooks{"exit": LifecycleHook{Template: "hook"}}}
 	hooks = step.GetExitHook(step.Arguments)
 	assert.Equal(t, "hook", hooks.Template)
-
 }
 
 func TestTemplate_RetryStrategy(t *testing.T) {

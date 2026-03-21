@@ -14,7 +14,6 @@ type semaphore interface {
 	removeFromQueue(ctx context.Context, holderKey string) error
 	getCurrentHolders(ctx context.Context) ([]string, error)
 	getCurrentPending(ctx context.Context) ([]string, error)
-	getName() string
 	getLimit(ctx context.Context) int // Testing only
 	probeWaiting(ctx context.Context)
 	lock(ctx context.Context) bool

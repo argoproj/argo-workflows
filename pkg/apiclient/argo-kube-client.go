@@ -10,27 +10,27 @@ import (
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/argoproj/argo-workflows/v3"
-	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
-	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
-	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
-	infopkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/info"
-	syncpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/sync"
-	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
-	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
-	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
-	workflow "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo-workflows/v3/server/auth"
-	clusterworkflowtmplserver "github.com/argoproj/argo-workflows/v3/server/clusterworkflowtemplate"
-	cronworkflowserver "github.com/argoproj/argo-workflows/v3/server/cronworkflow"
-	syncserver "github.com/argoproj/argo-workflows/v3/server/sync"
-	"github.com/argoproj/argo-workflows/v3/server/types"
-	workflowserver "github.com/argoproj/argo-workflows/v3/server/workflow"
-	"github.com/argoproj/argo-workflows/v3/server/workflow/store"
-	workflowtemplateserver "github.com/argoproj/argo-workflows/v3/server/workflowtemplate"
-	"github.com/argoproj/argo-workflows/v3/util/help"
-	"github.com/argoproj/argo-workflows/v3/util/instanceid"
-	rbacutil "github.com/argoproj/argo-workflows/v3/util/rbac"
+	"github.com/argoproj/argo-workflows/v4"
+	"github.com/argoproj/argo-workflows/v4/persist/sqldb"
+	"github.com/argoproj/argo-workflows/v4/pkg/apiclient/clusterworkflowtemplate"
+	"github.com/argoproj/argo-workflows/v4/pkg/apiclient/cronworkflow"
+	infopkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/info"
+	syncpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/sync"
+	workflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow"
+	workflowarchivepkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflowarchive"
+	"github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflowtemplate"
+	workflow "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo-workflows/v4/server/auth"
+	clusterworkflowtmplserver "github.com/argoproj/argo-workflows/v4/server/clusterworkflowtemplate"
+	cronworkflowserver "github.com/argoproj/argo-workflows/v4/server/cronworkflow"
+	syncserver "github.com/argoproj/argo-workflows/v4/server/sync"
+	"github.com/argoproj/argo-workflows/v4/server/types"
+	workflowserver "github.com/argoproj/argo-workflows/v4/server/workflow"
+	"github.com/argoproj/argo-workflows/v4/server/workflow/store"
+	workflowtemplateserver "github.com/argoproj/argo-workflows/v4/server/workflowtemplate"
+	"github.com/argoproj/argo-workflows/v4/util/help"
+	"github.com/argoproj/argo-workflows/v4/util/instanceid"
+	rbacutil "github.com/argoproj/argo-workflows/v4/util/rbac"
 )
 
 var (
@@ -156,7 +156,7 @@ func (a *argoKubeClient) startStores(ctx context.Context, restConfig *restclient
 		wftmplInformer.Run(ctx, a.opts.CachingCloseCh)
 		a.wfTmplStore = wftmplInformer
 	} else {
-		a.wfTmplStore = workflowtemplateserver.NewWorkflowTemplateClientStore()
+		a.wfTmplStore = workflowtemplateserver.NewClientStore()
 	}
 
 	if rbacutil.HasAccessToClusterWorkflowTemplates(ctx, a.kubeClient) {
@@ -168,7 +168,7 @@ func (a *argoKubeClient) startStores(ctx context.Context, restConfig *restclient
 			cwftmplInformer.Run(ctx, a.opts.CachingCloseCh)
 			a.cwfTmplStore = cwftmplInformer
 		} else {
-			a.cwfTmplStore = clusterworkflowtmplserver.NewClusterWorkflowTemplateClientStore()
+			a.cwfTmplStore = clusterworkflowtmplserver.NewClientStore()
 		}
 	} else {
 		a.cwfTmplStore = clusterworkflowtmplserver.NewNullClusterWorkflowTemplate()
@@ -179,7 +179,7 @@ func (a *argoKubeClient) startStores(ctx context.Context, restConfig *restclient
 
 func (a *argoKubeClient) NewWorkflowServiceClient(ctx context.Context) workflowpkg.WorkflowServiceClient {
 	wfArchive := sqldb.NullWorkflowArchive
-	wfServer := workflowserver.NewWorkflowServer(ctx, a.instanceIDService, argoKubeOffloadNodeStatusRepo, wfArchive, a.wfClient, a.wfLister, a.wfStore, a.wfTmplStore, a.cwfTmplStore, nil, &a.namespace)
+	wfServer := workflowserver.NewServer(ctx, a.instanceIDService, argoKubeOffloadNodeStatusRepo, wfArchive, a.wfClient, a.wfLister, a.wfStore, a.wfTmplStore, a.cwfTmplStore, nil, &a.namespace)
 	go wfServer.Run(a.opts.CachingCloseCh)
 	return &errorTranslatingWorkflowServiceClient{&argoKubeWorkflowServiceClient{wfServer}}
 }
@@ -189,7 +189,7 @@ func (a *argoKubeClient) NewCronWorkflowServiceClient() (cronworkflow.CronWorkfl
 }
 
 func (a *argoKubeClient) NewWorkflowTemplateServiceClient() (workflowtemplate.WorkflowTemplateServiceClient, error) {
-	return &errorTranslatingWorkflowTemplateServiceClient{&argoKubeWorkflowTemplateServiceClient{workflowtemplateserver.NewWorkflowTemplateServer(a.instanceIDService, a.wfTmplStore, a.cwfTmplStore)}}, nil
+	return &errorTranslatingWorkflowTemplateServiceClient{&argoKubeWorkflowTemplateServiceClient{workflowtemplateserver.NewServer(a.instanceIDService, a.wfTmplStore, a.cwfTmplStore)}}, nil
 }
 
 func (a *argoKubeClient) NewArchivedWorkflowServiceClient() (workflowarchivepkg.ArchivedWorkflowServiceClient, error) {

@@ -14,13 +14,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo-workflows/v3/server/auth"
-	"github.com/argoproj/argo-workflows/v3/server/auth/types"
-	"github.com/argoproj/argo-workflows/v3/util/instanceid"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo-workflows/v4/server/auth"
+	"github.com/argoproj/argo-workflows/v4/server/auth/types"
+	"github.com/argoproj/argo-workflows/v4/util/instanceid"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 func Test_metaData(t *testing.T) {
@@ -41,7 +41,7 @@ func Test_metaData(t *testing.T) {
 
 func TestNewOperation(t *testing.T) {
 	// set-up
-	client := fake.NewSimpleClientset(
+	client := fake.NewClientset(
 		&wfv1.ClusterWorkflowTemplate{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-cwft", Labels: map[string]string{common.LabelKeyControllerInstanceID: "my-instanceid"}},
 		},
@@ -201,7 +201,7 @@ func TestNewOperation(t *testing.T) {
 
 func Test_populateWorkflowMetadata(t *testing.T) {
 	// set-up
-	client := fake.NewSimpleClientset(
+	client := fake.NewClientset(
 		&wfv1.WorkflowTemplate{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-wft", Namespace: "my-ns", Labels: map[string]string{common.LabelKeyControllerInstanceID: "my-instanceid"}},
 		},
@@ -414,5 +414,5 @@ func Test_expressionEnvironment(t *testing.T) {
 	assert.Equal(t, "my-ns", env["namespace"])
 	assert.Equal(t, "my-d", env["discriminator"])
 	assert.Contains(t, env, "metadata")
-	assert.Equal(t, map[string]interface{}{"foo": "bar"}, env["payload"], "make sure we parse an object as a map")
+	assert.Equal(t, map[string]any{"foo": "bar"}, env["payload"], "make sure we parse an object as a map")
 }

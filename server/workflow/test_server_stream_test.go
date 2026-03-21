@@ -30,10 +30,10 @@ func (t testServerStream) Context() context.Context {
 	return t.ctx
 }
 
-func (t testServerStream) SendMsg(interface{}) error {
+func (t testServerStream) SendMsg(any) error {
 	panic("implement me")
 }
 
-func (t testServerStream) RecvMsg(interface{}) error {
+func (t testServerStream) RecvMsg(any) error {
 	panic("implement me")
 }

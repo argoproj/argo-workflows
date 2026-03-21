@@ -9,9 +9,9 @@ If this file and that one differ, then the argoproj file is the authoritative ve
 
 | Maintainer                | GitHub ID                                         | Project Roles              | Affiliation                                    |
 |---------------------------|---------------------------------------------------|----------------------------|------------------------------------------------|
-| Saravanan Balasubramanian | [sarabala1979](https://github.com/sarabala1979)   | Lead           | [Intuit](https://www.github.com/intuit/)       |
 | Alan Clucas               | [Joibel](https://github.com/Joibel)               | Lead           | [Pipekit](https://pipekit.io/)                 |
 | Yuan Tang                 | [terrytangyuan](https://github.com/terrytangyuan) | Lead           | [Red Hat](https://www.redhat.com)              |
+| Saravanan Balasubramanian | [sarabala1979](https://github.com/sarabala1979)   | Approver       | [Intuit](https://www.github.com/intuit/)       |
 | Alex Collins              | [alexec](https://github.com/alexec)               | Approver       | [Intuit](https://www.github.com/intuit/)       |
 | Ed Lee                    | [edlee2121](https://github.com/edlee2121)         | Approver       | [Intuit](https://www.github.com/intuit/)       |
 | Mason Malone              | [MasonM](https://github.com/MasonM)               | Approver       | [Adobe](https://www.github.com/adobe/)         |

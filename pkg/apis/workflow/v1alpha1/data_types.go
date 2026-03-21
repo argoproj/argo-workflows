@@ -38,5 +38,5 @@ type ArtifactPaths struct {
 }
 
 type DataSourceProcessor interface {
-	ProcessArtifactPaths(context.Context, *ArtifactPaths) (interface{}, error)
+	ProcessArtifactPaths(context.Context, *ArtifactPaths) (any, error)
 }

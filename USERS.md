@@ -229,3 +229,4 @@ In addition, the following projects are **officially** using Argo Workflows:
 1. [SQLFlow](https://github.com/sql-machine-learning/sqlflow)
 1. [BisQue](https://github.com/UCSB-VRL/bisqueUCSB)
 1. [Tator](https://www.tator.io)
+1. [Juno](https://github.com/lumindigital/juno)

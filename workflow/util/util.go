@@ -34,27 +34,26 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/informers/internalinterfaces"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo-workflows/v3/workflow/creator"
+	"github.com/argoproj/argo-workflows/v4/workflow/creator"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	cmdutil "github.com/argoproj/argo-workflows/v3/util/cmd"
-	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/util/retry"
-	unstructutil "github.com/argoproj/argo-workflows/v3/util/unstructured"
-	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
-	"github.com/argoproj/argo-workflows/v3/workflow/packer"
-	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
-	"github.com/argoproj/argo-workflows/v3/workflow/validate"
+	"github.com/argoproj/argo-workflows/v4/errors"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	wfclientset "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	cmdutil "github.com/argoproj/argo-workflows/v4/util/cmd"
+	errorsutil "github.com/argoproj/argo-workflows/v4/util/errors"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/retry"
+	unstructutil "github.com/argoproj/argo-workflows/v4/util/unstructured"
+	waitutil "github.com/argoproj/argo-workflows/v4/util/wait"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
+	"github.com/argoproj/argo-workflows/v4/workflow/packer"
+	"github.com/argoproj/argo-workflows/v4/workflow/templateresolution"
+	"github.com/argoproj/argo-workflows/v4/workflow/validate"
 )
 
 // NewWorkflowInformer returns the workflow informer used by the controller. This is actually
@@ -141,13 +140,13 @@ func FromUnstructured(un *unstructured.Unstructured) (*wfv1.Workflow, error) {
 	return &wf, err
 }
 
-func FromUnstructuredObj(un *unstructured.Unstructured, v interface{}) error {
+func FromUnstructuredObj(un *unstructured.Unstructured, v any) error {
 	err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, v)
 	if err != nil {
 		if err.Error() == "cannot convert int64 to v1alpha1.AnyString" {
-			data, err := json.Marshal(un)
-			if err != nil {
-				return err
+			data, marshalErr := json.Marshal(un)
+			if marshalErr != nil {
+				return marshalErr
 			}
 			return json.Unmarshal(data, v)
 		}
@@ -186,24 +185,25 @@ func SubmitWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, wfClie
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(namespace))
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 
-	err = validate.ValidateWorkflow(ctx, wftmplGetter, cwftmplGetter, wf, wfDefaults, validate.ValidateOpts{Submit: true})
+	err = validate.Workflow(ctx, wftmplGetter, cwftmplGetter, wf, wfDefaults, validate.Opts{Submit: true})
 	if err != nil {
 		return nil, err
 	}
-	if opts.DryRun {
+	switch {
+	case opts.DryRun:
 		return wf, nil
-	} else if opts.ServerDryRun {
-		wf, err := CreateServerDryRun(ctx, wf, wfClientset)
-		if err != nil {
-			return nil, err
+	case opts.ServerDryRun:
+		createWf, createErr := CreateServerDryRun(ctx, wf, wfClientset)
+		if createErr != nil {
+			return nil, createErr
 		}
-		return wf, err
-	} else {
+		return createWf, createErr
+	default:
 		var runWf *wfv1.Workflow
 		err = waitutil.Backoff(retry.DefaultRetry(ctx), func() (bool, error) {
-			var err error
-			runWf, err = wfIf.Create(ctx, wf, metav1.CreateOptions{})
-			return !errorsutil.IsTransientErr(ctx, err), err
+			var createErr error
+			runWf, createErr = wfIf.Create(ctx, wf, metav1.CreateOptions{})
+			return !errorsutil.IsTransientErr(ctx, createErr), createErr
 		})
 		return runWf, err
 	}
@@ -373,7 +373,7 @@ func SuspendWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, workf
 			return false, errSuspendedCompletedWorkflow
 		}
 		if wf.Spec.Suspend == nil || !*wf.Spec.Suspend {
-			wf.Spec.Suspend = ptr.To(true)
+			wf.Spec.Suspend = new(true)
 			creator.LabelActor(ctx, wf, creator.ActionSuspend)
 			_, err := wfIf.Update(ctx, wf, metav1.UpdateOptions{})
 			if apierr.IsConflict(err) {
@@ -392,12 +392,11 @@ func OverrideOutputParametersWithDefault(outputs *wfv1.Outputs) error {
 	}
 	for i, param := range outputs.Parameters {
 		if param.ValueFrom != nil && param.ValueFrom.Supplied != nil {
-			if param.ValueFrom.Default != nil {
-				outputs.Parameters[i].Value = param.ValueFrom.Default
-				outputs.Parameters[i].ValueFrom = nil
-			} else {
+			if param.ValueFrom.Default == nil {
 				return fmt.Errorf("raw output parameter '%s' has not been set and does not have a default value", param.Name)
 			}
+			outputs.Parameters[i].Value = param.ValueFrom.Default
+			outputs.Parameters[i].ValueFrom = nil
 		}
 	}
 	return nil
@@ -413,59 +412,58 @@ func ResumeWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, hydrat
 	}
 	if len(nodeFieldSelector) > 0 {
 		return updateSuspendedNode(ctx, wfIf, hydrator, workflowName, nodeFieldSelector, SetOperationValues{Phase: wfv1.NodeSucceeded, Message: uiMsg}, creator.ActionResume)
-	} else {
-		err := waitutil.Backoff(retry.DefaultRetry(ctx), func() (bool, error) {
-			wf, err := wfIf.Get(ctx, workflowName, metav1.GetOptions{})
-			if err != nil {
-				return !errorsutil.IsTransientErr(ctx, err), err
-			}
+	}
+	err := waitutil.Backoff(retry.DefaultRetry(ctx), func() (bool, error) {
+		wf, err := wfIf.Get(ctx, workflowName, metav1.GetOptions{})
+		if err != nil {
+			return !errorsutil.IsTransientErr(ctx, err), err
+		}
 
-			err = hydrator.Hydrate(ctx, wf)
-			if err != nil {
-				return true, err
-			}
+		err = hydrator.Hydrate(ctx, wf)
+		if err != nil {
+			return true, err
+		}
 
-			workflowUpdated := false
-			if wf.Spec.Suspend != nil && *wf.Spec.Suspend {
-				wf.Spec.Suspend = nil
-				workflowUpdated = true
-			}
+		workflowUpdated := false
+		if wf.Spec.Suspend != nil && *wf.Spec.Suspend {
+			wf.Spec.Suspend = nil
+			workflowUpdated = true
+		}
 
-			// To resume a workflow with a suspended node we simply mark the node as Successful
-			for nodeID, node := range wf.Status.Nodes {
-				if node.IsActiveSuspendNode() {
-					if err := OverrideOutputParametersWithDefault(node.Outputs); err != nil {
-						return false, err
-					}
-					node.Phase = wfv1.NodeSucceeded
-					if node.Message != "" {
-						uiMsg = node.Message + "; " + uiMsg
-					}
-					node.Message = uiMsg
-					node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
-					wf.Status.Nodes.Set(ctx, nodeID, node)
-					workflowUpdated = true
-				}
-			}
-
-			if workflowUpdated {
-				err := hydrator.Dehydrate(ctx, wf)
-				if err != nil {
-					return false, fmt.Errorf("unable to compress or offload workflow nodes: %s", err)
-				}
-				creator.LabelActor(ctx, wf, creator.ActionResume)
-				_, err = wfIf.Update(ctx, wf, metav1.UpdateOptions{})
-				if err != nil {
-					if apierr.IsConflict(err) {
-						return false, nil
-					}
+		// To resume a workflow with a suspended node we simply mark the node as Successful
+		for nodeID, node := range wf.Status.Nodes {
+			if node.IsActiveSuspendNode() {
+				if err := OverrideOutputParametersWithDefault(node.Outputs); err != nil {
 					return false, err
 				}
+				node.Phase = wfv1.NodeSucceeded
+				if node.Message != "" {
+					uiMsg = node.Message + "; " + uiMsg
+				}
+				node.Message = uiMsg
+				node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
+				wf.Status.Nodes.Set(ctx, nodeID, node)
+				workflowUpdated = true
 			}
-			return true, nil
-		})
-		return err
-	}
+		}
+
+		if workflowUpdated {
+			err := hydrator.Dehydrate(ctx, wf)
+			if err != nil {
+				return false, fmt.Errorf("unable to compress or offload workflow nodes: %w", err)
+			}
+			creator.LabelActor(ctx, wf, creator.ActionResume)
+			_, err = wfIf.Update(ctx, wf, metav1.UpdateOptions{})
+			if err != nil {
+				if apierr.IsConflict(err) {
+					return false, nil
+				}
+				return false, err
+			}
+		}
+		return true, nil
+	})
+	return err
 }
 
 func SelectorMatchesNode(selector fields.Selector, node wfv1.NodeStatus) bool {
@@ -535,21 +533,20 @@ func updateSuspendedNode(ctx context.Context, wfIf v1alpha1.WorkflowInterface, h
 		return err
 	}
 	err = waitutil.Backoff(retry.DefaultRetry(ctx), func() (bool, error) {
-		wf, err := wfIf.Get(ctx, workflowName, metav1.GetOptions{})
-		if err != nil {
-			return !errorsutil.IsTransientErr(ctx, err), err
+		wf, getErr := wfIf.Get(ctx, workflowName, metav1.GetOptions{})
+		if getErr != nil {
+			return !errorsutil.IsTransientErr(ctx, getErr), getErr
 		}
 
-		err = hydrator.Hydrate(ctx, wf)
-		if err != nil {
-			return false, err
+		hydrateErr := hydrator.Hydrate(ctx, wf)
+		if hydrateErr != nil {
+			return false, hydrateErr
 		}
 
 		nodeUpdated := false
 		for nodeID, node := range wf.Status.Nodes {
 			if node.IsActiveSuspendNode() {
 				if SelectorMatchesNode(selector, node) {
-
 					// Update phase
 					if values.Phase != "" {
 						node.Phase = values.Phase
@@ -601,7 +598,7 @@ func updateSuspendedNode(ctx context.Context, wfIf v1alpha1.WorkflowInterface, h
 
 		err = hydrator.Dehydrate(ctx, wf)
 		if err != nil {
-			return true, fmt.Errorf("unable to compress or offload workflow nodes: %s", err)
+			return true, fmt.Errorf("unable to compress or offload workflow nodes: %w", err)
 		}
 		creator.LabelActor(ctx, wf, action)
 		_, err = wfIf.Update(ctx, wf, metav1.UpdateOptions{})
@@ -746,14 +743,15 @@ func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized 
 			newOutboundNodes[i] = convertNodeID(&newWF, replaceRegexp, outboundID, wf.Status.Nodes)
 		}
 		newNode.OutboundNodes = newOutboundNodes
-		if !newNode.FailedOrError() && newNode.Type == wfv1.NodeTypePod {
+		switch {
+		case !newNode.FailedOrError() && newNode.Type == wfv1.NodeTypePod:
 			newNode.Phase = wfv1.NodeSkipped
 			newNode.Type = wfv1.NodeTypeSkipped
 			newNode.Message = fmt.Sprintf("original pod: %s", originalID)
-		} else if newNode.Type == wfv1.NodeTypeSkipped && !isDescendantNodeSucceeded(ctx, wf, node, make(map[string]bool)) {
+		case newNode.Type == wfv1.NodeTypeSkipped && !isDescendantNodeSucceeded(ctx, wf, node, make(map[string]bool)):
 			newWF.Status.Nodes.Delete(ctx, newNode.ID)
 			continue
-		} else {
+		default:
 			newNode.Phase = wfv1.NodePending
 			newNode.Message = ""
 		}
@@ -889,7 +887,7 @@ func newWorkflowsDag(wf *wfv1.Workflow) ([]*dagNode, error) {
 }
 
 func singularPath(nodes []*dagNode, toNode string) ([]*dagNode, error) {
-	if len(nodes) <= 0 {
+	if len(nodes) == 0 {
 		return nil, fmt.Errorf("expected at least 1 node")
 	}
 	var root *dagNode
@@ -1056,7 +1054,6 @@ func resetPath(allNodes []*dagNode, startNode string) (map[string]bool, map[stri
 	}
 
 	for curr != nil {
-
 		switch {
 		case isGroupNodeType(curr.n.Type):
 			addToReset(curr.n.ID)
@@ -1110,10 +1107,12 @@ func dagSortedNodes(nodes []*dagNode, rootNodeName string) []*dagNode {
 	}
 
 	queue := make([]*dagNode, 0)
+	visited := make(map[string]bool)
 
 	for _, n := range nodes {
 		if n.n.Name == rootNodeName {
 			queue = append(queue, n)
+			visited[n.n.ID] = true
 			break
 		}
 	}
@@ -1126,7 +1125,13 @@ func dagSortedNodes(nodes []*dagNode, rootNodeName string) []*dagNode {
 		curr := queue[0]
 		sortedNodes = append(sortedNodes, curr)
 		queue = queue[1:]
-		queue = append(queue, curr.children...)
+		for _, child := range curr.children {
+			if visited[child.n.ID] {
+				continue
+			}
+			visited[child.n.ID] = true
+			queue = append(queue, child)
+		}
 	}
 
 	return sortedNodes
@@ -1140,11 +1145,10 @@ func dagSortedNodes(nodes []*dagNode, rootNodeName string) []*dagNode {
 // obtain singular path to each $node
 // reset all "reset points" to $node
 func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string, parameters []string) (*wfv1.Workflow, []string, error) {
-
 	switch wf.Status.Phase {
 	case wfv1.WorkflowFailed, wfv1.WorkflowError:
 	case wfv1.WorkflowSucceeded:
-		if !restartSuccessful || len(nodeFieldSelector) <= 0 {
+		if !restartSuccessful || len(nodeFieldSelector) == 0 {
 			return nil, nil, errors.Errorf(errors.CodeBadRequest, "To retry a succeeded workflow, set the options restartSuccessful and nodeFieldSelector")
 		}
 	default:
@@ -1277,7 +1281,6 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 		}
 	}
 	for id, oldWfNode := range wf.Status.Nodes {
-
 		if !newWf.Status.Nodes.Has(id) {
 			continue
 		}
@@ -1398,8 +1401,8 @@ func (e AlreadyShutdownError) Error() string {
 
 // patchShutdownStrategy patches the shutdown strategy to a workflow.
 func patchShutdownStrategy(ctx context.Context, wfClient v1alpha1.WorkflowInterface, name string, strategy wfv1.ShutdownStrategy) error {
-	patchObj := map[string]interface{}{
-		"spec": map[string]interface{}{
+	patchObj := map[string]any{
+		"spec": map[string]any{
 			"shutdown": strategy,
 		},
 	}
@@ -1414,7 +1417,7 @@ func patchShutdownStrategy(ctx context.Context, wfClient v1alpha1.WorkflowInterf
 	}
 	userActionLabel := creator.UserActionLabel(ctx, action)
 	if userActionLabel != nil {
-		patchObj["metadata"] = map[string]interface{}{
+		patchObj["metadata"] = map[string]any{
 			"labels": userActionLabel,
 		}
 	}
@@ -1424,18 +1427,18 @@ func patchShutdownStrategy(ctx context.Context, wfClient v1alpha1.WorkflowInterf
 		return errors.InternalWrapError(err)
 	}
 	err = waitutil.Backoff(retry.DefaultRetry(ctx), func() (bool, error) {
-		wf, err := wfClient.Get(ctx, name, metav1.GetOptions{})
-		if err != nil {
-			return !errorsutil.IsTransientErr(ctx, err), err
+		wf, getErr := wfClient.Get(ctx, name, metav1.GetOptions{})
+		if getErr != nil {
+			return !errorsutil.IsTransientErr(ctx, getErr), getErr
 		}
 		if wf.Status.Fulfilled() {
 			return true, AlreadyShutdownError{wf.Name, wf.Namespace}
 		}
-		_, err = wfClient.Patch(ctx, name, types.MergePatchType, patch, metav1.PatchOptions{})
-		if apierr.IsConflict(err) {
+		_, patchErr := wfClient.Patch(ctx, name, types.MergePatchType, patch, metav1.PatchOptions{})
+		if apierr.IsConflict(patchErr) {
 			return false, nil
 		}
-		return !errorsutil.IsTransientErr(ctx, err), err
+		return !errorsutil.IsTransientErr(ctx, patchErr), patchErr
 	})
 	return err
 }
@@ -1502,7 +1505,8 @@ func ReadManifest(ctx context.Context, manifestPaths ...string) ([][]byte, error
 	var manifestContents [][]byte
 	var err error
 	if len(manifestPaths) == 1 && manifestPaths[0] == "-" {
-		body, err := ReadFromStdin()
+		var body []byte
+		body, err = ReadFromStdin()
 		if err != nil {
 			return [][]byte{}, err
 		}
@@ -1540,14 +1544,14 @@ func ApplyPodSpecPatch(podSpec apiv1.PodSpec, podSpecPatchYamls ...string) (*api
 
 	for _, podSpecPatchYaml := range podSpecPatchYamls {
 		// must convert to json because PodSpec has only json tags
-		podSpecPatchJSON, err := ConvertYAMLToJSON(podSpecPatchYaml)
-		if err != nil {
-			return nil, errors.Wrap(err, "", "Failed to convert the PodSpecPatch yaml to json")
+		podSpecPatchJSON, convertErr := ConvertYAMLToJSON(podSpecPatchYaml)
+		if convertErr != nil {
+			return nil, errors.Wrap(convertErr, "", "Failed to convert the PodSpecPatch yaml to json")
 		}
 
 		// validate the patch to be a PodSpec
-		if err := json.Unmarshal([]byte(podSpecPatchJSON), &apiv1.PodSpec{}); err != nil {
-			return nil, fmt.Errorf("invalid podSpecPatch %q: %w", podSpecPatchYaml, err)
+		if unmarshalErr := json.Unmarshal([]byte(podSpecPatchJSON), &apiv1.PodSpec{}); unmarshalErr != nil {
+			return nil, fmt.Errorf("invalid podSpecPatch %q: %w", podSpecPatchYaml, unmarshalErr)
 		}
 
 		podSpecJSON, err = strategicpatch.StrategicMergePatch(podSpecJSON, []byte(podSpecPatchJSON), apiv1.PodSpec{})
@@ -1597,8 +1601,7 @@ func HasWindowsOSNodeSelector(nodeSelector map[string]string) bool {
 func FindWaitCtrIndex(pod *apiv1.Pod) (int, error) {
 	waitCtrIndex := -1
 	for i, ctr := range pod.Spec.Containers {
-		switch ctr.Name {
-		case common.WaitContainerName:
+		if ctr.Name == common.WaitContainerName {
 			waitCtrIndex = i
 		}
 	}

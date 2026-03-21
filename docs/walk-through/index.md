@@ -19,3 +19,7 @@ Start with [Argo CLI](argo-cli.md).
 
 If you would prefer to write Workflows using Python instead of YAML, check out the walk through for
 [Hera, the Python SDK for Argo Workflows](https://hera.readthedocs.io/en/stable/walk-through/quick-start/).
+
+## Juno SDK for Typescript Users
+
+You can also write Workflows in typescript, check out the documentation on [Juno](https://github.com/lumindigital/juno/blob/main/docs/index.md)

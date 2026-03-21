@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type obj = map[string]interface{}
+type obj = map[string]any
 
 func TestSwagger(t *testing.T) {
 	swagger := obj{}

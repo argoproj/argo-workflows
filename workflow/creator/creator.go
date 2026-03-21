@@ -7,9 +7,9 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo-workflows/v3/server/auth"
-	"github.com/argoproj/argo-workflows/v3/util/labels"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/server/auth"
+	"github.com/argoproj/argo-workflows/v4/util/labels"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 type ActionType string
@@ -20,6 +20,7 @@ const (
 	ActionStop      ActionType = "Stop"
 	ActionTerminate ActionType = "Terminate"
 	ActionResume    ActionType = "Resume"
+	ActionRetry     ActionType = "Retry"
 	ActionNone      ActionType = ""
 )
 

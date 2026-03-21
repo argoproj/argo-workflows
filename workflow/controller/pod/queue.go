@@ -15,10 +15,10 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	typedv1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
-	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/signal"
+	errorsutil "github.com/argoproj/argo-workflows/v4/util/errors"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/signal"
 )
 
 func (c *Controller) runPodCleanup(ctx context.Context) {
@@ -63,7 +63,7 @@ func (c *Controller) signalContainers(ctx context.Context, namespace string, pod
 			continue
 		}
 		// problems are already logged at info level, so we just ignore errors here
-		_ = signal.SignalContainer(ctx, c.restConfig, pod, container.Name, sig)
+		_ = signal.Container(ctx, c.restConfig, pod, container.Name, sig)
 	}
 	if pod.Spec.TerminationGracePeriodSeconds == nil {
 		return 30 * time.Second, nil

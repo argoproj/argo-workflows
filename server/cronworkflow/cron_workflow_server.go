@@ -9,15 +9,15 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/server/auth"
-	servertypes "github.com/argoproj/argo-workflows/v3/server/types"
-	"github.com/argoproj/argo-workflows/v3/util/instanceid"
-	"github.com/argoproj/argo-workflows/v3/workflow/creator"
-	"github.com/argoproj/argo-workflows/v3/workflow/validate"
+	cronworkflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/cronworkflow"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/server/auth"
+	servertypes "github.com/argoproj/argo-workflows/v4/server/types"
+	"github.com/argoproj/argo-workflows/v4/util/instanceid"
+	"github.com/argoproj/argo-workflows/v4/workflow/creator"
+	"github.com/argoproj/argo-workflows/v4/workflow/validate"
 
-	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
+	sutils "github.com/argoproj/argo-workflows/v4/server/utils"
 )
 
 type cronWorkflowServiceServer struct {
@@ -37,7 +37,7 @@ func (c *cronWorkflowServiceServer) LintCronWorkflow(ctx context.Context, req *c
 	cwftmplGetter := c.cwftmplStore.Getter(ctx)
 	c.instanceIDService.Label(req.CronWorkflow)
 	creator.LabelCreator(ctx, req.CronWorkflow)
-	err := validate.ValidateCronWorkflow(ctx, wftmplGetter, cwftmplGetter, req.CronWorkflow, c.wfDefaults)
+	err := validate.CronWorkflow(ctx, wftmplGetter, cwftmplGetter, req.CronWorkflow, c.wfDefaults)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
 	}
@@ -66,7 +66,7 @@ func (c *cronWorkflowServiceServer) CreateCronWorkflow(ctx context.Context, req 
 	creator.LabelCreator(ctx, req.CronWorkflow)
 	wftmplGetter := c.wftmplStore.Getter(ctx, req.Namespace)
 	cwftmplGetter := c.cwftmplStore.Getter(ctx)
-	err := validate.ValidateCronWorkflow(ctx, wftmplGetter, cwftmplGetter, req.CronWorkflow, c.wfDefaults)
+	err := validate.CronWorkflow(ctx, wftmplGetter, cwftmplGetter, req.CronWorkflow, c.wfDefaults)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
 	}
@@ -93,8 +93,8 @@ func (c *cronWorkflowServiceServer) UpdateCronWorkflow(ctx context.Context, req 
 	creator.LabelActor(ctx, req.CronWorkflow, creator.ActionUpdate)
 	wftmplGetter := c.wftmplStore.Getter(ctx, req.Namespace)
 	cwftmplGetter := c.cwftmplStore.Getter(ctx)
-	if err := validate.ValidateCronWorkflow(ctx, wftmplGetter, cwftmplGetter, req.CronWorkflow, c.wfDefaults); err != nil {
-		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
+	if validateErr := validate.CronWorkflow(ctx, wftmplGetter, cwftmplGetter, req.CronWorkflow, c.wfDefaults); validateErr != nil {
+		return nil, sutils.ToStatusError(validateErr, codes.InvalidArgument)
 	}
 	crWf, err := auth.GetWfClient(ctx).ArgoprojV1alpha1().CronWorkflows(req.Namespace).Update(ctx, req.CronWorkflow, metav1.UpdateOptions{})
 	if err != nil {
@@ -138,7 +138,7 @@ func (c *cronWorkflowServiceServer) SuspendCronWorkflow(ctx context.Context, req
 }
 
 func setCronWorkflowSuspend(ctx context.Context, setTo bool, namespace, name string) (*v1alpha1.CronWorkflow, error) {
-	data, err := json.Marshal(map[string]interface{}{"spec": map[string]interface{}{"suspend": setTo}})
+	data, err := json.Marshal(map[string]any{"spec": map[string]any{"suspend": setTo}})
 	if err != nil {
 		return nil, sutils.ToStatusError(fmt.Errorf("failed to marshall cron workflow patch data: %w", err), codes.Internal)
 	}

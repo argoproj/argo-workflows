@@ -9,14 +9,14 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	syncpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/sync"
-	"github.com/argoproj/argo-workflows/v3/server/auth"
-	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
+	syncpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/sync"
+	"github.com/argoproj/argo-workflows/v4/server/auth"
+	sutils "github.com/argoproj/argo-workflows/v4/server/utils"
 )
 
 type configMapSyncProvider struct{}
 
-var _ SyncConfigProvider = &configMapSyncProvider{}
+var _ ConfigProvider = &configMapSyncProvider{}
 
 func (s *configMapSyncProvider) createSyncLimit(ctx context.Context, req *syncpkg.CreateSyncLimitRequest) (*syncpkg.SyncLimitResponse, error) {
 	if req.Limit <= 0 {

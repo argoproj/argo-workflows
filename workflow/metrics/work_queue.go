@@ -5,9 +5,8 @@ import (
 
 	"go.opentelemetry.io/otel/metric"
 	"k8s.io/client-go/util/workqueue"
-	"k8s.io/utils/ptr"
 
-	"github.com/argoproj/argo-workflows/v3/util/telemetry"
+	"github.com/argoproj/argo-workflows/v4/util/telemetry"
 )
 
 // Act as a metrics provider for a workqueues
@@ -180,7 +179,7 @@ func (m *Metrics) NewLongestRunningProcessorSecondsMetric(name string) workqueue
 }
 
 func (m *Metrics) newObservableGaugeMetric(name string, inst telemetry.BuiltinInstrument, observe func(context.Context, metric.Observer, float64, string)) queueMetric {
-	valuePtr := ptr.To(float64(0.0))
+	valuePtr := new(float64(0.0))
 	metric := queueMetric{
 		value:           valuePtr,
 		set:             func(val float64) { *valuePtr = val },

@@ -5,16 +5,15 @@ import (
 
 	"github.com/upper/db/v4"
 
-	"github.com/argoproj/argo-workflows/v3/util/sqldb"
+	"github.com/argoproj/argo-workflows/v4/util/sqldb"
 )
 
 const (
 	versionTable = "schema_history"
 )
 
-func Migrate(ctx context.Context, session db.Session, clusterName, tableName string) (err error) {
-	dbType := sqldb.DBTypeFor(session)
-	return sqldb.Migrate(ctx, session, versionTable, []sqldb.Change{
+func Migrate(ctx context.Context, session db.Session, clusterName, tableName string, dbType sqldb.DBType) (err error) {
+	return sqldb.Migrate(ctx, session, dbType, versionTable, []sqldb.Change{
 		sqldb.AnsiSQLChange(`create table if not exists ` + tableName + ` (
     id varchar(128) ,
     name varchar(256),
@@ -226,5 +225,11 @@ func Migrate(ctx context.Context, session db.Session, clusterName, tableName str
 		}),
 		// add index on creationtimestamp column
 		sqldb.AnsiSQLChange(`create index argo_archived_workflows_i5 on argo_archived_workflows (creationtimestamp)`),
+		// change argo_archived_workflows_i1 index to add startedat DESC to resolve MySQL out of sort memory issues. #14240
+		sqldb.ByType(dbType, sqldb.TypedChanges{
+			sqldb.MySQL:    sqldb.AnsiSQLChange(`drop index argo_archived_workflows_i1 on argo_archived_workflows`),
+			sqldb.Postgres: sqldb.AnsiSQLChange(`drop index argo_archived_workflows_i1`),
+		}),
+		sqldb.AnsiSQLChange(`create index argo_archived_workflows_i1 on argo_archived_workflows (clustername, instanceid, namespace, startedat DESC)`),
 	})
 }

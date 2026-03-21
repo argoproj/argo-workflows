@@ -1,8 +1,0 @@
-walk:
-  includes:
-    - sdks/go
-    - docs
-  excludes:
-    - vendor
-    - .git
-  exclude_file_path:

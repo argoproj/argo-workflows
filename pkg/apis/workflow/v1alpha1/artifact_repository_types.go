@@ -40,24 +40,26 @@ type ArtifactRepositoryType interface {
 }
 
 func (a *ArtifactRepository) Get() ArtifactRepositoryType {
-	if a == nil {
+	switch {
+	case a == nil:
 		return nil
-	} else if a.Artifactory != nil {
+	case a.Artifactory != nil:
 		return a.Artifactory
-	} else if a.Azure != nil {
+	case a.Azure != nil:
 		return a.Azure
-	} else if a.GCS != nil {
+	case a.GCS != nil:
 		return a.GCS
-	} else if a.HDFS != nil {
+	case a.HDFS != nil:
 		return a.HDFS
-	} else if a.OSS != nil {
+	case a.OSS != nil:
 		return a.OSS
-	} else if a.Plugin != nil {
+	case a.Plugin != nil:
 		return a.Plugin
-	} else if a.S3 != nil {
+	case a.S3 != nil:
 		return a.S3
+	default:
+		return nil
 	}
-	return nil
 }
 
 // ToArtifactLocation returns the artifact location set with default template key:
@@ -82,7 +84,8 @@ type S3ArtifactRepository struct {
 	KeyFormat string `json:"keyFormat,omitempty" protobuf:"bytes,2,opt,name=keyFormat"`
 
 	// KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts.
-	// DEPRECATED. Use KeyFormat instead
+	//
+	// Deprecated: Use KeyFormat instead.
 	KeyPrefix string `json:"keyPrefix,omitempty" protobuf:"bytes,3,opt,name=keyPrefix"`
 }
 
@@ -138,7 +141,7 @@ type ArtifactoryArtifactRepository struct {
 func (r *ArtifactoryArtifactRepository) IntoArtifactLocation(l *ArtifactLocation) {
 	url := r.RepoURL
 	if !strings.HasSuffix(url, "/") {
-		url = url + "/"
+		url += "/"
 	}
 	k := r.KeyFormat
 	if k == "" {

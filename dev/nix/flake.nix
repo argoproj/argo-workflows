@@ -356,6 +356,7 @@
                 nodePackages.shell.nodeDependencies
                 gopls
                 go
+                goimports
                 jq
                 nodejs
                 pythonEnv
@@ -386,6 +387,7 @@
                     nodePackages.shell.nodeDependencies
                     gopls
                     go
+                    goimports
                     jq
                     nodejs
                     pythonEnv

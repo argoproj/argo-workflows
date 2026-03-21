@@ -1,9 +1,9 @@
 syntax = "proto3";
-option go_package = "github.com/argoproj/argo-workflows/pkg/apiclient/event";
+option go_package = "github.com/argoproj/argo-workflows/v4/pkg/apiclient/event";
 
 import "google/api/annotations.proto";
 import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
-import "github.com/argoproj/argo-workflows/pkg/apis/workflow/v1alpha1/generated.proto";
+import "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1/generated.proto";
 
 package event;
 
@@ -18,7 +18,7 @@ message EventRequest {
   // This is made available as `discriminator` in the event binding selector (`/spec/event/selector)`
   string discriminator = 2;
   // The event itself can be any data.
-  github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.Item payload = 3;
+  github.com.argoproj.argo_workflows.v4.pkg.apis.workflow.v1alpha1.Item payload = 3;
 }
 
 message EventResponse {
@@ -36,7 +36,7 @@ service EventService {
       body : "payload"
     };
   }
-  rpc ListWorkflowEventBindings(ListWorkflowEventBindingsRequest) returns (github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.WorkflowEventBindingList) {
+  rpc ListWorkflowEventBindings(ListWorkflowEventBindingsRequest) returns (github.com.argoproj.argo_workflows.v4.pkg.apis.workflow.v1alpha1.WorkflowEventBindingList) {
     option (google.api.http).get = "/api/v1/workflow-event-bindings/{namespace}";
   }
 }

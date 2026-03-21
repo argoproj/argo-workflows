@@ -16,19 +16,12 @@ import (
 
 const workflowPaginationLimit = 500
 
-// NewUnstructuredInformer constructs a new informer for Unstructured type.
-// Always prefer using an informer factory to get a shared informer instead of getting an independent
-// one. This reduces memory footprint and number of connections to the server.
-func NewUnstructuredInformer(ctx context.Context, resource schema.GroupVersionResource, client dynamic.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
-	return NewFilteredUnstructuredInformer(ctx, resource, client, namespace, resyncPeriod, indexers, nil, nil)
-}
-
 // NewFilteredUnstructuredInformer constructs a new informer for Unstructured type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
 func NewFilteredUnstructuredInformer(ctx context.Context, resource schema.GroupVersionResource, client dynamic.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListRequestListOptions internalinterfaces.TweakListOptionsFunc, tweakWatchRequestListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
-		&cache.ListWatch{
+		cache.ToListWatcherWithWatchListSemantics(&cache.ListWatch{
 			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
 				if tweakListRequestListOptions != nil {
 					tweakListRequestListOptions(&options)
@@ -50,7 +43,7 @@ func NewFilteredUnstructuredInformer(ctx context.Context, resource schema.GroupV
 					continueTok = unList.GetContinue()
 				}
 				return &unstructured.UnstructuredList{
-					Object: map[string]interface{}{
+					Object: map[string]any{
 						"apiVersion": "v1",
 						"kind":       "List",
 					},
@@ -63,7 +56,7 @@ func NewFilteredUnstructuredInformer(ctx context.Context, resource schema.GroupV
 				}
 				return client.Resource(resource).Namespace(namespace).Watch(ctx, options)
 			},
-		},
+		}, client),
 		&unstructured.Unstructured{},
 		resyncPeriod,
 		indexers,

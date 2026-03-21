@@ -13,11 +13,11 @@ import (
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo-workflows/v3/config"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
+	"github.com/argoproj/argo-workflows/v4/config"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
 )
 
 func NewGiven(
@@ -137,7 +137,7 @@ func (g *Given) readResource(text string, v metav1.Object) {
 // Using an arbitrary image will result in slow and flakey tests as we can't really predict when they'll be
 // downloaded or evicted. To keep tests fast and reliable you must use allowed images.
 // Workflows from the examples/ folder are given special treatment and allowed to use a wider range of images.
-func (g *Given) checkImages(wf interface{}, isExample bool) {
+func (g *Given) checkImages(wf any, isExample bool) {
 	g.t.Helper()
 	var defaultImage string
 	var templates []wfv1.Template
@@ -166,8 +166,9 @@ func (g *Given) checkImages(wf interface{}, isExample bool) {
 			image == "argoproj/argosay:v1" ||
 			image == "argoproj/argosay:v2" ||
 			image == "quay.io/argoproj/argocli:latest" ||
-			(isExample && (image == "busybox" ||
-				image == "python:alpine3.23" ||
+			image == "ghcr.io/equinix-labs/otel-cli:v0.4.5" ||
+			image == "busybox" ||
+			(isExample && (image == "python:alpine3.23" ||
 				image == "golang:1.18" ||
 				image == "nginx:1.13" ||
 				image == "curlimages/curl:latest" ||

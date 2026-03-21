@@ -7,8 +7,8 @@ import (
 
 	"k8s.io/apimachinery/pkg/labels"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	sutils "github.com/argoproj/argo-workflows/v4/server/utils"
 )
 
 var NullWorkflowArchive WorkflowArchive = &nullWorkflowArchive{}

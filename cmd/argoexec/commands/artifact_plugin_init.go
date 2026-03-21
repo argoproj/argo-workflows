@@ -10,10 +10,10 @@ import (
 	"github.com/argoproj/pkg/stats"
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo-workflows/v3/cmd/argoexec/executor"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/executor/osspecific"
+	"github.com/argoproj/argo-workflows/v4/cmd/argoexec/executor"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/executor/osspecific"
 )
 
 func NewArtifactPluginInitCommand() *cobra.Command {
@@ -55,7 +55,7 @@ func NewArtifactPluginInitCommand() *cobra.Command {
 			}()
 			err := loadArtifactPlugin(ctx, wfv1.ArtifactPluginName(artifactPlugin))
 			if err != nil {
-				return fmt.Errorf("%+v", err)
+				return fmt.Errorf("%w", err)
 			}
 			return nil
 		},
@@ -69,7 +69,8 @@ func loadArtifactPlugin(ctx context.Context, pluginName wfv1.ArtifactPluginName)
 		return err
 	}
 	wfExecutor := executor.Init(ctx, clientConfig, varRunArgo)
-	defer wfExecutor.HandleError(ctx)
+	errHandler := wfExecutor.HandleError(ctx)
+	defer errHandler()
 	defer stats.LogStats()
 
 	err := wfExecutor.LoadArtifactsFromPlugin(ctx, pluginName)

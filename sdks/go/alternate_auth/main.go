@@ -11,7 +11,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
-	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
+	wfclientset "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
 )
 
 func main() {
