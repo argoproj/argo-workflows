@@ -259,7 +259,7 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 	}
 
 	// Identify our target tasks. If user did not specify any, then we choose all tasks which have
-	// no dependants.
+	// no dependents.
 	var targetTasks []string
 	if tmpl.DAG.Target == "" {
 		targetTasks = dagCtx.findLeafTaskNames(ctx, tmpl.DAG.Tasks)
