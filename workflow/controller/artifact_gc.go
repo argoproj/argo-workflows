@@ -14,7 +14,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/env"
-	"k8s.io/utils/ptr"
 
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
@@ -512,7 +511,7 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 				},
 				VolumeMounts: volumeMounts,
 			}),
-			AutomountServiceAccountToken: ptr.To(true),
+			AutomountServiceAccountToken: new(true),
 			RestartPolicy:                corev1.RestartPolicyNever,
 		},
 	}

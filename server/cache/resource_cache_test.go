@@ -29,7 +29,7 @@ func TestServer_K8sUtilsCache(t *testing.T) {
 
 	secretLabels := make(map[string]string)
 	secretLabels["hi"] = "world"
-	kubeClient := kubefake.NewSimpleClientset(
+	kubeClient := kubefake.NewClientset(
 		&v1.ServiceAccount{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "sa1", Namespace: "ns1",

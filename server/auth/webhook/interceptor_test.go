@@ -78,7 +78,7 @@ func TestInterceptor(t *testing.T) {
 
 func intercept(ctx context.Context, method string, target string, headers map[string]string) (*http.Request, *httptest.ResponseRecorder) {
 	// set-up
-	k := fake.NewSimpleClientset(
+	k := fake.NewClientset(
 		&corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{Name: "argo-workflows-webhook-clients", Namespace: "my-ns"},
 			Data: map[string][]byte{
@@ -129,7 +129,7 @@ func intercept(ctx context.Context, method string, target string, headers map[st
 	w := httptest.NewRecorder()
 	b := &bytes.Buffer{}
 	b.WriteString("{}")
-	r := httptest.NewRequest(method, target, b)
+	r := httptest.NewRequestWithContext(ctx, method, target, b)
 	for k, v := range headers {
 		r.Header.Set(k, v)
 	}

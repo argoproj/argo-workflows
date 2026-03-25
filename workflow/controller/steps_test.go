@@ -534,3 +534,188 @@ func TestOptionalArgumentUseSubPathInLoop(t *testing.T) {
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 }
+
+// Regression test: referencing {{steps.<expanded_step>.id}} where the step was expanded
+// via withItems. Before the fix, buildLocalScope was not called for the StepGroup node
+// when a step had withItem/withParam expansion, so steps.<step>.id was unavailable
+// and caused a requeue.
+var stepsStepGroupIDRef = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: steps-stepgroup-id-ref
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: fanout
+        template: echo
+        arguments:
+          parameters:
+          - name: msg
+            value: '{{item}}'
+        withItems: [0, 1]
+    - - name: use-id
+        template: echo
+        arguments:
+          parameters:
+          - name: msg
+            value: '{{steps.fanout.id}}'
+  - name: echo
+    inputs:
+      parameters:
+      - name: msg
+    container:
+      image: alpine:3.23
+      command: [echo, '{{inputs.parameters.msg}}']
+status:
+  nodes:
+    steps-stepgroup-id-ref:
+      id: steps-stepgroup-id-ref
+      name: steps-stepgroup-id-ref
+      displayName: steps-stepgroup-id-ref
+      type: Steps
+      templateName: main
+      templateScope: local/steps-stepgroup-id-ref
+      phase: Running
+      startedAt: "2020-04-20T16:39:00Z"
+      children:
+      - steps-stepgroup-id-ref-3297018276
+    steps-stepgroup-id-ref-3297018276:
+      id: steps-stepgroup-id-ref-3297018276
+      name: steps-stepgroup-id-ref[0]
+      displayName: '[0]'
+      type: StepGroup
+      templateName: main
+      templateScope: local/steps-stepgroup-id-ref
+      boundaryID: steps-stepgroup-id-ref
+      phase: Succeeded
+      startedAt: "2020-04-20T16:39:00Z"
+      finishedAt: "2020-04-20T16:39:09Z"
+      children:
+      - steps-stepgroup-id-ref-2590864174
+      - steps-stepgroup-id-ref-2140877386
+    steps-stepgroup-id-ref-2590864174:
+      id: steps-stepgroup-id-ref-2590864174
+      name: steps-stepgroup-id-ref[0].fanout(0:0)
+      displayName: fanout(0:0)
+      type: Pod
+      templateName: echo
+      templateScope: local/steps-stepgroup-id-ref
+      boundaryID: steps-stepgroup-id-ref
+      phase: Succeeded
+      startedAt: "2020-04-20T16:39:00Z"
+      finishedAt: "2020-04-20T16:39:06Z"
+      inputs:
+        parameters:
+        - name: msg
+          value: "0"
+      outputs:
+        exitCode: "0"
+    steps-stepgroup-id-ref-2140877386:
+      id: steps-stepgroup-id-ref-2140877386
+      name: steps-stepgroup-id-ref[0].fanout(1:1)
+      displayName: fanout(1:1)
+      type: Pod
+      templateName: echo
+      templateScope: local/steps-stepgroup-id-ref
+      boundaryID: steps-stepgroup-id-ref
+      phase: Succeeded
+      startedAt: "2020-04-20T16:39:00Z"
+      finishedAt: "2020-04-20T16:39:07Z"
+      inputs:
+        parameters:
+        - name: msg
+          value: "1"
+      outputs:
+        exitCode: "0"
+  phase: Running
+  startedAt: "2020-04-20T16:39:00Z"
+`
+
+func TestStepsStepGroupIDReference(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	wf := wfv1.MustUnmarshalWorkflow(stepsStepGroupIDRef)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	woc.operate(ctx)
+
+	// Verify the use-id step was created (not stuck in requeue due to missing variable)
+	useIDNode := woc.wf.Status.Nodes.FindByDisplayName("use-id")
+	require.NotNil(t, useIDNode, "use-id node should be created when steps.fanout.id is resolvable")
+
+	// Verify the resolved value of steps.fanout.id matches the StepGroup node's ID
+	require.NotNil(t, useIDNode.Inputs)
+	require.Len(t, useIDNode.Inputs.Parameters, 1)
+	assert.Equal(t, "steps-stepgroup-id-ref-3297018276", useIDNode.Inputs.Parameters[0].Value.String())
+}
+
+var stepsWhenSkipNoRequeue = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: steps-when-skip-no-requeue-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: A
+        template: script-echo
+        when: "false"
+    - - name: B
+        when: "{{steps.A.status}} == Succeeded"
+        template: echo-with-param
+        arguments:
+          parameters:
+          - name: msg
+            value: "{{steps.A.outputs.result}}"
+  - name: script-echo
+    script:
+      image: alpine:3.23
+      command: [sh]
+      source: |
+        echo hello
+  - name: echo-with-param
+    inputs:
+      parameters:
+      - name: msg
+    container:
+      image: alpine:3.23
+      command: [echo, "{{inputs.parameters.msg}}"]
+`
+
+// TestStepsWhenSkipNoRequeue verifies that a step with a "when" clause that evaluates to false
+// does not cause a requeue even when other fields in the step reference outputs that don't exist.
+// Scenario: A is skipped (when: "false"), so A's outputs don't exist. B has
+// when: "{{steps.A.status}} == Succeeded" which evaluates to false ("Skipped == Succeeded").
+// B also references {{steps.A.outputs.result}} which is unresolvable since A was skipped.
+// Without the fix, the full ReplaceStrict would fail on the missing output and requeue.
+// With the fix, the when clause is resolved first, evaluates to false, and B is skipped early.
+func TestStepsWhenSkipNoRequeue(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	wf := wfv1.MustUnmarshalWorkflow(stepsWhenSkipNoRequeue)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	woc.operate(ctx)
+
+	// Workflow should succeed: A was skipped, B's when evaluated false so B was also skipped
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+
+	nodeB := woc.wf.Status.Nodes.FindByDisplayName("B")
+	require.NotNil(t, nodeB)
+	assert.Equal(t, wfv1.NodeSkipped, nodeB.Phase)
+}
