@@ -3210,6 +3210,15 @@
             "type": "string",
             "name": "finishedBefore",
             "in": "query"
+          },
+          {
+            "type": "array",
+            "items": {
+              "type": "boolean"
+            },
+            "collectionFormat": "multi",
+            "name": "archived",
+            "in": "query"
           }
         ],
         "responses": {

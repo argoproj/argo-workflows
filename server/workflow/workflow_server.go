@@ -208,9 +208,33 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 	}
 
 	var wfs wfv1.Workflows
-	liveWfCount, err := s.wfLister.CountWorkflows(ctx, req.Namespace, req.NameFilter, req.CreatedAfter, req.FinishedBefore, listOption)
-	if err != nil {
-		return nil, sutils.ToStatusError(err, codes.Internal)
+	// Determine which workflows to fetch based on archived filter array
+	// If both are unset we fetch both live and archived workflows
+	fetchLive := true
+	fetchArchived := true
+
+	if len(req.Archived) > 0 {
+		hasTrue := false
+		hasFalse := false
+		for _, a := range req.Archived {
+			if a {
+				hasTrue = true
+			} else {
+				hasFalse = true
+			}
+		}
+		fetchLive = hasFalse
+		fetchArchived = hasTrue
+	}
+
+	// Count workflows
+	var liveWfCount int64
+	if fetchLive {
+		var err error
+		liveWfCount, err = s.wfLister.CountWorkflows(ctx, req.Namespace, req.NameFilter, req.CreatedAfter, req.FinishedBefore, listOption)
+		if err != nil {
+			return nil, sutils.ToStatusError(err, codes.Internal)
+		}
 	}
 
 	// Only calculate archivedCount when it's actually needed
@@ -218,20 +242,28 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 	var archivedCount int64
 	var totalCount int64
 	if options.ShowRemainingItemCount {
-		archivedCount, err = s.wfArchive.CountWorkflows(ctx, options)
-		if err != nil {
-			return nil, sutils.ToStatusError(err, codes.Internal)
+		if fetchArchived {
+			var err error
+			archivedCount, err = s.wfArchive.CountWorkflows(ctx, options)
+			if err != nil {
+				return nil, sutils.ToStatusError(err, codes.Internal)
+			}
 		}
-		totalCount = liveWfCount + archivedCount
-	} else {
+		if fetchLive {
+			totalCount = liveWfCount + archivedCount
+		} else {
+			totalCount = archivedCount
+		}
+	} else if fetchLive {
 		// For pagination without remaining count, we can use a more efficient approach
 		// Just check if there are more items beyond the current page
 		totalCount = liveWfCount // Start with live count, will be updated if needed
 	}
 
-	// first fetch live workflows
+	// fetch live workflows
 	liveWfList := &wfv1.WorkflowList{}
-	if liveWfCount > 0 && (options.Limit == 0 || options.Offset < int(liveWfCount)) {
+	if fetchLive && liveWfCount > 0 && (options.Limit == 0 || options.Offset < int(liveWfCount)) {
+		var err error
 		liveWfList, err = s.wfLister.ListWorkflows(ctx, req.Namespace, req.NameFilter, req.CreatedAfter, req.FinishedBefore, listOption)
 		if err != nil {
 			return nil, sutils.ToStatusError(err, codes.Internal)
@@ -239,9 +271,9 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 		wfs = append(wfs, liveWfList.Items...)
 	}
 
-	// then fetch archived workflows
-	if options.Limit == 0 ||
-		int64(options.Offset+options.Limit) > liveWfCount {
+	// fetch archived workflows
+	if fetchArchived && (options.Limit == 0 ||
+		int64(options.Offset+options.Limit) > liveWfCount) {
 		archivedOffset := options.Offset - int(liveWfCount)
 		archivedLimit := options.Limit
 		if archivedOffset < 0 {
