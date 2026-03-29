@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	syncpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/sync"
+	syncpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/sync"
 )
 
 func validateFlags(syncType, cmName string) error {

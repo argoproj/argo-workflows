@@ -17,7 +17,7 @@ func (l TTL) MarshalJSON() ([]byte, error) {
 }
 
 func (l *TTL) UnmarshalJSON(b []byte) error {
-	var v interface{}
+	var v any
 	if err := json.Unmarshal(b, &v); err != nil {
 		return err
 	}
@@ -27,23 +27,23 @@ func (l *TTL) UnmarshalJSON(b []byte) error {
 			*l = 0
 			return nil
 		}
-		if strings.HasSuffix(value, "d") {
-			days, err := strconv.Atoi(strings.TrimSuffix(value, "d"))
+		if before, ok := strings.CutSuffix(value, "d"); ok {
+			days, err := strconv.Atoi(before)
 			*l = TTL(time.Duration(days) * 24 * time.Hour)
 			return err
 		}
-		if strings.HasSuffix(value, "h") {
-			hours, err := strconv.Atoi(strings.TrimSuffix(value, "h"))
+		if before, ok := strings.CutSuffix(value, "h"); ok {
+			hours, err := strconv.Atoi(before)
 			*l = TTL(time.Duration(hours) * time.Hour)
 			return err
 		}
-		if strings.HasSuffix(value, "m") {
-			minutes, err := strconv.Atoi(strings.TrimSuffix(value, "m"))
+		if before, ok := strings.CutSuffix(value, "m"); ok {
+			minutes, err := strconv.Atoi(before)
 			*l = TTL(time.Duration(minutes) * time.Minute)
 			return err
 		}
-		if strings.HasSuffix(value, "s") {
-			seconds, err := strconv.Atoi(strings.TrimSuffix(value, "s"))
+		if before, ok := strings.CutSuffix(value, "s"); ok {
+			seconds, err := strconv.Atoi(before)
 			*l = TTL(time.Duration(seconds) * time.Second)
 			return err
 		}

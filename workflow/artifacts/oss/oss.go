@@ -3,6 +3,7 @@ package oss
 import (
 	"context"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -18,14 +19,14 @@ import (
 	"github.com/aliyun/credentials-go/credentials"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	errutil "github.com/argoproj/argo-workflows/v3/util/errors"
-	"github.com/argoproj/argo-workflows/v3/util/file"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
-	wfcommon "github.com/argoproj/argo-workflows/v3/workflow/common"
+	argoerrors "github.com/argoproj/argo-workflows/v4/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	errutil "github.com/argoproj/argo-workflows/v4/util/errors"
+	"github.com/argoproj/argo-workflows/v4/util/file"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	waitutil "github.com/argoproj/argo-workflows/v4/util/wait"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/common"
+	wfcommon "github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 // ArtifactDriver is a driver for OSS
@@ -165,7 +166,7 @@ func (ossDriver *ArtifactDriver) Load(ctx context.Context, inputArtifact *wfv1.A
 			}
 
 			if err = GetOssDirectory(ctx, bucket, objectName, path); err != nil {
-				return !isTransientOSSErr(ctx, err), fmt.Errorf("failed get directory: %v", err)
+				return !isTransientOSSErr(ctx, err), fmt.Errorf("failed get directory: %w", err)
 			}
 			return true, nil
 		})
@@ -208,7 +209,7 @@ func (ossDriver *ArtifactDriver) OpenStream(ctx context.Context, inputArtifact *
 			}
 			// directory case:
 			// todo: make a .tgz file which can be streamed to user
-			return false, errors.New(errors.CodeNotImplemented, "Directory Stream capability currently unimplemented for OSS")
+			return false, argoerrors.New(argoerrors.CodeNotImplemented, "Directory Stream capability currently unimplemented for OSS")
 		})
 	return stream, err
 }
@@ -217,7 +218,8 @@ func (ossDriver *ArtifactDriver) OpenStream(ctx context.Context, inputArtifact *
 func (ossDriver *ArtifactDriver) Save(ctx context.Context, path string, outputArtifact *wfv1.Artifact) error {
 	err := waitutil.Backoff(defaultRetry,
 		func() (bool, error) {
-			ctx, logger := logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"path": path, "key": outputArtifact.OSS.Key}).InContext(ctx)
+			var logger logging.Logger
+			ctx, logger = logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"path": path, "key": outputArtifact.OSS.Key}).InContext(ctx)
 			logger.Info(ctx, "OSS Save")
 			osscli, err := ossDriver.newOSSClient(ctx)
 			if err != nil {
@@ -234,9 +236,9 @@ func (ossDriver *ArtifactDriver) Save(ctx context.Context, path string, outputAr
 				return !isTransientOSSErr(ctx, err), err
 			}
 			if outputArtifact.OSS.CreateBucketIfNotPresent {
-				exists, err := osscli.IsBucketExist(bucketName)
-				if err != nil {
-					return !isTransientOSSErr(ctx, err), fmt.Errorf("failed to check if bucket %s exists: %w", bucketName, err)
+				exists, existsErr := osscli.IsBucketExist(bucketName)
+				if existsErr != nil {
+					return !isTransientOSSErr(ctx, existsErr), fmt.Errorf("failed to check if bucket %s exists: %w", bucketName, existsErr)
 				}
 				if !exists {
 					err = osscli.CreateBucket(bucketName)
@@ -329,12 +331,11 @@ func (ossDriver *ArtifactDriver) ListObjects(ctx context.Context, artifact *wfv1
 				for _, object := range results.Objects {
 					files = append(files, object.Key)
 				}
-				if results.IsTruncated {
-					continueToken = results.NextContinuationToken
-					pre = oss.Prefix(results.Prefix)
-				} else {
+				if !results.IsTruncated {
 					break
 				}
+				continueToken = results.NextContinuationToken
+				pre = oss.Prefix(results.Prefix)
 			}
 			return true, nil
 		})
@@ -404,7 +405,8 @@ func isTransientOSSErr(ctx context.Context, err error) bool {
 	if errutil.IsTransientErr(ctx, err) {
 		return true
 	}
-	if ossErr, ok := err.(oss.ServiceError); ok {
+	var ossErr oss.ServiceError
+	if errors.As(err, &ossErr) {
 		if slices.Contains(ossTransientErrorCodes, ossErr.Code) {
 			return true
 		}
@@ -441,15 +443,15 @@ func multipartUpload(ctx context.Context, bucket *oss.Bucket, objectName, path s
 	// Upload the chunks.
 	var parts []oss.UploadPart
 	for _, chunk := range chunks {
-		_, err := fd.Seek(chunk.Offset, io.SeekStart)
-		if err != nil {
-			return err
+		_, seekErr := fd.Seek(chunk.Offset, io.SeekStart)
+		if seekErr != nil {
+			return seekErr
 		}
 		// Call the UploadPart method to upload each chunck.
-		part, err := bucket.UploadPart(imur, fd, chunk.Size, chunk.Number)
-		if err != nil {
-			logger.WithError(err).Warn(ctx, "Upload part error")
-			return err
+		part, uploadErr := bucket.UploadPart(imur, fd, chunk.Size, chunk.Number)
+		if uploadErr != nil {
+			logger.WithError(uploadErr).Warn(ctx, "Upload part error")
+			return uploadErr
 		}
 		logger.WithFields(logging.Fields{"partNumber": part.PartNumber, "etag": part.ETag}).Info(ctx, "Upload part")
 		parts = append(parts, part)
@@ -478,12 +480,12 @@ func putFile(ctx context.Context, bucket *oss.Bucket, objectName, path string) e
 func putDirectory(ctx context.Context, bucket *oss.Bucket, objectName, dir string) error {
 	return filepath.Walk(dir, func(fpath string, info os.FileInfo, err error) error {
 		if err != nil {
-			return errors.InternalWrapError(err)
+			return argoerrors.InternalWrapError(err)
 		}
 		// build the name to be used in OSS
 		nameInDir, err := filepath.Rel(dir, fpath)
 		if err != nil {
-			return errors.InternalWrapError(err)
+			return argoerrors.InternalWrapError(err)
 		}
 		fObjectName := filepath.Join(objectName, nameInDir)
 		// create an OSS dir explicitly for every local dir, , including empty dirs.
@@ -511,7 +513,8 @@ func putDirectory(ctx context.Context, bucket *oss.Bucket, objectName, dir strin
 
 // IsOssErrCode tests if an err is an oss.ServiceError with the specified code
 func IsOssErrCode(err error, code string) bool {
-	if serr, ok := err.(oss.ServiceError); ok {
+	var serr oss.ServiceError
+	if errors.As(err, &serr) {
 		if serr.Code == code {
 			return true
 		}

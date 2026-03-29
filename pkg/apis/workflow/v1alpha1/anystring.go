@@ -11,17 +11,17 @@ import (
 // * It will marshall back to string - marshalling is not symmetric.
 type AnyString string
 
-func ParseAnyString(val interface{}) AnyString {
+func ParseAnyString(val any) AnyString {
 	return AnyString(fmt.Sprintf("%v", val))
 }
 
-func AnyStringPtr(val interface{}) *AnyString {
+func AnyStringPtr(val any) *AnyString {
 	i := ParseAnyString(val)
 	return &i
 }
 
 func (i *AnyString) UnmarshalJSON(value []byte) error {
-	var v interface{}
+	var v any
 	err := json.Unmarshal(value, &v)
 	if err != nil {
 		return err

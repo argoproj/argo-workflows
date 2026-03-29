@@ -5,8 +5,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 var dagCycle = `
@@ -19,7 +19,7 @@ spec:
   templates:
   - name: echo
     container:
-      image: alpine:3.7
+      image: alpine:3.23
       command: [echo, hello]
   - name: cycle
     dag:
@@ -50,7 +50,7 @@ spec:
   templates:
   - name: echo
     container:
-      image: alpine:3.7
+      image: alpine:3.23
       command: [echo, hello]
   - name: entry
     dag:
@@ -100,7 +100,7 @@ spec:
       parameters:
       - name: message
     container:
-      image: alpine:3.7
+      image: alpine:3.23
       command: [echo, "{{inputs.parameters.message}}"]
     outputs:
       parameters:
@@ -142,7 +142,7 @@ spec:
       - name: id
       - name: hostnodename
     container:
-      image: alpine:3.7
+      image: alpine:3.23
       command: [echo, "{{inputs.parameters.message}}"]
     outputs:
       parameters:
@@ -211,7 +211,7 @@ spec:
       parameters:
       - name: message
     container:
-      image: alpine:3.7
+      image: alpine:3.23
       command: [echo, "{{inputs.parameters.message}}"]
     outputs:
       parameters:
@@ -253,7 +253,7 @@ spec:
   templates:
   - name: first
     container:
-      image: alpine:3.7
+      image: alpine:3.23
     outputs:
       parameters:
       - name: hosts
@@ -262,7 +262,7 @@ spec:
         globalName: global
   - name: second
     container:
-      image: alpine:3.7
+      image: alpine:3.23
       command: [echo, "{{workflow.outputs.parameters.global}}"]
   - name: unresolved
     dag:
@@ -284,7 +284,7 @@ spec:
   templates:
   - name: first
     container:
-      image: alpine:3.7
+      image: alpine:3.23
     outputs:
       parameters:
       - name: hosts
@@ -293,7 +293,7 @@ spec:
         globalName: global
   - name: second
     container:
-      image: alpine:3.7
+      image: alpine:3.23
       command: [echo, "{{workflow.outputs.parameters.global}}"]
   - name: unresolved
     dag:
@@ -332,7 +332,7 @@ spec:
   templates:
   - name: generate
     container:
-      image: alpine:3.7
+      image: alpine:3.23
       command: [echo, generate]
     outputs:
       artifacts:
@@ -347,7 +347,7 @@ spec:
       - name: passthrough
         path: /tmp/passthrough
     container:
-      image: alpine:3.7
+      image: alpine:3.23
       command: [echo, "{{inputs.parameters.message}}"]
     outputs:
       parameters:
@@ -393,7 +393,7 @@ spec:
       parameters:
       - name: message
     container:
-      image: alpine:3.7
+      image: alpine:3.23
       command: [echo, "{{inputs.parameters.message}}"]
 
   - name: dag-arg-passing
@@ -429,7 +429,7 @@ spec:
       parameters:
       - name: message
     container:
-      image: alpine:3.7
+      image: alpine:3.23
       command: [echo, "{{inputs.parameters.message}}"]
 
   - name: dag-arg-passing
@@ -465,7 +465,7 @@ spec:
       parameters:
       - name: message
     container:
-      image: alpine:3.7
+      image: alpine:3.23
       command: [echo, "{{inputs.parameters.message}}"]
 
   - name: dag-arg-passing
@@ -508,7 +508,7 @@ spec:
       parameters:
       - name: message
     container:
-      image: alpine:3.7
+      image: alpine:3.23
       command: [echo, "{{inputs.parameters.message}}"]
 
   - name: dag-arg-passing
@@ -565,7 +565,7 @@ spec:
       parameters:
       - name: message
     container:
-      image: alpine:3.7
+      image: alpine:3.23
       command: [echo, "{{inputs.parameters.message}}"]
 
   - name: dag-arg-passing
@@ -657,14 +657,13 @@ spec:
       parameters:
       - name: message
     container:
-      image: alpine:3.7
+      image: alpine:3.23
       command: [echo, "{{inputs.parameters.message}}"]
 `
 
 func TestDAGNonExistantTarget(t *testing.T) {
 	err := validate(logging.TestContext(t.Context()), dagNonexistantTarget)
 	require.ErrorContains(t, err, "target 'DOESNTEXIST' is not defined")
-
 }
 
 var dagTargetSubstitution = `
@@ -697,7 +696,7 @@ spec:
       parameters:
       - name: message
     container:
-      image: alpine:3.7
+      image: alpine:3.23
       command: [echo, "{{inputs.parameters.message}}"]
 `
 
@@ -731,7 +730,7 @@ spec:
       parameters:
       - name: message
     container:
-      image: alpine:3.7
+      image: alpine:3.23
       command: [echo, "{{inputs.parameters.message}}"]
 `
 
@@ -762,7 +761,7 @@ spec:
 
   - name: echo
     container:
-      image: alpine:3.7
+      image: alpine:3.23
       command: [echo, "hello"]
 `
 
@@ -794,7 +793,7 @@ spec:
 
   - name: echo
     container:
-      image: alpine:3.7
+      image: alpine:3.23
       command: [echo, "hello"]
 `
 
@@ -836,14 +835,14 @@ spec:
             template: pass
     - name: pass
       container:
-        image: alpine:3.7
+        image: alpine:3.23
         command:
           - sh
           - -c
           - exit 0
     - name: fail
       container:
-        image: alpine:3.7
+        image: alpine:3.23
         command:
           - sh
           - -c
@@ -888,14 +887,14 @@ spec:
             template: pass
     - name: pass
       container:
-        image: alpine:3.7
+        image: alpine:3.23
         command:
           - sh
           - -c
           - exit 0
     - name: fail
       container:
-        image: alpine:3.7
+        image: alpine:3.23
         command:
           - sh
           - -c
@@ -924,7 +923,7 @@ spec:
             template: pass
     - name: pass
       container:
-        image: alpine:3.7
+        image: alpine:3.23
         command:
           - sh
           - -c
@@ -1219,7 +1218,7 @@ func TestDagWithItemTemplateRefTmpl(t *testing.T) {
 	err := createWorkflowTemplate(ctx, wftmpl)
 	require.NoError(t, err)
 
-	err = ValidateWorkflow(ctx, wftmplGetter, cwftmplGetter, wf, nil, ValidateOpts{})
+	err = Workflow(ctx, wftmplGetter, cwftmplGetter, wf, nil, Opts{})
 	require.NoError(t, err)
 
 	_ = deleteWorkflowTemplate(ctx, wftmpl.Name)

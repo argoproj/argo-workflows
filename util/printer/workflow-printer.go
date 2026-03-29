@@ -10,9 +10,9 @@ import (
 
 	"sigs.k8s.io/yaml"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/humanize"
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/humanize"
+	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
 func PrintWorkflows(workflows wfv1.Workflows, out io.Writer, opts PrintOpts) error {
@@ -140,11 +140,12 @@ func countPendingRunningCompletedNodes(wf *wfv1.Workflow) (int, int, int) {
 		if node.Type != wfv1.NodeTypePod {
 			continue
 		}
-		if node.Fulfilled() {
+		switch {
+		case node.Fulfilled():
 			completed++
-		} else if node.Phase == wfv1.NodeRunning {
+		case node.Phase == wfv1.NodeRunning:
 			running++
-		} else {
+		default:
 			pending++
 		}
 	}

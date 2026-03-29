@@ -6,7 +6,15 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: k8s-jobs
+  labels:
+    workflows.argoproj.io/no-test: "environment"
+  annotations:
+    workflows.argoproj.io/no-test-reasons: |
+      Error (exit code 64): no more retries Error from server (Forbidden): error when
+      creating "/tmp/manifest.yaml": jobs.batch is forbidden: User
+      "system:serviceaccount:argo:default" cannot create resource "jobs" in API group
+      "batch" in the namespace "argo"
+      name: k8s-jobs
 spec:
   entrypoint: rand-num
   templates:
@@ -38,7 +46,7 @@ spec:
             spec:
               containers:
               - name: rand
-                image: python:alpine3.6
+                image: python:alpine3.23
                 command: ["python", "-c", "import random; import time; print(random.randint(1, 1000)); time.sleep(10)"]
               restartPolicy: Never
     # Resource templates can have output parameters extracted from fields of the

@@ -17,11 +17,11 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 
-	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	workflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 // The goal of this class is to stream the logs of the workflow you want.
@@ -83,12 +83,10 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 	// we add selector if cli specify the pod selector when using logs
 	if req.GetSelector() != "" {
 		podListOptions = metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + req.GetName() + "," + req.GetSelector()}
-
 	} else {
 		// we create a watch on the pods labelled with the workflow name,
 		// but we also filter by pod name if that was requested
 		podListOptions = metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + req.GetName()}
-
 	}
 
 	if req.GetPodName() != "" {
@@ -118,23 +116,23 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 	ensureWeAreStreaming := func(pod *corev1.Pod) {
 		streamedPodsGuard.Lock()
 		defer streamedPodsGuard.Unlock()
-		ctx, logger := logger.WithField("podName", pod.GetName()).InContext(ctx)
-		logger.WithFields(logging.Fields{"podPhase": pod.Status.Phase, "alreadyStreaming": streamedPods[pod.UID]}).Debug(ctx, "Ensuring pod logs stream")
+		var podLogger logging.Logger
+		ctx, podLogger = logger.WithField("podName", pod.GetName()).InContext(ctx)
+		podLogger.WithFields(logging.Fields{"podPhase": pod.Status.Phase, "alreadyStreaming": streamedPods[pod.UID]}).Debug(ctx, "Ensuring pod logs stream")
 		if pod.Status.Phase != corev1.PodPending && !streamedPods[pod.UID] {
 			streamedPods[pod.UID] = true
-			wg.Add(1)
-			go func(podName string) {
-				defer wg.Done()
-				logger.Debug(ctx, "Streaming pod logs")
-				defer logger.Debug(ctx, "Pod logs stream done")
-				stream, err := podInterface.GetLogs(podName, &podLogStreamOptions).Stream(ctx)
-				if err != nil {
-					logger.WithError(err).Error(ctx, "Failed to get pod logs")
+			podName := pod.GetName()
+			wg.Go(func() {
+				podLogger.Debug(ctx, "Streaming pod logs")
+				defer podLogger.Debug(ctx, "Pod logs stream done")
+				stream, streamErr := podInterface.GetLogs(podName, &podLogStreamOptions).Stream(ctx)
+				if streamErr != nil {
+					podLogger.WithError(streamErr).Error(ctx, "Failed to get pod logs")
 					return
 				}
 				defer func() {
-					if err := stream.Close(); err != nil {
-						logger.WithError(err).Warn(ctx, "Failed to close stream")
+					if closeErr := stream.Close(); closeErr != nil {
+						podLogger.WithError(closeErr).Warn(ctx, "Failed to close stream")
 					}
 				}()
 				scanner := bufio.NewScanner(stream)
@@ -154,9 +152,9 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 						if len(parts) > 1 {
 							content = parts[1]
 						}
-						timestamp, err := time.Parse(time.RFC3339, parts[0])
-						if err != nil {
-							logger.WithError(err).Error(ctx, "Failed to decode or infer timestamp from log line")
+						timestamp, parseErr := time.Parse(time.RFC3339, parts[0])
+						if parseErr != nil {
+							podLogger.WithError(parseErr).Error(ctx, "Failed to decode or infer timestamp from log line")
 							// The current timestamp is the next best substitute. This won't be shown, but will be used
 							// for sorting
 							timestamp = time.Now()
@@ -168,14 +166,14 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 							content = line
 						}
 						if rx.MatchString(content) { // this means we filter the lines in the server, but will still incur the cost of retrieving them from Kubernetes
-							logger.WithFields(logging.Fields{"timestamp": timestamp, "content": content}).Debug(ctx, "Log line")
+							podLogger.WithFields(logging.Fields{"timestamp": timestamp, "content": content}).Debug(ctx, "Log line")
 							unsortedEntries <- logEntry{podName: podName, content: content, timestamp: timestamp}
 						}
 					}
 				}
-				logger.Debug(ctx, "No more log lines to stream")
+				podLogger.Debug(ctx, "No more log lines to stream")
 				// out of data, we do not want to start watching again
-			}(pod.GetName())
+			})
 		}
 	}
 
@@ -212,10 +210,8 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 		stopWatchingPods := make(chan struct{})
 		// The purpose of this watch is to make sure we do not exit until the workflow is completed or deleted.
 		// When that happens, it signals we are done by closing the stop channel.
-		wg.Add(1)
-		go func() {
+		wg.Go(func() {
 			defer close(stopWatchingPods)
-			defer wg.Done()
 			defer logger.Debug(ctx, "Done watching workflow events")
 			logger.Debug(ctx, "Watching for workflow events")
 			for {
@@ -245,12 +241,10 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 					}
 				}
 			}
-		}()
+		})
 
 		// The purpose of this watch is to start streaming any new pods that appear when we are running.
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			defer logger.Debug(ctx, "Done watching pod events")
 			logger.Debug(ctx, "Watching for pod events")
 			for {
@@ -281,7 +275,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 					podListOptions.ResourceVersion = pod.ResourceVersion
 				}
 			}
-		}()
+		})
 	} else {
 		logger.Debug(ctx, "Not starting watches")
 	}

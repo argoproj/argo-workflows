@@ -6,6 +6,7 @@
 [![Slack](https://img.shields.io/badge/slack-argoproj-brightgreen.svg?logo=slack)](https://argoproj.github.io/community/join-slack)
 [![X Follow](https://img.shields.io/twitter/follow/argoproj?style=social)](https://x.com/argoproj)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-argoproj-blue.svg?logo=linkedin)](https://www.linkedin.com/company/argoproj/)
+[![Bluesky](https://img.shields.io/badge/Bluesky-argoproj-blue.svg?style=social&logo=bluesky)](https://bsky.app/profile/argoproj.bsky.social)
 [![Release Version](https://img.shields.io/github/v/release/argoproj/argo-workflows?label=argo-workflows)](https://github.com/argoproj/argo-workflows/releases/latest)
 [![Artifact HUB](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/argo-workflows)](https://artifacthub.io/packages/helm/argo/argo-workflows)
 
@@ -56,22 +57,18 @@ You can try Argo Workflows via one of the following:
 Just some of the projects that use or rely on Argo Workflows (complete list [here](https://github.com/akuity/awesome-argo#ecosystem-projects)):
 
 * [Argo Events](https://github.com/argoproj/argo-events)
-* [Couler](https://github.com/couler-proj/couler)
-* [Hera](https://github.com/argoproj-labs/hera-workflows)
+* [Hera](https://github.com/argoproj-labs/hera)
 * [Katib](https://github.com/kubeflow/katib)
 * [Kedro](https://kedro.readthedocs.io/en/stable/)
 * [Kubeflow Pipelines](https://github.com/kubeflow/pipelines)
 * [Netflix Metaflow](https://metaflow.org)
-* [Onepanel](https://github.com/onepanelio/onepanel)
-* [Orchest](https://github.com/orchest/orchest/)
 * [Piper](https://github.com/quickube/piper)
-* [Ploomber](https://github.com/ploomber/ploomber)
 * [Seldon](https://github.com/SeldonIO/seldon-core)
 * [SQLFlow](https://github.com/sql-machine-learning/sqlflow)
 
 ## Client Libraries
 
-Check out our [Java, Golang and Python clients](client-libraries.md).
+Check out our [Java, Golang, Python (Hera), and Typescript (Juno) clients](client-libraries.md).
 
 ## Quickstart
 
@@ -116,7 +113,7 @@ An incomplete list of features Argo Workflows provides:
 * Multiple executors
 * Multiple pod and workflow garbage collection strategies
 * Automatically calculated resource usage per step
-* Java/Golang/Python SDKs
+* Java, Golang, Python (Hera), and Typescript (Juno) SDKs
 * Pod Disruption Budget support
 * Single-sign on (OAuth2/OIDC)
 * Webhook triggering
@@ -146,6 +143,7 @@ Participation in Argo Workflows is governed by the [CNCF Code of Conduct](https:
 * [Distributed Machine Learning Patterns from Manning Publication](https://github.com/terrytangyuan/distributed-ml-patterns)
 * [Engineering Cloud Native AI Platform](https://github.com/terrytangyuan/public-talks/tree/main/talks/platform-con-2024-engineering-cloud-native-ai-platform)
 * [Managing Thousands of Automatic Machine Learning Experiments with Argo and Katib](https://github.com/terrytangyuan/public-talks/blob/main/talks/argocon-automl-experiments-2022)
+* [Autonomous Driving Data Pipelines Reconstruction With Argo Workflows](https://www.youtube.com/watch?v=oTgIQxbsLhU)
 * [Revolutionizing Scientific Simulations with Argo Workflows](https://www.youtube.com/watch?v=BYVf7GhfiRg)
 * [Running Argo Workflows Across Multiple Kubernetes Clusters](https://admiralty.io/blog/running-argo-workflows-across-multiple-kubernetes-clusters/)
 * [Scaling Kubernetes: Best Practices for Managing Large-Scale Batch Jobs with Spark and Argo Workflow](https://www.youtube.com/watch?v=KqEKRPjy4aE)

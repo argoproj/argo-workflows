@@ -1,9 +1,14 @@
 package executor
 
 import (
+	"archive/tar"
+	"archive/zip"
+	"compress/gzip"
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
@@ -15,13 +20,13 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
-	"k8s.io/utils/ptr"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	argofake "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/executor/mocks"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	argofake "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/executor/mocks"
+	"github.com/argoproj/argo-workflows/v4/workflow/executor/tracing"
 )
 
 const (
@@ -73,21 +78,24 @@ func TestWorkflowExecutor_LoadArtifacts(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			ctx := logging.TestContext(t.Context())
+			tracing, err := tracing.New(ctx, `argoexec`) // TODO arguments here
+			require.NoError(t, err)
 			we := WorkflowExecutor{
 				Template: wfv1.Template{
 					Inputs: wfv1.Inputs{
 						Artifacts: []wfv1.Artifact{test.artifact},
 					},
 				},
+				Tracing: tracing,
 			}
-			err := we.loadArtifacts(ctx, "")
+			err = we.loadArtifacts(ctx, "")
 			require.EqualError(t, err, test.error)
 		})
 	}
 }
 
 func TestSaveParameters(t *testing.T) {
-	fakeClientset := fake.NewSimpleClientset()
+	fakeClientset := fake.NewClientset()
 	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
 	templateWithOutParam := wfv1.Template{
 		Outputs: wfv1.Outputs{
@@ -173,7 +181,7 @@ func TestIsBaseImagePath(t *testing.T) {
 }
 
 func TestDefaultParameters(t *testing.T) {
-	fakeClientset := fake.NewSimpleClientset()
+	fakeClientset := fake.NewClientset()
 	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
 	templateWithOutParam := wfv1.Template{
 		Outputs: wfv1.Outputs{
@@ -204,7 +212,7 @@ func TestDefaultParameters(t *testing.T) {
 }
 
 func TestDefaultParametersEmptyString(t *testing.T) {
-	fakeClientset := fake.NewSimpleClientset()
+	fakeClientset := fake.NewClientset()
 	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
 	templateWithOutParam := wfv1.Template{
 		Outputs: wfv1.Outputs{
@@ -377,9 +385,9 @@ func TestChmod(t *testing.T) {
 }
 
 func TestSaveArtifacts(t *testing.T) {
-	fakeClientset := fake.NewSimpleClientset()
+	fakeClientset := fake.NewClientset()
 	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
-	mockTaskResultClient := argofake.NewSimpleClientset().ArgoprojV1alpha1().WorkflowTaskResults(fakeNamespace)
+	mockTaskResultClient := argofake.NewClientset().ArgoprojV1alpha1().WorkflowTaskResults(fakeNamespace)
 	templateWithOutParam := wfv1.Template{
 		Inputs: wfv1.Inputs{
 			Artifacts: []wfv1.Artifact{
@@ -440,6 +448,9 @@ func TestSaveArtifacts(t *testing.T) {
 			},
 		},
 	}
+	ctx := logging.TestContext(t.Context())
+	tracing, err := tracing.New(ctx, `argoexec`) // TODO arguments here
+	require.NoError(t, err)
 	tests := []struct {
 		workflowExecutor WorkflowExecutor
 		expectError      bool
@@ -452,6 +463,7 @@ func TestSaveArtifacts(t *testing.T) {
 				Namespace:        fakeNamespace,
 				RuntimeExecutor:  &mockRuntimeExecutor,
 				taskResultClient: mockTaskResultClient,
+				Tracing:          tracing,
 			},
 			expectError: false,
 		},
@@ -463,6 +475,7 @@ func TestSaveArtifacts(t *testing.T) {
 				Namespace:        fakeNamespace,
 				RuntimeExecutor:  &mockRuntimeExecutor,
 				taskResultClient: mockTaskResultClient,
+				Tracing:          tracing,
 			},
 			expectError: true,
 		},
@@ -474,6 +487,7 @@ func TestSaveArtifacts(t *testing.T) {
 				Namespace:        fakeNamespace,
 				RuntimeExecutor:  &mockRuntimeExecutor,
 				taskResultClient: mockTaskResultClient,
+				Tracing:          tracing,
 			},
 			expectError: false,
 		},
@@ -497,14 +511,14 @@ func TestMonitorProgress(t *testing.T) {
 	readProgressFileTickDuration := time.Millisecond
 	progressFile := "/tmp/progress"
 
-	wfFake := argofake.NewSimpleClientset(&wfv1.WorkflowTaskSet{
+	wfFake := argofake.NewClientset(&wfv1.WorkflowTaskSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: fakeNamespace,
 			Name:      fakeWorkflow,
 		},
 	})
 	taskResults := wfFake.ArgoprojV1alpha1().WorkflowTaskResults(fakeNamespace)
-	we := NewExecutor(
+	we, err := NewExecutor(
 		ctx,
 		nil,
 		taskResults,
@@ -522,10 +536,11 @@ func TestMonitorProgress(t *testing.T) {
 		annotationPackTickDuration,
 		readProgressFileTickDuration,
 	)
+	require.NoError(t, err)
 
 	go we.monitorProgress(ctx, progressFile)
 
-	err := os.WriteFile(progressFile, []byte("100/100\n"), os.ModePerm)
+	err = os.WriteFile(progressFile, []byte("100/100\n"), os.ModePerm)
 	require.NoError(t, err)
 
 	time.Sleep(time.Second)
@@ -542,17 +557,20 @@ func TestSaveLogs(t *testing.T) {
 	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
 	mockRuntimeExecutor.On("GetOutputStream", mock.Anything, mock.AnythingOfType("string"), true).Return(io.NopCloser(strings.NewReader("hello world")), nil)
 	t.Run("Simple Pod node", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		tracing, err := tracing.New(ctx, `argoexec`)
+		require.NoError(t, err)
 		templateWithArchiveLogs := wfv1.Template{
 			ArchiveLocation: &wfv1.ArtifactLocation{
-				ArchiveLogs: ptr.To(true),
+				ArchiveLogs: new(true),
 			},
 		}
 		we := WorkflowExecutor{
 			Template:        templateWithArchiveLogs,
 			RuntimeExecutor: &mockRuntimeExecutor,
+			Tracing:         tracing,
 		}
 
-		ctx := logging.TestContext(t.Context())
 		logArtifacts := we.SaveLogs(ctx)
 
 		require.EqualError(t, we.errors[0], artStorageError)
@@ -562,7 +580,7 @@ func TestSaveLogs(t *testing.T) {
 
 func TestReportOutputs(t *testing.T) {
 	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
-	mockTaskResultClient := argofake.NewSimpleClientset().ArgoprojV1alpha1().WorkflowTaskResults(fakeNamespace)
+	mockTaskResultClient := argofake.NewClientset().ArgoprojV1alpha1().WorkflowTaskResults(fakeNamespace)
 	t.Run("Simple report output", func(t *testing.T) {
 		artifacts := []wfv1.Artifact{
 			{
@@ -575,17 +593,155 @@ func TestReportOutputs(t *testing.T) {
 				Artifacts: artifacts,
 			},
 		}
+		ctx := logging.TestContext(t.Context())
+		tracing, err := tracing.New(ctx, `argoexec`) // TODO arguments here
+		require.NoError(t, err)
 		we := WorkflowExecutor{
 			Template:         templateWithArtifacts,
 			RuntimeExecutor:  &mockRuntimeExecutor,
 			taskResultClient: mockTaskResultClient,
+			Tracing:          tracing,
 		}
 
-		ctx := logging.TestContext(t.Context())
-		err := we.ReportOutputs(ctx, artifacts)
+		err = we.ReportOutputs(ctx, artifacts)
 
 		require.NoError(t, err)
 		assert.Empty(t, we.errors)
 	})
+}
 
+func TestUntarMaliciousSymlink(t *testing.T) {
+	// Create a temporary directory for the test
+	tmpDir := t.TempDir()
+
+	// Create a target directory outside the extraction root
+	outsideDir := filepath.Join(tmpDir, "outside")
+	err := os.Mkdir(outsideDir, 0755)
+	require.NoError(t, err)
+
+	// Create a file in the outside directory to verify it's NOT overwritten initially
+	targetFile := filepath.Join(outsideDir, "pwned")
+	err = os.WriteFile(targetFile, []byte("safe"), 0644)
+	require.NoError(t, err)
+
+	// Create the malicious tarball directly
+	tarPath := filepath.Join(tmpDir, "malicious.tar.gz")
+	f, err := os.Create(tarPath)
+	require.NoError(t, err)
+	gw := gzip.NewWriter(f)
+	tw := tar.NewWriter(gw)
+
+	// 1. Create a symlink "link" -> absolute path of outsideDir
+	absOutside, err := filepath.Abs(outsideDir)
+	require.NoError(t, err)
+
+	err = tw.WriteHeader(&tar.Header{
+		Name:     "link",
+		Typeflag: tar.TypeSymlink,
+		Linkname: absOutside,
+		Mode:     0777,
+	})
+	require.NoError(t, err)
+
+	// 2. Create a file "link/pwned" that writes through the symlink
+	fileContent := []byte("pwned")
+	err = tw.WriteHeader(&tar.Header{
+		Name:     "link/pwned",
+		Typeflag: tar.TypeReg,
+		Mode:     0644,
+		Size:     int64(len(fileContent)),
+	})
+	require.NoError(t, err)
+	_, err = tw.Write(fileContent)
+	require.NoError(t, err)
+
+	require.NoError(t, tw.Close())
+	require.NoError(t, gw.Close())
+	require.NoError(t, f.Close())
+
+	// Debug: List tarball contents
+	cmd := exec.CommandContext(t.Context(), "tar", "-tvzf", tarPath)
+	out, err := cmd.CombinedOutput()
+	require.NoError(t, err)
+	if err == nil {
+		t.Logf("Tarball contents:\n%s", string(out))
+	}
+
+	// Destination directory for extraction
+	destDir := filepath.Join(tmpDir, "dest")
+
+	// Perform untar
+	err = untar(tarPath, destDir)
+	// This should return an error because the symlink is outside the extraction root
+	require.Error(t, err)
+
+	// Check if the file outside was overwritten
+	content, err := os.ReadFile(targetFile)
+	require.NoError(t, err)
+
+	// If content is "pwned", the vulnerability is reproduced.
+	if string(content) == "pwned" {
+		t.Logf("Tar slip symlink vulnerability reproduced: File outside was overwritten with '%s'", string(content))
+	} else {
+		t.Logf("Tar slip symlink vulnerability NOT reproduced: File content is '%s'", string(content))
+	}
+
+	// Assert that it IS "safe" (this should FAIL if vulnerable)
+	assert.Equal(t, "safe", string(content), "File outside should NOT be overwritten")
+}
+
+func TestUnzipMaliciousSymlink(t *testing.T) {
+	// Create a temporary directory for the test
+	tmpDir := t.TempDir()
+
+	// Create a target directory outside the extraction root
+	outsideDir := filepath.Join(tmpDir, "outside")
+	err := os.Mkdir(outsideDir, 0755)
+	require.NoError(t, err)
+
+	// Create a file in the outside directory
+	targetFile := filepath.Join(outsideDir, "pwned")
+	err = os.WriteFile(targetFile, []byte("safe"), 0644)
+	require.NoError(t, err)
+
+	// Create the malicious zip
+	zipPath := filepath.Join(tmpDir, "malicious.zip")
+	f, err := os.Create(zipPath)
+	require.NoError(t, err)
+	zw := zip.NewWriter(f)
+
+	// 1. Create a symlink "link" -> "../outside"
+	header := &zip.FileHeader{
+		Name:   "link",
+		Method: zip.Store,
+	}
+	header.SetMode(0777 | os.ModeSymlink)
+	w, err := zw.CreateHeader(header)
+	require.NoError(t, err)
+	_, err = w.Write([]byte("../outside"))
+	require.NoError(t, err)
+
+	// 2. Create a file "link/pwned"
+	w, err = zw.Create("link/pwned")
+	require.NoError(t, err)
+	_, err = w.Write([]byte("pwned"))
+	require.NoError(t, err)
+
+	require.NoError(t, zw.Close())
+	require.NoError(t, f.Close())
+
+	// Destination directory
+	destDir := filepath.Join(tmpDir, "dest")
+
+	// Perform unzip
+	ctx := logging.TestContext(t.Context())
+	// This should return an error because the symlink is outside the extraction root
+	err = unzip(ctx, zipPath, destDir)
+	require.Error(t, err)
+
+	// Check if the file outside was overwritten
+	content, err := os.ReadFile(targetFile)
+	require.NoError(t, err)
+
+	assert.Equal(t, "safe", string(content), "File outside should NOT be overwritten by unzip")
 }

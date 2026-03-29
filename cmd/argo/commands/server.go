@@ -16,24 +16,24 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	_ "k8s.io/client-go/plugin/pkg/client/auth" // load authentication plugins
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/utils/env"
 
 	"os"
 
-	"github.com/argoproj/argo-workflows/v3"
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
-	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo-workflows/v3/server/apiserver"
-	"github.com/argoproj/argo-workflows/v3/server/auth"
-	"github.com/argoproj/argo-workflows/v3/server/types"
-	cmdutil "github.com/argoproj/argo-workflows/v3/util/cmd"
-	"github.com/argoproj/argo-workflows/v3/util/help"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	pprofutil "github.com/argoproj/argo-workflows/v3/util/pprof"
-	tlsutils "github.com/argoproj/argo-workflows/v3/util/tls"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v4"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/client"
+	wfclientset "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo-workflows/v4/server/apiserver"
+	"github.com/argoproj/argo-workflows/v4/server/auth"
+	"github.com/argoproj/argo-workflows/v4/server/types"
+	cmdutil "github.com/argoproj/argo-workflows/v4/util/cmd"
+	"github.com/argoproj/argo-workflows/v4/util/help"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	pprofutil "github.com/argoproj/argo-workflows/v4/util/pprof"
+	tlsutils "github.com/argoproj/argo-workflows/v4/util/tls"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 func NewServerCommand() *cobra.Command {
@@ -67,7 +67,7 @@ func NewServerCommand() *cobra.Command {
 		Example: fmt.Sprintf(`
 See %s`, help.ArgoServer()),
 		RunE: func(c *cobra.Command, args []string) error {
-			ctx, logger, err := cmdutil.CmdContextWithLogger(c, logLevel, logFormat)
+			ctx, logger, err := cmdutil.ContextWithLogger(c, logLevel, logFormat)
 			if err != nil {
 				return err
 			}
@@ -118,7 +118,8 @@ See %s`, help.ArgoServer()),
 
 			var tlsConfig *tls.Config
 			if secure {
-				tlsMinVersion, err := env.GetInt("TLS_MIN_VERSION", tls.VersionTLS12)
+				var tlsMinVersion int
+				tlsMinVersion, err = env.GetInt("TLS_MIN_VERSION", tls.VersionTLS12)
 				if err != nil {
 					return err
 				}
@@ -137,15 +138,13 @@ See %s`, help.ArgoServer()),
 						return err
 					}
 				}
-
 			} else {
 				logger.Warn(ctx, "You are running in insecure mode. Learn how to enable transport layer security: https://argo-workflows.readthedocs.io/en/latest/tls/")
 			}
 
 			modes := auth.Modes{}
 			for _, mode := range authModes {
-				err := modes.Add(mode)
-				if err != nil {
+				if err = modes.Add(mode); err != nil {
 					return err
 				}
 			}
@@ -177,9 +176,8 @@ See %s`, help.ArgoServer()),
 			if enableOpenBrowser {
 				browserOpenFunc = func(url string) {
 					logger.WithField("url", url).Info(ctx, "Argo UI is available")
-					err := browser.OpenURL(url)
-					if err != nil {
-						logger.WithError(err).Warn(ctx, "Unable to open the browser")
+					if browserErr := browser.OpenURL(url); browserErr != nil {
+						logger.WithError(browserErr).Warn(ctx, "Unable to open the browser")
 					}
 				}
 			}
@@ -222,7 +220,7 @@ See %s`, help.ArgoServer()),
 	viper.SetEnvPrefix("ARGO")
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_", ".", "_"))
 	// bind flags to env vars (https://github.com/spf13/viper/tree/v1.17.0#working-with-flags)
-	ctx, logger, err := cmdutil.CmdContextWithLogger(&command, logLevel, logFormat)
+	ctx, logger, err := cmdutil.ContextWithLogger(&command, logLevel, logFormat)
 	if err != nil {
 		logging.InitLogger().WithError(err).WithFatal().Error(ctx, "Failed to create server logger")
 	}

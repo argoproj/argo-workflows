@@ -8,6 +8,7 @@ dist/
 # delve debug binaries
 cmd/**/debug
 hack/**/debug
+hack/embeddoc/embeddoc
 hack/featuregen/featuregen
 /argo
 /argoexec
@@ -40,7 +41,6 @@ git-ask-pass.sh
 /.brew_home
 /go-diagrams/
 /.run/
-sdks/python/client/dist/*
 /v3/
 /cmd/argoexec/commands/test.txt
 /db-dumps/
@@ -54,3 +54,6 @@ node_modules
 result
 .devenv
 .devenv.flake.nix
+.*-vendor
+proto_vendor
+.github.com

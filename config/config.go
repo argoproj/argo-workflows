@@ -13,7 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
 type ResourceRateLimit struct {
@@ -27,10 +27,10 @@ type ResourceRateLimit struct {
 // as read from the ConfigMap called workflow-controller-configmap
 type Config struct {
 	// NodeEvents configures how node events are emitted
-	NodeEvents NodeEvents `json:"nodeEvents,omitempty"`
+	NodeEvents NodeEvents `json:"nodeEvents,omitzero"`
 
 	// WorkflowEvents configures how workflow events are emitted
-	WorkflowEvents WorkflowEvents `json:"workflowEvents,omitempty"`
+	WorkflowEvents WorkflowEvents `json:"workflowEvents,omitzero"`
 
 	// Executor holds container customizations for the executor to use when running pods
 	Executor *apiv1.Container `json:"executor,omitempty"`
@@ -42,7 +42,7 @@ type Config struct {
 	KubeConfig *KubeConfig `json:"kubeConfig,omitempty"`
 
 	// ArtifactRepository contains the default location of an artifact repository for container artifacts
-	ArtifactRepository wfv1.ArtifactRepository `json:"artifactRepository,omitempty"`
+	ArtifactRepository wfv1.ArtifactRepository `json:"artifactRepository,omitzero"`
 
 	// Namespace is a label selector filter to limit the controller's watch to a specific namespace
 	Namespace string `json:"namespace,omitempty"`
@@ -59,11 +59,11 @@ type Config struct {
 
 	// MetricsConfig specifies configuration for metrics emission. Metrics are enabled and emitted on localhost:9090/metrics
 	// by default.
-	MetricsConfig MetricsConfig `json:"metricsConfig,omitempty"`
+	MetricsConfig MetricsConfig `json:"metricsConfig,omitzero"`
 
 	// TelemetryConfig specifies configuration for telemetry emission. Telemetry is enabled and emitted in the same endpoint
 	// as metrics by default, but can be overridden using this config.
-	TelemetryConfig MetricsConfig `json:"telemetryConfig,omitempty"`
+	TelemetryConfig MetricsConfig `json:"telemetryConfig,omitzero"`
 
 	// Parallelism limits the max total parallel workflows that can execute at the same time
 	Parallelism int `json:"parallelism,omitempty"`
@@ -87,7 +87,7 @@ type Config struct {
 	WorkflowDefaults *wfv1.Workflow `json:"workflowDefaults,omitempty"`
 
 	// PodSpecLogStrategy enables the logging of podspec on controller log.
-	PodSpecLogStrategy PodSpecLogStrategy `json:"podSpecLogStrategy,omitempty"`
+	PodSpecLogStrategy PodSpecLogStrategy `json:"podSpecLogStrategy,omitzero"`
 
 	// PodGCGracePeriodSeconds specifies the duration in seconds before a terminating pod is forcefully killed.
 	// Value must be non-negative integer. A zero value indicates that the pod will be forcefully terminated immediately.
@@ -103,7 +103,7 @@ type Config struct {
 	WorkflowRestrictions *WorkflowRestrictions `json:"workflowRestrictions,omitempty"`
 
 	// Adds configurable initial delay (for K8S clusters with mutating webhooks) to prevent workflow getting modified by MWC.
-	InitialDelay metav1.Duration `json:"initialDelay,omitempty"`
+	InitialDelay metav1.Duration `json:"initialDelay,omitzero"`
 
 	// The command/args for each image, needed when the command is not specified and the emissary executor is used.
 	// https://argo-workflows.readthedocs.io/en/latest/workflow-executors/#emissary-emissary
@@ -116,13 +116,46 @@ type Config struct {
 	NavColor string `json:"navColor,omitempty"`
 
 	// SSO in settings for single-sign on
-	SSO SSOConfig `json:"sso,omitempty"`
+	SSO SSOConfig `json:"sso,omitzero"`
 
 	// Synchronization via databases config
 	Synchronization *SyncConfig `json:"synchronization,omitempty"`
 
 	// ArtifactDrivers lists artifact driver plugins we can use
 	ArtifactDrivers []ArtifactDriver `json:"artifactDrivers,omitempty"`
+
+	// FailedPodRestart configures automatic restart of pods that fail before entering Running state
+	// (e.g., due to Eviction, DiskPressure, Preemption). This allows recovery from transient
+	// infrastructure issues without requiring a retryStrategy on templates.
+	FailedPodRestart *FailedPodRestartConfig `json:"failedPodRestart,omitempty"`
+}
+
+// FailedPodRestartConfig configures automatic restart of pods that fail before entering Running state.
+// This is useful for recovering from transient infrastructure issues like node eviction due to
+// DiskPressure or MemoryPressure without requiring a retryStrategy on every template.
+type FailedPodRestartConfig struct {
+	// Enabled enables automatic restart of pods that fail before entering Running state.
+	// When enabled, pods that fail due to infrastructure issues (like eviction) without ever
+	// running their main container will be automatically recreated.
+	// Default is false.
+	Enabled bool `json:"enabled,omitempty"`
+
+	// MaxRestarts is the maximum number of automatic restarts per node before giving up.
+	// This prevents infinite restart loops. Default is 3.
+	MaxRestarts *int32 `json:"maxRestarts,omitempty"`
+}
+
+// GetMaxRestarts returns the configured max restarts or the default value of 3.
+func (c *FailedPodRestartConfig) GetMaxRestarts() int32 {
+	if c == nil || c.MaxRestarts == nil {
+		return 3
+	}
+	return *c.MaxRestarts
+}
+
+// IsEnabled returns true if the feature is enabled.
+func (c *FailedPodRestartConfig) IsEnabled() bool {
+	return c != nil && c.Enabled
 }
 
 // ArtifactDriver is a plugin for an artifact driver
@@ -327,9 +360,9 @@ type DatabaseConfig struct {
 	// TableName is the name of the table to use, must be set
 	TableName string `json:"tableName,omitempty"`
 	// UsernameSecret references a secret containing the database username
-	UsernameSecret apiv1.SecretKeySelector `json:"userNameSecret,omitempty"`
+	UsernameSecret apiv1.SecretKeySelector `json:"userNameSecret,omitzero"`
 	// PasswordSecret references a secret containing the database password
-	PasswordSecret apiv1.SecretKeySelector `json:"passwordSecret,omitempty"`
+	PasswordSecret apiv1.SecretKeySelector `json:"passwordSecret,omitzero"`
 }
 
 func (c DatabaseConfig) GetHostname() string {
@@ -346,6 +379,15 @@ type PostgreSQLConfig struct {
 	SSL bool `json:"ssl,omitempty"`
 	// SSLMode specifies the SSL mode (disable, require, verify-ca, verify-full)
 	SSLMode string `json:"sslMode,omitempty"`
+	// AzureToken specifies if the password should be fetched as an Azure token
+	AzureToken *AzureTokenConfig `json:"azureToken,omitempty"`
+}
+
+type AzureTokenConfig struct {
+	// Enabled enables Azure token fetching
+	Enabled bool `json:"enabled,omitempty"`
+	// Scope is the scope to request the token for. Defaults to "https://ossrdbms-aad.database.windows.net/.default" if empty.
+	Scope string `json:"scope,omitempty"`
 }
 
 // MySQLConfig contains MySQL-specific database configuration
@@ -359,7 +401,7 @@ type MySQLConfig struct {
 type MetricModifier struct {
 	// Disabled disables the emission of this metric completely
 	Disabled bool `json:"disabled,omitempty"`
-	// DisabledAttributes lists labels for this metric to remove that attributes to save on cardinality
+	// DisabledAttributes lists labels for this metric to remove those attributes to save on cardinality
 	DisabledAttributes []string `json:"disabledAttributes"`
 	// HistogramBuckets allow configuring of the buckets used in a histogram
 	// Has no effect on non-histogram buckets
@@ -380,8 +422,9 @@ const (
 type MetricsConfig struct {
 	// Enabled controls metric emission. Default is true, set "enabled: false" to turn off
 	Enabled *bool `json:"enabled,omitempty"`
-	// DisableLegacy turns off legacy metrics
-	// DEPRECATED: Legacy metrics are now removed, this field is ignored
+	// DisableLegacy turns off legacy metrics.
+	//
+	// Deprecated: Legacy metrics are now removed, this field is ignored.
 	DisableLegacy bool `json:"disableLegacy,omitempty"`
 	// MetricsTTL sets how often custom metrics are cleared from memory
 	MetricsTTL TTL `json:"metricsTTL,omitempty"`

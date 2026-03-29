@@ -8,12 +8,12 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	typed "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	listers "github.com/argoproj/argo-workflows/v3/pkg/client/listers/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	typed "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	listers "github.com/argoproj/argo-workflows/v4/pkg/client/listers/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 // workflowTemplateInterfaceWrapper is an internal struct to wrap clientset.
@@ -56,13 +56,6 @@ type NullClusterWorkflowTemplateGetter struct{}
 func (n *NullClusterWorkflowTemplateGetter) Get(_ context.Context, name string) (*wfv1.ClusterWorkflowTemplate, error) {
 	return nil, errors.Errorf("", "invalid spec: clusterworkflowtemplates.argoproj.io `%s` is "+
 		"forbidden: User cannot get resource 'clusterworkflowtemplates' in API group argoproj.io at the cluster scope", name)
-}
-
-type NullWorkflowTemplateNamespacedGetter struct{}
-
-func (n *NullWorkflowTemplateNamespacedGetter) Get(_ context.Context, name string) (*wfv1.WorkflowTemplate, error) {
-	return nil, errors.Errorf("", "invalid spec: workflowtemplates.argoproj.io `%s` is "+
-		"forbidden: User cannot get resource 'workflowtemplates' in API group argoproj.io at the namespace scope", name)
 }
 
 // Get retrieves the WorkflowTemplate of a given name.
@@ -226,7 +219,23 @@ func (tplCtx *TemplateContext) resolveTemplateImpl(ctx context.Context, tmplHold
 				tplCtx.log.Debug(ctx, "Stored the template")
 				templateStored = true
 			}
-			err = tplCtx.workflow.SetStoredInlineTemplate(scope, resourceName, newTmpl)
+			// For inline sub-templates, use the referenced resource's scope
+			// rather than the caller's scope. When a Workflow (scope=Local)
+			// references a WorkflowTemplate via templateRef, the inline
+			// sub-templates belong to that WorkflowTemplate and must be
+			// stored with its scope. Local scope skips storage, so without
+			// this the first write comes from a copy already contaminated
+			// by validation placeholder substitution.
+			inlineScope := scope
+			inlineResourceName := resourceName
+			if tmplRef := tmplHolder.GetTemplateRef(); tmplRef != nil {
+				inlineScope = wfv1.ResourceScopeNamespaced
+				if tmplRef.ClusterScope {
+					inlineScope = wfv1.ResourceScopeCluster
+				}
+				inlineResourceName = tmplRef.Name
+			}
+			err = tplCtx.workflow.SetStoredInlineTemplate(inlineScope, inlineResourceName, newTmpl)
 			if err != nil {
 				tplCtx.log.WithError(err).Error(ctx, "Failed to store the inline template")
 			}
@@ -254,9 +263,8 @@ func (tplCtx *TemplateContext) WithTemplateHolder(ctx context.Context, tmplHolde
 		tmplName := tmplRef.Name
 		if tmplRef.ClusterScope {
 			return tplCtx.WithClusterWorkflowTemplate(ctx, tmplName)
-		} else {
-			return tplCtx.WithWorkflowTemplate(ctx, tmplName)
 		}
+		return tplCtx.WithWorkflowTemplate(ctx, tmplName)
 	}
 	return tplCtx.WithTemplateBase(tplCtx.tmplBase), nil
 }

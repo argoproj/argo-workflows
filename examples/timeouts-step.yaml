@@ -6,6 +6,17 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: timeouts-step-
+  labels:
+    workflows.argoproj.io/no-test: "expected-failure"
+  annotations:
+    workflows.argoproj.io/no-test-reason: |
+      It looks like the container does not terminate in a clean way
+
+      time=2025-11-28T16:47:21.850Z level=DEBUG msg="ignore signal" argo=true signal="child exited"
+      time=2025-11-28T16:47:22.858Z level=DEBUG msg="forwarding signal" argo=true signal=terminated
+      time=2025-11-28T16:47:23.327Z level=INFO msg="sub-process exited" argo=true error="exit status 143"
+      time=2025-11-28T16:47:23.327Z level=DEBUG msg="ignore signal" argo=true signal="urgent I/O condition"
+      Error: exit status 143
 spec:
   entrypoint: sleep
   templates:

@@ -9,12 +9,12 @@ import (
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
-	"github.com/argoproj/argo-workflows/v3/persist/sqldb/mocks"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
-	"github.com/argoproj/argo-workflows/v3/workflow/packer"
+	"github.com/argoproj/argo-workflows/v4/errors"
+	"github.com/argoproj/argo-workflows/v4/persist/sqldb/mocks"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
+	"github.com/argoproj/argo-workflows/v4/workflow/packer"
 )
 
 func getMockDBCtx(expectedError error, largeWfSupport bool) (*mocks.OffloadNodeStatusRepo, hydrator.Interface) {
@@ -49,7 +49,8 @@ spec:
 
 // TestPersistWithoutLargeWfSupport verifies persistence with no largeWFsuppport
 func TestPersistWithoutLargeWfSupport(t *testing.T) {
-	defer makeMax()()
+	cleanup := makeMax()
+	defer cleanup()
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 
@@ -70,7 +71,8 @@ func TestPersistWithoutLargeWfSupport(t *testing.T) {
 
 // TestPersistErrorWithoutLargeWfSupport verifies persistence error with no largeWFsuppport
 func TestPersistErrorWithoutLargeWfSupport(t *testing.T) {
-	defer makeMax()()
+	cleanup := makeMax()
+	defer cleanup()
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 
@@ -90,7 +92,8 @@ func TestPersistErrorWithoutLargeWfSupport(t *testing.T) {
 
 // TestPersistWithLargeWfSupport verifies persistence with largeWFsuppport
 func TestPersistWithLargeWfSupport(t *testing.T) {
-	defer makeMax()()
+	cleanup := makeMax()
+	defer cleanup()
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 
@@ -118,7 +121,8 @@ func TestPersistWithLargeWfSupport(t *testing.T) {
 
 // TestPersistErrorWithLargeWfSupport verifies persistence error with largeWFsuppport
 func TestPersistErrorWithLargeWfSupport(t *testing.T) {
-	defer makeMax()()
+	cleanup := makeMax()
+	defer cleanup()
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 

@@ -4,11 +4,12 @@
 
 * Try out [Hera](https://hera.readthedocs.io/en/stable/) for writing Workflows in Python.
     * Also read: [How To Get the Most out of Hera for Data Science](https://pipekit.io/blog/how-to-get-the-most-out-of-hera-for-data-science)
-* Try out the [Go and Java SDKs](../client-libraries.md).
+* Try out the [Go, Java, and Typescript SDKs](../client-libraries.md).
 
 ## Videos
 
 * [Automating Research Workflows at BlackRock](https://www.youtube.com/watch?v=ZK510prml8o)
+* [Autonomous Driving Data Pipelines Reconstruction With Argo Workflows](https://www.youtube.com/watch?v=oTgIQxbsLhU)
 * [Beyond Prototypes: Production-Ready ML Systems with Metaflow and Argo](https://github.com/terrytangyuan/public-talks/tree/main/talks/kubecon-na-2023-metaflow-argo)
 * [Bridging into Python Ecosystem with Cloud-Native Distributed Machine Learning Pipelines](https://github.com/terrytangyuan/public-talks/tree/main/talks/bridging-into-python-ecosystem-with-cloud-native-distributed-machine-learning-pipelines-argocon-2021)
 * [Building Medical Grade AI with Argo Workflows](https://youtu.be/4VPSktuM5Ow)

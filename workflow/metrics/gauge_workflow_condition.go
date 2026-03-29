@@ -5,8 +5,8 @@ import (
 
 	"go.opentelemetry.io/otel/metric"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/telemetry"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/telemetry"
 )
 
 // WorkflowConditionCallback is the function prototype to provide this gauge with the condition of the workflows

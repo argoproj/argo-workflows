@@ -16,18 +16,18 @@ import (
 
 	"github.com/upper/db/v4"
 
-	syncpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/sync"
-	"github.com/argoproj/argo-workflows/v3/server/auth"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	syncdb "github.com/argoproj/argo-workflows/v3/util/sync/db"
-	syncdbmocks "github.com/argoproj/argo-workflows/v3/util/sync/db/mocks"
+	syncpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/sync"
+	"github.com/argoproj/argo-workflows/v4/server/auth"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	syncdb "github.com/argoproj/argo-workflows/v4/util/sync/db"
+	syncdbmocks "github.com/argoproj/argo-workflows/v4/util/sync/db/mocks"
 )
 
 func TestDBSyncProvider(t *testing.T) {
 	mockSyncQueries := &syncdbmocks.SyncQueries{}
 	provider := &dbSyncProvider{db: mockSyncQueries}
 	server := &syncServer{
-		providers: map[syncpkg.SyncConfigType]SyncConfigProvider{
+		providers: map[syncpkg.SyncConfigType]ConfigProvider{
 			syncpkg.SyncConfigType_DATABASE: provider,
 		},
 	}

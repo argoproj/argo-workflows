@@ -21,7 +21,5 @@ func (l logEntries) Less(i, j int) bool {
 }
 
 func (l logEntries) Swap(i, j int) {
-	tmp := l[i]
-	l[i] = l[j]
-	l[j] = tmp
+	l[i], l[j] = l[j], l[i]
 }

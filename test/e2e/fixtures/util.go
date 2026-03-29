@@ -14,7 +14,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 )
 
-func errorln(args ...interface{}) {
+func errorln(args ...any) {
 	_, _ = fmt.Fprint(os.Stderr, args...)
 }
 

@@ -6,6 +6,7 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -15,7 +16,7 @@ import (
 	"github.com/klauspost/pgzip"
 	"k8s.io/utils/env"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 var (
@@ -58,7 +59,7 @@ func ExistsInTar(sourcePath string, tarReader TarReader) bool {
 	sourcePath = strings.Trim(sourcePath, "/")
 	for {
 		hdr, err := tarReader.Next()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {
@@ -141,13 +142,13 @@ func WalkManifests(ctx context.Context, root string, fn func(path string, data [
 		case err != nil:
 			return err
 		case strings.HasPrefix(path, "/dev/") || manifestExt[filepath.Ext(path)]:
-			f, err := os.Open(filepath.Clean(path))
-			if err != nil {
-				return err
+			f, openErr := os.Open(filepath.Clean(path))
+			if openErr != nil {
+				return openErr
 			}
 			defer func() {
-				if err := f.Close(); err != nil {
-					logging.RequireLoggerFromContext(ctx).WithError(err).WithField("path", path).WithFatal().Error(ctx, "Error closing file")
+				if closeErr := f.Close(); closeErr != nil {
+					logging.RequireLoggerFromContext(ctx).WithError(closeErr).WithField("path", path).WithFatal().Error(ctx, "Error closing file")
 				}
 			}()
 			r = f

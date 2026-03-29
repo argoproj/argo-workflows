@@ -1,4 +1,10 @@
 attributes:
+  - name: ArtifactArchive
+    displayName: archive
+    description: "Type of archived artifact, one of none, zip or tar"
+  - name: ArtifactPath
+    displayName: path
+    description: "Local path for artifact being transferred"
   - name: BuildCompiler
     displayName: compiler
     description: "The compiler used. Example: `gc`"
@@ -24,6 +30,9 @@ attributes:
     description: The version of Argo
   - name: ConcurrencyPolicy
     description: "The concurrency policy which was triggered, will be either `Forbid` or `Replace`"
+  - name: ContainerName
+    displayName: container_name
+    description: The name of the container
   - name: CronWFName
     displayName: name
     description: "⚠️ The name of the CronWorkflow"
@@ -36,11 +45,26 @@ attributes:
   - name: ErrorCause
     displayName: cause
     description: The cause of the error
+  - name: LockAcquired
+    displayName: acquired
+    description: Whether the lock was successfully acquired
+    type: bool
+  - name: LockName
+    displayName: lock_name
+    description: The name of the synchronization lock
   - name: LogLevel
     displayName: level
     description: The log level of the message
+  - name: Message
+    displayName: message
+    description: The message associated with the node at the end
+  - name: NodeID
+    description: "The unique ID of a node in a DAG"
   - name: NodePhase
     description: "The phase that the pod's node was in"
+  - name: NodeType
+    displayName: node_type
+    description: The type of the node
   - name: PodNamespace
     displayName: namespace
     description: The namespace that the pod is in
@@ -50,6 +74,12 @@ attributes:
   - name: PodPhase
     displayName: phase
     description: The phase that the pod is in
+  - name: PodRestartCondition
+    displayName: condition
+    description: "The node condition that caused the pod restart, e.g., `DiskPressure`, `MemoryPressure`"
+  - name: PodRestartReason
+    displayName: reason
+    description: "The infrastructure failure reason: `Evicted`, `NodeShutdown`, `NodeAffinity`, or `UnexpectedAdmissionError`"
   - name: QueueName
     description: The name of the queue
   - name: RecentlyStarted
@@ -65,6 +95,13 @@ attributes:
   - name: RequestVerb
     displayName: verb
     description: "The verb of the request, such as `Get` or `List`"
+  - name: TaskResultCompleted
+    displayName: completed
+    description: "True if the task result is marked completed"
+    type: bool
+  - name: TaskResultName
+    displayName: name
+    description: The name of the task result
   - name: TemplateCluster
     displayName: cluster_scope
     description: A boolean set true if this is a ClusterWorkflowTemplate
@@ -77,6 +114,9 @@ attributes:
     description: The namespace that the WorkflowTemplate is in
   - name: WorkerType
     description: The type of queue
+  - name: WorkflowName
+    displayName: name
+    description: The name of the workflow
   - name: WorkflowNamespace
     displayName: namespace
     description: The namespace that the Workflow is in
@@ -91,6 +131,16 @@ attributes:
     description: "The type of condition, currently only `PodRunning`"
 
 metrics:
+  - name: ClientRateLimiterLatency
+    description: A histogram of the time spent waiting for the client-side rate limiter
+    extendedDescription: |
+      Records the actual wait time spent blocking on the client-go rate limiter before
+      Kubernetes API requests can proceed. This metric helps identify when the client
+      rate limiter (configured via QPS and Burst settings) is causing delays in API calls.
+      This rate limiter is on by default.
+    unit: s
+    type: Float64Histogram
+    defaultBuckets: [0.01, 0.1, 0.5, 1.0, 5.0, 10.0, 30.0, 60.0, 180.0]
   - name: CronworkflowsConcurrencypolicyTriggered
     description: A counter of the number of times a CronWorkflow has triggered its `concurrencyPolicy` to limit the number of workflows running
     attributes:
@@ -203,6 +253,28 @@ metrics:
     description: "Total number of pods that started pending by reason"
     attributes:
       - name: PodPendingReason
+      - name: PodNamespace
+    unit: "{pod}"
+    type: Int64Counter
+  - name: PodRestartsTotal
+    description: "Total number of pods automatically restarted due to infrastructure failures before the main container started"
+    extendedDescription: |
+      This counter tracks pods that were automatically restarted by the [failed pod restart](pod-restarts.md) feature.
+      These are infrastructure-level failures (like node eviction) that occur before the main container enters the Running state.
+    notes: |
+      `reason` will be one of:
+
+      - `Evicted`: Node pressure eviction (`DiskPressure`, `MemoryPressure`, etc.)
+      - `NodeShutdown`: Graceful node shutdown
+      - `NodeAffinity`: Node affinity/selector no longer matches
+      - `UnexpectedAdmissionError`: Unexpected error during pod admission
+
+      `condition` is extracted from the pod status message when available (e.g., `DiskPressure`, `MemoryPressure`).
+      It will be empty if the condition cannot be determined.
+    attributes:
+      - name: PodRestartReason
+      - name: PodRestartCondition
+        optional: true
       - name: PodNamespace
     unit: "{pod}"
     type: Int64Counter
@@ -342,6 +414,17 @@ metrics:
       - name: QueueName
     unit: "{item}"
     type: Float64ObservableGauge
+  - name: ResourceRateLimiterLatency
+    description: A histogram of the delay duration from the resource creation rate limiter
+    extendedDescription: |
+      Records the delay that would be required before a resource creation operation could proceed.
+      This metric helps identify when the resource rate limiter is throttling pod creation.
+      A delay of 0 means the operation was allowed immediately. A non-zero delay indicates
+      the operation was rate limited.
+      This rate limiter is not on by default
+    unit: s
+    type: Float64Histogram
+    defaultBuckets: [0.0, 0.1, 0.5, 1.0, 5.0, 10.0, 30.0, 60.0, 180.0]
   - name: TotalCount
     description: A counter of workflows that have entered each phase for tracking them through their life-cycle, by namespace
     attributes:
@@ -408,3 +491,151 @@ metrics:
       - name: WorkflowPhase
     unit: "{workflow_template}"
     type: Int64Counter
+
+# Spans should have the pattern Verb Noun
+spans:
+  - name: ArchiveArtifact
+    description: The compression stage of artifact saving
+    parents: [SaveArtifact]
+  - name: CaptureScriptResult
+    description: Capturing script output as a result
+    parents: [RunWaitContainer]
+  - name: CreateTaskResult
+    description: Creating the WorkflowTaskResult
+    parents: [RunWaitContainer, RunMainContainer]
+  - name: CreateWorkflowPod
+    description: Creating a workflow pod for a node
+    parents: [Node]
+    attributes:
+      - name: NodeID
+  - name: LoadArtifact
+    description: Load one artifact
+    parents: [LoadArtifacts]
+    attributes:
+      - name: ArtifactPath
+  - name: LoadArtifacts
+    description: Load the artifacts
+    parents: [RunInitContainer]
+  - name: Node
+    description: One node in the DAG of a workflow
+    attributes:
+      - name: NodeID
+      - name: WorkflowName
+      - name: WorkflowNamespace
+      - name: NodeType
+    parents: [Workflow]
+  - name: NodePhase
+    description: The phase of one node as observed by the controller in the DAG of a workflow
+    attributes:
+      - name: NodeID
+      - name: NodePhase
+      - name: Message
+        optional: true
+    parents: [Node]
+    kind: Producer
+  - name: PatchTaskResult
+    description: Patching the WorkflowTaskResult
+    parents: [RunWaitContainer, RunMainContainer]
+  - name: PatchTaskResultLabels
+    description: Patching the labels of WorkflowTaskResult
+    parents: [RunWaitContainer, RunMainContainer]
+  - name: PersistUpdates
+    description: Persisting workflow status updates to Kubernetes
+    parents: [Workflow]
+  - name: PodReconciliation
+    description: Reconciling pod statuses with workflow nodes
+    parents: [ReconcileWorkflow]
+  - name: ProcessDataTemplate
+    description: Processing a data template transformation
+    parents: [RunMainContainer]
+  - name: ReconcileTaskResult
+    description: Check a single task result
+    attributes:
+      - name: TaskResultName
+      - name: TaskResultCompleted
+    parents: [ReconcileTaskResults]
+  - name: ReconcileTaskResults
+    description: Check the task results
+    parents: [ReconcileWorkflow]
+  - name: ReconcileWorkflow
+    description: Reconciliation between actual and desired state for a single workflow
+    parents: [Workflow]
+  - name: RunInitContainer
+    description: Run the init container of a workload
+    parents: [CreateWorkflowPod]
+    attributes:
+      - name: WorkflowName
+      - name: WorkflowNamespace
+  - name: RunMainContainer
+    description: Run the main container of a workload
+    parents: [CreateWorkflowPod]
+    attributes:
+      - name: WorkflowName
+      - name: WorkflowNamespace
+  - name: RunWaitContainer
+    description: Run the wait container of a workload
+    parents: [CreateWorkflowPod]
+    attributes:
+      - name: WorkflowName
+      - name: WorkflowNamespace
+  - name: RunWorkload
+    description: This is where your workload will appear if it emits traces
+    parents: [RunMainContainer]
+    docsOnly: true
+    extendedDescription: |
+      Workflows never emits this span, it's a placeholder to show what happens if you enable open telemetry tracing in your workloads
+  - name: SaveArtifact
+    description: Save one artifact
+    parents: [SaveArtifacts]
+  - name: SaveArtifacts
+    description: Save all the artifacts
+    parents: [RunWaitContainer]
+  - name: SaveContainerLogs
+    description: Saving logs for a specific container
+    parents: [SaveLogs]
+    attributes:
+      - name: ContainerName
+  - name: SaveLogs
+    description: Saving container logs as artifacts
+    parents: [RunWaitContainer]
+  - name: StageFiles
+    description: Staging script or manifest files for execution
+    parents: [RunInitContainer]
+  - name: StartupCacheSync
+    description: Controllers informer caches have been synchronized
+    parents: [StartupController]
+  - name: StartupController
+    description: Controller startup before it starts processing workflows
+    root: true
+  - name: TryAcquireLock
+    description: Attempting to acquire a synchronization lock
+    parents: [Workflow]
+    attributes:
+      - name: LockName
+      - name: LockAcquired
+  - name: UnarchiveArtifact
+    description: The decompression stage of artifact loading
+    attributes:
+      - name: ArtifactArchive
+    parents: [LoadArtifact]
+  - name: WaitClientRateLimiter
+    description: Waiting for the kubernetes client's rate limiter
+    anyParent: true
+    extendedDescription: |
+      This span can appear under any active span context (`node`, `reconcileWorkflow`, etc.)
+      since rate limiter waits can occur during various operations.
+      This is controlled by --qps and --burst on the workflow-controller
+  - name: WaitWorkload
+    description: Wait for the workload to finish
+    parents: [RunWaitContainer]
+  - name: Workflow
+    description: The trace of the lifetime of a workflow
+    attributes:
+      - name: WorkflowName
+      - name: WorkflowNamespace
+    root: true
+  - name: WorkflowPhase
+    description: One phase of the lifetime of a workflow
+    attributes:
+      - name: WorkflowPhase
+    parents: [Workflow]

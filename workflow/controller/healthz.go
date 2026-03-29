@@ -10,11 +10,11 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/cache"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/env"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/env"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
 var (
@@ -53,12 +53,12 @@ func (wfc *WorkflowController) Healthz(w http.ResponseWriter, r *http.Request) {
 
 		// establish a list of unreconciled workflows
 		unreconciledWorkflows := make(map[string]*wfv1.Workflow)
-		err = cache.ListAllByNamespace(wfc.wfInformer.GetIndexer(), wfc.managedNamespace, selector, func(m interface{}) {
+		err = cache.ListAllByNamespace(wfc.wfInformer.GetIndexer(), wfc.managedNamespace, selector, func(m any) {
 			// Informer holds Workflows as type *Unstructured
 			un := m.(*unstructured.Unstructured)
 			// verify it's of type *Workflow (if not, it's an incorrectly formatted Workflow spec)
-			wf, err := util.FromUnstructured(un)
-			if err != nil {
+			wf, convErr := util.FromUnstructured(un)
+			if convErr != nil {
 				logger.WithField("name", un.GetName()).WithField("namespace", un.GetNamespace()).Warn(ctx, "Healthz check found an incorrectly formatted Workflow")
 				return
 			}
@@ -67,7 +67,7 @@ func (wfc *WorkflowController) Healthz(w http.ResponseWriter, r *http.Request) {
 			unreconciledWorkflows[key] = wf
 		})
 		if err != nil {
-			return fmt.Errorf("Healthz check failed to list Workflows using Informer, err=%v", err)
+			return fmt.Errorf("Healthz check failed to list Workflows using Informer, err=%w", err)
 		}
 
 		unreconciledExceedAge := false

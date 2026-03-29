@@ -9,6 +9,11 @@ import (
 	"sync"
 	"time"
 
+	// Embed timezone database into the binary so that cron schedules with
+	// timezone abbreviations (e.g. "CET") work regardless of which timezone
+	// files the base container image ships. See #15653.
+	_ "time/tzdata"
+
 	"github.com/argoproj/pkg/stats"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -24,18 +29,20 @@ import (
 	"k8s.io/client-go/tools/leaderelection"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 
-	"github.com/argoproj/argo-workflows/v3"
-	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
-	cmdutil "github.com/argoproj/argo-workflows/v3/util/cmd"
-	"github.com/argoproj/argo-workflows/v3/util/env"
-	kubecli "github.com/argoproj/argo-workflows/v3/util/kube/cli"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/util/logs"
-	pprofutil "github.com/argoproj/argo-workflows/v3/util/pprof"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/controller"
-	"github.com/argoproj/argo-workflows/v3/workflow/events"
-	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
+	"github.com/argoproj/argo-workflows/v4"
+	wfclientset "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
+	cmdutil "github.com/argoproj/argo-workflows/v4/util/cmd"
+	"github.com/argoproj/argo-workflows/v4/util/env"
+	kubecli "github.com/argoproj/argo-workflows/v4/util/kube/cli"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logs"
+	pprofutil "github.com/argoproj/argo-workflows/v4/util/pprof"
+	"github.com/argoproj/argo-workflows/v4/util/telemetry/ratelimiter"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/controller"
+	"github.com/argoproj/argo-workflows/v4/workflow/events"
+	"github.com/argoproj/argo-workflows/v4/workflow/metrics"
+	"github.com/argoproj/argo-workflows/v4/workflow/tracing"
 )
 
 const (
@@ -70,7 +77,7 @@ func NewRootCommand() *cobra.Command {
 		Short: "workflow-controller is the controller to operate on workflows",
 		RunE: func(c *cobra.Command, args []string) error {
 			defer runtimeutil.HandleCrashWithContext(c.Context(), runtimeutil.PanicHandlers...)
-			ctx, log, err := cmdutil.CmdContextWithLogger(c, logLevel, logFormat)
+			ctx, log, err := cmdutil.ContextWithLogger(c, logLevel, logFormat)
 			if err != nil {
 				logging.InitLogger().WithError(err).WithFatal().Error(c.Context(), "Failed to create workflow-controller cmd logger")
 				return err
@@ -96,6 +103,8 @@ func NewRootCommand() *cobra.Command {
 
 			logs.AddK8SLogTransportWrapper(ctx, config)
 			metrics.AddMetricsTransportWrapper(ctx, config)
+			ratelimiter.AddRateLimiterWrapper(ctx, config)
+			tracing.AddTracingTransportWrapper(ctx, config)
 
 			namespace, _, err := clientConfig.Namespace()
 			if err != nil {
@@ -117,6 +126,14 @@ func NewRootCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			defer func() {
+				if err := wfController.ShutdownTracing(context.WithoutCancel(ctx)); err != nil {
+					log.WithError(err).Error(ctx, "Failed to shutdown tracing")
+				}
+				if err := wfController.ShutdownMetrics(context.WithoutCancel(ctx)); err != nil {
+					log.WithError(err).Error(ctx, "Failed to shutdown metrics")
+				}
+			}()
 
 			leaderElectionOff := os.Getenv("LEADER_ELECTION_DISABLE")
 			if leaderElectionOff == "true" {
@@ -141,11 +158,9 @@ func NewRootCommand() *cobra.Command {
 				dummyCtx, dummyCancel := context.WithCancel(ctx)
 				defer dummyCancel()
 
-				wg.Add(1)
-				go func() {
+				wg.Go(func() {
 					wfController.RunPrometheusServer(dummyCtx, true)
-					wg.Done()
-				}()
+				})
 
 				go leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
 					Lock: &resourcelock.LeaseLock{
@@ -161,11 +176,9 @@ func NewRootCommand() *cobra.Command {
 							dummyCancel()
 							wg.Wait()
 							go wfController.Run(ctx, workflowWorkers, workflowTTLWorkers, podCleanupWorkers, cronWorkflowWorkers, workflowArchiveWorkers)
-							wg.Add(1)
-							go func() {
+							wg.Go(func() {
 								wfController.RunPrometheusServer(ctx, false)
-								wg.Done()
-							}()
+							})
 						},
 						OnStoppedLeading: func() {
 							log.WithField("id", nodeID).Info(ctx, "stopped leading")
@@ -208,7 +221,7 @@ func NewRootCommand() *cobra.Command {
 	command.Flags().BoolVar(&namespaced, "namespaced", false, "run workflow-controller as namespaced mode")
 	command.Flags().StringVar(&managedNamespace, "managed-namespace", "", "namespace that workflow-controller watches, default to the installation namespace")
 	command.Flags().BoolVar(&executorPlugins, "executor-plugins", false, "enable executor plugins")
-	ctx, log, err := cmdutil.CmdContextWithLogger(&command, logLevel, logFormat)
+	ctx, log, err := cmdutil.ContextWithLogger(&command, logLevel, logFormat)
 	if err != nil {
 		logging.InitLogger().WithError(err).WithFatal().Error(command.Context(), "Failed to create workflow-controller logger")
 		os.Exit(1)

@@ -10,10 +10,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo-workflows/v3/config"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/config"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 var artgcWorkflow = `apiVersion: argoproj.io/v1alpha1
@@ -371,15 +371,15 @@ func TestProcessArtifactGCStrategy(t *testing.T) {
 	// and it should only consist of artifacts labeled with OnWorkflowCompletion
 
 	assert.NotNil(t, pods)
-	assert.Len(t, (*pods).Items, 2)
+	assert.Len(t, pods.Items, 2)
 	var pod1 *corev1.Pod
 	var pod2 *corev1.Pod
-	for i, pod := range (*pods).Items {
+	for i, pod := range pods.Items {
 		switch pod.Name {
 		case "two-artgc-8tcvt-artgc-wfcomp-592587874":
-			pod1 = &(*pods).Items[i]
+			pod1 = &pods.Items[i]
 		case "two-artgc-8tcvt-artgc-wfcomp-3953780960":
-			pod2 = &(*pods).Items[i]
+			pod2 = &pods.Items[i]
 		default:
 			assert.Fail(t, fmt.Sprintf("pod name '%s' doesn't match expected", pod.Name))
 		}
@@ -425,16 +425,16 @@ func TestProcessArtifactGCStrategy(t *testing.T) {
 	// We should have on WFAT per Pod (for now until we implement the capability to have multiple)
 
 	assert.NotNil(t, wfats)
-	assert.Len(t, (*wfats).Items, 2)
+	assert.Len(t, wfats.Items, 2)
 
 	var wfat1 *wfv1.WorkflowArtifactGCTask
 	var wfat2 *wfv1.WorkflowArtifactGCTask
-	for i, wfat := range (*wfats).Items {
+	for i, wfat := range wfats.Items {
 		switch wfat.Name {
 		case "two-artgc-8tcvt-artgc-wfcomp-592587874-0":
-			wfat1 = &(*wfats).Items[i]
+			wfat1 = &wfats.Items[i]
 		case "two-artgc-8tcvt-artgc-wfcomp-3953780960-0":
-			wfat2 = &(*wfats).Items[i]
+			wfat2 = &wfats.Items[i]
 		default:
 			assert.Fail(t, fmt.Sprintf("WorkflowArtifactGCTask name '%s' doesn't match expected", wfat.Name))
 		}
@@ -456,7 +456,6 @@ func TestProcessArtifactGCStrategy(t *testing.T) {
 	assert.Contains(t, wfat2.Spec.ArtifactsByNode, "two-artgc-8tcvt-802059674")
 	assert.Contains(t, wfat2.Spec.ArtifactsByNode["two-artgc-8tcvt-802059674"].Artifacts, "first-on-completion-2")
 	assert.NotContains(t, wfat2.Spec.ArtifactsByNode["two-artgc-8tcvt-802059674"].Artifacts, "on-deletion")
-
 }
 
 var artgcTask = `apiVersion: argoproj.io/v1alpha1
@@ -598,7 +597,6 @@ func TestProcessCompletedWorkflowArtifactGCTask(t *testing.T) {
 			true,
 		},
 	} {
-
 		node := woc.wf.Status.Nodes[expectedArtifact.nodeName]
 		artifact := node.Outputs.Artifacts.GetArtifactByName(expectedArtifact.artifactName)
 		if artifact == nil {
@@ -619,7 +617,6 @@ func TestProcessCompletedWorkflowArtifactGCTask(t *testing.T) {
 			assert.Contains(t, gcFailureCondition.Message, "something went wrong")
 		}
 	}
-
 }
 
 func TestWorkflowHasArtifactGC(t *testing.T) {
@@ -689,7 +686,6 @@ func TestWorkflowHasArtifactGC(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			workflowSpec := fmt.Sprintf(`
             apiVersion: argoproj.io/v1alpha1
             kind: Workflow
@@ -723,7 +719,6 @@ func TestWorkflowHasArtifactGC(t *testing.T) {
 			assert.Equal(t, tt.expectedResult, hasArtifact)
 		})
 	}
-
 }
 
 func TestArtifactGCPodWithPlugins(t *testing.T) {

@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 func TestConvertToGRPC(t *testing.T) {
@@ -74,10 +74,8 @@ func TestConvertToGRPC(t *testing.T) {
 				assert.Equal(t, tt.expectedPluginName, result.Plugin.Name)
 				assert.Equal(t, tt.expectedConfig, result.Plugin.Configuration)
 				assert.Equal(t, tt.expectedKey, result.Plugin.Key)
-			} else {
-				if result.Plugin != nil {
-					assert.Nil(t, result.Plugin)
-				}
+			} else if result.Plugin != nil {
+				assert.Nil(t, result.Plugin)
 			}
 		})
 	}

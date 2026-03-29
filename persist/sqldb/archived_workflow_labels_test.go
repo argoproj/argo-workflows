@@ -8,7 +8,7 @@ import (
 	"github.com/upper/db/v4"
 	"k8s.io/apimachinery/pkg/labels"
 
-	"github.com/argoproj/argo-workflows/v3/util/sqldb"
+	"github.com/argoproj/argo-workflows/v4/util/sqldb"
 )
 
 func Test_labelsClause(t *testing.T) {

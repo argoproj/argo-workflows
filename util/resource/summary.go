@@ -5,7 +5,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
 type Summary struct {
@@ -16,9 +16,8 @@ type Summary struct {
 func (s Summary) age() time.Duration {
 	if s.ContainerState.Terminated != nil {
 		return s.ContainerState.Terminated.FinishedAt.Sub(s.ContainerState.Terminated.StartedAt.Time)
-	} else {
-		return 0
 	}
+	return 0
 }
 
 // map[containerName]Summary

@@ -16,10 +16,10 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 
-	argoErr "github.com/argoproj/argo-workflows/v3/errors"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/sync"
+	argoErr "github.com/argoproj/argo-workflows/v4/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/sync"
 )
 
 const configMap = `
@@ -73,7 +73,7 @@ spec:
             key: template
             name: my-config
     script:
-      image: python:alpine3.6
+      image: python:alpine3.23
       command: ["python"]
       # fail with a 66% probability
       source: |
@@ -100,7 +100,7 @@ spec:
             key: template
             name: my-config
     script:
-      image: python:alpine3.6
+      image: python:alpine3.23
       command: ["python"]
       # fail with a 66% probability
       source: |
@@ -198,7 +198,7 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 		wocTwo.operate(ctx)
 
 		// Check Node status
-		err, _ = wocTwo.podReconciliation(ctx)
+		_, err = wocTwo.podReconciliation(ctx)
 		require.NoError(t, err)
 		for _, node := range wocTwo.wf.Status.Nodes {
 			assert.Equal(t, wfv1.NodePending, node.Phase)
@@ -259,7 +259,7 @@ func TestSemaphoreScriptTmplLevel(t *testing.T) {
 		wocTwo.operate(ctx)
 
 		// Check Node status
-		err, _ = wocTwo.podReconciliation(ctx)
+		_, err = wocTwo.podReconciliation(ctx)
 		require.NoError(t, err)
 		for _, node := range wocTwo.wf.Status.Nodes {
 			assert.Equal(t, wfv1.NodePending, node.Phase)
@@ -321,7 +321,7 @@ func TestSemaphoreScriptConfigMapInDifferentNamespace(t *testing.T) {
 		wocTwo.operate(ctx)
 
 		// Check Node status
-		err, _ = wocTwo.podReconciliation(ctx)
+		_, err = wocTwo.podReconciliation(ctx)
 		require.NoError(t, err)
 		for _, node := range wocTwo.wf.Status.Nodes {
 			assert.Equal(t, wfv1.NodePending, node.Phase)
@@ -381,7 +381,7 @@ func TestSemaphoreResourceTmplLevel(t *testing.T) {
 		wocTwo.operate(ctx)
 
 		// Check Node status
-		err, _ = wocTwo.podReconciliation(ctx)
+		_, err = wocTwo.podReconciliation(ctx)
 		require.NoError(t, err)
 		for _, node := range wocTwo.wf.Status.Nodes {
 			assert.Equal(t, wfv1.NodePending, node.Phase)
@@ -418,7 +418,7 @@ func TestSemaphoreWithOutConfigMap(t *testing.T) {
 		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 		require.NoError(t, err)
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
-		err, _ = woc.podReconciliation(ctx)
+		_, err = woc.podReconciliation(ctx)
 		require.NoError(t, err)
 		for _, node := range woc.wf.Status.Nodes {
 			assert.Equal(t, wfv1.NodePending, node.Phase)
@@ -455,7 +455,7 @@ spec:
      mutexes:
        - name: welcome
    container:
-     image: alpine:3.7
+     image: alpine:3.23
      command: [sh, -c, "exit 0"]
 `
 
@@ -527,7 +527,7 @@ spec:
      parameters:
      - name: message
    container:
-     image: alpine:3.7
+     image: alpine:3.23
      command: [sh, -c, "echo {{inputs.parameters.message}}"]
 `
 
@@ -877,7 +877,7 @@ spec:
               name: my-config
               key: template
       container:
-        image: alpine:3.6
+        image: alpine:3.23
         command: [sh, -c]
         args: ["sleep 300"]`
 
@@ -925,7 +925,6 @@ func TestSynchronizationWithStepRetry(t *testing.T) {
 			}
 		}
 	})
-
 }
 
 const pendingWfWithShutdownStrategy = `apiVersion: argoproj.io/v1alpha1
@@ -977,8 +976,8 @@ func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
 		assert.Equal(t, wfv1.WorkflowPending, wocTwo.wf.Status.Phase)
 
 		// Shutdown the second workflow that's pending.
-		patchObj := map[string]interface{}{
-			"spec": map[string]interface{}{
+		patchObj := map[string]any{
+			"spec": map[string]any{
 				"shutdown": wfv1.ShutdownStrategyTerminate,
 			},
 		}
@@ -1021,8 +1020,8 @@ func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
 		assert.Equal(t, wfv1.WorkflowPending, wocTwo.wf.Status.Phase)
 
 		// Shutdown the second workflow that's pending.
-		patchObj := map[string]interface{}{
-			"spec": map[string]interface{}{
+		patchObj := map[string]any{
+			"spec": map[string]any{
 				"shutdown": wfv1.ShutdownStrategyStop,
 			},
 		}
@@ -1081,7 +1080,7 @@ spec:
         parameters:
           - name: sleep_duration
       script:
-        image: alpine:latest
+        image: alpine:3.23
         command: [/bin/sh]
         source: |
           echo "Sleeping for {{ inputs.parameters.sleep_duration }}"

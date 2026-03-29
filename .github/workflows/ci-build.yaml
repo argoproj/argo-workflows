@@ -29,12 +29,12 @@ jobs:
       ui: ${{ steps.changed-files.outputs.ui_any_modified == 'true' }}
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 50 # assume PRs are less than 50 commits
       - name: Get relevant files changed per group
         id: changed-files
-        uses: tj-actions/changed-files@cbda684547adc8c052d50711417fa61b428a9f88 # v41.1.2
+        uses: tj-actions/changed-files@22103cc46bda19c2b464ffe86db46df6922fd323 # v47.0.5
         with:
           files_yaml: |
             common: &common
@@ -62,6 +62,9 @@ jobs:
               - sdks/**
               # example test suite
               - examples/**
+              - go.mod
+              - go.sum
+              - hack/k8s-versions.sh
             codegen:
               - *common
               # generated files
@@ -73,7 +76,6 @@ jobs:
               - docs/metrics.md
               - pkg/**
               - sdks/java/**
-              - sdks/python/**
               # files that generation is based off
               - pkg/**
               - cmd/**
@@ -84,6 +86,8 @@ jobs:
               - hack/docs/**
               - hack/manifests/**
               - .clang-format
+              - go.mod
+              - go.sum
             lint:
               - *tests
               - .features/**
@@ -97,8 +101,6 @@ jobs:
               - '!docs/fields.md'
               - '!docs/executor_swagger.md'
               - '!docs/cli/**'
-              # proposals live only on GH as pure markdown
-              - '!docs/proposals/**'
               # docs scripts & tools from `make docs`
               - hack/docs/copy-readme.sh
               - hack/docs/check-env-doc.sh
@@ -107,6 +109,8 @@ jobs:
               - .mlc_config.json
               - .spelling
               - mkdocs.yml
+              - go.mod
+              - go.sum
             ui:
               - *common
               - ui/**
@@ -118,16 +122,24 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
-          go-version: "1.24"
+          go-version: "1.26"
           cache: true
       - run: make test STATIC_FILES=false GOTEST='go test -p 20 -covermode=atomic -coverprofile=coverage.out'
+      - name: Upload test results
+        if: ${{ always() }}
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: test-results-unit
+          path: test/reports/json/unit.json
+          if-no-files-found: warn
+          retention-days: 10
       - name: Upload coverage report
         # engineers just ignore this in PRs, so lets not even run it
         if: github.ref == 'refs/heads/main'
-        uses: codecov/codecov-action@84508663e988701840491b86de86b666e8a86bed # v4.3.0
+        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
         with:
           fail_ci_if_error: true
         env:
@@ -140,19 +152,19 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
-          go-version: "1.24"
+          go-version: "1.26"
           cache: true
       # windows run does not use makefile target because it does a lot more than just testing and is not cross-platform compatible
-      - run: if (!(Test-Path "ui/dist/app/index.html")) { New-Item -ItemType Directory -Force -Path "ui/dist/app" | Out-Null; New-Item -ItemType File -Path "ui/dist/app/placeholder" | Out-Null }; go test -p 20 -covermode=atomic -coverprofile='coverage.out' $(go list ./... | select-string -Pattern 'github.com/argoproj/argo-workflows/v3/workflow/controller' , 'github.com/argoproj/argo-workflows/v3/server' -NotMatch)
+      - run: if (!(Test-Path "ui/dist/app/index.html")) { New-Item -ItemType Directory -Force -Path "ui/dist/app" | Out-Null; New-Item -ItemType File -Path "ui/dist/app/placeholder" | Out-Null }; go test -p 20 -covermode=atomic -coverprofile='coverage.out' $(go list ./... | select-string -Pattern 'github.com/argoproj/argo-workflows/v4/workflow/controller' , 'github.com/argoproj/argo-workflows/v4/server' -NotMatch)
         env:
           KUBECONFIG: /dev/null
       - name: Upload coverage report
         # engineers just ignore this in PRs, so lets not even run it
         if: github.ref == 'refs/heads/main'
-        uses: codecov/codecov-action@84508663e988701840491b86de86b666e8a86bed # v4.3.0
+        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
         with:
           fail_ci_if_error: true
         env:
@@ -171,15 +183,15 @@ jobs:
           - target: controller
           - target: cli
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
-          go-version: "1.24"
+          go-version: "1.26"
           cache: true
       - name: Build
         run: make ${{matrix.target}}
       - name: Upload
-        uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b # v4.5.0
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: ${{matrix.target}}
           path: dist
@@ -197,10 +209,10 @@ jobs:
           - image: argoexec
           - image: argocli
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-      - uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226 # v3.0.0
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
       - name: Build and export
-        uses: docker/build-push-action@4a13e500e55cf31b7a5d59a38ab2040ab0f42f56 # v5.1.0
+        uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7.0.0
         with:
           context: .
           tags: quay.io/argoproj/${{matrix.image}}:latest
@@ -209,7 +221,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Upload
-        uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b # v4.5.0
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: ${{matrix.image}}_image.tar
           path: /tmp/${{matrix.image}}_image.tar
@@ -224,7 +236,7 @@ jobs:
     # contention on the runner, which we have no control over.
     timeout-minutes: 60
     env:
-      KUBECONFIG: /home/runner/.kubeconfig
+      KUBECONFIG: /home/runner/.kube/config
       E2E_ENV_FACTOR: 2
     strategy:
       fail-fast: false
@@ -254,10 +266,17 @@ jobs:
           - test: test-metrics
             profile: postgres
             use-api: true
+          - test: test-tracing
+            profile: telemetry
+            use-api: false
+          - test: test-telemetry
+            profile: telemetry-stack
+            use-api: false
+            retries: 0
           - test: test-cli
             profile: mysql
             use-api: true
-          # Cron tests are not retryable withou a controller restart
+          # Cron tests are not retryable without a controller restart
           - test: test-cron
             profile: minimal
             use-api: false
@@ -265,13 +284,15 @@ jobs:
           - test: test-examples
             profile: minimal
             use-api: false
+            retries: 0
           - test: test-plugins
             profile: plugins
             use-api: false
-          - test: test-java-sdk
+          - test: test-go-sdk
             profile: minimal
             use-api: true
-          - test: test-python-sdk
+            secure: true
+          - test: test-java-sdk
             profile: minimal
             use-api: true
           - test: test-artifacts
@@ -307,24 +328,18 @@ jobs:
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
           printf "==> Available space after cleanup\n"
           df -h
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
-          go-version: "1.24"
+          go-version: "1.26"
           cache: true
       - name: Install Java for the SDK
         if: ${{matrix.test == 'test-java-sdk'}}
-        uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93 # v4.0.0
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
         with:
           java-version: '8'
           distribution: adopt
           cache: maven
-      - name: Install Python for the SDK
-        if: ${{matrix.test == 'test-python-sdk'}}
-        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
-        with:
-          python-version: '3.x'
-          cache: pip
       - name: Install socat (needed by Kubernetes) and kit
         # socat is needed for "kubectl port-forward" to work when using cri-dockerd: https://github.com/k3s-io/cri-dockerd/blob/4995f339edcffdf890406b3f1477d34e38477f18/streaming/streaming_others.go#L46
         # Both cri-o and containerd removed it as a dependency awhile ago, but that hasn't been ported to cri-dockerd.
@@ -344,13 +359,14 @@ jobs:
             K3S_KUBECONFIG_MODE=644 \
             sh -
           until kubectl --kubeconfig=/etc/rancher/k3s/k3s.yaml cluster-info ; do sleep 10s ; done
-          cp /etc/rancher/k3s/k3s.yaml /home/runner/.kubeconfig
+          mkdir -p .kube
+          cp /etc/rancher/k3s/k3s.yaml /home/runner/.kube/config
           echo "- name: fake_token_user" >> $KUBECONFIG
           echo "  user:" >> $KUBECONFIG
           echo "    token: xxxxxx" >> $KUBECONFIG
           until kubectl cluster-info ; do sleep 10s ; done
       - name: Download images
-        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: '*_image.tar'
           path: /tmp
@@ -360,13 +376,13 @@ jobs:
           docker load < /tmp/argoexec_image.tar/argoexec_image.tar
           docker load < /tmp/argocli_image.tar/argocli_image.tar
       - name: Download controller
-        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: controller
           path: dist/
       - name: Download CLI
         if: ${{matrix.use-api}}
-        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: cli
           path: dist/
@@ -386,13 +402,22 @@ jobs:
             LOG_LEVEL=info \
             API=${{matrix.use-api}} \
             UI=false \
+            SECURE=${{ matrix.secure || 'false' }} \
             POD_STATUS_CAPTURE_FINALIZER=true 2>&1 | tee /tmp/argo.log &
-          make wait PROFILE=${{matrix.profile}} API=${{matrix.use-api}}
+          make wait PROFILE=${{matrix.profile}} API=${{matrix.use-api}} SECURE=${{ matrix.secure || 'false' }}
         timeout-minutes: 5
       - name: Validate release manifests
         run: make manifests-validate
       - name: Run tests ${{matrix.test}}
         run: make ${{matrix.test}} E2E_SUITE_TIMEOUT=30m STATIC_FILES=false
+      - name: Upload test results
+        if: ${{ always() }}
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: test-results-${{matrix.test}}-${{matrix.profile}}-k8s-${{matrix.k8s_version || 'max'}}
+          path: test/reports/json/${{matrix.test}}.json
+          if-no-files-found: warn
+          retention-days: 10
 
       # failure debugging below
       - name: Failure debug - k3s logs
@@ -460,10 +485,10 @@ jobs:
     env:
       GOPATH: /home/runner/go
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
-          go-version: "1.24"
+          go-version: "1.26"
           cache: true
       - name: Install protoc
         run: |
@@ -497,10 +522,10 @@ jobs:
     env:
       GOPATH: /home/runner/go
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
-          go-version: "1.24"
+          go-version: "1.26"
           cache: true
       - run: make lint STATIC_FILES=false
       # if lint makes changes that are not in the PR, fail the build
@@ -508,7 +533,7 @@ jobs:
         run: git diff --exit-code
       # lint GH Actions
       - name: Ensure GH Actions are pinned to SHAs
-        uses: zgosalvez/github-actions-ensure-sha-pinned-actions@ba37328d4ea95eaf8b3bd6c6cef308f709a5f2ec # v3.0.3
+        uses: zgosalvez/github-actions-ensure-sha-pinned-actions@70c4af2ed5282c51ba40566d026d6647852ffa3e # v5.0.1
 
   ui:
     name: UI
@@ -519,8 +544,8 @@ jobs:
     env:
       NODE_OPTIONS: --max-old-space-size=4096
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-      - uses: actions/setup-node@b39b52d1213e96004bfcb1c61a8a6fa8ab84f3e8 # v4.0.1
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: "20" # change in all GH Workflows
           cache: yarn

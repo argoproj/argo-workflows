@@ -16,10 +16,10 @@ import (
 
 	kwait "k8s.io/apimachinery/pkg/util/wait"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	argoerr "github.com/argoproj/argo-workflows/v3/util/errors"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	argoerr "github.com/argoproj/argo-workflows/v4/util/errors"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 type configMapCache struct {
@@ -173,9 +173,9 @@ func (c *configMapCache) save(ctx context.Context, key string, nodeID string, va
 			return fmt.Errorf("could not save to config map cache: %w", err)
 		}
 	} else {
-		err := c.validateConfigmap(ctx, cache)
-		if err != nil {
-			return err
+		validateErr := c.validateConfigmap(ctx, cache)
+		if validateErr != nil {
+			return validateErr
 		}
 	}
 

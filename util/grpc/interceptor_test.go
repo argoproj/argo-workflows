@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -37,7 +37,7 @@ func TestSetVersionHeaderUnaryServerInterceptor(t *testing.T) {
 	mockReturn := "successful return"
 
 	t.Run("success", func(t *testing.T) {
-		handler := func(ctx context.Context, req interface{}) (interface{}, error) { return mockReturn, nil }
+		handler := func(ctx context.Context, req any) (any, error) { return mockReturn, nil }
 		msts := &mockServerTransportStream{}
 		baseCtx := logging.TestContext(t.Context())
 		ctx := grpc.NewContextWithServerTransportStream(baseCtx, msts)
@@ -51,7 +51,7 @@ func TestSetVersionHeaderUnaryServerInterceptor(t *testing.T) {
 	})
 
 	t.Run("upstream error handling", func(t *testing.T) {
-		handler := func(ctx context.Context, req interface{}) (interface{}, error) { return nil, errors.New("error") }
+		handler := func(ctx context.Context, req any) (any, error) { return nil, errors.New("error") }
 		msts := &mockServerTransportStream{}
 		baseCtx := logging.TestContext(t.Context())
 		ctx := grpc.NewContextWithServerTransportStream(baseCtx, msts)
@@ -64,7 +64,7 @@ func TestSetVersionHeaderUnaryServerInterceptor(t *testing.T) {
 	})
 
 	t.Run("SetHeader error handling", func(t *testing.T) {
-		handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		handler := func(ctx context.Context, req any) (any, error) {
 			return mockReturn, nil
 		}
 		msts := &mockServerTransportStream{isError: true}
@@ -95,7 +95,6 @@ func (msts mockServerStream) SetHeader(md metadata.MD) error {
 func (mockServerStream) SendHeader(md metadata.MD) error { return nil }
 func (mockServerStream) SetTrailer(md metadata.MD)       {}
 func (mockServerStream) Context() context.Context {
-
 	return logging.TestContext(context.Background())
 }
 func (mockServerStream) SendMsg(m any) error { return nil }

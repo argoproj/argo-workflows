@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -8,13 +9,12 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 func TestHealthz(t *testing.T) {
-
 	veryOldUnreconciledWF := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 	veryOldUnreconciledWF.SetCreationTimestamp(metav1.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)) // a long time ago
 	veryOldUnreconciledWF.SetName(veryOldUnreconciledWF.Name + "-1")
@@ -76,30 +76,31 @@ func TestHealthz(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		workflowsAsInterfaceSlice := []interface{}{}
-		for _, wf := range tt.workflows {
-			workflowsAsInterfaceSlice = append(workflowsAsInterfaceSlice, wf)
-		}
-		ctx := logging.TestContext(t.Context())
-		cancel, controller := newController(ctx, workflowsAsInterfaceSlice...)
-		defer cancel()
-		controller.lastUnreconciledWorkflows = tt.lastUnreconciledWorkflws
-		rr := httptest.NewRecorder()
+	for i, tt := range tests {
+		t.Run(fmt.Sprintf("test-%d", i), func(t *testing.T) {
+			workflowsAsInterfaceSlice := []any{}
+			for _, wf := range tt.workflows {
+				workflowsAsInterfaceSlice = append(workflowsAsInterfaceSlice, wf)
+			}
+			ctx := logging.TestContext(t.Context())
+			cancel, controller := newController(ctx, workflowsAsInterfaceSlice...)
+			defer cancel()
+			controller.lastUnreconciledWorkflows = tt.lastUnreconciledWorkflws
+			rr := httptest.NewRecorder()
 
-		handler := LogMiddleware(logging.RequireLoggerFromContext(ctx), http.HandlerFunc(controller.Healthz))
+			handler := LogMiddleware(logging.RequireLoggerFromContext(ctx), http.HandlerFunc(controller.Healthz))
 
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, "/healthz", nil)
-		if err != nil {
-			t.Fatal(err)
-		}
-		handler.ServeHTTP(rr, req)
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, "/healthz", nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			handler.ServeHTTP(rr, req)
 
-		// Check the status code is what we expect.
-		if status := rr.Code; status != tt.expectedStatus {
-			t.Errorf("handler returned wrong status code: got %v want %v",
-				status, tt.expectedStatus)
-		}
+			// Check the status code is what we expect.
+			if status := rr.Code; status != tt.expectedStatus {
+				t.Errorf("handler returned wrong status code: got %v want %v",
+					status, tt.expectedStatus)
+			}
+		})
 	}
-
 }

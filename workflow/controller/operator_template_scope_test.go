@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 var testTemplateScopeWorkflowYaml = `
@@ -46,7 +46,7 @@ spec:
           template: steps
   - name: hello
     script:
-      image: python:alpine3.6
+      image: python:alpine3.23
       command: [python]
       source: |
         print("hello world")
@@ -66,7 +66,7 @@ spec:
         template: hello
   - name: hello
     script:
-      image: python:alpine3.6
+      image: python:alpine3.23
       command: [python]
       source: |
         print("hello world")
@@ -156,7 +156,7 @@ spec:
         parameters:
          - name: letter
       container:
-        image: alpine:3.6
+        image: alpine:3.23
         command: [sh, -c]
         args: ["echo {{inputs.parameters.letter}}"]
 `
@@ -245,7 +245,7 @@ spec:
         parameters:
          - name: letter
       container:
-        image: alpine:3.6
+        image: alpine:3.23
         command: [sh, -c]
         args: ["echo {{inputs.parameters.letter}}"]
 `
@@ -347,7 +347,7 @@ spec:
         parameters:
          - name: letter
       container:
-        image: alpine:3.6
+        image: alpine:3.23
         command: [sh, -c]
         args: ["echo {{inputs.parameters.letter}}"]
 `
@@ -442,7 +442,7 @@ spec:
           template: steps
   - name: hello
     script:
-      image: python:alpine3.6
+      image: python:alpine3.23
       command: [python]
       source: |
         print("hello world")

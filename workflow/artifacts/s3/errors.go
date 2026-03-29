@@ -3,8 +3,8 @@ package s3
 import (
 	"context"
 
-	"github.com/argoproj/argo-workflows/v3/util/errors"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/errors"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 // s3TransientErrorCodes is a list of S3 error codes that are transient (retryable)

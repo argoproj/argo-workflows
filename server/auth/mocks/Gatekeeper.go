@@ -101,7 +101,7 @@ func (_c *Gatekeeper_Context_Call) RunAndReturn(run func(ctx context.Context) (c
 }
 
 // ContextWithRequest provides a mock function for the type Gatekeeper
-func (_mock *Gatekeeper) ContextWithRequest(ctx context.Context, req interface{}) (context.Context, error) {
+func (_mock *Gatekeeper) ContextWithRequest(ctx context.Context, req any) (context.Context, error) {
 	ret := _mock.Called(ctx, req)
 
 	if len(ret) == 0 {
@@ -110,17 +110,17 @@ func (_mock *Gatekeeper) ContextWithRequest(ctx context.Context, req interface{}
 
 	var r0 context.Context
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, interface{}) (context.Context, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, any) (context.Context, error)); ok {
 		return returnFunc(ctx, req)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, interface{}) context.Context); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, any) context.Context); ok {
 		r0 = returnFunc(ctx, req)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(context.Context)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, interface{}) error); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, any) error); ok {
 		r1 = returnFunc(ctx, req)
 	} else {
 		r1 = ret.Error(1)
@@ -135,20 +135,20 @@ type Gatekeeper_ContextWithRequest_Call struct {
 
 // ContextWithRequest is a helper method to define mock.On call
 //   - ctx context.Context
-//   - req interface{}
+//   - req any
 func (_e *Gatekeeper_Expecter) ContextWithRequest(ctx interface{}, req interface{}) *Gatekeeper_ContextWithRequest_Call {
 	return &Gatekeeper_ContextWithRequest_Call{Call: _e.mock.On("ContextWithRequest", ctx, req)}
 }
 
-func (_c *Gatekeeper_ContextWithRequest_Call) Run(run func(ctx context.Context, req interface{})) *Gatekeeper_ContextWithRequest_Call {
+func (_c *Gatekeeper_ContextWithRequest_Call) Run(run func(ctx context.Context, req any)) *Gatekeeper_ContextWithRequest_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 interface{}
+		var arg1 any
 		if args[1] != nil {
-			arg1 = args[1].(interface{})
+			arg1 = args[1].(any)
 		}
 		run(
 			arg0,
@@ -163,7 +163,7 @@ func (_c *Gatekeeper_ContextWithRequest_Call) Return(context1 context.Context, e
 	return _c
 }
 
-func (_c *Gatekeeper_ContextWithRequest_Call) RunAndReturn(run func(ctx context.Context, req interface{}) (context.Context, error)) *Gatekeeper_ContextWithRequest_Call {
+func (_c *Gatekeeper_ContextWithRequest_Call) RunAndReturn(run func(ctx context.Context, req any) (context.Context, error)) *Gatekeeper_ContextWithRequest_Call {
 	_c.Call.Return(run)
 	return _c
 }

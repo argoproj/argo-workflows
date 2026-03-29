@@ -12,7 +12,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 type Callback func(pod *corev1.Pod, data []byte) error
@@ -33,7 +33,8 @@ func LogPods(ctx context.Context, kubernetesClient kubernetes.Interface, namespa
 	}
 	streaming := &sync.Map{}
 	streamPod := func(pod *corev1.Pod) {
-		ctx, logger := logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"namespace": pod.Namespace, "podName": pod.Name}).InContext(ctx)
+		var logger logging.Logger
+		ctx, logger = logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"namespace": pod.Namespace, "podName": pod.Name}).InContext(ctx)
 		go func(pod *corev1.Pod) {
 			err := func() error {
 				_, loaded := streaming.LoadOrStore(pod.Name, true)

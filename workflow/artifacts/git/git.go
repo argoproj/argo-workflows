@@ -18,11 +18,11 @@ import (
 	ssh2 "github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"golang.org/x/crypto/ssh"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 
-	argoerrors "github.com/argoproj/argo-workflows/v3/errors"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
+	argoerrors "github.com/argoproj/argo-workflows/v4/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/common"
 )
 
 // ArtifactDriver is the artifact driver for a git repo
@@ -125,15 +125,15 @@ func (g *ArtifactDriver) Load(ctx context.Context, inputArtifact *wfv1.Artifact,
 	}
 
 	r, err := git.PlainClone(path, false, cloneOptions)
-	switch err {
-	case transport.ErrEmptyRemoteRepository:
+	if errors.Is(err, transport.ErrEmptyRemoteRepository) {
 		logging.RequireLoggerFromContext(ctx).Info(ctx, "Cloned an empty repository")
-		r, err := git.PlainInit(path, false)
-		if err != nil {
-			return fmt.Errorf("failed to plain init: %w", err)
+		var initErr error
+		r, initErr = git.PlainInit(path, false)
+		if initErr != nil {
+			return fmt.Errorf("failed to plain init: %w", initErr)
 		}
-		if _, err := r.CreateRemote(&config.RemoteConfig{Name: git.DefaultRemoteName, URLs: []string{a.Repo}}); err != nil {
-			return fmt.Errorf("failed to create remote %q: %w", a.Repo, err)
+		if _, remoteErr := r.CreateRemote(&config.RemoteConfig{Name: git.DefaultRemoteName, URLs: []string{a.Repo}}); remoteErr != nil {
+			return fmt.Errorf("failed to create remote %q: %w", a.Repo, remoteErr)
 		}
 		branchName := a.Revision
 		if branchName == "" {
@@ -143,9 +143,7 @@ func (g *ArtifactDriver) Load(ctx context.Context, inputArtifact *wfv1.Artifact,
 			return fmt.Errorf("failed to create branch %q: %w", branchName, err)
 		}
 		return nil
-	case nil:
-		// fallthrough ...
-	default:
+	} else if err != nil {
 		return fmt.Errorf("failed to clone %q: %w", a.Repo, err)
 	}
 	if len(a.Fetch) > 0 {
@@ -154,8 +152,8 @@ func (g *ArtifactDriver) Load(ctx context.Context, inputArtifact *wfv1.Artifact,
 			refSpecs[i] = config.RefSpec(spec)
 		}
 		opts := &git.FetchOptions{Auth: auth, RefSpecs: refSpecs, Depth: depth, InsecureSkipTLS: g.InsecureSkipTLS}
-		if err := opts.Validate(); err != nil {
-			return fmt.Errorf("failed to validate fetch %v: %w", refSpecs, err)
+		if validateErr := opts.Validate(); validateErr != nil {
+			return fmt.Errorf("failed to validate fetch %v: %w", refSpecs, validateErr)
 		}
 		if err = r.Fetch(opts); isFetchErr(err) {
 			return fmt.Errorf("failed to fetch %v: %w", refSpecs, err)

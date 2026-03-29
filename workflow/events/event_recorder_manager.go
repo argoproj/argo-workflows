@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/argoproj/argo-workflows/v3/util/env"
+	"github.com/argoproj/argo-workflows/v4/util/env"
 
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"

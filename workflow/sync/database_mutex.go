@@ -1,10 +1,10 @@
 package sync
 
 import (
-	syncdb "github.com/argoproj/argo-workflows/v3/util/sync/db"
+	syncdb "github.com/argoproj/argo-workflows/v4/util/sync/db"
 )
 
-func newDatabaseMutex(name string, dbKey string, nextWorkflow NextWorkflow, info syncdb.DBInfo) *databaseSemaphore {
+func newDatabaseMutex(name string, dbKey string, nextWorkflow NextWorkflow, info syncdb.Info) *databaseSemaphore {
 	logger := syncLogger{
 		name:     name,
 		lockType: lockTypeMutex,

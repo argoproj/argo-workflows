@@ -16,9 +16,13 @@ func (o *obj) RemoveNestedField(fields ...string) {
 }
 
 func (o *obj) RecursiveRemoveDescriptions(fields ...string) {
+	if _, found, _ := unstructured.NestedFieldNoCopy(*o, fields...); !found {
+		return
+	}
 	startField := nestedFieldNoCopy[map[string]any](o, fields...)
-	description := startField["description"].(string)
-	startField["description"] = description + ".\nAll nested field descriptions have been dropped due to Kubernetes size limitations."
+	if description, found := startField["description"]; found {
+		startField["description"] = description.(string) + ".\nAll nested field descriptions have been dropped due to Kubernetes size limitations."
+	}
 
 	var rec func(field *map[string]any)
 	rec = func(field *map[string]any) {
@@ -58,6 +62,12 @@ func (o *obj) RecursiveRemoveValidations(fields ...string) {
 	rec(&startField)
 }
 
+func (o *obj) OverwriteNestedField(value any, fields ...string) {
+	o.RemoveNestedField(fields...)
+	parentField := nestedFieldNoCopy[map[string]any](o, fields[:len(fields)-1]...)
+	parentField[fields[len(fields)-1]] = value
+}
+
 func (o *obj) SetNestedField(value any, fields ...string) {
 	parentField := nestedFieldNoCopy[map[string]any](o, fields[:len(fields)-1]...)
 	parentField[fields[len(fields)-1]] = value
@@ -89,15 +99,21 @@ func nestedFieldNoCopy[T any](o *obj, fields ...string) T {
 	return value.(T)
 }
 
-func (o *obj) WriteYaml(filename string) {
+func (o *obj) WriteYaml(filename string) error {
 	data, err := yaml.Marshal(o)
 	if err != nil {
 		panic(err)
+	}
+	// Absolute max is the MaxRequestBodySize in the Kubernetes API server
+	// so let's ensure we're under that.
+	if len(data) > 3*1024*1024 {
+		return fmt.Errorf("CRD is bigger than 3Mb, %d bytes", len(data))
 	}
 	err = os.WriteFile(filename, data, 0o600)
 	if err != nil {
 		panic(err)
 	}
+	return nil
 }
 
 func Read(filename string) []byte {

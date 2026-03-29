@@ -7,15 +7,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/sas"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -97,7 +96,7 @@ func TestArtifactDriver_WithSASToken_DownloadDirectory_Subdir(t *testing.T) {
 		Protocol:      sas.ProtocolHTTPSandHTTP,
 		StartTime:     time.Now().UTC().Add(time.Second * -10),
 		ExpiryTime:    time.Now().UTC().Add(15 * time.Minute),
-		Permissions:   to.Ptr(sas.ContainerPermissions{Read: true, Write: true, List: true}).String(),
+		Permissions:   new(sas.ContainerPermissions{Read: true, Write: true, List: true}).String(),
 		ContainerName: driver.Container,
 	}.SignWithSharedKey(credential)
 	if err != nil {
@@ -113,7 +112,6 @@ func TestArtifactDriver_WithSASToken_DownloadDirectory_Subdir(t *testing.T) {
 
 	// test read/write operations to the azurite container  using the container client
 	testContainerClientReadWriteOperations(t, containerClient, driver)
-
 }
 
 func testContainerClientReadWriteOperations(t *testing.T, containerClient *container.Client, driver ArtifactDriver) {

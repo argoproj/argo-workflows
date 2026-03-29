@@ -7,8 +7,9 @@ import (
 
 	"k8s.io/client-go/rest"
 
-	"github.com/argoproj/argo-workflows/v3/util/k8s"
-	"github.com/argoproj/argo-workflows/v3/util/telemetry"
+	"github.com/argoproj/argo-workflows/v4/util/k8s"
+	"github.com/argoproj/argo-workflows/v4/util/telemetry"
+	"github.com/argoproj/argo-workflows/v4/util/telemetry/ratelimiter"
 )
 
 func addK8sRequests(_ context.Context, m *Metrics) error {
@@ -52,6 +53,7 @@ func (m metricsRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) 
 }
 
 func AddMetricsTransportWrapper(ctx context.Context, config *rest.Config) *rest.Config {
+	k8sMetrics.ctx = ctx
 	wrap := config.WrapTransport
 	config.WrapTransport = func(rt http.RoundTripper) http.RoundTripper {
 		if wrap != nil {
@@ -60,4 +62,14 @@ func AddMetricsTransportWrapper(ctx context.Context, config *rest.Config) *rest.
 		return &metricsRoundTripper{roundTripper: rt, metricsRoundTripperContext: &k8sMetrics}
 	}
 	return config
+}
+
+func addClientRateLimiterLatency(_ context.Context, m *Metrics) error {
+	err := m.CreateBuiltinInstrument(telemetry.InstrumentClientRateLimiterLatency)
+	if err != nil {
+		return err
+	}
+	// Register the metrics callback with the rate limiter instrumentation
+	ratelimiter.DefaultInstrumentation.SetMetricsCallback(m.RecordClientRateLimiterLatency)
+	return nil
 }

@@ -12,9 +12,9 @@ import (
 	testpostgres "github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
 
-	"github.com/argoproj/argo-workflows/v3/config"
-	"github.com/argoproj/argo-workflows/v3/util/sqldb"
-	syncdb "github.com/argoproj/argo-workflows/v3/util/sync/db"
+	"github.com/argoproj/argo-workflows/v4/config"
+	"github.com/argoproj/argo-workflows/v4/util/sqldb"
+	syncdb "github.com/argoproj/argo-workflows/v4/util/sync/db"
 )
 
 const (
@@ -24,7 +24,7 @@ const (
 )
 
 // createTestDBSession creates a test database session
-func createTestDBSession(ctx context.Context, t *testing.T, dbType sqldb.DBType) (syncdb.DBInfo, func(), config.SyncConfig, error) {
+func createTestDBSession(ctx context.Context, t *testing.T, dbType sqldb.DBType) (syncdb.Info, func(), config.SyncConfig, error) {
 	t.Helper()
 
 	var cfg config.SyncConfig
@@ -33,17 +33,19 @@ func createTestDBSession(ctx context.Context, t *testing.T, dbType sqldb.DBType)
 
 	switch dbType {
 	case sqldb.Postgres:
-		cfg, termContainerFn, err = setupPostgresContainer(t, ctx)
+		cfg, termContainerFn, err = setupPostgresContainer(ctx, t)
 	case sqldb.MySQL:
-		cfg, termContainerFn, err = setupMySQLContainer(t, ctx)
+		cfg, termContainerFn, err = setupMySQLContainer(ctx, t)
 	}
 	if err != nil {
 		t.Fatalf("failed to start container: %s", err)
 	}
 
-	info := syncdb.DBInfo{
-		Config:  syncdb.DBConfigFromConfig(&cfg),
-		Session: syncdb.DBSessionFromConfigWithCreds(&cfg, testDBUser, testDBPassword),
+	session, dbType := syncdb.SessionFromConfigWithCreds(&cfg, testDBUser, testDBPassword)
+	info := syncdb.Info{
+		Config:  syncdb.ConfigFromConfig(&cfg),
+		Session: session,
+		DBType:  dbType,
 	}
 	require.NotNil(t, info.Session, "failed to create database session")
 	deferfn := func() {
@@ -70,7 +72,7 @@ func createTestDBSession(ctx context.Context, t *testing.T, dbType sqldb.DBType)
 }
 
 // setupPostgresContainer sets up a Postgres test container and returns the config and cleanup function
-func setupPostgresContainer(t *testing.T, ctx context.Context) (config.SyncConfig, func(), error) {
+func setupPostgresContainer(ctx context.Context, t *testing.T) (config.SyncConfig, func(), error) {
 	postgresContainer, err := testpostgres.Run(ctx,
 		"postgres:17.4-alpine",
 		testpostgres.WithDatabase(testDBName),
@@ -115,7 +117,7 @@ func setupPostgresContainer(t *testing.T, ctx context.Context) (config.SyncConfi
 }
 
 // setupMySQLContainer sets up a MySQL test container and returns the config and cleanup function
-func setupMySQLContainer(t *testing.T, ctx context.Context) (config.SyncConfig, func(), error) {
+func setupMySQLContainer(ctx context.Context, t *testing.T) (config.SyncConfig, func(), error) {
 	mysqlContainer, err := testmysql.Run(ctx,
 		"mysql:8.4.5",
 		testmysql.WithDatabase(testDBName),

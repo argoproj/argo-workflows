@@ -8,9 +8,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
+	"github.com/argoproj/argo-workflows/v4/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/common"
 )
 
 // ArtifactDriver is the artifact driver for artifactory and http URLs
@@ -26,14 +26,15 @@ func (h *ArtifactDriver) retrieveContent(ctx context.Context, inputArtifact *wfv
 	var req *http.Request
 	var url string
 	var err error
-	if inputArtifact.Artifactory != nil && inputArtifact.HTTP == nil {
+	switch {
+	case inputArtifact.Artifactory != nil && inputArtifact.HTTP == nil:
 		url = inputArtifact.Artifactory.URL
 		req, err = http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 		if err != nil {
 			return http.Response{}, err
 		}
 		req.SetBasicAuth(h.Username, h.Password)
-	} else if inputArtifact.Artifactory == nil && inputArtifact.HTTP != nil {
+	case inputArtifact.Artifactory == nil && inputArtifact.HTTP != nil:
 		url = inputArtifact.HTTP.URL
 		req, err = http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 		if err != nil {
@@ -45,7 +46,7 @@ func (h *ArtifactDriver) retrieveContent(ctx context.Context, inputArtifact *wfv
 		if h.Username != "" && h.Password != "" {
 			req.SetBasicAuth(h.Username, h.Password)
 		}
-	} else {
+	default:
 		return http.Response{}, errors.InternalErrorf("Either Artifactory or HTTP artifact needs to be configured")
 	}
 
