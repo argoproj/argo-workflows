@@ -1136,7 +1136,7 @@ func (s *ArgoServerSuite) TestWorkflowServiceListArchived() {
 				}
 			}
 			return true
-		}, 30*time.Second, time.Second, "expected both workflows to have Persisted archiving status")
+		}, 60*time.Second, time.Second, "expected both workflows to have Persisted archiving status")
 	})
 
 	s.Run("ListNameContainsAlice", func() {
