@@ -169,7 +169,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
             historyUrl('workflows' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {namespace, extraSearchParams: params})
         );
         isFirstRender.current = false;
-    }, [namespace, phases.toString(), labels.toString(), pagination.limit, pagination.offset, nameValue, nameFilter, createdAfter, finishedBefore, sidePanel]); // referential equality, so use values, not refs        
+    }, [namespace, phases.toString(), labels.toString(), pagination.limit, pagination.offset, nameValue, nameFilter, createdAfter, finishedBefore, sidePanel]); // referential equality, so use values, not refs
 
     useEffect(() => {
         const listWatch = new ListWatch(
