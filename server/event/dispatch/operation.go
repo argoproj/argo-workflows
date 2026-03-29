@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"strings"
 
 	"github.com/expr-lang/expr"
@@ -113,6 +114,18 @@ func (o *Operation) dispatch(ctx context.Context, wfeb wfv1.WorkflowEventBinding
 			return nil, fmt.Errorf("failed to validate workflow template instanceid: %w", err)
 		}
 		wf := common.NewWorkflowFromWorkflowTemplate(tmpl.GetName(), ref.ClusterScope)
+
+		// Apply workflowMetadata labels and annotations from the template
+		// at creation time, matching the CronWorkflow behavior.
+		// labelsFrom is left to the controller since it
+		// requires parameter evaluation at runtime.
+		if wmd := tmpl.GetWorkflowSpec().WorkflowMetadata; wmd != nil {
+			maps.Copy(wf.Labels, wmd.Labels)
+			if len(wmd.Annotations) > 0 {
+				maps.Copy(wf.Annotations, wmd.Annotations)
+			}
+		}
+
 		o.instanceIDService.Label(wf)
 		err = o.populateWorkflowMetadata(wf, &submit.ObjectMeta)
 		if err != nil {

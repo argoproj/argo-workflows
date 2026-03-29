@@ -408,6 +408,69 @@ func Test_populateWorkflowMetadata(t *testing.T) {
 	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: workflow name expression must evaluate to a string, not a <nil>", <-recorder.Events)
 }
 
+func TestDispatchWorkflowMetadata(t *testing.T) {
+	tmpl := &wfv1.WorkflowTemplate{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "my-wft", Namespace: "my-ns",
+			Labels: map[string]string{common.LabelKeyControllerInstanceID: "my-instanceid"},
+		},
+		Spec: wfv1.WorkflowSpec{
+			WorkflowMetadata: &wfv1.WorkflowMetadata{
+				Labels:      map[string]string{"env": "from-template", "template-only": "yes"},
+				Annotations: map[string]string{"note": "from-template"},
+			},
+		},
+	}
+
+	dispatch := func(t *testing.T, binding wfv1.WorkflowEventBinding) wfv1.Workflow {
+		t.Helper()
+		client := fake.NewClientset(tmpl)
+		ctx := context.WithValue(logging.TestContext(t.Context()), auth.WfKey, client)
+		ctx = context.WithValue(ctx, auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
+		op, err := NewOperation(ctx, instanceid.NewService("my-instanceid"), record.NewFakeRecorder(6),
+			[]wfv1.WorkflowEventBinding{binding}, "my-ns", "", &wfv1.Item{Value: json.RawMessage(`{}`)})
+		require.NoError(t, err)
+		require.NoError(t, op.Dispatch(ctx))
+		list, err := client.ArgoprojV1alpha1().Workflows("my-ns").List(ctx, metav1.ListOptions{})
+		require.NoError(t, err)
+		require.Len(t, list.Items, 1)
+		return list.Items[0]
+	}
+
+	t.Run("AppliesTemplateMetadata", func(t *testing.T) {
+		wf := dispatch(t, wfv1.WorkflowEventBinding{
+			ObjectMeta: metav1.ObjectMeta{Name: "my-wfeb", Namespace: "my-ns"},
+			Spec: wfv1.WorkflowEventBindingSpec{
+				Event: wfv1.Event{Selector: "true"},
+				Submit: &wfv1.Submit{
+					WorkflowTemplateRef: wfv1.WorkflowTemplateRef{Name: "my-wft"},
+				},
+			},
+		})
+		assert.Equal(t, "from-template", wf.Labels["env"])
+		assert.Equal(t, "yes", wf.Labels["template-only"])
+		assert.Equal(t, "from-template", wf.Annotations["note"])
+	})
+
+	t.Run("EventBindingOverridesTemplate", func(t *testing.T) {
+		wf := dispatch(t, wfv1.WorkflowEventBinding{
+			ObjectMeta: metav1.ObjectMeta{Name: "my-wfeb", Namespace: "my-ns"},
+			Spec: wfv1.WorkflowEventBindingSpec{
+				Event: wfv1.Event{Selector: "true"},
+				Submit: &wfv1.Submit{
+					WorkflowTemplateRef: wfv1.WorkflowTemplateRef{Name: "my-wft"},
+					ObjectMeta: metav1.ObjectMeta{
+						Labels: map[string]string{"env": `"from-binding"`},
+					},
+				},
+			},
+		})
+		assert.Equal(t, "from-binding", wf.Labels["env"])
+		assert.Equal(t, "yes", wf.Labels["template-only"])
+		assert.Equal(t, "from-template", wf.Annotations["note"])
+	})
+}
+
 func Test_expressionEnvironment(t *testing.T) {
 	env, err := expressionEnvironment(logging.TestContext(t.Context()), "my-ns", "my-d", &wfv1.Item{Value: []byte(`{"foo":"bar"}`)})
 	require.NoError(t, err)

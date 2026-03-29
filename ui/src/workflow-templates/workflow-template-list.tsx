@@ -64,22 +64,19 @@ export function WorkflowTemplateList({match, location, history}: RouteComponentP
     );
 
     useEffect(() => {
-        if (isFirstRender.current) {
-            isFirstRender.current = false;
-            return;
-        }
         storage.setItem('options', {labels}, {});
         const params = new URLSearchParams();
         labels?.forEach(label => params.append('label', label));
         if (sidePanel) {
             params.append('sidePanel', 'true');
         }
-        history.push(
+        (isFirstRender.current ? history.replace : history.push)(
             historyUrl('workflow-templates' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {
                 namespace,
                 extraSearchParams: params
             })
         );
+        isFirstRender.current = false;
     }, [namespace, sidePanel, labels.toString()]);
     // internal state
     const [error, setError] = useState<Error>();
