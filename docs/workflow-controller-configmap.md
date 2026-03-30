@@ -207,6 +207,7 @@ PostgreSQLConfig contains PostgreSQL-specific database configuration
 | `SSL`            | `bool`                                                                                                                      | SSL enables SSL connection to the database                                |
 | `SSLMode`        | `string`                                                                                                                    | SSLMode specifies the SSL mode (disable, require, verify-ca, verify-full) |
 | `AzureToken`     | [`AzureTokenConfig`](#azuretokenconfig)                                                                                     | AzureToken specifies if the password should be fetched as an Azure token  |
+| `AWSRDSToken`    | [`AWSRDSTokenConfig`](#awsrdstokenconfig)                                                                                   | AWSRDSToken specifies if the password should be fetched as an AWS RDS IAM auth token |
 
 ## AzureTokenConfig
 
@@ -216,6 +217,15 @@ PostgreSQLConfig contains PostgreSQL-specific database configuration
 |------------|------------|-------------------------------------------------------------------------------------------------------------------------|
 | `Enabled`  | `bool`     | Enabled enables Azure token fetching                                                                                    |
 | `Scope`    | `string`   | Scope is the scope to request the token for. Defaults to "https://ossrdbms-aad.database.windows.net/.default" if empty. |
+
+## AWSRDSTokenConfig
+
+### Fields
+
+| Field Name | Field Type |                                             Description                                              |
+|------------|------------|------------------------------------------------------------------------------------------------------|
+| `Enabled`  | `bool`     | Enabled enables AWS RDS IAM auth token fetching                                                      |
+| `Region`   | `string`   | Region is the AWS region of the RDS instance. Auto-detected from AWS SDK default config if empty.    |
 
 ## MySQLConfig
 

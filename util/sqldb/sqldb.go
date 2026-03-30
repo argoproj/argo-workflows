@@ -69,6 +69,10 @@ func createPostGresDBSession(ctx context.Context, kubectlConfig kubernetes.Inter
 		return createPostGresDBSessionWithAzure(cfg, persistPool, string(userNameByte))
 	}
 
+	if cfg.AWSRDSToken != nil && cfg.AWSRDSToken.Enabled {
+		return createPostGresDBSessionWithAWSRDS(cfg, persistPool, string(userNameByte))
+	}
+
 	passwordByte, err := util.GetSecrets(ctx, kubectlConfig, namespace, cfg.PasswordSecret.Name, cfg.PasswordSecret.Key)
 	if err != nil {
 		return nil, err
@@ -116,6 +120,39 @@ func createPostGresDBSessionWithAzure(cfg *config.PostgreSQLConfig, persistPool 
 	connector := &azureConnector{
 		dsn:   settings.String(),
 		scope: scope,
+	}
+
+	sqlDB := otelsql.OpenDB(connector, otelSQLOptions(semconv.DBSystemNamePostgreSQL, cfg.Database)...)
+	return newPostgresSession(sqlDB, persistPool)
+}
+
+// createPostGresDBSessionWithAWSRDS creates postgresDB session with AWS RDS IAM auth
+func createPostGresDBSessionWithAWSRDS(cfg *config.PostgreSQLConfig, persistPool *config.ConnectionPool, username string) (db.Session, error) {
+	settings := postgresqladp.ConnectionURL{
+		User:     username,
+		Host:     cfg.GetHostname(),
+		Database: cfg.Database,
+	}
+
+	if cfg.SSL {
+		if cfg.SSLMode != "" {
+			options := map[string]string{
+				"sslmode": cfg.SSLMode,
+			}
+			settings.Options = options
+		}
+	}
+
+	region := ""
+	if cfg.AWSRDSToken != nil {
+		region = cfg.AWSRDSToken.Region
+	}
+
+	connector := &awsRDSConnector{
+		dsn:      settings.String(),
+		endpoint: cfg.GetHostname(),
+		username: username,
+		region:   region,
 	}
 
 	sqlDB := otelsql.OpenDB(connector, otelSQLOptions(semconv.DBSystemNamePostgreSQL, cfg.Database)...)
