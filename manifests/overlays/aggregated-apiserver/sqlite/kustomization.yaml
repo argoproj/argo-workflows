@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Aggregated API server backed by SQLite with a persistent volume.
+# Suitable for single-node dev/test environments.
+# NOTE: SQLite does not support multiple replicas — keep replicaCount: 1.
+#
+# Deploy:
+#   kubectl apply -k manifests/overlays/aggregated-apiserver/sqlite
+
+resources:
+  - ../../../base/aggregated-apiserver
+  - sqlite-pvc.yaml
+
+patches:
+  - target:
+      group: apps
+      version: v1
+      kind: Deployment
+      name: argo-aggregated-apiserver
+    path: aggregated-apiserver-sqlite-patch.yaml
+
+namespace: argo

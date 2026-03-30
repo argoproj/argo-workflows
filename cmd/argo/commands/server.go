@@ -57,8 +57,12 @@ func NewServerCommand() *cobra.Command {
 		kubeAPIQPS               float32
 		kubeAPIBurst             int
 		allowedLinkProtocol      []string
-		logFormat                string // --log-format
-		logLevel                 string // --loglevel
+		logFormat                  string // --log-format
+		logLevel                   string // --loglevel
+		enableAggregatedAPIServer  bool
+		aggregatedDBDriver         string
+		aggregatedDBDSN            string
+		aggregatedAPIServerPort    int
 	)
 
 	command := cobra.Command{
@@ -153,24 +157,28 @@ See %s`, help.ArgoServer()),
 			}
 
 			opts := apiserver.ArgoServerOpts{
-				BaseHRef:                 baseHRef,
-				TLSConfig:                tlsConfig,
-				HSTS:                     hsts,
-				Namespaced:               namespaced,
-				Namespace:                namespace,
-				Clients:                  clients,
-				RestConfig:               config,
-				AuthModes:                modes,
-				ManagedNamespace:         managedNamespace,
-				SSONamespace:             ssoNamespace,
-				ConfigName:               configMap,
-				EventOperationQueueSize:  eventOperationQueueSize,
-				EventWorkerCount:         eventWorkerCount,
-				EventAsyncDispatch:       eventAsyncDispatch,
-				XFrameOptions:            frameOptions,
-				AccessControlAllowOrigin: accessControlAllowOrigin,
-				APIRateLimit:             apiRateLimit,
-				AllowedLinkProtocol:      allowedLinkProtocol,
+				BaseHRef:                  baseHRef,
+				TLSConfig:                 tlsConfig,
+				HSTS:                      hsts,
+				Namespaced:                namespaced,
+				Namespace:                 namespace,
+				Clients:                   clients,
+				RestConfig:                config,
+				AuthModes:                 modes,
+				ManagedNamespace:          managedNamespace,
+				SSONamespace:              ssoNamespace,
+				ConfigName:                configMap,
+				EventOperationQueueSize:   eventOperationQueueSize,
+				EventWorkerCount:          eventWorkerCount,
+				EventAsyncDispatch:        eventAsyncDispatch,
+				XFrameOptions:             frameOptions,
+				AccessControlAllowOrigin:  accessControlAllowOrigin,
+				APIRateLimit:              apiRateLimit,
+				AllowedLinkProtocol:       allowedLinkProtocol,
+				EnableAggregatedAPIServer: enableAggregatedAPIServer,
+				AggregatedDBDriver:        aggregatedDBDriver,
+				AggregatedDBDSN:           aggregatedDBDSN,
+				AggregatedAPIServerPort:   aggregatedAPIServerPort,
 			}
 			browserOpenFunc := func(url string) {}
 			if enableOpenBrowser {
@@ -214,6 +222,10 @@ See %s`, help.ArgoServer()),
 	command.Flags().Float32Var(&kubeAPIQPS, "kube-api-qps", 20.0, "QPS to use while talking with kube-apiserver.")
 	command.Flags().IntVar(&kubeAPIBurst, "kube-api-burst", 30, "Burst to use while talking with kube-apiserver.")
 	command.Flags().StringVar(&logLevel, "loglevel", "info", "Set the logging level. One of: debug|info|warn|error")
+	command.Flags().BoolVar(&enableAggregatedAPIServer, "enable-aggregated-apiserver", false, "Enable the Kubernetes aggregated API server backed by SQL storage")
+	command.Flags().StringVar(&aggregatedDBDriver, "db-driver", "postgres", "Database driver for aggregated API server: sqlite or postgres")
+	command.Flags().StringVar(&aggregatedDBDSN, "db-dsn", "postgresql://argo:argo@postgres:5432/argo?sslmode=disable", "Database DSN for aggregated API server")
+	command.Flags().IntVar(&aggregatedAPIServerPort, "aggregated-api-port", 6443, "Port for the aggregated API server")
 
 	// set-up env vars for the CLI such that ARGO_* env vars can be used instead of flags
 	viper.AutomaticEnv()

@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argo-aggregated-apiserver
+spec:
+  selector:
+    matchLabels:
+      app: argo-aggregated-apiserver
+  template:
+    metadata:
+      labels:
+        app: argo-aggregated-apiserver
+    spec:
+      serviceAccountName: argo-server
+      containers:
+        - name: argo-aggregated-apiserver
+          image: argoproj/argocli:simple12
+          imagePullPolicy: Never
+          securityContext:
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          args:
+            - server
+            - --auth-mode
+            - server
+            - --enable-aggregated-apiserver
+            - --db-driver
+            - sqlite
+            - --db-dsn
+            - /data/argo.db
+          ports:
+            - name: aggregated-api
+              containerPort: 6443
+          readinessProbe:
+            httpGet:
+              port: 6443
+              scheme: HTTPS
+              path: /apis
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+            - mountPath: /data
+              name: data
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: data
+          emptyDir: {}
+      securityContext:
+        runAsNonRoot: true
+      nodeSelector:
+        kubernetes.io/os: linux

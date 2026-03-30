@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argo-aggregated-apiserver
+spec:
+  template:
+    spec:
+      # SQLite only supports a single writer — ensure at most one replica.
+      # (This is enforced at the overlay level; horizontal scaling requires postgres.)
+      containers:
+        - name: argo-aggregated-apiserver
+          args:
+            - server
+            - --auth-mode
+            - server
+            - --enable-aggregated-apiserver
+            - --db-driver
+            - sqlite
+            - --db-dsn
+            - /data/argo.db
+          # Clear the postgres env var — SQLite uses a file path in args, not an env var.
+          env: []
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+            - mountPath: /data
+              name: data
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: data
+          persistentVolumeClaim:
+            claimName: aggregated-apiserver-sqlite

@@ -1,0 +1,16 @@
+apiVersion: apiregistration.k8s.io/v1
+kind: APIService
+metadata:
+  name: v1alpha1.argoproj.io
+  labels:
+    app: argo-server
+spec:
+  group: argoproj.io
+  version: v1alpha1
+  service:
+    name: argo-aggregated-apiserver
+    namespace: argo
+    port: 6443
+  groupPriorityMinimum: 1000
+  versionPriority: 15
+  insecureSkipTLSVerify: true
