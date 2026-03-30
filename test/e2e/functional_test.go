@@ -55,8 +55,9 @@ func (s *FunctionalSuite) TestDeletingPendingPod() {
 		}(), "-p", `{"metadata":{"finalizers":[]}}`, "--type", "merge"}, fixtures.OutputRegexp(`pod/.* patched`)).
 		Wait(time.Second).
 		Exec("kubectl", []string{"-n", "argo", "delete", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.OutputRegexp(`pod "pending-.*" deleted`)).
-		Wait(time.Duration(3*fixtures.EnvFactor)*time.Second). // allow 3s for reconciliation, we'll create a new pod
-		Exec("kubectl", []string{"-n", "argo", "get", "pod", "-l", "workflows.argoproj.io/workflow"}, fixtures.OutputRegexp(`pending-.*Pending`))
+		WaitForPod(fixtures.PodCondition(func(p *apiv1.Pod) bool {
+			return p.DeletionTimestamp.IsZero() && p.Status.Phase == apiv1.PodPending
+		}))
 }
 
 func (s *FunctionalSuite) TestWorkflowLevelErrorRetryPolicy() {

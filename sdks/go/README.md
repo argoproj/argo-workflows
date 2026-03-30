@@ -5,7 +5,7 @@ This is using the code in argo-workflows codebase as an SDK to build and control
 
 ## Prerequisites
 
-- Go 1.24.10
+- Go 1.26.1
 - Access to a Kubernetes cluster with Argo Workflows installed, and able to run workflows in the `argo` namespace
 - Kubeconfig configured for cluster access
 - kubectl configured with cluster access (for Kubernetes client examples)

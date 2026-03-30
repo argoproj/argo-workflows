@@ -26,7 +26,9 @@ const config = {
         path: __dirname + '/dist/app',
     },
 
-    devtool: isProd ? 'source-map' : 'eval',
+    // Enable source maps in production for easier debugging, but use faster eval-source-map in development for better performance
+    // Docs: https://webpack.js.org/configuration/devtool/
+    devtool: isProd ? 'source-map' : 'eval-source-map',
 
     resolve: {
         extensions: ['.ts', '.tsx', '.js', '.json', '.ttf'],
