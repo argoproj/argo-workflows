@@ -14,7 +14,7 @@ spec:
       serviceAccountName: argo-server
       containers:
         - name: argo-aggregated-apiserver
-          image: argoproj/argocli:simple12
+          image: argoproj/argocli:simple13
           imagePullPolicy: Never
           securityContext:
             readOnlyRootFilesystem: true

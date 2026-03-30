@@ -35,6 +35,7 @@ import (
 	argo "github.com/argoproj/argo-workflows/v4"
 	aggregatedapiserver "github.com/argoproj/argo-workflows/v4/pkg/apiserver"
 	storageutil "github.com/argoproj/argo-workflows/v4/pkg/storage"
+	"gorm.io/gorm"
 	"github.com/argoproj/argo-workflows/v4/config"
 	persist "github.com/argoproj/argo-workflows/v4/persist/sqldb"
 	clusterwftemplatepkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/clusterworkflowtemplate"
@@ -282,39 +283,44 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	log.Info(ctx, "TRACE: About to get resourceCacheNamespace")
 	resourceCacheNamespace := getResourceCacheNamespace(as.managedNamespace)
 	
-	// Start the aggregated API server BEFORE creating informers if enabled
-	// This ensures the API is available when informers try to connect
+	// Start the aggregated API server BEFORE creating informers if enabled.
+	// This ensures the API is available when informers try to connect.
 	if as.enableAggregatedAPIServer {
-		log.Info(ctx, "AGGREGATED API SERVER ENABLED - starting simple server (before informers)")
-		
-		// Initialize database
-		db, dbErr := storageutil.NewDB(as.aggregatedDBDriver, as.aggregatedDBDSN)
-		if dbErr != nil {
-			log.WithError(dbErr).Error(ctx, "Failed to initialize database - aggregated API server will not start")
-			// Continue without aggregated API server
-		} else {
-			// Create stop channel for aggregated server
-			aggStopCh := make(chan struct{})
-			
-			go func() {
-				log.Info(ctx, "Inside aggregated API server goroutine")
-				
-				// Use SimpleAggregatedServer
-				aggServer, aggErr := aggregatedapiserver.NewSimpleAggregatedServer(db, as.aggregatedAPIServerPort)
-				if aggErr != nil {
-					log.WithError(aggErr).Error(ctx, "Failed to create aggregated API server")
-					return
-				}
-				log.WithField("port", as.aggregatedAPIServerPort).Info(ctx, "Starting simple aggregated API server")
-				if aggErr = aggServer.Run(aggStopCh); aggErr != nil {
-					log.WithError(aggErr).Error(ctx, "Aggregated API server stopped")
-				}
-			}()
-			// Give the aggregated API server a moment to start before informers try to connect
-			log.Info(ctx, "Waiting 5 seconds for aggregated API server to initialize...")
-			time.Sleep(5 * time.Second)
-			log.Info(ctx, "Proceeding with informer creation")
+		log.Info(ctx, "Aggregated API server enabled — connecting to database")
+
+		// Retry DB connection so a slow-starting postgres pod doesn't cause a
+		// permanent failure. The pod exits after max retries so Kubernetes will
+		// restart it with backoff.
+		const dbMaxRetries = 30
+		const dbRetryInterval = 2 * time.Second
+		var db *gorm.DB
+		var dbErr error
+		for i := 1; i <= dbMaxRetries; i++ {
+			db, dbErr = storageutil.NewDB(as.aggregatedDBDriver, as.aggregatedDBDSN)
+			if dbErr == nil {
+				break
+			}
+			log.WithError(dbErr).WithField("attempt", i).Warn(ctx, "Database not ready, retrying...")
+			time.Sleep(dbRetryInterval)
 		}
+		if dbErr != nil {
+			log.WithError(dbErr).WithFatal().Error(ctx, "Failed to connect to database after retries — exiting so Kubernetes can restart")
+		}
+
+		aggStopCh := make(chan struct{})
+		go func() {
+			aggServer, aggErr := aggregatedapiserver.NewSimpleAggregatedServer(db, as.aggregatedAPIServerPort)
+			if aggErr != nil {
+				log.WithError(aggErr).WithFatal().Error(ctx, "Failed to create aggregated API server")
+			}
+			log.WithField("port", as.aggregatedAPIServerPort).Info(ctx, "Starting aggregated API server")
+			if aggErr = aggServer.Run(aggStopCh); aggErr != nil {
+				log.WithError(aggErr).WithFatal().Error(ctx, "Aggregated API server stopped unexpectedly")
+			}
+		}()
+		// Give the aggregated API server a moment to start before informers try to connect.
+		log.Info(ctx, "Waiting 5 seconds for aggregated API server to initialize...")
+		time.Sleep(5 * time.Second)
 	}
 	
 	log.Info(ctx, "TRACE: About to create wftmplStore informer")

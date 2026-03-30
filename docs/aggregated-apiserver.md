@@ -103,6 +103,22 @@ kubectl rollout restart deployment/workflow-controller -n argo
 
 > Prerequisites: Kubernetes 1.25+, Argo Workflows installed in the `argo` namespace, `kubectl` with `kustomize` support.
 
+> **⚠️ Important:** The `argoproj.io/v1alpha1` resource group must not have any CRDs installed. If you installed Argo from `manifests/quick-start/minimal` (or any install that includes CRDs), Kubernetes automatically creates a *local* APIService for that group which takes priority over the aggregated server. Delete any installed `argoproj.io` CRDs first:
+>
+> ```bash
+> kubectl delete crd \
+>   workflowartifactgctasks.argoproj.io \
+>   workfloweventbindings.argoproj.io \
+>   workflowtaskresults.argoproj.io \
+>   workflowtasksets.argoproj.io \
+>   workflows.argoproj.io \
+>   workflowtemplates.argoproj.io \
+>   clusterworkflowtemplates.argoproj.io \
+>   cronworkflows.argoproj.io 2>/dev/null || true
+> ```
+>
+> The aggregated server handles all `argoproj.io/v1alpha1` resources; no CRDs are needed.
+
 ```bash
 # Deploy with PostgreSQL (recommended)
 kubectl apply -k manifests/overlays/aggregated-apiserver/postgres
@@ -316,7 +332,28 @@ kubectl rollout restart deployment/workflow-controller -n argo
 
 ### `the server could not find the requested resource`
 
-The `APIService` is not registered or the server is unreachable.
+The `APIService` is either not registered, auto-managed as local (due to installed CRDs), or the server is unreachable.
+
+**Step 1** — check if the APIService points to the service (not local):
+
+```bash
+kubectl get apiservice v1alpha1.argoproj.io -o jsonpath='{.spec.service}'
+# Should return: {"name":"argo-aggregated-apiserver","namespace":"argo","port":6443}
+# If empty, the APIService is local (CRD-backed) — see below
+```
+
+**If the APIService is local** — installed CRDs are taking precedence. Delete them and re-apply:
+
+```bash
+kubectl delete crd \
+  workflowartifactgctasks.argoproj.io workfloweventbindings.argoproj.io \
+  workflowtaskresults.argoproj.io workflowtasksets.argoproj.io \
+  workflows.argoproj.io workflowtemplates.argoproj.io \
+  clusterworkflowtemplates.argoproj.io cronworkflows.argoproj.io 2>/dev/null || true
+kubectl apply -k manifests/overlays/aggregated-apiserver/postgres
+```
+
+**Step 2** — if the service is correctly set but still failing:
 
 ```bash
 kubectl get apiservice v1alpha1.argoproj.io
@@ -368,6 +405,7 @@ You are running an older build. The `setTypeMeta` fix in `pkg/storage/rest/gener
 
 ## Known Limitations
 
+- **No CRDs allowed** — all `argoproj.io/v1alpha1` CRDs must be absent from the cluster. Kubernetes automatically creates a *local* APIService (backed by etcd) when any CRD for the group is present, which takes precedence over the aggregated server. The aggregated server itself serves all resource types (including `workflowtaskresults`, `workflowtasksets`, etc.) so CRDs are not needed.
 - **SQLite is single-writer** — do not run more than 1 replica with the SQLite overlay. Use PostgreSQL for HA.
 - **`argoproj.io/v1alpha1` only** — all other resource types continue to flow through etcd. This is not a full etcd replacement.
 - **Self-signed TLS** — certificates are generated at startup. Restart the pod to regenerate. For production, provide a proper CA and certificate via a Secret and mount it into the pod.
