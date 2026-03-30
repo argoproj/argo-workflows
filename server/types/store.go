@@ -3,7 +3,7 @@ package types
 import (
 	"context"
 
-	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
+	"github.com/argoproj/argo-workflows/v4/workflow/templateresolution"
 )
 
 type WorkflowTemplateStore interface {

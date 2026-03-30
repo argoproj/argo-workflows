@@ -97,6 +97,7 @@ Config contains the root of the configuration settings for the workflow controll
 | `SSO`                      | [`SSOConfig`](#ssoconfig)                                                                                   | SSO in settings for single-sign on                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `Synchronization`          | [`SyncConfig`](#syncconfig)                                                                                 | Synchronization via databases config                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `ArtifactDrivers`          | `Array<`[`ArtifactDriver`](#artifactdriver)`>`                                                              | ArtifactDrivers lists artifact driver plugins we can use                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `FailedPodRestart`         | [`FailedPodRestartConfig`](#failedpodrestartconfig)                                                         | FailedPodRestart configures automatic restart of pods that fail before entering Running state (e.g., due to Eviction, DiskPressure, Preemption). This allows recovery from transient infrastructure issues without requiring a retryStrategy on templates.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 
 ## NodeEvents
 
@@ -141,7 +142,7 @@ MetricsConfig defines a config for a metrics server
 |   Field Name    |                                                                                               Field Type                                                                                                |                                                                          Description                                                                           |
 |-----------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `Enabled`       | `bool`                                                                                                                                                                                                  | Enabled controls metric emission. Default is true, set "enabled: false" to turn off                                                                            |
-| `DisableLegacy` | `bool`                                                                                                                                                                                                  | DisableLegacy turns off legacy metrics DEPRECATED: Legacy metrics are now removed, this field is ignored                                                       |
+| `DisableLegacy` | `bool`                                                                                                                                                                                                  | DisableLegacy turns off legacy metrics. Deprecated: Legacy metrics are now removed, this field is ignored.                                                     |
 | `MetricsTTL`    | `TTL` (time.Duration forces you to specify in millis, and does not support days see https://stackoverflow.com/questions/48050945/how-to-unmarshal-json-into-durations (underlying type: time.Duration)) | MetricsTTL sets how often custom metrics are cleared from memory                                                                                               |
 | `Path`          | `string`                                                                                                                                                                                                | Path is the path where metrics are emitted. Must start with a "/". Default is "/metrics"                                                                       |
 | `Port`          | `int`                                                                                                                                                                                                   | Port is the port where metrics are emitted. Default is "9090"                                                                                                  |
@@ -159,7 +160,7 @@ MetricModifier are modifiers for an individual named metric to change their beha
 |      Field Name      |    Field Type    |                                                 Description                                                  |
 |----------------------|------------------|--------------------------------------------------------------------------------------------------------------|
 | `Disabled`           | `bool`           | Disabled disables the emission of this metric completely                                                     |
-| `DisabledAttributes` | `Array<string>`  | DisabledAttributes lists labels for this metric to remove that attributes to save on cardinality             |
+| `DisabledAttributes` | `Array<string>`  | DisabledAttributes lists labels for this metric to remove those attributes to save on cardinality            |
 | `HistogramBuckets`   | `Array<float64>` | HistogramBuckets allow configuring of the buckets used in a histogram Has no effect on non-histogram buckets |
 
 ## ResourceRateLimit
@@ -205,6 +206,16 @@ PostgreSQLConfig contains PostgreSQL-specific database configuration
 | `PasswordSecret` | [`apiv1.SecretKeySelector`](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#secretkeyselector-v1-core) | PasswordSecret references a secret containing the database password       |
 | `SSL`            | `bool`                                                                                                                      | SSL enables SSL connection to the database                                |
 | `SSLMode`        | `string`                                                                                                                    | SSLMode specifies the SSL mode (disable, require, verify-ca, verify-full) |
+| `AzureToken`     | [`AzureTokenConfig`](#azuretokenconfig)                                                                                     | AzureToken specifies if the password should be fetched as an Azure token  |
+
+## AzureTokenConfig
+
+### Fields
+
+| Field Name | Field Type |                                                       Description                                                       |
+|------------|------------|-------------------------------------------------------------------------------------------------------------------------|
+| `Enabled`  | `bool`     | Enabled enables Azure token fetching                                                                                    |
+| `Scope`    | `string`   | Scope is the scope to request the token for. Defaults to "https://ossrdbms-aad.database.windows.net/.default" if empty. |
 
 ## MySQLConfig
 
@@ -344,3 +355,14 @@ ArtifactDriver is a plugin for an artifact driver
 | `Name`                     | `wfv1.ArtifactPluginName` (string (name of an artifact plugin)) | Name is the name of the artifact driver plugin                                                   |
 | `Image`                    | `string`                                                        | Image is the docker image of the artifact driver                                                 |
 | `ConnectionTimeoutSeconds` | `int32`                                                         | ConnectionTimeoutSeconds is the timeout for the artifact driver connection, 5 seconds if not set |
+
+## FailedPodRestartConfig
+
+FailedPodRestartConfig configures automatic restart of pods that fail before entering Running state. This is useful for recovering from transient infrastructure issues like node eviction due to DiskPressure or MemoryPressure without requiring a retryStrategy on every template.
+
+### Fields
+
+|  Field Name   | Field Type |                                                                                                                        Description                                                                                                                        |
+|---------------|------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `Enabled`     | `bool`     | Enabled enables automatic restart of pods that fail before entering Running state. When enabled, pods that fail due to infrastructure issues (like eviction) without ever running their main container will be automatically recreated. Default is false. |
+| `MaxRestarts` | `int32`    | MaxRestarts is the maximum number of automatic restarts per node before giving up. This prevents infinite restart loops. Default is 3.                                                                                                                    |

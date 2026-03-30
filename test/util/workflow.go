@@ -3,7 +3,7 @@ package util
 import (
 	"sigs.k8s.io/yaml"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
 func MustUnmarshalWorkflow(text string) *wfv1.Workflow {

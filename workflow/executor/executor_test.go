@@ -20,13 +20,13 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
-	"k8s.io/utils/ptr"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	argofake "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/executor/mocks"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	argofake "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/executor/mocks"
+	"github.com/argoproj/argo-workflows/v4/workflow/executor/tracing"
 )
 
 const (
@@ -78,21 +78,24 @@ func TestWorkflowExecutor_LoadArtifacts(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			ctx := logging.TestContext(t.Context())
+			tracing, err := tracing.New(ctx, `argoexec`) // TODO arguments here
+			require.NoError(t, err)
 			we := WorkflowExecutor{
 				Template: wfv1.Template{
 					Inputs: wfv1.Inputs{
 						Artifacts: []wfv1.Artifact{test.artifact},
 					},
 				},
+				Tracing: tracing,
 			}
-			err := we.loadArtifacts(ctx, "")
+			err = we.loadArtifacts(ctx, "")
 			require.EqualError(t, err, test.error)
 		})
 	}
 }
 
 func TestSaveParameters(t *testing.T) {
-	fakeClientset := fake.NewSimpleClientset()
+	fakeClientset := fake.NewClientset()
 	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
 	templateWithOutParam := wfv1.Template{
 		Outputs: wfv1.Outputs{
@@ -178,7 +181,7 @@ func TestIsBaseImagePath(t *testing.T) {
 }
 
 func TestDefaultParameters(t *testing.T) {
-	fakeClientset := fake.NewSimpleClientset()
+	fakeClientset := fake.NewClientset()
 	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
 	templateWithOutParam := wfv1.Template{
 		Outputs: wfv1.Outputs{
@@ -209,7 +212,7 @@ func TestDefaultParameters(t *testing.T) {
 }
 
 func TestDefaultParametersEmptyString(t *testing.T) {
-	fakeClientset := fake.NewSimpleClientset()
+	fakeClientset := fake.NewClientset()
 	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
 	templateWithOutParam := wfv1.Template{
 		Outputs: wfv1.Outputs{
@@ -382,9 +385,9 @@ func TestChmod(t *testing.T) {
 }
 
 func TestSaveArtifacts(t *testing.T) {
-	fakeClientset := fake.NewSimpleClientset()
+	fakeClientset := fake.NewClientset()
 	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
-	mockTaskResultClient := argofake.NewSimpleClientset().ArgoprojV1alpha1().WorkflowTaskResults(fakeNamespace)
+	mockTaskResultClient := argofake.NewClientset().ArgoprojV1alpha1().WorkflowTaskResults(fakeNamespace)
 	templateWithOutParam := wfv1.Template{
 		Inputs: wfv1.Inputs{
 			Artifacts: []wfv1.Artifact{
@@ -445,6 +448,9 @@ func TestSaveArtifacts(t *testing.T) {
 			},
 		},
 	}
+	ctx := logging.TestContext(t.Context())
+	tracing, err := tracing.New(ctx, `argoexec`) // TODO arguments here
+	require.NoError(t, err)
 	tests := []struct {
 		workflowExecutor WorkflowExecutor
 		expectError      bool
@@ -457,6 +463,7 @@ func TestSaveArtifacts(t *testing.T) {
 				Namespace:        fakeNamespace,
 				RuntimeExecutor:  &mockRuntimeExecutor,
 				taskResultClient: mockTaskResultClient,
+				Tracing:          tracing,
 			},
 			expectError: false,
 		},
@@ -468,6 +475,7 @@ func TestSaveArtifacts(t *testing.T) {
 				Namespace:        fakeNamespace,
 				RuntimeExecutor:  &mockRuntimeExecutor,
 				taskResultClient: mockTaskResultClient,
+				Tracing:          tracing,
 			},
 			expectError: true,
 		},
@@ -479,6 +487,7 @@ func TestSaveArtifacts(t *testing.T) {
 				Namespace:        fakeNamespace,
 				RuntimeExecutor:  &mockRuntimeExecutor,
 				taskResultClient: mockTaskResultClient,
+				Tracing:          tracing,
 			},
 			expectError: false,
 		},
@@ -502,14 +511,14 @@ func TestMonitorProgress(t *testing.T) {
 	readProgressFileTickDuration := time.Millisecond
 	progressFile := "/tmp/progress"
 
-	wfFake := argofake.NewSimpleClientset(&wfv1.WorkflowTaskSet{
+	wfFake := argofake.NewClientset(&wfv1.WorkflowTaskSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: fakeNamespace,
 			Name:      fakeWorkflow,
 		},
 	})
 	taskResults := wfFake.ArgoprojV1alpha1().WorkflowTaskResults(fakeNamespace)
-	we := NewExecutor(
+	we, err := NewExecutor(
 		ctx,
 		nil,
 		taskResults,
@@ -527,10 +536,11 @@ func TestMonitorProgress(t *testing.T) {
 		annotationPackTickDuration,
 		readProgressFileTickDuration,
 	)
+	require.NoError(t, err)
 
 	go we.monitorProgress(ctx, progressFile)
 
-	err := os.WriteFile(progressFile, []byte("100/100\n"), os.ModePerm)
+	err = os.WriteFile(progressFile, []byte("100/100\n"), os.ModePerm)
 	require.NoError(t, err)
 
 	time.Sleep(time.Second)
@@ -547,17 +557,20 @@ func TestSaveLogs(t *testing.T) {
 	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
 	mockRuntimeExecutor.On("GetOutputStream", mock.Anything, mock.AnythingOfType("string"), true).Return(io.NopCloser(strings.NewReader("hello world")), nil)
 	t.Run("Simple Pod node", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		tracing, err := tracing.New(ctx, `argoexec`)
+		require.NoError(t, err)
 		templateWithArchiveLogs := wfv1.Template{
 			ArchiveLocation: &wfv1.ArtifactLocation{
-				ArchiveLogs: ptr.To(true),
+				ArchiveLogs: new(true),
 			},
 		}
 		we := WorkflowExecutor{
 			Template:        templateWithArchiveLogs,
 			RuntimeExecutor: &mockRuntimeExecutor,
+			Tracing:         tracing,
 		}
 
-		ctx := logging.TestContext(t.Context())
 		logArtifacts := we.SaveLogs(ctx)
 
 		require.EqualError(t, we.errors[0], artStorageError)
@@ -567,7 +580,7 @@ func TestSaveLogs(t *testing.T) {
 
 func TestReportOutputs(t *testing.T) {
 	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
-	mockTaskResultClient := argofake.NewSimpleClientset().ArgoprojV1alpha1().WorkflowTaskResults(fakeNamespace)
+	mockTaskResultClient := argofake.NewClientset().ArgoprojV1alpha1().WorkflowTaskResults(fakeNamespace)
 	t.Run("Simple report output", func(t *testing.T) {
 		artifacts := []wfv1.Artifact{
 			{
@@ -580,19 +593,21 @@ func TestReportOutputs(t *testing.T) {
 				Artifacts: artifacts,
 			},
 		}
+		ctx := logging.TestContext(t.Context())
+		tracing, err := tracing.New(ctx, `argoexec`) // TODO arguments here
+		require.NoError(t, err)
 		we := WorkflowExecutor{
 			Template:         templateWithArtifacts,
 			RuntimeExecutor:  &mockRuntimeExecutor,
 			taskResultClient: mockTaskResultClient,
+			Tracing:          tracing,
 		}
 
-		ctx := logging.TestContext(t.Context())
-		err := we.ReportOutputs(ctx, artifacts)
+		err = we.ReportOutputs(ctx, artifacts)
 
 		require.NoError(t, err)
 		assert.Empty(t, we.errors)
 	})
-
 }
 
 func TestUntarMaliciousSymlink(t *testing.T) {

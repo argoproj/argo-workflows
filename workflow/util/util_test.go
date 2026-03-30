@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 
 	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/stretchr/testify/assert"
@@ -19,15 +19,15 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo-workflows/v3/server/auth"
-	"github.com/argoproj/argo-workflows/v3/server/auth/types"
+	"github.com/argoproj/argo-workflows/v4/server/auth"
+	"github.com/argoproj/argo-workflows/v4/server/auth/types"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	argofake "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/creator"
-	hydratorfake "github.com/argoproj/argo-workflows/v3/workflow/hydrator/fake"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	argofake "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/creator"
+	hydratorfake "github.com/argoproj/argo-workflows/v4/workflow/hydrator/fake"
 )
 
 // TestSubmitDryRun
@@ -49,7 +49,7 @@ spec:
 `
 	wf := wfv1.MustUnmarshalWorkflow(workflowYaml)
 	newWf := wf.DeepCopy()
-	wfClientSet := argofake.NewSimpleClientset()
+	wfClientSet := argofake.NewClientset()
 	ctx := logging.TestContext(t.Context())
 	newWf, err := SubmitWorkflow(ctx, nil, wfClientSet, "test-namespace", newWf, nil, &wfv1.SubmitOpts{DryRun: true})
 	require.NoError(t, err)
@@ -248,7 +248,7 @@ status:
 
 func TestResumeWorkflowByNodeName(t *testing.T) {
 	t.Run("Withought user info", func(t *testing.T) {
-		wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
+		wfIf := argofake.NewClientset().ArgoprojV1alpha1().Workflows("")
 		origWf := wfv1.MustUnmarshalWorkflow(suspendedWf)
 
 		ctx := logging.TestContext(t.Context())
@@ -275,7 +275,7 @@ func TestResumeWorkflowByNodeName(t *testing.T) {
 	})
 
 	t.Run("With user info", func(t *testing.T) {
-		wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
+		wfIf := argofake.NewClientset().ArgoprojV1alpha1().Workflows("")
 		origWf := wfv1.MustUnmarshalWorkflow(suspendedWf)
 
 		ctx := logging.TestContext(t.Context())
@@ -307,7 +307,7 @@ func TestResumeWorkflowByNodeName(t *testing.T) {
 }
 
 func TestStopWorkflowByNodeName(t *testing.T) {
-	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
+	wfIf := argofake.NewClientset().ArgoprojV1alpha1().Workflows("")
 	origWf := wfv1.MustUnmarshalWorkflow(suspendedWf)
 
 	ctx := logging.TestContext(t.Context())
@@ -466,7 +466,7 @@ status:
 `
 
 func TestUpdateSuspendedNode(t *testing.T) {
-	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
+	wfIf := argofake.NewClientset().ArgoprojV1alpha1().Workflows("")
 	origWf := wfv1.MustUnmarshalWorkflow(susWorkflow)
 
 	ctx := logging.TestContext(t.Context())
@@ -718,7 +718,6 @@ func TestFormulateResubmitWorkflow(t *testing.T) {
 		assert.Emptyf(t, wf.Labels[common.LabelKeyCreator], "should not %s label when a workflow is resubmitted by an unauthenticated request", common.LabelKeyCreator)
 		assert.Emptyf(t, wf.Labels[common.LabelKeyCreatorEmail], "should not %s label when a workflow is resubmitted by an unauthenticated request", common.LabelKeyCreatorEmail)
 		assert.Emptyf(t, wf.Labels[common.LabelKeyCreatorPreferredUsername], "should not %s label when a workflow is resubmitted by an unauthenticated request", common.LabelKeyCreatorPreferredUsername)
-
 	})
 	t.Run("OverrideParams", func(t *testing.T) {
 		wf := &wfv1.Workflow{
@@ -886,7 +885,7 @@ status:
 `
 
 func TestDeepDeleteNodes(t *testing.T) {
-	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
+	wfIf := argofake.NewClientset().ArgoprojV1alpha1().Workflows("")
 	origWf := wfv1.MustUnmarshalWorkflow(deepDeleteOfNodes)
 
 	ctx := logging.TestContext(t.Context())
@@ -918,7 +917,7 @@ spec:
       metadata: {}
       script:
         name: ''
-        image: python:alpine3.6
+        image: python:alpine3.23
         command:
           - python
         resources: {}
@@ -934,7 +933,7 @@ spec:
       metadata: {}
       container:
         name: ''
-        image: alpine:latest
+        image: alpine:3.23
         command:
           - sh
           - '-c'
@@ -1016,7 +1015,7 @@ status:
 `
 
 func TestRetryExitHandler(t *testing.T) {
-	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
+	wfIf := argofake.NewClientset().ArgoprojV1alpha1().Workflows("")
 	origWf := wfv1.MustUnmarshalWorkflow(exitHandler)
 
 	ctx := logging.TestContext(t.Context())
@@ -1032,7 +1031,7 @@ func TestRetryExitHandler(t *testing.T) {
 
 func TestFormulateRetryWorkflow(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	wfClient := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("my-ns")
+	wfClient := argofake.NewClientset().ArgoprojV1alpha1().Workflows("my-ns")
 	t.Run("DAG", func(t *testing.T) {
 		wf := &wfv1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{
@@ -1158,7 +1157,6 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		wf, _, err := FormulateRetryWorkflow(logging.TestContext(t.Context()), wf, false, "", []string{"message=modified"})
 		require.NoError(t, err)
 		assert.Equal(t, "modified", wf.Spec.Arguments.Parameters[0].Value.String())
-
 	})
 
 	t.Run("OverrideParamsSubmitFromWfTmpl", func(t *testing.T) {
@@ -1187,7 +1185,6 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, "modified", wf.Spec.Arguments.Parameters[0].Value.String())
 		assert.Equal(t, "modified", wf.Status.StoredWorkflowSpec.Arguments.Parameters[0].Value.String())
-
 	})
 
 	t.Run("Fail on running workflow", func(t *testing.T) {
@@ -1511,7 +1508,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:latest
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs: {}
@@ -2295,7 +2292,6 @@ func TestStepsRetryWorkflow(t *testing.T) {
 			assert.Equal(wfv1.NodeSucceeded, node.Phase)
 		}
 	}
-
 }
 
 func TestDagConversion(t *testing.T) {
@@ -2375,7 +2371,7 @@ spec:
       command:
       - echo
       - '{{inputs.parameters.message}}'
-      image: alpine:3.7
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs:
@@ -3016,7 +3012,6 @@ func TestOnExitWorkflowRetry(t *testing.T) {
 			assert.Equal(wfv1.NodeSucceeded, node.Phase)
 		}
 	}
-
 }
 
 const onExitWorkflow = `
@@ -3048,7 +3043,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:3.18
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs: {}
@@ -3061,7 +3056,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:3.18
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs: {}
@@ -3161,7 +3156,6 @@ func TestOnExitWorkflow(t *testing.T) {
 	assert.Len(podsToDelete, 1)
 	assert.Len(newWf.Status.Nodes, 1)
 	assert.Equal(wfv1.NodeSucceeded, newWf.Status.Nodes["retry-workflow-with-failed-exit-handler"].Phase)
-
 }
 
 const nestedDAG = `apiVersion: argoproj.io/v1alpha1
@@ -3191,7 +3185,7 @@ spec:
       command:
       - echo
       - '{{inputs.parameters.message}}'
-      image: alpine:3.7
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs:
@@ -3887,9 +3881,8 @@ func TestNestedDAG(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(nestedDAG)
 
 	running := map[string]bool{
-		"dag-nested-zxlc2-1920344377":  true,
-		"dag-nested-zxlc2-1970677234 ": true,
-		"dag-nested-zxlc2":             true,
+		"dag-nested-zxlc2-1920344377": true,
+		"dag-nested-zxlc2":            true,
 	}
 	deleted := map[string]bool{
 		"dag-nested-zxlc2-744943701": true,
@@ -3918,7 +3911,6 @@ func TestNestedDAG(t *testing.T) {
 			assert.Equal(wfv1.NodeSucceeded, node.Phase)
 		}
 	}
-
 }
 
 const onExitPanic = `apiVersion: argoproj.io/v1alpha1
@@ -3951,7 +3943,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:latest
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs: {}
@@ -3981,7 +3973,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:latest
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs: {}
@@ -3994,7 +3986,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:latest
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs: {}
@@ -4007,7 +3999,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:latest
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs: {}
@@ -4189,7 +4181,7 @@ func TestRegressions(t *testing.T) {
 func TestFormulateRetryWorkflowWithParams(t *testing.T) {
 	// Test from issue #14769
 	ctx := logging.TestContext(t.Context())
-	wfClientSet := argofake.NewSimpleClientset()
+	wfClientSet := argofake.NewClientset()
 
 	// Use the workflow from out.yaml as test input
 	workflowYaml := `apiVersion: argoproj.io/v1alpha1

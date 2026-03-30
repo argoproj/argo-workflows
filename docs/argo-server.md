@@ -70,6 +70,9 @@ To access the UI, use one of the following:
 kubectl -n argo port-forward svc/argo-server 2746:2746
 ```
 
+!!! Note "Helm installations"
+    If you installed Argo Workflows using the [Helm chart](https://github.com/argoproj/argo-helm/tree/main/charts/argo-workflows), use `svc/argo-workflows-server` instead of `svc/argo-server`.
+
 Then visit: <https://localhost:2746>
 
 ### Expose a `LoadBalancer`

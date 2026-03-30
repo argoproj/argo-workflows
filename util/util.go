@@ -12,11 +12,11 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
-	"github.com/argoproj/argo-workflows/v3/util/retry"
-	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
+	"github.com/argoproj/argo-workflows/v4/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	errorsutil "github.com/argoproj/argo-workflows/v4/util/errors"
+	"github.com/argoproj/argo-workflows/v4/util/retry"
+	waitutil "github.com/argoproj/argo-workflows/v4/util/wait"
 )
 
 type Closer interface {
@@ -113,10 +113,10 @@ func GenerateFieldSelectorFromWorkflowName(wfName string) string {
 
 func RecoverWorkflowNameFromSelectorStringIfAny(selector string) string {
 	const tag = "metadata.name="
-	if starts := strings.Index(selector, tag); starts > -1 {
-		suffix := selector[starts+len(tag):]
-		if ends := strings.Index(suffix, ","); ends > -1 {
-			return strings.TrimSpace(suffix[:ends])
+	if _, after, ok := strings.Cut(selector, tag); ok {
+		suffix := after
+		if before, _, ok := strings.Cut(suffix, ","); ok {
+			return strings.TrimSpace(before)
 		}
 		return strings.TrimSpace(suffix)
 	}

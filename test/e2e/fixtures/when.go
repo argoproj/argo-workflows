@@ -17,17 +17,16 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"k8s.io/utils/ptr"
 
 	"github.com/upper/db/v4"
 
-	"github.com/argoproj/argo-workflows/v3/config"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/util/sqldb"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
+	"github.com/argoproj/argo-workflows/v4/config"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/sqldb"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
 )
 
 type When struct {
@@ -305,7 +304,7 @@ func describeListOptions(opts metav1.ListOptions) string {
 //   - just because the Workflow completed
 //
 // * `Condition` - a condition - `ToFinish` by default
-func (w *When) WaitForWorkflow(options ...interface{}) *When {
+func (w *When) WaitForWorkflow(options ...any) *When {
 	w.t.Helper()
 	timeout := defaultTimeout
 	condition := ToBeDone
@@ -345,11 +344,10 @@ func (w *When) WaitForWorkflow(options ...interface{}) *When {
 	for {
 		select {
 		case event := <-watch.ResultChan():
-			wf, ok := event.Object.(*wfv1.Workflow)
-			if ok {
+			if wf, ok := event.Object.(*wfv1.Workflow); ok {
 				w.hydrateWorkflow(wf)
 				printWorkflow(wf)
-				if ok, message := condition(wf); ok {
+				if condOk, message := condition(wf); condOk {
 					_, _ = fmt.Printf("Condition %q met after %s\n", message, time.Since(start).Truncate(time.Second))
 					w.wf = wf
 					return w
@@ -480,8 +478,9 @@ func (w *When) hydrateWorkflow(wf *wfv1.Workflow) {
 	}
 }
 
-// Wait creates slow flaky tests
-// DEPRECATED: do not use this
+// Wait creates slow flaky tests.
+//
+// do not use this.
 func (w *When) Wait(timeout time.Duration) *When {
 	w.t.Helper()
 	_, _ = fmt.Println("Waiting for", timeout.String())
@@ -515,9 +514,9 @@ func (w *When) RemoveFinalizers(shouldErr bool) *When {
 func (w *When) AddNamespaceLimit(limit string) *When {
 	w.t.Helper()
 	ctx := logging.TestContext(w.t.Context())
-	patchMap := make(map[string]interface{})
-	metadata := make(map[string]interface{})
-	labels := make(map[string]interface{})
+	patchMap := make(map[string]any)
+	metadata := make(map[string]any)
+	labels := make(map[string]any)
 	labels["workflows.argoproj.io/parallelism-limit"] = limit
 	metadata["labels"] = labels
 	patchMap["metadata"] = metadata
@@ -551,7 +550,7 @@ func (w *When) WaitForPod(condition PodCondition) *When {
 	timeout := defaultTimeout
 	watch, err := w.kubeClient.CoreV1().Pods(Namespace).Watch(
 		ctx,
-		metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + w.wf.Name, TimeoutSeconds: ptr.To(int64(timeout.Seconds()))},
+		metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + w.wf.Name, TimeoutSeconds: new(int64(timeout.Seconds()))},
 	)
 	if err != nil {
 		w.t.Fatal(err)
@@ -655,7 +654,7 @@ func (w *When) setupDBSession() db.Session {
 	}
 
 	ctx := logging.TestContext(w.t.Context())
-	dbSession, err := sqldb.CreateDBSession(ctx, w.kubeClient, Namespace, w.config.Synchronization.DBConfig)
+	dbSession, _, err := sqldb.CreateDBSession(ctx, w.kubeClient, Namespace, w.config.Synchronization.DBConfig)
 	if err != nil {
 		w.t.Fatal(err)
 	}
@@ -671,7 +670,8 @@ func (w *When) SetupDatabaseSemaphore(name string, limit int) *When {
 	limitTable := w.config.Synchronization.LimitTableName
 
 	// Insert or update the semaphore limit
-	if w.config.Synchronization.PostgreSQL != nil {
+	switch {
+	case w.config.Synchronization.PostgreSQL != nil:
 		_, err := dbSession.SQL().Exec(
 			fmt.Sprintf("INSERT INTO %s (name, sizelimit) VALUES ($1, $2) ON CONFLICT (name) DO UPDATE SET sizelimit = $2",
 				limitTable),
@@ -679,7 +679,7 @@ func (w *When) SetupDatabaseSemaphore(name string, limit int) *When {
 		if err != nil {
 			w.t.Fatal(err)
 		}
-	} else if w.config.Synchronization.MySQL != nil {
+	case w.config.Synchronization.MySQL != nil:
 		_, err := dbSession.SQL().Exec(
 			fmt.Sprintf("INSERT INTO %s (name, sizelimit) VALUES (?, ?) ON DUPLICATE KEY UPDATE sizelimit = ?",
 				limitTable),
@@ -687,7 +687,7 @@ func (w *When) SetupDatabaseSemaphore(name string, limit int) *When {
 		if err != nil {
 			w.t.Fatal(err)
 		}
-	} else {
+	default:
 		w.t.Fatal("Require one synchronization database to be setup")
 	}
 	return w
@@ -712,7 +712,8 @@ func (w *When) SetDBSemaphoreState(name string, workflowKey string, controller *
 	}
 
 	// Insert or update the semaphore state
-	if w.config.Synchronization.PostgreSQL != nil {
+	switch {
+	case w.config.Synchronization.PostgreSQL != nil:
 		_, err := dbSession.SQL().Exec(
 			fmt.Sprintf("INSERT INTO %s (name, workflowkey, controller, held, priority, time) VALUES ($1, $2, $3, $4, $5, $6) "+
 				"ON CONFLICT (name, workflowkey, controller) DO UPDATE SET held = $4, priority = $5, time = $6",
@@ -721,7 +722,7 @@ func (w *When) SetDBSemaphoreState(name string, workflowKey string, controller *
 		if err != nil {
 			w.t.Fatal(err)
 		}
-	} else if w.config.Synchronization.MySQL != nil {
+	case w.config.Synchronization.MySQL != nil:
 		_, err := dbSession.SQL().Exec(
 			fmt.Sprintf("INSERT INTO %s (name, workflowkey, controller, held, priority, time) VALUES (?, ?, ?, ?, ?, ?) "+
 				"ON DUPLICATE KEY UPDATE held = ?, priority = ?, time = ?",
@@ -730,7 +731,7 @@ func (w *When) SetDBSemaphoreState(name string, workflowKey string, controller *
 		if err != nil {
 			w.t.Fatal(err)
 		}
-	} else {
+	default:
 		w.t.Fatal("Require one synchronization database to be setup")
 	}
 	return w
@@ -750,7 +751,8 @@ func (w *When) SetDBSemaphoreControllerHB(name *string, timestamp time.Time) *Wh
 	}
 
 	// Insert or update the semaphore state
-	if w.config.Synchronization.PostgreSQL != nil {
+	switch {
+	case w.config.Synchronization.PostgreSQL != nil:
 		_, err := dbSession.SQL().Exec(
 			fmt.Sprintf("INSERT INTO %s (controller, time) VALUES ($1, $2) "+
 				"ON CONFLICT (controller) DO UPDATE SET time = $2",
@@ -759,7 +761,7 @@ func (w *When) SetDBSemaphoreControllerHB(name *string, timestamp time.Time) *Wh
 		if err != nil {
 			w.t.Fatal(err)
 		}
-	} else if w.config.Synchronization.MySQL != nil {
+	case w.config.Synchronization.MySQL != nil:
 		_, err := dbSession.SQL().Exec(
 			fmt.Sprintf("INSERT INTO %s (controller, time) VALUES (?, ?) "+
 				"ON DUPLICATE KEY UPDATE time = ?",
@@ -768,7 +770,7 @@ func (w *When) SetDBSemaphoreControllerHB(name *string, timestamp time.Time) *Wh
 		if err != nil {
 			w.t.Fatal(err)
 		}
-	} else {
+	default:
 		w.t.Fatal("Require one synchronization database to be setup")
 	}
 	return w
@@ -871,8 +873,8 @@ func (w *When) SuspendCronWorkflow() *When {
 func (w *When) setCronWorkflowSuspend(suspend bool) *When {
 	ctx := logging.TestContext(w.t.Context())
 	w.t.Helper()
-	spec := map[string]interface{}{"suspend": suspend}
-	data, err := json.Marshal(map[string]interface{}{"spec": spec})
+	spec := map[string]any{"suspend": suspend}
+	data, err := json.Marshal(map[string]any{"spec": spec})
 	if err != nil {
 		w.t.Fatal(err)
 	}
@@ -886,7 +888,7 @@ func (w *When) setCronWorkflowSuspend(suspend bool) *When {
 func (w *When) ShutdownWorkflow(strategy wfv1.ShutdownStrategy) *When {
 	w.t.Helper()
 	ctx := logging.TestContext(w.t.Context())
-	data, err := json.Marshal(map[string]interface{}{"spec": map[string]interface{}{"shutdown": strategy}})
+	data, err := json.Marshal(map[string]any{"spec": map[string]any{"shutdown": strategy}})
 	if err != nil {
 		w.t.Fatal(err)
 	}

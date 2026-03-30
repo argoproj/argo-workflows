@@ -11,11 +11,11 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	eventsourcepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/eventsource"
-	"github.com/argoproj/argo-workflows/v3/server/auth"
-	"github.com/argoproj/argo-workflows/v3/util/logs"
+	eventsourcepkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/eventsource"
+	"github.com/argoproj/argo-workflows/v4/server/auth"
+	"github.com/argoproj/argo-workflows/v4/util/logs"
 
-	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
+	sutils "github.com/argoproj/argo-workflows/v4/server/utils"
 )
 
 type eventSourceServer struct{}

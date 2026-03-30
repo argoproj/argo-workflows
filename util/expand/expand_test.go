@@ -8,9 +8,9 @@ import (
 )
 
 func TestExpand(t *testing.T) {
-	for i := 0; i < 1; i++ { // loop 100 times, because map ordering is not determisitic
+	for i := range 1 { // loop 100 times, because map ordering is not determisitic
 		t.Run(fmt.Sprint(i), func(t *testing.T) {
-			before := map[string]interface{}{
+			before := map[string]any{
 				"a.b":   1,
 				"a.c.d": 2,
 				"a":     3, // should be deleted
@@ -19,10 +19,10 @@ func TestExpand(t *testing.T) {
 			}
 			after := Expand(before)
 			assert.Len(t, before, 5, "original map unchanged")
-			assert.Equal(t, map[string]interface{}{
-				"a": map[string]interface{}{
+			assert.Equal(t, map[string]any{
+				"a": map[string]any{
 					"b": 1,
-					"c": map[string]interface{}{
+					"c": map[string]any{
 						"d": 2,
 					},
 				},

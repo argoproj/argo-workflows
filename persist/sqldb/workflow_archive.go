@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -15,18 +16,22 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
-	"github.com/argoproj/argo-workflows/v3/util/instanceid"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/util/sqldb"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	sutils "github.com/argoproj/argo-workflows/v4/server/utils"
+	"github.com/argoproj/argo-workflows/v4/util/env"
+	"github.com/argoproj/argo-workflows/v4/util/instanceid"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/sqldb"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 const (
 	archiveTableName        = "argo_archived_workflows"
 	archiveLabelsTableName  = archiveTableName + "_labels"
 	postgresNullReplacement = "ARGO_POSTGRES_NULL_REPLACEMENT"
+	// Default timeout in seconds for database queries in GetWorkflowForEstimator to prevent blocking workflow execution
+	// Can be overridden by WORKFLOW_ESTIMATION_DB_QUERY_TIMEOUT_SECONDS environment variable
+	defaultEstimationDBQueryTimeoutSeconds = 5
 )
 
 type archivedWorkflowMetadata struct {
@@ -44,6 +49,7 @@ type archivedWorkflowMetadata struct {
 	Labels            string `db:"labels,omitempty"`
 	Annotations       string `db:"annotations,omitempty"`
 	Suspend           *bool  `db:"suspend,omitempty"`
+	Arguments         string `db:"arguments,omitempty"`
 	Message           string `db:"message,omitempty"`
 	Progress          string `db:"progress,omitempty"`
 	EstimatedDuration int    `db:"estimatedduration,omitempty"`
@@ -97,8 +103,8 @@ func (r *workflowArchive) IsEnabled() bool {
 }
 
 // NewWorkflowArchive returns a new workflowArchive
-func NewWorkflowArchive(session db.Session, clusterName, managedNamespace string, instanceIDService instanceid.Service) WorkflowArchive {
-	return &workflowArchive{session: session, clusterName: clusterName, managedNamespace: managedNamespace, instanceIDService: instanceIDService, dbType: sqldb.DBTypeFor(session)}
+func NewWorkflowArchive(session db.Session, clusterName, managedNamespace string, instanceIDService instanceid.Service, dbType sqldb.DBType) WorkflowArchive {
+	return &workflowArchive{session: session, clusterName: clusterName, managedNamespace: managedNamespace, instanceIDService: instanceIDService, dbType: dbType}
 }
 
 func (r *workflowArchive) ArchiveWorkflow(ctx context.Context, wf *wfv1.Workflow) error {
@@ -177,6 +183,7 @@ func (r *workflowArchive) ListWorkflows(ctx context.Context, options sutils.List
 				db.Raw("coalesce(workflow->'$.metadata.annotations', '{}') as annotations"),
 				db.Raw("coalesce(workflow->>'$.status.progress', '') as progress"),
 				db.Raw("workflow->>'$.spec.suspend'"),
+				db.Raw("coalesce(workflow->>'$.spec.arguments', '{}') as arguments"),
 				db.Raw("coalesce(workflow->>'$.status.message', '') as message"),
 				db.Raw("coalesce(workflow->>'$.status.estimatedDuration', '0') as estimatedduration"),
 				db.Raw("coalesce(workflow->'$.status.resourcesDuration', '{}') as resourcesduration"),
@@ -201,6 +208,7 @@ func (r *workflowArchive) ListWorkflows(ctx context.Context, options sutils.List
 				db.Raw("coalesce(workflow->'metadata', '{}') as metadata"),
 				db.Raw("coalesce(workflow->'status', '{}') as status"),
 				db.Raw("workflow->'spec'->>'suspend' as suspend"),
+				db.Raw("coalesce(workflow->'spec'->'arguments', '{}') as arguments"),
 			).
 			From(archiveTableName).
 			Where(r.clusterManagedNamespaceAndInstanceID())
@@ -215,6 +223,7 @@ func (r *workflowArchive) ListWorkflows(ctx context.Context, options sutils.List
 			db.Raw("coalesce(metadata->>'annotations', '{}') as annotations"),
 			db.Raw("coalesce(status->>'progress', '') as progress"),
 			"suspend",
+			db.Raw("coalesce(arguments::text, '{}') as arguments"),
 			db.Raw("coalesce(status->>'message', '') as message"),
 			db.Raw("coalesce(status->>'estimatedDuration', '0') as estimatedduration"),
 			db.Raw("coalesce(status->>'resourcesDuration', '{}') as resourcesduration"),
@@ -251,6 +260,13 @@ func (r *workflowArchive) ListWorkflows(ctx context.Context, options sutils.List
 			return nil, err
 		}
 
+		arguments := wfv1.Arguments{}
+		if md.Arguments != "" {
+			if err := json.Unmarshal([]byte(md.Arguments), &arguments); err != nil {
+				return nil, err
+			}
+		}
+
 		wfs[i] = wfv1.Workflow{
 			ObjectMeta: v1.ObjectMeta{
 				Name:              md.Name,
@@ -261,7 +277,8 @@ func (r *workflowArchive) ListWorkflows(ctx context.Context, options sutils.List
 				Annotations:       annotations,
 			},
 			Spec: wfv1.WorkflowSpec{
-				Suspend: md.Suspend,
+				Suspend:   md.Suspend,
+				Arguments: arguments,
 			},
 			Status: wfv1.WorkflowStatus{
 				Phase:             md.Phase,
@@ -288,8 +305,15 @@ func (r *workflowArchive) CountWorkflows(ctx context.Context, options sutils.Lis
 		selector := r.session.SQL().
 			Select(db.Raw("count(*) as total")).
 			From(archiveTableName).
-			Where(r.clusterManagedNamespaceAndInstanceID()).
-			And(namespaceEqual(options.Namespace)).
+			Where(r.clusterManagedNamespaceAndInstanceID())
+
+		if options.NamespaceFilter == "NotEquals" {
+			selector = selector.And(namespaceNotEqual(options.Namespace))
+		} else {
+			selector = selector.And(namespaceEqual(options.Namespace))
+		}
+
+		selector = selector.
 			And(namePrefixClause(options.NamePrefix)).
 			And(startedAtFromClause(options.MinStartedAt)).
 			And(startedAtToClause(options.MaxStartedAt)).
@@ -343,8 +367,15 @@ func (r *workflowArchive) countWorkflowsOptimized(options sutils.ListOptions) (i
 	sampleSelector := r.session.SQL().
 		Select(db.Raw("count(*) as total")).
 		From(archiveTableName).
-		Where(r.clusterManagedNamespaceAndInstanceID()).
-		And(namespaceEqual(options.Namespace)).
+		Where(r.clusterManagedNamespaceAndInstanceID())
+
+	if options.NamespaceFilter == "NotEquals" {
+		sampleSelector = sampleSelector.And(namespaceNotEqual(options.Namespace))
+	} else {
+		sampleSelector = sampleSelector.And(namespaceEqual(options.Namespace))
+	}
+
+	sampleSelector = sampleSelector.
 		And(namePrefixClause(options.NamePrefix)).
 		And(startedAtFromClause(options.MinStartedAt)).
 		And(startedAtToClause(options.MaxStartedAt)).
@@ -400,8 +431,15 @@ func (r *workflowArchive) HasMoreWorkflows(ctx context.Context, options sutils.L
 	selector := r.session.SQL().
 		Select("uid").
 		From(archiveTableName).
-		Where(r.clusterManagedNamespaceAndInstanceID()).
-		And(namespaceEqual(options.Namespace)).
+		Where(r.clusterManagedNamespaceAndInstanceID())
+
+	if options.NamespaceFilter == "NotEquals" {
+		selector = selector.And(namespaceNotEqual(options.Namespace))
+	} else {
+		selector = selector.And(namespaceEqual(options.Namespace))
+	}
+
+	selector = selector.
 		And(namePrefixClause(options.NamePrefix)).
 		And(startedAtFromClause(options.MinStartedAt)).
 		And(startedAtToClause(options.MaxStartedAt)).
@@ -489,6 +527,13 @@ func namespaceEqual(namespace string) db.Cond {
 	return db.Cond{}
 }
 
+func namespaceNotEqual(namespace string) db.Cond {
+	if namespace != "" {
+		return db.Cond{"namespace !=": namespace}
+	}
+	return db.Cond{}
+}
+
 func nameEqual(name string) db.Cond {
 	if name != "" {
 		return db.Cond{"name": name}
@@ -536,40 +581,39 @@ func (r *workflowArchive) GetWorkflow(ctx context.Context, uid string, namespace
 			And(db.Cond{"uid": uid}).
 			One(archivedWf)
 	} else {
-		if name != "" && namespace != "" {
-			total := &archivedWorkflowCount{}
-			err = r.session.SQL().
-				Select(db.Raw("count(*) as total")).
-				From(archiveTableName).
-				Where(r.clusterManagedNamespaceAndInstanceID()).
-				And(namespaceEqual(namespace)).
-				And(nameEqual(name)).
-				One(total)
-			if err != nil {
-				return nil, err
-			}
-			num := int64(total.Total)
-			if num > 1 {
-				logger.WithFields(logging.Fields{
-					"namespace": namespace,
-					"name":      name,
-					"num":       num,
-				}).Debug(ctx, "returning latest of archived workflows")
-			}
-			err = r.session.SQL().
-				Select("workflow").
-				From(archiveTableName).
-				Where(r.clusterManagedNamespaceAndInstanceID()).
-				And(namespaceEqual(namespace)).
-				And(nameEqual(name)).
-				OrderBy("-startedat").
-				One(archivedWf)
-		} else {
+		if name == "" || namespace == "" {
 			return nil, sutils.ToStatusError(fmt.Errorf("both name and namespace are required if uid is not specified"), codes.InvalidArgument)
 		}
+		total := &archivedWorkflowCount{}
+		err = r.session.SQL().
+			Select(db.Raw("count(*) as total")).
+			From(archiveTableName).
+			Where(r.clusterManagedNamespaceAndInstanceID()).
+			And(namespaceEqual(namespace)).
+			And(nameEqual(name)).
+			One(total)
+		if err != nil {
+			return nil, err
+		}
+		num := int64(total.Total)
+		if num > 1 {
+			logger.WithFields(logging.Fields{
+				"namespace": namespace,
+				"name":      name,
+				"num":       num,
+			}).Debug(ctx, "returning latest of archived workflows")
+		}
+		err = r.session.SQL().
+			Select("workflow").
+			From(archiveTableName).
+			Where(r.clusterManagedNamespaceAndInstanceID()).
+			And(namespaceEqual(namespace)).
+			And(nameEqual(name)).
+			OrderBy("-startedat").
+			One(archivedWf)
 	}
 	if err != nil {
-		if err == db.ErrNoMoreRows {
+		if errors.Is(err, db.ErrNoMoreRows) {
 			return nil, nil
 		}
 		return nil, err
@@ -588,7 +632,13 @@ func (r *workflowArchive) GetWorkflow(ctx context.Context, uid string, namespace
 }
 
 func (r *workflowArchive) GetWorkflowForEstimator(ctx context.Context, namespace string, requirements []labels.Requirement) (*wfv1.Workflow, error) {
-	selector := r.session.SQL().
+	// Add timeout to database query to prevent blocking workflow execution
+	// if database is slow or locked.
+	queryTimeoutSeconds := env.LookupEnvIntOr(ctx, "WORKFLOW_ESTIMATION_DB_QUERY_TIMEOUT_SECONDS", defaultEstimationDBQueryTimeoutSeconds)
+	queryCtx, cancel := context.WithTimeout(ctx, time.Duration(queryTimeoutSeconds)*time.Second)
+	defer cancel()
+
+	selector := r.session.WithContext(queryCtx).SQL().
 		Select("name", "namespace", "uid", "startedat", "finishedat").
 		From(archiveTableName).
 		Where(r.clusterManagedNamespaceAndInstanceID()).
@@ -624,7 +674,6 @@ func (r *workflowArchive) GetWorkflowForEstimator(ctx context.Context, namespace
 			FinishedAt: v1.Time{Time: awf.FinishedAt},
 		},
 	}, nil
-
 }
 
 func (r *workflowArchive) DeleteWorkflow(ctx context.Context, uid string) error {

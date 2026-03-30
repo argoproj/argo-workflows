@@ -8,23 +8,23 @@ import (
 
 	"github.com/expr-lang/expr"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/expr/env"
-	"github.com/argoproj/argo-workflows/v3/util/template"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/expr/env"
+	"github.com/argoproj/argo-workflows/v4/util/template"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 // wfScope contains the current scope of variables available when executing a template
 type wfScope struct {
 	tmpl  *wfv1.Template
-	scope map[string]interface{}
+	scope map[string]any
 }
 
 func createScope(tmpl *wfv1.Template) *wfScope {
 	scope := &wfScope{
 		tmpl:  tmpl,
-		scope: make(map[string]interface{}),
+		scope: make(map[string]any),
 	}
 	if tmpl != nil {
 		for _, param := range scope.tmpl.Inputs.Parameters {
@@ -60,8 +60,8 @@ func (s *wfScope) addArtifactToScope(key string, artifact wfv1.Artifact) {
 }
 
 // resolveVar resolves a parameter or artifact
-func (s *wfScope) resolveVar(v string) (interface{}, error) {
-	m := make(map[string]interface{})
+func (s *wfScope) resolveVar(v string) (any, error) {
+	m := make(map[string]any)
 	maps.Copy(m, s.scope)
 	if s.tmpl != nil {
 		for _, a := range s.tmpl.Inputs.Artifacts {
@@ -71,7 +71,7 @@ func (s *wfScope) resolveVar(v string) (interface{}, error) {
 	return template.ResolveVar(v, m)
 }
 
-func (s *wfScope) resolveParameter(p *wfv1.ValueFrom) (interface{}, error) {
+func (s *wfScope) resolveParameter(p *wfv1.ValueFrom) (any, error) {
 	if p == nil || (p.Parameter == "" && p.Expression == "") {
 		return "", nil
 	}
@@ -82,9 +82,8 @@ func (s *wfScope) resolveParameter(p *wfv1.ValueFrom) (interface{}, error) {
 			return nil, err
 		}
 		return expr.Run(program, env)
-	} else {
-		return s.resolveVar(p.Parameter)
 	}
+	return s.resolveVar(p.Parameter)
 }
 
 func (s *wfScope) resolveArtifact(ctx context.Context, art *wfv1.Artifact) (*wfv1.Artifact, error) {
@@ -93,19 +92,18 @@ func (s *wfScope) resolveArtifact(ctx context.Context, art *wfv1.Artifact) (*wfv
 	}
 
 	var err error
-	var val interface{}
+	var val any
 
 	if art.FromExpression != "" {
-		env := env.GetFuncMap(s.scope)
-		program, err := expr.Compile(art.FromExpression, expr.Env(env))
+		envMap := env.GetFuncMap(s.scope)
+		program, compileErr := expr.Compile(art.FromExpression, expr.Env(envMap))
+		if compileErr != nil {
+			return nil, compileErr
+		}
+		val, err = expr.Run(program, envMap)
 		if err != nil {
 			return nil, err
 		}
-		val, err = expr.Run(program, env)
-		if err != nil {
-			return nil, err
-		}
-
 	} else {
 		val, err = s.resolveVar(art.From)
 	}
@@ -117,11 +115,10 @@ func (s *wfScope) resolveArtifact(ctx context.Context, art *wfv1.Artifact) (*wfv
 	if !ok {
 		// If the workflow refers itself input artifacts in fromExpression, the val type is "*wfv1.Artifact"
 		ptArt, ok := val.(*wfv1.Artifact)
-		if ok {
-			valArt = *ptArt
-		} else {
+		if !ok {
 			return nil, errors.Errorf(errors.CodeBadRequest, "Variable {{%v}} is not an artifact", art)
 		}
+		valArt = *ptArt
 	}
 
 	if art.SubPath != "" {

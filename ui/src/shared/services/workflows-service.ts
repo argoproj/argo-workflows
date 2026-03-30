@@ -52,7 +52,8 @@ export const WorkflowsService = {
             'items.status.startedAt',
             'items.status.estimatedDuration',
             'items.status.progress',
-            'items.spec.suspend'
+            'items.spec.suspend',
+            'items.spec.arguments'
         ],
         name?: string,
         nameFilter?: NameFilterKeys,
@@ -64,8 +65,9 @@ export const WorkflowsService = {
         return requests.get(`api/v1/workflows/${namespace}?${params.join('&')}`).then(res => res.body as WorkflowList);
     },
 
-    get(namespace: string, name: string) {
-        return requests.get(`api/v1/workflows/${namespace}/${name}`).then(res => res.body as Workflow);
+    get(namespace: string, name: string, uid?: string) {
+        const params = uid ? `?uid=${uid}` : '';
+        return requests.get(`api/v1/workflows/${namespace}/${name}${params}`).then(res => res.body as Workflow);
     },
 
     getArchived(namespace: string, uid: string) {
@@ -112,7 +114,8 @@ export const WorkflowsService = {
             'result.type',
             'result.object.metadata.labels',
             'result.object.metadata.annotations',
-            'result.object.spec.suspend'
+            'result.object.spec.suspend',
+            'result.object.spec.arguments'
         ];
         params.push(`fields=${fields.join(',')}`);
         const url = `api/v1/workflow-events/${query.namespace || ''}?${params.join('&')}`;

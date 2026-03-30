@@ -59,7 +59,7 @@ spec:
       parameters:
       - name: num
     container:
-      image: alpine:3.6
+      image: alpine:3.23
       command: [sh, -c]
       args:
       - |
@@ -85,7 +85,7 @@ spec:
       parameters:
       - name: num
     container:
-      image: alpine:3.6
+      image: alpine:3.23
       command: [sh, -c]
       args:
         - echo $(({{inputs.parameters.num}}/2))

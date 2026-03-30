@@ -14,13 +14,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo-workflows/v3/server/auth"
-	"github.com/argoproj/argo-workflows/v3/server/auth/types"
-	"github.com/argoproj/argo-workflows/v3/util/instanceid"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo-workflows/v4/server/auth"
+	"github.com/argoproj/argo-workflows/v4/server/auth/types"
+	"github.com/argoproj/argo-workflows/v4/util/instanceid"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 func Test_metaData(t *testing.T) {
@@ -41,7 +41,7 @@ func Test_metaData(t *testing.T) {
 
 func TestNewOperation(t *testing.T) {
 	// set-up
-	client := fake.NewSimpleClientset(
+	client := fake.NewClientset(
 		&wfv1.ClusterWorkflowTemplate{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-cwft", Labels: map[string]string{common.LabelKeyControllerInstanceID: "my-instanceid"}},
 		},
@@ -201,7 +201,7 @@ func TestNewOperation(t *testing.T) {
 
 func Test_populateWorkflowMetadata(t *testing.T) {
 	// set-up
-	client := fake.NewSimpleClientset(
+	client := fake.NewClientset(
 		&wfv1.WorkflowTemplate{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-wft", Namespace: "my-ns", Labels: map[string]string{common.LabelKeyControllerInstanceID: "my-instanceid"}},
 		},
@@ -408,11 +408,74 @@ func Test_populateWorkflowMetadata(t *testing.T) {
 	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: workflow name expression must evaluate to a string, not a <nil>", <-recorder.Events)
 }
 
+func TestDispatchWorkflowMetadata(t *testing.T) {
+	tmpl := &wfv1.WorkflowTemplate{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "my-wft", Namespace: "my-ns",
+			Labels: map[string]string{common.LabelKeyControllerInstanceID: "my-instanceid"},
+		},
+		Spec: wfv1.WorkflowSpec{
+			WorkflowMetadata: &wfv1.WorkflowMetadata{
+				Labels:      map[string]string{"env": "from-template", "template-only": "yes"},
+				Annotations: map[string]string{"note": "from-template"},
+			},
+		},
+	}
+
+	dispatch := func(t *testing.T, binding wfv1.WorkflowEventBinding) wfv1.Workflow {
+		t.Helper()
+		client := fake.NewClientset(tmpl)
+		ctx := context.WithValue(logging.TestContext(t.Context()), auth.WfKey, client)
+		ctx = context.WithValue(ctx, auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
+		op, err := NewOperation(ctx, instanceid.NewService("my-instanceid"), record.NewFakeRecorder(6),
+			[]wfv1.WorkflowEventBinding{binding}, "my-ns", "", &wfv1.Item{Value: json.RawMessage(`{}`)})
+		require.NoError(t, err)
+		require.NoError(t, op.Dispatch(ctx))
+		list, err := client.ArgoprojV1alpha1().Workflows("my-ns").List(ctx, metav1.ListOptions{})
+		require.NoError(t, err)
+		require.Len(t, list.Items, 1)
+		return list.Items[0]
+	}
+
+	t.Run("AppliesTemplateMetadata", func(t *testing.T) {
+		wf := dispatch(t, wfv1.WorkflowEventBinding{
+			ObjectMeta: metav1.ObjectMeta{Name: "my-wfeb", Namespace: "my-ns"},
+			Spec: wfv1.WorkflowEventBindingSpec{
+				Event: wfv1.Event{Selector: "true"},
+				Submit: &wfv1.Submit{
+					WorkflowTemplateRef: wfv1.WorkflowTemplateRef{Name: "my-wft"},
+				},
+			},
+		})
+		assert.Equal(t, "from-template", wf.Labels["env"])
+		assert.Equal(t, "yes", wf.Labels["template-only"])
+		assert.Equal(t, "from-template", wf.Annotations["note"])
+	})
+
+	t.Run("EventBindingOverridesTemplate", func(t *testing.T) {
+		wf := dispatch(t, wfv1.WorkflowEventBinding{
+			ObjectMeta: metav1.ObjectMeta{Name: "my-wfeb", Namespace: "my-ns"},
+			Spec: wfv1.WorkflowEventBindingSpec{
+				Event: wfv1.Event{Selector: "true"},
+				Submit: &wfv1.Submit{
+					WorkflowTemplateRef: wfv1.WorkflowTemplateRef{Name: "my-wft"},
+					ObjectMeta: metav1.ObjectMeta{
+						Labels: map[string]string{"env": `"from-binding"`},
+					},
+				},
+			},
+		})
+		assert.Equal(t, "from-binding", wf.Labels["env"])
+		assert.Equal(t, "yes", wf.Labels["template-only"])
+		assert.Equal(t, "from-template", wf.Annotations["note"])
+	})
+}
+
 func Test_expressionEnvironment(t *testing.T) {
 	env, err := expressionEnvironment(logging.TestContext(t.Context()), "my-ns", "my-d", &wfv1.Item{Value: []byte(`{"foo":"bar"}`)})
 	require.NoError(t, err)
 	assert.Equal(t, "my-ns", env["namespace"])
 	assert.Equal(t, "my-d", env["discriminator"])
 	assert.Contains(t, env, "metadata")
-	assert.Equal(t, map[string]interface{}{"foo": "bar"}, env["payload"], "make sure we parse an object as a map")
+	assert.Equal(t, map[string]any{"foo": "bar"}, env["payload"], "make sure we parse an object as a map")
 }

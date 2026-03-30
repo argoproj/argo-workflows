@@ -70,6 +70,20 @@ func (mb *MetricBaseline) CaptureBaseline(expectedIncreases map[string]float64) 
 // specified in the map passed to CaptureBaseline()
 func (mb *MetricBaseline) ExpectIncrease() {
 	mb.t.Helper()
+	mb.checkIncreases(false)
+}
+
+// ExpectAtLeastIncrease checks that the metrics have increased by at least the amounts
+// specified in the map passed to CaptureBaseline(). This is useful for metrics where
+// the exact increase is not known, but we expect at least a minimum increase.
+func (mb *MetricBaseline) ExpectAtLeastIncrease() {
+	mb.t.Helper()
+	mb.checkIncreases(true)
+}
+
+// checkIncreases is the common implementation for ExpectIncrease and ExpectAtLeastIncrease
+func (mb *MetricBaseline) checkIncreases(atLeast bool) {
+	mb.t.Helper()
 
 	if len(mb.expectedIncreases) == 0 {
 		mb.t.Fatal("No expected increases stored. Call CaptureBaseline() first.")
@@ -82,11 +96,17 @@ func (mb *MetricBaseline) ExpectIncrease() {
 		currentValue := currentValues[metric]
 		actualIncrease := currentValue - baseline
 
-		mb.t.Logf("Metric %s: baseline=%f, current=%f, expected_increase=%f, actual_increase=%f",
-			metric, baseline, currentValue, expectedIncrease, actualIncrease)
-
-		assert.InDelta(mb.t, expectedIncrease, actualIncrease, 0.001,
-			"Expected %s to increase by %f, but it increased by %f (from %f to %f)", metric, expectedIncrease, actualIncrease, baseline, currentValue)
+		if atLeast {
+			mb.t.Logf("Metric %s: baseline=%f, current=%f, min_expected_increase=%f, actual_increase=%f",
+				metric, baseline, currentValue, expectedIncrease, actualIncrease)
+			assert.GreaterOrEqual(mb.t, actualIncrease, expectedIncrease,
+				"Expected %s to increase by at least %f, but it increased by %f (from %f to %f)", metric, expectedIncrease, actualIncrease, baseline, currentValue)
+		} else {
+			mb.t.Logf("Metric %s: baseline=%f, current=%f, expected_increase=%f, actual_increase=%f",
+				metric, baseline, currentValue, expectedIncrease, actualIncrease)
+			assert.InDelta(mb.t, expectedIncrease, actualIncrease, 0.001,
+				"Expected %s to increase by %f, but it increased by %f (from %f to %f)", metric, expectedIncrease, actualIncrease, baseline, currentValue)
+		}
 	}
 }
 

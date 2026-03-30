@@ -16,7 +16,7 @@ Name | Type | Description | Notes
 **endpoint** | **String** | Endpoint is the hostname of the bucket endpoint |  [optional]
 **insecure** | **Boolean** | Insecure will connect to the service with TLS |  [optional]
 **keyFormat** | **String** | KeyFormat defines the format of how to store keys and can reference workflow variables. |  [optional]
-**keyPrefix** | **String** | KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts. DEPRECATED. Use KeyFormat instead |  [optional]
+**keyPrefix** | **String** | KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts.  Deprecated: Use KeyFormat instead. |  [optional]
 **region** | **String** | Region contains the optional bucket region |  [optional]
 **roleARN** | **String** | RoleARN is the Amazon Resource Name (ARN) of the role to assume. |  [optional]
 **secretKeySecret** | [**io.kubernetes.client.openapi.models.V1SecretKeySelector**](io.kubernetes.client.openapi.models.V1SecretKeySelector.md) |  |  [optional]

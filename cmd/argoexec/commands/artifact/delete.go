@@ -12,16 +12,16 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
-	"github.com/argoproj/argo-workflows/v3/cmd/argoexec/executor"
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	workflow "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
-	wfv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/util/retry"
-	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v4/cmd/argoexec/executor"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	workflow "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
+	wfv1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/retry"
+	waitutil "github.com/argoproj/argo-workflows/v4/util/wait"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 func NewArtifactDeleteCommand() *cobra.Command {
@@ -35,7 +35,8 @@ func NewArtifactDeleteCommand() *cobra.Command {
 			clientConfig := client.GetConfig()
 			wfExecutor := executor.Init(ctx, clientConfig, common.VarRunArgoPath)
 
-			defer wfExecutor.HandleError(ctx)
+			errHandler := wfExecutor.HandleError(ctx)
+			defer errHandler()
 			defer wfExecutor.FinalizeOutput(ctx)
 			defer func() {
 				err := wfExecutor.KillArtifactSidecars(ctx)
@@ -45,7 +46,6 @@ func NewArtifactDeleteCommand() *cobra.Command {
 			}()
 
 			if podName, ok := os.LookupEnv(common.EnvVarArtifactGCPodHash); ok {
-
 				config, err := clientConfig.ClientConfig()
 				workflowInterface := workflow.NewForConfigOrDie(config)
 				if err != nil {
@@ -56,7 +56,7 @@ func NewArtifactDeleteCommand() *cobra.Command {
 				artifactGCTaskInterface := workflowInterface.ArgoprojV1alpha1().WorkflowArtifactGCTasks(namespace)
 				labelSelector := fmt.Sprintf("%s = %s", common.LabelKeyArtifactGCPodHash, podName)
 
-				err = deleteArtifacts(labelSelector, ctx, artifactGCTaskInterface)
+				err = deleteArtifacts(ctx, labelSelector, artifactGCTaskInterface)
 				if err != nil {
 					wfExecutor.AddError(ctx, err)
 					return wfExecutor.HasError()
@@ -68,8 +68,7 @@ func NewArtifactDeleteCommand() *cobra.Command {
 	}
 }
 
-func deleteArtifacts(labelSelector string, ctx context.Context, artifactGCTaskInterface wfv1alpha1.WorkflowArtifactGCTaskInterface) error {
-
+func deleteArtifacts(ctx context.Context, labelSelector string, artifactGCTaskInterface wfv1alpha1.WorkflowArtifactGCTaskInterface) error {
 	taskList, err := artifactGCTaskInterface.List(ctx, metav1.ListOptions{LabelSelector: labelSelector})
 	if err != nil {
 		return err
@@ -78,7 +77,6 @@ func deleteArtifacts(labelSelector string, ctx context.Context, artifactGCTaskIn
 	for _, task := range taskList.Items {
 		task.Status.ArtifactResultsByNode = make(map[string]v1alpha1.ArtifactResultNodeStatus)
 		for nodeName, artifactNodeSpec := range task.Spec.ArtifactsByNode {
-
 			var archiveLocation *v1alpha1.ArtifactLocation
 			artResultNodeStatus := v1alpha1.ArtifactResultNodeStatus{ArtifactResults: make(map[string]v1alpha1.ArtifactResult)}
 			if artifactNodeSpec.ArchiveLocation != nil {
@@ -114,7 +112,7 @@ func deleteArtifacts(labelSelector string, ctx context.Context, artifactGCTaskIn
 
 			task.Status.ArtifactResultsByNode[nodeName] = artResultNodeStatus
 		}
-		patch, err := json.Marshal(map[string]interface{}{"status": v1alpha1.ArtifactGCStatus{ArtifactResultsByNode: task.Status.ArtifactResultsByNode}})
+		patch, err := json.Marshal(map[string]any{"status": v1alpha1.ArtifactGCStatus{ArtifactResultsByNode: task.Status.ArtifactResultsByNode}})
 		if err != nil {
 			return err
 		}
@@ -132,7 +130,6 @@ type resources struct {
 }
 
 func (r resources) GetSecret(ctx context.Context, name, key string) (string, error) {
-
 	path := filepath.Join(common.SecretVolMountPath, name, key)
 	if file, ok := r.Files[path]; ok {
 		return string(file), nil
@@ -141,10 +138,9 @@ func (r resources) GetSecret(ctx context.Context, name, key string) (string, err
 	file, err := os.ReadFile(path)
 	if err != nil {
 		return "", err
-	} else {
-		r.Files[path] = file
-		return string(file), err
 	}
+	r.Files[path] = file
+	return string(file), nil
 }
 
 func (r resources) GetConfigMapKey(ctx context.Context, name, key string) (string, error) {

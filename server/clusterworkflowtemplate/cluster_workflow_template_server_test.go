@@ -7,17 +7,20 @@ import (
 	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	authorizationv1 "k8s.io/api/authorization/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
+	k8stesting "k8s.io/client-go/testing"
 
-	clusterwftmplpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	wftFake "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo-workflows/v3/server/auth"
-	"github.com/argoproj/argo-workflows/v3/server/auth/types"
-	"github.com/argoproj/argo-workflows/v3/util/instanceid"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/creator"
+	clusterwftmplpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/clusterworkflowtemplate"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	wftFake "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo-workflows/v4/server/auth"
+	"github.com/argoproj/argo-workflows/v4/server/auth/types"
+	"github.com/argoproj/argo-workflows/v4/util/instanceid"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/creator"
 )
 
 var unlabelled, cwftObj2, cwftObj3 v1alpha1.ClusterWorkflowTemplate
@@ -152,8 +155,13 @@ const userEmailLabel = "my-sub.at.your.org"
 
 func getClusterWorkflowTemplateServer(t *testing.T) (clusterwftmplpkg.ClusterWorkflowTemplateServiceServer, context.Context) {
 	t.Helper()
-	kubeClientSet := fake.NewSimpleClientset()
-	wfClientset := wftFake.NewSimpleClientset(&unlabelled, &cwftObj2, &cwftObj3)
+	kubeClientSet := fake.NewClientset()
+	kubeClientSet.PrependReactor("create", "selfsubjectaccessreviews", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		return true, &authorizationv1.SelfSubjectAccessReview{
+			Status: authorizationv1.SubjectAccessReviewStatus{Allowed: true},
+		}, nil
+	})
+	wfClientset := wftFake.NewClientset(&unlabelled, &cwftObj2, &cwftObj3)
 	ctx := context.WithValue(logging.TestContext(t.Context()), auth.WfKey, wfClientset)
 	ctx = context.WithValue(ctx, auth.KubeKey, kubeClientSet)
 	ctx = context.WithValue(ctx, auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}, Email: "my-sub@your.org"})
@@ -206,6 +214,25 @@ func TestWorkflowTemplateServer_GetClusterWorkflowTemplate(t *testing.T) {
 			Name: "cluster-workflow-template-whalesay-template",
 		})
 		require.Error(t, err)
+	})
+	t.Run("Unauthorized", func(t *testing.T) {
+		kubeClientSet := fake.NewClientset()
+		kubeClientSet.PrependReactor("create", "selfsubjectaccessreviews", func(action k8stesting.Action) (bool, runtime.Object, error) {
+			return true, &authorizationv1.SelfSubjectAccessReview{
+				Status: authorizationv1.SubjectAccessReviewStatus{Allowed: false},
+			}, nil
+		})
+		wfClientset := wftFake.NewClientset(&cwftObj2)
+		ctx := context.WithValue(context.WithValue(context.WithValue(logging.TestContext(t.Context()),
+			auth.WfKey, wfClientset),
+			auth.KubeKey, kubeClientSet),
+			auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
+		server := NewClusterWorkflowTemplateServer(instanceid.NewService("my-instanceid"), nil, nil)
+		_, err := server.GetClusterWorkflowTemplate(ctx, &clusterwftmplpkg.ClusterWorkflowTemplateGetRequest{
+			Name: "cluster-workflow-template-whalesay-template2",
+		})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "PermissionDenied")
 	})
 }
 
@@ -269,13 +296,13 @@ func TestWorkflowTemplateServer_UpdateClusterWorkflowTemplate(t *testing.T) {
 		req := &clusterwftmplpkg.ClusterWorkflowTemplateUpdateRequest{
 			Template: cwftObj2.DeepCopy(),
 		}
-		req.Template.Spec.Templates[0].Container.Image = "alpine:latest"
+		req.Template.Spec.Templates[0].Container.Image = "alpine:3.23"
 		cwftRsp, err := server.UpdateClusterWorkflowTemplate(ctx, req)
 		require.NoError(t, err)
 		assert.Contains(t, cwftRsp.Labels, common.LabelKeyActor)
 		assert.Equal(t, string(creator.ActionUpdate), cwftRsp.Labels[common.LabelKeyAction])
 		assert.Equal(t, userEmailLabel, cwftRsp.Labels[common.LabelKeyActorEmail])
-		assert.Equal(t, "alpine:latest", cwftRsp.Spec.Templates[0].Container.Image)
+		assert.Equal(t, "alpine:3.23", cwftRsp.Spec.Templates[0].Container.Image)
 	})
 	t.Run("Unlabelled", func(t *testing.T) {
 		_, err := server.UpdateClusterWorkflowTemplate(ctx, &clusterwftmplpkg.ClusterWorkflowTemplateUpdateRequest{

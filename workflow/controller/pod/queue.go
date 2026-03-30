@@ -15,10 +15,10 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	typedv1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
-	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/signal"
+	errorsutil "github.com/argoproj/argo-workflows/v4/util/errors"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/signal"
 )
 
 func (c *Controller) runPodCleanup(ctx context.Context) {
@@ -63,7 +63,7 @@ func (c *Controller) signalContainers(ctx context.Context, namespace string, pod
 			continue
 		}
 		// problems are already logged at info level, so we just ignore errors here
-		_ = signal.SignalContainer(ctx, c.restConfig, pod, container.Name, sig)
+		_ = signal.Container(ctx, c.restConfig, pod, container.Name, sig)
 	}
 	if pod.Spec.TerminationGracePeriodSeconds == nil {
 		return 30 * time.Second, nil
@@ -110,7 +110,7 @@ func (c *Controller) processNextPodCleanupItem(ctx context.Context) bool {
 		c.workqueue.Done(key)
 	}()
 
-	namespace, podName, action := parsePodCleanupKey(key)
+	namespace, podName, action, uid := parsePodCleanupKey(key)
 	ctx, log := c.log.WithFields(logging.Fields{"key": key, "action": action, "namespace": namespace, "podName": podName}).InContext(ctx)
 	log.Info(ctx, "cleaning up pod")
 	err := func() error {
@@ -146,6 +146,21 @@ func (c *Controller) processNextPodCleanupItem(ctx context.Context) bool {
 			if err != nil && !apierr.IsNotFound(err) {
 				return err
 			}
+		case deletePodByUID:
+			pods := c.kubeclientset.CoreV1().Pods(namespace)
+			if err := c.patchPodForCleanup(ctx, pods, namespace, podName, false); err != nil {
+				return err
+			}
+			propagation := metav1.DeletePropagationBackground
+			podUID := types.UID(uid)
+			err := pods.Delete(ctx, podName, metav1.DeleteOptions{
+				PropagationPolicy:  &propagation,
+				GracePeriodSeconds: c.config.PodGCGracePeriodSeconds,
+				Preconditions:      &metav1.Preconditions{UID: &podUID},
+			})
+			if err != nil && !apierr.IsNotFound(err) {
+				return err
+			}
 		case removeFinalizer:
 			pods := c.kubeclientset.CoreV1().Pods(namespace)
 			if err := c.patchPodForCleanup(ctx, pods, namespace, podName, false); err != nil {
@@ -177,4 +192,9 @@ func (c *Controller) queuePodForCleanupAfter(ctx context.Context, namespace stri
 		logCtx.Warn(ctx, "queueing pod for cleanup now, rather than delayed")
 		c.workqueue.AddRateLimited(newPodCleanupKey(namespace, podName, action))
 	}
+}
+
+func (c *Controller) queuePodForCleanupByUID(ctx context.Context, namespace string, podName string, uid string) {
+	c.log.WithFields(logging.Fields{"namespace": namespace, "podName": podName, "uid": uid, "action": deletePodByUID}).Info(ctx, "queueing pod for cleanup by UID")
+	c.workqueue.AddRateLimited(newPodCleanupKeyWithUID(namespace, podName, deletePodByUID, uid))
 }

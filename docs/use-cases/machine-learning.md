@@ -4,7 +4,7 @@
 
 * Try out [Hera](https://hera.readthedocs.io/en/stable/) for writing Workflows in Python.
     * Also read: [How To Get the Most out of Hera for Data Science](https://pipekit.io/blog/how-to-get-the-most-out-of-hera-for-data-science)
-* Try out the [Go and Java SDKs](../client-libraries.md).
+* Try out the [Go, Java, and Typescript SDKs](../client-libraries.md).
 
 ## Videos
 

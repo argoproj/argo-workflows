@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 func TestUninitalized(t *testing.T) {
@@ -20,12 +20,12 @@ func TestInitalized(t *testing.T) {
 	countUndefined := 0
 	countMutex := 0
 	fn := func(_ context.Context, deprecation, _ string) {
-		count += 1
+		count++
 		if deprecation == "undefined" {
-			countUndefined += 1
+			countUndefined++
 		}
 		if deprecation == "synchronization mutex" {
-			countMutex += 1
+			countMutex++
 		}
 	}
 	Initialize(fn)

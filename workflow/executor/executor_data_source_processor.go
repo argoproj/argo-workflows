@@ -3,7 +3,7 @@ package executor
 import (
 	"context"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
 type executorDataSourceProcessor struct {
@@ -16,7 +16,7 @@ func newExecutorDataSourceProcessor(we *WorkflowExecutor) *executorDataSourcePro
 	}
 }
 
-func (ep *executorDataSourceProcessor) ProcessArtifactPaths(ctx context.Context, artifacts *wfv1.ArtifactPaths) (interface{}, error) {
+func (ep *executorDataSourceProcessor) ProcessArtifactPaths(ctx context.Context, artifacts *wfv1.ArtifactPaths) (any, error) {
 	driverArt, err := ep.we.newDriverArt(&artifacts.Artifact)
 	if err != nil {
 		return nil, err

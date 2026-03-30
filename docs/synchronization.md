@@ -83,8 +83,8 @@ metadata:
 spec:
   synchronization:
     mutexes:
-      - database:
-          key: bar
+      - database: true
+        name: bar
 ```
 
 And a Workflow that uses a Workflow-level database semaphore would look like this:

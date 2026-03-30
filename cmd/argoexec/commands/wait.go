@@ -7,9 +7,11 @@ import (
 
 	"github.com/argoproj/pkg/stats"
 	"github.com/spf13/cobra"
+	"go.opentelemetry.io/otel/trace"
 
-	"github.com/argoproj/argo-workflows/v3/cmd/argoexec/executor"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/cmd/argoexec/executor"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/executor/tracing"
 )
 
 func NewWaitCommand() *cobra.Command {
@@ -19,7 +21,7 @@ func NewWaitCommand() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			err := waitContainer(cmd.Context())
 			if err != nil {
-				return fmt.Errorf("%+v", err)
+				return fmt.Errorf("%w", err)
 			}
 			return nil
 		},
@@ -27,15 +29,24 @@ func NewWaitCommand() *cobra.Command {
 	return &command
 }
 
-// nolint: contextcheck
+//nolint:contextcheck
 func waitContainer(ctx context.Context) error {
+	ctx = tracing.InjectTraceContext(ctx)
 	wfExecutor := executor.Init(ctx, clientConfig, varRunArgo)
+	defer func() {
+		if err := wfExecutor.Tracing.Shutdown(context.WithoutCancel(ctx)); err != nil {
+			logging.RequireLoggerFromContext(ctx).WithError(err).Error(ctx, "Failed to shutdown tracing")
+		}
+	}()
+	ctx, span := wfExecutor.Tracing.StartRunWaitContainer(ctx, wfExecutor.WorkflowName(), wfExecutor.Namespace)
+	defer span.End()
 
 	// Don't allow cancellation to impact capture of results, parameters, artifacts, or defers.
 	//nolint:contextcheck
-	bgCtx := logging.RequireLoggerFromContext(ctx).NewBackgroundContext()
+	bgCtx := trace.ContextWithSpan(logging.RequireLoggerFromContext(ctx).NewBackgroundContext(), span)
 
-	defer wfExecutor.HandleError(bgCtx)    // Must be placed at the bottom of defers stack.
+	errHandler := wfExecutor.HandleError(bgCtx)
+	defer errHandler()                     // Must be placed at the bottom of defers stack.
 	defer wfExecutor.FinalizeOutput(bgCtx) // Ensures the LabelKeyReportOutputsCompleted is set to true.
 	defer func() {
 		err := wfExecutor.KillArtifactSidecars(bgCtx)
@@ -44,6 +55,7 @@ func waitContainer(ctx context.Context) error {
 		}
 	}()
 	defer stats.LogStats()
+
 	stats.StartStatsTicker(5 * time.Minute)
 
 	// Create a new empty (placeholder) task result with LabelKeyReportOutputsCompleted set to false.

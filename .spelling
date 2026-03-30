@@ -25,6 +25,7 @@
 5xx
 8Ki
 90m
+@filename
 Alexandre
 Alibaba
 Ang
@@ -134,12 +135,14 @@ Valasek
 Webhooks
 Welch
 WorkflowEventBinding
+WorkflowTaskResult
 WorkflowTemplate
 WorkflowTemplates
 a.m.
 anded
 apis
 architecting
+arg
 argo
 argoexec
 argoproj
@@ -173,7 +176,9 @@ env
 errored
 expr
 fibonacci
+filename
 finalizer
+gRPC
 gitops
 goroutine
 goroutines
@@ -191,11 +196,13 @@ k8s-jobs
 kube
 kube-apiserver
 kube-scheduler
+kubeconfig
 kubectl
 kubelet
 kubernetes
 liveness
 localhost
+marshaled
 maxFailures
 maxSuccess
 md
@@ -233,6 +240,7 @@ shortcodes
 stateful
 stderr
 symlinks
+syscall
 temporality
 tolerations
 triaged

@@ -14,16 +14,16 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/util/retry"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/executor/mocks"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/executor/mocks"
 )
 
 // TestResourceFlags tests whether Resource Flags
 // are properly passed to `kubectl` command
 func TestResourceFlags(t *testing.T) {
 	manifestPath := "../../examples/hello-world.yaml"
-	fakeClientset := fake.NewSimpleClientset()
+	fakeClientset := fake.NewClientset()
 	fakeFlags := []string{"--fake=true"}
 
 	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
@@ -66,7 +66,7 @@ func TestResourceFlags(t *testing.T) {
 // are properly passed to `kubectl patch` command
 func TestResourcePatchFlags(t *testing.T) {
 	fakeFlags := []string{"pod", "mypod"}
-	fakeClientset := fake.NewSimpleClientset()
+	fakeClientset := fake.NewClientset()
 	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
 
 	tests := []struct {
@@ -197,7 +197,6 @@ func TestInferSelfLink(t *testing.T) {
 		Kind:    "Namespace",
 	})
 	assert.Equal(t, "api/v1/namespaces/test-name", inferObjectSelfLink(obj))
-
 }
 
 // TestResourceExecRetry tests whether Exec retries transitive errors
@@ -205,7 +204,7 @@ func TestResourceExecRetry(t *testing.T) {
 	we := WorkflowExecutor{
 		PodName:         fakePodName,
 		Template:        wfv1.Template{},
-		ClientSet:       fake.NewSimpleClientset(),
+		ClientSet:       fake.NewClientset(),
 		Namespace:       fakeNamespace,
 		RuntimeExecutor: &mocks.ContainerRuntimeExecutor{},
 	}

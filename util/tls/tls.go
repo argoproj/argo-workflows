@@ -19,7 +19,7 @@ import (
 
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/argoproj/argo-workflows/v3/util"
+	"github.com/argoproj/argo-workflows/v4/util"
 )
 
 const (
@@ -30,7 +30,7 @@ const (
 	tlsKeySecretKey = "tls.key"
 )
 
-func pemBlockForKey(priv interface{}) *pem.Block {
+func pemBlockForKey(priv any) *pem.Block {
 	switch k := priv.(type) {
 	case *ecdsa.PrivateKey:
 		b, err := x509.MarshalECPrivateKey(k)
@@ -50,7 +50,7 @@ func generate() ([]byte, crypto.PrivateKey, error) {
 	var err error
 	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to generate private key: %s", err)
+		return nil, nil, fmt.Errorf("failed to generate private key: %w", err)
 	}
 
 	notBefore := time.Now()
@@ -59,7 +59,7 @@ func generate() ([]byte, crypto.PrivateKey, error) {
 	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
 	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to generate serial number: %s", err)
+		return nil, nil, fmt.Errorf("failed to generate serial number: %w", err)
 	}
 
 	template := x509.Certificate{
@@ -85,7 +85,7 @@ func generate() ([]byte, crypto.PrivateKey, error) {
 
 	certBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, &privateKey.PublicKey, privateKey)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create certificate: %s", err)
+		return nil, nil, fmt.Errorf("failed to create certificate: %w", err)
 	}
 	return certBytes, privateKey, nil
 }
@@ -115,7 +115,6 @@ func GenerateX509KeyPair() (*tls.Certificate, error) {
 }
 
 func GenerateX509KeyPairTLSConfig(tlsMinVersion uint16) (*tls.Config, error) {
-
 	cer, err := GenerateX509KeyPair()
 	if err != nil {
 		return nil, err

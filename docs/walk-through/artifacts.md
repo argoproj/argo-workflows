@@ -52,7 +52,7 @@ spec:
       - name: message
         path: /tmp/message
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["cat /tmp/message"]
 ```
@@ -85,7 +85,7 @@ Optionally, for large artifacts, you can set `podSpecPatch` in the workflow spec
       - name: data
         path: /tmp/large-file
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["cat /tmp/large-file"]
 # <... snipped ...>
@@ -399,3 +399,9 @@ spec:
     forceFinalizerRemoval: true
 
 ```
+
+## Security
+
+You should ensure that the credentials provided to your workflow limits access to the artifacts you wish users to be able to access.
+
+Argo-workflows explicitly allows path traversal where a key containing "../" may allow users to traverse up the "directory structure".

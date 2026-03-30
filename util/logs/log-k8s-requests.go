@@ -7,8 +7,8 @@ import (
 
 	"k8s.io/client-go/rest"
 
-	"github.com/argoproj/argo-workflows/v3/util/k8s"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/k8s"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 var (

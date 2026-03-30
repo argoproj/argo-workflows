@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/util/telemetry"
+	"github.com/argoproj/argo-workflows/v4/util/telemetry"
 )
 
 func addWorkflowTemplateHistogram(_ context.Context, m *Metrics) error {

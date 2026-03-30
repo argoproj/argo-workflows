@@ -2,19 +2,21 @@ package plugin
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
 	"os"
 	"time"
 
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/artifact"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/pkg/apiclient/artifact"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 // Driver implements the ArtifactDriver interface by making gRPC calls to a plugin service
@@ -93,6 +95,8 @@ func NewDriver(ctx context.Context, pluginName wfv1.ArtifactPluginName, socketPa
 			dialer := &net.Dialer{Timeout: connectionTimeout}
 			return dialer.DialContext(ctx, "unix", addr)
 		}),
+		// Add OpenTelemetry tracing for gRPC calls
+		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to dial plugin %s at %q: %w", pluginName, socketPath, err)
@@ -168,7 +172,7 @@ func (d *Driver) OpenStream(ctx context.Context, a *wfv1.Artifact) (io.ReadClose
 		defer writer.Close()
 		for {
 			resp, err := stream.Recv()
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			}
 			if err != nil {

@@ -1,5 +1,5 @@
 syntax = "proto3";
-option go_package = "github.com/argoproj/argo-workflows/pkg/apiclient/sync";
+option go_package = "github.com/argoproj/argo-workflows/v4/pkg/apiclient/sync";
 
 import "google/api/annotations.proto";
 

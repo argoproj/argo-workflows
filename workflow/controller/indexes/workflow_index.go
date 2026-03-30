@@ -8,9 +8,9 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/tools/cache"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
 var (
@@ -21,7 +21,7 @@ func init() {
 	logging.InitLogger().WithField("indexWorkflowSemaphoreKeys", indexWorkflowSemaphoreKeys).Info(context.Background(), "index config")
 }
 
-func MetaWorkflowIndexFunc(obj interface{}) ([]string, error) {
+func MetaWorkflowIndexFunc(obj any) ([]string, error) {
 	m, err := meta.Accessor(obj)
 	if err != nil {
 		return nil, err
@@ -35,7 +35,7 @@ func MetaWorkflowIndexFunc(obj interface{}) ([]string, error) {
 
 // MetaNodeIDIndexFunc takes a kubernetes object and returns either the
 // namespace and its node id or the namespace and its name
-func MetaNodeIDIndexFunc(obj interface{}) ([]string, error) {
+func MetaNodeIDIndexFunc(obj any) ([]string, error) {
 	m, err := meta.Accessor(obj)
 	if err != nil {
 		return nil, err
@@ -54,11 +54,11 @@ func WorkflowIndexValue(namespace, name string) string {
 
 func WorkflowSemaphoreKeysIndexFunc() cache.IndexFunc {
 	if !indexWorkflowSemaphoreKeys {
-		return func(obj interface{}) ([]string, error) {
+		return func(obj any) ([]string, error) {
 			return nil, nil
 		}
 	}
-	return func(obj interface{}) ([]string, error) {
+	return func(obj any) ([]string, error) {
 		un, ok := obj.(*unstructured.Unstructured)
 		if !ok {
 			return nil, nil

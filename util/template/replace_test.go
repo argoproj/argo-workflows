@@ -7,10 +7,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
-func toJSONString(v interface{}) string {
+func toJSONString(v any) string {
 	jsonString, _ := json.Marshal(v)
 	return string(jsonString)
 }
@@ -43,6 +43,11 @@ func Test_Replace(t *testing.T) {
 			r, err := Replace(ctx, toJSONString("{{=foo}}"), map[string]string{"foo": "bar"}, false)
 			require.NoError(t, err)
 			assert.Equal(t, toJSONString("bar"), r)
+		})
+		t.Run("Valid With Variadic Sprig Expression", func(t *testing.T) {
+			r, err := Replace(ctx, toJSONString("{{=sprig.dig('status', nil, workflow)}}"), map[string]string{"workflow.status": "Succeeded"}, false)
+			require.NoError(t, err)
+			assert.Equal(t, toJSONString("Succeeded"), r)
 		})
 		t.Run("Valid WorkflowStatus", func(t *testing.T) {
 			replaced, err := Replace(ctx, toJSONString(`{{=workflow.status == "Succeeded" ? "SUCCESSFUL" : "FAILED"}}`), map[string]string{"workflow.status": "Succeeded"}, false)
@@ -82,7 +87,7 @@ func Test_Replace(t *testing.T) {
 			})
 			t.Run("Disallowed", func(t *testing.T) {
 				_, err := Replace(ctx, toJSONString("{{=foo}}"), nil, false)
-				require.EqualError(t, err, "failed to evaluate expression: unknown name foo (1:1)\n | foo\n | ^")
+				require.EqualError(t, err, "failed to evaluate expression: foo is missing")
 			})
 			t.Run("DisallowedWorkflowStatus", func(t *testing.T) {
 				_, err := Replace(ctx, toJSONString(`{{=workflow.status == "Succeeded" ? "SUCCESSFUL" : "FAILED"}}`), nil, false)

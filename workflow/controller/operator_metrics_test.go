@@ -10,8 +10,8 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 var basicMetric = `
@@ -39,7 +39,7 @@ spec:
             valueFrom:
               path: /tmp/rand_int.txt
       container:
-        image: alpine:latest
+        image: alpine:3.23
         command: [sh, -c]
         args: ["RAND_INT=$((1 + RANDOM % 10)); echo $RAND_INT; echo $RAND_INT > /tmp/rand_int.txt"]
 `
@@ -386,7 +386,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:latest
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs: {}
@@ -424,7 +424,7 @@ spec:
       command:
       - python
       - -c
-      image: python:alpine3.6
+      image: python:alpine3.23
       name: ""
       resources: {}
     inputs: {}
@@ -524,7 +524,7 @@ func TestRealtimeWorkflowMetric(t *testing.T) {
 	t.Logf("%v new %v old", value1, value)
 	assert.Greater(t, value1, value)
 
-	woc.markWorkflowSuccess(ctx)
+	ctx = woc.markWorkflowSuccess(ctx)
 	value2, err := testExporter.GetFloat64GaugeValue(ctx, woc.wf.Spec.Metrics.Prometheus[0].Name, &attribs)
 	require.NoError(t, err)
 	time.Sleep(10 * time.Millisecond)
@@ -856,7 +856,7 @@ spec:
 
   - name: echo
     container:
-      image: alpine:3.7
+      image: alpine:3.23
       command: [echo, "hello"]
 `
 

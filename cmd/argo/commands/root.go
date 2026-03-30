@@ -9,19 +9,19 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
-	"github.com/argoproj/argo-workflows/v3"
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/archive"
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/auth"
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/clustertemplate"
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/cron"
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/executorplugin"
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/sync"
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/template"
+	"github.com/argoproj/argo-workflows/v4"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/archive"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/auth"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/clustertemplate"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/cron"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/executorplugin"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/sync"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/template"
 
-	cmdutil "github.com/argoproj/argo-workflows/v3/util/cmd"
-	grpcutil "github.com/argoproj/argo-workflows/v3/util/grpc"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	cmdutil "github.com/argoproj/argo-workflows/v4/util/cmd"
+	grpcutil "github.com/argoproj/argo-workflows/v4/util/grpc"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 const (
@@ -138,7 +138,7 @@ If your server is behind an ingress with a path (running "argo server --base-hre
 			logLevel = "debug"
 			glogLevel = 6
 		}
-		ctx, log, err := cmdutil.CmdContextWithLogger(cmd, logLevel, logFormat)
+		ctx, log, err := cmdutil.ContextWithLogger(cmd, logLevel, logFormat)
 		if err != nil {
 			logging.InitLogger().WithError(err).WithFatal().Error(ctx, "Failed to create argo pre-run logger")
 			os.Exit(1)
@@ -161,7 +161,7 @@ If your server is behind an ingress with a path (running "argo server --base-hre
 	command.PersistentFlags().IntVar(&glogLevel, "gloglevel", 0, "Set the glog logging level")
 	command.PersistentFlags().StringVar(&logFormat, "log-format", "text", "The formatter to use for logs. One of: text|json")
 	command.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enabled verbose logging, i.e. --loglevel debug")
-	cctx, log, err := cmdutil.CmdContextWithLogger(command, logLevel, logFormat)
+	cctx, log, err := cmdutil.ContextWithLogger(command, logLevel, logFormat)
 	if err != nil {
 		logging.InitLogger().WithError(err).WithFatal().Error(cctx, "Failed to create argo logger")
 		os.Exit(1)

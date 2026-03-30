@@ -24,6 +24,7 @@ Name | Type | Description | Notes
 **hdfs** | [**Map&lt;String, GithubComArgoprojArgoEventsPkgApisEventsV1alpha1HDFSEventSource&gt;**](GithubComArgoprojArgoEventsPkgApisEventsV1alpha1HDFSEventSource.md) |  |  [optional]
 **kafka** | [**Map&lt;String, GithubComArgoprojArgoEventsPkgApisEventsV1alpha1KafkaEventSource&gt;**](GithubComArgoprojArgoEventsPkgApisEventsV1alpha1KafkaEventSource.md) |  |  [optional]
 **minio** | [**Map&lt;String, GithubComArgoprojArgoEventsPkgApisEventsV1alpha1S3Artifact&gt;**](GithubComArgoprojArgoEventsPkgApisEventsV1alpha1S3Artifact.md) |  |  [optional]
+**mns** | [**Map&lt;String, GithubComArgoprojArgoEventsPkgApisEventsV1alpha1MNSEventSource&gt;**](GithubComArgoprojArgoEventsPkgApisEventsV1alpha1MNSEventSource.md) |  |  [optional]
 **mqtt** | [**Map&lt;String, GithubComArgoprojArgoEventsPkgApisEventsV1alpha1MQTTEventSource&gt;**](GithubComArgoprojArgoEventsPkgApisEventsV1alpha1MQTTEventSource.md) |  |  [optional]
 **nats** | [**Map&lt;String, GithubComArgoprojArgoEventsPkgApisEventsV1alpha1NATSEventsSource&gt;**](GithubComArgoprojArgoEventsPkgApisEventsV1alpha1NATSEventsSource.md) |  |  [optional]
 **nsq** | [**Map&lt;String, GithubComArgoprojArgoEventsPkgApisEventsV1alpha1NSQEventSource&gt;**](GithubComArgoprojArgoEventsPkgApisEventsV1alpha1NSQEventSource.md) |  |  [optional]

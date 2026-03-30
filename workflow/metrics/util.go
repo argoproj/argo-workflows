@@ -7,7 +7,7 @@ import (
 
 	"github.com/prometheus/common/model"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
 var (
@@ -17,7 +17,7 @@ var (
 
 func IsValidMetricName(name string) bool {
 	// Use promtheus's metric name checker, despite perhaps not using prometheus
-	return model.IsValidLegacyMetricName(string(model.LabelValue(name))) && !strings.Contains(name, `:`)
+	return model.LegacyValidation.IsValidMetricName(string(model.LabelValue(name))) && !strings.Contains(name, `:`)
 }
 
 func ValidateMetricValues(metric *wfv1.Prometheus) error {

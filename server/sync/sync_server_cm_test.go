@@ -16,8 +16,8 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	ktesting "k8s.io/client-go/testing"
 
-	syncpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/sync"
-	"github.com/argoproj/argo-workflows/v3/server/auth"
+	syncpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/sync"
+	"github.com/argoproj/argo-workflows/v4/server/auth"
 )
 
 func withKubeClient(kubeClient *fake.Clientset) context.Context {
@@ -46,7 +46,7 @@ func Test_syncServer_CreateSyncLimit(t *testing.T) {
 	})
 
 	t.Run("Error creating ConfigMap", func(t *testing.T) {
-		kubeClient := fake.NewSimpleClientset()
+		kubeClient := fake.NewClientset()
 
 		kubeClient.PrependReactor("create", "configmaps", func(action ktesting.Action) (bool, runtime.Object, error) {
 			return true, nil, apierrors.NewForbidden(
@@ -76,7 +76,7 @@ func Test_syncServer_CreateSyncLimit(t *testing.T) {
 	})
 
 	t.Run("Create new ConfigMap", func(t *testing.T) {
-		kubeClient := fake.NewSimpleClientset()
+		kubeClient := fake.NewClientset()
 		ctx := withKubeClient(kubeClient)
 		server := NewSyncServer(ctx, kubeClient, "", nil)
 
@@ -106,7 +106,7 @@ func Test_syncServer_CreateSyncLimit(t *testing.T) {
 				"existing-key": "50",
 			},
 		}
-		kubeClient := fake.NewSimpleClientset(existingCM)
+		kubeClient := fake.NewClientset(existingCM)
 		ctx := withKubeClient(kubeClient)
 		server := NewSyncServer(ctx, kubeClient, "", nil)
 
@@ -127,7 +127,6 @@ func Test_syncServer_CreateSyncLimit(t *testing.T) {
 	})
 
 	t.Run("ConfigMap exists with nil Data", func(t *testing.T) {
-
 		existingCM := &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "nil-data-cm",
@@ -135,7 +134,7 @@ func Test_syncServer_CreateSyncLimit(t *testing.T) {
 			},
 			Data: nil,
 		}
-		kubeClient := fake.NewSimpleClientset(existingCM)
+		kubeClient := fake.NewClientset(existingCM)
 		ctx := withKubeClient(kubeClient)
 		server := NewSyncServer(ctx, kubeClient, "", nil)
 
@@ -164,7 +163,7 @@ func Test_syncServer_CreateSyncLimit(t *testing.T) {
 				"existing-key": "50",
 			},
 		}
-		kubeClient := fake.NewSimpleClientset(existingCM)
+		kubeClient := fake.NewClientset(existingCM)
 		ctx := withKubeClient(kubeClient)
 		server := NewSyncServer(ctx, kubeClient, "", nil)
 
@@ -187,7 +186,7 @@ func Test_syncServer_CreateSyncLimit(t *testing.T) {
 
 func Test_syncServer_GetSyncLimit(t *testing.T) {
 	t.Run("ConfigMap doesn't exist", func(t *testing.T) {
-		kubeClient := fake.NewSimpleClientset()
+		kubeClient := fake.NewClientset()
 		ctx := withKubeClient(kubeClient)
 		server := NewSyncServer(ctx, kubeClient, "", nil)
 
@@ -207,7 +206,6 @@ func Test_syncServer_GetSyncLimit(t *testing.T) {
 	})
 
 	t.Run("Key doesn't exist", func(t *testing.T) {
-
 		existingCM := &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "existing-cm",
@@ -217,7 +215,7 @@ func Test_syncServer_GetSyncLimit(t *testing.T) {
 				"existing-key": "100",
 			},
 		}
-		kubeClient := fake.NewSimpleClientset(existingCM)
+		kubeClient := fake.NewClientset(existingCM)
 		ctx := withKubeClient(kubeClient)
 		server := NewSyncServer(ctx, kubeClient, "", nil)
 
@@ -237,7 +235,6 @@ func Test_syncServer_GetSyncLimit(t *testing.T) {
 	})
 
 	t.Run("Invalid size limit format", func(t *testing.T) {
-
 		existingCM := &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "existing-cm",
@@ -247,7 +244,7 @@ func Test_syncServer_GetSyncLimit(t *testing.T) {
 				"invalid-key": "not-a-number",
 			},
 		}
-		kubeClient := fake.NewSimpleClientset(existingCM)
+		kubeClient := fake.NewClientset(existingCM)
 		ctx := withKubeClient(kubeClient)
 		server := NewSyncServer(ctx, kubeClient, "", nil)
 
@@ -276,7 +273,7 @@ func Test_syncServer_GetSyncLimit(t *testing.T) {
 				"valid-key": "500",
 			},
 		}
-		kubeClient := fake.NewSimpleClientset(existingCM)
+		kubeClient := fake.NewClientset(existingCM)
 		ctx := withKubeClient(kubeClient)
 		server := NewSyncServer(ctx, kubeClient, "", nil)
 
@@ -318,7 +315,7 @@ func Test_syncServer_UpdateSyncLimit(t *testing.T) {
 	})
 
 	t.Run("ConfigMap doesn't exist", func(t *testing.T) {
-		kubeClient := fake.NewSimpleClientset()
+		kubeClient := fake.NewClientset()
 		ctx := withKubeClient(kubeClient)
 		server := NewSyncServer(ctx, kubeClient, "", nil)
 
@@ -346,7 +343,7 @@ func Test_syncServer_UpdateSyncLimit(t *testing.T) {
 			},
 			Data: nil,
 		}
-		kubeClient := fake.NewSimpleClientset(existingCM)
+		kubeClient := fake.NewClientset(existingCM)
 		ctx := withKubeClient(kubeClient)
 		server := NewSyncServer(ctx, kubeClient, "", nil)
 
@@ -367,7 +364,6 @@ func Test_syncServer_UpdateSyncLimit(t *testing.T) {
 	})
 
 	t.Run("Key doesn't exist", func(t *testing.T) {
-
 		existingCM := &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "existing-cm",
@@ -377,7 +373,7 @@ func Test_syncServer_UpdateSyncLimit(t *testing.T) {
 				"existing-key": "100",
 			},
 		}
-		kubeClient := fake.NewSimpleClientset(existingCM)
+		kubeClient := fake.NewClientset(existingCM)
 		ctx := withKubeClient(kubeClient)
 		server := NewSyncServer(ctx, kubeClient, "", nil)
 
@@ -407,7 +403,7 @@ func Test_syncServer_UpdateSyncLimit(t *testing.T) {
 				"existing-key": "100",
 			},
 		}
-		kubeClient := fake.NewSimpleClientset(existingCM)
+		kubeClient := fake.NewClientset(existingCM)
 
 		kubeClient.PrependReactor("update", "configmaps", func(action ktesting.Action) (bool, runtime.Object, error) {
 			return true, nil, errors.New("update error")
@@ -442,7 +438,7 @@ func Test_syncServer_UpdateSyncLimit(t *testing.T) {
 				"existing-key": "100",
 			},
 		}
-		kubeClient := fake.NewSimpleClientset(existingCM)
+		kubeClient := fake.NewClientset(existingCM)
 		ctx := withKubeClient(kubeClient)
 		server := NewSyncServer(ctx, kubeClient, "", nil)
 
@@ -465,7 +461,7 @@ func Test_syncServer_UpdateSyncLimit(t *testing.T) {
 
 func Test_syncServer_DeleteSyncLimit(t *testing.T) {
 	t.Run("ConfigMap doesn't exist", func(t *testing.T) {
-		kubeClient := fake.NewSimpleClientset()
+		kubeClient := fake.NewClientset()
 		ctx := withKubeClient(kubeClient)
 		server := NewSyncServer(ctx, kubeClient, "", nil)
 
@@ -492,7 +488,7 @@ func Test_syncServer_DeleteSyncLimit(t *testing.T) {
 			},
 			Data: nil,
 		}
-		kubeClient := fake.NewSimpleClientset(existingCM)
+		kubeClient := fake.NewClientset(existingCM)
 		ctx := withKubeClient(kubeClient)
 		server := NewSyncServer(ctx, kubeClient, "", nil)
 
@@ -515,7 +511,7 @@ func Test_syncServer_DeleteSyncLimit(t *testing.T) {
 			},
 			Data: map[string]string{},
 		}
-		kubeClient := fake.NewSimpleClientset(existingCM)
+		kubeClient := fake.NewClientset(existingCM)
 		ctx := withKubeClient(kubeClient)
 		server := NewSyncServer(ctx, kubeClient, "", nil)
 
@@ -540,7 +536,7 @@ func Test_syncServer_DeleteSyncLimit(t *testing.T) {
 				"existing-key": "100",
 			},
 		}
-		kubeClient := fake.NewSimpleClientset(existingCM)
+		kubeClient := fake.NewClientset(existingCM)
 
 		kubeClient.PrependReactor("update", "configmaps", func(action ktesting.Action) (bool, runtime.Object, error) {
 			return true, nil, errors.New("update error")
@@ -575,7 +571,7 @@ func Test_syncServer_DeleteSyncLimit(t *testing.T) {
 				"key2": "200",
 			},
 		}
-		kubeClient := fake.NewSimpleClientset(existingCM)
+		kubeClient := fake.NewClientset(existingCM)
 		ctx := withKubeClient(kubeClient)
 		server := NewSyncServer(ctx, kubeClient, "", nil)
 

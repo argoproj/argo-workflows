@@ -8,7 +8,7 @@ import (
 
 	sema "golang.org/x/sync/semaphore"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 type prioritySemaphore struct {
@@ -43,10 +43,6 @@ func newInternalSemaphore(ctx context.Context, name string, nextWorkflow NextWor
 		err = fmt.Errorf("failed to initialize semaphore %s with limit", name)
 	}
 	return sem, err
-}
-
-func (s *prioritySemaphore) getName() string {
-	return s.name
 }
 
 func (s *prioritySemaphore) getLimit(ctx context.Context) int {
@@ -127,7 +123,7 @@ func (s *prioritySemaphore) release(ctx context.Context, key string) bool {
 // where N is the availability of the semaphore. If semaphore is out of capacity, this does nothing.
 func (s *prioritySemaphore) notifyWaiters(ctx context.Context) {
 	triggerCount := min(s.pending.Len(), s.getLimit(ctx)-len(s.lockHolder))
-	for idx := 0; idx < triggerCount; idx++ {
+	for idx := range triggerCount {
 		item := s.pending.items[idx]
 		wfKey := workflowKey(item.key)
 		s.logger(ctx).WithField("workflow", wfKey).Debug(ctx, "Enqueue the workflow")

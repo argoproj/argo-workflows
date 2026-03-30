@@ -30,12 +30,12 @@ spec:
 
   - name: fail
     container:
-      image: alpine:3.6
+      image: alpine:3.23
       command: [sh, -c]
       args: ["exit 1"]
 
   - name: succeed
     container:
-      image: alpine:3.6
+      image: alpine:3.23
       command: [sh, -c]
       args: ["exit 0"]

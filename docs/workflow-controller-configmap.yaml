@@ -241,7 +241,6 @@ data:
     # IgnoreErrors is a flag that instructs prometheus to ignore metric emission errors. Default is "false"
     ignoreErrors: false
     # Use a self-signed cert for TLS
-    # >= 3.6: default true
     secure: true
     # Options for configuring individual metrics
     options:
@@ -305,6 +304,10 @@ data:
       # sslMode must be one of: disable, require, verify-ca, verify-full
       # you can find more information about those ssl options here: https://godoc.org/github.com/lib/pq
       sslMode: require
+      # azureToken specifies if the password should be fetched as an Azure token
+      # azureToken:
+      #   enabled: true
+      #   scope: https://ossrdbms-aad.database.windows.net/.default
 
     # Optional config for mysql:
     # mysql:
@@ -325,7 +328,7 @@ data:
   synchronization: |
     # Enable or disable database synchronization API (default: false)
     enableAPI: false
-    
+
     # Connection pool settings, similar to persistence connectionPool
     connectionPool:
       maxIdleConns: 100
@@ -369,6 +372,10 @@ data:
         key: password
       ssl: true
       sslMode: require
+      # azureToken specifies if the password should be fetched as an Azure token
+      # azureToken:
+      #   enabled: true
+      #   scope: https://ossrdbms-aad.database.windows.net/.default
 
     # MySQL database configuration (alternative to PostgreSQL)
     # mysql:

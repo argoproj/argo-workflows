@@ -4,16 +4,15 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
-	"k8s.io/utils/ptr"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
 var wfTmpl = `
@@ -40,7 +39,7 @@ func templatedWorkflow(name string, syncBlock string) *wfv1.Workflow {
 
 func TestMultipleMutexLock(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	kube := fake.NewSimpleClientset()
+	kube := fake.NewClientset()
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("MultipleMutex", func(t *testing.T) {
 		syncManager := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {},
@@ -194,7 +193,7 @@ data:
 `
 
 func TestMutexAndSemaphore(t *testing.T) {
-	kube := fake.NewSimpleClientset()
+	kube := fake.NewClientset()
 	var cm v1.ConfigMap
 	wfv1.MustUnmarshal([]byte(multipleConfigMap), &cm)
 
@@ -314,12 +313,11 @@ func TestMutexAndSemaphore(t *testing.T) {
 		assert.Empty(t, failedLockName)
 		assert.True(t, status)
 		assert.True(t, wfUpdate)
-
 	})
 }
 func TestPriority(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	kube := fake.NewSimpleClientset()
+	kube := fake.NewClientset()
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("Priority", func(t *testing.T) {
 		syncManager := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {},
@@ -331,7 +329,7 @@ func TestPriority(t *testing.T) {
 `)
 		wfhigh := wflow.DeepCopy()
 		wfhigh.Name = "priorityhigh"
-		wfhigh.Spec.Priority = ptr.To(int32(5))
+		wfhigh.Spec.Priority = new(int32(5))
 		wf1 := templatedWorkflow("one",
 			`    mutexes:
        - name: two
@@ -396,7 +394,7 @@ func TestPriority(t *testing.T) {
 
 func TestDuplicates(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	kube := fake.NewSimpleClientset()
+	kube := fake.NewClientset()
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("Mutex", func(t *testing.T) {
 		syncManager := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {},

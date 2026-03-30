@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/config"
+	"github.com/argoproj/argo-workflows/v4/config"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/go-jose/go-jose/v3"
@@ -23,9 +23,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
-	"github.com/argoproj/argo-workflows/v3/server/auth/types"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	pkgrand "github.com/argoproj/argo-workflows/v3/util/rand"
+	"github.com/argoproj/argo-workflows/v4/server/auth/types"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	pkgrand "github.com/argoproj/argo-workflows/v4/util/rand"
 )
 
 const (
@@ -170,9 +170,8 @@ func newSso(
 	if err != nil {
 		if isSecretAlreadyExists {
 			return nil, fmt.Errorf("failed to parse private key. If you have already defined a Secret named %s, delete it and retry: %w", secretName, err)
-		} else {
-			return nil, fmt.Errorf("failed to parse private key: %w", err)
 		}
+		return nil, fmt.Errorf("failed to parse private key: %w", err)
 	}
 
 	clientID := clientIDObj.Data[c.ClientID.Key]
@@ -237,7 +236,7 @@ func (s *sso) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 	if !isValidFinalRedirectURL(finalRedirectURL) {
 		finalRedirectURL = s.baseHRef
 	}
-	state, err := pkgrand.RandString(10)
+	state, err := pkgrand.String(10)
 	if err != nil {
 		s.logger.WithError(err).Error(r.Context(), "failed to create state")
 		w.WriteHeader(http.StatusInternalServerError)
@@ -288,8 +287,8 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	c := &types.Claims{}
-	if err := idToken.Claims(c); err != nil {
-		s.logger.WithError(err).Error(r.Context(), "failed to get claims from the id token")
+	if claimsErr := idToken.Claims(c); claimsErr != nil {
+		s.logger.WithError(claimsErr).Error(r.Context(), "failed to get claims from the id token")
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
@@ -361,7 +360,6 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	finalRedirectURL := cookie.Value
 	if !isValidFinalRedirectURL(cookie.Value) {
 		finalRedirectURL = s.baseHRef
-
 	}
 	http.Redirect(w, r, finalRedirectURL, http.StatusFound)
 }
@@ -391,15 +389,15 @@ func isValidFinalRedirectURL(redirect string) bool {
 func (s *sso) Authorize(authorization string) (*types.Claims, error) {
 	tok, err := jwt.ParseEncrypted(strings.TrimPrefix(authorization, Prefix))
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse encrypted token %v", err)
+		return nil, fmt.Errorf("failed to parse encrypted token: %w", err)
 	}
 	c := &types.Claims{}
 	if err := tok.Claims(s.privateKey, c); err != nil {
-		return nil, fmt.Errorf("failed to parse claims: %v", err)
+		return nil, fmt.Errorf("failed to parse claims: %w", err)
 	}
 
 	if err := c.Validate(jwt.Expected{Issuer: issuer}); err != nil {
-		return nil, fmt.Errorf("failed to validate claims: %v", err)
+		return nil, fmt.Errorf("failed to validate claims: %w", err)
 	}
 
 	return c, nil
