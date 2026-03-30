@@ -124,6 +124,13 @@ message WatchEventsRequest {
   k8s.io.apimachinery.pkg.apis.meta.v1.ListOptions listOptions = 2;
 }
 
+message EventWatchEvent {
+  // the type of change
+  string type = 1;
+  // the event
+  k8s.io.api.core.v1.Event object = 2;
+}
+
 message LogEntry {
   string content = 1;
   string podName = 2;
@@ -161,7 +168,7 @@ service WorkflowService {
     option (google.api.http).get = "/api/v1/workflow-events/{namespace}";
   }
 
-  rpc WatchEvents(WatchEventsRequest) returns (stream k8s.io.api.core.v1.Event) {
+  rpc WatchEvents(WatchEventsRequest) returns (stream EventWatchEvent) {
     option (google.api.http).get = "/api/v1/stream/events/{namespace}";
   }
 

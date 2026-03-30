@@ -93,7 +93,7 @@
           "default": {
             "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/google.rpc.Status"
             }
           }
         }
@@ -143,7 +143,7 @@
           "default": {
             "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/google.rpc.Status"
             }
           }
         }
@@ -193,7 +193,7 @@
           "default": {
             "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/google.rpc.Status"
             }
           }
         }
@@ -237,7 +237,7 @@
           "default": {
             "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/google.rpc.Status"
             }
           }
         }
@@ -281,7 +281,7 @@
           "default": {
             "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/grpc.gateway.runtime.Error"
+              "$ref": "#/definitions/google.rpc.Status"
             }
           }
         }
@@ -310,23 +310,22 @@
         }
       }
     },
-    "grpc.gateway.runtime.Error": {
+    "google.rpc.Status": {
       "type": "object",
       "properties": {
         "code": {
-          "type": "integer"
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
         },
         "details": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/google.protobuf.Any"
           }
-        },
-        "error": {
-          "type": "string"
-        },
-        "message": {
-          "type": "string"
         }
       }
     }

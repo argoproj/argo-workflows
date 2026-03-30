@@ -8,7 +8,7 @@ import io.argoproj.workflow.apis.WorkflowServiceApi;
 import io.argoproj.workflow.auth.ApiKeyAuth;
 import io.argoproj.workflow.models.IoArgoprojWorkflowV1alpha1Template;
 import io.argoproj.workflow.models.IoArgoprojWorkflowV1alpha1Workflow;
-import io.argoproj.workflow.models.IoArgoprojWorkflowV1alpha1WorkflowCreateRequest;
+import io.argoproj.workflow.models.IoArgoprojWorkflowV1alpha1CreateWorkflowBody;
 import io.argoproj.workflow.models.IoArgoprojWorkflowV1alpha1WorkflowSpec;
 import io.kubernetes.client.openapi.models.V1Container;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
@@ -33,7 +33,7 @@ public class ClientTest {
     @Test
     public void testClient() throws Exception {
         // create a workflow
-        IoArgoprojWorkflowV1alpha1WorkflowCreateRequest req = new IoArgoprojWorkflowV1alpha1WorkflowCreateRequest();
+        IoArgoprojWorkflowV1alpha1CreateWorkflowBody req = new IoArgoprojWorkflowV1alpha1CreateWorkflowBody();
         req.setWorkflow(
                 new IoArgoprojWorkflowV1alpha1Workflow()
                         .metadata(new V1ObjectMeta().generateName("test-"))
