@@ -33,6 +33,9 @@ import (
 	"k8s.io/utils/env"
 
 	argo "github.com/argoproj/argo-workflows/v4"
+	aggregatedapiserver "github.com/argoproj/argo-workflows/v4/pkg/apiserver"
+	storageutil "github.com/argoproj/argo-workflows/v4/pkg/storage"
+	"gorm.io/gorm"
 	"github.com/argoproj/argo-workflows/v4/config"
 	persist "github.com/argoproj/argo-workflows/v4/persist/sqldb"
 	clusterwftemplatepkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/clusterworkflowtemplate"
@@ -105,8 +108,12 @@ type argoServer struct {
 	accessControlAllowOrigin string
 	apiRateLimiter           limiter.Store
 	allowedLinkProtocol      []string
-	cache                    *cache.ResourceCache
-	restConfig               *rest.Config
+	cache                      *cache.ResourceCache
+	restConfig                 *rest.Config
+	enableAggregatedAPIServer  bool
+	aggregatedDBDriver         string
+	aggregatedDBDSN            string
+	aggregatedAPIServerPort    int
 }
 
 type ArgoServerOpts struct {
@@ -129,6 +136,11 @@ type ArgoServerOpts struct {
 	AccessControlAllowOrigin string
 	APIRateLimit             uint64
 	AllowedLinkProtocol      []string
+	// Aggregated API server options
+	EnableAggregatedAPIServer bool
+	AggregatedDBDriver        string
+	AggregatedDBDSN           string
+	AggregatedAPIServerPort   int
 }
 
 func init() {
@@ -199,8 +211,12 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (Server, error) {
 		accessControlAllowOrigin: opts.AccessControlAllowOrigin,
 		apiRateLimiter:           store,
 		allowedLinkProtocol:      opts.AllowedLinkProtocol,
-		cache:                    resourceCache,
-		restConfig:               opts.RestConfig,
+		cache:                      resourceCache,
+		restConfig:                 opts.RestConfig,
+		enableAggregatedAPIServer:  opts.EnableAggregatedAPIServer,
+		aggregatedDBDriver:         opts.AggregatedDBDriver,
+		aggregatedDBDSN:            opts.AggregatedDBDSN,
+		aggregatedAPIServerPort:    opts.AggregatedAPIServerPort,
 	}, nil
 }
 
@@ -237,8 +253,11 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	}
 
 	log.WithFields(argo.GetVersion().Fields()).WithField("instanceID", config.InstanceID).Info(ctx, "Starting Argo Server")
+	log.WithField("enableAggregatedAPIServer_FLAG", as.enableAggregatedAPIServer).Info(ctx, "TRACE: After Starting Argo Server log")
 
+	log.Info(ctx, "TRACE: About to create instanceIDService")
 	instanceIDService := instanceid.NewService(config.InstanceID)
+	log.Info(ctx, "TRACE: About to setup persistence")
 	offloadRepo := persist.ExplosiveOffloadNodeStatusRepo
 	wfArchive := persist.NullWorkflowArchive
 	persistence := config.Persistence
@@ -261,7 +280,50 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		// disable the archiving - and still read old records
 		wfArchive = persist.NewWorkflowArchive(session, persistence.GetClusterName(), as.managedNamespace, instanceIDService, dbType)
 	}
+	log.Info(ctx, "TRACE: About to get resourceCacheNamespace")
 	resourceCacheNamespace := getResourceCacheNamespace(as.managedNamespace)
+	
+	// Start the aggregated API server BEFORE creating informers if enabled.
+	// This ensures the API is available when informers try to connect.
+	if as.enableAggregatedAPIServer {
+		log.Info(ctx, "Aggregated API server enabled — connecting to database")
+
+		// Retry DB connection so a slow-starting postgres pod doesn't cause a
+		// permanent failure. The pod exits after max retries so Kubernetes will
+		// restart it with backoff.
+		const dbMaxRetries = 30
+		const dbRetryInterval = 2 * time.Second
+		var db *gorm.DB
+		var dbErr error
+		for i := 1; i <= dbMaxRetries; i++ {
+			db, dbErr = storageutil.NewDB(as.aggregatedDBDriver, as.aggregatedDBDSN)
+			if dbErr == nil {
+				break
+			}
+			log.WithError(dbErr).WithField("attempt", i).Warn(ctx, "Database not ready, retrying...")
+			time.Sleep(dbRetryInterval)
+		}
+		if dbErr != nil {
+			log.WithError(dbErr).WithFatal().Error(ctx, "Failed to connect to database after retries — exiting so Kubernetes can restart")
+		}
+
+		aggStopCh := make(chan struct{})
+		go func() {
+			aggServer, aggErr := aggregatedapiserver.NewSimpleAggregatedServer(db, as.aggregatedAPIServerPort)
+			if aggErr != nil {
+				log.WithError(aggErr).WithFatal().Error(ctx, "Failed to create aggregated API server")
+			}
+			log.WithField("port", as.aggregatedAPIServerPort).Info(ctx, "Starting aggregated API server")
+			if aggErr = aggServer.Run(aggStopCh); aggErr != nil {
+				log.WithError(aggErr).WithFatal().Error(ctx, "Aggregated API server stopped unexpectedly")
+			}
+		}()
+		// Give the aggregated API server a moment to start before informers try to connect.
+		log.Info(ctx, "Waiting 5 seconds for aggregated API server to initialize...")
+		time.Sleep(5 * time.Second)
+	}
+	
+	log.Info(ctx, "TRACE: About to create wftmplStore informer")
 	wftmplStore, err := workflowtemplate.NewInformer(as.restConfig, resourceCacheNamespace)
 	if err != nil {
 		log.WithFatal().Error(ctx, err.Error())
@@ -333,6 +395,8 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	log.WithField("url", url).Info(ctx, "Argo Server started successfully")
 	browserOpenFunc(url)
 
+	// Aggregated API server already started earlier (before informers) if enabled
+	
 	<-as.stopCh
 }
 

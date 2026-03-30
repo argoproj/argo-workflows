@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argo-aggregated-apiserver
+spec:
+  template:
+    spec:
+      containers:
+        - name: argo-aggregated-apiserver
+          args:
+            - server
+            - --auth-mode
+            - server
+            - --enable-aggregated-apiserver
+            - --db-driver
+            - postgres
+            - --db-dsn
+            - $(ARGO_DB_DSN)
+          env:
+            - name: ARGO_DB_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: dsn
+          # Remove the SQLite /data volume mount — postgres needs no local storage.
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        # Remove the SQLite data volume — replaced by postgres.
+        - name: data
+          emptyDir: {}

@@ -1,0 +1,11 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Minimal base: SQLite with ephemeral storage (no postgres).
+# Use overlays/aggregated-apiserver/postgres for a production-ready deployment,
+# or overlays/aggregated-apiserver/sqlite for persistent SQLite.
+
+resources:
+  - aggregated-apiserver-deployment.yaml
+  - aggregated-apiserver-service.yaml
+  - apiservice.yaml

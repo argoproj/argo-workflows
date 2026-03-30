@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: argo-aggregated-apiserver
+spec:
+  ports:
+    - name: aggregated-api
+      port: 6443
+      targetPort: 6443
+  selector:
+    app: argo-aggregated-apiserver
