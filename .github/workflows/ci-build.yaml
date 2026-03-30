@@ -168,6 +168,10 @@ jobs:
       - run: if (!(Test-Path "ui/dist/app/index.html")) { New-Item -ItemType Directory -Force -Path "ui/dist/app" | Out-Null; New-Item -ItemType File -Path "ui/dist/app/placeholder" | Out-Null }; go test -p 20 -covermode=atomic -coverprofile='coverage.out' $(go list ./... | select-string -Pattern 'github.com/argoproj/argo-workflows/v4/workflow/controller' , 'github.com/argoproj/argo-workflows/v4/server' -NotMatch)
         env:
           KUBECONFIG: /dev/null
+          # This job runs go test directly (not through make), so it must set the
+          # tag the Makefile normally exports: without it, Kubernetes v0.35 types
+          # lack ProtoMessage() and pkg/apiclient's startup probe fails.
+          GOFLAGS: -tags=kubernetes_protomessage_one_more_release
       - name: Upload coverage report
         # engineers just ignore this in PRs, so lets not even run it
         if: github.ref == 'refs/heads/main'

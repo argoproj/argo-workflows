@@ -14,9 +14,8 @@ import (
 	"time"
 
 	"github.com/gorilla/handlers"
-	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sethvargo/go-limiter"
 	"github.com/sethvargo/go-limiter/httplimit"
@@ -365,7 +364,7 @@ func (as *argoServer) newGRPCServer(ctx context.Context, instanceIDService insta
 		grpc.MaxRecvMsgSize(MaxGRPCMessageSize),
 		grpc.MaxSendMsgSize(MaxGRPCMessageSize),
 		grpc.ConnectionTimeout(300 * time.Second),
-		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
+		grpc.ChainUnaryInterceptor(
 			grpc_prometheus.UnaryServerInterceptor,
 			grpcutil.LoggerUnaryServerInterceptor(serverLog),
 			grpcutil.PanicLoggerUnaryServerInterceptor(serverLog),
@@ -373,8 +372,8 @@ func (as *argoServer) newGRPCServer(ctx context.Context, instanceIDService insta
 			as.gatekeeper.UnaryServerInterceptor(),
 			grpcutil.RatelimitUnaryServerInterceptor(as.apiRateLimiter),
 			grpcutil.SetVersionHeaderUnaryServerInterceptor(argo.GetVersion()),
-		)),
-		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
+		),
+		grpc.ChainStreamInterceptor(
 			grpc_prometheus.StreamServerInterceptor,
 			grpcutil.LoggerStreamServerInterceptor(serverLog),
 			grpcutil.PanicLoggerStreamServerInterceptor(serverLog),
@@ -382,7 +381,7 @@ func (as *argoServer) newGRPCServer(ctx context.Context, instanceIDService insta
 			as.gatekeeper.StreamServerInterceptor(),
 			grpcutil.RatelimitStreamServerInterceptor(as.apiRateLimiter),
 			grpcutil.SetVersionHeaderStreamServerInterceptor(argo.GetVersion()),
-		)),
+		),
 	}
 
 	grpcServer := grpc.NewServer(sOpts...)
@@ -418,7 +417,9 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 
 	mux := http.NewServeMux()
 	loggingInterceptor := accesslog.NewLoggingInterceptor(log)
-	handler := rateLimitMiddleware.Handle(loggingInterceptor.Interceptor(mux))
+	// The gateway stream forwarder (and anything else downstream) pulls the
+	// logger from the request context, so inject it at the outermost layer.
+	handler := withRequestLogger(log, rateLimitMiddleware.Handle(loggingInterceptor.Interceptor(mux)))
 	dialOpts := []grpc.DialOption{
 		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(MaxGRPCMessageSize)),
 	}
@@ -435,15 +436,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 
 	// HTTP 1.1+JSON Server
 	// grpc-ecosystem/grpc-gateway is used to proxy HTTP requests to the corresponding gRPC call
-	// NOTE: if a marshaller option is not supplied, grpc-gateway will default to the jsonpb from
-	// golang/protobuf. Which does not support types such as time.Time. gogo/protobuf does support
-	// time.Time, but does not support custom UnmarshalJSON() and MarshalJSON() methods. Therefore
-	// we use our own Marshaler
-	gwMuxOpts := runtime.WithMarshalerOption(runtime.MIMEWildcard, new(json.Marshaler))
-	gwmux := runtime.NewServeMux(gwMuxOpts,
-		runtime.WithIncomingHeaderMatcher(grpcutil.IncomingHeaderMatcher),
-		runtime.WithProtoErrorHandler(runtime.DefaultHTTPProtoErrorHandler),
-	)
+	gwmux := newGatewayMux()
 	mustRegisterGWHandler(ctx, infopkg.RegisterInfoServiceHandlerFromEndpoint, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(ctx, eventpkg.RegisterEventServiceHandlerFromEndpoint, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(ctx, eventsourcepkg.RegisterEventSourceServiceHandlerFromEndpoint, gwmux, endpoint, dialOpts)
@@ -594,6 +587,29 @@ func (as *argoServer) validateArtifactDriverImages(ctx context.Context, cfg *con
 
 	log.WithField("driverCount", len(cfg.ArtifactDrivers)).Info(ctx, "Artifact driver validation passed: All configured artifact driver images are present in the server pod")
 	return nil
+}
+
+// withRequestLogger injects the server logger into every HTTP request context.
+// Downstream handlers — in particular the gateway stream forwarder's keepalive
+// goroutine — read it from there.
+func withRequestLogger(log logging.Logger, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		next.ServeHTTP(w, r.WithContext(logging.WithLogger(r.Context(), log)))
+	})
+}
+
+// newGatewayMux builds the grpc-gateway mux with the server's marshaler and
+// header-matching configuration. Kept as its own function so the gateway
+// round-trip test exercises exactly the production configuration.
+// NOTE: the marshaler must stay encoding/json-based: grpc-gateway's default
+// protojson marshaler ignores MarshalJSON methods, which both our API types and
+// the gateway.MessageV2Of bridge for gogo-generated messages rely on — with
+// protojson, bridged responses would serialize as {}.
+func newGatewayMux() *runtime.ServeMux {
+	return runtime.NewServeMux(
+		runtime.WithMarshalerOption(runtime.MIMEWildcard, new(json.Marshaler)),
+		runtime.WithIncomingHeaderMatcher(grpcutil.IncomingHeaderMatcher),
+	)
 }
 
 type registerFunc func(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) error
