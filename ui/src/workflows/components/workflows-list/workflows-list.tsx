@@ -142,9 +142,24 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
         storage.setItem('options', options, {} as WorkflowListRenderOptions);
 
         const params = new URLSearchParams();
+        const currentParams = new URLSearchParams(history.location.search);
+
+        if (currentParams.has('namespace')) {
+            params.set('namespace', currentParams.get('namespace'));
+        }
 
         if (sidePanel) {
             params.set('sidePanel', sidePanel);
+
+            // preserve template name and parameters if sidePanel is open
+            if (currentParams.has('template')) {
+                params.append('template', currentParams.get('template'));
+            }
+            currentParams.forEach((v, k) => {
+                if (k.startsWith('parameters')) {
+                    params.append(k, v);
+                }
+            });
         }
 
         // phases
