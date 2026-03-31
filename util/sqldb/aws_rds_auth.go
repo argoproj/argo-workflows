@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql/driver"
 	"fmt"
+	"strings"
 
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/rds/auth"
@@ -33,7 +34,10 @@ func (c *awsRDSConnector) Connect(ctx context.Context) (driver.Conn, error) {
 		return nil, fmt.Errorf("failed to build RDS auth token: %w", err)
 	}
 
-	dsnWithPassword := fmt.Sprintf("%s password='%s'", c.dsn, token)
+	// Escape single quotes in token for safe DSN interpolation
+	escapedToken := strings.ReplaceAll(token, "'", "\\'")
+
+	dsnWithPassword := fmt.Sprintf("%s password='%s'", c.dsn, escapedToken)
 
 	return pq.Driver{}.Open(dsnWithPassword)
 }
