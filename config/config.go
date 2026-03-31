@@ -283,13 +283,13 @@ type DBConfig struct {
 
 // DBReconnectConfig contains database reconnect settings
 type DBReconnectConfig struct {
-	// MaxRetries defines how many connection attempts should be made before we give up
+	// MaxRetries defines how many connection attempts should be made before we give up. Default: 5
 	MaxRetries int `json:"maxRetries"`
-	// BaseDelaySeconds delays retries by this amount multiplied by the retryMultiple, capped to `maxDelaySeconds`
+	// BaseDelaySeconds delays retries by this amount multiplied by the retryMultiple, capped to `maxDelaySeconds`. Default: 0 (100ms)
 	BaseDelaySeconds int `json:"baseDelaySeconds"`
-	// MaxDelaySeconds the absolute upper limit to wait before retrying
+	// MaxDelaySeconds the absolute upper limit to wait before retrying. Default: 30
 	MaxDelaySeconds int `json:"maxDelaySeconds"`
-	// RetryMultiple is the growth factor for `baseDelaySeconds`
+	// RetryMultiple is the growth factor for `baseDelaySeconds`. Default: 2.0
 	RetryMultiple float64 `json:"retryMultiple"`
 }
 
