@@ -2819,6 +2819,11 @@ func (s *ArgoServerSuite) TestSyncConfigmapService() {
 	configmapName := "test-sync-cm"
 	syncKey := "test-key"
 
+	// Clean up configmap from previous runs. DeleteResources only removes
+	// configmaps labelled workflows.argoproj.io/test; this one is created
+	// by the sync API without that label, so it survives re-runs.
+	_ = s.KubeClient.CoreV1().ConfigMaps(syncNamespace).Delete(s.T().Context(), configmapName, metav1.DeleteOptions{})
+
 	s.Run("CreateSyncLimitConfigmap", func() {
 		s.e().POST("/api/v1/sync/{namespace}", syncNamespace).
 			WithJSON(syncpkg.CreateSyncLimitRequest{
