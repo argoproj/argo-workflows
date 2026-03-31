@@ -3,7 +3,7 @@ import * as React from 'react';
 import {uiUrl} from '../shared/base';
 
 export const WidgetGallery = ({namespace, name, label}: {namespace: string; name?: string; label?: string}) => (
-    <div className='white-box'>
+    <div className='white-box' style={{marginTop: 20}}>
         <h3>Widgets</h3>
         <p>
             These widgets can be embedded inside other applications. <a href='https://argo-workflows.readthedocs.io/en/latest/widgets'>Learn more</a>
