@@ -38,11 +38,12 @@ describe('WorkflowsList', () => {
 
         // Wait for close button, then press it and verify URL updates
         // TODO: use findByRole once the close button has an aria-label
-        await waitFor(() => {
+        const closeButton = await waitFor<HTMLElement>(() => {
             const closeButton = container.querySelector<HTMLElement>('button.sliding-panel__close');
-            expect(closeButton).toBeInTheDocument;
-            closeButton.click();
+            expect(closeButton).toBeInTheDocument();
+            return closeButton;
         });
+        closeButton.click();
 
         // Check sidePanel was removed from URL.
         // Also, namespace is cleared out due to services.info.getInfo() being
