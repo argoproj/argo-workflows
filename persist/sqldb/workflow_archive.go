@@ -323,8 +323,15 @@ func (r *workflowArchive) CountWorkflows(ctx context.Context, options sutils.Lis
 			selector := s.SQL().
 				Select(db.Raw("count(*) as total")).
 				From(archiveTableName).
-				Where(r.clusterManagedNamespaceAndInstanceID()).
-				And(namespaceEqual(options.Namespace)).
+				Where(r.clusterManagedNamespaceAndInstanceID())
+
+			if options.NamespaceFilter == "NotEquals" {
+				selector = selector.And(namespaceNotEqual(options.Namespace))
+			} else {
+				selector = selector.And(namespaceEqual(options.Namespace))
+			}
+
+			selector = selector.
 				And(namePrefixClause(options.NamePrefix)).
 				And(startedAtFromClause(options.MinStartedAt)).
 				And(startedAtToClause(options.MaxStartedAt)).
@@ -344,6 +351,9 @@ func (r *workflowArchive) CountWorkflows(ctx context.Context, options sutils.Lis
 				}
 				if nameFilter == "Prefix" {
 					selector = selector.And(namePrefixClause(options.Name))
+				}
+				if nameFilter == "NotEquals" {
+					selector = selector.And(nameNotEqual(options.Name))
 				}
 			}
 
@@ -385,8 +395,15 @@ func (r *workflowArchive) countWorkflowsOptimized(ctx context.Context, options s
 		sampleSelector := s.SQL().
 			Select(db.Raw("count(*) as total")).
 			From(archiveTableName).
-			Where(r.clusterManagedNamespaceAndInstanceID()).
-			And(namespaceEqual(options.Namespace)).
+			Where(r.clusterManagedNamespaceAndInstanceID())
+
+		if options.NamespaceFilter == "NotEquals" {
+			sampleSelector = sampleSelector.And(namespaceNotEqual(options.Namespace))
+		} else {
+			sampleSelector = sampleSelector.And(namespaceEqual(options.Namespace))
+		}
+
+		sampleSelector = sampleSelector.
 			And(namePrefixClause(options.NamePrefix)).
 			And(startedAtFromClause(options.MinStartedAt)).
 			And(startedAtToClause(options.MaxStartedAt)).
@@ -406,6 +423,9 @@ func (r *workflowArchive) countWorkflowsOptimized(ctx context.Context, options s
 			}
 			if nameFilter == "Prefix" {
 				sampleSelector = sampleSelector.And(namePrefixClause(options.Name))
+			}
+			if nameFilter == "NotEquals" {
+				sampleSelector = sampleSelector.And(nameNotEqual(options.Name))
 			}
 		}
 
@@ -449,8 +469,15 @@ func (r *workflowArchive) HasMoreWorkflows(ctx context.Context, options sutils.L
 		selector := s.SQL().
 			Select("uid").
 			From(archiveTableName).
-			Where(r.clusterManagedNamespaceAndInstanceID()).
-			And(namespaceEqual(options.Namespace)).
+			Where(r.clusterManagedNamespaceAndInstanceID())
+
+		if options.NamespaceFilter == "NotEquals" {
+			selector = selector.And(namespaceNotEqual(options.Namespace))
+		} else {
+			selector = selector.And(namespaceEqual(options.Namespace))
+		}
+
+		selector = selector.
 			And(namePrefixClause(options.NamePrefix)).
 			And(startedAtFromClause(options.MinStartedAt)).
 			And(startedAtToClause(options.MaxStartedAt)).

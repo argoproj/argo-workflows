@@ -322,18 +322,47 @@ func (sm *Manager) TryAcquire(ctx context.Context, wf *wfv1.Workflow, nodeName s
 		var updated bool
 		var already bool
 		var msg string
-		err = sm.dbInfo.SessionProxy.TxWith(ctx, func(sp *sqldb.SessionProxy) error {
-			sm.log.WithField("holderKey", holderKey).Info(ctx, "TryAcquire - starting transaction")
-			var txErr error
-			tx := &transaction{sessionProxy: sp}
-			already, updated, msg, failedLockName, txErr = sm.tryAcquireImpl(ctx, wf, tx, holderKey, failedLockName, syncItems, lockKeys)
-			sm.log.WithField("holderKey", holderKey).Info(ctx, "TryAcquire - transaction completed")
-			return txErr
-		}, &sql.TxOptions{Isolation: sql.LevelSerializable, ReadOnly: false})
-		if err != nil {
+		var lastErr error
+		for retryCounter := range 5 {
+			err = sm.dbInfo.SessionProxy.TxWith(ctx, func(sp *sqldb.SessionProxy) error {
+				sm.log.WithFields(logging.Fields{
+					"holderKey": holderKey,
+					"attempt":   retryCounter + 1,
+				}).Info(ctx, "TryAcquire - starting transaction")
+				var txErr error
+				tx := &transaction{sessionProxy: sp}
+				already, updated, msg, failedLockName, txErr = sm.tryAcquireImpl(ctx, wf, tx, holderKey, failedLockName, syncItems, lockKeys)
+				sm.log.WithFields(logging.Fields{
+					"holderKey": holderKey,
+					"attempt":   retryCounter + 1,
+				}).Info(ctx, "TryAcquire - transaction completed")
+				return txErr
+			}, &sql.TxOptions{Isolation: sql.LevelSerializable, ReadOnly: false})
+			if err == nil {
+				return already, updated, msg, failedLockName, nil
+			}
+			lastErr = err
+			// Check if this is a serialization error
+			if strings.Contains(err.Error(), "serialization") ||
+				strings.Contains(err.Error(), "dependencies") ||
+				strings.Contains(err.Error(), "deadlock") ||
+				strings.Contains(err.Error(), "rollback") {
+				sm.log.WithFields(logging.Fields{
+					"holderKey": holderKey,
+					"attempt":   retryCounter + 1,
+					"error":     err,
+				}).Info(ctx, "TryAcquire - serialization conflict, retrying")
+				continue
+			}
+			sm.log.WithFields(logging.Fields{
+				"holderKey": holderKey,
+				"attempt":   retryCounter + 1,
+				"error":     err,
+			}).Info(ctx, "TryAcquire - tx failed")
+			// For other errors, return immediately
 			return false, false, "", failedLockName, err
 		}
-		return already, updated, msg, failedLockName, nil
+		return false, false, "", failedLockName, fmt.Errorf("failed after %d retries: %w", 5, lastErr)
 	}
 	return sm.tryAcquireImpl(ctx, wf, nil, holderKey, failedLockName, syncItems, lockKeys)
 }
