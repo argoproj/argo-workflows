@@ -154,16 +154,19 @@ func (r *workflowArchive) ArchiveWorkflow(ctx context.Context, wf *wfv1.Workflow
 		if err != nil {
 			return err
 		}
-		// insert the labels
-		for key, value := range wf.GetLabels() {
-			_, err := sess.Collection(archiveLabelsTableName).
-				Insert(&archivedWorkflowLabelRecord{
-					ClusterName: r.clusterName,
-					UID:         string(wf.UID),
-					Key:         key,
-					Value:       value,
-				})
-			if err != nil {
+		// insert all labels in a single multi-row INSERT
+		labels := wf.GetLabels()
+		if len(labels) > 0 {
+			uid := string(wf.UID)
+			batch := sess.SQL().
+				InsertInto(archiveLabelsTableName).
+				Columns("clustername", "uid", "name", "value").
+				Batch(len(labels))
+			for key, value := range labels {
+				batch.Values(r.clusterName, uid, key, value)
+			}
+			batch.Done()
+			if err := batch.Wait(); err != nil {
 				return err
 			}
 		}

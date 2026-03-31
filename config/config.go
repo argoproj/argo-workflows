@@ -381,6 +381,8 @@ type PostgreSQLConfig struct {
 	SSLMode string `json:"sslMode,omitempty"`
 	// AzureToken specifies if the password should be fetched as an Azure token
 	AzureToken *AzureTokenConfig `json:"azureToken,omitempty"`
+	// AWSRDSToken specifies if the password should be fetched as an AWS RDS IAM auth token
+	AWSRDSToken *AWSRDSTokenConfig `json:"awsRDSToken,omitempty"`
 }
 
 type AzureTokenConfig struct {
@@ -388,6 +390,13 @@ type AzureTokenConfig struct {
 	Enabled bool `json:"enabled,omitempty"`
 	// Scope is the scope to request the token for. Defaults to "https://ossrdbms-aad.database.windows.net/.default" if empty.
 	Scope string `json:"scope,omitempty"`
+}
+
+type AWSRDSTokenConfig struct {
+	// Enabled enables AWS RDS IAM auth token fetching
+	Enabled bool `json:"enabled,omitempty"`
+	// Region is the AWS region of the RDS instance. Auto-detected if empty.
+	Region string `json:"region,omitempty"`
 }
 
 // MySQLConfig contains MySQL-specific database configuration
