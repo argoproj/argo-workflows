@@ -196,17 +196,18 @@ PostgreSQLConfig contains PostgreSQL-specific database configuration
 
 ### Fields
 
-|    Field Name    |                                                         Field Type                                                          |                                Description                                |
-|------------------|-----------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------|
-| `Host`           | `string`                                                                                                                    | Host is the database server hostname                                      |
-| `Port`           | `int`                                                                                                                       | Port is the database server port                                          |
-| `Database`       | `string`                                                                                                                    | Database is the name of the database to connect to                        |
-| `TableName`      | `string`                                                                                                                    | TableName is the name of the table to use, must be set                    |
-| `UsernameSecret` | [`apiv1.SecretKeySelector`](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#secretkeyselector-v1-core) | UsernameSecret references a secret containing the database username       |
-| `PasswordSecret` | [`apiv1.SecretKeySelector`](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#secretkeyselector-v1-core) | PasswordSecret references a secret containing the database password       |
-| `SSL`            | `bool`                                                                                                                      | SSL enables SSL connection to the database                                |
-| `SSLMode`        | `string`                                                                                                                    | SSLMode specifies the SSL mode (disable, require, verify-ca, verify-full) |
-| `AzureToken`     | [`AzureTokenConfig`](#azuretokenconfig)                                                                                     | AzureToken specifies if the password should be fetched as an Azure token  |
+|    Field Name    |                                                         Field Type                                                          |                                     Description                                      |
+|------------------|-----------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------|
+| `Host`           | `string`                                                                                                                    | Host is the database server hostname                                                 |
+| `Port`           | `int`                                                                                                                       | Port is the database server port                                                     |
+| `Database`       | `string`                                                                                                                    | Database is the name of the database to connect to                                   |
+| `TableName`      | `string`                                                                                                                    | TableName is the name of the table to use, must be set                               |
+| `UsernameSecret` | [`apiv1.SecretKeySelector`](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#secretkeyselector-v1-core) | UsernameSecret references a secret containing the database username                  |
+| `PasswordSecret` | [`apiv1.SecretKeySelector`](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#secretkeyselector-v1-core) | PasswordSecret references a secret containing the database password                  |
+| `SSL`            | `bool`                                                                                                                      | SSL enables SSL connection to the database                                           |
+| `SSLMode`        | `string`                                                                                                                    | SSLMode specifies the SSL mode (disable, require, verify-ca, verify-full)            |
+| `AzureToken`     | [`AzureTokenConfig`](#azuretokenconfig)                                                                                     | AzureToken specifies if the password should be fetched as an Azure token             |
+| `AWSRDSToken`    | [`AWSRDSTokenConfig`](#awsrdstokenconfig)                                                                                   | AWSRDSToken specifies if the password should be fetched as an AWS RDS IAM auth token |
 
 ## AzureTokenConfig
 
@@ -216,6 +217,15 @@ PostgreSQLConfig contains PostgreSQL-specific database configuration
 |------------|------------|-------------------------------------------------------------------------------------------------------------------------|
 | `Enabled`  | `bool`     | Enabled enables Azure token fetching                                                                                    |
 | `Scope`    | `string`   | Scope is the scope to request the token for. Defaults to "https://ossrdbms-aad.database.windows.net/.default" if empty. |
+
+## AWSRDSTokenConfig
+
+### Fields
+
+| Field Name | Field Type |                              Description                              |
+|------------|------------|-----------------------------------------------------------------------|
+| `Enabled`  | `bool`     | Enabled enables AWS RDS IAM auth token fetching                       |
+| `Region`   | `string`   | Region is the AWS region of the RDS instance. Auto-detected if empty. |
 
 ## MySQLConfig
 
