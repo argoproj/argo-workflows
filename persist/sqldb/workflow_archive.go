@@ -119,8 +119,7 @@ func (r *workflowArchive) ArchiveWorkflow(ctx context.Context, wf *wfv1.Workflow
 		workflow = bytes.ReplaceAll(workflow, []byte("\\u0000"), []byte(postgresNullReplacement))
 	}
 	return r.sessionProxy.With(ctx, func(s db.Session) error {
-		
-	return s.Tx(func(sess db.Session) error {
+		return s.Tx(func(sess db.Session) error {
 			_, err := sess.SQL().
 				DeleteFrom(archiveTableName).
 				Where(r.clusterManagedNamespaceAndInstanceID()).
