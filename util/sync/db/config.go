@@ -60,7 +60,7 @@ func (d *Info) Migrate(ctx context.Context) {
 	logger := logging.RequireLoggerFromContext(ctx)
 	logger.Info(ctx, "Setting up sync manager database")
 	if !d.Config.SkipMigration {
-		err := migrate(ctx, d.SessionProxy, &d.Config)
+		err := migrate(ctx, d.SessionProxy.Session(), d.SessionProxy.DBType(), &d.Config)
 		if err != nil {
 			// Carry on anyway, but database sync locks won't work
 			logger.WithError(err).Warn(ctx, "cannot initialize semaphore database, database sync locks won't work")
@@ -73,46 +73,30 @@ func (d *Info) Migrate(ctx context.Context) {
 	}
 }
 
-func ConfigFromConfig(syncConfig *config.SyncConfig) Config {
-	if syncConfig == nil {
+func ConfigFromConfig(config *config.SyncConfig) Config {
+	if config == nil {
 		return Config{}
 	}
 	return Config{
-		LimitTable:      defaultTable(syncConfig.LimitTableName, defaultLimitTableName),
-		StateTable:      defaultTable(syncConfig.StateTableName, defaultStateTableName),
-		ControllerTable: defaultTable(syncConfig.ControllerTableName, defaultControllerTableName),
-		LockTable:       defaultTable(syncConfig.LockTableName, defaultLockTableName),
-		ControllerName:  syncConfig.ControllerName,
-		InactiveControllerTimeout: SecondsToDurationWithDefault(syncConfig.InactiveControllerSeconds,
+		LimitTable:      defaultTable(config.LimitTableName, defaultLimitTableName),
+		StateTable:      defaultTable(config.StateTableName, defaultStateTableName),
+		ControllerTable: defaultTable(config.ControllerTableName, defaultControllerTableName),
+		LockTable:       defaultTable(config.LockTableName, defaultLockTableName),
+		ControllerName:  config.ControllerName,
+		InactiveControllerTimeout: SecondsToDurationWithDefault(config.InactiveControllerSeconds,
 			DefaultDBInactiveControllerSeconds),
-		SkipMigration: syncConfig.SkipMigration,
+		SkipMigration: config.SkipMigration,
 	}
 }
 
-func SessionFromConfigWithCreds(syncConfig *config.SyncConfig, username, password string) *sqldb.SessionProxy {
-	if syncConfig == nil {
-		return nil
-	}
-	sessionProxy, err := sqldb.NewSessionProxy(context.Background(), sqldb.SessionProxyConfig{
-		DBConfig: syncConfig.DBConfig,
-		Username: username,
-		Password: password,
-	})
-	if err != nil {
-		// Carry on anyway, but database sync locks won't work
-		return nil
-	}
-	return sessionProxy
-}
-
-func SessionFromConfig(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, syncConfig *config.SyncConfig) *sqldb.SessionProxy {
-	if syncConfig == nil {
+func SessionProxyFromConfig(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, config *config.SyncConfig) *sqldb.SessionProxy {
+	if config == nil {
 		return nil
 	}
 	sessionProxy, err := sqldb.NewSessionProxy(ctx, sqldb.SessionProxyConfig{
 		KubectlConfig: kubectlConfig,
 		Namespace:     namespace,
-		DBConfig:      syncConfig.DBConfig,
+		DBConfig:      config.DBConfig,
 	})
 	if err != nil {
 		// Carry on anyway, but database sync locks won't work

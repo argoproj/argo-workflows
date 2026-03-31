@@ -17,12 +17,12 @@ import (
 	persistsqldb "github.com/argoproj/argo-workflows/v4/persist/sqldb"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/instanceid"
-	utilsqldb "github.com/argoproj/argo-workflows/v4/util/sqldb"
+	"github.com/argoproj/argo-workflows/v4/util/sqldb"
 )
 
 var (
 	session db.Session
-	dbType  utilsqldb.DBType
+	dbType  sqldb.DBType
 )
 
 func main() {
@@ -33,9 +33,6 @@ func main() {
 	}
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) (err error) {
 		session, dbType, err = createDBSession(dsn)
-		if err != nil {
-			return err
-		}
 		return
 	}
 	rootCmd.PersistentFlags().StringVarP(&dsn, "dsn", "d", "postgres://postgres@localhost:5432/postgres", "DSN connection string. For MySQL, use 'mysql:password@tcp/argo'.")
@@ -79,8 +76,8 @@ func NewFakeDataCommand() *cobra.Command {
 			for i := 0; i < rows; i++ {
 				wf := randomizeWorkflow(wfTmpl, namespaces)
 				cluster := clusters[rand.Intn(len(clusters))]
-				sessionProxy := utilsqldb.NewSessionProxyFromSession(session, nil, "", "").Tx()
-				wfArchive := persistsqldb.NewWorkflowArchive(sessionProxy, cluster, "", instanceIDService)
+				proxy := sqldb.NewSessionProxyFromSession(session, nil, "", "")
+				wfArchive := persistsqldb.NewWorkflowArchive(proxy, cluster, "", instanceIDService)
 				if err := wfArchive.ArchiveWorkflow(ctx, wf); err != nil {
 					return err
 				}
@@ -97,27 +94,27 @@ func NewFakeDataCommand() *cobra.Command {
 	return fakeDataCmd
 }
 
-func createDBSession(dsn string) (db.Session, utilsqldb.DBType, error) {
+func createDBSession(dsn string) (db.Session, sqldb.DBType, error) {
 	if strings.HasPrefix(dsn, "postgres") {
 		url, err := postgresqladp.ParseURL(dsn)
 		if err != nil {
-			return nil, utilsqldb.Invalid, err
+			return nil, "", err
 		}
 		session, err := postgresqladp.Open(url)
 		if err != nil {
-			return nil, utilsqldb.Invalid, err
+			return nil, sqldb.Invalid, err
 		}
-		return session, utilsqldb.Postgres, nil
+		return session, sqldb.Postgres, err
 	} else {
 		url, err := mysqladp.ParseURL(dsn)
 		if err != nil {
-			return nil, utilsqldb.Invalid, err
+			return nil, "", err
 		}
 		session, err := mysqladp.Open(url)
 		if err != nil {
-			return nil, utilsqldb.Invalid, err
+			return nil, sqldb.Invalid, err
 		}
-		return session, utilsqldb.MySQL, nil
+		return session, sqldb.MySQL, err
 	}
 }
 

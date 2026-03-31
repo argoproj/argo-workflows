@@ -46,6 +46,13 @@ const (
 	lockTypeMutex     lockTypeName = "mutex"
 )
 
+func sessionFromProxy(sp *sqldb.SessionProxy) db.Session {
+	if sp == nil {
+		return nil
+	}
+	return sp.Session()
+}
+
 // NewLockManager creates a new lock manager
 func NewLockManager(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, config *config.SyncConfig, getSyncLimit GetSyncLimit, nextWorkflow NextWorkflow, workflowExists WorkflowExists, ensureDBConnection bool) (*Manager, error) {
 	var sessionProxy *sqldb.SessionProxy
@@ -79,7 +86,7 @@ func createLockManager(ctx context.Context, sessionProxy *sqldb.SessionProxy, co
 		syncLimitCacheTTL: syncLimitCacheTTL,
 		workflowExists:    workflowExists,
 		dbInfo:            dbInfo,
-		queries:           syncdb.NewSyncQueries(sessionProxy, dbInfo.Config),
+		queries:           syncdb.NewSyncQueries(sessionFromProxy(sessionProxy), dbInfo.Config),
 		log:               log,
 	}
 	log.WithField("dbConfigured", sm.dbInfo.SessionProxy != nil).Info(ctx, "Sync manager initialized")

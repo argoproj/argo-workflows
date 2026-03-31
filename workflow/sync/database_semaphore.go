@@ -36,7 +36,7 @@ func newDatabaseSemaphore(ctx context.Context, name string, dbKey string, nextWo
 		nextWorkflow: nextWorkflow,
 		logger:       logger.get,
 		info:         info,
-		queries:      syncdb.NewSyncQueries(info.SessionProxy, info.Config),
+		queries:      syncdb.NewSyncQueries(info.SessionProxy.Session(), info.Config),
 		isMutex:      false,
 	}
 	sem.limitGetter = newCachedLimit(sem.getLimitFromDB, syncLimitCacheTTL)
@@ -85,7 +85,7 @@ func (s *databaseSemaphore) getLimit(ctx context.Context) int {
 
 func (s *databaseSemaphore) currentState(ctx context.Context, sessionProxy *sqldb.SessionProxy, held bool) ([]string, error) {
 	logger := s.logger(ctx)
-	states, err := s.queries.GetCurrentState(ctx, sessionProxy, s.longDBKey(), held)
+	states, err := s.queries.GetCurrentState(ctx, sessionProxy.Session(), s.longDBKey(), held)
 	if err != nil {
 		logger.WithField("held", held).WithError(err).Error(ctx, "Failed to get current state")
 		return nil, err
@@ -156,7 +156,7 @@ func (s *databaseSemaphore) release(ctx context.Context, key string) bool {
 
 func (s *databaseSemaphore) queueOrdered(ctx context.Context, sessionProxy *sqldb.SessionProxy) ([]syncdb.StateRecord, error) {
 	logger := s.logger(ctx)
-	queue, err := s.queries.GetOrderedQueue(ctx, sessionProxy, s.longDBKey(), s.info.Config.InactiveControllerTimeout)
+	queue, err := s.queries.GetOrderedQueue(ctx, sessionProxy.Session(), s.longDBKey(), s.info.Config.InactiveControllerTimeout)
 	if err != nil {
 		logger.WithError(err).Error(ctx, "Failed to get ordered queue for semaphore notification")
 		return nil, err
@@ -332,13 +332,13 @@ func (s *databaseSemaphore) acquire(ctx context.Context, holderKey string, tx *t
 		return false
 	}
 	if len(existing) < limit {
-		pending, err := s.queries.GetPendingInQueueWithSession(ctx, tx.sessionProxy, s.longDBKey(), holderKey, s.info.Config.ControllerName)
+		pending, err := s.queries.GetPendingInQueueWithSession(ctx, tx.sessionProxy.Session(), s.longDBKey(), holderKey, s.info.Config.ControllerName)
 		if err != nil {
 			logger.WithField("key", holderKey).WithError(err).Error(ctx, "Failed to acquire lock")
 			return false
 		}
 		if len(pending) > 0 {
-			err := s.queries.UpdateStateToHeldWithSession(ctx, tx.sessionProxy, s.longDBKey(), holderKey, s.info.Config.ControllerName)
+			err := s.queries.UpdateStateToHeldWithSession(ctx, tx.sessionProxy.Session(), s.longDBKey(), holderKey, s.info.Config.ControllerName)
 			if err != nil {
 				logger.WithField("key", holderKey).WithError(err).Error(ctx, "Failed to acquire lock")
 				return false
@@ -350,7 +350,7 @@ func (s *databaseSemaphore) acquire(ctx context.Context, holderKey string, tx *t
 				Controller: s.info.Config.ControllerName,
 				Held:       true,
 			}
-			err := s.queries.InsertHeldStateWithSession(ctx, tx.sessionProxy, record)
+			err := s.queries.InsertHeldStateWithSession(ctx, tx.sessionProxy.Session(), record)
 			if err != nil {
 				logger.WithField("key", holderKey).WithError(err).Error(ctx, "Failed to acquire lock")
 				return false

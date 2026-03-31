@@ -279,9 +279,7 @@ func (sp *SessionProxy) With(ctx context.Context, fn func(db.Session) error) err
 		logger.Warn(ctx, "session proxy is closed")
 		return fmt.Errorf("session proxy is closed")
 	}
-	sp.mu.RUnlock()
 
-	sp.mu.RLock()
 	sess := sp.sess
 	sp.mu.RUnlock()
 
@@ -318,7 +316,7 @@ func (sp *SessionProxy) With(ctx context.Context, fn func(db.Session) error) err
 	return nil
 }
 
-// Reconnect performs reconnection with retry logic and exponential backoff
+// Reconnect performs reconnection with retry logic and linear backoff
 func (sp *SessionProxy) Reconnect(ctx context.Context) error {
 	logger := logging.RequireLoggerFromContext(ctx)
 	sp.mu.Lock()
@@ -346,7 +344,7 @@ func (sp *SessionProxy) Reconnect(ctx context.Context) error {
 			break
 		}
 
-		// Calculate delay for next retry with exponential backoff
+		// Calculate delay for next retry with linear backoff
 		delay := time.Duration(float64(sp.baseDelay) * float64(attempt+1) * sp.retryMultiple)
 		delay = min(delay, sp.maxDelay)
 

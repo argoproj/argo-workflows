@@ -18,11 +18,7 @@ func (t DBType) IntType() string {
 	return "int"
 }
 
-// dbTypeFromConfig determines the DBType from a DBConfig.
 func dbTypeFromConfig(cfg *config.DBConfig) DBType {
-	if cfg == nil {
-		return Invalid
-	}
 	if cfg.PostgreSQL != nil {
 		return Postgres
 	}

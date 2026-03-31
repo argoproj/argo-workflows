@@ -89,14 +89,13 @@ func (wdc *nodeOffloadRepo) Save(ctx context.Context, uid, namespace string, nod
 
 	logCtx := wdc.log.WithFields(logging.Fields{"uid": uid, "version": version})
 	logCtx.Debug(ctx, "Offloading nodes")
-
-	err = wdc.sessionProxy.With(ctx, func(session db.Session) error {
-		_, insertErr := session.Collection(wdc.tableName).Insert(record)
-		if insertErr != nil {
+	err = wdc.sessionProxy.With(ctx, func(s db.Session) error {
+		_, err := s.Collection(wdc.tableName).Insert(record)
+		if err != nil {
 			// if we have a duplicate, then it must have the same clustername+uid+version, which MUST mean that we
 			// have already written this record
-			if !isDuplicateKeyError(insertErr) {
-				return insertErr
+			if !isDuplicateKeyError(err) {
+				return err
 			}
 			logCtx.WithField("err", err).Debug(ctx, "Ignoring duplicate key error")
 		}
@@ -124,72 +123,87 @@ func isDuplicateKeyError(err error) bool {
 
 func (wdc *nodeOffloadRepo) Get(ctx context.Context, uid, version string) (wfv1.Nodes, error) {
 	wdc.log.WithFields(logging.Fields{"uid": uid, "version": version}).Debug(ctx, "Getting offloaded nodes")
-	r := &nodesRecord{}
-	err := wdc.sessionProxy.With(ctx, func(session db.Session) error {
-		return session.SQL().
+	var nodes wfv1.Nodes
+	err := wdc.sessionProxy.With(ctx, func(s db.Session) error {
+		r := &nodesRecord{}
+		err := s.SQL().
 			SelectFrom(wdc.tableName).
 			Where(db.Cond{"clustername": wdc.clusterName}).
 			And(db.Cond{"uid": uid}).
 			And(db.Cond{"version": version}).
 			One(r)
+		if err != nil {
+			return err
+		}
+		n := &wfv1.Nodes{}
+		err = json.Unmarshal([]byte(r.Nodes), n)
+		if err != nil {
+			return err
+		}
+		nodes = *n
+		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
-	nodes := &wfv1.Nodes{}
-	err = json.Unmarshal([]byte(r.Nodes), nodes)
-	if err != nil {
-		return nil, err
-	}
-	return *nodes, nil
+	return nodes, nil
 }
 
 func (wdc *nodeOffloadRepo) List(ctx context.Context, namespace string) (map[UUIDVersion]wfv1.Nodes, error) {
 	wdc.log.WithFields(logging.Fields{"namespace": namespace}).Debug(ctx, "Listing offloaded nodes")
-	var records []nodesRecord
-	err := wdc.sessionProxy.With(ctx, func(session db.Session) error {
-		return session.SQL().
+	var res map[UUIDVersion]wfv1.Nodes
+	err := wdc.sessionProxy.With(ctx, func(s db.Session) error {
+		var records []nodesRecord
+		err := s.SQL().
 			Select("uid", "version", "nodes").
 			From(wdc.tableName).
 			Where(db.Cond{"clustername": wdc.clusterName}).
 			And(namespaceEqual(namespace)).
 			All(&records)
+		if err != nil {
+			return err
+		}
+
+		res = make(map[UUIDVersion]wfv1.Nodes)
+		for _, r := range records {
+			nodes := &wfv1.Nodes{}
+			err = json.Unmarshal([]byte(r.Nodes), nodes)
+			if err != nil {
+				return err
+			}
+			res[UUIDVersion{UID: r.UID, Version: r.Version}] = *nodes
+		}
+		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
-
-	res := make(map[UUIDVersion]wfv1.Nodes)
-	for _, r := range records {
-		nodes := &wfv1.Nodes{}
-		err = json.Unmarshal([]byte(r.Nodes), nodes)
-		if err != nil {
-			return nil, err
-		}
-		res[UUIDVersion{UID: r.UID, Version: r.Version}] = *nodes
-	}
-
 	return res, nil
 }
 
 func (wdc *nodeOffloadRepo) ListOldOffloads(ctx context.Context, namespace string) (map[string][]string, error) {
 	wdc.log.WithFields(logging.Fields{"namespace": namespace}).Debug(ctx, "Listing old offloaded nodes")
-	var records []UUIDVersion
-	err := wdc.sessionProxy.With(ctx, func(session db.Session) error {
-		return session.SQL().
+	var x map[string][]string
+	err := wdc.sessionProxy.With(ctx, func(s db.Session) error {
+		var records []UUIDVersion
+		err := s.SQL().
 			Select("uid", "version").
 			From(wdc.tableName).
 			Where(db.Cond{"clustername": wdc.clusterName}).
 			And(namespaceEqual(namespace)).
 			And(wdc.oldOffload()).
 			All(&records)
+		if err != nil {
+			return err
+		}
+		x = make(map[string][]string)
+		for _, r := range records {
+			x[r.UID] = append(x[r.UID], r.Version)
+		}
+		return nil
 	})
 	if err != nil {
 		return nil, err
-	}
-	x := make(map[string][]string)
-	for _, r := range records {
-		x[r.UID] = append(x[r.UID], r.Version)
 	}
 	return x, nil
 }
@@ -203,10 +217,8 @@ func (wdc *nodeOffloadRepo) Delete(ctx context.Context, uid, version string) err
 	}
 	logCtx := wdc.log.WithFields(logging.Fields{"uid": uid, "version": version})
 	logCtx.Debug(ctx, "Deleting offloaded nodes")
-
-	var rowsAffected int64
-	err := wdc.sessionProxy.With(ctx, func(session db.Session) error {
-		rs, err := session.SQL().
+	return wdc.sessionProxy.With(ctx, func(s db.Session) error {
+		rs, err := s.SQL().
 			DeleteFrom(wdc.tableName).
 			Where(db.Cond{"clustername": wdc.clusterName}).
 			And(db.Cond{"uid": uid}).
@@ -215,14 +227,13 @@ func (wdc *nodeOffloadRepo) Delete(ctx context.Context, uid, version string) err
 		if err != nil {
 			return err
 		}
-		rowsAffected, err = rs.RowsAffected()
-		return err
+		rowsAffected, err := rs.RowsAffected()
+		if err != nil {
+			return err
+		}
+		logCtx.WithField("rowsAffected", rowsAffected).Debug(ctx, "Deleted offloaded nodes")
+		return nil
 	})
-	if err != nil {
-		return err
-	}
-	logCtx.WithField("rowsAffected", rowsAffected).Debug(ctx, "Deleted offloaded nodes")
-	return nil
 }
 
 func (wdc *nodeOffloadRepo) oldOffload() string {
