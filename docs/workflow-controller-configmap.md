@@ -252,12 +252,12 @@ DBReconnectConfig contains database reconnect settings
 
 ### Fields
 
-|     Field Name     | Field Type |                                                 Description                                                 |
-|--------------------|------------|-------------------------------------------------------------------------------------------------------------|
-| `MaxRetries`       | `int`      | MaxRetries defines how many connection attempts should be made before we give up                            |
-| `BaseDelaySeconds` | `int`      | BaseDelaySeconds delays retries by this amount multiplied by the retryMultiple, capped to `maxDelaySeconds` |
-| `MaxDelaySeconds`  | `int`      | MaxDelaySeconds the absolute upper limit to wait before retrying                                            |
-| `RetryMultiple`    | `float64`  | RetryMultiple is the growth factor for `baseDelaySeconds`                                                   |
+|     Field Name     | Field Type |                                                           Description                                                           |
+|--------------------|------------|---------------------------------------------------------------------------------------------------------------------------------|
+| `MaxRetries`       | `int`      | MaxRetries defines how many connection attempts should be made before we give up. Default: 5                                    |
+| `BaseDelaySeconds` | `int`      | BaseDelaySeconds delays retries by this amount multiplied by the retryMultiple, capped to `maxDelaySeconds`. Default: 0 (100ms) |
+| `MaxDelaySeconds`  | `int`      | MaxDelaySeconds the absolute upper limit to wait before retrying. Default: 30                                                   |
+| `RetryMultiple`    | `float64`  | RetryMultiple is the growth factor for `baseDelaySeconds`. Default: 2.0                                                         |
 
 ## PodSpecLogStrategy
 
