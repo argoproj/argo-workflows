@@ -135,23 +135,37 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
         }
         storage.setItem('options', options, {} as WorkflowListRenderOptions);
 
-        const params = new URLSearchParams(history.location.search);
+        const params = new URLSearchParams();
+
+        const preserveKeys = ['sidePanel'];
+        const currentParams = new URLSearchParams(history.location.search);
+        preserveKeys.forEach(key => {
+            const value = currentParams.get(key);
+            if (value) {
+                params.set(key, value);
+            }
+        });
+
         phases?.forEach(phase => params.append('phase', phase));
+
         labels?.forEach(label => params.append('label', label));
+
         if (pagination.offset) {
-            params.append('offset', pagination.offset);
+            params.set('offset', pagination.offset);
         }
         if (pagination.limit) {
-            params.append('limit', pagination.limit.toString());
+            params.set('limit', pagination.limit.toString());
         }
+
         if (nameValue) {
-            params.append(nameFilter, nameValue);
+            params.set(nameFilter, nameValue);
         }
+
         if (createdAfter) {
-            params.append('createdAfter', createdAfter.toISOString());
+            params.set('createdAfter', createdAfter.toISOString());
         }
         if (finishedBefore) {
-            params.append('finishedBefore', finishedBefore.toISOString());
+            params.set('finishedBefore', finishedBefore.toISOString());
         }
         (isFirstRender.current ? history.replace : history.push)(
             historyUrl('workflows' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {namespace, extraSearchParams: params})
