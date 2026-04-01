@@ -352,4 +352,3 @@ func (q *syncQueries) UpdateControllerTimestamp(ctx context.Context, controllerN
 		return err
 	})
 }
-
