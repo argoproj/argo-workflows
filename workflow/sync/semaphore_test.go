@@ -101,7 +101,7 @@ func testTryAcquireSemaphore(t *testing.T, factory semaphoreFactory) {
 	defer cleanup()
 
 	now := time.Now()
-	tx := &transaction{sessionProxy: sessionProxy}
+	tx := sessionProxy
 	require.NoError(t, s.addToQueue(ctx, "default/wf-01", 0, now))
 	require.NoError(t, s.addToQueue(ctx, "default/wf-02", 0, now.Add(time.Second)))
 	require.NoError(t, s.addToQueue(ctx, "default/wf-03", 0, now.Add(2*time.Second)))
@@ -154,7 +154,7 @@ func testNotifyWaitersAcquire(t *testing.T, factory semaphoreFactory) {
 	require.NoError(t, s.addToQueue(ctx, "default/wf-05", 0, now.Add(4*time.Second)))
 	require.NoError(t, s.addToQueue(ctx, "default/wf-03", 0, now.Add(2*time.Second)))
 
-	tx := &transaction{sessionProxy: sessionProxy}
+	tx := sessionProxy
 	acquired, _ := s.tryAcquire(ctx, "default/wf-01", tx)
 	assert.True(t, acquired)
 
@@ -200,7 +200,7 @@ func testNotifyWorkflowFromTemplateSemaphore(t *testing.T, factory semaphoreFact
 	require.NoError(t, s.addToQueue(ctx, "foo/wf-01/nodeid-123", 0, now))
 	require.NoError(t, s.addToQueue(ctx, "foo/wf-02/nodeid-456", 0, now.Add(time.Second)))
 
-	tx := &transaction{sessionProxy: sessionProxy}
+	tx := sessionProxy
 	acquired, _ := s.tryAcquire(ctx, "foo/wf-01/nodeid-123", tx)
 	assert.True(t, acquired)
 
@@ -235,7 +235,7 @@ func testCheckAcquireNotifiesCorrectKeyForTemplateSemaphore(t *testing.T, factor
 	require.NoError(t, s.addToQueue(ctx, "foo/wf-01/node-aaa", 0, now))
 	require.NoError(t, s.addToQueue(ctx, "foo/wf-02/node-bbb", 0, now.Add(time.Second)))
 
-	tx := &transaction{sessionProxy: sessionProxy}
+	tx := sessionProxy
 	// wf-02 is not first in queue, so checkAcquire should notify the front (wf-01)
 	// via nextWorkflow with the workflow-level key, not the template-level key
 	acquired, _, _ := s.checkAcquire(ctx, "foo/wf-02/node-bbb", tx)

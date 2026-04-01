@@ -225,7 +225,7 @@ func (s *databaseSemaphore) removeFromQueue(ctx context.Context, holderKey strin
 	return err
 }
 
-func (s *databaseSemaphore) checkAcquire(ctx context.Context, holderKey string, tx *transaction) (bool, bool, string) {
+func (s *databaseSemaphore) checkAcquire(ctx context.Context, holderKey string, tx *sqldb.SessionProxy) (bool, bool, string) {
 	logger := s.logger(ctx)
 	if holderKey == "" {
 		logger.WithFields(logging.Fields{
@@ -237,7 +237,7 @@ func (s *databaseSemaphore) checkAcquire(ctx context.Context, holderKey string, 
 	}
 	// Limit changes are eventually consistent, not inside the tx
 	limit := s.getLimit(ctx)
-	holders, err := s.currentHoldersSession(ctx, tx.sessionProxy)
+	holders, err := s.currentHoldersSession(ctx, tx)
 	if err != nil {
 		logger.WithFields(logging.Fields{
 			"key":          holderKey,
@@ -272,7 +272,7 @@ func (s *databaseSemaphore) checkAcquire(ctx context.Context, holderKey string, 
 	// If it is in front position, it will allow to acquire lock.
 	// If it is not a front key, it needs to wait for its turn.
 	// Only live controllers are considered
-	queue, err := s.queueOrdered(ctx, tx.sessionProxy)
+	queue, err := s.queueOrdered(ctx, tx)
 	if err != nil {
 		logger.WithFields(logging.Fields{
 			"key":          holderKey,
@@ -323,22 +323,22 @@ func (s *databaseSemaphore) checkAcquire(ctx context.Context, holderKey string, 
 	return true, false, ""
 }
 
-func (s *databaseSemaphore) acquire(ctx context.Context, holderKey string, tx *transaction) bool {
+func (s *databaseSemaphore) acquire(ctx context.Context, holderKey string, tx *sqldb.SessionProxy) bool {
 	logger := s.logger(ctx)
 	limit := s.getLimit(ctx)
-	existing, err := s.currentHoldersSession(ctx, tx.sessionProxy)
+	existing, err := s.currentHoldersSession(ctx, tx)
 	if err != nil {
 		logger.WithField("key", holderKey).WithError(err).Error(ctx, "Failed to acquire lock")
 		return false
 	}
 	if len(existing) < limit {
-		pending, err := s.queries.GetPendingInQueue(ctx, tx.sessionProxy, s.longDBKey(), holderKey, s.info.Config.ControllerName)
+		pending, err := s.queries.GetPendingInQueue(ctx, tx, s.longDBKey(), holderKey, s.info.Config.ControllerName)
 		if err != nil {
 			logger.WithField("key", holderKey).WithError(err).Error(ctx, "Failed to acquire lock")
 			return false
 		}
 		if len(pending) > 0 {
-			err := s.queries.UpdateStateToHeld(ctx, tx.sessionProxy, s.longDBKey(), holderKey, s.info.Config.ControllerName)
+			err := s.queries.UpdateStateToHeld(ctx, tx, s.longDBKey(), holderKey, s.info.Config.ControllerName)
 			if err != nil {
 				logger.WithField("key", holderKey).WithError(err).Error(ctx, "Failed to acquire lock")
 				return false
@@ -350,7 +350,7 @@ func (s *databaseSemaphore) acquire(ctx context.Context, holderKey string, tx *t
 				Controller: s.info.Config.ControllerName,
 				Held:       true,
 			}
-			err := s.queries.InsertHeldState(ctx, tx.sessionProxy, record)
+			err := s.queries.InsertHeldState(ctx, tx, record)
 			if err != nil {
 				logger.WithField("key", holderKey).WithError(err).Error(ctx, "Failed to acquire lock")
 				return false
@@ -372,7 +372,7 @@ func (s *databaseSemaphore) acquire(ctx context.Context, holderKey string, tx *t
 	return false
 }
 
-func (s *databaseSemaphore) tryAcquire(ctx context.Context, holderKey string, tx *transaction) (bool, string) {
+func (s *databaseSemaphore) tryAcquire(ctx context.Context, holderKey string, tx *sqldb.SessionProxy) (bool, string) {
 	logger := s.logger(ctx)
 	acq, already, msg := s.checkAcquire(ctx, holderKey, tx)
 	if already {

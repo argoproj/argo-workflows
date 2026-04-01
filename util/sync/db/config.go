@@ -99,7 +99,8 @@ func SessionProxyFromConfig(ctx context.Context, kubectlConfig kubernetes.Interf
 		DBConfig:      config.DBConfig,
 	})
 	if err != nil {
-		// Carry on anyway, but database sync locks won't work
+		log := logging.RequireLoggerFromContext(ctx)
+		log.WithError(err).Error(ctx, "was unable to create database connection")
 		return nil
 	}
 	return sessionProxy

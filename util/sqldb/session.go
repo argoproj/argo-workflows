@@ -144,29 +144,6 @@ func (sp *SessionProxy) DBType() DBType {
 	return sp.dbType
 }
 
-// Tx marks the sessionproxy as being part of a transaction.
-// This ensures we do not retry/reconnect
-func (sp *SessionProxy) Tx() *SessionProxy {
-	sp.mu.RLock()
-	defer sp.mu.RUnlock()
-
-	return &SessionProxy{
-		kubectlConfig:     sp.kubectlConfig,
-		namespace:         sp.namespace,
-		dbConfig:          sp.dbConfig,
-		username:          sp.username,
-		password:          sp.password,
-		dbType:            sp.dbType,
-		sess:              sp.sess,
-		closed:            sp.closed,
-		maxRetries:        sp.maxRetries,
-		baseDelay:         sp.baseDelay,
-		maxDelay:          sp.maxDelay,
-		retryMultiple:     sp.retryMultiple,
-		insideTransaction: true,
-	}
-}
-
 // TxWith runs a With transaction
 func (sp *SessionProxy) TxWith(ctx context.Context, fn func(*SessionProxy) error, opts *sql.TxOptions) error {
 	return sp.With(ctx, func(s db.Session) error {
@@ -186,6 +163,7 @@ func (sp *SessionProxy) TxWith(ctx context.Context, fn func(*SessionProxy) error
 				retryMultiple:     sp.retryMultiple,
 				insideTransaction: true,
 			}
+
 			return fn(newSp)
 		}, opts)
 	})
@@ -227,11 +205,9 @@ func (sp *SessionProxy) isNetworkError(err error) bool {
 
 	errStr := strings.ToLower(err.Error())
 
-	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
-		return true
-	}
-
-	if errors.Is(err, syscall.ECONNRESET) ||
+	if errors.Is(err, io.ErrUnexpectedEOF) ||
+		errors.Is(err, io.EOF) ||
+		errors.Is(err, syscall.ECONNRESET) ||
 		errors.Is(err, syscall.ECONNREFUSED) ||
 		errors.Is(err, syscall.ECONNABORTED) ||
 		errors.Is(err, syscall.EPIPE) {

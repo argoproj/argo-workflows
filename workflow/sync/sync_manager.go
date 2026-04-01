@@ -244,8 +244,7 @@ func (sm *Manager) Initialize(ctx context.Context, wfs []wfv1.Workflow) {
 						continue
 					}
 					key := getUpgradedKey(&wf, holders, level)
-					tx := &transaction{sessionProxy: sm.dbInfo.SessionProxy}
-					if sem != nil && sem.acquire(ctx, key, tx) {
+					if sem != nil && sem.acquire(ctx, key, sm.dbInfo.SessionProxy) {
 						sm.log.WithFields(logging.Fields{"key": key, "semaphore": holding.Semaphore}).Info(ctx, "Lock acquired")
 					}
 				}
@@ -269,8 +268,7 @@ func (sm *Manager) Initialize(ctx context.Context, wfs []wfv1.Workflow) {
 							continue
 						}
 						key := getUpgradedKey(&wf, holding.Holder, level)
-						tx := &transaction{sessionProxy: sm.dbInfo.SessionProxy}
-						mutex.acquire(ctx, key, tx)
+						mutex.acquire(ctx, key, sm.dbInfo.SessionProxy)
 					}
 					sm.syncLockMap[holding.Mutex] = mutex
 				}
@@ -330,8 +328,7 @@ func (sm *Manager) TryAcquire(ctx context.Context, wf *wfv1.Workflow, nodeName s
 					"attempt":   retryCounter + 1,
 				}).Info(ctx, "TryAcquire - starting transaction")
 				var txErr error
-				tx := &transaction{sessionProxy: sp}
-				already, updated, msg, failedLockName, txErr = sm.tryAcquireImpl(ctx, wf, tx, holderKey, failedLockName, syncItems, lockKeys)
+				already, updated, msg, failedLockName, txErr = sm.tryAcquireImpl(ctx, wf, sp, holderKey, failedLockName, syncItems, lockKeys)
 				sm.log.WithFields(logging.Fields{
 					"holderKey": holderKey,
 					"attempt":   retryCounter + 1,
@@ -401,7 +398,7 @@ func (sm *Manager) prepAcquire(ctx context.Context, wf *wfv1.Workflow, holderKey
 	return true, "", "", nil
 }
 
-func (sm *Manager) tryAcquireImpl(ctx context.Context, wf *wfv1.Workflow, tx *transaction, holderKey string, failedLockName string, syncItems []*syncItem, lockKeys []string) (bool, bool, string, string, error) {
+func (sm *Manager) tryAcquireImpl(ctx context.Context, wf *wfv1.Workflow, tx *sqldb.SessionProxy, holderKey string, failedLockName string, syncItems []*syncItem, lockKeys []string) (bool, bool, string, string, error) {
 	defer sm.unlockAll(ctx, lockKeys)
 	allAcquirable := true
 	msg := ""

@@ -53,7 +53,7 @@ func TestInactiveControllerDBSemaphore(t *testing.T) {
 			require.NoError(t, s.addToQueue(ctx, "foo/wf-02", 0, now.Add(time.Second)))
 
 			// Try to acquire - this should fail because the controller is considered inactive
-			tx := &transaction{sessionProxy: info.SessionProxy}
+			tx := info.SessionProxy
 			acquired, _ := s.tryAcquire(ctx, "foo/wf-01", tx)
 			assert.False(t, acquired, "Semaphore should not be acquired when controller is marked as inactive")
 
@@ -108,7 +108,7 @@ func TestOtherControllerDBSemaphore(t *testing.T) {
 			require.NoError(t, s.addToQueue(ctx, "foo/our-wf-01", 0, now.Add(time.Second)))
 
 			// Try to acquire - this should fail because the other controller's item is first in line
-			tx := &transaction{sessionProxy: info.SessionProxy}
+			tx := info.SessionProxy
 			acquired, _ := s.tryAcquire(ctx, "foo/our-wf-01", tx)
 			assert.False(t, acquired, "Semaphore should not be acquired when another controller's item is first in queue")
 
@@ -170,7 +170,7 @@ func TestDifferentSemaphoreDBSemaphore(t *testing.T) {
 			require.NoError(t, s.addToQueue(ctx, "foo/our-wf-01", 0, now.Add(time.Second)))
 
 			// Try to acquire - this should succeed because the other cluster's item is for a different semaphore
-			tx := &transaction{sessionProxy: info.SessionProxy}
+			tx := info.SessionProxy
 			acquired, _ := s.tryAcquire(ctx, "foo/our-wf-01", tx)
 			assert.True(t, acquired, "Semaphore should be acquired when another cluster's item is for a different semaphore")
 
@@ -204,7 +204,7 @@ func TestMutexAndSemaphoreWithSameName(t *testing.T) {
 			now := time.Now()
 
 			// Mutex workflow 1
-			tx := &transaction{sessionProxy: info.SessionProxy}
+			tx := info.SessionProxy
 			require.NoError(t, mutex.addToQueue(ctx, "foo/wf-mutex-1", 0, now))
 			mutexAcquired1, _ := mutex.tryAcquire(ctx, "foo/wf-mutex-1", tx)
 			assert.True(t, mutexAcquired1, "Mutex should be acquired by first workflow")
