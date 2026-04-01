@@ -6,9 +6,11 @@ import (
 	"database/sql/driver"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/upper/db/v4"
@@ -145,6 +147,9 @@ func (sp *SessionProxy) DBType() DBType {
 // Tx marks the sessionproxy as being part of a transaction.
 // This ensures we do not retry/reconnect
 func (sp *SessionProxy) Tx() *SessionProxy {
+	sp.mu.RLock()
+	defer sp.mu.RUnlock()
+
 	return &SessionProxy{
 		kubectlConfig:     sp.kubectlConfig,
 		namespace:         sp.namespace,
@@ -152,7 +157,7 @@ func (sp *SessionProxy) Tx() *SessionProxy {
 		username:          sp.username,
 		password:          sp.password,
 		dbType:            sp.dbType,
-		sess:              sp.Session(),
+		sess:              sp.sess,
 		closed:            sp.closed,
 		maxRetries:        sp.maxRetries,
 		baseDelay:         sp.baseDelay,
@@ -222,6 +227,17 @@ func (sp *SessionProxy) isNetworkError(err error) bool {
 
 	errStr := strings.ToLower(err.Error())
 
+	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+		return true
+	}
+
+	if errors.Is(err, syscall.ECONNRESET) ||
+		errors.Is(err, syscall.ECONNREFUSED) ||
+		errors.Is(err, syscall.ECONNABORTED) ||
+		errors.Is(err, syscall.EPIPE) {
+		return true
+	}
+
 	// Common network error patterns
 	networkErrors := []string{
 		"connection refused",
@@ -234,7 +250,6 @@ func (sp *SessionProxy) isNetworkError(err error) bool {
 		"broken pipe",
 		"connection timed out",
 		"i/o timeout",
-		"eof",
 		"connection aborted",
 		"connection dropped",
 		"server closed the connection",
@@ -297,7 +312,7 @@ func (sp *SessionProxy) With(ctx context.Context, fn func(db.Session) error) err
 		return err
 	}
 
-	if reconnectErr := sp.Reconnect(ctx); reconnectErr != nil {
+	if reconnectErr := sp.reconnectIfStale(ctx, sess); reconnectErr != nil {
 		return fmt.Errorf("operation failed and reconnection failed: %w", reconnectErr)
 	}
 
@@ -316,11 +331,27 @@ func (sp *SessionProxy) With(ctx context.Context, fn func(db.Session) error) err
 	return nil
 }
 
-// Reconnect performs reconnection with retry logic and linear backoff
-func (sp *SessionProxy) Reconnect(ctx context.Context) error {
-	logger := logging.RequireLoggerFromContext(ctx)
+// reconnectIfStale reconnects only if the current session is still the
+// same one that produced the error. If another goroutine already
+// reconnected (sp.sess != staleSess), this is a no-op.
+func (sp *SessionProxy) reconnectIfStale(ctx context.Context, staleSess db.Session) error {
 	sp.mu.Lock()
 	defer sp.mu.Unlock()
+	if sp.sess != staleSess {
+		return nil
+	}
+	return sp.reconnectLocked(ctx)
+}
+
+// Reconnect performs reconnection with retry logic and linear backoff
+func (sp *SessionProxy) Reconnect(ctx context.Context) error {
+	sp.mu.Lock()
+	defer sp.mu.Unlock()
+	return sp.reconnectLocked(ctx)
+}
+
+func (sp *SessionProxy) reconnectLocked(ctx context.Context) error {
+	logger := logging.RequireLoggerFromContext(ctx)
 
 	var err error
 

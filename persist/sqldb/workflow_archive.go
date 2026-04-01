@@ -680,7 +680,7 @@ func (r *workflowArchive) GetWorkflowForEstimator(ctx context.Context, namespace
 
 	var result *wfv1.Workflow
 	err := r.sessionProxy.With(queryCtx, func(s db.Session) error {
-		selector := s.SQL().
+		selector := s.WithContext(queryCtx).SQL().
 			Select("name", "namespace", "uid", "startedat", "finishedat").
 			From(archiveTableName).
 			Where(r.clusterManagedNamespaceAndInstanceID()).
