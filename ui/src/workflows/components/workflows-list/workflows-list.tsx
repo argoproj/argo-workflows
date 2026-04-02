@@ -32,6 +32,8 @@ import {WorkflowsToolbar} from '../workflows-toolbar/workflows-toolbar';
 
 import './workflows-list.scss';
 
+import {useQueryParams} from '../../../shared/use-query-params';
+
 interface WorkflowListRenderOptions {
     paginationLimit: number;
     phases: WorkflowPhase[];
@@ -60,6 +62,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
 
     const isFirstRender = useRef(true);
     const [namespace, setNamespace] = useState(nsUtils.getNamespace(match.params.namespace) || '');
+    const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') || '');
     const [pagination, setPagination] = useState<Pagination>(() => {
         const savedPaginationLimit = storage.getItem('options', {}).paginationLimit || undefined;
         return {
@@ -111,10 +114,6 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
         setSelectedWorkflows(new Map<string, models.Workflow>());
     }
 
-    function getSidePanel() {
-        return queryParams.get('sidePanel');
-    }
-
     // run once on first render
     useEffect(() => {
         (async () => {
@@ -123,6 +122,13 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
             setColumns(info.columns);
         })();
     }, []);
+
+    useEffect(
+        useQueryParams(history, p => {
+            setSidePanel(p.get('sidePanel') || '');
+        }),
+        [history]
+    );
 
     // save history and localStorage
     useEffect(() => {
@@ -135,7 +141,28 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
         }
         storage.setItem('options', options, {} as WorkflowListRenderOptions);
 
-        const params = new URLSearchParams(history.location.search);
+        const params = new URLSearchParams();
+        const currentParams = new URLSearchParams(history.location.search);
+
+        if (currentParams.has('namespace')) {
+            params.set('namespace', currentParams.get('namespace'));
+        }
+
+        if (sidePanel) {
+            params.set('sidePanel', sidePanel);
+
+            // preserve template name and parameters if sidePanel is open
+            if (currentParams.has('template')) {
+                params.append('template', currentParams.get('template'));
+            }
+            currentParams.forEach((v, k) => {
+                if (k.startsWith('parameters')) {
+                    params.append(k, v);
+                }
+            });
+        }
+
+        // phases
         phases?.forEach(phase => params.append('phase', phase));
         labels?.forEach(label => params.append('label', label));
         if (pagination.offset) {
@@ -157,7 +184,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
             historyUrl('workflows' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {namespace, extraSearchParams: params})
         );
         isFirstRender.current = false;
-    }, [namespace, phases.toString(), labels.toString(), pagination.limit, pagination.offset, nameValue, nameFilter, createdAfter, finishedBefore]); // referential equality, so use values, not refs
+    }, [namespace, phases.toString(), labels.toString(), pagination.limit, pagination.offset, nameValue, nameFilter, createdAfter, finishedBefore, sidePanel]); // referential equality, so use values, not refs
 
     useEffect(() => {
         const listWatch = new ListWatch(
@@ -199,7 +226,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                         {
                             title: 'Submit New Workflow',
                             iconClassName: 'fa fa-plus',
-                            action: () => navigation.goto('.', {sidePanel: 'submit-new-workflow'})
+                            action: () => setSidePanel('submit-new-workflow')
                         },
                         ...links.map(link => ({
                             title: link.name,
@@ -355,23 +382,8 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                     )}
                 </div>
             </div>
-            <SlidingPanel
-                isShown={!!getSidePanel()}
-                onClose={() => {
-                    const qParams: {[key: string]: string | null} = {
-                        sidePanel: null
-                    };
-                    // Remove any lingering query params
-                    for (const key of queryParams.keys()) {
-                        qParams[key] = null;
-                    }
-                    // Add back the pagination and namespace params.
-                    qParams.limit = pagination.limit.toString();
-                    qParams.offset = pagination.offset || null;
-                    qParams.namespace = namespace;
-                    navigation.goto('.', qParams);
-                }}>
-                {getSidePanel() === 'submit-new-workflow' && (
+            <SlidingPanel isShown={!!sidePanel} onClose={() => setSidePanel('')}>
+                {sidePanel === 'submit-new-workflow' && (
                     <WorkflowCreator
                         namespace={nsUtils.getNamespaceWithDefault(namespace)}
                         history={history}

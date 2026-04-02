@@ -34,7 +34,9 @@ describe('WorkflowsList', () => {
         const submitWorkflowButton = getByRole('button', {name: 'Submit New Workflow'});
         expect(submitWorkflowButton).toBeInTheDocument();
         submitWorkflowButton.click();
-        expect(history.location.search).toBe('?namespace=argo&limit=50&sidePanel=submit-new-workflow');
+        await waitFor(() => {
+            expect(history.location.search).toBe('?namespace=argo&sidePanel=submit-new-workflow&limit=50');
+        });
 
         // Wait for close button, then press it and verify URL updates
         // TODO: use findByRole once the close button has an aria-label
@@ -46,10 +48,9 @@ describe('WorkflowsList', () => {
         closeButton.click();
 
         // Check sidePanel was removed from URL.
-        // Also, namespace is cleared out due to services.info.getInfo() being
-        // mocked to return empty body, which causes AppRouter to set namespace
-        // to empty string.
-        expect(history.location.search).toBe('?namespace=&limit=50');
+        await waitFor(() => {
+            expect(history.location.search).toBe('?namespace=argo&limit=50');
+        });
     });
 
     it('opens workflow creator with pre-filled URL parameters', async () => {
@@ -63,5 +64,35 @@ describe('WorkflowsList', () => {
 
         const parameterInput = await findByDisplayValue('test-hello');
         expect(parameterInput).toBeInTheDocument();
+    });
+
+    it('retains query parameters when side panel is closed', async () => {
+        const history = createMemoryHistory();
+        history.push('/workflows?namespace=argo&phase=Pending&label=test');
+
+        const {getByRole, container} = render(<App history={history} />);
+        expect(history.location.search).toBe('?namespace=argo&phase=Pending&label=test&limit=50');
+
+        // Click "Submit New Workflow" button and verify URL updates
+        const submitWorkflowButton = getByRole('button', {name: 'Submit New Workflow'});
+        expect(submitWorkflowButton).toBeInTheDocument();
+        submitWorkflowButton.click();
+        await waitFor(() => {
+            expect(history.location.search).toBe('?namespace=argo&sidePanel=submit-new-workflow&phase=Pending&label=test&limit=50');
+        });
+
+        // Wait for close button, then press it and verify URL updates
+        // TODO: use findByRole once the close button has an aria-label
+        const closeButton = await waitFor<HTMLElement>(() => {
+            const closeButton = container.querySelector<HTMLElement>('button.sliding-panel__close');
+            expect(closeButton).toBeInTheDocument();
+            return closeButton;
+        });
+        closeButton.click();
+
+        // Check sidePanel was removed from URL but phase remains
+        await waitFor(() => {
+            expect(history.location.search).toBe('?namespace=argo&phase=Pending&label=test&limit=50');
+        });
     });
 });
