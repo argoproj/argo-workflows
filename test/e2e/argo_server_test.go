@@ -1136,7 +1136,7 @@ func (s *ArgoServerSuite) TestWorkflowServiceListArchived() {
 				}
 			}
 			return true
-		}, 30*time.Second, time.Second, "expected both workflows to have Persisted archiving status")
+		}, 60*time.Second, time.Second, "expected both workflows to have Persisted archiving status")
 	})
 
 	s.Run("ListNameContainsAlice", func() {
@@ -1314,15 +1314,29 @@ func (s *ArgoServerSuite) TestWorkflowArchiveServiceList() {
 		WaitForWorkflow(fixtures.ToBeArchived, metav1.ListOptions{FieldSelector: "metadata.name=" + nameBobWf}).
 		WaitForWorkflow(fixtures.ToBeArchived, metav1.ListOptions{FieldSelector: "metadata.name=" + nameAliceWf})
 
+	// WaitForWorkflow(ToBeArchived) watches K8s labels, but the archive
+	// endpoint queries the DB which may lag behind. Poll until both
+	// workflows appear.
 	s.Run("ListAll", func() {
-		s.e().GET("/api/v1/archived-workflows").
-			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test=subject-1").
-			Expect().
-			Status(200).
-			JSON().
-			Path(`$.items[*].metadata.labels["workflows.argoproj.io/workflow-archiving-status"]`).
-			Array().
-			IsEqual([]any{"Persisted", "Persisted"})
+		s.Eventually(func() bool {
+			statuses := s.e().GET("/api/v1/archived-workflows").
+				WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test=subject-1").
+				Expect().
+				Status(200).
+				JSON().
+				Path(`$.items[*].metadata.labels["workflows.argoproj.io/workflow-archiving-status"]`).
+				Array().
+				Raw()
+			if len(statuses) != 2 {
+				return false
+			}
+			for _, v := range statuses {
+				if v != "Persisted" {
+					return false
+				}
+			}
+			return true
+		}, 60*time.Second, time.Second, "expected both workflows to have Persisted archiving status")
 	})
 
 	s.Run("ArchiveNameContainsAlice", func() {
@@ -2818,6 +2832,11 @@ func (s *ArgoServerSuite) TestSyncConfigmapService() {
 	syncNamespace := "argo"
 	configmapName := "test-sync-cm"
 	syncKey := "test-key"
+
+	// Clean up configmap from previous runs. DeleteResources only removes
+	// configmaps labelled workflows.argoproj.io/test; this one is created
+	// by the sync API without that label, so it survives re-runs.
+	_ = s.KubeClient.CoreV1().ConfigMaps(syncNamespace).Delete(s.T().Context(), configmapName, metav1.DeleteOptions{})
 
 	s.Run("CreateSyncLimitConfigmap", func() {
 		s.e().POST("/api/v1/sync/{namespace}", syncNamespace).
