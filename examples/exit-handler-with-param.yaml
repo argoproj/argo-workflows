@@ -2,8 +2,6 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: exit-handler-with-param-
-  labels:
-    workflows.argoproj.io/test: "true"
   annotations:
     workflows.argoproj.io/description: |
       onExitTemplate enables workflow to pass the arguments (parameters/Artifacts) to exit handler template.
@@ -25,7 +23,7 @@ spec:
     
     - name: output
       container:
-        image: python:alpine3.6
+        image: python:alpine3.23
         command: [sh, -c]
         args: ["echo -n hello world > /tmp/hello_world.txt"]
       outputs:
@@ -40,7 +38,7 @@ spec:
         parameters:
           - name: message
       script:
-        image: python:alpine3.6
+        image: python:alpine3.23
         command: [ python ]
         source: |
           print("{{inputs.parameters.message}}")

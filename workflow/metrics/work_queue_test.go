@@ -4,35 +4,47 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/attribute"
 	"k8s.io/client-go/util/workqueue"
+
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/telemetry"
 )
 
 func TestMetricsWorkQueue(t *testing.T) {
-	config := ServerConfig{
-		Enabled: true,
-		Path:    DefaultMetricsServerPath,
-		Port:    DefaultMetricsServerPort,
-	}
-	m := New(config, config)
+	ctx := logging.TestContext(t.Context())
+	m, te, err := getSharedMetrics(ctx)
+	require.NoError(t, err)
 
-	assert.Empty(t, m.workersBusy)
+	attribsWT := attribute.NewSet(attribute.String(telemetry.AttribWorkerType, "test"))
 
-	m.newWorker("test")
-	assert.Len(t, m.workersBusy, 1)
-	assert.Equal(t, float64(0), *write(m.workersBusy["test"]).Gauge.Value)
-
-	m.newWorker("test")
-	assert.Len(t, m.workersBusy, 1)
-
-	queue := m.RateLimiterWithBusyWorkers(workqueue.DefaultControllerRateLimiter(), "test")
+	queue := m.RateLimiterWithBusyWorkers(ctx, workqueue.DefaultTypedControllerRateLimiter[string](), "test")
 	defer queue.ShutDown()
+	val, err := te.GetInt64CounterValue(ctx, telemetry.InstrumentWorkersBusyCount.Name(), &attribsWT)
+	require.NoError(t, err)
+	assert.Equal(t, int64(0), val)
 
+	attribsQN := attribute.NewSet(attribute.String(telemetry.AttribQueueName, "test"))
 	queue.Add("A")
-	assert.Equal(t, float64(0), *write(m.workersBusy["test"]).Gauge.Value)
+	val, err = te.GetInt64CounterValue(ctx, telemetry.InstrumentWorkersBusyCount.Name(), &attribsWT)
+	require.NoError(t, err)
+	assert.Equal(t, int64(0), val)
+
+	val, err = te.GetInt64CounterValue(ctx, telemetry.InstrumentQueueDepthGauge.Name(), &attribsQN)
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), val)
 
 	queue.Get()
-	assert.Equal(t, float64(1), *write(m.workersBusy["test"]).Gauge.Value)
+	val, err = te.GetInt64CounterValue(ctx, telemetry.InstrumentWorkersBusyCount.Name(), &attribsWT)
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), val)
+	val, err = te.GetInt64CounterValue(ctx, telemetry.InstrumentQueueDepthGauge.Name(), &attribsQN)
+	require.NoError(t, err)
+	assert.Equal(t, int64(0), val)
 
 	queue.Done("A")
-	assert.Equal(t, float64(0), *write(m.workersBusy["test"]).Gauge.Value)
+	val, err = te.GetInt64CounterValue(ctx, telemetry.InstrumentWorkersBusyCount.Name(), &attribsWT)
+	require.NoError(t, err)
+	assert.Equal(t, int64(0), val)
 }

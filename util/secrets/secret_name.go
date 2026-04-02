@@ -3,7 +3,7 @@ package secrets
 import (
 	"fmt"
 
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 
 	corev1 "k8s.io/api/core/v1"
 )

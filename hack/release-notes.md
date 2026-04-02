@@ -19,7 +19,7 @@ Available via `curl`
 ```bash
 # Detect OS
 ARGO_OS="darwin"
-if [[ uname -s != "Darwin" ]]; then
+if [[ "$(uname -s)" != "Darwin" ]]; then
   ARGO_OS="linux"
 fi
 

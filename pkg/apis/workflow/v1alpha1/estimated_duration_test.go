@@ -10,5 +10,5 @@ import (
 func TestEstimatedDuration(t *testing.T) {
 	duration := NewEstimatedDuration(time.Minute)
 	assert.Equal(t, EstimatedDuration(60), duration)
-	assert.Equal(t, time.Duration(time.Minute), duration.ToDuration())
+	assert.Equal(t, time.Minute, duration.ToDuration())
 }

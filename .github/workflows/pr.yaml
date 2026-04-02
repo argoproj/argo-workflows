@@ -1,4 +1,4 @@
-name: PR
+name: PR Title Check
 
 on:
   pull_request_target:
@@ -13,9 +13,10 @@ permissions:
 
 jobs:
   title-check:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Check PR Title's semantic conformance
-        uses: amannn/action-semantic-pull-request@e9fabac35e210fea40ca5b14c0da95a099eff26f # v5.4.0
+        id: semantic-pr-check
+        uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

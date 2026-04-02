@@ -6,10 +6,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	argoerrors "github.com/argoproj/argo-workflows/v3/errors"
+	argoerrors "github.com/argoproj/argo-workflows/v4/errors"
 )
 
 type testArgoError struct {
@@ -36,8 +37,6 @@ func (t testArgoError) HTTPCode() int {
 		return http.StatusBadRequest
 	case argoerrors.CodeNotImplemented:
 		return http.StatusNotImplemented
-	case argoerrors.CodeTimeout, argoerrors.CodeInternal:
-		return http.StatusInternalServerError
 	default:
 		return http.StatusInternalServerError
 	}
@@ -62,11 +61,10 @@ func TestRecursiveStatus(t *testing.T) {
 
 func TestNilStatus(t *testing.T) {
 	newErr := ToStatusError(nil, codes.InvalidArgument)
-	assert.NoError(t, newErr)
+	require.NoError(t, newErr)
 }
 
 func TestArgoError(t *testing.T) {
-
 	t.Run("CodeBadRequest", func(t *testing.T) {
 		argoErr := testArgoError{argoerrors.CodeBadRequest}
 		newErr := ToStatusError(argoErr, codes.Internal)
@@ -87,7 +85,6 @@ func TestArgoError(t *testing.T) {
 		stat := status.Convert(newErr)
 		assert.Equal(t, codes.Internal, stat.Code())
 	})
-
 }
 
 func TestHTTPToStatusError(t *testing.T) {
@@ -95,7 +92,7 @@ func TestHTTPToStatusError(t *testing.T) {
 
 	t.Run("StatusOk", func(t *testing.T) {
 		code := http.StatusAccepted
-		err, ok := httpToStatusError(code, "msg")
+		ok, err := httpToStatusError(code, "msg")
 		assert.True(ok)
 		stat := status.Convert(err)
 		assert.Equal(codes.OK, stat.Code())
@@ -103,7 +100,7 @@ func TestHTTPToStatusError(t *testing.T) {
 
 	t.Run("StatusOnRedirect", func(t *testing.T) {
 		code := http.StatusPermanentRedirect
-		err, ok := httpToStatusError(code, "msg")
+		ok, err := httpToStatusError(code, "msg")
 		assert.True(ok)
 		stat := status.Convert(err)
 		assert.Equal(codes.Internal, stat.Code())
@@ -111,7 +108,7 @@ func TestHTTPToStatusError(t *testing.T) {
 	// Test 400 level errors not accounted for in map
 	t.Run("StatusTeapot", func(t *testing.T) {
 		code := http.StatusTeapot
-		err, ok := httpToStatusError(code, "msg")
+		ok, err := httpToStatusError(code, "msg")
 		assert.True(ok)
 		stat := status.Convert(err)
 		assert.Equal(codes.InvalidArgument, stat.Code())
@@ -120,7 +117,7 @@ func TestHTTPToStatusError(t *testing.T) {
 	// Test 500 level errors not accounted for in map
 	t.Run("StatusInternal", func(t *testing.T) {
 		code := http.StatusVariantAlsoNegotiates
-		err, ok := httpToStatusError(code, "msg")
+		ok, err := httpToStatusError(code, "msg")
 		assert.True(ok)
 		stat := status.Convert(err)
 		assert.Equal(codes.Internal, stat.Code())

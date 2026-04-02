@@ -3,16 +3,18 @@ package client
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"net/url"
 	"os"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/argoproj/argo-workflows/v3"
-	"github.com/argoproj/argo-workflows/v3/pkg/apiclient"
-	"github.com/argoproj/argo-workflows/v3/util/kubeconfig"
+	"github.com/argoproj/argo-workflows/v4"
+	"github.com/argoproj/argo-workflows/v4/pkg/apiclient"
+	"github.com/argoproj/argo-workflows/v4/util/kubeconfig"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 var (
@@ -54,26 +56,35 @@ func AddAPIClientFlagsToCmd(cmd *cobra.Command) {
 	cmd.PersistentFlags().BoolVarP(&ArgoServerOpts.InsecureSkipVerify, "insecure-skip-verify", "k", os.Getenv("ARGO_INSECURE_SKIP_VERIFY") == "true", "If true, the Argo Server's certificate will not be checked for validity. This will make your HTTPS connections insecure. Defaults to the ARGO_INSECURE_SKIP_VERIFY environment variable.")
 }
 
-func NewAPIClient(ctx context.Context) (context.Context, apiclient.Client) {
-	ctx, client, err := apiclient.NewClientFromOpts(
+func NewAPIClient(ctx context.Context) (context.Context, apiclient.Client, error) {
+	var proxy func(*http.Request) (*url.URL, error)
+	if overrides.ClusterInfo.ProxyURL != "" {
+		proxyURL, err := url.Parse(overrides.ClusterInfo.ProxyURL)
+		if err != nil {
+			return nil, nil, err
+		}
+		proxy = http.ProxyURL(proxyURL)
+	}
+	return apiclient.NewClientFromOptsWithContext(ctx,
 		apiclient.Opts{
 			ArgoServerOpts: ArgoServerOpts,
 			InstanceID:     instanceID,
 			AuthSupplier: func() string {
-				return GetAuthString()
+				authString, err := GetAuthString(ctx)
+				if err != nil {
+					logger := logging.RequireLoggerFromContext(ctx)
+					logger.WithFatal().WithError(err).Error(ctx, "Failed to get auth string")
+				}
+				return authString
 			},
-			ClientConfigSupplier: func() clientcmd.ClientConfig { return GetConfig() },
+			ClientConfigSupplier: GetConfig,
 			Offline:              Offline,
 			OfflineFiles:         OfflineFiles,
-			Context:              ctx,
+			Proxy:                proxy,
 		})
-	if err != nil {
-		log.Fatal(err)
-	}
-	return ctx, client
 }
 
-func Namespace() string {
+func Namespace(ctx context.Context) string {
 	if Offline {
 		return ""
 	}
@@ -86,25 +97,26 @@ func Namespace() string {
 	}
 	namespace, _, err := GetConfig().Namespace()
 	if err != nil {
-		log.Fatal(err)
+		logger := logging.RequireLoggerFromContext(ctx)
+		logger.WithFatal().WithError(err).Error(ctx, "Failed to get namespace")
 	}
 	return namespace
 }
 
-func GetAuthString() string {
+func GetAuthString(ctx context.Context) (string, error) {
 	token, ok := os.LookupEnv("ARGO_TOKEN")
 	if ok {
-		return token
+		return token, nil
 	}
 	restConfig, err := GetConfig().ClientConfig()
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
 	version := argo.GetVersion()
 	restConfig = restclient.AddUserAgent(restConfig, fmt.Sprintf("argo-workflows/%s argo-cli", version.Version))
-	authString, err := kubeconfig.GetAuthString(restConfig, explicitPath)
+	authString, err := kubeconfig.GetAuthString(ctx, restConfig, explicitPath)
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
-	return authString
+	return authString, nil
 }

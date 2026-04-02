@@ -4,44 +4,79 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"os"
 
-	"github.com/argoproj/pkg/errors"
-	"github.com/argoproj/pkg/humanize"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
-	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/common"
+	workflowarchivepkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflowarchive"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/humanize"
 )
 
 func NewGetCommand() *cobra.Command {
-	var output string
+	var (
+		output = common.EnumFlagValue{
+			AllowedValues: []string{"json", "yaml", "wide"},
+			Value:         "wide",
+		}
+		forceName bool
+		forceUID  bool
+	)
 	command := &cobra.Command{
-		Use:   "get UID",
+		Use:   "get WORKFLOW",
 		Short: "get a workflow in the archive",
-		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 1 {
-				cmd.HelpFunc()(cmd, args)
-				os.Exit(1)
-			}
-			uid := args[0]
+		Args:  cobra.ExactArgs(1),
+		Example: `# Get information about an archived workflow by name:
+  argo archive get my-workflow
 
-			ctx, apiClient := client.NewAPIClient(cmd.Context())
+# Get information about an archived workflow by UID (auto-detected):
+  argo archive get a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11
+
+# Get information about an archived workflow in YAML format:
+  argo archive get my-workflow -o yaml
+
+# Get information about an archived workflow by name (forced):
+  argo archive get my-workflow --name
+
+# Get information about an archived workflow by UID (forced):
+  argo archive get a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11 --uid
+`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			identifier := args[0]
+
+			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
+			if err != nil {
+				return err
+			}
 			serviceClient, err := apiClient.NewArchivedWorkflowServiceClient()
-			errors.CheckError(err)
+			if err != nil {
+				return err
+			}
+
+			namespace := client.Namespace(ctx)
+			uid, err := resolveUID(ctx, serviceClient, identifier, namespace, forceUID, forceName)
+			if err != nil {
+				return fmt.Errorf("resolve UID: %w", err)
+			}
+
 			wf, err := serviceClient.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{Uid: uid})
-			errors.CheckError(err)
-			printWorkflow(wf, output)
+			if err != nil {
+				return err
+			}
+			printWorkflow(wf, output.String())
+			return nil
 		},
 	}
-	command.Flags().StringVarP(&output, "output", "o", "wide", "Output format. One of: json|yaml|wide")
+	command.Flags().VarP(&output, "output", "o", "Output format. "+output.Usage())
+	command.Flags().BoolVar(&forceName, "name", false, "force the argument to be treated as a name")
+	command.Flags().BoolVar(&forceUID, "uid", false, "force the argument to be treated as a UID")
+	command.MarkFlagsMutuallyExclusive("name", "uid")
 	return command
 }
 
 func printWorkflow(wf *wfv1.Workflow, output string) {
-
 	switch output {
 	case "json":
 		output, err := json.Marshal(wf)
@@ -57,8 +92,8 @@ func printWorkflow(wf *wfv1.Workflow, output string) {
 		fmt.Println(string(output))
 	default:
 		const fmtStr = "%-20s %v\n"
-		fmt.Printf(fmtStr, "Name:", wf.ObjectMeta.Name)
-		fmt.Printf(fmtStr, "Namespace:", wf.ObjectMeta.Namespace)
+		fmt.Printf(fmtStr, "Name:", wf.Name)
+		fmt.Printf(fmtStr, "Namespace:", wf.Namespace)
 		serviceAccount := wf.GetExecSpec().ServiceAccountName
 		if serviceAccount == "" {
 			// if serviceAccountName was not specified in a submitted Workflow, we will
@@ -72,7 +107,7 @@ func printWorkflow(wf *wfv1.Workflow, output string) {
 		if wf.Status.Message != "" {
 			fmt.Printf(fmtStr, "Message:", wf.Status.Message)
 		}
-		fmt.Printf(fmtStr, "Created:", humanize.Timestamp(wf.ObjectMeta.CreationTimestamp.Time))
+		fmt.Printf(fmtStr, "Created:", humanize.Timestamp(wf.CreationTimestamp.Time))
 		if !wf.Status.StartedAt.IsZero() {
 			fmt.Printf(fmtStr, "Started:", humanize.Timestamp(wf.Status.StartedAt.Time))
 		}
@@ -83,5 +118,4 @@ func printWorkflow(wf *wfv1.Workflow, output string) {
 			fmt.Printf(fmtStr, "Duration:", humanize.RelativeDuration(wf.Status.StartedAt.Time, wf.Status.FinishedAt.Time))
 		}
 	}
-
 }

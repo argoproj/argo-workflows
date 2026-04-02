@@ -3,13 +3,35 @@
 delete a workflow in the archive
 
 ```
-argo archive delete UID... [flags]
+argo archive delete WORKFLOW... [flags]
+```
+
+### Examples
+
+```
+# Delete an archived workflow by name:
+  argo archive delete my-workflow
+
+# Delete an archived workflow by UID (auto-detected):
+  argo archive delete a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11
+
+# Delete multiple archived workflows:
+  argo archive delete my-workflow my-other-workflow
+
+# Delete an archived workflow by name (forced):
+  argo archive delete my-workflow --name
+
+# Delete an archived workflow by UID (forced):
+  argo archive delete a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11 --uid
+
 ```
 
 ### Options
 
 ```
   -h, --help   help for delete
+      --name   force the argument to be treated as a name
+      --uid    force the argument to be treated as a UID
 ```
 
 ### Options inherited from parent commands
@@ -33,6 +55,7 @@ argo archive delete UID... [flags]
   -k, --insecure-skip-verify           If true, the Argo Server's certificate will not be checked for validity. This will make your HTTPS connections insecure. Defaults to the ARGO_INSECURE_SKIP_VERIFY environment variable.
       --instanceid string              submit with a specific controller's instance id label. Default to the ARGO_INSTANCEID environment variable.
       --kubeconfig string              Path to a kube config. Only required if out-of-cluster
+      --log-format string              The formatter to use for logs. One of: text|json (default "text")
       --loglevel string                Set the logging level. One of: debug|info|warn|error (default "info")
   -n, --namespace string               If present, the namespace scope for this CLI request
       --password string                Password for basic authentication to the API server

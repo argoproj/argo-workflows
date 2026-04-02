@@ -4,21 +4,21 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 
-	"github.com/argoproj/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/apiclient"
-	clusterworkflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
-	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
-	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
-	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
-	wf "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	fileutil "github.com/argoproj/argo-workflows/v3/util/file"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/pkg/apiclient"
+	clusterworkflowtemplatepkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/clusterworkflowtemplate"
+	cronworkflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/cronworkflow"
+	workflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow"
+	workflowtemplatepkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflowtemplate"
+	wf "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	fileutil "github.com/argoproj/argo-workflows/v4/util/file"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 type ServiceClients struct {
@@ -28,7 +28,7 @@ type ServiceClients struct {
 	ClusterWorkflowTemplateClient clusterworkflowtemplatepkg.ClusterWorkflowTemplateServiceClient
 }
 
-type LintOptions struct {
+type Options struct {
 	Files            []string
 	Strict           bool
 	DefaultNamespace string
@@ -40,16 +40,16 @@ type LintOptions struct {
 	Printer io.Writer
 }
 
-// LintResult represents the result of linting objects from a single source
-type LintResult struct {
+// Result represents the result of linting objects from a single source
+type Result struct {
 	File   string
 	Errs   []error
 	Linted bool
 }
 
-// LintResults represents the result of linting objects from multiple sources
-type LintResults struct {
-	Results        []*LintResult
+// Results represents the result of linting objects from multiple sources
+type Results struct {
+	Results        []*Result
 	Success        bool
 	msg            string
 	fmtr           Formatter
@@ -57,8 +57,8 @@ type LintResults struct {
 }
 
 type Formatter interface {
-	Format(*LintResult) string
-	Summarize(*LintResults) string
+	Format(*Result) string
+	Summarize(*Results) string
 }
 
 var (
@@ -80,24 +80,35 @@ func GetFormatter(fmtr string) (Formatter, error) {
 
 // RunLint lints the specified kinds in the specified files and prints the results to os.Stdout.
 // If linting fails it will exit with status code 1.
-func RunLint(ctx context.Context, client apiclient.Client, kinds []string, output string, offline bool, opts LintOptions) {
+func RunLint(ctx context.Context, client apiclient.Client, kinds []string, output string, offline bool, opts Options) error {
 	fmtr, err := GetFormatter(output)
-	errors.CheckError(err)
-	clients, err := getLintClients(client, kinds)
-	errors.CheckError(err)
+	if err != nil {
+		return err
+	}
+	clients, err := getLintClients(ctx, client, kinds)
+	if err != nil {
+		return err
+	}
 	opts.ServiceClients = clients
 	opts.Formatter = fmtr
 	res, err := Lint(ctx, &opts)
-	errors.CheckError(err)
+	if err != nil {
+		return err
+	}
 
 	if !res.Success {
-		log.StandardLogger().Exit(1)
+		exitFunc := logging.GetExitFunc()
+		if exitFunc == nil {
+			os.Exit(1)
+		}
+		exitFunc(1)
 	}
+	return nil
 }
 
 // Lint reads all files, returns linting errors of all of the enitities of the specified kinds.
 // Entities of other kinds are ignored.
-func Lint(ctx context.Context, opts *LintOptions) (*LintResults, error) {
+func Lint(ctx context.Context, opts *Options) (*Results, error) {
 	var fmtr Formatter = defaultFormatter
 	var w = io.Discard
 	if opts.Formatter != nil {
@@ -107,13 +118,13 @@ func Lint(ctx context.Context, opts *LintOptions) (*LintResults, error) {
 		w = opts.Printer
 	}
 
-	results := &LintResults{
-		Results: []*LintResult{},
+	results := &Results{
+		Results: []*Result{},
 		fmtr:    fmtr,
 	}
 
 	for _, file := range opts.Files {
-		err := fileutil.WalkManifests(file, func(path string, data []byte) error {
+		err := fileutil.WalkManifests(ctx, file, func(path string, data []byte) error {
 			res := lintData(ctx, path, data, opts)
 			results.Results = append(results.Results, res)
 
@@ -130,13 +141,13 @@ func Lint(ctx context.Context, opts *LintOptions) (*LintResults, error) {
 	return results, err
 }
 
-func lintData(ctx context.Context, src string, data []byte, opts *LintOptions) *LintResult {
-	res := &LintResult{
+func lintData(ctx context.Context, src string, data []byte, opts *Options) *Result {
+	res := &Result{
 		File: src,
 		Errs: []error{},
 	}
 
-	for i, pr := range common.ParseObjects(data, opts.Strict) {
+	for i, pr := range common.ParseObjects(ctx, data, opts.Strict) {
 		obj, err := pr.Object, pr.Err
 		if obj == nil {
 			continue // could not parse to kubernetes object
@@ -147,12 +158,13 @@ func lintData(ctx context.Context, src string, data []byte, opts *LintOptions) *
 			namespace = opts.DefaultNamespace
 		}
 		objName := ""
-
+		var logger logging.Logger
+		ctx, logger = logging.RequireLoggerFromContext(ctx).WithField("objectName", objName).InContext(ctx)
 		switch v := obj.(type) {
 		case *wfv1.ClusterWorkflowTemplate:
 			objName = getObjectName(wf.ClusterWorkflowTemplateKind, v, i)
 			if opts.ServiceClients.ClusterWorkflowTemplateClient == nil {
-				log.Debugf("ignoring %s, not in lint options", objName)
+				logger.Debug(ctx, "ignoring object, not in lint options kinds")
 				continue
 			}
 			res.Linted = true
@@ -165,7 +177,7 @@ func lintData(ctx context.Context, src string, data []byte, opts *LintOptions) *
 		case *wfv1.CronWorkflow:
 			objName = getObjectName(wf.CronWorkflowKind, v, i)
 			if opts.ServiceClients.CronWorkflowsClient == nil {
-				log.Debugf("ignoring %s, not in lint options kinds", objName)
+				logger.Debug(ctx, "ignoring object, not in lint options kinds")
 				continue
 			}
 			res.Linted = true
@@ -178,7 +190,7 @@ func lintData(ctx context.Context, src string, data []byte, opts *LintOptions) *
 		case *wfv1.Workflow:
 			objName = getObjectName(wf.WorkflowKind, v, i)
 			if opts.ServiceClients.WorkflowsClient == nil {
-				log.Debugf("ignoring %s, not in lint options kinds", objName)
+				logger.Debug(ctx, "ignoring object, not in lint options kinds")
 				continue
 			}
 			res.Linted = true
@@ -193,7 +205,7 @@ func lintData(ctx context.Context, src string, data []byte, opts *LintOptions) *
 		case *wfv1.WorkflowTemplate:
 			objName = getObjectName(wf.WorkflowTemplateKind, v, i)
 			if opts.ServiceClients.WorkflowTemplatesClient == nil {
-				log.Debugf("ignoring %s, not in lint options kinds", objName)
+				logger.Debug(ctx, "ignoring object, not in lint options kinds")
 				continue
 			}
 			res.Linted = true
@@ -215,12 +227,12 @@ func lintData(ctx context.Context, src string, data []byte, opts *LintOptions) *
 	return res
 }
 
-func (l *LintResults) Msg() string {
+func (l *Results) Msg() string {
 	return l.msg
 }
 
 // evaluate must be called before checking the value of l.Success and l.String()
-func (l *LintResults) evaluate() *LintResults {
+func (l *Results) evaluate() *Results {
 	success := true
 	l.anythingLinted = false
 
@@ -246,7 +258,7 @@ func (l *LintResults) evaluate() *LintResults {
 	return l
 }
 
-func (l *LintResults) buildMsg() string {
+func (l *Results) buildMsg() string {
 	sb := &strings.Builder{}
 	for _, r := range l.Results {
 		sb.WriteString(l.fmtr.Format(r))
@@ -258,7 +270,7 @@ func (l *LintResults) buildMsg() string {
 }
 
 func getObjectName(kind string, obj metav1.Object, objIndex int) string {
-	name := ""
+	var name string
 	switch {
 	case obj.GetName() != "":
 		name = obj.GetName()
@@ -271,13 +283,13 @@ func getObjectName(kind string, obj metav1.Object, objIndex int) string {
 	return fmt.Sprintf(`"%s" (%s)`, name, kind)
 }
 
-func getLintClients(client apiclient.Client, kinds []string) (ServiceClients, error) {
+func getLintClients(ctx context.Context, client apiclient.Client, kinds []string) (ServiceClients, error) {
 	res := ServiceClients{}
 	var err error
 	for _, kind := range kinds {
 		switch kind {
 		case wf.WorkflowPlural, wf.WorkflowShortName:
-			res.WorkflowsClient = client.NewWorkflowServiceClient()
+			res.WorkflowsClient = client.NewWorkflowServiceClient(ctx)
 		case wf.WorkflowTemplatePlural, wf.WorkflowTemplateShortName:
 			res.WorkflowTemplatesClient, err = client.NewWorkflowTemplateServiceClient()
 			if err != nil {

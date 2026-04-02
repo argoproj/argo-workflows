@@ -7,24 +7,24 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/argoproj/pkg/file"
 	"github.com/jcmturner/gokrb5/v8/credentials"
 	"github.com/jcmturner/gokrb5/v8/keytab"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/resource"
+	"github.com/argoproj/argo-workflows/v4/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/file"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/resource"
 )
 
 // ArtifactDriver is a driver for HDFS
 type ArtifactDriver struct {
-	Addresses  []string // comma-separated name nodes
-	Path       string
-	Force      bool
-	HDFSUser   string
-	KrbOptions *KrbOptions
+	Addresses              []string // comma-separated name nodes
+	Path                   string
+	Force                  bool
+	HDFSUser               string
+	KrbOptions             *KrbOptions
+	DataTransferProtection string
 }
 
 var _ common.ArtifactDriver = &ArtifactDriver{}
@@ -73,6 +73,7 @@ func ValidateArtifact(errPrefix string, art *wfv1.HDFSArtifact) error {
 	if hasKrbCCache && (art.KrbServicePrincipalName == "" || art.KrbConfigConfigMap == nil) {
 		return errors.Errorf(errors.CodeBadRequest, "%s.krbServicePrincipalName and %s.krbConfigConfigMap are required with %s.krbCCacheSecret", errPrefix, errPrefix, errPrefix)
 	}
+
 	return nil
 }
 
@@ -128,22 +129,23 @@ func CreateDriver(ctx context.Context, ci resource.Interface, art *wfv1.HDFSArti
 	}
 
 	driver := ArtifactDriver{
-		Addresses:  art.Addresses,
-		Path:       art.Path,
-		Force:      art.Force,
-		HDFSUser:   art.HDFSUser,
-		KrbOptions: krbOptions,
+		Addresses:              art.Addresses,
+		Path:                   art.Path,
+		Force:                  art.Force,
+		HDFSUser:               art.HDFSUser,
+		KrbOptions:             krbOptions,
+		DataTransferProtection: art.DataTransferProtection,
 	}
 	return &driver, nil
 }
 
 // Load downloads artifacts from HDFS compliant storage
-func (driver *ArtifactDriver) Load(_ *wfv1.Artifact, path string) error {
-	hdfscli, err := createHDFSClient(driver.Addresses, driver.HDFSUser, driver.KrbOptions)
+func (driver *ArtifactDriver) Load(ctx context.Context, _ *wfv1.Artifact, path string) error {
+	hdfscli, err := createHDFSClient(driver.Addresses, driver.HDFSUser, driver.DataTransferProtection, driver.KrbOptions)
 	if err != nil {
 		return err
 	}
-	defer util.Close(hdfscli)
+	defer hdfscli.Close()
 
 	srcStat, err := hdfscli.Stat(driver.Path)
 	if err != nil {
@@ -170,12 +172,10 @@ func (driver *ArtifactDriver) Load(_ *wfv1.Artifact, path string) error {
 				return err
 			}
 		}
-	} else {
-		if driver.Force {
-			err = os.Remove(path)
-			if err != nil && !os.IsNotExist(err) {
-				return err
-			}
+	} else if driver.Force {
+		err = os.Remove(path)
+		if err != nil && !os.IsNotExist(err) {
+			return err
 		}
 	}
 
@@ -189,18 +189,18 @@ func (driver *ArtifactDriver) Load(_ *wfv1.Artifact, path string) error {
 	return nil
 }
 
-func (driver *ArtifactDriver) OpenStream(a *wfv1.Artifact) (io.ReadCloser, error) {
+func (driver *ArtifactDriver) OpenStream(ctx context.Context, a *wfv1.Artifact) (io.ReadCloser, error) {
 	// todo: this is a temporary implementation which loads file to disk first
-	return common.LoadToStream(a, driver)
+	return common.LoadToStream(ctx, a, driver)
 }
 
 // Save saves an artifact to HDFS compliant storage
-func (driver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error {
-	hdfscli, err := createHDFSClient(driver.Addresses, driver.HDFSUser, driver.KrbOptions)
+func (driver *ArtifactDriver) Save(ctx context.Context, path string, outputArtifact *wfv1.Artifact) error {
+	hdfscli, err := createHDFSClient(driver.Addresses, driver.HDFSUser, driver.DataTransferProtection, driver.KrbOptions)
 	if err != nil {
 		return err
 	}
-	defer util.Close(hdfscli)
+	defer hdfscli.Close()
 
 	isDir, err := file.IsDirectory(path)
 	if err != nil {
@@ -224,12 +224,10 @@ func (driver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) e
 				return err
 			}
 		}
-	} else {
-		if driver.Force {
-			err = hdfscli.Remove(driver.Path)
-			if err != nil && !os.IsNotExist(err) {
-				return err
-			}
+	} else if driver.Force {
+		err = hdfscli.Remove(driver.Path)
+		if err != nil && !os.IsNotExist(err) {
+			return err
 		}
 	}
 
@@ -237,14 +235,14 @@ func (driver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) e
 }
 
 // Delete is unsupported for the hdfs artifacts
-func (driver *ArtifactDriver) Delete(s *wfv1.Artifact) error {
+func (driver *ArtifactDriver) Delete(ctx context.Context, s *wfv1.Artifact) error {
 	return common.ErrDeleteNotSupported
 }
 
-func (driver *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
+func (driver *ArtifactDriver) ListObjects(ctx context.Context, artifact *wfv1.Artifact) ([]string, error) {
 	return nil, fmt.Errorf("ListObjects is currently not supported for this artifact type, but it will be in a future version")
 }
 
-func (driver *ArtifactDriver) IsDirectory(artifact *wfv1.Artifact) (bool, error) {
+func (driver *ArtifactDriver) IsDirectory(ctx context.Context, artifact *wfv1.Artifact) (bool, error) {
 	return false, errors.New(errors.CodeNotImplemented, "IsDirectory currently unimplemented for HDFS")
 }

@@ -1,9 +1,21 @@
 {
   "arrowParens": "avoid",
   "bracketSpacing": false,
+  "importOrder": [
+    "<BUILTIN_MODULES>",
+    "<THIRD_PARTY_MODULES>",
+    "",
+    "^[.]",
+    "",
+    ".[s?]css$"
+],
+  "importOrderTypeScriptVersion": "4.9.5",
   "jsxSingleQuote": true,
   "jsxBracketSameLine": true,
   "printWidth": 180,
+  "plugins": [
+    "@ianvs/prettier-plugin-sort-imports"
+  ],
   "quoteProps": "consistent",
   "singleQuote": true,
   "tabWidth": 4,

@@ -5,7 +5,6 @@ resources:
   - ../../../../manifests/quick-start/minimal
   - ../../../../manifests/quick-start/base/prometheus
   - workflow-controller-pprof-service.yaml
-  - workflow-controller-podpriorityclass.yaml
   - argo-server-podpriorityclass.yaml
   - minio-podpriorityclass.yaml
 
@@ -14,8 +13,3 @@ patches:
   - path: workflow-controller-deployment.yaml
   - path: argo-server-deployment.yaml
   - path: minio-deployment.yaml
-
-labels:
-  - includeSelectors: true
-    pairs:
-      app.kubernetes.io/part-of: argo

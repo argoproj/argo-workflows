@@ -20,11 +20,12 @@ func ParseRequest(r *http.Request) (verb string, kind string) {
 
 	x := n%2 == 0
 
-	if r.URL.Query().Get("watch") != "" {
+	switch {
+	case r.URL.Query().Get("watch") != "":
 		verb = "Watch"
-	} else if verb == "List" && !x {
+	case verb == "List" && !x:
 		verb = "Get"
-	} else if verb == "Delete" && x {
+	case verb == "Delete" && x:
 		verb = "DeleteCollection"
 	}
 

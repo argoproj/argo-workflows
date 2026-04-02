@@ -1,4 +1,3 @@
-sdks/python/client/** linguist-generated
 sdks/java/client/** linguist-generated
 manifests/base/crds/*/argoproj.io*.yaml linguist-generated
 manifests/quick-start-*.yaml linguist-generated

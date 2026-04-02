@@ -6,12 +6,29 @@ list workflows in the archive
 argo archive list [flags]
 ```
 
+### Examples
+
+```
+# List all archived workflows:
+  argo archive list
+
+# List all archived workflows fetched in chunks of 100:
+  argo archive list --chunk-size 100
+
+# List all archived workflows in YAML format:
+  argo archive list -o yaml
+
+# List archived workflows that have both labels:
+  argo archive list -l key1=value1,key2=value2
+
+```
+
 ### Options
 
 ```
       --chunk-size int    Return large lists in chunks rather than all at once. Pass 0 to disable.
   -h, --help              help for list
-  -o, --output string     Output format. One of: json|yaml|wide (default "wide")
+  -o, --output string     Output format. One of: name|json|yaml|wide (default "wide")
   -l, --selector string   Selector (label query) to filter on, not including uninitialized ones, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)
 ```
 
@@ -36,6 +53,7 @@ argo archive list [flags]
   -k, --insecure-skip-verify           If true, the Argo Server's certificate will not be checked for validity. This will make your HTTPS connections insecure. Defaults to the ARGO_INSECURE_SKIP_VERIFY environment variable.
       --instanceid string              submit with a specific controller's instance id label. Default to the ARGO_INSTANCEID environment variable.
       --kubeconfig string              Path to a kube config. Only required if out-of-cluster
+      --log-format string              The formatter to use for logs. One of: text|json (default "text")
       --loglevel string                Set the logging level. One of: debug|info|warn|error (default "info")
   -n, --namespace string               If present, the namespace scope for this CLI request
       --password string                Password for basic authentication to the API server

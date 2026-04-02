@@ -1,45 +1,44 @@
 package client
 
 import (
-	"context"
 	"testing"
 
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 func TestGetAuthString(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
 	t.Setenv("ARGO_TOKEN", "my-token")
-	assert.Equal(t, "my-token", GetAuthString())
+	authString, err := GetAuthString(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, "my-token", authString)
 }
 
 func TestNamespace(t *testing.T) {
 	t.Setenv("ARGO_NAMESPACE", "my-ns")
-	assert.Equal(t, "my-ns", Namespace())
+	ctx := logging.TestContext(t.Context())
+	assert.Equal(t, "my-ns", Namespace(ctx))
 }
 
 func TestCreateOfflineClient(t *testing.T) {
 	t.Run("creating an offline client with no files should not fail", func(t *testing.T) {
-		defer func() { logrus.StandardLogger().ExitFunc = nil }()
-		var fatal bool
-		logrus.StandardLogger().ExitFunc = func(int) { fatal = true }
-
 		Offline = true
 		OfflineFiles = []string{}
-		NewAPIClient(context.TODO())
+		ctx := logging.TestContext(t.Context())
+		_, _, err := NewAPIClient(ctx)
 
-		assert.False(t, fatal, "should have exited")
+		assert.NoError(t, err)
 	})
 
 	t.Run("creating an offline client with a non-existing file should fail", func(t *testing.T) {
-		defer func() { logrus.StandardLogger().ExitFunc = nil }()
-		var fatal bool
-		logrus.StandardLogger().ExitFunc = func(int) { fatal = true }
-
 		Offline = true
 		OfflineFiles = []string{"non-existing-file"}
-		NewAPIClient(context.TODO())
+		ctx := logging.TestContext(t.Context())
+		_, _, err := NewAPIClient(ctx)
 
-		assert.True(t, fatal, "should have exited")
+		assert.Error(t, err)
 	})
 }

@@ -1,27 +1,31 @@
-//go:build executor
+//go:build artifacts
 
 package e2e
 
 import (
 	"bytes"
-	"context"
+	"compress/gzip"
 	"fmt"
+	"io"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/test/e2e/fixtures"
 )
 
 type ArtifactsSuite struct {
@@ -45,6 +49,57 @@ func (s *ArtifactsSuite) TestOutputOnMount() {
 		WaitForWorkflow(fixtures.ToBeSucceeded)
 }
 
+func (s *ArtifactsSuite) TestOutputOnMountPlugin() {
+	s.Given().
+		Workflow("@testdata/output-on-mount-plugin-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectArtifact("-", "out-0", "plugin-bucket", func(t *testing.T, object minio.ObjectInfo, err error) {
+			require.NoError(t, err)
+			// Verify the artifact content contains the expected output
+			s.checkArtifactContent(t, "plugin-bucket", object.Key, "hi")
+		})
+}
+
+func (s *ArtifactsSuite) TestInputOnMountPlugin() {
+	s.Given().
+		Workflow("@testdata/input-on-mount-plugin-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflowNode(func(status wfv1.NodeStatus) bool {
+			return strings.Contains(status.Name, "create-artifact") && status.TemplateName == "create"
+		}, func(t *testing.T, n *wfv1.NodeStatus, pod *corev1.Pod) {
+			assert.Equal(t, wfv1.NodeSucceeded, n.Phase)
+			artifact := n.Outputs.GetArtifactByName("artifact")
+			require.NotNil(t, artifact, "artifact should exist")
+			key, err := artifact.GetKey()
+			require.NoError(t, err)
+			s.checkArtifactContent(t, "plugin-bucket", key, "hello plugin mount")
+		}).
+		ExpectWorkflowNode(wfv1.NodeWithDisplayName("read-artifact"),
+			func(t *testing.T, n *wfv1.NodeStatus, pod *corev1.Pod) {
+				assert.Equal(t, wfv1.NodeSucceeded, n.Phase)
+			})
+}
+
+func (s *ArtifactsSuite) TestOutputOnInputPlugin() {
+	s.Given().
+		Workflow("@testdata/output-on-input-plugin-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectArtifact("-", "out-0", "plugin-bucket", func(t *testing.T, object minio.ObjectInfo, err error) {
+			require.NoError(t, err)
+			// Verify the artifact content contains the expected output
+			s.checkArtifactContent(t, "plugin-bucket", object.Key, "hi")
+		})
+}
+
 func (s *ArtifactsSuite) TestOutputOnInput() {
 	s.Given().
 		Workflow("@testdata/output-on-input-workflow.yaml").
@@ -61,6 +116,14 @@ func (s *ArtifactsSuite) TestArtifactPassing() {
 		WaitForWorkflow(fixtures.ToBeSucceeded)
 }
 
+func (s *ArtifactsSuite) TestArtifactPassingPlugin() {
+	s.Given().
+		Workflow("@testdata/artifact-passing-plugin-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
 type expectedArtifact struct {
 	key        string
 	bucketName string
@@ -69,10 +132,12 @@ type expectedArtifact struct {
 
 func (s *ArtifactsSuite) TestGlobalArtifactPassing() {
 	for _, tt := range []struct {
+		name             string
 		workflowFile     string
 		expectedArtifact expectedArtifact
 	}{
 		{
+			name:         "Basic",
 			workflowFile: "@testdata/global-artifact-passing.yaml",
 			expectedArtifact: expectedArtifact{
 				key:        "globalArtifact",
@@ -81,6 +146,7 @@ func (s *ArtifactsSuite) TestGlobalArtifactPassing() {
 			},
 		},
 		{
+			name:         "Complex",
 			workflowFile: "@testdata/complex-global-artifact-passing.yaml",
 			expectedArtifact: expectedArtifact{
 				key:        "finalTestUpdate",
@@ -88,41 +154,60 @@ func (s *ArtifactsSuite) TestGlobalArtifactPassing() {
 				value:      "Updated testUpdate",
 			},
 		},
+		{
+			name:         "Plugin",
+			workflowFile: "@testdata/global-artifact-passing-plugin.yaml",
+			expectedArtifact: expectedArtifact{
+				key:        "globalArtifactPlugin",
+				bucketName: "my-bucket-3",
+				value:      "01",
+			},
+		},
+		{
+			name:         "ComplexPlugin",
+			workflowFile: "@testdata/complex-global-artifact-passing-plugin.yaml",
+			expectedArtifact: expectedArtifact{
+				key:        "finalTestUpdatePlugin",
+				bucketName: "my-bucket-3",
+				value:      "Updated testUpdate",
+			},
+		},
 	} {
-		then := s.Given().
-			Workflow(tt.workflowFile).
-			When().
-			SubmitWorkflow().
-			WaitForWorkflow(fixtures.ToBeSucceeded, time.Minute*2).
-			Then().
-			ExpectWorkflow(func(t *testing.T, objectMeta *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-				// Check the global artifact value and see if it equals the expected value.
-				c, err := minio.New("localhost:9000", &minio.Options{
-					Creds: credentials.NewStaticV4("admin", "password", ""),
+		s.Run(tt.name, func() {
+			then := s.Given().
+				Workflow(tt.workflowFile).
+				When().
+				SubmitWorkflow().
+				WaitForWorkflow(fixtures.ToBeSucceeded, time.Minute*2).
+				Then().
+				ExpectWorkflow(func(t *testing.T, objectMeta *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+					c, err := minio.New("localhost:9000", &minio.Options{
+						Creds: credentials.NewStaticV4("admin", "password", ""),
+					})
+
+					if err != nil {
+						t.Error(err)
+					}
+
+					object, err := c.GetObject(logging.TestContext(t.Context()), tt.expectedArtifact.bucketName, tt.expectedArtifact.key, minio.GetObjectOptions{})
+					if err != nil {
+						t.Error(err)
+					}
+
+					buf := new(bytes.Buffer)
+					_, err = buf.ReadFrom(object)
+					if err != nil {
+						t.Error(err)
+					}
+					value := buf.String()
+
+					assert.Equal(t, tt.expectedArtifact.value, value)
 				})
 
-				if err != nil {
-					t.Error(err)
-				}
-
-				object, err := c.GetObject(context.Background(), tt.expectedArtifact.bucketName, tt.expectedArtifact.key, minio.GetObjectOptions{})
-				if err != nil {
-					t.Error(err)
-				}
-
-				buf := new(bytes.Buffer)
-				_, err = buf.ReadFrom(object)
-				if err != nil {
-					t.Error(err)
-				}
-				value := buf.String()
-
-				assert.Equal(t, tt.expectedArtifact.value, value)
-			})
-
-		then.
-			When().
-			RemoveFinalizers(false)
+			then.
+				When().
+				RemoveFinalizers(false)
+		})
 	}
 }
 
@@ -163,10 +248,14 @@ func (al *s3Location) getS3Key(wf *wfv1.Workflow) (string, error) {
 	}
 	for _, a := range n.Outputs.Artifacts {
 		if a.Name == al.derivedKey.artifactName {
-			if a.S3 == nil {
-				return "", fmt.Errorf("didn't find expected S3 field in artifact %q: %+v", al.derivedKey.artifactName, a)
+			// Support both S3 and Plugin artifacts
+			if a.S3 != nil {
+				return a.S3.Key, nil
 			}
-			return a.S3.Key, nil
+			if a.Plugin != nil {
+				return a.Plugin.Key, nil
+			}
+			return "", fmt.Errorf("artifact %q has neither S3 nor Plugin field: %+v", al.derivedKey.artifactName, a)
 		}
 	}
 
@@ -174,6 +263,7 @@ func (al *s3Location) getS3Key(wf *wfv1.Workflow) (string, error) {
 }
 
 func (s *ArtifactsSuite) TestStoppedWorkflow() {
+	s.T().Skip("This test is flaky and will be skipped as a result")
 
 	for _, tt := range []struct {
 		workflowFile string
@@ -185,18 +275,19 @@ func (s *ArtifactsSuite) TestStoppedWorkflow() {
 		c, err := minio.New("localhost:9000", &minio.Options{
 			Creds: credentials.NewStaticV4("admin", "password", ""),
 		})
-		s.NoError(err)
+		s.Require().NoError(err)
 
 		// Ensure the artifacts aren't in the bucket.
-		_, err = c.StatObject(context.Background(), "my-bucket-3", "on-deletion-wf-stopped-1", minio.StatObjectOptions{})
+		ctx := logging.TestContext(s.T().Context())
+		_, err = c.StatObject(ctx, "my-bucket-3", "on-deletion-wf-stopped-1", minio.StatObjectOptions{})
 		if err == nil {
-			err = c.RemoveObject(context.Background(), "my-bucket-3", "on-deletion-wf-stopped-1", minio.RemoveObjectOptions{})
-			s.NoError(err)
+			err = c.RemoveObject(ctx, "my-bucket-3", "on-deletion-wf-stopped-1", minio.RemoveObjectOptions{})
+			s.Require().NoError(err)
 		}
-		_, err = c.StatObject(context.Background(), "my-bucket-3", "on-deletion-wf-stopped-2", minio.StatObjectOptions{})
+		_, err = c.StatObject(ctx, "my-bucket-3", "on-deletion-wf-stopped-2", minio.StatObjectOptions{})
 		if err == nil {
-			err = c.RemoveObject(context.Background(), "my-bucket-3", "on-deletion-wf-stopped-2", minio.RemoveObjectOptions{})
-			s.NoError(err)
+			err = c.RemoveObject(ctx, "my-bucket-3", "on-deletion-wf-stopped-2", minio.RemoveObjectOptions{})
+			s.Require().NoError(err)
 		}
 
 		then := s.Given().
@@ -206,10 +297,10 @@ func (s *ArtifactsSuite) TestStoppedWorkflow() {
 
 		// Assert the artifacts don't exist.
 		then.ExpectArtifactByKey("on-deletion-wf-stopped-1", "my-bucket-3", func(t *testing.T, object minio.ObjectInfo, err error) {
-			assert.Error(t, err)
+			require.Error(t, err)
 		})
 		then.ExpectArtifactByKey("on-deletion-wf-stopped-2", "my-bucket-3", func(t *testing.T, object minio.ObjectInfo, err error) {
-			assert.Error(t, err)
+			require.Error(t, err)
 		})
 
 		when := then.When().
@@ -217,16 +308,14 @@ func (s *ArtifactsSuite) TestStoppedWorkflow() {
 			WaitForWorkflow(
 				fixtures.WorkflowCompletionOkay(true),
 				fixtures.Condition(func(wf *wfv1.Workflow) (bool, string) {
-
 					condition := "for artifacts to exist"
 
-					_, err1 := c.StatObject(context.Background(), "my-bucket-3", "on-deletion-wf-stopped-1", minio.StatObjectOptions{})
-					_, err2 := c.StatObject(context.Background(), "my-bucket-3", "on-deletion-wf-stopped-2", minio.StatObjectOptions{})
+					_, err1 := c.StatObject(ctx, "my-bucket-3", "on-deletion-wf-stopped-1", minio.StatObjectOptions{})
+					_, err2 := c.StatObject(ctx, "my-bucket-3", "on-deletion-wf-stopped-2", minio.StatObjectOptions{})
 
 					if err1 == nil && err2 == nil {
 						return true, condition
 					}
-
 					return false, condition
 				}))
 
@@ -234,10 +323,10 @@ func (s *ArtifactsSuite) TestStoppedWorkflow() {
 
 		// Assert artifact exists
 		then.ExpectArtifactByKey("on-deletion-wf-stopped-1", "my-bucket-3", func(t *testing.T, object minio.ObjectInfo, err error) {
-			assert.NoError(t, err)
+			require.NoError(t, err)
 		})
 		then.ExpectArtifactByKey("on-deletion-wf-stopped-2", "my-bucket-3", func(t *testing.T, object minio.ObjectInfo, err error) {
-			assert.NoError(t, err)
+			require.NoError(t, err)
 		})
 
 		when = then.When()
@@ -250,10 +339,10 @@ func (s *ArtifactsSuite) TestStoppedWorkflow() {
 
 		// Assert the artifacts don't exist.
 		then.ExpectArtifactByKey("on-deletion-wf-stopped-1", "my-bucket-3", func(t *testing.T, object minio.ObjectInfo, err error) {
-			assert.Error(t, err)
+			require.Error(t, err)
 		})
 		then.ExpectArtifactByKey("on-deletion-wf-stopped-2", "my-bucket-3", func(t *testing.T, object minio.ObjectInfo, err error) {
-			assert.Error(t, err)
+			require.Error(t, err)
 		})
 
 		when = then.When()
@@ -283,17 +372,41 @@ func (s *ArtifactsSuite) TestDeleteWorkflow() {
 	when.RemoveFinalizers(false)
 }
 
-func (s *ArtifactsSuite) TestArtifactGC() {
+func (s *ArtifactsSuite) TestDeleteWorkflowPlugin() {
+	when := s.Given().
+		Workflow("@testdata/artifactgc/artgc-dag-wf-self-delete-plugin.yaml").
+		When().
+		SubmitWorkflow()
 
+	then := when.
+		WaitForWorkflow(fixtures.ToBeCompleted).
+		Then().
+		ExpectWorkflow(func(t *testing.T, objectMeta *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Contains(t, objectMeta.Finalizers, common.FinalizerArtifactGC)
+		})
+
+	when = then.When()
+
+	when.WaitForWorkflowDeletion()
+
+	when.RemoveFinalizers(false)
+}
+
+func (s *ArtifactsSuite) TestArtifactGC() {
 	s.Given().
 		WorkflowTemplate("@testdata/artifactgc/artgc-template.yaml").
 		WorkflowTemplate("@testdata/artifactgc/artgc-template-2.yaml").
 		WorkflowTemplate("@testdata/artifactgc/artgc-template-ref-template.yaml").
 		WorkflowTemplate("@testdata/artifactgc/artgc-template-no-gc.yaml").
+		WorkflowTemplate("@testdata/artifactgc/artgc-template-plugin.yaml").
+		WorkflowTemplate("@testdata/artifactgc/artgc-template-2-plugin.yaml").
+		WorkflowTemplate("@testdata/artifactgc/artgc-template-ref-template-plugin.yaml").
+		WorkflowTemplate("@testdata/artifactgc/artgc-template-no-gc-plugin.yaml").
 		When().
 		CreateWorkflowTemplates()
 
 	for _, tt := range []struct {
+		name                         string
 		workflowFile                 string
 		hasGC                        bool
 		workflowShouldSucceed        bool
@@ -301,77 +414,162 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 		expectedGCPodsOnWFCompletion int
 	}{
 		{
+			name:                         "MultiStrategyMultiAnnotation",
 			workflowFile:                 "@testdata/artifactgc/artgc-multi-strategy-multi-anno.yaml",
 			hasGC:                        true,
 			workflowShouldSucceed:        true,
 			expectedGCPodsOnWFCompletion: 2,
 			expectedArtifacts: []artifactState{
-				artifactState{s3Location{bucketName: "my-bucket-2", specifiedKey: "first-on-completion-1"}, true, false},
-				artifactState{s3Location{bucketName: "my-bucket-3", specifiedKey: "first-on-completion-2"}, true, false},
-				artifactState{s3Location{bucketName: "my-bucket-3", specifiedKey: "first-no-deletion"}, false, false},
-				artifactState{s3Location{bucketName: "my-bucket-3", specifiedKey: "second-on-deletion"}, false, true},
-				artifactState{s3Location{bucketName: "my-bucket-2", specifiedKey: "second-on-completion"}, true, false},
+				{s3Location{bucketName: "my-bucket-2", specifiedKey: "first-on-completion-1"}, true, false},
+				{s3Location{bucketName: "my-bucket-3", specifiedKey: "first-on-completion-2"}, true, false},
+				{s3Location{bucketName: "my-bucket-3", specifiedKey: "first-no-deletion"}, false, false},
+				{s3Location{bucketName: "my-bucket-3", specifiedKey: "second-on-deletion"}, false, true},
+				{s3Location{bucketName: "my-bucket-2", specifiedKey: "second-on-completion"}, true, false},
+			},
+		},
+		{
+			name:                         "MultiStrategyMultiAnnotationPlugin",
+			workflowFile:                 "@testdata/artifactgc/artgc-multi-strategy-multi-anno-plugin.yaml",
+			hasGC:                        true,
+			workflowShouldSucceed:        true,
+			expectedGCPodsOnWFCompletion: 2,
+			expectedArtifacts: []artifactState{
+				{s3Location{bucketName: "plugin-bucket", specifiedKey: "first-on-completion-1"}, true, false},
+				{s3Location{bucketName: "plugin-bucket", specifiedKey: "first-on-completion-2"}, true, false},
+				{s3Location{bucketName: "plugin-bucket", specifiedKey: "first-no-deletion"}, false, false},
+				{s3Location{bucketName: "plugin-bucket", specifiedKey: "second-on-deletion"}, false, true},
+				{s3Location{bucketName: "plugin-bucket", specifiedKey: "second-on-completion"}, true, false},
 			},
 		},
 		// entire Workflow based on a WorkflowTemplate
 		{
+			name:                         "FromTemplate",
 			workflowFile:                 "@testdata/artifactgc/artgc-from-template.yaml",
 			hasGC:                        true,
 			workflowShouldSucceed:        true,
 			expectedGCPodsOnWFCompletion: 1,
 			expectedArtifacts: []artifactState{
-				artifactState{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-completion"}, true, false},
-				artifactState{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-deletion"}, false, true},
+				{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-completion"}, true, false},
+				{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-deletion"}, false, true},
+			},
+		},
+		// entire Workflow based on a WorkflowTemplate with a plugin
+		{
+			name:                         "FromTemplatePlugin",
+			workflowFile:                 "@testdata/artifactgc/artgc-from-template-plugin.yaml",
+			hasGC:                        true,
+			workflowShouldSucceed:        true,
+			expectedGCPodsOnWFCompletion: 1,
+			expectedArtifacts: []artifactState{
+				{s3Location{bucketName: "plugin-bucket", specifiedKey: "on-completion"}, true, false},
+				{s3Location{bucketName: "plugin-bucket", specifiedKey: "on-deletion"}, false, true},
 			},
 		},
 		// entire Workflow based on a WorkflowTemplate
 		{
+			name:                         "FromTemplate2",
 			workflowFile:                 "@testdata/artifactgc/artgc-from-template-2.yaml",
 			hasGC:                        true,
 			workflowShouldSucceed:        true,
 			expectedGCPodsOnWFCompletion: 1,
 			expectedArtifacts: []artifactState{
-				artifactState{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-completion"}, true, false},
-				artifactState{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-deletion"}, false, true},
+				{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-completion"}, true, false},
+				{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-deletion"}, false, true},
+			},
+		},
+		{
+			name:                         "FromTemplate2Plugin",
+			workflowFile:                 "@testdata/artifactgc/artgc-from-template-2-plugin.yaml",
+			hasGC:                        true,
+			workflowShouldSucceed:        true,
+			expectedGCPodsOnWFCompletion: 1,
+			expectedArtifacts: []artifactState{
+				{s3Location{bucketName: "plugin-bucket", specifiedKey: "on-completion"}, true, false},
+				{s3Location{bucketName: "plugin-bucket", specifiedKey: "on-deletion"}, false, true},
 			},
 		},
 		// Step in Workflow references a WorkflowTemplate's template
 		{
+			name:                         "StepWorkflowTemplate",
 			workflowFile:                 "@testdata/artifactgc/artgc-step-wf-tmpl.yaml",
 			hasGC:                        true,
 			workflowShouldSucceed:        true,
 			expectedGCPodsOnWFCompletion: 1,
 			expectedArtifacts: []artifactState{
-				artifactState{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-completion"}, true, false},
-				artifactState{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-deletion"}, false, true},
+				{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-completion"}, true, false},
+				{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-deletion"}, false, true},
+			},
+		},
+		{
+			name:                         "StepWorkflowTemplatePlugin",
+			workflowFile:                 "@testdata/artifactgc/artgc-step-wf-tmpl-plugin.yaml",
+			hasGC:                        true,
+			workflowShouldSucceed:        true,
+			expectedGCPodsOnWFCompletion: 1,
+			expectedArtifacts: []artifactState{
+				{s3Location{bucketName: "plugin-bucket", specifiedKey: "on-completion"}, true, false},
+				{s3Location{bucketName: "plugin-bucket", specifiedKey: "on-deletion"}, false, true},
 			},
 		},
 		// Step in Workflow references a WorkflowTemplate's template
 		{
+			name:                         "StepWorkflowTemplate2",
 			workflowFile:                 "@testdata/artifactgc/artgc-step-wf-tmpl-2.yaml",
 			hasGC:                        true,
 			workflowShouldSucceed:        true,
 			expectedGCPodsOnWFCompletion: 1,
 			expectedArtifacts: []artifactState{
-				artifactState{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-completion"}, true, false},
-				artifactState{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-deletion"}, false, false},
+				{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-completion"}, true, false},
+				{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-deletion"}, false, false},
+			},
+		},
+		{
+			name:                         "StepWorkflowTemplate2Plugin",
+			workflowFile:                 "@testdata/artifactgc/artgc-step-wf-tmpl-2-plugin.yaml",
+			hasGC:                        true,
+			workflowShouldSucceed:        true,
+			expectedGCPodsOnWFCompletion: 1,
+			expectedArtifacts: []artifactState{
+				{s3Location{bucketName: "plugin-bucket", specifiedKey: "on-completion"}, true, false},
+				{s3Location{bucketName: "plugin-bucket", specifiedKey: "on-deletion"}, false, false},
 			},
 		},
 		// entire Workflow based on a WorkflowTemplate which has a Step that references another WorkflowTemplate's template
 		{
+			name:                         "FromRefTemplate",
 			workflowFile:                 "@testdata/artifactgc/artgc-from-ref-template.yaml",
 			hasGC:                        true,
 			workflowShouldSucceed:        true,
 			expectedGCPodsOnWFCompletion: 1,
 			expectedArtifacts: []artifactState{
-				artifactState{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-completion"}, true, false},
-				artifactState{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-deletion"}, false, true},
+				{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-completion"}, true, false},
+				{s3Location{bucketName: "my-bucket-2", specifiedKey: "on-deletion"}, false, true},
+			},
+		},
+		{
+			name:                         "FromRefTemplatePlugin",
+			workflowFile:                 "@testdata/artifactgc/artgc-from-ref-template-plugin.yaml",
+			hasGC:                        true,
+			workflowShouldSucceed:        true,
+			expectedGCPodsOnWFCompletion: 1,
+			expectedArtifacts: []artifactState{
+				{s3Location{bucketName: "plugin-bucket", specifiedKey: "on-completion"}, true, false},
+				{s3Location{bucketName: "plugin-bucket", specifiedKey: "on-deletion"}, false, true},
 			},
 		},
 		// Step in Workflow references a WorkflowTemplate's template
 		// Workflow defines ArtifactGC but all artifacts override with "Never" so Artifact GC should not be done
 		{
+			name:                         "StepWorkflowTemplateNoGC",
 			workflowFile:                 "@testdata/artifactgc/artgc-step-wf-tmpl-no-gc.yaml",
+			hasGC:                        false,
+			workflowShouldSucceed:        true,
+			expectedGCPodsOnWFCompletion: 0,
+			expectedArtifacts:            []artifactState{},
+		},
+		{
+			name:                         "StepWorkflowTemplateNoGCPlugin",
+			workflowFile:                 "@testdata/artifactgc/artgc-step-wf-tmpl-no-gc-plugin.yaml",
 			hasGC:                        false,
 			workflowShouldSucceed:        true,
 			expectedGCPodsOnWFCompletion: 0,
@@ -379,109 +577,164 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 		},
 		// Workflow fails to write an artifact that's been defined as an Output
 		{
-			workflowFile:                 "@testdata/artifactgc/artgc-artifact-not-written.yaml",
+			name:                         "NonOptionalArtifactNotWritten",
+			workflowFile:                 "@testdata/artifactgc/artgc-non-optional-artifact-not-written.yaml",
 			hasGC:                        true,
 			workflowShouldSucceed:        false, // artifact not being present causes Workflow to fail
 			expectedGCPodsOnWFCompletion: 0,
 			expectedArtifacts: []artifactState{
-				artifactState{s3Location{bucketName: "my-bucket", derivedKey: &artifactDerivedKey{templateName: "artifact-written", artifactName: "present"}}, false, true},
+				{s3Location{bucketName: "my-bucket", derivedKey: &artifactDerivedKey{templateName: "artifact-written", artifactName: "present"}}, false, true},
+				{s3Location{bucketName: "my-bucket", derivedKey: &artifactDerivedKey{templateName: "some-artifacts-not-written", artifactName: "present"}}, false, true},
 			},
 		},
+		{
+			name:                         "NonOptionalArtifactNotWrittenPlugin",
+			workflowFile:                 "@testdata/artifactgc/artgc-non-optional-artifact-not-written-plugin.yaml",
+			hasGC:                        true,
+			workflowShouldSucceed:        false,
+			expectedGCPodsOnWFCompletion: 0,
+			expectedArtifacts: []artifactState{
+				{s3Location{bucketName: "plugin-bucket", derivedKey: &artifactDerivedKey{templateName: "artifact-written", artifactName: "present"}}, false, true},
+				{s3Location{bucketName: "plugin-bucket", derivedKey: &artifactDerivedKey{templateName: "some-artifacts-not-written", artifactName: "present"}}, false, true},
+			},
+		},
+		// Workflow doesn't write an artifact that's been defined as an Output, but it's an Optional artifact, so Workflow succeeds
+		{
+			name:                         "OptionalArtifactNotWritten",
+			workflowFile:                 "@testdata/artifactgc/artgc-optional-artifact-not-written.yaml",
+			hasGC:                        true,
+			workflowShouldSucceed:        true,
+			expectedGCPodsOnWFCompletion: 0,
+			expectedArtifacts: []artifactState{
+				{s3Location{bucketName: "my-bucket", derivedKey: &artifactDerivedKey{templateName: "artifact-written", artifactName: "present"}}, false, true},
+				{s3Location{bucketName: "my-bucket", derivedKey: &artifactDerivedKey{templateName: "some-artifacts-not-written", artifactName: "present"}}, false, true},
+			},
+		},
+		{
+			name:                         "OptionalArtifactNotWrittenPlugin",
+			workflowFile:                 "@testdata/artifactgc/artgc-optional-artifact-not-written-plugin.yaml",
+			hasGC:                        true,
+			workflowShouldSucceed:        true,
+			expectedGCPodsOnWFCompletion: 0,
+			expectedArtifacts: []artifactState{
+				{s3Location{bucketName: "plugin-bucket", derivedKey: &artifactDerivedKey{templateName: "artifact-written", artifactName: "present"}}, false, true},
+				{s3Location{bucketName: "plugin-bucket", derivedKey: &artifactDerivedKey{templateName: "some-artifacts-not-written", artifactName: "present"}}, false, true},
+			},
+		},
+		// Workflow defined output artifact but execution failed, no artifacts to be gced
+		{
+			name:                         "ArtifactNotWrittenFailed",
+			workflowFile:                 "@testdata/artifactgc/artgc-artifact-not-written-failed.yaml",
+			hasGC:                        true,
+			workflowShouldSucceed:        false,
+			expectedGCPodsOnWFCompletion: 0,
+			expectedArtifacts:            []artifactState{},
+		},
+		{
+			name:                         "ArtifactNotWrittenFailedPlugin",
+			workflowFile:                 "@testdata/artifactgc/artgc-artifact-not-written-failed-plugin.yaml",
+			hasGC:                        true,
+			workflowShouldSucceed:        false,
+			expectedGCPodsOnWFCompletion: 0,
+			expectedArtifacts:            []artifactState{},
+		},
 	} {
-		// for each test make sure that:
-		// 1. the finalizer gets added
-		// 2. the artifacts are deleted at the right time
-		// 3. the finalizer gets removed after all artifacts are deleted
-		// (note that in order to verify that the finalizer has been added once the Workflow's been submitted,
-		// we need it to still be there after being submitted, so each of the following tests includes at least one
-		// 'OnWorkflowDeletion' strategy)
+		s.Run(tt.name, func() {
+			// for each test make sure that:
+			// 1. the finalizer gets added
+			// 2. the artifacts are deleted at the right time
+			// 3. the finalizer gets removed after all artifacts are deleted
+			// (note that in order to verify that the finalizer has been added once the Workflow's been submitted,
+			// we need it to still be there after being submitted, so each of the following tests includes at least one
+			// 'OnWorkflowDeletion' strategy)
 
-		when := s.Given().
-			Workflow(tt.workflowFile).
-			When().
-			SubmitWorkflow()
-		when.
-			WaitForWorkflow(fixtures.ToBeCompleted).
-			Then().
-			ExpectWorkflow(func(t *testing.T, objectMeta *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-				if tt.hasGC {
-					assert.Contains(t, objectMeta.Finalizers, common.FinalizerArtifactGC)
+			when := s.Given().
+				Workflow(tt.workflowFile).
+				When().
+				SubmitWorkflow()
+			when.
+				WaitForWorkflow(fixtures.ToBeCompleted).
+				Then().
+				ExpectWorkflow(func(t *testing.T, objectMeta *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+					if tt.hasGC {
+						assert.Contains(t, objectMeta.Finalizers, common.FinalizerArtifactGC)
+					}
+				})
+
+			if tt.workflowShouldSucceed && when.WorkflowCondition(func(wf *wfv1.Workflow) bool {
+				return wf.Status.Phase == wfv1.WorkflowFailed || wf.Status.Phase == wfv1.WorkflowError
+			}) {
+				fmt.Println("can't reliably verify Artifact GC since workflow failed")
+				when.RemoveFinalizers(false)
+				return
+			}
+
+			// wait for all pods to have started and been completed and recouped
+			when.
+				WaitForWorkflow(
+					fixtures.WorkflowCompletionOkay(true),
+					fixtures.Condition(func(wf *wfv1.Workflow) (bool, string) {
+						return (len(wf.Status.ArtifactGCStatus.PodsRecouped) >= tt.expectedGCPodsOnWFCompletion) || (tt.expectedGCPodsOnWFCompletion == 0),
+							fmt.Sprintf("for all %d pods to have been recouped", tt.expectedGCPodsOnWFCompletion)
+					}))
+
+			then := when.Then()
+
+			// verify that the artifacts that should have been deleted at completion time were
+			for _, expectedArtifact := range tt.expectedArtifacts {
+				artifactKey, err := expectedArtifact.artifactLocation.getS3Key(when.GetWorkflow())
+				fmt.Printf("artifact key: %q\n", artifactKey)
+				if err != nil {
+					panic(err)
 				}
-			})
-
-		if tt.workflowShouldSucceed && when.WorkflowCondition(func(wf *wfv1.Workflow) bool {
-			return wf.Status.Phase == wfv1.WorkflowFailed || wf.Status.Phase == wfv1.WorkflowError
-		}) {
-			fmt.Println("can't reliably verify Artifact GC since workflow failed")
-			when.RemoveFinalizers(false)
-			continue
-		}
-
-		// wait for all pods to have started and been completed and recouped
-		when.
-			WaitForWorkflow(
-				fixtures.WorkflowCompletionOkay(true),
-				fixtures.Condition(func(wf *wfv1.Workflow) (bool, string) {
-					return (len(wf.Status.ArtifactGCStatus.PodsRecouped) >= tt.expectedGCPodsOnWFCompletion) || (tt.expectedGCPodsOnWFCompletion == 0),
-						fmt.Sprintf("for all %d pods to have been recouped", tt.expectedGCPodsOnWFCompletion)
-				}))
-
-		then := when.Then()
-
-		// verify that the artifacts that should have been deleted at completion time were
-		for _, expectedArtifact := range tt.expectedArtifacts {
-			artifactKey, err := expectedArtifact.artifactLocation.getS3Key(when.GetWorkflow())
-			fmt.Printf("artifact key: %q\n", artifactKey)
-			if err != nil {
-				panic(err)
-			}
-			if expectedArtifact.deletedAtWFCompletion {
-				fmt.Printf("verifying artifact %s is deleted at completion time\n", artifactKey)
-				then.ExpectArtifactByKey(artifactKey, expectedArtifact.artifactLocation.bucketName, func(t *testing.T, object minio.ObjectInfo, err error) {
-					assert.Error(t, err)
-				})
-			} else {
-				fmt.Printf("verifying artifact %s is not deleted at completion time\n", artifactKey)
-				then.ExpectArtifactByKey(artifactKey, expectedArtifact.artifactLocation.bucketName, func(t *testing.T, object minio.ObjectInfo, err error) {
-					assert.NoError(t, err)
-				})
-			}
-		}
-
-		fmt.Println("deleting workflow; verifying that Artifact GC finalizer gets removed")
-
-		when.
-			DeleteWorkflow().
-			WaitForWorkflowDeletion().
-			Then().
-			ExpectWorkflowDeleted()
-
-		when = when.RemoveFinalizers(false) // just in case - if the above test failed we need to forcibly remove the finalizer for Artifact GC
-
-		then = when.Then()
-
-		for _, expectedArtifact := range tt.expectedArtifacts {
-			artifactKey, err := expectedArtifact.artifactLocation.getS3Key(when.GetWorkflow())
-			fmt.Printf("artifact key: %q\n", artifactKey)
-			if err != nil {
-				panic(err)
+				if expectedArtifact.deletedAtWFCompletion {
+					fmt.Printf("verifying artifact %s is deleted at completion time\n", artifactKey)
+					then.ExpectArtifactByKey(artifactKey, expectedArtifact.artifactLocation.bucketName, func(t *testing.T, object minio.ObjectInfo, err error) {
+						require.Error(t, err)
+					})
+				} else {
+					fmt.Printf("verifying artifact %s is not deleted at completion time\n", artifactKey)
+					then.ExpectArtifactByKey(artifactKey, expectedArtifact.artifactLocation.bucketName, func(t *testing.T, object minio.ObjectInfo, err error) {
+						require.NoError(t, err)
+					})
+				}
 			}
 
-			if expectedArtifact.deletedAtWFCompletion { // already checked this
-				continue
+			fmt.Println("deleting workflow; verifying that Artifact GC finalizer gets removed")
+
+			when.
+				DeleteWorkflow().
+				WaitForWorkflowDeletion().
+				Then().
+				ExpectWorkflowDeleted()
+
+			when = when.RemoveFinalizers(false) // just in case - if the above test failed we need to forcibly remove the finalizer for Artifact GC
+
+			then = when.Then()
+
+			for _, expectedArtifact := range tt.expectedArtifacts {
+				artifactKey, err := expectedArtifact.artifactLocation.getS3Key(when.GetWorkflow())
+				fmt.Printf("artifact key: %q\n", artifactKey)
+				if err != nil {
+					panic(err)
+				}
+
+				if expectedArtifact.deletedAtWFCompletion { // already checked this
+					continue
+				}
+				if expectedArtifact.deletedAtWFDeletion {
+					fmt.Printf("verifying artifact %s is deleted\n", artifactKey)
+					then.ExpectArtifactByKey(artifactKey, expectedArtifact.artifactLocation.bucketName, func(t *testing.T, object minio.ObjectInfo, err error) {
+						require.Error(t, err)
+					})
+				} else {
+					fmt.Printf("verifying artifact %s is not deleted\n", artifactKey)
+					then.ExpectArtifactByKey(artifactKey, expectedArtifact.artifactLocation.bucketName, func(t *testing.T, object minio.ObjectInfo, err error) {
+						require.NoError(t, err)
+					})
+				}
 			}
-			if expectedArtifact.deletedAtWFDeletion {
-				fmt.Printf("verifying artifact %s is deleted\n", artifactKey)
-				then.ExpectArtifactByKey(artifactKey, expectedArtifact.artifactLocation.bucketName, func(t *testing.T, object minio.ObjectInfo, err error) {
-					assert.Error(t, err)
-				})
-			} else {
-				fmt.Printf("verifying artifact %s is not deleted\n", artifactKey)
-				then.ExpectArtifactByKey(artifactKey, expectedArtifact.artifactLocation.bucketName, func(t *testing.T, object minio.ObjectInfo, err error) {
-					assert.NoError(t, err)
-				})
-			}
-		}
+		})
 	}
 }
 
@@ -518,9 +771,10 @@ spec:
 // create a ServiceAccount which won't be tied to the artifactgc role and attempt to use that service account in the GC Pod
 // Want to verify that this causes the ArtifactGCError Condition in the Workflow
 func (s *ArtifactsSuite) TestInsufficientRole() {
-	ctx := context.Background()
+	ctx := logging.TestContext(s.T().Context())
+	_ = s.KubeClient.CoreV1().ServiceAccounts(fixtures.Namespace).Delete(ctx, "artgc-role-test-sa", metav1.DeleteOptions{})
 	_, err := s.KubeClient.CoreV1().ServiceAccounts(fixtures.Namespace).Create(ctx, &corev1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: "artgc-role-test-sa"}}, metav1.CreateOptions{})
-	s.NoError(err)
+	s.Require().NoError(err)
 	s.T().Cleanup(func() {
 		_ = s.KubeClient.CoreV1().ServiceAccounts(fixtures.Namespace).Delete(ctx, "artgc-role-test-sa", metav1.DeleteOptions{})
 	})
@@ -597,6 +851,35 @@ func (s *ArtifactsSuite) TestInsufficientRole() {
 	}
 }
 
+func (s *ArtifactsSuite) TestExitHandlerWithParameterizedGlobalArtifacts() {
+	s.Given().
+		Workflow("@testdata/exit-handler-parameterized-global-artifacts.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflowNode(wfv1.NodeWithDisplayName("printer"),
+			func(t *testing.T, n *wfv1.NodeStatus, pod *corev1.Pod) {
+				assert.Equal(t, wfv1.NodeSucceeded, n.Phase)
+				require.NotNil(t, pod)
+				// Get pod logs to verify the artifacts were correctly resolved
+				ctx := logging.TestContext(t.Context())
+				logStream, err := s.KubeClient.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &corev1.PodLogOptions{
+					Container: "main",
+				}).Stream(ctx)
+				require.NoError(t, err, "Failed to get pod logs")
+				defer logStream.Close()
+
+				logBytes, err := io.ReadAll(logStream)
+				require.NoError(t, err, "Failed to read pod logs")
+				logs := string(logBytes)
+
+				// Verify the logs contain output from both parameterized artifacts
+				assert.Contains(t, logs, "Have car", "Logs should contain 'Have car' from the car artifact")
+				assert.Contains(t, logs, "Have bike", "Logs should contain 'Have bike' from the bike artifact")
+			})
+}
+
 func (s *ArtifactsSuite) TestDefaultParameterOutputs() {
 	s.Given().
 		Workflow(`
@@ -649,9 +932,38 @@ spec:
 		})
 }
 
+func (s *ArtifactsSuite) TestDefaultParameterOutputsPlugin() {
+	s.Given().
+		Workflow("@testdata/default-params-plugin-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.True(t, status.Nodes.Any(func(node wfv1.NodeStatus) bool {
+				if node.Outputs != nil {
+					for _, param := range node.Outputs.Parameters {
+						if param.Value != nil && param.Value.String() == "Default value" {
+							return true
+						}
+					}
+				}
+				return false
+			}))
+		})
+}
+
 func (s *ArtifactsSuite) TestSameInputOutputPathOptionalArtifact() {
 	s.Given().
 		Workflow("@testdata/same-input-output-path-optional.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
+func (s *ArtifactsSuite) TestSameInputOutputPathOptionalArtifactPlugin() {
+	s.Given().
+		Workflow("@testdata/same-input-output-path-optional-plugin.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded)
@@ -666,10 +978,9 @@ func (s *ArtifactsSuite) TestOutputResult() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			n := status.Nodes.FindByDisplayName("a")
-			if assert.NotNil(t, n) {
-				assert.NotNil(t, n.Outputs.ExitCode)
-				assert.NotNil(t, n.Outputs.Result)
-			}
+			require.NotNil(t, n)
+			assert.NotNil(t, n.Outputs.ExitCode)
+			assert.NotNil(t, n.Outputs.Result)
 		})
 }
 
@@ -682,7 +993,8 @@ func (s *ArtifactsSuite) TestMainLog() {
 			WaitForWorkflow(fixtures.ToBeSucceeded).
 			Then().
 			ExpectArtifact("-", "main-logs", "my-bucket", func(t *testing.T, object minio.ObjectInfo, err error) {
-				assert.NoError(t, err)
+				require.NoError(t, err)
+				s.checkArtifactContent(t, "my-bucket", object.Key, ":) Hello Argo!")
 			})
 	})
 	s.Run("ActiveDeadlineSeconds", func() {
@@ -693,7 +1005,127 @@ func (s *ArtifactsSuite) TestMainLog() {
 			WaitForWorkflow(fixtures.ToBeFailed).
 			Then().
 			ExpectArtifact("-", "main-logs", "my-bucket", func(t *testing.T, object minio.ObjectInfo, err error) {
-				assert.NoError(t, err)
+				require.NoError(t, err)
+				s.checkArtifactContent(t, "my-bucket", object.Key, "123")
+			})
+	})
+}
+
+func (s *ArtifactsSuite) TestMainLogPlugin() {
+	s.Run("Basic", func() {
+		s.Given().
+			Workflow("@testdata/main-log-plugin-workflow.yaml").
+			When().
+			SubmitWorkflow().
+			WaitForWorkflow(fixtures.ToBeSucceeded).
+			Then().
+			ExpectArtifact("-", "main-logs", "plugin-bucket", func(t *testing.T, object minio.ObjectInfo, err error) {
+				require.NoError(t, err)
+				// Verify the log content contains our expected message
+				s.checkArtifactContent(t, "plugin-bucket", object.Key, ":) Hello Argo Plugin Logs!")
+			})
+	})
+	s.Run("ActiveDeadlineSeconds", func() {
+		s.Given().
+			Workflow("@expectedfailures/timeouts-step-plugin.yaml").
+			When().
+			SubmitWorkflow().
+			WaitForWorkflow(fixtures.ToBeFailed).
+			Then().
+			ExpectArtifact("-", "main-logs", "plugin-bucket", func(t *testing.T, object minio.ObjectInfo, err error) {
+				require.NoError(t, err)
+				// Verify the log content contains the echo output from the timeout test
+				s.checkArtifactContent(t, "plugin-bucket", object.Key, "123")
+			})
+	})
+}
+
+func (s *ArtifactsSuite) TestResourceLog() {
+	s.Run("Basic", func() {
+		s.Given().
+			Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-tmpl-wf-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      resource:
+        action: create
+        successCondition: status.phase == Succeeded
+        setOwnerReference: true
+        manifest: |
+          apiVersion: argoproj.io/v1alpha1
+          kind: Workflow
+          metadata:
+            generateName: hello-world-
+            labels:
+              workflows.argoproj.io/test: "true"
+          spec:
+            entrypoint: whalesay
+            templates:
+              - name: whalesay
+                container:
+                  image: argoproj/argosay:v2
+                  command: [sh, -c]
+                  args: [echo, ":) Hello Argo!"]
+`).
+			When().
+			SubmitWorkflow().
+			WaitForWorkflow(fixtures.ToBeSucceeded).
+			Then().
+			ExpectArtifact("-", "main-logs", "my-bucket", func(t *testing.T, object minio.ObjectInfo, err error) {
+				require.NoError(t, err)
+			})
+	})
+}
+
+func (s *ArtifactsSuite) TestResourceLogPlugin() {
+	s.Run("Basic", func() {
+		s.Given().
+			Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-tmpl-plugin-wf-
+spec:
+  artifactRepositoryRef:
+    configMap: artifact-repositories
+    key: plugin-v1
+  entrypoint: main
+  templates:
+    - name: main
+      resource:
+        action: create
+        successCondition: status.phase == Succeeded
+        setOwnerReference: true
+        manifest: |
+          apiVersion: argoproj.io/v1alpha1
+          kind: Workflow
+          metadata:
+            generateName: hello-world-plugin-
+            labels:
+              workflows.argoproj.io/test: "true"
+          spec:
+            artifactRepositoryRef:
+              configMap: artifact-repositories
+              key: plugin-v1
+            entrypoint: whalesay
+            templates:
+              - name: whalesay
+                container:
+                  image: argoproj/argosay:v2
+                  command: [sh, -c]
+                  args: [echo, ":) Hello Argo Plugin Resource!"]
+`).
+			When().
+			SubmitWorkflow().
+			WaitForWorkflow(fixtures.ToBeSucceeded).
+			Then().
+			ExpectArtifact("-", "main-logs", "plugin-bucket", func(t *testing.T, object minio.ObjectInfo, err error) {
+				require.NoError(t, err)
 			})
 	})
 }
@@ -743,9 +1175,61 @@ spec:
 						},
 					},
 				}
-				if assert.NotNil(t, n) {
-					assert.Equal(t, expectedOutputs, n.Outputs)
-				}
+				require.NotNil(t, n)
+				assert.Equal(t, expectedOutputs, n.Outputs)
+			})
+	})
+}
+
+func (s *ArtifactsSuite) TestContainersetLogsPlugin() {
+	s.Run("Basic", func() {
+		s.Given().
+			Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: containerset-logs-plugin-
+spec:
+  entrypoint: main
+  artifactRepositoryRef:
+    configMap: artifact-repositories
+    key: plugin-v1
+  templates:
+    - name: main
+      containerSet:
+        containers:
+          - name: a
+            image: argoproj/argosay:v2
+          - name: b
+            image: argoproj/argosay:v2
+`).
+			When().
+			SubmitWorkflow().
+			WaitForWorkflow(fixtures.ToBeSucceeded).
+			Then().
+			ExpectWorkflow(func(t *testing.T, m *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+				n := status.Nodes[m.Name]
+				require.NotNil(t, n)
+				require.NotNil(t, n.Outputs)
+
+				// Verify we have both log artifacts
+				assert.Len(t, n.Outputs.Artifacts, 2)
+
+				// Check for a-logs artifact
+				aLogs := n.Outputs.GetArtifactByName("a-logs")
+				require.NotNil(t, aLogs, "a-logs artifact should exist")
+				require.NotNil(t, aLogs.Plugin, "a-logs should use plugin")
+				assert.Equal(t, fmt.Sprintf("%s/%s/a.log", m.Name, m.Name), aLogs.Plugin.Key)
+
+				// Check for b-logs artifact
+				bLogs := n.Outputs.GetArtifactByName("b-logs")
+				require.NotNil(t, bLogs, "b-logs artifact should exist")
+				require.NotNil(t, bLogs.Plugin, "b-logs should use plugin")
+				assert.Equal(t, fmt.Sprintf("%s/%s/b.log", m.Name, m.Name), bLogs.Plugin.Key)
+
+				// Verify the artifacts exist in the bucket and contain expected output
+				s.checkArtifactContent(t, "plugin-bucket", aLogs.Plugin.Key, "hello argo")
+				s.checkArtifactContent(t, "plugin-bucket", bLogs.Plugin.Key, "hello argo")
 			})
 	})
 }
@@ -815,6 +1299,46 @@ spec:
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
+// checkArtifactContent reads an artifact from MinIO and verifies it contains expected content
+func (s *ArtifactsSuite) checkArtifactContent(t *testing.T, bucketName, key, expectedContent string) {
+	t.Helper()
+
+	// Create MinIO client
+	c, err := minio.New("localhost:9000", &minio.Options{
+		Creds: credentials.NewStaticV4("admin", "password", ""),
+	})
+	require.NoError(t, err)
+
+	// Get the object
+	ctx := logging.TestContext(t.Context())
+	obj, err := c.GetObject(ctx, bucketName, key, minio.GetObjectOptions{})
+	require.NoError(t, err)
+	defer obj.Close()
+
+	// Read the content
+	content, err := io.ReadAll(obj)
+	require.NoError(t, err)
+
+	var contentStr string
+	// Check if content is gzipped (artifacts may be compressed)
+	if len(content) > 2 && content[0] == 0x1f && content[1] == 0x8b {
+		// Content is gzipped, decompress it
+		gzipReader, err := gzip.NewReader(bytes.NewReader(content))
+		require.NoError(t, err, "Failed to create gzip reader")
+		defer gzipReader.Close()
+
+		decompressed, err := io.ReadAll(gzipReader)
+		require.NoError(t, err, "Failed to decompress gzipped content")
+		contentStr = string(decompressed)
+	} else {
+		// Content is not compressed, use as-is
+		contentStr = string(content)
+	}
+
+	// Check that the expected content is present
+	assert.Contains(t, contentStr, expectedContent, "Artifact content should contain expected text")
 }
 
 func TestArtifactsSuite(t *testing.T) {

@@ -1,13 +1,14 @@
 package controller
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 var inMemoryDataNode = `
@@ -90,7 +91,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:latest
+      image: alpine:3.23
       name: ""
     inputs:
       artifacts:
@@ -110,7 +111,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:latest
+      image: alpine:3.23
     inputs:
       parameters:
       - name: file
@@ -152,6 +153,10 @@ status:
       finishedAt: "2021-02-22T18:01:09Z"
       id: artifact-passing-z9j6n-613296860
       name: artifact-passing-z9j6n[1]
+      outputs:
+        parameters:
+        - name: processed
+          value: '["foo/script.py.processed","script.py.processed"]'
       phase: Succeeded
       startedAt: "2021-02-22T18:01:02Z"
       templateScope: local/artifact-passing-z9j6n
@@ -165,6 +170,10 @@ status:
       hostNodeName: k3d-k3s-default-server-0
       id: artifact-passing-z9j6n-762040888
       name: artifact-passing-z9j6n[1].process-artifact(1:script.py)
+      outputs:
+        parameters:
+        - name: processed
+          value: '"script.py.processed"'
       phase: Succeeded
       startedAt: "2021-02-22T18:01:02Z"
       templateName: process-message
@@ -216,6 +225,10 @@ status:
       hostNodeName: k3d-k3s-default-server-0
       id: artifact-passing-z9j6n-4238057504
       name: artifact-passing-z9j6n[1].process-artifact(0:foo/script.py)
+      outputs:
+        parameters:
+        - name: processed
+          value: '"foo/script.py.processed"'
       phase: Succeeded
       startedAt: "2021-02-22T18:01:02Z"
       templateName: process-message
@@ -228,15 +241,13 @@ status:
 // Test that a pod is created when necessary
 func TestDataTemplateCreatesPod(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(fmt.Sprintf(inMemoryDataNode, `artifactPaths: {s3: {bucket: "test"}}`))
-	cancel, controller := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
-
-	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 
 	node := woc.wf.Status.Nodes.FindByDisplayName("collect-artifact")
-	if assert.NotNil(t, node) {
-		assert.Equal(t, wfv1.NodePending, node.Phase)
-	}
+	require.NotNil(t, node)
+	assert.Equal(t, wfv1.NodePending, node.Phase)
 }

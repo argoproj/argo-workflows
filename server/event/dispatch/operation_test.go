@@ -9,38 +9,39 @@ import (
 
 	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/metadata"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo-workflows/v3/server/auth"
-	"github.com/argoproj/argo-workflows/v3/server/auth/types"
-	"github.com/argoproj/argo-workflows/v3/util/instanceid"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo-workflows/v4/server/auth"
+	"github.com/argoproj/argo-workflows/v4/server/auth/types"
+	"github.com/argoproj/argo-workflows/v4/util/instanceid"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 func Test_metaData(t *testing.T) {
 	t.Run("Empty", func(t *testing.T) {
-		data := metaData(context.TODO())
+		data := metaData(logging.TestContext(t.Context()))
 		assert.Empty(t, data)
 	})
 	t.Run("Headers", func(t *testing.T) {
-		ctx := metadata.NewIncomingContext(context.TODO(), metadata.MD{
+		ctx := metadata.NewIncomingContext(logging.TestContext(t.Context()), metadata.MD{
 			"x-valid": []string{"true"},
 			"ignored": []string{"false"},
 		})
 		data := metaData(ctx)
-		if assert.Len(t, data, 1) {
-			assert.Equal(t, []string{"true"}, data["x-valid"])
-		}
+		require.Len(t, data, 1)
+		assert.Equal(t, []string{"true"}, data["x-valid"])
 	})
 }
 
 func TestNewOperation(t *testing.T) {
 	// set-up
-	client := fake.NewSimpleClientset(
+	client := fake.NewClientset(
 		&wfv1.ClusterWorkflowTemplate{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-cwft", Labels: map[string]string{common.LabelKeyControllerInstanceID: "my-instanceid"}},
 		},
@@ -57,7 +58,9 @@ func TestNewOperation(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{Name: "my-wft-4", Namespace: "my-ns", Labels: map[string]string{common.LabelKeyControllerInstanceID: "my-instanceid"}},
 		},
 	)
-	ctx := context.WithValue(context.WithValue(context.Background(), auth.WfKey, client), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
+	ctx := context.WithValue(logging.TestContext(t.Context()), auth.WfKey, client)
+	ctx = context.WithValue(ctx, auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
+
 	recorder := record.NewFakeRecorder(6)
 
 	// act
@@ -163,9 +166,9 @@ func TestNewOperation(t *testing.T) {
 			},
 		},
 	}, "my-ns", "my-discriminator", &wfv1.Item{Value: json.RawMessage(`{"foo": {"bar": "baz"}, "formatted": "My%Test%"}`)})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = operation.Dispatch(ctx)
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	expectedParamValues := []string{
 		`My%Test%`,
@@ -176,17 +179,18 @@ func TestNewOperation(t *testing.T) {
 	var paramValues []string
 	// assert
 	list, err := client.ArgoprojV1alpha1().Workflows("my-ns").List(ctx, metav1.ListOptions{})
-	if assert.NoError(t, err) && assert.Len(t, list.Items, 4) {
-		for _, wf := range list.Items {
-			assert.Equal(t, "my-instanceid", wf.Labels[common.LabelKeyControllerInstanceID])
-			assert.Equal(t, "my-sub", wf.Labels[common.LabelKeyCreator])
-			assert.Contains(t, wf.Labels, common.LabelKeyWorkflowEventBinding)
-			assert.Contains(t, "my-param", wf.Spec.Arguments.Parameters[0].Name)
-			paramValues = append(paramValues, string(*wf.Spec.Arguments.Parameters[0].Value))
-		}
-		sort.Strings(paramValues)
-		assert.Equal(t, expectedParamValues, paramValues)
+	require.NoError(t, err)
+	require.Len(t, list.Items, 4)
+	for _, wf := range list.Items {
+		assert.Equal(t, "my-instanceid", wf.Labels[common.LabelKeyControllerInstanceID])
+		assert.Equal(t, "my-sub", wf.Labels[common.LabelKeyCreator])
+		assert.Contains(t, wf.Labels, common.LabelKeyWorkflowEventBinding)
+		assert.Contains(t, "my-param", wf.Spec.Arguments.Parameters[0].Name)
+		paramValues = append(paramValues, string(*wf.Spec.Arguments.Parameters[0].Value))
 	}
+	sort.Strings(paramValues)
+	assert.Equal(t, expectedParamValues, paramValues)
+
 	assert.Contains(t, "Warning WorkflowEventBindingError failed to dispatch event: failed to evaluate workflow template expression: unexpected token EOF", <-recorder.Events)
 	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: failed to get workflow template: workflowtemplates.argoproj.io \"not-found\" not found", <-recorder.Events)
 	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: failed to validate workflow template instanceid: 'my-wft-3' is not managed by the current Argo Server", <-recorder.Events)
@@ -197,12 +201,13 @@ func TestNewOperation(t *testing.T) {
 
 func Test_populateWorkflowMetadata(t *testing.T) {
 	// set-up
-	client := fake.NewSimpleClientset(
+	client := fake.NewClientset(
 		&wfv1.WorkflowTemplate{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-wft", Namespace: "my-ns", Labels: map[string]string{common.LabelKeyControllerInstanceID: "my-instanceid"}},
 		},
 	)
-	ctx := context.WithValue(context.WithValue(context.Background(), auth.WfKey, client), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
+	ctx := context.WithValue(logging.TestContext(t.Context()), auth.WfKey, client)
+	ctx = context.WithValue(ctx, auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
 	recorder := record.NewFakeRecorder(10)
 
 	// act
@@ -352,13 +357,13 @@ func Test_populateWorkflowMetadata(t *testing.T) {
 	}, "my-ns", "my-discriminator",
 		&wfv1.Item{Value: json.RawMessage(`{"foo": {"bar": "baz", "numeric": 8675309, "bool": true, "pr": 112}, "list": ["one", "two"]}`)})
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = operation.Dispatch(ctx)
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	list, err := client.ArgoprojV1alpha1().Workflows("my-ns").List(ctx, metav1.ListOptions{})
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, list.Items, 4)
 
 	expectedNames := []string{
@@ -394,7 +399,7 @@ func Test_populateWorkflowMetadata(t *testing.T) {
 	}
 
 	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: failed to evaluate workflow name expression: unexpected token Operator(\"..\") (1:10)\n | payload.......foo[.numeric]\n | .........^", <-recorder.Events)
-	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: failed to evaluate workflow label \"invalidLabel\" expression: cannot use pointer accessor outside closure (1:6)\n | foo...bar\n | .....^", <-recorder.Events)
+	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: failed to evaluate workflow label \"invalidLabel\" expression: unexpected token Operator(\".\") (1:6)\n | foo...bar\n | .....^", <-recorder.Events)
 	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: failed to evaluate workflow annotation \"invalidAnnotation\" expression: expected name (1:6)\n | foo.[..]bar\n | .....^", <-recorder.Events)
 	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: workflow name expression must evaluate to a string, not a float64", <-recorder.Events)
 	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: workflow name expression must evaluate to a string, not a bool", <-recorder.Events)
@@ -403,12 +408,74 @@ func Test_populateWorkflowMetadata(t *testing.T) {
 	assert.Equal(t, "Warning WorkflowEventBindingError failed to dispatch event: workflow name expression must evaluate to a string, not a <nil>", <-recorder.Events)
 }
 
-func Test_expressionEnvironment(t *testing.T) {
-	env, err := expressionEnvironment(context.TODO(), "my-ns", "my-d", &wfv1.Item{Value: []byte(`{"foo":"bar"}`)})
-	if assert.NoError(t, err) {
-		assert.Equal(t, "my-ns", env["namespace"])
-		assert.Equal(t, "my-d", env["discriminator"])
-		assert.Contains(t, env, "metadata")
-		assert.Equal(t, map[string]interface{}{"foo": "bar"}, env["payload"], "make sure we parse an object as a map")
+func TestDispatchWorkflowMetadata(t *testing.T) {
+	tmpl := &wfv1.WorkflowTemplate{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "my-wft", Namespace: "my-ns",
+			Labels: map[string]string{common.LabelKeyControllerInstanceID: "my-instanceid"},
+		},
+		Spec: wfv1.WorkflowSpec{
+			WorkflowMetadata: &wfv1.WorkflowMetadata{
+				Labels:      map[string]string{"env": "from-template", "template-only": "yes"},
+				Annotations: map[string]string{"note": "from-template"},
+			},
+		},
 	}
+
+	dispatch := func(t *testing.T, binding wfv1.WorkflowEventBinding) wfv1.Workflow {
+		t.Helper()
+		client := fake.NewClientset(tmpl)
+		ctx := context.WithValue(logging.TestContext(t.Context()), auth.WfKey, client)
+		ctx = context.WithValue(ctx, auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
+		op, err := NewOperation(ctx, instanceid.NewService("my-instanceid"), record.NewFakeRecorder(6),
+			[]wfv1.WorkflowEventBinding{binding}, "my-ns", "", &wfv1.Item{Value: json.RawMessage(`{}`)})
+		require.NoError(t, err)
+		require.NoError(t, op.Dispatch(ctx))
+		list, err := client.ArgoprojV1alpha1().Workflows("my-ns").List(ctx, metav1.ListOptions{})
+		require.NoError(t, err)
+		require.Len(t, list.Items, 1)
+		return list.Items[0]
+	}
+
+	t.Run("AppliesTemplateMetadata", func(t *testing.T) {
+		wf := dispatch(t, wfv1.WorkflowEventBinding{
+			ObjectMeta: metav1.ObjectMeta{Name: "my-wfeb", Namespace: "my-ns"},
+			Spec: wfv1.WorkflowEventBindingSpec{
+				Event: wfv1.Event{Selector: "true"},
+				Submit: &wfv1.Submit{
+					WorkflowTemplateRef: wfv1.WorkflowTemplateRef{Name: "my-wft"},
+				},
+			},
+		})
+		assert.Equal(t, "from-template", wf.Labels["env"])
+		assert.Equal(t, "yes", wf.Labels["template-only"])
+		assert.Equal(t, "from-template", wf.Annotations["note"])
+	})
+
+	t.Run("EventBindingOverridesTemplate", func(t *testing.T) {
+		wf := dispatch(t, wfv1.WorkflowEventBinding{
+			ObjectMeta: metav1.ObjectMeta{Name: "my-wfeb", Namespace: "my-ns"},
+			Spec: wfv1.WorkflowEventBindingSpec{
+				Event: wfv1.Event{Selector: "true"},
+				Submit: &wfv1.Submit{
+					WorkflowTemplateRef: wfv1.WorkflowTemplateRef{Name: "my-wft"},
+					ObjectMeta: metav1.ObjectMeta{
+						Labels: map[string]string{"env": `"from-binding"`},
+					},
+				},
+			},
+		})
+		assert.Equal(t, "from-binding", wf.Labels["env"])
+		assert.Equal(t, "yes", wf.Labels["template-only"])
+		assert.Equal(t, "from-template", wf.Annotations["note"])
+	})
+}
+
+func Test_expressionEnvironment(t *testing.T) {
+	env, err := expressionEnvironment(logging.TestContext(t.Context()), "my-ns", "my-d", &wfv1.Item{Value: []byte(`{"foo":"bar"}`)})
+	require.NoError(t, err)
+	assert.Equal(t, "my-ns", env["namespace"])
+	assert.Equal(t, "my-d", env["discriminator"])
+	assert.Contains(t, env, "metadata")
+	assert.Equal(t, map[string]any{"foo": "bar"}, env["payload"], "make sure we parse an object as a map")
 }

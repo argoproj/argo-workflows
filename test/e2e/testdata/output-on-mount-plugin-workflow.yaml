@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: output-on-mount-plugin-
+spec:
+  entrypoint: main
+  artifactRepositoryRef:
+    configMap: artifact-repositories
+    key: plugin-v1
+  templates:
+    - name: main
+      volumes:
+        - name: mnt
+          emptyDir: { }
+      container:
+        image: argoproj/argosay:v2
+        args: [ echo , hi, /mnt/out-0 ]
+        volumeMounts:
+          - name: mnt
+            mountPath: /mnt
+      outputs:
+        artifacts:
+          - name: out-0
+            path: /mnt/out-0
+            archive:
+              none: {}

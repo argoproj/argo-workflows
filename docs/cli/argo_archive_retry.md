@@ -9,13 +9,17 @@ argo archive retry [WORKFLOW...] [flags]
 ### Examples
 
 ```
-# Retry a workflow:
+# Retry a workflow by name:
 
-  argo archive retry uid
+  argo archive retry my-workflow
+
+# Retry a workflow by UID (auto-detected):
+
+  argo archive retry a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11
 
 # Retry multiple workflows:
 
-  argo archive retry uid another-uid
+  argo archive retry my-workflow another-workflow
 
 # Retry multiple workflows by label selector:
 
@@ -27,15 +31,23 @@ argo archive retry [WORKFLOW...] [flags]
 
 # Retry and wait for completion:
 
-  argo archive retry --wait uid
+  argo archive retry --wait my-workflow
 
 # Retry and watch until completion:
 
-  argo archive retry --watch uid
+  argo archive retry --watch my-workflow
 		
 # Retry and tail logs until completion:
 
-  argo archive retry --log uid
+  argo archive retry --log my-workflow
+
+# Retry a workflow by name (forced):
+
+  argo archive retry my-workflow --name
+
+# Retry a workflow by UID (forced):
+
+  argo archive retry a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11 --uid
 
 ```
 
@@ -45,11 +57,13 @@ argo archive retry [WORKFLOW...] [flags]
       --field-selector string        Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selector key1=value1,key2=value2). The server only supports a limited number of field queries per type.
   -h, --help                         help for retry
       --log                          log the workflow until it completes
-      --node-field-selector string   selector of nodes to reset, eg: --node-field-selector inputs.paramaters.myparam.value=abc
+      --name                         force the argument to be treated as a name
+      --node-field-selector string   selector of nodes to reset, eg: --node-field-selector inputs.parameters.myparam.value=abc
   -o, --output string                Output format. One of: name|json|yaml|wide
   -p, --parameter stringArray        input parameter to override on the original workflow spec
       --restart-successful           indicates to restart successful nodes matching the --node-field-selector
   -l, --selector string              Selector (label query) to filter on, not including uninitialized ones, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)
+      --uid                          force the argument to be treated as a UID
   -w, --wait                         wait for the workflow to complete, only works when a single workflow is retried
       --watch                        watch the workflow until it completes, only works when a single workflow is retried
 ```
@@ -75,6 +89,7 @@ argo archive retry [WORKFLOW...] [flags]
   -k, --insecure-skip-verify           If true, the Argo Server's certificate will not be checked for validity. This will make your HTTPS connections insecure. Defaults to the ARGO_INSECURE_SKIP_VERIFY environment variable.
       --instanceid string              submit with a specific controller's instance id label. Default to the ARGO_INSTANCEID environment variable.
       --kubeconfig string              Path to a kube config. Only required if out-of-cluster
+      --log-format string              The formatter to use for logs. One of: text|json (default "text")
       --loglevel string                Set the logging level. One of: debug|info|warn|error (default "info")
   -n, --namespace string               If present, the namespace scope for this CLI request
       --password string                Password for basic authentication to the API server

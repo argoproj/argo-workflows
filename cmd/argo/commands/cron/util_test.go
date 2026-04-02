@@ -7,7 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 var invalidCwf = `
@@ -22,11 +23,12 @@ metadata:
   selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/cronworkflows/wonderful-tiger
   uid: c4ea2e84-ec58-4638-bf1d-5d543e7cc86a
 spec:
-  schedule: '* * * * *'
+  schedules:
+    - '* * * * *'
   workflowSpec:
     entrypoint: argosay
     templates:
-    - 
+    -
       container:
         args:
         - echo
@@ -56,13 +58,15 @@ Conditions:
 
 func TestPrintCronWorkflow(t *testing.T) {
 	var cronWf = v1alpha1.MustUnmarshalCronWorkflow(invalidCwf)
-	out := getCronWorkflowGet(cronWf)
+	ctx := logging.TestContext(t.Context())
+	out := getCronWorkflowGet(ctx, cronWf)
 	assert.Contains(t, out, expectedOut)
 }
 
 func TestNextRuntime(t *testing.T) {
 	var cronWf = v1alpha1.MustUnmarshalCronWorkflow(invalidCwf)
-	next, err := GetNextRuntime(cronWf)
+	ctx := logging.TestContext(t.Context())
+	next, err := GetNextRuntime(ctx, cronWf)
 	require.NoError(t, err)
 	assert.LessOrEqual(t, next.Unix(), time.Now().Add(1*time.Minute).Unix())
 	assert.Greater(t, next.Unix(), time.Now().Unix())
@@ -80,7 +84,7 @@ metadata:
   selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/cronworkflows/wonderful-tiger
   uid: c4ea2e84-ec58-4638-bf1d-5d543e7cc86a
 spec:
-  schedules: 
+  schedules:
   - '* * * * *'
   - '*/2 * * * *'
   workflowSpec:
@@ -94,7 +98,8 @@ spec:
 
 func TestNextRuntimeWithMultipleSchedules(t *testing.T) {
 	var cronWf = v1alpha1.MustUnmarshalCronWorkflow(cronMultipleSchedules)
-	next, err := GetNextRuntime(cronWf)
+	ctx := logging.TestContext(t.Context())
+	next, err := GetNextRuntime(ctx, cronWf)
 	require.NoError(t, err)
 	assert.LessOrEqual(t, next.Unix(), time.Now().Add(1*time.Minute).Unix())
 	assert.Greater(t, next.Unix(), time.Now().Unix())

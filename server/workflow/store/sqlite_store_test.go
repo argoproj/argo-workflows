@@ -1,10 +1,12 @@
 package store
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"testing"
+	"time"
+
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -13,13 +15,13 @@ import (
 	"zombiezen.com/go/sqlite"
 	"zombiezen.com/go/sqlite/sqlitex"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/instanceid"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/instanceid"
 )
 
 func TestInitDB(t *testing.T) {
 	conn, err := initDB()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	defer conn.Close()
 	t.Run("TestTablesCreated", func(t *testing.T) {
 		err = sqlitex.Execute(conn, `select name from sqlite_master where type='table'`, &sqlitex.ExecOptions{
@@ -68,18 +70,22 @@ func TestInitDB(t *testing.T) {
 }
 
 func TestStoreOperation(t *testing.T) {
-	instanceIdSvc := instanceid.NewService("my-instanceid")
+	instanceIDSvc := instanceid.NewService("my-instanceid")
 	conn, err := initDB()
 	require.NoError(t, err)
 	store := SQLiteStore{
 		conn:            conn,
-		instanceService: instanceIdSvc,
+		instanceService: instanceIDSvc,
 	}
+	// Use a fixed reference time to avoid flaky boundary comparisons between
+	// workflow timestamps and filter parameters.
+	now := time.Now().UTC()
 	t.Run("TestAddWorkflow", func(t *testing.T) {
-		for i := 0; i < 10; i++ {
-			require.NoError(t, store.Add(generateWorkflow(i)))
+		for i := range 10 {
+			require.NoError(t, store.Add(generateWorkflow(now, i)))
 		}
-		num, err := store.CountWorkflows(context.Background(), "argo", "", metav1.ListOptions{})
+		ctx := logging.TestContext(t.Context())
+		num, err := store.CountWorkflows(ctx, "argo", "", "", "", metav1.ListOptions{})
 		require.NoError(t, err)
 		assert.Equal(t, int64(10), num)
 		// Labels are also added
@@ -91,7 +97,7 @@ func TestStoreOperation(t *testing.T) {
 		}))
 	})
 	t.Run("TestUpdateWorkflow", func(t *testing.T) {
-		wf := generateWorkflow(0)
+		wf := generateWorkflow(now, 0)
 		wf.Labels["test-label-2"] = "value-2"
 		require.NoError(t, store.Update(wf))
 		// workflow is updated
@@ -111,7 +117,7 @@ func TestStoreOperation(t *testing.T) {
 		}))
 	})
 	t.Run("TestDeleteWorkflow", func(t *testing.T) {
-		wf := generateWorkflow(0)
+		wf := generateWorkflow(now, 0)
 		require.NoError(t, store.Delete(wf))
 		// workflow is deleted
 		require.NoError(t, sqlitex.Execute(conn, `select count(*) from argo_workflows where uid = 'uid-0'`, &sqlitex.ExecOptions{
@@ -129,27 +135,117 @@ func TestStoreOperation(t *testing.T) {
 		}))
 	})
 	t.Run("TestListWorkflows", func(t *testing.T) {
-		wfList, err := store.ListWorkflows(context.Background(), "argo", "", metav1.ListOptions{Limit: 5})
+		ctx := logging.TestContext(t.Context())
+		wfList, err := store.ListWorkflows(ctx, "argo", "", "", "", metav1.ListOptions{Limit: 5})
 		require.NoError(t, err)
 		assert.Len(t, wfList.Items, 5)
 	})
+	t.Run("TestListWorkflows name", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		wfList, err := store.ListWorkflows(ctx, "argo", "Exact", "", "", metav1.ListOptions{Limit: 5, FieldSelector: "metadata.name=flow"})
+		require.NoError(t, err)
+		assert.Empty(t, wfList.Items)
+
+		wfList, err = store.ListWorkflows(ctx, "argo", "Exact", "", "", metav1.ListOptions{Limit: 5, FieldSelector: "metadata.name=workflow-1"})
+		require.NoError(t, err)
+		assert.Len(t, wfList.Items, 1)
+
+		wfList, err = store.ListWorkflows(ctx, "argo", "", "", "", metav1.ListOptions{Limit: 5, FieldSelector: "metadata.name=workflow-1"})
+		require.NoError(t, err)
+		assert.Len(t, wfList.Items, 1)
+	})
+	t.Run("TestListWorkflows namePrefix", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		wfList, err := store.ListWorkflows(ctx, "argo", "Prefix", "", "", metav1.ListOptions{Limit: 5, FieldSelector: "metadata.name=flow"})
+		require.NoError(t, err)
+		assert.Empty(t, wfList.Items)
+
+		wfList, err = store.ListWorkflows(ctx, "argo", "Prefix", "", "", metav1.ListOptions{Limit: 5, FieldSelector: "metadata.name=workflow-"})
+		require.NoError(t, err)
+		assert.Len(t, wfList.Items, 5)
+
+		wfList, err = store.ListWorkflows(ctx, "argo", "Prefix", "", "", metav1.ListOptions{Limit: 5, FieldSelector: "metadata.name=workflow-1"})
+		require.NoError(t, err)
+		assert.Len(t, wfList.Items, 1)
+	})
+	t.Run("TestListWorkflows namePattern", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		wfList, err := store.ListWorkflows(ctx, "argo", "Contains", "", "", metav1.ListOptions{Limit: 5, FieldSelector: "metadata.name=non-existing-pattern"})
+		require.NoError(t, err)
+		assert.Empty(t, wfList.Items)
+
+		wfList, err = store.ListWorkflows(ctx, "argo", "Contains", "", "", metav1.ListOptions{Limit: 5, FieldSelector: "metadata.name=flow"})
+		require.NoError(t, err)
+		assert.Len(t, wfList.Items, 5)
+
+		wfList, err = store.ListWorkflows(ctx, "argo", "Contains", "", "", metav1.ListOptions{Limit: 5, FieldSelector: "metadata.name=workflow-1"})
+		require.NoError(t, err)
+		assert.Len(t, wfList.Items, 1)
+	})
+	t.Run("TestListWorkflows finishedBefore", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		// Finished before today
+		wfList, err := store.ListWorkflows(ctx, "argo", "", "", now.Format(time.RFC3339), metav1.ListOptions{})
+		require.NoError(t, err)
+		assert.Len(t, wfList.Items, 9)
+
+		// Finished before 1 day ago
+		wfList, err = store.ListWorkflows(ctx, "argo", "", "", now.Add(-24*time.Hour).Format(time.RFC3339), metav1.ListOptions{})
+		require.NoError(t, err)
+		assert.Len(t, wfList.Items, 8)
+
+		// Finished before 5 days ago
+		wfList, err = store.ListWorkflows(ctx, "argo", "", "", now.Add(-5*24*time.Hour).Format(time.RFC3339), metav1.ListOptions{})
+		require.NoError(t, err)
+		assert.Len(t, wfList.Items, 4)
+
+		// Finished before 10 days ago
+		wfList, err = store.ListWorkflows(ctx, "argo", "", "", now.Add(-24*10*time.Hour).Format(time.RFC3339), metav1.ListOptions{})
+		require.NoError(t, err)
+		assert.Empty(t, wfList.Items)
+	})
+	t.Run("TestListWorkflows createdAfter", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		// Created after today
+		wfList, err := store.ListWorkflows(ctx, "argo", "", now.Format(time.RFC3339), "", metav1.ListOptions{})
+		require.NoError(t, err)
+		assert.Empty(t, wfList.Items)
+
+		// Created after 1 day ago
+		wfList, err = store.ListWorkflows(ctx, "argo", "", now.Add(-24*time.Hour).Format(time.RFC3339), "", metav1.ListOptions{})
+		require.NoError(t, err)
+		assert.Len(t, wfList.Items, 1)
+
+		// Created after 3 days ago
+		wfList, err = store.ListWorkflows(ctx, "argo", "", now.Add(-3*24*time.Hour).Format(time.RFC3339), "", metav1.ListOptions{})
+		require.NoError(t, err)
+		assert.Len(t, wfList.Items, 3)
+
+		// Created after 10 days ago
+		wfList, err = store.ListWorkflows(ctx, "argo", "", now.Add(-10*24*time.Hour).Format(time.RFC3339), "", metav1.ListOptions{})
+		require.NoError(t, err)
+		assert.Len(t, wfList.Items, 9)
+	})
 	t.Run("TestCountWorkflows", func(t *testing.T) {
-		num, err := store.CountWorkflows(context.Background(), "argo", "", metav1.ListOptions{})
+		ctx := logging.TestContext(t.Context())
+		num, err := store.CountWorkflows(ctx, "argo", "", "", "", metav1.ListOptions{})
 		require.NoError(t, err)
 		assert.Equal(t, int64(9), num)
 	})
 }
 
-func generateWorkflow(uid int) *wfv1.Workflow {
+func generateWorkflow(now time.Time, uid int) *wfv1.Workflow {
+	ts := now.Add(-24 * time.Duration(uid) * time.Hour)
 	return &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{
-		UID:       types.UID(fmt.Sprintf("uid-%d", uid)),
-		Name:      fmt.Sprintf("workflow-%d", uid),
-		Namespace: "argo",
+		UID:               types.UID(fmt.Sprintf("uid-%d", uid)),
+		Name:              fmt.Sprintf("workflow-%d", uid),
+		Namespace:         "argo",
+		CreationTimestamp: metav1.Time{Time: ts},
 		Labels: map[string]string{
 			"workflows.argoproj.io/completed":             "true",
 			"workflows.argoproj.io/phase":                 "Succeeded",
 			"workflows.argoproj.io/controller-instanceid": "my-instanceid",
 			"test-label": fmt.Sprintf("label-%d", uid),
 		},
-	}}
+	}, Status: wfv1.WorkflowStatus{FinishedAt: metav1.NewTime(ts)}}
 }

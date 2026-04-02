@@ -3,14 +3,13 @@ package commands
 import (
 	"context"
 
-	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
-	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/common"
+	workflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
 type resubmitOps struct {
@@ -32,7 +31,7 @@ func (o *resubmitOps) hasSelector() bool {
 func NewResubmitCommand() *cobra.Command {
 	var (
 		resubmitOpts  resubmitOps
-		cliSubmitOpts common.CliSubmitOpts
+		cliSubmitOpts = common.NewCliSubmitOpts()
 	)
 	command := &cobra.Command{
 		Use:   "resubmit [WORKFLOW...]",
@@ -70,22 +69,25 @@ func NewResubmitCommand() *cobra.Command {
 
   argo resubmit @latest
 `,
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			if cmd.Flag("priority").Changed {
 				cliSubmitOpts.Priority = &resubmitOpts.priority
 			}
 
-			ctx, apiClient := client.NewAPIClient(cmd.Context())
-			serviceClient := apiClient.NewWorkflowServiceClient()
-			resubmitOpts.namespace = client.Namespace()
-			err := resubmitWorkflows(ctx, serviceClient, resubmitOpts, cliSubmitOpts, args)
-			errors.CheckError(err)
+			ctx := cmd.Context()
+			ctx, apiClient, err := client.NewAPIClient(ctx)
+			if err != nil {
+				return err
+			}
+			serviceClient := apiClient.NewWorkflowServiceClient(ctx)
+			resubmitOpts.namespace = client.Namespace(ctx)
+			return resubmitWorkflows(ctx, serviceClient, resubmitOpts, cliSubmitOpts, args)
 		},
 	}
 
 	command.Flags().StringArrayVarP(&cliSubmitOpts.Parameters, "parameter", "p", []string{}, "input parameter to override on the original workflow spec")
 	command.Flags().Int32Var(&resubmitOpts.priority, "priority", 0, "workflow priority")
-	command.Flags().StringVarP(&cliSubmitOpts.Output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
+	command.Flags().VarP(&cliSubmitOpts.Output, "output", "o", "Output format. "+cliSubmitOpts.Output.Usage())
 	command.Flags().BoolVarP(&cliSubmitOpts.Wait, "wait", "w", false, "wait for the workflow to complete, only works when a single workflow is resubmitted")
 	command.Flags().BoolVar(&cliSubmitOpts.Watch, "watch", false, "watch the workflow until it completes, only works when a single workflow is resubmitted")
 	command.Flags().BoolVar(&cliSubmitOpts.Log, "log", false, "log the workflow until it completes")
@@ -140,11 +142,13 @@ func resubmitWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowSe
 		if err != nil {
 			return err
 		}
-		printWorkflow(lastResubmitted, common.GetFlags{Output: cliSubmitOpts.Output})
+		if err = printWorkflow(lastResubmitted, common.GetFlags{Output: cliSubmitOpts.Output}); err != nil {
+			return err
+		}
 	}
 	if len(resubmittedNames) == 1 {
 		// watch or wait when there is only one workflow retried
-		common.WaitWatchOrLog(ctx, serviceClient, lastResubmitted.Namespace, []string{lastResubmitted.Name}, cliSubmitOpts)
+		return common.WaitWatchOrLog(ctx, serviceClient, lastResubmitted.Namespace, []string{lastResubmitted.Name}, cliSubmitOpts)
 	}
 	return nil
 }

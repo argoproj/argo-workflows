@@ -113,7 +113,7 @@ ownership management and SELinux relabeling.
 
 
 
-[interface{}](#interface)
+`any`
 
 ### <span id="any-string"></span> AnyString
 
@@ -127,6 +127,39 @@ It will marshall back to string - marshalling is not symmetric.
 | Name | Type | Go type | Default | Description | Example |
 |------|------|---------| ------- |-------------|---------|
 | AnyString | string| string | | It will unmarshall int64, int32, float64, float32, boolean, a plain string and represents it as string.</br>It will marshall back to string - marshalling is not symmetric. |  |
+
+
+
+### <span id="app-armor-profile"></span> AppArmorProfile
+
+
+> +union
+  
+
+
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| localhostProfile | string| `string` |  | | localhostProfile indicates a profile loaded on the node that should be used.</br>The profile must be preconfigured on the node to work.</br>Must match the loaded name of the profile.</br>Must be set if and only if type is "Localhost".</br>+optional |  |
+| type | [AppArmorProfileType](#app-armor-profile-type)| `AppArmorProfileType` |  | |  |  |
+
+
+
+### <span id="app-armor-profile-type"></span> AppArmorProfileType
+
+
+> +enum
+  
+
+
+
+| Name | Type | Go type | Default | Description | Example |
+|------|------|---------| ------- |-------------|---------|
+| AppArmorProfileType | string| string | | +enum |  |
 
 
 
@@ -196,11 +229,12 @@ It will marshall back to string - marshalling is not symmetric.
 | globalName | string| `string` |  | | GlobalName exports an output artifact to the global scope, making it available as</br>'{{workflow.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts |  |
 | hdfs | [HDFSArtifact](#h-d-f-s-artifact)| `HDFSArtifact` |  | |  |  |
 | http | [HTTPArtifact](#http-artifact)| `HTTPArtifact` |  | |  |  |
-| mode | int32 (formatted integer)| `int32` |  | | mode bits to use on this file, must be a value between 0 and 0777</br>set when loading input artifacts. |  |
-| name | string| `string` |  | | name of the artifact. must be unique within a template's inputs/outputs. |  |
+| mode | int32 (formatted integer)| `int32` |  | | mode bits to use on this file, must be a value between 0 and 0777.</br>Set when loading input artifacts. It is recommended to set the mode value</br>to ensure the artifact has the expected permissions in your container.</br>+kubebuilder:validation:Minimum=0</br>+kubebuilder:validation:Maximum=511 |  |
+| name | string| `string` |  | | name of the artifact. must be unique within a template's inputs/outputs.</br>+kubebuilder:validation:Pattern=`^[-a-zA-Z0-9_{}.]+$` |  |
 | optional | boolean| `bool` |  | | Make Artifacts optional, if Artifacts doesn't generate or exist |  |
 | oss | [OSSArtifact](#o-s-s-artifact)| `OSSArtifact` |  | |  |  |
 | path | string| `string` |  | | Path is the container path to the artifact |  |
+| plugin | [PluginArtifact](#plugin-artifact)| `PluginArtifact` |  | |  |  |
 | raw | [RawArtifact](#raw-artifact)| `RawArtifact` |  | |  |  |
 | recurseMode | boolean| `bool` |  | | If mode is set, apply the permission recursively into the artifact if it is a folder |  |
 | s3 | [S3Artifact](#s3-artifact)| `S3Artifact` |  | |  |  |
@@ -245,6 +279,7 @@ It will marshall back to string - marshalling is not symmetric.
 > It is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname).
 It is also used to describe the location of multiple artifacts such as the archive location
 of a single workflow step, which the executor will use as a default location to store its files.
++kubebuilder:validation:XValidation:rule="(has(self.s3) ? 1 : 0) + (has(self.git) ? 1 : 0) + (has(self.http) ? 1 : 0) + (has(self.artifactory) ? 1 : 0) + (has(self.hdfs) ? 1 : 0) + (has(self.raw) ? 1 : 0) + (has(self.oss) ? 1 : 0) + (has(self.gcs) ? 1 : 0) + (has(self.azure) ? 1 : 0) + (has(self.plugin) ? 1 : 0) <= 1",message="at most one artifact location can be specified"
   
 
 
@@ -263,6 +298,7 @@ of a single workflow step, which the executor will use as a default location to 
 | hdfs | [HDFSArtifact](#h-d-f-s-artifact)| `HDFSArtifact` |  | |  |  |
 | http | [HTTPArtifact](#http-artifact)| `HTTPArtifact` |  | |  |  |
 | oss | [OSSArtifact](#o-s-s-artifact)| `OSSArtifact` |  | |  |  |
+| plugin | [PluginArtifact](#plugin-artifact)| `PluginArtifact` |  | |  |  |
 | raw | [RawArtifact](#raw-artifact)| `RawArtifact` |  | |  |  |
 | s3 | [S3Artifact](#s3-artifact)| `S3Artifact` |  | |  |  |
 
@@ -295,15 +331,30 @@ of a single workflow step, which the executor will use as a default location to 
 | globalName | string| `string` |  | | GlobalName exports an output artifact to the global scope, making it available as</br>'{{workflow.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts |  |
 | hdfs | [HDFSArtifact](#h-d-f-s-artifact)| `HDFSArtifact` |  | |  |  |
 | http | [HTTPArtifact](#http-artifact)| `HTTPArtifact` |  | |  |  |
-| mode | int32 (formatted integer)| `int32` |  | | mode bits to use on this file, must be a value between 0 and 0777</br>set when loading input artifacts. |  |
-| name | string| `string` |  | | name of the artifact. must be unique within a template's inputs/outputs. |  |
+| mode | int32 (formatted integer)| `int32` |  | | mode bits to use on this file, must be a value between 0 and 0777.</br>Set when loading input artifacts. It is recommended to set the mode value</br>to ensure the artifact has the expected permissions in your container.</br>+kubebuilder:validation:Minimum=0</br>+kubebuilder:validation:Maximum=511 |  |
+| name | string| `string` |  | | name of the artifact. must be unique within a template's inputs/outputs.</br>+kubebuilder:validation:Pattern=`^[-a-zA-Z0-9_{}.]+$` |  |
 | optional | boolean| `bool` |  | | Make Artifacts optional, if Artifacts doesn't generate or exist |  |
 | oss | [OSSArtifact](#o-s-s-artifact)| `OSSArtifact` |  | |  |  |
 | path | string| `string` |  | | Path is the container path to the artifact |  |
+| plugin | [PluginArtifact](#plugin-artifact)| `PluginArtifact` |  | |  |  |
 | raw | [RawArtifact](#raw-artifact)| `RawArtifact` |  | |  |  |
 | recurseMode | boolean| `bool` |  | | If mode is set, apply the permission recursively into the artifact if it is a folder |  |
 | s3 | [S3Artifact](#s3-artifact)| `S3Artifact` |  | |  |  |
 | subPath | string| `string` |  | | SubPath allows an artifact to be sourced from a subpath within the specified source |  |
+
+
+
+### <span id="artifact-plugin-name"></span> ArtifactPluginName
+
+
+> ArtifactPluginName is the name of an artifact plugin
+  
+
+
+
+| Name | Type | Go type | Default | Description | Example |
+|------|------|---------| ------- |-------------|---------|
+| ArtifactPluginName | string| string | | ArtifactPluginName is the name of an artifact plugin |  |
 
 
 
@@ -337,7 +388,7 @@ of a single workflow step, which the executor will use as a default location to 
 ### <span id="azure-artifact"></span> AzureArtifact
 
 
-> AzureArtifact is the location of a an Azure Storage artifact
+> AzureArtifact is the location of an Azure Storage artifact
   
 
 
@@ -398,9 +449,9 @@ of a single workflow step, which the executor will use as a default location to 
 | cachingMode | [AzureDataDiskCachingMode](#azure-data-disk-caching-mode)| `AzureDataDiskCachingMode` |  | |  |  |
 | diskName | string| `string` |  | | diskName is the Name of the data disk in the blob storage |  |
 | diskURI | string| `string` |  | | diskURI is the URI of data disk in the blob storage |  |
-| fsType | string| `string` |  | | fsType is Filesystem type to mount.</br>Must be a filesystem type supported by the host operating system.</br>Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.</br>+optional |  |
+| fsType | string| `string` |  | | fsType is Filesystem type to mount.</br>Must be a filesystem type supported by the host operating system.</br>Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.</br>+optional</br>+default="ext4" |  |
 | kind | [AzureDataDiskKind](#azure-data-disk-kind)| `AzureDataDiskKind` |  | |  |  |
-| readOnly | boolean| `bool` |  | | readOnly Defaults to false (read/write). ReadOnly here will force</br>the ReadOnly setting in VolumeMounts.</br>+optional |  |
+| readOnly | boolean| `bool` |  | | readOnly Defaults to false (read/write). ReadOnly here will force</br>the ReadOnly setting in VolumeMounts.</br>+optional</br>+default=false |  |
 
 
 
@@ -435,6 +486,7 @@ of a single workflow step, which the executor will use as a default location to 
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
+| cap | string| `string` |  | | Cap is a limit on revised values of the duration parameter. If a</br>multiplication by the factor parameter would make the duration</br>exceed the cap then the duration is set to the cap |  |
 | duration | string| `string` |  | | Duration is the amount to back off. Default unit is seconds, but could also be a duration (e.g. "2m", "1h") |  |
 | factor | [IntOrString](#int-or-string)| `IntOrString` |  | |  |  |
 | maxDuration | string| `string` |  | | MaxDuration is the maximum amount of time allowed for a workflow in the backoff strategy.</br>It is important to note that if the workflow template includes activeDeadlineSeconds, the pod's deadline is initially set with activeDeadlineSeconds.</br>However, when the workflow fails, the pod's deadline is then overridden by maxDuration.</br>This ensures that the workflow does not exceed the specified maximum duration when retries are involved. |  |
@@ -496,7 +548,7 @@ of a single workflow step, which the executor will use as a default location to 
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| configMap | [ConfigMapKeySelector](#config-map-key-selector)| `ConfigMapKeySelector` |  | |  |  |
+| configMap | [LocalObjectReference](#local-object-reference)| `LocalObjectReference` |  | |  |  |
 
 
 
@@ -511,8 +563,8 @@ of a single workflow step, which the executor will use as a default location to 
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| add | [][Capability](#capability)| `[]Capability` |  | | Added capabilities</br>+optional |  |
-| drop | [][Capability](#capability)| `[]Capability` |  | | Removed capabilities</br>+optional |  |
+| add | [][Capability](#capability)| `[]Capability` |  | | Added capabilities</br>+optional</br>+listType=atomic |  |
+| drop | [][Capability](#capability)| `[]Capability` |  | | Removed capabilities</br>+optional</br>+listType=atomic |  |
 
 
 
@@ -545,7 +597,7 @@ Cephfs volumes do not support ownership management or SELinux relabeling.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| monitors | []string| `[]string` |  | | monitors is Required: Monitors is a collection of Ceph monitors</br>More info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it |  |
+| monitors | []string| `[]string` |  | | monitors is Required: Monitors is a collection of Ceph monitors</br>More info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it</br>+listType=atomic |  |
 | path | string| `string` |  | | path is Optional: Used as the mounted root, rather than the full Ceph tree, default is /</br>+optional |  |
 | readOnly | boolean| `bool` |  | | readOnly is Optional: Defaults to false (read/write). ReadOnly here will force</br>the ReadOnly setting in VolumeMounts.</br>More info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it</br>+optional |  |
 | secretFile | string| `string` |  | | secretFile is Optional: SecretFile is the path to key ring for User, default is /etc/ceph/user.secret</br>More info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it</br>+optional |  |
@@ -596,6 +648,30 @@ Cinder volumes support ownership management and SELinux relabeling.
 
 
 
+### <span id="cluster-trust-bundle-projection"></span> ClusterTrustBundleProjection
+
+
+> ClusterTrustBundleProjection describes how to select a set of
+ClusterTrustBundle objects and project their contents into the pod
+filesystem.
+  
+
+
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| labelSelector | [LabelSelector](#label-selector)| `LabelSelector` |  | |  |  |
+| name | string| `string` |  | | Select a single ClusterTrustBundle by object name.  Mutually-exclusive</br>with signerName and labelSelector.</br>+optional |  |
+| optional | boolean| `bool` |  | | If true, don't block pod startup if the referenced ClusterTrustBundle(s)</br>aren't available.  If using name, then the named ClusterTrustBundle is</br>allowed not to exist.  If using signerName, then the combination of</br>signerName and labelSelector is allowed to match zero</br>ClusterTrustBundles.</br>+optional |  |
+| path | string| `string` |  | | Relative path from the volume root to write the bundle. |  |
+| signerName | string| `string` |  | | Select all ClusterTrustBundles that match this signer name.</br>Mutually-exclusive with name.  The contents of all selected</br>ClusterTrustBundles will be unified and deduplicated.</br>+optional |  |
+
+
+
 ### <span id="config-map-env-source"></span> ConfigMapEnvSource
 
 
@@ -611,7 +687,7 @@ key-value pairs as environment variables.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| name | string| `string` |  | | Name of the referent.</br>More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</br>TODO: Add other useful fields. apiVersion, kind, uid?</br>+optional |  |
+| name | string| `string` |  | | Name of the referent.</br>This field is effectively required, but due to backwards compatibility is</br>allowed to be empty. Instances of this type with an empty value here are</br>almost certainly wrong.</br>More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</br>+optional</br>+default=""</br>+kubebuilder:default=""</br>TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896. |  |
 | optional | boolean| `bool` |  | | Specify whether the ConfigMap must be defined</br>+optional |  |
 
 
@@ -631,7 +707,7 @@ key-value pairs as environment variables.
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | key | string| `string` |  | | The key to select. |  |
-| name | string| `string` |  | | Name of the referent.</br>More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</br>TODO: Add other useful fields. apiVersion, kind, uid?</br>+optional |  |
+| name | string| `string` |  | | Name of the referent.</br>This field is effectively required, but due to backwards compatibility is</br>allowed to be empty. Instances of this type with an empty value here are</br>almost certainly wrong.</br>More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</br>+optional</br>+default=""</br>+kubebuilder:default=""</br>TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896. |  |
 | optional | boolean| `bool` |  | | Specify whether the ConfigMap or its key must be defined</br>+optional |  |
 
 
@@ -654,8 +730,8 @@ mode.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| items | [][KeyToPath](#key-to-path)| `[]*KeyToPath` |  | | items if unspecified, each key-value pair in the Data field of the referenced</br>ConfigMap will be projected into the volume as a file whose name is the</br>key and content is the value. If specified, the listed keys will be</br>projected into the specified paths, and unlisted keys will not be</br>present. If a key is specified which is not present in the ConfigMap,</br>the volume setup will error unless it is marked optional. Paths must be</br>relative and may not contain the '..' path or start with '..'.</br>+optional |  |
-| name | string| `string` |  | | Name of the referent.</br>More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</br>TODO: Add other useful fields. apiVersion, kind, uid?</br>+optional |  |
+| items | [][KeyToPath](#key-to-path)| `[]*KeyToPath` |  | | items if unspecified, each key-value pair in the Data field of the referenced</br>ConfigMap will be projected into the volume as a file whose name is the</br>key and content is the value. If specified, the listed keys will be</br>projected into the specified paths, and unlisted keys will not be</br>present. If a key is specified which is not present in the ConfigMap,</br>the volume setup will error unless it is marked optional. Paths must be</br>relative and may not contain the '..' path or start with '..'.</br>+optional</br>+listType=atomic |  |
+| name | string| `string` |  | | Name of the referent.</br>This field is effectively required, but due to backwards compatibility is</br>allowed to be empty. Instances of this type with an empty value here are</br>almost certainly wrong.</br>More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</br>+optional</br>+default=""</br>+kubebuilder:default=""</br>TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896. |  |
 | optional | boolean| `bool` |  | | optional specify whether the ConfigMap or its keys must be defined</br>+optional |  |
 
 
@@ -678,8 +754,8 @@ ConfigMap volumes support ownership management and SELinux relabeling.
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | defaultMode | int32 (formatted integer)| `int32` |  | | defaultMode is optional: mode bits used to set permissions on created files by default.</br>Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.</br>YAML accepts both octal and decimal values, JSON requires decimal values for mode bits.</br>Defaults to 0644.</br>Directories within the path are not affected by this setting.</br>This might be in conflict with other options that affect the file</br>mode, like fsGroup, and the result can be other mode bits set.</br>+optional |  |
-| items | [][KeyToPath](#key-to-path)| `[]*KeyToPath` |  | | items if unspecified, each key-value pair in the Data field of the referenced</br>ConfigMap will be projected into the volume as a file whose name is the</br>key and content is the value. If specified, the listed keys will be</br>projected into the specified paths, and unlisted keys will not be</br>present. If a key is specified which is not present in the ConfigMap,</br>the volume setup will error unless it is marked optional. Paths must be</br>relative and may not contain the '..' path or start with '..'.</br>+optional |  |
-| name | string| `string` |  | | Name of the referent.</br>More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</br>TODO: Add other useful fields. apiVersion, kind, uid?</br>+optional |  |
+| items | [][KeyToPath](#key-to-path)| `[]*KeyToPath` |  | | items if unspecified, each key-value pair in the Data field of the referenced</br>ConfigMap will be projected into the volume as a file whose name is the</br>key and content is the value. If specified, the listed keys will be</br>projected into the specified paths, and unlisted keys will not be</br>present. If a key is specified which is not present in the ConfigMap,</br>the volume setup will error unless it is marked optional. Paths must be</br>relative and may not contain the '..' path or start with '..'.</br>+optional</br>+listType=atomic |  |
+| name | string| `string` |  | | Name of the referent.</br>This field is effectively required, but due to backwards compatibility is</br>allowed to be empty. Instances of this type with an empty value here are</br>almost certainly wrong.</br>More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</br>+optional</br>+default=""</br>+kubebuilder:default=""</br>TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896. |  |
 | optional | boolean| `bool` |  | | optional specify whether the ConfigMap or its keys must be defined</br>+optional |  |
 
 
@@ -695,10 +771,10 @@ ConfigMap volumes support ownership management and SELinux relabeling.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| args | []string| `[]string` |  | | Arguments to the entrypoint.</br>The container image's CMD is used if this is not provided.</br>Variable references $(VAR_NAME) are expanded using the container's environment. If a variable</br>cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced</br>to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will</br>produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless</br>of whether the variable exists or not. Cannot be updated.</br>More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell</br>+optional |  |
-| command | []string| `[]string` |  | | Entrypoint array. Not executed within a shell.</br>The container image's ENTRYPOINT is used if this is not provided.</br>Variable references $(VAR_NAME) are expanded using the container's environment. If a variable</br>cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced</br>to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will</br>produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless</br>of whether the variable exists or not. Cannot be updated.</br>More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell</br>+optional |  |
-| env | [][EnvVar](#env-var)| `[]*EnvVar` |  | | List of environment variables to set in the container.</br>Cannot be updated.</br>+optional</br>+patchMergeKey=name</br>+patchStrategy=merge |  |
-| envFrom | [][EnvFromSource](#env-from-source)| `[]*EnvFromSource` |  | | List of sources to populate environment variables in the container.</br>The keys defined within a source must be a C_IDENTIFIER. All invalid keys</br>will be reported as an event when the container is starting. When a key exists in multiple</br>sources, the value associated with the last source will take precedence.</br>Values defined by an Env with a duplicate key will take precedence.</br>Cannot be updated.</br>+optional |  |
+| args | []string| `[]string` |  | | Arguments to the entrypoint.</br>The container image's CMD is used if this is not provided.</br>Variable references $(VAR_NAME) are expanded using the container's environment. If a variable</br>cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced</br>to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will</br>produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless</br>of whether the variable exists or not. Cannot be updated.</br>More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell</br>+optional</br>+listType=atomic |  |
+| command | []string| `[]string` |  | | Entrypoint array. Not executed within a shell.</br>The container image's ENTRYPOINT is used if this is not provided.</br>Variable references $(VAR_NAME) are expanded using the container's environment. If a variable</br>cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced</br>to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will</br>produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless</br>of whether the variable exists or not. Cannot be updated.</br>More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell</br>+optional</br>+listType=atomic |  |
+| env | [][EnvVar](#env-var)| `[]*EnvVar` |  | | List of environment variables to set in the container.</br>Cannot be updated.</br>+optional</br>+patchMergeKey=name</br>+patchStrategy=merge</br>+listType=map</br>+listMapKey=name |  |
+| envFrom | [][EnvFromSource](#env-from-source)| `[]*EnvFromSource` |  | | List of sources to populate environment variables in the container.</br>The keys defined within a source may consist of any printable ASCII characters except '='.</br>When a key exists in multiple</br>sources, the value associated with the last source will take precedence.</br>Values defined by an Env with a duplicate key will take precedence.</br>Cannot be updated.</br>+optional</br>+listType=atomic |  |
 | image | string| `string` |  | | Container image name.</br>More info: https://kubernetes.io/docs/concepts/containers/images</br>This field is optional to allow higher level config management to default or override</br>container images in workload controllers like Deployments and StatefulSets.</br>+optional |  |
 | imagePullPolicy | [PullPolicy](#pull-policy)| `PullPolicy` |  | |  |  |
 | lifecycle | [Lifecycle](#lifecycle)| `Lifecycle` |  | |  |  |
@@ -706,7 +782,10 @@ ConfigMap volumes support ownership management and SELinux relabeling.
 | name | string| `string` |  | | Name of the container specified as a DNS_LABEL.</br>Each container in a pod must have a unique name (DNS_LABEL).</br>Cannot be updated. |  |
 | ports | [][ContainerPort](#container-port)| `[]*ContainerPort` |  | | List of ports to expose from the container. Not specifying a port here</br>DOES NOT prevent that port from being exposed. Any port which is</br>listening on the default "0.0.0.0" address inside a container will be</br>accessible from the network.</br>Modifying this array with strategic merge patch may corrupt the data.</br>For more information See https://github.com/kubernetes/kubernetes/issues/108255.</br>Cannot be updated.</br>+optional</br>+patchMergeKey=containerPort</br>+patchStrategy=merge</br>+listType=map</br>+listMapKey=containerPort</br>+listMapKey=protocol |  |
 | readinessProbe | [Probe](#probe)| `Probe` |  | |  |  |
+| resizePolicy | [][ContainerResizePolicy](#container-resize-policy)| `[]*ContainerResizePolicy` |  | | Resources resize policy for the container.</br>This field cannot be set on ephemeral containers.</br>+featureGate=InPlacePodVerticalScaling</br>+optional</br>+listType=atomic |  |
 | resources | [ResourceRequirements](#resource-requirements)| `ResourceRequirements` |  | |  |  |
+| restartPolicy | [ContainerRestartPolicy](#container-restart-policy)| `ContainerRestartPolicy` |  | |  |  |
+| restartPolicyRules | [][ContainerRestartRule](#container-restart-rule)| `[]*ContainerRestartRule` |  | | Represents a list of rules to be checked to determine if the</br>container should be restarted on exit. The rules are evaluated in</br>order. Once a rule matches a container exit condition, the remaining</br>rules are ignored. If no rule matches the container exit condition,</br>the Container-level restart policy determines the whether the container</br>is restarted or not. Constraints on the rules:</br>At most 20 rules are allowed.</br>Rules can have the same action.</br>Identical rules are not forbidden in validations.</br>When rules are specified, container MUST set RestartPolicy explicitly</br>even it if matches the Pod's RestartPolicy.</br>+featureGate=ContainerRestartRules</br>+optional</br>+listType=atomic |  |
 | securityContext | [SecurityContext](#security-context)| `SecurityContext` |  | |  |  |
 | startupProbe | [Probe](#probe)| `Probe` |  | |  |  |
 | stdin | boolean| `bool` |  | | Whether this container should allocate a buffer for stdin in the container runtime. If this</br>is not set, reads from stdin in the container will always result in EOF.</br>Default is false.</br>+optional |  |
@@ -714,8 +793,8 @@ ConfigMap volumes support ownership management and SELinux relabeling.
 | terminationMessagePath | string| `string` |  | | Optional: Path at which the file to which the container's termination message</br>will be written is mounted into the container's filesystem.</br>Message written is intended to be brief final status, such as an assertion failure message.</br>Will be truncated by the node if greater than 4096 bytes. The total message length across</br>all containers will be limited to 12kb.</br>Defaults to /dev/termination-log.</br>Cannot be updated.</br>+optional |  |
 | terminationMessagePolicy | [TerminationMessagePolicy](#termination-message-policy)| `TerminationMessagePolicy` |  | |  |  |
 | tty | boolean| `bool` |  | | Whether this container should allocate a TTY for itself, also requires 'stdin' to be true.</br>Default is false.</br>+optional |  |
-| volumeDevices | [][VolumeDevice](#volume-device)| `[]*VolumeDevice` |  | | volumeDevices is the list of block devices to be used by the container.</br>+patchMergeKey=devicePath</br>+patchStrategy=merge</br>+optional |  |
-| volumeMounts | [][VolumeMount](#volume-mount)| `[]*VolumeMount` |  | | Pod volumes to mount into the container's filesystem.</br>Cannot be updated.</br>+optional</br>+patchMergeKey=mountPath</br>+patchStrategy=merge |  |
+| volumeDevices | [][VolumeDevice](#volume-device)| `[]*VolumeDevice` |  | | volumeDevices is the list of block devices to be used by the container.</br>+patchMergeKey=devicePath</br>+patchStrategy=merge</br>+listType=map</br>+listMapKey=devicePath</br>+optional |  |
+| volumeMounts | [][VolumeMount](#volume-mount)| `[]*VolumeMount` |  | | Pod volumes to mount into the container's filesystem.</br>Cannot be updated.</br>+optional</br>+patchMergeKey=mountPath</br>+patchStrategy=merge</br>+listType=map</br>+listMapKey=mountPath |  |
 | workingDir | string| `string` |  | | Container's working directory.</br>If not specified, the container runtime's default will be used, which</br>might be configured in the container image.</br>Cannot be updated.</br>+optional |  |
 
 
@@ -731,11 +810,11 @@ ConfigMap volumes support ownership management and SELinux relabeling.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| args | []string| `[]string` |  | | Arguments to the entrypoint.</br>The container image's CMD is used if this is not provided.</br>Variable references $(VAR_NAME) are expanded using the container's environment. If a variable</br>cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced</br>to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will</br>produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless</br>of whether the variable exists or not. Cannot be updated.</br>More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell</br>+optional |  |
-| command | []string| `[]string` |  | | Entrypoint array. Not executed within a shell.</br>The container image's ENTRYPOINT is used if this is not provided.</br>Variable references $(VAR_NAME) are expanded using the container's environment. If a variable</br>cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced</br>to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will</br>produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless</br>of whether the variable exists or not. Cannot be updated.</br>More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell</br>+optional |  |
+| args | []string| `[]string` |  | | Arguments to the entrypoint.</br>The container image's CMD is used if this is not provided.</br>Variable references $(VAR_NAME) are expanded using the container's environment. If a variable</br>cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced</br>to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will</br>produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless</br>of whether the variable exists or not. Cannot be updated.</br>More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell</br>+optional</br>+listType=atomic |  |
+| command | []string| `[]string` |  | | Entrypoint array. Not executed within a shell.</br>The container image's ENTRYPOINT is used if this is not provided.</br>Variable references $(VAR_NAME) are expanded using the container's environment. If a variable</br>cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced</br>to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will</br>produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless</br>of whether the variable exists or not. Cannot be updated.</br>More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell</br>+optional</br>+listType=atomic |  |
 | dependencies | []string| `[]string` |  | |  |  |
-| env | [][EnvVar](#env-var)| `[]*EnvVar` |  | | List of environment variables to set in the container.</br>Cannot be updated.</br>+optional</br>+patchMergeKey=name</br>+patchStrategy=merge |  |
-| envFrom | [][EnvFromSource](#env-from-source)| `[]*EnvFromSource` |  | | List of sources to populate environment variables in the container.</br>The keys defined within a source must be a C_IDENTIFIER. All invalid keys</br>will be reported as an event when the container is starting. When a key exists in multiple</br>sources, the value associated with the last source will take precedence.</br>Values defined by an Env with a duplicate key will take precedence.</br>Cannot be updated.</br>+optional |  |
+| env | [][EnvVar](#env-var)| `[]*EnvVar` |  | | List of environment variables to set in the container.</br>Cannot be updated.</br>+optional</br>+patchMergeKey=name</br>+patchStrategy=merge</br>+listType=map</br>+listMapKey=name |  |
+| envFrom | [][EnvFromSource](#env-from-source)| `[]*EnvFromSource` |  | | List of sources to populate environment variables in the container.</br>The keys defined within a source may consist of any printable ASCII characters except '='.</br>When a key exists in multiple</br>sources, the value associated with the last source will take precedence.</br>Values defined by an Env with a duplicate key will take precedence.</br>Cannot be updated.</br>+optional</br>+listType=atomic |  |
 | image | string| `string` |  | | Container image name.</br>More info: https://kubernetes.io/docs/concepts/containers/images</br>This field is optional to allow higher level config management to default or override</br>container images in workload controllers like Deployments and StatefulSets.</br>+optional |  |
 | imagePullPolicy | [PullPolicy](#pull-policy)| `PullPolicy` |  | |  |  |
 | lifecycle | [Lifecycle](#lifecycle)| `Lifecycle` |  | |  |  |
@@ -743,7 +822,10 @@ ConfigMap volumes support ownership management and SELinux relabeling.
 | name | string| `string` |  | | Name of the container specified as a DNS_LABEL.</br>Each container in a pod must have a unique name (DNS_LABEL).</br>Cannot be updated. |  |
 | ports | [][ContainerPort](#container-port)| `[]*ContainerPort` |  | | List of ports to expose from the container. Not specifying a port here</br>DOES NOT prevent that port from being exposed. Any port which is</br>listening on the default "0.0.0.0" address inside a container will be</br>accessible from the network.</br>Modifying this array with strategic merge patch may corrupt the data.</br>For more information See https://github.com/kubernetes/kubernetes/issues/108255.</br>Cannot be updated.</br>+optional</br>+patchMergeKey=containerPort</br>+patchStrategy=merge</br>+listType=map</br>+listMapKey=containerPort</br>+listMapKey=protocol |  |
 | readinessProbe | [Probe](#probe)| `Probe` |  | |  |  |
+| resizePolicy | [][ContainerResizePolicy](#container-resize-policy)| `[]*ContainerResizePolicy` |  | | Resources resize policy for the container.</br>This field cannot be set on ephemeral containers.</br>+featureGate=InPlacePodVerticalScaling</br>+optional</br>+listType=atomic |  |
 | resources | [ResourceRequirements](#resource-requirements)| `ResourceRequirements` |  | |  |  |
+| restartPolicy | [ContainerRestartPolicy](#container-restart-policy)| `ContainerRestartPolicy` |  | |  |  |
+| restartPolicyRules | [][ContainerRestartRule](#container-restart-rule)| `[]*ContainerRestartRule` |  | | Represents a list of rules to be checked to determine if the</br>container should be restarted on exit. The rules are evaluated in</br>order. Once a rule matches a container exit condition, the remaining</br>rules are ignored. If no rule matches the container exit condition,</br>the Container-level restart policy determines the whether the container</br>is restarted or not. Constraints on the rules:</br>At most 20 rules are allowed.</br>Rules can have the same action.</br>Identical rules are not forbidden in validations.</br>When rules are specified, container MUST set RestartPolicy explicitly</br>even it if matches the Pod's RestartPolicy.</br>+featureGate=ContainerRestartRules</br>+optional</br>+listType=atomic |  |
 | securityContext | [SecurityContext](#security-context)| `SecurityContext` |  | |  |  |
 | startupProbe | [Probe](#probe)| `Probe` |  | |  |  |
 | stdin | boolean| `bool` |  | | Whether this container should allocate a buffer for stdin in the container runtime. If this</br>is not set, reads from stdin in the container will always result in EOF.</br>Default is false.</br>+optional |  |
@@ -751,8 +833,8 @@ ConfigMap volumes support ownership management and SELinux relabeling.
 | terminationMessagePath | string| `string` |  | | Optional: Path at which the file to which the container's termination message</br>will be written is mounted into the container's filesystem.</br>Message written is intended to be brief final status, such as an assertion failure message.</br>Will be truncated by the node if greater than 4096 bytes. The total message length across</br>all containers will be limited to 12kb.</br>Defaults to /dev/termination-log.</br>Cannot be updated.</br>+optional |  |
 | terminationMessagePolicy | [TerminationMessagePolicy](#termination-message-policy)| `TerminationMessagePolicy` |  | |  |  |
 | tty | boolean| `bool` |  | | Whether this container should allocate a TTY for itself, also requires 'stdin' to be true.</br>Default is false.</br>+optional |  |
-| volumeDevices | [][VolumeDevice](#volume-device)| `[]*VolumeDevice` |  | | volumeDevices is the list of block devices to be used by the container.</br>+patchMergeKey=devicePath</br>+patchStrategy=merge</br>+optional |  |
-| volumeMounts | [][VolumeMount](#volume-mount)| `[]*VolumeMount` |  | | Pod volumes to mount into the container's filesystem.</br>Cannot be updated.</br>+optional</br>+patchMergeKey=mountPath</br>+patchStrategy=merge |  |
+| volumeDevices | [][VolumeDevice](#volume-device)| `[]*VolumeDevice` |  | | volumeDevices is the list of block devices to be used by the container.</br>+patchMergeKey=devicePath</br>+patchStrategy=merge</br>+listType=map</br>+listMapKey=devicePath</br>+optional |  |
+| volumeMounts | [][VolumeMount](#volume-mount)| `[]*VolumeMount` |  | | Pod volumes to mount into the container's filesystem.</br>Cannot be updated.</br>+optional</br>+patchMergeKey=mountPath</br>+patchStrategy=merge</br>+listType=map</br>+listMapKey=mountPath |  |
 | workingDir | string| `string` |  | | Container's working directory.</br>If not specified, the container runtime's default will be used, which</br>might be configured in the container image.</br>Cannot be updated.</br>+optional |  |
 
 
@@ -773,6 +855,102 @@ ConfigMap volumes support ownership management and SELinux relabeling.
 | hostPort | int32 (formatted integer)| `int32` |  | | Number of port to expose on the host.</br>If specified, this must be a valid port number, 0 < x < 65536.</br>If HostNetwork is specified, this must match ContainerPort.</br>Most containers do not need this.</br>+optional |  |
 | name | string| `string` |  | | If specified, this must be an IANA_SVC_NAME and unique within the pod. Each</br>named port in a pod must have a unique name. Name for the port that can be</br>referred to by services.</br>+optional |  |
 | protocol | [Protocol](#protocol)| `Protocol` |  | |  |  |
+
+
+
+### <span id="container-resize-policy"></span> ContainerResizePolicy
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| resourceName | [ResourceName](#resource-name)| `ResourceName` |  | |  |  |
+| restartPolicy | [ResourceResizeRestartPolicy](#resource-resize-restart-policy)| `ResourceResizeRestartPolicy` |  | |  |  |
+
+
+
+### <span id="container-restart-policy"></span> ContainerRestartPolicy
+
+
+> The only allowed values are "Always", "Never", and "OnFailure".
+  
+
+
+
+| Name | Type | Go type | Default | Description | Example |
+|------|------|---------| ------- |-------------|---------|
+| ContainerRestartPolicy | string| string | | The only allowed values are "Always", "Never", and "OnFailure". |  |
+
+
+
+### <span id="container-restart-rule"></span> ContainerRestartRule
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| action | [ContainerRestartRuleAction](#container-restart-rule-action)| `ContainerRestartRuleAction` |  | |  |  |
+| exitCodes | [ContainerRestartRuleOnExitCodes](#container-restart-rule-on-exit-codes)| `ContainerRestartRuleOnExitCodes` |  | |  |  |
+
+
+
+### <span id="container-restart-rule-action"></span> ContainerRestartRuleAction
+
+
+> ContainerRestartRuleAction describes the action to take when the
+container exits.
+  
+
+
+
+| Name | Type | Go type | Default | Description | Example |
+|------|------|---------| ------- |-------------|---------|
+| ContainerRestartRuleAction | string| string | | ContainerRestartRuleAction describes the action to take when the</br>container exits. |  |
+
+
+
+### <span id="container-restart-rule-on-exit-codes"></span> ContainerRestartRuleOnExitCodes
+
+
+> ContainerRestartRuleOnExitCodes describes the condition
+for handling an exited container based on its exit codes.
+  
+
+
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| operator | [ContainerRestartRuleOnExitCodesOperator](#container-restart-rule-on-exit-codes-operator)| `ContainerRestartRuleOnExitCodesOperator` |  | |  |  |
+| values | []int32 (formatted integer)| `[]int32` |  | | Specifies the set of values to check for container exit codes.</br>At most 255 elements are allowed.</br>+optional</br>+listType=set |  |
+
+
+
+### <span id="container-restart-rule-on-exit-codes-operator"></span> ContainerRestartRuleOnExitCodesOperator
+
+
+> ContainerRestartRuleOnExitCodesOperator describes the operator
+to take for the exit codes.
+  
+
+
+
+| Name | Type | Go type | Default | Description | Example |
+|------|------|---------| ------- |-------------|---------|
+| ContainerRestartRuleOnExitCodesOperator | string| string | | ContainerRestartRuleOnExitCodesOperator describes the operator</br>to take for the exit codes. |  |
 
 
 
@@ -845,7 +1023,7 @@ ConfigMap volumes support ownership management and SELinux relabeling.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| value | string| `string` |  | | Value is the value of the metric |  |
+| value | string| `string` |  | | Value is the value of the metric</br>+kubebuilder:validation:MinLength=1 |  |
 
 
 
@@ -871,6 +1049,10 @@ ConfigMap volumes support ownership management and SELinux relabeling.
 
 
 > DAGTask represents a node in the graph during DAG execution
+Note: CEL validation cannot check withItems (Schemaless) or inline (PreserveUnknownFields) fields.
++kubebuilder:validation:XValidation:rule="!has(self.depends) || !has(self.dependencies)",message="cannot use both 'depends' and 'dependencies'"
++kubebuilder:validation:XValidation:rule="!has(self.depends) || !has(self.continueOn)",message="cannot use 'continueOn' when using 'depends'"
++kubebuilder:validation:XValidation:rule="!(has(self.depends) || has(self.dependencies)) || !self.name.matches('^[0-9]')",message="task name cannot begin with a digit when using 'depends' or 'dependencies'"
   
 
 
@@ -887,12 +1069,12 @@ ConfigMap volumes support ownership management and SELinux relabeling.
 | depends | string| `string` |  | | Depends are name of other targets which this depends on |  |
 | hooks | [LifecycleHooks](#lifecycle-hooks)| `LifecycleHooks` |  | |  |  |
 | inline | [Template](#template)| `Template` |  | |  |  |
-| name | string| `string` |  | | Name is the name of the target |  |
-| onExit | string| `string` |  | | OnExit is a template reference which is invoked at the end of the</br>template, irrespective of the success, failure, or error of the</br>primary template.</br>DEPRECATED: Use Hooks[exit].Template instead. |  |
+| name | string| `string` |  | | Name is the name of the target</br>+kubebuilder:validation:MaxLength=128</br>+kubebuilder:validation:Pattern=`^[a-zA-Z0-9][-a-zA-Z0-9]*$` |  |
+| onExit | string| `string` |  | | OnExit is a template reference which is invoked at the end of the</br>template, irrespective of the success, failure, or error of the</br>primary template.</br></br>Deprecated: Use Hooks[exit].Template instead. |  |
 | template | string| `string` |  | | Name of template to execute |  |
 | templateRef | [TemplateRef](#template-ref)| `TemplateRef` |  | |  |  |
 | when | string| `string` |  | | When is an expression in which the task should conditionally execute |  |
-| withItems | [][Item](#item)| `[]Item` |  | | WithItems expands a task into multiple parallel tasks from the items in the list |  |
+| withItems | [][Item](#item)| `[]Item` |  | | WithItems expands a task into multiple parallel tasks from the items in the list</br>Note: The structure of WithItems is free-form, so we need</br>"x-kubernetes-preserve-unknown-fields: true" in the validation schema.</br>+kubebuilder:validation:Schemaless</br>+kubebuilder:pruning:PreserveUnknownFields |  |
 | withParam | string| `string` |  | | WithParam expands a task into multiple parallel tasks from the value in the parameter,</br>which is expected to be a JSON list. |  |
 | withSequence | [Sequence](#sequence)| `Sequence` |  | |  |  |
 
@@ -914,7 +1096,7 @@ ConfigMap volumes support ownership management and SELinux relabeling.
 |------|------|---------|:--------:| ------- |-------------|---------|
 | failFast | boolean| `bool` |  | | This flag is for DAG logic. The DAG logic has a built-in "fail fast" feature to stop scheduling new steps,</br>as soon as it detects that one of the DAG nodes is failed. Then it waits until all DAG nodes are completed</br>before failing the DAG itself.</br>The FailFast flag default is true,  if set to false, it will allow a DAG to run all branches of the DAG to</br>completion (either success or failure), regardless of the failed outcomes of branches in the DAG.</br>More info and example about this feature at https://github.com/argoproj/argo-workflows/issues/1442 |  |
 | target | string| `string` |  | | Target are one or more names of targets to execute in a DAG |  |
-| tasks | [][DAGTask](#d-a-g-task)| `[]*DAGTask` |  | | Tasks are a list of DAG tasks</br>+patchStrategy=merge</br>+patchMergeKey=name |  |
+| tasks | [][DAGTask](#d-a-g-task)| `[]*DAGTask` |  | | Tasks are a list of DAG tasks</br>MaxItems is an artificial limit to limit CEL validation costs - see note at top of file</br>+patchStrategy=merge</br>+patchMergeKey=name</br>+kubebuilder:validation:MinItems=1</br>+kubebuilder:validation:MaxItems=200 |  |
 
 
 
@@ -970,7 +1152,7 @@ mode.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| items | [][DownwardAPIVolumeFile](#downward-api-volume-file)| `[]*DownwardAPIVolumeFile` |  | | Items is a list of DownwardAPIVolume file</br>+optional |  |
+| items | [][DownwardAPIVolumeFile](#downward-api-volume-file)| `[]*DownwardAPIVolumeFile` |  | | Items is a list of DownwardAPIVolume file</br>+optional</br>+listType=atomic |  |
 
 
 
@@ -1010,7 +1192,7 @@ mode.
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | defaultMode | int32 (formatted integer)| `int32` |  | | Optional: mode bits to use on created files by default. Must be a</br>Optional: mode bits used to set permissions on created files by default.</br>Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.</br>YAML accepts both octal and decimal values, JSON requires decimal values for mode bits.</br>Defaults to 0644.</br>Directories within the path are not affected by this setting.</br>This might be in conflict with other options that affect the file</br>mode, like fsGroup, and the result can be other mode bits set.</br>+optional |  |
-| items | [][DownwardAPIVolumeFile](#downward-api-volume-file)| `[]*DownwardAPIVolumeFile` |  | | Items is a list of downward API volume file</br>+optional |  |
+| items | [][DownwardAPIVolumeFile](#downward-api-volume-file)| `[]*DownwardAPIVolumeFile` |  | | Items is a list of downward API volume file</br>+optional</br>+listType=atomic |  |
 
 
 
@@ -1024,7 +1206,7 @@ can be used as map keys in json.
 
 
 
-[interface{}](#interface)
+`any`
 
 ### <span id="empty-dir-volume-source"></span> EmptyDirVolumeSource
 
@@ -1048,7 +1230,7 @@ can be used as map keys in json.
 ### <span id="env-from-source"></span> EnvFromSource
 
 
-> EnvFromSource represents the source of a set of ConfigMaps
+> EnvFromSource represents the source of a set of ConfigMaps or Secrets
   
 
 
@@ -1060,7 +1242,7 @@ can be used as map keys in json.
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | configMapRef | [ConfigMapEnvSource](#config-map-env-source)| `ConfigMapEnvSource` |  | |  |  |
-| prefix | string| `string` |  | | An optional identifier to prepend to each key in the ConfigMap. Must be a C_IDENTIFIER.</br>+optional |  |
+| prefix | string| `string` |  | | Optional text to prepend to the name of each environment variable.</br>May consist of any printable ASCII characters except '='.</br>+optional |  |
 | secretRef | [SecretEnvSource](#secret-env-source)| `SecretEnvSource` |  | |  |  |
 
 
@@ -1076,7 +1258,7 @@ can be used as map keys in json.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| name | string| `string` |  | | Name of the environment variable. Must be a C_IDENTIFIER. |  |
+| name | string| `string` |  | | Name of the environment variable.</br>May consist of any printable ASCII characters except '='. |  |
 | value | string| `string` |  | | Variable references $(VAR_NAME) are expanded</br>using the previously defined environment variables in the container and</br>any service environment variables. If a variable cannot be resolved,</br>the reference in the input string will be unchanged. Double $$ are reduced</br>to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e.</br>"$$(VAR_NAME)" will produce the string literal "$(VAR_NAME)".</br>Escaped references will never be expanded, regardless of whether the variable</br>exists or not.</br>Defaults to "".</br>+optional |  |
 | valueFrom | [EnvVarSource](#env-var-source)| `EnvVarSource` |  | |  |  |
 
@@ -1095,6 +1277,7 @@ can be used as map keys in json.
 |------|------|---------|:--------:| ------- |-------------|---------|
 | configMapKeyRef | [ConfigMapKeySelector](#config-map-key-selector)| `ConfigMapKeySelector` |  | |  |  |
 | fieldRef | [ObjectFieldSelector](#object-field-selector)| `ObjectFieldSelector` |  | |  |  |
+| fileKeyRef | [FileKeySelector](#file-key-selector)| `FileKeySelector` |  | |  |  |
 | resourceFieldRef | [ResourceFieldSelector](#resource-field-selector)| `ResourceFieldSelector` |  | |  |  |
 | secretKeyRef | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
 
@@ -1126,7 +1309,7 @@ can be used as map keys in json.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| command | []string| `[]string` |  | | Command is the command line to execute inside the container, the working directory for the</br>command  is root ('/') in the container's filesystem. The command is simply exec'd, it is</br>not run inside a shell, so traditional shell instructions ('|', etc) won't work. To use</br>a shell, you need to explicitly call out to that shell.</br>Exit status of 0 is treated as live/healthy and non-zero is unhealthy.</br>+optional |  |
+| command | []string| `[]string` |  | | Command is the command line to execute inside the container, the working directory for the</br>command  is root ('/') in the container's filesystem. The command is simply exec'd, it is</br>not run inside a shell, so traditional shell instructions ('|', etc) won't work. To use</br>a shell, you need to explicitly call out to that shell.</br>Exit status of 0 is treated as live/healthy and non-zero is unhealthy.</br>+optional</br>+listType=atomic |  |
 
 
 
@@ -1195,8 +1378,8 @@ Fibre Channel volumes support ownership management and SELinux relabeling.
 | fsType | string| `string` |  | | fsType is the filesystem type to mount.</br>Must be a filesystem type supported by the host operating system.</br>Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.</br>TODO: how do we prevent errors in the filesystem from compromising the machine</br>+optional |  |
 | lun | int32 (formatted integer)| `int32` |  | | lun is Optional: FC target lun number</br>+optional |  |
 | readOnly | boolean| `bool` |  | | readOnly is Optional: Defaults to false (read/write). ReadOnly here will force</br>the ReadOnly setting in VolumeMounts.</br>+optional |  |
-| targetWWNs | []string| `[]string` |  | | targetWWNs is Optional: FC target worldwide names (WWNs)</br>+optional |  |
-| wwids | []string| `[]string` |  | | wwids Optional: FC volume world wide identifiers (wwids)</br>Either wwids or combination of targetWWNs and lun must be set, but not both simultaneously.</br>+optional |  |
+| targetWWNs | []string| `[]string` |  | | targetWWNs is Optional: FC target worldwide names (WWNs)</br>+optional</br>+listType=atomic |  |
+| wwids | []string| `[]string` |  | | wwids Optional: FC volume world wide identifiers (wwids)</br>Either wwids or combination of targetWWNs and lun must be set, but not both simultaneously.</br>+optional</br>+listType=atomic |  |
 
 
 
@@ -1217,7 +1400,28 @@ The exact format is defined in sigs.k8s.io/structured-merge-diff
 
 
 
-[interface{}](#interface)
+`any`
+
+### <span id="file-key-selector"></span> FileKeySelector
+
+
+> +structType=atomic
+  
+
+
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| key | string| `string` |  | | The key within the env file. An invalid key will prevent the pod from starting.</br>The keys defined within a source may consist of any printable ASCII characters except '='.</br>During Alpha stage of the EnvFiles feature gate, the key size is limited to 128 characters.</br>+required |  |
+| optional | boolean| `bool` |  | | Specify whether the file or its key must be defined. If the file or key</br>does not exist, then the env var is not published.</br>If optional is set to true and the specified key does not exist,</br>the environment variable will not be set in the Pod's containers.</br></br>If optional is set to false and the specified key does not exist,</br>an error will be returned during Pod creation.</br>+optional</br>+default=false |  |
+| path | string| `string` |  | | The path within the volume from which to select the file.</br>Must be relative and may not contain the '..' path or start with '..'.</br>+required |  |
+| volumeName | string| `string` |  | | The name of the volume mount containing the env file.</br>+required |  |
+
+
 
 ### <span id="flex-volume-source"></span> FlexVolumeSource
 
@@ -1326,6 +1530,7 @@ PDs support ownership management and SELinux relabeling.
 
 
 > Gauge is a Gauge prometheus metric
++kubebuilder:validation:XValidation:rule="!has(self.realtime) || !self.realtime || !self.value.contains('resourcesDuration.')",message="'resourcesDuration.*' metrics cannot be used in real-time gauges"
   
 
 
@@ -1338,25 +1543,28 @@ PDs support ownership management and SELinux relabeling.
 |------|------|---------|:--------:| ------- |-------------|---------|
 | operation | [GaugeOperation](#gauge-operation)| `GaugeOperation` |  | |  |  |
 | realtime | boolean| `bool` |  | | Realtime emits this metric in real time if applicable |  |
-| value | string| `string` |  | | Value is the value to be used in the operation with the metric's current value. If no operation is set,</br>value is the value of the metric |  |
+| value | string| `string` |  | | Value is the value to be used in the operation with the metric's current value. If no operation is set,</br>value is the value of the metric</br>MaxLength is an artificial limit to limit CEL validation costs - see note at top of file</br>+kubebuilder:validation:MinLength=1</br>+kubebuilder:validation:MaxLength=256 |  |
 
 
 
 ### <span id="gauge-operation"></span> GaugeOperation
 
 
+> +kubebuilder:validation:Enum=Set;Add;Sub
   
+
+
 
 | Name | Type | Go type | Default | Description | Example |
 |------|------|---------| ------- |-------------|---------|
-| GaugeOperation | string| string | |  |  |
+| GaugeOperation | string| string | | +kubebuilder:validation:Enum=Set;Add;Sub |  |
 
 
 
 ### <span id="git-artifact"></span> GitArtifact
 
 
-> GitArtifact is the location of an git artifact
+> GitArtifact is the location of a git artifact
   
 
 
@@ -1372,6 +1580,7 @@ PDs support ownership management and SELinux relabeling.
 | disableSubmodules | boolean| `bool` |  | | DisableSubmodules disables submodules during git clone |  |
 | fetch | []string| `[]string` |  | | Fetch specifies a number of refs that should be fetched before checkout |  |
 | insecureIgnoreHostKey | boolean| `bool` |  | | InsecureIgnoreHostKey disables SSH strict host key checking during git clone |  |
+| insecureSkipTLS | boolean| `bool` |  | | InsecureSkipTLS disables server certificate verification resulting in insecure HTTPS connections |  |
 | passwordSecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
 | repo | string| `string` |  | | Repo is the git repository |  |
 | revision | string| `string` |  | | Revision is the git commit, tag, branch to checkout |  |
@@ -1417,7 +1626,7 @@ into the Pod's container.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| endpoints | string| `string` |  | | endpoints is the endpoint name that details Glusterfs topology.</br>More info: https://examples.k8s.io/volumes/glusterfs/README.md#create-a-pod |  |
+| endpoints | string| `string` |  | | endpoints is the endpoint name that details Glusterfs topology. |  |
 | path | string| `string` |  | | path is the Glusterfs volume path.</br>More info: https://examples.k8s.io/volumes/glusterfs/README.md#create-a-pod |  |
 | readOnly | boolean| `bool` |  | | readOnly here will force the Glusterfs volume to be mounted with read-only permissions.</br>Defaults to false.</br>More info: https://examples.k8s.io/volumes/glusterfs/README.md#create-a-pod</br>+optional |  |
 
@@ -1438,6 +1647,7 @@ into the Pod's container.
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | addresses | []string| `[]string` |  | | Addresses is accessible addresses of HDFS name nodes |  |
+| dataTransferProtection | string| `string` |  | | DataTransferProtection is the protection level for HDFS data transfer.</br>It corresponds to the dfs.data.transfer.protection configuration in HDFS. |  |
 | force | boolean| `bool` |  | | Force copies a file forcibly even if it exists |  |
 | hdfsUser | string| `string` |  | | HDFSUser is the user to access HDFS file system.</br>It is ignored if either ccache or keytab is used. |  |
 | krbCCacheSecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
@@ -1536,7 +1746,7 @@ into the Pod's container.
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | host | string| `string` |  | | Host name to connect to, defaults to the pod IP. You probably want to set</br>"Host" in httpHeaders instead.</br>+optional |  |
-| httpHeaders | [][HTTPHeader](#http-header)| `[]*HTTPHeader` |  | | Custom headers to set in the request. HTTP allows repeated headers.</br>+optional |  |
+| httpHeaders | [][HTTPHeader](#http-header)| `[]*HTTPHeader` |  | | Custom headers to set in the request. HTTP allows repeated headers.</br>+optional</br>+listType=atomic |  |
 | path | string| `string` |  | | Path to access on the HTTP server.</br>+optional |  |
 | port | [IntOrString](#int-or-string)| `IntOrString` |  | |  |  |
 | scheme | [URIScheme](#uri-scheme)| `URIScheme` |  | |  |  |
@@ -1616,7 +1826,7 @@ into the Pod's container.
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | buckets | [][Amount](#amount)| `[]Amount` |  | | Buckets is a list of bucket divisors for the histogram |  |
-| value | string| `string` |  | | Value is the value of the metric |  |
+| value | string| `string` |  | | Value is the value of the metric</br>+kubebuilder:validation:MinLength=1 |  |
 
 
 
@@ -1635,8 +1845,8 @@ pod's hosts file.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| hostnames | []string| `[]string` |  | | Hostnames for the above IP address. |  |
-| ip | string| `string` |  | | IP address of the host file entry. |  |
+| hostnames | []string| `[]string` |  | | Hostnames for the above IP address.</br>+listType=atomic |  |
+| ip | string| `string` |  | | IP address of the host file entry.</br>+required |  |
 
 
 
@@ -1693,12 +1903,28 @@ ISCSI volumes support ownership management and SELinux relabeling.
 | fsType | string| `string` |  | | fsType is the filesystem type of the volume that you want to mount.</br>Tip: Ensure that the filesystem type is supported by the host operating system.</br>Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.</br>More info: https://kubernetes.io/docs/concepts/storage/volumes#iscsi</br>TODO: how do we prevent errors in the filesystem from compromising the machine</br>+optional |  |
 | initiatorName | string| `string` |  | | initiatorName is the custom iSCSI Initiator Name.</br>If initiatorName is specified with iscsiInterface simultaneously, new iSCSI interface</br><target portal>:<volume name> will be created for the connection.</br>+optional |  |
 | iqn | string| `string` |  | | iqn is the target iSCSI Qualified Name. |  |
-| iscsiInterface | string| `string` |  | | iscsiInterface is the interface Name that uses an iSCSI transport.</br>Defaults to 'default' (tcp).</br>+optional |  |
+| iscsiInterface | string| `string` |  | | iscsiInterface is the interface Name that uses an iSCSI transport.</br>Defaults to 'default' (tcp).</br>+optional</br>+default="default" |  |
 | lun | int32 (formatted integer)| `int32` |  | | lun represents iSCSI Target Lun number. |  |
-| portals | []string| `[]string` |  | | portals is the iSCSI Target Portal List. The portal is either an IP or ip_addr:port if the port</br>is other than default (typically TCP ports 860 and 3260).</br>+optional |  |
+| portals | []string| `[]string` |  | | portals is the iSCSI Target Portal List. The portal is either an IP or ip_addr:port if the port</br>is other than default (typically TCP ports 860 and 3260).</br>+optional</br>+listType=atomic |  |
 | readOnly | boolean| `bool` |  | | readOnly here will force the ReadOnly setting in VolumeMounts.</br>Defaults to false.</br>+optional |  |
 | secretRef | [LocalObjectReference](#local-object-reference)| `LocalObjectReference` |  | |  |  |
 | targetPortal | string| `string` |  | | targetPortal is iSCSI Target Portal. The Portal is either an IP or ip_addr:port if the port</br>is other than default (typically TCP ports 860 and 3260). |  |
+
+
+
+### <span id="image-volume-source"></span> ImageVolumeSource
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| pullPolicy | [PullPolicy](#pull-policy)| `PullPolicy` |  | |  |  |
+| reference | string| `string` |  | | Required: Image or artifact reference to be used.</br>Behaves in the same way as pod.spec.containers[*].image.</br>Pull secrets will be assembled in the same way as for the container image by looking up node credentials, SA image pull secrets, and pod spec image pull secrets.</br>More info: https://kubernetes.io/docs/concepts/containers/images</br>This field is optional to allow higher level config management to default or override</br>container images in workload controllers like Deployments and StatefulSets.</br>+optional |  |
 
 
 
@@ -1717,7 +1943,7 @@ ISCSI volumes support ownership management and SELinux relabeling.
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | artifacts | [Artifacts](#artifacts)| `Artifacts` |  | |  |  |
-| parameters | [][Parameter](#parameter)| `[]*Parameter` |  | | Parameters are a list of parameters passed as inputs</br>+patchStrategy=merge</br>+patchMergeKey=name |  |
+| parameters | [][Parameter](#parameter)| `[]*Parameter` |  | | Parameters are a list of parameters passed as inputs</br>MaxItems is an artificial limit to limit CEL validation costs - see note at top of file</br>+patchStrategy=merge</br>+patchMergeKey=name</br>+kubebuilder:validation:MaxItems=500 |  |
 
 
 
@@ -1727,6 +1953,7 @@ ISCSI volumes support ownership management and SELinux relabeling.
 > +protobuf=true
 +protobuf.options.(gogoproto.goproto_stringer)=false
 +k8s:openapi-gen=true
++k8s:openapi-model-package=io.k8s.apimachinery.pkg.util.intstr
   
 
 
@@ -1747,12 +1974,11 @@ ISCSI volumes support ownership management and SELinux relabeling.
 
 
 > +protobuf.options.(gogoproto.goproto_stringer)=false
-+kubebuilder:validation:Type=object
   
 
 
 
-[interface{}](#interface)
+`any`
 
 ### <span id="key-to-path"></span> KeyToPath
 
@@ -1788,7 +2014,7 @@ label selector matches no objects.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| matchExpressions | [][LabelSelectorRequirement](#label-selector-requirement)| `[]*LabelSelectorRequirement` |  | | matchExpressions is a list of label selector requirements. The requirements are ANDed.</br>+optional |  |
+| matchExpressions | [][LabelSelectorRequirement](#label-selector-requirement)| `[]*LabelSelectorRequirement` |  | | matchExpressions is a list of label selector requirements. The requirements are ANDed.</br>+optional</br>+listType=atomic |  |
 | matchLabels | map of string| `map[string]string` |  | | matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels</br>map is equivalent to an element of matchExpressions, whose key field is "key", the</br>operator is "In", and the values array contains only "value". The requirements are ANDed.</br>+optional |  |
 
 
@@ -1819,9 +2045,9 @@ relates the key and values.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| key | string| `string` |  | | key is the label key that the selector applies to.</br>+patchMergeKey=key</br>+patchStrategy=merge |  |
+| key | string| `string` |  | | key is the label key that the selector applies to. |  |
 | operator | [LabelSelectorOperator](#label-selector-operator)| `LabelSelectorOperator` |  | |  |  |
-| values | []string| `[]string` |  | | values is an array of string values. If the operator is In or NotIn,</br>the values array must be non-empty. If the operator is Exists or DoesNotExist,</br>the values array must be empty. This array is replaced during a strategic</br>merge patch.</br>+optional |  |
+| values | []string| `[]string` |  | | values is an array of string values. If the operator is In or NotIn,</br>the values array must be non-empty. If the operator is Exists or DoesNotExist,</br>the values array must be empty. This array is replaced during a strategic</br>merge patch.</br>+optional</br>+listType=atomic |  |
 
 
 
@@ -1843,6 +2069,7 @@ until the action is complete, unless the container process fails, in which case 
 |------|------|---------|:--------:| ------- |-------------|---------|
 | postStart | [LifecycleHandler](#lifecycle-handler)| `LifecycleHandler` |  | |  |  |
 | preStop | [LifecycleHandler](#lifecycle-handler)| `LifecycleHandler` |  | |  |  |
+| stopSignal | [Signal](#signal)| `Signal` |  | |  |  |
 
 
 
@@ -1863,6 +2090,7 @@ hook. One and only one of the fields, except TCPSocket must be specified.
 |------|------|---------|:--------:| ------- |-------------|---------|
 | exec | [ExecAction](#exec-action)| `ExecAction` |  | |  |  |
 | httpGet | [HTTPGetAction](#http-get-action)| `HTTPGetAction` |  | |  |  |
+| sleep | [SleepAction](#sleep-action)| `SleepAction` |  | |  |  |
 | tcpSocket | [TCPSocketAction](#tcp-socket-action)| `TCPSocketAction` |  | |  |  |
 
 
@@ -1895,8 +2123,16 @@ hook. One and only one of the fields, except TCPSocket must be specified.
 ### <span id="local-object-reference"></span> LocalObjectReference
 
 
-> LocalObjectReference contains enough information to let you locate the
-referenced object inside the same namespace.
+> New uses of this type are discouraged because of difficulty describing its usage when embedded in APIs.
+1. Invalid usage help.  It is impossible to add specific help for individual usage.  In most embedded usages, there are particular
+restrictions like, "must refer only to types A and B" or "UID not honored" or "name must be restricted".
+Those cannot be well described when embedded.
+2. Inconsistent validation.  Because the usages are different, the validation rules are different by usage, which makes it hard for users to predict what will happen.
+3. We cannot easily change it.  Because this type is embedded in many locations, updates to this type
+will affect numerous schemas.  Don't make new APIs embed an underspecified API type they do not control.
+
+Instead of using this type, create a locally provided and used type that is well-focused on your reference.
+For example, ServiceReferences for admission registration: https://github.com/kubernetes/api/blob/release-1.17/admissionregistration/v1/types.go#L533 .
 +structType=atomic
   
 
@@ -1908,7 +2144,7 @@ referenced object inside the same namespace.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| name | string| `string` |  | | Name of the referent.</br>More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</br>TODO: Add other useful fields. apiVersion, kind, uid?</br>+optional |  |
+| name | string| `string` |  | | Name of the referent.</br>This field is effectively required, but due to backwards compatibility is</br>allowed to be empty. Instances of this type with an empty value here are</br>almost certainly wrong.</br>More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</br>+optional</br>+default=""</br>+kubebuilder:default=""</br>TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896. |  |
 
 
 
@@ -1986,7 +2222,7 @@ that the fieldset applies to.
 ### <span id="metadata"></span> Metadata
 
 
-> Pod metdata
+> Pod metadata
   
 
 
@@ -2016,7 +2252,7 @@ that the fieldset applies to.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| key | string| `string` |  | |  |  |
+| key | string| `string` |  | | +kubebuilder:validation:Pattern=`^[a-zA-Z_][a-zA-Z0-9_]*$` |  |
 | value | string| `string` |  | |  |  |
 
 
@@ -2035,7 +2271,7 @@ that the fieldset applies to.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| prometheus | [][Prometheus](#prometheus)| `[]*Prometheus` |  | | Prometheus is a list of prometheus metrics to be emitted |  |
+| prometheus | [][Prometheus](#prometheus)| `[]*Prometheus` |  | | Prometheus is a list of prometheus metrics to be emitted</br>MaxItems is an artificial limit to limit CEL validation costs - see note at top of file</br>+kubebuilder:validation:MaxItems=100 |  |
 
 
 
@@ -2067,6 +2303,7 @@ that the fieldset applies to.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
+| database | boolean| `bool` |  | | Database specifies this is database controlled if this is set true |  |
 | name | string| `string` |  | | name of the mutex |  |
 | namespace | string| `string` |  | `"[namespace of workflow]"`|  |  |
 
@@ -2103,7 +2340,7 @@ that the fieldset applies to.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| preferredDuringSchedulingIgnoredDuringExecution | [][PreferredSchedulingTerm](#preferred-scheduling-term)| `[]*PreferredSchedulingTerm` |  | | The scheduler will prefer to schedule pods to nodes that satisfy</br>the affinity expressions specified by this field, but it may choose</br>a node that violates one or more of the expressions. The node that is</br>most preferred is the one with the greatest sum of weights, i.e.</br>for each node that meets all of the scheduling requirements (resource</br>request, requiredDuringScheduling affinity expressions, etc.),</br>compute a sum by iterating through the elements of this field and adding</br>"weight" to the sum if the node matches the corresponding matchExpressions; the</br>node(s) with the highest sum are the most preferred.</br>+optional |  |
+| preferredDuringSchedulingIgnoredDuringExecution | [][PreferredSchedulingTerm](#preferred-scheduling-term)| `[]*PreferredSchedulingTerm` |  | | The scheduler will prefer to schedule pods to nodes that satisfy</br>the affinity expressions specified by this field, but it may choose</br>a node that violates one or more of the expressions. The node that is</br>most preferred is the one with the greatest sum of weights, i.e.</br>for each node that meets all of the scheduling requirements (resource</br>request, requiredDuringScheduling affinity expressions, etc.),</br>compute a sum by iterating through the elements of this field and adding</br>"weight" to the sum if the node matches the corresponding matchExpressions; the</br>node(s) with the highest sum are the most preferred.</br>+optional</br>+listType=atomic |  |
 | requiredDuringSchedulingIgnoredDuringExecution | [NodeSelector](#node-selector)| `NodeSelector` |  | |  |  |
 
 
@@ -2154,7 +2391,7 @@ by the node selector terms.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| nodeSelectorTerms | [][NodeSelectorTerm](#node-selector-term)| `[]*NodeSelectorTerm` |  | | Required. A list of node selector terms. The terms are ORed. |  |
+| nodeSelectorTerms | [][NodeSelectorTerm](#node-selector-term)| `[]*NodeSelectorTerm` |  | | Required. A list of node selector terms. The terms are ORed.</br>+listType=atomic |  |
 
 
 
@@ -2191,7 +2428,7 @@ that relates the key and values.
 |------|------|---------|:--------:| ------- |-------------|---------|
 | key | string| `string` |  | | The label key that the selector applies to. |  |
 | operator | [NodeSelectorOperator](#node-selector-operator)| `NodeSelectorOperator` |  | |  |  |
-| values | []string| `[]string` |  | | An array of string values. If the operator is In or NotIn,</br>the values array must be non-empty. If the operator is Exists or DoesNotExist,</br>the values array must be empty. If the operator is Gt or Lt, the values</br>array must have a single element, which will be interpreted as an integer.</br>This array is replaced during a strategic merge patch.</br>+optional |  |
+| values | []string| `[]string` |  | | An array of string values. If the operator is In or NotIn,</br>the values array must be non-empty. If the operator is Exists or DoesNotExist,</br>the values array must be empty. If the operator is Gt or Lt, the values</br>array must have a single element, which will be interpreted as an integer.</br>This array is replaced during a strategic merge patch.</br>+optional</br>+listType=atomic |  |
 
 
 
@@ -2212,8 +2449,8 @@ The TopologySelectorTerm type implements a subset of the NodeSelectorTerm.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| matchExpressions | [][NodeSelectorRequirement](#node-selector-requirement)| `[]*NodeSelectorRequirement` |  | | A list of node selector requirements by node's labels.</br>+optional |  |
-| matchFields | [][NodeSelectorRequirement](#node-selector-requirement)| `[]*NodeSelectorRequirement` |  | | A list of node selector requirements by node's fields.</br>+optional |  |
+| matchExpressions | [][NodeSelectorRequirement](#node-selector-requirement)| `[]*NodeSelectorRequirement` |  | | A list of node selector requirements by node's labels.</br>+optional</br>+listType=atomic |  |
+| matchFields | [][NodeSelectorRequirement](#node-selector-requirement)| `[]*NodeSelectorRequirement` |  | | A list of node selector requirements by node's fields.</br>+optional</br>+listType=atomic |  |
 
 
 
@@ -2227,7 +2464,7 @@ save/load the directory appropriately.
 
 
 
-[interface{}](#interface)
+`any`
 
 ### <span id="o-auth2-auth"></span> OAuth2Auth
 
@@ -2368,7 +2605,7 @@ save/load the directory appropriately.
 | artifacts | [Artifacts](#artifacts)| `Artifacts` |  | |  |  |
 | exitCode | string| `string` |  | | ExitCode holds the exit code of a script template |  |
 | parameters | [][Parameter](#parameter)| `[]*Parameter` |  | | Parameters holds the list of output parameters produced by a step</br>+patchStrategy=merge</br>+patchMergeKey=name |  |
-| result | string| `string` |  | | Result holds the result (stdout) of a script template |  |
+| result | string| `string` |  | | Result holds the result (stdout) of a script or container template, or the response body of an HTTP template |  |
 
 
 
@@ -2393,7 +2630,7 @@ be cluster-scoped, so there is no namespace field.
 | blockOwnerDeletion | boolean| `bool` |  | | If true, AND if the owner has the "foregroundDeletion" finalizer, then</br>the owner cannot be deleted from the key-value store until this</br>reference is removed.</br>See https://kubernetes.io/docs/concepts/architecture/garbage-collection/#foreground-deletion</br>for how the garbage collector interacts with this field and enforces the foreground deletion.</br>Defaults to false.</br>To set this field, a user needs "delete" permission of the owner,</br>otherwise 422 (Unprocessable Entity) will be returned.</br>+optional |  |
 | controller | boolean| `bool` |  | | If true, this reference points to the managing controller.</br>+optional |  |
 | kind | string| `string` |  | | Kind of the referent.</br>More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds |  |
-| name | string| `string` |  | | Name of the referent.</br>More info: http://kubernetes.io/docs/user-guide/identifiers#names |  |
+| name | string| `string` |  | | Name of the referent.</br>More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#names |  |
 | uid | [UID](#uid)| `UID` |  | |  |  |
 
 
@@ -2401,12 +2638,9 @@ be cluster-scoped, so there is no namespace field.
 ### <span id="parallel-steps"></span> ParallelSteps
 
 
-> +kubebuilder:validation:Type=array
   
 
-
-
-[interface{}](#interface)
+`any`
 
 ### <span id="parameter"></span> Parameter
 
@@ -2424,9 +2658,9 @@ be cluster-scoped, so there is no namespace field.
 |------|------|---------|:--------:| ------- |-------------|---------|
 | default | [AnyString](#any-string)| `AnyString` |  | |  |  |
 | description | [AnyString](#any-string)| `AnyString` |  | |  |  |
-| enum | [][AnyString](#any-string)| `[]AnyString` |  | | Enum holds a list of string values to choose from, for the actual value of the parameter |  |
+| enum | [][AnyString](#any-string)| `[]AnyString` |  | | Enum holds a list of string values to choose from, for the actual value of the parameter</br>+kubebuilder:validation:MinItems=1 |  |
 | globalName | string| `string` |  | | GlobalName exports an output parameter to the global scope, making it available as</br>'{{workflow.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters |  |
-| name | string| `string` |  | | Name is the parameter name |  |
+| name | string| `string` |  | | Name is the parameter name</br>+kubebuilder:validation:Pattern=`^[-a-zA-Z0-9_]+$` |  |
 | value | [AnyString](#any-string)| `AnyString` |  | |  |  |
 | valueFrom | [ValueFrom](#value-from)| `ValueFrom` |  | |  |  |
 
@@ -2461,12 +2695,13 @@ and allows a Source for provider-specific attributes
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| accessModes | [][PersistentVolumeAccessMode](#persistent-volume-access-mode)| `[]PersistentVolumeAccessMode` |  | | accessModes contains the desired access modes the volume should have.</br>More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1</br>+optional |  |
+| accessModes | [][PersistentVolumeAccessMode](#persistent-volume-access-mode)| `[]PersistentVolumeAccessMode` |  | | accessModes contains the desired access modes the volume should have.</br>More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1</br>+optional</br>+listType=atomic |  |
 | dataSource | [TypedLocalObjectReference](#typed-local-object-reference)| `TypedLocalObjectReference` |  | |  |  |
 | dataSourceRef | [TypedObjectReference](#typed-object-reference)| `TypedObjectReference` |  | |  |  |
-| resources | [ResourceRequirements](#resource-requirements)| `ResourceRequirements` |  | |  |  |
+| resources | [VolumeResourceRequirements](#volume-resource-requirements)| `VolumeResourceRequirements` |  | |  |  |
 | selector | [LabelSelector](#label-selector)| `LabelSelector` |  | |  |  |
 | storageClassName | string| `string` |  | | storageClassName is the name of the StorageClass required by the claim.</br>More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1</br>+optional |  |
+| volumeAttributesClassName | string| `string` |  | | volumeAttributesClassName may be used to set the VolumeAttributesClass used by this claim.</br>If specified, the CSI driver will create or update the volume with the attributes defined</br>in the corresponding VolumeAttributesClass. This has a different purpose than storageClassName,</br>it can be changed after the claim is created. An empty string or nil value indicates that no</br>VolumeAttributesClass will be applied to the claim. If the claim enters an Infeasible error state,</br>this field can be reset to its previous value (including nil) to cancel the modification.</br>If the resource referred to by volumeAttributesClass does not exist, this PersistentVolumeClaim will be</br>set to a Pending state, as reflected by the modifyVolumeStatus field, until such as a resource</br>exists.</br>More info: https://kubernetes.io/docs/concepts/storage/volume-attributes-classes/</br>+featureGate=VolumeAttributesClass</br>+optional |  |
 | volumeMode | [PersistentVolumeMode](#persistent-volume-mode)| `PersistentVolumeMode` |  | |  |  |
 | volumeName | string| `string` |  | | volumeName is the binding reference to the PersistentVolume backing this claim.</br>+optional |  |
 
@@ -2487,18 +2722,18 @@ PersistentVolumeClaim objects as part of an EphemeralVolumeSource.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| annotations | map of string| `map[string]string` |  | | Annotations is an unstructured key value map stored with a resource that may be</br>set by external tools to store and retrieve arbitrary metadata. They are not</br>queryable and should be preserved when modifying objects.</br>More info: http://kubernetes.io/docs/user-guide/annotations</br>+optional |  |
+| annotations | map of string| `map[string]string` |  | | Annotations is an unstructured key value map stored with a resource that may be</br>set by external tools to store and retrieve arbitrary metadata. They are not</br>queryable and should be preserved when modifying objects.</br>More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations</br>+optional |  |
 | creationTimestamp | string| `string` |  | | CreationTimestamp is a timestamp representing the server time when this object was</br>created. It is not guaranteed to be set in happens-before order across separate operations.</br>Clients may not set this value. It is represented in RFC3339 form and is in UTC.</br></br>Populated by the system.</br>Read-only.</br>Null for lists.</br>More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata</br>+optional |  |
 | deletionGracePeriodSeconds | int64 (formatted integer)| `int64` |  | | Number of seconds allowed for this object to gracefully terminate before</br>it will be removed from the system. Only set when deletionTimestamp is also set.</br>May only be shortened.</br>Read-only.</br>+optional |  |
 | deletionTimestamp | string| `string` |  | | DeletionTimestamp is RFC 3339 date and time at which this resource will be deleted. This</br>field is set by the server when a graceful deletion is requested by the user, and is not</br>directly settable by a client. The resource is expected to be deleted (no longer visible</br>from resource lists, and not reachable by name) after the time in this field, once the</br>finalizers list is empty. As long as the finalizers list contains items, deletion is blocked.</br>Once the deletionTimestamp is set, this value may not be unset or be set further into the</br>future, although it may be shortened or the resource may be deleted prior to this time.</br>For example, a user may request that a pod is deleted in 30 seconds. The Kubelet will react</br>by sending a graceful termination signal to the containers in the pod. After that 30 seconds,</br>the Kubelet will send a hard termination signal (SIGKILL) to the container and after cleanup,</br>remove the pod from the API. In the presence of network partitions, this object may still</br>exist after this timestamp, until an administrator or automated process can determine the</br>resource is fully terminated.</br>If not set, graceful deletion of the object has not been requested.</br></br>Populated by the system when a graceful deletion is requested.</br>Read-only.</br>More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata</br>+optional |  |
-| finalizers | []string| `[]string` |  | | Must be empty before the object is deleted from the registry. Each entry</br>is an identifier for the responsible component that will remove the entry</br>from the list. If the deletionTimestamp of the object is non-nil, entries</br>in this list can only be removed.</br>Finalizers may be processed and removed in any order.  Order is NOT enforced</br>because it introduces significant risk of stuck finalizers.</br>finalizers is a shared field, any actor with permission can reorder it.</br>If the finalizer list is processed in order, then this can lead to a situation</br>in which the component responsible for the first finalizer in the list is</br>waiting for a signal (field value, external system, or other) produced by a</br>component responsible for a finalizer later in the list, resulting in a deadlock.</br>Without enforced ordering finalizers are free to order amongst themselves and</br>are not vulnerable to ordering changes in the list.</br>+optional</br>+patchStrategy=merge |  |
+| finalizers | []string| `[]string` |  | | Must be empty before the object is deleted from the registry. Each entry</br>is an identifier for the responsible component that will remove the entry</br>from the list. If the deletionTimestamp of the object is non-nil, entries</br>in this list can only be removed.</br>Finalizers may be processed and removed in any order.  Order is NOT enforced</br>because it introduces significant risk of stuck finalizers.</br>finalizers is a shared field, any actor with permission can reorder it.</br>If the finalizer list is processed in order, then this can lead to a situation</br>in which the component responsible for the first finalizer in the list is</br>waiting for a signal (field value, external system, or other) produced by a</br>component responsible for a finalizer later in the list, resulting in a deadlock.</br>Without enforced ordering finalizers are free to order amongst themselves and</br>are not vulnerable to ordering changes in the list.</br>+optional</br>+patchStrategy=merge</br>+listType=set |  |
 | generateName | string| `string` |  | | GenerateName is an optional prefix, used by the server, to generate a unique</br>name ONLY IF the Name field has not been provided.</br>If this field is used, the name returned to the client will be different</br>than the name passed. This value will also be combined with a unique suffix.</br>The provided value has the same validation rules as the Name field,</br>and may be truncated by the length of the suffix required to make the value</br>unique on the server.</br></br>If this field is specified and the generated name exists, the server will return a 409.</br></br>Applied only if Name is not specified.</br>More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#idempotency</br>+optional |  |
 | generation | int64 (formatted integer)| `int64` |  | | A sequence number representing a specific generation of the desired state.</br>Populated by the system. Read-only.</br>+optional |  |
-| labels | map of string| `map[string]string` |  | | Map of string keys and values that can be used to organize and categorize</br>(scope and select) objects. May match selectors of replication controllers</br>and services.</br>More info: http://kubernetes.io/docs/user-guide/labels</br>+optional |  |
-| managedFields | [][ManagedFieldsEntry](#managed-fields-entry)| `[]*ManagedFieldsEntry` |  | | ManagedFields maps workflow-id and version to the set of fields</br>that are managed by that workflow. This is mostly for internal</br>housekeeping, and users typically shouldn't need to set or</br>understand this field. A workflow can be the user's name, a</br>controller's name, or the name of a specific apply path like</br>"ci-cd". The set of fields is always in the version that the</br>workflow used when modifying the object.</br></br>+optional |  |
-| name | string| `string` |  | | Name must be unique within a namespace. Is required when creating resources, although</br>some resources may allow a client to request the generation of an appropriate name</br>automatically. Name is primarily intended for creation idempotence and configuration</br>definition.</br>Cannot be updated.</br>More info: http://kubernetes.io/docs/user-guide/identifiers#names</br>+optional |  |
-| namespace | string| `string` |  | | Namespace defines the space within which each name must be unique. An empty namespace is</br>equivalent to the "default" namespace, but "default" is the canonical representation.</br>Not all objects are required to be scoped to a namespace - the value of this field for</br>those objects will be empty.</br></br>Must be a DNS_LABEL.</br>Cannot be updated.</br>More info: http://kubernetes.io/docs/user-guide/namespaces</br>+optional |  |
-| ownerReferences | [][OwnerReference](#owner-reference)| `[]*OwnerReference` |  | | List of objects depended by this object. If ALL objects in the list have</br>been deleted, this object will be garbage collected. If this object is managed by a controller,</br>then an entry in this list will point to this controller, with the controller field set to true.</br>There cannot be more than one managing controller.</br>+optional</br>+patchMergeKey=uid</br>+patchStrategy=merge |  |
+| labels | map of string| `map[string]string` |  | | Map of string keys and values that can be used to organize and categorize</br>(scope and select) objects. May match selectors of replication controllers</br>and services.</br>More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels</br>+optional |  |
+| managedFields | [][ManagedFieldsEntry](#managed-fields-entry)| `[]*ManagedFieldsEntry` |  | | ManagedFields maps workflow-id and version to the set of fields</br>that are managed by that workflow. This is mostly for internal</br>housekeeping, and users typically shouldn't need to set or</br>understand this field. A workflow can be the user's name, a</br>controller's name, or the name of a specific apply path like</br>"ci-cd". The set of fields is always in the version that the</br>workflow used when modifying the object.</br></br>+optional</br>+listType=atomic |  |
+| name | string| `string` |  | | Name must be unique within a namespace. Is required when creating resources, although</br>some resources may allow a client to request the generation of an appropriate name</br>automatically. Name is primarily intended for creation idempotence and configuration</br>definition.</br>Cannot be updated.</br>More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#names</br>+optional |  |
+| namespace | string| `string` |  | | Namespace defines the space within which each name must be unique. An empty namespace is</br>equivalent to the "default" namespace, but "default" is the canonical representation.</br>Not all objects are required to be scoped to a namespace - the value of this field for</br>those objects will be empty.</br></br>Must be a DNS_LABEL.</br>Cannot be updated.</br>More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces</br>+optional |  |
+| ownerReferences | [][OwnerReference](#owner-reference)| `[]*OwnerReference` |  | | List of objects depended by this object. If ALL objects in the list have</br>been deleted, this object will be garbage collected. If this object is managed by a controller,</br>then an entry in this list will point to this controller, with the controller field set to true.</br>There cannot be more than one managing controller.</br>+optional</br>+patchMergeKey=uid</br>+patchStrategy=merge</br>+listType=map</br>+listMapKey=uid |  |
 | resourceVersion | string| `string` |  | | An opaque value that represents the internal version of this object that can</br>be used by clients to determine when objects have changed. May be used for optimistic</br>concurrency, change detection, and the watch operation on a resource or set of resources.</br>Clients must treat these values as opaque and passed unmodified back to the server.</br>They may only be valid for a particular resource or set of resources.</br></br>Populated by the system.</br>Read-only.</br>Value must be treated as opaque by clients and .</br>More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency</br>+optional |  |
 | selfLink | string| `string` |  | | Deprecated: selfLink is a legacy read-only field that is no longer populated by the system.</br>+optional |  |
 | spec | [PersistentVolumeClaimSpec](#persistent-volume-claim-spec)| `PersistentVolumeClaimSpec` |  | |  |  |
@@ -2565,7 +2800,28 @@ type of volume that is owned by someone else (the system).
 
 
 
-[interface{}](#interface)
+`any`
+
+### <span id="plugin-artifact"></span> PluginArtifact
+
+
+> PluginArtifact is the location of a plugin artifact
+  
+
+
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| configuration | string| `string` |  | | Configuration is the plugin defined configuration for the artifact driver plugin |  |
+| connectionTimeoutSeconds | int32 (formatted integer)| `int32` |  | | ConnectionTimeoutSeconds is the timeout for the artifact driver connection, overriding the driver's timeout |  |
+| key | string| `string` |  | | Key is the path in the artifact repository where the artifact resides |  |
+| name | [ArtifactPluginName](#artifact-plugin-name)| `ArtifactPluginName` |  | |  |  |
+
+
 
 ### <span id="pod-affinity"></span> PodAffinity
 
@@ -2578,8 +2834,8 @@ type of volume that is owned by someone else (the system).
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| preferredDuringSchedulingIgnoredDuringExecution | [][WeightedPodAffinityTerm](#weighted-pod-affinity-term)| `[]*WeightedPodAffinityTerm` |  | | The scheduler will prefer to schedule pods to nodes that satisfy</br>the affinity expressions specified by this field, but it may choose</br>a node that violates one or more of the expressions. The node that is</br>most preferred is the one with the greatest sum of weights, i.e.</br>for each node that meets all of the scheduling requirements (resource</br>request, requiredDuringScheduling affinity expressions, etc.),</br>compute a sum by iterating through the elements of this field and adding</br>"weight" to the sum if the node has pods which matches the corresponding podAffinityTerm; the</br>node(s) with the highest sum are the most preferred.</br>+optional |  |
-| requiredDuringSchedulingIgnoredDuringExecution | [][PodAffinityTerm](#pod-affinity-term)| `[]*PodAffinityTerm` |  | | If the affinity requirements specified by this field are not met at</br>scheduling time, the pod will not be scheduled onto the node.</br>If the affinity requirements specified by this field cease to be met</br>at some point during pod execution (e.g. due to a pod label update), the</br>system may or may not try to eventually evict the pod from its node.</br>When there are multiple elements, the lists of nodes corresponding to each</br>podAffinityTerm are intersected, i.e. all terms must be satisfied.</br>+optional |  |
+| preferredDuringSchedulingIgnoredDuringExecution | [][WeightedPodAffinityTerm](#weighted-pod-affinity-term)| `[]*WeightedPodAffinityTerm` |  | | The scheduler will prefer to schedule pods to nodes that satisfy</br>the affinity expressions specified by this field, but it may choose</br>a node that violates one or more of the expressions. The node that is</br>most preferred is the one with the greatest sum of weights, i.e.</br>for each node that meets all of the scheduling requirements (resource</br>request, requiredDuringScheduling affinity expressions, etc.),</br>compute a sum by iterating through the elements of this field and adding</br>"weight" to the sum if the node has pods which matches the corresponding podAffinityTerm; the</br>node(s) with the highest sum are the most preferred.</br>+optional</br>+listType=atomic |  |
+| requiredDuringSchedulingIgnoredDuringExecution | [][PodAffinityTerm](#pod-affinity-term)| `[]*PodAffinityTerm` |  | | If the affinity requirements specified by this field are not met at</br>scheduling time, the pod will not be scheduled onto the node.</br>If the affinity requirements specified by this field cease to be met</br>at some point during pod execution (e.g. due to a pod label update), the</br>system may or may not try to eventually evict the pod from its node.</br>When there are multiple elements, the lists of nodes corresponding to each</br>podAffinityTerm are intersected, i.e. all terms must be satisfied.</br>+optional</br>+listType=atomic |  |
 
 
 
@@ -2603,8 +2859,10 @@ a pod of the set of pods is running
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | labelSelector | [LabelSelector](#label-selector)| `LabelSelector` |  | |  |  |
+| matchLabelKeys | []string| `[]string` |  | | MatchLabelKeys is a set of pod label keys to select which pods will</br>be taken into consideration. The keys are used to lookup values from the</br>incoming pod labels, those key-value labels are merged with `labelSelector` as `key in (value)`</br>to select the group of existing pods which pods will be taken into consideration</br>for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming</br>pod labels will be ignored. The default value is empty.</br>The same key is forbidden to exist in both matchLabelKeys and labelSelector.</br>Also, matchLabelKeys cannot be set when labelSelector isn't set.</br></br>+listType=atomic</br>+optional |  |
+| mismatchLabelKeys | []string| `[]string` |  | | MismatchLabelKeys is a set of pod label keys to select which pods will</br>be taken into consideration. The keys are used to lookup values from the</br>incoming pod labels, those key-value labels are merged with `labelSelector` as `key notin (value)`</br>to select the group of existing pods which pods will be taken into consideration</br>for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming</br>pod labels will be ignored. The default value is empty.</br>The same key is forbidden to exist in both mismatchLabelKeys and labelSelector.</br>Also, mismatchLabelKeys cannot be set when labelSelector isn't set.</br></br>+listType=atomic</br>+optional |  |
 | namespaceSelector | [LabelSelector](#label-selector)| `LabelSelector` |  | |  |  |
-| namespaces | []string| `[]string` |  | | namespaces specifies a static list of namespace names that the term applies to.</br>The term is applied to the union of the namespaces listed in this field</br>and the ones selected by namespaceSelector.</br>null or empty namespaces list and null namespaceSelector means "this pod's namespace".</br>+optional |  |
+| namespaces | []string| `[]string` |  | | namespaces specifies a static list of namespace names that the term applies to.</br>The term is applied to the union of the namespaces listed in this field</br>and the ones selected by namespaceSelector.</br>null or empty namespaces list and null namespaceSelector means "this pod's namespace".</br>+optional</br>+listType=atomic |  |
 | topologyKey | string| `string` |  | | This pod should be co-located (affinity) or not co-located (anti-affinity) with the pods matching</br>the labelSelector in the specified namespaces, where co-located is defined as running on a node</br>whose value of the label with key topologyKey matches that of any node on which any of the</br>selected pods is running.</br>Empty topologyKey is not allowed. |  |
 
 
@@ -2620,8 +2878,33 @@ a pod of the set of pods is running
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| preferredDuringSchedulingIgnoredDuringExecution | [][WeightedPodAffinityTerm](#weighted-pod-affinity-term)| `[]*WeightedPodAffinityTerm` |  | | The scheduler will prefer to schedule pods to nodes that satisfy</br>the anti-affinity expressions specified by this field, but it may choose</br>a node that violates one or more of the expressions. The node that is</br>most preferred is the one with the greatest sum of weights, i.e.</br>for each node that meets all of the scheduling requirements (resource</br>request, requiredDuringScheduling anti-affinity expressions, etc.),</br>compute a sum by iterating through the elements of this field and adding</br>"weight" to the sum if the node has pods which matches the corresponding podAffinityTerm; the</br>node(s) with the highest sum are the most preferred.</br>+optional |  |
-| requiredDuringSchedulingIgnoredDuringExecution | [][PodAffinityTerm](#pod-affinity-term)| `[]*PodAffinityTerm` |  | | If the anti-affinity requirements specified by this field are not met at</br>scheduling time, the pod will not be scheduled onto the node.</br>If the anti-affinity requirements specified by this field cease to be met</br>at some point during pod execution (e.g. due to a pod label update), the</br>system may or may not try to eventually evict the pod from its node.</br>When there are multiple elements, the lists of nodes corresponding to each</br>podAffinityTerm are intersected, i.e. all terms must be satisfied.</br>+optional |  |
+| preferredDuringSchedulingIgnoredDuringExecution | [][WeightedPodAffinityTerm](#weighted-pod-affinity-term)| `[]*WeightedPodAffinityTerm` |  | | The scheduler will prefer to schedule pods to nodes that satisfy</br>the anti-affinity expressions specified by this field, but it may choose</br>a node that violates one or more of the expressions. The node that is</br>most preferred is the one with the greatest sum of weights, i.e.</br>for each node that meets all of the scheduling requirements (resource</br>request, requiredDuringScheduling anti-affinity expressions, etc.),</br>compute a sum by iterating through the elements of this field and subtracting</br>"weight" from the sum if the node has pods which matches the corresponding podAffinityTerm; the</br>node(s) with the highest sum are the most preferred.</br>+optional</br>+listType=atomic |  |
+| requiredDuringSchedulingIgnoredDuringExecution | [][PodAffinityTerm](#pod-affinity-term)| `[]*PodAffinityTerm` |  | | If the anti-affinity requirements specified by this field are not met at</br>scheduling time, the pod will not be scheduled onto the node.</br>If the anti-affinity requirements specified by this field cease to be met</br>at some point during pod execution (e.g. due to a pod label update), the</br>system may or may not try to eventually evict the pod from its node.</br>When there are multiple elements, the lists of nodes corresponding to each</br>podAffinityTerm are intersected, i.e. all terms must be satisfied.</br>+optional</br>+listType=atomic |  |
+
+
+
+### <span id="pod-certificate-projection"></span> PodCertificateProjection
+
+
+> PodCertificateProjection provides a private key and X.509 certificate in the
+pod filesystem.
+  
+
+
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| certificateChainPath | string| `string` |  | | Write the certificate chain at this path in the projected volume.</br></br>Most applications should use credentialBundlePath.  When using keyPath</br>and certificateChainPath, your application needs to check that the key</br>and leaf certificate are consistent, because it is possible to read the</br>files mid-rotation.</br></br>+optional |  |
+| credentialBundlePath | string| `string` |  | | Write the credential bundle at this path in the projected volume.</br></br>The credential bundle is a single file that contains multiple PEM blocks.</br>The first PEM block is a PRIVATE KEY block, containing a PKCS#8 private</br>key.</br></br>The remaining blocks are CERTIFICATE blocks, containing the issued</br>certificate chain from the signer (leaf and any intermediates).</br></br>Using credentialBundlePath lets your Pod's application code make a single</br>atomic read that retrieves a consistent key and certificate chain.  If you</br>project them to separate files, your application code will need to</br>additionally check that the leaf certificate was issued to the key.</br></br>+optional |  |
+| keyPath | string| `string` |  | | Write the key at this path in the projected volume.</br></br>Most applications should use credentialBundlePath.  When using keyPath</br>and certificateChainPath, your application needs to check that the key</br>and leaf certificate are consistent, because it is possible to read the</br>files mid-rotation.</br></br>+optional |  |
+| keyType | string| `string` |  | | The type of keypair Kubelet will generate for the pod.</br></br>Valid values are "RSA3072", "RSA4096", "ECDSAP256", "ECDSAP384",</br>"ECDSAP521", and "ED25519".</br></br>+required |  |
+| maxExpirationSeconds | int32 (formatted integer)| `int32` |  | | maxExpirationSeconds is the maximum lifetime permitted for the</br>certificate.</br></br>Kubelet copies this value verbatim into the PodCertificateRequests it</br>generates for this projection.</br></br>If omitted, kube-apiserver will set it to 86400(24 hours). kube-apiserver</br>will reject values shorter than 3600 (1 hour).  The maximum allowable</br>value is 7862400 (91 days).</br></br>The signer implementation is then free to issue a certificate with any</br>lifetime *shorter* than MaxExpirationSeconds, but no shorter than 3600</br>seconds (1 hour).  This constraint is enforced by kube-apiserver.</br>`kubernetes.io` signers will never issue certificates with a lifetime</br>longer than 24 hours.</br></br>+optional |  |
+| signerName | string| `string` |  | | Kubelet's generated CSRs will be addressed to this signer.</br></br>+required |  |
+| userAnnotations | map of string| `map[string]string` |  | | userAnnotations allow pod authors to pass additional information to</br>the signer implementation.  Kubernetes does not restrict or validate this</br>metadata in any way.</br></br>These values are copied verbatim into the `spec.unverifiedUserAnnotations` field of</br>the PodCertificateRequest objects that Kubelet creates.</br></br>Entries are subject to the same validation as object metadata annotations,</br>with the addition that all keys must be domain-prefixed. No restrictions</br>are placed on values, except an overall size limitation on the entire field.</br></br>Signers should document the keys and values they support. Signers should</br>deny requests that contain keys they do not recognize. |  |
 
 
 
@@ -2641,6 +2924,17 @@ when volume is mounted.
 
 
 
+### <span id="pod-s-e-linux-change-policy"></span> PodSELinuxChangePolicy
+
+
+  
+
+| Name | Type | Go type | Default | Description | Example |
+|------|------|---------| ------- |-------------|---------|
+| PodSELinuxChangePolicy | string| string | |  |  |
+
+
+
 ### <span id="pod-security-context"></span> PodSecurityContext
 
 
@@ -2656,15 +2950,18 @@ container.securityContext take precedence over field values of PodSecurityContex
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
+| appArmorProfile | [AppArmorProfile](#app-armor-profile)| `AppArmorProfile` |  | |  |  |
 | fsGroup | int64 (formatted integer)| `int64` |  | | A special supplemental group that applies to all containers in a pod.</br>Some volume types allow the Kubelet to change the ownership of that volume</br>to be owned by the pod:</br></br>1. The owning GID will be the FSGroup</br>2. The setgid bit is set (new files created in the volume will be owned by FSGroup)</br>3. The permission bits are OR'd with rw-rw----</br></br>If unset, the Kubelet will not modify the ownership and permissions of any volume.</br>Note that this field cannot be set when spec.os.name is windows.</br>+optional |  |
 | fsGroupChangePolicy | [PodFSGroupChangePolicy](#pod-f-s-group-change-policy)| `PodFSGroupChangePolicy` |  | |  |  |
 | runAsGroup | int64 (formatted integer)| `int64` |  | | The GID to run the entrypoint of the container process.</br>Uses runtime default if unset.</br>May also be set in SecurityContext.  If set in both SecurityContext and</br>PodSecurityContext, the value specified in SecurityContext takes precedence</br>for that container.</br>Note that this field cannot be set when spec.os.name is windows.</br>+optional |  |
 | runAsNonRoot | boolean| `bool` |  | | Indicates that the container must run as a non-root user.</br>If true, the Kubelet will validate the image at runtime to ensure that it</br>does not run as UID 0 (root) and fail to start the container if it does.</br>If unset or false, no such validation will be performed.</br>May also be set in SecurityContext.  If set in both SecurityContext and</br>PodSecurityContext, the value specified in SecurityContext takes precedence.</br>+optional |  |
 | runAsUser | int64 (formatted integer)| `int64` |  | | The UID to run the entrypoint of the container process.</br>Defaults to user specified in image metadata if unspecified.</br>May also be set in SecurityContext.  If set in both SecurityContext and</br>PodSecurityContext, the value specified in SecurityContext takes precedence</br>for that container.</br>Note that this field cannot be set when spec.os.name is windows.</br>+optional |  |
+| seLinuxChangePolicy | [PodSELinuxChangePolicy](#pod-s-e-linux-change-policy)| `PodSELinuxChangePolicy` |  | |  |  |
 | seLinuxOptions | [SELinuxOptions](#s-e-linux-options)| `SELinuxOptions` |  | |  |  |
 | seccompProfile | [SeccompProfile](#seccomp-profile)| `SeccompProfile` |  | |  |  |
-| supplementalGroups | []int64 (formatted integer)| `[]int64` |  | | A list of groups applied to the first process run in each container, in addition</br>to the container's primary GID, the fsGroup (if specified), and group memberships</br>defined in the container image for the uid of the container process. If unspecified,</br>no additional groups are added to any container. Note that group memberships</br>defined in the container image for the uid of the container process are still effective,</br>even if they are not included in this list.</br>Note that this field cannot be set when spec.os.name is windows.</br>+optional |  |
-| sysctls | [][Sysctl](#sysctl)| `[]*Sysctl` |  | | Sysctls hold a list of namespaced sysctls used for the pod. Pods with unsupported</br>sysctls (by the container runtime) might fail to launch.</br>Note that this field cannot be set when spec.os.name is windows.</br>+optional |  |
+| supplementalGroups | []int64 (formatted integer)| `[]int64` |  | | A list of groups applied to the first process run in each container, in</br>addition to the container's primary GID and fsGroup (if specified).  If</br>the SupplementalGroupsPolicy feature is enabled, the</br>supplementalGroupsPolicy field determines whether these are in addition</br>to or instead of any group memberships defined in the container image.</br>If unspecified, no additional groups are added, though group memberships</br>defined in the container image may still be used, depending on the</br>supplementalGroupsPolicy field.</br>Note that this field cannot be set when spec.os.name is windows.</br>+optional</br>+listType=atomic |  |
+| supplementalGroupsPolicy | [SupplementalGroupsPolicy](#supplemental-groups-policy)| `SupplementalGroupsPolicy` |  | |  |  |
+| sysctls | [][Sysctl](#sysctl)| `[]*Sysctl` |  | | Sysctls hold a list of namespaced sysctls used for the pod. Pods with unsupported</br>sysctls (by the container runtime) might fail to launch.</br>Note that this field cannot be set when spec.os.name is windows.</br>+optional</br>+listType=atomic |  |
 | windowsOptions | [WindowsSecurityContextOptions](#windows-security-context-options)| `WindowsSecurityContextOptions` |  | |  |  |
 
 
@@ -2774,7 +3071,7 @@ alive or ready to receive traffic.
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | defaultMode | int32 (formatted integer)| `int32` |  | | defaultMode are the mode bits used to set permissions on created files by default.</br>Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.</br>YAML accepts both octal and decimal values, JSON requires decimal values for mode bits.</br>Directories within the path are not affected by this setting.</br>This might be in conflict with other options that affect the file</br>mode, like fsGroup, and the result can be other mode bits set.</br>+optional |  |
-| sources | [][VolumeProjection](#volume-projection)| `[]*VolumeProjection` |  | | sources is the list of volume projections</br>+optional |  |
+| sources | [][VolumeProjection](#volume-projection)| `[]*VolumeProjection` |  | | sources is the list of volume projections. Each entry in this list</br>handles one source.</br>+optional</br>+listType=atomic |  |
 
 
 
@@ -2794,10 +3091,10 @@ alive or ready to receive traffic.
 |------|------|---------|:--------:| ------- |-------------|---------|
 | counter | [Counter](#counter)| `Counter` |  | |  |  |
 | gauge | [Gauge](#gauge)| `Gauge` |  | |  |  |
-| help | string| `string` |  | | Help is a string that describes the metric |  |
+| help | string| `string` |  | | Help is a string that describes the metric</br>+kubebuilder:validation:MinLength=1 |  |
 | histogram | [Histogram](#histogram)| `Histogram` |  | |  |  |
 | labels | [][MetricLabel](#metric-label)| `[]*MetricLabel` |  | | Labels is a list of metric labels |  |
-| name | string| `string` |  | | Name is the name of the metric |  |
+| name | string| `string` |  | | Name is the name of the metric</br>+kubebuilder:validation:Pattern=`^[a-zA-Z_][a-zA-Z0-9_]*$` |  |
 | when | string| `string` |  | | When is a conditional statement that decides when to emit the metric |  |
 
 
@@ -2899,11 +3196,12 @@ cause implementors to also use a fixed point implementation.
 +protobuf.options.(gogoproto.goproto_stringer)=false
 +k8s:deepcopy-gen=true
 +k8s:openapi-gen=true
++k8s:openapi-model-package=io.k8s.apimachinery.pkg.api.resource
   
 
 
 
-[interface{}](#interface)
+`any`
 
 ### <span id="quobyte-volume-source"></span> QuobyteVolumeSource
 
@@ -2944,12 +3242,12 @@ cause implementors to also use a fixed point implementation.
 |------|------|---------|:--------:| ------- |-------------|---------|
 | fsType | string| `string` |  | | fsType is the filesystem type of the volume that you want to mount.</br>Tip: Ensure that the filesystem type is supported by the host operating system.</br>Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.</br>More info: https://kubernetes.io/docs/concepts/storage/volumes#rbd</br>TODO: how do we prevent errors in the filesystem from compromising the machine</br>+optional |  |
 | image | string| `string` |  | | image is the rados image name.</br>More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it |  |
-| keyring | string| `string` |  | | keyring is the path to key ring for RBDUser.</br>Default is /etc/ceph/keyring.</br>More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it</br>+optional |  |
-| monitors | []string| `[]string` |  | | monitors is a collection of Ceph monitors.</br>More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it |  |
-| pool | string| `string` |  | | pool is the rados pool name.</br>Default is rbd.</br>More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it</br>+optional |  |
+| keyring | string| `string` |  | | keyring is the path to key ring for RBDUser.</br>Default is /etc/ceph/keyring.</br>More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it</br>+optional</br>+default="/etc/ceph/keyring" |  |
+| monitors | []string| `[]string` |  | | monitors is a collection of Ceph monitors.</br>More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it</br>+listType=atomic |  |
+| pool | string| `string` |  | | pool is the rados pool name.</br>Default is rbd.</br>More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it</br>+optional</br>+default="rbd" |  |
 | readOnly | boolean| `bool` |  | | readOnly here will force the ReadOnly setting in VolumeMounts.</br>Defaults to false.</br>More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it</br>+optional |  |
 | secretRef | [LocalObjectReference](#local-object-reference)| `LocalObjectReference` |  | |  |  |
-| user | string| `string` |  | | user is the rados user name.</br>Default is admin.</br>More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it</br>+optional |  |
+| user | string| `string` |  | | user is the rados user name.</br>Default is admin.</br>More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it</br>+optional</br>+default="admin" |  |
 
 
 
@@ -2971,6 +3269,17 @@ cause implementors to also use a fixed point implementation.
 
 
 
+### <span id="recursive-read-only-mode"></span> RecursiveReadOnlyMode
+
+
+  
+
+| Name | Type | Go type | Default | Description | Example |
+|------|------|---------| ------- |-------------|---------|
+| RecursiveReadOnlyMode | string| string | |  |  |
+
+
+
 ### <span id="resource-claim"></span> ResourceClaim
 
 
@@ -2983,6 +3292,7 @@ cause implementors to also use a fixed point implementation.
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | name | string| `string` |  | | Name must match the name of one entry in pod.spec.resourceClaims of</br>the Pod where this field is used. It makes that resource available</br>inside a container. |  |
+| request | string| `string` |  | | Request is the name chosen for a request in the referenced claim.</br>If empty, everything from the claim is made available, otherwise</br>only the result of this request.</br></br>+optional |  |
 
 
 
@@ -3014,6 +3324,17 @@ cause implementors to also use a fixed point implementation.
 
 [ResourceList](#resource-list)
 
+### <span id="resource-name"></span> ResourceName
+
+
+  
+
+| Name | Type | Go type | Default | Description | Example |
+|------|------|---------| ------- |-------------|---------|
+| ResourceName | string| string | |  |  |
+
+
+
 ### <span id="resource-requirements"></span> ResourceRequirements
 
 
@@ -3025,9 +3346,20 @@ cause implementors to also use a fixed point implementation.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| claims | [][ResourceClaim](#resource-claim)| `[]*ResourceClaim` |  | | Claims lists the names of resources, defined in spec.resourceClaims,</br>that are used by this container.</br></br>This is an alpha field and requires enabling the</br>DynamicResourceAllocation feature gate.</br></br>This field is immutable. It can only be set for containers.</br></br>+listType=map</br>+listMapKey=name</br>+featureGate=DynamicResourceAllocation</br>+optional |  |
+| claims | [][ResourceClaim](#resource-claim)| `[]*ResourceClaim` |  | | Claims lists the names of resources, defined in spec.resourceClaims,</br>that are used by this container.</br></br>This field depends on the</br>DynamicResourceAllocation feature gate.</br></br>This field is immutable. It can only be set for containers.</br></br>+listType=map</br>+listMapKey=name</br>+featureGate=DynamicResourceAllocation</br>+optional |  |
 | limits | [ResourceList](#resource-list)| `ResourceList` |  | |  |  |
 | requests | [ResourceList](#resource-list)| `ResourceList` |  | |  |  |
+
+
+
+### <span id="resource-resize-restart-policy"></span> ResourceResizeRestartPolicy
+
+
+  
+
+| Name | Type | Go type | Default | Description | Example |
+|------|------|---------| ------- |-------------|---------|
+| ResourceResizeRestartPolicy | string| string | |  |  |
 
 
 
@@ -3035,6 +3367,7 @@ cause implementors to also use a fixed point implementation.
 
 
 > ResourceTemplate is a template subtype to manipulate kubernetes resources
++kubebuilder:validation:XValidation:rule="(has(self.manifest) && !has(self.manifestFrom)) || (!has(self.manifest) && has(self.manifestFrom)) || (!has(self.manifest) && !has(self.manifestFrom))",message="only one of manifest or manifestFrom can be specified"
   
 
 
@@ -3045,12 +3378,12 @@ cause implementors to also use a fixed point implementation.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| action | string| `string` |  | | Action is the action to perform to the resource.</br>Must be one of: get, create, apply, delete, replace, patch |  |
+| action | string| `string` |  | | Action is the action to perform to the resource.</br>Must be one of: get, create, apply, delete, replace, patch</br>+kubebuilder:validation:Enum=get;create;apply;delete;replace;patch |  |
 | failureCondition | string| `string` |  | | FailureCondition is a label selector expression which describes the conditions</br>of the k8s resource in which the step was considered failed |  |
 | flags | []string| `[]string` |  | | Flags is a set of additional options passed to kubectl before submitting a resource</br>I.e. to disable resource validation:</br>flags: [</br>"--validate=false"  # disable resource validation</br>] |  |
 | manifest | string| `string` |  | | Manifest contains the kubernetes manifest |  |
 | manifestFrom | [ManifestFrom](#manifest-from)| `ManifestFrom` |  | |  |  |
-| mergeStrategy | string| `string` |  | | MergeStrategy is the strategy used to merge a patch. It defaults to "strategic"</br>Must be one of: strategic, merge, json |  |
+| mergeStrategy | string| `string` |  | | MergeStrategy is the strategy used to merge a patch. It defaults to "strategic"</br>Must be one of: strategic, merge, json</br>+kubebuilder:validation:Enum=strategic;merge;json |  |
 | setOwnerReference | boolean| `bool` |  | | SetOwnerReference sets the reference to the workflow on the OwnerReference of generated resource. |  |
 | successCondition | string| `string` |  | | SuccessCondition is a label selector expression which describes the conditions</br>of the k8s resource in which it is acceptable to proceed to the following step |  |
 
@@ -3079,16 +3412,19 @@ cause implementors to also use a fixed point implementation.
 
 
 
-[interface{}](#interface)
+`any`
 
 ### <span id="retry-policy"></span> RetryPolicy
 
 
+> +kubebuilder:validation:Enum=Always;OnFailure;OnError;OnTransientError
   
+
+
 
 | Name | Type | Go type | Default | Description | Example |
 |------|------|---------| ------- |-------------|---------|
-| RetryPolicy | string| string | |  |  |
+| RetryPolicy | string| string | | +kubebuilder:validation:Enum=Always;OnFailure;OnError;OnTransientError |  |
 
 
 
@@ -3139,6 +3475,7 @@ cause implementors to also use a fixed point implementation.
 | region | string| `string` |  | | Region contains the optional bucket region |  |
 | roleARN | string| `string` |  | | RoleARN is the Amazon Resource Name (ARN) of the role to assume. |  |
 | secretKeySecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
+| sessionTokenSecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
 | useSDKCreds | boolean| `bool` |  | | UseSDKCreds tells the driver to figure out credentials based on sdk defaults. |  |
 
 
@@ -3199,13 +3536,13 @@ cause implementors to also use a fixed point implementation.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| fsType | string| `string` |  | | fsType is the filesystem type to mount.</br>Must be a filesystem type supported by the host operating system.</br>Ex. "ext4", "xfs", "ntfs".</br>Default is "xfs".</br>+optional |  |
+| fsType | string| `string` |  | | fsType is the filesystem type to mount.</br>Must be a filesystem type supported by the host operating system.</br>Ex. "ext4", "xfs", "ntfs".</br>Default is "xfs".</br>+optional</br>+default="xfs" |  |
 | gateway | string| `string` |  | | gateway is the host address of the ScaleIO API Gateway. |  |
 | protectionDomain | string| `string` |  | | protectionDomain is the name of the ScaleIO Protection Domain for the configured storage.</br>+optional |  |
 | readOnly | boolean| `bool` |  | | readOnly Defaults to false (read/write). ReadOnly here will force</br>the ReadOnly setting in VolumeMounts.</br>+optional |  |
 | secretRef | [LocalObjectReference](#local-object-reference)| `LocalObjectReference` |  | |  |  |
 | sslEnabled | boolean| `bool` |  | | sslEnabled Flag enable/disable SSL communication with Gateway, default false</br>+optional |  |
-| storageMode | string| `string` |  | | storageMode indicates whether the storage for a volume should be ThickProvisioned or ThinProvisioned.</br>Default is ThinProvisioned.</br>+optional |  |
+| storageMode | string| `string` |  | | storageMode indicates whether the storage for a volume should be ThickProvisioned or ThinProvisioned.</br>Default is ThinProvisioned.</br>+optional</br>+default="ThinProvisioned" |  |
 | storagePool | string| `string` |  | | storagePool is the ScaleIO Storage Pool associated with the protection domain.</br>+optional |  |
 | system | string| `string` |  | | system is the name of the storage system as configured in ScaleIO. |  |
 | volumeName | string| `string` |  | | volumeName is the name of a volume already created in the ScaleIO system</br>that is associated with this volume source. |  |
@@ -3226,10 +3563,10 @@ cause implementors to also use a fixed point implementation.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| args | []string| `[]string` |  | | Arguments to the entrypoint.</br>The container image's CMD is used if this is not provided.</br>Variable references $(VAR_NAME) are expanded using the container's environment. If a variable</br>cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced</br>to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will</br>produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless</br>of whether the variable exists or not. Cannot be updated.</br>More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell</br>+optional |  |
-| command | []string| `[]string` |  | | Entrypoint array. Not executed within a shell.</br>The container image's ENTRYPOINT is used if this is not provided.</br>Variable references $(VAR_NAME) are expanded using the container's environment. If a variable</br>cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced</br>to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will</br>produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless</br>of whether the variable exists or not. Cannot be updated.</br>More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell</br>+optional |  |
-| env | [][EnvVar](#env-var)| `[]*EnvVar` |  | | List of environment variables to set in the container.</br>Cannot be updated.</br>+optional</br>+patchMergeKey=name</br>+patchStrategy=merge |  |
-| envFrom | [][EnvFromSource](#env-from-source)| `[]*EnvFromSource` |  | | List of sources to populate environment variables in the container.</br>The keys defined within a source must be a C_IDENTIFIER. All invalid keys</br>will be reported as an event when the container is starting. When a key exists in multiple</br>sources, the value associated with the last source will take precedence.</br>Values defined by an Env with a duplicate key will take precedence.</br>Cannot be updated.</br>+optional |  |
+| args | []string| `[]string` |  | | Arguments to the entrypoint.</br>The container image's CMD is used if this is not provided.</br>Variable references $(VAR_NAME) are expanded using the container's environment. If a variable</br>cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced</br>to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will</br>produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless</br>of whether the variable exists or not. Cannot be updated.</br>More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell</br>+optional</br>+listType=atomic |  |
+| command | []string| `[]string` |  | | Entrypoint array. Not executed within a shell.</br>The container image's ENTRYPOINT is used if this is not provided.</br>Variable references $(VAR_NAME) are expanded using the container's environment. If a variable</br>cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced</br>to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will</br>produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless</br>of whether the variable exists or not. Cannot be updated.</br>More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell</br>+optional</br>+listType=atomic |  |
+| env | [][EnvVar](#env-var)| `[]*EnvVar` |  | | List of environment variables to set in the container.</br>Cannot be updated.</br>+optional</br>+patchMergeKey=name</br>+patchStrategy=merge</br>+listType=map</br>+listMapKey=name |  |
+| envFrom | [][EnvFromSource](#env-from-source)| `[]*EnvFromSource` |  | | List of sources to populate environment variables in the container.</br>The keys defined within a source may consist of any printable ASCII characters except '='.</br>When a key exists in multiple</br>sources, the value associated with the last source will take precedence.</br>Values defined by an Env with a duplicate key will take precedence.</br>Cannot be updated.</br>+optional</br>+listType=atomic |  |
 | image | string| `string` |  | | Container image name.</br>More info: https://kubernetes.io/docs/concepts/containers/images</br>This field is optional to allow higher level config management to default or override</br>container images in workload controllers like Deployments and StatefulSets.</br>+optional |  |
 | imagePullPolicy | [PullPolicy](#pull-policy)| `PullPolicy` |  | |  |  |
 | lifecycle | [Lifecycle](#lifecycle)| `Lifecycle` |  | |  |  |
@@ -3237,17 +3574,20 @@ cause implementors to also use a fixed point implementation.
 | name | string| `string` |  | | Name of the container specified as a DNS_LABEL.</br>Each container in a pod must have a unique name (DNS_LABEL).</br>Cannot be updated. |  |
 | ports | [][ContainerPort](#container-port)| `[]*ContainerPort` |  | | List of ports to expose from the container. Not specifying a port here</br>DOES NOT prevent that port from being exposed. Any port which is</br>listening on the default "0.0.0.0" address inside a container will be</br>accessible from the network.</br>Modifying this array with strategic merge patch may corrupt the data.</br>For more information See https://github.com/kubernetes/kubernetes/issues/108255.</br>Cannot be updated.</br>+optional</br>+patchMergeKey=containerPort</br>+patchStrategy=merge</br>+listType=map</br>+listMapKey=containerPort</br>+listMapKey=protocol |  |
 | readinessProbe | [Probe](#probe)| `Probe` |  | |  |  |
+| resizePolicy | [][ContainerResizePolicy](#container-resize-policy)| `[]*ContainerResizePolicy` |  | | Resources resize policy for the container.</br>This field cannot be set on ephemeral containers.</br>+featureGate=InPlacePodVerticalScaling</br>+optional</br>+listType=atomic |  |
 | resources | [ResourceRequirements](#resource-requirements)| `ResourceRequirements` |  | |  |  |
+| restartPolicy | [ContainerRestartPolicy](#container-restart-policy)| `ContainerRestartPolicy` |  | |  |  |
+| restartPolicyRules | [][ContainerRestartRule](#container-restart-rule)| `[]*ContainerRestartRule` |  | | Represents a list of rules to be checked to determine if the</br>container should be restarted on exit. The rules are evaluated in</br>order. Once a rule matches a container exit condition, the remaining</br>rules are ignored. If no rule matches the container exit condition,</br>the Container-level restart policy determines the whether the container</br>is restarted or not. Constraints on the rules:</br>At most 20 rules are allowed.</br>Rules can have the same action.</br>Identical rules are not forbidden in validations.</br>When rules are specified, container MUST set RestartPolicy explicitly</br>even it if matches the Pod's RestartPolicy.</br>+featureGate=ContainerRestartRules</br>+optional</br>+listType=atomic |  |
 | securityContext | [SecurityContext](#security-context)| `SecurityContext` |  | |  |  |
-| source | string| `string` |  | | Source contains the source code of the script to execute |  |
+| source | string| `string` |  | | Source contains the source code of the script to execute</br>+optional |  |
 | startupProbe | [Probe](#probe)| `Probe` |  | |  |  |
 | stdin | boolean| `bool` |  | | Whether this container should allocate a buffer for stdin in the container runtime. If this</br>is not set, reads from stdin in the container will always result in EOF.</br>Default is false.</br>+optional |  |
 | stdinOnce | boolean| `bool` |  | | Whether the container runtime should close the stdin channel after it has been opened by</br>a single attach. When stdin is true the stdin stream will remain open across multiple attach</br>sessions. If stdinOnce is set to true, stdin is opened on container start, is empty until the</br>first client attaches to stdin, and then remains open and accepts data until the client disconnects,</br>at which time stdin is closed and remains closed until the container is restarted. If this</br>flag is false, a container processes that reads from stdin will never receive an EOF.</br>Default is false</br>+optional |  |
 | terminationMessagePath | string| `string` |  | | Optional: Path at which the file to which the container's termination message</br>will be written is mounted into the container's filesystem.</br>Message written is intended to be brief final status, such as an assertion failure message.</br>Will be truncated by the node if greater than 4096 bytes. The total message length across</br>all containers will be limited to 12kb.</br>Defaults to /dev/termination-log.</br>Cannot be updated.</br>+optional |  |
 | terminationMessagePolicy | [TerminationMessagePolicy](#termination-message-policy)| `TerminationMessagePolicy` |  | |  |  |
 | tty | boolean| `bool` |  | | Whether this container should allocate a TTY for itself, also requires 'stdin' to be true.</br>Default is false.</br>+optional |  |
-| volumeDevices | [][VolumeDevice](#volume-device)| `[]*VolumeDevice` |  | | volumeDevices is the list of block devices to be used by the container.</br>+patchMergeKey=devicePath</br>+patchStrategy=merge</br>+optional |  |
-| volumeMounts | [][VolumeMount](#volume-mount)| `[]*VolumeMount` |  | | Pod volumes to mount into the container's filesystem.</br>Cannot be updated.</br>+optional</br>+patchMergeKey=mountPath</br>+patchStrategy=merge |  |
+| volumeDevices | [][VolumeDevice](#volume-device)| `[]*VolumeDevice` |  | | volumeDevices is the list of block devices to be used by the container.</br>+patchMergeKey=devicePath</br>+patchStrategy=merge</br>+listType=map</br>+listMapKey=devicePath</br>+optional |  |
+| volumeMounts | [][VolumeMount](#volume-mount)| `[]*VolumeMount` |  | | Pod volumes to mount into the container's filesystem.</br>Cannot be updated.</br>+optional</br>+patchMergeKey=mountPath</br>+patchStrategy=merge</br>+listType=map</br>+listMapKey=mountPath |  |
 | workingDir | string| `string` |  | | Container's working directory.</br>If not specified, the container runtime's default will be used, which</br>might be configured in the container image.</br>Cannot be updated.</br>+optional |  |
 
 
@@ -3267,7 +3607,7 @@ cause implementors to also use a fixed point implementation.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| localhostProfile | string| `string` |  | | localhostProfile indicates a profile defined in a file on the node should be used.</br>The profile must be preconfigured on the node to work.</br>Must be a descending path, relative to the kubelet's configured seccomp profile location.</br>Must only be set if type is "Localhost".</br>+optional |  |
+| localhostProfile | string| `string` |  | | localhostProfile indicates a profile defined in a file on the node should be used.</br>The profile must be preconfigured on the node to work.</br>Must be a descending path, relative to the kubelet's configured seccomp profile location.</br>Must be set if type is "Localhost". Must NOT be set for any other type.</br>+optional |  |
 | type | [SeccompProfileType](#seccomp-profile-type)| `SeccompProfileType` |  | |  |  |
 
 
@@ -3301,7 +3641,7 @@ key-value pairs as environment variables.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| name | string| `string` |  | | Name of the referent.</br>More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</br>TODO: Add other useful fields. apiVersion, kind, uid?</br>+optional |  |
+| name | string| `string` |  | | Name of the referent.</br>This field is effectively required, but due to backwards compatibility is</br>allowed to be empty. Instances of this type with an empty value here are</br>almost certainly wrong.</br>More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</br>+optional</br>+default=""</br>+kubebuilder:default=""</br>TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896. |  |
 | optional | boolean| `bool` |  | | Specify whether the Secret must be defined</br>+optional |  |
 
 
@@ -3321,7 +3661,7 @@ key-value pairs as environment variables.
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | key | string| `string` |  | | The key of the secret to select from.  Must be a valid secret key. |  |
-| name | string| `string` |  | | Name of the referent.</br>More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</br>TODO: Add other useful fields. apiVersion, kind, uid?</br>+optional |  |
+| name | string| `string` |  | | Name of the referent.</br>This field is effectively required, but due to backwards compatibility is</br>allowed to be empty. Instances of this type with an empty value here are</br>almost certainly wrong.</br>More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</br>+optional</br>+default=""</br>+kubebuilder:default=""</br>TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896. |  |
 | optional | boolean| `bool` |  | | Specify whether the Secret or its key must be defined</br>+optional |  |
 
 
@@ -3343,8 +3683,8 @@ mode.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| items | [][KeyToPath](#key-to-path)| `[]*KeyToPath` |  | | items if unspecified, each key-value pair in the Data field of the referenced</br>Secret will be projected into the volume as a file whose name is the</br>key and content is the value. If specified, the listed keys will be</br>projected into the specified paths, and unlisted keys will not be</br>present. If a key is specified which is not present in the Secret,</br>the volume setup will error unless it is marked optional. Paths must be</br>relative and may not contain the '..' path or start with '..'.</br>+optional |  |
-| name | string| `string` |  | | Name of the referent.</br>More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</br>TODO: Add other useful fields. apiVersion, kind, uid?</br>+optional |  |
+| items | [][KeyToPath](#key-to-path)| `[]*KeyToPath` |  | | items if unspecified, each key-value pair in the Data field of the referenced</br>Secret will be projected into the volume as a file whose name is the</br>key and content is the value. If specified, the listed keys will be</br>projected into the specified paths, and unlisted keys will not be</br>present. If a key is specified which is not present in the Secret,</br>the volume setup will error unless it is marked optional. Paths must be</br>relative and may not contain the '..' path or start with '..'.</br>+optional</br>+listType=atomic |  |
+| name | string| `string` |  | | Name of the referent.</br>This field is effectively required, but due to backwards compatibility is</br>allowed to be empty. Instances of this type with an empty value here are</br>almost certainly wrong.</br>More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</br>+optional</br>+default=""</br>+kubebuilder:default=""</br>TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896. |  |
 | optional | boolean| `bool` |  | | optional field specify whether the Secret or its key must be defined</br>+optional |  |
 
 
@@ -3366,7 +3706,7 @@ Secret volumes support ownership management and SELinux relabeling.
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | defaultMode | int32 (formatted integer)| `int32` |  | | defaultMode is Optional: mode bits used to set permissions on created files by default.</br>Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511.</br>YAML accepts both octal and decimal values, JSON requires decimal values</br>for mode bits. Defaults to 0644.</br>Directories within the path are not affected by this setting.</br>This might be in conflict with other options that affect the file</br>mode, like fsGroup, and the result can be other mode bits set.</br>+optional |  |
-| items | [][KeyToPath](#key-to-path)| `[]*KeyToPath` |  | | items If unspecified, each key-value pair in the Data field of the referenced</br>Secret will be projected into the volume as a file whose name is the</br>key and content is the value. If specified, the listed keys will be</br>projected into the specified paths, and unlisted keys will not be</br>present. If a key is specified which is not present in the Secret,</br>the volume setup will error unless it is marked optional. Paths must be</br>relative and may not contain the '..' path or start with '..'.</br>+optional |  |
+| items | [][KeyToPath](#key-to-path)| `[]*KeyToPath` |  | | items If unspecified, each key-value pair in the Data field of the referenced</br>Secret will be projected into the volume as a file whose name is the</br>key and content is the value. If specified, the listed keys will be</br>projected into the specified paths, and unlisted keys will not be</br>present. If a key is specified which is not present in the Secret,</br>the volume setup will error unless it is marked optional. Paths must be</br>relative and may not contain the '..' path or start with '..'.</br>+optional</br>+listType=atomic |  |
 | optional | boolean| `bool` |  | | optional field specify whether the Secret or its keys must be defined</br>+optional |  |
 | secretName | string| `string` |  | | secretName is the name of the secret in the pod's namespace to use.</br>More info: https://kubernetes.io/docs/concepts/storage/volumes#secret</br>+optional |  |
 
@@ -3388,6 +3728,7 @@ are set, the values in SecurityContext take precedence.
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | allowPrivilegeEscalation | boolean| `bool` |  | | AllowPrivilegeEscalation controls whether a process can gain more</br>privileges than its parent process. This bool directly controls if</br>the no_new_privs flag will be set on the container process.</br>AllowPrivilegeEscalation is true always when the container is:</br>1) run as Privileged</br>2) has CAP_SYS_ADMIN</br>Note that this field cannot be set when spec.os.name is windows.</br>+optional |  |
+| appArmorProfile | [AppArmorProfile](#app-armor-profile)| `AppArmorProfile` |  | |  |  |
 | capabilities | [Capabilities](#capabilities)| `Capabilities` |  | |  |  |
 | privileged | boolean| `bool` |  | | Run container in privileged mode.</br>Processes in privileged containers are essentially equivalent to root on the host.</br>Defaults to false.</br>Note that this field cannot be set when spec.os.name is windows.</br>+optional |  |
 | procMount | [ProcMountType](#proc-mount-type)| `ProcMountType` |  | |  |  |
@@ -3416,6 +3757,7 @@ are set, the values in SecurityContext take precedence.
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | configMapKeyRef | [ConfigMapKeySelector](#config-map-key-selector)| `ConfigMapKeySelector` |  | |  |  |
+| database | [SyncDatabaseRef](#sync-database-ref)| `SyncDatabaseRef` |  | |  |  |
 | namespace | string| `string` |  | `"[namespace of workflow]"`|  |  |
 
 
@@ -3424,6 +3766,7 @@ are set, the values in SecurityContext take precedence.
 
 
 > Sequence expands a workflow step into numeric range
++kubebuilder:validation:XValidation:rule="!(has(self.count) && has(self.end))",message="only one of count or end can be defined"
   
 
 
@@ -3464,6 +3807,36 @@ otherwise).
 
 
 
+### <span id="signal"></span> Signal
+
+
+> Signal defines the stop signal of containers
++enum
+  
+
+
+
+| Name | Type | Go type | Default | Description | Example |
+|------|------|---------| ------- |-------------|---------|
+| Signal | string| string | | Signal defines the stop signal of containers</br>+enum |  |
+
+
+
+### <span id="sleep-action"></span> SleepAction
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| seconds | int64 (formatted integer)| `int64` |  | | Seconds is the number of seconds to sleep. |  |
+
+
+
 ### <span id="storage-medium"></span> StorageMedium
 
 
@@ -3494,12 +3867,28 @@ otherwise).
 
 
 
+### <span id="supplemental-groups-policy"></span> SupplementalGroupsPolicy
+
+
+> SupplementalGroupsPolicy defines how supplemental groups
+of the first container processes are calculated.
++enum
+  
+
+
+
+| Name | Type | Go type | Default | Description | Example |
+|------|------|---------| ------- |-------------|---------|
+| SupplementalGroupsPolicy | string| string | | SupplementalGroupsPolicy defines how supplemental groups</br>of the first container processes are calculated.</br>+enum |  |
+
+
+
 ### <span id="supplied-value-from"></span> SuppliedValueFrom
 
 
   
 
-[interface{}](#interface)
+`any`
 
 ### <span id="suspend-template"></span> SuspendTemplate
 
@@ -3519,6 +3908,21 @@ otherwise).
 
 
 
+### <span id="sync-database-ref"></span> SyncDatabaseRef
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| key | string| `string` |  | |  |  |
+
+
+
 ### <span id="synchronization"></span> Synchronization
 
 
@@ -3533,8 +3937,8 @@ otherwise).
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| mutex | [Mutex](#mutex)| `Mutex` |  | |  |  |
-| semaphore | [SemaphoreRef](#semaphore-ref)| `SemaphoreRef` |  | |  |  |
+| mutexes | [][Mutex](#mutex)| `[]*Mutex` |  | | v3.6 and after: Mutexes holds the list of Mutex lock details |  |
+| semaphores | [][SemaphoreRef](#semaphore-ref)| `[]*SemaphoreRef` |  | | v3.6 and after: Semaphores holds the list of Semaphores configuration |  |
 
 
 
@@ -3624,6 +4028,7 @@ otherwise).
 |------|------|---------|:--------:| ------- |-------------|---------|
 | activeDeadlineSeconds | [IntOrString](#int-or-string)| `IntOrString` |  | |  |  |
 | affinity | [Affinity](#affinity)| `Affinity` |  | |  |  |
+| annotations | map of string| `map[string]string` |  | | Annotations is a list of annotations to add to the template at runtime |  |
 | archiveLocation | [ArtifactLocation](#artifact-location)| `ArtifactLocation` |  | |  |  |
 | automountServiceAccountToken | boolean| `bool` |  | | AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.</br>ServiceAccountName of ExecutorConfig must be specified if this value is false. |  |
 | container | [Container](#container)| `Container` |  | |  |  |
@@ -3640,14 +4045,13 @@ otherwise).
 | memoize | [Memoize](#memoize)| `Memoize` |  | |  |  |
 | metadata | [Metadata](#metadata)| `Metadata` |  | |  |  |
 | metrics | [Metrics](#metrics)| `Metrics` |  | |  |  |
-| name | string| `string` |  | | Name is the name of the template |  |
+| name | string| `string` |  | | Name is the name of the template</br>+kubebuilder:validation:MaxLength=128</br>+kubebuilder:validation:Pattern=`^[a-zA-Z0-9][-a-zA-Z0-9]*$` |  |
 | nodeSelector | map of string| `map[string]string` |  | | NodeSelector is a selector to schedule this step of the workflow to be</br>run on the selected node(s). Overrides the selector set at the workflow level. |  |
 | outputs | [Outputs](#outputs)| `Outputs` |  | |  |  |
-| parallelism | int64 (formatted integer)| `int64` |  | | Parallelism limits the max total parallel pods that can execute at the same time within the</br>boundaries of this template invocation. If additional steps/dag templates are invoked, the</br>pods created by those templates will not be counted towards this total. |  |
+| parallelism | int64 (formatted integer)| `int64` |  | | Parallelism limits the max total parallel pods that can execute at the same time within the</br>boundaries of this template invocation. If additional steps/dag templates are invoked, the</br>pods created by those templates will not be counted towards this total.</br>+kubebuilder:validation:Minimum=1 |  |
 | pendingTimeout | string| `string` |  | | PendingTimeout allows to set the maximum time spent in pending status counting from the node's start time.</br>This duration may not be applied to Step or DAG templates. |  |
 | plugin | [Plugin](#plugin)| `Plugin` |  | |  |  |
 | podSpecPatch | string| `string` |  | | PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of</br>container fields which are not strings (e.g. resource limits). |  |
-| priority | int32 (formatted integer)| `int32` |  | | Priority to apply to workflow pods. |  |
 | priorityClassName | string| `string` |  | | PriorityClassName to apply to workflow pods. |  |
 | resource | [ResourceTemplate](#resource-template)| `ResourceTemplate` |  | |  |  |
 | retryStrategy | [RetryStrategy](#retry-strategy)| `RetryStrategy` |  | |  |  |
@@ -3656,7 +4060,7 @@ otherwise).
 | securityContext | [PodSecurityContext](#pod-security-context)| `PodSecurityContext` |  | |  |  |
 | serviceAccountName | string| `string` |  | | ServiceAccountName to apply to workflow pods |  |
 | sidecars | [][UserContainer](#user-container)| `[]*UserContainer` |  | | Sidecars is a list of containers which run alongside the main container</br>Sidecars are automatically killed when the main container completes</br>+patchStrategy=merge</br>+patchMergeKey=name |  |
-| steps | [][ParallelSteps](#parallel-steps)| `[]ParallelSteps` |  | | Steps define a series of sequential/parallel workflow steps |  |
+| steps | [][ParallelSteps](#parallel-steps)| `[]ParallelSteps` |  | | Steps define a series of sequential/parallel workflow steps</br>+kubebuilder:validation:MinItems=1 |  |
 | suspend | [SuspendTemplate](#suspend-template)| `SuspendTemplate` |  | |  |  |
 | synchronization | [Synchronization](#synchronization)| `Synchronization` |  | |  |  |
 | timeout | string| `string` |  | | Timeout allows to set the total node execution timeout duration counting from the node's start time.</br>This duration also includes time in which the node spends in Pending state. This duration may not be applied to Step or DAG templates. |  |
@@ -3769,8 +4173,19 @@ the triple <key,value,effect> using the matching operator <operator>.
 ### <span id="typed-local-object-reference"></span> TypedLocalObjectReference
 
 
-> TypedLocalObjectReference contains enough information to let you locate the
-typed referenced object inside the same namespace.
+> New uses of this type are discouraged because of difficulty describing its usage when embedded in APIs.
+1. Invalid usage help.  It is impossible to add specific help for individual usage.  In most embedded usages, there are particular
+restrictions like, "must refer only to types A and B" or "UID not honored" or "name must be restricted".
+Those cannot be well described when embedded.
+2. Inconsistent validation.  Because the usages are different, the validation rules are different by usage, which makes it hard for users to predict what will happen.
+3. The fields are both imprecise and overly precise.  Kind is not a precise mapping to a URL. This can produce ambiguity
+during interpretation and require a REST mapping.  In most cases, the dependency is on the group,resource tuple
+and the version of the actual struct is irrelevant.
+4. We cannot easily change it.  Because this type is embedded in many locations, updates to this type
+will affect numerous schemas.  Don't make new APIs embed an underspecified API type they do not control.
+
+Instead of using this type, create a locally provided and used type that is well-focused on your reference.
+For example, ServiceReferences for admission registration: https://github.com/kubernetes/api/blob/release-1.17/admissionregistration/v1/types.go#L533 .
 +structType=atomic
   
 
@@ -3791,7 +4206,10 @@ typed referenced object inside the same namespace.
 ### <span id="typed-object-reference"></span> TypedObjectReference
 
 
+> TypedObjectReference contains enough information to let you locate the typed referenced object
   
+
+
 
 
 
@@ -3848,10 +4266,10 @@ intent and helps make sure that UIDs and names do not get conflated.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| args | []string| `[]string` |  | | Arguments to the entrypoint.</br>The container image's CMD is used if this is not provided.</br>Variable references $(VAR_NAME) are expanded using the container's environment. If a variable</br>cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced</br>to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will</br>produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless</br>of whether the variable exists or not. Cannot be updated.</br>More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell</br>+optional |  |
-| command | []string| `[]string` |  | | Entrypoint array. Not executed within a shell.</br>The container image's ENTRYPOINT is used if this is not provided.</br>Variable references $(VAR_NAME) are expanded using the container's environment. If a variable</br>cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced</br>to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will</br>produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless</br>of whether the variable exists or not. Cannot be updated.</br>More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell</br>+optional |  |
-| env | [][EnvVar](#env-var)| `[]*EnvVar` |  | | List of environment variables to set in the container.</br>Cannot be updated.</br>+optional</br>+patchMergeKey=name</br>+patchStrategy=merge |  |
-| envFrom | [][EnvFromSource](#env-from-source)| `[]*EnvFromSource` |  | | List of sources to populate environment variables in the container.</br>The keys defined within a source must be a C_IDENTIFIER. All invalid keys</br>will be reported as an event when the container is starting. When a key exists in multiple</br>sources, the value associated with the last source will take precedence.</br>Values defined by an Env with a duplicate key will take precedence.</br>Cannot be updated.</br>+optional |  |
+| args | []string| `[]string` |  | | Arguments to the entrypoint.</br>The container image's CMD is used if this is not provided.</br>Variable references $(VAR_NAME) are expanded using the container's environment. If a variable</br>cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced</br>to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will</br>produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless</br>of whether the variable exists or not. Cannot be updated.</br>More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell</br>+optional</br>+listType=atomic |  |
+| command | []string| `[]string` |  | | Entrypoint array. Not executed within a shell.</br>The container image's ENTRYPOINT is used if this is not provided.</br>Variable references $(VAR_NAME) are expanded using the container's environment. If a variable</br>cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced</br>to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will</br>produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless</br>of whether the variable exists or not. Cannot be updated.</br>More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell</br>+optional</br>+listType=atomic |  |
+| env | [][EnvVar](#env-var)| `[]*EnvVar` |  | | List of environment variables to set in the container.</br>Cannot be updated.</br>+optional</br>+patchMergeKey=name</br>+patchStrategy=merge</br>+listType=map</br>+listMapKey=name |  |
+| envFrom | [][EnvFromSource](#env-from-source)| `[]*EnvFromSource` |  | | List of sources to populate environment variables in the container.</br>The keys defined within a source may consist of any printable ASCII characters except '='.</br>When a key exists in multiple</br>sources, the value associated with the last source will take precedence.</br>Values defined by an Env with a duplicate key will take precedence.</br>Cannot be updated.</br>+optional</br>+listType=atomic |  |
 | image | string| `string` |  | | Container image name.</br>More info: https://kubernetes.io/docs/concepts/containers/images</br>This field is optional to allow higher level config management to default or override</br>container images in workload controllers like Deployments and StatefulSets.</br>+optional |  |
 | imagePullPolicy | [PullPolicy](#pull-policy)| `PullPolicy` |  | |  |  |
 | lifecycle | [Lifecycle](#lifecycle)| `Lifecycle` |  | |  |  |
@@ -3860,7 +4278,10 @@ intent and helps make sure that UIDs and names do not get conflated.
 | name | string| `string` |  | | Name of the container specified as a DNS_LABEL.</br>Each container in a pod must have a unique name (DNS_LABEL).</br>Cannot be updated. |  |
 | ports | [][ContainerPort](#container-port)| `[]*ContainerPort` |  | | List of ports to expose from the container. Not specifying a port here</br>DOES NOT prevent that port from being exposed. Any port which is</br>listening on the default "0.0.0.0" address inside a container will be</br>accessible from the network.</br>Modifying this array with strategic merge patch may corrupt the data.</br>For more information See https://github.com/kubernetes/kubernetes/issues/108255.</br>Cannot be updated.</br>+optional</br>+patchMergeKey=containerPort</br>+patchStrategy=merge</br>+listType=map</br>+listMapKey=containerPort</br>+listMapKey=protocol |  |
 | readinessProbe | [Probe](#probe)| `Probe` |  | |  |  |
+| resizePolicy | [][ContainerResizePolicy](#container-resize-policy)| `[]*ContainerResizePolicy` |  | | Resources resize policy for the container.</br>This field cannot be set on ephemeral containers.</br>+featureGate=InPlacePodVerticalScaling</br>+optional</br>+listType=atomic |  |
 | resources | [ResourceRequirements](#resource-requirements)| `ResourceRequirements` |  | |  |  |
+| restartPolicy | [ContainerRestartPolicy](#container-restart-policy)| `ContainerRestartPolicy` |  | |  |  |
+| restartPolicyRules | [][ContainerRestartRule](#container-restart-rule)| `[]*ContainerRestartRule` |  | | Represents a list of rules to be checked to determine if the</br>container should be restarted on exit. The rules are evaluated in</br>order. Once a rule matches a container exit condition, the remaining</br>rules are ignored. If no rule matches the container exit condition,</br>the Container-level restart policy determines the whether the container</br>is restarted or not. Constraints on the rules:</br>At most 20 rules are allowed.</br>Rules can have the same action.</br>Identical rules are not forbidden in validations.</br>When rules are specified, container MUST set RestartPolicy explicitly</br>even it if matches the Pod's RestartPolicy.</br>+featureGate=ContainerRestartRules</br>+optional</br>+listType=atomic |  |
 | securityContext | [SecurityContext](#security-context)| `SecurityContext` |  | |  |  |
 | startupProbe | [Probe](#probe)| `Probe` |  | |  |  |
 | stdin | boolean| `bool` |  | | Whether this container should allocate a buffer for stdin in the container runtime. If this</br>is not set, reads from stdin in the container will always result in EOF.</br>Default is false.</br>+optional |  |
@@ -3868,8 +4289,8 @@ intent and helps make sure that UIDs and names do not get conflated.
 | terminationMessagePath | string| `string` |  | | Optional: Path at which the file to which the container's termination message</br>will be written is mounted into the container's filesystem.</br>Message written is intended to be brief final status, such as an assertion failure message.</br>Will be truncated by the node if greater than 4096 bytes. The total message length across</br>all containers will be limited to 12kb.</br>Defaults to /dev/termination-log.</br>Cannot be updated.</br>+optional |  |
 | terminationMessagePolicy | [TerminationMessagePolicy](#termination-message-policy)| `TerminationMessagePolicy` |  | |  |  |
 | tty | boolean| `bool` |  | | Whether this container should allocate a TTY for itself, also requires 'stdin' to be true.</br>Default is false.</br>+optional |  |
-| volumeDevices | [][VolumeDevice](#volume-device)| `[]*VolumeDevice` |  | | volumeDevices is the list of block devices to be used by the container.</br>+patchMergeKey=devicePath</br>+patchStrategy=merge</br>+optional |  |
-| volumeMounts | [][VolumeMount](#volume-mount)| `[]*VolumeMount` |  | | Pod volumes to mount into the container's filesystem.</br>Cannot be updated.</br>+optional</br>+patchMergeKey=mountPath</br>+patchStrategy=merge |  |
+| volumeDevices | [][VolumeDevice](#volume-device)| `[]*VolumeDevice` |  | | volumeDevices is the list of block devices to be used by the container.</br>+patchMergeKey=devicePath</br>+patchStrategy=merge</br>+listType=map</br>+listMapKey=devicePath</br>+optional |  |
+| volumeMounts | [][VolumeMount](#volume-mount)| `[]*VolumeMount` |  | | Pod volumes to mount into the container's filesystem.</br>Cannot be updated.</br>+optional</br>+patchMergeKey=mountPath</br>+patchStrategy=merge</br>+listType=map</br>+listMapKey=mountPath |  |
 | workingDir | string| `string` |  | | Container's working directory.</br>If not specified, the container runtime's default will be used, which</br>might be configured in the container image.</br>Cannot be updated.</br>+optional |  |
 
 
@@ -3928,6 +4349,7 @@ intent and helps make sure that UIDs and names do not get conflated.
 | gitRepo | [GitRepoVolumeSource](#git-repo-volume-source)| `GitRepoVolumeSource` |  | |  |  |
 | glusterfs | [GlusterfsVolumeSource](#glusterfs-volume-source)| `GlusterfsVolumeSource` |  | |  |  |
 | hostPath | [HostPathVolumeSource](#host-path-volume-source)| `HostPathVolumeSource` |  | |  |  |
+| image | [ImageVolumeSource](#image-volume-source)| `ImageVolumeSource` |  | |  |  |
 | iscsi | [ISCSIVolumeSource](#i-s-c-s-i-volume-source)| `ISCSIVolumeSource` |  | |  |  |
 | name | string| `string` |  | | name of the volume.</br>Must be a DNS_LABEL and unique within the pod.</br>More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names |  |
 | nfs | [NFSVolumeSource](#n-f-s-volume-source)| `NFSVolumeSource` |  | |  |  |
@@ -3975,6 +4397,7 @@ intent and helps make sure that UIDs and names do not get conflated.
 | mountPropagation | [MountPropagationMode](#mount-propagation-mode)| `MountPropagationMode` |  | |  |  |
 | name | string| `string` |  | | This must match the Name of a Volume. |  |
 | readOnly | boolean| `bool` |  | | Mounted read-only if true, read-write otherwise (false or unspecified).</br>Defaults to false.</br>+optional |  |
+| recursiveReadOnly | [RecursiveReadOnlyMode](#recursive-read-only-mode)| `RecursiveReadOnlyMode` |  | |  |  |
 | subPath | string| `string` |  | | Path within the volume from which the container's volume should be mounted.</br>Defaults to "" (volume's root).</br>+optional |  |
 | subPathExpr | string| `string` |  | | Expanded path within the volume from which the container's volume should be mounted.</br>Behaves similarly to SubPath but environment variable references $(VAR_NAME) are expanded using the container's environment.</br>Defaults to "" (volume's root).</br>SubPathExpr and SubPath are mutually exclusive.</br>+optional |  |
 
@@ -3983,7 +4406,7 @@ intent and helps make sure that UIDs and names do not get conflated.
 ### <span id="volume-projection"></span> VolumeProjection
 
 
-> Projection that may be projected along with other supported volume types
+> Exactly one of these fields must be set.
   
 
 
@@ -3994,10 +4417,28 @@ intent and helps make sure that UIDs and names do not get conflated.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
+| clusterTrustBundle | [ClusterTrustBundleProjection](#cluster-trust-bundle-projection)| `ClusterTrustBundleProjection` |  | |  |  |
 | configMap | [ConfigMapProjection](#config-map-projection)| `ConfigMapProjection` |  | |  |  |
 | downwardAPI | [DownwardAPIProjection](#downward-api-projection)| `DownwardAPIProjection` |  | |  |  |
+| podCertificate | [PodCertificateProjection](#pod-certificate-projection)| `PodCertificateProjection` |  | |  |  |
 | secret | [SecretProjection](#secret-projection)| `SecretProjection` |  | |  |  |
 | serviceAccountToken | [ServiceAccountTokenProjection](#service-account-token-projection)| `ServiceAccountTokenProjection` |  | |  |  |
+
+
+
+### <span id="volume-resource-requirements"></span> VolumeResourceRequirements
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| limits | [ResourceList](#resource-list)| `ResourceList` |  | |  |  |
+| requests | [ResourceList](#resource-list)| `ResourceList` |  | |  |  |
 
 
 
@@ -4051,7 +4492,7 @@ intent and helps make sure that UIDs and names do not get conflated.
 |------|------|---------|:--------:| ------- |-------------|---------|
 | gmsaCredentialSpec | string| `string` |  | | GMSACredentialSpec is where the GMSA admission webhook</br>(https://github.com/kubernetes-sigs/windows-gmsa) inlines the contents of the</br>GMSA credential spec named by the GMSACredentialSpecName field.</br>+optional |  |
 | gmsaCredentialSpecName | string| `string` |  | | GMSACredentialSpecName is the name of the GMSA credential spec to use.</br>+optional |  |
-| hostProcess | boolean| `bool` |  | | HostProcess determines if a container should be run as a 'Host Process' container.</br>This field is alpha-level and will only be honored by components that enable the</br>WindowsHostProcessContainers feature flag. Setting this field without the feature</br>flag will result in errors when validating the Pod. All of a Pod's containers must</br>have the same effective HostProcess value (it is not allowed to have a mix of HostProcess</br>containers and non-HostProcess containers).  In addition, if HostProcess is true</br>then HostNetwork must also be set to true.</br>+optional |  |
+| hostProcess | boolean| `bool` |  | | HostProcess determines if a container should be run as a 'Host Process' container.</br>All of a Pod's containers must have the same effective HostProcess value</br>(it is not allowed to have a mix of HostProcess containers and non-HostProcess containers).</br>In addition, if HostProcess is true then HostNetwork must also be set to true.</br>+optional |  |
 | runAsUserName | string| `string` |  | | The UserName in Windows to run the entrypoint of the container process.</br>Defaults to the user specified in image metadata if unspecified.</br>May also be set in PodSecurityContext. If set in both SecurityContext and</br>PodSecurityContext, the value specified in SecurityContext takes precedence.</br>+optional |  |
 
 
@@ -4079,4 +4520,4 @@ intent and helps make sure that UIDs and names do not get conflated.
 
 
 
-[interface{}](#interface)
+`any`

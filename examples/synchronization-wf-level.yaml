@@ -12,14 +12,20 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
+  labels:
+    workflows.argoproj.io/no-test: "environment"
   generateName: synchronization-wf-level-
 spec:
   entrypoint: hello-world
   synchronization:
-    semaphore:
-      configMapKeyRef:
-        name: my-config
-        key: workflow
+    semaphores: # v3.6 and after
+      - configMapKeyRef:
+          name: my-config
+          key: workflow
+    # semaphore: # deprecated: v3.5 and before
+    #   configMapKeyRef:
+    #     name: my-config
+    #     key: workflow
   templates:
     - name: hello-world
       container:

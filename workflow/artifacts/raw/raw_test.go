@@ -7,10 +7,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/raw"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/raw"
 )
 
 const (
@@ -19,20 +22,20 @@ const (
 
 func TestLoad(t *testing.T) {
 	content := fmt.Sprintf("time: %v", time.Now().UnixNano())
-	lf, err := os.CreateTemp("", LoadFileName)
-	assert.NoError(t, err)
-	defer os.Remove(lf.Name())
+	lf, err := os.CreateTemp(t.TempDir(), LoadFileName)
+	lf.Close()
+	require.NoError(t, err)
 
 	art := &wfv1.Artifact{}
 	art.Raw = &wfv1.RawArtifact{
 		Data: content,
 	}
 	driver := &raw.ArtifactDriver{}
-	err = driver.Load(art, lf.Name())
-	assert.NoError(t, err)
+	err = driver.Load(logging.TestContext(t.Context()), art, lf.Name())
+	require.NoError(t, err)
 
 	dat, err := os.ReadFile(lf.Name())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, content, string(dat))
 }
 
@@ -43,11 +46,11 @@ func TestOpenStream(t *testing.T) {
 		Data: content,
 	}
 	driver := &raw.ArtifactDriver{}
-	rc, err := driver.OpenStream(art)
-	assert.NoError(t, err)
+	rc, err := driver.OpenStream(logging.TestContext(t.Context()), art)
+	require.NoError(t, err)
 	defer rc.Close()
 
 	dat, err := io.ReadAll(rc)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, content, string(dat))
 }

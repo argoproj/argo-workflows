@@ -1,0 +1,9 @@
+# Component to scale down the deployments for the workflow controller and argo server,
+# for use with profiles where argo is run locally to avoid conflicts.
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+replicas:
+  - name: argo-server
+    count: 0
+  - name: workflow-controller
+    count: 0

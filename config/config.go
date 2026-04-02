@@ -4,25 +4,33 @@ import (
 	"fmt"
 	"math"
 	"net/url"
+	"slices"
 	"time"
 
+	metricsdk "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
 type ResourceRateLimit struct {
+	// Limit is the maximum rate at which pods can be created
 	Limit float64 `json:"limit"`
-	Burst int     `json:"burst"`
+	// Burst allows temporary spikes above the limit
+	Burst int `json:"burst"`
 }
 
-// Config contains the configuration settings for the workflow controller
+// Config contains the root of the configuration settings for the workflow controller
+// as read from the ConfigMap called workflow-controller-configmap
 type Config struct {
-
 	// NodeEvents configures how node events are emitted
-	NodeEvents NodeEvents `json:"nodeEvents,omitempty"`
+	NodeEvents NodeEvents `json:"nodeEvents,omitzero"`
+
+	// WorkflowEvents configures how workflow events are emitted
+	WorkflowEvents WorkflowEvents `json:"workflowEvents,omitzero"`
 
 	// Executor holds container customizations for the executor to use when running pods
 	Executor *apiv1.Container `json:"executor,omitempty"`
@@ -34,7 +42,7 @@ type Config struct {
 	KubeConfig *KubeConfig `json:"kubeConfig,omitempty"`
 
 	// ArtifactRepository contains the default location of an artifact repository for container artifacts
-	ArtifactRepository wfv1.ArtifactRepository `json:"artifactRepository,omitempty"`
+	ArtifactRepository wfv1.ArtifactRepository `json:"artifactRepository,omitzero"`
 
 	// Namespace is a label selector filter to limit the controller's watch to a specific namespace
 	Namespace string `json:"namespace,omitempty"`
@@ -46,15 +54,16 @@ type Config struct {
 	// in order to support multiple controllers in a single cluster, and ultimately allows the
 	// controller itself to be bundled as part of a higher level application. If omitted, the
 	// controller watches workflows and pods that *are not* labeled with an instance id.
+	// See [Scaling - Instance ID](https://argo-workflows.readthedocs.io/en/latest/scaling/#instance-id) for more details.
 	InstanceID string `json:"instanceID,omitempty"`
 
 	// MetricsConfig specifies configuration for metrics emission. Metrics are enabled and emitted on localhost:9090/metrics
 	// by default.
-	MetricsConfig MetricsConfig `json:"metricsConfig,omitempty"`
+	MetricsConfig MetricsConfig `json:"metricsConfig,omitzero"`
 
 	// TelemetryConfig specifies configuration for telemetry emission. Telemetry is enabled and emitted in the same endpoint
 	// as metrics by default, but can be overridden using this config.
-	TelemetryConfig MetricsConfig `json:"telemetryConfig,omitempty"`
+	TelemetryConfig MetricsConfig `json:"telemetryConfig,omitzero"`
 
 	// Parallelism limits the max total parallel workflows that can execute at the same time
 	Parallelism int `json:"parallelism,omitempty"`
@@ -78,7 +87,7 @@ type Config struct {
 	WorkflowDefaults *wfv1.Workflow `json:"workflowDefaults,omitempty"`
 
 	// PodSpecLogStrategy enables the logging of podspec on controller log.
-	PodSpecLogStrategy PodSpecLogStrategy `json:"podSpecLogStrategy,omitempty"`
+	PodSpecLogStrategy PodSpecLogStrategy `json:"podSpecLogStrategy,omitzero"`
 
 	// PodGCGracePeriodSeconds specifies the duration in seconds before a terminating pod is forcefully killed.
 	// Value must be non-negative integer. A zero value indicates that the pod will be forcefully terminated immediately.
@@ -94,7 +103,7 @@ type Config struct {
 	WorkflowRestrictions *WorkflowRestrictions `json:"workflowRestrictions,omitempty"`
 
 	// Adds configurable initial delay (for K8S clusters with mutating webhooks) to prevent workflow getting modified by MWC.
-	InitialDelay metav1.Duration `json:"initialDelay,omitempty"`
+	InitialDelay metav1.Duration `json:"initialDelay,omitzero"`
 
 	// The command/args for each image, needed when the command is not specified and the emissary executor is used.
 	// https://argo-workflows.readthedocs.io/en/latest/workflow-executors/#emissary-emissary
@@ -107,7 +116,86 @@ type Config struct {
 	NavColor string `json:"navColor,omitempty"`
 
 	// SSO in settings for single-sign on
-	SSO SSOConfig `json:"sso,omitempty"`
+	SSO SSOConfig `json:"sso,omitzero"`
+
+	// Synchronization via databases config
+	Synchronization *SyncConfig `json:"synchronization,omitempty"`
+
+	// ArtifactDrivers lists artifact driver plugins we can use
+	ArtifactDrivers []ArtifactDriver `json:"artifactDrivers,omitempty"`
+
+	// FailedPodRestart configures automatic restart of pods that fail before entering Running state
+	// (e.g., due to Eviction, DiskPressure, Preemption). This allows recovery from transient
+	// infrastructure issues without requiring a retryStrategy on templates.
+	FailedPodRestart *FailedPodRestartConfig `json:"failedPodRestart,omitempty"`
+}
+
+// FailedPodRestartConfig configures automatic restart of pods that fail before entering Running state.
+// This is useful for recovering from transient infrastructure issues like node eviction due to
+// DiskPressure or MemoryPressure without requiring a retryStrategy on every template.
+type FailedPodRestartConfig struct {
+	// Enabled enables automatic restart of pods that fail before entering Running state.
+	// When enabled, pods that fail due to infrastructure issues (like eviction) without ever
+	// running their main container will be automatically recreated.
+	// Default is false.
+	Enabled bool `json:"enabled,omitempty"`
+
+	// MaxRestarts is the maximum number of automatic restarts per node before giving up.
+	// This prevents infinite restart loops. Default is 3.
+	MaxRestarts *int32 `json:"maxRestarts,omitempty"`
+}
+
+// GetMaxRestarts returns the configured max restarts or the default value of 3.
+func (c *FailedPodRestartConfig) GetMaxRestarts() int32 {
+	if c == nil || c.MaxRestarts == nil {
+		return 3
+	}
+	return *c.MaxRestarts
+}
+
+// IsEnabled returns true if the feature is enabled.
+func (c *FailedPodRestartConfig) IsEnabled() bool {
+	return c != nil && c.Enabled
+}
+
+// ArtifactDriver is a plugin for an artifact driver
+type ArtifactDriver struct {
+	// Name is the name of the artifact driver plugin
+	Name wfv1.ArtifactPluginName `json:"name"`
+	// Image is the docker image of the artifact driver
+	Image string `json:"image"`
+	// ConnectionTimeoutSeconds is the timeout for the artifact driver connection, 5 seconds if not set
+	ConnectionTimeoutSeconds int32 `json:"connectionTimeoutSeconds,omitempty" protobuf:"varint,3,opt,name=connectionTimeoutSeconds"`
+}
+
+const defaultArtifactConnectionTimeout = time.Duration(5) * time.Second
+
+func (a ArtifactDriver) ConnectionTimeout() time.Duration {
+	if a.ConnectionTimeoutSeconds != 0 {
+		return time.Duration(a.ConnectionTimeoutSeconds) * time.Second
+	}
+	return defaultArtifactConnectionTimeout
+}
+
+func (c Config) GetArtifactDriver(name wfv1.ArtifactPluginName) (ArtifactDriver, error) {
+	for _, driver := range c.ArtifactDrivers {
+		if driver.Name == name {
+			return driver, nil
+		}
+	}
+	return ArtifactDriver{}, fmt.Errorf("artifact driver %s not found", name)
+}
+
+func (c Config) GetArtifactDrivers(plugins []wfv1.ArtifactPluginName) ([]ArtifactDriver, error) {
+	drivers := []ArtifactDriver{}
+	for _, plugin := range plugins {
+		driver, err := c.GetArtifactDriver(plugin)
+		if err != nil {
+			return nil, err
+		}
+		drivers = append(drivers, driver)
+	}
+	return drivers, nil
 }
 
 func (c Config) GetExecutor() *apiv1.Container {
@@ -136,10 +224,8 @@ func (c Config) GetPodGCDeleteDelayDuration() time.Duration {
 }
 
 func (c Config) ValidateProtocol(inputProtocol string, allowedProtocol []string) error {
-	for _, protocol := range allowedProtocol {
-		if inputProtocol == protocol {
-			return nil
-		}
+	if slices.Contains(allowedProtocol, inputProtocol) {
+		return nil
 	}
 	return fmt.Errorf("protocol %s is not allowed", inputProtocol)
 }
@@ -168,8 +254,8 @@ type PodSpecLogStrategy struct {
 	AllPods   bool `json:"allPods,omitempty"`
 }
 
-// KubeConfig is used for wait & init sidecar containers to communicate with a k8s apiserver by a outofcluster method,
-// it is used when the workflow controller is in a different cluster with the workflow workloads
+// KubeConfig is used for wait & init sidecar containers to communicate with a k8s apiserver by an out-of-cluster method;
+// it is used when the workflow controller is in a different cluster from the workflow workloads
 type KubeConfig struct {
 	// SecretName of the kubeconfig secret
 	// may not be empty if kuebConfig specified
@@ -183,19 +269,32 @@ type KubeConfig struct {
 	MountPath string `json:"mountPath,omitempty"`
 }
 
+// DBConfig contains database configuration settings
+type DBConfig struct {
+	// PostgreSQL configuration for PostgreSQL database, don't use MySQL at the same time
+	PostgreSQL *PostgreSQLConfig `json:"postgresql,omitempty"`
+	// MySQL configuration for MySQL database, don't use PostgreSQL at the same time
+	MySQL *MySQLConfig `json:"mysql,omitempty"`
+	// Pooled connection settings for all types of database connections
+	ConnectionPool *ConnectionPool `json:"connectionPool,omitempty"`
+}
+
+// PersistConfig contains workflow persistence configuration
 type PersistConfig struct {
+	DBConfig
+	// NodeStatusOffload saves node status only to the persistence DB to avoid the 1MB limit in etcd
 	NodeStatusOffload bool `json:"nodeStatusOffLoad,omitempty"`
-	// Archive workflows to persistence.
+	// Archive completed and Workflows to persistence so you can access them after they're
+	// removed from kubernetes
 	Archive bool `json:"archive,omitempty"`
-	// ArchivelabelSelector holds LabelSelector to determine workflow persistence.
+	// ArchiveLabelSelector holds LabelSelector to determine which Workflows to archive
 	ArchiveLabelSelector *metav1.LabelSelector `json:"archiveLabelSelector,omitempty"`
-	// in days
-	ArchiveTTL     TTL               `json:"archiveTTL,omitempty"`
-	ClusterName    string            `json:"clusterName,omitempty"`
-	ConnectionPool *ConnectionPool   `json:"connectionPool,omitempty"`
-	PostgreSQL     *PostgreSQLConfig `json:"postgresql,omitempty"`
-	MySQL          *MySQLConfig      `json:"mysql,omitempty"`
-	SkipMigration  bool              `json:"skipMigration,omitempty"`
+	// ArchiveTTL is the time to live for archived Workflows
+	ArchiveTTL TTL `json:"archiveTTL,omitempty"`
+	// ClusterName is the name of the cluster (or technically controller) for the persistence database
+	ClusterName string `json:"clusterName,omitempty"`
+	// SkipMigration skips database migration even if needed
+	SkipMigration bool `json:"skipMigration,omitempty"`
 }
 
 func (c PersistConfig) GetArchiveLabelSelector() (labels.Selector, error) {
@@ -212,19 +311,58 @@ func (c PersistConfig) GetClusterName() string {
 	return "default"
 }
 
+// SyncConfig contains synchronization configuration for database locks (semaphores and mutexes)
+type SyncConfig struct {
+	DBConfig
+	// EnableAPI enables the database synchronization API
+	EnableAPI bool `json:"enableAPI,omitempty"`
+	// ControllerName sets a unique name for this controller instance
+	ControllerName string `json:"controllerName"`
+	// SkipMigration skips database migration if needed
+	SkipMigration bool `json:"skipMigration,omitempty"`
+	// LimitTableName customizes the table name for semaphore limits, if not set, the default value is "sync_limit"
+	LimitTableName string `json:"limitTableName,omitempty"`
+	// StateTableName customizes the table name for current lock state, if not set, the default value is "sync_state"
+	StateTableName string `json:"stateTableName,omitempty"`
+	// ControllerTableName customizes the table name for controller heartbeats, if not set, the default value is "sync_controller"
+	ControllerTableName string `json:"controllerTableName,omitempty"`
+	// LockTableName customizes the table name for lock coordination data, if not set, the default value is "sync_lock"
+	LockTableName string `json:"lockTableName,omitempty"`
+	// PollSeconds specifies how often to check for lock changes, if not set, the default value is 5 seconds
+	PollSeconds *int `json:"pollSeconds,omitempty"`
+	// HeartbeatSeconds specifies how often to update controller heartbeat, if not set, the default value is 60 seconds
+	HeartbeatSeconds *int `json:"heartbeatSeconds,omitempty"`
+	// InactiveControllerSeconds specifies when to consider a controller dead, if not set, the default value is 300 seconds
+	InactiveControllerSeconds *int `json:"inactiveControllerSeconds,omitempty"`
+	// SemaphoreLimitCacheSeconds specifies the duration in seconds before the workflow controller will re-fetch the limit
+	// for a semaphore from its associated data source. Defaults to 0 seconds (re-fetch every time the semaphore is checked).
+	SemaphoreLimitCacheSeconds *int64 `json:"semaphoreLimitCacheSeconds,omitempty"`
+}
+
+// ConnectionPool contains database connection pool settings
 type ConnectionPool struct {
-	MaxIdleConns    int `json:"maxIdleConns,omitempty"`
-	MaxOpenConns    int `json:"maxOpenConns,omitempty"`
+	// MaxIdleConns sets the maximum number of idle connections in the pool
+	MaxIdleConns int `json:"maxIdleConns,omitempty"`
+	// MaxOpenConns sets the maximum number of open connections to the database
+	MaxOpenConns int `json:"maxOpenConns,omitempty"`
+	// ConnMaxLifetime sets the maximum amount of time a connection may be reused
 	ConnMaxLifetime TTL `json:"connMaxLifetime,omitempty"`
 }
 
+// DatabaseConfig contains common database connection settings
 type DatabaseConfig struct {
-	Host           string                  `json:"host"`
-	Port           int                     `json:"port,omitempty"`
-	Database       string                  `json:"database"`
-	TableName      string                  `json:"tableName,omitempty"`
-	UsernameSecret apiv1.SecretKeySelector `json:"userNameSecret,omitempty"`
-	PasswordSecret apiv1.SecretKeySelector `json:"passwordSecret,omitempty"`
+	// Host is the database server hostname
+	Host string `json:"host"`
+	// Port is the database server port
+	Port int `json:"port,omitempty"`
+	// Database is the name of the database to connect to
+	Database string `json:"database"`
+	// TableName is the name of the table to use, must be set
+	TableName string `json:"tableName,omitempty"`
+	// UsernameSecret references a secret containing the database username
+	UsernameSecret apiv1.SecretKeySelector `json:"userNameSecret,omitzero"`
+	// PasswordSecret references a secret containing the database password
+	PasswordSecret apiv1.SecretKeySelector `json:"passwordSecret,omitzero"`
 }
 
 func (c DatabaseConfig) GetHostname() string {
@@ -234,23 +372,68 @@ func (c DatabaseConfig) GetHostname() string {
 	return fmt.Sprintf("%s:%v", c.Host, c.Port)
 }
 
+// PostgreSQLConfig contains PostgreSQL-specific database configuration
 type PostgreSQLConfig struct {
 	DatabaseConfig
-	SSL     bool   `json:"ssl,omitempty"`
+	// SSL enables SSL connection to the database
+	SSL bool `json:"ssl,omitempty"`
+	// SSLMode specifies the SSL mode (disable, require, verify-ca, verify-full)
 	SSLMode string `json:"sslMode,omitempty"`
+	// AzureToken specifies if the password should be fetched as an Azure token
+	AzureToken *AzureTokenConfig `json:"azureToken,omitempty"`
+	// AWSRDSToken specifies if the password should be fetched as an AWS RDS IAM auth token
+	AWSRDSToken *AWSRDSTokenConfig `json:"awsRDSToken,omitempty"`
 }
 
+type AzureTokenConfig struct {
+	// Enabled enables Azure token fetching
+	Enabled bool `json:"enabled,omitempty"`
+	// Scope is the scope to request the token for. Defaults to "https://ossrdbms-aad.database.windows.net/.default" if empty.
+	Scope string `json:"scope,omitempty"`
+}
+
+type AWSRDSTokenConfig struct {
+	// Enabled enables AWS RDS IAM auth token fetching
+	Enabled bool `json:"enabled,omitempty"`
+	// Region is the AWS region of the RDS instance. Auto-detected if empty.
+	Region string `json:"region,omitempty"`
+}
+
+// MySQLConfig contains MySQL-specific database configuration
 type MySQLConfig struct {
 	DatabaseConfig
+	// Options contains additional MySQL connection options
 	Options map[string]string `json:"options,omitempty"`
 }
+
+// MetricModifier are modifiers for an individual named metric to change their behaviour
+type MetricModifier struct {
+	// Disabled disables the emission of this metric completely
+	Disabled bool `json:"disabled,omitempty"`
+	// DisabledAttributes lists labels for this metric to remove those attributes to save on cardinality
+	DisabledAttributes []string `json:"disabledAttributes"`
+	// HistogramBuckets allow configuring of the buckets used in a histogram
+	// Has no effect on non-histogram buckets
+	HistogramBuckets []float64 `json:"histogramBuckets,omitempty"`
+}
+
+// MetricsTemporality defines the temporality of OpenTelemetry metrics
+type MetricsTemporality string
+
+const (
+	// MetricsTemporalityCumulative indicates cumulative temporality
+	MetricsTemporalityCumulative MetricsTemporality = "Cumulative"
+	// MetricsTemporalityDelta indicates delta temporality
+	MetricsTemporalityDelta MetricsTemporality = "Delta"
+)
 
 // MetricsConfig defines a config for a metrics server
 type MetricsConfig struct {
 	// Enabled controls metric emission. Default is true, set "enabled: false" to turn off
 	Enabled *bool `json:"enabled,omitempty"`
-	// DisableLegacy turns off legacy metrics
-	// DEPRECATED: Legacy metrics are now removed, this field is ignored
+	// DisableLegacy turns off legacy metrics.
+	//
+	// Deprecated: Legacy metrics are now removed, this field is ignored.
 	DisableLegacy bool `json:"disableLegacy,omitempty"`
 	// MetricsTTL sets how often custom metrics are cleared from memory
 	MetricsTTL TTL `json:"metricsTTL,omitempty"`
@@ -260,25 +443,51 @@ type MetricsConfig struct {
 	Port int `json:"port,omitempty"`
 	// IgnoreErrors is a flag that instructs prometheus to ignore metric emission errors
 	IgnoreErrors bool `json:"ignoreErrors,omitempty"`
-	// Secure is a flag that starts the metrics servers using TLS
+	// Secure is a flag that starts the metrics servers using TLS, defaults to true
 	Secure *bool `json:"secure,omitempty"`
+	// Modifiers configure metrics by name
+	Modifiers map[string]MetricModifier `json:"modifiers,omitempty"`
+	// Temporality of the OpenTelemetry metrics.
+	// Enum of Cumulative or Delta, defaulting to Cumulative.
+	// No effect on Prometheus metrics, which are always Cumulative.
+	Temporality MetricsTemporality `json:"temporality,omitempty"`
 }
 
-func (mc MetricsConfig) GetSecure(defaultValue bool) bool {
+func (mc *MetricsConfig) GetSecure(defaultValue bool) bool {
 	if mc.Secure != nil {
 		return *mc.Secure
 	}
 	return defaultValue
 }
 
+func (mc *MetricsConfig) GetTemporality() metricsdk.TemporalitySelector {
+	switch mc.Temporality {
+	case MetricsTemporalityCumulative:
+		return func(metricsdk.InstrumentKind) metricdata.Temporality {
+			return metricdata.CumulativeTemporality
+		}
+	case MetricsTemporalityDelta:
+		return func(metricsdk.InstrumentKind) metricdata.Temporality {
+			return metricdata.DeltaTemporality
+		}
+	default:
+		return metricsdk.DefaultTemporalitySelector
+	}
+}
+
+// WorkflowRestrictions contains restrictions for workflow execution
 type WorkflowRestrictions struct {
+	// TemplateReferencing controls how templates can be referenced
 	TemplateReferencing TemplateReferencing `json:"templateReferencing,omitempty"`
 }
 
+// TemplateReferencing defines how templates can be referenced in workflows
 type TemplateReferencing string
 
 const (
+	// TemplateReferencingStrict requires templates to be referenced, not embedded
 	TemplateReferencingStrict TemplateReferencing = "Strict"
+	// TemplateReferencingSecure requires templates to be referenced and prevents spec changes
 	TemplateReferencingSecure TemplateReferencing = "Secure"
 )
 

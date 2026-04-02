@@ -6,7 +6,7 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 )
 
-func SignificantPodChange(from *apiv1.Pod, to *apiv1.Pod) bool {
+func significantPodChange(from *apiv1.Pod, to *apiv1.Pod) bool {
 	return os.Getenv("ALL_POD_CHANGES_SIGNIFICANT") == "true" ||
 		from.Spec.NodeName != to.Spec.NodeName ||
 		from.Status.Phase != to.Status.Phase ||

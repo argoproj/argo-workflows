@@ -8,9 +8,10 @@ import (
 	"github.com/jcmturner/gokrb5/v8/config"
 )
 
-func createHDFSClient(addresses []string, user string, krbOptions *KrbOptions) (*hdfs.Client, error) {
+func createHDFSClient(addresses []string, user string, dataTransferProtection string, krbOptions *KrbOptions) (*hdfs.Client, error) {
 	options := hdfs.ClientOptions{
-		Addresses: addresses,
+		Addresses:              addresses,
+		DataTransferProtection: dataTransferProtection,
 	}
 
 	if krbOptions != nil {
@@ -34,9 +35,9 @@ func createKrbClient(krbOptions *KrbOptions) (*krb.Client, error) {
 	}
 
 	if krbOptions.CCacheOptions != nil {
-		client, err := krb.NewFromCCache(&krbOptions.CCacheOptions.CCache, krbConfig)
-		if err != nil {
-			return nil, err
+		client, cacheErr := krb.NewFromCCache(&krbOptions.CCacheOptions.CCache, krbConfig)
+		if cacheErr != nil {
+			return nil, cacheErr
 		}
 		return client, nil
 	} else if krbOptions.KeytabOptions != nil {
@@ -53,5 +54,5 @@ func createKrbClient(krbOptions *KrbOptions) (*krb.Client, error) {
 		return client, nil
 	}
 
-	return nil, fmt.Errorf("Failed to get a Kerberos client")
+	return nil, fmt.Errorf("failed to get a kerberos client")
 }

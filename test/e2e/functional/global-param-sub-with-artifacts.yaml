@@ -21,6 +21,6 @@ spec:
         path: /tmp/foo.txt
         mode: 0644
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: ["cat"]
       args: ["/tmp/foo.txt"]

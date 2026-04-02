@@ -3,10 +3,10 @@
 package v1alpha1
 
 import (
-	v1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
+	workflowv1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 )
 
 // WorkflowTaskSetLister helps list WorkflowTaskSets.
@@ -14,7 +14,7 @@ import (
 type WorkflowTaskSetLister interface {
 	// List lists all WorkflowTaskSets in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha1.WorkflowTaskSet, err error)
+	List(selector labels.Selector) (ret []*workflowv1alpha1.WorkflowTaskSet, err error)
 	// WorkflowTaskSets returns an object that can list and get WorkflowTaskSets.
 	WorkflowTaskSets(namespace string) WorkflowTaskSetNamespaceLister
 	WorkflowTaskSetListerExpansion
@@ -22,25 +22,17 @@ type WorkflowTaskSetLister interface {
 
 // workflowTaskSetLister implements the WorkflowTaskSetLister interface.
 type workflowTaskSetLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*workflowv1alpha1.WorkflowTaskSet]
 }
 
 // NewWorkflowTaskSetLister returns a new WorkflowTaskSetLister.
 func NewWorkflowTaskSetLister(indexer cache.Indexer) WorkflowTaskSetLister {
-	return &workflowTaskSetLister{indexer: indexer}
-}
-
-// List lists all WorkflowTaskSets in the indexer.
-func (s *workflowTaskSetLister) List(selector labels.Selector) (ret []*v1alpha1.WorkflowTaskSet, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha1.WorkflowTaskSet))
-	})
-	return ret, err
+	return &workflowTaskSetLister{listers.New[*workflowv1alpha1.WorkflowTaskSet](indexer, workflowv1alpha1.Resource("workflowtaskset"))}
 }
 
 // WorkflowTaskSets returns an object that can list and get WorkflowTaskSets.
 func (s *workflowTaskSetLister) WorkflowTaskSets(namespace string) WorkflowTaskSetNamespaceLister {
-	return workflowTaskSetNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return workflowTaskSetNamespaceLister{listers.NewNamespaced[*workflowv1alpha1.WorkflowTaskSet](s.ResourceIndexer, namespace)}
 }
 
 // WorkflowTaskSetNamespaceLister helps list and get WorkflowTaskSets.
@@ -48,36 +40,15 @@ func (s *workflowTaskSetLister) WorkflowTaskSets(namespace string) WorkflowTaskS
 type WorkflowTaskSetNamespaceLister interface {
 	// List lists all WorkflowTaskSets in the indexer for a given namespace.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha1.WorkflowTaskSet, err error)
+	List(selector labels.Selector) (ret []*workflowv1alpha1.WorkflowTaskSet, err error)
 	// Get retrieves the WorkflowTaskSet from the indexer for a given namespace and name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1alpha1.WorkflowTaskSet, error)
+	Get(name string) (*workflowv1alpha1.WorkflowTaskSet, error)
 	WorkflowTaskSetNamespaceListerExpansion
 }
 
 // workflowTaskSetNamespaceLister implements the WorkflowTaskSetNamespaceLister
 // interface.
 type workflowTaskSetNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all WorkflowTaskSets in the indexer for a given namespace.
-func (s workflowTaskSetNamespaceLister) List(selector labels.Selector) (ret []*v1alpha1.WorkflowTaskSet, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha1.WorkflowTaskSet))
-	})
-	return ret, err
-}
-
-// Get retrieves the WorkflowTaskSet from the indexer for a given namespace and name.
-func (s workflowTaskSetNamespaceLister) Get(name string) (*v1alpha1.WorkflowTaskSet, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1alpha1.Resource("workflowtaskset"), name)
-	}
-	return obj.(*v1alpha1.WorkflowTaskSet), nil
+	listers.ResourceIndexer[*workflowv1alpha1.WorkflowTaskSet]
 }

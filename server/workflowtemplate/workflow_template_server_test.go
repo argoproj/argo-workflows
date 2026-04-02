@@ -4,18 +4,26 @@ import (
 	"context"
 	"testing"
 
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+
 	"github.com/go-jose/go-jose/v3/jwt"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	authorizationv1 "k8s.io/api/authorization/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
+	k8stesting "k8s.io/client-go/testing"
 
-	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	wftFake "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo-workflows/v3/server/auth"
-	"github.com/argoproj/argo-workflows/v3/server/auth/types"
-	"github.com/argoproj/argo-workflows/v3/util/instanceid"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	workflowtemplatepkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflowtemplate"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	wftFake "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo-workflows/v4/server/auth"
+	"github.com/argoproj/argo-workflows/v4/server/auth/types"
+	"github.com/argoproj/argo-workflows/v4/server/clusterworkflowtemplate"
+	"github.com/argoproj/argo-workflows/v4/util/instanceid"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/creator"
 )
 
 const unlabelled = `{
@@ -160,38 +168,46 @@ const wftStr3 = `{
   }
 }`
 
-func getWorkflowTemplateServer() (workflowtemplatepkg.WorkflowTemplateServiceServer, context.Context) {
+const userEmailLabel = "my-sub.at.your.org"
+
+func getWorkflowTemplateServer(t *testing.T) (workflowtemplatepkg.WorkflowTemplateServiceServer, context.Context) {
+	t.Helper()
 	var unlabelledObj, wftObj1, wftObj2 v1alpha1.WorkflowTemplate
 	v1alpha1.MustUnmarshal(unlabelled, &unlabelledObj)
 	v1alpha1.MustUnmarshal(wftStr2, &wftObj1)
 	v1alpha1.MustUnmarshal(wftStr3, &wftObj2)
-	kubeClientSet := fake.NewSimpleClientset()
-	wfClientset := wftFake.NewSimpleClientset(&unlabelledObj, &wftObj1, &wftObj2)
-	ctx := context.WithValue(context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
-	return NewWorkflowTemplateServer(instanceid.NewService("my-instanceid")), ctx
+	kubeClientSet := fake.NewClientset()
+	kubeClientSet.PrependReactor("create", "selfsubjectaccessreviews", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		return true, &authorizationv1.SelfSubjectAccessReview{
+			Status: authorizationv1.SubjectAccessReviewStatus{Allowed: true},
+		}, nil
+	})
+	wfClientset := wftFake.NewClientset(&unlabelledObj, &wftObj1, &wftObj2)
+	ctx := context.WithValue(context.WithValue(context.WithValue(logging.TestContext(t.Context()), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}, Email: "my-sub@your.org"})
+	wftmplStore := NewClientStore()
+	cwftmplStore := clusterworkflowtemplate.NewClientStore()
+	return NewServer(instanceid.NewService("my-instanceid"), wftmplStore, cwftmplStore), ctx
 }
 
 func TestWorkflowTemplateServer_CreateWorkflowTemplate(t *testing.T) {
-	server, ctx := getWorkflowTemplateServer()
+	server, ctx := getWorkflowTemplateServer(t)
 	t.Run("Without parameter values", func(t *testing.T) {
 		var wftReq workflowtemplatepkg.WorkflowTemplateCreateRequest
 		v1alpha1.MustUnmarshal(wftStr1, &wftReq)
 		wftReq.Template.Name = "foo-without-param-values"
 		wftReq.Template.Spec.Arguments.Parameters[0].Value = nil
 		wftRsp, err := server.CreateWorkflowTemplate(ctx, &wftReq)
-		if assert.NoError(t, err) {
-			assert.NotNil(t, wftRsp)
-			assert.Equal(t, "message", wftRsp.Spec.Arguments.Parameters[0].Name)
-			assert.Nil(t, wftRsp.Spec.Arguments.Parameters[0].Value)
-		}
+		require.NoError(t, err)
+		assert.NotNil(t, wftRsp)
+		assert.Equal(t, "message", wftRsp.Spec.Arguments.Parameters[0].Name)
+		assert.Nil(t, wftRsp.Spec.Arguments.Parameters[0].Value)
 	})
 	t.Run("Labelled", func(t *testing.T) {
 		var wftReq workflowtemplatepkg.WorkflowTemplateCreateRequest
 		v1alpha1.MustUnmarshal(wftStr1, &wftReq)
 		wftRsp, err := server.CreateWorkflowTemplate(ctx, &wftReq)
-		if assert.NoError(t, err) {
-			assert.NotNil(t, wftRsp)
-		}
+		require.NoError(t, err)
+		assert.NotNil(t, wftRsp)
 	})
 	t.Run("Unlabelled", func(t *testing.T) {
 		var wftReq workflowtemplatepkg.WorkflowTemplateCreateRequest
@@ -199,78 +215,100 @@ func TestWorkflowTemplateServer_CreateWorkflowTemplate(t *testing.T) {
 		wftReq.Namespace = "default"
 		wftReq.Template.Name = "foo"
 		wftRsp, err := server.CreateWorkflowTemplate(ctx, &wftReq)
-		if assert.NoError(t, err) {
-			assert.NotNil(t, wftRsp)
-			assert.Contains(t, wftRsp.Labels, common.LabelKeyControllerInstanceID)
-			assert.Contains(t, wftRsp.Labels, common.LabelKeyCreator)
-		}
+		require.NoError(t, err)
+		assert.NotNil(t, wftRsp)
+		assert.Contains(t, wftRsp.Labels, common.LabelKeyControllerInstanceID)
+		assert.Contains(t, wftRsp.Labels, common.LabelKeyCreator)
+		assert.Equal(t, userEmailLabel, wftRsp.Labels[common.LabelKeyCreatorEmail])
 	})
 }
 
 func TestWorkflowTemplateServer_GetWorkflowTemplate(t *testing.T) {
-	server, ctx := getWorkflowTemplateServer()
+	server, ctx := getWorkflowTemplateServer(t)
 	t.Run("Labelled", func(t *testing.T) {
 		wftRsp, err := server.GetWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateGetRequest{Name: "workflow-template-whalesay-template2", Namespace: "default"})
-		if assert.NoError(t, err) {
-			assert.NotNil(t, wftRsp)
-			assert.Equal(t, "workflow-template-whalesay-template2", wftRsp.Name)
-			assert.Equal(t, "message", wftRsp.Spec.Arguments.Parameters[0].Name)
-			assert.Equal(t, "message description", wftRsp.Spec.Arguments.Parameters[0].Description.String())
-		}
+		require.NoError(t, err)
+		assert.NotNil(t, wftRsp)
+		assert.Equal(t, "workflow-template-whalesay-template2", wftRsp.Name)
+		assert.Equal(t, "message", wftRsp.Spec.Arguments.Parameters[0].Name)
+		assert.Equal(t, "message description", wftRsp.Spec.Arguments.Parameters[0].Description.String())
 	})
 	t.Run("Unlabelled", func(t *testing.T) {
 		_, err := server.GetWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateGetRequest{Name: "unlabelled", Namespace: "default"})
-		assert.Error(t, err)
+		require.Error(t, err)
+	})
+	t.Run("Unauthorized", func(t *testing.T) {
+		kubeClientSet := fake.NewClientset()
+		kubeClientSet.PrependReactor("create", "selfsubjectaccessreviews", func(action k8stesting.Action) (bool, runtime.Object, error) {
+			return true, &authorizationv1.SelfSubjectAccessReview{
+				Status: authorizationv1.SubjectAccessReviewStatus{Allowed: false},
+			}, nil
+		})
+		var wftObj1 v1alpha1.WorkflowTemplate
+		v1alpha1.MustUnmarshal(wftStr2, &wftObj1)
+		wfClientset := wftFake.NewClientset(&wftObj1)
+		ctx := context.WithValue(context.WithValue(context.WithValue(logging.TestContext(t.Context()),
+			auth.WfKey, wfClientset),
+			auth.KubeKey, kubeClientSet),
+			auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
+		wftmplStore := NewClientStore()
+		cwftmplStore := clusterworkflowtemplate.NewClientStore()
+		server := NewServer(instanceid.NewService("my-instanceid"), wftmplStore, cwftmplStore)
+		_, err := server.GetWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateGetRequest{
+			Name:      "workflow-template-whalesay-template2",
+			Namespace: "default",
+		})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "PermissionDenied")
 	})
 }
 
 func TestWorkflowTemplateServer_ListWorkflowTemplates(t *testing.T) {
-	server, ctx := getWorkflowTemplateServer()
+	server, ctx := getWorkflowTemplateServer(t)
 	wftRsp, err := server.ListWorkflowTemplates(ctx, &workflowtemplatepkg.WorkflowTemplateListRequest{Namespace: "default"})
-	if assert.NoError(t, err) {
-		assert.Len(t, wftRsp.Items, 2)
-	}
+	require.NoError(t, err)
+	assert.Len(t, wftRsp.Items, 2)
 	wftRsp, err = server.ListWorkflowTemplates(ctx, &workflowtemplatepkg.WorkflowTemplateListRequest{Namespace: "test"})
-	if assert.NoError(t, err) {
-		assert.Empty(t, wftRsp.Items)
-	}
+	require.NoError(t, err)
+	assert.Empty(t, wftRsp.Items)
 }
 
 func TestWorkflowTemplateServer_DeleteWorkflowTemplate(t *testing.T) {
-	server, ctx := getWorkflowTemplateServer()
+	server, ctx := getWorkflowTemplateServer(t)
 	t.Run("Labelled", func(t *testing.T) {
 		_, err := server.DeleteWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateDeleteRequest{Namespace: "default", Name: "workflow-template-whalesay-template2"})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	})
 	t.Run("Unlabelled", func(t *testing.T) {
 		_, err := server.DeleteWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateDeleteRequest{Namespace: "default", Name: "unlabelled"})
-		assert.Error(t, err)
+		require.Error(t, err)
 	})
 }
 
 func TestWorkflowTemplateServer_LintWorkflowTemplate(t *testing.T) {
-	server, ctx := getWorkflowTemplateServer()
+	server, ctx := getWorkflowTemplateServer(t)
 	tmpl, err := server.LintWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateLintRequest{
 		Template: &v1alpha1.WorkflowTemplate{},
 	})
-	if assert.NoError(t, err) {
-		assert.Contains(t, tmpl.Labels, common.LabelKeyControllerInstanceID)
-	}
+	require.NoError(t, err)
+	assert.Contains(t, tmpl.Labels, common.LabelKeyControllerInstanceID)
 }
 
 func TestWorkflowTemplateServer_UpdateWorkflowTemplate(t *testing.T) {
-	server, ctx := getWorkflowTemplateServer()
+	server, ctx := getWorkflowTemplateServer(t)
 	t.Run("Labelled", func(t *testing.T) {
 		var wftObj1 v1alpha1.WorkflowTemplate
 		v1alpha1.MustUnmarshal(wftStr2, &wftObj1)
-		wftObj1.Spec.Templates[0].Container.Image = "alpine:latest"
+		wftObj1.Spec.Templates[0].Container.Image = "alpine:3.23"
 		wftRsp, err := server.UpdateWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateUpdateRequest{
 			Namespace: "default",
 			Template:  &wftObj1,
 		})
-		if assert.NoError(t, err) {
-			assert.Equal(t, "alpine:latest", wftRsp.Spec.Templates[0].Container.Image)
-		}
+		require.NoError(t, err)
+		assert.Contains(t, wftRsp.Labels, common.LabelKeyActor)
+		assert.Equal(t, string(creator.ActionUpdate), wftRsp.Labels[common.LabelKeyAction])
+		assert.Equal(t, userEmailLabel, wftRsp.Labels[common.LabelKeyActorEmail])
+		assert.Equal(t, "alpine:3.23", wftRsp.Spec.Templates[0].Container.Image)
 	})
 	t.Run("Unlabelled", func(t *testing.T) {
 		_, err := server.UpdateWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateUpdateRequest{
@@ -278,6 +316,6 @@ func TestWorkflowTemplateServer_UpdateWorkflowTemplate(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{Name: "unlabelled"},
 			},
 		})
-		assert.Error(t, err)
+		require.Error(t, err)
 	})
 }

@@ -150,6 +150,8 @@ spec:
 
   # This template is the same as in the previous example
   - name: cat-os-release
+    annotations: 
+      workflows.argoproj.io/display-name: "os-{{inputs.parameters.image}}-{{inputs.parameters.tag}}" # this sets a custom name for the node in the UI, based on the template's parameters
     inputs:
       parameters:
       - name: image
@@ -188,7 +190,7 @@ spec:
   # Generate a list of numbers in JSON format
   - name: gen-number-list
     script:
-      image: python:alpine3.6
+      image: python:alpine3.23
       command: [python]
       source: |
         import json
@@ -200,7 +202,7 @@ spec:
       parameters:
       - name: seconds
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo sleeping for {{inputs.parameters.seconds}} seconds; sleep {{inputs.parameters.seconds}}; echo done"]
 ```
@@ -243,7 +245,7 @@ spec:
       - name: index
     # The output must be a valid JSON
     script:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh]
       source: |
         cat <<EOF
@@ -258,7 +260,7 @@ spec:
       - name: aggregate-results
         value: 'no-value'
     script:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh]
       source: |
         echo 'inputs.parameters.aggregate-results: "{{inputs.parameters.aggregate-results}}"'

@@ -2,11 +2,10 @@ package executorplugin
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
 
-	plugin "github.com/argoproj/argo-workflows/v3/workflow/util/plugins"
+	"github.com/argoproj/argo-workflows/v4/workflow/util/plugin"
 )
 
 func NewBuildCommand() *cobra.Command {
@@ -14,11 +13,8 @@ func NewBuildCommand() *cobra.Command {
 		Use:          "build DIR",
 		Short:        "build an executor plugin",
 		SilenceUsage: true,
+		Args:         cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if len(args) != 1 {
-				cmd.HelpFunc()(cmd, args)
-				os.Exit(1)
-			}
 			pluginDir := args[0]
 			plug, err := loadPluginManifest(pluginDir)
 			if err != nil {

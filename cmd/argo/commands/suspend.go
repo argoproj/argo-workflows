@@ -2,12 +2,11 @@ package commands
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
-	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/client"
+	workflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow"
 )
 
 func NewSuspendCommand() *cobra.Command {
@@ -21,20 +20,25 @@ func NewSuspendCommand() *cobra.Command {
 # Suspend the latest workflow:
   argo suspend @latest
 `,
-		Run: func(cmd *cobra.Command, args []string) {
-			ctx, apiClient := client.NewAPIClient(cmd.Context())
-			serviceClient := apiClient.NewWorkflowServiceClient()
-			namespace := client.Namespace()
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
+			ctx, apiClient, err := client.NewAPIClient(ctx)
+			if err != nil {
+				return err
+			}
+			serviceClient := apiClient.NewWorkflowServiceClient(ctx)
+			namespace := client.Namespace(ctx)
 			for _, wfName := range args {
 				_, err := serviceClient.SuspendWorkflow(ctx, &workflowpkg.WorkflowSuspendRequest{
 					Name:      wfName,
 					Namespace: namespace,
 				})
 				if err != nil {
-					log.Fatalf("Failed to suspended %s: %+v", wfName, err)
+					return fmt.Errorf("failed to suspend %s: %w", wfName, err)
 				}
 				fmt.Printf("workflow %s suspended\n", wfName)
 			}
+			return nil
 		},
 	}
 	return command

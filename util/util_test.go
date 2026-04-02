@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
 func TestGenerateFieldSelectorFromWorkflowName(t *testing.T) {
@@ -62,7 +62,7 @@ func TestRecoverWorkflowNameFromSelectorString(t *testing.T) {
 		})
 	}
 	name := RecoverWorkflowNameFromSelectorStringIfAny("whatever=whalesay")
-	assert.Equal(t, "", name)
+	assert.Empty(t, name)
 	assert.NotPanics(t, func() {
 		_ = RecoverWorkflowNameFromSelectorStringIfAny("whatever")
 	})

@@ -34,7 +34,7 @@ func TopologicalSorting(graph []*TopologicalSortingNode) ([]*TopologicalSortingN
 	for nodeName, priorNodeCount := range priorNodeCountMap {
 		if priorNodeCount == 0 {
 			queue[tail] = nodeNameMap[nodeName]
-			tail += 1
+			tail++
 		}
 	}
 
@@ -47,12 +47,12 @@ func TopologicalSorting(graph []*TopologicalSortingNode) ([]*TopologicalSortingN
 			if priorNodeCountMap[next] > 0 {
 				if priorNodeCountMap[next] == 1 {
 					queue[tail] = nodeNameMap[next]
-					tail += 1
+					tail++
 				}
-				priorNodeCountMap[next] -= 1
+				priorNodeCountMap[next]--
 			}
 		}
-		head += 1
+		head++
 	}
 
 	return queue, nil

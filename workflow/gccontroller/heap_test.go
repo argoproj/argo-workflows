@@ -9,7 +9,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	testutil "github.com/argoproj/argo-workflows/v3/test/util"
+	testutil "github.com/argoproj/argo-workflows/v4/test/util"
 )
 
 func TestPriorityQueue(t *testing.T) {
@@ -51,10 +51,10 @@ metadata:
 	heap.Push(queue, wf)
 	assert.Equal(t, 3, queue.Len())
 	first := heap.Pop(queue).(*unstructured.Unstructured)
-	assert.Equal(t, now.Add(-time.Second).Unix(), first.GetCreationTimestamp().Time.Unix())
+	assert.Equal(t, now.Add(-time.Second).Unix(), first.GetCreationTimestamp().Unix())
 	assert.Equal(t, "bad-baseline-oldest", first.GetName())
-	assert.Equal(t, now.Unix(), heap.Pop(queue).(*unstructured.Unstructured).GetCreationTimestamp().Time.Unix())
-	assert.Equal(t, now.Add(time.Second).Unix(), heap.Pop(queue).(*unstructured.Unstructured).GetCreationTimestamp().Time.Unix())
+	assert.Equal(t, now.Unix(), heap.Pop(queue).(*unstructured.Unstructured).GetCreationTimestamp().Unix())
+	assert.Equal(t, now.Add(time.Second).Unix(), heap.Pop(queue).(*unstructured.Unstructured).GetCreationTimestamp().Unix())
 	assert.Equal(t, 0, queue.Len())
 }
 
@@ -90,5 +90,4 @@ metadata:
 	assert.Equal(t, 0, queue.Len())
 	heap.Push(queue, wf)
 	assert.Equal(t, 1, queue.Len())
-
 }

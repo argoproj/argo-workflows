@@ -1,0 +1,57 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: double-fan-out-using-param-
+spec:
+  entrypoint: main-dag
+  templates:
+    - inputs:
+        parameters:
+          - name: param1
+      name: operation
+      outputs:
+        parameters:
+          - name: output1
+            valueFrom:
+              path: /tmp/fan_out.json
+      container:
+        image: argoproj/argosay:v2
+        args: ["echo", "{{inputs.parameters.param1}}", "/tmp/fan_out.json"]
+    - dag:
+        tasks:
+          - arguments:
+              parameters:
+                - name: param1
+                  value: '{{item}}'
+            name: task3
+            template: operation
+            withParam: '{{inputs.parameters.param1}}'
+      inputs:
+        parameters:
+          - name: param1
+      name: secondary-dag
+    - dag:
+        tasks:
+          - arguments:
+              parameters:
+                - name: param1
+                  value: '[[{"key1": "value1"}, {"key2": "value2"}, {"key3": "value3"}], [{"key4": "value4"}, {"key5": "value5"}]]'
+            name: task1
+            template: operation
+          - arguments:
+              parameters:
+                - name: param1
+                  value: '{{item}}'
+            depends: task1
+            name: task2
+            template: operation
+            withParam: '{{tasks.task1.outputs.parameters.output1}}'
+          - arguments:
+              parameters:
+                - name: param1
+                  value: '{{item}}'
+            depends: task2
+            name: task3-dag
+            template: secondary-dag
+            withParam: '{{tasks.task2.outputs.parameters.output1}}'
+      name: main-dag

@@ -1,17 +1,20 @@
-//go:build !windows
-
 package common
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
+	"runtime"
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
 type fakeArtifactDriver struct {
@@ -29,31 +32,37 @@ func (a *fakeArtifactDriver) getMockedErr(funcName string) error {
 	return err
 }
 
-func (a *fakeArtifactDriver) Load(_ *wfv1.Artifact, path string) error {
+func (a *fakeArtifactDriver) Load(ctx context.Context, _ *wfv1.Artifact, path string) error {
 	err := a.getMockedErr("Load")
 	if err == nil {
 		// actually write a file to disk
-		_, err := os.Create(path)
-		if err != nil {
+		_, createErr := os.Create(path)
+		if createErr != nil {
 			panic(fmt.Sprintf("can't create file at path %s", path))
 		}
 		return nil
-	} else {
-		return err
 	}
-
+	return err
 }
 
-func (a *fakeArtifactDriver) OpenStream(_ *wfv1.Artifact) (io.ReadCloser, error) {
+func (a *fakeArtifactDriver) OpenStream(ctx context.Context, _ *wfv1.Artifact) (io.ReadCloser, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (a *fakeArtifactDriver) Save(_ string, _ *wfv1.Artifact) error {
+func (a *fakeArtifactDriver) Save(ctx context.Context, path string, _ *wfv1.Artifact) error {
 	return fmt.Errorf("not implemented")
 }
 
-func (a *fakeArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
+func (a *fakeArtifactDriver) Delete(ctx context.Context, _ *wfv1.Artifact) error {
+	return nil
+}
+
+func (a *fakeArtifactDriver) ListObjects(ctx context.Context, artifact *wfv1.Artifact) ([]string, error) {
 	return nil, fmt.Errorf("not implemented")
+}
+
+func (a *fakeArtifactDriver) IsDirectory(ctx context.Context, _ *wfv1.Artifact) (bool, error) {
+	return false, nil
 }
 
 func filteredFiles(t *testing.T) ([]os.DirEntry, error) {
@@ -73,6 +82,9 @@ func filteredFiles(t *testing.T) ([]os.DirEntry, error) {
 }
 
 func TestLoadToStream(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("disabled on windows because artifacts server isn't run in windows and the test fails.")
+	}
 	tests := map[string]struct {
 		artifactDriver ArtifactDriver
 		errMsg         string
@@ -95,30 +107,28 @@ func TestLoadToStream(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-
 			// need to verify that a new file doesn't get written so check the /tmp directory ahead of time
 			filesBefore, err := filteredFiles(t)
 			if err != nil {
 				panic(err)
 			}
 
-			stream, err := LoadToStream(&wfv1.Artifact{}, tc.artifactDriver)
+			stream, err := LoadToStream(logging.TestContext(t.Context()), &wfv1.Artifact{}, tc.artifactDriver)
 			if tc.errMsg == "" {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.NotNil(t, stream)
 				stream.Close()
 
 				// make sure the new file got deleted when we called stream.Close() above
-				filesAfter, err := filteredFiles(t)
-				if err != nil {
-					panic(err)
+				filesAfter, filesErr := filteredFiles(t)
+				if filesErr != nil {
+					panic(filesErr)
 				}
-				assert.Equal(t, len(filesBefore), len(filesAfter))
+				assert.Len(t, filesAfter, len(filesBefore))
 			} else {
-				assert.Error(t, err)
+				require.Error(t, err)
 				assert.Equal(t, tc.errMsg, err.Error())
 			}
 		})
 	}
-
 }

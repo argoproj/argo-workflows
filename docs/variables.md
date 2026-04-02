@@ -78,8 +78,6 @@ Map a list:
 map([1, 2], { # * 2 })
 ```
 
-We provide some core functions:
-
 Cast to int:
 
 ```text
@@ -98,11 +96,16 @@ Cast to string:
 string(1)
 ```
 
+We provide some additional functions:
+
 Convert to a JSON string (needed for `withParam`):
 
 ```text
 toJson([1, 2])
 ```
+
+`toJson` is the same as [expr's built-in `toJSON` function](https://expr-lang.org/docs/language-definition#toJSON),
+except `toJson` does not add indentation.
 
 Extract data from JSON:
 
@@ -145,11 +148,13 @@ sprig.trim(inputs.parameters['my-string-param'])
 | `steps.<STEPNAME>.exitCode` | Exit code of any previous script or container step |
 | `steps.<STEPNAME>.startedAt` | Time-stamp when the step started |
 | `steps.<STEPNAME>.finishedAt` | Time-stamp when the step finished |
-| `steps.<TASKNAME>.hostNodeName` | Host node where task ran (available from version 3.5) |
-| `steps.<STEPNAME>.outputs.result` | Output result of any previous container or script step |
+| `steps.<STEPNAME>.hostNodeName` | Host node where step ran (available from version 3.5) |
+| `steps.<STEPNAME>.outputs.result` | Output result of any previous container, script, or HTTP step |
 | `steps.<STEPNAME>.outputs.parameters` | When the previous step uses `withItems` or `withParams`, this contains a JSON array of the output parameter maps of each invocation |
 | `steps.<STEPNAME>.outputs.parameters.<NAME>` | Output parameter of any previous step. When the previous step uses `withItems` or `withParams`, this contains a JSON array of the output parameter values of each invocation |
 | `steps.<STEPNAME>.outputs.artifacts.<NAME>` | Output artifact of any previous step |
+
+**Note:** If a step was Skipped (its `when` condition was false), output parameters and results from that step resolve to empty strings.
 
 ### DAG Templates
 
@@ -163,10 +168,12 @@ sprig.trim(inputs.parameters['my-string-param'])
 | `tasks.<TASKNAME>.startedAt` | Time-stamp when the task started |
 | `tasks.<TASKNAME>.finishedAt` | Time-stamp when the task finished |
 | `tasks.<TASKNAME>.hostNodeName` | Host node where task ran (available from version 3.5) |
-| `tasks.<TASKNAME>.outputs.result` | Output result of any previous container or script task |
+| `tasks.<TASKNAME>.outputs.result` | Output result of any previous container, script, or HTTP task |
 | `tasks.<TASKNAME>.outputs.parameters` | When the previous task uses `withItems` or `withParams`, this contains a JSON array of the output parameter maps of each invocation |
 | `tasks.<TASKNAME>.outputs.parameters.<NAME>` | Output parameter of any previous task. When the previous task uses `withItems` or `withParams`, this contains a JSON array of the output parameter values of each invocation |
 | `tasks.<TASKNAME>.outputs.artifacts.<NAME>` | Output artifact of any previous task |
+
+**Note:** If a task was Skipped (its `when` condition was false) or Omitted (its `depends` condition was not satisfied), output parameters and results from that task resolve to empty strings.
 
 ### HTTP Templates
 
@@ -183,6 +190,22 @@ Only available for `successCondition`
 | `response.statusCode` | Response status code (`int`) |
 | `response.body` | Response body (`string`) |
 | `response.headers` | Response headers (`map[string][]string`) |
+
+### CronWorkflows
+
+> v3.6 and after
+
+| Variable | Description|
+|----------|------------|
+| `cronworkflow.name` | Name of the CronWorkflow (`string`) |
+| `cronworkflow.namespace` | Namespace of the CronWorkflow (`string`) |
+| `cronworkflow.labels.<NAME>` | CronWorkflow labels (`string`) |
+| `cronworkflow.labels.json` | CronWorkflow labels as a JSON string (`string`) |
+| `cronworkflow.annotations.<NAME>` | CronWorkflow annotations (`string`) |
+| `cronworkflow.annotations.json` | CronWorkflow annotations as a JSON string (`string`) |
+| `cronworkflow.lastScheduledTime` | The time since this workflow was last scheduled, value is nil on first run (`*time.Time`) |
+| `cronworkflow.failed` | Counts how many times child workflows failed |
+| `cronworkflow.succeeded` | Counts how many times child workflows succeeded |
 
 ### `RetryStrategy`
 
@@ -203,6 +226,7 @@ Note: These variables evaluate to a string type. If using advanced expressions, 
 |----------|------------|
 | `pod.name` | Pod name of the container/script |
 | `retries` | The retry number of the container/script if `retryStrategy` is specified |
+| `lastRetry` | The last retry is a structure that contains the fields `exitCode`, `status`, `duration` and `message` of the last retry |
 | `inputs.artifacts.<NAME>.path` | Local path of the input artifact |
 | `outputs.artifacts.<NAME>.path` | Local path of the output artifact |
 | `outputs.parameters.<NAME>.path` | Local path of the output parameter |
@@ -275,17 +299,6 @@ For `Template`-level metrics:
 |----------|------------|
 | `workflow.status` | Workflow status. One of: `Succeeded`, `Failed`, `Error` |
 | `workflow.failures` | A list of JSON objects containing information about nodes that failed or errored during execution. Available fields: `displayName`, `message`, `templateName`, `phase`, `podName`, and `finishedAt`. |
-
-### `stopStrategy`
-
-> v3.6 and after
-
-When using the `condition` field within the [`stopStrategy` of a `CronWorkflow`](cron-workflows.md#automatically-stopping-a-cronworkflow), special variables are available.
-
-| Variable | Description|
-|----------|------------|
-| `failed` | Counts how many times child workflows failed |
-| `succeeded` | Counts how many times child workflows succeeded |
 
 ### Knowing where you are
 

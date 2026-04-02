@@ -1,18 +1,17 @@
 package commands
 
 import (
+	"errors"
 	"fmt"
-	"os"
 
-	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
-	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/client"
+	workflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
 // NewDeleteCommand returns a new instance of an `argo delete` command
@@ -23,6 +22,10 @@ func NewDeleteCommand() *cobra.Command {
 		allNamespaces bool
 		dryRun        bool
 		force         bool
+		hasFilterFlag = func() bool {
+			return all || allNamespaces || flags.completed || flags.resubmitted || flags.prefix != "" ||
+				flags.labels != "" || flags.fields != "" || flags.finishedBefore != "" || len(flags.status) > 0
+		}
 	)
 	command := &cobra.Command{
 		Use:   "delete [--dry-run] [WORKFLOW...|[--all] [--older] [--completed] [--resubmitted] [--prefix PREFIX] [--selector SELECTOR] [--force] [--status STATUS] ]",
@@ -35,35 +38,39 @@ func NewDeleteCommand() *cobra.Command {
 
   argo delete @latest
 `,
-		Run: func(cmd *cobra.Command, args []string) {
-			hasFilterFlag := all || allNamespaces || flags.completed || flags.resubmitted || flags.prefix != "" ||
-				flags.labels != "" || flags.fields != "" || flags.finishedBefore != "" || len(flags.status) > 0
-
-			if len(args) == 0 && !hasFilterFlag {
-				cmd.HelpFunc()(cmd, args)
-				os.Exit(1)
+		Args: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 0 && !hasFilterFlag() {
+				return errors.New("requires either a workflow or other argument")
 			}
-
-			ctx, apiClient := client.NewAPIClient(cmd.Context())
-			serviceClient := apiClient.NewWorkflowServiceClient()
+			return nil
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
+			ctx, apiClient, err := client.NewAPIClient(ctx)
+			if err != nil {
+				return err
+			}
+			serviceClient := apiClient.NewWorkflowServiceClient(ctx)
 			var workflows wfv1.Workflows
 			if !allNamespaces {
-				flags.namespace = client.Namespace()
+				flags.namespace = client.Namespace(ctx)
 			}
 			for _, name := range args {
 				workflows = append(workflows, wfv1.Workflow{
 					ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: flags.namespace},
 				})
 			}
-			if hasFilterFlag {
+			if hasFilterFlag() {
 				listed, err := listWorkflows(ctx, serviceClient, flags)
-				errors.CheckError(err)
+				if err != nil {
+					return err
+				}
 				workflows = append(workflows, listed...)
 			}
 
 			if len(workflows) == 0 {
 				fmt.Printf("No resources found\n")
-				return
+				return nil
 			}
 
 			for _, wf := range workflows {
@@ -73,13 +80,17 @@ func NewDeleteCommand() *cobra.Command {
 				}
 
 				_, err := serviceClient.DeleteWorkflow(ctx, &workflowpkg.WorkflowDeleteRequest{Name: wf.Name, Namespace: wf.Namespace, Force: force})
-				if err != nil && status.Code(err) == codes.NotFound {
-					fmt.Printf("Workflow '%s' not found\n", wf.Name)
-					continue
+				if err != nil {
+					if status.Code(err) == codes.NotFound {
+						fmt.Printf("Workflow '%s' not found\n", wf.Name)
+						continue
+					}
+					return err
 				}
-				errors.CheckError(err)
 				fmt.Printf("Workflow '%s' deleted\n", wf.Name)
 			}
+
+			return nil
 		},
 	}
 

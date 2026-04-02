@@ -12,11 +12,11 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
-var workflowName string = "testWF"
+var workflowName = "testWF"
 
 func init() {
 	// these values get used as part of determining node name and would normally be set as part of
@@ -54,9 +54,7 @@ func TestPrintNode(t *testing.T) {
 	nodeTemplateRefName := "testTemplateRef"
 	nodeID := "testID"
 	nodeMessage := "test"
-	getArgs := GetFlags{
-		Output: "",
-	}
+	getArgs := GetFlags{}
 	timestamp := metav1.Time{
 		Time: time.Now(),
 	}
@@ -105,7 +103,7 @@ func TestPrintNode(t *testing.T) {
 	testPrintNodeImpl(t, "", node, getArgs)
 
 	getArgs = GetFlags{
-		Output: "",
+		Output: EnumFlagValue{AllowedValues: []string{"short", "wide"}},
 	}
 
 	node.TemplateName = nodeTemplateName
@@ -124,13 +122,13 @@ func TestPrintNode(t *testing.T) {
 	expectedPodName = util.GeneratePodName(workflowName, nodeName, templateName, nodeID, util.GetPodNameVersion())
 	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s/%s\t%s\t%s\t%s\t%s\n", NodeTypeIconMap[wfv1.NodeTypeSuspend], nodeName, nodeTemplateRefName, nodeTemplateRefName, "", "", nodeMessage, ""), node, getArgs)
 
-	getArgs.Output = "wide"
+	require.NoError(t, getArgs.Output.Set("wide"))
 	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s/%s\t%s\t%s\t%s\t%s\t%s\t\n", NodeTypeIconMap[wfv1.NodeTypeSuspend], nodeName, nodeTemplateRefName, nodeTemplateRefName, "", "", getArtifactsString(node), nodeMessage, ""), node, getArgs)
 
 	node.Type = wfv1.NodeTypePod
 	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s/%s\t%s\t%s\t%s\t%s\t%s\t%s\n", JobStatusIconMap[wfv1.NodeRunning], nodeName, nodeTemplateRefName, nodeTemplateRefName, expectedPodName, "0s", getArtifactsString(node), nodeMessage, "", kubernetesNodeName), node, getArgs)
 
-	getArgs.Output = "short"
+	require.NoError(t, getArgs.Output.Set("short"))
 	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s/%s\t%s\t%s\t%s\t%s\n", JobStatusIconMap[wfv1.NodeRunning], nodeName, nodeTemplateRefName, nodeTemplateRefName, expectedPodName, "0s", nodeMessage, kubernetesNodeName), node, getArgs)
 
 	getArgs.Status = "foobar"
@@ -205,7 +203,7 @@ spec:
       - sh
       - -c
       - sleep 10
-      image: alpine:latest
+      image: alpine:3.23
     name: sleep
 status:
   conditions:

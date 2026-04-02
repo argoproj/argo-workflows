@@ -3,53 +3,62 @@ package commands
 import (
 	"context"
 	"fmt"
-	"os"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+
+	"github.com/argoproj/argo-workflows/v4/cmd/argoexec/executor"
+	"github.com/argoproj/argo-workflows/v4/workflow/executor/tracing"
 )
 
 func NewResourceCommand() *cobra.Command {
 	command := cobra.Command{
 		Use:   "resource (get|create|apply|delete) MANIFEST",
 		Short: "update a resource and wait for resource conditions",
-		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 1 {
-				cmd.HelpFunc()(cmd, args)
-				os.Exit(1)
-			}
-
-			ctx := cmd.Context()
-			err := execResource(ctx, args[0])
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			err := execResource(cmd.Context(), args[0])
 			if err != nil {
-				log.Fatalf("%+v", err)
+				return fmt.Errorf("%w", err)
 			}
+			return nil
 		},
 	}
 	return &command
 }
 
+//nolint:contextcheck
 func execResource(ctx context.Context, action string) error {
-	wfExecutor := initExecutor()
+	ctx = tracing.InjectTraceContext(ctx)
+	wfExecutor := executor.Init(ctx, clientConfig, varRunArgo)
+	defer func() {
+		if err := wfExecutor.Tracing.Shutdown(context.WithoutCancel(ctx)); err != nil {
+			logging.RequireLoggerFromContext(ctx).WithError(err).Error(ctx, "Failed to shutdown tracing")
+		}
+	}()
 
 	// Don't allow cancellation to impact capture of results, parameters, artifacts, or defers.
-	bgCtx := context.Background()
+	//nolint:contextcheck
+	bgCtx := tracing.InjectTraceContext(logging.RequireLoggerFromContext(ctx).NewBackgroundContext())
 
 	wfExecutor.InitializeOutput(bgCtx)
-	defer wfExecutor.HandleError(bgCtx)
-	defer wfExecutor.FinalizeOutput(bgCtx) //Ensures the LabelKeyReportOutputsCompleted is set to true.
-	err := wfExecutor.StageFiles()
+	errHandler := wfExecutor.HandleError(bgCtx)
+	defer errHandler()
+	if !wfExecutor.Template.SaveLogsAsArtifact() {
+		defer wfExecutor.FinalizeOutput(bgCtx) // Ensures the LabelKeyReportOutputsCompleted is set to true.
+	}
+	err := wfExecutor.StageFiles(ctx)
 	if err != nil {
-		wfExecutor.AddError(err)
+		wfExecutor.AddError(ctx, err)
 		return err
 	}
 
 	isDelete := action == "delete"
 	if isDelete && (wfExecutor.Template.Resource.SuccessCondition != "" || wfExecutor.Template.Resource.FailureCondition != "" || len(wfExecutor.Template.Outputs.Parameters) > 0) {
 		err = fmt.Errorf("successCondition, failureCondition and outputs are not supported for delete action")
-		wfExecutor.AddError(err)
+		wfExecutor.AddError(ctx, err)
 		return err
 	}
 	manifestPath := common.ExecutorResourceManifestPath
@@ -62,22 +71,22 @@ func execResource(ctx context.Context, action string) error {
 			}
 		}
 	}
-	resourceNamespace, resourceName, selfLink, err := wfExecutor.ExecResource(
+	resourceNamespace, resourceName, selfLink, err := wfExecutor.ExecResource(ctx,
 		action, manifestPath, wfExecutor.Template.Resource.Flags,
 	)
 	if err != nil {
-		wfExecutor.AddError(err)
+		wfExecutor.AddError(ctx, err)
 		return err
 	}
 	if !isDelete {
 		err = wfExecutor.WaitResource(ctx, resourceNamespace, resourceName, selfLink)
 		if err != nil {
-			wfExecutor.AddError(err)
+			wfExecutor.AddError(ctx, err)
 			return err
 		}
 		err = wfExecutor.SaveResourceParameters(ctx, resourceNamespace, resourceName)
 		if err != nil {
-			wfExecutor.AddError(err)
+			wfExecutor.AddError(ctx, err)
 			return err
 		}
 	}

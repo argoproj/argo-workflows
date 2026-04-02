@@ -10,25 +10,25 @@ func TestUniqueQueue(t *testing.T) {
 	queue := newUniquePhaseNodeQueue()
 	assert.True(t, queue.empty())
 
-	phaseNodeA := phaseNode{nodeId: "node-a"}
+	phaseNodeA := phaseNode{nodeID: "node-a"}
 	queue.add(phaseNodeA)
 	assert.Equal(t, 1, queue.len())
 	assert.False(t, queue.empty())
 	queue.add(phaseNodeA)
 	assert.Equal(t, 1, queue.len())
 
-	phaseNodeB := phaseNode{nodeId: "node-b"}
+	phaseNodeB := phaseNode{nodeID: "node-b"}
 	queue.add(phaseNodeB)
 	assert.Equal(t, 2, queue.len())
 	queue.add(phaseNodeB)
 	assert.Equal(t, 2, queue.len())
 
 	pop := queue.pop()
-	assert.Equal(t, "node-a", pop.nodeId)
+	assert.Equal(t, "node-a", pop.nodeID)
 	assert.Equal(t, 1, queue.len())
 	pop = queue.pop()
 	assert.True(t, queue.empty())
-	assert.Equal(t, "node-b", pop.nodeId)
+	assert.Equal(t, "node-b", pop.nodeID)
 	assert.Equal(t, 0, queue.len())
 
 	queue.add(phaseNodeA)
@@ -38,25 +38,25 @@ func TestUniqueQueue(t *testing.T) {
 }
 
 func TestUniqueQueueConstructor(t *testing.T) {
-	phaseNodeA := phaseNode{nodeId: "node-a"}
+	phaseNodeA := phaseNode{nodeID: "node-a"}
 	queue := newUniquePhaseNodeQueue(phaseNodeA)
 	assert.Equal(t, 1, queue.len())
 	assert.False(t, queue.empty())
 	queue.add(phaseNodeA)
 	assert.Equal(t, 1, queue.len())
 
-	phaseNodeB := phaseNode{nodeId: "node-b"}
+	phaseNodeB := phaseNode{nodeID: "node-b"}
 	queue.add(phaseNodeB)
 	assert.Equal(t, 2, queue.len())
 	queue.add(phaseNodeB)
 	assert.Equal(t, 2, queue.len())
 
 	pop := queue.pop()
-	assert.Equal(t, "node-a", pop.nodeId)
+	assert.Equal(t, "node-a", pop.nodeID)
 	assert.Equal(t, 1, queue.len())
 	pop = queue.pop()
 	assert.True(t, queue.empty())
-	assert.Equal(t, "node-b", pop.nodeId)
+	assert.Equal(t, "node-b", pop.nodeID)
 	assert.Equal(t, 0, queue.len())
 
 	queue.add(phaseNodeA)

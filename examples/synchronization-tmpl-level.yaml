@@ -12,6 +12,8 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: synchronization-tmpl-level-
+  labels:
+    workflows.argoproj.io/no-test: "environment"
 spec:
   entrypoint: synchronization-tmpl-level-example
   templates:
@@ -27,11 +29,15 @@ spec:
 
   - name: acquire-lock
     synchronization:
-      semaphore:
-        configMapKeyRef:
-          name: my-config
-          key: template
+      semaphores: # v3.6 and after
+        - configMapKeyRef:
+            name: my-config
+            key: template
+      # semaphore: # deprecated: v3.5 and before
+      #   configMapKeyRef:
+      #     name: my-config
+      #     key: template
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["sleep 10; echo acquired lock"]

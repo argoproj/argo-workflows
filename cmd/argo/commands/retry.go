@@ -2,18 +2,17 @@ package commands
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"os"
 
-	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
-	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/common"
+	workflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
 type retryOps struct {
@@ -34,7 +33,7 @@ func (o *retryOps) hasSelector() bool {
 
 func NewRetryCommand() *cobra.Command {
 	var (
-		cliSubmitOpts common.CliSubmitOpts
+		cliSubmitOpts = common.NewCliSubmitOpts()
 		retryOpts     retryOps
 	)
 	command := &cobra.Command{
@@ -76,26 +75,31 @@ func NewRetryCommand() *cobra.Command {
 # Restart node with id 5 on successful workflow, using node-field-selector
   argo retry my-wf --restart-successful --node-field-selector id=5
 `,
-		Run: func(cmd *cobra.Command, args []string) {
+		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 && !retryOpts.hasSelector() {
-				cmd.HelpFunc()(cmd, args)
-				os.Exit(1)
+				return errors.New("requires either node field selector or workflow")
 			}
-			ctx, apiClient := client.NewAPIClient(cmd.Context())
-			serviceClient := apiClient.NewWorkflowServiceClient()
-			retryOpts.namespace = client.Namespace()
+			return nil
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
+			ctx, apiClient, err := client.NewAPIClient(ctx)
+			if err != nil {
+				return err
+			}
+			serviceClient := apiClient.NewWorkflowServiceClient(ctx)
+			retryOpts.namespace = client.Namespace(ctx)
 
-			err := retryWorkflows(ctx, serviceClient, retryOpts, cliSubmitOpts, args)
-			errors.CheckError(err)
+			return retryWorkflows(ctx, serviceClient, retryOpts, cliSubmitOpts, args)
 		},
 	}
 	command.Flags().StringArrayVarP(&cliSubmitOpts.Parameters, "parameter", "p", []string{}, "input parameter to override on the original workflow spec")
-	command.Flags().StringVarP(&cliSubmitOpts.Output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
+	command.Flags().VarP(&cliSubmitOpts.Output, "output", "o", "Output format. "+cliSubmitOpts.Output.Usage())
 	command.Flags().BoolVarP(&cliSubmitOpts.Wait, "wait", "w", false, "wait for the workflow to complete, only works when a single workflow is retried")
 	command.Flags().BoolVar(&cliSubmitOpts.Watch, "watch", false, "watch the workflow until it completes, only works when a single workflow is retried")
 	command.Flags().BoolVar(&cliSubmitOpts.Log, "log", false, "log the workflow until it completes")
 	command.Flags().BoolVar(&retryOpts.restartSuccessful, "restart-successful", false, "indicates to restart successful nodes matching the --node-field-selector")
-	command.Flags().StringVar(&retryOpts.nodeFieldSelector, "node-field-selector", "", "selector of nodes to reset, eg: --node-field-selector inputs.paramaters.myparam.value=abc")
+	command.Flags().StringVar(&retryOpts.nodeFieldSelector, "node-field-selector", "", "selector of nodes to reset, eg: --node-field-selector inputs.parameters.myparam.value=abc")
 	command.Flags().StringVarP(&retryOpts.labelSelector, "selector", "l", "", "Selector (label query) to filter on, not including uninitialized ones, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
 	command.Flags().StringVar(&retryOpts.fieldSelector, "field-selector", "", "Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selector key1=value1,key2=value2). The server only supports a limited number of field queries per type.")
 	return command
@@ -105,7 +109,7 @@ func NewRetryCommand() *cobra.Command {
 func retryWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, retryOpts retryOps, cliSubmitOpts common.CliSubmitOpts, args []string) error {
 	selector, err := fields.ParseSelector(retryOpts.nodeFieldSelector)
 	if err != nil {
-		return fmt.Errorf("unable to parse node field selector '%s': %s", retryOpts.nodeFieldSelector, err)
+		return fmt.Errorf("unable to parse node field selector '%s': %w", retryOpts.nodeFieldSelector, err)
 	}
 	var wfs wfv1.Workflows
 	if retryOpts.hasSelector() {
@@ -147,11 +151,13 @@ func retryWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServi
 		if err != nil {
 			return err
 		}
-		printWorkflow(lastRetried, common.GetFlags{Output: cliSubmitOpts.Output})
+		if err = printWorkflow(lastRetried, common.GetFlags{Output: cliSubmitOpts.Output}); err != nil {
+			return err
+		}
 	}
 	if len(retriedNames) == 1 {
 		// watch or wait when there is only one workflow retried
-		common.WaitWatchOrLog(ctx, serviceClient, lastRetried.Namespace, []string{lastRetried.Name}, cliSubmitOpts)
+		return common.WaitWatchOrLog(ctx, serviceClient, lastRetried.Namespace, []string{lastRetried.Name}, cliSubmitOpts)
 	}
 	return nil
 }

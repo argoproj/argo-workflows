@@ -2,17 +2,16 @@ package commands
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"os"
 
-	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
-	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/client"
+	workflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
 type stopOps struct {
@@ -55,21 +54,26 @@ func NewStopCommand() *cobra.Command {
 
   argo stop --field-selector metadata.namespace=argo
 `,
-		Run: func(cmd *cobra.Command, args []string) {
+		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 && !stopArgs.hasSelector() {
-				cmd.HelpFunc()(cmd, args)
-				os.Exit(1)
+				return errors.New("requires either selector or workflow")
 			}
-			ctx, apiClient := client.NewAPIClient(cmd.Context())
-			serviceClient := apiClient.NewWorkflowServiceClient()
-			stopArgs.namespace = client.Namespace()
+			return nil
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
+			ctx, apiClient, err := client.NewAPIClient(ctx)
+			if err != nil {
+				return err
+			}
+			serviceClient := apiClient.NewWorkflowServiceClient(ctx)
+			stopArgs.namespace = client.Namespace(ctx)
 
-			err := stopWorkflows(ctx, serviceClient, stopArgs, args)
-			errors.CheckError(err)
+			return stopWorkflows(ctx, serviceClient, stopArgs, args)
 		},
 	}
 	command.Flags().StringVar(&stopArgs.message, "message", "", "Message to add to previously running nodes")
-	command.Flags().StringVar(&stopArgs.nodeFieldSelector, "node-field-selector", "", "selector of node to stop, eg: --node-field-selector inputs.paramaters.myparam.value=abc")
+	command.Flags().StringVar(&stopArgs.nodeFieldSelector, "node-field-selector", "", "selector of node to stop, eg: --node-field-selector inputs.parameters.myparam.value=abc")
 	command.Flags().StringVarP(&stopArgs.labelSelector, "selector", "l", "", "Selector (label query) to filter on, not including uninitialized ones, supports '=', '==', and '!='.(e.g. -l key1=value1,key2=value2)")
 	command.Flags().StringVar(&stopArgs.fieldSelector, "field-selector", "", "Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selector key1=value1,key2=value2). The server only supports a limited number of field queries per type.")
 	command.Flags().BoolVar(&stopArgs.dryRun, "dry-run", false, "If true, only print the workflows that would be stopped, without stopping them.")
@@ -80,7 +84,7 @@ func NewStopCommand() *cobra.Command {
 func stopWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, stopArgs stopOps, args []string) error {
 	selector, err := fields.ParseSelector(stopArgs.nodeFieldSelector)
 	if err != nil {
-		return fmt.Errorf("unable to parse node field selector '%s': %s", stopArgs.nodeFieldSelector, err)
+		return fmt.Errorf("unable to parse node field selector '%s': %w", stopArgs.nodeFieldSelector, err)
 	}
 	var wfs wfv1.Workflows
 	if stopArgs.hasSelector() {

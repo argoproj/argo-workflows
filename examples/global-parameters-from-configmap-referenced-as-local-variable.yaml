@@ -2,14 +2,11 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: global-parameter-from-configmap-referenced-as-local-variable-
-  labels:
-    workflows.argoproj.io/test: "true"
   annotations:
     workflows.argoproj.io/description: |
       This example demonstrates how a global parameter from a ConfigMap can be referenced as a template local variable.
       Note that the "simple-parameters" ConfigMap (defined in `examples/configmaps/simple-parameters-configmap.yaml`) needs to be created first before submitting this workflow.
 spec:
-  serviceAccountName: argo
   entrypoint: print-message
   arguments:
     parameters:

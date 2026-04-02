@@ -30,31 +30,24 @@ New minor versions are released roughly every 6 months.
 Release Candidates (RCs) for major and minor versions are available roughly 4-6 weeks before General Availability (GA).
 
 Features may be added in subsequent RCs.
-If they are, the RC will be available for at least 2 weeks to ensure sufficient testing before GA.
-If bugs are found with a feature and not resolved within the 2 week period, it will be rolled back and a new RC will be released before GA.
+If they are, the RC will be available for at least 1 week to ensure sufficient testing before GA.
+If bugs are found with a feature and not resolved within the 1 week period, it will be rolled back and a new RC will be released before GA.
 
 Otherwise, we typically release every two weeks:
 
 * Patch fixes for the current stable version.
 * The next RC, if we are currently in a release cycle.
 
-## Kubernetes Compatibility Matrix
+## Tested Versions
 
-| Argo Workflows \ Kubernetes | 1.28 | 1.29 | 1.30 |
-|-----------------------------|------|------|------|
-| **3.5**                     | `✓`  | `✓`  | `✓`  |
-| **3.4**                     | `?`  | `?`  | `?`  |
+--8<-- "docs/tested-kubernetes-versions.md"
 
-* `✓` Fully supported versions.
-* `?` Due to breaking changes might not work. Also, we haven't thoroughly tested against this version.
-* `✕` Unsupported versions.
+Use the version selector to view the tested Kubernetes versions for a specific Argo Workflows version.
 
 ### Notes on Compatibility
 
-Argo versions may be compatible with newer and older Kubernetes versions (indicated by `?`), but only three minor versions are tested unless otherwise noted.
+Argo versions may be compatible with newer and older Kubernetes versions, but only two minor versions are tested.
 
 Note that Kubernetes [is backward compatible with clients](https://github.com/kubernetes/client-go/tree/aa7909e7d7c0661792ba21b9e882f3cd6ad0ce53?tab=readme-ov-file#compatibility-client-go---kubernetes-clusters), so newer k8s versions are generally supported.
 The caveats with newer k8s versions are possible changes to experimental APIs and unused new features.
 Argo uses stable Kubernetes APIs such as Pods and ConfigMaps; see the Controller and Server RBAC of your [installation](installation.md) for a full list.
-
-The `main` branch is currently [tested on Kubernetes 1.28](https://github.com/argoproj/argo-workflows/blob/main/.github/workflows/ci-build.yaml#L218) and [1.30](https://github.com/argoproj/argo-workflows/blob/main/.github/workflows/ci-build.yaml#L250).

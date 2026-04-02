@@ -43,13 +43,11 @@ func Int64(is *intstr.IntOrString) (*int64, error) {
 }
 
 func IsValidIntOrArgoVariable(is *intstr.IntOrString) bool {
-	if is == nil {
+	if is == nil || is.Type == intstr.Int {
 		return true
-	} else if is.Type == intstr.Int {
-		return true
-	} else if _, err := strconv.Atoi(is.StrVal); err == nil {
-		return true
-	} else {
-		return strings.HasPrefix(is.StrVal, "{{") && strings.HasSuffix(is.StrVal, "}}")
 	}
+	if _, err := strconv.Atoi(is.StrVal); err == nil {
+		return true
+	}
+	return strings.HasPrefix(is.StrVal, "{{") && strings.HasSuffix(is.StrVal, "}}")
 }

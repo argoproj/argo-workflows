@@ -23,6 +23,7 @@ The field can be any of:
 | Field | Description|
 |----------|------------|
 | `displayName`| Display name of the node. This is the name of the node as it is displayed on the CLI or UI, without considering its ancestors (see example below). This is a useful shortcut if there is only one node with the same `displayName` |
+| `id` | ID of the node, a unique identifier for the node which can be discovered by reading the status of the workflow. |
 | `name`| Full name of the node. This is the full name of the node, including its ancestors (see example below). Using `name` is necessary when two or more nodes share the same `displayName` and disambiguation is required. |
 | `templateName`| Template name of the node |
 | `phase`| Phase status of the node - e.g. Running |

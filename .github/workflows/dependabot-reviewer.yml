@@ -11,11 +11,11 @@ jobs:
     permissions:
       pull-requests: write # for approving a PR
       contents: write # for enabling auto-merge on a PR
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Dependabot metadata
         id: metadata
-        uses: dependabot/fetch-metadata@c9c4182bf1b97f5224aee3906fd373f6b61b4526 # v1.6.0
+        uses: dependabot/fetch-metadata@21025c705c08248db411dc16f3619e6b5f9ea21a # v2.5.0
         with:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
       - name: Approve PR

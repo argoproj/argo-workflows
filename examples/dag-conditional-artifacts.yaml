@@ -2,8 +2,6 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: dag-conditional-artifacts-
-  labels:
-    workflows.argoproj.io/test: "true"
   annotations:
     workflows.argoproj.io/description: |
       Conditional artifacts provides a way to choose the output artifacts based on an expression.
@@ -36,7 +34,7 @@ spec:
 
     - name: flip-coin
       script:
-        image: python:alpine3.6
+        image: python:alpine3.23
         command: [ python ]
         source: |
           import random
@@ -44,7 +42,7 @@ spec:
 
     - name: heads
       script:
-        image: python:alpine3.6
+        image: python:alpine3.23
         command: [ python ]
         source: |
           with open("result.txt", "w") as f:
@@ -56,7 +54,7 @@ spec:
 
     - name: tails
       script:
-        image: python:alpine3.6
+        image: python:alpine3.23
         command: [ python ]
         source: |
           with open("result.txt", "w") as f:

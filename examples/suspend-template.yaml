@@ -13,6 +13,8 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: suspend-template-
+  labels:
+    workflows.argoproj.io/no-test: "environment"
 spec:
   entrypoint: suspend
   templates:

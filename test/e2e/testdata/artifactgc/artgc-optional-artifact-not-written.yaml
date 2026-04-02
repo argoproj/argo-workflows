@@ -1,0 +1,46 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: artgc-optional-artifact-not-written-
+spec:
+  entrypoint: entrypoint
+  artifactGC:
+    strategy: OnWorkflowDeletion
+  podGC:
+    strategy: ""
+  templates:
+    - name: entrypoint
+      steps:
+      - - name: some-artifacts-not-written
+          template: some-artifacts-not-written
+      - - name: artifact-written
+          template: artifact-written
+    - name: some-artifacts-not-written
+      container:
+        image: argoproj/argosay:v2
+        command:
+          - sh
+          - -c
+        args:
+          - |
+            echo "something" > /tmp/present
+      outputs:
+        artifacts:
+          - name: notpresent
+            path: /tmp/notpresent
+            optional: true   # artifact is optional - therefore, Workflow can succeed
+          - name: present
+            path: /tmp/present
+    - name: artifact-written
+      container:
+        image: argoproj/argosay:v2
+        command:
+          - sh
+          - -c
+        args:
+          - |
+            echo "something" > /tmp/present
+      outputs:
+        artifacts:
+          - name: present
+            path: /tmp/present

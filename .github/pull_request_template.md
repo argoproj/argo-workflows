@@ -36,12 +36,7 @@ Fixes #TODO
 
 <!-- TODO: Say how you tested your changes. -->
 
-<!--
-### Beyond this PR
+### Documentation
 
-Thank you for submitting this! Have you ever thought of becoming a Reviewer or Approver on the project?
-
-Argo Workflows is seeking more community involvement and ultimately more [Reviewers and Approvers](https://github.com/argoproj/argoproj/blob/main/community/membership.md) to help keep it viable.
-See [Sustainability Effort](https://github.com/argoproj/argo-workflows/blob/main/community/sustainability_effort.md) for more information.
-
--->
+<!-- TODO: Say how you have updated the documentation or explain why this isn't needed here -->
+<!-- Required for features: Explain how the user will discover this feature through documentation and examples -->

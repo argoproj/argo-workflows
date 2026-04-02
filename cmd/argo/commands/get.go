@@ -3,21 +3,22 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
-	"log"
-	"os"
 
-	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
-	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/common"
+	workflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
 func NewGetCommand() *cobra.Command {
-	var getArgs common.GetFlags
+	var getArgs = common.GetFlags{
+		Output: common.EnumFlagValue{
+			AllowedValues: []string{"name", "json", "yaml", "short", "wide"},
+		},
+	}
 
 	command := &cobra.Command{
 		Use:   "get WORKFLOW...",
@@ -29,26 +30,32 @@ func NewGetCommand() *cobra.Command {
 # Get the latest workflow:
   argo get @latest
 `,
-		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) == 0 {
-				cmd.HelpFunc()(cmd, args)
-				os.Exit(1)
+		Args: cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
+			ctx, apiClient, err := client.NewAPIClient(ctx)
+			if err != nil {
+				return err
 			}
-			ctx, apiClient := client.NewAPIClient(cmd.Context())
-			serviceClient := apiClient.NewWorkflowServiceClient()
-			namespace := client.Namespace()
+			serviceClient := apiClient.NewWorkflowServiceClient(ctx)
+			namespace := client.Namespace(ctx)
 			for _, name := range args {
 				wf, err := serviceClient.GetWorkflow(ctx, &workflowpkg.WorkflowGetRequest{
 					Name:      name,
 					Namespace: namespace,
 				})
-				errors.CheckError(err)
-				printWorkflow(wf, getArgs)
+				if err != nil {
+					return err
+				}
+				if err := printWorkflow(wf, getArgs); err != nil {
+					return err
+				}
 			}
+			return nil
 		},
 	}
 
-	command.Flags().StringVarP(&getArgs.Output, "output", "o", "", "Output format. One of: json|yaml|short|wide")
+	command.Flags().VarP(&getArgs.Output, "output", "o", "Output format. "+getArgs.Output.Usage())
 	command.Flags().BoolVar(&common.NoColor, "no-color", false, "Disable colorized output")
 	command.Flags().BoolVar(&common.NoUtf8, "no-utf8", false, "Use plain 7-bits ascii characters")
 	command.Flags().StringVar(&getArgs.Status, "status", "", "Filter by status (Pending, Running, Succeeded, Skipped, Failed, Error)")
@@ -56,10 +63,10 @@ func NewGetCommand() *cobra.Command {
 	return command
 }
 
-func printWorkflow(wf *wfv1.Workflow, getArgs common.GetFlags) {
-	switch getArgs.Output {
+func printWorkflow(wf *wfv1.Workflow, getArgs common.GetFlags) error {
+	switch getArgs.Output.String() {
 	case "name":
-		fmt.Println(wf.ObjectMeta.Name)
+		fmt.Println(wf.Name)
 	case "json":
 		outBytes, _ := json.MarshalIndent(wf, "", "    ")
 		fmt.Println(string(outBytes))
@@ -69,6 +76,7 @@ func printWorkflow(wf *wfv1.Workflow, getArgs common.GetFlags) {
 	case "short", "wide", "":
 		fmt.Print(common.PrintWorkflowHelper(wf, getArgs))
 	default:
-		log.Fatalf("Unknown output format: %s", getArgs.Output)
+		return fmt.Errorf("unknown output format: %s", getArgs.Output)
 	}
+	return nil
 }

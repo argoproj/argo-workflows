@@ -1,16 +1,19 @@
 package controller
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/config"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 var artgcWorkflow = `apiVersion: argoproj.io/v1alpha1
@@ -340,15 +343,15 @@ status:
 
 func TestProcessArtifactGCStrategy(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(artgcWorkflow)
-	cancel, controller := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
 
-	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.wf.Status.ArtifactGCStatus = &wfv1.ArtGCStatus{}
 
 	err := woc.processArtifactGCStrategy(ctx, wfv1.ArtifactGCOnWorkflowCompletion)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	wfatcs := controller.wfclientset.ArgoprojV1alpha1().WorkflowArtifactGCTasks(woc.wf.GetNamespace())
 	podcs := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace())
@@ -368,15 +371,15 @@ func TestProcessArtifactGCStrategy(t *testing.T) {
 	// and it should only consist of artifacts labeled with OnWorkflowCompletion
 
 	assert.NotNil(t, pods)
-	assert.Len(t, (*pods).Items, 2)
+	assert.Len(t, pods.Items, 2)
 	var pod1 *corev1.Pod
 	var pod2 *corev1.Pod
-	for i, pod := range (*pods).Items {
+	for i, pod := range pods.Items {
 		switch pod.Name {
 		case "two-artgc-8tcvt-artgc-wfcomp-592587874":
-			pod1 = &(*pods).Items[i]
+			pod1 = &pods.Items[i]
 		case "two-artgc-8tcvt-artgc-wfcomp-3953780960":
-			pod2 = &(*pods).Items[i]
+			pod2 = &pods.Items[i]
 		default:
 			assert.Fail(t, fmt.Sprintf("pod name '%s' doesn't match expected", pod.Name))
 		}
@@ -422,16 +425,16 @@ func TestProcessArtifactGCStrategy(t *testing.T) {
 	// We should have on WFAT per Pod (for now until we implement the capability to have multiple)
 
 	assert.NotNil(t, wfats)
-	assert.Len(t, (*wfats).Items, 2)
+	assert.Len(t, wfats.Items, 2)
 
 	var wfat1 *wfv1.WorkflowArtifactGCTask
 	var wfat2 *wfv1.WorkflowArtifactGCTask
-	for i, wfat := range (*wfats).Items {
+	for i, wfat := range wfats.Items {
 		switch wfat.Name {
 		case "two-artgc-8tcvt-artgc-wfcomp-592587874-0":
-			wfat1 = &(*wfats).Items[i]
+			wfat1 = &wfats.Items[i]
 		case "two-artgc-8tcvt-artgc-wfcomp-3953780960-0":
-			wfat2 = &(*wfats).Items[i]
+			wfat2 = &wfats.Items[i]
 		default:
 			assert.Fail(t, fmt.Sprintf("WorkflowArtifactGCTask name '%s' doesn't match expected", wfat.Name))
 		}
@@ -453,7 +456,6 @@ func TestProcessArtifactGCStrategy(t *testing.T) {
 	assert.Contains(t, wfat2.Spec.ArtifactsByNode, "two-artgc-8tcvt-802059674")
 	assert.Contains(t, wfat2.Spec.ArtifactsByNode["two-artgc-8tcvt-802059674"].Artifacts, "first-on-completion-2")
 	assert.NotContains(t, wfat2.Spec.ArtifactsByNode["two-artgc-8tcvt-802059674"].Artifacts, "on-deletion")
-
 }
 
 var artgcTask = `apiVersion: argoproj.io/v1alpha1
@@ -560,18 +562,19 @@ status:
 func TestProcessCompletedWorkflowArtifactGCTask(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(artgcWorkflow)
 	wfat := wfv1.MustUnmarshalWorkflowArtifactGCTask(artgcTask)
-	cancel, controller := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
 
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.wf.Status.ArtifactGCStatus = &wfv1.ArtGCStatus{}
 
 	// verify that we update these Status fields:
 	// - Artifact.Deleted
 	// - Conditions
 
-	_, err := woc.processCompletedWorkflowArtifactGCTask(wfat, "OnWorkflowCompletion")
-	assert.NoError(t, err)
+	_, err := woc.processCompletedWorkflowArtifactGCTask(ctx, wfat, "OnWorkflowCompletion")
+	require.NoError(t, err)
 
 	for _, expectedArtifact := range []struct {
 		nodeName     string
@@ -594,7 +597,6 @@ func TestProcessCompletedWorkflowArtifactGCTask(t *testing.T) {
 			true,
 		},
 	} {
-
 		node := woc.wf.Status.Nodes[expectedArtifact.nodeName]
 		artifact := node.Outputs.Artifacts.GetArtifactByName(expectedArtifact.artifactName)
 		if artifact == nil {
@@ -615,7 +617,6 @@ func TestProcessCompletedWorkflowArtifactGCTask(t *testing.T) {
 			assert.Contains(t, gcFailureCondition.Message, "something went wrong")
 		}
 	}
-
 }
 
 func TestWorkflowHasArtifactGC(t *testing.T) {
@@ -685,7 +686,6 @@ func TestWorkflowHasArtifactGC(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			workflowSpec := fmt.Sprintf(`
             apiVersion: argoproj.io/v1alpha1
             kind: Workflow
@@ -709,14 +709,208 @@ func TestWorkflowHasArtifactGC(t *testing.T) {
                         %s`, tt.workflowArtGCStrategySpec, tt.artifactGCStrategySpec)
 
 			wf := wfv1.MustUnmarshalWorkflow(workflowSpec)
-			cancel, controller := newController(wf)
+			ctx := logging.TestContext(t.Context())
+			cancel, controller := newController(ctx, wf)
 			defer cancel()
-			woc := newWorkflowOperationCtx(wf, controller)
+			woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 			hasArtifact := woc.HasArtifactGC()
 
 			assert.Equal(t, tt.expectedResult, hasArtifact)
 		})
 	}
+}
 
+func TestArtifactGCPodWithPlugins(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	// Create a workflow with plugin artifacts
+	wf := &wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-artgc-plugins",
+			Namespace: "default",
+			Labels: map[string]string{
+				common.LabelKeyCompleted: "true",
+			},
+		},
+		Spec: wfv1.WorkflowSpec{
+			Entrypoint: "test-template",
+			Templates: []wfv1.Template{
+				{
+					Name: "test-template",
+					Container: &corev1.Container{
+						Image: "hello-world",
+					},
+					Outputs: wfv1.Outputs{
+						Artifacts: []wfv1.Artifact{
+							{
+								Name: "plugin-artifact-1",
+								Path: "/tmp/output1.txt",
+								ArtifactLocation: wfv1.ArtifactLocation{
+									Plugin: &wfv1.PluginArtifact{
+										Name: "test-plugin",
+									},
+								},
+								ArtifactGC: &wfv1.ArtifactGC{
+									Strategy: wfv1.ArtifactGCOnWorkflowCompletion,
+								},
+							},
+							{
+								Name: "plugin-artifact-2",
+								Path: "/tmp/output2.txt",
+								ArtifactLocation: wfv1.ArtifactLocation{
+									Plugin: &wfv1.PluginArtifact{
+										Name: "another-plugin",
+									},
+								},
+								ArtifactGC: &wfv1.ArtifactGC{
+									Strategy: wfv1.ArtifactGCOnWorkflowCompletion,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Status: wfv1.WorkflowStatus{
+			Nodes: map[string]wfv1.NodeStatus{
+				"test-node-id": {
+					ID:           "test-node-id",
+					Type:         wfv1.NodeTypePod,
+					TemplateName: "test-template",
+					Outputs: &wfv1.Outputs{
+						Artifacts: []wfv1.Artifact{
+							{
+								Name: "plugin-artifact-1",
+								Path: "/tmp/output1.txt",
+								ArtifactLocation: wfv1.ArtifactLocation{
+									Plugin: &wfv1.PluginArtifact{
+										Name: "test-plugin",
+									},
+								},
+								ArtifactGC: &wfv1.ArtifactGC{
+									Strategy: wfv1.ArtifactGCOnWorkflowCompletion,
+								},
+							},
+							{
+								Name: "plugin-artifact-2",
+								Path: "/tmp/output2.txt",
+								ArtifactLocation: wfv1.ArtifactLocation{
+									Plugin: &wfv1.PluginArtifact{
+										Name: "another-plugin",
+									},
+								},
+								ArtifactGC: &wfv1.ArtifactGC{
+									Strategy: wfv1.ArtifactGCOnWorkflowCompletion,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	// Configure artifact drivers
+	controller.Config.ArtifactDrivers = []config.ArtifactDriver{
+		{
+			Name:  "test-plugin",
+			Image: "busybox",
+		},
+		{
+			Name:  "another-plugin",
+			Image: "alpine",
+		},
+	}
+	controller.Config.Images = map[string]config.Image{
+		"busybox": {
+			Entrypoint: []string{"/plugin-server"},
+		},
+		"alpine": {
+			Entrypoint: []string{"/plugin-server"},
+		},
+	}
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.wf.Status.ArtifactGCStatus = &wfv1.ArtGCStatus{}
+
+	// Set up artifact repository (needed for GC to work)
+	repo := &wfv1.ArtifactRepository{
+		S3: &wfv1.S3ArtifactRepository{
+			S3Bucket: wfv1.S3Bucket{
+				Bucket: "test-bucket",
+			},
+		},
+	}
+	setArtifactRepository(controller, repo)
+	woc.artifactRepository = repo
+
+	// Process the artifact GC strategy
+	err := woc.processArtifactGCStrategy(ctx, wfv1.ArtifactGCOnWorkflowCompletion)
+	require.NoError(t, err)
+
+	// Get the created pod
+	pods, err := controller.kubeclientset.CoreV1().Pods(wf.Namespace).List(ctx, metav1.ListOptions{})
+	require.NoError(t, err)
+	require.Len(t, pods.Items, 1)
+
+	pod := &pods.Items[0]
+
+	// Verify the pod has the expected containers: main + 2 plugin sidecars
+	require.Len(t, pod.Spec.Containers, 3)
+
+	// Find plugin sidecar containers
+	var testPluginSidecar, anotherPluginSidecar *corev1.Container
+	var mainContainer *corev1.Container
+
+	for _, c := range pod.Spec.Containers {
+		switch c.Name {
+		case common.ArtifactPluginSidecarPrefix + "test-plugin":
+			testPluginSidecar = &c
+		case common.ArtifactPluginSidecarPrefix + "another-plugin":
+			anotherPluginSidecar = &c
+		case common.MainContainerName:
+			mainContainer = &c
+		}
+	}
+
+	// Verify both plugin sidecars exist with correct images
+	require.NotNil(t, testPluginSidecar, "test-plugin sidecar not found")
+	assert.Equal(t, "busybox", testPluginSidecar.Image)
+
+	require.NotNil(t, anotherPluginSidecar, "another-plugin sidecar not found")
+	assert.Equal(t, "alpine", anotherPluginSidecar.Image)
+
+	require.NotNil(t, mainContainer, "main container not found")
+
+	// Verify plugin volumes exist
+	testPluginVolume := wfv1.ArtifactPluginName("test-plugin").Volume()
+	anotherPluginVolume := wfv1.ArtifactPluginName("another-plugin").Volume()
+	assert.Contains(t, pod.Spec.Volumes, testPluginVolume)
+	assert.Contains(t, pod.Spec.Volumes, anotherPluginVolume)
+
+	// Verify plugin volume mounts on main container
+	testPluginMount := wfv1.ArtifactPluginName("test-plugin").VolumeMount()
+	anotherPluginMount := wfv1.ArtifactPluginName("another-plugin").VolumeMount()
+	assert.Contains(t, mainContainer.VolumeMounts, testPluginMount)
+	assert.Contains(t, mainContainer.VolumeMounts, anotherPluginMount)
+
+	// Verify plugin names environment variable
+	var pluginNamesEnv *corev1.EnvVar
+	for _, env := range mainContainer.Env {
+		if env.Name == common.EnvVarArtifactPluginNames {
+			pluginNamesEnv = &env
+			break
+		}
+	}
+	require.NotNil(t, pluginNamesEnv, "Plugin names env var not found")
+	assert.Contains(t, pluginNamesEnv.Value, common.ArtifactPluginSidecarPrefix+"test-plugin")
+	assert.Contains(t, pluginNamesEnv.Value, common.ArtifactPluginSidecarPrefix+"another-plugin")
+
+	// Verify main container has artifact delete command
+	assert.Contains(t, mainContainer.Args, "artifact")
+	assert.Contains(t, mainContainer.Args, "delete")
 }

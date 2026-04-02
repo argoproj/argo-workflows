@@ -1,13 +1,14 @@
 package sqldb
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/upper/db/v4"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 type backfillNodes struct {
@@ -18,8 +19,9 @@ func (s backfillNodes) String() string {
 	return fmt.Sprintf("backfillNodes{%s}", s.tableName)
 }
 
-func (s backfillNodes) apply(session db.Session) (err error) {
-	log.Info("Backfill node status")
+func (s backfillNodes) Apply(ctx context.Context, session db.Session) (err error) {
+	logger := logging.RequireLoggerFromContext(ctx)
+	logger.Info(ctx, "Backfill node status")
 	rs, err := session.SQL().SelectFrom(s.tableName).
 		Columns("workflow").
 		Where(db.Cond{"version": nil}).
@@ -53,8 +55,8 @@ func (s backfillNodes) apply(session db.Session) (err error) {
 		if err != nil {
 			return err
 		}
-		logCtx := log.WithFields(log.Fields{"name": wf.Name, "namespace": wf.Namespace, "version": version})
-		logCtx.Info("Back-filling node status")
+		bfCtx, bfLogger := logger.WithFields(logging.Fields{"name": wf.Name, "namespace": wf.Namespace, "version": version}).InContext(ctx)
+		bfLogger.Info(bfCtx, "Back-filling node status")
 		res, err := session.SQL().Update(archiveTableName).
 			Set("version", wf.ResourceVersion).
 			Set("nodes", marshalled).
@@ -69,7 +71,7 @@ func (s backfillNodes) apply(session db.Session) (err error) {
 			return err
 		}
 		if rowsAffected != 1 {
-			logCtx.WithField("rowsAffected", rowsAffected).Warn("Expected exactly one row affected")
+			bfLogger.WithField("rowsAffected", rowsAffected).Warn(bfCtx, "Expected exactly one row affected")
 		}
 	}
 	return nil

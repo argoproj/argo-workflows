@@ -6,6 +6,26 @@ validate files or directories of cluster workflow template manifests
 argo cluster-template lint FILE... [flags]
 ```
 
+### Examples
+
+```
+# Lint a single cluster workflow template:
+  argo cluster-template lint my-cluster-template.yaml
+
+# Lint multiple files:
+  argo cluster-template lint template1.yaml template2.yaml
+
+# Lint all templates in a directory:
+  argo cluster-template lint ./cluster-templates/
+
+# Lint with simple output format:
+  argo cluster-template lint -o simple my-cluster-template.yaml
+
+# Lint without strict validation:
+  argo cluster-template lint --strict=false my-cluster-template.yaml
+
+```
+
 ### Options
 
 ```
@@ -35,6 +55,7 @@ argo cluster-template lint FILE... [flags]
   -k, --insecure-skip-verify           If true, the Argo Server's certificate will not be checked for validity. This will make your HTTPS connections insecure. Defaults to the ARGO_INSECURE_SKIP_VERIFY environment variable.
       --instanceid string              submit with a specific controller's instance id label. Default to the ARGO_INSTANCEID environment variable.
       --kubeconfig string              Path to a kube config. Only required if out-of-cluster
+      --log-format string              The formatter to use for logs. One of: text|json (default "text")
       --loglevel string                Set the logging level. One of: debug|info|warn|error (default "info")
   -n, --namespace string               If present, the namespace scope for this CLI request
       --password string                Password for basic authentication to the API server

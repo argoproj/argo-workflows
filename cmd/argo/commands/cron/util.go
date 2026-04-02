@@ -1,31 +1,26 @@
 package cron
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
-	"os"
 	"strings"
 	"time"
 
-	argoJson "github.com/argoproj/pkg/json"
 	"github.com/robfig/cron/v3"
-	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
-
-	"github.com/argoproj/pkg/errors"
-	"github.com/argoproj/pkg/humanize"
-
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/humanize"
+	argoJson "github.com/argoproj/argo-workflows/v4/util/json"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
 // GetNextRuntime returns the next time the workflow should run in local time. It assumes the workflow-controller is in
 // UTC, but nevertheless returns the time in the local timezone.
-func GetNextRuntime(cwf *v1alpha1.CronWorkflow) (time.Time, error) {
+func GetNextRuntime(ctx context.Context, cwf *v1alpha1.CronWorkflow) (time.Time, error) {
 	var nextRunTime time.Time
 	now := time.Now().UTC()
 	for _, schedule := range cwf.Spec.GetSchedulesWithTimezone() {
@@ -42,15 +37,15 @@ func GetNextRuntime(cwf *v1alpha1.CronWorkflow) (time.Time, error) {
 	return nextRunTime, nil
 }
 
-func generateCronWorkflows(filePaths []string, strict bool) []v1alpha1.CronWorkflow {
-	fileContents, err := util.ReadManifest(filePaths...)
+func generateCronWorkflows(ctx context.Context, filePaths []string, strict bool) []v1alpha1.CronWorkflow {
+	fileContents, err := util.ReadManifest(ctx, filePaths...)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	var cronWorkflows []v1alpha1.CronWorkflow
 	for _, body := range fileContents {
-		cronWfs := unmarshalCronWorkflows(body, strict)
+		cronWfs := unmarshalCronWorkflows(ctx, body, strict)
 		cronWorkflows = append(cronWorkflows, cronWfs...)
 	}
 
@@ -61,30 +56,18 @@ func generateCronWorkflows(filePaths []string, strict bool) []v1alpha1.CronWorkf
 	return cronWorkflows
 }
 
-func checkArgs(cmd *cobra.Command, args []string, parametersFile string, submitOpts *v1alpha1.SubmitOpts) {
-	if len(args) == 0 {
-		cmd.HelpFunc()(cmd, args)
-		os.Exit(1)
-	}
-
-	if parametersFile != "" {
-		err := util.ReadParametersFile(parametersFile, submitOpts)
-		errors.CheckError(err)
-	}
-}
-
 // unmarshalCronWorkflows unmarshals the input bytes as either json or yaml
-func unmarshalCronWorkflows(wfBytes []byte, strict bool) []wfv1.CronWorkflow {
-	var cronWf wfv1.CronWorkflow
-	var jsonOpts []argoJson.JSONOpt
+func unmarshalCronWorkflows(ctx context.Context, wfBytes []byte, strict bool) []v1alpha1.CronWorkflow {
+	var cronWf v1alpha1.CronWorkflow
+	var jsonOpts []argoJson.Opt
 	if strict {
 		jsonOpts = append(jsonOpts, argoJson.DisallowUnknownFields)
 	}
 	err := argoJson.Unmarshal(wfBytes, &cronWf, jsonOpts...)
 	if err == nil {
-		return []wfv1.CronWorkflow{cronWf}
+		return []v1alpha1.CronWorkflow{cronWf}
 	}
-	yamlWfs, err := common.SplitCronWorkflowYAMLFile(wfBytes, strict)
+	yamlWfs, err := common.SplitCronWorkflowYAMLFile(ctx, wfBytes, strict)
 	if err == nil {
 		return yamlWfs
 	}
@@ -92,10 +75,10 @@ func unmarshalCronWorkflows(wfBytes []byte, strict bool) []wfv1.CronWorkflow {
 	return nil
 }
 
-func printCronWorkflow(wf *wfv1.CronWorkflow, outFmt string) {
+func printCronWorkflow(ctx context.Context, wf *v1alpha1.CronWorkflow, outFmt string) {
 	switch outFmt {
 	case "name":
-		fmt.Println(wf.ObjectMeta.Name)
+		fmt.Println(wf.Name)
 	case "json":
 		outBytes, _ := json.MarshalIndent(wf, "", "    ")
 		fmt.Println(string(outBytes))
@@ -103,37 +86,37 @@ func printCronWorkflow(wf *wfv1.CronWorkflow, outFmt string) {
 		outBytes, _ := yaml.Marshal(wf)
 		fmt.Print(string(outBytes))
 	case "wide", "":
-		fmt.Print(getCronWorkflowGet(wf))
+		fmt.Print(getCronWorkflowGet(ctx, wf))
 	default:
 		log.Fatalf("Unknown output format: %s", outFmt)
 	}
 }
 
-func getCronWorkflowGet(cwf *wfv1.CronWorkflow) string {
+func getCronWorkflowGet(ctx context.Context, cwf *v1alpha1.CronWorkflow) string {
 	const fmtStr = "%-30s %v\n"
 
-	out := ""
-	out += fmt.Sprintf(fmtStr, "Name:", cwf.ObjectMeta.Name)
-	out += fmt.Sprintf(fmtStr, "Namespace:", cwf.ObjectMeta.Namespace)
-	out += fmt.Sprintf(fmtStr, "Created:", humanize.Timestamp(cwf.ObjectMeta.CreationTimestamp.Time))
-	out += fmt.Sprintf(fmtStr, "Schedule:", cwf.Spec.GetScheduleString())
-	out += fmt.Sprintf(fmtStr, "Suspended:", cwf.Spec.Suspend)
+	var out strings.Builder
+	fmt.Fprintf(&out, fmtStr, "Name:", cwf.Name)
+	fmt.Fprintf(&out, fmtStr, "Namespace:", cwf.Namespace)
+	fmt.Fprintf(&out, fmtStr, "Created:", humanize.Timestamp(cwf.CreationTimestamp.Time))
+	fmt.Fprintf(&out, fmtStr, "Schedules:", cwf.Spec.GetScheduleString())
+	fmt.Fprintf(&out, fmtStr, "Suspended:", cwf.Spec.Suspend)
 	if cwf.Spec.Timezone != "" {
-		out += fmt.Sprintf(fmtStr, "Timezone:", cwf.Spec.Timezone)
+		fmt.Fprintf(&out, fmtStr, "Timezone:", cwf.Spec.Timezone)
 	}
 	if cwf.Spec.StartingDeadlineSeconds != nil {
-		out += fmt.Sprintf(fmtStr, "StartingDeadlineSeconds:", *cwf.Spec.StartingDeadlineSeconds)
+		fmt.Fprintf(&out, fmtStr, "StartingDeadlineSeconds:", *cwf.Spec.StartingDeadlineSeconds)
 	}
 	if cwf.Spec.ConcurrencyPolicy != "" {
-		out += fmt.Sprintf(fmtStr, "ConcurrencyPolicy:", cwf.Spec.ConcurrencyPolicy)
+		fmt.Fprintf(&out, fmtStr, "ConcurrencyPolicy:", cwf.Spec.ConcurrencyPolicy)
 	}
 	if cwf.Status.LastScheduledTime != nil {
-		out += fmt.Sprintf(fmtStr, "LastScheduledTime:", humanize.Timestamp(cwf.Status.LastScheduledTime.Time))
+		fmt.Fprintf(&out, fmtStr, "LastScheduledTime:", humanize.Timestamp(cwf.Status.LastScheduledTime.Time))
 	}
 
-	next, err := GetNextRuntime(cwf)
+	next, err := GetNextRuntime(ctx, cwf)
 	if err == nil {
-		out += fmt.Sprintf(fmtStr, "NextScheduledTime:", humanize.Timestamp(next)+" (assumes workflow-controller is in UTC)")
+		fmt.Fprintf(&out, fmtStr, "NextScheduledTime:", humanize.Timestamp(next)+" (assumes workflow-controller is in UTC)")
 	}
 
 	if len(cwf.Status.Active) > 0 {
@@ -141,19 +124,19 @@ func getCronWorkflowGet(cwf *wfv1.CronWorkflow) string {
 		for _, activeWf := range cwf.Status.Active {
 			activeWfNames = append(activeWfNames, activeWf.Name)
 		}
-		out += fmt.Sprintf(fmtStr, "Active Workflows:", strings.Join(activeWfNames, ", "))
+		fmt.Fprintf(&out, fmtStr, "Active Workflows:", strings.Join(activeWfNames, ", "))
 	}
 	if len(cwf.Status.Conditions) > 0 {
-		out += cwf.Status.Conditions.DisplayString(fmtStr, map[wfv1.ConditionType]string{wfv1.ConditionTypeSubmissionError: "✖"})
+		out.WriteString(cwf.Status.Conditions.DisplayString(fmtStr, map[v1alpha1.ConditionType]string{v1alpha1.ConditionTypeSubmissionError: "✖"}))
 	}
 	if len(cwf.Spec.WorkflowSpec.Arguments.Parameters) > 0 {
-		out += fmt.Sprintf(fmtStr, "Workflow Parameters:", "")
+		fmt.Fprintf(&out, fmtStr, "Workflow Parameters:", "")
 		for _, param := range cwf.Spec.WorkflowSpec.Arguments.Parameters {
 			if !param.HasValue() {
 				continue
 			}
-			out += fmt.Sprintf(fmtStr, "  "+param.Name+":", param.GetValue())
+			fmt.Fprintf(&out, fmtStr, "  "+param.Name+":", param.GetValue())
 		}
 	}
-	return out
+	return out.String()
 }

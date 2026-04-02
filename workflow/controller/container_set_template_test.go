@@ -1,14 +1,15 @@
 package controller
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 func TestContainerSetTemplate(t *testing.T) {
@@ -30,17 +31,17 @@ spec:
           - name: ctr-0
             image: argoproj/argosay:v2
 `)
-	cancel, controller := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
-
-	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate(context.Background())
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
 
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	assert.Len(t, woc.wf.Status.Nodes, 2)
 
-	pod, err := getPod(woc, "pod")
-	assert.NoError(t, err)
+	pod, err := getPod(ctx, woc, "pod")
+	require.NoError(t, err)
 
 	assert.ElementsMatch(t, []corev1.Volume{
 		{Name: "tmp-dir-argo", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
@@ -64,7 +65,7 @@ spec:
 				{Name: "var-run-argo", MountPath: common.VarRunArgoPath},
 			}, c.VolumeMounts)
 		default:
-			t.Fatalf(c.Name)
+			t.Fatal(c.Name)
 		}
 	}
 }
@@ -98,17 +99,17 @@ spec:
           - name: main
             image: argoproj/argosay:v2
 `)
-	cancel, controller := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
-
-	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate(context.Background())
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
 
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	assert.Len(t, woc.wf.Status.Nodes, 2)
 
-	pod, err := getPod(woc, "pod")
-	assert.NoError(t, err)
+	pod, err := getPod(ctx, woc, "pod")
+	require.NoError(t, err)
 
 	assert.ElementsMatch(t, []corev1.Volume{
 		{Name: "tmp-dir-argo", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
@@ -117,14 +118,13 @@ spec:
 		{Name: "input-artifacts", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
 	}, pod.Spec.Volumes)
 
-	if assert.Len(t, pod.Spec.InitContainers, 1) {
-		c := pod.Spec.InitContainers[0]
-		assert.ElementsMatch(t, []corev1.VolumeMount{
-			{Name: "input-artifacts", MountPath: "/argo/inputs/artifacts"},
-			{Name: "workspace", MountPath: "/mainctrfs/workspace"},
-			{Name: "var-run-argo", MountPath: common.VarRunArgoPath},
-		}, c.VolumeMounts)
-	}
+	require.Len(t, pod.Spec.InitContainers, 1)
+	c := pod.Spec.InitContainers[0]
+	assert.ElementsMatch(t, []corev1.VolumeMount{
+		{Name: "input-artifacts", MountPath: "/argo/inputs/artifacts"},
+		{Name: "workspace", MountPath: "/mainctrfs/workspace"},
+		{Name: "var-run-argo", MountPath: common.VarRunArgoPath},
+	}, c.VolumeMounts)
 
 	assert.Len(t, pod.Spec.Containers, 2)
 	for _, c := range pod.Spec.Containers {
@@ -143,7 +143,7 @@ spec:
 				{Name: "var-run-argo", MountPath: common.VarRunArgoPath},
 			}, c.VolumeMounts)
 		default:
-			t.Fatalf(c.Name)
+			t.Fatal(c.Name)
 		}
 	}
 }
@@ -178,17 +178,17 @@ spec:
            raw:
              data: hi
 `)
-	cancel, controller := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
-
-	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate(context.Background())
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
 
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	assert.Len(t, woc.wf.Status.Nodes, 2)
 
-	pod, err := getPod(woc, "pod")
-	assert.NoError(t, err)
+	pod, err := getPod(ctx, woc, "pod")
+	require.NoError(t, err)
 
 	assert.ElementsMatch(t, []corev1.Volume{
 		{Name: "tmp-dir-argo", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
@@ -213,7 +213,7 @@ spec:
 				{Name: "var-run-argo", MountPath: common.VarRunArgoPath},
 			}, c.VolumeMounts)
 		default:
-			t.Fatalf(c.Name)
+			t.Fatal(c.Name)
 		}
 	}
 }

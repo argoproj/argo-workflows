@@ -5,14 +5,16 @@ package e2e
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	apiv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/test/e2e/fixtures"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 type HooksSuite struct {
@@ -169,11 +171,11 @@ spec:
 	// TODO: Temporarily comment out this assertion since it's flaky:
 	// 	  The running hook is occasionally not triggered. Possibly because the step finishes too quickly
 	//	  while the controller did not get a chance to trigger this hook.
-	//.ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
-	//	return strings.Contains(status.Name, "step-2.hooks.running")
-	//}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
+	// .ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
+	// return strings.Contains(status.Name, "step-2.hooks.running")
+	// }, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
 	//	assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
-	//})
+	// })
 }
 
 func (s *HooksSuite) TestTemplateLevelHooksStepFailVersion() {
@@ -283,7 +285,7 @@ spec:
 		// TODO: Temporarily comment out this assertion since it's flaky:
 		// 	  The running hook is occasionally not triggered. Possibly because the step finishes too quickly
 		//	  while the controller did not get a chance to trigger this hook.
-		//assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
+		// assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
 	})
 }
 
@@ -535,20 +537,15 @@ spec:
                 template: sleep
     - name: sleep
       synchronization:
-        mutex:
-          name: job
-      script:
-        image: alpine:latest
-        command: [/bin/sh]
-        source: |
-          sleep 4
+        mutexes:
+          - name: job
+      container:
+        image: argoproj/argosay:v2
+        args: ["sleep", "4"]
     - name: exit0
-      script:
-        image: alpine:latest
-        command: [/bin/sh]
-        source: |
-          sleep 2
-          exit 0
+      container:
+        image: argoproj/argosay:v2
+        args: ["sleep", "2"]
 `).When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded).
@@ -689,18 +686,12 @@ spec:
     
     - name: output-artifact
       script:
-        image: python:alpine3.6
-        command: [ python ]
+        image: argoproj/argosay:v2
+        command: [/bin/sh]
         source: |
-          import time
-          import random
-          import sys
-          time.sleep(1) # lifecycle hook for running won't trigger unless it runs for more than "a few seconds"
-          with open("result.txt", "w") as f:
-            f.write("Welcome")
-          if {{retries}} == 2:
-          	sys.exit(0)
-          sys.exit(1)
+          sleep 1
+          echo 'Welcome' > result.txt
+          [ "{{retries}}" = "2" ]
       retryStrategy: 
         limit: 2
       outputs:
@@ -710,21 +701,18 @@ spec:
 
     - name: started
       container:
-        image: python:alpine3.6
-        command: [sh, -c]
-        args: ["echo STARTED!"]
+        image: argoproj/argosay:v2
+        args: ["echo", "STARTED!"]
 
     - name: success
       container:
-        image: python:alpine3.6
-        command: [sh, -c]
-        args: ["echo SUCCEEDED!"]
+        image: argoproj/argosay:v2
+        args: ["echo", "SUCCEEDED!"]
 
     - name: failed
       container:
-        image: python:alpine3.6
-        command: [sh, -c]
-        args: ["echo FAILED or ERROR!"]
+        image: argoproj/argosay:v2
+        args: ["echo", "FAILED or ERROR!"]
 
     - name: print-artifact
       inputs:
@@ -732,9 +720,8 @@ spec:
           - name: message
             path: /tmp/message
       container:
-        image: python:alpine3.6
-        command: [sh, -c]
-        args: ["cat /tmp/message"]
+        image: argoproj/argosay:v2
+        args: ["cat", "/tmp/message"]
 `).When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeCompleted).
@@ -774,6 +761,101 @@ spec:
 		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
 			assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
 		})
+}
+
+func (s *HooksSuite) TestExitHandlerWithWorkflowLevelDeadline() {
+	var onExitNodeName string
+	(s.Given().
+		Workflow(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: exit-handler-with-workflow-level-deadline
+spec:
+  entrypoint: main
+  activeDeadlineSeconds: 1
+  hooks:
+    exit:
+      template: exit-handler
+  templates:
+    - name: main
+      steps:
+      - - name: sleep
+          template: sleep
+    - name: exit-handler
+      steps:
+      - - name: sleep
+          template: sleep
+    - name: sleep
+      container:
+        image: argoproj/argosay:v2
+        args: ["sleep", "5"]
+`).When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeCompleted, 2*time.Minute).
+		WaitForWorkflow(fixtures.Condition(func(wf *v1alpha1.Workflow) (bool, string) {
+			onExitNodeName = common.GenerateOnExitNodeName(wf.ObjectMeta.Name)
+			onExitNode := wf.Status.Nodes.FindByDisplayName(onExitNodeName)
+			return onExitNode.Completed(), "exit handler completed"
+		})).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
+			assert.Equal(t, v1alpha1.WorkflowFailed, status.Phase)
+		}).
+		ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
+			return status.DisplayName == onExitNodeName
+		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
+			assert.True(t, status.NodeFlag.Hooked)
+			assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
+		}))
+}
+
+func (s *HooksSuite) TestHttpExitHandlerWithWorkflowLevelDeadline() {
+	var onExitNodeName string
+	(s.Given().
+		Workflow(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: http-exit-handler-with-workflow-level-deadline
+spec:
+  entrypoint: main
+  activeDeadlineSeconds: 1
+  hooks:
+    exit:
+      template: exit-handler
+  templates:
+    - name: main
+      steps:
+      - - name: sleep
+          template: sleep
+    - name: sleep
+      container:
+        image: argoproj/argosay:v2
+        args: ["sleep", "5"]
+    - name: exit-handler
+      steps:
+      - - name: http
+          template: http
+    - name: http
+      http:
+        url: http://httpbin:9100/get
+`).When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeCompleted).
+		WaitForWorkflow(fixtures.Condition(func(wf *v1alpha1.Workflow) (bool, string) {
+			onExitNodeName = common.GenerateOnExitNodeName(wf.ObjectMeta.Name)
+			onExitNode := wf.Status.Nodes.FindByDisplayName(onExitNodeName)
+			return onExitNode.Completed(), "exit handler completed"
+		})).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
+			assert.Equal(t, v1alpha1.WorkflowFailed, status.Phase)
+		}).
+		ExpectWorkflowNode(func(status v1alpha1.NodeStatus) bool {
+			return status.DisplayName == onExitNodeName
+		}, func(t *testing.T, status *v1alpha1.NodeStatus, pod *apiv1.Pod) {
+			assert.True(t, status.NodeFlag.Hooked)
+			assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
+		}))
 }
 
 func TestHooksSuite(t *testing.T) {

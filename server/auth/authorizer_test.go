@@ -5,10 +5,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	k8stesting "k8s.io/client-go/testing"
+
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 func TestAuthorizer_CanI(t *testing.T) {
@@ -19,12 +22,11 @@ func TestAuthorizer_CanI(t *testing.T) {
 			Status: authorizationv1.SubjectAccessReviewStatus{Allowed: allowed},
 		}, nil
 	})
-	ctx := context.WithValue(context.Background(), KubeKey, kubeClient)
+	ctx := context.WithValue(logging.TestContext(t.Context()), KubeKey, kubeClient)
 	t.Run("CanI", func(t *testing.T) {
 		allowed, err := CanI(ctx, "", "", "", "")
-		if assert.NoError(t, err) {
-			assert.True(t, allowed)
-		}
+		require.NoError(t, err)
+		assert.True(t, allowed)
 	})
 	kubeClient.AddReactor("create", "selfsubjectrulesreviews", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
 		return true, &authorizationv1.SelfSubjectRulesReview{

@@ -1,5 +1,7 @@
 package common
 
+import "maps"
+
 // Parameters extends string map with useful methods.
 type Parameters map[string]string
 
@@ -7,9 +9,7 @@ type Parameters map[string]string
 func (ps Parameters) Merge(args ...Parameters) Parameters {
 	newParams := ps.DeepCopy()
 	for _, params := range args {
-		for k, v := range params {
-			newParams[k] = v
-		}
+		maps.Copy(newParams, params)
 	}
 	return newParams
 }
@@ -17,8 +17,6 @@ func (ps Parameters) Merge(args ...Parameters) Parameters {
 // DeepCopy returns a new instance which has the same parameters as the receiver.
 func (ps Parameters) DeepCopy() Parameters {
 	newParams := make(Parameters)
-	for k, v := range ps {
-		newParams[k] = v
-	}
+	maps.Copy(newParams, ps)
 	return newParams
 }

@@ -3,19 +3,20 @@ package cache
 import (
 	"context"
 	"regexp"
+	"sync"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
 var cacheKeyRegex = regexp.MustCompile("^[a-zA-Z0-9][-a-zA-Z0-9]*$")
 
 type MemoizationCache interface {
 	Load(ctx context.Context, key string) (*Entry, error)
-	Save(ctx context.Context, key string, nodeId string, value *wfv1.Outputs) error
+	Save(ctx context.Context, key string, nodeID string, value *wfv1.Outputs) error
 }
 
 type Entry struct {
@@ -51,10 +52,11 @@ type cacheFactory struct {
 	caches     map[string]MemoizationCache
 	kubeclient kubernetes.Interface
 	namespace  string
+	lock       sync.RWMutex
 }
 
 type Factory interface {
-	GetCache(ct CacheType, name string) MemoizationCache
+	GetCache(ct Type, name string) MemoizationCache
 }
 
 func NewCacheFactory(ki kubernetes.Interface, ns string) Factory {
@@ -62,22 +64,35 @@ func NewCacheFactory(ki kubernetes.Interface, ns string) Factory {
 		make(map[string]MemoizationCache),
 		ki,
 		ns,
+		sync.RWMutex{},
 	}
 }
 
-type CacheType string
+type Type string
 
 const (
 	// Only config maps are currently supported for caching
-	ConfigMapCache CacheType = "ConfigMapCache"
+	ConfigMapCache Type = "ConfigMapCache"
 )
 
 // Returns a cache if it exists and creates it otherwise
-func (cf *cacheFactory) GetCache(ct CacheType, name string) MemoizationCache {
+func (cf *cacheFactory) GetCache(ct Type, name string) MemoizationCache {
+	cf.lock.RLock()
+
 	idx := string(ct) + "." + name
+	if c := cf.caches[idx]; c != nil {
+		cf.lock.RUnlock()
+		return c
+	}
+	cf.lock.RUnlock()
+
+	cf.lock.Lock()
+	defer cf.lock.Unlock()
+
 	if c := cf.caches[idx]; c != nil {
 		return c
 	}
+
 	switch ct {
 	case ConfigMapCache:
 		c := NewConfigMapCache(cf.namespace, cf.kubeclient, name)
