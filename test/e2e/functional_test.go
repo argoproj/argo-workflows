@@ -463,6 +463,54 @@ func (s *FunctionalSuite) TestDAGEmptyParam() {
 		})
 }
 
+func (s *FunctionalSuite) TestDAGOmittedOutputRef() {
+	s.Given().
+		Workflow("@functional/dag-omitted-output-ref.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			nodeA := status.Nodes.FindByDisplayName("stage-a")
+			if assert.NotNil(t, nodeA) {
+				assert.Equal(t, wfv1.NodeSucceeded, nodeA.Phase)
+			}
+			nodeB := status.Nodes.FindByDisplayName("stage-b")
+			if assert.NotNil(t, nodeB) {
+				assert.Equal(t, wfv1.NodeOmitted, nodeB.Phase)
+			}
+			nodeC := status.Nodes.FindByDisplayName("stage-c")
+			if assert.NotNil(t, nodeC) {
+				assert.Equal(t, wfv1.NodeSucceeded, nodeC.Phase)
+			}
+		})
+}
+
+func (s *FunctionalSuite) TestDAGSkippedOutputRef() {
+	s.Given().
+		Workflow("@functional/dag-skipped-output-ref.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			nodeA := status.Nodes.FindByDisplayName("stage-a")
+			if assert.NotNil(t, nodeA) {
+				assert.Equal(t, wfv1.NodeSucceeded, nodeA.Phase)
+			}
+			nodeB := status.Nodes.FindByDisplayName("stage-b")
+			if assert.NotNil(t, nodeB) {
+				assert.Equal(t, wfv1.NodeSkipped, nodeB.Phase)
+			}
+			nodeC := status.Nodes.FindByDisplayName("stage-c")
+			if assert.NotNil(t, nodeC) {
+				assert.Equal(t, wfv1.NodeSucceeded, nodeC.Phase)
+			}
+		})
+}
+
 // 128M is for argo executor
 func (s *FunctionalSuite) TestPendingRetryWorkflow() {
 	s.Given().
