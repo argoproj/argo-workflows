@@ -509,6 +509,54 @@ func (s *FunctionalSuite) TestDAGSkippedOutputRef() {
 		})
 }
 
+func (s *FunctionalSuite) TestStepsWhenExprFilter() {
+	s.Given().
+		Workflow("@functional/steps-when-expr-filter.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			// "first" has type "" which matches the empty string in the list
+			node0 := status.Nodes.FindByDisplayName("fst(0:name:first,type:)")
+			if assert.NotNil(t, node0) {
+				assert.Equal(t, wfv1.NodeSucceeded, node0.Phase)
+			}
+			// "second" has type "always" which is in the list
+			node1 := status.Nodes.FindByDisplayName("fst(1:name:second,type:always)")
+			if assert.NotNil(t, node1) {
+				assert.Equal(t, wfv1.NodeSucceeded, node1.Phase)
+			}
+			// "third" has type "test" which is in the list (since test=true)
+			node2 := status.Nodes.FindByDisplayName("fst(2:name:third,type:test)")
+			if assert.NotNil(t, node2) {
+				assert.Equal(t, wfv1.NodeSucceeded, node2.Phase)
+			}
+			// "fourth" has no type, defaults to "always" via ??
+			node3 := status.Nodes.FindByDisplayName("fst(3:name:fourth)")
+			if assert.NotNil(t, node3) {
+				assert.Equal(t, wfv1.NodeSucceeded, node3.Phase)
+			}
+		})
+}
+
+func (s *FunctionalSuite) TestDAGWhenExprSkip() {
+	s.Given().
+		Workflow("@functional/dag-when-expr-skip.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			nodeB := status.Nodes.FindByDisplayName("B")
+			if assert.NotNil(t, nodeB) {
+				assert.Equal(t, wfv1.NodeSkipped, nodeB.Phase)
+			}
+		})
+}
+
 // 128M is for argo executor
 func (s *FunctionalSuite) TestPendingRetryWorkflow() {
 	s.Given().
