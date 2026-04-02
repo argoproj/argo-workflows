@@ -1,0 +1,39 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: steps-when-expr-filter-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      inputs:
+        parameters:
+          - name: test
+            value: 'true'
+          - name: list
+            value: "{{= concat(['always'], inputs.parameters.test == 'true' ? ['test'] : []) | toJSON() }}"
+      steps:
+        - - name: fst
+            template: run
+            when: |
+              "{{= get(item, 'type') ?? 'always' }}"
+              in
+              ("{{= inputs.parameters.list | fromJSON() | join('","') }}","")
+            withParam: |
+              [
+                { "name": "first", "type": "" },
+                { "name": "second", "type": "always" },
+                { "name": "third", "type": "test" },
+                { "name": "fourth" }
+              ]
+            arguments:
+              parameters:
+                - name: name
+                  value: "{{ item.name }}{{ inputs.parameters.list }}"
+    - name: run
+      inputs:
+        parameters:
+          - name: name
+      container:
+        image: argoproj/argosay:v2
+        args: ["echo", "{{inputs.parameters.name}}"]
