@@ -499,17 +499,17 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
                 },
                 tools: (
                     <div className='workflow-details__topbar-buttons'>
-                        <a className={classNames({active: tab === 'summary'})} onClick={() => setTab('summary')}>
+                        <a className={classNames({active: tab === 'summary'})} onClick={() => setTab('summary')} title='Summary'>
                             <i className='fa fa-columns' />
                             {workflow && workflow.status.conditions && hasWarningConditionBadge(workflow.status.conditions) && <span className='badge' />}
                         </a>
-                        <a className={classNames({active: tab === 'events'})} onClick={() => setTab('events')}>
+                        <a className={classNames({active: tab === 'events'})} onClick={() => setTab('events')} title='Events'>
                             <i className='fa argo-icon-notification' />
                         </a>
-                        <a className={classNames({active: tab === 'timeline'})} onClick={() => setTab('timeline')}>
+                        <a className={classNames({active: tab === 'timeline'})} onClick={() => setTab('timeline')} title='Timeline'>
                             <i className='fa argo-icon-timeline' />
                         </a>
-                        <a className={classNames({active: tab === 'workflow'})} onClick={() => setTab('workflow')}>
+                        <a className={classNames({active: tab === 'workflow'})} onClick={() => setTab('workflow')} title='Workflow'>
                             <i className='fa argo-icon-workflow' />
                         </a>
                     </div>
