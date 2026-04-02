@@ -4120,3 +4120,71 @@ func TestDAGSkippedOutputRef(t *testing.T) {
 	require.NotNil(t, nodeC, "stage-c should be created even though stage-b was skipped")
 	assert.Equal(t, wfv1.NodePending, nodeC.Phase)
 }
+
+var dagWhenExprSkipEval = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-when-expr-skip-eval-
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+      - name: data
+        value: ''
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: A
+        template: echo
+        when: "false"
+        arguments:
+          parameters:
+          - name: message
+            value: A
+      - name: B
+        dependencies: [A]
+        when: "{{= workflow.parameters.data != '' }}"
+        template: echo
+        arguments:
+          parameters:
+          - name: message
+            value: "{{= jsonpath(workflow.parameters.data, '$.id') }}"
+  - name: echo
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: alpine:3.23
+      command: [echo, "{{inputs.parameters.message}}"]
+`
+
+// TestDAGWhenExprSkipEval verifies that expression templates in a DAG task's arguments are not
+// evaluated when the task's "when" clause evaluates to false.
+// Scenario: workflow parameter "data" is empty. Task B has when: "{{= workflow.parameters.data != ” }}"
+// which evaluates to false. B's argument uses jsonpath(workflow.parameters.data, '$.id') which would
+// fail on an empty string. The expression should not be evaluated since the task will be skipped.
+// Currently fails because SubstituteParams evaluates all expression templates in the entire DAG
+// template before individual task "when" conditions are checked.
+func TestDAGWhenExprSkipEval(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	wf := wfv1.MustUnmarshalWorkflow(dagWhenExprSkipEval)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	woc.operate(ctx)
+
+	// Workflow should succeed: B's when clause evaluates to false so B should be skipped
+	// without evaluating B's argument expressions.
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+
+	nodeB := woc.wf.Status.Nodes.FindByDisplayName("B")
+	require.NotNil(t, nodeB)
+	assert.Equal(t, wfv1.NodeSkipped, nodeB.Phase)
+}
