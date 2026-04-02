@@ -880,7 +880,7 @@ spec:
     metadata: {}
     name: one-will-fail
     outputs: {}
-  - 
+  -
     container:
       command:
       - cowsay
@@ -1131,7 +1131,7 @@ spec:
     metadata: {}
     name: diamond
     outputs: {}
-  - 
+  -
     container:
       args:
       - sleep 10
@@ -1339,16 +1339,16 @@ kind: Workflow
 metadata:
   name: dag-diamond-dj7q5
 spec:
-  
+
   entrypoint: diamond
   templates:
-  - 
+  -
     dag:
       tasks:
-      - 
+      -
         name: A
         template: echo
-      - 
+      -
         dependencies:
         - A
         name: B
@@ -1357,7 +1357,7 @@ spec:
     metadata: {}
     name: diamond
     outputs: {}
-  - 
+  -
     container:
       args:
       - exit 1
@@ -1510,29 +1510,29 @@ kind: Workflow
 metadata:
   name: wf-retry-pol
 spec:
-  
+
   entrypoint: run-steps
   onExit: onExit
   templates:
-  - 
+  -
     inputs: {}
     metadata: {}
     name: run-steps
     outputs: {}
     steps:
-    - - 
+    - -
         name: run-dag
         template: run-dag
-    - - 
+    - -
         name: manual-onExit
         template: onExit
-  - 
+  -
     dag:
       tasks:
-      - 
+      -
         name: A
         template: fail
-      - 
+      -
         dependencies:
         - A
         name: B
@@ -1541,7 +1541,7 @@ spec:
     metadata: {}
     name: run-dag
     outputs: {}
-  - 
+  -
     container:
       args:
       - exit 2
@@ -1558,7 +1558,7 @@ spec:
     retryStrategy:
       limit: 100
       retryPolicy: OnError
-  - 
+  -
     container:
       args:
       - hello world
@@ -1699,17 +1699,17 @@ kind: Workflow
 metadata:
   name: dag-diamond-88trp
 spec:
-  
+
   entrypoint: diamond
   templates:
-  - 
+  -
     dag:
       failFast: false
       tasks:
-      - 
+      -
         name: A
         template: echo
-      - 
+      -
         dependencies:
         - A
         name: B
@@ -1719,7 +1719,7 @@ spec:
     metadata: {}
     name: diamond
     outputs: {}
-  - 
+  -
     container:
       args:
       - exit 0
@@ -1733,7 +1733,7 @@ spec:
     metadata: {}
     name: echo
     outputs: {}
-  - 
+  -
     container:
       args:
       - exit 1
@@ -1865,17 +1865,17 @@ kind: Workflow
 metadata:
   name: exit-handler-bug-example
 spec:
-  
+
   entrypoint: dag
   templates:
-  - 
+  -
     dag:
       tasks:
-      - 
+      -
         name: step-2
         onExit: on-exit
         template: step-template
-      - 
+      -
         dependencies:
         - step-2
         name: step-3
@@ -1885,7 +1885,7 @@ spec:
     metadata: {}
     name: dag
     outputs: {}
-  - 
+  -
     container:
       args:
       - echo exit-handler-step-{{pod.name}}
@@ -1899,7 +1899,7 @@ spec:
     metadata: {}
     name: on-exit
     outputs: {}
-  - 
+  -
     container:
       args:
       - echo step {{pod.name}}
@@ -2102,10 +2102,10 @@ kind: Workflow
 metadata:
   name: dag-primay-branch-6bnnl
 spec:
-  
+
   entrypoint: statis
   templates:
-  - 
+  -
     container:
       args:
       - hello world
@@ -2118,7 +2118,7 @@ spec:
     metadata: {}
     name: a
     outputs: {}
-  - 
+  -
     container:
       args:
       - exit!
@@ -2131,19 +2131,19 @@ spec:
     metadata: {}
     name: exit
     outputs: {}
-  - 
+  -
     inputs: {}
     metadata: {}
     name: steps
     outputs: {}
     steps:
-    - - 
+    - -
         name: step-a
         template: a
-  - 
+  -
     dag:
       tasks:
-      - 
+      -
         name: A
         onExit: exit
         template: steps
@@ -2303,7 +2303,7 @@ spec:
       parameters:
       - name: scheduled-jobs
         value: '[]'
-  - 
+  -
     container:
       args:
       - hello world
@@ -2490,7 +2490,7 @@ spec:
         fi
         echo "process $chunk"
   - activeDeadlineSeconds: 300
-    
+
     inputs: {}
     metadata: {}
     name: finish
@@ -3144,7 +3144,7 @@ spec:
     metadata: {}
     name: ok
     outputs: {}
-  - 
+  -
     container:
       args:
       - |
@@ -3933,4 +3933,132 @@ func TestDAGWhenSkipNoRequeue(t *testing.T) {
 	nodeB := woc.wf.Status.Nodes.FindByDisplayName("B")
 	require.NotNil(t, nodeB)
 	assert.Equal(t, wfv1.NodeSkipped, nodeB.Phase)
+}
+
+var dagSkippedOutputRef = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-skipped-output-ref
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+      - name: run-stage-b
+        value: "false"
+  templates:
+    - name: main
+      inputs:
+        parameters:
+          - name: run-stage-b
+      dag:
+        tasks:
+          - name: stage-a
+            template: stage-a
+          - name: stage-b
+            template: stage-b
+            when: "\"{{inputs.parameters.run-stage-b}}\" == \"true\""
+          - name: stage-c
+            template: stage-c
+            depends: "stage-a && (stage-b || stage-b.Skipped)"
+            arguments:
+              parameters:
+                - name: message-from-a
+                  value: "{{tasks.stage-a.outputs.parameters.output-message}}"
+                - name: message-from-b
+                  value: "{{tasks.stage-b.outputs.parameters.output-message}}"
+    - name: stage-a
+      outputs:
+        parameters:
+          - name: output-message
+            valueFrom:
+              path: /tmp/output.txt
+      container:
+        image: alpine:3.23
+        command: [sh, -c]
+        args: ["echo 'hello from stage A' > /tmp/output.txt"]
+    - name: stage-b
+      outputs:
+        parameters:
+          - name: output-message
+            valueFrom:
+              path: /tmp/output.txt
+      container:
+        image: alpine:3.23
+        command: [sh, -c]
+        args: ["echo 'hello from stage B' > /tmp/output.txt"]
+    - name: stage-c
+      inputs:
+        parameters:
+          - name: message-from-a
+          - name: message-from-b
+      container:
+        image: alpine:3.23
+        command: [echo]
+        args: ["{{inputs.parameters.message-from-a}}", "{{inputs.parameters.message-from-b}}"]
+status:
+  phase: Running
+  startedAt: "2024-01-01T00:00:00Z"
+  nodes:
+    dag-skipped-output-ref:
+      id: dag-skipped-output-ref
+      name: dag-skipped-output-ref
+      displayName: dag-skipped-output-ref
+      type: DAG
+      templateName: main
+      templateScope: local/dag-skipped-output-ref
+      phase: Running
+      startedAt: "2024-01-01T00:00:00Z"
+      children:
+        - dag-skipped-output-ref-1381367026
+        - dag-skipped-output-ref-1364589407
+      outboundNodes:
+        - dag-skipped-output-ref-1347811788
+    dag-skipped-output-ref-1381367026:
+      id: dag-skipped-output-ref-1381367026
+      name: dag-skipped-output-ref.stage-a
+      displayName: stage-a
+      type: Pod
+      templateName: stage-a
+      templateScope: local/dag-skipped-output-ref
+      boundaryID: dag-skipped-output-ref
+      phase: Succeeded
+      startedAt: "2024-01-01T00:00:00Z"
+      finishedAt: "2024-01-01T00:00:10Z"
+      outputs:
+        parameters:
+          - name: output-message
+            value: "hello from stage A"
+    dag-skipped-output-ref-1364589407:
+      id: dag-skipped-output-ref-1364589407
+      name: dag-skipped-output-ref.stage-b
+      displayName: stage-b
+      type: Skipped
+      templateName: stage-b
+      templateScope: local/dag-skipped-output-ref
+      boundaryID: dag-skipped-output-ref
+      phase: Skipped
+      startedAt: "2024-01-01T00:00:00Z"
+      finishedAt: "2024-01-01T00:00:00Z"
+      message: when '"false" == "true"' evaluated false
+`
+
+// TestDAGSkippedOutputRef verifies that a DAG task can reference outputs from a skipped
+// dependency without causing a requeue loop.
+// Scenario: stage-a succeeds with output parameters, stage-b is skipped (when evaluates false),
+// stage-c depends on both and references outputs from both. stage-c should still be scheduled
+// even though tasks.stage-b.outputs.parameters.output-message is unresolvable.
+func TestDAGSkippedOutputRef(t *testing.T) {
+	ctx := t.Context()
+	wf := wfv1.MustUnmarshalWorkflow(dagSkippedOutputRef)
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+
+	// stage-c should be created and pending, not stuck in a requeue loop
+	nodeC := woc.wf.Status.Nodes.FindByDisplayName("stage-c")
+	require.NotNil(t, nodeC, "stage-c should be created even though stage-b was skipped")
+	assert.Equal(t, wfv1.NodePending, nodeC.Phase)
 }
