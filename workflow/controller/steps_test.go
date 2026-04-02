@@ -719,3 +719,90 @@ func TestStepsWhenSkipNoRequeue(t *testing.T) {
 	require.NotNil(t, nodeB)
 	assert.Equal(t, wfv1.NodeSkipped, nodeB.Phase)
 }
+
+var stepsWhenExprWithParamFilter = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: steps-when-expr-filter-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      inputs:
+        parameters:
+          - name: test
+            value: 'true'
+          - name: list
+            value: "{{= concat(['always'], inputs.parameters.test == 'true' ? ['test'] : []) | toJSON() }}"
+      steps:
+        - - name: fst
+            template: run
+            when: |
+              "{{= get(item, 'type') ?? 'always' }}"
+              in
+              ("{{= inputs.parameters.list | fromJSON() | join('","') }}","")
+            withParam: |
+              [
+                { "name": "first", "type": "" },
+                { "name": "second", "type": "always" },
+                { "name": "third", "type": "test" },
+                { "name": "fourth" }
+              ]
+            arguments:
+              parameters:
+                - name: name
+                  value: "{{ item.name }}{{ inputs.parameters.list }}"
+    - name: run
+      inputs:
+        parameters:
+          - name: name
+      container:
+        image: alpine:3.23
+        command: [echo]
+        args: ["{{inputs.parameters.name}}"]
+`
+
+// TestStepsWhenExprWithParamFilter verifies that expression templates work correctly
+// in a steps workflow with withParam expansion and a when clause that filters items
+// using expression functions (concat, get, ??, toJSON, fromJSON, join).
+// This mirrors a real-world pattern where a dynamic list parameter controls which
+// withParam items execute.
+func TestStepsWhenExprWithParamFilter(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	wf := wfv1.MustUnmarshalWorkflow(stepsWhenExprWithParamFilter)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	woc.operate(ctx)
+
+	// Workflow is Running because pods haven't completed, but we can verify:
+	// 1. No error occurred during expression evaluation
+	// 2. All 4 items were expanded and scheduled (none were incorrectly skipped/errored)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+
+	// "first" has type "" which matches empty string in the filter list
+	node0 := woc.wf.Status.Nodes.FindByDisplayName("fst(0:name:first,type:)")
+	require.NotNil(t, node0)
+	assert.Equal(t, wfv1.NodePending, node0.Phase)
+
+	// "second" has type "always" which is in the filter list
+	node1 := woc.wf.Status.Nodes.FindByDisplayName("fst(1:name:second,type:always)")
+	require.NotNil(t, node1)
+	assert.Equal(t, wfv1.NodePending, node1.Phase)
+
+	// "third" has type "test" which is in the filter list (test=true)
+	node2 := woc.wf.Status.Nodes.FindByDisplayName("fst(2:name:third,type:test)")
+	require.NotNil(t, node2)
+	assert.Equal(t, wfv1.NodePending, node2.Phase)
+
+	// "fourth" has no type, defaults to "always" via ?? operator
+	node3 := woc.wf.Status.Nodes.FindByDisplayName("fst(3:name:fourth)")
+	require.NotNil(t, node3)
+	assert.Equal(t, wfv1.NodePending, node3.Phase)
+}
