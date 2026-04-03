@@ -11,7 +11,7 @@ export function ChatButton() {
         services.info
             .getInfo()
             .then(info => info.links)
-            .then(links => (links || []).concat({name: 'Get help', scope: 'chat', url: 'https://argo-workflows.readthedocs.io/en/latest/'}).filter(x => x.scope === 'chat'))
+            .then(links => (links || []).concat({name: 'Get help', scope: 'chat', url: 'https://argo-workflows.readthedocs.io/en/latest/', target: '_blank', rel: 'noreferrer'}).filter(x => x.scope === 'chat'))
             .then(links => {
                 setLink(links[0]);
             });
@@ -23,7 +23,7 @@ export function ChatButton() {
 
     return (
         <div style={{position: 'fixed', right: 10, bottom: 10}}>
-            <a href={link.url} className='argo-button argo-button--special'>
+            <a href={link.url} className='argo-button argo-button--special' target={link.target} rel={link.rel}>
                 <i className='fas fa-comment-alt' /> {link.name}
             </a>
         </div>
