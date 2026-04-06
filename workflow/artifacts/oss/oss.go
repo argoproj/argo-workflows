@@ -277,7 +277,22 @@ func (ossDriver *ArtifactDriver) Save(ctx context.Context, path string, outputAr
 
 // SaveStream saves an artifact from an io.Reader to OSS compliant storage
 func (ossDriver *ArtifactDriver) SaveStream(ctx context.Context, reader io.Reader, outputArtifact *wfv1.Artifact) error {
-	err := waitutil.Backoff(defaultRetry,
+	// Buffer to a temp file so the reader can be re-read on retry
+	tmpFile, err := os.CreateTemp("", "oss-upload-*")
+	if err != nil {
+		return fmt.Errorf("failed to create temp file: %w", err)
+	}
+	defer os.Remove(tmpFile.Name())
+
+	if _, err = io.Copy(tmpFile, reader); err != nil {
+		tmpFile.Close()
+		return fmt.Errorf("failed to buffer stream to temp file: %w", err)
+	}
+	if err = tmpFile.Close(); err != nil {
+		return fmt.Errorf("failed to close temp file: %w", err)
+	}
+
+	err = waitutil.Backoff(defaultRetry,
 		func() (bool, error) {
 			logger := logging.RequireLoggerFromContext(ctx)
 			logger.WithField("key", outputArtifact.OSS.Key).Info(ctx, "OSS SaveStream")
@@ -294,7 +309,12 @@ func (ossDriver *ArtifactDriver) SaveStream(ctx context.Context, reader io.Reade
 			if err != nil {
 				return !isTransientOSSErr(ctx, err), err
 			}
-			err = bucket.PutObject(outputArtifact.OSS.Key, reader)
+			f, err := os.Open(tmpFile.Name())
+			if err != nil {
+				return true, fmt.Errorf("failed to reopen temp file: %w", err)
+			}
+			defer f.Close()
+			err = bucket.PutObject(outputArtifact.OSS.Key, f)
 			if err != nil {
 				return !isTransientOSSErr(ctx, err), err
 			}

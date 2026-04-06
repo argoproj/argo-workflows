@@ -318,8 +318,10 @@ func (azblobDriver *ArtifactDriver) SaveStream(ctx context.Context, reader io.Re
 	}
 
 	blobClient := containerClient.NewBlockBlobClient(outputArtifact.Azure.Blob)
-	_, err = blobClient.UploadStream(ctx, reader, nil)
-	return err
+	if _, err = blobClient.UploadStream(ctx, reader, nil); err != nil {
+		return fmt.Errorf("unable to upload stream to Azure blob %s: %w", outputArtifact.Azure.Blob, err)
+	}
+	return nil
 }
 
 // PutFile uploads a file to Azure Blob Storage
