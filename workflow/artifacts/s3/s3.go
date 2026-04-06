@@ -274,15 +274,40 @@ func (s3Driver *ArtifactDriver) Save(ctx context.Context, path string, outputArt
 func (s3Driver *ArtifactDriver) SaveStream(ctx context.Context, reader io.Reader, outputArtifact *wfv1.Artifact) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+
+	// Buffer to a temp file so the reader can be re-read on retry
+	tmpFile, err := os.CreateTemp("", "s3-upload-*")
+	if err != nil {
+		return fmt.Errorf("failed to create temp file: %w", err)
+	}
+	defer os.Remove(tmpFile.Name())
+
+	if _, err = io.Copy(tmpFile, reader); err != nil {
+		tmpFile.Close()
+		return fmt.Errorf("failed to buffer stream to temp file: %w", err)
+	}
+	if err = tmpFile.Close(); err != nil {
+		return fmt.Errorf("failed to close temp file: %w", err)
+	}
+
 	log := logging.RequireLoggerFromContext(ctx)
-	err := waitutil.Backoff(executorretry.ExecutorRetry(ctx),
+	err = waitutil.Backoff(executorretry.ExecutorRetry(ctx),
 		func() (bool, error) {
 			log.WithField("key", outputArtifact.S3.Key).Info(ctx, "S3 SaveStream")
 			s3cli, err := s3Driver.newClient(ctx)
 			if err != nil {
 				return !isTransientS3Err(ctx, err), fmt.Errorf("failed to create new S3 client: %w", err)
 			}
-			err = s3cli.PutStream(outputArtifact.S3.Bucket, outputArtifact.S3.Key, reader, -1)
+			f, err := os.Open(tmpFile.Name())
+			if err != nil {
+				return true, fmt.Errorf("failed to reopen temp file: %w", err)
+			}
+			defer f.Close()
+			fi, err := f.Stat()
+			if err != nil {
+				return true, fmt.Errorf("failed to stat temp file: %w", err)
+			}
+			err = s3cli.PutStream(outputArtifact.S3.Bucket, outputArtifact.S3.Key, f, fi.Size())
 			if err != nil {
 				return !isTransientS3Err(ctx, err), fmt.Errorf("failed to put stream: %w", err)
 			}

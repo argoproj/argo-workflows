@@ -243,7 +243,22 @@ func (h *ArtifactDriver) Save(ctx context.Context, path string, outputArtifact *
 
 // SaveStream saves an artifact from an io.Reader to GCS compliant storage
 func (h *ArtifactDriver) SaveStream(ctx context.Context, reader io.Reader, outputArtifact *wfv1.Artifact) error {
-	err := waitutil.Backoff(defaultRetry,
+	// Buffer to a temp file so the reader can be re-read on retry
+	tmpFile, err := os.CreateTemp("", "gcs-upload-*")
+	if err != nil {
+		return fmt.Errorf("failed to create temp file: %w", err)
+	}
+	defer os.Remove(tmpFile.Name())
+
+	if _, err = io.Copy(tmpFile, reader); err != nil {
+		tmpFile.Close()
+		return fmt.Errorf("failed to buffer stream to temp file: %w", err)
+	}
+	if err = tmpFile.Close(); err != nil {
+		return fmt.Errorf("failed to close temp file: %w", err)
+	}
+
+	err = waitutil.Backoff(defaultRetry,
 		func() (bool, error) {
 			key := filepath.Clean(outputArtifact.GCS.Key)
 			logging.RequireLoggerFromContext(ctx).WithField("key", key).Info(ctx, "GCS SaveStream")
@@ -253,8 +268,14 @@ func (h *ArtifactDriver) SaveStream(ctx context.Context, reader io.Reader, outpu
 			}
 			defer client.Close()
 
+			f, err := os.Open(tmpFile.Name())
+			if err != nil {
+				return true, fmt.Errorf("failed to reopen temp file: %w", err)
+			}
+			defer f.Close()
+
 			wc := client.Bucket(outputArtifact.GCS.Bucket).Object(key).NewWriter(ctx)
-			if _, err = io.Copy(wc, reader); err != nil {
+			if _, err = io.Copy(wc, f); err != nil {
 				wc.Close()
 				return !isTransientGCSErr(ctx, err), err
 			}
