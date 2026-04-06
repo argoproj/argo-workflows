@@ -832,19 +832,13 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 	s.instanceIDService.Label(wf)
 	creator.LabelCreator(ctx, wf)
 
-	// Debug: Log SubmitOptions
 	logger := logging.RequireLoggerFromContext(ctx)
-	logger.WithFields(logging.Fields{
-		"submitOptions":    req.SubmitOptions,
-		"hasSubmitOptions": req.SubmitOptions != nil,
-		"artifactsCount": func() int {
-			if req.SubmitOptions != nil {
-				return len(req.SubmitOptions.Artifacts)
-			}
-			return -1
-		}(),
-		"hasWorkflowTemplateRef": wf.Spec.WorkflowTemplateRef != nil,
-	}).Debug(ctx, "SubmitWorkflow: checking conditions")
+	if req.SubmitOptions != nil {
+		logger.WithFields(logging.Fields{
+			"artifactsCount":         len(req.SubmitOptions.Artifacts),
+			"hasWorkflowTemplateRef": wf.Spec.WorkflowTemplateRef != nil,
+		}).Debug(ctx, "SubmitWorkflow: checking conditions")
+	}
 
 	err := util.ApplySubmitOpts(wf, req.SubmitOptions)
 	if err != nil {
