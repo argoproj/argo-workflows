@@ -15,7 +15,7 @@ interface ArtifactsInputProps {
 export interface ArtifactUploadResponse {
     name: string;
     key: string;
-    location: any;
+    location: Record<string, unknown>;
 }
 
 type UploadStatus = 'idle' | 'uploading' | 'success' | 'error';
@@ -26,17 +26,13 @@ export function ArtifactsInput({namespace, workflowTemplateName, artifactName, o
     const [fileName, setFileName] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [isDragging, setIsDragging] = useState(false);
 
     const handleFileSelect = () => {
         fileInputRef.current?.click();
     };
 
-    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file) {
-            return;
-        }
-
+    const uploadFile = async (file: File) => {
         if (onUploadStart) {
             onUploadStart();
         }
@@ -93,6 +89,36 @@ export function ArtifactsInput({namespace, workflowTemplateName, artifactName, o
         }
     };
 
+    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) {
+            return;
+        }
+        uploadFile(file);
+    };
+
+    const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+        event.preventDefault();
+        event.stopPropagation();
+        setIsDragging(true);
+    };
+
+    const handleDragLeave = (event: React.DragEvent<HTMLDivElement>) => {
+        event.preventDefault();
+        event.stopPropagation();
+        setIsDragging(false);
+    };
+
+    const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
+        event.preventDefault();
+        event.stopPropagation();
+        setIsDragging(false);
+        const file = event.dataTransfer.files?.[0];
+        if (file) {
+            uploadFile(file);
+        }
+    };
+
     const handleReset = () => {
         setStatus('idle');
         setProgress(0);
@@ -108,7 +134,12 @@ export function ArtifactsInput({namespace, workflowTemplateName, artifactName, o
             <input ref={fileInputRef} type='file' onChange={handleFileChange} style={{display: 'none'}} />
 
             {status === 'idle' && (
-                <div className='artifacts-input__dropzone' onClick={handleFileSelect}>
+                <div
+                    className={`artifacts-input__dropzone${isDragging ? ' artifacts-input__dropzone--dragging' : ''}`}
+                    onClick={handleFileSelect}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}>
                     <i className='fa fa-upload' />
                     <span>Click to select a file or drag and drop</span>
                 </div>
