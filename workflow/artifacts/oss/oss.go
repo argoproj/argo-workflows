@@ -296,27 +296,27 @@ func (ossDriver *ArtifactDriver) SaveStream(ctx context.Context, reader io.Reade
 		func() (bool, error) {
 			logger := logging.RequireLoggerFromContext(ctx)
 			logger.WithField("key", outputArtifact.OSS.Key).Info(ctx, "OSS SaveStream")
-			osscli, err := ossDriver.newOSSClient(ctx)
-			if err != nil {
-				return !isTransientOSSErr(ctx, err), err
+			osscli, retryErr := ossDriver.newOSSClient(ctx)
+			if retryErr != nil {
+				return !isTransientOSSErr(ctx, retryErr), retryErr
 			}
 			bucketName := outputArtifact.OSS.Bucket
-			err = setBucketLogging(osscli, bucketName)
-			if err != nil {
-				return !isTransientOSSErr(ctx, err), err
+			retryErr = setBucketLogging(osscli, bucketName)
+			if retryErr != nil {
+				return !isTransientOSSErr(ctx, retryErr), retryErr
 			}
-			bucket, err := osscli.Bucket(bucketName)
-			if err != nil {
-				return !isTransientOSSErr(ctx, err), err
+			bucket, retryErr := osscli.Bucket(bucketName)
+			if retryErr != nil {
+				return !isTransientOSSErr(ctx, retryErr), retryErr
 			}
-			f, err := os.Open(tmpFile.Name())
-			if err != nil {
-				return true, fmt.Errorf("failed to reopen temp file: %w", err)
+			f, retryErr := os.Open(tmpFile.Name())
+			if retryErr != nil {
+				return true, fmt.Errorf("failed to reopen temp file: %w", retryErr)
 			}
 			defer f.Close()
-			err = bucket.PutObject(outputArtifact.OSS.Key, f)
-			if err != nil {
-				return !isTransientOSSErr(ctx, err), err
+			retryErr = bucket.PutObject(outputArtifact.OSS.Key, f)
+			if retryErr != nil {
+				return !isTransientOSSErr(ctx, retryErr), retryErr
 			}
 			return true, nil
 		})

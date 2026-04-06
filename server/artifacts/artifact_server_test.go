@@ -905,7 +905,7 @@ func createMultipartRequest(t *testing.T, path string, fileContent []byte) *http
 	err = writer.Close()
 	require.NoError(t, err)
 
-	req := httptest.NewRequest(http.MethodPost, path, body)
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, path, body)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	return req
 }
@@ -947,7 +947,7 @@ func TestArtifactServer_UploadInputArtifact(t *testing.T) {
 	t.Run("Error - method not allowed", func(t *testing.T) {
 		s := newServerForUpload(t, nil)
 		recorder := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodGet, "/upload-artifacts/my-ns/my-wft/input-artifact", nil)
+		req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/upload-artifacts/my-ns/my-wft/input-artifact", nil)
 
 		s.UploadInputArtifact(recorder, req)
 
@@ -1008,7 +1008,7 @@ func TestArtifactServer_UploadInputArtifact(t *testing.T) {
 		err = writer.Close()
 		require.NoError(t, err)
 
-		req := httptest.NewRequest(http.MethodPost, "/upload-artifacts/my-ns/my-wft/input-artifact", body)
+		req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/upload-artifacts/my-ns/my-wft/input-artifact", body)
 		req.Header.Set("Content-Type", writer.FormDataContentType())
 
 		s.UploadInputArtifact(recorder, req)
@@ -1025,7 +1025,7 @@ func TestArtifactServer_UploadInputArtifact(t *testing.T) {
 	t.Run("Error - missing file in form", func(t *testing.T) {
 		s := newServerForUpload(t, nil)
 		recorder := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodPost, "/upload-artifacts/my-ns/my-wft/input-artifact", strings.NewReader(""))
+		req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/upload-artifacts/my-ns/my-wft/input-artifact", strings.NewReader(""))
 		req.Header.Set("Content-Type", "multipart/form-data; boundary=xxx")
 
 		s.UploadInputArtifact(recorder, req)
