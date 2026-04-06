@@ -994,6 +994,34 @@ func TestArtifactServer_UploadInputArtifact(t *testing.T) {
 		assert.Equal(t, http.StatusInternalServerError, recorder.Result().StatusCode)
 	})
 
+	t.Run("Error - path traversal in filename", func(t *testing.T) {
+		s := newServerForUpload(t, nil)
+		recorder := httptest.NewRecorder()
+
+		// Create multipart request with malicious filename
+		body := &bytes.Buffer{}
+		writer := multipart.NewWriter(body)
+		part, err := writer.CreateFormFile("file", "../../../etc/passwd")
+		require.NoError(t, err)
+		_, err = part.Write([]byte("malicious content"))
+		require.NoError(t, err)
+		err = writer.Close()
+		require.NoError(t, err)
+
+		req := httptest.NewRequest(http.MethodPost, "/upload-artifacts/my-ns/my-wft/input-artifact", body)
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+
+		s.UploadInputArtifact(recorder, req)
+
+		assert.Equal(t, http.StatusOK, recorder.Result().StatusCode)
+		var response map[string]any
+		err = json.NewDecoder(recorder.Body).Decode(&response)
+		require.NoError(t, err)
+		// path.Base strips traversal — key should contain only "passwd"
+		assert.Contains(t, response["key"], "/passwd")
+		assert.NotContains(t, response["key"], "..")
+	})
+
 	t.Run("Error - missing file in form", func(t *testing.T) {
 		s := newServerForUpload(t, nil)
 		recorder := httptest.NewRecorder()
