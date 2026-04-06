@@ -40,9 +40,19 @@ export function SubmitWorkflowPanel(props: Props) {
     const [error, setError] = useState<Error>();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [uploadedArtifacts, setUploadedArtifacts] = useState<Record<string, ArtifactUploadResponse>>({});
+    const [uploadingArtifacts, setUploadingArtifacts] = useState<Set<string>>(new Set());
+
+    const handleArtifactUploadStart = (artifactName: string) => {
+        setUploadingArtifacts(prev => new Set(prev).add(artifactName));
+    };
 
     const handleArtifactUpload = (artifactName: string, response: ArtifactUploadResponse) => {
         setUploadedArtifacts(prev => ({...prev, [artifactName]: response}));
+        setUploadingArtifacts(prev => {
+            const next = new Set(prev);
+            next.delete(artifactName);
+            return next;
+        });
     };
 
     useEffect(() => {
@@ -134,6 +144,7 @@ export function SubmitWorkflowPanel(props: Props) {
                                     namespace={props.namespace}
                                     workflowTemplateName={props.name}
                                     artifactName={artifact.name}
+                                    onUploadStart={() => handleArtifactUploadStart(artifact.name)}
                                     onUploadComplete={response => handleArtifactUpload(artifact.name, response)}
                                     onError={setError}
                                 />
@@ -147,8 +158,8 @@ export function SubmitWorkflowPanel(props: Props) {
                     <TagsInput tags={labels} onChange={setLabels} />
                 </div>
                 <div key='submit'>
-                    <button onClick={submit} className='argo-button argo-button--base' disabled={isSubmitting}>
-                        <i className='fa fa-plus' /> {isSubmitting ? 'Loading...' : 'Submit'}
+                    <button onClick={submit} className='argo-button argo-button--base' disabled={isSubmitting || uploadingArtifacts.size > 0}>
+                        <i className='fa fa-plus' /> {isSubmitting ? 'Loading...' : uploadingArtifacts.size > 0 ? 'Uploading...' : 'Submit'}
                     </button>
                 </div>
             </div>

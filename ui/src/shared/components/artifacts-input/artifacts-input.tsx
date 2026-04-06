@@ -7,6 +7,7 @@ interface ArtifactsInputProps {
     namespace: string;
     workflowTemplateName: string;
     artifactName: string;
+    onUploadStart?: () => void;
     onUploadComplete?: (response: ArtifactUploadResponse) => void;
     onError?: (error: Error) => void;
 }
@@ -19,7 +20,7 @@ export interface ArtifactUploadResponse {
 
 type UploadStatus = 'idle' | 'uploading' | 'success' | 'error';
 
-export function ArtifactsInput({namespace, workflowTemplateName, artifactName, onUploadComplete, onError}: ArtifactsInputProps) {
+export function ArtifactsInput({namespace, workflowTemplateName, artifactName, onUploadStart, onUploadComplete, onError}: ArtifactsInputProps) {
     const [status, setStatus] = useState<UploadStatus>('idle');
     const [progress, setProgress] = useState(0);
     const [fileName, setFileName] = useState<string | null>(null);
@@ -36,6 +37,9 @@ export function ArtifactsInput({namespace, workflowTemplateName, artifactName, o
             return;
         }
 
+        if (onUploadStart) {
+            onUploadStart();
+        }
         setFileName(file.name);
         setStatus('uploading');
         setProgress(0);
