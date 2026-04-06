@@ -189,7 +189,11 @@ func (a *ArtifactServer) UploadInputArtifact(w http.ResponseWriter, r *http.Requ
 	}
 
 	// Generate unique key for the artifact
-	uuid := generateUUID()
+	uuid, uuidErr := generateUUID()
+	if uuidErr != nil {
+		http.Error(w, fmt.Sprintf("Failed to generate UUID: %v", uuidErr), http.StatusInternalServerError)
+		return
+	}
 	originalKey, _ := artifactCopy.GetKey()
 	// Sanitize filename to prevent path traversal attacks
 	sanitizedFilename := path.Base(header.Filename)
@@ -246,10 +250,12 @@ func (a *ArtifactServer) UploadInputArtifact(w http.ResponseWriter, r *http.Requ
 }
 
 // generateUUID generates a simple UUID for unique artifact keys
-func generateUUID() string {
+func generateUUID() (string, error) {
 	b := make([]byte, 16)
-	_, _ = rand.Read(b)
-	return hex.EncodeToString(b)
+	if _, err := rand.Read(b); err != nil {
+		return "", fmt.Errorf("failed to generate random bytes: %w", err)
+	}
+	return hex.EncodeToString(b), nil
 }
 
 // GetArtifactFile is a single endpoint to handle serving directories as well as files, both those that have been archived and those that haven't.
