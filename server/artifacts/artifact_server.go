@@ -191,8 +191,14 @@ func (a *ArtifactServer) UploadInputArtifact(w http.ResponseWriter, r *http.Requ
 	// Generate unique key for the artifact
 	uuid := generateUUID()
 	originalKey, _ := artifactCopy.GetKey()
+	// Sanitize filename to prevent path traversal attacks
+	sanitizedFilename := path.Base(header.Filename)
+	if sanitizedFilename == "." || sanitizedFilename == "/" || sanitizedFilename == "" {
+		http.Error(w, "Invalid filename", http.StatusBadRequest)
+		return
+	}
 	// Replace the key with uploaded file path under uploads/
-	newKey := fmt.Sprintf("uploads/%s/%s/%s", namespace, uuid, header.Filename)
+	newKey := fmt.Sprintf("uploads/%s/%s/%s", namespace, uuid, sanitizedFilename)
 
 	// Create a copy of the artifact for uploading (using artifactCopy which has resolved location)
 	outputArtifact := artifactCopy.DeepCopy()
