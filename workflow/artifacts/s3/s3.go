@@ -294,22 +294,22 @@ func (s3Driver *ArtifactDriver) SaveStream(ctx context.Context, reader io.Reader
 	err = waitutil.Backoff(executorretry.ExecutorRetry(ctx),
 		func() (bool, error) {
 			log.WithField("key", outputArtifact.S3.Key).Info(ctx, "S3 SaveStream")
-			s3cli, err := s3Driver.newClient(ctx)
-			if err != nil {
-				return !isTransientS3Err(ctx, err), fmt.Errorf("failed to create new S3 client: %w", err)
+			s3cli, retryErr := s3Driver.newClient(ctx)
+			if retryErr != nil {
+				return !isTransientS3Err(ctx, retryErr), fmt.Errorf("failed to create new S3 client: %w", retryErr)
 			}
-			f, err := os.Open(tmpFile.Name())
-			if err != nil {
-				return true, fmt.Errorf("failed to reopen temp file: %w", err)
+			f, retryErr := os.Open(tmpFile.Name())
+			if retryErr != nil {
+				return true, fmt.Errorf("failed to reopen temp file: %w", retryErr)
 			}
 			defer f.Close()
-			fi, err := f.Stat()
-			if err != nil {
-				return true, fmt.Errorf("failed to stat temp file: %w", err)
+			fi, retryErr := f.Stat()
+			if retryErr != nil {
+				return true, fmt.Errorf("failed to stat temp file: %w", retryErr)
 			}
-			err = s3cli.PutStream(outputArtifact.S3.Bucket, outputArtifact.S3.Key, f, fi.Size())
-			if err != nil {
-				return !isTransientS3Err(ctx, err), fmt.Errorf("failed to put stream: %w", err)
+			retryErr = s3cli.PutStream(outputArtifact.S3.Bucket, outputArtifact.S3.Key, f, fi.Size())
+			if retryErr != nil {
+				return !isTransientS3Err(ctx, retryErr), fmt.Errorf("failed to put stream: %w", retryErr)
 			}
 			return true, nil
 		})

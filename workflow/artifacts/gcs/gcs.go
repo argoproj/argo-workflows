@@ -262,25 +262,25 @@ func (h *ArtifactDriver) SaveStream(ctx context.Context, reader io.Reader, outpu
 		func() (bool, error) {
 			key := filepath.Clean(outputArtifact.GCS.Key)
 			logging.RequireLoggerFromContext(ctx).WithField("key", key).Info(ctx, "GCS SaveStream")
-			client, err := h.newGCSClient(ctx)
-			if err != nil {
-				return !isTransientGCSErr(ctx, err), err
+			client, retryErr := h.newGCSClient(ctx)
+			if retryErr != nil {
+				return !isTransientGCSErr(ctx, retryErr), retryErr
 			}
 			defer client.Close()
 
-			f, err := os.Open(tmpFile.Name())
-			if err != nil {
-				return true, fmt.Errorf("failed to reopen temp file: %w", err)
+			f, retryErr := os.Open(tmpFile.Name())
+			if retryErr != nil {
+				return true, fmt.Errorf("failed to reopen temp file: %w", retryErr)
 			}
 			defer f.Close()
 
 			wc := client.Bucket(outputArtifact.GCS.Bucket).Object(key).NewWriter(ctx)
-			if _, err = io.Copy(wc, f); err != nil {
+			if _, retryErr = io.Copy(wc, f); retryErr != nil {
 				wc.Close()
-				return !isTransientGCSErr(ctx, err), err
+				return !isTransientGCSErr(ctx, retryErr), retryErr
 			}
-			if err = wc.Close(); err != nil {
-				return !isTransientGCSErr(ctx, err), err
+			if retryErr = wc.Close(); retryErr != nil {
+				return !isTransientGCSErr(ctx, retryErr), retryErr
 			}
 			return true, nil
 		})
