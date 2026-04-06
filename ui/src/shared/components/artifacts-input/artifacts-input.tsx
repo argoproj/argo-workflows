@@ -76,7 +76,7 @@ export function ArtifactsInput({namespace, workflowTemplateName, artifactName, o
                     reject(new Error('Network error'));
                 };
 
-                xhr.open('POST', `/upload-artifacts/${namespace}/${workflowTemplateName}/${artifactName}`);
+                xhr.open('POST', `/upload-artifacts/${encodeURIComponent(namespace)}/${encodeURIComponent(workflowTemplateName)}/${encodeURIComponent(artifactName)}`);
                 xhr.send(formData);
             });
         } catch (error) {
