@@ -883,6 +883,8 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 			parts := strings.SplitN(artifactStr, "=", 2)
 			if len(parts) == 2 {
 				overrides[parts[0]] = parts[1]
+			} else {
+				logger.WithField("artifact", artifactStr).Warn(ctx, "Ignoring malformed artifact override (expected name=key format)")
 			}
 		}
 
