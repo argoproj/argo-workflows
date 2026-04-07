@@ -872,7 +872,7 @@ func newServerForUpload(t *testing.T, saveStreamError error) *ArtifactServer {
 		},
 	}
 
-	argo := fakewfv1.NewSimpleClientset(wft, wftNoLocation)
+	argo := fakewfv1.NewClientset(wft, wftNoLocation)
 	ctx := context.WithValue(context.WithValue(logging.TestContext(t.Context()), auth.KubeKey, kube), auth.WfKey, argo)
 	gatekeeper.On("ContextWithRequest", mock.Anything, mock.Anything).Return(ctx, nil)
 	a := &sqldbmocks.WorkflowArchive{}
