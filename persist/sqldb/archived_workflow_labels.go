@@ -17,41 +17,50 @@ import (
 // ListWorkflowsLabelKeys returns distinct name from argo_archived_workflows_labels table
 // SELECT DISTINCT name FROM argo_archived_workflows_labels
 func (r *workflowArchive) ListWorkflowsLabelKeys(ctx context.Context) (*wfv1.LabelKeys, error) {
-	var archivedWfLabels []archivedWorkflowLabelRecord
-
-	err := r.session.SQL().
-		Select(db.Raw("DISTINCT name")).
-		From(archiveLabelsTableName).
-		All(&archivedWfLabels)
+	var labelKeys []string
+	err := r.sessionProxy.With(ctx, func(s db.Session) error {
+		var archivedWfLabels []archivedWorkflowLabelRecord
+		if err := s.SQL().
+			Select(db.Raw("DISTINCT name")).
+			From(archiveLabelsTableName).
+			All(&archivedWfLabels); err != nil {
+			return err
+		}
+		labelKeys = make([]string, len(archivedWfLabels))
+		for i, md := range archivedWfLabels {
+			labelKeys[i] = md.Key
+		}
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
-	labelKeys := make([]string, len(archivedWfLabels))
-	for i, md := range archivedWfLabels {
-		labelKeys[i] = md.Key
-	}
-
 	return &wfv1.LabelKeys{Items: labelKeys}, nil
 }
 
 // ListWorkflowsLabelValues returns distinct value from argo_archived_workflows_labels table
 // SELECT DISTINCT value FROM argo_archived_workflows_labels WHERE name=labelkey
 func (r *workflowArchive) ListWorkflowsLabelValues(ctx context.Context, key string) (*wfv1.LabelValues, error) {
-	var archivedWfLabels []archivedWorkflowLabelRecord
-	err := r.session.SQL().
-		Select(db.Raw("DISTINCT value")).
-		From(archiveLabelsTableName).
-		Where(db.Cond{"name": key}).
-		All(&archivedWfLabels)
+	var labelValues []string
+	err := r.sessionProxy.With(ctx, func(s db.Session) error {
+		var archivedWfLabels []archivedWorkflowLabelRecord
+		if err := s.SQL().
+			Select(db.Raw("DISTINCT value")).
+			From(archiveLabelsTableName).
+			Where(db.Cond{"name": key}).
+			All(&archivedWfLabels); err != nil {
+			return err
+		}
+		labelValues = make([]string, len(archivedWfLabels))
+		for i, md := range archivedWfLabels {
+			labelValues[i] = md.Value
+		}
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
-	labels := make([]string, len(archivedWfLabels))
-	for i, md := range archivedWfLabels {
-		labels[i] = md.Value
-	}
-
-	return &wfv1.LabelValues{Items: labels}, nil
+	return &wfv1.LabelValues{Items: labelValues}, nil
 }
 
 func labelsClause(selector db.Selector, t sqldb.DBType, requirements labels.Requirements, tableName, labelTableName string, hasClusterName bool) (db.Selector, error) {

@@ -13,7 +13,7 @@ import (
 )
 
 // createTestDatabaseMutex creates a database-backed mutex for testing
-func createTestDatabaseMutex(ctx context.Context, t *testing.T, name, namespace string, nextWorkflow NextWorkflow, dbType sqldb.DBType) (*databaseSemaphore, *transaction, func()) {
+func createTestDatabaseMutex(ctx context.Context, t *testing.T, name, namespace string, nextWorkflow NextWorkflow, dbType sqldb.DBType) (*databaseSemaphore, *sqldb.SessionProxy, func()) {
 	t.Helper()
 	info, deferfunc, _, err := createTestDBSession(ctx, t, dbType)
 	require.NoError(t, err)
@@ -23,8 +23,7 @@ func createTestDatabaseMutex(ctx context.Context, t *testing.T, name, namespace 
 	// Create a mutex (which is a semaphore with limit=1)
 	mutex := newDatabaseMutex(name, dbKey, nextWorkflow, info)
 	require.NotNil(t, mutex)
-	tx := &transaction{db: &info.Session}
-	return mutex, tx, deferfunc
+	return mutex, info.SessionProxy, deferfunc
 }
 
 // TestDatabaseMutexAcquireRelease tests basic acquire and release functionality
