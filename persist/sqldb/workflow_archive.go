@@ -3,6 +3,7 @@ package sqldb
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -118,62 +119,62 @@ func (r *workflowArchive) ArchiveWorkflow(ctx context.Context, wf *wfv1.Workflow
 	if r.dbType == sqldb.Postgres {
 		workflow = bytes.ReplaceAll(workflow, []byte("\\u0000"), []byte(postgresNullReplacement))
 	}
-	return r.sessionProxy.With(ctx, func(s db.Session) error {
-		return s.Tx(func(sess db.Session) error {
-			_, err := sess.SQL().
-				DeleteFrom(archiveTableName).
-				Where(r.clusterManagedNamespaceAndInstanceID()).
-				And(db.Cond{"uid": wf.UID}).
-				Exec()
-			if err != nil {
-				return err
-			}
-			_, err = sess.Collection(archiveTableName).
-				Insert(&archivedWorkflowRecord{
-					archivedWorkflowMetadata: archivedWorkflowMetadata{
-						ClusterName:       r.clusterName,
-						InstanceID:        r.instanceIDService.InstanceID(),
-						UID:               string(wf.UID),
-						Name:              wf.Name,
-						Namespace:         wf.Namespace,
-						Phase:             wf.Status.Phase,
-						StartedAt:         wf.Status.StartedAt.Time,
-						FinishedAt:        wf.Status.FinishedAt.Time,
-						CreationTimestamp: wf.CreationTimestamp.Time,
-					},
-					Workflow: string(workflow),
-				})
-			if err != nil {
-				return err
-			}
+	return r.sessionProxy.TxWith(ctx, func(s *sqldb.SessionProxy) error {
+		sess := s.Session()
+		_, err := sess.SQL().
+			DeleteFrom(archiveTableName).
+			Where(r.clusterManagedNamespaceAndInstanceID()).
+			And(db.Cond{"uid": wf.UID}).
+			Exec()
+		if err != nil {
+			return err
+		}
+		_, err = sess.Collection(archiveTableName).
+			Insert(&archivedWorkflowRecord{
+				archivedWorkflowMetadata: archivedWorkflowMetadata{
+					ClusterName:       r.clusterName,
+					InstanceID:        r.instanceIDService.InstanceID(),
+					UID:               string(wf.UID),
+					Name:              wf.Name,
+					Namespace:         wf.Namespace,
+					Phase:             wf.Status.Phase,
+					StartedAt:         wf.Status.StartedAt.Time,
+					FinishedAt:        wf.Status.FinishedAt.Time,
+					CreationTimestamp: wf.CreationTimestamp.Time,
+				},
+				Workflow: string(workflow),
+			})
+		if err != nil {
+			return err
+		}
 
-			_, err = sess.SQL().
-				DeleteFrom(archiveLabelsTableName).
-				Where(db.Cond{"clustername": r.clusterName}).
-				And(db.Cond{"uid": wf.UID}).
-				Exec()
-			if err != nil {
+		_, err = sess.SQL().
+			DeleteFrom(archiveLabelsTableName).
+			Where(db.Cond{"clustername": r.clusterName}).
+			And(db.Cond{"uid": wf.UID}).
+			Exec()
+		if err != nil {
+			return err
+		}
+		// insert all labels in a single multi-row INSERT
+		labels := wf.GetLabels()
+		if len(labels) > 0 {
+			uid := string(wf.UID)
+			batch := sess.SQL().
+				InsertInto(archiveLabelsTableName).
+				Columns("clustername", "uid", "name", "value").
+				Batch(len(labels))
+			for key, value := range labels {
+				batch.Values(r.clusterName, uid, key, value)
+			}
+			batch.Done()
+			if err := batch.Wait(); err != nil {
 				return err
 			}
-			// insert all labels in a single multi-row INSERT
-			labels := wf.GetLabels()
-			if len(labels) > 0 {
-				uid := string(wf.UID)
-				batch := sess.SQL().
-					InsertInto(archiveLabelsTableName).
-					Columns("clustername", "uid", "name", "value").
-					Batch(len(labels))
-				for key, value := range labels {
-					batch.Values(r.clusterName, uid, key, value)
-				}
-				batch.Done()
-				if err := batch.Wait(); err != nil {
-					return err
-				}
-			}
-			return nil
-		})
-	})
+		}
+		return nil
+	}, &sql.TxOptions{Isolation: sql.LevelSerializable, ReadOnly: false})
+
 }
 
 func (r *workflowArchive) ListWorkflows(ctx context.Context, options sutils.ListOptions) (wfv1.Workflows, error) {
