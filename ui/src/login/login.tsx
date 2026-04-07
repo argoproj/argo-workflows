@@ -31,7 +31,9 @@ export function Login({location, history}: RouteComponentProps<any>) {
                             <br /> it depends on how it is configured.
                         </p>
                         <p>
-                            <a href='https://argo-workflows.readthedocs.io/en/latest/argo-server-auth-mode/'>Learn more</a>.
+                            <a href='https://argo-workflows.readthedocs.io/en/latest/argo-server-auth-mode/' target='_blank' rel='noreferrer'>
+                                Learn more
+                            </a>
                         </p>
                     </div>
                     <div className='white-box login__sso-section'>
@@ -48,7 +50,11 @@ export function Login({location, history}: RouteComponentProps<any>) {
                         <p>
                             If your organisation has configured <b>client authentication</b>,
                             <br />
-                            get your token following this instructions from <a href='https://argo-workflows.readthedocs.io/en/latest/access-token/#token-creation'>here</a> and
+                            get your token following this instructions from{' '}
+                            <a href='https://argo-workflows.readthedocs.io/en/latest/access-token/#token-creation' target='_blank' rel='noreferrer'>
+                                here
+                            </a>{' '}
+                            and
                             <br />
                             paste in this box:
                         </p>
