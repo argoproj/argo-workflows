@@ -305,6 +305,24 @@ func (ossDriver *ArtifactDriver) SaveStream(ctx context.Context, reader io.Reade
 			if retryErr != nil {
 				return !isTransientOSSErr(ctx, retryErr), retryErr
 			}
+			if outputArtifact.OSS.CreateBucketIfNotPresent {
+				exists, existsErr := osscli.IsBucketExist(bucketName)
+				if existsErr != nil {
+					return !isTransientOSSErr(ctx, existsErr), fmt.Errorf("failed to check if bucket %s exists: %w", bucketName, existsErr)
+				}
+				if !exists {
+					retryErr = osscli.CreateBucket(bucketName)
+					if retryErr != nil {
+						return !isTransientOSSErr(ctx, retryErr), fmt.Errorf("failed to automatically create bucket %s when it's not present: %w", bucketName, retryErr)
+					}
+				}
+			}
+			if outputArtifact.OSS.LifecycleRule != nil {
+				retryErr = setBucketLifecycleRule(osscli, outputArtifact.OSS)
+				if retryErr != nil {
+					return !isTransientOSSErr(ctx, retryErr), retryErr
+				}
+			}
 			bucket, retryErr := osscli.Bucket(bucketName)
 			if retryErr != nil {
 				return !isTransientOSSErr(ctx, retryErr), retryErr
