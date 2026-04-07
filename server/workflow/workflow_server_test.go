@@ -1257,7 +1257,7 @@ func getWorkflowServerWithArtifacts(t *testing.T, wft *v1alpha1.WorkflowTemplate
 		}, nil
 	})
 
-	wfClientset := v1alpha.NewSimpleClientset(wft)
+	wfClientset := v1alpha.NewClientset(wft)
 	wfClientset.PrependReactor("create", "workflows", generateNameReactor)
 
 	ctx := logging.TestContext(t.Context())
