@@ -174,7 +174,6 @@ func (r *workflowArchive) ArchiveWorkflow(ctx context.Context, wf *wfv1.Workflow
 		}
 		return nil
 	}, &sql.TxOptions{Isolation: sql.LevelSerializable, ReadOnly: false})
-
 }
 
 func (r *workflowArchive) ListWorkflows(ctx context.Context, options sutils.ListOptions) (wfv1.Workflows, error) {
