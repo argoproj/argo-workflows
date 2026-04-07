@@ -211,6 +211,18 @@ func (s *ResourceTemplateSuite) TestResourceTemplateFailed() {
 		})
 }
 
+func (s *ResourceTemplateSuite) TestWaitForDeleteAlreadyGone() {
+	s.Given().
+		Workflow("@testdata/resource-templates/wait-for-delete-already-gone.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+		})
+}
+
 func TestResourceTemplateSuite(t *testing.T) {
 	suite.Run(t, new(ResourceTemplateSuite))
 }

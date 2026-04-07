@@ -27,6 +27,7 @@ import (
 	v1 "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/restmapper"
 	"k8s.io/client-go/tools/cache"
 	apiwatch "k8s.io/client-go/tools/watch"
 	"k8s.io/client-go/util/workqueue"
@@ -116,6 +117,7 @@ type WorkflowController struct {
 	kubeclientset    kubernetes.Interface
 	rateLimiter      *rate.Limiter
 	dynamicInterface dynamic.Interface
+	restMapper       meta.RESTMapper
 	wfclientset      wfclientset.Interface
 
 	// maxStackDepth is a configurable limit to the depth of the "stack", which is increased with every nested call to
@@ -197,10 +199,16 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		return nil, err
 	}
 
+	groupResources, err := restmapper.GetAPIGroupResources(kubeclientset.Discovery())
+	if err != nil {
+		return nil, err
+	}
+
 	wfc := WorkflowController{
 		restConfig:                 restConfig,
 		kubeclientset:              kubeclientset,
 		dynamicInterface:           dynamicInterface,
+		restMapper:                 restmapper.NewDiscoveryRESTMapper(groupResources),
 		wfclientset:                wfclientset,
 		namespace:                  namespace,
 		managedNamespace:           managedNamespace,

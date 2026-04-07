@@ -3297,8 +3297,8 @@ type ScriptTemplate struct {
 // +kubebuilder:validation:XValidation:rule="(has(self.manifest) && !has(self.manifestFrom)) || (!has(self.manifest) && has(self.manifestFrom)) || (!has(self.manifest) && !has(self.manifestFrom))",message="only one of manifest or manifestFrom can be specified"
 type ResourceTemplate struct {
 	// Action is the action to perform to the resource.
-	// Must be one of: get, create, apply, delete, replace, patch
-	// +kubebuilder:validation:Enum=get;create;apply;delete;replace;patch
+	// Must be one of: get, create, apply, delete, replace, patch, wait
+	// +kubebuilder:validation:Enum=get;create;apply;delete;replace;patch;wait
 	Action string `json:"action" protobuf:"bytes,1,opt,name=action"`
 
 	// MergeStrategy is the strategy used to merge a patch. It defaults to "strategic"
@@ -3329,6 +3329,13 @@ type ResourceTemplate struct {
 	// 	"--validate=false"  # disable resource validation
 	// ]
 	Flags []string `json:"flags,omitempty" protobuf:"varint,7,opt,name=flags"`
+
+	// WaitFor specifies what condition to wait for when Action is "wait".
+	// Currently only "delete" is supported, which completes when the resource no longer exists.
+	// The wait runs in the controller with no pod — zero resource overhead.
+	// Only valid when Action is "wait".
+	// +kubebuilder:validation:Enum=delete
+	WaitFor string `json:"waitFor,omitempty" protobuf:"bytes,9,opt,name=waitFor"`
 }
 
 type ManifestFrom struct {

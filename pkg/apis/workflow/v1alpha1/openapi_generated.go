@@ -5190,7 +5190,7 @@ func schema_pkg_apis_workflow_v1alpha1_ResourceTemplate(ref common.ReferenceCall
 				Properties: map[string]spec.Schema{
 					"action": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Action is the action to perform to the resource. Must be one of: get, create, apply, delete, replace, patch",
+							Description: "Action is the action to perform to the resource. Must be one of: get, create, apply, delete, replace, patch, wait",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
@@ -5250,6 +5250,13 @@ func schema_pkg_apis_workflow_v1alpha1_ResourceTemplate(ref common.ReferenceCall
 									},
 								},
 							},
+						},
+					},
+					"waitFor": {
+						SchemaProps: spec.SchemaProps{
+							Description: "WaitFor specifies what condition to wait for when Action is \"wait\". Currently only \"delete\" is supported, which completes when the resource no longer exists. The wait runs in the controller with no pod — zero resource overhead. Only valid when Action is \"wait\".",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 				},

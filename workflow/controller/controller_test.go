@@ -10,11 +10,13 @@ import (
 	"github.com/stretchr/testify/require"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	apiv1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	dynamicfake "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
@@ -253,6 +255,13 @@ var defaultServiceAccount = &apiv1.ServiceAccount{
 // test exporter extract metric values from the metrics subsystem
 var testExporter *telemetry.TestMetricsExporter
 
+// newTestRESTMapper creates a REST mapper with common k8s types for testing.
+func newTestRESTMapper() meta.RESTMapper {
+	mapper := meta.NewDefaultRESTMapper([]schema.GroupVersion{{Group: "", Version: "v1"}})
+	mapper.Add(schema.GroupVersionKind{Group: "", Version: "v1", Kind: "ConfigMap"}, meta.RESTScopeNamespace)
+	return mapper
+}
+
 func newController(ctx context.Context, options ...any) (context.CancelFunc, *WorkflowController) {
 	// get all the objects and add to the fake
 	var objects, coreObjects []runtime.Object
@@ -289,6 +298,7 @@ func newController(ctx context.Context, options ...any) (context.CancelFunc, *Wo
 		cliExecutorLogFormat:      "text",
 		kubeclientset:             kube,
 		dynamicInterface:          dynamicClient,
+		restMapper:                newTestRESTMapper(),
 		wfclientset:               wfclientset,
 		workflowKeyLock:           sync.NewKeyLock(),
 		wfArchive:                 sqldb.NullWorkflowArchive,

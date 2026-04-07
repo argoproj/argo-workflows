@@ -5739,6 +5739,11 @@ func (m *ResourceTemplate) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	i -= len(m.WaitFor)
+	copy(dAtA[i:], m.WaitFor)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.WaitFor)))
+	i--
+	dAtA[i] = 0x4a
 	if m.ManifestFrom != nil {
 		{
 			size, err := m.ManifestFrom.MarshalToSizedBuffer(dAtA[:i])
@@ -11536,6 +11541,8 @@ func (m *ResourceTemplate) Size() (n int) {
 		l = m.ManifestFrom.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
+	l = len(m.WaitFor)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -14305,6 +14312,7 @@ func (this *ResourceTemplate) String() string {
 		`FailureCondition:` + fmt.Sprintf("%v", this.FailureCondition) + `,`,
 		`Flags:` + fmt.Sprintf("%v", this.Flags) + `,`,
 		`ManifestFrom:` + strings.Replace(this.ManifestFrom.String(), "ManifestFrom", "ManifestFrom", 1) + `,`,
+		`WaitFor:` + fmt.Sprintf("%v", this.WaitFor) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -32398,6 +32406,38 @@ func (m *ResourceTemplate) Unmarshal(dAtA []byte) error {
 			if err := m.ManifestFrom.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
+			iNdEx = postIndex
+		case 9:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field WaitFor", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.WaitFor = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

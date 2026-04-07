@@ -1710,7 +1710,7 @@ func TestInvalidResourceWorkflow(t *testing.T) {
 
 	wf = unmarshalWf(invalidActionResourceWorkflow)
 	err = Workflow(ctx, wftmplGetter, cwftmplGetter, wf, nil, Opts{})
-	require.EqualError(t, err, "templates.whalesay.resource.action must be one of: get, create, apply, delete, replace, patch")
+	require.EqualError(t, err, "templates.whalesay.resource.action must be one of: get, create, apply, delete, replace, patch, wait")
 }
 
 var invalidPodGC = `
@@ -3694,4 +3694,108 @@ func TestWorkflowWithoutParameterizedArtifactsFails(t *testing.T) {
 	err := validate(logging.TestContext(t.Context()), workflowWithoutParameterizedArtifacts)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to resolve {{workflow.outputs.artifacts.nonexistent}}")
+}
+
+func TestResourceWaitValidation(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	t.Run("valid wait-for-delete", func(t *testing.T) {
+		err := validate(ctx, `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: test-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    resource:
+      action: wait
+      waitFor: delete
+      manifest: |
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: test-cm`)
+		require.NoError(t, err)
+	})
+
+	t.Run("wait without waitFor", func(t *testing.T) {
+		err := validate(ctx, `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: test-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    resource:
+      action: wait
+      manifest: |
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: test-cm`)
+		require.EqualError(t, err, "templates.main.resource.waitFor is required when action is 'wait'")
+	})
+
+	t.Run("waitFor on non-wait action", func(t *testing.T) {
+		err := validate(ctx, `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: test-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    resource:
+      action: get
+      waitFor: delete`)
+		require.EqualError(t, err, "templates.main.resource.waitFor can only be used when action is 'wait'")
+	})
+
+	t.Run("wait with successCondition", func(t *testing.T) {
+		err := validate(ctx, `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: test-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    resource:
+      action: wait
+      waitFor: delete
+      successCondition: status.phase == Succeeded
+      manifest: |
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: test-cm`)
+		require.EqualError(t, err, "templates.main.resource: successCondition and failureCondition cannot be used with action 'wait'")
+	})
+
+	t.Run("wait with outputs", func(t *testing.T) {
+		err := validate(ctx, `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: test-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    resource:
+      action: wait
+      waitFor: delete
+      manifest: |
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: test-cm
+    outputs:
+      parameters:
+      - name: result
+        valueFrom:
+          jsonPath: '{.metadata.name}'`)
+		require.EqualError(t, err, "templates.main.resource: outputs are not supported for wait action")
+	})
 }

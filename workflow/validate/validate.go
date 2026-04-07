@@ -830,11 +830,25 @@ func (tctx *templateValidationCtx) validateLeaf(scope map[string]any, tmplCtx *t
 	if tmpl.Resource != nil {
 		if !placeholderGenerator.IsPlaceholder(tmpl.Resource.Action) {
 			switch tmpl.Resource.Action {
-			case "get", "create", "apply", "delete", "replace", "patch":
+			case "get", "create", "apply", "delete", "replace", "patch", "wait":
 				// OK
 			default:
-				return errors.Errorf(errors.CodeBadRequest, "templates.%s.resource.action must be one of: get, create, apply, delete, replace, patch", tmpl.Name)
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s.resource.action must be one of: get, create, apply, delete, replace, patch, wait", tmpl.Name)
 			}
+		}
+		// Validate wait action constraints
+		if tmpl.Resource.Action == "wait" {
+			if tmpl.Resource.WaitFor == "" {
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s.resource.waitFor is required when action is 'wait'", tmpl.Name)
+			}
+			if tmpl.Resource.SuccessCondition != "" || tmpl.Resource.FailureCondition != "" {
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s.resource: successCondition and failureCondition cannot be used with action 'wait'", tmpl.Name)
+			}
+			if len(tmpl.Outputs.Parameters) > 0 {
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s.resource: outputs are not supported for wait action", tmpl.Name)
+			}
+		} else if tmpl.Resource.WaitFor != "" {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.resource.waitFor can only be used when action is 'wait'", tmpl.Name)
 		}
 		if tmpl.Resource.Action != "delete" && tmpl.Resource.Action != "get" {
 			if tmpl.Resource.Manifest == "" && tmpl.Resource.ManifestFrom == nil {

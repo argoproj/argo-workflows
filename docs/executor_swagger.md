@@ -3378,7 +3378,7 @@ cause implementors to also use a fixed point implementation.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| action | string| `string` |  | | Action is the action to perform to the resource.</br>Must be one of: get, create, apply, delete, replace, patch</br>+kubebuilder:validation:Enum=get;create;apply;delete;replace;patch |  |
+| action | string| `string` |  | | Action is the action to perform to the resource.</br>Must be one of: get, create, apply, delete, replace, patch, wait</br>+kubebuilder:validation:Enum=get;create;apply;delete;replace;patch;wait |  |
 | failureCondition | string| `string` |  | | FailureCondition is a label selector expression which describes the conditions</br>of the k8s resource in which the step was considered failed |  |
 | flags | []string| `[]string` |  | | Flags is a set of additional options passed to kubectl before submitting a resource</br>I.e. to disable resource validation:</br>flags: [</br>"--validate=false"  # disable resource validation</br>] |  |
 | manifest | string| `string` |  | | Manifest contains the kubernetes manifest |  |
@@ -3386,6 +3386,7 @@ cause implementors to also use a fixed point implementation.
 | mergeStrategy | string| `string` |  | | MergeStrategy is the strategy used to merge a patch. It defaults to "strategic"</br>Must be one of: strategic, merge, json</br>+kubebuilder:validation:Enum=strategic;merge;json |  |
 | setOwnerReference | boolean| `bool` |  | | SetOwnerReference sets the reference to the workflow on the OwnerReference of generated resource. |  |
 | successCondition | string| `string` |  | | SuccessCondition is a label selector expression which describes the conditions</br>of the k8s resource in which it is acceptable to proceed to the following step |  |
+| waitFor | string| `string` |  | | WaitFor specifies what condition to wait for when Action is "wait".</br>Currently only "delete" is supported, which completes when the resource no longer exists.</br>The wait runs in the controller with no pod — zero resource overhead.</br>Only valid when Action is "wait".</br>+kubebuilder:validation:Enum=delete |  |
 
 
 

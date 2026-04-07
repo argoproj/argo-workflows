@@ -10880,7 +10880,7 @@
       ],
       "properties": {
         "action": {
-          "description": "Action is the action to perform to the resource. Must be one of: get, create, apply, delete, replace, patch",
+          "description": "Action is the action to perform to the resource. Must be one of: get, create, apply, delete, replace, patch, wait",
           "type": "string"
         },
         "failureCondition": {
@@ -10912,6 +10912,10 @@
         },
         "successCondition": {
           "description": "SuccessCondition is a label selector expression which describes the conditions of the k8s resource in which it is acceptable to proceed to the following step",
+          "type": "string"
+        },
+        "waitFor": {
+          "description": "WaitFor specifies what condition to wait for when Action is \"wait\". Currently only \"delete\" is supported, which completes when the resource no longer exists. The wait runs in the controller with no pod — zero resource overhead. Only valid when Action is \"wait\".",
           "type": "string"
         }
       }
