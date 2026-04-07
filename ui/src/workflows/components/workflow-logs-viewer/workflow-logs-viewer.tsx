@@ -316,7 +316,10 @@ export function WorkflowLogsViewer({workflow, initialNodeId, initialPodName, con
                 {podName && podNamesToNodeIDs.get(podName) && (
                     <>
                         Still waiting for data or an error? Try getting{' '}
-                        <a href={services.workflows.getArtifactLogsPath(workflow, podNamesToNodeIDs.get(podName), selectedContainer, archived)}>logs from the artifacts</a>.
+                        <a href={services.workflows.getArtifactLogsPath(workflow, podNamesToNodeIDs.get(podName), selectedContainer, archived)} target='_blank' rel='noreferrer'>
+                            logs from the artifacts
+                        </a>
+                        .
                     </>
                 )}
                 {execSpec(workflow).podGC && (
