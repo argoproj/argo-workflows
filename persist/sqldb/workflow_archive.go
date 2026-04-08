@@ -3,7 +3,6 @@ package sqldb
 import (
 	"bytes"
 	"context"
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -173,7 +172,7 @@ func (r *workflowArchive) ArchiveWorkflow(ctx context.Context, wf *wfv1.Workflow
 			}
 		}
 		return nil
-	}, &sql.TxOptions{Isolation: sql.LevelSerializable, ReadOnly: false})
+	}, nil)
 }
 
 func (r *workflowArchive) ListWorkflows(ctx context.Context, options sutils.ListOptions) (wfv1.Workflows, error) {
