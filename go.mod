@@ -60,13 +60,13 @@ require (
 	github.com/valyala/fasttemplate v1.2.2
 	github.com/xeipuuv/gojsonschema v1.2.0
 	go.opentelemetry.io/contrib/instrumentation/runtime v0.61.0
-	go.opentelemetry.io/otel v1.40.0
+	go.opentelemetry.io/otel v1.43.0
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.36.0
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp v1.36.0
 	go.opentelemetry.io/otel/exporters/prometheus v0.58.0
-	go.opentelemetry.io/otel/metric v1.40.0
-	go.opentelemetry.io/otel/sdk v1.40.0
-	go.opentelemetry.io/otel/sdk/metric v1.40.0
+	go.opentelemetry.io/otel/metric v1.43.0
+	go.opentelemetry.io/otel/sdk v1.43.0
+	go.opentelemetry.io/otel/sdk/metric v1.43.0
 	golang.org/x/crypto v0.46.0
 	golang.org/x/exp v0.0.0-20260218203240-3dfff04db8fa
 	golang.org/x/oauth2 v0.34.0
@@ -184,7 +184,7 @@ require (
 	go.opentelemetry.io/contrib/detectors/gcp v1.39.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.61.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.61.0 // indirect
-	go.opentelemetry.io/otel/trace v1.40.0 // indirect
+	go.opentelemetry.io/otel/trace v1.43.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.7.1 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	google.golang.org/genproto v0.0.0-20250603155806-513f23925822 // indirect
@@ -332,7 +332,7 @@ require (
 	github.com/yudai/gojsondiff v1.0.0 // indirect
 	github.com/yudai/golcs v0.0.0-20170316035057-ecda9a501e82 // indirect
 	golang.org/x/net v0.48.0
-	golang.org/x/sys v0.40.0
+	golang.org/x/sys v0.42.0
 	golang.org/x/term v0.38.0
 	golang.org/x/text v0.32.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
