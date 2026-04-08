@@ -161,6 +161,19 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 				woc.buildLocalScope(stepsCtx.scope, prefix, sgNode)
 			} else {
 				woc.buildLocalScope(stepsCtx.scope, prefix, childNode)
+
+				if (childNode.Phase == wfv1.NodeSkipped || childNode.Phase == wfv1.NodeOmitted) && childNode.Outputs == nil {
+					_, tmpl, _, err := stepsCtx.tmplCtx.ResolveTemplate(&step)
+					if err == nil && tmpl != nil {
+						for _, param := range tmpl.Outputs.Parameters {
+							key := fmt.Sprintf("%s.outputs.parameters.%s", prefix, param.Name)
+							stepsCtx.scope.addParamToScope(key, "")
+						}
+						if tmpl.Outputs.Result != nil {
+							stepsCtx.scope.addParamToScope(fmt.Sprintf("%s.outputs.result", prefix), "")
+						}
+					}
+				}
 			}
 		}
 	}
