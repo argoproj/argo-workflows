@@ -186,6 +186,11 @@ func Workflow(ctx context.Context, wftmplGetter templateresolution.WorkflowTempl
 		return errors.Errorf(errors.CodeBadRequest, "spec.templates%s", err.Error())
 	}
 
+	if wfDefaults != nil {
+		wfArgs.Parameters = util.MergeParameters(wfArgs.Parameters, wfDefaults.Spec.Arguments.Parameters)
+		wfArgs.Artifacts = util.MergeArtifacts(wfArgs.Artifacts, wfDefaults.Spec.Arguments.Artifacts)
+	}
+
 	// if we are linting, we don't care if spec.arguments.parameters.XXX doesn't have an
 	// explicit value. Workflow templates without a default value are also a desired use
 	// case, since values will be provided during workflow submission.
