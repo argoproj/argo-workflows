@@ -65,6 +65,7 @@ var bucketsOfKeys = map[string][]string{
 		"my-wf/my-node-1/my-gcs-artifact.tgz",
 		"my-wf/my-node-1/my-oss-artifact.zip",
 		"my-wf/my-node-1/my-s3-artifact.tgz",
+		"my-wf/my-node-1/main.log",
 		"my-wf/my-node-inline/main.log",
 	},
 	"my-bucket-2": {
@@ -264,6 +265,18 @@ func newServer(t *testing.T) *ArtifactServer {
 									},
 								},
 							},
+							{
+								// Log artifact created when archiveLogs is enabled
+								// (see workflow/executor/executor.go:saveContainerLogs).
+								// The key ends with ".log", which is not in the MIME database
+								// on minimal container images (e.g. distroless).
+								Name: "main-logs",
+								ArtifactLocation: wfv1.ArtifactLocation{
+									S3: &wfv1.S3Artifact{
+										Key: "my-wf/my-node-1/main.log",
+									},
+								},
+							},
 						},
 					},
 				},
@@ -391,6 +404,7 @@ func TestArtifactServer_GetArtifactFile(t *testing.T) {
 		// success        bool
 		isDirectory    bool
 		directoryFiles []string // verify these files are in there, if this is a directory
+		contentType    string   // expected Content-Type for non-directory artifacts (if set, assert exact match)
 	}{
 		{
 			path:       "/artifact-files/my-ns/workflows/my-wf/my-node-1/outputs/my-s3-artifact-directory",
@@ -474,6 +488,12 @@ func TestArtifactServer_GetArtifactFile(t *testing.T) {
 			statusCode:  200,
 			isDirectory: false,
 		},
+		{
+			path:        "/artifact-files/my-ns/workflows/my-wf/my-node-1/outputs/main-logs",
+			statusCode:  200,
+			isDirectory: false,
+			contentType: "text/plain; charset=utf-8", // .log is not in the MIME db on all platforms → fallback
+		},
 	}
 
 	for _, tt := range tests {
@@ -502,6 +522,10 @@ func TestArtifactServer_GetArtifactFile(t *testing.T) {
 					}
 				} else {
 					assert.Equal(t, "my-data", string(all))
+					assert.NotEmpty(t, recorder.Header().Get("Content-Type"), "Content-Type header must not be empty")
+					if tt.contentType != "" {
+						assert.Equal(t, tt.contentType, recorder.Header().Get("Content-Type"))
+					}
 				}
 			}
 		})
