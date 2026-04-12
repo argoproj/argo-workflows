@@ -2,6 +2,7 @@ package sqldb
 
 import (
 	"context"
+	"runtime"
 	"testing"
 	"time"
 
@@ -84,6 +85,10 @@ func setupPostgresContainer(ctx context.Context, t *testing.T) (config.DBConfig,
 }
 
 func TestSessionReconnect(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("This test uses the Linux container image and therefore cannot be performed on the Windows platform")
+	}
+
 	ctx := logging.TestContext(t.Context())
 	cfg, cancel, err := setupPostgresContainer(ctx, t)
 	require.NoError(t, err)
