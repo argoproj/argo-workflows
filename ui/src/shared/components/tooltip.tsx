@@ -29,5 +29,13 @@ export function Tooltip({content, ...props}: TooltipProps) {
         ) : (
             content
         );
-    return <ArgoTooltip content={renderedContent} {...props} />;
+    const isMarkdown = typeof content === 'string';
+    return (
+        <ArgoTooltip
+            content={renderedContent}
+            maxWidth={isMarkdown ? 'none' : undefined}
+            onCreate={isMarkdown ? (instance: {popper: HTMLElement}) => (instance.popper.style.minWidth = '50vw') : undefined}
+            {...props}
+        />
+    );
 }
