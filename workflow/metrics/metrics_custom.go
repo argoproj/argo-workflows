@@ -357,3 +357,21 @@ func (m *Metrics) CompleteRealtimeMetricsForWfUID(key string) {
 func (m *Metrics) DeleteRealtimeMetricsForWfUID(key string) {
 	m.handleRealtimeMetricsForWfUID(key, Delete)
 }
+
+// GetCustomMetricValue returns the current prometheusValue for a custom metric by its key.
+// This is exported for testing only.
+func (m *Metrics) GetCustomMetricValue(metricName string, key string) (float64, bool) {
+	inst := m.GetCustomMetric(metricName)
+	if inst == nil {
+		return 0, false
+	}
+	ud := customUserData(inst, false)
+	if ud == nil {
+		return 0, false
+	}
+	val := ud.GetValue(key)
+	if val == nil {
+		return 0, false
+	}
+	return val.prometheusValue, true
+}

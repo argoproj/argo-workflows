@@ -5836,6 +5836,56 @@ func TestWorkflowStatusMetric(t *testing.T) {
 	assert.Len(t, woc.wf.Status.Conditions, 2)
 }
 
+var workflowDoubleMetricWithRetry = `
+metadata:
+  name: test-double-metrics
+  namespace: default
+spec:
+  entrypoint: simple-task
+  templates:
+  - name: simple-task
+    retryStrategy:
+      limit: "2"
+      retryPolicy: Always
+    metrics:
+      prometheus:
+      - name: workflow_counter
+        help: "Counter should increment by 1"
+        labels:
+        - key: status
+          value: "{{status}}"
+        counter:
+          value: "1"
+    container:
+      image: busybox
+      command: [sh, -c]
+      args: ["exit 0"]
+`
+
+func TestCustomMetricsNotDoubleEmittedWithRetryStrategy(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(workflowDoubleMetricWithRetry)
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	// First operate: Argo creates the pod node naturally
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	// Simulate pod completing successfully
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+
+	// Second operate: pod Succeeded is detected, retry node fulfills, metrics emit
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	// Counter must be exactly 1.0 — not 2.0 (the bug)
+	metricKey := "workflow_counter{status=Succeeded,}"
+	val, ok := controller.metrics.GetCustomMetricValue("workflow_counter", metricKey)
+	require.True(t, ok, "workflow_counter metric should exist after operate()")
+	assert.InDelta(t, 1.0, val, 0.1, "workflow_counter must be incremented exactly once even with retryStrategy configured")
+}
+
 func TestWorkflowConditions(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(`
