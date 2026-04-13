@@ -9,7 +9,7 @@ require (
 	github.com/Knetic/govaluate v3.0.1-0.20250325060307-7625b7f8c03d+incompatible
 	github.com/Masterminds/sprig/v3 v3.3.0
 	github.com/TwiN/go-color v1.4.1
-	github.com/XSAM/otelsql v0.41.0
+	github.com/XSAM/otelsql v0.42.0
 	github.com/alibabacloud-go/tea v1.4.0
 	github.com/aliyun/aliyun-oss-go-sdk v3.0.2+incompatible
 	github.com/aliyun/credentials-go v1.4.11
