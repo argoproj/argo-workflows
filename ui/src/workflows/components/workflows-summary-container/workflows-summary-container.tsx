@@ -1,7 +1,7 @@
-import {Tooltip} from '../../../shared/components/tooltip';
 import * as React from 'react';
 import {useEffect, useState} from 'react';
 
+import {Tooltip} from '../../../shared/components/tooltip';
 import {Workflow} from '../../../shared/models';
 
 import './workflows-summary-container.scss';

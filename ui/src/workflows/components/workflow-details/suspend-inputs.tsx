@@ -1,8 +1,8 @@
 import {Select} from 'argo-ui/src/components/select/select';
-import {Tooltip} from '../../../shared/components/tooltip';
 import * as React from 'react';
 import {useState} from 'react';
 
+import {Tooltip} from '../../../shared/components/tooltip';
 import {Parameter} from '../../../shared/models';
 
 interface SuspendInputProps {

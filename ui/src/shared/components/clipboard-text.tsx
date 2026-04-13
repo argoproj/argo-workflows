@@ -1,6 +1,7 @@
-import {Tooltip} from './tooltip';
 import * as React from 'react';
 import {useState} from 'react';
+
+import {Tooltip} from './tooltip';
 
 export function ClipboardText({text}: {text: string}) {
     const [justClicked, setJustClicked] = useState(false);
