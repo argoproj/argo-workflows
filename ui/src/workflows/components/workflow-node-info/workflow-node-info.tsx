@@ -1,6 +1,6 @@
 import {Tabs} from 'argo-ui/src/components/tabs/tabs';
 import {Ticker} from 'argo-ui/src/components/ticker';
-import {Tooltip} from 'argo-ui/src/components/tooltip/tooltip';
+import {Tooltip} from '../../../shared/components/tooltip';
 import * as React from 'react';
 import {useState} from 'react';
 

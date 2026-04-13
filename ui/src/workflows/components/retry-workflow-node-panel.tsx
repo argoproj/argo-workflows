@@ -1,5 +1,5 @@
 import {Checkbox} from 'argo-ui/src/components/checkbox';
-import {Tooltip} from 'argo-ui/src/components/tooltip/tooltip';
+import {Tooltip} from '../../shared/components/tooltip';
 import React, {useState} from 'react';
 
 import {ErrorNotice} from '../../shared/components/error-notice';
