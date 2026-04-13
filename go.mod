@@ -19,8 +19,6 @@ require (
 	github.com/blushft/go-diagrams v0.0.0-20250322201119-d91ac4ca5de4
 	github.com/colinmarc/hdfs/v2 v2.4.0
 	github.com/coreos/go-oidc/v3 v3.17.0
-	github.com/docker/docker v28.5.2+incompatible
-	github.com/docker/go-connections v0.6.0
 	github.com/doublerebel/bellows v0.0.0-20160303004610-f177d92a03d3
 	github.com/dustin/go-humanize v1.0.1
 	github.com/evanphx/json-patch v5.9.11+incompatible
@@ -45,6 +43,7 @@ require (
 	github.com/klauspost/pgzip v1.2.6
 	github.com/lib/pq v1.12.1
 	github.com/minio/minio-go/v7 v7.0.99
+	github.com/moby/moby/api v1.54.1
 	github.com/nao1215/markdown v0.13.0
 	github.com/prometheus/client_golang v1.23.2
 	github.com/prometheus/common v0.67.5
@@ -113,10 +112,10 @@ require (
 	github.com/clipperhouse/uax29/v2 v2.3.0 // indirect
 	github.com/containerd/errdefs v1.0.0 // indirect
 	github.com/containerd/errdefs/pkg v0.3.0 // indirect
+	github.com/docker/go-connections v0.6.0 // indirect
 	github.com/go-openapi/swag/jsonname v0.25.5 // indirect
 	github.com/google/cel-go v0.26.0 // indirect
 	github.com/klauspost/crc32 v1.3.0 // indirect
-	github.com/moby/moby/api v1.54.1 // indirect
 	github.com/moby/moby/client v0.4.0 // indirect
 	github.com/olekukonko/cat v0.0.0-20250911104152-50322a0618f6 // indirect
 	github.com/olekukonko/errors v1.1.0 // indirect
