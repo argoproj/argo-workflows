@@ -14,12 +14,13 @@ function NestedAnchor(props: React.ComponentProps<'a'>) {
             {...props}
             onClick={ev => {
                 ev.preventDefault();
-                openLinkWithKey(props.href);
+                openLinkWithKey(props.href); // eslint-disable-line react/prop-types
             }}
         />
     );
 }
 
+// eslint-disable-next-line react/prop-types
 export function Tooltip({content, ...props}: TooltipProps) {
     const renderedContent =
         typeof content === 'string' ? (
