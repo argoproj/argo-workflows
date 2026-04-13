@@ -12,7 +12,7 @@ require (
 	github.com/XSAM/otelsql v0.42.0
 	github.com/alibabacloud-go/tea v1.4.0
 	github.com/aliyun/aliyun-oss-go-sdk v3.0.2+incompatible
-	github.com/aliyun/credentials-go v1.4.11
+	github.com/aliyun/credentials-go v1.4.12
 	github.com/argoproj/argo-events v1.9.10
 	github.com/argoproj/pkg v0.13.7-0.20250123033407-65f2d4777bfd
 	github.com/aws/aws-sdk-go-v2/feature/rds/auth v1.6.21
