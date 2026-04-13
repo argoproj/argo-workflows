@@ -1,5 +1,4 @@
 # markdown-spellcheck dictionary
-tooltip
 000s
 0s
 100Gi
@@ -244,6 +243,7 @@ symlinks
 syscall
 temporality
 tolerations
+tooltip
 triaged
 triaging
 un-reconciled
