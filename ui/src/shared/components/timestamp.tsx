@@ -1,5 +1,5 @@
 import {Ticker} from 'argo-ui/src/components/ticker';
-import {Tooltip} from 'argo-ui/src/components/tooltip/tooltip';
+import {Tooltip} from './tooltip';
 import * as React from 'react';
 
 import {ago} from '../duration';
