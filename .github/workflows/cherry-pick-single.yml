@@ -28,6 +28,10 @@ on:
 permissions:
   contents: read
 
+env:
+  # a workaround to disable harden runner
+  STEP_SECURITY_HARDEN_RUNNER: ${{ vars.disable_harden_runner }}
+
 jobs:
   cherry-pick:
     name: Cherry Pick to ${{ inputs.version_number }}
@@ -41,6 +45,12 @@ jobs:
       PR_NUMBER: ${{ inputs.pr_number }}
       PR_TITLE: ${{ inputs.pr_title }}
     steps:
+      - name: Harden the runner (Audit all outbound calls)
+        if: ${{ vars.disable_harden_runner != 'true' }}
+        uses: step-security/harden-runner@f808768d1510423e83855289c910610ca9b43176 # v2.17.0
+        with:
+          egress-policy: audit
+
       - name: Generate a token
         id: generate-token
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
