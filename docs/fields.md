@@ -1846,6 +1846,7 @@ Template is a reusable and composable unit of execution in a workflow
 |`nodeSelector`|`Map< string , string >`|NodeSelector is a selector to schedule this step of the workflow to be run on the selected node(s). Overrides the selector set at the workflow level.|
 |`outputs`|[`Outputs`](#outputs)|Outputs describe the parameters and artifacts that this template produces|
 |`parallelism`|`integer`|Parallelism limits the max total parallel pods that can execute at the same time within the boundaries of this template invocation. If additional steps/dag templates are invoked, the pods created by those templates will not be counted towards this total.|
+|`pendingTimeout`|`string`|PendingTimeout allows to set the maximum time spent in pending status counting from the node's start time. This duration may not be applied to Step or DAG templates.|
 |`plugin`|[`Plugin`](#plugin)|Plugin is a plugin template Note: the structure of a plugin template is free-form, so we need to have "x-kubernetes-preserve-unknown-fields: true" in the validation schema.|
 |`podSpecPatch`|`string`|PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).|
 |`priorityClassName`|`string`|PriorityClassName to apply to workflow pods.|

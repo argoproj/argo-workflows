@@ -122,8 +122,17 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		return nil, err
 	}
 
+	node, err := woc.wf.GetNodeByName(nodeName)
+	if err != nil {
+		woc.log.WithField("nodeName", nodeName).Warn(ctx, "couldn't retrieve node, will get nil templateDeadline")
+	}
+
 	if exists {
 		woc.log.WithFields(logging.Fields{"podPhase": existing.Status.Phase, "nodeName": nodeName, "nodeID": nodeID}).Debug(ctx, "Skipped pod creation: already exists")
+		_, _, err = woc.checkTemplateTimeouts(tmpl, node)
+		if err != nil {
+			return nil, err
+		}
 		return existing, nil
 	}
 
@@ -302,12 +311,12 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	// Set initial progress from pod metadata if exists.
 	if x, ok := pod.Annotations[common.AnnotationKeyProgress]; ok {
 		if p, ok := wfv1.ParseProgress(x); ok {
-			node, getNodeErr := woc.wf.Status.Nodes.Get(nodeID)
+			progressNode, getNodeErr := woc.wf.Status.Nodes.Get(nodeID)
 			if getNodeErr != nil {
 				log.WithPanic().Error(ctx, "was unable to obtain node")
 			}
-			node.Progress = p
-			woc.wf.Status.Nodes.Set(ctx, nodeID, *node)
+			progressNode.Progress = p
+			woc.wf.Status.Nodes.Set(ctx, nodeID, *progressNode)
 		}
 	}
 
@@ -607,11 +616,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	}
 
 	// Check if the template has exceeded its timeout duration. If it hasn't set the applicable activeDeadlineSeconds
-	node, err := woc.wf.GetNodeByName(nodeName)
-	if err != nil {
-		log.Warn(ctx, "couldn't retrieve node, will get nil templateDeadline")
-	}
-	templateDeadline, err := woc.checkTemplateTimeout(tmpl, node)
+	templateDeadline, pendingOnly, err := woc.checkTemplateTimeouts(tmpl, node)
 	if err != nil {
 		return nil, err
 	}
@@ -620,13 +625,18 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		return nil, scheduleErr
 	}
 
-	if templateDeadline != nil && (pod.Spec.ActiveDeadlineSeconds == nil || time.Since(*templateDeadline).Seconds() < float64(*pod.Spec.ActiveDeadlineSeconds)) {
-		newActiveDeadlineSeconds := int64(time.Until(*templateDeadline).Seconds())
-		if newActiveDeadlineSeconds <= 1 {
-			return nil, fmt.Errorf("%s exceeded its deadline", nodeName)
+	if templateDeadline != nil {
+		if !pendingOnly && (pod.Spec.ActiveDeadlineSeconds == nil || time.Since(*templateDeadline).Seconds() < float64(*pod.Spec.ActiveDeadlineSeconds)) {
+			newActiveDeadlineSeconds := int64(time.Until(*templateDeadline).Seconds())
+			if newActiveDeadlineSeconds <= 1 {
+				return nil, fmt.Errorf("%s exceeded its deadline", nodeName)
+			}
+			log.WithFields(logging.Fields{"newActiveDeadlineSeconds": newActiveDeadlineSeconds, "podNamespace": pod.Namespace, "podName": pod.Name}).Debug(ctx, "Setting new activeDeadlineSeconds")
+			pod.Spec.ActiveDeadlineSeconds = &newActiveDeadlineSeconds
 		}
-		log.WithFields(logging.Fields{"newActiveDeadlineSeconds": newActiveDeadlineSeconds, "podNamespace": pod.Namespace, "podName": pod.Name}).Debug(ctx, "Setting new activeDeadlineSeconds")
-		pod.Spec.ActiveDeadlineSeconds = &newActiveDeadlineSeconds
+		if time.Now().Before(*templateDeadline) {
+			woc.requeueAfter(time.Until(*templateDeadline))
+		}
 	}
 
 	reservation := woc.controller.rateLimiter.Reserve()

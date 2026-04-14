@@ -10986,6 +10986,8 @@ spec:
                     format: int64
                     minimum: 1
                     type: integer
+                  pendingTimeout:
+                    type: string
                   plugin:
                     type: object
                     x-kubernetes-preserve-unknown-fields: true
@@ -28789,6 +28791,11 @@ spec:
                       format: int64
                       minimum: 1
                       type: integer
+                    pendingTimeout:
+                      description: |-
+                        PendingTimeout allows to set the maximum time spent in pending status counting from the node's start time.
+                        This duration may not be applied to Step or DAG templates.
+                      type: string
                     plugin:
                       description: |-
                         Plugin is a plugin template

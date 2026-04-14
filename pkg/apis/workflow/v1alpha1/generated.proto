@@ -1865,6 +1865,10 @@ message Template {
 
   // Annotations is a list of annotations to add to the template at runtime
   map<string, string> annotations = 44;
+
+  // PendingTimeout allows to set the maximum time spent in pending status counting from the node's start time.
+  // This duration may not be applied to Step or DAG templates.
+  optional string pendingTimeout = 45;
 }
 
 // TemplateRef is a reference of template resource.

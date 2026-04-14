@@ -7285,6 +7285,33 @@ spec:
       command: [cowsay]
       args: ["hello world"]
 `
+var pendingTimeoutWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world-dag
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: dag1
+        template: whalesay
+        arguments:
+          parameters:
+          - name: sleep_time
+            value: 3s
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: sleep_time
+    pendingTimeout: 1s
+    timeout: 2s
+    container:
+      image: debian:9.5-slim
+      command: [sleep, "{{inputs.parameters.sleep_time}}"]
+`
 
 func TestTemplateTimeoutDuration(t *testing.T) {
 	t.Run("Step Template Deadline", func(t *testing.T) {
@@ -7351,6 +7378,23 @@ func TestTemplateTimeoutDuration(t *testing.T) {
 		jsonByte, err := json.Marshal(woc.wf)
 		require.NoError(t, err)
 		assert.Contains(t, string(jsonByte), "doesn't support timeout field")
+	})
+	t.Run("PendingTimeout", func(t *testing.T) {
+		wf := wfv1.MustUnmarshalWorkflow(pendingTimeoutWf)
+		cancel, controller := newController(logging.TestContext(t.Context()), wf)
+		defer cancel()
+
+		ctx := logging.TestContext(t.Context())
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		woc.operate(ctx)
+		assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+		makePodsPhase(ctx, woc, apiv1.PodPending)
+		time.Sleep(6 * time.Second)
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc.operate(ctx)
+
+		assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Nodes.FindByDisplayName("hello-world-dag").Phase)
 	})
 }
 
@@ -11429,6 +11473,69 @@ func TestWorkflowNeedReconcile(t *testing.T) {
 	require.Len(t, pods.Items, 2)
 	assert.Equal(t, "hello1", pods.Items[0].Spec.Containers[1].Env[0].Value)
 	assert.Equal(t, "steps-need-reconcile", pods.Items[1].Spec.Containers[1].Env[0].Value)
+}
+
+func TestCheckTemplateTimeouts(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("my-ns")
+	wf := wfv1.MustUnmarshalWorkflow(pendingTimeoutWf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	wf = woc.wf
+	makePodsPhase(ctx, woc, apiv1.PodPending)
+	woc = newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	wf = woc.wf
+
+	node, err := wf.GetNodeByName("hello-world-dag.dag1")
+	require.NoError(t, err)
+	assert.NotNil(t, node)
+	tmpl, err := woc.GetNodeTemplate(ctx, node)
+	require.NoError(t, err)
+
+	deadline, pendingOnly, err := woc.checkTemplateTimeouts(tmpl, node)
+
+	require.NoError(t, err)
+	deadlineUntil := time.Until(*deadline)
+	assert.True(t, 0 <= deadlineUntil && deadlineUntil < (time.Second*2))
+	assert.True(t, pendingOnly)
+
+	// pending timeout
+	deadlineUntil += 1 * time.Millisecond
+	time.Sleep(deadlineUntil)
+	deadline, pendingOnly, err = woc.checkTemplateTimeouts(tmpl, node)
+	assert.Nil(t, deadline)
+	assert.Equal(t, err, ErrTimeout)
+	assert.True(t, pendingOnly)
+
+	makePodsPhase(ctx, woc, apiv1.PodRunning)
+	woc = newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	wf = woc.wf
+
+	node, err = wf.GetNodeByName("hello-world-dag.dag1")
+	require.NoError(t, err)
+
+	deadline, pendingOnly, err = woc.checkTemplateTimeouts(tmpl, node)
+	deadlineUntil = time.Duration(0)
+	if deadline != nil {
+		deadlineUntil = time.Until(*deadline)
+	}
+	assert.True(t, 0 < deadlineUntil && deadlineUntil < (time.Second*4))
+	require.NoError(t, err)
+	assert.False(t, pendingOnly)
+
+	// general timeout
+	deadlineUntil += 1 * time.Millisecond
+	time.Sleep(deadlineUntil)
+	deadline, pendingOnly, err = woc.checkTemplateTimeouts(tmpl, node)
+	assert.Nil(t, deadline)
+	assert.Equal(t, err, ErrTimeout)
+	assert.False(t, pendingOnly)
 }
 
 func TestWorkflowRunningButLabelCompleted(t *testing.T) {

@@ -4049,6 +4049,7 @@ of the first container processes are calculated.
 | nodeSelector | map of string| `map[string]string` |  | | NodeSelector is a selector to schedule this step of the workflow to be</br>run on the selected node(s). Overrides the selector set at the workflow level. |  |
 | outputs | [Outputs](#outputs)| `Outputs` |  | |  |  |
 | parallelism | int64 (formatted integer)| `int64` |  | | Parallelism limits the max total parallel pods that can execute at the same time within the</br>boundaries of this template invocation. If additional steps/dag templates are invoked, the</br>pods created by those templates will not be counted towards this total.</br>+kubebuilder:validation:Minimum=1 |  |
+| pendingTimeout | string| `string` |  | | PendingTimeout allows to set the maximum time spent in pending status counting from the node's start time.</br>This duration may not be applied to Step or DAG templates. |  |
 | plugin | [Plugin](#plugin)| `Plugin` |  | |  |  |
 | podSpecPatch | string| `string` |  | | PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of</br>container fields which are not strings (e.g. resource limits). |  |
 | priorityClassName | string| `string` |  | | PriorityClassName to apply to workflow pods. |  |
