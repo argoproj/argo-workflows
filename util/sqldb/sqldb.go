@@ -121,6 +121,13 @@ func buildPostgresDSN(cfg *config.PostgreSQLConfig, username string) string {
 		}
 	}
 
+	if cfg.Schema != "" {
+		if settings.Options == nil {
+			settings.Options = map[string]string{}
+		}
+		settings.Options["search_path"] = cfg.Schema
+	}
+
 	return settings.String()
 }
 
@@ -181,6 +188,11 @@ func createPostGresDBSessionWithCreds(cfg *config.PostgreSQLConfig, persistPool 
 		// which used sslmode=prefer. lib/pq defaults to sslmode=require.
 		query.Set("sslmode", "prefer")
 	}
+
+	if cfg.Schema != "" {
+		query.Set("search_path", cfg.Schema)
+	}
+
 	connURL.RawQuery = query.Encode()
 	dsn := connURL.String()
 
