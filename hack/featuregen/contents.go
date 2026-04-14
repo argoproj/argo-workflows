@@ -199,7 +199,9 @@ func format(version string, features []feature) string {
 
 			if feature.Details != "" {
 				for line := range strings.SplitSeq(feature.Details, "\n") {
-					if line != "" {
+					if line == "" {
+						output.WriteString("\n")
+					} else {
 						output.WriteString(fmt.Sprintf("  %s\n", line))
 					}
 				}

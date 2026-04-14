@@ -18,9 +18,11 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	dynamicfake "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes/fake"
 	batchfake "k8s.io/client-go/kubernetes/typed/batch/v1/fake"
 	corefake "k8s.io/client-go/kubernetes/typed/core/v1/fake"
@@ -12614,5 +12616,91 @@ func TestWithSequenceExpressionPreservesGlobalScope(t *testing.T) {
 		// Should have at least: workflow root + start template + step group + expanded steps
 		assert.GreaterOrEqual(t, len(woc.wf.Status.Nodes), 4,
 			"Should have created multiple nodes for expanded sequence")
+	})
+}
+
+var resourceWaitForDeleteTemplate = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wait-for-delete
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    resource:
+      action: wait
+      waitFor: delete
+      manifest: |
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: test-cm
+`
+
+func TestExecuteResourceWaitForDelete(t *testing.T) {
+	t.Run("resource already deleted succeeds immediately", func(t *testing.T) {
+		cancel, controller := newController(logging.TestContext(t.Context()))
+		defer cancel()
+		ctx := logging.TestContext(t.Context())
+
+		// Dynamic client returns NotFound for any Get
+		controller.dynamicInterface.(*dynamicfake.FakeDynamicClient).PrependReactor("get", "*", func(action k8stesting.Action) (bool, runtime.Object, error) {
+			return true, nil, apierr.NewNotFound(action.(k8stesting.GetAction).GetResource().GroupResource(), action.(k8stesting.GetAction).GetName())
+		})
+
+		wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+		wf := wfv1.MustUnmarshalWorkflow(resourceWaitForDeleteTemplate)
+		wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+		require.NoError(t, err)
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		woc.operate(ctx)
+
+		node := woc.wf.Status.Nodes.FindByDisplayName("wait-for-delete")
+		require.NotNil(t, node)
+		assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
+		assert.Equal(t, "resource deleted", node.Message)
+
+		// Verify no pods were created
+		pods, err := woc.controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(ctx, metav1.ListOptions{})
+		require.NoError(t, err)
+		assert.Empty(t, pods.Items)
+	})
+
+	t.Run("resource exists stays running", func(t *testing.T) {
+		cancel, controller := newController(logging.TestContext(t.Context()))
+		defer cancel()
+		ctx := logging.TestContext(t.Context())
+
+		// Dynamic client returns a ConfigMap (resource exists)
+		controller.dynamicInterface.(*dynamicfake.FakeDynamicClient).PrependReactor("get", "*", func(action k8stesting.Action) (bool, runtime.Object, error) {
+			return true, &unstructured.Unstructured{
+				Object: map[string]any{
+					"apiVersion": "v1",
+					"kind":       "ConfigMap",
+					"metadata": map[string]any{
+						"name":      "test-cm",
+						"namespace": "default",
+					},
+				},
+			}, nil
+		})
+
+		wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+		wf := wfv1.MustUnmarshalWorkflow(resourceWaitForDeleteTemplate)
+		wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+		require.NoError(t, err)
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		woc.operate(ctx)
+
+		node := woc.wf.Status.Nodes.FindByDisplayName("wait-for-delete")
+		require.NotNil(t, node)
+		assert.Equal(t, wfv1.NodeRunning, node.Phase)
+		assert.Equal(t, "waiting for resource deletion", node.Message)
+
+		// Verify no pods were created
+		pods, err := woc.controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(ctx, metav1.ListOptions{})
+		require.NoError(t, err)
+		assert.Empty(t, pods.Items)
 	})
 }

@@ -1409,8 +1409,8 @@ message RawArtifact {
 // +kubebuilder:validation:XValidation:rule="(has(self.manifest) && !has(self.manifestFrom)) || (!has(self.manifest) && has(self.manifestFrom)) || (!has(self.manifest) && !has(self.manifestFrom))",message="only one of manifest or manifestFrom can be specified"
 message ResourceTemplate {
   // Action is the action to perform to the resource.
-  // Must be one of: get, create, apply, delete, replace, patch
-  // +kubebuilder:validation:Enum=get;create;apply;delete;replace;patch
+  // Must be one of: get, create, apply, delete, replace, patch, wait
+  // +kubebuilder:validation:Enum=get;create;apply;delete;replace;patch;wait
   optional string action = 1;
 
   // MergeStrategy is the strategy used to merge a patch. It defaults to "strategic"
@@ -1441,6 +1441,13 @@ message ResourceTemplate {
   // 	"--validate=false"  # disable resource validation
   // ]
   repeated string flags = 7;
+
+  // WaitFor specifies what condition to wait for when Action is "wait".
+  // Currently only "delete" is supported, which completes when the resource no longer exists.
+  // The wait runs in the controller with no pod — zero resource overhead.
+  // Only valid when Action is "wait".
+  // +kubebuilder:validation:Enum=delete
+  optional string waitFor = 9;
 }
 
 // RetryAffinity prevents running steps on the same host.

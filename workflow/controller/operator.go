@@ -1251,6 +1251,10 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (bool, error) 
 			// node is not a pod, it is already complete, or it can be re-run.
 			continue
 		}
+		// Skip wait-action nodes — they run in the controller with no pod
+		if woc.isWaitActionNode(ctx, &node) {
+			continue
+		}
 		recentlyStarted := recentlyStarted(ctx, node)
 		// In case in the absence of nodes, collect metrics.
 		woc.controller.metrics.PodMissingEnsure(ctx, recentlyStarted, string(node.Phase))
@@ -3756,7 +3760,16 @@ func (woc *wfOperationCtx) executeResource(ctx context.Context, nodeName string,
 	if err != nil {
 		ctx, node = woc.initializeExecutableNode(ctx, nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, opts.nodeFlag, false)
 	} else if !node.Pending() {
+		// For wait nodes that are Running, re-check on each reconciliation
+		if tmpl.Resource.Action == "wait" && node.Phase == wfv1.NodeRunning {
+			return woc.checkResourceWaitForDelete(ctx, node, tmpl)
+		}
 		return node, nil
+	}
+
+	// Handle wait action in-controller (no pod)
+	if tmpl.Resource.Action == "wait" {
+		return woc.checkResourceWaitForDelete(ctx, node, tmpl)
 	}
 
 	tmpl = tmpl.DeepCopy()
@@ -3785,6 +3798,58 @@ func (woc *wfOperationCtx) executeResource(ctx context.Context, nodeName string,
 	}
 
 	return node, err
+}
+
+// isWaitActionNode returns true if the node is a resource wait-action node (no pod).
+func (woc *wfOperationCtx) isWaitActionNode(ctx context.Context, node *wfv1.NodeStatus) bool {
+	tmpl, err := woc.GetNodeTemplate(ctx, node)
+	if err != nil {
+		return false
+	}
+	return tmpl != nil && tmpl.Resource != nil && tmpl.Resource.Action == "wait"
+}
+
+// checkResourceWaitForDelete checks if a resource still exists.
+// Returns Succeeded if gone (404), stays Running if it still exists.
+// Runs in the controller — no pod is created.
+func (woc *wfOperationCtx) checkResourceWaitForDelete(ctx context.Context, node *wfv1.NodeStatus, tmpl *wfv1.Template) (*wfv1.NodeStatus, error) {
+	obj := unstructured.Unstructured{}
+	if err := yaml.Unmarshal([]byte(tmpl.Resource.Manifest), &obj); err != nil {
+		return woc.markNodeError(ctx, node.Name, err), err
+	}
+
+	gvk := obj.GroupVersionKind()
+	mapping, err := woc.controller.restMapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+	if err != nil {
+		return woc.markNodeError(ctx, node.Name, fmt.Errorf("failed to resolve resource mapping for %v: %w", gvk, err)), err
+	}
+
+	ns := obj.GetNamespace()
+	if ns == "" {
+		ns = woc.wf.Namespace
+	}
+
+	resourceClient := woc.controller.dynamicInterface.Resource(mapping.Resource)
+	if mapping.Scope.Name() == "namespace" {
+		_, err = resourceClient.Namespace(ns).Get(ctx, obj.GetName(), metav1.GetOptions{})
+	} else {
+		_, err = resourceClient.Get(ctx, obj.GetName(), metav1.GetOptions{})
+	}
+
+	if apierr.IsNotFound(err) {
+		woc.log.WithField("resource", obj.GetName()).Info(ctx, "Resource deleted, marking node succeeded")
+		return woc.markNodePhase(ctx, node.Name, wfv1.NodeSucceeded, "resource deleted"), nil
+	}
+	if err != nil {
+		return woc.requeueIfTransientErr(ctx, err, node.Name)
+	}
+
+	// Resource still exists — mark Running and requeue
+	if node.Phase == wfv1.NodePending {
+		node = woc.markNodePhase(ctx, node.Name, wfv1.NodeRunning, "waiting for resource deletion")
+	}
+	woc.requeue()
+	return node, nil
 }
 
 func (woc *wfOperationCtx) executeData(ctx context.Context, nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
