@@ -57,7 +57,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.42.0
 	github.com/testcontainers/testcontainers-go/modules/mysql v0.41.0
-	github.com/testcontainers/testcontainers-go/modules/postgres v0.41.0
+	github.com/testcontainers/testcontainers-go/modules/postgres v0.42.0
 	github.com/tidwall/gjson v1.18.0
 	github.com/upper/db/v4 v4.10.0
 	github.com/valyala/fasttemplate v1.2.2
