@@ -292,6 +292,7 @@ data:
       host: localhost
       port: 5432
       database: postgres
+      schema: argo
       tableName: argo_workflows
       # the database secrets must be in the same namespace of the controller
       userNameSecret:
@@ -367,6 +368,7 @@ data:
       host: localhost
       port: 5432
       database: postgres  # Can be the same database as persistence
+      schema: argo
       # the database secrets must be in the same namespace as the controller
       userNameSecret:
         name: argo-postgres-config

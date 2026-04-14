@@ -13,7 +13,7 @@ const (
 )
 
 func migrate(ctx context.Context, session db.Session, dbType sqldb.DBType, config *Config) (err error) {
-	return sqldb.Migrate(ctx, session, dbType, versionTable, []sqldb.Change{
+	return sqldb.Migrate(ctx, session, dbType, "", versionTable, []sqldb.Change{
 		sqldb.AnsiSQLChange(`create table if not exists ` + config.LimitTable + ` (
     name varchar(256) not null,
     sizelimit int,

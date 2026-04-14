@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -24,10 +25,10 @@ import (
 var (
 	session db.Session
 	dbType  sqldb.DBType
+	dsn     string
 )
 
 func main() {
-	var dsn string
 	rootCmd := &cobra.Command{
 		Use:   "db",
 		Short: "CLI for developers to use when working on the DB locally",
@@ -51,7 +52,11 @@ func NewMigrateCommand() *cobra.Command {
 		Use:   "migrate",
 		Short: "Force DB migration for given cluster/table",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return persistsqldb.Migrate(cmd.Context(), session, cluster, table, dbType)
+			schema, err := schemaFromDSN(dsn)
+			if err != nil {
+				return err
+			}
+			return persistsqldb.Migrate(cmd.Context(), session, cluster, schema, table, dbType)
 		},
 	}
 	migrationCmd.Flags().StringVar(&cluster, "cluster", "default", "Cluster name")
@@ -118,6 +123,14 @@ func createDBSession(dsn string) (db.Session, sqldb.DBType, error) {
 		}
 		return session, sqldb.MySQL, err
 	}
+}
+
+func schemaFromDSN(dsn string) (string, error) {
+	u, err := url.Parse(dsn)
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(u.Query().Get("search_path")), nil
 }
 
 func randomPhase() wfv1.WorkflowPhase {
