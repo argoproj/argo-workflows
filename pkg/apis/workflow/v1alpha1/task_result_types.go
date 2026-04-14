@@ -15,6 +15,7 @@ type WorkflowTaskResult struct {
 	NodeResult        `json:",inline" protobuf:"bytes,2,opt,name=nodeResult"`
 }
 
+// WorkflowTaskResultList is a list of WorkflowTaskResult resources.
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type WorkflowTaskResultList struct {
 	metav1.TypeMeta `json:",inline"`
