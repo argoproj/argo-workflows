@@ -544,8 +544,8 @@ func (a *ArtifactServer) returnArtifact(ctx context.Context, w http.ResponseWrit
 
 	key, _ := art.GetKey()
 	w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s"`, path.Base(key)))
-	// mime.TypeByExtension relies on the system MIME database (/etc/mime.types), which may not
-	// exist in minimal container images such as distroless. Fall back to "text/plain" so that
+	// mime.TypeByExtension relies on the system MIME database, which may not exist in
+	// minimal container images such as distroless. Fall back to "text/plain; charset=utf-8" so that
 	// unrecognized extensions (e.g. ".log") are still served with a valid Content-Type.
 	contentType := mime.TypeByExtension(path.Ext(key))
 	if contentType == "" {
