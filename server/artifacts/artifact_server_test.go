@@ -404,7 +404,6 @@ func TestArtifactServer_GetArtifactFile(t *testing.T) {
 		// success        bool
 		isDirectory    bool
 		directoryFiles []string // verify these files are in there, if this is a directory
-		contentType    string   // expected Content-Type for non-directory artifacts (if set, assert exact match)
 	}{
 		{
 			path:       "/artifact-files/my-ns/workflows/my-wf/my-node-1/outputs/my-s3-artifact-directory",
@@ -492,9 +491,11 @@ func TestArtifactServer_GetArtifactFile(t *testing.T) {
 			path:        "/artifact-files/my-ns/workflows/my-wf/my-node-1/outputs/main-logs",
 			statusCode:  200,
 			isDirectory: false,
-			// .log may resolve to "text/x-log" where the system MIME db has it,
-			// or fall back to "text/plain" on minimal images. Either is fine;
-			// the non-empty assertion below covers both cases.
+			// Verify that .log artifacts are served with a non-empty Content-Type.
+			// The ".log" extension may not be in the system MIME database on minimal
+			// container images (e.g. distroless), causing mime.TypeByExtension to
+			// return "". The fallback in returnArtifact ensures "text/plain; charset=utf-8"
+			// is used instead.
 		},
 	}
 
@@ -525,9 +526,6 @@ func TestArtifactServer_GetArtifactFile(t *testing.T) {
 				} else {
 					assert.Equal(t, "my-data", string(all))
 					assert.NotEmpty(t, recorder.Header().Get("Content-Type"), "Content-Type header must not be empty")
-					if tt.contentType != "" {
-						assert.Equal(t, tt.contentType, recorder.Header().Get("Content-Type"))
-					}
 				}
 			}
 		})
