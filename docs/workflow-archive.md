@@ -100,7 +100,7 @@ Example:
 
 ## Customizing PostgreSQL Database Schema
 
-To change the schema for the tables in PostgreSQL, set `schema:` to the desired schema in the `persistence` section of [your configuration](workflow-controller-configmap.yaml). 
+To change the schema for the tables in PostgreSQL, set `schema:` to the desired schema in the `persistence` section of [your configuration](workflow-controller-configmap.yaml).
 Only available on PostgreSQL.
 
 Example:
