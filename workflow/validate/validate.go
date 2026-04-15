@@ -120,7 +120,7 @@ func SubstituteResourceManifestExpressions(manifest string) string {
 
 	// since we don't need to resolve/evaluate here we can do just a simple replacement
 	for old, new := range substitutions {
-		rmatch, _ := regexp.Compile(`{{\s*=\s*` + regexp.QuoteMeta(old) + `\s*}}`)
+		rmatch := regexp.MustCompile(`{{\s*=\s*` + regexp.QuoteMeta(old) + `\s*}}`)
 		manifest = rmatch.ReplaceAllString(manifest, new)
 	}
 
