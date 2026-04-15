@@ -119,7 +119,8 @@ Note the important distinction between `parameters` and `artifacts`; they both s
 
 ### Parameter Descriptions
 
-You can add a `description` field to a parameter. The description is displayed as a tooltip in the UI when submitting a workflow or providing intermediate inputs.
+You can add a `description` field to a parameter.
+The description is displayed as a tooltip in the UI when submitting a workflow or providing intermediate inputs.
 
 ```yaml
 arguments:
