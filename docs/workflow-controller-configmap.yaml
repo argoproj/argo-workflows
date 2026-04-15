@@ -308,6 +308,10 @@ data:
       # azureToken:
       #   enabled: true
       #   scope: https://ossrdbms-aad.database.windows.net/.default
+      # awsRDSToken specifies if the password should be fetched as an AWS RDS IAM auth token
+      # awsRDSToken:
+      #   enabled: true
+      #   region: us-east-1
 
     # Optional config for mysql:
     # mysql:
@@ -376,6 +380,10 @@ data:
       # azureToken:
       #   enabled: true
       #   scope: https://ossrdbms-aad.database.windows.net/.default
+      # awsRDSToken specifies if the password should be fetched as an AWS RDS IAM auth token
+      # awsRDSToken:
+      #   enabled: true
+      #   region: us-east-1
 
     # MySQL database configuration (alternative to PostgreSQL)
     # mysql:

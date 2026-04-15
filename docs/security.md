@@ -20,16 +20,24 @@ See [`workflow-controller-cluster-role.yaml`](https://raw.githubusercontent.com/
 
 ### User Permissions
 
-Users minimally need permission to create/read workflows. The controller will then create workflow pods (config maps etc) on behalf of the users, even if the user does not have permission to do this themselves. The controller will only create workflow pods in the workflow's namespace.
+Users minimally need permission to create/read workflows.
+The controller will then create workflow pods (config maps etc) on behalf of the users, even if the user does not have permission to do this themselves.
+The controller will only create workflow pods in the workflow's namespace.
 
 A way to think of this is that, if the user has permission to create a workflow in a namespace, then it is OK to create pods or anything else for them in that namespace.
 
-If the user only has permission to create workflows, then they will be typically unable to configure other necessary resources such as config maps, or view the outcome of their workflow. This is useful when the user is a service.
+If the user only has permission to create workflows, then they will be typically unable to configure other necessary resources such as config maps, or view the outcome of their workflow.
+This is useful when the user is a service.
 
 !!! Warning
     If you allow users to create workflows in the controller's namespace (typically `argo`), it may be possible for users to modify the controller itself.  In a namespace-install the managed namespace should therefore not be the controller's namespace.
 
 You can typically further restrict what a user can do to just being able to submit workflows from templates using [the workflow restrictions feature](workflow-restrictions.md).
+
+Argo Workflows is a Pod controller.
+In the same way that a Kubernetes Deployment or Job can create arbitrary Pods, Argo Workflows can create arbitrary Pods.
+For security purposes, with the exception of the workflow-restrictions feature, Argo Workflows does not attempt to restrict or prevent this.
+In other words, if you can do something insecure with a Job you can do the same thing with a Workflow.
 
 #### UI Access
 
@@ -83,9 +91,11 @@ This service account typically needs [permissions](workflow-rbac.md).
 
 Different service accounts should be used if a workflow pod needs to have elevated permissions, e.g. to create other resources.
 
-The main container will have the service account token mounted, allowing the main container to patch pods (among other permissions). Set `automountServiceAccountToken` to false to prevent this. See [fields](fields.md).
+The main container will have the service account token mounted, allowing the main container to patch pods (among other permissions).
+Set `automountServiceAccountToken` to false to prevent this. See [fields](fields.md).
 
-By default, workflows pods run as `root`. To further secure workflow pods, set the [workflow pod security context](workflow-pod-security-context.md).
+By default, workflows pods run as `root`.
+To further secure workflow pods, set the [workflow pod security context](workflow-pod-security-context.md).
 
 You should configure the controller with the correct [workflow executor](workflow-executors.md) for your trade off between security and scalability.
 
@@ -107,18 +117,25 @@ You can achieve this by configuring the `argo-server` role ([example](https://gi
 
 ## Network Security
 
-Argo Workflows requires various levels of network access depending on configuration and the features enabled. The following describes the different workflow components and their network access needs, to help provide guidance on how to configure the argo namespace in a secure manner (e.g. `NetworkPolicy`).
+Argo Workflows requires various levels of network access depending on configuration and the features enabled.
+The following describes the different workflow components and their network access needs, to help provide guidance on how to configure the argo namespace in a secure manner (e.g. `NetworkPolicy`).
 
 ### Argo Server
 
-The Argo Server is commonly exposed to end-users to provide users with a UI for visualizing and managing their workflows. It must also be exposed if leveraging [webhooks](webhooks.md) to trigger workflows. Both of these use cases require that the argo-server Service to be exposed for ingress traffic (e.g. with an Ingress object or load balancer). Note that the Argo UI is also available to be accessed by running the server locally (i.e. `argo server`) using local KUBECONFIG credentials, and visiting the UI over <https://localhost:2746>.
+The Argo Server is commonly exposed to end-users to provide users with a UI for visualizing and managing their workflows.
+It must also be exposed if leveraging [webhooks](webhooks.md) to trigger workflows.
+Both of these use cases require that the argo-server Service to be exposed for ingress traffic (e.g. with an Ingress object or load balancer).
+Note that the Argo UI is also available to be accessed by running the server locally (i.e. `argo server`) using local KUBECONFIG credentials, and visiting the UI over <https://localhost:2746>.
 
-The Argo Server additionally has a feature to allow downloading of artifacts through the UI. This feature requires that the argo-server be given egress access to the underlying artifact provider (e.g. S3, GCS, MinIO, Artifactory, Azure Blob Storage) in order to download and stream the artifact.
+The Argo Server additionally has a feature to allow downloading of artifacts through the UI.
+This feature requires that the argo-server be given egress access to the underlying artifact provider (e.g. S3, GCS, MinIO, Artifactory, Azure Blob Storage) in order to download and stream the artifact.
 
 ### Workflow Controller
 
-The workflow-controller Deployment exposes a Prometheus metrics endpoint (workflow-controller-metrics:9090) so that a Prometheus server can periodically scrape for controller level metrics. Since Prometheus is typically running in a separate namespace, the argo namespace should be configured to allow cross-namespace ingress access to the workflow-controller-metrics Service.
+The workflow-controller Deployment exposes a Prometheus metrics endpoint (workflow-controller-metrics:9090) so that a Prometheus server can periodically scrape for controller level metrics.
+Since Prometheus is typically running in a separate namespace, the argo namespace should be configured to allow cross-namespace ingress access to the workflow-controller-metrics Service.
 
 ### Database access
 
-A persistent store can be configured for either [archiving](workflow-archive.md) or [offloading](offloading-large-workflows.md) workflows. If either of these features are enabled, both the workflow-controller and argo-server Deployments will need egress network access to the external database used for archiving/offloading.
+A persistent store can be configured for either [archiving](workflow-archive.md) or [offloading](offloading-large-workflows.md) workflows.
+If either of these features are enabled, both the workflow-controller and argo-server Deployments will need egress network access to the external database used for archiving/offloading.

@@ -704,6 +704,24 @@ func (woc *wfOperationCtx) buildLocalScopeFromTask(ctx context.Context, dagCtx *
 			}
 		}
 		woc.buildLocalScope(scope, prefix, ancestorNode)
+
+		// For skipped/omitted ancestors that produced no outputs, populate scope with
+		// empty values for the template's declared output parameters. This prevents
+		// downstream tasks from getting stuck in a requeue loop when they reference
+		// outputs from a dependency that was legitimately skipped.
+		if (ancestorNode.Phase == wfv1.NodeSkipped || ancestorNode.Phase == wfv1.NodeOmitted) && ancestorNode.Outputs == nil {
+			ancestorTask := dagCtx.GetTask(ctx, ancestor)
+			_, tmpl, _, err := dagCtx.tmplCtx.ResolveTemplate(ctx, ancestorTask)
+			if err == nil && tmpl != nil {
+				for _, param := range tmpl.Outputs.Parameters {
+					key := fmt.Sprintf("%s.outputs.parameters.%s", prefix, param.Name)
+					scope.addParamToScope(key, "")
+				}
+				if tmpl.Outputs.Result != nil {
+					scope.addParamToScope(fmt.Sprintf("%s.outputs.result", prefix), "")
+				}
+			}
+		}
 	}
 	return scope, nil
 }

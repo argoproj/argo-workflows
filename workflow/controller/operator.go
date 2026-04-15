@@ -2576,7 +2576,7 @@ func (woc *wfOperationCtx) recordWorkflowPhaseChange(ctx context.Context) {
 		if woc.wf.Status.Phase.Completed() {
 			duration := time.Since(woc.wf.Status.StartedAt.Time)
 			woc.controller.metrics.RecordWorkflowTemplateTime(ctx, duration, woc.wf.Spec.WorkflowTemplateRef.Name, woc.wf.Namespace, woc.wf.Spec.WorkflowTemplateRef.ClusterScope) // not-woc-misuse
-			woc.log.Warn(ctx, "Recording template time")
+			woc.log.Info(ctx, "Recording template time")
 		}
 	}
 }

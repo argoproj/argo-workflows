@@ -1,5 +1,30 @@
 # Changelog
 
+## v4.0.4 (2026-04-02)
+
+Full Changelog: [v4.0.3...v4.0.4](https://github.com/argoproj/argo-workflows/compare/v4.0.3...v4.0.4)
+
+### Selected Changes
+
+* [fe0af1198](https://github.com/argoproj/argo-workflows/commit/fe0af119897a54f4c7db117a5912a5559c46532f) fix: tolerate expression template runtime failures when allowUnresolved is true. Fixes #15832, #15824 (cherry-pick #15839 for 4.0) (#15850)
+* [107542b44](https://github.com/argoproj/argo-workflows/commit/107542b4424240db6241555d253a8a6bf2619bda) fix: populate scope with empty values for outputs of skipped/omitted DAG ancestors (cherry-pick #15841 for 4.0) (#15849)
+* [0ba0565d7](https://github.com/argoproj/argo-workflows/commit/0ba0565d720785a57d3c92886fe9bc78ea09430b) fix(ui): add tooltips to tab icons (cherry-pick #15840 for 4.0) (#15846)
+* [73eb45dba](https://github.com/argoproj/argo-workflows/commit/73eb45dba03cd89bfedfd5f88269062ec2d63417) chore(deps): update module github.com/go-git/go-git/v5 to v5.17.1 [security] (release-4.0) (#15831)
+* [92ee3e221](https://github.com/argoproj/argo-workflows/commit/92ee3e2213f1919d5657d11e461cb8081ed9d8de) chore(deps): update module github.com/docker/cli to v29 [security] (release-4.0) (#15813)
+* [1e2059a2a](https://github.com/argoproj/argo-workflows/commit/1e2059a2a7aa1d997661992314ebd54bf7a9de94) fix: remove holder from waiting list when semaphore lock is acquired. (cherry-pick #15239 for 4.0) (#15823)
+* [f9004cddf](https://github.com/argoproj/argo-workflows/commit/f9004cddf3c4e96212f83788c883196e46f5207e) chore(deps): update dependency yaml to v2.8.3 [security] (release-4.0) (#15810)
+* [251beac5e](https://github.com/argoproj/argo-workflows/commit/251beac5e8d9ce195d04bf18696a26a694023510) chore(deps): update module google.golang.org/grpc to v1.79.3 [security] (release-4.0) (#15775)
+* [077c3186c](https://github.com/argoproj/argo-workflows/commit/077c3186c5f4fd72a66c7dc11c447d722003eaf7) chore(deps): update module google.golang.org/grpc to v1.79.3 [security] (release-4.0) (#15771)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Claude Opus 4.6
+* nakatani-yo
+* shuangkun tian
+
+</details>
+
 ## v4.0.3 (2026-03-18)
 
 Full Changelog: [v4.0.2...v4.0.3](https://github.com/argoproj/argo-workflows/compare/v4.0.2...v4.0.3)
@@ -206,7 +231,7 @@ Full Changelog: [v4.0.0-rc1...v4.0.0-rc2](https://github.com/argoproj/argo-workf
 
 ## v4.0.0-rc1 (2025-12-11)
 
-Full Changelog: [v3.7.12...v4.0.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.7.12...v4.0.0-rc1)
+Full Changelog: [v3.7.13...v4.0.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.7.13...v4.0.0-rc1)
 
 ### Selected Changes
 
@@ -393,6 +418,30 @@ Full Changelog: [v3.7.12...v4.0.0-rc1](https://github.com/argoproj/argo-workflow
 * William Van Hevelingen
 * Xavier Hardy
 * Yuan Tang
+
+</details>
+
+## v3.7.13 (2026-04-02)
+
+Full Changelog: [v3.7.12...v3.7.13](https://github.com/argoproj/argo-workflows/compare/v3.7.12...v3.7.13)
+
+### Selected Changes
+
+* [8204ae19a](https://github.com/argoproj/argo-workflows/commit/8204ae19ac7cc1d9f3b76bef29d85d40f4a74b41) fix: tolerate expression template runtime failures when allowUnresolved is true. Fixes #15832, #15824 (cherry-pick #15839 for 3.7) (#15851)
+* [e21bd1e59](https://github.com/argoproj/argo-workflows/commit/e21bd1e5982f9d5bfd5501269e666add302bc7bb) fix: populate scope with empty values for outputs of skipped/omitted DAG ancestors (cherry-pick #15841 for 3.7) (#15848)
+* [013a2a7dd](https://github.com/argoproj/argo-workflows/commit/013a2a7dd993309d9399a43531d413ae0a3245db) fix(ui): add tooltips to tab icons (cherry-pick #15840 for 3.7) (#15847)
+* [92efea2f9](https://github.com/argoproj/argo-workflows/commit/92efea2f9653ecfc0f87e1dd94f4f422adf5c175) chore(deps): update module github.com/go-git/go-git/v5 to v5.17.1 [security] (release-3.7) (#15830)
+* [0aabc74ad](https://github.com/argoproj/argo-workflows/commit/0aabc74adb60a191240d18c19d348b008e6e1ab6) chore(deps): update module github.com/docker/cli to v29 [security] (release-3.7) (#15812)
+* [f8f212033](https://github.com/argoproj/argo-workflows/commit/f8f212033f76f21566908c869f12e6bd496f1437) fix: remove holder from waiting list when semaphore lock is acquired. (cherry-pick #15239 for 3.7) (#15822)
+* [d6e4f33eb](https://github.com/argoproj/argo-workflows/commit/d6e4f33eb886058d6dde0d3c8e45cea05557514a) chore(deps): update dependency yaml to v2.8.3 [security] (release-3.7) (#15809)
+* [9044c2f58](https://github.com/argoproj/argo-workflows/commit/9044c2f582c2a472bbd52b54d9cdbc9029440d4b) chore(deps): update module google.golang.org/grpc to v1.79.3 [security] (release-3.7) (#15770)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Claude Opus 4.6
+* nakatani-yo
+* shuangkun tian
 
 </details>
 

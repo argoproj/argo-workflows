@@ -277,6 +277,20 @@ type DBConfig struct {
 	MySQL *MySQLConfig `json:"mysql,omitempty"`
 	// Pooled connection settings for all types of database connections
 	ConnectionPool *ConnectionPool `json:"connectionPool,omitempty"`
+	// DBReconnectConfig are configuration options for database retries and reconnections
+	DBReconnectConfig *DBReconnectConfig `json:"reconnectionConfig,omitempty"`
+}
+
+// DBReconnectConfig contains database reconnect settings
+type DBReconnectConfig struct {
+	// MaxRetries defines how many connection attempts should be made before we give up. Default: 5
+	MaxRetries int `json:"maxRetries"`
+	// BaseDelaySeconds delays retries by this amount multiplied by the retryMultiple, capped to `maxDelaySeconds`. Default: 0 (100ms)
+	BaseDelaySeconds int `json:"baseDelaySeconds"`
+	// MaxDelaySeconds the absolute upper limit to wait before retrying. Default: 30
+	MaxDelaySeconds int `json:"maxDelaySeconds"`
+	// RetryMultiple is the growth factor for `baseDelaySeconds`. Default: 2.0
+	RetryMultiple float64 `json:"retryMultiple"`
 }
 
 // PersistConfig contains workflow persistence configuration
@@ -381,6 +395,8 @@ type PostgreSQLConfig struct {
 	SSLMode string `json:"sslMode,omitempty"`
 	// AzureToken specifies if the password should be fetched as an Azure token
 	AzureToken *AzureTokenConfig `json:"azureToken,omitempty"`
+	// AWSRDSToken specifies if the password should be fetched as an AWS RDS IAM auth token
+	AWSRDSToken *AWSRDSTokenConfig `json:"awsRDSToken,omitempty"`
 }
 
 type AzureTokenConfig struct {
@@ -388,6 +404,13 @@ type AzureTokenConfig struct {
 	Enabled bool `json:"enabled,omitempty"`
 	// Scope is the scope to request the token for. Defaults to "https://ossrdbms-aad.database.windows.net/.default" if empty.
 	Scope string `json:"scope,omitempty"`
+}
+
+type AWSRDSTokenConfig struct {
+	// Enabled enables AWS RDS IAM auth token fetching
+	Enabled bool `json:"enabled,omitempty"`
+	// Region is the AWS region of the RDS instance. Auto-detected if empty.
+	Region string `json:"region,omitempty"`
 }
 
 // MySQLConfig contains MySQL-specific database configuration

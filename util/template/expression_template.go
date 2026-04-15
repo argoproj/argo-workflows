@@ -78,8 +78,10 @@ func expressionReplaceStrict(ctx context.Context, w io.Writer, expression string
 	}
 
 	// If we have missing identifiers but they are NOT strict, we allow unresolved.
-	// If we have NO missing identifiers, we enforce resolution (to catch runtime errors).
-	allowUnresolved := len(missingIdentifiers) > 0
+	// If we have NO missing identifiers, we enforce resolution (to catch runtime errors),
+	// unless the caller allows unresolved (strictRegex == nil), in which case runtime
+	// failures are tolerated and the expression is left unresolved for later evaluation.
+	allowUnresolved := len(missingIdentifiers) > 0 || strictRegex == nil
 	return expressionReplaceCore(ctx, w, expression, env, allowUnresolved)
 }
 
