@@ -1240,9 +1240,12 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 			if toDelete[nodeID] {
 				continue
 			}
-			n := wf.Status.Nodes[nodeID]
+			n, ok := wf.Status.Nodes[nodeID]
+			if !ok {
+				continue
+			}
 			if n.Type == wfv1.NodeTypeTaskGroup || n.Type == wfv1.NodeTypeStepGroup {
-				if dagNode, ok := nodesMap[nodeID]; ok {
+				if dagNode, okNode := nodesMap[nodeID]; okNode {
 					for childID := range getChildren(dagNode) {
 						toDelete[childID] = true
 					}
