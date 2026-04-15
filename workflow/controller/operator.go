@@ -2667,7 +2667,7 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 	case wfv1.WorkflowSucceeded, wfv1.WorkflowFailed, wfv1.WorkflowError:
 		woc.log.Info(ctx, "Marking workflow completed")
 		woc.wf.Status.FinishedAt = metav1.Time{Time: time.Now().UTC()}
-		woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", woc.wf.Status.FinishedAt.Sub(woc.wf.Status.StartedAt.Time).Seconds())
+		woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", woc.workflowDurationSeconds())
 		if woc.wf.Labels == nil {
 			woc.wf.Labels = make(map[string]string)
 		}
@@ -4377,13 +4377,21 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) (context.Context
 
 func (woc *wfOperationCtx) setGlobalRuntimeParameters() {
 	woc.globalParams[common.GlobalVarWorkflowStatus] = string(woc.wf.Status.Phase)
+	woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", woc.workflowDurationSeconds())
+}
 
-	// Update workflow duration variable
+// workflowDurationSeconds returns the workflow's elapsed duration in seconds,
+// or 0 if it has not started. Once completed, FinishedAt - StartedAt is used.
+// The IsZero guard is required to avoid time.Since saturating to MaxInt64
+// nanoseconds (~9.22e9 seconds) when StartedAt is the zero time.Time.
+func (woc *wfOperationCtx) workflowDurationSeconds() float64 {
 	if woc.wf.Status.StartedAt.IsZero() {
-		woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", time.Duration(0).Seconds())
-	} else {
-		woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", time.Since(woc.wf.Status.StartedAt.Time).Seconds())
+		return 0
 	}
+	if woc.wf.Status.Phase.Completed() && !woc.wf.Status.FinishedAt.IsZero() {
+		return woc.wf.Status.FinishedAt.Time.Sub(woc.wf.Status.StartedAt.Time).Seconds()
+	}
+	return time.Since(woc.wf.Status.StartedAt.Time).Seconds()
 }
 
 func (woc *wfOperationCtx) GetShutdownStrategy() wfv1.ShutdownStrategy {
