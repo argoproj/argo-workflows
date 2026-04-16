@@ -276,6 +276,11 @@ func TestGetFormatter(t *testing.T) {
 			expectedErr:    nil,
 			expectedOutput: (&Results{fmtr: formatterSimple{}}).buildMsg(),
 		},
+		"json": {
+			formatterName:  "json",
+			expectedErr:    nil,
+			expectedOutput: (&LintResults{fmtr: formatterJson{}}).buildMsg(),
+		},
 		"unknown name": {
 			formatterName:  "foo",
 			expectedErr:    fmt.Errorf("unknown formatter: foo"),
