@@ -512,6 +512,9 @@ func (s *FunctionalSuite) TestDAGSkippedOutputRef() {
 		})
 }
 
+// TestStepsSkippedOutputRef tests that output references to skipped steps resolve to empty strings
+// rather than causing an unresolvable reference error. NodeOmitted is not exercised here because
+// that phase arises in DAG templates, not steps; the fix covers both phases in the same code path.
 func (s *FunctionalSuite) TestStepsSkippedOutputRef() {
 	s.Given().
 		Workflow("@functional/steps-skipped-output-ref.yaml").
