@@ -94,7 +94,7 @@ require (
 	k8s.io/gengo v0.0.0-20251215205346-5ee0d033ba5b
 	k8s.io/klog/v2 v2.140.0
 	k8s.io/kube-openapi v0.0.0-20260330154417-16be699c7b31
-	k8s.io/kubectl v0.35.3
+	k8s.io/kubectl v0.35.4
 	k8s.io/utils v0.0.0-20260108192941-914a6e750570
 	sigs.k8s.io/yaml v1.6.0
 	zombiezen.com/go/sqlite v1.4.2
@@ -356,8 +356,8 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	k8s.io/component-base v0.35.4 // indirect
-	k8s.io/component-helpers v0.35.3 // indirect
-	k8s.io/metrics v0.35.3 // indirect
+	k8s.io/component-helpers v0.35.4 // indirect
+	k8s.io/metrics v0.35.4 // indirect
 	moul.io/http2curl/v2 v2.3.0 // indirect
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730
 	sigs.k8s.io/kustomize/api v0.20.1 // indirect
