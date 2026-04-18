@@ -275,11 +275,14 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 	// Configuring default container to be used with commands like "kubectl exec/logs".
 	// Select "main" container if it's available. In other case use the last container (can happen when pod created from ContainerSet).
-	defaultContainer := pod.Spec.Containers[len(pod.Spec.Containers)-1].Name
-	for _, c := range pod.Spec.Containers {
-		if c.Name == common.MainContainerName {
-			defaultContainer = common.MainContainerName
-			break
+	defaultContainer := common.MainContainerName
+	if len(pod.Spec.Containers) > 0 {
+		defaultContainer = pod.Spec.Containers[len(pod.Spec.Containers)-1].Name
+		for _, c := range pod.Spec.Containers {
+			if c.Name == common.MainContainerName {
+				defaultContainer = common.MainContainerName
+				break
+			}
 		}
 	}
 	pod.Annotations[common.AnnotationKeyDefaultContainer] = defaultContainer
