@@ -8985,6 +8985,42 @@ func TestRootRetryStrategyWithInlineTemplateRetries(t *testing.T) {
 	assert.Equal(t, wfv1.NodePending, woc.wf.Status.Nodes.FindByDisplayName("hello(0)").Phase)
 }
 
+var inlineTemplateReferenceOuterTemplateWorkflow = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: inline-composite-retry-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+      - - name: step1
+          inline:
+            steps:
+            - - name: fail
+                template: fail
+    - name: fail
+      container:
+        image: alpine:latest
+        command: [sh, -c]
+        args: ["exit 1"]
+`
+
+func TestInlineTemplateReferenceOuterTemplateWorkflow(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(inlineTemplateReferenceOuterTemplateWorkflow)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
+	defer cancel()
+
+	ctx := logging.TestContext(t.Context())
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Nodes.FindByDisplayName("step1").Phase)
+	assert.Equal(t, wfv1.NodePending, woc.wf.Status.Nodes.FindByDisplayName("fail").Phase)
+}
+
 const testGlobalParamSubstitute = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow

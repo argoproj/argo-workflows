@@ -1039,6 +1039,9 @@ func (woc *wfOperationCtx) GetTemplateByBoundaryID(ctx context.Context, boundary
 	if err != nil {
 		return nil, false, err
 	}
+	if boundaryNode.TemplateName == "" && boundaryNode.TemplateRef == nil {
+		return nil, false, nil
+	}
 	scope, name := boundaryNode.GetTemplateScope()
 	tmplCtx, err := woc.createTemplateContext(ctx, scope, name)
 	if err != nil {
