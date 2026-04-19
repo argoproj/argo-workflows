@@ -143,7 +143,7 @@ type LegacyCronWorkflow struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
 	Spec              LegacyCronWorkflowSpec  `json:"spec"`
-	Status            wfv1.CronWorkflowStatus `json:"status,omitempty"`
+	Status            wfv1.CronWorkflowStatus `json:"status,omitzero"`
 }
 
 // ToCurrent converts a LegacyCronWorkflow to the current CronWorkflow type

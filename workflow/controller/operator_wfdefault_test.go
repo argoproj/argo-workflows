@@ -5,7 +5,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
@@ -247,7 +246,7 @@ func TestWFDefaultWithWFTAndWf(t *testing.T) {
 		controller.Config.WorkflowDefaults = wfDefault
 
 		ttlStrategy := wfv1.TTLStrategy{
-			SecondsAfterCompletion: ptr.To(int32(10)),
+			SecondsAfterCompletion: new(int32(10)),
 		}
 
 		wf := wfv1.Workflow{
@@ -284,7 +283,7 @@ func TestWFDefaultWithWFTAndWf(t *testing.T) {
 		}
 
 		ttlStrategy := wfv1.TTLStrategy{
-			SecondsAfterCompletion: ptr.To(int32(10)),
+			SecondsAfterCompletion: new(int32(10)),
 		}
 
 		wf := wfv1.Workflow{

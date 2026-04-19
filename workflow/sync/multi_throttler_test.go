@@ -76,7 +76,7 @@ func TestMultiInitWithWorkflows(t *testing.T) {
 	throttler := NewMultiThrottler(1, 1, func(key string) { queuedKey = key })
 	ctx := logging.TestContext(t.Context())
 
-	wfclientset := fakewfclientset.NewSimpleClientset(
+	wfclientset := fakewfclientset.NewClientset(
 		wfv1.MustUnmarshalWorkflow(`
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow

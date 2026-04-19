@@ -1,5 +1,8 @@
 export SHELL:=bash
 export SHELLOPTS:=$(if $(SHELLOPTS),$(SHELLOPTS):)pipefail:errexit
+# k8s v0.35 moved ProtoMessage() behind a build tag. We need it unconditionally
+# for gogo protobuf + grpc-gateway v1 compatibility (gRPC codec requires proto.Message).
+export GOFLAGS += -tags=kubernetes_protomessage_one_more_release
 
 .PHONY: help
 help: ## Showcase the help instructions for all documented `make` commands (not an exhaustive list)
@@ -68,7 +71,7 @@ $(JSON_TEST_OUTPUT):
 	mkdir -p $(JSON_TEST_OUTPUT)
 
 define gotest
-	$(TOOL_GOTESTSUM) --rerun-fails=$(TEST_RETRIES) --jsonfile=$(JSON_TEST_OUTPUT)/$(2).json --format=testname --packages $(1) -- $(3)
+	$(TOOL_GOTESTSUM) --rerun-fails-run-root-test --rerun-fails=$(TEST_RETRIES) --jsonfile=$(JSON_TEST_OUTPUT)/$(2).json --format=testname --packages $(1) -- $(3)
 endef
 ALL_BUILD_TAGS        ?= api,cli,cron,executor,examples,corefunctional,functional,plugins
 BENCHMARK_COUNT       ?= 6
@@ -183,7 +186,7 @@ print-variables: ## Print Makefile variables
 	@echo RUN_MODE=$(RUN_MODE) PROFILE=$(PROFILE) AUTH_MODE=$(AUTH_MODE) SECURE=$(SECURE) STATIC_FILES=$(STATIC_FILES) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) LOG_LEVEL=$(LOG_LEVEL) NAMESPACED=$(NAMESPACED) BASE_HREF=$(BASE_HREF)
 
 proto_vendor: argo-proto.yaml $(TOOL_BUF)
-	GOFLAGS=-mod=mod go run hack/proto-export/*.go --out proto_vendor
+	GOFLAGS="$(GOFLAGS) -mod=mod" go run hack/proto-export/*.go --out proto_vendor
 	touch proto_vendor
 
 .PHONY: proto-vendor
@@ -363,9 +366,7 @@ argoexec-nonroot-image:
 .PHONY: codegen
 codegen: types swagger manifests $(TOOL_MOCKERY) $(TOOL_BUF) $(GENERATED_DOCS) ## Generate code via `go generate`, as well as SDKs
 	go generate ./...
-	GOFLAGS=-mod=mod $(TOOL_MOCKERY) --config .mockery.yaml
- 	# The generated markdown contains links to nowhere for interfaces, so remove them
-	sed -i.bak 's/\[any\](#any)/`any`/g' docs/executor_swagger.md && rm -f docs/executor_swagger.md.bak
+	$(TOOL_MOCKERY) --config .mockery.yaml
 	make --directory sdks/java USE_NIX=$(USE_NIX) generate
 
 .PHONY: check-pwd
@@ -399,7 +400,7 @@ swagger: \
 $(TOOL_MOCKERY): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	GOTOOLCHAIN=go1.25.6 go install github.com/vektra/mockery/v3@v3.5.1
+	GOTOOLCHAIN=go1.26.1 go install github.com/vektra/mockery/v3@v3.5.1
 endif
 $(TOOL_CONTROLLER_GEN): Makefile
 # update this in Nix when upgrading it here
@@ -409,7 +410,7 @@ endif
 $(TOOL_GO_TO_PROTOBUF): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	go install k8s.io/code-generator/cmd/go-to-protobuf@v0.33.1
+	go install k8s.io/code-generator/cmd/go-to-protobuf@v0.35.1
 endif
 $(TOOL_PROTOC_GEN_GOGO): Makefile
 # update this in Nix when upgrading it here
@@ -482,12 +483,16 @@ pkg/apis/workflow/v1alpha1/generated.proto: $(TOOL_GO_TO_PROTOBUF) $(PROTO_BINAR
 	@echo "*** So fix them first."
 	find pkg/apiclient -name '*.proto'|xargs clang-format -i
 	[ -e ./vendor ] || go mod vendor
-	GOFLAGS="-mod=vendor" $(TOOL_GO_TO_PROTOBUF) \
+	GOFLAGS="$(GOFLAGS) -mod=vendor" $(TOOL_GO_TO_PROTOBUF) \
 		--go-header-file=$(CURDIR)/hack/custom-boilerplate.go.txt \
 		--packages=github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1 \
 		--apimachinery-packages=+k8s.io/apimachinery/pkg/util/intstr,+k8s.io/apimachinery/pkg/api/resource,+k8s.io/apimachinery/pkg/runtime/schema,+k8s.io/apimachinery/pkg/runtime,+k8s.io/apimachinery/pkg/apis/meta/v1,+k8s.io/api/core/v1,+k8s.io/api/policy/v1 \
 		--proto-import $(CURDIR) \
 		--proto-import $(CURDIR)/proto_vendor
+	# go-to-protobuf v0.35 puts ProtoMessage() methods in generated.protomessage.pb.go
+	# behind a build tag. Strip it so codegen tools (mockery, etc.) can compile without
+	# requiring the tag. Runtime builds use GOFLAGS for k8s vendor types instead.
+	perl -i -ne 'print unless /kubernetes_protomessage_one_more_release/' pkg/apis/workflow/v1alpha1/generated.protomessage.pb.go
 	# Delete the link and created k8s.io directory
 	rm -rf github.com v4 k8s.io
 	# Restore vendor if go-to-protobuf deleted files
@@ -516,6 +521,7 @@ pkg/apiclient/sensor/sensor.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclie
 
 pkg/apiclient/workflow/workflow.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclient/workflow/workflow.proto
 	$(call protoc,pkg/apiclient/workflow/workflow.proto)
+	perl -i -pe 's/return resp\.Recv\(\) \}, mux\.GetForwardResponseOptions\(\)\.\.\.\)/return wrapEventAsProtoMessage(resp.Recv()) }, mux.GetForwardResponseOptions()...)/ if /forward_WorkflowService_WatchEvents_0/' pkg/apiclient/workflow/workflow.pb.gw.go
 
 pkg/apiclient/workflowarchive/workflow-archive.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclient/workflowarchive/workflow-archive.proto
 	$(call protoc,pkg/apiclient/workflowarchive/workflow-archive.proto)
@@ -537,11 +543,13 @@ manifests: \
 	manifests/quick-start-minimal.yaml \
 	manifests/quick-start-mysql.yaml \
 	manifests/quick-start-postgres.yaml \
+	manifests/quick-start-telemetry.yaml \
 	dist/manifests/install.yaml \
 	dist/manifests/namespace-install.yaml \
 	dist/manifests/quick-start-minimal.yaml \
 	dist/manifests/quick-start-mysql.yaml \
-	dist/manifests/quick-start-postgres.yaml
+	dist/manifests/quick-start-postgres.yaml \
+	dist/manifests/quick-start-telemetry.yaml
 
 .PHONY: manifests/install.yaml
 manifests/install.yaml: /dev/null
@@ -563,6 +571,10 @@ manifests/quick-start-mysql.yaml: /dev/null
 manifests/quick-start-postgres.yaml: /dev/null
 	kubectl kustomize --load-restrictor=LoadRestrictionsNone manifests/quick-start/postgres | ./hack/manifests/auto-gen-msg.sh > manifests/quick-start-postgres.yaml
 
+.PHONY: manifests/quick-start-telemetry.yaml
+manifests/quick-start-telemetry.yaml: /dev/null
+	kubectl kustomize --load-restrictor=LoadRestrictionsNone manifests/quick-start/telemetry | ./hack/manifests/auto-gen-msg.sh > manifests/quick-start-telemetry.yaml
+
 dist/manifests/%: manifests/%
 	@mkdir -p dist/manifests
 	sed 's/:latest/:$(VERSION)/' manifests/$* > $@
@@ -574,7 +586,7 @@ manifests-validate:
 	kubectl apply --server-side --validate=strict --dry-run=server -f 'manifests/*.yaml'
 
 $(TOOL_GOLANGCI_LINT): Makefile
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v2.8.0
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v2.11.3
 
 .PHONY: lint lint-go lint-ui
 lint: lint-go lint-ui features-validate ## Lint the project
@@ -770,7 +782,7 @@ pkg/apis/workflow/v1alpha1/openapi_generated.go: $(TOOL_OPENAPI_GEN) $(TYPES)
 # generates many other files (listers, informers, client etc).
 .PRECIOUS: pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go
 pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TOOL_GO_TO_PROTOBUF) $(TYPES)
-	bash -c 'source $(GOPATH)/pkg/mod/k8s.io/code-generator@v0.33.1/kube_codegen.sh && \
+	bash -c 'source $(GOPATH)/pkg/mod/k8s.io/code-generator@v0.35.1/kube_codegen.sh && \
 		kube::codegen::gen_helpers \
 			--boilerplate ./hack/custom-boilerplate.go.txt \
 			./pkg/apis && \
@@ -787,11 +799,11 @@ dist/kubernetes.swagger.json: Makefile
 	@mkdir -p dist
 	# recurl will only fetch if the file doesn't exist, so delete it
 	rm -f $@
-	./hack/recurl.sh $@ https://raw.githubusercontent.com/kubernetes/kubernetes/v1.33.1/api/openapi-spec/swagger.json
+	./hack/recurl.sh $@ https://raw.githubusercontent.com/kubernetes/kubernetes/v1.35.1/api/openapi-spec/swagger.json
 
 pkg/apiclient/_.secondary.swagger.json: hack/api/swagger/secondaryswaggergen.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
 	# We have `hack/api/swagger` so that most hack script do not depend on the whole code base and are therefore slow.
-	GOFLAGS=-mod=mod go run ./hack/api/swagger secondaryswaggergen
+	GOFLAGS="$(GOFLAGS) -mod=mod" go run ./hack/api/swagger secondaryswaggergen
 
 # we always ignore the conflicts, so lets automated figuring out how many there will be and just use that
 dist/swagger-conflicts: $(TOOL_SWAGGER) $(SWAGGER_FILES)
@@ -804,7 +816,7 @@ dist/swaggifed.swagger.json: dist/mixed.swagger.json hack/api/swagger/swaggify.s
 	cat dist/mixed.swagger.json | ./hack/api/swagger/swaggify.sh > dist/swaggifed.swagger.json
 
 dist/kubeified.swagger.json: dist/swaggifed.swagger.json dist/kubernetes.swagger.json
-	GOFLAGS=-mod=mod go run ./hack/api/swagger kubeifyswagger dist/swaggifed.swagger.json dist/kubeified.swagger.json
+	GOFLAGS="$(GOFLAGS) -mod=mod" go run ./hack/api/swagger kubeifyswagger dist/swaggifed.swagger.json dist/kubeified.swagger.json
 
 dist/swagger.0.json: $(TOOL_SWAGGER) dist/kubeified.swagger.json
 	$(TOOL_SWAGGER) flatten --with-flatten minimal --with-flatten remove-unused dist/kubeified.swagger.json -o dist/swagger.0.json
@@ -813,24 +825,24 @@ api/openapi-spec/swagger.json: $(TOOL_SWAGGER) dist/swagger.0.json
 	$(TOOL_SWAGGER) flatten --with-flatten remove-unused dist/swagger.0.json -o api/openapi-spec/swagger.json
 
 api/jsonschema/schema.json: api/openapi-spec/swagger.json hack/api/jsonschema/main.go
-	GOFLAGS=-mod=mod go run ./hack/api/jsonschema
+	GOFLAGS="$(GOFLAGS) -mod=mod" go run ./hack/api/jsonschema
 
 go-diagrams/diagram.dot: ./hack/docs/diagram.go
 	rm -Rf go-diagrams
-	GOFLAGS=-mod=mod go run ./hack/docs diagram
+	GOFLAGS="$(GOFLAGS) -mod=mod" go run ./hack/docs diagram
 
 docs/assets/diagram.png: go-diagrams/diagram.dot
 	cd go-diagrams && dot -Tpng diagram.dot -o ../docs/assets/diagram.png
 
 docs/fields.md: api/openapi-spec/swagger.json $(shell find examples -type f) ui/dist/app/index.html hack/docs/fields.go
-	env ARGO_SECURE=false ARGO_INSECURE_SKIP_VERIFY=false ARGO_SERVER= ARGO_INSTANCEID= GOFLAGS=-mod=mod go run ./hack/docs fields
+	env ARGO_SECURE=false ARGO_INSECURE_SKIP_VERIFY=false ARGO_SERVER= ARGO_INSTANCEID= GOFLAGS="$(GOFLAGS) -mod=mod" go run ./hack/docs fields
 
 docs/workflow-controller-configmap.md: config/*.go hack/docs/workflow-controller-configmap.md hack/docs/configdoc.go
-	GOFLAGS=-mod=mod go run ./hack/docs configdoc
+	GOFLAGS="$(GOFLAGS) -mod=mod" go run ./hack/docs configdoc
 
 # generates several other files
 docs/cli/argo.md: $(CLI_PKG_FILES) go.sum ui/dist/app/index.html hack/docs/cli.go
-	GOFLAGS=-mod=mod go run ./hack/docs cli
+	GOFLAGS="$(GOFLAGS) -mod=mod" go run ./hack/docs cli
 
 docs/go-sdk-guide.md: $(TOOL_EMBEDDOC)
 	$(TOOL_EMBEDDOC)

@@ -8,8 +8,9 @@ import (
 	"time"
 )
 
-// time.Duration forces you to specify in millis, and does not support days
-// see https://stackoverflow.com/questions/48050945/how-to-unmarshal-json-into-durations
+// TTL is a time.Duration wrapper that supports human-readable unmarshalling,
+// since time.Duration forces you to specify in millis and does not support days.
+// See https://stackoverflow.com/questions/48050945/how-to-unmarshal-json-into-durations
 type TTL time.Duration
 
 func (l TTL) MarshalJSON() ([]byte, error) {

@@ -16,7 +16,7 @@ import (
 )
 
 func TestHydrator(t *testing.T) {
-	cleanup := packer.SetMaxWorkflowSize(260)
+	cleanup := packer.SetMaxWorkflowSize(230)
 	defer cleanup()
 	ctx := logging.TestContext(t.Context())
 	t.Run("Dehydrate", func(t *testing.T) {

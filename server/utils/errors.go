@@ -58,11 +58,10 @@ func httpToStatusError(code int, msg string) (bool, error) {
 	return false, nil
 }
 
-// Try to see if we can obtain a http
-// error code from the k8s layer or the ArgoError layer
-// if not we resort to a default value of `code`
-// NOTE: errors passed of the type from grpc's status are not converted
-// and returned as is. This is to keep user code as dumb as possible.
+// ToStatusError tries to obtain an HTTP error code from the k8s layer or
+// the ArgoError layer; if not, it resorts to a default value of `code`.
+// NOTE: errors of the type from grpc's status are not converted and are
+// returned as is. This is to keep user code as simple as possible.
 // The assumption here is that the error in the lowest layer of the error stack is the most relevant error.
 func ToStatusError(err error, code codes.Code) error {
 	if err == nil {

@@ -33,8 +33,11 @@ func NewSyncServer(ctx context.Context, kubectlConfig kubernetes.Interface, name
 	server.providers[syncpkg.SyncConfigType_CONFIGMAP] = &configMapSyncProvider{}
 
 	if syncConfig != nil && syncConfig.EnableAPI {
-		session, _ := syncdb.SessionFromConfig(ctx, kubectlConfig, namespace, syncConfig)
-		server.providers[syncpkg.SyncConfigType_DATABASE] = &dbSyncProvider{db: syncdb.NewSyncQueries(session, syncdb.ConfigFromConfig(syncConfig))}
+		sessionProxy := syncdb.SessionProxyFromConfig(ctx, kubectlConfig, namespace, syncConfig)
+		if sessionProxy == nil {
+			panic("was unable to create database connection")
+		}
+		server.providers[syncpkg.SyncConfigType_DATABASE] = &dbSyncProvider{db: syncdb.NewSyncQueries(sessionProxy, syncdb.ConfigFromConfig(syncConfig))}
 	}
 
 	return server
