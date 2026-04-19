@@ -31,10 +31,13 @@ import (
 	sutils "github.com/argoproj/argo-workflows/v4/server/utils"
 	"github.com/argoproj/argo-workflows/v4/server/workflow/store"
 	argoutil "github.com/argoproj/argo-workflows/v4/util"
+	errorsutil "github.com/argoproj/argo-workflows/v4/util/errors"
 	"github.com/argoproj/argo-workflows/v4/util/fields"
 	"github.com/argoproj/argo-workflows/v4/util/instanceid"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/logs"
+	retry "github.com/argoproj/argo-workflows/v4/util/retry"
+	waitutil "github.com/argoproj/argo-workflows/v4/util/wait"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/creator"
 	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
@@ -135,7 +138,12 @@ func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.Wo
 		return workflow, nil
 	}
 
-	wf, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Create(ctx, req.Workflow, metav1.CreateOptions{})
+	var wf *wfv1.Workflow
+	err = waitutil.Backoff(retry.DefaultRetry(ctx), func() (bool, error) {
+		var createErr error
+		wf, createErr = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Create(ctx, req.Workflow, metav1.CreateOptions{})
+		return !errorsutil.IsTransientErr(ctx, createErr), createErr
+	})
 	logger := logging.RequireLoggerFromContext(ctx)
 	if err != nil {
 		if apierr.IsServerTimeout(err) && req.Workflow.GenerateName != "" && req.Workflow.Name != "" {
@@ -856,7 +864,11 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 		return workflow, nil
 	}
 
-	wf, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+	err = waitutil.Backoff(retry.DefaultRetry(ctx), func() (bool, error) {
+		var createErr error
+		wf, createErr = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+		return !errorsutil.IsTransientErr(ctx, createErr), createErr
+	})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
 	}
