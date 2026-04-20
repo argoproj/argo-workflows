@@ -109,7 +109,16 @@ function WorkflowNodeSummary(props: Props) {
             ? [
                   {
                       title: 'WORKFLOW TEMPLATE',
-                      value: <ClipboardText text={workflow.spec.workflowTemplateRef.name} />
+                      value: (
+                          <a
+                              href={uiUrl(
+                                  workflow.spec.workflowTemplateRef.clusterScope
+                                      ? `cluster-workflow-templates/${workflow.spec.workflowTemplateRef.name}`
+                                      : `workflow-templates/${workflow.metadata.namespace}/${workflow.spec.workflowTemplateRef.name}`
+                              )}>
+                              {workflow.spec.workflowTemplateRef.name}
+                          </a>
+                      )
                   }
               ]
             : []),
