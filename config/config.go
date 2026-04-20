@@ -389,6 +389,8 @@ func (c DatabaseConfig) GetHostname() string {
 // PostgreSQLConfig contains PostgreSQL-specific database configuration
 type PostgreSQLConfig struct {
 	DatabaseConfig
+	// Schema is the name of the schema to use in the database. If not set, the default schema of the database will be used
+	Schema string `json:"schema"`
 	// SSL enables SSL connection to the database
 	SSL bool `json:"ssl,omitempty"`
 	// SSLMode specifies the SSL mode (disable, require, verify-ca, verify-full)
