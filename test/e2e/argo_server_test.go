@@ -1211,7 +1211,7 @@ func (s *ArgoServerSuite) artifactServerRetrievalTests(name string, uid types.UI
 			Contains(":) Hello Argo!")
 
 		resp.Header("Content-Security-Policy").
-			IsEqual("sandbox; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self' 'unsafe-inline'")
+			IsEqual("sandbox allow-same-origin; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self' 'unsafe-inline'")
 
 		resp.Header("X-Frame-Options").
 			IsEqual("SAMEORIGIN")
@@ -1227,7 +1227,7 @@ func (s *ArgoServerSuite) artifactServerRetrievalTests(name string, uid types.UI
 			Contains(":) Hello Argo!")
 
 		resp.Header("Content-Security-Policy").
-			IsEqual("sandbox; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self' 'unsafe-inline'")
+			IsEqual("sandbox allow-same-origin; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self' 'unsafe-inline'")
 
 		resp.Header("X-Frame-Options").
 			IsEqual("SAMEORIGIN")
@@ -1243,7 +1243,7 @@ func (s *ArgoServerSuite) artifactServerRetrievalTests(name string, uid types.UI
 			Contains("<a href=\"./subdirectory/\">subdirectory/</a>")
 
 		resp.Header("Content-Security-Policy").
-			IsEqual("sandbox; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self' 'unsafe-inline'")
+			IsEqual("sandbox allow-same-origin; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self' 'unsafe-inline'")
 
 		resp.Header("X-Frame-Options").
 			IsEqual("SAMEORIGIN")
@@ -1272,7 +1272,7 @@ func (s *ArgoServerSuite) artifactServerRetrievalTests(name string, uid types.UI
 			Contains(":) Hello Argo!")
 
 		resp.Header("Content-Security-Policy").
-			IsEqual("sandbox; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self' 'unsafe-inline'")
+			IsEqual("sandbox allow-same-origin; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self' 'unsafe-inline'")
 
 		resp.Header("X-Frame-Options").
 			IsEqual("SAMEORIGIN")
