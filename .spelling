@@ -37,6 +37,8 @@ BlackRock
 Breitgand
 CRD
 CRDs
+ChatGPT
+Claude
 CloudSQL
 ClusterRoleBinding
 ClusterRoles
@@ -46,9 +48,11 @@ Codespaces
 ConfigMap
 ConfigMaps
 ContainerSet
+Copilot
 Couler
 CronWorkflow
 CronWorkflows
+Cursor
 CustomResource
 DataDog
 Dataflow
@@ -58,6 +62,7 @@ Dex
 EditorConfig
 EtcD
 EventRouter
+GenAI
 Generator
 GitOps
 Github
