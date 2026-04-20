@@ -43,5 +43,5 @@ Fixes #TODO
 
 ### AI
 
-<!-- TODO: Declare any use of AI tools (e.g. Copilot, Cursor, Claude, ChatGPT) in preparing this PR, including code, tests, docs, or commit messages. Say "None" if no AI was used. -->
-<!-- See the Argo project's GenAI policy: https://github.com/argoproj/argoproj/blob/main/community/genai.md -->
+<!-- TODO: Declare any use of generative AI tools (for example ChatGPT) in preparing this PR, including code, tests, docs, or commit messages. Say "None" if no AI was used. -->
+<!-- See the Argo project's Generative AI policy: https://github.com/argoproj/argoproj/blob/main/community/genai.md -->

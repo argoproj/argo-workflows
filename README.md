@@ -165,4 +165,4 @@ See [SECURITY.md](SECURITY.md).
 
 ## Generative AI
 
-Contributions using generative AI tools must follow the [Argo project GenAI policy](https://github.com/argoproj/argoproj/blob/main/community/genai.md).
+Contributions using generative AI tools must follow the [Argo project Generative AI policy](https://github.com/argoproj/argoproj/blob/main/community/genai.md).

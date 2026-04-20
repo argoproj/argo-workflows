@@ -97,7 +97,7 @@ See [the pull request template](https://github.com/argoproj/argo-workflows/blob/
 
 #### Use of Generative AI
 
-Contributors using generative AI tools (e.g. Copilot, Cursor, Claude, ChatGPT) to help prepare contributions must follow the [Argo project GenAI policy](https://github.com/argoproj/argoproj/blob/main/community/genai.md) and declare such use in the `AI` section of the pull request template.
+Contributors using generative AI tools (for example ChatGPT) to help prepare contributions must follow the [Argo project Generative AI policy](https://github.com/argoproj/argoproj/blob/main/community/genai.md) and declare such use in the `AI` section of the pull request template.
 
 ### Other Contributions
 
