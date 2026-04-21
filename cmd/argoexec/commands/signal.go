@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"syscall"
 
 	"github.com/argoproj/argo-workflows/v4/util/file"
@@ -27,7 +28,7 @@ func startFileSignalHandler(ctx context.Context, pid int) {
 			if readErr != nil {
 				return
 			}
-			s, parseErr := strconv.Atoi(string(data))
+			s, parseErr := strconv.Atoi(strings.TrimSpace(string(data)))
 			if parseErr != nil || s <= 0 {
 				return
 			}

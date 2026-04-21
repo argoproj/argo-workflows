@@ -7,16 +7,17 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"syscall"
+	"time"
 
 	"github.com/fsnotify/fsnotify"
+
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 // WaitForCreate blocks until a file or directory exists at path, or ctx is
 // cancelled. The parent directory of path MUST already exist; callers are
 // responsible for creating it (e.g. with os.MkdirAll) before calling.
-//
-// There is no fallback poll — if the kernel does not deliver an event we
-// will wait forever (until ctx is cancelled).
 func WaitForCreate(ctx context.Context, path string) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -36,9 +37,22 @@ func WaitForCreate(ctx context.Context, path string) error {
 // is invoked once immediately. The parent directory of path MUST already
 // exist.
 //
-// Blocks until ctx is cancelled or the kernel reports an unrecoverable
-// watcher error. There is no fallback poll.
+// Uses inotify when available; falls back to 2s polling if the kernel's
+// inotify limits (fs.inotify.max_user_instances / max_user_watches) are
+// exhausted.
+//
+// Blocks until ctx is cancelled or an unrecoverable error occurs.
 func WatchFile(ctx context.Context, path string, onChange func()) error {
+	err := watchFileInotify(ctx, path, onChange)
+	if isInotifyResourceExhausted(err) {
+		logging.RequireLoggerFromContext(ctx).WithError(err).Warn(ctx,
+			"inotify unavailable; falling back to polling. Consider raising fs.inotify.max_user_instances / fs.inotify.max_user_watches")
+		return watchFilePoll(ctx, path, onChange)
+	}
+	return err
+}
+
+func watchFileInotify(ctx context.Context, path string, onChange func()) error {
 	path = filepath.Clean(path)
 	w, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -74,4 +88,41 @@ func WatchFile(ctx context.Context, path string, onChange func()) error {
 			return err
 		}
 	}
+}
+
+func watchFilePoll(ctx context.Context, path string, onChange func()) error {
+	path = filepath.Clean(path)
+	var last os.FileInfo
+	if fi, err := os.Stat(path); err == nil {
+		onChange()
+		last = fi
+	} else if !errors.Is(err, fs.ErrNotExist) {
+		return err
+	}
+	t := time.NewTicker(2 * time.Second)
+	defer t.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-t.C:
+			fi, err := os.Stat(path)
+			if err != nil {
+				if errors.Is(err, fs.ErrNotExist) {
+					continue
+				}
+				return err
+			}
+			if last == nil || fi.ModTime() != last.ModTime() || fi.Size() != last.Size() {
+				onChange()
+				last = fi
+			}
+		}
+	}
+}
+
+// isInotifyResourceExhausted reports whether err indicates the kernel has no
+// more inotify instances or watches available for this user.
+func isInotifyResourceExhausted(err error) bool {
+	return errors.Is(err, syscall.EMFILE) || errors.Is(err, syscall.ENOSPC)
 }

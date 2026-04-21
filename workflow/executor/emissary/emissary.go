@@ -118,7 +118,7 @@ func (e emissary) Wait(ctx context.Context, containerNames []string) error {
 	// 0o777 — peer containers may run as different users and need to
 	// write exit code / log files inside it.
 	osspecific.AllowGrantingAccessToEveryone()
-	g, gctx := errgroup.WithContext(ctx)
+	exitCodePaths := make([]string, 0, len(containerNames))
 	for _, containerName := range containerNames {
 		dir := filepath.Join(common.VarRunArgoPath, "ctr", containerName)
 		// The peer container will MkdirAll this directory too, but it may
@@ -127,7 +127,10 @@ func (e emissary) Wait(ctx context.Context, containerNames []string) error {
 		if err := os.MkdirAll(dir, 0o777); err != nil {
 			return err
 		}
-		exitCodePath := filepath.Join(dir, "exitcode")
+		exitCodePaths = append(exitCodePaths, filepath.Join(dir, "exitcode"))
+	}
+	g, gctx := errgroup.WithContext(ctx)
+	for _, exitCodePath := range exitCodePaths {
 		g.Go(func() error { return file.WaitForCreate(gctx, exitCodePath) })
 	}
 	return g.Wait()

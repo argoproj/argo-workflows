@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync/atomic"
+	"syscall"
 	"testing"
 	"time"
 
@@ -61,6 +62,7 @@ func TestWaitForCreate_ParentMissingIsError(t *testing.T) {
 func TestWatchFile_FiresOnCreateAndWrite(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "file")
+	require.NoError(t, os.WriteFile(path, []byte("a"), 0o644))
 
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
@@ -74,10 +76,11 @@ func TestWatchFile_FiresOnCreateAndWrite(t *testing.T) {
 		close(done)
 	}()
 
-	// Give the watcher time to install before writing.
-	time.Sleep(100 * time.Millisecond)
+	// Wait for the initial Stat callback to confirm the watcher is installed.
+	require.Eventually(t, func() bool {
+		return atomic.LoadInt32(&fires) >= 1
+	}, 2*time.Second, 10*time.Millisecond)
 
-	require.NoError(t, os.WriteFile(path, []byte("a"), 0o644))
 	require.NoError(t, os.WriteFile(path, []byte("ab"), 0o644))
 
 	require.Eventually(t, func() bool {
@@ -111,4 +114,79 @@ func TestWatchFile_FiresWhenAlreadyExists(t *testing.T) {
 
 	cancel()
 	<-done
+}
+
+func TestIsInotifyResourceExhausted(t *testing.T) {
+	require.True(t, isInotifyResourceExhausted(syscall.EMFILE))
+	require.True(t, isInotifyResourceExhausted(syscall.ENOSPC))
+	require.False(t, isInotifyResourceExhausted(syscall.EACCES))
+	require.False(t, isInotifyResourceExhausted(nil))
+}
+
+func TestWatchFilePoll_FiresOnCreateAndWrite(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "file")
+
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	var fires int32
+	done := make(chan struct{})
+	go func() {
+		_ = watchFilePoll(ctx, path, func() {
+			atomic.AddInt32(&fires, 1)
+		})
+		close(done)
+	}()
+
+	require.NoError(t, os.WriteFile(path, []byte("a"), 0o644))
+	require.Eventually(t, func() bool {
+		return atomic.LoadInt32(&fires) >= 1
+	}, 5*time.Second, 50*time.Millisecond)
+
+	// Ensure a detectably-different mtime on filesystems with coarse timestamps.
+	time.Sleep(1100 * time.Millisecond)
+	require.NoError(t, os.WriteFile(path, []byte("ab-longer"), 0o644))
+	require.Eventually(t, func() bool {
+		return atomic.LoadInt32(&fires) >= 2
+	}, 5*time.Second, 50*time.Millisecond)
+
+	cancel()
+	<-done
+}
+
+func TestWatchFilePoll_FiresWhenAlreadyExists(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "file")
+	require.NoError(t, os.WriteFile(path, []byte("hi"), 0o644))
+
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	var fires int32
+	done := make(chan struct{})
+	go func() {
+		_ = watchFilePoll(ctx, path, func() {
+			atomic.AddInt32(&fires, 1)
+		})
+		close(done)
+	}()
+
+	require.Eventually(t, func() bool {
+		return atomic.LoadInt32(&fires) >= 1
+	}, 1*time.Second, 10*time.Millisecond)
+
+	cancel()
+	<-done
+}
+
+func TestWatchFilePoll_ContextCancelled(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "never")
+
+	ctx, cancel := context.WithTimeout(t.Context(), 100*time.Millisecond)
+	defer cancel()
+
+	err := watchFilePoll(ctx, path, func() {})
+	require.ErrorIs(t, err, context.DeadlineExceeded)
 }

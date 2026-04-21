@@ -1366,11 +1366,16 @@ func (we *WorkflowExecutor) monitorProgress(ctx context.Context, progressFile st
 			mu.Lock()
 			current := we.progress
 			mu.Unlock()
+			if current == "" {
+				continue
+			}
 			if err := we.reportResult(ctx, wfv1.NodeResult{Progress: current}); err != nil {
 				logger.WithError(err).Info(ctx, "failed to report progress")
 			} else {
 				mu.Lock()
-				we.progress = ""
+				if we.progress == current {
+					we.progress = ""
+				}
 				mu.Unlock()
 			}
 		}
