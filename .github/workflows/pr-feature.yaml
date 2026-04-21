@@ -11,10 +11,20 @@ on:
 permissions:
   contents: read
 
+env:
+  # a workaround to disable harden runner
+  STEP_SECURITY_HARDEN_RUNNER: ${{ vars.disable_harden_runner }}
+
 jobs:
   feature-pr-handling:
     runs-on: ubuntu-24.04
     steps:
+      - name: Harden the runner (Audit all outbound calls)
+        if: ${{ vars.disable_harden_runner != 'true' }}
+        uses: step-security/harden-runner@f808768d1510423e83855289c910610ca9b43176 # v2.17.0
+        with:
+          egress-policy: audit
+
       - name: Check if feature PR
         id: check-type
         env:

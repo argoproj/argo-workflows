@@ -5,6 +5,10 @@ on: pull_request
 permissions:
   contents: read
 
+env:
+  # a workaround to disable harden runner
+  STEP_SECURITY_HARDEN_RUNNER: ${{ vars.disable_harden_runner }}
+
 jobs:
   review:
     if: ${{ github.actor == 'dependabot[bot]' && github.repository == 'argoproj/argo-workflows'}}
@@ -13,6 +17,12 @@ jobs:
       contents: write # for enabling auto-merge on a PR
     runs-on: ubuntu-24.04
     steps:
+      - name: Harden the runner (Audit all outbound calls)
+        if: ${{ vars.disable_harden_runner != 'true' }}
+        uses: step-security/harden-runner@f808768d1510423e83855289c910610ca9b43176 # v2.17.0
+        with:
+          egress-policy: audit
+
       - name: Dependabot metadata
         id: metadata
         uses: dependabot/fetch-metadata@ffa630c65fa7e0ecfa0625b5ceda64399aea1b36 # v3.0.0
