@@ -238,7 +238,8 @@ SWAGGER_FILES := pkg/apiclient/_.primary.swagger.json \
 	pkg/apiclient/workflowtemplate/workflow-template.swagger.json \
 	pkg/apiclient/sync/sync.swagger.json
 PROTO_BINARIES := $(TOOL_PROTOC_GEN_GOGO) $(TOOL_PROTOC_GEN_GOGOFAST) $(TOOL_GOIMPORTS) $(TOOL_PROTOC_GEN_GRPC_GATEWAY) $(TOOL_PROTOC_GEN_SWAGGER) $(TOOL_CLANG_FORMAT)
-GENERATED_DOCS := docs/fields.md docs/cli/argo.md docs/workflow-controller-configmap.md docs/metrics.md docs/go-sdk-guide.md
+QUICK_GENERATED_DOCS := docs/metrics.md docs/tracing.md docs/database-migrations.md
+GENERATED_DOCS := $(QUICK_GENERATED_DOCS) docs/fields.md docs/cli/argo.md docs/workflow-controller-configmap.md docs/go-sdk-guide.md
 
 # protoc,my.proto
 define protoc
@@ -764,6 +765,9 @@ docs/tracing.md: $(TELEMETRY_BUILDER) util/telemetry/builder/values.yaml
 	@echo Rebuilding $@
 	go run ./util/telemetry/builder --tracingDocs $@
 
+docs/database-migrations.md: persist/sqldb/migrate.go util/sync/db/migrate.go hack/docs/migrations/main.go
+	GOFLAGS="$(GOFLAGS) -mod=mod" go run ./hack/docs/migrations
+
 # swagger
 pkg/apis/workflow/v1alpha1/openapi_generated.go: $(TOOL_OPENAPI_GEN) $(TYPES)
 	# These files are generated on a v4/ folder by the tool. Link them to the root folder
@@ -854,7 +858,7 @@ ifneq ($(USE_NIX), true)
 endif
 
 .PHONY: docs-spellcheck
-docs-spellcheck: $(TOOL_MDSPELL) docs/metrics.md ## Spell check docs
+docs-spellcheck: $(TOOL_MDSPELL) $(QUICK_GENERATED_DOCS) ## Spell check docs
 	# check docs for spelling mistakes
 	$(TOOL_MDSPELL) --ignore-numbers --ignore-acronyms --en-us --no-suggestions --report $(shell find docs -name '*.md' -not -name upgrading.md -not -name README.md -not -name fields.md -not -name workflow-controller-configmap.md -not -name upgrading.md -not -name executor_swagger.md -not -path '*/cli/*' -not -name tested-kubernetes-versions.md -not -name new-features.md)
 	# alphabetize spelling file -- ignore first line (comment), then sort the rest case-sensitive and remove duplicates
@@ -878,9 +882,9 @@ ifneq ($(USE_NIX), true)
 endif
 
 .PHONY: docs-lint
-docs-lint: $(TOOL_MARKDOWNLINT) docs/metrics.md
+docs-lint: $(TOOL_MARKDOWNLINT) $(QUICK_GENERATED_DOCS)
 	# lint docs
-	$(TOOL_MARKDOWNLINT) docs --fix --ignore docs/fields.md --ignore docs/executor_swagger.md --ignore docs/cli --ignore docs/walk-through/the-structure-of-workflow-specs.md --ignore docs/tested-kubernetes-versions.md --ignore docs/go-sdk-guide.md
+	$(TOOL_MARKDOWNLINT) docs --fix --ignore docs/fields.md --ignore docs/executor_swagger.md --ignore docs/cli --ignore docs/walk-through/the-structure-of-workflow-specs.md --ignore docs/tested-kubernetes-versions.md --ignore docs/go-sdk-guide.md --ignore docs/database-migrations.md
 
 $(TOOL_MKDOCS): docs/requirements.txt
 # update this in Nix when upgrading it here
@@ -890,8 +894,7 @@ ifneq ($(USE_NIX), true)
 endif
 
 .PHONY: docs
-docs: $(TOOL_MKDOCS) docs-spellcheck docs-lint ## Build docs
-	# TODO: This is temporarily disabled to unblock merging PRs.
+docs: $(TOOL_MKDOCS) docs-spellcheck docs-lint ## Build docs TODO: This is temporarily disabled to unblock merging PRs.
 	# docs-linkcheck
 	# copy README.md to docs/README.md
 	./hack/docs/copy-readme.sh

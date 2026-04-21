@@ -12,8 +12,8 @@ const (
 	versionTable = "schema_history"
 )
 
-func Migrate(ctx context.Context, session db.Session, clusterName, tableName string, dbType sqldb.DBType) (err error) {
-	return sqldb.Migrate(ctx, session, dbType, versionTable, []sqldb.Change{
+func MigrateChanges(clusterName, tableName string, dbType sqldb.DBType) []sqldb.Change {
+	return []sqldb.Change{
 		sqldb.AnsiSQLChange(`create table if not exists ` + tableName + ` (
     id varchar(128) ,
     name varchar(256),
@@ -231,5 +231,9 @@ func Migrate(ctx context.Context, session db.Session, clusterName, tableName str
 			sqldb.Postgres: sqldb.AnsiSQLChange(`drop index argo_archived_workflows_i1`),
 		}),
 		sqldb.AnsiSQLChange(`create index argo_archived_workflows_i1 on argo_archived_workflows (clustername, instanceid, namespace, startedat DESC)`),
-	})
+	}
+}
+
+func Migrate(ctx context.Context, session db.Session, clusterName, tableName string, dbType sqldb.DBType) (err error) {
+	return sqldb.Migrate(ctx, session, dbType, versionTable, MigrateChanges(clusterName, tableName, dbType))
 }
