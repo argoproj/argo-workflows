@@ -1,4 +1,3 @@
-<!-- Required: All of these fields are required, including at least one issue -->
 Description: Show workflow template link in workflow node info summary tab
 Authors: [nakatani-yo](https://github.com/nakatani-yo)
 Component: UI
