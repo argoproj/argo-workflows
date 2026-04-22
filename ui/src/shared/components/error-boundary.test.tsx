@@ -26,7 +26,7 @@ describe('ErrorBoundary', () => {
         originalLocation = window.location;
         Object.defineProperty(window, 'location', {
             configurable: true,
-            value: {...originalLocation, reload: reloadMock},
+            value: {...originalLocation, reload: reloadMock}
         });
         // React logs caught errors via console.error; suppress so test output stays readable.
         consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
@@ -35,7 +35,7 @@ describe('ErrorBoundary', () => {
     afterEach(() => {
         Object.defineProperty(window, 'location', {
             configurable: true,
-            value: originalLocation,
+            value: originalLocation
         });
         consoleErrorSpy.mockRestore();
     });
@@ -44,7 +44,7 @@ describe('ErrorBoundary', () => {
         render(
             <ErrorBoundary>
                 <Thrower error={makeChunkLoadError()} />
-            </ErrorBoundary>,
+            </ErrorBoundary>
         );
 
         expect(reloadMock).toHaveBeenCalledTimes(1);
@@ -57,7 +57,7 @@ describe('ErrorBoundary', () => {
         render(
             <ErrorBoundary>
                 <Thrower error={err} />
-            </ErrorBoundary>,
+            </ErrorBoundary>
         );
 
         expect(reloadMock).toHaveBeenCalledTimes(1);
@@ -69,7 +69,7 @@ describe('ErrorBoundary', () => {
         render(
             <ErrorBoundary>
                 <Thrower error={makeChunkLoadError()} />
-            </ErrorBoundary>,
+            </ErrorBoundary>
         );
 
         expect(reloadMock).not.toHaveBeenCalled();
@@ -82,7 +82,7 @@ describe('ErrorBoundary', () => {
         render(
             <ErrorBoundary>
                 <Thrower error={new Error('Something else broke')} />
-            </ErrorBoundary>,
+            </ErrorBoundary>
         );
 
         expect(reloadMock).not.toHaveBeenCalled();
@@ -94,7 +94,7 @@ describe('ErrorBoundary', () => {
         render(
             <ErrorBoundary>
                 <div>healthy child</div>
-            </ErrorBoundary>,
+            </ErrorBoundary>
         );
 
         expect(screen.getByText('healthy child')).toBeInTheDocument();
