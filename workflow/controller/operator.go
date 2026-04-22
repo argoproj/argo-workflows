@@ -3184,7 +3184,7 @@ func (woc *wfOperationCtx) checkParallelism(ctx context.Context, tmpl *wfv1.Temp
 		}
 
 		// Check failFast
-		if boundaryTemplate.IsFailFast() && woc.getUnsuccessfulChildren(boundaryID) > 0 {
+		if boundaryTemplate != nil && boundaryTemplate.IsFailFast() && woc.getUnsuccessfulChildren(boundaryID) > 0 {
 			if woc.getActivePods(boundaryID) == 0 {
 				if boundaryTemplate.GetType() == wfv1.TemplateTypeSteps {
 					if leafStepGroupNode := woc.findLeafNodeWithType(ctx, boundaryID, wfv1.NodeTypeStepGroup); leafStepGroupNode != nil {
@@ -3197,7 +3197,7 @@ func (woc *wfOperationCtx) checkParallelism(ctx context.Context, tmpl *wfv1.Temp
 		}
 
 		// Check parallelism
-		if boundaryTemplate.HasParallelism() && woc.getActiveChildren(boundaryID) >= *boundaryTemplate.Parallelism {
+		if boundaryTemplate != nil && boundaryTemplate.HasParallelism() && woc.getActiveChildren(boundaryID) >= *boundaryTemplate.Parallelism {
 			woc.log.WithFields(logging.Fields{"node": boundaryID, "parallelism": *boundaryTemplate.Parallelism}).Info(ctx, "template active children parallelism exceeded")
 			return ErrParallelismReached
 		}
@@ -4255,7 +4255,7 @@ func (woc *wfOperationCtx) includeScriptOutput(ctx context.Context, nodeName, bo
 	}
 
 	parentTemplate, templateStored, err := woc.GetTemplateByBoundaryID(ctx, boundaryID)
-	if err != nil {
+	if err != nil || parentTemplate == nil {
 		return false, err
 	}
 	// A new template was stored during resolution, persist it

@@ -1908,8 +1908,8 @@ func (n Nodes) FindByName(name string) *NodeStatus {
 	return n.Find(NodeWithName(name))
 }
 
-func (n Nodes) FindByChild(childID string) *NodeStatus {
-	return n.Find(NodeWithChild(childID))
+func (n Nodes) FindRetryNodeByChild(childID string) *NodeStatus {
+	return n.Find(RetryNodeWithChild(childID))
 }
 
 func (n Nodes) Any(f func(NodeStatus) bool) bool {
@@ -1997,9 +1997,9 @@ func NodeWithDisplayName(name string) func(n NodeStatus) bool {
 	return func(n NodeStatus) bool { return n.DisplayName == name }
 }
 
-func NodeWithChild(childID string) func(n NodeStatus) bool {
+func RetryNodeWithChild(childID string) func(n NodeStatus) bool {
 	return func(n NodeStatus) bool {
-		return n.HasChild(childID)
+		return n.HasChild(childID) && n.Type == NodeTypeRetry
 	}
 }
 
