@@ -23,7 +23,9 @@ const config = {
     },
     output: {
         filename: '[name].[contenthash].js',
+        chunkFilename: '[name].[contenthash].js',
         path: __dirname + '/dist/app',
+        publicPath: base,
     },
 
     // Enable source maps in production for easier debugging, but use faster eval-source-map in development for better performance
