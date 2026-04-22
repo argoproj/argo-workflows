@@ -42,6 +42,9 @@ type Client interface {
 	// PutFile puts a single file to a bucket at the specified key
 	PutFile(bucket, key, path string) error
 
+	// PutStream puts a stream to a bucket at the specified key
+	PutStream(bucket, key string, reader io.Reader, objectSize int64) error
+
 	// PutDirectory puts a complete directory into a bucket key prefix, with each file in the directory
 	// a separate key in the bucket.
 	PutDirectory(bucket, key, path string) error
@@ -263,6 +266,52 @@ func (s3Driver *ArtifactDriver) Save(ctx context.Context, path string, outputArt
 				return !isTransientS3Err(ctx, err), fmt.Errorf("failed to create new S3 client: %w", err)
 			}
 			return saveS3Artifact(ctx, s3cli, path, outputArtifact)
+		})
+	return err
+}
+
+// SaveStream saves an artifact from an io.Reader to S3 compliant storage
+func (s3Driver *ArtifactDriver) SaveStream(ctx context.Context, reader io.Reader, outputArtifact *wfv1.Artifact) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	// Buffer to a temp file so the reader can be re-read on retry
+	tmpFile, err := os.CreateTemp("", "s3-upload-*")
+	if err != nil {
+		return fmt.Errorf("failed to create temp file: %w", err)
+	}
+	defer os.Remove(tmpFile.Name())
+
+	if _, err = io.Copy(tmpFile, reader); err != nil {
+		tmpFile.Close()
+		return fmt.Errorf("failed to buffer stream to temp file: %w", err)
+	}
+	if err = tmpFile.Close(); err != nil {
+		return fmt.Errorf("failed to close temp file: %w", err)
+	}
+
+	log := logging.RequireLoggerFromContext(ctx)
+	err = waitutil.Backoff(executorretry.ExecutorRetry(ctx),
+		func() (bool, error) {
+			log.WithField("key", outputArtifact.S3.Key).Info(ctx, "S3 SaveStream")
+			s3cli, retryErr := s3Driver.newClient(ctx)
+			if retryErr != nil {
+				return !isTransientS3Err(ctx, retryErr), fmt.Errorf("failed to create new S3 client: %w", retryErr)
+			}
+			f, retryErr := os.Open(tmpFile.Name())
+			if retryErr != nil {
+				return true, fmt.Errorf("failed to reopen temp file: %w", retryErr)
+			}
+			defer f.Close()
+			fi, retryErr := f.Stat()
+			if retryErr != nil {
+				return true, fmt.Errorf("failed to stat temp file: %w", retryErr)
+			}
+			retryErr = s3cli.PutStream(outputArtifact.S3.Bucket, outputArtifact.S3.Key, f, fi.Size())
+			if retryErr != nil {
+				return !isTransientS3Err(ctx, retryErr), fmt.Errorf("failed to put stream: %w", retryErr)
+			}
+			return true, nil
 		})
 	return err
 }
@@ -529,6 +578,19 @@ func (s *s3client) PutFile(bucket, key, path string) error {
 		return err
 	}
 	return nil
+}
+
+// PutStream puts a stream to a bucket at the specified key
+func (s *s3client) PutStream(bucket, key string, reader io.Reader, objectSize int64) error {
+	logging.RequireLoggerFromContext(s.ctx).WithFields(logging.Fields{"endpoint": s.Endpoint, "bucket": bucket, "key": key}).Info(s.ctx, "Saving stream to s3")
+
+	encOpts, err := s.EncryptOpts.buildServerSideEnc(bucket, key)
+	if err != nil {
+		return err
+	}
+
+	_, err = s.minioClient.PutObject(s.ctx, bucket, key, reader, objectSize, minio.PutObjectOptions{SendContentMd5: s.SendContentMd5, ServerSideEncryption: encOpts})
+	return err
 }
 
 func (s *s3client) BucketExists(bucketName string) (bool, error) {
