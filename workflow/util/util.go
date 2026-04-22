@@ -1180,7 +1180,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 		if node.FailedOrError() && isExecutionNodeType(node.Type) {
 			// Check its parent if current node is retry node
 			if node.NodeFlag != nil && node.NodeFlag.Retried {
-				node = *wf.Status.Nodes.FindByChild(nodeID)
+				node = *wf.Status.Nodes.FindRetryNodeByChild(nodeID)
 			}
 			if !isDescendantNodeSucceeded(wf, node, deleteNodesMap) {
 				failed[nodeID] = true
