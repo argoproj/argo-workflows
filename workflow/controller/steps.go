@@ -188,11 +188,21 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 	}
 
 	if node.MemoizationStatus != nil {
-		c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, node.MemoizationStatus.CacheName)
-		err := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs)
-		if err != nil {
-			woc.log.WithFields(logging.Fields{"nodeID": node.ID}).WithError(err).Error(ctx, "Failed to save node outputs to cache")
-			node.Phase = wfv1.NodeError
+		c := woc.controller.cacheFactory.GetCache(ctx, controllercache.ConfigMapCache, woc.wf.Namespace, node.MemoizationStatus.CacheName)
+		switch {
+		case c == nil:
+			woc.log.WithFields(logging.Fields{"nodeID": node.ID}).Warn(ctx, "Memoization cache unavailable; skipping cache save")
+		case tmpl.Memoize == nil:
+			woc.log.WithFields(logging.Fields{"nodeID": node.ID}).Warn(ctx, "Node template has no memoize spec; skipping cache save")
+		default:
+			maxAgeSeconds, maxAgeErr := controllercache.ResolveMaxAgeSeconds(tmpl.Memoize.MaxAge)
+			if maxAgeErr != nil {
+				woc.log.WithFields(logging.Fields{"nodeID": node.ID}).WithError(maxAgeErr).Error(ctx, "Failed to resolve maxAge for cache save")
+				node.Phase = wfv1.NodeError
+			} else if err := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs, maxAgeSeconds); err != nil {
+				woc.log.WithFields(logging.Fields{"nodeID": node.ID}).WithError(err).Error(ctx, "Failed to save node outputs to cache")
+				node.Phase = wfv1.NodeError
+			}
 		}
 	}
 	return woc.markNodePhase(ctx, nodeName, wfv1.NodeSucceeded), nil
