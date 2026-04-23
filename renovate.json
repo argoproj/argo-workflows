@@ -14,6 +14,16 @@
   },
   "packageRules": [
     {
+      "description": "Group k8s.io code-generator, proto vendor, and OpenAPI spec versions",
+      "matchPackageNames": [
+        "k8s.io/code-generator",
+        "k8s.io/api",
+        "k8s.io/apimachinery",
+        "kubernetes/kubernetes"
+      ],
+      "groupName": "k8s.io codegen and proto deps"
+    },
+    {
       "description": "Disable argo updates (maintained separately)",
       "matchPackageNames": [
         "argoproj/argo-ui",
@@ -80,6 +90,48 @@
     "yarnDedupeFewer",
     "gomodTidy",
     "gomodUpdateImportPaths"
+  ],
+  "customManagers": [
+    {
+      "description": "k8s.io/code-generator go install in Makefile",
+      "customType": "regex",
+      "fileMatch": ["^Makefile$"],
+      "matchStrings": [
+        "go install k8s\\.io/code-generator/cmd/go-to-protobuf@(?<currentValue>v\\d+\\.\\d+\\.\\d+)"
+      ],
+      "depNameTemplate": "k8s.io/code-generator",
+      "datasourceTemplate": "go"
+    },
+    {
+      "description": "k8s.io/code-generator module path in Makefile",
+      "customType": "regex",
+      "fileMatch": ["^Makefile$"],
+      "matchStrings": [
+        "k8s\\.io/code-generator@(?<currentValue>v\\d+\\.\\d+\\.\\d+)/kube_codegen\\.sh"
+      ],
+      "depNameTemplate": "k8s.io/code-generator",
+      "datasourceTemplate": "go"
+    },
+    {
+      "description": "Kubernetes OpenAPI spec version in Makefile",
+      "customType": "regex",
+      "fileMatch": ["^Makefile$"],
+      "matchStrings": [
+        "kubernetes/kubernetes/(?<currentValue>v\\d+\\.\\d+\\.\\d+)/api/openapi-spec"
+      ],
+      "depNameTemplate": "kubernetes/kubernetes",
+      "datasourceTemplate": "github-tags"
+    },
+    {
+      "description": "k8s.io proto vendor refs in argo-proto.yaml",
+      "customType": "regex",
+      "fileMatch": ["^argo-proto\\.yaml$"],
+      "matchStrings": [
+        "owner: kubernetes\\s+name: (?<depName>api|apimachinery)\\s+ref: (?<currentValue>v\\d+\\.\\d+\\.\\d+)"
+      ],
+      "depNameTemplate": "k8s.io/{{{depName}}}",
+      "datasourceTemplate": "go"
+    }
   ],
   "osvVulnerabilityAlerts": true,
   "vulnerabilityAlerts": {
