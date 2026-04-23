@@ -154,10 +154,23 @@ func (woc *wfOperationCtx) reconcileTaskSet(ctx context.Context) error {
 
 			woc.wf.Status.Nodes.Set(ctx, nodeID, *node)
 			if node.MemoizationStatus != nil && node.Succeeded() {
-				c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, node.MemoizationStatus.CacheName)
-				err := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs)
-				if err != nil {
-					woc.log.WithFields(logging.Fields{"nodeID": node.ID}).WithError(err).Error(ctx, "Failed to save node outputs to cache")
+				c := woc.controller.cacheFactory.GetCache(ctx, controllercache.ConfigMapCache, woc.wf.Namespace, node.MemoizationStatus.CacheName)
+				if c == nil {
+					woc.log.WithFields(logging.Fields{"nodeID": node.ID}).Warn(ctx, "Memoization cache unavailable; skipping cache save")
+				} else {
+					nodeTmpl, tmplErr := woc.GetNodeTemplate(ctx, node)
+					maxAge := ""
+					if tmplErr != nil {
+						woc.log.WithFields(logging.Fields{"nodeID": node.ID}).WithError(tmplErr).Warn(ctx, "Failed to get node template for cache save; using default maxAge")
+					} else if nodeTmpl != nil && nodeTmpl.Memoize != nil {
+						maxAge = nodeTmpl.Memoize.MaxAge
+					}
+					maxAgeSeconds, maxAgeErr := controllercache.ResolveMaxAgeSeconds(maxAge)
+					if maxAgeErr != nil {
+						woc.log.WithFields(logging.Fields{"nodeID": node.ID}).WithError(maxAgeErr).Error(ctx, "Failed to resolve maxAge for cache save")
+					} else if err := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs, maxAgeSeconds); err != nil {
+						woc.log.WithFields(logging.Fields{"nodeID": node.ID}).WithError(err).Error(ctx, "Failed to save node outputs to cache")
+					}
 				}
 			}
 			woc.updated = true
