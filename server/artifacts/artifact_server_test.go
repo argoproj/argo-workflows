@@ -493,7 +493,7 @@ func TestArtifactServer_GetArtifactFile(t *testing.T) {
 				}
 				if tt.isDirectory {
 					fmt.Printf("got directory listing:\n%s\n", all)
-					assert.Contains(t, recorder.Header().Get("Content-Security-Policy"), "sandbox")
+					assert.Contains(t, recorder.Header().Get("Content-Security-Policy"), "sandbox allow-same-origin")
 					assert.Equal(t, "SAMEORIGIN", recorder.Header().Get("X-Frame-Options"))
 					// verify that the files are contained in the listing we got back
 					assert.Len(t, tt.directoryFiles, strings.Count(string(all), "<li>"))

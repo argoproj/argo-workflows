@@ -316,7 +316,10 @@ export function WorkflowLogsViewer({workflow, initialNodeId, initialPodName, con
                 {podName && podNamesToNodeIDs.get(podName) && (
                     <>
                         Still waiting for data or an error? Try getting{' '}
-                        <a href={services.workflows.getArtifactLogsPath(workflow, podNamesToNodeIDs.get(podName), selectedContainer, archived)}>logs from the artifacts</a>.
+                        <a href={services.workflows.getArtifactLogsPath(workflow, podNamesToNodeIDs.get(podName), selectedContainer, archived)} target='_blank' rel='noreferrer'>
+                            logs from the artifacts
+                        </a>
+                        .
                     </>
                 )}
                 {execSpec(workflow).podGC && (
@@ -325,7 +328,10 @@ export function WorkflowLogsViewer({workflow, initialNodeId, initialPodName, con
                         {execSpec(workflow).podGC.deleteDelayDuration ? `after ${execSpec(workflow).podGC.deleteDelayDuration}` : 'immediately'} on completion.
                     </>
                 )}{' '}
-                Logs may not appear for pods that are deleted unless you have <a href='https://argo-workflows.readthedocs.io/en/latest/configure-archive-logs'>archive logs</a>{' '}
+                Logs may not appear for pods that are deleted unless you have{' '}
+                <a href='https://argo-workflows.readthedocs.io/en/latest/configure-archive-logs' target='_blank' rel='noreferrer'>
+                    archive logs
+                </a>{' '}
                 enabled.{' '}
                 {podName ? (
                     <Links

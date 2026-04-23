@@ -277,6 +277,20 @@ type DBConfig struct {
 	MySQL *MySQLConfig `json:"mysql,omitempty"`
 	// Pooled connection settings for all types of database connections
 	ConnectionPool *ConnectionPool `json:"connectionPool,omitempty"`
+	// DBReconnectConfig are configuration options for database retries and reconnections
+	DBReconnectConfig *DBReconnectConfig `json:"reconnectionConfig,omitempty"`
+}
+
+// DBReconnectConfig contains database reconnect settings
+type DBReconnectConfig struct {
+	// MaxRetries defines how many connection attempts should be made before we give up. Default: 5
+	MaxRetries int `json:"maxRetries"`
+	// BaseDelaySeconds delays retries by this amount multiplied by the retryMultiple, capped to `maxDelaySeconds`. Default: 0 (100ms)
+	BaseDelaySeconds int `json:"baseDelaySeconds"`
+	// MaxDelaySeconds the absolute upper limit to wait before retrying. Default: 30
+	MaxDelaySeconds int `json:"maxDelaySeconds"`
+	// RetryMultiple is the growth factor for `baseDelaySeconds`. Default: 2.0
+	RetryMultiple float64 `json:"retryMultiple"`
 }
 
 // PersistConfig contains workflow persistence configuration

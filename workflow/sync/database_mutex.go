@@ -16,7 +16,7 @@ func newDatabaseMutex(name string, dbKey string, nextWorkflow NextWorkflow, info
 		nextWorkflow: nextWorkflow,
 		logger:       logger.get,
 		info:         info,
-		queries:      syncdb.NewSyncQueries(info.Session, info.Config),
+		queries:      syncdb.NewSyncQueries(info.SessionProxy, info.Config),
 		isMutex:      true,
 	}
 }
