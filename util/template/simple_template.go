@@ -2,10 +2,10 @@ package template
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/argoproj/argo-workflows/v4/errors"
@@ -24,8 +24,11 @@ func simpleReplaceStrict(ctx context.Context, w io.Writer, tag string, replaceMa
 			if replNested, replOk := replaceMap[nestedTag]; replOk {
 				replStr, isStr := replNested.(string)
 				if isStr {
-					replStr = strconv.Quote(replStr)
-					replStr = replStr[1 : len(replStr)-1]
+					escaped, err := json.Marshal(replStr)
+					if err != nil {
+						return 0, err
+					}
+					replStr = string(escaped[1 : len(escaped)-1])
 					return w.Write([]byte("{{" + nestedTagPrefix + replStr))
 				}
 			}
@@ -54,7 +57,10 @@ func simpleReplaceStrict(ctx context.Context, w io.Writer, tag string, replaceMa
 	}
 	// The following escapes any special characters (e.g. newlines, tabs, etc...)
 	// in preparation for substitution
-	replacementStr = strconv.Quote(replacementStr)
-	replacementStr = replacementStr[1 : len(replacementStr)-1]
+	escaped, err := json.Marshal(replacementStr)
+	if err != nil {
+		return 0, err
+	}
+	replacementStr = string(escaped[1 : len(escaped)-1])
 	return w.Write([]byte(replacementStr))
 }
