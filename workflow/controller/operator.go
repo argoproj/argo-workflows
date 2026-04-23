@@ -1196,12 +1196,27 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (bool, error) 
 				woc.addOutputsToGlobalScope(ctx, newState.Outputs)
 				if newState.MemoizationStatus != nil {
 					if newState.Succeeded() {
-						c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, newState.MemoizationStatus.CacheName)
-						err := c.Save(ctx, newState.MemoizationStatus.Key, newState.ID, newState.Outputs)
-						if err != nil {
-							woc.log.WithFields(logging.Fields{"nodeID": newState.ID}).WithError(err).Error(ctx, "Failed to save node outputs to cache")
-							newState.Phase = wfv1.NodeError
-							newState.Message = err.Error()
+						c := woc.controller.cacheFactory.GetCache(ctx, controllercache.ConfigMapCache, woc.wf.Namespace, newState.MemoizationStatus.CacheName)
+						if c == nil {
+							woc.log.WithFields(logging.Fields{"nodeID": newState.ID}).Warn(ctx, "Memoization cache unavailable; skipping cache save")
+						} else {
+							nodeTmpl, tmplErr := woc.GetNodeTemplate(ctx, newState)
+							maxAge := ""
+							if tmplErr != nil {
+								woc.log.WithFields(logging.Fields{"nodeID": newState.ID}).WithError(tmplErr).Warn(ctx, "Failed to get node template for cache save; using default maxAge")
+							} else if nodeTmpl != nil && nodeTmpl.Memoize != nil {
+								maxAge = nodeTmpl.Memoize.MaxAge
+							}
+							maxAgeSeconds, maxAgeErr := controllercache.ResolveMaxAgeSeconds(maxAge)
+							if maxAgeErr != nil {
+								woc.log.WithFields(logging.Fields{"nodeID": newState.ID}).WithError(maxAgeErr).Error(ctx, "Failed to resolve maxAge for cache save")
+								newState.Phase = wfv1.NodeError
+								newState.Message = maxAgeErr.Error()
+							} else if err := c.Save(ctx, newState.MemoizationStatus.Key, newState.ID, newState.Outputs, maxAgeSeconds); err != nil {
+								woc.log.WithFields(logging.Fields{"nodeID": newState.ID}).WithError(err).Error(ctx, "Failed to save node outputs to cache")
+								newState.Phase = wfv1.NodeError
+								newState.Message = err.Error()
+							}
 						}
 					}
 				}
@@ -2228,11 +2243,21 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 
 	// Check memoization cache if the node is about to be created, or was created in the past but is only now allowed to run due to acquiring a lock
 	if processedTmpl.Memoize != nil {
+		cacheName := ""
+		if processedTmpl.Memoize.Cache != nil && processedTmpl.Memoize.Cache.ConfigMap != nil {
+			cacheName = processedTmpl.Memoize.Cache.ConfigMap.Name
+		}
+		if cacheName == "" {
+			cacheErr := fmt.Errorf("memoize.cache.configMap.name is required")
+			woc.log.WithError(cacheErr).Error(ctx, "Invalid memoize configuration")
+			errNode := woc.initializeNodeOrMarkError(ctx, node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, cacheErr)
+			return errNode, cacheErr
+		}
 		if node == nil || unlockedNode {
-			memoizationCache := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, processedTmpl.Memoize.Cache.ConfigMap.Name)
+			memoizationCache := woc.controller.cacheFactory.GetCache(ctx, controllercache.ConfigMapCache, woc.wf.Namespace, cacheName)
 			if memoizationCache == nil {
 				cacheErr := fmt.Errorf("cache could not be found or created")
-				woc.log.WithFields(logging.Fields{"cacheName": processedTmpl.Memoize.Cache.ConfigMap.Name}).WithError(cacheErr)
+				woc.log.WithFields(logging.Fields{"cacheName": cacheName}).WithError(cacheErr)
 				errNode := woc.initializeNodeOrMarkError(ctx, node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, cacheErr)
 				return errNode, cacheErr
 			}
@@ -2263,7 +2288,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			memoizationStatus := &wfv1.MemoizationStatus{
 				Hit:       hit,
 				Key:       processedTmpl.Memoize.Key,
-				CacheName: processedTmpl.Memoize.Cache.ConfigMap.Name,
+				CacheName: cacheName,
 			}
 			if hit {
 				if node == nil {
@@ -2808,14 +2833,19 @@ func (woc *wfOperationCtx) initializeExecutableNode(ctx context.Context, nodeNam
 		node.Inputs = executeTmpl.Inputs.DeepCopy()
 	}
 
-	// Set the MemoizationStatus
-	if node.MemoizationStatus == nil && executeTmpl.Memoize != nil {
-		memoizationStatus := &wfv1.MemoizationStatus{
+	// Set the MemoizationStatus only when the user explicitly supplied a key.
+	// When key is auto-derived, executeTemplate sets MemoizationStatus with the
+	// computed effectiveKey before reaching this point.
+	if node.MemoizationStatus == nil && executeTmpl.Memoize != nil && executeTmpl.Memoize.Key != "" {
+		cacheName := ""
+		if executeTmpl.Memoize.Cache != nil {
+			cacheName = executeTmpl.Memoize.Cache.ConfigMap.Name
+		}
+		node.MemoizationStatus = &wfv1.MemoizationStatus{
 			Hit:       false,
 			Key:       executeTmpl.Memoize.Key,
-			CacheName: executeTmpl.Memoize.Cache.ConfigMap.Name,
+			CacheName: cacheName,
 		}
-		node.MemoizationStatus = memoizationStatus
 	}
 
 	if nodeType == wfv1.NodeTypeSuspend {

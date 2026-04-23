@@ -13,6 +13,7 @@ import (
 	persist "github.com/argoproj/argo-workflows/v4/persist/sqldb"
 	"github.com/argoproj/argo-workflows/v4/util/instanceid"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	memodb "github.com/argoproj/argo-workflows/v4/util/memo/db"
 	"github.com/argoproj/argo-workflows/v4/util/sqldb"
 	"github.com/argoproj/argo-workflows/v4/workflow/artifactrepositories"
 	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
@@ -77,6 +78,45 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 	} else {
 		logger.Info(ctx, "Persistence configuration disabled")
 	}
+
+	memoCfg := wfc.Config.Memoization
+	wfc.memoLock.Lock()
+	wfc.memoConfig = memoCfg
+	if memoCfg != nil {
+		logger.Info(ctx, "Memoization database configuration enabled")
+		if wfc.memoSessionProxy == nil {
+			sp := memodb.SessionProxyFromConfig(ctx, wfc.kubeclientset, wfc.namespace, memoCfg)
+			if sp == nil {
+				logger.Error(ctx, "Failed to connect to memoization database; SQL caching unavailable. Workflows using memoization will skip caching until the database is reachable.")
+				wfc.cacheFactory.ClearSessionProxy(true)
+			}
+			wfc.memoSessionProxy = sp
+			wfc.memoMigrated = false
+		}
+		if wfc.memoSessionProxy != nil && !wfc.memoMigrated {
+			cfg := memodb.ConfigFromConfig(memoCfg)
+			if err := memodb.Migrate(ctx, wfc.memoSessionProxy, cfg); err != nil {
+				logger.WithError(err).Error(ctx, "Memoization database migration failed; SQL caching unavailable. Workflows using memoization will skip caching until the database is healthy.")
+				wfc.memoSessionProxy.Close()
+				wfc.memoSessionProxy = nil
+				wfc.memoMigrated = false
+				wfc.cacheFactory.ClearSessionProxy(true)
+			} else {
+				wfc.memoMigrated = true
+				wfc.cacheFactory.SetSessionProxy(wfc.memoSessionProxy, cfg.TableName)
+			}
+		}
+	} else {
+		if wfc.memoSessionProxy != nil {
+			logger.Info(ctx, "Memoization database configuration removed")
+			wfc.memoSessionProxy.Close()
+			wfc.memoSessionProxy = nil
+			wfc.memoMigrated = false
+		}
+		wfc.cacheFactory.ClearSessionProxy(false)
+		logger.Info(ctx, "Memoization database configuration disabled; using ConfigMap-based caching")
+	}
+	wfc.memoLock.Unlock()
 
 	wfc.hydrator = hydrator.New(wfc.offloadNodeStatusRepo)
 	wfc.updateEstimatorFactory(ctx)

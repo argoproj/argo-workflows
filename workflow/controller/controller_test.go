@@ -296,7 +296,7 @@ func newController(ctx context.Context, options ...any) (context.CancelFunc, *Wo
 		estimatorFactory:          estimation.DummyEstimatorFactory,
 		eventRecorderManager:      &testEventRecorderManager{eventRecorder: record.NewFakeRecorder(64)},
 		archiveLabelSelector:      labels.Everything(),
-		cacheFactory:              controllercache.NewCacheFactory(kube, "default"),
+		cacheFactory:              controllercache.NewCacheFactory(kube),
 		progressPatchTickDuration: envutil.LookupEnvDurationOr(ctx, common.EnvVarProgressPatchTickDuration, 1*time.Minute),
 		progressFileTickDuration:  envutil.LookupEnvDurationOr(ctx, common.EnvVarProgressFileTickDuration, 3*time.Second),
 		maxStackDepth:             maxAllowedStackDepth,
