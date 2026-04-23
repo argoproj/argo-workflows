@@ -206,6 +206,23 @@ func TestQueriesSaveReplaces(t *testing.T) {
 	assert.Contains(t, rec.Outputs, "new")
 }
 
+func TestQueriesLoadSkipsExpiredEntries(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	sp := setupPostgres(ctx, t)
+	q, err := memodb.NewQueries(testTableName, sqldb.Postgres)
+	require.NoError(t, err)
+
+	require.NoError(t, q.Save(ctx, sp, testNamespace, testCacheName, "expired-key", "node-old", sampleOutputs("old"), 2592000))
+
+	_, err = sp.Session().SQL().
+		ExecContext(ctx, `UPDATE `+testTableName+` SET expires_at = $1 WHERE cache_key = $2`, time.Now().Add(-10*time.Second), "expired-key")
+	require.NoError(t, err)
+
+	rec, err := q.Load(ctx, sp, testNamespace, testCacheName, "expired-key")
+	require.NoError(t, err)
+	assert.Nil(t, rec, "expired entries should load as a cache miss")
+}
+
 func TestQueriesPruneRemovesOldEntries(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	sp := setupPostgres(ctx, t)
@@ -283,6 +300,23 @@ func TestMySQLSaveReplaces(t *testing.T) {
 	require.NotNil(t, rec)
 	assert.Equal(t, "node-new", rec.NodeID)
 	assert.Contains(t, rec.Outputs, "new")
+}
+
+func TestMySQLLoadSkipsExpiredEntries(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	sp := setupMySQL(ctx, t)
+	q, err := memodb.NewQueries(testTableName, sqldb.MySQL)
+	require.NoError(t, err)
+
+	require.NoError(t, q.Save(ctx, sp, testNamespace, testCacheName, "expired-key", "node-old", sampleOutputs("old"), 2592000))
+
+	_, err = sp.Session().SQL().
+		ExecContext(ctx, "UPDATE "+testTableName+" SET expires_at = ? WHERE cache_key = ?", time.Now().Add(-10*time.Second), "expired-key")
+	require.NoError(t, err)
+
+	rec, err := q.Load(ctx, sp, testNamespace, testCacheName, "expired-key")
+	require.NoError(t, err)
+	assert.Nil(t, rec, "expired entries should load as a cache miss")
 }
 
 func TestMySQLPruneRemovesOldEntries(t *testing.T) {

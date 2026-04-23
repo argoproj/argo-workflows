@@ -199,7 +199,7 @@ func TestSQLDBCacheGetOutputsWithMaxAge(t *testing.T) {
 	assert.Nil(t, out)
 }
 
-func TestSQLDBCacheUpsertPreservesCreatedAt(t *testing.T) {
+func TestSQLDBCacheUpsertRefreshesCreatedAt(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	sp := setupTestPostgres(ctx, t)
 
@@ -233,9 +233,7 @@ func TestSQLDBCacheUpsertPreservesCreatedAt(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, entry2)
 
-	// created_at should be preserved (not reset) on upsert.
-	assert.Equal(t, createdAt1.Unix(), entry2.CreationTimestamp.Unix(),
-		"created_at should be preserved on upsert: first=%v, second=%v", createdAt1, entry2.CreationTimestamp.Time)
-	// But the outputs should be updated.
+	assert.True(t, entry2.CreationTimestamp.After(createdAt1),
+		"created_at should be refreshed on upsert: first=%v, second=%v", createdAt1, entry2.CreationTimestamp.Time)
 	assert.Equal(t, "node-2", entry2.NodeID)
 }

@@ -16,8 +16,75 @@ import (
 	memodb "github.com/argoproj/argo-workflows/v4/util/memo/db"
 	"github.com/argoproj/argo-workflows/v4/util/sqldb"
 	"github.com/argoproj/argo-workflows/v4/workflow/artifactrepositories"
+	controllercache "github.com/argoproj/argo-workflows/v4/workflow/controller/cache"
 	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
 )
+
+var (
+	memoSessionProxyFromConfig = memodb.SessionProxyFromConfig
+	memoizationMigrate         = memodb.Migrate
+)
+
+// initializeMemoizationBackendLocked creates and migrates the memoization SQL backend.
+// The caller must hold wfc.memoLock.
+func (wfc *WorkflowController) initializeMemoizationBackendLocked(ctx context.Context, logger logging.Logger) {
+	if wfc.memoConfig == nil {
+		return
+	}
+	if wfc.memoSessionProxy == nil {
+		sp := memoSessionProxyFromConfig(ctx, wfc.kubeclientset, wfc.namespace, wfc.memoConfig)
+		if sp == nil {
+			logger.Error(ctx, "Failed to connect to memoization database; SQL caching unavailable. Workflows using memoization will skip caching until the database is reachable.")
+			wfc.memoSessionProxy = nil
+			wfc.memoMigrated = false
+			wfc.cacheFactory.ClearSessionProxy(true)
+			return
+		}
+		wfc.memoSessionProxy = sp
+		wfc.memoMigrated = false
+	}
+	if wfc.memoSessionProxy != nil && !wfc.memoMigrated {
+		cfg := memodb.ConfigFromConfig(wfc.memoConfig)
+		if err := memoizationMigrate(ctx, wfc.memoSessionProxy, cfg); err != nil {
+			logger.WithError(err).Error(ctx, "Memoization database migration failed; SQL caching unavailable. Workflows using memoization will skip caching until the database is healthy.")
+			wfc.memoSessionProxy.Close()
+			wfc.memoSessionProxy = nil
+			wfc.memoMigrated = false
+			wfc.cacheFactory.ClearSessionProxy(true)
+			return
+		}
+		wfc.memoMigrated = true
+		wfc.cacheFactory.SetSessionProxy(wfc.memoSessionProxy, cfg.TableName)
+	}
+}
+
+// ensureMemoizationBackend makes sure the configured memoization SQL backend is ready for use.
+// It returns true when memoization can proceed against the configured backend.
+func (wfc *WorkflowController) ensureMemoizationBackend(ctx context.Context) bool {
+	logger := logging.RequireLoggerFromContext(ctx)
+	wfc.memoLock.Lock()
+	defer wfc.memoLock.Unlock()
+	if wfc.memoConfig == nil {
+		return true
+	}
+	if wfc.memoSessionProxy != nil && wfc.memoMigrated {
+		return true
+	}
+	wfc.initializeMemoizationBackendLocked(ctx, logger)
+	return wfc.memoSessionProxy != nil && wfc.memoMigrated
+}
+
+// getMemoizationCache returns the memoization cache for the given namespace and name.
+// When SQL memoization is configured, it first ensures the backend is available.
+func (wfc *WorkflowController) getMemoizationCache(ctx context.Context, namespace, name string) controllercache.MemoizationCache {
+	wfc.memoLock.RLock()
+	memoConfigured := wfc.memoConfig != nil
+	wfc.memoLock.RUnlock()
+	if memoConfigured && !wfc.ensureMemoizationBackend(ctx) {
+		return nil
+	}
+	return wfc.cacheFactory.GetCache(ctx, controllercache.ConfigMapCache, namespace, name)
+}
 
 func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 	logger := logging.RequireLoggerFromContext(ctx)
@@ -84,28 +151,7 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 	wfc.memoConfig = memoCfg
 	if memoCfg != nil {
 		logger.Info(ctx, "Memoization database configuration enabled")
-		if wfc.memoSessionProxy == nil {
-			sp := memodb.SessionProxyFromConfig(ctx, wfc.kubeclientset, wfc.namespace, memoCfg)
-			if sp == nil {
-				logger.Error(ctx, "Failed to connect to memoization database; SQL caching unavailable. Workflows using memoization will skip caching until the database is reachable.")
-				wfc.cacheFactory.ClearSessionProxy(true)
-			}
-			wfc.memoSessionProxy = sp
-			wfc.memoMigrated = false
-		}
-		if wfc.memoSessionProxy != nil && !wfc.memoMigrated {
-			cfg := memodb.ConfigFromConfig(memoCfg)
-			if err := memodb.Migrate(ctx, wfc.memoSessionProxy, cfg); err != nil {
-				logger.WithError(err).Error(ctx, "Memoization database migration failed; SQL caching unavailable. Workflows using memoization will skip caching until the database is healthy.")
-				wfc.memoSessionProxy.Close()
-				wfc.memoSessionProxy = nil
-				wfc.memoMigrated = false
-				wfc.cacheFactory.ClearSessionProxy(true)
-			} else {
-				wfc.memoMigrated = true
-				wfc.cacheFactory.SetSessionProxy(wfc.memoSessionProxy, cfg.TableName)
-			}
-		}
+		wfc.initializeMemoizationBackendLocked(ctx, logger)
 	} else {
 		if wfc.memoSessionProxy != nil {
 			logger.Info(ctx, "Memoization database configuration removed")
