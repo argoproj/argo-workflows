@@ -5665,7 +5665,7 @@ func TestValidReferenceMode(t *testing.T) {
 	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
 }
 
-func TestReferenceModeBlocksPodSpecPatch(t *testing.T) {
+func TestReferenceModeBlocksDisallowedFields(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow("@testdata/workflow-template-ref.yaml")
 	wfTmpl := wfv1.MustUnmarshalWorkflowTemplate("@testdata/workflow-template-submittable.yaml")
 
@@ -5682,7 +5682,8 @@ func TestReferenceModeBlocksPodSpecPatch(t *testing.T) {
 		woc := newWorkflowOperationCtx(ctx, wfWithPatch, controller)
 		woc.operate(ctx)
 		assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
-		assert.Contains(t, woc.wf.Status.Message, "podSpecPatch is not permitted")
+		assert.Contains(t, woc.wf.Status.Message, "PodSpecPatch")
+		assert.Contains(t, woc.wf.Status.Message, "not permitted")
 	})
 
 	t.Run("Secure rejects podSpecPatch", func(t *testing.T) {
@@ -5698,7 +5699,89 @@ func TestReferenceModeBlocksPodSpecPatch(t *testing.T) {
 		woc := newWorkflowOperationCtx(ctx, wfWithPatch, controller)
 		woc.operate(ctx)
 		assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
-		assert.Contains(t, woc.wf.Status.Message, "podSpecPatch is not permitted")
+		assert.Contains(t, woc.wf.Status.Message, "PodSpecPatch")
+		assert.Contains(t, woc.wf.Status.Message, "not permitted")
+	})
+
+	t.Run("Strict rejects ServiceAccountName", func(t *testing.T) {
+		wfCopy := wf.DeepCopy()
+		wfCopy.Spec.ServiceAccountName = "admin"
+		cancel, controller := newController(logging.TestContext(t.Context()), wfCopy, wfTmpl)
+		defer cancel()
+
+		ctx := logging.TestContext(t.Context())
+		controller.Config.WorkflowRestrictions = &config.WorkflowRestrictions{
+			TemplateReferencing: config.TemplateReferencingStrict,
+		}
+		woc := newWorkflowOperationCtx(ctx, wfCopy, controller)
+		woc.operate(ctx)
+		assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+		assert.Contains(t, woc.wf.Status.Message, "ServiceAccountName")
+	})
+
+	t.Run("Strict rejects SecurityContext", func(t *testing.T) {
+		wfCopy := wf.DeepCopy()
+		wfCopy.Spec.SecurityContext = &apiv1.PodSecurityContext{}
+		cancel, controller := newController(logging.TestContext(t.Context()), wfCopy, wfTmpl)
+		defer cancel()
+
+		ctx := logging.TestContext(t.Context())
+		controller.Config.WorkflowRestrictions = &config.WorkflowRestrictions{
+			TemplateReferencing: config.TemplateReferencingStrict,
+		}
+		woc := newWorkflowOperationCtx(ctx, wfCopy, controller)
+		woc.operate(ctx)
+		assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+		assert.Contains(t, woc.wf.Status.Message, "SecurityContext")
+	})
+
+	t.Run("Strict rejects Templates", func(t *testing.T) {
+		wfCopy := wf.DeepCopy()
+		wfCopy.Spec.Templates = []wfv1.Template{{Name: "injected"}}
+		cancel, controller := newController(logging.TestContext(t.Context()), wfCopy, wfTmpl)
+		defer cancel()
+
+		ctx := logging.TestContext(t.Context())
+		controller.Config.WorkflowRestrictions = &config.WorkflowRestrictions{
+			TemplateReferencing: config.TemplateReferencingStrict,
+		}
+		woc := newWorkflowOperationCtx(ctx, wfCopy, controller)
+		woc.operate(ctx)
+		assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+		assert.Contains(t, woc.wf.Status.Message, "Templates")
+	})
+
+	t.Run("Strict rejects Volumes", func(t *testing.T) {
+		wfCopy := wf.DeepCopy()
+		wfCopy.Spec.Volumes = []apiv1.Volume{{Name: "secret-vol"}}
+		cancel, controller := newController(logging.TestContext(t.Context()), wfCopy, wfTmpl)
+		defer cancel()
+
+		ctx := logging.TestContext(t.Context())
+		controller.Config.WorkflowRestrictions = &config.WorkflowRestrictions{
+			TemplateReferencing: config.TemplateReferencingStrict,
+		}
+		woc := newWorkflowOperationCtx(ctx, wfCopy, controller)
+		woc.operate(ctx)
+		assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+		assert.Contains(t, woc.wf.Status.Message, "Volumes")
+	})
+
+	t.Run("Strict rejects HostNetwork", func(t *testing.T) {
+		wfCopy := wf.DeepCopy()
+		hostNet := true
+		wfCopy.Spec.HostNetwork = &hostNet
+		cancel, controller := newController(logging.TestContext(t.Context()), wfCopy, wfTmpl)
+		defer cancel()
+
+		ctx := logging.TestContext(t.Context())
+		controller.Config.WorkflowRestrictions = &config.WorkflowRestrictions{
+			TemplateReferencing: config.TemplateReferencingStrict,
+		}
+		woc := newWorkflowOperationCtx(ctx, wfCopy, controller)
+		woc.operate(ctx)
+		assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+		assert.Contains(t, woc.wf.Status.Message, "HostNetwork")
 	})
 
 	t.Run("No restrictions allows podSpecPatch", func(t *testing.T) {
@@ -5714,7 +5797,25 @@ func TestReferenceModeBlocksPodSpecPatch(t *testing.T) {
 		assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	})
 
-	t.Run("Without podSpecPatch still works in Strict mode", func(t *testing.T) {
+	t.Run("Allowed fields pass in Strict mode", func(t *testing.T) {
+		wfCopy := wf.DeepCopy()
+		// Set allowed fields only - entrypoint must match one defined in the template
+		wfCopy.Spec.Entrypoint = "whalesay-template"
+		wfCopy.Spec.Shutdown = wfv1.ShutdownStrategyTerminate
+		cancel, controller := newController(logging.TestContext(t.Context()), wfCopy, wfTmpl)
+		defer cancel()
+
+		ctx := logging.TestContext(t.Context())
+		controller.Config.WorkflowRestrictions = &config.WorkflowRestrictions{
+			TemplateReferencing: config.TemplateReferencingStrict,
+		}
+		woc := newWorkflowOperationCtx(ctx, wfCopy, controller)
+		woc.operate(ctx)
+		// Shutdown=Terminate means it won't reach Running, but it shouldn't be Error
+		assert.NotEqual(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+	})
+
+	t.Run("Without disallowed fields still works in Strict mode", func(t *testing.T) {
 		cancel, controller := newController(logging.TestContext(t.Context()), wf, wfTmpl)
 		defer cancel()
 

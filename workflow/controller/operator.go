@@ -4283,12 +4283,13 @@ func (woc *wfOperationCtx) retryStrategy(tmpl *wfv1.Template) *wfv1.RetryStrateg
 func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) error {
 	if woc.wf.Spec.WorkflowTemplateRef != nil { // not-woc-misuse
 		// When workflow restrictions require template referencing (Strict/Secure mode),
-		// reject workflows that include a podSpecPatch as it could override security
-		// settings defined in the WorkflowTemplate.
-		if woc.controller.Config.WorkflowRestrictions.MustUseReference() && woc.wf.Spec.HasPodSpecPatch() { // not-woc-misuse: intentionally checking the user-submitted spec
-			err := fmt.Errorf("podSpecPatch is not permitted when using workflowTemplateRef with templateReferencing restriction")
-			woc.markWorkflowError(ctx, err)
-			return err
+		// reject workflows that set any non-allowed fields, as they could override
+		// security settings defined in the WorkflowTemplate.
+		if woc.controller.Config.WorkflowRestrictions.MustUseReference() { // not-woc-misuse: intentionally checking the user-submitted spec
+			if err := wfutil.ValidateUserOverrides(&woc.wf.Spec); err != nil { // not-woc-misuse
+				woc.markWorkflowError(ctx, err)
+				return err
+			}
 		}
 		err := woc.setStoredWfSpec(ctx)
 		if err != nil {
@@ -4410,8 +4411,14 @@ func (woc *wfOperationCtx) setStoredWfSpec(ctx context.Context) error {
 	}
 	// Update the Entrypoint, ShutdownStrategy and Suspend
 	if woc.needsStoredWfSpecUpdate() {
+		// In reference mode, sanitize the user spec before merging so that
+		// only allow-listed fields participate in the strategic merge patch.
+		userSpec := &woc.wf.Spec // not-woc-misuse
+		if woc.controller.Config.WorkflowRestrictions.MustUseReference() {
+			userSpec = wfutil.SanitizeUserWorkflowSpec(&woc.wf.Spec) // not-woc-misuse
+		}
 		// Join workflow, workflow template, and workflow default metadata to workflow spec.
-		mergedWf, err := wfutil.JoinWorkflowSpec(&woc.wf.Spec, workflowTemplateSpec, &wfDefault.Spec) // not-woc-misuse
+		mergedWf, err := wfutil.JoinWorkflowSpec(userSpec, workflowTemplateSpec, &wfDefault.Spec)
 		if err != nil {
 			return err
 		}
@@ -4422,7 +4429,11 @@ func (woc *wfOperationCtx) setStoredWfSpec(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		mergedWf, err := wfutil.JoinWorkflowSpec(&woc.wf.Spec, wftHolder.GetWorkflowSpec(), &wfDefault.Spec) // not-woc-misuse
+		userSpec := &woc.wf.Spec // not-woc-misuse
+		if woc.controller.Config.WorkflowRestrictions.MustUseReference() {
+			userSpec = wfutil.SanitizeUserWorkflowSpec(&woc.wf.Spec) // not-woc-misuse
+		}
+		mergedWf, err := wfutil.JoinWorkflowSpec(userSpec, wftHolder.GetWorkflowSpec(), &wfDefault.Spec)
 		if err != nil {
 			return err
 		}
