@@ -76,6 +76,27 @@ func TestInterceptor(t *testing.T) {
 	})
 }
 
+func TestInterceptorOversizedBody(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	k := fake.NewClientset(
+		&corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{Name: "argo-workflows-webhook-clients", Namespace: "my-ns"},
+			Data: map[string][]byte{
+				"github": []byte("type: github\nsecret: sh!"),
+			},
+		},
+	)
+	i := NewInterceptor(logging.RequireLoggerFromContext(ctx)).Interceptor(k)
+	w := httptest.NewRecorder()
+	// Create a body that exceeds 2MB
+	body := bytes.NewReader(make([]byte, 2*1024*1024+1))
+	r := httptest.NewRequestWithContext(ctx, "POST", "/api/v1/events/my-ns/my-d", body)
+	h := &testHTTPHandler{}
+	i(w, r, h)
+	assert.Equal(t, 403, w.Code)
+	assert.JSONEq(t, `{"message": "failed to process webhook request"}`, w.Body.String())
+}
+
 func intercept(ctx context.Context, method string, target string, headers map[string]string) (*http.Request, *httptest.ResponseRecorder) {
 	// set-up
 	k := fake.NewClientset(
