@@ -60,6 +60,16 @@ func TestServer_GetWFClient(t *testing.T) {
 		},
 		&corev1.ServiceAccount{
 			ObjectMeta: metav1.ObjectMeta{
+				Name: "user1-only-sa", Namespace: "user1-ns",
+				Annotations: map[string]string{
+					common.AnnotationKeyRBACRule:           "'user1-only-group' in groups",
+					common.AnnotationKeyRBACRulePrecedence: "0",
+				},
+			},
+			Secrets: []corev1.ObjectReference{{Name: "user-secret"}},
+		},
+		&corev1.ServiceAccount{
+			ObjectMeta: metav1.ObjectMeta{
 				Name: "user2-sa", Namespace: "user2-ns",
 				Annotations: map[string]string{
 					common.AnnotationKeyRBACRule:           "'my-group' in groups",
@@ -239,6 +249,23 @@ func TestServer_GetWFClient(t *testing.T) {
 		assert.Equal(t, []string{"my-group", "other-group"}, claims.Groups)
 		assert.Equal(t, "my-sa", claims.ServiceAccountName)
 		assert.Equal(t, "my-ns", claims.ServiceAccountNamespace)
+	})
+	t.Run("SSO+RBAC, Namespace delegation ON, no ssoNamespace match, Delegated", func(t *testing.T) {
+		// Regression test: claims match a namespace-level rule but no
+		// ssoNamespace rule. Previously this caused a nil pointer panic
+		// because precedence(loginAccount) was called on nil.
+		t.Setenv("SSO_DELEGATE_RBAC_TO_NAMESPACE", "true")
+		ssoIf := &ssomocks.Interface{}
+		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&authTypes.Claims{Groups: []string{"user1-only-group"}}, nil)
+		ssoIf.On("IsRBACEnabled").Return(true)
+		g, err := NewGatekeeper(Modes{SSO: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, clientForAuthorization, "my-ns", "my-ns", false, resourceCache)
+		require.NoError(t, err)
+		ctx, err := g.ContextWithRequest(x(logging.TestContext(t.Context()), "Bearer v2:whatever"), servertypes.NamespaceHolder("user1-ns"))
+		require.NoError(t, err)
+		claims := GetClaims(ctx)
+		require.NotNil(t, claims)
+		assert.Equal(t, "user1-only-sa", claims.ServiceAccountName)
+		assert.Equal(t, "user1-ns", claims.ServiceAccountNamespace)
 	})
 	t.Run("SSO+RBAC,precedence=0", func(t *testing.T) {
 		ssoIf := &ssomocks.Interface{}
