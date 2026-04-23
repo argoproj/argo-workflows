@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -226,7 +227,7 @@ func (woc *wfOperationCtx) updateOutboundNodes(ctx context.Context, nodeName str
 	// Find the last, initialized stepgroup node
 	var lastSGNode *wfv1.NodeStatus
 	var err error
-	for i := len(tmpl.Steps) - 1; i >= 0; i-- {
+	for i := range slices.Backward(tmpl.Steps) {
 		var sgNode *wfv1.NodeStatus
 		sgNode, err = woc.wf.GetNodeByName(fmt.Sprintf("%s[%d]", nodeName, i))
 		if err == nil {

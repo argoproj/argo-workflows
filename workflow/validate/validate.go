@@ -826,6 +826,20 @@ func (tctx *templateValidationCtx) validateLeaf(scope map[string]any, tmplCtx *t
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.containerSet.containers must have a container named \"main\" for input or output", tmpl.Name)
 			}
 		}
+		for _, c := range tmpl.ContainerSet.GetContainers() {
+			if common.IsArgoSidecar(c.Name) {
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s.containerSet.containers: %q is a reserved Argo container name", tmpl.Name, c.Name)
+			}
+		}
+	}
+	// Reserve the Argo-managed auxiliary container names (wait, supervisor, and the
+	// artifact-plugin sidecar prefix): a user container with one of these names is
+	// misclassified by common.IsArgoSidecar and collides with the controller's own
+	// container, so reject it at submission with a clear error.
+	for _, s := range tmpl.Sidecars {
+		if common.IsArgoSidecar(s.Name) {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.sidecars: %q is a reserved Argo container name", tmpl.Name, s.Name)
+		}
 	}
 	if tmpl.Resource != nil {
 		if !placeholderGenerator.IsPlaceholder(tmpl.Resource.Action) {

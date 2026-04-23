@@ -2946,6 +2946,45 @@ func TestInvalidContainerSetDependencyNotFound(t *testing.T) {
 	require.ErrorContains(t, err, "templates.main.containerSet.containers.b dependency 'c' not defined")
 }
 
+func TestReservedAuxContainerNames(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	containerSetSupervisor := `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: workflow
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      containerSet:
+        containers:
+          - name: supervisor
+            image: argoproj/argosay:v2
+`
+	err := validate(ctx, containerSetSupervisor)
+	require.ErrorContains(t, err, "reserved Argo container name")
+
+	sidecarWait := `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: workflow
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+      sidecars:
+        - name: wait
+          image: argoproj/argosay:v2
+`
+	err = validate(ctx, sidecarWait)
+	require.ErrorContains(t, err, "reserved Argo container name")
+}
+
 func TestInvalidContainerSetNoMainContainer(t *testing.T) {
 	invalidContainerSetTemplateWithInputArtifacts := `
 apiVersion: argoproj.io/v1alpha1

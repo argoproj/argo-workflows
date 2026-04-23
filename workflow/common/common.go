@@ -1,6 +1,8 @@
 package common
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -10,9 +12,12 @@ import (
 
 const (
 	// Container names used in the workflow pod
-	MainContainerName           = "main"
-	InitContainerName           = "init"
-	WaitContainerName           = "wait"
+	MainContainerName = "main"
+	InitContainerName = "init"
+	WaitContainerName = "wait"
+	// SupervisorContainerName is the name of the init-less auxiliary container
+	// that replaces `wait` when initlessPod is enabled.
+	SupervisorContainerName     = "supervisor"
 	ArtifactPluginSidecarPrefix = "artifact-plugin-"
 	ArtifactPluginInitPrefix    = InitContainerName + "-artifact-"
 
@@ -148,8 +153,24 @@ const (
 
 	// EnvVarArtifactGCPodHash is applied as a Label on the WorkflowTaskSets read by the Artifact GC Pod, so that the Pod can find them
 	EnvVarArtifactGCPodHash = "ARGO_ARTIFACT_POD_NAME"
-	// EnvVarArtifactPluginNames is the env var for artifact GC pods containing the names of the artifact plugins
+	// EnvVarArtifactPluginNames is a comma-separated list of artifact plugin
+	// container names. It is set on the artifact GC pod, on the legacy `wait`
+	// container, and on the init-less `supervisor` container, which use it to
+	// locate and (for wait/supervisor) drive Save on each plugin sidecar.
 	EnvVarArtifactPluginNames = "ARGO_ARTIFACT_PLUGIN_NAMES"
+	// EnvVarInputArtifactPluginNames is the comma-separated list of input artifact plugin names
+	// the supervisor container must invoke for Load in init-less pod mode.
+	EnvVarInputArtifactPluginNames = "ARGO_INPUT_ARTIFACT_PLUGIN_NAMES"
+	// EnvVarWaitForReady tells the emissary to block on the /var/run/argo/ready
+	// marker before reading the template and exec'ing the user command.
+	// Set by the controller on main-level containers in init-less pod mode.
+	EnvVarWaitForReady = "ARGO_WAIT_FOR_READY"
+	// EnvVarInitlessPod signals that the executor is running inside an
+	// init-less pod (i.e. as `argoexec supervisor`). The controller sets it
+	// on the supervisor container. Used to gate init-less-specific code
+	// paths in the executor (e.g. the input-artifacts overlap fallback in
+	// stageArchiveFile).
+	EnvVarInitlessPod = "ARGO_INITLESS_POD"
 	// EnvVarPodName contains the name of the pod (currently unused)
 	EnvVarPodName = "ARGO_POD_NAME"
 	// EnvVarPodUID is the workflow's UID
@@ -294,8 +315,38 @@ const (
 	// VarRunArgoPath is the standard path for the shared volume
 	VarRunArgoPath = "/var/run/argo"
 
+	// LegacyArgoExecBinPath is where the init container copies argoexec in the
+	// legacy pod layout (it lives in the shared VarRunArgoPath emptyDir).
+	LegacyArgoExecBinPath = VarRunArgoPath + "/argoexec"
+
+	// ArgoExecBinImageVolumeName / ArgoExecBinMountPath / ArgoExecBinPath describe
+	// the image volume that delivers the argoexec binary to main-level containers
+	// in init-less pod mode (there is no init container to copy it into
+	// VarRunArgoPath). argoexec lives at /bin/argoexec inside the argoexec image.
+	ArgoExecBinImageVolumeName = "argoexec-bin"
+	ArgoExecBinMountPath       = "/argo-bin"
+	ArgoExecBinPath            = ArgoExecBinMountPath + "/bin/argoexec"
+
 	// ArgoProgressPath defines the path to a file used for self reporting progress
 	ArgoProgressPath = VarRunArgoPath + "/progress"
+
+	// ReadyMarkerPath is the marker file the supervisor writes atomically once
+	// pre-main setup is complete. The emissary waits for it before exec'ing the
+	// user command (init-less pod mode).
+	ReadyMarkerPath = VarRunArgoPath + "/ready"
+	// FailedMarkerPath is the marker file the supervisor writes if pre-main
+	// setup fails. The emissary reads the contents, logs, and exits non-zero.
+	FailedMarkerPath = VarRunArgoPath + "/failed"
+
+	// ExitCodeSupervisorPreMainFailure is the exit code main's emissary uses
+	// when it observes the supervisor's failed marker before exec'ing the user
+	// command (init-less pod mode). 65 = sysexits.h EX_DATAERR, chosen to be
+	// distinct from the user command's likely codes (0-2, 126-128, 137, 143) so
+	// the controller can attribute the failure to supervisor pre-main setup
+	// rather than the user command. The controller (inferFailedReason) keys off
+	// this value to surface the supervisor's real error instead of the
+	// placeholder code on main.
+	ExitCodeSupervisorPreMainFailure = 65
 
 	ConfigMapName = "workflow-controller-configmap"
 )
@@ -318,9 +369,54 @@ func IsArtifactPluginSidecar(containerName string) bool {
 }
 
 func IsArgoSidecar(containerName string) bool {
-	return containerName == WaitContainerName || IsArtifactPluginSidecar(containerName)
+	return containerName == WaitContainerName || containerName == SupervisorContainerName || IsArtifactPluginSidecar(containerName)
 }
 
 func IsArtifactPluginInit(containerName string) bool {
 	return strings.HasPrefix(containerName, ArtifactPluginInitPrefix)
+}
+
+// IsInitlessPod reports whether the executor is running under the init-less pod
+// layout, signalled by the controller via EnvVarInitlessPod on the supervisor
+// and main-level containers. Several output-staging and lifecycle code paths
+// diverge from the legacy init-container + wait layout in this mode.
+func IsInitlessPod() bool {
+	return os.Getenv(EnvVarInitlessPod) == "true"
+}
+
+// JoinPluginNames serializes artifact-plugin sidecar names into the
+// comma-separated form the controller writes to EnvVarArtifactPluginNames /
+// EnvVarInputArtifactPluginNames. Paired with SplitPluginNames.
+func JoinPluginNames(names []string) string {
+	return strings.Join(names, ",")
+}
+
+// SplitPluginNames parses the comma-separated value written by JoinPluginNames,
+// trimming surrounding whitespace and dropping empty entries so callers never
+// see a blank name from a trailing or doubled comma.
+func SplitPluginNames(raw string) []string {
+	if raw == "" {
+		return nil
+	}
+	parts := strings.Split(raw, ",")
+	names := make([]string, 0, len(parts))
+	for _, p := range parts {
+		if p = strings.TrimSpace(p); p != "" {
+			names = append(names, p)
+		}
+	}
+	return names
+}
+
+// ResolveTemplateEnvValue takes a raw ARGO_TEMPLATE env value and returns
+// the actual template JSON. If raw is the offloaded sentinel, reads from
+// the configmap mount at offloadDir/EnvVarTemplate; otherwise returns the
+// raw value unchanged. Shared between the legacy init container
+// (cmd/argoexec/executor) and the emissary (cmd/argoexec/commands) so the
+// offload protocol stays in one place.
+func ResolveTemplateEnvValue(raw string, offloadDir string) ([]byte, error) {
+	if raw == EnvVarTemplateOffloaded {
+		return os.ReadFile(filepath.Join(offloadDir, EnvVarTemplate))
+	}
+	return []byte(raw), nil
 }

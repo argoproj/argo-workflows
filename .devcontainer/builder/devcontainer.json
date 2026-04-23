@@ -14,7 +14,11 @@
 
   "features": {
     "ghcr.io/devcontainers/features/go:1": {
-      "version": "1.26.1"
+      "version": "1.26.1",
+      // Pin golangci-lint to the version CI lints with (see Makefile lint-go).
+      // "latest" (the feature default) pulls a release whose checksum the Go
+      // feature currently fails to verify, which breaks the devcontainer build.
+      "golangciLintVersion": "2.11.3"
     },
     "ghcr.io/devcontainers/features/node:1": {
       "version": "20"

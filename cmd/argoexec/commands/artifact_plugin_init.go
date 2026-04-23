@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"syscall"
 
 	"github.com/argoproj/pkg/stats"
 	"github.com/spf13/cobra"
@@ -13,7 +12,6 @@ import (
 	"github.com/argoproj/argo-workflows/v4/cmd/argoexec/executor"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
-	"github.com/argoproj/argo-workflows/v4/workflow/executor/osspecific"
 )
 
 func NewArtifactPluginInitCommand() *cobra.Command {
@@ -41,17 +39,7 @@ func NewArtifactPluginInitCommand() *cobra.Command {
 				signal.Notify(signals)
 				defer signal.Reset()
 
-				go func() {
-					for s := range signals {
-						if osspecific.CanIgnoreSignal(s) {
-							logger.WithField("signal", s).Debug(ctx, "ignore signal")
-							continue
-						}
-
-						logger.WithField("signal", s).Debug(ctx, "forwarding signal")
-						_ = osspecific.Kill(command.Process.Pid, s.(syscall.Signal))
-					}
-				}()
+				forwardSignals(ctx, signals, command.Process.Pid, false)
 			}()
 			err := loadArtifactPlugin(ctx, wfv1.ArtifactPluginName(artifactPlugin))
 			if err != nil {

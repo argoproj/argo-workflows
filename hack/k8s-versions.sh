@@ -4,5 +4,5 @@
 # This is used in the CI workflow for e2e tests, the devcontainer, and to generate docs.
 declare -A K8S_VERSIONS=(
   [min]=v1.33.10
-  [max]=v1.35.0
+  [max]=v1.36.0
 )

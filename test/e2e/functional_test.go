@@ -4,6 +4,7 @@ package e2e
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -1049,8 +1050,13 @@ spec:
 }
 
 func (s *FunctionalSuite) TestWorkflowPodSpecPatch() {
+	// podSpecPatch targets the auxiliary executor container by name; it's "wait"
+	// in the legacy layout and "supervisor" in init-less mode, so template it via
+	// AuxContainerName() (a static "wait" would add an imageless container and the
+	// pod would be rejected under init-less). The assertion uses the same name.
+	aux := fixtures.AuxContainerName()
 	s.Given().
-		Workflow(`
+		Workflow(fmt.Sprintf(`
 metadata:
   generateName: basic-
 spec:
@@ -1060,8 +1066,8 @@ spec:
       container:
         image: argoproj/argosay:v2
       # ordering of the containers in the next line is intentionally reversed
-      podSpecPatch: '{"terminationGracePeriodSeconds":5, "containers":[{"name":"main", "resources":{"limits":{"cpu": "100m"}}}, {"name":"wait", "resources":{"limits":{"cpu": "101m"}}}]}'
-`).
+      podSpecPatch: '{"terminationGracePeriodSeconds":5, "containers":[{"name":"main", "resources":{"limits":{"cpu": "100m"}}}, {"name":%q, "resources":{"limits":{"cpu": "101m"}}}]}'
+`, aux)).
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow().
@@ -1072,7 +1078,7 @@ spec:
 				switch c.Name {
 				case "main":
 					assert.Equal(t, "100m", c.Resources.Limits.Cpu().String())
-				case "wait":
+				case aux:
 					assert.Equal(t, "101m", c.Resources.Limits.Cpu().String())
 				}
 			}
@@ -1630,7 +1636,7 @@ func (s *FunctionalSuite) TestWorkflowInvalidServiceAccountError() {
 		ExpectContainerLogs("main", func(t *testing.T, logs string) {
 			assert.Contains(t, logs, "hello argo")
 		}).
-		ExpectContainerLogs("wait", func(t *testing.T, logs string) {
+		ExpectContainerLogs(fixtures.AuxContainerName(), func(t *testing.T, logs string) {
 			assert.Contains(t, logs, "Error: workflowtaskresults.argoproj.io is forbidden: User \"system:serviceaccount:argo:github.com\" cannot create resource")
 			// Shouldn't have print help text
 			assert.NotContains(t, logs, "Usage:")
