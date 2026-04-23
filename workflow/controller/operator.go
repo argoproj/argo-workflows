@@ -1196,7 +1196,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (bool, error) 
 				woc.addOutputsToGlobalScope(ctx, newState.Outputs)
 				if newState.MemoizationStatus != nil {
 					if newState.Succeeded() {
-						c := woc.controller.cacheFactory.GetCache(ctx, controllercache.ConfigMapCache, woc.wf.Namespace, newState.MemoizationStatus.CacheName)
+						c := woc.controller.getMemoizationCache(ctx, woc.wf.Namespace, newState.MemoizationStatus.CacheName)
 						if c == nil {
 							woc.log.WithFields(logging.Fields{"nodeID": newState.ID}).Warn(ctx, "Memoization cache unavailable; skipping cache save")
 						} else {
@@ -2254,17 +2254,18 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			return errNode, cacheErr
 		}
 		if node == nil || unlockedNode {
-			memoizationCache := woc.controller.cacheFactory.GetCache(ctx, controllercache.ConfigMapCache, woc.wf.Namespace, cacheName)
+			memoizationCache := woc.controller.getMemoizationCache(ctx, woc.wf.Namespace, cacheName)
 			if memoizationCache == nil {
-				cacheErr := fmt.Errorf("cache could not be found or created")
-				woc.log.WithFields(logging.Fields{"cacheName": cacheName}).WithError(cacheErr)
-				errNode := woc.initializeNodeOrMarkError(ctx, node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, cacheErr)
-				return errNode, cacheErr
+				woc.log.WithFields(logging.Fields{"cacheName": cacheName}).Warn(ctx, "Memoization cache unavailable; treating as cache miss")
 			}
 
-			entry, loadErr := memoizationCache.Load(ctx, processedTmpl.Memoize.Key)
-			if loadErr != nil {
-				return woc.initializeNodeOrMarkError(ctx, node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, loadErr), loadErr
+			var entry *controllercache.Entry
+			if memoizationCache != nil {
+				var loadErr error
+				entry, loadErr = memoizationCache.Load(ctx, processedTmpl.Memoize.Key)
+				if loadErr != nil {
+					return woc.initializeNodeOrMarkError(ctx, node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, loadErr), loadErr
+				}
 			}
 
 			hit := entry.Hit()
