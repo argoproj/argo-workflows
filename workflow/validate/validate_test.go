@@ -2830,6 +2830,134 @@ func TestWorkflowTemplateWithResourceManifest(t *testing.T) {
 	require.NoError(t, err)
 }
 
+var workflowOfWorkflowsWithInnerParams = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: workflow-of-workflows-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: submit-workflow
+        template: submit-inner-workflow
+  - name: submit-inner-workflow
+    resource:
+      action: create
+      manifest: |
+        apiVersion: argoproj.io/v1alpha1
+        kind: Workflow
+        metadata:
+          generateName: inner-workflow-
+        spec:
+          entrypoint: inner-main
+          arguments:
+            parameters:
+            - name: msg
+              value: hello
+          templates:
+          - name: inner-main
+            inputs:
+              parameters:
+              - name: msg
+            container:
+              image: alpine
+              command: [echo]
+              args: ["{{inputs.parameters.msg}}"]
+`
+
+// TestWorkflowOfWorkflowsWithInnerParams verifies that a workflow-of-workflows pattern
+// does not fail validation when the inner workflow manifest contains its own {{inputs.parameters.*}} tags.
+// See https://github.com/argoproj/argo-workflows/issues/12634
+func TestWorkflowOfWorkflowsWithInnerParams(t *testing.T) {
+	wf := unmarshalWf(workflowOfWorkflowsWithInnerParams)
+	err := Workflow(logging.TestContext(t.Context()), wftmplGetter, cwftmplGetter, wf, nil, Opts{})
+	require.NoError(t, err)
+}
+
+var workflowOfWorkflowsWithOuterScopeVars = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: workflow-of-workflows-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: submit-workflow
+        template: submit-inner-workflow
+  - name: submit-inner-workflow
+    resource:
+      action: create
+      manifest: |
+        apiVersion: argoproj.io/v1alpha1
+        kind: Workflow
+        metadata:
+          generateName: inner-workflow-
+          labels:
+            parent-workflow: "{{workflow.name}}"
+        spec:
+          entrypoint: inner-main
+          templates:
+          - name: inner-main
+            container:
+              image: alpine
+              command: [echo]
+              args: ["{{inputs.parameters.msg}}"]
+`
+
+// TestWorkflowOfWorkflowsWithOuterScopeVars verifies that outer-scope variables like
+// {{workflow.name}} in a resource manifest are still validated, while inner workflow
+// tags like {{inputs.parameters.msg}} are allowed.
+func TestWorkflowOfWorkflowsWithOuterScopeVars(t *testing.T) {
+	wf := unmarshalWf(workflowOfWorkflowsWithOuterScopeVars)
+	err := Workflow(logging.TestContext(t.Context()), wftmplGetter, cwftmplGetter, wf, nil, Opts{})
+	require.NoError(t, err)
+}
+
+var workflowOfWorkflowsWithMixedManifestVars = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: workflow-of-workflows-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: submit-workflow
+        template: submit-inner-workflow
+        arguments:
+          parameters:
+          - name: msg
+            value: hello
+  - name: submit-inner-workflow
+    inputs:
+      parameters:
+      - name: msg
+    resource:
+      action: create
+      manifest: |
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: "{{inputs.parameters.msg}}"
+        data:
+          inner: "{{inputs.parameters.inner_only}}"
+`
+
+// TestWorkflowOfWorkflowsWithMixedManifestVars verifies that a resource manifest can
+// contain both outer-scope variables ({{inputs.parameters.msg}} which is a declared input)
+// and tags that are not in scope ({{inputs.parameters.inner_only}}). The latter are allowed
+// because they may belong to an inner resource; they will be validated at runtime instead.
+func TestWorkflowOfWorkflowsWithMixedManifestVars(t *testing.T) {
+	wf := unmarshalWf(workflowOfWorkflowsWithMixedManifestVars)
+	err := Workflow(logging.TestContext(t.Context()), wftmplGetter, cwftmplGetter, wf, nil, Opts{})
+	require.NoError(t, err)
+}
+
 var validActiveDeadlineSecondsArgoVariable = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
