@@ -37,23 +37,24 @@ func NewQueries(tableName string, dbType sqldb.DBType) (*Queries, error) {
 }
 
 // Load retrieves the outputs for the given cache key.
-// Returns nil when the entry does not exist.
+// Returns nil when the entry does not exist or has expired.
 func (q *Queries) Load(ctx context.Context, sp *sqldb.SessionProxy, namespace, cacheName, cacheKey string) (*CacheRecord, error) {
 	var r CacheRecord
 	var found bool
+	now := time.Now().UTC()
 	err := sp.With(ctx, func(sess db.Session) error {
 		// Use raw SQL to avoid upper/db ORM timestamp scanning issues with
 		// "timestamp without timezone" columns (the ORM may not populate time.Time fields).
 		var query string
 		switch q.dbType {
 		case sqldb.Postgres:
-			query = fmt.Sprintf(`SELECT namespace, cache_name, cache_key, node_id, outputs, created_at, expires_at FROM %s WHERE namespace = $1 AND cache_name = $2 AND cache_key = $3`, q.tableName)
+			query = fmt.Sprintf(`SELECT namespace, cache_name, cache_key, node_id, outputs, created_at, expires_at FROM %s WHERE namespace = $1 AND cache_name = $2 AND cache_key = $3 AND expires_at > $4`, q.tableName)
 		case sqldb.MySQL:
-			query = fmt.Sprintf("SELECT namespace, cache_name, cache_key, node_id, outputs, created_at, expires_at FROM %s WHERE namespace = ? AND cache_name = ? AND cache_key = ?", q.tableName)
+			query = fmt.Sprintf("SELECT namespace, cache_name, cache_key, node_id, outputs, created_at, expires_at FROM %s WHERE namespace = ? AND cache_name = ? AND cache_key = ? AND expires_at > ?", q.tableName)
 		default:
 			return fmt.Errorf("unsupported database type: %s", q.dbType)
 		}
-		rows, err := sess.SQL().QueryContext(ctx, query, namespace, cacheName, cacheKey)
+		rows, err := sess.SQL().QueryContext(ctx, query, namespace, cacheName, cacheKey, now)
 		if err != nil {
 			return err
 		}
@@ -109,13 +110,13 @@ func (q *Queries) Save(ctx context.Context, sp *sqldb.SessionProxy, namespace, c
 			_, err := sess.SQL().ExecContext(ctx,
 				fmt.Sprintf(`INSERT INTO %s (namespace, cache_name, cache_key, node_id, outputs, created_at, expires_at)
 VALUES ($1, $2, $3, $4, $5, $6, $7)
-ON CONFLICT (namespace, cache_name, cache_key) DO UPDATE SET node_id = $4, outputs = $5, expires_at = $7`, q.tableName),
+ON CONFLICT (namespace, cache_name, cache_key) DO UPDATE SET node_id = $4, outputs = $5, created_at = $6, expires_at = $7`, q.tableName),
 				namespace, cacheName, cacheKey, nodeID, outputsStr, now, expiresAt)
 			return err
 		case sqldb.MySQL:
 			_, err := sess.SQL().ExecContext(ctx,
-				fmt.Sprintf("INSERT INTO %s (namespace, cache_name, cache_key, node_id, outputs, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE node_id = ?, outputs = ?, expires_at = ?", q.tableName),
-				namespace, cacheName, cacheKey, nodeID, outputsStr, now, expiresAt, nodeID, outputsStr, expiresAt)
+				fmt.Sprintf("INSERT INTO %s (namespace, cache_name, cache_key, node_id, outputs, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE node_id = ?, outputs = ?, created_at = ?, expires_at = ?", q.tableName),
+				namespace, cacheName, cacheKey, nodeID, outputsStr, now, expiresAt, nodeID, outputsStr, now, expiresAt)
 			return err
 		default:
 			return fmt.Errorf("unsupported database type: %s", q.dbType)
