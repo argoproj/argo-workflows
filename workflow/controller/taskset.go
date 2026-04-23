@@ -229,7 +229,7 @@ func (woc *wfOperationCtx) reconcileTaskSet(ctx context.Context) error {
 			tmpl := workflowTaskSet.Spec.Tasks[nodeID]
 			woc.handleNodeFulfilled(ctx, node, &tmpl)
 			if node.MemoizationStatus != nil && node.Succeeded() {
-				c := woc.controller.cacheFactory.GetCache(ctx, controllercache.ConfigMapCache, woc.wf.Namespace, node.MemoizationStatus.CacheName)
+				c := woc.controller.getMemoizationCache(ctx, woc.wf.Namespace, node.MemoizationStatus.CacheName)
 				if c == nil {
 					woc.log.WithFields(logging.Fields{"nodeID": node.ID}).Warn(ctx, "Memoization cache unavailable; skipping cache save")
 				} else {
