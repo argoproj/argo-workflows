@@ -1,0 +1,24 @@
+@import 'node_modules/argo-ui/src/styles/config';
+
+.theme-selector {
+    display: flex;
+    gap: 0.5em;
+    flex-wrap: wrap;
+
+    &__button {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5em;
+
+        &--selected {
+            background-color: $argo-color-teal-5;
+            color: $white-color;
+            border-color: $argo-color-teal-5;
+
+            &:hover {
+                background-color: $argo-color-teal-6;
+                border-color: $argo-color-teal-6;
+            }
+        }
+    }
+}

@@ -1,4 +1,5 @@
 @import 'node_modules/argo-ui/src/styles/config';
+@import 'node_modules/argo-ui/src/styles/theme';
 
 .workflows-list {
     padding: 1em;
@@ -117,11 +118,14 @@
         overflow: hidden;
         position: relative;
         border-radius: $border-radius;
-        box-shadow: 1px 1px 3px $argo-color-gray-5;
         padding: 0 1em 0.75em 1em;
         margin: 33px 0;
-        background-color: white;
         transition: max-height 0.25s cubic-bezier(0, 1, 0, 1);
+
+        @include themify($themes) {
+            box-shadow: 1px 1px 3px themed('shadow');
+            background-color: themed('background-2');
+        }
 
         ul,
         a,
