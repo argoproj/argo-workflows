@@ -379,7 +379,7 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 		woc.wf.Status.Nodes.Set(ctx, node.ID, *node)
 	}
 	if node.MemoizationStatus != nil {
-		c := woc.controller.cacheFactory.GetCache(ctx, controllercache.ConfigMapCache, woc.wf.Namespace, node.MemoizationStatus.CacheName)
+		c := woc.controller.getMemoizationCache(ctx, woc.wf.Namespace, node.MemoizationStatus.CacheName)
 		switch {
 		case c == nil:
 			woc.log.WithField("nodeID", node.ID).Warn(ctx, "Memoization cache unavailable; skipping cache save")

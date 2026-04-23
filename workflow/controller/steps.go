@@ -188,7 +188,7 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 	}
 
 	if node.MemoizationStatus != nil {
-		c := woc.controller.cacheFactory.GetCache(ctx, controllercache.ConfigMapCache, woc.wf.Namespace, node.MemoizationStatus.CacheName)
+		c := woc.controller.getMemoizationCache(ctx, woc.wf.Namespace, node.MemoizationStatus.CacheName)
 		switch {
 		case c == nil:
 			woc.log.WithFields(logging.Fields{"nodeID": node.ID}).Warn(ctx, "Memoization cache unavailable; skipping cache save")
