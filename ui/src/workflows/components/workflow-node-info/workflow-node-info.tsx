@@ -4,6 +4,7 @@ import {Tooltip} from 'argo-ui/src/components/tooltip/tooltip';
 import * as React from 'react';
 import {useState} from 'react';
 
+import {uiUrl} from '../../../shared/base';
 import {Button} from '../../../shared/components/button';
 import {ClipboardText} from '../../../shared/components/clipboard-text';
 import {DurationPanel} from '../../../shared/components/duration-panel';
@@ -104,6 +105,23 @@ function WorkflowNodeSummary(props: Props) {
     const attributes = [
         {title: 'NAME', value: <ClipboardText text={props.node.name} />},
         {title: 'ID', value: <ClipboardText text={props.node.id} />},
+        ...(workflow.spec.workflowTemplateRef
+            ? [
+                  {
+                      title: 'WORKFLOW TEMPLATE',
+                      value: (
+                          <a
+                              href={uiUrl(
+                                  workflow.spec.workflowTemplateRef.clusterScope
+                                      ? `cluster-workflow-templates/${workflow.spec.workflowTemplateRef.name}`
+                                      : `workflow-templates/${workflow.metadata.namespace}/${workflow.spec.workflowTemplateRef.name}`
+                              )}>
+                              {workflow.spec.workflowTemplateRef.name}
+                          </a>
+                      )
+                  }
+              ]
+            : []),
         {title: 'TYPE', value: props.node.type},
         {
             title: 'PHASE',
