@@ -88,6 +88,7 @@ func (h Facade) EventStreamReader(ctx context.Context, in any, path string) (*bu
 				TLSClientConfig: &tls.Config{
 					InsecureSkipVerify: h.insecureSkipVerify,
 				},
+				DisableKeepAlives: true,
 			},
 		}
 	}
