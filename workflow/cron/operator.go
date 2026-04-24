@@ -55,6 +55,11 @@ type cronWfOperationCtx struct {
 	scheduledTimeFunc ScheduledTimeFunc
 	//nolint: containedctx
 	ctx context.Context
+	// modifiedLabels and modifiedAnnotations track metadata keys that the controller
+	// has explicitly modified during this operation. Only these keys are included
+	// in the persistUpdate patch, avoiding overwrite of externally-set metadata.
+	modifiedLabels      map[string]string
+	modifiedAnnotations map[string]string
 }
 
 func newCronWfOperationCtx(ctx context.Context, cronWorkflow *v1alpha1.CronWorkflow, wfClientset versioned.Interface,
@@ -98,7 +103,9 @@ func (woc *cronWfOperationCtx) run(ctx context.Context, scheduledRuntime time.Ti
 
 	// If the cron workflow has a schedule that was just updated, update its annotation
 	if woc.cronWf.IsUsingNewSchedule() {
-		woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleWithTimezoneString())
+		schedule := woc.cronWf.Spec.GetScheduleWithTimezoneString()
+		woc.cronWf.SetSchedule(schedule)
+		woc.setModifiedAnnotation(woc.cronWf.GetScheduleAnnotationKey(), schedule)
 	}
 
 	err := woc.validateCronWorkflow(ctx)
@@ -167,8 +174,35 @@ func getWorkflowObjectReference(wf *v1alpha1.Workflow, runWf *v1alpha1.Workflow)
 	}
 }
 
+func (woc *cronWfOperationCtx) setModifiedLabel(key, value string) {
+	if woc.modifiedLabels == nil {
+		woc.modifiedLabels = map[string]string{}
+	}
+	woc.modifiedLabels[key] = value
+}
+
+func (woc *cronWfOperationCtx) setModifiedAnnotation(key, value string) {
+	if woc.modifiedAnnotations == nil {
+		woc.modifiedAnnotations = map[string]string{}
+	}
+	woc.modifiedAnnotations[key] = value
+}
+
 func (woc *cronWfOperationCtx) persistUpdate(ctx context.Context) {
-	woc.patch(ctx, map[string]any{"status": woc.cronWf.Status, "metadata": map[string]any{"annotations": woc.cronWf.Annotations, "labels": woc.cronWf.Labels}})
+	patch := map[string]any{
+		"status": woc.cronWf.Status,
+	}
+	meta := map[string]any{}
+	if len(woc.modifiedLabels) > 0 {
+		meta["labels"] = woc.modifiedLabels
+	}
+	if len(woc.modifiedAnnotations) > 0 {
+		meta["annotations"] = woc.modifiedAnnotations
+	}
+	if len(meta) > 0 {
+		patch["metadata"] = meta
+	}
+	woc.patch(ctx, patch)
 }
 
 func (woc *cronWfOperationCtx) persistCurrentWorkflowStatus(ctx context.Context) {
@@ -555,6 +589,7 @@ func (woc *cronWfOperationCtx) setAsCompleted() {
 		woc.cronWf.Labels = map[string]string{}
 	}
 	woc.cronWf.Labels[common.LabelKeyCronWorkflowCompleted] = "true"
+	woc.setModifiedLabel(common.LabelKeyCronWorkflowCompleted, "true")
 }
 
 func inferScheduledTime(ctx context.Context) time.Time {
