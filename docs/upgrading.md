@@ -3,6 +3,68 @@
 Breaking changes  typically (sometimes we don't realise they are breaking) have "!" in the commit message, as per
 the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summary).
 
+## Upgrading to v3.7
+
+See also the list of [new features in 3.7](new-features.md).
+
+### Docker Hub images discontinued ([#14457](https://github.com/argoproj/argo-workflows/pull/14457))
+
+Argo Workflows images are no longer published to Docker Hub. They are only available on Quay.io.
+
+Update your image references:
+
+| Old (Docker Hub) | New (Quay.io) |
+|---|---|
+| `argoproj/argocli:<tag>` | `quay.io/argoproj/argocli:<tag>` |
+| `argoproj/argoexec:<tag>` | `quay.io/argoproj/argoexec:<tag>` |
+| `argoproj/workflow-controller:<tag>` | `quay.io/argoproj/workflow-controller:<tag>` |
+
+If your image references omit the registry prefix (e.g. `argoproj/argocli`), they default to Docker Hub and will fail to pull.
+
+### `podPriority` and `Template.priority` fields removed ([#14277](https://github.com/argoproj/argo-workflows/pull/14277))
+
+The `spec.podPriority` and `template.priority` integer fields have been removed. These were deprecated in v3.6.
+
+Use `spec.podPriorityClassName` or `template.priorityClassName` instead, which reference a Kubernetes `PriorityClass` object.
+
+### Parameter value overriding fix ([#14462](https://github.com/argoproj/argo-workflows/pull/14462))
+
+When a Workflow overrides a WorkflowTemplate parameter that uses `valueFrom.configMapKeyRef`, `value` now takes precedence over `valueFrom`. Previously, the ConfigMap value would win even when an explicit `value` was set.
+
+If you relied on `valueFrom` winning over `value`:
+
+* To keep using the ConfigMap, remove the `value` field so only `valueFrom` is set.
+* If you wanted the explicit `value` to win, no changes needed -- this is now the correct behavior.
+
+### Retried persisted workflows API change ([#15030](https://github.com/argoproj/argo-workflows/pull/15030))
+
+When retrieving an archived workflow by namespace and name (not UID), and multiple archived entries exist from retries, the API now returns the most recently started workflow instead of returning an error. If your tooling caught that multi-record error, that code path is gone -- use UID-based lookups to retrieve a specific retry.
+
+### Prometheus metrics naming change ([#14879](https://github.com/argoproj/argo-workflows/pull/14879))
+
+The OTel Prometheus exporter now uses UTF-8 validation for metric names by default.
+Custom metrics with dots (`.`) or dashes (`-`) in their names will no longer have those characters replaced with underscores.
+
+If your dashboards or alerts reference custom metrics using the old underscore-substituted names, update them.
+
+To restore the old behavior, set `PROMETHEUS_LEGACY_NAME_VALIDATION_SCHEME=true` on the workflow controller.
+
+Built-in Argo Workflows metrics already use underscores in their names, so those don't change.
+
+### Custom counter metrics type change ([#14700](https://github.com/argoproj/argo-workflows/pull/14700))
+
+Custom counter metrics now use `Float64ObservableCounter` (monotonically increasing) instead of `Float64ObservableUpDownCounter`.
+In Prometheus this means custom counters are emitted as type `counter` (with `_total` suffix) rather than `gauge`.
+
+Check your dashboards and alerts if you use custom counter metrics -- the names and types will look different.
+
+### `pods_total_count` metric type change ([#14130](https://github.com/argoproj/argo-workflows/pull/14130))
+
+The built-in `pods_total_count` metric has been corrected from `Int64ObservableGauge` to `Int64Counter`.
+In Prometheus this means it is now emitted as type `counter` (with `_total` suffix) rather than `gauge`, matching its intent as a total-entries-per-phase counter.
+
+If your dashboards or alerts treat `argo_workflows_pods_total_count` as a gauge, update them to use counter semantics (e.g. `rate(...)`, `increase(...)`) against the `_total`-suffixed name.
+
 ## Upgrading to v3.6
 
 See also the list of [new features in 3.6](new-features.md).
