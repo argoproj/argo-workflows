@@ -62,6 +62,9 @@ attributes:
     description: "The unique ID of a node in a DAG"
   - name: NodePhase
     description: "The phase that the pod's node was in"
+  - name: NodeTemplateName
+    displayName: template_name
+    description: The name of the template executed by this node
   - name: NodeType
     displayName: node_type
     description: The type of the node
@@ -523,6 +526,7 @@ spans:
       - name: WorkflowName
       - name: WorkflowNamespace
       - name: NodeType
+      - name: NodeTemplateName
     parents: [Workflow]
   - name: NodePhase
     description: The phase of one node as observed by the controller in the DAG of a workflow
