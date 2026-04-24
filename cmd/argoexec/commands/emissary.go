@@ -401,11 +401,15 @@ func saveArtifact(ctx context.Context, srcPath string) error {
 		logger.WithField("srcPath", srcPath).Info(ctx, "no need to save artifact - on overlapping volume")
 		return nil
 	}
+	dstPath := filepath.Join(varRunArgo, "outputs/artifacts", strings.TrimSuffix(srcPath, "/")+".tgz")
+	safeArtifactBase := filepath.Clean(filepath.Join(varRunArgo, "outputs/artifacts")) + string(os.PathSeparator)
+	if !strings.HasPrefix(filepath.Clean(dstPath)+string(os.PathSeparator), safeArtifactBase) {
+		return fmt.Errorf("path traversal in output artifact path %q", srcPath)
+	}
 	if _, err := os.Stat(srcPath); os.IsNotExist(err) { // might be optional, so we ignore
 		logger.WithField("srcPath", srcPath).WithError(err).Warn(ctx, "cannot save artifact")
 		return nil
 	}
-	dstPath := filepath.Join(varRunArgo, "/outputs/artifacts/", strings.TrimSuffix(srcPath, "/")+".tgz")
 	logger.WithFields(logging.Fields{
 		"src": srcPath,
 		"dst": dstPath,
@@ -435,6 +439,11 @@ func saveParameter(ctx context.Context, srcPath string) error {
 		logger.WithField("src", srcPath).Info(ctx, "no need to save parameter - on overlapping volume")
 		return nil
 	}
+	dstPath := filepath.Join(varRunArgo, "outputs/parameters", srcPath)
+	safeParamBase := filepath.Clean(filepath.Join(varRunArgo, "outputs/parameters")) + string(os.PathSeparator)
+	if !strings.HasPrefix(filepath.Clean(dstPath)+string(os.PathSeparator), safeParamBase) {
+		return fmt.Errorf("path traversal in output parameter path %q", srcPath)
+	}
 	src, err := os.Open(filepath.Clean(srcPath))
 	if os.IsNotExist(err) { // might be optional, so we ignore
 		logger.WithField("src", srcPath).WithError(err).Error(ctx, "cannot save parameter, does not exist")
@@ -444,7 +453,6 @@ func saveParameter(ctx context.Context, srcPath string) error {
 		return fmt.Errorf("failed to open %s: %w", srcPath, err)
 	}
 	defer func() { _ = src.Close() }()
-	dstPath := varRunArgo + "/outputs/parameters/" + srcPath
 	logger.WithFields(logging.Fields{
 		"src": srcPath,
 		"dst": dstPath,
