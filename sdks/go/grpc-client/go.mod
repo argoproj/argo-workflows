@@ -5,7 +5,7 @@ go 1.26.1
 replace github.com/argoproj/argo-workflows/v4 => ../../..
 
 require (
-	github.com/argoproj/argo-workflows/v4 v4.0.4
+	github.com/argoproj/argo-workflows/v4 v4.0.5
 	k8s.io/api v0.35.4
 	k8s.io/apimachinery v0.35.4
 )
