@@ -123,7 +123,7 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 			if err = woc.updateOutboundNodes(ctx, nodeName, tmpl); err != nil {
 				return nil, err
 			}
-			return woc.markNodePhase(ctx, nodeName, wfv1.NodeFailed, sgNode.Message), nil
+			return woc.markNodePhase(ctx, nodeName, sgNode.Phase, sgNode.Message), nil
 		}
 
 		// Add all outputs of each step in the group to the scope
@@ -372,7 +372,7 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 		if childNode.FailedOrError() && !step.ContinuesOn(childNode.Phase) {
 			failMessage := fmt.Sprintf("child '%s' failed", childNodeID)
 			woc.log.WithFields(logging.Fields{"nodeID": node.ID, "failMessage": failMessage}).Info(ctx, "Step group node deemed failed")
-			return woc.markNodePhase(ctx, node.Name, wfv1.NodeFailed, failMessage), nil
+			return woc.markNodePhase(ctx, node.Name, childNode.Phase, failMessage), nil
 		}
 	}
 	woc.log.WithField("nodeID", node.ID).Info(ctx, "Step group node successful")

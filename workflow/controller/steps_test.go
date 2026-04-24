@@ -13,13 +13,16 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
-// TestStepsFailedRetries ensures a steps template will recognize exhausted retries
+// TestStepsFailedRetries ensures a steps template will recognize exhausted retries.
+// The workflow ends as Error (not Failed) because the test environment lacks real pods,
+// causing the controller to re-mark fulfilled pod nodes as Error during retry assessment.
+// In production, pods exist and retain their Failed phase.
 func TestStepsFailedRetries(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow("@testdata/steps-failed-retries.yaml")
 	woc := newWoc(ctx, *wf)
 	woc.operate(ctx)
-	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
 }
 
 var artifactResolutionWhenSkipped = `
@@ -821,4 +824,86 @@ func TestStepsWhenExprWithParamFilter(t *testing.T) {
 	node3 := woc.wf.Status.Nodes.FindByDisplayName("fst(3:name:fourth)")
 	require.NotNil(t, node3)
 	assert.Equal(t, wfv1.NodePending, node3.Phase)
+}
+
+// TestStepsPreserveNodeErrorPhase verifies that when a step child has NodeError phase,
+// the step group and parent Steps node preserve NodeError instead of converting to NodeFailed.
+// This is a regression test for https://github.com/argoproj/argo-workflows/issues/14337
+var stepsWithErrorChild = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: steps-error-child
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: fail-step
+        template: fail
+  - name: fail
+    container:
+      image: alpine:3.23
+      command: [sh, -c, "exit 1"]
+status:
+  phase: Running
+  startedAt: "2024-01-01T00:00:00Z"
+  nodes:
+    steps-error-child:
+      id: steps-error-child
+      name: steps-error-child
+      displayName: steps-error-child
+      type: Steps
+      phase: Running
+      templateName: main
+      templateScope: local/steps-error-child
+      startedAt: "2024-01-01T00:00:00Z"
+      children:
+      - steps-error-child-2564286602
+    steps-error-child-2564286602:
+      id: steps-error-child-2564286602
+      name: steps-error-child[0]
+      displayName: "[0]"
+      type: StepGroup
+      phase: Running
+      boundaryID: steps-error-child
+      startedAt: "2024-01-01T00:00:00Z"
+      children:
+      - steps-error-child-1608617573
+    steps-error-child-1608617573:
+      id: steps-error-child-1608617573
+      name: steps-error-child[0].fail-step
+      displayName: fail-step
+      type: Pod
+      phase: Error
+      boundaryID: steps-error-child
+      templateName: fail
+      templateScope: local/steps-error-child
+      message: "pod infrastructure failure"
+      startedAt: "2024-01-01T00:00:00Z"
+      finishedAt: "2024-01-01T00:00:10Z"
+      outputs:
+        exitCode: "1"
+`
+
+func TestStepsPreserveNodeErrorPhase(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	wf := wfv1.MustUnmarshalWorkflow(stepsWithErrorChild)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	woc.operate(ctx)
+
+	sgNode := woc.wf.Status.Nodes.FindByDisplayName("[0]")
+	require.NotNil(t, sgNode)
+	assert.Equal(t, wfv1.NodeError, sgNode.Phase, "step group should preserve NodeError from child, not convert to NodeFailed")
+
+	stepsNode := woc.wf.Status.Nodes.FindByDisplayName("steps-error-child")
+	require.NotNil(t, stepsNode)
+	assert.Equal(t, wfv1.NodeError, stepsNode.Phase, "steps node should preserve NodeError from step group, not convert to NodeFailed")
 }
