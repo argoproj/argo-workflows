@@ -53,9 +53,9 @@ data:
         key: password
 ```
 
-Each cache entry computes an `expires_at` timestamp at save time from the template's `maxAge` field. If `maxAge` is not specified on the template, it defaults to 30 days (2592000 seconds). This default can be overridden by setting the `DEFAULT_MAX_AGE` environment variable on the workflow controller (accepts Go duration strings like `720h` or integer seconds like `2592000`).
+Each cache entry stores its expiry time when it is written, derived from the template's `maxAge` field. If `maxAge` is not specified on the template, it defaults to 30 days (2592000 seconds). This default can be overridden by setting the `DEFAULT_MAX_AGE` environment variable on the workflow controller (accepts Go duration strings like `720h` or integer seconds like `2592000`).
 
-The garbage collector periodically deletes entries whose `expires_at` has elapsed. The GC period defaults to 24 hours and can be configured via the `MEMO_CACHE_GC_PERIOD` environment variable.
+The garbage collector periodically deletes expired entries. The GC period defaults to 24 hours and can be configured via the `MEMO_CACHE_GC_PERIOD` environment variable.
 
 MySQL is also supported:
 

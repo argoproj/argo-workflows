@@ -6420,6 +6420,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: memoized-workflow-test
+  namespace: default
 spec:
   entrypoint: whalesay
   arguments:
@@ -6454,6 +6455,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: memoized-workflow-test
+  namespace: default
 spec:
   entrypoint: main
 #  podGC:
