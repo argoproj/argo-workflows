@@ -1771,6 +1771,10 @@ func (woc *wfOperationCtx) inferFailedReason(ctx context.Context, pod *apiv1.Pod
 		case ctr.Name == common.WaitContainerName:
 			return wfv1.NodeError, msg
 		default:
+			// Sidecar OOMKilled must fail even when exit code is 137; wait may not observe the OOM.
+			if t.Reason == "OOMKilled" {
+				return wfv1.NodeFailed, msg
+			}
 			if t.ExitCode != 137 && t.ExitCode != 143 {
 				return wfv1.NodeFailed, msg
 			}
