@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/argoproj/pkg/sync"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -225,6 +226,11 @@ func (f fakeLister) List() ([]*v1alpha1.Workflow, error) {
 	return nil, nil
 }
 
+func (f fakeLister) ListByIndex(_, _ string) ([]*v1alpha1.Workflow, error) {
+	// Do nothing
+	return nil, nil
+}
+
 var _ util.WorkflowLister = &fakeLister{}
 
 var invalidWf = `
@@ -270,6 +276,7 @@ func TestCronWorkflowConditionSubmissionError(t *testing.T) {
 		metrics:           testMetrics,
 		scheduledTimeFunc: inferScheduledTime,
 		ctx:               ctx,
+		keylock:           sync.NewKeyLock(),
 	}
 	woc.Run()
 
@@ -353,6 +360,7 @@ func TestScheduleTimeParam(t *testing.T) {
 		metrics:           testMetrics,
 		scheduledTimeFunc: inferScheduledTime,
 		ctx:               ctx,
+		keylock:           sync.NewKeyLock(),
 	}
 	woc.Run()
 	wsl, err := cs.ArgoprojV1alpha1().Workflows("").List(ctx, v1.ListOptions{})
@@ -538,6 +546,7 @@ func TestMultipleSchedules(t *testing.T) {
 		metrics:           testMetrics,
 		scheduledTimeFunc: inferScheduledTime,
 		ctx:               ctx,
+		keylock:           sync.NewKeyLock(),
 	}
 	woc.Run()
 	wsl, err := cs.ArgoprojV1alpha1().Workflows("").List(ctx, v1.ListOptions{})
