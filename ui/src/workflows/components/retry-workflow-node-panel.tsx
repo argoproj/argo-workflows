@@ -1,9 +1,9 @@
 import {Checkbox} from 'argo-ui/src/components/checkbox';
-import {Tooltip} from 'argo-ui/src/components/tooltip/tooltip';
 import React, {useState} from 'react';
 
 import {ErrorNotice} from '../../shared/components/error-notice';
 import {getValueFromParameter, ParametersInput} from '../../shared/components/parameters-input';
+import {Tooltip} from '../../shared/components/tooltip';
 import {Parameter, RetryOpts, Workflow} from '../../shared/models';
 import {services} from '../../shared/services';
 

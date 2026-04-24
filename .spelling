@@ -244,6 +244,7 @@ symlinks
 syscall
 temporality
 tolerations
+tooltip
 triaged
 triaging
 un-reconciled
