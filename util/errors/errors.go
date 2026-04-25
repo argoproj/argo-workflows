@@ -47,6 +47,7 @@ func isTransientErr(err error) bool {
 		isResourceQuotaTimeoutErr(err) ||
 		isTransientNetworkErr(err) ||
 		apierr.IsServerTimeout(err) ||
+		apierr.IsInternalError(err) ||
 		apierr.IsTimeout(err) ||
 		apierr.IsServiceUnavailable(err) ||
 		isTransientEtcdErr(err) ||

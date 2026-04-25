@@ -69,8 +69,9 @@ func TestIsTransientErr(t *testing.T) {
 		assert.Contains(t, hook.LastEntry().Msg, "Transient error")
 	})
 	t.Run("ResourceQuotaTimeoutErr", func(t *testing.T) {
-		assert.False(t, IsTransientErr(ctx, apierr.NewInternalError(errors.New(""))))
+		assert.True(t, IsTransientErr(ctx, apierr.NewInternalError(errors.New(""))))
 		assert.True(t, IsTransientErr(ctx, apierr.NewInternalError(errors.New("resource quota evaluation timed out"))))
+		assert.True(t, IsTransientErr(ctx, apierr.NewInternalError(errors.New("some other transient 500"))))
 	})
 	t.Run("ExceededQuotaErr", func(t *testing.T) {
 		assert.False(t, IsTransientErr(ctx, apierr.NewForbidden(schema.GroupResource{}, "", nil)))
