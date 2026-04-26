@@ -467,6 +467,12 @@ type WorkflowSpec struct {
 	// ArtifactGC describes the strategy to use when deleting artifacts from completed or deleted workflows (applies to all output Artifacts
 	// unless Artifact.ArtifactGC is specified, which overrides this)
 	ArtifactGC *WorkflowLevelArtifactGC `json:"artifactGC,omitempty" protobuf:"bytes,43,opt,name=artifactGC"`
+
+	// DisableRetry prevents manual retry of this workflow once it has completed.
+	DisableRetry bool `json:"disableRetry,omitempty" protobuf:"varint,44,opt,name=disableRetry"`
+
+	// DisableResubmit prevents resubmission of this workflow once it has completed.
+	DisableResubmit bool `json:"disableResubmit,omitempty" protobuf:"varint,45,opt,name=disableResubmit"`
 }
 
 type LabelValueFrom struct {
