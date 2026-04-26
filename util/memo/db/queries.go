@@ -30,8 +30,8 @@ type Queries struct {
 }
 
 func NewQueries(tableName string, dbType sqldb.DBType) (*Queries, error) {
-	if !validTableName.MatchString(tableName) {
-		return nil, fmt.Errorf("invalid table name %q: must match [A-Za-z0-9_]+", tableName)
+	if err := validateTableName(tableName); err != nil {
+		return nil, err
 	}
 	return &Queries{tableName: tableName, dbType: dbType}, nil
 }
@@ -72,7 +72,7 @@ func (q *Queries) Load(ctx context.Context, sp *sqldb.SessionProxy, namespace, c
 }
 
 // Prune deletes cache entries whose expires_at has elapsed. It is called
-// periodically by the controller to bound the size of the memoization_cache table.
+// periodically by the controller to bound the size of the configured memoization cache table.
 func (q *Queries) Prune(ctx context.Context, sp *sqldb.SessionProxy) (int64, error) {
 	now := time.Now().UTC()
 	var n int64

@@ -2,6 +2,9 @@ package db
 
 import (
 	"context"
+	"fmt"
+	"hash/fnv"
+	"regexp"
 
 	"k8s.io/client-go/kubernetes"
 
@@ -11,9 +14,11 @@ import (
 )
 
 const (
-	defaultTableName = "memoization_cache"
+	defaultTableName = "cache_entries"
 	versionTable     = "memoization_schema_history"
 )
+
+var validTableName = regexp.MustCompile(`^[A-Za-z0-9_]+$`)
 
 // Config holds resolved configuration for database-backed memoization.
 type Config struct {
@@ -26,6 +31,28 @@ func TableName(cfg *config.MemoizationConfig) string {
 		return defaultTableName
 	}
 	return cfg.TableName
+}
+
+func validateTableName(tableName string) error {
+	if !validTableName.MatchString(tableName) {
+		return fmt.Errorf("invalid table name %q: must match [A-Za-z0-9_]+", tableName)
+	}
+	return nil
+}
+
+func memoizationVersionTableName(tableName string) string {
+	if tableName == defaultTableName {
+		return versionTable
+	}
+	hasher := fnv.New64a()
+	_, _ = hasher.Write([]byte(tableName))
+	return fmt.Sprintf("memoization_schema_history_%x", hasher.Sum64())
+}
+
+func memoizationExpiresAtIndexName(tableName string) string {
+	hasher := fnv.New64a()
+	_, _ = hasher.Write([]byte(tableName))
+	return fmt.Sprintf("memoization_expires_at_%x", hasher.Sum64())
 }
 
 // ConfigFromConfig converts a controller MemoizationConfig (with DB credentials, connection
@@ -70,6 +97,9 @@ func Migrate(ctx context.Context, sessionProxy *sqldb.SessionProxy, cfg Config) 
 		return nil
 	}
 	logger := logging.RequireLoggerFromContext(ctx)
+	if err := validateTableName(cfg.TableName); err != nil {
+		return err
+	}
 	if cfg.SkipMigration {
 		logger.Info(ctx, "Memoization db migration skipped")
 		return nil
