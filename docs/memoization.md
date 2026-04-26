@@ -40,11 +40,11 @@ metadata:
   namespace: argo
 data:
   memoization: |
-    tableName: memoization_cache
     postgresql:
       host: postgres
       port: 5432
       database: postgres
+      tableName: cache_entries
       userNameSecret:
         name: argo-postgres-config
         key: username
@@ -53,7 +53,9 @@ data:
         key: password
 ```
 
-Each cache entry stores its expiry time when it is written, derived from the template's `maxAge` field. If `maxAge` is not specified on the template, it defaults to 30 days (2592000 seconds). This default can be overridden by setting the `DEFAULT_MAX_AGE` environment variable on the workflow controller (accepts Go duration strings like `720h` or integer seconds like `2592000`).
+SQL-backed memoization stores entries in the configured table. If `tableName` is omitted, it defaults to `cache_entries`.
+
+Each cache entry stores its expiry time when it is written, derived from the template's `maxAge` field. If `maxAge` is not specified on the template, it defaults to 30 days (2592000 seconds). This default can be overridden by setting the `DEFAULT_MAX_AGE` environment variable on the workflow controller for SQL-backed memoization (accepts Go duration strings like `720h` or integer seconds like `2592000`).
 
 The garbage collector periodically deletes expired entries. The GC period defaults to 24 hours and can be configured via the `MEMO_CACHE_GC_PERIOD` environment variable.
 
@@ -61,11 +63,11 @@ MySQL is also supported:
 
 ```yaml
   memoization: |
-    tableName: memoization_cache
     mysql:
       host: mysql
       port: 3306
       database: argo
+      tableName: cache_entries
       userNameSecret:
         name: argo-mysql-config
         key: username

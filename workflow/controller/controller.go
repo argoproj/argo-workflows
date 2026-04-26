@@ -758,10 +758,9 @@ func (wfc *WorkflowController) memoizationCacheGarbageCollector(ctx context.Cont
 				continue
 			}
 
-			cfg := memodb.ConfigFromConfig(memoCfg)
-			queries, err := memodb.NewQueries(cfg.TableName, sp.DBType())
+			queries, err := memodb.NewQueries(memodb.TableName(memoCfg), sp.DBType())
 			if err != nil {
-				logger.WithError(err).Error(ctx, "Invalid memoization cache table name; skipping GC tick")
+				logger.WithError(err).Error(ctx, "Failed to initialize memoization cache queries")
 				continue
 			}
 
