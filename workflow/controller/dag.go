@@ -15,7 +15,6 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/template"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
-	controllercache "github.com/argoproj/argo-workflows/v4/workflow/controller/cache"
 	"github.com/argoproj/argo-workflows/v4/workflow/templateresolution"
 )
 
@@ -386,11 +385,7 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 		case tmpl.Memoize == nil:
 			woc.log.WithField("nodeID", node.ID).Warn(ctx, "Node template has no memoize spec; skipping cache save")
 		default:
-			maxAgeSeconds, maxAgeErr := controllercache.ResolveMaxAgeSeconds(tmpl.Memoize.MaxAge)
-			if maxAgeErr != nil {
-				woc.log.WithField("nodeID", node.ID).WithError(maxAgeErr).Error(ctx, "Failed to resolve maxAge for cache save")
-				node.Phase = wfv1.NodeError
-			} else if saveErr := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs, maxAgeSeconds); saveErr != nil {
+			if saveErr := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs, tmpl.Memoize.MaxAge); saveErr != nil {
 				woc.log.WithField("nodeID", node.ID).WithError(saveErr).Error(ctx, "Failed to save node outputs to cache")
 				node.Phase = wfv1.NodeError
 			}

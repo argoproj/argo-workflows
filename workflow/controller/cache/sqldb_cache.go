@@ -55,9 +55,13 @@ func (c *sqlDBCache) Load(ctx context.Context, key string) (*Entry, error) {
 	}, nil
 }
 
-func (c *sqlDBCache) Save(ctx context.Context, key string, nodeID string, value *wfv1.Outputs, maxAgeSeconds int64) error {
+func (c *sqlDBCache) Save(ctx context.Context, key string, nodeID string, value *wfv1.Outputs, maxAge string) error {
 	if !cacheKeyRegex.MatchString(key) {
 		return fmt.Errorf("invalid cache key: %s", key)
+	}
+	maxAgeSeconds, err := ResolveMaxAgeSeconds(maxAge)
+	if err != nil {
+		return err
 	}
 	return c.queries.Save(ctx, c.sessionProxy, c.namespace, c.name, key, nodeID, value, maxAgeSeconds)
 }

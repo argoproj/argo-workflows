@@ -99,7 +99,7 @@ func (s *SQLDBMemoizeSuite) TestSQLDBMemoize() {
 	s.assertNoConfigMap(ctx, "sqldb-memo-cache")
 }
 
-// assertDBCacheEntry checks the memoization_cache table directly.
+// assertDBCacheEntry checks the configured memoization table directly.
 func (s *SQLDBMemoizeSuite) assertDBCacheEntry(ctx context.Context, key string) {
 	memoCfg := s.Config.Memoization
 	// E2E tests connect to postgres via a port-forward on localhost.

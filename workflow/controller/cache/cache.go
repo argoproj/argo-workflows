@@ -29,9 +29,10 @@ var resolvedDefaultMaxAge struct {
 	err  error
 }
 
-// ResolveMaxAgeSeconds converts a template's maxAge duration string to seconds. If maxAge is
-// empty, it falls back to the DEFAULT_MAX_AGE env var (a Go duration string like "720h"), then
-// to 30 days. Returns an error only if the duration string is malformed.
+// ResolveMaxAgeSeconds converts a template's maxAge duration string to seconds for SQL-backed
+// memoization cache entries. If maxAge is empty, it falls back to the DEFAULT_MAX_AGE env var
+// (a Go duration string like "720h"), then to 30 days. Returns an error only if the duration
+// string is malformed.
 func ResolveMaxAgeSeconds(maxAge string) (int64, error) {
 	if maxAge == "" {
 		resolvedDefaultMaxAge.once.Do(func() {
@@ -63,10 +64,9 @@ func ResolveMaxAgeSeconds(maxAge string) (int64, error) {
 
 type MemoizationCache interface {
 	Load(ctx context.Context, key string) (*Entry, error)
-	// Save stores the outputs of a completed memoized node. maxAgeSeconds is the number of seconds
-	// after which this entry expires and becomes eligible for garbage collection. Ignored by the
-	// ConfigMap backend.
-	Save(ctx context.Context, key string, nodeID string, value *wfv1.Outputs, maxAgeSeconds int64) error
+	// Save stores the outputs of a completed memoized node. ConfigMap-backed caches ignore maxAge.
+	// SQL-backed caches use maxAge, or DEFAULT_MAX_AGE when maxAge is empty, to compute expires_at.
+	Save(ctx context.Context, key string, nodeID string, value *wfv1.Outputs, maxAge string) error
 }
 
 type Entry struct {
@@ -114,7 +114,7 @@ type Factory interface {
 	GetCache(ctx context.Context, ct Type, namespace, name string) MemoizationCache
 	// SetSessionProxy configures the factory to use database-backed caching with the given
 	// session proxy and table name. Calling this clears any previously created cache instances
-	// so they are recreated against the new backend.
+	// so they are recreated against the SQL backend.
 	SetSessionProxy(sp *sqldb.SessionProxy, tableName string)
 	// ClearSessionProxy removes any SQL backend configuration. If sqlEnabled is true, GetCache
 	// returns nil rather than silently falling back to ConfigMap-based caching (e.g. after a

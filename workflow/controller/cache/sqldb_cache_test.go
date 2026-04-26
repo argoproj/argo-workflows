@@ -26,10 +26,11 @@ const (
 	testDBName     = "cachetest"
 	testDBUser     = "user"
 	testDBPassword = "pass"
-	testTableName  = "memoization_cache"
 	testNamespace  = "default"
 	testCacheName  = "my-cache"
 )
+
+var testTableName = memodb.TableName(nil)
 
 func setupTestPostgres(ctx context.Context, t *testing.T) *sqldb.SessionProxy {
 	t.Helper()
@@ -79,8 +80,7 @@ func setupTestPostgres(ctx context.Context, t *testing.T) *sqldb.SessionProxy {
 	t.Cleanup(func() { _ = sp.Close() })
 
 	memoCfg := &config.MemoizationConfig{
-		DBConfig:  dbCfg,
-		TableName: testTableName,
+		DBConfig: dbCfg,
 	}
 	require.NoError(t, memodb.Migrate(ctx, sp, memodb.ConfigFromConfig(memoCfg)))
 	return sp
@@ -104,7 +104,7 @@ func TestSQLDBCacheSaveAndLoad(t *testing.T) {
 			{Name: "result", Value: wfv1.AnyStringPtr("hello")},
 		},
 	}
-	require.NoError(t, c.Save(ctx, "key1", "node-abc", outputs, 2592000))
+	require.NoError(t, c.Save(ctx, "key1", "node-abc", outputs, "720h"))
 
 	entry, err = c.Load(ctx, "key1")
 	require.NoError(t, err)
@@ -130,7 +130,7 @@ func TestSQLDBCacheInvalidKey(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid cache key")
 
-	err = c.Save(ctx, "invalid key!", "node-1", &wfv1.Outputs{}, 3600)
+	err = c.Save(ctx, "invalid key!", "node-1", &wfv1.Outputs{}, "1h")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid cache key")
 }
@@ -149,7 +149,7 @@ func TestSQLDBCacheOutputsRoundTrip(t *testing.T) {
 			{Name: "p2", Value: wfv1.AnyStringPtr("v2")},
 		},
 	}
-	require.NoError(t, c.Save(ctx, "complex-key", "node-x", outputs, 3600))
+	require.NoError(t, c.Save(ctx, "complex-key", "node-x", outputs, "1h"))
 
 	entry, err := c.Load(ctx, "complex-key")
 	require.NoError(t, err)
@@ -159,15 +159,6 @@ func TestSQLDBCacheOutputsRoundTrip(t *testing.T) {
 	originalJSON, _ := json.Marshal(outputs)
 	loadedJSON, _ := json.Marshal(entry.Outputs)
 	assert.JSONEq(t, string(originalJSON), string(loadedJSON))
-}
-
-func TestSQLDBCacheInvalidTableName(t *testing.T) {
-	ctx := logging.TestContext(t.Context())
-	sp := setupTestPostgres(ctx, t)
-	_ = ctx
-
-	_, err := newSQLDBCache(testNamespace, testCacheName, sp, "invalid-table!")
-	require.Error(t, err)
 }
 
 func TestSQLDBCacheGetOutputsWithMaxAge(t *testing.T) {
@@ -182,7 +173,7 @@ func TestSQLDBCacheGetOutputsWithMaxAge(t *testing.T) {
 			{Name: "result", Value: wfv1.AnyStringPtr("cached")},
 		},
 	}
-	require.NoError(t, c.Save(ctx, "ttl-key", "node-ttl", outputs, 3600))
+	require.NoError(t, c.Save(ctx, "ttl-key", "node-ttl", outputs, "1h"))
 
 	entry, err := c.Load(ctx, "ttl-key")
 	require.NoError(t, err)
@@ -211,7 +202,7 @@ func TestSQLDBCacheUpsertRefreshesCreatedAt(t *testing.T) {
 			{Name: "result", Value: wfv1.AnyStringPtr("v1")},
 		},
 	}
-	require.NoError(t, c.Save(ctx, "upsert-key", "node-1", outputs, 3600))
+	require.NoError(t, c.Save(ctx, "upsert-key", "node-1", outputs, "1h"))
 
 	entry1, err := c.Load(ctx, "upsert-key")
 	require.NoError(t, err)
@@ -227,7 +218,7 @@ func TestSQLDBCacheUpsertRefreshesCreatedAt(t *testing.T) {
 			{Name: "result", Value: wfv1.AnyStringPtr("v2")},
 		},
 	}
-	require.NoError(t, c.Save(ctx, "upsert-key", "node-2", outputs2, 3600))
+	require.NoError(t, c.Save(ctx, "upsert-key", "node-2", outputs2, "1h"))
 
 	entry2, err := c.Load(ctx, "upsert-key")
 	require.NoError(t, err)
