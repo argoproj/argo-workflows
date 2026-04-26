@@ -176,7 +176,7 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 							key := fmt.Sprintf("%s.outputs.parameters.%s", prefix, param.Name)
 							stepsCtx.scope.addParamToScope(key, "")
 						}
-						//register a zero-value placeholder for artifacts
+						// register a zero-value placeholder for artifacts
 						for _, artifact := range tmpl.Outputs.Artifacts {
 							key := fmt.Sprintf("%s.outputs.artifacts.%s", prefix, artifact.Name)
 							stepsCtx.scope.addArtifactToScope(key, wfv1.Artifact{})
