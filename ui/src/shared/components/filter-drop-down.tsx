@@ -18,10 +18,10 @@ export function FilterDropDown(props: FilterDropDownProps) {
     return (
         <DropDown
             isMenu={true}
-            anchor={opened => (
+            anchor={() => (
                 <div className={classNames('top-bar__filter')} title='Filter'>
                     <i className='argo-icon-filter' aria-hidden='true' />
-                    <i className={`fa ${opened ? 'fa-angle-up' : 'fa-angle-down'}`} aria-hidden='true' />
+                    <i className='fa fa-angle-down' aria-hidden='true' />
                 </div>
             )}>
             <ul>
