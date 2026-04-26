@@ -43,6 +43,18 @@ data:
       passwordSecret:
         name: argo-postgres-config
         key: password
+  memoization: |
+    postgresql:
+      host: postgres
+      port: 5432
+      database: postgres
+      tableName: cache_entries
+      userNameSecret:
+        name: argo-postgres-config
+        key: username
+      passwordSecret:
+        name: argo-postgres-config
+        key: password
   retentionPolicy: |
     completed: 10
     failed: 3

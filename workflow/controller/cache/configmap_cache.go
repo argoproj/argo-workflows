@@ -132,7 +132,7 @@ func (c *configMapCache) load(ctx context.Context, key string) (*Entry, error) {
 	return &entry, nil
 }
 
-func (c *configMapCache) Save(ctx context.Context, key string, nodeID string, value *wfv1.Outputs) error {
+func (c *configMapCache) Save(ctx context.Context, key string, nodeID string, value *wfv1.Outputs, _ string) error {
 	err := retry.OnError(kwait.Backoff{
 		Duration: time.Second,
 		Factor:   2,
