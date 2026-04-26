@@ -216,6 +216,10 @@ func (w *archivedWorkflowServer) ResubmitArchivedWorkflow(ctx context.Context, r
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
 
+	if wf.Spec.DisableResubmit {
+		return nil, status.Errorf(codes.FailedPrecondition, "resubmit is disabled for workflow %s", wf.Name)
+	}
+
 	newWF, err := util.FormulateResubmitWorkflow(ctx, wf, req.Memoized, req.Parameters)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
@@ -245,6 +249,11 @@ func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req 
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
+
+	if wf.Spec.DisableRetry {
+		return nil, status.Errorf(codes.FailedPrecondition, "retry is disabled for workflow %s", wf.Name)
+	}
+
 	oriUID := wf.UID
 
 	_, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Get(ctx, wf.Name, metav1.GetOptions{})
