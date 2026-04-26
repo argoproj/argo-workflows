@@ -1207,12 +1207,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (bool, error) 
 							} else if nodeTmpl != nil && nodeTmpl.Memoize != nil {
 								maxAge = nodeTmpl.Memoize.MaxAge
 							}
-							maxAgeSeconds, maxAgeErr := controllercache.ResolveMaxAgeSeconds(maxAge)
-							if maxAgeErr != nil {
-								woc.log.WithFields(logging.Fields{"nodeID": newState.ID}).WithError(maxAgeErr).Error(ctx, "Failed to resolve maxAge for cache save")
-								newState.Phase = wfv1.NodeError
-								newState.Message = maxAgeErr.Error()
-							} else if err := c.Save(ctx, newState.MemoizationStatus.Key, newState.ID, newState.Outputs, maxAgeSeconds); err != nil {
+							if err := c.Save(ctx, newState.MemoizationStatus.Key, newState.ID, newState.Outputs, maxAge); err != nil {
 								woc.log.WithFields(logging.Fields{"nodeID": newState.ID}).WithError(err).Error(ctx, "Failed to save node outputs to cache")
 								newState.Phase = wfv1.NodeError
 								newState.Message = err.Error()

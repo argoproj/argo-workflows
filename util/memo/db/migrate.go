@@ -2,21 +2,17 @@ package db
 
 import (
 	"context"
-	"fmt"
-	"regexp"
 
 	"github.com/upper/db/v4"
 
 	"github.com/argoproj/argo-workflows/v4/util/sqldb"
 )
 
-var validTableName = regexp.MustCompile(`^[A-Za-z0-9_]+$`)
-
 func migrate(ctx context.Context, session db.Session, dbType sqldb.DBType, tableName string) error {
-	if !validTableName.MatchString(tableName) {
-		return fmt.Errorf("invalid table name %q: must match [A-Za-z0-9_]+", tableName)
+	if err := validateTableName(tableName); err != nil {
+		return err
 	}
-	return sqldb.Migrate(ctx, session, dbType, versionTable, []sqldb.Change{
+	return sqldb.Migrate(ctx, session, dbType, memoizationVersionTableName(tableName), []sqldb.Change{
 		// MySQL: use LONGTEXT for outputs (TEXT is 64KB).
 		// Postgres: use text for outputs (no size limit).
 		// Varchar sizes chosen to keep composite PK within InnoDB's 3072-byte limit with utf8mb4:
@@ -42,6 +38,6 @@ func migrate(ctx context.Context, session db.Session, dbType sqldb.DBType, table
 				"expires_at       timestamp    not null, " +
 				"primary key (namespace, cache_name, cache_key))"),
 		}),
-		sqldb.AnsiSQLChange(`create index imemo_expires_at on ` + tableName + ` (expires_at)`),
+		sqldb.AnsiSQLChange(`create index ` + memoizationExpiresAtIndexName(tableName) + ` on ` + tableName + ` (expires_at)`),
 	})
 }

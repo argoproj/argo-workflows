@@ -15,7 +15,6 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
-	controllercache "github.com/argoproj/argo-workflows/v4/workflow/controller/cache"
 )
 
 func (woc *wfOperationCtx) mergePatchTaskSet(ctx context.Context, patch any, subresources ...string) error {
@@ -165,10 +164,7 @@ func (woc *wfOperationCtx) reconcileTaskSet(ctx context.Context) error {
 					} else if nodeTmpl != nil && nodeTmpl.Memoize != nil {
 						maxAge = nodeTmpl.Memoize.MaxAge
 					}
-					maxAgeSeconds, maxAgeErr := controllercache.ResolveMaxAgeSeconds(maxAge)
-					if maxAgeErr != nil {
-						woc.log.WithFields(logging.Fields{"nodeID": node.ID}).WithError(maxAgeErr).Error(ctx, "Failed to resolve maxAge for cache save")
-					} else if err := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs, maxAgeSeconds); err != nil {
+					if err := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs, maxAge); err != nil {
 						woc.log.WithFields(logging.Fields{"nodeID": node.ID}).WithError(err).Error(ctx, "Failed to save node outputs to cache")
 					}
 				}

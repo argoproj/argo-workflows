@@ -362,7 +362,7 @@ type SyncConfig struct {
 type MemoizationConfig struct {
 	DBConfig
 	// TableName is the name of the table to use for memoization cache entries.
-	// Defaults to "memoization_cache" if not set.
+	// Defaults to "cache_entries" if not set.
 	TableName string `json:"tableName,omitempty"`
 	// SkipMigration skips automatic database migration on startup.
 	SkipMigration bool `json:"skipMigration,omitempty"`
