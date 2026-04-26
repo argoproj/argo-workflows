@@ -512,6 +512,35 @@ func (s *FunctionalSuite) TestDAGSkippedOutputRef() {
 		})
 }
 
+// TestStepsSkippedOutputRef tests that output references to skipped steps resolve to empty strings
+// rather than causing an unresolvable reference error. NodeOmitted is not exercised here because
+// that phase arises in DAG templates, not steps; the fix covers both phases in the same code path.
+func (s *FunctionalSuite) TestStepsSkippedOutputRef() {
+	s.Given().
+		Workflow("@functional/steps-skipped-output-ref.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			nodeJob1 := status.Nodes.FindByDisplayName("job1")
+			if assert.NotNil(t, nodeJob1) {
+				assert.Equal(t, wfv1.NodeSucceeded, nodeJob1.Phase)
+			}
+			// job2 is skipped because job1 succeeded (not failed)
+			nodeJob2 := status.Nodes.FindByDisplayName("job2")
+			if assert.NotNil(t, nodeJob2) {
+				assert.Equal(t, wfv1.NodeSkipped, nodeJob2.Phase)
+			}
+			// job2-error-handler runs: job2 output resolves to "" so "" != "SUCCESS" is true
+			nodeHandler := status.Nodes.FindByDisplayName("job2-error-handler")
+			if assert.NotNil(t, nodeHandler) {
+				assert.Equal(t, wfv1.NodeSucceeded, nodeHandler.Phase)
+			}
+		})
+}
+
 func (s *FunctionalSuite) TestStepsWhenExprFilter() {
 	s.Given().
 		Workflow("@functional/steps-when-expr-filter.yaml").
