@@ -271,6 +271,7 @@ Which variables are in scope for each template type. `•` = in scope, blank = n
 | after-loop           | Every child of a withItems/withParam group has completed; aggregated outputs appear.                                                          |
 | exit-handler         | The onExit template runs. workflow.{status,failures,duration} are final. Any earlier-phase variable is also visible here (scope accumulates). |
 
+
 ### workflow-start (20 variables)
 
 |                 Key                  |  Kind  |  Type  |
