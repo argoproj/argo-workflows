@@ -2021,16 +2021,12 @@ metadata:
   labels:
     foo: 1
 spec:
-  arguments:
-    parameters:
-      - name: archived-message
-        value: "hello \\u0001F44D"
   entrypoint: run-archie
   templates:
     - name: run-archie
       container:
-        image: quay.io/argoproj/argoexec:latest
-        args: [version]`).
+        image: argoproj/argosay:v2
+        args: [echo, "hello \\u0001F44D"]`).
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeArchived).
@@ -2052,8 +2048,9 @@ spec:
   templates:
     - name: run-jughead
       container:
-        image: quay.io/argoproj/argoexec:latest
-        args: [not-a-real-subcommand]`).
+        image: argoproj/argosay:v2
+        command: [sh, -c]
+        args: ["echo intentional failure; exit 1"]`).
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeArchived).
@@ -2073,8 +2070,7 @@ spec:
   templates:
     - name: run-betty
       container:
-        image: quay.io/argoproj/argoexec:latest
-        args: [version]`).
+        image: argoproj/argosay:v2`).
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeArchived)
@@ -2183,7 +2179,7 @@ spec:
 			Path("$.metadata.name").
 			NotNull()
 		j.
-			Path("$.spec.arguments.parameters[0].value").
+			Path("$.spec.templates[0].container.args[1]").
 			// make sure unicode escape wasn't mangled
 			IsEqual("hello \\u0001F44D")
 		j.
