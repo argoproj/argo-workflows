@@ -3,7 +3,7 @@ package keys
 // workflow.creationTimestamp formatters (strftime).
 var (
 	WorkflowCreationTimestampFmt = global("workflow.creationTimestamp.<fmt>", "string",
-		"strftime-formatted workflow creation time; <fmt> is one of the chars in util/strftime")
+		"strftime-formatted workflow creation time; `<fmt>` is one of the chars in util/strftime")
 	WorkflowCreationTimestampUnix    = global("workflow.creationTimestamp.s", "string", "Workflow creation time as Unix seconds")
 	WorkflowCreationTimestampRFC3339 = global("workflow.creationTimestamp.RFC3339", "string", "Workflow creation time as RFC3339")
 )

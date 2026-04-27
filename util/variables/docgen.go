@@ -101,7 +101,7 @@ func writePhaseLegend(mdoc *md.Markdown) {
 		{string(PhWorkflowStart), "Globals populated once, up front, before any template runs."},
 		{string(PhPreDispatch), "Immediately before a template's pod is created; pod.name / node.name / steps.name / tasks.name are set."},
 		{string(PhDuringExecute), "Inside a template body; inputs.* are bound."},
-		{string(PhInsideLoop), "Inside a withItems/withParam expansion; item, item.<key> are bound."},
+		{string(PhInsideLoop), "Inside a withItems/withParam expansion; `item`, `item.<key>` are bound."},
 		{string(PhInsideRetry), "Inside a retryStrategy template; retries.* are bound."},
 		{string(PhAfterNodeInit), "A referenced node has been initialised (has an ID / phase). Earliest steps.X.id, steps.X.status."},
 		{string(PhAfterPodStart), "The referenced node's pod has started; startedAt, ip, hostNodeName are populated."},
