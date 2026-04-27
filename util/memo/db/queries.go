@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/upper/db/v4"
@@ -79,6 +80,42 @@ func (q *queries) IsEnabled() bool {
 	return true
 }
 
+func cacheRecordCond(record *CacheRecord) db.Cond {
+	return db.Cond{
+		colNamespace: record.Namespace,
+		colCacheName: record.CacheName,
+		colCacheKey:  record.CacheKey,
+	}
+}
+
+func cacheRecordUpdates(record *CacheRecord) map[string]any {
+	return map[string]any{
+		"node_id":    record.NodeID,
+		"outputs":    record.Outputs,
+		"created_at": record.CreatedAt,
+		"expires_at": record.ExpiresAt,
+	}
+}
+
+func isDuplicateKeyError(err error) bool {
+	if err == nil {
+		return false
+	}
+	return strings.Contains(err.Error(), "duplicate key") || strings.Contains(err.Error(), "Duplicate entry")
+}
+
+func saveRecord(sess db.Session, tableName string, record *CacheRecord) error {
+	collection := sess.Collection(tableName)
+	_, err := collection.Insert(record)
+	if err == nil {
+		return nil
+	}
+	if !isDuplicateKeyError(err) {
+		return err
+	}
+	return collection.Find(cacheRecordCond(record)).Update(cacheRecordUpdates(record))
+}
+
 // Load retrieves the outputs for the given cache key.
 // Returns nil when the entry does not exist or has expired.
 func (q *queries) Load(ctx context.Context, namespace, cacheName, cacheKey string) (*CacheRecord, error) {
@@ -128,27 +165,16 @@ func (q *queries) Save(ctx context.Context, namespace, cacheName, cacheKey, node
 	}
 	now := time.Now().UTC()
 	expiresAt := now.Add(time.Duration(maxAgeSeconds) * time.Second)
-	return q.sessionProxy.TxWith(ctx, func(sp *sqldb.SessionProxy) error {
-		return sp.With(ctx, func(tx db.Session) error {
-			_, err := tx.SQL().
-				DeleteFrom(q.tableName).
-				Where(db.Cond{colNamespace: namespace}).
-				And(db.Cond{colCacheName: cacheName}).
-				And(db.Cond{colCacheKey: cacheKey}).
-				Exec()
-			if err != nil {
-				return err
-			}
-			_, err = tx.Collection(q.tableName).Insert(&CacheRecord{
-				Namespace: namespace,
-				CacheName: cacheName,
-				CacheKey:  cacheKey,
-				NodeID:    nodeID,
-				Outputs:   string(outputsJSON),
-				CreatedAt: now,
-				ExpiresAt: expiresAt,
-			})
-			return err
-		})
-	}, nil)
+	record := &CacheRecord{
+		Namespace: namespace,
+		CacheName: cacheName,
+		CacheKey:  cacheKey,
+		NodeID:    nodeID,
+		Outputs:   string(outputsJSON),
+		CreatedAt: now,
+		ExpiresAt: expiresAt,
+	}
+	return q.sessionProxy.With(ctx, func(sess db.Session) error {
+		return saveRecord(sess, q.tableName, record)
+	})
 }

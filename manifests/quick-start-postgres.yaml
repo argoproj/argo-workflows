@@ -192507,11 +192507,11 @@ data:
       scope: workflow-list
       url: http://workflows?label=workflows.argoproj.io/completed=true
   memoization: |
+    tableName: cache_entries
     postgresql:
       host: postgres
       port: 5432
       database: postgres
-      tableName: cache_entries
       userNameSecret:
         name: argo-postgres-config
         key: username
