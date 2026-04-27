@@ -8,11 +8,12 @@ var (
 	WorkflowCreationTimestampRFC3339 = global("workflow.creationTimestamp.RFC3339", "string", "Workflow creation time as RFC3339")
 )
 
-// cron-scheduled workflows
+// WorkflowScheduledTime is the scheduled time for cron-triggered workflows.
 var WorkflowScheduledTime = global("workflow.scheduledTime", "string",
 	"Scheduled time for cron-triggered workflows (from annotation)")
 
-// Alternative whole-parameters JSON form. Legacy code writes both keys.
+// WorkflowParametersJSON is the alternative whole-parameters JSON form.
+// Legacy code writes both this and WorkflowParametersAll.
 var WorkflowParametersJSON = global("workflow.parameters.json", "json",
 	"All workflow parameters as a JSON array (alias for workflow.parameters)")
 

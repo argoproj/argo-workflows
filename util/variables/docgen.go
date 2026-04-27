@@ -44,7 +44,7 @@ func GenerateMarkdown() string {
 	mdoc.PlainText("")
 	writeByPhase(mdoc, all)
 
-	mdoc.Build()
+	_ = mdoc.Build()
 	return buf.String()
 }
 

@@ -19,21 +19,21 @@ var (
 
 func nodeRef(pfx string, inKind v.TemplateKind) NodeRefKeys {
 	applies := []v.TemplateKind{inKind, v.TmplExitHandler}
-	def := func(suffix, typ, desc string, phase v.LifecyclePhase) *v.Key {
+	def := func(suffix, desc string, phase v.LifecyclePhase) *v.Key {
 		return v.Define(v.Spec{
-			Template: pfx + ".<name>" + suffix, Kind: v.KindNodeRef, ValueType: typ,
+			Template: pfx + ".<name>" + suffix, Kind: v.KindNodeRef, ValueType: "string",
 			AppliesTo: applies, Phases: []v.LifecyclePhase{phase}, Description: desc,
 		})
 	}
 	return NodeRefKeys{
-		ID:            def(".id", "string", "Node ID", v.PhAfterNodeInit),
-		Status:        def(".status", "string", "Node phase", v.PhAfterNodeInit),
-		StartedAt:     def(".startedAt", "string", "RFC3339 start time", v.PhAfterPodStart),
-		IP:            def(".ip", "string", "Pod IP", v.PhAfterPodStart),
-		HostNodeName:  def(".hostNodeName", "string", "Underlying k8s node name", v.PhAfterPodStart),
-		FinishedAt:    def(".finishedAt", "string", "RFC3339 finish time", v.PhAfterNodeComplete),
-		ExitCode:      def(".exitCode", "string", "Container exit code", v.PhAfterNodeComplete),
-		OutputsResult: def(".outputs.result", "string", "Captured stdout (non-loop nodes)", v.PhAfterNodeSucceeded),
+		ID:            def(".id", "Node ID", v.PhAfterNodeInit),
+		Status:        def(".status", "Node phase", v.PhAfterNodeInit),
+		StartedAt:     def(".startedAt", "RFC3339 start time", v.PhAfterPodStart),
+		IP:            def(".ip", "Pod IP", v.PhAfterPodStart),
+		HostNodeName:  def(".hostNodeName", "Underlying k8s node name", v.PhAfterPodStart),
+		FinishedAt:    def(".finishedAt", "RFC3339 finish time", v.PhAfterNodeComplete),
+		ExitCode:      def(".exitCode", "Container exit code", v.PhAfterNodeComplete),
+		OutputsResult: def(".outputs.result", "Captured stdout (non-loop nodes)", v.PhAfterNodeSucceeded),
 		OutputsParameterByName: v.Define(v.Spec{
 			Template: pfx + ".<name>.outputs.parameters.<p>", Kind: v.KindNodeRef, ValueType: "string",
 			AppliesTo: applies, Phases: []v.LifecyclePhase{v.PhAfterNodeSucceeded},

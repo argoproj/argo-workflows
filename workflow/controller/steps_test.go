@@ -265,7 +265,7 @@ func TestResourceDurationMetricDefaultMetricScope(t *testing.T) {
 	wf := wfv1.Workflow{Status: wfv1.WorkflowStatus{StartedAt: metav1.NewTime(time.Now())}}
 	woc := wfOperationCtx{
 		scope: variables.NewScope(),
-		wf:           &wf,
+		wf:    &wf,
 	}
 
 	localScope, realTimeScope := woc.prepareDefaultMetricScope()
@@ -285,7 +285,7 @@ func TestRealTimeWorkflowDurationBeforeStartedAt(t *testing.T) {
 	wf := wfv1.Workflow{}
 	woc := wfOperationCtx{
 		scope: variables.NewScope(),
-		wf:           &wf,
+		wf:    &wf,
 	}
 
 	_, realTimeScope := woc.prepareDefaultMetricScope()
