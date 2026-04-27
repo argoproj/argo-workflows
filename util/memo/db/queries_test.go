@@ -32,13 +32,6 @@ const (
 
 var testTableName = memodb.TableName(nil)
 
-func newQueries(t *testing.T) *memodb.Queries {
-	t.Helper()
-	q, err := memodb.NewQueries(testTableName)
-	require.NoError(t, err)
-	return q
-}
-
 // setupPostgres starts a throwaway Postgres container and returns a migrated SessionProxy.
 func setupPostgres(ctx context.Context, t *testing.T) *sqldb.SessionProxy {
 	t.Helper()
@@ -144,6 +137,13 @@ func setupMySQL(ctx context.Context, t *testing.T) *sqldb.SessionProxy {
 	return sp
 }
 
+func newQueries(t *testing.T, sp *sqldb.SessionProxy) memodb.MemoizationDB {
+	t.Helper()
+	q, err := memodb.NewQueries(testTableName, sp)
+	require.NoError(t, err)
+	return q
+}
+
 func sampleOutputs(message string) *wfv1.Outputs {
 	return &wfv1.Outputs{
 		Parameters: []wfv1.Parameter{
@@ -155,16 +155,16 @@ func sampleOutputs(message string) *wfv1.Outputs {
 func TestQueriesSaveAndLoad(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	sp := setupPostgres(ctx, t)
-	q := newQueries(t)
+	q := newQueries(t, sp)
 
 	// Load returns nil when no entry exists.
-	rec, err := q.Load(ctx, sp, testNamespace, testCacheName, "key1")
+	rec, err := q.Load(ctx, testNamespace, testCacheName, "key1")
 	require.NoError(t, err)
 	assert.Nil(t, rec, "expected nil for missing key")
 
 	// Save an entry and load it back.
-	require.NoError(t, q.Save(ctx, sp, testNamespace, testCacheName, "key1", "node-abc", sampleOutputs("hello"), 2592000))
-	rec, err = q.Load(ctx, sp, testNamespace, testCacheName, "key1")
+	require.NoError(t, q.Save(ctx, testNamespace, testCacheName, "key1", "node-abc", sampleOutputs("hello"), 2592000))
+	rec, err = q.Load(ctx, testNamespace, testCacheName, "key1")
 	require.NoError(t, err)
 	require.NotNil(t, rec)
 	assert.Equal(t, "node-abc", rec.NodeID)
@@ -174,20 +174,20 @@ func TestQueriesSaveAndLoad(t *testing.T) {
 func TestQueriesNamespaceIsolation(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	sp := setupPostgres(ctx, t)
-	q := newQueries(t)
+	q := newQueries(t, sp)
 
 	// Save the same cache_name+cache key in two different namespaces.
-	require.NoError(t, q.Save(ctx, sp, "ns-a", testCacheName, "shared-key", "node-a", sampleOutputs("from-a"), 2592000))
-	require.NoError(t, q.Save(ctx, sp, "ns-b", testCacheName, "shared-key", "node-b", sampleOutputs("from-b"), 2592000))
+	require.NoError(t, q.Save(ctx, "ns-a", testCacheName, "shared-key", "node-a", sampleOutputs("from-a"), 2592000))
+	require.NoError(t, q.Save(ctx, "ns-b", testCacheName, "shared-key", "node-b", sampleOutputs("from-b"), 2592000))
 
 	// Each namespace should see its own entry.
-	recA, err := q.Load(ctx, sp, "ns-a", testCacheName, "shared-key")
+	recA, err := q.Load(ctx, "ns-a", testCacheName, "shared-key")
 	require.NoError(t, err)
 	require.NotNil(t, recA)
 	assert.Equal(t, "node-a", recA.NodeID)
 	assert.Contains(t, recA.Outputs, "from-a")
 
-	recB, err := q.Load(ctx, sp, "ns-b", testCacheName, "shared-key")
+	recB, err := q.Load(ctx, "ns-b", testCacheName, "shared-key")
 	require.NoError(t, err)
 	require.NotNil(t, recB)
 	assert.Equal(t, "node-b", recB.NodeID)
@@ -197,12 +197,12 @@ func TestQueriesNamespaceIsolation(t *testing.T) {
 func TestQueriesSaveReplaces(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	sp := setupPostgres(ctx, t)
-	q := newQueries(t)
+	q := newQueries(t, sp)
 
-	require.NoError(t, q.Save(ctx, sp, testNamespace, testCacheName, "key3", "node-old", sampleOutputs("old"), 2592000))
-	require.NoError(t, q.Save(ctx, sp, testNamespace, testCacheName, "key3", "node-new", sampleOutputs("new"), 2592000))
+	require.NoError(t, q.Save(ctx, testNamespace, testCacheName, "key3", "node-old", sampleOutputs("old"), 2592000))
+	require.NoError(t, q.Save(ctx, testNamespace, testCacheName, "key3", "node-new", sampleOutputs("new"), 2592000))
 
-	rec, err := q.Load(ctx, sp, testNamespace, testCacheName, "key3")
+	rec, err := q.Load(ctx, testNamespace, testCacheName, "key3")
 	require.NoError(t, err)
 	require.NotNil(t, rec)
 	assert.Equal(t, "node-new", rec.NodeID)
@@ -212,15 +212,15 @@ func TestQueriesSaveReplaces(t *testing.T) {
 func TestQueriesLoadSkipsExpiredEntries(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	sp := setupPostgres(ctx, t)
-	q := newQueries(t)
+	q := newQueries(t, sp)
 
-	require.NoError(t, q.Save(ctx, sp, testNamespace, testCacheName, "expired-key", "node-old", sampleOutputs("old"), 2592000))
+	require.NoError(t, q.Save(ctx, testNamespace, testCacheName, "expired-key", "node-old", sampleOutputs("old"), 2592000))
 
 	_, err := sp.Session().SQL().
 		ExecContext(ctx, `UPDATE `+testTableName+` SET expires_at = $1 WHERE cache_key = $2`, time.Now().Add(-10*time.Second), "expired-key")
 	require.NoError(t, err)
 
-	rec, err := q.Load(ctx, sp, testNamespace, testCacheName, "expired-key")
+	rec, err := q.Load(ctx, testNamespace, testCacheName, "expired-key")
 	require.NoError(t, err)
 	assert.Nil(t, rec, "expired entries should load as a cache miss")
 }
@@ -228,11 +228,11 @@ func TestQueriesLoadSkipsExpiredEntries(t *testing.T) {
 func TestQueriesPruneRemovesOldEntries(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	sp := setupPostgres(ctx, t)
-	q := newQueries(t)
+	q := newQueries(t, sp)
 
 	// Save an entry with a very short max_age (1 second) and one with 30 days.
-	require.NoError(t, q.Save(ctx, sp, testNamespace, testCacheName, "old-key", "node-old", sampleOutputs("old"), 1))
-	require.NoError(t, q.Save(ctx, sp, testNamespace, testCacheName, "new-key", "node-new", sampleOutputs("new"), 2592000))
+	require.NoError(t, q.Save(ctx, testNamespace, testCacheName, "old-key", "node-old", sampleOutputs("old"), 1))
+	require.NoError(t, q.Save(ctx, testNamespace, testCacheName, "new-key", "node-new", sampleOutputs("new"), 2592000))
 
 	// Backdate old-key's expires_at so it is in the past.
 	_, err := sp.Session().SQL().
@@ -240,15 +240,15 @@ func TestQueriesPruneRemovesOldEntries(t *testing.T) {
 	require.NoError(t, err)
 
 	// Prune — old-key should be deleted (expires_at < now), new-key should survive.
-	n, err := q.Prune(ctx, sp)
+	n, err := q.Prune(ctx)
 	require.NoError(t, err)
 	assert.EqualValues(t, 1, n, "expected exactly one row pruned")
 
-	old, err := q.Load(ctx, sp, testNamespace, testCacheName, "old-key")
+	old, err := q.Load(ctx, testNamespace, testCacheName, "old-key")
 	require.NoError(t, err)
 	assert.Nil(t, old, "old entry should have been pruned")
 
-	fresh, err := q.Load(ctx, sp, testNamespace, testCacheName, "new-key")
+	fresh, err := q.Load(ctx, testNamespace, testCacheName, "new-key")
 	require.NoError(t, err)
 	assert.NotNil(t, fresh, "new entry should still exist")
 }
@@ -256,29 +256,29 @@ func TestQueriesPruneRemovesOldEntries(t *testing.T) {
 func TestQueriesPruneKeepsRecentEntries(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	sp := setupPostgres(ctx, t)
-	q := newQueries(t)
+	q := newQueries(t, sp)
 
-	require.NoError(t, q.Save(ctx, sp, testNamespace, testCacheName, "recent", "node-1", sampleOutputs("v1"), 2592000))
+	require.NoError(t, q.Save(ctx, testNamespace, testCacheName, "recent", "node-1", sampleOutputs("v1"), 2592000))
 
 	// All entries are recent — nothing should be pruned.
-	n, err := q.Prune(ctx, sp)
+	n, err := q.Prune(ctx)
 	require.NoError(t, err)
 	assert.EqualValues(t, 0, n, "expected no rows pruned when all entries are fresh")
 }
 
-// MySQL test variants — verify longtext and ON DUPLICATE KEY UPDATE.
+// MySQL test variants — verify longtext and upsert behavior.
 
 func TestMySQLSaveAndLoad(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	sp := setupMySQL(ctx, t)
-	q := newQueries(t)
+	q := newQueries(t, sp)
 
-	rec, err := q.Load(ctx, sp, testNamespace, testCacheName, "key1")
+	rec, err := q.Load(ctx, testNamespace, testCacheName, "key1")
 	require.NoError(t, err)
 	assert.Nil(t, rec, "expected nil for missing key")
 
-	require.NoError(t, q.Save(ctx, sp, testNamespace, testCacheName, "key1", "node-abc", sampleOutputs("hello"), 2592000))
-	rec, err = q.Load(ctx, sp, testNamespace, testCacheName, "key1")
+	require.NoError(t, q.Save(ctx, testNamespace, testCacheName, "key1", "node-abc", sampleOutputs("hello"), 2592000))
+	rec, err = q.Load(ctx, testNamespace, testCacheName, "key1")
 	require.NoError(t, err)
 	require.NotNil(t, rec)
 	assert.Equal(t, "node-abc", rec.NodeID)
@@ -288,12 +288,12 @@ func TestMySQLSaveAndLoad(t *testing.T) {
 func TestMySQLSaveReplaces(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	sp := setupMySQL(ctx, t)
-	q := newQueries(t)
+	q := newQueries(t, sp)
 
-	require.NoError(t, q.Save(ctx, sp, testNamespace, testCacheName, "key3", "node-old", sampleOutputs("old"), 2592000))
-	require.NoError(t, q.Save(ctx, sp, testNamespace, testCacheName, "key3", "node-new", sampleOutputs("new"), 2592000))
+	require.NoError(t, q.Save(ctx, testNamespace, testCacheName, "key3", "node-old", sampleOutputs("old"), 2592000))
+	require.NoError(t, q.Save(ctx, testNamespace, testCacheName, "key3", "node-new", sampleOutputs("new"), 2592000))
 
-	rec, err := q.Load(ctx, sp, testNamespace, testCacheName, "key3")
+	rec, err := q.Load(ctx, testNamespace, testCacheName, "key3")
 	require.NoError(t, err)
 	require.NotNil(t, rec)
 	assert.Equal(t, "node-new", rec.NodeID)
@@ -303,15 +303,15 @@ func TestMySQLSaveReplaces(t *testing.T) {
 func TestMySQLLoadSkipsExpiredEntries(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	sp := setupMySQL(ctx, t)
-	q := newQueries(t)
+	q := newQueries(t, sp)
 
-	require.NoError(t, q.Save(ctx, sp, testNamespace, testCacheName, "expired-key", "node-old", sampleOutputs("old"), 2592000))
+	require.NoError(t, q.Save(ctx, testNamespace, testCacheName, "expired-key", "node-old", sampleOutputs("old"), 2592000))
 
 	_, err := sp.Session().SQL().
 		ExecContext(ctx, "UPDATE "+testTableName+" SET expires_at = ? WHERE cache_key = ?", time.Now().Add(-10*time.Second), "expired-key")
 	require.NoError(t, err)
 
-	rec, err := q.Load(ctx, sp, testNamespace, testCacheName, "expired-key")
+	rec, err := q.Load(ctx, testNamespace, testCacheName, "expired-key")
 	require.NoError(t, err)
 	assert.Nil(t, rec, "expired entries should load as a cache miss")
 }
@@ -319,25 +319,25 @@ func TestMySQLLoadSkipsExpiredEntries(t *testing.T) {
 func TestMySQLPruneRemovesOldEntries(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	sp := setupMySQL(ctx, t)
-	q := newQueries(t)
+	q := newQueries(t, sp)
 
-	require.NoError(t, q.Save(ctx, sp, testNamespace, testCacheName, "old-key", "node-old", sampleOutputs("old"), 1))
-	require.NoError(t, q.Save(ctx, sp, testNamespace, testCacheName, "new-key", "node-new", sampleOutputs("new"), 2592000))
+	require.NoError(t, q.Save(ctx, testNamespace, testCacheName, "old-key", "node-old", sampleOutputs("old"), 1))
+	require.NoError(t, q.Save(ctx, testNamespace, testCacheName, "new-key", "node-new", sampleOutputs("new"), 2592000))
 
 	// Backdate old-key's expires_at so it is in the past.
 	_, err := sp.Session().SQL().
 		ExecContext(ctx, "UPDATE "+testTableName+" SET expires_at = ? WHERE cache_key = ?", time.Now().Add(-10*time.Second), "old-key")
 	require.NoError(t, err)
 
-	n, err := q.Prune(ctx, sp)
+	n, err := q.Prune(ctx)
 	require.NoError(t, err)
 	assert.EqualValues(t, 1, n, "expected exactly one row pruned")
 
-	old, err := q.Load(ctx, sp, testNamespace, testCacheName, "old-key")
+	old, err := q.Load(ctx, testNamespace, testCacheName, "old-key")
 	require.NoError(t, err)
 	assert.Nil(t, old, "old entry should have been pruned")
 
-	fresh, err := q.Load(ctx, sp, testNamespace, testCacheName, "new-key")
+	fresh, err := q.Load(ctx, testNamespace, testCacheName, "new-key")
 	require.NoError(t, err)
 	assert.NotNil(t, fresh, "new entry should still exist")
 }

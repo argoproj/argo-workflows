@@ -6393,11 +6393,7 @@ func TestConfigMapCacheLoadOperateMaxAge(t *testing.T) {
 func TestUnavailableSQLMemoizationBackendTreatsLookupAsCacheMiss(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(workflowCachedMaxAge)
 	ctx := logging.TestContext(t.Context())
-	cancel, controller := newController(ctx, func(wfc *WorkflowController) {
-		wfc.memoLock.Lock()
-		defer wfc.memoLock.Unlock()
-		wfc.memoConfig = &config.MemoizationConfig{}
-	})
+	cancel, controller := newController(ctx)
 	defer cancel()
 
 	_, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.ObjectMeta.Namespace).Create(ctx, wf, metav1.CreateOptions{})

@@ -17,7 +17,7 @@ func TestTableNameDefaultsAndOverrides(t *testing.T) {
 }
 
 func TestNewQueriesRejectsInvalidTableName(t *testing.T) {
-	queries, err := memodb.NewQueries("invalid-table-name")
+	queries, err := memodb.NewQueries("invalid-table-name", nil)
 	require.Error(t, err)
 	assert.Nil(t, queries)
 }

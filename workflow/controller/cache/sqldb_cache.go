@@ -9,34 +9,27 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	memodb "github.com/argoproj/argo-workflows/v4/util/memo/db"
-	"github.com/argoproj/argo-workflows/v4/util/sqldb"
 )
 
 type sqlDBCache struct {
-	namespace    string
-	name         string
-	sessionProxy *sqldb.SessionProxy
-	queries      *memodb.Queries
+	namespace string
+	name      string
+	queries   memodb.MemoizationDB
 }
 
-func newSQLDBCache(namespace, name string, sp *sqldb.SessionProxy, tableName string) (MemoizationCache, error) {
-	queries, err := memodb.NewQueries(tableName)
-	if err != nil {
-		return nil, err
-	}
+func newSQLDBCache(namespace, name string, queries memodb.MemoizationDB) MemoizationCache {
 	return &sqlDBCache{
-		namespace:    namespace,
-		name:         name,
-		sessionProxy: sp,
-		queries:      queries,
-	}, nil
+		namespace: namespace,
+		name:      name,
+		queries:   queries,
+	}
 }
 
 func (c *sqlDBCache) Load(ctx context.Context, key string) (*Entry, error) {
 	if !cacheKeyRegex.MatchString(key) {
 		return nil, fmt.Errorf("invalid cache key: %s", key)
 	}
-	record, err := c.queries.Load(ctx, c.sessionProxy, c.namespace, c.name, key)
+	record, err := c.queries.Load(ctx, c.namespace, c.name, key)
 	if err != nil {
 		return nil, fmt.Errorf("memoization db load failed: %w", err)
 	}
@@ -63,5 +56,5 @@ func (c *sqlDBCache) Save(ctx context.Context, key string, nodeID string, value 
 	if err != nil {
 		return err
 	}
-	return c.queries.Save(ctx, c.sessionProxy, c.namespace, c.name, key, nodeID, value, maxAgeSeconds)
+	return c.queries.Save(ctx, c.namespace, c.name, key, nodeID, value, maxAgeSeconds)
 }

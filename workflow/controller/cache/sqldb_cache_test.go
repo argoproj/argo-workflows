@@ -86,12 +86,18 @@ func setupTestPostgres(ctx context.Context, t *testing.T) *sqldb.SessionProxy {
 	return sp
 }
 
+func newTestSQLDBCache(t *testing.T, sp *sqldb.SessionProxy) MemoizationCache {
+	t.Helper()
+	queries, err := memodb.NewQueries(testTableName, sp)
+	require.NoError(t, err)
+	return newSQLDBCache(testNamespace, testCacheName, queries)
+}
+
 func TestSQLDBCacheSaveAndLoad(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	sp := setupTestPostgres(ctx, t)
 
-	c, err := newSQLDBCache(testNamespace, testCacheName, sp, testTableName)
-	require.NoError(t, err)
+	c := newTestSQLDBCache(t, sp)
 
 	// Load returns nil for missing key.
 	entry, err := c.Load(ctx, "key1")
@@ -122,11 +128,10 @@ func TestSQLDBCacheInvalidKey(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	sp := setupTestPostgres(ctx, t)
 
-	c, err := newSQLDBCache(testNamespace, testCacheName, sp, testTableName)
-	require.NoError(t, err)
+	c := newTestSQLDBCache(t, sp)
 
 	// Keys with invalid characters should be rejected.
-	_, err = c.Load(ctx, "invalid key!")
+	_, err := c.Load(ctx, "invalid key!")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid cache key")
 
@@ -139,8 +144,7 @@ func TestSQLDBCacheOutputsRoundTrip(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	sp := setupTestPostgres(ctx, t)
 
-	c, err := newSQLDBCache(testNamespace, testCacheName, sp, testTableName)
-	require.NoError(t, err)
+	c := newTestSQLDBCache(t, sp)
 
 	// Save complex outputs and verify they round-trip through JSON.
 	outputs := &wfv1.Outputs{
@@ -165,8 +169,7 @@ func TestSQLDBCacheGetOutputsWithMaxAge(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	sp := setupTestPostgres(ctx, t)
 
-	c, err := newSQLDBCache(testNamespace, testCacheName, sp, testTableName)
-	require.NoError(t, err)
+	c := newTestSQLDBCache(t, sp)
 
 	outputs := &wfv1.Outputs{
 		Parameters: []wfv1.Parameter{
@@ -194,8 +197,7 @@ func TestSQLDBCacheUpsertRefreshesCreatedAt(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	sp := setupTestPostgres(ctx, t)
 
-	c, err := newSQLDBCache(testNamespace, testCacheName, sp, testTableName)
-	require.NoError(t, err)
+	c := newTestSQLDBCache(t, sp)
 
 	outputs := &wfv1.Outputs{
 		Parameters: []wfv1.Parameter{
