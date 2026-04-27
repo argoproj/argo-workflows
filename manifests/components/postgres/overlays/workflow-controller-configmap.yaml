@@ -44,11 +44,11 @@ data:
         name: argo-postgres-config
         key: password
   memoization: |
+    tableName: cache_entries
     postgresql:
       host: postgres
       port: 5432
       database: postgres
-      tableName: cache_entries
       userNameSecret:
         name: argo-postgres-config
         key: username

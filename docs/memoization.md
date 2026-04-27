@@ -40,11 +40,11 @@ metadata:
   namespace: argo
 data:
   memoization: |
+    tableName: cache_entries
     postgresql:
       host: postgres
       port: 5432
       database: postgres
-      tableName: cache_entries
       userNameSecret:
         name: argo-postgres-config
         key: username
@@ -53,7 +53,8 @@ data:
         key: password
 ```
 
-SQL-backed memoization stores entries in the configured table. If `tableName` is omitted, it defaults to `cache_entries`.
+SQL-backed memoization stores entries in the configured table. Set `memoization.tableName` to override the default table name; if omitted, it defaults to `cache_entries`.
+The database connection settings remain under `postgresql` or `mysql`.
 
 Each cache entry stores its expiry time when it is written, derived from the template's `maxAge` field. If `maxAge` is not specified on the template, it defaults to 30 days (2592000 seconds). This default can be overridden by setting the `DEFAULT_MAX_AGE` environment variable on the workflow controller for SQL-backed memoization (accepts Go duration strings like `720h` or integer seconds like `2592000`).
 
@@ -63,11 +64,11 @@ MySQL is also supported:
 
 ```yaml
   memoization: |
+    tableName: cache_entries
     mysql:
       host: mysql
       port: 3306
       database: argo
-      tableName: cache_entries
       userNameSecret:
         name: argo-mysql-config
         key: username
@@ -107,7 +108,7 @@ spec:
 |-------|----------|-------------|
 | `key` | Yes | The cache lookup key. |
 | `cache` | Yes | Specifies the cache storage. When using the ConfigMap backend, a ConfigMap is created. When using the SQL backend, `cache.configMap.name` acts as a logical group name in the database — no ConfigMap is created. |
-| `maxAge` | Yes | Maximum age of a cache entry (e.g. `"180s"`, `"24h"`). Entries older than this are treated as misses at lookup time. |
+| `maxAge` | No | Maximum age of a cache entry (e.g. `"180s"`, `"24h"`). Entries older than this are treated as misses at lookup time. When omitted for SQL-backed memoization, it defaults to 30 days or the controller's `DEFAULT_MAX_AGE` setting. |
 
 [Find a simple example for memoization here](https://github.com/argoproj/argo-workflows/blob/main/examples/memoize-simple.yaml).
 
