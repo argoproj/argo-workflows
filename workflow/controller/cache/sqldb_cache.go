@@ -20,7 +20,7 @@ type sqlDBCache struct {
 }
 
 func newSQLDBCache(namespace, name string, sp *sqldb.SessionProxy, tableName string) (MemoizationCache, error) {
-	queries, err := memodb.NewQueries(tableName, sp.DBType())
+	queries, err := memodb.NewQueries(tableName)
 	if err != nil {
 		return nil, err
 	}
