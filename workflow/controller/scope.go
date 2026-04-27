@@ -3,8 +3,6 @@ package controller
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"maps"
 
 	"github.com/expr-lang/expr"
 
@@ -12,57 +10,47 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/expr/env"
 	"github.com/argoproj/argo-workflows/v4/util/template"
+	"github.com/argoproj/argo-workflows/v4/util/variables"
+	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
-// wfScope contains the current scope of variables available when executing a template
+// wfScope contains the current scope of variables available when executing a
+// template. The underlying *variables.Scope has no exported subscript or
+// write helper, so the only way to populate it is via Key.Set — which means
+// the only writable variables are those declared in util/variables/keys.
 type wfScope struct {
 	tmpl  *wfv1.Template
-	scope map[string]any
+	scope *variables.Scope
 }
 
 func createScope(tmpl *wfv1.Template) *wfScope {
 	scope := &wfScope{
 		tmpl:  tmpl,
-		scope: make(map[string]any),
+		scope: variables.NewScope(),
 	}
 	if tmpl != nil {
 		for _, param := range scope.tmpl.Inputs.Parameters {
-			key := fmt.Sprintf("inputs.parameters.%s", param.Name)
-			scope.scope[key] = scope.tmpl.Inputs.GetParameterByName(param.Name).Value.String()
+			val := scope.tmpl.Inputs.GetParameterByName(param.Name).Value.String()
+			varkeys.InputsParameterByName.Set(scope.scope, val, param.Name)
 		}
 		for _, param := range scope.tmpl.Inputs.Artifacts {
-			key := fmt.Sprintf("inputs.artifacts.%s", param.Name)
-			scope.scope[key] = scope.tmpl.Inputs.GetArtifactByName(param.Name)
+			art := scope.tmpl.Inputs.GetArtifactByName(param.Name)
+			varkeys.InputsArtifactByName.Set(scope.scope, art, param.Name)
 		}
 	}
 	return scope
 }
 
-// getParameters returns a map of strings intended to be used simple string substitution
+// getParameters returns a string-only snapshot of the scope, suitable for
+// passing into common.Parameters consumers.
 func (s *wfScope) getParameters() common.Parameters {
-	params := make(common.Parameters)
-	for key, val := range s.scope {
-		valStr, ok := val.(string)
-		if ok {
-			params[key] = valStr
-		}
-	}
-	return params
-}
-
-func (s *wfScope) addParamToScope(key, val string) {
-	s.scope[key] = val
-}
-
-func (s *wfScope) addArtifactToScope(key string, artifact wfv1.Artifact) {
-	s.scope[key] = artifact
+	return common.Parameters(s.scope.AsStringMap())
 }
 
 // resolveVar resolves a parameter or artifact
 func (s *wfScope) resolveVar(v string) (any, error) {
-	m := make(map[string]any)
-	maps.Copy(m, s.scope)
+	m := s.scope.AsAnyMap()
 	if s.tmpl != nil {
 		for _, a := range s.tmpl.Inputs.Artifacts {
 			m["inputs.artifacts."+a.Name] = a // special case for artifacts
@@ -76,7 +64,7 @@ func (s *wfScope) resolveParameter(p *wfv1.ValueFrom) (any, error) {
 		return "", nil
 	}
 	if p.Expression != "" {
-		env := env.GetFuncMap(s.scope)
+		env := env.GetFuncMap(s.scope.AsAnyMap())
 		program, err := expr.Compile(p.Expression, expr.Env(env))
 		if err != nil {
 			return nil, err
@@ -95,7 +83,7 @@ func (s *wfScope) resolveArtifact(ctx context.Context, art *wfv1.Artifact) (*wfv
 	var val any
 
 	if art.FromExpression != "" {
-		envMap := env.GetFuncMap(s.scope)
+		envMap := env.GetFuncMap(s.scope.AsAnyMap())
 		program, compileErr := expr.Compile(art.FromExpression, expr.Env(envMap))
 		if compileErr != nil {
 			return nil, compileErr

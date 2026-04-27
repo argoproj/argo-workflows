@@ -106,7 +106,7 @@ func (woc *wfOperationCtx) processPodSpecPatch(ctx context.Context, tmpl *wfv1.T
 	for _, patch := range toProcess {
 		newTmpl := tmpl.DeepCopy()
 		newTmpl.PodSpecPatch = patch
-		processedTmpl, err := common.ProcessArgs(ctx, newTmpl, &wfv1.Arguments{}, woc.globalParams, localParams, false, woc.wf.Namespace, woc.controller.configMapInformer.GetIndexer())
+		processedTmpl, err := common.ProcessArgs(ctx, newTmpl, &wfv1.Arguments{}, woc.globalParams(), localParams, false, woc.wf.Namespace, woc.controller.configMapInformer.GetIndexer())
 		if err != nil {
 			return nil, errors.Wrap(err, "", "Failed to substitute the PodSpecPatch variables")
 		}
@@ -398,7 +398,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	// Perform one last variable substitution here. Some variables come from the from workflow
 	// configmap (e.g. archive location) or volumes attribute, and were not substituted
 	// in executeTemplate.
-	pod, err = substitutePodParams(ctx, pod, woc.globalParams, tmpl)
+	pod, err = substitutePodParams(ctx, pod, woc.globalParams(), tmpl)
 	if err != nil {
 		return nil, err
 	}

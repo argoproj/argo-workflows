@@ -992,7 +992,7 @@ spec:
 	node := woc.wf.Status.Nodes.FindByDisplayName("hook-failures.hooks.failure")
 	assert.NotNil(t, node)
 	assert.Contains(t,
-		woc.globalParams[common.GlobalVarWorkflowFailures],
+		woc.globalParams()[common.GlobalVarWorkflowFailures],
 		`[{\"displayName\":\"hook-failures\",\"message\":\"Pod failed\",\"templateName\":\"intentional-fail\",\"phase\":\"Failed\",\"podName\":\"hook-failures\"`,
 	)
 	assert.Equal(t, wfv1.NodePending, node.Phase)

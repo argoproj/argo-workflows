@@ -27,15 +27,22 @@ func (s *Scope) set(key string, value any) {
 }
 
 // get is package-private; the only caller is Key.Get.
+// Nil-safe: a zero-value/nil Scope returns (nil, false).
 func (s *Scope) get(key string) (any, bool) {
+	if s == nil {
+		return nil, false
+	}
 	v, ok := s.data[key]
 	return v, ok
 }
 
 // AsAnyMap returns a snapshot of the scope as map[string]any, suitable for
 // passing to expr.Compile / expr.Run. Mutations to the returned map do not
-// affect the Scope.
+// affect the Scope. Nil-safe.
 func (s *Scope) AsAnyMap() map[string]any {
+	if s == nil {
+		return map[string]any{}
+	}
 	out := make(map[string]any, len(s.data))
 	maps.Copy(out, s.data)
 	return out
@@ -43,9 +50,12 @@ func (s *Scope) AsAnyMap() map[string]any {
 
 // AsStringMap returns a snapshot of the string-valued entries. Non-string
 // values are skipped. Intended for bridging into common.Parameters-style
-// APIs that expect map[string]string.
+// APIs that expect map[string]string. Nil-safe.
 func (s *Scope) AsStringMap() map[string]string {
 	out := map[string]string{}
+	if s == nil {
+		return out
+	}
 	for k, v := range s.data {
 		if str, ok := v.(string); ok {
 			out[k] = str
@@ -54,12 +64,20 @@ func (s *Scope) AsStringMap() map[string]string {
 	return out
 }
 
-// Len returns the number of entries currently in the scope.
-func (s *Scope) Len() int { return len(s.data) }
+// Len returns the number of entries currently in the scope. Nil-safe.
+func (s *Scope) Len() int {
+	if s == nil {
+		return 0
+	}
+	return len(s.data)
+}
 
 // Keys returns every concrete key currently in the scope, sorted.
-// Useful for tests and debug dumps.
+// Useful for tests and debug dumps. Nil-safe.
 func (s *Scope) Keys() []string {
+	if s == nil {
+		return nil
+	}
 	out := make([]string, 0, len(s.data))
 	for k := range s.data {
 		out = append(out, k)

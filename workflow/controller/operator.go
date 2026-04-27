@@ -54,6 +54,8 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/secrets"
 	"github.com/argoproj/argo-workflows/v4/util/strftime"
 	"github.com/argoproj/argo-workflows/v4/util/template"
+	"github.com/argoproj/argo-workflows/v4/util/variables"
+	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
 	waitutil "github.com/argoproj/argo-workflows/v4/util/wait"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	controllercache "github.com/argoproj/argo-workflows/v4/workflow/controller/cache"
@@ -81,9 +83,12 @@ type wfOperationCtx struct {
 	controller *WorkflowController
 	// estimate duration
 	estimator estimation.Estimator
-	// globalParams holds any parameters that are available to be referenced
-	// in the global scope (e.g. workflow.parameters.XXX).
-	globalParams common.Parameters
+	// scope holds every variable available at the workflow level (workflow.*).
+	// It is the single source of truth for global parameter state; reads
+	// produce snapshots via AsStringMap()/AsAnyMap(). Writes go through
+	// varkeys.X.Set(woc.scope, ...) — that is the only path, because
+	// *variables.Scope has no exported map subscript.
+	scope *variables.Scope
 	// volumes holds a DeepCopy of wf.Spec.Volumes to perform substitutions.
 	// It is then used in addVolumeReferences() when creating a pod.
 	volumes []apiv1.Volume
@@ -166,7 +171,7 @@ func newWorkflowOperationCtx(ctx context.Context, wf *wfv1.Workflow, wfc *Workfl
 			"namespace": wf.Namespace,
 		}),
 		controller:               wfc,
-		globalParams:             make(map[string]string),
+		scope:                    variables.NewScope(),
 		volumes:                  wf.Spec.DeepCopy().Volumes,
 		deadline:                 time.Now().UTC().Add(maxOperationTime),
 		eventRecorder:            wfc.eventRecorderManager.Get(ctx, wf.Namespace),
@@ -188,6 +193,13 @@ func newWorkflowOperationCtx(ctx context.Context, wf *wfv1.Workflow, wfc *Workfl
 // operate is the main operator logic of a workflow. It evaluates the current state of the workflow,
 // and its pods and decides how to proceed down the execution path.
 // TODO: an error returned by this method should result in requeuing the workflow to be retried at a
+// globalParams returns a snapshot of the workflow-level scope as a
+// common.Parameters map. This is the read path; writes must go through
+// varkeys.X.Set(woc.scope, ...).
+func (woc *wfOperationCtx) globalParams() common.Parameters {
+	return common.Parameters(woc.scope.AsStringMap())
+}
+
 // later time
 // As you must not call `persistUpdates` twice, you must not call `operate` twice.
 func (woc *wfOperationCtx) operate(ctx context.Context) {
@@ -358,7 +370,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		return
 	}
 
-	err = woc.substituteParamsInVolumes(ctx, woc.globalParams)
+	err = woc.substituteParamsInVolumes(ctx, woc.globalParams())
 	if err != nil {
 		woc.log.WithError(err).Error(ctx, "volumes global param substitution error")
 		woc.markWorkflowError(ctx, err)
@@ -416,7 +428,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		wfv1.NodeOmitted:   wfv1.WorkflowSucceeded,
 	}[node.Phase]
 
-	woc.globalParams[common.GlobalVarWorkflowStatus] = string(workflowStatus)
+	varkeys.WorkflowStatus.Set(woc.scope, string(workflowStatus))
 
 	var failures []failedNodeStatus
 	for _, node := range woc.wf.Status.Nodes {
@@ -438,7 +450,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		// No need to return here
 	}
 	// This strconv.Quote is necessary so that the escaped quotes are not removed during parameter substitution
-	woc.globalParams[common.GlobalVarWorkflowFailures] = strconv.Quote(string(failedNodeBytes))
+	varkeys.WorkflowFailures.Set(woc.scope, strconv.Quote(string(failedNodeBytes)))
 
 	hookCompleted, err := woc.executeWfLifeCycleHook(ctx, tmplCtx)
 	if err != nil {
@@ -540,7 +552,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	}
 
 	if woc.execWf.Spec.Metrics != nil {
-		woc.globalParams[common.GlobalVarWorkflowStatus] = string(workflowStatus)
+		varkeys.WorkflowStatus.Set(woc.scope, string(workflowStatus))
 		localScope, realTimeScope := woc.prepareMetricScope(node)
 		woc.computeMetrics(ctx, woc.execWf.Spec.Metrics.Prometheus, localScope, realTimeScope, false)
 	}
@@ -576,7 +588,7 @@ func (woc *wfOperationCtx) updateWorkflowMetadata(ctx context.Context) error {
 				return argoerrors.Errorf(argoerrors.CodeBadRequest, "invalid label value %q for label %q: %s", v, n, strings.Join(errs, ";"))
 			}
 			woc.wf.Labels[n] = v
-			woc.globalParams["workflow.labels."+n] = v
+			varkeys.WorkflowLabelsByName.Set(woc.scope, v, n)
 			updatedParams["workflow.labels."+n] = v
 		}
 		if woc.wf.Annotations == nil {
@@ -584,11 +596,11 @@ func (woc *wfOperationCtx) updateWorkflowMetadata(ctx context.Context) error {
 		}
 		for n, v := range md.Annotations {
 			woc.wf.Annotations[n] = v
-			woc.globalParams["workflow.annotations."+n] = v
+			varkeys.WorkflowAnnotationsByName.Set(woc.scope, v, n)
 			updatedParams["workflow.annotations."+n] = v
 		}
 
-		env := env.GetFuncMap(template.EnvMap(woc.globalParams))
+		env := env.GetFuncMap(template.EnvMap(woc.globalParams()))
 		for n, f := range md.LabelsFrom {
 			program, err := expr.Compile(f.Expression, expr.Env(env))
 			if err != nil {
@@ -606,7 +618,7 @@ func (woc *wfOperationCtx) updateWorkflowMetadata(ctx context.Context) error {
 				return argoerrors.Errorf(argoerrors.CodeBadRequest, "invalid label value %q for label %q and expression %q: %s", v, n, f.Expression, strings.Join(errs, ";"))
 			}
 			woc.wf.Labels[n] = v
-			woc.globalParams["workflow.labels."+n] = v
+			varkeys.WorkflowLabelsByName.Set(woc.scope, v, n)
 			updatedParams["workflow.labels."+n] = v
 		}
 		woc.updated = true
@@ -634,37 +646,39 @@ func (woc *wfOperationCtx) getWorkflowDeadline() *time.Time {
 
 // setGlobalParameters sets the globalParam map with global parameters
 func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Arguments) error {
-	woc.globalParams[common.GlobalVarWorkflowName] = woc.wf.Name
-	woc.globalParams[common.GlobalVarWorkflowNamespace] = woc.wf.Namespace
-	woc.globalParams[common.GlobalVarWorkflowMainEntrypoint] = woc.execWf.Spec.Entrypoint
-	woc.globalParams[common.GlobalVarWorkflowServiceAccountName] = woc.execWf.Spec.ServiceAccountName
-	woc.globalParams[common.GlobalVarWorkflowUID] = string(woc.wf.UID)
-	woc.globalParams[common.GlobalVarWorkflowCreationTimestamp] = woc.wf.CreationTimestamp.Format(time.RFC3339)
+	varkeys.WorkflowName.Set(woc.scope, woc.wf.Name)
+	varkeys.WorkflowNamespace.Set(woc.scope, woc.wf.Namespace)
+	varkeys.WorkflowMainEntrypoint.Set(woc.scope, woc.execWf.Spec.Entrypoint)
+	varkeys.WorkflowServiceAccountName.Set(woc.scope, woc.execWf.Spec.ServiceAccountName)
+	varkeys.WorkflowUID.Set(woc.scope, string(woc.wf.UID))
+	varkeys.WorkflowCreationTimestamp.Set(woc.scope, woc.wf.CreationTimestamp.Format(time.RFC3339))
 	if annotation := woc.wf.GetAnnotations(); annotation != nil {
 		val, ok := annotation[common.AnnotationKeyCronWfScheduledTime]
 		if ok {
-			woc.globalParams[common.GlobalVarWorkflowCronScheduleTime] = val
+			varkeys.WorkflowScheduledTime.Set(woc.scope, val)
 		}
 	}
 
 	if woc.execWf.Spec.Priority != nil {
-		woc.globalParams[common.GlobalVarWorkflowPriority] = strconv.Itoa(int(*woc.execWf.Spec.Priority))
+		varkeys.WorkflowPriority.Set(woc.scope, strconv.Itoa(int(*woc.execWf.Spec.Priority)))
 	}
 	for char := range strftime.FormatChars {
-		cTimeVar := fmt.Sprintf("%s.%s", common.GlobalVarWorkflowCreationTimestamp, string(char))
-		woc.globalParams[cTimeVar] = strftime.Format("%"+string(char), woc.wf.CreationTimestamp.Time)
+		varkeys.WorkflowCreationTimestampFmt.Set(woc.scope,
+			strftime.Format("%"+string(char), woc.wf.CreationTimestamp.Time), string(char))
 	}
-	woc.globalParams[common.GlobalVarWorkflowCreationTimestamp+".s"] = strconv.FormatInt(woc.wf.CreationTimestamp.Unix(), 10)
-	woc.globalParams[common.GlobalVarWorkflowCreationTimestamp+".RFC3339"] = woc.wf.CreationTimestamp.Format(time.RFC3339)
+	varkeys.WorkflowCreationTimestampUnix.Set(woc.scope,
+		strconv.FormatInt(woc.wf.CreationTimestamp.Unix(), 10))
+	varkeys.WorkflowCreationTimestampRFC3339.Set(woc.scope,
+		woc.wf.CreationTimestamp.Format(time.RFC3339))
 
 	if workflowParameters, err := json.Marshal(woc.execWf.Spec.Arguments.Parameters); err == nil {
-		woc.globalParams[common.GlobalVarWorkflowParameters] = string(workflowParameters)
-		woc.globalParams[common.GlobalVarWorkflowParametersJSON] = string(workflowParameters)
+		varkeys.WorkflowParametersAll.Set(woc.scope, string(workflowParameters))
+		varkeys.WorkflowParametersJSON.Set(woc.scope, string(workflowParameters))
 	}
 	for _, param := range executionParameters.Parameters {
 		switch {
 		case param.Value != nil:
-			woc.globalParams["workflow.parameters."+param.Name] = param.Value.String()
+			varkeys.WorkflowParametersByName.Set(woc.scope, param.Value.String(), param.Name)
 		case param.ValueFrom != nil && param.ValueFrom.ConfigMapKeyRef != nil:
 			cmValue, err := common.GetConfigMapValue(woc.controller.configMapInformer.GetIndexer(), woc.wf.Namespace, param.ValueFrom.ConfigMapKeyRef.Name, param.ValueFrom.ConfigMapKeyRef.Key)
 			if err != nil {
@@ -672,9 +686,9 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 					return fmt.Errorf("failed to set global parameter %s from configmap with name %s and key %s: %w",
 						param.Name, param.ValueFrom.ConfigMapKeyRef.Name, param.ValueFrom.ConfigMapKeyRef.Key, err)
 				}
-				woc.globalParams["workflow.parameters."+param.Name] = param.ValueFrom.Default.String()
+				varkeys.WorkflowParametersByName.Set(woc.scope, param.ValueFrom.Default.String(), param.Name)
 			} else {
-				woc.globalParams["workflow.parameters."+param.Name] = cmValue
+				varkeys.WorkflowParametersByName.Set(woc.scope, cmValue, param.Name)
 			}
 		default:
 			return fmt.Errorf("either value or valueFrom must be specified in order to set global parameter %s", param.Name)
@@ -683,7 +697,7 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 	if woc.wf.Status.Outputs != nil {
 		for _, param := range woc.wf.Status.Outputs.Parameters {
 			if param.HasValue() {
-				woc.globalParams["workflow.outputs.parameters."+param.Name] = param.GetValue()
+				varkeys.WorkflowOutputsParameterByName.Set(woc.scope, param.GetValue(), param.Name)
 			}
 		}
 	}
@@ -698,25 +712,25 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 	md := woc.execWf.Spec.WorkflowMetadata
 
 	if workflowAnnotations, err := json.Marshal(woc.wf.Annotations); err == nil {
-		woc.globalParams[common.GlobalVarWorkflowAnnotations] = string(workflowAnnotations)
-		woc.globalParams[common.GlobalVarWorkflowAnnotationsJSON] = string(workflowAnnotations)
+		varkeys.WorkflowAnnotationsAll.Set(woc.scope, string(workflowAnnotations))
+		varkeys.WorkflowAnnotationsJSON.Set(woc.scope, string(workflowAnnotations))
 	}
 	for k, v := range woc.wf.Annotations {
-		woc.globalParams["workflow.annotations."+k] = v
+		varkeys.WorkflowAnnotationsByName.Set(woc.scope, v, k)
 	}
 	if workflowLabels, err := json.Marshal(woc.wf.Labels); err == nil {
-		woc.globalParams[common.GlobalVarWorkflowLabels] = string(workflowLabels)
-		woc.globalParams[common.GlobalVarWorkflowLabelsJSON] = string(workflowLabels)
+		varkeys.WorkflowLabelsAll.Set(woc.scope, string(workflowLabels))
+		varkeys.WorkflowLabelsJSON.Set(woc.scope, string(workflowLabels))
 	}
 	for k, v := range woc.wf.Labels {
 		// if the Label will get overridden by a LabelsFrom expression later, don't set it now
 		if md != nil {
 			_, existsLabelsFrom := md.LabelsFrom[k]
 			if !existsLabelsFrom {
-				woc.globalParams["workflow.labels."+k] = v
+				varkeys.WorkflowLabelsByName.Set(woc.scope, v, k)
 			}
 		} else {
-			woc.globalParams["workflow.labels."+k] = v
+			varkeys.WorkflowLabelsByName.Set(woc.scope, v, k)
 		}
 	}
 
@@ -725,11 +739,11 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 			// if the Label will get overridden by a LabelsFrom expression later, don't set it now
 			_, existsLabelsFrom := md.LabelsFrom[n]
 			if !existsLabelsFrom {
-				woc.globalParams["workflow.labels."+n] = v
+				varkeys.WorkflowLabelsByName.Set(woc.scope, v, n)
 			}
 		}
 		for n, v := range md.Annotations {
-			woc.globalParams["workflow.annotations."+n] = v
+			varkeys.WorkflowAnnotationsByName.Set(woc.scope, v, n)
 		}
 	}
 
@@ -2144,7 +2158,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	localParams["node.name"] = nodeName
 
 	// Inputs has been processed with arguments already, so pass empty arguments.
-	processedTmpl, err := common.ProcessArgs(ctx, resolvedTmpl, &args, woc.globalParams, localParams, false, woc.wf.Namespace, woc.controller.configMapInformer.GetIndexer())
+	processedTmpl, err := common.ProcessArgs(ctx, resolvedTmpl, &args, woc.globalParams(), localParams, false, woc.wf.Namespace, woc.controller.configMapInformer.GetIndexer())
 	if err != nil {
 		errNode := woc.initializeNodeOrMarkError(ctx, node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err)
 		return errNode, err
@@ -2402,7 +2416,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		localParams[common.LocalVarRetriesLastDuration] = lastRetryDuration
 		localParams[common.LocalVarRetriesLastStatus] = lastRetryStatus
 		localParams[common.LocalVarRetriesLastMessage] = lastRetryMessage
-		processedTmpl, err = common.SubstituteParams(ctx, processedTmpl, woc.globalParams, localParams)
+		processedTmpl, err = common.SubstituteParams(ctx, processedTmpl, woc.globalParams(), localParams)
 		if errorsutil.IsTransientErr(ctx, err) {
 			return node, err
 		}
@@ -2667,7 +2681,7 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 	case wfv1.WorkflowSucceeded, wfv1.WorkflowFailed, wfv1.WorkflowError:
 		woc.log.Info(ctx, "Marking workflow completed")
 		woc.wf.Status.FinishedAt = metav1.Time{Time: time.Now().UTC()}
-		woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", woc.workflowDurationSeconds())
+		varkeys.WorkflowDuration.Set(woc.scope, fmt.Sprintf("%f", woc.workflowDurationSeconds()))
 		if woc.wf.Labels == nil {
 			woc.wf.Labels = make(map[string]string)
 		}
@@ -3464,7 +3478,7 @@ func (woc *wfOperationCtx) requeueIfTransientErr(ctx context.Context, err error,
 
 // buildLocalScope adds all of a nodes outputs to the local scope with the given prefix, as well
 // as the global scope, if specified with a globalName
-func (woc *wfOperationCtx) buildLocalScope(scope *wfScope, prefix string, node *wfv1.NodeStatus) {
+func (woc *wfOperationCtx) buildLocalScope(scope *wfScope, ref varkeys.NodeRefKeys, name string, node *wfv1.NodeStatus) {
 	// It may be that the node is a retry node, in which case we want to get the outputs of the last node
 	// in the retry group instead of the retry node itself.
 	if lastChildNode := woc.possiblyGetRetryChildNode(node); lastChildNode != nil {
@@ -3472,52 +3486,64 @@ func (woc *wfOperationCtx) buildLocalScope(scope *wfScope, prefix string, node *
 	}
 
 	if node.ID != "" {
-		key := fmt.Sprintf("%s.id", prefix)
-		scope.addParamToScope(key, node.ID)
+		ref.ID.Set(scope.scope, node.ID, name)
 	}
 
 	if !node.StartedAt.Time.IsZero() {
-		key := fmt.Sprintf("%s.startedAt", prefix)
-		scope.addParamToScope(key, node.StartedAt.Format(time.RFC3339))
+		ref.StartedAt.Set(scope.scope, node.StartedAt.Format(time.RFC3339), name)
 	}
 
 	if !node.FinishedAt.Time.IsZero() {
-		key := fmt.Sprintf("%s.finishedAt", prefix)
-		scope.addParamToScope(key, node.FinishedAt.Format(time.RFC3339))
+		ref.FinishedAt.Set(scope.scope, node.FinishedAt.Format(time.RFC3339), name)
 	}
 
 	if node.PodIP != "" {
-		key := fmt.Sprintf("%s.ip", prefix)
-		scope.addParamToScope(key, node.PodIP)
+		ref.IP.Set(scope.scope, node.PodIP, name)
 	}
 	if node.Phase != "" {
-		key := fmt.Sprintf("%s.status", prefix)
-		scope.addParamToScope(key, string(node.Phase))
+		ref.Status.Set(scope.scope, string(node.Phase), name)
 	}
 	if node.HostNodeName != "" {
-		key := fmt.Sprintf("%s.hostNodeName", prefix)
-		scope.addParamToScope(key, node.HostNodeName)
+		ref.HostNodeName.Set(scope.scope, node.HostNodeName, name)
 	}
-	woc.addOutputsToLocalScope(prefix, node.Outputs, scope)
+	woc.addNodeOutputsToLocalScope(ref, name, node.Outputs, scope)
 }
 
-func (woc *wfOperationCtx) addOutputsToLocalScope(prefix string, outputs *wfv1.Outputs, scope *wfScope) {
+func (woc *wfOperationCtx) addNodeOutputsToLocalScope(ref varkeys.NodeRefKeys, name string, outputs *wfv1.Outputs, scope *wfScope) {
 	if outputs == nil || scope == nil {
 		return
 	}
-	if prefix != "workflow" && outputs.Result != nil {
-		scope.addParamToScope(fmt.Sprintf("%s.outputs.result", prefix), *outputs.Result)
+	if outputs.Result != nil {
+		ref.OutputsResult.Set(scope.scope, *outputs.Result, name)
 	}
-	if prefix != "workflow" && outputs.ExitCode != nil {
-		scope.addParamToScope(fmt.Sprintf("%s.exitCode", prefix), *outputs.ExitCode)
+	if outputs.ExitCode != nil {
+		ref.ExitCode.Set(scope.scope, *outputs.ExitCode, name)
 	}
 	for _, param := range outputs.Parameters {
 		if param.Value != nil {
-			scope.addParamToScope(fmt.Sprintf("%s.outputs.parameters.%s", prefix, param.Name), param.Value.String())
+			ref.OutputsParameterByName.Set(scope.scope, param.Value.String(), name, param.Name)
 		}
 	}
 	for _, art := range outputs.Artifacts {
-		scope.addArtifactToScope(fmt.Sprintf("%s.outputs.artifacts.%s", prefix, art.Name), art)
+		ref.OutputsArtifactByName.Set(scope.scope, art, name, art.Name)
+	}
+}
+
+// addWorkflowOutputsToLocalScope mirrors workflow-level outputs into the
+// per-template scope as workflow.outputs.parameters.<name> /
+// workflow.outputs.artifacts.<name>. Used when a sub-template needs to read
+// finalised workflow outputs (e.g. an exit handler).
+func (woc *wfOperationCtx) addWorkflowOutputsToLocalScope(outputs *wfv1.Outputs, scope *wfScope) {
+	if outputs == nil || scope == nil {
+		return
+	}
+	for _, param := range outputs.Parameters {
+		if param.Value != nil {
+			varkeys.WorkflowOutputsParameterByName.Set(scope.scope, param.Value.String(), param.Name)
+		}
+	}
+	for _, art := range outputs.Artifacts {
+		varkeys.WorkflowOutputsArtifactByName.Set(scope.scope, art, art.Name)
 	}
 }
 
@@ -3563,7 +3589,7 @@ func (n loopNodes) Swap(i, j int) {
 
 // processAggregateNodeOutputs adds the aggregated outputs of a withItems/withParam template as a
 // parameter in the form of a JSON list
-func (woc *wfOperationCtx) processAggregateNodeOutputs(scope *wfScope, prefix string, childNodes []wfv1.NodeStatus) error {
+func (woc *wfOperationCtx) processAggregateNodeOutputs(scope *wfScope, agg varkeys.AggregateKeys, name string, childNodes []wfv1.NodeStatus) error {
 	if len(childNodes) == 0 {
 		return nil
 	}
@@ -3610,23 +3636,20 @@ func (woc *wfOperationCtx) processAggregateNodeOutputs(scope *wfScope, prefix st
 		if err != nil {
 			return err
 		}
-		key := fmt.Sprintf("%s.outputs.result", prefix)
-		scope.addParamToScope(key, string(resultsJSON))
+		agg.Result.Set(scope.scope, string(resultsJSON), name)
 	}
 	outputsJSON, err := json.Marshal(paramList)
 	if err != nil {
 		return err
 	}
-	key := fmt.Sprintf("%s.outputs.parameters", prefix)
-	scope.addParamToScope(key, string(outputsJSON))
+	agg.Parameters.Set(scope.scope, string(outputsJSON), name)
 	// Adding per-output aggregated value placeholders
 	for outputName, valueList := range outputParamValueLists {
-		key = fmt.Sprintf("%s.outputs.parameters.%s", prefix, outputName)
 		valueListJSON, err := aggregatedJSONValueList(valueList)
 		if err != nil {
 			return err
 		}
-		scope.addParamToScope(key, valueListJSON)
+		agg.ParameterByName.Set(scope.scope, valueListJSON, name, outputName)
 	}
 	return nil
 }
@@ -3687,9 +3710,8 @@ func (woc *wfOperationCtx) addParamToGlobalScope(ctx context.Context, param wfv1
 	if param.GlobalName == "" {
 		return
 	}
-	paramName := fmt.Sprintf("workflow.outputs.parameters.%s", param.GlobalName)
 	if param.HasValue() {
-		woc.globalParams[paramName] = param.GetValue()
+		varkeys.WorkflowOutputsParameterByName.Set(woc.scope, param.GetValue(), param.GlobalName)
 	}
 	wfUpdated := wfutil.AddParamToGlobalScope(ctx, woc.wf, param)
 	if wfUpdated {
@@ -4359,7 +4381,7 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) (context.Context
 		return ctx, err
 	}
 
-	err = woc.substituteGlobalVariables(ctx, woc.globalParams)
+	err = woc.substituteGlobalVariables(ctx, woc.globalParams())
 	if err != nil {
 		return ctx, err
 	}
@@ -4377,8 +4399,8 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) (context.Context
 }
 
 func (woc *wfOperationCtx) setGlobalRuntimeParameters() {
-	woc.globalParams[common.GlobalVarWorkflowStatus] = string(woc.wf.Status.Phase)
-	woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", woc.workflowDurationSeconds())
+	varkeys.WorkflowStatus.Set(woc.scope, string(woc.wf.Status.Phase))
+	varkeys.WorkflowDuration.Set(woc.scope, fmt.Sprintf("%f", woc.workflowDurationSeconds()))
 }
 
 // workflowDurationSeconds returns the workflow's elapsed duration in seconds,
