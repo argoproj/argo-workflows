@@ -143,56 +143,18 @@ spec:
 			assert.Equal(t, 1, count)
 			assert.Contains(t, logs, "hi")
 		}).
+		// Command err. No retry logic is entered.
+		ExpectContainerLogs("c2", func(t *testing.T, logs string) {
+			count := strings.Count(logs, "capturing logs")
+			assert.Equal(t, 0, count)
+			assert.Contains(t, logs, "executable file not found in $PATH")
+		}).
 		// Retry when err.
 		ExpectContainerLogs("c3", func(t *testing.T, logs string) {
 			count := strings.Count(logs, "capturing logs")
 			assert.Equal(t, 2, count)
 			countFailureInfo := strings.Count(logs, "intentional failure")
 			assert.Equal(t, 2, countFailureInfo)
-		})
-}
-
-func (s *RetryTestSuite) TestWorkflowTemplateWithCommandStartErrorInContainerSet() {
-	s.Given().
-		WorkflowTemplate(`
-apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
-metadata:
-  name: containerset-with-command-start-error
-spec:
-  entrypoint: test
-  templates:
-    - name: test
-      containerSet:
-        retryStrategy:
-          retries: "2"
-        containers:
-          - name: c2
-            image: argoproj/argosay:v2
-            command:
-              - invalid
-              - command
-`).
-		Workflow(`
-metadata:
-  name: workflow-template-containerset-command-error
-spec:
-  workflowTemplateRef:
-    name: containerset-with-command-start-error
-`).
-		When().
-		CreateWorkflowTemplates().
-		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeFailed).
-		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
-			assert.Equal(t, v1alpha1.WorkflowFailed, status.Phase)
-		}).
-		// Command start errors bypass retry execution.
-		ExpectContainerLogs("c2", func(t *testing.T, logs string) {
-			count := strings.Count(logs, "capturing logs")
-			assert.Equal(t, 0, count)
-			assert.Contains(t, logs, "executable file not found in $PATH")
 		})
 }
 
