@@ -12,16 +12,8 @@ import (
 	"golang.org/x/text/language"
 )
 
-// GenerateMarkdown renders the registered catalog as a self-contained
-// Markdown document. Tables are aligned by tablewriter (via
-// github.com/nao1215/markdown's CustomTable).
-//
-// Output sections:
-//   1. Alphabetical list of every variable with its metadata.
-//   2. Grouped by Kind (global, input, node-ref, …).
-//   3. Matrix: rows = variables, columns = TemplateKinds; "•" indicates
-//      the variable is in scope for that kind.
-//   4. Grouped by LifecyclePhase.
+// GenerateMarkdown renders the catalog as Markdown. Sections:
+// alphabetical index, by Kind, matrix by TemplateKind, by LifecyclePhase.
 func GenerateMarkdown() string {
 	var buf bytes.Buffer
 	mdoc := md.NewMarkdown(io.Writer(&buf))
@@ -57,23 +49,11 @@ func GenerateMarkdown() string {
 }
 
 func writeFullTable(mdoc *md.Markdown, all []*Key) {
-	rows := make([][]string, 0, len(all))
-	for _, k := range all {
-		rows = append(rows, []string{
-			md.Code(k.template),
-			k.kind.String(),
-			k.valueType,
-			joinPhases(k.phases),
-			k.description,
-		})
+	rows := make([][]string, len(all))
+	for i, k := range all {
+		rows[i] = []string{md.Code(k.template), k.kind.String(), k.valueType, joinPhases(k.phases), k.description}
 	}
-	mdoc.CustomTable(
-		md.TableSet{
-			Header: []string{"Key", "Kind", "Type", "Availability", "Description"},
-			Rows:   rows,
-		},
-		md.TableOptions{AutoWrapText: false},
-	)
+	table(mdoc, []string{"Key", "Kind", "Type", "Availability", "Description"}, rows)
 }
 
 func writeByKind(mdoc *md.Markdown, all []*Key) {
@@ -90,75 +70,46 @@ func writeByKind(mdoc *md.Markdown, all []*Key) {
 	for _, kd := range kinds {
 		mdoc.H3(titler.String(kd.String()))
 		mdoc.PlainText("")
-		rows := make([][]string, 0, len(groups[kd]))
-		for _, k := range groups[kd] {
-			rows = append(rows, []string{
-				md.Code(k.template),
-				k.valueType,
-				joinPhases(k.phases),
-				k.description,
-			})
+		rows := make([][]string, len(groups[kd]))
+		for i, k := range groups[kd] {
+			rows[i] = []string{md.Code(k.template), k.valueType, joinPhases(k.phases), k.description}
 		}
-		mdoc.CustomTable(
-			md.TableSet{
-				Header: []string{"Key", "Type", "Availability", "Description"},
-				Rows:   rows,
-			},
-			md.TableOptions{AutoWrapText: false},
-		)
+		table(mdoc, []string{"Key", "Type", "Availability", "Description"}, rows)
 	}
 }
 
 func writeMatrix(mdoc *md.Markdown, all []*Key) {
 	cols := append([]TemplateKind{TmplAll}, AllTemplateKinds...)
-	header := make([]string, 0, len(cols)+1)
-	header = append(header, "Key")
-	for _, c := range cols {
-		header = append(header, string(c))
-	}
-	rows := make([][]string, 0, len(all))
-	for _, k := range all {
-		row := make([]string, 0, len(cols)+1)
-		row = append(row, md.Code(k.template))
+	header := append([]string{"Key"}, kindStrings(cols)...)
+	rows := make([][]string, len(all))
+	for i, k := range all {
+		row := make([]string, len(cols)+1)
+		row[0] = md.Code(k.template)
 		hasAll := slices.Contains(k.appliesTo, TmplAll)
-		for _, c := range cols {
-			switch {
-			case slices.Contains(k.appliesTo, c):
-				row = append(row, "•")
-			case hasAll && c != TmplAll:
-				row = append(row, "•")
-			default:
-				row = append(row, "")
+		for j, c := range cols {
+			if slices.Contains(k.appliesTo, c) || (hasAll && c != TmplAll) {
+				row[j+1] = "•"
 			}
 		}
-		rows = append(rows, row)
+		rows[i] = row
 	}
-	mdoc.CustomTable(
-		md.TableSet{Header: header, Rows: rows},
-		md.TableOptions{AutoWrapText: false},
-	)
+	table(mdoc, header, rows)
 }
 
 func writePhaseLegend(mdoc *md.Markdown) {
-	mdoc.CustomTable(
-		md.TableSet{
-			Header: []string{"Phase", "Meaning"},
-			Rows: [][]string{
-				{string(PhWorkflowStart), "Globals populated once, up front, before any template runs."},
-				{string(PhPreDispatch), "Immediately before a template's pod is created; pod.name / node.name / steps.name / tasks.name are set."},
-				{string(PhDuringExecute), "Inside a template body; inputs.* are bound."},
-				{string(PhInsideLoop), "Inside a withItems/withParam expansion; item, item.<key> are bound."},
-				{string(PhInsideRetry), "Inside a retryStrategy template; retries.* are bound."},
-				{string(PhAfterNodeInit), "A referenced node has been initialised (has an ID / phase). Earliest steps.X.id, steps.X.status."},
-				{string(PhAfterPodStart), "The referenced node's pod has started; startedAt, ip, hostNodeName are populated."},
-				{string(PhAfterNodeComplete), "The referenced node has finished (any terminal phase); finishedAt, exitCode are populated."},
-				{string(PhAfterNodeSucceeded), "The referenced node has finished with Succeeded; outputs.result, outputs.parameters.*, outputs.artifacts.* are populated."},
-				{string(PhAfterLoop), "Every child of a withItems/withParam group has completed; aggregated outputs appear."},
-				{string(PhExitHandler), "The onExit template runs. workflow.{status,failures,duration} are final. Any earlier-phase variable is also visible here (scope accumulates)."},
-			},
-		},
-		md.TableOptions{AutoWrapText: false},
-	)
+	table(mdoc, []string{"Phase", "Meaning"}, [][]string{
+		{string(PhWorkflowStart), "Globals populated once, up front, before any template runs."},
+		{string(PhPreDispatch), "Immediately before a template's pod is created; pod.name / node.name / steps.name / tasks.name are set."},
+		{string(PhDuringExecute), "Inside a template body; inputs.* are bound."},
+		{string(PhInsideLoop), "Inside a withItems/withParam expansion; item, item.<key> are bound."},
+		{string(PhInsideRetry), "Inside a retryStrategy template; retries.* are bound."},
+		{string(PhAfterNodeInit), "A referenced node has been initialised (has an ID / phase). Earliest steps.X.id, steps.X.status."},
+		{string(PhAfterPodStart), "The referenced node's pod has started; startedAt, ip, hostNodeName are populated."},
+		{string(PhAfterNodeComplete), "The referenced node has finished (any terminal phase); finishedAt, exitCode are populated."},
+		{string(PhAfterNodeSucceeded), "The referenced node has finished with Succeeded; outputs.result, outputs.parameters.*, outputs.artifacts.* are populated."},
+		{string(PhAfterLoop), "Every child of a withItems/withParam group has completed; aggregated outputs appear."},
+		{string(PhExitHandler), "The onExit template runs. workflow.{status,failures,duration} are final. Any earlier-phase variable is also visible here (scope accumulates)."},
+	})
 }
 
 func writeByPhase(mdoc *md.Markdown, all []*Key) {
@@ -180,27 +131,30 @@ func writeByPhase(mdoc *md.Markdown, all []*Key) {
 		}
 		mdoc.H3(fmt.Sprintf("%s (%d variables)", p, len(keys)))
 		mdoc.PlainText("")
-		rows := make([][]string, 0, len(keys))
-		for _, k := range keys {
-			rows = append(rows, []string{md.Code(k.template), k.kind.String(), k.valueType})
+		rows := make([][]string, len(keys))
+		for i, k := range keys {
+			rows[i] = []string{md.Code(k.template), k.kind.String(), k.valueType}
 		}
-		mdoc.CustomTable(
-			md.TableSet{
-				Header: []string{"Key", "Kind", "Type"},
-				Rows:   rows,
-			},
-			md.TableOptions{AutoWrapText: false},
-		)
+		table(mdoc, []string{"Key", "Kind", "Type"}, rows)
 	}
 }
 
+func table(mdoc *md.Markdown, header []string, rows [][]string) {
+	mdoc.CustomTable(md.TableSet{Header: header, Rows: rows}, md.TableOptions{AutoWrapText: false})
+}
+
 func joinPhases(ps []LifecyclePhase) string {
-	if len(ps) == 0 {
-		return ""
-	}
 	s := make([]string, len(ps))
 	for i, p := range ps {
 		s[i] = string(p)
 	}
 	return strings.Join(s, ", ")
+}
+
+func kindStrings(ks []TemplateKind) []string {
+	out := make([]string, len(ks))
+	for i, k := range ks {
+		out[i] = string(k)
+	}
+	return out
 }

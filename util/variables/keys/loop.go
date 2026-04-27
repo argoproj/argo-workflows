@@ -2,23 +2,16 @@ package keys
 
 import v "github.com/argoproj/argo-workflows/v4/util/variables"
 
-// ─────────────────────────── item / item.<key> — loop iteration values
+// item / item.<key> — loop iteration values (withItems/withParam).
+func item(template, valueType, description string) *v.Key {
+	return v.Define(v.Spec{
+		Template: template, Kind: v.KindItem, ValueType: valueType, AppliesTo: anyTmpl,
+		Phases:      []v.LifecyclePhase{v.PhInsideLoop, v.PhDuringExecute},
+		Description: description,
+	})
+}
 
 var (
-	Item = v.Define(v.Spec{
-		Template:    "item",
-		Kind:        v.KindItem,
-		ValueType:   "string|json",
-		AppliesTo:   []v.TemplateKind{v.TmplAll},
-		Phases:      []v.LifecyclePhase{v.PhInsideLoop, v.PhDuringExecute},
-		Description: "Current loop iteration value (withItems/withParam). JSON for map/list items.",
-	})
-	ItemByKey = v.Define(v.Spec{
-		Template:    "item.<key>",
-		Kind:        v.KindItem,
-		ValueType:   "string",
-		AppliesTo:   []v.TemplateKind{v.TmplAll},
-		Phases:      []v.LifecyclePhase{v.PhInsideLoop, v.PhDuringExecute},
-		Description: "Accessor into a map-typed loop iteration value",
-	})
+	Item      = item("item", "string|json", "Current loop iteration value (withItems/withParam). JSON for map/list items.")
+	ItemByKey = item("item.<key>", "string", "Accessor into a map-typed loop iteration value")
 )
