@@ -758,7 +758,7 @@ func (wfc *WorkflowController) memoizationCacheGarbageCollector(ctx context.Cont
 				continue
 			}
 
-			queries, err := memodb.NewQueries(memodb.TableName(memoCfg), sp.DBType())
+			queries, err := memodb.NewQueries(memodb.TableName(memoCfg))
 			if err != nil {
 				logger.WithError(err).Error(ctx, "Failed to initialize memoization cache queries")
 				continue
