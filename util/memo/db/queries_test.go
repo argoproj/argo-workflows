@@ -32,9 +32,9 @@ const (
 
 var testTableName = memodb.TableName(nil)
 
-func newQueries(t *testing.T, dbType sqldb.DBType) *memodb.Queries {
+func newQueries(t *testing.T) *memodb.Queries {
 	t.Helper()
-	q, err := memodb.NewQueries(testTableName, dbType)
+	q, err := memodb.NewQueries(testTableName)
 	require.NoError(t, err)
 	return q
 }
@@ -155,7 +155,7 @@ func sampleOutputs(message string) *wfv1.Outputs {
 func TestQueriesSaveAndLoad(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	sp := setupPostgres(ctx, t)
-	q := newQueries(t, sqldb.Postgres)
+	q := newQueries(t)
 
 	// Load returns nil when no entry exists.
 	rec, err := q.Load(ctx, sp, testNamespace, testCacheName, "key1")
@@ -174,7 +174,7 @@ func TestQueriesSaveAndLoad(t *testing.T) {
 func TestQueriesNamespaceIsolation(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	sp := setupPostgres(ctx, t)
-	q := newQueries(t, sqldb.Postgres)
+	q := newQueries(t)
 
 	// Save the same cache_name+cache key in two different namespaces.
 	require.NoError(t, q.Save(ctx, sp, "ns-a", testCacheName, "shared-key", "node-a", sampleOutputs("from-a"), 2592000))
@@ -197,7 +197,7 @@ func TestQueriesNamespaceIsolation(t *testing.T) {
 func TestQueriesSaveReplaces(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	sp := setupPostgres(ctx, t)
-	q := newQueries(t, sqldb.Postgres)
+	q := newQueries(t)
 
 	require.NoError(t, q.Save(ctx, sp, testNamespace, testCacheName, "key3", "node-old", sampleOutputs("old"), 2592000))
 	require.NoError(t, q.Save(ctx, sp, testNamespace, testCacheName, "key3", "node-new", sampleOutputs("new"), 2592000))
@@ -212,7 +212,7 @@ func TestQueriesSaveReplaces(t *testing.T) {
 func TestQueriesLoadSkipsExpiredEntries(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	sp := setupPostgres(ctx, t)
-	q := newQueries(t, sqldb.Postgres)
+	q := newQueries(t)
 
 	require.NoError(t, q.Save(ctx, sp, testNamespace, testCacheName, "expired-key", "node-old", sampleOutputs("old"), 2592000))
 
@@ -228,7 +228,7 @@ func TestQueriesLoadSkipsExpiredEntries(t *testing.T) {
 func TestQueriesPruneRemovesOldEntries(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	sp := setupPostgres(ctx, t)
-	q := newQueries(t, sqldb.Postgres)
+	q := newQueries(t)
 
 	// Save an entry with a very short max_age (1 second) and one with 30 days.
 	require.NoError(t, q.Save(ctx, sp, testNamespace, testCacheName, "old-key", "node-old", sampleOutputs("old"), 1))
@@ -256,7 +256,7 @@ func TestQueriesPruneRemovesOldEntries(t *testing.T) {
 func TestQueriesPruneKeepsRecentEntries(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	sp := setupPostgres(ctx, t)
-	q := newQueries(t, sqldb.Postgres)
+	q := newQueries(t)
 
 	require.NoError(t, q.Save(ctx, sp, testNamespace, testCacheName, "recent", "node-1", sampleOutputs("v1"), 2592000))
 
@@ -271,7 +271,7 @@ func TestQueriesPruneKeepsRecentEntries(t *testing.T) {
 func TestMySQLSaveAndLoad(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	sp := setupMySQL(ctx, t)
-	q := newQueries(t, sqldb.MySQL)
+	q := newQueries(t)
 
 	rec, err := q.Load(ctx, sp, testNamespace, testCacheName, "key1")
 	require.NoError(t, err)
@@ -288,7 +288,7 @@ func TestMySQLSaveAndLoad(t *testing.T) {
 func TestMySQLSaveReplaces(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	sp := setupMySQL(ctx, t)
-	q := newQueries(t, sqldb.MySQL)
+	q := newQueries(t)
 
 	require.NoError(t, q.Save(ctx, sp, testNamespace, testCacheName, "key3", "node-old", sampleOutputs("old"), 2592000))
 	require.NoError(t, q.Save(ctx, sp, testNamespace, testCacheName, "key3", "node-new", sampleOutputs("new"), 2592000))
@@ -303,7 +303,7 @@ func TestMySQLSaveReplaces(t *testing.T) {
 func TestMySQLLoadSkipsExpiredEntries(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	sp := setupMySQL(ctx, t)
-	q := newQueries(t, sqldb.MySQL)
+	q := newQueries(t)
 
 	require.NoError(t, q.Save(ctx, sp, testNamespace, testCacheName, "expired-key", "node-old", sampleOutputs("old"), 2592000))
 
@@ -319,7 +319,7 @@ func TestMySQLLoadSkipsExpiredEntries(t *testing.T) {
 func TestMySQLPruneRemovesOldEntries(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	sp := setupMySQL(ctx, t)
-	q := newQueries(t, sqldb.MySQL)
+	q := newQueries(t)
 
 	require.NoError(t, q.Save(ctx, sp, testNamespace, testCacheName, "old-key", "node-old", sampleOutputs("old"), 1))
 	require.NoError(t, q.Save(ctx, sp, testNamespace, testCacheName, "new-key", "node-new", sampleOutputs("new"), 2592000))

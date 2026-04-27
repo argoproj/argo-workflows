@@ -12,6 +12,13 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/sqldb"
 )
 
+const (
+	colNamespace = "namespace"
+	colCacheName = "cache_name"
+	colCacheKey  = "cache_key"
+	colExpiresAt = "expires_at"
+)
+
 // CacheRecord is the database row for a single memoization cache entry.
 type CacheRecord struct {
 	Namespace string    `db:"namespace"`
@@ -26,46 +33,33 @@ type CacheRecord struct {
 // Queries provides database operations for the memoization cache table.
 type Queries struct {
 	tableName string
-	dbType    sqldb.DBType
 }
 
-func NewQueries(tableName string, dbType sqldb.DBType) (*Queries, error) {
+func NewQueries(tableName string) (*Queries, error) {
 	if err := validateTableName(tableName); err != nil {
 		return nil, err
 	}
-	return &Queries{tableName: tableName, dbType: dbType}, nil
+	return &Queries{tableName: tableName}, nil
 }
 
 // Load retrieves the outputs for the given cache key.
 // Returns nil when the entry does not exist or has expired.
 func (q *Queries) Load(ctx context.Context, sp *sqldb.SessionProxy, namespace, cacheName, cacheKey string) (*CacheRecord, error) {
 	var r CacheRecord
-	var found bool
 	now := time.Now().UTC()
 	err := sp.With(ctx, func(sess db.Session) error {
-		// Use raw SQL to avoid upper/db ORM timestamp scanning issues with
-		// "timestamp without timezone" columns (the ORM may not populate time.Time fields).
-		var query string
-		switch q.dbType {
-		case sqldb.Postgres:
-			query = fmt.Sprintf(`SELECT namespace, cache_name, cache_key, node_id, outputs, created_at, expires_at FROM %s WHERE namespace = $1 AND cache_name = $2 AND cache_key = $3 AND expires_at > $4`, q.tableName)
-		case sqldb.MySQL:
-			query = fmt.Sprintf("SELECT namespace, cache_name, cache_key, node_id, outputs, created_at, expires_at FROM %s WHERE namespace = ? AND cache_name = ? AND cache_key = ? AND expires_at > ?", q.tableName)
-		default:
-			return fmt.Errorf("unsupported database type: %s", q.dbType)
-		}
-		rows, err := sess.SQL().QueryContext(ctx, query, namespace, cacheName, cacheKey, now)
-		if err != nil {
-			return err
-		}
-		defer rows.Close()
-		if !rows.Next() {
-			return rows.Err()
-		}
-		found = true
-		return rows.Scan(&r.Namespace, &r.CacheName, &r.CacheKey, &r.NodeID, &r.Outputs, &r.CreatedAt, &r.ExpiresAt)
+		return sess.SQL().
+			SelectFrom(q.tableName).
+			Where(db.Cond{colNamespace: namespace}).
+			And(db.Cond{colCacheName: cacheName}).
+			And(db.Cond{colCacheKey: cacheKey}).
+			And(db.Cond{colExpiresAt + " >": now}).
+			One(&r)
 	})
-	if err != nil || !found {
+	if err == db.ErrNoMoreRows {
+		return nil, nil
+	}
+	if err != nil {
 		return nil, err
 	}
 	return &r, nil
@@ -77,16 +71,10 @@ func (q *Queries) Prune(ctx context.Context, sp *sqldb.SessionProxy) (int64, err
 	now := time.Now().UTC()
 	var n int64
 	err := sp.With(ctx, func(sess db.Session) error {
-		var query string
-		switch q.dbType {
-		case sqldb.Postgres:
-			query = fmt.Sprintf(`DELETE FROM %s WHERE expires_at < $1`, q.tableName)
-		case sqldb.MySQL:
-			query = fmt.Sprintf("DELETE FROM %s WHERE expires_at < ?", q.tableName)
-		default:
-			return fmt.Errorf("unsupported database type: %s", q.dbType)
-		}
-		result, err := sess.SQL().ExecContext(ctx, query, now)
+		result, err := sess.SQL().
+			DeleteFrom(q.tableName).
+			Where(db.Cond{colExpiresAt + " <": now}).
+			Exec()
 		if err != nil {
 			return err
 		}
@@ -101,25 +89,29 @@ func (q *Queries) Save(ctx context.Context, sp *sqldb.SessionProxy, namespace, c
 	if err != nil {
 		return fmt.Errorf("unable to marshal memoization outputs: %w", err)
 	}
-	outputsStr := string(outputsJSON)
 	now := time.Now().UTC()
 	expiresAt := now.Add(time.Duration(maxAgeSeconds) * time.Second)
 	return sp.With(ctx, func(sess db.Session) error {
-		switch q.dbType {
-		case sqldb.Postgres:
-			_, err := sess.SQL().ExecContext(ctx,
-				fmt.Sprintf(`INSERT INTO %s (namespace, cache_name, cache_key, node_id, outputs, created_at, expires_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7)
-ON CONFLICT (namespace, cache_name, cache_key) DO UPDATE SET node_id = $4, outputs = $5, created_at = $6, expires_at = $7`, q.tableName),
-				namespace, cacheName, cacheKey, nodeID, outputsStr, now, expiresAt)
+		return sess.TxContext(ctx, func(tx db.Session) error {
+			_, err := tx.SQL().
+				DeleteFrom(q.tableName).
+				Where(db.Cond{colNamespace: namespace}).
+				And(db.Cond{colCacheName: cacheName}).
+				And(db.Cond{colCacheKey: cacheKey}).
+				Exec()
+			if err != nil {
+				return err
+			}
+			_, err = tx.Collection(q.tableName).Insert(&CacheRecord{
+				Namespace: namespace,
+				CacheName: cacheName,
+				CacheKey:  cacheKey,
+				NodeID:    nodeID,
+				Outputs:   string(outputsJSON),
+				CreatedAt: now,
+				ExpiresAt: expiresAt,
+			})
 			return err
-		case sqldb.MySQL:
-			_, err := sess.SQL().ExecContext(ctx,
-				fmt.Sprintf("INSERT INTO %s (namespace, cache_name, cache_key, node_id, outputs, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE node_id = ?, outputs = ?, created_at = ?, expires_at = ?", q.tableName),
-				namespace, cacheName, cacheKey, nodeID, outputsStr, now, expiresAt, nodeID, outputsStr, now, expiresAt)
-			return err
-		default:
-			return fmt.Errorf("unsupported database type: %s", q.dbType)
-		}
+		}, nil)
 	})
 }

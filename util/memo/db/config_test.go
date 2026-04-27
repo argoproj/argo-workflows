@@ -8,7 +8,6 @@ import (
 
 	"github.com/argoproj/argo-workflows/v4/config"
 	memodb "github.com/argoproj/argo-workflows/v4/util/memo/db"
-	"github.com/argoproj/argo-workflows/v4/util/sqldb"
 )
 
 func TestTableNameDefaultsAndOverrides(t *testing.T) {
@@ -18,7 +17,7 @@ func TestTableNameDefaultsAndOverrides(t *testing.T) {
 }
 
 func TestNewQueriesRejectsInvalidTableName(t *testing.T) {
-	queries, err := memodb.NewQueries("invalid-table-name", sqldb.Postgres)
+	queries, err := memodb.NewQueries("invalid-table-name")
 	require.Error(t, err)
 	assert.Nil(t, queries)
 }
