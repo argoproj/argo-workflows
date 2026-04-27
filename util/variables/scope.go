@@ -1,7 +1,8 @@
 package variables
 
 import (
-	"github.com/argoproj/argo-workflows/v4/util/exprtrace"
+	"maps"
+	"sort"
 )
 
 // Scope holds variable values. The internal map is unexported, and the only
@@ -13,58 +14,66 @@ import (
 // snapshots for consumption by template.Replace and similar legacy
 // map-based APIs. Mutating those snapshots does not write back.
 type Scope struct {
-	data *exprtrace.Map
+	data map[string]any
 }
 
 // NewScope returns an empty Scope.
-func NewScope() *Scope { return &Scope{data: exprtrace.New()} }
+func NewScope() *Scope { return &Scope{data: map[string]any{}} }
 
 // set is package-private; the only caller is Key.Set. This is the single
 // write path for a Scope.
-func (s *Scope) set(key string, value any, skip int) {
-	s.data.SetFromCaller(key, value, skip+1)
+func (s *Scope) set(key string, value any) {
+	s.data[key] = value
 }
 
 // get is package-private; the only caller is Key.Get.
 func (s *Scope) get(key string) (any, bool) {
-	return s.data.Get(key)
+	v, ok := s.data[key]
+	return v, ok
 }
 
 // AsAnyMap returns a snapshot of the scope as map[string]any, suitable for
 // passing to expr.Compile / expr.Run. Mutations to the returned map do not
 // affect the Scope.
-func (s *Scope) AsAnyMap() map[string]any { return s.data.AsAnyMap() }
+func (s *Scope) AsAnyMap() map[string]any {
+	out := make(map[string]any, len(s.data))
+	maps.Copy(out, s.data)
+	return out
+}
 
 // AsStringMap returns a snapshot of the string-valued entries. Non-string
 // values are skipped. Intended for bridging into common.Parameters-style
 // APIs that expect map[string]string.
 func (s *Scope) AsStringMap() map[string]string {
 	out := map[string]string{}
-	for k, v := range s.data.AsAnyMap() {
-		if s, ok := v.(string); ok {
-			out[k] = s
+	for k, v := range s.data {
+		if str, ok := v.(string); ok {
+			out[k] = str
 		}
 	}
 	return out
 }
 
 // Len returns the number of entries currently in the scope.
-func (s *Scope) Len() int { return s.data.Len() }
+func (s *Scope) Len() int { return len(s.data) }
 
 // Keys returns every concrete key currently in the scope, sorted.
 // Useful for tests and debug dumps.
-func (s *Scope) Keys() []string { return s.data.Keys() }
-
-// Provenance returns a snapshot of entry provenance (file, line, function).
-// Useful for exprtrace-style d2 dumps.
-func (s *Scope) Provenance() map[string]exprtrace.Entry { return s.data.Entries() }
+func (s *Scope) Keys() []string {
+	out := make([]string, 0, len(s.data))
+	for k := range s.data {
+		out = append(out, k)
+	}
+	sort.Strings(out)
+	return out
+}
 
 // Set writes a value through a Key. This is the ONLY way for caller code
 // to write into a Scope — because Scope.set is unexported, Key.Set is the
 // single public write path, and a Key cannot be constructed outside this
 // package.
 func (k *Key) Set(s *Scope, value any, args ...string) {
-	s.set(k.Concretize(args...), value, 1)
+	s.set(k.Concretize(args...), value)
 }
 
 // Get reads a value through a Key.

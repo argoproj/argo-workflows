@@ -12,7 +12,7 @@ import (
 
 // -write flag lets you regenerate docs/variable-flow/variables.md in-place.
 //
-//	go test -run TestGenerateMarkdown -write ./util/variables/
+//	go test -run TestGenerateMarkdown ./util/variables/ -args -write
 var writeDocs = flag.Bool("write", false, "write docs/variable-flow/variables.md")
 
 // TestGenerateMarkdown sanity-checks the doc output and optionally writes it.

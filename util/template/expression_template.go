@@ -17,7 +17,6 @@ import (
 	"github.com/expr-lang/expr/parser"
 	"github.com/expr-lang/expr/parser/lexer"
 
-	"github.com/argoproj/argo-workflows/v4/util/exprtrace"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/maps"
 )
@@ -180,12 +179,6 @@ func expressionReplaceCore(ctx context.Context, w io.Writer, expression string, 
 		return fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)
 	}
 
-	if exprtrace.Enabled() {
-		_, _ = exprtrace.FromAnyMap(env).DumpD2(exprtrace.DumpTarget{
-			Expression: unmarshalledExpression,
-			Label:      "pipeline-a",
-		})
-	}
 	program, err := expr.Compile(unmarshalledExpression, expr.Env(env))
 	// This allowUnresolved check is not great
 	// it allows for errors that are obviously

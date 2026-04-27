@@ -30,8 +30,6 @@ import (
 	"github.com/argoproj/argo-workflows/v4/config"
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v4/util/exprtrace"
-	"github.com/argoproj/argo-workflows/v4/util/variables"
 	intstrutil "github.com/argoproj/argo-workflows/v4/util/intstr"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/strftime"
@@ -4817,15 +4815,14 @@ func TestRetryNodeOutputs(t *testing.T) {
 	assert.NotNil(t, retryNode)
 	fmt.Println(retryNode)
 	scope := &wfScope{
-		scope: exprtrace.New(),
-		typed: variables.NewScope(),
+		scope: make(map[string]any),
 	}
 	woc.buildLocalScope(scope, "steps.influx", retryNode)
-	assert.Contains(t, scope.scope.AsAnyMap(), "steps.influx.ip")
-	assert.Contains(t, scope.scope.AsAnyMap(), "steps.influx.id")
-	assert.Contains(t, scope.scope.AsAnyMap(), "steps.influx.startedAt")
-	assert.Contains(t, scope.scope.AsAnyMap(), "steps.influx.finishedAt")
-	assert.Contains(t, scope.scope.AsAnyMap(), "steps.influx.hostNodeName")
+	assert.Contains(t, scope.scope, "steps.influx.ip")
+	assert.Contains(t, scope.scope, "steps.influx.id")
+	assert.Contains(t, scope.scope, "steps.influx.startedAt")
+	assert.Contains(t, scope.scope, "steps.influx.finishedAt")
+	assert.Contains(t, scope.scope, "steps.influx.hostNodeName")
 }
 
 var workflowWithPVCAndFailingStep = `
