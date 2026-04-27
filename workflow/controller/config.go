@@ -96,7 +96,7 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 		logger.Info(ctx, "Persistence configuration disabled")
 	}
 
-	wfc.memoQueries = memodb.NullMemoizationDB
+	wfc.setMemoizationQueries(memodb.NullMemoizationDB)
 	memoCfg := wfc.Config.Memoization
 	if memoCfg != nil {
 		logger.Info(ctx, "Memoization database configuration enabled")
@@ -115,7 +115,7 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		wfc.memoQueries = queries
+		wfc.setMemoizationQueries(queries)
 		wfc.cacheFactory.SetQueries(queries)
 	} else {
 		if wfc.memoSessionProxy != nil {
