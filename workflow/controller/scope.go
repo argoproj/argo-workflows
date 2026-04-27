@@ -4,46 +4,69 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"maps"
 
 	"github.com/expr-lang/expr"
 
 	"github.com/argoproj/argo-workflows/v4/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/expr/env"
+	"github.com/argoproj/argo-workflows/v4/util/exprtrace"
 	"github.com/argoproj/argo-workflows/v4/util/template"
+	"github.com/argoproj/argo-workflows/v4/util/variables"
+	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
-// wfScope contains the current scope of variables available when executing a template
+// wfScope contains the current scope of variables available when executing a template.
+//
+// MIGRATION: scope.scope (*exprtrace.Map) is the legacy string-keyed container;
+// scope.typed (*variables.Scope) is the new catalog-gated view. addParamToScope
+// and addArtifactToScope still write the legacy map for compatibility with code
+// that has not yet been migrated; newer writers call addParam / addArtifact,
+// which dual-write to both. When all writers go through Keys, the legacy map
+// disappears.
 type wfScope struct {
 	tmpl  *wfv1.Template
-	scope map[string]any
+	scope *exprtrace.Map
+	typed *variables.Scope
 }
 
 func createScope(tmpl *wfv1.Template) *wfScope {
 	scope := &wfScope{
 		tmpl:  tmpl,
-		scope: make(map[string]any),
+		scope: exprtrace.New(),
+		typed: variables.NewScope(),
 	}
 	if tmpl != nil {
 		for _, param := range scope.tmpl.Inputs.Parameters {
+			val := scope.tmpl.Inputs.GetParameterByName(param.Name).Value.String()
 			key := fmt.Sprintf("inputs.parameters.%s", param.Name)
-			scope.scope[key] = scope.tmpl.Inputs.GetParameterByName(param.Name).Value.String()
+			scope.scope.Set(key, val)
+			varkeys.InputsParameterByName.Set(scope.typed, val, param.Name)
 		}
 		for _, param := range scope.tmpl.Inputs.Artifacts {
+			art := scope.tmpl.Inputs.GetArtifactByName(param.Name)
 			key := fmt.Sprintf("inputs.artifacts.%s", param.Name)
-			scope.scope[key] = scope.tmpl.Inputs.GetArtifactByName(param.Name)
+			scope.scope.Set(key, art)
+			varkeys.InputsArtifactByName.Set(scope.typed, art, param.Name)
 		}
 	}
 	return scope
 }
 
+// addParam is the catalog-gated write path. It writes via key to the typed
+// scope AND mirrors into the legacy map so consumers that still read the old
+// map remain correct during migration.
+func (s *wfScope) addParam(key *variables.Key, value any, args ...string) {
+	s.scope.SetFromCaller(key.Concretize(args...), value, 1)
+	key.Set(s.typed, value, args...)
+}
+
 // getParameters returns a map of strings intended to be used simple string substitution
 func (s *wfScope) getParameters() common.Parameters {
 	params := make(common.Parameters)
-	for key, val := range s.scope {
-		valStr, ok := val.(string)
+	for key, entry := range s.scope.Entries() {
+		valStr, ok := entry.Value.(string)
 		if ok {
 			params[key] = valStr
 		}
@@ -52,17 +75,16 @@ func (s *wfScope) getParameters() common.Parameters {
 }
 
 func (s *wfScope) addParamToScope(key, val string) {
-	s.scope[key] = val
+	s.scope.SetFromCaller(key, val, 1)
 }
 
 func (s *wfScope) addArtifactToScope(key string, artifact wfv1.Artifact) {
-	s.scope[key] = artifact
+	s.scope.SetFromCaller(key, artifact, 1)
 }
 
 // resolveVar resolves a parameter or artifact
 func (s *wfScope) resolveVar(v string) (any, error) {
-	m := make(map[string]any)
-	maps.Copy(m, s.scope)
+	m := s.scope.AsAnyMap()
 	if s.tmpl != nil {
 		for _, a := range s.tmpl.Inputs.Artifacts {
 			m["inputs.artifacts."+a.Name] = a // special case for artifacts
@@ -76,7 +98,11 @@ func (s *wfScope) resolveParameter(p *wfv1.ValueFrom) (any, error) {
 		return "", nil
 	}
 	if p.Expression != "" {
-		env := env.GetFuncMap(s.scope)
+		_, _ = s.scope.DumpD2(exprtrace.DumpTarget{
+			Expression: p.Expression,
+			Label:      "resolveParameter",
+		})
+		env := env.GetFuncMap(s.scope.AsAnyMap())
 		program, err := expr.Compile(p.Expression, expr.Env(env))
 		if err != nil {
 			return nil, err
@@ -95,7 +121,11 @@ func (s *wfScope) resolveArtifact(ctx context.Context, art *wfv1.Artifact) (*wfv
 	var val any
 
 	if art.FromExpression != "" {
-		envMap := env.GetFuncMap(s.scope)
+		_, _ = s.scope.DumpD2(exprtrace.DumpTarget{
+			Expression: art.FromExpression,
+			Label:      "resolveArtifact",
+		})
+		envMap := env.GetFuncMap(s.scope.AsAnyMap())
 		program, compileErr := expr.Compile(art.FromExpression, expr.Env(envMap))
 		if compileErr != nil {
 			return nil, compileErr
