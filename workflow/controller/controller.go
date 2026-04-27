@@ -136,9 +136,7 @@ type WorkflowController struct {
 	workflowKeyLock       syncpkg.KeyLock // used to lock workflows for exclusive modification or access
 	sessionProxy          *utilsqldb.SessionProxy
 	memoSessionProxy      *utilsqldb.SessionProxy
-	memoMigrated          bool
-	memoConfig            *config.MemoizationConfig // protected by memoLock
-	memoLock              gosync.RWMutex
+	memoQueries           memodb.MemoizationDB
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	hydrator              hydrator.Interface
 	wfArchive             sqldb.WorkflowArchive
@@ -734,12 +732,17 @@ func (wfc *WorkflowController) memoizationCacheGarbageCollector(ctx context.Cont
 	logger = logger.WithField("component", "memo_cache_garbage_collector")
 	ctx = logging.WithLogger(ctx, logger)
 
+	if wfc.memoQueries == nil || !wfc.memoQueries.IsEnabled() {
+		logger.Debug(ctx, "Memoization DB not configured; GC disabled")
+		return
+	}
+
 	periodicity := env.LookupEnvDurationOr(ctx, "MEMO_CACHE_GC_PERIOD", 24*time.Hour)
 	if periodicity <= 0 {
 		logger.Info(ctx, "MEMO_CACHE_GC_PERIOD is zero or negative - cache GC disabled")
 		return
 	}
-	logger.Info(ctx, "Memoization cache GC goroutine started; will check config each tick")
+	logger.Info(ctx, "Memoization cache GC goroutine started")
 
 	ticker := time.NewTicker(periodicity)
 	defer ticker.Stop()
@@ -748,24 +751,8 @@ func (wfc *WorkflowController) memoizationCacheGarbageCollector(ctx context.Cont
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			wfc.memoLock.RLock()
-			memoCfg := wfc.memoConfig
-			sp := wfc.memoSessionProxy
-			wfc.memoLock.RUnlock()
-
-			if memoCfg == nil || sp == nil {
-				logger.Debug(ctx, "Memoization DB not configured or unavailable; skipping GC tick")
-				continue
-			}
-
-			queries, err := memodb.NewQueries(memodb.TableName(memoCfg))
-			if err != nil {
-				logger.WithError(err).Error(ctx, "Failed to initialize memoization cache queries")
-				continue
-			}
-
 			logger.Info(ctx, "Performing memoization cache GC")
-			n, err := queries.Prune(ctx, sp)
+			n, err := wfc.memoQueries.Prune(ctx)
 			if err != nil {
 				logger.WithError(err).Error(ctx, "Failed to prune memoization cache")
 			} else {

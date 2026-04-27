@@ -14,7 +14,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
-	"github.com/argoproj/argo-workflows/v4/util/sqldb"
+	memodb "github.com/argoproj/argo-workflows/v4/util/memo/db"
 )
 
 var cacheKeyRegex = regexp.MustCompile("^[a-zA-Z0-9][-a-zA-Z0-9]*$")
@@ -99,27 +99,18 @@ func (e *Entry) GetOutputsWithMaxAge(maxAge time.Duration) (*wfv1.Outputs, bool)
 }
 
 type cacheFactory struct {
-	caches       map[string]MemoizationCache
-	kubeclient   kubernetes.Interface
-	lock         sync.RWMutex
-	sessionProxy *sqldb.SessionProxy
-	tableName    string
-	// sqlEnabled indicates that SQL caching was explicitly configured by the operator, even if
-	// the session proxy is currently unavailable. When true and sessionProxy is nil, GetCache
-	// returns nil rather than silently falling back to ConfigMap-based caching.
-	sqlEnabled bool
+	caches     map[string]MemoizationCache
+	kubeclient kubernetes.Interface
+	lock       sync.RWMutex
+	queries    memodb.MemoizationDB
 }
 
 type Factory interface {
 	GetCache(ctx context.Context, ct Type, namespace, name string) MemoizationCache
-	// SetSessionProxy configures the factory to use database-backed caching with the given
-	// session proxy and table name. Calling this clears any previously created cache instances
+	// SetQueries configures the factory to use database-backed caching with the given
+	// MemoizationDB. Calling this clears any previously created cache instances
 	// so they are recreated against the SQL backend.
-	SetSessionProxy(sp *sqldb.SessionProxy, tableName string)
-	// ClearSessionProxy removes any SQL backend configuration. If sqlEnabled is true, GetCache
-	// returns nil rather than silently falling back to ConfigMap-based caching (e.g. after a
-	// transient DB failure). If sqlEnabled is false, GetCache falls back to ConfigMap caching.
-	ClearSessionProxy(sqlEnabled bool)
+	SetQueries(q memodb.MemoizationDB)
 }
 
 func NewCacheFactory(ki kubernetes.Interface) Factory {
@@ -133,30 +124,16 @@ type Type string
 
 const (
 	// ConfigMapCache is a cache type identifier used as a key prefix in the cache map.
-	// When a database session proxy is configured, SQL-backed caching is used instead.
+	// When a MemoizationDB is configured, SQL-backed caching is used instead.
 	ConfigMapCache Type = "ConfigMapCache"
 )
 
-// SetSessionProxy configures the factory to use a SQL backend, clearing any previously
+// SetQueries configures the factory to use a SQL backend, clearing any previously
 // cached instances so they are recreated against the new backend.
-func (cf *cacheFactory) SetSessionProxy(sp *sqldb.SessionProxy, tableName string) {
+func (cf *cacheFactory) SetQueries(q memodb.MemoizationDB) {
 	cf.lock.Lock()
 	defer cf.lock.Unlock()
-	cf.sessionProxy = sp
-	cf.tableName = tableName
-	cf.sqlEnabled = true
-	cf.caches = make(map[string]MemoizationCache)
-}
-
-// ClearSessionProxy removes the SQL backend. When sqlEnabled is true (DB configured but
-// temporarily unavailable), GetCache returns nil. When false (no DB configured), GetCache
-// falls back to ConfigMap-based caching.
-func (cf *cacheFactory) ClearSessionProxy(sqlEnabled bool) {
-	cf.lock.Lock()
-	defer cf.lock.Unlock()
-	cf.sessionProxy = nil
-	cf.tableName = ""
-	cf.sqlEnabled = sqlEnabled
+	cf.queries = q
 	cf.caches = make(map[string]MemoizationCache)
 }
 
@@ -188,20 +165,9 @@ func (cf *cacheFactory) GetCache(ctx context.Context, ct Type, namespace, name s
 	switch ct {
 	case ConfigMapCache:
 		var c MemoizationCache
-		switch {
-		case cf.sessionProxy != nil:
-			var err error
-			c, err = newSQLDBCache(namespace, name, cf.sessionProxy, cf.tableName)
-			if err != nil {
-				logger.WithFields(logging.Fields{"cacheName": name, "workflowNamespace": namespace}).WithError(err).Error(ctx, "Failed to create SQL memoization cache")
-				return nil
-			}
-		case cf.sqlEnabled:
-			// SQL was explicitly configured but is currently unavailable. Return nil so callers
-			// can skip caching rather than silently redirecting to a ConfigMap backend.
-			logger.WithFields(logging.Fields{"cacheName": name, "workflowNamespace": namespace}).Warn(ctx, "SQL memoization cache requested but SQL backend is unavailable; skipping cache")
-			return nil
-		default:
+		if cf.queries != nil && cf.queries.IsEnabled() {
+			c = newSQLDBCache(namespace, name, cf.queries)
+		} else {
 			c = NewConfigMapCache(namespace, cf.kubeclient, name)
 		}
 		cf.caches[idx] = c

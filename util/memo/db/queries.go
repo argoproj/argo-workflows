@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -30,24 +31,60 @@ type CacheRecord struct {
 	ExpiresAt time.Time `db:"expires_at"`
 }
 
-// Queries provides database operations for the memoization cache table.
-type Queries struct {
-	tableName string
+// MemoizationDB is the interface for database-backed memoization cache operations.
+type MemoizationDB interface {
+	Load(ctx context.Context, namespace, cacheName, cacheKey string) (*CacheRecord, error)
+	Save(ctx context.Context, namespace, cacheName, cacheKey, nodeID string, outputs *wfv1.Outputs, maxAgeSeconds int64) error
+	Prune(ctx context.Context) (int64, error)
+	IsEnabled() bool
 }
 
-func NewQueries(tableName string) (*Queries, error) {
+// NullMemoizationDB is a no-op implementation used when database memoization is disabled.
+var NullMemoizationDB MemoizationDB = &nullMemoizationDB{}
+
+type nullMemoizationDB struct{}
+
+func (n *nullMemoizationDB) Load(context.Context, string, string, string) (*CacheRecord, error) {
+	return nil, nil
+}
+
+func (n *nullMemoizationDB) Save(context.Context, string, string, string, string, *wfv1.Outputs, int64) error {
+	return nil
+}
+
+func (n *nullMemoizationDB) Prune(context.Context) (int64, error) {
+	return 0, nil
+}
+
+func (n *nullMemoizationDB) IsEnabled() bool {
+	return false
+}
+
+var _ MemoizationDB = &queries{}
+
+// queries provides database operations for the memoization cache table.
+type queries struct {
+	tableName    string
+	sessionProxy *sqldb.SessionProxy
+}
+
+func NewQueries(tableName string, sessionProxy *sqldb.SessionProxy) (MemoizationDB, error) {
 	if err := validateTableName(tableName); err != nil {
 		return nil, err
 	}
-	return &Queries{tableName: tableName}, nil
+	return &queries{tableName: tableName, sessionProxy: sessionProxy}, nil
+}
+
+func (q *queries) IsEnabled() bool {
+	return true
 }
 
 // Load retrieves the outputs for the given cache key.
 // Returns nil when the entry does not exist or has expired.
-func (q *Queries) Load(ctx context.Context, sp *sqldb.SessionProxy, namespace, cacheName, cacheKey string) (*CacheRecord, error) {
+func (q *queries) Load(ctx context.Context, namespace, cacheName, cacheKey string) (*CacheRecord, error) {
 	var r CacheRecord
 	now := time.Now().UTC()
-	err := sp.With(ctx, func(sess db.Session) error {
+	err := q.sessionProxy.With(ctx, func(sess db.Session) error {
 		return sess.SQL().
 			SelectFrom(q.tableName).
 			Where(db.Cond{colNamespace: namespace}).
@@ -56,7 +93,7 @@ func (q *Queries) Load(ctx context.Context, sp *sqldb.SessionProxy, namespace, c
 			And(db.Cond{colExpiresAt + " >": now}).
 			One(&r)
 	})
-	if err == db.ErrNoMoreRows {
+	if errors.Is(err, db.ErrNoMoreRows) {
 		return nil, nil
 	}
 	if err != nil {
@@ -67,10 +104,10 @@ func (q *Queries) Load(ctx context.Context, sp *sqldb.SessionProxy, namespace, c
 
 // Prune deletes cache entries whose expires_at has elapsed. It is called
 // periodically by the controller to bound the size of the configured memoization cache table.
-func (q *Queries) Prune(ctx context.Context, sp *sqldb.SessionProxy) (int64, error) {
+func (q *queries) Prune(ctx context.Context) (int64, error) {
 	now := time.Now().UTC()
 	var n int64
-	err := sp.With(ctx, func(sess db.Session) error {
+	err := q.sessionProxy.With(ctx, func(sess db.Session) error {
 		result, err := sess.SQL().
 			DeleteFrom(q.tableName).
 			Where(db.Cond{colExpiresAt + " <": now}).
@@ -84,15 +121,15 @@ func (q *Queries) Prune(ctx context.Context, sp *sqldb.SessionProxy) (int64, err
 	return n, err
 }
 
-func (q *Queries) Save(ctx context.Context, sp *sqldb.SessionProxy, namespace, cacheName, cacheKey, nodeID string, outputs *wfv1.Outputs, maxAgeSeconds int64) error {
+func (q *queries) Save(ctx context.Context, namespace, cacheName, cacheKey, nodeID string, outputs *wfv1.Outputs, maxAgeSeconds int64) error {
 	outputsJSON, err := json.Marshal(outputs)
 	if err != nil {
 		return fmt.Errorf("unable to marshal memoization outputs: %w", err)
 	}
 	now := time.Now().UTC()
 	expiresAt := now.Add(time.Duration(maxAgeSeconds) * time.Second)
-	return sp.With(ctx, func(sess db.Session) error {
-		return sess.TxContext(ctx, func(tx db.Session) error {
+	return q.sessionProxy.TxWith(ctx, func(sp *sqldb.SessionProxy) error {
+		return sp.With(ctx, func(tx db.Session) error {
 			_, err := tx.SQL().
 				DeleteFrom(q.tableName).
 				Where(db.Cond{colNamespace: namespace}).
@@ -112,6 +149,6 @@ func (q *Queries) Save(ctx context.Context, sp *sqldb.SessionProxy, namespace, c
 				ExpiresAt: expiresAt,
 			})
 			return err
-		}, nil)
-	})
+		})
+	}, nil)
 }
