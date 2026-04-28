@@ -175,12 +175,12 @@ spec:
 	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
-	assert.Equal(t, "0.000000", woc.globalParams()[common.GlobalVarWorkflowDuration])
+	assert.Equal(t, "0.000000", woc.globalParams()[varkeys.WorkflowDuration.Template()])
 
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc.operate(ctx)
-	assert.Greater(t, woc.globalParams()[common.GlobalVarWorkflowDuration], "0.000000")
+	assert.Greater(t, woc.globalParams()[varkeys.WorkflowDuration.Template()], "0.000000")
 }
 
 func TestEstimatedDuration(t *testing.T) {
@@ -4220,7 +4220,7 @@ func TestStepsOnExitFailures(t *testing.T) {
 	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc.operate(ctx)
 
-	assert.Contains(t, woc.globalParams()[common.GlobalVarWorkflowFailures], `[{\"displayName\":\"exit-handlers\",\"message\":\"Pod failed\",\"templateName\":\"intentional-fail\",\"phase\":\"Failed\",\"podName\":\"exit-handlers\"`)
+	assert.Contains(t, woc.globalParams()[varkeys.WorkflowFailures.Template()], `[{\"displayName\":\"exit-handlers\",\"message\":\"Pod failed\",\"templateName\":\"intentional-fail\",\"phase\":\"Failed\",\"podName\":\"exit-handlers\"`)
 	node := woc.wf.Status.Nodes.FindByDisplayName("exit-handlers")
 	assert.NotNil(t, node)
 	assert.Equal(t, wfv1.NodeFailed, node.Phase)
@@ -8507,7 +8507,7 @@ func TestWorkflowScheduledTimeVariable(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
-	assert.Equal(t, "2006-01-02T15:04:05-07:00", woc.globalParams()[common.GlobalVarWorkflowCronScheduleTime])
+	assert.Equal(t, "2006-01-02T15:04:05-07:00", woc.globalParams()[varkeys.WorkflowScheduledTime.Template()])
 }
 
 var wfMainEntrypointVariable = `
@@ -8534,7 +8534,7 @@ func TestWorkflowMainEntrypointVariable(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
-	assert.Equal(t, "whalesay", woc.globalParams()[common.GlobalVarWorkflowMainEntrypoint])
+	assert.Equal(t, "whalesay", woc.globalParams()[varkeys.WorkflowMainEntrypoint.Template()])
 }
 
 var wfNodeNameField = `
@@ -9828,11 +9828,11 @@ func TestBuildRetryStrategyLocalScope(t *testing.T) {
 	localScope := buildRetryStrategyLocalScope(retryNode, wf.Status.Nodes)
 
 	assert.Len(t, localScope, 5)
-	assert.Equal(t, "1", localScope[common.LocalVarRetries])
-	assert.Equal(t, "1", localScope[common.LocalVarRetriesLastExitCode])
-	assert.Equal(t, string(wfv1.NodeFailed), localScope[common.LocalVarRetriesLastStatus])
-	assert.Equal(t, "6", localScope[common.LocalVarRetriesLastDuration])
-	assert.Equal(t, "Error (exit code 1)", localScope[common.LocalVarRetriesLastMessage])
+	assert.Equal(t, "1", localScope[varkeys.Retries.Template()])
+	assert.Equal(t, "1", localScope[varkeys.RetriesLastExitCode.Template()])
+	assert.Equal(t, string(wfv1.NodeFailed), localScope[varkeys.RetriesLastStatus.Template()])
+	assert.Equal(t, "6", localScope[varkeys.RetriesLastDuration.Template()])
+	assert.Equal(t, "Error (exit code 1)", localScope[varkeys.RetriesLastMessage.Template()])
 }
 
 const operatorRetryExpressionError = `

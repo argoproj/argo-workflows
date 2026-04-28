@@ -11,7 +11,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
-	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
 )
 
 func TestExecuteWfLifeCycleHook(t *testing.T) {
@@ -992,7 +992,7 @@ spec:
 	node := woc.wf.Status.Nodes.FindByDisplayName("hook-failures.hooks.failure")
 	assert.NotNil(t, node)
 	assert.Contains(t,
-		woc.globalParams()[common.GlobalVarWorkflowFailures],
+		woc.globalParams()[varkeys.WorkflowFailures.Template()],
 		`[{\"displayName\":\"hook-failures\",\"message\":\"Pod failed\",\"templateName\":\"intentional-fail\",\"phase\":\"Failed\",\"podName\":\"hook-failures\"`,
 	)
 	assert.Equal(t, wfv1.NodePending, node.Phase)

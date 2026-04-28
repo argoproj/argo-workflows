@@ -108,6 +108,8 @@ func writePhaseLegend(mdoc *md.Markdown) {
 		{string(PhAfterNodeSucceeded), "The referenced node has finished with Succeeded; outputs.result, outputs.parameters.*, outputs.artifacts.* are populated."},
 		{string(PhAfterLoop), "Every child of a withItems/withParam group has completed; aggregated outputs appear."},
 		{string(PhExitHandler), "The onExit template runs. workflow.{status,failures,duration} are final. Any earlier-phase variable is also visible here (scope accumulates)."},
+		{string(PhMetricEmission), "Inside a Prometheus metric expression. Adds duration, status, exitCode, resourcesDuration.<resource>, and the current node's bare outputs.result / outputs.parameters.<name>."},
+		{string(PhCronEval), "Evaluating a CronWorkflow `spec.when` or `spec.stopStrategy.expression`. Adds cronworkflow.* variables describing the cron object's identity, labels/annotations, and run counts."},
 	})
 }
 
@@ -116,7 +118,7 @@ func writeByPhase(mdoc *md.Markdown, all []*Key) {
 		PhWorkflowStart, PhPreDispatch, PhDuringExecute,
 		PhInsideLoop, PhInsideRetry,
 		PhAfterNodeInit, PhAfterPodStart, PhAfterNodeComplete, PhAfterNodeSucceeded,
-		PhAfterLoop, PhExitHandler,
+		PhAfterLoop, PhExitHandler, PhMetricEmission, PhCronEval,
 	}
 	for _, p := range phases {
 		var keys []*Key

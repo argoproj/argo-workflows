@@ -589,7 +589,7 @@ func (woc *wfOperationCtx) updateWorkflowMetadata(ctx context.Context) error {
 			}
 			woc.wf.Labels[n] = v
 			varkeys.WorkflowLabelsByName.Set(woc.scope, v, n)
-			updatedParams["workflow.labels."+n] = v
+			updatedParams[varkeys.WorkflowLabelsByName.Concretize(n)] = v
 		}
 		if woc.wf.Annotations == nil {
 			woc.wf.Annotations = make(map[string]string)
@@ -597,7 +597,7 @@ func (woc *wfOperationCtx) updateWorkflowMetadata(ctx context.Context) error {
 		for n, v := range md.Annotations {
 			woc.wf.Annotations[n] = v
 			varkeys.WorkflowAnnotationsByName.Set(woc.scope, v, n)
-			updatedParams["workflow.annotations."+n] = v
+			updatedParams[varkeys.WorkflowAnnotationsByName.Concretize(n)] = v
 		}
 
 		env := env.GetFuncMap(template.EnvMap(woc.globalParams()))
@@ -619,7 +619,7 @@ func (woc *wfOperationCtx) updateWorkflowMetadata(ctx context.Context) error {
 			}
 			woc.wf.Labels[n] = v
 			varkeys.WorkflowLabelsByName.Set(woc.scope, v, n)
-			updatedParams["workflow.labels."+n] = v
+			updatedParams[varkeys.WorkflowLabelsByName.Concretize(n)] = v
 		}
 		woc.updated = true
 
@@ -2060,16 +2060,16 @@ func buildRetryStrategyLocalScope(node *wfv1.NodeStatus, nodes wfv1.Nodes) map[s
 	if lastChildNode == nil || len(childNodeIds) == 0 {
 		return localScope
 	}
-	localScope[common.LocalVarRetries] = strconv.Itoa(len(childNodeIds) - 1)
+	localScope[varkeys.Retries.Template()] = strconv.Itoa(len(childNodeIds) - 1)
 
 	exitCode := "-1"
 	if lastChildNode.Outputs != nil && lastChildNode.Outputs.ExitCode != nil {
 		exitCode = *lastChildNode.Outputs.ExitCode
 	}
-	localScope[common.LocalVarRetriesLastExitCode] = exitCode
-	localScope[common.LocalVarRetriesLastStatus] = string(lastChildNode.Phase)
-	localScope[common.LocalVarRetriesLastDuration] = fmt.Sprint(lastChildNode.GetDuration().Seconds())
-	localScope[common.LocalVarRetriesLastMessage] = lastChildNode.Message
+	localScope[varkeys.RetriesLastExitCode.Template()] = exitCode
+	localScope[varkeys.RetriesLastStatus.Template()] = string(lastChildNode.Phase)
+	localScope[varkeys.RetriesLastDuration.Template()] = fmt.Sprint(lastChildNode.GetDuration().Seconds())
+	localScope[varkeys.RetriesLastMessage.Template()] = lastChildNode.Message
 
 	return localScope
 }
@@ -2146,16 +2146,16 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	// Inject the pod name. If the pod has a retry strategy, the pod name will be changed and will be injected when it
 	// is determined
 	if resolvedTmpl.IsPodType() && woc.retryStrategy(resolvedTmpl) == nil {
-		localParams[common.LocalVarPodName] = woc.getPodName(nodeName, resolvedTmpl.Name)
+		localParams[varkeys.PodName.Template()] = woc.getPodName(nodeName, resolvedTmpl.Name)
 	}
 	if orgTmpl.IsDAGTask() {
-		localParams["tasks.name"] = orgTmpl.GetName()
+		localParams[varkeys.TasksName.Template()] = orgTmpl.GetName()
 	}
 	if orgTmpl.IsWorkflowStep() {
-		localParams["steps.name"] = orgTmpl.GetName()
+		localParams[varkeys.StepsName.Template()] = orgTmpl.GetName()
 	}
 
-	localParams["node.name"] = nodeName
+	localParams[varkeys.NodeName.Template()] = nodeName
 
 	// Inputs has been processed with arguments already, so pass empty arguments.
 	processedTmpl, err := common.ProcessArgs(ctx, resolvedTmpl, &args, woc.globalParams(), localParams, false, woc.wf.Namespace, woc.controller.configMapInformer.GetIndexer())
@@ -2394,10 +2394,10 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		localParams = make(map[string]string)
 		// Change the `pod.name` variable to the new retry node name
 		if processedTmpl.IsPodType() {
-			localParams[common.LocalVarPodName] = woc.getPodName(nodeName, processedTmpl.Name)
+			localParams[varkeys.PodName.Template()] = woc.getPodName(nodeName, processedTmpl.Name)
 		}
 		// Inject the retryAttempt number
-		localParams[common.LocalVarRetries] = strconv.Itoa(retryNum)
+		localParams[varkeys.Retries.Template()] = strconv.Itoa(retryNum)
 
 		// Inject lastRetry variables
 		// the first node will not have "lastRetry" variables so they must have default values
@@ -2412,10 +2412,10 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			lastRetryDuration = fmt.Sprint(lastChildNode.GetDuration().Seconds())
 			lastRetryMessage = lastChildNode.Message
 		}
-		localParams[common.LocalVarRetriesLastExitCode] = lastRetryExitCode
-		localParams[common.LocalVarRetriesLastDuration] = lastRetryDuration
-		localParams[common.LocalVarRetriesLastStatus] = lastRetryStatus
-		localParams[common.LocalVarRetriesLastMessage] = lastRetryMessage
+		localParams[varkeys.RetriesLastExitCode.Template()] = lastRetryExitCode
+		localParams[varkeys.RetriesLastDuration.Template()] = lastRetryDuration
+		localParams[varkeys.RetriesLastStatus.Template()] = lastRetryStatus
+		localParams[varkeys.RetriesLastMessage.Template()] = lastRetryMessage
 		processedTmpl, err = common.SubstituteParams(ctx, processedTmpl, woc.globalParams(), localParams)
 		if errorsutil.IsTransientErr(ctx, err) {
 			return node, err
@@ -3725,7 +3725,7 @@ func (woc *wfOperationCtx) addArtifactToGlobalScope(ctx context.Context, art wfv
 	if art.GlobalName == "" {
 		return
 	}
-	globalArtName := fmt.Sprintf("workflow.outputs.artifacts.%s", art.GlobalName)
+	globalArtName := varkeys.WorkflowOutputsArtifactByName.Concretize(art.GlobalName)
 	if woc.wf.Status.Outputs != nil {
 		for i, gArt := range woc.wf.Status.Outputs.Artifacts {
 			if gArt.Name == art.GlobalName {
@@ -3941,10 +3941,10 @@ func processItem(ctx context.Context, tmpl template.Template, name string, index
 
 	switch item.GetType() {
 	case wfv1.Number, wfv1.Bool:
-		replaceMap["item"] = fmt.Sprintf("%v", item)
+		replaceMap[varkeys.Item.Template()] = fmt.Sprintf("%v", item)
 		newName = generateNodeName(name, index, item)
 	case wfv1.String:
-		replaceMap["item"] = item.GetStrVal()
+		replaceMap[varkeys.Item.Template()] = item.GetStrVal()
 		newName = generateNodeName(name, index, item)
 	case wfv1.Map:
 		// Handle the case when withItems is a list of maps.
@@ -3955,14 +3955,14 @@ func processItem(ctx context.Context, tmpl template.Template, name string, index
 		vals := make([]string, 0)
 		mapVal := item.GetMapVal()
 		for itemKey, itemVal := range mapVal {
-			replaceMap[fmt.Sprintf("item.%s", itemKey)] = fmt.Sprintf("%v", itemVal)
+			replaceMap[varkeys.ItemByKey.Concretize(itemKey)] = fmt.Sprintf("%v", itemVal)
 			vals = append(vals, fmt.Sprintf("%s:%v", itemKey, itemVal))
 		}
 		jsonByteVal, err := json.Marshal(mapVal)
 		if err != nil {
 			return "", argoerrors.InternalWrapError(err)
 		}
-		replaceMap["item"] = string(jsonByteVal)
+		replaceMap[varkeys.Item.Template()] = string(jsonByteVal)
 
 		// sort the values so that the name is deterministic
 		sort.Strings(vals)
@@ -3973,7 +3973,7 @@ func processItem(ctx context.Context, tmpl template.Template, name string, index
 		if err != nil {
 			return "", argoerrors.InternalWrapError(err)
 		}
-		replaceMap["item"] = string(byteVal)
+		replaceMap[varkeys.Item.Template()] = string(byteVal)
 		newName = generateNodeName(name, index, listVal)
 	default:
 		return "", argoerrors.Errorf(argoerrors.CodeBadRequest, "withItems[%d] expected string, number, list, or map. received: %v", index, item)

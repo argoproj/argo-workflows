@@ -47,6 +47,7 @@ import (
 	errorsutil "github.com/argoproj/argo-workflows/v4/util/errors"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/retry"
+	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
 	unstructutil "github.com/argoproj/argo-workflows/v4/util/unstructured"
 	waitutil "github.com/argoproj/argo-workflows/v4/util/wait"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
@@ -510,7 +511,7 @@ func AddParamToGlobalScope(ctx context.Context, wf *wfv1.Workflow, param wfv1.Pa
 	} else {
 		wf.Status.Outputs = &wfv1.Outputs{}
 	}
-	paramName := fmt.Sprintf("workflow.outputs.parameters.%s", param.GlobalName)
+	paramName := varkeys.WorkflowOutputsParameterByName.Concretize(param.GlobalName)
 	if index == -1 {
 		log.WithFields(logging.Fields{"paramName": paramName, "paramValue": param.Value}).Info(ctx, "setting param")
 		gParam := wfv1.Parameter{Name: param.GlobalName, Value: param.Value}

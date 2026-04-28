@@ -13,8 +13,8 @@ func retry(template, description string) *v.Key {
 
 var (
 	Retries             = retry("retries", "0-based retry attempt index")
-	RetriesLastExitCode = retry("retries.lastExitCode", "Exit code of the previous attempt (or 0 on first attempt)")
-	RetriesLastStatus   = retry("retries.lastStatus", "Phase of the previous attempt (or empty on first)")
-	RetriesLastDuration = retry("retries.lastDuration", "Duration of the previous attempt in seconds")
-	RetriesLastMessage  = retry("retries.lastMessage", "Message of the previous attempt")
+	RetriesLastExitCode = retry("lastRetry.exitCode", "Exit code of the previous attempt (or 0 on first attempt)")
+	RetriesLastStatus   = retry("lastRetry.status", "Phase of the previous attempt (or empty on first)")
+	RetriesLastDuration = retry("lastRetry.duration", "Duration of the previous attempt in seconds")
+	RetriesLastMessage  = retry("lastRetry.message", "Message of the previous attempt")
 )

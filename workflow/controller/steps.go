@@ -18,7 +18,6 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/template"
 	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
-	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	controllercache "github.com/argoproj/argo-workflows/v4/workflow/controller/cache"
 	"github.com/argoproj/argo-workflows/v4/workflow/templateresolution"
 )
@@ -648,17 +647,14 @@ func (woc *wfOperationCtx) expandStep(ctx context.Context, step wfv1.WorkflowSte
 }
 
 func (woc *wfOperationCtx) prepareDefaultMetricScope() (map[string]string, map[string]func() float64) {
-	durationCPU := fmt.Sprintf("%s.%s", common.LocalVarResourcesDuration, v1.ResourceCPU)
-	durationMem := fmt.Sprintf("%s.%s", common.LocalVarResourcesDuration, v1.ResourceMemory)
-
 	localScope := woc.globalParams().DeepCopy()
-	localScope[common.LocalVarDuration] = "0"
-	localScope[common.LocalVarStatus] = string(wfv1.NodePending)
-	localScope[durationCPU] = "0"
-	localScope[durationMem] = "0"
+	localScope[varkeys.MetricDuration.Template()] = "0"
+	localScope[varkeys.MetricStatus.Template()] = string(wfv1.NodePending)
+	localScope[varkeys.MetricResourcesDurationByName.Concretize(string(v1.ResourceCPU))] = "0"
+	localScope[varkeys.MetricResourcesDurationByName.Concretize(string(v1.ResourceMemory))] = "0"
 
 	var realTimeScope = map[string]func() float64{
-		common.GlobalVarWorkflowDuration: woc.workflowDurationSeconds,
+		varkeys.WorkflowDuration.Template(): woc.workflowDurationSeconds,
 	}
 
 	return localScope, realTimeScope
@@ -667,28 +663,28 @@ func (woc *wfOperationCtx) prepareDefaultMetricScope() (map[string]string, map[s
 func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus) (map[string]string, map[string]func() float64) {
 	localScope, realTimeScope := woc.prepareDefaultMetricScope()
 	if node.Fulfilled() {
-		localScope[common.LocalVarDuration] = fmt.Sprintf("%f", node.FinishedAt.Sub(node.StartedAt.Time).Seconds())
-		realTimeScope[common.LocalVarDuration] = func() float64 {
+		localScope[varkeys.MetricDuration.Template()] = fmt.Sprintf("%f", node.FinishedAt.Sub(node.StartedAt.Time).Seconds())
+		realTimeScope[varkeys.MetricDuration.Template()] = func() float64 {
 			return node.FinishedAt.Sub(node.StartedAt.Time).Seconds()
 		}
 	} else {
-		localScope[common.LocalVarDuration] = fmt.Sprintf("%f", time.Since(node.StartedAt.Time).Seconds())
-		realTimeScope[common.LocalVarDuration] = func() float64 {
+		localScope[varkeys.MetricDuration.Template()] = fmt.Sprintf("%f", time.Since(node.StartedAt.Time).Seconds())
+		realTimeScope[varkeys.MetricDuration.Template()] = func() float64 {
 			return time.Since(node.StartedAt.Time).Seconds()
 		}
 	}
 
 	if len(node.Children) != 0 {
-		localScope[common.LocalVarRetries] = strconv.Itoa(len(node.Children) - 1)
+		localScope[varkeys.Retries.Template()] = strconv.Itoa(len(node.Children) - 1)
 	}
 
 	if node.Phase != "" {
-		localScope[common.LocalVarStatus] = string(node.Phase)
+		localScope[varkeys.MetricStatus.Template()] = string(node.Phase)
 	}
 
 	if node.Inputs != nil {
 		for _, param := range node.Inputs.Parameters {
-			key := fmt.Sprintf("inputs.parameters.%s", param.Name)
+			key := varkeys.InputsParameterByName.Concretize(param.Name)
 			if param.Value == nil {
 				localScope[key] = ""
 			} else {
@@ -699,13 +695,13 @@ func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus) (map[string
 
 	if node.Outputs != nil {
 		if node.Outputs.Result != nil {
-			localScope["outputs.result"] = *node.Outputs.Result
+			localScope[varkeys.MetricOutputsResult.Template()] = *node.Outputs.Result
 		}
 		if node.Outputs.ExitCode != nil {
-			localScope[common.LocalVarExitCode] = *node.Outputs.ExitCode
+			localScope[varkeys.MetricExitCode.Template()] = *node.Outputs.ExitCode
 		}
 		for _, param := range node.Outputs.Parameters {
-			key := fmt.Sprintf("outputs.parameters.%s", param.Name)
+			key := varkeys.MetricOutputsParameterByName.Concretize(param.Name)
 			if param.Value == nil {
 				localScope[key] = ""
 			} else {
@@ -716,7 +712,7 @@ func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus) (map[string
 
 	if node.ResourcesDuration != nil {
 		for name, duration := range node.ResourcesDuration {
-			localScope[fmt.Sprintf("%s.%s", common.LocalVarResourcesDuration, name)] = fmt.Sprint(duration.Duration().Seconds())
+			localScope[varkeys.MetricResourcesDurationByName.Concretize(string(name))] = fmt.Sprint(duration.Duration().Seconds())
 		}
 	}
 

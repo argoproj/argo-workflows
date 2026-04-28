@@ -10,10 +10,12 @@ const (
 	KindItem
 	KindRetry
 	KindNodeCtx
+	KindMetric
+	KindCronWorkflow
 )
 
 func (k Kind) String() string {
-	return [...]string{"global", "runtime", "input", "node-ref", "item", "retry", "node-ctx"}[k]
+	return [...]string{"global", "runtime", "input", "node-ref", "item", "retry", "node-ctx", "metric", "cron-workflow"}[k]
 }
 
 // LifecyclePhase is a coarse point-in-time within one workflow execution.
@@ -32,6 +34,8 @@ const (
 	PhAfterNodeSucceeded LifecyclePhase = "after-node-succeeded"
 	PhAfterLoop          LifecyclePhase = "after-loop"
 	PhExitHandler        LifecyclePhase = "exit-handler"
+	PhMetricEmission     LifecyclePhase = "metric-emission"
+	PhCronEval           LifecyclePhase = "cron-eval"
 )
 
 // TemplateKind categorises a wfv1.Template by its body type.
@@ -47,14 +51,16 @@ const (
 	TmplData        TemplateKind = "data"
 	TmplSuspend     TemplateKind = "suspend"
 	TmplHTTP        TemplateKind = "http"
-	TmplPlugin      TemplateKind = "plugin"
-	TmplExitHandler TemplateKind = "exit-handler"
+	TmplPlugin       TemplateKind = "plugin"
+	TmplExitHandler  TemplateKind = "exit-handler"
+	TmplCronWorkflow TemplateKind = "cron-workflow"
 )
 
 var AllTemplateKinds = []TemplateKind{
 	TmplContainer, TmplScript, TmplResource,
 	TmplSteps, TmplDAG, TmplData,
 	TmplSuspend, TmplHTTP, TmplPlugin, TmplExitHandler,
+	TmplCronWorkflow,
 }
 
 var PodKinds = []TemplateKind{TmplContainer, TmplScript, TmplResource}
