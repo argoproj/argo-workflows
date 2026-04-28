@@ -325,7 +325,7 @@ Which variables are in scope for each template type. `•` = in scope, blank = n
 | after-node-succeeded | The referenced node has finished with Succeeded; outputs.result, outputs.parameters.*, outputs.artifacts.* are populated.                                                         |
 | after-loop           | Every child of a withItems/withParam group has completed; aggregated outputs appear.                                                                                              |
 | exit-handler         | The onExit template runs. workflow.{status,failures,duration} are final. Any earlier-phase variable is also visible here (scope accumulates).                                     |
-| metric-emission      | Inside a Prometheus metric expression. Adds duration, status, exitCode, resourcesDuration.<resource>, and the current node's bare outputs.result / outputs.parameters.<name>.     |
+| metric-emission      | Inside a Prometheus metric expression. Adds duration, status, exitCode, `resourcesDuration.<resource>`, and the current node's bare outputs.result / `outputs.parameters.<name>`. |
 | cron-eval            | Evaluating a CronWorkflow `spec.when` or `spec.stopStrategy.expression`. Adds cronworkflow.* variables describing the cron object's identity, labels/annotations, and run counts. |
 
 ### workflow-start (20 variables)
