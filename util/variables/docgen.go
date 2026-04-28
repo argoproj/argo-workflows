@@ -41,7 +41,6 @@ func GenerateMarkdown() string {
 	mdoc.H2("4. Grouped by LifecyclePhase")
 	mdoc.PlainText("")
 	writePhaseLegend(mdoc)
-	mdoc.PlainText("")
 	writeByPhase(mdoc, all)
 
 	_ = mdoc.Build()
