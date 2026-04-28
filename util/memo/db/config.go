@@ -69,8 +69,8 @@ func ConfigFromConfig(cfg *config.MemoizationConfig) Config {
 }
 
 // SessionProxyFromConfig creates a SessionProxy from a MemoizationConfig, returning nil and logging
-// an error if the connection cannot be established. Callers that receive nil should fall back to
-// ConfigMap-based caching.
+// an error if the connection cannot be established. Callers that receive nil should decide how to
+// degrade memoization without crashing the controller.
 func SessionProxyFromConfig(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, cfg *config.MemoizationConfig) *sqldb.SessionProxy {
 	if cfg == nil {
 		return nil
@@ -90,8 +90,8 @@ func SessionProxyFromConfig(ctx context.Context, kubectlConfig kubernetes.Interf
 }
 
 // Migrate runs database migrations for the memoization cache table. It is a no-op when
-// cfg.SkipMigration is true. Returns an error if migration fails; callers should fall back
-// to ConfigMap-based caching.
+// cfg.SkipMigration is true. Returns an error if migration fails; callers should decide how to
+// degrade memoization without crashing the controller.
 func Migrate(ctx context.Context, sessionProxy *sqldb.SessionProxy, cfg Config) error {
 	if sessionProxy == nil {
 		return nil

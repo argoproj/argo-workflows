@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"strconv"
+	"sync"
 	"testing"
 	"time"
 
@@ -90,7 +91,8 @@ func newTestSQLDBCache(t *testing.T, sp *sqldb.SessionProxy) MemoizationCache {
 	t.Helper()
 	queries, err := memodb.NewQueries(testTableName, sp)
 	require.NoError(t, err)
-	return newSQLDBCache(testNamespace, testCacheName, queries)
+	var lock sync.RWMutex
+	return newSQLDBCache(testNamespace, testCacheName, func() memodb.MemoizationDB { return queries }, &lock)
 }
 
 func TestSQLDBCacheSaveAndLoad(t *testing.T) {
