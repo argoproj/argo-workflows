@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sync"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -12,24 +13,50 @@ import (
 )
 
 type sqlDBCache struct {
-	namespace string
-	name      string
-	queries   memodb.MemoizationDB
+	namespace  string
+	name       string
+	getQueries func() memodb.MemoizationDB
+	lock       *sync.RWMutex
 }
 
-func newSQLDBCache(namespace, name string, queries memodb.MemoizationDB) MemoizationCache {
+func newSQLDBCache(namespace, name string, getQueries func() memodb.MemoizationDB, lock *sync.RWMutex) MemoizationCache {
 	return &sqlDBCache{
-		namespace: namespace,
-		name:      name,
-		queries:   queries,
+		namespace:  namespace,
+		name:       name,
+		getQueries: getQueries,
+		lock:       lock,
 	}
+}
+
+func (c *sqlDBCache) withQueries(fn func(memodb.MemoizationDB) error) error {
+	if c.lock == nil {
+		return fn(memodb.NullMemoizationDB)
+	}
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+
+	queries := memodb.NullMemoizationDB
+	if c.getQueries != nil {
+		if q := c.getQueries(); q != nil {
+			queries = q
+		}
+	}
+	return fn(queries)
 }
 
 func (c *sqlDBCache) Load(ctx context.Context, key string) (*Entry, error) {
 	if !cacheKeyRegex.MatchString(key) {
 		return nil, fmt.Errorf("invalid cache key: %s", key)
 	}
-	record, err := c.queries.Load(ctx, c.namespace, c.name, key)
+	var record *memodb.CacheRecord
+	err := c.withQueries(func(queries memodb.MemoizationDB) error {
+		if !queries.IsEnabled() {
+			return nil
+		}
+		var err error
+		record, err = queries.Load(ctx, c.namespace, c.name, key)
+		return err
+	})
 	if err != nil {
 		return nil, fmt.Errorf("memoization db load failed: %w", err)
 	}
@@ -52,9 +79,14 @@ func (c *sqlDBCache) Save(ctx context.Context, key string, nodeID string, value 
 	if !cacheKeyRegex.MatchString(key) {
 		return fmt.Errorf("invalid cache key: %s", key)
 	}
-	maxAgeSeconds, err := ResolveMaxAgeSeconds(maxAge)
-	if err != nil {
-		return err
-	}
-	return c.queries.Save(ctx, c.namespace, c.name, key, nodeID, value, maxAgeSeconds)
+	return c.withQueries(func(queries memodb.MemoizationDB) error {
+		if !queries.IsEnabled() {
+			return nil
+		}
+		maxAgeSeconds, err := ResolveMaxAgeSeconds(maxAge)
+		if err != nil {
+			return err
+		}
+		return queries.Save(ctx, c.namespace, c.name, key, nodeID, value, maxAgeSeconds)
+	})
 }

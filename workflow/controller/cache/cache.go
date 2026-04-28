@@ -124,12 +124,14 @@ type Type string
 
 const (
 	// ConfigMapCache is a cache type identifier used as a key prefix in the cache map.
-	// When a MemoizationDB is configured, SQL-backed caching is used instead.
+	// When a MemoizationDB is configured, SQL-backed memoization semantics are used instead.
 	ConfigMapCache Type = "ConfigMapCache"
 )
 
-// SetQueries configures the factory to use a SQL backend, clearing any previously
-// cached instances so they are recreated against the new backend.
+// SetQueries configures the factory's memoization backend, clearing any previously
+// cached instances so they are recreated against the new backend. A nil MemoizationDB
+// selects ConfigMap-backed caching; a non-nil MemoizationDB selects SQL-backed
+// memoization semantics, even if the DB implementation is disabled/no-op.
 func (cf *cacheFactory) SetQueries(q memodb.MemoizationDB) {
 	cf.lock.Lock()
 	defer cf.lock.Unlock()
@@ -165,8 +167,8 @@ func (cf *cacheFactory) GetCache(ctx context.Context, ct Type, namespace, name s
 	switch ct {
 	case ConfigMapCache:
 		var c MemoizationCache
-		if cf.queries != nil && cf.queries.IsEnabled() {
-			c = newSQLDBCache(namespace, name, cf.queries)
+		if cf.queries != nil {
+			c = newSQLDBCache(namespace, name, func() memodb.MemoizationDB { return cf.queries }, &cf.lock)
 		} else {
 			c = NewConfigMapCache(namespace, cf.kubeclient, name)
 		}

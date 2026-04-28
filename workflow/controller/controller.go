@@ -281,6 +281,15 @@ func (wfc *WorkflowController) setMemoizationQueries(queries memodb.MemoizationD
 	wfc.memoQueries = queries
 }
 
+func (wfc *WorkflowController) withMemoizationQueries(fn func(memodb.MemoizationDB) error) error {
+	wfc.memoizationLock.RLock()
+	defer wfc.memoizationLock.RUnlock()
+	if wfc.memoQueries == nil {
+		return fn(memodb.NullMemoizationDB)
+	}
+	return fn(wfc.memoQueries)
+}
+
 // runGCcontroller runs the workflow garbage collector controller
 func (wfc *WorkflowController) runGCcontroller(ctx context.Context, workflowTTLWorkers int) {
 	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
@@ -765,12 +774,23 @@ func (wfc *WorkflowController) memoizationCacheGarbageCollector(ctx context.Cont
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			queries := wfc.getMemoizationQueries()
-			if !queries.IsEnabled() {
+			var (
+				n      int64
+				active bool
+			)
+			err := wfc.withMemoizationQueries(func(queries memodb.MemoizationDB) error {
+				if !queries.IsEnabled() {
+					return nil
+				}
+				active = true
+				logger.Info(ctx, "Performing memoization cache GC")
+				var err error
+				n, err = queries.Prune(ctx)
+				return err
+			})
+			if !active {
 				continue
 			}
-			logger.Info(ctx, "Performing memoization cache GC")
-			n, err := queries.Prune(ctx)
 			if err != nil {
 				logger.WithError(err).Error(ctx, "Failed to prune memoization cache")
 			} else {

@@ -25,6 +25,21 @@ var (
 	memoizationMigrate         = memodb.Migrate
 )
 
+func (wfc *WorkflowController) resetMemoizationBackend(ctx context.Context, sessionProxy *sqldb.SessionProxy, cacheQueries memodb.MemoizationDB) {
+	logger := logging.RequireLoggerFromContext(ctx)
+	wfc.setMemoizationQueries(cacheQueries)
+	wfc.cacheFactory.SetQueries(cacheQueries)
+	if sessionProxy == nil {
+		sessionProxy = wfc.memoSessionProxy
+	}
+	wfc.memoSessionProxy = nil
+	if sessionProxy != nil {
+		if err := sessionProxy.Close(); err != nil {
+			logger.WithError(err).Warn(ctx, "Failed to close memoization database session")
+		}
+	}
+}
+
 func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 	logger := logging.RequireLoggerFromContext(ctx)
 	_, err := yaml.Marshal(wfc.Config)
@@ -85,37 +100,42 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 		logger.Info(ctx, "Persistence configuration disabled")
 	}
 
-	wfc.setMemoizationQueries(memodb.NullMemoizationDB)
 	memoCfg := wfc.Config.Memoization
 	if memoCfg != nil {
 		logger.Info(ctx, "Memoization database configuration enabled")
-		if wfc.memoSessionProxy == nil {
-			sp := memoSessionProxyFromConfig(ctx, wfc.kubeclientset, wfc.namespace, memoCfg)
-			if sp == nil {
-				return fmt.Errorf("failed to create memoization database session")
+		sessionProxy := wfc.memoSessionProxy
+		if sessionProxy == nil {
+			sessionProxy = memoSessionProxyFromConfig(ctx, wfc.kubeclientset, wfc.namespace, memoCfg)
+			if sessionProxy == nil {
+				logger.Warn(ctx, "Memoization database unavailable; memoization disabled")
+				wfc.resetMemoizationBackend(ctx, nil, memodb.NullMemoizationDB)
+				goto memoizationConfigured
 			}
-			wfc.memoSessionProxy = sp
 		}
 		cfg := memodb.ConfigFromConfig(memoCfg)
-		if err := memoizationMigrate(ctx, wfc.memoSessionProxy, cfg); err != nil {
-			return fmt.Errorf("memoization database migration failed: %w", err)
+		if err := memoizationMigrate(ctx, sessionProxy, cfg); err != nil {
+			logger.WithError(err).Error(ctx, "Memoization database migration failed; memoization disabled")
+			wfc.resetMemoizationBackend(ctx, sessionProxy, memodb.NullMemoizationDB)
+			goto memoizationConfigured
 		}
-		queries, err := memodb.NewQueries(cfg.TableName, wfc.memoSessionProxy)
+		queries, err := memodb.NewQueries(cfg.TableName, sessionProxy)
 		if err != nil {
-			return err
+			logger.WithError(err).Error(ctx, "Memoization database initialization failed; memoization disabled")
+			wfc.resetMemoizationBackend(ctx, sessionProxy, memodb.NullMemoizationDB)
+			goto memoizationConfigured
 		}
+		wfc.memoSessionProxy = sessionProxy
 		wfc.setMemoizationQueries(queries)
 		wfc.cacheFactory.SetQueries(queries)
 	} else {
 		if wfc.memoSessionProxy != nil {
 			logger.Info(ctx, "Memoization database configuration removed")
-			wfc.memoSessionProxy.Close()
-			wfc.memoSessionProxy = nil
 		}
-		wfc.cacheFactory.SetQueries(nil)
+		wfc.resetMemoizationBackend(ctx, nil, nil)
 		logger.Info(ctx, "Memoization database configuration disabled; using ConfigMap-based caching")
 	}
 
+memoizationConfigured:
 	wfc.hydrator = hydrator.New(wfc.offloadNodeStatusRepo)
 	wfc.updateEstimatorFactory(ctx)
 	wfc.rateLimiter = wfc.newRateLimiter()
