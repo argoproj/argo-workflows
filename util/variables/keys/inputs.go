@@ -10,6 +10,15 @@ func input(template, valueType, description string, applies []v.TemplateKind) *v
 	})
 }
 
+// output declares an outputs.* declaration variable (the pod-side declared
+// path of an output) available during template execution.
+func output(template, valueType, description string, applies []v.TemplateKind) *v.Key {
+	return v.Define(v.Spec{
+		Template: template, Kind: v.KindOutput, ValueType: valueType,
+		AppliesTo: applies, Phases: []v.LifecyclePhase{v.PhDuringExecute}, Description: description,
+	})
+}
+
 var anyTmpl = []v.TemplateKind{v.TmplAll}
 
 // inputs.parameters.*, inputs.artifacts.*
@@ -20,8 +29,8 @@ var (
 	InputsArtifactPathByName = input("inputs.artifacts.<name>.path", "string", "Mount path of the input artifact inside the pod", v.PodKinds)
 )
 
-// outputs.*.path — declared input-side paths.
+// outputs.*.path — declared output-side paths (pod-side).
 var (
-	OutputsArtifactPathByName  = input("outputs.artifacts.<name>.path", "string", "Declared output artifact path for the current template (pod side)", v.PodKinds)
-	OutputsParameterPathByName = input("outputs.parameters.<name>.path", "string", "Declared output parameter path for the current template (pod side)", v.PodKinds)
+	OutputsArtifactPathByName  = output("outputs.artifacts.<name>.path", "string", "Declared output artifact path for the current template (pod side)", v.PodKinds)
+	OutputsParameterPathByName = output("outputs.parameters.<name>.path", "string", "Declared output parameter path for the current template (pod side)", v.PodKinds)
 )

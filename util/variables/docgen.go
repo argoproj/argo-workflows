@@ -85,8 +85,19 @@ func writeMatrix(mdoc *md.Markdown, all []*Key) {
 		row := make([]string, len(cols)+1)
 		row[0] = md.Code(k.template)
 		hasAll := slices.Contains(k.appliesTo, TmplAll)
+		hasCronEval := slices.Contains(k.phases, PhCronEval)
 		for j, c := range cols {
-			if slices.Contains(k.appliesTo, c) || (hasAll && c != TmplAll) {
+			explicit := slices.Contains(k.appliesTo, c)
+			// Cron-workflow templates only run during the cron-eval phase. A
+			// variable with no PhCronEval phase is never reachable from a
+			// CronWorkflow expression even if its appliesTo is TmplAll.
+			if c == TmplCronWorkflow && !hasCronEval {
+				if explicit {
+					row[j+1] = "•"
+				}
+				continue
+			}
+			if explicit || (hasAll && c != TmplAll) {
 				row[j+1] = "•"
 			}
 		}
@@ -124,6 +135,14 @@ func writeByPhase(mdoc *md.Markdown, all []*Key) {
 		var keys []*Key
 		for _, k := range all {
 			if slices.Contains(k.phases, p) {
+				keys = append(keys, k)
+				continue
+			}
+			// Exit-handler scope accumulates: every node-ref variable whose
+			// appliesTo includes TmplExitHandler is reachable from onExit,
+			// even though its primary phase is the one when the underlying
+			// value first becomes available (after-node-init, after-loop, …).
+			if p == PhExitHandler && slices.Contains(k.appliesTo, TmplExitHandler) {
 				keys = append(keys, k)
 			}
 		}

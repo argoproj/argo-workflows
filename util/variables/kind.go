@@ -6,6 +6,7 @@ const (
 	KindGlobal Kind = iota
 	KindRuntime
 	KindInput
+	KindOutput
 	KindNodeRef
 	KindItem
 	KindRetry
@@ -15,7 +16,7 @@ const (
 )
 
 func (k Kind) String() string {
-	return [...]string{"global", "runtime", "input", "node-ref", "item", "retry", "node-ctx", "metric", "cron-workflow"}[k]
+	return [...]string{"global", "runtime", "input", "output", "node-ref", "item", "retry", "node-ctx", "metric", "cron-workflow"}[k]
 }
 
 // LifecyclePhase is a coarse point-in-time within one workflow execution.

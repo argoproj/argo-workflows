@@ -12,6 +12,6 @@ func item(template, valueType, description string) *v.Key {
 }
 
 var (
-	Item      = item("item", "string|json", "Current loop iteration value (withItems/withParam). JSON for map/list items.")
+	Item      = item("item", "string or json", "Current loop iteration value (withItems/withParam). JSON for map/list items.")
 	ItemByKey = item("item.<key>", "string", "Accessor into a map-typed loop iteration value")
 )

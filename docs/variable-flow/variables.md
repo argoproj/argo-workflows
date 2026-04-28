@@ -4,91 +4,91 @@ Auto-generated from `util/variables` via `GenerateMarkdown()`. 83 variables regi
 
 ## 1. Alphabetical index
 
-|                    Key                    |     Kind      |     Type      |                        Availability                        |                                            Description                                            |
-|-------------------------------------------|---------------|---------------|------------------------------------------------------------|---------------------------------------------------------------------------------------------------|
-| `cronworkflow.annotations`                | cron-workflow | map           | cron-eval                                                  | CronWorkflow annotations as a map; supports nested key access (cronworkflow.annotations.foo)      |
-| `cronworkflow.annotations.json`           | cron-workflow | json          | cron-eval                                                  | CronWorkflow annotations as a JSON object                                                         |
-| `cronworkflow.failed`                     | cron-workflow | int           | cron-eval                                                  | Count of failed child Workflows                                                                   |
-| `cronworkflow.labels`                     | cron-workflow | map           | cron-eval                                                  | CronWorkflow labels as a map; supports nested key access (cronworkflow.labels.foo)                |
-| `cronworkflow.labels.json`                | cron-workflow | json          | cron-eval                                                  | CronWorkflow labels as a JSON object                                                              |
-| `cronworkflow.lastScheduledTime`          | cron-workflow | *time.Time    | cron-eval                                                  | Time the cron last triggered, or nil before the first run                                         |
-| `cronworkflow.name`                       | cron-workflow | string        | cron-eval                                                  | CronWorkflow object name                                                                          |
-| `cronworkflow.namespace`                  | cron-workflow | string        | cron-eval                                                  | CronWorkflow namespace                                                                            |
-| `cronworkflow.succeeded`                  | cron-workflow | int           | cron-eval                                                  | Count of succeeded child Workflows                                                                |
-| `duration`                                | metric        | string        | metric-emission                                            | Current node's elapsed duration in seconds                                                        |
-| `exitCode`                                | metric        | string        | metric-emission                                            | Current node's container exit code                                                                |
-| `inputs.artifacts.<name>`                 | input         | wfv1.Artifact | during-execute                                             | Input artifact object (for fromExpression use)                                                    |
-| `inputs.artifacts.<name>.path`            | input         | string        | during-execute                                             | Mount path of the input artifact inside the pod                                                   |
-| `inputs.parameters`                       | input         | json          | during-execute                                             | All input parameters as a JSON array                                                              |
-| `inputs.parameters.<name>`                | input         | string        | during-execute                                             | Resolved input parameter value                                                                    |
-| `item`                                    | item          | string|json   | inside-loop, during-execute                                | Current loop iteration value (withItems/withParam). JSON for map/list items.                      |
-| `item.<key>`                              | item          | string        | inside-loop, during-execute                                | Accessor into a map-typed loop iteration value                                                    |
-| `lastRetry.duration`                      | retry         | string        | inside-retry, during-execute                               | Duration of the previous attempt in seconds                                                       |
-| `lastRetry.exitCode`                      | retry         | string        | inside-retry, during-execute                               | Exit code of the previous attempt (or 0 on first attempt)                                         |
-| `lastRetry.message`                       | retry         | string        | inside-retry, during-execute                               | Message of the previous attempt                                                                   |
-| `lastRetry.status`                        | retry         | string        | inside-retry, during-execute                               | Phase of the previous attempt (or empty on first)                                                 |
-| `node.name`                               | node-ctx      | string        | pre-dispatch, during-execute                               | Full node name                                                                                    |
-| `outputs.artifacts.<name>.path`           | input         | string        | during-execute                                             | Declared output artifact path for the current template (pod side)                                 |
-| `outputs.parameters.<name>`               | metric        | string        | metric-emission                                            | Current node's named output parameter value (metric scope only)                                   |
-| `outputs.parameters.<name>.path`          | input         | string        | during-execute                                             | Declared output parameter path for the current template (pod side)                                |
-| `outputs.result`                          | metric        | string        | metric-emission                                            | Current node's captured stdout (metric scope only)                                                |
-| `pod.name`                                | node-ctx      | string        | pre-dispatch, during-execute                               | Computed pod name for pod-producing templates                                                     |
-| `resourcesDuration.<resource>`            | metric        | string        | metric-emission                                            | Current node's resource duration in seconds, keyed by Kubernetes resource name (e.g. cpu, memory) |
-| `retries`                                 | retry         | string        | inside-retry, during-execute                               | 0-based retry attempt index                                                                       |
-| `status`                                  | metric        | string        | metric-emission                                            | Current node's phase                                                                              |
-| `steps.<loopName>.outputs.parameters`     | node-ref      | json          | after-loop                                                 | JSON array of per-child output-parameter maps                                                     |
-| `steps.<loopName>.outputs.parameters.<p>` | node-ref      | json          | after-loop                                                 | JSON array of values for a named parameter across all children                                    |
-| `steps.<loopName>.outputs.result`         | node-ref      | json          | after-loop                                                 | JSON array of child results (withItems/withParam)                                                 |
-| `steps.<name>.exitCode`                   | node-ref      | string        | after-node-complete                                        | Container exit code                                                                               |
-| `steps.<name>.finishedAt`                 | node-ref      | string        | after-node-complete                                        | RFC3339 finish time                                                                               |
-| `steps.<name>.hostNodeName`               | node-ref      | string        | after-pod-start                                            | Underlying k8s node name                                                                          |
-| `steps.<name>.id`                         | node-ref      | string        | after-node-init                                            | Node ID                                                                                           |
-| `steps.<name>.ip`                         | node-ref      | string        | after-pod-start                                            | Pod IP                                                                                            |
-| `steps.<name>.outputs.artifacts.<a>`      | node-ref      | wfv1.Artifact | after-node-succeeded                                       | Named output artifact of the referenced node                                                      |
-| `steps.<name>.outputs.parameters.<p>`     | node-ref      | string        | after-node-succeeded                                       | Named output parameter of the referenced node                                                     |
-| `steps.<name>.outputs.result`             | node-ref      | string        | after-node-succeeded                                       | Captured stdout (non-loop nodes)                                                                  |
-| `steps.<name>.startedAt`                  | node-ref      | string        | after-pod-start                                            | RFC3339 start time                                                                                |
-| `steps.<name>.status`                     | node-ref      | string        | after-node-init                                            | Node phase                                                                                        |
-| `steps.name`                              | node-ctx      | string        | pre-dispatch, during-execute                               | Name of the current step (inside a Steps template body)                                           |
-| `tasks.<loopName>.outputs.parameters`     | node-ref      | json          | after-loop                                                 | JSON array of per-child output-parameter maps                                                     |
-| `tasks.<loopName>.outputs.parameters.<p>` | node-ref      | json          | after-loop                                                 | JSON array of values for a named parameter across all children                                    |
-| `tasks.<loopName>.outputs.result`         | node-ref      | json          | after-loop                                                 | JSON array of child results (withItems/withParam)                                                 |
-| `tasks.<name>.exitCode`                   | node-ref      | string        | after-node-complete                                        | Container exit code                                                                               |
-| `tasks.<name>.finishedAt`                 | node-ref      | string        | after-node-complete                                        | RFC3339 finish time                                                                               |
-| `tasks.<name>.hostNodeName`               | node-ref      | string        | after-pod-start                                            | Underlying k8s node name                                                                          |
-| `tasks.<name>.id`                         | node-ref      | string        | after-node-init                                            | Node ID                                                                                           |
-| `tasks.<name>.ip`                         | node-ref      | string        | after-pod-start                                            | Pod IP                                                                                            |
-| `tasks.<name>.outputs.artifacts.<a>`      | node-ref      | wfv1.Artifact | after-node-succeeded                                       | Named output artifact of the referenced node                                                      |
-| `tasks.<name>.outputs.parameters.<p>`     | node-ref      | string        | after-node-succeeded                                       | Named output parameter of the referenced node                                                     |
-| `tasks.<name>.outputs.result`             | node-ref      | string        | after-node-succeeded                                       | Captured stdout (non-loop nodes)                                                                  |
-| `tasks.<name>.startedAt`                  | node-ref      | string        | after-pod-start                                            | RFC3339 start time                                                                                |
-| `tasks.<name>.status`                     | node-ref      | string        | after-node-init                                            | Node phase                                                                                        |
-| `tasks.name`                              | node-ctx      | string        | pre-dispatch, during-execute                               | Name of the current task (inside a DAG template body)                                             |
-| `workflow.annotations`                    | global        | json          | workflow-start, pre-dispatch, during-execute, exit-handler | All workflow annotations as a JSON object (deprecated — use workflow.annotations.json)            |
-| `workflow.annotations.<name>`             | global        | string        | workflow-start, pre-dispatch, during-execute, exit-handler | Workflow metadata annotation value                                                                |
-| `workflow.annotations.json`               | global        | json          | workflow-start, pre-dispatch, during-execute, exit-handler | All workflow annotations as a JSON object                                                         |
-| `workflow.creationTimestamp`              | global        | string        | workflow-start, pre-dispatch, during-execute, exit-handler | RFC3339 creation timestamp                                                                        |
-| `workflow.creationTimestamp.<fmt>`        | global        | string        | workflow-start, pre-dispatch, during-execute, exit-handler | strftime-formatted workflow creation time; `<fmt>` is one of the chars in util/strftime           |
-| `workflow.creationTimestamp.RFC3339`      | global        | string        | workflow-start, pre-dispatch, during-execute, exit-handler | Workflow creation time as RFC3339                                                                 |
-| `workflow.creationTimestamp.s`            | global        | string        | workflow-start, pre-dispatch, during-execute, exit-handler | Workflow creation time as Unix seconds                                                            |
-| `workflow.duration`                       | runtime       | string        | pre-dispatch, during-execute, exit-handler                 | Elapsed seconds as float string; final at exit handler                                            |
-| `workflow.failures`                       | runtime       | json          | exit-handler                                               | JSON array of failed node descriptors; populated when any node failed                             |
-| `workflow.labels`                         | global        | json          | workflow-start, pre-dispatch, during-execute, exit-handler | All workflow labels as a JSON object (deprecated — use workflow.labels.json)                      |
-| `workflow.labels.<name>`                  | global        | string        | workflow-start, pre-dispatch, during-execute, exit-handler | Workflow metadata label value                                                                     |
-| `workflow.labels.json`                    | global        | json          | workflow-start, pre-dispatch, during-execute, exit-handler | All workflow labels as a JSON object                                                              |
-| `workflow.mainEntrypoint`                 | global        | string        | workflow-start, pre-dispatch, during-execute, exit-handler | spec.entrypoint                                                                                   |
-| `workflow.name`                           | global        | string        | workflow-start, pre-dispatch, during-execute, exit-handler | Workflow object name                                                                              |
-| `workflow.namespace`                      | global        | string        | workflow-start, pre-dispatch, during-execute, exit-handler | Workflow namespace                                                                                |
-| `workflow.outputs.artifacts.<name>`       | node-ref      | wfv1.Artifact | during-execute, exit-handler                               | Global output artifact (lifted via outputs.artifacts[*].globalName)                               |
-| `workflow.outputs.parameters.<name>`      | node-ref      | string        | during-execute, exit-handler                               | Global output parameter (lifted via outputs.parameters[*].globalName)                             |
-| `workflow.parameters`                     | global        | json          | workflow-start, pre-dispatch, during-execute, exit-handler | All workflow parameters as a JSON array                                                           |
-| `workflow.parameters.<name>`              | global        | string        | workflow-start, pre-dispatch, during-execute, exit-handler | Value from spec.arguments.parameters, ConfigMap-resolved if ValueFrom is set                      |
-| `workflow.parameters.json`                | global        | json          | workflow-start, pre-dispatch, during-execute, exit-handler | All workflow parameters as a JSON array (alias for workflow.parameters)                           |
-| `workflow.priority`                       | global        | string        | workflow-start, pre-dispatch, during-execute, exit-handler | Workflow priority                                                                                 |
-| `workflow.scheduledTime`                  | global        | string        | workflow-start, pre-dispatch, during-execute, exit-handler | Scheduled time for cron-triggered workflows (from annotation)                                     |
-| `workflow.serviceAccountName`             | global        | string        | workflow-start, pre-dispatch, during-execute, exit-handler | Effective service account name                                                                    |
-| `workflow.status`                         | runtime       | string        | pre-dispatch, during-execute, exit-handler                 | Current workflow phase; final value only at exit handler                                          |
-| `workflow.uid`                            | global        | string        | workflow-start, pre-dispatch, during-execute, exit-handler | Workflow UID                                                                                      |
+|                    Key                    |     Kind      |      Type      |                        Availability                        |                                            Description                                            |
+|-------------------------------------------|---------------|----------------|------------------------------------------------------------|---------------------------------------------------------------------------------------------------|
+| `cronworkflow.annotations`                | cron-workflow | map            | cron-eval                                                  | CronWorkflow annotations as a map; supports nested key access (cronworkflow.annotations.foo)      |
+| `cronworkflow.annotations.json`           | cron-workflow | json           | cron-eval                                                  | CronWorkflow annotations as a JSON object                                                         |
+| `cronworkflow.failed`                     | cron-workflow | int            | cron-eval                                                  | Count of failed child Workflows                                                                   |
+| `cronworkflow.labels`                     | cron-workflow | map            | cron-eval                                                  | CronWorkflow labels as a map; supports nested key access (cronworkflow.labels.foo)                |
+| `cronworkflow.labels.json`                | cron-workflow | json           | cron-eval                                                  | CronWorkflow labels as a JSON object                                                              |
+| `cronworkflow.lastScheduledTime`          | cron-workflow | *time.Time     | cron-eval                                                  | Time the cron last triggered, or nil before the first run                                         |
+| `cronworkflow.name`                       | cron-workflow | string         | cron-eval                                                  | CronWorkflow object name                                                                          |
+| `cronworkflow.namespace`                  | cron-workflow | string         | cron-eval                                                  | CronWorkflow namespace                                                                            |
+| `cronworkflow.succeeded`                  | cron-workflow | int            | cron-eval                                                  | Count of succeeded child Workflows                                                                |
+| `duration`                                | metric        | string         | metric-emission                                            | Current node's elapsed duration in seconds                                                        |
+| `exitCode`                                | metric        | string         | metric-emission                                            | Current node's container exit code                                                                |
+| `inputs.artifacts.<name>`                 | input         | wfv1.Artifact  | during-execute                                             | Input artifact object (for fromExpression use)                                                    |
+| `inputs.artifacts.<name>.path`            | input         | string         | during-execute                                             | Mount path of the input artifact inside the pod                                                   |
+| `inputs.parameters`                       | input         | json           | during-execute                                             | All input parameters as a JSON array                                                              |
+| `inputs.parameters.<name>`                | input         | string         | during-execute                                             | Resolved input parameter value                                                                    |
+| `item`                                    | item          | string or json | inside-loop, during-execute                                | Current loop iteration value (withItems/withParam). JSON for map/list items.                      |
+| `item.<key>`                              | item          | string         | inside-loop, during-execute                                | Accessor into a map-typed loop iteration value                                                    |
+| `lastRetry.duration`                      | retry         | string         | inside-retry, during-execute                               | Duration of the previous attempt in seconds                                                       |
+| `lastRetry.exitCode`                      | retry         | string         | inside-retry, during-execute                               | Exit code of the previous attempt (or 0 on first attempt)                                         |
+| `lastRetry.message`                       | retry         | string         | inside-retry, during-execute                               | Message of the previous attempt                                                                   |
+| `lastRetry.status`                        | retry         | string         | inside-retry, during-execute                               | Phase of the previous attempt (or empty on first)                                                 |
+| `node.name`                               | node-ctx      | string         | pre-dispatch, during-execute                               | Full node name                                                                                    |
+| `outputs.artifacts.<name>.path`           | output        | string         | during-execute                                             | Declared output artifact path for the current template (pod side)                                 |
+| `outputs.parameters.<name>`               | metric        | string         | metric-emission                                            | Current node's named output parameter value (metric scope only)                                   |
+| `outputs.parameters.<name>.path`          | output        | string         | during-execute                                             | Declared output parameter path for the current template (pod side)                                |
+| `outputs.result`                          | metric        | string         | metric-emission                                            | Current node's captured stdout (metric scope only)                                                |
+| `pod.name`                                | node-ctx      | string         | pre-dispatch, during-execute                               | Computed pod name for pod-producing templates                                                     |
+| `resourcesDuration.<resource>`            | metric        | string         | metric-emission                                            | Current node's resource duration in seconds, keyed by Kubernetes resource name (e.g. cpu, memory) |
+| `retries`                                 | retry         | string         | inside-retry, during-execute                               | 0-based retry attempt index                                                                       |
+| `status`                                  | metric        | string         | metric-emission                                            | Current node's phase                                                                              |
+| `steps.<loopName>.outputs.parameters`     | node-ref      | json           | after-loop                                                 | JSON array of per-child output-parameter maps                                                     |
+| `steps.<loopName>.outputs.parameters.<p>` | node-ref      | json           | after-loop                                                 | JSON array of values for a named parameter across all children                                    |
+| `steps.<loopName>.outputs.result`         | node-ref      | json           | after-loop                                                 | JSON array of child results (withItems/withParam)                                                 |
+| `steps.<name>.exitCode`                   | node-ref      | string         | after-node-complete                                        | Container exit code                                                                               |
+| `steps.<name>.finishedAt`                 | node-ref      | string         | after-node-complete                                        | RFC3339 finish time                                                                               |
+| `steps.<name>.hostNodeName`               | node-ref      | string         | after-pod-start                                            | Underlying k8s node name                                                                          |
+| `steps.<name>.id`                         | node-ref      | string         | after-node-init                                            | Node ID                                                                                           |
+| `steps.<name>.ip`                         | node-ref      | string         | after-pod-start                                            | Pod IP                                                                                            |
+| `steps.<name>.outputs.artifacts.<a>`      | node-ref      | wfv1.Artifact  | after-node-succeeded                                       | Named output artifact of the referenced node                                                      |
+| `steps.<name>.outputs.parameters.<p>`     | node-ref      | string         | after-node-succeeded                                       | Named output parameter of the referenced node                                                     |
+| `steps.<name>.outputs.result`             | node-ref      | string         | after-node-succeeded                                       | Captured stdout (non-loop nodes)                                                                  |
+| `steps.<name>.startedAt`                  | node-ref      | string         | after-pod-start                                            | RFC3339 start time                                                                                |
+| `steps.<name>.status`                     | node-ref      | string         | after-node-init                                            | Node phase                                                                                        |
+| `steps.name`                              | node-ctx      | string         | pre-dispatch, during-execute                               | Name of the current step (inside a Steps template body)                                           |
+| `tasks.<loopName>.outputs.parameters`     | node-ref      | json           | after-loop                                                 | JSON array of per-child output-parameter maps                                                     |
+| `tasks.<loopName>.outputs.parameters.<p>` | node-ref      | json           | after-loop                                                 | JSON array of values for a named parameter across all children                                    |
+| `tasks.<loopName>.outputs.result`         | node-ref      | json           | after-loop                                                 | JSON array of child results (withItems/withParam)                                                 |
+| `tasks.<name>.exitCode`                   | node-ref      | string         | after-node-complete                                        | Container exit code                                                                               |
+| `tasks.<name>.finishedAt`                 | node-ref      | string         | after-node-complete                                        | RFC3339 finish time                                                                               |
+| `tasks.<name>.hostNodeName`               | node-ref      | string         | after-pod-start                                            | Underlying k8s node name                                                                          |
+| `tasks.<name>.id`                         | node-ref      | string         | after-node-init                                            | Node ID                                                                                           |
+| `tasks.<name>.ip`                         | node-ref      | string         | after-pod-start                                            | Pod IP                                                                                            |
+| `tasks.<name>.outputs.artifacts.<a>`      | node-ref      | wfv1.Artifact  | after-node-succeeded                                       | Named output artifact of the referenced node                                                      |
+| `tasks.<name>.outputs.parameters.<p>`     | node-ref      | string         | after-node-succeeded                                       | Named output parameter of the referenced node                                                     |
+| `tasks.<name>.outputs.result`             | node-ref      | string         | after-node-succeeded                                       | Captured stdout (non-loop nodes)                                                                  |
+| `tasks.<name>.startedAt`                  | node-ref      | string         | after-pod-start                                            | RFC3339 start time                                                                                |
+| `tasks.<name>.status`                     | node-ref      | string         | after-node-init                                            | Node phase                                                                                        |
+| `tasks.name`                              | node-ctx      | string         | pre-dispatch, during-execute                               | Name of the current task (inside a DAG template body)                                             |
+| `workflow.annotations`                    | global        | json           | workflow-start, pre-dispatch, during-execute, exit-handler | All workflow annotations as a JSON object (deprecated — use workflow.annotations.json)            |
+| `workflow.annotations.<name>`             | global        | string         | workflow-start, pre-dispatch, during-execute, exit-handler | Workflow metadata annotation value                                                                |
+| `workflow.annotations.json`               | global        | json           | workflow-start, pre-dispatch, during-execute, exit-handler | All workflow annotations as a JSON object                                                         |
+| `workflow.creationTimestamp`              | global        | string         | workflow-start, pre-dispatch, during-execute, exit-handler | RFC3339 creation timestamp                                                                        |
+| `workflow.creationTimestamp.<fmt>`        | global        | string         | workflow-start, pre-dispatch, during-execute, exit-handler | strftime-formatted workflow creation time; `<fmt>` is one of the chars in util/strftime           |
+| `workflow.creationTimestamp.RFC3339`      | global        | string         | workflow-start, pre-dispatch, during-execute, exit-handler | Workflow creation time as RFC3339                                                                 |
+| `workflow.creationTimestamp.s`            | global        | string         | workflow-start, pre-dispatch, during-execute, exit-handler | Workflow creation time as Unix seconds                                                            |
+| `workflow.duration`                       | runtime       | string         | pre-dispatch, during-execute, exit-handler                 | Elapsed seconds as float string; final at exit handler                                            |
+| `workflow.failures`                       | runtime       | json           | exit-handler                                               | JSON array of failed node descriptors; populated when any node failed                             |
+| `workflow.labels`                         | global        | json           | workflow-start, pre-dispatch, during-execute, exit-handler | All workflow labels as a JSON object (deprecated — use workflow.labels.json)                      |
+| `workflow.labels.<name>`                  | global        | string         | workflow-start, pre-dispatch, during-execute, exit-handler | Workflow metadata label value                                                                     |
+| `workflow.labels.json`                    | global        | json           | workflow-start, pre-dispatch, during-execute, exit-handler | All workflow labels as a JSON object                                                              |
+| `workflow.mainEntrypoint`                 | global        | string         | workflow-start, pre-dispatch, during-execute, exit-handler | spec.entrypoint                                                                                   |
+| `workflow.name`                           | global        | string         | workflow-start, pre-dispatch, during-execute, exit-handler | Workflow object name                                                                              |
+| `workflow.namespace`                      | global        | string         | workflow-start, pre-dispatch, during-execute, exit-handler | Workflow namespace                                                                                |
+| `workflow.outputs.artifacts.<name>`       | node-ref      | wfv1.Artifact  | during-execute, exit-handler                               | Global output artifact (lifted via outputs.artifacts[*].globalName)                               |
+| `workflow.outputs.parameters.<name>`      | node-ref      | string         | during-execute, exit-handler                               | Global output parameter (lifted via outputs.parameters[*].globalName)                             |
+| `workflow.parameters`                     | global        | json           | workflow-start, pre-dispatch, during-execute, exit-handler | All workflow parameters as a JSON array                                                           |
+| `workflow.parameters.<name>`              | global        | string         | workflow-start, pre-dispatch, during-execute, exit-handler | Value from spec.arguments.parameters, ConfigMap-resolved if ValueFrom is set                      |
+| `workflow.parameters.json`                | global        | json           | workflow-start, pre-dispatch, during-execute, exit-handler | All workflow parameters as a JSON array (alias for workflow.parameters)                           |
+| `workflow.priority`                       | global        | string         | workflow-start, pre-dispatch, during-execute, exit-handler | Workflow priority                                                                                 |
+| `workflow.scheduledTime`                  | global        | string         | workflow-start, pre-dispatch, during-execute, exit-handler | Scheduled time for cron-triggered workflows (from annotation)                                     |
+| `workflow.serviceAccountName`             | global        | string         | workflow-start, pre-dispatch, during-execute, exit-handler | Effective service account name                                                                    |
+| `workflow.status`                         | runtime       | string         | pre-dispatch, during-execute, exit-handler                 | Current workflow phase; final value only at exit handler                                          |
+| `workflow.uid`                            | global        | string         | workflow-start, pre-dispatch, during-execute, exit-handler | Workflow UID                                                                                      |
 
 ## 2. Grouped by Kind
 
@@ -127,14 +127,19 @@ Auto-generated from `util/variables` via `GenerateMarkdown()`. 83 variables regi
 
 ### Input
 
-|               Key                |     Type      |  Availability  |                            Description                             |
-|----------------------------------|---------------|----------------|--------------------------------------------------------------------|
-| `inputs.artifacts.<name>`        | wfv1.Artifact | during-execute | Input artifact object (for fromExpression use)                     |
-| `inputs.artifacts.<name>.path`   | string        | during-execute | Mount path of the input artifact inside the pod                    |
-| `inputs.parameters`              | json          | during-execute | All input parameters as a JSON array                               |
-| `inputs.parameters.<name>`       | string        | during-execute | Resolved input parameter value                                     |
-| `outputs.artifacts.<name>.path`  | string        | during-execute | Declared output artifact path for the current template (pod side)  |
-| `outputs.parameters.<name>.path` | string        | during-execute | Declared output parameter path for the current template (pod side) |
+|              Key               |     Type      |  Availability  |                   Description                   |
+|--------------------------------|---------------|----------------|-------------------------------------------------|
+| `inputs.artifacts.<name>`      | wfv1.Artifact | during-execute | Input artifact object (for fromExpression use)  |
+| `inputs.artifacts.<name>.path` | string        | during-execute | Mount path of the input artifact inside the pod |
+| `inputs.parameters`            | json          | during-execute | All input parameters as a JSON array            |
+| `inputs.parameters.<name>`     | string        | during-execute | Resolved input parameter value                  |
+
+### Output
+
+|               Key                |  Type  |  Availability  |                            Description                             |
+|----------------------------------|--------|----------------|--------------------------------------------------------------------|
+| `outputs.artifacts.<name>.path`  | string | during-execute | Declared output artifact path for the current template (pod side)  |
+| `outputs.parameters.<name>.path` | string | during-execute | Declared output parameter path for the current template (pod side) |
 
 ### Node-Ref
 
@@ -171,10 +176,10 @@ Auto-generated from `util/variables` via `GenerateMarkdown()`. 83 variables regi
 
 ### Item
 
-|     Key      |    Type     |        Availability         |                                 Description                                  |
-|--------------|-------------|-----------------------------|------------------------------------------------------------------------------|
-| `item`       | string|json | inside-loop, during-execute | Current loop iteration value (withItems/withParam). JSON for map/list items. |
-| `item.<key>` | string      | inside-loop, during-execute | Accessor into a map-typed loop iteration value                               |
+|     Key      |      Type      |        Availability         |                                 Description                                  |
+|--------------|----------------|-----------------------------|------------------------------------------------------------------------------|
+| `item`       | string or json | inside-loop, during-execute | Current loop iteration value (withItems/withParam). JSON for map/list items. |
+| `item.<key>` | string         | inside-loop, during-execute | Accessor into a map-typed loop iteration value                               |
 
 ### Retry
 
@@ -235,27 +240,27 @@ Which variables are in scope for each template type. `•` = in scope, blank = n
 | `cronworkflow.name`                       |     |           |        |          |       |     |      |         |      |        |              | •             |
 | `cronworkflow.namespace`                  |     |           |        |          |       |     |      |         |      |        |              | •             |
 | `cronworkflow.succeeded`                  |     |           |        |          |       |     |      |         |      |        |              | •             |
-| `duration`                                | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            | •             |
-| `exitCode`                                | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            | •             |
-| `inputs.artifacts.<name>`                 | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            | •             |
+| `duration`                                | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
+| `exitCode`                                | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
+| `inputs.artifacts.<name>`                 | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
 | `inputs.artifacts.<name>.path`            |     | •         | •      | •        |       |     |      |         |      |        |              |               |
-| `inputs.parameters`                       | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            | •             |
-| `inputs.parameters.<name>`                | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            | •             |
-| `item`                                    | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            | •             |
-| `item.<key>`                              | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            | •             |
+| `inputs.parameters`                       | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
+| `inputs.parameters.<name>`                | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
+| `item`                                    | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
+| `item.<key>`                              | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
 | `lastRetry.duration`                      |     | •         | •      | •        |       |     |      |         |      |        |              |               |
 | `lastRetry.exitCode`                      |     | •         | •      | •        |       |     |      |         |      |        |              |               |
 | `lastRetry.message`                       |     | •         | •      | •        |       |     |      |         |      |        |              |               |
 | `lastRetry.status`                        |     | •         | •      | •        |       |     |      |         |      |        |              |               |
-| `node.name`                               | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            | •             |
+| `node.name`                               | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
 | `outputs.artifacts.<name>.path`           |     | •         | •      | •        |       |     |      |         |      |        |              |               |
-| `outputs.parameters.<name>`               | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            | •             |
+| `outputs.parameters.<name>`               | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
 | `outputs.parameters.<name>.path`          |     | •         | •      | •        |       |     |      |         |      |        |              |               |
-| `outputs.result`                          | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            | •             |
+| `outputs.result`                          | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
 | `pod.name`                                |     | •         | •      | •        |       |     |      |         |      |        |              |               |
-| `resourcesDuration.<resource>`            | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            | •             |
+| `resourcesDuration.<resource>`            | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
 | `retries`                                 |     | •         | •      | •        |       |     |      |         |      |        |              |               |
-| `status`                                  | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            | •             |
+| `status`                                  | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
 | `steps.<loopName>.outputs.parameters`     |     |           |        |          | •     |     |      |         |      |        | •            |               |
 | `steps.<loopName>.outputs.parameters.<p>` |     |           |        |          | •     |     |      |         |      |        | •            |               |
 | `steps.<loopName>.outputs.result`         |     |           |        |          | •     |     |      |         |      |        | •            |               |
@@ -284,31 +289,31 @@ Which variables are in scope for each template type. `•` = in scope, blank = n
 | `tasks.<name>.startedAt`                  |     |           |        |          |       | •   |      |         |      |        | •            |               |
 | `tasks.<name>.status`                     |     |           |        |          |       | •   |      |         |      |        | •            |               |
 | `tasks.name`                              |     |           |        |          |       | •   |      |         |      |        |              |               |
-| `workflow.annotations`                    | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            | •             |
-| `workflow.annotations.<name>`             | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            | •             |
-| `workflow.annotations.json`               | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            | •             |
-| `workflow.creationTimestamp`              | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            | •             |
-| `workflow.creationTimestamp.<fmt>`        | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            | •             |
-| `workflow.creationTimestamp.RFC3339`      | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            | •             |
-| `workflow.creationTimestamp.s`            | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            | •             |
-| `workflow.duration`                       | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            | •             |
-| `workflow.failures`                       | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            | •             |
-| `workflow.labels`                         | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            | •             |
-| `workflow.labels.<name>`                  | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            | •             |
-| `workflow.labels.json`                    | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            | •             |
-| `workflow.mainEntrypoint`                 | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            | •             |
-| `workflow.name`                           | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            | •             |
-| `workflow.namespace`                      | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            | •             |
-| `workflow.outputs.artifacts.<name>`       | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            | •             |
-| `workflow.outputs.parameters.<name>`      | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            | •             |
-| `workflow.parameters`                     | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            | •             |
-| `workflow.parameters.<name>`              | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            | •             |
-| `workflow.parameters.json`                | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            | •             |
-| `workflow.priority`                       | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            | •             |
-| `workflow.scheduledTime`                  | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            | •             |
-| `workflow.serviceAccountName`             | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            | •             |
-| `workflow.status`                         | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            | •             |
-| `workflow.uid`                            | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            | •             |
+| `workflow.annotations`                    | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
+| `workflow.annotations.<name>`             | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
+| `workflow.annotations.json`               | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
+| `workflow.creationTimestamp`              | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
+| `workflow.creationTimestamp.<fmt>`        | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
+| `workflow.creationTimestamp.RFC3339`      | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
+| `workflow.creationTimestamp.s`            | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
+| `workflow.duration`                       | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
+| `workflow.failures`                       | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
+| `workflow.labels`                         | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
+| `workflow.labels.<name>`                  | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
+| `workflow.labels.json`                    | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
+| `workflow.mainEntrypoint`                 | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
+| `workflow.name`                           | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
+| `workflow.namespace`                      | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
+| `workflow.outputs.artifacts.<name>`       | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
+| `workflow.outputs.parameters.<name>`      | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
+| `workflow.parameters`                     | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
+| `workflow.parameters.<name>`              | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
+| `workflow.parameters.json`                | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
+| `workflow.priority`                       | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
+| `workflow.scheduledTime`                  | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
+| `workflow.serviceAccountName`             | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
+| `workflow.status`                         | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
+| `workflow.uid`                            | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
 
 ## 4. Grouped by LifecyclePhase
 
@@ -386,56 +391,56 @@ Which variables are in scope for each template type. `•` = in scope, blank = n
 
 ### during-execute (41 variables)
 
-|                 Key                  |   Kind   |     Type      |
-|--------------------------------------|----------|---------------|
-| `inputs.artifacts.<name>`            | input    | wfv1.Artifact |
-| `inputs.artifacts.<name>.path`       | input    | string        |
-| `inputs.parameters`                  | input    | json          |
-| `inputs.parameters.<name>`           | input    | string        |
-| `item`                               | item     | string|json   |
-| `item.<key>`                         | item     | string        |
-| `lastRetry.duration`                 | retry    | string        |
-| `lastRetry.exitCode`                 | retry    | string        |
-| `lastRetry.message`                  | retry    | string        |
-| `lastRetry.status`                   | retry    | string        |
-| `node.name`                          | node-ctx | string        |
-| `outputs.artifacts.<name>.path`      | input    | string        |
-| `outputs.parameters.<name>.path`     | input    | string        |
-| `pod.name`                           | node-ctx | string        |
-| `retries`                            | retry    | string        |
-| `steps.name`                         | node-ctx | string        |
-| `tasks.name`                         | node-ctx | string        |
-| `workflow.annotations`               | global   | json          |
-| `workflow.annotations.<name>`        | global   | string        |
-| `workflow.annotations.json`          | global   | json          |
-| `workflow.creationTimestamp`         | global   | string        |
-| `workflow.creationTimestamp.<fmt>`   | global   | string        |
-| `workflow.creationTimestamp.RFC3339` | global   | string        |
-| `workflow.creationTimestamp.s`       | global   | string        |
-| `workflow.duration`                  | runtime  | string        |
-| `workflow.labels`                    | global   | json          |
-| `workflow.labels.<name>`             | global   | string        |
-| `workflow.labels.json`               | global   | json          |
-| `workflow.mainEntrypoint`            | global   | string        |
-| `workflow.name`                      | global   | string        |
-| `workflow.namespace`                 | global   | string        |
-| `workflow.outputs.artifacts.<name>`  | node-ref | wfv1.Artifact |
-| `workflow.outputs.parameters.<name>` | node-ref | string        |
-| `workflow.parameters`                | global   | json          |
-| `workflow.parameters.<name>`         | global   | string        |
-| `workflow.parameters.json`           | global   | json          |
-| `workflow.priority`                  | global   | string        |
-| `workflow.scheduledTime`             | global   | string        |
-| `workflow.serviceAccountName`        | global   | string        |
-| `workflow.status`                    | runtime  | string        |
-| `workflow.uid`                       | global   | string        |
+|                 Key                  |   Kind   |      Type      |
+|--------------------------------------|----------|----------------|
+| `inputs.artifacts.<name>`            | input    | wfv1.Artifact  |
+| `inputs.artifacts.<name>.path`       | input    | string         |
+| `inputs.parameters`                  | input    | json           |
+| `inputs.parameters.<name>`           | input    | string         |
+| `item`                               | item     | string or json |
+| `item.<key>`                         | item     | string         |
+| `lastRetry.duration`                 | retry    | string         |
+| `lastRetry.exitCode`                 | retry    | string         |
+| `lastRetry.message`                  | retry    | string         |
+| `lastRetry.status`                   | retry    | string         |
+| `node.name`                          | node-ctx | string         |
+| `outputs.artifacts.<name>.path`      | output   | string         |
+| `outputs.parameters.<name>.path`     | output   | string         |
+| `pod.name`                           | node-ctx | string         |
+| `retries`                            | retry    | string         |
+| `steps.name`                         | node-ctx | string         |
+| `tasks.name`                         | node-ctx | string         |
+| `workflow.annotations`               | global   | json           |
+| `workflow.annotations.<name>`        | global   | string         |
+| `workflow.annotations.json`          | global   | json           |
+| `workflow.creationTimestamp`         | global   | string         |
+| `workflow.creationTimestamp.<fmt>`   | global   | string         |
+| `workflow.creationTimestamp.RFC3339` | global   | string         |
+| `workflow.creationTimestamp.s`       | global   | string         |
+| `workflow.duration`                  | runtime  | string         |
+| `workflow.labels`                    | global   | json           |
+| `workflow.labels.<name>`             | global   | string         |
+| `workflow.labels.json`               | global   | json           |
+| `workflow.mainEntrypoint`            | global   | string         |
+| `workflow.name`                      | global   | string         |
+| `workflow.namespace`                 | global   | string         |
+| `workflow.outputs.artifacts.<name>`  | node-ref | wfv1.Artifact  |
+| `workflow.outputs.parameters.<name>` | node-ref | string         |
+| `workflow.parameters`                | global   | json           |
+| `workflow.parameters.<name>`         | global   | string         |
+| `workflow.parameters.json`           | global   | json           |
+| `workflow.priority`                  | global   | string         |
+| `workflow.scheduledTime`             | global   | string         |
+| `workflow.serviceAccountName`        | global   | string         |
+| `workflow.status`                    | runtime  | string         |
+| `workflow.uid`                       | global   | string         |
 
 ### inside-loop (2 variables)
 
-|     Key      | Kind |    Type     |
-|--------------|------|-------------|
-| `item`       | item | string|json |
-| `item.<key>` | item | string      |
+|     Key      | Kind |      Type      |
+|--------------|------|----------------|
+| `item`       | item | string or json |
+| `item.<key>` | item | string         |
 
 ### inside-retry (5 variables)
 
@@ -498,35 +503,61 @@ Which variables are in scope for each template type. `•` = in scope, blank = n
 | `tasks.<loopName>.outputs.parameters.<p>` | node-ref | json |
 | `tasks.<loopName>.outputs.result`         | node-ref | json |
 
-### exit-handler (25 variables)
+### exit-handler (51 variables)
 
-|                 Key                  |   Kind   |     Type      |
-|--------------------------------------|----------|---------------|
-| `workflow.annotations`               | global   | json          |
-| `workflow.annotations.<name>`        | global   | string        |
-| `workflow.annotations.json`          | global   | json          |
-| `workflow.creationTimestamp`         | global   | string        |
-| `workflow.creationTimestamp.<fmt>`   | global   | string        |
-| `workflow.creationTimestamp.RFC3339` | global   | string        |
-| `workflow.creationTimestamp.s`       | global   | string        |
-| `workflow.duration`                  | runtime  | string        |
-| `workflow.failures`                  | runtime  | json          |
-| `workflow.labels`                    | global   | json          |
-| `workflow.labels.<name>`             | global   | string        |
-| `workflow.labels.json`               | global   | json          |
-| `workflow.mainEntrypoint`            | global   | string        |
-| `workflow.name`                      | global   | string        |
-| `workflow.namespace`                 | global   | string        |
-| `workflow.outputs.artifacts.<name>`  | node-ref | wfv1.Artifact |
-| `workflow.outputs.parameters.<name>` | node-ref | string        |
-| `workflow.parameters`                | global   | json          |
-| `workflow.parameters.<name>`         | global   | string        |
-| `workflow.parameters.json`           | global   | json          |
-| `workflow.priority`                  | global   | string        |
-| `workflow.scheduledTime`             | global   | string        |
-| `workflow.serviceAccountName`        | global   | string        |
-| `workflow.status`                    | runtime  | string        |
-| `workflow.uid`                       | global   | string        |
+|                    Key                    |   Kind   |     Type      |
+|-------------------------------------------|----------|---------------|
+| `steps.<loopName>.outputs.parameters`     | node-ref | json          |
+| `steps.<loopName>.outputs.parameters.<p>` | node-ref | json          |
+| `steps.<loopName>.outputs.result`         | node-ref | json          |
+| `steps.<name>.exitCode`                   | node-ref | string        |
+| `steps.<name>.finishedAt`                 | node-ref | string        |
+| `steps.<name>.hostNodeName`               | node-ref | string        |
+| `steps.<name>.id`                         | node-ref | string        |
+| `steps.<name>.ip`                         | node-ref | string        |
+| `steps.<name>.outputs.artifacts.<a>`      | node-ref | wfv1.Artifact |
+| `steps.<name>.outputs.parameters.<p>`     | node-ref | string        |
+| `steps.<name>.outputs.result`             | node-ref | string        |
+| `steps.<name>.startedAt`                  | node-ref | string        |
+| `steps.<name>.status`                     | node-ref | string        |
+| `tasks.<loopName>.outputs.parameters`     | node-ref | json          |
+| `tasks.<loopName>.outputs.parameters.<p>` | node-ref | json          |
+| `tasks.<loopName>.outputs.result`         | node-ref | json          |
+| `tasks.<name>.exitCode`                   | node-ref | string        |
+| `tasks.<name>.finishedAt`                 | node-ref | string        |
+| `tasks.<name>.hostNodeName`               | node-ref | string        |
+| `tasks.<name>.id`                         | node-ref | string        |
+| `tasks.<name>.ip`                         | node-ref | string        |
+| `tasks.<name>.outputs.artifacts.<a>`      | node-ref | wfv1.Artifact |
+| `tasks.<name>.outputs.parameters.<p>`     | node-ref | string        |
+| `tasks.<name>.outputs.result`             | node-ref | string        |
+| `tasks.<name>.startedAt`                  | node-ref | string        |
+| `tasks.<name>.status`                     | node-ref | string        |
+| `workflow.annotations`                    | global   | json          |
+| `workflow.annotations.<name>`             | global   | string        |
+| `workflow.annotations.json`               | global   | json          |
+| `workflow.creationTimestamp`              | global   | string        |
+| `workflow.creationTimestamp.<fmt>`        | global   | string        |
+| `workflow.creationTimestamp.RFC3339`      | global   | string        |
+| `workflow.creationTimestamp.s`            | global   | string        |
+| `workflow.duration`                       | runtime  | string        |
+| `workflow.failures`                       | runtime  | json          |
+| `workflow.labels`                         | global   | json          |
+| `workflow.labels.<name>`                  | global   | string        |
+| `workflow.labels.json`                    | global   | json          |
+| `workflow.mainEntrypoint`                 | global   | string        |
+| `workflow.name`                           | global   | string        |
+| `workflow.namespace`                      | global   | string        |
+| `workflow.outputs.artifacts.<name>`       | node-ref | wfv1.Artifact |
+| `workflow.outputs.parameters.<name>`      | node-ref | string        |
+| `workflow.parameters`                     | global   | json          |
+| `workflow.parameters.<name>`              | global   | string        |
+| `workflow.parameters.json`                | global   | json          |
+| `workflow.priority`                       | global   | string        |
+| `workflow.scheduledTime`                  | global   | string        |
+| `workflow.serviceAccountName`             | global   | string        |
+| `workflow.status`                         | runtime  | string        |
+| `workflow.uid`                            | global   | string        |
 
 ### metric-emission (6 variables)
 
