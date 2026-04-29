@@ -92,7 +92,12 @@ func ReachablePhases(k TemplateKind) []LifecyclePhase {
 			PhAfterNodeSucceeded, PhAfterLoop,
 			PhExitHandler, PhMetricEmission,
 		}
-	case TmplContainer, TmplContainerSet, TmplScript, TmplResource:
+	// Pod-producing leaves (Container/ContainerSet/Script/Resource/Data) and
+	// the agent-driven leaves (HTTP/Plugin) share the same reachable phases:
+	// retryStrategy demonstrably fires on all of them and {{retries}} /
+	// {{lastRetry.*}} substitute inside their bodies.
+	case TmplContainer, TmplContainerSet, TmplScript, TmplResource,
+		TmplData, TmplHTTP, TmplPlugin:
 		return []LifecyclePhase{
 			PhWorkflowStart, PhPreDispatch, PhDuringExecute,
 			PhInsideLoop, PhInsideRetry, PhMetricEmission,
@@ -104,15 +109,9 @@ func ReachablePhases(k TemplateKind) []LifecyclePhase {
 			PhAfterNodeInit, PhAfterPodStart, PhAfterNodeComplete,
 			PhAfterNodeSucceeded, PhAfterLoop, PhMetricEmission,
 		}
-	case TmplData, TmplHTTP, TmplPlugin:
-		// PhInsideRetry: retryStrategy demonstrably fires on these kinds and
-		// {{retries}} / {{lastRetry.*}} substitute inside their bodies.
-		// (Suspend is excluded — lint accepts retryStrategy but suspend has no
-		// realistic failure path so retry vars never bind.)
-		return []LifecyclePhase{
-			PhWorkflowStart, PhPreDispatch, PhDuringExecute,
-			PhInsideLoop, PhInsideRetry, PhMetricEmission,
-		}
+	// Suspend has no realistic failure path — lint accepts retryStrategy on
+	// suspend templates but retry vars never actually bind. So PhInsideRetry
+	// is intentionally excluded from its reachable set.
 	case TmplSuspend:
 		return []LifecyclePhase{
 			PhWorkflowStart, PhPreDispatch, PhDuringExecute,
