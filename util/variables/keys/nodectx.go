@@ -13,7 +13,9 @@ func nodeCtx(template, description string, applies []v.TemplateKind) *v.Key {
 }
 
 var (
-	PodName   = nodeCtx("pod.name", "Computed pod name for pod-producing templates", v.PodKinds)
+	// pod.name is in scope for any pod-producing body, including an
+	// exit-handler template whose body is itself container/script/resource.
+	PodName   = nodeCtx("pod.name", "Computed pod name for pod-producing templates", podKindsOnExit)
 	NodeName  = nodeCtx("node.name", "Full node name", anyTmpl)
 	StepsName = nodeCtx("steps.name", "Name of the current step (inside a Steps template body)", []v.TemplateKind{v.TmplSteps})
 	TasksName = nodeCtx("tasks.name", "Name of the current task (inside a DAG template body)", []v.TemplateKind{v.TmplDAG})

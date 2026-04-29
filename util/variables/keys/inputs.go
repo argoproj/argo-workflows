@@ -21,16 +21,23 @@ func output(template, valueType, description string, applies []v.TemplateKind) *
 
 var anyTmpl = []v.TemplateKind{v.TmplAll}
 
+// podKindsOnExit covers pod-producing bodies AND the exit-handler context
+// (since an onExit template can itself be a container/script/resource and,
+// when it is, inherits all pod-side variables: pod.name, mount paths, …).
+// Distinct from PodKinds because retry- and loop-context variables must
+// not leak into the exit handler.
+var podKindsOnExit = []v.TemplateKind{v.TmplContainer, v.TmplScript, v.TmplResource, v.TmplExitHandler}
+
 // inputs.parameters.*, inputs.artifacts.*
 var (
 	InputsParameterByName    = input("inputs.parameters.<name>", "string", "Resolved input parameter value", anyTmpl)
 	InputsParametersAll      = input("inputs.parameters", "json", "All input parameters as a JSON array", anyTmpl)
 	InputsArtifactByName     = input("inputs.artifacts.<name>", "wfv1.Artifact", "Input artifact object (for fromExpression use)", anyTmpl)
-	InputsArtifactPathByName = input("inputs.artifacts.<name>.path", "string", "Mount path of the input artifact inside the pod", v.PodKinds)
+	InputsArtifactPathByName = input("inputs.artifacts.<name>.path", "string", "Mount path of the input artifact inside the pod", podKindsOnExit)
 )
 
 // outputs.*.path — declared output-side paths (pod-side).
 var (
-	OutputsArtifactPathByName  = output("outputs.artifacts.<name>.path", "string", "Declared output artifact path for the current template (pod side)", v.PodKinds)
-	OutputsParameterPathByName = output("outputs.parameters.<name>.path", "string", "Declared output parameter path for the current template (pod side)", v.PodKinds)
+	OutputsArtifactPathByName  = output("outputs.artifacts.<name>.path", "string", "Declared output artifact path for the current template (pod side)", podKindsOnExit)
+	OutputsParameterPathByName = output("outputs.parameters.<name>.path", "string", "Declared output parameter path for the current template (pod side)", podKindsOnExit)
 )

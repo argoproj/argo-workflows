@@ -243,7 +243,7 @@ Which variables are in scope for each template type. `•` = in scope, blank = n
 | `duration`                                | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
 | `exitCode`                                | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
 | `inputs.artifacts.<name>`                 | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
-| `inputs.artifacts.<name>.path`            |     | •         | •      | •        |       |     |      |         |      |        |              |               |
+| `inputs.artifacts.<name>.path`            |     | •         | •      | •        |       |     |      |         |      |        | •            |               |
 | `inputs.parameters`                       | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
 | `inputs.parameters.<name>`                | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
 | `item`                                    | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      |              |               |
@@ -253,11 +253,11 @@ Which variables are in scope for each template type. `•` = in scope, blank = n
 | `lastRetry.message`                       |     | •         | •      | •        |       |     |      |         |      |        |              |               |
 | `lastRetry.status`                        |     | •         | •      | •        |       |     |      |         |      |        |              |               |
 | `node.name`                               | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
-| `outputs.artifacts.<name>.path`           |     | •         | •      | •        |       |     |      |         |      |        |              |               |
+| `outputs.artifacts.<name>.path`           |     | •         | •      | •        |       |     |      |         |      |        | •            |               |
 | `outputs.parameters.<name>`               | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
-| `outputs.parameters.<name>.path`          |     | •         | •      | •        |       |     |      |         |      |        |              |               |
+| `outputs.parameters.<name>.path`          |     | •         | •      | •        |       |     |      |         |      |        | •            |               |
 | `outputs.result`                          | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
-| `pod.name`                                |     | •         | •      | •        |       |     |      |         |      |        |              |               |
+| `pod.name`                                |     | •         | •      | •        |       |     |      |         |      |        | •            |               |
 | `resourcesDuration.<resource>`            | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
 | `retries`                                 |     | •         | •      | •        |       |     |      |         |      |        |              |               |
 | `status`                                  | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
@@ -496,10 +496,14 @@ Which variables are in scope for each template type. `•` = in scope, blank = n
 | `tasks.<loopName>.outputs.parameters.<p>` | node-ref | json |
 | `tasks.<loopName>.outputs.result`         | node-ref | json |
 
-### exit-handler (51 variables)
+### exit-handler (55 variables)
 
 |                    Key                    |   Kind   |     Type      |
 |-------------------------------------------|----------|---------------|
+| `inputs.artifacts.<name>.path`            | input    | string        |
+| `outputs.artifacts.<name>.path`           | output   | string        |
+| `outputs.parameters.<name>.path`          | output   | string        |
+| `pod.name`                                | node-ctx | string        |
 | `steps.<loopName>.outputs.parameters`     | node-ref | json          |
 | `steps.<loopName>.outputs.parameters.<p>` | node-ref | json          |
 | `steps.<loopName>.outputs.result`         | node-ref | json          |
