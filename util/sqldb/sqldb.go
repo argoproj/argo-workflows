@@ -202,7 +202,7 @@ func createMySQLDBSessionWithCreds(cfg *config.MySQLConfig, persistPool *config.
 		Addr:                 cfg.GetHostname(),
 		DBName:               cfg.Database,
 		ParseTime:            true,
-		AllowNativePasswords: true,
+		AllowNativePasswords: true, // Required for MariaDB which uses mysql_native_password by default
 		Params:               cfg.Options,
 	}
 	dsn := mysqlCfg.FormatDSN()

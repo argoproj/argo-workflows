@@ -31,7 +31,7 @@ Database-based limits allow multiple workflow controllers (typically across diff
 
 Before you can manage database limits via the API, you must:
 
-1. Configure a PostgreSQL or MySQL database for synchronization (see [workflow synchronization](synchronization.md#database-configuration))
+1. Configure a PostgreSQL, MySQL, or MariaDB database for synchronization (see [workflow synchronization](synchronization.md#database-configuration))
 2. Enable the synchronization API in your workflow controller configuration
 
 ### Enable the API

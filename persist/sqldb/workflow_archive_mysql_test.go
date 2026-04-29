@@ -1,8 +1,9 @@
+//go:build !windows
+
 package sqldb
 
 import (
 	"context"
-	"runtime"
 	"strconv"
 	"testing"
 	"time"
@@ -23,31 +24,27 @@ import (
 	usqldb "github.com/argoproj/argo-workflows/v4/util/sqldb"
 )
 
-type mysqlVariant struct {
-	image       string
-	waitMessage string
-}
-
-var mysqlVariants = map[string]mysqlVariant{
-	"MySQL":   {image: "mysql:8.4", waitMessage: "port: 3306  MySQL Community Server"},
-	"MariaDB": {image: "mariadb:11.4", waitMessage: "mariadbd: ready for connections"},
-}
-
-func setupMySQLArchiveTest(ctx context.Context, t *testing.T, v mysqlVariant) (WorkflowArchive, func()) {
+// setupMySQLArchiveTest starts a MySQL or MariaDB container, runs migrations, and returns a WorkflowArchive.
+func setupMySQLArchiveTest(ctx context.Context, t *testing.T, v usqldb.MySQLVariant) WorkflowArchive {
 	t.Helper()
 
 	c, err := testmysql.Run(ctx,
-		v.image,
+		v.Image,
 		testmysql.WithDatabase("argo"),
 		testmysql.WithUsername("argo"),
 		testmysql.WithPassword("argo"),
 		testcontainers.WithWaitStrategy(
 			wait.ForAll(
-				wait.ForLog(v.waitMessage).WithStartupTimeout(60*time.Second),
+				wait.ForLog(v.WaitMessage).WithStartupTimeout(60*time.Second),
 				wait.ForListeningPort("3306/tcp"),
 			)),
 	)
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		if termErr := testcontainers.TerminateContainer(c); termErr != nil {
+			t.Logf("failed to terminate container: %s", termErr)
+		}
+	})
 
 	host, err := c.Host(ctx)
 	require.NoError(t, err)
@@ -74,24 +71,18 @@ func setupMySQLArchiveTest(ctx context.Context, t *testing.T, v mysqlVariant) (W
 	err = Migrate(ctx, proxy.Session(), "test", "argo_workflows", proxy.DBType())
 	require.NoError(t, err)
 
-	return NewWorkflowArchive(proxy, "test", "", instanceid.NewService("")), func() {
-		proxy.Close()
-		testcontainers.TerminateContainer(c) //nolint:errcheck
-	}
+	t.Cleanup(func() { proxy.Close() })
+
+	return NewWorkflowArchive(proxy, "test", "", instanceid.NewService(""))
 }
 
 // TestMySQLListWorkflows verifies that JSON_EXTRACT/JSON_UNQUOTE queries in
 // ListWorkflows execute correctly against both MySQL and MariaDB.
 func TestMySQLListWorkflows(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("test requires Linux container")
-	}
-
-	for name, variant := range mysqlVariants {
+	for name, variant := range usqldb.MySQLVariants {
 		t.Run(name, func(t *testing.T) {
 			ctx := logging.TestContext(t.Context())
-			archive, cleanup := setupMySQLArchiveTest(ctx, t, variant)
-			defer cleanup()
+			archive := setupMySQLArchiveTest(ctx, t, variant)
 
 			now := metav1.Now()
 			err := archive.ArchiveWorkflow(ctx, &wfv1.Workflow{
@@ -100,12 +91,11 @@ func TestMySQLListWorkflows(t *testing.T) {
 					Namespace:         "default",
 					UID:               types.UID("test-uid-001"),
 					CreationTimestamp: now,
-					Labels: map[string]string{
-						"workflows.argoproj.io/archive-strategy": "Persisted",
-						"env":                                    "test",
-					},
+					Labels:            map[string]string{"env": "test"},
+					Annotations:       map[string]string{"note": "integration-test"},
 				},
 				Spec: wfv1.WorkflowSpec{
+					Suspend: new(true),
 					Arguments: wfv1.Arguments{
 						Parameters: []wfv1.Parameter{
 							{Name: "msg", Value: wfv1.AnyStringPtr("hello")},
@@ -113,11 +103,12 @@ func TestMySQLListWorkflows(t *testing.T) {
 					},
 				},
 				Status: wfv1.WorkflowStatus{
-					Phase:      wfv1.WorkflowSucceeded,
-					StartedAt:  now,
-					FinishedAt: now,
-					Progress:   "1/1",
-					Message:    "completed",
+					Phase:             wfv1.WorkflowSucceeded,
+					StartedAt:         now,
+					FinishedAt:        now,
+					Progress:          "1/1",
+					Message:           "completed",
+					EstimatedDuration: wfv1.EstimatedDuration(30),
 				},
 			})
 			require.NoError(t, err)
@@ -132,6 +123,10 @@ func TestMySQLListWorkflows(t *testing.T) {
 			assert.Equal(t, wfv1.Progress("1/1"), wf.Status.Progress)
 			assert.Equal(t, "completed", wf.Status.Message)
 			assert.Equal(t, "test", wf.GetLabels()["env"])
+			assert.Equal(t, "integration-test", wf.GetAnnotations()["note"])
+			assert.Equal(t, new(true), wf.Spec.Suspend)
+			assert.Equal(t, "hello", wf.Spec.Arguments.Parameters[0].Value.String())
+			assert.Equal(t, wfv1.EstimatedDuration(30), wf.Status.EstimatedDuration)
 		})
 	}
 }
