@@ -10,7 +10,7 @@ var (
 
 // WorkflowScheduledTime is the scheduled time for cron-triggered workflows.
 var WorkflowScheduledTime = global("workflow.scheduledTime", "string",
-	"Scheduled time for cron-triggered workflows (from annotation)")
+	"Scheduled time for cron-triggered workflows. Conditional — resolves only when annotation `workflows.argoproj.io/scheduled-time` is present (set automatically by the cron controller). Lint passes via prefix exemption (validate.go:756-757) but on a non-cron Workflow the runtime leaves the literal `{{workflow.scheduledTime}}` in resolved values rather than substituting empty.")
 
 // WorkflowParametersJSON is the alternative whole-parameters JSON form.
 // Legacy code writes both this and WorkflowParametersAll.

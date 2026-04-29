@@ -45,6 +45,7 @@ type TemplateKind string
 const (
 	TmplAll          TemplateKind = "any"
 	TmplContainer    TemplateKind = "container"
+	TmplContainerSet TemplateKind = "container-set"
 	TmplScript       TemplateKind = "script"
 	TmplResource     TemplateKind = "resource"
 	TmplSteps        TemplateKind = "steps"
@@ -58,13 +59,15 @@ const (
 )
 
 var AllTemplateKinds = []TemplateKind{
-	TmplContainer, TmplScript, TmplResource,
+	TmplContainer, TmplContainerSet, TmplScript, TmplResource,
 	TmplSteps, TmplDAG, TmplData,
 	TmplSuspend, TmplHTTP, TmplPlugin, TmplExitHandler,
 	TmplCronWorkflow,
 }
 
-var PodKinds = []TemplateKind{TmplContainer, TmplScript, TmplResource}
+// PodKinds are the body types that produce a real Kubernetes Pod.
+// Mirrors `Template.IsPodType()` in pkg/apis/workflow/v1alpha1.
+var PodKinds = []TemplateKind{TmplContainer, TmplContainerSet, TmplScript, TmplResource, TmplData}
 
 // ReachablePhases returns the lifecycle phases that can actually fire from
 // inside a template body of the given kind. Used by the doc generator to
@@ -89,18 +92,28 @@ func ReachablePhases(k TemplateKind) []LifecyclePhase {
 			PhAfterNodeSucceeded, PhAfterLoop,
 			PhExitHandler, PhMetricEmission,
 		}
-	case TmplContainer, TmplScript, TmplResource:
+	case TmplContainer, TmplContainerSet, TmplScript, TmplResource:
 		return []LifecyclePhase{
 			PhWorkflowStart, PhPreDispatch, PhDuringExecute,
 			PhInsideLoop, PhInsideRetry, PhMetricEmission,
 		}
 	case TmplSteps, TmplDAG:
 		return []LifecyclePhase{
-			PhWorkflowStart, PhPreDispatch, PhDuringExecute, PhInsideLoop,
+			PhWorkflowStart, PhPreDispatch, PhDuringExecute,
+			PhInsideLoop, PhInsideRetry,
 			PhAfterNodeInit, PhAfterPodStart, PhAfterNodeComplete,
 			PhAfterNodeSucceeded, PhAfterLoop, PhMetricEmission,
 		}
-	case TmplData, TmplSuspend, TmplHTTP, TmplPlugin:
+	case TmplData, TmplHTTP, TmplPlugin:
+		// PhInsideRetry: retryStrategy demonstrably fires on these kinds and
+		// {{retries}} / {{lastRetry.*}} substitute inside their bodies.
+		// (Suspend is excluded — lint accepts retryStrategy but suspend has no
+		// realistic failure path so retry vars never bind.)
+		return []LifecyclePhase{
+			PhWorkflowStart, PhPreDispatch, PhDuringExecute,
+			PhInsideLoop, PhInsideRetry, PhMetricEmission,
+		}
+	case TmplSuspend:
 		return []LifecyclePhase{
 			PhWorkflowStart, PhPreDispatch, PhDuringExecute,
 			PhInsideLoop, PhMetricEmission,

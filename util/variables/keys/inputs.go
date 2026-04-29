@@ -21,12 +21,22 @@ func output(template, valueType, description string, applies []v.TemplateKind) *
 
 var anyTmpl = []v.TemplateKind{v.TmplAll}
 
-// podKindsOnExit covers pod-producing bodies AND the exit-handler context
-// (since an onExit template can itself be a container/script/resource and,
-// when it is, inherits all pod-side variables: pod.name, mount paths, …).
-// Distinct from PodKinds because retry- and loop-context variables must
-// not leak into the exit handler.
-var podKindsOnExit = []v.TemplateKind{v.TmplContainer, v.TmplScript, v.TmplResource, v.TmplExitHandler}
+// podKindsOnExit covers every body type that produces a real Pod plus the
+// exit-handler context (an onExit template that is itself one of those
+// pod-producing types inherits all pod-side variables: pod.name, mount
+// paths, …). Distinct from PodKinds because retry- and loop-context
+// variables must not leak into the exit handler.
+//
+// The pod-producing set mirrors Template.IsPodType() in pkg/apis/workflow/
+// v1alpha1: Container, ContainerSet, Script, Resource, and Data all run
+// real Pods, validate.go gates pod-side variables on IsPodType()/IsLeaf(),
+// and the runtime substitutes pod.name and the path variables for all of
+// them. Empirically verified end-to-end on the cluster for Data and
+// ContainerSet.
+var podKindsOnExit = []v.TemplateKind{
+	v.TmplContainer, v.TmplContainerSet, v.TmplScript, v.TmplResource, v.TmplData,
+	v.TmplExitHandler,
+}
 
 // inputs.parameters.*, inputs.artifacts.*
 var (

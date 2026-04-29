@@ -33,7 +33,7 @@ var (
 	WorkflowCreationTimestamp  = global("workflow.creationTimestamp", "string", "RFC3339 creation timestamp")
 	WorkflowMainEntrypoint     = global("workflow.mainEntrypoint", "string", "spec.entrypoint")
 	WorkflowServiceAccountName = global("workflow.serviceAccountName", "string", "Effective service account name")
-	WorkflowPriority           = global("workflow.priority", "string", "Workflow priority")
+	WorkflowPriority           = global("workflow.priority", "string", "Workflow priority. Conditional — resolves only when spec.priority is set; otherwise both lint (validate.go:250-252) and runtime (operator.go:662-664) treat the reference as undefined (no empty/zero fallback).")
 )
 
 // workflow.parameters.*
@@ -58,6 +58,6 @@ var (
 		"Elapsed seconds as float string; final at exit handler",
 		v.PhPreDispatch, v.PhDuringExecute, v.PhExitHandler)
 	WorkflowFailures = runtime("workflow.failures", "json",
-		"JSON array of failed node descriptors; populated when any node failed",
+		"Failed-node descriptors. Wire format: a strconv.Quote-wrapped JSON string (operator.go:453) — consumers must JSON-decode twice. When no nodes have failed, the value is the literal 6-character string \"null\" (with quotes), not an empty array.",
 		v.PhExitHandler)
 )
