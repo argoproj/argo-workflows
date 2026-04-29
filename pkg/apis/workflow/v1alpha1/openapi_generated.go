@@ -14,157 +14,160 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Amount":                        schema_pkg_apis_workflow_v1alpha1_Amount(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArchiveStrategy":               schema_pkg_apis_workflow_v1alpha1_ArchiveStrategy(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Arguments":                     schema_pkg_apis_workflow_v1alpha1_Arguments(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtGCStatus":                   schema_pkg_apis_workflow_v1alpha1_ArtGCStatus(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Artifact":                      schema_pkg_apis_workflow_v1alpha1_Artifact(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGC":                    schema_pkg_apis_workflow_v1alpha1_ArtifactGC(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGCSpec":                schema_pkg_apis_workflow_v1alpha1_ArtifactGCSpec(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGCStatus":              schema_pkg_apis_workflow_v1alpha1_ArtifactGCStatus(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactLocation":              schema_pkg_apis_workflow_v1alpha1_ArtifactLocation(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactNodeSpec":              schema_pkg_apis_workflow_v1alpha1_ArtifactNodeSpec(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactPaths":                 schema_pkg_apis_workflow_v1alpha1_ArtifactPaths(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactRepository":            schema_pkg_apis_workflow_v1alpha1_ArtifactRepository(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRef":         schema_pkg_apis_workflow_v1alpha1_ArtifactRepositoryRef(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRefStatus":   schema_pkg_apis_workflow_v1alpha1_ArtifactRepositoryRefStatus(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactResult":                schema_pkg_apis_workflow_v1alpha1_ArtifactResult(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactResultNodeStatus":      schema_pkg_apis_workflow_v1alpha1_ArtifactResultNodeStatus(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactSearchQuery":           schema_pkg_apis_workflow_v1alpha1_ArtifactSearchQuery(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactSearchResult":          schema_pkg_apis_workflow_v1alpha1_ArtifactSearchResult(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactoryArtifact":           schema_pkg_apis_workflow_v1alpha1_ArtifactoryArtifact(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactoryArtifactRepository": schema_pkg_apis_workflow_v1alpha1_ArtifactoryArtifactRepository(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactoryAuth":               schema_pkg_apis_workflow_v1alpha1_ArtifactoryAuth(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.AzureArtifact":                 schema_pkg_apis_workflow_v1alpha1_AzureArtifact(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.AzureArtifactRepository":       schema_pkg_apis_workflow_v1alpha1_AzureArtifactRepository(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.AzureBlobContainer":            schema_pkg_apis_workflow_v1alpha1_AzureBlobContainer(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Backoff":                       schema_pkg_apis_workflow_v1alpha1_Backoff(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.BasicAuth":                     schema_pkg_apis_workflow_v1alpha1_BasicAuth(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Cache":                         schema_pkg_apis_workflow_v1alpha1_Cache(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ClientCertAuth":                schema_pkg_apis_workflow_v1alpha1_ClientCertAuth(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ClusterWorkflowTemplate":       schema_pkg_apis_workflow_v1alpha1_ClusterWorkflowTemplate(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ClusterWorkflowTemplateList":   schema_pkg_apis_workflow_v1alpha1_ClusterWorkflowTemplateList(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Column":                        schema_pkg_apis_workflow_v1alpha1_Column(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Condition":                     schema_pkg_apis_workflow_v1alpha1_Condition(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContainerNode":                 schema_pkg_apis_workflow_v1alpha1_ContainerNode(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContainerSetRetryStrategy":     schema_pkg_apis_workflow_v1alpha1_ContainerSetRetryStrategy(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContainerSetTemplate":          schema_pkg_apis_workflow_v1alpha1_ContainerSetTemplate(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContinueOn":                    schema_pkg_apis_workflow_v1alpha1_ContinueOn(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Counter":                       schema_pkg_apis_workflow_v1alpha1_Counter(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.CreateS3BucketOptions":         schema_pkg_apis_workflow_v1alpha1_CreateS3BucketOptions(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.CronWorkflow":                  schema_pkg_apis_workflow_v1alpha1_CronWorkflow(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.CronWorkflowList":              schema_pkg_apis_workflow_v1alpha1_CronWorkflowList(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.CronWorkflowSpec":              schema_pkg_apis_workflow_v1alpha1_CronWorkflowSpec(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.CronWorkflowStatus":            schema_pkg_apis_workflow_v1alpha1_CronWorkflowStatus(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.DAGTask":                       schema_pkg_apis_workflow_v1alpha1_DAGTask(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.DAGTemplate":                   schema_pkg_apis_workflow_v1alpha1_DAGTemplate(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Data":                          schema_pkg_apis_workflow_v1alpha1_Data(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.DataSource":                    schema_pkg_apis_workflow_v1alpha1_DataSource(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Event":                         schema_pkg_apis_workflow_v1alpha1_Event(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ExecutorConfig":                schema_pkg_apis_workflow_v1alpha1_ExecutorConfig(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GCSArtifact":                   schema_pkg_apis_workflow_v1alpha1_GCSArtifact(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GCSArtifactRepository":         schema_pkg_apis_workflow_v1alpha1_GCSArtifactRepository(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GCSBucket":                     schema_pkg_apis_workflow_v1alpha1_GCSBucket(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Gauge":                         schema_pkg_apis_workflow_v1alpha1_Gauge(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GitArtifact":                   schema_pkg_apis_workflow_v1alpha1_GitArtifact(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HDFSArtifact":                  schema_pkg_apis_workflow_v1alpha1_HDFSArtifact(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HDFSArtifactRepository":        schema_pkg_apis_workflow_v1alpha1_HDFSArtifactRepository(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HDFSConfig":                    schema_pkg_apis_workflow_v1alpha1_HDFSConfig(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HDFSKrbConfig":                 schema_pkg_apis_workflow_v1alpha1_HDFSKrbConfig(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTP":                          schema_pkg_apis_workflow_v1alpha1_HTTP(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPArtifact":                  schema_pkg_apis_workflow_v1alpha1_HTTPArtifact(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPAuth":                      schema_pkg_apis_workflow_v1alpha1_HTTPAuth(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPBodySource":                schema_pkg_apis_workflow_v1alpha1_HTTPBodySource(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPHeader":                    schema_pkg_apis_workflow_v1alpha1_HTTPHeader(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPHeaderSource":              schema_pkg_apis_workflow_v1alpha1_HTTPHeaderSource(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Header":                        schema_pkg_apis_workflow_v1alpha1_Header(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Histogram":                     schema_pkg_apis_workflow_v1alpha1_Histogram(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Inputs":                        schema_pkg_apis_workflow_v1alpha1_Inputs(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Item":                          schema_pkg_apis_workflow_v1alpha1_Item(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.LabelKeys":                     schema_pkg_apis_workflow_v1alpha1_LabelKeys(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.LabelValueFrom":                schema_pkg_apis_workflow_v1alpha1_LabelValueFrom(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.LabelValues":                   schema_pkg_apis_workflow_v1alpha1_LabelValues(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.LifecycleHook":                 schema_pkg_apis_workflow_v1alpha1_LifecycleHook(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Link":                          schema_pkg_apis_workflow_v1alpha1_Link(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ManifestFrom":                  schema_pkg_apis_workflow_v1alpha1_ManifestFrom(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.MemoizationStatus":             schema_pkg_apis_workflow_v1alpha1_MemoizationStatus(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Memoize":                       schema_pkg_apis_workflow_v1alpha1_Memoize(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metadata":                      schema_pkg_apis_workflow_v1alpha1_Metadata(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.MetricLabel":                   schema_pkg_apis_workflow_v1alpha1_MetricLabel(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metrics":                       schema_pkg_apis_workflow_v1alpha1_Metrics(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Mutex":                         schema_pkg_apis_workflow_v1alpha1_Mutex(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.MutexHolding":                  schema_pkg_apis_workflow_v1alpha1_MutexHolding(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.MutexStatus":                   schema_pkg_apis_workflow_v1alpha1_MutexStatus(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NodeFlag":                      schema_pkg_apis_workflow_v1alpha1_NodeFlag(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NodeResult":                    schema_pkg_apis_workflow_v1alpha1_NodeResult(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NodeStatus":                    schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NodeSynchronizationStatus":     schema_pkg_apis_workflow_v1alpha1_NodeSynchronizationStatus(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NoneStrategy":                  schema_pkg_apis_workflow_v1alpha1_NoneStrategy(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OAuth2Auth":                    schema_pkg_apis_workflow_v1alpha1_OAuth2Auth(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OAuth2EndpointParam":           schema_pkg_apis_workflow_v1alpha1_OAuth2EndpointParam(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSArtifact":                   schema_pkg_apis_workflow_v1alpha1_OSSArtifact(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSArtifactRepository":         schema_pkg_apis_workflow_v1alpha1_OSSArtifactRepository(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSBucket":                     schema_pkg_apis_workflow_v1alpha1_OSSBucket(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSLifecycleRule":              schema_pkg_apis_workflow_v1alpha1_OSSLifecycleRule(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Object":                        schema_pkg_apis_workflow_v1alpha1_Object(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Outputs":                       schema_pkg_apis_workflow_v1alpha1_Outputs(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ParallelSteps":                 schema_pkg_apis_workflow_v1alpha1_ParallelSteps(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Parameter":                     schema_pkg_apis_workflow_v1alpha1_Parameter(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Plugin":                        schema_pkg_apis_workflow_v1alpha1_Plugin(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.PodGC":                         schema_pkg_apis_workflow_v1alpha1_PodGC(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Prometheus":                    schema_pkg_apis_workflow_v1alpha1_Prometheus(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RawArtifact":                   schema_pkg_apis_workflow_v1alpha1_RawArtifact(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ResourceTemplate":              schema_pkg_apis_workflow_v1alpha1_ResourceTemplate(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RetryAffinity":                 schema_pkg_apis_workflow_v1alpha1_RetryAffinity(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RetryNodeAntiAffinity":         schema_pkg_apis_workflow_v1alpha1_RetryNodeAntiAffinity(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RetryStrategy":                 schema_pkg_apis_workflow_v1alpha1_RetryStrategy(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.S3Artifact":                    schema_pkg_apis_workflow_v1alpha1_S3Artifact(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.S3ArtifactRepository":          schema_pkg_apis_workflow_v1alpha1_S3ArtifactRepository(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.S3Bucket":                      schema_pkg_apis_workflow_v1alpha1_S3Bucket(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.S3EncryptionOptions":           schema_pkg_apis_workflow_v1alpha1_S3EncryptionOptions(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ScriptTemplate":                schema_pkg_apis_workflow_v1alpha1_ScriptTemplate(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SemaphoreHolding":              schema_pkg_apis_workflow_v1alpha1_SemaphoreHolding(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SemaphoreRef":                  schema_pkg_apis_workflow_v1alpha1_SemaphoreRef(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SemaphoreStatus":               schema_pkg_apis_workflow_v1alpha1_SemaphoreStatus(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Sequence":                      schema_pkg_apis_workflow_v1alpha1_Sequence(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.StopStrategy":                  schema_pkg_apis_workflow_v1alpha1_StopStrategy(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Submit":                        schema_pkg_apis_workflow_v1alpha1_Submit(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SubmitOpts":                    schema_pkg_apis_workflow_v1alpha1_SubmitOpts(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SuppliedValueFrom":             schema_pkg_apis_workflow_v1alpha1_SuppliedValueFrom(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SuspendTemplate":               schema_pkg_apis_workflow_v1alpha1_SuspendTemplate(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Synchronization":               schema_pkg_apis_workflow_v1alpha1_Synchronization(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SynchronizationStatus":         schema_pkg_apis_workflow_v1alpha1_SynchronizationStatus(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.TTLStrategy":                   schema_pkg_apis_workflow_v1alpha1_TTLStrategy(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.TarStrategy":                   schema_pkg_apis_workflow_v1alpha1_TarStrategy(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Template":                      schema_pkg_apis_workflow_v1alpha1_Template(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.TemplateRef":                   schema_pkg_apis_workflow_v1alpha1_TemplateRef(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.TransformationStep":            schema_pkg_apis_workflow_v1alpha1_TransformationStep(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.UserContainer":                 schema_pkg_apis_workflow_v1alpha1_UserContainer(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ValueFrom":                     schema_pkg_apis_workflow_v1alpha1_ValueFrom(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Version":                       schema_pkg_apis_workflow_v1alpha1_Version(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.VolumeClaimGC":                 schema_pkg_apis_workflow_v1alpha1_VolumeClaimGC(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Workflow":                      schema_pkg_apis_workflow_v1alpha1_Workflow(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowArtifactGCTask":        schema_pkg_apis_workflow_v1alpha1_WorkflowArtifactGCTask(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowArtifactGCTaskList":    schema_pkg_apis_workflow_v1alpha1_WorkflowArtifactGCTaskList(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowEventBinding":          schema_pkg_apis_workflow_v1alpha1_WorkflowEventBinding(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowEventBindingList":      schema_pkg_apis_workflow_v1alpha1_WorkflowEventBindingList(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowEventBindingSpec":      schema_pkg_apis_workflow_v1alpha1_WorkflowEventBindingSpec(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowLevelArtifactGC":       schema_pkg_apis_workflow_v1alpha1_WorkflowLevelArtifactGC(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowList":                  schema_pkg_apis_workflow_v1alpha1_WorkflowList(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowMetadata":              schema_pkg_apis_workflow_v1alpha1_WorkflowMetadata(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowSpec":                  schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowStatus":                schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowStep":                  schema_pkg_apis_workflow_v1alpha1_WorkflowStep(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowTaskResult":            schema_pkg_apis_workflow_v1alpha1_WorkflowTaskResult(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowTaskResultList":        schema_pkg_apis_workflow_v1alpha1_WorkflowTaskResultList(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowTaskSet":               schema_pkg_apis_workflow_v1alpha1_WorkflowTaskSet(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowTaskSetList":           schema_pkg_apis_workflow_v1alpha1_WorkflowTaskSetList(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowTaskSetSpec":           schema_pkg_apis_workflow_v1alpha1_WorkflowTaskSetSpec(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowTaskSetStatus":         schema_pkg_apis_workflow_v1alpha1_WorkflowTaskSetStatus(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowTemplate":              schema_pkg_apis_workflow_v1alpha1_WorkflowTemplate(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowTemplateList":          schema_pkg_apis_workflow_v1alpha1_WorkflowTemplateList(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef":           schema_pkg_apis_workflow_v1alpha1_WorkflowTemplateRef(ref),
-		"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ZipStrategy":                   schema_pkg_apis_workflow_v1alpha1_ZipStrategy(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Amount":                        schema_pkg_apis_workflow_v1alpha1_Amount(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArchiveStrategy":               schema_pkg_apis_workflow_v1alpha1_ArchiveStrategy(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Arguments":                     schema_pkg_apis_workflow_v1alpha1_Arguments(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtGCStatus":                   schema_pkg_apis_workflow_v1alpha1_ArtGCStatus(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Artifact":                      schema_pkg_apis_workflow_v1alpha1_Artifact(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactGC":                    schema_pkg_apis_workflow_v1alpha1_ArtifactGC(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactGCSpec":                schema_pkg_apis_workflow_v1alpha1_ArtifactGCSpec(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactGCStatus":              schema_pkg_apis_workflow_v1alpha1_ArtifactGCStatus(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactLocation":              schema_pkg_apis_workflow_v1alpha1_ArtifactLocation(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactNodeSpec":              schema_pkg_apis_workflow_v1alpha1_ArtifactNodeSpec(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactPaths":                 schema_pkg_apis_workflow_v1alpha1_ArtifactPaths(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactRepository":            schema_pkg_apis_workflow_v1alpha1_ArtifactRepository(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRef":         schema_pkg_apis_workflow_v1alpha1_ArtifactRepositoryRef(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRefStatus":   schema_pkg_apis_workflow_v1alpha1_ArtifactRepositoryRefStatus(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactResult":                schema_pkg_apis_workflow_v1alpha1_ArtifactResult(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactResultNodeStatus":      schema_pkg_apis_workflow_v1alpha1_ArtifactResultNodeStatus(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactSearchQuery":           schema_pkg_apis_workflow_v1alpha1_ArtifactSearchQuery(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactSearchResult":          schema_pkg_apis_workflow_v1alpha1_ArtifactSearchResult(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactoryArtifact":           schema_pkg_apis_workflow_v1alpha1_ArtifactoryArtifact(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactoryArtifactRepository": schema_pkg_apis_workflow_v1alpha1_ArtifactoryArtifactRepository(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactoryAuth":               schema_pkg_apis_workflow_v1alpha1_ArtifactoryAuth(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.AzureArtifact":                 schema_pkg_apis_workflow_v1alpha1_AzureArtifact(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.AzureArtifactRepository":       schema_pkg_apis_workflow_v1alpha1_AzureArtifactRepository(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.AzureBlobContainer":            schema_pkg_apis_workflow_v1alpha1_AzureBlobContainer(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Backoff":                       schema_pkg_apis_workflow_v1alpha1_Backoff(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.BasicAuth":                     schema_pkg_apis_workflow_v1alpha1_BasicAuth(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Cache":                         schema_pkg_apis_workflow_v1alpha1_Cache(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ClientCertAuth":                schema_pkg_apis_workflow_v1alpha1_ClientCertAuth(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ClusterWorkflowTemplate":       schema_pkg_apis_workflow_v1alpha1_ClusterWorkflowTemplate(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ClusterWorkflowTemplateList":   schema_pkg_apis_workflow_v1alpha1_ClusterWorkflowTemplateList(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Column":                        schema_pkg_apis_workflow_v1alpha1_Column(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Condition":                     schema_pkg_apis_workflow_v1alpha1_Condition(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ContainerNode":                 schema_pkg_apis_workflow_v1alpha1_ContainerNode(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ContainerSetRetryStrategy":     schema_pkg_apis_workflow_v1alpha1_ContainerSetRetryStrategy(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ContainerSetTemplate":          schema_pkg_apis_workflow_v1alpha1_ContainerSetTemplate(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ContinueOn":                    schema_pkg_apis_workflow_v1alpha1_ContinueOn(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Counter":                       schema_pkg_apis_workflow_v1alpha1_Counter(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.CreateS3BucketOptions":         schema_pkg_apis_workflow_v1alpha1_CreateS3BucketOptions(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.CronWorkflow":                  schema_pkg_apis_workflow_v1alpha1_CronWorkflow(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.CronWorkflowList":              schema_pkg_apis_workflow_v1alpha1_CronWorkflowList(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.CronWorkflowSpec":              schema_pkg_apis_workflow_v1alpha1_CronWorkflowSpec(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.CronWorkflowStatus":            schema_pkg_apis_workflow_v1alpha1_CronWorkflowStatus(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.DAGTask":                       schema_pkg_apis_workflow_v1alpha1_DAGTask(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.DAGTemplate":                   schema_pkg_apis_workflow_v1alpha1_DAGTemplate(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Data":                          schema_pkg_apis_workflow_v1alpha1_Data(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.DataSource":                    schema_pkg_apis_workflow_v1alpha1_DataSource(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Event":                         schema_pkg_apis_workflow_v1alpha1_Event(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ExecutorConfig":                schema_pkg_apis_workflow_v1alpha1_ExecutorConfig(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.GCSArtifact":                   schema_pkg_apis_workflow_v1alpha1_GCSArtifact(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.GCSArtifactRepository":         schema_pkg_apis_workflow_v1alpha1_GCSArtifactRepository(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.GCSBucket":                     schema_pkg_apis_workflow_v1alpha1_GCSBucket(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Gauge":                         schema_pkg_apis_workflow_v1alpha1_Gauge(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.GitArtifact":                   schema_pkg_apis_workflow_v1alpha1_GitArtifact(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.HDFSArtifact":                  schema_pkg_apis_workflow_v1alpha1_HDFSArtifact(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.HDFSArtifactRepository":        schema_pkg_apis_workflow_v1alpha1_HDFSArtifactRepository(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.HDFSConfig":                    schema_pkg_apis_workflow_v1alpha1_HDFSConfig(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.HDFSKrbConfig":                 schema_pkg_apis_workflow_v1alpha1_HDFSKrbConfig(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.HTTP":                          schema_pkg_apis_workflow_v1alpha1_HTTP(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.HTTPArtifact":                  schema_pkg_apis_workflow_v1alpha1_HTTPArtifact(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.HTTPAuth":                      schema_pkg_apis_workflow_v1alpha1_HTTPAuth(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.HTTPBodySource":                schema_pkg_apis_workflow_v1alpha1_HTTPBodySource(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.HTTPHeader":                    schema_pkg_apis_workflow_v1alpha1_HTTPHeader(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.HTTPHeaderSource":              schema_pkg_apis_workflow_v1alpha1_HTTPHeaderSource(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Header":                        schema_pkg_apis_workflow_v1alpha1_Header(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Histogram":                     schema_pkg_apis_workflow_v1alpha1_Histogram(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Inputs":                        schema_pkg_apis_workflow_v1alpha1_Inputs(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Item":                          schema_pkg_apis_workflow_v1alpha1_Item(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.LabelKeys":                     schema_pkg_apis_workflow_v1alpha1_LabelKeys(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.LabelValueFrom":                schema_pkg_apis_workflow_v1alpha1_LabelValueFrom(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.LabelValues":                   schema_pkg_apis_workflow_v1alpha1_LabelValues(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.LifecycleHook":                 schema_pkg_apis_workflow_v1alpha1_LifecycleHook(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Link":                          schema_pkg_apis_workflow_v1alpha1_Link(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ManifestFrom":                  schema_pkg_apis_workflow_v1alpha1_ManifestFrom(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.MemoizationStatus":             schema_pkg_apis_workflow_v1alpha1_MemoizationStatus(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Memoize":                       schema_pkg_apis_workflow_v1alpha1_Memoize(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Metadata":                      schema_pkg_apis_workflow_v1alpha1_Metadata(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.MetricLabel":                   schema_pkg_apis_workflow_v1alpha1_MetricLabel(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Metrics":                       schema_pkg_apis_workflow_v1alpha1_Metrics(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Mutex":                         schema_pkg_apis_workflow_v1alpha1_Mutex(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.MutexHolding":                  schema_pkg_apis_workflow_v1alpha1_MutexHolding(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.MutexStatus":                   schema_pkg_apis_workflow_v1alpha1_MutexStatus(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.NodeFlag":                      schema_pkg_apis_workflow_v1alpha1_NodeFlag(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.NodeResult":                    schema_pkg_apis_workflow_v1alpha1_NodeResult(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.NodeStatus":                    schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.NodeSynchronizationStatus":     schema_pkg_apis_workflow_v1alpha1_NodeSynchronizationStatus(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.NoneStrategy":                  schema_pkg_apis_workflow_v1alpha1_NoneStrategy(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.OAuth2Auth":                    schema_pkg_apis_workflow_v1alpha1_OAuth2Auth(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.OAuth2EndpointParam":           schema_pkg_apis_workflow_v1alpha1_OAuth2EndpointParam(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.OSSArtifact":                   schema_pkg_apis_workflow_v1alpha1_OSSArtifact(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.OSSArtifactRepository":         schema_pkg_apis_workflow_v1alpha1_OSSArtifactRepository(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.OSSBucket":                     schema_pkg_apis_workflow_v1alpha1_OSSBucket(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.OSSLifecycleRule":              schema_pkg_apis_workflow_v1alpha1_OSSLifecycleRule(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Object":                        schema_pkg_apis_workflow_v1alpha1_Object(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Outputs":                       schema_pkg_apis_workflow_v1alpha1_Outputs(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ParallelSteps":                 schema_pkg_apis_workflow_v1alpha1_ParallelSteps(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Parameter":                     schema_pkg_apis_workflow_v1alpha1_Parameter(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Plugin":                        schema_pkg_apis_workflow_v1alpha1_Plugin(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.PluginArtifact":                schema_pkg_apis_workflow_v1alpha1_PluginArtifact(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.PluginArtifactRepository":      schema_pkg_apis_workflow_v1alpha1_PluginArtifactRepository(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.PodGC":                         schema_pkg_apis_workflow_v1alpha1_PodGC(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Prometheus":                    schema_pkg_apis_workflow_v1alpha1_Prometheus(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.RawArtifact":                   schema_pkg_apis_workflow_v1alpha1_RawArtifact(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ResourceTemplate":              schema_pkg_apis_workflow_v1alpha1_ResourceTemplate(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.RetryAffinity":                 schema_pkg_apis_workflow_v1alpha1_RetryAffinity(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.RetryNodeAntiAffinity":         schema_pkg_apis_workflow_v1alpha1_RetryNodeAntiAffinity(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.RetryStrategy":                 schema_pkg_apis_workflow_v1alpha1_RetryStrategy(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.S3Artifact":                    schema_pkg_apis_workflow_v1alpha1_S3Artifact(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.S3ArtifactRepository":          schema_pkg_apis_workflow_v1alpha1_S3ArtifactRepository(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.S3Bucket":                      schema_pkg_apis_workflow_v1alpha1_S3Bucket(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.S3EncryptionOptions":           schema_pkg_apis_workflow_v1alpha1_S3EncryptionOptions(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ScriptTemplate":                schema_pkg_apis_workflow_v1alpha1_ScriptTemplate(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.SemaphoreHolding":              schema_pkg_apis_workflow_v1alpha1_SemaphoreHolding(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.SemaphoreRef":                  schema_pkg_apis_workflow_v1alpha1_SemaphoreRef(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.SemaphoreStatus":               schema_pkg_apis_workflow_v1alpha1_SemaphoreStatus(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Sequence":                      schema_pkg_apis_workflow_v1alpha1_Sequence(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.StopStrategy":                  schema_pkg_apis_workflow_v1alpha1_StopStrategy(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Submit":                        schema_pkg_apis_workflow_v1alpha1_Submit(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.SubmitOpts":                    schema_pkg_apis_workflow_v1alpha1_SubmitOpts(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.SuppliedValueFrom":             schema_pkg_apis_workflow_v1alpha1_SuppliedValueFrom(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.SuspendTemplate":               schema_pkg_apis_workflow_v1alpha1_SuspendTemplate(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.SyncDatabaseRef":               schema_pkg_apis_workflow_v1alpha1_SyncDatabaseRef(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Synchronization":               schema_pkg_apis_workflow_v1alpha1_Synchronization(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.SynchronizationStatus":         schema_pkg_apis_workflow_v1alpha1_SynchronizationStatus(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.TTLStrategy":                   schema_pkg_apis_workflow_v1alpha1_TTLStrategy(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.TarStrategy":                   schema_pkg_apis_workflow_v1alpha1_TarStrategy(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Template":                      schema_pkg_apis_workflow_v1alpha1_Template(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.TemplateRef":                   schema_pkg_apis_workflow_v1alpha1_TemplateRef(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.TransformationStep":            schema_pkg_apis_workflow_v1alpha1_TransformationStep(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.UserContainer":                 schema_pkg_apis_workflow_v1alpha1_UserContainer(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ValueFrom":                     schema_pkg_apis_workflow_v1alpha1_ValueFrom(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Version":                       schema_pkg_apis_workflow_v1alpha1_Version(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.VolumeClaimGC":                 schema_pkg_apis_workflow_v1alpha1_VolumeClaimGC(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Workflow":                      schema_pkg_apis_workflow_v1alpha1_Workflow(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowArtifactGCTask":        schema_pkg_apis_workflow_v1alpha1_WorkflowArtifactGCTask(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowArtifactGCTaskList":    schema_pkg_apis_workflow_v1alpha1_WorkflowArtifactGCTaskList(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowEventBinding":          schema_pkg_apis_workflow_v1alpha1_WorkflowEventBinding(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowEventBindingList":      schema_pkg_apis_workflow_v1alpha1_WorkflowEventBindingList(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowEventBindingSpec":      schema_pkg_apis_workflow_v1alpha1_WorkflowEventBindingSpec(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowLevelArtifactGC":       schema_pkg_apis_workflow_v1alpha1_WorkflowLevelArtifactGC(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowList":                  schema_pkg_apis_workflow_v1alpha1_WorkflowList(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowMetadata":              schema_pkg_apis_workflow_v1alpha1_WorkflowMetadata(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowSpec":                  schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowStatus":                schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowStep":                  schema_pkg_apis_workflow_v1alpha1_WorkflowStep(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowTaskResult":            schema_pkg_apis_workflow_v1alpha1_WorkflowTaskResult(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowTaskResultList":        schema_pkg_apis_workflow_v1alpha1_WorkflowTaskResultList(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowTaskSet":               schema_pkg_apis_workflow_v1alpha1_WorkflowTaskSet(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowTaskSetList":           schema_pkg_apis_workflow_v1alpha1_WorkflowTaskSetList(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowTaskSetSpec":           schema_pkg_apis_workflow_v1alpha1_WorkflowTaskSetSpec(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowTaskSetStatus":         schema_pkg_apis_workflow_v1alpha1_WorkflowTaskSetStatus(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowTemplate":              schema_pkg_apis_workflow_v1alpha1_WorkflowTemplate(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowTemplateList":          schema_pkg_apis_workflow_v1alpha1_WorkflowTemplateList(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef":           schema_pkg_apis_workflow_v1alpha1_WorkflowTemplateRef(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ZipStrategy":                   schema_pkg_apis_workflow_v1alpha1_ZipStrategy(ref),
 	}
 }
 
@@ -189,24 +192,24 @@ func schema_pkg_apis_workflow_v1alpha1_ArchiveStrategy(ref common.ReferenceCallb
 				Properties: map[string]spec.Schema{
 					"tar": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.TarStrategy"),
+							Ref: ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.TarStrategy"),
 						},
 					},
 					"none": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NoneStrategy"),
+							Ref: ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.NoneStrategy"),
 						},
 					},
 					"zip": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ZipStrategy"),
+							Ref: ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ZipStrategy"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NoneStrategy", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.TarStrategy", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ZipStrategy"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.NoneStrategy", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.TarStrategy", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ZipStrategy"},
 	}
 }
 
@@ -231,7 +234,7 @@ func schema_pkg_apis_workflow_v1alpha1_Arguments(ref common.ReferenceCallback) c
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Parameter"),
+										Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Parameter"),
 									},
 								},
 							},
@@ -251,7 +254,7 @@ func schema_pkg_apis_workflow_v1alpha1_Arguments(ref common.ReferenceCallback) c
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Artifact"),
+										Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Artifact"),
 									},
 								},
 							},
@@ -261,7 +264,7 @@ func schema_pkg_apis_workflow_v1alpha1_Arguments(ref common.ReferenceCallback) c
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Artifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Parameter"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Artifact", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Parameter"},
 	}
 }
 
@@ -341,7 +344,7 @@ func schema_pkg_apis_workflow_v1alpha1_Artifact(ref common.ReferenceCallback) co
 					},
 					"mode": {
 						SchemaProps: spec.SchemaProps{
-							Description: "mode bits to use on this file, must be a value between 0 and 0777 set when loading input artifacts.",
+							Description: "mode bits to use on this file, must be a value between 0 and 0777. Set when loading input artifacts. It is recommended to set the mode value to ensure the artifact has the expected permissions in your container.",
 							Type:        []string{"integer"},
 							Format:      "int32",
 						},
@@ -363,55 +366,61 @@ func schema_pkg_apis_workflow_v1alpha1_Artifact(ref common.ReferenceCallback) co
 					"s3": {
 						SchemaProps: spec.SchemaProps{
 							Description: "S3 contains S3 artifact location details",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.S3Artifact"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.S3Artifact"),
 						},
 					},
 					"git": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Git contains git artifact location details",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GitArtifact"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.GitArtifact"),
 						},
 					},
 					"http": {
 						SchemaProps: spec.SchemaProps{
 							Description: "HTTP contains HTTP artifact location details",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPArtifact"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.HTTPArtifact"),
 						},
 					},
 					"artifactory": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Artifactory contains artifactory artifact location details",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactoryArtifact"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactoryArtifact"),
 						},
 					},
 					"hdfs": {
 						SchemaProps: spec.SchemaProps{
 							Description: "HDFS contains HDFS artifact location details",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HDFSArtifact"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.HDFSArtifact"),
 						},
 					},
 					"raw": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Raw contains raw artifact location details",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RawArtifact"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.RawArtifact"),
 						},
 					},
 					"oss": {
 						SchemaProps: spec.SchemaProps{
 							Description: "OSS contains OSS artifact location details",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSArtifact"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.OSSArtifact"),
 						},
 					},
 					"gcs": {
 						SchemaProps: spec.SchemaProps{
 							Description: "GCS contains GCS artifact location details",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GCSArtifact"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.GCSArtifact"),
 						},
 					},
 					"azure": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Azure contains Azure Storage artifact location details",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.AzureArtifact"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.AzureArtifact"),
+						},
+					},
+					"plugin": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Plugin contains plugin artifact location details",
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.PluginArtifact"),
 						},
 					},
 					"globalName": {
@@ -424,7 +433,7 @@ func schema_pkg_apis_workflow_v1alpha1_Artifact(ref common.ReferenceCallback) co
 					"archive": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Archive controls how the artifact will be saved to the artifact repository.",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArchiveStrategy"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArchiveStrategy"),
 						},
 					},
 					"optional": {
@@ -458,7 +467,7 @@ func schema_pkg_apis_workflow_v1alpha1_Artifact(ref common.ReferenceCallback) co
 					"artifactGC": {
 						SchemaProps: spec.SchemaProps{
 							Description: "ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGC"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactGC"),
 						},
 					},
 					"deleted": {
@@ -473,7 +482,7 @@ func schema_pkg_apis_workflow_v1alpha1_Artifact(ref common.ReferenceCallback) co
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArchiveStrategy", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGC", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactoryArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.AzureArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GCSArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GitArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HDFSArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RawArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.S3Artifact"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArchiveStrategy", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactGC", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactoryArtifact", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.AzureArtifact", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.GCSArtifact", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.GitArtifact", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.HDFSArtifact", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.HTTPArtifact", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.OSSArtifact", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.PluginArtifact", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.RawArtifact", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.S3Artifact"},
 	}
 }
 
@@ -494,7 +503,7 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactGC(ref common.ReferenceCallback) 
 					"podMetadata": {
 						SchemaProps: spec.SchemaProps{
 							Description: "PodMetadata is an optional field for specifying the Labels and Annotations that should be assigned to the Pod doing the deletion",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metadata"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Metadata"),
 						},
 					},
 					"serviceAccountName": {
@@ -508,7 +517,7 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactGC(ref common.ReferenceCallback) 
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metadata"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Metadata"},
 	}
 }
 
@@ -528,7 +537,7 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactGCSpec(ref common.ReferenceCallba
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactNodeSpec"),
+										Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactNodeSpec"),
 									},
 								},
 							},
@@ -538,7 +547,7 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactGCSpec(ref common.ReferenceCallba
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactNodeSpec"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactNodeSpec"},
 	}
 }
 
@@ -558,7 +567,7 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactGCStatus(ref common.ReferenceCall
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactResultNodeStatus"),
+										Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactResultNodeStatus"),
 									},
 								},
 							},
@@ -568,7 +577,7 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactGCStatus(ref common.ReferenceCall
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactResultNodeStatus"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactResultNodeStatus"},
 	}
 }
 
@@ -589,62 +598,68 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactLocation(ref common.ReferenceCall
 					"s3": {
 						SchemaProps: spec.SchemaProps{
 							Description: "S3 contains S3 artifact location details",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.S3Artifact"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.S3Artifact"),
 						},
 					},
 					"git": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Git contains git artifact location details",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GitArtifact"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.GitArtifact"),
 						},
 					},
 					"http": {
 						SchemaProps: spec.SchemaProps{
 							Description: "HTTP contains HTTP artifact location details",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPArtifact"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.HTTPArtifact"),
 						},
 					},
 					"artifactory": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Artifactory contains artifactory artifact location details",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactoryArtifact"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactoryArtifact"),
 						},
 					},
 					"hdfs": {
 						SchemaProps: spec.SchemaProps{
 							Description: "HDFS contains HDFS artifact location details",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HDFSArtifact"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.HDFSArtifact"),
 						},
 					},
 					"raw": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Raw contains raw artifact location details",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RawArtifact"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.RawArtifact"),
 						},
 					},
 					"oss": {
 						SchemaProps: spec.SchemaProps{
 							Description: "OSS contains OSS artifact location details",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSArtifact"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.OSSArtifact"),
 						},
 					},
 					"gcs": {
 						SchemaProps: spec.SchemaProps{
 							Description: "GCS contains GCS artifact location details",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GCSArtifact"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.GCSArtifact"),
 						},
 					},
 					"azure": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Azure contains Azure Storage artifact location details",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.AzureArtifact"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.AzureArtifact"),
+						},
+					},
+					"plugin": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Plugin contains plugin artifact location details",
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.PluginArtifact"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactoryArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.AzureArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GCSArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GitArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HDFSArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RawArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.S3Artifact"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactoryArtifact", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.AzureArtifact", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.GCSArtifact", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.GitArtifact", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.HDFSArtifact", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.HTTPArtifact", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.OSSArtifact", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.PluginArtifact", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.RawArtifact", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.S3Artifact"},
 	}
 }
 
@@ -658,7 +673,7 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactNodeSpec(ref common.ReferenceCall
 					"archiveLocation": {
 						SchemaProps: spec.SchemaProps{
 							Description: "ArchiveLocation is the template-level Artifact location specification",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactLocation"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactLocation"),
 						},
 					},
 					"artifacts": {
@@ -670,7 +685,7 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactNodeSpec(ref common.ReferenceCall
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Artifact"),
+										Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Artifact"),
 									},
 								},
 							},
@@ -680,7 +695,7 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactNodeSpec(ref common.ReferenceCall
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Artifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactLocation"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Artifact", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactLocation"},
 	}
 }
 
@@ -708,7 +723,7 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactPaths(ref common.ReferenceCallbac
 					},
 					"mode": {
 						SchemaProps: spec.SchemaProps{
-							Description: "mode bits to use on this file, must be a value between 0 and 0777 set when loading input artifacts.",
+							Description: "mode bits to use on this file, must be a value between 0 and 0777. Set when loading input artifacts. It is recommended to set the mode value to ensure the artifact has the expected permissions in your container.",
 							Type:        []string{"integer"},
 							Format:      "int32",
 						},
@@ -730,55 +745,61 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactPaths(ref common.ReferenceCallbac
 					"s3": {
 						SchemaProps: spec.SchemaProps{
 							Description: "S3 contains S3 artifact location details",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.S3Artifact"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.S3Artifact"),
 						},
 					},
 					"git": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Git contains git artifact location details",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GitArtifact"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.GitArtifact"),
 						},
 					},
 					"http": {
 						SchemaProps: spec.SchemaProps{
 							Description: "HTTP contains HTTP artifact location details",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPArtifact"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.HTTPArtifact"),
 						},
 					},
 					"artifactory": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Artifactory contains artifactory artifact location details",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactoryArtifact"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactoryArtifact"),
 						},
 					},
 					"hdfs": {
 						SchemaProps: spec.SchemaProps{
 							Description: "HDFS contains HDFS artifact location details",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HDFSArtifact"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.HDFSArtifact"),
 						},
 					},
 					"raw": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Raw contains raw artifact location details",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RawArtifact"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.RawArtifact"),
 						},
 					},
 					"oss": {
 						SchemaProps: spec.SchemaProps{
 							Description: "OSS contains OSS artifact location details",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSArtifact"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.OSSArtifact"),
 						},
 					},
 					"gcs": {
 						SchemaProps: spec.SchemaProps{
 							Description: "GCS contains GCS artifact location details",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GCSArtifact"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.GCSArtifact"),
 						},
 					},
 					"azure": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Azure contains Azure Storage artifact location details",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.AzureArtifact"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.AzureArtifact"),
+						},
+					},
+					"plugin": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Plugin contains plugin artifact location details",
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.PluginArtifact"),
 						},
 					},
 					"globalName": {
@@ -791,7 +812,7 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactPaths(ref common.ReferenceCallbac
 					"archive": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Archive controls how the artifact will be saved to the artifact repository.",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArchiveStrategy"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArchiveStrategy"),
 						},
 					},
 					"optional": {
@@ -825,7 +846,7 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactPaths(ref common.ReferenceCallbac
 					"artifactGC": {
 						SchemaProps: spec.SchemaProps{
 							Description: "ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGC"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactGC"),
 						},
 					},
 					"deleted": {
@@ -840,7 +861,7 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactPaths(ref common.ReferenceCallbac
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArchiveStrategy", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGC", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactoryArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.AzureArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GCSArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GitArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HDFSArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RawArtifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.S3Artifact"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArchiveStrategy", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactGC", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactoryArtifact", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.AzureArtifact", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.GCSArtifact", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.GitArtifact", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.HDFSArtifact", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.HTTPArtifact", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.OSSArtifact", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.PluginArtifact", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.RawArtifact", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.S3Artifact"},
 	}
 }
 
@@ -861,44 +882,50 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactRepository(ref common.ReferenceCa
 					"s3": {
 						SchemaProps: spec.SchemaProps{
 							Description: "S3 stores artifact in a S3-compliant object store",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.S3ArtifactRepository"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.S3ArtifactRepository"),
 						},
 					},
 					"artifactory": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Artifactory stores artifacts to JFrog Artifactory",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactoryArtifactRepository"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactoryArtifactRepository"),
 						},
 					},
 					"hdfs": {
 						SchemaProps: spec.SchemaProps{
 							Description: "HDFS stores artifacts in HDFS",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HDFSArtifactRepository"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.HDFSArtifactRepository"),
 						},
 					},
 					"oss": {
 						SchemaProps: spec.SchemaProps{
 							Description: "OSS stores artifact in a OSS-compliant object store",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSArtifactRepository"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.OSSArtifactRepository"),
 						},
 					},
 					"gcs": {
 						SchemaProps: spec.SchemaProps{
 							Description: "GCS stores artifact in a GCS object store",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GCSArtifactRepository"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.GCSArtifactRepository"),
 						},
 					},
 					"azure": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Azure stores artifact in an Azure Storage account",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.AzureArtifactRepository"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.AzureArtifactRepository"),
+						},
+					},
+					"plugin": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Plugin stores artifact in a plugin-specific artifact repository",
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.PluginArtifactRepository"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactoryArtifactRepository", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.AzureArtifactRepository", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.GCSArtifactRepository", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HDFSArtifactRepository", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSArtifactRepository", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.S3ArtifactRepository"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactoryArtifactRepository", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.AzureArtifactRepository", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.GCSArtifactRepository", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.HDFSArtifactRepository", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.OSSArtifactRepository", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.PluginArtifactRepository", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.S3ArtifactRepository"},
 	}
 }
 
@@ -906,7 +933,8 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactRepositoryRef(ref common.Referenc
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "ArtifactRepositoryRef is a reference to an artifact repository config map.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"configMap": {
 						SchemaProps: spec.SchemaProps{
@@ -932,7 +960,8 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactRepositoryRefStatus(ref common.Re
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "ArtifactRepositoryRefStatus is the resolved artifact repository reference with namespace info.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"configMap": {
 						SchemaProps: spec.SchemaProps{
@@ -965,14 +994,14 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactRepositoryRefStatus(ref common.Re
 					"artifactRepository": {
 						SchemaProps: spec.SchemaProps{
 							Description: "The repository the workflow will use. This maybe empty before v3.1.",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactRepository"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactRepository"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactRepository"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactRepository"},
 	}
 }
 
@@ -1028,7 +1057,7 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactResultNodeStatus(ref common.Refer
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactResult"),
+										Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactResult"),
 									},
 								},
 							},
@@ -1038,7 +1067,7 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactResultNodeStatus(ref common.Refer
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactResult"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactResult"},
 	}
 }
 
@@ -1117,7 +1146,7 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactSearchResult(ref common.Reference
 					"Artifact": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Artifact"),
+							Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Artifact"),
 						},
 					},
 					"NodeID": {
@@ -1132,7 +1161,7 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactSearchResult(ref common.Reference
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Artifact"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Artifact"},
 	}
 }
 
@@ -1244,7 +1273,7 @@ func schema_pkg_apis_workflow_v1alpha1_AzureArtifact(ref common.ReferenceCallbac
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "AzureArtifact is the location of a an Azure Storage artifact",
+				Description: "AzureArtifact is the location of an Azure Storage artifact",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"endpoint": {
@@ -1417,6 +1446,13 @@ func schema_pkg_apis_workflow_v1alpha1_Backoff(ref common.ReferenceCallback) com
 							Format:      "",
 						},
 					},
+					"cap": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Cap is a limit on revised values of the duration parameter. If a multiplication by the factor parameter would make the duration exceed the cap then the duration is set to the cap",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 			},
 		},
@@ -1462,7 +1498,7 @@ func schema_pkg_apis_workflow_v1alpha1_Cache(ref common.ReferenceCallback) commo
 					"configMap": {
 						SchemaProps: spec.SchemaProps{
 							Description: "ConfigMap sets a ConfigMap-based cache",
-							Ref:         ref("k8s.io/api/core/v1.ConfigMapKeySelector"),
+							Ref:         ref("k8s.io/api/core/v1.LocalObjectReference"),
 						},
 					},
 				},
@@ -1470,7 +1506,7 @@ func schema_pkg_apis_workflow_v1alpha1_Cache(ref common.ReferenceCallback) commo
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/api/core/v1.ConfigMapKeySelector"},
+			"k8s.io/api/core/v1.LocalObjectReference"},
 	}
 }
 
@@ -1529,7 +1565,7 @@ func schema_pkg_apis_workflow_v1alpha1_ClusterWorkflowTemplate(ref common.Refere
 					"spec": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowSpec"),
+							Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowSpec"),
 						},
 					},
 				},
@@ -1537,7 +1573,7 @@ func schema_pkg_apis_workflow_v1alpha1_ClusterWorkflowTemplate(ref common.Refere
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
@@ -1575,7 +1611,7 @@ func schema_pkg_apis_workflow_v1alpha1_ClusterWorkflowTemplateList(ref common.Re
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ClusterWorkflowTemplate"),
+										Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ClusterWorkflowTemplate"),
 									},
 								},
 							},
@@ -1586,7 +1622,7 @@ func schema_pkg_apis_workflow_v1alpha1_ClusterWorkflowTemplateList(ref common.Re
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ClusterWorkflowTemplate", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ClusterWorkflowTemplate", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
 	}
 }
 
@@ -1767,7 +1803,7 @@ func schema_pkg_apis_workflow_v1alpha1_ContainerNode(ref common.ReferenceCallbac
 							},
 						},
 						SchemaProps: spec.SchemaProps{
-							Description: "List of sources to populate environment variables in the container. The keys defined within a source must be a C_IDENTIFIER. All invalid keys will be reported as an event when the container is starting. When a key exists in multiple sources, the value associated with the last source will take precedence. Values defined by an Env with a duplicate key will take precedence. Cannot be updated.",
+							Description: "List of sources to populate environment variables in the container. The keys defined within a source may consist of any printable ASCII characters except '='. When a key exists in multiple sources, the value associated with the last source will take precedence. Values defined by an Env with a duplicate key will take precedence. Cannot be updated.",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
@@ -1817,7 +1853,7 @@ func schema_pkg_apis_workflow_v1alpha1_ContainerNode(ref common.ReferenceCallbac
 							},
 						},
 						SchemaProps: spec.SchemaProps{
-							Description: "Resources resize policy for the container.",
+							Description: "Resources resize policy for the container. This field cannot be set on ephemeral containers.",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
@@ -1831,9 +1867,28 @@ func schema_pkg_apis_workflow_v1alpha1_ContainerNode(ref common.ReferenceCallbac
 					},
 					"restartPolicy": {
 						SchemaProps: spec.SchemaProps{
-							Description: "RestartPolicy defines the restart behavior of individual containers in a pod. This field may only be set for init containers, and the only allowed value is \"Always\". For non-init containers or when this field is not specified, the restart behavior is defined by the Pod's restart policy and the container type. Setting the RestartPolicy as \"Always\" for the init container will have the following effect: this init container will be continually restarted on exit until all regular containers have terminated. Once all regular containers have completed, all init containers with restartPolicy \"Always\" will be shut down. This lifecycle differs from normal init containers and is often referred to as a \"sidecar\" container. Although this init container still starts in the init container sequence, it does not wait for the container to complete before proceeding to the next init container. Instead, the next init container starts immediately after this init container is started, or after any startupProbe has successfully completed.",
+							Description: "RestartPolicy defines the restart behavior of individual containers in a pod. This overrides the pod-level restart policy. When this field is not specified, the restart behavior is defined by the Pod's restart policy and the container type. Additionally, setting the RestartPolicy as \"Always\" for the init container will have the following effect: this init container will be continually restarted on exit until all regular containers have terminated. Once all regular containers have completed, all init containers with restartPolicy \"Always\" will be shut down. This lifecycle differs from normal init containers and is often referred to as a \"sidecar\" container. Although this init container still starts in the init container sequence, it does not wait for the container to complete before proceeding to the next init container. Instead, the next init container starts immediately after this init container is started, or after any startupProbe has successfully completed.",
 							Type:        []string{"string"},
 							Format:      "",
+						},
+					},
+					"restartPolicyRules": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "Represents a list of rules to be checked to determine if the container should be restarted on exit. The rules are evaluated in order. Once a rule matches a container exit condition, the remaining rules are ignored. If no rule matches the container exit condition, the Container-level restart policy determines the whether the container is restarted or not. Constraints on the rules: - At most 20 rules are allowed. - Rules can have the same action. - Identical rules are not forbidden in validations. When rules are specified, container MUST set RestartPolicy explicitly even it if matches the Pod's RestartPolicy.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.ContainerRestartRule"),
+									},
+								},
+							},
 						},
 					},
 					"volumeMounts": {
@@ -1975,7 +2030,7 @@ func schema_pkg_apis_workflow_v1alpha1_ContainerNode(ref common.ReferenceCallbac
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/api/core/v1.ContainerPort", "k8s.io/api/core/v1.ContainerResizePolicy", "k8s.io/api/core/v1.EnvFromSource", "k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.Lifecycle", "k8s.io/api/core/v1.Probe", "k8s.io/api/core/v1.ResourceRequirements", "k8s.io/api/core/v1.SecurityContext", "k8s.io/api/core/v1.VolumeDevice", "k8s.io/api/core/v1.VolumeMount"},
+			"k8s.io/api/core/v1.ContainerPort", "k8s.io/api/core/v1.ContainerResizePolicy", "k8s.io/api/core/v1.ContainerRestartRule", "k8s.io/api/core/v1.EnvFromSource", "k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.Lifecycle", "k8s.io/api/core/v1.Probe", "k8s.io/api/core/v1.ResourceRequirements", "k8s.io/api/core/v1.SecurityContext", "k8s.io/api/core/v1.VolumeDevice", "k8s.io/api/core/v1.VolumeMount"},
 	}
 }
 
@@ -2021,7 +2076,7 @@ func schema_pkg_apis_workflow_v1alpha1_ContainerSetTemplate(ref common.Reference
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContainerNode"),
+										Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ContainerNode"),
 									},
 								},
 							},
@@ -2043,7 +2098,7 @@ func schema_pkg_apis_workflow_v1alpha1_ContainerSetTemplate(ref common.Reference
 					"retryStrategy": {
 						SchemaProps: spec.SchemaProps{
 							Description: "RetryStrategy describes how to retry container nodes if the container set fails. Note that this works differently from the template-level `retryStrategy` as it is a process-level retry that does not create new Pods or containers.",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContainerSetRetryStrategy"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ContainerSetRetryStrategy"),
 						},
 					},
 				},
@@ -2051,7 +2106,7 @@ func schema_pkg_apis_workflow_v1alpha1_ContainerSetTemplate(ref common.Reference
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContainerNode", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContainerSetRetryStrategy", "k8s.io/api/core/v1.VolumeMount"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ContainerNode", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ContainerSetRetryStrategy", "k8s.io/api/core/v1.VolumeMount"},
 	}
 }
 
@@ -2152,13 +2207,13 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflow(ref common.ReferenceCallback
 					"spec": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.CronWorkflowSpec"),
+							Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.CronWorkflowSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.CronWorkflowStatus"),
+							Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.CronWorkflowStatus"),
 						},
 					},
 				},
@@ -2166,7 +2221,7 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflow(ref common.ReferenceCallback
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.CronWorkflowSpec", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.CronWorkflowStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.CronWorkflowSpec", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.CronWorkflowStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
@@ -2204,7 +2259,7 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowList(ref common.ReferenceCall
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.CronWorkflow"),
+										Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.CronWorkflow"),
 									},
 								},
 							},
@@ -2215,7 +2270,7 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowList(ref common.ReferenceCall
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.CronWorkflow", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.CronWorkflow", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
 	}
 }
 
@@ -2230,14 +2285,7 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowSpec(ref common.ReferenceCall
 						SchemaProps: spec.SchemaProps{
 							Description: "WorkflowSpec is the spec of the workflow to be run",
 							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowSpec"),
-						},
-					},
-					"schedule": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Schedule is a schedule to run the Workflow in Cron format. Deprecated, use Schedules",
-							Type:        []string{"string"},
-							Format:      "",
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowSpec"),
 						},
 					},
 					"concurrencyPolicy": {
@@ -2291,7 +2339,7 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowSpec(ref common.ReferenceCall
 					"stopStrategy": {
 						SchemaProps: spec.SchemaProps{
 							Description: "v3.6 and after: StopStrategy defines if the CronWorkflow should stop scheduling based on a condition",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.StopStrategy"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.StopStrategy"),
 						},
 					},
 					"schedules": {
@@ -2317,11 +2365,11 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowSpec(ref common.ReferenceCall
 						},
 					},
 				},
-				Required: []string{"workflowSpec"},
+				Required: []string{"workflowSpec", "schedules"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.StopStrategy", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.StopStrategy", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
@@ -2360,7 +2408,7 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowStatus(ref common.ReferenceCa
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Condition"),
+										Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Condition"),
 									},
 								},
 							},
@@ -2384,18 +2432,17 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowStatus(ref common.ReferenceCa
 					},
 					"phase": {
 						SchemaProps: spec.SchemaProps{
-							Description: "v3.6 and after: Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.condition is true",
+							Description: "v3.6 and after: Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.expression is true",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
 				},
-				Required: []string{"active", "lastScheduledTime", "conditions", "succeeded", "failed", "phase"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Condition", "k8s.io/api/core/v1.ObjectReference", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Condition", "k8s.io/api/core/v1.ObjectReference", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
 	}
 }
 
@@ -2403,7 +2450,7 @@ func schema_pkg_apis_workflow_v1alpha1_DAGTask(ref common.ReferenceCallback) com
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "DAGTask represents a node in the graph during DAG execution",
+				Description: "DAGTask represents a node in the graph during DAG execution Note: CEL validation cannot check withItems (Schemaless) or inline (PreserveUnknownFields) fields.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"name": {
@@ -2423,21 +2470,21 @@ func schema_pkg_apis_workflow_v1alpha1_DAGTask(ref common.ReferenceCallback) com
 					},
 					"inline": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Inline is the template. Template must be empty if this is declared (and vice-versa).",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Template"),
+							Description: "Inline is the template. Template must be empty if this is declared (and vice-versa). Note: As mentioned in the corresponding definition in WorkflowStep, this struct is defined recursively, so we need \"x-kubernetes-preserve-unknown-fields: true\" in the validation schema.",
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Template"),
 						},
 					},
 					"arguments": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Arguments are the parameter and artifact arguments to the template",
 							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Arguments"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Arguments"),
 						},
 					},
 					"templateRef": {
 						SchemaProps: spec.SchemaProps{
 							Description: "TemplateRef is the reference to the template resource to execute.",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.TemplateRef"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.TemplateRef"),
 						},
 					},
 					"dependencies": {
@@ -2457,13 +2504,13 @@ func schema_pkg_apis_workflow_v1alpha1_DAGTask(ref common.ReferenceCallback) com
 					},
 					"withItems": {
 						SchemaProps: spec.SchemaProps{
-							Description: "WithItems expands a task into multiple parallel tasks from the items in the list",
+							Description: "WithItems expands a task into multiple parallel tasks from the items in the list Note: The structure of WithItems is free-form, so we need \"x-kubernetes-preserve-unknown-fields: true\" in the validation schema.",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Item"),
+										Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Item"),
 									},
 								},
 							},
@@ -2479,7 +2526,7 @@ func schema_pkg_apis_workflow_v1alpha1_DAGTask(ref common.ReferenceCallback) com
 					"withSequence": {
 						SchemaProps: spec.SchemaProps{
 							Description: "WithSequence expands a task into a numeric sequence",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Sequence"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Sequence"),
 						},
 					},
 					"when": {
@@ -2492,12 +2539,12 @@ func schema_pkg_apis_workflow_v1alpha1_DAGTask(ref common.ReferenceCallback) com
 					"continueOn": {
 						SchemaProps: spec.SchemaProps{
 							Description: "ContinueOn makes argo to proceed with the following step even if this step fails. Errors and Failed states can be specified",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContinueOn"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ContinueOn"),
 						},
 					},
 					"onExit": {
 						SchemaProps: spec.SchemaProps{
-							Description: "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template. DEPRECATED: Use Hooks[exit].Template instead.",
+							Description: "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.\n\nDeprecated: Use Hooks[exit].Template instead.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -2518,7 +2565,7 @@ func schema_pkg_apis_workflow_v1alpha1_DAGTask(ref common.ReferenceCallback) com
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.LifecycleHook"),
+										Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.LifecycleHook"),
 									},
 								},
 							},
@@ -2529,7 +2576,7 @@ func schema_pkg_apis_workflow_v1alpha1_DAGTask(ref common.ReferenceCallback) com
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContinueOn", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Item", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.LifecycleHook", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Sequence", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Template", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.TemplateRef"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ContinueOn", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Item", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.LifecycleHook", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Sequence", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Template", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.TemplateRef"},
 	}
 }
 
@@ -2555,13 +2602,13 @@ func schema_pkg_apis_workflow_v1alpha1_DAGTemplate(ref common.ReferenceCallback)
 							},
 						},
 						SchemaProps: spec.SchemaProps{
-							Description: "Tasks are a list of DAG tasks",
+							Description: "Tasks are a list of DAG tasks MaxItems is an artificial limit to limit CEL validation costs - see note at top of file",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.DAGTask"),
+										Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.DAGTask"),
 									},
 								},
 							},
@@ -2579,7 +2626,7 @@ func schema_pkg_apis_workflow_v1alpha1_DAGTemplate(ref common.ReferenceCallback)
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.DAGTask"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.DAGTask"},
 	}
 }
 
@@ -2594,7 +2641,7 @@ func schema_pkg_apis_workflow_v1alpha1_Data(ref common.ReferenceCallback) common
 						SchemaProps: spec.SchemaProps{
 							Description: "Source sources external data into a data template",
 							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.DataSource"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.DataSource"),
 						},
 					},
 					"transformation": {
@@ -2605,7 +2652,7 @@ func schema_pkg_apis_workflow_v1alpha1_Data(ref common.ReferenceCallback) common
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.TransformationStep"),
+										Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.TransformationStep"),
 									},
 								},
 							},
@@ -2616,7 +2663,7 @@ func schema_pkg_apis_workflow_v1alpha1_Data(ref common.ReferenceCallback) common
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.DataSource", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.TransformationStep"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.DataSource", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.TransformationStep"},
 	}
 }
 
@@ -2630,14 +2677,14 @@ func schema_pkg_apis_workflow_v1alpha1_DataSource(ref common.ReferenceCallback) 
 					"artifactPaths": {
 						SchemaProps: spec.SchemaProps{
 							Description: "ArtifactPaths is a data transformation that collects a list of artifact paths",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactPaths"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactPaths"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactPaths"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactPaths"},
 	}
 }
 
@@ -2791,7 +2838,7 @@ func schema_pkg_apis_workflow_v1alpha1_Gauge(ref common.ReferenceCallback) commo
 				Properties: map[string]spec.Schema{
 					"value": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Value is the value to be used in the operation with the metric's current value. If no operation is set, value is the value of the metric",
+							Description: "Value is the value to be used in the operation with the metric's current value. If no operation is set, value is the value of the metric MaxLength is an artificial limit to limit CEL validation costs - see note at top of file",
 							Default:     "",
 							Type:        []string{"string"},
 							Format:      "",
@@ -2822,7 +2869,7 @@ func schema_pkg_apis_workflow_v1alpha1_GitArtifact(ref common.ReferenceCallback)
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "GitArtifact is the location of an git artifact",
+				Description: "GitArtifact is the location of a git artifact",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"repo": {
@@ -3286,7 +3333,7 @@ func schema_pkg_apis_workflow_v1alpha1_HTTP(ref common.ReferenceCallback) common
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPHeader"),
+										Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.HTTPHeader"),
 									},
 								},
 							},
@@ -3316,7 +3363,7 @@ func schema_pkg_apis_workflow_v1alpha1_HTTP(ref common.ReferenceCallback) common
 					"bodyFrom": {
 						SchemaProps: spec.SchemaProps{
 							Description: "BodyFrom is  content of the HTTP Request as Bytes",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPBodySource"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.HTTPBodySource"),
 						},
 					},
 					"insecureSkipVerify": {
@@ -3331,7 +3378,7 @@ func schema_pkg_apis_workflow_v1alpha1_HTTP(ref common.ReferenceCallback) common
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPBodySource", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPHeader"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.HTTPBodySource", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.HTTPHeader"},
 	}
 }
 
@@ -3358,7 +3405,7 @@ func schema_pkg_apis_workflow_v1alpha1_HTTPArtifact(ref common.ReferenceCallback
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Header"),
+										Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Header"),
 									},
 								},
 							},
@@ -3367,7 +3414,7 @@ func schema_pkg_apis_workflow_v1alpha1_HTTPArtifact(ref common.ReferenceCallback
 					"auth": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Auth contains information for client authentication",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPAuth"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.HTTPAuth"),
 						},
 					},
 				},
@@ -3375,7 +3422,7 @@ func schema_pkg_apis_workflow_v1alpha1_HTTPArtifact(ref common.ReferenceCallback
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPAuth", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Header"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.HTTPAuth", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Header"},
 	}
 }
 
@@ -3388,26 +3435,26 @@ func schema_pkg_apis_workflow_v1alpha1_HTTPAuth(ref common.ReferenceCallback) co
 					"clientCert": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ClientCertAuth"),
+							Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ClientCertAuth"),
 						},
 					},
 					"oauth2": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OAuth2Auth"),
+							Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.OAuth2Auth"),
 						},
 					},
 					"basicAuth": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.BasicAuth"),
+							Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.BasicAuth"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.BasicAuth", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ClientCertAuth", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OAuth2Auth"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.BasicAuth", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ClientCertAuth", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.OAuth2Auth"},
 	}
 }
 
@@ -3451,7 +3498,7 @@ func schema_pkg_apis_workflow_v1alpha1_HTTPHeader(ref common.ReferenceCallback) 
 					},
 					"valueFrom": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPHeaderSource"),
+							Ref: ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.HTTPHeaderSource"),
 						},
 					},
 				},
@@ -3459,7 +3506,7 @@ func schema_pkg_apis_workflow_v1alpha1_HTTPHeader(ref common.ReferenceCallback) 
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTPHeaderSource"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.HTTPHeaderSource"},
 	}
 }
 
@@ -3535,7 +3582,7 @@ func schema_pkg_apis_workflow_v1alpha1_Histogram(ref common.ReferenceCallback) c
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Amount"),
+										Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Amount"),
 									},
 								},
 							},
@@ -3546,7 +3593,7 @@ func schema_pkg_apis_workflow_v1alpha1_Histogram(ref common.ReferenceCallback) c
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Amount"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Amount"},
 	}
 }
 
@@ -3565,13 +3612,13 @@ func schema_pkg_apis_workflow_v1alpha1_Inputs(ref common.ReferenceCallback) comm
 							},
 						},
 						SchemaProps: spec.SchemaProps{
-							Description: "Parameters are a list of parameters passed as inputs",
+							Description: "Parameters are a list of parameters passed as inputs MaxItems is an artificial limit to limit CEL validation costs - see note at top of file",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Parameter"),
+										Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Parameter"),
 									},
 								},
 							},
@@ -3591,7 +3638,7 @@ func schema_pkg_apis_workflow_v1alpha1_Inputs(ref common.ReferenceCallback) comm
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Artifact"),
+										Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Artifact"),
 									},
 								},
 							},
@@ -3601,7 +3648,7 @@ func schema_pkg_apis_workflow_v1alpha1_Inputs(ref common.ReferenceCallback) comm
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Artifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Parameter"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Artifact", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Parameter"},
 	}
 }
 
@@ -3668,7 +3715,7 @@ func schema_pkg_apis_workflow_v1alpha1_LabelValues(ref common.ReferenceCallback)
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "Labels is list of workflow labels",
+				Description: "LabelValues is a list of workflow labels.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"items": {
@@ -3708,13 +3755,13 @@ func schema_pkg_apis_workflow_v1alpha1_LifecycleHook(ref common.ReferenceCallbac
 						SchemaProps: spec.SchemaProps{
 							Description: "Arguments hold arguments to the template",
 							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Arguments"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Arguments"),
 						},
 					},
 					"templateRef": {
 						SchemaProps: spec.SchemaProps{
 							Description: "TemplateRef is the reference to the template resource to execute by the hook",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.TemplateRef"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.TemplateRef"),
 						},
 					},
 					"expression": {
@@ -3728,7 +3775,7 @@ func schema_pkg_apis_workflow_v1alpha1_LifecycleHook(ref common.ReferenceCallbac
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.TemplateRef"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.TemplateRef"},
 	}
 }
 
@@ -3736,7 +3783,7 @@ func schema_pkg_apis_workflow_v1alpha1_Link(ref common.ReferenceCallback) common
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "A link to another app.",
+				Description: "Link is a link to another app.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"name": {
@@ -3763,8 +3810,16 @@ func schema_pkg_apis_workflow_v1alpha1_Link(ref common.ReferenceCallback) common
 							Format:      "",
 						},
 					},
+					"target": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Target attribute specifies where a linked document will be opened when a user clicks on a link. E.g. \"_blank\", \"_self\". If the target is _blank, it will open in a new tab.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
-				Required: []string{"name", "scope", "url"},
+				Required: []string{"name", "scope", "url", "target"},
 			},
 			VendorExtensible: spec.VendorExtensible{
 				Extensions: spec.Extensions{
@@ -3785,7 +3840,7 @@ func schema_pkg_apis_workflow_v1alpha1_ManifestFrom(ref common.ReferenceCallback
 					"artifact": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Artifact contains the artifact to use",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Artifact"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Artifact"),
 						},
 					},
 				},
@@ -3793,7 +3848,7 @@ func schema_pkg_apis_workflow_v1alpha1_ManifestFrom(ref common.ReferenceCallback
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Artifact"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Artifact"},
 	}
 }
 
@@ -3839,7 +3894,7 @@ func schema_pkg_apis_workflow_v1alpha1_Memoize(ref common.ReferenceCallback) com
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "Memoization enables caching for the Outputs of the template",
+				Description: "Memoize enables caching for the Outputs of the template.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"key": {
@@ -3853,7 +3908,7 @@ func schema_pkg_apis_workflow_v1alpha1_Memoize(ref common.ReferenceCallback) com
 					"cache": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Cache sets and configures the kind of cache",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Cache"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Cache"),
 						},
 					},
 					"maxAge": {
@@ -3869,7 +3924,7 @@ func schema_pkg_apis_workflow_v1alpha1_Memoize(ref common.ReferenceCallback) com
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Cache"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Cache"},
 	}
 }
 
@@ -3877,7 +3932,7 @@ func schema_pkg_apis_workflow_v1alpha1_Metadata(ref common.ReferenceCallback) co
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "Pod metdata",
+				Description: "Metadata is pod metadata.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"annotations": {
@@ -3953,12 +4008,12 @@ func schema_pkg_apis_workflow_v1alpha1_Metrics(ref common.ReferenceCallback) com
 				Properties: map[string]spec.Schema{
 					"prometheus": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Prometheus is a list of prometheus metrics to be emitted",
+							Description: "Prometheus is a list of prometheus metrics to be emitted MaxItems is an artificial limit to limit CEL validation costs - see note at top of file",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Prometheus"),
+										Ref: ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Prometheus"),
 									},
 								},
 							},
@@ -3969,7 +4024,7 @@ func schema_pkg_apis_workflow_v1alpha1_Metrics(ref common.ReferenceCallback) com
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Prometheus"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Prometheus"},
 	}
 }
 
@@ -3991,6 +4046,13 @@ func schema_pkg_apis_workflow_v1alpha1_Mutex(ref common.ReferenceCallback) commo
 						SchemaProps: spec.SchemaProps{
 							Description: "Namespace is the namespace of the mutex, default: [namespace of workflow]",
 							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"database": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Database specifies this is database controlled if this is set true",
+							Type:        []string{"boolean"},
 							Format:      "",
 						},
 					},
@@ -4047,7 +4109,7 @@ func schema_pkg_apis_workflow_v1alpha1_MutexStatus(ref common.ReferenceCallback)
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.MutexHolding"),
+										Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.MutexHolding"),
 									},
 								},
 							},
@@ -4066,7 +4128,7 @@ func schema_pkg_apis_workflow_v1alpha1_MutexStatus(ref common.ReferenceCallback)
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.MutexHolding"),
+										Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.MutexHolding"),
 									},
 								},
 							},
@@ -4076,7 +4138,7 @@ func schema_pkg_apis_workflow_v1alpha1_MutexStatus(ref common.ReferenceCallback)
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.MutexHolding"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.MutexHolding"},
 	}
 }
 
@@ -4126,7 +4188,7 @@ func schema_pkg_apis_workflow_v1alpha1_NodeResult(ref common.ReferenceCallback) 
 					},
 					"outputs": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Outputs"),
+							Ref: ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Outputs"),
 						},
 					},
 					"progress": {
@@ -4139,7 +4201,7 @@ func schema_pkg_apis_workflow_v1alpha1_NodeResult(ref common.ReferenceCallback) 
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Outputs"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Outputs"},
 	}
 }
 
@@ -4191,7 +4253,7 @@ func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) 
 					"templateRef": {
 						SchemaProps: spec.SchemaProps{
 							Description: "TemplateRef is the reference to the template resource which this node corresponds to. Not applicable to virtual nodes (e.g. Retry, StepGroup)",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.TemplateRef"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.TemplateRef"),
 						},
 					},
 					"templateScope": {
@@ -4283,19 +4345,19 @@ func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) 
 					"nodeFlag": {
 						SchemaProps: spec.SchemaProps{
 							Description: "NodeFlag tracks some history of node. e.g.) hooked, retried, etc.",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NodeFlag"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.NodeFlag"),
 						},
 					},
 					"inputs": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Inputs captures input parameter values and artifact locations supplied to this template invocation",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Inputs"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Inputs"),
 						},
 					},
 					"outputs": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Outputs captures output parameter values and artifact locations produced by this template invocation",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Outputs"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Outputs"),
 						},
 					},
 					"children": {
@@ -4338,13 +4400,34 @@ func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) 
 					"memoizationStatus": {
 						SchemaProps: spec.SchemaProps{
 							Description: "MemoizationStatus holds information about cached nodes",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.MemoizationStatus"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.MemoizationStatus"),
 						},
 					},
 					"synchronizationStatus": {
 						SchemaProps: spec.SchemaProps{
 							Description: "SynchronizationStatus is the synchronization status of the node",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NodeSynchronizationStatus"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.NodeSynchronizationStatus"),
+						},
+					},
+					"taskResultSynced": {
+						SchemaProps: spec.SchemaProps{
+							Description: "TaskResultSynced is used to determine if the node's output has been received",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"failedPodRestarts": {
+						SchemaProps: spec.SchemaProps{
+							Description: "FailedPodRestarts tracks the number of times the pod for this node was restarted due to infrastructure failures before the main container started.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"restartingPodUID": {
+						SchemaProps: spec.SchemaProps{
+							Description: "RestartingPodUID tracks the UID of the pod that is currently being restarted. This prevents duplicate restart attempts when the controller processes the same failed pod multiple times. Cleared when the replacement pod starts running.",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 				},
@@ -4352,7 +4435,7 @@ func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) 
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Inputs", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.MemoizationStatus", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NodeFlag", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NodeSynchronizationStatus", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.TemplateRef", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Inputs", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.MemoizationStatus", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.NodeFlag", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.NodeSynchronizationStatus", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.TemplateRef", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
 	}
 }
 
@@ -4430,7 +4513,7 @@ func schema_pkg_apis_workflow_v1alpha1_OAuth2Auth(ref common.ReferenceCallback) 
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OAuth2EndpointParam"),
+										Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.OAuth2EndpointParam"),
 									},
 								},
 							},
@@ -4440,7 +4523,7 @@ func schema_pkg_apis_workflow_v1alpha1_OAuth2Auth(ref common.ReferenceCallback) 
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OAuth2EndpointParam", "k8s.io/api/core/v1.SecretKeySelector"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.OAuth2EndpointParam", "k8s.io/api/core/v1.SecretKeySelector"},
 	}
 }
 
@@ -4448,7 +4531,7 @@ func schema_pkg_apis_workflow_v1alpha1_OAuth2EndpointParam(ref common.ReferenceC
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "EndpointParam is for requesting optional fields that should be sent in the oauth request",
+				Description: "OAuth2EndpointParam is an optional field that should be sent in the OAuth request.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"key": {
@@ -4523,7 +4606,7 @@ func schema_pkg_apis_workflow_v1alpha1_OSSArtifact(ref common.ReferenceCallback)
 					"lifecycleRule": {
 						SchemaProps: spec.SchemaProps{
 							Description: "LifecycleRule specifies how to manage bucket's lifecycle",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSLifecycleRule"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.OSSLifecycleRule"),
 						},
 					},
 					"useSDKCreds": {
@@ -4546,7 +4629,7 @@ func schema_pkg_apis_workflow_v1alpha1_OSSArtifact(ref common.ReferenceCallback)
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSLifecycleRule", "k8s.io/api/core/v1.SecretKeySelector"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.OSSLifecycleRule", "k8s.io/api/core/v1.SecretKeySelector"},
 	}
 }
 
@@ -4600,7 +4683,7 @@ func schema_pkg_apis_workflow_v1alpha1_OSSArtifactRepository(ref common.Referenc
 					"lifecycleRule": {
 						SchemaProps: spec.SchemaProps{
 							Description: "LifecycleRule specifies how to manage bucket's lifecycle",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSLifecycleRule"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.OSSLifecycleRule"),
 						},
 					},
 					"useSDKCreds": {
@@ -4621,7 +4704,7 @@ func schema_pkg_apis_workflow_v1alpha1_OSSArtifactRepository(ref common.Referenc
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSLifecycleRule", "k8s.io/api/core/v1.SecretKeySelector"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.OSSLifecycleRule", "k8s.io/api/core/v1.SecretKeySelector"},
 	}
 }
 
@@ -4675,7 +4758,7 @@ func schema_pkg_apis_workflow_v1alpha1_OSSBucket(ref common.ReferenceCallback) c
 					"lifecycleRule": {
 						SchemaProps: spec.SchemaProps{
 							Description: "LifecycleRule specifies how to manage bucket's lifecycle",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSLifecycleRule"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.OSSLifecycleRule"),
 						},
 					},
 					"useSDKCreds": {
@@ -4689,7 +4772,7 @@ func schema_pkg_apis_workflow_v1alpha1_OSSBucket(ref common.ReferenceCallback) c
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.OSSLifecycleRule", "k8s.io/api/core/v1.SecretKeySelector"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.OSSLifecycleRule", "k8s.io/api/core/v1.SecretKeySelector"},
 	}
 }
 
@@ -4724,8 +4807,9 @@ func schema_pkg_apis_workflow_v1alpha1_Object(ref common.ReferenceCallback) comm
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type:   Object{}.OpenAPISchemaType(),
-				Format: Object{}.OpenAPISchemaFormat(),
+				Description: "Object represents a JSON object value.",
+				Type:        Object{}.OpenAPISchemaType(),
+				Format:      Object{}.OpenAPISchemaFormat(),
 			},
 		},
 	}
@@ -4752,7 +4836,7 @@ func schema_pkg_apis_workflow_v1alpha1_Outputs(ref common.ReferenceCallback) com
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Parameter"),
+										Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Parameter"),
 									},
 								},
 							},
@@ -4772,7 +4856,7 @@ func schema_pkg_apis_workflow_v1alpha1_Outputs(ref common.ReferenceCallback) com
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Artifact"),
+										Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Artifact"),
 									},
 								},
 							},
@@ -4780,7 +4864,7 @@ func schema_pkg_apis_workflow_v1alpha1_Outputs(ref common.ReferenceCallback) com
 					},
 					"result": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Result holds the result (stdout) of a script template",
+							Description: "Result holds the result (stdout) of a script or container template, or the response body of an HTTP template",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -4796,7 +4880,7 @@ func schema_pkg_apis_workflow_v1alpha1_Outputs(ref common.ReferenceCallback) com
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Artifact", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Parameter"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Artifact", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Parameter"},
 	}
 }
 
@@ -4804,8 +4888,9 @@ func schema_pkg_apis_workflow_v1alpha1_ParallelSteps(ref common.ReferenceCallbac
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type:   ParallelSteps{}.OpenAPISchemaType(),
-				Format: ParallelSteps{}.OpenAPISchemaFormat(),
+				Description: "ParallelSteps is a list of workflow steps that run in parallel. swagger:ignore",
+				Type:        ParallelSteps{}.OpenAPISchemaType(),
+				Format:      ParallelSteps{}.OpenAPISchemaFormat(),
 			},
 		},
 	}
@@ -4835,7 +4920,7 @@ func schema_pkg_apis_workflow_v1alpha1_Parameter(ref common.ReferenceCallback) c
 					},
 					"value": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values",
+							Description: "Value is the literal value to use for the parameter. If specified in the context of an input parameter, any passed values take precedence over the specified value",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -4843,7 +4928,7 @@ func schema_pkg_apis_workflow_v1alpha1_Parameter(ref common.ReferenceCallback) c
 					"valueFrom": {
 						SchemaProps: spec.SchemaProps{
 							Description: "ValueFrom is the source for the output parameter's value",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ValueFrom"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ValueFrom"),
 						},
 					},
 					"globalName": {
@@ -4880,7 +4965,7 @@ func schema_pkg_apis_workflow_v1alpha1_Parameter(ref common.ReferenceCallback) c
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ValueFrom"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ValueFrom"},
 	}
 }
 
@@ -4890,6 +4975,83 @@ func schema_pkg_apis_workflow_v1alpha1_Plugin(ref common.ReferenceCallback) comm
 			SchemaProps: spec.SchemaProps{
 				Description: "Plugin is an Object with exactly one key",
 				Type:        []string{"object"},
+			},
+		},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_PluginArtifact(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "PluginArtifact is the location of a plugin artifact",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"name": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Name is the name of the artifact driver plugin",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"configuration": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Configuration is the plugin defined configuration for the artifact driver plugin",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"connectionTimeoutSeconds": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ConnectionTimeoutSeconds is the timeout for the artifact driver connection, overriding the driver's timeout",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"key": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Key is the path in the artifact repository where the artifact resides",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+				Required: []string{"key"},
+			},
+		},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_PluginArtifactRepository(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "PluginArtifactRepository defines the controller configuration for a plugin artifact repository",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"name": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
+						},
+					},
+					"keyFormat": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"configuration": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
+						},
+					},
+				},
+				Required: []string{"name", "configuration"},
 			},
 		},
 	}
@@ -4952,7 +5114,7 @@ func schema_pkg_apis_workflow_v1alpha1_Prometheus(ref common.ReferenceCallback) 
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.MetricLabel"),
+										Ref: ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.MetricLabel"),
 									},
 								},
 							},
@@ -4976,19 +5138,19 @@ func schema_pkg_apis_workflow_v1alpha1_Prometheus(ref common.ReferenceCallback) 
 					"gauge": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Gauge is a gauge metric",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Gauge"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Gauge"),
 						},
 					},
 					"histogram": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Histogram is a histogram metric",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Histogram"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Histogram"),
 						},
 					},
 					"counter": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Counter is a counter metric",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Counter"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Counter"),
 						},
 					},
 				},
@@ -4996,7 +5158,7 @@ func schema_pkg_apis_workflow_v1alpha1_Prometheus(ref common.ReferenceCallback) 
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Counter", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Gauge", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Histogram", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.MetricLabel"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Counter", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Gauge", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Histogram", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.MetricLabel"},
 	}
 }
 
@@ -5054,7 +5216,7 @@ func schema_pkg_apis_workflow_v1alpha1_ResourceTemplate(ref common.ReferenceCall
 					"manifestFrom": {
 						SchemaProps: spec.SchemaProps{
 							Description: "ManifestFrom is the source for a single kubernetes manifest",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ManifestFrom"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ManifestFrom"),
 						},
 					},
 					"setOwnerReference": {
@@ -5098,7 +5260,7 @@ func schema_pkg_apis_workflow_v1alpha1_ResourceTemplate(ref common.ReferenceCall
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ManifestFrom"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ManifestFrom"},
 	}
 }
 
@@ -5111,14 +5273,14 @@ func schema_pkg_apis_workflow_v1alpha1_RetryAffinity(ref common.ReferenceCallbac
 				Properties: map[string]spec.Schema{
 					"nodeAntiAffinity": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RetryNodeAntiAffinity"),
+							Ref: ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.RetryNodeAntiAffinity"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RetryNodeAntiAffinity"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.RetryNodeAntiAffinity"},
 	}
 }
 
@@ -5156,13 +5318,13 @@ func schema_pkg_apis_workflow_v1alpha1_RetryStrategy(ref common.ReferenceCallbac
 					"backoff": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Backoff is a backoff strategy",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Backoff"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Backoff"),
 						},
 					},
 					"affinity": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Affinity prevents running workflow's step on the same host",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RetryAffinity"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.RetryAffinity"),
 						},
 					},
 					"expression": {
@@ -5176,7 +5338,7 @@ func schema_pkg_apis_workflow_v1alpha1_RetryStrategy(ref common.ReferenceCallbac
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Backoff", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RetryAffinity", "k8s.io/apimachinery/pkg/util/intstr.IntOrString"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Backoff", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.RetryAffinity", "k8s.io/apimachinery/pkg/util/intstr.IntOrString"},
 	}
 }
 
@@ -5250,12 +5412,12 @@ func schema_pkg_apis_workflow_v1alpha1_S3Artifact(ref common.ReferenceCallback) 
 					"createBucketIfNotPresent": {
 						SchemaProps: spec.SchemaProps{
 							Description: "CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist. Setting Enabled Encryption will apply either SSE-S3 to the bucket if KmsKeyId is not set or SSE-KMS if it is.",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.CreateS3BucketOptions"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.CreateS3BucketOptions"),
 						},
 					},
 					"encryptionOptions": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.S3EncryptionOptions"),
+							Ref: ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.S3EncryptionOptions"),
 						},
 					},
 					"caSecret": {
@@ -5275,7 +5437,7 @@ func schema_pkg_apis_workflow_v1alpha1_S3Artifact(ref common.ReferenceCallback) 
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.CreateS3BucketOptions", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.S3EncryptionOptions", "k8s.io/api/core/v1.SecretKeySelector"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.CreateS3BucketOptions", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.S3EncryptionOptions", "k8s.io/api/core/v1.SecretKeySelector"},
 	}
 }
 
@@ -5349,12 +5511,12 @@ func schema_pkg_apis_workflow_v1alpha1_S3ArtifactRepository(ref common.Reference
 					"createBucketIfNotPresent": {
 						SchemaProps: spec.SchemaProps{
 							Description: "CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist. Setting Enabled Encryption will apply either SSE-S3 to the bucket if KmsKeyId is not set or SSE-KMS if it is.",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.CreateS3BucketOptions"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.CreateS3BucketOptions"),
 						},
 					},
 					"encryptionOptions": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.S3EncryptionOptions"),
+							Ref: ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.S3EncryptionOptions"),
 						},
 					},
 					"caSecret": {
@@ -5372,7 +5534,7 @@ func schema_pkg_apis_workflow_v1alpha1_S3ArtifactRepository(ref common.Reference
 					},
 					"keyPrefix": {
 						SchemaProps: spec.SchemaProps{
-							Description: "KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts. DEPRECATED. Use KeyFormat instead",
+							Description: "KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts.\n\nDeprecated: Use KeyFormat instead.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -5381,7 +5543,7 @@ func schema_pkg_apis_workflow_v1alpha1_S3ArtifactRepository(ref common.Reference
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.CreateS3BucketOptions", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.S3EncryptionOptions", "k8s.io/api/core/v1.SecretKeySelector"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.CreateS3BucketOptions", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.S3EncryptionOptions", "k8s.io/api/core/v1.SecretKeySelector"},
 	}
 }
 
@@ -5455,12 +5617,12 @@ func schema_pkg_apis_workflow_v1alpha1_S3Bucket(ref common.ReferenceCallback) co
 					"createBucketIfNotPresent": {
 						SchemaProps: spec.SchemaProps{
 							Description: "CreateBucketIfNotPresent tells the driver to attempt to create the S3 bucket for output artifacts, if it doesn't exist. Setting Enabled Encryption will apply either SSE-S3 to the bucket if KmsKeyId is not set or SSE-KMS if it is.",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.CreateS3BucketOptions"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.CreateS3BucketOptions"),
 						},
 					},
 					"encryptionOptions": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.S3EncryptionOptions"),
+							Ref: ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.S3EncryptionOptions"),
 						},
 					},
 					"caSecret": {
@@ -5473,7 +5635,7 @@ func schema_pkg_apis_workflow_v1alpha1_S3Bucket(ref common.ReferenceCallback) co
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.CreateS3BucketOptions", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.S3EncryptionOptions", "k8s.io/api/core/v1.SecretKeySelector"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.CreateS3BucketOptions", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.S3EncryptionOptions", "k8s.io/api/core/v1.SecretKeySelector"},
 	}
 }
 
@@ -5620,7 +5782,7 @@ func schema_pkg_apis_workflow_v1alpha1_ScriptTemplate(ref common.ReferenceCallba
 							},
 						},
 						SchemaProps: spec.SchemaProps{
-							Description: "List of sources to populate environment variables in the container. The keys defined within a source must be a C_IDENTIFIER. All invalid keys will be reported as an event when the container is starting. When a key exists in multiple sources, the value associated with the last source will take precedence. Values defined by an Env with a duplicate key will take precedence. Cannot be updated.",
+							Description: "List of sources to populate environment variables in the container. The keys defined within a source may consist of any printable ASCII characters except '='. When a key exists in multiple sources, the value associated with the last source will take precedence. Values defined by an Env with a duplicate key will take precedence. Cannot be updated.",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
@@ -5670,7 +5832,7 @@ func schema_pkg_apis_workflow_v1alpha1_ScriptTemplate(ref common.ReferenceCallba
 							},
 						},
 						SchemaProps: spec.SchemaProps{
-							Description: "Resources resize policy for the container.",
+							Description: "Resources resize policy for the container. This field cannot be set on ephemeral containers.",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
@@ -5684,9 +5846,28 @@ func schema_pkg_apis_workflow_v1alpha1_ScriptTemplate(ref common.ReferenceCallba
 					},
 					"restartPolicy": {
 						SchemaProps: spec.SchemaProps{
-							Description: "RestartPolicy defines the restart behavior of individual containers in a pod. This field may only be set for init containers, and the only allowed value is \"Always\". For non-init containers or when this field is not specified, the restart behavior is defined by the Pod's restart policy and the container type. Setting the RestartPolicy as \"Always\" for the init container will have the following effect: this init container will be continually restarted on exit until all regular containers have terminated. Once all regular containers have completed, all init containers with restartPolicy \"Always\" will be shut down. This lifecycle differs from normal init containers and is often referred to as a \"sidecar\" container. Although this init container still starts in the init container sequence, it does not wait for the container to complete before proceeding to the next init container. Instead, the next init container starts immediately after this init container is started, or after any startupProbe has successfully completed.",
+							Description: "RestartPolicy defines the restart behavior of individual containers in a pod. This overrides the pod-level restart policy. When this field is not specified, the restart behavior is defined by the Pod's restart policy and the container type. Additionally, setting the RestartPolicy as \"Always\" for the init container will have the following effect: this init container will be continually restarted on exit until all regular containers have terminated. Once all regular containers have completed, all init containers with restartPolicy \"Always\" will be shut down. This lifecycle differs from normal init containers and is often referred to as a \"sidecar\" container. Although this init container still starts in the init container sequence, it does not wait for the container to complete before proceeding to the next init container. Instead, the next init container starts immediately after this init container is started, or after any startupProbe has successfully completed.",
 							Type:        []string{"string"},
 							Format:      "",
+						},
+					},
+					"restartPolicyRules": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "Represents a list of rules to be checked to determine if the container should be restarted on exit. The rules are evaluated in order. Once a rule matches a container exit condition, the remaining rules are ignored. If no rule matches the container exit condition, the Container-level restart policy determines the whether the container is restarted or not. Constraints on the rules: - At most 20 rules are allowed. - Rules can have the same action. - Identical rules are not forbidden in validations. When rules are specified, container MUST set RestartPolicy explicitly even it if matches the Pod's RestartPolicy.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.ContainerRestartRule"),
+									},
+								},
+							},
 						},
 					},
 					"volumeMounts": {
@@ -5818,11 +5999,11 @@ func schema_pkg_apis_workflow_v1alpha1_ScriptTemplate(ref common.ReferenceCallba
 						},
 					},
 				},
-				Required: []string{"name", "source"},
+				Required: []string{"name"},
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/api/core/v1.ContainerPort", "k8s.io/api/core/v1.ContainerResizePolicy", "k8s.io/api/core/v1.EnvFromSource", "k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.Lifecycle", "k8s.io/api/core/v1.Probe", "k8s.io/api/core/v1.ResourceRequirements", "k8s.io/api/core/v1.SecurityContext", "k8s.io/api/core/v1.VolumeDevice", "k8s.io/api/core/v1.VolumeMount"},
+			"k8s.io/api/core/v1.ContainerPort", "k8s.io/api/core/v1.ContainerResizePolicy", "k8s.io/api/core/v1.ContainerRestartRule", "k8s.io/api/core/v1.EnvFromSource", "k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.Lifecycle", "k8s.io/api/core/v1.Probe", "k8s.io/api/core/v1.ResourceRequirements", "k8s.io/api/core/v1.SecurityContext", "k8s.io/api/core/v1.VolumeDevice", "k8s.io/api/core/v1.VolumeMount"},
 	}
 }
 
@@ -5874,7 +6055,7 @@ func schema_pkg_apis_workflow_v1alpha1_SemaphoreRef(ref common.ReferenceCallback
 				Properties: map[string]spec.Schema{
 					"configMapKeyRef": {
 						SchemaProps: spec.SchemaProps{
-							Description: "ConfigMapKeyRef is configmap selector for Semaphore configuration",
+							Description: "ConfigMapKeyRef is a configmap selector for Semaphore configuration",
 							Ref:         ref("k8s.io/api/core/v1.ConfigMapKeySelector"),
 						},
 					},
@@ -5885,11 +6066,17 @@ func schema_pkg_apis_workflow_v1alpha1_SemaphoreRef(ref common.ReferenceCallback
 							Format:      "",
 						},
 					},
+					"database": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SyncDatabaseRef is a database reference for Semaphore configuration",
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.SyncDatabaseRef"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/api/core/v1.ConfigMapKeySelector"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.SyncDatabaseRef", "k8s.io/api/core/v1.ConfigMapKeySelector"},
 	}
 }
 
@@ -5907,7 +6094,7 @@ func schema_pkg_apis_workflow_v1alpha1_SemaphoreStatus(ref common.ReferenceCallb
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SemaphoreHolding"),
+										Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.SemaphoreHolding"),
 									},
 								},
 							},
@@ -5921,7 +6108,7 @@ func schema_pkg_apis_workflow_v1alpha1_SemaphoreStatus(ref common.ReferenceCallb
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SemaphoreHolding"),
+										Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.SemaphoreHolding"),
 									},
 								},
 							},
@@ -5931,7 +6118,7 @@ func schema_pkg_apis_workflow_v1alpha1_SemaphoreStatus(ref common.ReferenceCallb
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SemaphoreHolding"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.SemaphoreHolding"},
 	}
 }
 
@@ -6007,7 +6194,7 @@ func schema_pkg_apis_workflow_v1alpha1_Submit(ref common.ReferenceCallback) comm
 						SchemaProps: spec.SchemaProps{
 							Description: "WorkflowTemplateRef the workflow template to submit",
 							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef"),
 						},
 					},
 					"metadata": {
@@ -6020,7 +6207,7 @@ func schema_pkg_apis_workflow_v1alpha1_Submit(ref common.ReferenceCallback) comm
 					"arguments": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Arguments extracted from the event and then set as arguments to the workflow created.",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Arguments"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Arguments"),
 						},
 					},
 				},
@@ -6028,7 +6215,7 @@ func schema_pkg_apis_workflow_v1alpha1_Submit(ref common.ReferenceCallback) comm
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
@@ -6169,6 +6356,26 @@ func schema_pkg_apis_workflow_v1alpha1_SuspendTemplate(ref common.ReferenceCallb
 	}
 }
 
+func schema_pkg_apis_workflow_v1alpha1_SyncDatabaseRef(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"key": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
+						},
+					},
+				},
+				Required: []string{"key"},
+			},
+		},
+	}
+}
+
 func schema_pkg_apis_workflow_v1alpha1_Synchronization(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -6176,18 +6383,6 @@ func schema_pkg_apis_workflow_v1alpha1_Synchronization(ref common.ReferenceCallb
 				Description: "Synchronization holds synchronization lock configuration",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"semaphore": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Semaphore holds the Semaphore configuration - deprecated, use semaphores instead",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SemaphoreRef"),
-						},
-					},
-					"mutex": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Mutex holds the Mutex lock details - deprecated, use mutexes instead",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Mutex"),
-						},
-					},
 					"semaphores": {
 						SchemaProps: spec.SchemaProps{
 							Description: "v3.6 and after: Semaphores holds the list of Semaphores configuration",
@@ -6195,7 +6390,7 @@ func schema_pkg_apis_workflow_v1alpha1_Synchronization(ref common.ReferenceCallb
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SemaphoreRef"),
+										Ref: ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.SemaphoreRef"),
 									},
 								},
 							},
@@ -6208,7 +6403,7 @@ func schema_pkg_apis_workflow_v1alpha1_Synchronization(ref common.ReferenceCallb
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Mutex"),
+										Ref: ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Mutex"),
 									},
 								},
 							},
@@ -6218,7 +6413,7 @@ func schema_pkg_apis_workflow_v1alpha1_Synchronization(ref common.ReferenceCallb
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Mutex", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SemaphoreRef"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Mutex", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.SemaphoreRef"},
 	}
 }
 
@@ -6232,20 +6427,20 @@ func schema_pkg_apis_workflow_v1alpha1_SynchronizationStatus(ref common.Referenc
 					"semaphore": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Semaphore stores this workflow's Semaphore holder details",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SemaphoreStatus"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.SemaphoreStatus"),
 						},
 					},
 					"mutex": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Mutex stores this workflow's mutex holder details",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.MutexStatus"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.MutexStatus"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.MutexStatus", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SemaphoreStatus"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.MutexStatus", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.SemaphoreStatus"},
 	}
 }
 
@@ -6321,14 +6516,14 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 						SchemaProps: spec.SchemaProps{
 							Description: "Inputs describe what inputs parameters and artifacts are supplied to this template",
 							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Inputs"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Inputs"),
 						},
 					},
 					"outputs": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Outputs describe the parameters and artifacts that this template produces",
 							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Outputs"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Outputs"),
 						},
 					},
 					"nodeSelector": {
@@ -6355,9 +6550,9 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Metdata sets the pods's metadata, i.e. annotations and labels",
+							Description: "Metadata sets the pods's metadata, i.e. annotations and labels",
 							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metadata"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Metadata"),
 						},
 					},
 					"daemon": {
@@ -6375,7 +6570,7 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ParallelSteps"),
+										Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ParallelSteps"),
 									},
 								},
 							},
@@ -6390,49 +6585,49 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 					"containerSet": {
 						SchemaProps: spec.SchemaProps{
 							Description: "ContainerSet groups multiple containers within a single pod.",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContainerSetTemplate"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ContainerSetTemplate"),
 						},
 					},
 					"script": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Script runs a portion of code against an interpreter",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ScriptTemplate"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ScriptTemplate"),
 						},
 					},
 					"resource": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Resource template subtype which can run k8s resources",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ResourceTemplate"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ResourceTemplate"),
 						},
 					},
 					"dag": {
 						SchemaProps: spec.SchemaProps{
 							Description: "DAG template subtype which runs a DAG",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.DAGTemplate"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.DAGTemplate"),
 						},
 					},
 					"suspend": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Suspend template subtype which can suspend a workflow when reaching the step",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SuspendTemplate"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.SuspendTemplate"),
 						},
 					},
 					"data": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Data is a data template",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Data"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Data"),
 						},
 					},
 					"http": {
 						SchemaProps: spec.SchemaProps{
 							Description: "HTTP makes a HTTP request",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTP"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.HTTP"),
 						},
 					},
 					"plugin": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Plugin is a plugin template",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Plugin"),
+							Description: "Plugin is a plugin template Note: the structure of a plugin template is free-form, so we need to have \"x-kubernetes-preserve-unknown-fields: true\" in the validation schema.",
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Plugin"),
 						},
 					},
 					"volumes": {
@@ -6469,7 +6664,7 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.UserContainer"),
+										Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.UserContainer"),
 									},
 								},
 							},
@@ -6489,7 +6684,7 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.UserContainer"),
+										Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.UserContainer"),
 									},
 								},
 							},
@@ -6498,7 +6693,7 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 					"archiveLocation": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Location in which all files related to the step will be stored (logs, artifacts, etc...). Can be overridden by individual items in Outputs. If omitted, will use the default artifact repository location configured in the controller, appended with the <workflowname>/<nodename> in the key.",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactLocation"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactLocation"),
 						},
 					},
 					"activeDeadlineSeconds": {
@@ -6510,7 +6705,7 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 					"retryStrategy": {
 						SchemaProps: spec.SchemaProps{
 							Description: "RetryStrategy describes how to retry a template when it fails",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RetryStrategy"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.RetryStrategy"),
 						},
 					},
 					"parallelism": {
@@ -6561,13 +6756,6 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 							Format:      "",
 						},
 					},
-					"priority": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Priority to apply to workflow pods.",
-							Type:        []string{"integer"},
-							Format:      "int32",
-						},
-					},
 					"serviceAccountName": {
 						SchemaProps: spec.SchemaProps{
 							Description: "ServiceAccountName to apply to workflow pods",
@@ -6585,7 +6773,7 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 					"executor": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Executor holds configurations of the executor container.",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ExecutorConfig"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ExecutorConfig"),
 						},
 					},
 					"hostAliases": {
@@ -6624,19 +6812,19 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 					"metrics": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Metrics are a list of metrics emitted from this template",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metrics"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Metrics"),
 						},
 					},
 					"synchronization": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Synchronization holds synchronization lock configuration for this template",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Synchronization"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Synchronization"),
 						},
 					},
 					"memoize": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Memoize allows templates to use outputs generated from already executed templates",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Memoize"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Memoize"),
 						},
 					},
 					"timeout": {
@@ -6646,11 +6834,27 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 							Format:      "",
 						},
 					},
+					"annotations": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Annotations is a list of annotations to add to the template at runtime",
+							Type:        []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactLocation", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContainerSetTemplate", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.DAGTemplate", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Data", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ExecutorConfig", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.HTTP", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Inputs", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Memoize", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metadata", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metrics", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ParallelSteps", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Plugin", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ResourceTemplate", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RetryStrategy", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ScriptTemplate", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SuspendTemplate", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Synchronization", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.UserContainer", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.Container", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume", "k8s.io/apimachinery/pkg/util/intstr.IntOrString"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactLocation", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ContainerSetTemplate", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.DAGTemplate", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Data", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ExecutorConfig", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.HTTP", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Inputs", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Memoize", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Metadata", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Metrics", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ParallelSteps", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Plugin", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ResourceTemplate", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.RetryStrategy", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ScriptTemplate", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.SuspendTemplate", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Synchronization", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.UserContainer", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.Container", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume", "k8s.io/apimachinery/pkg/util/intstr.IntOrString"},
 	}
 }
 
@@ -6810,7 +7014,7 @@ func schema_pkg_apis_workflow_v1alpha1_UserContainer(ref common.ReferenceCallbac
 							},
 						},
 						SchemaProps: spec.SchemaProps{
-							Description: "List of sources to populate environment variables in the container. The keys defined within a source must be a C_IDENTIFIER. All invalid keys will be reported as an event when the container is starting. When a key exists in multiple sources, the value associated with the last source will take precedence. Values defined by an Env with a duplicate key will take precedence. Cannot be updated.",
+							Description: "List of sources to populate environment variables in the container. The keys defined within a source may consist of any printable ASCII characters except '='. When a key exists in multiple sources, the value associated with the last source will take precedence. Values defined by an Env with a duplicate key will take precedence. Cannot be updated.",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
@@ -6860,7 +7064,7 @@ func schema_pkg_apis_workflow_v1alpha1_UserContainer(ref common.ReferenceCallbac
 							},
 						},
 						SchemaProps: spec.SchemaProps{
-							Description: "Resources resize policy for the container.",
+							Description: "Resources resize policy for the container. This field cannot be set on ephemeral containers.",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
@@ -6874,9 +7078,28 @@ func schema_pkg_apis_workflow_v1alpha1_UserContainer(ref common.ReferenceCallbac
 					},
 					"restartPolicy": {
 						SchemaProps: spec.SchemaProps{
-							Description: "RestartPolicy defines the restart behavior of individual containers in a pod. This field may only be set for init containers, and the only allowed value is \"Always\". For non-init containers or when this field is not specified, the restart behavior is defined by the Pod's restart policy and the container type. Setting the RestartPolicy as \"Always\" for the init container will have the following effect: this init container will be continually restarted on exit until all regular containers have terminated. Once all regular containers have completed, all init containers with restartPolicy \"Always\" will be shut down. This lifecycle differs from normal init containers and is often referred to as a \"sidecar\" container. Although this init container still starts in the init container sequence, it does not wait for the container to complete before proceeding to the next init container. Instead, the next init container starts immediately after this init container is started, or after any startupProbe has successfully completed.",
+							Description: "RestartPolicy defines the restart behavior of individual containers in a pod. This overrides the pod-level restart policy. When this field is not specified, the restart behavior is defined by the Pod's restart policy and the container type. Additionally, setting the RestartPolicy as \"Always\" for the init container will have the following effect: this init container will be continually restarted on exit until all regular containers have terminated. Once all regular containers have completed, all init containers with restartPolicy \"Always\" will be shut down. This lifecycle differs from normal init containers and is often referred to as a \"sidecar\" container. Although this init container still starts in the init container sequence, it does not wait for the container to complete before proceeding to the next init container. Instead, the next init container starts immediately after this init container is started, or after any startupProbe has successfully completed.",
 							Type:        []string{"string"},
 							Format:      "",
+						},
+					},
+					"restartPolicyRules": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "Represents a list of rules to be checked to determine if the container should be restarted on exit. The rules are evaluated in order. Once a rule matches a container exit condition, the remaining rules are ignored. If no rule matches the container exit condition, the Container-level restart policy determines the whether the container is restarted or not. Constraints on the rules: - At most 20 rules are allowed. - Rules can have the same action. - Identical rules are not forbidden in validations. When rules are specified, container MUST set RestartPolicy explicitly even it if matches the Pod's RestartPolicy.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.ContainerRestartRule"),
+									},
+								},
+							},
 						},
 					},
 					"volumeMounts": {
@@ -7011,7 +7234,7 @@ func schema_pkg_apis_workflow_v1alpha1_UserContainer(ref common.ReferenceCallbac
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/api/core/v1.ContainerPort", "k8s.io/api/core/v1.ContainerResizePolicy", "k8s.io/api/core/v1.EnvFromSource", "k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.Lifecycle", "k8s.io/api/core/v1.Probe", "k8s.io/api/core/v1.ResourceRequirements", "k8s.io/api/core/v1.SecurityContext", "k8s.io/api/core/v1.VolumeDevice", "k8s.io/api/core/v1.VolumeMount"},
+			"k8s.io/api/core/v1.ContainerPort", "k8s.io/api/core/v1.ContainerResizePolicy", "k8s.io/api/core/v1.ContainerRestartRule", "k8s.io/api/core/v1.EnvFromSource", "k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.Lifecycle", "k8s.io/api/core/v1.Probe", "k8s.io/api/core/v1.ResourceRequirements", "k8s.io/api/core/v1.SecurityContext", "k8s.io/api/core/v1.VolumeDevice", "k8s.io/api/core/v1.VolumeMount"},
 	}
 }
 
@@ -7060,7 +7283,7 @@ func schema_pkg_apis_workflow_v1alpha1_ValueFrom(ref common.ReferenceCallback) c
 					"supplied": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Supplied value to be filled in directly, either through the CLI, API, etc.",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SuppliedValueFrom"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.SuppliedValueFrom"),
 						},
 					},
 					"configMapKeyRef": {
@@ -7087,7 +7310,7 @@ func schema_pkg_apis_workflow_v1alpha1_ValueFrom(ref common.ReferenceCallback) c
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SuppliedValueFrom", "k8s.io/api/core/v1.ConfigMapKeySelector"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.SuppliedValueFrom", "k8s.io/api/core/v1.ConfigMapKeySelector"},
 	}
 }
 
@@ -7210,13 +7433,13 @@ func schema_pkg_apis_workflow_v1alpha1_Workflow(ref common.ReferenceCallback) co
 					"spec": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowSpec"),
+							Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowStatus"),
+							Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowStatus"),
 						},
 					},
 				},
@@ -7224,7 +7447,7 @@ func schema_pkg_apis_workflow_v1alpha1_Workflow(ref common.ReferenceCallback) co
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowSpec", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowSpec", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
@@ -7258,13 +7481,13 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowArtifactGCTask(ref common.Referen
 					"spec": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGCSpec"),
+							Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactGCSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGCStatus"),
+							Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactGCStatus"),
 						},
 					},
 				},
@@ -7272,7 +7495,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowArtifactGCTask(ref common.Referen
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGCSpec", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactGCStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactGCSpec", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactGCStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
@@ -7310,7 +7533,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowArtifactGCTaskList(ref common.Ref
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowArtifactGCTask"),
+										Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowArtifactGCTask"),
 									},
 								},
 							},
@@ -7321,7 +7544,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowArtifactGCTaskList(ref common.Ref
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowArtifactGCTask", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowArtifactGCTask", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
 	}
 }
 
@@ -7355,7 +7578,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowEventBinding(ref common.Reference
 					"spec": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowEventBindingSpec"),
+							Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowEventBindingSpec"),
 						},
 					},
 				},
@@ -7363,7 +7586,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowEventBinding(ref common.Reference
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowEventBindingSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowEventBindingSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
@@ -7401,7 +7624,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowEventBindingList(ref common.Refer
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowEventBinding"),
+										Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowEventBinding"),
 									},
 								},
 							},
@@ -7412,7 +7635,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowEventBindingList(ref common.Refer
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowEventBinding", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowEventBinding", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
 	}
 }
 
@@ -7426,13 +7649,13 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowEventBindingSpec(ref common.Refer
 						SchemaProps: spec.SchemaProps{
 							Description: "Event is the event to bind to",
 							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Event"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Event"),
 						},
 					},
 					"submit": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Submit is the workflow template to submit",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Submit"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Submit"),
 						},
 					},
 				},
@@ -7440,7 +7663,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowEventBindingSpec(ref common.Refer
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Event", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Submit"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Event", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Submit"},
 	}
 }
 
@@ -7461,7 +7684,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowLevelArtifactGC(ref common.Refere
 					"podMetadata": {
 						SchemaProps: spec.SchemaProps{
 							Description: "PodMetadata is an optional field for specifying the Labels and Annotations that should be assigned to the Pod doing the deletion",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metadata"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Metadata"),
 						},
 					},
 					"serviceAccountName": {
@@ -7489,7 +7712,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowLevelArtifactGC(ref common.Refere
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metadata"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Metadata"},
 	}
 }
 
@@ -7527,7 +7750,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowList(ref common.ReferenceCallback
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Workflow"),
+										Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Workflow"),
 									},
 								},
 							},
@@ -7538,7 +7761,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowList(ref common.ReferenceCallback
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Workflow", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Workflow", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
 	}
 }
 
@@ -7586,7 +7809,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowMetadata(ref common.ReferenceCall
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.LabelValueFrom"),
+										Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.LabelValueFrom"),
 									},
 								},
 							},
@@ -7596,7 +7819,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowMetadata(ref common.ReferenceCall
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.LabelValueFrom"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.LabelValueFrom"},
 	}
 }
 
@@ -7615,13 +7838,13 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 							},
 						},
 						SchemaProps: spec.SchemaProps{
-							Description: "Templates is a list of workflow templates used in a workflow",
+							Description: "Templates is a list of workflow templates used in a workflow MaxItems is an artificial limit to limit CEL validation costs - see note at top of file",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Template"),
+										Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Template"),
 									},
 								},
 							},
@@ -7638,7 +7861,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 						SchemaProps: spec.SchemaProps{
 							Description: "Arguments contain the parameters and artifacts sent to the workflow entrypoint Parameters are referencable globally using the 'workflow' variable prefix. e.g. {{workflow.parameters.myparam}}",
 							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Arguments"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Arguments"),
 						},
 					},
 					"serviceAccountName": {
@@ -7658,7 +7881,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 					"executor": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Executor holds configurations of executor containers of the workflow.",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ExecutorConfig"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ExecutorConfig"),
 						},
 					},
 					"volumes": {
@@ -7705,7 +7928,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 					"artifactRepositoryRef": {
 						SchemaProps: spec.SchemaProps{
 							Description: "ArtifactRepositoryRef specifies the configMap name and key containing the artifact repository config.",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRef"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRef"),
 						},
 					},
 					"suspend": {
@@ -7807,7 +8030,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 					"ttlStrategy": {
 						SchemaProps: spec.SchemaProps{
 							Description: "TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be deleted after the time to live expires. If this field is unset, the controller config map will hold the default values.",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.TTLStrategy"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.TTLStrategy"),
 						},
 					},
 					"activeDeadlineSeconds": {
@@ -7834,7 +8057,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 					"podGC": {
 						SchemaProps: spec.SchemaProps{
 							Description: "PodGC describes the strategy to use when deleting completed pods",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.PodGC"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.PodGC"),
 						},
 					},
 					"podPriorityClassName": {
@@ -7842,13 +8065,6 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 							Description: "PriorityClassName to apply to workflow pods.",
 							Type:        []string{"string"},
 							Format:      "",
-						},
-					},
-					"podPriority": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Priority to apply to workflow pods. DEPRECATED: Use PodPriorityClassName instead.",
-							Type:        []string{"integer"},
-							Format:      "int32",
 						},
 					},
 					"hostAliases": {
@@ -7892,7 +8108,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 					"metrics": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Metrics are a list of metrics emitted from this Workflow",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metrics"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Metrics"),
 						},
 					},
 					"shutdown": {
@@ -7905,37 +8121,37 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 					"workflowTemplateRef": {
 						SchemaProps: spec.SchemaProps{
 							Description: "WorkflowTemplateRef holds a reference to a WorkflowTemplate for execution",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef"),
 						},
 					},
 					"synchronization": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Synchronization holds synchronization lock configuration for this Workflow",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Synchronization"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Synchronization"),
 						},
 					},
 					"volumeClaimGC": {
 						SchemaProps: spec.SchemaProps{
 							Description: "VolumeClaimGC describes the strategy to use when deleting volumes from completed workflows",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.VolumeClaimGC"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.VolumeClaimGC"),
 						},
 					},
 					"retryStrategy": {
 						SchemaProps: spec.SchemaProps{
 							Description: "RetryStrategy for all templates in the workflow.",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RetryStrategy"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.RetryStrategy"),
 						},
 					},
 					"podMetadata": {
 						SchemaProps: spec.SchemaProps{
 							Description: "PodMetadata defines additional metadata that should be applied to workflow pods",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metadata"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Metadata"),
 						},
 					},
 					"templateDefaults": {
 						SchemaProps: spec.SchemaProps{
 							Description: "TemplateDefaults holds default template values that will apply to all templates in the Workflow, unless overridden on the template-level",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Template"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Template"),
 						},
 					},
 					"archiveLogs": {
@@ -7954,7 +8170,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.LifecycleHook"),
+										Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.LifecycleHook"),
 									},
 								},
 							},
@@ -7963,20 +8179,20 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 					"workflowMetadata": {
 						SchemaProps: spec.SchemaProps{
 							Description: "WorkflowMetadata contains some metadata of the workflow to refer to",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowMetadata"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowMetadata"),
 						},
 					},
 					"artifactGC": {
 						SchemaProps: spec.SchemaProps{
 							Description: "ArtifactGC describes the strategy to use when deleting artifacts from completed or deleted workflows (applies to all output Artifacts unless Artifact.ArtifactGC is specified, which overrides this)",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowLevelArtifactGC"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowLevelArtifactGC"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRef", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ExecutorConfig", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.LifecycleHook", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metadata", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Metrics", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.PodGC", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.RetryStrategy", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Synchronization", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.TTLStrategy", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Template", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.VolumeClaimGC", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowLevelArtifactGC", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowMetadata", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PersistentVolumeClaim", "k8s.io/api/core/v1.PodDNSConfig", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume", "k8s.io/api/policy/v1.PodDisruptionBudgetSpec"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRef", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ExecutorConfig", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.LifecycleHook", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Metadata", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Metrics", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.PodGC", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.RetryStrategy", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Synchronization", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.TTLStrategy", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Template", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.VolumeClaimGC", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowLevelArtifactGC", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowMetadata", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PersistentVolumeClaim", "k8s.io/api/core/v1.PodDNSConfig", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume", "k8s.io/api/policy/v1.PodDisruptionBudgetSpec"},
 	}
 }
 
@@ -8045,7 +8261,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallba
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NodeStatus"),
+										Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.NodeStatus"),
 									},
 								},
 							},
@@ -8067,7 +8283,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallba
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Template"),
+										Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Template"),
 									},
 								},
 							},
@@ -8090,7 +8306,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallba
 					"outputs": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Outputs captures output values and artifact locations produced by the workflow via global outputs",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Outputs"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Outputs"),
 						},
 					},
 					"conditions": {
@@ -8101,7 +8317,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallba
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Condition"),
+										Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Condition"),
 									},
 								},
 							},
@@ -8126,25 +8342,25 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallba
 					"storedWorkflowTemplateSpec": {
 						SchemaProps: spec.SchemaProps{
 							Description: "StoredWorkflowSpec stores the WorkflowTemplate spec for future execution.",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowSpec"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowSpec"),
 						},
 					},
 					"synchronization": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Synchronization stores the status of synchronization locks",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SynchronizationStatus"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.SynchronizationStatus"),
 						},
 					},
 					"artifactRepositoryRef": {
 						SchemaProps: spec.SchemaProps{
 							Description: "ArtifactRepositoryRef is used to cache the repository to use so we do not need to determine it everytime we reconcile.",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRefStatus"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRefStatus"),
 						},
 					},
 					"artifactGCStatus": {
 						SchemaProps: spec.SchemaProps{
 							Description: "ArtifactGCStatus maintains the status of Artifact Garbage Collection",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtGCStatus"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtGCStatus"),
 						},
 					},
 					"taskResultsCompletionStatus": {
@@ -8167,7 +8383,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallba
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtGCStatus", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRefStatus", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Condition", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NodeStatus", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.SynchronizationStatus", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Template", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowSpec", "k8s.io/api/core/v1.Volume", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtGCStatus", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRefStatus", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Condition", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.NodeStatus", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.SynchronizationStatus", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Template", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowSpec", "k8s.io/api/core/v1.Volume", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
 	}
 }
 
@@ -8175,7 +8391,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStep(ref common.ReferenceCallback
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "WorkflowStep is a reference to a template to execute in a series of step",
+				Description: "WorkflowStep is a reference to a template to execute in a series of step Note: CEL validation cannot check withItems (Schemaless) or inline (PreserveUnknownFields) fields.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"name": {
@@ -8194,32 +8410,32 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStep(ref common.ReferenceCallback
 					},
 					"inline": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Inline is the template. Template must be empty if this is declared (and vice-versa).",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Template"),
+							Description: "Inline is the template. Template must be empty if this is declared (and vice-versa). Note: This struct is defined recursively, since the inline template can potentially contain steps/DAGs that also has an \"inline\" field. Kubernetes doesn't allow recursive types, so we need \"x-kubernetes-preserve-unknown-fields: true\" in the validation schema.",
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Template"),
 						},
 					},
 					"arguments": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Arguments hold arguments to the template",
 							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Arguments"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Arguments"),
 						},
 					},
 					"templateRef": {
 						SchemaProps: spec.SchemaProps{
 							Description: "TemplateRef is the reference to the template resource to execute as the step.",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.TemplateRef"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.TemplateRef"),
 						},
 					},
 					"withItems": {
 						SchemaProps: spec.SchemaProps{
-							Description: "WithItems expands a step into multiple parallel steps from the items in the list",
+							Description: "WithItems expands a step into multiple parallel steps from the items in the list Note: The structure of WithItems is free-form, so we need \"x-kubernetes-preserve-unknown-fields: true\" in the validation schema.",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Item"),
+										Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Item"),
 									},
 								},
 							},
@@ -8235,7 +8451,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStep(ref common.ReferenceCallback
 					"withSequence": {
 						SchemaProps: spec.SchemaProps{
 							Description: "WithSequence expands a step into a numeric sequence",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Sequence"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Sequence"),
 						},
 					},
 					"when": {
@@ -8248,12 +8464,12 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStep(ref common.ReferenceCallback
 					"continueOn": {
 						SchemaProps: spec.SchemaProps{
 							Description: "ContinueOn makes argo to proceed with the following step even if this step fails. Errors and Failed states can be specified",
-							Ref:         ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContinueOn"),
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ContinueOn"),
 						},
 					},
 					"onExit": {
 						SchemaProps: spec.SchemaProps{
-							Description: "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template. DEPRECATED: Use Hooks[exit].Template instead.",
+							Description: "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.\n\nDeprecated: Use Hooks[exit].Template instead.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -8267,7 +8483,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStep(ref common.ReferenceCallback
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.LifecycleHook"),
+										Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.LifecycleHook"),
 									},
 								},
 							},
@@ -8277,7 +8493,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStep(ref common.ReferenceCallback
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.ContinueOn", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Item", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.LifecycleHook", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Sequence", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Template", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.TemplateRef"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ContinueOn", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Item", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.LifecycleHook", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Sequence", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Template", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.TemplateRef"},
 	}
 }
 
@@ -8322,7 +8538,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTaskResult(ref common.ReferenceCa
 					},
 					"outputs": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Outputs"),
+							Ref: ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Outputs"),
 						},
 					},
 					"progress": {
@@ -8336,7 +8552,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTaskResult(ref common.ReferenceCa
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Outputs", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Outputs", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
@@ -8344,7 +8560,8 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTaskResultList(ref common.Referen
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "WorkflowTaskResultList is a list of WorkflowTaskResult resources.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{
@@ -8373,7 +8590,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTaskResultList(ref common.Referen
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowTaskResult"),
+										Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowTaskResult"),
 									},
 								},
 							},
@@ -8384,7 +8601,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTaskResultList(ref common.Referen
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowTaskResult", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowTaskResult", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
 	}
 }
 
@@ -8392,7 +8609,8 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTaskSet(ref common.ReferenceCallb
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "WorkflowTaskSet holds a set of tasks to be executed as part of a workflow.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{
@@ -8417,13 +8635,13 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTaskSet(ref common.ReferenceCallb
 					"spec": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowTaskSetSpec"),
+							Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowTaskSetSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowTaskSetStatus"),
+							Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowTaskSetStatus"),
 						},
 					},
 				},
@@ -8431,7 +8649,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTaskSet(ref common.ReferenceCallb
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowTaskSetSpec", "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowTaskSetStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowTaskSetSpec", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowTaskSetStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
@@ -8439,7 +8657,8 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTaskSetList(ref common.ReferenceC
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "WorkflowTaskSetList is a list of WorkflowTaskSet resources.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{
@@ -8468,7 +8687,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTaskSetList(ref common.ReferenceC
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowTaskSet"),
+										Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowTaskSet"),
 									},
 								},
 							},
@@ -8479,7 +8698,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTaskSetList(ref common.ReferenceC
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowTaskSet", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowTaskSet", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
 	}
 }
 
@@ -8497,7 +8716,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTaskSetSpec(ref common.ReferenceC
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Template"),
+										Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Template"),
 									},
 								},
 							},
@@ -8507,7 +8726,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTaskSetSpec(ref common.ReferenceC
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.Template"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Template"},
 	}
 }
 
@@ -8525,7 +8744,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTaskSetStatus(ref common.Referenc
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NodeResult"),
+										Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.NodeResult"),
 									},
 								},
 							},
@@ -8535,7 +8754,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTaskSetStatus(ref common.Referenc
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.NodeResult"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.NodeResult"},
 	}
 }
 
@@ -8569,7 +8788,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTemplate(ref common.ReferenceCall
 					"spec": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowSpec"),
+							Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowSpec"),
 						},
 					},
 				},
@@ -8577,7 +8796,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTemplate(ref common.ReferenceCall
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
@@ -8615,7 +8834,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTemplateList(ref common.Reference
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Default: map[string]interface{}{},
-										Ref:     ref("github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowTemplate"),
+										Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowTemplate"),
 									},
 								},
 							},
@@ -8626,7 +8845,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTemplateList(ref common.Reference
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1.WorkflowTemplate", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowTemplate", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
 	}
 }
 

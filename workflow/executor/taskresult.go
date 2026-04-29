@@ -9,26 +9,41 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 func (we *WorkflowExecutor) upsertTaskResult(ctx context.Context, result wfv1.NodeResult) error {
-	err := we.createTaskResult(ctx, result)
-	if apierr.IsAlreadyExists(err) {
-		return we.patchTaskResult(ctx, result)
+	if !we.taskResultCreated {
+		err := we.createTaskResult(ctx, result)
+		if apierr.IsAlreadyExists(err) {
+			return we.patchTaskResult(ctx, result)
+		}
+		if err != nil {
+			return err
+		}
+	} else {
+		err := we.patchTaskResult(ctx, result)
+		if err != nil {
+			if apierr.IsNotFound(err) {
+				return we.createTaskResult(ctx, result)
+			}
+			return err
+		}
 	}
-	return err
+	return nil
 }
 
 func (we *WorkflowExecutor) patchTaskResult(ctx context.Context, result wfv1.NodeResult) error {
+	ctx, span := we.Tracing.StartPatchTaskResult(ctx)
+	defer span.End()
 	data, err := json.Marshal(&wfv1.WorkflowTaskResult{NodeResult: result})
 	if err != nil {
 		return err
 	}
 	_, err = we.taskResultClient.Patch(ctx,
-		we.nodeId,
+		we.nodeID,
 		types.MergePatchType,
 		data,
 		metav1.PatchOptions{},
@@ -37,6 +52,8 @@ func (we *WorkflowExecutor) patchTaskResult(ctx context.Context, result wfv1.Nod
 }
 
 func (we *WorkflowExecutor) patchTaskResultLabels(ctx context.Context, labels map[string]string) error {
+	ctx, span := we.Tracing.StartPatchTaskResultLabels(ctx)
+	defer span.End()
 	data, err := json.Marshal(&wfv1.WorkflowTaskResult{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: labels,
@@ -46,7 +63,7 @@ func (we *WorkflowExecutor) patchTaskResultLabels(ctx context.Context, labels ma
 		return err
 	}
 	_, err = we.taskResultClient.Patch(ctx,
-		we.nodeId,
+		we.nodeID,
 		types.MergePatchType,
 		data,
 		metav1.PatchOptions{},
@@ -55,13 +72,15 @@ func (we *WorkflowExecutor) patchTaskResultLabels(ctx context.Context, labels ma
 }
 
 func (we *WorkflowExecutor) createTaskResult(ctx context.Context, result wfv1.NodeResult) error {
+	ctx, span := we.Tracing.StartCreateTaskResult(ctx)
+	defer span.End()
 	taskResult := &wfv1.WorkflowTaskResult{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: workflow.APIVersion,
 			Kind:       workflow.WorkflowTaskResultKind,
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: we.nodeId,
+			Name: we.nodeID,
 		},
 		NodeResult: result,
 	}
@@ -83,5 +102,6 @@ func (we *WorkflowExecutor) createTaskResult(ctx context.Context, result wfv1.No
 		taskResult,
 		metav1.CreateOptions{},
 	)
+	we.taskResultCreated = err == nil || apierr.IsAlreadyExists(err)
 	return err
 }

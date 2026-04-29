@@ -6,10 +6,10 @@ import (
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
-	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/common"
+	workflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
 type resubmitOps struct {
@@ -74,12 +74,13 @@ func NewResubmitCommand() *cobra.Command {
 				cliSubmitOpts.Priority = &resubmitOpts.priority
 			}
 
-			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
+			ctx := cmd.Context()
+			ctx, apiClient, err := client.NewAPIClient(ctx)
 			if err != nil {
 				return err
 			}
-			serviceClient := apiClient.NewWorkflowServiceClient()
-			resubmitOpts.namespace = client.Namespace()
+			serviceClient := apiClient.NewWorkflowServiceClient(ctx)
+			resubmitOpts.namespace = client.Namespace(ctx)
 			return resubmitWorkflows(ctx, serviceClient, resubmitOpts, cliSubmitOpts, args)
 		},
 	}

@@ -67,6 +67,7 @@ spec:
       data:
         source:
           artifactPaths:
+            name: data
             s3:
               bucket: my-bucket
               endpoint: minio:9000

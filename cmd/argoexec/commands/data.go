@@ -5,6 +5,11 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	"go.opentelemetry.io/otel/trace"
+
+	"github.com/argoproj/argo-workflows/v4/cmd/argoexec/executor"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/executor/tracing"
 )
 
 func NewDataCommand() *cobra.Command {
@@ -12,10 +17,9 @@ func NewDataCommand() *cobra.Command {
 		Use:   "data",
 		Short: "Process data",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
-			err := execData(ctx)
+			err := execData(cmd.Context())
 			if err != nil {
-				return fmt.Errorf("%+v", err)
+				return fmt.Errorf("%w", err)
 			}
 			return nil
 		},
@@ -23,19 +27,28 @@ func NewDataCommand() *cobra.Command {
 	return &command
 }
 
+//nolint:contextcheck
 func execData(ctx context.Context) error {
-	wfExecutor := initExecutor()
+	ctx = tracing.InjectTraceContext(ctx)
+	wfExecutor := executor.Init(ctx, clientConfig, varRunArgo)
+	defer func() {
+		if err := wfExecutor.Tracing.Shutdown(context.WithoutCancel(ctx)); err != nil {
+			logging.RequireLoggerFromContext(ctx).WithError(err).Error(ctx, "Failed to shutdown tracing")
+		}
+	}()
+	span := trace.SpanFromContext(ctx)
 
 	// Don't allow cancellation to impact capture of results, parameters, artifacts, or defers.
-	bgCtx := context.Background()
+	//nolint:contextcheck
+	bgCtx := trace.ContextWithSpan(logging.RequireLoggerFromContext(ctx).NewBackgroundContext(), span)
 	// Create a new empty (placeholder) task result with LabelKeyReportOutputsCompleted set to false.
-	wfExecutor.InitializeOutput(bgCtx)
-	defer wfExecutor.HandleError(bgCtx)
-	defer wfExecutor.FinalizeOutput(bgCtx) //Ensures the LabelKeyReportOutputsCompleted is set to true.
+	errHandler := wfExecutor.HandleError(bgCtx)
+	defer errHandler()
+	defer wfExecutor.FinalizeOutput(bgCtx) // Ensures the LabelKeyReportOutputsCompleted is set to true.
 
 	err := wfExecutor.Data(ctx)
 	if err != nil {
-		wfExecutor.AddError(err)
+		wfExecutor.AddError(ctx, err)
 		return err
 	}
 	return nil

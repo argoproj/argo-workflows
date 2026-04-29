@@ -87,6 +87,7 @@ export function WorkflowLogsViewer({workflow, initialNodeId, initialPodName, con
     const [selectedJsonFields, setSelectedJsonFields] = useState<SelectedJsonFields>(() => {
         return storage.getItem<SelectedJsonFields>('jsonFields', {values: []});
     });
+    const [templateFromRef, setTemplateFromRef] = useState<models.Template>(null);
 
     function setDebouncedGrep(value: string) {
         debounce(() => setGrep(value), 1000)[0]();
@@ -169,7 +170,38 @@ export function WorkflowLogsViewer({workflow, initialNodeId, initialPodName, con
     // default to the node id of the pod
     const nodeId = initialNodeId || podNamesToNodeIDs.get(podName);
     const node = workflow.status.nodes[nodeId];
-    const templates = execSpec(workflow).templates.filter(t => !node || t.name === getTemplateNameFromNode(node));
+
+    useEffect(() => {
+        if (!node || !node.templateRef) {
+            setTemplateFromRef(null);
+            return;
+        }
+
+        const fetchTemplate = async () => {
+            try {
+                const tmpl = node.templateRef.clusterScope
+                    ? await services.clusterWorkflowTemplate.get(node.templateRef.name)
+                    : await services.workflowTemplate.get(node.templateRef.name, workflow.metadata.namespace);
+                const matchingTemplate = tmpl.spec.templates.find(t => t.name === node.templateRef.template);
+
+                if (matchingTemplate) {
+                    setTemplateFromRef(matchingTemplate);
+                } else {
+                    setTemplateFromRef(null);
+                }
+            } catch (err) {
+                setTemplateFromRef(null);
+            }
+        };
+
+        fetchTemplate();
+    }, [node, workflow.metadata.namespace]);
+
+    let templates = execSpec(workflow).templates.filter(t => !node || t.name === getTemplateNameFromNode(node));
+
+    if (templates.length === 0 && node && node.templateRef && templateFromRef) {
+        templates = [templateFromRef];
+    }
 
     const containers = [
         ...new Set(
@@ -284,7 +316,10 @@ export function WorkflowLogsViewer({workflow, initialNodeId, initialPodName, con
                 {podName && podNamesToNodeIDs.get(podName) && (
                     <>
                         Still waiting for data or an error? Try getting{' '}
-                        <a href={services.workflows.getArtifactLogsPath(workflow, podNamesToNodeIDs.get(podName), selectedContainer, archived)}>logs from the artifacts</a>.
+                        <a href={services.workflows.getArtifactLogsPath(workflow, podNamesToNodeIDs.get(podName), selectedContainer, archived)} target='_blank' rel='noreferrer'>
+                            logs from the artifacts
+                        </a>
+                        .
                     </>
                 )}
                 {execSpec(workflow).podGC && (
@@ -293,7 +328,10 @@ export function WorkflowLogsViewer({workflow, initialNodeId, initialPodName, con
                         {execSpec(workflow).podGC.deleteDelayDuration ? `after ${execSpec(workflow).podGC.deleteDelayDuration}` : 'immediately'} on completion.
                     </>
                 )}{' '}
-                Logs may not appear for pods that are deleted unless you have <a href='https://argo-workflows.readthedocs.io/en/latest/configure-archive-logs'>archive logs</a>{' '}
+                Logs may not appear for pods that are deleted unless you have{' '}
+                <a href='https://argo-workflows.readthedocs.io/en/latest/configure-archive-logs' target='_blank' rel='noreferrer'>
+                    archive logs
+                </a>{' '}
                 enabled.{' '}
                 {podName ? (
                     <Links

@@ -1,5 +1,4 @@
 import classNames from 'classnames';
-import moment from 'moment';
 import React, {useEffect, useRef, useState} from 'react';
 import {fromEvent, interval, Subscription} from 'rxjs';
 
@@ -19,9 +18,20 @@ interface WorkflowTimelineProps {
     nodeClicked?: (node: models.NodeStatus) => any;
 }
 
+function dateDiff(dateLikeA: string | number, dateLikeB: string | number): number {
+    return new Date(dateLikeA).valueOf() - new Date(dateLikeB).valueOf();
+}
+
+function hhMMFormat(dateLike: string | number): string {
+    const date = new Date(dateLike);
+    // timeString format is '00:59:00 GMT-0500 (Eastern Standard Time)', hh:MM is '00:59'
+    const parts = date.toTimeString().split(':');
+    return parts[0] + ':' + parts[1];
+}
+
 export function WorkflowTimeline(props: WorkflowTimelineProps) {
     const [parentWidth, setParentWidth] = useState(0);
-    const [now, setNow] = useState(moment());
+    const [now, setNow] = useState(new Date());
 
     const containerRef = useRef<HTMLDivElement>(null);
     const resizeSubscription = useRef<Subscription>(null);
@@ -41,7 +51,7 @@ export function WorkflowTimeline(props: WorkflowTimelineProps) {
         const isCompleted = props.workflow?.status && COMPLETED_PHASES.includes(props.workflow.status.phase);
         if (!refreshSubscription.current && !isCompleted) {
             refreshSubscription.current = interval(1000).subscribe(() => {
-                setNow(moment());
+                setNow(new Date());
             });
         } else if (refreshSubscription.current && isCompleted) {
             refreshSubscription.current.unsubscribe();
@@ -62,15 +72,15 @@ export function WorkflowTimeline(props: WorkflowTimelineProps) {
     const nodes = Object.keys(props.workflow.status.nodes)
         .map(id => {
             const node = props.workflow.status.nodes[id];
-            node.finishedAt = node.finishedAt || now.format();
-            node.startedAt = node.startedAt || now.format();
+            node.finishedAt = node.finishedAt || now.toISOString();
+            node.startedAt = node.startedAt || now.toISOString();
             return node;
         })
         .filter(node => node.startedAt && node.type === 'Pod')
         .sort((first, second) => {
-            const diff = moment(first.startedAt).diff(second.startedAt);
+            const diff = dateDiff(first.startedAt, second.startedAt);
             if (diff <= 2) {
-                return moment(first.finishedAt).diff(second.finishedAt);
+                return dateDiff(first.finishedAt, second.finishedAt);
             }
             return diff;
         });
@@ -79,20 +89,20 @@ export function WorkflowTimeline(props: WorkflowTimelineProps) {
         return <div />;
     }
 
-    const timelineStart = moment(nodes[0].startedAt).valueOf();
-    const timelineEnd = nodes.map(node => moment(node.finishedAt).valueOf()).reduce((first, second) => Math.max(first, second), moment(timelineStart).valueOf());
+    const timelineStart = new Date(nodes[0].startedAt).valueOf();
+    const timelineEnd = nodes.map(node => new Date(node.finishedAt).valueOf()).reduce((first, second) => Math.max(first, second), new Date(timelineStart).valueOf());
 
     function timeToLeft(time: number) {
         return ((time - timelineStart) / (timelineEnd - timelineStart)) * Math.max(parentWidth, MIN_WIDTH) + NODE_NAME_WIDTH;
     }
 
     const groups = nodes.map(node => ({
-        startedAt: moment(node.startedAt).valueOf(),
-        finishedAt: moment(node.finishedAt).valueOf(),
+        startedAt: new Date(node.startedAt).valueOf(),
+        finishedAt: new Date(node.finishedAt).valueOf(),
         nodes: [
             Object.assign({}, node, {
-                left: timeToLeft(moment(node.startedAt).valueOf()),
-                width: timeToLeft(moment(node.finishedAt).valueOf()) - timeToLeft(moment(node.startedAt).valueOf())
+                left: timeToLeft(new Date(node.startedAt).valueOf()),
+                width: timeToLeft(new Date(node.finishedAt).valueOf()) - timeToLeft(new Date(node.startedAt).valueOf())
             })
         ]
     }));
@@ -100,9 +110,9 @@ export function WorkflowTimeline(props: WorkflowTimelineProps) {
     for (let i = groups.length - 1; i >= 1; i--) {
         const cur = groups[i];
         const next = groups[i - 1];
-        if (moment(cur.startedAt).diff(next.finishedAt, 'milliseconds') < 0 && moment(next.startedAt).diff(cur.startedAt, 'milliseconds') < ROUND_START_DIFF_MS) {
+        if (dateDiff(cur.startedAt, next.finishedAt) < 0 && dateDiff(next.startedAt, cur.startedAt) < ROUND_START_DIFF_MS) {
             next.nodes = next.nodes.concat(cur.nodes);
-            next.finishedAt = nodes.map(node => moment(node.finishedAt).valueOf()).reduce((first, second) => Math.max(first, second), next.finishedAt.valueOf());
+            next.finishedAt = nodes.map(node => new Date(node.finishedAt).valueOf()).reduce((first, second) => Math.max(first, second), next.finishedAt.valueOf());
             groups.splice(i, 1);
         }
     }
@@ -113,7 +123,7 @@ export function WorkflowTimeline(props: WorkflowTimelineProps) {
             <div className='workflow-timeline__row workflow-timeline__row--header' />
             {groups.map(group => [
                 <div style={{left: timeToLeft(group.startedAt)}} key={`group-${group.startedAt}`} className={classNames('workflow-timeline__start-line')}>
-                    <span className='workflow-timeline__start-line__time'>{moment(group.startedAt).format('hh:mm')}</span>
+                    <span className='workflow-timeline__start-line__time'>{hhMMFormat(group.startedAt)}</span>
                 </div>,
                 ...group.nodes.map(node => (
                     <div

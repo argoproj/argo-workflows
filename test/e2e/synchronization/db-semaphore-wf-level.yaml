@@ -1,0 +1,14 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: semaphore-wf-level-
+spec:
+  entrypoint: whalesay
+  synchronization:
+    semaphores:
+      - database:
+          key: workflow
+  templates:
+  - name: whalesay
+    container:
+      image: argoproj/argosay:v2

@@ -34,7 +34,7 @@ func runItemTest(t *testing.T, data string, expectedType Type) {
 	assert.Equal(t, expectedType, itm.GetType())
 	jsonBytes, err := json.Marshal(itm)
 	require.NoError(t, err)
-	assert.Equal(t, data, string(jsonBytes), "marshalling is symmetric")
+	assert.JSONEq(t, data, string(jsonBytes), "marshalling is symmetric")
 	if strings.HasPrefix(data, `"`) {
 		assert.Equal(t, data, fmt.Sprintf("\"%v\"", itm))
 		assert.Equal(t, data, fmt.Sprintf("\"%s\"", itm))
@@ -67,7 +67,7 @@ func TestItem_GetStrVal(t *testing.T) {
 
 var testItemStringTable = []struct {
 	name   string
-	origin interface{}
+	origin any
 	str    string
 }{
 	{"json-string", []string{`{"foo": "bar"}`}, `["{\"foo\": \"bar\"}"]`},

@@ -1,7 +1,7 @@
 import {SlideContents} from 'argo-ui/src/components/slide-contents/slide-contents';
 import * as React from 'react';
 
-import {ObjectEditor} from '../../../shared/components/object-editor';
+import {SerializingObjectEditor} from '../../../shared/components/object-editor';
 import * as models from '../../../shared/models';
 import {getResolvedTemplates} from '../../../shared/template-resolution';
 
@@ -25,7 +25,7 @@ export function WorkflowYamlViewer(props: WorkflowYamlViewerProps) {
             contents.push(
                 <div key='parent-node'>
                     <h4>{normalizeNodeName(props.selectedNode.displayName || props.selectedNode.name)}</h4>
-                    <ObjectEditor type='io.argoproj.workflow.v1alpha1.Template' value={getResolvedTemplates(props.workflow, parentNode)} />
+                    <SerializingObjectEditor type='io.argoproj.workflow.v1alpha1.Template' value={getResolvedTemplates(props.workflow, parentNode)} />
                 </div>
             );
         }
@@ -35,7 +35,7 @@ export function WorkflowYamlViewer(props: WorkflowYamlViewerProps) {
             contents.push(
                 <div key='current-node'>
                     <h4>{props.selectedNode.name}</h4>
-                    <ObjectEditor type='io.argoproj.workflow.v1alpha1.Template' value={currentNodeTemplate} />
+                    <SerializingObjectEditor type='io.argoproj.workflow.v1alpha1.Template' value={currentNodeTemplate} />
                 </div>
             );
         }
@@ -47,7 +47,7 @@ export function WorkflowYamlViewer(props: WorkflowYamlViewerProps) {
             <SlideContents
                 title='Templates'
                 key='templates'
-                contents={<ObjectEditor type='io.argoproj.workflow.v1alpha1.Template' value={templates} />}
+                contents={<SerializingObjectEditor type='io.argoproj.workflow.v1alpha1.Template' value={templates} />}
                 className='workflow-yaml-section'
             />
         );
@@ -59,7 +59,7 @@ export function WorkflowYamlViewer(props: WorkflowYamlViewerProps) {
             <SlideContents
                 title='Stored Templates'
                 key='stored-templates'
-                contents={<ObjectEditor type='io.argoproj.workflow.v1alpha1.Template' value={storedTemplates} />}
+                contents={<SerializingObjectEditor type='io.argoproj.workflow.v1alpha1.Template' value={storedTemplates} />}
                 className='workflow-yaml-section'
             />
         );

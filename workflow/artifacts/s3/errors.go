@@ -1,10 +1,13 @@
 package s3
 
 import (
-	argos3 "github.com/argoproj/pkg/s3"
-	log "github.com/sirupsen/logrus"
+	"context"
+	stderrors "errors"
 
-	"github.com/argoproj/argo-workflows/v3/util/errors"
+	"github.com/minio/minio-go/v7"
+
+	"github.com/argoproj/argo-workflows/v4/util/errors"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 // s3TransientErrorCodes is a list of S3 error codes that are transient (retryable)
@@ -22,15 +25,26 @@ var s3TransientErrorCodes = []string{
 }
 
 // isTransientS3Err checks if an minio.ErrorResponse error is transient (retryable)
-func isTransientS3Err(err error) bool {
+func isTransientS3Err(ctx context.Context, err error) bool {
 	if err == nil {
 		return false
 	}
+	log := logging.RequireLoggerFromContext(ctx)
 	for _, transientErrCode := range s3TransientErrorCodes {
-		if argos3.IsS3ErrCode(err, transientErrCode) {
-			log.Errorf("Transient S3 error: %v", err)
+		if IsS3ErrCode(err, transientErrCode) {
+			log.WithError(err).Error(ctx, "Transient S3 error")
 			return true
 		}
 	}
-	return errors.IsTransientErr(err)
+	// When the response body is not a parsable S3 XML document (e.g. a proxy
+	// or load balancer returned a bare 5xx response), minio-go sets Code to
+	// the raw HTTP status string ("503 Service Unavailable"), which does not
+	// match any entry in s3TransientErrorCodes. Fall back to StatusCode so
+	// 5xx responses are still treated as transient per S3 retry semantics.
+	var minioErr minio.ErrorResponse
+	if stderrors.As(err, &minioErr) && minioErr.StatusCode >= 500 && minioErr.StatusCode < 600 {
+		log.WithError(err).Error(ctx, "Transient S3 error")
+		return true
+	}
+	return errors.IsTransientErr(ctx, err)
 }

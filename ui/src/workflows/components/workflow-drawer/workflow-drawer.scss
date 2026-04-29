@@ -3,6 +3,7 @@
 .workflow-drawer {
   font-size: 13px;
   background-color: $argo-color-gray-1;
+  margin: 0 15px;
   padding: 1.5em 15px;
   border-radius: 0 0 3px 3px;
   line-height: 30px;
@@ -81,6 +82,25 @@
     .value {
       color: white;
       background-color: $argo-color-teal-5;
+    }
+  }
+
+  &__description {
+    margin-top: 16px;
+    max-width: 75%;
+    white-space: pre-line;
+
+    &--content {
+      blockquote {
+        line-height: normal;
+        padding: 0.25rem 1rem 0 1.25rem;
+        margin: 0;
+      }
+
+      ul, ol {
+        line-height: normal;
+        margin: 0 0 -1.5rem 1.25rem;
+      }
     }
   }
 

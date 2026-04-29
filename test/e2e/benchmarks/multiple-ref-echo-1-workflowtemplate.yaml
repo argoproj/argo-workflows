@@ -1,0 +1,16 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: multiple-ref-echo-1
+spec:
+  entrypoint: print-message
+  templates:
+    - name: print-message
+      inputs:
+        parameters:
+          - name: message
+            value: "hello world!"
+      container:
+        image: ubuntu
+        command: [echo]
+        args: ["{{inputs.parameters.message}}"]

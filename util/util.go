@@ -12,11 +12,11 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
-	"github.com/argoproj/argo-workflows/v3/util/retry"
-	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
+	"github.com/argoproj/argo-workflows/v4/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	errorsutil "github.com/argoproj/argo-workflows/v4/util/errors"
+	"github.com/argoproj/argo-workflows/v4/util/retry"
+	waitutil "github.com/argoproj/argo-workflows/v4/util/wait"
 )
 
 type Closer interface {
@@ -33,10 +33,10 @@ func Close(c Closer) {
 func GetSecrets(ctx context.Context, clientSet kubernetes.Interface, namespace, name, key string) ([]byte, error) {
 	secretsIf := clientSet.CoreV1().Secrets(namespace)
 	var secret *apiv1.Secret
-	err := waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
+	err := waitutil.Backoff(retry.DefaultRetry(ctx), func() (bool, error) {
 		var err error
 		secret, err = secretsIf.Get(ctx, name, metav1.GetOptions{})
-		return !errorsutil.IsTransientErr(err), err
+		return !errorsutil.IsTransientErr(ctx, err), err
 	})
 	if err != nil {
 		return []byte{}, errors.InternalWrapError(err)
@@ -48,7 +48,7 @@ func GetSecrets(ctx context.Context, clientSet kubernetes.Interface, namespace, 
 	return val, nil
 }
 
-// Write the Terminate message in pod spec
+// WriteTerminateMessage writes the terminate message in the pod spec.
 func WriteTerminateMessage(message string) {
 	err := os.WriteFile("/dev/termination-log", []byte(message), 0o600)
 	if err != nil {
@@ -56,8 +56,8 @@ func WriteTerminateMessage(message string) {
 	}
 }
 
-// Merge the two parameters Slice
-// Merge the slices based on arguments order (first is high priority).
+// MergeParameters merges multiple parameter slices into one.
+// It merges based on argument order, where the first slice has the highest priority.
 func MergeParameters(params ...[]wfv1.Parameter) []wfv1.Parameter {
 	var resultParams []wfv1.Parameter
 	passedParams := make(map[string]bool)
@@ -113,17 +113,17 @@ func GenerateFieldSelectorFromWorkflowName(wfName string) string {
 
 func RecoverWorkflowNameFromSelectorStringIfAny(selector string) string {
 	const tag = "metadata.name="
-	if starts := strings.Index(selector, tag); starts > -1 {
-		suffix := selector[starts+len(tag):]
-		if ends := strings.Index(suffix, ","); ends > -1 {
-			return strings.TrimSpace(suffix[:ends])
+	if _, after, ok := strings.Cut(selector, tag); ok {
+		suffix := after
+		if before, _, ok := strings.Cut(suffix, ","); ok {
+			return strings.TrimSpace(before)
 		}
 		return strings.TrimSpace(suffix)
 	}
 	return ""
 }
 
-// getDeletePropagation return the default or configured DeletePropagation policy
+// GetDeletePropagation returns the default or configured DeletePropagation policy.
 func GetDeletePropagation() *metav1.DeletionPropagation {
 	propagationPolicy := metav1.DeletePropagationBackground
 	envVal, ok := os.LookupEnv("WF_DEL_PROPAGATION_POLICY")

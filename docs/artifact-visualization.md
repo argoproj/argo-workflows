@@ -27,7 +27,7 @@ To start, take a look at the [example](https://github.com/argoproj/argo-workflow
 
 ## Artifact Types
 
-An artifact maybe a `.tgz`, file or directory.
+An artifact may be a `.tgz`, file, or directory.
 
 ### `.tgz`
 
@@ -45,7 +45,7 @@ To prevent compression, set `archive` to `none` to prevent compression:
 
 ### File
 
-Files maybe shown in the UI. To determine if a file can be shown, the UI checks if the artifact's file extension is
+Files may be shown in the UI. To determine if a file can be shown, the UI checks if the artifact's file extension is
 supported. The extension is found in the artifact's key.
 
 To view a file, add the extension to the key:

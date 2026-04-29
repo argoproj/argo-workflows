@@ -15,17 +15,23 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: container-on-exit-
+  labels:
+    workflows.argoproj.io/no-test: "environment"
 spec:
   entrypoint: step-template
   templates:
     - name: step-template
       steps:
         - - name: stepA
-            onExit: exitContainer
             template: hello-world
+            hooks:
+              exit:
+                template: exit-container
         - - name: stepB
-            onExit: exitContainer
             template: hello-world
+            hooks:
+              exit:
+                template: exit-container
 
     - name: hello-world
       container:
@@ -33,7 +39,7 @@ spec:
         command: [echo]
         args: ["hello world"]
 
-    - name: exitContainer
+    - name: exit-container
       container:
         image: busybox
         command: [echo]

@@ -3,8 +3,8 @@ package cron
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
-	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/client"
+	cronworkflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/cronworkflow"
 )
 
 // NewDeleteCommand returns a new instance of an `argo delete` command
@@ -25,7 +25,7 @@ func NewDeleteCommand() *cobra.Command {
 			}
 			if all {
 				cronWfList, err := serviceClient.ListCronWorkflows(ctx, &cronworkflowpkg.ListCronWorkflowsRequest{
-					Namespace: client.Namespace(),
+					Namespace: client.Namespace(ctx),
 				})
 				if err != nil {
 					return err
@@ -37,7 +37,7 @@ func NewDeleteCommand() *cobra.Command {
 			for _, name := range args {
 				_, err := serviceClient.DeleteCronWorkflow(ctx, &cronworkflowpkg.DeleteCronWorkflowRequest{
 					Name:      name,
-					Namespace: client.Namespace(),
+					Namespace: client.Namespace(ctx),
 				})
 				if err != nil {
 					return err

@@ -16,7 +16,10 @@ spec:
       automountServiceAccountToken: false
       containers:
         - name: main
-          image: kong/httpbin
+          image: quay.io/holos/mccutchen/go-httpbin:v2.14.1@sha256:2612f203b1be154524b0dbb65212a158776f0643e2f6e1dad45984fc93413d97
+          env:
+            - name: PORT
+              value: "80"
           ports:
             - containerPort: 80
               name: api

@@ -7,10 +7,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 )
 
 type MockKC struct {
@@ -46,7 +47,7 @@ func TestTerminatePodWithContainerName(t *testing.T) {
 			},
 		},
 	}
-	ctx := context.Background()
+	ctx := logging.TestContext(t.Context())
 	err := TerminatePodWithContainerNames(ctx, mock, []string{"container-name"}, syscall.SIGTERM)
 	require.NoError(t, err)
 
@@ -57,7 +58,7 @@ func TestTerminatePodWithContainerName(t *testing.T) {
 				Name: "foo",
 			},
 			Spec: v1.PodSpec{
-				ShareProcessNamespace: ptr.To(true),
+				ShareProcessNamespace: new(true),
 			},
 		},
 		getContainerStatusContainerStatus: &v1.ContainerStatus{
@@ -142,7 +143,7 @@ func TestWaitForTermination(t *testing.T) {
 			},
 		},
 	}
-	ctx := context.Background()
+	ctx := logging.TestContext(t.Context())
 	err := WaitForTermination(ctx, mock, []string{"container-name"}, time.Duration(10)*time.Second)
 	require.NoError(t, err)
 
@@ -178,7 +179,7 @@ func TestKillGracefully(t *testing.T) {
 			},
 		},
 	}
-	ctx := context.Background()
+	ctx := logging.TestContext(t.Context())
 	err := KillGracefully(ctx, mock, []string{"container-name"}, time.Second)
 	require.EqualError(t, err, "timeout after 1s")
 }

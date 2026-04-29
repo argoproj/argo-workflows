@@ -7,6 +7,7 @@ import (
 
 // Plugin is an Object with exactly one key
 type Plugin struct {
+	// +kubebuilder:pruning:PreserveUnknownFields
 	Object `json:",inline" protobuf:"bytes,1,opt,name=object"`
 }
 
@@ -17,8 +18,8 @@ func (p *Plugin) UnmarshalJSON(value []byte) error {
 	}
 	// by validating the structure in UnmarshallJSON, we prevent bad data entering the system at the point of
 	// parsing, which means we do not need validate
-	m := map[string]interface{}{}
-	if err := json.Unmarshal(p.Object.Value, &m); err != nil {
+	m := map[string]any{}
+	if err := json.Unmarshal(p.Value, &m); err != nil {
 		return err
 	}
 	numKeys := len(m)

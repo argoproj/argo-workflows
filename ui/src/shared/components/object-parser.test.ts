@@ -1,6 +1,15 @@
 import {exampleWorkflowTemplate} from '../examples';
 import {parse, stringify} from './object-parser';
 
+describe('parse and stringify are inverses', () => {
+    it('handles creationTimestamp', () => {
+        const testWorkflowTemplate = exampleWorkflowTemplate('test');
+        testWorkflowTemplate.metadata.creationTimestamp = '2024-11-17T06:56:52Z';
+        expect(parse(stringify(testWorkflowTemplate, 'yaml'))).toEqual(testWorkflowTemplate);
+        expect(parse(stringify(testWorkflowTemplate, 'json'))).toEqual(testWorkflowTemplate);
+    });
+});
+
 describe('parse', () => {
     it('handles a valid JSON string', () => {
         expect(parse('{}')).toEqual({});

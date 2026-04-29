@@ -3,9 +3,9 @@ package cron
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
-	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/common"
+	"github.com/argoproj/argo-workflows/v4/pkg/apiclient/cronworkflow"
 )
 
 func NewGetCommand() *cobra.Command {
@@ -24,7 +24,7 @@ func NewGetCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			namespace := client.Namespace()
+			namespace := client.Namespace(ctx)
 
 			for _, arg := range args {
 				cronWf, err := serviceClient.GetCronWorkflow(ctx, &cronworkflow.GetCronWorkflowRequest{

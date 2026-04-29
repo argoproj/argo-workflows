@@ -6,10 +6,7 @@ If you find a security related bug in Argo Workflows, we kindly ask you for resp
 disclosure and for giving us appropriate time to react, analyze and develop a
 fix to mitigate the found security vulnerability.
 
-Please report vulnerabilities by:
-
-* Opening a draft GitHub Security Advisory: https://github.com/argoproj/argo-workflows/security/advisories/new
-* Sending an e-mail to the following address: cncf-argo-security@lists.cncf.io
+Please report vulnerabilities by opening a draft GitHub Security Advisory: https://github.com/argoproj/argo-workflows/security/advisories/new
 
 All vulnerabilities and associated information will be treated with full confidentiality.
 
@@ -22,20 +19,6 @@ feature to keep our community well informed, and will credit you for your findin
 ## Vulnerability Scanning
 
 See [static code analysis](docs/static-code-analysis.md).
-
-## Internet Bug Bounty collaboration
-
-We're happy to announce that the Argo project is collaborating with the great
-folks over at
-[Hacker One](https://hackerone.com/) and their
-[Internet Bug Bounty program](https://hackerone.com/ibb)
-to reward the awesome people who find security vulnerabilities in the four
-main Argo projects (CD, Events, Rollouts and Workflows) and then work with
-us to fix and disclose them in a responsible manner.
-
-If you report a vulnerability to us as outlined in this security policy, we
-will work together with you to find out whether your finding is eligible for
-claiming a bounty, and also on how to claim it.
 
 ## Securing Argo Workflows
 

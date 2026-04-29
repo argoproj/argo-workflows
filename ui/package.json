@@ -16,7 +16,7 @@
         "node": ">=20"
     },
     "dependencies": {
-        "argo-ui": "git+https://github.com/argoproj/argo-ui.git#6de6bfedc0ec0625122dd5162371fc1932f8d428",
+        "argo-ui": "git+https://github.com/argoproj/argo-ui.git#54f36c723d9a0e5d3386689298cbb9c27767fa00",
         "chart.js": "^2.9.4",
         "chartjs-plugin-annotation": "^0.5.7",
         "classnames": "^2.5.1",
@@ -34,17 +34,22 @@
         "react-dom": "^18.3.1",
         "react-markdown": "^8.0.7",
         "react-monaco-editor": "^0.50.1",
+        "react-router": "^4.3.1",
         "react-router-dom": "^4.2.2",
         "remark-gfm": "^3.0.0",
-        "superagent": "^8.1.2",
-        "swagger-ui-react": "^5.17.12",
-        "yaml": "^2.5.1"
+        "rxjs": "^7.8.1",
+        "superagent": "^10.2.3",
+        "xterm": "^4.19.0",
+        "yaml": "^2.8.3"
     },
     "devDependencies": {
         "@babel/core": "^7.22.11",
         "@babel/preset-env": "^7.22.10",
         "@fortawesome/fontawesome-free": "^6.5.1",
         "@ianvs/prettier-plugin-sort-imports": "^4.3.1",
+        "@testing-library/dom": "^10.4.0",
+        "@testing-library/jest-dom": "^6.6.3",
+        "@testing-library/react": "^16.3.0",
         "@types/chart.js": "^2.9.24",
         "@types/classnames": "^2.3.1",
         "@types/dagre": "^0.7.52",
@@ -60,7 +65,6 @@
         "@types/react-helmet": "^6.1.11",
         "@types/react-router-dom": "^4.2.3",
         "@types/superagent": "^8.1.1",
-        "@types/swagger-ui-react": "^4.11.0",
         "@types/uuid": "^9.0.7",
         "@typescript-eslint/eslint-plugin": "^6.18.1",
         "@typescript-eslint/parser": "^6.10.0",
@@ -82,13 +86,14 @@
         "ts-jest": "^26.4.4",
         "ts-node": "^9.1.1",
         "typescript": "^4.6.4",
-        "webpack": "^5.94.0",
+        "webpack": "^5.104.0",
         "webpack-cli": "^5.1.4",
-        "webpack-dev-server": "^4.15.0",
+        "webpack-dev-server": "^5.0.0",
         "yarn-deduplicate": "^6.0.2"
     },
     "resolutions": {
         "semver": "^7.5.2",
-        "types-ramda": "0.29.4"
-    }
+        "types-ramda": "0.29.4",
+        "qs": ">=6.14.1"
+	}
 }

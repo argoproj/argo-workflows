@@ -5,25 +5,27 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	fakekube "k8s.io/client-go/kubernetes/fake"
 
-	eventpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/event"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo-workflows/v3/server/auth"
-	"github.com/argoproj/argo-workflows/v3/util/instanceid"
-	"github.com/argoproj/argo-workflows/v3/workflow/events"
+	eventpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/event"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo-workflows/v4/server/auth"
+	"github.com/argoproj/argo-workflows/v4/util/instanceid"
+	"github.com/argoproj/argo-workflows/v4/workflow/events"
 )
 
 func TestController(t *testing.T) {
-	clientset := fake.NewSimpleClientset()
-	ctx := context.WithValue(context.TODO(), auth.WfKey, clientset)
+	clientset := fake.NewClientset()
+	ctx := context.WithValue(logging.TestContext(t.Context()), auth.WfKey, clientset)
 	instanceIDService := instanceid.NewService("my-instanceid")
-	eventRecorderManager := events.NewEventRecorderManager(fakekube.NewSimpleClientset())
+	eventRecorderManager := events.NewEventRecorderManager(fakekube.NewClientset())
 	newController := func(asyncDispatch bool) *Controller {
-		return NewController(instanceIDService, eventRecorderManager, 1, 1, asyncDispatch)
+		return NewController(ctx, instanceIDService, eventRecorderManager, 1, 1, asyncDispatch)
 	}
 	e1 := &eventpkg.EventRequest{Namespace: "my-ns", Payload: &wfv1.Item{}}
 	e2 := &eventpkg.EventRequest{}
@@ -40,7 +42,7 @@ func TestController(t *testing.T) {
 
 		stopCh := make(chan struct{}, 1)
 		stopCh <- struct{}{}
-		s.Run(stopCh)
+		s.Run(ctx, stopCh)
 
 		assert.Empty(t, s.operationQueue, "all events were processed")
 	})

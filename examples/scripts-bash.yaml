@@ -25,8 +25,8 @@ spec:
 
   - name: gen-random-int
     script:
-      image: debian:9.4
-      command: [bash]
+      image: alpine:3.23
+      command: [sh, -c]
       source: |
         cat /dev/urandom | od -N2 -An -i | awk -v f=1 -v r=100 '{printf "%i\n", f + r * $1 / 65536}'
 
@@ -35,6 +35,6 @@ spec:
       parameters:
       - name: message
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo result was: {{inputs.parameters.message}}"]

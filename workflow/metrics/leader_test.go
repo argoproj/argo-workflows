@@ -7,12 +7,15 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
 
-	"github.com/argoproj/argo-workflows/v3/util/telemetry"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/telemetry"
 )
 
 func TestIsLeader(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
 	_, te, err := createTestMetrics(
-		&telemetry.Config{},
+		ctx,
+		&telemetry.MetricsConfig{},
 		Callbacks{
 			IsLeader: func() bool {
 				return true
@@ -22,14 +25,16 @@ func TestIsLeader(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, te)
 	attribs := attribute.NewSet()
-	val, err := te.GetInt64GaugeValue(`is_leader`, &attribs)
+	val, err := te.GetInt64GaugeValue(ctx, telemetry.InstrumentIsLeader.Name(), &attribs)
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), val)
 }
 
 func TestNotLeader(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
 	_, te, err := createTestMetrics(
-		&telemetry.Config{},
+		ctx,
+		&telemetry.MetricsConfig{},
 		Callbacks{
 			IsLeader: func() bool {
 				return false
@@ -38,7 +43,7 @@ func TestNotLeader(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, te)
 	attribs := attribute.NewSet()
-	val, err := te.GetInt64GaugeValue(`is_leader`, &attribs)
+	val, err := te.GetInt64GaugeValue(ctx, telemetry.InstrumentIsLeader.Name(), &attribs)
 	require.NoError(t, err)
 	assert.Equal(t, int64(0), val)
 }

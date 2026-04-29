@@ -1,0 +1,34 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: parameter-aggregation-dag-with-retry
+spec:
+  retryStrategy:
+    limit: 1
+  entrypoint: fanout-dag-with-output
+  templates:
+    - name: echo-value
+      inputs:
+        parameters:
+          - name: message
+      container:
+        image: argoproj/argosay:v2
+      outputs:
+        parameters:
+          - name: dummy-output
+            value: '{{inputs.parameters.message}}'
+    - name: fanout-dag-with-output
+      dag:
+        tasks:
+          - name: echo-list
+            template: echo-value
+            arguments:
+              parameters:
+                - name: message
+                  value: '{{item}}'
+            withItems: [1, 2, 3]
+      outputs:
+        parameters:
+          - name: dummy-dag-output
+            valueFrom:
+              parameter: '{{tasks.echo-list.outputs.parameters.dummy-output}}'

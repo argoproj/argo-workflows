@@ -1,26 +1,65 @@
 # High-Availability (HA)
 
+By default, the Workflow Controller Pod(s) and the Argo Server Pod(s) do not have resource requests or limits configured.
+Set resource requests to guarantee a resource allocation appropriate for your workloads.
+
+When you use multiple replicas of the same deployment, spread the Pods across multiple availability zones.
+At a minimum, ensure that the Pods are not scheduled on the same node.
+
+Use a [Pod Disruption Budget](https://kubernetes.io/docs/concepts/workloads/pods/disruptions/#pod-disruption-budgets) to prevent all replicas from being replaced simultaneously.
+
 ## Workflow Controller
 
-Before v3.0, only one controller could run at once. (If it crashed, Kubernetes would start another pod.)
+In the event of a Workflow Controller Pod failure, the replacement Controller Pod will continue running Workflows when it is created.
+In most cases, this short loss of Workflow Controller service may be acceptable.
 
-> v3.0 and after
+If you run a single replica of the Workflow Controller, ensure that the [environment variable](environment-variables.md#controller) `LEADER_ELECTION_DISABLE` is set to `true` and that the Pod uses the `workflow-controller` [Priority Class](https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/) included in the installation manifests.
 
-For many users, a short loss of workflow service may be acceptable - the new controller will just continue running
-workflows if it restarts.  However, with high service guarantees, new pods may take too long to start running workflows.
-You should run two replicas, and one of which will be kept on hot-standby.
+By disabling the leader election process, you can avoid unnecessary communication with the Kubernetes API, which may become unresponsive when running Workflows at scale.
 
-A voluntary pod disruption can cause both replicas to be replaced at the same time. You should use a Pod Disruption
-Budget to prevent this and Pod Priority to recover faster from an involuntary pod disruption:
+By using the `PriorityClass`, you can ensure that the Workflow Controller Pod is scheduled before other Pods in the cluster.
 
-* [Pod Disruption Budget](https://kubernetes.io/docs/concepts/workloads/pods/disruptions/#pod-disruption-budgets)
-* [Pod Priority](https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/)
+### Deployment rollout strategy
+
+When leader election is disabled, the Deployment's rollout strategy must not surge a second Pod.
+The default `RollingUpdate` strategy with `maxSurge: 25%` rounds up to `maxSurge: 1` for a single-replica Deployment, so on every rollout (image bump, ConfigMap change, resource edit) the new Pod becomes Ready before the old Pod is terminated.
+Without a leader lease, both Pods reconcile the same Workflows during that window, which can duplicate Pod creations, clobber Workflow status updates, and cause their informer caches to diverge.
+
+Set the Deployment's `spec.strategy` to `Recreate` so the old Pod is terminated before the new Pod starts:
+
+```yaml
+spec:
+  strategy:
+    type: Recreate
+```
+
+This produces a few seconds of controller downtime during each rollout.
+Running Workflows keep executing; reconciliation resumes when the new Pod is Ready.
+
+### Multiple Workflow Controller Replicas
+
+It is possible to run multiple replicas of the Workflow Controller to provide high-availability.
+Ensure that leader election is enabled (either by omitting the `LEADER_ELECTION_DISABLE` or setting it to `false`).
+
+Only one replica of the Workflow Controller will actively manage Workflows at any given time.
+The other replicas will be on standby, ready to take over if the active replica fails.
+This means that you are guaranteeing resource allocations for replicas that are not actively contributing to the running of Workflows.
+
+With leader election enabled, the default `RollingUpdate` Deployment strategy is safe: only the replica holding the lease reconciles Workflows, so a surging replica simply waits to acquire the lease when the previous leader steps down.
+
+The leader election process requires frequent communication with the Kubernetes API.
+When running Workflows at scale, the Kubernetes API may become unresponsive, causing the leader election to take longer than 10 seconds (`LEADER_ELECTION_RENEW_DEADLINE`) to respond, which will disrupt the controller.
+
+### Considerations
+
+A single replica of the Workflow Controller is recommended for most use cases due to:
+
+- The time taken to re-provision the controller Pod often being faster than the time for an existing Pod to win a leader election, especially when the cluster is under load.
+- Saving on the cost of extra Kubernetes resource allocations that aren't being used.
 
 ## Argo Server
 
-> v2.6 and after
+Run a minimum of two replicas, typically three, to avoid dropping API and webhook requests.
+The minimum memory requirements for the Argo Server at scale can be quite large and are not load dependent.
 
-Run a minimum of two replicas, typically three, should be run, otherwise it may be possible that API and webhook requests are dropped.
-
-!!! Tip
-    Consider [spreading Pods across multiple availability zones](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/).
+The Argo Server is horizontally scalable and can be load balanced.

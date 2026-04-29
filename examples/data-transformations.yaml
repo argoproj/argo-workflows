@@ -2,6 +2,8 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
+  labels:
+    workflows.argoproj.io/no-test: "environment"
   generateName: data-transformations-
   annotations:
     workflows.argoproj.io/description: |
@@ -38,10 +40,6 @@ spec:
 
         transformation:
           - expression: "filter(data, {# endsWith \"main.log\"})"
-      outputs:
-        artifacts:
-          - name: file
-            path: /file
 
     - name: process-logs
       inputs:

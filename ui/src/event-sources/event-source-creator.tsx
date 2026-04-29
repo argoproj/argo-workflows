@@ -8,10 +8,11 @@ import {exampleEventSource} from '../shared/examples';
 import {EventSource} from '../shared/models';
 import * as nsUtils from '../shared/namespaces';
 import {services} from '../shared/services';
+import {useEditableObject} from '../shared/use-editable-object';
 import {EventSourceEditor} from './event-source-editor';
 
 export function EventSourceCreator({onCreate, namespace}: {namespace: string; onCreate: (eventSource: EventSource) => void}) {
-    const [eventSource, setEventSource] = useState<EventSource>(exampleEventSource(nsUtils.getNamespaceWithDefault(namespace)));
+    const {object: eventSource, setObject: setEventSource, serialization, lang, setLang} = useEditableObject(exampleEventSource(nsUtils.getNamespaceWithDefault(namespace)));
     const [error, setError] = useState<Error>();
     return (
         <>
@@ -31,9 +32,9 @@ export function EventSourceCreator({onCreate, namespace}: {namespace: string; on
                 </Button>
             </div>
             <ErrorNotice error={error} />
-            <EventSourceEditor eventSource={eventSource} onChange={setEventSource} onError={setError} />
+            <EventSourceEditor eventSource={eventSource} serialization={serialization} lang={lang} onChange={setEventSource} onLangChange={setLang} onError={setError} />
             <p>
-                <a href='https://github.com/argoproj/argo-events/tree/stable/examples/event-sources'>
+                <a href='https://github.com/argoproj/argo-events/tree/stable/examples/event-sources' target='_blank' rel='noreferrer'>
                     Example event sources <i className='fa fa-external-link-alt' />
                 </a>
             </p>

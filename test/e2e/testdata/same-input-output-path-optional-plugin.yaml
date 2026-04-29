@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: optional-input-output-artifact-same-location-plugin-
+spec:
+  entrypoint: main
+  artifactRepositoryRef:
+    configMap: artifact-repositories
+    key: plugin-v1
+  templates:
+    - name: main
+      inputs:
+        artifacts:
+          - name: file
+            path: /tmp/file1.txt
+            optional: true
+      container:
+        image: argoproj/argosay:v2
+        args: ["echo", "test", "/tmp/file1.txt"]
+      outputs:
+        artifacts:
+          - name: file
+            path: /tmp/file1.txt

@@ -2,35 +2,33 @@ package common
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"sync"
 
-	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util"
+	workflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
-// waitWorkflows waits for the given workflowNames.
+// WaitWorkflows waits for the given workflowNames.
 func WaitWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, namespace string, workflowNames []string, ignoreNotFound, quiet bool) {
 	var wg sync.WaitGroup
 	wfSuccessStatus := true
 
 	for _, name := range workflowNames {
-		wg.Add(1)
-		go func(name string) {
-			if ok, _ := waitOnOne(serviceClient, ctx, name, namespace, ignoreNotFound, quiet); !ok {
+		wg.Go(func() {
+			if ok, _ := waitOnOne(ctx, serviceClient, name, namespace, ignoreNotFound, quiet); !ok {
 				wfSuccessStatus = false
 			}
-			wg.Done()
-		}(name)
-
+		})
 	}
 	wg.Wait()
 
@@ -39,7 +37,7 @@ func WaitWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 	}
 }
 
-func waitOnOne(serviceClient workflowpkg.WorkflowServiceClient, ctx context.Context, wfName, namespace string, ignoreNotFound, quiet bool) (bool, error) {
+func waitOnOne(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, wfName, namespace string, ignoreNotFound, quiet bool) (bool, error) {
 	req := &workflowpkg.WatchWorkflowsRequest{
 		Namespace: namespace,
 		ListOptions: &metav1.ListOptions{
@@ -56,8 +54,9 @@ func waitOnOne(serviceClient workflowpkg.WorkflowServiceClient, ctx context.Cont
 	}
 	for {
 		event, err := stream.Recv()
-		if err == io.EOF {
-			log.Debug("Re-establishing workflow watch")
+		if errors.Is(err, io.EOF) {
+			logger := logging.RequireLoggerFromContext(ctx)
+			logger.Debug(ctx, "Re-establishing workflow watch")
 			stream, err = serviceClient.WatchWorkflows(ctx, req)
 			if err != nil {
 				return false, err

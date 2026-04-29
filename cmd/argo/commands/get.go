@@ -7,10 +7,10 @@ import (
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
-	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/common"
+	workflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
 func NewGetCommand() *cobra.Command {
@@ -32,12 +32,13 @@ func NewGetCommand() *cobra.Command {
 `,
 		Args: cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
+			ctx := cmd.Context()
+			ctx, apiClient, err := client.NewAPIClient(ctx)
 			if err != nil {
 				return err
 			}
-			serviceClient := apiClient.NewWorkflowServiceClient()
-			namespace := client.Namespace()
+			serviceClient := apiClient.NewWorkflowServiceClient(ctx)
+			namespace := client.Namespace(ctx)
 			for _, name := range args {
 				wf, err := serviceClient.GetWorkflow(ctx, &workflowpkg.WorkflowGetRequest{
 					Name:      name,
@@ -65,7 +66,7 @@ func NewGetCommand() *cobra.Command {
 func printWorkflow(wf *wfv1.Workflow, getArgs common.GetFlags) error {
 	switch getArgs.Output.String() {
 	case "name":
-		fmt.Println(wf.ObjectMeta.Name)
+		fmt.Println(wf.Name)
 	case "json":
 		outBytes, _ := json.MarshalIndent(wf, "", "    ")
 		fmt.Println(string(outBytes))
@@ -75,7 +76,7 @@ func printWorkflow(wf *wfv1.Workflow, getArgs common.GetFlags) error {
 	case "short", "wide", "":
 		fmt.Print(common.PrintWorkflowHelper(wf, getArgs))
 	default:
-		return fmt.Errorf("Unknown output format: %s", getArgs.Output)
+		return fmt.Errorf("unknown output format: %s", getArgs.Output)
 	}
 	return nil
 }

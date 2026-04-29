@@ -11,18 +11,19 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"math"
 	"os"
 	"path"
 	"path/filepath"
 	"runtime/debug"
+	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/util/file"
-
-	argofile "github.com/argoproj/pkg/file"
-	log "github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,18 +33,21 @@ import (
 	"k8s.io/client-go/rest"
 	retryutil "k8s.io/client-go/util/retry"
 
-	argoerrs "github.com/argoproj/argo-workflows/v3/errors"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	argoprojv1 "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util"
-	"github.com/argoproj/argo-workflows/v3/util/archive"
-	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
-	"github.com/argoproj/argo-workflows/v3/util/retry"
-	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
-	artifact "github.com/argoproj/argo-workflows/v3/workflow/artifacts"
-	artifactcommon "github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	executorretry "github.com/argoproj/argo-workflows/v3/workflow/executor/retry"
+	argoerrs "github.com/argoproj/argo-workflows/v4/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	argoprojv1 "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util"
+	"github.com/argoproj/argo-workflows/v4/util/archive"
+	errorsutil "github.com/argoproj/argo-workflows/v4/util/errors"
+	"github.com/argoproj/argo-workflows/v4/util/file"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/retry"
+	waitutil "github.com/argoproj/argo-workflows/v4/util/wait"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts"
+	artifactcommon "github.com/argoproj/argo-workflows/v4/workflow/artifacts/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	executorretry "github.com/argoproj/argo-workflows/v4/workflow/executor/retry"
+	"github.com/argoproj/argo-workflows/v4/workflow/executor/tracing"
 )
 
 const (
@@ -57,7 +61,7 @@ type WorkflowExecutor struct {
 	podUID              types.UID
 	workflow            string
 	workflowUID         types.UID
-	nodeId              string
+	nodeID              string
 	Template            wfv1.Template
 	IncludeScriptOutput bool
 	Deadline            time.Time
@@ -66,6 +70,7 @@ type WorkflowExecutor struct {
 	RESTClient          rest.Interface
 	Namespace           string
 	RuntimeExecutor     ContainerRuntimeExecutor
+	Tracing             *tracing.Tracing
 
 	// memoized configmaps
 	memoizedConfigMaps map[string]string
@@ -80,13 +85,14 @@ type WorkflowExecutor struct {
 
 	annotationPatchTickDuration  time.Duration
 	readProgressFileTickDuration time.Duration
+
+	// flag to indicate if the task result was created
+	taskResultCreated bool
 }
 
 type Initializer interface {
 	Init(tmpl wfv1.Template) error
 }
-
-//go:generate mockery --name=ContainerRuntimeExecutor
 
 // ContainerRuntimeExecutor is the interface for interacting with a container runtime
 type ContainerRuntimeExecutor interface {
@@ -94,7 +100,7 @@ type ContainerRuntimeExecutor interface {
 	GetFileContents(containerName string, sourcePath string) (string, error)
 
 	// CopyFile copies a source file in a container to a local path
-	CopyFile(containerName, sourcePath, destPath string, compressionLevel int) error
+	CopyFile(ctx context.Context, containerName, sourcePath, destPath string, compressionLevel int) error
 
 	// GetOutputStream returns the entirety of the container output as a io.Reader
 	// Used to capture script results as an output parameter, and to archive container logs
@@ -107,8 +113,14 @@ type ContainerRuntimeExecutor interface {
 	Kill(ctx context.Context, containerNames []string, terminationGracePeriodDuration time.Duration) error
 }
 
+// WorkflowName returns the name of the workflow being executed
+func (we *WorkflowExecutor) WorkflowName() string {
+	return we.workflow
+}
+
 // NewExecutor instantiates a new workflow executor
 func NewExecutor(
+	ctx context.Context,
 	clientset kubernetes.Interface,
 	taskResultClient argoprojv1.WorkflowTaskResultInterface,
 	restClient rest.Interface,
@@ -116,20 +128,27 @@ func NewExecutor(
 	podUID types.UID,
 	workflow string,
 	workflowUID types.UID,
-	nodeId, namespace string,
+	nodeID, namespace string,
 	cre ContainerRuntimeExecutor,
 	template wfv1.Template,
 	includeScriptOutput bool,
 	deadline time.Time,
 	annotationPatchTickDuration, readProgressFileTickDuration time.Duration,
-) WorkflowExecutor {
-	log.WithFields(log.Fields{"Steps": executorretry.Steps, "Duration": executorretry.Duration, "Factor": executorretry.Factor, "Jitter": executorretry.Jitter}).Info("Using executor retry strategy")
+) (WorkflowExecutor, error) {
+	retry := executorretry.ExecutorRetry(ctx)
+	logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{
+		"Steps":    retry.Steps,
+		"Duration": retry.Duration,
+		"Factor":   retry.Factor,
+		"Jitter":   retry.Jitter,
+	}).Info(ctx, "Using executor retry strategy")
+	tracing, err := tracing.New(ctx, `argoexec`)
 	return WorkflowExecutor{
 		PodName:                      podName,
 		podUID:                       podUID,
 		workflow:                     workflow,
 		workflowUID:                  workflowUID,
-		nodeId:                       nodeId,
+		nodeID:                       nodeID,
 		ClientSet:                    clientset,
 		taskResultClient:             taskResultClient,
 		RESTClient:                   restClient,
@@ -138,148 +157,225 @@ func NewExecutor(
 		Template:                     template,
 		IncludeScriptOutput:          includeScriptOutput,
 		Deadline:                     deadline,
+		Tracing:                      tracing,
 		memoizedConfigMaps:           map[string]string{},
 		memoizedSecrets:              map[string][]byte{},
 		errors:                       []error{},
 		annotationPatchTickDuration:  annotationPatchTickDuration,
 		readProgressFileTickDuration: readProgressFileTickDuration,
-	}
+	}, err
 }
 
-// HandleError is a helper to annotate the pod with the error message upon a unexpected executor panic or error
-func (we *WorkflowExecutor) HandleError(ctx context.Context) {
-	if r := recover(); r != nil {
-		util.WriteTerminateMessage(fmt.Sprintf("%v", r))
-		log.Fatalf("executor panic: %+v\n%s", r, debug.Stack())
-	} else {
-		if len(we.errors) > 0 {
+// HandleError is a helper to annotate the pod with the error message upon a unexpected executor panic or error.
+// Usage: defer we.HandleError(ctx)()
+//
+//nolint:revive // recover is inside returned closure that gets deferred by caller
+func (we *WorkflowExecutor) HandleError(ctx context.Context) func() {
+	return func() {
+		if r := recover(); r != nil {
+			util.WriteTerminateMessage(fmt.Sprintf("%v", r))
+			logging.RequireLoggerFromContext(ctx).WithFatal().WithFields(logging.Fields{
+				"error": r,
+				"stack": debug.Stack(),
+			}).Error(ctx, "executor panic")
+		} else if len(we.errors) > 0 {
 			util.WriteTerminateMessage(we.errors[0].Error())
 		}
 	}
 }
 
-// LoadArtifacts loads artifacts from location to a container path
-func (we *WorkflowExecutor) LoadArtifacts(ctx context.Context) error {
-	log.Infof("Start loading input artifacts...")
+func (we *WorkflowExecutor) LoadArtifactsWithoutPlugins(ctx context.Context) error {
+	return we.loadArtifacts(ctx, "")
+}
+
+func (we *WorkflowExecutor) LoadArtifactsFromPlugin(ctx context.Context, pluginName wfv1.ArtifactPluginName) error {
+	return we.loadArtifacts(ctx, pluginName)
+}
+
+// loadArtifacts loads artifacts from location to a container path
+// pluginName is the name of the plugin to load artifacts from, only one plugin can be used at a time
+func (we *WorkflowExecutor) loadArtifacts(ctx context.Context, pluginName wfv1.ArtifactPluginName) error {
+	logger := logging.RequireLoggerFromContext(ctx)
+	logger.WithFields(logging.Fields{"pluginName": pluginName}).Info(ctx, "Start loading input artifacts...")
+	ctx, span := we.Tracing.StartLoadArtifacts(ctx)
+	defer span.End()
 	for _, art := range we.Template.Inputs.Artifacts {
-
-		log.Infof("Downloading artifact: %s", art.Name)
-
-		if !art.HasLocationOrKey() {
-			if art.Optional {
-				log.Warnf("Ignoring optional artifact '%s' which was not supplied", art.Name)
-				continue
-			} else {
-				return argoerrs.Errorf(argoerrs.CodeNotFound, "required artifact '%s' not supplied", art.Name)
-			}
-		}
-		err := art.CleanPath()
+		err := we.loadArtifact(ctx, pluginName, art)
 		if err != nil {
 			return err
-		}
-		driverArt, err := we.newDriverArt(&art)
-		if err != nil {
-			return fmt.Errorf("failed to load artifact '%s': %w", art.Name, err)
-		}
-		artDriver, err := we.InitDriver(ctx, driverArt)
-		if err != nil {
-			return err
-		}
-		// Determine the file path of where to load the artifact
-		var artPath string
-		mnt := common.FindOverlappingVolume(&we.Template, art.Path)
-		if mnt == nil {
-			artPath = path.Join(common.ExecutorArtifactBaseDir, art.Name)
-		} else {
-			// If we get here, it means the input artifact path overlaps with a user-specified
-			// volumeMount in the container. Because we also implement input artifacts as volume
-			// mounts, we need to load the artifact into the user specified volume mount,
-			// as opposed to the `input-artifacts` volume that is an implementation detail
-			// unbeknownst to the user.
-			log.Infof("Specified artifact path %s overlaps with volume mount at %s. Extracting to volume mount", art.Path, mnt.MountPath)
-			artPath = path.Join(common.ExecutorMainFilesystemDir, art.Path)
-		}
-
-		// The artifact is downloaded to a temporary location, after which we determine if
-		// the file is a tarball or not. If it is, it is first extracted then renamed to
-		// the desired location. If not, it is simply renamed to the location.
-		tempArtPath := artPath + ".tmp"
-		// Ensure parent directory exist, create if missing
-		tempArtDir := filepath.Dir(tempArtPath)
-		if err := os.MkdirAll(tempArtDir, 0o700); err != nil {
-			return fmt.Errorf("failed to create artifact temporary parent directory %s: %w", tempArtDir, err)
-		}
-		err = artDriver.Load(driverArt, tempArtPath)
-		if err != nil {
-			if art.Optional && argoerrs.IsCode(argoerrs.CodeNotFound, err) {
-				log.Infof("Skipping optional input artifact that was not found: %s", art.Name)
-				continue
-			}
-			return fmt.Errorf("artifact %s failed to load: %w", art.Name, err)
-		}
-
-		isTar := false
-		isZip := false
-		if art.GetArchive().None != nil {
-			// explicitly not a tar
-			isTar = false
-			isZip = false
-		} else if art.GetArchive().Tar != nil {
-			// explicitly a tar
-			isTar = true
-		} else if art.GetArchive().Zip != nil {
-			// explicitly a zip
-			isZip = true
-		} else {
-			// auto-detect if tarball
-			// (don't try to autodetect zip files for backwards compatibility)
-			isTar, err = isTarball(tempArtPath)
-			if err != nil {
-				return err
-			}
-		}
-
-		if isTar {
-			err = untar(tempArtPath, artPath)
-			_ = os.Remove(tempArtPath)
-		} else if isZip {
-			err = unzip(tempArtPath, artPath)
-			_ = os.Remove(tempArtPath)
-		} else {
-			err = os.Rename(tempArtPath, artPath)
-		}
-		if err != nil {
-			return err
-		}
-
-		log.Infof("Successfully download file: %s", artPath)
-		if art.Mode != nil {
-			err = chmod(artPath, *art.Mode, art.RecurseMode)
-			if err != nil {
-				return err
-			}
 		}
 	}
 	return nil
 }
 
+func (we *WorkflowExecutor) loadArtifact(ctx context.Context, pluginName wfv1.ArtifactPluginName, art wfv1.Artifact) error {
+	logger := logging.RequireLoggerFromContext(ctx)
+	logger.WithField("name", art.Name).Info(ctx, "Downloading artifact")
+
+	if !art.HasLocationOrKey() {
+		if art.Optional {
+			logger.WithField("name", art.Name).Warn(ctx, "Ignoring optional artifact which was not supplied")
+			return nil
+		}
+		return argoerrs.Errorf(argoerrs.CodeNotFound, "required artifact '%s' not supplied", art.Name)
+	}
+	err := art.CleanPath()
+	if err != nil {
+		return err
+	}
+	driverArt, err := we.newDriverArt(&art)
+	if err != nil {
+		return fmt.Errorf("failed to load artifact '%s': %w", art.Name, err)
+	}
+	switch pluginName {
+	// If no plugin is specified only load non-plugin artifacts
+	case "":
+		if driverArt.Plugin != nil {
+			logger.Info(ctx, "Skipping artifact that is from a plugin")
+			return nil
+		}
+		// If a plugin is specified only load artifacts from that plugin
+	default:
+		if driverArt.Plugin == nil || driverArt.Plugin.Name != pluginName {
+			logger.WithFields(logging.Fields{"name": driverArt.Name, "plugin": driverArt.Plugin}).Info(ctx, "Skipping artifact that is not from the specified plugin")
+			return nil
+		}
+	}
+
+	artDriver, err := we.InitDriver(ctx, driverArt)
+	if err != nil {
+		return err
+	}
+	// Determine the file path of where to load the artifact
+	var artPath string
+	mnt := common.FindOverlappingVolume(&we.Template, art.Path)
+	if mnt == nil {
+		artPath = path.Join(common.ExecutorArtifactBaseDir, art.Name)
+	} else {
+		// If we get here, it means the input artifact path overlaps with a user-specified
+		// volumeMount in the container. Because we also implement input artifacts as volume
+		// mounts, we need to load the artifact into the user specified volume mount,
+		// as opposed to the `input-artifacts` volume that is an implementation detail
+		// unbeknownst to the user.
+		logger.WithFields(logging.Fields{"path": art.Path, "mountPath": mnt.MountPath}).Info(ctx, "Specified artifact path overlaps with volume mount, extracting to volume mount")
+		artPath = path.Join(common.ExecutorMainFilesystemDir, art.Path)
+	}
+
+	// The artifact is downloaded to a temporary location, after which we determine if
+	// the file is a tarball or not. If it is, it is first extracted then renamed to
+	// the desired location. If not, it is simply renamed to the location.
+	tempArtPath := artPath + ".tmp"
+	// Ensure parent directory exist, create if missing
+	tempArtDir := filepath.Dir(tempArtPath)
+	if mkdirErr := os.MkdirAll(tempArtDir, 0o700); mkdirErr != nil {
+		return fmt.Errorf("failed to create artifact temporary parent directory %s: %w", tempArtDir, mkdirErr)
+	}
+	ctx, span := we.Tracing.StartLoadArtifact(ctx, artPath)
+	defer span.End()
+	err = artDriver.Load(ctx, driverArt, tempArtPath)
+	if err != nil {
+		if art.Optional && argoerrs.IsCode(argoerrs.CodeNotFound, err) {
+			logger.WithField("name", art.Name).Info(ctx, "Skipping optional input artifact that was not found")
+			return nil
+		}
+		return fmt.Errorf("artifact %s failed to load: %w", art.Name, err)
+	}
+
+	err = we.unarchiveArtifact(ctx, art, tempArtPath, artPath)
+	if err != nil {
+		return err
+	}
+
+	logger.WithField("path", artPath).Info(ctx, "Successfully download file")
+	if art.Mode != nil {
+		err = chmod(artPath, *art.Mode, art.RecurseMode)
+		if err != nil {
+			return err
+		}
+	} else if driverArt.Plugin != nil {
+		// For plugin artifacts without explicit mode, ensure the file is writable
+		// by setting mode to 0666 so the main container can read/write it
+		err = chmod(artPath, 0666, art.RecurseMode)
+		if err != nil {
+			logger.WithError(err).Error(ctx, "Failed to chmod plugin artifact")
+			return err
+		}
+	}
+	return nil
+}
+
+func (we *WorkflowExecutor) unarchiveArtifact(ctx context.Context, art wfv1.Artifact, tempArtPath, artPath string) error {
+	isTar := false
+	isZip := false
+	var err error
+
+	switch {
+	case art.GetArchive().None != nil:
+		// explicitly not a tar
+		isTar = false
+		isZip = false
+	case art.GetArchive().Tar != nil:
+		// explicitly a tar
+		isTar = true
+	case art.GetArchive().Zip != nil:
+		// explicitly a zip
+		isZip = true
+	default:
+		// auto-detect if tarball
+		// (don't try to autodetect zip files for backwards compatibility)
+		isTar, err = isTarball(ctx, tempArtPath)
+		if err != nil {
+			return err
+		}
+	}
+
+	unarchiveCtx, span := we.Tracing.StartUnarchiveArtifact(ctx, artifactArchiveWord(isZip, isTar))
+	defer span.End()
+
+	switch {
+	case isTar:
+		err = untar(tempArtPath, artPath)
+		_ = os.Remove(tempArtPath)
+	case isZip:
+		err = unzip(unarchiveCtx, tempArtPath, artPath)
+		_ = os.Remove(tempArtPath)
+	default:
+		err = os.Rename(tempArtPath, artPath)
+	}
+	return err
+}
+
+func artifactArchiveWord(zip, tar bool) string {
+	switch {
+	case zip:
+		return "zip"
+	case tar:
+		return "tar"
+	}
+	return "none"
+}
+
 // StageFiles will create any files required by script/resource templates
-func (we *WorkflowExecutor) StageFiles() error {
+func (we *WorkflowExecutor) StageFiles(ctx context.Context) error {
+	ctx, span := we.Tracing.StartStageFiles(ctx)
+	defer span.End()
+
 	var filePath string
 	var body []byte
+	logger := logging.RequireLoggerFromContext(ctx)
 	mode := os.FileMode(0o644)
 	switch we.Template.GetType() {
 	case wfv1.TemplateTypeScript:
-		log.Infof("Loading script source to %s", common.ExecutorScriptSourcePath)
+		logger.WithField("path", common.ExecutorScriptSourcePath).Info(ctx, "Loading script source")
 		filePath = common.ExecutorScriptSourcePath
 		body = []byte(we.Template.Script.Source)
 		mode = os.FileMode(0o755)
 	case wfv1.TemplateTypeResource:
 		if we.Template.Resource.ManifestFrom != nil && we.Template.Resource.ManifestFrom.Artifact != nil {
-			log.Infof("manifest %s already staged", we.Template.Resource.ManifestFrom.Artifact.Name)
+			logger.WithField("name", we.Template.Resource.ManifestFrom.Artifact.Name).Info(ctx, "manifest already staged")
 			return nil
 		}
-		log.Infof("Loading manifest to %s", common.ExecutorResourceManifestPath)
+		logger.WithField("path", common.ExecutorResourceManifestPath).Info(ctx, "Loading manifest")
 		filePath = common.ExecutorResourceManifestPath
 		body = []byte(we.Template.Resource.Manifest)
 	default:
@@ -294,13 +390,16 @@ func (we *WorkflowExecutor) StageFiles() error {
 
 // SaveArtifacts uploads artifacts to the archive location
 func (we *WorkflowExecutor) SaveArtifacts(ctx context.Context) (wfv1.Artifacts, error) {
+	logger := logging.RequireLoggerFromContext(ctx)
 	artifacts := wfv1.Artifacts{}
+	ctx, span := we.Tracing.StartSaveArtifacts(ctx)
+	defer span.End()
 	if len(we.Template.Outputs.Artifacts) == 0 {
-		log.Infof("No output artifacts")
+		logger.Info(ctx, "No output artifacts")
 		return artifacts, nil
 	}
 
-	log.Infof("Saving output artifacts")
+	logger.Info(ctx, "Saving output artifacts")
 	err := os.MkdirAll(tempOutArtDir, os.ModePerm)
 	if err != nil {
 		return artifacts, argoerrs.InternalWrapError(err)
@@ -308,8 +407,9 @@ func (we *WorkflowExecutor) SaveArtifacts(ctx context.Context) (wfv1.Artifacts, 
 
 	aggregateError := ""
 	for _, art := range we.Template.Outputs.Artifacts {
+		span.AddEvent("upload artifact",
+			trace.WithAttributes(attribute.KeyValue{Key: "file", Value: attribute.StringValue(art.Name)}))
 		saved, err := we.saveArtifact(ctx, common.MainContainerName, &art)
-
 		if err != nil {
 			aggregateError += err.Error() + "; "
 		}
@@ -319,24 +419,25 @@ func (we *WorkflowExecutor) SaveArtifacts(ctx context.Context) (wfv1.Artifacts, 
 	}
 	if aggregateError == "" {
 		return artifacts, nil
-	} else {
-		return artifacts, errors.New(aggregateError)
 	}
-
+	return artifacts, errors.New(aggregateError)
 }
 
 // save artifact
 // return whether artifact was in fact saved, and if there was an error
 func (we *WorkflowExecutor) saveArtifact(ctx context.Context, containerName string, art *wfv1.Artifact) (bool, error) {
+	logger := logging.RequireLoggerFromContext(ctx)
 	// Determine the file path of where to find the artifact
 	err := art.CleanPath()
 	if err != nil {
 		return false, err
 	}
-	fileName, localArtPath, err := we.stageArchiveFile(containerName, art)
+	ctx, span := we.Tracing.StartSaveArtifact(ctx)
+	defer span.End()
+	fileName, localArtPath, err := we.stageArchiveFile(ctx, containerName, art)
 	if err != nil {
 		if art.Optional && argoerrs.IsCode(argoerrs.CodeNotFound, err) {
-			log.Warnf("Ignoring optional artifact '%s' which does not exist in path '%s': %v", art.Name, art.Path, err)
+			logger.WithField("name", art.Name).WithField("path", art.Path).WithError(err).Warn(ctx, "Ignoring optional artifact which does not exist in path")
 			return false, nil
 		}
 		return false, err
@@ -347,7 +448,7 @@ func (we *WorkflowExecutor) saveArtifact(ctx context.Context, containerName stri
 	}
 	size := fi.Size()
 	if size == 0 {
-		log.Warnf("The file %q is empty. It may not be uploaded successfully depending on the artifact driver", localArtPath)
+		logger.WithField("path", localArtPath).Warn(ctx, "The file is empty. It may not be uploaded successfully depending on the artifact driver")
 	}
 	err = we.saveArtifactFromFile(ctx, art, fileName, localArtPath)
 	return err == nil, err
@@ -360,11 +461,11 @@ func (we *WorkflowExecutor) saveArtifactFromFile(ctx context.Context, art *wfv1.
 		if err != nil {
 			return err
 		}
-		art_location, err := we.Template.ArchiveLocation.Get()
+		artLocation, err := we.Template.ArchiveLocation.Get()
 		if err != nil {
 			return err
 		}
-		if err = art.SetType(art_location); err != nil {
+		if err = art.SetType(artLocation); err != nil {
 			return err
 		}
 		if err := art.SetKey(path.Join(key, fileName)); err != nil {
@@ -379,26 +480,27 @@ func (we *WorkflowExecutor) saveArtifactFromFile(ctx context.Context, art *wfv1.
 	if err != nil {
 		return err
 	}
-	err = artDriver.Save(localArtPath, driverArt)
+	err = artDriver.Save(ctx, localArtPath, driverArt)
 	if err != nil {
 		return err
 	}
-	we.maybeDeleteLocalArtPath(localArtPath)
-	log.Infof("Successfully saved file: %s", localArtPath)
+	we.maybeDeleteLocalArtPath(ctx, localArtPath)
+	logging.RequireLoggerFromContext(ctx).WithField("path", localArtPath).Info(ctx, "Successfully saved file")
 	return nil
 }
 
-func (we *WorkflowExecutor) maybeDeleteLocalArtPath(localArtPath string) {
+func (we *WorkflowExecutor) maybeDeleteLocalArtPath(ctx context.Context, localArtPath string) {
 	if os.Getenv("REMOVE_LOCAL_ART_PATH") == "true" {
-		log.WithField("localArtPath", localArtPath).Info("deleting local artifact")
+		logger := logging.RequireLoggerFromContext(ctx)
+		logger.WithField("localArtPath", localArtPath).Info(ctx, "deleting local artifact")
 		// remove is best effort (the container will go away anyways).
 		// we just want reduce peak space usage
 		err := os.Remove(localArtPath)
 		if err != nil {
-			log.Warnf("Failed to remove %s: %v", localArtPath, err)
+			logger.WithField("path", localArtPath).WithError(err).Warn(ctx, "Failed to remove")
 		}
 	} else {
-		log.WithField("localArtPath", localArtPath).Info("not deleting local artifact")
+		logging.RequireLoggerFromContext(ctx).WithField("localArtPath", localArtPath).Info(ctx, "not deleting local artifact")
 	}
 }
 
@@ -407,8 +509,11 @@ func (we *WorkflowExecutor) maybeDeleteLocalArtPath(localArtPath string) {
 // The filename is incorporated into the final path when uploading it to the artifact repo.
 // The local path is the final staging location of the file (or directory) which we will pass
 // to the SaveArtifacts call and may be a directory or file.
-func (we *WorkflowExecutor) stageArchiveFile(containerName string, art *wfv1.Artifact) (string, string, error) {
-	log.Infof("Staging artifact: %s", art.Name)
+func (we *WorkflowExecutor) stageArchiveFile(ctx context.Context, containerName string, art *wfv1.Artifact) (string, string, error) {
+	logger := logging.RequireLoggerFromContext(ctx)
+	ctx, span := we.Tracing.StartArchiveArtifact(ctx)
+	defer span.End()
+	logger.WithField("name", art.Name).Info(ctx, "Staging artifact")
 	strategy := art.Archive
 	if strategy == nil {
 		// If no strategy is specified, default to the tar strategy
@@ -430,11 +535,11 @@ func (we *WorkflowExecutor) stageArchiveFile(containerName string, art *wfv1.Art
 		// sidecar has direct access to. We can upload directly from the shared volume mount,
 		// instead of copying it from the container.
 		mountedArtPath := filepath.Join(common.ExecutorMainFilesystemDir, art.Path)
-		log.Infof("Staging %s from mirrored volume mount %s", art.Path, mountedArtPath)
+		logger.WithFields(logging.Fields{"path": art.Path, "mountedArtPath": mountedArtPath}).Info(ctx, "Staging from mirrored volume mount")
 		if strategy.None != nil {
 			fileName := filepath.Base(art.Path)
-			log.Infof("No compression strategy needed. Staging skipped")
-			if !argofile.Exists(mountedArtPath) {
+			logger.WithField("fileName", fileName).Info(ctx, "No compression strategy needed, staging skipped")
+			if !file.Exists(mountedArtPath) {
 				return "", "", argoerrs.Errorf(argoerrs.CodeNotFound, "%s no such file or directory", art.Path)
 			}
 			return fileName, mountedArtPath, nil
@@ -448,11 +553,11 @@ func (we *WorkflowExecutor) stageArchiveFile(containerName string, art *wfv1.Art
 			}
 			zw := zip.NewWriter(f)
 			defer zw.Close()
-			err = archive.ZipToWriter(mountedArtPath, zw)
+			err = archive.ZipToWriter(ctx, mountedArtPath, zw)
 			if err != nil {
 				return "", "", err
 			}
-			log.Infof("Successfully staged %s from mirrored volume mount %s", art.Path, mountedArtPath)
+			logger.WithFields(logging.Fields{"path": art.Path, "mountedArtPath": mountedArtPath}).Info(ctx, "Successfully staged from mirrored volume mount")
 			return fileName, localArtPath, nil
 		}
 		fileName := fmt.Sprintf("%s.tgz", art.Name)
@@ -462,19 +567,19 @@ func (we *WorkflowExecutor) stageArchiveFile(containerName string, art *wfv1.Art
 			return "", "", argoerrs.InternalWrapError(err)
 		}
 		w := bufio.NewWriter(f)
-		err = archive.TarGzToWriter(mountedArtPath, compressionLevel, w)
+		err = archive.TarGzToWriter(ctx, mountedArtPath, compressionLevel, w)
 		if err != nil {
 			return "", "", err
 		}
-		log.Infof("Successfully staged %s from mirrored volume mount %s", art.Path, mountedArtPath)
+		logger.WithFields(logging.Fields{"path": art.Path, "mountedArtPath": mountedArtPath}).Info(ctx, "Successfully staged from mirrored volume mount")
 		return fileName, localArtPath, nil
 	}
 
 	fileName := fmt.Sprintf("%s.tgz", art.Name)
 	localArtPath := filepath.Join(tempOutArtDir, fileName)
-	log.Infof("Copying %s from container base image layer to %s", art.Path, localArtPath)
+	logger.WithFields(logging.Fields{"path": art.Path, "localArtPath": localArtPath}).Info(ctx, "Copying from container base image layer")
 
-	err := we.RuntimeExecutor.CopyFile(containerName, art.Path, localArtPath, compressionLevel)
+	err := we.RuntimeExecutor.CopyFile(ctx, containerName, art.Path, localArtPath, compressionLevel)
 	if err != nil {
 		return "", "", err
 	}
@@ -483,7 +588,7 @@ func (we *WorkflowExecutor) stageArchiveFile(containerName string, art *wfv1.Art
 		return fileName, localArtPath, nil
 	}
 	// localArtPath now points to a .tgz file, and the archive strategy is *not* tar. We need to untar it
-	log.Infof("Untaring %s archive before upload", localArtPath)
+	logger.WithField("path", localArtPath).Info(ctx, "Untarring archive before upload")
 	unarchivedArtPath := path.Join(filepath.Dir(localArtPath), art.Name)
 	err = untar(localArtPath, unarchivedArtPath)
 	if err != nil {
@@ -494,7 +599,7 @@ func (we *WorkflowExecutor) stageArchiveFile(containerName string, art *wfv1.Art
 	if err != nil {
 		return "", "", argoerrs.InternalWrapError(err)
 	}
-	isDir, err := argofile.IsDirectory(unarchivedArtPath)
+	isDir, err := file.IsDirectory(unarchivedArtPath)
 	if err != nil {
 		return "", "", argoerrs.InternalWrapError(err)
 	}
@@ -522,11 +627,11 @@ func (we *WorkflowExecutor) stageArchiveFile(containerName string, art *wfv1.Art
 		}
 		zw := zip.NewWriter(f)
 		defer zw.Close()
-		err = archive.ZipToWriter(unarchivedArtPath, zw)
+		err = archive.ZipToWriter(ctx, unarchivedArtPath, zw)
 		if err != nil {
 			return "", "", err
 		}
-		log.Infof("Successfully zipped %s to %s", unarchivedArtPath, localArtPath)
+		logger.WithFields(logging.Fields{"unarchivedArtPath": unarchivedArtPath, "localArtPath": localArtPath}).Info(ctx, "Successfully zipped")
 		return fileName, localArtPath, nil
 	}
 	return fileName, localArtPath, nil
@@ -559,13 +664,14 @@ func (we *WorkflowExecutor) isBaseImagePath(path string) bool {
 
 // SaveParameters will save the content in the specified file path as output parameter value
 func (we *WorkflowExecutor) SaveParameters(ctx context.Context) error {
+	logger := logging.RequireLoggerFromContext(ctx)
 	if len(we.Template.Outputs.Parameters) == 0 {
-		log.Infof("No output parameters")
+		logger.Info(ctx, "No output parameters")
 		return nil
 	}
-	log.Infof("Saving output parameters")
+	logger.Info(ctx, "Saving output parameters")
 	for i, param := range we.Template.Outputs.Parameters {
-		log.Infof("Saving path output parameter: %s", param.Name)
+		logger.WithField("name", param.Name).Info(ctx, "Saving path output parameter")
 		// Determine the file path of where to find the parameter
 		if param.ValueFrom == nil || param.ValueFrom.Path == "" {
 			continue
@@ -573,29 +679,27 @@ func (we *WorkflowExecutor) SaveParameters(ctx context.Context) error {
 
 		var output *wfv1.AnyString
 		if we.isBaseImagePath(param.ValueFrom.Path) {
-			log.Infof("Copying %s from base image layer", param.ValueFrom.Path)
+			logger.WithField("path", param.ValueFrom.Path).Info(ctx, "Copying from base image layer")
 			fileContents, err := we.RuntimeExecutor.GetFileContents(common.MainContainerName, param.ValueFrom.Path)
 			if err != nil {
 				// We have a default value to use instead of returning an error
-				if param.ValueFrom.Default != nil {
-					output = param.ValueFrom.Default
-				} else {
+				if param.ValueFrom.Default == nil {
 					return err
 				}
+				output = param.ValueFrom.Default
 			} else {
 				output = wfv1.AnyStringPtr(fileContents)
 			}
 		} else {
-			log.Infof("Copying %s from volume mount", param.ValueFrom.Path)
+			logger.WithField("path", param.ValueFrom.Path).Info(ctx, "Copying from volume mount")
 			mountedPath := filepath.Join(common.ExecutorMainFilesystemDir, param.ValueFrom.Path)
 			data, err := os.ReadFile(filepath.Clean(mountedPath))
 			if err != nil {
 				// We have a default value to use instead of returning an error
-				if param.ValueFrom.Default != nil {
-					output = param.ValueFrom.Default
-				} else {
+				if param.ValueFrom.Default == nil {
 					return err
 				}
+				output = param.ValueFrom.Default
 			} else {
 				output = wfv1.AnyStringPtr(string(data))
 			}
@@ -604,19 +708,22 @@ func (we *WorkflowExecutor) SaveParameters(ctx context.Context) error {
 		// Trims off a single newline for user convenience
 		output = wfv1.AnyStringPtr(strings.TrimSuffix(output.String(), "\n"))
 		we.Template.Outputs.Parameters[i].Value = output
-		log.Infof("Successfully saved output parameter: %s", param.Name)
+		logger.WithField("name", param.Name).Info(ctx, "Successfully saved output parameter")
 	}
 	return nil
 }
 
 func (we *WorkflowExecutor) SaveLogs(ctx context.Context) []wfv1.Artifact {
+	ctx, span := we.Tracing.StartSaveLogs(ctx)
+	defer span.End()
+
 	var logArtifacts []wfv1.Artifact
 	tempLogsDir := "/tmp/argo/outputs/logs"
 
 	if we.Template.SaveLogsAsArtifact() {
 		err := os.MkdirAll(tempLogsDir, os.ModePerm)
 		if err != nil {
-			we.AddError(argoerrs.InternalWrapError(err))
+			we.AddError(ctx, argoerrs.InternalWrapError(err))
 		}
 
 		containerNames := we.Template.GetMainContainerNames()
@@ -626,7 +733,7 @@ func (we *WorkflowExecutor) SaveLogs(ctx context.Context) []wfv1.Artifact {
 			// Saving logs
 			art, err := we.saveContainerLogs(ctx, tempLogsDir, containerName)
 			if err != nil {
-				we.AddError(err)
+				we.AddError(ctx, err)
 			} else {
 				logArtifacts = append(logArtifacts, *art)
 			}
@@ -638,6 +745,9 @@ func (we *WorkflowExecutor) SaveLogs(ctx context.Context) []wfv1.Artifact {
 
 // saveContainerLogs saves a single container's log into a file
 func (we *WorkflowExecutor) saveContainerLogs(ctx context.Context, tempLogsDir, containerName string) (*wfv1.Artifact, error) {
+	ctx, span := we.Tracing.StartSaveContainerLogs(ctx, containerName)
+	defer span.End()
+
 	fileName := containerName + ".log"
 	filePath := path.Join(tempLogsDir, fileName)
 	err := we.saveLogToFile(ctx, containerName, filePath)
@@ -690,8 +800,8 @@ func (we *WorkflowExecutor) newDriverArt(art *wfv1.Artifact) (*wfv1.Artifact, er
 
 // InitDriver initializes an instance of an artifact driver
 func (we *WorkflowExecutor) InitDriver(ctx context.Context, art *wfv1.Artifact) (artifactcommon.ArtifactDriver, error) {
-	driver, err := artifact.NewDriver(ctx, art, we)
-	if err == artifact.ErrUnsupportedDriver {
+	driver, err := artifacts.NewDriver(ctx, art, we)
+	if errors.Is(err, artifacts.ErrUnsupportedDriver) {
 		return nil, argoerrs.Errorf(argoerrs.CodeBadRequest, "Unsupported artifact driver for %s", art.Name)
 	}
 	return driver, err
@@ -706,10 +816,10 @@ func (we *WorkflowExecutor) GetConfigMapKey(ctx context.Context, name, key strin
 	}
 	configmapsIf := we.ClientSet.CoreV1().ConfigMaps(namespace)
 	var configmap *apiv1.ConfigMap
-	err := waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
+	err := waitutil.Backoff(retry.DefaultRetry(ctx), func() (bool, error) {
 		var err error
 		configmap, err = configmapsIf.Get(ctx, name, metav1.GetOptions{})
-		return !errorsutil.IsTransientErr(err), err
+		return !errorsutil.IsTransientErr(ctx, err), err
 	})
 	if err != nil {
 		return "", argoerrs.InternalWrapError(err)
@@ -726,36 +836,8 @@ func (we *WorkflowExecutor) GetConfigMapKey(ctx context.Context, name, key strin
 	return val, nil
 }
 
-// GetSecrets retrieves a secret value and memoizes the result
-func (we *WorkflowExecutor) GetSecrets(ctx context.Context, namespace, name, key string) ([]byte, error) {
-	cachedKey := fmt.Sprintf("%s/%s/%s", namespace, name, key)
-	if val, ok := we.memoizedSecrets[cachedKey]; ok {
-		return val, nil
-	}
-	secretsIf := we.ClientSet.CoreV1().Secrets(namespace)
-	var secret *apiv1.Secret
-	err := waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
-		var err error
-		secret, err = secretsIf.Get(ctx, name, metav1.GetOptions{})
-		return !errorsutil.IsTransientErr(err), err
-	})
-	if err != nil {
-		return []byte{}, argoerrs.InternalWrapError(err)
-	}
-	// memoize all keys in the secret since it's highly likely we will need to get a
-	// subsequent key in the secret (e.g. username + password) and we can save an API call
-	for k, v := range secret.Data {
-		we.memoizedSecrets[fmt.Sprintf("%s/%s/%s", namespace, name, k)] = v
-	}
-	val, ok := we.memoizedSecrets[cachedKey]
-	if !ok {
-		return []byte{}, argoerrs.Errorf(argoerrs.CodeBadRequest, "secret '%s' does not have the key '%s'", name, key)
-	}
-	return val, nil
-}
-
 // GetTerminationGracePeriodDuration returns the terminationGracePeriodSeconds of podSpec in Time.Duration format
-func getTerminationGracePeriodDuration() time.Duration {
+func GetTerminationGracePeriodDuration() time.Duration {
 	x, _ := strconv.ParseInt(os.Getenv(common.EnvVarTerminationGracePeriodSeconds), 10, 64)
 	if x > 0 {
 		return time.Duration(x) * time.Second
@@ -765,15 +847,19 @@ func getTerminationGracePeriodDuration() time.Duration {
 
 // CaptureScriptResult will add the stdout of a script template as output result
 func (we *WorkflowExecutor) CaptureScriptResult(ctx context.Context) error {
+	ctx, span := we.Tracing.StartCaptureScriptResult(ctx)
+	defer span.End()
+
+	logger := logging.RequireLoggerFromContext(ctx)
 	if !we.IncludeScriptOutput {
-		log.Infof("No Script output reference in workflow. Capturing script output ignored")
+		logger.Info(ctx, "No Script output reference in workflow. Capturing script output ignored")
 		return nil
 	}
 	if !we.Template.HasOutput() {
-		log.Infof("Template type is neither of Script, Container, or Pod. Capturing script output ignored")
+		logger.Info(ctx, "Template type is neither of Script, Container, or Pod. Capturing script output ignored")
 		return nil
 	}
-	log.Infof("Capturing script output")
+	logger.Info(ctx, "Capturing script output")
 	reader, err := we.RuntimeExecutor.GetOutputStream(ctx, common.MainContainerName, false)
 	if err != nil {
 		return err
@@ -793,7 +879,7 @@ func (we *WorkflowExecutor) CaptureScriptResult(ctx context.Context) error {
 	const maxAnnotationSize int = 256 * (1 << 10) // 256 kB
 	// A character in a string is a byte
 	if len(out) > maxAnnotationSize {
-		log.Warnf("Output is larger than the maximum allowed size of 256 kB, only the last 256 kB were saved")
+		logger.Warn(ctx, "Output is larger than the maximum allowed size of 256 kB, only the last 256 kB were saved")
 		out = out[len(out)-maxAnnotationSize:]
 	}
 
@@ -803,42 +889,56 @@ func (we *WorkflowExecutor) CaptureScriptResult(ctx context.Context) error {
 
 // FinalizeOutput adds a label or annotation to denote that outputs have completed reporting.
 func (we *WorkflowExecutor) FinalizeOutput(ctx context.Context) {
+	logger := logging.RequireLoggerFromContext(ctx)
+	var count uint64
 	err := retryutil.OnError(wait.Backoff{
 		Duration: time.Second,
 		Factor:   2,
 		Jitter:   0.1,
-		Steps:    5,
+		Steps:    math.MaxInt32, // effectively infinite retries
 		Cap:      30 * time.Second,
-	}, errorsutil.IsTransientErr, func() error {
+	}, func(err error) bool {
+		return errorsutil.IsTransientErr(ctx, err)
+	}, func() error {
 		err := we.patchTaskResultLabels(ctx, map[string]string{
 			common.LabelKeyReportOutputsCompleted: "true",
 		})
 		if apierr.IsForbidden(err) || apierr.IsNotFound(err) {
-			log.WithError(err).Warn("failed to patch task result, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
+			logger.WithError(err).WithField("attempt", count).Warn(ctx, "failed to patch task result, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
+		} else if err != nil && count%20 == 0 {
+			logger.WithError(err).WithField("attempt", count).Warn(ctx, "failed to patch task result")
 		}
+		count++
 		return err
 	})
 	if err != nil {
-		we.AddError(err)
+		we.AddError(ctx, err)
 	}
 }
 
 func (we *WorkflowExecutor) InitializeOutput(ctx context.Context) {
+	logger := logging.RequireLoggerFromContext(ctx)
+	var count uint64
 	err := retryutil.OnError(wait.Backoff{
 		Duration: time.Second,
 		Factor:   2,
 		Jitter:   0.1,
-		Steps:    5,
+		Steps:    math.MaxInt32, // effectively infinite retries
 		Cap:      30 * time.Second,
-	}, errorsutil.IsTransientErr, func() error {
+	}, func(err error) bool {
+		return errorsutil.IsTransientErr(ctx, err)
+	}, func() error {
 		err := we.upsertTaskResult(ctx, wfv1.NodeResult{})
 		if apierr.IsForbidden(err) {
-			log.WithError(err).Warn("failed to patch task result, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
+			logger.WithError(err).WithField("attempt", count).Warn(ctx, "failed to patch task result, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
+		} else if err != nil && count%20 == 0 {
+			logger.WithError(err).WithField("attempt", count).Warn(ctx, "failed to patch task result")
 		}
+		count++
 		return err
 	})
 	if err != nil {
-		we.AddError(err)
+		we.AddError(ctx, err)
 	}
 }
 
@@ -849,25 +949,42 @@ func (we *WorkflowExecutor) ReportOutputs(ctx context.Context, artifacts []wfv1.
 	return we.reportResult(ctx, wfv1.NodeResult{Outputs: outputs})
 }
 
+// ReportOutputsLogs updates the WorkflowTaskResult log fields
+func (we *WorkflowExecutor) ReportOutputsLogs(ctx context.Context) error {
+	var outputs wfv1.Outputs
+	artifacts := wfv1.Artifacts{}
+	logArtifacts := we.SaveLogs(ctx)
+	artifacts = append(artifacts, logArtifacts...)
+	outputs.Artifacts = artifacts
+	return we.reportResult(ctx, wfv1.NodeResult{Outputs: &outputs})
+}
+
 func (we *WorkflowExecutor) reportResult(ctx context.Context, result wfv1.NodeResult) error {
+	var count uint64 // used to avoid spamming with these messages
+	logger := logging.RequireLoggerFromContext(ctx)
 	return retryutil.OnError(wait.Backoff{
 		Duration: time.Second,
-		Factor:   2,
-		Jitter:   0.1,
-		Steps:    5,
+		Factor:   2.0,
+		Jitter:   0.2,
+		Steps:    math.MaxInt32, // effectively infinite retries
 		Cap:      30 * time.Second,
-	}, errorsutil.IsTransientErr, func() error {
+	}, func(err error) bool {
+		return errorsutil.IsTransientErr(ctx, err)
+	}, func() error {
 		err := we.upsertTaskResult(ctx, result)
 		if apierr.IsForbidden(err) {
-			log.WithError(err).Warn("failed to patch task result, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
+			logger.WithError(err).WithField("attempt", count).Warn(ctx, "failed to patch task result, see https://argo-workflows.readthedocs.io/en/latest/workflow-rbac/")
+		} else if err != nil && count%20 == 0 {
+			logger.WithError(err).WithField("attempt", count).Warn(ctx, "failed to patch task result")
 		}
+		count++
 		return err
 	})
 }
 
 // AddError adds an error to the list of encountered errors during execution
-func (we *WorkflowExecutor) AddError(err error) {
-	log.Errorf("executor error: %+v", err)
+func (we *WorkflowExecutor) AddError(ctx context.Context, err error) {
+	logging.RequireLoggerFromContext(ctx).WithError(err).Error(ctx, "executor error")
 	we.errors = append(we.errors, err)
 }
 
@@ -881,7 +998,7 @@ func (we *WorkflowExecutor) HasError() error {
 
 // AddAnnotation adds an annotation to the workflow pod
 func (we *WorkflowExecutor) AddAnnotation(ctx context.Context, key, value string) error {
-	data, err := json.Marshal(map[string]interface{}{"metadata": metav1.ObjectMeta{
+	data, err := json.Marshal(map[string]any{"metadata": metav1.ObjectMeta{
 		Annotations: map[string]string{
 			key: value,
 		},
@@ -891,19 +1008,19 @@ func (we *WorkflowExecutor) AddAnnotation(ctx context.Context, key, value string
 	}
 	_, err = we.ClientSet.CoreV1().Pods(we.Namespace).Patch(ctx, we.PodName, types.MergePatchType, data, metav1.PatchOptions{})
 	return err
-
 }
 
 // isTarball returns whether or not the file is a tarball
-func isTarball(filePath string) (bool, error) {
-	log.Infof("Detecting if %s is a tarball", filePath)
+func isTarball(ctx context.Context, filePath string) (bool, error) {
+	logger := logging.RequireLoggerFromContext(ctx)
+	logger.WithField("path", filePath).Info(ctx, "Detecting if file is a tarball")
 	f, err := os.Open(filepath.Clean(filePath))
 	if err != nil {
 		return false, err
 	}
 	defer func() {
-		if err := f.Close(); err != nil {
-			log.Fatalf("Error closing file[%s]: %v", filePath, err)
+		if closeErr := f.Close(); closeErr != nil {
+			logger.WithFatal().WithField("path", filePath).WithError(closeErr).Error(ctx, "Error closing file")
 		}
 	}()
 	gzr, err := gzip.NewReader(f)
@@ -934,7 +1051,7 @@ func untar(tarPath string, destPath string) error {
 		for {
 			header, err := tr.Next()
 			switch {
-			case err == io.EOF:
+			case errors.Is(err, io.EOF):
 				return nil
 			case err != nil:
 				return err
@@ -942,11 +1059,23 @@ func untar(tarPath string, destPath string) error {
 				continue
 			}
 			target := filepath.Join(dest, filepath.Clean(header.Name))
-			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil && os.IsExist(err) {
-				return err
+			if !strings.HasPrefix(target, filepath.Clean(dest)+string(os.PathSeparator)) {
+				return fmt.Errorf("illegal file path: %s", header.Name)
 			}
 			switch header.Typeflag {
 			case tar.TypeSymlink:
+				// Validate symlink target before creating it
+				linkTarget := header.Linkname
+				if !filepath.IsAbs(linkTarget) {
+					linkTarget = filepath.Join(filepath.Dir(target), header.Linkname)
+				}
+				if !strings.HasPrefix(filepath.Clean(linkTarget), filepath.Clean(dest)+string(os.PathSeparator)) {
+					return fmt.Errorf("illegal symlink target: %s -> %s", header.Name, header.Linkname)
+				}
+				// Create parent directory if needed
+				if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+					return err
+				}
 				err := os.Symlink(header.Linkname, target)
 				if err != nil {
 					return err
@@ -956,6 +1085,35 @@ func untar(tarPath string, destPath string) error {
 					return err
 				}
 			case tar.TypeReg:
+				// Before writing the file, check if the parent directory resolves outside dest
+				parentDir := filepath.Dir(target)
+
+				// Resolve the destination directory
+				resolvedDest, err := filepath.EvalSymlinks(dest)
+				if err != nil {
+					return err
+				}
+
+				// Check if parent exists and if so, verify it doesn't resolve outside dest
+				if _, lstatErr := os.Lstat(parentDir); lstatErr == nil {
+					// Parent exists, resolve it to check for symlink traversal
+					resolvedParent, evalErr := filepath.EvalSymlinks(parentDir)
+					if evalErr != nil {
+						return evalErr
+					}
+					// Check if resolved parent is outside dest
+					if !strings.HasPrefix(resolvedParent+string(os.PathSeparator), resolvedDest+string(os.PathSeparator)) && resolvedParent != resolvedDest {
+						return fmt.Errorf("illegal file path after symlink resolution: %s resolves outside destination", header.Name)
+					}
+				} else if !os.IsNotExist(lstatErr) {
+					return lstatErr
+				} else {
+					// Parent doesn't exist, create it
+					if mkdirErr := os.MkdirAll(parentDir, 0o755); mkdirErr != nil {
+						return mkdirErr
+					}
+				}
+
 				f, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
 				if err != nil {
 					return err
@@ -978,7 +1136,7 @@ func untar(tarPath string, destPath string) error {
 
 // unzip extracts a zip folder to a temporary directory,
 // renaming it to the desired location
-func unzip(zipPath string, destPath string) error {
+func unzip(ctx context.Context, zipPath string, destPath string) error {
 	decompressor := func(src string, dest string) error {
 		r, err := zip.OpenReader(src)
 		if err != nil {
@@ -997,12 +1155,12 @@ func unzip(zipPath string, destPath string) error {
 				return err
 			}
 			defer func() {
-				if err := rc.Close(); err != nil {
-					panic(err)
+				if closeErr := rc.Close(); closeErr != nil {
+					panic(closeErr)
 				}
 			}()
 
-			path := filepath.Join(dest, f.Name) //nolint:gosec
+			path := filepath.Join(dest, f.Name)
 			if !strings.HasPrefix(path, filepath.Clean(dest)+string(os.PathSeparator)) {
 				return fmt.Errorf("%s: Illegal file path", path)
 			}
@@ -1015,17 +1173,17 @@ func unzip(zipPath string, destPath string) error {
 				if err = os.MkdirAll(filepath.Dir(path), f.Mode()); err != nil {
 					return err
 				}
-				f, err := os.OpenFile(filepath.Clean(path), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
-				if err != nil {
-					return err
+				outFile, openErr := os.OpenFile(filepath.Clean(path), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
+				if openErr != nil {
+					return openErr
 				}
 				defer func() {
-					if err := f.Close(); err != nil {
-						panic(err)
+					if closeErr := outFile.Close(); closeErr != nil {
+						panic(closeErr)
 					}
 				}()
 
-				_, err = io.Copy(f, rc) //nolint:gosec
+				_, err = io.Copy(outFile, rc)
 				if err != nil {
 					return err
 				}
@@ -1033,14 +1191,15 @@ func unzip(zipPath string, destPath string) error {
 			return nil
 		}
 
+		logger := logging.RequireLoggerFromContext(ctx)
 		for _, f := range r.File {
 			if err := extractAndWriteFile(f); err != nil {
 				return err
 			}
-			log.Infof("Extracting file: %s", f.Name)
+			logger.WithFields(logging.Fields{"name": f.Name, "src": src}).Info(ctx, "Extracting file")
 		}
 
-		log.Infof("Extraction of %s finished!", src)
+		logger.WithField("src", src).Info(ctx, "Extraction finished")
 
 		return nil
 	}
@@ -1114,23 +1273,28 @@ func chmod(artPath string, mode int32, recurse bool) error {
 // Also monitors for updates in the pod annotations which may change (e.g. terminate)
 // Upon completion, kills any sidecars after it finishes.
 func (we *WorkflowExecutor) Wait(ctx context.Context) error {
+	logger := logging.RequireLoggerFromContext(ctx)
+	ctx, span := we.Tracing.StartWaitWorkload(ctx)
+	defer span.End()
 	containerNames := we.Template.GetMainContainerNames()
 	// only monitor progress if both tick durations are >0
 	if we.annotationPatchTickDuration != 0 && we.readProgressFileTickDuration != 0 {
 		go we.monitorProgress(ctx, os.Getenv(common.EnvVarProgressFile))
 	} else {
-		log.WithField("annotationPatchTickDuration", we.annotationPatchTickDuration).WithField("readProgressFileTickDuration", we.readProgressFileTickDuration).Info("monitoring progress disabled")
+		logger.WithField("annotationPatchTickDuration", we.annotationPatchTickDuration).WithField("readProgressFileTickDuration", we.readProgressFileTickDuration).Info(ctx, "monitoring progress disabled")
 	}
 
 	go we.monitorDeadline(ctx, containerNames)
 
-	err := retryutil.OnError(executorretry.ExecutorRetry, errorsutil.IsTransientErr, func() error {
+	err := retryutil.OnError(executorretry.ExecutorRetry(ctx), func(err error) bool {
+		return errorsutil.IsTransientErr(ctx, err)
+	}, func() error {
 		return we.RuntimeExecutor.Wait(ctx, containerNames)
 	})
 
-	log.WithError(err).Info("Main container completed")
+	logger.WithError(err).Info(ctx, "Main container completed")
 
-	if err != nil && err != context.Canceled {
+	if err != nil && !errors.Is(err, context.Canceled) {
 		return fmt.Errorf("failed to wait for main container to complete: %w", err)
 	}
 	return nil
@@ -1138,51 +1302,81 @@ func (we *WorkflowExecutor) Wait(ctx context.Context) error {
 
 // monitorProgress monitors for self-reported progress in the progressFile and patches the pod annotations with the parsed progress.
 //
-// The function reads the last line of the `progressFile` every `readFileTickDuration`.
+// The function watches the `progressFile` via inotify and re-parses the last line on every write.
 // If the line matches `N/M`, will set the progress annotation to the parsed progress value.
 // Every `annotationPatchTickDuration` the pod is patched with the updated annotations. This way the controller
 // gets notified of new self reported progress.
 func (we *WorkflowExecutor) monitorProgress(ctx context.Context, progressFile string) {
+	logger := logging.RequireLoggerFromContext(ctx)
 	annotationPatchTicker := time.NewTicker(we.annotationPatchTickDuration)
 	defer annotationPatchTicker.Stop()
-	fileTicker := time.NewTicker(we.readProgressFileTickDuration)
-	defer fileTicker.Stop()
 
-	lastLine := ""
 	progressFile = filepath.Clean(progressFile)
 
-	for {
-		select {
-		case <-ctx.Done():
-			log.WithError(ctx.Err()).Info("stopping progress monitor (context done)")
-			return
-		case <-annotationPatchTicker.C:
-			if err := we.reportResult(ctx, wfv1.NodeResult{Progress: we.progress}); err != nil {
-				log.WithError(err).Info("failed to report progress")
-			} else {
-				we.progress = ""
-			}
-		case <-fileTicker.C:
-			data, err := os.ReadFile(progressFile)
-			if err != nil {
-				if !errors.Is(err, fs.ErrNotExist) {
-					log.WithError(err).WithField("file", progressFile).Info("unable to watch file")
+	// Ensure the parent directory exists so WatchFile can install its inotify
+	// watch. The progress file itself may never be created (the user's script
+	// is optional here), but its parent needs to be there for the watcher.
+	if err := os.MkdirAll(filepath.Dir(progressFile), 0o755); err != nil {
+		logger.WithError(err).WithField("file", progressFile).Info(ctx, "cannot create progress file parent dir, progress monitoring disabled")
+		return
+	}
+
+	// we.progress is read by the patch ticker (in this goroutine) and written
+	// by the inotify callback below (in another goroutine).
+	var mu sync.Mutex
+
+	go func() {
+		lastLine := ""
+		err := file.WatchFile(ctx, progressFile, func() {
+			data, readErr := os.ReadFile(progressFile)
+			if readErr != nil {
+				if !errors.Is(readErr, fs.ErrNotExist) {
+					logger.WithError(readErr).WithField("file", progressFile).Info(ctx, "unable to read progress file")
 				}
-				continue
+				return
 			}
 			lines := strings.Split(strings.TrimSpace(string(data)), "\n")
 			mostRecent := strings.TrimSpace(lines[len(lines)-1])
 
 			if mostRecent == "" || mostRecent == lastLine {
-				continue
+				return
 			}
 			lastLine = mostRecent
 
 			if progress, ok := wfv1.ParseProgress(lastLine); ok {
-				log.WithField("progress", progress).Info()
+				logger.WithField("progress", progress).Info(ctx, "")
+				mu.Lock()
 				we.progress = progress
+				mu.Unlock()
 			} else {
-				log.WithField("line", lastLine).Info("unable to parse progress")
+				logger.WithField("line", lastLine).Info(ctx, "unable to parse progress")
+			}
+		})
+		if err != nil && !errors.Is(err, context.Canceled) {
+			logger.WithError(err).WithField("file", progressFile).Info(ctx, "progress file watcher exited")
+		}
+	}()
+
+	for {
+		select {
+		case <-ctx.Done():
+			logger.WithError(ctx.Err()).Info(ctx, "stopping progress monitor (context done)")
+			return
+		case <-annotationPatchTicker.C:
+			mu.Lock()
+			current := we.progress
+			mu.Unlock()
+			if current == "" {
+				continue
+			}
+			if err := we.reportResult(ctx, wfv1.NodeResult{Progress: current}); err != nil {
+				logger.WithError(err).Info(ctx, "failed to report progress")
+			} else {
+				mu.Lock()
+				if we.progress == current {
+					we.progress = ""
+				}
+				mu.Unlock()
 			}
 		}
 	}
@@ -1191,7 +1385,6 @@ func (we *WorkflowExecutor) monitorProgress(ctx context.Context, progressFile st
 // monitorDeadline checks to see if we exceeded the deadline for the step and
 // terminates the main container if we did
 func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerNames []string) {
-
 	deadlineExceeded := make(chan bool, 1)
 	if !we.Deadline.IsZero() {
 		t := time.AfterFunc(time.Until(we.Deadline), func() {
@@ -1201,24 +1394,28 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerNames 
 	}
 
 	var message string
-	log.Infof("Starting deadline monitor")
+	logger := logging.RequireLoggerFromContext(ctx)
+	logger.WithField("containers", containerNames).Info(ctx, "Starting deadline monitor")
 	select {
 	case <-ctx.Done():
-		log.Info("Deadline monitor stopped")
+		logger.Info(ctx, "Deadline monitor stopped")
 		return
 	case <-deadlineExceeded:
 		message = "Step exceeded its deadline"
 	}
-	log.Info(message)
+	logger.Info(ctx, message)
 	util.WriteTerminateMessage(message)
+
+	containerNames = slices.DeleteFunc(containerNames, common.IsArtifactPluginSidecar)
 	we.killContainers(ctx, containerNames)
 }
 
 func (we *WorkflowExecutor) killContainers(ctx context.Context, containerNames []string) {
-	log.Infof("Killing containers")
-	terminationGracePeriodDuration := getTerminationGracePeriodDuration()
+	logger := logging.RequireLoggerFromContext(ctx)
+	logger.WithField("containerNames", containerNames).Info(ctx, "Killing containers")
+	terminationGracePeriodDuration := GetTerminationGracePeriodDuration()
 	if err := we.RuntimeExecutor.Kill(ctx, containerNames, terminationGracePeriodDuration); err != nil {
-		log.Warnf("Failed to kill %q: %v", containerNames, err)
+		logger.WithField("containerNames", containerNames).WithError(err).Warn(ctx, "Failed to kill")
 	}
 }
 
@@ -1226,5 +1423,23 @@ func (we *WorkflowExecutor) Init() error {
 	if i, ok := we.RuntimeExecutor.(Initializer); ok {
 		return i.Init(we.Template)
 	}
+	return nil
+}
+
+func (we *WorkflowExecutor) KillArtifactSidecars(ctx context.Context) error {
+	logger := logging.RequireLoggerFromContext(ctx)
+	pluginNamesEnv := os.Getenv(common.EnvVarArtifactPluginNames)
+	if pluginNamesEnv == "" {
+		logger.Info(ctx, "no artifact sidecars to kill")
+		return nil
+	}
+	artifactSidecars := strings.Split(pluginNamesEnv, ",")
+	logger.WithFields(logging.Fields{"numSidecars": len(artifactSidecars), "artifactSidecars": artifactSidecars}).Info(ctx, "killing artifact sidecars")
+	err := we.RuntimeExecutor.Kill(ctx, artifactSidecars, GetTerminationGracePeriodDuration())
+	if err != nil {
+		logger.WithError(err).WithFields(logging.Fields{"artifactSidecars": artifactSidecars}).Error(ctx, "failed to kill artifact sidecars")
+		return err
+	}
+	logger.WithFields(logging.Fields{"artifactSidecars": artifactSidecars}).Info(ctx, "artifact sidecars killed")
 	return nil
 }

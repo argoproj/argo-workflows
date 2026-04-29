@@ -2,7 +2,7 @@ import {NotificationType} from 'argo-ui/src/components/notifications/notificatio
 import {Page} from 'argo-ui/src/components/page/page';
 import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
 import * as React from 'react';
-import {useContext, useEffect, useState} from 'react';
+import {useContext, useEffect, useRef, useState} from 'react';
 import {RouteComponentProps} from 'react-router';
 
 import {uiUrl} from '../shared/base';
@@ -29,6 +29,7 @@ export function CronWorkflowDetails({match, location, history}: RouteComponentPr
     const {navigation, notifications, popup} = useContext(Context);
     const queryParams = new URLSearchParams(location.search);
 
+    const isFirstRender = useRef(true);
     const [namespace] = useState(match.params.namespace);
     const [name] = useState(match.params.name);
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel'));
@@ -36,7 +37,7 @@ export function CronWorkflowDetails({match, location, history}: RouteComponentPr
     const [workflows, setWorkflows] = useState<Workflow[]>([]);
     const [columns, setColumns] = useState<models.Column[]>([]);
 
-    const [cronWorkflow, edited, setCronWorkflow, resetCronWorkflow] = useEditableObject<CronWorkflow>();
+    const {object: cronWorkflow, setObject: setCronWorkflow, resetObject: resetCronWorkflow, serialization, edited, lang, setLang} = useEditableObject<CronWorkflow>();
     const [error, setError] = useState<Error>();
 
     useEffect(
@@ -47,18 +48,20 @@ export function CronWorkflowDetails({match, location, history}: RouteComponentPr
         [history]
     );
 
-    useEffect(
-        () =>
-            history.push(
-                historyUrl('cron-workflows/{namespace}/{name}', {
-                    namespace,
-                    name,
-                    sidePanel,
-                    tab
-                })
-            ),
-        [namespace, name, sidePanel, tab]
-    );
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+        history.push(
+            historyUrl('cron-workflows/{namespace}/{name}', {
+                namespace,
+                name,
+                sidePanel,
+                tab
+            })
+        );
+    }, [namespace, name, sidePanel, tab]);
 
     useEffect(() => {
         services.cronWorkflows
@@ -149,7 +152,7 @@ export function CronWorkflowDetails({match, location, history}: RouteComponentPr
                 iconClassName: 'fa fa-trash',
                 disabled: edited,
                 action: () => {
-                    popup.confirm('confirm', 'Are you sure you want to delete this cron workflow?').then(yes => {
+                    popup.confirm('confirm', 'Are you sure you want to delete this cron workflow? (This also deletes all Workflows it spawned)').then(yes => {
                         if (yes) {
                             services.cronWorkflows
                                 .delete(name, namespace)
@@ -207,7 +210,16 @@ export function CronWorkflowDetails({match, location, history}: RouteComponentPr
                 {!cronWorkflow ? (
                     <Loading />
                 ) : (
-                    <CronWorkflowEditor cronWorkflow={cronWorkflow} onChange={setCronWorkflow} onError={setError} selectedTabKey={tab} onTabSelected={setTab} />
+                    <CronWorkflowEditor
+                        cronWorkflow={cronWorkflow}
+                        serialization={serialization}
+                        lang={lang}
+                        onLangChange={setLang}
+                        onChange={setCronWorkflow}
+                        onError={setError}
+                        selectedTabKey={tab}
+                        onTabSelected={setTab}
+                    />
                 )}
                 <SlidingPanel isShown={!!sidePanel} onClose={() => setSidePanel(null)}>
                     {sidePanel === 'share' && <WidgetGallery namespace={namespace} label={'workflows.argoproj.io/cron-workflow=' + name} />}

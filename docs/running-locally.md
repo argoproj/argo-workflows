@@ -1,53 +1,33 @@
 # Running Locally
 
-You have two options:
+## Development Environment Setup
 
-1. Use the [Dev Container](#development-container). This takes about 7 minutes. This can be used with VSCode, the `devcontainer` CLI, or GitHub Codespaces.
-1. Install the [requirements](#requirements) on your computer manually. This takes about 1 hour.
+You have two options for setting up your development environment:
 
-## Development Container
+1. Use the [Dev Container](#development-container), either locally or via [GitHub Codespaces](https://github.com/codespaces). This is usually the fastest and easiest way to get started.
+1. [Manual installation](#manual-installation) of the necessary tooling. This requires a basic understanding of administering Kubernetes and package management for your OS.
 
-The development container should be able to do everything you need to do to develop Argo Workflows without installing tools on your local machine. It takes quite a long time to build the container. It runs `k3d` inside the container so you have a cluster to test against. To communicate with services running either in other development containers or directly on the local machine (e.g. a database), the following URL can be used in the workflow spec: `host.docker.internal:<PORT>`. This facilitates the implementation of workflows which need to connect to a database or an API server.
+### Initial Local Setup
+
+Unless you're using GitHub Codespaces, the first step is cloning the Git repo into `$GOPATH/src/github.com/argoproj/argo-workflows`. Any other path will break the code generation.
+
+### Development Container
+
+Prebuilt [development container](https://containers.dev/) images are provided for both `amd64` and `arm64` containing all you need to develop Argo Workflows, without installing tools on your local machine. Provisioning a dev container is fully automated and typically takes ~1 minute.
 
 You can use the development container in a few different ways:
 
 1. [Visual Studio Code](https://code.visualstudio.com/) with [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers). Open your `argo-workflows` folder in VSCode and it should offer to use the development container automatically. VSCode will allow you to forward ports to allow your external browser to access the running components.
-1. [`devcontainer` CLI](https://github.com/devcontainers/cli). Once installed, go to your `argo-workflows` folder and run `devcontainer up --workspace-folder .` followed by `devcontainer exec --workspace-folder . /bin/bash` to get a shell where you can build the code. You can use any editor outside the container to edit code; any changes will be mirrored inside the container. Due to a limitation of the CLI, only port 8080 (the Web UI) will be exposed for you to access if you run this way. Other services are usable from the shell inside.
+1. [`devcontainer` CLI](https://github.com/devcontainers/cli). In your `argo-workflows` folder, run `make devcontainer-up`, which will automatically install the CLI and start the container. Then, use `devcontainer exec --workspace-folder . /bin/bash` to get a shell where you can build the code. You can use any editor outside the container to edit code; any changes will be mirrored inside the container. Due to a limitation of the CLI, only port 8080 (the Web UI) will be exposed for you to access if you run this way. Other services are usable from the shell inside.
 1. [GitHub Codespaces](https://github.com/codespaces). You can start editing as soon as VSCode is open, though you may want to wait for `pre-build.sh` to finish installing dependencies, building binaries, and setting up the cluster before running any commands in the terminal. Once you start running services (see next steps below), you can click on the "PORTS" tab in the VSCode terminal to see all forwarded ports. You can open the Web UI in a new tab from there.
 
 Once you have entered the container, continue to [Developing Locally](#developing-locally).
 
-Note:
+The container runs [k3d](https://k3d.io/) via [docker-in-docker](https://github.com/devcontainers/features/tree/main/src/docker-in-docker) so you have a cluster to test against. To communicate with services running either in other development containers or directly on the local machine (e.g. a database), the following URL can be used in the workflow spec: `host.docker.internal:<PORT>`. This facilitates the implementation of workflows which need to connect to a database or an API server.
 
-* for **Apple Silicon**
-    * This platform can spend 3 times the indicated time
-    * Configure Docker Desktop to use BuildKit:
+Note for Windows: configure [`.wslconfig`](https://docs.microsoft.com/en-us/windows/wsl/wsl-config#configuration-setting-for-wslconfig) to limit memory usage by the WSL2 to prevent VSCode OOM.
 
-    ```json
-    "features": {
-      "buildkit": true
-    },
-    ```
-
-* For **Windows WSL2**
-    * Configure [`.wslconfig`](https://docs.microsoft.com/en-us/windows/wsl/wsl-config#configuration-setting-for-wslconfig) to limit memory usage by the WSL2 to prevent VSCode OOM.
-
-* For **Linux**
-    * Use [Docker Desktop](https://docs.docker.com/desktop/linux/install/) instead of [Docker Engine](https://docs.docker.com/engine/install/) to prevent incorrect network configuration by k3d.
-
-## Requirements
-
-Clone the Git repo into: `$GOPATH/src/github.com/argoproj/argo-workflows`. Any other path will break the code generation.
-
-Add the following to your `/etc/hosts`:
-
-```text
-127.0.0.1 dex
-127.0.0.1 minio
-127.0.0.1 postgres
-127.0.0.1 mysql
-127.0.0.1 azurite
-```
+### Manual Installation
 
 To build on your own machine without using the Dev Container you will need:
 
@@ -57,6 +37,15 @@ To build on your own machine without using the Dev Container you will need:
 * [`protoc`](http://google.github.io/proto-lens/installing-protoc.html)
 * [`node`](https://nodejs.org/download/release/latest-v16.x/) for running the UI
 * A local Kubernetes cluster ([`k3d`](https://k3d.io/), [`kind`](https://kind.sigs.k8s.io/docs/user/quick-start/#installation), or [`minikube`](https://minikube.sigs.k8s.io/docs/start/))
+* The following entries in your `/etc/hosts` file:
+
+    ```text
+    127.0.0.1 dex
+    127.0.0.1 minio
+    127.0.0.1 postgres
+    127.0.0.1 mysql
+    127.0.0.1 azurite
+    ```
 
 We recommend using [K3D](https://k3d.io/) to set up the local Kubernetes cluster since this will allow you to test RBAC
 set-up and is fast. You can set-up K3D to be part of your default kube config as follows:
@@ -168,6 +157,19 @@ To test SSO integration, use `PROFILE=sso`:
 make start UI=true PROFILE=sso
 ```
 
+### Proxying
+
+When using `UI=true`, `make start` will start [webpack-dev-server](https://github.com/webpack/webpack-dev-server) to serve requests to <http://localhost:8080>, while proxying API requests to the Argo Server at <http://localhost:2746>.
+
+Use `BASE_HREF` to customize the [base HREF](argo-server.md#base-href), which will cause webpack-dev-server to strip out the provided path when proxying requests to the Argo Server.
+For example, to make the UI accessible at <http://localhost:8080/argo/>:
+
+```bash
+make start UI=true BASE_HREF=/argo/
+```
+
+Note that if you're using `PROFILE=sso`, you may need to run `kubectl rollout restart deploy dex` to restart Dex after changing the base HREF.
+
 ### TLS
 
 By default, `make start` will start Argo in [plain text mode](tls.md#plain-text).
@@ -235,6 +237,30 @@ Tests often fail: that's good. To diagnose failure:
 
 If tests run slowly or time out, factory reset your Kubernetes cluster.
 
+### Database Tooling
+
+The `go run ./hack/db` CLI provides a few useful commands for working with the DB locally:
+
+```console
+$ go run ./hack/db
+CLI for developers to use when working on the DB locally
+
+Usage:
+  db [command]
+
+Available Commands:
+  completion              Generate the autocompletion script for the specified shell
+  fake-archived-workflows Insert randomly-generated workflows into argo_archived_workflows, for testing purposes
+  help                    Help about any command
+  migrate                 Force DB migration for given cluster/table
+
+Flags:
+  -c, --dsn string   DSN connection string. For MySQL, use 'mysql:password@tcp/argo'. (default "postgres://postgres@localhost:5432/postgres")
+  -h, --help         help for db
+
+Use "db [command] --help" for more information about a command.
+```
+
 ### Debugging using Visual Studio Code
 
 When using the Dev Container with VSCode, use the `Attach to argo server` and/or `Attach to workflow controller` launch configurations to attach to the `argo` or `workflow-controller` processes, respectively.
@@ -264,6 +290,44 @@ git commit --signoff -m 'fix: Fixed broken thing. Fixes #1234'
 ```bash
 git commit --signoff -m 'feat: Added a new feature. Fixes #1234'
 ```
+
+### Creating Feature Descriptions
+
+When adding a new feature, you must create a feature description file that will be used to generate new feature information when we do a feature release:
+
+```bash
+make feature-new
+```
+
+This will create a new feature description file in the `.features` directory which you must then edit to describe your feature.
+By default, it uses your current branch name as the file name.
+The name of the file doesn't get used by the tooling, it just needs to be unique to your feature so as not to collide on merge.
+You can also specify a custom file name:
+
+```bash
+make feature-new FEATURE_FILENAME=my-awesome-feature
+```
+
+You must have an issue number to associate with your PR for features, and that must be placed in this file.
+It seems reasonable that all new features are discussed in an issue before being developed.
+There is a `Component` field which must match one of the fields in `hack/featuregen/components.go`
+
+The feature file should be included in your PR to document your changes.
+Before submitting, you can validate your feature file:
+
+```bash
+make features-validate
+```
+
+The `pre-commit` target will also do that.
+
+You can also preview how your feature will appear in the release notes:
+
+```bash
+make features-preview
+```
+
+This command runs a dry-run of the release notes generation process, showing you how your feature will appear in the markdown file that will be used to generate the release notes.
 
 ## Troubleshooting
 

@@ -98,6 +98,7 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
     const namespace = match.params.namespace;
     const name = match.params.name;
 
+    const isFirstRender = useRef(true);
     const [tab, setTab] = useState(queryParams.get('tab') || 'workflow');
     const [uid, setUid] = useState(queryParams.get('uid') || '');
     const [nodeId, setNodeId] = useState(queryParams.get('nodeId'));
@@ -138,7 +139,7 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
         return (
             selectedWorkflowNode?.inputs?.parameters?.map(param => {
                 const paramClone = {...param};
-                if (paramClone.enum) {
+                if (paramClone.enum && !paramClone.value) {
                     paramClone.value = paramClone.default;
                 }
                 return paramClone;
@@ -163,6 +164,10 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
     }, [workflow, selectedArtifact]);
 
     useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
         history.push(historyUrl('workflows/{namespace}/{name}', {namespace, name, tab, nodeId, nodePanelView, sidePanel, uid}));
     }, [namespace, name, tab, nodeId, nodePanelView, sidePanel, uid]);
 
@@ -389,7 +394,8 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
     useEffect(() => {
         (async () => {
             try {
-                const wf = await services.workflows.get(namespace, name);
+                // Pass uid if available from URL query params
+                const wf = await services.workflows.get(namespace, name, uid || undefined);
                 setUid(wf.metadata.uid);
                 setWorkflow(wf);
                 setError(null);
@@ -429,7 +435,7 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
                 finishedAt: workflow.status.finishedAt
             }
         };
-        openLinkWithKey(processURL(link.url, object));
+        openLinkWithKey(processURL(link.url, object), link.target);
     }
 
     function setParameter(key: string, value: string) {
@@ -493,17 +499,17 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
                 },
                 tools: (
                     <div className='workflow-details__topbar-buttons'>
-                        <a className={classNames({active: tab === 'summary'})} onClick={() => setTab('summary')}>
+                        <a className={classNames({active: tab === 'summary'})} onClick={() => setTab('summary')} title='Summary'>
                             <i className='fa fa-columns' />
                             {workflow && workflow.status.conditions && hasWarningConditionBadge(workflow.status.conditions) && <span className='badge' />}
                         </a>
-                        <a className={classNames({active: tab === 'events'})} onClick={() => setTab('events')}>
+                        <a className={classNames({active: tab === 'events'})} onClick={() => setTab('events')} title='Events'>
                             <i className='fa argo-icon-notification' />
                         </a>
-                        <a className={classNames({active: tab === 'timeline'})} onClick={() => setTab('timeline')}>
+                        <a className={classNames({active: tab === 'timeline'})} onClick={() => setTab('timeline')} title='Timeline'>
                             <i className='fa argo-icon-timeline' />
                         </a>
-                        <a className={classNames({active: tab === 'workflow'})} onClick={() => setTab('workflow')}>
+                        <a className={classNames({active: tab === 'workflow'})} onClick={() => setTab('workflow')} title='Workflow'>
                             <i className='fa argo-icon-workflow' />
                         </a>
                     </div>

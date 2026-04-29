@@ -1,7 +1,7 @@
 import {Page} from 'argo-ui/src/components/page/page';
 import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
 import * as React from 'react';
-import {useContext, useEffect, useState} from 'react';
+import {useContext, useEffect, useRef, useState} from 'react';
 import {RouteComponentProps} from 'react-router-dom';
 
 import {absoluteUrl, uiUrl} from '../shared/base';
@@ -11,7 +11,7 @@ import {GraphPanel} from '../shared/components/graph/graph-panel';
 import {Graph} from '../shared/components/graph/types';
 import {Loading} from '../shared/components/loading';
 import {NamespaceFilter} from '../shared/components/namespace-filter';
-import {ResourceEditor} from '../shared/components/resource-editor/resource-editor';
+import {SerializingObjectEditor} from '../shared/components/object-editor';
 import {ZeroState} from '../shared/components/zero-state';
 import {Context} from '../shared/context';
 import {Footnote} from '../shared/footnote';
@@ -29,10 +29,15 @@ const introductionText = (
         from a remote system.
     </>
 );
-const learnMore = <a href={'https://argo-workflows.readthedocs.io/en/latest/events/'}>Learn more</a>;
+const learnMore = (
+    <a href={'https://argo-workflows.readthedocs.io/en/latest/events/'} target='_blank' rel='noreferrer'>
+        Learn more
+    </a>
+);
 
 export function WorkflowEventBindings({match, location, history}: RouteComponentProps<any>) {
     // boiler-plate
+    const isFirstRender = useRef(true);
     const ctx = useContext(Context);
     const queryParams = new URLSearchParams(location.search);
 
@@ -47,16 +52,18 @@ export function WorkflowEventBindings({match, location, history}: RouteComponent
         [history]
     );
 
-    useEffect(
-        () =>
-            history.push(
-                historyUrl('workflow-event-bindings' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {
-                    namespace,
-                    selectedWorkflowEventBinding
-                })
-            ),
-        [namespace, selectedWorkflowEventBinding]
-    );
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+        history.push(
+            historyUrl('workflow-event-bindings' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {
+                namespace,
+                selectedWorkflowEventBinding
+            })
+        );
+    }, [namespace, selectedWorkflowEventBinding]);
 
     // internal state
     const [error, setError] = useState<Error>();
@@ -116,8 +123,11 @@ export function WorkflowEventBindings({match, location, history}: RouteComponent
                         </code>
                     </p>
                     <p>
-                        You&apos;ll probably find it easiest to experiment and test using the <a href={uiUrl('apidocs')}>graphical interface to the API </a> - look for
-                        &quot;EventService&quot;.
+                        You can also experiment with viewing the{' '}
+                        <a href='https://argo-workflows.readthedocs.io/en/latest/swagger/' target='_blank' rel='noreferrer'>
+                            graphical interface to the API
+                        </a>{' '}
+                        - look for &quot;EventService&quot;.
                     </p>
                     <p>{learnMore}</p>
                 </ZeroState>
@@ -144,7 +154,7 @@ export function WorkflowEventBindings({match, location, history}: RouteComponent
                         <InfoIcon /> {introductionText} {learnMore}.
                     </Footnote>
                     <SlidingPanel isShown={!!selectedWorkflowEventBinding} onClose={() => setSelectedWorkflowEventBinding(null)}>
-                        {selected && <ResourceEditor value={selected} />}
+                        {selected && <SerializingObjectEditor value={selected} />}
                     </SlidingPanel>
                 </>
             )}

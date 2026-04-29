@@ -41,7 +41,7 @@ spec:
           - name: flag
       container:
         name: ''
-        image: alpine:latest
+        image: alpine:3.23
         command:
           - sh
           - '-c'

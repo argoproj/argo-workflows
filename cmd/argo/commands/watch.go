@@ -3,8 +3,8 @@ package commands
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/common"
 )
 
 func NewWatchCommand() *cobra.Command {
@@ -23,12 +23,13 @@ func NewWatchCommand() *cobra.Command {
 `,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
+			ctx := cmd.Context()
+			ctx, apiClient, err := client.NewAPIClient(ctx)
 			if err != nil {
 				return err
 			}
-			serviceClient := apiClient.NewWorkflowServiceClient()
-			namespace := client.Namespace()
+			serviceClient := apiClient.NewWorkflowServiceClient(ctx)
+			namespace := client.Namespace(ctx)
 			return common.WatchWorkflow(ctx, serviceClient, namespace, args[0], getArgs)
 		},
 	}

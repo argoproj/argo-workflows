@@ -11,15 +11,16 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 // TestDagXfail verifies a DAG can fail properly
 func TestDagXfail(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow("@testdata/dag_xfail.yaml")
-	woc := newWoc(*wf)
-	ctx := context.Background()
+	ctx := logging.TestContext(t.Context())
+	woc := newWoc(ctx, *wf)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 }
@@ -27,8 +28,8 @@ func TestDagXfail(t *testing.T) {
 // TestDagRetrySucceeded verifies a DAG will be marked Succeeded if retry was successful
 func TestDagRetrySucceeded(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow("@testdata/dag_retry_succeeded.yaml")
-	woc := newWoc(*wf)
-	ctx := context.Background()
+	ctx := logging.TestContext(t.Context())
+	woc := newWoc(ctx, *wf)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
@@ -36,8 +37,8 @@ func TestDagRetrySucceeded(t *testing.T) {
 // TestDagRetryExhaustedXfail verifies we fail properly when we exhaust our retries
 func TestDagRetryExhaustedXfail(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow("@testdata/dag-exhausted-retries-xfail.yaml")
-	woc := newWoc(*wf)
-	ctx := context.Background()
+	ctx := logging.TestContext(t.Context())
+	woc := newWoc(ctx, *wf)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 }
@@ -45,8 +46,8 @@ func TestDagRetryExhaustedXfail(t *testing.T) {
 // TestDagDisableFailFast test disable fail fast function
 func TestDagDisableFailFast(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow("@testdata/dag-disable-fail-fast.yaml")
-	woc := newWoc(*wf)
-	ctx := context.Background()
+	ctx := logging.TestContext(t.Context())
+	woc := newWoc(ctx, *wf)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 }
@@ -71,17 +72,17 @@ spec:
 
  - name: Succeeded
    container:
-     image: alpine:3.7
+     image: alpine:3.23
      command: [sh, -c, "exit 0"]
 
  - name: Failed
    container:
-     image: alpine:3.7
+     image: alpine:3.23
      command: [sh, -c, "exit 1"]
 
  - name: Skipped
    container:
-     image: alpine:3.7
+     image: alpine:3.23
      command: [sh, -c, "echo Hello"]
 `
 
@@ -91,7 +92,8 @@ func TestSingleDependency(t *testing.T) {
 	var controller *WorkflowController
 	for _, status := range []string{"Succeeded", "Failed", "Skipped"} {
 		fmt.Printf("\n\n\nCurrent status %s\n\n\n", status)
-		closer, controller = newController()
+		ctx := logging.TestContext(t.Context())
+		closer, controller = newController(ctx)
 		wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 		// If the status is "skipped" skip the root node.
@@ -103,12 +105,11 @@ func TestSingleDependency(t *testing.T) {
 		}
 		wf := wfv1.MustUnmarshalWorkflow(wfString)
 
-		ctx := context.Background()
 		wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 		require.NoError(t, err)
-		wf, err = wfcset.Get(ctx, wf.ObjectMeta.Name, metav1.GetOptions{})
+		wf, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
 		require.NoError(t, err)
-		woc := newWorkflowOperationCtx(wf, controller)
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 		woc.operate(ctx)
 		// Mark the status of the pod according to the test
@@ -118,7 +119,7 @@ func TestSingleDependency(t *testing.T) {
 			makePodsPhase(ctx, woc, v1.PodPending)
 		}
 
-		woc = newWorkflowOperationCtx(woc.wf, controller)
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 		woc.operate(ctx)
 		found := false
 		for _, node := range woc.wf.Status.Nodes {
@@ -183,7 +184,7 @@ spec:
       - name: message
         path: /tmp/message
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["cat /tmp/message"]
 
@@ -191,21 +192,68 @@ spec:
 
 // Tests ability to reference workflow parameters from within top level spec fields (e.g. spec.volumes)
 func TestArtifactResolutionWhenSkippedDAG(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(artifactResolutionWhenSkippedDAG)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	woc.operate(ctx)
 
-	woc = newWorkflowOperationCtx(wf, controller)
+	woc = newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+}
+
+func TestExpandTaskWithParam(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	task := wfv1.DAGTask{
+		Name:     "fanout-param",
+		Template: "tmpl",
+		Arguments: wfv1.Arguments{
+			Parameters: []wfv1.Parameter{{
+				Name:  "msg",
+				Value: wfv1.AnyStringPtr("{{item}}"),
+			}},
+		},
+		WithParam: `[1234, "foo\tbar", true, []]`,
+	}
+
+	expanded, err := expandTask(ctx, task, map[string]string{})
+	require.NoError(t, err)
+	require.Len(t, expanded, 4)
+
+	expectedExpandedTasks := []struct {
+		Name      string
+		Parameter string
+	}{
+		{
+			Name:      "fanout-param(0:1234)",
+			Parameter: "1234",
+		},
+		{
+			Name:      `fanout-param(1:foo\tbar)`,
+			Parameter: "foo\tbar",
+		},
+		{
+			Name:      "fanout-param(2:true)",
+			Parameter: "true",
+		},
+		{
+			Name:      "fanout-param(3:[])",
+			Parameter: "[]",
+		},
+	}
+
+	for i, expected := range expectedExpandedTasks {
+		assert.Equal(t, expected.Name, expanded[i].Name)
+		assert.Equal(t, "tmpl", expanded[i].Template)
+		assert.Equal(t, expected.Parameter, expanded[i].Arguments.Parameters[0].Value.String())
+	}
 }
 
 func TestEvaluateDependsLogic(t *testing.T) {
@@ -238,13 +286,14 @@ func TestEvaluateDependsLogic(t *testing.T) {
 			Depends: "should-execute-2 || should-not-execute",
 		},
 	}
-
+	ctx := logging.TestContext(t.Context())
 	d := &dagContext{
 		boundaryName: "test",
 		tasks:        testTasks,
 		wf:           &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "test-wf"}},
 		dependencies: make(map[string][]string),
 		dependsLogic: make(map[string]string),
+		log:          logging.RequireLoggerFromContext(ctx),
 	}
 
 	// Task A is running
@@ -258,7 +307,7 @@ func TestEvaluateDependsLogic(t *testing.T) {
 	}
 
 	// Task B should not proceed, task A is still running
-	execute, proceed, err := d.evaluateDependsLogic("B")
+	execute, proceed, err := d.evaluateDependsLogic(ctx, "B")
 	require.NoError(t, err)
 	assert.False(t, proceed)
 	assert.False(t, execute)
@@ -267,16 +316,16 @@ func TestEvaluateDependsLogic(t *testing.T) {
 	d.wf.Status.Nodes[d.taskNodeID("A")] = wfv1.NodeStatus{Phase: wfv1.NodeSucceeded}
 
 	// Task B and C should proceed and execute
-	execute, proceed, err = d.evaluateDependsLogic("B")
+	execute, proceed, err = d.evaluateDependsLogic(ctx, "B")
 	require.NoError(t, err)
 	assert.True(t, proceed)
 	assert.True(t, execute)
-	execute, proceed, err = d.evaluateDependsLogic("C")
+	execute, proceed, err = d.evaluateDependsLogic(ctx, "C")
 	require.NoError(t, err)
 	assert.True(t, proceed)
 	assert.True(t, execute)
 	// Other tasks should not
-	execute, proceed, err = d.evaluateDependsLogic("should-execute-1")
+	execute, proceed, err = d.evaluateDependsLogic(ctx, "should-execute-1")
 	require.NoError(t, err)
 	assert.False(t, proceed)
 	assert.False(t, execute)
@@ -286,16 +335,16 @@ func TestEvaluateDependsLogic(t *testing.T) {
 	d.wf.Status.Nodes[d.taskNodeID("C")] = wfv1.NodeStatus{Phase: wfv1.NodeFailed}
 
 	// Tasks should-execute-1 and should-execute-2 should proceed and execute
-	execute, proceed, err = d.evaluateDependsLogic("should-execute-1")
+	execute, proceed, err = d.evaluateDependsLogic(ctx, "should-execute-1")
 	require.NoError(t, err)
 	assert.True(t, proceed)
 	assert.True(t, execute)
-	execute, proceed, err = d.evaluateDependsLogic("should-execute-2")
+	execute, proceed, err = d.evaluateDependsLogic(ctx, "should-execute-2")
 	require.NoError(t, err)
 	assert.True(t, proceed)
 	assert.True(t, execute)
 	// Task should-not-execute should proceed, but not execute
-	execute, proceed, err = d.evaluateDependsLogic("should-not-execute")
+	execute, proceed, err = d.evaluateDependsLogic(ctx, "should-not-execute")
 	require.NoError(t, err)
 	assert.True(t, proceed)
 	assert.False(t, execute)
@@ -306,7 +355,7 @@ func TestEvaluateDependsLogic(t *testing.T) {
 	d.wf.Status.Nodes[d.taskNodeID("should-not-execute")] = wfv1.NodeStatus{Phase: wfv1.NodeSkipped}
 
 	// Tasks should-execute-3 should proceed and execute
-	execute, proceed, err = d.evaluateDependsLogic("should-execute-3")
+	execute, proceed, err = d.evaluateDependsLogic(ctx, "should-execute-3")
 	require.NoError(t, err)
 	assert.True(t, proceed)
 	assert.True(t, execute)
@@ -339,12 +388,14 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 		},
 	}
 
+	ctx := logging.TestContext(t.Context())
 	d := &dagContext{
 		boundaryName: "test",
 		tasks:        testTasks,
 		wf:           &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "test-wf"}},
 		dependencies: make(map[string][]string),
 		dependsLogic: make(map[string]string),
+		log:          logging.RequireLoggerFromContext(ctx),
 	}
 
 	// Task A is still running, A-1 succeeded but A-2 failed
@@ -364,7 +415,7 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 	}
 
 	// Task B should not proceed as task A is still running
-	execute, proceed, err := d.evaluateDependsLogic("B")
+	execute, proceed, err := d.evaluateDependsLogic(ctx, "B")
 	require.NoError(t, err)
 	assert.False(t, proceed)
 	assert.False(t, execute)
@@ -377,7 +428,7 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 	}
 
 	// Task B should proceed, but not execute as none of the children have succeeded yet
-	execute, proceed, err = d.evaluateDependsLogic("B")
+	execute, proceed, err = d.evaluateDependsLogic(ctx, "B")
 	require.NoError(t, err)
 	assert.True(t, proceed)
 	assert.False(t, execute)
@@ -386,7 +437,7 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 	d.wf.Status.Nodes[d.taskNodeID("A-2")] = wfv1.NodeStatus{Phase: wfv1.NodeSucceeded}
 
 	// Task B should now proceed and execute
-	execute, proceed, err = d.evaluateDependsLogic("B")
+	execute, proceed, err = d.evaluateDependsLogic(ctx, "B")
 	require.NoError(t, err)
 	assert.True(t, proceed)
 	assert.True(t, execute)
@@ -400,7 +451,7 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 	d.wf.Status.Nodes[d.taskNodeID("B-1")] = wfv1.NodeStatus{Phase: wfv1.NodeFailed}
 
 	// Task C should proceed, but not execute as not all of B's children have failed yet
-	execute, proceed, err = d.evaluateDependsLogic("C")
+	execute, proceed, err = d.evaluateDependsLogic(ctx, "C")
 	require.NoError(t, err)
 	assert.True(t, proceed)
 	assert.False(t, execute)
@@ -408,7 +459,7 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 	d.wf.Status.Nodes[d.taskNodeID("B-2")] = wfv1.NodeStatus{Phase: wfv1.NodeFailed}
 
 	// Task C should now proceed and execute as all of B's children have failed
-	execute, proceed, err = d.evaluateDependsLogic("C")
+	execute, proceed, err = d.evaluateDependsLogic(ctx, "C")
 	require.NoError(t, err)
 	assert.True(t, proceed)
 	assert.True(t, execute)
@@ -425,12 +476,14 @@ func TestEvaluateDependsLogicWhenDaemonFailed(t *testing.T) {
 		},
 	}
 
+	ctx := logging.TestContext(t.Context())
 	d := &dagContext{
 		boundaryName: "test",
 		tasks:        testTasks,
 		wf:           &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "test-wf"}},
 		dependencies: make(map[string][]string),
 		dependsLogic: make(map[string]string),
+		log:          logging.RequireLoggerFromContext(ctx),
 	}
 
 	// Task A is running
@@ -445,7 +498,7 @@ func TestEvaluateDependsLogicWhenDaemonFailed(t *testing.T) {
 	}
 
 	// Task B should proceed and execute
-	execute, proceed, err := d.evaluateDependsLogic("B")
+	execute, proceed, err := d.evaluateDependsLogic(ctx, "B")
 	require.NoError(t, err)
 	assert.True(t, proceed)
 	assert.True(t, execute)
@@ -457,7 +510,7 @@ func TestEvaluateDependsLogicWhenDaemonFailed(t *testing.T) {
 	d.wf.Status.Nodes[d.taskNodeID("A")] = wfv1.NodeStatus{Phase: wfv1.NodeFailed}
 
 	// Task B should proceed and execute
-	execute, proceed, err = d.evaluateDependsLogic("B")
+	execute, proceed, err = d.evaluateDependsLogic(ctx, "B")
 	require.NoError(t, err)
 	assert.True(t, proceed)
 	assert.True(t, execute)
@@ -474,12 +527,14 @@ func TestEvaluateDependsLogicWhenTaskOmitted(t *testing.T) {
 		},
 	}
 
+	ctx := logging.TestContext(t.Context())
 	d := &dagContext{
 		boundaryName: "test",
 		tasks:        testTasks,
 		wf:           &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "test-wf"}},
 		dependencies: make(map[string][]string),
 		dependsLogic: make(map[string]string),
+		log:          logging.RequireLoggerFromContext(ctx),
 	}
 
 	// Task A is running
@@ -493,7 +548,7 @@ func TestEvaluateDependsLogicWhenTaskOmitted(t *testing.T) {
 	}
 
 	// Task B should proceed and execute
-	execute, proceed, err := d.evaluateDependsLogic("B")
+	execute, proceed, err := d.evaluateDependsLogic(ctx, "B")
 	require.NoError(t, err)
 	assert.True(t, proceed)
 	assert.True(t, execute)
@@ -520,12 +575,14 @@ func TestAllEvaluateDependsLogic(t *testing.T) {
 			},
 		}
 
+		ctx := logging.TestContext(t.Context())
 		d := &dagContext{
 			boundaryName: "test",
 			tasks:        testTasks,
 			wf:           &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "test-wf"}},
 			dependencies: make(map[string][]string),
 			dependsLogic: make(map[string]string),
+			log:          logging.RequireLoggerFromContext(ctx),
 		}
 
 		// Task A is running
@@ -538,11 +595,11 @@ func TestAllEvaluateDependsLogic(t *testing.T) {
 			},
 		}
 
-		execute, proceed, err := d.evaluateDependsLogic("Run")
+		execute, proceed, err := d.evaluateDependsLogic(ctx, "Run")
 		require.NoError(t, err)
 		assert.True(t, proceed)
 		assert.True(t, execute)
-		execute, proceed, err = d.evaluateDependsLogic("NotRun")
+		execute, proceed, err = d.evaluateDependsLogic(ctx, "NotRun")
 		require.NoError(t, err)
 		assert.True(t, proceed)
 		assert.False(t, execute)
@@ -600,7 +657,7 @@ spec:
       command:
       - sh
       - -xc
-      image: alpine:latest
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs:
@@ -628,7 +685,7 @@ spec:
     script:
       command:
       - python
-      image: python:alpine3.6
+      image: python:alpine3.23
       name: ""
       resources: {}
       source: |
@@ -809,18 +866,18 @@ status:
 
 // Tests whether assessPhase marks a DAG as successful when it contains failed tasks with continueOn failed
 func TestDagAssessPhaseContinueOnExpandedTaskVariables(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(dagAssessPhaseContinueOnExpandedTaskVariables)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	woc.operate(ctx)
-	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
@@ -871,7 +928,7 @@ spec:
       command:
       - sh
       - -xc
-      image: alpine:latest
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs:
@@ -880,7 +937,7 @@ spec:
     metadata: {}
     name: one-will-fail
     outputs: {}
-  - 
+  -
     container:
       command:
       - cowsay
@@ -1032,18 +1089,18 @@ status:
 
 // Tests whether assessPhase marks a DAG as successful when it contains failed tasks with continueOn failed
 func TestDagAssessPhaseContinueOnExpandedTask(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(dagAssessPhaseContinueOnExpandedTask)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	woc.operate(ctx)
-	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
@@ -1081,15 +1138,15 @@ spec:
 `
 
 func TestDAGWithParamAndGlobalParam(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(dagWithParamAndGlobalParam)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
@@ -1131,14 +1188,14 @@ spec:
     metadata: {}
     name: diamond
     outputs: {}
-  - 
+  -
     container:
       args:
       - sleep 10
       command:
       - sh
       - -c
-      image: alpine:3.7
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs: {}
@@ -1319,15 +1376,15 @@ status:
 
 // This tests that a DAG with retry strategy in its tasks fails successfully when terminated
 func TestTerminatingDAGWithRetryStrategyNodes(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(terminatingDAGWithRetryStrategyNodes)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
@@ -1339,16 +1396,16 @@ kind: Workflow
 metadata:
   name: dag-diamond-dj7q5
 spec:
-  
+
   entrypoint: diamond
   templates:
-  - 
+  -
     dag:
       tasks:
-      - 
+      -
         name: A
         template: echo
-      - 
+      -
         dependencies:
         - A
         name: B
@@ -1357,14 +1414,14 @@ spec:
     metadata: {}
     name: diamond
     outputs: {}
-  - 
+  -
     container:
       args:
       - exit 1
       command:
       - sh
       - -c
-      image: alpine:3.7
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs: {}
@@ -1479,15 +1536,15 @@ status:
 
 // This tests that a DAG with retry strategy in its tasks fails successfully when terminated
 func TestTerminateDAGWithMaxDurationLimitExpiredAndMoreAttempts(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(terminateDAGWithMaxDurationLimitExpiredAndMoreAttempts)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	woc.operate(ctx)
 
@@ -1497,7 +1554,7 @@ func TestTerminateDAGWithMaxDurationLimitExpiredAndMoreAttempts(t *testing.T) {
 	assert.Equal(t, wfv1.NodeFailed, retryNode.Phase)
 	assert.Contains(t, retryNode.Message, "Max duration limit exceeded")
 
-	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc.operate(ctx)
 
 	// This is the crucial part of the test
@@ -1510,29 +1567,29 @@ kind: Workflow
 metadata:
   name: wf-retry-pol
 spec:
-  
+
   entrypoint: run-steps
   onExit: onExit
   templates:
-  - 
+  -
     inputs: {}
     metadata: {}
     name: run-steps
     outputs: {}
     steps:
-    - - 
+    - -
         name: run-dag
         template: run-dag
-    - - 
+    - -
         name: manual-onExit
         template: onExit
-  - 
+  -
     dag:
       tasks:
-      - 
+      -
         name: A
         template: fail
-      - 
+      -
         dependencies:
         - A
         name: B
@@ -1541,7 +1598,7 @@ spec:
     metadata: {}
     name: run-dag
     outputs: {}
-  - 
+  -
     container:
       args:
       - exit 2
@@ -1558,7 +1615,7 @@ spec:
     retryStrategy:
       limit: 100
       retryPolicy: OnError
-  - 
+  -
     container:
       args:
       - hello world
@@ -1668,15 +1725,15 @@ status:
 `
 
 func TestRetryStrategyNodes(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(testRetryStrategyNodes)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	woc.operate(ctx)
 	retryNode, err := woc.wf.GetNodeByName("wf-retry-pol")
@@ -1699,17 +1756,17 @@ kind: Workflow
 metadata:
   name: dag-diamond-88trp
 spec:
-  
+
   entrypoint: diamond
   templates:
-  - 
+  -
     dag:
       failFast: false
       tasks:
-      - 
+      -
         name: A
         template: echo
-      - 
+      -
         dependencies:
         - A
         name: B
@@ -1719,28 +1776,28 @@ spec:
     metadata: {}
     name: diamond
     outputs: {}
-  - 
+  -
     container:
       args:
       - exit 0
       command:
       - sh
       - -c
-      image: alpine:3.7
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs: {}
     metadata: {}
     name: echo
     outputs: {}
-  - 
+  -
     container:
       args:
       - exit 1
       command:
       - sh
       - -c
-      image: alpine:3.7
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs: {}
@@ -1834,15 +1891,15 @@ status:
 `
 
 func TestOnExitDAGPhase(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(testOnExitNodeDAGPhase)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	woc.operate(ctx)
 	retryNode, err := woc.wf.GetNodeByName("dag-diamond-88trp")
@@ -1865,17 +1922,17 @@ kind: Workflow
 metadata:
   name: exit-handler-bug-example
 spec:
-  
+
   entrypoint: dag
   templates:
-  - 
+  -
     dag:
       tasks:
-      - 
+      -
         name: step-2
         onExit: on-exit
         template: step-template
-      - 
+      -
         dependencies:
         - step-2
         name: step-3
@@ -1885,28 +1942,28 @@ spec:
     metadata: {}
     name: dag
     outputs: {}
-  - 
+  -
     container:
       args:
       - echo exit-handler-step-{{pod.name}}
       command:
       - sh
       - -c
-      image: alpine:latest
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs: {}
     metadata: {}
     name: on-exit
     outputs: {}
-  - 
+  -
     container:
       args:
       - echo step {{pod.name}}
       command:
       - sh
       - -c
-      image: alpine:latest
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs: {}
@@ -1965,15 +2022,15 @@ status:
 `
 
 func TestOnExitNonLeaf(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(testOnExitNonLeaf)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	woc.operate(ctx)
 	retryNode, err := woc.wf.GetNodeByName("exit-handler-bug-example.step-2.onExit")
@@ -1987,7 +2044,7 @@ func TestOnExitNonLeaf(t *testing.T) {
 
 	retryNode.Phase = wfv1.NodeSucceeded
 	woc.wf.Status.Nodes[retryNode.ID] = *retryNode
-	woc = newWorkflowOperationCtx(woc.wf, controller)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc.operate(ctx)
 	retryNode, err = woc.wf.GetNodeByName("exit-handler-bug-example.step-3")
 	require.NoError(t, err)
@@ -2015,7 +2072,7 @@ spec:
     container:
       args: ['mkdir -p /tmp/outputs/A && echo "exist" > /tmp/outputs/A/data']
       command: [sh, -c]
-      image: alpine:3.7
+      image: alpine:3.23
     outputs:
       artifacts:
       - {name: A-out, path: /tmp/outputs/A/data}
@@ -2023,7 +2080,7 @@ spec:
     container:
       args: ['[ -f /tmp/outputs/condition/data ] && cat /tmp/outputs/condition/data || echo not exist']
       command: [sh, -c]
-      image: alpine:3.7
+      image: alpine:3.23
     inputs:
       artifacts:
       - {name: B-in, optional: true,  path: /tmp/outputs/condition/data}
@@ -2083,11 +2140,11 @@ status:
 `
 
 func TestDagOptionalInputArtifacts(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(testDagOptionalInputArtifacts)
-	cancel, controller := newController(wf)
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
-	woc := newWorkflowOperationCtx(wf, controller)
-	ctx := context.Background()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	optionalInputArtifactsNode, err := woc.wf.GetNodeByName("dag-optional-inputartifacts.B")
@@ -2102,10 +2159,10 @@ kind: Workflow
 metadata:
   name: dag-primay-branch-6bnnl
 spec:
-  
+
   entrypoint: statis
   templates:
-  - 
+  -
     container:
       args:
       - hello world
@@ -2118,7 +2175,7 @@ spec:
     metadata: {}
     name: a
     outputs: {}
-  - 
+  -
     container:
       args:
       - exit!
@@ -2131,19 +2188,19 @@ spec:
     metadata: {}
     name: exit
     outputs: {}
-  - 
+  -
     inputs: {}
     metadata: {}
     name: steps
     outputs: {}
     steps:
-    - - 
+    - -
         name: step-a
         template: a
-  - 
+  -
     dag:
       tasks:
-      - 
+      -
         name: A
         onExit: exit
         template: steps
@@ -2235,15 +2292,15 @@ status:
 `
 
 func TestDagTargetTaskOnExit(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(testDagTargetTaskOnExit)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	woc.operate(ctx)
 	onExitNode, err := woc.wf.GetNodeByName("dag-primay-branch-6bnnl.A.onExit")
@@ -2293,7 +2350,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:latest
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs: {}
@@ -2303,7 +2360,7 @@ spec:
       parameters:
       - name: scheduled-jobs
         value: '[]'
-  - 
+  -
     container:
       args:
       - hello world
@@ -2388,15 +2445,15 @@ status:
 `
 
 func TestEmptyWithParamDAG(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(testEmptyWithParamDAG)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
@@ -2490,7 +2547,7 @@ spec:
         fi
         echo "process $chunk"
   - activeDeadlineSeconds: 300
-    
+
     inputs: {}
     metadata: {}
     name: finish
@@ -2565,6 +2622,8 @@ status:
         - name: chunk
           value: "7"
       name: reproduce-bug-9tpfr.process-tasks(7:7)(0)
+      nodeFlag:
+        retried: true
       outputs:
         exitCode: "0"
       phase: Succeeded
@@ -2588,6 +2647,8 @@ status:
         - name: chunk
           value: "5"
       name: reproduce-bug-9tpfr.process-tasks(5:5)(0)
+      nodeFlag:
+        retried: true
       outputs:
         exitCode: "0"
       phase: Succeeded
@@ -2630,6 +2691,8 @@ status:
         - name: chunk
           value: "1"
       name: reproduce-bug-9tpfr.process-tasks(1:1)(0)
+      nodeFlag:
+        retried: true
       outputs:
         exitCode: "0"
       phase: Succeeded
@@ -2653,6 +2716,8 @@ status:
         - name: chunk
           value: "8"
       name: reproduce-bug-9tpfr.process-tasks(8:8)(0)
+      nodeFlag:
+        retried: true
       outputs:
         exitCode: "0"
       phase: Succeeded
@@ -2732,6 +2797,8 @@ status:
           value: "3"
       message: failed with exit code 1
       name: reproduce-bug-9tpfr.process-tasks(3:3)(0)
+      nodeFlag:
+        retried: true
       outputs:
         exitCode: "1"
       phase: Failed
@@ -2755,6 +2822,8 @@ status:
         - name: chunk
           value: "9"
       name: reproduce-bug-9tpfr.process-tasks(9:9)(0)
+      nodeFlag:
+        retried: true
       outputs:
         exitCode: "0"
       phase: Succeeded
@@ -2777,6 +2846,8 @@ status:
           value: "3"
       message: failed with exit code 1
       name: reproduce-bug-9tpfr.process-tasks(3:3)(1)
+      nodeFlag:
+        retried: true
       outputs:
         exitCode: "1"
       phase: Failed
@@ -2819,6 +2890,8 @@ status:
         - name: chunk
           value: "6"
       name: reproduce-bug-9tpfr.process-tasks(6:6)(0)
+      nodeFlag:
+        retried: true
       outputs:
         exitCode: "0"
       phase: Succeeded
@@ -2899,6 +2972,8 @@ status:
         - name: chunk
           value: "2"
       name: reproduce-bug-9tpfr.process-tasks(2:2)(0)
+      nodeFlag:
+        retried: true
       outputs:
         exitCode: "0"
       phase: Succeeded
@@ -2961,6 +3036,8 @@ status:
         - name: chunk
           value: "4"
       name: reproduce-bug-9tpfr.process-tasks(4:4)(0)
+      nodeFlag:
+        retried: true
       outputs:
         exitCode: "0"
       phase: Succeeded
@@ -3004,6 +3081,8 @@ status:
         - name: chunk
           value: "0"
       name: reproduce-bug-9tpfr.process-tasks(0:0)(0)
+      nodeFlag:
+        retried: true
       outputs:
         exitCode: "0"
       phase: Succeeded
@@ -3047,6 +3126,8 @@ status:
           value: "3"
       message: failed with exit code 1
       name: reproduce-bug-9tpfr.process-tasks(3:3)(2)
+      nodeFlag:
+        retried: true
       outputs:
         exitCode: "1"
       phase: Failed
@@ -3065,15 +3146,15 @@ status:
 `
 
 func TestFailsWithParamDAG(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(testFailsWithParamDAG)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
@@ -3120,7 +3201,7 @@ spec:
     metadata: {}
     name: ok
     outputs: {}
-  - 
+  -
     container:
       args:
       - |
@@ -3194,12 +3275,12 @@ status:
 
 func TestLeafContinueOn(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(testLeafContinueOn)
-	cancel, controller := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
 
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
-	ctx := context.Background()
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
@@ -3250,7 +3331,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:latest
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs:
@@ -3357,11 +3438,11 @@ status:
 
 func TestDAGReferTaskAggregatedOutputs(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(dagOutputsReferTaskAggregatedOuputs)
-	cancel, controller := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
 
-	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 
 	dagNode := woc.wf.Status.Nodes.FindByDisplayName("parameter-aggregation-dag-h8b82")
@@ -3372,7 +3453,7 @@ func TestDAGReferTaskAggregatedOutputs(t *testing.T) {
 	assert.Equal(t, `["odd","even"]`, dagNode.Outputs.Parameters[1].Value.String())
 }
 
-var dagHttpChildrenAssigned = `apiVersion: argoproj.io/v1alpha1
+var dagHTTPChildrenAssigned = `apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: http-template-nv52d
@@ -3435,12 +3516,12 @@ status:
 `
 
 func TestDagHttpChildrenAssigned(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(dagHttpChildrenAssigned)
-	cancel, controller := newController(wf)
+	wf := wfv1.MustUnmarshalWorkflow(dagHTTPChildrenAssigned)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
 
-	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 
 	dagNode := woc.wf.Status.Nodes.FindByDisplayName("good2")
@@ -3465,8 +3546,8 @@ spec:
   templates:
   - name: linuxExitHandler
     steps:
-    - - name: printExit
-        template: printExit
+    - - name: print-exit
+        template: print-exit
   - container:
       args:
       - echo
@@ -3475,7 +3556,7 @@ spec:
       - /argosay
       image: argoproj/argosay:v2
       name: ""
-    name: printExit
+    name: print-exit
   - container:
       args:
       - echo
@@ -3566,11 +3647,11 @@ status:
 
 func TestRetryTypeDagTaskRunExitNodeAfterCompleted(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(retryTypeDagTaskRunExitNodeAfterCompleted)
-	cancel, controller := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
 
-	ctx := context.Background()
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	// retryTypeDAGTask completed
 	printAChild := woc.wf.Status.Nodes.FindByDisplayName("printA(0)")
 	assert.Equal(t, wfv1.NodeSucceeded, printAChild.Phase)
@@ -3578,7 +3659,7 @@ func TestRetryTypeDagTaskRunExitNodeAfterCompleted(t *testing.T) {
 	// run ExitNode
 	woc.operate(ctx)
 	onExitNode := woc.wf.Status.Nodes.FindByDisplayName("printA.onExit")
-	assert.NotNil(t, onExitNode)
+	require.NotNil(t, onExitNode)
 	assert.Equal(t, wfv1.NodeRunning, onExitNode.Phase)
 	assert.True(t, onExitNode.NodeFlag.Hooked)
 
@@ -3592,7 +3673,7 @@ func TestRetryTypeDagTaskRunExitNodeAfterCompleted(t *testing.T) {
 	// run next DAGTask
 	woc.operate(ctx)
 	nextDAGTaskNode := woc.wf.Status.Nodes.FindByDisplayName("dependencyTesting")
-	assert.NotNil(t, nextDAGTaskNode)
+	require.NotNil(t, nextDAGTaskNode)
 	assert.Equal(t, wfv1.NodeRunning, nextDAGTaskNode.Phase)
 }
 
@@ -3635,18 +3716,19 @@ spec:
         image: docker/whalesay:latest
         command: [cowsay]
         args: ["I have a {{inputs.parameters.thing}}"]`)
-	woc := newWoc(*wf)
-	ctx := context.Background()
+
+	ctx := logging.TestContext(t.Context())
+	woc := newWoc(ctx, *wf)
 	woc.operate(ctx)
-	woc1 := newWoc(*woc.wf)
+	woc1 := newWoc(ctx, *woc.wf)
 	woc1.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 }
 
 func TestDagWftmplHookWithRetry(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow("@testdata/dag_wftmpl_hook_with_retry.yaml")
-	woc := newWoc(*wf)
-	ctx := context.Background()
+	ctx := logging.TestContext(t.Context())
+	woc := newWoc(ctx, *wf)
 	woc.operate(ctx)
 
 	// assert task kicked
@@ -3695,4 +3777,414 @@ func TestDagWftmplHookWithRetry(t *testing.T) {
 	// finish Node skipped
 	finishNode := woc.wf.Status.Nodes.FindByDisplayName("finish")
 	assert.Equal(t, wfv1.NodeOmitted, finishNode.Phase)
+}
+
+// Regression test: referencing {{tasks.<taskgroup>.id}} where the ancestor is a TaskGroup
+// (created by withParam expansion). Before the fix, buildLocalScope was only called for
+// non-TaskGroup ancestors, so tasks.<taskgroup>.id was unavailable and caused a requeue.
+var dagTaskGroupIDRef = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-taskgroup-id-ref
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: generate
+        template: gen-list
+      - name: fanout
+        dependencies: [generate]
+        template: echo
+        arguments:
+          parameters:
+          - name: msg
+            value: '{{item}}'
+        withParam: '{{tasks.generate.outputs.result}}'
+      - name: use-id
+        dependencies: [fanout]
+        template: echo
+        arguments:
+          parameters:
+          - name: msg
+            value: '{{tasks.fanout.id}}'
+  - name: gen-list
+    script:
+      image: python:alpine3.23
+      command: [python]
+      source: |
+        import json, sys
+        json.dump([0, 1], sys.stdout)
+  - name: echo
+    inputs:
+      parameters:
+      - name: msg
+    container:
+      image: alpine:3.23
+      command: [echo, '{{inputs.parameters.msg}}']
+status:
+  nodes:
+    dag-taskgroup-id-ref:
+      id: dag-taskgroup-id-ref
+      name: dag-taskgroup-id-ref
+      displayName: dag-taskgroup-id-ref
+      type: DAG
+      templateName: main
+      templateScope: local/dag-taskgroup-id-ref
+      phase: Running
+      startedAt: "2020-04-20T16:39:00Z"
+      children:
+      - dag-taskgroup-id-ref-455800905
+    dag-taskgroup-id-ref-455800905:
+      id: dag-taskgroup-id-ref-455800905
+      name: dag-taskgroup-id-ref.generate
+      displayName: generate
+      type: Pod
+      templateName: gen-list
+      templateScope: local/dag-taskgroup-id-ref
+      boundaryID: dag-taskgroup-id-ref
+      phase: Succeeded
+      startedAt: "2020-04-20T16:39:00Z"
+      finishedAt: "2020-04-20T16:39:02Z"
+      children:
+      - dag-taskgroup-id-ref-2094038697
+      outputs:
+        result: '[0, 1]'
+        exitCode: "0"
+    dag-taskgroup-id-ref-2094038697:
+      id: dag-taskgroup-id-ref-2094038697
+      name: dag-taskgroup-id-ref.fanout
+      displayName: fanout
+      type: TaskGroup
+      templateName: echo
+      templateScope: local/dag-taskgroup-id-ref
+      boundaryID: dag-taskgroup-id-ref
+      phase: Succeeded
+      startedAt: "2020-04-20T16:39:03Z"
+      finishedAt: "2020-04-20T16:39:09Z"
+      children:
+      - dag-taskgroup-id-ref-2700861446
+      - dag-taskgroup-id-ref-3319419394
+    dag-taskgroup-id-ref-2700861446:
+      id: dag-taskgroup-id-ref-2700861446
+      name: dag-taskgroup-id-ref.fanout(0:0)
+      displayName: fanout(0:0)
+      type: Pod
+      templateName: echo
+      templateScope: local/dag-taskgroup-id-ref
+      boundaryID: dag-taskgroup-id-ref
+      phase: Succeeded
+      startedAt: "2020-04-20T16:39:03Z"
+      finishedAt: "2020-04-20T16:39:06Z"
+      inputs:
+        parameters:
+        - name: msg
+          value: "0"
+      outputs:
+        exitCode: "0"
+    dag-taskgroup-id-ref-3319419394:
+      id: dag-taskgroup-id-ref-3319419394
+      name: dag-taskgroup-id-ref.fanout(1:1)
+      displayName: fanout(1:1)
+      type: Pod
+      templateName: echo
+      templateScope: local/dag-taskgroup-id-ref
+      boundaryID: dag-taskgroup-id-ref
+      phase: Succeeded
+      startedAt: "2020-04-20T16:39:03Z"
+      finishedAt: "2020-04-20T16:39:07Z"
+      inputs:
+        parameters:
+        - name: msg
+          value: "1"
+      outputs:
+        exitCode: "0"
+  phase: Running
+  startedAt: "2020-04-20T16:39:00Z"
+`
+
+func TestDAGTaskGroupIDReference(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	wf := wfv1.MustUnmarshalWorkflow(dagTaskGroupIDRef)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	woc.operate(ctx)
+
+	// Verify the use-id task was created (not stuck in requeue due to missing variable)
+	useIDNode := woc.wf.Status.Nodes.FindByDisplayName("use-id")
+	require.NotNil(t, useIDNode, "use-id node should be created when tasks.fanout.id is resolvable")
+
+	// Verify the resolved value of tasks.fanout.id matches the TaskGroup node's ID
+	require.NotNil(t, useIDNode.Inputs)
+	require.Len(t, useIDNode.Inputs.Parameters, 1)
+	assert.Equal(t, "dag-taskgroup-id-ref-2094038697", useIDNode.Inputs.Parameters[0].Value.String())
+}
+
+var dagWhenSkipNoRequeue = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-when-skip-no-requeue-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: A
+        template: script-echo
+        when: "false"
+      - name: B
+        dependencies: [A]
+        when: "{{tasks.A.status}} == Succeeded"
+        template: echo-with-param
+        arguments:
+          parameters:
+          - name: msg
+            value: "{{tasks.A.outputs.result}}"
+  - name: script-echo
+    script:
+      image: alpine:3.23
+      command: [sh]
+      source: |
+        echo hello
+  - name: echo-with-param
+    inputs:
+      parameters:
+      - name: msg
+    container:
+      image: alpine:3.23
+      command: [echo, "{{inputs.parameters.msg}}"]
+`
+
+// TestDAGWhenSkipNoRequeue verifies that a DAG task with a "when" clause that evaluates to false
+// does not cause a requeue even when other fields in the task reference outputs that don't exist.
+// Scenario: A is skipped (when: "false"), so A's outputs don't exist. B depends on A and has
+// when: "{{tasks.A.status}} == Succeeded" which evaluates to false ("Skipped == Succeeded").
+// B also references {{tasks.A.outputs.result}} which is unresolvable since A was skipped.
+// Without the fix, the full ReplaceStrict would fail on the missing output and requeue.
+// With the fix, the when clause is resolved first, evaluates to false, and B is skipped early.
+func TestDAGWhenSkipNoRequeue(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	wf := wfv1.MustUnmarshalWorkflow(dagWhenSkipNoRequeue)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	woc.operate(ctx)
+
+	// Workflow should succeed: A was skipped, B's when evaluated false so B was also skipped
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+
+	nodeB := woc.wf.Status.Nodes.FindByDisplayName("B")
+	require.NotNil(t, nodeB)
+	assert.Equal(t, wfv1.NodeSkipped, nodeB.Phase)
+}
+
+var dagSkippedOutputRef = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-skipped-output-ref
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+      - name: run-stage-b
+        value: "false"
+  templates:
+    - name: main
+      inputs:
+        parameters:
+          - name: run-stage-b
+      dag:
+        tasks:
+          - name: stage-a
+            template: stage-a
+          - name: stage-b
+            template: stage-b
+            when: "\"{{inputs.parameters.run-stage-b}}\" == \"true\""
+          - name: stage-c
+            template: stage-c
+            depends: "stage-a && (stage-b || stage-b.Skipped)"
+            arguments:
+              parameters:
+                - name: message-from-a
+                  value: "{{tasks.stage-a.outputs.parameters.output-message}}"
+                - name: message-from-b
+                  value: "{{tasks.stage-b.outputs.parameters.output-message}}"
+    - name: stage-a
+      outputs:
+        parameters:
+          - name: output-message
+            valueFrom:
+              path: /tmp/output.txt
+      container:
+        image: alpine:3.23
+        command: [sh, -c]
+        args: ["echo 'hello from stage A' > /tmp/output.txt"]
+    - name: stage-b
+      outputs:
+        parameters:
+          - name: output-message
+            valueFrom:
+              path: /tmp/output.txt
+      container:
+        image: alpine:3.23
+        command: [sh, -c]
+        args: ["echo 'hello from stage B' > /tmp/output.txt"]
+    - name: stage-c
+      inputs:
+        parameters:
+          - name: message-from-a
+          - name: message-from-b
+      container:
+        image: alpine:3.23
+        command: [echo]
+        args: ["{{inputs.parameters.message-from-a}}", "{{inputs.parameters.message-from-b}}"]
+status:
+  phase: Running
+  startedAt: "2024-01-01T00:00:00Z"
+  nodes:
+    dag-skipped-output-ref:
+      id: dag-skipped-output-ref
+      name: dag-skipped-output-ref
+      displayName: dag-skipped-output-ref
+      type: DAG
+      templateName: main
+      templateScope: local/dag-skipped-output-ref
+      phase: Running
+      startedAt: "2024-01-01T00:00:00Z"
+      children:
+        - dag-skipped-output-ref-1381367026
+        - dag-skipped-output-ref-1364589407
+      outboundNodes:
+        - dag-skipped-output-ref-1347811788
+    dag-skipped-output-ref-1381367026:
+      id: dag-skipped-output-ref-1381367026
+      name: dag-skipped-output-ref.stage-a
+      displayName: stage-a
+      type: Pod
+      templateName: stage-a
+      templateScope: local/dag-skipped-output-ref
+      boundaryID: dag-skipped-output-ref
+      phase: Succeeded
+      startedAt: "2024-01-01T00:00:00Z"
+      finishedAt: "2024-01-01T00:00:10Z"
+      outputs:
+        parameters:
+          - name: output-message
+            value: "hello from stage A"
+    dag-skipped-output-ref-1364589407:
+      id: dag-skipped-output-ref-1364589407
+      name: dag-skipped-output-ref.stage-b
+      displayName: stage-b
+      type: Skipped
+      templateName: stage-b
+      templateScope: local/dag-skipped-output-ref
+      boundaryID: dag-skipped-output-ref
+      phase: Skipped
+      startedAt: "2024-01-01T00:00:00Z"
+      finishedAt: "2024-01-01T00:00:00Z"
+      message: when '"false" == "true"' evaluated false
+`
+
+// TestDAGSkippedOutputRef verifies that a DAG task can reference outputs from a skipped
+// dependency without causing a requeue loop.
+// Scenario: stage-a succeeds with output parameters, stage-b is skipped (when evaluates false),
+// stage-c depends on both and references outputs from both. stage-c should still be scheduled
+// even though tasks.stage-b.outputs.parameters.output-message is unresolvable.
+func TestDAGSkippedOutputRef(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(dagSkippedOutputRef)
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	woc.operate(ctx)
+
+	// stage-c should be created and pending, not stuck in a requeue loop
+	nodeC := woc.wf.Status.Nodes.FindByDisplayName("stage-c")
+	require.NotNil(t, nodeC, "stage-c should be created even though stage-b was skipped")
+	assert.Equal(t, wfv1.NodePending, nodeC.Phase)
+}
+
+var dagWhenExprSkipEval = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-when-expr-skip-eval-
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+      - name: data
+        value: ''
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: A
+        template: echo
+        when: "false"
+        arguments:
+          parameters:
+          - name: message
+            value: A
+      - name: B
+        dependencies: [A]
+        when: "{{= workflow.parameters.data != '' }}"
+        template: echo
+        arguments:
+          parameters:
+          - name: message
+            value: "{{= jsonpath(workflow.parameters.data, '$.id') }}"
+  - name: echo
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: alpine:3.23
+      command: [echo, "{{inputs.parameters.message}}"]
+`
+
+// TestDAGWhenExprSkipEval verifies that expression templates in a DAG task's arguments are not
+// evaluated when the task's "when" clause evaluates to false.
+// Scenario: workflow parameter "data" is empty. Task B has when: "{{= workflow.parameters.data != ” }}"
+// which evaluates to false. B's argument uses jsonpath(workflow.parameters.data, '$.id') which would
+// fail on an empty string. The expression should not be evaluated since the task will be skipped.
+// Currently fails because SubstituteParams evaluates all expression templates in the entire DAG
+// template before individual task "when" conditions are checked.
+func TestDAGWhenExprSkipEval(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	wf := wfv1.MustUnmarshalWorkflow(dagWhenExprSkipEval)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	woc.operate(ctx)
+
+	// Workflow should succeed: B's when clause evaluates to false so B should be skipped
+	// without evaluating B's argument expressions.
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+
+	nodeB := woc.wf.Status.Nodes.FindByDisplayName("B")
+	require.NotNil(t, nodeB)
+	assert.Equal(t, wfv1.NodeSkipped, nodeB.Phase)
 }

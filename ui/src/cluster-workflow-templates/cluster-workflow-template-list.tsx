@@ -19,6 +19,7 @@ import {useCollectEvent} from '../shared/use-collect-event';
 import {useQueryParams} from '../shared/use-query-params';
 import useTimestamp, {TIMESTAMP_KEYS} from '../shared/use-timestamp';
 import {ClusterWorkflowTemplateCreator} from './cluster-workflow-template-creator';
+import {ClusterWorkflowTemplateMarkdown} from './cluster-workflow-template-markdown';
 
 import './cluster-workflow-template-list.scss';
 
@@ -61,7 +62,11 @@ export function ClusterWorkflowTemplateList({history, location}: RouteComponentP
         if (!templates) {
             return <Loading />;
         }
-        const learnMore = <a href='https://argo-workflows.readthedocs.io/en/latest/cluster-workflow-templates/'>Learn more</a>;
+        const learnMore = (
+            <a href='https://argo-workflows.readthedocs.io/en/latest/cluster-workflow-templates/' target='_blank' rel='noreferrer'>
+                Learn more
+            </a>
+        );
         if (templates.length === 0) {
             return (
                 <ZeroState title='No cluster workflow templates'>
@@ -83,15 +88,19 @@ export function ClusterWorkflowTemplateList({history, location}: RouteComponentP
                         </div>
                     </div>
                     {templates.map(t => (
-                        <Link className='row argo-table-list__row' key={t.metadata.uid} to={uiUrl(`cluster-workflow-templates/${t.metadata.name}`)}>
-                            <div className='columns small-1'>
-                                <i className='fa fa-clone' />
+                        <div className='cluster-workflow-templates-list__row-container' key={`${t.metadata.namespace}/${t.metadata.name}`}>
+                            <div className='row argo-table-list__row'>
+                                <div className='columns small-1'>
+                                    <i className='fa fa-clone' />
+                                </div>
+                                <Link to={{pathname: uiUrl(`cluster-workflow-templates/${t.metadata.name}`)}} className='columns small-5'>
+                                    <ClusterWorkflowTemplateMarkdown workflow={t} key={`{t.metadata.namespace}/${t.metadata.name}`} />
+                                </Link>
+                                <div className='columns small-3'>
+                                    <Timestamp date={t.metadata.creationTimestamp} displayISOFormat={storedDisplayISOFormat} />
+                                </div>
                             </div>
-                            <div className='columns small-5'>{t.metadata.name}</div>
-                            <div className='columns small-3'>
-                                <Timestamp date={t.metadata.creationTimestamp} displayISOFormat={storedDisplayISOFormat} />
-                            </div>
-                        </Link>
+                        </div>
                     ))}
                 </div>
                 <Footnote>

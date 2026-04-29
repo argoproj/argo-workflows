@@ -196,7 +196,7 @@ export interface Parameter {
      */
     name: string;
     /**
-     * Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values
+     * Value is the literal value to use for the parameter. If specified in the context of an input parameter, any passed values take precedence over the specified value
      */
     value?: string;
     /**
@@ -920,7 +920,7 @@ export interface Sequence {
     count?: number;
 }
 
-export interface DAGTask {
+export interface BaseDAGTask {
     name: string;
 
     /**
@@ -938,15 +938,20 @@ export interface DAGTask {
      */
     arguments?: Arguments;
 
-    /**
-     * Dependencies are name of other targets which this depends on
-     */
-    dependencies?: string[];
     onExit?: string;
     withItems?: any[];
     withParam?: string;
     withSequence?: Sequence;
 }
+
+/**
+ * DAGTask interface allows either `depends` or `dependencies`, but not both.
+ */
+export type DAGTask = BaseDAGTask &
+    /**
+     * Dependencies are name of other targets which this depends on
+     */
+    ({depends?: string; dependencies?: never} | {depends?: never; dependencies?: string[]});
 
 /**
  * WorkflowStep is a reference to a template to execute in a series of step

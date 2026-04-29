@@ -3,7 +3,7 @@ import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
 import {Tabs} from 'argo-ui/src/components/tabs/tabs';
 import classNames from 'classnames';
 import * as React from 'react';
-import {useContext, useEffect, useState} from 'react';
+import {useContext, useEffect, useRef, useState} from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
 
 import {ID} from '../event-flow/id';
@@ -28,7 +28,11 @@ import {EventsPanel} from '../workflows/components/events-panel';
 import {EventSourceCreator} from './event-source-creator';
 import {EventSourceLogsViewer} from './event-source-log-viewer';
 
-const learnMore = <a href='https://argoproj.github.io/argo-events/concepts/event_source/'>Learn more</a>;
+const learnMore = (
+    <a href='https://argoproj.github.io/argo-events/concepts/event_source/' target='_blank' rel='noreferrer'>
+        Learn more
+    </a>
+);
 
 export function EventSourceList({match, location, history}: RouteComponentProps<any>) {
     // boiler-plate
@@ -36,6 +40,7 @@ export function EventSourceList({match, location, history}: RouteComponentProps<
     const {navigation} = useContext(Context);
 
     // state for URL and query parameters
+    const isFirstRender = useRef(true);
     const [namespace, setNamespace] = useState(nsUtils.getNamespace(match.params.namespace) || '');
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') === 'true');
     const [selectedNode, setSelectedNode] = useState<Node>(queryParams.get('selectedNode'));
@@ -50,18 +55,20 @@ export function EventSourceList({match, location, history}: RouteComponentProps<
         [history]
     );
 
-    useEffect(
-        () =>
-            history.push(
-                historyUrl('event-sources' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {
-                    namespace,
-                    sidePanel,
-                    selectedNode,
-                    tab
-                })
-            ),
-        [namespace, sidePanel, selectedNode, tab]
-    );
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+        history.push(
+            historyUrl('event-sources' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {
+                namespace,
+                sidePanel,
+                selectedNode,
+                tab
+            })
+        );
+    }, [namespace, sidePanel, selectedNode, tab]);
 
     // internal state
     const [error, setError] = useState<Error>();

@@ -1,17 +1,17 @@
 package sync
 
 import (
-	"context"
 	"testing"
+
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
-	"k8s.io/utils/ptr"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	fakewfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	fakewfclientset "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
 )
 
 var mutexWf = `
@@ -23,8 +23,8 @@ metadata:
 spec:
   entrypoint: whalesay
   synchronization:
-    mutex:
-      name: test
+    mutexes:
+      - name: test
   templates:
   - name: whalesay
     container:
@@ -42,9 +42,9 @@ metadata:
 spec:
   entrypoint: whalesay
   synchronization:
-    mutex:
-      namespace: other
-      name: test
+    mutexes:
+      - namespace: other
+        name: test
   templates:
   - name: whalesay
     container:
@@ -70,8 +70,8 @@ metadata:
 spec:
   entrypoint: whalesay
   synchronization:
-    mutex:
-      name: test
+    mutexes:
+      - name: test
   templates:
   - container:
       args:
@@ -110,16 +110,17 @@ status:
 `
 
 func TestMutexLock(t *testing.T) {
-	ctx := context.Background()
-	kube := fake.NewSimpleClientset()
+	ctx := logging.TestContext(t.Context())
+	kube := fake.NewClientset()
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("InitializeSynchronization", func(t *testing.T) {
-		syncManager := NewLockManager(syncLimitFunc, func(key string) {
-		}, WorkflowExistenceFunc)
-		wf := wfv1.MustUnmarshalWorkflow(mutexwfstatus)
-		wfclientset := fakewfclientset.NewSimpleClientset(wf)
+		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
+		}, WorkflowExistenceFunc, false)
+		require.NoError(t, err)
 
-		ctx := context.Background()
+		wf := wfv1.MustUnmarshalWorkflow(mutexwfstatus)
+		wfclientset := fakewfclientset.NewClientset(wf)
+
 		wfList, err := wfclientset.ArgoprojV1alpha1().Workflows("default").List(ctx, metav1.ListOptions{})
 		require.NoError(t, err)
 		syncManager.Initialize(ctx, wfList.Items)
@@ -127,9 +128,11 @@ func TestMutexLock(t *testing.T) {
 	})
 	t.Run("WfLevelMutexAcquireAndRelease", func(t *testing.T) {
 		var nextWorkflow string
-		syncManager := NewLockManager(syncLimitFunc, func(key string) {
+		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
 			nextWorkflow = key
-		}, WorkflowExistenceFunc)
+		}, WorkflowExistenceFunc, false)
+		require.NoError(t, err)
+
 		wf := wfv1.MustUnmarshalWorkflow(mutexWf)
 		wf1 := wf.DeepCopy()
 		wf2 := wf.DeepCopy()
@@ -162,7 +165,7 @@ func TestMutexLock(t *testing.T) {
 		assert.True(t, wfUpdate)
 
 		wf2.Name = "three"
-		wf2.Spec.Priority = ptr.To(int32(5))
+		wf2.Spec.Priority = new(int32(5))
 		holderKey2 := getHolderKey(wf2, "")
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf2, "", wf2.Spec.Synchronization)
 		require.NoError(t, err)
@@ -202,15 +205,17 @@ func TestMutexLock(t *testing.T) {
 		require.NotNil(t, wf2.Status.Synchronization)
 		require.NotNil(t, wf2.Status.Synchronization.Mutex)
 		assert.Equal(t, getHolderKey(wf2, ""), wf2.Status.Synchronization.Mutex.Holding[0].Holder)
-		syncManager.ReleaseAll(wf2)
+		syncManager.ReleaseAll(ctx, wf2)
 		assert.Nil(t, wf2.Status.Synchronization)
 	})
 
 	t.Run("WfLevelMutexOthernamespace", func(t *testing.T) {
 		var nextWorkflow string
-		syncManager := NewLockManager(syncLimitFunc, func(key string) {
+		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
 			nextWorkflow = key
-		}, WorkflowExistenceFunc)
+		}, WorkflowExistenceFunc, false)
+		require.NoError(t, err)
+
 		wf := wfv1.MustUnmarshalWorkflow(mutexWfNamespaced)
 		wf1 := wf.DeepCopy()
 		wf2 := wf.DeepCopy()
@@ -246,7 +251,7 @@ func TestMutexLock(t *testing.T) {
 
 		wf2.Name = "three"
 		wf2.Namespace = "three"
-		wf2.Spec.Priority = ptr.To(int32(5))
+		wf2.Spec.Priority = new(int32(5))
 		holderKey2 := getHolderKey(wf2, "")
 		status, wfUpdate, msg, failedLockName, err = syncManager.TryAcquire(ctx, wf2, "", wf2.Spec.Synchronization)
 		require.NoError(t, err)
@@ -288,7 +293,7 @@ func TestMutexLock(t *testing.T) {
 		require.NotNil(t, wf2.Status.Synchronization.Mutex)
 		expected = getHolderKey(wf2, "")
 		assert.Equal(t, expected, wf2.Status.Synchronization.Mutex.Holding[0].Holder)
-		syncManager.ReleaseAll(wf2)
+		syncManager.ReleaseAll(ctx, wf2)
 		assert.Nil(t, wf2.Status.Synchronization)
 	})
 }
@@ -317,12 +322,12 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:latest
+      image: alpine:3.23
       name: ""
     name: acquire-lock
     synchronization:
-      mutex:
-        name: welcome
+      mutexes:
+        - name: welcome
 status:
   finishedAt: null
   nodes:
@@ -393,15 +398,17 @@ status:
 `
 
 func TestMutexTmplLevel(t *testing.T) {
-	ctx := context.Background()
-	kube := fake.NewSimpleClientset()
+	ctx := logging.TestContext(t.Context())
+	kube := fake.NewClientset()
 
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("TemplateLevelAcquireAndRelease", func(t *testing.T) {
 		// var nextKey string
-		syncManager := NewLockManager(syncLimitFunc, func(key string) {
+		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
 			// nextKey = key
-		}, WorkflowExistenceFunc)
+		}, WorkflowExistenceFunc, false)
+		require.NoError(t, err)
+
 		wf := wfv1.MustUnmarshalWorkflow(mutexWfWithTmplLevel)
 		tmpl := wf.Spec.Templates[1]
 

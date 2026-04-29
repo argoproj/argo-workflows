@@ -1,38 +1,51 @@
 package template
 
 import (
+	"context"
 	"fmt"
 	"io"
+	"regexp"
 	"strconv"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
-
-	"github.com/argoproj/argo-workflows/v3/errors"
+	"github.com/argoproj/argo-workflows/v4/errors"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
-func simpleReplace(w io.Writer, tag string, replaceMap map[string]interface{}, allowUnresolved bool) (int, error) {
+var matchAllRegex = regexp.MustCompile(".*")
+
+func simpleReplaceStrict(ctx context.Context, w io.Writer, tag string, replaceMap map[string]any, strictRegex *regexp.Regexp, allowUnresolvedArtifacts bool) (int, error) {
 	replacement, ok := replaceMap[strings.TrimSpace(tag)]
 	if !ok {
 		// Attempt to resolve nested tags, if possible
 		if index := strings.LastIndex(tag, "{{"); index > 0 {
 			nestedTagPrefix := tag[:index]
 			nestedTag := tag[index+2:]
-			if replacement, ok := replaceMap[nestedTag]; ok {
-				replacement, isStr := replacement.(string)
+			if replNested, replOk := replaceMap[nestedTag]; replOk {
+				replStr, isStr := replNested.(string)
 				if isStr {
-					replacement = strconv.Quote(replacement)
-					replacement = replacement[1 : len(replacement)-1]
-					return w.Write([]byte("{{" + nestedTagPrefix + replacement))
+					replStr = strconv.Quote(replStr)
+					replStr = replStr[1 : len(replStr)-1]
+					return w.Write([]byte("{{" + nestedTagPrefix + replStr))
 				}
 			}
 		}
-		if allowUnresolved {
-			// just write the same string back
-			log.WithError(errors.InternalError("unresolved")).Debug("unresolved is allowed ")
-			return w.Write([]byte(fmt.Sprintf("{{%s}}", tag)))
+
+		// Strict check: if the tag starts with any strict prefix, it MUST be resolved.
+		// Exception: Artifacts (containing ".outputs.artifacts.") are handled later by artifact resolution logic
+		// and support "optional: true", so we allow them to remain unresolved here.
+		trimmedTag := strings.TrimSpace(tag)
+		isStrict := strictRegex != nil && strictRegex.MatchString(trimmedTag)
+
+		if isStrict && (!allowUnresolvedArtifacts || !strings.Contains(trimmedTag, ".outputs.artifacts.")) {
+			return 0, errors.Errorf(errors.CodeBadRequest, "failed to resolve {{%s}}", tag)
 		}
-		return 0, errors.Errorf(errors.CodeBadRequest, "failed to resolve {{%s}}", tag)
+
+		// allow unresolved (implied true for non-strict tags or artifacts)
+		// just write the same string back
+		logger := logging.RequireLoggerFromContext(ctx)
+		logger.WithError(errors.InternalError("unresolved")).Debug(ctx, "unresolved is allowed")
+		return fmt.Fprintf(w, "{{%s}}", tag)
 	}
 
 	replacementStr, isStr := replacement.(string)

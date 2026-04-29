@@ -5,7 +5,7 @@ import (
 
 	apiv1 "k8s.io/api/core/v1"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 
 	"github.com/stretchr/testify/assert"
 	//	"github.com/stretchr/testify/require"
@@ -19,7 +19,7 @@ func TestNoDuplicates(t *testing.T) {
 		{
 			name: "single",
 			items: []*syncItem{
-				&syncItem{
+				{
 					mutex: &v1alpha1.Mutex{
 						Name: "alpha",
 					},
@@ -29,12 +29,12 @@ func TestNoDuplicates(t *testing.T) {
 		{
 			name: "two",
 			items: []*syncItem{
-				&syncItem{
+				{
 					mutex: &v1alpha1.Mutex{
 						Name: "alpha",
 					},
 				},
-				&syncItem{
+				{
 					mutex: &v1alpha1.Mutex{
 						Name: "beta",
 					},
@@ -44,13 +44,13 @@ func TestNoDuplicates(t *testing.T) {
 		{
 			name: "different namespace mutex",
 			items: []*syncItem{
-				&syncItem{
+				{
 					mutex: &v1alpha1.Mutex{
 						Name:      "alpha",
 						Namespace: "foo",
 					},
 				},
-				&syncItem{
+				{
 					mutex: &v1alpha1.Mutex{
 						Name:      "alpha",
 						Namespace: "bar",
@@ -75,12 +75,12 @@ func TestExpectDuplicates(t *testing.T) {
 		{
 			name: "simple duplicate mutex",
 			items: []*syncItem{
-				&syncItem{
+				{
 					mutex: &v1alpha1.Mutex{
 						Name: "alpha",
 					},
 				},
-				&syncItem{
+				{
 					mutex: &v1alpha1.Mutex{
 						Name: "alpha",
 					},
@@ -90,7 +90,7 @@ func TestExpectDuplicates(t *testing.T) {
 		{
 			name: "simple duplicate semaphore",
 			items: []*syncItem{
-				&syncItem{
+				{
 					semaphore: &v1alpha1.SemaphoreRef{
 						ConfigMapKeyRef: &apiv1.ConfigMapKeySelector{
 							LocalObjectReference: apiv1.LocalObjectReference{
@@ -100,7 +100,7 @@ func TestExpectDuplicates(t *testing.T) {
 						},
 					},
 				},
-				&syncItem{
+				{
 					semaphore: &v1alpha1.SemaphoreRef{
 						ConfigMapKeyRef: &apiv1.ConfigMapKeySelector{
 							LocalObjectReference: apiv1.LocalObjectReference{
@@ -115,17 +115,17 @@ func TestExpectDuplicates(t *testing.T) {
 		{
 			name: "another duplicate mutex",
 			items: []*syncItem{
-				&syncItem{
+				{
 					mutex: &v1alpha1.Mutex{
 						Name: "alpha",
 					},
 				},
-				&syncItem{
+				{
 					mutex: &v1alpha1.Mutex{
 						Name: "beta",
 					},
 				},
-				&syncItem{
+				{
 					mutex: &v1alpha1.Mutex{
 						Name: "alpha",
 					},

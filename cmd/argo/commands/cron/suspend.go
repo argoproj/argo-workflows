@@ -5,8 +5,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
-	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/client"
+	cronworkflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/cronworkflow"
 )
 
 // NewSuspendCommand returns a new instance of an `argo suspend` command
@@ -23,7 +23,7 @@ func NewSuspendCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			namespace := client.Namespace()
+			namespace := client.Namespace(ctx)
 			for _, name := range args {
 				cronWf, err := serviceClient.SuspendCronWorkflow(ctx, &cronworkflowpkg.CronWorkflowSuspendRequest{
 					Name:      name,

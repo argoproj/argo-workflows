@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -9,15 +8,16 @@ import (
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 // TestStepsFailedRetries ensures a steps template will recognize exhausted retries
 func TestStepsFailedRetries(t *testing.T) {
-	ctx := context.Background()
+	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow("@testdata/steps-failed-retries.yaml")
-	woc := newWoc(*wf)
+	woc := newWoc(ctx, *wf)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 }
@@ -59,7 +59,7 @@ spec:
       - name: message
         path: /tmp/message
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["cat /tmp/message"]
 
@@ -67,15 +67,15 @@ spec:
 
 // Tests ability to reference workflow parameters from within top level spec fields (e.g. spec.volumes)
 func TestArtifactResolutionWhenSkipped(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(artifactResolutionWhenSkipped)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
@@ -113,18 +113,107 @@ spec:
 `
 
 func TestStepsWithParamAndGlobalParam(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(stepsWithParamAndGlobalParam)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+}
+
+var stepsWithParam = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: steps-with-params-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: use-with-param
+        template: whalesay
+        arguments:
+          parameters:
+          - name: message
+            value: "{{item}}"
+        withParam: "[1234, \"foo\\tbar\", true, []]"
+`
+
+func TestExpandStepGroupWithParam(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(stepsWithParam)
+	woc := newWoc(ctx, *wf)
+
+	expanded, err := woc.expandStepGroup(ctx, "[0]", wf.Spec.Templates[0].Steps[0].Steps, &stepsContext{scope: createScope(&wf.Spec.Templates[0])})
+	require.NoError(t, err)
+	require.Len(t, expanded, 4)
+
+	expectedExpandedTasks := []struct {
+		Name      string
+		Parameter string
+	}{
+		{
+			Name:      "use-with-param(0:1234)",
+			Parameter: "1234",
+		},
+		{
+			Name:      `use-with-param(1:foo\tbar)`,
+			Parameter: "foo\tbar",
+		},
+		{
+			Name:      "use-with-param(2:true)",
+			Parameter: "true",
+		},
+		{
+			Name:      "use-with-param(3:[])",
+			Parameter: "[]",
+		},
+	}
+
+	for i, expected := range expectedExpandedTasks {
+		assert.Equal(t, expected.Name, expanded[i].Name)
+		require.Len(t, expanded[i].Arguments.Parameters, 1)
+		assert.Equal(t, expected.Parameter, expanded[i].Arguments.Parameters[0].Value.String())
+	}
+}
+
+var stepsWithItems = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: steps-with-items-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: use-with-items
+        template: whalesay
+        arguments:
+          parameters:
+          - name: message
+            value: "{{item}}"
+        withItems:
+          - Hello"Argo
+`
+
+func TestExpandStepGroupWithItems(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(stepsWithItems)
+	woc := newWoc(ctx, *wf)
+
+	expanded, err := woc.expandStepGroup(ctx, "[0]", wf.Spec.Templates[0].Steps[0].Steps, &stepsContext{scope: createScope(&wf.Spec.Templates[0])})
+	require.NoError(t, err)
+	require.Len(t, expanded, 1)
+
+	assert.Equal(t, `Hello"Argo`, expanded[0].Arguments.Parameters[0].Value.String())
 }
 
 func TestResourceDurationMetric(t *testing.T) {
@@ -188,6 +277,22 @@ func TestResourceDurationMetricDefaultMetricScope(t *testing.T) {
 	assert.Less(t, realTimeScope["workflow.duration"](), 1.0)
 }
 
+// Regression: when realtime metrics are evaluated before Status.StartedAt has
+// been populated (the first operate cycle of a brand-new workflow), the
+// workflow.duration closure must return 0 rather than time.Since(zero-time)
+// saturating to MaxInt64 nanoseconds (~9.22e9 seconds).
+func TestRealTimeWorkflowDurationBeforeStartedAt(t *testing.T) {
+	wf := wfv1.Workflow{}
+	woc := wfOperationCtx{
+		globalParams: make(common.Parameters),
+		wf:           &wf,
+	}
+
+	_, realTimeScope := woc.prepareDefaultMetricScope()
+
+	assert.InDelta(t, 0.0, realTimeScope["workflow.duration"](), 0)
+}
+
 var optionalArgumentAndParameter = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -221,7 +326,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:3.11
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs: {}
@@ -238,7 +343,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:3.11
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs:
@@ -302,15 +407,15 @@ status:
 `
 
 func TestOptionalArgumentAndParameter(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(optionalArgumentAndParameter)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
@@ -432,16 +537,288 @@ status:
     artifact-passing-subpath-rx7f4-511855021: true`
 
 func TestOptionalArgumentUseSubPathInLoop(t *testing.T) {
-	cancel, controller := newController()
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(artifactResolutionWhenOptionalAndSubpath)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+}
+
+// Regression test: referencing {{steps.<expanded_step>.id}} where the step was expanded
+// via withItems. Before the fix, buildLocalScope was not called for the StepGroup node
+// when a step had withItem/withParam expansion, so steps.<step>.id was unavailable
+// and caused a requeue.
+var stepsStepGroupIDRef = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: steps-stepgroup-id-ref
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: fanout
+        template: echo
+        arguments:
+          parameters:
+          - name: msg
+            value: '{{item}}'
+        withItems: [0, 1]
+    - - name: use-id
+        template: echo
+        arguments:
+          parameters:
+          - name: msg
+            value: '{{steps.fanout.id}}'
+  - name: echo
+    inputs:
+      parameters:
+      - name: msg
+    container:
+      image: alpine:3.23
+      command: [echo, '{{inputs.parameters.msg}}']
+status:
+  nodes:
+    steps-stepgroup-id-ref:
+      id: steps-stepgroup-id-ref
+      name: steps-stepgroup-id-ref
+      displayName: steps-stepgroup-id-ref
+      type: Steps
+      templateName: main
+      templateScope: local/steps-stepgroup-id-ref
+      phase: Running
+      startedAt: "2020-04-20T16:39:00Z"
+      children:
+      - steps-stepgroup-id-ref-3297018276
+    steps-stepgroup-id-ref-3297018276:
+      id: steps-stepgroup-id-ref-3297018276
+      name: steps-stepgroup-id-ref[0]
+      displayName: '[0]'
+      type: StepGroup
+      templateName: main
+      templateScope: local/steps-stepgroup-id-ref
+      boundaryID: steps-stepgroup-id-ref
+      phase: Succeeded
+      startedAt: "2020-04-20T16:39:00Z"
+      finishedAt: "2020-04-20T16:39:09Z"
+      children:
+      - steps-stepgroup-id-ref-2590864174
+      - steps-stepgroup-id-ref-2140877386
+    steps-stepgroup-id-ref-2590864174:
+      id: steps-stepgroup-id-ref-2590864174
+      name: steps-stepgroup-id-ref[0].fanout(0:0)
+      displayName: fanout(0:0)
+      type: Pod
+      templateName: echo
+      templateScope: local/steps-stepgroup-id-ref
+      boundaryID: steps-stepgroup-id-ref
+      phase: Succeeded
+      startedAt: "2020-04-20T16:39:00Z"
+      finishedAt: "2020-04-20T16:39:06Z"
+      inputs:
+        parameters:
+        - name: msg
+          value: "0"
+      outputs:
+        exitCode: "0"
+    steps-stepgroup-id-ref-2140877386:
+      id: steps-stepgroup-id-ref-2140877386
+      name: steps-stepgroup-id-ref[0].fanout(1:1)
+      displayName: fanout(1:1)
+      type: Pod
+      templateName: echo
+      templateScope: local/steps-stepgroup-id-ref
+      boundaryID: steps-stepgroup-id-ref
+      phase: Succeeded
+      startedAt: "2020-04-20T16:39:00Z"
+      finishedAt: "2020-04-20T16:39:07Z"
+      inputs:
+        parameters:
+        - name: msg
+          value: "1"
+      outputs:
+        exitCode: "0"
+  phase: Running
+  startedAt: "2020-04-20T16:39:00Z"
+`
+
+func TestStepsStepGroupIDReference(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	wf := wfv1.MustUnmarshalWorkflow(stepsStepGroupIDRef)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	woc.operate(ctx)
+
+	// Verify the use-id step was created (not stuck in requeue due to missing variable)
+	useIDNode := woc.wf.Status.Nodes.FindByDisplayName("use-id")
+	require.NotNil(t, useIDNode, "use-id node should be created when steps.fanout.id is resolvable")
+
+	// Verify the resolved value of steps.fanout.id matches the StepGroup node's ID
+	require.NotNil(t, useIDNode.Inputs)
+	require.Len(t, useIDNode.Inputs.Parameters, 1)
+	assert.Equal(t, "steps-stepgroup-id-ref-3297018276", useIDNode.Inputs.Parameters[0].Value.String())
+}
+
+var stepsWhenSkipNoRequeue = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: steps-when-skip-no-requeue-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: A
+        template: script-echo
+        when: "false"
+    - - name: B
+        when: "{{steps.A.status}} == Succeeded"
+        template: echo-with-param
+        arguments:
+          parameters:
+          - name: msg
+            value: "{{steps.A.outputs.result}}"
+  - name: script-echo
+    script:
+      image: alpine:3.23
+      command: [sh]
+      source: |
+        echo hello
+  - name: echo-with-param
+    inputs:
+      parameters:
+      - name: msg
+    container:
+      image: alpine:3.23
+      command: [echo, "{{inputs.parameters.msg}}"]
+`
+
+// TestStepsWhenSkipNoRequeue verifies that a step with a "when" clause that evaluates to false
+// does not cause a requeue even when other fields in the step reference outputs that don't exist.
+// Scenario: A is skipped (when: "false"), so A's outputs don't exist. B has
+// when: "{{steps.A.status}} == Succeeded" which evaluates to false ("Skipped == Succeeded").
+// B also references {{steps.A.outputs.result}} which is unresolvable since A was skipped.
+// Without the fix, the full ReplaceStrict would fail on the missing output and requeue.
+// With the fix, the when clause is resolved first, evaluates to false, and B is skipped early.
+func TestStepsWhenSkipNoRequeue(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	wf := wfv1.MustUnmarshalWorkflow(stepsWhenSkipNoRequeue)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	woc.operate(ctx)
+
+	// Workflow should succeed: A was skipped, B's when evaluated false so B was also skipped
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+
+	nodeB := woc.wf.Status.Nodes.FindByDisplayName("B")
+	require.NotNil(t, nodeB)
+	assert.Equal(t, wfv1.NodeSkipped, nodeB.Phase)
+}
+
+var stepsWhenExprWithParamFilter = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: steps-when-expr-filter-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      inputs:
+        parameters:
+          - name: test
+            value: 'true'
+          - name: list
+            value: "{{= concat(['always'], inputs.parameters.test == 'true' ? ['test'] : []) | toJSON() }}"
+      steps:
+        - - name: fst
+            template: run
+            when: |
+              "{{= get(item, 'type') ?? 'always' }}"
+              in
+              ("{{= inputs.parameters.list | fromJSON() | join('","') }}","")
+            withParam: |
+              [
+                { "name": "first", "type": "" },
+                { "name": "second", "type": "always" },
+                { "name": "third", "type": "test" },
+                { "name": "fourth" }
+              ]
+            arguments:
+              parameters:
+                - name: name
+                  value: "{{ item.name }}{{ inputs.parameters.list }}"
+    - name: run
+      inputs:
+        parameters:
+          - name: name
+      container:
+        image: alpine:3.23
+        command: [echo]
+        args: ["{{inputs.parameters.name}}"]
+`
+
+// TestStepsWhenExprWithParamFilter verifies that expression templates work correctly
+// in a steps workflow with withParam expansion and a when clause that filters items
+// using expression functions (concat, get, ??, toJSON, fromJSON, join).
+// This mirrors a real-world pattern where a dynamic list parameter controls which
+// withParam items execute.
+func TestStepsWhenExprWithParamFilter(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	wf := wfv1.MustUnmarshalWorkflow(stepsWhenExprWithParamFilter)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	woc.operate(ctx)
+
+	// Workflow is Running because pods haven't completed, but we can verify:
+	// 1. No error occurred during expression evaluation
+	// 2. All 4 items were expanded and scheduled (none were incorrectly skipped/errored)
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+
+	// "first" has type "" which matches empty string in the filter list
+	node0 := woc.wf.Status.Nodes.FindByDisplayName("fst(0:name:first,type:)")
+	require.NotNil(t, node0)
+	assert.Equal(t, wfv1.NodePending, node0.Phase)
+
+	// "second" has type "always" which is in the filter list
+	node1 := woc.wf.Status.Nodes.FindByDisplayName("fst(1:name:second,type:always)")
+	require.NotNil(t, node1)
+	assert.Equal(t, wfv1.NodePending, node1.Phase)
+
+	// "third" has type "test" which is in the filter list (test=true)
+	node2 := woc.wf.Status.Nodes.FindByDisplayName("fst(2:name:third,type:test)")
+	require.NotNil(t, node2)
+	assert.Equal(t, wfv1.NodePending, node2.Phase)
+
+	// "fourth" has no type, defaults to "always" via ?? operator
+	node3 := woc.wf.Status.Nodes.FindByDisplayName("fst(3:name:fourth)")
+	require.NotNil(t, node3)
+	assert.Equal(t, wfv1.NodePending, node3.Phase)
 }

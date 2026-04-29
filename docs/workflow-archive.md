@@ -59,6 +59,8 @@ If you know what are you doing you also have an option to skip migration:
     persistence:
       skipMigration: true
 
+For the list of SQL statements applied during migration, see [Database Migrations](database-migrations.md).
+
 ## Required database permissions
 
 ### Postgres

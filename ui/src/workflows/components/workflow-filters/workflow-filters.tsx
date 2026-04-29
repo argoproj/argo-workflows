@@ -29,6 +29,10 @@ const NAME_FILTERS = [
     {
         title: 'Name Exact',
         id: 'Exact' as const
+    },
+    {
+        title: 'Name Not Equals',
+        id: 'NotEquals' as const
     }
 ];
 

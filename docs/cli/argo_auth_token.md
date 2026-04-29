@@ -6,6 +6,18 @@ Print the auth token
 argo auth token [flags]
 ```
 
+### Examples
+
+```
+
+# Print the auth token for the current Argo Server
+  argo auth token
+
+# Save the token to a variable and send a request directly to the Argo API
+  TOKEN=$(argo auth token) && curl -H "Authorization: Bearer $TOKEN" https://<ARGO_SERVER>/api/v1/userinfo
+
+```
+
 ### Options
 
 ```
@@ -33,6 +45,7 @@ argo auth token [flags]
   -k, --insecure-skip-verify           If true, the Argo Server's certificate will not be checked for validity. This will make your HTTPS connections insecure. Defaults to the ARGO_INSECURE_SKIP_VERIFY environment variable.
       --instanceid string              submit with a specific controller's instance id label. Default to the ARGO_INSTANCEID environment variable.
       --kubeconfig string              Path to a kube config. Only required if out-of-cluster
+      --log-format string              The formatter to use for logs. One of: text|json (default "text")
       --loglevel string                Set the logging level. One of: debug|info|warn|error (default "info")
   -n, --namespace string               If present, the namespace scope for this CLI request
       --password string                Password for basic authentication to the API server

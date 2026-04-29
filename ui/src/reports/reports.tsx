@@ -4,7 +4,7 @@ import {ChartOptions} from 'chart.js';
 import 'chartjs-plugin-annotation';
 
 import * as React from 'react';
-import {useContext, useEffect, useState} from 'react';
+import {useContext, useEffect, useRef, useState} from 'react';
 import {Bar, ChartData} from 'react-chartjs-2';
 import {RouteComponentProps} from 'react-router-dom';
 
@@ -33,6 +33,7 @@ export function Reports({match, location, history}: RouteComponentProps<any>) {
     const {navigation} = useContext(Context);
 
     // state for URL, query, and label parameters
+    const isFirstRender = useRef(true);
     const [namespace, setNamespace] = useState<string>(nsUtils.getNamespace(match.params.namespace) || '');
     const [labels, setLabels] = useState((queryParams.get('labels') || '').split(',').filter(v => v !== ''));
     // internal state
@@ -41,6 +42,10 @@ export function Reports({match, location, history}: RouteComponentProps<any>) {
 
     // save history
     useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
         history.push(historyUrl('reports' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {namespace, labels: labels.join(',')}));
     }, [namespace, labels]);
 
@@ -96,12 +101,16 @@ export function Reports({match, location, history}: RouteComponentProps<any>) {
                             <p>
                                 Use this page to find costly or time consuming workflows. You must label workflows you want to report on. If you use <b>workflow templates</b> or{' '}
                                 <b>cron workflows</b>, your workflows will be automatically labelled. You&apos;ll probably need to enable the{' '}
-                                <a href='https://argo-workflows.readthedocs.io/en/latest/workflow-archive/'>workflow archive</a> to get long term data. Only the {limit} most recent
-                                workflows are shown.
+                                <a href='https://argo-workflows.readthedocs.io/en/latest/workflow-archive/' target='_blank' rel='noreferrer'>
+                                    workflow archive
+                                </a>{' '}
+                                to get long term data. Only the {limit} most recent workflows are shown.
                             </p>
                             <p>Select a namespace and at least one label to get a report.</p>
                             <p>
-                                <a href='https://argo-workflows.readthedocs.io/en/latest/cost-optimisation/'>Learn more about cost optimization</a>
+                                <a href='https://argo-workflows.readthedocs.io/en/latest/cost-optimisation/' target='_blank' rel='noreferrer'>
+                                    Learn more about cost optimization
+                                </a>
                             </p>
                         </ZeroState>
                     ) : (

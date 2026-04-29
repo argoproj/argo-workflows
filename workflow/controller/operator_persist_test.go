@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
@@ -10,11 +9,12 @@ import (
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
-	"github.com/argoproj/argo-workflows/v3/persist/sqldb/mocks"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
-	"github.com/argoproj/argo-workflows/v3/workflow/packer"
+	"github.com/argoproj/argo-workflows/v4/errors"
+	"github.com/argoproj/argo-workflows/v4/persist/sqldb/mocks"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
+	"github.com/argoproj/argo-workflows/v4/workflow/packer"
 )
 
 func getMockDBCtx(expectedError error, largeWfSupport bool) (*mocks.OffloadNodeStatusRepo, hydrator.Interface) {
@@ -49,18 +49,19 @@ spec:
 
 // TestPersistWithoutLargeWfSupport verifies persistence with no largeWFsuppport
 func TestPersistWithoutLargeWfSupport(t *testing.T) {
-	defer makeMax()()
-	cancel, controller := newController()
+	cleanup := makeMax()
+	defer cleanup()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 
-	ctx := context.Background()
+	ctx := logging.TestContext(t.Context())
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWfPersist)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	controller.offloadNodeStatusRepo, controller.hydrator = getMockDBCtx(fmt.Errorf("not found"), false)
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	wf, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
 	require.NoError(t, err)
@@ -70,18 +71,19 @@ func TestPersistWithoutLargeWfSupport(t *testing.T) {
 
 // TestPersistErrorWithoutLargeWfSupport verifies persistence error with no largeWFsuppport
 func TestPersistErrorWithoutLargeWfSupport(t *testing.T) {
-	defer makeMax()()
-	cancel, controller := newController()
+	cleanup := makeMax()
+	defer cleanup()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 
-	ctx := context.Background()
+	ctx := logging.TestContext(t.Context())
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWfPersist)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	controller.offloadNodeStatusRepo, controller.hydrator = getMockDBCtx(errors.New("23324", "test"), false)
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	wf, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
 	require.NoError(t, err)
@@ -90,18 +92,19 @@ func TestPersistErrorWithoutLargeWfSupport(t *testing.T) {
 
 // TestPersistWithLargeWfSupport verifies persistence with largeWFsuppport
 func TestPersistWithLargeWfSupport(t *testing.T) {
-	defer makeMax()()
-	cancel, controller := newController()
+	cleanup := makeMax()
+	defer cleanup()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 
-	ctx := context.Background()
+	ctx := logging.TestContext(t.Context())
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWfPersist)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	controller.offloadNodeStatusRepo, controller.hydrator = getMockDBCtx(nil, true)
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	wf, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
 	require.NoError(t, err)
@@ -118,18 +121,19 @@ func TestPersistWithLargeWfSupport(t *testing.T) {
 
 // TestPersistErrorWithLargeWfSupport verifies persistence error with largeWFsuppport
 func TestPersistErrorWithLargeWfSupport(t *testing.T) {
-	defer makeMax()()
-	cancel, controller := newController()
+	cleanup := makeMax()
+	defer cleanup()
+	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 
-	ctx := context.Background()
+	ctx := logging.TestContext(t.Context())
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWfPersist)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 
 	controller.offloadNodeStatusRepo, controller.hydrator = getMockDBCtx(errors.New("23324", "test"), true)
-	woc := newWorkflowOperationCtx(wf, controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	wf, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
 	require.NoError(t, err)

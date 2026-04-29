@@ -6,8 +6,8 @@ import (
 
 	"google.golang.org/grpc"
 
-	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	workflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
 type argoKubeWorkflowServiceClient struct {

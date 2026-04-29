@@ -24,6 +24,6 @@ spec:
             name: non-existent-secret
             key: secretkey
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo 'hello world'"]

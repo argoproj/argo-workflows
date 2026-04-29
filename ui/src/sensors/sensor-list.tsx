@@ -2,7 +2,7 @@ import {Page} from 'argo-ui/src/components/page/page';
 import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
 import classNames from 'classnames';
 import * as React from 'react';
-import {useContext, useEffect, useState} from 'react';
+import {useContext, useEffect, useRef, useState} from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
 
 import {ID} from '../event-flow/id';
@@ -26,7 +26,11 @@ import {SensorCreator} from './sensor-creator';
 import {SensorSidePanel} from './sensor-side-panel';
 import {statusIconClasses} from './utils';
 
-const learnMore = <a href='https://argoproj.github.io/argo-events/concepts/sensor/'>Learn more</a>;
+const learnMore = (
+    <a href='https://argoproj.github.io/argo-events/concepts/sensor/' target='_blank' rel='noreferrer'>
+        Learn more
+    </a>
+);
 
 export function SensorList({match, location, history}: RouteComponentProps<any>) {
     // boiler-plate
@@ -34,6 +38,7 @@ export function SensorList({match, location, history}: RouteComponentProps<any>)
     const {navigation} = useContext(Context);
 
     // state for URL and query parameters
+    const isFirstRender = useRef(true);
     const [namespace, setNamespace] = useState(nsUtils.getNamespace(match.params.namespace) || '');
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') === 'true');
     const [selectedNode, setSelectedNode] = useState<Node>(queryParams.get('selectedNode'));
@@ -46,17 +51,19 @@ export function SensorList({match, location, history}: RouteComponentProps<any>)
         [history]
     );
 
-    useEffect(
-        () =>
-            history.push(
-                historyUrl('sensors' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {
-                    namespace,
-                    sidePanel,
-                    selectedNode
-                })
-            ),
-        [namespace, sidePanel, selectedNode]
-    );
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+        history.push(
+            historyUrl('sensors' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {
+                namespace,
+                sidePanel,
+                selectedNode
+            })
+        );
+    }, [namespace, sidePanel, selectedNode]);
 
     // internal state
     const [error, setError] = useState<Error>();

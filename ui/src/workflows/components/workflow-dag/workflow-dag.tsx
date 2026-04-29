@@ -56,8 +56,8 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         this.state = {
             expandNodes: new Set(),
             showArtifacts: localStorage.getItem('showArtifacts') !== 'false',
-            showInvokingTemplateName: localStorage.getItem('showInvokingTemplateName') !== 'false',
-            showTemplateRefsGrouping: localStorage.getItem('showTemplateRefsGrouping') !== 'false'
+            showInvokingTemplateName: localStorage.getItem('showInvokingTemplateName') === 'true',
+            showTemplateRefsGrouping: localStorage.getItem('showTemplateRefsGrouping') === 'true'
         };
     }
 
@@ -92,18 +92,20 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         );
     }
 
-    private nodeLabel(n: NodeStatus, parent?: NodeStatus) {
+    private nodeLabel(n: NodeStatus) {
         const phase = n.type === 'Suspend' && n.phase === 'Running' ? 'Suspended' : n.phase;
         let label = shortNodeName(n);
 
         if (this.state.showInvokingTemplateName) {
-            label = `${parent?.templateRef?.name ?? parent?.templateName ?? n.templateName}:${label}`;
+            label = n.templateName ? `${n.templateName}:${label}` : label;
         }
+
+        const icon = n?.memoizationStatus?.hit ? icons['Memoized'] : icons[phase] || icons.Pending;
 
         return {
             label,
             genre: n.type,
-            icon: icons[phase] || icons.Pending,
+            icon: icon,
             progress: phase === 'Running' && progress(n),
             classNames: phase,
             tags: new Set([getNodeLabelTemplateName(n)])
@@ -228,7 +230,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                 }
                 const isExpanded: boolean = this.state.expandNodes.has('*') || this.state.expandNodes.has(item.nodeName);
 
-                nodes.set(item.nodeName, this.nodeLabel(child, allNodes[item.parent]));
+                nodes.set(item.nodeName, this.nodeLabel(child));
                 edges.set({v: item.parent, w: item.nodeName}, {});
 
                 // If we have already considered the children of this node, don't consider them again

@@ -5,15 +5,15 @@ import (
 	"os"
 	"sort"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
-	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/printer"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/common"
+	workflowarchivepkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflowarchive"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/printer"
 )
 
 func NewListCommand() *cobra.Command {
@@ -46,7 +46,7 @@ func NewListCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			namespace := client.Namespace()
+			namespace := client.Namespace(ctx)
 			workflows, err := listArchivedWorkflows(ctx, serviceClient, namespace, selector, chunkSize)
 			if err != nil {
 				return err
@@ -67,7 +67,8 @@ func listArchivedWorkflows(ctx context.Context, serviceClient workflowarchivepkg
 	}
 	var workflows wfv1.Workflows
 	for {
-		log.WithField("listOpts", listOpts).Debug()
+		logger := logging.RequireLoggerFromContext(ctx)
+		logger.WithField("listOpts", listOpts).Debug(ctx, "Listing archived workflows")
 		resp, err := serviceClient.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{Namespace: namespace, ListOptions: listOpts})
 		if err != nil {
 			return nil, err

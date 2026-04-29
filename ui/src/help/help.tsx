@@ -1,7 +1,6 @@
 import {Page} from 'argo-ui/src/components/page/page';
 import * as React from 'react';
 
-import {uiUrl} from '../shared/base';
 import {useCollectEvent} from '../shared/use-collect-event';
 
 import './help.scss';
@@ -15,10 +14,10 @@ export function Help() {
                     <div className='help-box'>
                         <div className='help-box__ico help-box__ico--manual' />
                         <h3>Documentation</h3>
-                        <a href='https://argo-workflows.readthedocs.io/en/latest' target='_blank' className='help-box__link' rel='noreferrer'>
+                        <a className='help-box__link' target='_blank' href='https://argo-workflows.readthedocs.io/en/latest' rel='noreferrer'>
                             Online Help
                         </a>
-                        <a className='help-box__link' target='_blank' href={uiUrl('apidocs')} rel='noreferrer'>
+                        <a className='help-box__link' target='_blank' href='https://argo-workflows.readthedocs.io/en/latest/swagger/' rel='noreferrer'>
                             API Docs
                         </a>
                     </div>

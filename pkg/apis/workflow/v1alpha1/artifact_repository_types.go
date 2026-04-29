@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-var (
+const (
 	// DefaultArchivePattern is the default pattern when storing artifacts in an archive repository
 	DefaultArchivePattern = "{{workflow.name}}/{{pod.name}}"
 )
@@ -27,6 +27,8 @@ type ArtifactRepository struct {
 	GCS *GCSArtifactRepository `json:"gcs,omitempty" protobuf:"bytes,6,opt,name=gcs"`
 	// Azure stores artifact in an Azure Storage account
 	Azure *AzureArtifactRepository `json:"azure,omitempty" protobuf:"bytes,7,opt,name=azure"`
+	// Plugin stores artifact in a plugin-specific artifact repository
+	Plugin *PluginArtifactRepository `json:"plugin,omitempty" protobuf:"bytes,8,opt,name=plugin"`
 }
 
 func (a *ArtifactRepository) IsArchiveLogs() bool {
@@ -38,22 +40,26 @@ type ArtifactRepositoryType interface {
 }
 
 func (a *ArtifactRepository) Get() ArtifactRepositoryType {
-	if a == nil {
+	switch {
+	case a == nil:
 		return nil
-	} else if a.Artifactory != nil {
+	case a.Artifactory != nil:
 		return a.Artifactory
-	} else if a.Azure != nil {
+	case a.Azure != nil:
 		return a.Azure
-	} else if a.GCS != nil {
+	case a.GCS != nil:
 		return a.GCS
-	} else if a.HDFS != nil {
+	case a.HDFS != nil:
 		return a.HDFS
-	} else if a.OSS != nil {
+	case a.OSS != nil:
 		return a.OSS
-	} else if a.S3 != nil {
+	case a.Plugin != nil:
+		return a.Plugin
+	case a.S3 != nil:
 		return a.S3
+	default:
+		return nil
 	}
-	return nil
 }
 
 // ToArtifactLocation returns the artifact location set with default template key:
@@ -78,7 +84,8 @@ type S3ArtifactRepository struct {
 	KeyFormat string `json:"keyFormat,omitempty" protobuf:"bytes,2,opt,name=keyFormat"`
 
 	// KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts.
-	// DEPRECATED. Use KeyFormat instead
+	//
+	// Deprecated: Use KeyFormat instead.
 	KeyPrefix string `json:"keyPrefix,omitempty" protobuf:"bytes,3,opt,name=keyPrefix"`
 }
 
@@ -134,7 +141,7 @@ type ArtifactoryArtifactRepository struct {
 func (r *ArtifactoryArtifactRepository) IntoArtifactLocation(l *ArtifactLocation) {
 	url := r.RepoURL
 	if !strings.HasSuffix(url, "/") {
-		url = url + "/"
+		url += "/"
 	}
 	k := r.KeyFormat
 	if k == "" {
@@ -178,4 +185,17 @@ func (r *HDFSArtifactRepository) IntoArtifactLocation(l *ArtifactLocation) {
 	l.HDFS = &HDFSArtifact{HDFSConfig: r.HDFSConfig, Path: p, Force: r.Force}
 }
 
-// MetricsConfig defines a config for a metrics server
+// PluginArtifactRepository defines the controller configuration for a plugin artifact repository
+type PluginArtifactRepository struct {
+	Name          ArtifactPluginName `json:"name" protobuf:"bytes,1,opt,name=name"`
+	KeyFormat     string             `json:"keyFormat,omitempty" protobuf:"bytes,2,opt,name=keyFormat"`
+	Configuration string             `json:"configuration" protobuf:"bytes,3,opt,name=configuration"`
+}
+
+func (r *PluginArtifactRepository) IntoArtifactLocation(l *ArtifactLocation) {
+	k := r.KeyFormat
+	if k == "" {
+		k = DefaultArchivePattern
+	}
+	l.Plugin = &PluginArtifact{Name: r.Name, Configuration: r.Configuration, Key: k}
+}

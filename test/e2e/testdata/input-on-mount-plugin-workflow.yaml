@@ -1,0 +1,44 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: input-on-mount-plugin-
+spec:
+  entrypoint: main
+  artifactRepositoryRef:
+    configMap: artifact-repositories
+    key: plugin-v1
+  templates:
+    - name: main
+      steps:
+        - - name: create-artifact
+            template: create
+        - - name: read-artifact
+            template: read
+            arguments:
+              artifacts:
+                - name: in-0
+                  from: "{{steps.create-artifact.outputs.artifacts.artifact}}"
+    - name: create
+      container:
+        image: argoproj/argosay:v2
+        args: [ echo, "hello plugin mount", /tmp/input.txt ]
+      outputs:
+        artifacts:
+          - name: artifact
+            path: /tmp/input.txt
+            archive:
+              none: {}
+    - name: read
+      volumes:
+        - name: mnt
+          emptyDir: { }
+      container:
+        image: argoproj/argosay:v2
+        args: [ cat , /mnt/in-0 ]
+        volumeMounts:
+          - name: mnt
+            mountPath: /mnt
+      inputs:
+        artifacts:
+          - name: in-0
+            path: /mnt/in-0

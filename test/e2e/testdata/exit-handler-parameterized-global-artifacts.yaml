@@ -1,0 +1,62 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: exit-handler-with-artifacts-
+spec:
+  onExit: exit-handler
+  entrypoint: main
+  arguments:
+    parameters:
+    - name: params
+      value: |
+        [
+          { "variable": "car"},
+          { "variable": "bike"}
+        ]
+  templates:
+    - name: main
+      steps:
+        - - name: step-1
+            template: output
+            arguments:
+              parameters:
+                - name: variable
+                  value: "{{item.variable}}"
+            withParam: "{{workflow.parameters.params}}"
+
+    - name: output
+      inputs:
+        parameters:
+        - name: variable
+      script:
+        image: argoproj/argosay:v2
+        command: [sh, -c]
+        args: ["echo Have {{inputs.parameters.variable}} > /result.txt; cat /result.txt"]
+      outputs:
+        artifacts:
+          - name: result-{{inputs.parameters.variable}}
+            path: /result.txt
+            globalName: output-result-{{inputs.parameters.variable}}
+
+    - name: printer
+      inputs:
+        artifacts:
+          - name: message-bike
+            path: /tmp/message-bike
+          - name: message-car
+            path: /tmp/message-car
+      container:
+        image: argoproj/argosay:v2
+        command: [sh, -c]
+        args: ["cat /tmp/message*"]
+
+    - name: exit-handler
+      steps:
+        - - name: printer
+            template: printer
+            arguments:
+              artifacts:
+              - name: message-car
+                from: "{{workflow.outputs.artifacts.output-result-car}}"
+              - name: message-bike
+                from: "{{workflow.outputs.artifacts.output-result-bike}}"

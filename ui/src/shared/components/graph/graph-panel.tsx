@@ -39,11 +39,13 @@ interface Props {
     onNodeSelect?: (id: Node) => void;
 }
 
+const defaultNodeSize = 64;
+
 const merge = (a: {[key: string]: boolean}, b: {[key: string]: boolean}) => b && Object.assign(Object.assign({}, b), a);
 
 export function GraphPanel(props: Props) {
     const storage = new ScopedLocalStorage('graph/' + props.storageScope);
-    const [nodeSize, setNodeSize] = useState<number>(storage.getItem('nodeSize', props.nodeSize));
+    const [nodeSize, setNodeSize] = useState<number>(storage.getItem('nodeSize', props.nodeSize || defaultNodeSize));
     const [horizontal, setHorizontal] = useState<boolean>(storage.getItem('horizontal', !!props.horizontal));
     const [fast, setFast] = useState<boolean>(storage.getItem('fast', false));
     const [nodeGenres, setNodeGenres] = useState<INodeSelectionMap>(storage.getItem('nodeGenres', props.nodeGenres));
@@ -52,7 +54,7 @@ export function GraphPanel(props: Props) {
     const [checkAll, setCheckAll] = useState<boolean>(true);
     const [nodeSearchKeyword, setNodeSearchKeyword] = useState<string>('');
 
-    useEffect(() => storage.setItem('nodeSize', nodeSize, props.nodeSize), [nodeSize]);
+    useEffect(() => storage.setItem('nodeSize', nodeSize, props.nodeSize || defaultNodeSize), [nodeSize]);
     useEffect(() => storage.setItem('horizontal', horizontal, props.horizontal), [horizontal]);
     useEffect(() => storage.setItem('fast', fast, false), [fast]);
     useEffect(() => storage.setItem('nodeGenres', nodeGenres, props.nodeGenres), [nodeGenres, props.nodeGenres]);
@@ -261,13 +263,13 @@ export function GraphPanel(props: Props) {
                                             )}
                                             <GraphIcon icon={label.icon} progress={label.progress} nodeSize={nodeSize} />
                                             {props.hideNodeTypes || (
-                                                <text y={nodeSize * 0.33} className='type' fontSize={(12 * nodeSize) / GraphPanel.defaultProps.nodeSize}>
+                                                <text y={nodeSize * 0.33} className='type' fontSize={(12 * nodeSize) / defaultNodeSize}>
                                                     {label.genre}
                                                 </text>
                                             )}
                                         </g>
                                         <g transform={`translate(0,${(nodeSize * 3) / 4})`}>
-                                            <text className='node-label' fontSize={(18 * nodeSize) / GraphPanel.defaultProps.nodeSize}>
+                                            <text className='node-label' fontSize={(18 * nodeSize) / defaultNodeSize}>
                                                 {formatLabel(label.label)}
                                             </text>
                                         </g>
@@ -280,7 +282,3 @@ export function GraphPanel(props: Props) {
         </div>
     );
 }
-
-GraphPanel.defaultProps = {
-    nodeSize: 64
-};

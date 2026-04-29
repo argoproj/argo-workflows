@@ -9,13 +9,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	apiv1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/test/e2e/fixtures"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 type ExecutorPluginsSuite struct {
@@ -38,11 +36,11 @@ func (s *ExecutorPluginsSuite) TestTemplateExecutor() {
 			require.Len(t, pods, 1)
 			pod := pods[0]
 			spec := pod.Spec
-			assert.Equal(t, ptr.To(false), spec.AutomountServiceAccountToken)
+			assert.Equal(t, new(false), spec.AutomountServiceAccountToken)
 			assert.Equal(t, &apiv1.PodSecurityContext{
-				RunAsUser:      ptr.To(int64(8737)),
-				RunAsNonRoot:   ptr.To(true),
-				SeccompProfile: &v1.SeccompProfile{Type: "RuntimeDefault"},
+				RunAsUser:      new(int64(8737)),
+				RunAsNonRoot:   new(true),
+				SeccompProfile: &apiv1.SeccompProfile{Type: "RuntimeDefault"},
 			}, spec.SecurityContext)
 			require.Len(t, spec.Volumes, 4)
 			assert.Contains(t, spec.Volumes[0].Name, "kube-api-access-")
@@ -66,13 +64,13 @@ func (s *ExecutorPluginsSuite) TestTemplateExecutor() {
 				assert.Contains(t, agent.VolumeMounts[1].Name, "kube-api-access-")
 				assert.Equal(t, "argo-workflows-agent-ca-certificates", agent.VolumeMounts[2].Name)
 				assert.Equal(t, &apiv1.SecurityContext{
-					RunAsUser:                ptr.To(int64(8737)),
-					RunAsNonRoot:             ptr.To(true),
-					AllowPrivilegeEscalation: ptr.To(false),
-					ReadOnlyRootFilesystem:   ptr.To(true),
-					Privileged:               ptr.To(false),
+					RunAsUser:                new(int64(8737)),
+					RunAsNonRoot:             new(true),
+					AllowPrivilegeEscalation: new(false),
+					ReadOnlyRootFilesystem:   new(true),
+					Privileged:               new(false),
 					Capabilities:             &apiv1.Capabilities{Drop: []apiv1.Capability{"ALL"}},
-					SeccompProfile:           &v1.SeccompProfile{Type: "RuntimeDefault"},
+					SeccompProfile:           &apiv1.SeccompProfile{Type: "RuntimeDefault"},
 				}, agent.SecurityContext)
 			}
 		}).
