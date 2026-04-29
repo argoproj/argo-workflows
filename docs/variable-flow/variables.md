@@ -47,7 +47,7 @@ Auto-generated from `util/variables` via `GenerateMarkdown()`. 83 variables regi
 | `steps.<name>.outputs.artifacts.<a>`      | node-ref      | wfv1.Artifact  | after-node-succeeded                                       | Named output artifact of the referenced node                                                                                                                                                                                                                                                                                                                                            |
 | `steps.<name>.outputs.parameters.<p>`     | node-ref      | string         | after-node-succeeded                                       | Named output parameter of the referenced node                                                                                                                                                                                                                                                                                                                                           |
 | `steps.<name>.outputs.result`             | node-ref      | string         | after-node-succeeded                                       | Captured stdout (non-loop nodes)                                                                                                                                                                                                                                                                                                                                                        |
-| `steps.<name>.startedAt`                  | node-ref      | string         | after-pod-start                                            | RFC3339 start time                                                                                                                                                                                                                                                                                                                                                                      |
+| `steps.<name>.startedAt`                  | node-ref      | string         | after-node-init                                            | RFC3339 start time (set at controller node-init, before pod creation; populated for all node types)                                                                                                                                                                                                                                                                                     |
 | `steps.<name>.status`                     | node-ref      | string         | after-node-init                                            | Node phase                                                                                                                                                                                                                                                                                                                                                                              |
 | `steps.name`                              | node-ctx      | string         | pre-dispatch, during-execute                               | Name of the current step (inside a Steps template body)                                                                                                                                                                                                                                                                                                                                 |
 | `tasks.<loopName>.outputs.parameters`     | node-ref      | json           | after-loop                                                 | JSON array of per-child output-parameter maps                                                                                                                                                                                                                                                                                                                                           |
@@ -61,7 +61,7 @@ Auto-generated from `util/variables` via `GenerateMarkdown()`. 83 variables regi
 | `tasks.<name>.outputs.artifacts.<a>`      | node-ref      | wfv1.Artifact  | after-node-succeeded                                       | Named output artifact of the referenced node                                                                                                                                                                                                                                                                                                                                            |
 | `tasks.<name>.outputs.parameters.<p>`     | node-ref      | string         | after-node-succeeded                                       | Named output parameter of the referenced node                                                                                                                                                                                                                                                                                                                                           |
 | `tasks.<name>.outputs.result`             | node-ref      | string         | after-node-succeeded                                       | Captured stdout (non-loop nodes)                                                                                                                                                                                                                                                                                                                                                        |
-| `tasks.<name>.startedAt`                  | node-ref      | string         | after-pod-start                                            | RFC3339 start time                                                                                                                                                                                                                                                                                                                                                                      |
+| `tasks.<name>.startedAt`                  | node-ref      | string         | after-node-init                                            | RFC3339 start time (set at controller node-init, before pod creation; populated for all node types)                                                                                                                                                                                                                                                                                     |
 | `tasks.<name>.status`                     | node-ref      | string         | after-node-init                                            | Node phase                                                                                                                                                                                                                                                                                                                                                                              |
 | `tasks.name`                              | node-ctx      | string         | pre-dispatch, during-execute                               | Name of the current task (inside a DAG template body)                                                                                                                                                                                                                                                                                                                                   |
 | `workflow.annotations`                    | global        | json           | workflow-start, pre-dispatch, during-execute, exit-handler | All workflow annotations as a JSON object (deprecated — use workflow.annotations.json)                                                                                                                                                                                                                                                                                                  |
@@ -143,36 +143,36 @@ Auto-generated from `util/variables` via `GenerateMarkdown()`. 83 variables regi
 
 ### Node-Ref
 
-|                    Key                    |     Type      |         Availability         |                              Description                              |
-|-------------------------------------------|---------------|------------------------------|-----------------------------------------------------------------------|
-| `steps.<loopName>.outputs.parameters`     | json          | after-loop                   | JSON array of per-child output-parameter maps                         |
-| `steps.<loopName>.outputs.parameters.<p>` | json          | after-loop                   | JSON array of values for a named parameter across all children        |
-| `steps.<loopName>.outputs.result`         | json          | after-loop                   | JSON array of child results (withItems/withParam)                     |
-| `steps.<name>.exitCode`                   | string        | after-node-complete          | Container exit code                                                   |
-| `steps.<name>.finishedAt`                 | string        | after-node-complete          | RFC3339 finish time                                                   |
-| `steps.<name>.hostNodeName`               | string        | after-pod-start              | Underlying k8s node name                                              |
-| `steps.<name>.id`                         | string        | after-node-init              | Node ID                                                               |
-| `steps.<name>.ip`                         | string        | after-pod-start              | Pod IP                                                                |
-| `steps.<name>.outputs.artifacts.<a>`      | wfv1.Artifact | after-node-succeeded         | Named output artifact of the referenced node                          |
-| `steps.<name>.outputs.parameters.<p>`     | string        | after-node-succeeded         | Named output parameter of the referenced node                         |
-| `steps.<name>.outputs.result`             | string        | after-node-succeeded         | Captured stdout (non-loop nodes)                                      |
-| `steps.<name>.startedAt`                  | string        | after-pod-start              | RFC3339 start time                                                    |
-| `steps.<name>.status`                     | string        | after-node-init              | Node phase                                                            |
-| `tasks.<loopName>.outputs.parameters`     | json          | after-loop                   | JSON array of per-child output-parameter maps                         |
-| `tasks.<loopName>.outputs.parameters.<p>` | json          | after-loop                   | JSON array of values for a named parameter across all children        |
-| `tasks.<loopName>.outputs.result`         | json          | after-loop                   | JSON array of child results (withItems/withParam)                     |
-| `tasks.<name>.exitCode`                   | string        | after-node-complete          | Container exit code                                                   |
-| `tasks.<name>.finishedAt`                 | string        | after-node-complete          | RFC3339 finish time                                                   |
-| `tasks.<name>.hostNodeName`               | string        | after-pod-start              | Underlying k8s node name                                              |
-| `tasks.<name>.id`                         | string        | after-node-init              | Node ID                                                               |
-| `tasks.<name>.ip`                         | string        | after-pod-start              | Pod IP                                                                |
-| `tasks.<name>.outputs.artifacts.<a>`      | wfv1.Artifact | after-node-succeeded         | Named output artifact of the referenced node                          |
-| `tasks.<name>.outputs.parameters.<p>`     | string        | after-node-succeeded         | Named output parameter of the referenced node                         |
-| `tasks.<name>.outputs.result`             | string        | after-node-succeeded         | Captured stdout (non-loop nodes)                                      |
-| `tasks.<name>.startedAt`                  | string        | after-pod-start              | RFC3339 start time                                                    |
-| `tasks.<name>.status`                     | string        | after-node-init              | Node phase                                                            |
-| `workflow.outputs.artifacts.<name>`       | wfv1.Artifact | during-execute, exit-handler | Global output artifact (lifted via outputs.artifacts[*].globalName)   |
-| `workflow.outputs.parameters.<name>`      | string        | during-execute, exit-handler | Global output parameter (lifted via outputs.parameters[*].globalName) |
+|                    Key                    |     Type      |         Availability         |                                             Description                                             |
+|-------------------------------------------|---------------|------------------------------|-----------------------------------------------------------------------------------------------------|
+| `steps.<loopName>.outputs.parameters`     | json          | after-loop                   | JSON array of per-child output-parameter maps                                                       |
+| `steps.<loopName>.outputs.parameters.<p>` | json          | after-loop                   | JSON array of values for a named parameter across all children                                      |
+| `steps.<loopName>.outputs.result`         | json          | after-loop                   | JSON array of child results (withItems/withParam)                                                   |
+| `steps.<name>.exitCode`                   | string        | after-node-complete          | Container exit code                                                                                 |
+| `steps.<name>.finishedAt`                 | string        | after-node-complete          | RFC3339 finish time                                                                                 |
+| `steps.<name>.hostNodeName`               | string        | after-pod-start              | Underlying k8s node name                                                                            |
+| `steps.<name>.id`                         | string        | after-node-init              | Node ID                                                                                             |
+| `steps.<name>.ip`                         | string        | after-pod-start              | Pod IP                                                                                              |
+| `steps.<name>.outputs.artifacts.<a>`      | wfv1.Artifact | after-node-succeeded         | Named output artifact of the referenced node                                                        |
+| `steps.<name>.outputs.parameters.<p>`     | string        | after-node-succeeded         | Named output parameter of the referenced node                                                       |
+| `steps.<name>.outputs.result`             | string        | after-node-succeeded         | Captured stdout (non-loop nodes)                                                                    |
+| `steps.<name>.startedAt`                  | string        | after-node-init              | RFC3339 start time (set at controller node-init, before pod creation; populated for all node types) |
+| `steps.<name>.status`                     | string        | after-node-init              | Node phase                                                                                          |
+| `tasks.<loopName>.outputs.parameters`     | json          | after-loop                   | JSON array of per-child output-parameter maps                                                       |
+| `tasks.<loopName>.outputs.parameters.<p>` | json          | after-loop                   | JSON array of values for a named parameter across all children                                      |
+| `tasks.<loopName>.outputs.result`         | json          | after-loop                   | JSON array of child results (withItems/withParam)                                                   |
+| `tasks.<name>.exitCode`                   | string        | after-node-complete          | Container exit code                                                                                 |
+| `tasks.<name>.finishedAt`                 | string        | after-node-complete          | RFC3339 finish time                                                                                 |
+| `tasks.<name>.hostNodeName`               | string        | after-pod-start              | Underlying k8s node name                                                                            |
+| `tasks.<name>.id`                         | string        | after-node-init              | Node ID                                                                                             |
+| `tasks.<name>.ip`                         | string        | after-pod-start              | Pod IP                                                                                              |
+| `tasks.<name>.outputs.artifacts.<a>`      | wfv1.Artifact | after-node-succeeded         | Named output artifact of the referenced node                                                        |
+| `tasks.<name>.outputs.parameters.<p>`     | string        | after-node-succeeded         | Named output parameter of the referenced node                                                       |
+| `tasks.<name>.outputs.result`             | string        | after-node-succeeded         | Captured stdout (non-loop nodes)                                                                    |
+| `tasks.<name>.startedAt`                  | string        | after-node-init              | RFC3339 start time (set at controller node-init, before pod creation; populated for all node types) |
+| `tasks.<name>.status`                     | string        | after-node-init              | Node phase                                                                                          |
+| `workflow.outputs.artifacts.<name>`       | wfv1.Artifact | during-execute, exit-handler | Global output artifact (lifted via outputs.artifacts[*].globalName)                                 |
+| `workflow.outputs.parameters.<name>`      | string        | during-execute, exit-handler | Global output parameter (lifted via outputs.parameters[*].globalName)                               |
 
 ### Item
 
@@ -317,21 +317,21 @@ Which variables are in scope for each template type. `•` = in scope, blank = n
 
 ## 4. Grouped by LifecyclePhase
 
-|        Phase         |                                                                                      Meaning                                                                                      |
-|----------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| workflow-start       | Globals populated once, up front, before any template runs.                                                                                                                       |
-| pre-dispatch         | Immediately before a template's pod is created; pod.name / node.name / steps.name / tasks.name are set.                                                                           |
-| during-execute       | Inside a template body; inputs.* are bound.                                                                                                                                       |
-| inside-loop          | Inside a withItems/withParam expansion; `item`, `item.<key>` are bound.                                                                                                           |
-| inside-retry         | Inside a retryStrategy template; retries.* are bound.                                                                                                                             |
-| after-node-init      | A referenced node has been initialised (has an ID / phase). Earliest steps.X.id, steps.X.status.                                                                                  |
-| after-pod-start      | The referenced node's pod has started; startedAt, ip, hostNodeName are populated.                                                                                                 |
-| after-node-complete  | The referenced node has finished (any terminal phase); finishedAt, exitCode are populated.                                                                                        |
-| after-node-succeeded | The referenced node has finished with Succeeded; outputs.result, outputs.parameters.*, outputs.artifacts.* are populated.                                                         |
-| after-loop           | Every child of a withItems/withParam group has completed; aggregated outputs appear.                                                                                              |
-| exit-handler         | The onExit template runs. workflow.{status,failures,duration} are final. Any earlier-phase variable is also visible here (scope accumulates).                                     |
-| metric-emission      | Inside a Prometheus metric expression. Adds duration, status, exitCode, `resourcesDuration.<resource>`, and the current node's bare outputs.result / `outputs.parameters.<name>`. |
-| cron-eval            | Evaluating a CronWorkflow `spec.when` or `spec.stopStrategy.expression`. Adds cronworkflow.* variables describing the cron object's identity, labels/annotations, and run counts. |
+|        Phase         |                                                                                                                        Meaning                                                                                                                        |
+|----------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| workflow-start       | Globals populated once, up front, before any template runs.                                                                                                                                                                                           |
+| pre-dispatch         | Immediately before a template's pod is created; pod.name / node.name / steps.name / tasks.name are set.                                                                                                                                               |
+| during-execute       | Inside a template body; inputs.* are bound.                                                                                                                                                                                                           |
+| inside-loop          | Inside a withItems/withParam expansion; `item`, `item.<key>` are bound.                                                                                                                                                                               |
+| inside-retry         | Inside a retryStrategy template; retries.* are bound.                                                                                                                                                                                                 |
+| after-node-init      | A referenced node has been initialised by the controller (id, status, startedAt are populated — startedAt is set at node-init time, before any pod is created, for all node types including non-pod ones like Suspend / HTTP / Plugin / Steps / DAG). |
+| after-pod-start      | The referenced node's pod has started; ip, hostNodeName are populated (k8s-supplied; meaningless for non-pod node types).                                                                                                                             |
+| after-node-complete  | The referenced node has finished (any terminal phase); finishedAt, exitCode are populated.                                                                                                                                                            |
+| after-node-succeeded | The referenced node has finished with Succeeded; outputs.result, outputs.parameters.*, outputs.artifacts.* are populated.                                                                                                                             |
+| after-loop           | Every child of a withItems/withParam group has completed; aggregated outputs appear.                                                                                                                                                                  |
+| exit-handler         | The onExit template runs. workflow.{status,failures,duration} are final. Any earlier-phase variable is also visible here (scope accumulates).                                                                                                         |
+| metric-emission      | Inside a Prometheus metric expression. Adds duration, status, exitCode, `resourcesDuration.<resource>`, and the current node's bare outputs.result / `outputs.parameters.<name>`.                                                                     |
+| cron-eval            | Evaluating a CronWorkflow `spec.when` or `spec.stopStrategy.expression`. Adds cronworkflow.* variables describing the cron object's identity, labels/annotations, and run counts.                                                                     |
 
 ### workflow-start (20 variables)
 
@@ -445,25 +445,25 @@ Which variables are in scope for each template type. `•` = in scope, blank = n
 | `lastRetry.status`   | retry | string |
 | `retries`            | retry | string |
 
-### after-node-init (4 variables)
+### after-node-init (6 variables)
 
-|          Key          |   Kind   |  Type  |
-|-----------------------|----------|--------|
-| `steps.<name>.id`     | node-ref | string |
-| `steps.<name>.status` | node-ref | string |
-| `tasks.<name>.id`     | node-ref | string |
-| `tasks.<name>.status` | node-ref | string |
+|           Key            |   Kind   |  Type  |
+|--------------------------|----------|--------|
+| `steps.<name>.id`        | node-ref | string |
+| `steps.<name>.startedAt` | node-ref | string |
+| `steps.<name>.status`    | node-ref | string |
+| `tasks.<name>.id`        | node-ref | string |
+| `tasks.<name>.startedAt` | node-ref | string |
+| `tasks.<name>.status`    | node-ref | string |
 
-### after-pod-start (6 variables)
+### after-pod-start (4 variables)
 
 |             Key             |   Kind   |  Type  |
 |-----------------------------|----------|--------|
 | `steps.<name>.hostNodeName` | node-ref | string |
 | `steps.<name>.ip`           | node-ref | string |
-| `steps.<name>.startedAt`    | node-ref | string |
 | `tasks.<name>.hostNodeName` | node-ref | string |
 | `tasks.<name>.ip`           | node-ref | string |
-| `tasks.<name>.startedAt`    | node-ref | string |
 
 ### after-node-complete (4 variables)
 

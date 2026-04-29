@@ -26,9 +26,15 @@ func nodeRef(pfx string, inKind v.TemplateKind) NodeRefKeys {
 		})
 	}
 	return NodeRefKeys{
-		ID:            def(".id", "Node ID", v.PhAfterNodeInit),
-		Status:        def(".status", "Node phase", v.PhAfterNodeInit),
-		StartedAt:     def(".startedAt", "RFC3339 start time", v.PhAfterPodStart),
+		ID:     def(".id", "Node ID", v.PhAfterNodeInit),
+		Status: def(".status", "Node phase", v.PhAfterNodeInit),
+		// StartedAt is populated by initializeNode (operator.go:2920) the
+		// moment the controller creates the NodeStatus — before any pod
+		// is created, and for non-pod node types (Suspend / HTTP / Plugin
+		// / Steps / DAG) regardless. The validator adds it to scope
+		// unconditionally at validate.go:1108. Belongs with id / status,
+		// not with ip / hostNodeName.
+		StartedAt:     def(".startedAt", "RFC3339 start time (set at controller node-init, before pod creation; populated for all node types)", v.PhAfterNodeInit),
 		IP:            def(".ip", "Pod IP", v.PhAfterPodStart),
 		HostNodeName:  def(".hostNodeName", "Underlying k8s node name", v.PhAfterPodStart),
 		FinishedAt:    def(".finishedAt", "RFC3339 finish time", v.PhAfterNodeComplete),
