@@ -85,25 +85,41 @@ func writeMatrix(mdoc *md.Markdown, all []*Key) {
 		row := make([]string, len(cols)+1)
 		row[0] = md.Code(k.template)
 		hasAll := slices.Contains(k.appliesTo, TmplAll)
-		hasCronEval := slices.Contains(k.phases, PhCronEval)
 		for j, c := range cols {
 			explicit := slices.Contains(k.appliesTo, c)
-			// Cron-workflow templates only run during the cron-eval phase. A
-			// variable with no PhCronEval phase is never reachable from a
-			// CronWorkflow expression even if its appliesTo is TmplAll.
-			if c == TmplCronWorkflow && !hasCronEval {
+			// The "any" column reports raw eligibility, not reachability.
+			if c == TmplAll {
 				if explicit {
 					row[j+1] = "•"
 				}
 				continue
 			}
-			if explicit || (hasAll && c != TmplAll) {
-				row[j+1] = "•"
+			// appliesTo gate: either the kind is listed explicitly, or the
+			// variable opts in to every kind via TmplAll.
+			if !explicit && !hasAll {
+				continue
 			}
+			// Phase-reachability gate: at least one of the variable's
+			// declared phases must be reachable from inside this kind.
+			// Without this check, narrow phases like PhInsideLoop or
+			// PhExitHandler bleed into columns that never enter them.
+			if !phasesIntersect(k.phases, ReachablePhases(c)) {
+				continue
+			}
+			row[j+1] = "•"
 		}
 		rows[i] = row
 	}
 	table(mdoc, header, rows)
+}
+
+func phasesIntersect(a, b []LifecyclePhase) bool {
+	for _, x := range a {
+		if slices.Contains(b, x) {
+			return true
+		}
+	}
+	return false
 }
 
 func writePhaseLegend(mdoc *md.Markdown) {

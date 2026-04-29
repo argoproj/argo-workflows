@@ -65,3 +65,46 @@ var AllTemplateKinds = []TemplateKind{
 }
 
 var PodKinds = []TemplateKind{TmplContainer, TmplScript, TmplResource}
+
+// ReachablePhases returns the lifecycle phases that can actually fire from
+// inside a template body of the given kind. Used by the doc generator to
+// gate matrix `•` marks: a variable is only shown reachable from a
+// TemplateKind column if at least one of its declared phases is in this
+// set. This prevents "narrow" phases (PhInsideLoop, PhInsideRetry,
+// PhExitHandler, PhCronEval) from leaking into columns that never enter
+// those phases — e.g. `item` showing up under the exit-handler column.
+//
+// TmplExitHandler is treated as a context, not a body type: any leaf body
+// (container/script/etc.) can serve as an onExit handler, but the matrix
+// renders it as a separate column for catalog readers, so its column
+// reflects exit-handler semantics rather than generic body semantics.
+func ReachablePhases(k TemplateKind) []LifecyclePhase {
+	switch k {
+	case TmplCronWorkflow:
+		return []LifecyclePhase{PhCronEval}
+	case TmplExitHandler:
+		return []LifecyclePhase{
+			PhWorkflowStart, PhPreDispatch, PhDuringExecute,
+			PhAfterNodeInit, PhAfterPodStart, PhAfterNodeComplete,
+			PhAfterNodeSucceeded, PhAfterLoop,
+			PhExitHandler, PhMetricEmission,
+		}
+	case TmplContainer, TmplScript, TmplResource:
+		return []LifecyclePhase{
+			PhWorkflowStart, PhPreDispatch, PhDuringExecute,
+			PhInsideLoop, PhInsideRetry, PhMetricEmission,
+		}
+	case TmplSteps, TmplDAG:
+		return []LifecyclePhase{
+			PhWorkflowStart, PhPreDispatch, PhDuringExecute, PhInsideLoop,
+			PhAfterNodeInit, PhAfterPodStart, PhAfterNodeComplete,
+			PhAfterNodeSucceeded, PhAfterLoop, PhMetricEmission,
+		}
+	case TmplData, TmplSuspend, TmplHTTP, TmplPlugin:
+		return []LifecyclePhase{
+			PhWorkflowStart, PhPreDispatch, PhDuringExecute,
+			PhInsideLoop, PhMetricEmission,
+		}
+	}
+	return nil
+}

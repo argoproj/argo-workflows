@@ -21,12 +21,12 @@ Auto-generated from `util/variables` via `GenerateMarkdown()`. 83 variables regi
 | `inputs.artifacts.<name>.path`            | input         | string         | during-execute                                             | Mount path of the input artifact inside the pod                                                   |
 | `inputs.parameters`                       | input         | json           | during-execute                                             | All input parameters as a JSON array                                                              |
 | `inputs.parameters.<name>`                | input         | string         | during-execute                                             | Resolved input parameter value                                                                    |
-| `item`                                    | item          | string or json | inside-loop, during-execute                                | Current loop iteration value (withItems/withParam). JSON for map/list items.                      |
-| `item.<key>`                              | item          | string         | inside-loop, during-execute                                | Accessor into a map-typed loop iteration value                                                    |
-| `lastRetry.duration`                      | retry         | string         | inside-retry, during-execute                               | Duration of the previous attempt in seconds                                                       |
-| `lastRetry.exitCode`                      | retry         | string         | inside-retry, during-execute                               | Exit code of the previous attempt (or 0 on first attempt)                                         |
-| `lastRetry.message`                       | retry         | string         | inside-retry, during-execute                               | Message of the previous attempt                                                                   |
-| `lastRetry.status`                        | retry         | string         | inside-retry, during-execute                               | Phase of the previous attempt (or empty on first)                                                 |
+| `item`                                    | item          | string or json | inside-loop                                                | Current loop iteration value (withItems/withParam). JSON for map/list items.                      |
+| `item.<key>`                              | item          | string         | inside-loop                                                | Accessor into a map-typed loop iteration value                                                    |
+| `lastRetry.duration`                      | retry         | string         | inside-retry                                               | Duration of the previous attempt in seconds                                                       |
+| `lastRetry.exitCode`                      | retry         | string         | inside-retry                                               | Exit code of the previous attempt (or 0 on first attempt)                                         |
+| `lastRetry.message`                       | retry         | string         | inside-retry                                               | Message of the previous attempt                                                                   |
+| `lastRetry.status`                        | retry         | string         | inside-retry                                               | Phase of the previous attempt (or empty on first)                                                 |
 | `node.name`                               | node-ctx      | string         | pre-dispatch, during-execute                               | Full node name                                                                                    |
 | `outputs.artifacts.<name>.path`           | output        | string         | during-execute                                             | Declared output artifact path for the current template (pod side)                                 |
 | `outputs.parameters.<name>`               | metric        | string         | metric-emission                                            | Current node's named output parameter value (metric scope only)                                   |
@@ -34,7 +34,7 @@ Auto-generated from `util/variables` via `GenerateMarkdown()`. 83 variables regi
 | `outputs.result`                          | metric        | string         | metric-emission                                            | Current node's captured stdout (metric scope only)                                                |
 | `pod.name`                                | node-ctx      | string         | pre-dispatch, during-execute                               | Computed pod name for pod-producing templates                                                     |
 | `resourcesDuration.<resource>`            | metric        | string         | metric-emission                                            | Current node's resource duration in seconds, keyed by Kubernetes resource name (e.g. cpu, memory) |
-| `retries`                                 | retry         | string         | inside-retry, during-execute                               | 0-based retry attempt index                                                                       |
+| `retries`                                 | retry         | string         | inside-retry                                               | 0-based retry attempt index                                                                       |
 | `status`                                  | metric        | string         | metric-emission                                            | Current node's phase                                                                              |
 | `steps.<loopName>.outputs.parameters`     | node-ref      | json           | after-loop                                                 | JSON array of per-child output-parameter maps                                                     |
 | `steps.<loopName>.outputs.parameters.<p>` | node-ref      | json           | after-loop                                                 | JSON array of values for a named parameter across all children                                    |
@@ -176,20 +176,20 @@ Auto-generated from `util/variables` via `GenerateMarkdown()`. 83 variables regi
 
 ### Item
 
-|     Key      |      Type      |        Availability         |                                 Description                                  |
-|--------------|----------------|-----------------------------|------------------------------------------------------------------------------|
-| `item`       | string or json | inside-loop, during-execute | Current loop iteration value (withItems/withParam). JSON for map/list items. |
-| `item.<key>` | string         | inside-loop, during-execute | Accessor into a map-typed loop iteration value                               |
+|     Key      |      Type      | Availability |                                 Description                                  |
+|--------------|----------------|--------------|------------------------------------------------------------------------------|
+| `item`       | string or json | inside-loop  | Current loop iteration value (withItems/withParam). JSON for map/list items. |
+| `item.<key>` | string         | inside-loop  | Accessor into a map-typed loop iteration value                               |
 
 ### Retry
 
-|         Key          |  Type  |         Availability         |                        Description                        |
-|----------------------|--------|------------------------------|-----------------------------------------------------------|
-| `lastRetry.duration` | string | inside-retry, during-execute | Duration of the previous attempt in seconds               |
-| `lastRetry.exitCode` | string | inside-retry, during-execute | Exit code of the previous attempt (or 0 on first attempt) |
-| `lastRetry.message`  | string | inside-retry, during-execute | Message of the previous attempt                           |
-| `lastRetry.status`   | string | inside-retry, during-execute | Phase of the previous attempt (or empty on first)         |
-| `retries`            | string | inside-retry, during-execute | 0-based retry attempt index                               |
+|         Key          |  Type  | Availability |                        Description                        |
+|----------------------|--------|--------------|-----------------------------------------------------------|
+| `lastRetry.duration` | string | inside-retry | Duration of the previous attempt in seconds               |
+| `lastRetry.exitCode` | string | inside-retry | Exit code of the previous attempt (or 0 on first attempt) |
+| `lastRetry.message`  | string | inside-retry | Message of the previous attempt                           |
+| `lastRetry.status`   | string | inside-retry | Phase of the previous attempt (or empty on first)         |
+| `retries`            | string | inside-retry | 0-based retry attempt index                               |
 
 ### Node-Ctx
 
@@ -246,8 +246,8 @@ Which variables are in scope for each template type. `•` = in scope, blank = n
 | `inputs.artifacts.<name>.path`            |     | •         | •      | •        |       |     |      |         |      |        |              |               |
 | `inputs.parameters`                       | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
 | `inputs.parameters.<name>`                | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
-| `item`                                    | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
-| `item.<key>`                              | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
+| `item`                                    | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      |              |               |
+| `item.<key>`                              | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      |              |               |
 | `lastRetry.duration`                      |     | •         | •      | •        |       |     |      |         |      |        |              |               |
 | `lastRetry.exitCode`                      |     | •         | •      | •        |       |     |      |         |      |        |              |               |
 | `lastRetry.message`                       |     | •         | •      | •        |       |     |      |         |      |        |              |               |
@@ -297,7 +297,7 @@ Which variables are in scope for each template type. `•` = in scope, blank = n
 | `workflow.creationTimestamp.RFC3339`      | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
 | `workflow.creationTimestamp.s`            | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
 | `workflow.duration`                       | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
-| `workflow.failures`                       | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
+| `workflow.failures`                       | •   |           |        |          |       |     |      |         |      |        | •            |               |
 | `workflow.labels`                         | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
 | `workflow.labels.<name>`                  | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
 | `workflow.labels.json`                    | •   | •         | •      | •        | •     | •   | •    | •       | •    | •      | •            |               |
@@ -389,51 +389,44 @@ Which variables are in scope for each template type. `•` = in scope, blank = n
 | `workflow.status`                    | runtime  | string |
 | `workflow.uid`                       | global   | string |
 
-### during-execute (41 variables)
+### during-execute (34 variables)
 
-|                 Key                  |   Kind   |      Type      |
-|--------------------------------------|----------|----------------|
-| `inputs.artifacts.<name>`            | input    | wfv1.Artifact  |
-| `inputs.artifacts.<name>.path`       | input    | string         |
-| `inputs.parameters`                  | input    | json           |
-| `inputs.parameters.<name>`           | input    | string         |
-| `item`                               | item     | string or json |
-| `item.<key>`                         | item     | string         |
-| `lastRetry.duration`                 | retry    | string         |
-| `lastRetry.exitCode`                 | retry    | string         |
-| `lastRetry.message`                  | retry    | string         |
-| `lastRetry.status`                   | retry    | string         |
-| `node.name`                          | node-ctx | string         |
-| `outputs.artifacts.<name>.path`      | output   | string         |
-| `outputs.parameters.<name>.path`     | output   | string         |
-| `pod.name`                           | node-ctx | string         |
-| `retries`                            | retry    | string         |
-| `steps.name`                         | node-ctx | string         |
-| `tasks.name`                         | node-ctx | string         |
-| `workflow.annotations`               | global   | json           |
-| `workflow.annotations.<name>`        | global   | string         |
-| `workflow.annotations.json`          | global   | json           |
-| `workflow.creationTimestamp`         | global   | string         |
-| `workflow.creationTimestamp.<fmt>`   | global   | string         |
-| `workflow.creationTimestamp.RFC3339` | global   | string         |
-| `workflow.creationTimestamp.s`       | global   | string         |
-| `workflow.duration`                  | runtime  | string         |
-| `workflow.labels`                    | global   | json           |
-| `workflow.labels.<name>`             | global   | string         |
-| `workflow.labels.json`               | global   | json           |
-| `workflow.mainEntrypoint`            | global   | string         |
-| `workflow.name`                      | global   | string         |
-| `workflow.namespace`                 | global   | string         |
-| `workflow.outputs.artifacts.<name>`  | node-ref | wfv1.Artifact  |
-| `workflow.outputs.parameters.<name>` | node-ref | string         |
-| `workflow.parameters`                | global   | json           |
-| `workflow.parameters.<name>`         | global   | string         |
-| `workflow.parameters.json`           | global   | json           |
-| `workflow.priority`                  | global   | string         |
-| `workflow.scheduledTime`             | global   | string         |
-| `workflow.serviceAccountName`        | global   | string         |
-| `workflow.status`                    | runtime  | string         |
-| `workflow.uid`                       | global   | string         |
+|                 Key                  |   Kind   |     Type      |
+|--------------------------------------|----------|---------------|
+| `inputs.artifacts.<name>`            | input    | wfv1.Artifact |
+| `inputs.artifacts.<name>.path`       | input    | string        |
+| `inputs.parameters`                  | input    | json          |
+| `inputs.parameters.<name>`           | input    | string        |
+| `node.name`                          | node-ctx | string        |
+| `outputs.artifacts.<name>.path`      | output   | string        |
+| `outputs.parameters.<name>.path`     | output   | string        |
+| `pod.name`                           | node-ctx | string        |
+| `steps.name`                         | node-ctx | string        |
+| `tasks.name`                         | node-ctx | string        |
+| `workflow.annotations`               | global   | json          |
+| `workflow.annotations.<name>`        | global   | string        |
+| `workflow.annotations.json`          | global   | json          |
+| `workflow.creationTimestamp`         | global   | string        |
+| `workflow.creationTimestamp.<fmt>`   | global   | string        |
+| `workflow.creationTimestamp.RFC3339` | global   | string        |
+| `workflow.creationTimestamp.s`       | global   | string        |
+| `workflow.duration`                  | runtime  | string        |
+| `workflow.labels`                    | global   | json          |
+| `workflow.labels.<name>`             | global   | string        |
+| `workflow.labels.json`               | global   | json          |
+| `workflow.mainEntrypoint`            | global   | string        |
+| `workflow.name`                      | global   | string        |
+| `workflow.namespace`                 | global   | string        |
+| `workflow.outputs.artifacts.<name>`  | node-ref | wfv1.Artifact |
+| `workflow.outputs.parameters.<name>` | node-ref | string        |
+| `workflow.parameters`                | global   | json          |
+| `workflow.parameters.<name>`         | global   | string        |
+| `workflow.parameters.json`           | global   | json          |
+| `workflow.priority`                  | global   | string        |
+| `workflow.scheduledTime`             | global   | string        |
+| `workflow.serviceAccountName`        | global   | string        |
+| `workflow.status`                    | runtime  | string        |
+| `workflow.uid`                       | global   | string        |
 
 ### inside-loop (2 variables)
 
