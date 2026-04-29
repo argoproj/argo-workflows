@@ -75,16 +75,18 @@ func (ae *AgentExecutor) Agent(ctx context.Context) error {
 
 	taskWorkers := env.LookupEnvIntOr(ctx, common.EnvAgentTaskWorkers, 16)
 	requeueTime := env.LookupEnvDurationOr(ctx, common.EnvAgentPatchRate, 10*time.Second)
+	batchSize := env.LookupEnvIntOr(ctx, common.EnvAgentPatchBatchSize, 900)
 	logger := logging.RequireLoggerFromContext(ctx)
 	logger.WithField("taskWorkers", taskWorkers).
 		WithField("requeueTime", requeueTime).
+		WithField("batchSize", batchSize).
 		Info(ctx, "Starting Agent")
 
 	taskQueue := make(chan task)
 	responseQueue := make(chan response)
 	taskSetInterface := ae.WorkflowInterface.ArgoprojV1alpha1().WorkflowTaskSets(ae.Namespace)
 
-	go ae.patchWorker(ctx, taskSetInterface, responseQueue, requeueTime)
+	go ae.patchWorker(ctx, taskSetInterface, responseQueue, requeueTime, batchSize)
 	for range taskWorkers {
 		go ae.taskWorker(ctx, taskQueue, responseQueue)
 	}
@@ -166,7 +168,7 @@ func (ae *AgentExecutor) taskWorker(ctx context.Context, taskQueue chan task, re
 	}
 }
 
-func (ae *AgentExecutor) patchWorker(ctx context.Context, taskSetInterface v1alpha1.WorkflowTaskSetInterface, responseQueue chan response, requeueTime time.Duration) {
+func (ae *AgentExecutor) patchWorker(ctx context.Context, taskSetInterface v1alpha1.WorkflowTaskSetInterface, responseQueue chan response, requeueTime time.Duration, batchSize int) {
 	ticker := time.NewTicker(requeueTime)
 	defer ticker.Stop()
 	nodeResults := map[string]wfv1.NodeResult{}
@@ -179,28 +181,7 @@ func (ae *AgentExecutor) patchWorker(ctx context.Context, taskSetInterface v1alp
 			if len(nodeResults) == 0 {
 				continue
 			}
-
-			patch, err := json.Marshal(map[string]any{"status": wfv1.WorkflowTaskSetStatus{Nodes: nodeResults}})
-			if err != nil {
-				logger.WithError(err).Error(ctx, "Generating Patch Failed")
-				continue
-			}
-
-			logger.Info(ctx, "Processing Patch")
-
-			err = retry.OnError(wait.Backoff{
-				Duration: time.Second,
-				Factor:   2,
-				Jitter:   0.1,
-				Steps:    5,
-				Cap:      30 * time.Second,
-			}, func(retryErr error) bool {
-				return errors.IsTransientErr(ctx, retryErr)
-			}, func() error {
-				_, patchErr := taskSetInterface.Patch(ctx, ae.WorkflowName, types.MergePatchType, patch, metav1.PatchOptions{}, "status")
-				return patchErr
-			})
-
+			err := patchTaskSetStatus(ctx, taskSetInterface, nodeResults, ae.WorkflowName, batchSize)
 			if err != nil && !errors.IsTransientErr(ctx, err) {
 				logger.WithError(err).
 					Error(ctx, "TaskSet Patch Failed")
@@ -217,9 +198,6 @@ func (ae *AgentExecutor) patchWorker(ctx context.Context, taskSetInterface v1alp
 				}
 				continue
 			}
-
-			// Patch was successful, clear nodeResults for next iteration
-			nodeResults = map[string]wfv1.NodeResult{}
 
 			logger.Info(ctx, "Patched TaskSet")
 		}
@@ -387,4 +365,64 @@ func (ae *AgentExecutor) executePluginTemplate(ctx context.Context, tmpl wfv1.Te
 
 func IsWorkflowCompleted(wts *wfv1.WorkflowTaskSet) bool {
 	return wts.Labels[common.LabelKeyCompleted] == "true"
+}
+
+func batchNodeResults(nodeResults map[string]wfv1.NodeResult, batchSize int) []map[string]wfv1.NodeResult {
+	keys := make([]string, 0, len(nodeResults))
+	for k := range nodeResults {
+		keys = append(keys, k)
+	}
+
+	var batches []map[string]wfv1.NodeResult
+
+	for i := 0; i < len(keys); i += batchSize {
+		end := min(i+batchSize, len(keys))
+
+		batch := make(map[string]wfv1.NodeResult, end-i)
+		for _, k := range keys[i:end] {
+			batch[k] = nodeResults[k]
+		}
+
+		batches = append(batches, batch)
+	}
+
+	return batches
+}
+
+func patchTaskSetStatus(ctx context.Context, taskSetInterface v1alpha1.WorkflowTaskSetInterface, nodeResults map[string]wfv1.NodeResult, wf string, batchSize int) error {
+	batches := batchNodeResults(nodeResults, batchSize)
+	for _, batch := range batches {
+		err := patchWorkerTaskSets(ctx, taskSetInterface, batch, wf)
+		if err != nil {
+			return err
+		}
+		for nodeID := range batch {
+			delete(nodeResults, nodeID)
+		}
+	}
+	return nil
+}
+
+func patchWorkerTaskSets(ctx context.Context, taskSetInterface v1alpha1.WorkflowTaskSetInterface, nodeResults map[string]wfv1.NodeResult, wf string) error {
+	logger := logging.RequireLoggerFromContext(ctx)
+	logger.Info(ctx, fmt.Sprintf("Patching TaskSet. Node results to patch: %d", len(nodeResults)))
+	patch, err := json.Marshal(map[string]any{"status": wfv1.WorkflowTaskSetStatus{Nodes: nodeResults}})
+	if err != nil {
+		logger.WithError(err).Error(ctx, "Generating Patch Failed")
+		return err
+	}
+
+	err = retry.OnError(wait.Backoff{
+		Duration: time.Second,
+		Factor:   2,
+		Jitter:   0.1,
+		Steps:    5,
+		Cap:      30 * time.Second,
+	}, func(retryErr error) bool {
+		return errors.IsTransientErr(ctx, retryErr)
+	}, func() error {
+		_, patchErr := taskSetInterface.Patch(ctx, wf, types.MergePatchType, patch, metav1.PatchOptions{}, "status")
+		return patchErr
+	})
+	return err
 }

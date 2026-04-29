@@ -87,6 +87,80 @@ func TestAgentPluginExecuteTaskSet(t *testing.T) {
 	}
 }
 
+func TestBatchNodeResults(t *testing.T) {
+	tests := []struct {
+		name      string
+		input     map[string]v1alpha1.NodeResult
+		batchSize int
+
+		expectBatchCount int
+		expectBatchSizes []int
+	}{
+		{
+			name:      "empty collection",
+			input:     map[string]v1alpha1.NodeResult{},
+			batchSize: 3,
+
+			expectBatchCount: 0,
+			expectBatchSizes: []int{},
+		},
+		{
+			name: "less than batch size",
+			input: map[string]v1alpha1.NodeResult{
+				"a": {}, "b": {},
+			},
+			batchSize: 3,
+
+			expectBatchCount: 1,
+			expectBatchSizes: []int{2},
+		},
+		{
+			name: "equal to batch size",
+			input: map[string]v1alpha1.NodeResult{
+				"a": {}, "b": {}, "c": {},
+			},
+			batchSize: 3,
+
+			expectBatchCount: 1,
+			expectBatchSizes: []int{3},
+		},
+		{
+			name: "greater than batch size",
+			input: map[string]v1alpha1.NodeResult{
+				"a": {}, "b": {}, "c": {}, "d": {}, "e": {},
+			},
+			batchSize: 3,
+
+			expectBatchCount: 2,
+			expectBatchSizes: []int{3, 2},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			batches := batchNodeResults(tc.input, tc.batchSize)
+
+			if len(batches) != tc.expectBatchCount {
+				t.Fatalf("expected %d batches, got %d", tc.expectBatchCount, len(batches))
+			}
+
+			for i, b := range batches {
+				if len(b) != tc.expectBatchSizes[i] {
+					t.Errorf("batch %d: expected size %d, got %d", i, tc.expectBatchSizes[i], len(b))
+				}
+
+				// optional: ensure no data loss
+				for k, v := range b {
+					if _, ok := tc.input[k]; !ok {
+						t.Errorf("batch %d contains unknown key %s", i, k)
+					}
+					_ = v
+				}
+			}
+		})
+	}
+}
+
 type alwaysSucceededPlugin struct {
 	requeue time.Duration
 }

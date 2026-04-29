@@ -147,6 +147,13 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		})
 	}
 
+	if batchSize, exists := os.LookupEnv(common.EnvAgentPatchBatchSize); exists {
+		envVars = append(envVars, apiv1.EnvVar{
+			Name:  common.EnvAgentPatchBatchSize,
+			Value: batchSize,
+		})
+	}
+
 	serviceAccountName := woc.execWf.Spec.ServiceAccountName
 	tokenVolume, tokenVolumeMount, err := woc.getServiceAccountTokenVolume(ctx, serviceAccountName)
 	if err != nil {
