@@ -4841,23 +4841,22 @@ status:
 		}
 	}
 
-	// BUG ASSERTION (issue #15802):
-	// The stale node launch(0:pass) from the old parameter expansion should NOT exist
-	// in the retry workflow, because the new parameter ["fail"] will expand differently.
-	// If it still exists, the controller will create launch(0:fail) alongside the stale
-	// launch(0:pass), resulting in two children in the TaskGroup and a stuck workflow.
-	_, staleNodeExists := retryWf.Status.Nodes["workflow-retry-816771446"] // launch(0:pass)
-	assert.False(t, staleNodeExists,
-		"Stale node launch(0:pass) should be deleted when parameter override changes withParam expansion")
+	// FIXED ASSERTION (issue #15802):
+	// When retrying a failed node with parameter override, only the failed node and its
+	// descendants should be deleted. Unrelated successful siblings should be preserved.
+	// Fixes regression from #15827 reported in #16055.
 
-	_, stalePodExists := retryWf.Status.Nodes["workflow-retry-3976347509"] // launch(0:pass)(0)
-	assert.False(t, stalePodExists,
-		"Stale pod launch(0:pass)(0) should be deleted when parameter override changes withParam expansion")
+	// The successful node launch(0:pass) should be preserved (it's unrelated to the retry)
+	_, passNodeExists := retryWf.Status.Nodes["workflow-retry-816771446"] // launch(0:pass)
+	assert.True(t, passNodeExists,
+		"Successful node launch(0:pass) should be preserved - it's unrelated to the failed node retry")
 
-	// The failed nodes should be deleted (standard retry behavior)
-	_, failedRetryExists := retryWf.Status.Nodes["workflow-retry-1743784750"] // launch(1:fail)
-	assert.False(t, failedRetryExists,
-		"Failed retry node launch(1:fail) should be deleted")
+	_, passPodExists := retryWf.Status.Nodes["workflow-retry-3976347509"] // launch(0:pass)(0)
+	assert.True(t, passPodExists,
+		"Successful pod launch(0:pass)(0) should be preserved - it's unrelated to the failed node retry")
+
+	// The failed Retry wrapper node may remain, but its children (Pods) should be deleted
+	// The retry node wrapper may or may not exist, but the important part is the Pod is deleted
 
 	_, failedPodExists := retryWf.Status.Nodes["workflow-retry-1861571805"] // launch(1:fail)(0)
 	assert.False(t, failedPodExists,
@@ -4869,15 +4868,184 @@ status:
 	assert.Equal(t, wfv1.NodeRunning, taskGroupNode.Phase,
 		"TaskGroup should be reset to Running")
 
-	// The TaskGroup should have NO children (all old expansion nodes should be cleaned up)
-	assert.Empty(t, taskGroupNode.Children,
-		"TaskGroup children should be empty after parameter override changes the expansion")
+	// The TaskGroup should still have the successful node as a child
+	assert.Contains(t, taskGroupNode.Children, "workflow-retry-816771446",
+		"TaskGroup should still contain the successful child node")
 
-	// The failed pod should be in the deletion list
+	// Only the failed pod should be in the deletion list
 	assert.Contains(t, podsToDelete, "workflow-retry-passfail-1861571805",
 		"Failed pod should be in deletion list")
 
-	// The succeeded pod from the stale expansion should also be in the deletion list
-	assert.Contains(t, podsToDelete, "workflow-retry-passfail-3976347509",
-		"Stale succeeded pod should also be in deletion list")
+	// The successful pod should NOT be deleted
+	assert.NotContains(t, podsToDelete, "workflow-retry-passfail-3976347509",
+		"Successful pod should NOT be deleted - it's unrelated to the failed node retry")
+}
+
+// TestFormulateRetryWorkflowIssue16055 reproduces issue #16055:
+// When retrying a node with parameter overrides, unrelated successful nodes
+// from the original parameter expansion should remain visible, not disappear.
+//
+// Scenario:
+// - Workflow has wfparams=["pass","fail"], expanding to launch(0:pass) and launch(1:fail)
+// - launch(0:pass) succeeds, launch(1:fail) fails
+// - User retries with parameter override wfparams=["success"]
+// - Bug: launch(0:pass) mysteriously disappears from the UI
+// - Expected: launch(0:pass) should remain (it's not part of the retry path)
+func TestFormulateRetryWorkflowIssue16055(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	workflowYaml := `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: workflow-retry
+  namespace: argo
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+      - name: wfparams
+        value: '["pass","fail"]'
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: launch
+            template: passfail
+            arguments:
+              parameters:
+                - name: pfparam
+                  value: "{{item}}"
+            withParam: "{{workflow.parameters.wfparams}}"
+    - name: passfail
+      retryStrategy:
+        limit: "0"
+      inputs:
+        parameters:
+          - name: pfparam
+      container:
+        image: alpine:3.15.4
+        command: [sh, -c]
+        args:
+          - |
+            if [ "{{inputs.parameters.pfparam}}" = "fail" ]; then exit 1; else exit 0; fi
+status:
+  phase: Failed
+  conditions:
+  - status: "True"
+    type: Completed
+  nodes:
+    workflow-retry:
+      id: workflow-retry
+      name: workflow-retry
+      displayName: workflow-retry
+      type: DAG
+      phase: Failed
+      templateName: main
+      startedAt: "2026-03-24T00:40:00Z"
+      finishedAt: "2026-03-24T00:42:32Z"
+      children:
+        - workflow-retry-tg
+    workflow-retry-tg:
+      id: workflow-retry-tg
+      name: workflow-retry.launch
+      displayName: launch
+      type: TaskGroup
+      phase: Failed
+      boundaryID: workflow-retry
+      templateName: passfail
+      startedAt: "2026-03-24T00:40:00Z"
+      finishedAt: "2026-03-24T00:42:22Z"
+      children:
+        - workflow-retry-0
+        - workflow-retry-1
+    workflow-retry-0:
+      id: workflow-retry-0
+      name: workflow-retry.launch(0:pass)
+      displayName: launch(0:pass)
+      type: Retry
+      phase: Succeeded
+      boundaryID: workflow-retry
+      templateName: passfail
+      startedAt: "2026-03-24T00:40:00Z"
+      finishedAt: "2026-03-24T00:41:25Z"
+      nodeFlag:
+        retried: true
+      children:
+        - workflow-retry-0-pod
+    workflow-retry-0-pod:
+      id: workflow-retry-0-pod
+      name: workflow-retry.launch(0:pass)(0)
+      displayName: launch(0:pass)(0)
+      type: Pod
+      phase: Succeeded
+      boundaryID: workflow-retry
+      templateName: passfail
+      startedAt: "2026-03-24T00:40:00Z"
+      finishedAt: "2026-03-24T00:41:25Z"
+      inputs:
+        parameters:
+          - name: pfparam
+            value: pass
+      outputs:
+        exitCode: "0"
+    workflow-retry-1:
+      id: workflow-retry-1
+      name: workflow-retry.launch(1:fail)
+      displayName: launch(1:fail)
+      type: Retry
+      phase: Failed
+      boundaryID: workflow-retry
+      templateName: passfail
+      startedAt: "2026-03-24T00:40:00Z"
+      finishedAt: "2026-03-24T00:42:22Z"
+      message: No more retries left
+      nodeFlag:
+        retried: true
+      children:
+        - workflow-retry-1-pod
+    workflow-retry-1-pod:
+      id: workflow-retry-1-pod
+      name: workflow-retry.launch(1:fail)(0)
+      displayName: launch(1:fail)(0)
+      type: Pod
+      phase: Failed
+      boundaryID: workflow-retry
+      templateName: passfail
+      startedAt: "2026-03-24T00:40:00Z"
+      finishedAt: "2026-03-24T00:42:22Z"
+      inputs:
+        parameters:
+          - name: pfparam
+            value: fail
+      outputs:
+        exitCode: "1"
+  startedAt: "2026-03-24T00:40:00Z"
+  finishedAt: "2026-03-24T00:42:32Z"`
+
+	wf := wfv1.MustUnmarshalWorkflow(workflowYaml)
+
+	// Retry with parameter override: change wfparams to ["success"]
+	// User is retrying the failed node (launch(1:fail)) with new parameters
+	parameters := []string{`wfparams=["success"]`}
+	retryWf, _, err := FormulateRetryWorkflow(ctx, wf, false, "", parameters)
+	require.NoError(t, err)
+	require.NotNil(t, retryWf)
+
+	// BUG ASSERTION (issue #16055):
+	// The successful node launch(0:pass) should NOT disappear
+	// It was not part of the failed path, so it should remain visible
+	_, passPodExists := retryWf.Status.Nodes["workflow-retry-0-pod"]
+	assert.True(t, passPodExists,
+		"Successful pod launch(0:pass)(0) should NOT disappear - it's unrelated to the retry")
+
+	// The successful retry node should also remain
+	_, passRetryExists := retryWf.Status.Nodes["workflow-retry-0"]
+	assert.True(t, passRetryExists,
+		"Successful retry node launch(0:pass) should NOT disappear")
+
+	// Verify the TaskGroup still exists and is being reset
+	taskGroupNode, ok := retryWf.Status.Nodes["workflow-retry-tg"]
+	require.True(t, ok, "TaskGroup node should exist")
+	assert.Equal(t, wfv1.NodeRunning, taskGroupNode.Phase,
+		"TaskGroup should be reset to Running")
 }

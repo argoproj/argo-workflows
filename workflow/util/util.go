@@ -1233,26 +1233,11 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 		toDelete = setUnion(toDelete, pathToDelete)
 	}
 
-	// Delete children of TaskGroup/StepGroup nodes being reset when parameters are overridden,
-	// so the controller can re-expand them with the new values. Fixes #15802.
-	if len(parameters) > 0 {
-		for nodeID := range toReset {
-			if toDelete[nodeID] {
-				continue
-			}
-			n, ok := wf.Status.Nodes[nodeID]
-			if !ok {
-				continue
-			}
-			if n.Type == wfv1.NodeTypeTaskGroup || n.Type == wfv1.NodeTypeStepGroup {
-				if dagNode, okNode := nodesMap[nodeID]; okNode {
-					for childID := range getChildren(dagNode) {
-						toDelete[childID] = true
-					}
-				}
-			}
-		}
-	}
+	// Note: The parameter override deletion logic from PR #15827 has been removed.
+	// The issue it was trying to fix (workflow stuck in Running) should be addressed
+	// in the controller's node state management, not by deleting unrelated nodes.
+	// Deleting all TaskGroup children indiscriminately causes issues #16055 where
+	// successful sibling nodes are incorrectly removed.
 
 	for nodeID := range toReset {
 		// avoid resetting nodes that are marked for deletion
