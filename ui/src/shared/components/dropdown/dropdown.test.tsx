@@ -18,12 +18,8 @@ describe('DropDown', () => {
     // Calling rerender() with a *new* JSX element forces React to re-render
     // the component, at which point the refs are populated.
     function renderDropDown(anchor: React.ReactElement | ((opened: boolean) => React.ReactElement), children?: React.ReactNode) {
-        const result = render(
-            <DropDown anchor={anchor}>{children || <div>Content</div>}</DropDown>
-        );
-        result.rerender(
-            <DropDown anchor={anchor}>{children || <div>Content</div>}</DropDown>
-        );
+        const result = render(<DropDown anchor={anchor}>{children || <div>Content</div>}</DropDown>);
+        result.rerender(<DropDown anchor={anchor}>{children || <div>Content</div>}</DropDown>);
         return result;
     }
 
