@@ -643,8 +643,19 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 			scope, err := woc.buildLocalScopeFromTask(ctx, dagCtx, task)
 			if err != nil {
 				woc.markNodeError(ctx, node.Name, err)
+				return
 			}
 			scope.addParamToScope(fmt.Sprintf("tasks.%s.status", task.Name), string(node.Phase))
+			// Re-evaluate hooks: executeTemplate may have transitioned this node from Running to
+			// Fulfilled within this sweep, after the earlier hook evaluation ran.
+			hookCompleted, err := woc.executeTmplLifeCycleHook(ctx, scope, task.Hooks, node, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName)
+			if err != nil {
+				woc.markNodeError(ctx, node.Name, err)
+				return
+			}
+			if !hookCompleted {
+				return
+			}
 			// if the node type is NodeTypeRetry, and its last child is completed, it will be completed after woc.executeTemplate;
 			hasOnExitNode, onExitNode, err := woc.runOnExitNode(ctx, task.GetExitHook(woc.execWf.Spec.Arguments), node, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName, scope)
 			if hasOnExitNode && (onExitNode == nil || !onExitNode.Fulfilled() || err != nil) {

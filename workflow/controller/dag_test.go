@@ -4188,3 +4188,110 @@ func TestDAGWhenExprSkipEval(t *testing.T) {
 	require.NotNil(t, nodeB)
 	assert.Equal(t, wfv1.NodeSkipped, nodeB.Phase)
 }
+
+// makePendingPodsPhase is like makePodsPhase but skips pods already in a terminal phase.
+func makePendingPodsPhase(ctx context.Context, woc *wfOperationCtx, phase v1.PodPhase) {
+	podcs := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace())
+	pods, err := podcs.List(ctx, metav1.ListOptions{})
+	if err != nil {
+		panic(err)
+	}
+	for _, pod := range pods.Items {
+		if pod.Status.Phase == v1.PodFailed || pod.Status.Phase == v1.PodSucceeded {
+			continue
+		}
+		if pod.Status.Phase == phase {
+			continue
+		}
+		pod.Status.Phase = phase
+		if phase == v1.PodFailed {
+			pod.Status.Message = "Pod failed"
+		}
+		updatedPod, err := podcs.Update(ctx, &pod, metav1.UpdateOptions{})
+		if err != nil {
+			panic(err)
+		}
+		if err = woc.controller.PodController.TestingPodInformer().GetStore().Update(updatedPod); err != nil {
+			panic(err)
+		}
+		if phase == v1.PodSucceeded {
+			nodeID := woc.nodeID(&pod)
+			woc.wf.Status.MarkTaskResultComplete(ctx, nodeID)
+		}
+	}
+}
+
+func TestDAGHookNonLeafSerialHeadFails(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/dag_hook_non_leaf_serial_head_fails.yaml")
+	ctx := logging.TestContext(t.Context())
+	woc := newWoc(ctx, *wf)
+
+	woc.operate(ctx)
+	require.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+
+	// step-a inner pod fails
+	makePodsPhase(ctx, woc, v1.PodFailed)
+	woc.operate(ctx)
+
+	// hook scheduled, step-b not yet omitted
+	hookNode := woc.wf.Status.Nodes.FindByDisplayName("step-a.hooks.notify")
+	require.NotNil(t, hookNode)
+	assert.True(t, hookNode.NodeFlag.Hooked)
+	assert.Equal(t, wfv1.NodePending, hookNode.Phase)
+	assert.Nil(t, woc.wf.Status.Nodes.FindByDisplayName("step-b"))
+	require.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+
+	// hook pod succeeds
+	makePendingPodsPhase(ctx, woc, v1.PodSucceeded)
+	woc.operate(ctx)
+
+	// hook succeeded, step-b omitted, workflow failed
+	hookNode = woc.wf.Status.Nodes.FindByDisplayName("step-a.hooks.notify")
+	require.NotNil(t, hookNode)
+	assert.Equal(t, wfv1.NodeSucceeded, hookNode.Phase)
+	stepB := woc.wf.Status.Nodes.FindByDisplayName("step-b")
+	require.NotNil(t, stepB)
+	assert.Equal(t, wfv1.NodeOmitted, stepB.Phase)
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+}
+
+func TestDAGHookNonLeafFanInBothFail(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/dag_hook_non_leaf_fanin_both_fail.yaml")
+	ctx := logging.TestContext(t.Context())
+	woc := newWoc(ctx, *wf)
+
+	woc.operate(ctx)
+	require.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+
+	// both inner pods fail
+	makePodsPhase(ctx, woc, v1.PodFailed)
+	woc.operate(ctx)
+
+	// both hooks scheduled, step-c not yet omitted
+	hookA := woc.wf.Status.Nodes.FindByDisplayName("step-a.hooks.notify")
+	require.NotNil(t, hookA)
+	assert.True(t, hookA.NodeFlag.Hooked)
+	assert.Equal(t, wfv1.NodePending, hookA.Phase)
+	hookB := woc.wf.Status.Nodes.FindByDisplayName("step-b.hooks.notify")
+	require.NotNil(t, hookB)
+	assert.True(t, hookB.NodeFlag.Hooked)
+	assert.Equal(t, wfv1.NodePending, hookB.Phase)
+	assert.Nil(t, woc.wf.Status.Nodes.FindByDisplayName("step-c"))
+	require.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+
+	// both hook pods succeed
+	makePendingPodsPhase(ctx, woc, v1.PodSucceeded)
+	woc.operate(ctx)
+
+	// both hooks succeeded, step-c omitted, workflow failed
+	hookA = woc.wf.Status.Nodes.FindByDisplayName("step-a.hooks.notify")
+	require.NotNil(t, hookA)
+	assert.Equal(t, wfv1.NodeSucceeded, hookA.Phase)
+	hookB = woc.wf.Status.Nodes.FindByDisplayName("step-b.hooks.notify")
+	require.NotNil(t, hookB)
+	assert.Equal(t, wfv1.NodeSucceeded, hookB.Phase)
+	stepC := woc.wf.Status.Nodes.FindByDisplayName("step-c")
+	require.NotNil(t, stepC)
+	assert.Equal(t, wfv1.NodeOmitted, stepC.Phase)
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+}
