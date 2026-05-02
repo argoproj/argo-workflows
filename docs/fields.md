@@ -1828,6 +1828,7 @@ Template is a reusable and composable unit of execution in a workflow
 |`annotations`|`Map< string , string >`|Annotations is a list of annotations to add to the template at runtime|
 |`archiveLocation`|[`ArtifactLocation`](#artifactlocation)|Location in which all files related to the step will be stored (logs, artifacts, etc...). Can be overridden by individual items in Outputs. If omitted, will use the default artifact repository location configured in the controller, appended with the <workflowname>/<nodename> in the key.|
 |`automountServiceAccountToken`|`boolean`|AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.|
+|`compressedTemplate`|`string`|Compressed and base64 decoded Template|
 |`container`|[`Container`](#container)|Container is the main container image to run in the pod|
 |`containerSet`|[`ContainerSetTemplate`](#containersettemplate)|ContainerSet groups multiple containers within a single pod.|
 |`daemon`|`boolean`|Daemon will allow a workflow to proceed to the next step so long as the container reaches readiness|

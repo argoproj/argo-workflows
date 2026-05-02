@@ -13,6 +13,7 @@ Name | Type | Description | Notes
 **annotations** | **Map&lt;String, String&gt;** | Annotations is a list of annotations to add to the template at runtime |  [optional]
 **archiveLocation** | [**IoArgoprojWorkflowV1alpha1ArtifactLocation**](IoArgoprojWorkflowV1alpha1ArtifactLocation.md) |  |  [optional]
 **automountServiceAccountToken** | **Boolean** | AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false. |  [optional]
+**compressedTemplate** | **String** | Compressed and base64 decoded Template |  [optional]
 **container** | [**io.kubernetes.client.openapi.models.V1Container**](io.kubernetes.client.openapi.models.V1Container.md) |  |  [optional]
 **containerSet** | [**IoArgoprojWorkflowV1alpha1ContainerSetTemplate**](IoArgoprojWorkflowV1alpha1ContainerSetTemplate.md) |  |  [optional]
 **daemon** | **Boolean** | Daemon will allow a workflow to proceed to the next step so long as the container reaches readiness |  [optional]

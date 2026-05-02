@@ -1013,6 +1013,8 @@ spec:
                       type: object
                     automountServiceAccountToken:
                       type: boolean
+                    compressedTemplate:
+                      type: string
                     container:
                       properties:
                         args:
@@ -11144,6 +11146,8 @@ spec:
               nodes:
                 additionalProperties:
                   properties:
+                    compressedNode:
+                      type: string
                     message:
                       type: string
                     outputs:

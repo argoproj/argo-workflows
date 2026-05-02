@@ -1078,6 +1078,8 @@ message NodeResult {
   optional Outputs outputs = 3;
 
   optional string progress = 4;
+
+  optional string compressedNode = 5;
 }
 
 // NodeStatus contains status information about an individual node in the workflow
@@ -1869,6 +1871,9 @@ message Template {
 
   // Annotations is a list of annotations to add to the template at runtime
   map<string, string> annotations = 44;
+
+  // Compressed and base64 decoded Template
+  optional string compressedTemplate = 49;
 }
 
 // TemplateRef is a reference of template resource.

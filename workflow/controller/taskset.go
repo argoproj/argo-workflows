@@ -10,6 +10,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
+	"github.com/argoproj/argo-workflows/v4/workflow/packer"
+
 	argoerrors "github.com/argoproj/argo-workflows/v4/errors"
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
@@ -139,6 +141,9 @@ func (woc *wfOperationCtx) reconcileTaskSet(ctx context.Context) error {
 
 	woc.log.Info(ctx, "TaskSet Reconciliation")
 	if workflowTaskSet != nil && len(workflowTaskSet.Status.Nodes) > 0 {
+		if err = packer.DecompressWorkflowTaskSetStatus(ctx, &workflowTaskSet.Status); err != nil {
+			return fmt.Errorf("task set reconciliation failed while decompressing status: %w", err)
+		}
 		for nodeID, taskResult := range workflowTaskSet.Status.Nodes {
 			node, err := woc.wf.Status.Nodes.Get(nodeID)
 			if err != nil {
@@ -176,6 +181,15 @@ func (woc *wfOperationCtx) createTaskSet(ctx context.Context) error {
 	if woc.controller.Config.InstanceID != "" {
 		labels[common.LabelKeyControllerInstanceID] = woc.controller.Config.InstanceID
 	}
+	taskSetSpec := wfv1.WorkflowTaskSetSpec{
+		Tasks: woc.taskSet,
+	}
+
+	err := packer.CompressWorkflowTaskSetSpec(ctx, &taskSetSpec)
+	if err != nil {
+		woc.log.WithError(err).Error(ctx, "Failed to compress task set before patching")
+		return fmt.Errorf("failed to compress task set before patching. %w", err)
+	}
 	taskSet := wfv1.WorkflowTaskSet{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       workflow.WorkflowTaskSetKind,
@@ -194,13 +208,11 @@ func (woc *wfOperationCtx) createTaskSet(ctx context.Context) error {
 				},
 			},
 		},
-		Spec: wfv1.WorkflowTaskSetSpec{
-			Tasks: woc.taskSet,
-		},
+		Spec: taskSetSpec,
 	}
 	woc.log.Debug(ctx, "creating new taskset")
 
-	_, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(woc.wf.Namespace).Create(ctx, &taskSet, metav1.CreateOptions{})
+	_, err = woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(woc.wf.Namespace).Create(ctx, &taskSet, metav1.CreateOptions{})
 
 	if apierr.IsConflict(err) || apierr.IsAlreadyExists(err) {
 		woc.log.Debug(ctx, "patching the exiting taskset")
@@ -210,7 +222,7 @@ func (woc *wfOperationCtx) createTaskSet(ctx context.Context) error {
 					common.LabelKeyCompleted: strconv.FormatBool(woc.wf.Status.Fulfilled()),
 				},
 			},
-			"spec": wfv1.WorkflowTaskSetSpec{Tasks: woc.taskSet},
+			"spec": taskSetSpec,
 		}
 		// patch the new templates into taskset
 		err = woc.mergePatchTaskSet(ctx, spec)

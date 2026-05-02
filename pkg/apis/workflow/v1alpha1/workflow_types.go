@@ -798,6 +798,8 @@ type Template struct {
 
 	// Annotations is a list of annotations to add to the template at runtime
 	Annotations map[string]string `json:"annotations,omitempty" protobuf:"bytes,44,opt,name=annotations"`
+	// Compressed and base64 decoded Template
+	CompressedTemplate string `json:"compressedTemplate,omitempty" protobuf:"bytes,49,opt,name=compressedTemplate"`
 }
 
 // SetType will set the template object based on template type.

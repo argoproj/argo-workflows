@@ -2340,6 +2340,7 @@ that the fieldset applies to.
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
+| compressedNode | string| `string` |  | |  |  |
 | message | string| `string` |  | |  |  |
 | outputs | [Outputs](#outputs)| `Outputs` |  | |  |  |
 | phase | [NodePhase](#node-phase)| `NodePhase` |  | |  |  |
@@ -3976,6 +3977,7 @@ of the first container processes are calculated.
 | annotations | map of string| `map[string]string` |  | | Annotations is a list of annotations to add to the template at runtime |  |
 | archiveLocation | [ArtifactLocation](#artifact-location)| `ArtifactLocation` |  | |  |  |
 | automountServiceAccountToken | boolean| `bool` |  | | AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.</br>ServiceAccountName of ExecutorConfig must be specified if this value is false. |  |
+| compressedTemplate | string| `string` |  | | Compressed and base64 decoded Template |  |
 | container | [Container](#container)| `Container` |  | |  |  |
 | containerSet | [ContainerSetTemplate](#container-set-template)| `ContainerSetTemplate` |  | |  |  |
 | daemon | boolean| `bool` |  | | Daemon will allow a workflow to proceed to the next step so long as the container reaches readiness |  |

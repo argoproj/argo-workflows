@@ -33,8 +33,9 @@ type WorkflowTaskSetList struct {
 }
 
 type NodeResult struct {
-	Phase    NodePhase `json:"phase,omitempty" protobuf:"bytes,1,opt,name=phase,casttype=NodePhase"`
-	Message  string    `json:"message,omitempty" protobuf:"bytes,2,opt,name=message"`
-	Outputs  *Outputs  `json:"outputs,omitempty" protobuf:"bytes,3,opt,name=outputs"`
-	Progress Progress  `json:"progress,omitempty" protobuf:"bytes,4,opt,name=progress,casttype=Progress"`
+	Phase          NodePhase `json:"phase,omitempty" protobuf:"bytes,1,opt,name=phase,casttype=NodePhase"`
+	Message        string    `json:"message,omitempty" protobuf:"bytes,2,opt,name=message"`
+	Outputs        *Outputs  `json:"outputs,omitempty" protobuf:"bytes,3,opt,name=outputs"`
+	Progress       Progress  `json:"progress,omitempty" protobuf:"bytes,4,opt,name=progress,casttype=Progress"`
+	CompressedNode string    `json:"compressedNode,omitempty" protobuf:"bytes,5,opt,name=compressedNode"`
 }

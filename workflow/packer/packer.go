@@ -40,9 +40,46 @@ func DecompressWorkflow(ctx context.Context, wf *wfv1.Workflow) error {
 	return nil
 }
 
-// getSize return the entire workflow json string size
-func getSize(wf *wfv1.Workflow) (int, error) {
-	nodeContent, err := json.Marshal(wf)
+func DecompressWorkflowTaskSetSpec(ctx context.Context, spec *wfv1.WorkflowTaskSetSpec) error {
+	for name, task := range spec.Tasks {
+		if task.CompressedTemplate != "" {
+			content, err := file.DecodeDecompressString(ctx, task.CompressedTemplate)
+			if err != nil {
+				return fmt.Errorf("failed to decompress task %q: %w", name, err)
+			}
+
+			if err := json.Unmarshal([]byte(content), &task); err != nil {
+				return fmt.Errorf("failed to unmarshal task %q: %w", name, err)
+			}
+
+			task.CompressedTemplate = ""
+			spec.Tasks[name] = task
+		}
+	}
+	return nil
+}
+
+func DecompressWorkflowTaskSetStatus(ctx context.Context, status *wfv1.WorkflowTaskSetStatus) error {
+	for name, node := range status.Nodes {
+		if node.CompressedNode != "" {
+			content, err := file.DecodeDecompressString(ctx, node.CompressedNode)
+			if err != nil {
+				return fmt.Errorf("failed to decompress node %q: %w", name, err)
+			}
+
+			if err := json.Unmarshal([]byte(content), &node); err != nil {
+				return fmt.Errorf("failed to unmarshal node %q: %w", name, err)
+			}
+			node.CompressedNode = ""
+			status.Nodes[name] = node
+		}
+	}
+	return nil
+}
+
+// getSize return the entire k8s resource json string size
+func getSize(resource any) (int, error) {
+	nodeContent, err := json.Marshal(resource)
 	if err != nil {
 		return 0, err
 	}
@@ -55,9 +92,14 @@ func IsLargeWorkflow(wf *wfv1.Workflow) (bool, error) {
 }
 
 const tooLarge = "workflow is longer than maximum allowed size."
+const tooLargeTaskSetSpec = "workflowtasksets/spec is longer than maximum allowed size."
 
 func IsTooLargeError(err error) bool {
 	return err != nil && strings.HasPrefix(err.Error(), tooLarge)
+}
+
+func IsTooLargeTaskSetSpecError(err error) bool {
+	return err != nil && strings.HasPrefix(err.Error(), tooLargeTaskSetSpec)
 }
 
 func CompressWorkflowIfNeeded(ctx context.Context, wf *wfv1.Workflow) error {
@@ -94,6 +136,121 @@ func compressWorkflow(ctx context.Context, wf *wfv1.Workflow) error {
 			return err
 		}
 		return fmt.Errorf("%s compressed size %d > maxSize %d", tooLarge, compressedSize, getMaxWorkflowSize())
+	}
+	return nil
+}
+
+// CompressWorkflowTaskSetSpec compress tasks individually instead of serializing the whole map.
+//
+// Reason:
+// WorkflowTaskSetSpec.Tasks is treated as a mergeable collection where finished tasks
+// may be removed/updated via k8s merge semantics in other parts of the system.
+//
+// If we compressed the entire collection as a single blob:
+// - we would lose per-task merge/delete semantics
+// - finished task cleanup (merge-by-key behavior) would break
+// - partial updates would become impossible without full decompression
+//
+// Therefore each task is compressed independently.
+func CompressWorkflowTaskSetSpec(ctx context.Context, spec *wfv1.WorkflowTaskSetSpec) error {
+	if spec == nil || len(spec.Tasks) == 0 {
+		return nil
+	}
+
+	for name, task := range spec.Tasks {
+		rawJSON, err := json.Marshal(task)
+		if err != nil {
+			return fmt.Errorf("marshal task %s: %w", name, err)
+		}
+		rawEncoded := string(rawJSON)
+		compressed := file.CompressEncodeString(ctx, rawEncoded)
+
+		if len(compressed) < len(rawEncoded) {
+			spec.Tasks[name] = wfv1.Template{
+				CompressedTemplate: compressed,
+			}
+		}
+	}
+
+	size, err := getSize(spec)
+	if err != nil {
+		return err
+	}
+
+	if size > getMaxWorkflowSize() {
+		if err := DecompressWorkflowTaskSetSpec(ctx, spec); err != nil {
+			return fmt.Errorf(
+				"%s compressed size %d > maxSize %d; additionally failed to decompress workflow task set spec: %w",
+				tooLargeTaskSetSpec,
+				size,
+				getMaxWorkflowSize(),
+				err,
+			)
+		}
+
+		return fmt.Errorf(
+			"%s compressed size %d > maxSize %d",
+			tooLargeTaskSetSpec,
+			size,
+			getMaxWorkflowSize(),
+		)
+	}
+
+	return nil
+}
+
+// CompressWorkflowTaskSetStatus compress nodes individually instead of serializing the whole map.
+//
+// Reason:
+// WorkflowTaskSetStatus.nodes is treated as a mergeable collection where finished tasks
+// may be removed/updated via k8s merge semantics in other parts of the system.
+//
+// If we compressed the entire collection as a single blob:
+// - we would lose per-task merge/delete semantics
+// - finished task cleanup (merge-by-key behavior) would break
+// - partial updates would become impossible without full decompression
+//
+// Therefore each task is compressed independently.
+func CompressWorkflowTaskSetStatus(ctx context.Context, status *wfv1.WorkflowTaskSetStatus) error {
+	if status == nil || len(status.Nodes) == 0 {
+		return nil
+	}
+
+	for name, node := range status.Nodes {
+		rawJSON, err := json.Marshal(node)
+		if err != nil {
+			return fmt.Errorf("marshal node %s: %w", name, err)
+		}
+		rawEncoded := string(rawJSON)
+		compressed := file.CompressEncodeString(ctx, rawEncoded)
+
+		if len(compressed) < len(rawEncoded) {
+			status.Nodes[name] = wfv1.NodeResult{
+				CompressedNode: compressed,
+			}
+		} else {
+			node.CompressedNode = ""
+			status.Nodes[name] = node
+		}
+	}
+
+	size, err := getSize(status)
+	if err != nil {
+		return err
+	}
+
+	if size > getMaxWorkflowSize() {
+		if err := DecompressWorkflowTaskSetStatus(ctx, status); err != nil {
+			return fmt.Errorf(
+				"%s compressed size %d > maxSize %d; additionally failed to decompress workflow task set status: %w",
+				tooLargeTaskSetSpec,
+				size,
+				getMaxWorkflowSize(),
+				err,
+			)
+		}
+		return fmt.Errorf("%s compressed size %d > maxSize %d",
+			tooLargeTaskSetSpec, size, getMaxWorkflowSize())
 	}
 	return nil
 }

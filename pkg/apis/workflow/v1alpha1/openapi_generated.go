@@ -4197,6 +4197,12 @@ func schema_pkg_apis_workflow_v1alpha1_NodeResult(ref common.ReferenceCallback) 
 							Format: "",
 						},
 					},
+					"compressedNode": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
 				},
 			},
 		},
@@ -6850,6 +6856,13 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 							},
 						},
 					},
+					"compressedTemplate": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Compressed and base64 decoded Template",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 			},
 		},
@@ -8542,6 +8555,12 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTaskResult(ref common.ReferenceCa
 						},
 					},
 					"progress": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"compressedNode": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
 							Format: "",

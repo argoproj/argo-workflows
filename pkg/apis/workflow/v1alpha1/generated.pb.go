@@ -4576,6 +4576,11 @@ func (m *NodeResult) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	i -= len(m.CompressedNode)
+	copy(dAtA[i:], m.CompressedNode)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.CompressedNode)))
+	i--
+	dAtA[i] = 0x2a
 	i -= len(m.Progress)
 	copy(dAtA[i:], m.Progress)
 	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Progress)))
@@ -6878,6 +6883,13 @@ func (m *Template) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	i -= len(m.CompressedTemplate)
+	copy(dAtA[i:], m.CompressedTemplate)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.CompressedTemplate)))
+	i--
+	dAtA[i] = 0x3
+	i--
+	dAtA[i] = 0x8a
 	if len(m.Annotations) > 0 {
 		keysForAnnotations := make([]string, 0, len(m.Annotations))
 		for k := range m.Annotations {
@@ -11088,6 +11100,8 @@ func (m *NodeResult) Size() (n int) {
 	}
 	l = len(m.Progress)
 	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.CompressedNode)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -12095,6 +12109,8 @@ func (m *Template) Size() (n int) {
 			n += mapEntrySize + 2 + sovGenerated(uint64(mapEntrySize))
 		}
 	}
+	l = len(m.CompressedTemplate)
+	n += 2 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -14000,6 +14016,7 @@ func (this *NodeResult) String() string {
 		`Message:` + fmt.Sprintf("%v", this.Message) + `,`,
 		`Outputs:` + strings.Replace(this.Outputs.String(), "Outputs", "Outputs", 1) + `,`,
 		`Progress:` + fmt.Sprintf("%v", this.Progress) + `,`,
+		`CompressedNode:` + fmt.Sprintf("%v", this.CompressedNode) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -14687,6 +14704,7 @@ func (this *Template) String() string {
 		`HTTP:` + strings.Replace(this.HTTP.String(), "HTTP", "HTTP", 1) + `,`,
 		`Plugin:` + strings.Replace(this.Plugin.String(), "Plugin", "Plugin", 1) + `,`,
 		`Annotations:` + mapStringForAnnotations + `,`,
+		`CompressedTemplate:` + fmt.Sprintf("%v", this.CompressedTemplate) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -28467,6 +28485,38 @@ func (m *NodeResult) Unmarshal(dAtA []byte) error {
 			}
 			m.Progress = Progress(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CompressedNode", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.CompressedNode = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGenerated(dAtA[iNdEx:])
@@ -37114,6 +37164,38 @@ func (m *Template) Unmarshal(dAtA []byte) error {
 				}
 			}
 			m.Annotations[mapkey] = mapvalue
+			iNdEx = postIndex
+		case 49:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CompressedTemplate", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.CompressedTemplate = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

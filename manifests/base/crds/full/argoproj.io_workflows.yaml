@@ -5267,6 +5267,8 @@ spec:
                         (has(self.plugin) ? 1 : 0) <= 1'
                   automountServiceAccountToken:
                     type: boolean
+                  compressedTemplate:
+                    type: string
                   container:
                     properties:
                       args:
@@ -17392,6 +17394,9 @@ spec:
                         AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.
                         ServiceAccountName of ExecutorConfig must be specified if this value is false.
                       type: boolean
+                    compressedTemplate:
+                      description: Compressed and base64 decoded Template
+                      type: string
                     container:
                       description: Container is the main container image to run in
                         the pod

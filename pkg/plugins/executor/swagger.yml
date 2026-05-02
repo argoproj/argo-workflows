@@ -2522,6 +2522,8 @@ definitions:
         type: string
     NodeResult:
         properties:
+            compressedNode:
+                type: string
             message:
                 type: string
             outputs:
@@ -4679,6 +4681,9 @@ definitions:
                     AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.
                     ServiceAccountName of ExecutorConfig must be specified if this value is false.
                 type: boolean
+            compressedTemplate:
+                description: Compressed and base64 decoded Template
+                type: string
             container:
                 $ref: '#/definitions/Container'
             containerSet:

@@ -22,6 +22,8 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/retry"
 
+	"github.com/argoproj/argo-workflows/v4/workflow/packer"
+
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	workflow "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
@@ -104,6 +106,10 @@ func (ae *AgentExecutor) Agent(ctx context.Context) error {
 			}
 
 			taskSet, ok := event.Object.(*wfv1.WorkflowTaskSet)
+			err = packer.DecompressWorkflowTaskSetSpec(ctx, &taskSet.Spec)
+			if err != nil {
+				return err
+			}
 			if !ok {
 				return apierr.FromObject(event.Object)
 			}
@@ -111,7 +117,6 @@ func (ae *AgentExecutor) Agent(ctx context.Context) error {
 				logger.Info(ctx, "Workflow completed... stopping agent")
 				return nil
 			}
-
 			for nodeID, tmpl := range taskSet.Spec.Tasks {
 				taskQueue <- task{NodeID: nodeID, Template: tmpl}
 			}
@@ -179,8 +184,12 @@ func (ae *AgentExecutor) patchWorker(ctx context.Context, taskSetInterface v1alp
 			if len(nodeResults) == 0 {
 				continue
 			}
-
-			patch, err := json.Marshal(map[string]any{"status": wfv1.WorkflowTaskSetStatus{Nodes: nodeResults}})
+			status := wfv1.WorkflowTaskSetStatus{Nodes: nodeResults}
+			if err := packer.CompressWorkflowTaskSetStatus(ctx, &status); err != nil {
+				logger.WithError(err).Error(ctx, "Error in agent patch during compression node result")
+				continue
+			}
+			patch, err := json.Marshal(map[string]any{"status": status})
 			if err != nil {
 				logger.WithError(err).Error(ctx, "Generating Patch Failed")
 				continue
