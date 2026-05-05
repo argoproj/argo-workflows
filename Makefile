@@ -395,7 +395,8 @@ swagger: \
 	manifests/base/crds/full/argoproj.io_workflows.yaml \
 	manifests \
 	api/openapi-spec/swagger.json \
-	api/jsonschema/schema.json
+	api/jsonschema/schema.json \
+	api/openapi-spec/openapi.yaml
 
 
 $(TOOL_MOCKERY): Makefile
@@ -827,6 +828,8 @@ dist/swagger.0.json: $(TOOL_SWAGGER) dist/kubeified.swagger.json
 
 api/openapi-spec/swagger.json: $(TOOL_SWAGGER) dist/swagger.0.json
 	$(TOOL_SWAGGER) flatten --with-flatten remove-unused dist/swagger.0.json -o api/openapi-spec/swagger.json
+api/openapi-spec/openapi.yaml: api/openapi-spec/swagger.json hack/api/openapi3/main.go
+	GOFLAGS="$(GOFLAGS) -mod=mod" go run ./hack/api/openapi3
 
 api/jsonschema/schema.json: api/openapi-spec/swagger.json hack/api/jsonschema/main.go
 	GOFLAGS="$(GOFLAGS) -mod=mod" go run ./hack/api/jsonschema
