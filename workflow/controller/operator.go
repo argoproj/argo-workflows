@@ -3314,6 +3314,10 @@ func (woc *wfOperationCtx) getTemplateOutputsFromScope(ctx context.Context, tmpl
 					return nil, err
 				}
 				val = param.ValueFrom.Default.String()
+			} else if val == "" && param.ValueFrom.Default != nil {
+				// Skipped/omitted steps contribute "" to scope (they produced no output).
+				// Use the declared default rather than propagating an empty value.
+				val = param.ValueFrom.Default.String()
 			}
 			param.Value = wfv1.AnyStringPtr(val)
 			param.ValueFrom = nil
