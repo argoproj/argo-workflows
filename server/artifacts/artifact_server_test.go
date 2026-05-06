@@ -790,3 +790,67 @@ func TestArtifactServer_httpFromError(t *testing.T) {
 	s.httpFromError(ctx, err, recorder)
 	assert.Equal(t, http.StatusNotFound, recorder.Result().StatusCode)
 }
+
+func TestArtifactServer_NilDriverReturns500(t *testing.T) {
+	gatekeeper := &authmocks.Gatekeeper{}
+	kube := kubefake.NewClientset()
+	instanceID := "my-instanceid"
+	wf := &wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Name: "my-wf", Labels: map[string]string{
+			common.LabelKeyControllerInstanceID: instanceID,
+		}},
+		Spec: wfv1.WorkflowSpec{
+			Templates: []wfv1.Template{
+				{Name: "template-1"},
+			},
+		},
+		Status: wfv1.WorkflowStatus{
+			Nodes: wfv1.Nodes{
+				"my-node-1": wfv1.NodeStatus{
+					TemplateName: "template-1",
+					Outputs: &wfv1.Outputs{
+						Artifacts: wfv1.Artifacts{
+							{
+								Name: "my-artifact",
+								ArtifactLocation: wfv1.ArtifactLocation{
+									S3: &wfv1.S3Artifact{
+										Key: "my-wf/my-node-1/my-artifact.tgz",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	argo := fakewfv1.NewClientset(wf)
+	ctx := context.WithValue(context.WithValue(logging.TestContext(t.Context()), auth.KubeKey, kube), auth.WfKey, argo)
+	gatekeeper.On("ContextWithRequest", mock.Anything, mock.Anything).Return(ctx, nil)
+	a := &sqldbmocks.WorkflowArchive{}
+	a.On("GetWorkflow", mock.Anything, "my-uuid", "", "").Return(wf, nil)
+
+	// Factory that returns nil driver and nil error — the bug trigger
+	nilDriverFactory := func(_ context.Context, _ *wfv1.Artifact, _ resource.Interface) (artifactscommon.ArtifactDriver, error) {
+		return nil, nil
+	}
+
+	artifactRepositories := armocks.DummyArtifactRepositories(&wfv1.ArtifactRepository{
+		S3: &wfv1.S3ArtifactRepository{
+			S3Bucket: wfv1.S3Bucket{
+				Endpoint: "my-endpoint",
+				Bucket:   "my-bucket",
+			},
+		},
+	})
+
+	s := newArtifactServer(gatekeeper, hydratorfake.Noop, a, instanceid.NewService(instanceID), nilDriverFactory, artifactRepositories, logging.RequireLoggerFromContext(ctx))
+
+	r := &http.Request{}
+	r.URL = mustParse("/artifact-files/my-ns/workflows/my-wf/my-node-1/outputs/my-artifact")
+	recorder := httptest.NewRecorder()
+
+	// This should NOT panic — it should return 500
+	s.GetArtifactFile(recorder, r)
+	assert.Equal(t, 500, recorder.Result().StatusCode)
+}

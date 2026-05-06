@@ -177,6 +177,10 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 		a.serverInternalError(ctx, err, w)
 		return
 	}
+	if driver == nil {
+		a.serverInternalError(ctx, fmt.Errorf("artifact driver is nil for artifact %q in node %q", artifactName, nodeID), w)
+		return
+	}
 
 	isDir := strings.HasSuffix(r.URL.Path, "/")
 
@@ -312,6 +316,10 @@ func (a *ArtifactServer) getArtifact(w http.ResponseWriter, r *http.Request, isI
 		a.serverInternalError(ctx, err, w)
 		return
 	}
+	if driver == nil {
+		a.serverInternalError(ctx, fmt.Errorf("artifact driver is nil for artifact %q in node %q", artifactName, nodeID), w)
+		return
+	}
 
 	err = a.returnArtifact(ctx, w, art, driver)
 
@@ -364,6 +372,10 @@ func (a *ArtifactServer) getArtifactByUID(w http.ResponseWriter, r *http.Request
 	art, driver, err := a.getArtifactAndDriver(ctx, nodeID, artifactName, isInput, wf, nil)
 	if err != nil {
 		a.serverInternalError(ctx, err, w)
+		return
+	}
+	if driver == nil {
+		a.serverInternalError(ctx, fmt.Errorf("artifact driver is nil for artifact %q in node %q", artifactName, nodeID), w)
 		return
 	}
 
