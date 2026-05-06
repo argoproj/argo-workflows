@@ -17,6 +17,7 @@ import (
 	"google.golang.org/grpc/status"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/utils/env"
 
 	argoerrors "github.com/argoproj/argo-workflows/v4/errors"
@@ -41,6 +42,7 @@ type ArtifactServer struct {
 	artDriverFactory     artifacts.NewDriverFunc
 	artifactRepositories artifactrepositories.Interface
 	logger               logging.Logger
+	serverKubeClient     kubernetes.Interface
 }
 
 type Direction string
@@ -50,12 +52,12 @@ const (
 	Inputs  Direction = "inputs"
 )
 
-func NewArtifactServer(authN auth.Gatekeeper, hydrator hydrator.Interface, wfArchive sqldb.WorkflowArchive, instanceIDService instanceid.Service, artifactRepositories artifactrepositories.Interface, logger logging.Logger) *ArtifactServer {
-	return newArtifactServer(authN, hydrator, wfArchive, instanceIDService, artifacts.NewDriver, artifactRepositories, logger)
+func NewArtifactServer(authN auth.Gatekeeper, hydrator hydrator.Interface, wfArchive sqldb.WorkflowArchive, instanceIDService instanceid.Service, artifactRepositories artifactrepositories.Interface, logger logging.Logger, serverKubeClient kubernetes.Interface) *ArtifactServer {
+	return newArtifactServer(authN, hydrator, wfArchive, instanceIDService, artifacts.NewDriver, artifactRepositories, logger, serverKubeClient)
 }
 
-func newArtifactServer(authN auth.Gatekeeper, hydrator hydrator.Interface, wfArchive sqldb.WorkflowArchive, instanceIDService instanceid.Service, artDriverFactory artifacts.NewDriverFunc, artifactRepositories artifactrepositories.Interface, logger logging.Logger) *ArtifactServer {
-	return &ArtifactServer{authN, hydrator, wfArchive, instanceIDService, artDriverFactory, artifactRepositories, logger}
+func newArtifactServer(authN auth.Gatekeeper, hydrator hydrator.Interface, wfArchive sqldb.WorkflowArchive, instanceIDService instanceid.Service, artDriverFactory artifacts.NewDriverFunc, artifactRepositories artifactrepositories.Interface, logger logging.Logger, serverKubeClient kubernetes.Interface) *ArtifactServer {
+	return &ArtifactServer{authN, hydrator, wfArchive, instanceIDService, artDriverFactory, artifactRepositories, logger, serverKubeClient}
 }
 
 //nolint:contextcheck
@@ -460,7 +462,7 @@ func (a *ArtifactServer) httpFromError(ctx context.Context, err error, w http.Re
 func (a *ArtifactServer) getArtifactAndDriver(ctx context.Context, nodeID, artifactName string, isInput bool, wf *wfv1.Workflow, fileName *string) (*wfv1.Artifact, common.ArtifactDriver, error) {
 	logger := logging.RequireLoggerFromContext(ctx)
 
-	kubeClient := auth.GetKubeClient(ctx)
+	kubeClient := a.serverKubeClient
 
 	var art *wfv1.Artifact
 

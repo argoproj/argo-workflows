@@ -51,6 +51,19 @@ type fakeArtifactDriver struct {
 	data []byte
 }
 
+// simpleArtifactDriver is a minimal driver that always succeeds without validating bucket keys.
+type simpleArtifactDriver struct {
+	artifactscommon.ArtifactDriver
+}
+
+func (a *simpleArtifactDriver) IsDirectory(_ context.Context, _ *wfv1.Artifact) (bool, error) {
+	return false, nil
+}
+
+func (a *simpleArtifactDriver) OpenStream(_ context.Context, _ *wfv1.Artifact) (io.ReadCloser, error) {
+	return io.NopCloser(bytes.NewReader([]byte("data"))), nil
+}
+
 func (a *fakeArtifactDriver) Load(_ context.Context, _ *wfv1.Artifact, path string) error {
 	return os.WriteFile(path, a.data, 0o600)
 }
@@ -376,7 +389,7 @@ func newServer(t *testing.T) *ArtifactServer {
 		},
 	})
 
-	return newArtifactServer(gatekeeper, hydratorfake.Noop, a, instanceid.NewService(instanceID), fakeArtifactDriverFactory, artifactRepositories, logging.RequireLoggerFromContext(ctx))
+	return newArtifactServer(gatekeeper, hydratorfake.Noop, a, instanceid.NewService(instanceID), fakeArtifactDriverFactory, artifactRepositories, logging.RequireLoggerFromContext(ctx), kube)
 }
 
 func TestArtifactServer_GetArtifactFile(t *testing.T) {
@@ -844,7 +857,7 @@ func TestArtifactServer_NilDriverReturns500(t *testing.T) {
 		},
 	})
 
-	s := newArtifactServer(gatekeeper, hydratorfake.Noop, a, instanceid.NewService(instanceID), nilDriverFactory, artifactRepositories, logging.RequireLoggerFromContext(ctx))
+	s := newArtifactServer(gatekeeper, hydratorfake.Noop, a, instanceid.NewService(instanceID), nilDriverFactory, artifactRepositories, logging.RequireLoggerFromContext(ctx), kube)
 
 	r := &http.Request{}
 	r.URL = mustParse("/artifact-files/my-ns/workflows/my-wf/my-node-1/outputs/my-artifact")
@@ -853,4 +866,77 @@ func TestArtifactServer_NilDriverReturns500(t *testing.T) {
 	// This should NOT panic — it should return 500
 	s.GetArtifactFile(recorder, r)
 	assert.Equal(t, 500, recorder.Result().StatusCode)
+}
+
+func TestArtifactServer_UsesServerKubeClient(t *testing.T) {
+	gatekeeper := &authmocks.Gatekeeper{}
+	serverKube := kubefake.NewClientset() // the server's own client
+	callerKube := kubefake.NewClientset() // the caller's scoped client
+	instanceID := "my-instanceid"
+	wf := &wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Name: "my-wf", Labels: map[string]string{
+			common.LabelKeyControllerInstanceID: instanceID,
+		}},
+		Spec: wfv1.WorkflowSpec{
+			Templates: []wfv1.Template{
+				{Name: "template-1"},
+			},
+		},
+		Status: wfv1.WorkflowStatus{
+			Nodes: wfv1.Nodes{
+				"my-node-1": wfv1.NodeStatus{
+					TemplateName: "template-1",
+					Outputs: &wfv1.Outputs{
+						Artifacts: wfv1.Artifacts{
+							{
+								Name: "my-artifact",
+								ArtifactLocation: wfv1.ArtifactLocation{
+									S3: &wfv1.S3Artifact{
+										Key: "my-wf/my-node-1/my-artifact.tgz",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	argo := fakewfv1.NewClientset(wf)
+	// Context has the CALLER's kube client (limited permissions)
+	ctx := context.WithValue(context.WithValue(logging.TestContext(t.Context()), auth.KubeKey, callerKube), auth.WfKey, argo)
+	gatekeeper.On("ContextWithRequest", mock.Anything, mock.Anything).Return(ctx, nil)
+
+	a := &sqldbmocks.WorkflowArchive{}
+	a.On("GetWorkflow", mock.Anything, "my-uuid", "", "").Return(wf, nil)
+
+	// Track which resource interface the factory receives
+	var receivedResources resource.Interface
+	trackingFactory := func(_ context.Context, _ *wfv1.Artifact, ri resource.Interface) (artifactscommon.ArtifactDriver, error) {
+		receivedResources = ri
+		return &simpleArtifactDriver{}, nil
+	}
+
+	artifactRepositories := armocks.DummyArtifactRepositories(&wfv1.ArtifactRepository{
+		S3: &wfv1.S3ArtifactRepository{
+			S3Bucket: wfv1.S3Bucket{
+				Endpoint: "my-endpoint",
+				Bucket:   "my-bucket",
+			},
+		},
+	})
+
+	s := newArtifactServer(gatekeeper, hydratorfake.Noop, a, instanceid.NewService(instanceID), trackingFactory, artifactRepositories, logging.RequireLoggerFromContext(ctx), serverKube)
+
+	r := &http.Request{}
+	r.URL = mustParse("/artifacts/my-ns/my-wf/my-node-1/my-artifact")
+	recorder := httptest.NewRecorder()
+
+	s.GetOutputArtifact(recorder, r)
+
+	// The factory should have received the SERVER's kube client, not the caller's
+	require.NotNil(t, receivedResources, "factory should have been called")
+	res, ok := receivedResources.(resources)
+	require.True(t, ok, "expected resources type")
+	assert.Same(t, serverKube, res.kubeClient, "artifact driver should use server kube client, not caller's")
 }
