@@ -5,6 +5,7 @@ package commands
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"sync"
 	"syscall"
@@ -202,6 +203,52 @@ func TestEmissary(t *testing.T) {
 		data, err = os.ReadFile(varRunArgo + "/outputs/artifacts/tmp/artifact.tgz")
 		require.NoError(t, err)
 		assert.NotEmpty(t, string(data)) // data is tgz format
+	})
+}
+
+func TestSaveParameterPathTraversal(t *testing.T) {
+	tmp := t.TempDir()
+	varRunArgo = tmp
+	ctx := logging.TestContext(t.Context())
+
+	srcFile := "result.txt"
+	require.NoError(t, os.WriteFile(filepath.Join(tmp, srcFile), []byte("hello"), 0o644))
+
+	t.Run("LegitimateRelativePath", func(t *testing.T) {
+		err := saveParameter(ctx, srcFile)
+		require.NoError(t, err)
+	})
+	t.Run("TraversalToArgoexec", func(t *testing.T) {
+		err := saveParameter(ctx, "../../argoexec")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "path traversal")
+	})
+	t.Run("TraversalToSidecarExitCode", func(t *testing.T) {
+		err := saveParameter(ctx, "../../ctr/sidecar/exitcode")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "path traversal")
+	})
+	t.Run("TraversalToTemplate", func(t *testing.T) {
+		err := saveParameter(ctx, "../template")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "path traversal")
+	})
+}
+
+func TestSaveArtifactPathTraversal(t *testing.T) {
+	tmp := t.TempDir()
+	varRunArgo = tmp
+	ctx := logging.TestContext(t.Context())
+
+	t.Run("TraversalToArgoexec", func(t *testing.T) {
+		err := saveArtifact(ctx, "../../argoexec")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "path traversal")
+	})
+	t.Run("TraversalToSidecarExitCode", func(t *testing.T) {
+		err := saveArtifact(ctx, "../../ctr/sidecar/exitcode")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "path traversal")
 	})
 }
 
