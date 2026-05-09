@@ -4,15 +4,16 @@ import {useEffect, useState} from 'react';
 import {genres} from '../../../workflows/components/workflow-dag/genres';
 import {WorkflowDagRenderOptions} from '../../../workflows/components/workflow-dag/workflow-dag';
 import {WorkflowDagRenderOptionsPanel} from '../../../workflows/components/workflow-dag/workflow-dag-render-options-panel';
-import {ClusterWorkflowTemplate, CronWorkflow, DAGTask, Template, Workflow, WorkflowStep, WorkflowTemplate } from '../../models';
+import {ClusterWorkflowTemplate, CronWorkflow, DAGTask, Template, Workflow, WorkflowStep, WorkflowTemplate} from '../../models';
 import {services} from '../../services';
+import {ErrorNotice} from '../error-notice';
 import {GraphPanel} from '../graph/graph-panel';
 import {Graph} from '../graph/types';
 import {Icon} from '../icon';
+import {Loading} from '../loading';
 
 export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow | WorkflowTemplate | ClusterWorkflowTemplate | CronWorkflow}) {
-    const [workflow, setWorkflow] = useState<Workflow | WorkflowTemplate | ClusterWorkflowTemplate>(workflowDefinition);
-    const [isLoading, setIsLoading] = useState(true);
+    const [workflow, setWorkflow] = useState<Workflow | WorkflowTemplate | ClusterWorkflowTemplate>();
     const [error, setError] = useState<Error>();
     const [state, saveOptions] = useState<WorkflowDagRenderOptions>({
         expandNodes: new Set(),
@@ -22,89 +23,56 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
     });
 
     useEffect(() => {
-        if ('workflowTemplateRef' in workflowDefinition.spec && isLoading) {
-            setWorkflowFromReference(workflowDefinition, setWorkflow)
-                .then(() => {
-                    setError(null);
-                    setIsLoading(false);
-                })
-                .catch(err => {
-                    setError(err);
-                });
-        } else if ('workflowSpec' in workflowDefinition.spec && isLoading) {
-            const convertedCronWorkflow = convertFromCronWorkflow(workflowDefinition as CronWorkflow);
-            setWorkflow(convertedCronWorkflow);
-            setIsLoading(false);
-        } else {
-            setIsLoading(false);
-        }
-    }, [workflow]);
-
-    if (isLoading) {
-        const currentState = error ? `${error.name}: ${error.message}` : 'Loading...';
-        return <div>{currentState}</div>;
-    }
-
-    const name = workflow.metadata.name ? `${workflow.metadata.name}-${generateNamePostfix(5)}` : `${workflow.metadata.generateName}${generateNamePostfix(5)}`;
-    const graph = populateGraphFromWorkflow(workflow, name);
+        (async () => {
+            try {
+                let convertedWorkflow = workflowDefinition;
+                if ('workflowSpec' in convertedWorkflow.spec) {
+                    convertedWorkflow = convertFromCronWorkflow(convertedWorkflow as CronWorkflow);
+                }
+                if ('workflowTemplateRef' in convertedWorkflow.spec) {
+                    convertedWorkflow = await convertWorkflowFromReference(convertedWorkflow);
+                }
+                setError(null);
+                setWorkflow(convertedWorkflow);
+            } catch (err) {
+                setError(err);
+            }
+        })();
+    }, [workflowDefinition]);
 
     return (
-        <GraphPanel
-            storageScope='graph-viewer'
-            graph={graph}
-            nodeGenresTitle={'Node Type'}
-            nodeGenres={genres}
-            nodeClassNamesTitle={'Node Phase'}
-            nodeClassNames={{Skipped: true}}
-            nodeTagsTitle={'Template'}
-            nodeTags={{[name]: true}}
-            nodeSize={64}
-            defaultIconShape='circle'
-            hideNodeTypes={false}
-            hideOptions={false}
-            options={<WorkflowDagRenderOptionsPanel {...state} onChange={workflowDagRenderOptions => saveOptions(workflowDagRenderOptions)} />}
-        />
+        <>
+            <ErrorNotice error={error} />
+            {!workflow ? (
+                <Loading />
+            ) : (
+                <GraphPanel
+                    storageScope='graph-viewer'
+                    graph={populateGraphFromWorkflow(workflow)}
+                    nodeGenresTitle={'Node Type'}
+                    nodeGenres={genres}
+                    nodeClassNamesTitle={'Node Phase'}
+                    nodeClassNames={{Skipped: true}}
+                    nodeTagsTitle={'Template'}
+                    nodeTags={{[workflow.metadata.name || workflow.metadata.generateName]: true}}
+                    nodeSize={64}
+                    defaultIconShape='circle'
+                    hideNodeTypes={false}
+                    hideOptions={false}
+                    options={<WorkflowDagRenderOptionsPanel {...state} onChange={workflowDagRenderOptions => saveOptions(workflowDagRenderOptions)} />}
+                />
+            )}
+        </>
     );
 }
 
-const defaultNodeParams: {
-    classNames: string;
-    progress: number;
-    icon: Icon;
-} = {
-    classNames: 'Skipped',
-    progress: 0,
-    icon: 'clock'
-};
-
-export function setWorkflowFromReference(
-    workflowDefinition: Workflow | WorkflowTemplate | ClusterWorkflowTemplate,
-    setWorkflow: (w: WorkflowTemplate | ClusterWorkflowTemplate) => void
-): Promise<void> {
+export function convertWorkflowFromReference(workflowDefinition: Workflow | WorkflowTemplate | ClusterWorkflowTemplate): Promise<WorkflowTemplate | ClusterWorkflowTemplate> {
     const workflowTemplateRef = workflowDefinition.spec.workflowTemplateRef;
     const referenceName = workflowTemplateRef.name;
     if ('clusterScope' in workflowTemplateRef && workflowTemplateRef.clusterScope == true) {
-        return services.clusterWorkflowTemplate
-            .get(referenceName)
-            .then(clusterWorkflowTemplate => {
-                setWorkflow(clusterWorkflowTemplate);
-            })
-            .catch(err => {
-                const explicitError = new Error(`${err.message}, no workflowTemplateRef "${referenceName}" found in clusterWorkflowTemplates`);
-                explicitError.stack = err.stack;
-                throw explicitError;
-            });
+        return services.clusterWorkflowTemplate.get(referenceName);
     } else {
-        return services.workflowTemplate
-            .get(referenceName, workflowDefinition.metadata.namespace)
-            .then(workflowTemplate => {
-                setWorkflow(workflowTemplate);
-            })
-            .catch(err => {
-                const explicitError = new Error(`${err.message}, no workflowTemplateRef "${referenceName}" found in workflowTemplates`);
-                explicitError.stack = err.stack;
-                throw explicitError;
-            });
+        return services.workflowTemplate.get(referenceName, workflowDefinition.metadata.namespace);
     }
 }
 
@@ -117,10 +85,10 @@ export function convertFromCronWorkflow(cronWorkflow: CronWorkflow): Workflow {
     };
 }
 
-export function populateGraphFromWorkflow(workflow: Workflow | WorkflowTemplate | ClusterWorkflowTemplate, name: string): Graph {
+export function populateGraphFromWorkflow(workflow: Workflow | WorkflowTemplate | ClusterWorkflowTemplate): Graph {
     const graph = new Graph();
 
-    const templates = workflow.spec.templates;
+    const templates = workflow.spec.templates || [];
     const templateMap = new Map<string, Template>();
     const templateLeafMap = new Map<string, string[]>();
     let previousSteps: string[] = [];
@@ -297,6 +265,16 @@ export function populateGraphFromWorkflow(workflow: Workflow | WorkflowTemplate 
         return '';
     }
 
+    const defaultNodeParams: {
+        classNames: string;
+        progress: number;
+        icon: Icon;
+    } = {
+        classNames: 'Skipped',
+        progress: 0,
+        icon: 'clock'
+    };
+
     const createNode = (name: string, label: string, genre: string, params = defaultNodeParams) => {
         graph.nodes.set(name, {
             label,
@@ -310,7 +288,7 @@ export function populateGraphFromWorkflow(workflow: Workflow | WorkflowTemplate 
         graph.edges.set({v: from, w: to}, edgeData);
     };
 
-    processTemplate(entrypoint, name);
+    processTemplate(entrypoint, workflow.metadata.name || workflow.metadata.generateName);
 
     return graph;
 }
@@ -324,16 +302,6 @@ export function parseDepends(dependsString: string): string[] {
     }
 
     return Array.from(taskNames);
-}
-
-export function generateNamePostfix(len: number): string {
-    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-    let result = '';
-    for (let i = 0; i < len; i++) {
-        const randomIndex = Math.floor(Math.random() * chars.length);
-        result += chars[randomIndex];
-    }
-    return result;
 }
 
 export function getLeafNodes(template: Template): string[] | null {

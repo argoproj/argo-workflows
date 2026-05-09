@@ -4,15 +4,7 @@ import React from 'react';
 import {exampleClusterWorkflowTemplate, exampleCronWorkflow, exampleWorkflow, exampleWorkflowTemplate} from '../../examples';
 import {Workflow} from '../../models';
 import {services} from '../../services';
-import {
-    convertFromCronWorkflow,
-    generateNamePostfix,
-    getLeafNodes,
-    getStringAfterDelimiter,
-    GraphViewer,
-    parseDepends,
-    populateGraphFromWorkflow
-} from './graph-viewer';
+import {convertFromCronWorkflow, getLeafNodes, getStringAfterDelimiter, GraphViewer, parseDepends, populateGraphFromWorkflow} from './graph-viewer';
 
 jest.mock('../../services/workflow-template-service');
 jest.mock('../../services/cluster-workflow-template-service');
@@ -22,6 +14,10 @@ jest.mock('../graph/graph-panel', () => ({
     GraphPanel: (props: {graph: {nodes: Map<string, unknown>; edges: Map<unknown, unknown>}}) => (
         <div data-testid='graph-panel' data-node-count={props.graph.nodes.size} data-edge-count={props.graph.edges.size} />
     )
+}));
+
+jest.mock('../loading', () => ({
+    Loading: () => <div>Loading...</div>
 }));
 
 describe('parseDepends', () => {
@@ -45,25 +41,6 @@ describe('parseDepends', () => {
 
     it('returns empty array for empty string', () => {
         expect(parseDepends('')).toEqual([]);
-    });
-});
-
-describe('generateNamePostfix', () => {
-    it('generates a string of the requested length', () => {
-        expect(generateNamePostfix(5)).toHaveLength(5);
-        expect(generateNamePostfix(10)).toHaveLength(10);
-    });
-
-    it('only contains lowercase letters and digits', () => {
-        const result = generateNamePostfix(50);
-        expect(result).toMatch(/^[a-z0-9]+$/);
-    });
-
-    it('generates different values on successive calls (probabilistic)', () => {
-        const a = generateNamePostfix(10);
-        const b = generateNamePostfix(10);
-        // Probability of collision is ~36^-10 ≈ 0
-        expect(a).not.toBe(b);
     });
 });
 
@@ -102,7 +79,10 @@ describe('getLeafNodes', () => {
             name: 'steps-tmpl',
             steps: [
                 [{name: 'step-0', template: 'pod-tmpl'}],
-                [{name: 'step-1a', template: 'pod-tmpl'}, {name: 'step-1b', template: 'pod-tmpl'}]
+                [
+                    {name: 'step-1a', template: 'pod-tmpl'},
+                    {name: 'step-1b', template: 'pod-tmpl'}
+                ]
             ]
         };
         const leaves = getLeafNodes(template as any);
@@ -130,7 +110,7 @@ describe('convertFromCronWorkflow', () => {
 describe('populateGraphFromWorkflow', () => {
     it('creates a Pod node for a single-template workflow', () => {
         const workflow = exampleWorkflow('argo');
-        const graph = populateGraphFromWorkflow(workflow, 'test-run');
+        const graph = populateGraphFromWorkflow(workflow);
         expect(graph.nodes.size).toBeGreaterThan(0);
         // The single entrypoint template should be represented as a Pod node
         const genres = Array.from(graph.nodes.values()).map((n: any) => n.genre);
@@ -159,7 +139,7 @@ describe('populateGraphFromWorkflow', () => {
                 ]
             }
         };
-        const graph = populateGraphFromWorkflow(workflow, 'dag-wf-run');
+        const graph = populateGraphFromWorkflow(workflow);
         const genres = Array.from(graph.nodes.values()).map((n: any) => n.genre);
         expect(genres).toContain('DAG');
         expect(genres).toContain('Pod');
@@ -173,10 +153,7 @@ describe('populateGraphFromWorkflow', () => {
                 templates: [
                     {
                         name: 'steps-tmpl',
-                        steps: [
-                            [{name: 'step-a', template: 'pod-tmpl'}],
-                            [{name: 'step-b', template: 'pod-tmpl'}]
-                        ]
+                        steps: [[{name: 'step-a', template: 'pod-tmpl'}], [{name: 'step-b', template: 'pod-tmpl'}]]
                     },
                     {
                         name: 'pod-tmpl',
@@ -185,11 +162,23 @@ describe('populateGraphFromWorkflow', () => {
                 ]
             }
         };
-        const graph = populateGraphFromWorkflow(workflow, 'steps-wf-run');
+        const graph = populateGraphFromWorkflow(workflow);
         const genres = Array.from(graph.nodes.values()).map((n: any) => n.genre);
         expect(genres).toContain('Steps');
         expect(genres).toContain('StepGroup');
         expect(genres).toContain('Pod');
+    });
+
+    it('gracefully handles Workflow without templates', () => {
+        const workflow: Workflow = {
+            metadata: {name: 'empty-wf', namespace: 'argo'},
+            spec: {
+                entrypoint: 'nonexistent-tmpl'
+            }
+        };
+        const graph = populateGraphFromWorkflow(workflow);
+        expect(graph.nodes.size).toBe(0);
+        expect(graph.edges.size).toBe(0);
     });
 });
 
