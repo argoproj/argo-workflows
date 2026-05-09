@@ -3493,7 +3493,7 @@ spec:
                       description: |-
                         Expression is a condition expression that, when it evaluates to true, causes the hook to fire.
                         The hook is invoked once per matching event and runs in parallel to the step or template it is
-                        attached to. Available variables depend on the hook scope (e.g. workflow.status, steps.status, tasks.status).
+                        attached to. Available variables depend on the hook scope (e.g. workflow status, step status, or task status).
                       type: string
                     template:
                       description: Template is the name of the template to execute
@@ -23266,7 +23266,7 @@ spec:
                                       description: |-
                                         Expression is a condition expression that, when it evaluates to true, causes the hook to fire.
                                         The hook is invoked once per matching event and runs in parallel to the step or template it is
-                                        attached to. Available variables depend on the hook scope (e.g. workflow.status, steps.status, tasks.status).
+                                        attached to. Available variables depend on the hook scope (e.g. workflow status, step status, or task status).
                                       type: string
                                     template:
                                       description: Template is the name of the template
@@ -36019,7 +36019,7 @@ spec:
                                     description: |-
                                       Expression is a condition expression that, when it evaluates to true, causes the hook to fire.
                                       The hook is invoked once per matching event and runs in parallel to the step or template it is
-                                      attached to. Available variables depend on the hook scope (e.g. workflow.status, steps.status, tasks.status).
+                                      attached to. Available variables depend on the hook scope (e.g. workflow status, step status, or task status).
                                     type: string
                                   template:
                                     description: Template is the name of the template

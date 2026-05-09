@@ -2088,7 +2088,7 @@ hook. One and only one of the fields, except TCPSocket must be specified.
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | arguments | [Arguments](#arguments)| `Arguments` |  | |  |  |
-| expression | string| `string` |  | | Expression is a condition expression that, when it evaluates to true, causes the hook to fire.</br>The hook is invoked once per matching event and runs in parallel to the step or template it is</br>attached to. Available variables depend on the hook scope (e.g. workflow.status, steps.status, tasks.status). |  |
+| expression | string| `string` |  | | Expression is a condition expression that, when it evaluates to true, causes the hook to fire.</br>The hook is invoked once per matching event and runs in parallel to the step or template it is</br>attached to. Available variables depend on the hook scope (e.g. workflow status, step status, or task status). |  |
 | template | string| `string` |  | | Template is the name of the template to execute by the hook |  |
 | templateRef | [TemplateRef](#template-ref)| `TemplateRef` |  | |  |  |
 
