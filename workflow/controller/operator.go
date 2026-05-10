@@ -759,9 +759,16 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		woc.log.WithPanic().Error(ctx, "cannot persist updates with mismatched resource versions")
 	}
 	wfClient := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows(woc.wf.Namespace)
+
+	// Remove completed taskset status before update workflow.
+	err := woc.removeCompletedTaskSetStatus(ctx)
+	if err != nil {
+		woc.log.WithError(err).Warn(ctx, "error updating taskset")
+	}
+
 	// try and compress nodes if needed
 	nodes := woc.wf.Status.Nodes
-	err := woc.controller.hydrator.Dehydrate(ctx, woc.wf)
+	err = woc.controller.hydrator.Dehydrate(ctx, woc.wf)
 	if err != nil {
 		woc.log.WithError(err).Warn(ctx, "Failed to dehydrate")
 		ctx = woc.markWorkflowError(ctx, err)
@@ -772,12 +779,6 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		if woc.controller.syncManager.ReleaseAll(ctx, woc.wf) {
 			woc.log.WithFields(logging.Fields{"key": woc.wf.Name}).Info(ctx, "Released all acquired locks")
 		}
-	}
-
-	// Remove completed taskset status before update workflow.
-	err = woc.removeCompletedTaskSetStatus(ctx)
-	if err != nil {
-		woc.log.WithError(err).Warn(ctx, "error updating taskset")
 	}
 
 	oldRV := woc.wf.ResourceVersion
