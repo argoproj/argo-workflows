@@ -93,8 +93,8 @@ This is a concise list of new features.
   The system will automatically use certificates configured with `SSL_CERT_DIR`, and `SSL_CERT_FILE` for non macOS environments.
   For production environments, always use proper CA certificates instead of skipping TLS verification.
 
-- Deprecate singular in favour of plural items by [Alan Clucas](https://github.com/Joibel) ([#14977](https://github.com/argoproj/argo-workflows/issues/14977))
-  Deprecation: remove singluar `mutex`, `semaphore` and `schedule` from the specs, all were replaced by the plural version in 3.6
+- Deprecate singular in favor of plural items by [Alan Clucas](https://github.com/Joibel) ([#14977](https://github.com/argoproj/argo-workflows/issues/14977))
+  Deprecation: remove singular `mutex`, `semaphore` and `schedule` from the specs, all were replaced by the plural version in 3.6
 
 - Disable write back informer by default by [Eduardo Rodrigues](https://github.com/eduardodbr) ([#12352](https://github.com/argoproj/argo-workflows/issues/12352))
   Update the controller’s default behavior to disable the write-back informer. We’ve seen several cases of unexpected behavior that appear to be caused by the write-back mechanism, and Kubernetes docs recommend avoiding writes to the informer store. Although turning it off may increase the frequency of 409 Conflict errors, it should help reduce unpredictable controller behavior.
