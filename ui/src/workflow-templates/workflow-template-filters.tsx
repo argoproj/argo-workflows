@@ -59,7 +59,7 @@ export function WorkflowTemplateFilters({templates, namespace, namePattern, labe
                     />
                 </div>
                 <div className='columns small-2 xlarge-12'>
-                    <p className='wf-filters-container__title'>Name Pattern</p>
+                    <p className='wf-filters-container__title'>Name Contains</p>
                     <InputFilter
                         value={namePattern}
                         name='wfnamePattern'
