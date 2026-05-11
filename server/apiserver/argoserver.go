@@ -282,7 +282,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	}
 	eventRecorderManager := events.NewEventRecorderManager(as.clients.Kubernetes)
 	artifactRepositories := artifactrepositories.New(as.clients.Kubernetes, as.managedNamespace, &config.ArtifactRepository)
-	artifactServer := artifacts.NewArtifactServer(as.gatekeeper, hydrator.New(offloadRepo), wfArchive, instanceIDService, artifactRepositories, log)
+	artifactServer := artifacts.NewArtifactServer(as.gatekeeper, hydrator.New(offloadRepo), wfArchive, instanceIDService, artifactRepositories, log, as.clients.Kubernetes)
 	eventServer := event.NewController(ctx, instanceIDService, eventRecorderManager, as.eventQueueSize, as.eventWorkerCount, as.eventAsyncDispatch)
 	wfArchiveServer := workflowarchive.NewWorkflowArchiveServer(wfArchive, offloadRepo, config.WorkflowDefaults)
 
