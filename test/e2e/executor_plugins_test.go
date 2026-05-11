@@ -1,5 +1,3 @@
-//go:build plugins
-
 package e2e
 
 import (
@@ -74,6 +72,22 @@ func (s *ExecutorPluginsSuite) TestTemplateExecutor() {
 				}, agent.SecurityContext)
 			}
 		}).
+		ExpectWorkflowTaskSet(func(t *testing.T, wfts *wfv1.WorkflowTaskSet) {
+			assert.NotNil(t, wfts)
+			assert.Empty(t, wfts.Spec.Tasks)
+			assert.Empty(t, wfts.Status.Nodes)
+			assert.Equal(t, "true", wfts.Labels[common.LabelKeyCompleted])
+		})
+}
+
+func (s *ExecutorPluginsSuite) TestCompressedTemplateExecutor_WorkflowTaskSetIsProperlyCleaned() {
+	s.Given().
+		Workflow("@testdata/plugins/executor/massive-executor-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflowCompressed().
 		ExpectWorkflowTaskSet(func(t *testing.T, wfts *wfv1.WorkflowTaskSet) {
 			assert.NotNil(t, wfts)
 			assert.Empty(t, wfts.Spec.Tasks)
