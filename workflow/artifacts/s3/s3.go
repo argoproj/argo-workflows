@@ -280,26 +280,49 @@ func (s3Driver *ArtifactDriver) Delete(ctx context.Context, artifact *wfv1.Artif
 		if err != nil {
 			return err
 		}
-
-		// check suffix instead of s3cli.IsDirectory as it requires another request for file delete (most scenarios)
-		if !strings.HasSuffix(artifact.S3.Key, "/") {
-			return s3cli.Delete(artifact.S3.Bucket, artifact.S3.Key)
-		}
-
-		keys, err := s3cli.ListDirectory(artifact.S3.Bucket, artifact.S3.Key)
-		if err != nil {
-			return fmt.Errorf("unable to list files in %s: %w", artifact.S3.Key, err)
-		}
-		for _, objKey := range keys {
-			err = s3cli.Delete(artifact.S3.Bucket, objKey)
-			if err != nil {
-				return err
-			}
-		}
-		return nil
+		return deleteS3Artifact(ctx, s3cli, artifact)
 	})
 
 	return err
+}
+
+func deleteS3Artifact(ctx context.Context, s3cli Client, artifact *wfv1.Artifact) error {
+	if strings.HasSuffix(artifact.S3.Key, "/") {
+		return deleteS3Directory(s3cli, artifact.S3.Bucket, artifact.S3.Key)
+	}
+
+	err := s3cli.Delete(artifact.S3.Bucket, artifact.S3.Key)
+	if err == nil {
+		return nil
+	}
+
+	isDir, isDirErr := s3cli.IsDirectory(artifact.S3.Bucket, artifact.S3.Key)
+	if isDirErr != nil {
+		return fmt.Errorf("failed to test if %s is a directory: %w", artifact.S3.Key, isDirErr)
+	}
+	if !isDir {
+		return err
+	}
+
+	logging.RequireLoggerFromContext(ctx).
+		WithField("key", artifact.S3.Key).
+		WithError(err).
+		Info(ctx, "Failed to delete key as object, trying directory-prefix deletion")
+	return deleteS3Directory(s3cli, artifact.S3.Bucket, artifact.S3.Key)
+}
+
+func deleteS3Directory(s3cli Client, bucket, key string) error {
+	keys, err := s3cli.ListDirectory(bucket, key)
+	if err != nil {
+		return fmt.Errorf("unable to list files in %s: %w", key, err)
+	}
+	for _, objKey := range keys {
+		err = s3cli.Delete(bucket, objKey)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // saveS3Artifact uploads artifacts to an S3 compliant storage
