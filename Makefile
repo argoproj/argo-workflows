@@ -860,7 +860,7 @@ endif
 .PHONY: docs-spellcheck
 docs-spellcheck: $(TOOL_MDSPELL) $(QUICK_GENERATED_DOCS) ## Spell check docs
 	# check docs for spelling mistakes
-	$(TOOL_MDSPELL) --ignore-numbers --ignore-acronyms --en-us --no-suggestions --report $(shell find docs -name '*.md' -not -name upgrading.md -not -name README.md -not -name fields.md -not -name workflow-controller-configmap.md -not -name upgrading.md -not -name executor_swagger.md -not -path '*/cli/*' -not -name tested-kubernetes-versions.md -not -name new-features.md)
+	$(TOOL_MDSPELL) --ignore-numbers --ignore-acronyms --en-us --no-suggestions --report $(shell find docs -name '*.md' -not -name upgrading.md -not -name README.md -not -name fields.md -not -name workflow-controller-configmap.md -not -name upgrading.md -not -name executor_swagger.md -not -path '*/cli/*' -not -name tested-kubernetes-versions.md)
 	# alphabetize spelling file -- ignore first line (comment), then sort the rest case-sensitive and remove duplicates
 	$(shell cat .spelling | awk 'NR<2{ print $0; next } { print $0 | "LC_COLLATE=C sort" }' | uniq > .spelling.tmp && mv .spelling.tmp .spelling)
 
