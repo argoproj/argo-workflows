@@ -8,28 +8,33 @@ import * as React from 'react';
 import {useEffect, useState} from 'react';
 import {Redirect, Route, Router, Switch} from 'react-router';
 
-import apiDocs from './api-docs';
-import clusterWorkflowTemplates from './cluster-workflow-templates';
-import cronWorkflows from './cron-workflows';
-import eventflow from './event-flow';
-import eventSources from './event-sources';
-import help from './help';
-import login from './login';
 import {ModalSwitch} from './modals/modal-switch';
-import plugins from './plugins';
-import reports from './reports';
-import sensors from './sensors';
 import {uiUrl} from './shared/base';
 import {ChatButton} from './shared/components/chat-button';
 import ErrorBoundary from './shared/components/error-boundary';
 import {Version} from './shared/models';
 import * as nsUtils from './shared/namespaces';
 import {services} from './shared/services';
-import userinfo from './userinfo';
+import {lazyImport} from './shared/utils/lazy-import';
 import {Widgets} from './widgets/widgets';
-import workflowEventBindings from './workflow-event-bindings';
-import workflowTemplates from './workflow-templates';
-import workflows from './workflows';
+
+// Route-level code splitting with retry logic.
+// Each module exposes a `.component` property, so we re-export it as the
+// default so React.lazy (which requires a default export) can consume it.
+const ApiDocs = React.lazy(() => lazyImport(() => import('./api-docs').then(m => ({default: m.default.component}))));
+const ClusterWorkflowTemplates = React.lazy(() => lazyImport(() => import('./cluster-workflow-templates').then(m => ({default: m.default.component}))));
+const CronWorkflows = React.lazy(() => lazyImport(() => import('./cron-workflows').then(m => ({default: m.default.component}))));
+const EventFlow = React.lazy(() => lazyImport(() => import('./event-flow').then(m => ({default: m.default.component}))));
+const EventSources = React.lazy(() => lazyImport(() => import('./event-sources').then(m => ({default: m.default.component}))));
+const Help = React.lazy(() => lazyImport(() => import('./help').then(m => ({default: m.default.component}))));
+const Login = React.lazy(() => lazyImport(() => import('./login').then(m => ({default: m.default.component}))));
+const Plugins = React.lazy(() => lazyImport(() => import('./plugins').then(m => ({default: m.default.component}))));
+const Reports = React.lazy(() => lazyImport(() => import('./reports').then(m => ({default: m.default.component}))));
+const Sensors = React.lazy(() => lazyImport(() => import('./sensors').then(m => ({default: m.default.component}))));
+const UserInfo = React.lazy(() => lazyImport(() => import('./userinfo').then(m => ({default: m.default.component}))));
+const WorkflowEventBindings = React.lazy(() => lazyImport(() => import('./workflow-event-bindings').then(m => ({default: m.default.component}))));
+const WorkflowTemplates = React.lazy(() => lazyImport(() => import('./workflow-templates').then(m => ({default: m.default.component}))));
+const Workflows = React.lazy(() => lazyImport(() => import('./workflows').then(m => ({default: m.default.component}))));
 
 const eventFlowUrl = uiUrl('event-flow');
 const sensorUrl = uiUrl('sensors');
@@ -89,7 +94,7 @@ export function AppRouter({popupManager, history, notificationsManager}: {popupM
             {popupProps && <Popup {...popupProps} />}
             <Router history={history}>
                 <Switch>
-                    <Route exact={true} strict={true} path={loginUrl} component={login.component} />
+                    <Route exact={true} strict={true} path={loginUrl} component={Login} />
                     <Route path={uiUrl('widgets')} component={Widgets} />
                     <Layout
                         navBarStyle={{backgroundColor: navBarBackgroundColor}}
@@ -163,26 +168,28 @@ export function AppRouter({popupManager, history, notificationsManager}: {popupM
                         version={() => <>{version ? version.version : 'unknown'}</>}>
                         <Notifications notifications={notificationsManager.notifications} />
                         <ErrorBoundary>
-                            <Switch>
-                                <Route exact={true} strict={true} path={timelineUrl}>
-                                    <Redirect to={workflowsUrl} />
-                                </Route>
-                                <Route path={eventFlowUrl} component={eventflow.component} />
-                                <Route path={sensorUrl} component={sensors.component} />
-                                <Route path={eventSourceUrl} component={eventSources.component} />
-                                <Route path={workflowsUrl} component={workflows.component} />
-                                <Route path={workflowsEventBindingsUrl} component={workflowEventBindings.component} />
-                                <Route path={workflowTemplatesUrl} component={workflowTemplates.component} />
-                                <Route path={clusterWorkflowTemplatesUrl} component={clusterWorkflowTemplates.component} />
-                                <Route path={cronWorkflowsUrl} component={cronWorkflows.component} />
-                                <Route path={reportsUrl} component={reports.component} />
-                                <Route path={pluginsUrl} component={plugins.component} />
-                                <Route exact={true} strict={true} path={helpUrl} component={help.component} />
-                                <Route exact={true} strict={true} path={apiDocsUrl} component={apiDocs.component} />
-                                <Route exact={true} strict={true} path={userInfoUrl} component={userinfo.component} />
-                                {managedNamespace && <Redirect to={workflowsUrl} />}
-                                {namespace && <Redirect to={workflowsUrl + '/' + namespace} />}
-                            </Switch>
+                            <React.Suspense fallback={<div>Loading...</div>}>
+                                <Switch>
+                                    <Route exact={true} strict={true} path={timelineUrl}>
+                                        <Redirect to={workflowsUrl} />
+                                    </Route>
+                                    <Route path={eventFlowUrl} component={EventFlow} />
+                                    <Route path={sensorUrl} component={Sensors} />
+                                    <Route path={eventSourceUrl} component={EventSources} />
+                                    <Route path={workflowsUrl} component={Workflows} />
+                                    <Route path={workflowsEventBindingsUrl} component={WorkflowEventBindings} />
+                                    <Route path={workflowTemplatesUrl} component={WorkflowTemplates} />
+                                    <Route path={clusterWorkflowTemplatesUrl} component={ClusterWorkflowTemplates} />
+                                    <Route path={cronWorkflowsUrl} component={CronWorkflows} />
+                                    <Route path={reportsUrl} component={Reports} />
+                                    <Route path={pluginsUrl} component={Plugins} />
+                                    <Route exact={true} strict={true} path={helpUrl} component={Help} />
+                                    <Route exact={true} strict={true} path={apiDocsUrl} component={ApiDocs} />
+                                    <Route exact={true} strict={true} path={userInfoUrl} component={UserInfo} />
+                                    {managedNamespace && <Redirect to={workflowsUrl} />}
+                                    {namespace && <Redirect to={workflowsUrl + '/' + namespace} />}
+                                </Switch>
+                            </React.Suspense>
                         </ErrorBoundary>
                         <ChatButton />
                         {version && modals && <ModalSwitch version={version.version} modals={modals} />}
