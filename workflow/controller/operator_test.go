@@ -7332,6 +7332,63 @@ func Test_processItem(t *testing.T) {
 	}
 }
 
+func Test_processItem_mapWithMultilineString(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	tests := []struct {
+		name          string
+		withParam     string
+		expectedParam string
+	}{
+		{
+			name:          "Map with multiline string value",
+			withParam:     `[{"key": "multi\nline\nvalue"}]`,
+			expectedParam: "multi\nline\nvalue",
+		},
+		{
+			name:          "Map with tab in string value",
+			withParam:     `[{"key": "col1\tcol2"}]`,
+			expectedParam: "col1\tcol2",
+		},
+		{
+			name:          "Map with quotes in string value",
+			withParam:     `[{"key": "say \"hello\""}]`,
+			expectedParam: `say "hello"`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			task := wfv1.DAGTask{
+				WithParam: tt.withParam,
+				Arguments: wfv1.Arguments{
+					Parameters: []wfv1.Parameter{
+						{
+							Name:  "value",
+							Value: wfv1.AnyStringPtr("{{item.key}}"),
+						},
+					},
+				},
+			}
+
+			taskBytes, err := json.Marshal(task)
+			require.NoError(t, err)
+
+			tmpl, err := template.NewTemplate(string(taskBytes))
+			require.NoError(t, err)
+
+			var items []wfv1.Item
+			wfv1.MustUnmarshal([]byte(tt.withParam), &items)
+
+			var newTask wfv1.DAGTask
+			_, err = processItem(ctx, tmpl, "task-name", 0, items[0], &newTask, "", map[string]string{})
+
+			require.NoError(t, err)
+			assert.Equal(t, tt.expectedParam, newTask.Arguments.Parameters[0].Value.String())
+		})
+	}
+}
+
 var stepTimeoutWf = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow

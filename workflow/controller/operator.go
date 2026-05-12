@@ -3933,7 +3933,11 @@ func processItem(ctx context.Context, tmpl template.Template, name string, index
 		vals := make([]string, 0)
 		mapVal := item.GetMapVal()
 		for itemKey, itemVal := range mapVal {
-			replaceMap[fmt.Sprintf("item.%s", itemKey)] = fmt.Sprintf("%v", itemVal)
+			if itemVal.GetType() == wfv1.String {
+				replaceMap[fmt.Sprintf("item.%s", itemKey)] = itemVal.GetStrVal()
+			} else {
+				replaceMap[fmt.Sprintf("item.%s", itemKey)] = fmt.Sprintf("%v", itemVal)
+			}
 			vals = append(vals, fmt.Sprintf("%s:%v", itemKey, itemVal))
 		}
 		jsonByteVal, err := json.Marshal(mapVal)
