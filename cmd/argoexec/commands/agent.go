@@ -111,14 +111,10 @@ func initAgentExecutor(ctx context.Context) *executor.AgentExecutor {
 
 	restClient := clientSet.RESTClient()
 
-	workflowName, ok := os.LookupEnv(common.EnvVarWorkflowName)
-	if !ok {
-		logger.WithFatal().Error(ctx, fmt.Sprintf("Unable to determine workflow name from environment variable %s", common.EnvVarWorkflowName))
-		os.Exit(1)
-	}
-	workflowUID, ok := os.LookupEnv(common.EnvVarWorkflowUID)
-	if !ok {
-		logger.WithFatal().Error(ctx, fmt.Sprintf("Unable to determine workflow Uid from environment variable %s", common.EnvVarWorkflowUID))
+	workflowName, workflowNameFound := os.LookupEnv(common.EnvVarWorkflowName)
+	labelSelector, ok := os.LookupEnv(common.EnvVarTaskSetLabelSelector)
+	if !ok && !workflowNameFound {
+		logger.WithFatal().Error(ctx, fmt.Sprintf("Unable to determine label selector or workflow name from environment variables %s and %s", common.EnvVarTaskSetLabelSelector, common.EnvVarWorkflowName))
 		os.Exit(1)
 	}
 
@@ -139,5 +135,5 @@ func initAgentExecutor(ctx context.Context) *executor.AgentExecutor {
 		plugins = append(plugins, rpc.New(address, string(data)))
 	}
 
-	return executor.NewAgentExecutor(clientSet, restClient, config, namespace, workflowName, workflowUID, plugins)
+	return executor.NewAgentExecutor(clientSet, restClient, config, namespace, labelSelector, workflowName, plugins)
 }

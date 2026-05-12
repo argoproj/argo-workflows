@@ -2689,7 +2689,7 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 			}
 		}
 		woc.updated = true
-		if woc.hasTaskSetNodes() {
+		if woc.cleanupAgentPod(ctx) {
 			woc.controller.PodController.DeletePod(ctx, woc.wf.Namespace, woc.getAgentPodName())
 		}
 	}
