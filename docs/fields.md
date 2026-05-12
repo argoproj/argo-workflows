@@ -881,7 +881,7 @@ WorkflowSpec is the specification of a Workflow.
 |`activeDeadlineSeconds`|`integer`|Optional duration in seconds relative to the workflow start time which the workflow is allowed to run before the controller terminates the io.argoproj.workflow.v1alpha1. A value of zero is used to terminate a Running workflow|
 |`affinity`|[`Affinity`](#affinity)|Affinity sets the scheduling constraints for all pods in the io.argoproj.workflow.v1alpha1. Can be overridden by an affinity specified in the template|
 |`archiveLogs`|`boolean`|ArchiveLogs indicates if the container logs should be archived|
-|`arguments`|[`Arguments`](#arguments)|Arguments contain the parameters and artifacts sent to the workflow entrypoint Parameters are referencable globally using the 'workflow' variable prefix. e.g. {{io.argoproj.workflow.v1alpha1.parameters.myparam}}|
+|`arguments`|[`Arguments`](#arguments)|Arguments contain the parameters and artifacts sent to the workflow entrypoint Parameters are referencable globally using the 'workflow' variable prefix. e.g. io.argoproj.workflow.v1alpha1.parameters.myparam|
 |`artifactGC`|[`WorkflowLevelArtifactGC`](#workflowlevelartifactgc)|ArtifactGC describes the strategy to use when deleting artifacts from completed or deleted workflows (applies to all output Artifacts unless Artifact.ArtifactGC is specified, which overrides this)|
 |`artifactRepositoryRef`|[`ArtifactRepositoryRef`](#artifactrepositoryref)|ArtifactRepositoryRef specifies the configMap name and key containing the artifact repository config.|
 |`automountServiceAccountToken`|`boolean`|AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.|
@@ -2285,7 +2285,7 @@ Artifact indicates an artifact to place at a specified path
 |`fromExpression`|`string`|FromExpression, if defined, is evaluated to specify the value for the artifact|
 |`gcs`|[`GCSArtifact`](#gcsartifact)|GCS contains GCS artifact location details|
 |`git`|[`GitArtifact`](#gitartifact)|Git contains git artifact location details|
-|`globalName`|`string`|GlobalName exports an output artifact to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts|
+|`globalName`|`string`|GlobalName exports an output artifact to the global scope, making it available as io.argoproj.workflow.v1alpha1.outputs.artifacts.XXXX and in workflow.status.outputs.artifacts|
 |`hdfs`|[`HDFSArtifact`](#hdfsartifact)|HDFS contains HDFS artifact location details|
 |`http`|[`HTTPArtifact`](#httpartifact)|HTTP contains HTTP artifact location details|
 |`mode`|`integer`|mode bits to use on this file, must be a value between 0 and 0777. Set when loading input artifacts. It is recommended to set the mode value to ensure the artifact has the expected permissions in your container.|
@@ -2505,7 +2505,7 @@ Parameter indicate a passed string parameter to a service template with an optio
 |`default`|`string`|Default is the default value to use for an input parameter if a value was not supplied|
 |`description`|`string`|Description is the parameter description|
 |`enum`|`Array< string >`|Enum holds a list of string values to choose from, for the actual value of the parameter|
-|`globalName`|`string`|GlobalName exports an output parameter to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters|
+|`globalName`|`string`|GlobalName exports an output parameter to the global scope, making it available as io.argoproj.workflow.v1alpha1.outputs.parameters.XXXX and in workflow.status.outputs.parameters|
 |`name`|`string`|Name is the parameter name|
 |`value`|`string`|Value is the literal value to use for the parameter. If specified in the context of an input parameter, any passed values take precedence over the specified value|
 |`valueFrom`|[`ValueFrom`](#valuefrom)|ValueFrom is the source for the output parameter's value|
@@ -3918,7 +3918,7 @@ ValueFrom describes a location in which to obtain the value to a parameter
 |`expression`|`string`|Expression, if defined, is evaluated to specify the value for the parameter|
 |`jqFilter`|`string`|JQFilter expression against the resource object in resource templates|
 |`jsonPath`|`string`|JSONPath of a resource to retrieve an output parameter value from in resource templates|
-|`parameter`|`string`|Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. '{{steps.mystep.outputs.myparam}}')|
+|`parameter`|`string`|Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. steps.mystep.outputs.myparam)|
 |`path`|`string`|Path in the container to retrieve an output parameter value from in container templates|
 |`supplied`|[`SuppliedValueFrom`](#suppliedvaluefrom)|Supplied value to be filled in directly, either through the CLI, API, etc.|
 
@@ -4746,7 +4746,7 @@ ArtifactPaths expands a step from a collection of artifacts
 |`fromExpression`|`string`|FromExpression, if defined, is evaluated to specify the value for the artifact|
 |`gcs`|[`GCSArtifact`](#gcsartifact)|GCS contains GCS artifact location details|
 |`git`|[`GitArtifact`](#gitartifact)|Git contains git artifact location details|
-|`globalName`|`string`|GlobalName exports an output artifact to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts|
+|`globalName`|`string`|GlobalName exports an output artifact to the global scope, making it available as io.argoproj.workflow.v1alpha1.outputs.artifacts.XXXX and in workflow.status.outputs.artifacts|
 |`hdfs`|[`HDFSArtifact`](#hdfsartifact)|HDFS contains HDFS artifact location details|
 |`http`|[`HTTPArtifact`](#httpartifact)|HTTP contains HTTP artifact location details|
 |`mode`|`integer`|mode bits to use on this file, must be a value between 0 and 0777. Set when loading input artifacts. It is recommended to set the mode value to ensure the artifact has the expected permissions in your container.|

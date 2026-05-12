@@ -223,7 +223,7 @@ It will marshall back to string - marshalling is not symmetric.
 | fromExpression | string| `string` |  | | FromExpression, if defined, is evaluated to specify the value for the artifact |  |
 | gcs | [GCSArtifact](#g-c-s-artifact)| `GCSArtifact` |  | |  |  |
 | git | [GitArtifact](#git-artifact)| `GitArtifact` |  | |  |  |
-| globalName | string| `string` |  | | GlobalName exports an output artifact to the global scope, making it available as</br>'{{workflow.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts |  |
+| globalName | string| `string` |  | | GlobalName exports an output artifact to the global scope, making it available as</br>workflow.outputs.artifacts.XXXX and in workflow.status.outputs.artifacts |  |
 | hdfs | [HDFSArtifact](#h-d-f-s-artifact)| `HDFSArtifact` |  | |  |  |
 | http | [HTTPArtifact](#http-artifact)| `HTTPArtifact` |  | |  |  |
 | mode | int32 (formatted integer)| `int32` |  | | mode bits to use on this file, must be a value between 0 and 0777.</br>Set when loading input artifacts. It is recommended to set the mode value</br>to ensure the artifact has the expected permissions in your container. </br>*Minimum value: 0; Maximum value: 511.*|  |
@@ -324,7 +324,7 @@ of a single workflow step, which the executor will use as a default location to 
 | fromExpression | string| `string` |  | | FromExpression, if defined, is evaluated to specify the value for the artifact |  |
 | gcs | [GCSArtifact](#g-c-s-artifact)| `GCSArtifact` |  | |  |  |
 | git | [GitArtifact](#git-artifact)| `GitArtifact` |  | |  |  |
-| globalName | string| `string` |  | | GlobalName exports an output artifact to the global scope, making it available as</br>'{{workflow.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts |  |
+| globalName | string| `string` |  | | GlobalName exports an output artifact to the global scope, making it available as</br>workflow.outputs.artifacts.XXXX and in workflow.status.outputs.artifacts |  |
 | hdfs | [HDFSArtifact](#h-d-f-s-artifact)| `HDFSArtifact` |  | |  |  |
 | http | [HTTPArtifact](#http-artifact)| `HTTPArtifact` |  | |  |  |
 | mode | int32 (formatted integer)| `int32` |  | | mode bits to use on this file, must be a value between 0 and 0777.</br>Set when loading input artifacts. It is recommended to set the mode value</br>to ensure the artifact has the expected permissions in your container. </br>*Minimum value: 0; Maximum value: 511.*|  |
@@ -2624,7 +2624,7 @@ be cluster-scoped, so there is no namespace field.
 | default | [AnyString](#any-string)| `AnyString` |  | |  |  |
 | description | [AnyString](#any-string)| `AnyString` |  | |  |  |
 | enum | [][AnyString](#any-string)| `[]AnyString` |  | | Enum holds a list of string values to choose from, for the actual value of the parameter </br>*Minimum items: 1.*|  |
-| globalName | string| `string` |  | | GlobalName exports an output parameter to the global scope, making it available as</br>'{{workflow.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters |  |
+| globalName | string| `string` |  | | GlobalName exports an output parameter to the global scope, making it available as</br>workflow.outputs.parameters.XXXX and in workflow.status.outputs.parameters |  |
 | name | string| `string` |  | | Name is the parameter name </br>*Validation regex: `^[-a-zA-Z0-9_]+$`.*|  |
 | value | [AnyString](#any-string)| `AnyString` |  | |  |  |
 | valueFrom | [ValueFrom](#value-from)| `ValueFrom` |  | |  |  |
@@ -4255,7 +4255,7 @@ intent and helps make sure that UIDs and names do not get conflated.
 | expression | string| `string` |  | | Expression, if defined, is evaluated to specify the value for the parameter |  |
 | jqFilter | string| `string` |  | | JQFilter expression against the resource object in resource templates |  |
 | jsonPath | string| `string` |  | | JSONPath of a resource to retrieve an output parameter value from in resource templates |  |
-| parameter | string| `string` |  | | Parameter reference to a step or dag task in which to retrieve an output parameter value from</br>(e.g. '{{steps.mystep.outputs.myparam}}') |  |
+| parameter | string| `string` |  | | Parameter reference to a step or dag task in which to retrieve an output parameter value from</br>(e.g. steps.mystep.outputs.myparam) |  |
 | path | string| `string` |  | | Path in the container to retrieve an output parameter value from in container templates |  |
 | supplied | [SuppliedValueFrom](#supplied-value-from)| `SuppliedValueFrom` |  | |  |  |
 

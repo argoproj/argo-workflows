@@ -425,7 +425,7 @@ func schema_pkg_apis_workflow_v1alpha1_Artifact(ref common.ReferenceCallback) co
 					},
 					"globalName": {
 						SchemaProps: spec.SchemaProps{
-							Description: "GlobalName exports an output artifact to the global scope, making it available as '{{workflow.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts",
+							Description: "GlobalName exports an output artifact to the global scope, making it available as workflow.outputs.artifacts.XXXX and in workflow.status.outputs.artifacts",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -804,7 +804,7 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactPaths(ref common.ReferenceCallbac
 					},
 					"globalName": {
 						SchemaProps: spec.SchemaProps{
-							Description: "GlobalName exports an output artifact to the global scope, making it available as '{{workflow.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts",
+							Description: "GlobalName exports an output artifact to the global scope, making it available as workflow.outputs.artifacts.XXXX and in workflow.status.outputs.artifacts",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -4933,7 +4933,7 @@ func schema_pkg_apis_workflow_v1alpha1_Parameter(ref common.ReferenceCallback) c
 					},
 					"globalName": {
 						SchemaProps: spec.SchemaProps{
-							Description: "GlobalName exports an output parameter to the global scope, making it available as '{{workflow.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters",
+							Description: "GlobalName exports an output parameter to the global scope, making it available as workflow.outputs.parameters.XXXX and in workflow.status.outputs.parameters",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -7275,7 +7275,7 @@ func schema_pkg_apis_workflow_v1alpha1_ValueFrom(ref common.ReferenceCallback) c
 					},
 					"parameter": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. '{{steps.mystep.outputs.myparam}}')",
+							Description: "Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. steps.mystep.outputs.myparam)",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -7859,7 +7859,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 					},
 					"arguments": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Arguments contain the parameters and artifacts sent to the workflow entrypoint Parameters are referencable globally using the 'workflow' variable prefix. e.g. {{workflow.parameters.myparam}}",
+							Description: "Arguments contain the parameters and artifacts sent to the workflow entrypoint Parameters are referencable globally using the 'workflow' variable prefix. e.g. workflow.parameters.myparam",
 							Default:     map[string]interface{}{},
 							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Arguments"),
 						},
