@@ -17,7 +17,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/template"
-	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
 	controllercache "github.com/argoproj/argo-workflows/v4/workflow/controller/cache"
 	"github.com/argoproj/argo-workflows/v4/workflow/templateresolution"
 )
@@ -64,7 +64,7 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 		tmplCtx:        tmplCtx,
 		onExitTemplate: opts.onExitTemplate,
 	}
-	woc.addOutputsToLocalScope("workflow", woc.wf.Status.Outputs, stepsCtx.scope)
+	woc.addWorkflowOutputsToLocalScope(woc.wf.Status.Outputs, stepsCtx.scope)
 
 	for i, stepGroup := range tmpl.Steps {
 		sgNodeName := fmt.Sprintf("%s[%d]", nodeName, i)
@@ -131,7 +131,6 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 			childNodeName := fmt.Sprintf("%s.%s", sgNodeName, step.Name)
 			var childNode *wfv1.NodeStatus
 			childNode, err = woc.wf.GetNodeByName(childNodeName)
-			prefix := fmt.Sprintf("steps.%s", step.Name)
 			if err != nil {
 				// This happens when there was `withItem/withParam` expansion.
 				// We add the aggregate outputs of our children to the scope as a JSON list
@@ -153,16 +152,16 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 						woc.updated = true
 					}
 
-					err = woc.processAggregateNodeOutputs(stepsCtx.scope, prefix, childNodes)
+					err = woc.processAggregateNodeOutputs(stepsCtx.scope, varkeys.StepsAggregate, step.Name, childNodes)
 					if err != nil {
 						return node, err
 					}
 				} else {
 					woc.log.WithField("childNode", childNode).Info(ctx, "Step has no expanded child nodes")
 				}
-				woc.buildLocalScope(stepsCtx.scope, prefix, sgNode)
+				woc.buildLocalScope(stepsCtx.scope, varkeys.StepsNodeRef, step.Name, sgNode)
 			} else {
-				woc.buildLocalScope(stepsCtx.scope, prefix, childNode)
+				woc.buildLocalScope(stepsCtx.scope, varkeys.StepsNodeRef, step.Name, childNode)
 			}
 		}
 	}
@@ -329,8 +328,8 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 			return nil, fmt.Errorf("%s", errorMsg)
 		}
 		step := nodeSteps[childNode.Name]
-		stepsCtx.scope.addParamToScope(fmt.Sprintf("steps.%s.status", childNode.DisplayName), string(childNode.Phase))
-		hookCompleted, err := woc.executeTmplLifeCycleHook(ctx, stepsCtx.scope, step.Hooks, childNode, stepsCtx.boundaryID, stepsCtx.tmplCtx, "steps."+step.Name)
+		varkeys.StepsNodeRef.Status.Set(stepsCtx.scope.scope, string(childNode.Phase), childNode.DisplayName)
+		hookCompleted, err := woc.executeTmplLifeCycleHook(ctx, stepsCtx.scope, step.Hooks, childNode, stepsCtx.boundaryID, stepsCtx.tmplCtx, varkeys.StepsNodeRef, step.Name)
 		if err != nil {
 			woc.markNodeError(ctx, node.Name, err)
 		}
@@ -342,7 +341,7 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 		if !childNode.Fulfilled() {
 			completed = false
 		} else if childNode.Completed() {
-			hasOnExitNode, onExitNode, err := woc.runOnExitNode(ctx, step.GetExitHook(woc.execWf.Spec.Arguments), childNode, stepsCtx.boundaryID, stepsCtx.tmplCtx, "steps."+step.Name, stepsCtx.scope)
+			hasOnExitNode, onExitNode, err := woc.runOnExitNode(ctx, step.GetExitHook(woc.execWf.Spec.Arguments), childNode, stepsCtx.boundaryID, stepsCtx.tmplCtx, varkeys.StepsNodeRef, step.Name, stepsCtx.scope)
 			// see https://github.com/argoproj/argo-workflows/issues/14031,
 			// we should return error otherwise the node will get stuck
 			if err != nil {
@@ -451,7 +450,7 @@ func (woc *wfOperationCtx) resolveReferences(ctx context.Context, stepGroup []wf
 		originalHooks := step.Hooks
 		step.Hooks = nil
 
-		mergedParams := woc.globalParams.Merge(scope.getParameters())
+		mergedParams := woc.globalParams().Merge(scope.getParameters())
 
 		// Resolve the "when" clause first to check if this step should execute before resolving the full step.
 		// This avoids unnecessary requeues when a step won't execute but other fields have unresolved references.
@@ -636,7 +635,7 @@ func (woc *wfOperationCtx) expandStep(ctx context.Context, step wfv1.WorkflowSte
 
 	for i, item := range items {
 		var newStep wfv1.WorkflowStep
-		newStepName, err := processItem(ctx, t, step.Name, i, item, &newStep, step.When, woc.globalParams.Merge(scope.getParameters()))
+		newStepName, err := processItem(ctx, t, step.Name, i, item, &newStep, step.When, woc.globalParams().Merge(scope.getParameters()))
 		if err != nil {
 			return nil, err
 		}
@@ -648,17 +647,14 @@ func (woc *wfOperationCtx) expandStep(ctx context.Context, step wfv1.WorkflowSte
 }
 
 func (woc *wfOperationCtx) prepareDefaultMetricScope() (map[string]string, map[string]func() float64) {
-	durationCPU := fmt.Sprintf("%s.%s", common.LocalVarResourcesDuration, v1.ResourceCPU)
-	durationMem := fmt.Sprintf("%s.%s", common.LocalVarResourcesDuration, v1.ResourceMemory)
-
-	localScope := woc.globalParams.DeepCopy()
-	localScope[common.LocalVarDuration] = "0"
-	localScope[common.LocalVarStatus] = string(wfv1.NodePending)
-	localScope[durationCPU] = "0"
-	localScope[durationMem] = "0"
+	localScope := woc.globalParams().DeepCopy()
+	localScope[varkeys.MetricDuration.Template()] = "0"
+	localScope[varkeys.MetricStatus.Template()] = string(wfv1.NodePending)
+	localScope[varkeys.MetricResourcesDurationByName.Concretize(string(v1.ResourceCPU))] = "0"
+	localScope[varkeys.MetricResourcesDurationByName.Concretize(string(v1.ResourceMemory))] = "0"
 
 	var realTimeScope = map[string]func() float64{
-		common.GlobalVarWorkflowDuration: woc.workflowDurationSeconds,
+		varkeys.WorkflowDuration.Template(): woc.workflowDurationSeconds,
 	}
 
 	return localScope, realTimeScope
@@ -667,28 +663,28 @@ func (woc *wfOperationCtx) prepareDefaultMetricScope() (map[string]string, map[s
 func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus) (map[string]string, map[string]func() float64) {
 	localScope, realTimeScope := woc.prepareDefaultMetricScope()
 	if node.Fulfilled() {
-		localScope[common.LocalVarDuration] = fmt.Sprintf("%f", node.FinishedAt.Sub(node.StartedAt.Time).Seconds())
-		realTimeScope[common.LocalVarDuration] = func() float64 {
+		localScope[varkeys.MetricDuration.Template()] = fmt.Sprintf("%f", node.FinishedAt.Sub(node.StartedAt.Time).Seconds())
+		realTimeScope[varkeys.MetricDuration.Template()] = func() float64 {
 			return node.FinishedAt.Sub(node.StartedAt.Time).Seconds()
 		}
 	} else {
-		localScope[common.LocalVarDuration] = fmt.Sprintf("%f", time.Since(node.StartedAt.Time).Seconds())
-		realTimeScope[common.LocalVarDuration] = func() float64 {
+		localScope[varkeys.MetricDuration.Template()] = fmt.Sprintf("%f", time.Since(node.StartedAt.Time).Seconds())
+		realTimeScope[varkeys.MetricDuration.Template()] = func() float64 {
 			return time.Since(node.StartedAt.Time).Seconds()
 		}
 	}
 
 	if len(node.Children) != 0 {
-		localScope[common.LocalVarRetries] = strconv.Itoa(len(node.Children) - 1)
+		localScope[varkeys.Retries.Template()] = strconv.Itoa(len(node.Children) - 1)
 	}
 
 	if node.Phase != "" {
-		localScope[common.LocalVarStatus] = string(node.Phase)
+		localScope[varkeys.MetricStatus.Template()] = string(node.Phase)
 	}
 
 	if node.Inputs != nil {
 		for _, param := range node.Inputs.Parameters {
-			key := fmt.Sprintf("inputs.parameters.%s", param.Name)
+			key := varkeys.InputsParameterByName.Concretize(param.Name)
 			if param.Value == nil {
 				localScope[key] = ""
 			} else {
@@ -699,13 +695,13 @@ func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus) (map[string
 
 	if node.Outputs != nil {
 		if node.Outputs.Result != nil {
-			localScope["outputs.result"] = *node.Outputs.Result
+			localScope[varkeys.MetricOutputsResult.Template()] = *node.Outputs.Result
 		}
 		if node.Outputs.ExitCode != nil {
-			localScope[common.LocalVarExitCode] = *node.Outputs.ExitCode
+			localScope[varkeys.MetricExitCode.Template()] = *node.Outputs.ExitCode
 		}
 		for _, param := range node.Outputs.Parameters {
-			key := fmt.Sprintf("outputs.parameters.%s", param.Name)
+			key := varkeys.MetricOutputsParameterByName.Concretize(param.Name)
 			if param.Value == nil {
 				localScope[key] = ""
 			} else {
@@ -716,7 +712,7 @@ func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus) (map[string
 
 	if node.ResourcesDuration != nil {
 		for name, duration := range node.ResourcesDuration {
-			localScope[fmt.Sprintf("%s.%s", common.LocalVarResourcesDuration, name)] = fmt.Sprint(duration.Duration().Seconds())
+			localScope[varkeys.MetricResourcesDurationByName.Concretize(string(name))] = fmt.Sprint(duration.Duration().Seconds())
 		}
 	}
 

@@ -19,6 +19,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/maps"
+	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
 )
 
 func init() {
@@ -29,14 +30,14 @@ func init() {
 
 var (
 	variablesToCheck = []string{
-		"item",
-		"retries",
-		"lastRetry.exitCode",
-		"lastRetry.status",
-		"lastRetry.duration",
-		"lastRetry.message",
-		"workflow.status",
-		"workflow.failures",
+		varkeys.Item.Template(),
+		varkeys.Retries.Template(),
+		varkeys.RetriesLastExitCode.Template(),
+		varkeys.RetriesLastStatus.Template(),
+		varkeys.RetriesLastDuration.Template(),
+		varkeys.RetriesLastMessage.Template(),
+		varkeys.WorkflowStatus.Template(),
+		varkeys.WorkflowFailures.Template(),
 	}
 )
 

@@ -1,0 +1,495 @@
+# Companion to variables.md — exercises every non-cron-workflow variable
+# documented in the catalog. Every reference is annotated inline with the
+# catalog row it covers. CronWorkflow-only variables are intentionally omitted.
+#
+# Coverage map (74 variables):
+#
+#   Global (20)              workflow.* identity / metadata / parameters
+#   Runtime (3)              workflow.duration / .status / .failures
+#   Input (4)                inputs.parameters{,.<n>}, inputs.artifacts.<n>{,.path}
+#   Output (2)               outputs.{parameters,artifacts}.<n>.path
+#   Node-Ref (28)            steps.<*>.* and tasks.<*>.* including after-loop
+#                            aggregates and workflow.outputs.{parameters,artifacts}.<n>
+#   Item (2)                 item / item.<key>
+#   Retry (5)                lastRetry.* / retries
+#   Node-Ctx (4)             node.name / pod.name / steps.name / tasks.name
+#   Metric (6)               duration / exitCode / status / outputs.result /
+#                            outputs.parameters.<n> / resourcesDuration.<r>
+
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: variables-showcase-
+  annotations:
+    # `workflow.scheduledTime` is sourced from this annotation.
+    workflows.argoproj.io/scheduled-time: "2026-04-29T00:00:00Z"
+    # Used to demonstrate workflow.annotations / .annotations.json /
+    # .annotations.<name>.
+    workflows.argoproj.io/description: "Showcase of every non-cronworkflow variable"
+    example.io/owner: platform-team
+  labels:
+    # Used to demonstrate workflow.labels / .labels.json / .labels.<name>.
+    app: variables-demo
+    tier: example
+spec:
+  entrypoint: main
+  serviceAccountName: default               # → workflow.serviceAccountName (executor role bound)
+  priority: 5                               # → workflow.priority
+  onExit: exit-handler                      # required for workflow.failures + the
+                                            #   final values of workflow.{status,duration}
+
+  arguments:                                # → workflow.parameters / .parameters.<n> / .parameters.json
+    parameters:
+      - name: greeting
+        value: hello
+      - name: target
+        value: world
+    artifacts:
+      - name: seed                          # consumed via workflow.parameters → prepared
+        raw:
+          data: seed-content
+
+  templates:
+
+    # ============================================================
+    # 1. main — Steps body. Exercises:
+    #      steps.name (node-ctx)
+    #      steps.<name>.{id,status,startedAt,finishedAt,hostNodeName,
+    #                    ip,exitCode,outputs.{result,parameters.<p>,
+    #                    artifacts.<a>}}
+    #      steps.<loopName>.outputs.{result, parameters,
+    #                                parameters.<p>}      (after-loop)
+    #    Declares `seed` as an input artifact so that inputs.artifacts.<name>
+    #    (the wfv1.Artifact object form, distinct from the `.path` accessor)
+    #    can be referenced via `from:` on a downstream argument.
+    # ============================================================
+    - name: main
+      inputs:
+        artifacts:
+          - name: seed                  # bound from spec.arguments.artifacts.seed
+      steps:
+        - - name: prepare
+            template: prepare
+          - name: svc                   # daemon — validator only exposes .ip on daemons
+            template: svc-daemon
+
+        - - name: fanout                              # withItems → item / item.<key>
+            template: per-item
+            arguments:
+              parameters:
+                - name: msg
+                  value: "{{item.k}}={{item.v}}"      # item.<key>
+                - name: ctx
+                  value: "{{item}}"                   # item
+              artifacts:
+                - name: in-art
+                  from: "{{steps.prepare.outputs.artifacts.prepared}}"   # steps.<name>.outputs.artifacts.<a>
+            withItems:
+              - { k: alpha, v: "1" }
+              - { k: beta,  v: "2" }
+
+        - - name: consume
+            template: consume
+            arguments:
+              parameters:
+                # ---- after-loop on steps.<loopName> ----
+                - { name: fanout-result,       value: "{{steps.fanout.outputs.result}}" }
+                - { name: fanout-all-params,   value: "{{steps.fanout.outputs.parameters}}" }
+                - { name: fanout-named-params, value: "{{steps.fanout.outputs.parameters.echoed}}" }
+                # ---- node-ref on a non-loop step (prepare) ----
+                - { name: prep-id,         value: "{{steps.prepare.id}}" }
+                - { name: prep-status,     value: "{{steps.prepare.status}}" }
+                - { name: prep-host,       value: "{{steps.prepare.hostNodeName}}" }
+                - { name: svc-ip,          value: "{{steps.svc.ip}}" }       # ip only valid on daemon
+                - { name: prep-started,    value: "{{steps.prepare.startedAt}}" }
+                - { name: prep-finished,   value: "{{steps.prepare.finishedAt}}" }
+                - { name: prep-exit,       value: "{{steps.prepare.exitCode}}" }
+                - { name: prep-result,     value: "{{steps.prepare.outputs.result}}" }
+                - { name: prep-param,      value: "{{steps.prepare.outputs.parameters.greeting-out}}" }
+                # ---- current-step name (Steps body context) ----
+                - { name: step-name,       value: "{{steps.name}}" }
+              artifacts:
+                # `inputs.artifacts.<name>` (wfv1.Artifact object form):
+                # main's own input artifact forwarded to a child via `from:`.
+                - name: seed-art
+                  from: "{{inputs.artifacts.seed}}"
+
+        - - name: dag-stage
+            template: dag
+
+    # ============================================================
+    # 2. prepare — Script template. Exercises:
+    #      identity:   workflow.{name, namespace, uid, mainEntrypoint,
+    #                  serviceAccountName, priority}
+    #      timestamps: workflow.creationTimestamp{,.RFC3339,.s,.<fmt>}
+    #                  + workflow.scheduledTime
+    #      metadata:   workflow.{annotations, annotations.json,
+    #                            annotations.<n>, labels, labels.json,
+    #                            labels.<n>, parameters, parameters.json,
+    #                            parameters.<n>}
+    #      runtime:    workflow.{duration, status}
+    #      node-ctx:   node.name, pod.name, steps.name
+    #      output ptr: outputs.{parameters,artifacts}.<n>.path
+    #      metric:     duration, exitCode, status, outputs.result,
+    #                  outputs.parameters.<n>, resourcesDuration.<r>
+    #      Globals are emitted via globalName so workflow.outputs.* is
+    #      populated for the exit handler.
+    # ============================================================
+    - name: prepare
+      metrics:
+        prometheus:
+          - name: prepare_seconds
+            help: Elapsed seconds for the prepare node.
+            labels:
+              - { key: phase,  value: "{{status}}" }
+              - { key: code,   value: "{{exitCode}}" }
+              - { key: param,  value: "{{outputs.parameters.greeting-out}}" }
+              - { key: result, value: "{{outputs.result}}" }
+              - { key: cpu,    value: "{{resourcesDuration.cpu}}" }
+              - { key: mem,    value: "{{resourcesDuration.memory}}" }
+            gauge:
+              realtime: false
+              value: "{{duration}}"
+      outputs:
+        parameters:
+          - name: greeting-out
+            valueFrom:
+              path: /tmp/out.txt              # → outputs.parameters.<n>.path
+            globalName: prepared-param        # → workflow.outputs.parameters.prepared-param
+        artifacts:
+          - name: prepared
+            path: /tmp/payload.txt            # → outputs.artifacts.<n>.path
+            globalName: prepared              # → workflow.outputs.artifacts.prepared
+      script:
+        image: alpine:3.19
+        command: [sh]
+        source: |
+          set -eu
+          # ---- node-ctx ----
+          echo "node.name           = {{node.name}}"
+          echo "pod.name            = {{pod.name}}"
+          echo "steps.name          = {{steps.name}}"
+          # ---- identity ----
+          echo "workflow.name       = {{workflow.name}}"
+          echo "workflow.namespace  = {{workflow.namespace}}"
+          echo "workflow.uid        = {{workflow.uid}}"
+          echo "workflow.entrypoint = {{workflow.mainEntrypoint}}"
+          echo "workflow.sa         = {{workflow.serviceAccountName}}"
+          echo "workflow.priority   = {{workflow.priority}}"
+          # ---- timestamps ----
+          echo "ts.raw              = {{workflow.creationTimestamp}}"
+          echo "ts.RFC3339          = {{workflow.creationTimestamp.RFC3339}}"
+          echo "ts.epoch-seconds    = {{workflow.creationTimestamp.s}}"
+          echo "ts.year (strftime)  = {{workflow.creationTimestamp.Y}}"
+          echo "ts.scheduled        = {{workflow.scheduledTime}}"
+          # ---- metadata maps ----
+          echo "annotations.deprec  = {{workflow.annotations}}"
+          echo "annotations.json    = {{workflow.annotations.json}}"
+          echo "annotations.owner   = {{workflow.annotations.example.io/owner}}"
+          echo "labels.deprecated   = {{workflow.labels}}"
+          echo "labels.json         = {{workflow.labels.json}}"
+          echo "labels.app          = {{workflow.labels.app}}"
+          # ---- parameters ----
+          echo "params.deprecated   = {{workflow.parameters}}"
+          echo "params.json         = {{workflow.parameters.json}}"
+          echo "params.greeting     = {{workflow.parameters.greeting}}"
+          echo "params.target       = {{workflow.parameters.target}}"
+          # ---- runtime ----
+          echo "workflow.duration   = {{workflow.duration}}"
+          echo "workflow.status     = {{workflow.status}}"
+          # ---- output declared paths (pod-side) ----
+          echo "out.param.path      = {{outputs.parameters.greeting-out.path}}"
+          echo "out.artifact.path   = {{outputs.artifacts.prepared.path}}"
+          # The final stdout line is captured as outputs.result for this
+          # script node (exposed downstream as steps.prepare.outputs.result).
+          printf 'greeting=%s target=%s' '{{workflow.parameters.greeting}}' '{{workflow.parameters.target}}' > /tmp/out.txt
+          cp /tmp/out.txt /tmp/payload.txt
+          echo "PREPARED"
+
+    # ============================================================
+    # 3. per-item — Script with retryStrategy. Exercises:
+    #      item, item.<key>           (loop scope)
+    #      retries, lastRetry.{duration,exitCode,message,status}
+    #      inputs.parameters, inputs.parameters.<n>
+    #      inputs.artifacts.<n>.path
+    #      inputs.artifacts.<n>       (the wfv1.Artifact object, used
+    #                                  via fromExpression on the relayed
+    #                                  output artifact)
+    # ============================================================
+    - name: per-item
+      inputs:
+        parameters:
+          - name: msg
+          - name: ctx
+        artifacts:
+          - name: in-art
+            path: /work/in.txt
+      retryStrategy:
+        limit: "2"
+        retryPolicy: OnError
+      outputs:
+        parameters:
+          - name: echoed
+            valueFrom:
+              path: /work/echoed.txt
+      script:
+        image: alpine:3.19
+        command: [sh]
+        source: |
+          # Loop aggregation parses each child's stdout as JSON
+          # (workflow/controller/operator.go:3627), so diagnostics go to
+          # stderr and the final line on stdout is a JSON value.
+          {
+            set -eu
+            # `item` and `item.<key>` are referenced at the call site
+            # (main → fanout arguments) — the static validator does not
+            # propagate item scope into inner template bodies.
+            # ---- inputs ----
+            echo "inputs.parameters   = {{inputs.parameters}}"
+            echo "inputs.params.msg   = {{inputs.parameters.msg}}"
+            echo "inputs.params.ctx   = {{inputs.parameters.ctx}}"
+            echo "inputs.art.path     = {{inputs.artifacts.in-art.path}}"
+            cat /work/in.txt
+            # ---- retry ----
+            echo "retries             = {{retries}}"
+            echo "lastRetry.status    = {{lastRetry.status}}"
+            echo "lastRetry.exitCode  = {{lastRetry.exitCode}}"
+            echo "lastRetry.duration  = {{lastRetry.duration}}"
+            echo "lastRetry.message   = {{lastRetry.message}}"
+            # ---- node-ctx (also valid here) ----
+            echo "node.name           = {{node.name}}"
+            echo "pod.name            = {{pod.name}}"
+            # ---- output param path ----
+            echo "out.param.path      = {{outputs.parameters.echoed.path}}"
+          } >&2
+          printf '%s' '{{inputs.parameters.msg}}' > /work/echoed.txt
+          # outputs.result must be a JSON value for loop aggregation:
+          printf '{"msg":"%s"}\n' '{{inputs.parameters.msg}}'
+
+    # ============================================================
+    # 4. consume — receives the after-loop and node-ref values captured
+    #    in the Steps body. Pure-pass-through container.
+    # ============================================================
+    - name: consume
+      inputs:
+        parameters:
+          - name: fanout-result
+          - name: fanout-all-params
+          - name: fanout-named-params
+          - name: prep-id
+          - name: prep-status
+          - name: prep-host
+          - name: svc-ip
+          - name: prep-started
+          - name: prep-finished
+          - name: prep-exit
+          - name: prep-result
+          - name: prep-param
+          - name: step-name
+        artifacts:
+          - name: seed-art                  # forwarded from main's inputs.artifacts.seed
+            path: /tmp/seed.txt
+      container:
+        image: alpine:3.19
+        command: [sh, -c]
+        args:
+          - |
+            echo "fanout.result        = {{inputs.parameters.fanout-result}}"
+            echo "fanout.all-params    = {{inputs.parameters.fanout-all-params}}"
+            echo "fanout.echoed-param  = {{inputs.parameters.fanout-named-params}}"
+            echo "prepare.id           = {{inputs.parameters.prep-id}}"
+            echo "prepare.status       = {{inputs.parameters.prep-status}}"
+            echo "prepare.host         = {{inputs.parameters.prep-host}}"
+            echo "svc.ip               = {{inputs.parameters.svc-ip}}"
+            echo "prepare.startedAt    = {{inputs.parameters.prep-started}}"
+            echo "prepare.finishedAt   = {{inputs.parameters.prep-finished}}"
+            echo "prepare.exitCode     = {{inputs.parameters.prep-exit}}"
+            echo "prepare.result       = {{inputs.parameters.prep-result}}"
+            echo "prepare.param        = {{inputs.parameters.prep-param}}"
+            echo "current step.name    = {{inputs.parameters.step-name}}"
+            echo "seed-art.path        = {{inputs.artifacts.seed-art.path}}"
+            cat /tmp/seed.txt
+
+    # ============================================================
+    # 5. dag — DAG body. Exercises:
+    #      tasks.name (node-ctx)
+    #      tasks.<name>.{id,status,startedAt,finishedAt,hostNodeName,ip,
+    #                    exitCode,outputs.{result,parameters.<p>,artifacts.<a>}}
+    #      tasks.<loopName>.outputs.{result, parameters,
+    #                                parameters.<p>}     (after-loop)
+    # ============================================================
+    - name: dag
+      dag:
+        tasks:
+          - name: svc                                              # daemon — for tasks.<n>.ip
+            template: svc-daemon
+
+          - name: a
+            template: dag-leaf
+            arguments:
+              parameters:
+                - { name: tag,       value: "a" }
+                # tasks.name (node-ctx) is referenced inside dag-leaf's body
+                # via the local-params substitution path.
+
+          - name: b                                                # downstream of a + svc
+            template: dag-leaf
+            depends: "a && svc"
+            arguments:
+              parameters:
+                - { name: tag,         value: "b" }
+                # ---- node-ref on tasks.<name> ----
+                - { name: a-id,        value: "{{tasks.a.id}}" }
+                - { name: a-status,    value: "{{tasks.a.status}}" }
+                - { name: a-host,      value: "{{tasks.a.hostNodeName}}" }
+                - { name: svc-ip,      value: "{{tasks.svc.ip}}" }    # ip only valid on daemon
+                - { name: a-started,   value: "{{tasks.a.startedAt}}" }
+                - { name: a-finished,  value: "{{tasks.a.finishedAt}}" }
+                - { name: a-exit,      value: "{{tasks.a.exitCode}}" }
+                - { name: a-result,    value: "{{tasks.a.outputs.result}}" }
+                - { name: a-param,     value: "{{tasks.a.outputs.parameters.echoed}}" }
+              artifacts:
+                - name: in-art
+                  from: "{{tasks.a.outputs.artifacts.bundle}}"     # tasks.<name>.outputs.artifacts.<a>
+
+          - name: c-loop                                           # withParam → after-loop
+            template: dag-leaf
+            depends: b
+            arguments:
+              parameters:
+                - { name: tag,       value: "{{item}}" }
+            withParam: '["x","y","z"]'
+
+          - name: gather
+            template: dag-gather
+            depends: c-loop
+            arguments:
+              parameters:
+                - { name: loop-result,        value: "{{tasks.c-loop.outputs.result}}" }
+                - { name: loop-all-params,    value: "{{tasks.c-loop.outputs.parameters}}" }
+                - { name: loop-named-params,  value: "{{tasks.c-loop.outputs.parameters.echoed}}" }
+
+    # 5a. dag-leaf — Script: produces outputs.result (captured stdout),
+    #     a named output parameter, and a named output artifact.
+    - name: dag-leaf
+      inputs:
+        parameters:
+          - name: tag
+          # Optional inputs so the same template handles a, b, and c-loop.
+          - { name: a-id,        value: "" }
+          - { name: a-status,    value: "" }
+          - { name: a-host,      value: "" }
+          - { name: svc-ip,      value: "" }
+          - { name: a-started,   value: "" }
+          - { name: a-finished,  value: "" }
+          - { name: a-exit,      value: "" }
+          - { name: a-result,    value: "" }
+          - { name: a-param,     value: "" }
+        artifacts:
+          - { name: in-art, path: /work/in, optional: true }
+      outputs:
+        parameters:
+          - name: echoed
+            valueFrom:
+              path: /work/out.txt
+        artifacts:
+          - name: bundle
+            path: /work/bundle.txt
+      script:
+        image: alpine:3.19
+        command: [sh]
+        source: |
+          # Same JSON-on-stdout convention as per-item: c-loop calls this
+          # template via withParam, so its result is loop-aggregated.
+          {
+            set -eu
+            mkdir -p /work
+            # tasks.name is substituted by the controller's local-params pass
+            # to the calling task's name (e.g. "a", "b", "c-loop[0]").
+            echo "tag={{inputs.parameters.tag}} tasks.name={{tasks.name}}"
+            echo "a-id={{inputs.parameters.a-id}} status={{inputs.parameters.a-status}}"
+            echo "a-host={{inputs.parameters.a-host}} svc-ip={{inputs.parameters.svc-ip}}"
+            echo "a-started={{inputs.parameters.a-started}} finished={{inputs.parameters.a-finished}}"
+            echo "a-exit={{inputs.parameters.a-exit}} result={{inputs.parameters.a-result}}"
+            echo "a-param={{inputs.parameters.a-param}}"
+          } >&2
+          printf 'tag=%s' '{{inputs.parameters.tag}}' > /work/out.txt
+          cp /work/out.txt /work/bundle.txt
+          printf '{"tag":"%s"}\n' '{{inputs.parameters.tag}}'
+
+    # 5b. dag-gather — receives the after-loop aggregates from c-loop.
+    - name: dag-gather
+      inputs:
+        parameters:
+          - name: loop-result
+          - name: loop-all-params
+          - name: loop-named-params
+      container:
+        image: alpine:3.19
+        command: [sh, -c]
+        args:
+          - |
+            echo "c-loop.result       = {{inputs.parameters.loop-result}}"
+            echo "c-loop.all-params   = {{inputs.parameters.loop-all-params}}"
+            echo "c-loop.named-params = {{inputs.parameters.loop-named-params}}"
+
+    # ============================================================
+    # 5c. svc-daemon — used purely so steps.<name>.ip / tasks.<name>.ip
+    #     pass the static validator's daemon-only check.
+    # ============================================================
+    - name: svc-daemon
+      daemon: true
+      container:
+        image: alpine:3.19
+        command: [sh, -c]
+        args: ["nc -lk -p 9999 -e /bin/true"]
+        readinessProbe:
+          tcpSocket:
+            port: 9999
+          initialDelaySeconds: 1
+          timeoutSeconds: 1
+
+    # ============================================================
+    # 6. exit-handler — onExit template. Exercises:
+    #      workflow.failures           (only meaningful here)
+    #      workflow.outputs.parameters.<n>
+    #      workflow.outputs.artifacts.<n>
+    #      final values of workflow.{status,duration}
+    #    Long source goes through inputs.parameters so the YAML stays
+    #    readable and so the exit-handler also exercises a couple of
+    #    input variables.
+    # ============================================================
+    - name: exit-handler
+      steps:
+        - - name: report
+            template: exit-report
+            arguments:
+              parameters:
+                - { name: final-status,   value: "{{workflow.status}}" }
+                - { name: final-duration, value: "{{workflow.duration}}" }
+                - { name: failures,       value: "{{workflow.failures}}" }
+                - { name: global-param,   value: "{{workflow.outputs.parameters.prepared-param}}" }
+              artifacts:
+                - name: global-art
+                  from: "{{workflow.outputs.artifacts.prepared}}"
+
+    - name: exit-report
+      inputs:
+        parameters:
+          - name: final-status
+          - name: final-duration
+          - name: failures
+          - name: global-param
+        artifacts:
+          - name: global-art
+            path: /tmp/global.txt
+      container:
+        image: alpine:3.19
+        command: [sh, -c]
+        args:
+          - |
+            echo "workflow.status                  = {{inputs.parameters.final-status}}"
+            echo "workflow.duration                = {{inputs.parameters.final-duration}}"
+            echo "workflow.failures                = {{inputs.parameters.failures}}"
+            echo "workflow.outputs.params.prepared = {{inputs.parameters.global-param}}"
+            cat /tmp/global.txt

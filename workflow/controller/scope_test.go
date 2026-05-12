@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
@@ -17,7 +18,7 @@ func unsupportedArtifactSubPathResolution(t *testing.T, artifactString string) {
 
 	artifact := unmarshalArtifact(artifactString)
 
-	scope.addArtifactToScope("steps.test.outputs.artifacts.art", *artifact)
+	varkeys.StepsNodeRef.OutputsArtifactByName.Set(scope.scope, *artifact, "test", "art")
 
 	// Ensure that normal artifact resolution without adding subpaths works
 	resolvedArtifact, err := scope.resolveArtifact(ctx, &wfv1.Artifact{From: "{{steps.test.outputs.artifacts.art}}"})
@@ -42,7 +43,7 @@ func artifactSubPathResolution(t *testing.T, artifactString string, subPathArtif
 	originalArtifact := artifact.DeepCopy()
 	artifactWithSubPath := unmarshalArtifact(subPathArtifactString)
 
-	scope.addArtifactToScope("steps.test.outputs.artifacts.art", *artifact)
+	varkeys.StepsNodeRef.OutputsArtifactByName.Set(scope.scope, *artifact, "test", "art")
 
 	// Ensure that normal artifact resolution without adding subpaths works
 	resolvedArtifact, err := scope.resolveArtifact(ctx, &wfv1.Artifact{From: "{{steps.test.outputs.artifacts.art}}"})
@@ -55,7 +56,7 @@ func artifactSubPathResolution(t *testing.T, artifactString string, subPathArtif
 	assert.Equal(t, resolvedArtifact, artifactWithSubPath)
 
 	// Ensure that subpath template values are also resolved
-	scope.addParamToScope("steps.test.outputs.parameters.subkey", "some")
+	varkeys.StepsNodeRef.OutputsParameterByName.Set(scope.scope, "some", "test", "subkey")
 
 	resolvedArtifact, err = scope.resolveArtifact(ctx, &wfv1.Artifact{SubPath: "{{steps.test.outputs.parameters.subkey}}/subkey", From: "{{steps.test.outputs.artifacts.art}}"})
 	require.NoError(t, err)
@@ -266,9 +267,9 @@ func TestResolveParameters(t *testing.T) {
 	}
 
 	scope := createScope(&tmpl)
-	scope.addParamToScope("steps.t1.outputs.parameters.result", "4")
-	scope.addParamToScope("workflows.arguments.param", "head")
-	scope.addParamToScope("steps.coin-flip.outputs.parameters.result", "5")
+	varkeys.StepsNodeRef.OutputsParameterByName.Set(scope.scope, "4", "t1", "result")
+	varkeys.WorkflowParametersByName.Set(scope.scope, "head", "param")
+	varkeys.StepsNodeRef.OutputsParameterByName.Set(scope.scope, "5", "coin-flip", "result")
 
 	valFrom := &wfv1.ValueFrom{
 		Expression: "inputs.parameters.one == '1' ? inputs.parameters.two: steps.t1.outputs.parameters.result",
@@ -285,21 +286,21 @@ func TestResolveParameters(t *testing.T) {
 	assert.Equal("4", result)
 
 	valFrom = &wfv1.ValueFrom{
-		Expression: "inputs.parameters.one == 2 ? steps.t1.outputs.parameters.result :workflows.arguments.param",
+		Expression: "inputs.parameters.one == 2 ? steps.t1.outputs.parameters.result : workflow.parameters.param",
 	}
 	result, err = scope.resolveParameter(valFrom)
 	require.NoError(t, err)
 	assert.Equal("head", result)
 
 	valFrom = &wfv1.ValueFrom{
-		Expression: "asInt(inputs.parameters.one) == 1 ? steps['coin-flip'].outputs.parameters.result :workflows.arguments.param",
+		Expression: "asInt(inputs.parameters.one) == 1 ? steps['coin-flip'].outputs.parameters.result : workflow.parameters.param",
 	}
 	result, err = scope.resolveParameter(valFrom)
 	require.NoError(t, err)
 	assert.Equal("5", result)
 
 	valFrom = &wfv1.ValueFrom{
-		Expression: "asInt(inputs.parameters.one) == 1 ? steps[\"coin-flip\"].outputs.parameters.result :workflows.arguments.param",
+		Expression: "asInt(inputs.parameters.one) == 1 ? steps[\"coin-flip\"].outputs.parameters.result : workflow.parameters.param",
 	}
 	result, err = scope.resolveParameter(valFrom)
 	require.NoError(t, err)
