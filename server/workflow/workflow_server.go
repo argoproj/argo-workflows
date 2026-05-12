@@ -264,16 +264,29 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 		remainCount = max(totalCount-int64(options.Offset)-int64(len(wfs)), 0)
 		meta.RemainingItemCount = &remainCount
 	} else {
-		// For pagination without remaining count, use the efficient HasMoreWorkflows method
-		// This avoids expensive COUNT queries
-		hasMore, err := s.wfArchive.HasMoreWorkflows(ctx, options)
-		if err != nil {
-			return nil, sutils.ToStatusError(err, codes.Internal)
+		// For pagination without remaining count, avoid expensive COUNT queries.
+		// First check if there are more live workflows beyond the current page.
+		hasMoreLive := options.Limit > 0 && int64(options.Offset+options.Limit) < liveWfCount
+		// Only query the archive if live workflows are exhausted and this is a paginated request.
+		// Mirror the same offset/limit arithmetic used by the actual archive fetch above.
+		hasMoreArchived := false
+		if !hasMoreLive && options.Limit > 0 {
+			archivedOffset := options.Offset - int(liveWfCount)
+			archivedLimit := options.Limit
+			if archivedOffset < 0 {
+				archivedOffset = 0
+				archivedLimit = options.Limit - len(liveWfList.Items)
+			}
+			hasMore, err := s.wfArchive.HasMoreWorkflows(ctx, options.WithOffset(archivedOffset).WithLimit(archivedLimit))
+			if err != nil {
+				return nil, sutils.ToStatusError(err, codes.Internal)
+			}
+			hasMoreArchived = hasMore
 		}
-		if hasMore {
-			remainCount = 1 // There are more items
+		if hasMoreLive || hasMoreArchived {
+			remainCount = 1
 		} else {
-			remainCount = 0 // No more items
+			remainCount = 0
 		}
 	}
 

@@ -860,6 +860,129 @@ func TestListWorkflow(t *testing.T) {
 	assert.Len(t, wfl.Items, 2)
 }
 
+// buildPaginationTestServer creates a minimal workflow server for pagination tests.
+// It accepts any archive implementation and a list of live workflows to seed.
+func buildPaginationTestServer(t *testing.T, archive sqldb.WorkflowArchive, liveWfs ...*v1alpha1.Workflow) (workflowpkg.WorkflowServiceServer, context.Context) {
+	t.Helper()
+
+	offloadNodeStatusRepo := &mocks.OffloadNodeStatusRepo{}
+	offloadNodeStatusRepo.On("IsEnabled", mock.Anything).Return(false)
+
+	kubeClientSet := fake.NewSimpleClientset()
+	kubeClientSet.PrependReactor("create", "selfsubjectaccessreviews", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+		return true, &authorizationv1.SelfSubjectAccessReview{
+			Status: authorizationv1.SubjectAccessReviewStatus{Allowed: true},
+		}, nil
+	})
+
+	objs := make([]runtime.Object, len(liveWfs))
+	for i, wf := range liveWfs {
+		objs[i] = wf
+	}
+	wfClientset := v1alpha.NewSimpleClientset(objs...)
+
+	ctx := logging.TestContext(t.Context())
+	ctx = context.WithValue(context.WithValue(context.WithValue(ctx, auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}, Email: "my-sub@your.org"})
+
+	instanceIDSvc := instanceid.NewService("my-instanceid")
+	wfStore, err := store.NewSQLiteStore(instanceIDSvc)
+	require.NoError(t, err)
+	for _, wf := range liveWfs {
+		require.NoError(t, wfStore.Add(wf))
+	}
+
+	namespaceAll := metav1.NamespaceAll
+	wftmplStore := workflowtemplate.NewClientStore()
+	cwftmplStore := clusterworkflowtemplate.NewClientStore()
+	server := NewServer(ctx, instanceIDSvc, offloadNodeStatusRepo, archive, wfClientset, wfStore, wfStore, wftmplStore, cwftmplStore, nil, &namespaceAll)
+	return server, ctx
+}
+
+// TestListWorkflowPaginationWithoutArchive is a regression test for
+// https://github.com/argoproj/argo-workflows/issues/15639.
+// When archive is disabled, HasMoreWorkflows always returns false, so the old code
+// never set meta.Continue even when there were more live workflows — disabling Next page in the UI.
+func TestListWorkflowPaginationWithoutArchive(t *testing.T) {
+	var wfObj1, wfObj2, wfObj5 v1alpha1.Workflow
+	v1alpha1.MustUnmarshal(wf1, &wfObj1) // workflows namespace
+	v1alpha1.MustUnmarshal(wf2, &wfObj2) // workflows namespace
+	v1alpha1.MustUnmarshal(wf5, &wfObj5) // workflows namespace
+
+	server, ctx := buildPaginationTestServer(t, sqldb.NullWorkflowArchive, &wfObj1, &wfObj2, &wfObj5)
+
+	// Page 1: limit=2, 3 live workflows exist — Continue must be set.
+	page1, err := server.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{
+		Namespace:   "workflows",
+		ListOptions: &metav1.ListOptions{Limit: 2},
+	})
+	require.NoError(t, err)
+	assert.Len(t, page1.Items, 2)
+	assert.NotEmpty(t, page1.Continue, "Next page must be available when there are more live workflows")
+
+	// Page 2: use the Continue token — should return the remaining 1 workflow with no further Continue.
+	page2, err := server.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{
+		Namespace:   "workflows",
+		ListOptions: &metav1.ListOptions{Limit: 2, Continue: page1.Continue},
+	})
+	require.NoError(t, err)
+	assert.Len(t, page2.Items, 1)
+	assert.Empty(t, page2.Continue, "No next page on last page")
+}
+
+// TestListWorkflowPaginationMixedLiveAndArchive tests the live/archive boundary: a page that
+// spans both live and archived workflows must still set meta.Continue when more archived items remain.
+func TestListWorkflowPaginationMixedLiveAndArchive(t *testing.T) {
+	var wfObj1, wfObj2, wfObj5 v1alpha1.Workflow
+	v1alpha1.MustUnmarshal(wf1, &wfObj1) // workflows namespace
+	v1alpha1.MustUnmarshal(wf2, &wfObj2) // workflows namespace
+	v1alpha1.MustUnmarshal(wf5, &wfObj5) // workflows namespace
+
+	// 4 archived workflows in "workflows" namespace.
+	makeArchived := func(name string) v1alpha1.Workflow {
+		return v1alpha1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: "workflows",
+				Labels:    map[string]string{"workflows.argoproj.io/controller-instanceid": "my-instanceid"},
+			},
+		}
+	}
+	a1, a2, a3, a4 := makeArchived("archived-1"), makeArchived("archived-2"), makeArchived("archived-3"), makeArchived("archived-4")
+
+	r, err := labels.ParseToRequirements("workflows.argoproj.io/controller-instanceid=my-instanceid")
+	require.NoError(t, err)
+
+	archivedRepo := &mocks.WorkflowArchive{}
+	// Page 1: 3 live items consumed 3 of the 5 slots → archivedOffset=0, archivedLimit=2.
+	archivedRepo.On("ListWorkflows", mock.Anything, sutils.ListOptions{Namespace: "workflows", Limit: 2, Offset: 0, LabelRequirements: r}).Return(v1alpha1.Workflows{a1, a2}, nil)
+	archivedRepo.On("HasMoreWorkflows", mock.Anything, sutils.ListOptions{Namespace: "workflows", Limit: 2, Offset: 0, LabelRequirements: r}).Return(true, nil)
+	// Page 2: offset=5, archivedOffset=5-3=2, archivedLimit=5.
+	archivedRepo.On("ListWorkflows", mock.Anything, sutils.ListOptions{Namespace: "workflows", Limit: 5, Offset: 2, LabelRequirements: r}).Return(v1alpha1.Workflows{a3, a4}, nil)
+	archivedRepo.On("HasMoreWorkflows", mock.Anything, sutils.ListOptions{Namespace: "workflows", Limit: 5, Offset: 2, LabelRequirements: r}).Return(false, nil)
+
+	server, ctx := buildPaginationTestServer(t, archivedRepo, &wfObj1, &wfObj2, &wfObj5)
+
+	// Page 1: limit=5, 3 live + 4 archived = 7 total → returns 3 live + 2 archived, Continue set.
+	page1, err := server.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{
+		Namespace:   "workflows",
+		ListOptions: &metav1.ListOptions{Limit: 5},
+	})
+	require.NoError(t, err)
+	assert.Len(t, page1.Items, 5)
+	assert.NotEmpty(t, page1.Continue, "Next page must be available when live+archive spans multiple pages")
+
+	// Page 2: use Continue token → returns remaining 2 archived, no further Continue.
+	page2, err := server.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{
+		Namespace:   "workflows",
+		ListOptions: &metav1.ListOptions{Limit: 5, Continue: page1.Continue},
+	})
+	require.NoError(t, err)
+	assert.Len(t, page2.Items, 2)
+	assert.Empty(t, page2.Continue, "No next page on last page")
+
+	archivedRepo.AssertExpectations(t)
+}
+
 func TestDeleteWorkflow(t *testing.T) {
 	server, ctx := getWorkflowServer(t)
 	t.Run("Labelled", func(t *testing.T) {
