@@ -184,14 +184,14 @@ func (r *workflowArchive) ListWorkflows(ctx context.Context, options sutils.List
 			baseSelector := s.SQL().Select("name", "namespace", "uid", "phase", "startedat", "finishedat", "creationtimestamp")
 			selectQuery := baseSelector.
 				Columns(
-					db.Raw("coalesce(workflow->'$.metadata.labels', '{}') as labels"),
-					db.Raw("coalesce(workflow->'$.metadata.annotations', '{}') as annotations"),
-					db.Raw("coalesce(workflow->>'$.status.progress', '') as progress"),
-					db.Raw("workflow->>'$.spec.suspend'"),
-					db.Raw("coalesce(workflow->>'$.spec.arguments', '{}') as arguments"),
-					db.Raw("coalesce(workflow->>'$.status.message', '') as message"),
-					db.Raw("coalesce(workflow->>'$.status.estimatedDuration', '0') as estimatedduration"),
-					db.Raw("coalesce(workflow->'$.status.resourcesDuration', '{}') as resourcesduration"),
+					db.Raw("coalesce(JSON_EXTRACT(workflow, '$.metadata.labels'), '{}') as labels"),
+					db.Raw("coalesce(JSON_EXTRACT(workflow, '$.metadata.annotations'), '{}') as annotations"),
+					db.Raw("coalesce(JSON_UNQUOTE(JSON_EXTRACT(workflow, '$.status.progress')), '') as progress"),
+					db.Raw("JSON_UNQUOTE(JSON_EXTRACT(workflow, '$.spec.suspend')) as suspend"),
+					db.Raw("coalesce(JSON_EXTRACT(workflow, '$.spec.arguments'), '{}') as arguments"),
+					db.Raw("coalesce(JSON_UNQUOTE(JSON_EXTRACT(workflow, '$.status.message')), '') as message"),
+					db.Raw("coalesce(JSON_UNQUOTE(JSON_EXTRACT(workflow, '$.status.estimatedDuration')), '0') as estimatedduration"),
+					db.Raw("coalesce(JSON_EXTRACT(workflow, '$.status.resourcesDuration'), '{}') as resourcesduration"),
 				).
 				From(archiveTableName).
 				Where(r.clusterManagedNamespaceAndInstanceID())
