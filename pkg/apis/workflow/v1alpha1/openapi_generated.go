@@ -3766,7 +3766,7 @@ func schema_pkg_apis_workflow_v1alpha1_LifecycleHook(ref common.ReferenceCallbac
 					},
 					"expression": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not be retried and the retry strategy will be ignored",
+							Description: "Expression is a condition expression that, when it evaluates to true, causes the hook to fire. The hook is invoked once per matching event and runs in parallel to the step or template it is attached to. Available variables depend on the hook scope (e.g. workflow status, step status, or task status).",
 							Type:        []string{"string"},
 							Format:      "",
 						},

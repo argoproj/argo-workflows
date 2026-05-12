@@ -1681,7 +1681,7 @@ _No description available_
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`arguments`|[`Arguments`](#arguments)|Arguments hold arguments to the template|
-|`expression`|`string`|Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not be retried and the retry strategy will be ignored|
+|`expression`|`string`|Expression is a condition expression that, when it evaluates to true, causes the hook to fire. The hook is invoked once per matching event and runs in parallel to the step or template it is attached to. Available variables depend on the hook scope (e.g. workflow status, step status, or task status).|
 |`template`|`string`|Template is the name of the template to execute by the hook|
 |`templateRef`|[`TemplateRef`](#templateref)|TemplateRef is the reference to the template resource to execute by the hook|
 
