@@ -65,6 +65,7 @@ var bucketsOfKeys = map[string][]string{
 		"my-wf/my-node-1/my-gcs-artifact.tgz",
 		"my-wf/my-node-1/my-oss-artifact.zip",
 		"my-wf/my-node-1/my-s3-artifact.tgz",
+		"my-wf/my-node-1/main.log",
 		"my-wf/my-node-inline/main.log",
 	},
 	"my-bucket-2": {
@@ -261,6 +262,18 @@ func newServer(t *testing.T) *ArtifactServer {
 											Bucket: "my-bucket",
 										},
 										Key: "my-wf/my-node-1/my-oss-artifact.zip",
+									},
+								},
+							},
+							{
+								// Log artifact created when archiveLogs is enabled
+								// (see workflow/executor/executor.go:saveContainerLogs).
+								// The key ends with ".log", which is not in the MIME database
+								// on minimal container images (e.g. distroless).
+								Name: "main-logs",
+								ArtifactLocation: wfv1.ArtifactLocation{
+									S3: &wfv1.S3Artifact{
+										Key: "my-wf/my-node-1/main.log",
 									},
 								},
 							},
@@ -474,6 +487,16 @@ func TestArtifactServer_GetArtifactFile(t *testing.T) {
 			statusCode:  200,
 			isDirectory: false,
 		},
+		{
+			path:        "/artifact-files/my-ns/workflows/my-wf/my-node-1/outputs/main-logs",
+			statusCode:  200,
+			isDirectory: false,
+			// Verify that .log artifacts are served with a non-empty Content-Type.
+			// The ".log" extension may not be in the system MIME database on minimal
+			// container images (e.g. distroless), causing mime.TypeByExtension to
+			// return "". The fallback in returnArtifact ensures "text/plain; charset=utf-8"
+			// is used instead.
+		},
 	}
 
 	for _, tt := range tests {
@@ -502,6 +525,7 @@ func TestArtifactServer_GetArtifactFile(t *testing.T) {
 					}
 				} else {
 					assert.Equal(t, "my-data", string(all))
+					assert.NotEmpty(t, recorder.Header().Get("Content-Type"), "Content-Type header must not be empty")
 				}
 			}
 		})
