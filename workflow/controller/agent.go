@@ -110,6 +110,9 @@ func (woc *wfOperationCtx) getCertVolumeMount(ctx context.Context, name string) 
 }
 
 func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, error) {
+	if woc.controller.Config.DisableAgentPodCreation {
+		return nil, nil
+	}
 	podName := woc.getAgentPodName()
 	ctx, log := woc.log.WithField("podName", podName).InContext(ctx)
 

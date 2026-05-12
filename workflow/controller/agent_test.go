@@ -171,3 +171,46 @@ func TestAssessAgentPodStatus(t *testing.T) {
 		assert.Empty(t, msg)
 	})
 }
+
+func TestDisableAgentPodCreation(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: http-template
+  namespace: default
+spec:
+  podSpecPatch: |
+    nodeName: virtual-node
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: good
+            template: http
+            arguments:
+              parameters: [{name: url, value: "https://raw.githubusercontent.com/argoproj/argo-workflows/4e450e250168e6b4d51a126b784e90b11a0162bc/pkg/apis/workflow/v1alpha1/generated.swagger.json"}]
+        - - name: bad
+            template: http
+            continueOn:
+              failed: true
+            arguments:
+              parameters: [{name: url, value: "http://openlibrary.org/people/george08/nofound.json"}]
+
+    - name: http
+      inputs:
+        parameters:
+          - name: url
+      http:
+       url: "{{inputs.parameters.url}}"
+
+`)
+	cancel, controller := newController(ctx, wf, defaultServiceAccount)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.controller.Config.DisableAgentPodCreation = true
+	defer cancel()
+	woc.operate(ctx)
+	pods, err := woc.controller.kubeclientset.CoreV1().Pods("default").List(ctx, v1.ListOptions{})
+	require.NoError(t, err)
+	assert.Empty(t, pods.Items)
+}
