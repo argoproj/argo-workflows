@@ -37,7 +37,6 @@ func (s *ArtifactsSuite) TestInputOnMount() {
 		Workflow("@testdata/input-on-mount-workflow.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded)
 }
 
