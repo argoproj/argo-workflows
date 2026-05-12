@@ -1,0 +1,57 @@
+# Regression test: lifecycle hook on a non-leaf DAG task whose failure triggers
+# an Omit cascade must fire even though the task transitions Running→Failed
+# inside executeTemplate (not via podReconciliation).
+#
+# Topology: step-a (fail-inner) → step-b (succeed-inner)
+# step-a has a notify hook on failure.
+# Expected: hook fires, step-b is Omitted only AFTER the hook completes.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-hook-non-leaf-serial-head
+  namespace: argo
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: step-a
+            template: fail-inner
+            hooks:
+              notify:
+                template: echo
+                expression: tasks["step-a"].status == "Failed"
+          - name: step-b
+            template: succeed-inner
+            depends: step-a
+
+    - name: fail-inner
+      dag:
+        tasks:
+          - name: inner
+            template: fail-pod
+
+    - name: succeed-inner
+      dag:
+        tasks:
+          - name: inner
+            template: succeed-pod
+
+    - name: fail-pod
+      container:
+        image: alpine:3.23
+        command: [sh, -c]
+        args: ["exit 1"]
+
+    - name: succeed-pod
+      container:
+        image: alpine:3.23
+        command: [sh, -c]
+        args: ["echo done"]
+
+    - name: echo
+      container:
+        image: alpine:3.23
+        command: [echo]
+        args: ["hook fired"]
