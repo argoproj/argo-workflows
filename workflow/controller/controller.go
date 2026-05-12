@@ -1113,14 +1113,9 @@ func (wfc *WorkflowController) archiveWorkflow(ctx context.Context, obj any) err
 	}
 	wfc.workflowKeyLock.Lock(key)
 	defer wfc.workflowKeyLock.Unlock(key)
-	key, err = cache.MetaNamespaceKeyFunc(obj)
+	_, err = cache.MetaNamespaceKeyFunc(obj)
 	if err != nil {
 		logger.Error(ctx, "failed to get key for object after locking")
-		return nil // non-retryable
-	}
-	err = wfc.archiveWorkflowAux(ctx, obj)
-	if err != nil {
-		logger.WithField("key", key).WithError(err).Error(ctx, "failed to archive workflow")
 		return nil // non-retryable
 	}
 	return wfc.archiveWorkflowAux(ctx, obj)
