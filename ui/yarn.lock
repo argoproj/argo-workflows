@@ -2061,11 +2061,11 @@
   integrity sha512-nG96G3Wp6acyAgJqGasjODb+acrI7KltPiRxzHPXnP3NgI28bpQDRv53olbqGXbfcgF5aiiHmO3xpwEpS5Ld9g==
 
 "@types/node@*":
-  version "20.10.5"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.10.5.tgz#47ad460b514096b7ed63a1dae26fad0914ed3ab2"
-  integrity sha512-nNPsNE65wjMxEKI93yOP+NPGGBJz/PoN3kZsVLee0XMiJolxSekEVD8wRwBUBqkwc7UWop0edW50yrCQW4CyRw==
+  version "25.7.0"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-25.7.0.tgz#7498f82e90dbdce7c34b75aaaa256c498a0ebe6c"
+  integrity sha512-z+pdZyxE+RTQE9AcboAZCb4otwcrvgHD+GlBpPgn0emDVt0ohrTMhAwlr2Wd9nZ+nihhYFxO2pThz3C5qSu2Eg==
   dependencies:
-    undici-types "~5.26.4"
+    undici-types "~7.21.0"
 
 "@types/normalize-package-data@^2.4.0":
   version "2.4.4"
@@ -2206,13 +2206,14 @@
   integrity sha512-9aEbYZ3TbYMznPdcdr3SmIrLXwC/AKZXQeCf9Pgao5CKb8CyHuEX5jzWPTkvregvhRJHcpRO6BFoGW9ycaOkYw==
 
 "@types/superagent@^8.1.1":
-  version "8.1.1"
-  resolved "https://registry.yarnpkg.com/@types/superagent/-/superagent-8.1.1.tgz#dbc620c5df3770b0c3092f947d6d5e808adae2bc"
-  integrity sha512-YQyEXA4PgCl7EVOoSAS3o0fyPFU6erv5mMixztQYe1bqbWmmn8c+IrqoxjQeZe4MgwXikgcaZPiI/DsbmOVlzA==
+  version "8.1.9"
+  resolved "https://registry.yarnpkg.com/@types/superagent/-/superagent-8.1.9.tgz#28bfe4658e469838ed0bf66d898354bcab21f49f"
+  integrity sha512-pTVjI73witn+9ILmoJdajHGW2jkSaOzhiFYF1Rd3EQ94kymLqB9PjD9ISg7WaALC7+dCHT0FGe9T2LktLq/3GQ==
   dependencies:
     "@types/cookiejar" "^2.1.5"
     "@types/methods" "^1.1.4"
     "@types/node" "*"
+    form-data "^4.0.0"
 
 "@types/unist@^2", "@types/unist@^2.0.0":
   version "2.0.10"
@@ -4689,10 +4690,10 @@ form-data@^3.0.0:
     combined-stream "^1.0.8"
     mime-types "^2.1.12"
 
-form-data@^4.0.4:
-  version "4.0.4"
-  resolved "https://registry.yarnpkg.com/form-data/-/form-data-4.0.4.tgz#784cdcce0669a9d68e94d11ac4eea98088edd2c4"
-  integrity sha512-KrGhL9Q4zjj0kiUt5OO4Mr/A/jlI2jDYs5eHBpYHPcBEVSiipAvn2Ko2HnPe20rmcuuvMHNdZFp+4IlGTMF0Ow==
+form-data@^4.0.0, form-data@^4.0.4:
+  version "4.0.5"
+  resolved "https://registry.yarnpkg.com/form-data/-/form-data-4.0.5.tgz#b49e48858045ff4cbf6b03e1805cebcad3679053"
+  integrity sha512-8RipRLol37bNs2bhoV67fiTEvdTrbMUYcFTiy3+wuuOnUog2QBHCZWXDRijWQfAkhBj2Uf5UnVaiWwA5vdd82w==
   dependencies:
     asynckit "^0.4.0"
     combined-stream "^1.0.8"
@@ -5016,9 +5017,9 @@ has-values@^1.0.0:
     kind-of "^4.0.0"
 
 hasown@^2.0.0, hasown@^2.0.2:
-  version "2.0.2"
-  resolved "https://registry.yarnpkg.com/hasown/-/hasown-2.0.2.tgz#003eaf91be7adc372e84ec59dc37252cedb80003"
-  integrity sha512-0hJU9SCPvmMzIBdZFqNPXWa6dqh7WdH0cII9y+CyS8rG3nL48Bclra9HmKhVVUHyPWNH5Y7xDwAB7bfgSjkUMQ==
+  version "2.0.3"
+  resolved "https://registry.yarnpkg.com/hasown/-/hasown-2.0.3.tgz#5e5c2b15b60370a4c7930c383dfb76bf17bc403c"
+  integrity sha512-ej4AhfhfL2Q2zpMmLo7U1Uv9+PyhIZpgQLGT1F9miIGmiCJIoCgSmczFdrc97mWT4kVY72KA+WnnhJ5pghSvSg==
   dependencies:
     function-bind "^1.1.2"
 
@@ -9260,10 +9261,10 @@ unbox-primitive@^1.0.2:
     has-symbols "^1.0.3"
     which-boxed-primitive "^1.0.2"
 
-undici-types@~5.26.4:
-  version "5.26.5"
-  resolved "https://registry.yarnpkg.com/undici-types/-/undici-types-5.26.5.tgz#bcd539893d00b56e964fd2657a4866b221a65617"
-  integrity sha512-JlCMO+ehdEIKqlFxk6IfVoAUVmgz7cU7zD/h9XZ0qzeosSHmUJVOzSQvvYSYWXkFXC+IfLKSIffhv0sVZup6pA==
+undici-types@~7.21.0:
+  version "7.21.0"
+  resolved "https://registry.yarnpkg.com/undici-types/-/undici-types-7.21.0.tgz#433f7dd1b5daa9ab4dacb721a5e11a8de51eadda"
+  integrity sha512-w9IMgQrz4O0YN1LtB7K5P63vhlIOvC7opSmouCJ+ZywlPAlO9gIkJ+otk6LvGpAs2wg4econaCz3TvQ9xPoyuQ==
 
 unicode-canonical-property-names-ecmascript@^2.0.0:
   version "2.0.0"
