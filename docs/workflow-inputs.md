@@ -116,3 +116,22 @@ dag:
 ```
 
 Note the important distinction between `parameters` and `artifacts`; they both share the `name` field, but one uses `value` and the other uses `from`.
+
+### Parameter Descriptions
+
+You can add a `description` field to a parameter.
+The description is displayed as a tooltip in the UI when submitting a workflow or providing intermediate inputs.
+
+```yaml
+arguments:
+  parameters:
+  - name: db-host
+    value: localhost
+    description: 'The **database host** to connect to.'
+```
+
+Descriptions support [Markdown](https://www.markdownguide.org/basic-syntax/) formatting, including:
+
+- **Bold**, *italic*, and `code`
+- [Links](https://www.markdownguide.org/basic-syntax/#links)
+- Line breaks
