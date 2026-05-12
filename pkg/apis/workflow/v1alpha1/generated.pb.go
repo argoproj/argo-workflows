@@ -6024,6 +6024,11 @@ func (m *S3Bucket) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	i -= len(m.AddressingStyle)
+	copy(dAtA[i:], m.AddressingStyle)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.AddressingStyle)))
+	i--
+	dAtA[i] = 0x6a
 	if m.SessionTokenSecret != nil {
 		{
 			size, err := m.SessionTokenSecret.MarshalToSizedBuffer(dAtA[:i])
@@ -11656,6 +11661,8 @@ func (m *S3Bucket) Size() (n int) {
 		l = m.SessionTokenSecret.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
+	l = len(m.AddressingStyle)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -14382,6 +14389,7 @@ func (this *S3Bucket) String() string {
 		`EncryptionOptions:` + strings.Replace(this.EncryptionOptions.String(), "S3EncryptionOptions", "S3EncryptionOptions", 1) + `,`,
 		`CASecret:` + strings.Replace(fmt.Sprintf("%v", this.CASecret), "SecretKeySelector", "v1.SecretKeySelector", 1) + `,`,
 		`SessionTokenSecret:` + strings.Replace(fmt.Sprintf("%v", this.SessionTokenSecret), "SecretKeySelector", "v1.SecretKeySelector", 1) + `,`,
+		`AddressingStyle:` + fmt.Sprintf("%v", this.AddressingStyle) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -33453,6 +33461,38 @@ func (m *S3Bucket) Unmarshal(dAtA []byte) error {
 			if err := m.SessionTokenSecret.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
+			iNdEx = postIndex
+		case 13:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AddressingStyle", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.AddressingStyle = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

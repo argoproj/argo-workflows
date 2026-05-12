@@ -6722,6 +6722,10 @@
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
           "description": "AccessKeySecret is the secret selector to the bucket's access key"
         },
+        "addressingStyle": {
+          "description": "AddressingStyle defines how buckets are addressed by the S3 client. This is required for some S3-compatible providers that only support virtual-hosted-style bucket addressing.\n\nValid values are: - \"\" (default, auto-detect) - \"path\" - \"virtual-hosted\"",
+          "type": "string"
+        },
         "bucket": {
           "description": "Bucket is the name of the bucket",
           "type": "string"
@@ -6778,6 +6782,10 @@
         "accessKeySecret": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
           "description": "AccessKeySecret is the secret selector to the bucket's access key"
+        },
+        "addressingStyle": {
+          "description": "AddressingStyle defines how buckets are addressed by the S3 client. This is required for some S3-compatible providers that only support virtual-hosted-style bucket addressing.\n\nValid values are: - \"\" (default, auto-detect) - \"path\" - \"virtual-hosted\"",
+          "type": "string"
         },
         "bucket": {
           "description": "Bucket is the name of the bucket",
