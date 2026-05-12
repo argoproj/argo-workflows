@@ -1709,6 +1709,26 @@ func TestAssessNodeStatus(t *testing.T) {
 		wantPhase:   wfv1.NodeFailed,
 		wantMessage: "can't find failed message for pod  namespace ", // daemoned nodes currently don't have a fail message
 	}, {
+		name: "daemon pod succeeded unexpectedly while still active",
+		pod: &apiv1.Pod{
+			Status: apiv1.PodStatus{
+				Phase: apiv1.PodSucceeded,
+			},
+		},
+		daemon:    true,
+		node:      &wfv1.NodeStatus{TemplateName: templateName, Phase: wfv1.NodeRunning},
+		wantPhase: wfv1.NodeFailed,
+	}, {
+		name: "daemon pod succeeded after killDaemonedChildren set node to Succeeded",
+		pod: &apiv1.Pod{
+			Status: apiv1.PodStatus{
+				Phase: apiv1.PodSucceeded,
+			},
+		},
+		daemon:    true,
+		node:      &wfv1.NodeStatus{TemplateName: templateName, Phase: wfv1.NodeSucceeded},
+		wantPhase: wfv1.NodeSucceeded,
+	}, {
 		name: "daemon, pod running, node failed",
 		pod: &apiv1.Pod{
 			Status: apiv1.PodStatus{

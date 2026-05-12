@@ -1407,11 +1407,13 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		}
 	case apiv1.PodSucceeded:
 		// if the pod is succeeded, we need to check if it is a daemoned step or not
-		// if it is daemoned, we need to mark it as failed, since daemon pods should run indefinitely
-		if tmpl.IsDaemon() {
-			woc.log.WithField("podName", pod.Name).Debug(ctx, "Daemoned pod succeeded. Marking it as failed")
+		// if it is daemoned and still active, mark it as failed so retryStrategy can trigger.
+		// however, if the node was already completed (e.g. set to Succeeded by killDaemonedChildren
+		// during workflow shutdown), preserve that phase — the pod exited cleanly due to SIGTERM.
+		if tmpl.IsDaemon() && !old.Phase.Completed() {
+			woc.log.WithField("podName", pod.Name).Debug(ctx, "Daemoned pod succeeded unexpectedly. Marking it as failed")
 			updated.Phase = wfv1.NodeFailed
-		} else {
+		} else if !tmpl.IsDaemon() {
 			updated.Phase = wfv1.NodeSucceeded
 		}
 
