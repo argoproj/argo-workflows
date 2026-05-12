@@ -8,13 +8,13 @@ import (
 
 	"github.com/argoproj/pkg/sync"
 	apiv1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/selection"
-	"k8s.io/apimachinery/pkg/types"
 	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/dynamic"
@@ -55,13 +55,31 @@ type Controller struct {
 	eventRecorderManager events.EventRecorderManager
 	cronWorkflowWorkers  int
 	logger               logging.Logger
+	wfInformer           cache.SharedIndexInformer
 }
 
 const (
 	cronWorkflowResyncPeriod = 20 * time.Minute
+	cronwfIndex              = "cronworkflow"
 )
 
-var cronSyncPeriod time.Duration
+var (
+	cronSyncPeriod time.Duration
+	indexes        = cache.Indexers{
+		cronwfIndex: func(rawObj any) ([]string, error) {
+			obj, err := meta.Accessor(rawObj)
+			if err != nil {
+				return []string{}, err
+			}
+
+			owner := v1.GetControllerOf(obj)
+			if owner == nil || owner.Kind != workflow.CronWorkflowKind {
+				return []string{}, nil
+			}
+			return []string{string(owner.UID)}, nil
+		},
+	}
+)
 
 func init() {
 	// this make sure we support timezones
@@ -112,18 +130,27 @@ func (cc *Controller) Run(ctx context.Context) {
 		cc.logger.WithFatal().Error(ctx, err.Error())
 	}
 
-	wfInformer := util.NewWorkflowInformer(ctx, cc.dynamicInterface, cc.managedNamespace, cronWorkflowResyncPeriod,
+	cc.wfInformer = util.NewWorkflowInformer(ctx, cc.dynamicInterface, cc.managedNamespace, cronWorkflowResyncPeriod,
 		func(options *v1.ListOptions) { wfInformerListOptionsFunc(options, cc.instanceID) },
 		func(options *v1.ListOptions) { wfInformerListOptionsFunc(options, cc.instanceID) },
-		cache.Indexers{})
-	go wfInformer.Run(ctx.Done())
+		indexes,
+	)
+	go cc.wfInformer.Run(ctx.Done())
 
-	cc.wfLister = util.NewWorkflowLister(ctx, wfInformer)
+	cc.wfLister = util.NewWorkflowLister(ctx, cc.wfInformer)
 
 	cc.cron.Start()
 	defer cc.cron.Stop()
 
 	go cc.cronWfInformer.Informer().Run(ctx.Done())
+
+	if !cache.WaitForCacheSync(
+		ctx.Done(),
+		cc.wfInformer.HasSynced,
+		cc.cronWfInformer.Informer().HasSynced,
+	) {
+		cc.logger.WithFatal().Error(ctx, "Timed out waiting for caches to sync")
+	}
 
 	go wait.UntilWithContext(ctx, cc.syncAll, cronSyncPeriod)
 
@@ -179,7 +206,7 @@ func (cc *Controller) processNextCronItem(ctx context.Context) bool {
 	}
 	ctx = wfctx.InjectObjectMeta(ctx, &cronWf.ObjectMeta)
 
-	cronWorkflowOperationCtx := newCronWfOperationCtx(ctx, cronWf, cc.wfClientset, cc.metrics, cc.wftmplInformer, cc.cwftmplInformer, cc.wfDefaults)
+	cronWorkflowOperationCtx := newCronWfOperationCtx(ctx, cronWf, cc.wfClientset, cc.metrics, cc.wftmplInformer, cc.cwftmplInformer, cc.wfDefaults, cc.keyLock)
 
 	err = cronWorkflowOperationCtx.validateCronWorkflow(ctx)
 	if err != nil {
@@ -264,27 +291,9 @@ func (cc *Controller) syncAll(ctx context.Context) {
 
 	cc.logger.Debug(ctx, "Syncing all CronWorkflows")
 
-	workflows, err := cc.wfLister.List()
-	if err != nil {
-		return
-	}
-	groupedWorkflows := groupWorkflows(workflows)
-
-	cronWorkflows := cc.cronWfInformer.Informer().GetStore().List()
-	for _, obj := range cronWorkflows {
-		un, ok := obj.(*unstructured.Unstructured)
-		if !ok {
-			cc.logger.Error(ctx, "Unable to convert object to unstructured when syncing CronWorkflows")
-			continue
-		}
-		cronWf := &v1alpha1.CronWorkflow{}
-		err := util.FromUnstructuredObj(un, cronWf)
-		if err != nil {
-			cc.logger.WithError(err).Error(ctx, "Unable to convert unstructured to CronWorkflow when syncing CronWorkflows")
-			continue
-		}
-
-		err = cc.syncCronWorkflow(ctx, cronWf, groupedWorkflows[cronWf.UID])
+	keys := cc.cronWfInformer.Informer().GetStore().ListKeys()
+	for _, key := range keys {
+		err := cc.syncCronWorkflow(ctx, key)
 		if err != nil {
 			cc.logger.WithError(err).Error(ctx, "Unable to sync CronWorkflow")
 			continue
@@ -292,34 +301,41 @@ func (cc *Controller) syncAll(ctx context.Context) {
 	}
 }
 
-func (cc *Controller) syncCronWorkflow(ctx context.Context, cronWf *v1alpha1.CronWorkflow, workflows []v1alpha1.Workflow) error {
-	key := cronWf.Namespace + "/" + cronWf.Name
+func (cc *Controller) syncCronWorkflow(ctx context.Context, key string) error {
 	cc.keyLock.Lock(key)
 	defer cc.keyLock.Unlock(key)
 
-	cwoc := newCronWfOperationCtx(ctx, cronWf, cc.wfClientset, cc.metrics, cc.wftmplInformer, cc.cwftmplInformer, cc.wfDefaults)
-	err := cwoc.enforceHistoryLimit(ctx, workflows)
+	obj, _, err := cc.cronWfInformer.Informer().GetStore().GetByKey(key)
 	if err != nil {
 		return err
 	}
-	err = cwoc.reconcileActiveWfs(ctx, workflows)
+	un, ok := obj.(*unstructured.Unstructured)
+	if !ok {
+		return fmt.Errorf("key in index is not an unstructured")
+	}
+
+	cronWf := &v1alpha1.CronWorkflow{}
+	err = util.FromUnstructuredObj(un, cronWf)
+	if err != nil {
+		return err
+	}
+
+	wfs, err := cc.wfLister.ListByIndex(cronwfIndex, string(cronWf.UID))
+	if err != nil {
+		return err
+	}
+
+	cwoc := newCronWfOperationCtx(ctx, cronWf, cc.wfClientset, cc.metrics, cc.wftmplInformer, cc.cwftmplInformer, cc.wfDefaults, cc.keyLock)
+	err = cwoc.enforceHistoryLimit(ctx, wfs)
+	if err != nil {
+		return err
+	}
+	err = cwoc.reconcileActiveWfs(ctx, wfs)
 	if err != nil {
 		return err
 	}
 
 	return nil
-}
-
-func groupWorkflows(wfs []*v1alpha1.Workflow) map[types.UID][]v1alpha1.Workflow {
-	cwfChildren := make(map[types.UID][]v1alpha1.Workflow)
-	for _, wf := range wfs {
-		owner := v1.GetControllerOf(wf)
-		if owner == nil || owner.Kind != workflow.CronWorkflowKind {
-			continue
-		}
-		cwfChildren[owner.UID] = append(cwfChildren[owner.UID], *wf)
-	}
-	return cwfChildren
 }
 
 func cronWfInformerListOptionsFunc(options *v1.ListOptions, instanceID string) {
