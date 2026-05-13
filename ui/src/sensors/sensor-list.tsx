@@ -110,7 +110,7 @@ export function SensorList({match, location, history}: RouteComponentProps<any>)
                         }
                     ]
                 },
-                tools: [<NamespaceFilter key='namespace-filter' value={namespace} onChange={setNamespace} />]
+                tools: [<NamespaceFilter key='namespace-filter' value={namespace} onChange={setNamespace} extraNamespaces={nsUtils.getUniqueNamespaces(sensors)} />]
             }}>
             <ErrorNotice error={error} />
             {loading && <Loading />}
