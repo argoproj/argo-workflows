@@ -13,6 +13,7 @@ import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {TagsInput} from '../../../shared/components/tags-input/tags-input';
 import * as models from '../../../shared/models';
 import {WorkflowPhase} from '../../../shared/models';
+import {getUniqueNamespaces} from '../../../shared/namespaces';
 import {services} from '../../../shared/services';
 
 import './workflow-filters.scss';
@@ -98,7 +99,7 @@ export function WorkflowFilters(props: WorkflowFilterProps) {
             <div className='row'>
                 <div className='columns small-2 xlarge-12'>
                     <p className='wf-filters-container__title'>Namespace</p>
-                    <NamespaceFilter value={props.namespace} onChange={props.setNamespace} />
+                    <NamespaceFilter value={props.namespace} onChange={props.setNamespace} extraNamespaces={getUniqueNamespaces(props.workflows)} />
                 </div>
                 <div className='columns small-2 xlarge-12'>
                     <DropDown
