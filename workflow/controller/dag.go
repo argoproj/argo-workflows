@@ -306,7 +306,7 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 			}
 			if taskNode.Fulfilled() && taskNode.Completed() {
 				onExitNodeName := common.GenerateOnExitNodeName(taskNode.Name)
-				if onExitNode, err := woc.wf.GetNodeByName(onExitNodeName); err == nil && onExitNode != nil && !onExitNode.Fulfilled() {
+				if onExitNode, onExitErr := woc.wf.GetNodeByName(onExitNodeName); onExitErr == nil && onExitNode != nil && !onExitNode.Fulfilled() {
 					onExitCompleted = false
 				}
 			}
