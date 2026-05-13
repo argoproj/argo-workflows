@@ -35,6 +35,12 @@ type SSOConfig struct {
 	FilterGroupsRegex []string `json:"filterGroupsRegex,omitempty"`
 	// custom PEM encoded CA certificate file contents
 	RootCA string `json:"rootCA,omitempty"`
+	// InsecureSkipPKCE disables PKCE (RFC 7636) on the OAuth2 authorization
+	// code flow. PKCE is enabled by default and is recommended by the OAuth 2.0
+	// Security Best Current Practice for all clients, including confidential
+	// server-side clients. Only set this to true if your identity provider
+	// rejects requests containing the `code_challenge` parameter.
+	InsecureSkipPKCE bool `json:"insecureSkipPKCE,omitempty"`
 }
 
 func (c SSOConfig) GetSessionExpiry() time.Duration {

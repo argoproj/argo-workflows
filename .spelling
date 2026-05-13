@@ -33,6 +33,7 @@ Anthos
 Approvers
 ArgoLabs
 Artifactory
+Auth0
 BlackRock
 Breitgand
 CRD
@@ -57,6 +58,7 @@ DevOps
 Devenv
 Dex
 EditorConfig
+Entra
 EtcD
 EventRouter
 Generator
@@ -82,6 +84,7 @@ Katacoda
 Katib
 Kerberos
 KeyValueEditor
+Keycloak
 Killercoda
 KubectlExec
 Kubeflow
@@ -120,6 +123,7 @@ Risc-V
 Roadmap
 RoleBinding
 SDKs
+SHA-256
 SageMaker
 ServiceAccount
 Sharding

@@ -65,6 +65,7 @@ type sso struct {
 	customClaimName   string
 	userInfoPath      string
 	filterGroupsRegex []*regexp.Regexp
+	pkceEnabled       bool
 	logger            logging.Logger
 }
 
@@ -206,7 +207,7 @@ func newSso(
 		}
 	}
 
-	lf := logging.Fields{"redirectUrl": config.RedirectURL, "issuer": c.Issuer, "issuerAlias": "DISABLED", "clientId": c.ClientID, "scopes": config.Scopes, "insecureSkipVerify": c.InsecureSkipVerify, "filterGroupsRegex": c.FilterGroupsRegex, "rootCA": c.RootCA}
+	lf := logging.Fields{"redirectUrl": config.RedirectURL, "issuer": c.Issuer, "issuerAlias": "DISABLED", "clientId": c.ClientID, "scopes": config.Scopes, "insecureSkipVerify": c.InsecureSkipVerify, "filterGroupsRegex": c.FilterGroupsRegex, "rootCA": c.RootCA, "pkceEnabled": !c.InsecureSkipPKCE}
 	if c.IssuerAlias != "" {
 		lf["issuerAlias"] = c.IssuerAlias
 	}
@@ -227,8 +228,38 @@ func newSso(
 		userInfoPath:      c.UserInfoPath,
 		issuer:            c.Issuer,
 		filterGroupsRegex: filterGroupsRegex,
+		pkceEnabled:       !c.InsecureSkipPKCE,
 		logger:            logger,
 	}, nil
+}
+
+// stateCookieSeparator separates the PKCE code verifier from the post-login
+// redirect URL inside the state cookie value. ':' is safe because:
+//   - PKCE verifiers use the RFC 7636 unreserved character set ([A-Za-z0-9-._~]),
+//     so ':' cannot occur inside one (and our generator uses an even smaller
+//     alphabet, [A-Za-z0-9-_]).
+//   - ':' is a valid cookie-octet per RFC 6265 (so net/http will not strip it).
+//   - The redirect URL is path-absolute (starts with '/'), so any subsequent ':'
+//     in a query string is unambiguously to the right of the first separator.
+const stateCookieSeparator = ":"
+
+// encodeStateCookieValue packs the PKCE code verifier and the final redirect
+// URL into a single cookie value. When verifier is empty (PKCE disabled), the
+// cookie value is just the redirect URL, preserving backward compatibility.
+func encodeStateCookieValue(verifier, finalRedirectURL string) string {
+	if verifier == "" {
+		return finalRedirectURL
+	}
+	return verifier + stateCookieSeparator + finalRedirectURL
+}
+
+// decodeStateCookieValue is the inverse of encodeStateCookieValue. It returns
+// the PKCE code verifier (empty when not present) and the final redirect URL.
+func decodeStateCookieValue(value string) (verifier, finalRedirectURL string) {
+	if before, after, ok := strings.Cut(value, stateCookieSeparator); ok {
+		return before, after
+	}
+	return "", value
 }
 
 func (s *sso) HandleRedirect(w http.ResponseWriter, r *http.Request) {
@@ -242,17 +273,30 @@ func (s *sso) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
+	// PKCE (RFC 7636): generate a fresh code verifier per authorization request
+	// and bind it to this state cookie. The verifier is round-tripped to the
+	// callback via the HttpOnly state cookie; the IdP only ever sees the SHA-256
+	// challenge derived from it.
+	authCodeOptions := []oauth2.AuthCodeOption{
+		oauth2.SetAuthURLParam("redirect_uri", s.getRedirectURL(r)),
+	}
+	var verifier string
+	if s.pkceEnabled {
+		verifier = oauth2.GenerateVerifier()
+		authCodeOptions = append(authCodeOptions, oauth2.S256ChallengeOption(verifier))
+	}
+
 	http.SetCookie(w, &http.Cookie{
 		Name:     state,
-		Value:    finalRedirectURL,
+		Value:    encodeStateCookieValue(verifier, finalRedirectURL),
 		Expires:  time.Now().Add(3 * time.Minute),
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
 		Secure:   s.secure,
 	})
 
-	redirectOption := oauth2.SetAuthURLParam("redirect_uri", s.getRedirectURL(r))
-	http.Redirect(w, r, s.config.AuthCodeURL(state, redirectOption), http.StatusFound)
+	http.Redirect(w, r, s.config.AuthCodeURL(state, authCodeOptions...), http.StatusFound)
 }
 
 func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
@@ -265,10 +309,16 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	redirectOption := oauth2.SetAuthURLParam("redirect_uri", s.getRedirectURL(r))
+	verifier, finalRedirectURL := decodeStateCookieValue(cookie.Value)
+	exchangeOptions := []oauth2.AuthCodeOption{
+		oauth2.SetAuthURLParam("redirect_uri", s.getRedirectURL(r)),
+	}
+	if s.pkceEnabled && verifier != "" {
+		exchangeOptions = append(exchangeOptions, oauth2.VerifierOption(verifier))
+	}
 	// Use sso.httpClient in order to respect TLSOptions
 	oauth2Context := context.WithValue(ctx, oauth2.HTTPClient, s.httpClient)
-	oauth2Token, err := s.config.Exchange(oauth2Context, r.URL.Query().Get("code"), redirectOption)
+	oauth2Token, err := s.config.Exchange(oauth2Context, r.URL.Query().Get("code"), exchangeOptions...)
 	if err != nil {
 		s.logger.WithError(err).Error(r.Context(), "failed to get oauth2Token by using code from the oauth2 server")
 		w.WriteHeader(http.StatusUnauthorized)
@@ -357,8 +407,7 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		Secure:   s.secure,
 	})
 
-	finalRedirectURL := cookie.Value
-	if !isValidFinalRedirectURL(cookie.Value) {
+	if !isValidFinalRedirectURL(finalRedirectURL) {
 		finalRedirectURL = s.baseHRef
 	}
 	http.Redirect(w, r, finalRedirectURL, http.StatusFound)
