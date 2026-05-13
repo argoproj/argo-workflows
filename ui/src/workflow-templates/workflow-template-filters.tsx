@@ -5,6 +5,7 @@ import {InputFilter} from '../shared/components/input-filter';
 import {NamespaceFilter} from '../shared/components/namespace-filter';
 import {TagsInput} from '../shared/components/tags-input/tags-input';
 import * as models from '../shared/models';
+import {getUniqueNamespaces} from '../shared/namespaces';
 
 import './workflow-template-filters.scss';
 
@@ -45,6 +46,7 @@ export function WorkflowTemplateFilters({templates, namespace, namePattern, labe
                         onChange={ns => {
                             onChange(ns, namePattern, labels);
                         }}
+                        extraNamespaces={getUniqueNamespaces(templates)}
                     />
                 </div>
                 <div className='columns small-2 xlarge-12'>

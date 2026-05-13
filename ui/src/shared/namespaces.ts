@@ -62,3 +62,17 @@ export function getNamespace(namespace: string) {
 export function getNamespaceWithDefault(namespace: string) {
     return namespace || getCurrentNamespace() || getUserNamespace() || getManagedNamespace() || 'default';
 }
+
+// extract the unique, sorted set of namespaces present on a list of namespaced k8s objects
+export function getUniqueNamespaces<T extends {metadata?: {namespace?: string}}>(items: T[] | null | undefined): string[] {
+    if (!items) {
+        return [];
+    }
+    const set = new Set<string>();
+    for (const item of items) {
+        if (item.metadata?.namespace) {
+            set.add(item.metadata.namespace);
+        }
+    }
+    return Array.from(set).sort();
+}
