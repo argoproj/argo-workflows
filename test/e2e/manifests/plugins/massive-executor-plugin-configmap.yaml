@@ -64,7 +64,7 @@ data:
                   self.unsupported()
 
       if __name__ == '__main__':
-          httpd = HTTPServer(('', 4355), Plugin)
+          httpd = HTTPServer(('', 4356), Plugin)
           httpd.serve_forever()
     command:
     - python
