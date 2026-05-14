@@ -1,4 +1,4 @@
-//go:build corefunctional
+//go:build sqldbmemoize
 
 package e2e
 
@@ -61,9 +61,7 @@ spec:
 }
 
 func (s *SQLDBMemoizeSuite) TestSQLDBMemoize() {
-	if s.Config.Memoization == nil {
-		s.T().Skip("memoization DB not configured; skipping SQL cache test")
-	}
+	s.Require().NotNil(s.Config.Memoization, "memoization DB must be configured for SQL cache test")
 
 	ctx := logging.TestContext(s.T().Context())
 

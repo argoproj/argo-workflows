@@ -251,10 +251,10 @@ jobs:
           - test: test-corefunctional
             profile: minimal
             use-api: false
-          - test: test-corefunctional
+          - test: test-sqldbmemoize
             profile: mysql
             use-api: false
-          - test: test-corefunctional
+          - test: test-sqldbmemoize
             profile: postgres
             use-api: false
           - test: test-functional
