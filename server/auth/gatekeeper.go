@@ -279,6 +279,16 @@ func (s *gatekeeper) getClientsForServiceAccount(ctx context.Context, claims *au
 	}
 	claims.ServiceAccountName = serviceAccount.Name
 	claims.ServiceAccountNamespace = serviceAccount.Namespace
+	// Allow the SA to advertise a different "home namespace" to UI clients
+	// via the workflows.argoproj.io/default-namespace annotation. SSO-mapping
+	// SAs must live in the install namespace (only ns Argo walks for SSO
+	// rule matching), but in a multi-tenant install the user's actual
+	// permissions live in their tenant namespace. Without this override the
+	// UI's default-namespace cascade lands on the install ns, producing 403
+	// on every list call. See common.AnnotationKeyDefaultNamespace.
+	if defaultNs, ok := serviceAccount.Annotations[common.AnnotationKeyDefaultNamespace]; ok && defaultNs != "" {
+		claims.ServiceAccountNamespace = defaultNs
+	}
 	return clients, nil
 }
 

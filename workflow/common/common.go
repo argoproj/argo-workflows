@@ -38,6 +38,18 @@ const (
 	AnnotationKeyRBACRule           = workflow.WorkflowFullName + "/rbac-rule"
 	AnnotationKeyRBACRulePrecedence = workflow.WorkflowFullName + "/rbac-rule-precedence"
 
+	// AnnotationKeyDefaultNamespace, when set on an SSO-mapping ServiceAccount,
+	// overrides the namespace returned to clients (e.g. the UI) as the user's
+	// "home" namespace via /api/v1/userinfo's serviceAccountNamespace field.
+	// Without this annotation the UI defaults to the SA's own namespace, which
+	// in multi-tenant installs is the install namespace where the user has no
+	// permissions — every UI button then bounces them to a 403. Setting this
+	// annotation to the user's tenant namespace fixes the UI default-namespace
+	// behavior without moving the SSO-mapping SA (Argo only walks the install
+	// ns for SSO matching, so SAs MUST live there). The value is treated as a
+	// literal namespace name, not an expression. See docs/argo-server-sso.md.
+	AnnotationKeyDefaultNamespace = workflow.WorkflowFullName + "/default-namespace"
+
 	// AnnotationKeyCronWfScheduledTime is the workflow metadata annotation key containing the time when the workflow
 	// was scheduled to run by CronWorkflow.
 	AnnotationKeyCronWfScheduledTime = workflow.WorkflowFullName + "/scheduled-time"
