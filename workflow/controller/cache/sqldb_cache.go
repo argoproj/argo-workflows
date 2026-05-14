@@ -28,6 +28,8 @@ func newSQLDBCache(namespace, name string, getQueries func() memodb.MemoizationD
 	}
 }
 
+// withQueries is necessary to make runtime enable/disable of SQL memoization
+// safe, deterministic, and backward-safe for already-created cache instances.
 func (c *sqlDBCache) withQueries(fn func(memodb.MemoizationDB) error) error {
 	if c.lock == nil {
 		return fn(memodb.NullMemoizationDB)

@@ -158,7 +158,8 @@ func (q *queries) Prune(ctx context.Context) (int64, error) {
 	return n, err
 }
 
-func (q *queries) Save(ctx context.Context, namespace, cacheName, cacheKey, nodeID string, outputs *wfv1.Outputs, maxAgeSeconds int64) error {
+func (q *queries) Save(
+	ctx context.Context, namespace, cacheName, cacheKey, nodeID string, outputs *wfv1.Outputs, maxAgeSeconds int64) error {
 	outputsJSON, err := json.Marshal(outputs)
 	if err != nil {
 		return fmt.Errorf("unable to marshal memoization outputs: %w", err)

@@ -5,6 +5,7 @@ import (
 	stderrors "errors"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/upper/db/v4"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -13,8 +14,6 @@ import (
 
 	"github.com/argoproj/argo-workflows/v4/config"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
-	"github.com/stretchr/testify/assert"
-
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	memodb "github.com/argoproj/argo-workflows/v4/util/memo/db"
 	"github.com/argoproj/argo-workflows/v4/util/sqldb"
@@ -97,7 +96,7 @@ func TestUpdateConfigMemoizationDisableDetachesCachesBeforeClosingSession(t *tes
 	require.NoError(t, err)
 	assert.False(t, setQueriesSawClosedProxy)
 	assert.Nil(t, controller.memoSessionProxy)
-	assert.EqualError(t, sessionProxy.With(ctx, func(db.Session) error { return nil }), "session proxy is closed")
+	require.EqualError(t, sessionProxy.With(ctx, func(db.Session) error { return nil }), "session proxy is closed")
 }
 
 func TestUpdateConfigMemoizationMigrationFailureDisablesMemoization(t *testing.T) {
@@ -121,7 +120,7 @@ func TestUpdateConfigMemoizationMigrationFailureDisablesMemoization(t *testing.T
 	require.NoError(t, err)
 	assert.Nil(t, controller.memoSessionProxy)
 	assert.Equal(t, memodb.NullMemoizationDB, controller.getMemoizationQueries())
-	assert.EqualError(t, sessionProxy.With(ctx, func(db.Session) error { return nil }), "session proxy is closed")
+	require.EqualError(t, sessionProxy.With(ctx, func(db.Session) error { return nil }), "session proxy is closed")
 
 	cache := controller.getMemoizationCache(ctx, "default", "memo-migrate-disabled-cache")
 	require.NotNil(t, cache)
