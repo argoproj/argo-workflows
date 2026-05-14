@@ -285,10 +285,10 @@ jobs:
             profile: minimal
             use-api: false
             initless: true
-          - test: test-corefunctional
+          - test: test-sqldbmemoize
             profile: mysql
             use-api: false
-          - test: test-corefunctional
+          - test: test-sqldbmemoize
             profile: postgres
             use-api: false
           - test: test-functional
