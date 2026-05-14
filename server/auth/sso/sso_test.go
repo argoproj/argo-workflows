@@ -2,6 +2,9 @@ package sso
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"testing"
 	"time"
 
@@ -197,4 +200,138 @@ func TestIsValidFinalRedirectURL(t *testing.T) {
 			assert.Equal(t, tc.expected, isValidFinalRedirectURL(tc.url))
 		})
 	}
+}
+
+func TestEncodeDecodeStateCookieValue(t *testing.T) {
+	testCases := []struct {
+		name             string
+		verifier         string
+		finalRedirectURL string
+	}{
+		{"empty verifier (PKCE disabled)", "", "/workflows"},
+		{"empty verifier and empty redirect", "", ""},
+		{"verifier and redirect", "thisIsAVerifier_-1234", "/workflows/argo"},
+		{"verifier and redirect with query", "v_eR1f1eR", "/workflows?foo=bar&baz=qux"},
+		{"verifier only (defensive)", "v_eR1f1eR", ""},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			encoded := encodeStateCookieValue(tc.verifier, tc.finalRedirectURL)
+			gotVerifier, gotRedirect := decodeStateCookieValue(encoded)
+			assert.Equal(t, tc.verifier, gotVerifier)
+			assert.Equal(t, tc.finalRedirectURL, gotRedirect)
+		})
+	}
+}
+
+// TestDecodeStateCookieValueBackwardCompat verifies that a cookie value
+// written by a pre-PKCE Argo version (containing only the redirect URL with
+// no separator) is still decoded correctly: empty verifier, full redirect.
+func TestDecodeStateCookieValueBackwardCompat(t *testing.T) {
+	verifier, redirect := decodeStateCookieValue("/workflows")
+	assert.Empty(t, verifier)
+	assert.Equal(t, "/workflows", redirect)
+}
+
+func newSsoForTest(t *testing.T, mutate func(c *Config)) *sso {
+	t.Helper()
+	fakeClient := fake.NewClientset(ssoConfigSecret).CoreV1().Secrets(testNamespace)
+	cfg := Config{
+		Issuer:       "https://test-issuer",
+		ClientID:     getSecretKeySelector("argo-sso-secret", "client-id"),
+		ClientSecret: getSecretKeySelector("argo-sso-secret", "client-secret"),
+		RedirectURL:  "https://argo.example.com/oauth2/callback",
+	}
+	if mutate != nil {
+		mutate(&cfg)
+	}
+	ssoInterface, err := newSso(logging.TestContext(t.Context()), fakeOidcFactory, cfg, fakeClient, "/", false)
+	require.NoError(t, err)
+	return ssoInterface.(*sso)
+}
+
+// TestPKCEEnabledByDefault verifies that PKCE is on unless explicitly opted
+// out via InsecureSkipPKCE, matching the OAuth 2.0 Security BCP recommendation.
+func TestPKCEEnabledByDefault(t *testing.T) {
+	t.Run("default: enabled", func(t *testing.T) {
+		s := newSsoForTest(t, nil)
+		assert.True(t, s.pkceEnabled)
+	})
+	t.Run("InsecureSkipPKCE=true disables", func(t *testing.T) {
+		s := newSsoForTest(t, func(c *Config) { c.InsecureSkipPKCE = true })
+		assert.False(t, s.pkceEnabled)
+	})
+}
+
+// TestHandleRedirectAddsPKCEChallenge verifies that when PKCE is enabled,
+// HandleRedirect adds code_challenge and code_challenge_method=S256 to the
+// authorization URL and stores the corresponding verifier in the state cookie.
+func TestHandleRedirectAddsPKCEChallenge(t *testing.T) {
+	s := newSsoForTest(t, nil)
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "https://argo.example.com/oauth2/redirect?redirect=/workflows", nil)
+	s.HandleRedirect(rec, req)
+
+	require.Equal(t, http.StatusFound, rec.Code, "expected redirect to IdP")
+
+	authURL, err := url.Parse(rec.Header().Get("Location"))
+	require.NoError(t, err)
+
+	q := authURL.Query()
+	assert.NotEmpty(t, q.Get("code_challenge"), "code_challenge must be present when PKCE is enabled")
+	assert.Equal(t, "S256", q.Get("code_challenge_method"), "S256 is the only safe challenge method")
+	state := q.Get("state")
+	require.NotEmpty(t, state)
+
+	// The state cookie value must contain the verifier paired with the redirect URL.
+	cookies := rec.Result().Cookies()
+	var stateCookie *http.Cookie
+	for _, c := range cookies {
+		if c.Name == state {
+			stateCookie = c
+			break
+		}
+	}
+	require.NotNil(t, stateCookie, "state cookie must be set")
+	verifier, finalRedirect := decodeStateCookieValue(stateCookie.Value)
+	assert.NotEmpty(t, verifier, "verifier must be stored in state cookie")
+	assert.Equal(t, "/workflows", finalRedirect)
+	// RFC 7636 §4.1: verifier is 43–128 chars from the unreserved set.
+	assert.GreaterOrEqual(t, len(verifier), 43)
+	assert.LessOrEqual(t, len(verifier), 128)
+	// Cookie hardening attributes preserved.
+	assert.True(t, stateCookie.HttpOnly)
+	assert.Equal(t, http.SameSiteLaxMode, stateCookie.SameSite)
+}
+
+// TestHandleRedirectOmitsPKCEWhenDisabled verifies opt-out preserves the
+// pre-PKCE wire format: no code_challenge param, plain redirect-URL cookie value.
+func TestHandleRedirectOmitsPKCEWhenDisabled(t *testing.T) {
+	s := newSsoForTest(t, func(c *Config) { c.InsecureSkipPKCE = true })
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "https://argo.example.com/oauth2/redirect?redirect=/workflows", nil)
+	s.HandleRedirect(rec, req)
+
+	require.Equal(t, http.StatusFound, rec.Code)
+	authURL, err := url.Parse(rec.Header().Get("Location"))
+	require.NoError(t, err)
+	q := authURL.Query()
+	assert.Empty(t, q.Get("code_challenge"))
+	assert.Empty(t, q.Get("code_challenge_method"))
+
+	state := q.Get("state")
+	cookies := rec.Result().Cookies()
+	var stateCookie *http.Cookie
+	for _, c := range cookies {
+		if c.Name == state {
+			stateCookie = c
+			break
+		}
+	}
+	require.NotNil(t, stateCookie)
+	// No separator → cookie value is exactly the redirect URL (back-compat wire format).
+	assert.Equal(t, "/workflows", stateCookie.Value)
+	assert.NotContains(t, stateCookie.Value, stateCookieSeparator)
 }

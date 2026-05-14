@@ -212,6 +212,24 @@ sso:
     - ".*argo-workflow.*"
 ```
 
+## PKCE
+
+> v3.7 and after
+
+Argo Server uses [PKCE (Proof Key for Code Exchange, RFC 7636)](https://datatracker.ietf.org/doc/html/rfc7636) on the OAuth 2.0 authorization code flow by default. PKCE is recommended for all OAuth clients — including confidential server-side clients like Argo — by the [OAuth 2.0 Security Best Current Practice](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-security-topics) and is mandatory in OAuth 2.1. It mitigates authorization code injection and adds defense in depth on top of the `state` parameter.
+
+Argo only uses the `S256` challenge method (the SHA-256 of the code verifier); the deprecated `plain` method is never used.
+
+You should only need to opt out if your identity provider rejects requests that include the `code_challenge` parameter, which is uncommon for modern providers (Okta, Auth0, Keycloak, Entra ID, Google all support PKCE for confidential clients).
+
+```yaml
+sso:
+  # Disable PKCE on the OAuth2 authorization code flow.
+  # Not recommended; only set this if your identity provider rejects
+  # requests containing the code_challenge parameter.
+  insecureSkipPKCE: true
+```
+
 ## Custom TLS Configuration
 
 > v 3.8 and after
