@@ -67,6 +67,10 @@ func (woc *wfOperationCtx) hasTaskSetNodes() bool {
 }
 
 func (woc *wfOperationCtx) removeCompletedTaskSetStatus(ctx context.Context) error {
+	err := woc.ensureNotCompressed()
+	if err != nil {
+		return fmt.Errorf("failed to remove completed tasksets: %w", err)
+	}
 	if !woc.hasTaskSetNodes() {
 		return nil
 	}
@@ -221,6 +225,17 @@ func (woc *wfOperationCtx) createTaskSet(ctx context.Context) error {
 	} else if err != nil {
 		woc.log.WithError(err).Error(ctx, "Failed to create WorkflowTaskSet")
 		return err
+	}
+	return nil
+}
+
+// ensureNotCompressed verifies that the workflow is not in a compressed state
+// The workflow operator is responsible for controlling when a workflow is
+// compressed or decompressed.
+// Tasksets operate on in-memory nodes and must ensure the workflow is decompressed before proceeding
+func (woc *wfOperationCtx) ensureNotCompressed() error {
+	if woc.wf != nil && woc.wf.Status.CompressedNodes != "" {
+		return fmt.Errorf("workflow must be decompressed")
 	}
 	return nil
 }

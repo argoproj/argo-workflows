@@ -48,16 +48,17 @@ func (s *ExecutorPluginsSuite) TestTemplateExecutor() {
 			assert.Contains(t, spec.Volumes[2].Name, "kube-api-access-")
 			assert.Equal(t, "argo-workflows-agent-ca-certificates", spec.Volumes[3].Name)
 
-			require.Len(t, spec.Containers, 2)
+			require.Len(t, spec.Containers, 3)
 			{
-				plug := spec.Containers[0]
+				plug := requireFindContainerByName(t, spec.Containers, "hello-executor-plugin")
+				require.NotNil(t, plug)
 				require.Equal(t, "hello-executor-plugin", plug.Name)
 				require.Len(t, plug.VolumeMounts, 2)
 				assert.Equal(t, "var-run-argo", plug.VolumeMounts[0].Name)
 				assert.Contains(t, plug.VolumeMounts[1].Name, "kube-api-access-")
 			}
 			{
-				agent := spec.Containers[1]
+				agent := requireFindContainerByName(t, spec.Containers, "main")
 				require.Equal(t, "main", agent.Name)
 				require.Len(t, agent.VolumeMounts, 3)
 				assert.Equal(t, "var-run-argo", agent.VolumeMounts[0].Name)
@@ -82,6 +83,34 @@ func (s *ExecutorPluginsSuite) TestTemplateExecutor() {
 		})
 }
 
+func (s *ExecutorPluginsSuite) TestCompressedTemplateExecutor_WorkflowTaskSetIsProperlyCleaned() {
+	s.Given().
+		Workflow("@testdata/plugins/executor/massive-executor-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflowCompressed().
+		ExpectWorkflowTaskSet(func(t *testing.T, wfts *wfv1.WorkflowTaskSet) {
+			assert.NotNil(t, wfts)
+			assert.Empty(t, wfts.Spec.Tasks)
+			assert.Empty(t, wfts.Status.Nodes)
+			assert.Equal(t, "true", wfts.Labels[common.LabelKeyCompleted])
+		})
+}
+
 func TestExecutorPluginsSuite(t *testing.T) {
 	suite.Run(t, new(ExecutorPluginsSuite))
+}
+
+func requireFindContainerByName(t *testing.T, containers []apiv1.Container, name string) *apiv1.Container {
+	var result *apiv1.Container
+	for _, container := range containers {
+		if container.Name == name {
+			result = &container
+			break
+		}
+	}
+	require.NotNil(t, result, "could not find container %s", name)
+	return result
 }
