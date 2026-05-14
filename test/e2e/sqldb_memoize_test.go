@@ -94,7 +94,7 @@ func (s *SQLDBMemoizeSuite) TestSQLDBMemoize() {
 			assert.True(t, memoHit, "expected at least one node to hit the cache")
 		})
 
-	// Also verify the entry landed in postgres, not a ConfigMap.
+	// Also verify the entry landed in the configured SQL database, not a ConfigMap.
 	s.assertDBCacheEntry(ctx, cacheKey)
 	s.assertNoConfigMap(ctx, "sqldb-memo-cache")
 }
@@ -102,7 +102,7 @@ func (s *SQLDBMemoizeSuite) TestSQLDBMemoize() {
 // assertDBCacheEntry checks the configured memoization table directly.
 func (s *SQLDBMemoizeSuite) assertDBCacheEntry(ctx context.Context, key string) {
 	memoCfg := s.Config.Memoization
-	// E2E tests connect to postgres via a port-forward on localhost.
+	// E2E tests connect to the configured SQL backend via a port-forward on localhost.
 	cfg := *memoCfg
 	if cfg.PostgreSQL != nil {
 		pg := *cfg.PostgreSQL
