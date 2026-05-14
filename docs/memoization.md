@@ -79,9 +79,7 @@ MySQL is also supported:
 
 ## Using Memoization
 
-Memoization is configured at the template level via the `memoize` field.
-
-Memoization is set at the template level. You must specify a `key`, which can be static strings but more often depend on inputs.
+Memoization is configured at the template level via the `memoize` field. You must specify a `key`, which can be static strings but more often depend on inputs.
 You must also specify a name for the `config-map` cache.
 Optionally you can set a `maxAge` in seconds or hours (e.g. `180s`, `24h`) to define how long should it be considered valid. If an entry is older than the `maxAge`, it will be ignored.
 

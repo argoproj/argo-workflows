@@ -263,6 +263,8 @@ func (wfc *WorkflowController) newThrottler() sync.Throttler {
 	return sync.NewMultiThrottler(wfc.Config.Parallelism, wfc.Config.NamespaceParallelism, f)
 }
 
+// getMemoizationQueries returns the currently configured memoization query backend.
+// If no backend is configured, it returns NullMemoizationDB to provide no-op behavior.
 func (wfc *WorkflowController) getMemoizationQueries() memodb.MemoizationDB {
 	wfc.memoizationLock.RLock()
 	defer wfc.memoizationLock.RUnlock()
@@ -272,6 +274,8 @@ func (wfc *WorkflowController) getMemoizationQueries() memodb.MemoizationDB {
 	return wfc.memoQueries
 }
 
+// setMemoizationQueries updates the memoization query backend used by the controller.
+// A nil backend is normalized to NullMemoizationDB to keep callers nil-safe.
 func (wfc *WorkflowController) setMemoizationQueries(queries memodb.MemoizationDB) {
 	if queries == nil {
 		queries = memodb.NullMemoizationDB
@@ -281,6 +285,8 @@ func (wfc *WorkflowController) setMemoizationQueries(queries memodb.MemoizationD
 	wfc.memoQueries = queries
 }
 
+// withMemoizationQueries executes fn while holding a read lock on the memoization backend.
+// If no backend is configured, fn is invoked with NullMemoizationDB.
 func (wfc *WorkflowController) withMemoizationQueries(fn func(memodb.MemoizationDB) error) error {
 	wfc.memoizationLock.RLock()
 	defer wfc.memoizationLock.RUnlock()

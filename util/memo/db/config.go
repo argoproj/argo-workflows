@@ -40,6 +40,9 @@ func validateTableName(tableName string) error {
 	return nil
 }
 
+// memoizationVersionTableName returns the schema history table name for the given memoization
+// cache table. The default table name uses a fixed well-known name; custom table names get a
+// deterministic hash suffix to avoid collisions.
 func memoizationVersionTableName(tableName string) string {
 	if tableName == defaultTableName {
 		return versionTable
@@ -49,6 +52,9 @@ func memoizationVersionTableName(tableName string) string {
 	return fmt.Sprintf("memoization_schema_history_%x", hasher.Sum64())
 }
 
+// memoizationExpiresAtIndexName returns the name of the expires_at index for the given
+// memoization cache table, using a deterministic hash suffix to avoid collisions across
+// multiple cache tables.
 func memoizationExpiresAtIndexName(tableName string) string {
 	hasher := fnv.New64a()
 	_, _ = hasher.Write([]byte(tableName))

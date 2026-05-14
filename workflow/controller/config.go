@@ -25,6 +25,10 @@ var (
 	memoizationMigrate         = memodb.Migrate
 )
 
+// resetMemoizationBackend switches memoization query backend state and closes the previous
+// database session. It updates both controller-level query access and cache-factory query access,
+// then clears wfc.memoSessionProxy. If sessionProxy is nil, it closes the currently tracked
+// session; otherwise it closes the explicitly provided one.
 func (wfc *WorkflowController) resetMemoizationBackend(ctx context.Context, sessionProxy *sqldb.SessionProxy, cacheQueries memodb.MemoizationDB) {
 	logger := logging.RequireLoggerFromContext(ctx)
 	wfc.setMemoizationQueries(cacheQueries)
