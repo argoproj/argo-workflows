@@ -22,7 +22,7 @@
               sha256 = "sha256-stRtSZCvPUQuTiKOHmJ7k8o3Gtly9Up+gicrDOeWjIs=";
             };
           });
-          argoConfig = import ../../conf.nix;
+          argoConfig = import ../../dev/nix/conf.nix;
           filter = inputs.nix-filter.lib;
           mysrc = filter {
             root = ./../../.;
