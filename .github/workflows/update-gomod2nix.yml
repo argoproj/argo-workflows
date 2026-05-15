@@ -1,0 +1,37 @@
+name: Update gomod2nix
+
+on:
+  push:
+    branches:
+      - 'renovate/**' # Only run on Renovate branches
+      - 'dependabot/**'
+    paths:
+      - 'go.mod'
+      - 'go.sum'
+
+permissions:
+  contents: write
+
+jobs:
+  gomod2nix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          # Use the default ref (the branch that was pushed)
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-go@04702edda442b2e678b25b537cec683a1493fcb9
+        with:
+          go-version: '1.24.10'  # Match project version
+      - uses: nixbuild/nix-quick-install-action@2c9db80fb984ceb1bcaa77cdda3fdf8cfba92035
+      - name: Install gomod2nix
+        run: nix profile install github:nix-community/gomod2nix
+
+      - name: Run gomod2nix
+        run: gomod2nix
+
+      - name: Commit and push changes
+        uses: stefanzweifel/git-auto-commit-action@04702edda442b2e678b25b537cec683a1493fcb9
+        with:
+          commit_message: "chore(nix): update gomod2nix.toml"
+          file_pattern: gomod2nix.toml
