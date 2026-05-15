@@ -108,20 +108,20 @@ func testTryAcquireSemaphore(t *testing.T, factory semaphoreFactory) {
 	require.NoError(t, s.addToQueue(ctx, "default/wf-04", 0, now.Add(3*time.Second)))
 	// verify only the first in line is allowed to acquired the semaphore
 	var acquired bool
-	acquired, _ = s.tryAcquire(ctx, "default/wf-04", tx)
+	acquired, _, _ = s.tryAcquire(ctx, "default/wf-04", tx)
 	assert.False(t, acquired)
-	acquired, _ = s.tryAcquire(ctx, "default/wf-03", tx)
+	acquired, _, _ = s.tryAcquire(ctx, "default/wf-03", tx)
 	assert.False(t, acquired)
-	acquired, _ = s.tryAcquire(ctx, "default/wf-02", tx)
+	acquired, _, _ = s.tryAcquire(ctx, "default/wf-02", tx)
 	assert.False(t, acquired)
-	acquired, _ = s.tryAcquire(ctx, "default/wf-01", tx)
+	acquired, _, _ = s.tryAcquire(ctx, "default/wf-01", tx)
 	assert.True(t, acquired)
 	// now that wf-01 obtained it, wf-02 can
-	acquired, _ = s.tryAcquire(ctx, "default/wf-02", tx)
+	acquired, _, _ = s.tryAcquire(ctx, "default/wf-02", tx)
 	assert.True(t, acquired)
-	acquired, _ = s.tryAcquire(ctx, "default/wf-03", tx)
+	acquired, _, _ = s.tryAcquire(ctx, "default/wf-03", tx)
 	assert.False(t, acquired)
-	acquired, _ = s.tryAcquire(ctx, "default/wf-04", tx)
+	acquired, _, _ = s.tryAcquire(ctx, "default/wf-04", tx)
 	assert.False(t, acquired)
 }
 
@@ -155,7 +155,7 @@ func testNotifyWaitersAcquire(t *testing.T, factory semaphoreFactory) {
 	require.NoError(t, s.addToQueue(ctx, "default/wf-03", 0, now.Add(2*time.Second)))
 
 	tx := sessionProxy
-	acquired, _ := s.tryAcquire(ctx, "default/wf-01", tx)
+	acquired, _, _ := s.tryAcquire(ctx, "default/wf-01", tx)
 	assert.True(t, acquired)
 
 	assert.Len(t, notified, 2)
@@ -201,7 +201,7 @@ func testNotifyWorkflowFromTemplateSemaphore(t *testing.T, factory semaphoreFact
 	require.NoError(t, s.addToQueue(ctx, "foo/wf-02/nodeid-456", 0, now.Add(time.Second)))
 
 	tx := sessionProxy
-	acquired, _ := s.tryAcquire(ctx, "foo/wf-01/nodeid-123", tx)
+	acquired, _, _ := s.tryAcquire(ctx, "foo/wf-01/nodeid-123", tx)
 	assert.True(t, acquired)
 
 	assert.Len(t, notified, 1)
