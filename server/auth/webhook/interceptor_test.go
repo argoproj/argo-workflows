@@ -23,57 +23,78 @@ func (t testHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func TestInterceptor(t *testing.T) {
 	// we ignore these
 	t.Run("WrongMethod", func(t *testing.T) {
-		r, _ := intercept(logging.TestContext(t.Context()), "GET", "/api/v1/events/", nil)
+		r, _ := intercept(logging.TestContext(t.Context()), http.MethodGet, "/api/v1/events/", nil)
 		assert.Empty(t, r.Header["Authorization"])
 	})
 	t.Run("ExistingAuthorization", func(t *testing.T) {
-		r, _ := intercept(logging.TestContext(t.Context()), "POST", "/api/v1/events/my-ns/my-d", map[string]string{"Authorization": "existing"})
+		r, _ := intercept(logging.TestContext(t.Context()), http.MethodPost, "/api/v1/events/my-ns/my-d", map[string]string{"Authorization": "existing"})
 		assert.Equal(t, []string{"existing"}, r.Header["Authorization"])
 	})
 	t.Run("WrongPathPrefix", func(t *testing.T) {
-		r, _ := intercept(logging.TestContext(t.Context()), "POST", "/api/v1/xxx/", nil)
+		r, _ := intercept(logging.TestContext(t.Context()), http.MethodPost, "/api/v1/xxx/", nil)
 		assert.Empty(t, r.Header["Authorization"])
 	})
 	t.Run("NoNamespace", func(t *testing.T) {
-		r, w := intercept(logging.TestContext(t.Context()), "POST", "/api/v1/events//my-d", nil)
+		r, w := intercept(logging.TestContext(t.Context()), http.MethodPost, "/api/v1/events//my-d", nil)
 		assert.Empty(t, r.Header["Authorization"])
 		// we check the status code here - because we get a 403
 		assert.Equal(t, 403, w.Code)
 		assert.JSONEq(t, `{"message": "failed to process webhook request"}`, w.Body.String())
 	})
 	t.Run("NoDiscriminator", func(t *testing.T) {
-		r, _ := intercept(logging.TestContext(t.Context()), "POST", "/api/v1/events/my-ns/", nil)
+		r, _ := intercept(logging.TestContext(t.Context()), http.MethodPost, "/api/v1/events/my-ns/", nil)
 		assert.Empty(t, r.Header["Authorization"])
 	})
 	// we accept these
 	t.Run("Bitbucket", func(t *testing.T) {
-		r, _ := intercept(logging.TestContext(t.Context()), "POST", "/api/v1/events/my-ns/my-d", map[string]string{
+		r, _ := intercept(logging.TestContext(t.Context()), http.MethodPost, "/api/v1/events/my-ns/my-d", map[string]string{
 			"X-Event-Key": "repo:push",
 			"X-Hook-UUID": "sh!",
 		})
 		assert.Equal(t, []string{"Bearer my-bitbucket-token"}, r.Header["Authorization"])
 	})
 	t.Run("Bitbucketserver", func(t *testing.T) {
-		r, _ := intercept(logging.TestContext(t.Context()), "POST", "/api/v1/events/my-ns/my-d", map[string]string{
+		r, _ := intercept(logging.TestContext(t.Context()), http.MethodPost, "/api/v1/events/my-ns/my-d", map[string]string{
 			"X-Event-Key":     "pr:modified",
 			"X-Hub-Signature": "0000000926ceeb8dcd67d5979fd7d726e3905af6d220f7fd6b2d8cce946906f7cf35963",
 		})
 		assert.Equal(t, []string{"Bearer my-bitbucketserver-token"}, r.Header["Authorization"])
 	})
 	t.Run("Github", func(t *testing.T) {
-		r, _ := intercept(logging.TestContext(t.Context()), "POST", "/api/v1/events/my-ns/my-d", map[string]string{
+		r, _ := intercept(logging.TestContext(t.Context()), http.MethodPost, "/api/v1/events/my-ns/my-d", map[string]string{
 			"X-Github-Event":      "push",
 			"X-Hub-Signature-256": "sha256=926ceeb8dcd67d5979fd7d726e3905af6d220f7fd6b2d8cce946906f7cf35963",
 		})
 		assert.Equal(t, []string{"Bearer my-github-token"}, r.Header["Authorization"])
 	})
 	t.Run("Gitlab", func(t *testing.T) {
-		r, _ := intercept(logging.TestContext(t.Context()), "POST", "/api/v1/events/my-ns/my-d", map[string]string{
+		r, _ := intercept(logging.TestContext(t.Context()), http.MethodPost, "/api/v1/events/my-ns/my-d", map[string]string{
 			"X-Gitlab-Event": "Push Hook",
 			"X-Gitlab-Token": "sh!",
 		})
 		assert.Equal(t, []string{"Bearer my-gitlab-token"}, r.Header["Authorization"])
 	})
+}
+
+func TestInterceptorOversizedBody(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	k := fake.NewClientset(
+		&corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{Name: "argo-workflows-webhook-clients", Namespace: "my-ns"},
+			Data: map[string][]byte{
+				"github": []byte("type: github\nsecret: sh!"),
+			},
+		},
+	)
+	i := NewInterceptor(logging.RequireLoggerFromContext(ctx)).Interceptor(k)
+	w := httptest.NewRecorder()
+	// Create a body that exceeds 2MB
+	body := bytes.NewReader(make([]byte, 2*1024*1024+1))
+	r := httptest.NewRequestWithContext(ctx, http.MethodPost, "/api/v1/events/my-ns/my-d", body)
+	h := &testHTTPHandler{}
+	i(w, r, h)
+	assert.Equal(t, 403, w.Code)
+	assert.JSONEq(t, `{"message": "failed to process webhook request"}`, w.Body.String())
 }
 
 func intercept(ctx context.Context, method string, target string, headers map[string]string) (*http.Request, *httptest.ResponseRecorder) {

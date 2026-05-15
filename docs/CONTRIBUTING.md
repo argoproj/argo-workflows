@@ -95,6 +95,10 @@ No, we should not add that dependency.
 Changes without either unit or e2e tests are unlikely to be accepted.
 See [the pull request template](https://github.com/argoproj/argo-workflows/blob/main/.github/pull_request_template.md).
 
+#### Use of Generative AI
+
+Contributors using generative AI tools (for example ChatGPT) to help prepare contributions must follow the [Argo project Generative AI policy](https://github.com/argoproj/argoproj/blob/main/community/genai.md) and declare such use in the `AI` section of the pull request template.
+
 ### Other Contributions
 
 * [Reviewing PRs](#reviewing-prs)

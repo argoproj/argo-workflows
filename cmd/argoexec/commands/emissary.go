@@ -4,6 +4,7 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -13,7 +14,6 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
-	"time"
 
 	"github.com/spf13/cobra"
 	"go.opentelemetry.io/otel/propagation"
@@ -21,7 +21,8 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/archive"
-	"github.com/argoproj/argo-workflows/v4/util/errors"
+	argoerrors "github.com/argoproj/argo-workflows/v4/util/errors"
+	"github.com/argoproj/argo-workflows/v4/util/file"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor"
@@ -143,32 +144,20 @@ func NewEmissaryCommand() *cobra.Command {
 				if x.Name == containerName {
 					for _, y := range x.Dependencies {
 						logger.WithField("dependency", y).Info(ctx, "waiting for dependency")
-					WaitForDependency:
-						for {
-							select {
-							// If we receive a terminated or killed signal, we should exit immediately.
-							case s := <-signals:
-								switch s {
-								case osspecific.Term:
-									// exit with 128 + 15 (SIGTERM)
-									return errors.NewExitErr(143)
-								case os.Kill:
-									// exit with 128 + 9 (SIGKILL)
-									return errors.NewExitErr(137)
-								}
-							default:
-								data, _ := os.ReadFile(filepath.Clean(varRunArgo + "/ctr/" + y + "/exitcode"))
-								exitCode, err = strconv.Atoi(string(data))
-								if err != nil {
-									time.Sleep(time.Second)
-									continue
-								}
-								if exitCode != 0 {
-									return fmt.Errorf("dependency %q exited with non-zero code: %d", y, exitCode)
-								}
-
-								break WaitForDependency
-							}
+						depDir := filepath.Clean(varRunArgo + "/ctr/" + y)
+						// The dependency container will MkdirAll this too, but may not have
+						// started yet; pre-create it so we can install an inotify watch on it.
+						if err = os.MkdirAll(depDir, 0o777); err != nil {
+							return fmt.Errorf("failed to create dependency dir: %w", err)
+						}
+						depExitPath := filepath.Join(depDir, "exitcode")
+						code, waitErr := waitForDependencyExitCode(ctx, depExitPath, signals)
+						if waitErr != nil {
+							return waitErr
+						}
+						exitCode = code
+						if exitCode != 0 {
+							return fmt.Errorf("dependency %q exited with non-zero code: %d", y, exitCode)
 						}
 					}
 				}
@@ -180,15 +169,11 @@ func NewEmissaryCommand() *cobra.Command {
 			}
 
 			if os.Getenv("ARGO_DEBUG_PAUSE_BEFORE") == "true" {
-				for {
-					// User can create the file: /ctr/NAME_OF_THE_CONTAINER/before
-					// in order to break out of the sleep and release the container from
-					// the debugging state.
-					if _, statErr := os.Stat(varRunArgo + "/ctr/" + containerName + "/before"); os.IsNotExist(statErr) {
-						time.Sleep(time.Second)
-						continue
-					}
-					break
+				// User can create the file: /ctr/NAME_OF_THE_CONTAINER/before
+				// in order to break out of the wait and release the container from
+				// the debugging state.
+				if waitErr := file.WaitForCreate(ctx, varRunArgo+"/ctr/"+containerName+"/before"); waitErr != nil {
+					return fmt.Errorf("failed waiting for debug-pause-before marker: %w", waitErr)
 				}
 			}
 
@@ -254,21 +239,17 @@ func NewEmissaryCommand() *cobra.Command {
 			logger.WithError(cmdErr).Info(ctx, "sub-process exited")
 
 			if os.Getenv("ARGO_DEBUG_PAUSE_AFTER") == "true" {
-				for {
-					// User can create the file: /ctr/NAME_OF_THE_CONTAINER/after
-					// in order to break out of the sleep and release the container from
-					// the debugging state.
-					if _, err := os.Stat(varRunArgo + "/ctr/" + containerName + "/after"); os.IsNotExist(err) {
-						time.Sleep(time.Second)
-						continue
-					}
-					break
+				// User can create the file: /ctr/NAME_OF_THE_CONTAINER/after
+				// in order to break out of the wait and release the container from
+				// the debugging state.
+				if waitErr := file.WaitForCreate(ctx, varRunArgo+"/ctr/"+containerName+"/after"); waitErr != nil {
+					return fmt.Errorf("failed waiting for debug-pause-after marker: %w", waitErr)
 				}
 			}
 
 			if cmdErr == nil {
 				exitCode = 0
-			} else if exitError, ok := cmdErr.(errors.Exited); ok {
+			} else if exitError, ok := cmdErr.(argoerrors.Exited); ok {
 				if exitError.ExitCode() >= 0 {
 					exitCode = exitError.ExitCode()
 				} else {
@@ -297,6 +278,69 @@ func NewEmissaryCommand() *cobra.Command {
 
 			return cmdErr // this is the error returned from cmd.Wait(), which maybe an exitError
 		},
+	}
+}
+
+// waitForDependencyExitCode blocks until the given dependency exitcode file is
+// written, or until a SIGTERM/SIGKILL signal is received. It uses inotify on
+// the parent directory rather than polling.
+//
+// We deliberately do not select on ctx.Done() here: argoexec's root context is
+// bound to SIGTERM via signal.NotifyContext in main.go, so when SIGTERM
+// arrives both ctx.Done() and the signals channel fire simultaneously. If
+// select picked the ctx.Done() arm, we'd return context.Canceled instead of
+// exit code 143 — breaking tests like TestSignaledContainerSet that assert on
+// the 143 / 137 exit codes. Consuming signals directly gives us the correct
+// exit code; if the outer ctx is ever cancelled without a corresponding
+// signal, the parent process will escalate to SIGKILL.
+func waitForDependencyExitCode(ctx context.Context, depExitPath string, signals <-chan os.Signal) (int, error) {
+	type result struct {
+		code int
+		err  error
+	}
+	results := make(chan result, 1)
+
+	watchCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	go func() {
+		err := file.WatchFile(watchCtx, depExitPath, func() {
+			data, readErr := os.ReadFile(depExitPath)
+			if readErr != nil {
+				return
+			}
+			code, parseErr := strconv.Atoi(strings.TrimSpace(string(data)))
+			if parseErr != nil {
+				// File created but not yet fully written; await the next event.
+				return
+			}
+			select {
+			case results <- result{code: code}:
+			default:
+			}
+		})
+		if err != nil && !errors.Is(err, context.Canceled) {
+			select {
+			case results <- result{err: err}:
+			default:
+			}
+		}
+	}()
+
+	for {
+		select {
+		case s := <-signals:
+			switch s {
+			case osspecific.Term:
+				// exit with 128 + 15 (SIGTERM)
+				return 0, argoerrors.NewExitErr(143)
+			case os.Kill:
+				// exit with 128 + 9 (SIGKILL)
+				return 0, argoerrors.NewExitErr(137)
+			}
+		case r := <-results:
+			return r.code, r.err
+		}
 	}
 }
 

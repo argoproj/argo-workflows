@@ -2576,7 +2576,7 @@ func (woc *wfOperationCtx) recordWorkflowPhaseChange(ctx context.Context) {
 		if woc.wf.Status.Phase.Completed() {
 			duration := time.Since(woc.wf.Status.StartedAt.Time)
 			woc.controller.metrics.RecordWorkflowTemplateTime(ctx, duration, woc.wf.Spec.WorkflowTemplateRef.Name, woc.wf.Namespace, woc.wf.Spec.WorkflowTemplateRef.ClusterScope) // not-woc-misuse
-			woc.log.Warn(ctx, "Recording template time")
+			woc.log.Info(ctx, "Recording template time")
 		}
 	}
 }
@@ -2667,7 +2667,7 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 	case wfv1.WorkflowSucceeded, wfv1.WorkflowFailed, wfv1.WorkflowError:
 		woc.log.Info(ctx, "Marking workflow completed")
 		woc.wf.Status.FinishedAt = metav1.Time{Time: time.Now().UTC()}
-		woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", woc.wf.Status.FinishedAt.Sub(woc.wf.Status.StartedAt.Time).Seconds())
+		woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", woc.workflowDurationSeconds())
 		if woc.wf.Labels == nil {
 			woc.wf.Labels = make(map[string]string)
 		}
@@ -3184,7 +3184,7 @@ func (woc *wfOperationCtx) checkParallelism(ctx context.Context, tmpl *wfv1.Temp
 		}
 
 		// Check failFast
-		if boundaryTemplate.IsFailFast() && woc.getUnsuccessfulChildren(boundaryID) > 0 {
+		if boundaryTemplate != nil && boundaryTemplate.IsFailFast() && woc.getUnsuccessfulChildren(boundaryID) > 0 {
 			if woc.getActivePods(boundaryID) == 0 {
 				if boundaryTemplate.GetType() == wfv1.TemplateTypeSteps {
 					if leafStepGroupNode := woc.findLeafNodeWithType(ctx, boundaryID, wfv1.NodeTypeStepGroup); leafStepGroupNode != nil {
@@ -3197,7 +3197,7 @@ func (woc *wfOperationCtx) checkParallelism(ctx context.Context, tmpl *wfv1.Temp
 		}
 
 		// Check parallelism
-		if boundaryTemplate.HasParallelism() && woc.getActiveChildren(boundaryID) >= *boundaryTemplate.Parallelism {
+		if boundaryTemplate != nil && boundaryTemplate.HasParallelism() && woc.getActiveChildren(boundaryID) >= *boundaryTemplate.Parallelism {
 			woc.log.WithFields(logging.Fields{"node": boundaryID, "parallelism": *boundaryTemplate.Parallelism}).Info(ctx, "template active children parallelism exceeded")
 			return ErrParallelismReached
 		}
@@ -4255,7 +4255,7 @@ func (woc *wfOperationCtx) includeScriptOutput(ctx context.Context, nodeName, bo
 	}
 
 	parentTemplate, templateStored, err := woc.GetTemplateByBoundaryID(ctx, boundaryID)
-	if err != nil {
+	if err != nil || parentTemplate == nil {
 		return false, err
 	}
 	// A new template was stored during resolution, persist it
@@ -4303,12 +4303,13 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) (context.Context
 	switch {
 	case woc.wf.Spec.WorkflowTemplateRef != nil: // not-woc-misuse
 		// When workflow restrictions require template referencing (Strict/Secure mode),
-		// reject workflows that include a podSpecPatch as it could override security
-		// settings defined in the WorkflowTemplate.
-		if woc.controller.Config.WorkflowRestrictions.MustUseReference() && woc.wf.Spec.HasPodSpecPatch() { // not-woc-misuse: intentionally checking the user-submitted spec
-			err := fmt.Errorf("podSpecPatch is not permitted when using workflowTemplateRef with templateReferencing restriction")
-			ctx = woc.markWorkflowError(ctx, err)
-			return ctx, err
+		// reject workflows that set any non-allowed fields, as they could override
+		// security settings defined in the WorkflowTemplate.
+		if woc.controller.Config.WorkflowRestrictions.MustUseReference() { // not-woc-misuse: intentionally checking the user-submitted spec
+			if err := wfutil.ValidateUserOverrides(&woc.wf.Spec); err != nil { // not-woc-misuse
+				ctx = woc.markWorkflowError(ctx, err)
+				return ctx, err
+			}
 		}
 		err := woc.setStoredWfSpec(ctx)
 		if err != nil {
@@ -4377,13 +4378,21 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) (context.Context
 
 func (woc *wfOperationCtx) setGlobalRuntimeParameters() {
 	woc.globalParams[common.GlobalVarWorkflowStatus] = string(woc.wf.Status.Phase)
+	woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", woc.workflowDurationSeconds())
+}
 
-	// Update workflow duration variable
+// workflowDurationSeconds returns the workflow's elapsed duration in seconds,
+// or 0 if it has not started. Once completed, FinishedAt - StartedAt is used.
+// The IsZero guard is required to avoid time.Since saturating to MaxInt64
+// nanoseconds (~9.22e9 seconds) when StartedAt is the zero time.Time.
+func (woc *wfOperationCtx) workflowDurationSeconds() float64 {
 	if woc.wf.Status.StartedAt.IsZero() {
-		woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", time.Duration(0).Seconds())
-	} else {
-		woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", time.Since(woc.wf.Status.StartedAt.Time).Seconds())
+		return 0
 	}
+	if woc.wf.Status.Phase.Completed() && !woc.wf.Status.FinishedAt.IsZero() {
+		return woc.wf.Status.FinishedAt.Time.Sub(woc.wf.Status.StartedAt.Time).Seconds()
+	}
+	return time.Since(woc.wf.Status.StartedAt.Time).Seconds()
 }
 
 func (woc *wfOperationCtx) GetShutdownStrategy() wfv1.ShutdownStrategy {
@@ -4423,8 +4432,14 @@ func (woc *wfOperationCtx) setStoredWfSpec(ctx context.Context) error {
 	}
 	// Update the Entrypoint, ShutdownStrategy and Suspend
 	if woc.needsStoredWfSpecUpdate() {
+		// In reference mode, sanitize the user spec before merging so that
+		// only allow-listed fields participate in the strategic merge patch.
+		userSpec := &woc.wf.Spec // not-woc-misuse
+		if woc.controller.Config.WorkflowRestrictions.MustUseReference() {
+			userSpec = wfutil.SanitizeUserWorkflowSpec(&woc.wf.Spec) // not-woc-misuse
+		}
 		// Join workflow, workflow template, and workflow default metadata to workflow spec.
-		mergedWf, err := wfutil.JoinWorkflowSpec(&woc.wf.Spec, workflowTemplateSpec, &wfDefault.Spec) // not-woc-misuse
+		mergedWf, err := wfutil.JoinWorkflowSpec(userSpec, workflowTemplateSpec, &wfDefault.Spec)
 		if err != nil {
 			return err
 		}
@@ -4435,7 +4450,11 @@ func (woc *wfOperationCtx) setStoredWfSpec(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		mergedWf, err := wfutil.JoinWorkflowSpec(&woc.wf.Spec, wftHolder.GetWorkflowSpec(), &wfDefault.Spec) // not-woc-misuse
+		userSpec := &woc.wf.Spec // not-woc-misuse
+		if woc.controller.Config.WorkflowRestrictions.MustUseReference() {
+			userSpec = wfutil.SanitizeUserWorkflowSpec(&woc.wf.Spec) // not-woc-misuse
+		}
+		mergedWf, err := wfutil.JoinWorkflowSpec(userSpec, wftHolder.GetWorkflowSpec(), &wfDefault.Spec)
 		if err != nil {
 			return err
 		}

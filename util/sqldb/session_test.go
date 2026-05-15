@@ -2,11 +2,13 @@ package sqldb
 
 import (
 	"context"
+	"net/netip"
+	"runtime"
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/network"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
@@ -33,10 +35,10 @@ func setupPostgresContainer(ctx context.Context, t *testing.T) (config.DBConfig,
 		testpostgres.WithPassword(password),
 		testcontainers.WithHostConfigModifier(func(hostConfig *container.HostConfig) {
 			// Set up fixed port binding: map container port 5432 to host port 15432
-			hostConfig.PortBindings = nat.PortMap{
-				"5432/tcp": []nat.PortBinding{
+			hostConfig.PortBindings = network.PortMap{
+				network.MustParsePort("5432/tcp"): []network.PortBinding{
 					{
-						HostIP:   "0.0.0.0",
+						HostIP:   netip.MustParseAddr("0.0.0.0"),
 						HostPort: "15432",
 					},
 				},
@@ -84,6 +86,10 @@ func setupPostgresContainer(ctx context.Context, t *testing.T) (config.DBConfig,
 }
 
 func TestSessionReconnect(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("This test uses the Linux container image and therefore cannot be performed on the Windows platform")
+	}
+
 	ctx := logging.TestContext(t.Context())
 	cfg, cancel, err := setupPostgresContainer(ctx, t)
 	require.NoError(t, err)

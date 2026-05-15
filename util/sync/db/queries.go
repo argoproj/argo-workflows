@@ -9,7 +9,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/sqldb"
 )
 
-// Record types for database operations
+// LimitRecord is a record type for database synchronization limit operations.
 type LimitRecord struct {
 	Name      string `db:"name"`
 	SizeLimit int    `db:"sizelimit"`
