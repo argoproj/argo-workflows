@@ -323,25 +323,25 @@ func (s *databaseSemaphore) checkAcquire(ctx context.Context, holderKey string, 
 	return true, false, ""
 }
 
-func (s *databaseSemaphore) acquire(ctx context.Context, holderKey string, tx *sqldb.SessionProxy) bool {
+func (s *databaseSemaphore) acquire(ctx context.Context, holderKey string, tx *sqldb.SessionProxy) (bool, error) {
 	logger := s.logger(ctx)
 	limit := s.getLimit(ctx)
 	existing, err := s.currentHoldersSession(ctx, tx)
 	if err != nil {
 		logger.WithField("key", holderKey).WithError(err).Error(ctx, "Failed to acquire lock")
-		return false
+		return false, err
 	}
 	if len(existing) < limit {
 		pending, err := s.queries.GetPendingInQueue(ctx, tx, s.longDBKey(), holderKey, s.info.Config.ControllerName)
 		if err != nil {
 			logger.WithField("key", holderKey).WithError(err).Error(ctx, "Failed to acquire lock")
-			return false
+			return false, err
 		}
 		if len(pending) > 0 {
 			err := s.queries.UpdateStateToHeld(ctx, tx, s.longDBKey(), holderKey, s.info.Config.ControllerName)
 			if err != nil {
 				logger.WithField("key", holderKey).WithError(err).Error(ctx, "Failed to acquire lock")
-				return false
+				return false, err
 			}
 		} else {
 			record := &syncdb.StateRecord{
@@ -353,14 +353,14 @@ func (s *databaseSemaphore) acquire(ctx context.Context, holderKey string, tx *s
 			err := s.queries.InsertHeldState(ctx, tx, record)
 			if err != nil {
 				logger.WithField("key", holderKey).WithError(err).Error(ctx, "Failed to acquire lock")
-				return false
+				return false, err
 			}
 		}
 		logger.WithFields(logging.Fields{
 			"key":    holderKey,
 			"result": true,
 		}).Info(ctx, "Acquire succeeded")
-		return true
+		return true, nil
 	}
 	logger.WithFields(logging.Fields{
 		"key":             holderKey,
@@ -369,10 +369,10 @@ func (s *databaseSemaphore) acquire(ctx context.Context, holderKey string, tx *s
 		"current_holders": len(existing),
 		"limit":           limit,
 	}).Info(ctx, "Acquire failed")
-	return false
+	return false, nil
 }
 
-func (s *databaseSemaphore) tryAcquire(ctx context.Context, holderKey string, tx *sqldb.SessionProxy) (bool, string) {
+func (s *databaseSemaphore) tryAcquire(ctx context.Context, holderKey string, tx *sqldb.SessionProxy) (bool, string, error) {
 	logger := s.logger(ctx)
 	acq, already, msg := s.checkAcquire(ctx, holderKey, tx)
 	if already {
@@ -381,7 +381,7 @@ func (s *databaseSemaphore) tryAcquire(ctx context.Context, holderKey string, tx
 			"result":  true,
 			"message": msg,
 		}).Info(ctx, "tryAcquire - already held")
-		return true, msg
+		return true, msg, nil
 	}
 	if !acq {
 		logger.WithFields(logging.Fields{
@@ -389,22 +389,24 @@ func (s *databaseSemaphore) tryAcquire(ctx context.Context, holderKey string, tx
 			"result":  false,
 			"message": msg,
 		}).Info(ctx, "tryAcquire - cannot acquire")
-		return false, msg
+		return false, msg, nil
 	}
-	if s.acquire(ctx, holderKey, tx) {
+	acquired, err := s.acquire(ctx, holderKey, tx)
+	if acquired {
 		logger.WithFields(logging.Fields{
 			"key":    holderKey,
 			"result": true,
 		}).Info(ctx, "tryAcquire succeeded")
 		s.notifyWaiters(ctx)
-		return true, ""
+		return true, "", nil
 	}
 	logger.WithFields(logging.Fields{
 		"key":     holderKey,
 		"result":  false,
 		"message": msg,
+		"error":   err,
 	}).Info(ctx, "tryAcquire failed")
-	return false, msg
+	return false, msg, err
 }
 
 func (s *databaseSemaphore) expireLocks(ctx context.Context) {
