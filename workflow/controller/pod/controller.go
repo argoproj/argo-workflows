@@ -297,6 +297,10 @@ func newWorkflowPodWatch(ctx context.Context, clientSet kubernetes.Interface, in
 		options.Limit = podPaginationLimit
 		for {
 			options.Continue = continueTok
+			if options.Continue != "" {
+				options.ResourceVersion = ""
+				options.ResourceVersionMatch = ""
+			}
 			podList, err := c.List(ctx, options)
 			if err != nil {
 				return nil, err
