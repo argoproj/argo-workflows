@@ -3,7 +3,6 @@ package templateresolution
 import (
 	"context"
 	"fmt"
-	"maps"
 
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -294,15 +293,28 @@ func (tplCtx *TemplateContext) WithClusterWorkflowTemplate(ctx context.Context, 
 
 // addPodMetadata add podMetadata in workflow template level to template
 func (tplCtx *TemplateContext) addPodMetadata(podMetadata *wfv1.Metadata, tmpl *wfv1.Template) {
-	if podMetadata != nil {
+	if podMetadata == nil {
+		return
+	}
+	if len(podMetadata.Annotations) > 0 {
 		if tmpl.Metadata.Annotations == nil {
 			tmpl.Metadata.Annotations = make(map[string]string)
 		}
-		maps.Copy(tmpl.Metadata.Annotations, podMetadata.Annotations)
+		for k, v := range podMetadata.Annotations {
+			if _, ok := tmpl.Metadata.Annotations[k]; !ok {
+				tmpl.Metadata.Annotations[k] = v
+			}
+		}
+	}
+	if len(podMetadata.Labels) > 0 {
 		if tmpl.Metadata.Labels == nil {
 			tmpl.Metadata.Labels = make(map[string]string)
 		}
-		maps.Copy(tmpl.Metadata.Labels, podMetadata.Labels)
+		for k, v := range podMetadata.Labels {
+			if _, ok := tmpl.Metadata.Labels[k]; !ok {
+				tmpl.Metadata.Labels[k] = v
+			}
+		}
 	}
 }
 
