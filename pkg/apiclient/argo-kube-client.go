@@ -11,6 +11,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/argoproj/argo-workflows/v4"
+	"github.com/argoproj/argo-workflows/v4/config"
 	"github.com/argoproj/argo-workflows/v4/persist/sqldb"
 	"github.com/argoproj/argo-workflows/v4/pkg/apiclient/clusterworkflowtemplate"
 	"github.com/argoproj/argo-workflows/v4/pkg/apiclient/cronworkflow"
@@ -19,6 +20,7 @@ import (
 	workflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow"
 	workflowarchivepkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflowarchive"
 	"github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflowtemplate"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	workflow "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v4/server/auth"
 	clusterworkflowtmplserver "github.com/argoproj/argo-workflows/v4/server/clusterworkflowtemplate"
@@ -31,6 +33,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/help"
 	"github.com/argoproj/argo-workflows/v4/util/instanceid"
 	rbacutil "github.com/argoproj/argo-workflows/v4/util/rbac"
+	wfcommon "github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 var (
@@ -179,7 +182,12 @@ func (a *argoKubeClient) startStores(ctx context.Context, restConfig *restclient
 
 func (a *argoKubeClient) NewWorkflowServiceClient(ctx context.Context) workflowpkg.WorkflowServiceClient {
 	wfArchive := sqldb.NullWorkflowArchive
-	wfServer := workflowserver.NewServer(ctx, a.instanceIDService, argoKubeOffloadNodeStatusRepo, wfArchive, a.wfClient, a.wfLister, a.wfStore, a.wfTmplStore, a.cwfTmplStore, nil, &a.namespace)
+	configController := config.NewController(a.namespace, wfcommon.ConfigMapName, a.kubeClient)
+	var wfDefaults *wfv1.Workflow
+	if cfg, err := configController.Get(ctx); err == nil {
+		wfDefaults = cfg.WorkflowDefaults
+	}
+	wfServer := workflowserver.NewServer(ctx, a.instanceIDService, argoKubeOffloadNodeStatusRepo, wfArchive, a.wfClient, a.wfLister, a.wfStore, a.wfTmplStore, a.cwfTmplStore, wfDefaults, &a.namespace)
 	go wfServer.Run(a.opts.CachingCloseCh)
 	return &errorTranslatingWorkflowServiceClient{&argoKubeWorkflowServiceClient{wfServer}}
 }
