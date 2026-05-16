@@ -112,6 +112,40 @@ As of Kubernetes v1.24, secrets for a service account token are no longer automa
 Therefore, service account secrets for SSO RBAC must be created manually.
 See [Service Account Secrets](service-account-secrets.md) for detailed instructions.
 
+### Per-user default UI namespace
+
+By default, the Argo UI's "current namespace" is initialized from the matched
+SSO ServiceAccount's own `metadata.namespace`. SSO-mapping ServiceAccounts
+must live in the install namespace (Argo only walks that namespace when
+matching `rbac-rule` annotations against claims), so in a multi-tenant install
+where users have permissions only in their **tenant** namespace, the UI lands
+on the install namespace where the user has no permissions and every list
+call returns 403.
+
+To override the namespace advertised to UI clients without moving the SA, set
+the `workflows.argoproj.io/default-namespace` annotation on the SSO-mapping
+ServiceAccount:
+
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: alice
+  namespace: argo                 # install ns — where SSO matching happens
+  annotations:
+    workflows.argoproj.io/rbac-rule: "preferred_username == 'alice'"
+    workflows.argoproj.io/rbac-rule-precedence: "10"
+    # When set, this is what /api/v1/userinfo's serviceAccountNamespace returns
+    # to UI clients, instead of the SA's own namespace. The UI uses this as
+    # the default for the namespace dropdown.
+    workflows.argoproj.io/default-namespace: "argo-jobs-alice"
+```
+
+The annotation value is treated as a literal namespace name. Argo Server does
+not validate that the namespace exists or that the user has permissions
+there — it only changes what the UI defaults to. The user's actual access is
+still governed by their RoleBindings in the target namespace.
+
 ## SSO RBAC Namespace Delegation
 
 > v3.3 and after
