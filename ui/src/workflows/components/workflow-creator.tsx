@@ -72,7 +72,7 @@ export function WorkflowCreator({namespace, onCreate, history}: {namespace: stri
     return (
         <>
             {stage === 'choose-method' && (
-                <div className='white-box'>
+                <div className='white-box' style={{marginTop: 20}}>
                     <h4>Submit new workflow</h4>
                     <p>Either:</p>
                     <div style={{margin: 10, marginLeft: 20}}>

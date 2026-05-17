@@ -1,5 +1,136 @@
 # Changelog
 
+## v4.0.5 (2026-04-23)
+
+Full Changelog: [v4.0.4...v4.0.5](https://github.com/argoproj/argo-workflows/compare/v4.0.4...v4.0.5)
+
+### Selected Changes
+
+* [0ab145214](https://github.com/argoproj/argo-workflows/commit/0ab1452144d8f4d57c50b37ce50dad218868e950) chore(deps): update module github.com/jackc/pgx/v5 to v5.9.2 [security] (release-4.0) (#16027)
+* [0954bb218](https://github.com/argoproj/argo-workflows/commit/0954bb2182cfcab605b0fd87639217a5f1de8074) fix(ui): respect target field in workflow-list scope links (cherry-pick #16021 for 4.0) (#16022)
+* [2727f3f70](https://github.com/argoproj/argo-workflows/commit/2727f3f701677d467dfb5e053c57237cbc752c3c) Merge commit from fork
+* [7abb4de6c](https://github.com/argoproj/argo-workflows/commit/7abb4de6c3599e2d5d960ba4d5de4cf1df109965) Merge commit from fork
+* [09fff05e0](https://github.com/argoproj/argo-workflows/commit/09fff05e0830c14a5e36cc40597ad84881db1ab6) Merge commit from fork
+* [c4cc17d0c](https://github.com/argoproj/argo-workflows/commit/c4cc17d0c034fa9a9cc01ef1af6c8016c93071d4) Merge commit from fork
+* [4fe54e529](https://github.com/argoproj/argo-workflows/commit/4fe54e529eff5519233287251e5adf9a61b9fc67) Merge commit from fork
+* [bdd409085](https://github.com/argoproj/argo-workflows/commit/bdd40908580f727c590c8743836e338b04fe4a87) Merge commit from fork
+* [91697ce35](https://github.com/argoproj/argo-workflows/commit/91697ce3596e143adc706dcffbb72fbabf0e0f5f) fix: delete stale TaskGroup children on retry with parameter override. Fixes #15802 (cherry-pick #15827 for 4.0) (#16010)
+* [16f4914ce](https://github.com/argoproj/argo-workflows/commit/16f4914cede0aeddd8b198b3cccb7bbc6dce6e40) fix: prevent `failed to get a template` when using inline template. Fixes #15051 (cherry-pick #15574 for 4.0) (#16007)
+* [245cb9b74](https://github.com/argoproj/argo-workflows/commit/245cb9b741d80637b7d550a028128076bf1babb8) fix(controller): guard realtime workflow.duration against zero StartedAt (cherry-pick #15935 for 4.0) (#16005)
+* [adb055138](https://github.com/argoproj/argo-workflows/commit/adb055138c734b824bb52b1ce2c5d0cca2aa5f29) fix: 401s when accessing artifact directories with SSO enabled. Fixes #15800 (cherry-pick #15994 for 4.0) (#15998)
+* [b65e27e8f](https://github.com/argoproj/argo-workflows/commit/b65e27e8fdeca8f39d9f854598b44244679fe636) chore(deps): update module github.com/go-git/go-git/v5 to v5.18.0 [security] (release-4.0) (#15990)
+* [7a5ecf7b5](https://github.com/argoproj/argo-workflows/commit/7a5ecf7b5085e187622acd66b23e227ea93da577) chore(deps): update module github.com/moby/spdystream to v0.5.1 [security] (release-4.0) (#15957)
+* [d54c13ff0](https://github.com/argoproj/argo-workflows/commit/d54c13ff07482a7142effb3bb621dc382216b1b3) chore(deps): update k8s.io/gengo digest to 25e2208 (release-4.0) (#15980)
+* [bfb330f82](https://github.com/argoproj/argo-workflows/commit/bfb330f82eee29aa0055b829b7c712cfcf783192) chore(deps): update k8s.io/utils digest to 28399d8 (release-4.0) (#15981)
+* [7761ec8e2](https://github.com/argoproj/argo-workflows/commit/7761ec8e22ddcf98e9c879e6332e4d26c0b14e7d) chore(deps): update module github.com/jackc/pgx/v5 to v5.9.0 [security] (release-4.0) (#15947)
+* [63ae70510](https://github.com/argoproj/argo-workflows/commit/63ae70510501d75470f53e13b77681a157d93a63) chore(deps): update module go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp to v1.43.0 [security] (release-4.0) (#15891)
+* [97d616cca](https://github.com/argoproj/argo-workflows/commit/97d616cca5a98a6dfb0809067a1df46ed24dcc66) chore(deps): update minio-go to include non-DualStack region fix (#2205) (cherry-pick #15838 for 4.0) (#15928)
+* [66a384d28](https://github.com/argoproj/argo-workflows/commit/66a384d28982ed01bbf4f4c3b47800e4391a1e86) chore(deps): update module github.com/go-jose/go-jose/v3 to v3.0.5 [security] (release-4.0) (#15858)
+* [8a8c7325e](https://github.com/argoproj/argo-workflows/commit/8a8c7325e6e01c744769b0a93c04632a18f2257e) chore(deps): update module go.opentelemetry.io/otel/sdk to v1.43.0 [security] (release-4.0) (#15902)
+* [288da9183](https://github.com/argoproj/argo-workflows/commit/288da91832f4d36040ffec1f464edc5b6d1e6cde) fix: changed log level (cherry-pick #15898 for 4.0) (#15899)
+* [65d2b618a](https://github.com/argoproj/argo-workflows/commit/65d2b618a19fac53ca96c4201181df666f23e464) chore(deps): update module github.com/go-jose/go-jose/v4 to v4.1.4 [security] (release-4.0) (#15883)
+* [aa8ee507a](https://github.com/argoproj/argo-workflows/commit/aa8ee507a90e4870dd9ac91c1dddd3176936620c) chore(deps): update module go.opentelemetry.io/otel/sdk to v1.43.0 [security] (release-4.0) (#15892)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* AsKc2000
+* Claude Opus 4.6
+* Claude Opus 4.7 (1M context)
+* Isitha Subasinghe
+* Mason Malone
+* panicboat
+* Ville Vesilehto
+* Yu-Hong Shen
+
+</details>
+
+## v4.0.4 (2026-04-02)
+
+Full Changelog: [v4.0.3...v4.0.4](https://github.com/argoproj/argo-workflows/compare/v4.0.3...v4.0.4)
+
+### Selected Changes
+
+* [fe0af1198](https://github.com/argoproj/argo-workflows/commit/fe0af119897a54f4c7db117a5912a5559c46532f) fix: tolerate expression template runtime failures when allowUnresolved is true. Fixes #15832, #15824 (cherry-pick #15839 for 4.0) (#15850)
+* [107542b44](https://github.com/argoproj/argo-workflows/commit/107542b4424240db6241555d253a8a6bf2619bda) fix: populate scope with empty values for outputs of skipped/omitted DAG ancestors (cherry-pick #15841 for 4.0) (#15849)
+* [0ba0565d7](https://github.com/argoproj/argo-workflows/commit/0ba0565d720785a57d3c92886fe9bc78ea09430b) fix(ui): add tooltips to tab icons (cherry-pick #15840 for 4.0) (#15846)
+* [73eb45dba](https://github.com/argoproj/argo-workflows/commit/73eb45dba03cd89bfedfd5f88269062ec2d63417) chore(deps): update module github.com/go-git/go-git/v5 to v5.17.1 [security] (release-4.0) (#15831)
+* [92ee3e221](https://github.com/argoproj/argo-workflows/commit/92ee3e2213f1919d5657d11e461cb8081ed9d8de) chore(deps): update module github.com/docker/cli to v29 [security] (release-4.0) (#15813)
+* [1e2059a2a](https://github.com/argoproj/argo-workflows/commit/1e2059a2a7aa1d997661992314ebd54bf7a9de94) fix: remove holder from waiting list when semaphore lock is acquired. (cherry-pick #15239 for 4.0) (#15823)
+* [f9004cddf](https://github.com/argoproj/argo-workflows/commit/f9004cddf3c4e96212f83788c883196e46f5207e) chore(deps): update dependency yaml to v2.8.3 [security] (release-4.0) (#15810)
+* [251beac5e](https://github.com/argoproj/argo-workflows/commit/251beac5e8d9ce195d04bf18696a26a694023510) chore(deps): update module google.golang.org/grpc to v1.79.3 [security] (release-4.0) (#15775)
+* [077c3186c](https://github.com/argoproj/argo-workflows/commit/077c3186c5f4fd72a66c7dc11c447d722003eaf7) chore(deps): update module google.golang.org/grpc to v1.79.3 [security] (release-4.0) (#15771)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Claude Opus 4.6
+* nakatani-yo
+* shuangkun tian
+
+</details>
+
+## v4.0.3 (2026-03-18)
+
+Full Changelog: [v4.0.2...v4.0.3](https://github.com/argoproj/argo-workflows/compare/v4.0.2...v4.0.3)
+
+### Selected Changes
+
+* [8cae17b6f](https://github.com/argoproj/argo-workflows/commit/8cae17b6fb49f077eeb269fcf21ce021b37a97f1) chore(deps): go 1.24.10->1.25.7 (release-4.0) (#15759)
+* [c459b9817](https://github.com/argoproj/argo-workflows/commit/c459b9817285b12e4356f58cf929e7c3f01a545c) fix: add stepgroup and taskgroup to scope. Fixes #15737 (#15736). (cherry-pick #15736 for 4.0) (#15757)
+* [341f3ae5d](https://github.com/argoproj/argo-workflows/commit/341f3ae5d1f99bb119c9b33d77425e8ede41702b) fix(cron): embed tzdata and validate timezone (cherry-pick #15732 for 4.0) (#15739)
+* [d0919730c](https://github.com/argoproj/argo-workflows/commit/d0919730c286e5c3ce1f897ed60950f8ccaaae7b) chore(deps): pin distroless base to debian13 (cherry-pick #15741 for 4.0) (#15751)
+* [658b43198](https://github.com/argoproj/argo-workflows/commit/658b4319856d6204cd2190691ca5b05d6c52be80) chore(deps): update k8s.io/utils digest to b8788ab (release-4.0) (#15731)
+* [e8df68c81](https://github.com/argoproj/argo-workflows/commit/e8df68c819ebc8ee8674e28c0eb6b346214f1b87) fix: optimize index to prevent 'out of sort memory' error Fixes #14240 (cherry-pick #15250 for 4.0) (#15675)
+* [4f58ea73b](https://github.com/argoproj/argo-workflows/commit/4f58ea73b926129c1a432194cb4dd83f05203722) fix: include spec.arguments in archived and live workflow list responses. Fixes #13946 (cherry-pick #15669 for 4.0) (#15678)
+* [5df42c4f0](https://github.com/argoproj/argo-workflows/commit/5df42c4f06cc0e8170c60a5821e8c25c01000bac) fix: correct TTL strategy precedence comment in gc-ttl example (cherry-pick #15654 for 4.0) (#15672)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Claude Sonnet 4.6
+* downfa11
+* heitor
+* Heitor Pinto
+* himeshp
+* Himesh Panchal
+* Isitha Subasinghe
+* Ville Vesilehto
+
+</details>
+
+## v4.0.2 (2026-03-11)
+
+Full Changelog: [v4.0.1...v4.0.2](https://github.com/argoproj/argo-workflows/compare/v4.0.1...v4.0.2)
+
+### Selected Changes
+
+* [32afec3c4](https://github.com/argoproj/argo-workflows/commit/32afec3c401c0920517bf1e890fa7dba6170cdf2) Merge commit from fork
+* [4cac12c75](https://github.com/argoproj/argo-workflows/commit/4cac12c75de720889ad2cae8a6cc63c566b1d8d8) Merge commit from fork
+* [9f32c3843](https://github.com/argoproj/argo-workflows/commit/9f32c384364c35094c6d8862c1927c17c2304ace) fix: requeue workflow if expected variables are missing. Fixes #15513 (cherry-pick #15442 for 4.0) (#15656)
+* [c0b7f2f87](https://github.com/argoproj/argo-workflows/commit/c0b7f2f87b6b32e859482588b3dab5a27fa4ed52) fix(docs): use server-side apply in quick-start guide for v4.0+ compatibility (cherry-pick #15650 for 4.0) (#15651)
+* [5adb9bd30](https://github.com/argoproj/argo-workflows/commit/5adb9bd3011051e7f032a0cb9d0f6242f7ff9edd) chore(deps): update module github.com/cloudflare/circl to v1.6.3 [security] (release-4.0) (#15635)
+* [069bc11ed](https://github.com/argoproj/argo-workflows/commit/069bc11ed14ae105015e700b567ab4ebdc3eed9e) fix: update go paths to v4 (cherry-pick #15622 for 4.0) (#15626)
+* [35f6c11f7](https://github.com/argoproj/argo-workflows/commit/35f6c11f7dd93d4216c0c9e1e61f0a90bbe9e061) fix: use fixed reference time in SQLite store tests to prevent flakiness (cherry-pick #15599 for 4.0) (#15618)
+* [35cd9236f](https://github.com/argoproj/argo-workflows/commit/35cd9236f3352c97cbd858dcbbc47d22a9c85d10) fix: use workflow key for semaphore nextWorkflow callback (cherry-pick #15558 for 4.0) (#15620)
+* [c85c2efee](https://github.com/argoproj/argo-workflows/commit/c85c2efeefa34e10df272a6476e1ff80de3f5180) fix(sync): variable shadowing causes semaphore holders to be lost on restart (cherry-pick #15609 for 4.0) (#15612)
+* [a917fd688](https://github.com/argoproj/argo-workflows/commit/a917fd68876b75a05fe68a77831d27142fa69fbe) chore(deps): update lycheeverse/lychee-action digest to 8646ba3 (release-4.0) (#15611)
+* [bf91ab96b](https://github.com/argoproj/argo-workflows/commit/bf91ab96b88388c3a8067f802711e666142bd594) chore(deps): update module filippo.io/edwards25519 to v1.1.1 [security] (release-4.0) (#15605)
+* [f22cdadaa](https://github.com/argoproj/argo-workflows/commit/f22cdadaaa0f40cabbcf0f18259c4c562e82c4bd) chore(deps): update module go.opentelemetry.io/otel/sdk to v1.40.0 [security] (release-4.0) (#15606)
+* [bb301ad54](https://github.com/argoproj/argo-workflows/commit/bb301ad545d5a4cb75e8b009ad67ca9cc869cc32) chore(deps): update module go.opentelemetry.io/otel/sdk to v1.40.0 [security] (release-4.0) (#15603)
+* [2b4dc19b0](https://github.com/argoproj/argo-workflows/commit/2b4dc19b023476aea3c80ddb7ca86b3daef3a273) fix: Add optional UID query parameter to GetWorkflow (cherry-pick #15251 for 4.0) (#15579)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Claude Opus 4.5
+* Eduardo Rodrigues
+* Isitha Subasinghe
+* Nancy Sangani
+* Ville Vesilehto
+
+</details>
+
 ## v4.0.1 (2026-02-16)
 
 Full Changelog: [v4.0.0...v4.0.1](https://github.com/argoproj/argo-workflows/compare/v4.0.0...v4.0.1)
@@ -145,7 +276,7 @@ Full Changelog: [v4.0.0-rc1...v4.0.0-rc2](https://github.com/argoproj/argo-workf
 
 ## v4.0.0-rc1 (2025-12-11)
 
-Full Changelog: [v3.7.10...v4.0.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.7.10...v4.0.0-rc1)
+Full Changelog: [v3.7.14...v4.0.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.7.14...v4.0.0-rc1)
 
 ### Selected Changes
 
@@ -332,6 +463,123 @@ Full Changelog: [v3.7.10...v4.0.0-rc1](https://github.com/argoproj/argo-workflow
 * William Van Hevelingen
 * Xavier Hardy
 * Yuan Tang
+
+</details>
+
+## v3.7.14 (2026-04-23)
+
+Full Changelog: [v3.7.13...v3.7.14](https://github.com/argoproj/argo-workflows/compare/v3.7.13...v3.7.14)
+
+### Selected Changes
+
+* [ca37b537c](https://github.com/argoproj/argo-workflows/commit/ca37b537cd34d18029146a755bf42a9b2364c49b) chore(deps): update module github.com/jackc/pgx/v5 to v5.9.2 [security] (release-3.7) (#16026)
+* [251bb231d](https://github.com/argoproj/argo-workflows/commit/251bb231d62a0f4e5e03dcc13c3f2ae456b2fa34) Merge commit from fork
+* [d05b0d8da](https://github.com/argoproj/argo-workflows/commit/d05b0d8da9cf91c95b9c858fb190493cf4b87cf1) Merge commit from fork
+* [0b6da1f0e](https://github.com/argoproj/argo-workflows/commit/0b6da1f0e3ede7594fcd22f9559de7c1df27ca40) Merge commit from fork
+* [cc220db1e](https://github.com/argoproj/argo-workflows/commit/cc220db1e90c3544b16136d9ed38b5b92130689a) fix: delete stale TaskGroup children on retry with parameter override. Fixes #15802 (cherry-pick #15827 for 3.7) (#16011)
+* [c4def9d9a](https://github.com/argoproj/argo-workflows/commit/c4def9d9a6f5cefa49b57f9846eb01417df77b2d) fix: prevent `failed to get a template` when using inline template. Fixes #15051 (cherry-pick #15574 for 3.7) (#16009)
+* [6e3df1f21](https://github.com/argoproj/argo-workflows/commit/6e3df1f2187186f6c3453efc93040047170c2fbe) fix(controller): guard realtime workflow.duration against zero StartedAt (cherry-pick #15935 for 3.7) (#16004)
+* [dd8224565](https://github.com/argoproj/argo-workflows/commit/dd8224565e73eaadc8f3f4c0e30fd65cafcc7729) fix: 401s when accessing artifact directories with SSO enabled. Fixes #15800 (cherry-pick #15994 for 3.7) (#15997)
+* [9391a3eaf](https://github.com/argoproj/argo-workflows/commit/9391a3eaf3af60a287b54018ecb572f2afef5a88) chore(deps): update module github.com/go-git/go-git/v5 to v5.18.0 [security] (release-3.7) (#15989)
+* [6b9d2779e](https://github.com/argoproj/argo-workflows/commit/6b9d2779ecbc6e11cf76c6d00d265d087383cd05) chore(deps): update k8s.io/utils digest to 28399d8 (release-3.7) (#15979)
+* [b2760b1c4](https://github.com/argoproj/argo-workflows/commit/b2760b1c4a4e8608bcf84ef495e1f584928ac4cb) chore(deps): update module github.com/moby/spdystream to v0.5.1 [security] (release-3.7) (#15958)
+* [bbc2cdf12](https://github.com/argoproj/argo-workflows/commit/bbc2cdf121a0e0be623251831eb91b3a6fa8ddac) chore(deps): update k8s.io/gengo digest to 25e2208 (release-3.7) (#15978)
+* [be2c067e9](https://github.com/argoproj/argo-workflows/commit/be2c067e9b30d610d874596094dddf2acd26622f) chore(deps): update module github.com/jackc/pgx/v5 to v5.9.0 [security] (release-3.7) (#15946)
+* [4653cb0da](https://github.com/argoproj/argo-workflows/commit/4653cb0da400a892e9a07a38dd2310c2e8598037) chore(deps): update module go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp to v1.43.0 [security] (release-3.7) (#15889)
+* [ce6a91d10](https://github.com/argoproj/argo-workflows/commit/ce6a91d1012eaff11b49cdc16b64a29e92759622) chore(deps): update minio-go to include non-DualStack region fix (#2205) (cherry-pick #15838 for 3.7) (#15929)
+* [f035bf0a4](https://github.com/argoproj/argo-workflows/commit/f035bf0a43a02983ad97421c5dccc03c30111caf) fix: changed log level (cherry-pick #15898 for 3.7) (#15927)
+* [fbd203449](https://github.com/argoproj/argo-workflows/commit/fbd20344977ba4ca2ca62ccf4c2855e3f708092b) chore(deps): update module github.com/go-jose/go-jose/v3 to v3.0.5 [security] (release-3.7) (#15857)
+* [09a1a5457](https://github.com/argoproj/argo-workflows/commit/09a1a5457deec4f717b8ec47272d1b2ded2ee9a8) chore(deps): update module github.com/go-jose/go-jose/v4 to v4.1.4 [security] (release-3.7) (#15882)
+* [b31539beb](https://github.com/argoproj/argo-workflows/commit/b31539beb39e21dd637063b57f898cae67c96d00) chore(deps): update module go.opentelemetry.io/otel/sdk to v1.43.0 [security] (release-3.7) (#15890)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* AsKc2000
+* Claude Opus 4.6
+* Isitha Subasinghe
+* Mason Malone
+* Ville Vesilehto
+* Yu-Hong Shen
+
+</details>
+
+## v3.7.13 (2026-04-02)
+
+Full Changelog: [v3.7.12...v3.7.13](https://github.com/argoproj/argo-workflows/compare/v3.7.12...v3.7.13)
+
+### Selected Changes
+
+* [8204ae19a](https://github.com/argoproj/argo-workflows/commit/8204ae19ac7cc1d9f3b76bef29d85d40f4a74b41) fix: tolerate expression template runtime failures when allowUnresolved is true. Fixes #15832, #15824 (cherry-pick #15839 for 3.7) (#15851)
+* [e21bd1e59](https://github.com/argoproj/argo-workflows/commit/e21bd1e5982f9d5bfd5501269e666add302bc7bb) fix: populate scope with empty values for outputs of skipped/omitted DAG ancestors (cherry-pick #15841 for 3.7) (#15848)
+* [013a2a7dd](https://github.com/argoproj/argo-workflows/commit/013a2a7dd993309d9399a43531d413ae0a3245db) fix(ui): add tooltips to tab icons (cherry-pick #15840 for 3.7) (#15847)
+* [92efea2f9](https://github.com/argoproj/argo-workflows/commit/92efea2f9653ecfc0f87e1dd94f4f422adf5c175) chore(deps): update module github.com/go-git/go-git/v5 to v5.17.1 [security] (release-3.7) (#15830)
+* [0aabc74ad](https://github.com/argoproj/argo-workflows/commit/0aabc74adb60a191240d18c19d348b008e6e1ab6) chore(deps): update module github.com/docker/cli to v29 [security] (release-3.7) (#15812)
+* [f8f212033](https://github.com/argoproj/argo-workflows/commit/f8f212033f76f21566908c869f12e6bd496f1437) fix: remove holder from waiting list when semaphore lock is acquired. (cherry-pick #15239 for 3.7) (#15822)
+* [d6e4f33eb](https://github.com/argoproj/argo-workflows/commit/d6e4f33eb886058d6dde0d3c8e45cea05557514a) chore(deps): update dependency yaml to v2.8.3 [security] (release-3.7) (#15809)
+* [9044c2f58](https://github.com/argoproj/argo-workflows/commit/9044c2f582c2a472bbd52b54d9cdbc9029440d4b) chore(deps): update module google.golang.org/grpc to v1.79.3 [security] (release-3.7) (#15770)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Claude Opus 4.6
+* nakatani-yo
+* shuangkun tian
+
+</details>
+
+## v3.7.12 (2026-03-18)
+
+Full Changelog: [v3.7.11...v3.7.12](https://github.com/argoproj/argo-workflows/compare/v3.7.11...v3.7.12)
+
+### Selected Changes
+
+* [dbb6c3419](https://github.com/argoproj/argo-workflows/commit/dbb6c34199d252de7e3aa169310c3f3e4919ae52) fix: add stepgroup and taskgroup to scope. Fixes #15737 (#15736) (cherry-pick #15736 for 3.7) (#15758)
+* [d87479c35](https://github.com/argoproj/argo-workflows/commit/d87479c3501a83c860619d32de0623435c4c1976) chore(deps): upgrade go to 1.25.7 (release-3.7) (#15760)
+* [1a083fdeb](https://github.com/argoproj/argo-workflows/commit/1a083fdebf320a52d915feb5a766c2cd69650a12) fix(cron): embed tzdata and validate timezone (cherry-pick #15732 for 3.7) (#15738)
+* [49a0dd097](https://github.com/argoproj/argo-workflows/commit/49a0dd097061e4db0b36a2e11345ac776f2ba411) chore(deps): pin distroless base to debian13 (cherry-pick #15741 for 3.7) (#15752)
+* [09cfeac38](https://github.com/argoproj/argo-workflows/commit/09cfeac381caef035de51cdbdd54af393ddf537b) fix: include spec.arguments in archived and live workflow list responses. Fixes #13946 (cherry-pick #15669 for 3.7) (#15677)
+* [107ad76b8](https://github.com/argoproj/argo-workflows/commit/107ad76b87fb09be65e1f3f9c38b3376664d30fc) chore(deps): update golang.org/x/exp digest to 3dfff04 (release-3.7) (#15730)
+* [94d46cad5](https://github.com/argoproj/argo-workflows/commit/94d46cad51abcc8094b140ec53319b953db65c57) fix: optimize index to prevent 'out of sort memory' error Fixes #14240 (cherry-pick #15250 for 3.7) (#15676)
+* [e8ebb8ccc](https://github.com/argoproj/argo-workflows/commit/e8ebb8ccc6a8d8c6d709a59aeea2f5429ce84f3a) fix: correct TTL strategy precedence comment in gc-ttl example (cherry-pick #15654 for 3.7) (#15671)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Claude Sonnet 4.6
+* downfa11
+* heitor
+* Heitor Pinto
+* himeshp
+* Himesh Panchal
+* Isitha Subasinghe
+* Ville Vesilehto
+
+</details>
+
+## v3.7.11 (2026-03-11)
+
+Full Changelog: [v3.7.10...v3.7.11](https://github.com/argoproj/argo-workflows/compare/v3.7.10...v3.7.11)
+
+### Selected Changes
+
+* [8f505a558](https://github.com/argoproj/argo-workflows/commit/8f505a558176debfa46959ff7c4ee1aee2dd1769) Merge commit from fork
+* [9064c7f89](https://github.com/argoproj/argo-workflows/commit/9064c7f89e657165b83eaa011068ec14602f550d) Merge commit from fork
+* [91dfc0aa9](https://github.com/argoproj/argo-workflows/commit/91dfc0aa9ada1a9dc658c4822af9b84f4f807732) fix: Add optional UID query parameter to GetWorkflow (cherry pick 15265 to release 3.7) (#15643)
+* [477442702](https://github.com/argoproj/argo-workflows/commit/477442702ef20e6e5c9e344bf6bd368ea96b55ae) fix: requeue workflow if expected variables are missing. Fixes #15513 (cherry-pick #15442 for 3.7) (#15657)
+* [322d067a1](https://github.com/argoproj/argo-workflows/commit/322d067a18392bdffe6d09545fe884c21620b021) chore(deps): update module github.com/cloudflare/circl to v1.6.3 [security] (release-3.7) (#15634)
+* [3b2a55298](https://github.com/argoproj/argo-workflows/commit/3b2a5529837e1d2304aae53d61d2a3ca659b48f7) fix(sync): variable shadowing causes semaphore holders to be lost on restart (cherry-pick #15609 for 3.7) (#15617)
+* [0a7fa6790](https://github.com/argoproj/argo-workflows/commit/0a7fa6790bb8a5294afbbebe4579939137d3493e) fix: use fixed reference time in SQLite store tests to prevent flakiness (cherry-pick #15599 for 3.7) (#15619)
+* [1164dc5ed](https://github.com/argoproj/argo-workflows/commit/1164dc5ed70ce062e473a8bb723a815209b9f373) fix: use workflow key for semaphore nextWorkflow callback (cherry-pick #15558 for 3.7) (#15621)
+* [5499fb823](https://github.com/argoproj/argo-workflows/commit/5499fb82359890dd1c89dd8b85162404d2a1a25f) chore(deps): update module filippo.io/edwards25519 to v1.1.1 [security] (release-3.7) (#15604)
+* [2c007afc7](https://github.com/argoproj/argo-workflows/commit/2c007afc70e7fffc3bac2565c69cc077cdcfdab0) chore(deps): update module go.opentelemetry.io/otel/sdk to v1.40.0 [security] (release-3.7) (#15602)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Eduardo Rodrigues
+* Isitha Subasinghe
+* Ville Vesilehto
 
 </details>
 

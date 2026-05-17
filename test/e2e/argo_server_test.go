@@ -430,8 +430,11 @@ func (s *ArgoServerSuite) createServiceAccount(name string) {
 	secret, err := s.KubeClient.CoreV1().Secrets(fixtures.Namespace).Create(ctx, secrets.NewTokenSecret(name), metav1.CreateOptions{})
 	s.Require().NoError(err)
 	s.T().Cleanup(func() {
-		_ = s.KubeClient.CoreV1().Secrets(fixtures.Namespace).Delete(ctx, secret.Name, metav1.DeleteOptions{})
-		_ = s.KubeClient.CoreV1().ServiceAccounts(fixtures.Namespace).Delete(ctx, name, metav1.DeleteOptions{})
+		ctx := logging.TestContext(s.T().Context())
+		err := s.KubeClient.CoreV1().Secrets(fixtures.Namespace).Delete(ctx, secret.Name, metav1.DeleteOptions{})
+		s.Require().NoError(err)
+		err = s.KubeClient.CoreV1().ServiceAccounts(fixtures.Namespace).Delete(ctx, name, metav1.DeleteOptions{})
+		s.Require().NoError(err)
 	})
 }
 
@@ -453,6 +456,7 @@ func (s *ArgoServerSuite) TestPermission() {
 		_, err = s.KubeClient.RbacV1().Roles(nsName).Create(ctx, role, metav1.CreateOptions{})
 		s.Require().NoError(err)
 	})
+	s.Require().NotEmpty(roleName, "LoadRoleYaml must succeed")
 	defer func() {
 		_ = s.KubeClient.RbacV1().Roles(nsName).Delete(ctx, roleName, metav1.DeleteOptions{})
 	}()
@@ -502,6 +506,10 @@ func (s *ArgoServerSuite) TestPermission() {
 		badToken = string(secret.Data["token"])
 	})
 
+	// Stop early if token retrieval failed to prevent cascading failures
+	s.Require().NotEmpty(goodToken, "GetGoodSAToken must succeed")
+	s.Require().NotEmpty(badToken, "GetBadSAToken must succeed")
+
 	// fake / spoofed token
 	fakeToken := "faketoken"
 
@@ -540,6 +548,9 @@ func (s *ArgoServerSuite) TestPermission() {
 			Path("$.metadata.uid").
 			Raw().(string)
 	})
+
+	// Stop early if workflow creation failed to prevent cascading failures
+	s.Require().NotEmpty(uid, "CreateWFGoodToken must succeed")
 
 	// Test list workflows with good token
 	s.Run("ListWFsGoodToken", func() {
@@ -896,6 +907,9 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 			Raw()
 	})
 
+	// Stop early if workflow creation failed to prevent cascading failures
+	s.Require().NotEmpty(name, "Create must succeed")
+
 	s.Given().
 		When().
 		WaitForWorkflow(fixtures.ToBeRunning)
@@ -1089,19 +1103,40 @@ func (s *ArgoServerSuite) TestWorkflowServiceListArchived() {
 		nameAliceWf = aliceWf.Path("$.metadata.name").NotNull().String().Raw()
 	})
 
+	// Stop early if workflow creation failed to prevent cascading failures
+	s.Require().NotEmpty(nameBobWf, "CreateArchivedBobWf must succeed")
+	s.Require().NotEmpty(nameAliceWf, "CreateAlice must succeed")
+
 	s.Given().When().
 		WaitForWorkflow(fixtures.ToBeArchived, metav1.ListOptions{FieldSelector: "metadata.name=" + nameBobWf}).
 		WaitForWorkflow(fixtures.ToBeArchived, metav1.ListOptions{FieldSelector: "metadata.name=" + nameAliceWf})
 
+	// Poll until the API server's internal SQLite cache has converged.
+	// WaitForWorkflow(ToBeArchived) watches K8s labels directly, but the
+	// list endpoint merges a SQLite live-store (fed by a separate informer)
+	// with the archive DB. The informer may lag behind the test's watch,
+	// causing workflows to still appear with "Pending" status from the
+	// live store instead of "Persisted" from the archive.
 	s.Run("ListAll", func() {
-		s.e().GET("/api/v1/workflows/argo").
-			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test=subject-1").
-			Expect().
-			Status(200).
-			JSON().
-			Path(`$.items[*].metadata.labels["workflows.argoproj.io/workflow-archiving-status"]`).
-			Array().
-			IsEqual([]any{"Persisted", "Persisted"})
+		s.Eventually(func() bool {
+			statuses := s.e().GET("/api/v1/workflows/argo").
+				WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test=subject-1").
+				Expect().
+				Status(200).
+				JSON().
+				Path(`$.items[*].metadata.labels["workflows.argoproj.io/workflow-archiving-status"]`).
+				Array().
+				Raw()
+			if len(statuses) != 2 {
+				return false
+			}
+			for _, v := range statuses {
+				if v != "Persisted" {
+					return false
+				}
+			}
+			return true
+		}, 60*time.Second, time.Second, "expected both workflows to have Persisted archiving status")
 	})
 
 	s.Run("ListNameContainsAlice", func() {
@@ -1271,19 +1306,37 @@ func (s *ArgoServerSuite) TestWorkflowArchiveServiceList() {
 		nameAliceWf = aliceWf.Path("$.metadata.name").NotNull().String().Raw()
 	})
 
+	// Stop early if workflow creation failed to prevent cascading failures
+	s.Require().NotEmpty(nameBobWf, "CreateArchivedBobWf must succeed")
+	s.Require().NotEmpty(nameAliceWf, "CreateAlice must succeed")
+
 	s.Given().When().
 		WaitForWorkflow(fixtures.ToBeArchived, metav1.ListOptions{FieldSelector: "metadata.name=" + nameBobWf}).
 		WaitForWorkflow(fixtures.ToBeArchived, metav1.ListOptions{FieldSelector: "metadata.name=" + nameAliceWf})
 
+	// WaitForWorkflow(ToBeArchived) watches K8s labels, but the archive
+	// endpoint queries the DB which may lag behind. Poll until both
+	// workflows appear.
 	s.Run("ListAll", func() {
-		s.e().GET("/api/v1/archived-workflows").
-			WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test=subject-1").
-			Expect().
-			Status(200).
-			JSON().
-			Path(`$.items[*].metadata.labels["workflows.argoproj.io/workflow-archiving-status"]`).
-			Array().
-			IsEqual([]any{"Persisted", "Persisted"})
+		s.Eventually(func() bool {
+			statuses := s.e().GET("/api/v1/archived-workflows").
+				WithQuery("listOptions.labelSelector", "workflows.argoproj.io/test=subject-1").
+				Expect().
+				Status(200).
+				JSON().
+				Path(`$.items[*].metadata.labels["workflows.argoproj.io/workflow-archiving-status"]`).
+				Array().
+				Raw()
+			if len(statuses) != 2 {
+				return false
+			}
+			for _, v := range statuses {
+				if v != "Persisted" {
+					return false
+				}
+			}
+			return true
+		}, 60*time.Second, time.Second, "expected both workflows to have Persisted archiving status")
 	})
 
 	s.Run("ArchiveNameContainsAlice", func() {
@@ -1628,6 +1681,8 @@ spec:
 			Raw()
 	})
 
+	s.Require().NotEmpty(resourceVersion, "Get must return resourceVersion")
+
 	s.Run("Update", func() {
 		s.e().PUT("/api/v1/cron-workflows/argo/test").
 			WithBytes([]byte(`{"cronWorkflow": {
@@ -1754,7 +1809,7 @@ func (s *ArgoServerSuite) artifactServerRetrievalTests(name string, uid types.UI
 			Contains(":) Hello Argo!")
 
 		resp.Header("Content-Security-Policy").
-			IsEqual("sandbox; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self' 'unsafe-inline'")
+			IsEqual("sandbox allow-same-origin; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self' 'unsafe-inline'")
 
 		resp.Header("X-Frame-Options").
 			IsEqual("SAMEORIGIN")
@@ -1770,7 +1825,7 @@ func (s *ArgoServerSuite) artifactServerRetrievalTests(name string, uid types.UI
 			Contains(":) Hello Argo!")
 
 		resp.Header("Content-Security-Policy").
-			IsEqual("sandbox; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self' 'unsafe-inline'")
+			IsEqual("sandbox allow-same-origin; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self' 'unsafe-inline'")
 
 		resp.Header("X-Frame-Options").
 			IsEqual("SAMEORIGIN")
@@ -1786,7 +1841,7 @@ func (s *ArgoServerSuite) artifactServerRetrievalTests(name string, uid types.UI
 			Contains("<a href=\"./subdirectory/\">subdirectory/</a>")
 
 		resp.Header("Content-Security-Policy").
-			IsEqual("sandbox; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self' 'unsafe-inline'")
+			IsEqual("sandbox allow-same-origin; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self' 'unsafe-inline'")
 
 		resp.Header("X-Frame-Options").
 			IsEqual("SAMEORIGIN")
@@ -1813,7 +1868,7 @@ func (s *ArgoServerSuite) artifactServerRetrievalTests(name string, uid types.UI
 			Contains(":) Hello Argo!")
 
 		resp.Header("Content-Security-Policy").
-			IsEqual("sandbox; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self' 'unsafe-inline'")
+			IsEqual("sandbox allow-same-origin; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self' 'unsafe-inline'")
 
 		resp.Header("X-Frame-Options").
 			IsEqual("SAMEORIGIN")
@@ -2327,6 +2382,8 @@ func (s *ArgoServerSuite) TestWorkflowTemplateService() {
 			Raw()
 	})
 
+	s.Require().NotEmpty(resourceVersion, "Get must return resourceVersion")
+
 	s.Run("Update", func() {
 		s.e().PUT("/api/v1/workflow-templates/argo/test").
 			WithBytes([]byte(`{"template": {
@@ -2559,6 +2616,9 @@ func (s *ArgoServerSuite) TestEventSourcesService() {
 			String().
 			Raw()
 	})
+
+	s.Require().NotEmpty(resourceVersion, "GetEventSource must return resourceVersion")
+
 	s.Run("UpdateEventSource", func() {
 		s.e().PUT("/api/v1/event-sources/argo/test-event-source").
 			WithBytes([]byte(`
@@ -2772,6 +2832,11 @@ func (s *ArgoServerSuite) TestSyncConfigmapService() {
 	syncNamespace := "argo"
 	configmapName := "test-sync-cm"
 	syncKey := "test-key"
+
+	// Clean up configmap from previous runs. DeleteResources only removes
+	// configmaps labelled workflows.argoproj.io/test; this one is created
+	// by the sync API without that label, so it survives re-runs.
+	_ = s.KubeClient.CoreV1().ConfigMaps(syncNamespace).Delete(s.T().Context(), configmapName, metav1.DeleteOptions{})
 
 	s.Run("CreateSyncLimitConfigmap", func() {
 		s.e().POST("/api/v1/sync/{namespace}", syncNamespace).

@@ -68,14 +68,14 @@ tasks:
       UPPERIO_DB_DEBUG: "1"
       WORKFLOW_GC_PERIOD: 30s
       # OpenTelemetry tracing - collector runs in k8s, port-forwarded to localhost
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://localhost:4317
-      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://localhost:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
     ports:
     - "9090"
   otel-port-forward:
-    sh: kubectl port-forward -n argo svc/otel-collector 4317:4317 2>/dev/null || true
+    sh: kubectl port-forward -n argo svc/otel-collector 4318:4318 2>/dev/null || true
     ports:
-    - "4317"
+    - "4318"
   example:
     command:
     - kubectl

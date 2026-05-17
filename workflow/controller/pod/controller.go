@@ -172,8 +172,8 @@ func (c *Controller) podOrphaned(ctx context.Context, pod *apiv1.Pod) bool {
 
 func podGCFromPod(pod *apiv1.Pod) wfv1.PodGC {
 	if val, ok := pod.Annotations[common.AnnotationKeyPodGCStrategy]; ok {
-		parts := strings.Split(val, "/")
-		return wfv1.PodGC{Strategy: wfv1.PodGCStrategy(parts[0]), DeleteDelayDuration: parts[1]}
+		strategy, delay, _ := strings.Cut(val, "/")
+		return wfv1.PodGC{Strategy: wfv1.PodGCStrategy(strategy), DeleteDelayDuration: delay}
 	}
 	return wfv1.PodGC{Strategy: wfv1.PodGCOnPodNone}
 }
@@ -319,7 +319,7 @@ func newWorkflowPodWatch(ctx context.Context, clientSet kubernetes.Interface, in
 
 func newInformer(ctx context.Context, clientSet kubernetes.Interface, instanceID, namespace *string) cache.SharedIndexInformer {
 	source := newWorkflowPodWatch(ctx, clientSet, instanceID, namespace)
-	informer := cache.NewSharedIndexInformer(source, &apiv1.Pod{}, podResyncPeriod, cache.Indexers{
+	informer := cache.NewSharedIndexInformer(cache.ToListWatcherWithWatchListSemantics(source, clientSet), &apiv1.Pod{}, podResyncPeriod, cache.Indexers{
 		indexes.WorkflowIndex: indexes.MetaWorkflowIndexFunc,
 		indexes.NodeIDIndex:   indexes.MetaNodeIDIndexFunc,
 		indexes.PodPhaseIndex: indexes.PodPhaseIndexFunc,

@@ -34,7 +34,7 @@ export function SensorCreator({namespace, onCreate}: {namespace: string; onCreat
             <ErrorNotice error={error} />
             <SensorEditor sensor={sensor} serialization={serialization} lang={lang} onChange={setSensor} onLangChange={setLang} onError={setError} />
             <p>
-                <a href='https://github.com/argoproj/argo-events/tree/stable/examples/sensors'>
+                <a href='https://github.com/argoproj/argo-events/tree/stable/examples/sensors' target='_blank' rel='noreferrer'>
                     Example sensors <i className='fa fa-external-link-alt' />
                 </a>
             </p>

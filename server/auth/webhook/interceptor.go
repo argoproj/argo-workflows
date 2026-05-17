@@ -75,8 +75,16 @@ func (i *Interceptor) addWebhookAuthorization(r *http.Request, kube kubernetes.I
 		return fmt.Errorf("failed to get webhook clients: %w", err)
 	}
 	// we need to read the request body to check the signature, but we still need it for the GRPC request,
-	// so read it all now, and then reinstate when we are done
-	buf, _ := io.ReadAll(r.Body)
+	// so read it all now, and then reinstate when we are done.
+	// Limit to 2MB to prevent denial-of-service via oversized webhook payloads.
+	const maxWebhookSize = 2 * 1024 * 1024 // 2MB
+	buf, err2 := io.ReadAll(io.LimitReader(r.Body, maxWebhookSize+1))
+	if err2 != nil {
+		return fmt.Errorf("failed to read webhook request body: %w", err2)
+	}
+	if len(buf) > maxWebhookSize {
+		return fmt.Errorf("webhook request body exceeds maximum size of 2MB")
+	}
 	defer func() { r.Body = io.NopCloser(bytes.NewBuffer(buf)) }()
 	serviceAccountInterface := kube.CoreV1().ServiceAccounts(namespace)
 	for serviceAccountName, data := range webhookClients.Data {

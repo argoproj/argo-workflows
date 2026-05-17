@@ -6,6 +6,9 @@ on:
       - main
     types: ["labeled", "closed"]
 
+permissions:
+  contents: read
+
 jobs:
   find-labels:
     name: Find Cherry Pick Labels

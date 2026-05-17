@@ -298,6 +298,8 @@ This is done by setting up the [`SyncConfig` section](workflow-controller-config
 
 If you try to use multiple controller locks without configuring the database you will get an error.
 
+For the list of SQL statements applied during migration, see [Database Migrations](database-migrations.md).
+
 ### Limit Table
 
 This table stores the maximum number of concurrent Workflows/Templates allowed for each semaphore.
