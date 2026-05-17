@@ -456,21 +456,8 @@ func (we *WorkflowExecutor) saveArtifact(ctx context.Context, containerName stri
 
 // fileBase is probably path.Base(filePath), but can be something else
 func (we *WorkflowExecutor) saveArtifactFromFile(ctx context.Context, art *wfv1.Artifact, fileName, localArtPath string) error {
-	if !art.HasKey() {
-		key, err := we.Template.ArchiveLocation.GetKey()
-		if err != nil {
-			return err
-		}
-		artLocation, err := we.Template.ArchiveLocation.Get()
-		if err != nil {
-			return err
-		}
-		if err = art.SetType(artLocation); err != nil {
-			return err
-		}
-		if err := art.SetKey(path.Join(key, fileName)); err != nil {
-			return err
-		}
+	if err := we.generateArtifactKey(art, fileName); err != nil {
+		return err
 	}
 	driverArt, err := we.newDriverArt(art)
 	if err != nil {
@@ -487,6 +474,106 @@ func (we *WorkflowExecutor) saveArtifactFromFile(ctx context.Context, art *wfv1.
 	we.maybeDeleteLocalArtPath(ctx, localArtPath)
 	logging.RequireLoggerFromContext(ctx).WithField("path", localArtPath).Info(ctx, "Successfully saved file")
 	return nil
+}
+
+// generateArtifactKey populates the artifact's key and type fields from the archive location
+// without uploading. This allows metadata to be reported before the actual upload completes.
+func (we *WorkflowExecutor) generateArtifactKey(art *wfv1.Artifact, fileName string) error {
+	if !art.HasKey() {
+		key, err := we.Template.ArchiveLocation.GetKey()
+		if err != nil {
+			return err
+		}
+		artLocation, err := we.Template.ArchiveLocation.Get()
+		if err != nil {
+			return err
+		}
+		if err = art.SetType(artLocation); err != nil {
+			return err
+		}
+		if err := art.SetKey(path.Join(key, fileName)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// StagedArtifact pairs an output artifact with its staged local file information.
+type StagedArtifact struct {
+	Artifact     wfv1.Artifact
+	FileName     string
+	LocalArtPath string
+}
+
+// GenerateArtifactOutputs stages artifact files and populates their metadata (key/type)
+// without uploading to the artifact repository. The returned StagedArtifact records carry
+// full location information and local file paths, and can be reported to the controller
+// early while uploads proceed in the background via SaveArtifactsAsync.
+func (we *WorkflowExecutor) GenerateArtifactOutputs(ctx context.Context) ([]StagedArtifact, error) {
+	logger := logging.RequireLoggerFromContext(ctx)
+	if len(we.Template.Outputs.Artifacts) == 0 {
+		logger.Info(ctx, "No output artifacts")
+		return nil, nil
+	}
+
+	logger.Info(ctx, "Generating output artifact metadata")
+	err := os.MkdirAll(tempOutArtDir, os.ModePerm)
+	if err != nil {
+		return nil, argoerrs.InternalWrapError(err)
+	}
+
+	var results []StagedArtifact
+	for _, art := range we.Template.Outputs.Artifacts {
+		if err := art.CleanPath(); err != nil {
+			return nil, err
+		}
+		fileName, localArtPath, err := we.stageArchiveFile(ctx, common.MainContainerName, &art)
+		if err != nil {
+			if art.Optional && argoerrs.IsCode(argoerrs.CodeNotFound, err) {
+				logger.WithField("name", art.Name).WithError(err).Warn(ctx, "Ignoring optional artifact which does not exist in path")
+				continue
+			}
+			return nil, err
+		}
+		if err := we.generateArtifactKey(&art, fileName); err != nil {
+			return nil, err
+		}
+		results = append(results, StagedArtifact{Artifact: art, FileName: fileName, LocalArtPath: localArtPath})
+	}
+	return results, nil
+}
+
+// SaveArtifactsAsync uploads previously staged artifacts concurrently using goroutines.
+// It blocks until all uploads complete. Errors are aggregated across goroutines.
+func (we *WorkflowExecutor) SaveArtifactsAsync(ctx context.Context, staged []StagedArtifact) error {
+	if len(staged) == 0 {
+		return nil
+	}
+	logger := logging.RequireLoggerFromContext(ctx)
+	logger.WithField("count", len(staged)).Info(ctx, "Uploading staged artifacts asynchronously")
+
+	var (
+		wg             sync.WaitGroup
+		mu             sync.Mutex
+		aggregateError string
+	)
+
+	for _, s := range staged {
+		wg.Go(func() {
+			err := we.saveArtifactFromFile(ctx, &s.Artifact, s.FileName, s.LocalArtPath)
+			if err != nil {
+				mu.Lock()
+				aggregateError += err.Error() + "; "
+				mu.Unlock()
+			}
+		})
+	}
+
+	wg.Wait()
+	if aggregateError == "" {
+		return nil
+	}
+	return errors.New(aggregateError)
 }
 
 func (we *WorkflowExecutor) maybeDeleteLocalArtPath(ctx context.Context, localArtPath string) {
