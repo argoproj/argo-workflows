@@ -2933,7 +2933,7 @@ func (woc *wfOperationCtx) initializeNode(ctx context.Context, nodeName string, 
 	woc.wf.Status.Nodes.Set(ctx, nodeID, node)
 	woc.log.WithFields(logging.Fields{"node": node.ID, "phase": node.Phase, "message": message}).Info(ctx, "node initialized")
 	woc.updated = true
-	nodeCtx := woc.controller.tracing.RecordStartNode(ctx, woc.wf.Name, woc.wf.Namespace, node.ID, string(nodeType), phase, node.Message)
+	nodeCtx := woc.controller.tracing.RecordStartNode(ctx, woc.wf.Name, woc.wf.Namespace, node.ID, string(nodeType), wfutil.GetTemplateFromNode(node), phase, node.Message)
 	return nodeCtx, &node
 }
 
