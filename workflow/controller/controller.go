@@ -46,6 +46,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/deprecation"
 	"github.com/argoproj/argo-workflows/v4/util/env"
 	"github.com/argoproj/argo-workflows/v4/util/errors"
+	memodb "github.com/argoproj/argo-workflows/v4/util/memo/db"
 	rbacutil "github.com/argoproj/argo-workflows/v4/util/rbac"
 	"github.com/argoproj/argo-workflows/v4/util/retry"
 	utilsqldb "github.com/argoproj/argo-workflows/v4/util/sqldb"
@@ -134,6 +135,9 @@ type WorkflowController struct {
 	throttler             sync.Throttler
 	workflowKeyLock       syncpkg.KeyLock // used to lock workflows for exclusive modification or access
 	sessionProxy          *utilsqldb.SessionProxy
+	memoSessionProxy      *utilsqldb.SessionProxy
+	memoQueries           memodb.MemoizationDB
+	memoizationLock       gosync.RWMutex
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	hydrator              hydrator.Interface
 	wfArchive             sqldb.WorkflowArchive
@@ -209,7 +213,7 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		cliExecutorLogFormat:       executorLogFormat,
 		configController:           config.NewController(namespace, configMap, kubeclientset),
 		workflowKeyLock:            syncpkg.NewKeyLock(),
-		cacheFactory:               controllercache.NewCacheFactory(kubeclientset, namespace),
+		cacheFactory:               controllercache.NewCacheFactory(kubeclientset),
 		eventRecorderManager:       events.NewEventRecorderManager(kubeclientset),
 		progressPatchTickDuration:  env.LookupEnvDurationOr(ctx, common.EnvVarProgressPatchTickDuration, 1*time.Minute),
 		progressFileTickDuration:   env.LookupEnvDurationOr(ctx, common.EnvVarProgressFileTickDuration, 3*time.Second),
@@ -257,6 +261,39 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 func (wfc *WorkflowController) newThrottler() sync.Throttler {
 	f := func(key string) { wfc.wfQueue.Add(key) }
 	return sync.NewMultiThrottler(wfc.Config.Parallelism, wfc.Config.NamespaceParallelism, f)
+}
+
+// getMemoizationQueries returns the currently configured memoization query backend.
+// If no backend is configured, it returns NullMemoizationDB to provide no-op behavior.
+func (wfc *WorkflowController) getMemoizationQueries() memodb.MemoizationDB {
+	wfc.memoizationLock.RLock()
+	defer wfc.memoizationLock.RUnlock()
+	if wfc.memoQueries == nil {
+		return memodb.NullMemoizationDB
+	}
+	return wfc.memoQueries
+}
+
+// setMemoizationQueries updates the memoization query backend used by the controller.
+// A nil backend is normalized to NullMemoizationDB to keep callers nil-safe.
+func (wfc *WorkflowController) setMemoizationQueries(queries memodb.MemoizationDB) {
+	if queries == nil {
+		queries = memodb.NullMemoizationDB
+	}
+	wfc.memoizationLock.Lock()
+	defer wfc.memoizationLock.Unlock()
+	wfc.memoQueries = queries
+}
+
+// withMemoizationQueries executes fn while holding a read lock on the memoization backend.
+// If no backend is configured, fn is invoked with NullMemoizationDB.
+func (wfc *WorkflowController) withMemoizationQueries(fn func(memodb.MemoizationDB) error) error {
+	wfc.memoizationLock.RLock()
+	defer wfc.memoizationLock.RUnlock()
+	if wfc.memoQueries == nil {
+		return fn(memodb.NullMemoizationDB)
+	}
+	return fn(wfc.memoQueries)
 }
 
 // runGCcontroller runs the workflow garbage collector controller
@@ -404,6 +441,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 
 	go wfc.workflowGarbageCollector(ctx)
 	go wfc.archivedWorkflowGarbageCollector(ctx)
+	go wfc.memoizationCacheGarbageCollector(ctx)
 
 	go wfc.runGCcontroller(ctx, workflowTTLWorkers)
 	go wfc.runCronController(ctx, cronWorkflowWorkers)
@@ -716,6 +754,53 @@ func (wfc *WorkflowController) archivedWorkflowGarbageCollector(ctx context.Cont
 			err := wfc.wfArchive.DeleteExpiredWorkflows(ctx, time.Duration(ttl))
 			if err != nil {
 				logger.WithField("err", err).Error(ctx, "Failed to delete archived workflows")
+			}
+		}
+	}
+}
+
+func (wfc *WorkflowController) memoizationCacheGarbageCollector(ctx context.Context) {
+	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
+
+	logger := logging.RequireLoggerFromContext(ctx)
+	logger = logger.WithField("component", "memo_cache_garbage_collector")
+	ctx = logging.WithLogger(ctx, logger)
+
+	periodicity := env.LookupEnvDurationOr(ctx, "MEMO_CACHE_GC_PERIOD", 24*time.Hour)
+	if periodicity <= 0 {
+		logger.Info(ctx, "MEMO_CACHE_GC_PERIOD is zero or negative - cache GC disabled")
+		return
+	}
+	logger.Info(ctx, "Memoization cache GC goroutine started")
+
+	ticker := time.NewTicker(periodicity)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			var (
+				n      int64
+				active bool
+			)
+			err := wfc.withMemoizationQueries(func(queries memodb.MemoizationDB) error {
+				if !queries.IsEnabled() {
+					return nil
+				}
+				active = true
+				logger.Info(ctx, "Performing memoization cache GC")
+				var err error
+				n, err = queries.Prune(ctx)
+				return err
+			})
+			if !active {
+				continue
+			}
+			if err != nil {
+				logger.WithError(err).Error(ctx, "Failed to prune memoization cache")
+			} else {
+				logger.WithField("deleted", n).Info(ctx, "Memoization cache GC complete")
 			}
 		}
 	}

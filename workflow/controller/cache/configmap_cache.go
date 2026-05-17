@@ -132,7 +132,10 @@ func (c *configMapCache) load(ctx context.Context, key string) (*Entry, error) {
 	return &entry, nil
 }
 
-func (c *configMapCache) Save(ctx context.Context, key string, nodeID string, value *wfv1.Outputs) error {
+// Save stores a memoization entry in a ConfigMap. The final argument is maxAge from the
+// MemoizationCache interface; ConfigMap-backed memoization does not support TTL/expiration,
+// so this implementation intentionally ignores it.
+func (c *configMapCache) Save(ctx context.Context, key string, nodeID string, value *wfv1.Outputs, _ string) error {
 	err := retry.OnError(kwait.Backoff{
 		Duration: time.Second,
 		Factor:   2,
