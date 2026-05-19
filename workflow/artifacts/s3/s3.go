@@ -617,9 +617,9 @@ func (s *s3client) PutFile(bucket, key, path string) error {
 
 	partSizeMiB := s.getFromEnvS3UploadPartSizeMiB()
 	if partSizeMiB > 0 {
-		checkedPartSize, err := s.getCheckedPartSize(path, partSizeMiB)
-		if err != nil {
-			return err
+		checkedPartSize, err2 := s.getCheckedPartSize(path, partSizeMiB)
+		if err2 != nil {
+			return err2
 		}
 		if checkedPartSize > 0 {
 			logging.RequireLoggerFromContext(s.ctx).WithFields(logging.Fields{"checkedPartSize": checkedPartSize}).Info(s.ctx, "Part size MiB for S3 multipart upload")
@@ -628,9 +628,9 @@ func (s *s3client) PutFile(bucket, key, path string) error {
 	} else {
 		logging.RequireLoggerFromContext(s.ctx).Info(s.ctx, "Part size not configured from env var. Letting Minio calculate it.")
 	}
-	_, err = s.minioClient.FPutObject(s.ctx, bucket, key, path, opts)
-	if err != nil {
-		return err
+	_, err3 = s.minioClient.FPutObject(s.ctx, bucket, key, path, opts)
+	if err3 != nil {
+		return err3
 	}
 	return nil
 }
