@@ -166,7 +166,12 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
                     const dependencyLabel = task.depends ? task.depends : task.dependencies.join(' && ');
                     dependencies.forEach((dep: string) => {
                         let dependancyName = `${parentNodeName}.${dep}`;
-                        if (graph.nodes.get(dependancyName).genre == 'Pod') {
+                        const dependencyNode = graph.nodes.get(dependancyName);
+                        if (!dependencyNode) {
+                            console.error(`Dependency "${dependancyName}" not found in DAG graph. Skipping edge from "${parentNodeName}" to "${nodeName}".`);
+                            return;
+                        }
+                        if (dependencyNode.genre == 'Pod') {
                             if (retryStrategy) {
                                 createEdge(dependancyName, retryNodeName);
                                 dependancyName = retryNodeName;
@@ -178,21 +183,27 @@ export function GraphViewer({workflowDefinition}: {workflowDefinition: Workflow 
                             createEdge(dependancyName, nodeName, dependencyLabel);
                         } else {
                             const depTemplate = getTemplateNameFromTask(template.dag, dep);
-                            const templateLeafNodes = templateLeafMap.get(depTemplate);
-                            if (templateLeafNodes) {
-                                templateLeafNodes.forEach((leaf: string) => {
-                                    let leafNode = `${dependancyName}.${leaf}`;
-                                    if (retryStrategy) {
-                                        createEdge(parentNodeName, retryNodeName);
-                                        leafNode = retryNodeName;
-                                    }
-                                    if (executionStrategy) {
-                                        createEdge(parentNodeName, taskGroupName);
-                                        leafNode = taskGroupName;
-                                    }
-                                    createEdge(leafNode, nodeName, dependencyLabel);
-                                });
+                            if (!depTemplate) {
+                                console.error(`Template for dependency "${dependancyName}" not found in DAG template "${template.name}".`);
+                                return;
                             }
+                            const templateLeafNodes = templateLeafMap.get(depTemplate);
+                            if (!templateLeafNodes) {
+                                console.error(`Template leaf nodes for dependency "${dependancyName}" not found.`);
+                                return;
+                            }
+                            templateLeafNodes.forEach((leaf: string) => {
+                                let leafNode = `${dependancyName}.${leaf}`;
+                                if (retryStrategy) {
+                                    createEdge(parentNodeName, retryNodeName);
+                                    leafNode = retryNodeName;
+                                }
+                                if (executionStrategy) {
+                                    createEdge(parentNodeName, taskGroupName);
+                                    leafNode = taskGroupName;
+                                }
+                                createEdge(leafNode, nodeName, dependencyLabel);
+                            });
                         }
                     });
                 } else {
