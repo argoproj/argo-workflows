@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"maps"
+	"strings"
 
 	"github.com/expr-lang/expr"
 
@@ -71,7 +72,9 @@ func (s *wfScope) addSkippedParamToScope(key string) {
 
 // isSkippedOutput reports whether the given scope key was populated as a placeholder for a
 // skipped/omitted step (as opposed to a step that genuinely produced an empty string output).
+// The key may optionally be wrapped in "{{" / "}}" as it appears in ValueFrom.Parameter.
 func (s *wfScope) isSkippedOutput(key string) bool {
+	key = strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(key, "{{"), "}}"))
 	return s.skippedOutputs[key]
 }
 
