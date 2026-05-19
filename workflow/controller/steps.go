@@ -164,7 +164,7 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 			} else {
 				woc.buildLocalScope(stepsCtx.scope, prefix, childNode)
 
-				if childNode.Phase == wfv1.NodeSkipped || childNode.Phase == wfv1.NodeOmitted {
+				if (childNode.Phase == wfv1.NodeSkipped || childNode.Phase == wfv1.NodeOmitted) && childNode.Outputs == nil {
 					_, stepTmpl, _, resolveErr := stepsCtx.tmplCtx.ResolveTemplate(ctx, &step)
 
 					if resolveErr != nil {
@@ -174,14 +174,14 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 					if resolveErr == nil && stepTmpl != nil {
 						for _, param := range stepTmpl.Outputs.Parameters {
 							key := fmt.Sprintf("%s.outputs.parameters.%s", prefix, param.Name)
-							stepsCtx.scope.addParamToScope(key, "")
+							stepsCtx.scope.addSkippedParamToScope(key)
 						}
 						for _, artifact := range stepTmpl.Outputs.Artifacts {
 							key := fmt.Sprintf("%s.outputs.artifacts.%s", prefix, artifact.Name)
 							stepsCtx.scope.addArtifactToScope(key, wfv1.Artifact{})
 						}
 						if stepTmpl.Outputs.Result != nil {
-							stepsCtx.scope.addParamToScope(fmt.Sprintf("%s.outputs.result", prefix), "")
+							stepsCtx.scope.addSkippedParamToScope(fmt.Sprintf("%s.outputs.result", prefix))
 						}
 					}
 				}

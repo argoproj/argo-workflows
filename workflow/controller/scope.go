@@ -17,14 +17,16 @@ import (
 
 // wfScope contains the current scope of variables available when executing a template
 type wfScope struct {
-	tmpl  *wfv1.Template
-	scope map[string]any
+	tmpl           *wfv1.Template
+	scope          map[string]any
+	skippedOutputs map[string]bool
 }
 
 func createScope(tmpl *wfv1.Template) *wfScope {
 	scope := &wfScope{
-		tmpl:  tmpl,
-		scope: make(map[string]any),
+		tmpl:           tmpl,
+		scope:          make(map[string]any),
+		skippedOutputs: make(map[string]bool),
 	}
 	if tmpl != nil {
 		for _, param := range scope.tmpl.Inputs.Parameters {
@@ -57,6 +59,20 @@ func (s *wfScope) addParamToScope(key, val string) {
 
 func (s *wfScope) addArtifactToScope(key string, artifact wfv1.Artifact) {
 	s.scope[key] = artifact
+}
+
+// addSkippedParamToScope registers a parameter key with an empty value to satisfy reference
+// resolution for skipped/omitted steps, and marks it so callers can distinguish it from a
+// legitimately empty output.
+func (s *wfScope) addSkippedParamToScope(key string) {
+	s.scope[key] = ""
+	s.skippedOutputs[key] = true
+}
+
+// isSkippedOutput reports whether the given scope key was populated as a placeholder for a
+// skipped/omitted step (as opposed to a step that genuinely produced an empty string output).
+func (s *wfScope) isSkippedOutput(key string) bool {
+	return s.skippedOutputs[key]
 }
 
 // resolveVar resolves a parameter or artifact
