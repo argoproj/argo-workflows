@@ -50,7 +50,14 @@ export function setCurrentNamespace(value: string) {
 }
 
 export function getCurrentNamespace() {
-    return fixLocalStorageString(localStorage.getItem(currentNamespaceKey)) ?? (getUserNamespace() || getManagedNamespace());
+    // Use `||` (not `??`) so that an empty-string `current_namespace` falls
+    // through to `getUserNamespace()`. The "all namespaces" view persists
+    // `current_namespace = ""` to localStorage; without this, a user who
+    // ever loaded that view will keep landing on `/workflows/` (empty
+    // namespace path) on subsequent fresh logins, even when the server
+    // advertises a per-user default via the
+    // `workflows.argoproj.io/default-namespace` SA annotation.
+    return fixLocalStorageString(localStorage.getItem(currentNamespaceKey)) || getUserNamespace() || getManagedNamespace();
 }
 
 // return a namespace, favoring managed namespace when set

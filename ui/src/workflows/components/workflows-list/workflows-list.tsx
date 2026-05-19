@@ -62,7 +62,15 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
     const {navigation} = useContext(Context);
 
     const isFirstRender = useRef(true);
-    const [namespace, setNamespace] = useState(nsUtils.getNamespace(match.params.namespace) || '');
+    // When no namespace is in the URL path (e.g. landing from a bare
+    // `/workflows` redirect after SSO), fall back to the user's default
+    // namespace from getCurrentNamespace() — that picks up the value
+    // seeded by setUserNamespace(userInfo.serviceAccountNamespace) in
+    // app-router. Without this fallback, an SSO user with a per-user
+    // default-namespace annotation lands on `/workflows/?limit=50`
+    // (empty namespace → list-all → 403). getNamespace() alone only
+    // honors managedNamespace, not userNamespace.
+    const [namespace, setNamespace] = useState(nsUtils.getNamespace(match.params.namespace) || nsUtils.getCurrentNamespace() || '');
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') || '');
     const [pagination, setPagination] = useState<Pagination>(() => {
         const savedPaginationLimit = storage.getItem('options', {}).paginationLimit || undefined;

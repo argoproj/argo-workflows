@@ -88,6 +88,20 @@ func TestServer_GetWFClient(t *testing.T) {
 			},
 			Secrets: []corev1.ObjectReference{{Name: "user-secret"}},
 		},
+		&corev1.ServiceAccount{
+			// SA matched by a unique group; carries default-namespace
+			// annotation so the resulting claims advertise a different ns
+			// to UI clients than the SA itself lives in.
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "tenant-sa", Namespace: "my-ns",
+				Annotations: map[string]string{
+					common.AnnotationKeyRBACRule:           "'tenant-group' in groups",
+					common.AnnotationKeyRBACRulePrecedence: "5",
+					common.AnnotationKeyDefaultNamespace:   "tenant-ns",
+				},
+			},
+			Secrets: []corev1.ObjectReference{{Name: "my-secret"}},
+		},
 		&corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-secret", Namespace: "my-ns"},
 			Data: map[string][]byte{
@@ -276,6 +290,41 @@ func TestServer_GetWFClient(t *testing.T) {
 		ctx, err := g.Context(x(logging.TestContext(t.Context()), "Bearer v2:whatever"))
 		require.NoError(t, err)
 		assert.Equal(t, "my-other-sa", GetClaims(ctx).ServiceAccountName)
+	})
+	t.Run("SSO+RBAC, default-namespace annotation overrides SA namespace", func(t *testing.T) {
+		// SA `tenant-sa` lives in `my-ns` but carries the
+		// workflows.argoproj.io/default-namespace annotation pointing at
+		// `tenant-ns`. The matched SA's actual namespace is the install ns
+		// (where SSO matching always happens), but the claims returned to
+		// the UI advertise the tenant ns instead.
+		ssoIf := &ssomocks.Interface{}
+		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&authTypes.Claims{Groups: []string{"tenant-group"}}, nil)
+		ssoIf.On("IsRBACEnabled").Return(true)
+		g, err := NewGatekeeper(Modes{SSO: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, clientForAuthorization, "my-ns", "my-ns", true, resourceCache)
+		require.NoError(t, err)
+		ctx, err := g.Context(x(logging.TestContext(t.Context()), "Bearer v2:whatever"))
+		require.NoError(t, err)
+		claims := GetClaims(ctx)
+		require.NotNil(t, claims)
+		assert.Equal(t, "tenant-sa", claims.ServiceAccountName)
+		assert.Equal(t, "tenant-ns", claims.ServiceAccountNamespace,
+			"default-namespace annotation should override the SA's own namespace")
+	})
+	t.Run("SSO+RBAC, no default-namespace annotation falls back to SA namespace", func(t *testing.T) {
+		// `my-sa` has no default-namespace annotation, so claims.SA-NS
+		// is the SA's literal metadata.namespace. This is the pre-patch
+		// behavior and must stay that way for backwards compatibility.
+		ssoIf := &ssomocks.Interface{}
+		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&authTypes.Claims{Groups: []string{"my-group"}}, nil)
+		ssoIf.On("IsRBACEnabled").Return(true)
+		g, err := NewGatekeeper(Modes{SSO: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, clientForAuthorization, "my-ns", "my-ns", true, resourceCache)
+		require.NoError(t, err)
+		ctx, err := g.Context(x(logging.TestContext(t.Context()), "Bearer v2:whatever"))
+		require.NoError(t, err)
+		claims := GetClaims(ctx)
+		require.NotNil(t, claims)
+		assert.Equal(t, "my-sa", claims.ServiceAccountName)
+		assert.Equal(t, "my-ns", claims.ServiceAccountNamespace)
 	})
 	t.Run("SSO+RBAC,denied", func(t *testing.T) {
 		ssoIf := &ssomocks.Interface{}
