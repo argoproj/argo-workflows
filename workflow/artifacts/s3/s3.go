@@ -628,7 +628,7 @@ func (s *s3client) PutFile(bucket, key, path string) error {
 	} else {
 		logging.RequireLoggerFromContext(s.ctx).Info(s.ctx, "Part size not configured from env var. Letting Minio calculate it.")
 	}
-	_, err3 = s.minioClient.FPutObject(s.ctx, bucket, key, path, opts)
+	_, err3 := s.minioClient.FPutObject(s.ctx, bucket, key, path, opts)
 	if err3 != nil {
 		return err3
 	}
