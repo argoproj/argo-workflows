@@ -127,6 +127,16 @@ const (
 	// LabelKeyCronWorkflowBackfill is a label applied to the cron workflow when the workflow is created by backfill
 	LabelKeyCronWorkflowBackfill = workflow.WorkflowFullName + "/backfill"
 
+	// LabelKeyMonitoredResource is a label applied to all non delete resources
+	// of a resource template. This is done to watch on these resources.
+	LabelKeyMonitoredResource = workflow.WorkflowFullName + "/monitored-resource"
+
+	// LabelKeyMonitoredResourceNodeID is a label applied to all non delete
+	// resources of a resource template, carrying the workflow node ID that
+	// owns the resource. The agent uses it to route informer events back to
+	// the correct task.
+	LabelKeyMonitoredResourceNodeID = workflow.WorkflowFullName + "/monitored-resource-node-id"
+
 	// ExecutorArtifactBaseDir is the base directory in the init container in which artifacts will be copied to.
 	// Each artifact will be named according to its input name (e.g: /argo/inputs/artifacts/CODE)
 	ExecutorArtifactBaseDir = "/argo/inputs/artifacts"

@@ -3754,7 +3754,7 @@ func (woc *wfOperationCtx) executeResource(ctx context.Context, nodeName string,
 	node, err := woc.wf.GetNodeByName(nodeName)
 
 	if err != nil {
-		ctx, node = woc.initializeExecutableNode(ctx, nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, opts.nodeFlag, false)
+		_, node = woc.initializeExecutableNode(ctx, nodeName, wfv1.NodeTypeResourceMonitor, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, opts.nodeFlag, false)
 	} else if !node.Pending() {
 		return node, nil
 	}
@@ -3777,14 +3777,8 @@ func (woc *wfOperationCtx) executeResource(ctx context.Context, nodeName string,
 		tmpl.Resource.Manifest = string(bytes)
 	}
 
-	mainCtr := woc.newExecContainer(common.MainContainerName, tmpl)
-	mainCtr.Command = append([]string{"argoexec", "resource", tmpl.Resource.Action}, woc.getExecutorLogOpts(ctx)...)
-	_, err = woc.createWorkflowPod(ctx, nodeName, []apiv1.Container{*mainCtr}, tmpl, &createWorkflowPodOpts{onExitPod: opts.onExitTemplate, executionDeadline: opts.executionDeadline})
-	if err != nil {
-		return woc.requeueIfTransientErr(ctx, err, node.Name)
-	}
-
-	return node, err
+	woc.taskSet[node.ID] = *tmpl
+	return node, nil
 }
 
 func (woc *wfOperationCtx) executeData(ctx context.Context, nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {

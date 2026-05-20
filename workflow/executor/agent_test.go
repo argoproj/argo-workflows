@@ -18,14 +18,15 @@ import (
 
 func TestUnsupportedTemplateTaskWorker(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
+	responseQueue := make(chan response)
+	defer close(responseQueue)
 	ae := &AgentExecutor{
 		consideredTasks: &sync.Map{},
+		responseQueue:   responseQueue,
 	}
 	taskQueue := make(chan task)
 	defer close(taskQueue)
-	responseQueue := make(chan response)
-	defer close(responseQueue)
-	go ae.taskWorker(ctx, taskQueue, responseQueue)
+	go ae.taskWorker(ctx, taskQueue)
 
 	taskQueue <- task{
 		NodeID: "a",
@@ -76,7 +77,7 @@ func TestAgentPluginExecuteTaskSet(t *testing.T) {
 				consideredTasks: &sync.Map{},
 				plugins:         []executorplugins.TemplateExecutor{tc.plugin},
 			}
-			_, requeue, err := ae.processTask(ctx, *tc.template)
+			_, requeue, err := ae.processTask(ctx, "", *tc.template)
 			if err != nil {
 				t.Errorf("expect nil, but got %v", err)
 			}

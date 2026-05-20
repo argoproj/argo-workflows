@@ -153,12 +153,33 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		return nil, fmt.Errorf("failed to get token volumes: %w", err)
 	}
 
+	// The agent container runs with ReadOnlyRootFilesystem=true (see
+	// common.MinimalCtrSC), so /tmp on the root fs is read-only. Resource
+	// templates need scratch space for kubectl manifest files and downloaded
+	// manifestFrom artifacts. Shadow /tmp with a tmpfs emptyDir so os.WriteFile
+	// / os.CreateTemp / os.MkdirTemp continue to work without code changes.
+	agentTmpSize := resource.MustParse("64Mi")
+	volumeAgentTmp := apiv1.Volume{
+		Name: "tmp",
+		VolumeSource: apiv1.VolumeSource{
+			EmptyDir: &apiv1.EmptyDirVolumeSource{
+				Medium:    apiv1.StorageMediumMemory,
+				SizeLimit: &agentTmpSize,
+			},
+		},
+	}
+	volumeMountAgentTmp := apiv1.VolumeMount{
+		Name:      volumeAgentTmp.Name,
+		MountPath: "/tmp",
+	}
+
 	podVolumes := slices.Concat(
 		pluginVolumes,
-		[]apiv1.Volume{volumeVarArgo, *tokenVolume},
+		[]apiv1.Volume{volumeVarArgo, volumeAgentTmp, *tokenVolume},
 	)
 	podVolumeMounts := []apiv1.VolumeMount{
 		volumeMountVarArgo,
+		volumeMountAgentTmp,
 		*tokenVolumeMount,
 	}
 	if certVolume != nil && certVolumeMount != nil {

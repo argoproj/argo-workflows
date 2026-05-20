@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/itchyny/gojq"
@@ -390,8 +391,20 @@ func jqFilter(ctx context.Context, input []byte, filter string) (string, error) 
 	return strings.TrimSpace(buf.String()), nil
 }
 
-func runKubectl(ctx context.Context, args ...string) ([]byte, error) {
+// kubectlMu serializes runKubectl calls. The kubectl library is not safe
+// for concurrent in-process use: it mutates os.Args, installs a process-wide
+// BehaviorOnFatal handler, and shares pflag/factory state across invocations.
+// Two agent task workers racing into runKubectl can collapse onto one side's
+// -f file, producing two cluster objects from the same manifest.
+var kubectlMu sync.Mutex
+
+// runKubectl is a package-level variable so tests can swap in a stub that
+// reads the manifest off disk and mutates a fake dynamic client instead of
+// invoking kubectl as a library. Production code must not reassign it.
+var runKubectl = func(ctx context.Context, args ...string) ([]byte, error) {
 	logging.RequireLoggerFromContext(ctx).Info(ctx, strings.Join(args, " "))
+	kubectlMu.Lock()
+	defer kubectlMu.Unlock()
 	osArgs := append([]string{}, os.Args...)
 	os.Args = args
 	defer func() {

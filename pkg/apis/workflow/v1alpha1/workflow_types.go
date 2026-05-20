@@ -100,17 +100,18 @@ type NodeType string
 
 // Node types
 const (
-	NodeTypePod       NodeType = "Pod"
-	NodeTypeContainer NodeType = "Container"
-	NodeTypeSteps     NodeType = "Steps"
-	NodeTypeStepGroup NodeType = "StepGroup"
-	NodeTypeDAG       NodeType = "DAG"
-	NodeTypeTaskGroup NodeType = "TaskGroup"
-	NodeTypeRetry     NodeType = "Retry"
-	NodeTypeSkipped   NodeType = "Skipped"
-	NodeTypeSuspend   NodeType = "Suspend"
-	NodeTypeHTTP      NodeType = "HTTP"
-	NodeTypePlugin    NodeType = "Plugin"
+	NodeTypePod             NodeType = "Pod"
+	NodeTypeContainer       NodeType = "Container"
+	NodeTypeSteps           NodeType = "Steps"
+	NodeTypeStepGroup       NodeType = "StepGroup"
+	NodeTypeDAG             NodeType = "DAG"
+	NodeTypeTaskGroup       NodeType = "TaskGroup"
+	NodeTypeRetry           NodeType = "Retry"
+	NodeTypeSkipped         NodeType = "Skipped"
+	NodeTypeSuspend         NodeType = "Suspend"
+	NodeTypeHTTP            NodeType = "HTTP"
+	NodeTypePlugin          NodeType = "Plugin"
+	NodeTypeResourceMonitor NodeType = "ResourceMonitor"
 )
 
 // ArtifactGCStrategy is the strategy when to delete artifacts for GC.

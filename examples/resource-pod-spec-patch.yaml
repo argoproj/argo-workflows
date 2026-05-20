@@ -1,0 +1,37 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-pod-spec-patch-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    podSpecPatch: |
+      containers:
+      - name: main
+        resources:
+          requests:
+            cpu: 200m
+            memory: 128Mi
+          limits:
+            cpu: "1"
+            memory: 512Mi
+    resource:
+      action: create
+      setOwnerReference: true
+      successCondition: status.succeeded > 0
+      failureCondition: status.failed > 0
+      manifest: |
+        apiVersion: batch/v1
+        kind: Job
+        metadata:
+          generateName: pi-
+        spec:
+          template:
+            spec:
+              containers:
+              - name: pi
+                image: perl
+                command: ["perl", "-Mbignum=bpi", "-wle", "print bpi(20)"]
+              restartPolicy: Never
+          backoffLimit: 4
