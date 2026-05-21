@@ -1,1 +1,11 @@
 *.proto    @joibel @terrytangyuan
+
+# Documentation
+/docs/**              @argoproj/argo-workflows-approvers-docs
+/mkdocs.yml           @argoproj/argo-workflows-approvers-docs
+/.features/**/*.md    @argoproj/argo-workflows-approvers-docs
+/community/**         @argoproj/argo-workflows-approvers-docs
+/examples/README.md   @argoproj/argo-workflows-approvers-docs
+/README.md            @argoproj/argo-workflows-approvers-docs
+/CONTRIBUTING.md      @argoproj/argo-workflows-approvers-docs
+/USERS.md             @argoproj/argo-workflows-approvers-docs
