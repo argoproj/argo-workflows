@@ -5664,7 +5664,7 @@ func TestValidReferenceMode(t *testing.T) {
 	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
 }
 
-func TestReferenceModeBlocksPodSpecPatch(t *testing.T) {
+func TestReferenceModeBlocksDisallowedFields(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow("@testdata/workflow-template-ref.yaml")
 	wfTmpl := wfv1.MustUnmarshalWorkflowTemplate("@testdata/workflow-template-submittable.yaml")
 
@@ -5681,7 +5681,8 @@ func TestReferenceModeBlocksPodSpecPatch(t *testing.T) {
 		woc := newWorkflowOperationCtx(ctx, wfWithPatch, controller)
 		woc.operate(ctx)
 		assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
-		assert.Contains(t, woc.wf.Status.Message, "podSpecPatch is not permitted")
+		assert.Contains(t, woc.wf.Status.Message, "PodSpecPatch")
+		assert.Contains(t, woc.wf.Status.Message, "not permitted")
 	})
 
 	t.Run("Secure rejects podSpecPatch", func(t *testing.T) {
@@ -5697,7 +5698,89 @@ func TestReferenceModeBlocksPodSpecPatch(t *testing.T) {
 		woc := newWorkflowOperationCtx(ctx, wfWithPatch, controller)
 		woc.operate(ctx)
 		assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
-		assert.Contains(t, woc.wf.Status.Message, "podSpecPatch is not permitted")
+		assert.Contains(t, woc.wf.Status.Message, "PodSpecPatch")
+		assert.Contains(t, woc.wf.Status.Message, "not permitted")
+	})
+
+	t.Run("Strict rejects ServiceAccountName", func(t *testing.T) {
+		wfCopy := wf.DeepCopy()
+		wfCopy.Spec.ServiceAccountName = "admin"
+		cancel, controller := newController(logging.TestContext(t.Context()), wfCopy, wfTmpl)
+		defer cancel()
+
+		ctx := logging.TestContext(t.Context())
+		controller.Config.WorkflowRestrictions = &config.WorkflowRestrictions{
+			TemplateReferencing: config.TemplateReferencingStrict,
+		}
+		woc := newWorkflowOperationCtx(ctx, wfCopy, controller)
+		woc.operate(ctx)
+		assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+		assert.Contains(t, woc.wf.Status.Message, "ServiceAccountName")
+	})
+
+	t.Run("Strict rejects SecurityContext", func(t *testing.T) {
+		wfCopy := wf.DeepCopy()
+		wfCopy.Spec.SecurityContext = &apiv1.PodSecurityContext{}
+		cancel, controller := newController(logging.TestContext(t.Context()), wfCopy, wfTmpl)
+		defer cancel()
+
+		ctx := logging.TestContext(t.Context())
+		controller.Config.WorkflowRestrictions = &config.WorkflowRestrictions{
+			TemplateReferencing: config.TemplateReferencingStrict,
+		}
+		woc := newWorkflowOperationCtx(ctx, wfCopy, controller)
+		woc.operate(ctx)
+		assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+		assert.Contains(t, woc.wf.Status.Message, "SecurityContext")
+	})
+
+	t.Run("Strict rejects Templates", func(t *testing.T) {
+		wfCopy := wf.DeepCopy()
+		wfCopy.Spec.Templates = []wfv1.Template{{Name: "injected"}}
+		cancel, controller := newController(logging.TestContext(t.Context()), wfCopy, wfTmpl)
+		defer cancel()
+
+		ctx := logging.TestContext(t.Context())
+		controller.Config.WorkflowRestrictions = &config.WorkflowRestrictions{
+			TemplateReferencing: config.TemplateReferencingStrict,
+		}
+		woc := newWorkflowOperationCtx(ctx, wfCopy, controller)
+		woc.operate(ctx)
+		assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+		assert.Contains(t, woc.wf.Status.Message, "Templates")
+	})
+
+	t.Run("Strict rejects Volumes", func(t *testing.T) {
+		wfCopy := wf.DeepCopy()
+		wfCopy.Spec.Volumes = []apiv1.Volume{{Name: "secret-vol"}}
+		cancel, controller := newController(logging.TestContext(t.Context()), wfCopy, wfTmpl)
+		defer cancel()
+
+		ctx := logging.TestContext(t.Context())
+		controller.Config.WorkflowRestrictions = &config.WorkflowRestrictions{
+			TemplateReferencing: config.TemplateReferencingStrict,
+		}
+		woc := newWorkflowOperationCtx(ctx, wfCopy, controller)
+		woc.operate(ctx)
+		assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+		assert.Contains(t, woc.wf.Status.Message, "Volumes")
+	})
+
+	t.Run("Strict rejects HostNetwork", func(t *testing.T) {
+		wfCopy := wf.DeepCopy()
+		hostNet := true
+		wfCopy.Spec.HostNetwork = &hostNet
+		cancel, controller := newController(logging.TestContext(t.Context()), wfCopy, wfTmpl)
+		defer cancel()
+
+		ctx := logging.TestContext(t.Context())
+		controller.Config.WorkflowRestrictions = &config.WorkflowRestrictions{
+			TemplateReferencing: config.TemplateReferencingStrict,
+		}
+		woc := newWorkflowOperationCtx(ctx, wfCopy, controller)
+		woc.operate(ctx)
+		assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+		assert.Contains(t, woc.wf.Status.Message, "HostNetwork")
 	})
 
 	t.Run("No restrictions allows podSpecPatch", func(t *testing.T) {
@@ -5713,7 +5796,25 @@ func TestReferenceModeBlocksPodSpecPatch(t *testing.T) {
 		assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	})
 
-	t.Run("Without podSpecPatch still works in Strict mode", func(t *testing.T) {
+	t.Run("Allowed fields pass in Strict mode", func(t *testing.T) {
+		wfCopy := wf.DeepCopy()
+		// Set allowed fields only - entrypoint must match one defined in the template
+		wfCopy.Spec.Entrypoint = "whalesay-template"
+		wfCopy.Spec.Shutdown = wfv1.ShutdownStrategyTerminate
+		cancel, controller := newController(logging.TestContext(t.Context()), wfCopy, wfTmpl)
+		defer cancel()
+
+		ctx := logging.TestContext(t.Context())
+		controller.Config.WorkflowRestrictions = &config.WorkflowRestrictions{
+			TemplateReferencing: config.TemplateReferencingStrict,
+		}
+		woc := newWorkflowOperationCtx(ctx, wfCopy, controller)
+		woc.operate(ctx)
+		// Shutdown=Terminate means it won't reach Running, but it shouldn't be Error
+		assert.NotEqual(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+	})
+
+	t.Run("Without disallowed fields still works in Strict mode", func(t *testing.T) {
 		cancel, controller := newController(logging.TestContext(t.Context()), wf, wfTmpl)
 		defer cancel()
 
@@ -8279,6 +8380,75 @@ func TestRetryOnNodeAntiAffinity(t *testing.T) {
 	assert.Equal(t, sourceNodeSelectorRequirement, targetNodeSelectorRequirement)
 }
 
+var nodeAntiAffinityStepsWorkflow = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: retry-fail
+spec:
+  entrypoint: retry-fail
+  templates:
+    - name: retry-fail
+      steps:
+      - - name: fail
+          template: fail
+    - name: fail
+      retryStrategy:
+        limit: "1"
+        affinity:
+          nodeAntiAffinity: {}
+      container:
+        image: alpine:latest
+        command: [ sh, -c ]
+        args: [ "exit 1" ]
+`
+
+func TestRetryOnNodeAntiAffinitySteps(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(nodeAntiAffinityStepsWorkflow)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
+	defer cancel()
+
+	ctx := logging.TestContext(t.Context())
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	pods, err := listPods(ctx, woc)
+	require.NoError(t, err)
+	assert.Len(t, pods.Items, 1)
+
+	pod := pods.Items[0]
+	pod.Spec.NodeName = "node0"
+	_, err = controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace()).Update(ctx, &pod, metav1.UpdateOptions{})
+	require.NoError(t, err)
+	makePodsPhase(ctx, woc, apiv1.PodFailed)
+	woc.operate(ctx)
+
+	node := woc.wf.Status.Nodes.FindByDisplayName("fail(0)")
+	require.NotNil(t, node)
+	assert.Equal(t, wfv1.NodeFailed, node.Phase)
+	assert.Equal(t, "node0", node.HostNodeName)
+
+	pods, err = listPods(ctx, woc)
+	require.NoError(t, err)
+	assert.Len(t, pods.Items, 2)
+
+	var podRetry1 apiv1.Pod
+	for _, p := range pods.Items {
+		if p.Name != pod.GetName() {
+			podRetry1 = p
+		}
+	}
+
+	hostSelector := "kubernetes.io/hostname"
+	targetNodeSelectorRequirement := podRetry1.Spec.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0].MatchExpressions[0]
+	sourceNodeSelectorRequirement := apiv1.NodeSelectorRequirement{
+		Key:      hostSelector,
+		Operator: apiv1.NodeSelectorOpNotIn,
+		Values:   []string{node.HostNodeName},
+	}
+	assert.Equal(t, sourceNodeSelectorRequirement, targetNodeSelectorRequirement)
+}
+
 var noPodsWhenShutdown = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -8818,6 +8988,139 @@ func TestRootRetryStrategyCompletes(t *testing.T) {
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
+const rootRetryStrategyWithInlineTemplateCompletes = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: steps-inline-2bq8s
+spec:
+  entrypoint: main
+  retryStrategy:
+    limit: 1
+    retryPolicy: OnTransientError
+  templates:
+  - name: main
+    steps:
+    - - name: hello
+        inline:
+          script:
+            command: [python]
+            image: python:alpine
+            source: |
+              print("hello")
+status:
+  nodes:
+    steps-inline-2bq8s:
+      children:
+      - steps-inline-2bq8s-319341924
+      displayName: steps-inline-2bq8s
+      id: steps-inline-2bq8s
+      name: steps-inline-2bq8s
+      phase: Running
+      startedAt: "2026-02-25T04:45:34Z"
+      templateName: main
+      templateScope: local/steps-inline-2bq8s
+      type: Retry
+    steps-inline-2bq8s-319341924:
+      children:
+      - steps-inline-2bq8s-552579726
+      displayName: steps-inline-2bq8s(0)
+      id: steps-inline-2bq8s-319341924
+      name: steps-inline-2bq8s(0)
+      nodeFlag:
+        retried: true
+      phase: Running
+      startedAt: "2026-02-25T04:45:34Z"
+      templateName: main
+      templateScope: local/steps-inline-2bq8s
+      type: Steps
+    steps-inline-2bq8s-552579726:
+      boundaryID: steps-inline-2bq8s-319341924
+      children:
+      - steps-inline-2bq8s-3183619224
+      displayName: '[0]'
+      id: steps-inline-2bq8s-552579726
+      name: steps-inline-2bq8s(0)[0]
+      phase: Running
+      startedAt: "2026-02-25T04:45:34Z"
+      templateScope: local/steps-inline-2bq8s
+      type: StepGroup
+    steps-inline-2bq8s-1818864107:
+      boundaryID: steps-inline-2bq8s-319341924
+      displayName: hello(0)
+      id: steps-inline-2bq8s-1818864107
+      name: steps-inline-2bq8s(0)[0].hello(0)
+      nodeFlag:
+        retried: true
+      phase: Pending
+      startedAt: "2026-02-25T04:45:34Z"
+      taskResultSynced: true
+      templateScope: local/steps-inline-2bq8s
+      type: Pod
+    steps-inline-2bq8s-3183619224:
+      boundaryID: steps-inline-2bq8s-319341924
+      children:
+      - steps-inline-2bq8s-1818864107
+      displayName: hello
+      id: steps-inline-2bq8s-3183619224
+      name: steps-inline-2bq8s(0)[0].hello
+      phase: Running
+      startedAt: "2026-02-25T04:45:34Z"
+      templateScope: local/steps-inline-2bq8s
+      type: Retry
+  phase: Running
+  startedAt: "2026-02-25T04:45:34Z"
+`
+
+func TestRootRetryStrategyWithInlineTemplateRetries(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(rootRetryStrategyWithInlineTemplateCompletes)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
+	defer cancel()
+
+	ctx := logging.TestContext(t.Context())
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.NodePending, woc.wf.Status.Nodes.FindByDisplayName("hello(0)").Phase)
+}
+
+var inlineTemplateReferenceOuterTemplateWorkflow = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: inline-composite-retry-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+      - - name: step1
+          inline:
+            steps:
+            - - name: fail
+                template: fail
+    - name: fail
+      container:
+        image: alpine:latest
+        command: [sh, -c]
+        args: ["exit 1"]
+`
+
+func TestInlineTemplateReferenceOuterTemplateWorkflow(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(inlineTemplateReferenceOuterTemplateWorkflow)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
+	defer cancel()
+
+	ctx := logging.TestContext(t.Context())
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Nodes.FindByDisplayName("step1").Phase)
+	assert.Equal(t, wfv1.NodePending, woc.wf.Status.Nodes.FindByDisplayName("fail").Phase)
+}
+
 const testGlobalParamSubstitute = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -9057,8 +9360,8 @@ func TestMutexWfPendingWithNoPod(t *testing.T) {
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 	ctx := logging.TestContext(t.Context())
-	controller.syncManager = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
-	}, workflowExistenceFunc)
+	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
+	}, workflowExistenceFunc, false)
 
 	// preempt lock
 	_, _, _, _, err := controller.syncManager.TryAcquire(ctx, wf, "test", &wfv1.Synchronization{Mutexes: []*wfv1.Mutex{{Name: "welcome"}}})

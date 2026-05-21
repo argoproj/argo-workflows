@@ -162,3 +162,7 @@ Participation in Argo Workflows is governed by the [CNCF Code of Conduct](https:
 ## Security
 
 See [SECURITY.md](SECURITY.md).
+
+## Generative AI
+
+Contributions using generative AI tools must follow the [Argo project Generative AI policy](https://github.com/argoproj/argoproj/blob/main/community/genai.md).

@@ -37,6 +37,7 @@ BlackRock
 Breitgand
 CRD
 CRDs
+ChatGPT
 CloudSQL
 ClusterRoleBinding
 ClusterRoles
@@ -232,6 +233,8 @@ rc2
 repo
 retryStrategy
 roadmap
+rollout
+rollouts
 runtime
 runtimes
 s3

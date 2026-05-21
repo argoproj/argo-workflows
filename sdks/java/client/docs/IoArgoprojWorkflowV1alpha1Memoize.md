@@ -2,7 +2,7 @@
 
 # IoArgoprojWorkflowV1alpha1Memoize
 
-Memoization enables caching for the Outputs of the template
+Memoize enables caching for the Outputs of the template.
 
 ## Properties
 

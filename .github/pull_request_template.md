@@ -40,3 +40,8 @@ Fixes #TODO
 
 <!-- TODO: Say how you have updated the documentation or explain why this isn't needed here -->
 <!-- Required for features: Explain how the user will discover this feature through documentation and examples -->
+
+### AI
+
+<!-- TODO: Declare any use of generative AI tools (for example ChatGPT) in preparing this PR, including code, tests, docs, or commit messages. Say "None" if no AI was used. -->
+<!-- See the Argo project's Generative AI policy: https://github.com/argoproj/argoproj/blob/main/community/genai.md -->

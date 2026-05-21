@@ -8,20 +8,36 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	authorizationv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes/fake"
 	ktesting "k8s.io/client-go/testing"
 
 	syncpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/sync"
 	"github.com/argoproj/argo-workflows/v4/server/auth"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
-func withKubeClient(kubeClient *fake.Clientset) context.Context {
-	return context.WithValue(context.Background(), auth.KubeKey, kubeClient)
+func withAllowedKubeClient(t *testing.T, kubeClient *fake.Clientset) context.Context {
+	t.Helper()
+	kubeClient.PrependReactor("create", "selfsubjectaccessreviews", func(action ktesting.Action) (bool, runtime.Object, error) {
+		return true, &authorizationv1.SelfSubjectAccessReview{
+			Status: authorizationv1.SubjectAccessReviewStatus{Allowed: true},
+		}, nil
+	})
+	return context.WithValue(logging.TestContext(t.Context()), auth.KubeKey, kubeClient)
+}
+
+func withDeniedKubeClient(t *testing.T, kubeClient *fake.Clientset) context.Context {
+	t.Helper()
+	kubeClient.PrependReactor("create", "selfsubjectaccessreviews", func(action ktesting.Action) (bool, runtime.Object, error) {
+		return true, &authorizationv1.SelfSubjectAccessReview{
+			Status: authorizationv1.SubjectAccessReviewStatus{Allowed: false},
+		}, nil
+	})
+	return context.WithValue(logging.TestContext(t.Context()), auth.KubeKey, kubeClient)
 }
 
 func Test_syncServer_CreateSyncLimit(t *testing.T) {
@@ -45,18 +61,34 @@ func Test_syncServer_CreateSyncLimit(t *testing.T) {
 		require.Contains(t, statusErr.Message(), "limit must be greater than zero")
 	})
 
+	t.Run("Permission denied", func(t *testing.T) {
+		kubeClient := fake.NewClientset()
+		ctx := withDeniedKubeClient(t, kubeClient)
+		server := NewSyncServer(ctx, kubeClient, "", nil)
+
+		req := &syncpkg.CreateSyncLimitRequest{
+			CmName:    "test-cm",
+			Namespace: "test-ns",
+			Key:       "test-key",
+			Limit:     100,
+		}
+
+		_, err := server.CreateSyncLimit(ctx, req)
+
+		require.Error(t, err)
+		statusErr, ok := status.FromError(err)
+		require.True(t, ok)
+		require.Equal(t, codes.PermissionDenied, statusErr.Code())
+	})
+
 	t.Run("Error creating ConfigMap", func(t *testing.T) {
 		kubeClient := fake.NewClientset()
 
 		kubeClient.PrependReactor("create", "configmaps", func(action ktesting.Action) (bool, runtime.Object, error) {
-			return true, nil, apierrors.NewForbidden(
-				schema.GroupResource{Group: "", Resource: "configmaps"},
-				"test-cm",
-				errors.New("namespace not found"),
-			)
+			return true, nil, errors.New("create error")
 		})
 
-		ctx := context.WithValue(context.Background(), auth.KubeKey, kubeClient)
+		ctx := withAllowedKubeClient(t, kubeClient)
 		server := NewSyncServer(ctx, kubeClient, "", nil)
 
 		req := &syncpkg.CreateSyncLimitRequest{
@@ -71,13 +103,13 @@ func Test_syncServer_CreateSyncLimit(t *testing.T) {
 		require.Error(t, err)
 		statusErr, ok := status.FromError(err)
 		require.True(t, ok)
-		require.Equal(t, codes.PermissionDenied, statusErr.Code())
-		require.Contains(t, statusErr.Message(), "namespace not found")
+		require.Equal(t, codes.Internal, statusErr.Code())
+		require.Contains(t, statusErr.Message(), "create error")
 	})
 
 	t.Run("Create new ConfigMap", func(t *testing.T) {
 		kubeClient := fake.NewClientset()
-		ctx := withKubeClient(kubeClient)
+		ctx := withAllowedKubeClient(t, kubeClient)
 		server := NewSyncServer(ctx, kubeClient, "", nil)
 
 		req := &syncpkg.CreateSyncLimitRequest{
@@ -107,7 +139,7 @@ func Test_syncServer_CreateSyncLimit(t *testing.T) {
 			},
 		}
 		kubeClient := fake.NewClientset(existingCM)
-		ctx := withKubeClient(kubeClient)
+		ctx := withAllowedKubeClient(t, kubeClient)
 		server := NewSyncServer(ctx, kubeClient, "", nil)
 
 		req := &syncpkg.CreateSyncLimitRequest{
@@ -135,7 +167,7 @@ func Test_syncServer_CreateSyncLimit(t *testing.T) {
 			Data: nil,
 		}
 		kubeClient := fake.NewClientset(existingCM)
-		ctx := withKubeClient(kubeClient)
+		ctx := withAllowedKubeClient(t, kubeClient)
 		server := NewSyncServer(ctx, kubeClient, "", nil)
 
 		req := &syncpkg.CreateSyncLimitRequest{
@@ -164,7 +196,7 @@ func Test_syncServer_CreateSyncLimit(t *testing.T) {
 			},
 		}
 		kubeClient := fake.NewClientset(existingCM)
-		ctx := withKubeClient(kubeClient)
+		ctx := withAllowedKubeClient(t, kubeClient)
 		server := NewSyncServer(ctx, kubeClient, "", nil)
 
 		req := &syncpkg.CreateSyncLimitRequest{
@@ -185,9 +217,28 @@ func Test_syncServer_CreateSyncLimit(t *testing.T) {
 }
 
 func Test_syncServer_GetSyncLimit(t *testing.T) {
+	t.Run("Permission denied", func(t *testing.T) {
+		kubeClient := fake.NewClientset()
+		ctx := withDeniedKubeClient(t, kubeClient)
+		server := NewSyncServer(ctx, kubeClient, "", nil)
+
+		req := &syncpkg.GetSyncLimitRequest{
+			CmName:    "test-cm",
+			Namespace: "test-ns",
+			Key:       "test-key",
+		}
+
+		_, err := server.GetSyncLimit(ctx, req)
+
+		require.Error(t, err)
+		statusErr, ok := status.FromError(err)
+		require.True(t, ok)
+		require.Equal(t, codes.PermissionDenied, statusErr.Code())
+	})
+
 	t.Run("ConfigMap doesn't exist", func(t *testing.T) {
 		kubeClient := fake.NewClientset()
-		ctx := withKubeClient(kubeClient)
+		ctx := withAllowedKubeClient(t, kubeClient)
 		server := NewSyncServer(ctx, kubeClient, "", nil)
 
 		req := &syncpkg.GetSyncLimitRequest{
@@ -216,7 +267,7 @@ func Test_syncServer_GetSyncLimit(t *testing.T) {
 			},
 		}
 		kubeClient := fake.NewClientset(existingCM)
-		ctx := withKubeClient(kubeClient)
+		ctx := withAllowedKubeClient(t, kubeClient)
 		server := NewSyncServer(ctx, kubeClient, "", nil)
 
 		req := &syncpkg.GetSyncLimitRequest{
@@ -245,7 +296,7 @@ func Test_syncServer_GetSyncLimit(t *testing.T) {
 			},
 		}
 		kubeClient := fake.NewClientset(existingCM)
-		ctx := withKubeClient(kubeClient)
+		ctx := withAllowedKubeClient(t, kubeClient)
 		server := NewSyncServer(ctx, kubeClient, "", nil)
 
 		req := &syncpkg.GetSyncLimitRequest{
@@ -274,7 +325,7 @@ func Test_syncServer_GetSyncLimit(t *testing.T) {
 			},
 		}
 		kubeClient := fake.NewClientset(existingCM)
-		ctx := withKubeClient(kubeClient)
+		ctx := withAllowedKubeClient(t, kubeClient)
 		server := NewSyncServer(ctx, kubeClient, "", nil)
 
 		req := &syncpkg.GetSyncLimitRequest{
@@ -314,9 +365,29 @@ func Test_syncServer_UpdateSyncLimit(t *testing.T) {
 		require.Contains(t, statusErr.Message(), "limit must be greater than zero")
 	})
 
+	t.Run("Permission denied", func(t *testing.T) {
+		kubeClient := fake.NewClientset()
+		ctx := withDeniedKubeClient(t, kubeClient)
+		server := NewSyncServer(ctx, kubeClient, "", nil)
+
+		req := &syncpkg.UpdateSyncLimitRequest{
+			CmName:    "test-cm",
+			Namespace: "test-ns",
+			Key:       "test-key",
+			Limit:     100,
+		}
+
+		_, err := server.UpdateSyncLimit(ctx, req)
+
+		require.Error(t, err)
+		statusErr, ok := status.FromError(err)
+		require.True(t, ok)
+		require.Equal(t, codes.PermissionDenied, statusErr.Code())
+	})
+
 	t.Run("ConfigMap doesn't exist", func(t *testing.T) {
 		kubeClient := fake.NewClientset()
-		ctx := withKubeClient(kubeClient)
+		ctx := withAllowedKubeClient(t, kubeClient)
 		server := NewSyncServer(ctx, kubeClient, "", nil)
 
 		req := &syncpkg.UpdateSyncLimitRequest{
@@ -344,7 +415,7 @@ func Test_syncServer_UpdateSyncLimit(t *testing.T) {
 			Data: nil,
 		}
 		kubeClient := fake.NewClientset(existingCM)
-		ctx := withKubeClient(kubeClient)
+		ctx := withAllowedKubeClient(t, kubeClient)
 		server := NewSyncServer(ctx, kubeClient, "", nil)
 
 		req := &syncpkg.UpdateSyncLimitRequest{
@@ -374,7 +445,7 @@ func Test_syncServer_UpdateSyncLimit(t *testing.T) {
 			},
 		}
 		kubeClient := fake.NewClientset(existingCM)
-		ctx := withKubeClient(kubeClient)
+		ctx := withAllowedKubeClient(t, kubeClient)
 		server := NewSyncServer(ctx, kubeClient, "", nil)
 
 		req := &syncpkg.UpdateSyncLimitRequest{
@@ -409,7 +480,7 @@ func Test_syncServer_UpdateSyncLimit(t *testing.T) {
 			return true, nil, errors.New("update error")
 		})
 
-		ctx := withKubeClient(kubeClient)
+		ctx := withAllowedKubeClient(t, kubeClient)
 		server := NewSyncServer(ctx, kubeClient, "", nil)
 
 		req := &syncpkg.UpdateSyncLimitRequest{
@@ -439,7 +510,7 @@ func Test_syncServer_UpdateSyncLimit(t *testing.T) {
 			},
 		}
 		kubeClient := fake.NewClientset(existingCM)
-		ctx := withKubeClient(kubeClient)
+		ctx := withAllowedKubeClient(t, kubeClient)
 		server := NewSyncServer(ctx, kubeClient, "", nil)
 
 		req := &syncpkg.UpdateSyncLimitRequest{
@@ -460,9 +531,28 @@ func Test_syncServer_UpdateSyncLimit(t *testing.T) {
 }
 
 func Test_syncServer_DeleteSyncLimit(t *testing.T) {
+	t.Run("Permission denied", func(t *testing.T) {
+		kubeClient := fake.NewClientset()
+		ctx := withDeniedKubeClient(t, kubeClient)
+		server := NewSyncServer(ctx, kubeClient, "", nil)
+
+		req := &syncpkg.DeleteSyncLimitRequest{
+			CmName:    "test-cm",
+			Namespace: "test-ns",
+			Key:       "test-key",
+		}
+
+		_, err := server.DeleteSyncLimit(ctx, req)
+
+		require.Error(t, err)
+		statusErr, ok := status.FromError(err)
+		require.True(t, ok)
+		require.Equal(t, codes.PermissionDenied, statusErr.Code())
+	})
+
 	t.Run("ConfigMap doesn't exist", func(t *testing.T) {
 		kubeClient := fake.NewClientset()
-		ctx := withKubeClient(kubeClient)
+		ctx := withAllowedKubeClient(t, kubeClient)
 		server := NewSyncServer(ctx, kubeClient, "", nil)
 
 		req := &syncpkg.DeleteSyncLimitRequest{
@@ -489,7 +579,7 @@ func Test_syncServer_DeleteSyncLimit(t *testing.T) {
 			Data: nil,
 		}
 		kubeClient := fake.NewClientset(existingCM)
-		ctx := withKubeClient(kubeClient)
+		ctx := withAllowedKubeClient(t, kubeClient)
 		server := NewSyncServer(ctx, kubeClient, "", nil)
 
 		req := &syncpkg.DeleteSyncLimitRequest{
@@ -512,7 +602,7 @@ func Test_syncServer_DeleteSyncLimit(t *testing.T) {
 			Data: map[string]string{},
 		}
 		kubeClient := fake.NewClientset(existingCM)
-		ctx := withKubeClient(kubeClient)
+		ctx := withAllowedKubeClient(t, kubeClient)
 		server := NewSyncServer(ctx, kubeClient, "", nil)
 
 		req := &syncpkg.DeleteSyncLimitRequest{
@@ -542,7 +632,7 @@ func Test_syncServer_DeleteSyncLimit(t *testing.T) {
 			return true, nil, errors.New("update error")
 		})
 
-		ctx := withKubeClient(kubeClient)
+		ctx := withAllowedKubeClient(t, kubeClient)
 		server := NewSyncServer(ctx, kubeClient, "", nil)
 
 		req := &syncpkg.DeleteSyncLimitRequest{
@@ -572,7 +662,7 @@ func Test_syncServer_DeleteSyncLimit(t *testing.T) {
 			},
 		}
 		kubeClient := fake.NewClientset(existingCM)
-		ctx := withKubeClient(kubeClient)
+		ctx := withAllowedKubeClient(t, kubeClient)
 		server := NewSyncServer(ctx, kubeClient, "", nil)
 
 		req := &syncpkg.DeleteSyncLimitRequest{

@@ -9,6 +9,7 @@ import (
 	sema "golang.org/x/sync/semaphore"
 
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/sqldb"
 )
 
 type prioritySemaphore struct {
@@ -163,7 +164,7 @@ func (s *prioritySemaphore) removeFromQueue(ctx context.Context, holderKey strin
 	return nil
 }
 
-func (s *prioritySemaphore) acquire(_ context.Context, holderKey string, _ *transaction) bool {
+func (s *prioritySemaphore) acquire(_ context.Context, holderKey string, _ *sqldb.SessionProxy) bool {
 	if s.semaphore.TryAcquire(1) {
 		s.lockHolder[holderKey] = true
 		return true
@@ -189,7 +190,7 @@ func isSameWorkflowNodeKeys(firstKey, secondKey string) bool {
 //	false, true if we already have the lock
 //	false, false if the lock is not acquirable
 //	string return is a user facing message when not acquirable
-func (s *prioritySemaphore) checkAcquire(ctx context.Context, holderKey string, _ *transaction) (bool, bool, string) {
+func (s *prioritySemaphore) checkAcquire(ctx context.Context, holderKey string, _ *sqldb.SessionProxy) (bool, bool, string) {
 	logger := s.logger(ctx)
 	limit := s.getLimit(ctx)
 	if holderKey == "" {
@@ -230,7 +231,7 @@ func (s *prioritySemaphore) checkAcquire(ctx context.Context, holderKey string, 
 	return false, false, waitingMsg
 }
 
-func (s *prioritySemaphore) tryAcquire(ctx context.Context, holderKey string, tx *transaction) (bool, string) {
+func (s *prioritySemaphore) tryAcquire(ctx context.Context, holderKey string, tx *sqldb.SessionProxy) (bool, string) {
 	logger := s.logger(ctx)
 	acq, already, msg := s.checkAcquire(ctx, holderKey, tx)
 	if already {

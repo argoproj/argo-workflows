@@ -68,7 +68,7 @@ func (a *ArtifactServer) GetInputArtifact(w http.ResponseWriter, r *http.Request
 	a.getArtifact(w, r, true)
 }
 
-// single endpoint to be able to handle serving directories as well as files, both those that have been archived and those that haven't
+// GetArtifactFile is a single endpoint to handle serving directories as well as files, both those that have been archived and those that haven't.
 // Valid requests:
 //
 //	/artifact-files/{namespace}/[archived-workflows|workflows]/{id}/{nodeID}/[inputs|outputs]/{artifactName}
@@ -524,7 +524,10 @@ func (a *ArtifactServer) getArtifactAndDriver(ctx context.Context, nodeID, artif
 
 func (a *ArtifactServer) setSecurityHeaders(w http.ResponseWriter) {
 	// Set strict CSP headers for defense-in-depth against XSS: https://web.dev/articles/strict-csp
-	w.Header().Add("Content-Security-Policy", env.GetString("ARGO_ARTIFACT_CONTENT_SECURITY_POLICY", "sandbox; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self' 'unsafe-inline'"))
+	// The "allow-same-origin" is required to prevent 401s when browsing
+	// directories with SSO enabled, since otherwise the "Authorization" cookie
+	// won't be sent, since it has SameSet=Strict set.
+	w.Header().Add("Content-Security-Policy", env.GetString("ARGO_ARTIFACT_CONTENT_SECURITY_POLICY", "sandbox allow-same-origin; base-uri 'none'; default-src 'none'; img-src 'self'; style-src 'self' 'unsafe-inline'"))
 	// Mitigate clickjacking attacks
 	w.Header().Add("X-Frame-Options", env.GetString("ARGO_ARTIFACT_X_FRAME_OPTIONS", "SAMEORIGIN"))
 }

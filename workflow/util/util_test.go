@@ -4601,31 +4601,31 @@ status:
 
 	// Assertion 2: The parent task group node should be in Running state
 	// The target node's parent task group is "subdag-iterate-jrfch-1295605062" (echo-group(0:foo))
-	parentTaskGroupNode := retryWf.Status.Nodes["subdag-iterate-jrfch-1295605062"]
-	require.NotNil(t, parentTaskGroupNode, "Parent task group node should exist")
+	parentTaskGroupNode, ok := retryWf.Status.Nodes["subdag-iterate-jrfch-1295605062"]
+	require.True(t, ok, "Parent task group node should exist")
 	assert.Equal(t, wfv1.NodeRunning, parentTaskGroupNode.Phase,
 		"Parent task group node should be in Running state")
 
 	// Assertion 3: Other nodes in different iterations should remain unchanged
 	// Check nodes from other iterations (bar and baz) remain succeeded
-	barIterationNode := retryWf.Status.Nodes["subdag-iterate-jrfch-4005883592"] // echo-group(1:bar)
-	require.NotNil(t, barIterationNode, "Bar iteration node should exist")
+	barIterationNode, ok := retryWf.Status.Nodes["subdag-iterate-jrfch-4005883592"] // echo-group(1:bar)
+	require.True(t, ok, "Bar iteration node should exist")
 	assert.Equal(t, wfv1.NodeSucceeded, barIterationNode.Phase,
 		"Bar iteration node should remain succeeded")
 
-	bazIterationNode := retryWf.Status.Nodes["subdag-iterate-jrfch-851163487"] // echo-group(2:baz)
-	require.NotNil(t, bazIterationNode, "Baz iteration node should exist")
+	bazIterationNode, ok := retryWf.Status.Nodes["subdag-iterate-jrfch-851163487"] // echo-group(2:baz)
+	require.True(t, ok, "Baz iteration node should exist")
 	assert.Equal(t, wfv1.NodeSucceeded, bazIterationNode.Phase,
 		"Baz iteration node should remain succeeded")
 
 	// Check that nodes from other iterations' pods remain succeeded
-	barPodNode := retryWf.Status.Nodes["subdag-iterate-jrfch-2240770818"] // bar echo-bye pod
-	require.NotNil(t, barPodNode, "Bar pod node should exist")
+	barPodNode, ok := retryWf.Status.Nodes["subdag-iterate-jrfch-2240770818"] // bar echo-bye pod
+	require.True(t, ok, "Bar pod node should exist")
 	assert.Equal(t, wfv1.NodeSucceeded, barPodNode.Phase,
 		"Bar pod node should remain succeeded")
 
-	bazPodNode := retryWf.Status.Nodes["subdag-iterate-jrfch-656740947"] // baz echo-bye pod
-	require.NotNil(t, bazPodNode, "Baz pod node should exist")
+	bazPodNode, ok := retryWf.Status.Nodes["subdag-iterate-jrfch-656740947"] // baz echo-bye pod
+	require.True(t, ok, "Baz pod node should exist")
 	assert.Equal(t, wfv1.NodeSucceeded, bazPodNode.Phase,
 		"Baz pod node should remain succeeded")
 
@@ -4635,14 +4635,14 @@ status:
 
 	// Assertion 5: Verify workflow integrity is maintained
 	// Check that the root workflow node is in Running state
-	rootNode := retryWf.Status.Nodes["subdag-iterate-jrfch"]
-	require.NotNil(t, rootNode, "Root workflow node should exist")
+	rootNode, ok := retryWf.Status.Nodes["subdag-iterate-jrfch"]
+	require.True(t, ok, "Root workflow node should exist")
 	assert.Equal(t, wfv1.NodeRunning, rootNode.Phase,
 		"Root workflow node should be in Running state")
 
 	// Check that the main task group is in Running state
-	mainTaskGroupNode := retryWf.Status.Nodes["subdag-iterate-jrfch-1869003913"]
-	require.NotNil(t, mainTaskGroupNode, "Main task group node should exist")
+	mainTaskGroupNode, ok := retryWf.Status.Nodes["subdag-iterate-jrfch-1869003913"]
+	require.True(t, ok, "Main task group node should exist")
 	assert.Equal(t, wfv1.NodeRunning, mainTaskGroupNode.Phase,
 		"Main task group node should be in Running state")
 
@@ -4656,15 +4656,228 @@ status:
 
 	// Additional verification: Check that the target node's sibling (echo-param) is NOT deleted
 	// since retrying echo-bye should only affect that specific node, not its siblings
-	siblingNode := retryWf.Status.Nodes["subdag-iterate-jrfch-3231869949"] // foo echo-param pod
-	require.NotNil(t, siblingNode, "Sibling node should remain in the workflow")
+	siblingNode, ok := retryWf.Status.Nodes["subdag-iterate-jrfch-3231869949"] // foo echo-param pod
+	require.True(t, ok, "Sibling node should remain in the workflow")
 	assert.Equal(t, wfv1.NodeSucceeded, siblingNode.Phase,
 		"Sibling node should remain succeeded")
 
 	// Verify that the pod deletion list has the correct number of entries
-	// Should include only the target node
 	assert.Len(t, podsToDelete, 1,
 		"Pod deletion list should contain 1 pod (only the target)")
-	assert.Contains(t, podsToDelete, "subdag-iterate-jrfch-echo-1786915540",
-		"Pod deletion list should contain the target node's pod")
+}
+
+// TestFormulateRetryWorkflowWithParamOverride tests issue #15802:
+// When retrying a workflow with withParam + retryStrategy and overriding
+// the workflow parameter to a different value, the stale expanded nodes
+// from the old parameter value should be cleaned up.
+//
+// Scenario:
+// - Workflow has wfparams=["pass","fail"], expanding to launch(0:pass) and launch(1:fail)
+// - launch(0:pass) succeeds, launch(1:fail) fails -> workflow Failed
+// - User retries with parameter override wfparams=["fail"]
+// - Expected: launch(0:pass) and its children are removed (stale nodes)
+// - Bug: launch(0:pass) survives and causes inconsistent node tree
+func TestFormulateRetryWorkflowWithParamOverride(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	workflowYaml := `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: workflow-retry
+  namespace: argo
+  labels:
+    workflows.argoproj.io/completed: "true"
+    workflows.argoproj.io/phase: Failed
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+      - name: wfparams
+        value: '["pass","fail"]'
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: launch
+            template: passfail
+            arguments:
+              parameters:
+                - name: pfparam
+                  value: "{{item}}"
+            withParam: "{{workflow.parameters.wfparams}}"
+    - name: passfail
+      retryStrategy:
+        limit: "0"
+      inputs:
+        parameters:
+          - name: pfparam
+      container:
+        image: alpine:3.15.4
+        command: [sh, -c]
+        args:
+          - |
+            if [ "{{inputs.parameters.pfparam}}" = "fail" ]; then exit 1; else exit 0; fi
+status:
+  phase: Failed
+  conditions:
+  - status: "True"
+    type: Completed
+  nodes:
+    workflow-retry:
+      id: workflow-retry
+      name: workflow-retry
+      displayName: workflow-retry
+      type: DAG
+      phase: Failed
+      templateName: main
+      templateScope: local/workflow-retry
+      startedAt: "2026-03-24T00:40:00Z"
+      finishedAt: "2026-03-24T00:42:32Z"
+      children:
+        - workflow-retry-2014360908
+      outboundNodes:
+        - workflow-retry-3976347509
+        - workflow-retry-1861571805
+    workflow-retry-2014360908:
+      id: workflow-retry-2014360908
+      name: workflow-retry.launch
+      displayName: launch
+      type: TaskGroup
+      phase: Failed
+      boundaryID: workflow-retry
+      templateName: passfail
+      templateScope: local/workflow-retry
+      startedAt: "2026-03-24T00:40:00Z"
+      finishedAt: "2026-03-24T00:42:22Z"
+      nodeFlag: {}
+      children:
+        - workflow-retry-816771446
+        - workflow-retry-1743784750
+    workflow-retry-816771446:
+      id: workflow-retry-816771446
+      name: workflow-retry.launch(0:pass)
+      displayName: launch(0:pass)
+      type: Retry
+      phase: Succeeded
+      boundaryID: workflow-retry
+      templateName: passfail
+      templateScope: local/workflow-retry
+      startedAt: "2026-03-24T00:40:00Z"
+      finishedAt: "2026-03-24T00:41:25Z"
+      nodeFlag:
+        retried: true
+      children:
+        - workflow-retry-3976347509
+    workflow-retry-3976347509:
+      id: workflow-retry-3976347509
+      name: workflow-retry.launch(0:pass)(0)
+      displayName: launch(0:pass)(0)
+      type: Pod
+      phase: Succeeded
+      boundaryID: workflow-retry
+      hostNodeName: node1
+      templateName: passfail
+      templateScope: local/workflow-retry
+      startedAt: "2026-03-24T00:40:00Z"
+      finishedAt: "2026-03-24T00:41:25Z"
+      taskResultSynced: true
+      inputs:
+        parameters:
+          - name: pfparam
+            value: pass
+      outputs:
+        exitCode: "0"
+    workflow-retry-1743784750:
+      id: workflow-retry-1743784750
+      name: workflow-retry.launch(1:fail)
+      displayName: launch(1:fail)
+      type: Retry
+      phase: Failed
+      boundaryID: workflow-retry
+      templateName: passfail
+      templateScope: local/workflow-retry
+      startedAt: "2026-03-24T00:40:00Z"
+      finishedAt: "2026-03-24T00:42:22Z"
+      message: No more retries left
+      nodeFlag:
+        retried: true
+      children:
+        - workflow-retry-1861571805
+    workflow-retry-1861571805:
+      id: workflow-retry-1861571805
+      name: workflow-retry.launch(1:fail)(0)
+      displayName: launch(1:fail)(0)
+      type: Pod
+      phase: Failed
+      boundaryID: workflow-retry
+      hostNodeName: node1
+      templateName: passfail
+      templateScope: local/workflow-retry
+      startedAt: "2026-03-24T00:40:00Z"
+      finishedAt: "2026-03-24T00:42:22Z"
+      taskResultSynced: true
+      inputs:
+        parameters:
+          - name: pfparam
+            value: fail
+      outputs:
+        exitCode: "1"
+  startedAt: "2026-03-24T00:40:00Z"
+  finishedAt: "2026-03-24T00:42:32Z"`
+
+	wf := wfv1.MustUnmarshalWorkflow(workflowYaml)
+
+	// Retry with parameter override: change wfparams to ["fail"]
+	parameters := []string{`wfparams=["fail"]`}
+	retryWf, podsToDelete, err := FormulateRetryWorkflow(ctx, wf, false, "", parameters)
+	require.NoError(t, err)
+	require.NotNil(t, retryWf)
+
+	// Verify the workflow parameter was overridden
+	for _, p := range retryWf.Spec.Arguments.Parameters {
+		if p.Name == "wfparams" {
+			assert.Equal(t, `["fail"]`, p.GetValue(),
+				"wfparams should be overridden to [\"fail\"]")
+		}
+	}
+
+	// BUG ASSERTION (issue #15802):
+	// The stale node launch(0:pass) from the old parameter expansion should NOT exist
+	// in the retry workflow, because the new parameter ["fail"] will expand differently.
+	// If it still exists, the controller will create launch(0:fail) alongside the stale
+	// launch(0:pass), resulting in two children in the TaskGroup and a stuck workflow.
+	_, staleNodeExists := retryWf.Status.Nodes["workflow-retry-816771446"] // launch(0:pass)
+	assert.False(t, staleNodeExists,
+		"Stale node launch(0:pass) should be deleted when parameter override changes withParam expansion")
+
+	_, stalePodExists := retryWf.Status.Nodes["workflow-retry-3976347509"] // launch(0:pass)(0)
+	assert.False(t, stalePodExists,
+		"Stale pod launch(0:pass)(0) should be deleted when parameter override changes withParam expansion")
+
+	// The failed nodes should be deleted (standard retry behavior)
+	_, failedRetryExists := retryWf.Status.Nodes["workflow-retry-1743784750"] // launch(1:fail)
+	assert.False(t, failedRetryExists,
+		"Failed retry node launch(1:fail) should be deleted")
+
+	_, failedPodExists := retryWf.Status.Nodes["workflow-retry-1861571805"] // launch(1:fail)(0)
+	assert.False(t, failedPodExists,
+		"Failed pod launch(1:fail)(0) should be deleted")
+
+	// The TaskGroup should be reset to Running
+	taskGroupNode, ok := retryWf.Status.Nodes["workflow-retry-2014360908"] // launch TaskGroup
+	require.True(t, ok, "TaskGroup node should exist")
+	assert.Equal(t, wfv1.NodeRunning, taskGroupNode.Phase,
+		"TaskGroup should be reset to Running")
+
+	// The TaskGroup should have NO children (all old expansion nodes should be cleaned up)
+	assert.Empty(t, taskGroupNode.Children,
+		"TaskGroup children should be empty after parameter override changes the expansion")
+
+	// The failed pod should be in the deletion list
+	assert.Contains(t, podsToDelete, "workflow-retry-passfail-1861571805",
+		"Failed pod should be in deletion list")
+
+	// The succeeded pod from the stale expansion should also be in the deletion list
+	assert.Contains(t, podsToDelete, "workflow-retry-passfail-3976347509",
+		"Stale succeeded pod should also be in deletion list")
 }

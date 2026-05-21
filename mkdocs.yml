@@ -266,6 +266,7 @@ nav:
           - default-workflow-specs.md
           - offloading-large-workflows.md
           - workflow-archive.md
+          - database-migrations.md
           - telemetry-configuration.md
           - deprecations.md
           - workflow-executors.md

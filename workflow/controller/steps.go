@@ -658,12 +658,7 @@ func (woc *wfOperationCtx) prepareDefaultMetricScope() (map[string]string, map[s
 	localScope[durationMem] = "0"
 
 	var realTimeScope = map[string]func() float64{
-		common.GlobalVarWorkflowDuration: func() float64 {
-			if woc.wf.Status.Phase.Completed() {
-				return woc.wf.Status.FinishedAt.Time.Sub(woc.wf.Status.StartedAt.Time).Seconds()
-			}
-			return time.Since(woc.wf.Status.StartedAt.Time).Seconds()
-		},
+		common.GlobalVarWorkflowDuration: woc.workflowDurationSeconds,
 	}
 
 	return localScope, realTimeScope

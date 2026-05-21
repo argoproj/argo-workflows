@@ -29,7 +29,11 @@ import {WorkflowTemplateRow} from './workflow-template-row';
 
 import './workflow-template-list.scss';
 
-const learnMore = <a href='https://argo-workflows.readthedocs.io/en/latest/workflow-templates/'>Learn more</a>;
+const learnMore = (
+    <a href='https://argo-workflows.readthedocs.io/en/latest/workflow-templates/' target='_blank' rel='noreferrer'>
+        Learn more
+    </a>
+);
 
 export function WorkflowTemplateList({match, location, history}: RouteComponentProps<any>) {
     // boiler-plate

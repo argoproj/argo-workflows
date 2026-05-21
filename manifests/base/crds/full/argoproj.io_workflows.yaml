@@ -1630,9 +1630,8 @@ spec:
                                       x-kubernetes-map-type: atomic
                                     endpointParams:
                                       items:
-                                        description: EndpointParam is for requesting
-                                          optional fields that should be sent in the
-                                          oauth request
+                                        description: OAuth2EndpointParam is an optional
+                                          field that should be sent in the OAuth request.
                                         properties:
                                           key:
                                             description: Name is the header name
@@ -2091,9 +2090,9 @@ spec:
                             from, for the actual value of the parameter
                           items:
                             description: |-
-                              * It's JSON type is just string.
-                              * It will unmarshall int64, int32, float64, float32, boolean, a plain string and represents it as string.
-                              * It will marshall back to string - marshalling is not symmetric.
+                              AnyString is a string type whose JSON type is just string.
+                              It will unmarshall int64, int32, float64, float32, boolean, a plain string and represents it as string.
+                              It will marshall back to string - marshalling is not symmetric.
                             type: string
                           minItems: 1
                           type: array
@@ -2967,9 +2966,9 @@ spec:
                                             x-kubernetes-map-type: atomic
                                           endpointParams:
                                             items:
-                                              description: EndpointParam is for requesting
-                                                optional fields that should be sent
-                                                in the oauth request
+                                              description: OAuth2EndpointParam is
+                                                an optional field that should be sent
+                                                in the OAuth request.
                                               properties:
                                                 key:
                                                   description: Name is the header
@@ -3443,9 +3442,9 @@ spec:
                                   choose from, for the actual value of the parameter
                                 items:
                                   description: |-
-                                    * It's JSON type is just string.
-                                    * It will unmarshall int64, int32, float64, float32, boolean, a plain string and represents it as string.
-                                    * It will marshall back to string - marshalling is not symmetric.
+                                    AnyString is a string type whose JSON type is just string.
+                                    It will unmarshall int64, int32, float64, float32, boolean, a plain string and represents it as string.
+                                    It will marshall back to string - marshalling is not symmetric.
                                   type: string
                                 minItems: 1
                                 type: array
@@ -17078,9 +17077,8 @@ spec:
                                       x-kubernetes-map-type: atomic
                                     endpointParams:
                                       items:
-                                        description: EndpointParam is for requesting
-                                          optional fields that should be sent in the
-                                          oauth request
+                                        description: OAuth2EndpointParam is an optional
+                                          field that should be sent in the OAuth request.
                                         properties:
                                           key:
                                             description: Name is the header name
@@ -21378,10 +21376,10 @@ spec:
                                                       x-kubernetes-map-type: atomic
                                                     endpointParams:
                                                       items:
-                                                        description: EndpointParam
-                                                          is for requesting optional
-                                                          fields that should be sent
-                                                          in the oauth request
+                                                        description: OAuth2EndpointParam
+                                                          is an optional field that
+                                                          should be sent in the OAuth
+                                                          request.
                                                         properties:
                                                           key:
                                                             description: Name is the
@@ -21896,9 +21894,9 @@ spec:
                                             value of the parameter
                                           items:
                                             description: |-
-                                              * It's JSON type is just string.
-                                              * It will unmarshall int64, int32, float64, float32, boolean, a plain string and represents it as string.
-                                              * It will marshall back to string - marshalling is not symmetric.
+                                              AnyString is a string type whose JSON type is just string.
+                                              It will unmarshall int64, int32, float64, float32, boolean, a plain string and represents it as string.
+                                              It will marshall back to string - marshalling is not symmetric.
                                             type: string
                                           minItems: 1
                                           type: array
@@ -22758,11 +22756,10 @@ spec:
                                                             x-kubernetes-map-type: atomic
                                                           endpointParams:
                                                             items:
-                                                              description: EndpointParam
-                                                                is for requesting
-                                                                optional fields that
-                                                                should be sent in
-                                                                the oauth request
+                                                              description: OAuth2EndpointParam
+                                                                is an optional field
+                                                                that should be sent
+                                                                in the OAuth request.
                                                               properties:
                                                                 key:
                                                                   description: Name
@@ -23307,9 +23304,9 @@ spec:
                                                   the actual value of the parameter
                                                 items:
                                                   description: |-
-                                                    * It's JSON type is just string.
-                                                    * It will unmarshall int64, int32, float64, float32, boolean, a plain string and represents it as string.
-                                                    * It will marshall back to string - marshalling is not symmetric.
+                                                    AnyString is a string type whose JSON type is just string.
+                                                    It will unmarshall int64, int32, float64, float32, boolean, a plain string and represents it as string.
+                                                    It will marshall back to string - marshalling is not symmetric.
                                                   type: string
                                                 minItems: 1
                                                 type: array
@@ -24209,9 +24206,9 @@ spec:
                                               x-kubernetes-map-type: atomic
                                             endpointParams:
                                               items:
-                                                description: EndpointParam is for
-                                                  requesting optional fields that
-                                                  should be sent in the oauth request
+                                                description: OAuth2EndpointParam is
+                                                  an optional field that should be
+                                                  sent in the OAuth request.
                                                 properties:
                                                   key:
                                                     description: Name is the header
@@ -26998,9 +26995,9 @@ spec:
                                             x-kubernetes-map-type: atomic
                                           endpointParams:
                                             items:
-                                              description: EndpointParam is for requesting
-                                                optional fields that should be sent
-                                                in the oauth request
+                                              description: OAuth2EndpointParam is
+                                                an optional field that should be sent
+                                                in the OAuth request.
                                               properties:
                                                 key:
                                                   description: Name is the header
@@ -27475,9 +27472,9 @@ spec:
                                   choose from, for the actual value of the parameter
                                 items:
                                   description: |-
-                                    * It's JSON type is just string.
-                                    * It will unmarshall int64, int32, float64, float32, boolean, a plain string and represents it as string.
-                                    * It will marshall back to string - marshalling is not symmetric.
+                                    AnyString is a string type whose JSON type is just string.
+                                    It will unmarshall int64, int32, float64, float32, boolean, a plain string and represents it as string.
+                                    It will marshall back to string - marshalling is not symmetric.
                                   type: string
                                 minItems: 1
                                 type: array
@@ -28396,9 +28393,9 @@ spec:
                                             x-kubernetes-map-type: atomic
                                           endpointParams:
                                             items:
-                                              description: EndpointParam is for requesting
-                                                optional fields that should be sent
-                                                in the oauth request
+                                              description: OAuth2EndpointParam is
+                                                an optional field that should be sent
+                                                in the OAuth request.
                                               properties:
                                                 key:
                                                   description: Name is the header
@@ -28875,9 +28872,9 @@ spec:
                                   choose from, for the actual value of the parameter
                                 items:
                                   description: |-
-                                    * It's JSON type is just string.
-                                    * It will unmarshall int64, int32, float64, float32, boolean, a plain string and represents it as string.
-                                    * It will marshall back to string - marshalling is not symmetric.
+                                    AnyString is a string type whose JSON type is just string.
+                                    It will unmarshall int64, int32, float64, float32, boolean, a plain string and represents it as string.
+                                    It will marshall back to string - marshalling is not symmetric.
                                   type: string
                                 minItems: 1
                                 type: array
@@ -29687,9 +29684,9 @@ spec:
                                               x-kubernetes-map-type: atomic
                                             endpointParams:
                                               items:
-                                                description: EndpointParam is for
-                                                  requesting optional fields that
-                                                  should be sent in the oauth request
+                                                description: OAuth2EndpointParam is
+                                                  an optional field that should be
+                                                  sent in the OAuth request.
                                                 properties:
                                                   key:
                                                     description: Name is the header
@@ -34262,10 +34259,10 @@ spec:
                                                     x-kubernetes-map-type: atomic
                                                   endpointParams:
                                                     items:
-                                                      description: EndpointParam is
-                                                        for requesting optional fields
-                                                        that should be sent in the
-                                                        oauth request
+                                                      description: OAuth2EndpointParam
+                                                        is an optional field that
+                                                        should be sent in the OAuth
+                                                        request.
                                                       properties:
                                                         key:
                                                           description: Name is the
@@ -34773,9 +34770,9 @@ spec:
                                           the parameter
                                         items:
                                           description: |-
-                                            * It's JSON type is just string.
-                                            * It will unmarshall int64, int32, float64, float32, boolean, a plain string and represents it as string.
-                                            * It will marshall back to string - marshalling is not symmetric.
+                                            AnyString is a string type whose JSON type is just string.
+                                            It will unmarshall int64, int32, float64, float32, boolean, a plain string and represents it as string.
+                                            It will marshall back to string - marshalling is not symmetric.
                                           type: string
                                         minItems: 1
                                         type: array
@@ -35613,10 +35610,10 @@ spec:
                                                           x-kubernetes-map-type: atomic
                                                         endpointParams:
                                                           items:
-                                                            description: EndpointParam
-                                                              is for requesting optional
-                                                              fields that should be
-                                                              sent in the oauth request
+                                                            description: OAuth2EndpointParam
+                                                              is an optional field
+                                                              that should be sent
+                                                              in the OAuth request.
                                                             properties:
                                                               key:
                                                                 description: Name
@@ -36150,9 +36147,9 @@ spec:
                                                 value of the parameter
                                               items:
                                                 description: |-
-                                                  * It's JSON type is just string.
-                                                  * It will unmarshall int64, int32, float64, float32, boolean, a plain string and represents it as string.
-                                                  * It will marshall back to string - marshalling is not symmetric.
+                                                  AnyString is a string type whose JSON type is just string.
+                                                  It will unmarshall int64, int32, float64, float32, boolean, a plain string and represents it as string.
+                                                  It will marshall back to string - marshalling is not symmetric.
                                                 type: string
                                               minItems: 1
                                               type: array

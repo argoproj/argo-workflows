@@ -277,6 +277,22 @@ func TestResourceDurationMetricDefaultMetricScope(t *testing.T) {
 	assert.Less(t, realTimeScope["workflow.duration"](), 1.0)
 }
 
+// Regression: when realtime metrics are evaluated before Status.StartedAt has
+// been populated (the first operate cycle of a brand-new workflow), the
+// workflow.duration closure must return 0 rather than time.Since(zero-time)
+// saturating to MaxInt64 nanoseconds (~9.22e9 seconds).
+func TestRealTimeWorkflowDurationBeforeStartedAt(t *testing.T) {
+	wf := wfv1.Workflow{}
+	woc := wfOperationCtx{
+		globalParams: make(common.Parameters),
+		wf:           &wf,
+	}
+
+	_, realTimeScope := woc.prepareDefaultMetricScope()
+
+	assert.InDelta(t, 0.0, realTimeScope["workflow.duration"](), 0)
+}
+
 var optionalArgumentAndParameter = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
