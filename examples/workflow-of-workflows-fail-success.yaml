@@ -1,0 +1,55 @@
+# This template demonstrates a workflow of workflows where one child succeeds
+# and one child fails.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: workflow-of-workflows-fail-success-
+  labels:
+    workflows.argoproj.io/no-test: "intentionally-fails"
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: successful-child
+            template: create-successful-child
+          - name: failing-child
+            template: create-failing-child
+
+    - name: create-successful-child
+      resource:
+        action: create
+        successCondition: status.phase == Succeeded
+        failureCondition: status.phase in (Failed, Error)
+        manifest: |
+          apiVersion: argoproj.io/v1alpha1
+          kind: Workflow
+          metadata:
+            generateName: child-success-
+          spec:
+            entrypoint: succeed
+            templates:
+              - name: succeed
+                container:
+                  image: alpine:3.20
+                  command: [sh, -c]
+                  args: ["echo child workflow succeeded"]
+
+    - name: create-failing-child
+      resource:
+        action: create
+        successCondition: status.phase == Succeeded
+        failureCondition: status.phase in (Failed, Error)
+        manifest: |
+          apiVersion: argoproj.io/v1alpha1
+          kind: Workflow
+          metadata:
+            generateName: child-fail-
+          spec:
+            entrypoint: fail
+            templates:
+              - name: fail
+                container:
+                  image: alpine:3.20
+                  command: [sh, -c]
+                  args: ["echo child workflow failed; exit 1"]

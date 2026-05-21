@@ -8,6 +8,11 @@ metadata:
       This is the minimum recommended permissions needed if you want to use the agent, e.g. for HTTP or plugin templates.
 
       If <= v3.2 you must replace `workflowtasksets/status` with `patch workflowtasksets`.
+
+      Resource templates executed via the agent additionally require list/watch on
+      whatever GVRs they create — the agent runs a dynamic informer to evaluate
+      success/failure conditions. Add rules per GVR you use; the `workflows` rule
+      below covers workflow-of-workflows.
 rules:
   - apiGroups:
       - argoproj.io
@@ -22,3 +27,10 @@ rules:
       - workflowtasksets/status
     verbs:
       - patch
+  - apiGroups:
+      - argoproj.io
+    resources:
+      - workflows
+    verbs:
+      - list
+      - watch
