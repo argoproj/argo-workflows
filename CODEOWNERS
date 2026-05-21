@@ -1,11 +1,14 @@
+# Default ownership
+*          @argoproj/argo-workflows-approvers
+
 *.proto    @joibel @terrytangyuan
 
 # Documentation
-/docs/**              @argoproj/argo-workflows-approvers-docs
-/mkdocs.yml           @argoproj/argo-workflows-approvers-docs
-/.features/**/*.md    @argoproj/argo-workflows-approvers-docs
-/community/**         @argoproj/argo-workflows-approvers-docs
-/examples/README.md   @argoproj/argo-workflows-approvers-docs
-/README.md            @argoproj/argo-workflows-approvers-docs
-/CONTRIBUTING.md      @argoproj/argo-workflows-approvers-docs
-/USERS.md             @argoproj/argo-workflows-approvers-docs
+/docs/**              @argoproj/argo-workflows-approvers-docs @argoproj/argo-workflows-approvers
+/mkdocs.yml           @argoproj/argo-workflows-approvers-docs @argoproj/argo-workflows-approvers
+/.features/**/*.md    @argoproj/argo-workflows-approvers-docs @argoproj/argo-workflows-approvers
+/community/**         @argoproj/argo-workflows-approvers-docs @argoproj/argo-workflows-approvers
+/examples/README.md   @argoproj/argo-workflows-approvers-docs @argoproj/argo-workflows-approvers
+/README.md            @argoproj/argo-workflows-approvers-docs @argoproj/argo-workflows-approvers
+/CONTRIBUTING.md      @argoproj/argo-workflows-approvers-docs @argoproj/argo-workflows-approvers
+/USERS.md             @argoproj/argo-workflows-approvers-docs @argoproj/argo-workflows-approvers
