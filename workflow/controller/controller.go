@@ -73,7 +73,7 @@ import (
 const maxAllowedStackDepth = 100
 
 type recentlyCompletedWorkflow struct {
-	key  string
+	uid  types.UID
 	when time.Time
 }
 
@@ -781,7 +781,7 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 		return true
 	}
 
-	if wf.Status.Phase != "" && wfc.checkRecentlyCompleted(wf.Name) {
+	if wf.Labels[common.LabelKeyCompleted] != "true" && wfc.checkRecentlyCompleted(wf.UID) {
 		logger.WithField("name", wf.ObjectMeta.Name).Warn(ctx, "Cache: Rejecting recently deleted")
 		return true
 	}
@@ -948,27 +948,39 @@ func (wfc *WorkflowController) cleanCompletedWorkflowsRecord() {
 
 // Records a workflow as recently completed in the list
 // if it isn't already in the list
-func (wfc *WorkflowController) recordCompletedWorkflow(key string) {
-	if !wfc.checkRecentlyCompleted(key) {
+func (wfc *WorkflowController) recordCompletedWorkflow(uid types.UID) {
+	if uid == "" {
+		return
+	}
+	if !wfc.checkRecentlyCompleted(uid) {
 		wfc.recentCompletions.mutex.Lock()
 		defer wfc.recentCompletions.mutex.Unlock()
 		wfc.recentCompletions.completions = append(wfc.recentCompletions.completions,
 			recentlyCompletedWorkflow{
-				key:  key,
+				uid:  uid,
 				when: time.Now(),
 			})
 	}
 }
 
-// Returns true if the workflow given by key is in the recently completed
+func (wfc *WorkflowController) removeRecentlyCompleted(uid types.UID) {
+	wfc.recentCompletions.mutex.Lock()
+	defer wfc.recentCompletions.mutex.Unlock()
+	wfc.recentCompletions.completions = slices.DeleteFunc(wfc.recentCompletions.completions,
+		func(w recentlyCompletedWorkflow) bool {
+			return w.uid == uid
+		})
+}
+
+// Returns true if the workflow given by uid is in the recently completed
 // list. Will perform expiry cleanup before checking.
-func (wfc *WorkflowController) checkRecentlyCompleted(key string) bool {
+func (wfc *WorkflowController) checkRecentlyCompleted(uid types.UID) bool {
 	wfc.cleanCompletedWorkflowsRecord()
 	recent := false
 	wfc.recentCompletions.mutex.RLock()
 	defer wfc.recentCompletions.mutex.RUnlock()
 	for _, val := range wfc.recentCompletions.completions {
-		if val.key == key {
+		if val.uid == uid {
 			recent = true
 			break
 		}
@@ -992,8 +1004,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 				}
 				needed := reconciliationNeeded(un)
 				if !needed {
-					key, _ := cache.MetaNamespaceKeyFunc(un)
-					wfc.recordCompletedWorkflow(key)
+					wfc.recordCompletedWorkflow(un.GetUID())
 					wfc.deleteLastSeenVersionKey(wfc.getLastSeenVersionKey(un))
 				}
 				return needed
@@ -1002,6 +1013,9 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 				// This function is called when a new to the informer object
 				// is to be added to the informer
 				AddFunc: func(obj any) {
+					if un, ok := obj.(*unstructured.Unstructured); ok {
+						wfc.removeRecentlyCompleted(un.GetUID())
+					}
 					key, err := cache.MetaNamespaceKeyFunc(obj)
 					if err == nil {
 						// for a new workflow, we do not want to rate limit its execution using AddRateLimited
@@ -1048,7 +1062,9 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 					key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 					if err == nil {
 						wfc.releaseAllWorkflowLocks(ctx, obj)
-						wfc.recordCompletedWorkflow(key)
+						if un, ok := obj.(*unstructured.Unstructured); ok {
+							wfc.recordCompletedWorkflow(un.GetUID())
+						}
 						// no need to add to the queue - this workflow is done
 						wfc.throttler.Remove(key)
 					}

@@ -15,6 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	dynamicfake "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
@@ -1355,4 +1356,125 @@ func TestPodSpecPatchTemplateLevel(t *testing.T) {
 	}
 	require.NotNil(t, mainContainer)
 	assert.Equal(t, "25Mi", mainContainer.Resources.Requests.Memory().String())
+}
+
+func TestProcessNextItem_RejectsCompletedWorkflowPodEventRequeue(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	wf := wfv1.MustUnmarshalWorkflow(`
+metadata:
+  name: my-wf
+  namespace: test
+  uid: spurious-requeue-uid
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: my-image
+`)
+
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	assert.True(t, controller.processNextItem(ctx))
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	require.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc.operate(ctx)
+	require.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+
+	pods, err := listPods(ctx, woc)
+	require.NoError(t, err)
+	require.NotEmpty(t, pods.Items)
+	require.NoError(t, controller.enqueueWfFromPodLabel(&pods.Items[0]))
+
+	assert.True(t, controller.processNextItem(ctx))
+
+	expectNamespacedWorkflow(ctx, controller, "test", "my-wf", func(wf *wfv1.Workflow) {
+		require.NotNil(t, wf)
+		assert.Equal(t, wfv1.WorkflowSucceeded, wf.Status.Phase)
+	})
+}
+
+func TestProcessNextItem_AllowsRetryAfterCompletion(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	wf := wfv1.MustUnmarshalWorkflow(`
+metadata:
+  name: my-wf
+  namespace: test
+  uid: retry-instance-uid
+  labels:
+    workflows.argoproj.io/completed: "true"
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: my-image
+status:
+  phase: Failed
+`)
+
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	controller.recordCompletedWorkflow(wf.UID)
+
+	retried := wf.DeepCopy()
+	delete(retried.Labels, common.LabelKeyCompleted)
+	retried.Status.Phase = wfv1.WorkflowUnknown
+	u, err := runtime.DefaultUnstructuredConverter.ToUnstructured(retried)
+	require.NoError(t, err)
+
+	gvr := schema.GroupVersionResource{Group: workflow.Group, Version: "v1alpha1", Resource: workflow.WorkflowPlural}
+	_, err = controller.dynamicInterface.Resource(gvr).Namespace("test").Update(ctx, &unstructured.Unstructured{Object: u}, metav1.UpdateOptions{})
+	require.NoError(t, err)
+
+	require.Eventually(t, func() bool {
+		return controller.wfQueue.Len() > 0
+	}, 2*time.Second, 50*time.Millisecond)
+	assert.True(t, controller.processNextItem(ctx))
+
+	expectNamespacedWorkflow(ctx, controller, "test", "my-wf", func(wf *wfv1.Workflow) {
+		require.NotNil(t, wf)
+		assert.Equal(t, wfv1.WorkflowRunning, wf.Status.Phase)
+	})
+}
+
+func TestProcessNextItem_AllowsRequeueOfCompletedWorkflowWithFinalizer(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	wf := wfv1.MustUnmarshalWorkflow(`
+metadata:
+  name: my-wf
+  namespace: test
+  uid: completed-with-finalizer-uid
+  labels:
+    workflows.argoproj.io/completed: "true"
+  finalizers:
+    - workflows.argoproj.io/artifact-gc
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: my-image
+status:
+  phase: Succeeded
+`)
+
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	controller.recordCompletedWorkflow(wf.UID)
+
+	assert.True(t, controller.processNextItem(ctx))
+
+	expectNamespacedWorkflow(ctx, controller, "test", "my-wf", func(wf *wfv1.Workflow) {
+		require.NotNil(t, wf)
+		assert.NotContains(t, wf.Finalizers, common.FinalizerArtifactGC)
+	})
 }

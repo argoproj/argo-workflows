@@ -824,6 +824,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		if err := woc.deleteTaskResults(ctx); err != nil {
 			woc.log.WithError(err).Warn(ctx, "failed to delete task-results")
 		}
+		woc.controller.recordCompletedWorkflow(woc.wf.UID)
 	}
 	// If Finalizer exists, requeue to make sure Finalizer can be removed.
 	if woc.wf.Status.Fulfilled() && len(woc.wf.GetFinalizers()) > 0 {
