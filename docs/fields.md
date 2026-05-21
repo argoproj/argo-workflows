@@ -7,6 +7,10 @@ Workflow is the definition of a workflow resource
 <details markdown>
 <summary>Examples (click to open)</summary>
 
+- [`agent-resource-create-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/agent-resource-create-workflow.yaml)
+
+- [`agent-resource-sleeper.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/agent-resource-sleeper.yaml)
+
 - [`archive-location.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/archive-location.yaml)
 
 - [`arguments-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-artifacts.yaml)
@@ -285,6 +289,8 @@ Workflow is the definition of a workflow resource
 
 - [`resource-flags.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-flags.yaml)
 
+- [`resource-pod-spec-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-pod-spec-patch.yaml)
+
 - [`resubmit.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resubmit.yaml)
 
 - [`retry-backoff.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-backoff.yaml)
@@ -362,6 +368,10 @@ Workflow is the definition of a workflow resource
 - [`withsequence-nested-result.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/withsequence-nested-result.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
+
+- [`workflow-of-workflows-fail-success.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-of-workflows-fail-success.yaml)
+
+- [`workflow-of-workflows-sequence.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-of-workflows-sequence.yaml)
 
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-of-workflows.yaml)
 
@@ -488,6 +498,8 @@ WorkflowSpec is the specification of a Workflow.
 <details markdown>
 <summary>Examples with this field (click to open)</summary>
 
+- [`agent-resource-create-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/agent-resource-create-workflow.yaml)
+
 - [`archive-location.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/archive-location.yaml)
 
 - [`arguments-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-artifacts.yaml)
@@ -855,6 +867,10 @@ WorkflowSpec is the specification of a Workflow.
 - [`github-path-filter-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workfloweventbinding.yaml)
 
 - [`github-path-filter-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workflowtemplate.yaml)
+
+- [`workflow-of-workflows-fail-success.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-of-workflows-fail-success.yaml)
+
+- [`workflow-of-workflows-sequence.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-of-workflows-sequence.yaml)
 
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-of-workflows.yaml)
 
@@ -954,6 +970,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 <details markdown>
 <summary>Examples with this field (click to open)</summary>
 
+- [`agent-resource-create-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/agent-resource-create-workflow.yaml)
+
 - [`archive-location.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/archive-location.yaml)
 
 - [`arguments-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-artifacts.yaml)
@@ -1321,6 +1339,10 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`github-path-filter-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workfloweventbinding.yaml)
 
 - [`github-path-filter-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workflowtemplate.yaml)
+
+- [`workflow-of-workflows-fail-success.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-of-workflows-fail-success.yaml)
+
+- [`workflow-of-workflows-sequence.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-of-workflows-sequence.yaml)
 
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-of-workflows.yaml)
 
@@ -1593,6 +1615,8 @@ Arguments to a template
 - [`github-path-filter-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workfloweventbinding.yaml)
 
 - [`github-path-filter-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workflowtemplate.yaml)
+
+- [`workflow-of-workflows-sequence.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-of-workflows-sequence.yaml)
 
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-of-workflows.yaml)
 
@@ -2486,6 +2510,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`github-path-filter-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workflowtemplate.yaml)
 
+- [`workflow-of-workflows-sequence.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-of-workflows-sequence.yaml)
+
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-of-workflows.yaml)
 
 - [`dag.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/dag.yaml)
@@ -3077,6 +3103,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`github-path-filter-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workflowtemplate.yaml)
 
+- [`workflow-of-workflows-sequence.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-of-workflows-sequence.yaml)
+
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-of-workflows.yaml)
 
 - [`templates.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/templates.yaml)
@@ -3122,6 +3150,8 @@ ResourceTemplate is a template subtype to manipulate kubernetes resources
 <details markdown>
 <summary>Examples with this field (click to open)</summary>
 
+- [`agent-resource-create-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/agent-resource-create-workflow.yaml)
+
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cron-backfill.yaml)
 
 - [`k8s-owner-reference.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-owner-reference.yaml)
@@ -3133,6 +3163,10 @@ ResourceTemplate is a template subtype to manipulate kubernetes resources
 - [`k8s-patch-merge-pod.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-patch-merge-pod.yaml)
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-wait-wf.yaml)
+
+- [`workflow-of-workflows-fail-success.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-of-workflows-fail-success.yaml)
+
+- [`workflow-of-workflows-sequence.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-of-workflows-sequence.yaml)
 
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-of-workflows.yaml)
 </details>
@@ -3423,6 +3457,10 @@ WorkflowStep is a reference to a template to execute in a series of step Note: C
 - [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
 
 - [`github-path-filter-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workflowtemplate.yaml)
+
+- [`workflow-of-workflows-fail-success.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-of-workflows-fail-success.yaml)
+
+- [`workflow-of-workflows-sequence.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-of-workflows-sequence.yaml)
 
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-of-workflows.yaml)
 
@@ -4423,6 +4461,8 @@ Sequence expands a workflow step into numeric range
 - [`withsequence-nested-result.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/withsequence-nested-result.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
+
+- [`workflow-of-workflows-sequence.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-of-workflows-sequence.yaml)
 </details>
 
 ### Fields
@@ -4886,6 +4926,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 <details markdown>
 <summary>Examples with this field (click to open)</summary>
 
+- [`agent-resource-create-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/agent-resource-create-workflow.yaml)
+
 - [`archive-location.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/archive-location.yaml)
 
 - [`arguments-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-artifacts.yaml)
@@ -5254,6 +5296,10 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`github-path-filter-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workflowtemplate.yaml)
 
+- [`workflow-of-workflows-fail-success.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-of-workflows-fail-success.yaml)
+
+- [`workflow-of-workflows-sequence.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-of-workflows-sequence.yaml)
+
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-of-workflows.yaml)
 
 - [`dag.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/dag.yaml)
@@ -5565,6 +5611,8 @@ A single application container that you want to run within a pod.
 <details markdown>
 <summary>Examples with this field (click to open)</summary>
 
+- [`agent-resource-create-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/agent-resource-create-workflow.yaml)
+
 - [`archive-location.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/archive-location.yaml)
 
 - [`arguments-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-artifacts.yaml)
@@ -5864,6 +5912,10 @@ A single application container that you want to run within a pod.
 - [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
 
 - [`github-path-filter-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workflowtemplate.yaml)
+
+- [`workflow-of-workflows-fail-success.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-of-workflows-fail-success.yaml)
+
+- [`workflow-of-workflows-sequence.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-of-workflows-sequence.yaml)
 
 - [`templates.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/templates.yaml)
 
@@ -6543,6 +6595,8 @@ ImageVolumeSource represents a image volume resource.
 <details markdown>
 <summary>Examples with this field (click to open)</summary>
 
+- [`agent-resource-create-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/agent-resource-create-workflow.yaml)
+
 - [`archive-location.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/archive-location.yaml)
 
 - [`arguments-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-artifacts.yaml)
@@ -6886,6 +6940,10 @@ ImageVolumeSource represents a image volume resource.
 - [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
 
 - [`github-path-filter-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workflowtemplate.yaml)
+
+- [`workflow-of-workflows-fail-success.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-of-workflows-fail-success.yaml)
+
+- [`workflow-of-workflows-sequence.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-of-workflows-sequence.yaml)
 
 - [`templates.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/templates.yaml)
 
