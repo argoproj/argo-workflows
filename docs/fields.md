@@ -9,8 +9,6 @@ Workflow is the definition of a workflow resource
 
 - [`agent-resource-create-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/agent-resource-create-workflow.yaml)
 
-- [`agent-resource-sleeper.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/agent-resource-sleeper.yaml)
-
 - [`archive-location.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/archive-location.yaml)
 
 - [`arguments-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/arguments-artifacts.yaml)

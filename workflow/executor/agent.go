@@ -91,7 +91,7 @@ func NewAgentExecutor(clientSet kubernetes.Interface, restClient rest.Interface,
 		consideredTasks:   &sync.Map{},
 		plugins:           plugins,
 		pendingTasks:      map[string]pendingResourceTask{},
-		responseQueue:     make(chan response),
+		responseQueue:     make(chan response, 64),
 	}
 	ae.resourceInformer = NewMonitoredResourceInformer(dynClient, namespace, workflowName, 10*time.Minute, ae.handleDone)
 	return ae
@@ -711,7 +711,7 @@ func (ae *AgentExecutor) executeResource(ctx context.Context, action string, man
 		} else {
 			err = argoerrors.Wrap(err, argoerrors.CodeBadRequest, err.Error())
 		}
-		err = argoerrors.Wrap(err, argoerrors.CodeBadRequest, "no more retries "+err.Error())
+		return "", "", schema.GroupVersionResource{}, argoerrors.Wrap(err, argoerrors.CodeBadRequest, "no more retries "+err.Error())
 	}
 	if action == "delete" {
 		return "", "", schema.GroupVersionResource{}, nil
