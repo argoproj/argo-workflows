@@ -3379,8 +3379,10 @@ func (tmpl *Template) GetNodeType() NodeType {
 		return NodeTypeRetry
 	}
 	switch tmpl.GetType() {
-	case TemplateTypeContainer, TemplateTypeContainerSet, TemplateTypeScript, TemplateTypeResource, TemplateTypeData:
+	case TemplateTypeContainer, TemplateTypeContainerSet, TemplateTypeScript, TemplateTypeData:
 		return NodeTypePod
+	case TemplateTypeResource:
+		return NodeTypeResourceMonitor
 	case TemplateTypeDAG:
 		return NodeTypeDAG
 	case TemplateTypeSteps:

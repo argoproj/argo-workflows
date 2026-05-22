@@ -3238,7 +3238,7 @@ func (woc *wfOperationCtx) getOutboundNodes(ctx context.Context, nodeID string) 
 		woc.log.WithPanic().WithField("nodeID", nodeID).Error(ctx, "was unable to obtain node")
 	}
 	switch node.Type {
-	case wfv1.NodeTypeSkipped, wfv1.NodeTypeSuspend, wfv1.NodeTypeHTTP, wfv1.NodeTypePlugin:
+	case wfv1.NodeTypeSkipped, wfv1.NodeTypeSuspend, wfv1.NodeTypeHTTP, wfv1.NodeTypePlugin, wfv1.NodeTypeResourceMonitor:
 		return []string{node.ID}
 	case wfv1.NodeTypePod:
 
