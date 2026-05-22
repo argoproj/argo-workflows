@@ -3777,6 +3777,11 @@ func (woc *wfOperationCtx) executeResource(ctx context.Context, nodeName string,
 		tmpl.Resource.Manifest = string(bytes)
 	}
 
+	// Populate ArchiveLocation so the agent can archive kubectl output as a
+	// main-logs artifact. The legacy pod-based path got this via the wait
+	// sidecar's saveContainerLogs; the agent has to be told where to upload.
+	woc.addArchiveLocation(ctx, tmpl)
+
 	woc.taskSet[node.ID] = *tmpl
 	return node, nil
 }

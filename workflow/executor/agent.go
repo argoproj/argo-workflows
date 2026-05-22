@@ -74,6 +74,9 @@ type pendingResourceTask struct {
 	successReqs labels.Requirements
 	failReqs    labels.Requirements
 	outputs     []wfv1.Parameter
+	// logArt is the already-uploaded main-logs artifact, attached to the
+	// terminal NodeResult so the workflow surfaces it on the node's outputs.
+	logArt *wfv1.Artifact
 }
 
 type templateExecutor = func(ctx context.Context, nodeID string, tmpl wfv1.Template, result *wfv1.NodeResult) (time.Duration, error)
@@ -493,6 +496,80 @@ func (ae *AgentExecutor) obtainManifest(ctx context.Context, nodeID string, tmpl
 	return manifest, path, nil
 }
 
+// archiveAgentLogs writes the captured kubectl invocation log to the
+// workflow's configured archive location as the `main-logs` artifact and
+// returns the artifact with location + key populated. Returns nil if log
+// archival is disabled, no archive location is configured, or the upload
+// fails — the caller treats archival as best-effort.
+//
+// This re-implements, for the agent path, what the legacy resource-pod's
+// wait sidecar did via saveContainerLogs: the artifact name is `main-logs`
+// (matching the main container's name + "-logs" suffix used by the wait
+// sidecar) and the key extends the template's ArchiveLocation by `main.log`.
+func (ae *AgentExecutor) archiveAgentLogs(ctx context.Context, tmpl *wfv1.Template, logBytes []byte) *wfv1.Artifact {
+	logger := logging.RequireLoggerFromContext(ctx)
+	if tmpl.ArchiveLocation == nil || !tmpl.ArchiveLocation.IsArchiveLogs() {
+		return nil
+	}
+	if !tmpl.ArchiveLocation.HasLocation() {
+		logger.Info(ctx, "Skipping main-logs archival: template ArchiveLocation has no location")
+		return nil
+	}
+	baseKey, err := tmpl.ArchiveLocation.GetKey()
+	if err != nil {
+		logger.WithError(err).Warn(ctx, "Skipping main-logs archival: GetKey failed")
+		return nil
+	}
+
+	tmp, err := os.CreateTemp("", "agent-main-logs-*.log")
+	if err != nil {
+		logger.WithError(err).Warn(ctx, "Skipping main-logs archival: temp file create failed")
+		return nil
+	}
+	tmpPath := tmp.Name()
+	defer os.Remove(tmpPath)
+	if _, writeErr := tmp.Write(logBytes); writeErr != nil {
+		_ = tmp.Close()
+		logger.WithError(writeErr).Warn(ctx, "Skipping main-logs archival: write failed")
+		return nil
+	}
+	if closeErr := tmp.Close(); closeErr != nil {
+		logger.WithError(closeErr).Warn(ctx, "Skipping main-logs archival: close failed")
+		return nil
+	}
+
+	art := &wfv1.Artifact{Name: "main-logs"}
+	locType, err := tmpl.ArchiveLocation.Get()
+	if err != nil {
+		logger.WithError(err).Warn(ctx, "Skipping main-logs archival: ArchiveLocation.Get failed")
+		return nil
+	}
+	if setTypeErr := art.SetType(locType); setTypeErr != nil {
+		logger.WithError(setTypeErr).Warn(ctx, "Skipping main-logs archival: SetType failed")
+		return nil
+	}
+	if setKeyErr := art.SetKey(filepath.Join(baseKey, "main.log")); setKeyErr != nil {
+		logger.WithError(setKeyErr).Warn(ctx, "Skipping main-logs archival: SetKey failed")
+		return nil
+	}
+	if relErr := art.Relocate(tmpl.ArchiveLocation); relErr != nil {
+		logger.WithError(relErr).Warn(ctx, "Skipping main-logs archival: Relocate failed")
+		return nil
+	}
+
+	driver, drvErr := artifacts.NewDriver(ctx, art, ae)
+	if drvErr != nil {
+		logger.WithError(drvErr).Warn(ctx, "Skipping main-logs archival: driver init failed")
+		return nil
+	}
+	if saveErr := driver.Save(ctx, tmpPath, art); saveErr != nil {
+		logger.WithError(saveErr).Warn(ctx, "main-logs archival upload failed")
+		return nil
+	}
+	logger.WithField("key", art.GetKey).Info(ctx, "Archived main-logs")
+	return art
+}
+
 // downloadManifestArtifact fetches a single input artifact via the standard
 // artifact-driver interface and returns its raw bytes.
 //
@@ -688,10 +765,10 @@ func inferGVR(obj unstructured.Unstructured) schema.GroupVersionResource {
 	return schema.GroupVersionResource{Group: gvk.Group, Version: gvk.Version, Resource: plural}
 }
 
-func (ae *AgentExecutor) executeResource(ctx context.Context, action string, manifestPath string, mergeStrategy string, flags []string) (string, string, schema.GroupVersionResource, error) {
+func (ae *AgentExecutor) executeResource(ctx context.Context, action string, manifestPath string, mergeStrategy string, flags []string) (string, string, schema.GroupVersionResource, []byte, error) {
 	args, err := getKubectlArguments(action, manifestPath, mergeStrategy, flags)
 	if err != nil {
-		return "", "", schema.GroupVersionResource{}, err
+		return "", "", schema.GroupVersionResource{}, nil, err
 	}
 	var out []byte
 	err = retry.OnError(retry.DefaultBackoff, func(err error) bool {
@@ -703,6 +780,7 @@ func (ae *AgentExecutor) executeResource(ctx context.Context, action string, man
 		}
 		return nil
 	})
+	log := buildKubectlLog(args, out, err)
 	if err != nil {
 		var exErr *exec.ExitError
 		if goerrors.As(err, &exErr) {
@@ -711,31 +789,51 @@ func (ae *AgentExecutor) executeResource(ctx context.Context, action string, man
 		} else {
 			err = argoerrors.Wrap(err, argoerrors.CodeBadRequest, err.Error())
 		}
-		return "", "", schema.GroupVersionResource{}, argoerrors.Wrap(err, argoerrors.CodeBadRequest, "no more retries "+err.Error())
+		return "", "", schema.GroupVersionResource{}, log, argoerrors.Wrap(err, argoerrors.CodeBadRequest, "no more retries "+err.Error())
 	}
 	if action == "delete" {
-		return "", "", schema.GroupVersionResource{}, nil
+		return "", "", schema.GroupVersionResource{}, log, nil
 	}
 	if action == "get" && len(out) == 0 {
-		return "", "", schema.GroupVersionResource{}, nil
+		return "", "", schema.GroupVersionResource{}, log, nil
 	}
 	obj := unstructured.Unstructured{}
 	err = json.Unmarshal(out, &obj)
 	if err != nil {
-		return "", "", schema.GroupVersionResource{}, err
+		return "", "", schema.GroupVersionResource{}, log, err
 	}
 	resourceGroup := obj.GroupVersionKind().Group
 	resourceName := obj.GetName()
 	resourceKind := obj.GroupVersionKind().Kind
 	if resourceName == "" || resourceKind == "" {
-		return "", "", schema.GroupVersionResource{}, argoerrors.New(argoerrors.CodeBadRequest, "Kind and name are both required but at least one of them is missing from the manifest")
+		return "", "", schema.GroupVersionResource{}, log, argoerrors.New(argoerrors.CodeBadRequest, "Kind and name are both required but at least one of them is missing from the manifest")
 	}
 	resourceFullName := fmt.Sprintf("%s.%s/%s", strings.ToLower(resourceKind), resourceGroup, resourceName)
 	gvr := inferGVR(obj)
 	logger := logging.RequireLoggerFromContext(ctx)
 	logger.WithFields(logging.Fields{"namespace": obj.GetNamespace(), "resource": resourceFullName, "gvr": gvr.String()}).Info(ctx, "Resource")
 
-	return obj.GetNamespace(), resourceName, gvr, nil
+	return obj.GetNamespace(), resourceName, gvr, log, nil
+}
+
+// buildKubectlLog reproduces the "main container logs" content the legacy
+// wait sidecar would have captured for a resource template pod: the kubectl
+// invocation, its stdout, and any final error. The agent uploads this as the
+// main-logs artifact so resource templates retain log-archival parity with
+// the pod-based path.
+func buildKubectlLog(args []string, out []byte, runErr error) []byte {
+	var b bytes.Buffer
+	b.WriteString("$ " + strings.Join(args, " ") + "\n")
+	if len(out) > 0 {
+		b.Write(out)
+		if out[len(out)-1] != '\n' {
+			b.WriteByte('\n')
+		}
+	}
+	if runErr != nil {
+		b.WriteString("error: " + runErr.Error() + "\n")
+	}
+	return b.Bytes()
 }
 
 // handleDone is the per-event callback fed to the MonitoredResourceInformer.
@@ -767,10 +865,10 @@ func (ae *AgentExecutor) handleDone(ctx context.Context, obj *unstructured.Unstr
 
 	if deleted {
 		logger.Info(ctx, "Monitored resource deleted before completion")
-		ae.completeNode(nodeID, &wfv1.NodeResult{
+		ae.completeNode(nodeID, withLogArtifact(&wfv1.NodeResult{
 			Phase:   wfv1.NodeFailed,
 			Message: "monitored resource was deleted before completion",
-		})
+		}, pending.logArt))
 		return
 	}
 
@@ -787,20 +885,20 @@ func (ae *AgentExecutor) handleDone(ctx context.Context, obj *unstructured.Unstr
 	}
 	if matchErr != nil {
 		logger.WithError(matchErr).Info(ctx, "Failure condition matched; completing node as failed")
-		ae.completeNode(nodeID, &wfv1.NodeResult{
+		ae.completeNode(nodeID, withLogArtifact(&wfv1.NodeResult{
 			Phase:   wfv1.NodeFailed,
 			Message: matchErr.Error(),
-		})
+		}, pending.logArt))
 		return
 	}
 
 	outs, err := extractOutputs(ctx, jsonBytes, pending.outputs)
 	if err != nil {
 		logger.WithError(err).Info(ctx, "Failed to extract outputs; completing node as failed")
-		ae.completeNode(nodeID, &wfv1.NodeResult{
+		ae.completeNode(nodeID, withLogArtifact(&wfv1.NodeResult{
 			Phase:   wfv1.NodeFailed,
 			Message: fmt.Sprintf("extract outputs: %v", err),
-		})
+		}, pending.logArt))
 		return
 	}
 	result := &wfv1.NodeResult{Phase: wfv1.NodeSucceeded}
@@ -808,7 +906,20 @@ func (ae *AgentExecutor) handleDone(ctx context.Context, obj *unstructured.Unstr
 		result.Outputs = &wfv1.Outputs{Parameters: outs}
 	}
 	logger.Info(ctx, "Success condition matched; completing node as succeeded")
-	ae.completeNode(nodeID, result)
+	ae.completeNode(nodeID, withLogArtifact(result, pending.logArt))
+}
+
+// withLogArtifact attaches the main-logs artifact to a NodeResult, allocating
+// Outputs if needed. Returns r unchanged when art is nil.
+func withLogArtifact(r *wfv1.NodeResult, art *wfv1.Artifact) *wfv1.NodeResult {
+	if art == nil {
+		return r
+	}
+	if r.Outputs == nil {
+		r.Outputs = &wfv1.Outputs{}
+	}
+	r.Outputs.Artifacts = append(r.Outputs.Artifacts, *art)
+	return r
 }
 
 // completeNode drops the pending entry and pushes the result onto the
@@ -892,9 +1003,21 @@ func (ae *AgentExecutor) executeResourceTemplate(ctx context.Context, nodeID str
 		return 0, fmt.Errorf("successCondition, failureCondition and outputs are not supported for delete action")
 	}
 
-	_, _, gvr, err := ae.executeResource(ctx, action, manifestPath, tmpl.Resource.MergeStrategy, tmpl.Resource.Flags)
-	if err != nil {
-		return 0, err
+	_, _, gvr, kubectlLog, kubectlErr := ae.executeResource(ctx, action, manifestPath, tmpl.Resource.MergeStrategy, tmpl.Resource.Flags)
+
+	// Archive the kubectl invocation as main-logs (parity with the legacy
+	// pod-based path's wait sidecar). Best-effort: archival failure must not
+	// mask the underlying kubectl outcome.
+	logArt := ae.archiveAgentLogs(ctx, &tmpl, kubectlLog)
+	if logArt != nil {
+		if result.Outputs == nil {
+			result.Outputs = &wfv1.Outputs{}
+		}
+		result.Outputs.Artifacts = append(result.Outputs.Artifacts, *logArt)
+	}
+
+	if kubectlErr != nil {
+		return 0, kubectlErr
 	}
 	if isDelete {
 		result.Phase = wfv1.NodeSucceeded
@@ -910,15 +1033,32 @@ func (ae *AgentExecutor) executeResourceTemplate(ctx context.Context, nodeID str
 		successReqs: successReqs,
 		failReqs:    failReqs,
 		outputs:     tmpl.Outputs.Parameters,
+		logArt:      logArt,
 	}
 	ae.pendingMu.Unlock()
 
 	if err := ae.resourceInformer.Watch(ctx, gvr); err != nil {
 		logger.WithError(err).Info(ctx, "was unable to watch on the resource")
-		ae.completeNode(nodeID, &wfv1.NodeResult{
+		nr := &wfv1.NodeResult{
 			Phase:   wfv1.NodeFailed,
 			Message: fmt.Sprintf("watch %s: %v", gvr, err),
-		})
+		}
+		if logArt != nil {
+			nr.Outputs = &wfv1.Outputs{Artifacts: wfv1.Artifacts{*logArt}}
+		}
+		ae.completeNode(nodeID, nr)
+		return 0, nil
+	}
+	// Watch's cache sync dispatches the initial Add events synchronously, so
+	// handleDone may have already resolved this node before we get here (e.g.
+	// templates with no successCondition complete on the first event). If
+	// pendingTasks no longer holds the entry, completeNode already pushed a
+	// terminal result — leaving result.Phase empty stops runWorker from
+	// sending a Running result that would clobber the terminal one.
+	ae.pendingMu.Lock()
+	_, stillPending := ae.pendingTasks[nodeID]
+	ae.pendingMu.Unlock()
+	if !stillPending {
 		return 0, nil
 	}
 	result.Phase = wfv1.NodeRunning
