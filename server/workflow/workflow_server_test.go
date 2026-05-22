@@ -879,7 +879,7 @@ func buildPaginationTestServer(t *testing.T, archive sqldb.WorkflowArchive, live
 	for i, wf := range liveWfs {
 		objs[i] = wf
 	}
-	wfClientset := v1alpha.NewSimpleClientset(objs...)
+	wfClientset := v1alpha.NewClientset(objs...)
 
 	ctx := logging.TestContext(t.Context())
 	ctx = context.WithValue(context.WithValue(context.WithValue(ctx, auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}, Email: "my-sub@your.org"})
