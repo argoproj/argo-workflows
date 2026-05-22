@@ -343,8 +343,12 @@ func TestSemaphoreScriptConfigMapInDifferentNamespace(t *testing.T) {
 	})
 }
 
+// TestSemaphoreResourceTmplLevel exercises the semaphore acquire/release path
+// for a template that now runs through the agent. Lock release is driven by
+// failing the agent pod, which marks the in-flight taskset nodes as errored
+// and lets the next workflow acquire.
 func TestSemaphoreResourceTmplLevel(t *testing.T) {
-	cancel, controller := newController(logging.TestContext(t.Context()))
+	cancel, controller := newController(logging.TestContext(t.Context()), defaultServiceAccount)
 	defer cancel()
 	ctx := logging.TestContext(t.Context())
 	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
@@ -367,6 +371,12 @@ func TestSemaphoreResourceTmplLevel(t *testing.T) {
 		assert.NotNil(t, woc.wf.Status.Synchronization.Semaphore)
 		assert.Len(t, woc.wf.Status.Synchronization.Semaphore.Holding, 1)
 
+		// The resource template was dispatched to the agent: a TaskSet
+		// should now carry the task and an agent pod should exist.
+		ts, err := controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets(wf.Namespace).Get(ctx, wf.Name, metav1.GetOptions{})
+		require.NoError(t, err)
+		assert.Len(t, ts.Spec.Tasks, 1)
+
 		for _, node := range woc.wf.Status.Nodes {
 			assert.Equal(t, wfv1.NodePending, node.Phase)
 		}
@@ -387,7 +397,9 @@ func TestSemaphoreResourceTmplLevel(t *testing.T) {
 			assert.Equal(t, wfv1.NodePending, node.Phase)
 		}
 
-		// Updating Pod state
+		// Fail the agent pod for workflow "one"; the controller's agent-pod
+		// assessment will mark its taskset nodes as errored, fulfilling the
+		// resource node and releasing the semaphore.
 		makePodsPhase(ctx, woc, apiv1.PodFailed)
 
 		// Release the lock

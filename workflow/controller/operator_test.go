@@ -3830,6 +3830,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: resource-template
+  namespace: default
 spec:
   entrypoint: resource
   templates:
@@ -3843,31 +3844,37 @@ spec:
           name: resource-cm
 `
 
+// TestResourceTemplate asserts that a resource template is dispatched via the
+// agent: the controller should produce a WorkflowTaskSet whose Spec.Tasks
+// carries the resource template manifest, rather than creating a per-resource
+// pod (the legacy path).
 func TestResourceTemplate(t *testing.T) {
-	cancel, controller := newController(logging.TestContext(t.Context()))
-	defer cancel()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-
-	// operate the workflow. it should create a pod.
 	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, defaultServiceAccount)
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("default")
+
 	wf := wfv1.MustUnmarshalWorkflow(resourceTemplate)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
+
 	wf, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
 	require.NoError(t, err)
 	assert.Equal(t, wfv1.WorkflowRunning, wf.Status.Phase)
 
-	pod, err := getPod(ctx, woc, "resource-template")
+	ts, err := controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").Get(ctx, wf.Name, metav1.GetOptions{})
 	require.NoError(t, err)
-	tmpl, err := getPodTemplate(pod)
-	require.NoError(t, err)
-	cm := apiv1.ConfigMap{}
-	err = yaml.Unmarshal([]byte(tmpl.Resource.Manifest), &cm)
-	require.NoError(t, err)
-	assert.Equal(t, "resource-cm", cm.Name)
-	assert.Empty(t, cm.OwnerReferences)
+	require.Len(t, ts.Spec.Tasks, 1)
+
+	for _, tmpl := range ts.Spec.Tasks {
+		require.NotNil(t, tmpl.Resource)
+		cm := apiv1.ConfigMap{}
+		require.NoError(t, yaml.Unmarshal([]byte(tmpl.Resource.Manifest), &cm))
+		assert.Equal(t, "resource-cm", cm.Name)
+		assert.Empty(t, cm.OwnerReferences)
+	}
 }
 
 var resourceWithOwnerReferenceTemplate = `
@@ -3875,6 +3882,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: resource-with-ownerreference-template
+  namespace: default
 spec:
   entrypoint: start
   templates:
@@ -3926,31 +3934,34 @@ spec:
             uid: "manual-ref-uid"
 `
 
+// TestResourceWithOwnerReferenceTemplate verifies that setOwnerReference
+// merges the workflow's controller ref into the manifest the agent receives,
+// and that manually-supplied ownerReferences are preserved.
 func TestResourceWithOwnerReferenceTemplate(t *testing.T) {
-	cancel, controller := newController(logging.TestContext(t.Context()))
-	defer cancel()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-
-	// operate the workflow. it should create a pod.
 	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, defaultServiceAccount)
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("default")
+
 	wf := wfv1.MustUnmarshalWorkflow(resourceWithOwnerReferenceTemplate)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
+
 	wf, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
 	require.NoError(t, err)
 	assert.Equal(t, wfv1.WorkflowRunning, wf.Status.Phase)
 
-	pods, err := listPods(ctx, woc)
+	ts, err := controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").Get(ctx, wf.Name, metav1.GetOptions{})
 	require.NoError(t, err)
+	require.Len(t, ts.Spec.Tasks, 3)
+
 	objectMetas := map[string]metav1.ObjectMeta{}
-	for _, pod := range pods.Items {
-		tmpl, err := getPodTemplate(&pod)
-		require.NoError(t, err)
+	for _, tmpl := range ts.Spec.Tasks {
+		require.NotNil(t, tmpl.Resource)
 		cm := apiv1.ConfigMap{}
-		err = yaml.Unmarshal([]byte(tmpl.Resource.Manifest), &cm)
-		require.NoError(t, err)
+		require.NoError(t, yaml.Unmarshal([]byte(tmpl.Resource.Manifest), &cm))
 		objectMetas[cm.Name] = cm.ObjectMeta
 	}
 	require.Len(t, objectMetas["resource-cm-1"].OwnerReferences, 1)

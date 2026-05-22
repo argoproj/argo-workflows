@@ -2734,7 +2734,7 @@ func (n *NodeStatus) IsActiveSuspendNode() bool {
 
 // IsTaskSetNode returns whether this node uses the taskset
 func (n *NodeStatus) IsTaskSetNode() bool {
-	return n.Type == NodeTypeHTTP || n.Type == NodeTypePlugin
+	return n.Type == NodeTypeHTTP || n.Type == NodeTypePlugin || n.Type == NodeTypeResourceMonitor
 }
 
 func (n NodeStatus) GetDuration() time.Duration {
