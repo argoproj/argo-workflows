@@ -159,7 +159,7 @@ func (a *fakeArtifactDriver) ListObjects(_ context.Context, artifact *wfv1.Artif
 func newServer(t *testing.T) *ArtifactServer {
 	t.Helper()
 	gatekeeper := &authmocks.Gatekeeper{}
-	kube := kubefake.NewSimpleClientset()
+	kube := kubefake.NewClientset()
 	instanceID := "my-instanceid"
 	wf := &wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Name: "my-wf", Labels: map[string]string{
@@ -355,7 +355,7 @@ func newServer(t *testing.T) *ArtifactServer {
 			},
 		},
 	}
-	argo := fakewfv1.NewSimpleClientset(wf, &wfv1.Workflow{
+	argo := fakewfv1.NewClientset(wf, &wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Name: "your-wf"},
 	})
 	ctx := context.WithValue(context.WithValue(logging.TestContext(t.Context()), auth.KubeKey, kube), auth.WfKey, argo)
@@ -493,7 +493,7 @@ func TestArtifactServer_GetArtifactFile(t *testing.T) {
 				}
 				if tt.isDirectory {
 					fmt.Printf("got directory listing:\n%s\n", all)
-					assert.Contains(t, recorder.Header().Get("Content-Security-Policy"), "sandbox")
+					assert.Contains(t, recorder.Header().Get("Content-Security-Policy"), "sandbox allow-same-origin")
 					assert.Equal(t, "SAMEORIGIN", recorder.Header().Get("X-Frame-Options"))
 					// verify that the files are contained in the listing we got back
 					assert.Len(t, tt.directoryFiles, strings.Count(string(all), "<li>"))

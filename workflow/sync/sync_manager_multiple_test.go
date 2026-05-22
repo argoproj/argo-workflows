@@ -14,7 +14,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 
@@ -66,18 +65,18 @@ func setupMultipleLockManagers(t *testing.T, dbType sqldb.DBType, semaphoreSize 
 
 	// Set up the semaphore limit in the database
 	dbKey := "default/my-db-semaphore"
-	_, err = info.Session.SQL().Exec("INSERT INTO sync_limit (name, sizelimit) VALUES (?, ?)", dbKey, semaphoreSize)
+	_, err = info.SessionProxy.Session().SQL().Exec("INSERT INTO sync_limit (name, sizelimit) VALUES (?, ?)", dbKey, semaphoreSize)
 	require.NoError(t, err)
 
 	// Create two sync managers with the same database session
-	syncMgr1 := createLockManager(ctx, info.Session, dbType, &cfg, func(_ context.Context, _ string) (int, error) { return 2, nil }, func(key string) {}, WorkflowExistenceFunc)
+	syncMgr1 := createLockManager(ctx, info.SessionProxy, &cfg, func(_ context.Context, _ string) (int, error) { return 2, nil }, func(key string) {}, WorkflowExistenceFunc)
 	require.NotNil(t, syncMgr1)
-	require.NotNil(t, syncMgr1.dbInfo.Session)
+	require.NotNil(t, syncMgr1.dbInfo.SessionProxy.Session())
 	// Second controller
 	cfg.ControllerName = "test2"
-	syncMgr2 := createLockManager(ctx, info.Session, dbType, &cfg, func(_ context.Context, _ string) (int, error) { return 2, nil }, func(key string) {}, WorkflowExistenceFunc)
+	syncMgr2 := createLockManager(ctx, info.SessionProxy, &cfg, func(_ context.Context, _ string) (int, error) { return 2, nil }, func(key string) {}, WorkflowExistenceFunc)
 	require.NotNil(t, syncMgr2)
-	require.NotNil(t, syncMgr2.dbInfo.Session)
+	require.NotNil(t, syncMgr2.dbInfo.SessionProxy.Session())
 	return ctx, deferfn2, syncMgr1, syncMgr2
 }
 
@@ -128,20 +127,20 @@ func testSyncManagersSemaphoreAcquisitionWithPriorityForDB(t *testing.T, dbType 
 	// Create 4 workflows
 	wf01 := wfv1.MustUnmarshalWorkflow(wfWithDatabaseSemaphore)
 	wf01.CreationTimestamp = metav1.Time{Time: time.Now().Add(-4 * time.Second)}
-	wf01.Spec.Priority = ptr.To(int32(1))
+	wf01.Spec.Priority = new(int32(1))
 	wf01.Name = "wf-01"
 	wf02 := wf01.DeepCopy()
 	wf02.CreationTimestamp = metav1.Time{Time: time.Now().Add(-3 * time.Second)}
 	wf02.Name = "wf-02"
-	wf02.Spec.Priority = ptr.To(int32(2))
+	wf02.Spec.Priority = new(int32(2))
 	wf03 := wf01.DeepCopy()
 	wf03.CreationTimestamp = metav1.Time{Time: time.Now().Add(-2 * time.Second)}
 	wf03.Name = "wf-03"
-	wf03.Spec.Priority = ptr.To(int32(3))
+	wf03.Spec.Priority = new(int32(3))
 	wf04 := wf01.DeepCopy()
 	wf04.CreationTimestamp = metav1.Time{Time: time.Now().Add(-1 * time.Second)}
 	wf04.Name = "wf-04"
-	wf04.Spec.Priority = ptr.To(int32(4))
+	wf04.Spec.Priority = new(int32(4))
 
 	// wf-01 acquires lock as first to appear
 	checkCanAcquire(ctx, t, syncMgr1, wf01)

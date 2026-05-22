@@ -29,7 +29,11 @@ const introductionText = (
         from a remote system.
     </>
 );
-const learnMore = <a href={'https://argo-workflows.readthedocs.io/en/latest/events/'}>Learn more</a>;
+const learnMore = (
+    <a href={'https://argo-workflows.readthedocs.io/en/latest/events/'} target='_blank' rel='noreferrer'>
+        Learn more
+    </a>
+);
 
 export function WorkflowEventBindings({match, location, history}: RouteComponentProps<any>) {
     // boiler-plate

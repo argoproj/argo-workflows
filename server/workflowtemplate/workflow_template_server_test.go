@@ -176,13 +176,13 @@ func getWorkflowTemplateServer(t *testing.T) (workflowtemplatepkg.WorkflowTempla
 	v1alpha1.MustUnmarshal(unlabelled, &unlabelledObj)
 	v1alpha1.MustUnmarshal(wftStr2, &wftObj1)
 	v1alpha1.MustUnmarshal(wftStr3, &wftObj2)
-	kubeClientSet := fake.NewSimpleClientset()
+	kubeClientSet := fake.NewClientset()
 	kubeClientSet.PrependReactor("create", "selfsubjectaccessreviews", func(action k8stesting.Action) (bool, runtime.Object, error) {
 		return true, &authorizationv1.SelfSubjectAccessReview{
 			Status: authorizationv1.SubjectAccessReviewStatus{Allowed: true},
 		}, nil
 	})
-	wfClientset := wftFake.NewSimpleClientset(&unlabelledObj, &wftObj1, &wftObj2)
+	wfClientset := wftFake.NewClientset(&unlabelledObj, &wftObj1, &wftObj2)
 	ctx := context.WithValue(context.WithValue(context.WithValue(logging.TestContext(t.Context()), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}, Email: "my-sub@your.org"})
 	wftmplStore := NewClientStore()
 	cwftmplStore := clusterworkflowtemplate.NewClientStore()
@@ -238,7 +238,7 @@ func TestWorkflowTemplateServer_GetWorkflowTemplate(t *testing.T) {
 		require.Error(t, err)
 	})
 	t.Run("Unauthorized", func(t *testing.T) {
-		kubeClientSet := fake.NewSimpleClientset()
+		kubeClientSet := fake.NewClientset()
 		kubeClientSet.PrependReactor("create", "selfsubjectaccessreviews", func(action k8stesting.Action) (bool, runtime.Object, error) {
 			return true, &authorizationv1.SelfSubjectAccessReview{
 				Status: authorizationv1.SubjectAccessReviewStatus{Allowed: false},
@@ -246,7 +246,7 @@ func TestWorkflowTemplateServer_GetWorkflowTemplate(t *testing.T) {
 		})
 		var wftObj1 v1alpha1.WorkflowTemplate
 		v1alpha1.MustUnmarshal(wftStr2, &wftObj1)
-		wfClientset := wftFake.NewSimpleClientset(&wftObj1)
+		wfClientset := wftFake.NewClientset(&wftObj1)
 		ctx := context.WithValue(context.WithValue(context.WithValue(logging.TestContext(t.Context()),
 			auth.WfKey, wfClientset),
 			auth.KubeKey, kubeClientSet),

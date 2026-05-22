@@ -155,13 +155,13 @@ const userEmailLabel = "my-sub.at.your.org"
 
 func getClusterWorkflowTemplateServer(t *testing.T) (clusterwftmplpkg.ClusterWorkflowTemplateServiceServer, context.Context) {
 	t.Helper()
-	kubeClientSet := fake.NewSimpleClientset()
+	kubeClientSet := fake.NewClientset()
 	kubeClientSet.PrependReactor("create", "selfsubjectaccessreviews", func(action k8stesting.Action) (bool, runtime.Object, error) {
 		return true, &authorizationv1.SelfSubjectAccessReview{
 			Status: authorizationv1.SubjectAccessReviewStatus{Allowed: true},
 		}, nil
 	})
-	wfClientset := wftFake.NewSimpleClientset(&unlabelled, &cwftObj2, &cwftObj3)
+	wfClientset := wftFake.NewClientset(&unlabelled, &cwftObj2, &cwftObj3)
 	ctx := context.WithValue(logging.TestContext(t.Context()), auth.WfKey, wfClientset)
 	ctx = context.WithValue(ctx, auth.KubeKey, kubeClientSet)
 	ctx = context.WithValue(ctx, auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}, Email: "my-sub@your.org"})
@@ -216,13 +216,13 @@ func TestWorkflowTemplateServer_GetClusterWorkflowTemplate(t *testing.T) {
 		require.Error(t, err)
 	})
 	t.Run("Unauthorized", func(t *testing.T) {
-		kubeClientSet := fake.NewSimpleClientset()
+		kubeClientSet := fake.NewClientset()
 		kubeClientSet.PrependReactor("create", "selfsubjectaccessreviews", func(action k8stesting.Action) (bool, runtime.Object, error) {
 			return true, &authorizationv1.SelfSubjectAccessReview{
 				Status: authorizationv1.SubjectAccessReviewStatus{Allowed: false},
 			}, nil
 		})
-		wfClientset := wftFake.NewSimpleClientset(&cwftObj2)
+		wfClientset := wftFake.NewClientset(&cwftObj2)
 		ctx := context.WithValue(context.WithValue(context.WithValue(logging.TestContext(t.Context()),
 			auth.WfKey, wfClientset),
 			auth.KubeKey, kubeClientSet),

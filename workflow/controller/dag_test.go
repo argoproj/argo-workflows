@@ -3778,3 +3778,413 @@ func TestDagWftmplHookWithRetry(t *testing.T) {
 	finishNode := woc.wf.Status.Nodes.FindByDisplayName("finish")
 	assert.Equal(t, wfv1.NodeOmitted, finishNode.Phase)
 }
+
+// Regression test: referencing {{tasks.<taskgroup>.id}} where the ancestor is a TaskGroup
+// (created by withParam expansion). Before the fix, buildLocalScope was only called for
+// non-TaskGroup ancestors, so tasks.<taskgroup>.id was unavailable and caused a requeue.
+var dagTaskGroupIDRef = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-taskgroup-id-ref
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: generate
+        template: gen-list
+      - name: fanout
+        dependencies: [generate]
+        template: echo
+        arguments:
+          parameters:
+          - name: msg
+            value: '{{item}}'
+        withParam: '{{tasks.generate.outputs.result}}'
+      - name: use-id
+        dependencies: [fanout]
+        template: echo
+        arguments:
+          parameters:
+          - name: msg
+            value: '{{tasks.fanout.id}}'
+  - name: gen-list
+    script:
+      image: python:alpine3.23
+      command: [python]
+      source: |
+        import json, sys
+        json.dump([0, 1], sys.stdout)
+  - name: echo
+    inputs:
+      parameters:
+      - name: msg
+    container:
+      image: alpine:3.23
+      command: [echo, '{{inputs.parameters.msg}}']
+status:
+  nodes:
+    dag-taskgroup-id-ref:
+      id: dag-taskgroup-id-ref
+      name: dag-taskgroup-id-ref
+      displayName: dag-taskgroup-id-ref
+      type: DAG
+      templateName: main
+      templateScope: local/dag-taskgroup-id-ref
+      phase: Running
+      startedAt: "2020-04-20T16:39:00Z"
+      children:
+      - dag-taskgroup-id-ref-455800905
+    dag-taskgroup-id-ref-455800905:
+      id: dag-taskgroup-id-ref-455800905
+      name: dag-taskgroup-id-ref.generate
+      displayName: generate
+      type: Pod
+      templateName: gen-list
+      templateScope: local/dag-taskgroup-id-ref
+      boundaryID: dag-taskgroup-id-ref
+      phase: Succeeded
+      startedAt: "2020-04-20T16:39:00Z"
+      finishedAt: "2020-04-20T16:39:02Z"
+      children:
+      - dag-taskgroup-id-ref-2094038697
+      outputs:
+        result: '[0, 1]'
+        exitCode: "0"
+    dag-taskgroup-id-ref-2094038697:
+      id: dag-taskgroup-id-ref-2094038697
+      name: dag-taskgroup-id-ref.fanout
+      displayName: fanout
+      type: TaskGroup
+      templateName: echo
+      templateScope: local/dag-taskgroup-id-ref
+      boundaryID: dag-taskgroup-id-ref
+      phase: Succeeded
+      startedAt: "2020-04-20T16:39:03Z"
+      finishedAt: "2020-04-20T16:39:09Z"
+      children:
+      - dag-taskgroup-id-ref-2700861446
+      - dag-taskgroup-id-ref-3319419394
+    dag-taskgroup-id-ref-2700861446:
+      id: dag-taskgroup-id-ref-2700861446
+      name: dag-taskgroup-id-ref.fanout(0:0)
+      displayName: fanout(0:0)
+      type: Pod
+      templateName: echo
+      templateScope: local/dag-taskgroup-id-ref
+      boundaryID: dag-taskgroup-id-ref
+      phase: Succeeded
+      startedAt: "2020-04-20T16:39:03Z"
+      finishedAt: "2020-04-20T16:39:06Z"
+      inputs:
+        parameters:
+        - name: msg
+          value: "0"
+      outputs:
+        exitCode: "0"
+    dag-taskgroup-id-ref-3319419394:
+      id: dag-taskgroup-id-ref-3319419394
+      name: dag-taskgroup-id-ref.fanout(1:1)
+      displayName: fanout(1:1)
+      type: Pod
+      templateName: echo
+      templateScope: local/dag-taskgroup-id-ref
+      boundaryID: dag-taskgroup-id-ref
+      phase: Succeeded
+      startedAt: "2020-04-20T16:39:03Z"
+      finishedAt: "2020-04-20T16:39:07Z"
+      inputs:
+        parameters:
+        - name: msg
+          value: "1"
+      outputs:
+        exitCode: "0"
+  phase: Running
+  startedAt: "2020-04-20T16:39:00Z"
+`
+
+func TestDAGTaskGroupIDReference(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	wf := wfv1.MustUnmarshalWorkflow(dagTaskGroupIDRef)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	woc.operate(ctx)
+
+	// Verify the use-id task was created (not stuck in requeue due to missing variable)
+	useIDNode := woc.wf.Status.Nodes.FindByDisplayName("use-id")
+	require.NotNil(t, useIDNode, "use-id node should be created when tasks.fanout.id is resolvable")
+
+	// Verify the resolved value of tasks.fanout.id matches the TaskGroup node's ID
+	require.NotNil(t, useIDNode.Inputs)
+	require.Len(t, useIDNode.Inputs.Parameters, 1)
+	assert.Equal(t, "dag-taskgroup-id-ref-2094038697", useIDNode.Inputs.Parameters[0].Value.String())
+}
+
+var dagWhenSkipNoRequeue = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-when-skip-no-requeue-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: A
+        template: script-echo
+        when: "false"
+      - name: B
+        dependencies: [A]
+        when: "{{tasks.A.status}} == Succeeded"
+        template: echo-with-param
+        arguments:
+          parameters:
+          - name: msg
+            value: "{{tasks.A.outputs.result}}"
+  - name: script-echo
+    script:
+      image: alpine:3.23
+      command: [sh]
+      source: |
+        echo hello
+  - name: echo-with-param
+    inputs:
+      parameters:
+      - name: msg
+    container:
+      image: alpine:3.23
+      command: [echo, "{{inputs.parameters.msg}}"]
+`
+
+// TestDAGWhenSkipNoRequeue verifies that a DAG task with a "when" clause that evaluates to false
+// does not cause a requeue even when other fields in the task reference outputs that don't exist.
+// Scenario: A is skipped (when: "false"), so A's outputs don't exist. B depends on A and has
+// when: "{{tasks.A.status}} == Succeeded" which evaluates to false ("Skipped == Succeeded").
+// B also references {{tasks.A.outputs.result}} which is unresolvable since A was skipped.
+// Without the fix, the full ReplaceStrict would fail on the missing output and requeue.
+// With the fix, the when clause is resolved first, evaluates to false, and B is skipped early.
+func TestDAGWhenSkipNoRequeue(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	wf := wfv1.MustUnmarshalWorkflow(dagWhenSkipNoRequeue)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	woc.operate(ctx)
+
+	// Workflow should succeed: A was skipped, B's when evaluated false so B was also skipped
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+
+	nodeB := woc.wf.Status.Nodes.FindByDisplayName("B")
+	require.NotNil(t, nodeB)
+	assert.Equal(t, wfv1.NodeSkipped, nodeB.Phase)
+}
+
+var dagSkippedOutputRef = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-skipped-output-ref
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+      - name: run-stage-b
+        value: "false"
+  templates:
+    - name: main
+      inputs:
+        parameters:
+          - name: run-stage-b
+      dag:
+        tasks:
+          - name: stage-a
+            template: stage-a
+          - name: stage-b
+            template: stage-b
+            when: "\"{{inputs.parameters.run-stage-b}}\" == \"true\""
+          - name: stage-c
+            template: stage-c
+            depends: "stage-a && (stage-b || stage-b.Skipped)"
+            arguments:
+              parameters:
+                - name: message-from-a
+                  value: "{{tasks.stage-a.outputs.parameters.output-message}}"
+                - name: message-from-b
+                  value: "{{tasks.stage-b.outputs.parameters.output-message}}"
+    - name: stage-a
+      outputs:
+        parameters:
+          - name: output-message
+            valueFrom:
+              path: /tmp/output.txt
+      container:
+        image: alpine:3.23
+        command: [sh, -c]
+        args: ["echo 'hello from stage A' > /tmp/output.txt"]
+    - name: stage-b
+      outputs:
+        parameters:
+          - name: output-message
+            valueFrom:
+              path: /tmp/output.txt
+      container:
+        image: alpine:3.23
+        command: [sh, -c]
+        args: ["echo 'hello from stage B' > /tmp/output.txt"]
+    - name: stage-c
+      inputs:
+        parameters:
+          - name: message-from-a
+          - name: message-from-b
+      container:
+        image: alpine:3.23
+        command: [echo]
+        args: ["{{inputs.parameters.message-from-a}}", "{{inputs.parameters.message-from-b}}"]
+status:
+  phase: Running
+  startedAt: "2024-01-01T00:00:00Z"
+  nodes:
+    dag-skipped-output-ref:
+      id: dag-skipped-output-ref
+      name: dag-skipped-output-ref
+      displayName: dag-skipped-output-ref
+      type: DAG
+      templateName: main
+      templateScope: local/dag-skipped-output-ref
+      phase: Running
+      startedAt: "2024-01-01T00:00:00Z"
+      children:
+        - dag-skipped-output-ref-1381367026
+        - dag-skipped-output-ref-1364589407
+      outboundNodes:
+        - dag-skipped-output-ref-1347811788
+    dag-skipped-output-ref-1381367026:
+      id: dag-skipped-output-ref-1381367026
+      name: dag-skipped-output-ref.stage-a
+      displayName: stage-a
+      type: Pod
+      templateName: stage-a
+      templateScope: local/dag-skipped-output-ref
+      boundaryID: dag-skipped-output-ref
+      phase: Succeeded
+      startedAt: "2024-01-01T00:00:00Z"
+      finishedAt: "2024-01-01T00:00:10Z"
+      outputs:
+        parameters:
+          - name: output-message
+            value: "hello from stage A"
+    dag-skipped-output-ref-1364589407:
+      id: dag-skipped-output-ref-1364589407
+      name: dag-skipped-output-ref.stage-b
+      displayName: stage-b
+      type: Skipped
+      templateName: stage-b
+      templateScope: local/dag-skipped-output-ref
+      boundaryID: dag-skipped-output-ref
+      phase: Skipped
+      startedAt: "2024-01-01T00:00:00Z"
+      finishedAt: "2024-01-01T00:00:00Z"
+      message: when '"false" == "true"' evaluated false
+`
+
+// TestDAGSkippedOutputRef verifies that a DAG task can reference outputs from a skipped
+// dependency without causing a requeue loop.
+// Scenario: stage-a succeeds with output parameters, stage-b is skipped (when evaluates false),
+// stage-c depends on both and references outputs from both. stage-c should still be scheduled
+// even though tasks.stage-b.outputs.parameters.output-message is unresolvable.
+func TestDAGSkippedOutputRef(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(dagSkippedOutputRef)
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	woc.operate(ctx)
+
+	// stage-c should be created and pending, not stuck in a requeue loop
+	nodeC := woc.wf.Status.Nodes.FindByDisplayName("stage-c")
+	require.NotNil(t, nodeC, "stage-c should be created even though stage-b was skipped")
+	assert.Equal(t, wfv1.NodePending, nodeC.Phase)
+}
+
+var dagWhenExprSkipEval = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-when-expr-skip-eval-
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+      - name: data
+        value: ''
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: A
+        template: echo
+        when: "false"
+        arguments:
+          parameters:
+          - name: message
+            value: A
+      - name: B
+        dependencies: [A]
+        when: "{{= workflow.parameters.data != '' }}"
+        template: echo
+        arguments:
+          parameters:
+          - name: message
+            value: "{{= jsonpath(workflow.parameters.data, '$.id') }}"
+  - name: echo
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: alpine:3.23
+      command: [echo, "{{inputs.parameters.message}}"]
+`
+
+// TestDAGWhenExprSkipEval verifies that expression templates in a DAG task's arguments are not
+// evaluated when the task's "when" clause evaluates to false.
+// Scenario: workflow parameter "data" is empty. Task B has when: "{{= workflow.parameters.data != ” }}"
+// which evaluates to false. B's argument uses jsonpath(workflow.parameters.data, '$.id') which would
+// fail on an empty string. The expression should not be evaluated since the task will be skipped.
+// Currently fails because SubstituteParams evaluates all expression templates in the entire DAG
+// template before individual task "when" conditions are checked.
+func TestDAGWhenExprSkipEval(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	wf := wfv1.MustUnmarshalWorkflow(dagWhenExprSkipEval)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	woc.operate(ctx)
+
+	// Workflow should succeed: B's when clause evaluates to false so B should be skipped
+	// without evaluating B's argument expressions.
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+
+	nodeB := woc.wf.Status.Nodes.FindByDisplayName("B")
+	require.NotNil(t, nodeB)
+	assert.Equal(t, wfv1.NodeSkipped, nodeB.Phase)
+}

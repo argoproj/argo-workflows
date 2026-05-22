@@ -19,7 +19,7 @@ func TestGetCurrentPodName(t *testing.T) {
 	t.Run("Returns pod name from environment variable", func(t *testing.T) {
 		t.Setenv(common.EnvVarPodName, "test-pod-from-env")
 
-		client := fake.NewSimpleClientset()
+		client := fake.NewClientset()
 		podName, err := GetCurrentPodName(ctx, client, "test-namespace", "app=test")
 
 		require.NoError(t, err)
@@ -44,7 +44,7 @@ func TestGetCurrentPodName(t *testing.T) {
 			},
 		}
 
-		client := fake.NewSimpleClientset(pod)
+		client := fake.NewClientset(pod)
 		podName, err := GetCurrentPodName(ctx, client, "test-namespace", "app=test")
 
 		require.NoError(t, err)
@@ -68,7 +68,7 @@ func TestGetCurrentPodName(t *testing.T) {
 			},
 		}
 
-		client := fake.NewSimpleClientset(pod)
+		client := fake.NewClientset(pod)
 		podName, err := GetCurrentPodName(ctx, client, "test-namespace", "app=test")
 
 		require.NoError(t, err)
@@ -78,7 +78,7 @@ func TestGetCurrentPodName(t *testing.T) {
 	t.Run("Returns error when no pods found", func(t *testing.T) {
 		t.Setenv(common.EnvVarPodName, "")
 
-		client := fake.NewSimpleClientset()
+		client := fake.NewClientset()
 		_, err := GetCurrentPodName(ctx, client, "test-namespace", "app=nonexistent")
 
 		require.Error(t, err)

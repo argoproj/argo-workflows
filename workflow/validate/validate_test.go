@@ -21,7 +21,7 @@ import (
 )
 
 var (
-	wfClientset   = fakewfclientset.NewSimpleClientset()
+	wfClientset   = fakewfclientset.NewClientset()
 	wftmplGetter  = templateresolution.WrapWorkflowTemplateInterface(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault))
 	cwftmplGetter = templateresolution.WrapClusterWorkflowTemplateInterface(wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 )
@@ -1612,6 +1612,31 @@ spec:
 
 func TestUndefinedTemplateRef(t *testing.T) {
 	err := validate(logging.TestContext(t.Context()), undefinedTemplateRef)
+	require.ErrorContains(t, err, "not found")
+}
+
+// templateRefWithPlaceholderInName references a non-existent template whose
+// name contains the word "placeholder". Before the fix, the substring check
+// at validateTemplateHolder would silently skip validation for this reference
+// instead of returning a "not found" error.
+var templateRefWithPlaceholderInName = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: placeholder-name-ref-
+spec:
+  entrypoint: A
+  templates:
+  - name: A
+    steps:
+      - - name: call-A
+          templateRef:
+            name: foo
+            template: run-placeholder-task
+`
+
+func TestTemplateRefWithPlaceholderInNameIsNotSkipped(t *testing.T) {
+	err := validate(logging.TestContext(t.Context()), templateRefWithPlaceholderInName)
 	require.ErrorContains(t, err, "not found")
 }
 
@@ -3459,6 +3484,277 @@ func TestDynamicWorkflowTemplateRef(t *testing.T) {
 
 	_ = deleteWorkflowTemplate(ctx, wftmplA.Name)
 	_ = deleteWorkflowTemplate(ctx, wftmplB.Name)
+}
+
+var inlineWorkflowTemplate14329 = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: test-inline-template-14329
+spec:
+  templates:
+  - inputs:
+      parameters:
+      - name: params1
+      - name: params2
+    name: main
+    steps:
+    - - name: inline-main
+        arguments:
+          parameters:
+          - name: params1
+            value: '{{inputs.parameters.params1}}'
+          - name: params2
+            value: '{{inputs.parameters.params2}}'
+        inline:
+          inputs:
+            parameters:
+            - name: params1
+            - name: params2
+          script:
+            command:
+            - sh
+            image: alpine:3.18
+            source: |
+              echo PARAM1={{inputs.parameters.params1}}
+              echo PARAM2={{inputs.parameters.params2}}
+`
+
+var inlineWorkflow14329 = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: test-inline-
+spec:
+  arguments:
+    parameters:
+    - name: params1
+      value: foo1
+    - name: params2
+      value: bar1
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - arguments:
+          parameters:
+          - name: params1
+            value: '{{workflow.parameters.params1}}'
+          - name: params2
+            value: '{{workflow.parameters.params2}}'
+        name: inline
+        templateRef:
+          name: test-inline-template-14329
+          template: main
+`
+
+func TestInlineTemplateNotContaminatedByPlaceholders(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(inlineWorkflowTemplate14329)
+	err := createWorkflowTemplate(ctx, wftmpl)
+	require.NoError(t, err)
+	defer func() { _ = deleteWorkflowTemplate(ctx, wftmpl.Name) }()
+
+	wf := wfv1.MustUnmarshalWorkflow(inlineWorkflow14329)
+	err = Workflow(ctx, wftmplGetter, cwftmplGetter, wf, nil, Opts{})
+	require.NoError(t, err)
+
+	for key, tmpl := range wf.Status.StoredTemplates {
+		if tmpl.Script != nil {
+			if strings.Contains(tmpl.Script.Source, "placeholder") {
+				t.Errorf("stored template %q has placeholder-contaminated script source: %s", key, tmpl.Script.Source)
+			}
+		}
+	}
+}
+
+var dynamicStepNameWorkflowTemplate15896 = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: test-dynamic-step-name-15896
+spec:
+  templates:
+  - name: day-loop
+    inputs:
+      parameters:
+      - name: date
+    steps:
+    - - name: run-{{inputs.parameters.date}}
+        template: worker
+        arguments:
+          parameters:
+          - name: date
+            value: "{{inputs.parameters.date}}"
+        continueOn:
+          failed: true
+    - - name: check-{{inputs.parameters.date}}
+        template: worker
+        arguments:
+          parameters:
+          - name: date
+            value: "{{inputs.parameters.date}}"
+        when: "{{steps.run-{{inputs.parameters.date}}.status}} != Succeeded"
+  - name: worker
+    inputs:
+      parameters:
+      - name: date
+    container:
+      image: busybox
+      command: [echo]
+      args: ["Processing {{inputs.parameters.date}}"]
+`
+
+var dynamicStepNameWorkflow15896 = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: test-dynamic-step-name-
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+    - name: date
+      value: "2024-01-15"
+  templates:
+  - name: main
+    steps:
+    - - name: process-day
+        arguments:
+          parameters:
+          - name: date
+            value: "{{workflow.parameters.date}}"
+        templateRef:
+          name: test-dynamic-step-name-15896
+          template: day-loop
+`
+
+var dynamicStepNameWorkflowLocal15896 = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: test-dynamic-step-name-
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+    - name: date
+      value: "2024-01-15"
+  templates:
+  - name: main
+    steps:
+    - - name: process-day
+        template: day-loop
+        arguments:
+          parameters:
+          - name: date
+            value: "{{workflow.parameters.date}}"
+  - name: day-loop
+    inputs:
+      parameters:
+      - name: date
+    steps:
+    - - name: run-{{inputs.parameters.date}}
+        template: worker
+        arguments:
+          parameters:
+          - name: date
+            value: "{{inputs.parameters.date}}"
+        continueOn:
+          failed: true
+    - - name: check-{{inputs.parameters.date}}
+        template: worker
+        arguments:
+          parameters:
+          - name: date
+            value: "{{inputs.parameters.date}}"
+        when: "{{steps.run-{{inputs.parameters.date}}.status}} != Succeeded"
+  - name: worker
+    inputs:
+      parameters:
+      - name: date
+    container:
+      image: busybox
+      command: [echo]
+      args: ["Processing {{inputs.parameters.date}}"]
+`
+
+// TestDynamicStepNameWithInputParameters verifies that using {{inputs.parameters.xxx}}
+// in step names does not cause validation errors due to placeholder contamination.
+// Regression test for https://github.com/argoproj/argo-workflows/issues/15896
+func TestDynamicStepNameWithInputParameters(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	// Test with templateRef (the original regression scenario)
+	t.Run("WithTemplateRef", func(t *testing.T) {
+		wftmpl := wfv1.MustUnmarshalWorkflowTemplate(dynamicStepNameWorkflowTemplate15896)
+		err := createWorkflowTemplate(ctx, wftmpl)
+		require.NoError(t, err)
+		defer func() { _ = deleteWorkflowTemplate(ctx, wftmpl.Name) }()
+
+		wf := wfv1.MustUnmarshalWorkflow(dynamicStepNameWorkflow15896)
+		err = Workflow(ctx, wftmplGetter, cwftmplGetter, wf, nil, Opts{})
+		require.NoError(t, err, "workflow with dynamic step names via templateRef should pass validation")
+	})
+
+	// Test with inline templates (local workflow, no templateRef)
+	t.Run("WithInlineSteps", func(t *testing.T) {
+		wf := wfv1.MustUnmarshalWorkflow(dynamicStepNameWorkflowLocal15896)
+		err := Workflow(ctx, wftmplGetter, cwftmplGetter, wf, nil, Opts{})
+		require.NoError(t, err, "workflow with dynamic step names in local templates should pass validation")
+	})
+}
+
+var dynamicStepNameInvalidSkeleton15896 = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: test-invalid-skeleton-
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+    - name: date
+      value: "2024-01-15"
+  templates:
+  - name: main
+    steps:
+    - - name: process-day
+        template: day-loop
+        arguments:
+          parameters:
+          - name: date
+            value: "{{workflow.parameters.date}}"
+  - name: day-loop
+    inputs:
+      parameters:
+      - name: date
+    steps:
+    - - name: run_{{inputs.parameters.date}}
+        template: worker
+        arguments:
+          parameters:
+          - name: date
+            value: "{{inputs.parameters.date}}"
+  - name: worker
+    inputs:
+      parameters:
+      - name: date
+    container:
+      image: busybox
+      command: [echo]
+      args: ["Processing {{inputs.parameters.date}}"]
+`
+
+// TestDynamicStepNameInvalidSkeletonStillFails verifies that an invalid literal
+// skeleton around a placeholder (here an underscore in "run_{{...}}") is still
+// rejected. The placeholder is replaced with a safe token for validation, so
+// the surrounding characters are still checked.
+func TestDynamicStepNameInvalidSkeletonStillFails(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(dynamicStepNameInvalidSkeleton15896)
+	err := Workflow(logging.TestContext(t.Context()), wftmplGetter, cwftmplGetter, wf, nil, Opts{})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "is invalid")
 }
 
 var parameterizedGlobalArtifactsWorkflow = `

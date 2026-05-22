@@ -15,7 +15,7 @@ func TestDefault(t *testing.T) {
 }
 
 func TestDecompressWorkflow(t *testing.T) {
-	cleanup := SetMaxWorkflowSize(260)
+	cleanup := SetMaxWorkflowSize(230)
 	defer cleanup()
 	ctx := logging.TestContext(t.Context())
 

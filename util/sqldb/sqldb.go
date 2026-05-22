@@ -3,6 +3,7 @@ package sqldb
 import (
 	"context"
 	"database/sql"
+	"database/sql/driver"
 	"fmt"
 	"net/url"
 	"time"
@@ -60,13 +61,28 @@ func CreateDBSessionWithCreds(dbConfig config.DBConfig, username, password strin
 
 // createPostGresDBSession creates postgresDB session
 func createPostGresDBSession(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, cfg *config.PostgreSQLConfig, persistPool *config.ConnectionPool) (db.Session, error) {
+	azureEnabled := cfg.AzureToken != nil && cfg.AzureToken.Enabled
+	awsEnabled := cfg.AWSRDSToken != nil && cfg.AWSRDSToken.Enabled
+
+	if azureEnabled && awsEnabled {
+		return nil, fmt.Errorf("only one of azureToken or awsRDSToken may be enabled, not both")
+	}
+
+	if awsEnabled && !cfg.SSL {
+		return nil, fmt.Errorf("SSL must be enabled (ssl: true) when using AWS RDS IAM authentication")
+	}
+
 	userNameByte, err := util.GetSecrets(ctx, kubectlConfig, namespace, cfg.UsernameSecret.Name, cfg.UsernameSecret.Key)
 	if err != nil {
 		return nil, err
 	}
 
-	if cfg.AzureToken != nil && cfg.AzureToken.Enabled {
+	if azureEnabled {
 		return createPostGresDBSessionWithAzure(cfg, persistPool, string(userNameByte))
+	}
+
+	if awsEnabled {
+		return createPostGresDBSessionWithAWSRDS(cfg, persistPool, string(userNameByte))
 	}
 
 	passwordByte, err := util.GetSecrets(ctx, kubectlConfig, namespace, cfg.PasswordSecret.Name, cfg.PasswordSecret.Key)
@@ -91,22 +107,32 @@ func createMySQLDBSession(ctx context.Context, kubectlConfig kubernetes.Interfac
 	return createMySQLDBSessionWithCreds(cfg, persistPool, string(userNameByte), string(passwordByte))
 }
 
-// createPostGresDBSessionWithAzure creates postgresDB session with azure token
-func createPostGresDBSessionWithAzure(cfg *config.PostgreSQLConfig, persistPool *config.ConnectionPool, username string) (db.Session, error) {
+// buildPostgresDSN constructs a PostgreSQL DSN from config and username, with SSL options configured.
+func buildPostgresDSN(cfg *config.PostgreSQLConfig, username string) string {
 	settings := postgresqladp.ConnectionURL{
 		User:     username,
 		Host:     cfg.GetHostname(),
 		Database: cfg.Database,
 	}
 
-	if cfg.SSL {
-		if cfg.SSLMode != "" {
-			options := map[string]string{
-				"sslmode": cfg.SSLMode,
-			}
-			settings.Options = options
+	if cfg.SSL && cfg.SSLMode != "" {
+		settings.Options = map[string]string{
+			"sslmode": cfg.SSLMode,
 		}
 	}
+
+	return settings.String()
+}
+
+// createPostGresDBSessionWithConnector creates a PostgreSQL session using the provided connector.
+func createPostGresDBSessionWithConnector(cfg *config.PostgreSQLConfig, persistPool *config.ConnectionPool, connector driver.Connector) (db.Session, error) {
+	sqlDB := otelsql.OpenDB(connector, otelSQLOptions(semconv.DBSystemNamePostgreSQL, cfg.Database)...)
+	return newPostgresSession(sqlDB, persistPool)
+}
+
+// createPostGresDBSessionWithAzure creates postgresDB session with azure token
+func createPostGresDBSessionWithAzure(cfg *config.PostgreSQLConfig, persistPool *config.ConnectionPool, username string) (db.Session, error) {
+	dsn := buildPostgresDSN(cfg, username)
 
 	scope := cfg.AzureToken.Scope
 	if scope == "" {
@@ -114,12 +140,25 @@ func createPostGresDBSessionWithAzure(cfg *config.PostgreSQLConfig, persistPool 
 	}
 
 	connector := &azureConnector{
-		dsn:   settings.String(),
+		dsn:   dsn,
 		scope: scope,
 	}
 
-	sqlDB := otelsql.OpenDB(connector, otelSQLOptions(semconv.DBSystemNamePostgreSQL, cfg.Database)...)
-	return newPostgresSession(sqlDB, persistPool)
+	return createPostGresDBSessionWithConnector(cfg, persistPool, connector)
+}
+
+// createPostGresDBSessionWithAWSRDS creates postgresDB session with AWS RDS IAM auth
+func createPostGresDBSessionWithAWSRDS(cfg *config.PostgreSQLConfig, persistPool *config.ConnectionPool, username string) (db.Session, error) {
+	dsn := buildPostgresDSN(cfg, username)
+
+	connector := &awsRDSConnector{
+		dsn:      dsn,
+		endpoint: cfg.GetHostname(),
+		username: username,
+		region:   cfg.AWSRDSToken.Region,
+	}
+
+	return createPostGresDBSessionWithConnector(cfg, persistPool, connector)
 }
 
 // createPostGresDBSessionWithCreds creates postgresDB session with direct credentials

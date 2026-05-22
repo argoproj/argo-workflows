@@ -154,6 +154,8 @@ sprig.trim(inputs.parameters['my-string-param'])
 | `steps.<STEPNAME>.outputs.parameters.<NAME>` | Output parameter of any previous step. When the previous step uses `withItems` or `withParams`, this contains a JSON array of the output parameter values of each invocation |
 | `steps.<STEPNAME>.outputs.artifacts.<NAME>` | Output artifact of any previous step |
 
+**Note:** If a step was Skipped (its `when` condition was false), output parameters and results from that step resolve to empty strings.
+
 ### DAG Templates
 
 | Variable | Description|
@@ -170,6 +172,8 @@ sprig.trim(inputs.parameters['my-string-param'])
 | `tasks.<TASKNAME>.outputs.parameters` | When the previous task uses `withItems` or `withParams`, this contains a JSON array of the output parameter maps of each invocation |
 | `tasks.<TASKNAME>.outputs.parameters.<NAME>` | Output parameter of any previous task. When the previous task uses `withItems` or `withParams`, this contains a JSON array of the output parameter values of each invocation |
 | `tasks.<TASKNAME>.outputs.artifacts.<NAME>` | Output artifact of any previous task |
+
+**Note:** If a task was Skipped (its `when` condition was false) or Omitted (its `depends` condition was not satisfied), output parameters and results from that task resolve to empty strings.
 
 ### HTTP Templates
 

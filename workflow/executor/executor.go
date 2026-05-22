@@ -19,6 +19,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -1301,7 +1302,7 @@ func (we *WorkflowExecutor) Wait(ctx context.Context) error {
 
 // monitorProgress monitors for self-reported progress in the progressFile and patches the pod annotations with the parsed progress.
 //
-// The function reads the last line of the `progressFile` every `readFileTickDuration`.
+// The function watches the `progressFile` via inotify and re-parses the last line on every write.
 // If the line matches `N/M`, will set the progress annotation to the parsed progress value.
 // Every `annotationPatchTickDuration` the pod is patched with the updated annotations. This way the controller
 // gets notified of new self reported progress.
@@ -1309,11 +1310,52 @@ func (we *WorkflowExecutor) monitorProgress(ctx context.Context, progressFile st
 	logger := logging.RequireLoggerFromContext(ctx)
 	annotationPatchTicker := time.NewTicker(we.annotationPatchTickDuration)
 	defer annotationPatchTicker.Stop()
-	fileTicker := time.NewTicker(we.readProgressFileTickDuration)
-	defer fileTicker.Stop()
 
-	lastLine := ""
 	progressFile = filepath.Clean(progressFile)
+
+	// Ensure the parent directory exists so WatchFile can install its inotify
+	// watch. The progress file itself may never be created (the user's script
+	// is optional here), but its parent needs to be there for the watcher.
+	if err := os.MkdirAll(filepath.Dir(progressFile), 0o755); err != nil {
+		logger.WithError(err).WithField("file", progressFile).Info(ctx, "cannot create progress file parent dir, progress monitoring disabled")
+		return
+	}
+
+	// we.progress is read by the patch ticker (in this goroutine) and written
+	// by the inotify callback below (in another goroutine).
+	var mu sync.Mutex
+
+	go func() {
+		lastLine := ""
+		err := file.WatchFile(ctx, progressFile, func() {
+			data, readErr := os.ReadFile(progressFile)
+			if readErr != nil {
+				if !errors.Is(readErr, fs.ErrNotExist) {
+					logger.WithError(readErr).WithField("file", progressFile).Info(ctx, "unable to read progress file")
+				}
+				return
+			}
+			lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+			mostRecent := strings.TrimSpace(lines[len(lines)-1])
+
+			if mostRecent == "" || mostRecent == lastLine {
+				return
+			}
+			lastLine = mostRecent
+
+			if progress, ok := wfv1.ParseProgress(lastLine); ok {
+				logger.WithField("progress", progress).Info(ctx, "")
+				mu.Lock()
+				we.progress = progress
+				mu.Unlock()
+			} else {
+				logger.WithField("line", lastLine).Info(ctx, "unable to parse progress")
+			}
+		})
+		if err != nil && !errors.Is(err, context.Canceled) {
+			logger.WithError(err).WithField("file", progressFile).Info(ctx, "progress file watcher exited")
+		}
+	}()
 
 	for {
 		select {
@@ -1321,32 +1363,20 @@ func (we *WorkflowExecutor) monitorProgress(ctx context.Context, progressFile st
 			logger.WithError(ctx.Err()).Info(ctx, "stopping progress monitor (context done)")
 			return
 		case <-annotationPatchTicker.C:
-			if err := we.reportResult(ctx, wfv1.NodeResult{Progress: we.progress}); err != nil {
+			mu.Lock()
+			current := we.progress
+			mu.Unlock()
+			if current == "" {
+				continue
+			}
+			if err := we.reportResult(ctx, wfv1.NodeResult{Progress: current}); err != nil {
 				logger.WithError(err).Info(ctx, "failed to report progress")
 			} else {
-				we.progress = ""
-			}
-		case <-fileTicker.C:
-			data, err := os.ReadFile(progressFile)
-			if err != nil {
-				if !errors.Is(err, fs.ErrNotExist) {
-					logger.WithError(err).WithField("file", progressFile).Info(ctx, "unable to watch file")
+				mu.Lock()
+				if we.progress == current {
+					we.progress = ""
 				}
-				continue
-			}
-			lines := strings.Split(strings.TrimSpace(string(data)), "\n")
-			mostRecent := strings.TrimSpace(lines[len(lines)-1])
-
-			if mostRecent == "" || mostRecent == lastLine {
-				continue
-			}
-			lastLine = mostRecent
-
-			if progress, ok := wfv1.ParseProgress(lastLine); ok {
-				logger.WithField("progress", progress).Info(ctx, "")
-				we.progress = progress
-			} else {
-				logger.WithField("line", lastLine).Info(ctx, "unable to parse progress")
+				mu.Unlock()
 			}
 		}
 	}

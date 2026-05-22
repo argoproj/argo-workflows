@@ -56,7 +56,7 @@ metadata:
   namespace: my-ns
 `, &unlabelled)
 
-	wfClientset := wftFake.NewSimpleClientset(&unlabelled)
+	wfClientset := wftFake.NewClientset(&unlabelled)
 	wftmplStore := workflowtemplate.NewClientStore()
 	cwftmplStore := clusterworkflowtemplate.NewClientStore()
 	server := NewCronWorkflowServer(instanceid.NewService("my-instanceid"), wftmplStore, cwftmplStore, nil)

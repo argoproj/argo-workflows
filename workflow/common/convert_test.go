@@ -42,7 +42,6 @@ metadata:
   annotations:
     annotation2: value2
     workflows.argoproj.io/scheduled-time: "2021-02-19T10:29:05-08:00"
-  creationTimestamp: null
   finalizers:
   - finalizer1
   generateName: hello-world-

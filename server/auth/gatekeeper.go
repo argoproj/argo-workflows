@@ -295,7 +295,7 @@ func (s *gatekeeper) rbacAuthorization(ctx context.Context, claims *authTypes.Cl
 		namespaceAccount, err := s.getServiceAccount(claims, getNamespace(req))
 		if err != nil {
 			logger.WithError(err).Info(ctx, "Error while SSO Delegation")
-		} else if precedence(namespaceAccount) > precedence(loginAccount) {
+		} else if loginAccount == nil || precedence(namespaceAccount) > precedence(loginAccount) {
 			delegatedAccount = namespaceAccount
 			ssoDelegated = true
 		}
@@ -304,14 +304,17 @@ func (s *gatekeeper) rbacAuthorization(ctx context.Context, claims *authTypes.Cl
 		return nil, fmt.Errorf("no service account rule matches")
 	}
 	// important! write an audit entry (i.e. log entry) so we know which user performed an operation
-	logger.WithFields(logging.Fields{
+	fields := logging.Fields{
 		"serviceAccount":       delegatedAccount.Name,
-		"loginServiceAccount":  loginAccount.Name,
 		"subject":              claims.Subject,
 		"email":                claims.Email,
 		"ssoDelegationAllowed": ssoDelegationAllowed,
 		"ssoDelegated":         ssoDelegated,
-	}).Info(ctx, "selected SSO RBAC service account for user")
+	}
+	if loginAccount != nil {
+		fields["loginServiceAccount"] = loginAccount.Name
+	}
+	logger.WithFields(fields).Info(ctx, "selected SSO RBAC service account for user")
 	return s.getClientsForServiceAccount(ctx, claims, delegatedAccount)
 }
 

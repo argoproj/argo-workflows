@@ -6,8 +6,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
-// the underlying ExponentialBackoff does not retain the underlying error
-// so this addresses this
+// Backoff wraps ExponentialBackoff to retain the underlying error,
+// which the standard ExponentialBackoff does not preserve.
 func Backoff(b wait.Backoff, f func() (bool, error)) error {
 	var err error
 	waitErr := wait.ExponentialBackoff(b, func() (bool, error) {

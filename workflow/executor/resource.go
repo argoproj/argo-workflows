@@ -192,6 +192,12 @@ func (g gjsonLabels) Get(label string) string {
 	return gjson.GetBytes(g.json, label).String()
 }
 
+// Lookup returns the value for the provided label and whether it exists.
+func (g gjsonLabels) Lookup(label string) (string, bool) {
+	result := gjson.GetBytes(g.json, label)
+	return result.String(), result.Exists()
+}
+
 // WaitResource waits for a specific resource to satisfy either the success or failure condition
 func (we *WorkflowExecutor) WaitResource(ctx context.Context, resourceNamespace, resourceName, selfLink string) error {
 	logger := logging.RequireLoggerFromContext(ctx)
