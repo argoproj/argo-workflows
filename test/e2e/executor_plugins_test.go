@@ -42,11 +42,12 @@ func (s *ExecutorPluginsSuite) TestTemplateExecutor() {
 				RunAsNonRoot:   new(true),
 				SeccompProfile: &apiv1.SeccompProfile{Type: "RuntimeDefault"},
 			}, spec.SecurityContext)
-			require.Len(t, spec.Volumes, 4)
+			require.Len(t, spec.Volumes, 5)
 			assert.Contains(t, spec.Volumes[0].Name, "kube-api-access-")
 			assert.Equal(t, "var-run-argo", spec.Volumes[1].Name)
-			assert.Contains(t, spec.Volumes[2].Name, "kube-api-access-")
-			assert.Equal(t, "argo-workflows-agent-ca-certificates", spec.Volumes[3].Name)
+			assert.Equal(t, "tmp", spec.Volumes[2].Name)
+			assert.Contains(t, spec.Volumes[3].Name, "kube-api-access-")
+			assert.Equal(t, "argo-workflows-agent-ca-certificates", spec.Volumes[4].Name)
 
 			require.Len(t, spec.Containers, 2)
 			{
@@ -59,10 +60,11 @@ func (s *ExecutorPluginsSuite) TestTemplateExecutor() {
 			{
 				agent := spec.Containers[1]
 				require.Equal(t, "main", agent.Name)
-				require.Len(t, agent.VolumeMounts, 3)
+				require.Len(t, agent.VolumeMounts, 4)
 				assert.Equal(t, "var-run-argo", agent.VolumeMounts[0].Name)
-				assert.Contains(t, agent.VolumeMounts[1].Name, "kube-api-access-")
-				assert.Equal(t, "argo-workflows-agent-ca-certificates", agent.VolumeMounts[2].Name)
+				assert.Equal(t, "tmp", agent.VolumeMounts[1].Name)
+				assert.Contains(t, agent.VolumeMounts[2].Name, "kube-api-access-")
+				assert.Equal(t, "argo-workflows-agent-ca-certificates", agent.VolumeMounts[3].Name)
 				assert.Equal(t, &apiv1.SecurityContext{
 					RunAsUser:                new(int64(8737)),
 					RunAsNonRoot:             new(true),

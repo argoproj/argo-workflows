@@ -25,9 +25,9 @@ spec:
             entrypoint: whalesay
             templates:
               - name: whalesay
-                resources:
-                  requests:
-                    cpu: 3
                 container:
                   image: argoproj/argosay:v2
                   args: [echo, ":) Hello Argo!"]
+                  resources:
+                    requests:
+                      cpu: 3

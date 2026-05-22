@@ -147,7 +147,17 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		})
 	}
 
+	// The agent pod runs argo machinery (HTTP/plugin/resource template
+	// orchestration), not user code, so it inherits the executor SA when one
+	// is set — that's the SA designated for argo's own work. This matches the
+	// pre-PR resource-template path, where the executor sidecar (running with
+	// executor.serviceAccountName) did the kubectl create and polling. Falls
+	// back to the workflow SA to preserve existing behavior for workflows
+	// that don't configure executor.serviceAccountName.
 	serviceAccountName := woc.execWf.Spec.ServiceAccountName
+	if woc.execWf.Spec.Executor != nil && woc.execWf.Spec.Executor.ServiceAccountName != "" {
+		serviceAccountName = woc.execWf.Spec.Executor.ServiceAccountName
+	}
 	tokenVolume, tokenVolumeMount, err := woc.getServiceAccountTokenVolume(ctx, serviceAccountName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get token volumes: %w", err)
