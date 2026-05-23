@@ -28,4 +28,11 @@ describe('history URL', () => {
         expect(historyUrl('foo', {bar: false})).toBe('/foo?');
         expect(historyUrl('foo', {bar: null})).toBe('/foo?');
     });
+
+    test('repeated extra search parametes', () => {
+        const params = new URLSearchParams();
+        params.append('label', 'a');
+        params.append('label', 'b');
+        expect(historyUrl('foo', {extraSearchParams: params})).toBe('/foo?label=a&label=b');
+    });
 });
