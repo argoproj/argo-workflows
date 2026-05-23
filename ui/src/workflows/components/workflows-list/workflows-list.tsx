@@ -167,19 +167,19 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
         phases?.forEach(phase => params.append('phase', phase));
         labels?.forEach(label => params.append('label', label));
         if (pagination.offset) {
-            params.append('offset', pagination.offset);
+            params.set('offset', pagination.offset);
         }
         if (pagination.limit) {
-            params.append('limit', pagination.limit.toString());
+            params.set('limit', pagination.limit.toString());
         }
         if (nameValue) {
-            params.append(nameFilter, nameValue);
+            params.set(nameFilter, nameValue);
         }
         if (createdAfter) {
-            params.append('createdAfter', createdAfter.toISOString());
+            params.set('createdAfter', createdAfter.toISOString());
         }
         if (finishedBefore) {
-            params.append('finishedBefore', finishedBefore.toISOString());
+            params.set('finishedBefore', finishedBefore.toISOString());
         }
         (isFirstRender.current ? history.replace : history.push)(
             historyUrl('workflows' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {namespace, extraSearchParams: params})

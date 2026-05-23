@@ -14,7 +14,7 @@ export function historyUrl(path: string, params: {[key: string]: any}) {
             if (path.includes(searchValue)) {
                 path = path.replace(searchValue, v != null ? v : '');
             } else if (k === 'extraSearchParams') {
-                (v as URLSearchParams).forEach((value, key) => queryParams.set(key, value));
+                (v as URLSearchParams).forEach((value, key) => queryParams.append(key, value));
             } else if (v) {
                 queryParams.set(k, v);
             }
