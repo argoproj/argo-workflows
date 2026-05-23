@@ -104,11 +104,13 @@ describe('WorkflowsList', () => {
         const {findByLabelText, container} = render(<App history={history} />);
         expect(history.location.search).toBe('?namespace=argo&limit=50');
 
+        // Select multiple phases.
         const runningFilter = await findByLabelText('Running');
         const failedFilter = await findByLabelText('Failed');
         runningFilter.click();
         failedFilter.click();
 
+        // Add multiple labels.
         const labelInput = container.querySelector<HTMLInputElement>('.tags-input input');
         if (!labelInput) {
             throw new Error('Labels input not found');
@@ -120,10 +122,12 @@ describe('WorkflowsList', () => {
         fireEvent.change(labelInput, {target: {value: 'env=prod'}});
         fireEvent.keyUp(labelInput, {key: 'Enter', keyCode: 13});
 
+        // Verify selected filters are added to the URL.
         await waitFor(() => {
             expect(history.location.search).toBe('?namespace=argo&phase=Running&phase=Failed&label=team%3Dml&label=env%3Dprod&limit=50');
         });
 
+        // Unselect one phase and one label.
         runningFilter.click();
         const teamLabelRemoveButton = await waitFor<HTMLElement>(() => {
             const teamLabel = Array.from(container.querySelectorAll<HTMLElement>('.tags-input__tag')).find(tag => tag.textContent?.includes('team=ml'));
@@ -134,6 +138,7 @@ describe('WorkflowsList', () => {
         });
         teamLabelRemoveButton.click();
 
+        // Verify unselected filters are removed from the URL.
         await waitFor(() => {
             expect(history.location.search).toBe('?namespace=argo&phase=Failed&label=env%3Dprod&limit=50');
         });
