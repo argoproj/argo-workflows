@@ -123,6 +123,20 @@ describe('WorkflowsList', () => {
         await waitFor(() => {
             expect(history.location.search).toBe('?namespace=argo&phase=Running&phase=Failed&label=team%3Dml&label=env%3Dprod&limit=50');
         });
+
+        runningFilter.click();
+        const teamLabelRemoveButton = await waitFor<HTMLElement>(() => {
+            const teamLabel = Array.from(container.querySelectorAll<HTMLElement>('.tags-input__tag')).find(tag => tag.textContent?.includes('team=ml'));
+            expect(teamLabel).toBeInTheDocument();
+            const removeButton = teamLabel?.querySelector<HTMLElement>('.fa-times');
+            expect(removeButton).toBeInTheDocument();
+            return removeButton;
+        });
+        teamLabelRemoveButton.click();
+
+        await waitFor(() => {
+            expect(history.location.search).toBe('?namespace=argo&phase=Failed&label=env%3Dprod&limit=50');
+        });
     });
 
     it('selects repeated phase and label filters from query parameters', async () => {
