@@ -83,3 +83,46 @@ func TestTolerantList_AllValid(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, items, 2)
 }
+
+// TestTolerantList_PreservesCustomUnmarshalers guards against a regression where
+// reflection-based conversion silently dropped every Workflow with `steps`
+// because ParallelSteps relies on a custom json.Unmarshaler (it serializes as
+// an anonymous list, not a struct). The fix routes per-item decoding through
+// json.Unmarshal, which invokes UnmarshalJSON correctly.
+func TestTolerantList_PreservesCustomUnmarshalers(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	scheme := runtime.NewScheme()
+	require.NoError(t, wfv1.AddToScheme(scheme))
+
+	wf := &unstructured.Unstructured{Object: map[string]any{
+		"apiVersion": wfv1.SchemeGroupVersion.String(),
+		"kind":       workflow.WorkflowKind,
+		"metadata": map[string]any{
+			"name":            "with-steps",
+			"namespace":       "ns1",
+			"resourceVersion": "1",
+		},
+		"spec": map[string]any{
+			"entrypoint": "main",
+			"templates": []any{
+				map[string]any{
+					"name": "main",
+					// ParallelSteps is an anonymous outer list of inner lists.
+					"steps": []any{
+						[]any{map[string]any{"name": "a", "template": "echo"}},
+					},
+				},
+			},
+		},
+	}}
+
+	dyn := dynamicfake.NewSimpleDynamicClient(scheme, wf)
+	gvr := wfv1.SchemeGroupVersion.WithResource(workflow.WorkflowPlural)
+	items, _, err := TolerantList[wfv1.Workflow](ctx, dyn, gvr, "ns1", metav1.ListOptions{})
+	require.NoError(t, err)
+	require.Len(t, items, 1, "workflow with ParallelSteps must be decoded, not dropped")
+	require.Len(t, items[0].Spec.Templates, 1)
+	require.Len(t, items[0].Spec.Templates[0].Steps, 1)
+	require.Len(t, items[0].Spec.Templates[0].Steps[0].Steps, 1)
+	assert.Equal(t, "a", items[0].Spec.Templates[0].Steps[0].Steps[0].Name)
+}

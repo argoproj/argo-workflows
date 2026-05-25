@@ -101,7 +101,7 @@ func (p *tolerantWatchProxy[T, PT]) translate(ctx context.Context, logger loggin
 		return evt, false
 	}
 	var item T
-	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, &item); err != nil {
+	if err := decodeUnstructured(un, &item); err != nil {
 		logger.
 			WithField("namespace", un.GetNamespace()).
 			WithField("name", un.GetName()).
