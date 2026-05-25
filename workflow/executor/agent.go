@@ -1003,7 +1003,7 @@ func (ae *AgentExecutor) executeResourceTemplate(ctx context.Context, nodeID str
 		return 0, fmt.Errorf("successCondition, failureCondition and outputs are not supported for delete action")
 	}
 
-	_, _, gvr, kubectlLog, kubectlErr := ae.executeResource(ctx, action, manifestPath, tmpl.Resource.MergeStrategy, tmpl.Resource.Flags)
+	resourceNamespace, resourceName, gvr, kubectlLog, kubectlErr := ae.executeResource(ctx, action, manifestPath, tmpl.Resource.MergeStrategy, tmpl.Resource.Flags)
 
 	// Archive the kubectl invocation as main-logs (parity with the legacy
 	// pod-based path's wait sidecar). Best-effort: archival failure must not
@@ -1048,6 +1048,18 @@ func (ae *AgentExecutor) executeResourceTemplate(ctx context.Context, nodeID str
 		}
 		ae.completeNode(nodeID, nr)
 		return 0, nil
+	}
+	// The shared informer fires Add events only when an object enters the
+	// cache. If a concurrent task already created the informer for this GVR,
+	// the just-created resource may have entered the cache and dispatched its
+	// Add event BEFORE this task registered pendingTasks above — leaving the
+	// event orphaned and the node permanently waiting on a future Update.
+	// Re-dispatch the object from the cache now that pendingTasks is set; the
+	// handler is idempotent (it removes pendingTasks[nodeID] on resolution).
+	if obj, exists, getErr := ae.resourceInformer.Get(gvr, resourceNamespace, resourceName); getErr == nil && exists {
+		if u, ok := obj.(*unstructured.Unstructured); ok {
+			ae.handleDone(ctx, u, false)
+		}
 	}
 	// Watch's cache sync dispatches the initial Add events synchronously, so
 	// handleDone may have already resolved this node before we get here (e.g.
