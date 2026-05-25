@@ -430,10 +430,35 @@ func (ae *AgentExecutor) executePluginTemplate(ctx context.Context, _ string, tm
 // to route informer events back to the originating task:
 // common.LabelKeyMonitoredResource=workflowName for the watch selector,
 // common.LabelKeyMonitoredResourceNodeID=nodeID for dispatch. Delete
-// actions need no result watch and are returned unchanged.
-func injectMonitoredLabel(manifest, action, workflowName, nodeID string) (string, error) {
+// actions need no result watch and are returned unchanged. JSON Patch
+// (action=patch, mergeStrategy=json) wraps a list of ops rather than a
+// resource, so we append `add` ops for the labels using JSON Pointer
+// escaping (~1 for `/`); kubectl applies them along with the user's ops.
+func injectMonitoredLabel(manifest, action, mergeStrategy, workflowName, nodeID string) (string, error) {
 	if action == "delete" {
 		return manifest, nil
+	}
+	if action == "patch" && mergeStrategy == "json" {
+		var ops []map[string]any
+		if err := yaml.Unmarshal([]byte(manifest), &ops); err != nil {
+			return "", fmt.Errorf("parse json patch: %w", err)
+		}
+		escapedMonitored := strings.ReplaceAll(common.LabelKeyMonitoredResource, "/", "~1")
+		escapedNodeID := strings.ReplaceAll(common.LabelKeyMonitoredResourceNodeID, "/", "~1")
+		// "add" on /metadata/labels is a no-op overwrite when labels already
+		// exist; per RFC 6902 it creates the object otherwise. Chaining the
+		// per-key adds afterward is then safe whether or not the patched
+		// resource originally had labels.
+		ops = append(ops,
+			map[string]any{"op": "add", "path": "/metadata/labels", "value": map[string]string{}},
+			map[string]any{"op": "add", "path": "/metadata/labels/" + escapedMonitored, "value": workflowName},
+			map[string]any{"op": "add", "path": "/metadata/labels/" + escapedNodeID, "value": nodeID},
+		)
+		out, err := yaml.Marshal(ops)
+		if err != nil {
+			return "", fmt.Errorf("serialize json patch: %w", err)
+		}
+		return string(out), nil
 	}
 	obj := &unstructured.Unstructured{}
 	if err := yaml.Unmarshal([]byte(manifest), &obj.Object); err != nil {
@@ -483,7 +508,7 @@ func (ae *AgentExecutor) obtainManifest(ctx context.Context, nodeID string, tmpl
 		return "", "", fmt.Errorf("manifest was not supplied")
 	}
 
-	manifest, err := injectMonitoredLabel(raw, tmpl.Resource.Action, ae.WorkflowName, nodeID)
+	manifest, err := injectMonitoredLabel(raw, tmpl.Resource.Action, tmpl.Resource.MergeStrategy, ae.WorkflowName, nodeID)
 	if err != nil {
 		return "", "", err
 	}

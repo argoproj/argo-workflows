@@ -395,6 +395,11 @@ func (woc *wfOperationCtx) getAgentArtifactPlugins(ctx context.Context) ([]apiv1
 		if err != nil {
 			return nil, nil, nil, nil, fmt.Errorf("build artifact sidecar for plugin %q: %w", driver.Name, err)
 		}
+		// The sidecar's command is /var/run/argo/argoexec — workflow pods get
+		// the var-run-argo mount applied in the createWorkflowPod loop, but
+		// the agent pod has no such loop. Mount it explicitly so the binary
+		// (staged by the agent init container) is visible to the sidecar.
+		ctr.VolumeMounts = append(ctr.VolumeMounts, volumeMountVarArgo)
 		sidecars = append(sidecars, *ctr)
 		volumes = append(volumes, driver.Name.Volume())
 		mounts = append(mounts, driver.Name.VolumeMount())
