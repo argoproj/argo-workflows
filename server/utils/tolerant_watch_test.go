@@ -72,6 +72,33 @@ func TestTolerantWatch_ForwardsErrorEvent(t *testing.T) {
 	assert.Equal(t, watch.Error, got[0].Type)
 }
 
+// TestTolerantWatch_ConvertsBookmarkEvent guards against a regression where
+// Bookmark events were forwarded as *unstructured.Unstructured. The typed
+// reflector rejects mismatched object types and stalls watch-list initial sync
+// until the bookmark is delivered with the expected typed payload.
+func TestTolerantWatch_ConvertsBookmarkEvent(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	upstream := watch.NewFake()
+	proxy := runProxy(ctx, upstream)
+	defer proxy.Stop()
+
+	go func() {
+		bookmark := &unstructured.Unstructured{Object: map[string]any{
+			"apiVersion": wfv1.SchemeGroupVersion.String(),
+			"kind":       workflow.WorkflowKind,
+			"metadata":   map[string]any{"resourceVersion": "42"},
+		}}
+		upstream.Action(watch.Bookmark, bookmark)
+		upstream.Stop()
+	}()
+
+	got := drain(t, proxy, 1)
+	require.Equal(t, watch.Bookmark, got[0].Type)
+	wf, ok := got[0].Object.(*wfv1.Workflow)
+	require.True(t, ok, "bookmark event must carry typed *wfv1.Workflow, got %T", got[0].Object)
+	assert.Equal(t, "42", wf.ResourceVersion)
+}
+
 func TestTolerantWatch_PropagatesStop(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	upstream := watch.NewFake()

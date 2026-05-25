@@ -91,8 +91,9 @@ func (p *tolerantWatchProxy[T, PT]) run(ctx context.Context, logger logging.Logg
 }
 
 func (p *tolerantWatchProxy[T, PT]) translate(ctx context.Context, logger logging.Logger, gvr schema.GroupVersionResource, evt watch.Event) (watch.Event, bool) {
-	// Error and Bookmark events carry control metadata, not user resources.
-	if evt.Type == watch.Error || evt.Type == watch.Bookmark {
+	// Error events carry *metav1.Status, not user resources. Forward as-is so
+	// the consuming reflector can handle the error.
+	if evt.Type == watch.Error {
 		return evt, false
 	}
 	un, ok := evt.Object.(*unstructured.Unstructured)
@@ -102,6 +103,13 @@ func (p *tolerantWatchProxy[T, PT]) translate(ctx context.Context, logger loggin
 	}
 	var item T
 	if err := decodeUnstructured(un, &item); err != nil {
+		// Bookmark events carry only a resourceVersion in metadata, no spec.
+		// They must still reach the reflector to drive watch-list sync, so
+		// fall back to an empty typed object with the bookmark's metadata.
+		// For other event types, drop the malformed item.
+		if evt.Type == watch.Bookmark {
+			return watch.Event{Type: evt.Type, Object: PT(&item)}, false
+		}
 		logger.
 			WithField("namespace", un.GetNamespace()).
 			WithField("name", un.GetName()).
