@@ -557,7 +557,14 @@ func (ae *AgentExecutor) archiveAgentLogs(ctx context.Context, tmpl *wfv1.Templa
 		return nil
 	}
 
-	driver, drvErr := artifacts.NewDriver(ctx, art, ae)
+	// Bound driver init so a missing artifact-plugin socket (e.g. a plugin
+	// sidecar that failed to start) can't stall the whole resource-template
+	// task. plugin.NewDriver polls for its unix socket up to 120s, which is
+	// far longer than typical test/resource template timeouts; archival is
+	// best-effort, so fail fast and let the kubectl outcome propagate.
+	drvCtx, drvCancel := context.WithTimeout(ctx, 30*time.Second)
+	driver, drvErr := artifacts.NewDriver(drvCtx, art, ae)
+	drvCancel()
 	if drvErr != nil {
 		logger.WithError(drvErr).Warn(ctx, "Skipping main-logs archival: driver init failed")
 		return nil

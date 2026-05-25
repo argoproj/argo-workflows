@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/itchyny/gojq"
 	"github.com/tidwall/gjson"
@@ -103,9 +104,21 @@ func jqFilter(ctx context.Context, input []byte, filter string) (string, error) 
 	return strings.TrimSpace(buf.String()), nil
 }
 
+// runKubectlMu serializes runKubectl invocations. The implementation below
+// mutates process-global state (os.Args, kubectlutil.BehaviorOnFatal) which
+// the agent's parallel task workers would otherwise race on, corrupting each
+// other's manifest paths and exit-code closures — observed in production as
+// concurrently-created resources receiving each other's monitored-resource
+// node-ID labels (so handleDone could not match events back to their tasks).
+var runKubectlMu sync.Mutex
+
 // runKubectl is a package-level var so tests can swap it for a stub.
 var runKubectl = func(ctx context.Context, args ...string) ([]byte, error) {
 	logging.RequireLoggerFromContext(ctx).Info(ctx, strings.Join(args, " "))
+
+	runKubectlMu.Lock()
+	defer runKubectlMu.Unlock()
+
 	osArgs := append([]string{}, os.Args...)
 	os.Args = args
 	defer func() {

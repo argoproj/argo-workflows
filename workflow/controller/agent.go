@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"slices"
+	"strings"
 
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -131,12 +132,25 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		return nil, err
 	}
 
+	artifactPluginSidecars, artifactPluginVolumes, artifactPluginMounts, artifactPluginNames, err := woc.getAgentArtifactPlugins(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	envVars := []apiv1.EnvVar{
 		{Name: common.EnvVarWorkflowName, Value: woc.wf.Name},
 		{Name: common.EnvVarWorkflowUID, Value: string(woc.wf.UID)},
 		{Name: common.EnvAgentPatchRate, Value: env.LookupEnvStringOr(common.EnvAgentPatchRate, GetRequeueTime().String())},
 		{Name: common.EnvVarPluginAddresses, Value: wfv1.MustMarshallJSON(addresses(pluginSidecars))},
 		{Name: common.EnvVarPluginNames, Value: wfv1.MustMarshallJSON(names(pluginSidecars))},
+	}
+	if len(artifactPluginNames) > 0 {
+		// Parity with the wait container — the artifact-plugin driver path
+		// keys off this env var to find the plugins available locally.
+		envVars = append(envVars, apiv1.EnvVar{
+			Name:  common.EnvVarArtifactPluginNames,
+			Value: strings.Join(artifactPluginNames, ","),
+		})
 	}
 
 	// If the default number of task workers is overridden, then pass it to the agent pod.
@@ -185,6 +199,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 
 	podVolumes := slices.Concat(
 		pluginVolumes,
+		artifactPluginVolumes,
 		[]apiv1.Volume{volumeVarArgo, volumeAgentTmp, *tokenVolume},
 	)
 	podVolumeMounts := []apiv1.VolumeMount{
@@ -192,6 +207,10 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		volumeMountAgentTmp,
 		*tokenVolumeMount,
 	}
+	// Mount each artifact plugin's socket dir on the agent main container so
+	// the in-process artifact driver (plugin.NewDriver) can dial the sidecar
+	// over its unix socket — the same contract the wait container relies on.
+	podVolumeMounts = append(podVolumeMounts, artifactPluginMounts...)
 	if certVolume != nil && certVolumeMount != nil {
 		podVolumes = append(podVolumes, *certVolume)
 		podVolumeMounts = append(podVolumeMounts, *certVolumeMount)
@@ -249,9 +268,10 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 			InitContainers: []apiv1.Container{
 				*agentInitCtr,
 			},
-			Containers: append(
+			Containers: slices.Concat(
 				pluginSidecars,
-				*agentMainCtr,
+				artifactPluginSidecars,
+				[]apiv1.Container{*agentMainCtr},
 			),
 		},
 	}
@@ -323,6 +343,64 @@ func (woc *wfOperationCtx) getExecutorPlugins(ctx context.Context) ([]apiv1.Cont
 		}
 	}
 	return sidecars, volumes, nil
+}
+
+// getAgentArtifactPlugins collects the artifact plugin sidecars the agent pod
+// must run so resource templates can save their main-logs (and resolve any
+// manifestFrom artifacts) via plugin-backed artifact repositories.
+//
+// Without these sidecars the agent's call to artifacts.NewDriver would block
+// inside plugin.NewDriver polling for a unix socket that never appears,
+// silently stranding every resource template whose archive location resolves
+// to a plugin.
+//
+// The agent pod is created once per workflow and may handle many resource
+// templates over its lifetime, so we union plugin needs across all of them
+// rather than per-template. The result mirrors workflowpod.addArtifactPlugins:
+// one sidecar per driver, a shared emptyDir per driver for the socket, and a
+// volume mount on the agent main container pointing at that socket dir.
+func (woc *wfOperationCtx) getAgentArtifactPlugins(ctx context.Context) ([]apiv1.Container, []apiv1.Volume, []apiv1.VolumeMount, []string, error) {
+	pluginNameSet := map[wfv1.ArtifactPluginName]bool{}
+	for i := range woc.execWf.Spec.Templates {
+		tmpl := &woc.execWf.Spec.Templates[i]
+		if tmpl.Resource == nil {
+			continue
+		}
+		for _, name := range tmpl.Outputs.Artifacts.GetPluginNames(ctx, woc.artifactRepository, wfv1.IncludeLogs, tmpl.ArchiveLocation) {
+			pluginNameSet[name] = true
+		}
+	}
+	if len(pluginNameSet) == 0 {
+		return nil, nil, nil, nil, nil
+	}
+
+	pluginNames := make([]wfv1.ArtifactPluginName, 0, len(pluginNameSet))
+	for n := range pluginNameSet {
+		pluginNames = append(pluginNames, n)
+	}
+	drivers, err := woc.controller.Config.GetArtifactDrivers(pluginNames)
+	if err != nil {
+		return nil, nil, nil, nil, fmt.Errorf("get artifact drivers for agent: %w", err)
+	}
+
+	// Synthetic template so artifactSidecarContainer's TemplateType check
+	// (resource → MinimalCtrSC) doesn't misclassify a plugin sidecar.
+	syntheticTmpl := &wfv1.Template{}
+	sidecars := make([]apiv1.Container, 0, len(drivers))
+	volumes := make([]apiv1.Volume, 0, len(drivers))
+	mounts := make([]apiv1.VolumeMount, 0, len(drivers))
+	sidecarNames := make([]string, 0, len(drivers))
+	for _, driver := range drivers {
+		ctr, err := woc.artifactSidecarContainer(ctx, syntheticTmpl, driver)
+		if err != nil {
+			return nil, nil, nil, nil, fmt.Errorf("build artifact sidecar for plugin %q: %w", driver.Name, err)
+		}
+		sidecars = append(sidecars, *ctr)
+		volumes = append(volumes, driver.Name.Volume())
+		mounts = append(mounts, driver.Name.VolumeMount())
+		sidecarNames = append(sidecarNames, ctr.Name)
+	}
+	return sidecars, volumes, mounts, sidecarNames, nil
 }
 
 func addresses(containers []apiv1.Container) []string {
