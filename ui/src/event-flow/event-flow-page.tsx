@@ -256,7 +256,14 @@ export function EventFlowPage({history, location, match}: RouteComponentProps<an
                         }
                     ]
                 },
-                tools: [<NamespaceFilter key='namespace-filter' value={namespace} onChange={setNamespace} />]
+                tools: [
+                    <NamespaceFilter
+                        key='namespace-filter'
+                        value={namespace}
+                        onChange={setNamespace}
+                        extraNamespaces={nsUtils.getUniqueNamespaces([...(eventSources || []), ...(sensors || []), ...(workflows || [])])}
+                    />
+                ]
             }}>
             <ErrorNotice error={error} />
             {emptyGraph ? (
