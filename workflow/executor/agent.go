@@ -489,7 +489,7 @@ func (ae *AgentExecutor) obtainManifest(ctx context.Context, nodeID string, tmpl
 	}
 	sum := sha256.Sum256([]byte(manifest))
 	hash := hex.EncodeToString(sum[:])
-	path := filepath.Join("/tmp", fmt.Sprintf("manifest-%s.yaml", hash))
+	path := filepath.Join(os.TempDir(), fmt.Sprintf("manifest-%s.yaml", hash))
 	if err := os.WriteFile(path, []byte(manifest), 0o600); err != nil {
 		return "", "", fmt.Errorf("write manifest file: %w", err)
 	}

@@ -2132,7 +2132,15 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	// Inject the pod name. If the pod has a retry strategy, the pod name will be changed and will be injected when it
 	// is determined
 	if resolvedTmpl.IsPodType() && woc.retryStrategy(resolvedTmpl) == nil {
-		localParams[common.LocalVarPodName] = woc.getPodName(nodeName, resolvedTmpl.Name)
+		// Resource templates no longer run in their own pod; the agent pod
+		// executes kubectl. Expose the agent pod name as pod.name so existing
+		// "patch own pod" examples (k8s-patch-pod et al.) keep targeting the
+		// pod actually running the resource template.
+		if resolvedTmpl.GetType() == wfv1.TemplateTypeResource {
+			localParams[common.LocalVarPodName] = woc.getAgentPodName()
+		} else {
+			localParams[common.LocalVarPodName] = woc.getPodName(nodeName, resolvedTmpl.Name)
+		}
 	}
 	if orgTmpl.IsDAGTask() {
 		localParams["tasks.name"] = orgTmpl.GetName()
@@ -2380,7 +2388,11 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		localParams = make(map[string]string)
 		// Change the `pod.name` variable to the new retry node name
 		if processedTmpl.IsPodType() {
-			localParams[common.LocalVarPodName] = woc.getPodName(nodeName, processedTmpl.Name)
+			if processedTmpl.GetType() == wfv1.TemplateTypeResource {
+				localParams[common.LocalVarPodName] = woc.getAgentPodName()
+			} else {
+				localParams[common.LocalVarPodName] = woc.getPodName(nodeName, processedTmpl.Name)
+			}
 		}
 		// Inject the retryAttempt number
 		localParams[common.LocalVarRetries] = strconv.Itoa(retryNum)

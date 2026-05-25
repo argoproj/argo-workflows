@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 
 	"github.com/argoproj/argo-workflows/v4/util/logging"
@@ -54,9 +56,41 @@ func NewAgentInitCommand() *cobra.Command {
 					return err
 				}
 			}
+
+			// Artifact plugin sidecars are exec-wrapped by emissary, which
+			// invokes /var/run/argo/argoexec. The standard workflow pod's init
+			// container stages that binary via emissary.Init(); the agent's
+			// init doesn't share that path, so stage it explicitly here when
+			// the agent pod has artifact plugin sidecars attached.
+			if os.Getenv(common.EnvVarArtifactPluginNames) != "" {
+				if err := stageArgoexecBinary(); err != nil {
+					return fmt.Errorf("stage argoexec for artifact plugin sidecars: %w", err)
+				}
+			}
 			return nil
 		},
 	}
+}
+
+func stageArgoexecBinary() error {
+	src, err := exec.LookPath("argoexec")
+	if err != nil {
+		return err
+	}
+	in, err := os.Open(filepath.Clean(src))
+	if err != nil {
+		return err
+	}
+	defer func() { _ = in.Close() }()
+	out, err := os.OpenFile(filepath.Join(common.VarRunArgoPath, "argoexec"), os.O_RDWR|os.O_CREATE, 0o555)
+	if err != nil {
+		return err
+	}
+	if _, err := io.Copy(out, in); err != nil {
+		_ = out.Close()
+		return err
+	}
+	return out.Close()
 }
 
 func tokenFilename(name string) string {
