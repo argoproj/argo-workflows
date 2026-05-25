@@ -29,7 +29,7 @@ describe('history URL', () => {
         expect(historyUrl('foo', {bar: null})).toBe('/foo?');
     });
 
-    test('repeated extra search parametes', () => {
+    test('repeated extra search parameters', () => {
         const params = new URLSearchParams();
         params.append('label', 'a');
         params.append('label', 'b');
