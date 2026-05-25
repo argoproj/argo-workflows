@@ -12,6 +12,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	workflowtemplatepkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflowtemplate"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/server/auth"
 	"github.com/argoproj/argo-workflows/v4/server/clusterworkflowtemplate"
@@ -129,7 +130,6 @@ func cursorPaginationByResourceVersion(items []v1alpha1.WorkflowTemplate, resour
 }
 
 func (wts *Server) ListWorkflowTemplates(ctx context.Context, req *workflowtemplatepkg.WorkflowTemplateListRequest) (*v1alpha1.WorkflowTemplateList, error) {
-	wfClient := auth.GetWfClient(ctx)
 	k8sOptions := &v1.ListOptions{}
 
 	if req.ListOptions != nil {
@@ -149,10 +149,12 @@ func (wts *Server) ListWorkflowTemplates(ctx context.Context, req *workflowtempl
 	}
 
 	wts.instanceIDService.With(k8sOptions)
-	wfList, err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace).List(ctx, *k8sOptions)
+	gvr := v1alpha1.SchemeGroupVersion.WithResource(workflow.WorkflowTemplatePlural)
+	tmpls, meta, err := sutils.TolerantList[v1alpha1.WorkflowTemplate](ctx, auth.GetDynamicClient(ctx), gvr, req.Namespace, *k8sOptions)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
+	wfList := &v1alpha1.WorkflowTemplateList{ListMeta: meta, Items: tmpls}
 
 	// Enables name-based searching.
 	// Do name pattern filtering if NamePattern request exist.

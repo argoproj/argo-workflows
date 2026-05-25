@@ -69,6 +69,7 @@ type argoKubeClient struct {
 	opts              ArgoKubeOpts
 	instanceIDService instanceid.Service
 	wfClient          workflow.Interface
+	dynamicClient     dynamic.Interface
 	wfTmplStore       types.WorkflowTemplateStore
 	cwfTmplStore      types.ClusterWorkflowTemplateStore
 	wfLister          store.WorkflowLister
@@ -125,6 +126,7 @@ func newArgoKubeClient(ctx context.Context, opts ArgoKubeOpts, clientConfig clie
 		opts:              opts,
 		instanceIDService: instanceIDService,
 		wfClient:          wfClient,
+		dynamicClient:     dynamicClient,
 		namespace:         namespace,
 		kubeClient:        kubeClient,
 	}
@@ -145,7 +147,7 @@ func (a *argoKubeClient) startStores(ctx context.Context, restConfig *restclient
 		a.wfStore = wfStore
 		a.wfLister = wfStore
 	} else {
-		a.wfLister = store.NewKubeLister(a.wfClient)
+		a.wfLister = store.NewKubeLister(a.dynamicClient)
 	}
 
 	if a.opts.CacheWorkflowTemplates {
@@ -179,7 +181,7 @@ func (a *argoKubeClient) startStores(ctx context.Context, restConfig *restclient
 
 func (a *argoKubeClient) NewWorkflowServiceClient(ctx context.Context) workflowpkg.WorkflowServiceClient {
 	wfArchive := sqldb.NullWorkflowArchive
-	wfServer := workflowserver.NewServer(ctx, a.instanceIDService, argoKubeOffloadNodeStatusRepo, wfArchive, a.wfClient, a.wfLister, a.wfStore, a.wfTmplStore, a.cwfTmplStore, nil, &a.namespace)
+	wfServer := workflowserver.NewServer(ctx, a.instanceIDService, argoKubeOffloadNodeStatusRepo, wfArchive, a.dynamicClient, a.wfLister, a.wfStore, a.wfTmplStore, a.cwfTmplStore, nil, &a.namespace)
 	go wfServer.Run(a.opts.CachingCloseCh)
 	return &errorTranslatingWorkflowServiceClient{&argoKubeWorkflowServiceClient{wfServer}}
 }

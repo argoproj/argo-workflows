@@ -10,6 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	cronworkflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/cronworkflow"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/server/auth"
 	servertypes "github.com/argoproj/argo-workflows/v4/server/types"
@@ -50,11 +51,12 @@ func (c *cronWorkflowServiceServer) ListCronWorkflows(ctx context.Context, req *
 		options = req.ListOptions
 	}
 	c.instanceIDService.With(options)
-	cronWfList, err := auth.GetWfClient(ctx).ArgoprojV1alpha1().CronWorkflows(req.Namespace).List(ctx, *options)
+	gvr := v1alpha1.SchemeGroupVersion.WithResource(workflow.CronWorkflowPlural)
+	items, meta, err := sutils.TolerantList[v1alpha1.CronWorkflow](ctx, auth.GetDynamicClient(ctx), gvr, req.Namespace, *options)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
-	return cronWfList, nil
+	return &v1alpha1.CronWorkflowList{ListMeta: meta, Items: items}, nil
 }
 
 func (c *cronWorkflowServiceServer) CreateCronWorkflow(ctx context.Context, req *cronworkflowpkg.CreateCronWorkflowRequest) (*v1alpha1.CronWorkflow, error) {

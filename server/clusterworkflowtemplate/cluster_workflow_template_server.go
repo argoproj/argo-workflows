@@ -10,6 +10,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	clusterwftmplpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/clusterworkflowtemplate"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/server/auth"
 	servertypes "github.com/argoproj/argo-workflows/v4/server/types"
@@ -80,16 +81,17 @@ func (cwts *Server) getTemplateAndValidate(ctx context.Context, name string) (*v
 }
 
 func (cwts *Server) ListClusterWorkflowTemplates(ctx context.Context, req *clusterwftmplpkg.ClusterWorkflowTemplateListRequest) (*v1alpha1.ClusterWorkflowTemplateList, error) {
-	wfClient := auth.GetWfClient(ctx)
 	options := &v1.ListOptions{}
 	if req.ListOptions != nil {
 		options = req.ListOptions
 	}
 	cwts.instanceIDService.With(options)
-	cwfList, err := wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates().List(ctx, *options)
+	gvr := v1alpha1.SchemeGroupVersion.WithResource(workflow.ClusterWorkflowTemplatePlural)
+	items, meta, err := serverutils.TolerantList[v1alpha1.ClusterWorkflowTemplate](ctx, auth.GetDynamicClient(ctx), gvr, "", *options)
 	if err != nil {
 		return nil, serverutils.ToStatusError(err, codes.Internal)
 	}
+	cwfList := &v1alpha1.ClusterWorkflowTemplateList{ListMeta: meta, Items: items}
 
 	sort.Sort(cwfList.Items)
 

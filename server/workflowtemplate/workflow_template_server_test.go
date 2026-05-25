@@ -12,12 +12,14 @@ import (
 	authorizationv1 "k8s.io/api/authorization/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	dynamicfake "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes/fake"
 	k8stesting "k8s.io/client-go/testing"
 
 	workflowtemplatepkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflowtemplate"
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	wftFake "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
+	wfscheme "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/scheme"
 	"github.com/argoproj/argo-workflows/v4/server/auth"
 	"github.com/argoproj/argo-workflows/v4/server/auth/types"
 	"github.com/argoproj/argo-workflows/v4/server/clusterworkflowtemplate"
@@ -183,7 +185,8 @@ func getWorkflowTemplateServer(t *testing.T) (workflowtemplatepkg.WorkflowTempla
 		}, nil
 	})
 	wfClientset := wftFake.NewClientset(&unlabelledObj, &wftObj1, &wftObj2)
-	ctx := context.WithValue(context.WithValue(context.WithValue(logging.TestContext(t.Context()), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}, Email: "my-sub@your.org"})
+	dynClient := dynamicfake.NewSimpleDynamicClient(wfscheme.Scheme, &unlabelledObj, &wftObj1, &wftObj2)
+	ctx := context.WithValue(context.WithValue(context.WithValue(context.WithValue(logging.TestContext(t.Context()), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}, Email: "my-sub@your.org"}), auth.DynamicKey, dynClient)
 	wftmplStore := NewClientStore()
 	cwftmplStore := clusterworkflowtemplate.NewClientStore()
 	return NewServer(instanceid.NewService("my-instanceid"), wftmplStore, cwftmplStore), ctx

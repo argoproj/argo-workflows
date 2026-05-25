@@ -18,6 +18,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/argoproj/argo-workflows/v4/errors"
@@ -69,7 +70,7 @@ type workflowServer struct {
 var _ Server = &workflowServer{}
 
 // NewServer returns a new Server
-func NewServer(ctx context.Context, instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, wfClientSet versioned.Interface, wfLister store.WorkflowLister, wfStore store.WorkflowStore, wftmplStore servertypes.WorkflowTemplateStore, cwftmplStore servertypes.ClusterWorkflowTemplateStore, wfDefaults *wfv1.Workflow, namespace *string) Server {
+func NewServer(ctx context.Context, instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, dyn dynamic.Interface, wfLister store.WorkflowLister, wfStore store.WorkflowStore, wftmplStore servertypes.WorkflowTemplateStore, cwftmplStore servertypes.ClusterWorkflowTemplateStore, wfDefaults *wfv1.Workflow, namespace *string) Server {
 	ws := &workflowServer{
 		instanceIDService:     instanceIDService,
 		offloadNodeStatusRepo: offloadNodeStatusRepo,
@@ -81,12 +82,17 @@ func NewServer(ctx context.Context, instanceIDService instanceid.Service, offloa
 		wfDefaults:            wfDefaults,
 	}
 	if wfStore != nil && namespace != nil {
+		gvr := wfv1.SchemeGroupVersion.WithResource(workflow.WorkflowPlural)
 		lw := &cache.ListWatch{
 			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
-				return wfClientSet.ArgoprojV1alpha1().Workflows(*namespace).List(ctx, options)
+				items, meta, err := sutils.TolerantList[wfv1.Workflow](ctx, dyn, gvr, *namespace, options)
+				if err != nil {
+					return nil, err
+				}
+				return &wfv1.WorkflowList{ListMeta: meta, Items: items}, nil
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-				return wfClientSet.ArgoprojV1alpha1().Workflows(*namespace).Watch(ctx, options)
+				return sutils.TolerantWatch[wfv1.Workflow, *wfv1.Workflow](ctx, dyn, gvr, *namespace, options)
 			},
 		}
 		wfReflector := cache.NewReflector(lw, &wfv1.Workflow{}, wfStore, reSyncDuration)

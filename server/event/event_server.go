@@ -9,6 +9,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	eventpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/event"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/server/auth"
 	"github.com/argoproj/argo-workflows/v4/server/event/dispatch"
@@ -103,9 +104,10 @@ func (s *Controller) ListWorkflowEventBindings(ctx context.Context, in *eventpkg
 	if in.ListOptions != nil {
 		listOptions = *in.ListOptions
 	}
-	eventBindings, err := auth.GetWfClient(ctx).ArgoprojV1alpha1().WorkflowEventBindings(in.Namespace).List(ctx, listOptions)
+	gvr := wfv1.SchemeGroupVersion.WithResource(workflow.WorkflowEventBindingPlural)
+	items, meta, err := sutils.TolerantList[wfv1.WorkflowEventBinding](ctx, auth.GetDynamicClient(ctx), gvr, in.Namespace, listOptions)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
-	return eventBindings, nil
+	return &wfv1.WorkflowEventBindingList{ListMeta: meta, Items: items}, nil
 }
