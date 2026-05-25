@@ -177,6 +177,16 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		return nil, fmt.Errorf("failed to get token volumes: %w", err)
 	}
 
+	// Artifact-plugin sidecars run with the pod's AutomountServiceAccountToken
+	// disabled, so the standard projection at /var/run/secrets/kubernetes.io/serviceaccount
+	// is absent. Plugin RPC handlers that build an in-cluster client to read
+	// credential Secrets (e.g. minio accessKey/secretKey) fail without a token
+	// at the conventional path. Mount the same SA-bound token volume the agent
+	// main container uses — the Volume is already in podVolumes below.
+	for i := range artifactPluginSidecars {
+		artifactPluginSidecars[i].VolumeMounts = append(artifactPluginSidecars[i].VolumeMounts, *tokenVolumeMount)
+	}
+
 	// The agent container runs with ReadOnlyRootFilesystem=true (see
 	// common.MinimalCtrSC), so /tmp on the root fs is read-only. Resource
 	// templates need scratch space for kubectl manifest files and downloaded
