@@ -745,3 +745,127 @@ func TestUnzipMaliciousSymlink(t *testing.T) {
 
 	assert.Equal(t, "safe", string(content), "File outside should NOT be overwritten by unzip")
 }
+
+// TestRenameOrMerge_RenameFastPath verifies that renameOrMerge uses the
+// atomic Rename path when the destination doesn't already exist.
+func TestRenameOrMerge_RenameFastPath(t *testing.T) {
+	tmp := t.TempDir()
+	src := filepath.Join(tmp, "src")
+	require.NoError(t, os.MkdirAll(src, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(src, "hello.txt"), []byte("hi"), 0o644))
+
+	dst := filepath.Join(tmp, "dst")
+	require.NoError(t, renameOrMerge(src, dst))
+
+	body, err := os.ReadFile(filepath.Join(dst, "hello.txt"))
+	require.NoError(t, err)
+	assert.Equal(t, "hi", string(body))
+
+	_, err = os.Stat(src)
+	assert.True(t, os.IsNotExist(err), "src should be gone after rename")
+}
+
+// TestRenameOrMerge_MergesIntoExistingDir verifies that when os.Rename fails
+// because the destination is a pre-existing directory (mimicking the
+// volume-mount case where the mount point already exists), the helper falls
+// back to recursively merging src's contents into dst.
+func TestRenameOrMerge_MergesIntoExistingDir(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows os.Rename returns ERROR_ACCESS_DENIED for dir-onto-dir, " +
+			"which isn't in the renameOrMerge fallback set; the rename-onto-mount " +
+			"bug this fallback addresses only manifests for Linux container runtimes")
+	}
+	tmp := t.TempDir()
+
+	src := filepath.Join(tmp, "src")
+	require.NoError(t, os.MkdirAll(filepath.Join(src, "nested"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(src, "a.txt"), []byte("alpha"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(src, "nested", "b.txt"), []byte("beta"), 0o644))
+
+	// Pre-create dst as a non-empty directory so os.Rename can't atomically
+	// replace it. This is the same shape as an input artifact whose target
+	// path is a volume mount root.
+	dst := filepath.Join(tmp, "dst")
+	require.NoError(t, os.MkdirAll(dst, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dst, "preexisting.txt"), []byte("keep"), 0o644))
+
+	require.NoError(t, renameOrMerge(src, dst))
+
+	// src is moved
+	_, err := os.Stat(src)
+	assert.True(t, os.IsNotExist(err), "src should be gone after merge")
+
+	// dst has merged contents
+	keep, err := os.ReadFile(filepath.Join(dst, "preexisting.txt"))
+	require.NoError(t, err)
+	assert.Equal(t, "keep", string(keep))
+
+	a, err := os.ReadFile(filepath.Join(dst, "a.txt"))
+	require.NoError(t, err)
+	assert.Equal(t, "alpha", string(a))
+
+	b, err := os.ReadFile(filepath.Join(dst, "nested", "b.txt"))
+	require.NoError(t, err)
+	assert.Equal(t, "beta", string(b))
+}
+
+// TestRenameOrMerge_PreservesSymlinks verifies that the merge fallback
+// preserves symbolic links from the source tree.
+func TestRenameOrMerge_PreservesSymlinks(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlink creation requires elevated privileges on Windows")
+	}
+	tmp := t.TempDir()
+	src := filepath.Join(tmp, "src")
+	require.NoError(t, os.MkdirAll(src, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(src, "real.txt"), []byte("real"), 0o644))
+	require.NoError(t, os.Symlink("real.txt", filepath.Join(src, "link.txt")))
+
+	dst := filepath.Join(tmp, "dst")
+	require.NoError(t, os.MkdirAll(dst, 0o755))
+
+	require.NoError(t, renameOrMerge(src, dst))
+
+	info, err := os.Lstat(filepath.Join(dst, "link.txt"))
+	require.NoError(t, err)
+	assert.NotZero(t, info.Mode()&os.ModeSymlink, "link.txt should remain a symlink")
+
+	target, err := os.Readlink(filepath.Join(dst, "link.txt"))
+	require.NoError(t, err)
+	assert.Equal(t, "real.txt", target)
+}
+
+// TestRenameOrMerge_PreservesFileMode verifies executable bits and other
+// permission bits survive the merge fallback.
+func TestRenameOrMerge_PreservesFileMode(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows os.Rename returns ERROR_ACCESS_DENIED for dir-onto-dir, " +
+			"which isn't in the renameOrMerge fallback set; the rename-onto-mount " +
+			"bug this fallback addresses only manifests for Linux container runtimes")
+	}
+	tmp := t.TempDir()
+	src := filepath.Join(tmp, "src")
+	require.NoError(t, os.MkdirAll(src, 0o755))
+
+	scriptPath := filepath.Join(src, "run.sh")
+	require.NoError(t, os.WriteFile(scriptPath, []byte("#!/bin/sh\n"), 0o755))
+
+	dst := filepath.Join(tmp, "dst")
+	require.NoError(t, os.MkdirAll(dst, 0o755))
+
+	require.NoError(t, renameOrMerge(src, dst))
+
+	info, err := os.Stat(filepath.Join(dst, "run.sh"))
+	require.NoError(t, err)
+	assert.Equal(t, os.FileMode(0o755), info.Mode().Perm())
+}
+
+// TestRenameOrMerge_NonRecoverableErrorPropagates verifies that a rename
+// failure that isn't EXDEV/EBUSY/EEXIST/ENOTEMPTY (e.g. ENOENT for a
+// missing source) propagates unchanged rather than entering the fallback.
+func TestRenameOrMerge_NonRecoverableErrorPropagates(t *testing.T) {
+	tmp := t.TempDir()
+	err := renameOrMerge(filepath.Join(tmp, "does-not-exist"), filepath.Join(tmp, "dst"))
+	require.Error(t, err)
+	assert.True(t, os.IsNotExist(err))
+}
