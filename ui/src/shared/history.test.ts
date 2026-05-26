@@ -35,4 +35,12 @@ describe('history URL', () => {
         params.append('label', 'b');
         expect(historyUrl('foo', {extraSearchParams: params})).toBe('/foo?label=a&label=b');
     });
+
+    test('namespace in extraSearchParams is ignored when already set via named param', () => {
+        const params = new URLSearchParams();
+        params.append('namespace', 'stale');
+        params.append('label', 'a');
+        // namespace named param takes precedence; 'stale' from extraSearchParams is dropped
+        expect(historyUrl('foo', {namespace: 'argo', extraSearchParams: params})).toBe('/foo?namespace=argo&label=a');
+    });
 });

@@ -14,7 +14,13 @@ export function historyUrl(path: string, params: {[key: string]: any}) {
             if (path.includes(searchValue)) {
                 path = path.replace(searchValue, v != null ? v : '');
             } else if (k === 'extraSearchParams') {
-                (v as URLSearchParams).forEach((value, key) => queryParams.append(key, value));
+                (v as URLSearchParams).forEach((value, key) => {
+                    // If namespace was already written as a query param (via queryParams.set above),
+                    // skip it from extraSearchParams to prevent duplicate ?namespace= entries.
+                    if (key !== 'namespace' || !queryParams.has('namespace')) {
+                        queryParams.append(key, value);
+                    }
+                });
             } else if (v) {
                 queryParams.set(k, v);
             }
