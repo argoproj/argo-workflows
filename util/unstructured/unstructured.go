@@ -39,6 +39,10 @@ func NewFilteredUnstructuredInformer(resource schema.GroupVersionResource, clien
 				options.Limit = workflowPaginationLimit
 				for {
 					options.Continue = continueTok
+					if options.Continue != "" {
+						options.ResourceVersion = ""
+						options.ResourceVersionMatch = ""
+					}
 					unList, err := client.Resource(resource).Namespace(namespace).List(ctx, options)
 					if err != nil {
 						return nil, err
