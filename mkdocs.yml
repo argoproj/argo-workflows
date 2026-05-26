@@ -170,6 +170,7 @@ nav:
           - executor_plugins.md
           - executor_swagger.md
           - plugin-directory.md
+          - shared-agent-pod.md
       - Best Practices:
           - workflow-pod-security-context.md
           - tolerating-pod-deletion.md
