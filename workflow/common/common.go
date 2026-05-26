@@ -16,6 +16,16 @@ const (
 	ArtifactPluginSidecarPrefix = "artifact-plugin-"
 	ArtifactPluginInitPrefix    = InitContainerName + "-artifact-"
 
+	// AgentPluginShareDir is the path under which the agent main container
+	// and each artifact-plugin sidecar exchange small files (e.g. main-logs)
+	// during resource-template execution. The agent main mounts a shared
+	// emptyDir at this path (root view); each sidecar mounts the same volume
+	// at AgentPluginShareDir + "/" + <plugin-name> via SubPath=<plugin-name>,
+	// so path strings line up across containers and the artifact-driver RPC
+	// resolves to the same bytes on both sides. Each sidecar only sees its
+	// own subpath, preserving isolation between plugins.
+	AgentPluginShareDir = "/argo/plugin-share"
+
 	// AnnotationKeyDefaultContainer is the annotation that specify container that will be used by default in case of kubectl commands for example
 	AnnotationKeyDefaultContainer = "kubectl.kubernetes.io/default-container"
 

@@ -521,6 +521,25 @@ func (ae *AgentExecutor) obtainManifest(ctx context.Context, nodeID string, tmpl
 	return manifest, path, nil
 }
 
+// agentLogsTmpDir returns the directory under which archiveAgentLogs creates
+// the captured kubectl log file. Plugin-backed archive locations route the
+// upload through a sidecar container, so the file must live in the per-plugin
+// slice of the agent's shared emptyDir (see common.AgentPluginShareDir and
+// createAgentPod) — the sidecar mounts the same volume at the same path via
+// SubPath, so the path string the agent passes to driver.Save resolves to
+// the same bytes inside the sidecar. All other drivers (S3, GCS, ...) run
+// in-process in the agent main container, so the empty string ("") falls
+// through to os.CreateTemp's default of os.TempDir.
+func agentLogsTmpDir(tmpl *wfv1.Template) string {
+	if tmpl == nil || tmpl.ArchiveLocation == nil {
+		return ""
+	}
+	if tmpl.ArchiveLocation.Plugin == nil || tmpl.ArchiveLocation.Plugin.Name == "" {
+		return ""
+	}
+	return filepath.Join(common.AgentPluginShareDir, string(tmpl.ArchiveLocation.Plugin.Name))
+}
+
 // archiveAgentLogs writes the captured kubectl invocation log to the
 // workflow's configured archive location as the `main-logs` artifact and
 // returns the artifact with location + key populated. Returns nil if log
@@ -546,7 +565,14 @@ func (ae *AgentExecutor) archiveAgentLogs(ctx context.Context, tmpl *wfv1.Templa
 		return nil
 	}
 
-	tmp, err := os.CreateTemp("", "agent-main-logs-*.log")
+	tmpDir := agentLogsTmpDir(tmpl)
+	if tmpDir != "" {
+		if mkErr := os.MkdirAll(tmpDir, 0o700); mkErr != nil {
+			logger.WithError(mkErr).Warn(ctx, "Skipping main-logs archival: plugin share mkdir failed")
+			return nil
+		}
+	}
+	tmp, err := os.CreateTemp(tmpDir, "agent-main-logs-*.log")
 	if err != nil {
 		logger.WithError(err).Warn(ctx, "Skipping main-logs archival: temp file create failed")
 		return nil

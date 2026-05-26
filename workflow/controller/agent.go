@@ -22,6 +22,12 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
+// agentPluginShareVolumeName names the emptyDir mounted on both the agent
+// main container (at common.AgentPluginShareDir, root view) and each
+// artifact-plugin sidecar (at common.AgentPluginShareDir/<plugin-name> via
+// SubPath=<plugin-name>). See createAgentPod for the wiring.
+const agentPluginShareVolumeName = "agent-plugin-share"
+
 func (woc *wfOperationCtx) getAgentPodName() string {
 	return woc.wf.NodeID("agent") + "-agent"
 }
@@ -221,6 +227,31 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	// the in-process artifact driver (plugin.NewDriver) can dial the sidecar
 	// over its unix socket — the same contract the wait container relies on.
 	podVolumeMounts = append(podVolumeMounts, artifactPluginMounts...)
+
+	// Shared emptyDir between the agent main container and the artifact-plugin
+	// sidecars. The agent main writes per-plugin temp files (e.g. the kubectl
+	// log it asks the sidecar to upload as main-logs) under
+	// common.AgentPluginShareDir/<plugin-name>; each sidecar mounts the same
+	// volume with SubPath=<plugin-name> at that path so the agent and the
+	// sidecar see identical path strings for the same bytes. Skipped when no
+	// artifact-plugin sidecars exist on this agent pod.
+	if len(artifactPluginSidecars) > 0 {
+		pluginShareSize := resource.MustParse("64Mi")
+		volumePluginShare := apiv1.Volume{
+			Name: agentPluginShareVolumeName,
+			VolumeSource: apiv1.VolumeSource{
+				EmptyDir: &apiv1.EmptyDirVolumeSource{
+					Medium:    apiv1.StorageMediumMemory,
+					SizeLimit: &pluginShareSize,
+				},
+			},
+		}
+		podVolumes = append(podVolumes, volumePluginShare)
+		podVolumeMounts = append(podVolumeMounts, apiv1.VolumeMount{
+			Name:      agentPluginShareVolumeName,
+			MountPath: common.AgentPluginShareDir,
+		})
+	}
 	if certVolume != nil && certVolumeMount != nil {
 		podVolumes = append(podVolumes, *certVolume)
 		podVolumeMounts = append(podVolumeMounts, *certVolumeMount)
@@ -410,6 +441,18 @@ func (woc *wfOperationCtx) getAgentArtifactPlugins(ctx context.Context) ([]apiv1
 		// the agent pod has no such loop. Mount it explicitly so the binary
 		// (staged by the agent init container) is visible to the sidecar.
 		ctr.VolumeMounts = append(ctr.VolumeMounts, volumeMountVarArgo)
+		// Per-plugin slice of the agent's shared scratch emptyDir. The agent
+		// main container writes temp files (e.g. captured kubectl logs) under
+		// common.AgentPluginShareDir/<plugin-name>; the sidecar sees those
+		// same bytes at the identical path string via SubPath. Each sidecar
+		// is scoped to its own subpath, so plugins cannot read each other's
+		// temp files. The matching Volume + agent-main mount live in
+		// createAgentPod.
+		ctr.VolumeMounts = append(ctr.VolumeMounts, apiv1.VolumeMount{
+			Name:      agentPluginShareVolumeName,
+			SubPath:   string(driver.Name),
+			MountPath: common.AgentPluginShareDir + "/" + string(driver.Name),
+		})
 		sidecars = append(sidecars, *ctr)
 		volumes = append(volumes, driver.Name.Volume())
 		mounts = append(mounts, driver.Name.VolumeMount())
