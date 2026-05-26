@@ -144,6 +144,25 @@ describe('WorkflowsList', () => {
         });
     });
 
+    // Regression test: when the sidePanel is open and the URL already contains
+    // duplicate parameters[*] keys, historyUrl's append() preserves all duplicates instead of
+    // collapsing them. After any filter change the count must not exceed 1 per parameter key.
+    it('does not accumulate duplicate parameters[*] in URL when sidePanel is open', async () => {
+        const history = createMemoryHistory();
+        history.push('/workflows/argo?sidePanel=submit-new-workflow&parameters[message]=hello&parameters[message]=world');
+
+        const {findByLabelText} = render(<App history={history} />);
+
+        // Trigger a state change so the save-history effect re-runs while sidePanel is still open.
+        const runningFilter = await findByLabelText('Running');
+        runningFilter.click();
+
+        await waitFor(() => {
+            const params = new URLSearchParams(history.location.search);
+            expect(params.getAll('parameters[message]')).toHaveLength(1);
+        });
+    });
+
     it('selects repeated phase and label filters from query parameters', async () => {
         const history = createMemoryHistory();
         history.push('/workflows?namespace=argo&phase=Running&phase=Failed&label=team%3Dml&label=env%3Dprod');
