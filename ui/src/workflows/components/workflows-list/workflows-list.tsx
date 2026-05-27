@@ -158,7 +158,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
             }
             currentParams.forEach((v, k) => {
                 if (k.startsWith('parameters')) {
-                    params.append(k, v);
+                    params.set(k, v);
                 }
             });
         }
