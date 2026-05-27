@@ -154,7 +154,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
 
             // preserve template name and parameters if sidePanel is open
             if (currentParams.has('template')) {
-                params.append('template', currentParams.get('template'));
+                params.set('template', currentParams.get('template'));
             }
             currentParams.forEach((v, k) => {
                 if (k.startsWith('parameters')) {
