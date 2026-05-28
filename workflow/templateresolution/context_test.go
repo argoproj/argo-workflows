@@ -418,7 +418,7 @@ spec:
 
 func TestGetTemplateFromRefWithTemplateMetadataAndPodMetadata(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	wfClientset := fakewfclientset.NewClientset()
+	wfClientset := fakewfclientset.NewSimpleClientset()
 
 	workflowTemplateWithPodMetadata := `
 apiVersion: argoproj.io/v1alpha1
