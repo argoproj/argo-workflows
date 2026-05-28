@@ -486,3 +486,9 @@ data:
   #     Workflow cannot run an arbitrary Workflow, use this option.
   workflowRestrictions: |
     templateReferencing: Strict
+  
+  # disableAgentPodCreation disables the creation of agent pods for HTTP and Plugin templates. 
+  # This is useful when external agents are responsible for executing these templates and the controller should not create agent pods. 
+  # Note: when this is set to true, HTTP templates will not be reconciled and the controller will not attempt to create agent pods for them.
+  # Defaults to false
+  disableAgentPodCreation: "false"
