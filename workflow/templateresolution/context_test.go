@@ -396,3 +396,56 @@ spec:
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "template nonexistent-template not found in workflow template template-with-podmetadata")
 }
+
+func TestGetTemplateFromRefWithTemplateMetadataAndPodMetadata(t *testing.T) {
+	wfClientset := fakewfclientset.NewSimpleClientset()
+
+	workflowTemplateWithPodMetadata := `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: template-with-podmetadata
+spec:
+  podMetadata:
+    labels:
+      workflow-level-pod-label: foo
+    annotations:
+      workflow-level-pod-annotation: foo
+  templates:
+  - name: existing-template
+    metadata:
+      labels:
+        workflow-level-pod-label: bar
+        template-level-pod-label: world
+      annotations:
+        workflow-level-pod-annotation: baz
+        template-level-pod-annotation: hello
+    container:
+      image: alpine:3.23
+      command: [echo, hello]
+`
+
+	err := createWorkflowTemplate(wfClientset, workflowTemplateWithPodMetadata)
+	require.NoError(t, err)
+
+	baseWftmpl := unmarshalWftmpl(baseWorkflowTemplateYaml)
+	tplCtx := NewContextFromClientSet(
+		wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault),
+		wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(),
+		baseWftmpl,
+		nil,
+	)
+
+	tmplRef := wfv1.TemplateRef{
+		Name:     "template-with-podmetadata",
+		Template: "existing-template",
+	}
+
+	tmpl, err := tplCtx.GetTemplateFromRef(&tmplRef)
+	require.NoError(t, err)
+
+	assert.Equal(t, "bar", tmpl.Metadata.Labels["workflow-level-pod-label"])
+	assert.Equal(t, "world", tmpl.Metadata.Labels["template-level-pod-label"])
+	assert.Equal(t, "baz", tmpl.Metadata.Annotations["workflow-level-pod-annotation"])
+	assert.Equal(t, "hello", tmpl.Metadata.Annotations["template-level-pod-annotation"])
+}

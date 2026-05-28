@@ -292,18 +292,27 @@ func (ctx *Context) WithClusterWorkflowTemplate(name string) (*Context, error) {
 
 // addPodMetadata add podMetadata in workflow template level to template
 func (ctx *Context) addPodMetadata(podMetadata *wfv1.Metadata, tmpl *wfv1.Template) {
-	if podMetadata != nil {
+	if podMetadata == nil {
+		return
+	}
+	if len(podMetadata.Annotations) > 0 {
 		if tmpl.Metadata.Annotations == nil {
 			tmpl.Metadata.Annotations = make(map[string]string)
 		}
 		for k, v := range podMetadata.Annotations {
-			tmpl.Metadata.Annotations[k] = v
+			if _, ok := tmpl.Metadata.Annotations[k]; !ok {
+				tmpl.Metadata.Annotations[k] = v
+			}
 		}
+	}
+	if len(podMetadata.Labels) > 0 {
 		if tmpl.Metadata.Labels == nil {
 			tmpl.Metadata.Labels = make(map[string]string)
 		}
 		for k, v := range podMetadata.Labels {
-			tmpl.Metadata.Labels[k] = v
+			if _, ok := tmpl.Metadata.Labels[k]; !ok {
+				tmpl.Metadata.Labels[k] = v
+			}
 		}
 	}
 }
