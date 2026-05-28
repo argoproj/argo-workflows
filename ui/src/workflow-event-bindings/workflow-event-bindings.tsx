@@ -105,7 +105,7 @@ export function WorkflowEventBindings({match, location, history}: RouteComponent
                     {title: 'Workflow Event Bindings', path: uiUrl('workflow-event-bindings')},
                     {title: namespace, path: uiUrl('workflow-event-bindings/' + namespace)}
                 ],
-                tools: [<NamespaceFilter key='namespace-filter' value={namespace} onChange={setNamespace} />]
+                tools: [<NamespaceFilter key='namespace-filter' value={namespace} onChange={setNamespace} extraNamespaces={nsUtils.getUniqueNamespaces(workflowEventBindings)} />]
             }}>
             <ErrorNotice error={error} />
             {!workflowEventBindings ? (
