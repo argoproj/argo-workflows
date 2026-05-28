@@ -50,7 +50,17 @@ func (s *FilesServer) ServerFiles(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Strict-Transport-Security", "max-age=31536000")
 	}
 
-	if r.URL.Path == "/" || !s.uiAssetExists(r.URL.Path) {
+	// Strip baseHRef prefix so assets resolve correctly when behind a reverse proxy
+	assetPath := r.URL.Path
+	if s.baseHRef != "/" && s.baseHRef != "" {
+		basePath := "/" + strings.Trim(s.baseHRef, "/")
+		assetPath = strings.TrimPrefix(assetPath, basePath)
+		if assetPath == "" || !strings.HasPrefix(assetPath, "/") {
+			assetPath = "/" + assetPath
+		}
+	}
+
+	if r.URL.Path == "/" || !s.uiAssetExists(assetPath) {
 		data, err := s.getIndexData()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -64,6 +74,7 @@ func (s *FilesServer) ServerFiles(w http.ResponseWriter, r *http.Request) {
 		http.ServeContent(w, r, "index.html", modTime, bytes.NewReader(data))
 	} else {
 		staticFS, _ := fs.Sub(s.staticAssets, ui.EMBED_PATH)
+		r.URL.Path = assetPath
 		http.FileServer(http.FS(staticFS)).ServeHTTP(w, r)
 	}
 }
