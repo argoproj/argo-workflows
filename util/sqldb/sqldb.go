@@ -196,13 +196,14 @@ func createPostGresDBSessionWithCreds(cfg *config.PostgreSQLConfig, persistPool 
 func createMySQLDBSessionWithCreds(cfg *config.MySQLConfig, persistPool *config.ConnectionPool, username, password string) (db.Session, error) {
 	// Build MySQL DSN using mysql.Config to safely handle special characters in credentials
 	mysqlCfg := mysql.Config{
-		User:      username,
-		Passwd:    password,
-		Net:       "tcp",
-		Addr:      cfg.GetHostname(),
-		DBName:    cfg.Database,
-		ParseTime: true,
-		Params:    cfg.Options,
+		User:                 username,
+		Passwd:               password,
+		Net:                  "tcp",
+		Addr:                 cfg.GetHostname(),
+		DBName:               cfg.Database,
+		ParseTime:            true,
+		AllowNativePasswords: true, // Required for MariaDB which uses mysql_native_password by default
+		Params:               cfg.Options,
 	}
 	dsn := mysqlCfg.FormatDSN()
 
