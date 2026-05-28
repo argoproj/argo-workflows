@@ -8,6 +8,13 @@ metadata:
       This is the minimum recommended permissions needed if you want to use the agent, e.g. for HTTP or plugin templates.
 
       If <= v3.2 you must replace `workflowtasksets/status` with `patch workflowtasksets`.
+
+      Resource templates executed via the agent additionally require permissions
+      on whatever GVRs they manage: the verb matching the resource template's
+      action (create/patch/delete/get) plus list/watch so the agent's dynamic
+      informer can evaluate success/failure conditions. Add rules per GVR you
+      use; the rules below cover the bundled examples (workflow-of-workflows,
+      k8s-patch-pod, resource-pod-spec-patch).
 rules:
   - apiGroups:
       - argoproj.io
@@ -22,3 +29,36 @@ rules:
       - workflowtasksets/status
     verbs:
       - patch
+  - apiGroups:
+      - argoproj.io
+    resources:
+      - workflows
+    verbs:
+      - create
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - get
+      - list
+      - patch
+      - watch
+  - apiGroups:
+      - batch
+    resources:
+      - jobs
+    verbs:
+      - create
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - get

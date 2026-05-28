@@ -100,17 +100,18 @@ type NodeType string
 
 // Node types
 const (
-	NodeTypePod       NodeType = "Pod"
-	NodeTypeContainer NodeType = "Container"
-	NodeTypeSteps     NodeType = "Steps"
-	NodeTypeStepGroup NodeType = "StepGroup"
-	NodeTypeDAG       NodeType = "DAG"
-	NodeTypeTaskGroup NodeType = "TaskGroup"
-	NodeTypeRetry     NodeType = "Retry"
-	NodeTypeSkipped   NodeType = "Skipped"
-	NodeTypeSuspend   NodeType = "Suspend"
-	NodeTypeHTTP      NodeType = "HTTP"
-	NodeTypePlugin    NodeType = "Plugin"
+	NodeTypePod             NodeType = "Pod"
+	NodeTypeContainer       NodeType = "Container"
+	NodeTypeSteps           NodeType = "Steps"
+	NodeTypeStepGroup       NodeType = "StepGroup"
+	NodeTypeDAG             NodeType = "DAG"
+	NodeTypeTaskGroup       NodeType = "TaskGroup"
+	NodeTypeRetry           NodeType = "Retry"
+	NodeTypeSkipped         NodeType = "Skipped"
+	NodeTypeSuspend         NodeType = "Suspend"
+	NodeTypeHTTP            NodeType = "HTTP"
+	NodeTypePlugin          NodeType = "Plugin"
+	NodeTypeResourceMonitor NodeType = "ResourceMonitor"
 )
 
 // ArtifactGCStrategy is the strategy when to delete artifacts for GC.
@@ -2733,7 +2734,7 @@ func (n *NodeStatus) IsActiveSuspendNode() bool {
 
 // IsTaskSetNode returns whether this node uses the taskset
 func (n *NodeStatus) IsTaskSetNode() bool {
-	return n.Type == NodeTypeHTTP || n.Type == NodeTypePlugin
+	return n.Type == NodeTypeHTTP || n.Type == NodeTypePlugin || n.Type == NodeTypeResourceMonitor
 }
 
 func (n NodeStatus) GetDuration() time.Duration {
@@ -3378,8 +3379,10 @@ func (tmpl *Template) GetNodeType() NodeType {
 		return NodeTypeRetry
 	}
 	switch tmpl.GetType() {
-	case TemplateTypeContainer, TemplateTypeContainerSet, TemplateTypeScript, TemplateTypeResource, TemplateTypeData:
+	case TemplateTypeContainer, TemplateTypeContainerSet, TemplateTypeScript, TemplateTypeData:
 		return NodeTypePod
+	case TemplateTypeResource:
+		return NodeTypeResourceMonitor
 	case TemplateTypeDAG:
 		return NodeTypeDAG
 	case TemplateTypeSteps:

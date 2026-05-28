@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"slices"
+	"strings"
 
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -20,6 +21,12 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
+
+// agentPluginShareVolumeName names the emptyDir mounted on both the agent
+// main container (at common.AgentPluginShareDir, root view) and each
+// artifact-plugin sidecar (at common.AgentPluginShareDir/<plugin-name> via
+// SubPath=<plugin-name>). See createAgentPod for the wiring.
+const agentPluginShareVolumeName = "agent-plugin-share"
 
 func (woc *wfOperationCtx) getAgentPodName() string {
 	return woc.wf.NodeID("agent") + "-agent"
@@ -131,12 +138,25 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		return nil, err
 	}
 
+	artifactPluginSidecars, artifactPluginVolumes, artifactPluginMounts, artifactPluginNames, err := woc.getAgentArtifactPlugins(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	envVars := []apiv1.EnvVar{
 		{Name: common.EnvVarWorkflowName, Value: woc.wf.Name},
 		{Name: common.EnvVarWorkflowUID, Value: string(woc.wf.UID)},
 		{Name: common.EnvAgentPatchRate, Value: env.LookupEnvStringOr(common.EnvAgentPatchRate, GetRequeueTime().String())},
 		{Name: common.EnvVarPluginAddresses, Value: wfv1.MustMarshallJSON(addresses(pluginSidecars))},
 		{Name: common.EnvVarPluginNames, Value: wfv1.MustMarshallJSON(names(pluginSidecars))},
+	}
+	if len(artifactPluginNames) > 0 {
+		// Parity with the wait container — the artifact-plugin driver path
+		// keys off this env var to find the plugins available locally.
+		envVars = append(envVars, apiv1.EnvVar{
+			Name:  common.EnvVarArtifactPluginNames,
+			Value: strings.Join(artifactPluginNames, ","),
+		})
 	}
 
 	// If the default number of task workers is overridden, then pass it to the agent pod.
@@ -147,19 +167,90 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		})
 	}
 
+	// The agent pod runs argo machinery (HTTP/plugin/resource template
+	// orchestration), not user code, so it inherits the executor SA when one
+	// is set — that's the SA designated for argo's own work. This matches the
+	// pre-PR resource-template path, where the executor sidecar (running with
+	// executor.serviceAccountName) did the kubectl create and polling. Falls
+	// back to the workflow SA to preserve existing behavior for workflows
+	// that don't configure executor.serviceAccountName.
 	serviceAccountName := woc.execWf.Spec.ServiceAccountName
+	if woc.execWf.Spec.Executor != nil && woc.execWf.Spec.Executor.ServiceAccountName != "" {
+		serviceAccountName = woc.execWf.Spec.Executor.ServiceAccountName
+	}
 	tokenVolume, tokenVolumeMount, err := woc.getServiceAccountTokenVolume(ctx, serviceAccountName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get token volumes: %w", err)
 	}
 
+	// Artifact-plugin sidecars run with the pod's AutomountServiceAccountToken
+	// disabled, so the standard projection at /var/run/secrets/kubernetes.io/serviceaccount
+	// is absent. Plugin RPC handlers that build an in-cluster client to read
+	// credential Secrets (e.g. minio accessKey/secretKey) fail without a token
+	// at the conventional path. Mount the same SA-bound token volume the agent
+	// main container uses — the Volume is already in podVolumes below.
+	for i := range artifactPluginSidecars {
+		artifactPluginSidecars[i].VolumeMounts = append(artifactPluginSidecars[i].VolumeMounts, *tokenVolumeMount)
+	}
+
+	// The agent container runs with ReadOnlyRootFilesystem=true (see
+	// common.MinimalCtrSC), so /tmp on the root fs is read-only. Resource
+	// templates need scratch space for kubectl manifest files and downloaded
+	// manifestFrom artifacts. Shadow /tmp with a tmpfs emptyDir so os.WriteFile
+	// / os.CreateTemp / os.MkdirTemp continue to work without code changes.
+	agentTmpSize := resource.MustParse("64Mi")
+	volumeAgentTmp := apiv1.Volume{
+		Name: "tmp",
+		VolumeSource: apiv1.VolumeSource{
+			EmptyDir: &apiv1.EmptyDirVolumeSource{
+				Medium:    apiv1.StorageMediumMemory,
+				SizeLimit: &agentTmpSize,
+			},
+		},
+	}
+	volumeMountAgentTmp := apiv1.VolumeMount{
+		Name:      volumeAgentTmp.Name,
+		MountPath: "/tmp",
+	}
+
 	podVolumes := slices.Concat(
 		pluginVolumes,
-		[]apiv1.Volume{volumeVarArgo, *tokenVolume},
+		artifactPluginVolumes,
+		[]apiv1.Volume{volumeVarArgo, volumeAgentTmp, *tokenVolume},
 	)
 	podVolumeMounts := []apiv1.VolumeMount{
 		volumeMountVarArgo,
+		volumeMountAgentTmp,
 		*tokenVolumeMount,
+	}
+	// Mount each artifact plugin's socket dir on the agent main container so
+	// the in-process artifact driver (plugin.NewDriver) can dial the sidecar
+	// over its unix socket — the same contract the wait container relies on.
+	podVolumeMounts = append(podVolumeMounts, artifactPluginMounts...)
+
+	// Shared emptyDir between the agent main container and the artifact-plugin
+	// sidecars. The agent main writes per-plugin temp files (e.g. the kubectl
+	// log it asks the sidecar to upload as main-logs) under
+	// common.AgentPluginShareDir/<plugin-name>; each sidecar mounts the same
+	// volume with SubPath=<plugin-name> at that path so the agent and the
+	// sidecar see identical path strings for the same bytes. Skipped when no
+	// artifact-plugin sidecars exist on this agent pod.
+	if len(artifactPluginSidecars) > 0 {
+		pluginShareSize := resource.MustParse("64Mi")
+		volumePluginShare := apiv1.Volume{
+			Name: agentPluginShareVolumeName,
+			VolumeSource: apiv1.VolumeSource{
+				EmptyDir: &apiv1.EmptyDirVolumeSource{
+					Medium:    apiv1.StorageMediumMemory,
+					SizeLimit: &pluginShareSize,
+				},
+			},
+		}
+		podVolumes = append(podVolumes, volumePluginShare)
+		podVolumeMounts = append(podVolumeMounts, apiv1.VolumeMount{
+			Name:      agentPluginShareVolumeName,
+			MountPath: common.AgentPluginShareDir,
+		})
 	}
 	if certVolume != nil && certVolumeMount != nil {
 		podVolumes = append(podVolumes, *certVolume)
@@ -218,9 +309,10 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 			InitContainers: []apiv1.Container{
 				*agentInitCtr,
 			},
-			Containers: append(
+			Containers: slices.Concat(
 				pluginSidecars,
-				*agentMainCtr,
+				artifactPluginSidecars,
+				[]apiv1.Container{*agentMainCtr},
 			),
 		},
 	}
@@ -292,6 +384,81 @@ func (woc *wfOperationCtx) getExecutorPlugins(ctx context.Context) ([]apiv1.Cont
 		}
 	}
 	return sidecars, volumes, nil
+}
+
+// getAgentArtifactPlugins collects the artifact plugin sidecars the agent pod
+// must run so resource templates can save their main-logs (and resolve any
+// manifestFrom artifacts) via plugin-backed artifact repositories.
+//
+// Without these sidecars the agent's call to artifacts.NewDriver would block
+// inside plugin.NewDriver polling for a unix socket that never appears,
+// silently stranding every resource template whose archive location resolves
+// to a plugin.
+//
+// The agent pod is created once per workflow and may handle many resource
+// templates over its lifetime, so we union plugin needs across all of them
+// rather than per-template. The result mirrors workflowpod.addArtifactPlugins:
+// one sidecar per driver, a shared emptyDir per driver for the socket, and a
+// volume mount on the agent main container pointing at that socket dir.
+func (woc *wfOperationCtx) getAgentArtifactPlugins(ctx context.Context) ([]apiv1.Container, []apiv1.Volume, []apiv1.VolumeMount, []string, error) {
+	pluginNameSet := map[wfv1.ArtifactPluginName]bool{}
+	for i := range woc.execWf.Spec.Templates {
+		tmpl := &woc.execWf.Spec.Templates[i]
+		if tmpl.Resource == nil {
+			continue
+		}
+		for _, name := range tmpl.Outputs.Artifacts.GetPluginNames(ctx, woc.artifactRepository, wfv1.IncludeLogs, tmpl.ArchiveLocation) {
+			pluginNameSet[name] = true
+		}
+	}
+	if len(pluginNameSet) == 0 {
+		return nil, nil, nil, nil, nil
+	}
+
+	pluginNames := make([]wfv1.ArtifactPluginName, 0, len(pluginNameSet))
+	for n := range pluginNameSet {
+		pluginNames = append(pluginNames, n)
+	}
+	drivers, err := woc.controller.Config.GetArtifactDrivers(pluginNames)
+	if err != nil {
+		return nil, nil, nil, nil, fmt.Errorf("get artifact drivers for agent: %w", err)
+	}
+
+	// Synthetic template so artifactSidecarContainer's TemplateType check
+	// (resource → MinimalCtrSC) doesn't misclassify a plugin sidecar.
+	syntheticTmpl := &wfv1.Template{}
+	sidecars := make([]apiv1.Container, 0, len(drivers))
+	volumes := make([]apiv1.Volume, 0, len(drivers))
+	mounts := make([]apiv1.VolumeMount, 0, len(drivers))
+	sidecarNames := make([]string, 0, len(drivers))
+	for _, driver := range drivers {
+		ctr, err := woc.artifactSidecarContainer(ctx, syntheticTmpl, driver)
+		if err != nil {
+			return nil, nil, nil, nil, fmt.Errorf("build artifact sidecar for plugin %q: %w", driver.Name, err)
+		}
+		// The sidecar's command is /var/run/argo/argoexec — workflow pods get
+		// the var-run-argo mount applied in the createWorkflowPod loop, but
+		// the agent pod has no such loop. Mount it explicitly so the binary
+		// (staged by the agent init container) is visible to the sidecar.
+		ctr.VolumeMounts = append(ctr.VolumeMounts, volumeMountVarArgo)
+		// Per-plugin slice of the agent's shared scratch emptyDir. The agent
+		// main container writes temp files (e.g. captured kubectl logs) under
+		// common.AgentPluginShareDir/<plugin-name>; the sidecar sees those
+		// same bytes at the identical path string via SubPath. Each sidecar
+		// is scoped to its own subpath, so plugins cannot read each other's
+		// temp files. The matching Volume + agent-main mount live in
+		// createAgentPod.
+		ctr.VolumeMounts = append(ctr.VolumeMounts, apiv1.VolumeMount{
+			Name:      agentPluginShareVolumeName,
+			SubPath:   string(driver.Name),
+			MountPath: common.AgentPluginShareDir + "/" + string(driver.Name),
+		})
+		sidecars = append(sidecars, *ctr)
+		volumes = append(volumes, driver.Name.Volume())
+		mounts = append(mounts, driver.Name.VolumeMount())
+		sidecarNames = append(sidecarNames, ctr.Name)
+	}
+	return sidecars, volumes, mounts, sidecarNames, nil
 }
 
 func addresses(containers []apiv1.Container) []string {

@@ -14,18 +14,20 @@ import (
 
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	executorplugins "github.com/argoproj/argo-workflows/v4/pkg/plugins/executor"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 func TestUnsupportedTemplateTaskWorker(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
+	responseQueue := make(chan response)
+	defer close(responseQueue)
 	ae := &AgentExecutor{
 		consideredTasks: &sync.Map{},
+		responseQueue:   responseQueue,
 	}
 	taskQueue := make(chan task)
 	defer close(taskQueue)
-	responseQueue := make(chan response)
-	defer close(responseQueue)
-	go ae.taskWorker(ctx, taskQueue, responseQueue)
+	go ae.taskWorker(ctx, taskQueue)
 
 	taskQueue <- task{
 		NodeID: "a",
@@ -76,7 +78,7 @@ func TestAgentPluginExecuteTaskSet(t *testing.T) {
 				consideredTasks: &sync.Map{},
 				plugins:         []executorplugins.TemplateExecutor{tc.plugin},
 			}
-			_, requeue, err := ae.processTask(ctx, *tc.template)
+			_, requeue, err := ae.processTask(ctx, "", *tc.template)
 			if err != nil {
 				t.Errorf("expect nil, but got %v", err)
 			}
@@ -97,4 +99,46 @@ func (a alwaysSucceededPlugin) ExecuteTemplate(_ context.Context, _ executorplug
 	}
 	reply.Requeue = &metav1.Duration{Duration: a.requeue}
 	return nil
+}
+
+// TestAgentLogsTmpDir pins the contract archiveAgentLogs relies on: plugin-
+// backed archive locations must produce a path under common.AgentPluginShareDir
+// (the per-plugin slice of the shared emptyDir mounted on both the agent main
+// container and that plugin's sidecar — see createAgentPod). Non-plugin
+// locations return "" so os.CreateTemp falls back to os.TempDir, which is
+// fine for the in-process drivers that run in the agent main container.
+func TestAgentLogsTmpDir(t *testing.T) {
+	t.Run("PluginLocationUsesShareDir", func(t *testing.T) {
+		tmpl := &v1alpha1.Template{
+			ArchiveLocation: &v1alpha1.ArtifactLocation{
+				Plugin: &v1alpha1.PluginArtifact{Name: "test"},
+			},
+		}
+		assert.Equal(t, common.AgentPluginShareDir+"/test", agentLogsTmpDir(tmpl))
+	})
+	t.Run("S3LocationFallsThroughToOSTempDir", func(t *testing.T) {
+		tmpl := &v1alpha1.Template{
+			ArchiveLocation: &v1alpha1.ArtifactLocation{
+				S3: &v1alpha1.S3Artifact{},
+			},
+		}
+		assert.Empty(t, agentLogsTmpDir(tmpl))
+	})
+	t.Run("NoArchiveLocationFallsThrough", func(t *testing.T) {
+		assert.Empty(t, agentLogsTmpDir(&v1alpha1.Template{}))
+	})
+	t.Run("NilTemplateFallsThrough", func(t *testing.T) {
+		assert.Empty(t, agentLogsTmpDir(nil))
+	})
+	t.Run("PluginWithEmptyNameFallsThrough", func(t *testing.T) {
+		// An empty plugin name has no matching sidecar mount, so falling
+		// through to /tmp is safer than producing common.AgentPluginShareDir
+		// itself (the root view, shared with every plugin).
+		tmpl := &v1alpha1.Template{
+			ArchiveLocation: &v1alpha1.ArtifactLocation{
+				Plugin: &v1alpha1.PluginArtifact{},
+			},
+		}
+		assert.Empty(t, agentLogsTmpDir(tmpl))
+	})
 }

@@ -1,0 +1,39 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: workflow-of-workflows-sequence-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: create-children
+            template: create-child
+            arguments:
+              parameters:
+                - name: index
+                  value: "{{item}}"
+            withSequence:
+              count: "2"
+
+    - name: create-child
+      inputs:
+        parameters:
+          - name: index
+      resource:
+        action: create
+        successCondition: status.phase == Succeeded
+        failureCondition: status.phase in (Failed, Error)
+        manifest: |
+          apiVersion: argoproj.io/v1alpha1
+          kind: Workflow
+          metadata:
+            generateName: child-wf-{{inputs.parameters.index}}-
+          spec:
+            entrypoint: hello
+            templates:
+              - name: hello
+                container:
+                  image: alpine:3.20
+                  command: [sh, -c]
+                  args: ["echo hello from child {{inputs.parameters.index}}; sleep 5"]

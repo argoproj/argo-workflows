@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: create-child-wf-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      resource:
+        action: create
+        successCondition: status.phase = Succeeded
+        failureCondition: status.phase = Failed
+        manifest: |
+          apiVersion: argoproj.io/v1alpha1
+          kind: Workflow
+          metadata:
+            generateName: child-wf-
+          spec:
+            entrypoint: hello
+            templates:
+              - name: hello
+                container:
+                  image: alpine:3.20
+                  command: [sh, -c]
+                  args: ["echo hello from child; sleep 5"]

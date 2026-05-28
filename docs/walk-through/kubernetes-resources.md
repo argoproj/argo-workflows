@@ -46,6 +46,8 @@ spec:
 **Note:**
 Currently only a single resource can be managed by a resource template so either a `generateName` or `name` must be provided in the resource's meta-data.
 
+**RBAC:** Resource templates run inside the workflow's agent pod, which watches each created object to evaluate `successCondition` / `failureCondition`. The agent's `ServiceAccount` needs `list` and `watch` on every GVR you create from a resource template, in addition to the verb required by the action (`create`, `delete`, `patch`, …). See [Workflow RBAC](../workflow-rbac.md#agent-rbac-for-resource-templates) for a full example.
+
 Resources created in this way are independent of the workflow. If you want the resource to be deleted when the workflow is deleted then you can use [Kubernetes garbage collection](https://kubernetes.io/docs/concepts/workloads/controllers/garbage-collection/) with the workflow resource as an owner reference ([example](https://github.com/argoproj/argo-workflows/tree/main/examples/k8s-owner-reference.yaml)).
 
 You can also collect data about the resource in output parameters (see more at [k8s-jobs.yaml](https://github.com/argoproj/argo-workflows/tree/main/examples/k8s-jobs.yaml))

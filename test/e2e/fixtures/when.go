@@ -222,6 +222,11 @@ var (
 			return node.Type == wfv1.NodeTypePod && node.Phase == wfv1.NodeRunning
 		}), "to have running pod"
 	}
+	ToHaveRunningResourceMonitor Condition = func(wf *wfv1.Workflow) (bool, string) {
+		return wf.Status.Nodes.Any(func(node wfv1.NodeStatus) bool {
+			return node.Type == wfv1.NodeTypeResourceMonitor && node.Phase == wfv1.NodeRunning
+		}), "to have running resource monitor"
+	}
 	ToHaveFailedPod Condition = func(wf *wfv1.Workflow) (bool, string) {
 		return wf.Status.Nodes.Any(func(node wfv1.NodeStatus) bool {
 			return node.Type == wfv1.NodeTypePod && node.Phase == wfv1.NodeFailed

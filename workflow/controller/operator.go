@@ -2132,7 +2132,15 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	// Inject the pod name. If the pod has a retry strategy, the pod name will be changed and will be injected when it
 	// is determined
 	if resolvedTmpl.IsPodType() && woc.retryStrategy(resolvedTmpl) == nil {
-		localParams[common.LocalVarPodName] = woc.getPodName(nodeName, resolvedTmpl.Name)
+		// Resource templates no longer run in their own pod; the agent pod
+		// executes kubectl. Expose the agent pod name as pod.name so existing
+		// "patch own pod" examples (k8s-patch-pod et al.) keep targeting the
+		// pod actually running the resource template.
+		if resolvedTmpl.GetType() == wfv1.TemplateTypeResource {
+			localParams[common.LocalVarPodName] = woc.getAgentPodName()
+		} else {
+			localParams[common.LocalVarPodName] = woc.getPodName(nodeName, resolvedTmpl.Name)
+		}
 	}
 	if orgTmpl.IsDAGTask() {
 		localParams["tasks.name"] = orgTmpl.GetName()
@@ -2380,7 +2388,11 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		localParams = make(map[string]string)
 		// Change the `pod.name` variable to the new retry node name
 		if processedTmpl.IsPodType() {
-			localParams[common.LocalVarPodName] = woc.getPodName(nodeName, processedTmpl.Name)
+			if processedTmpl.GetType() == wfv1.TemplateTypeResource {
+				localParams[common.LocalVarPodName] = woc.getAgentPodName()
+			} else {
+				localParams[common.LocalVarPodName] = woc.getPodName(nodeName, processedTmpl.Name)
+			}
 		}
 		// Inject the retryAttempt number
 		localParams[common.LocalVarRetries] = strconv.Itoa(retryNum)
@@ -3238,7 +3250,7 @@ func (woc *wfOperationCtx) getOutboundNodes(ctx context.Context, nodeID string) 
 		woc.log.WithPanic().WithField("nodeID", nodeID).Error(ctx, "was unable to obtain node")
 	}
 	switch node.Type {
-	case wfv1.NodeTypeSkipped, wfv1.NodeTypeSuspend, wfv1.NodeTypeHTTP, wfv1.NodeTypePlugin:
+	case wfv1.NodeTypeSkipped, wfv1.NodeTypeSuspend, wfv1.NodeTypeHTTP, wfv1.NodeTypePlugin, wfv1.NodeTypeResourceMonitor:
 		return []string{node.ID}
 	case wfv1.NodeTypePod:
 
@@ -3754,7 +3766,7 @@ func (woc *wfOperationCtx) executeResource(ctx context.Context, nodeName string,
 	node, err := woc.wf.GetNodeByName(nodeName)
 
 	if err != nil {
-		ctx, node = woc.initializeExecutableNode(ctx, nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, opts.nodeFlag, false)
+		_, node = woc.initializeExecutableNode(ctx, nodeName, wfv1.NodeTypeResourceMonitor, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, opts.nodeFlag, false)
 	} else if !node.Pending() {
 		return node, nil
 	}
@@ -3777,14 +3789,13 @@ func (woc *wfOperationCtx) executeResource(ctx context.Context, nodeName string,
 		tmpl.Resource.Manifest = string(bytes)
 	}
 
-	mainCtr := woc.newExecContainer(common.MainContainerName, tmpl)
-	mainCtr.Command = append([]string{"argoexec", "resource", tmpl.Resource.Action}, woc.getExecutorLogOpts(ctx)...)
-	_, err = woc.createWorkflowPod(ctx, nodeName, []apiv1.Container{*mainCtr}, tmpl, &createWorkflowPodOpts{onExitPod: opts.onExitTemplate, executionDeadline: opts.executionDeadline})
-	if err != nil {
-		return woc.requeueIfTransientErr(ctx, err, node.Name)
-	}
+	// Populate ArchiveLocation so the agent can archive kubectl output as a
+	// main-logs artifact. The legacy pod-based path got this via the wait
+	// sidecar's saveContainerLogs; the agent has to be told where to upload.
+	woc.addArchiveLocation(ctx, tmpl)
 
-	return node, err
+	woc.taskSet[node.ID] = *tmpl
+	return node, nil
 }
 
 func (woc *wfOperationCtx) executeData(ctx context.Context, nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {

@@ -5,6 +5,12 @@ metadata:
   annotations:
     workflows.argoproj.io/description: |
       Recommended minimum permissions for the `emissary` executor.
+
+      If `executor.serviceAccountName` is set, the agent pod also runs as this
+      SA (for HTTP, plugin, and resource templates). In that case this SA also
+      needs the `agent` Role bound — list/watch on `workflowtasksets`, patch on
+      `workflowtasksets/status`, and list/watch on every GVR your resource
+      templates target (e.g. `workflows` for workflow-of-workflows).
 rules:
   - apiGroups:
       - argoproj.io
