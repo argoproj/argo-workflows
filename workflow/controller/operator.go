@@ -2104,7 +2104,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	node, err = woc.wf.GetNodeByName(nodeName)
 	if err != nil {
 		// Will be initialized via woc.initializeNodeOrMarkError
-		woc.log.Warn(ctx, "Node was nil, will be initialized as type Skipped")
+		woc.log.Info(ctx, "Node was nil, will be initialized as type Skipped")
 	}
 
 	if node != nil {
