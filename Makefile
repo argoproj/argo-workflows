@@ -99,19 +99,8 @@ endif
 PROFILE               ?= minimal
 KUBE_NAMESPACE        ?= argo # namespace where Kubernetes resources/RBAC will be installed
 PLUGINS               ?= $(shell [ $(PROFILE) = plugins ] && echo true || echo false)
-UI                    ?= false # start the UI with HTTP
 UI_SECURE             ?= false # start the UI with HTTPS
-API                   ?= $(UI) # start the Argo Server
-TASKS                 := controller
-ifeq ($(API),true)
-TASKS                 := controller server
-endif
-ifeq ($(UI_SECURE),true)
-TASKS                 := controller server ui
-endif
-ifeq ($(UI),true)
-TASKS                 := controller server ui
-endif
+API                   ?= true# deploy the Argo Server (API=false skips it)
 
 # -- SSO options
 # Need to rewrite the SSO redirect URL referenced in ConfigMaps when UI_SECURE and/or BASE_HREF is set.
@@ -131,18 +120,8 @@ override BASE_HREF := $(BASE_HREF:%/=%)/
 endif
 SSO_REDIRECT_URL   := $(SSO_REDIRECT_URL)://localhost:8080$(BASE_HREF)oauth2/callback
 
-# Which mode to run in:
-# * `local` run the workflow–controller and argo-server as single replicas on the local machine (default)
-# * `kubernetes` run the workflow-controller and argo-server on the Kubernetes cluster
-RUN_MODE              := local
 KUBECTX               := $(shell [[ "`which kubectl`" != '' ]] && kubectl config current-context || echo none)
 K3D                   := $(shell [[ "$(KUBECTX)" == "k3d-"* ]] && echo true || echo false)
-ifeq ($(PROFILE),prometheus)
-RUN_MODE              := kubernetes
-endif
-ifeq ($(PROFILE),stress)
-RUN_MODE              := kubernetes
-endif
 
 # -- controller + server + executor env vars
 LOG_LEVEL                     := debug
@@ -152,7 +131,7 @@ ALWAYS_OFFLOAD_NODE_STATUS 	  := false
 POD_STATUS_CAPTURE_FINALIZER  ?= true
 NAMESPACED                    := true
 MANAGED_NAMESPACE             ?= $(KUBE_NAMESPACE)
-SECURE                        := false # whether or not to start Argo in TLS mode
+SECURE                        ?= false# whether or not to start Argo in TLS mode
 AUTH_MODE                     := hybrid
 ifeq ($(PROFILE),sso)
 AUTH_MODE                     := sso
@@ -234,7 +213,7 @@ endif
 print-variables: ## Print Makefile variables
 	@echo GIT_COMMIT=$(GIT_COMMIT) GIT_BRANCH=$(GIT_BRANCH) GIT_TAG=$(GIT_TAG) GIT_TREE_STATE=$(GIT_TREE_STATE) RELEASE_TAG=$(RELEASE_TAG) DEV_BRANCH=$(DEV_BRANCH) VERSION=$(VERSION)
 	@echo KUBECTX=$(KUBECTX) K3D=$(K3D) DOCKER_PUSH=$(DOCKER_PUSH) TARGET_PLATFORM=$(TARGET_PLATFORM)
-	@echo RUN_MODE=$(RUN_MODE) PROFILE=$(PROFILE) AUTH_MODE=$(AUTH_MODE) SECURE=$(SECURE) STATIC_FILES=$(STATIC_FILES) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) LOG_LEVEL=$(LOG_LEVEL) NAMESPACED=$(NAMESPACED) BASE_HREF=$(BASE_HREF) GOPATH=$(GOPATH)
+	@echo PROFILE=$(PROFILE) AUTH_MODE=$(AUTH_MODE) SECURE=$(SECURE) STATIC_FILES=$(STATIC_FILES) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) LOG_LEVEL=$(LOG_LEVEL) NAMESPACED=$(NAMESPACED) BASE_HREF=$(BASE_HREF) GOPATH=$(GOPATH)
 
 ifneq ($(USE_NIX), true)
 proto_vendor: $(TOOL_BUF)
@@ -747,52 +726,60 @@ dist/argosay:
 	mkdir -p dist
 	cp test/e2e/images/argosay/v2/argosay dist/
 
-.PHONY: kit
-kit: Makefile
-ifneq ($(USE_NIX), true)
-	go install github.com/kitproj/kit@v0.1.79
-endif
+# renovate: datasource=github-releases depName=tilt-dev/tilt
+TILT_VERSION          ?= 0.37.3
+
+.PHONY: tilt
+tilt: ## Install the pinned Tilt to $(GOPATH)/bin if not already present
+	@if tilt version 2>/dev/null | grep -q "v$(TILT_VERSION)," ; then \
+		echo "tilt v$(TILT_VERSION) already installed" ; \
+	else \
+		os=$$(uname -s | tr 'A-Z' 'a-z') ; [ "$$os" = darwin ] && os=mac ; \
+		arch=$$(uname -m) ; [ "$$arch" = aarch64 ] && arch=arm64 ; \
+		dir=$$(go env GOPATH)/bin ; mkdir -p "$$dir" ; \
+		echo "installing tilt v$(TILT_VERSION) to $$dir" ; \
+		: "tilt can't be go installed (its go.mod has replace directives), so it" ; \
+		: "comes from GitHub's release CDN. CI builds it once (the e2e-tools job)" ; \
+		: "and shares it across the matrix, rather than fetching it in 14 parallel" ; \
+		: "jobs (which throttles the CDN) — so no download retries are needed." ; \
+		: "Download to a temp file so a truncated download fails tar cleanly." ; \
+		tmp=$$(mktemp) ; \
+		curl -fsSL "https://github.com/tilt-dev/tilt/releases/download/v$(TILT_VERSION)/tilt.$(TILT_VERSION).$$os.$$arch.tar.gz" -o "$$tmp" \
+			&& tar -xzf "$$tmp" -C "$$dir" tilt && rm -f "$$tmp" ; \
+	fi
+
+# renovate: datasource=github-releases depName=k3d-io/k3d
+K3D_VERSION           ?= 5.8.3
+
+.PHONY: k3d
+k3d: ## Install the pinned k3d to $(GOPATH)/bin if not already present
+	@if k3d version 2>/dev/null | grep -q "k3d version v$(K3D_VERSION)" ; then \
+		echo "k3d v$(K3D_VERSION) already installed" ; \
+	else \
+		echo "installing k3d v$(K3D_VERSION)" ; \
+		: "go install pulls from the module proxy (proxy.golang.org), which is" ; \
+		: "far more reliable under CI load than GitHub's release-asset CDN. The" ; \
+		: "ldflags stamp the version k3d reports and uses to tag its helper image" ; \
+		go install -ldflags "-X github.com/k3d-io/k3d/v5/version.Version=v$(K3D_VERSION)" \
+			github.com/k3d-io/k3d/v5@v$(K3D_VERSION) ; \
+	fi
+
+.PHONY: k3d-up
+k3d-up: ## Create the k3d cluster used by Tilt
+	K3D_CLUSTER_NAME=$(K3D_CLUSTER_NAME) ./hack/tilt/k3d-up.sh
+
+.PHONY: k3d-down
+k3d-down: ## Delete the k3d cluster used by Tilt
+	K3D_CLUSTER_NAME=$(K3D_CLUSTER_NAME) ./hack/tilt/k3d-down.sh
 
 .PHONY: start
-ifeq ($(RUN_MODE),local)
-start: print-variables kit ## Start the Argo server
-else
-start: print-variables install kit
-endif
-	@echo "starting STATIC_FILES=$(STATIC_FILES) (DEV_BRANCH=$(DEV_BRANCH), GIT_BRANCH=$(GIT_BRANCH)), AUTH_MODE=$(AUTH_MODE), RUN_MODE=$(RUN_MODE), MANAGED_NAMESPACE=$(MANAGED_NAMESPACE)"
-ifneq ($(API),true)
-	@echo "⚠️️  not starting API. If you want to test the API, use 'make start API=true' to start it"
-endif
-ifneq ($(UI),true)
-	@echo "⚠️  not starting UI. If you want to test the UI, run 'make start UI=true' to start it"
-endif
-ifneq ($(PLUGINS),true)
-	@echo "⚠️  not starting plugins. If you want to test plugins, run 'make start PROFILE=plugins' to start it"
-endif
-	# Check dex, minio, postgres and mysql are in hosts file
-ifeq ($(AUTH_MODE),sso)
-	grep '127.0.0.1.*dex' /etc/hosts
-endif
-	grep '127.0.0.1.*azurite' /etc/hosts
-	grep '127.0.0.1.*minio' /etc/hosts
-	grep '127.0.0.1.*postgres' /etc/hosts
-	grep '127.0.0.1.*mysql' /etc/hosts
-ifeq ($(RUN_MODE),local)
-	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) ARGO_SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) ARGO_LOGLEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) ARGO_AUTH_MODE=$(AUTH_MODE) ARGO_NAMESPACED=$(NAMESPACED) ARGO_NAMESPACE=$(KUBE_NAMESPACE) ARGO_MANAGED_NAMESPACE=$(MANAGED_NAMESPACE) ARGO_EXECUTOR_PLUGINS=$(PLUGINS) ARGO_POD_STATUS_CAPTURE_FINALIZER=$(POD_STATUS_CAPTURE_FINALIZER) ARGO_UI_SECURE=$(UI_SECURE) ARGO_BASE_HREF=$(BASE_HREF) PROFILE=$(PROFILE) kit $(TASKS)
-endif
-
-.PHONY: wait
-wait:
-	# Wait for workflow controller
-	until lsof -i :9090 > /dev/null ; do sleep 10s ; done
-ifeq ($(API),true)
-	# Wait for Argo Server
-	until lsof -i :2746 > /dev/null ; do sleep 10s ; done
-endif
-ifeq ($(PROFILE),mysql)
-	# Wait for MySQL
-	until (: < /dev/tcp/localhost/3306) ; do sleep 10s ; done
-endif
+start: tilt k3d-up ## Start the dev stack in-cluster via Tilt
+	# --host=0.0.0.0 binds the Tilt web UI to all interfaces so it is reachable
+	# via the container IP in a devcontainer (the devcontainer CLI doesn't
+	# forward ports). The argo server/UI/metrics forwards bind 0.0.0.0 too.
+	tilt up --host=0.0.0.0 -- --profile=$(PROFILE) --auth-mode=$(AUTH_MODE) \
+		--secure=$(SECURE) --api=$(API) \
+		--pod-status-capture-finalizer=$(POD_STATUS_CAPTURE_FINALIZER)
 
 .PHONY: postgres-cli
 postgres-cli:
