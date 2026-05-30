@@ -32,10 +32,22 @@ import (
 	envutil "github.com/argoproj/argo-workflows/v4/util/env"
 	argoerr "github.com/argoproj/argo-workflows/v4/util/errors"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	common "github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 // ExecResource will run kubectl action against a manifest
 func (we *WorkflowExecutor) ExecResource(ctx context.Context, action string, manifestPath string, flags []string) (string, string, string, error) {
+	// For create actions, replace generateName with a deterministic name derived from the node ID.
+	// This ensures idempotency: if the executor pod dies and restarts, kubectl create will fail
+	// with "already exists" which is handled gracefully below. Works for both inline and manifestFrom templates.
+	if action == "create" {
+		if data, err := os.ReadFile(manifestPath); err == nil {
+			if rewritten := common.ReplaceGenerateNameWithDeterministic(string(data), we.nodeID); rewritten != string(data) {
+				_ = os.WriteFile(manifestPath, []byte(rewritten), 0o600)
+			}
+		}
+	}
+
 	args, err := we.getKubectlArguments(action, manifestPath, flags)
 	if err != nil {
 		return "", "", "", err
@@ -52,15 +64,27 @@ func (we *WorkflowExecutor) ExecResource(ctx context.Context, action string, man
 		return nil
 	})
 	if err != nil {
-		var exErr *exec.ExitError
-		if errors.As(err, &exErr) {
-			errMsg := strings.TrimSpace(string(exErr.Stderr))
-			err = argoerrors.Wrap(err, argoerrors.CodeBadRequest, errMsg)
-		} else {
-			err = argoerrors.Wrap(err, argoerrors.CodeBadRequest, err.Error())
+		// If kubectl create fails because the resource already exists and this is a restarted
+		// executor pod (previous pod created the resource then died), retrieve the existing
+		// resource instead of failing. Only recover on restart to preserve the original "already
+		// exists" error behavior on first run.
+		if action != "create" || !isAlreadyExistsErr(err) || os.Getenv(common.EnvVarResourceTemplateRestarted) != "true" {
+			var exErr *exec.ExitError
+			if errors.As(err, &exErr) {
+				errMsg := strings.TrimSpace(string(exErr.Stderr))
+				err = argoerrors.Wrap(err, argoerrors.CodeBadRequest, errMsg)
+			} else {
+				err = argoerrors.Wrap(err, argoerrors.CodeBadRequest, err.Error())
+			}
+			err = argoerrors.Wrap(err, argoerrors.CodeBadRequest, "no more retries "+err.Error())
+			return "", "", "", err
 		}
-		err = argoerrors.Wrap(err, argoerrors.CodeBadRequest, "no more retries "+err.Error())
-		return "", "", "", err
+		logger := logging.RequireLoggerFromContext(ctx)
+		logger.Info(ctx, "Resource already exists from previous executor run, retrieving existing resource")
+		out, err = runKubectl(ctx, "kubectl", "get", "-f", manifestPath, "-o", "json")
+		if err != nil {
+			return "", "", "", argoerrors.Wrap(err, argoerrors.CodeBadRequest, "failed to get existing resource: "+err.Error())
+		}
 	}
 	if action == "delete" {
 		return "", "", "", nil
@@ -84,6 +108,14 @@ func (we *WorkflowExecutor) ExecResource(ctx context.Context, action string, man
 	logger := logging.RequireLoggerFromContext(ctx)
 	logger.WithFields(logging.Fields{"namespace": obj.GetNamespace(), "resource": resourceFullName, "selfLink": selfLink}).Info(ctx, "Resource")
 	return obj.GetNamespace(), resourceFullName, selfLink, nil
+}
+
+// isAlreadyExistsErr checks if a kubectl error indicates the resource already exists.
+func isAlreadyExistsErr(err error) bool {
+	if err == nil {
+		return false
+	}
+	return strings.Contains(strings.ToLower(err.Error()), "already exists")
 }
 
 func inferObjectSelfLink(obj unstructured.Unstructured) string {
