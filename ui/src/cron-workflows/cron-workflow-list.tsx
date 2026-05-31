@@ -2,7 +2,7 @@ import {Page} from 'argo-ui/src/components/page/page';
 import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
 import * as React from 'react';
 import {useContext, useEffect, useRef, useState} from 'react';
-import {RouteComponentProps} from 'react-router-dom';
+import {useLocation, useNavigate, useParams} from 'react-router-dom';
 
 import {uiUrl} from '../shared/base';
 import {ErrorNotice} from '../shared/components/error-notice';
@@ -32,13 +32,16 @@ const learnMore = (
     </a>
 );
 
-export function CronWorkflowList({match, location, history}: RouteComponentProps<any>) {
+export function CronWorkflowList() {
+    const navigate = useNavigate();
+    const location = useLocation();
+    const routeParams = useParams();
     const queryParams = new URLSearchParams(location.search);
     const {navigation} = useContext(Context);
 
     // state for URL, query, and label parameters
     const isFirstRender = useRef(true);
-    const [namespace, setNamespace] = useState<string>(nsUtils.getNamespace(match.params.namespace) || '');
+    const [namespace, setNamespace] = useState<string>(nsUtils.getNamespace(routeParams.namespace) || '');
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') === 'true');
     const [labels, setLabels] = useState<string[]>([]);
     const [states, setStates] = useState(['Running', 'Suspended']); // check all by default
@@ -46,20 +49,18 @@ export function CronWorkflowList({match, location, history}: RouteComponentProps
     const [storedDisplayISOFormatCreation, setStoredDisplayISOFormatCreation] = useTimestamp(TIMESTAMP_KEYS.CRON_WORKFLOW_LIST_CREATION);
     const [storedDisplayISOFormatNextScheduled, setStoredDisplayISOFormatNextScheduled] = useTimestamp(TIMESTAMP_KEYS.CRON_WORKFLOW_LIST_NEXT_SCHEDULED);
 
-    useEffect(
-        useQueryParams(history, p => {
-            setSidePanel(p.get('sidePanel') === 'true');
-        }),
-        [history]
-    );
+    useQueryParams(p => {
+        setSidePanel(p.get('sidePanel') === 'true');
+    });
 
     // save history
     useEffect(() => {
-        (isFirstRender.current ? history.replace : history.push)(
+        navigate(
             historyUrl('cron-workflows' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {
                 namespace,
                 sidePanel
-            })
+            }),
+            {replace: isFirstRender.current}
         );
         isFirstRender.current = false;
     }, [namespace, sidePanel]);
@@ -163,7 +164,7 @@ export function CronWorkflowList({match, location, history}: RouteComponentProps
                                             workflow={w}
                                             displayISOFormatCreation={storedDisplayISOFormatCreation}
                                             displayISOFormatNextScheduled={storedDisplayISOFormatNextScheduled}
-                                            key={`{w.metadata.namespace}/${w.metadata.name}`}
+                                            key={`${w.metadata.namespace}/${w.metadata.name}`}
                                         />
                                     );
                                 })}

@@ -21,7 +21,7 @@
       perSystem = { pkgs, lib, config, system, ... }:
         let
           argoConfig = import ./conf.nix;
-          myyarn = pkgs.yarn.override { nodejs = pkgs.nodejs_20; };
+          myyarn = pkgs.yarn.override { nodejs = pkgs.nodejs_22; };
           filter = inputs.nix-filter.lib;
 
           # dependencies for building the go binaries
@@ -51,7 +51,7 @@
             version = argoConfig.version;
           };
 
-          nodejs = pkgs.nodejs_20;
+          nodejs = pkgs.nodejs_22;
           nodeEnv = import ./node-env.nix {
             inherit (pkgs) stdenv lib python2 runCommand writeTextFile writeShellScript;
             inherit pkgs nodejs;

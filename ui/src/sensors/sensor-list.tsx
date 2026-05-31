@@ -3,7 +3,7 @@ import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
 import classNames from 'classnames';
 import * as React from 'react';
 import {useContext, useEffect, useRef, useState} from 'react';
-import {Link, RouteComponentProps} from 'react-router-dom';
+import {Link, useLocation, useNavigate, useParams} from 'react-router-dom';
 
 import {ID} from '../event-flow/id';
 import {uiUrl} from '../shared/base';
@@ -32,31 +32,31 @@ const learnMore = (
     </a>
 );
 
-export function SensorList({match, location, history}: RouteComponentProps<any>) {
+export function SensorList() {
     // boiler-plate
+    const navigate = useNavigate();
+    const location = useLocation();
+    const routeParams = useParams();
     const queryParams = new URLSearchParams(location.search);
     const {navigation} = useContext(Context);
 
     // state for URL and query parameters
     const isFirstRender = useRef(true);
-    const [namespace, setNamespace] = useState(nsUtils.getNamespace(match.params.namespace) || '');
+    const [namespace, setNamespace] = useState(nsUtils.getNamespace(routeParams.namespace) || '');
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') === 'true');
     const [selectedNode, setSelectedNode] = useState<Node>(queryParams.get('selectedNode'));
 
-    useEffect(
-        useQueryParams(history, p => {
-            setSidePanel(p.get('sidePanel') === 'true');
-            setSelectedNode(p.get('selectedNode'));
-        }),
-        [history]
-    );
+    useQueryParams(p => {
+        setSidePanel(p.get('sidePanel') === 'true');
+        setSelectedNode(p.get('selectedNode'));
+    });
 
     useEffect(() => {
         if (isFirstRender.current) {
             isFirstRender.current = false;
             return;
         }
-        history.push(
+        navigate(
             historyUrl('sensors' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {
                 namespace,
                 sidePanel,

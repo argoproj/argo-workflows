@@ -1,10 +1,12 @@
 import * as React from 'react';
-import {Route, RouteComponentProps, Switch} from 'react-router';
+import {Route, Routes} from 'react-router-dom';
 
 import {EventFlowPage} from './event-flow-page';
 
-export const EventFlowContainer = (props: RouteComponentProps<any>) => (
-    <Switch>
-        <Route path={`${props.match.path}/:namespace?`} component={EventFlowPage} />
-    </Switch>
-);
+export function EventFlowContainer() {
+    return (
+        <Routes>
+            <Route path=':namespace?' element={<EventFlowPage />} />
+        </Routes>
+    );
+}

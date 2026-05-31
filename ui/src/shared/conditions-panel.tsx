@@ -34,7 +34,7 @@ export function hasArtifactGCError(conditions: Condition[]): boolean {
     return false;
 }
 
-function getConditionIcon(condition: ConditionType): JSX.Element {
+function getConditionIcon(condition: ConditionType): React.JSX.Element {
     let icon;
     if (WarningConditions.includes(condition as ConditionType)) {
         icon = <WarningIcon />;

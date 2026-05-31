@@ -24,7 +24,7 @@ in
   # Import packages from nixpkgs and the argo flake
   packages = with pkgs; [
     go
-    nodejs_20
+    nodejs_22
     yarn
     jq
     protobuf

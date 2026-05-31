@@ -5,7 +5,7 @@ import {SuspenseReactMarkdownGfm} from '../shared/components/suspense-react-mark
 import {ClusterWorkflowTemplate} from '../shared/models';
 import {escapeInvalidMarkdown} from '../workflows/utils';
 
-require('./cluster-workflow-template-markdown.scss');
+import './cluster-workflow-template-markdown.scss';
 
 interface ClusterWorkflowTemplateMarkdownProps {
     workflow: ClusterWorkflowTemplate;

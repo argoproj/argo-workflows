@@ -3,7 +3,7 @@ import {Page} from 'argo-ui/src/components/page/page';
 import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
 import * as React from 'react';
 import {useContext, useEffect, useRef, useState} from 'react';
-import {RouteComponentProps} from 'react-router';
+import {useLocation, useNavigate, useParams} from 'react-router-dom';
 
 import {uiUrl} from '../shared/base';
 import {ErrorNotice} from '../shared/components/error-notice';
@@ -22,15 +22,18 @@ import {SubmitWorkflowPanel} from '../workflows/components/submit-workflow-panel
 import {WorkflowDetailsList} from '../workflows/components/workflow-details-list/workflow-details-list';
 import {WorkflowTemplateEditor} from './workflow-template-editor';
 
-export function WorkflowTemplateDetails({history, location, match}: RouteComponentProps<any>) {
+export function WorkflowTemplateDetails() {
     // boiler-plate
+    const navigate = useNavigate();
+    const location = useLocation();
+    const params = useParams();
     const {notifications, navigation, popup} = useContext(Context);
     const queryParams = new URLSearchParams(location.search);
 
     // state for URL and query parameters
     const isFirstRender = useRef(true);
-    const namespace = match.params.namespace;
-    const name = match.params.name;
+    const namespace = params.namespace;
+    const name = params.name;
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel'));
     const [tab, setTab] = useState<string>(queryParams.get('tab'));
     const [workflows, setWorkflows] = useState<Workflow[]>([]);
@@ -38,20 +41,17 @@ export function WorkflowTemplateDetails({history, location, match}: RouteCompone
     const {object: template, setObject: setTemplate, resetObject: resetTemplate, serialization, edited, lang, setLang} = useEditableObject<WorkflowTemplate>();
     const [error, setError] = useState<Error>();
 
-    useEffect(
-        useQueryParams(history, p => {
-            setSidePanel(p.get('sidePanel'));
-            setTab(p.get('tab'));
-        }),
-        [history]
-    );
+    useQueryParams(p => {
+        setSidePanel(p.get('sidePanel'));
+        setTab(p.get('tab'));
+    });
 
     useEffect(() => {
         if (isFirstRender.current) {
             isFirstRender.current = false;
             return;
         }
-        history.push(
+        navigate(
             historyUrl('workflow-templates/{namespace}/{name}', {
                 namespace,
                 name,
@@ -160,7 +160,6 @@ export function WorkflowTemplateDetails({history, location, match}: RouteCompone
                             entrypoint={template.spec.entrypoint}
                             templates={template.spec.templates || []}
                             workflowParameters={template.spec.arguments.parameters || []}
-                            history={history}
                         />
                     )}
                     {sidePanel === 'share' && <WidgetGallery namespace={namespace} label={'workflows.argoproj.io/workflow-template=' + name} />}

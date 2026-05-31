@@ -2,7 +2,7 @@ import {Page} from 'argo-ui/src/components/page/page';
 import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
 import * as React from 'react';
 import {useContext, useEffect, useRef, useState} from 'react';
-import {RouteComponentProps} from 'react-router-dom';
+import {useLocation, useNavigate, useParams} from 'react-router-dom';
 
 import {absoluteUrl, uiUrl} from '../shared/base';
 import {ErrorNotice} from '../shared/components/error-notice';
@@ -35,29 +35,29 @@ const learnMore = (
     </a>
 );
 
-export function WorkflowEventBindings({match, location, history}: RouteComponentProps<any>) {
+export function WorkflowEventBindings() {
     // boiler-plate
+    const navigate = useNavigate();
+    const location = useLocation();
+    const routeParams = useParams();
     const isFirstRender = useRef(true);
     const ctx = useContext(Context);
     const queryParams = new URLSearchParams(location.search);
 
     // state for URL and query parameters
-    const [namespace, setNamespace] = useState(nsUtils.getNamespace(match.params.namespace) || '');
+    const [namespace, setNamespace] = useState(nsUtils.getNamespace(routeParams.namespace) || '');
     const [selectedWorkflowEventBinding, setSelectedWorkflowEventBinding] = useState(queryParams.get('selectedWorkflowEventBinding'));
 
-    useEffect(
-        useQueryParams(history, p => {
-            setSelectedWorkflowEventBinding(p.get('selectedWorkflowEventBinding'));
-        }),
-        [history]
-    );
+    useQueryParams(p => {
+        setSelectedWorkflowEventBinding(p.get('selectedWorkflowEventBinding'));
+    });
 
     useEffect(() => {
         if (isFirstRender.current) {
             isFirstRender.current = false;
             return;
         }
-        history.push(
+        navigate(
             historyUrl('workflow-event-bindings' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {
                 namespace,
                 selectedWorkflowEventBinding

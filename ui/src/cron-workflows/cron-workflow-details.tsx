@@ -3,7 +3,7 @@ import {Page} from 'argo-ui/src/components/page/page';
 import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
 import * as React from 'react';
 import {useContext, useEffect, useRef, useState} from 'react';
-import {RouteComponentProps} from 'react-router';
+import {useLocation, useNavigate, useParams} from 'react-router-dom';
 
 import {uiUrl} from '../shared/base';
 import {ErrorNotice} from '../shared/components/error-notice';
@@ -24,14 +24,17 @@ import {CronWorkflowEditor} from './cron-workflow-editor';
 
 import '../workflows/components/workflow-details/workflow-details.scss';
 
-export function CronWorkflowDetails({match, location, history}: RouteComponentProps<any>) {
+export function CronWorkflowDetails() {
     // boiler-plate
+    const navigate = useNavigate();
+    const location = useLocation();
+    const params = useParams();
     const {navigation, notifications, popup} = useContext(Context);
     const queryParams = new URLSearchParams(location.search);
 
     const isFirstRender = useRef(true);
-    const [namespace] = useState(match.params.namespace);
-    const [name] = useState(match.params.name);
+    const [namespace] = useState(params.namespace);
+    const [name] = useState(params.name);
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel'));
     const [tab, setTab] = useState(queryParams.get('tab'));
     const [workflows, setWorkflows] = useState<Workflow[]>([]);
@@ -40,20 +43,17 @@ export function CronWorkflowDetails({match, location, history}: RouteComponentPr
     const {object: cronWorkflow, setObject: setCronWorkflow, resetObject: resetCronWorkflow, serialization, edited, lang, setLang} = useEditableObject<CronWorkflow>();
     const [error, setError] = useState<Error>();
 
-    useEffect(
-        useQueryParams(history, p => {
-            setSidePanel(p.get('sidePanel'));
-            setTab(p.get('tab'));
-        }),
-        [history]
-    );
+    useQueryParams(p => {
+        setSidePanel(p.get('sidePanel'));
+        setTab(p.get('tab'));
+    });
 
     useEffect(() => {
         if (isFirstRender.current) {
             isFirstRender.current = false;
             return;
         }
-        history.push(
+        navigate(
             historyUrl('cron-workflows/{namespace}/{name}', {
                 namespace,
                 name,

@@ -1,7 +1,10 @@
+import type {AnnotationOptions} from 'chartjs-plugin-annotation';
+
 import {denominator} from '../shared/duration';
 import {getColorForNodePhase, Workflow} from '../shared/models';
+import type {Chart} from './reports';
 
-export function workflowsToChartData(workflows: Workflow[], limit: number) {
+export function workflowsToChartData(workflows: Workflow[], limit: number): Chart[] {
     const filteredWorkflows = workflows
         .filter(wf => !!wf.status.finishedAt)
         .map(wf => ({
@@ -18,7 +21,7 @@ export function workflowsToChartData(workflows: Workflow[], limit: number) {
     const labels: string[] = new Array(filteredWorkflows.length);
     const backgroundColors: string[] = new Array(filteredWorkflows.length);
     const durationData: number[] = new Array(filteredWorkflows.length);
-    const resourceData = {} as any;
+    const resourceData = {} as {[resource: string]: number[]};
 
     filteredWorkflows.forEach((wf, i) => {
         labels[i] = wf.name;
@@ -36,7 +39,22 @@ export function workflowsToChartData(workflows: Workflow[], limit: number) {
         'memory': 'blue',
         'storage': 'purple',
         'ephemeral-storage': 'purple'
-    } as any;
+    } as {[resource: string]: string};
+
+    const avgDuration = durationData.length > 0 ? durationData.reduce((a, b) => a + b, 0) / durationData.length : 0;
+    const avgLine: AnnotationOptions<'line'> = {
+        type: 'line',
+        scaleID: 'duration',
+        yMin: avgDuration,
+        yMax: avgDuration,
+        borderColor: 'gray',
+        borderWidth: 1,
+        label: {
+            display: true,
+            position: 'start',
+            content: 'Average'
+        }
+    };
 
     return [
         {
@@ -45,48 +63,35 @@ export function workflowsToChartData(workflows: Workflow[], limit: number) {
                 labels,
                 datasets: [
                     {
+                        yAxisID: 'duration',
                         data: durationData,
                         backgroundColor: backgroundColors
                     }
                 ]
             },
             options: {
-                title: {
-                    display: true,
-                    text: 'Duration'
-                },
-                legend: {display: false},
                 scales: {
-                    xAxes: [{}],
-                    yAxes: [
-                        {
-                            id: 'duration',
-                            ticks: {
-                                beginAtZero: true
-                            },
-                            scaleLabel: {
-                                display: true,
-                                labelString: 'Duration (seconds)'
-                            }
+                    x: {},
+                    duration: {
+                        beginAtZero: true,
+                        ticks: {},
+                        title: {
+                            display: true,
+                            text: 'Duration (seconds)'
                         }
-                    ]
+                    }
                 },
-                annotation: {
-                    annotations: [
-                        {
-                            type: 'line',
-                            mode: 'horizontal',
-                            scaleID: 'duration',
-                            value: durationData.length > 0 ? durationData.reduce((a, b) => a + b, 0) / durationData.length : 0,
-                            borderColor: 'gray',
-                            borderWidth: 1,
-                            label: {
-                                enabled: true,
-                                position: 'left',
-                                content: 'Average'
-                            }
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Duration'
+                    },
+                    legend: {display: false},
+                    annotation: {
+                        annotations: {
+                            avgLine
                         }
-                    ]
+                    }
                 }
             }
         },
@@ -95,29 +100,34 @@ export function workflowsToChartData(workflows: Workflow[], limit: number) {
                 name: 'resources',
                 labels,
                 datasets: Object.entries(resourceData).map(([resource, data]) => ({
-                    yAxesID: resource,
+                    yAxisID: resource,
                     label: resource,
                     data,
                     backgroundColor: resourceColors[resource] || 'black'
                 }))
             },
             options: {
-                title: {
-                    display: true,
-                    text: 'Resources (not available for archived workflows)'
-                },
                 scales: {
-                    xAxes: [{}],
-                    yAxes: Object.keys(resourceData).map(resource => ({
-                        id: resource,
-                        ticks: {
-                            beginAtZero: true
-                        },
-                        scaleLabel: {
-                            display: true,
-                            labelString: resource + ' (' + denominator(resource) + ')'
-                        }
-                    }))
+                    x: {},
+                    ...Object.fromEntries(
+                        Object.keys(resourceData).map(resource => [
+                            resource,
+                            {
+                                beginAtZero: true,
+                                ticks: {},
+                                title: {
+                                    display: true,
+                                    text: resource + ' (' + denominator(resource) + ')'
+                                }
+                            }
+                        ])
+                    )
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Resources (not available for archived workflows)'
+                    }
                 }
             }
         }

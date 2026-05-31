@@ -1,12 +1,10 @@
 import {Page} from 'argo-ui/src/components/page/page';
-import {ChartOptions} from 'chart.js';
-
-import 'chartjs-plugin-annotation';
-
+import {BarController, BarElement, CategoryScale, ChartData, Chart as ChartJS, ChartOptions, Legend, LinearScale, Title, Tooltip} from 'chart.js';
+import annotationPlugin from 'chartjs-plugin-annotation';
 import * as React from 'react';
 import {useContext, useEffect, useRef, useState} from 'react';
-import {Bar, ChartData} from 'react-chartjs-2';
-import {RouteComponentProps} from 'react-router-dom';
+import {Bar} from 'react-chartjs-2';
+import {useLocation, useNavigate, useParams} from 'react-router-dom';
 
 import {uiUrl} from '../shared/base';
 import {ErrorNotice} from '../shared/components/error-notice';
@@ -21,20 +19,27 @@ import {useCollectEvent} from '../shared/use-collect-event';
 import {ReportFilters} from './reports-filters';
 import {workflowsToChartData} from './workflows-to-chart-data';
 
-interface Chart {
-    data: ChartData<any>;
-    options: ChartOptions;
+// chart.js v3+ is tree-shaken: without explicit registration the charts render blank.
+ChartJS.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip, Legend, Title, annotationPlugin);
+
+export interface Chart {
+    // `name` is a non-standard field used as the React key when mapping charts
+    data: ChartData<'bar', number[], string> & {name: string};
+    options: ChartOptions<'bar'>;
 }
 
 const limit = 100;
 
-export function Reports({match, location, history}: RouteComponentProps<any>) {
+export function Reports() {
+    const navigate = useNavigate();
+    const location = useLocation();
+    const routeParams = useParams();
     const queryParams = new URLSearchParams(location.search);
     const {navigation} = useContext(Context);
 
     // state for URL, query, and label parameters
     const isFirstRender = useRef(true);
-    const [namespace, setNamespace] = useState<string>(nsUtils.getNamespace(match.params.namespace) || '');
+    const [namespace, setNamespace] = useState<string>(nsUtils.getNamespace(routeParams.namespace) || '');
     const [labels, setLabels] = useState((queryParams.get('labels') || '').split(',').filter(v => v !== ''));
     // internal state
     const [charts, setCharts] = useState<Chart[]>();
@@ -46,7 +51,7 @@ export function Reports({match, location, history}: RouteComponentProps<any>) {
             isFirstRender.current = false;
             return;
         }
-        history.push(historyUrl('reports' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {namespace, labels: labels.join(',')}));
+        navigate(historyUrl('reports' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {namespace, labels: labels.join(',')}));
     }, [namespace, labels]);
 
     async function onChange(newNamespace: string, newLabels: string[]) {
@@ -120,14 +125,16 @@ export function Reports({match, location, history}: RouteComponentProps<any>) {
                                     <div className='white-box'>
                                         <Bar
                                             data={chart.data}
-                                            options={chart.options}
-                                            onElementsClick={(e: any[]) => {
-                                                const activePoint = e[0];
-                                                if (activePoint === undefined) {
-                                                    return;
+                                            options={{
+                                                ...chart.options,
+                                                onClick: (event, elements) => {
+                                                    const activeElement = elements[0];
+                                                    if (activeElement === undefined) {
+                                                        return;
+                                                    }
+                                                    const workflowName = chart.data.labels[activeElement.index];
+                                                    navigation.goto(uiUrl('workflows/' + namespace + '/' + workflowName));
                                                 }
-                                                const workflowName = chart.data.labels[activePoint._index];
-                                                navigation.goto(uiUrl('workflows/' + namespace + '/' + workflowName));
                                             }}
                                         />
                                     </div>

@@ -1,10 +1,12 @@
 import * as React from 'react';
-import {Route, RouteComponentProps, Switch} from 'react-router';
+import {Route, Routes} from 'react-router-dom';
 
 import {PluginList} from './plugin-list';
 
-export const PluginsContainer = (props: RouteComponentProps<any>) => (
-    <Switch>
-        <Route exact={true} path={`${props.match.path}/:namespace?`} component={PluginList} />
-    </Switch>
-);
+export function PluginsContainer() {
+    return (
+        <Routes>
+            <Route path=':namespace?' element={<PluginList />} />
+        </Routes>
+    );
+}

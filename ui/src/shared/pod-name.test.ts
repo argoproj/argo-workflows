@@ -4,7 +4,9 @@ import {ANNOTATION_KEY_POD_NAME_VERSION} from './annotations';
 import {NodeStatus, Workflow} from './models';
 import {createFNVHash, ensurePodNamePrefixLength, getPodName, getTemplateNameFromNode, k8sNamingHashLength, maxK8sResourceNameLength, POD_NAME_V1, POD_NAME_V2} from './pod-name';
 
-global.TextEncoder = TextEncoder;
+// TS 5 lib types narrow TextEncoder's output to Uint8Array<ArrayBuffer>, but Node's
+// util.TextEncoder returns Uint8Array<ArrayBufferLike>; cast for this jsdom polyfill.
+global.TextEncoder = TextEncoder as unknown as typeof global.TextEncoder;
 
 describe('pod names', () => {
     test('createFNVHash', () => {

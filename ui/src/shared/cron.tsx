@@ -1,10 +1,12 @@
-import parser from 'cron-parser';
+import {CronExpressionParser} from 'cron-parser';
 
 export function getNextScheduledTime(schedule: string, tz: string): Date {
     let out: Date;
     try {
-        out = parser.parseExpression(schedule, {utc: !tz, tz}).next().toDate();
-    } catch (e) {
+        out = CronExpressionParser.parse(schedule, {tz: tz || 'UTC'})
+            .next()
+            .toDate();
+    } catch {
         // Do nothing
     }
     return out;

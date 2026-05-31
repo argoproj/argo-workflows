@@ -49,11 +49,37 @@ const config = {
             },
             {
                 test: /\.scss$/,
-                use: ['style-loader', 'raw-loader', 'sass-loader']
+                use: [
+                    'style-loader',
+                    {
+                        // style-loader v4's runtime expects css-loader's module array format
+                        // ([[moduleId, cssText, ...]]). raw-loader emitted a raw string instead,
+                        // which v4 iterated char-by-char and injected as ~150k broken <style> tags.
+                        // css-loader gives style-loader the right format. url:false / import:false
+                        // preserve raw-loader's pass-through semantics: argo-ui SCSS uses url(...)
+                        // font/image refs that must resolve at RUNTIME against the assets/ dir
+                        // copied by CopyWebpackPlugin, not be webpack-bundled/hashed.
+                        loader: 'css-loader',
+                        options: {url: false, import: false}
+                    },
+                    {
+                        loader: 'sass-loader',
+                        options: {
+                            // sass-loader 16+ defaults to the modern Sass API, which (unlike the
+                            // legacy API) does not implicitly resolve `@import 'node_modules/...'`
+                            // paths from the project root. Add the ui dir to `loadPaths` so the
+                            // existing `node_modules/argo-ui/...` and `node_modules/@fortawesome/...`
+                            // imports keep resolving as they did under sass-loader 13.
+                            sassOptions: {
+                                loadPaths: [__dirname]
+                            }
+                        }
+                    }
+                ]
             },
             {
                 test: /\.css$/,
-                use: ['style-loader', 'raw-loader']
+                use: ['style-loader', {loader: 'css-loader', options: {url: false, import: false}}]
             },
             {
                 test: /\.(png|svg|jpg|jpeg|gif)$/i,
@@ -101,7 +127,8 @@ const config = {
                     to: 'assets/jsonschema/schema.json'
                 },
                 {
-                    from: 'node_modules/monaco-editor/min/vs/base/browser/ui/codicons/codicon/',
+                    // monaco 0.55 removed the prebuilt `min/vs/...` codicons; the font now ships under `esm/vs/...`
+                    from: 'node_modules/monaco-editor/esm/vs/base/browser/ui/codicons/codicon/codicon.ttf',
                     to: '.'
                 }
             ]

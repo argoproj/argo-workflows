@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {ReactChild} from 'react';
+import {ReactNode} from 'react';
 
 import './inline-table.scss';
 
@@ -8,8 +8,8 @@ interface TableProps {
 }
 
 interface Row {
-    left: ReactChild;
-    right: ReactChild;
+    left: ReactNode;
+    right: ReactNode;
 }
 
 export function InlineTable(props: TableProps) {

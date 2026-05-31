@@ -2,7 +2,7 @@ import {NotificationType} from 'argo-ui/src/components/notifications/notificatio
 import {Page} from 'argo-ui/src/components/page/page';
 import * as React from 'react';
 import {useContext, useEffect, useRef, useState} from 'react';
-import {RouteComponentProps} from 'react-router';
+import {useLocation, useNavigate, useParams} from 'react-router-dom';
 
 import {ID} from '../event-flow/id';
 import {uiUrl} from '../shared/base';
@@ -21,34 +21,34 @@ import {SensorSidePanel} from './sensor-side-panel';
 
 import '../workflows/components/workflow-details/workflow-details.scss';
 
-export function SensorDetails({match, location, history}: RouteComponentProps<any>) {
+export function SensorDetails() {
     // boiler-plate
+    const navigate = useNavigate();
+    const location = useLocation();
+    const params = useParams();
     const isFirstRender = useRef(true);
     const {navigation, notifications, popup} = useContext(Context);
     const queryParams = new URLSearchParams(location.search);
 
-    const [namespace] = useState(match.params.namespace);
-    const [name] = useState(match.params.name);
+    const [namespace] = useState(params.namespace);
+    const [name] = useState(params.name);
     const [tab, setTab] = useState<string>(queryParams.get('tab'));
 
     const {object: sensor, setObject: setSensor, resetObject: resetSensor, serialization, edited, lang, setLang} = useEditableObject<Sensor>();
     const [selectedLogNode, setSelectedLogNode] = useState<Node>(queryParams.get('selectedLogNode'));
     const [error, setError] = useState<Error>();
 
-    useEffect(
-        useQueryParams(history, p => {
-            setTab(p.get('tab'));
-            setSelectedLogNode(p.get('selectedLogNode'));
-        }),
-        [history]
-    );
+    useQueryParams(p => {
+        setTab(p.get('tab'));
+        setSelectedLogNode(p.get('selectedLogNode'));
+    });
 
     useEffect(() => {
         if (isFirstRender.current) {
             isFirstRender.current = false;
             return;
         }
-        history.push(
+        navigate(
             historyUrl('sensors/{namespace}/{name}', {
                 namespace,
                 name,

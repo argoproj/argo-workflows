@@ -4,7 +4,7 @@ import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
 import {Tabs} from 'argo-ui/src/components/tabs/tabs';
 import * as React from 'react';
 import {useContext, useEffect, useRef, useState} from 'react';
-import {RouteComponentProps} from 'react-router';
+import {useLocation, useNavigate, useParams} from 'react-router-dom';
 
 import {ID} from '../event-flow/id';
 import {uiUrl} from '../shared/base';
@@ -21,32 +21,32 @@ import {EventsPanel} from '../workflows/components/events-panel';
 import {EventSourceEditor} from './event-source-editor';
 import {EventSourceLogsViewer} from './event-source-log-viewer';
 
-export function EventSourceDetails({history, location, match}: RouteComponentProps<any>) {
+export function EventSourceDetails() {
     // boiler-plate
+    const navigate = useNavigate();
+    const location = useLocation();
+    const params = useParams();
     const {notifications, navigation, popup} = useContext(Context);
     const queryParams = new URLSearchParams(location.search);
 
     // state for URL and query parameters
     const isFirstRender = useRef(true);
-    const namespace = match.params.namespace;
-    const name = match.params.name;
+    const namespace = params.namespace;
+    const name = params.name;
     const [tab, setTab] = useState<string>(queryParams.get('tab'));
     const [selectedNode, setSelectedNode] = useState<string>(queryParams.get('selectedNode'));
 
-    useEffect(
-        useQueryParams(history, p => {
-            setTab(p.get('tab'));
-            setSelectedNode(p.get('selectedNode'));
-        }),
-        [history]
-    );
+    useQueryParams(p => {
+        setTab(p.get('tab'));
+        setSelectedNode(p.get('selectedNode'));
+    });
 
     useEffect(() => {
         if (isFirstRender.current) {
             isFirstRender.current = false;
             return;
         }
-        history.push(
+        navigate(
             historyUrl('event-sources/{namespace}/{name}', {
                 namespace,
                 name,

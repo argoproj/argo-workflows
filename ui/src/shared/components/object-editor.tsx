@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {useEffect, useRef, useState} from 'react';
-import MonacoEditor from 'react-monaco-editor';
+import type {MonacoEditorHandle} from 'react-monaco-editor';
 
 import {uiUrl} from '../base';
 import {useEditableObject} from '../use-editable-object';
@@ -8,6 +8,20 @@ import {Button} from './button';
 import type {Lang} from './object-parser';
 import {PhaseIcon} from './phase-icon';
 import {SuspenseMonacoEditor} from './suspense-monaco-editor';
+
+// monaco 0.55 moved the JSON language defaults out of the lightweight `editor.api` `languages.json`
+// namespace and into the standalone JSON language contribution module. That module's published types
+// are empty (`export {}`), so we describe the small slice of `jsonDefaults` we use here.
+interface JSONDiagnosticsOptions {
+    validate?: boolean;
+    schemas?: {uri: string; fileMatch?: string[]; schema?: unknown}[];
+}
+interface JSONLanguageDefaults {
+    setDiagnosticsOptions(options: JSONDiagnosticsOptions): void;
+}
+interface JSONContribution {
+    jsonDefaults: JSONLanguageDefaults;
+}
 
 interface Props<T> {
     type?: string;
@@ -20,7 +34,7 @@ interface Props<T> {
 
 export function ObjectEditor<T>({type, value, text, lang, onChange, onLangChange}: Props<T>) {
     const [error, setError] = useState<Error>();
-    const editor = useRef<MonacoEditor>(null);
+    const editor = useRef<MonacoEditorHandle>(null);
 
     useEffect(() => {
         if (!editor.current || text === editor.current.editor.getValue()) {
@@ -40,9 +54,12 @@ export function ObjectEditor<T>({type, value, text, lang, onChange, onLangChange
                 const res = await fetch(uri);
                 const swagger = await res.json();
                 // lazy load this, otherwise all of monaco-editor gets imported into the main bundle
-                const languages = (await import(/* webpackChunkName: "monaco-editor" */ 'monaco-editor/esm/vs/editor/editor.api')).languages;
+                // import `jsonDefaults` directly from the JSON language contribution module (see note above)
+                const {jsonDefaults} = (await import(
+                    /* webpackChunkName: "monaco-editor" */ 'monaco-editor/esm/vs/language/json/monaco.contribution'
+                )) as unknown as JSONContribution;
                 // adds auto-completion to JSON only
-                languages.json.jsonDefaults.setDiagnosticsOptions({
+                jsonDefaults.setDiagnosticsOptions({
                     validate: true,
                     schemas: [
                         {

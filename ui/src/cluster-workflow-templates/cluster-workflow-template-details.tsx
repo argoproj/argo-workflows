@@ -3,7 +3,7 @@ import {Page} from 'argo-ui/src/components/page/page';
 import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
 import * as React from 'react';
 import {useContext, useEffect, useState} from 'react';
-import {RouteComponentProps} from 'react-router';
+import {useLocation, useNavigate, useParams} from 'react-router-dom';
 
 import {uiUrl} from '../shared/base';
 import {ErrorNotice} from '../shared/components/error-notice';
@@ -24,12 +24,15 @@ import {WorkflowDetailsList} from '../workflows/components/workflow-details-list
 
 import '../workflows/components/workflow-details/workflow-details.scss';
 
-export function ClusterWorkflowTemplateDetails({history, location, match}: RouteComponentProps<any>) {
+export function ClusterWorkflowTemplateDetails() {
     // boiler-plate
+    const navigate = useNavigate();
+    const location = useLocation();
+    const params = useParams();
     const {navigation, notifications, popup} = useContext(Context);
     const queryParams = new URLSearchParams(location.search);
 
-    const name = match.params.name;
+    const name = params.name;
     const [namespace, setNamespace] = useState<string>();
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') === 'true');
     const [tab, setTab] = useState<string>(queryParams.get('tab'));
@@ -39,16 +42,13 @@ export function ClusterWorkflowTemplateDetails({history, location, match}: Route
     const [error, setError] = useState<Error>();
     const {object: template, setObject: setTemplate, resetObject: resetTemplate, serialization, edited, lang, setLang} = useEditableObject<ClusterWorkflowTemplate>();
 
-    useEffect(
-        useQueryParams(history, p => {
-            setSidePanel(p.get('sidePanel') === 'true');
-            setTab(p.get('tab'));
-        }),
-        [history]
-    );
+    useQueryParams(p => {
+        setSidePanel(p.get('sidePanel') === 'true');
+        setTab(p.get('tab'));
+    });
 
     useEffect(() => {
-        history.push(historyUrl('cluster-workflow-templates/{name}', {name, sidePanel, tab}));
+        navigate(historyUrl('cluster-workflow-templates/{name}', {name, sidePanel, tab}));
     }, [name, sidePanel, tab]);
 
     useEffect(() => {
@@ -160,7 +160,6 @@ export function ClusterWorkflowTemplateDetails({history, location, match}: Route
                         entrypoint={template.spec.entrypoint}
                         templates={template.spec.templates || []}
                         workflowParameters={template.spec.arguments.parameters || []}
-                        history={history}
                     />
                 </SlidingPanel>
             )}

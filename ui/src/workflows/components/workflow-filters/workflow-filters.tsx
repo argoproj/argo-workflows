@@ -52,8 +52,8 @@ interface WorkflowFilterProps {
     setNamespace: (namespace: string) => void;
     setPhases: (phases: WorkflowPhase[]) => void;
     setLabels: (labels: string[]) => void;
-    setCreatedAfter: (createdAfter: Date) => void;
-    setFinishedBefore: (finishedBefore: Date) => void;
+    setCreatedAfter: (createdAfter?: Date) => void;
+    setFinishedBefore: (finishedBefore?: Date) => void;
     nameFilter: NameFilterKeys;
     nameValue: string;
     setNameFilter: (nameFilter: NameFilterKeys) => void;
@@ -155,7 +155,7 @@ export function WorkflowFilters(props: WorkflowFilterProps) {
                     <div className='wf-filters-container__content'>
                         <DatePicker
                             selected={props.createdAfter}
-                            onChange={props.setCreatedAfter}
+                            onChange={(date: Date | null) => props.setCreatedAfter(date ?? undefined)}
                             placeholderText='From'
                             dateFormat='dd MMM yyyy'
                             todayButton='Today'
@@ -169,7 +169,7 @@ export function WorkflowFilters(props: WorkflowFilterProps) {
                     <div className='wf-filters-container__content'>
                         <DatePicker
                             selected={props.finishedBefore}
-                            onChange={props.setFinishedBefore}
+                            onChange={(date: Date | null) => props.setFinishedBefore(date ?? undefined)}
                             placeholderText='To'
                             dateFormat='dd MMM yyyy'
                             todayButton='Today'

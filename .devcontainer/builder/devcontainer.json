@@ -17,7 +17,7 @@
       "version": "1.26.1"
     },
     "ghcr.io/devcontainers/features/node:1": {
-      "version": "20"
+      "version": "22"
     },
     "ghcr.io/devcontainers/features/docker-in-docker:2": {},
     "ghcr.io/devcontainers/features/python:1": {}

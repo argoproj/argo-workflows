@@ -1,5 +1,3 @@
-import {History} from 'history';
-
 function extractKey(inputString: string): string | null {
     // Use regular expression to match the key within square brackets
     const match = inputString.match(/^parameters\[(.*?)\]$/);
@@ -13,10 +11,10 @@ function extractKey(inputString: string): string | null {
     return null; // Or return '';
 }
 /**
- * Returns the workflow parameters from the query parameters.
+ * Returns the workflow parameters from the URL query string (e.g. `location.search`).
  */
-export function getWorkflowParametersFromQuery(history: History): {[key: string]: string} {
-    const queryParams = new URLSearchParams(history.location.search);
+export function getWorkflowParametersFromQuery(search: string): {[key: string]: string} {
+    const queryParams = new URLSearchParams(search);
 
     const parameters: {[key: string]: string} = {};
     for (const [key, value] of queryParams.entries()) {

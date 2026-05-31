@@ -1,6 +1,5 @@
 import * as React from 'react';
-import type {MonacoEditorProps} from 'react-monaco-editor';
-import type MonacoEditor from 'react-monaco-editor';
+import type {MonacoEditorHandle, MonacoEditorProps} from 'react-monaco-editor';
 
 import {Loading} from './loading';
 
@@ -13,7 +12,7 @@ const LazyMonacoEditor = React.lazy(() => {
 // react-monaco-editor's default no-op: https://github.com/react-monaco-editor/react-monaco-editor/blob/7e5a4938cd328bf95ebc1288967f2037c6023b5a/src/editor.tsx#L184
 const noop = () => {}; // tslint:disable-line:no-empty
 
-export const SuspenseMonacoEditor = React.forwardRef(function InnerMonacoEditor(props: MonacoEditorProps, ref: React.MutableRefObject<MonacoEditor>) {
+export const SuspenseMonacoEditor = React.forwardRef(function InnerMonacoEditor(props: MonacoEditorProps, ref: React.ForwardedRef<MonacoEditorHandle>) {
     return (
         <React.Suspense fallback={<Loading />}>
             <LazyMonacoEditor ref={ref} editorWillUnmount={noop} {...props} />

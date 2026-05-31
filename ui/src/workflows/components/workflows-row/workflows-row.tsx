@@ -15,7 +15,7 @@ import {isArchivedWorkflow, Workflow} from '../../../shared/models';
 import {escapeInvalidMarkdown} from '../../utils';
 import {WorkflowDrawer} from '../workflow-drawer/workflow-drawer';
 
-require('./workflows-row.scss');
+import './workflows-row.scss';
 
 interface WorkflowsRowProps {
     workflow: Workflow;

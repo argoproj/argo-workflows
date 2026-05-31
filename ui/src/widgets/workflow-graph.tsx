@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {useEffect, useRef, useState} from 'react';
-import {RouteComponentProps} from 'react-router';
+import {useLocation, useNavigate, useParams} from 'react-router-dom';
 
 import {uiUrl} from '../shared/base';
 import {ErrorNotice} from '../shared/components/error-notice';
@@ -10,10 +10,13 @@ import {RetryWatch} from '../shared/retry-watch';
 import {services} from '../shared/services';
 import {WorkflowDag} from '../workflows/components/workflow-dag/workflow-dag';
 
-export function WorkflowGraph({history, match}: RouteComponentProps<any>) {
+export function WorkflowGraph() {
+    const navigate = useNavigate();
+    const location = useLocation();
+    const params = useParams();
     const isFirstRender = useRef(true);
     const queryParams = new URLSearchParams(location.search);
-    const namespace = match.params.namespace;
+    const namespace = params.namespace;
     const name = queryParams.get('name');
     const label = queryParams.get('label');
     const showOptions = queryParams.get('showOptions') === 'true';
@@ -25,7 +28,7 @@ export function WorkflowGraph({history, match}: RouteComponentProps<any>) {
             isFirstRender.current = false;
             return;
         }
-        history.push(
+        navigate(
             historyUrl('widgets/workflow-graphs/{namespace}', {
                 namespace,
                 name,

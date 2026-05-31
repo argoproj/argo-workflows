@@ -1,4 +1,4 @@
-import * as dagre from 'dagre';
+import * as dagre from '@dagrejs/dagre';
 
 import {Graph, Node} from './types';
 
@@ -34,7 +34,7 @@ export function layoutGraphPretty(graph: Graph, nodeSize: number, horizontal: bo
         if (graph.nodes.has(e.v) && graph.nodes.has(e.w)) {
             const points = g.edge(e).points;
             graph.edges.get(e).points = points;
-            points.forEach(p => {
+            points.forEach((p: {x: number; y: number}) => {
                 graph.width = Math.max(graph.width, p.x + nodeSize);
                 graph.height = Math.max(graph.height, p.y + nodeSize);
             });

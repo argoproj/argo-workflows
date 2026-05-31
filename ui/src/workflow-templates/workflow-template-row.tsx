@@ -8,7 +8,7 @@ import {Timestamp} from '../shared/components/timestamp';
 import {WorkflowTemplate} from '../shared/models';
 import {escapeInvalidMarkdown} from '../workflows/utils';
 
-require('./workflow-template-row.scss');
+import './workflow-template-row.scss';
 
 interface WorkflowTemplateRowProps {
     workflow: WorkflowTemplate;

@@ -14,7 +14,7 @@ export function getCollapsedNodeName(parent: string, message: string, type: Node
 export function isCollapsedNode(id: string): boolean {
     try {
         return (JSON.parse(id) as CollapsedNode).kind === 'collapsed';
-    } catch (e) {
+    } catch {
         return false;
     }
 }

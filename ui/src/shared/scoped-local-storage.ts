@@ -13,7 +13,7 @@ export class ScopedLocalStorage {
             if (typeof x === typeof defaultValue) {
                 return x;
             }
-        } catch (ignored) {
+        } catch {
             // noop
         }
         return defaultValue;

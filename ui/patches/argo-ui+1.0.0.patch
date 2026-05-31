@@ -1,0 +1,91 @@
+diff --git a/node_modules/argo-ui/src/components/index.ts b/node_modules/argo-ui/src/components/index.ts
+index 04e5bd1..58a419e 100644
+--- a/node_modules/argo-ui/src/components/index.ts
++++ b/node_modules/argo-ui/src/components/index.ts
+@@ -34,6 +34,12 @@ export * from './autocomplete/autocomplete-field';
+ export * as ReactForm from './form/compat';
+ export {
+     Form,
++    Text,
++    TextArea,
++    NestedForm,
++    FormField as FormFieldHOC,
++} from './form/compat';
++export type {
+     FormApi,
+     FormValues,
+     FormErrors,
+@@ -41,12 +47,8 @@ export {
+     FormState,
+     FormFunctionProps,
+     Nested,
+-    Text,
+-    TextArea,
+-    NestedForm,
+     FieldApi,
+     FieldProps,
+     ValidateValuesFunction,
+     RenderReturn,
+-    FormField as FormFieldHOC,
+ } from './form/compat';
+diff --git a/node_modules/argo-ui/src/components/nav-bar/nav-bar.tsx b/node_modules/argo-ui/src/components/nav-bar/nav-bar.tsx
+index 9213aa7..77280ca 100644
+--- a/node_modules/argo-ui/src/components/nav-bar/nav-bar.tsx
++++ b/node_modules/argo-ui/src/components/nav-bar/nav-bar.tsx
+@@ -1,7 +1,7 @@
+ import {default as classNames} from 'classnames';
+ import * as React from 'react';
++import {useLocation, useNavigate} from 'react-router-dom';
+ 
+-import { AppContextReact } from '../../context';
+ import {Tooltip} from '../tooltip/tooltip';
+ 
+ require('./nav-bar.scss');
+@@ -21,11 +21,9 @@ export function isActiveRoute(locationPath: string, path: string) {
+ }
+ 
+ export const NavBar: React.FunctionComponent<NavBarProps> = (props: NavBarProps) => {
+-    const context = React.useContext(AppContextReact);
+-    if (!context) {
+-        return null;
+-    }
+-    const locationPath = context.router.route.location.pathname;
++    const navigate = useNavigate();
++    const location = useLocation();
++    const locationPath = location.pathname;
+     const navBarStyle = {
+         ...(props.style?.backgroundColor && {background: `linear-gradient(to bottom, ${props.style?.backgroundColor}, #999`}),
+     };
+@@ -39,7 +37,7 @@ export const NavBar: React.FunctionComponent<NavBarProps> = (props: NavBarProps)
+                 {(props.items || []).map((item) => (
+                     <Tooltip content={item.title} placement='right' arrow={true} key={item.path + item.title}>
+                         <div className={classNames('nav-bar__item', { active: isActiveRoute(locationPath, item.path) })}
+-                            onClick={() => context.router.history.push(item.path)}>
++                            onClick={() => navigate(item.path)}>
+                             <i className={item.iconClassName}/>
+                         </div>
+                     </Tooltip>
+diff --git a/node_modules/argo-ui/src/context.tsx b/node_modules/argo-ui/src/context.tsx
+index bfa8fda..c04d2c7 100644
+--- a/node_modules/argo-ui/src/context.tsx
++++ b/node_modules/argo-ui/src/context.tsx
+@@ -1,10 +1,18 @@
+ import * as H from 'history';
+-import { match } from 'react-router';
+ import * as React from 'react';
+ 
+ import { NotificationsApi } from './components/notifications/notification-manager';
+ import { PopupApi } from './components/popup/popup-manager';
+ 
++// react-router v6+ removed the `match` type; keep the legacy shape locally so the
++// AppContext type continues to compile (this context is not used by the app at runtime).
++interface match<P> {
++    params: P;
++    isExact: boolean;
++    path: string;
++    url: string;
++}
++
+ export interface AppContext {
+     router: {
+         history: H.History;

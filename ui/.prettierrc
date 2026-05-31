@@ -9,7 +9,7 @@
     "",
     ".[s?]css$"
 ],
-  "importOrderTypeScriptVersion": "4.9.5",
+  "importOrderTypeScriptVersion": "5.9.3",
   "jsxSingleQuote": true,
   "jsxBracketSameLine": true,
   "printWidth": 180,

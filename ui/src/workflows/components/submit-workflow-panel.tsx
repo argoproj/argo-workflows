@@ -1,6 +1,6 @@
 import {Select} from 'argo-ui/src/components/select/select';
-import {History} from 'history';
 import React, {useContext, useEffect, useMemo, useState} from 'react';
+import {useLocation} from 'react-router-dom';
 
 import {uiUrl} from '../../shared/base';
 import {ErrorNotice} from '../../shared/components/error-notice';
@@ -20,7 +20,6 @@ interface Props {
     entrypoint: string;
     templates: Template[];
     workflowParameters: Parameter[];
-    history: History;
 }
 
 const workflowEntrypoint = '<default>';
@@ -33,6 +32,7 @@ const defaultTemplate: Template = {
 
 export function SubmitWorkflowPanel(props: Props) {
     const {navigation} = useContext(Context);
+    const {search} = useLocation();
     const [entrypoint, setEntrypoint] = useState(props.entrypoint || workflowEntrypoint);
     const [parameters, setParameters] = useState<Parameter[]>([]);
     const [workflowParameters, setWorkflowParameters] = useState<Parameter[]>(JSON.parse(JSON.stringify(props.workflowParameters)));
@@ -41,14 +41,14 @@ export function SubmitWorkflowPanel(props: Props) {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
-        const templatePropertiesInQuery = getWorkflowParametersFromQuery(props.history);
+        const templatePropertiesInQuery = getWorkflowParametersFromQuery(search);
         // Get the user arguments from the query params
         const updatedParams = workflowParameters.map(param => ({
             ...param,
             value: templatePropertiesInQuery[param.name] || param.value
         }));
         setWorkflowParameters(updatedParams);
-    }, [props.history, setWorkflowParameters]);
+    }, [search, setWorkflowParameters]);
 
     const templates = useMemo(() => {
         return [defaultTemplate].concat(props.templates);

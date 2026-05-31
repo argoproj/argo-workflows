@@ -1,12 +1,14 @@
 import * as React from 'react';
-import {Route, RouteComponentProps, Switch} from 'react-router';
+import {Route, Routes} from 'react-router-dom';
 
 import {EventSourceDetails} from './event-source-details';
 import {EventSourceList} from './event-source-list';
 
-export const EventSourceContainer = (props: RouteComponentProps<any>) => (
-    <Switch>
-        <Route exact={true} path={`${props.match.path}/:namespace?`} component={EventSourceList} />
-        <Route exact={true} path={`${props.match.path}/:namespace/:name`} component={EventSourceDetails} />
-    </Switch>
-);
+export function EventSourceContainer() {
+    return (
+        <Routes>
+            <Route path=':namespace?' element={<EventSourceList />} />
+            <Route path=':namespace/:name' element={<EventSourceDetails />} />
+        </Routes>
+    );
+}

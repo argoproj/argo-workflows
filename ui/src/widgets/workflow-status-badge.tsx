@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {useEffect, useRef, useState} from 'react';
-import {RouteComponentProps} from 'react-router';
+import {useLocation, useNavigate, useParams} from 'react-router-dom';
 
 import {uiUrl} from '../shared/base';
 import {historyUrl} from '../shared/history';
@@ -10,16 +10,19 @@ import {services} from '../shared/services';
 
 import './workflow-status-badge.scss';
 
-export function WorkflowStatusBadge({history, match}: RouteComponentProps<any>) {
+export function WorkflowStatusBadge() {
+    const navigate = useNavigate();
+    const location = useLocation();
+    const params = useParams();
     const isFirstRender = useRef(true);
     const queryParams = new URLSearchParams(location.search);
-    const namespace = match.params.namespace;
+    const namespace = params.namespace;
     const name = queryParams.get('name');
     const label = queryParams.get('label');
     const target = queryParams.get('target') || '_top';
 
     useEffect(() => {
-        history.push(historyUrl('widgets/workflow-status-badges/{namespace}', {namespace, name, label, target}));
+        navigate(historyUrl('widgets/workflow-status-badges/{namespace}', {namespace, name, label, target}));
     }, [namespace, name, label]);
 
     const [displayName, setDisplayName] = useState<string>();

@@ -1,12 +1,14 @@
 import * as React from 'react';
-import {Route, RouteComponentProps, Switch} from 'react-router';
+import {Route, Routes} from 'react-router-dom';
 
 import {CronWorkflowDetails} from './cron-workflow-details';
 import {CronWorkflowList} from './cron-workflow-list';
 
-export const CronWorkflowContainer = (props: RouteComponentProps<any>) => (
-    <Switch>
-        <Route exact={true} path={`${props.match.path}/:namespace?`} component={CronWorkflowList} />
-        <Route exact={true} path={`${props.match.path}/:namespace/:name`} component={CronWorkflowDetails} />
-    </Switch>
-);
+export function CronWorkflowContainer() {
+    return (
+        <Routes>
+            <Route path=':namespace?' element={<CronWorkflowList />} />
+            <Route path=':namespace/:name' element={<CronWorkflowDetails />} />
+        </Routes>
+    );
+}

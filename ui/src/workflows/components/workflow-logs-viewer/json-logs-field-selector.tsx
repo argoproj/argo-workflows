@@ -74,7 +74,7 @@ export function extractJsonValue(obj: any, jsonpath: string): string | null {
             target = target[field];
         }
         return typeof target === 'string' ? target : JSON.stringify(target);
-    } catch (e) {
+    } catch {
         return null;
     }
 }

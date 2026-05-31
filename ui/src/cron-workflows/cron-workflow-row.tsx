@@ -11,7 +11,7 @@ import {CronWorkflow, CronWorkflowSpec} from '../shared/models';
 import {escapeInvalidMarkdown} from '../workflows/utils';
 import {PrettySchedule} from './pretty-schedule';
 
-require('./cron-workflow-row.scss');
+import './cron-workflow-row.scss';
 
 interface CronWorkflowRowProps {
     workflow: CronWorkflow;
@@ -39,18 +39,18 @@ export function CronWorkflowRow(props: CronWorkflowRowProps) {
                 <div className='columns small-1'>{wf.spec.timezone}</div>
                 <div className='columns small-1'>
                     {wf.spec.schedules.map(schedule => (
-                        <>
+                        <React.Fragment key={schedule}>
                             {schedule}
                             <br />
-                        </>
+                        </React.Fragment>
                     ))}
                 </div>
                 <div className='columns small-1'>
                     {wf.spec.schedules.map(schedule => (
-                        <>
+                        <React.Fragment key={schedule}>
                             <PrettySchedule schedule={schedule} />
                             <br />
-                        </>
+                        </React.Fragment>
                     ))}
                 </div>
                 <div className='columns small-2'>

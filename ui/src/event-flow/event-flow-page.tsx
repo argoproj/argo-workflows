@@ -3,7 +3,7 @@ import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
 import {Tabs} from 'argo-ui/src/components/tabs/tabs';
 import {useContext, useEffect, useRef, useState} from 'react';
 import * as React from 'react';
-import {RouteComponentProps} from 'react-router-dom';
+import {useLocation, useNavigate, useParams} from 'react-router-dom';
 import {Observable} from 'rxjs';
 import {filter, map} from 'rxjs/operators';
 
@@ -37,37 +37,37 @@ import {ID} from './id';
 
 import './event-flow-page.scss';
 
-export function EventFlowPage({history, location, match}: RouteComponentProps<any>) {
+export function EventFlowPage() {
     // boiler-plate
+    const navigate = useNavigate();
+    const location = useLocation();
+    const routeParams = useParams();
     const {navigation} = useContext(Context);
     const queryParams = new URLSearchParams(location.search);
 
     // state for URL and query parameters
     const isFirstRender = useRef(true);
-    const [namespace, setNamespace] = useState(nsUtils.getNamespace(match.params.namespace) || '');
+    const [namespace, setNamespace] = useState(nsUtils.getNamespace(routeParams.namespace) || '');
     const [showFlow, setShowFlow] = useState(queryParams.get('showFlow') === 'true');
     const [showWorkflows, setShowWorkflows] = useState(queryParams.get('showWorkflows') !== 'false');
     const [expanded, setExpanded] = useState(queryParams.get('expanded') === 'true');
     const [selectedNode, setSelectedNode] = useState<Node>(queryParams.get('selectedNode'));
     const [tab, setTab] = useState<Node>(queryParams.get('tab'));
 
-    useEffect(
-        useQueryParams(history, p => {
-            setShowFlow(p.get('showFlow') === 'true');
-            setShowWorkflows(p.get('showWorkflows') === 'true');
-            setExpanded(p.get('expanded') === 'true');
-            setSelectedNode(p.get('selectedNode'));
-            setTab(p.get('tab'));
-        }),
-        [history]
-    );
+    useQueryParams(p => {
+        setShowFlow(p.get('showFlow') === 'true');
+        setShowWorkflows(p.get('showWorkflows') === 'true');
+        setExpanded(p.get('expanded') === 'true');
+        setSelectedNode(p.get('selectedNode'));
+        setTab(p.get('tab'));
+    });
 
     useEffect(() => {
         if (isFirstRender.current) {
             isFirstRender.current = false;
             return;
         }
-        history.push(
+        navigate(
             historyUrl('event-flow' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {
                 namespace,
                 showFlow,

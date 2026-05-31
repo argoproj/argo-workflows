@@ -2,7 +2,7 @@ import {Page} from 'argo-ui/src/components/page/page';
 import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
 import * as React from 'react';
 import {useContext, useEffect, useMemo, useRef, useState} from 'react';
-import {RouteComponentProps} from 'react-router-dom';
+import {useLocation, useNavigate, useParams} from 'react-router-dom';
 
 import {uiUrl} from '../../../shared/base';
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
@@ -57,12 +57,15 @@ const allBatchActionsEnabled: Actions.OperationDisabled = {
 
 const storage = new ScopedLocalStorage('ListOptions');
 
-export function WorkflowsList({match, location, history}: RouteComponentProps<any>) {
+export function WorkflowsList() {
+    const navigate = useNavigate();
+    const location = useLocation();
+    const routeParams = useParams();
     const queryParams = new URLSearchParams(location.search);
     const {navigation} = useContext(Context);
 
     const isFirstRender = useRef(true);
-    const [namespace, setNamespace] = useState(nsUtils.getNamespace(match.params.namespace) || '');
+    const [namespace, setNamespace] = useState(nsUtils.getNamespace(routeParams.namespace) || '');
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') || '');
     const [pagination, setPagination] = useState<Pagination>(() => {
         const savedPaginationLimit = storage.getItem('options', {}).paginationLimit || undefined;
@@ -124,12 +127,9 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
         })();
     }, []);
 
-    useEffect(
-        useQueryParams(history, p => {
-            setSidePanel(p.get('sidePanel') || '');
-        }),
-        [history]
-    );
+    useQueryParams(p => {
+        setSidePanel(p.get('sidePanel') || '');
+    });
 
     // save history and localStorage
     useEffect(() => {
@@ -143,7 +143,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
         storage.setItem('options', options, {} as WorkflowListRenderOptions);
 
         const params = new URLSearchParams();
-        const currentParams = new URLSearchParams(history.location.search);
+        const currentParams = new URLSearchParams(location.search);
 
         if (currentParams.has('namespace')) {
             params.set('namespace', currentParams.get('namespace'));
@@ -181,9 +181,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
         if (finishedBefore) {
             params.append('finishedBefore', finishedBefore.toISOString());
         }
-        (isFirstRender.current ? history.replace : history.push)(
-            historyUrl('workflows' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {namespace, extraSearchParams: params})
-        );
+        navigate(historyUrl('workflows' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {namespace, extraSearchParams: params}), {replace: isFirstRender.current});
         isFirstRender.current = false;
     }, [namespace, phases.toString(), labels.toString(), pagination.limit, pagination.offset, nameValue, nameFilter, createdAfter, finishedBefore, sidePanel]); // referential equality, so use values, not refs
 
@@ -258,11 +256,11 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                             setNamespace={setNamespace}
                             setPhases={setPhases}
                             setLabels={setLabels}
-                            setCreatedAfter={(date: Date) => {
+                            setCreatedAfter={(date?: Date) => {
                                 setCreatedAfter(date);
                                 clearSelectedWorkflows(); // date filters are client-side, but clear similar to the server-side ones for consistency
                             }}
-                            setFinishedBefore={(date: Date) => {
+                            setFinishedBefore={(date?: Date) => {
                                 setFinishedBefore(date);
                                 clearSelectedWorkflows(); // date filters are client-side, but clear similar to the server-side ones for consistency
                             }}
@@ -387,7 +385,6 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                 {sidePanel === 'submit-new-workflow' && (
                     <WorkflowCreator
                         namespace={nsUtils.getNamespaceWithDefault(namespace)}
-                        history={history}
                         onCreate={wf => navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`))}
                     />
                 )}

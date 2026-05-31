@@ -16,7 +16,7 @@ function normalizeNodeName(name: string) {
 }
 
 export function WorkflowYamlViewer(props: WorkflowYamlViewerProps) {
-    const contents: JSX.Element[] = [];
+    const contents: React.JSX.Element[] = [];
     contents.push(<h3 key='title'>Node</h3>);
 
     if (props.selectedNode) {

@@ -6,7 +6,7 @@ import './dropdown.scss';
 
 export interface DropDownProps {
     isMenu?: boolean;
-    anchor: JSX.Element | ((opened: boolean) => JSX.Element);
+    anchor: React.JSX.Element | ((opened: boolean) => React.JSX.Element);
     closeOnInsideClick?: boolean;
     children: ReactNode;
 }

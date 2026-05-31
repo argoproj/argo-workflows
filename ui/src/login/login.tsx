@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {useState} from 'react';
-import {RouteComponentProps} from 'react-router';
+import {useLocation} from 'react-router-dom';
 
 import {uiUrl, uiUrlWithParams} from '../shared/base';
 import {deleteCookie, setCookie} from '../shared/cookie';
@@ -8,7 +8,8 @@ import {useCollectEvent} from '../shared/use-collect-event';
 
 import './login.scss';
 
-export function Login({location, history}: RouteComponentProps<any>) {
+export function Login() {
+    const location = useLocation();
     const urlParams = new URLSearchParams(location.search);
     const redirect = new URLSearchParams({redirect: urlParams.get('redirect') ?? uiUrl('workflows')});
     const [token, setToken] = useState('');
@@ -73,7 +74,7 @@ export function Login({location, history}: RouteComponentProps<any>) {
                             className='argo-button argo-button--base-o'
                             onClick={() => {
                                 deleteCookie('authorization');
-                                history.go(0);
+                                window.location.reload();
                             }}>
                             <i className='fa fa-sign-out-alt' /> Logout
                         </a>

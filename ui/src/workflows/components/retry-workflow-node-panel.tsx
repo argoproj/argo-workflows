@@ -32,9 +32,11 @@ export function RetryWorkflowNode(props: Props) {
         };
 
         try {
-            props.isArchived && !props.isWorkflowInCluster
-                ? await services.workflows.retryArchived(props.workflow.metadata.uid, props.workflow.metadata.namespace, opts)
-                : await services.workflows.retry(props.workflow.metadata.name, props.workflow.metadata.namespace, opts);
+            if (props.isArchived && !props.isWorkflowInCluster) {
+                await services.workflows.retryArchived(props.workflow.metadata.uid, props.workflow.metadata.namespace, opts);
+            } else {
+                await services.workflows.retry(props.workflow.metadata.name, props.workflow.metadata.namespace, opts);
+            }
             props.onRetrySuccess();
         } catch (err) {
             setError(err);

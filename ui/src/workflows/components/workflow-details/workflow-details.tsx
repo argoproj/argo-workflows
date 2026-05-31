@@ -3,7 +3,7 @@ import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
 import classNames from 'classnames';
 import * as React from 'react';
 import {useContext, useEffect, useRef, useState} from 'react';
-import {RouteComponentProps} from 'react-router';
+import {useLocation, useNavigate, useParams} from 'react-router-dom';
 
 import {artifactRepoHasLocation, findArtifact} from '../../../shared/artifacts';
 import {uiUrl} from '../../../shared/base';
@@ -91,12 +91,15 @@ function DeleteCheck(props: {isWfInDB: boolean; isWfInCluster: boolean}) {
     }
 }
 
-export function WorkflowDetails({history, location, match}: RouteComponentProps<any>) {
+export function WorkflowDetails() {
     // boiler-plate
+    const navigate = useNavigate();
+    const location = useLocation();
+    const params = useParams();
     const {navigation, popup} = useContext(Context);
     const queryParams = new URLSearchParams(location.search);
-    const namespace = match.params.namespace;
-    const name = match.params.name;
+    const namespace = params.namespace;
+    const name = params.name;
 
     const isFirstRender = useRef(true);
     const [tab, setTab] = useState(queryParams.get('tab') || 'workflow');
@@ -123,16 +126,13 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
         resizedElementRef: sidePanelRef
     });
 
-    useEffect(
-        useQueryParams(history, p => {
-            setUid(p.get('uid'));
-            setTab(p.get('tab') || 'workflow');
-            setNodeId(p.get('nodeId'));
-            setNodePanelView(p.get('nodePanelView'));
-            setSidePanel(p.get('sidePanel'));
-        }),
-        [history]
-    );
+    useQueryParams(p => {
+        setUid(p.get('uid'));
+        setTab(p.get('tab') || 'workflow');
+        setNodeId(p.get('nodeId'));
+        setNodePanelView(p.get('nodePanelView'));
+        setSidePanel(p.get('sidePanel'));
+    });
 
     function getInputParametersForNode(selectedWorkflowNodeId: string): Parameter[] {
         const selectedWorkflowNode = workflow && workflow.status && workflow.status.nodes && workflow.status.nodes[selectedWorkflowNodeId];
@@ -168,7 +168,7 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
             isFirstRender.current = false;
             return;
         }
-        history.push(historyUrl('workflows/{namespace}/{name}', {namespace, name, tab, nodeId, nodePanelView, sidePanel, uid}));
+        navigate(historyUrl('workflows/{namespace}/{name}', {namespace, name, tab, nodeId, nodePanelView, sidePanel, uid}));
     }, [namespace, name, tab, nodeId, nodePanelView, sidePanel, uid]);
 
     useEffect(() => {

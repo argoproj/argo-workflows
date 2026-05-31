@@ -5,7 +5,7 @@ import React from 'react';
 import {InputFilter} from './input-filter';
 
 jest.mock('argo-ui/src/components/autocomplete/autocomplete', () => ({
-    Autocomplete: jest.fn(() => null)
+    Autocomplete: jest.fn((): null => null)
 }));
 
 const lastItems = (): string[] => {

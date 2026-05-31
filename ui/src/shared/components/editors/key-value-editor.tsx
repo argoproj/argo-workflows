@@ -5,7 +5,7 @@ import {ANNOTATION_DESCRIPTION, ANNOTATION_TITLE} from '../../annotations';
 import {SuspenseReactMarkdownGfm} from '../suspense-react-markdown-gfm';
 import {TextInput} from '../text-input';
 
-require('./key-value-editor.scss');
+import './key-value-editor.scss';
 
 interface KeyValues {
     [key: string]: string;

@@ -1,10 +1,12 @@
 import * as React from 'react';
-import {Route, RouteComponentProps, Switch} from 'react-router';
+import {Route, Routes} from 'react-router-dom';
 
 import {WorkflowEventBindings} from './workflow-event-bindings';
 
-export const WorkflowEventBindingsContainer = (props: RouteComponentProps<any>) => (
-    <Switch>
-        <Route exact={true} path={`${props.match.path}/:namespace?`} component={WorkflowEventBindings} />
-    </Switch>
-);
+export function WorkflowEventBindingsContainer() {
+    return (
+        <Routes>
+            <Route path=':namespace?' element={<WorkflowEventBindings />} />
+        </Routes>
+    );
+}

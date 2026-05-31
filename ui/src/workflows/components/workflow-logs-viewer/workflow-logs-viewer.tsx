@@ -119,7 +119,7 @@ export function WorkflowLogsViewer({workflow, initialNodeId, initialPodName, con
                                 values.push(value);
                             }
                         });
-                    } catch (e) {
+                    } catch {
                         // if not json, show content directly
                     }
                 }
@@ -189,7 +189,7 @@ export function WorkflowLogsViewer({workflow, initialNodeId, initialPodName, con
                 } else {
                     setTemplateFromRef(null);
                 }
-            } catch (err) {
+            } catch {
                 setTemplateFromRef(null);
             }
         };

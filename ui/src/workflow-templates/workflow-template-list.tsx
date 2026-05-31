@@ -2,7 +2,7 @@ import {Page} from 'argo-ui/src/components/page/page';
 import {SlidingPanel} from 'argo-ui/src/components/sliding-panel/sliding-panel';
 import * as React from 'react';
 import {useContext, useEffect, useRef, useState} from 'react';
-import {RouteComponentProps} from 'react-router-dom';
+import {useLocation, useNavigate, useParams} from 'react-router-dom';
 
 import {uiUrl} from '../shared/base';
 import {ErrorNotice} from '../shared/components/error-notice';
@@ -35,8 +35,11 @@ const learnMore = (
     </a>
 );
 
-export function WorkflowTemplateList({match, location, history}: RouteComponentProps<any>) {
+export function WorkflowTemplateList() {
     // boiler-plate
+    const navigate = useNavigate();
+    const location = useLocation();
+    const routeParams = useParams();
     const isFirstRender = useRef(true);
     const queryParams = new URLSearchParams(location.search);
     const {navigation} = useContext(Context);
@@ -45,7 +48,7 @@ export function WorkflowTemplateList({match, location, history}: RouteComponentP
     const savedOptions = storage.getItem('paginationLimit', 0);
 
     // state for URL and query parameters
-    const [namespace, setNamespace] = useState(nsUtils.getNamespace(match.params.namespace) || '');
+    const [namespace, setNamespace] = useState(nsUtils.getNamespace(routeParams.namespace) || '');
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') === 'true');
     const [namePattern, setNamePattern] = useState('');
     const [labels, setLabels] = useState<string[]>(() => {
@@ -60,12 +63,9 @@ export function WorkflowTemplateList({match, location, history}: RouteComponentP
         limit: parseLimit(queryParams.get('limit')) || savedOptions.paginationLimit || 500
     });
 
-    useEffect(
-        useQueryParams(history, p => {
-            setSidePanel(p.get('sidePanel') === 'true');
-        }),
-        [history]
-    );
+    useQueryParams(p => {
+        setSidePanel(p.get('sidePanel') === 'true');
+    });
 
     useEffect(() => {
         storage.setItem('options', {labels}, {});
@@ -74,11 +74,12 @@ export function WorkflowTemplateList({match, location, history}: RouteComponentP
         if (sidePanel) {
             params.append('sidePanel', 'true');
         }
-        (isFirstRender.current ? history.replace : history.push)(
+        navigate(
             historyUrl('workflow-templates' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {
                 namespace,
                 extraSearchParams: params
-            })
+            }),
+            {replace: isFirstRender.current}
         );
         isFirstRender.current = false;
     }, [namespace, sidePanel, labels.toString()]);

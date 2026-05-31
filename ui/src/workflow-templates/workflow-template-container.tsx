@@ -1,12 +1,14 @@
 import * as React from 'react';
-import {Route, RouteComponentProps, Switch} from 'react-router';
+import {Route, Routes} from 'react-router-dom';
 
 import {WorkflowTemplateDetails} from './workflow-template-details';
 import {WorkflowTemplateList} from './workflow-template-list';
 
-export const WorkflowTemplateContainer = (props: RouteComponentProps<any>) => (
-    <Switch>
-        <Route exact={true} path={`${props.match.path}/:namespace?`} component={WorkflowTemplateList} />
-        <Route exact={true} path={`${props.match.path}/:namespace/:name`} component={WorkflowTemplateDetails} />
-    </Switch>
-);
+export function WorkflowTemplateContainer() {
+    return (
+        <Routes>
+            <Route path=':namespace?' element={<WorkflowTemplateList />} />
+            <Route path=':namespace/:name' element={<WorkflowTemplateDetails />} />
+        </Routes>
+    );
+}
