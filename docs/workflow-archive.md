@@ -65,7 +65,9 @@ For the list of SQL statements applied during migration, see [Database Migration
 
 ### Postgres
 
-The database user/role must have `CREATE` and `USAGE` permissions on the `public` schema of the database so that the tables can be created during the migration.
+The database user/role must have `CREATE` and `USAGE` permissions on the schema of the database (either `public` in default or the configured value of `persistence.postgresql.schema`) so that the tables can be created during the migration.
+
+When using a custom PostgreSQL schema via `persistence.postgresql.schema`, the user/role must also have permissions to create the schema.
 
 ## Archive TTL
 
@@ -108,4 +110,5 @@ Only available on PostgreSQL.
 Example:
 
     persistence:
-      schema: argo
+      postgresql
+        schema: argo

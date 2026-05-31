@@ -50,5 +50,5 @@ func MigrateChanges(config *Config) []sqldb.Change {
 }
 
 func migrate(ctx context.Context, session db.Session, dbType sqldb.DBType, config *Config) (err error) {
-	return sqldb.Migrate(ctx, session, dbType, "", versionTable, MigrateChanges(config))
+	return sqldb.Migrate(ctx, session, dbType, config.Schema, versionTable, MigrateChanges(config))
 }
