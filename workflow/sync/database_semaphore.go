@@ -372,6 +372,16 @@ func (s *databaseSemaphore) acquire(ctx context.Context, holderKey string, tx *s
 	return false, nil
 }
 
+// reacquire re-establishes a recorded holder at startup. For a database-backed
+// lock the holder is durable - its row survives the controller restart - so the
+// hold is already represented regardless of the current limit. We still call
+// acquire as a best-effort re-assertion (it inserts the held row if missing);
+// any failure (already-held row, limit exceeded, transient error) is harmless
+// because the persisted row keeps the hold counted by currentHolders.
+func (s *databaseSemaphore) reacquire(ctx context.Context, holderKey string, tx *sqldb.SessionProxy) {
+	_, _ = s.acquire(ctx, holderKey, tx)
+}
+
 func (s *databaseSemaphore) tryAcquire(ctx context.Context, holderKey string, tx *sqldb.SessionProxy) (bool, string, error) {
 	logger := s.logger(ctx)
 	acq, already, msg := s.checkAcquire(ctx, holderKey, tx)

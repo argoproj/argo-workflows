@@ -371,7 +371,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 
 		wfList, err := wfclientset.ArgoprojV1alpha1().Workflows("default").List(ctx, metav1.ListOptions{})
 		require.NoError(t, err)
-		syncManager.Initialize(ctx, wfList.Items)
+		require.NoError(t, syncManager.Initialize(ctx, wfList.Items))
 		assert.Len(t, syncManager.syncLockMap, 1)
 	})
 	t.Run("InitializeSynchronizationWithInvalid", func(t *testing.T) {
@@ -385,7 +385,11 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		wfclientset := fakewfclientset.NewClientset(wf)
 		wfList, err := wfclientset.ArgoprojV1alpha1().Workflows("default").List(ctx, metav1.ListOptions{})
 		require.NoError(t, err)
-		syncManager.Initialize(ctx, wfList.Items)
+		// An invalid/undecodable lock name now fails closed rather than being
+		// silently skipped: we can't poison it or prove the spec re-acquires it,
+		// so the controller halts for an operator instead of risking a double-acquire.
+		err = syncManager.Initialize(ctx, wfList.Items)
+		require.Error(t, err)
 		assert.Empty(t, syncManager.syncLockMap)
 	})
 	t.Run("InitializeMultipleWorkflowsHolding", func(t *testing.T) {
@@ -417,7 +421,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		wf2.Status.Synchronization.Semaphore.Holding[0].Holders = []string{"default/hello-world-two"}
 
 		// Initialize with both workflows
-		syncManager.Initialize(ctx, []wfv1.Workflow{*wf1, *wf2})
+		require.NoError(t, syncManager.Initialize(ctx, []wfv1.Workflow{*wf1, *wf2}))
 
 		// Verify the semaphore was created
 		assert.Len(t, syncManager.syncLockMap, 1)
@@ -430,6 +434,220 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		assert.Len(t, holders, 2, "both workflows should be registered as holders")
 		assert.Contains(t, holders, "default/hello-world-one")
 		assert.Contains(t, holders, "default/hello-world-two")
+	})
+
+	t.Run("InitializeConfigMapInitFailurePoisonsNotFatal", func(t *testing.T) {
+		// The ConfigMap backing the semaphore limit is absent, so the limit fetch
+		// fails and initializeSemaphore errors. The name decodes (kind ConfigMap),
+		// so this is recoverable - it must not crashloop the controller. It must
+		// POISON the lock rather than leave it absent: a ConfigMap semaphore keeps
+		// its holders only in memory, so leaving it absent would let a later
+		// rebuild start with zero holders and a racer double-acquire this hold.
+		kubeClient := fake.NewClientset() // no ConfigMap created
+		syncManager, err := NewLockManager(ctx, kubeClient, "", nil, GetSyncLimitFunc(kubeClient), func(key string) {
+		}, WorkflowExistenceFunc, false)
+		require.NoError(t, err)
+
+		wf := wfv1.MustUnmarshalWorkflow(wfWithStatus)
+		wf.Name = "cm-holder"
+		wf.Status.Synchronization.Semaphore.Holding[0].Holders = []string{"default/cm-holder"}
+
+		require.NoError(t, syncManager.Initialize(ctx, []wfv1.Workflow{*wf}), "a recoverable ConfigMap failure must not be fatal")
+		lock := syncManager.syncLockMap["default/ConfigMap/my-config/workflow"]
+		require.NotNil(t, lock)
+		_, poisoned := lock.(*poisonedLock)
+		assert.True(t, poisoned, "decodable lock that cannot be initialized must be poisoned, not left absent")
+	})
+
+	t.Run("InitializeLoweredLimitForceRegistersAllHolders", func(t *testing.T) {
+		// Two workflows are recorded as holders but the limit is now 1 (lowered
+		// from 2). Lowering a limit is routine: it must NOT poison the shared
+		// semaphore (which would block every contender until restart), NOR drop
+		// the over-limit holder (which would let a racer double-acquire once the
+		// other holder releases). Both holders must be force-registered so the
+		// in-memory count reflects reality and new acquisitions wait until the
+		// count drains below the limit.
+		kubeClient := fake.NewClientset()
+		_, err := kubeClient.CoreV1().ConfigMaps("default").Create(ctx, &v1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{Name: "my-config"},
+			Data:       map[string]string{"workflow": "1"},
+		}, metav1.CreateOptions{})
+		require.NoError(t, err)
+
+		syncManager, err := NewLockManager(ctx, kubeClient, "", nil, GetSyncLimitFunc(kubeClient), func(key string) {
+		}, WorkflowExistenceFunc, false)
+		require.NoError(t, err)
+
+		wf1 := wfv1.MustUnmarshalWorkflow(wfWithStatus)
+		wf1.Name = "holder-one"
+		wf1.Status.Synchronization.Semaphore.Holding[0].Holders = []string{"default/holder-one"}
+		wf2 := wfv1.MustUnmarshalWorkflow(wfWithStatus)
+		wf2.Name = "holder-two"
+		wf2.Status.Synchronization.Semaphore.Holding[0].Holders = []string{"default/holder-two"}
+
+		require.NoError(t, syncManager.Initialize(ctx, []wfv1.Workflow{*wf1, *wf2}))
+
+		lock := syncManager.syncLockMap["default/ConfigMap/my-config/workflow"]
+		require.NotNil(t, lock)
+		_, poisoned := lock.(*poisonedLock)
+		assert.False(t, poisoned, "lowering a limit must not poison the semaphore")
+		holders, err := lock.getCurrentHolders(ctx)
+		require.NoError(t, err)
+		assert.Len(t, holders, 2, "both recorded holders must be force-registered, even over the lowered limit")
+		assert.Contains(t, holders, "default/holder-one")
+		assert.Contains(t, holders, "default/holder-two")
+
+		// A new contender must NOT be able to acquire: the count (2) is over the
+		// limit (1), so the lock is correctly unavailable until holders drain.
+		racer := wfv1.MustUnmarshalWorkflow(wfWithStatus)
+		racer.Name = "racer"
+		acquired, _, _, _, err := syncManager.TryAcquire(ctx, racer, "", racer.Spec.Synchronization)
+		require.NoError(t, err)
+		assert.False(t, acquired, "a racer must wait while recorded holders exceed the lowered limit")
+	})
+
+	t.Run("InitializeMutexWithWorkflowTemplateRef", func(t *testing.T) {
+		// A workflowTemplateRef workflow has empty Spec.Synchronization and
+		// Spec.Templates; its rendered mutex lives in Status.StoredWorkflowSpec.
+		// Its recorded holder uses a self-describing V2 key, so Initialize must
+		// re-establish the hold WITHOUT needing to resolve a level from wf.Spec.
+		// Before the fix, getWorkflowSyncLevelByName could not find the mutex in
+		// the empty spec, Initialize hit "cannot obtain lock level" and dropped
+		// the holder, leaving the lock free for a racing workflow to acquire.
+		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
+		}, WorkflowExistenceFunc, false)
+		require.NoError(t, err)
+
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{Name: "tmplref-holder", Namespace: "default"},
+			Spec: wfv1.WorkflowSpec{
+				WorkflowTemplateRef: &wfv1.WorkflowTemplateRef{Name: "my-template"},
+			},
+			Status: wfv1.WorkflowStatus{
+				StoredWorkflowSpec: &wfv1.WorkflowSpec{
+					Synchronization: &wfv1.Synchronization{
+						Mutexes: []*wfv1.Mutex{{Name: "my-mutex"}},
+					},
+				},
+				Synchronization: &wfv1.SynchronizationStatus{
+					Mutex: &wfv1.MutexStatus{
+						Holding: []wfv1.MutexHolding{{
+							Mutex:  "default/Mutex/my-mutex",
+							Holder: "default/tmplref-holder",
+						}},
+					},
+				},
+			},
+		}
+
+		require.NoError(t, syncManager.Initialize(ctx, []wfv1.Workflow{*wf}))
+
+		lock := syncManager.syncLockMap["default/Mutex/my-mutex"]
+		require.NotNil(t, lock)
+		_, poisoned := lock.(*poisonedLock)
+		assert.False(t, poisoned, "holder should be re-established, not poisoned")
+		holders, err := lock.getCurrentHolders(ctx)
+		require.NoError(t, err)
+		assert.Equal(t, []string{"default/tmplref-holder"}, holders)
+	})
+
+	t.Run("InitializePoisonsUnresolvableHolder", func(t *testing.T) {
+		// A legacy V1 holder key that cannot be resolved to a level (no matching
+		// synchronization block in spec or stored spec) must poison the lock,
+		// rather than silently dropping the holder. Otherwise a racing workflow
+		// could acquire a mutex that persisted state says is already held.
+		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
+		}, WorkflowExistenceFunc, false)
+		require.NoError(t, err)
+
+		holder := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{Name: "ghost-holder", Namespace: "default"},
+			Status: wfv1.WorkflowStatus{
+				Synchronization: &wfv1.SynchronizationStatus{
+					Mutex: &wfv1.MutexStatus{
+						Holding: []wfv1.MutexHolding{{
+							Mutex:  "default/Mutex/my-mutex",
+							Holder: "ghost-holder", // V1 key, unresolvable against empty spec
+						}},
+					},
+				},
+			},
+		}
+
+		// A decodable name whose holder can't be re-established is poisoned, not
+		// fatal: the poison key matches what a racer computes, so soundness holds.
+		require.NoError(t, syncManager.Initialize(ctx, []wfv1.Workflow{*holder}))
+
+		lock := syncManager.syncLockMap["default/Mutex/my-mutex"]
+		require.NotNil(t, lock)
+		_, poisoned := lock.(*poisonedLock)
+		assert.True(t, poisoned, "unresolvable holder must poison the lock")
+
+		// A racing workflow must not be able to acquire the poisoned mutex.
+		racer := wfv1.MustUnmarshalWorkflow(wfWithMutex)
+		racer.Name = "racer"
+		acquired, _, msg, _, err := syncManager.TryAcquire(ctx, racer, "", racer.Spec.Synchronization)
+		require.NoError(t, err)
+		assert.False(t, acquired, "racing workflow must not acquire a poisoned lock")
+		assert.Contains(t, msg, "poisoned state")
+	})
+
+	t.Run("InitializeFailsClosedOnUndecodableLockName", func(t *testing.T) {
+		// A holder whose lock name cannot even be decoded is an unknowable hold:
+		// we can neither poison the lock (no key) nor prove the spec re-acquires
+		// it, so continuing risks a silent double-acquire. Initialize must fail
+		// closed (return an error) so the controller halts for an operator.
+		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
+		}, WorkflowExistenceFunc, false)
+		require.NoError(t, err)
+
+		holder := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{Name: "broken-holder", Namespace: "default"},
+			Status: wfv1.WorkflowStatus{
+				Synchronization: &wfv1.SynchronizationStatus{
+					Mutex: &wfv1.MutexStatus{
+						Holding: []wfv1.MutexHolding{{
+							Mutex:  "garbage-undecodable-name",
+							Holder: "default/broken-holder",
+						}},
+					},
+				},
+			},
+		}
+
+		err = syncManager.Initialize(ctx, []wfv1.Workflow{*holder})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "broken-holder")
+		assert.NotContains(t, syncManager.syncLockMap, "garbage-undecodable-name")
+	})
+
+	t.Run("InitializeFailsClosedWhenDBUnavailable", func(t *testing.T) {
+		// A Running workflow holds a database-backed lock, but the manager has no
+		// database session (e.g. the DB was unreachable at startup). The lock
+		// cannot be re-established, so Initialize must fail closed and let the
+		// controller crashloop until the database is reachable.
+		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
+		}, WorkflowExistenceFunc, false)
+		require.NoError(t, err)
+		require.Nil(t, syncManager.dbInfo.SessionProxy)
+
+		holder := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{Name: "db-holder", Namespace: "default"},
+			Status: wfv1.WorkflowStatus{
+				Synchronization: &wfv1.SynchronizationStatus{
+					Mutex: &wfv1.MutexStatus{
+						Holding: []wfv1.MutexHolding{{
+							Mutex:  "default/Database/my-db-lock",
+							Holder: "default/db-holder",
+						}},
+					},
+				},
+			},
+		}
+
+		err = syncManager.Initialize(ctx, []wfv1.Workflow{*holder})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "database session")
 	})
 
 	t.Run("WfLevelAcquireAndRelease", func(t *testing.T) {
@@ -1586,7 +1804,7 @@ func TestMutexMigration(t *testing.T) {
 
 		syncMgr.syncLockMap = make(map[string]semaphore)
 		wfs := []wfv1.Workflow{*wfMutex2.DeepCopy()}
-		syncMgr.Initialize(ctx, wfs)
+		require.NoError(syncMgr.Initialize(ctx, wfs))
 
 		syncItems, err := allSyncItems(wfMutex2.Spec.Synchronization)
 		require.NoError(err)
@@ -1631,7 +1849,7 @@ func TestMutexMigration(t *testing.T) {
 		assert.Equal(1, numFound)
 
 		wfs := []wfv1.Workflow{*wfMutex3.DeepCopy()}
-		syncMgr.Initialize(ctx, wfs)
+		require.NoError(syncMgr.Initialize(ctx, wfs))
 
 		syncItems, err := allSyncItems(wfMutex3.Spec.Templates[1].Synchronization)
 		require.NoError(err)

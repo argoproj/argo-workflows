@@ -488,7 +488,12 @@ func (wfc *WorkflowController) initManagers(ctx context.Context) error {
 		return err
 	}
 
-	wfc.syncManager.Initialize(ctx, wfList.Items)
+	// A non-nil error means a recorded lock holder could not be re-established
+	// (undecodable lock name, or an unavailable database session). This is fatal
+	// by design: we fail closed rather than risk a silent double-acquire.
+	if err := wfc.syncManager.Initialize(ctx, wfList.Items); err != nil {
+		return err
+	}
 
 	if err := wfc.throttler.Init(wfList.Items); err != nil {
 		return err
