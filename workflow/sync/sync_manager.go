@@ -246,8 +246,12 @@ func (sm *Manager) Initialize(ctx context.Context, wfs []wfv1.Workflow) {
 					}
 					key := getUpgradedKey(&wf, holders, level)
 					if sem != nil {
-						if acquired, err := sem.acquire(ctx, key, sm.dbInfo.SessionProxy); acquired {
-							sm.log.WithError(err).WithFields(logging.Fields{"key": key, "semaphore": holding.Semaphore}).Info(ctx, "Lock acquired")
+						acquired, acquireErr := sem.acquire(ctx, key, sm.dbInfo.SessionProxy)
+						if acquired {
+							sm.log.WithFields(logging.Fields{"key": key, "semaphore": holding.Semaphore}).Info(ctx, "Lock acquired")
+						}
+						if acquireErr != nil {
+							sm.log.WithError(err).Error(ctx, "was unable to obtain lock due to error")
 						}
 					}
 				}
