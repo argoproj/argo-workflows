@@ -715,10 +715,10 @@ func (woc *wfOperationCtx) buildLocalScopeFromTask(ctx context.Context, dagCtx *
 			if err == nil && tmpl != nil {
 				for _, param := range tmpl.Outputs.Parameters {
 					key := fmt.Sprintf("%s.outputs.parameters.%s", prefix, param.Name)
-					scope.addParamToScope(key, "")
+					scope.addSkippedParamToScope(key)
 				}
 				if tmpl.Outputs.Result != nil {
-					scope.addParamToScope(fmt.Sprintf("%s.outputs.result", prefix), "")
+					scope.addSkippedParamToScope(fmt.Sprintf("%s.outputs.result", prefix))
 				}
 			}
 		}
