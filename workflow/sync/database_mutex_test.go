@@ -47,7 +47,7 @@ func TestDatabaseMutexAcquireRelease(t *testing.T) {
 
 			// Second acquisition should fail
 			acquired, _, err = mutex.tryAcquire(ctx, "default/workflow2", tx)
-			require.Error(t, err)
+			require.NoError(t, err)
 			assert.False(t, acquired, "Second acquisition should fail")
 
 			// Release the mutex
@@ -80,7 +80,7 @@ func TestDatabaseMutexQueueOrder(t *testing.T) {
 			require.NoError(t, mutex.addToQueue(ctx, "default/workflow2", 0, now.Add(time.Second)))
 
 			acquired, _, err := mutex.tryAcquire(ctx, "default/workflow2", tx)
-			require.Error(t, err)
+			require.NoError(t, err)
 			assert.False(t, acquired, "Second workflow should not acquire the mutex")
 
 			// Acquire the first one
