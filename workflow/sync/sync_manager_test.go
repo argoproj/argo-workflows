@@ -2124,3 +2124,105 @@ func TestUnconfiguredSemaphores(t *testing.T) {
 		}
 	})
 }
+
+// TestDatabaseInitializeLoweredLimitAfterRestart drives the full restart path
+// through Manager.Initialize for a database-backed semaphore.
+//
+// Scenario: a controller acquires a database semaphore for two workflows under
+// limit 2, the controller is turned off, the limit is lowered to 1, and the
+// controller restarts while both workflows are still Running. On restart
+// Initialize re-establishes the recorded holders from the workflows' status.
+//
+// For a database semaphore the holds live in durable rows, so the holder count
+// survives the restart regardless of the lowered limit. We assert that:
+//   - the lock is live (not poisoned - lowering a limit is routine);
+//   - both holders are still counted, even over the lowered limit;
+//   - each still-running workflow keeps its lock when it re-reconciles;
+//   - a new contender waits until the over-subscription drains below the limit.
+func TestDatabaseInitializeLoweredLimitAfterRestart(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	for _, dbType := range testDBTypes {
+		t.Run(string(dbType), func(t *testing.T) {
+			const dbLimitKey = "default/my-database-sem"
+			const lockName = "default/Database/my-database-sem"
+
+			info, cleanup, syncConfig, err := createTestDBSession(ctx, t, dbType)
+			require.NoError(t, err)
+			defer cleanup()
+
+			// Original limit: 2.
+			_, err = info.SessionProxy.Session().SQL().Exec("INSERT INTO sync_limit (name, sizelimit) VALUES (?, ?)", dbLimitKey, 2)
+			require.NoError(t, err)
+
+			// --- Controller instance #1: two workflows acquire the semaphore. ---
+			mgr1 := createLockManager(ctx, info.SessionProxy, &syncConfig, nil, func(key string) {}, WorkflowExistenceFunc)
+
+			creationTime := metav1.NewTime(time.Now())
+			wf1 := wfv1.MustUnmarshalWorkflow(wfWithDBSemaphore)
+			wf1.Name = "holder-one"
+			wf1.CreationTimestamp = creationTime
+			wf2 := wfv1.MustUnmarshalWorkflow(wfWithDBSemaphore)
+			wf2.Name = "holder-two"
+			wf2.CreationTimestamp = creationTime
+
+			acquired, _, _, _, err := mgr1.TryAcquire(ctx, wf1, "", wf1.Spec.Synchronization)
+			require.NoError(t, err)
+			require.True(t, acquired, "holder-one should acquire under limit 2")
+			acquired, _, _, _, err = mgr1.TryAcquire(ctx, wf2, "", wf2.Spec.Synchronization)
+			require.NoError(t, err)
+			require.True(t, acquired, "holder-two should acquire under limit 2")
+
+			// Both workflows now record the hold in their status - this is what the
+			// informer persists and re-lists into Initialize after a restart.
+			require.NotNil(t, wf1.Status.Synchronization)
+			require.NotNil(t, wf2.Status.Synchronization)
+
+			// --- Limit lowered to 1 while the controller is down. ---
+			_, err = info.SessionProxy.Session().SQL().Exec("UPDATE sync_limit SET sizelimit = ? WHERE name = ?", 1, dbLimitKey)
+			require.NoError(t, err)
+
+			// --- Controller instance #2: restart. Initialize from the running workflows. ---
+			mgr2 := createLockManager(ctx, info.SessionProxy, &syncConfig, nil, func(key string) {}, WorkflowExistenceFunc)
+			require.NoError(t, mgr2.Initialize(ctx, []wfv1.Workflow{*wf1, *wf2}))
+
+			lock := mgr2.syncLockMap[lockName]
+			require.NotNil(t, lock)
+			_, poisoned := lock.(*poisonedLock)
+			assert.False(t, poisoned, "lowering a DB semaphore limit must not poison the lock")
+
+			holders, err := lock.getCurrentHolders(ctx)
+			require.NoError(t, err)
+			assert.Len(t, holders, 2, "both recorded holders must survive the restart, even over the lowered limit")
+
+			// Each still-running workflow re-reconciles and re-acquires the lock it
+			// already holds. Both must succeed regardless of the lowered limit, since
+			// the already-held check precedes the limit check.
+			acquired, _, _, _, err = mgr2.TryAcquire(ctx, wf1, "", wf1.Spec.Synchronization)
+			require.NoError(t, err)
+			assert.True(t, acquired, "holder-one must keep its lock after the limit was lowered")
+			acquired, _, _, _, err = mgr2.TryAcquire(ctx, wf2, "", wf2.Spec.Synchronization)
+			require.NoError(t, err)
+			assert.True(t, acquired, "holder-two must keep its lock after the limit was lowered")
+
+			// A new contender must wait: holders (2) exceed the lowered limit (1).
+			racer := wfv1.MustUnmarshalWorkflow(wfWithDBSemaphore)
+			racer.Name = "racer"
+			racer.CreationTimestamp = creationTime
+			acquired, _, _, _, err = mgr2.TryAcquire(ctx, racer, "", racer.Spec.Synchronization)
+			require.NoError(t, err)
+			assert.False(t, acquired, "a racer must wait while holders exceed the lowered limit")
+
+			// Drain one holder. Still at the limit (1 holder, limit 1) - racer waits.
+			mgr2.Release(ctx, wf1, "", wf1.Spec.Synchronization)
+			acquired, _, _, _, err = mgr2.TryAcquire(ctx, racer, "", racer.Spec.Synchronization)
+			require.NoError(t, err)
+			assert.False(t, acquired, "racer still waits: one holder remains at limit 1")
+
+			// Drain the last holder - now below the limit, so the racer is admitted.
+			mgr2.Release(ctx, wf2, "", wf2.Spec.Synchronization)
+			acquired, _, _, _, err = mgr2.TryAcquire(ctx, racer, "", racer.Spec.Synchronization)
+			require.NoError(t, err)
+			assert.True(t, acquired, "racer acquires once holders drain below the lowered limit")
+		})
+	}
+}
