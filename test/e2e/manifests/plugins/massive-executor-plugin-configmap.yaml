@@ -6,7 +6,7 @@ metadata:
     workflows.argoproj.io/configmap-type: ExecutorPlugin
   annotations:
     workflows.argoproj.io/description: |
-      This plugin returns a massive string (~1000 chars).
+      This plugin returns a massive string (~100000 chars).
 data:
   sidecar.automountServiceAccountToken: "false"
   sidecar.container: |

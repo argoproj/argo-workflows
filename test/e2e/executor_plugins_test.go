@@ -93,8 +93,8 @@ func (s *ExecutorPluginsSuite) TestCompressedTemplateExecutor_WorkflowTaskSetIsP
 		ExpectWorkflowCompressed().
 		ExpectWorkflowTaskSet(func(t *testing.T, wfts *wfv1.WorkflowTaskSet) {
 			assert.NotNil(t, wfts)
-			assert.Empty(t, wfts.Spec.Tasks)
 			assert.Empty(t, wfts.Status.Nodes)
+			assert.Empty(t, wfts.Spec.Tasks)
 			assert.Equal(t, "true", wfts.Labels[common.LabelKeyCompleted])
 		})
 }

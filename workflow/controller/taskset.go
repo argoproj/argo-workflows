@@ -30,9 +30,9 @@ func (woc *wfOperationCtx) mergePatchTaskSet(ctx context.Context, patch any, sub
 	return nil
 }
 
-func (woc *wfOperationCtx) getDeleteTaskAndNodePatch() (tasksPatch map[string]any, nodesPatch map[string]any) {
+func (woc *wfOperationCtx) getDeleteTaskAndNodePatch(nodes wfv1.Nodes) (tasksPatch map[string]any, nodesPatch map[string]any) {
 	deletedNode := make(map[string]any)
-	for _, node := range woc.wf.Status.Nodes {
+	for _, node := range nodes {
 		if node.IsTaskSetNode() && node.Fulfilled() {
 			deletedNode[node.ID] = nil
 		}
@@ -66,15 +66,14 @@ func (woc *wfOperationCtx) hasTaskSetNodes() bool {
 	})
 }
 
-func (woc *wfOperationCtx) removeCompletedTaskSetStatus(ctx context.Context) error {
-	err := woc.ensureNotCompressed()
-	if err != nil {
-		return fmt.Errorf("failed to remove completed tasksets: %w", err)
-	}
-	if !woc.hasTaskSetNodes() {
+func (woc *wfOperationCtx) removeCompletedTaskSetStatus(ctx context.Context, nodes wfv1.Nodes) error {
+	// Avoid sending empty patches when there are no completed taskset nodes to remove.
+	if !nodes.Any(func(node wfv1.NodeStatus) bool {
+		return node.IsTaskSetNode() && node.Fulfilled()
+	}) {
 		return nil
 	}
-	tasksPatch, nodesPatch := woc.getDeleteTaskAndNodePatch()
+	tasksPatch, nodesPatch := woc.getDeleteTaskAndNodePatch(nodes)
 	if woc.wf.Status.Fulfilled() {
 		tasksPatch["metadata"] = metav1.ObjectMeta{
 			Labels: map[string]string{
@@ -225,17 +224,6 @@ func (woc *wfOperationCtx) createTaskSet(ctx context.Context) error {
 	} else if err != nil {
 		woc.log.WithError(err).Error(ctx, "Failed to create WorkflowTaskSet")
 		return err
-	}
-	return nil
-}
-
-// ensureNotCompressed verifies that the workflow is not in a compressed state
-// The workflow operator is responsible for controlling when a workflow is
-// compressed or decompressed.
-// Tasksets operate on in-memory nodes and must ensure the workflow is decompressed before proceeding
-func (woc *wfOperationCtx) ensureNotCompressed() error {
-	if woc.wf != nil && woc.wf.Status.CompressedNodes != "" {
-		return fmt.Errorf("workflow must be decompressed")
 	}
 	return nil
 }

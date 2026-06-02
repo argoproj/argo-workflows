@@ -297,7 +297,7 @@ status:
 		_, err := controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").Create(ctx, &ts, v1.CreateOptions{})
 		require.NoError(t, err)
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
-		err = woc.removeCompletedTaskSetStatus(ctx)
+		err = woc.removeCompletedTaskSetStatus(ctx, woc.wf.Status.Nodes)
 		require.NoError(t, err)
 		tslist, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").List(ctx, v1.ListOptions{})
 		require.NoError(t, err)
@@ -311,35 +311,6 @@ status:
 			assert.Empty(t, ts.Spec.Tasks)
 			assert.Empty(t, ts.Status.Nodes)
 		}
-	})
-	t.Run("RemoveCompletedTaskSetStatusFailsForCompressedWorkflow", func(t *testing.T) {
-		cancel, controller := newController(ctx, wf, ts)
-		defer cancel()
-
-		_, err := controller.wfclientset.ArgoprojV1alpha1().
-			WorkflowTaskSets("default").
-			Create(ctx, &ts, v1.CreateOptions{})
-		require.NoError(t, err)
-
-		compressedWf := wf.DeepCopy()
-		compressedWf.Status.CompressedNodes = "compressed"
-
-		woc := newWorkflowOperationCtx(ctx, compressedWf, controller)
-
-		err = woc.removeCompletedTaskSetStatus(ctx)
-		require.Error(t, err)
-		require.ErrorContains(t, err, "workflow must be decompressed")
-
-		tslist, err := woc.controller.wfclientset.ArgoprojV1alpha1().
-			WorkflowTaskSets("default").
-			List(ctx, v1.ListOptions{})
-		require.NoError(t, err)
-
-		require.Len(t, tslist.Items, 1)
-
-		// Ensure tasksets were not modified.
-		assert.NotEmpty(t, tslist.Items[0].Spec.Tasks)
-		assert.NotEmpty(t, tslist.Items[0].Status.Nodes)
 	})
 }
 
@@ -356,7 +327,7 @@ func TestNonHTTPTemplateScenario(t *testing.T) {
 	})
 	t.Run("removeCompletedTaskSetStatus", func(t *testing.T) {
 		woc.operate(ctx)
-		err := woc.removeCompletedTaskSetStatus(ctx)
+		err := woc.removeCompletedTaskSetStatus(ctx, woc.wf.Status.Nodes)
 		require.NoError(t, err)
 	})
 }
