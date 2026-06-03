@@ -26,7 +26,7 @@ require (
 	github.com/expr-lang/expr v1.17.8
 	github.com/gavv/httpexpect/v2 v2.17.0
 	github.com/go-git/go-git/v5 v5.19.1
-	github.com/go-jose/go-jose/v3 v3.0.5
+	github.com/go-jose/go-jose/v4 v4.1.4
 	github.com/go-openapi/jsonreference v0.21.6
 	github.com/go-playground/webhooks/v6 v6.4.0
 	github.com/go-sql-driver/mysql v1.10.0
@@ -162,7 +162,6 @@ require (
 	github.com/envoyproxy/protoc-gen-validate v1.3.3 // indirect
 	github.com/fatih/color v1.19.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
-	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
