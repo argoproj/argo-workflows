@@ -33,7 +33,7 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/protobuf v1.5.4
 	github.com/google/go-containerregistry v0.21.6
-	github.com/google/go-containerregistry/pkg/authn/k8schain v0.0.0-20260416183851-f80cb9a75083
+	github.com/google/go-containerregistry/pkg/authn/k8schain v0.0.0-20260602205845-4b7672c7705a
 	github.com/gorilla/handlers v1.5.2
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
