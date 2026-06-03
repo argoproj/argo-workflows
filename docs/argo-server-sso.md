@@ -212,6 +212,21 @@ sso:
     - ".*argo-workflow.*"
 ```
 
+## PKCE
+
+> v3.7 and after
+
+Argo Server can enable [PKCE (Proof Key for Code Exchange, RFC 7636)](https://datatracker.ietf.org/doc/html/rfc7636) on the OAuth 2.0 authorization code flow. PKCE is **disabled by default** for backward compatibility, but **enabling it is recommended** by the [OAuth 2.0 Security Best Current Practice (RFC 9700)](https://datatracker.ietf.org/doc/html/rfc9700) for all clients — including confidential server-side clients like Argo — and is mandatory in OAuth 2.1. Some authorization servers also **require** PKCE on the authorization code flow. It mitigates authorization code injection and adds defense in depth on top of the `state` parameter.
+
+When enabled, Argo only uses the `S256` challenge method (the SHA-256 of the code verifier); the deprecated `plain` method is never used.
+
+```yaml
+sso:
+  # Enable PKCE on the OAuth2 authorization code flow.
+  # Recommended by RFC 9700 and required by certain authorization servers.
+  enablePKCEAuthentication: true
+```
+
 ## Custom TLS Configuration
 
 > v 3.8 and after
