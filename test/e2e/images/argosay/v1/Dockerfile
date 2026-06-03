@@ -1,4 +1,4 @@
-FROM ubuntu:mantic-20240530
+FROM ubuntu:26.04
 
 RUN apt-get update && \
     apt-get install -y apt-utils ca-certificates apt-transport-https cowsay --no-install-recommends && \
