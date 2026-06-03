@@ -13,6 +13,7 @@ import (
 	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/util/retry"
 
 	"github.com/argoproj/argo-workflows/v3/config"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
@@ -226,8 +227,14 @@ func (sm *Manager) Initialize(ctx context.Context, wfs []wfv1.Workflow) {
 					}
 					key := getUpgradedKey(&wf, holders, level)
 					tx := &transaction{db: &sm.dbInfo.session}
-					if semaphore != nil && semaphore.acquire(key, tx) {
-						log.Infof("Lock acquired by %s from %s", key, holding.Semaphore)
+					if semaphore != nil {
+						acquired, acquireErr := semaphore.acquire(key, tx)
+						if acquired {
+							log.Infof("Lock acquired by %s from %s", key, holding.Semaphore)
+						}
+						if acquireErr != nil {
+							log.WithError(acquireErr).Error("was unable to obtain lock due to error")
+						}
 					}
 				}
 
@@ -252,7 +259,7 @@ func (sm *Manager) Initialize(ctx context.Context, wfs []wfv1.Workflow) {
 						}
 						key := getUpgradedKey(&wf, holding.Holder, level)
 						tx := &transaction{db: &sm.dbInfo.session}
-						mutex.acquire(key, tx)
+						_, _ = mutex.acquire(key, tx)
 					}
 					sm.syncLockMap[holding.Mutex] = mutex
 				}
@@ -304,54 +311,60 @@ func (sm *Manager) TryAcquire(ctx context.Context, wf *wfv1.Workflow, nodeName s
 		var updated bool
 		var already bool
 		var msg string
-		var failedLockName string
-		var lastErr error
-		for retryCounter := range 5 {
-			err := sm.dbInfo.session.TxContext(ctx, func(sess db.Session) error {
-				log.WithFields(log.Fields{
-					"holderKey": holderKey,
-					"attempt":   retryCounter + 1,
-				}).Info("TryAcquire - starting transaction")
-				var err error
+		// Backoff bounds: sm.lock is held for the whole loop, so cap each sleep
+		// modestly. Jitter prevents a fleet of replicas from retrying in lockstep
+		// after a shared conflict burst.
+		backoff := wait.Backoff{
+			Steps:    5,
+			Duration: 10 * time.Millisecond,
+			Factor:   2.0,
+			Jitter:   0.5,
+			Cap:      600 * time.Millisecond,
+		}
+		attempt := 0
+		err = retry.OnError(backoff, isRetryableSyncError, func() error {
+			attempt++
+			log.WithFields(log.Fields{
+				"holderKey": holderKey,
+				"attempt":   attempt,
+			}).Info("TryAcquire - starting transaction")
+			txErr := sm.dbInfo.session.TxContext(ctx, func(sess db.Session) error {
+				var implErr error
 				tx := &transaction{db: &sess}
-				already, updated, msg, failedLockName, err = sm.tryAcquireImpl(wf, tx, holderKey, failedLockName, syncItems, lockKeys)
+				already, updated, msg, failedLockName, implErr = sm.tryAcquireImpl(wf, tx, holderKey, failedLockName, syncItems, lockKeys)
+				return implErr
+			}, &sql.TxOptions{Isolation: sql.LevelSerializable, ReadOnly: false})
+			if txErr != nil {
 				log.WithFields(log.Fields{
 					"holderKey": holderKey,
-					"attempt":   retryCounter + 1,
-				}).Info("TryAcquire - transaction completed")
-				return err
-			}, &sql.TxOptions{
-				Isolation: sql.LevelSerializable,
-				ReadOnly:  false,
-			})
-			if err == nil {
-				return already, updated, msg, failedLockName, nil
+					"attempt":   attempt,
+					"error":     txErr,
+					"retryable": isRetryableSyncError(txErr),
+				}).Info("TryAcquire - transaction failed")
 			}
-			lastErr = err
-			// Check if this is a serialization error
-			if strings.Contains(err.Error(), "serialization") ||
-				strings.Contains(err.Error(), "dependencies") ||
-				strings.Contains(err.Error(), "deadlock") ||
-				strings.Contains(err.Error(), "rollback") {
-				log.WithFields(log.Fields{
-					"holderKey": holderKey,
-					"attempt":   retryCounter + 1,
-					"error":     err,
-				}).Info("TryAcquire - serialization conflict, retrying")
-				continue
-			} else {
-				log.WithFields(log.Fields{
-					"holderKey": holderKey,
-					"attempt":   retryCounter + 1,
-					"error":     err,
-				}).Info("TryAcquire - tx failed")
-			}
-			// For other errors, return immediately
+			return txErr
+		})
+		if err != nil {
 			return false, false, "", failedLockName, err
 		}
-		return false, false, "", failedLockName, fmt.Errorf("failed after %d retries: %w", 5, lastErr)
+		return already, updated, msg, failedLockName, nil
 	}
 	return sm.tryAcquireImpl(wf, nil, holderKey, failedLockName, syncItems, lockKeys)
+}
+
+// isRetryableSyncError reports whether a TryAcquire transaction failure should
+// be retried. Matches PostgreSQL SERIALIZABLE conflict (40001), deadlock
+// (40P01), and explicit rollback messages by substring against the driver's
+// text.
+func isRetryableSyncError(err error) bool {
+	if err == nil {
+		return false
+	}
+	s := strings.ToLower(err.Error())
+	return strings.Contains(s, "serialization") ||
+		strings.Contains(s, "dependencies") ||
+		strings.Contains(s, "deadlock") ||
+		strings.Contains(s, "rollback")
 }
 
 func (sm *Manager) prepAcquire(wf *wfv1.Workflow, holderKey string, syncItems []*syncItem, lockKeys []string) (bool, string, string, error) {
@@ -422,7 +435,16 @@ func (sm *Manager) tryAcquireImpl(wf *wfv1.Workflow, tx *transaction, holderKey 
 		updated := false
 		for i, lockKey := range lockKeys {
 			lock := sm.syncLockMap[lockKey]
-			acquired, msg := lock.tryAcquire(holderKey, tx)
+			var acquired bool
+			var acquireErr error
+			acquired, msg, acquireErr = lock.tryAcquire(holderKey, tx)
+			if acquireErr != nil {
+				// Surface the underlying error so callers (e.g. TryAcquire's
+				// retry loop) can decide whether it is retryable. Transient
+				// database errors like PostgreSQL SQLSTATE 40001 must reach
+				// the retry detector untouched.
+				return false, false, "", failedLockName, acquireErr
+			}
 			if !acquired {
 				return false, false, "", failedLockName, fmt.Errorf("bug: failed to acquire something that should have been checked: %s", msg)
 			}

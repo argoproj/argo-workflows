@@ -5,9 +5,9 @@ import (
 )
 
 type semaphore interface {
-	acquire(holderKey string, tx *transaction) bool
+	acquire(holderKey string, tx *transaction) (bool, error)
 	checkAcquire(holderKey string, tx *transaction) (bool, bool, string)
-	tryAcquire(holderKey string, tx *transaction) (bool, string)
+	tryAcquire(holderKey string, tx *transaction) (bool, string, error)
 	release(key string) bool
 	addToQueue(holderKey string, priority int32, creationTime time.Time) error
 	removeFromQueue(holderKey string) error
