@@ -207,6 +207,8 @@ func (c *CronWorkflowStatus) HasActiveUID(uid types.UID) bool {
 }
 
 const (
-	// ConditionTypeSubmissionError signifies that there was an error when submitting the CronWorkflow as a Workflow
+	// ConditionTypeSubmissionError signifies that there was a permanent error when submitting the CronWorkflow as a Workflow
 	ConditionTypeSubmissionError ConditionType = "SubmissionError"
+	// ConditionTypeTransientSubmissionError signifies that a transient infrastructure error prevented submission.
+	ConditionTypeTransientSubmissionError ConditionType = "TransientSubmissionError"
 )
