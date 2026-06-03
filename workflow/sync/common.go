@@ -6,9 +6,9 @@ import (
 )
 
 type semaphore interface {
-	acquire(ctx context.Context, holderKey string, tx *transaction) bool
+	acquire(ctx context.Context, holderKey string, tx *transaction) (bool, error)
 	checkAcquire(ctx context.Context, holderKey string, tx *transaction) (bool, bool, string)
-	tryAcquire(ctx context.Context, holderKey string, tx *transaction) (bool, string)
+	tryAcquire(ctx context.Context, holderKey string, tx *transaction) (bool, string, error)
 	release(ctx context.Context, key string) bool
 	addToQueue(ctx context.Context, holderKey string, priority int32, creationTime time.Time) error
 	removeFromQueue(ctx context.Context, holderKey string) error
