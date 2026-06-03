@@ -37,7 +37,7 @@ require (
 	github.com/gorilla/handlers v1.5.2
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
-	github.com/grpc-ecosystem/grpc-gateway v1.16.0
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.29.0
 	github.com/itchyny/gojq v0.12.19
 	github.com/jcmturner/gokrb5/v8 v8.4.4
 	github.com/klauspost/pgzip v1.2.6
@@ -118,6 +118,7 @@ require (
 	github.com/gaganhr94/docker-credential-acr v1.0.2 // indirect
 	github.com/go-openapi/swag/jsonname v0.26.0 // indirect
 	github.com/google/cel-go v0.26.0 // indirect
+	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
 	github.com/klauspost/crc32 v1.3.0 // indirect
 	github.com/moby/moby/client v0.4.1 // indirect
 	github.com/olekukonko/cat v0.0.0-20250911104152-50322a0618f6 // indirect
@@ -172,7 +173,6 @@ require (
 	github.com/google/gnostic-models v0.7.0 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674 // indirect
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.29.0 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
