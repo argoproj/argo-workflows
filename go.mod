@@ -91,7 +91,7 @@ require (
 	k8s.io/apimachinery v0.35.4
 	k8s.io/cli-runtime v0.35.4
 	k8s.io/client-go v0.35.4
-	k8s.io/gengo v0.0.0-20251215205346-5ee0d033ba5b
+	k8s.io/gengo v0.0.0-20260408192533-25e2208e0dc3
 	k8s.io/klog/v2 v2.140.0
 	k8s.io/kube-openapi v0.0.0-20260330154417-16be699c7b31
 	k8s.io/kubectl v0.35.4
