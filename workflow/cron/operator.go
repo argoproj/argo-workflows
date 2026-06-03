@@ -15,6 +15,7 @@ import (
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/record"
 
 	argoerrs "github.com/argoproj/argo-workflows/v4/errors"
 
@@ -51,6 +52,7 @@ type cronWfOperationCtx struct {
 	cwftmplInformer wfextvv1alpha1.ClusterWorkflowTemplateInformer
 	log             logging.Logger
 	metrics         *metrics.Metrics
+	eventRecorder   record.EventRecorder
 	// scheduledTimeFunc returns the last scheduled time when it is called
 	scheduledTimeFunc ScheduledTimeFunc
 	//nolint: containedctx
@@ -60,6 +62,7 @@ type cronWfOperationCtx struct {
 func newCronWfOperationCtx(ctx context.Context, cronWorkflow *v1alpha1.CronWorkflow, wfClientset versioned.Interface,
 	metrics *metrics.Metrics, wftmplInformer wfextvv1alpha1.WorkflowTemplateInformer,
 	cwftmplInformer wfextvv1alpha1.ClusterWorkflowTemplateInformer, wfDefaults *v1alpha1.Workflow,
+	eventRecorder record.EventRecorder,
 ) *cronWfOperationCtx {
 	log := logging.RequireLoggerFromContext(ctx)
 	return &cronWfOperationCtx{
@@ -74,7 +77,8 @@ func newCronWfOperationCtx(ctx context.Context, cronWorkflow *v1alpha1.CronWorkf
 			"workflow":  cronWorkflow.Name,
 			"namespace": cronWorkflow.Namespace,
 		}),
-		metrics: metrics,
+		metrics:       metrics,
+		eventRecorder: eventRecorder,
 		// inferScheduledTime returns an inferred scheduled time based on the current time and only works if it is called
 		// within 59 seconds of the scheduled time. Here it acts as a placeholder until it is replaced by a similar
 		// function that returns the last scheduled time deterministically from the cron engine. Since we are only able
@@ -132,7 +136,15 @@ func (woc *cronWfOperationCtx) run(ctx context.Context, scheduledRuntime time.Ti
 		if apierrors.IsAlreadyExists(err) {
 			return
 		}
-		woc.reportCronWorkflowError(ctx, v1alpha1.ConditionTypeSubmissionError, fmt.Sprintf("Failed to submit Workflow: %s", err))
+		if errorsutil.IsTransientErrQuiet(ctx, err) {
+			// Transient infrastructure error (e.g. etcd leader change): mark for automatic retry on the next
+			// reconciliation without counting this as a workflow failure.
+			woc.reportCronWorkflowError(ctx, v1alpha1.ConditionTypeTransientSubmissionError,
+				fmt.Sprintf("Failed to submit Workflow (transient, will retry): %s", err))
+		} else {
+			woc.reportCronWorkflowError(ctx, v1alpha1.ConditionTypeSubmissionError,
+				fmt.Sprintf("Failed to submit Workflow: %s", err))
+		}
 		return
 	}
 
@@ -140,6 +152,7 @@ func (woc *cronWfOperationCtx) run(ctx context.Context, scheduledRuntime time.Ti
 	woc.cronWf.Status.Phase = v1alpha1.ActivePhase
 	woc.cronWf.Status.LastScheduledTime = &v1.Time{Time: scheduledRuntime}
 	woc.cronWf.Status.Conditions.RemoveCondition(v1alpha1.ConditionTypeSubmissionError)
+	woc.cronWf.Status.Conditions.RemoveCondition(v1alpha1.ConditionTypeTransientSubmissionError)
 }
 
 func (woc *cronWfOperationCtx) validateCronWorkflow(ctx context.Context) error {
@@ -344,6 +357,12 @@ func (woc *cronWfOperationCtx) shouldOutstandingWorkflowsBeRun(ctx context.Conte
 
 			// We missed the latest execution time
 			if !missedExecutionTime.IsZero() {
+				// If the previous submission failed due to a transient error retry unconditionally.
+				// LastScheduledTime was not updated so the run is safe to re-attempt.
+				if woc.cronWf.Status.Conditions.HasCondition(v1alpha1.ConditionTypeTransientSubmissionError) {
+					woc.log.WithFields(logging.Fields{"name": woc.cronWf.Name, "missedExecutionTime": missedExecutionTime.Format("Mon Jan _2 15:04:05 2006")}).Info(ctx, "retrying missed execution after transient submission error")
+					return missedExecutionTime, nil
+				}
 				// if missedExecutionTime is within StartDeadlineSeconds, We are still within the deadline window, run the Workflow
 				if woc.cronWf.Spec.StartingDeadlineSeconds != nil && now.Before(missedExecutionTime.Add(time.Duration(*woc.cronWf.Spec.StartingDeadlineSeconds)*time.Second)) {
 					woc.log.WithFields(logging.Fields{"name": woc.cronWf.Name, "missedExecutionTime": missedExecutionTime.Format("Mon Jan _2 15:04:05 2006")}).Info(ctx, "missed an execution and is within StartingDeadline")
@@ -475,9 +494,13 @@ func (woc *cronWfOperationCtx) reportCronWorkflowError(ctx context.Context, cond
 		Message: errString,
 		Status:  v1.ConditionTrue,
 	})
+	if woc.eventRecorder != nil {
+		woc.eventRecorder.Event(woc.cronWf, corev1.EventTypeWarning, string(conditionType), errString)
+	}
 	if conditionType == v1alpha1.ConditionTypeSpecError {
 		woc.metrics.CronWorkflowSpecError(ctx)
 	} else {
+		// Only permanent submission errors count as a workflow failure; transient errors will be retried.
 		if conditionType == v1alpha1.ConditionTypeSubmissionError {
 			woc.cronWf.Status.Failed++
 		}

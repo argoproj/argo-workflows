@@ -2399,6 +2399,15 @@ func (cs *Conditions) RemoveCondition(conditionType ConditionType) {
 	}
 }
 
+func (cs *Conditions) HasCondition(conditionType ConditionType) bool {
+	for _, wfCondition := range *cs {
+		if wfCondition.Type == conditionType {
+			return true
+		}
+	}
+	return false
+}
+
 func (cs *Conditions) DisplayString(fmtStr string, iconMap map[ConditionType]string) string {
 	if len(*cs) == 0 {
 		return fmt.Sprintf(fmtStr, "Conditions:", "None")
