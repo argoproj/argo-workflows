@@ -283,13 +283,22 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 
 	handler := grpcutil.NewMuxHandler(grpcServer, httpServer)
 
+	// Enable unencrypted HTTP/2 (h2c) so that plaintext gRPC requests are served
+	// over the shared port. This replaces the deprecated
+	// golang.org/x/net/http2/h2c.NewHandler wrapper.
+	var protocols http.Protocols
+	protocols.SetHTTP1(true)
+	protocols.SetHTTP2(true)
+	protocols.SetUnencryptedHTTP2(true)
+	srv := &http.Server{Handler: handler, Protocols: &protocols}
+
 	wftmplStore.Run(as.stopCh)
 	if cwftmplInformer != nil {
 		cwftmplInformer.Run(as.stopCh)
 	}
 	go eventServer.Run(as.stopCh)
 	go workflowServer.Run(as.stopCh)
-	go func() { as.checkServeErr("httpServer", http.Serve(conn, handler)) }()
+	go func() { as.checkServeErr("httpServer", srv.Serve(conn)) }()
 	url := "http://localhost" + address
 	if as.tlsConfig != nil {
 		url = "https://localhost" + address
