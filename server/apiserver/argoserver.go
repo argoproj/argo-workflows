@@ -311,13 +311,25 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 
 	handler := grpcutil.NewMuxHandler(grpcServer, httpServer)
 
+	// Enable HTTP/1.1, HTTP/2 over TLS (via ALPN), and unencrypted HTTP/2 (h2c)
+	// so gRPC can be served alongside HTTP both with and without TLS. This
+	// replaces the deprecated h2c.NewHandler wrapper.
+	protocols := new(http.Protocols)
+	protocols.SetHTTP1(true)
+	protocols.SetHTTP2(true)
+	protocols.SetUnencryptedHTTP2(true)
+	muxServer := &http.Server{
+		Handler:   handler,
+		Protocols: protocols,
+	}
+
 	wftmplStore.Run(ctx, as.stopCh)
 	if cwftmplInformer != nil {
 		cwftmplInformer.Run(ctx, as.stopCh)
 	}
 	go eventServer.Run(ctx, as.stopCh)
 	go workflowServer.Run(as.stopCh)
-	go func() { as.checkServeErr(ctx, "httpServer", http.Serve(conn, handler)) }()
+	go func() { as.checkServeErr(ctx, "httpServer", muxServer.Serve(conn)) }()
 	url := "http://localhost" + address
 	if as.tlsConfig != nil {
 		url = "https://localhost" + address
