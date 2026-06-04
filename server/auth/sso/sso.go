@@ -340,7 +340,7 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		PreferredUsername:       c.PreferredUsername,
 		ServiceAccountNamespace: c.ServiceAccountNamespace,
 	}
-	raw, err := jwt.Encrypted(s.encrypter).Claims(argoClaims).CompactSerialize()
+	raw, err := jwt.Encrypted(s.encrypter).Claims(argoClaims).Serialize()
 	if err != nil {
 		s.logger.WithError(err).Error(r.Context(), "failed to encrypt and serialize the jwt token")
 		w.WriteHeader(http.StatusUnauthorized)
@@ -387,7 +387,7 @@ func isValidFinalRedirectURL(redirect string) bool {
 
 // authorize verifies a bearer token and pulls user information form the claims.
 func (s *sso) Authorize(authorization string) (*types.Claims, error) {
-	tok, err := jwt.ParseEncrypted(strings.TrimPrefix(authorization, Prefix))
+	tok, err := jwt.ParseEncrypted(strings.TrimPrefix(authorization, Prefix), []jose.KeyAlgorithm{jose.RSA_OAEP_256}, []jose.ContentEncryption{jose.A256GCM})
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse encrypted token: %w", err)
 	}
