@@ -66,6 +66,7 @@ EtcD
 EventRouter
 Friedl
 Generator
+GiB
 GitOps
 Github
 Golang
@@ -91,6 +92,7 @@ Katacoda
 Katib
 Kerberos
 KeyValueEditor
+KiB
 Killercoda
 KubectlExec
 Kubeflow
@@ -102,9 +104,11 @@ MLOps
 Makefile
 MariaDB
 Metaflow
+MiB
 Miltiadis
 MinIO
 Minikube
+Multipart
 MySQL
 Nagal
 Nano

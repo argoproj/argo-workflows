@@ -79,7 +79,7 @@ message Artifact {
   optional ArtifactLocation artifactLocation = 5;
 
   // GlobalName exports an output artifact to the global scope, making it available as
-  // '{{workflow.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts
+  // workflow.outputs.artifacts.XXXX and in workflow.status.outputs.artifacts
   optional string globalName = 6;
 
   // Archive controls how the artifact will be saved to the artifact repository.
@@ -1324,7 +1324,7 @@ message Parameter {
   optional ValueFrom valueFrom = 4;
 
   // GlobalName exports an output parameter to the global scope, making it available as
-  // '{{workflow.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters
+  // workflow.outputs.parameters.XXXX and in workflow.status.outputs.parameters
   optional string globalName = 5;
 
   // Enum holds a list of string values to choose from, for the actual value of the parameter
@@ -1914,7 +1914,7 @@ message ValueFrom {
   optional string event = 7;
 
   // Parameter reference to a step or dag task in which to retrieve an output parameter value from
-  // (e.g. '{{steps.mystep.outputs.myparam}}')
+  // (e.g. steps.mystep.outputs.myparam)
   optional string parameter = 4;
 
   // Supplied value to be filled in directly, either through the CLI, API, etc.
@@ -2064,7 +2064,7 @@ message WorkflowSpec {
 
   // Arguments contain the parameters and artifacts sent to the workflow entrypoint
   // Parameters are referencable globally using the 'workflow' variable prefix.
-  // e.g. {{workflow.parameters.myparam}}
+  // e.g. workflow.parameters.myparam
   optional Arguments arguments = 3;
 
   // ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as.
