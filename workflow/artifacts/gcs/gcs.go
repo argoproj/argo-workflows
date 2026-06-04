@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime"
 	"os"
 	"path/filepath"
 	"strings"
@@ -313,7 +314,18 @@ func uploadObject(ctx context.Context, client *storage.Client, bucket, key, loca
 			logger.WithField("path", localPath).WithError(closeErr).Error(ctx, "Error closing file")
 		}
 	}()
+
+	ext := filepath.Ext(localPath)
+	mimeType := mime.TypeByExtension(ext)
+
+	fmt.Println("mimeType =", mimeType)
+
+	if mimeType == "" {
+		mimeType = "application/octet-stream"
+	}
 	wc := client.Bucket(bucket).Object(key).NewWriter(ctx)
+	wc.ContentType = mimeType
+
 	if _, err = io.Copy(wc, f); err != nil {
 		return fmt.Errorf("io copy: %w", err)
 	}
