@@ -96,7 +96,7 @@ export function EventSourceList({match, location, history}: RouteComponentProps<
 
     return (
         <Page
-            title='EventSources'
+            title='Event Sources'
             toolbar={{
                 breadcrumbs: [
                     {title: 'Event Sources', path: uiUrl('event-sources')},
