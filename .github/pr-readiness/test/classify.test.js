@@ -183,6 +183,9 @@ test('isExemptAuthor: OWNERS members, bots and Bot-type users are exempt (case-i
   assert.equal(isExemptAuthor({ login: 'blkperl', type: 'User' }, ownersYaml), true);
   assert.equal(isExemptAuthor({ login: 'dependabot[bot]', type: 'Bot' }, ownersYaml), true);
   assert.equal(isExemptAuthor({ login: 'renovate[bot]', type: 'User' }, ownersYaml), true);
+  // the repo's cherry-pick automation must never burn model quota
+  assert.equal(isExemptAuthor({ login: 'argo-cd-cherry-pick-bot[bot]', type: 'Bot' }, ownersYaml), true);
+  assert.equal(isExemptAuthor({ login: 'github-actions[bot]', type: 'Bot' }, ownersYaml), true);
   assert.equal(isExemptAuthor({ login: 'random-contributor', type: 'User' }, ownersYaml), false);
 });
 
