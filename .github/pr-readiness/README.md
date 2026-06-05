@@ -26,6 +26,7 @@ Tune guidance, add or remove signals in [`checks.config.json`](checks.config.jso
 - **Never posts** on a PR that never had a covered issue.
 - While issues exist: one comment listing only the failing items, each with a fix command and a log link. Pending checks are not mentioned.
 - Blocking issues (any covered check failure, or a confident "template not filled in" AI verdict) also **convert the PR to draft**. The bot **never** marks ready-for-review — that's the contributor's call — and it drafts at most once per head SHA, so a human re-marking it ready is respected until new commits arrive.
+- Draft conversion needs a **GitHub App token**: the default Actions token cannot toggle draft state (`Resource not accessible by integration` — verified live). Provision an app with **Pull requests: Read & write** only (do not reuse the cherry-pick app, which can push code), install it on the repo, and set the `PR_READINESS_APP_ID` / `PR_READINESS_APP_PRIVATE_KEY` secrets — the same `actions/create-github-app-token` pattern as `cherry-pick-single.yml`. Without the secrets the bot comments but does not draft.
 - When issues are resolved but other covered checks are still running: the comment shows a short "waiting" state.
 - When everything is terminal and green: the comment is edited to a short ✅ all-clear.
 - Skipped: PRs by anyone in [`OWNERS`](../../OWNERS) (owners/approvers/reviewers) and by bots.

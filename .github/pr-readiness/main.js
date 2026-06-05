@@ -141,7 +141,7 @@ async function prepare({ github, context, core }) {
   core.setOutput('pr_number', String(pr.number));
 }
 
-async function finalize({ github, core }) {
+async function finalize({ core }) {
   const dir = tempDir();
   const data = JSON.parse(fs.readFileSync(path.join(dir, 'data.json'), 'utf8'));
   const dryRun = process.env.DRY_RUN === 'true';
@@ -162,16 +162,35 @@ async function finalize({ github, core }) {
   });
 
   // Draft conversion: at most once per head SHA; undrafting is human-only.
+  // The default Actions token cannot toggle draft state ("Resource not
+  // accessible by integration"), so this requires the app token minted by
+  // the workflow. Best-effort: failure never blocks the comment.
   let draftedNow = false;
   if (decision.shouldDraft && !dryRun) {
-    try {
-      await github.graphql(
-        'mutation($id: ID!) { convertPullRequestToDraft(input: {pullRequestId: $id}) { pullRequest { isDraft } } }',
-        { id: data.prNodeId }
+    const token = process.env.DRAFT_TOKEN;
+    if (!token) {
+      core.warning(
+        `PR #${data.prNumber} should be drafted, but no draft token is available ` +
+          '(PR_READINESS_APP_ID / PR_READINESS_APP_PRIVATE_KEY secrets not configured?)'
       );
-      draftedNow = true;
-    } catch (e) {
-      core.warning(`could not convert PR #${data.prNumber} to draft: ${e.message}`);
+    } else {
+      try {
+        const res = await fetch('https://api.github.com/graphql', {
+          method: 'POST',
+          headers: { authorization: `bearer ${token}`, 'content-type': 'application/json' },
+          body: JSON.stringify({
+            query: 'mutation($id: ID!) { convertPullRequestToDraft(input: {pullRequestId: $id}) { pullRequest { isDraft } } }',
+            variables: { id: data.prNodeId },
+          }),
+        });
+        const result = await res.json();
+        if (!res.ok || result.errors) {
+          throw new Error(result.errors ? result.errors.map((e) => e.message).join('; ') : `HTTP ${res.status}`);
+        }
+        draftedNow = true;
+      } catch (e) {
+        core.warning(`could not convert PR #${data.prNumber} to draft: ${e.message}`);
+      }
     }
   }
 

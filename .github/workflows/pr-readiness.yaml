@@ -34,6 +34,10 @@ jobs:
     name: Assess PR readiness
     if: github.event.workflow_run.event == 'pull_request' || github.event.workflow_run.event == 'pull_request_target'
     runs-on: ubuntu-24.04
+    env:
+      # secrets are not available in step `if:` expressions, so surface
+      # "is the draft app configured?" as an env var here.
+      HAS_DRAFT_APP: ${{ secrets.PR_READINESS_APP_ID != '' }}
     permissions:
       pull-requests: write # sticky comment + draft conversion
       contents: read # checkout of the default branch (scripts, OWNERS, template)
@@ -62,16 +66,30 @@ jobs:
           prompt-file: ${{ runner.temp }}/pr-readiness/prompt.txt
           max-completion-tokens: "500"
 
+      # The default Actions token cannot toggle a PR's draft state
+      # ("Resource not accessible by integration"), so draft conversion
+      # needs a GitHub App token — same pattern as the cherry-pick bot.
+      # Without these secrets the bot still comments, it just cannot draft.
+      - name: Mint draft-conversion token
+        id: draft-token
+        if: steps.prepare.outputs.proceed == 'true' && env.DRY_RUN != 'true' && env.HAS_DRAFT_APP == 'true'
+        continue-on-error: true # drafting is best-effort; never block the comment
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ secrets.PR_READINESS_APP_ID }}
+          private-key: ${{ secrets.PR_READINESS_APP_PRIVATE_KEY }}
+
       - name: Decide, draft and render comment
         id: finalize
         if: steps.prepare.outputs.proceed == 'true'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           AI_RESPONSE: ${{ steps.ai.outputs.response }}
+          DRAFT_TOKEN: ${{ steps.draft-token.outputs.token }}
         with:
           script: |
             const { finalize } = require('./.github/pr-readiness/main.js');
-            await finalize({ github, core });
+            await finalize({ core });
 
       - name: Upsert sticky comment
         if: steps.prepare.outputs.proceed == 'true' && steps.finalize.outputs.should_comment == 'true' && env.DRY_RUN != 'true'
