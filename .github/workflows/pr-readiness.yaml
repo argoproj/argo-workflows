@@ -1,0 +1,83 @@
+name: PR Readiness Helper
+
+# Standalone helper that fires when CI workflows complete on a PR and keeps a
+# single sticky comment guiding the contributor through contributor-fixable
+# problems (lint, codegen, docs, title, DCO, feature files, PR template).
+# Blocking problems also move the PR to draft (it never undrafts).
+# See .github/pr-readiness/README.md for design, security model and tuning.
+#
+# Security: this runs with write permissions from the default branch's
+# workflow definition. It must NEVER check out or execute PR-head code, and
+# PR-controlled strings (title/body/branch) must only be handled as data.
+
+on:
+  workflow_run:
+    workflows: ["CI", "Docs", "PR Title Check", "PR Feature Check"]
+    types: [completed]
+
+permissions: {} # default deny; the job grants the minimum it needs
+
+concurrency:
+  # Serialize per head SHA: several of the above workflows can finish within
+  # seconds of each other. Never cancel — each completion must be processed
+  # so the comment converges on the final state.
+  group: pr-readiness-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: false
+
+env:
+  # Dry-run: render to the job summary instead of commenting/drafting.
+  # Flip to "false" to go live.
+  DRY_RUN: "true"
+
+jobs:
+  assess:
+    name: Assess PR readiness
+    if: github.event.workflow_run.event == 'pull_request' || github.event.workflow_run.event == 'pull_request_target'
+    runs-on: ubuntu-24.04
+    permissions:
+      pull-requests: write # sticky comment + draft conversion
+      contents: read # checkout of the default branch (scripts, OWNERS, template)
+      actions: read # job/step conclusions for the feature check
+      models: read # GitHub Models inference for template compliance
+    steps:
+      # Default branch only — never the PR head.
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: Resolve PR and classify checks
+        id: prepare
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const { prepare } = require('./.github/pr-readiness/main.js');
+            await prepare({ github, context, core });
+
+      - name: Check PR description against the template
+        id: ai
+        if: steps.prepare.outputs.proceed == 'true' && steps.prepare.outputs.ai_needed == 'true'
+        continue-on-error: true # advisory: on rate limit/error the verdict is simply dropped
+        uses: actions/ai-inference@a7805884c80886efc241e94a5351df715968a0ad # v2.1.1
+        with:
+          model: openai/gpt-4o-mini
+          system-prompt-file: .github/pr-readiness/ai-prompt.md
+          prompt-file: ${{ runner.temp }}/pr-readiness/prompt.txt
+          max-completion-tokens: "500"
+
+      - name: Decide, draft and render comment
+        id: finalize
+        if: steps.prepare.outputs.proceed == 'true'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          AI_RESPONSE: ${{ steps.ai.outputs.response }}
+        with:
+          script: |
+            const { finalize } = require('./.github/pr-readiness/main.js');
+            await finalize({ github, core });
+
+      - name: Upsert sticky comment
+        if: steps.prepare.outputs.proceed == 'true' && steps.finalize.outputs.should_comment == 'true' && env.DRY_RUN != 'true'
+        uses: marocchino/sticky-pull-request-comment@0ea0beb66eb9baf113663a64ec522f60e49231c0 # v3.0.4
+        with:
+          header: pr-readiness-bot
+          number_force: ${{ steps.prepare.outputs.pr_number }}
+          path: ${{ runner.temp }}/pr-readiness/comment.md
+          skip_unchanged: true

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Shape of the AI template-compliance verdict. Enforced (hand-rolled, fail-closed) in ai.js — keep the two in sync.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["compliant", "issues"],
+  "properties": {
+    "compliant": { "type": "boolean" },
+    "issues": {
+      "type": "array",
+      "maxItems": 6,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["section", "problem"],
+        "properties": {
+          "section": {
+            "type": "string",
+            "enum": ["Fixes", "Motivation", "Modifications", "Verification", "Documentation", "AI", "Other"]
+          },
+          "problem": { "type": "string", "maxLength": 200 }
+        }
+      }
+    }
+  }
+}
