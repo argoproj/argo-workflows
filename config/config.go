@@ -128,6 +128,11 @@ type Config struct {
 	// (e.g., due to Eviction, DiskPressure, Preemption). This allows recovery from transient
 	// infrastructure issues without requiring a retryStrategy on templates.
 	FailedPodRestart *FailedPodRestartConfig `json:"failedPodRestart,omitempty"`
+
+	// DisableAgentPodCreation disables the creation of agent pods for HTTP and Plugin templates.
+	// This is useful when external agents are responsible for executing these templates and the controller should not create agent pods.
+	// Note: when this is set to true, HTTP templates will not be reconciled and the controller will not attempt to create agent pods for them.
+	DisableAgentPodCreation bool `json:"disableAgentPodCreation,omitempty"`
 }
 
 // FailedPodRestartConfig configures automatic restart of pods that fail before entering Running state.

@@ -164,12 +164,12 @@ func (s *prioritySemaphore) removeFromQueue(ctx context.Context, holderKey strin
 	return nil
 }
 
-func (s *prioritySemaphore) acquire(_ context.Context, holderKey string, _ *sqldb.SessionProxy) bool {
+func (s *prioritySemaphore) acquire(_ context.Context, holderKey string, _ *sqldb.SessionProxy) (bool, error) {
 	if s.semaphore.TryAcquire(1) {
 		s.lockHolder[holderKey] = true
-		return true
+		return true, nil
 	}
-	return false
+	return false, nil
 }
 
 func isSameWorkflowNodeKeys(firstKey, secondKey string) bool {
@@ -231,16 +231,17 @@ func (s *prioritySemaphore) checkAcquire(ctx context.Context, holderKey string, 
 	return false, false, waitingMsg
 }
 
-func (s *prioritySemaphore) tryAcquire(ctx context.Context, holderKey string, tx *sqldb.SessionProxy) (bool, string) {
+func (s *prioritySemaphore) tryAcquire(ctx context.Context, holderKey string, tx *sqldb.SessionProxy) (bool, string, error) {
 	logger := s.logger(ctx)
 	acq, already, msg := s.checkAcquire(ctx, holderKey, tx)
 	if already {
-		return true, msg
+		return true, msg, nil
 	}
 	if !acq {
-		return false, msg
+		return false, msg, nil
 	}
-	if s.acquire(ctx, holderKey, tx) {
+	acquired, _ := s.acquire(ctx, holderKey, tx)
+	if acquired {
 		s.pending.pop()
 		limit := s.getLimit(ctx)
 		logger.WithFields(logging.Fields{
@@ -250,10 +251,10 @@ func (s *prioritySemaphore) tryAcquire(ctx context.Context, holderKey string, tx
 			"limit":     limit,
 		}).Info(ctx, "acquired")
 		s.notifyWaiters(ctx)
-		return true, ""
+		return true, "", nil
 	}
 	logger.WithField("lockHolder", s.lockHolder).Debug(ctx, "Current semaphore Holders")
-	return false, msg
+	return false, msg, nil
 }
 
 func (s *prioritySemaphore) probeWaiting(_ context.Context) {}

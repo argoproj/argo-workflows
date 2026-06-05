@@ -310,7 +310,7 @@ type WorkflowSpec struct {
 
 	// Arguments contain the parameters and artifacts sent to the workflow entrypoint
 	// Parameters are referencable globally using the 'workflow' variable prefix.
-	// e.g. {{workflow.parameters.myparam}}
+	// e.g. workflow.parameters.myparam
 	Arguments Arguments `json:"arguments,omitempty" protobuf:"bytes,3,opt,name=arguments"`
 
 	// ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as.
@@ -1013,7 +1013,7 @@ type Parameter struct {
 	ValueFrom *ValueFrom `json:"valueFrom,omitempty" protobuf:"bytes,4,opt,name=valueFrom"`
 
 	// GlobalName exports an output parameter to the global scope, making it available as
-	// '{{workflow.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters
+	// workflow.outputs.parameters.XXXX and in workflow.status.outputs.parameters
 	GlobalName string `json:"globalName,omitempty" protobuf:"bytes,5,opt,name=globalName"`
 
 	// Enum holds a list of string values to choose from, for the actual value of the parameter
@@ -1039,7 +1039,7 @@ type ValueFrom struct {
 	Event string `json:"event,omitempty" protobuf:"bytes,7,opt,name=event"`
 
 	// Parameter reference to a step or dag task in which to retrieve an output parameter value from
-	// (e.g. '{{steps.mystep.outputs.myparam}}')
+	// (e.g. steps.mystep.outputs.myparam)
 	Parameter string `json:"parameter,omitempty" protobuf:"bytes,4,opt,name=parameter"`
 
 	// Supplied value to be filled in directly, either through the CLI, API, etc.
@@ -1095,7 +1095,7 @@ type Artifact struct {
 	ArtifactLocation `json:",inline" protobuf:"bytes,5,opt,name=artifactLocation"`
 
 	// GlobalName exports an output artifact to the global scope, making it available as
-	// '{{workflow.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts
+	// workflow.outputs.artifacts.XXXX and in workflow.status.outputs.artifacts
 	GlobalName string `json:"globalName,omitempty" protobuf:"bytes,6,opt,name=globalName"`
 
 	// Archive controls how the artifact will be saved to the artifact repository.
