@@ -670,10 +670,16 @@ data:
         name: my-minio-cred
         key: secretKey
       useSDKCreds: true               #tells argo to use AWS SDK's default provider chain, enable for things like IRSA support
+      addressingStyle: "virtual-hosted" #optional; "" (auto-detect, default), "path", or "virtual-hosted". Set for providers that only support virtual-hosted-style addressing
 ```
 
 The secrets are retrieved from the namespace you use to run your workflows. Note
 that you can specify a `keyFormat`.
+
+Some S3-compatible providers only support virtual-hosted-style bucket addressing
+and reject path-style requests. If you hit addressing errors, set `addressingStyle`
+to `virtual-hosted` (or `path` to force path-style). The default `""` lets the
+client auto-detect.
 
 ### Google Cloud Storage (GCS)
 
