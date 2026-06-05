@@ -123,7 +123,9 @@ func TestMutexLock(t *testing.T) {
 
 		wfList, err := wfclientset.ArgoprojV1alpha1().Workflows("default").List(ctx, metav1.ListOptions{})
 		require.NoError(t, err)
-		require.NoError(t, syncManager.Initialize(ctx, wfList.Items))
+		staleHolds, err := syncManager.Initialize(ctx, wfList.Items)
+		require.NoError(t, err)
+		require.Empty(t, staleHolds)
 		assert.Len(t, syncManager.syncLockMap, 1)
 	})
 	t.Run("WfLevelMutexAcquireAndRelease", func(t *testing.T) {

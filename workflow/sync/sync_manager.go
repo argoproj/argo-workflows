@@ -288,15 +288,16 @@ func (sm *Manager) poison(ctx context.Context, lockName, reason string) {
 // It always reads the current lock from the map (never a stale local), so a lock
 // poisoned by a previous holder stays poisoned and is not acquired on an orphaned
 // object. A returned error is fatal (see initFailureFatal). An init failure or an
-// unresolvable holder key poisons the lock; a failed re-acquire leaves the lock
-// intact.
+// unresolvable holder key poisons the lock. A non-empty staleReason means the
+// hold could not be verified against its backing store (database-backed locks
+// only); the caller fails the workflow, whose teardown releases its locks.
 //
 // Poisoning, not leaving absent, is required for the init-failure case: a
 // ConfigMap-backed semaphore keeps its holders only in memory, so if we left the
 // lock absent, prepAcquire would later rebuild it with zero holders once the
 // backend recovered and let a racer acquire the slot this holder still owns. The
 // poison is lock-scoped and clears on the next controller restart.
-func (sm *Manager) reestablishHolder(ctx context.Context, wf *wfv1.Workflow, lockType, lockName, holder string, initLock func(context.Context, string) (semaphore, error)) error {
+func (sm *Manager) reestablishHolder(ctx context.Context, wf *wfv1.Workflow, lockType, lockName, holder string, initLock func(context.Context, string) (semaphore, error)) (staleReason string, fatalErr error) {
 	if sm.syncLockMap[lockName] == nil {
 		lock, err := initLock(ctx, lockName)
 		if err != nil {
@@ -305,38 +306,57 @@ func (sm *Manager) reestablishHolder(ctx context.Context, wf *wfv1.Workflow, loc
 				// poison to protect the recorded hold, so halt for an operator
 				// rather than risk a silent double-acquire.
 				sm.log.WithField(lockType, lockName).WithError(err).Error(ctx, "cannot initialize lock, failing closed")
-				return fmt.Errorf("cannot re-establish %s %q held by workflow %s/%s at startup: %w", lockType, lockName, wf.Namespace, wf.Name, err)
+				return "", fmt.Errorf("cannot re-establish %s %q held by workflow %s/%s at startup: %w", lockType, lockName, wf.Namespace, wf.Name, err)
 			}
 			// Recoverable (e.g. transient ConfigMap unavailability) but the name
 			// decodes, so poison protects the recorded hold without crashlooping.
 			// Leaving the lock absent would be unsound: an in-memory semaphore
 			// rebuilt later would have zero holders and let a racer double-acquire.
 			sm.poison(ctx, lockName, fmt.Sprintf("controller could not initialize lock at startup: %v", err))
-			return nil
+			return "", nil
 		}
 		sm.syncLockMap[lockName] = lock
 	}
 
 	if holder == "" {
-		return nil
+		return "", nil
 	}
 
 	key, err := upgradeHolderKey(ctx, wf, holder, lockName)
 	if err != nil {
 		sm.poison(ctx, lockName, fmt.Sprintf("controller could not re-establish recorded holder %q at startup: %v", holder, err))
-		return nil
+		return "", nil
 	}
 
 	// Re-read from the map: a previous holder of this same lock may have poisoned
 	// it, in which case reacquire is a no-op and we must not resurrect it.
 	lock := sm.syncLockMap[lockName]
-	// reacquire ignores the limit so the recorded hold is always represented:
-	// dropping it (leaving the lock intact) would let a racer double-acquire an
-	// in-memory semaphore whose holders exceed a lowered limit, and poisoning
-	// would block the whole shared lock over a routine limit change.
-	lock.reacquire(ctx, key, sm.dbInfo.SessionProxy)
+	// For in-memory locks reacquire force-registers the hold ignoring the limit,
+	// so the recorded hold is always represented: dropping it would let a racer
+	// double-acquire a semaphore whose holders exceed a lowered limit, and
+	// poisoning would block the whole shared lock over a routine limit change.
+	// For database-backed locks the database is the single source of truth and
+	// reacquire only asserts the hold is still recorded there; if it is not, the
+	// workflow's recorded hold is stale and the workflow is failed rather than
+	// left to run on a hold the database no longer backs.
+	if err := lock.reacquire(ctx, key, sm.dbInfo.SessionProxy); err != nil {
+		sm.log.WithFields(logging.Fields{"key": key, lockType: lockName}).WithError(err).Warn(ctx, "could not re-establish recorded holder, failing the workflow")
+		return fmt.Sprintf("could not re-establish %s %q at controller startup: %v", lockType, lockName, err), nil
+	}
 	sm.log.WithFields(logging.Fields{"key": key, lockType: lockName}).Info(ctx, "re-established recorded holder")
-	return nil
+	return "", nil
+}
+
+// StaleHold records a workflow whose recorded hold on a database-backed lock
+// could not be verified against the database during Initialize. The database
+// is the single source of truth for such locks, so the workflow is running on
+// a hold the database no longer backs (e.g. it was expired while the
+// controller was down and may since have been acquired by another holder).
+// The controller fails these workflows; their teardown releases any locks
+// they still hold.
+type StaleHold struct {
+	WF     *wfv1.Workflow
+	Reason string
 }
 
 // Initialize re-establishes, in the in-memory lock map, the holds that Running
@@ -350,28 +370,46 @@ func (sm *Manager) reestablishHolder(ctx context.Context, wf *wfv1.Workflow, loc
 //
 // Recoverable failures never crashloop: a lock that cannot be built (transient
 // ConfigMap/DB read) or whose holder key is unresolvable is poisoned (lock-scoped,
-// clears on restart); a holder that simply cannot be re-acquired (limit lowered,
-// transient error) leaves the lock intact.
-func (sm *Manager) Initialize(ctx context.Context, wfs []wfv1.Workflow) error {
+// clears on restart). A database-backed hold that the database no longer records
+// is returned as a StaleHold (at most one per workflow) for the controller to
+// fail the workflow.
+func (sm *Manager) Initialize(ctx context.Context, wfs []wfv1.Workflow) ([]StaleHold, error) {
 	// Hold the lock for the whole pass: a DB-backed Manager starts its
 	// backgroundNotifier goroutine in createLockManager (before initManagers
 	// calls Initialize), and that goroutine iterates syncLockMap under sm.lock.
 	sm.lock.Lock()
 	defer sm.lock.Unlock()
 
+	var staleHolds []StaleHold
 	for i := range wfs {
 		wf := &wfs[i]
 		if wf.Status.Synchronization == nil {
 			continue
 		}
 
+		// Record only the first stale hold per workflow (failing it once is
+		// enough), but keep re-establishing its remaining holds: they are real
+		// until the failed workflow's teardown releases them, and dropping one
+		// from the in-memory map would let a racer double-acquire it.
+		stale := func(reason string) {
+			// neat way to prevent double counting workflows, this works because we iterate workflow by workflow
+			// we only need to ask was the last stale workflow the same as this one as a result.
+			if len(staleHolds) == 0 || staleHolds[len(staleHolds)-1].WF != wf {
+				staleHolds = append(staleHolds, StaleHold{WF: wf, Reason: reason})
+			}
+		}
+
 		if wf.Status.Synchronization.Semaphore != nil {
 			for _, holding := range wf.Status.Synchronization.Semaphore.Holding {
 				for _, holder := range holding.Holders {
-					if err := sm.reestablishHolder(ctx, wf, "semaphore", holding.Semaphore, holder, func(ctx context.Context, name string) (semaphore, error) {
+					reason, err := sm.reestablishHolder(ctx, wf, "semaphore", holding.Semaphore, holder, func(ctx context.Context, name string) (semaphore, error) {
 						return sm.initializeSemaphore(ctx, name)
-					}); err != nil {
-						return err
+					})
+					if err != nil {
+						return nil, err
+					}
+					if reason != "" {
+						stale(reason)
 					}
 				}
 			}
@@ -379,16 +417,20 @@ func (sm *Manager) Initialize(ctx context.Context, wfs []wfv1.Workflow) error {
 
 		if wf.Status.Synchronization.Mutex != nil {
 			for _, holding := range wf.Status.Synchronization.Mutex.Holding {
-				if err := sm.reestablishHolder(ctx, wf, "mutex", holding.Mutex, holding.Holder, func(ctx context.Context, name string) (semaphore, error) {
+				reason, err := sm.reestablishHolder(ctx, wf, "mutex", holding.Mutex, holding.Holder, func(ctx context.Context, name string) (semaphore, error) {
 					return sm.initializeMutex(ctx, name)
-				}); err != nil {
-					return err
+				})
+				if err != nil {
+					return nil, err
+				}
+				if reason != "" {
+					stale(reason)
 				}
 			}
 		}
 	}
 	sm.log.Info(ctx, "Sync manager initialized successfully")
-	return nil
+	return staleHolds, nil
 }
 
 // TryAcquire tries to acquire the lock from semaphore.

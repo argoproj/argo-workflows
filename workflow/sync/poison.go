@@ -47,8 +47,13 @@ func (p *poisonedLock) acquire(_ context.Context, _ string, _ *sqldb.SessionProx
 	return false, nil
 }
 
-// reacquire is a no-op: a poisoned lock refuses all holds until restart.
-func (p *poisonedLock) reacquire(_ context.Context, _ string, _ *sqldb.SessionProxy) {}
+// reacquire is a no-op: a poisoned lock refuses all holds until restart. It
+// returns nil because the poison already protects the recorded hold; failing
+// the holding workflow on top of that would punish it for an unrelated
+// holder's poisoning.
+func (p *poisonedLock) reacquire(_ context.Context, _ string, _ *sqldb.SessionProxy) error {
+	return nil
+}
 
 func (p *poisonedLock) checkAcquire(_ context.Context, _ string, _ *sqldb.SessionProxy) (bool, bool, string) {
 	return false, false, p.message()

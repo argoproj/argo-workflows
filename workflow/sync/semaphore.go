@@ -179,13 +179,15 @@ func (s *prioritySemaphore) acquire(_ context.Context, holderKey string, _ *sqld
 // tracked solely in lockHolder, exactly as a downward resize leaves it. release()
 // already tolerates len(lockHolder) > limit and only frees a weighted slot once
 // the count drops below the limit, so new acquisitions wait until every recorded
-// holder has drained.
-func (s *prioritySemaphore) reacquire(_ context.Context, holderKey string, _ *sqldb.SessionProxy) {
+// holder has drained. It never fails: the in-memory map is the source of truth
+// here, so registering the holder is always possible.
+func (s *prioritySemaphore) reacquire(_ context.Context, holderKey string, _ *sqldb.SessionProxy) error {
 	if _, ok := s.lockHolder[holderKey]; ok {
-		return
+		return nil
 	}
 	s.semaphore.TryAcquire(1) // best effort: take a slot if one is free
 	s.lockHolder[holderKey] = true
+	return nil
 }
 
 func isSameWorkflowNodeKeys(firstKey, secondKey string) bool {

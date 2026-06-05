@@ -372,14 +372,23 @@ func (s *databaseSemaphore) acquire(ctx context.Context, holderKey string, tx *s
 	return false, nil
 }
 
-// reacquire re-establishes a recorded holder at startup. For a database-backed
-// lock the holder is durable - its row survives the controller restart - so the
-// hold is already represented regardless of the current limit. We still call
-// acquire as a best-effort re-assertion (it inserts the held row if missing);
-// any failure (already-held row, limit exceeded, transient error) is harmless
-// because the persisted row keeps the hold counted by currentHolders.
-func (s *databaseSemaphore) reacquire(ctx context.Context, holderKey string, tx *sqldb.SessionProxy) {
-	_, _ = s.acquire(ctx, holderKey, tx)
+// reacquire asserts at startup that the recorded holder still holds this lock
+// in the database. The database is the single source of truth for a
+// database-backed lock: the held row is durable and survives the controller
+// restart, so nothing is inserted or mutated here. A missing row means the
+// hold no longer exists - e.g. it was expired by ExpireInactiveLocks while the
+// controller was down and may since have been acquired by another holder - so
+// the workflow's recorded hold is stale and the caller fails the workflow
+// rather than resurrect a hold the database does not back.
+func (s *databaseSemaphore) reacquire(ctx context.Context, holderKey string, tx *sqldb.SessionProxy) error {
+	holders, err := s.currentHoldersSession(ctx, tx)
+	if err != nil {
+		return fmt.Errorf("could not verify hold on %s for %s: %w", s.longDBKey(), holderKey, err)
+	}
+	if !slices.Contains(holders, holderKey) {
+		return fmt.Errorf("hold on %s for %s is not present in the database", s.longDBKey(), holderKey)
+	}
+	return nil
 }
 
 func (s *databaseSemaphore) tryAcquire(ctx context.Context, holderKey string, tx *sqldb.SessionProxy) (bool, string, error) {

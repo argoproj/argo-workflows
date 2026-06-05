@@ -371,7 +371,9 @@ func TestSemaphoreWfLevel(t *testing.T) {
 
 		wfList, err := wfclientset.ArgoprojV1alpha1().Workflows("default").List(ctx, metav1.ListOptions{})
 		require.NoError(t, err)
-		require.NoError(t, syncManager.Initialize(ctx, wfList.Items))
+		staleHolds, err := syncManager.Initialize(ctx, wfList.Items)
+		require.NoError(t, err)
+		require.Empty(t, staleHolds)
 		assert.Len(t, syncManager.syncLockMap, 1)
 	})
 	t.Run("InitializeSynchronizationWithInvalid", func(t *testing.T) {
@@ -388,7 +390,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		// An invalid/undecodable lock name now fails closed rather than being
 		// silently skipped: we can't poison it or prove the spec re-acquires it,
 		// so the controller halts for an operator instead of risking a double-acquire.
-		err = syncManager.Initialize(ctx, wfList.Items)
+		_, err = syncManager.Initialize(ctx, wfList.Items)
 		require.Error(t, err)
 		assert.Empty(t, syncManager.syncLockMap)
 	})
@@ -421,7 +423,9 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		wf2.Status.Synchronization.Semaphore.Holding[0].Holders = []string{"default/hello-world-two"}
 
 		// Initialize with both workflows
-		require.NoError(t, syncManager.Initialize(ctx, []wfv1.Workflow{*wf1, *wf2}))
+		staleHolds, err := syncManager.Initialize(ctx, []wfv1.Workflow{*wf1, *wf2})
+		require.NoError(t, err)
+		require.Empty(t, staleHolds)
 
 		// Verify the semaphore was created
 		assert.Len(t, syncManager.syncLockMap, 1)
@@ -452,7 +456,9 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		wf.Name = "cm-holder"
 		wf.Status.Synchronization.Semaphore.Holding[0].Holders = []string{"default/cm-holder"}
 
-		require.NoError(t, syncManager.Initialize(ctx, []wfv1.Workflow{*wf}), "a recoverable ConfigMap failure must not be fatal")
+		staleHolds, err := syncManager.Initialize(ctx, []wfv1.Workflow{*wf})
+		require.NoError(t, err, "a recoverable ConfigMap failure must not be fatal")
+		require.Empty(t, staleHolds)
 		lock := syncManager.syncLockMap["default/ConfigMap/my-config/workflow"]
 		require.NotNil(t, lock)
 		_, poisoned := lock.(*poisonedLock)
@@ -485,7 +491,9 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		wf2.Name = "holder-two"
 		wf2.Status.Synchronization.Semaphore.Holding[0].Holders = []string{"default/holder-two"}
 
-		require.NoError(t, syncManager.Initialize(ctx, []wfv1.Workflow{*wf1, *wf2}))
+		staleHolds, err := syncManager.Initialize(ctx, []wfv1.Workflow{*wf1, *wf2})
+		require.NoError(t, err)
+		require.Empty(t, staleHolds)
 
 		lock := syncManager.syncLockMap["default/ConfigMap/my-config/workflow"]
 		require.NotNil(t, lock)
@@ -540,7 +548,9 @@ func TestSemaphoreWfLevel(t *testing.T) {
 			},
 		}
 
-		require.NoError(t, syncManager.Initialize(ctx, []wfv1.Workflow{*wf}))
+		staleHolds, err := syncManager.Initialize(ctx, []wfv1.Workflow{*wf})
+		require.NoError(t, err)
+		require.Empty(t, staleHolds)
 
 		lock := syncManager.syncLockMap["default/Mutex/my-mutex"]
 		require.NotNil(t, lock)
@@ -576,7 +586,9 @@ func TestSemaphoreWfLevel(t *testing.T) {
 
 		// A decodable name whose holder can't be re-established is poisoned, not
 		// fatal: the poison key matches what a racer computes, so soundness holds.
-		require.NoError(t, syncManager.Initialize(ctx, []wfv1.Workflow{*holder}))
+		staleHolds, err := syncManager.Initialize(ctx, []wfv1.Workflow{*holder})
+		require.NoError(t, err)
+		require.Empty(t, staleHolds)
 
 		lock := syncManager.syncLockMap["default/Mutex/my-mutex"]
 		require.NotNil(t, lock)
@@ -615,7 +627,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 			},
 		}
 
-		err = syncManager.Initialize(ctx, []wfv1.Workflow{*holder})
+		_, err = syncManager.Initialize(ctx, []wfv1.Workflow{*holder})
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "broken-holder")
 		assert.NotContains(t, syncManager.syncLockMap, "garbage-undecodable-name")
@@ -645,7 +657,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 			},
 		}
 
-		err = syncManager.Initialize(ctx, []wfv1.Workflow{*holder})
+		_, err = syncManager.Initialize(ctx, []wfv1.Workflow{*holder})
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "database session")
 	})
@@ -1804,7 +1816,9 @@ func TestMutexMigration(t *testing.T) {
 
 		syncMgr.syncLockMap = make(map[string]semaphore)
 		wfs := []wfv1.Workflow{*wfMutex2.DeepCopy()}
-		require.NoError(syncMgr.Initialize(ctx, wfs))
+		staleHolds, err := syncMgr.Initialize(ctx, wfs)
+		require.NoError(err)
+		require.Empty(staleHolds)
 
 		syncItems, err := allSyncItems(wfMutex2.Spec.Synchronization)
 		require.NoError(err)
@@ -1849,7 +1863,9 @@ func TestMutexMigration(t *testing.T) {
 		assert.Equal(1, numFound)
 
 		wfs := []wfv1.Workflow{*wfMutex3.DeepCopy()}
-		require.NoError(syncMgr.Initialize(ctx, wfs))
+		staleHolds, err := syncMgr.Initialize(ctx, wfs)
+		require.NoError(err)
+		require.Empty(staleHolds)
 
 		syncItems, err := allSyncItems(wfMutex3.Spec.Templates[1].Synchronization)
 		require.NoError(err)
@@ -2183,7 +2199,9 @@ func TestDatabaseInitializeLoweredLimitAfterRestart(t *testing.T) {
 
 			// --- Controller instance #2: restart. Initialize from the running workflows. ---
 			mgr2 := createLockManager(ctx, info.SessionProxy, &syncConfig, nil, func(key string) {}, WorkflowExistenceFunc)
-			require.NoError(t, mgr2.Initialize(ctx, []wfv1.Workflow{*wf1, *wf2}))
+			staleHolds, err := mgr2.Initialize(ctx, []wfv1.Workflow{*wf1, *wf2})
+			require.NoError(t, err)
+			require.Empty(t, staleHolds, "holders backed by database rows must not be reported stale")
 
 			lock := mgr2.syncLockMap[lockName]
 			require.NotNil(t, lock)
@@ -2223,6 +2241,87 @@ func TestDatabaseInitializeLoweredLimitAfterRestart(t *testing.T) {
 			acquired, _, _, _, err = mgr2.TryAcquire(ctx, racer, "", racer.Spec.Synchronization)
 			require.NoError(t, err)
 			assert.True(t, acquired, "racer acquires once holders drain below the lowered limit")
+		})
+	}
+}
+
+// TestDatabaseInitializeStaleHoldFailsWorkflow drives the restart path through
+// Manager.Initialize for a database-backed semaphore whose held row has gone
+// away while the controller was down (e.g. expired by ExpireInactiveLocks and
+// possibly acquired by another holder since).
+//
+// The database is the single source of truth for a database-backed lock, so
+// Initialize must not resurrect the hold: it asserts the row exists, and when
+// it does not it reports the workflow as a StaleHold for the controller to
+// fail. We assert that:
+//   - the stale workflow is reported, with a reason naming the lock;
+//   - the lock is live (not poisoned) - the database still arbitrates it;
+//   - the hold is not re-inserted into the database;
+//   - a workflow whose row survived is re-established normally, not reported.
+func TestDatabaseInitializeStaleHoldFailsWorkflow(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	for _, dbType := range testDBTypes {
+		t.Run(string(dbType), func(t *testing.T) {
+			const dbLimitKey = "default/my-database-sem"
+			const lockName = "default/Database/my-database-sem"
+
+			info, cleanup, syncConfig, err := createTestDBSession(ctx, t, dbType)
+			require.NoError(t, err)
+			defer cleanup()
+
+			_, err = info.SessionProxy.Session().SQL().Exec("INSERT INTO sync_limit (name, sizelimit) VALUES (?, ?)", dbLimitKey, 2)
+			require.NoError(t, err)
+
+			// --- Controller instance #1: two workflows acquire the semaphore. ---
+			mgr1 := createLockManager(ctx, info.SessionProxy, &syncConfig, nil, func(key string) {}, WorkflowExistenceFunc)
+
+			creationTime := metav1.NewTime(time.Now())
+			wf1 := wfv1.MustUnmarshalWorkflow(wfWithDBSemaphore)
+			wf1.Name = "stale-holder"
+			wf1.CreationTimestamp = creationTime
+			wf2 := wfv1.MustUnmarshalWorkflow(wfWithDBSemaphore)
+			wf2.Name = "live-holder"
+			wf2.CreationTimestamp = creationTime
+
+			acquired, _, _, _, err := mgr1.TryAcquire(ctx, wf1, "", wf1.Spec.Synchronization)
+			require.NoError(t, err)
+			require.True(t, acquired, "stale-holder should acquire under limit 2")
+			acquired, _, _, _, err = mgr1.TryAcquire(ctx, wf2, "", wf2.Spec.Synchronization)
+			require.NoError(t, err)
+			require.True(t, acquired, "live-holder should acquire under limit 2")
+			require.NotNil(t, wf1.Status.Synchronization)
+			require.NotNil(t, wf2.Status.Synchronization)
+
+			// --- wf1's held row disappears while the controller is down. ---
+			_, err = info.SessionProxy.Session().SQL().Exec("DELETE FROM sync_state WHERE name = ? AND workflowkey = ?", "sem/"+dbLimitKey, "default/stale-holder")
+			require.NoError(t, err)
+
+			// --- Controller instance #2: restart. Initialize from the running workflows. ---
+			mgr2 := createLockManager(ctx, info.SessionProxy, &syncConfig, nil, func(key string) {}, WorkflowExistenceFunc)
+			staleHolds, err := mgr2.Initialize(ctx, []wfv1.Workflow{*wf1, *wf2})
+			require.NoError(t, err, "a stale hold is not fatal: the workflow is failed, not the controller")
+
+			require.Len(t, staleHolds, 1, "only the workflow whose row is gone is stale")
+			assert.Equal(t, "stale-holder", staleHolds[0].WF.Name)
+			assert.Contains(t, staleHolds[0].Reason, lockName)
+
+			// The lock stays live: the database arbitrates it, and the live holder
+			// (and any future contender) must not be blocked by wf1's stale status.
+			lock := mgr2.syncLockMap[lockName]
+			require.NotNil(t, lock)
+			_, poisoned := lock.(*poisonedLock)
+			assert.False(t, poisoned, "a stale hold must not poison the lock")
+
+			// The stale hold was asserted, not re-acquired: only the surviving row
+			// is held.
+			holders, err := lock.getCurrentHolders(ctx)
+			require.NoError(t, err)
+			assert.Equal(t, []string{"default/live-holder"}, holders, "the stale hold must not be re-inserted into the database")
+
+			// The surviving holder keeps its lock when it re-reconciles.
+			acquired, _, _, _, err = mgr2.TryAcquire(ctx, wf2, "", wf2.Spec.Synchronization)
+			require.NoError(t, err)
+			assert.True(t, acquired, "live-holder must keep its lock")
 		})
 	}
 }
