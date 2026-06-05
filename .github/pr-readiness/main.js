@@ -132,6 +132,10 @@ async function prepare({ github, context, core }) {
     })
   );
 
+  core.info(
+    `Proceeding: PR #${pr.number} by ${pr.user.login} (draft=${pr.draft}) | ` +
+      `aiNeeded=${aiNeeded} synthetic=${Boolean(syntheticVerdict)} cached=${Boolean(cachedVerdict)} | existingComment=${Boolean(existing)}`
+  );
   core.setOutput('proceed', 'true');
   core.setOutput('ai_needed', String(aiNeeded));
   core.setOutput('pr_number', String(pr.number));
@@ -190,6 +194,20 @@ async function finalize({ github, core }) {
 
   for (const name of data.unmapped) {
     core.warning(`unmapped failing check (rename? update checks.config.json): ${name}`);
+  }
+
+  // Decision trail in the job log too — step summaries are only visible in
+  // the UI, logs are also fetchable via the API.
+  core.info(
+    `PR #${data.prNumber} head=${data.headSha} | signals: ` +
+      data.signals.map((s) => `${s.id}=${s.state}`).join(' ') +
+      ` | ai=${aiVerdict ? (aiVerdict.compliant ? 'compliant' : 'non-compliant') : 'none'}` +
+      ` | comment=${decision.shouldComment} variant=${decision.variant || 'n/a'} draft=${decision.shouldDraft} draftedNow=${draftedNow}`
+  );
+  if (decision.shouldComment) {
+    core.startGroup('rendered comment');
+    core.info(commentBody);
+    core.endGroup();
   }
 
   if (dryRun) {
