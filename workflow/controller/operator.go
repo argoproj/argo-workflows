@@ -4553,7 +4553,9 @@ func (woc *wfOperationCtx) getServiceAccountTokenName(ctx context.Context, name 
 	if err != nil {
 		return "", err
 	}
-	return secrets.TokenNameForServiceAccount(account), nil
+	return secrets.TokenNameForServiceAccountWithSecretGetter(ctx, account, func(ctx context.Context, name string) (*apiv1.Secret, error) {
+		return woc.controller.kubeclientset.CoreV1().Secrets(woc.wf.Namespace).Get(ctx, name, metav1.GetOptions{})
+	})
 }
 
 // setWfPodNamesAnnotation sets an annotation on a workflow with the pod naming

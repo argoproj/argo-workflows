@@ -23,6 +23,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/test/util"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/secrets"
 	armocks "github.com/argoproj/argo-workflows/v4/workflow/artifactrepositories/mocks"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	wfutil "github.com/argoproj/argo-workflows/v4/workflow/util"
@@ -285,6 +286,19 @@ func TestWFLevelExecutorServiceAccountName(t *testing.T) {
 	woc := newWoc(ctx)
 	_, err := util.CreateServiceAccountWithToken(ctx, woc.controller.kubeclientset, "", "foo")
 	require.NoError(t, err)
+	_, err = woc.controller.kubeclientset.CoreV1().Secrets("").Create(ctx, &apiv1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Name: "foo-image-pull-secret"},
+		Type:       apiv1.SecretTypeDockerConfigJson,
+	}, metav1.CreateOptions{})
+	require.NoError(t, err)
+	sa, err := woc.controller.kubeclientset.CoreV1().ServiceAccounts("").Get(ctx, "foo", metav1.GetOptions{})
+	require.NoError(t, err)
+	sa.Secrets = []apiv1.ObjectReference{
+		{Name: "foo-image-pull-secret"},
+		{Name: secrets.TokenName("foo")},
+	}
+	_, err = woc.controller.kubeclientset.CoreV1().ServiceAccounts("").Update(ctx, sa, metav1.UpdateOptions{})
+	require.NoError(t, err)
 
 	woc.execWf.Spec.Executor = &wfv1.ExecutorConfig{ServiceAccountName: "foo"}
 	tmplCtx, err := woc.createTemplateContext(ctx, wfv1.ResourceScopeLocal, "")
@@ -297,6 +311,7 @@ func TestWFLevelExecutorServiceAccountName(t *testing.T) {
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
 	assert.Equal(t, "exec-sa-token", pod.Spec.Volumes[2].Name)
+	assert.Equal(t, secrets.TokenName("foo"), pod.Spec.Volumes[2].Secret.SecretName)
 
 	waitCtr := pod.Spec.Containers[0]
 	verifyServiceAccountTokenVolumeMount(t, waitCtr, "exec-sa-token", "/var/run/secrets/kubernetes.io/serviceaccount")
