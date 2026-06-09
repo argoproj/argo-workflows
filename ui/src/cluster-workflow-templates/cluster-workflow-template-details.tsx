@@ -66,12 +66,19 @@ export function ClusterWorkflowTemplateDetails({history, location, match}: Route
     useEffect(() => {
         (async () => {
             try {
-                const workflowList = await services.workflows.list('', null, [`${models.labels.clusterWorkflowTemplate}=${name}`], {limit: 50});
+                // Listing workflows that reference this CWT. Empty namespace
+                // means "all namespaces" server-side, which only cluster-admin
+                // SSO principals are allowed. Tenant SAs are namespaced, so
+                // scope the query to the user's default namespace —
+                // getNamespaceWithDefault picks current → user → managed →
+                // 'default'. Same fallback chain WorkflowsList uses post-SSO.
                 const info = await services.info.getInfo();
+                const ns = nsUtils.getNamespaceWithDefault(info.managedNamespace);
+                const workflowList = await services.workflows.list(ns, null, [`${models.labels.clusterWorkflowTemplate}=${name}`], {limit: 50});
 
                 setWorkflows(workflowList.items);
                 setColumns(info.columns);
-                setNamespace(nsUtils.getNamespaceWithDefault(info.managedNamespace));
+                setNamespace(ns);
                 setError(null);
             } catch (err) {
                 setError(err);
