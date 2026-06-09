@@ -478,6 +478,25 @@ func (s *databaseSemaphore) acquire(holderKey string, tx *transaction) (bool, er
 	return false, nil
 }
 
+// reacquire asserts at startup that the recorded holder still holds this lock
+// in the database. The database is the single source of truth for a
+// database-backed lock: the held row is durable and survives the controller
+// restart, so nothing is inserted or mutated here. A missing row means the
+// hold no longer exists - e.g. it was expired by ExpireInactiveLocks while the
+// controller was down and may since have been acquired by another holder - so
+// the workflow's recorded hold is stale and the caller fails the workflow
+// rather than resurrect a hold the database does not back.
+func (s *databaseSemaphore) reacquire(holderKey string, tx *transaction) error {
+	holders, err := s.currentHoldersSession(*tx.db)
+	if err != nil {
+		return fmt.Errorf("could not verify hold on %s for %s: %w", s.longDBKey(), holderKey, err)
+	}
+	if !slices.Contains(holders, holderKey) {
+		return fmt.Errorf("hold on %s for %s is not present in the database", s.longDBKey(), holderKey)
+	}
+	return nil
+}
+
 func (s *databaseSemaphore) tryAcquire(holderKey string, tx *transaction) (bool, string, error) {
 	acq, already, msg := s.checkAcquire(holderKey, tx)
 	if already {

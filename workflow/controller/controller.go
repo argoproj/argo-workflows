@@ -458,7 +458,23 @@ func (wfc *WorkflowController) initManagers(ctx context.Context) error {
 		return err
 	}
 
-	wfc.syncManager.Initialize(ctx, wfList.Items)
+	// A non-nil error means a recorded lock holder could not be re-established
+	// (undecodable lock name, or an unavailable database session). This is fatal
+	// by design: we fail closed rather than risk a silent double-acquire.
+	staleHolds, err := wfc.syncManager.Initialize(ctx, wfList.Items)
+	if err != nil {
+		return err
+	}
+	// Stale holds are workflows whose recorded hold on a database-backed lock
+	// the database no longer has (e.g. expired while the controller was down,
+	// possibly acquired by someone else since). The database is the source of
+	// truth, so these workflows must not keep running on a hold it does not
+	// back: fail them; persistUpdates releases any locks they still hold.
+	for _, stale := range staleHolds {
+		woc := newWorkflowOperationCtx(stale.WF, wfc)
+		woc.markWorkflowFailed(ctx, fmt.Sprintf("Failed to re-establish synchronization lock at controller startup: %s", stale.Reason))
+		woc.persistUpdates(ctx)
+	}
 
 	if err := wfc.throttler.Init(wfList.Items); err != nil {
 		return err
