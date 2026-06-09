@@ -15,7 +15,6 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
-	controllercache "github.com/argoproj/argo-workflows/v4/workflow/controller/cache"
 )
 
 func (woc *wfOperationCtx) mergePatchTaskSet(ctx context.Context, patch any, subresources ...string) error {
@@ -154,10 +153,20 @@ func (woc *wfOperationCtx) reconcileTaskSet(ctx context.Context) error {
 
 			woc.wf.Status.Nodes.Set(ctx, nodeID, *node)
 			if node.MemoizationStatus != nil && node.Succeeded() {
-				c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, node.MemoizationStatus.CacheName)
-				err := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs)
-				if err != nil {
-					woc.log.WithFields(logging.Fields{"nodeID": node.ID}).WithError(err).Error(ctx, "Failed to save node outputs to cache")
+				c := woc.controller.getMemoizationCache(ctx, woc.wf.Namespace, node.MemoizationStatus.CacheName)
+				if c == nil {
+					woc.log.WithFields(logging.Fields{"nodeID": node.ID}).Warn(ctx, "Memoization cache unavailable; skipping cache save")
+				} else {
+					nodeTmpl, tmplErr := woc.GetNodeTemplate(ctx, node)
+					maxAge := ""
+					if tmplErr != nil {
+						woc.log.WithFields(logging.Fields{"nodeID": node.ID}).WithError(tmplErr).Warn(ctx, "Failed to get node template for cache save; using default maxAge")
+					} else if nodeTmpl != nil && nodeTmpl.Memoize != nil {
+						maxAge = nodeTmpl.Memoize.MaxAge
+					}
+					if err := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs, maxAge); err != nil {
+						woc.log.WithFields(logging.Fields{"nodeID": node.ID}).WithError(err).Error(ctx, "Failed to save node outputs to cache")
+					}
 				}
 			}
 			woc.updated = true

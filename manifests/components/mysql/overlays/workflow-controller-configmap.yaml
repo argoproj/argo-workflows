@@ -44,6 +44,18 @@ data:
       passwordSecret:
         name: argo-mysql-config
         key: password
+  memoization: |
+    tableName: cache_entries
+    mysql:
+      host: mysql
+      port: 3306
+      database: argo
+      userNameSecret:
+        name: argo-mysql-config
+        key: username
+      passwordSecret:
+        name: argo-mysql-config
+        key: password
   retentionPolicy: |
     completed: 10
     failed: 3

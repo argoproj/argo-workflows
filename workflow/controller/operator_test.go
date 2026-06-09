@@ -6301,6 +6301,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: memoized-workflow-test
+  namespace: default
 spec:
   entrypoint: whalesay
   arguments:
@@ -6389,11 +6390,33 @@ func TestConfigMapCacheLoadOperateMaxAge(t *testing.T) {
 	}
 }
 
+func TestUnavailableSQLMemoizationBackendTreatsLookupAsCacheMiss(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(workflowCachedMaxAge)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+
+	_, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.ObjectMeta.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	require.Len(t, woc.wf.Status.Nodes, 1)
+	for _, node := range woc.wf.Status.Nodes {
+		assert.Equal(t, wfv1.NodePending, node.Phase)
+		assert.NotNil(t, node.MemoizationStatus)
+		assert.False(t, node.MemoizationStatus.Hit)
+		assert.Nil(t, node.Outputs)
+	}
+}
+
 var workflowStepCachedWithRetryStrategy = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: memoized-workflow-test
+  namespace: default
 spec:
   entrypoint: whalesay
   arguments:
@@ -6428,6 +6451,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: memoized-workflow-test
+  namespace: default
 spec:
   entrypoint: main
 #  podGC:

@@ -13,10 +13,36 @@ import (
 	persist "github.com/argoproj/argo-workflows/v4/persist/sqldb"
 	"github.com/argoproj/argo-workflows/v4/util/instanceid"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	memodb "github.com/argoproj/argo-workflows/v4/util/memo/db"
 	"github.com/argoproj/argo-workflows/v4/util/sqldb"
 	"github.com/argoproj/argo-workflows/v4/workflow/artifactrepositories"
+	controllercache "github.com/argoproj/argo-workflows/v4/workflow/controller/cache"
 	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
 )
+
+var (
+	memoSessionProxyFromConfig = memodb.SessionProxyFromConfig
+	memoizationMigrate         = memodb.Migrate
+)
+
+// resetMemoizationBackend switches memoization query backend state and closes the previous
+// database session. It updates both controller-level query access and cache-factory query access,
+// then clears wfc.memoSessionProxy. If sessionProxy is nil, it closes the currently tracked
+// session; otherwise it closes the explicitly provided one.
+func (wfc *WorkflowController) resetMemoizationBackend(ctx context.Context, sessionProxy *sqldb.SessionProxy, cacheQueries memodb.MemoizationDB) {
+	logger := logging.RequireLoggerFromContext(ctx)
+	wfc.setMemoizationQueries(cacheQueries)
+	wfc.cacheFactory.SetQueries(cacheQueries)
+	if sessionProxy == nil {
+		sessionProxy = wfc.memoSessionProxy
+	}
+	wfc.memoSessionProxy = nil
+	if sessionProxy != nil {
+		if err := sessionProxy.Close(); err != nil {
+			logger.WithError(err).Warn(ctx, "Failed to close memoization database session")
+		}
+	}
+}
 
 func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 	logger := logging.RequireLoggerFromContext(ctx)
@@ -78,6 +104,42 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 		logger.Info(ctx, "Persistence configuration disabled")
 	}
 
+	memoCfg := wfc.Config.Memoization
+	if memoCfg != nil {
+		logger.Info(ctx, "Memoization database configuration enabled")
+		sessionProxy := wfc.memoSessionProxy
+		if sessionProxy == nil {
+			sessionProxy = memoSessionProxyFromConfig(ctx, wfc.kubeclientset, wfc.namespace, memoCfg)
+			if sessionProxy == nil {
+				logger.Warn(ctx, "Memoization database unavailable; memoization disabled")
+				wfc.resetMemoizationBackend(ctx, nil, memodb.NullMemoizationDB)
+				goto memoizationConfigured
+			}
+		}
+		cfg := memodb.ConfigFromConfig(memoCfg)
+		if err := memoizationMigrate(ctx, sessionProxy, cfg); err != nil {
+			logger.WithError(err).Error(ctx, "Memoization database migration failed; memoization disabled")
+			wfc.resetMemoizationBackend(ctx, sessionProxy, memodb.NullMemoizationDB)
+			goto memoizationConfigured
+		}
+		queries, err := memodb.NewQueries(cfg.TableName, sessionProxy)
+		if err != nil {
+			logger.WithError(err).Error(ctx, "Memoization database initialization failed; memoization disabled")
+			wfc.resetMemoizationBackend(ctx, sessionProxy, memodb.NullMemoizationDB)
+			goto memoizationConfigured
+		}
+		wfc.memoSessionProxy = sessionProxy
+		wfc.setMemoizationQueries(queries)
+		wfc.cacheFactory.SetQueries(queries)
+	} else {
+		if wfc.memoSessionProxy != nil {
+			logger.Info(ctx, "Memoization database configuration removed")
+		}
+		wfc.resetMemoizationBackend(ctx, nil, nil)
+		logger.Info(ctx, "Memoization database configuration disabled; using ConfigMap-based caching")
+	}
+
+memoizationConfigured:
 	wfc.hydrator = hydrator.New(wfc.offloadNodeStatusRepo)
 	wfc.updateEstimatorFactory(ctx)
 	wfc.rateLimiter = wfc.newRateLimiter()
@@ -88,6 +150,11 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 		WithField("managedNamespace", wfc.GetManagedNamespace()).
 		Info(ctx, "")
 	return nil
+}
+
+// getMemoizationCache returns the memoization cache for the given namespace and name.
+func (wfc *WorkflowController) getMemoizationCache(ctx context.Context, namespace, name string) controllercache.MemoizationCache {
+	return wfc.cacheFactory.GetCache(ctx, controllercache.ConfigMapCache, namespace, name)
 }
 
 // initDB inits argo DB tables
