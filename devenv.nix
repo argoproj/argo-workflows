@@ -22,24 +22,24 @@ let
 in
 {
   # Import packages from nixpkgs and the argo flake
-  packages = with pkgs; [
-    go_1_25
-    nodejs_20
+  packages = with argoFlakePackages; [
+    go
+    nodejs
     yarn
     jq
     protobuf
     diffutils
-    argoFlakePackages.kubeauto  # Import kubeauto from the argo flake
-    argoFlakePackages.mockery
-    argoFlakePackages.protoc-gen-gogo-all
-    argoFlakePackages.grpc-ecosystem
-    argoFlakePackages.go-swagger
-    argoFlakePackages.controller-tools
-    argoFlakePackages.k8sio-tools
-    argoFlakePackages.goreman
-    argoFlakePackages.stern
-    argoFlakePackages.buf
-    argoFlakePackages.nodeDependencies
+    kubeauto
+    mockery
+    protoc-gen-gogo-all
+    grpc-ecosystem
+    go-swagger
+    controller-tools
+    k8sio-tools
+    goreman
+    stern
+    buf
+    nodeDependencies
     golangci-lint
   ];
 
@@ -48,22 +48,30 @@ in
     USE_NIX = "true";
   };
 
-  # Define processes directly. 
-  # We removed the explicit 'process.managers.process-compose.settings' dependency graph 
-  # to avoid bugs/deadlocks. devenv will start these in parallel using its native process-compose backend.
+  tasks."argo:cluster" = {
+    exec = ''
+      if ! k3d cluster get argo-dev &>/dev/null; then
+        echo "Creating k3d cluster 'argo-dev'..."
+        k3d cluster create argo-dev
+      fi
+    '';
+  };
+
+  tasks."argo:install" = {
+    exec = "make install PROFILE=minimal";
+    after = [ "argo:cluster@succeeded" ];
+    before = [
+      "devenv:processes:kubeauto"
+      "devenv:processes:workflow-controller"
+      "devenv:processes:argo-server"
+    ];
+  };
+
   processes = {
-    kubeauto = {
-      exec = "kubeauto";
-    };
-    workflow-controller = {
-      exec = controllerCmd;
-    };
-    argo-server = {
-      exec = argoServerCmd;
-    };
-    ui = {
-      exec = uiCmd;
-    };
+    kubeauto.exec = "kubeauto";
+    workflow-controller.exec = controllerCmd;
+    argo-server.exec = argoServerCmd;
+    ui.exec = uiCmd;
   };
   enterShell = ''
     # --- 1. Environment Guard & Local Paths ---

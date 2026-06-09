@@ -2,4 +2,7 @@ inputs:
   nixpkgs:
     url: github:NixOS/nixpkgs/nixpkgs-unstable
   argo-flake:
-    url: path:./dev/nix 
+    url: path:./dev/nix
+cachix:
+  pull:
+    - argo-workflows 
