@@ -986,7 +986,7 @@ func (tctx *templateValidationCtx) validateSteps(ctx context.Context, scope map[
 			if ok {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].name '%s' is not unique", tmpl.Name, i, step.Name)
 			}
-			if errs := isValidWorkflowFieldName(step.Name); len(errs) != 0 {
+			if errs := isValidStepName(step.Name); len(errs) != 0 {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].name '%s' is invalid: %s", tmpl.Name, i, step.Name, strings.Join(errs, ";"))
 			}
 			stepNames[step.Name] = true
@@ -1605,6 +1605,9 @@ var (
 	paramRegex               = regexp.MustCompile(`{{[-a-zA-Z0-9]+(\.[-a-zA-Z0-9_]+)*}}`)
 	paramOrArtifactNameRegex = regexp.MustCompile(`^[-a-zA-Z0-9_]+$`)
 	workflowFieldNameRegex   = regexp.MustCompile("^" + workflowFieldNameFmt + "$")
+	// placeholderFragmentRegex matches internal placeholder tokens injected by
+	// ProcessArgs during validation (e.g. "__argo__internal__placeholder-42").
+	placeholderFragmentRegex = regexp.MustCompile(regexp.QuoteMeta(template.PlaceholderPrefix) + `\d+`)
 )
 
 func isParameter(p string) bool {
@@ -1636,6 +1639,18 @@ func isValidWorkflowFieldName(name string) []string {
 		errs = append(errs, msg)
 	}
 	return errs
+}
+
+// isValidStepName validates a step name that may contain internal placeholder
+// tokens from ProcessArgs substitution (e.g. "run-__argo__internal__placeholder-12").
+// It replaces every placeholder fragment with a short valid sentinel ("x") and
+// then runs the normal field-name check on the sanitized result. This ensures
+// the literal parts of the name (the "skeleton") are still validated while
+// tolerating the placeholder tokens that will be resolved at runtime.
+// See https://github.com/argoproj/argo-workflows/issues/15896
+func isValidStepName(name string) []string {
+	sanitized := placeholderFragmentRegex.ReplaceAllString(name, "x")
+	return isValidWorkflowFieldName(sanitized)
 }
 
 func getTemplateID(tmpl *wfv1.Template) string {
