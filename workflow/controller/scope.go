@@ -17,14 +17,16 @@ import (
 
 // wfScope contains the current scope of variables available when executing a template
 type wfScope struct {
-	tmpl  *wfv1.Template
-	scope map[string]any
+	tmpl           *wfv1.Template
+	scope          map[string]any
+	skippedOutputs map[string]bool
 }
 
 func createScope(tmpl *wfv1.Template) *wfScope {
 	scope := &wfScope{
-		tmpl:  tmpl,
-		scope: make(map[string]any),
+		tmpl:           tmpl,
+		scope:          make(map[string]any),
+		skippedOutputs: make(map[string]bool),
 	}
 	if tmpl != nil {
 		for _, param := range scope.tmpl.Inputs.Parameters {
@@ -59,8 +61,17 @@ func (s *wfScope) addArtifactToScope(key string, artifact wfv1.Artifact) {
 	s.scope[key] = artifact
 }
 
-// resolveVar resolves a parameter or artifact
-func (s *wfScope) resolveVar(v string) (any, error) {
+// addSkippedParamToScope registers a parameter key with an empty value to satisfy reference
+// resolution for skipped/omitted steps, and marks it so callers can distinguish it from a
+// legitimately empty output.
+func (s *wfScope) addSkippedParamToScope(key string) {
+	s.scope[key] = ""
+	s.skippedOutputs[key] = true
+}
+
+// resolveVar resolves a parameter or artifact and additionally returns the unwrapped tag
+// (v with the surrounding "{{" / "}}" stripped) so callers can reuse it without re-parsing.
+func (s *wfScope) resolveVar(v string) (string, any, error) {
 	m := make(map[string]any)
 	maps.Copy(m, s.scope)
 	if s.tmpl != nil {
@@ -71,19 +82,23 @@ func (s *wfScope) resolveVar(v string) (any, error) {
 	return template.ResolveVar(v, m)
 }
 
-func (s *wfScope) resolveParameter(p *wfv1.ValueFrom) (any, error) {
+// resolveParameter resolves a ValueFrom and additionally reports whether the source was a
+// skipped/omitted step's placeholder output (only meaningful for the Parameter form).
+func (s *wfScope) resolveParameter(p *wfv1.ValueFrom) (any, bool, error) {
 	if p == nil || (p.Parameter == "" && p.Expression == "") {
-		return "", nil
+		return "", false, nil
 	}
 	if p.Expression != "" {
 		env := env.GetFuncMap(s.scope)
 		program, err := expr.Compile(p.Expression, expr.Env(env))
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
-		return expr.Run(program, env)
+		val, err := expr.Run(program, env)
+		return val, false, err
 	}
-	return s.resolveVar(p.Parameter)
+	tag, val, err := s.resolveVar(p.Parameter)
+	return val, s.skippedOutputs[tag], err
 }
 
 func (s *wfScope) resolveArtifact(ctx context.Context, art *wfv1.Artifact) (*wfv1.Artifact, error) {
@@ -105,7 +120,7 @@ func (s *wfScope) resolveArtifact(ctx context.Context, art *wfv1.Artifact) (*wfv
 			return nil, err
 		}
 	} else {
-		val, err = s.resolveVar(art.From)
+		_, val, err = s.resolveVar(art.From)
 	}
 
 	if err != nil {
