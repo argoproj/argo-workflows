@@ -30,9 +30,9 @@ func (woc *wfOperationCtx) mergePatchTaskSet(ctx context.Context, patch interfac
 	return nil
 }
 
-func (woc *wfOperationCtx) getDeleteTaskAndNodePatch() (tasksPatch map[string]interface{}, nodesPatch map[string]interface{}) {
+func (woc *wfOperationCtx) getDeleteTaskAndNodePatch(nodes wfv1.Nodes) (tasksPatch map[string]interface{}, nodesPatch map[string]interface{}) {
 	deletedNode := make(map[string]interface{})
-	for _, node := range woc.wf.Status.Nodes {
+	for _, node := range nodes {
 		if node.IsTaskSetNode() && node.Fulfilled() {
 			deletedNode[node.ID] = nil
 		}
@@ -66,11 +66,14 @@ func (woc *wfOperationCtx) hasTaskSetNodes() bool {
 	})
 }
 
-func (woc *wfOperationCtx) removeCompletedTaskSetStatus(ctx context.Context) error {
-	if !woc.hasTaskSetNodes() {
+func (woc *wfOperationCtx) removeCompletedTaskSetStatus(ctx context.Context, nodes wfv1.Nodes) error {
+	// Avoid sending empty patches when there are no completed taskset nodes to remove.
+	if !nodes.Any(func(node wfv1.NodeStatus) bool {
+		return node.IsTaskSetNode() && node.Fulfilled()
+	}) {
 		return nil
 	}
-	tasksPatch, nodesPatch := woc.getDeleteTaskAndNodePatch()
+	tasksPatch, nodesPatch := woc.getDeleteTaskAndNodePatch(nodes)
 	if woc.wf.Status.Fulfilled() {
 		tasksPatch["metadata"] = metav1.ObjectMeta{
 			Labels: map[string]string{
