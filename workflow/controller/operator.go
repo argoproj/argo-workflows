@@ -740,7 +740,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		woc.log.Panic("cannot persist updates with mismatched resource versions")
 	}
 	wfClient := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows(woc.wf.Namespace)
-	// try and compress nodes if needed
+
 	nodes := woc.wf.Status.Nodes
 	err := woc.controller.hydrator.Dehydrate(woc.wf)
 	if err != nil {
@@ -756,7 +756,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	}
 
 	// Remove completed taskset status before update workflow.
-	err = woc.removeCompletedTaskSetStatus(ctx)
+	err = woc.removeCompletedTaskSetStatus(ctx, nodes)
 	if err != nil {
 		woc.log.WithError(err).Warn("error updating taskset")
 	}
