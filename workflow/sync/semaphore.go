@@ -160,12 +160,12 @@ func (s *prioritySemaphore) removeFromQueue(holderKey string) error {
 	return nil
 }
 
-func (s *prioritySemaphore) acquire(holderKey string, _ *transaction) bool {
+func (s *prioritySemaphore) acquire(holderKey string, _ *transaction) (bool, error) {
 	if s.semaphore.TryAcquire(1) {
 		s.lockHolder[holderKey] = true
-		return true
+		return true, nil
 	}
-	return false
+	return false, nil
 }
 
 func isSameWorkflowNodeKeys(firstKey, secondKey string) bool {
@@ -226,23 +226,24 @@ func (s *prioritySemaphore) checkAcquire(holderKey string, _ *transaction) (bool
 	return false, false, waitingMsg
 }
 
-func (s *prioritySemaphore) tryAcquire(holderKey string, tx *transaction) (bool, string) {
+func (s *prioritySemaphore) tryAcquire(holderKey string, tx *transaction) (bool, string, error) {
 	acq, already, msg := s.checkAcquire(holderKey, tx)
 	if already {
-		return true, msg
+		return true, msg, nil
 	}
 	if !acq {
-		return false, msg
+		return false, msg, nil
 	}
-	if s.acquire(holderKey, tx) {
+	acquired, _ := s.acquire(holderKey, tx)
+	if acquired {
 		s.pending.pop()
 		limit := s.getLimit()
 		s.log.Infof("%s acquired by %s. Lock availability: %d/%d", s.name, holderKey, limit-len(s.lockHolder), limit)
 		s.notifyWaiters()
-		return true, ""
+		return true, "", nil
 	}
 	s.log.Debugf("Current semaphore Holders. %v", s.lockHolder)
-	return false, msg
+	return false, msg, nil
 }
 
 func (s *prioritySemaphore) probeWaiting() {}
