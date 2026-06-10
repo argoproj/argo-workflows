@@ -57,7 +57,7 @@ spec:
                 description: 'v3.6 and after: Schedules is a list of schedules to
                   run the Workflow in Cron format'
                 items:
-                  pattern: ^(@(yearly|annually|monthly|weekly|daily|midnight|hourly)|@every\s+([0-9]+(ns|us|µs|ms|s|m|h))+|([0-9*,/?-]+\s+){4}[0-9*,/?-]+)$
+                  pattern: ^(@(yearly|annually|monthly|weekly|daily|midnight|hourly)|@every\s+([0-9]+(ns|us|µs|ms|s|m|h))+|([A-Za-z0-9*,/?-]+\s+){4}[A-Za-z0-9*,/?-]+)$
                   type: string
                 minItems: 1
                 type: array
