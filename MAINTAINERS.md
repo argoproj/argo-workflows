@@ -19,7 +19,7 @@ If this file and that one differ, then the argoproj file is the authoritative ve
 | Tim Collins               | [tico24](https://github.com/tico24)               | Approver(docs) | Independent                                    |
 | Saravanan Balasubramanian | [sarabala1979](https://github.com/sarabala1979)   | Reviewer       | [Intuit](https://www.github.com/intuit/)       |
 | Alex Collins              | [alexec](https://github.com/alexec)               | Reviewer       | [Intuit](https://www.github.com/intuit/)       |
-| Ed Lee                    | [edlee2121](https://github.com/edlee2121)         | Reviewer       | [Intuit](https://www.github.com/intuit/)       |
+| Ed Lee                    | [edlee2121](https://github.com/edlee2121)         | Reviewer       | Independent                                    |
 | William Van Hevelingen    | [blkperl](https://github.com/blkperl)             | Reviewer       | [Acquia](https://www.acquia.com/)              |
 | Yucong Wang               | [jswxstw](https://github.com/jswxstw)             | Reviewer       | Independent                                    |
 | Eduardo Rodrigues         | [eduardodbr](https://github.com/eduardodbr)       | Reviewer       | Independent                                    |
