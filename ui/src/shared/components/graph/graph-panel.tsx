@@ -183,10 +183,10 @@ export function GraphPanel(props: Props) {
                     <a onClick={() => setHorizontal(s => !s)} title='Horizontal/vertical layout'>
                         <i className={`fa ${horizontal ? 'fa-long-arrow-alt-right' : 'fa-long-arrow-alt-down'} fa-fw`} />
                     </a>
-                    <a onClick={() => setNodeSize(s => s * 1.2)} title='Zoom in'>
+                    <a onClick={() => setNodeSize(s => s + (props.nodeSize || defaultNodeSize) * 0.1)} title='Zoom in'>
                         <i className='fa fa-search-plus fa-fw' />
                     </a>
-                    <a onClick={() => setNodeSize(s => s / 1.2)} title='Zoom out'>
+                    <a onClick={() => setNodeSize(s => Math.max((props.nodeSize || defaultNodeSize) * 0.1, s - (props.nodeSize || defaultNodeSize) * 0.1))} title='Zoom out'>
                         <i className='fa fa-search-minus fa-fw' />
                     </a>
                     <div className='zoom-value'>{Math.round((nodeSize / (props.nodeSize || defaultNodeSize)) * 100)}%</div>
