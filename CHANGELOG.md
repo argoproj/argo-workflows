@@ -1,5 +1,51 @@
 # Changelog
 
+## v4.0.6 (2026-06-10)
+
+Full Changelog: [v4.0.5...v4.0.6](https://github.com/argoproj/argo-workflows/compare/v4.0.5...v4.0.6)
+
+### Selected Changes
+
+* [277e9cef0](https://github.com/argoproj/argo-workflows/commit/277e9cef0ad16d7eaaab253573d0695951a65dbd) Merge commit from fork
+* [5ac265d6a](https://github.com/argoproj/argo-workflows/commit/5ac265d6aef7418e57c64d66168ea18b6dd8f609) fix: WorkflowTaskSets size bloat for large workflows (cherry-pick #16075 for 4.0) (#16253)
+* [03fbf9f1d](https://github.com/argoproj/argo-workflows/commit/03fbf9f1db191297d60dcb99f121e62ad7013169) fix: address semaphore/mutex unsoundness for Initalize (cherry-pick #16160 for 4.0) (#16252)
+* [b604bfc95](https://github.com/argoproj/argo-workflows/commit/b604bfc95bb0500b4bb90af6a5d9b2f6925c97f9) fix: change log level because behavior is expected (cherry-pick #16124 for 4.0) (#16251)
+* [7466a0831](https://github.com/argoproj/argo-workflows/commit/7466a083102316db0312d590b64a611433c71cd7) fix: retry for database transaction errors. Fixes #16101 (cherry-pick #16102 for 4.0) (#16249)
+* [c7a1816c4](https://github.com/argoproj/argo-workflows/commit/c7a1816c4e23ecba647a72c02afc49fc49504297) fix(crds): escape template variables in CRD descriptions to prevent Helm rendering errors (cherry-pick #16036 for 4.0) (#16243)
+* [b5d864662](https://github.com/argoproj/argo-workflows/commit/b5d864662cf4cbfd10d9da5b41eb5a62170f3cfc) fix: allow cron aliases in schedule validation (cherry-pick #16100 for 4.0) (#16245)
+* [51980e5e6](https://github.com/argoproj/argo-workflows/commit/51980e5e6bffca4c80e54897e75cce50486f04f0) fix: do not re-run `onExitNode`. Fixes #14392 (cherry-pick #16088 for 4.0) (#16247)
+* [c365da494](https://github.com/argoproj/argo-workflows/commit/c365da49401d1276c65cd97c57bc26cc953645ef) fix(ui): fix mixed bold/notbold markdown in title annotations (cherry-pick #16064 for 4.0) (#16230)
+* [2f884facc](https://github.com/argoproj/argo-workflows/commit/2f884faccdd87792a7086b426d1c4524abfdf7c9) chore(deps): update module golang.org/x/crypto to v0.52.0 [security] (release-4.0) (#16130)
+* [e982bee95](https://github.com/argoproj/argo-workflows/commit/e982bee951aa866de93fa1082ff50497a571ceea) chore(deps): update module golang.org/x/net to v0.55.0 [security] (release-4.0) (#16067)
+* [a90250376](https://github.com/argoproj/argo-workflows/commit/a902503763f254e304f590a4d582d2b23b51fcbd) fix(ui): toggle filter dropdown closed when clicking anchor (cherry-pick #16014 for 4.0) (#16148)
+* [b29342673](https://github.com/argoproj/argo-workflows/commit/b29342673fd3cadf903a7d2da4974c8bc77b8cc3) fix: classify bare 5xx S3 responses as transient. Fixes #15565 (cherry-pick #16016 for 4.0) (#16033)
+* [e52434e6a](https://github.com/argoproj/argo-workflows/commit/e52434e6a39b661233fe6319c2f6cde14ed24cd6) chore(deps): update module github.com/go-git/go-git/v5 to v5.19.1 [security] (release-4.0) (#16118)
+* [d3e736b85](https://github.com/argoproj/argo-workflows/commit/d3e736b858d443202eea5d0dbc2866b6ff159981) chore(deps): update distroless base image (release-4.0) (#16217)
+* [f4381b6e6](https://github.com/argoproj/argo-workflows/commit/f4381b6e66030d0a66518b912c5722c513dc385b) chore(deps): update dependency qs to v6.15.2 [security] (release-4.0) (#16135)
+* [11eb27276](https://github.com/argoproj/argo-workflows/commit/11eb272765c45e06d63e6b46d80667860950bba4) fix: metadata merge. Fixes #15870 (cherry-pick #16103 for 4.0) (#16147)
+* [7b27535de](https://github.com/argoproj/argo-workflows/commit/7b27535de253e35c9a70cbff633ce9689ed028d1) chore(deps): update module golang.org/x/sys to v0.44.0 [security] (release-4.0) (#16138)
+* [3b72a8c13](https://github.com/argoproj/argo-workflows/commit/3b72a8c1313661ab1f7762be9759619b72e1bd24) fix: ignore resource version (match) when continue token present (cherry-pick #16099 for 4.0) (#16142)
+* [1267ad8ad](https://github.com/argoproj/argo-workflows/commit/1267ad8ad633cabf605a15c6ecdc7f7d72ab450e) chore(deps): update module github.com/go-git/go-git/v5 to v5.19.0 [security] (release-4.0) (#16084)
+* [6d300d4ff](https://github.com/argoproj/argo-workflows/commit/6d300d4ff64e6f110952cbfb6913537df535ab4f) fix(ui): populate URL filter parameters on first load. Fixes #15794 (cherry-pick #15796 for 4.0) (#16080)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Ali Asghar
+* Anton Pechenin
+* Claude Opus 4.8 (1M context)
+* Elliot Gunton
+* Ferhat Güneri
+* Isitha Subasinghe
+* isubasinghe
+* John Kelly
+* nakatani-yo
+* Pradeep Sagitra
+* spaced
+* Umang Tiwary
+
+</details>
+
 ## v4.0.5 (2026-04-23)
 
 Full Changelog: [v4.0.4...v4.0.5](https://github.com/argoproj/argo-workflows/compare/v4.0.4...v4.0.5)
@@ -276,7 +322,7 @@ Full Changelog: [v4.0.0-rc1...v4.0.0-rc2](https://github.com/argoproj/argo-workf
 
 ## v4.0.0-rc1 (2025-12-11)
 
-Full Changelog: [v3.7.14...v4.0.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.7.14...v4.0.0-rc1)
+Full Changelog: [v3.7.15...v4.0.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.7.15...v4.0.0-rc1)
 
 ### Selected Changes
 
@@ -463,6 +509,44 @@ Full Changelog: [v3.7.14...v4.0.0-rc1](https://github.com/argoproj/argo-workflow
 * William Van Hevelingen
 * Xavier Hardy
 * Yuan Tang
+
+</details>
+
+## v3.7.15 (2026-06-10)
+
+Full Changelog: [v3.7.14...v3.7.15](https://github.com/argoproj/argo-workflows/compare/v3.7.14...v3.7.15)
+
+### Selected Changes
+
+* [358cc3968](https://github.com/argoproj/argo-workflows/commit/358cc3968c8f06f1be0967e41df191088db0b662) Merge commit from fork
+* [8cbe2380e](https://github.com/argoproj/argo-workflows/commit/8cbe2380e135244020ca0afa6bff8056bb4d306b) fix: address semaphore/mutex unsoundness for Initalize (cherry-pick #16160 for 3.7) (#16254)
+* [d67c1c43d](https://github.com/argoproj/argo-workflows/commit/d67c1c43dec0109ade7781372497c1151fc748c2) fix: retry for database transaction errors. Fixes #16101 (cherry-pick #16102 for 3.7) (#16250)
+* [02bde5198](https://github.com/argoproj/argo-workflows/commit/02bde51982bb5b47ae186adda1447117f8df071d) fix: do not re-run `onExitNode`. Fixes #14392 (cherry-pick #16088 for 3.7) (#16248)
+* [fab3015aa](https://github.com/argoproj/argo-workflows/commit/fab3015aa47cd34f41c793b429d4a8da9ad8ef56) fix: classify bare 5xx S3 responses as transient. Fixes #15565 (cherry-pick #16016 for 3.7) (#16242)
+* [128d54d20](https://github.com/argoproj/argo-workflows/commit/128d54d200c2d550e46602927f843c4db9cee4dc) fix(ui): populate URL filter parameters on first load. Fixes #15794 (cherry-pick #15796 for 3.7) (#16246)
+* [f3cbc81a8](https://github.com/argoproj/argo-workflows/commit/f3cbc81a869264cda523252c455d3f32a15677ea) fix(ui): fix mixed bold/notbold markdown in title annotations (cherry-pick #16064 for 3.7) (#16229)
+* [57226e7a6](https://github.com/argoproj/argo-workflows/commit/57226e7a6c2673e58f28c179c9253fcb0845312c) chore(deps): update module golang.org/x/crypto to v0.52.0 [security] (release-3.7) (#16129)
+* [0a27c4550](https://github.com/argoproj/argo-workflows/commit/0a27c45500afe9e8c2c4d4e509ca347f594e89f2) chore(deps): update module golang.org/x/net to v0.55.0 [security] (release-3.7) (#16134)
+* [0b1aa84e7](https://github.com/argoproj/argo-workflows/commit/0b1aa84e7f5d382e9eb4caef858aed39f7324317) fix(ui): toggle filter dropdown closed when clicking anchor (cherry-pick #16014 for 3.7) (#16149)
+* [b71a45e29](https://github.com/argoproj/argo-workflows/commit/b71a45e298e502defa830d9307595521f564a326) chore(deps): update distroless base image (release-3.7) (#16216)
+* [81f12fba0](https://github.com/argoproj/argo-workflows/commit/81f12fba06dc31a4b1362c0fd6eb2dffba395318) chore(deps): update module github.com/go-git/go-git/v5 to v5.19.1 [security] (release-3.7) (#16117)
+* [824d9a837](https://github.com/argoproj/argo-workflows/commit/824d9a837cc9a7db3015ac9353815dba699c7b73) chore(deps): update dependency qs to v6.15.2 [security] (release-3.7) (#16133)
+* [1a1e3c06e](https://github.com/argoproj/argo-workflows/commit/1a1e3c06e641f073a5fa50c016b372ff20771a33) fix: metadata merge. Fixes #15870 (cherry-pick #16103 for 3.7) (#16150)
+* [463d00fe7](https://github.com/argoproj/argo-workflows/commit/463d00fe74324db9951db80de6417107850c3fc1) chore(deps): update module golang.org/x/sys to v0.44.0 [security] (release-3.7) (#16137)
+* [bcb2d5cb5](https://github.com/argoproj/argo-workflows/commit/bcb2d5cb5d9c765b74891c35b7563e88dfff8e05) fix: ignore resource version (match) when continue token present (cherry-pick #16099 for 3.7) (#16141)
+* [1cd641e30](https://github.com/argoproj/argo-workflows/commit/1cd641e3018fa0f510c867c29a024c30d0204ac8) chore(deps): update module github.com/go-git/go-git/v5 to v5.19.0 [security] (release-3.7) (#16083)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Ali Asghar
+* Claude Fable 5
+* Claude Opus 4.8 (1M context)
+* Elliot Gunton
+* Isitha Subasinghe
+* John Kelly
+* nakatani-yo
+* Umang Tiwary
 
 </details>
 
