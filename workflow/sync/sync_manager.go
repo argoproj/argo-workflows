@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -137,6 +138,26 @@ func getUpgradedKey(wf *wfv1.Workflow, key string, level SyncLevelType) string {
 	return key
 }
 
+// upgradeHolderKey resolves a holder key recorded in a Workflow's
+// synchronization status into the key form the in-memory lock expects.
+//
+// V2 keys are self-describing - they already encode whether the hold is at the
+// workflow level (ns/wfname) or the template level (ns/wfname/nodeID) - so they
+// are returned verbatim and no spec lookup is needed. Only legacy V1 keys are
+// ambiguous and require getWorkflowSyncLevelByName to determine the level. This
+// matters for workflowTemplateRef workflows, whose wf.Spec is empty: a V2 key
+// can be re-established without ever resolving a level from the spec.
+func upgradeHolderKey(ctx context.Context, wf *wfv1.Workflow, holderKey, lockName string) (string, error) {
+	if wfv1.CheckHolderKeyVersion(holderKey) != wfv1.HoldingNameV1 {
+		return holderKey, nil
+	}
+	level, err := getWorkflowSyncLevelByName(ctx, wf, lockName)
+	if err != nil {
+		return "", err
+	}
+	return getUpgradedKey(wf, holderKey, level), nil
+}
+
 type SyncLevelType int
 
 const (
@@ -167,8 +188,25 @@ const (
 // and at the workflow level -> impossible to upgrade correctly
 // due to ambiguity. Currently we just assume workflow level.
 func getWorkflowSyncLevelByName(ctx context.Context, wf *wfv1.Workflow, lockName string) (SyncLevelType, error) {
-	if wf.Spec.Synchronization != nil {
-		syncItems, err := allSyncItems(wf.Spec.Synchronization)
+	// For workflowTemplateRef workflows wf.Spec.Synchronization and
+	// wf.Spec.Templates are empty; the rendered spec lives in
+	// wf.Status.StoredWorkflowSpec. Inspect both so the level can be resolved
+	// regardless of where the synchronization block was declared.
+	syncBlocks := []*wfv1.Synchronization{wf.Spec.Synchronization}
+	templates := wf.Spec.Templates
+	if wf.Status.StoredWorkflowSpec != nil {
+		syncBlocks = append(syncBlocks, wf.Status.StoredWorkflowSpec.Synchronization)
+		// slices.Concat allocates a fresh backing array; a plain append could
+		// write into wf.Spec.Templates' spare capacity and corrupt the caller's
+		// slice (which aliases the workflow in wfs).
+		templates = slices.Concat(wf.Spec.Templates, wf.Status.StoredWorkflowSpec.Templates)
+	}
+
+	for _, sync := range syncBlocks {
+		if sync == nil {
+			continue
+		}
+		syncItems, err := allSyncItems(sync)
 		if err != nil {
 			return ErrorLevel, err
 		}
@@ -184,7 +222,7 @@ func getWorkflowSyncLevelByName(ctx context.Context, wf *wfv1.Workflow, lockName
 	}
 
 	var lastErr error
-	for _, template := range wf.Spec.Templates {
+	for _, template := range templates {
 		if template.Synchronization != nil {
 			syncItems, err := allSyncItems(template.Synchronization)
 			if err != nil {
@@ -208,73 +246,181 @@ func getWorkflowSyncLevelByName(ctx context.Context, wf *wfv1.Workflow, lockName
 	return ErrorLevel, lastErr
 }
 
-func (sm *Manager) Initialize(ctx context.Context, wfs []wfv1.Workflow) {
-	for _, wf := range wfs {
+// initFailureFatal reports whether a failure to (re)establish a lock at startup
+// is unrecoverable and must fail closed (crashloop). Only two cases qualify:
+//   - the lock name is undecodable, so there is no key to poison under and no way
+//     to prove the workflow's spec re-acquires the same lock; and
+//   - the lock is database-backed but no database session is configured, so
+//     nothing can back the lock.
+//
+// Everything else - a transient ConfigMap/DB read failure, a limit fetch
+// returning 0 - is recoverable: the name decodes, so the lock can be poisoned
+// (the poison key matches what a racer would compute) without halting the whole
+// controller.
+func (sm *Manager) initFailureFatal(ctx context.Context, lockName string) bool {
+	decoded, err := DecodeLockName(ctx, lockName)
+	if err != nil {
+		return true
+	}
+	return decoded.Kind == lockKindDatabase && sm.dbInfo.Session == nil
+}
+
+// poison installs a poisoned lock, refusing all acquires until the next restart.
+func (sm *Manager) poison(ctx context.Context, lockName, reason string) {
+	sm.log.WithField("lock", lockName).WithField("reason", reason).Warn(ctx, "poisoning lock")
+	sm.syncLockMap[lockName] = newPoisonedLock(lockName, reason)
+}
+
+// reestablishHolder re-establishes a single recorded holder of lockName in the
+// in-memory lock map. lockType is "semaphore" or "mutex" (for logging) and
+// initLock builds the backing lock when it is not yet present.
+//
+// It always reads the current lock from the map (never a stale local), so a lock
+// poisoned by a previous holder stays poisoned and is not acquired on an orphaned
+// object. A returned error is fatal (see initFailureFatal). An init failure or an
+// unresolvable holder key poisons the lock. A non-empty staleReason means the
+// hold could not be verified against its backing store (database-backed locks
+// only); the caller fails the workflow, whose teardown releases its locks.
+//
+// Poisoning, not leaving absent, is required for the init-failure case: a
+// ConfigMap-backed semaphore keeps its holders only in memory, so if we left the
+// lock absent, prepAcquire would later rebuild it with zero holders once the
+// backend recovered and let a racer acquire the slot this holder still owns. The
+// poison is lock-scoped and clears on the next controller restart.
+func (sm *Manager) reestablishHolder(ctx context.Context, wf *wfv1.Workflow, lockType, lockName, holder string, initLock func(context.Context, string) (semaphore, error)) (staleReason string, fatalErr error) {
+	if sm.syncLockMap[lockName] == nil {
+		lock, err := initLock(ctx, lockName)
+		if err != nil {
+			if sm.initFailureFatal(ctx, lockName) {
+				// Undecodable name or a database hold with no session: we cannot
+				// poison to protect the recorded hold, so halt for an operator
+				// rather than risk a silent double-acquire.
+				sm.log.WithField(lockType, lockName).WithError(err).Error(ctx, "cannot initialize lock, failing closed")
+				return "", fmt.Errorf("cannot re-establish %s %q held by workflow %s/%s at startup: %w", lockType, lockName, wf.Namespace, wf.Name, err)
+			}
+			// Recoverable (e.g. transient ConfigMap unavailability) but the name
+			// decodes, so poison protects the recorded hold without crashlooping.
+			// Leaving the lock absent would be unsound: an in-memory semaphore
+			// rebuilt later would have zero holders and let a racer double-acquire.
+			sm.poison(ctx, lockName, fmt.Sprintf("controller could not initialize lock at startup: %v", err))
+			return "", nil
+		}
+		sm.syncLockMap[lockName] = lock
+	}
+
+	if holder == "" {
+		return "", nil
+	}
+
+	key, err := upgradeHolderKey(ctx, wf, holder, lockName)
+	if err != nil {
+		sm.poison(ctx, lockName, fmt.Sprintf("controller could not re-establish recorded holder %q at startup: %v", holder, err))
+		return "", nil
+	}
+
+	// Re-read from the map: a previous holder of this same lock may have poisoned
+	// it, in which case reacquire is a no-op and we must not resurrect it.
+	lock := sm.syncLockMap[lockName]
+	// For in-memory locks reacquire force-registers the hold ignoring the limit,
+	// so the recorded hold is always represented: dropping it would let a racer
+	// double-acquire a semaphore whose holders exceed a lowered limit, and
+	// poisoning would block the whole shared lock over a routine limit change.
+	// For database-backed locks the database is the single source of truth and
+	// reacquire only asserts the hold is still recorded there; if it is not, the
+	// workflow's recorded hold is stale and the workflow is failed rather than
+	// left to run on a hold the database no longer backs.
+	if err := lock.reacquire(ctx, key, &transaction{db: &sm.dbInfo.Session}); err != nil {
+		sm.log.WithFields(logging.Fields{"key": key, lockType: lockName}).WithError(err).Warn(ctx, "could not re-establish recorded holder, failing the workflow")
+		return fmt.Sprintf("could not re-establish %s %q at controller startup: %v", lockType, lockName, err), nil
+	}
+	sm.log.WithFields(logging.Fields{"key": key, lockType: lockName}).Info(ctx, "re-established recorded holder")
+	return "", nil
+}
+
+// StaleHold records a workflow whose recorded hold on a database-backed lock
+// could not be verified against the database during Initialize. The database
+// is the single source of truth for such locks, so the workflow is running on
+// a hold the database no longer backs (e.g. it was expired while the
+// controller was down and may since have been acquired by another holder).
+// The controller fails these workflows; their teardown releases any locks
+// they still hold.
+type StaleHold struct {
+	WF     *wfv1.Workflow
+	Reason string
+}
+
+// Initialize re-establishes, in the in-memory lock map, the holds that Running
+// workflows record in their status.
+//
+// It fails closed only when a holder is genuinely unrecoverable (see
+// initFailureFatal): an undecodable lock name, or a database-backed hold with no
+// database session. Those return an error the controller treats as fatal,
+// because we can neither poison the lock nor prove the spec re-acquires it, so
+// continuing risks a silent double-acquire.
+//
+// Recoverable failures never crashloop: a lock that cannot be built (transient
+// ConfigMap/DB read) or whose holder key is unresolvable is poisoned (lock-scoped,
+// clears on restart). A database-backed hold that the database no longer records
+// is returned as a StaleHold (at most one per workflow) for the controller to
+// fail the workflow.
+func (sm *Manager) Initialize(ctx context.Context, wfs []wfv1.Workflow) ([]StaleHold, error) {
+	// Hold the lock for the whole pass: a DB-backed Manager starts its
+	// backgroundNotifier goroutine in createLockManager (before initManagers
+	// calls Initialize), and that goroutine iterates syncLockMap under sm.lock.
+	sm.lock.Lock()
+	defer sm.lock.Unlock()
+
+	var staleHolds []StaleHold
+	for i := range wfs {
+		wf := &wfs[i]
 		if wf.Status.Synchronization == nil {
 			continue
 		}
 
+		// Record only the first stale hold per workflow (failing it once is
+		// enough), but keep re-establishing its remaining holds: they are real
+		// until the failed workflow's teardown releases them, and dropping one
+		// from the in-memory map would let a racer double-acquire it.
+		stale := func(reason string) {
+			// neat way to prevent double counting workflows, this works because we iterate workflow by workflow
+			// we only need to ask was the last stale workflow the same as this one as a result.
+			if len(staleHolds) == 0 || staleHolds[len(staleHolds)-1].WF != wf {
+				staleHolds = append(staleHolds, StaleHold{WF: wf, Reason: reason})
+			}
+		}
+
 		if wf.Status.Synchronization.Semaphore != nil {
 			for _, holding := range wf.Status.Synchronization.Semaphore.Holding {
-				semaphore := sm.syncLockMap[holding.Semaphore]
-				if semaphore == nil {
-					var err error
-					semaphore, err = sm.initializeSemaphore(ctx, holding.Semaphore)
+				for _, holder := range holding.Holders {
+					reason, err := sm.reestablishHolder(ctx, wf, "semaphore", holding.Semaphore, holder, func(ctx context.Context, name string) (semaphore, error) {
+						return sm.initializeSemaphore(ctx, name)
+					})
 					if err != nil {
-						sm.log.WithField("semaphore", holding.Semaphore).WithError(err).Warn(ctx, "cannot initialize semaphore")
-						continue
+						return nil, err
 					}
-					sm.syncLockMap[holding.Semaphore] = semaphore
-				}
-
-				for _, holders := range holding.Holders {
-					level, err := getWorkflowSyncLevelByName(ctx, &wf, holding.Semaphore)
-					if err != nil {
-						sm.log.WithField("semaphore", holding.Semaphore).WithError(err).Warn(ctx, "cannot obtain lock level")
-						continue
-					}
-					key := getUpgradedKey(&wf, holders, level)
-					tx := &transaction{db: &sm.dbInfo.Session}
-					if semaphore != nil {
-						acquired, acquireErr := semaphore.acquire(ctx, key, tx)
-						if acquired {
-							sm.log.WithFields(logging.Fields{"key": key, "semaphore": holding.Semaphore}).Info(ctx, "Lock acquired")
-						}
-						if acquireErr != nil {
-							sm.log.WithError(acquireErr).Error(ctx, "was unable to obtain lock due to error")
-						}
+					if reason != "" {
+						stale(reason)
 					}
 				}
-
 			}
 		}
 
 		if wf.Status.Synchronization.Mutex != nil {
 			for _, holding := range wf.Status.Synchronization.Mutex.Holding {
-				mutex := sm.syncLockMap[holding.Mutex]
-				if mutex == nil {
-					var err error
-					mutex, err = sm.initializeMutex(ctx, holding.Mutex)
-					if err != nil {
-						sm.log.WithField("mutex", holding.Mutex).WithError(err).Warn(ctx, "cannot initialize mutex")
-						continue
-					}
-					if holding.Holder != "" {
-						level, err := getWorkflowSyncLevelByName(ctx, &wf, holding.Mutex)
-						if err != nil {
-							sm.log.WithField("mutex", holding.Mutex).WithError(err).Warn(ctx, "cannot obtain lock level")
-							continue
-						}
-						key := getUpgradedKey(&wf, holding.Holder, level)
-						tx := &transaction{db: &sm.dbInfo.Session}
-						_, _ = mutex.acquire(ctx, key, tx)
-					}
-					sm.syncLockMap[holding.Mutex] = mutex
+				reason, err := sm.reestablishHolder(ctx, wf, "mutex", holding.Mutex, holding.Holder, func(ctx context.Context, name string) (semaphore, error) {
+					return sm.initializeMutex(ctx, name)
+				})
+				if err != nil {
+					return nil, err
+				}
+				if reason != "" {
+					stale(reason)
 				}
 			}
 		}
 	}
 	sm.log.Info(ctx, "Sync manager initialized successfully")
+	return staleHolds, nil
 }
 
 // TryAcquire tries to acquire the lock from semaphore.

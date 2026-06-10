@@ -175,6 +175,24 @@ func (s *prioritySemaphore) acquire(_ context.Context, holderKey string, _ *tran
 	return false, nil
 }
 
+// reacquire re-establishes a recorded holder at startup, ignoring the limit. It
+// always registers the holder, even when the recorded holders already exceed the
+// current limit (e.g. the limit was lowered while held). The weighted semaphore
+// is capped at the limit, so a slot is only taken when one is free; the excess is
+// tracked solely in lockHolder, exactly as a downward resize leaves it. release()
+// already tolerates len(lockHolder) > limit and only frees a weighted slot once
+// the count drops below the limit, so new acquisitions wait until every recorded
+// holder has drained. It never fails: the in-memory map is the source of truth
+// here, so registering the holder is always possible.
+func (s *prioritySemaphore) reacquire(_ context.Context, holderKey string, _ *transaction) error {
+	if _, ok := s.lockHolder[holderKey]; ok {
+		return nil
+	}
+	s.semaphore.TryAcquire(1) // best effort: take a slot if one is free
+	s.lockHolder[holderKey] = true
+	return nil
+}
+
 func isSameWorkflowNodeKeys(firstKey, secondKey string) bool {
 	firstItems := strings.Split(firstKey, "/")
 	secondItems := strings.Split(secondKey, "/")
