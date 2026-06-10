@@ -296,7 +296,7 @@ status:
 		_, err := controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").Create(ctx, &ts, v1.CreateOptions{})
 		require.NoError(t, err)
 		woc := newWorkflowOperationCtx(wf, controller)
-		err = woc.removeCompletedTaskSetStatus(ctx)
+		err = woc.removeCompletedTaskSetStatus(ctx, woc.wf.Status.Nodes)
 		require.NoError(t, err)
 		tslist, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").List(ctx, v1.ListOptions{})
 		require.NoError(t, err)
@@ -327,7 +327,7 @@ func TestNonHTTPTemplateScenario(t *testing.T) {
 	})
 	t.Run("removeCompletedTaskSetStatus", func(t *testing.T) {
 		woc.operate(ctx)
-		err := woc.removeCompletedTaskSetStatus(ctx)
+		err := woc.removeCompletedTaskSetStatus(ctx, woc.wf.Status.Nodes)
 		require.NoError(t, err)
 	})
 }
