@@ -48,6 +48,20 @@
       border: 1px solid $argo-color-gray-4;
     }
   }
+
+  .zoom-value {
+    display: inline-block;
+    user-select: none;
+    font-size: 14px;
+    text-align: center;
+    width: 40px;
+    border: 1px solid $argo-color-gray-5;
+    background-color: $argo-color-gray-3;
+    border-radius: 3px;
+    padding: 2px;
+    color: $argo-color-gray-7;
+    vertical-align: middle;
+  }
 }
 
 .graph {

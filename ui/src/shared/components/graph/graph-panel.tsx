@@ -189,6 +189,7 @@ export function GraphPanel(props: Props) {
                     <a onClick={() => setNodeSize(s => s / 1.2)} title='Zoom out'>
                         <i className='fa fa-search-minus fa-fw' />
                     </a>
+                    <div className='zoom-value'>{Math.round((nodeSize / (props.nodeSize || defaultNodeSize)) * 100)}%</div>
                     <a onClick={() => setFast(s => !s)} title='Use faster, but less pretty renderer' className={fast ? 'active' : ''}>
                         <i className='fa fa-bolt fa-fw' />
                     </a>
