@@ -3320,6 +3320,12 @@ func (woc *wfOperationCtx) getTemplateOutputsFromScope(ctx context.Context, tmpl
 				// The referenced step was skipped/omitted and produced no output; use the declared default.
 				val = param.ValueFrom.Default.String()
 			}
+			if val == nil {
+				// Skipped/omitted output with no default anywhere — neither the producer's
+				// valueFrom.default nor this aggregating parameter's own — is an unhandled absent
+				// optional: fail terminally, mirroring simple-tag substitution semantics.
+				return nil, argoerrors.Errorf(argoerrors.CodeBadRequest, "output parameter %q: %q is an absent optional (skipped/omitted node output with no default)", param.Name, param.ValueFrom.Parameter)
+			}
 			param.Value = wfv1.AnyStringPtr(val)
 			param.ValueFrom = nil
 			outputs.Parameters = append(outputs.Parameters, param)

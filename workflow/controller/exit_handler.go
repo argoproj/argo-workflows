@@ -23,7 +23,8 @@ func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, exitHook *wfv1.Lif
 		execute := true
 		var err error
 		if exitHook.Expression != "" {
-			execute, err = argoexpr.EvalBool(exitHook.Expression, env.GetFuncMap(template.EnvMap(woc.globalParams.Merge(scope.getParameters()))))
+			// nil-preserving view so expressions can apply `??` fallbacks to skipped/omitted outputs
+			execute, err = argoexpr.EvalBool(exitHook.Expression, env.GetFuncMap(scope.getParametersAny(woc.globalParams)))
 			if err != nil {
 				return true, nil, err
 			}
@@ -31,14 +32,15 @@ func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, exitHook *wfv1.Lif
 		if execute {
 			woc.log.WithField("lifeCycleHook", exitHook).Info(ctx, "Running OnExit handler")
 			onExitNodeName := common.GenerateOnExitNodeName(parentNode.Name)
+			hookStep := &wfv1.WorkflowStep{Template: exitHook.Template, TemplateRef: exitHook.TemplateRef}
 			resolvedArgs := exitHook.Arguments
 			if !resolvedArgs.IsEmpty() {
-				resolvedArgs, err = woc.resolveExitTmplArgument(ctx, exitHook.Arguments, prefix, outputs, scope)
+				resolvedArgs, err = woc.resolveExitTmplArgument(ctx, tmplCtx, hookStep, exitHook.Arguments, prefix, outputs, scope)
 				if err != nil {
 					return true, nil, err
 				}
 			}
-			onExitNode, err := woc.executeTemplate(ctx, onExitNodeName, &wfv1.WorkflowStep{Template: exitHook.Template, TemplateRef: exitHook.TemplateRef}, tmplCtx, resolvedArgs, &executeTemplateOpts{
+			onExitNode, err := woc.executeTemplate(ctx, onExitNodeName, hookStep, tmplCtx, resolvedArgs, &executeTemplateOpts{
 				boundaryID:     boundaryID,
 				onExitTemplate: true,
 				nodeFlag:       &wfv1.NodeFlag{Hooked: true},
@@ -50,7 +52,7 @@ func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, exitHook *wfv1.Lif
 	return false, nil, nil
 }
 
-func (woc *wfOperationCtx) resolveExitTmplArgument(ctx context.Context, args wfv1.Arguments, prefix string, outputs *wfv1.Outputs, scope *wfScope) (wfv1.Arguments, error) {
+func (woc *wfOperationCtx) resolveExitTmplArgument(ctx context.Context, tmplCtx *templateresolution.TemplateContext, holder wfv1.TemplateReferenceHolder, args wfv1.Arguments, prefix string, outputs *wfv1.Outputs, scope *wfScope) (wfv1.Arguments, error) {
 	if scope == nil {
 		scope = createScope(nil)
 	}
@@ -67,11 +69,20 @@ func (woc *wfOperationCtx) resolveExitTmplArgument(ctx context.Context, args wfv
 		}
 	}
 
+	// Mirror task/step argument handling: a pure reference to a skipped/omitted output with no
+	// producer default is dropped BEFORE substitution when the hook template declares its own input
+	// default, so that default applies; an absent-optional reference left in place fails substitution.
+	if err := woc.dropSkippedDefaultedArgs(ctx, tmplCtx, holder, &args, scope); err != nil {
+		return args, err
+	}
+
 	stepBytes, err := json.Marshal(args)
 	if err != nil {
 		return args, err
 	}
-	newStepStr, err := template.Replace(ctx, string(stepBytes), woc.globalParams.Merge(scope.getParameters()), true)
+	// nil-preserving view (and no strict prefixes, preserving the allow-unresolved behavior) so
+	// expression tags can apply `??` fallbacks to skipped/omitted outputs, mirroring task/step args
+	newStepStr, err := template.ReplaceStrictAny(ctx, string(stepBytes), scope.getParametersAny(woc.globalParams), nil)
 	if err != nil {
 		return args, err
 	}

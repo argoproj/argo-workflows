@@ -154,7 +154,7 @@ sprig.trim(inputs.parameters['my-string-param'])
 | `steps.<STEPNAME>.outputs.parameters.<NAME>` | Output parameter of any previous step. When the previous step uses `withItems` or `withParams`, this contains a JSON array of the output parameter values of each invocation |
 | `steps.<STEPNAME>.outputs.artifacts.<NAME>` | Output artifact of any previous step |
 
-**Note:** If a step was Skipped (its `when` condition was false), output parameters and results from that step resolve to empty strings.
+**Note:** If a step was Skipped (its `when` condition was false), references to its outputs resolve according to the rules in [Outputs of Skipped and Omitted Nodes](#outputs-of-skipped-and-omitted-nodes).
 
 ### DAG Templates
 
@@ -173,7 +173,29 @@ sprig.trim(inputs.parameters['my-string-param'])
 | `tasks.<TASKNAME>.outputs.parameters.<NAME>` | Output parameter of any previous task. When the previous task uses `withItems` or `withParams`, this contains a JSON array of the output parameter values of each invocation |
 | `tasks.<TASKNAME>.outputs.artifacts.<NAME>` | Output artifact of any previous task |
 
-**Note:** If a task was Skipped (its `when` condition was false) or Omitted (its `depends` condition was not satisfied), output parameters and results from that task resolve to empty strings.
+**Note:** If a task was Skipped (its `when` condition was false) or Omitted (its `depends` condition was not satisfied), references to its outputs resolve according to the rules in [Outputs of Skipped and Omitted Nodes](#outputs-of-skipped-and-omitted-nodes).
+
+### Outputs of Skipped and Omitted Nodes
+
+> v3.7.15, v4.0.6, and after
+
+A step or task that was Skipped (its `when` condition was false) or Omitted (its `depends` condition was not satisfied) never ran, so it produced no outputs.
+References to its declared output parameters and `outputs.result` resolve as follows:
+
+1. If the producing template declares a `valueFrom.default` for the output parameter, every reference resolves to that default.
+1. Otherwise the output is *absent*, which is not the same as an empty string. An absent output must be handled by one of the following, or the referencing node fails with a terminal error:
+    * If an argument consists solely of such a reference and the consuming template's input parameter declares a `default`, the argument is omitted so that input default applies.
+    * An expression tag sees the value as `nil`. Use the `??` operator to choose a fallback, e.g. `{{= steps.producer.outputs.parameters.msg ?? 'fallback'}}`.
+    * In template outputs, a `valueFrom.default` declared on the aggregating output parameter applies when its `valueFrom.parameter` reference is absent or its `valueFrom.expression` fails.
+1. An unhandled reference to an absent output fails the node with a terminal error (it is not retried): a simple tag such as `{{steps.producer.outputs.parameters.msg}}` with no consumer input default, a bare `{{= steps.producer.outputs.parameters.msg}}`, or an operation on the `nil` such as `+ '-suffix'`.
+
+These rules apply wherever the reference appears: step and task arguments, `when` clauses, [`LifecycleHook`](lifecyclehook.md) and exit handler arguments and expressions, and the enclosing template's `outputs.parameters`.
+
+A legitimately empty output is **not** absent: if the producer ran and wrote an empty string, `??` does not fire and the empty string is substituted.
+For the same reason, an expression comparison such as `{{= steps.producer.outputs.parameters.msg == ''}}` is false when the producer was skipped, because `nil` is not equal to `''`.
+Declare `valueFrom.default: ""` on the producer's output if you want a skipped output to behave exactly like an empty one.
+
+See the [skipped output defaults examples](https://github.com/argoproj/argo-workflows/tree/main/examples/skipped-output-defaults) for runnable workflows demonstrating each rule.
 
 ### HTTP Templates
 

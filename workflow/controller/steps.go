@@ -163,28 +163,7 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 				woc.buildLocalScope(stepsCtx.scope, prefix, sgNode)
 			} else {
 				woc.buildLocalScope(stepsCtx.scope, prefix, childNode)
-
-				if (childNode.Phase == wfv1.NodeSkipped || childNode.Phase == wfv1.NodeOmitted) && childNode.Outputs == nil {
-					_, stepTmpl, _, resolveErr := stepsCtx.tmplCtx.ResolveTemplate(ctx, &step)
-
-					if resolveErr != nil {
-						woc.log.WithError(resolveErr).Debug(ctx, "failed to resolve template for skipped step, outputs will not be populated in scope")
-					}
-
-					if resolveErr == nil && stepTmpl != nil {
-						for _, param := range stepTmpl.Outputs.Parameters {
-							key := fmt.Sprintf("%s.outputs.parameters.%s", prefix, param.Name)
-							stepsCtx.scope.addSkippedParamToScope(key)
-						}
-						for _, artifact := range stepTmpl.Outputs.Artifacts {
-							key := fmt.Sprintf("%s.outputs.artifacts.%s", prefix, artifact.Name)
-							stepsCtx.scope.addArtifactToScope(key, wfv1.Artifact{})
-						}
-						if stepTmpl.Outputs.Result != nil {
-							stepsCtx.scope.addSkippedParamToScope(fmt.Sprintf("%s.outputs.result", prefix))
-						}
-					}
-				}
+				woc.addSkippedNodeOutputsToScope(ctx, stepsCtx.tmplCtx, stepsCtx.scope, prefix, childNode, &step, true)
 			}
 		}
 	}
@@ -267,7 +246,7 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 
 	// First, resolve any references to outputs from previous steps, and perform substitution
 	var resolveErr error
-	stepGroup, resolveErr = woc.resolveReferences(ctx, stepGroup, stepsCtx.scope)
+	stepGroup, resolveErr = woc.resolveReferences(ctx, stepsCtx.tmplCtx, stepGroup, stepsCtx.scope)
 	if resolveErr != nil {
 		if errors.Is(resolveErr, ErrRequeue) {
 			return node, nil
@@ -457,13 +436,27 @@ func errorFromChannel(errCh <-chan error) error {
 // 3) dereferencing output.exitCode from previous steps
 // 4) dereferencing artifacts from previous steps
 // 5) dereferencing artifacts from inputs
-func (woc *wfOperationCtx) resolveReferences(ctx context.Context, stepGroup []wfv1.WorkflowStep, scope *wfScope) ([]wfv1.WorkflowStep, error) {
+func (woc *wfOperationCtx) resolveReferences(ctx context.Context, tmplCtx *templateresolution.TemplateContext, stepGroup []wfv1.WorkflowStep, scope *wfScope) ([]wfv1.WorkflowStep, error) {
 	newStepGroup := make([]wfv1.WorkflowStep, len(stepGroup))
 
 	// Step 0: replace all parameter scope references for volumes
 	substErr := woc.substituteParamsInVolumes(ctx, scope.getParameters())
 	if substErr != nil {
 		return nil, substErr
+	}
+
+	// Sequential pre-pass (ResolveTemplate is not safe to call concurrently): drop arguments that
+	// are pure references to a skipped/omitted step's output with no producer default when the
+	// consumed template declares its own input default, BEFORE substitution — the argument becomes
+	// unsupplied so the input default applies, while any absent-optional reference left in place
+	// fails substitution with a terminal error. Operates on shallow copies; dropping allocates a
+	// fresh Parameters slice, so the caller's step group is never mutated.
+	steps := make([]wfv1.WorkflowStep, len(stepGroup))
+	copy(steps, stepGroup)
+	for i := range steps {
+		if err := woc.dropSkippedDefaultedArgs(ctx, tmplCtx, &steps[i], &steps[i].Arguments, scope); err != nil {
+			return nil, err
+		}
 	}
 
 	// Resolve a Step's References and add it to newStepGroup
@@ -473,7 +466,8 @@ func (woc *wfOperationCtx) resolveReferences(ctx context.Context, stepGroup []wf
 		originalHooks := step.Hooks
 		step.Hooks = nil
 
-		mergedParams := woc.globalParams.Merge(scope.getParameters())
+		// nil-preserving view so expression tags can apply `??` fallbacks to skipped/omitted outputs
+		mergedParams := scope.getParametersAny(woc.globalParams)
 
 		// Resolve the "when" clause first to check if this step should execute before resolving the full step.
 		// This avoids unnecessary requeues when a step won't execute but other fields have unresolved references.
@@ -482,7 +476,7 @@ func (woc *wfOperationCtx) resolveReferences(ctx context.Context, stepGroup []wf
 			if err != nil {
 				return argoerrors.InternalWrapError(err)
 			}
-			resolvedWhenStr, err := template.ReplaceStrict(ctx, string(whenBytes), mergedParams, []string{"steps", "tasks"})
+			resolvedWhenStr, err := template.ReplaceStrictAny(ctx, string(whenBytes), mergedParams, []string{"steps", "tasks"})
 			if err != nil {
 				if template.IsMissingVariableErr(err) {
 					woc.requeue()
@@ -516,7 +510,7 @@ func (woc *wfOperationCtx) resolveReferences(ctx context.Context, stepGroup []wf
 		if err != nil {
 			return argoerrors.InternalWrapError(err)
 		}
-		newStepStr, err := template.ReplaceStrict(ctx, string(stepBytes), mergedParams, []string{"steps", "tasks"})
+		newStepStr, err := template.ReplaceStrictAny(ctx, string(stepBytes), mergedParams, []string{"steps", "tasks"})
 		if err != nil {
 			if template.IsMissingVariableErr(err) {
 				woc.requeue()
@@ -558,9 +552,9 @@ func (woc *wfOperationCtx) resolveReferences(ctx context.Context, stepGroup []wf
 
 	// When resolveStepReferences we can use a channel parallelStepNum to control the number of concurrencies
 	parallelStepNum := make(chan string, 500)
-	errCh := make(chan error, len(stepGroup)) // contains the error during resolveStepReferences
+	errCh := make(chan error, len(steps)) // contains the error during resolveStepReferences
 	var wg sync.WaitGroup
-	for i, step := range stepGroup {
+	for i, step := range steps {
 		parallelStepNum <- step.Name
 		wg.Go(func() {
 			if refErr := resolveStepReferences(i, step, newStepGroup); refErr != nil {
