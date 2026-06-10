@@ -58,16 +58,13 @@ export function WorkflowTemplateList({match, location, history}: RouteComponentP
     );
 
     useEffect(() => {
-        if (isFirstRender.current) {
-            isFirstRender.current = false;
-            return;
-        }
-        history.push(
+        (isFirstRender.current ? history.replace : history.push)(
             historyUrl('workflow-templates' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {
                 namespace,
                 sidePanel
             })
         );
+        isFirstRender.current = false;
     }, [namespace, sidePanel]);
 
     // internal state

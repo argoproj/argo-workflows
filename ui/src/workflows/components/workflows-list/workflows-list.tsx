@@ -126,10 +126,6 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
 
     // save history and localStorage
     useEffect(() => {
-        if (isFirstRender.current) {
-            isFirstRender.current = false;
-            return;
-        }
         // add empty selectedPhases + selectedLabels for forward-compat w/ old version: previous code relies on them existing, so if you move up a version and back down, it breaks
         const options = {selectedPhases: [], selectedLabels: []} as unknown as WorkflowListRenderOptions;
         options.phases = phases;
@@ -157,7 +153,10 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
         if (finishedBefore) {
             params.append('finishedBefore', finishedBefore.toISOString());
         }
-        history.push(historyUrl('workflows' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {namespace, extraSearchParams: params}));
+        (isFirstRender.current ? history.replace : history.push)(
+            historyUrl('workflows' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {namespace, extraSearchParams: params})
+        );
+        isFirstRender.current = false;
     }, [namespace, phases.toString(), labels.toString(), pagination.limit, pagination.offset, nameValue, nameFilter, createdAfter, finishedBefore]); // referential equality, so use values, not refs
 
     useEffect(() => {
