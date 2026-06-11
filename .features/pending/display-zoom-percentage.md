@@ -1,4 +1,3 @@
-<!-- Required: All of these fields are required, including at least one issue -->
 Description: Display zoom percentage and use fixed 10% zoom steps in graph panel
 Authors: [nakatani-yo](https://github.com/nakatani-yo)
 Component: UI
