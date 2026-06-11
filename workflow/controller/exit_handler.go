@@ -35,7 +35,7 @@ func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, exitHook *wfv1.Lif
 			hookStep := &wfv1.WorkflowStep{Template: exitHook.Template, TemplateRef: exitHook.TemplateRef}
 			resolvedArgs := exitHook.Arguments
 			if !resolvedArgs.IsEmpty() {
-				resolvedArgs, err = woc.resolveExitTmplArgument(ctx, tmplCtx, hookStep, exitHook.Arguments, prefix, outputs, scope)
+				resolvedArgs, err = woc.resolveExitTmplArgument(ctx, exitHook.Arguments, prefix, outputs, scope)
 				if err != nil {
 					return true, nil, err
 				}
@@ -52,7 +52,7 @@ func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, exitHook *wfv1.Lif
 	return false, nil, nil
 }
 
-func (woc *wfOperationCtx) resolveExitTmplArgument(ctx context.Context, tmplCtx *templateresolution.TemplateContext, holder wfv1.TemplateReferenceHolder, args wfv1.Arguments, prefix string, outputs *wfv1.Outputs, scope *wfScope) (wfv1.Arguments, error) {
+func (woc *wfOperationCtx) resolveExitTmplArgument(ctx context.Context, args wfv1.Arguments, prefix string, outputs *wfv1.Outputs, scope *wfScope) (wfv1.Arguments, error) {
 	if scope == nil {
 		scope = createScope(nil)
 	}
@@ -70,11 +70,9 @@ func (woc *wfOperationCtx) resolveExitTmplArgument(ctx context.Context, tmplCtx 
 	}
 
 	// Mirror task/step argument handling: a pure reference to a skipped/omitted output with no
-	// producer default is dropped BEFORE substitution when the hook template declares its own input
-	// default, so that default applies; an absent-optional reference left in place fails substitution.
-	if err := woc.dropSkippedDefaultedArgs(ctx, tmplCtx, holder, &args, scope); err != nil {
-		return args, err
-	}
+	// producer default is replaced with a sentinel BEFORE substitution; common.ProcessArgs treats
+	// it as unsupplied so the hook template's own input default applies (or fails terminally).
+	scope.markAbsentOptionalArgs(&args)
 
 	stepBytes, err := json.Marshal(args)
 	if err != nil {

@@ -657,7 +657,8 @@ func (s *FunctionalSuite) TestStepsSkippedWithParamRef() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowError, status.Phase)
+			// the errored step group rolls up to the steps template as Failed (not Error)
+			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
 			producer := status.Nodes.FindByDisplayName("producer")
 			if assert.NotNil(t, producer) {
 				assert.Equal(t, wfv1.NodeSkipped, producer.Phase)
@@ -688,7 +689,8 @@ func (s *FunctionalSuite) TestStepsSkippedOutputRef() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowError, status.Phase)
+			// the errored step group rolls up to the steps template as Failed (not Error)
+			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
 			nodeJob1 := status.Nodes.FindByDisplayName("job1")
 			if assert.NotNil(t, nodeJob1) {
 				assert.Equal(t, wfv1.NodeSucceeded, nodeJob1.Phase)

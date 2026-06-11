@@ -4345,10 +4345,10 @@ spec:
 `
 
 // TestDAGSkippedRefDynamicTemplateName verifies that a task whose templateRef is itself templated
-// ("{{item.*}}", resolved only at expansion) fails terminally — not with a requeue — when an
-// argument references a skipped defaultless output: the skipped-arg default handling cannot resolve
-// the consumed template at that point, so the absent optional survives into substitution and is a
-// terminal error (add a producer valueFrom.default or a `??` expression fallback to handle it).
+// ("{{item.*}}", resolved only at expansion) is still rescued by the consumed template's input
+// default when an argument references a skipped defaultless output: the argument is marked with the
+// absent-optional sentinel before substitution and ProcessArgs interprets it at consumption time,
+// when the dynamic templateRef has been resolved.
 func TestDAGSkippedRefDynamicTemplateName(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx, wfv1.MustUnmarshalWorkflow(dagSkippedRefDynamicTemplateName), wfv1.MustUnmarshalWorkflowTemplate(skippedRefConsumeWorkflowTemplate))
@@ -4361,10 +4361,20 @@ func TestDAGSkippedRefDynamicTemplateName(t *testing.T) {
 	require.NotNil(t, producer)
 	require.Equal(t, wfv1.NodeSkipped, producer.Phase)
 
-	consumer := woc.wf.Status.Nodes.FindByDisplayName("consumer")
-	require.NotNil(t, consumer)
-	assert.Equal(t, wfv1.NodeError, consumer.Phase, "an unhandled absent optional must fail the task terminally")
-	assert.Contains(t, consumer.Message, "absent optional")
+	var consumer *wfv1.NodeStatus
+	for _, node := range woc.wf.Status.Nodes {
+		assert.NotEqual(t, wfv1.NodeError, node.Phase, "node %q should not error: %s", node.DisplayName, node.Message)
+		if strings.HasPrefix(node.DisplayName, "consumer(") {
+			n := node
+			consumer = &n
+		}
+	}
+	require.NotNil(t, consumer, "consumer should be scheduled even though producer was skipped")
+	require.NotNil(t, consumer.Inputs)
+	in := consumer.Inputs.GetParameterByName("in")
+	require.NotNil(t, in)
+	require.NotNil(t, in.Value)
+	assert.Equal(t, "FALLBACK", in.Value.String())
 }
 
 // dagSkippedInputDefaultSuppressed mirrors default-demo.yaml: the producer is skipped and its

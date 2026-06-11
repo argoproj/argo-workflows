@@ -44,7 +44,7 @@ func createScope(tmpl *wfv1.Template) *wfScope {
 // getParametersAny returns the scope's parameters merged over the given globals, preserving nil
 // (absent optional) values so expression tags can distinguish absent from empty (e.g. via `??`).
 // A simple tag resolving to a nil value is a terminal substitution error; arguments rescued by a
-// consumer input default must be dropped before substitution (see dropSkippedDefaultedArgs).
+// consumer input default are replaced with a sentinel before substitution (see markAbsentOptionalArgs).
 func (s *wfScope) getParametersAny(globals common.Parameters) map[string]any {
 	params := make(map[string]any, len(globals)+len(s.scope))
 	for key, val := range globals {
@@ -70,8 +70,8 @@ func (s *wfScope) addArtifactToScope(key string, artifact wfv1.Artifact) {
 // addSkippedParamToScope registers a parameter key for a skipped/omitted step's output that declared
 // no default. The value is stored as nil (an absent optional) so structured consumers and expressions
 // can tell it apart from a legitimately empty output (e.g. `ref ?? "fallback"`). A simple tag
-// resolving to the nil is a terminal substitution error unless the referencing argument was dropped
-// in favor of a consumer input default (dropSkippedDefaultedArgs); this applies uniformly to every
+// resolving to the nil is a terminal substitution error unless the referencing argument was replaced
+// with a sentinel for ProcessArgs to interpret (markAbsentOptionalArgs); this applies uniformly to every
 // substitution surface (arguments, when clauses, volumes, artifact subPath, item expansion). nil is
 // stored ONLY by this method, so a present-but-nil scope value is the definition of "skipped with
 // no default".
@@ -97,47 +97,29 @@ func (s *wfScope) absentOptionalRef(v string) bool {
 	return ok && val == nil
 }
 
-// dropSkippedDefaultedArgs removes arguments that are pure references to a skipped/omitted node's
-// output with no producer default (an absent optional, nil in scope) WHEN the consumed template
-// declares its own input default for that parameter. It must run BEFORE substitution: dropping the
-// argument makes it indistinguishable from an unsupplied one, so the consumer's input default
-// applies through the normal path, while any absent-optional reference left in place fails
-// substitution with a terminal error.
-func (woc *wfOperationCtx) dropSkippedDefaultedArgs(ctx context.Context, tmplCtx *templateresolution.TemplateContext, holder wfv1.TemplateReferenceHolder, args *wfv1.Arguments, scope *wfScope) error {
-	candidates := make(map[string]bool)
-	for _, p := range args.Parameters {
-		if p.Value != nil && scope.absentOptionalRef(p.Value.String()) {
-			candidates[p.Name] = true
-		}
-	}
-	if len(candidates) == 0 {
-		return nil
-	}
-	// Resolve the consumed template once to learn which of those inputs have their own default. The
-	// template may not be resolvable at this point (e.g. a "{{item.*}}" templateRef that only resolves
-	// at expansion); this handling is best-effort sugar, so skip it rather than failing here — the
-	// surviving reference will fail substitution with a terminal absent-optional error.
-	_, tmpl, _, err := tmplCtx.ResolveTemplate(ctx, holder)
-	if err != nil || tmpl == nil {
-		woc.log.WithError(err).WithField("template", holder.GetTemplateName()).
-			Debug(ctx, "could not resolve consumed template; skipping skipped-arg default handling")
-		return nil
-	}
-	if err := woc.mergedTemplateDefaultsInto(tmpl); err != nil {
-		return err
-	}
-	// Build a fresh slice: args may alias a step/task still shared with the caller.
-	kept := make([]wfv1.Parameter, 0, len(args.Parameters))
-	for _, p := range args.Parameters {
-		if candidates[p.Name] {
-			if in := tmpl.Inputs.GetParameterByName(p.Name); in != nil && in.Default != nil {
-				continue // drop: the argument becomes unsupplied, the consumer's own input default applies
+// markAbsentOptionalArgs replaces arguments that are pure references to a skipped/omitted node's
+// output with no producer default (an absent optional, nil in scope) with the
+// common.AbsentOptionalArgumentValue sentinel, BEFORE substitution. The sentinel survives textual
+// substitution — where the raw absent value would be a terminal error — and is interpreted by
+// common.ProcessArgs at consumption time, when the consumed template is fully resolved (even for
+// dynamic "{{item.*}}" templateRefs): the argument is treated as unsupplied so the input's own
+// default applies, and an input with no default fails terminally. Composite values like
+// "x-{{ref}}-y" are not pure references and still fail substitution. Builds a fresh Parameters
+// slice: args may alias a step/task still shared with the caller.
+func (s *wfScope) markAbsentOptionalArgs(args *wfv1.Arguments) {
+	var marked []wfv1.Parameter
+	for i, p := range args.Parameters {
+		if p.Value != nil && s.absentOptionalRef(p.Value.String()) {
+			if marked == nil {
+				marked = make([]wfv1.Parameter, len(args.Parameters))
+				copy(marked, args.Parameters)
 			}
+			marked[i].Value = wfv1.AnyStringPtr(common.AbsentOptionalArgumentValue)
 		}
-		kept = append(kept, p)
 	}
-	args.Parameters = kept
-	return nil
+	if marked != nil {
+		args.Parameters = marked
+	}
 }
 
 // addSkippedNodeOutputsToScope populates scope with the declared output parameters of a skipped or

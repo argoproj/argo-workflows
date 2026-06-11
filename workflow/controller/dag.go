@@ -776,14 +776,11 @@ func (woc *wfOperationCtx) resolveDependencyReferences(ctx context.Context, dagC
 		}
 	}
 
-	// Drop arguments that are pure references to a skipped/omitted dependency's output with no
-	// producer default when the consumed template declares its own input default, BEFORE substitution:
-	// the argument becomes unsupplied so the input default applies, while any absent-optional
-	// reference left in place fails substitution with a terminal error. When-false tasks returned
-	// early above and are never processed (they don't execute, and their template may be unresolvable).
-	if err = woc.dropSkippedDefaultedArgs(ctx, dagCtx.tmplCtx, &tempTask, &tempTask.Arguments, scope); err != nil {
-		return nil, err
-	}
+	// Replace arguments that are pure references to a skipped/omitted dependency's output with no
+	// producer default with a sentinel BEFORE substitution; common.ProcessArgs interprets it as
+	// "unsupplied" at consumption time so the consumed template's input default applies (or fails
+	// terminally if it has none). When-false tasks returned early above and never execute.
+	scope.markAbsentOptionalArgs(&tempTask.Arguments)
 
 	taskBytes, err := json.Marshal(tempTask)
 	if err != nil {

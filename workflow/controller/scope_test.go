@@ -340,7 +340,7 @@ func TestSkippedOptionalExpressionResolution(t *testing.T) {
 // TestAbsentOptionalRefRequiresTag verifies that absentOptionalRef only matches a real pure
 // "{{...}}" reference: a literal argument value that merely spells out a scope key is data, not a
 // reference, and must not be treated as a skipped-output ref (which would get the argument silently
-// dropped); composite and nested values are not pure references either.
+// replaced with the absent-optional sentinel); composite and nested values are not pure references either.
 func TestAbsentOptionalRefRequiresTag(t *testing.T) {
 	const ref = "tasks.producer.outputs.parameters.msg"
 	scope := createScope(nil)

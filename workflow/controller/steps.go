@@ -246,7 +246,7 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 
 	// First, resolve any references to outputs from previous steps, and perform substitution
 	var resolveErr error
-	stepGroup, resolveErr = woc.resolveReferences(ctx, stepsCtx.tmplCtx, stepGroup, stepsCtx.scope)
+	stepGroup, resolveErr = woc.resolveReferences(ctx, stepGroup, stepsCtx.scope)
 	if resolveErr != nil {
 		if errors.Is(resolveErr, ErrRequeue) {
 			return node, nil
@@ -436,27 +436,13 @@ func errorFromChannel(errCh <-chan error) error {
 // 3) dereferencing output.exitCode from previous steps
 // 4) dereferencing artifacts from previous steps
 // 5) dereferencing artifacts from inputs
-func (woc *wfOperationCtx) resolveReferences(ctx context.Context, tmplCtx *templateresolution.TemplateContext, stepGroup []wfv1.WorkflowStep, scope *wfScope) ([]wfv1.WorkflowStep, error) {
+func (woc *wfOperationCtx) resolveReferences(ctx context.Context, stepGroup []wfv1.WorkflowStep, scope *wfScope) ([]wfv1.WorkflowStep, error) {
 	newStepGroup := make([]wfv1.WorkflowStep, len(stepGroup))
 
 	// Step 0: replace all parameter scope references for volumes
 	substErr := woc.substituteParamsInVolumes(ctx, scope.getParametersAny(nil))
 	if substErr != nil {
 		return nil, substErr
-	}
-
-	// Sequential pre-pass (ResolveTemplate is not safe to call concurrently): drop arguments that
-	// are pure references to a skipped/omitted step's output with no producer default when the
-	// consumed template declares its own input default, BEFORE substitution — the argument becomes
-	// unsupplied so the input default applies, while any absent-optional reference left in place
-	// fails substitution with a terminal error. Operates on shallow copies; dropping allocates a
-	// fresh Parameters slice, so the caller's step group is never mutated.
-	steps := make([]wfv1.WorkflowStep, len(stepGroup))
-	copy(steps, stepGroup)
-	for i := range steps {
-		if err := woc.dropSkippedDefaultedArgs(ctx, tmplCtx, &steps[i], &steps[i].Arguments, scope); err != nil {
-			return nil, err
-		}
 	}
 
 	// Resolve a Step's References and add it to newStepGroup
@@ -506,6 +492,13 @@ func (woc *wfOperationCtx) resolveReferences(ctx context.Context, tmplCtx *templ
 			}
 		}
 
+		// Replace arguments that are pure references to a skipped/omitted step's output with no
+		// producer default with a sentinel BEFORE substitution; common.ProcessArgs interprets it as
+		// "unsupplied" at consumption time so the consumed template's input default applies (or
+		// fails terminally if it has none). When-false steps returned early above and never
+		// execute. Allocates a fresh Parameters slice, so the caller's step group is never mutated.
+		scope.markAbsentOptionalArgs(&step.Arguments)
+
 		stepBytes, err := json.Marshal(step)
 		if err != nil {
 			return argoerrors.InternalWrapError(err)
@@ -552,9 +545,9 @@ func (woc *wfOperationCtx) resolveReferences(ctx context.Context, tmplCtx *templ
 
 	// When resolveStepReferences we can use a channel parallelStepNum to control the number of concurrencies
 	parallelStepNum := make(chan string, 500)
-	errCh := make(chan error, len(steps)) // contains the error during resolveStepReferences
+	errCh := make(chan error, len(stepGroup)) // contains the error during resolveStepReferences
 	var wg sync.WaitGroup
-	for i, step := range steps {
+	for i, step := range stepGroup {
 		parallelStepNum <- step.Name
 		wg.Go(func() {
 			if refErr := resolveStepReferences(i, step, newStepGroup); refErr != nil {

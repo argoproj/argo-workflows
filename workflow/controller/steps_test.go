@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -946,10 +947,10 @@ spec:
 `
 
 // TestStepsSkippedRefDynamicTemplateName verifies that a step whose templateRef is itself templated
-// ("{{item.*}}", resolved only at expansion) fails terminally — not with a requeue — when an
-// argument references a skipped defaultless output: the skipped-arg default handling cannot resolve
-// the consumed template at that point, so the absent optional survives into substitution and is a
-// terminal error (add a producer valueFrom.default or a `??` expression fallback to handle it).
+// ("{{item.*}}", resolved only at expansion) is still rescued by the consumed template's input
+// default when an argument references a skipped defaultless output: the argument is marked with the
+// absent-optional sentinel before substitution and ProcessArgs interprets it at consumption time,
+// when the dynamic templateRef has been resolved.
 func TestStepsSkippedRefDynamicTemplateName(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx, wfv1.MustUnmarshalWorkflow(stepsSkippedRefDynamicTemplateName), wfv1.MustUnmarshalWorkflowTemplate(skippedRefConsumeWorkflowTemplate))
@@ -962,15 +963,20 @@ func TestStepsSkippedRefDynamicTemplateName(t *testing.T) {
 	require.NotNil(t, producer)
 	require.Equal(t, wfv1.NodeSkipped, producer.Phase)
 
-	var errored *wfv1.NodeStatus
+	var consumer *wfv1.NodeStatus
 	for _, node := range woc.wf.Status.Nodes {
-		if node.Phase == wfv1.NodeError {
+		assert.NotEqual(t, wfv1.NodeError, node.Phase, "node %q should not error: %s", node.DisplayName, node.Message)
+		if strings.HasPrefix(node.DisplayName, "consumer(") {
 			n := node
-			errored = &n
+			consumer = &n
 		}
 	}
-	require.NotNil(t, errored, "an unhandled absent optional must fail the step group terminally")
-	assert.Contains(t, errored.Message, "absent optional")
+	require.NotNil(t, consumer, "consumer should be scheduled even though producer was skipped")
+	require.NotNil(t, consumer.Inputs)
+	in := consumer.Inputs.GetParameterByName("in")
+	require.NotNil(t, in)
+	require.NotNil(t, in.Value)
+	assert.Equal(t, "FALLBACK", in.Value.String())
 }
 
 var stepsWhenFalseSkippedRefDrop = `
@@ -1011,9 +1017,9 @@ spec:
 `
 
 // TestStepsWhenFalseSkipsDropPass verifies that a step whose when-clause evaluates to false does
-// not fail on an absent-optional argument: the drop pre-pass is best-effort when the template is
-// unresolvable (e.g. a dynamic "{{item.*}}" templateRef), and a when-false step never substitutes
-// its body, so the absent optional is never hit and the step group proceeds with the step Skipped.
+// not fail on an absent-optional argument: a when-false step never substitutes its body (and item
+// expansion strips nils for never-executing steps), so the absent optional is never hit and the
+// step group proceeds with the step Skipped.
 func TestStepsWhenFalseSkipsDropPass(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx, wfv1.MustUnmarshalWorkflow(stepsWhenFalseSkippedRefDrop), wfv1.MustUnmarshalWorkflowTemplate(skippedRefConsumeWorkflowTemplate))
