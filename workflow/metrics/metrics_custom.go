@@ -101,7 +101,10 @@ type customInstrument struct {
 // For non-realtime we have to fake observability as prometheus provides
 // up/down and set on the same gauge type, which otel forbids.
 func (i *customInstrument) customCallback(ctx context.Context, o metric.Observer) error {
-	ud := customUserData(i.Instrument, true)
+	ud := customUserData(i.Instrument, false)
+	if ud == nil {
+		return nil
+	}
 	ud.mutex.RLock()
 	defer ud.mutex.RUnlock()
 	for _, value := range ud.values {
@@ -197,7 +200,9 @@ func (m *Metrics) ensureBaseMetric(metricSpec *wfv1.Prometheus, ownerKey string)
 	if inst == nil {
 		return nil, fmt.Errorf("failed to create new metric %s", metricSpec.Name)
 	}
-	inst.SetUserdata(newUserData())
+	if customUserData(inst, false) == nil {
+		inst.SetUserdata(newUserData())
+	}
 	return inst, nil
 }
 
@@ -290,6 +295,9 @@ func (m *Metrics) createCustomMetric(metricSpec *wfv1.Prometheus) error {
 			return err
 		}
 		inst := m.GetInstrument(metricSpec.Name)
+		if customUserData(inst, false) == nil {
+			inst.SetUserdata(newUserData())
+		}
 		customInst := customInstrument{Instrument: inst}
 		return inst.RegisterCallback(m.Metrics, customInst.customCallback)
 	default:
@@ -303,6 +311,9 @@ func (m *Metrics) createCustomGauge(metricSpec *wfv1.Prometheus) error {
 		return err
 	}
 	inst := m.GetInstrument(metricSpec.Name)
+	if customUserData(inst, false) == nil {
+		inst.SetUserdata(newUserData())
+	}
 	customInst := customInstrument{Instrument: inst}
 	return inst.RegisterCallback(m.Metrics, customInst.customCallback)
 }
@@ -371,7 +382,9 @@ func (m *Metrics) handleRealtimeMetricsForWfUID(key string, op operation) {
 		switch op {
 		case Complete:
 			if value, ok := ud.values[metric.key]; ok && value != nil {
+				value.mutex.Lock()
 				value.completed = true
+				value.mutex.Unlock()
 			}
 		case Delete:
 			delete(ud.values, metric.key)
