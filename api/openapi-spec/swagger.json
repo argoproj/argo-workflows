@@ -8432,7 +8432,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.GitArtifact"
         },
         "globalName": {
-          "description": "GlobalName exports an output artifact to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts",
+          "description": "GlobalName exports an output artifact to the global scope, making it available as io.argoproj.workflow.v1alpha1.outputs.artifacts.XXXX and in workflow.status.outputs.artifacts",
           "type": "string"
         },
         "hdfs": {
@@ -8601,7 +8601,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.GitArtifact"
         },
         "globalName": {
-          "description": "GlobalName exports an output artifact to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts",
+          "description": "GlobalName exports an output artifact to the global scope, making it available as io.argoproj.workflow.v1alpha1.outputs.artifacts.XXXX and in workflow.status.outputs.artifacts",
           "type": "string"
         },
         "hdfs": {
@@ -10737,7 +10737,7 @@
           }
         },
         "globalName": {
-          "description": "GlobalName exports an output parameter to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters",
+          "description": "GlobalName exports an output parameter to the global scope, making it available as io.argoproj.workflow.v1alpha1.outputs.parameters.XXXX and in workflow.status.outputs.parameters",
           "type": "string"
         },
         "name": {
@@ -12010,7 +12010,7 @@
           "type": "string"
         },
         "parameter": {
-          "description": "Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. '{{steps.mystep.outputs.myparam}}')",
+          "description": "Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. steps.mystep.outputs.myparam)",
           "type": "string"
         },
         "path": {
@@ -12374,7 +12374,7 @@
           "type": "boolean"
         },
         "arguments": {
-          "description": "Arguments contain the parameters and artifacts sent to the workflow entrypoint Parameters are referencable globally using the 'workflow' variable prefix. e.g. {{io.argoproj.workflow.v1alpha1.parameters.myparam}}",
+          "description": "Arguments contain the parameters and artifacts sent to the workflow entrypoint Parameters are referencable globally using the 'workflow' variable prefix. e.g. io.argoproj.workflow.v1alpha1.parameters.myparam",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments"
         },
         "artifactGC": {
