@@ -718,7 +718,7 @@ func substitutePodParams(ctx context.Context, pod *apiv1.Pod, globalParams commo
 	if err != nil {
 		return nil, err
 	}
-	newSpecBytes, err := template.Replace(ctx, string(specBytes), podParams, true)
+	newSpecBytes, err := template.Replace(ctx, string(specBytes), template.ToAnyMap(podParams), true)
 	if err != nil {
 		return nil, err
 	}

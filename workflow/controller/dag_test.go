@@ -223,7 +223,7 @@ func TestExpandTaskWithParam(t *testing.T) {
 		WithParam: `[1234, "foo\tbar", true, []]`,
 	}
 
-	expanded, err := expandTask(ctx, task, map[string]string{})
+	expanded, err := expandTask(ctx, task, map[string]any{})
 	require.NoError(t, err)
 	require.Len(t, expanded, 4)
 

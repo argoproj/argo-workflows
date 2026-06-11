@@ -226,7 +226,7 @@ func SubstituteParams(ctx context.Context, tmpl *wfv1.Template, globalParams, lo
 		return nil, errors.InternalWrapError(err)
 	}
 	// First replace globals & locals, then replace inputs because globals could be referenced in the inputs
-	replaceMap := globalParams.Merge(localParams)
+	replaceMap := template.ToAnyMap(globalParams.Merge(localParams))
 	globalReplacedTmplStr, err := template.Replace(ctx, string(tmplBytes), replaceMap, true)
 	if err != nil {
 		return nil, err

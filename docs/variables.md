@@ -189,7 +189,8 @@ References to its declared output parameters and `outputs.result` resolve as fol
     * In template outputs, a `valueFrom.default` declared on the aggregating output parameter applies when its `valueFrom.parameter` reference is absent or its `valueFrom.expression` fails.
 1. An unhandled reference to an absent output fails the node with a terminal error (it is not retried): a simple tag such as `{{steps.producer.outputs.parameters.msg}}` with no consumer input default, a bare `{{= steps.producer.outputs.parameters.msg}}`, or an operation on the `nil` such as `+ '-suffix'`.
 
-These rules apply wherever the reference appears: step and task arguments, `when` clauses, [`LifecycleHook`](lifecyclehook.md) and exit handler arguments and expressions, and the enclosing template's `outputs.parameters`.
+These rules apply wherever the reference appears: step and task arguments, `when` clauses, [`LifecycleHook`](lifecyclehook.md) and exit handler arguments and expressions, the enclosing template's `outputs.parameters`, `spec.volumes`, and artifact `subPath` fields.
+The exception is a step or task whose own `when` evaluates to false: it never runs, so absent references in its body are left unresolved instead of failing the workflow.
 
 A legitimately empty output is **not** absent: if the producer ran and wrote an empty string, `??` does not fire and the empty string is substituted.
 For the same reason, an expression comparison such as `{{= steps.producer.outputs.parameters.msg == ''}}` is false when the producer was skipped, because `nil` is not equal to `''`.

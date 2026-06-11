@@ -440,7 +440,7 @@ func (woc *wfOperationCtx) resolveReferences(ctx context.Context, tmplCtx *templ
 	newStepGroup := make([]wfv1.WorkflowStep, len(stepGroup))
 
 	// Step 0: replace all parameter scope references for volumes
-	substErr := woc.substituteParamsInVolumes(ctx, scope.getParameters())
+	substErr := woc.substituteParamsInVolumes(ctx, scope.getParametersAny(nil))
 	if substErr != nil {
 		return nil, substErr
 	}
@@ -652,7 +652,7 @@ func (woc *wfOperationCtx) expandStep(ctx context.Context, step wfv1.WorkflowSte
 
 	for i, item := range items {
 		var newStep wfv1.WorkflowStep
-		newStepName, err := processItem(ctx, t, step.Name, i, item, &newStep, step.When, woc.globalParams.Merge(scope.getParameters()))
+		newStepName, err := processItem(ctx, t, step.Name, i, item, &newStep, step.When, scope.getParametersAny(woc.globalParams))
 		if err != nil {
 			return nil, err
 		}
@@ -663,11 +663,11 @@ func (woc *wfOperationCtx) expandStep(ctx context.Context, step wfv1.WorkflowSte
 	return expandedStep, nil
 }
 
-func (woc *wfOperationCtx) prepareDefaultMetricScope() (map[string]string, map[string]func() float64) {
+func (woc *wfOperationCtx) prepareDefaultMetricScope() (map[string]any, map[string]func() float64) {
 	durationCPU := fmt.Sprintf("%s.%s", common.LocalVarResourcesDuration, v1.ResourceCPU)
 	durationMem := fmt.Sprintf("%s.%s", common.LocalVarResourcesDuration, v1.ResourceMemory)
 
-	localScope := woc.globalParams.DeepCopy()
+	localScope := template.ToAnyMap(woc.globalParams)
 	localScope[common.LocalVarDuration] = "0"
 	localScope[common.LocalVarStatus] = string(wfv1.NodePending)
 	localScope[durationCPU] = "0"
@@ -680,7 +680,7 @@ func (woc *wfOperationCtx) prepareDefaultMetricScope() (map[string]string, map[s
 	return localScope, realTimeScope
 }
 
-func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus) (map[string]string, map[string]func() float64) {
+func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus) (map[string]any, map[string]func() float64) {
 	localScope, realTimeScope := woc.prepareDefaultMetricScope()
 	if node.Fulfilled() {
 		localScope[common.LocalVarDuration] = fmt.Sprintf("%f", node.FinishedAt.Sub(node.StartedAt.Time).Seconds())

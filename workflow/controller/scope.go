@@ -41,22 +41,6 @@ func createScope(tmpl *wfv1.Template) *wfScope {
 	return scope
 }
 
-// getParameters returns a map of strings intended to be used simple string substitution
-func (s *wfScope) getParameters() common.Parameters {
-	params := make(common.Parameters)
-	for key, val := range s.scope {
-		switch v := val.(type) {
-		case string:
-			params[key] = v
-		case nil:
-			// Skipped/omitted optional output: nil for expression consumers, but "" here so plain
-			// string substitution can still resolve the reference and keep the node live.
-			params[key] = ""
-		}
-	}
-	return params
-}
-
 // getParametersAny returns the scope's parameters merged over the given globals, preserving nil
 // (absent optional) values so expression tags can distinguish absent from empty (e.g. via `??`).
 // A simple tag resolving to a nil value is a terminal substitution error; arguments rescued by a
@@ -87,9 +71,10 @@ func (s *wfScope) addArtifactToScope(key string, artifact wfv1.Artifact) {
 // no default. The value is stored as nil (an absent optional) so structured consumers and expressions
 // can tell it apart from a legitimately empty output (e.g. `ref ?? "fallback"`). A simple tag
 // resolving to the nil is a terminal substitution error unless the referencing argument was dropped
-// in favor of a consumer input default (dropSkippedDefaultedArgs); getParameters still flattens it
-// to "" for the legacy string-map paths (volumes, item expansion). nil is stored ONLY by this
-// method, so a present-but-nil scope value is the definition of "skipped with no default".
+// in favor of a consumer input default (dropSkippedDefaultedArgs); this applies uniformly to every
+// substitution surface (arguments, when clauses, volumes, artifact subPath, item expansion). nil is
+// stored ONLY by this method, so a present-but-nil scope value is the definition of "skipped with
+// no default".
 func (s *wfScope) addSkippedParamToScope(key string) {
 	s.scope[key] = nil
 }
@@ -292,7 +277,7 @@ func (s *wfScope) resolveArtifact(ctx context.Context, art *wfv1.Artifact) (*wfv
 			return copyArt, errors.New(errors.CodeBadRequest, "failed to marshal artifact subpath for templating")
 		}
 
-		resolvedSubPathAsJSON, err := template.Replace(ctx, string(subPathAsJSON), s.getParameters(), true)
+		resolvedSubPathAsJSON, err := template.Replace(ctx, string(subPathAsJSON), s.getParametersAny(nil), true)
 		if err != nil {
 			return nil, err
 		}

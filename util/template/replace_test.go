@@ -23,7 +23,7 @@ func Test_Replace(t *testing.T) {
 	})
 	t.Run("Simple", func(t *testing.T) {
 		t.Run("Valid", func(t *testing.T) {
-			r, err := Replace(ctx, toJSONString("{{foo}}"), map[string]string{"foo": "bar"}, false)
+			r, err := Replace(ctx, toJSONString("{{foo}}"), map[string]any{"foo": "bar"}, false)
 			require.NoError(t, err)
 			assert.Equal(t, toJSONString("bar"), r)
 		})
@@ -40,28 +40,28 @@ func Test_Replace(t *testing.T) {
 	})
 	t.Run("Expression", func(t *testing.T) {
 		t.Run("Valid", func(t *testing.T) {
-			r, err := Replace(ctx, toJSONString("{{=foo}}"), map[string]string{"foo": "bar"}, false)
+			r, err := Replace(ctx, toJSONString("{{=foo}}"), map[string]any{"foo": "bar"}, false)
 			require.NoError(t, err)
 			assert.Equal(t, toJSONString("bar"), r)
 		})
 		t.Run("Valid With Variadic Sprig Expression", func(t *testing.T) {
-			r, err := Replace(ctx, toJSONString("{{=sprig.dig('status', nil, workflow)}}"), map[string]string{"workflow.status": "Succeeded"}, false)
+			r, err := Replace(ctx, toJSONString("{{=sprig.dig('status', nil, workflow)}}"), map[string]any{"workflow.status": "Succeeded"}, false)
 			require.NoError(t, err)
 			assert.Equal(t, toJSONString("Succeeded"), r)
 		})
 		t.Run("Valid WorkflowStatus", func(t *testing.T) {
-			replaced, err := Replace(ctx, toJSONString(`{{=workflow.status == "Succeeded" ? "SUCCESSFUL" : "FAILED"}}`), map[string]string{"workflow.status": "Succeeded"}, false)
+			replaced, err := Replace(ctx, toJSONString(`{{=workflow.status == "Succeeded" ? "SUCCESSFUL" : "FAILED"}}`), map[string]any{"workflow.status": "Succeeded"}, false)
 			require.NoError(t, err)
 			assert.Equal(t, toJSONString(`SUCCESSFUL`), replaced)
-			replaced, err = Replace(ctx, toJSONString(`{{=workflow.status == "Succeeded" ? "SUCCESSFUL" : "FAILED"}}`), map[string]string{"workflow.status": "Failed"}, false)
+			replaced, err = Replace(ctx, toJSONString(`{{=workflow.status == "Succeeded" ? "SUCCESSFUL" : "FAILED"}}`), map[string]any{"workflow.status": "Failed"}, false)
 			require.NoError(t, err)
 			assert.Equal(t, toJSONString(`FAILED`), replaced)
 		})
 		t.Run("Valid WorkflowFailures", func(t *testing.T) {
-			replaced, err := Replace(ctx, toJSONString(`{{=workflow.failures == "{\"foo\":\"bar\"}" ? "SUCCESSFUL" : "FAILED"}}`), map[string]string{"workflow.failures": `{"foo":"bar"}`}, false)
+			replaced, err := Replace(ctx, toJSONString(`{{=workflow.failures == "{\"foo\":\"bar\"}" ? "SUCCESSFUL" : "FAILED"}}`), map[string]any{"workflow.failures": `{"foo":"bar"}`}, false)
 			require.NoError(t, err)
 			assert.Equal(t, toJSONString(`SUCCESSFUL`), replaced)
-			replaced, err = Replace(ctx, toJSONString(`{{=workflow.failures == "{\"foo\":\"bar\"}" ? "SUCCESSFUL" : "FAILED"}}`), map[string]string{"workflow.failures": `{"foo":"barr"}`}, false)
+			replaced, err = Replace(ctx, toJSONString(`{{=workflow.failures == "{\"foo\":\"bar\"}" ? "SUCCESSFUL" : "FAILED"}}`), map[string]any{"workflow.failures": `{"foo":"barr"}`}, false)
 			require.NoError(t, err)
 			assert.Equal(t, toJSONString(`FAILED`), replaced)
 		})
@@ -107,7 +107,7 @@ func Test_Replace(t *testing.T) {
 
 func TestNestedReplaceString(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	replaceMap := map[string]string{"inputs.parameters.message": "hello world"}
+	replaceMap := map[string]any{"inputs.parameters.message": "hello world"}
 
 	test := toJSONString(`{{- with secret "{{inputs.parameters.message}}" -}}
     {{ .Data.data.gitcreds }}
@@ -159,7 +159,7 @@ func TestNestedReplaceString(t *testing.T) {
 
 func TestReplaceStringWithWhiteSpace(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	replaceMap := map[string]string{"inputs.parameters.message": "hello world"}
+	replaceMap := map[string]any{"inputs.parameters.message": "hello world"}
 
 	test := toJSONString(`{{ inputs.parameters.message }}`)
 	replacement, err := Replace(ctx, test, replaceMap, true)
@@ -169,7 +169,7 @@ func TestReplaceStringWithWhiteSpace(t *testing.T) {
 
 func TestReplaceStringWithExpression(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	replaceMap := map[string]string{"inputs.parameters.message": "hello world"}
+	replaceMap := map[string]any{"inputs.parameters.message": "hello world"}
 
 	test := toJSONString(`test {{= sprig.trunc(5, inputs.parameters.message) }}`)
 	replacement, err := Replace(ctx, test, replaceMap, true)
