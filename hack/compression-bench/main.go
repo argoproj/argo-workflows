@@ -33,15 +33,17 @@ func main() {
 	seed := flag.Int64("seed", 42, "rng seed for corpus synthesis")
 	dictSize := flag.Int("dict-size", 112640, "max dictionary size in bytes (zstd default 110KiB)")
 	zstdLevel := flag.Int("zstd-level", 3, "zstd encoder level: 1=fastest 2=default 3=better 4=best")
+	brotliLevels := flag.String("brotli-levels", "", "comma-separated brotli qualities to include, e.g. 5,7,9,11 (empty: none)")
+	withXz := flag.Bool("xz", false, "include the xz -9 reference codec (requires xz in PATH)")
 	flag.Parse()
 
-	if err := run(*examplesDir, *scalesFlag, *specsPerScale, *seed, *dictSize, *zstdLevel); err != nil {
+	if err := run(*examplesDir, *scalesFlag, *specsPerScale, *seed, *dictSize, *zstdLevel, *brotliLevels, *withXz); err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)
 		os.Exit(1)
 	}
 }
 
-func run(examplesDir, scalesFlag string, specsPerScale int, seed int64, dictSize, zstdLevel int) error {
+func run(examplesDir, scalesFlag string, specsPerScale int, seed int64, dictSize, zstdLevel int, brotliLevelsFlag string, withXz bool) error {
 	// Error-level logger: SplitWorkflowYAMLFile and util/file log through the
 	// context, and per-file parse noise isn't interesting here.
 	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.Error, logging.Text))
@@ -60,6 +62,16 @@ func run(examplesDir, scalesFlag string, specsPerScale int, seed int64, dictSize
 	level := zstd.EncoderLevel(zstdLevel)
 	if level < zstd.SpeedFastest || level > zstd.SpeedBestCompression {
 		return fmt.Errorf("-zstd-level must be 1..4")
+	}
+	var brotliLevels []int
+	if brotliLevelsFlag != "" {
+		for _, s := range strings.Split(brotliLevelsFlag, ",") {
+			q, err := strconv.Atoi(strings.TrimSpace(s))
+			if err != nil || q < 0 || q > 11 {
+				return fmt.Errorf("bad brotli quality %q (must be 0..11)", s)
+			}
+			brotliLevels = append(brotliLevels, q)
+		}
 	}
 
 	specs, err := loadSpecs(ctx, examplesDir)
@@ -93,7 +105,7 @@ func run(examplesDir, scalesFlag string, specsPerScale int, seed int64, dictSize
 	}
 	fmt.Printf("trained dictionaries: json=%dB proto=%dB\n\n", len(jsonDict), len(protoDict))
 
-	codecs, err := buildCodecs(ctx, level, jsonDict, protoDict)
+	codecs, err := buildCodecs(ctx, level, jsonDict, protoDict, brotliLevels, withXz)
 	if err != nil {
 		return err
 	}
