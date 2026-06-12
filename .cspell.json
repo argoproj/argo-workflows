@@ -85,6 +85,7 @@
     "wftmpl",
     "workflowkey",
     "workflowtemplate",
-    "workflowtemplates"
+    "workflowtemplates",
+    "zstd"
   ]
 }
