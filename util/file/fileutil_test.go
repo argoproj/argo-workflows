@@ -70,6 +70,48 @@ func TestZstdCompression(t *testing.T) {
 	})
 }
 
+// TestBrotliCompression ensures brotli writes round-trip and are detected by
+// the reader by elimination (no gzip/zstd magic bytes), with the quality knob
+// falling back to the default when invalid.
+func TestBrotliCompression(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	content := "{\"pod-limits-rrdm8-591645159\":{\"id\":\"pod-limits-rrdm8-591645159\",\"phase\":\"Succeeded\"}}"
+
+	var compressed string
+	t.Run("CompressWithBrotli", func(t *testing.T) {
+		t.Setenv(file.CompressionAlgorithmEnvVarKey, file.BrotliAlgorithm)
+		compressed = file.CompressEncodeString(ctx, content)
+		buf, err := base64.StdEncoding.DecodeString(compressed)
+		require.NoError(t, err)
+		assert.NotEqual(t, []byte{0x1f, 0x8b}, buf[:2], "must not look like gzip")
+		assert.NotEqual(t, []byte{0x28, 0xb5, 0x2f, 0xfd}, buf[:4], "must not look like zstd")
+	})
+
+	t.Run("DecompressDetectsBrotliWithoutEnvVar", func(t *testing.T) {
+		resultString, err := file.DecodeDecompressString(ctx, compressed)
+		require.NoError(t, err)
+		assert.Equal(t, content, resultString)
+	})
+
+	t.Run("InvalidQualityFallsBackToDefault", func(t *testing.T) {
+		t.Setenv(file.CompressionAlgorithmEnvVarKey, file.BrotliAlgorithm)
+		t.Setenv(file.BrotliQualityEnvVarKey, "banana")
+		comp := file.CompressEncodeString(ctx, content)
+		resultString, err := file.DecodeDecompressString(ctx, comp)
+		require.NoError(t, err)
+		assert.Equal(t, content, resultString)
+	})
+
+	t.Run("ExplicitQuality", func(t *testing.T) {
+		t.Setenv(file.CompressionAlgorithmEnvVarKey, file.BrotliAlgorithm)
+		t.Setenv(file.BrotliQualityEnvVarKey, "11")
+		comp := file.CompressEncodeString(ctx, content)
+		resultString, err := file.DecodeDecompressString(ctx, comp)
+		require.NoError(t, err)
+		assert.Equal(t, content, resultString)
+	})
+}
+
 // TestGetGzipReader checks whether we can obtain the Gzip reader based on environment variable.
 func TestGetGzipReader(t *testing.T) {
 	ctx := logging.TestContext(t.Context())

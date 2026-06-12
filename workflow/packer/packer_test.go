@@ -73,6 +73,23 @@ func TestDecompressWorkflow(t *testing.T) {
 		assert.NotEmpty(t, wf.Status.Nodes)
 		assert.Empty(t, wf.Status.CompressedNodes)
 	})
+	t.Run("LargeWorkflowBrotli", func(t *testing.T) {
+		t.Setenv(file.CompressionAlgorithmEnvVarKey, file.BrotliAlgorithm)
+		wf := &wfv1.Workflow{
+			Status: wfv1.WorkflowStatus{
+				Nodes: wfv1.Nodes{"foo": wfv1.NodeStatus{}, "bar": wfv1.NodeStatus{}},
+			},
+		}
+		err := CompressWorkflowIfNeeded(ctx, wf)
+		require.NoError(t, err)
+		assert.Empty(t, wf.Status.Nodes)
+		assert.NotEmpty(t, wf.Status.CompressedNodes)
+
+		err = DecompressWorkflow(ctx, wf)
+		require.NoError(t, err)
+		assert.NotEmpty(t, wf.Status.Nodes)
+		assert.Empty(t, wf.Status.CompressedNodes)
+	})
 	t.Run("TooLargeToCompressWorkflow", func(t *testing.T) {
 		wf := &wfv1.Workflow{
 			Spec: wfv1.WorkflowSpec{Entrypoint: "main"},

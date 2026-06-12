@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/andybalholm/brotli"
 	"github.com/klauspost/compress/zstd"
 	"github.com/klauspost/pgzip"
 	"k8s.io/utils/env"
@@ -37,6 +38,10 @@ const (
 	CompressionAlgorithmEnvVarKey = "WORKFLOW_COMPRESSION_ALGORITHM"
 	GZipAlgorithm                 = "gzip"
 	ZStdAlgorithm                 = "zstd"
+	BrotliAlgorithm               = "brotli"
+
+	BrotliQualityEnvVarKey = "WORKFLOW_COMPRESSION_BROTLI_QUALITY"
+	defaultBrotliQuality   = 9
 )
 
 var (
@@ -45,7 +50,18 @@ var (
 	zstdDecoder, _ = zstd.NewReader(nil)
 
 	zstdMagic = []byte{0x28, 0xb5, 0x2f, 0xfd}
+	gzipMagic = []byte{0x1f, 0x8b}
 )
+
+func brotliQuality(ctx context.Context) int {
+	q, err := env.GetInt(BrotliQualityEnvVarKey, defaultBrotliQuality)
+	if err != nil || q < brotli.BestSpeed || q > brotli.BestCompression {
+		logging.RequireLoggerFromContext(ctx).WithField("quality", os.Getenv(BrotliQualityEnvVarKey)).
+			Warn(ctx, "Invalid brotli quality, using default")
+		return defaultBrotliQuality
+	}
+	return q
+}
 
 type TarReader interface {
 	Next() (*tar.Header, error)
@@ -118,8 +134,18 @@ func DecodeDecompressString(ctx context.Context, content string) (string, error)
 // by `CompressionAlgorithmEnvVarKey` (gzip by default). DecompressContent
 // detects the algorithm from the content, so the variable only affects writes.
 func CompressContent(ctx context.Context, content []byte) []byte {
-	if env.GetString(CompressionAlgorithmEnvVarKey, GZipAlgorithm) == ZStdAlgorithm {
+	switch env.GetString(CompressionAlgorithmEnvVarKey, GZipAlgorithm) {
+	case ZStdAlgorithm:
 		return zstdEncoder.EncodeAll(content, nil)
+	case BrotliAlgorithm:
+		var buf bytes.Buffer
+		brotliWriter := brotli.NewWriterLevel(&buf, brotliQuality(ctx))
+		_, err := brotliWriter.Write(content)
+		if err != nil {
+			logging.RequireLoggerFromContext(ctx).WithError(err).Warn(ctx, "Error in compressing")
+		}
+		closeFile(ctx, brotliWriter)
+		return buf.Bytes()
 	}
 	var buf bytes.Buffer
 	var gzipWriter io.WriteCloser
@@ -139,10 +165,19 @@ func CompressContent(ctx context.Context, content []byte) []byte {
 }
 
 // DecompressContent will return the uncompressed content, detecting the
-// compression algorithm from the content's magic bytes
+// compression algorithm from the content. zstd and gzip are identified by
+// their magic bytes; brotli streams have none, so anything else is treated
+// as brotli (the only other algorithm we write).
 func DecompressContent(ctx context.Context, content []byte) ([]byte, error) {
 	if bytes.HasPrefix(content, zstdMagic) {
 		return zstdDecoder.DecodeAll(content, nil)
+	}
+	if !bytes.HasPrefix(content, gzipMagic) {
+		decompressed, err := io.ReadAll(brotli.NewReader(bytes.NewReader(content)))
+		if err != nil {
+			return nil, fmt.Errorf("failed to decompress: %w", err)
+		}
+		return decompressed, nil
 	}
 	buf := bytes.NewReader(content)
 	gzipReader, err := GetGzipReader(buf)
