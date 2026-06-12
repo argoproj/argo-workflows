@@ -19,14 +19,14 @@ Levels are algorithm-specific and default to each library's own default: `gzip` 
 
 For context, measurements on synthetic node statuses (sizes are relative to the gzip default, compression times are for ~1MiB and ~10MiB of node status JSON):
 
-| Algorithm | Level | Size vs gzip | Compress 1MiB | Compress 10MiB |
-|-----------|-------|--------------|---------------|----------------|
-| `gzip`    | 6 (default) | 100% | 5ms | 43ms |
-| `zstd`    | 2 (default) | 88%  | 6ms | 49ms |
-| `zstd`    | 3           | 82%  | 6ms | 58ms |
-| `brotli`  | 6 (default) | 72%  | 11ms | 129ms |
-| `brotli`  | 9           | 67%  | 24ms | 232ms |
-| `brotli`  | 11          | 59%  | 1.7s | 18.3s |
+| Algorithm | Level       | Size vs gzip | Compress 1MiB | Compress 10MiB |
+|-----------|-------------|--------------|---------------|----------------|
+| `gzip`    | 6 (default) | 100%         | 5ms           | 43ms           |
+| `zstd`    | 2 (default) | 88%          | 6ms           | 49ms           |
+| `zstd`    | 3           | 82%          | 6ms           | 58ms           |
+| `brotli`  | 6 (default) | 72%          | 11ms          | 129ms          |
+| `brotli`  | 9           | 67%          | 24ms          | 232ms          |
+| `brotli`  | 11          | 59%          | 1.7s          | 18.3s          |
 
 Decompression speed is roughly equal for all three algorithms (~9ms per 1MiB of JSON). Higher levels than those shown buy little: brotli 11 compresses best but is ~80× slower than brotli 9, which matters because the controller re-compresses the status on every update of a large workflow. `zstd` 3 and `brotli` 9 are good choices when smaller statuses are worth slightly more controller CPU; they raise the effective node-count ceiling before offloading is required by ~20% and ~50% respectively.
 
