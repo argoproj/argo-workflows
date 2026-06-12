@@ -17,7 +17,7 @@ By default node statuses are compressed with gzip. The `WORKFLOW_COMPRESSION_ALG
 
 Levels are algorithm-specific and default to each library's own default: `gzip` 1–9 (default 6), `zstd` 1–4 (default 2), `brotli` 0–11 (default 6).
 
-For context, measurements on synthetic node statuses (synthesized from the `examples/` directory by `hack/compression-bench`; sizes are relative to the gzip default, compression times are for ~1MiB and ~10MiB of node status JSON):
+For context, measurements on synthetic node statuses (sizes are relative to the gzip default, compression times are for ~1MiB and ~10MiB of node status JSON):
 
 | Algorithm | Level | Size vs gzip | Compress 1MiB | Compress 10MiB |
 |-----------|-------|--------------|---------------|----------------|
