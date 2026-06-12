@@ -34,16 +34,15 @@ func main() {
 	dictSize := flag.Int("dict-size", 112640, "max dictionary size in bytes (zstd default 110KiB)")
 	zstdLevel := flag.Int("zstd-level", 3, "zstd encoder level: 1=fastest 2=default 3=better 4=best")
 	brotliLevels := flag.String("brotli-levels", "", "comma-separated brotli qualities to include, e.g. 5,7,9,11 (empty: none)")
-	withXz := flag.Bool("xz", false, "include the xz -9 reference codec (requires xz in PATH)")
 	flag.Parse()
 
-	if err := run(*examplesDir, *scalesFlag, *specsPerScale, *seed, *dictSize, *zstdLevel, *brotliLevels, *withXz); err != nil {
+	if err := run(*examplesDir, *scalesFlag, *specsPerScale, *seed, *dictSize, *zstdLevel, *brotliLevels); err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)
 		os.Exit(1)
 	}
 }
 
-func run(examplesDir, scalesFlag string, specsPerScale int, seed int64, dictSize, zstdLevel int, brotliLevelsFlag string, withXz bool) error {
+func run(examplesDir, scalesFlag string, specsPerScale int, seed int64, dictSize, zstdLevel int, brotliLevelsFlag string) error {
 	// Error-level logger: SplitWorkflowYAMLFile and util/file log through the
 	// context, and per-file parse noise isn't interesting here.
 	ctx := logging.WithLogger(context.Background(), logging.NewSlogLogger(logging.Error, logging.Text))
@@ -105,7 +104,7 @@ func run(examplesDir, scalesFlag string, specsPerScale int, seed int64, dictSize
 	}
 	fmt.Printf("trained dictionaries: json=%dB proto=%dB\n\n", len(jsonDict), len(protoDict))
 
-	codecs, err := buildCodecs(ctx, level, jsonDict, protoDict, brotliLevels, withXz)
+	codecs, err := buildCodecs(ctx, level, jsonDict, protoDict, brotliLevels)
 	if err != nil {
 		return err
 	}
