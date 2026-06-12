@@ -93,23 +93,45 @@ func TestBrotliCompression(t *testing.T) {
 		assert.Equal(t, content, resultString)
 	})
 
-	t.Run("InvalidQualityFallsBackToDefault", func(t *testing.T) {
+	t.Run("InvalidLevelFallsBackToDefault", func(t *testing.T) {
 		t.Setenv(file.CompressionAlgorithmEnvVarKey, file.BrotliAlgorithm)
-		t.Setenv(file.BrotliQualityEnvVarKey, "banana")
+		t.Setenv(file.CompressionLevelEnvVarKey, "banana")
 		comp := file.CompressEncodeString(ctx, content)
 		resultString, err := file.DecodeDecompressString(ctx, comp)
 		require.NoError(t, err)
 		assert.Equal(t, content, resultString)
 	})
 
-	t.Run("ExplicitQuality", func(t *testing.T) {
+	t.Run("ExplicitLevel", func(t *testing.T) {
 		t.Setenv(file.CompressionAlgorithmEnvVarKey, file.BrotliAlgorithm)
-		t.Setenv(file.BrotliQualityEnvVarKey, "11")
+		t.Setenv(file.CompressionLevelEnvVarKey, "11")
 		comp := file.CompressEncodeString(ctx, content)
 		resultString, err := file.DecodeDecompressString(ctx, comp)
 		require.NoError(t, err)
 		assert.Equal(t, content, resultString)
 	})
+}
+
+// TestCompressionLevel ensures WORKFLOW_COMPRESSION_LEVEL applies to each
+// algorithm with algorithm-specific ranges.
+func TestCompressionLevel(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	content := "{\"pod-limits-rrdm8-591645159\":{\"id\":\"pod-limits-rrdm8-591645159\",\"phase\":\"Succeeded\"}}"
+
+	for algo, level := range map[string]string{
+		file.GZipAlgorithm:   "9",
+		file.ZStdAlgorithm:   "4",
+		file.BrotliAlgorithm: "5",
+	} {
+		t.Run(algo, func(t *testing.T) {
+			t.Setenv(file.CompressionAlgorithmEnvVarKey, algo)
+			t.Setenv(file.CompressionLevelEnvVarKey, level)
+			comp := file.CompressEncodeString(ctx, content)
+			resultString, err := file.DecodeDecompressString(ctx, comp)
+			require.NoError(t, err)
+			assert.Equal(t, content, resultString)
+		})
+	}
 }
 
 // TestGetGzipReader checks whether we can obtain the Gzip reader based on environment variable.

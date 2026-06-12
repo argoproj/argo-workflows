@@ -11,7 +11,9 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/andybalholm/brotli"
 	"github.com/klauspost/compress/zstd"
@@ -40,27 +42,48 @@ const (
 	ZStdAlgorithm                 = "zstd"
 	BrotliAlgorithm               = "brotli"
 
-	BrotliQualityEnvVarKey = "WORKFLOW_COMPRESSION_BROTLI_QUALITY"
-	defaultBrotliQuality   = 9
+	// CompressionLevelEnvVarKey selects the compression level. Its range and
+	// default are algorithm-specific: gzip 1-9 (default 6), zstd 1-4
+	// (default 2), brotli 0-11 (default 6). Unset means each library's default.
+	CompressionLevelEnvVarKey = "WORKFLOW_COMPRESSION_LEVEL"
 )
 
 var (
 	// zstd.Encoder/Decoder are safe for concurrent EncodeAll/DecodeAll use.
-	zstdEncoder, _ = zstd.NewWriter(nil, zstd.WithEncoderLevel(zstd.SpeedBetterCompression))
 	zstdDecoder, _ = zstd.NewReader(nil)
+
+	zstdEncoders   = map[zstd.EncoderLevel]*zstd.Encoder{}
+	zstdEncodersMu sync.Mutex
 
 	zstdMagic = []byte{0x28, 0xb5, 0x2f, 0xfd}
 	gzipMagic = []byte{0x1f, 0x8b}
 )
 
-func brotliQuality(ctx context.Context) int {
-	q, err := env.GetInt(BrotliQualityEnvVarKey, defaultBrotliQuality)
-	if err != nil || q < brotli.BestSpeed || q > brotli.BestCompression {
-		logging.RequireLoggerFromContext(ctx).WithField("quality", os.Getenv(BrotliQualityEnvVarKey)).
-			Warn(ctx, "Invalid brotli quality, using default")
-		return defaultBrotliQuality
+// compressionLevel returns the level from CompressionLevelEnvVarKey if it is
+// set and within [minLevel, maxLevel], and the algorithm's default otherwise.
+func compressionLevel(ctx context.Context, defaultLevel, minLevel, maxLevel int) int {
+	s := os.Getenv(CompressionLevelEnvVarKey)
+	if s == "" {
+		return defaultLevel
 	}
-	return q
+	l, err := strconv.Atoi(s)
+	if err != nil || l < minLevel || l > maxLevel {
+		logging.RequireLoggerFromContext(ctx).WithField("level", s).
+			Warn(ctx, "Invalid compression level, using the algorithm's default")
+		return defaultLevel
+	}
+	return l
+}
+
+func zstdEncoderForLevel(level zstd.EncoderLevel) *zstd.Encoder {
+	zstdEncodersMu.Lock()
+	defer zstdEncodersMu.Unlock()
+	enc, ok := zstdEncoders[level]
+	if !ok {
+		enc, _ = zstd.NewWriter(nil, zstd.WithEncoderLevel(level))
+		zstdEncoders[level] = enc
+	}
+	return enc
 }
 
 type TarReader interface {
@@ -136,10 +159,11 @@ func DecodeDecompressString(ctx context.Context, content string) (string, error)
 func CompressContent(ctx context.Context, content []byte) []byte {
 	switch env.GetString(CompressionAlgorithmEnvVarKey, GZipAlgorithm) {
 	case ZStdAlgorithm:
-		return zstdEncoder.EncodeAll(content, nil)
+		level := zstd.EncoderLevel(compressionLevel(ctx, int(zstd.SpeedDefault), int(zstd.SpeedFastest), int(zstd.SpeedBestCompression)))
+		return zstdEncoderForLevel(level).EncodeAll(content, nil)
 	case BrotliAlgorithm:
 		var buf bytes.Buffer
-		brotliWriter := brotli.NewWriterLevel(&buf, brotliQuality(ctx))
+		brotliWriter := brotli.NewWriterLevel(&buf, compressionLevel(ctx, brotli.DefaultCompression, brotli.BestSpeed, brotli.BestCompression))
 		_, err := brotliWriter.Write(content)
 		if err != nil {
 			logging.RequireLoggerFromContext(ctx).WithError(err).Warn(ctx, "Error in compressing")
@@ -147,13 +171,14 @@ func CompressContent(ctx context.Context, content []byte) []byte {
 		closeFile(ctx, brotliWriter)
 		return buf.Bytes()
 	}
+	level := compressionLevel(ctx, gzip.DefaultCompression, gzip.BestSpeed, gzip.BestCompression)
 	var buf bytes.Buffer
 	var gzipWriter io.WriteCloser
 	switch gzipImpl {
 	case GZIP:
-		gzipWriter = gzip.NewWriter(&buf)
+		gzipWriter, _ = gzip.NewWriterLevel(&buf, level)
 	default:
-		gzipWriter = pgzip.NewWriter(&buf)
+		gzipWriter, _ = pgzip.NewWriterLevel(&buf, level)
 	}
 
 	_, err := gzipWriter.Write(content)

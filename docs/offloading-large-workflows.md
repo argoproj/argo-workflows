@@ -6,6 +6,32 @@ Argo stores workflows as Kubernetes resources (i.e. within EtcD). This creates a
 
 To enable this feature, configure a Postgres, MySQL, or MariaDB database under `persistence` in [your configuration](workflow-controller-configmap.yaml) and set `nodeStatusOffLoad: true`.
 
+## Node Status Compression
+
+> v4.1 and after
+
+By default node statuses are compressed with gzip. The `WORKFLOW_COMPRESSION_ALGORITHM` environment variable on the controller selects `gzip`, `zstd`, or `brotli` instead, and `WORKFLOW_COMPRESSION_LEVEL` tunes the chosen algorithm. Decompression always auto-detects the algorithm, so the variables only affect newly written statuses.
+
+!!! Warning
+    Workflows written with a non-`gzip` algorithm cannot be read by Argo versions without support for it (including `kubectl`-level tooling that gunzips `/status/compressedNodes` directly). Only change the algorithm after all components are upgraded, and be aware that downgrading past that support leaves in-flight large workflows unreadable.
+
+Levels are algorithm-specific and default to each library's own default: `gzip` 1–9 (default 6), `zstd` 1–4 (default 2), `brotli` 0–11 (default 6).
+
+For context, measurements on synthetic node statuses (synthesized from the `examples/` directory by `hack/compression-bench`; sizes are relative to the gzip default, compression times are for ~1MiB and ~10MiB of node status JSON):
+
+| Algorithm | Level | Size vs gzip | Compress 1MiB | Compress 10MiB |
+|-----------|-------|--------------|---------------|----------------|
+| `gzip`    | 6 (default) | 100% | 5ms | 43ms |
+| `zstd`    | 2 (default) | 88%  | 6ms | 49ms |
+| `zstd`    | 3           | 82%  | 6ms | 58ms |
+| `brotli`  | 6 (default) | 72%  | 11ms | 129ms |
+| `brotli`  | 9           | 67%  | 24ms | 232ms |
+| `brotli`  | 11          | 59%  | 1.7s | 18.3s |
+
+Decompression speed is roughly equal for all three algorithms (~9ms per 1MiB of JSON). Higher levels than those shown buy little: brotli 11 compresses best but is ~80× slower than brotli 9, which matters because the controller re-compresses the status on every update of a large workflow. `zstd` 3 and `brotli` 9 are good choices when smaller statuses are worth slightly more controller CPU; they raise the effective node-count ceiling before offloading is required by ~20% and ~50% respectively.
+
+These numbers are from synthetic data; real workflows may compress differently.
+
 ## FAQ
 
 ### Why aren't my workflows appearing in the database?
