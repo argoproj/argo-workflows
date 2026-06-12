@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/file"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
@@ -52,6 +53,23 @@ func TestDecompressWorkflow(t *testing.T) {
 		err = DecompressWorkflow(ctx, wf)
 		require.NoError(t, err)
 		assert.NotNil(t, wf)
+		assert.NotEmpty(t, wf.Status.Nodes)
+		assert.Empty(t, wf.Status.CompressedNodes)
+	})
+	t.Run("LargeWorkflowZstd", func(t *testing.T) {
+		t.Setenv(file.CompressionAlgorithmEnvVarKey, file.ZStdAlgorithm)
+		wf := &wfv1.Workflow{
+			Status: wfv1.WorkflowStatus{
+				Nodes: wfv1.Nodes{"foo": wfv1.NodeStatus{}, "bar": wfv1.NodeStatus{}},
+			},
+		}
+		err := CompressWorkflowIfNeeded(ctx, wf)
+		require.NoError(t, err)
+		assert.Empty(t, wf.Status.Nodes)
+		assert.NotEmpty(t, wf.Status.CompressedNodes)
+
+		err = DecompressWorkflow(ctx, wf)
+		require.NoError(t, err)
 		assert.NotEmpty(t, wf.Status.Nodes)
 		assert.Empty(t, wf.Status.CompressedNodes)
 	})

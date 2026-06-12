@@ -37,6 +37,39 @@ func TestCompressContentString(t *testing.T) {
 	}
 }
 
+// TestZstdCompression ensures the writer switches to zstd via the environment
+// variable while the reader detects the algorithm from the content alone.
+func TestZstdCompression(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	content := "{\"pod-limits-rrdm8-591645159\":{\"id\":\"pod-limits-rrdm8-591645159\",\"phase\":\"Succeeded\"}}"
+
+	var compressed string
+	t.Run("CompressWithZstd", func(t *testing.T) {
+		t.Setenv(file.CompressionAlgorithmEnvVarKey, file.ZStdAlgorithm)
+		compressed = file.CompressEncodeString(ctx, content)
+		buf, err := base64.StdEncoding.DecodeString(compressed)
+		require.NoError(t, err)
+		assert.Equal(t, []byte{0x28, 0xb5, 0x2f, 0xfd}, buf[:4], "expected zstd magic bytes")
+	})
+
+	t.Run("DecompressDetectsZstdWithoutEnvVar", func(t *testing.T) {
+		resultString, err := file.DecodeDecompressString(ctx, compressed)
+		require.NoError(t, err)
+		assert.Equal(t, content, resultString)
+	})
+
+	t.Run("UnknownAlgorithmFallsBackToGzip", func(t *testing.T) {
+		t.Setenv(file.CompressionAlgorithmEnvVarKey, "lz4")
+		comp := file.CompressEncodeString(ctx, content)
+		buf, err := base64.StdEncoding.DecodeString(comp)
+		require.NoError(t, err)
+		assert.Equal(t, []byte{0x1f, 0x8b}, buf[:2], "expected gzip magic bytes")
+		resultString, err := file.DecodeDecompressString(ctx, comp)
+		require.NoError(t, err)
+		assert.Equal(t, content, resultString)
+	})
+}
+
 // TestGetGzipReader checks whether we can obtain the Gzip reader based on environment variable.
 func TestGetGzipReader(t *testing.T) {
 	ctx := logging.TestContext(t.Context())

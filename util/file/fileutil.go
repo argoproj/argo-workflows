@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/klauspost/compress/zstd"
 	"github.com/klauspost/pgzip"
 	"k8s.io/utils/env"
 
@@ -32,6 +33,18 @@ const (
 	GZipImplEnvVarKey = "GZIP_IMPLEMENTATION"
 	GZIP              = "GZip"
 	PGZIP             = "PGZip"
+
+	CompressionAlgorithmEnvVarKey = "WORKFLOW_COMPRESSION_ALGORITHM"
+	GZipAlgorithm                 = "gzip"
+	ZStdAlgorithm                 = "zstd"
+)
+
+var (
+	// zstd.Encoder/Decoder are safe for concurrent EncodeAll/DecodeAll use.
+	zstdEncoder, _ = zstd.NewWriter(nil, zstd.WithEncoderLevel(zstd.SpeedBetterCompression))
+	zstdDecoder, _ = zstd.NewReader(nil)
+
+	zstdMagic = []byte{0x28, 0xb5, 0x2f, 0xfd}
 )
 
 type TarReader interface {
@@ -101,8 +114,13 @@ func DecodeDecompressString(ctx context.Context, content string) (string, error)
 	return string(dBuf), nil
 }
 
-// CompressContent will compress the byte array using zip writer
+// CompressContent will compress the byte array using the algorithm selected
+// by `CompressionAlgorithmEnvVarKey` (gzip by default). DecompressContent
+// detects the algorithm from the content, so the variable only affects writes.
 func CompressContent(ctx context.Context, content []byte) []byte {
+	if env.GetString(CompressionAlgorithmEnvVarKey, GZipAlgorithm) == ZStdAlgorithm {
+		return zstdEncoder.EncodeAll(content, nil)
+	}
 	var buf bytes.Buffer
 	var gzipWriter io.WriteCloser
 	switch gzipImpl {
@@ -120,8 +138,12 @@ func CompressContent(ctx context.Context, content []byte) []byte {
 	return buf.Bytes()
 }
 
-// DecompressContent will return the uncompressed content
+// DecompressContent will return the uncompressed content, detecting the
+// compression algorithm from the content's magic bytes
 func DecompressContent(ctx context.Context, content []byte) ([]byte, error) {
+	if bytes.HasPrefix(content, zstdMagic) {
+		return zstdDecoder.DecodeAll(content, nil)
+	}
 	buf := bytes.NewReader(content)
 	gzipReader, err := GetGzipReader(buf)
 	if err != nil {
