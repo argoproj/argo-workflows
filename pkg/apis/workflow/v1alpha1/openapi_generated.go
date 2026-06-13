@@ -423,6 +423,13 @@ func schema_pkg_apis_workflow_v1alpha1_Artifact(ref common.ReferenceCallback) co
 							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.PluginArtifact"),
 						},
 					},
+					"archiveSystemContainerLogs": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ArchiveSystemContainerLogs indicates if the init/wait container logs should be archived",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 					"globalName": {
 						SchemaProps: spec.SchemaProps{
 							Description: "GlobalName exports an output artifact to the global scope, making it available as workflow.outputs.artifacts.XXXX and in workflow.status.outputs.artifacts",
@@ -655,6 +662,13 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactLocation(ref common.ReferenceCall
 							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.PluginArtifact"),
 						},
 					},
+					"archiveSystemContainerLogs": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ArchiveSystemContainerLogs indicates if the init/wait container logs should be archived",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 				},
 			},
 		},
@@ -802,6 +816,13 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactPaths(ref common.ReferenceCallbac
 							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.PluginArtifact"),
 						},
 					},
+					"archiveSystemContainerLogs": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ArchiveSystemContainerLogs indicates if the init/wait container logs should be archived",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 					"globalName": {
 						SchemaProps: spec.SchemaProps{
 							Description: "GlobalName exports an output artifact to the global scope, making it available as workflow.outputs.artifacts.XXXX and in workflow.status.outputs.artifacts",
@@ -919,6 +940,13 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactRepository(ref common.ReferenceCa
 						SchemaProps: spec.SchemaProps{
 							Description: "Plugin stores artifact in a plugin-specific artifact repository",
 							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.PluginArtifactRepository"),
+						},
+					},
+					"archiveSystemContainerLogs": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ArchiveSystemContainerLogs enables log archiving for system containers (init/wait)",
+							Type:        []string{"boolean"},
+							Format:      "",
 						},
 					},
 				},
@@ -8186,6 +8214,13 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 						SchemaProps: spec.SchemaProps{
 							Description: "ArtifactGC describes the strategy to use when deleting artifacts from completed or deleted workflows (applies to all output Artifacts unless Artifact.ArtifactGC is specified, which overrides this)",
 							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowLevelArtifactGC"),
+						},
+					},
+					"archiveSystemContainerLogs": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ArchiveSystemContainerLogs indicates if the init/wait container logs should be archived",
+							Type:        []string{"boolean"},
+							Format:      "",
 						},
 					},
 				},

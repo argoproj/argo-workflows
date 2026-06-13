@@ -49,6 +49,8 @@ spec:
                       properties:
                         archiveLogs:
                           type: boolean
+                        archiveSystemContainerLogs:
+                          type: boolean
                         artifactory:
                           properties:
                             passwordSecret:
@@ -583,6 +585,8 @@ spec:
                                 type: object
                             type: object
                           archiveLogs:
+                            type: boolean
+                          archiveSystemContainerLogs:
                             type: boolean
                           artifactGC:
                             properties:

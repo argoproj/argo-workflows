@@ -494,6 +494,8 @@ spec:
                       properties:
                         archiveLogs:
                           type: boolean
+                        archiveSystemContainerLogs:
+                          type: boolean
                         artifactory:
                           properties:
                             passwordSecret:
@@ -2529,6 +2531,8 @@ spec:
                                           type: object
                                         archiveLogs:
                                           type: boolean
+                                        archiveSystemContainerLogs:
+                                          type: boolean
                                         artifactGC:
                                           properties:
                                             podMetadata:
@@ -3187,6 +3191,8 @@ spec:
                                                     type: object
                                                 type: object
                                               archiveLogs:
+                                                type: boolean
+                                              archiveSystemContainerLogs:
                                                 type: boolean
                                               artifactGC:
                                                 properties:
@@ -3900,6 +3906,8 @@ spec:
                                       type: object
                                   type: object
                                 archiveLogs:
+                                  type: boolean
+                                archiveSystemContainerLogs:
                                   type: boolean
                                 artifactGC:
                                   properties:
@@ -5297,6 +5305,8 @@ spec:
                                 type: object
                               archiveLogs:
                                 type: boolean
+                              archiveSystemContainerLogs:
+                                type: boolean
                               artifactGC:
                                 properties:
                                   podMetadata:
@@ -6057,6 +6067,8 @@ spec:
                                 type: object
                               archiveLogs:
                                 type: boolean
+                              archiveSystemContainerLogs:
+                                type: boolean
                               artifactGC:
                                 properties:
                                   podMetadata:
@@ -6732,6 +6744,8 @@ spec:
                                       type: object
                                   type: object
                                 archiveLogs:
+                                  type: boolean
+                                archiveSystemContainerLogs:
                                   type: boolean
                                 artifactGC:
                                   properties:
@@ -8906,6 +8920,8 @@ spec:
                                             type: object
                                           archiveLogs:
                                             type: boolean
+                                          archiveSystemContainerLogs:
+                                            type: boolean
                                           artifactGC:
                                             properties:
                                               podMetadata:
@@ -9558,6 +9574,8 @@ spec:
                                                       type: object
                                                   type: object
                                                 archiveLogs:
+                                                  type: boolean
+                                                archiveSystemContainerLogs:
                                                   type: boolean
                                                 artifactGC:
                                                   properties:
@@ -11186,6 +11204,10 @@ spec:
                               archiveLogs:
                                 description: ArchiveLogs indicates if the container
                                   logs should be archived
+                                type: boolean
+                              archiveSystemContainerLogs:
+                                description: ArchiveSystemContainerLogs indicates
+                                  if the init/wait container logs should be archived
                                 type: boolean
                               artifactGC:
                                 description: ArtifactGC describes the strategy to

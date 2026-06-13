@@ -167,6 +167,9 @@ message ArtifactLocation {
 
   // Plugin contains plugin artifact location details
   optional PluginArtifact plugin = 11;
+
+  // ArchiveSystemContainerLogs indicates if the init/wait container logs should be archived
+  optional bool archiveSystemContainerLogs = 12;
 }
 
 // ArtifactNodeSpec specifies the Artifacts that need to be deleted for a given Node
@@ -209,6 +212,9 @@ message ArtifactRepository {
 
   // Plugin stores artifact in a plugin-specific artifact repository
   optional PluginArtifactRepository plugin = 8;
+
+  // ArchiveSystemContainerLogs enables log archiving for system containers (init/wait)
+  optional bool archiveSystemContainerLogs = 9;
 }
 
 // ArtifactRepositoryRef is a reference to an artifact repository config map.
@@ -2221,6 +2227,9 @@ message WorkflowSpec {
   // ArtifactGC describes the strategy to use when deleting artifacts from completed or deleted workflows (applies to all output Artifacts
   // unless Artifact.ArtifactGC is specified, which overrides this)
   optional WorkflowLevelArtifactGC artifactGC = 43;
+
+  // ArchiveSystemContainerLogs indicates if the init/wait container logs should be archived
+  optional bool archiveSystemContainerLogs = 44;
 }
 
 // WorkflowStatus contains overall status information about a workflow

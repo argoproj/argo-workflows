@@ -78,6 +78,10 @@ spec:
                       description: ArchiveLogs indicates if the container logs should
                         be archived
                       type: boolean
+                    archiveSystemContainerLogs:
+                      description: ArchiveSystemContainerLogs indicates if the init/wait
+                        container logs should be archived
+                      type: boolean
                     artifactGC:
                       description: ArtifactGC describes the strategy to use when to
                         deleting an artifact from completed or deleted workflows

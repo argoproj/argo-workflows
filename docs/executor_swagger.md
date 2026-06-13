@@ -215,6 +215,7 @@ It will marshall back to string - marshalling is not symmetric.
 |------|------|---------|:--------:| ------- |-------------|---------|
 | archive | [ArchiveStrategy](#archive-strategy)| `ArchiveStrategy` |  | |  |  |
 | archiveLogs | boolean| `bool` |  | | ArchiveLogs indicates if the container logs should be archived |  |
+| archiveSystemContainerLogs | boolean| `bool` |  | | ArchiveSystemContainerLogs indicates if the init/wait container logs should be archived |  |
 | artifactGC | [ArtifactGC](#artifact-g-c)| `ArtifactGC` |  | |  |  |
 | artifactory | [ArtifactoryArtifact](#artifactory-artifact)| `ArtifactoryArtifact` |  | |  |  |
 | azure | [AzureArtifact](#azure-artifact)| `AzureArtifact` |  | |  |  |
@@ -287,6 +288,7 @@ of a single workflow step, which the executor will use as a default location to 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | archiveLogs | boolean| `bool` |  | | ArchiveLogs indicates if the container logs should be archived |  |
+| archiveSystemContainerLogs | boolean| `bool` |  | | ArchiveSystemContainerLogs indicates if the init/wait container logs should be archived |  |
 | artifactory | [ArtifactoryArtifact](#artifactory-artifact)| `ArtifactoryArtifact` |  | |  |  |
 | azure | [AzureArtifact](#azure-artifact)| `AzureArtifact` |  | |  |  |
 | gcs | [GCSArtifact](#g-c-s-artifact)| `GCSArtifact` |  | |  |  |
@@ -316,6 +318,7 @@ of a single workflow step, which the executor will use as a default location to 
 |------|------|---------|:--------:| ------- |-------------|---------|
 | archive | [ArchiveStrategy](#archive-strategy)| `ArchiveStrategy` |  | |  |  |
 | archiveLogs | boolean| `bool` |  | | ArchiveLogs indicates if the container logs should be archived |  |
+| archiveSystemContainerLogs | boolean| `bool` |  | | ArchiveSystemContainerLogs indicates if the init/wait container logs should be archived |  |
 | artifactGC | [ArtifactGC](#artifact-g-c)| `ArtifactGC` |  | |  |  |
 | artifactory | [ArtifactoryArtifact](#artifactory-artifact)| `ArtifactoryArtifact` |  | |  |  |
 | azure | [AzureArtifact](#azure-artifact)| `AzureArtifact` |  | |  |  |

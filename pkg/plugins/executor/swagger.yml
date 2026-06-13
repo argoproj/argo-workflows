@@ -110,6 +110,9 @@ definitions:
             archiveLogs:
                 description: ArchiveLogs indicates if the container logs should be archived
                 type: boolean
+            archiveSystemContainerLogs:
+                description: ArchiveSystemContainerLogs indicates if the init/wait container logs should be archived
+                type: boolean
             artifactGC:
                 $ref: '#/definitions/ArtifactGC'
             artifactory:
@@ -197,6 +200,9 @@ definitions:
             archiveLogs:
                 description: ArchiveLogs indicates if the container logs should be archived
                 type: boolean
+            archiveSystemContainerLogs:
+                description: ArchiveSystemContainerLogs indicates if the init/wait container logs should be archived
+                type: boolean
             artifactory:
                 $ref: '#/definitions/ArtifactoryArtifact'
             azure:
@@ -226,6 +232,9 @@ definitions:
                 $ref: '#/definitions/ArchiveStrategy'
             archiveLogs:
                 description: ArchiveLogs indicates if the container logs should be archived
+                type: boolean
+            archiveSystemContainerLogs:
+                description: ArchiveSystemContainerLogs indicates if the init/wait container logs should be archived
                 type: boolean
             artifactGC:
                 $ref: '#/definitions/ArtifactGC'
