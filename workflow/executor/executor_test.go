@@ -6,6 +6,7 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -554,12 +555,20 @@ func TestMonitorProgress(t *testing.T) {
 
 func TestSaveLogs(t *testing.T) {
 	const artStorageError = "artifact storage is not configured; see the docs for setup instructions: https://argo-workflows.readthedocs.io/en/latest/configure-artifact-repository/"
-	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
-	mockRuntimeExecutor.On("GetOutputStream", mock.Anything, mock.AnythingOfType("string"), true).Return(io.NopCloser(strings.NewReader("hello world")), nil)
+	templateWithMainAndSystemLogs := wfv1.Template{
+		ArchiveLocation: &wfv1.ArtifactLocation{
+			ArchiveLogs:                new(true),
+			ArchiveSystemContainerLogs: new(true),
+		},
+	}
 	t.Run("Simple Pod node", func(t *testing.T) {
 		ctx := logging.TestContext(t.Context())
 		tracing, err := tracing.New(ctx, `argoexec`)
 		require.NoError(t, err)
+
+		mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
+		mockRuntimeExecutor.On("GetOutputStream", mock.Anything, mock.AnythingOfType("string"), true).Return(io.NopCloser(strings.NewReader("hello world")), nil)
+
 		templateWithArchiveLogs := wfv1.Template{
 			ArchiveLocation: &wfv1.ArtifactLocation{
 				ArchiveLogs: new(true),
@@ -575,6 +584,139 @@ func TestSaveLogs(t *testing.T) {
 
 		require.EqualError(t, we.errors[0], artStorageError)
 		assert.Empty(t, logArtifacts)
+	})
+
+	t.Run("init and wait not archived when flag is false", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		tr, err := tracing.New(ctx, `argoexec`)
+		require.NoError(t, err)
+
+		mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
+		mockRuntimeExecutor.On("GetOutputStream", mock.Anything, "main", true).Return(io.NopCloser(strings.NewReader("main log")), nil)
+
+		templateWithArchiveLogsOnly := wfv1.Template{
+			ArchiveLocation: &wfv1.ArtifactLocation{
+				ArchiveLogs: new(true),
+				// ArchiveSystemContainerLogs not set (nil)
+			},
+		}
+		we := WorkflowExecutor{
+			Template:        templateWithArchiveLogsOnly,
+			RuntimeExecutor: &mockRuntimeExecutor,
+			Tracing:         tr,
+		}
+
+		we.SaveLogs(ctx)
+
+		mockRuntimeExecutor.AssertCalled(t, "GetOutputStream", mock.Anything, "main", true)
+		mockRuntimeExecutor.AssertNotCalled(t, "GetOutputStream", mock.Anything, "init", true)
+		mockRuntimeExecutor.AssertNotCalled(t, "GetOutputStream", mock.Anything, "wait", true)
+	})
+
+	t.Run("init and wait archived even when archiveLogs is false", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		tr, err := tracing.New(ctx, `argoexec`)
+		require.NoError(t, err)
+
+		mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
+		// main must not be called (archiveLogs is false)
+		mockRuntimeExecutor.On("GetOutputStream", mock.Anything, "init", true).Return(io.NopCloser(strings.NewReader("init log")), nil)
+		mockRuntimeExecutor.On("GetOutputStream", mock.Anything, "wait", true).Return(io.NopCloser(strings.NewReader("wait log")), nil)
+
+		templateSystemOnly := wfv1.Template{
+			ArchiveLocation: &wfv1.ArtifactLocation{
+				// ArchiveLogs not set (nil)
+				ArchiveSystemContainerLogs: new(true),
+			},
+		}
+
+		we := WorkflowExecutor{
+			Template:        templateSystemOnly,
+			RuntimeExecutor: &mockRuntimeExecutor,
+			Tracing:         tr,
+		}
+
+		we.SaveLogs(ctx)
+
+		mockRuntimeExecutor.AssertNotCalled(t, "GetOutputStream", mock.Anything, "main", true)
+		mockRuntimeExecutor.AssertCalled(t, "GetOutputStream", mock.Anything, "init", true)
+		mockRuntimeExecutor.AssertCalled(t, "GetOutputStream", mock.Anything, "wait", true)
+	})
+
+	t.Run("init is processed and wait is skipped when its combined file is missing", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		tr, err := tracing.New(ctx, `argoexec`)
+		require.NoError(t, err)
+
+		mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
+		mockRuntimeExecutor.On("GetOutputStream", mock.Anything, "main", true).Return(io.NopCloser(strings.NewReader("main log")), nil)
+		mockRuntimeExecutor.On("GetOutputStream", mock.Anything, "init", true).Return(io.NopCloser(strings.NewReader("init log")), nil)
+		// wait log file does not exist (simulating tee setup failure)
+		mockRuntimeExecutor.On("GetOutputStream", mock.Anything, "wait", true).Return(nil, fs.ErrNotExist)
+
+		we := WorkflowExecutor{
+			Template:        templateWithMainAndSystemLogs,
+			RuntimeExecutor: &mockRuntimeExecutor,
+			Tracing:         tr,
+		}
+
+		we.SaveLogs(ctx)
+
+		mockRuntimeExecutor.AssertCalled(t, "GetOutputStream", mock.Anything, "main", true)
+		mockRuntimeExecutor.AssertCalled(t, "GetOutputStream", mock.Anything, "init", true)
+		mockRuntimeExecutor.AssertCalled(t, "GetOutputStream", mock.Anything, "wait", true)
+
+		require.Len(t, we.errors, 2, "main and init recorded as storage errors, wait skipped")
+
+		for _, err := range we.errors {
+			assert.EqualError(t, err, artStorageError)
+		}
+	})
+
+	t.Run("skip init and wait when combined file does not exist", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		tr, err := tracing.New(ctx, `argoexec`)
+		require.NoError(t, err)
+
+		mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
+		mockRuntimeExecutor.On("GetOutputStream", mock.Anything, "main", true).Return(io.NopCloser(strings.NewReader("main log")), nil)
+		mockRuntimeExecutor.On("GetOutputStream", mock.Anything, "init", true).Return(nil, fs.ErrNotExist)
+		mockRuntimeExecutor.On("GetOutputStream", mock.Anything, "wait", true).Return(nil, fs.ErrNotExist)
+
+		we := WorkflowExecutor{
+			Template:        templateWithMainAndSystemLogs,
+			RuntimeExecutor: &mockRuntimeExecutor,
+			Tracing:         tr,
+		}
+
+		we.SaveLogs(ctx)
+
+		for _, err := range we.errors {
+			assert.NotErrorIs(t, err, fs.ErrNotExist, "should not be a fatal error when combined file does not exist")
+		}
+	})
+
+	t.Run("wait logs are saved last", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		tr, err := tracing.New(ctx, `argoexec`)
+		require.NoError(t, err)
+
+		callOrder := []string{}
+		mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
+		mockRuntimeExecutor.On("GetOutputStream", mock.Anything, "main", true).Run(func(args mock.Arguments) { callOrder = append(callOrder, "main") }).Return(io.NopCloser(strings.NewReader("main log")), nil)
+		mockRuntimeExecutor.On("GetOutputStream", mock.Anything, "init", true).Run(func(args mock.Arguments) { callOrder = append(callOrder, "init") }).Return(io.NopCloser(strings.NewReader("init log")), nil)
+		mockRuntimeExecutor.On("GetOutputStream", mock.Anything, "wait", true).Run(func(args mock.Arguments) { callOrder = append(callOrder, "wait") }).Return(io.NopCloser(strings.NewReader("wait log")), nil)
+
+		we := WorkflowExecutor{
+			Template:        templateWithMainAndSystemLogs,
+			RuntimeExecutor: &mockRuntimeExecutor,
+			Tracing:         tr,
+		}
+
+		we.SaveLogs(ctx)
+
+		require.NotEmpty(t, callOrder)
+		assert.Equal(t, "wait", callOrder[len(callOrder)-1], "wait logs should be saved last")
 	})
 }
 

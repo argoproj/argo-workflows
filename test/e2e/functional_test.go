@@ -37,6 +37,41 @@ func (s *FunctionalSuite) TestArchiveStrategies() {
 		})
 }
 
+// verifies that init / wait container logs are saved as artifacts when archiveSystemContainerLogs: true
+func (s *FunctionalSuite) TestArchiveInitWaitLogs() {
+	s.Given().
+		Workflow(`@testdata/workflow-archive-init-wait-logs.yaml`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflowNode(wfv1.SucceededPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
+			require.NotNil(t, n.Outputs, "outputs should exist")
+			artifactNames := make([]string, 0, len(n.Outputs.Artifacts))
+			for _, a := range n.Outputs.Artifacts {
+				artifactNames = append(artifactNames, a.Name)
+			}
+			assert.Contains(t, artifactNames, "main-logs", "main-logs artifact should exist")
+			assert.Contains(t, artifactNames, "init-logs", "init-logs artifact should exist")
+			assert.Contains(t, artifactNames, "wait-logs", "wait-logs artifact should exist")
+		})
+}
+
+// verifies that an init container failure still ends cleanly in the error phase when
+// system-container-log archiving is enabled (regression guard for the tee added in init.go).
+// init-logs is absent because wait never starts, which is a known limitation.
+func (s *FunctionalSuite) TestArchiveSystemContainerLogsWhenInitFails() {
+	s.Given().
+		Workflow(`@testdata/workflow-archive-init-fail.yaml`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeErrored).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowError, status.Phase)
+		})
+}
+
 // when you delete a pending pod,
 // then the pod is re- created automatically
 func (s *FunctionalSuite) TestDeletingPendingPod() {
