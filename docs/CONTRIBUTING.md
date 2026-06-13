@@ -6,7 +6,7 @@ Please [raise an issue in Github](https://github.com/argoproj/argo-workflows/iss
 
 ## Code of Conduct
 
-See [CNCF Code of Conduct](https://github.com/cncf/foundation/blob/master/code-of-conduct.md).
+See [CNCF Code of Conduct](https://github.com/cncf/foundation/blob/main/code-of-conduct.md).
 
 ## Community Meetings (monthly)
 
