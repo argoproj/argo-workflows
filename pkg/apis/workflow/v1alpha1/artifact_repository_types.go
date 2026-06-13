@@ -29,10 +29,16 @@ type ArtifactRepository struct {
 	Azure *AzureArtifactRepository `json:"azure,omitempty" protobuf:"bytes,7,opt,name=azure"`
 	// Plugin stores artifact in a plugin-specific artifact repository
 	Plugin *PluginArtifactRepository `json:"plugin,omitempty" protobuf:"bytes,8,opt,name=plugin"`
+	// ArchiveSystemContainerLogs enables log archiving for system containers (init/wait)
+	ArchiveSystemContainerLogs *bool `json:"archiveSystemContainerLogs,omitempty" protobuf:"varint,9,opt,name=archiveSystemContainerLogs"`
 }
 
 func (a *ArtifactRepository) IsArchiveLogs() bool {
 	return a != nil && a.ArchiveLogs != nil && *a.ArchiveLogs
+}
+
+func (a *ArtifactRepository) IsArchiveSystemContainerLogs() bool {
+	return a != nil && a.ArchiveSystemContainerLogs != nil && *a.ArchiveSystemContainerLogs
 }
 
 type ArtifactRepositoryType interface {

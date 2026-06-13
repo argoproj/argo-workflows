@@ -1301,7 +1301,8 @@ func (woc *wfOperationCtx) addArchiveLocation(ctx context.Context, tmpl *wfv1.Te
 		return
 	}
 	archiveLogs := woc.IsArchiveLogs(tmpl)
-	needLocation := archiveLogs
+	archiveSystemContainerLogs := woc.IsArchiveSystemContainerLogs(tmpl)
+	needLocation := archiveLogs || archiveSystemContainerLogs
 	artifacts := slices.Concat(tmpl.Inputs.Artifacts, tmpl.Outputs.Artifacts)
 	if tmpl.Data != nil {
 		if art, exist := tmpl.Data.Source.GetArtifactIfNeeded(); exist {
@@ -1319,6 +1320,7 @@ func (woc *wfOperationCtx) addArchiveLocation(ctx context.Context, tmpl *wfv1.Te
 	}
 	tmpl.ArchiveLocation = woc.artifactRepository.ToArtifactLocation()
 	tmpl.ArchiveLocation.ArchiveLogs = &archiveLogs
+	tmpl.ArchiveLocation.ArchiveSystemContainerLogs = &archiveSystemContainerLogs
 }
 
 // populateAllPluginArtifactTimeouts populates connection timeouts for all plugin artifacts in the template
@@ -1361,6 +1363,21 @@ func (woc *wfOperationCtx) IsArchiveLogs(tmpl *wfv1.Template) bool {
 		}
 	}
 	return archiveLogs
+}
+
+// IsArchiveSystemContainerLogs determines if system container logs should be archived
+// priorities: controller(on) > template > workflow > controller(off)
+func (woc *wfOperationCtx) IsArchiveSystemContainerLogs(tmpl *wfv1.Template) bool {
+	archiveSystemContainerLogs := woc.artifactRepository.IsArchiveSystemContainerLogs()
+	if !archiveSystemContainerLogs {
+		if woc.execWf.Spec.ArchiveSystemContainerLogs != nil {
+			archiveSystemContainerLogs = *woc.execWf.Spec.ArchiveSystemContainerLogs
+		}
+		if tmpl.ArchiveLocation != nil && tmpl.ArchiveLocation.ArchiveSystemContainerLogs != nil {
+			archiveSystemContainerLogs = *tmpl.ArchiveLocation.ArchiveSystemContainerLogs
+		}
+	}
+	return archiveSystemContainerLogs
 }
 
 // setupServiceAccount sets up service account and token.

@@ -467,6 +467,9 @@ type WorkflowSpec struct {
 	// ArtifactGC describes the strategy to use when deleting artifacts from completed or deleted workflows (applies to all output Artifacts
 	// unless Artifact.ArtifactGC is specified, which overrides this)
 	ArtifactGC *WorkflowLevelArtifactGC `json:"artifactGC,omitempty" protobuf:"bytes,43,opt,name=artifactGC"`
+
+	// ArchiveSystemContainerLogs indicates if the init/wait container logs should be archived
+	ArchiveSystemContainerLogs *bool `json:"archiveSystemContainerLogs,omitempty" protobuf:"varint,44,opt,name=archiveSystemContainerLogs"`
 }
 
 type LabelValueFrom struct {
@@ -1318,6 +1321,9 @@ type ArtifactLocation struct {
 
 	// Plugin contains plugin artifact location details
 	Plugin *PluginArtifact `json:"plugin,omitempty" protobuf:"bytes,11,opt,name=plugin"`
+
+	// ArchiveSystemContainerLogs indicates if the init/wait container logs should be archived
+	ArchiveSystemContainerLogs *bool `json:"archiveSystemContainerLogs,omitempty" protobuf:"varint,12,opt,name=archiveSystemContainerLogs"`
 }
 
 func (a *ArtifactLocation) Get() (ArtifactLocationType, error) {
@@ -1430,6 +1436,10 @@ func (a *ArtifactLocation) HasLocation() bool {
 
 func (a *ArtifactLocation) IsArchiveLogs() bool {
 	return a != nil && a.ArchiveLogs != nil && *a.ArchiveLogs
+}
+
+func (a *ArtifactLocation) IsArchiveSystemContainerLogs() bool {
+	return a != nil && a.ArchiveSystemContainerLogs != nil && *a.ArchiveSystemContainerLogs
 }
 
 func (a *ArtifactLocation) GetKey() (string, error) {
@@ -3457,6 +3467,10 @@ func (tmpl *Template) IsDaemon() bool {
 // SaveLogsAsArtifact reports whether logs should be saved as an artifact.
 func (tmpl *Template) SaveLogsAsArtifact() bool {
 	return tmpl != nil && tmpl.ArchiveLocation.IsArchiveLogs()
+}
+
+func (tmpl *Template) SaveSystemContainerLogsAsArtifact() bool {
+	return tmpl != nil && tmpl.ArchiveLocation.IsArchiveSystemContainerLogs()
 }
 
 func (tmpl *Template) GetRetryStrategy() (wait.Backoff, error) {

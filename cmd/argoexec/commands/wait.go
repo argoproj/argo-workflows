@@ -11,6 +11,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v4/cmd/argoexec/executor"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/tracing"
 )
 
@@ -19,8 +20,14 @@ func NewWaitCommand() *cobra.Command {
 		Use:   "wait",
 		Short: "wait for main container to finish and save artifacts",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			err := waitContainer(cmd.Context())
+			ctx, closer, err := teeContainerLogs(cmd.Context(), varRunArgo, common.WaitContainerName)
 			if err != nil {
+				// log tee failure is a log-archive failure; wait's primary processing continues
+				logging.RequireLoggerFromContext(ctx).WithError(err).Error(ctx, "Failed to set up log tee")
+			} else {
+				defer closer()
+			}
+			if err := waitContainer(ctx); err != nil {
 				return fmt.Errorf("%w", err)
 			}
 			return nil
