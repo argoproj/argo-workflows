@@ -17,20 +17,21 @@ import (
 // Any field NOT in this set is blocked by default, ensuring new fields added
 // to WorkflowSpec are denied until explicitly reviewed.
 var allowedUserOverrideFields = map[string]bool{
-	"Arguments":             true,
-	"Entrypoint":            true,
-	"Shutdown":              true,
-	"Suspend":               true,
-	"ActiveDeadlineSeconds": true,
-	"Priority":              true,
-	"TTLStrategy":           true,
-	"PodGC":                 true,
-	"VolumeClaimGC":         true,
-	"ArchiveLogs":           true,
-	"WorkflowMetadata":      true,
-	"WorkflowTemplateRef":   true,
-	"Metrics":               true,
-	"ArtifactGC":            true,
+	"Arguments":                  true,
+	"Entrypoint":                 true,
+	"Shutdown":                   true,
+	"Suspend":                    true,
+	"ActiveDeadlineSeconds":      true,
+	"Priority":                   true,
+	"TTLStrategy":                true,
+	"PodGC":                      true,
+	"VolumeClaimGC":              true,
+	"ArchiveLogs":                true,
+	"ArchiveSystemContainerLogs": true,
+	"WorkflowMetadata":           true,
+	"WorkflowTemplateRef":        true,
+	"Metrics":                    true,
+	"ArtifactGC":                 true,
 }
 
 // ValidateUserOverrides checks that a user-submitted WorkflowSpec only sets
