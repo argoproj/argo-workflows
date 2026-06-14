@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/executor/osspecific"
 )
 
 // teeContainerLogs adds the combined file as an additional log output destination,
@@ -17,6 +18,12 @@ func teeContainerLogs(ctx context.Context, varRunArgo, containerName string) (co
 	// Permissions are permissive because the file is written by this container
 	// and read by the wait container over the shared /var/run/argo volume.
 	dir := filepath.Join(varRunArgo, "ctr", containerName)
+	// Zero the umask so MkdirAll creates /var/run/argo/ctr (and below) with mode
+	// 0o777. This directory is shared by every container in the pod, which may run
+	// as different users (e.g. artifact plugin sidecars); if we created it with the
+	// default umask the parent would be 0o755 and peers could not create their own
+	// sibling directories. Matches the emissary/sidecar convention.
+	osspecific.AllowGrantingAccessToEveryone()
 	if err := os.MkdirAll(dir, 0o777); err != nil {
 		return ctx, func() {}, err
 	}
