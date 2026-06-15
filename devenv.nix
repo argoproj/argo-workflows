@@ -17,7 +17,7 @@ let
     "${mkEnv envAttrs}${execName} ${execArgs}"
   );
   controllerCmd = mkExec "./dist/workflow-controller" argoConfig.controller.env argoConfig.controller.args;
-  argoServerCmd = mkExec "./argo" argoConfig.argoServer.env argoConfig.argoServer.args;
+  argoServerCmd = mkExec "./dist/argo" argoConfig.argoServer.env argoConfig.argoServer.args;
   uiCmd = mkExec "yarn" argoConfig.ui.env argoConfig.ui.args;
 in
 {
