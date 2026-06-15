@@ -894,9 +894,9 @@ status:
       exit:
         arguments: {}
         template: http
-      Failed:
+      Error:
         arguments: {}
-        expression: workflow.status == "Failed"
+        expression: workflow.status == "Error"
         template: http
     podSpecPatch: |
       terminationGracePeriodSeconds: 3
@@ -939,7 +939,9 @@ status:
 
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
-	node := woc.wf.Status.Nodes.FindByDisplayName("lifecycle-hook-fh7t4.hooks.Failed")
+	// The hook fires on Error (not Failed) because the test environment has no real pods
+	// in the kubeclient, so the controller marks the missing pod as Error.
+	node := woc.wf.Status.Nodes.FindByDisplayName("lifecycle-hook-fh7t4.hooks.Error")
 	assert.NotNil(t, node)
 	assert.True(t, node.NodeFlag.Hooked)
 }

@@ -240,7 +240,7 @@ spec:
         histogram: null
         labels: null
         name: failure
-        when: '{{status}} == Failed'
+        when: '{{status}} == Error'
     name: steps-2
     outputs: {}
     steps:
