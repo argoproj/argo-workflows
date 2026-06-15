@@ -2,13 +2,17 @@
 
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     flake-parts = { url = "github:hercules-ci/flake-parts"; inputs.nixpkgs-lib.follows = "nixpkgs"; };
     devenv = {
-      url = "github:cachix/devenv/v1.6.1";
+      url = "github:cachix/devenv/v2.1.2";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     nix-filter.url = "github:numtide/nix-filter";
+    gomod2nix = {
+      url = "github:nix-community/gomod2nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     treefmt-nix.url = "github:numtide/treefmt-nix";
     rust-overlay.url = "github:oxalica/rust-overlay";
     rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
@@ -21,8 +25,29 @@
       perSystem = { pkgs, lib, config, system, ... }:
         let
           argoConfig = import ./conf.nix;
-          myyarn = pkgs.yarn.override { nodejs = pkgs.nodejs_20; };
+          myyarn = pkgs.yarn.override { inherit nodejs; };
           filter = inputs.nix-filter.lib;
+          # Keep these aligned with the matching go install targets in the Makefile.
+          toolVersions = {
+            kubeauto = "0.0.7";
+            mockery = "3.5.1";
+            controllerTools = "0.18.0";
+            codeGenerator = "0.35.1";
+            gogoProtobuf = "1.3.2";
+            grpcGateway = "1.16.0";
+            kubeOpenapi = "0.0.0-20220124234850-424119656bbf";
+            goSwagger = "0.33.1";
+            goimports = "0.35.0";
+            gotestsum = "1.12.3";
+            buf = "1.65.0";
+          };
+          goVersion = argoConfig.goVersion;
+          goVersionParts = lib.splitString "." goVersion;
+          goMajor = builtins.elemAt goVersionParts 0;
+          goMinor = builtins.elemAt goVersionParts 1;
+          goMajorMinor = "${goMajor}.${goMinor}";
+          goPackageAttr = "go_${goMajor}_${goMinor}";
+          buildGoModuleAttr = "buildGo${goMajor}${goMinor}Module";
 
           # dependencies for building the go binaries
           initialFilteredSrc = filter {
@@ -51,7 +76,7 @@
             version = argoConfig.version;
           };
 
-          nodejs = pkgs.nodejs_20;
+          nodejs = pkgs.nodejs_22;
           nodeEnv = import ./node-env.nix {
             inherit (pkgs) stdenv lib python2 runCommand writeTextFile writeShellScript;
             inherit pkgs nodejs;
@@ -62,7 +87,7 @@
             inherit (pkgs) fetchurl nix-gitignore stdenv lib fetchgit;
             inherit nodeEnv;
           };
-          pythonPkgs = pkgs.python310Packages;
+          pythonPkgs = pkgs.python312Packages;
           mkdocs = with pythonPkgs; # upgrade this in the Makefile if upgraded here
             buildPythonPackage rec {
               pname = "mkdocs";
@@ -71,6 +96,8 @@
                 inherit pname version;
                 hash = "sha256-jnlwomGDSH/ioQQZQMb9A6oNvlVJ5Qw+cZT1Zcs8Z4o=";
               };
+              pyproject = true;
+              build-system = [ setuptools ];
               propagatedBuildInputs = [
                 mergedeep markdown click
                 pyyaml
@@ -93,8 +120,9 @@
                 inherit pname version;
                 hash = "sha256-nAA9px4swkk9kQI3RIxnLgDO/IANPWrpPS/GmXnjvZM=";
               };
-              buildInputs = [ hatchling babel ];
-              format = "pyproject";
+              pyproject = true;
+              build-system = [ hatchling ];
+              dependencies = [ babel ];
             };
           mkdocs-material = with pythonPkgs; # upgrade this in the Makefile if upgraded here
             buildPythonPackage rec {
@@ -104,6 +132,8 @@
                 inherit pname version;
                 hash = "sha256-oVhzpeEWv0YVr0/O3IWgU3SSRkNlKGy6UDENlvsGaVg=";
               };
+              pyproject = true;
+              build-system = [ setuptools ];
               propagatedBuildInputs = [
                 mkdocs-material-extensions
                 pygments
@@ -120,11 +150,13 @@
           editdistpy = with pythonPkgs;
             buildPythonPackage rec {
               pname = "editdistpy";
-              version = "0.1.3";
+              version = "0.1.6";
               src = fetchPypi {
                 inherit pname version;
-                hash = "sha256-s8rQcxnXn+izumv5IpPelikykX2I6cYk33tqRL3fHcw=";
+                hash = "sha256-M87zqCxusAftwCr2XYyZ1nt1zo6cmAEF2kvYJWvLSyU=";
               };
+              pyproject = true;
+              build-system = [ setuptools cython ];
             };
           symspellpy = with pythonPkgs;
             buildPythonPackage rec {
@@ -134,9 +166,9 @@
                 inherit pname version;
                 hash = "sha256-9sMVGHeAvC3TD8nKMu8Hb4m7/LKns/mjd5JvH2reAIU=";
               };
-              buildInputs = [ setuptools ];
+              pyproject = true;
+              build-system = [ setuptools ];
               propagatedBuildInputs = [ editdistpy ];
-              format = "pyproject";
             };
           mkdocs-spellcheck = with pythonPkgs; # upgrade this in the Makefile if upgraded here
             buildPythonPackage rec {
@@ -146,15 +178,13 @@
                 inherit pname version;
                 hash = "sha256-g8neboAWGGN04EWsSBKj4oHyKVN/iKP4wANO+Ba3nI4=";
               };
-              format = "pyproject";
-              buildInputs = [
-                pdm-pep517
-              ];
+              pyproject = true;
+              build-system = [ pdm-pep517 ];
               propagatedBuildInputs = [
                 symspellpy
               ];
             };
-          pythonEnv = pkgs.python310.withPackages (ps: [
+          pythonEnv = pkgs.python312.withPackages (ps: [
             ps.pytest
             ps.typing-extensions
             ps.mypy
@@ -184,16 +214,29 @@
           _module.args = import inputs.nixpkgs {
             inherit system;
             overlays = [
+              inputs.gomod2nix.overlays.default
               inputs.rust-overlay.overlays.default
-              (self: super: {
-                go = super.go_1_24;
-                buildGoModule = super.buildGo124Module;
-              })
+              (self: super:
+                let
+                  goPackage = if builtins.hasAttr goPackageAttr super
+                    then builtins.getAttr goPackageAttr super
+                    else throw "go.mod requires Go ${goVersion}, but nixpkgs does not provide ${goPackageAttr}";
+                  buildGoModulePackage = if builtins.hasAttr buildGoModuleAttr super
+                    then builtins.getAttr buildGoModuleAttr super
+                    else throw "go.mod requires Go ${goVersion}, but nixpkgs does not provide ${buildGoModuleAttr}";
+                  goVersionMatches = if lib.versions.majorMinor goPackage.version == goMajorMinor && !lib.versionOlder goPackage.version goVersion
+                    then true
+                    else throw "go.mod requires Go ${goVersion}; nixpkgs ${goPackageAttr} provides ${goPackage.version}, which must be ${goMajorMinor}.x and not older than ${goVersion}";
+                in
+                {
+                  go = if goVersionMatches then goPackage else null;
+                  buildGoModule = if goVersionMatches then buildGoModulePackage else null;
+                })
             ];
           };
 
           packages = {
-            ${package.name} = pkgs.buildGoModule {
+            ${package.name} = pkgs.buildGoApplication {
               pname = package.name;
               inherit (package) version;
               src = pkgs.runCommand "${package.name}-src-with-placeholder-ui" {
@@ -211,13 +254,13 @@
                   echo "<html><body>Placeholder UI for Nix build</body></html>" > $out/ui/dist/app/index.html
                   echo "This is a placeholder file for Nix build." > $out/ui/dist/app/README.txt
                 '';
-              vendorHash = "sha256-zUfxtBSLyygW0UwVG8dodU8MPdP2hEezvwXa34EyqKU=";
+              modules = ./gomod2nix.toml;
               doCheck = false;
             };
 
             kubeauto = pkgs.buildGoModule rec {
               pname = "kubeauto";
-              version = "0.0.7";
+              version = toolVersions.kubeauto;
               src = pkgs.fetchFromGitHub {
                 owner = "kitproj";
                 repo = "kubeauto";
@@ -228,19 +271,20 @@
             };
 
             mockery = pkgs.go-mockery.overrideAttrs(old: rec {
-              version = "2.53.3";
+              version = toolVersions.mockery;
               src = pkgs.fetchFromGitHub {
                 owner = "vektra";
                 repo = "mockery";
                 rev = "v${version}";
-                sha256 = "sha256-X0cHpv4o6pzgjg7+ULCuFkspeff95WFtJbVHqy4LxAg=";
+                sha256 = "sha256-x7WniZ4wpnuzUHM2ZC2P7Ns67bIp4V4F9f4xQEJONEk=";
               };
-              vendorHash = "sha256-AQY4x2bLqMwHIjoKHzEm1hebR29gRs3LJN8i00Uup5o=";
+              vendorHash = "sha256-cNMknwlU7ENwN67CtyU1YgYIXCJbh4b7Z3oUK7kkEkk=";
+              doCheck = false;
             });
 
             protoc-gen-gogo-all = pkgs.buildGoModule rec {
               pname = "protoc-gen-gogo";
-              version = "1.3.2"; # upgrade this in the Makefile if upgraded here
+              version = toolVersions.gogoProtobuf;
 
               src = pkgs.fetchFromGitHub {
                 owner = "gogo";
@@ -253,7 +297,7 @@
             };
             grpc-ecosystem = pkgs.buildGoModule rec {
               pname = "grpc-ecosystem";
-              version = "1.16.0"; # upgrade this in the Makefile if upgraded here
+              version = toolVersions.grpcGateway;
 
               src = pkgs.fetchFromGitHub {
                 owner = "grpc-ecosystem";
@@ -266,38 +310,38 @@
             };
 
             go-swagger = pkgs.go-swagger.overrideAttrs (old: rec {
-              version = "0.31.0";
+              version = toolVersions.goSwagger;
               src = pkgs.fetchFromGitHub {
                 owner = "go-swagger";
                 repo = "go-swagger";
                 rev = "v${version}";
-                sha256 = "sha256-PeH9bkRObsw4+ttuWhaPfPQQTOAw8pwlgTEtPoUBiIQ=";
+                sha256 = "sha256-CVfGKkqneNgSJZOptQrywCioSZwJP0XGspVM3S45Q/k=";
               };
-              vendorHash = "sha256-PBzJMXPZ2gVdrW3ZeerhR1BeT9vWIIS1vCTjz3UFHes=";
+              vendorHash = "sha256-x3fTIXmI5NnOKph1D84MHzf1Kod+WLYn1JtnWLr4x+U=";
             });
 
             controller-tools = pkgs.kubernetes-controller-tools.overrideAttrs (old: rec {
-              version = "0.17.2";
+              version = toolVersions.controllerTools;
               src = pkgs.fetchFromGitHub {
                 owner = "kubernetes-sigs";
                 repo = "controller-tools";
                 rev = "v${version}";
-                sha256 = "sha256-AUYduzIEWCJDskoChXmQViR5ON4YZr4MKvFys03hBkY=";  # Replace with correct hash
+                sha256 = "sha256-zrh6GWFivs1fqkvaN6MSiYoCuPbiTQ6mJz4d69Wb7lo=";
               };
-              vendorHash = "sha256-Y7xYmD3fxAIo/NyLzBuSdbHIrduJ33SpK2I6LfOzNac=";
+              vendorHash = "sha256-criu2UyNkGaVQnIxrjzIU4D389DbCcjG/kn3kfoD5yE=";
             });
 
             k8sio-tools = pkgs.buildGoModule rec {
               pname = "k8sio-tools";
-              version = "0.21.5"; # upgrade this in the Makefile if upgraded here
+              version = toolVersions.codeGenerator;
 
               src = pkgs.fetchFromGitHub {
                 owner = "kubernetes";
                 repo = "code-generator";
                 rev = "v${version}";
-                sha256 = "sha256-x05eAO2oAq/jm1SBgwjKo6JRt/j4eMn7oA0cwswLxk8=";
+                sha256 = "sha256-NhWD09Uy8QZLov74qhBmhqXGkxWalSjOMe/1He/fHns=";
               };
-              vendorHash = "sha256-Re8Voj2nO8geLCrbDPqD5rLyiUqE7APcgOnAEJzlkOk=";
+              vendorHash = "sha256-eQuiQ8sCOE9wyVIBRmSQ1PkdvRIIw9I3GwSpHDPEE/I=";
               doCheck = false;
             };
 
@@ -327,6 +371,79 @@
               doCheck = false;
             };
 
+            buf = pkgs.buildGoModule rec {
+              pname = "buf";
+              version = toolVersions.buf;
+              src = pkgs.fetchFromGitHub {
+                owner = "bufbuild";
+                repo = "buf";
+                rev = "v${version}";
+                sha256 = "1vgwp4nm1kqisrywph6wdp6rvc3wsbzldvvdh8wnd7gd303j255s";
+              };
+              vendorHash = "sha256-8Vh6txDsPOGad6rsW9hkahT+3Dku+aECaWpkGHgW7fs=";
+              doCheck = false;
+            };
+
+            openapi-gen = pkgs.buildGoModule rec {
+              pname = "openapi-gen";
+              version = toolVersions.kubeOpenapi;
+              src = pkgs.fetchFromGitHub {
+                owner = "kubernetes";
+                repo = "kube-openapi";
+                rev = "424119656bbf";
+                hash = "sha256-rkI7r75euOv9c0QpGpLTfatFq5S3npynmKKNlflAHug=";
+              };
+              subPackages = [ "cmd/openapi-gen" ];
+              vendorHash = "sha256-2PETLn3oDGIsyUQS7cY0XGTdMZvr7LCCc9fcltP0L80=";
+              doCheck = false;
+            };
+
+            goimports = pkgs.buildGoModule rec {
+              pname = "goimports";
+              version = toolVersions.goimports;
+              src = pkgs.fetchFromGitHub {
+                owner = "golang";
+                repo = "tools";
+                rev = "v${version}";
+                hash = "sha256-h53fIvf3pedJXlopOEWYq5Hp7IVNsTIGychuCBPwY1I=";
+              };
+              subPackages = [ "cmd/goimports" ];
+              vendorHash = "sha256-L2VYebgRTdiJyIBW437hvt8RyF4D4P8rjFvjNiDtu6Q=";
+              doCheck = false;
+            };
+
+            gotestsum = pkgs.buildGoModule rec {
+              pname = "gotestsum";
+              version = toolVersions.gotestsum;
+              src = pkgs.fetchFromGitHub {
+                owner = "gotestyourself";
+                repo = "gotestsum";
+                rev = "v${version}";
+                hash = "sha256-j8lB0TIHK8/yMzaTB5OOaboEtnB6IsTybz8sJbNoQt4=";
+              };
+              vendorHash = "sha256-UInHqKzntK0fYsUKZ2jW4akymeRd3sMQKf8+//TQb7g=";
+              doCheck = false;
+            };
+
+            snipdoc = pkgs.rustPlatform.buildRustPackage rec {
+              pname = "snipdoc";
+              version = "0.1.12";
+              src = pkgs.fetchFromGitHub {
+                owner = "kaplanelad";
+                repo = "snipdoc";
+                rev = "v${version}";
+                hash = "sha256-3tF871gZouZMJ3LOzlucaxEy3q8TNoc08GVCT0aYOUk=";
+              };
+              cargoHash = "sha256-chi8q+zTewc7xpyvQbnMU7Lmd0Y4qFrIFCSh7IBITxU=";
+              doCheck = false;
+            };
+
+            nodeDependencies = nodePackages.shell.nodeDependencies;
+
+            inherit (pkgs) go jq protobuf diffutils golangci-lint kustomize gotools kubectl k3d docker gettext lsof;
+            inherit nodejs;
+            yarn = myyarn;
+
             default = config.packages.${package.name};
           };
 
@@ -336,6 +453,10 @@
               shellHook = ''
                 unset GOROOT;
                 unset GOPATH;
+                if ! k3d cluster get argo-dev &>/dev/null; then
+                  echo "Creating k3d cluster 'argo-dev'..."
+                  k3d cluster create argo-dev
+                fi
               '';
               inputsFrom = [ 
                 (pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.default))
@@ -351,12 +472,15 @@
                 config.packages.k8sio-tools
                 config.packages.goreman
                 config.packages.stern
+                config.packages.buf
+                config.packages.openapi-gen
+                config.packages.snipdoc
                 config.packages.${package.name}
                 config.packages.kubeauto
                 nodePackages.shell.nodeDependencies
                 gopls
                 go
-                goimports
+                config.packages.goimports
                 jq
                 nodejs
                 pythonEnv
@@ -365,6 +489,15 @@
                 myyarn
                 diffutils
                 kustomize
+                gomod2nix
+                config.packages.gotestsum
+                golangci-lint
+                gotools
+                kubectl
+                k3d
+                docker
+                gettext
+                lsof
               ];
             };
 
@@ -383,11 +516,14 @@
                     config.packages.k8sio-tools
                     config.packages.goreman
                     config.packages.stern
+                    config.packages.buf
+                    config.packages.openapi-gen
+                    config.packages.snipdoc
                     config.packages.kubeauto
                     nodePackages.shell.nodeDependencies
                     gopls
                     go
-                    goimports
+                    config.packages.goimports
                     jq
                     nodejs
                     pythonEnv
@@ -397,6 +533,14 @@
                     diffutils
                     config.packages.${package.name}
                     kustomize
+                    config.packages.gotestsum
+                    golangci-lint
+                    gotools
+                    kubectl
+                    k3d
+                    docker
+                    gettext
+                    lsof
                   ];
                   enterShell = ''
                     unset GOPATH;
@@ -412,7 +556,7 @@
                 })
               ];
             };
-            default = config.devShells.devEnv;
+            default = config.devShells.controller;
           };
 
           treefmt = {

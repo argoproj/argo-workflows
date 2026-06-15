@@ -83,6 +83,18 @@ func (t *Then) ExpectWorkflowDeleted() *Then {
 	return t
 }
 
+func (t *Then) ExpectWorkflowCompressed() *Then {
+	ctx := logging.TestContext(t.t.Context())
+	wf, err := t.client.Get(ctx, t.wf.Name, metav1.GetOptions{})
+	if err != nil {
+		t.t.Fatal(err)
+	}
+	if wf.Status.CompressedNodes == "" {
+		t.t.Errorf("expected workflow to be compressed")
+	}
+	return t
+}
+
 // ExpectWorkflowNode checks on a specific node in the workflow.
 // If no node matches the selector, then the NodeStatus and Pod will be nil.
 // If the pod does not exist (e.g. because it was deleted) then the Pod will be nil too.
