@@ -1,0 +1,18 @@
+# Config for `typos` (https://github.com/crate-ci/typos), which flags only known
+# misspellings, so no project-jargon dictionary is needed. Prose docs also get a
+# dictionary-based pass from cspell (.cspell.json). Version is pinned in the
+# Makefile and comes from nixpkgs in dev/nix.
+
+[files]
+extend-exclude = [
+  "sdks/",                     # generated/vendored SDK docs
+  "CHANGELOG.md",              # generated from commit messages
+  "CHANGELOG-2-x-x.md",        # generated from commit messages
+  "docs/fields.md",            # generated from Go API type comments
+  "docs/executor_swagger.md",  # generated from swagger
+  "USERS.md",                  # list of company names, not prose
+]
+
+[default.extend-words]
+# k8s API wording, e.g. "the requirements are ANDed" -- not a typo.
+ANDed = "ANDed"

@@ -196,19 +196,38 @@ TOOL_EMBEDDOC               := hack/embeddoc/embeddoc
 NVM_BIN                     ?= $(shell npm config get prefix)/bin
 ifeq ($(USE_NIX), true)
 TOOL_CLANG_FORMAT           := clang-format
-TOOL_MDSPELL                := mdspell
+TOOL_TYPOS                  := typos
+TOOL_CSPELL                 := cspell
 TOOL_MARKDOWN_LINK_CHECK    := markdown-link-check
 TOOL_MARKDOWNLINT           := markdownlint
 TOOL_DEVCONTAINER           := devcontainer
 TOOL_MKDOCS                 := mkdocs
 else
 TOOL_CLANG_FORMAT           := /usr/local/bin/clang-format
-TOOL_MDSPELL                := $(NVM_BIN)/mdspell
+TOOL_TYPOS                  := $(GOPATH)/bin/typos
+TOOL_CSPELL                 := $(NVM_BIN)/cspell
 TOOL_MARKDOWN_LINK_CHECK    := $(NVM_BIN)/markdown-link-check
 TOOL_MARKDOWNLINT           := $(NVM_BIN)/markdownlint
 TOOL_DEVCONTAINER           := $(NVM_BIN)/devcontainer
 TOOL_MKDOCS_DIR             := $(HOME)/.venv/mkdocs
 TOOL_MKDOCS                 := $(TOOL_MKDOCS_DIR)/bin/mkdocs
+endif
+
+# Spell-check tool versions. Sourced from nixpkgs under USE_NIX; pinned here for
+# the npm/binary installs below. Keep aligned with dev/nix when bumping.
+CSPELL_VERSION              := 9.7.0
+TYPOS_VERSION               := 1.47.0
+# Map `uname` output to the target triple used by typos' release tarballs.
+TYPOS_UNAME_ARCH            := $(shell uname -m)
+ifeq ($(TYPOS_UNAME_ARCH),arm64)
+TYPOS_ARCH                  := aarch64
+else
+TYPOS_ARCH                  := $(TYPOS_UNAME_ARCH)
+endif
+ifeq ($(shell uname -s),Darwin)
+TYPOS_TARGET                := $(TYPOS_ARCH)-apple-darwin
+else
+TYPOS_TARGET                := $(TYPOS_ARCH)-unknown-linux-musl
 endif
 
 .PHONY: print-variables
@@ -921,21 +940,33 @@ docs/cli/argo.md: $(CLI_PKG_FILES) go.sum ui/dist/app/index.html hack/docs/cli.g
 docs/go-sdk-guide.md: $(TOOL_EMBEDDOC)
 	$(TOOL_EMBEDDOC)
 
-$(TOOL_MDSPELL): Makefile
+$(TOOL_CSPELL): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	npm list -g markdown-spellcheck@1.3.1 > /dev/null || npm i -g markdown-spellcheck@1.3.1
+	npm list -g cspell@$(CSPELL_VERSION) > /dev/null || npm i -g cspell@$(CSPELL_VERSION)
 endif
+
+$(TOOL_TYPOS): Makefile
+# update this in Nix when upgrading it here
+ifneq ($(USE_NIX), true)
+	# typos has no npm package; install the prebuilt static binary
+	mkdir -p $(GOPATH)/bin
+	curl -sSfL https://github.com/crate-ci/typos/releases/download/v$(TYPOS_VERSION)/typos-v$(TYPOS_VERSION)-$(TYPOS_TARGET).tar.gz | tar -xz -C $(GOPATH)/bin ./typos
+endif
+
+# Markdown to spell-check: all tracked Markdown except SDKs, changelogs and the
+# generated API reference docs (whose typos come from upstream/vendored comments).
+SPELLCHECK_MD               = $(shell git ls-files '*.md' | grep -vE '^(sdks/|CHANGELOG|USERS\.md|docs/(fields|executor_swagger)\.md)')
 
 .PHONY: docs-spellcheck
 ifneq ($(USE_NIX), true)
-docs-spellcheck: $(TOOL_MDSPELL)
+docs-spellcheck: $(TOOL_TYPOS) $(TOOL_CSPELL)
 endif
 docs-spellcheck: $(QUICK_GENERATED_DOCS) ## Spell check docs
-	# check docs for spelling mistakes
-	$(TOOL_MDSPELL) --ignore-numbers --ignore-acronyms --en-us --no-suggestions --report $(shell find docs -name '*.md' -not -name upgrading.md -not -name README.md -not -name fields.md -not -name workflow-controller-configmap.md -not -name upgrading.md -not -name executor_swagger.md -not -path '*/cli/*' -not -name tested-kubernetes-versions.md -not -name new-features.md)
-	# alphabetize spelling file -- ignore first line (comment), then sort the rest case-sensitive and remove duplicates
-	$(shell cat .spelling | awk 'NR<2{ print $0; next } { print $0 | "LC_COLLATE=C sort" }' | uniq > .spelling.tmp && mv .spelling.tmp .spelling)
+	# catch common misspellings across all docs (config: _typos.toml)
+	$(TOOL_TYPOS) $(SPELLCHECK_MD)
+	# dictionary-based spell check of prose docs (config: .cspell.json)
+	$(TOOL_CSPELL) lint --no-progress --config .cspell.json "docs/**/*.md"
 
 $(TOOL_MARKDOWN_LINK_CHECK): Makefile
 # update this in Nix when upgrading it here
