@@ -46,6 +46,7 @@ type cronWfOperationCtx struct {
 	wfClientset     versioned.Interface
 	wfClient        typed.WorkflowInterface
 	wfDefaults      *v1alpha1.Workflow
+	cronWfDefaults  *v1alpha1.CronWorkflowSpec
 	cronWfIf        typed.CronWorkflowInterface
 	wftmplInformer  wfextvv1alpha1.WorkflowTemplateInformer
 	cwftmplInformer wfextvv1alpha1.ClusterWorkflowTemplateInformer
@@ -57,16 +58,33 @@ type cronWfOperationCtx struct {
 	ctx context.Context
 }
 
+// applyCronWorkflowDefaults merges controller-level CronWorkflow defaults into the in-memory
+// CronWorkflow spec, leaving any field the CronWorkflow already sets untouched. It only mutates the
+// working copy: the reconcile loop never persists the spec, so defaults don't cause GitOps drift.
+// The defaults are deep-copied because MergeToCronWorkflowSpec temporarily mutates its patch argument
+// and cronWfDefaults is shared across concurrent workers.
+func applyCronWorkflowDefaults(ctx context.Context, cronWf *v1alpha1.CronWorkflow, cronWfDefaults *v1alpha1.CronWorkflowSpec) {
+	if cronWfDefaults == nil {
+		return
+	}
+	if err := util.MergeToCronWorkflowSpec(cronWfDefaults.DeepCopy(), &cronWf.Spec); err != nil {
+		logging.RequireLoggerFromContext(ctx).WithError(err).Error(ctx, "Failed to apply CronWorkflow defaults")
+	}
+}
+
 func newCronWfOperationCtx(ctx context.Context, cronWorkflow *v1alpha1.CronWorkflow, wfClientset versioned.Interface,
 	metrics *metrics.Metrics, wftmplInformer wfextvv1alpha1.WorkflowTemplateInformer,
 	cwftmplInformer wfextvv1alpha1.ClusterWorkflowTemplateInformer, wfDefaults *v1alpha1.Workflow,
+	cronWfDefaults *v1alpha1.CronWorkflowSpec,
 ) *cronWfOperationCtx {
 	log := logging.RequireLoggerFromContext(ctx)
+	applyCronWorkflowDefaults(ctx, cronWorkflow, cronWfDefaults)
 	return &cronWfOperationCtx{
 		cronWf:          cronWorkflow,
 		wfClientset:     wfClientset,
 		wfClient:        wfClientset.ArgoprojV1alpha1().Workflows(cronWorkflow.Namespace),
 		wfDefaults:      wfDefaults,
+		cronWfDefaults:  cronWfDefaults,
 		cronWfIf:        wfClientset.ArgoprojV1alpha1().CronWorkflows(cronWorkflow.Namespace),
 		wftmplInformer:  wftmplInformer,
 		cwftmplInformer: cwftmplInformer,

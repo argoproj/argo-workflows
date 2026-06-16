@@ -815,3 +815,46 @@ func TestEvaluateWhenUnresolvedOutside(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, result)
 }
+
+func TestApplyCronWorkflowDefaults(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	newCronWf := func() *v1alpha1.CronWorkflow {
+		cronWf := &v1alpha1.CronWorkflow{}
+		v1alpha1.MustUnmarshal([]byte(scheduledWf), cronWf)
+		return cronWf
+	}
+
+	t.Run("DefaultsFillUnsetFields", func(t *testing.T) {
+		cronWf := newCronWf() // sets startingDeadlineSeconds: 30, no concurrencyPolicy
+		successLimit := int32(4)
+		defaults := &v1alpha1.CronWorkflowSpec{
+			ConcurrencyPolicy:          v1alpha1.ReplaceConcurrent,
+			SuccessfulJobsHistoryLimit: &successLimit,
+		}
+		applyCronWorkflowDefaults(ctx, cronWf, defaults)
+		assert.Equal(t, v1alpha1.ReplaceConcurrent, cronWf.Spec.ConcurrencyPolicy)
+		require.NotNil(t, cronWf.Spec.SuccessfulJobsHistoryLimit)
+		assert.Equal(t, int32(4), *cronWf.Spec.SuccessfulJobsHistoryLimit)
+		// fields set on the CronWorkflow itself are preserved
+		require.NotNil(t, cronWf.Spec.StartingDeadlineSeconds)
+		assert.Equal(t, int64(30), *cronWf.Spec.StartingDeadlineSeconds)
+		assert.Equal(t, []string{"* * * * *"}, cronWf.Spec.Schedules)
+	})
+
+	t.Run("CronWorkflowOverridesDefaults", func(t *testing.T) {
+		cronWf := newCronWf()
+		deadline := int64(120)
+		defaults := &v1alpha1.CronWorkflowSpec{StartingDeadlineSeconds: &deadline}
+		applyCronWorkflowDefaults(ctx, cronWf, defaults)
+		require.NotNil(t, cronWf.Spec.StartingDeadlineSeconds)
+		assert.Equal(t, int64(30), *cronWf.Spec.StartingDeadlineSeconds)
+	})
+
+	t.Run("NilDefaultsIsNoOp", func(t *testing.T) {
+		cronWf := newCronWf()
+		applyCronWorkflowDefaults(ctx, cronWf, nil)
+		assert.Empty(t, cronWf.Spec.ConcurrencyPolicy)
+		assert.Equal(t, []string{"* * * * *"}, cronWf.Spec.Schedules)
+	})
+}
