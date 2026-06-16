@@ -86,6 +86,9 @@ type Config struct {
 	// WorkflowDefaults are values that will apply to all Workflows from this controller, unless overridden on the Workflow-level
 	WorkflowDefaults *wfv1.Workflow `json:"workflowDefaults,omitempty"`
 
+	// CronWorkflowDefaults are values that will apply to all CronWorkflows from this controller, unless overridden on the CronWorkflow-level
+	CronWorkflowDefaults *wfv1.CronWorkflowSpec `json:"cronWorkflowDefaults,omitempty"`
+
 	// PodSpecLogStrategy enables the logging of podspec on controller log.
 	PodSpecLogStrategy PodSpecLogStrategy `json:"podSpecLogStrategy,omitzero"`
 

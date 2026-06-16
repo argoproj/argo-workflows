@@ -438,6 +438,14 @@ data:
         secondsAfterSuccess: 5
       parallelism: 3
 
+  # Default values that will apply to all CronWorkflows from this controller, unless overridden on the CronWorkflow-level
+  # See more: docs/default-workflow-specs.md
+  cronWorkflowDefaults: |
+    concurrencyPolicy: "Replace"
+    successfulJobsHistoryLimit: 4
+    failedJobsHistoryLimit: 4
+    timezone: "America/New_York"
+
   # SSO Configuration for the Argo server.
   # You must also start argo server with `--auth-mode sso`.
   # https://argo-workflows.readthedocs.io/en/latest/argo-server-auth-mode/

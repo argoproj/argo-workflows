@@ -191,6 +191,70 @@ func MergeTo(patch, target *wfv1.Workflow) error {
 	return nil
 }
 
+// MergeToCronWorkflowSpec merges the "patch" CronWorkflowSpec into the "target" CronWorkflowSpec.
+// If the target defines a field, that value takes precedence over the patch. This mirrors MergeTo,
+// including the manual handling of the embedded WorkflowSpec's hooks and labelsFrom, which strategic
+// merge does not handle.
+func MergeToCronWorkflowSpec(patch, target *wfv1.CronWorkflowSpec) error {
+	if target == nil || patch == nil {
+		return nil
+	}
+
+	// Temporarily remove hooks and labelsFrom as they don't merge
+	patchHooks := patch.WorkflowSpec.Hooks
+	patch.WorkflowSpec.Hooks = nil
+	var patchLabelsFrom map[string]wfv1.LabelValueFrom
+	if patch.WorkflowSpec.WorkflowMetadata != nil {
+		patchLabelsFrom = patch.WorkflowSpec.WorkflowMetadata.LabelsFrom
+		patch.WorkflowSpec.WorkflowMetadata.LabelsFrom = nil
+	}
+
+	patchBytes, err := json.Marshal(patch)
+	patch.WorkflowSpec.Hooks = patchHooks
+	if len(patchLabelsFrom) != 0 {
+		patch.WorkflowSpec.WorkflowMetadata.LabelsFrom = patchLabelsFrom
+	}
+	if err != nil {
+		return err
+	}
+
+	targetBytes, err := json.Marshal(target)
+	if err != nil {
+		return err
+	}
+
+	mergedBytes, err := strategicpatch.StrategicMergePatch(patchBytes, targetBytes, wfv1.CronWorkflowSpec{})
+	if err != nil {
+		return err
+	}
+
+	*target = wfv1.CronWorkflowSpec{}
+	if err = json.Unmarshal(mergedBytes, target); err != nil {
+		return err
+	}
+
+	if len(patchHooks) != 0 && target.WorkflowSpec.Hooks == nil {
+		target.WorkflowSpec.Hooks = make(wfv1.LifecycleHooks)
+	}
+	for name, hook := range patchHooks {
+		// If the patch hook doesn't exist in target
+		if _, ok := target.WorkflowSpec.Hooks[name]; !ok {
+			target.WorkflowSpec.Hooks[name] = hook
+		}
+	}
+
+	if len(patchLabelsFrom) != 0 && target.WorkflowSpec.WorkflowMetadata.LabelsFrom == nil {
+		target.WorkflowSpec.WorkflowMetadata.LabelsFrom = make(map[string]wfv1.LabelValueFrom)
+	}
+	for key, val := range patchLabelsFrom {
+		// If the patch labelFrom doesn't exist in target
+		if _, ok := target.WorkflowSpec.WorkflowMetadata.LabelsFrom[key]; !ok {
+			target.WorkflowSpec.WorkflowMetadata.LabelsFrom[key] = val
+		}
+	}
+	return nil
+}
+
 // mergeMap will merge all element from right map to left map if it is not present in left.
 func mergeMap(from, to map[string]string) {
 	for key, val := range from {

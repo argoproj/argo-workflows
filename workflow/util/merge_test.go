@@ -813,3 +813,55 @@ func TestAllWorkflowSpecFieldsAccountedFor(t *testing.T) {
 		}
 	}
 }
+
+func TestMergeToCronWorkflowSpec(t *testing.T) {
+	t.Run("DefaultFillsUnsetFields", func(t *testing.T) {
+		defaults := &wfv1.CronWorkflowSpec{
+			ConcurrencyPolicy:          wfv1.ReplaceConcurrent,
+			StartingDeadlineSeconds:    new(int64(60)),
+			SuccessfulJobsHistoryLimit: new(int32(4)),
+			FailedJobsHistoryLimit:     new(int32(4)),
+			Timezone:                   "America/New_York",
+		}
+		target := &wfv1.CronWorkflowSpec{
+			Schedules: []string{"* * * * *"},
+		}
+		require.NoError(t, MergeToCronWorkflowSpec(defaults, target))
+		assert.Equal(t, wfv1.ReplaceConcurrent, target.ConcurrencyPolicy)
+		assert.Equal(t, int64(60), *target.StartingDeadlineSeconds)
+		assert.Equal(t, int32(4), *target.SuccessfulJobsHistoryLimit)
+		assert.Equal(t, int32(4), *target.FailedJobsHistoryLimit)
+		assert.Equal(t, "America/New_York", target.Timezone)
+		// the CronWorkflow's own schedules must survive the merge
+		assert.Equal(t, []string{"* * * * *"}, target.Schedules)
+	})
+
+	t.Run("TargetOverridesDefault", func(t *testing.T) {
+		defaults := &wfv1.CronWorkflowSpec{
+			ConcurrencyPolicy:       wfv1.ReplaceConcurrent,
+			StartingDeadlineSeconds: new(int64(60)),
+		}
+		target := &wfv1.CronWorkflowSpec{
+			ConcurrencyPolicy:       wfv1.ForbidConcurrent,
+			StartingDeadlineSeconds: new(int64(10)),
+			Schedules:               []string{"* * * * *"},
+		}
+		require.NoError(t, MergeToCronWorkflowSpec(defaults, target))
+		assert.Equal(t, wfv1.ForbidConcurrent, target.ConcurrencyPolicy)
+		assert.Equal(t, int64(10), *target.StartingDeadlineSeconds)
+	})
+
+	t.Run("NilPatchIsNoOp", func(t *testing.T) {
+		target := &wfv1.CronWorkflowSpec{ConcurrencyPolicy: wfv1.ForbidConcurrent}
+		require.NoError(t, MergeToCronWorkflowSpec(nil, target))
+		assert.Equal(t, wfv1.ForbidConcurrent, target.ConcurrencyPolicy)
+	})
+
+	t.Run("PatchIsNotMutated", func(t *testing.T) {
+		defaults := &wfv1.CronWorkflowSpec{Timezone: "America/New_York"}
+		target := &wfv1.CronWorkflowSpec{Timezone: "Asia/Tokyo"}
+		require.NoError(t, MergeToCronWorkflowSpec(defaults, target))
+		assert.Equal(t, "America/New_York", defaults.Timezone)
+		assert.Equal(t, "Asia/Tokyo", target.Timezone)
+	})
+}
