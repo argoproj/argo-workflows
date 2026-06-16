@@ -33,7 +33,7 @@ Tune guidance, add or remove signals in [`checks.config.json`](checks.config.jso
 
 ## PR description check (GitHub Models)
 
-Deterministic shortcut first (empty body needs no model), then a body-hash cache (the verdict is reused until the description changes — the hash lives in a hidden state blob in the comment), then `actions/ai-inference` with [`ai-prompt.md`](ai-prompt.md). The verdict must match [`ai-schema.json`](ai-schema.json) exactly (enforced fail-closed in [`ai.js`](ai.js)); anything else — including rate limits and outages — silently drops the AI layer for that run. Model output is sanitized (`@mentions` neutralized, `fixes #N` redacted, length-capped) before it is posted.
+Deterministic shortcut first (empty body needs no model), then a body-hash cache (the verdict is reused until the description changes — the hash lives in a hidden state blob in the comment), then `actions/ai-inference` with [`ai-prompt.md`](ai-prompt.md). The verdict must match [`ai-schema.json`](ai-schema.json) exactly (enforced fail-closed in [`ai.ts`](ai.ts)); anything else — including rate limits and outages — silently drops the AI layer for that run. Model output is sanitized (`@mentions` neutralized, `fixes #N` redacted, length-capped) before it is posted.
 
 ## Security model
 
@@ -54,4 +54,16 @@ Deterministic shortcut first (empty body needs no model), then a body-hash cache
 - **Check renamed?** The signal silently stops matching (fail-safe — no false positives) and any failing unmapped check from a covered app is logged as a warning ("unmapped failing check") so you notice. Update `checks.config.json`.
 - **Workflow renamed?** Keep `on.workflow_run.workflows` in `pr-readiness.yaml` in sync with the `name:` fields of `ci-build.yaml`, `docs.yaml`, `pr.yaml`, `pr-feature.yaml`.
 - **Known limitation:** first-time contributors whose workflows need approval get no help until a maintainer approves the run (nothing completes, so nothing fires).
-- Tests: `node --test '.github/pr-readiness/test/*.test.js'` (plain `node:test`, no dependencies).
+
+## Code & local development
+
+The logic is TypeScript (ESM) under this directory. `main.ts` is the entry point (`prepare` / `finalize`); the pure, unit-tested logic lives in `classify.ts`, `comment.ts`, `ai.ts`, `sanitize.ts`, with shared types in `types.ts`.
+
+At runtime there are **no dependencies**: `actions/github-script` runs on Node 24, which strips the TypeScript types when it `require()`s `main.ts` — no build step and nothing compiled is committed. Because stripping does not *type-check*, [`pr-readiness-test.yaml`](../workflows/pr-readiness-test.yaml) runs `tsc --noEmit` and the unit tests on every PR that touches this directory. `typescript` and `@types/node` are dev-only (CI/editor), never shipped to the runner.
+
+```sh
+cd .github/pr-readiness
+npm ci
+npm run typecheck   # tsc --noEmit
+npm test            # node --test test/*.test.ts
+```

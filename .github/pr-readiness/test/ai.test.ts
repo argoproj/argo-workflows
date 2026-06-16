@@ -1,8 +1,7 @@
-'use strict';
-const { test } = require('node:test');
-const assert = require('node:assert/strict');
-const { parseAiVerdict } = require('../ai');
-const { pickStepGuidance } = require('../classify');
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { parseAiVerdict } from '../ai.ts';
+import { pickStepGuidance } from '../classify.ts';
 
 // --- parseAiVerdict: strict, fail-closed validation of model output ---
 
@@ -13,8 +12,8 @@ test('parseAiVerdict accepts a valid compliant verdict', () => {
 
 test('parseAiVerdict accepts a valid non-compliant verdict with issues', () => {
   const v = parseAiVerdict('{"compliant": false, "issues": [{"section": "Motivation", "problem": "TODO placeholder left in place"}]}');
-  assert.equal(v.compliant, false);
-  assert.equal(v.issues.length, 1);
+  assert.equal(v?.compliant, false);
+  assert.equal(v?.issues.length, 1);
 });
 
 test('parseAiVerdict tolerates a fenced code block around the JSON', () => {

@@ -52,7 +52,7 @@ jobs:
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
-            const { prepare } = require('./.github/pr-readiness/main.js');
+            const { prepare } = require('./.github/pr-readiness/main.ts');
             await prepare({ github, context, core });
 
       - name: Check PR description against the template
@@ -88,7 +88,7 @@ jobs:
           DRAFT_TOKEN: ${{ steps.draft-token.outputs.token }}
         with:
           script: |
-            const { finalize } = require('./.github/pr-readiness/main.js');
+            const { finalize } = require('./.github/pr-readiness/main.ts');
             await finalize({ core });
 
       - name: Upsert sticky comment

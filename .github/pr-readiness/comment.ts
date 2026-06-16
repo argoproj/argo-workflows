@@ -1,19 +1,35 @@
-'use strict';
 // Renders the sticky PR-readiness comment. One comment per PR, identified by
 // MARKER, edited in place. A hidden state blob carries data between runs.
 
-const MARKER = '<!-- pr-readiness-bot -->';
+import type { AiIssue, CommentVariant, State } from './types.ts';
+
+export const MARKER = '<!-- pr-readiness-bot -->';
 
 const FOOTER =
   '\n---\n<sub>🤖 Automated PR-readiness helper — it re-checks each time CI finishes. ' +
   'Unit/E2E test results are <b>not</b> covered here. ' +
   'Questions? See [the contributing guide](https://github.com/argoproj/argo-workflows/blob/main/docs/CONTRIBUTING.md) or ask a maintainer.</sub>';
 
-function stateLine(state) {
+function stateLine(state: State): string {
   return `<!-- state: ${JSON.stringify(state)} -->`;
 }
 
-function renderComment({ variant, failures, aiIssues, drafted, state }) {
+interface FailureItem {
+  title: string;
+  guidance: string;
+  url: string | null;
+  id?: string;
+}
+
+interface RenderArgs {
+  variant: CommentVariant | null;
+  failures: ReadonlyArray<FailureItem>;
+  aiIssues: AiIssue[] | null;
+  drafted: boolean;
+  state: State;
+}
+
+export function renderComment({ variant, failures, aiIssues, drafted, state }: RenderArgs): string {
   const head = [MARKER, stateLine(state), ''];
 
   if (variant === 'allclear') {
@@ -79,7 +95,7 @@ function renderComment({ variant, failures, aiIssues, drafted, state }) {
 
 // Returns the state object embedded in a bot comment, or null if the comment
 // is not ours / has no parsable state.
-function parseState(body) {
+export function parseState(body: string): State | null {
   // includes, not startsWith: the sticky-comment action injects its own
   // hidden header into the body it posts.
   if (typeof body !== 'string' || !body.includes(MARKER)) {
@@ -90,10 +106,8 @@ function parseState(body) {
     return null;
   }
   try {
-    return JSON.parse(m[1]);
+    return JSON.parse(m[1]) as State;
   } catch {
     return null;
   }
 }
-
-module.exports = { MARKER, renderComment, parseState };

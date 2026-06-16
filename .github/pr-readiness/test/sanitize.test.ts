@@ -1,7 +1,6 @@
-'use strict';
-const { test } = require('node:test');
-const assert = require('node:assert/strict');
-const { neutralizeMentions, redactClosingKeywords, sanitizeAiText } = require('../sanitize');
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { neutralizeMentions, redactClosingKeywords, sanitizeAiText } from '../sanitize.ts';
 
 test('neutralizeMentions wraps @mentions in backticks so GitHub does not notify', () => {
   assert.equal(neutralizeMentions('ping @alice please'), 'ping `@alice` please');

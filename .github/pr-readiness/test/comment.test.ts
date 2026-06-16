@@ -1,9 +1,9 @@
-'use strict';
-const { test } = require('node:test');
-const assert = require('node:assert/strict');
-const { MARKER, renderComment, parseState } = require('../comment');
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { MARKER, renderComment, parseState } from '../comment.ts';
+import type { State } from '../types.ts';
 
-const baseState = { v: 1, bodyHash: 'abc123', failing: ['lint'], aiFindings: null, aiCompliant: null, draftedSha: null };
+const baseState: State = { v: 1, bodyHash: 'abc123', failing: ['lint'], aiFindings: null, aiCompliant: null, draftedSha: null };
 
 test('renderComment issues variant lists each failure with guidance and log link', () => {
   const body = renderComment({
@@ -70,7 +70,7 @@ test('renderComment footer says tests are not covered and it is automated', () =
 });
 
 test('state round-trips through the rendered comment', () => {
-  const state = { v: 1, bodyHash: 'deadbeef', failing: ['lint', 'dco'], aiFindings: [{ section: 'AI', problem: 'missing' }], aiCompliant: false, draftedSha: 'cafe01' };
+  const state: State = { v: 1, bodyHash: 'deadbeef', failing: ['lint', 'dco'], aiFindings: [{ section: 'AI', problem: 'missing' }], aiCompliant: false, draftedSha: 'cafe01' };
   const body = renderComment({ variant: 'issues', failures: [{ id: 'lint', title: 'L', guidance: 'g', url: 'u' }], aiIssues: null, drafted: false, state });
   assert.deepEqual(parseState(body), state);
 });

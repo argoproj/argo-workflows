@@ -1,38 +1,90 @@
-'use strict';
 // Orchestration for the PR Readiness Helper workflow. Two entry points, each
 // called from an actions/github-script step in pr-readiness.yaml:
 //   prepare()  — resolve the PR, gate the author, classify checks, decide
 //                whether the AI template check is needed.
 //   finalize() — merge the AI verdict, convert to draft if blocking, render
 //                the sticky comment (or the dry-run summary).
-// All decision logic lives in the unit-tested modules this file requires.
+// All decision logic lives in the unit-tested modules this file imports.
 
-const fs = require('node:fs');
-const path = require('node:path');
-const crypto = require('node:crypto');
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import * as crypto from 'node:crypto';
+import { fileURLToPath } from 'node:url';
 
-const { classifySignals, decide, isExemptAuthor, findPullRequest, pickStepGuidance } = require('./classify');
-const { MARKER, renderComment, parseState } = require('./comment');
-const { parseAiVerdict } = require('./ai');
-const { sanitizeAiText } = require('./sanitize');
-const config = require('./checks.config.json');
+import { classifySignals, diagnostics, decide, isExemptAuthor, findPullRequest, pickStepGuidance } from './classify.ts';
+import { MARKER, renderComment, parseState } from './comment.ts';
+import { parseAiVerdict } from './ai.ts';
+import { sanitizeAiText } from './sanitize.ts';
+import type { AiVerdict, Config, JobStep, Signal, State } from './types.ts';
+
+// Minimal structural types for the actions/github-script bindings we use, so
+// the bot keeps zero runtime dependencies (no @actions/* packages).
+interface Summary {
+  addHeading(text: string, level?: number): Summary;
+  addRaw(text: string): Summary;
+  addTable(rows: unknown[]): Summary;
+  write(): Promise<unknown>;
+}
+interface Core {
+  info(message: string): void;
+  warning(message: string): void;
+  setOutput(name: string, value: string): void;
+  startGroup(name: string): void;
+  endGroup(): void;
+  summary: Summary;
+}
+interface RepoContext {
+  repo: { owner: string; repo: string };
+  payload: { workflow_run: { head_sha: string } };
+}
+interface Octokit {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  paginate(route: unknown, params: Record<string, unknown>): Promise<any[]>;
+  rest: {
+    actions: { getJobForWorkflowRun(params: Record<string, unknown>): Promise<{ data: { steps?: JobStep[] } }> };
+    pulls: { list: unknown };
+    checks: { listForRef: unknown };
+    issues: { listComments: unknown };
+  };
+}
+
+interface PreparedData {
+  prNumber: number;
+  prNodeId: string;
+  headSha: string;
+  draft: boolean;
+  signals: Signal[];
+  unmapped: string[];
+  hasExistingComment: boolean;
+  existingState: State | null;
+  bodyHash: string;
+  syntheticVerdict: AiVerdict | null;
+  cachedVerdict: AiVerdict | null;
+}
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const config = JSON.parse(fs.readFileSync(path.join(here, 'checks.config.json'), 'utf8')) as Config;
 
 const MAX_BODY_CHARS = 8000; // bound AI input size (cost + injection surface)
 
-function tempDir() {
+function tempDir(): string {
   const dir = path.join(process.env.RUNNER_TEMP || '/tmp', 'pr-readiness');
   fs.mkdirSync(dir, { recursive: true });
   return dir;
 }
 
-function sha256(text) {
+function sha256(text: string): string {
   return crypto.createHash('sha256').update(text).digest('hex');
 }
 
-async function prepare({ github, context, core }) {
+function errMessage(e: unknown): string {
+  return e instanceof Error ? e.message : String(e);
+}
+
+export async function prepare({ github, context, core }: { github: Octokit; context: RepoContext; core: Core }): Promise<void> {
   const { owner, repo } = context.repo;
   const headSha = context.payload.workflow_run.head_sha;
-  const stop = (reason) => {
+  const stop = (reason: string): void => {
     core.info(`Skipping: ${reason}`);
     core.setOutput('proceed', 'false');
     core.setOutput('ai_needed', 'false');
@@ -57,18 +109,20 @@ async function prepare({ github, context, core }) {
   // and the DCO app; unit/E2E checks are deliberately not covered).
   const checkRuns = await github.paginate(github.rest.checks.listForRef, { owner, repo, ref: headSha, per_page: 100 });
   const signals = classifySignals(checkRuns, config);
-  const { unmapped } = classifySignals.diagnostics(checkRuns, config);
+  const { unmapped } = diagnostics(checkRuns, config);
 
   // Step-level guidance for the feature check: the check-run id doubles as
   // the Actions job id, whose steps tell us which validation failed.
   const featureSignal = signals.find((s) => s.id === 'features');
   if (featureSignal && featureSignal.state === 'failure') {
     const featureRun = checkRuns.find((r) => r.name === 'feature-pr-handling');
-    try {
-      const { data: job } = await github.rest.actions.getJobForWorkflowRun({ owner, repo, job_id: featureRun.id });
-      featureSignal.guidance = pickStepGuidance(featureSignal, job.steps);
-    } catch (e) {
-      core.warning(`could not fetch feature job steps: ${e.message}`); // generic guidance still applies
+    if (featureRun) {
+      try {
+        const { data: job } = await github.rest.actions.getJobForWorkflowRun({ owner, repo, job_id: featureRun.id });
+        featureSignal.guidance = pickStepGuidance(featureSignal, job.steps ?? null);
+      } catch (e) {
+        core.warning(`could not fetch feature job steps: ${errMessage(e)}`); // generic guidance still applies
+      }
     }
   }
 
@@ -86,15 +140,15 @@ async function prepare({ github, context, core }) {
   const body = (pr.body || '').trim();
   const bodyHash = sha256(body);
   let aiNeeded = false;
-  let syntheticVerdict = null;
-  let cachedVerdict = null;
+  let syntheticVerdict: AiVerdict | null = null;
+  let cachedVerdict: AiVerdict | null = null;
   if (body === '') {
     syntheticVerdict = {
       compliant: false,
       issues: [{ section: 'Other', problem: 'The PR description is empty — please fill in the pull request template.' }],
     };
   } else if (existingState && existingState.bodyHash === bodyHash && typeof existingState.aiCompliant === 'boolean') {
-    cachedVerdict = { compliant: existingState.aiCompliant, issues: existingState.aiFindings || [] };
+    cachedVerdict = { compliant: existingState.aiCompliant, issues: existingState.aiFindings ?? [] };
   } else {
     aiNeeded = true;
   }
@@ -115,22 +169,20 @@ async function prepare({ github, context, core }) {
     ].join('\n');
     fs.writeFileSync(path.join(dir, 'prompt.txt'), prompt);
   }
-  fs.writeFileSync(
-    path.join(dir, 'data.json'),
-    JSON.stringify({
-      prNumber: pr.number,
-      prNodeId: pr.node_id,
-      headSha,
-      draft: pr.draft,
-      signals,
-      unmapped,
-      hasExistingComment: Boolean(existing),
-      existingState,
-      bodyHash,
-      syntheticVerdict,
-      cachedVerdict,
-    })
-  );
+  const prepared: PreparedData = {
+    prNumber: pr.number,
+    prNodeId: pr.node_id,
+    headSha,
+    draft: pr.draft,
+    signals,
+    unmapped,
+    hasExistingComment: Boolean(existing),
+    existingState,
+    bodyHash,
+    syntheticVerdict,
+    cachedVerdict,
+  };
+  fs.writeFileSync(path.join(dir, 'data.json'), JSON.stringify(prepared));
 
   core.info(
     `Proceeding: PR #${pr.number} by ${pr.user.login} (draft=${pr.draft}) | ` +
@@ -141,9 +193,9 @@ async function prepare({ github, context, core }) {
   core.setOutput('pr_number', String(pr.number));
 }
 
-async function finalize({ core }) {
+export async function finalize({ core }: { core: Core }): Promise<void> {
   const dir = tempDir();
-  const data = JSON.parse(fs.readFileSync(path.join(dir, 'data.json'), 'utf8'));
+  const data = JSON.parse(fs.readFileSync(path.join(dir, 'data.json'), 'utf8')) as PreparedData;
   const dryRun = process.env.DRY_RUN === 'true';
 
   // AI verdict precedence: synthetic (empty body) > cached (body unchanged)
@@ -183,18 +235,18 @@ async function finalize({ core }) {
             variables: { id: data.prNodeId },
           }),
         });
-        const result = await res.json();
+        const result = (await res.json()) as { errors?: Array<{ message: string }> };
         if (!res.ok || result.errors) {
           throw new Error(result.errors ? result.errors.map((e) => e.message).join('; ') : `HTTP ${res.status}`);
         }
         draftedNow = true;
       } catch (e) {
-        core.warning(`could not convert PR #${data.prNumber} to draft: ${e.message}`);
+        core.warning(`could not convert PR #${data.prNumber} to draft: ${errMessage(e)}`);
       }
     }
   }
 
-  const state = {
+  const state: State = {
     v: 1,
     bodyHash: data.bodyHash,
     failing: decision.failing,
@@ -252,5 +304,3 @@ async function finalize({ core }) {
   }
   core.setOutput('should_comment', String(decision.shouldComment));
 }
-
-module.exports = { prepare, finalize };

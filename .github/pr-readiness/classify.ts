@@ -1,32 +1,33 @@
-'use strict';
 // Core decision logic for the PR-readiness helper. Pure functions here are
-// unit-tested (test/classify.test.js); the API-calling orchestration lives in
-// main.js.
+// unit-tested (test/classify.test.ts); the API-calling orchestration lives in
+// main.ts.
+
+import type { CheckRun, Config, Decision, GitHubUser, JobStep, Signal, SignalMatch, SignalState } from './types.ts';
 
 const FAILURE_CONCLUSIONS = new Set(['failure', 'timed_out', 'action_required']);
 const NOT_APPLICABLE_CONCLUSIONS = new Set(['skipped', 'cancelled']);
 
-function matchesIgnore(name, patterns) {
+function matchesIgnore(name: string, patterns: string[]): boolean {
   return patterns.some((p) => (p.endsWith('*') ? name.startsWith(p.slice(0, -1)) : name === p));
 }
 
-function findRun(checkRuns, match) {
+function findRun(checkRuns: CheckRun[], match: SignalMatch): CheckRun | undefined {
   return checkRuns.find(
-    (r) => r.name === match.check && (!match.app || (r.app && r.app.slug === match.app))
+    (r) => r.name === match.check && (!match.app || (r.app != null && r.app.slug === match.app))
   );
 }
 
-function runState(run) {
+function runState(run: CheckRun | undefined): SignalState {
   if (!run) {
     return 'not-applicable';
   }
   if (run.status !== 'completed') {
     return 'pending';
   }
-  if (FAILURE_CONCLUSIONS.has(run.conclusion)) {
+  if (run.conclusion !== null && FAILURE_CONCLUSIONS.has(run.conclusion)) {
     return 'failure';
   }
-  if (NOT_APPLICABLE_CONCLUSIONS.has(run.conclusion)) {
+  if (run.conclusion !== null && NOT_APPLICABLE_CONCLUSIONS.has(run.conclusion)) {
     return 'not-applicable';
   }
   return 'success'; // success, neutral
@@ -34,14 +35,14 @@ function runState(run) {
 
 // Maps the covered signals from checks.config.json onto the live check runs
 // for a head SHA. Uncovered checks (unit/E2E tests etc.) are invisible.
-function classifySignals(checkRuns, config) {
+export function classifySignals(checkRuns: CheckRun[], config: Config): Signal[] {
   return config.signals.map((signal) => {
     const run = findRun(checkRuns, signal.match);
     return {
       id: signal.id,
       title: signal.title,
       guidance: signal.guidance,
-      stepGuidance: signal.stepGuidance || null,
+      stepGuidance: signal.stepGuidance ?? null,
       state: runState(run),
       url: run ? run.html_url : null,
     };
@@ -50,29 +51,38 @@ function classifySignals(checkRuns, config) {
 
 // Drift detection: failing check runs from apps we cover that match neither a
 // signal nor the ignore list — typically a renamed job. Logged, never posted.
-classifySignals.diagnostics = function diagnostics(checkRuns, config) {
+export function diagnostics(checkRuns: CheckRun[], config: Config): { unmapped: string[] } {
   const unmapped = checkRuns
     .filter(
       (r) =>
         r.status === 'completed' &&
+        r.conclusion !== null &&
         FAILURE_CONCLUSIONS.has(r.conclusion) &&
-        r.app &&
+        r.app != null &&
         config.coveredApps.includes(r.app.slug) &&
         !config.signals.some((s) => findRun([r], s.match)) &&
         !matchesIgnore(r.name, config.ignoreChecks)
     )
     .map((r) => r.name);
   return { unmapped };
-};
+}
+
+interface DecideArgs {
+  signals: ReadonlyArray<{ id: string; state: string }>;
+  aiVerdict: { compliant: boolean } | null;
+  existingState: { draftedSha?: string | null } | null;
+  hasExistingComment: boolean;
+  pr: { draft: boolean; headSha: string };
+}
 
 // The convergence rules. See README.md for the decision table.
-function decide({ signals, aiVerdict, existingState, hasExistingComment, pr }) {
+export function decide({ signals, aiVerdict, existingState, hasExistingComment, pr }: DecideArgs): Decision {
   const failing = signals.filter((s) => s.state === 'failure').map((s) => s.id);
   const aiBlocking = Boolean(aiVerdict && aiVerdict.compliant === false);
   const blocking = failing.length > 0 || aiBlocking;
   const anyPending = signals.some((s) => s.state === 'pending');
 
-  let variant = null;
+  let variant: Decision['variant'] = null;
   let shouldComment = false;
   if (blocking) {
     variant = 'issues';
@@ -89,10 +99,10 @@ function decide({ signals, aiVerdict, existingState, hasExistingComment, pr }) {
 }
 
 // OWNERS is a small YAML subset: three keys, each a list of logins.
-function parseOwners(yamlText) {
+export function parseOwners(yamlText: string): string[] {
   const sections = new Set(['owners', 'approvers', 'reviewers']);
-  const logins = [];
-  let current = null;
+  const logins: string[] = [];
+  let current: string | null = null;
   for (const line of yamlText.split('\n')) {
     const key = line.match(/^(\w+):/);
     if (key) {
@@ -100,14 +110,14 @@ function parseOwners(yamlText) {
       continue;
     }
     const item = line.match(/^-\s*(\S+)/);
-    if (item && sections.has(current)) {
+    if (item && current !== null && sections.has(current)) {
       logins.push(item[1]);
     }
   }
   return logins;
 }
 
-function isExemptAuthor(user, ownersYaml) {
+export function isExemptAuthor(user: GitHubUser, ownersYaml: string): boolean {
   if (user.type === 'Bot' || /\[bot\]$/i.test(user.login)) {
     return true;
   }
@@ -115,20 +125,21 @@ function isExemptAuthor(user, ownersYaml) {
   return parseOwners(ownersYaml).some((l) => l.toLowerCase() === login);
 }
 
-function findPullRequest(openPrs, headSha) {
-  return openPrs.find((pr) => pr.head.sha === headSha) || null;
+export function findPullRequest<T extends { head: { sha: string } }>(openPrs: T[], headSha: string): T | null {
+  return openPrs.find((pr) => pr.head.sha === headSha) ?? null;
 }
 
 // For checks with per-step guidance (the feature-pr-handling job), pick the
 // guidance of the failing step; fall back to the signal's generic guidance.
-function pickStepGuidance(signal, steps) {
+export function pickStepGuidance(
+  signal: { guidance: string; stepGuidance?: Record<string, string> | null },
+  steps: JobStep[] | null
+): string {
   if (signal.stepGuidance && Array.isArray(steps)) {
-    const failed = steps.find((s) => s.conclusion === 'failure' && signal.stepGuidance[s.name]);
+    const failed = steps.find((s) => s.conclusion === 'failure' && signal.stepGuidance![s.name]);
     if (failed) {
       return signal.stepGuidance[failed.name];
     }
   }
   return signal.guidance;
 }
-
-module.exports = { classifySignals, decide, parseOwners, isExemptAuthor, findPullRequest, pickStepGuidance };

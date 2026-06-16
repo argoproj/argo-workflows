@@ -1,10 +1,12 @@
-'use strict';
-const { test } = require('node:test');
-const assert = require('node:assert/strict');
-const { classifySignals, decide, isExemptAuthor, parseOwners, findPullRequest } = require('../classify');
-const config = require('../checks.config.json');
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { createRequire } from 'node:module';
+import { classifySignals, diagnostics, decide, isExemptAuthor, parseOwners, findPullRequest } from '../classify.ts';
+import type { CheckRun, Config, SignalState } from '../types.ts';
 
-function run(name, conclusion, status = 'completed', app = 'github-actions') {
+const config = createRequire(import.meta.url)('../checks.config.json') as Config;
+
+function run(name: string, conclusion: string | null, status = 'completed', app = 'github-actions'): CheckRun {
   return { name, status, conclusion, html_url: `https://example.invalid/${encodeURIComponent(name)}`, app: { slug: app } };
 }
 
@@ -12,11 +14,11 @@ function run(name, conclusion, status = 'completed', app = 'github-actions') {
 
 test('classifySignals maps failing covered checks to failure with guidance', () => {
   const signals = classifySignals([run('Lint', 'failure'), run('Codegen', 'success')], config);
-  const lint = signals.find((s) => s.id === 'lint');
+  const lint = signals.find((s) => s.id === 'lint')!;
   assert.equal(lint.state, 'failure');
   assert.ok(lint.guidance.includes('make pre-commit'));
-  assert.ok(lint.url.includes('Lint'));
-  assert.equal(signals.find((s) => s.id === 'codegen').state, 'success');
+  assert.ok(lint.url!.includes('Lint'));
+  assert.equal(signals.find((s) => s.id === 'codegen')!.state, 'success');
 });
 
 test('classifySignals ignores unit/e2e and unknown checks entirely', () => {
@@ -29,37 +31,37 @@ test('classifySignals ignores unit/e2e and unknown checks entirely', () => {
 
 test('classifySignals treats absent, skipped and cancelled checks as not-applicable', () => {
   const signals = classifySignals([run('UI', 'skipped'), run('Codegen', 'cancelled')], config);
-  assert.equal(signals.find((s) => s.id === 'ui').state, 'not-applicable');
-  assert.equal(signals.find((s) => s.id === 'codegen').state, 'not-applicable');
-  assert.equal(signals.find((s) => s.id === 'lint').state, 'not-applicable'); // absent
+  assert.equal(signals.find((s) => s.id === 'ui')!.state, 'not-applicable');
+  assert.equal(signals.find((s) => s.id === 'codegen')!.state, 'not-applicable');
+  assert.equal(signals.find((s) => s.id === 'lint')!.state, 'not-applicable'); // absent
 });
 
 test('classifySignals treats in-progress covered checks as pending', () => {
   const signals = classifySignals([run('Lint', null, 'in_progress')], config);
-  assert.equal(signals.find((s) => s.id === 'lint').state, 'pending');
+  assert.equal(signals.find((s) => s.id === 'lint')!.state, 'pending');
 });
 
 test('classifySignals covers DCO check from the dco app', () => {
   const signals = classifySignals([run('DCO', 'failure', 'completed', 'dco')], config);
-  const dco = signals.find((s) => s.id === 'dco');
+  const dco = signals.find((s) => s.id === 'dco')!;
   assert.equal(dco.state, 'failure');
   assert.ok(/sign.?off/i.test(dco.guidance));
 });
 
 test('classifySignals treats timed_out and action_required as failure', () => {
   const signals = classifySignals([run('Lint', 'timed_out'), run('Codegen', 'action_required')], config);
-  assert.equal(signals.find((s) => s.id === 'lint').state, 'failure');
-  assert.equal(signals.find((s) => s.id === 'codegen').state, 'failure');
+  assert.equal(signals.find((s) => s.id === 'lint')!.state, 'failure');
+  assert.equal(signals.find((s) => s.id === 'codegen')!.state, 'failure');
 });
 
-test('classifySignals reports unmapped failing checks from covered apps for drift detection', () => {
-  const { unmapped } = classifySignals.diagnostics([run('Lint Renamed', 'failure'), run('Unit Tests', 'failure')], config);
+test('diagnostics reports unmapped failing checks from covered apps for drift detection', () => {
+  const { unmapped } = diagnostics([run('Lint Renamed', 'failure'), run('Unit Tests', 'failure')], config);
   assert.deepEqual(unmapped, ['Lint Renamed']);
 });
 
 // --- decide ---
 
-const S = (id, state) => ({ id, state, title: id, guidance: 'g', url: 'u' });
+const S = (id: string, state: SignalState) => ({ id, state, title: id, guidance: 'g', url: 'u' });
 
 test('decide: failures present -> issues comment, draft requested', () => {
   const d = decide({
@@ -78,7 +80,7 @@ test('decide: failures present -> issues comment, draft requested', () => {
 test('decide: AI non-compliant alone is blocking -> issues + draft', () => {
   const d = decide({
     signals: [S('lint', 'success')],
-    aiVerdict: { compliant: false, issues: [{ section: 'Motivation', problem: 'empty' }] },
+    aiVerdict: { compliant: false },
     existingState: null,
     hasExistingComment: false,
     pr: { draft: false, headSha: 'sha1' },
@@ -88,10 +90,10 @@ test('decide: AI non-compliant alone is blocking -> issues + draft', () => {
 });
 
 test('decide: never post when no failures and no existing comment', () => {
-  for (const state of ['pending', 'success']) {
+  for (const state of ['pending', 'success'] as SignalState[]) {
     const d = decide({
       signals: [S('lint', state)],
-      aiVerdict: { compliant: true, issues: [] },
+      aiVerdict: { compliant: true },
       existingState: null,
       hasExistingComment: false,
       pr: { draft: false, headSha: 'sha1' },
@@ -105,7 +107,7 @@ test('decide: existing comment + no failures + pending -> waiting variant', () =
   const d = decide({
     signals: [S('lint', 'success'), S('docs', 'pending')],
     aiVerdict: null,
-    existingState: { v: 1, failing: ['lint'] },
+    existingState: { failing: ['lint'] } as never,
     hasExistingComment: true,
     pr: { draft: false, headSha: 'sha1' },
   });
@@ -117,8 +119,8 @@ test('decide: existing comment + no failures + pending -> waiting variant', () =
 test('decide: existing comment + all terminal green -> all-clear', () => {
   const d = decide({
     signals: [S('lint', 'success'), S('ui', 'not-applicable')],
-    aiVerdict: { compliant: true, issues: [] },
-    existingState: { v: 1, failing: ['lint'] },
+    aiVerdict: { compliant: true },
+    existingState: { failing: ['lint'] } as never,
     hasExistingComment: true,
     pr: { draft: false, headSha: 'sha1' },
   });
@@ -143,7 +145,7 @@ test('decide: drafts at most once per head SHA (human undraft is respected)', ()
   const d = decide({
     signals: [S('lint', 'failure')],
     aiVerdict: null,
-    existingState: { v: 1, failing: ['lint'], draftedSha: 'sha1' },
+    existingState: { draftedSha: 'sha1' },
     hasExistingComment: true,
     pr: { draft: false, headSha: 'sha1' },
   });
@@ -152,7 +154,7 @@ test('decide: drafts at most once per head SHA (human undraft is respected)', ()
   const d2 = decide({
     signals: [S('lint', 'failure')],
     aiVerdict: null,
-    existingState: { v: 1, failing: ['lint'], draftedSha: 'sha1' },
+    existingState: { draftedSha: 'sha1' },
     hasExistingComment: true,
     pr: { draft: false, headSha: 'sha2' },
   });
@@ -163,7 +165,7 @@ test('decide: AI error (null verdict) never drafts on its own', () => {
   const d = decide({
     signals: [S('lint', 'success')],
     aiVerdict: null,
-    existingState: { v: 1, failing: [] },
+    existingState: { failing: [] } as never,
     hasExistingComment: true,
     pr: { draft: false, headSha: 'sha1' },
   });
@@ -196,6 +198,6 @@ test('findPullRequest matches open PR by head sha', () => {
     { number: 1, head: { sha: 'aaa' } },
     { number: 2, head: { sha: 'bbb' } },
   ];
-  assert.equal(findPullRequest(prs, 'bbb').number, 2);
+  assert.equal(findPullRequest(prs, 'bbb')!.number, 2);
   assert.equal(findPullRequest(prs, 'zzz'), null);
 });
