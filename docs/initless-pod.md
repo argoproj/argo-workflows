@@ -145,6 +145,12 @@ For the common cases — reading the artifact, feeding it to a program, extracti
 
 When an input artifact path is **also an output artifact path** (read an artifact, transform it, write the result back to the same path), the produced output is captured correctly regardless of how `main` writes it — overwriting through the symlink, or replacing the symlink via `rm` + recreate or the idiomatic write-temp-then-`rename`. The emissary inside `main` stages the live file from `main`'s own filesystem before `supervisor` collects it, so the original input is never mistaken for the output.
 
+### `readOnlyRootFilesystem` is incompatible with init-less input artifacts
+
+Because init-less mode creates the symlink *inside `main`'s own filesystem* — the emissary calls `MkdirAll` on the parent directory, `RemoveAll` on any pre-existing path, and `Symlink` at `art.Path` — those operations require `art.Path` to be on a **writable** filesystem. If `main`'s container sets `securityContext.readOnlyRootFilesystem: true` (a common Pod Security / policy hardening) and `art.Path` falls on the read-only root filesystem, the symlink step fails with `EROFS` and the step errors before the user command runs. The same workflow succeeds in legacy mode, because there kubelet establishes the input artifact's `SubPath` bind mount at the mount-namespace level before the container starts — independent of whether the container's root filesystem is read-only.
+
+To use input artifacts under `readOnlyRootFilesystem: true` in init-less mode, mount a **writable volume** (e.g. an `emptyDir`) at the directory that contains each `art.Path`, so the symlink lands on a writable mount rather than the read-only root. Artifacts whose `art.Path` already sits under a user-provided volume are unaffected. If neither is possible, run the affected template in legacy mode.
+
 ## Plugin author notes
 
 Artifact plugins continue to use the same `driver.ArtifactDriver` interface. The only lifecycle difference in init-less mode is that the plugin container runs for the full duration of the pod (as a regular sidecar), and both Load and Save are invoked by `supervisor` on the same gRPC socket. Plugins written to run as long-lived sidecars (as the output-plugin path already does in legacy mode) work unchanged.
@@ -153,3 +159,4 @@ Artifact plugins continue to use the same `driver.ArtifactDriver` interface. The
 
 - **Latency**: in legacy mode, plugin Load runs in parallel init containers. In init-less mode, `supervisor` parallelizes plugin loads with non-plugin loads via an `errgroup`, so per-pod latency should be equivalent to or better than legacy. If you observe a regression, please file an issue.
 - **Plugin failure granularity**: the controller cannot currently distinguish "supervisor failed during plugin Load" from "supervisor failed during plugin Save" — both surface as supervisor-container failures. The `/var/run/argo/status` marker contents and supervisor logs are the authoritative source.
+- **`readOnlyRootFilesystem` + input artifacts**: init-less delivers input artifacts by symlinking into `main`'s own filesystem, so `readOnlyRootFilesystem: true` makes the symlink fail with `EROFS` when `art.Path` is on the read-only root. Legacy mode is unaffected (kubelet bind mount). See [`readOnlyRootFilesystem` is incompatible with init-less input artifacts](#readonlyrootfilesystem-is-incompatible-with-init-less-input-artifacts) for the workaround.
