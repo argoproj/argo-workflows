@@ -3,7 +3,6 @@ package templateresolution
 import (
 	"context"
 	"fmt"
-	"maps"
 
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -219,7 +218,23 @@ func (tplCtx *TemplateContext) resolveTemplateImpl(ctx context.Context, tmplHold
 				tplCtx.log.Debug(ctx, "Stored the template")
 				templateStored = true
 			}
-			err = tplCtx.workflow.SetStoredInlineTemplate(scope, resourceName, newTmpl)
+			// For inline sub-templates, use the referenced resource's scope
+			// rather than the caller's scope. When a Workflow (scope=Local)
+			// references a WorkflowTemplate via templateRef, the inline
+			// sub-templates belong to that WorkflowTemplate and must be
+			// stored with its scope. Local scope skips storage, so without
+			// this the first write comes from a copy already contaminated
+			// by validation placeholder substitution.
+			inlineScope := scope
+			inlineResourceName := resourceName
+			if tmplRef := tmplHolder.GetTemplateRef(); tmplRef != nil {
+				inlineScope = wfv1.ResourceScopeNamespaced
+				if tmplRef.ClusterScope {
+					inlineScope = wfv1.ResourceScopeCluster
+				}
+				inlineResourceName = tmplRef.Name
+			}
+			err = tplCtx.workflow.SetStoredInlineTemplate(inlineScope, inlineResourceName, newTmpl)
 			if err != nil {
 				tplCtx.log.WithError(err).Error(ctx, "Failed to store the inline template")
 			}
@@ -278,15 +293,28 @@ func (tplCtx *TemplateContext) WithClusterWorkflowTemplate(ctx context.Context, 
 
 // addPodMetadata add podMetadata in workflow template level to template
 func (tplCtx *TemplateContext) addPodMetadata(podMetadata *wfv1.Metadata, tmpl *wfv1.Template) {
-	if podMetadata != nil {
+	if podMetadata == nil {
+		return
+	}
+	if len(podMetadata.Annotations) > 0 {
 		if tmpl.Metadata.Annotations == nil {
 			tmpl.Metadata.Annotations = make(map[string]string)
 		}
-		maps.Copy(tmpl.Metadata.Annotations, podMetadata.Annotations)
+		for k, v := range podMetadata.Annotations {
+			if _, ok := tmpl.Metadata.Annotations[k]; !ok {
+				tmpl.Metadata.Annotations[k] = v
+			}
+		}
+	}
+	if len(podMetadata.Labels) > 0 {
 		if tmpl.Metadata.Labels == nil {
 			tmpl.Metadata.Labels = make(map[string]string)
 		}
-		maps.Copy(tmpl.Metadata.Labels, podMetadata.Labels)
+		for k, v := range podMetadata.Labels {
+			if _, ok := tmpl.Metadata.Labels[k]; !ok {
+				tmpl.Metadata.Labels[k] = v
+			}
+		}
 	}
 }
 

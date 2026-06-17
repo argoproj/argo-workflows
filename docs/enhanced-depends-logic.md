@@ -68,3 +68,11 @@ depends: "A && B && C"
 ```
 
 `dag.task.continueOn` is not available when using `depends`; instead you can specify `.Failed`.
+
+## Output references from Skipped or Omitted tasks
+
+A Skipped or Omitted task never runs, so it produces no output parameters or results.
+If a downstream task references those outputs, the references resolve to empty strings.
+
+For example, if `stage-b` is Skipped because its `when` condition was false, `{{tasks.stage-b.outputs.parameters.message}}` resolves to `""`.
+The same applies when a task is Omitted because its `depends` condition was not met.

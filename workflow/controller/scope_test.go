@@ -273,35 +273,35 @@ func TestResolveParameters(t *testing.T) {
 	valFrom := &wfv1.ValueFrom{
 		Expression: "inputs.parameters.one == '1' ? inputs.parameters.two: steps.t1.outputs.parameters.result",
 	}
-	result, err := scope.resolveParameter(valFrom)
+	result, _, err := scope.resolveParameter(valFrom)
 	require.NoError(t, err)
 	assert.Equal("2", result)
 
 	valFrom = &wfv1.ValueFrom{
 		Parameter: "{{steps.t1.outputs.parameters.result}}",
 	}
-	result, err = scope.resolveParameter(valFrom)
+	result, _, err = scope.resolveParameter(valFrom)
 	require.NoError(t, err)
 	assert.Equal("4", result)
 
 	valFrom = &wfv1.ValueFrom{
 		Expression: "inputs.parameters.one == 2 ? steps.t1.outputs.parameters.result :workflows.arguments.param",
 	}
-	result, err = scope.resolveParameter(valFrom)
+	result, _, err = scope.resolveParameter(valFrom)
 	require.NoError(t, err)
 	assert.Equal("head", result)
 
 	valFrom = &wfv1.ValueFrom{
 		Expression: "asInt(inputs.parameters.one) == 1 ? steps['coin-flip'].outputs.parameters.result :workflows.arguments.param",
 	}
-	result, err = scope.resolveParameter(valFrom)
+	result, _, err = scope.resolveParameter(valFrom)
 	require.NoError(t, err)
 	assert.Equal("5", result)
 
 	valFrom = &wfv1.ValueFrom{
 		Expression: "asInt(inputs.parameters.one) == 1 ? steps[\"coin-flip\"].outputs.parameters.result :workflows.arguments.param",
 	}
-	result, err = scope.resolveParameter(valFrom)
+	result, _, err = scope.resolveParameter(valFrom)
 	require.NoError(t, err)
 	assert.Equal("5", result)
 }

@@ -14,7 +14,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/utils/ptr"
 )
 
 func TestWorkflows(t *testing.T) {
@@ -314,8 +313,8 @@ func TestArtifactLocation_IsArchiveLogs(t *testing.T) {
 	var l *ArtifactLocation
 	assert.False(t, l.IsArchiveLogs())
 	assert.False(t, (&ArtifactLocation{}).IsArchiveLogs())
-	assert.False(t, (&ArtifactLocation{ArchiveLogs: ptr.To(false)}).IsArchiveLogs())
-	assert.True(t, (&ArtifactLocation{ArchiveLogs: ptr.To(true)}).IsArchiveLogs())
+	assert.False(t, (&ArtifactLocation{ArchiveLogs: new(false)}).IsArchiveLogs())
+	assert.True(t, (&ArtifactLocation{ArchiveLogs: new(true)}).IsArchiveLogs())
 }
 
 func TestArtifactLocation_HasLocation(t *testing.T) {
@@ -1080,7 +1079,7 @@ func TestWorkflowSpec_GetVolumeGC(t *testing.T) {
 }
 
 func TestGetTTLStrategy(t *testing.T) {
-	spec := WorkflowSpec{TTLStrategy: &TTLStrategy{SecondsAfterCompletion: ptr.To(int32(20))}}
+	spec := WorkflowSpec{TTLStrategy: &TTLStrategy{SecondsAfterCompletion: new(int32(20))}}
 	ttl := spec.GetTTLStrategy()
 	assert.Equal(t, int32(20), *ttl.SecondsAfterCompletion)
 }
@@ -1088,11 +1087,11 @@ func TestGetTTLStrategy(t *testing.T) {
 func TestWfGetTTLStrategy(t *testing.T) {
 	wf := Workflow{}
 
-	wf.Status.StoredWorkflowSpec = &WorkflowSpec{TTLStrategy: &TTLStrategy{SecondsAfterCompletion: ptr.To(int32(20))}}
+	wf.Status.StoredWorkflowSpec = &WorkflowSpec{TTLStrategy: &TTLStrategy{SecondsAfterCompletion: new(int32(20))}}
 	result := wf.GetTTLStrategy()
 	assert.Equal(t, int32(20), *result.SecondsAfterCompletion)
 
-	wf.Spec.TTLStrategy = &TTLStrategy{SecondsAfterCompletion: ptr.To(int32(30))}
+	wf.Spec.TTLStrategy = &TTLStrategy{SecondsAfterCompletion: new(int32(30))}
 	result = wf.GetTTLStrategy()
 	assert.Equal(t, int32(30), *result.SecondsAfterCompletion)
 }
@@ -1278,7 +1277,7 @@ func TestTemplate_SaveLogsAsArtifact(t *testing.T) {
 		assert.False(t, x.SaveLogsAsArtifact())
 	})
 	t.Run("IsArchiveLogs", func(t *testing.T) {
-		x := &Template{ArchiveLocation: &ArtifactLocation{ArchiveLogs: ptr.To(true)}}
+		x := &Template{ArchiveLocation: &ArtifactLocation{ArchiveLogs: new(true)}}
 		assert.True(t, x.SaveLogsAsArtifact())
 	})
 }
@@ -1297,7 +1296,7 @@ func TestTemplate_ExcludeTemplateTypes(t *testing.T) {
 		Steps:     []ParallelSteps{steps},
 		Script:    &ScriptTemplate{Source: "test"},
 		Container: &corev1.Container{Name: "container"},
-		DAG:       &DAGTemplate{FailFast: ptr.To(true)},
+		DAG:       &DAGTemplate{FailFast: new(true)},
 		Resource:  &ResourceTemplate{Action: "Create"},
 		Data:      &Data{Source: DataSource{ArtifactPaths: &ArtifactPaths{}}},
 		Suspend:   &SuspendTemplate{Duration: "10s"},
@@ -1680,4 +1679,95 @@ func TestInlineStore(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestSemaphoreStatus_LockAcquired_RemovesFromWaiting(t *testing.T) {
+	t.Run("Remove holder from waiting when acquiring lock", func(t *testing.T) {
+		ss := &SemaphoreStatus{
+			Waiting: []SemaphoreHolding{
+				{
+					Semaphore: "test-semaphore",
+					Holders:   []string{"workflow-1/node-1", "workflow-2/node-2"},
+				},
+			},
+		}
+
+		// Acquire lock for workflow-1/node-1
+		result := ss.LockAcquired("workflow-1/node-1", "test-semaphore", []string{})
+		assert.True(t, result)
+
+		// Verify it's in holding
+		_, holding := ss.GetHolding("test-semaphore")
+		assert.Contains(t, holding.Holders, "workflow-1/node-1")
+
+		// Verify it's removed from waiting
+		_, waiting := ss.GetWaiting("test-semaphore")
+		assert.NotContains(t, waiting.Holders, "workflow-1/node-1")
+		assert.Contains(t, waiting.Holders, "workflow-2/node-2")
+	})
+
+	t.Run("Remove waiting entry when last holder acquires lock", func(t *testing.T) {
+		ss := &SemaphoreStatus{
+			Waiting: []SemaphoreHolding{
+				{
+					Semaphore: "test-semaphore",
+					Holders:   []string{"workflow-1/node-1"},
+				},
+			},
+		}
+
+		// Acquire lock for the only waiting holder
+		result := ss.LockAcquired("workflow-1/node-1", "test-semaphore", []string{})
+		assert.True(t, result)
+
+		// Verify it's in holding
+		_, holding := ss.GetHolding("test-semaphore")
+		assert.Contains(t, holding.Holders, "workflow-1/node-1")
+
+		// Verify waiting entry is removed entirely
+		idx, _ := ss.GetWaiting("test-semaphore")
+		assert.Equal(t, -1, idx, "waiting entry should be removed when empty")
+	})
+
+	t.Run("Acquire lock when not in waiting", func(t *testing.T) {
+		ss := &SemaphoreStatus{}
+
+		// Acquire lock without being in waiting first
+		result := ss.LockAcquired("workflow-1/node-1", "test-semaphore", []string{})
+		assert.True(t, result)
+
+		// Verify it's in holding
+		_, holding := ss.GetHolding("test-semaphore")
+		assert.Contains(t, holding.Holders, "workflow-1/node-1")
+
+		// Verify waiting is empty
+		idx, _ := ss.GetWaiting("test-semaphore")
+		assert.Equal(t, -1, idx)
+	})
+
+	t.Run("Multiple holders in waiting, only one acquires", func(t *testing.T) {
+		ss := &SemaphoreStatus{
+			Waiting: []SemaphoreHolding{
+				{
+					Semaphore: "test-semaphore",
+					Holders:   []string{"workflow-1/node-1", "workflow-2/node-2", "workflow-3/node-3"},
+				},
+			},
+		}
+
+		// Acquire lock for workflow-2/node-2
+		result := ss.LockAcquired("workflow-2/node-2", "test-semaphore", []string{})
+		assert.True(t, result)
+
+		// Verify it's in holding
+		_, holding := ss.GetHolding("test-semaphore")
+		assert.Contains(t, holding.Holders, "workflow-2/node-2")
+
+		// Verify it's removed from waiting but others remain
+		_, waiting := ss.GetWaiting("test-semaphore")
+		assert.NotContains(t, waiting.Holders, "workflow-2/node-2")
+		assert.Contains(t, waiting.Holders, "workflow-1/node-1")
+		assert.Contains(t, waiting.Holders, "workflow-3/node-3")
+		assert.Len(t, waiting.Holders, 2)
+	})
 }

@@ -57,16 +57,12 @@ You can try Argo Workflows via one of the following:
 Just some of the projects that use or rely on Argo Workflows (complete list [here](https://github.com/akuity/awesome-argo#ecosystem-projects)):
 
 * [Argo Events](https://github.com/argoproj/argo-events)
-* [Couler](https://github.com/couler-proj/couler)
-* [Hera](https://github.com/argoproj-labs/hera-workflows)
+* [Hera](https://github.com/argoproj-labs/hera)
 * [Katib](https://github.com/kubeflow/katib)
 * [Kedro](https://kedro.readthedocs.io/en/stable/)
 * [Kubeflow Pipelines](https://github.com/kubeflow/pipelines)
 * [Netflix Metaflow](https://metaflow.org)
-* [Onepanel](https://github.com/onepanelio/onepanel)
-* [Orchest](https://github.com/orchest/orchest/)
 * [Piper](https://github.com/quickube/piper)
-* [Ploomber](https://github.com/ploomber/ploomber)
 * [Seldon](https://github.com/SeldonIO/seldon-core)
 * [SQLFlow](https://github.com/sql-machine-learning/sqlflow)
 
@@ -132,7 +128,7 @@ An incomplete list of features Argo Workflows provides:
 We host monthly community meetings where we and the community showcase demos and discuss the current and future state of the project. Feel free to join us!
 For Community Meeting information, minutes and recordings, please [see here](https://bit.ly/argo-wf-cmty-mtng).
 
-Participation in Argo Workflows is governed by the [CNCF Code of Conduct](https://github.com/cncf/foundation/blob/master/code-of-conduct.md)
+Participation in Argo Workflows is governed by the [CNCF Code of Conduct](https://github.com/cncf/foundation/blob/main/code-of-conduct.md)
 
 ## Community Blogs and Presentations
 
@@ -162,7 +158,14 @@ Participation in Argo Workflows is governed by the [CNCF Code of Conduct](https:
 * [Argo Project GitHub organization](https://github.com/argoproj)
 * [Argo Website](https://argoproj.github.io/)
 * [Argo Slack](https://argoproj.github.io/community/join-slack)
+* [Contributing](CONTRIBUTING.md)
+* [Governance](https://github.com/argoproj/argoproj/blob/main/community/GOVERNANCE.md)
+* [Code of Conduct](https://github.com/argoproj/argo-workflows/blob/main/CODE_OF_CONDUCT.md)
 
 ## Security
 
 See [Security](security.md).
+
+## Generative AI
+
+Contributions using generative AI tools must follow the [Argo project Generative AI policy](https://github.com/argoproj/argoproj/blob/main/community/genai.md).

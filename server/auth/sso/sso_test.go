@@ -58,7 +58,7 @@ var ssoConfigSecret = &apiv1.Secret{
 }
 
 func TestLoadSsoClientIdFromSecret(t *testing.T) {
-	fakeClient := fake.NewSimpleClientset(ssoConfigSecret).CoreV1().Secrets(testNamespace)
+	fakeClient := fake.NewClientset(ssoConfigSecret).CoreV1().Secrets(testNamespace)
 	config := Config{
 		Issuer:               "https://test-issuer",
 		IssuerAlias:          "",
@@ -79,7 +79,7 @@ func TestLoadSsoClientIdFromSecret(t *testing.T) {
 
 func TestNewSsoWithIssuerAlias(t *testing.T) {
 	// if there's an issuer alias present, the oidc provider will allow validation from either of the issuer or the issuerAlias.
-	fakeClient := fake.NewSimpleClientset(ssoConfigSecret).CoreV1().Secrets(testNamespace)
+	fakeClient := fake.NewClientset(ssoConfigSecret).CoreV1().Secrets(testNamespace)
 	config := Config{
 		Issuer:               "https://test-issuer",
 		IssuerAlias:          "https://test-issuer-alias",
@@ -103,7 +103,7 @@ func TestLoadSsoClientIdFromDifferentSecret(t *testing.T) {
 		},
 	}
 
-	fakeClient := fake.NewSimpleClientset(ssoConfigSecret, clientIDSecret).CoreV1().Secrets(testNamespace)
+	fakeClient := fake.NewClientset(ssoConfigSecret, clientIDSecret).CoreV1().Secrets(testNamespace)
 	config := Config{
 		Issuer:       "https://test-issuer",
 		ClientID:     getSecretKeySelector("other-secret", "client-id"),
@@ -117,7 +117,7 @@ func TestLoadSsoClientIdFromDifferentSecret(t *testing.T) {
 }
 
 func TestLoadSsoClientIdFromSecretNoKeyFails(t *testing.T) {
-	fakeClient := fake.NewSimpleClientset(ssoConfigSecret).CoreV1().Secrets(testNamespace)
+	fakeClient := fake.NewClientset(ssoConfigSecret).CoreV1().Secrets(testNamespace)
 	config := Config{
 		Issuer:       "https://test-issuer",
 		ClientID:     getSecretKeySelector("argo-sso-secret", "nonexistent"),
@@ -130,7 +130,7 @@ func TestLoadSsoClientIdFromSecretNoKeyFails(t *testing.T) {
 }
 
 func TestLoadSsoClientIdFromExistingSsoSecretFails(t *testing.T) {
-	fakeClient := fake.NewSimpleClientset(ssoConfigSecret).CoreV1().Secrets(testNamespace)
+	fakeClient := fake.NewClientset(ssoConfigSecret).CoreV1().Secrets(testNamespace)
 
 	ctx := logging.TestContext(t.Context())
 	_, err := fakeClient.Create(ctx, &apiv1.Secret{

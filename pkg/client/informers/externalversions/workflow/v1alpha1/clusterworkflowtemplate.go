@@ -40,7 +40,7 @@ func NewClusterWorkflowTemplateInformer(client versioned.Interface, resyncPeriod
 // one. This reduces memory footprint and number of connections to the server.
 func NewFilteredClusterWorkflowTemplateInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
-		&cache.ListWatch{
+		cache.ToListWatcherWithWatchListSemantics(&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
@@ -65,7 +65,7 @@ func NewFilteredClusterWorkflowTemplateInformer(client versioned.Interface, resy
 				}
 				return client.ArgoprojV1alpha1().ClusterWorkflowTemplates().Watch(ctx, options)
 			},
-		},
+		}, client),
 		&apisworkflowv1alpha1.ClusterWorkflowTemplate{},
 		resyncPeriod,
 		indexers,

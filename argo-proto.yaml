@@ -10,11 +10,11 @@ dependencies:
       api:
         owner: kubernetes
         name: api
-        ref: v0.33.1
+        ref: v0.35.1
       apimachinery:
         owner: kubernetes
         name: apimachinery
-        ref: v0.33.1
+        ref: v0.35.1
   googleapis:
     owner: googleapis
     name: googleapis

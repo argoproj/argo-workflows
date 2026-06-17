@@ -407,7 +407,7 @@ spec:
                             globalName:
                               description: |-
                                 GlobalName exports an output artifact to the global scope, making it available as
-                                '{{workflow.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts
+                                workflow.outputs.artifacts.XXXX and in workflow.status.outputs.artifacts
                               type: string
                             hdfs:
                               description: HDFS contains HDFS artifact location details
@@ -710,9 +710,9 @@ spec:
                                           x-kubernetes-map-type: atomic
                                         endpointParams:
                                           items:
-                                            description: EndpointParam is for requesting
-                                              optional fields that should be sent
-                                              in the oauth request
+                                            description: OAuth2EndpointParam is an
+                                              optional field that should be sent in
+                                              the OAuth request.
                                             properties:
                                               key:
                                                 description: Name is the header name
@@ -1166,16 +1166,16 @@ spec:
                                 from, for the actual value of the parameter
                               items:
                                 description: |-
-                                  * It's JSON type is just string.
-                                  * It will unmarshall int64, int32, float64, float32, boolean, a plain string and represents it as string.
-                                  * It will marshall back to string - marshalling is not symmetric.
+                                  AnyString is a string type whose JSON type is just string.
+                                  It will unmarshall int64, int32, float64, float32, boolean, a plain string and represents it as string.
+                                  It will marshall back to string - marshalling is not symmetric.
                                 type: string
                               minItems: 1
                               type: array
                             globalName:
                               description: |-
                                 GlobalName exports an output parameter to the global scope, making it available as
-                                '{{workflow.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters
+                                workflow.outputs.parameters.XXXX and in workflow.status.outputs.parameters
                               type: string
                             name:
                               description: Name is the parameter name
@@ -1239,7 +1239,7 @@ spec:
                                 parameter:
                                   description: |-
                                     Parameter reference to a step or dag task in which to retrieve an output parameter value from
-                                    (e.g. '{{steps.mystep.outputs.myparam}}')
+                                    (e.g. steps.mystep.outputs.myparam)
                                   type: string
                                 path:
                                   description: Path in the container to retrieve an

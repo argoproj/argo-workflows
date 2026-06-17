@@ -5,14 +5,14 @@ import (
 	"strings"
 )
 
-const placeholderPrefix = "__argo__internal__placeholder-"
+const PlaceholderPrefix = "__argo__internal__placeholder-"
 
 // NewPlaceholder generates an internal Argo placeholder string for the given index.
 func NewPlaceholder(index int) string {
-	return fmt.Sprintf("%s%d", placeholderPrefix, index)
+	return fmt.Sprintf("%s%d", PlaceholderPrefix, index)
 }
 
 // IsPlaceholder reports whether s is an internal Argo placeholder value.
 func IsPlaceholder(s string) bool {
-	return strings.HasPrefix(s, placeholderPrefix)
+	return strings.HasPrefix(s, PlaceholderPrefix)
 }

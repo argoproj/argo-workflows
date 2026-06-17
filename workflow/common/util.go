@@ -305,7 +305,7 @@ func IsDone(un *unstructured.Unstructured) bool {
 		un.GetLabels()[LabelKeyWorkflowArchivingStatus] != "Pending"
 }
 
-// Check whether child hooked nodes Fulfilled
+// CheckAllHooksFullfilled checks whether child hooked nodes are fulfilled.
 func CheckAllHooksFullfilled(node *wfv1.NodeStatus, nodes wfv1.Nodes) bool {
 	childs := node.Children
 	for _, id := range childs {

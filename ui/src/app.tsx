@@ -1,7 +1,7 @@
 import {NavigationManager} from 'argo-ui/src/components/navigation';
 import {NotificationsManager} from 'argo-ui/src/components/notifications/notification-manager';
 import {PopupManager} from 'argo-ui/src/components/popup/popup-manager';
-import {createBrowserHistory} from 'history';
+import type {History} from 'history';
 import * as React from 'react';
 
 import 'argo-ui/src/styles/main.scss';
@@ -9,9 +9,7 @@ import 'argo-ui/src/styles/main.scss';
 import {AppRouter} from './app-router';
 import {ContextApis, Provider} from './shared/context';
 
-const history = createBrowserHistory();
-
-export function App() {
+export function App({history}: {history: History}) {
     const popupManager: PopupManager = new PopupManager();
     const notificationsManager: NotificationsManager = new NotificationsManager();
     const navigationManager: NavigationManager = new NavigationManager(history);

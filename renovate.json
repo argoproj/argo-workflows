@@ -53,6 +53,14 @@
       "automerge": true
     },
     {
+      "description": "Group and automerge distroless base image digest updates",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["gcr.io/distroless/static-debian13"],
+      "groupName": "distroless base image",
+      "matchUpdateTypes": ["digest"],
+      "automerge": true
+    },
+    {
       "description": "Disable lock file maintenance on release branches",
       "matchBaseBranches": [
         "release-3.7",

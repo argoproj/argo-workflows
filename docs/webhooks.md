@@ -14,6 +14,8 @@ Additionally create:
 
 * A secret named `argo-workflows-webhook-clients` listing the service accounts: [example](https://raw.githubusercontent.com/argoproj/argo-workflows/main/manifests/quick-start/base/webhooks/argo-workflows-webhook-clients-secret.yaml)
 
+Webhook request bodies are limited to a maximum size of 2MB.
+
 The secret `argo-workflows-webhook-clients` tells Argo:
 
 * What type of webhook the account can be used for, e.g. `github`.

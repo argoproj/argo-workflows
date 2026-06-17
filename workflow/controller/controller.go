@@ -10,8 +10,6 @@ import (
 	gosync "sync"
 	"time"
 
-	"github.com/upper/db/v4"
-
 	syncpkg "github.com/argoproj/pkg/sync"
 	"golang.org/x/time/rate"
 	apiv1 "k8s.io/api/core/v1"
@@ -135,8 +133,7 @@ type WorkflowController struct {
 	wfArchiveQueue        workqueue.TypedRateLimitingInterface[string]
 	throttler             sync.Throttler
 	workflowKeyLock       syncpkg.KeyLock // used to lock workflows for exclusive modification or access
-	session               db.Session
-	dbType                utilsqldb.DBType
+	sessionProxy          *utilsqldb.SessionProxy
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	hydrator              hydrator.Interface
 	wfArchive             sqldb.WorkflowArchive
@@ -470,7 +467,12 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 		return exists
 	}
 
-	wfc.syncManager = sync.NewLockManager(ctx, wfc.kubeclientset, wfc.namespace, wfc.Config.Synchronization, getSyncLimit, nextWorkflow, workflowExists)
+	syncManager, err := sync.NewLockManager(ctx, wfc.kubeclientset, wfc.namespace, wfc.Config.Synchronization, getSyncLimit, nextWorkflow, workflowExists, true)
+	if err != nil {
+		logging.RequireLoggerFromContext(ctx).WithError(err).Error(ctx, "Failed to create sync lock manager")
+		return
+	}
+	wfc.syncManager = syncManager
 }
 
 // list all running workflows to initialize throttler and syncManager
@@ -486,7 +488,24 @@ func (wfc *WorkflowController) initManagers(ctx context.Context) error {
 		return err
 	}
 
-	wfc.syncManager.Initialize(ctx, wfList.Items)
+	// A non-nil error means a recorded lock holder could not be re-established
+	// (undecodable lock name, or an unavailable database session). This is fatal
+	// by design: we fail closed rather than risk a silent double-acquire.
+	staleHolds, err := wfc.syncManager.Initialize(ctx, wfList.Items)
+	if err != nil {
+		return err
+	}
+	// Stale holds are workflows whose recorded hold on a database-backed lock
+	// the database no longer has (e.g. expired while the controller was down,
+	// possibly acquired by someone else since). The database is the source of
+	// truth, so these workflows must not keep running on a hold it does not
+	// back: fail them; persistUpdates releases any locks they still hold.
+	for _, stale := range staleHolds {
+		woc := newWorkflowOperationCtx(ctx, stale.WF, wfc)
+		wocCtx := logging.WithLogger(ctx, woc.log)
+		wocCtx = woc.markWorkflowFailed(wocCtx, fmt.Sprintf("Failed to re-establish synchronization lock at controller startup: %s", stale.Reason))
+		woc.persistUpdates(wocCtx)
+	}
 
 	if err := wfc.throttler.Init(wfList.Items); err != nil {
 		return err
@@ -843,7 +862,10 @@ func (wfc *WorkflowController) processNextArchiveItem(ctx context.Context) bool 
 		return true
 	}
 
-	wfc.archiveWorkflow(ctx, obj)
+	if err := wfc.archiveWorkflow(ctx, obj); err != nil {
+		logger.WithField("key", key).WithError(err).Warn(ctx, "failed to archive workflow, requeuing")
+		wfc.wfArchiveQueue.AddRateLimited(key)
+	}
 	return true
 }
 
@@ -1099,24 +1121,26 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 	return nil
 }
 
-func (wfc *WorkflowController) archiveWorkflow(ctx context.Context, obj any) {
+func (wfc *WorkflowController) archiveWorkflow(ctx context.Context, obj any) error {
 	logger := logging.RequireLoggerFromContext(ctx)
 	key, err := cache.MetaNamespaceKeyFunc(obj)
 	if err != nil {
 		logger.Error(ctx, "failed to get key for object")
-		return
+		return nil // non-retryable
 	}
 	wfc.workflowKeyLock.Lock(key)
 	defer wfc.workflowKeyLock.Unlock(key)
 	key, err = cache.MetaNamespaceKeyFunc(obj)
 	if err != nil {
 		logger.Error(ctx, "failed to get key for object after locking")
-		return
+		return nil // non-retryable
 	}
 	err = wfc.archiveWorkflowAux(ctx, obj)
 	if err != nil {
 		logger.WithField("key", key).WithError(err).Error(ctx, "failed to archive workflow")
+		return nil // non-retryable
 	}
+	return wfc.archiveWorkflowAux(ctx, obj)
 }
 
 func (wfc *WorkflowController) archiveWorkflowAux(ctx context.Context, obj any) error {

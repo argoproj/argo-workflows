@@ -190,6 +190,10 @@ const (
 	EnvVarDefaultRequeueTime = "DEFAULT_REQUEUE_TIME"
 	// EnvVarPodStatusCaptureFinalizer is used to prevent pod garbage collected before argo captures its exit status
 	EnvVarPodStatusCaptureFinalizer = "ARGO_POD_STATUS_CAPTURE_FINALIZER"
+	// EnvVarS3UploadThreads is the number of threads for artifact upload through S3. Default: 4.
+	EnvVarS3UploadThreads = "ARTIFACT_S3_UPLOAD_THREADS"
+	// EnvVarS3UploadPartSizeMiB is the size in MiB of the part of a MultiPartUpload. Default: let Minio calculate automatically (16MiB for file <= 156GiB).
+	EnvVarS3UploadPartSizeMiB = "ARTIFACT_S3_UPLOAD_PART_SIZE_MIB"
 	// EnvAgentTaskWorkers is the number of task workers for the agent pod
 	EnvAgentTaskWorkers = "ARGO_AGENT_TASK_WORKERS"
 	// EnvAgentPatchRate is the rate that the Argo Agent will patch the Workflow TaskSet
@@ -299,7 +303,7 @@ const (
 // AnnotationKeyKillCmd specifies the command to use to kill to container, useful for injected sidecars
 var AnnotationKeyKillCmd = func(containerName string) string { return workflow.WorkflowFullName + "/kill-cmd-" + containerName }
 
-// GlobalVarWorkflowRootTags is a list of root tags in workflow which could be used for variable reference
+// GlobalVarValidWorkflowVariablePrefix is a list of root tags in workflow which could be used for variable reference.
 var GlobalVarValidWorkflowVariablePrefix = []string{"item.", "steps.", "inputs.", "outputs.", "pod.", "workflow.", "tasks."}
 
 func UnstructuredHasCompletedLabel(obj any) bool {

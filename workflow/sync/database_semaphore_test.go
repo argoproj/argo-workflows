@@ -41,7 +41,7 @@ func TestInactiveControllerDBSemaphore(t *testing.T) {
 
 			// Update the controller heartbeat to be older than the inactive controller timeout
 			staleTime := time.Now().Add(-info.Config.InactiveControllerTimeout * 2)
-			_, err := info.Session.SQL().Update(info.Config.ControllerTable).
+			_, err := info.SessionProxy.Session().SQL().Update(info.Config.ControllerTable).
 				Set("time", staleTime).
 				Where(db.Cond{"controller": info.Config.ControllerName}).
 				Exec()
@@ -53,19 +53,19 @@ func TestInactiveControllerDBSemaphore(t *testing.T) {
 			require.NoError(t, s.addToQueue(ctx, "foo/wf-02", 0, now.Add(time.Second)))
 
 			// Try to acquire - this should fail because the controller is considered inactive
-			tx := &transaction{db: &info.Session}
-			acquired, _ := s.tryAcquire(ctx, "foo/wf-01", tx)
+			tx := info.SessionProxy
+			acquired, _, _ := s.tryAcquire(ctx, "foo/wf-01", tx)
 			assert.False(t, acquired, "Semaphore should not be acquired when controller is marked as inactive")
 
 			// Now update the controller heartbeat to be current
-			_, err = info.Session.SQL().Update(info.Config.ControllerTable).
+			_, err = info.SessionProxy.Session().SQL().Update(info.Config.ControllerTable).
 				Set("time", time.Now()).
 				Where(db.Cond{"controller": info.Config.ControllerName}).
 				Exec()
 			require.NoError(t, err)
 
 			// Try again - now it should work
-			acquired, _ = s.tryAcquire(ctx, "foo/wf-01", tx)
+			acquired, _, _ = s.tryAcquire(ctx, "foo/wf-01", tx)
 			assert.True(t, acquired, "Semaphore should be acquired when controller is alive")
 		})
 	}
@@ -87,7 +87,7 @@ func TestOtherControllerDBSemaphore(t *testing.T) {
 				Controller: otherController,
 				Time:       time.Now(),
 			}
-			_, err := info.Session.Collection(info.Config.ControllerTable).
+			_, err := info.SessionProxy.Session().Collection(info.Config.ControllerTable).
 				Insert(controllerRecord)
 			require.NoError(t, err)
 
@@ -99,7 +99,7 @@ func TestOtherControllerDBSemaphore(t *testing.T) {
 				Held:       false,
 				Time:       time.Now(),
 			}
-			_, err = info.Session.Collection(info.Config.StateTable).
+			_, err = info.SessionProxy.Session().Collection(info.Config.StateTable).
 				Insert(semaphoreRecord)
 			require.NoError(t, err)
 
@@ -108,20 +108,20 @@ func TestOtherControllerDBSemaphore(t *testing.T) {
 			require.NoError(t, s.addToQueue(ctx, "foo/our-wf-01", 0, now.Add(time.Second)))
 
 			// Try to acquire - this should fail because the other controller's item is first in line
-			tx := &transaction{db: &info.Session}
-			acquired, _ := s.tryAcquire(ctx, "foo/our-wf-01", tx)
+			tx := info.SessionProxy
+			acquired, _, _ := s.tryAcquire(ctx, "foo/our-wf-01", tx)
 			assert.False(t, acquired, "Semaphore should not be acquired when another controller's item is first in queue")
 
 			// Now mark the other controller as inactive by setting its timestamp to be old
 			staleTime := time.Now().Add(-info.Config.InactiveControllerTimeout * 2)
-			_, err = info.Session.SQL().Update(info.Config.ControllerTable).
+			_, err = info.SessionProxy.Session().SQL().Update(info.Config.ControllerTable).
 				Set("time", staleTime).
 				Where(db.Cond{"controller": otherController}).
 				Exec()
 			require.NoError(t, err)
 
 			// Try again - now it should work because the other controller is considered inactive
-			acquired, _ = s.tryAcquire(ctx, "foo/our-wf-01", tx)
+			acquired, _, _ = s.tryAcquire(ctx, "foo/our-wf-01", tx)
 			assert.True(t, acquired, "Semaphore should be acquired when other controller is marked as inactive")
 
 			// Verify the semaphore is now held by our workflow
@@ -149,7 +149,7 @@ func TestDifferentSemaphoreDBSemaphore(t *testing.T) {
 				Controller: otherController,
 				Time:       time.Now(),
 			}
-			_, err := info.Session.Collection(info.Config.ControllerTable).
+			_, err := info.SessionProxy.Session().Collection(info.Config.ControllerTable).
 				Insert(controllerRecord)
 			require.NoError(t, err)
 
@@ -161,7 +161,7 @@ func TestDifferentSemaphoreDBSemaphore(t *testing.T) {
 				Held:       false,
 				Time:       time.Now(),
 			}
-			_, err = info.Session.Collection(info.Config.StateTable).
+			_, err = info.SessionProxy.Session().Collection(info.Config.StateTable).
 				Insert(semaphoreRecord)
 			require.NoError(t, err)
 
@@ -170,8 +170,8 @@ func TestDifferentSemaphoreDBSemaphore(t *testing.T) {
 			require.NoError(t, s.addToQueue(ctx, "foo/our-wf-01", 0, now.Add(time.Second)))
 
 			// Try to acquire - this should succeed because the other cluster's item is for a different semaphore
-			tx := &transaction{db: &info.Session}
-			acquired, _ := s.tryAcquire(ctx, "foo/our-wf-01", tx)
+			tx := info.SessionProxy
+			acquired, _, _ := s.tryAcquire(ctx, "foo/our-wf-01", tx)
 			assert.True(t, acquired, "Semaphore should be acquired when another cluster's item is for a different semaphore")
 
 			// Verify the semaphore is now held by our workflow
@@ -204,40 +204,40 @@ func TestMutexAndSemaphoreWithSameName(t *testing.T) {
 			now := time.Now()
 
 			// Mutex workflow 1
-			tx := &transaction{db: &info.Session}
+			tx := info.SessionProxy
 			require.NoError(t, mutex.addToQueue(ctx, "foo/wf-mutex-1", 0, now))
-			mutexAcquired1, _ := mutex.tryAcquire(ctx, "foo/wf-mutex-1", tx)
+			mutexAcquired1, _, _ := mutex.tryAcquire(ctx, "foo/wf-mutex-1", tx)
 			assert.True(t, mutexAcquired1, "Mutex should be acquired by first workflow")
 
 			// Semaphore workflow 1
 			require.NoError(t, semaphore.addToQueue(ctx, "foo/wf-sem-1", 0, now))
-			semAcquired1, _ := semaphore.tryAcquire(ctx, "foo/wf-sem-1", tx)
+			semAcquired1, _, _ := semaphore.tryAcquire(ctx, "foo/wf-sem-1", tx)
 			assert.True(t, semAcquired1, "Semaphore should be acquired by first workflow")
 
 			// Verify the mutex can't be acquired again
 			require.NoError(t, mutex.addToQueue(ctx, "foo/wf-mutex-2", 0, now))
-			mutexAcquired2, _ := mutex.tryAcquire(ctx, "foo/wf-mutex-2", tx)
+			mutexAcquired2, _, _ := mutex.tryAcquire(ctx, "foo/wf-mutex-2", tx)
 			assert.False(t, mutexAcquired2, "Mutex should not be acquired by second workflow")
 
 			// But the semaphore can still be acquired (limit=2)
 			require.NoError(t, semaphore.addToQueue(ctx, "foo/wf-sem-2", 0, now))
-			semAcquired2, _ := semaphore.tryAcquire(ctx, "foo/wf-sem-2", tx)
+			semAcquired2, _, _ := semaphore.tryAcquire(ctx, "foo/wf-sem-2", tx)
 			assert.True(t, semAcquired2, "Semaphore should be acquired by second workflow")
 
 			// But not a third time (because limit=2)
 			require.NoError(t, semaphore.addToQueue(ctx, "foo/wf-sem-3", 0, now))
-			semAcquired3, _ := semaphore.tryAcquire(ctx, "foo/wf-sem-3", tx)
+			semAcquired3, _, _ := semaphore.tryAcquire(ctx, "foo/wf-sem-3", tx)
 			assert.False(t, semAcquired3, "Semaphore should not be acquired by third workflow (at capacity)")
 
 			// Now release the mutex
 			mutex.release(ctx, "foo/wf-mutex-1")
 
 			// The mutex should be acquirable now
-			mutexAcquired2Again, _ := mutex.tryAcquire(ctx, "foo/wf-mutex-2", tx)
+			mutexAcquired2Again, _, _ := mutex.tryAcquire(ctx, "foo/wf-mutex-2", tx)
 			assert.True(t, mutexAcquired2Again, "Mutex should be acquired after release")
 
 			// But this shouldn't affect the semaphore's capacity
-			semAcquired3Again, _ := semaphore.tryAcquire(ctx, "foo/wf-sem-3", tx)
+			semAcquired3Again, _, _ := semaphore.tryAcquire(ctx, "foo/wf-sem-3", tx)
 			assert.False(t, semAcquired3Again, "Semaphore should still be at capacity")
 
 			// Now release one of the semaphore holders
@@ -245,21 +245,21 @@ func TestMutexAndSemaphoreWithSameName(t *testing.T) {
 			assert.True(t, released, "Semaphore should be released successfully")
 
 			// Now we should be able to acquire the semaphore once
-			semAcquired3Again, _ = semaphore.tryAcquire(ctx, "foo/wf-sem-3", tx)
+			semAcquired3Again, _, _ = semaphore.tryAcquire(ctx, "foo/wf-sem-3", tx)
 			assert.True(t, semAcquired3Again, "Semaphore should be acquired after release")
 
 			// But not a fourth time (still at capacity with 2 holders)
 			require.NoError(t, semaphore.addToQueue(ctx, "foo/wf-sem-4", 0, now))
-			semAcquired4, _ := semaphore.tryAcquire(ctx, "foo/wf-sem-4", tx)
+			semAcquired4, _, _ := semaphore.tryAcquire(ctx, "foo/wf-sem-4", tx)
 			assert.False(t, semAcquired4, "Semaphore should not be acquired fourth time (at capacity again)")
 
 			// The mutex should still be held
-			mutexAcquired3, _ := mutex.tryAcquire(ctx, "foo/wf-mutex-3", tx)
+			mutexAcquired3, _, _ := mutex.tryAcquire(ctx, "foo/wf-mutex-3", tx)
 			assert.False(t, mutexAcquired3, "Mutex should still be held by another workflow")
 
 			// Verify by checking the database directly
 			var allHolders []syncdb.StateRecord
-			err := info.Session.SQL().
+			err := info.SessionProxy.Session().SQL().
 				Select("*").
 				From(info.Config.StateTable).
 				Where(db.Cond{"held": true}).
@@ -315,7 +315,7 @@ func TestSyncLimitCacheDB(t *testing.T) {
 				assert.Equal(t, 5, limit, "Limit should still be 5")
 
 				// Update the semaphore limit in the database
-				_, err := info.Session.SQL().
+				_, err := info.SessionProxy.Session().SQL().
 					Update(info.Config.LimitTable).
 					Set(syncdb.LimitSizeField, 10).
 					Where(db.Cond{syncdb.LimitNameField: s.shortDBKey}).
@@ -356,7 +356,7 @@ func TestSyncLimitCacheDB(t *testing.T) {
 				mockNow = mockNow.Add(1 * time.Millisecond)
 
 				// Update the semaphore limit in the database
-				_, err := info.Session.SQL().
+				_, err := info.SessionProxy.Session().SQL().
 					Update(info.Config.LimitTable).
 					Set(syncdb.LimitSizeField, 7).
 					Where(db.Cond{syncdb.LimitNameField: s.shortDBKey}).

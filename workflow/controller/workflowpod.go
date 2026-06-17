@@ -19,7 +19,6 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
 	"github.com/argoproj/argo-workflows/v4/config"
 	"github.com/argoproj/argo-workflows/v4/errors"
@@ -59,18 +58,22 @@ var (
 
 // scheduleOnDifferentHost adds affinity to prevent retry on the same host when
 // retryStrategy.affinity.nodeAntiAffinity{} is specified
-func (woc *wfOperationCtx) scheduleOnDifferentHost(ctx context.Context, node *wfv1.NodeStatus, pod *apiv1.Pod) error {
+func (woc *wfOperationCtx) scheduleOnDifferentHost(ctx context.Context, node *wfv1.NodeStatus, tmpl *wfv1.Template, pod *apiv1.Pod) error {
 	if node != nil && pod != nil {
 		if retryNode := FindRetryNode(woc.wf.Status.Nodes, node.ID); retryNode != nil {
 			// recover template for the retry node
-			scope, name := retryNode.GetTemplateScope()
-			tmplCtx, err := woc.createTemplateContext(ctx, scope, name)
-			if err != nil {
-				return err
-			}
-			_, retryTmpl, _, err := tmplCtx.ResolveTemplate(ctx, retryNode)
-			if err != nil {
-				return err
+			retryTmpl := tmpl
+			if retryNode.TemplateName != "" || retryNode.TemplateRef != nil {
+				scope, name := retryNode.GetTemplateScope()
+				tmplCtx, err := woc.createTemplateContext(ctx, scope, name)
+				if err != nil {
+					return err
+				}
+				_, resolvedTmpl, _, err := tmplCtx.ResolveTemplate(ctx, retryNode)
+				if err != nil {
+					return err
+				}
+				retryTmpl = resolvedTmpl
 			}
 			if retryStrategy := woc.retryStrategy(retryTmpl); retryStrategy != nil {
 				RetryOnDifferentHost(retryNode.ID)(*retryStrategy, woc.wf.Status.Nodes, pod)
@@ -617,7 +620,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		return nil, err
 	}
 
-	if scheduleErr := woc.scheduleOnDifferentHost(ctx, node, pod); scheduleErr != nil {
+	if scheduleErr := woc.scheduleOnDifferentHost(ctx, node, tmpl, pod); scheduleErr != nil {
 		return nil, scheduleErr
 	}
 
@@ -895,7 +898,7 @@ func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *a
 		// TODO: always set RO FS once #10787 is fixed
 		exec.SecurityContext.ReadOnlyRootFilesystem = nil
 		if exec.Name != common.InitContainerName && exec.Name != common.WaitContainerName {
-			exec.SecurityContext.ReadOnlyRootFilesystem = ptr.To(true)
+			exec.SecurityContext.ReadOnlyRootFilesystem = new(true)
 		}
 	}
 	if woc.controller.Config.KubeConfig != nil {
@@ -1034,6 +1037,9 @@ func (woc *wfOperationCtx) GetTemplateByBoundaryID(ctx context.Context, boundary
 	boundaryNode, err := woc.wf.Status.Nodes.Get(boundaryID)
 	if err != nil {
 		return nil, false, err
+	}
+	if boundaryNode.TemplateName == "" && boundaryNode.TemplateRef == nil {
+		return nil, false, nil
 	}
 	scope, name := boundaryNode.GetTemplateScope()
 	tmplCtx, err := woc.createTemplateContext(ctx, scope, name)

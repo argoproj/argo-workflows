@@ -37,6 +37,7 @@ BlackRock
 Breitgand
 CRD
 CRDs
+ChatGPT
 CloudSQL
 ClusterRoleBinding
 ClusterRoles
@@ -59,6 +60,7 @@ EditorConfig
 EtcD
 EventRouter
 Generator
+GiB
 GitOps
 Github
 Golang
@@ -81,6 +83,7 @@ Katacoda
 Katib
 Kerberos
 KeyValueEditor
+KiB
 Killercoda
 KubectlExec
 Kubeflow
@@ -90,9 +93,12 @@ Lifecycle-Hook
 LitmusChaos
 MLOps
 Makefile
+MariaDB
 Metaflow
+MiB
 MinIO
 Minikube
+Multipart
 MySQL
 Nagal
 Nano
@@ -232,6 +238,8 @@ rc2
 repo
 retryStrategy
 roadmap
+rollout
+rollouts
 runtime
 runtimes
 s3

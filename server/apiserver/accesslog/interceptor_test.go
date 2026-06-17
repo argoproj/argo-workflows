@@ -19,7 +19,7 @@ func TestInterceptor(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/test", nil)
 	rr := httptest.NewRecorder()
 
 	handler := NewLoggingInterceptor(logger).Interceptor(realHandler)
