@@ -30,7 +30,7 @@ This executor works very differently to the others. It mounts an empty-dir on al
 The argoexec binary and the template are delivered differently depending on the pod layout:
 
 * Legacy layout: the init container creates `/var/run/argo/argoexec` (the binary, copied from the `argoexec` image) and `/var/run/argo/template` (a JSON encoding of the template).
-* Init-less layout (initlessPod enabled): there is no init container. The binary is mounted into containers from the `argoexec` image volume at `/argo-bin/bin/argoexec`, and the `supervisor` container — which runs concurrently with `main` — writes `/var/run/argo/template` and signals readiness via `/var/run/argo/ready` (or `/var/run/argo/failed` on pre-main failure). Main's emissary blocks on those markers before reading the template.
+* Init-less layout (initlessPod enabled): there is no init container. The binary is mounted into containers from the `argoexec` image volume at `/argo-bin/bin/argoexec`, and the `supervisor` container — which runs concurrently with `main` — writes `/var/run/argo/template` and signals progress via a single `/var/run/argo/status` marker whose first line is a state token (`RUNNING` heartbeat, `READY` on success, or `FAILED` plus the reason on pre-main failure). Main's emissary blocks on that marker before reading the template, and treats a stale heartbeat as a dead supervisor.
 
 In the main container, the emissary creates these files:
 

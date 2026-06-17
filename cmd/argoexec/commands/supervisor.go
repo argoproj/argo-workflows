@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"runtime/debug"
+	"time"
 
 	"github.com/spf13/cobra"
 	"go.opentelemetry.io/otel/trace"
@@ -15,6 +16,30 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	wfexecutor "github.com/argoproj/argo-workflows/v4/workflow/executor"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/osspecific"
+)
+
+// Status marker protocol between the supervisor (writer) and the emissary in
+// main (reader), exchanged via common.StatusMarkerPath in the shared emptyDir.
+// The first line of the marker is one of these tokens; for statusFailed the
+// remaining lines carry the failure message.
+const (
+	statusRunning = "RUNNING" // pre-main in progress; rewritten as a heartbeat
+	statusReady   = "READY"   // pre-main succeeded; main may proceed
+	statusFailed  = "FAILED"  // pre-main failed; message follows on later lines
+
+	// supervisorHeartbeatInterval is how often the supervisor rewrites the
+	// status marker while pre-main runs. Each rewrite advances the marker's
+	// mtime, which is what proves liveness to main.
+	supervisorHeartbeatInterval = 5 * time.Second
+	// supervisorHeartbeatTimeout is how long main tolerates a status marker that
+	// has neither appeared nor advanced before presuming the supervisor dead.
+	// Generously larger than the interval so a GC pause or CPU starvation in the
+	// supervisor doesn't trigger a false-positive death.
+	supervisorHeartbeatTimeout = 30 * time.Second
+	// supervisorStatusPollInterval is how often main re-checks the marker's
+	// freshness. inotify delivers the terminal READY/FAILED write promptly; this
+	// poll exists only to notice the *absence* of heartbeats, which inotify can't.
+	supervisorStatusPollInterval = 2 * time.Second
 )
 
 func NewSupervisorCommand() *cobra.Command {
@@ -37,24 +62,40 @@ func supervisorContainer(ctx context.Context) error {
 			return we.Tracing.StartRunSupervisorContainer(ctx, we.WorkflowName(), we.Namespace)
 		},
 		func(ctx, bgCtx context.Context, we *wfexecutor.WorkflowExecutor) error {
+			// Heartbeat the status marker so main's emissary can tell a live (but
+			// slow) supervisor from a dead one, rather than blocking to the pod
+			// deadline. The initial write also overwrites any stale marker from a
+			// prior attempt. Stop the heartbeat before the terminal write so no
+			// heartbeat races it on the same path.
+			stopHeartbeat, hbErr := startStatusHeartbeat(ctx)
+			if hbErr != nil {
+				// We can't write the marker at all (e.g. broken mount), so main
+				// can't be signalled — it will presume us dead via the
+				// never-appeared timeout. Record the error and collect logs.
+				we.AddError(ctx, hbErr)
+				return we.PostMain(ctx, bgCtx, true)
+			}
+
+			preMainErr := supervisorPreMain(ctx, we)
+			stopHeartbeat()
+
 			preMainFailed := false
-			if preMainErr := supervisorPreMain(ctx, we); preMainErr != nil {
-				// Surface the error to the emissary in main via the failed marker,
+			if preMainErr != nil {
+				// Surface the error to the emissary in main via the status marker,
 				// then fall through to PostMain. PostMain waits for main to exit —
-				// emissary in main observes the failed marker, exits 65, and writes
+				// emissary in main reads the failure status, exits 65, and writes
 				// its exitcode file — and then captures main's stdout/stderr (which
 				// includes the supervisor failure message echoed by emissary) into
-				// the task result. We must NOT write the ready marker here.
-				writeFailedMarker(ctx, preMainErr)
+				// the task result. We must NOT write a success status here.
+				writeFailureStatus(ctx, preMainErr)
 				we.AddError(ctx, preMainErr)
 				preMainFailed = true
-			} else if err := writeReadyMarker(); err != nil {
-				// The ready marker write failed (e.g. disk full). Without a
-				// failed marker, main's emissary would block on
-				// waitForSupervisorReady indefinitely until the pod-level
-				// deadline. Write the failed marker so main exits promptly,
-				// then fall through to PostMain (logs only).
-				writeFailedMarker(ctx, err)
+			} else if err := writeSuccessStatus(); err != nil {
+				// The success status write failed (e.g. disk full). Without a
+				// terminal status, main's emissary would keep waiting until the
+				// heartbeat-staleness timeout. Write a failure status so main
+				// exits promptly, then fall through to PostMain (logs only).
+				writeFailureStatus(ctx, err)
 				we.AddError(ctx, err)
 				preMainFailed = true
 			} else {
@@ -90,15 +131,9 @@ func supervisorPreMain(ctx context.Context, wfExecutor *wfexecutor.WorkflowExecu
 	// runs as a different uid. The legacy init container does the same.
 	osspecific.AllowGrantingAccessToEveryone()
 
-	// Make restarts idempotent: a previous crashed attempt may have left a
-	// failed marker in the shared emptyDir, which would otherwise race the
-	// ready marker on the emissary's watcher and fail the pod even after
-	// pre-main succeeds. Ignore not-exist; surface other errors so a broken
-	// mount fails fast rather than silently producing the wrong outcome.
-	if err := os.Remove(common.FailedMarkerPath); err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("failed to clean stale failed marker: %w", err)
-	}
-
+	// A stale marker from a prior attempt needs no explicit cleanup: the
+	// heartbeat's initial RUNNING write (startStatusHeartbeat, before we get
+	// here) has already overwritten it with a fresh mtime.
 	return runSupervisorPreMain(ctx, wfExecutor, inputArtifactPluginNames())
 }
 
@@ -141,40 +176,83 @@ func inputArtifactPluginNames() []wfv1.ArtifactPluginName {
 	return names
 }
 
-// writeReadyMarker signals to the emissary in main that pre-main setup is
-// complete. We write to a tmp path then rename: rename is atomic relative to
-// readers (the watcher inotify-rx event fires only after rename), so main
-// never observes a partially-written file. We deliberately do not fsync —
-// these markers live in an emptyDir and the pod is gone if the node crashes
-// before the write hits disk.
-func writeReadyMarker() error {
-	return writeReadyMarkerAt(common.ReadyMarkerPath)
+// startStatusHeartbeat writes an initial RUNNING status, then rewrites it every
+// supervisorHeartbeatInterval on a background goroutine until the returned stop
+// function is called. Each rewrite advances the marker's mtime, which main's
+// emissary uses to distinguish a live (but slow) supervisor from a dead one.
+//
+// The initial write is synchronous so a broken shared mount fails fast (its
+// error is returned). stop() cancels the goroutine and blocks until it has
+// exited, guaranteeing no heartbeat write can race the terminal status write
+// that follows it.
+func startStatusHeartbeat(ctx context.Context) (stop func(), err error) {
+	if err := writeRunningStatus(); err != nil {
+		return nil, fmt.Errorf("failed to write initial status marker: %w", err)
+	}
+	hbCtx, cancel := context.WithCancel(ctx)
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		ticker := time.NewTicker(supervisorHeartbeatInterval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-hbCtx.Done():
+				return
+			case <-ticker.C:
+				if err := writeRunningStatus(); err != nil {
+					logging.RequireLoggerFromContext(ctx).WithError(err).Warn(ctx, "failed to write status heartbeat")
+				}
+			}
+		}
+	}()
+	return func() { cancel(); <-done }, nil
 }
 
-// writeReadyMarkerAt is the path-parameterized form used by tests; production
-// calls writeReadyMarker with the constant.
-func writeReadyMarkerAt(path string) error {
-	return atomicWriteMarker(path, nil)
+// writeRunningStatus rewrites the status marker as RUNNING (the heartbeat).
+func writeRunningStatus() error {
+	return writeRunningStatusAt(common.StatusMarkerPath)
 }
 
-// writeFailedMarker is best-effort: if we can't write it, the emissary will
-// continue waiting (inotify-based, with polling only as a fallback) for the
-// ready marker and eventually hit the pod-level deadline.
-// Same tmp-then-rename pattern as writeReadyMarker — see notes there.
-func writeFailedMarker(ctx context.Context, cause error) {
-	writeFailedMarkerAt(ctx, common.FailedMarkerPath, cause)
+func writeRunningStatusAt(path string) error {
+	return writeStatusMarkerAt(path, []byte(statusRunning+"\n"))
 }
 
-func writeFailedMarkerAt(ctx context.Context, path string, cause error) {
-	if err := atomicWriteMarker(path, []byte(cause.Error())); err != nil {
-		logging.RequireLoggerFromContext(ctx).WithError(err).Error(ctx, "failed to write failed marker")
+// writeSuccessStatus signals to the emissary in main that pre-main setup is
+// complete by writing the terminal READY token.
+func writeSuccessStatus() error {
+	return writeSuccessStatusAt(common.StatusMarkerPath)
+}
+
+func writeSuccessStatusAt(path string) error {
+	return writeStatusMarkerAt(path, []byte(statusReady+"\n"))
+}
+
+// writeFailureStatus records a pre-main failure: the terminal FAILED token
+// followed by the cause. Best-effort — if the write fails, main keeps waiting
+// and eventually hits the heartbeat-staleness timeout.
+func writeFailureStatus(ctx context.Context, cause error) {
+	writeFailureStatusAt(ctx, common.StatusMarkerPath, cause)
+}
+
+func writeFailureStatusAt(ctx context.Context, path string, cause error) {
+	body := statusFailed
+	if msg := cause.Error(); msg != "" {
+		body += "\n" + msg
+	}
+	if err := writeStatusMarkerAt(path, []byte(body)); err != nil {
+		logging.RequireLoggerFromContext(ctx).WithError(err).Error(ctx, "failed to write failure status marker")
 	}
 }
 
-// atomicWriteMarker writes body to path via write-then-rename so a reader
-// watching path (via inotify) only ever observes the fully-written file. See
-// writeReadyMarker for why there is no fsync.
-func atomicWriteMarker(path string, body []byte) error {
+// writeStatusMarkerAt writes body to path via write-then-rename so a reader
+// watching path (via inotify) only ever observes the fully-written file — it
+// never sees a torn terminal message. It is the path-parameterized form used by
+// tests; production calls go through writeRunningStatus / writeSuccessStatus /
+// writeFailureStatus with the constant. We deliberately do not fsync — the
+// marker lives in an emptyDir and the pod is gone if the node crashes before
+// the write hits disk.
+func writeStatusMarkerAt(path string, body []byte) error {
 	tmp := path + ".tmp"
 	if err := os.WriteFile(tmp, body, 0o644); err != nil {
 		return fmt.Errorf("failed to write marker tmp %s: %w", tmp, err)

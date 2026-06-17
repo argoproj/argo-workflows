@@ -52,35 +52,68 @@ func TestInputArtifactPluginNames_TrailingComma(t *testing.T) {
 	assert.Equal(t, "s3-driver", string(names[0]))
 }
 
-func TestReadyMarker_AtomicWrite(t *testing.T) {
+func TestStatusMarker_RunningHeartbeat(t *testing.T) {
 	dir := t.TempDir()
-	readyPath := filepath.Join(dir, "ready")
+	statusPath := filepath.Join(dir, "status")
 
-	require.NoError(t, writeReadyMarkerAt(readyPath))
+	require.NoError(t, writeRunningStatusAt(statusPath))
 
-	assert.FileExists(t, readyPath)
-	assert.NoFileExists(t, readyPath+".tmp", "tmp file should be renamed away")
+	body, err := os.ReadFile(statusPath)
+	require.NoError(t, err)
+	token, _ := parseSupervisorStatus(body)
+	assert.Equal(t, statusRunning, token)
+	assert.NoFileExists(t, statusPath+".tmp", "tmp file should be renamed away")
 }
 
-func TestFailedMarker_CapturesCause(t *testing.T) {
+func TestStatusMarker_Success(t *testing.T) {
+	dir := t.TempDir()
+	statusPath := filepath.Join(dir, "status")
+
+	require.NoError(t, writeSuccessStatusAt(statusPath))
+
+	body, err := os.ReadFile(statusPath)
+	require.NoError(t, err)
+	token, _ := parseSupervisorStatus(body)
+	assert.Equal(t, statusReady, token)
+	assert.NoFileExists(t, statusPath+".tmp", "tmp file should be renamed away")
+}
+
+func TestStatusMarker_FailureCapturesCause(t *testing.T) {
 	ctx := logging.WithLogger(context.Background(), logging.InitLogger())
 	dir := t.TempDir()
-	failedPath := filepath.Join(dir, "failed")
+	statusPath := filepath.Join(dir, "status")
 
-	writeFailedMarkerAt(ctx, failedPath, errors.New("boom"))
+	writeFailureStatusAt(ctx, statusPath, errors.New("boom"))
 
-	body, err := os.ReadFile(failedPath)
+	body, err := os.ReadFile(statusPath)
 	require.NoError(t, err)
-	assert.Equal(t, "boom", string(body))
-	assert.NoFileExists(t, failedPath+".tmp", "tmp file should be renamed away")
+	token, message := parseSupervisorStatus(body)
+	assert.Equal(t, statusFailed, token)
+	assert.Equal(t, "boom", message)
+	assert.NoFileExists(t, statusPath+".tmp", "tmp file should be renamed away")
 }
 
-func TestFailedMarker_BestEffortOnUnwritable(t *testing.T) {
+func TestStatusMarker_FailureWithEmptyCauseStillSignalsFailure(t *testing.T) {
+	ctx := logging.WithLogger(context.Background(), logging.InitLogger())
+	dir := t.TempDir()
+	statusPath := filepath.Join(dir, "status")
+
+	// A cause that stringifies to "" must still produce the FAILED token, so
+	// the emissary can't misread the failure as success.
+	writeFailureStatusAt(ctx, statusPath, errors.New(""))
+
+	body, err := os.ReadFile(statusPath)
+	require.NoError(t, err)
+	token, _ := parseSupervisorStatus(body)
+	assert.Equal(t, statusFailed, token)
+}
+
+func TestStatusMarker_BestEffortOnUnwritable(t *testing.T) {
 	ctx := logging.WithLogger(context.Background(), logging.InitLogger())
 	// Path under a directory that doesn't exist — write fails, but the
 	// helper must not panic; supervisor's pre-main error still propagates
 	// via PostMain even if the marker write itself fails.
-	writeFailedMarkerAt(ctx, "/does/not/exist/failed", errors.New("boom"))
+	writeFailureStatusAt(ctx, "/does/not/exist/status", errors.New("boom"))
 }
 
 // fakeStages is a controllable preMainStages implementation. Each

@@ -13,10 +13,10 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 	"go.opentelemetry.io/otel/propagation"
-	"golang.org/x/sync/errgroup"
 	"k8s.io/client-go/util/retry"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
@@ -384,76 +384,119 @@ func linkInputArtifactsAt(ctx context.Context, baseDir string, tmpl *wfv1.Templa
 	return nil
 }
 
-// errReadySeen and errFailedSeen are sentinel errors used by
-// waitForSupervisorReadyAt to signal which watcher won the race; both
-// cancel the shared errgroup context (and thus the sibling watcher).
-var (
-	errReadySeen  = errors.New("supervisor ready marker observed")
-	errFailedSeen = errors.New("supervisor failed marker observed")
-)
-
-// waitForSupervisorReady blocks until the supervisor writes either
-// /var/run/argo/ready (success) or /var/run/argo/failed (failure). Used
-// only in init-less pod mode where main and supervisor start concurrently.
+// waitForSupervisorReady blocks until the supervisor's status marker reports a
+// terminal outcome (READY/FAILED), or until the supervisor is presumed dead.
+// Used only in init-less pod mode where main and supervisor start concurrently.
 // VarRunArgoPath itself is guaranteed to exist because the emissary has
 // already created /var/run/argo/ctr/<name> earlier in main, which MkdirAll'd
 // the full parent chain.
 func waitForSupervisorReady(ctx context.Context) error {
-	return waitForSupervisorReadyAt(ctx, common.ReadyMarkerPath, common.FailedMarkerPath)
+	return waitForSupervisorReadyAt(ctx, common.StatusMarkerPath, supervisorHeartbeatTimeout, supervisorStatusPollInterval)
 }
 
-// waitForSupervisorReadyAt is the path-parameterized form used by tests;
-// production calls waitForSupervisorReady with the constants.
-func waitForSupervisorReadyAt(ctx context.Context, readyPath, failedPath string) error {
+// waitForSupervisorReadyAt is the parameterized form used by tests; production
+// calls waitForSupervisorReady with the constants.
+//
+// The supervisor rewrites the marker as RUNNING on a heartbeat (see
+// startStatusHeartbeat). main treats a marker that has neither appeared nor
+// advanced within timeout as a dead supervisor and fails fast rather than
+// hanging to the pod deadline. An inotify watcher gives low-latency pickup of
+// the terminal READY/FAILED write; a parallel ticker (period pollInterval)
+// checks for staleness, because inotify cannot signal the *absence* of writes.
+func waitForSupervisorReadyAt(ctx context.Context, statusPath string, timeout, pollInterval time.Duration) error {
 	logger := logging.RequireLoggerFromContext(ctx)
-	logger.Info(ctx, "waiting for supervisor ready marker")
+	logger.Info(ctx, "waiting for supervisor status marker")
+	start := time.Now()
 
-	g, gctx := errgroup.WithContext(ctx)
-	var failedBody []byte
+	watchCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
-	g.Go(func() error {
-		if err := file.WaitForCreate(gctx, readyPath); err != nil {
-			// Only a clean exit when the sibling won the race (it cancels gctx).
-			// If the parent ctx is itself canceled (pod terminating), propagate
-			// so we don't mistake termination for a ready supervisor.
-			if errors.Is(err, context.Canceled) && ctx.Err() == nil {
-				return nil
-			}
-			return err
+	resCh := make(chan error, 1)
+	finish := func(err error) {
+		select {
+		case resCh <- err:
+		default: // a result already landed; first one wins
 		}
-		return errReadySeen
-	})
-
-	g.Go(func() error {
-		if err := file.WaitForCreate(gctx, failedPath); err != nil {
-			if errors.Is(err, context.Canceled) && ctx.Err() == nil {
-				return nil
-			}
-			return err
-		}
-		body, err := os.ReadFile(failedPath)
-		if err != nil {
-			return fmt.Errorf("failed marker appeared but could not be read: %w", err)
-		}
-		failedBody = body
-		return errFailedSeen
-	})
-
-	err := g.Wait()
-	switch {
-	case errors.Is(err, errReadySeen):
-		logger.Info(ctx, "supervisor is ready")
-		return nil
-	case errors.Is(err, errFailedSeen):
-		return fmt.Errorf("supervisor reported pre-main failure: %s", string(failedBody))
-	case err != nil:
-		return fmt.Errorf("waiting for supervisor readiness: %w", err)
-	default:
-		// Neither sentinel fired and no watcher errored: the only way here is a
-		// parent-context cancellation observed between the guard and Wait, so
-		// surface it rather than reporting a bogus ready.
-		return ctx.Err()
+		cancel()
 	}
+
+	// Low-latency terminal detection: re-evaluate on every write to the marker
+	// (heartbeats and the terminal write both fire here).
+	go func() {
+		werr := file.WatchFile(watchCtx, statusPath, func() {
+			if done, err := evaluateSupervisorStatus(statusPath, timeout, start); done {
+				finish(err)
+			}
+		})
+		if werr != nil && watchCtx.Err() == nil {
+			finish(fmt.Errorf("watching supervisor status: %w", werr))
+		}
+	}()
+
+	ticker := time.NewTicker(pollInterval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case err := <-resCh:
+			if err == nil {
+				logger.Info(ctx, "supervisor is ready")
+			}
+			return err
+		case <-ticker.C:
+			if done, err := evaluateSupervisorStatus(statusPath, timeout, start); done {
+				finish(err)
+			}
+		}
+	}
+}
+
+// evaluateSupervisorStatus reads the status marker once and decides whether main
+// can stop waiting. done=false means keep waiting. start is main's wait-start
+// reference, used to bound the case where the marker never appears at all. It is
+// safe to call concurrently — it only reads the filesystem.
+func evaluateSupervisorStatus(statusPath string, timeout time.Duration, start time.Time) (done bool, err error) {
+	fi, statErr := os.Stat(statusPath)
+	if statErr != nil {
+		if os.IsNotExist(statErr) {
+			if time.Since(start) > timeout {
+				return true, fmt.Errorf("supervisor presumed dead: status marker never appeared within %s", timeout)
+			}
+			return false, nil
+		}
+		return true, fmt.Errorf("stat supervisor status: %w", statErr)
+	}
+	body, readErr := os.ReadFile(statusPath)
+	if readErr != nil {
+		// Stat just succeeded, so a read failure here means we raced the
+		// supervisor's atomic rename (the old inode vanished between stat and
+		// read). Treat it as transient and re-evaluate on the next tick/event
+		// rather than failing the wait.
+		//nolint:nilerr // deliberate: swallow the transient read error and retry
+		return false, nil
+	}
+	token, message := parseSupervisorStatus(body)
+	switch token {
+	case statusReady:
+		return true, nil
+	case statusFailed:
+		return true, fmt.Errorf("supervisor reported pre-main failure: %s", message)
+	default:
+		// RUNNING, or a transient/partial read: the supervisor is alive only if
+		// it is still heartbeating, i.e. the marker's mtime is fresh.
+		if time.Since(fi.ModTime()) > timeout {
+			return true, fmt.Errorf("supervisor presumed dead: no status update within %s", timeout)
+		}
+		return false, nil
+	}
+}
+
+// parseSupervisorStatus splits the marker into its first-line token and the
+// remaining message (used by the FAILED token to carry the cause).
+func parseSupervisorStatus(body []byte) (token, message string) {
+	first, rest, _ := strings.Cut(string(body), "\n")
+	return strings.TrimSpace(first), strings.TrimSpace(rest)
 }
 
 // waitForDependencyExitCode blocks until the given dependency exitcode file is

@@ -98,14 +98,15 @@ pod:
 
 1. Pod scheduled. The image volume is mounted before containers start.
 2. `supervisor` and `main` start concurrently (no K8s ordering guarantee).
-3. `main`'s emissary blocks on `/var/run/argo/ready` before reading the template (gated by the `ARGO_WAIT_FOR_READY=true` env var).
+3. `main`'s emissary blocks on the `/var/run/argo/status` marker before reading the template (gated by the `ARGO_WAIT_FOR_READY=true` env var). The marker's first line is a state token — `RUNNING`, `READY`, or `FAILED` (with the failure message on following lines).
 4. `supervisor` in order:
-    1. Writes `/var/run/argo/template`.
-    2. Calls `StageFiles` (for script templates).
-    3. In parallel (errgroup): loads non-plugin input artifacts, and for each input-plugin name invokes Load on the plugin's gRPC socket.
-    4. On success: atomically writes `/var/run/argo/ready`.
-    5. On failure: writes `/var/run/argo/failed` with the error text, then falls through to PostMain (waits for `main` to exit and captures its logs). Emissary in `main` observes the failed marker, exits with a distinct code (65) so the controller can attribute the failure to supervisor pre-main.
-5. Emissary sees `ready`, reads the template, symlinks each input artifact into its expected path (see [Input artifacts: symlink vs bind mount](#input-artifacts-symlink-vs-bind-mount)), then execs the user command.
+    1. Writes the status marker as `RUNNING` and starts a heartbeat goroutine that rewrites it every 5s. Each rewrite advances the marker's mtime; `main` treats a marker that neither appears nor advances within 30s as a dead supervisor and fails fast (rather than hanging to the pod deadline). The initial write also overwrites any stale marker left by a prior attempt.
+    2. Writes `/var/run/argo/template`.
+    3. Calls `StageFiles` (for script templates).
+    4. In parallel (errgroup): loads non-plugin input artifacts, and for each input-plugin name invokes Load on the plugin's gRPC socket.
+    5. Stops the heartbeat, then on success: atomically writes `READY`.
+    6. On failure: atomically writes `FAILED` plus the error text, then falls through to PostMain (waits for `main` to exit and captures its logs). Emissary in `main` reads the `FAILED` status, exits with a distinct code (65) so the controller can attribute the failure to supervisor pre-main.
+5. Emissary sees `READY`, reads the template, symlinks each input artifact into its expected path (see [Input artifacts: symlink vs bind mount](#input-artifacts-symlink-vs-bind-mount)), then execs the user command.
 6. `supervisor` continues with the post-main responsibilities: observes `main`, captures outputs, saves output artifacts (plugin and non-plugin), saves logs, reports outputs. For plugin-backed output artifacts it invokes Save on the same sidecar it already used for Load.
 7. Once Save completes, `supervisor` signals plugin sidecars to exit; the pod terminates.
 
@@ -113,9 +114,9 @@ pod:
 
 | Scenario | Behavior |
 | --- | --- |
-| Artifact download fails in `supervisor` pre-main | `supervisor` writes `/var/run/argo/failed` with the error, then continues to PostMain (waits for `main`, captures logs). Emissary in `main` reads the marker, logs, exits with code 65. Pod fails; controller marks the node `Error`. |
-| `supervisor` crashes before writing either marker | The pod uses `restartPolicy: Never`, so the container is **not** restarted (the same as the legacy `wait`/init containers). `main`'s emissary keeps waiting for a marker until the pod's `activeDeadlineSeconds` or a workflow-level timeout fires, which is the authoritative upper bound. (The supervisor still removes any stale `failed` marker on start so that a future restart-enabled layout would be idempotent.) |
-| Plugin container fails to start | `supervisor` times out reaching the plugin's socket (120s). Writes `/var/run/argo/failed`, then continues to PostMain (logs only — no outputs to save). |
+| Artifact download fails in `supervisor` pre-main | `supervisor` writes `FAILED` plus the error to `/var/run/argo/status`, then continues to PostMain (waits for `main`, captures logs). Emissary in `main` reads the `FAILED` status, logs, exits with code 65. Pod fails; controller marks the node `Error`. |
+| `supervisor` dies before writing a terminal status | The status marker stops being heartbeated. `main`'s emissary sees its mtime go stale (no update within 30s — or the marker never appearing at all) and fails fast with a "supervisor presumed dead" error, rather than hanging to the pod's `activeDeadlineSeconds`. (The pod uses `restartPolicy: Never`, so the supervisor is **not** restarted, the same as the legacy `wait`/init containers.) |
+| Plugin container fails to start | `supervisor` times out reaching the plugin's socket (120s). Writes `FAILED` plus the error, then continues to PostMain (logs only — no outputs to save). |
 | Image volume pull fails | Kubernetes surfaces `ImagePullBackOff` on `main` — same user experience as any other container image failure. |
 | User image is distroless/scratch | Works — `argoexec emissary` from `/argo-bin` is the entrypoint; init-less mode does not depend on anything in the user image. |
 
@@ -126,7 +127,7 @@ In legacy mode, each input artifact is delivered to `main` via a per-artifact Ku
 In init-less mode, `main` and `supervisor` start concurrently. If kubelet sets up a `SubPath` mount before supervisor has written the file, it pre-creates the path as an empty directory in the shared emptyDir, which then causes supervisor's artifact-rename to fail. To avoid this race, init-less mode:
 
 - Mounts the whole `input-artifacts` emptyDir read-write on `main` at `/argo/inputs/artifacts` (no `SubPath`).
-- Has the emissary, immediately after the ready marker fires and before executing the user command, create a **symlink** at each input artifact's path pointing to the underlying file in the shared emptyDir.
+- Has the emissary, immediately after the status marker fires and before executing the user command, create a **symlink** at each input artifact's path pointing to the underlying file in the shared emptyDir.
 
 **What this means for workflow authors**:
 
@@ -151,4 +152,4 @@ Artifact plugins continue to use the same `driver.ArtifactDriver` interface. The
 ## Open questions / known gaps
 
 - **Latency**: in legacy mode, plugin Load runs in parallel init containers. In init-less mode, `supervisor` parallelizes plugin loads with non-plugin loads via an `errgroup`, so per-pod latency should be equivalent to or better than legacy. If you observe a regression, please file an issue.
-- **Plugin failure granularity**: the controller cannot currently distinguish "supervisor failed during plugin Load" from "supervisor failed during plugin Save" — both surface as supervisor-container failures. The `/var/run/argo/failed` marker contents and supervisor logs are the authoritative source.
+- **Plugin failure granularity**: the controller cannot currently distinguish "supervisor failed during plugin Load" from "supervisor failed during plugin Save" — both surface as supervisor-container failures. The `/var/run/argo/status` marker contents and supervisor logs are the authoritative source.

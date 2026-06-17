@@ -161,7 +161,7 @@ const (
 	// EnvVarInputArtifactPluginNames is the comma-separated list of input artifact plugin names
 	// the supervisor container must invoke for Load in init-less pod mode.
 	EnvVarInputArtifactPluginNames = "ARGO_INPUT_ARTIFACT_PLUGIN_NAMES"
-	// EnvVarWaitForReady tells the emissary to block on the /var/run/argo/ready
+	// EnvVarWaitForReady tells the emissary to block on the /var/run/argo/status
 	// marker before reading the template and exec'ing the user command.
 	// Set by the controller on main-level containers in init-less pod mode.
 	EnvVarWaitForReady = "ARGO_WAIT_FOR_READY"
@@ -330,16 +330,15 @@ const (
 	// ArgoProgressPath defines the path to a file used for self reporting progress
 	ArgoProgressPath = VarRunArgoPath + "/progress"
 
-	// ReadyMarkerPath is the marker file the supervisor writes atomically once
-	// pre-main setup is complete. The emissary waits for it before exec'ing the
-	// user command (init-less pod mode).
-	ReadyMarkerPath = VarRunArgoPath + "/ready"
-	// FailedMarkerPath is the marker file the supervisor writes if pre-main
-	// setup fails. The emissary reads the contents, logs, and exits non-zero.
-	FailedMarkerPath = VarRunArgoPath + "/failed"
+	// StatusMarkerPath is the marker file the supervisor writes atomically once
+	// pre-main setup concludes (init-less pod mode). The emissary in main waits
+	// for it before exec'ing the user command. Its contents encode the outcome:
+	// empty means success; a non-empty body is the failure reason, which the
+	// emissary logs before exiting non-zero.
+	StatusMarkerPath = VarRunArgoPath + "/status"
 
 	// ExitCodeSupervisorPreMainFailure is the exit code main's emissary uses
-	// when it observes the supervisor's failed marker before exec'ing the user
+	// when the supervisor's status marker reports a failure before exec'ing the user
 	// command (init-less pod mode). 65 = sysexits.h EX_DATAERR, chosen to be
 	// distinct from the user command's likely codes (0-2, 126-128, 137, 143) so
 	// the controller can attribute the failure to supervisor pre-main setup
@@ -368,8 +367,12 @@ func IsArtifactPluginSidecar(containerName string) bool {
 	return strings.HasPrefix(containerName, ArtifactPluginSidecarPrefix)
 }
 
+func IsArgoAuxilliary(containerName string) bool {
+	return containerName == WaitContainerName || containerName == SupervisorContainerName
+}
+
 func IsArgoSidecar(containerName string) bool {
-	return containerName == WaitContainerName || containerName == SupervisorContainerName || IsArtifactPluginSidecar(containerName)
+	return IsArgoAuxilliary(containerName) || IsArtifactPluginSidecar(containerName)
 }
 
 func IsArtifactPluginInit(containerName string) bool {
