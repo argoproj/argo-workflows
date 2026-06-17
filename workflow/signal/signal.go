@@ -39,27 +39,31 @@ func Container(ctx context.Context, restConfig *rest.Config, pod *corev1.Pod, co
 func killCommand(pod *corev1.Pod, container string, s syscall.Signal) ([]string, error) {
 	command := []string{"/bin/sh", "-c", "kill -%d 1"}
 
-	for _, c := range pod.Spec.Containers {
-		if c.Name != container {
-			continue
-		}
-		var hasVarRunArgo, hasArgoExecBin bool
-		for _, m := range c.VolumeMounts {
-			switch m.MountPath {
-			case common.VarRunArgoPath:
-				hasVarRunArgo = true
-			case common.ArgoExecBinMountPath:
-				hasArgoExecBin = true
+	if common.IsArgoAuxilliary(container) {
+		// Argoexec is on the path for our own sidecars
+		command = []string{"argoexec", "kill", "%d", "1"}
+	} else {
+		for _, c := range pod.Spec.Containers {
+			if c.Name != container {
+				continue
+			}
+			var hasVarRunArgo, hasArgoExecBin bool
+			for _, m := range c.VolumeMounts {
+				switch m.MountPath {
+				case common.VarRunArgoPath:
+					hasVarRunArgo = true
+				case common.ArgoExecBinMountPath:
+					hasArgoExecBin = true
+				}
+			}
+			switch {
+			case hasArgoExecBin:
+				command = []string{common.ArgoExecBinPath, "kill", "%d", "1"}
+			case hasVarRunArgo:
+				command = []string{common.LegacyArgoExecBinPath, "kill", "%d", "1"}
 			}
 		}
-		switch {
-		case hasArgoExecBin:
-			command = []string{common.ArgoExecBinPath, "kill", "%d", "1"}
-		case hasVarRunArgo:
-			command = []string{common.LegacyArgoExecBinPath, "kill", "%d", "1"}
-		}
 	}
-
 	if v, ok := pod.Annotations[common.AnnotationKeyKillCmd(container)]; ok {
 		if err := json.Unmarshal([]byte(v), &command); err != nil {
 			return nil, fmt.Errorf("failed to unmarshall kill command annotation %q: %w", v, err)
