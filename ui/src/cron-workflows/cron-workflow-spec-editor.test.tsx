@@ -57,9 +57,7 @@ describe('CronWorkflowSpecEditor', () => {
         render(<CronWorkflowSpecEditor spec={spec} onChange={handleChange} />);
         const input = screen.getByDisplayValue('60');
         fireEvent.change(input, {target: {value: ''}});
-        expect(handleChange).toHaveBeenCalledWith(
-            expect.objectContaining({startingDeadlineSeconds: undefined})
-        );
+        expect(handleChange).toHaveBeenCalledWith(expect.objectContaining({startingDeadlineSeconds: undefined}));
     });
 
     it('calls onChange with parsed number when a valid value is entered', () => {
@@ -71,8 +69,6 @@ describe('CronWorkflowSpecEditor', () => {
         render(<CronWorkflowSpecEditor spec={spec} onChange={handleChange} />);
         const input = screen.getByDisplayValue('3');
         fireEvent.change(input, {target: {value: '5'}});
-        expect(handleChange).toHaveBeenCalledWith(
-            expect.objectContaining({successfulJobsHistoryLimit: 5})
-        );
+        expect(handleChange).toHaveBeenCalledWith(expect.objectContaining({successfulJobsHistoryLimit: 5}));
     });
 });
