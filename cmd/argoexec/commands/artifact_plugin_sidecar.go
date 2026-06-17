@@ -1,20 +1,14 @@
 package commands
 
 import (
-	"context"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"strconv"
-	"syscall"
-	"time"
 
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo-workflows/v4/util/logging"
-	"github.com/argoproj/argo-workflows/v4/workflow/common"
-	"github.com/argoproj/argo-workflows/v4/workflow/executor"
-	"github.com/argoproj/argo-workflows/v4/workflow/executor/emissary"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/osspecific"
 )
 
@@ -65,13 +59,6 @@ func NewArtifactPluginSidecarCommand() *cobra.Command {
 			signalCtx := logger.NewBackgroundContext()
 			startFileSignalHandler(signalCtx, command.Process.Pid)
 
-			// Safety net: watch the aux container (supervisor in init-less,
-			// wait in legacy) and SIGTERM the plugin process if the aux
-			// container exits without sending us a signal file. Without
-			// this, an aux-container crash (OOM, panic) during PostMain
-			// would orphan the plugin sidecar until pod-level TGP.
-			startAuxExitWatcher(signalCtx, command.Process.Pid)
-
 			cmdErr := osspecific.Wait(command.Process)
 			exitCode = exitCodeFromErr(cmdErr, exitCode)
 
@@ -80,41 +67,4 @@ func NewArtifactPluginSidecarCommand() *cobra.Command {
 		},
 	}
 	return &command
-}
-
-// startAuxExitWatcher waits for the aux container (supervisor in init-less
-// mode, wait otherwise) to exit. If it does without first signalling us via
-// the file-signal mechanism, SIGTERM the plugin process so we don't sit
-// alive past the aux container's death and force pod-level TGP cleanup.
-// On normal shutdown the aux container's KillArtifactSidecars writes the
-// signal file, the plugin exits via startFileSignalHandler, and this
-// goroutine's Kill is a no-op against an already-dead pid.
-func startAuxExitWatcher(ctx context.Context, pid int) {
-	auxName := common.WaitContainerName
-	if common.IsInitlessPod() {
-		auxName = common.SupervisorContainerName
-	}
-	logger := logging.RequireLoggerFromContext(ctx)
-	go func() {
-		em, err := emissary.New()
-		if err != nil {
-			logger.WithError(err).Warn(ctx, "aux-exit watcher: failed to create emissary; skipping safety net")
-			return
-		}
-		if err := em.Wait(ctx, []string{auxName}); err != nil {
-			if ctx.Err() == nil {
-				logger.WithError(err).Warn(ctx, "aux-exit watcher: wait returned error")
-			}
-			return
-		}
-		logger.WithField("auxContainer", auxName).Info(ctx, "aux container exited; SIGTERM the plugin process as safety net")
-		_ = osspecific.Kill(pid, syscall.SIGTERM)
-		// Give the plugin a moment to exit on SIGTERM before SIGKILL.
-		select {
-		case <-ctx.Done():
-			return
-		case <-time.After(executor.GetTerminationGracePeriodDuration()):
-		}
-		_ = osspecific.Kill(pid, syscall.SIGKILL)
-	}()
 }
