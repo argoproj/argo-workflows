@@ -474,6 +474,133 @@ func TestCreateWorkflowPod_InitlessNoAuxContainer(t *testing.T) {
 	assert.NotEmpty(t, tmplEnv.Value)
 }
 
+// resourceManifestFromInitlessWf is a Resource template that is NOT archiving
+// logs but sources its manifest from an input artifact. `argoexec resource`
+// reads that artifact from disk, so in init-less mode it needs a supervisor to
+// download it during pre-main — even though, without manifestFrom, this same
+// template would run with no aux container.
+var resourceManifestFromInitlessWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: resource-manifestfrom-init-less
+spec:
+  archiveLogs: false
+  entrypoint: create-pod
+  templates:
+  - name: create-pod
+    inputs:
+      artifacts:
+      - name: manifest
+        path: /tmp/manifest.yaml
+        raw:
+          data: |
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              generateName: example-
+            spec:
+              containers:
+              - name: c
+                image: argoproj/argosay:v2
+              restartPolicy: Never
+    resource:
+      action: create
+      manifestFrom:
+        artifact:
+          name: manifest
+`
+
+// TestCreateWorkflowPod_InitlessResourceManifestFrom is the regression test for
+// the gap where a manifestFrom resource without log archiving got no supervisor
+// in init-less mode, leaving its manifest artifact undownloaded. It must now
+// schedule a supervisor and make main wait for readiness before exec'ing
+// argoexec resource.
+func TestCreateWorkflowPod_InitlessResourceManifestFrom(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(resourceManifestFromInitlessWf)
+	cancel, controller := newController(ctx, wf, defaultServiceAccount)
+	defer cancel()
+	controller.Config.InitlessPod = &config.InitlessPodConfig{Enabled: true}
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	tmpl := &woc.execWf.Spec.Templates[0]
+	mainCtr := apiv1.Container{
+		Name:    common.MainContainerName,
+		Image:   "argoproj/argoexec:v3",
+		Command: []string{"argoexec", "resource", "create"},
+	}
+	pod, err := woc.createWorkflowPod(ctx, tmpl.Name, []apiv1.Container{mainCtr}, tmpl, &createWorkflowPodOpts{})
+	require.NoError(t, err)
+	require.NotNil(t, pod)
+
+	var main, supervisor *apiv1.Container
+	for i, c := range pod.Spec.Containers {
+		switch c.Name {
+		case common.SupervisorContainerName:
+			supervisor = &pod.Spec.Containers[i]
+		case common.MainContainerName:
+			main = &pod.Spec.Containers[i]
+		}
+	}
+	require.NotNil(t, supervisor, "manifestFrom resource must schedule a supervisor to stage the manifest artifact")
+	require.NotNil(t, main)
+
+	// main must block on supervisor readiness so the manifest is staged before
+	// argoexec resource reads it.
+	var waitReadyEnv *apiv1.EnvVar
+	for i, e := range main.Env {
+		if e.Name == common.EnvVarWaitForReady {
+			waitReadyEnv = &main.Env[i]
+			break
+		}
+	}
+	require.NotNil(t, waitReadyEnv, "main must wait for supervisor readiness so the manifest artifact is staged first")
+	assert.Equal(t, "true", waitReadyEnv.Value)
+
+	// The supervisor downloads input artifacts, so the input-artifacts volume
+	// must be mounted on it.
+	hasInputMount := false
+	for _, vm := range supervisor.VolumeMounts {
+		if vm.Name == "input-artifacts" && vm.MountPath == common.ExecutorArtifactBaseDir {
+			hasInputMount = true
+			break
+		}
+	}
+	assert.True(t, hasInputMount, "supervisor must mount the input-artifacts volume to download the manifest")
+}
+
+// TestCreateWorkflowPod_LegacyResourceManifestFrom guards that the manifestFrom
+// supervisor trigger is init-less-only: in legacy mode the same template gets
+// its manifest from the init container and must not gain a wait container.
+func TestCreateWorkflowPod_LegacyResourceManifestFrom(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(resourceManifestFromInitlessWf)
+	cancel, controller := newController(ctx, wf, defaultServiceAccount)
+	defer cancel()
+	// InitlessPod not set → legacy.
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	tmpl := &woc.execWf.Spec.Templates[0]
+	mainCtr := apiv1.Container{
+		Name:    common.MainContainerName,
+		Image:   "argoproj/argoexec:v3",
+		Command: []string{"argoexec", "resource", "create"},
+	}
+	pod, err := woc.createWorkflowPod(ctx, tmpl.Name, []apiv1.Container{mainCtr}, tmpl, &createWorkflowPodOpts{})
+	require.NoError(t, err)
+	require.NotNil(t, pod)
+
+	// Init container stages the manifest artifact in legacy mode.
+	require.NotEmpty(t, pod.Spec.InitContainers, "legacy mode must stage the manifest via an init container")
+	// No aux container: resource-without-logs has none, and the manifestFrom
+	// trigger must not fire in legacy mode.
+	for _, c := range pod.Spec.Containers {
+		assert.NotEqual(t, common.WaitContainerName, c.Name, "legacy manifestFrom resource without logs must not gain a wait container")
+		assert.NotEqual(t, common.SupervisorContainerName, c.Name)
+	}
+}
+
 // TestAddArtifactPluginsInitless_SupervisorWiring drives the function
 // directly to assert the supervisor receives socket-volume mounts copied
 // from each plugin sidecar AND the input-artifacts mount, and that the

@@ -286,11 +286,21 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	}
 
 	hasAuxCtr := false
-	if (tmpl.GetType() != wfv1.TemplateTypeResource && tmpl.GetType() != wfv1.TemplateTypeData) || (tmpl.GetType() == wfv1.TemplateTypeResource && tmpl.SaveLogsAsArtifact()) {
-		// we do not need the wait container for data templates because
-		// argoexec runs as the main container and will perform the job of
-		// annotating the outputs or errors, making the wait container redundant.
-		// for resource template, add a wait container to collect logs.
+	// We do not need the aux (wait/supervisor) container for data templates because
+	// argoexec runs as the main container and will perform the job of annotating the
+	// outputs or errors, making it redundant. For resource templates we add one to
+	// collect logs.
+	needsAuxCtr := (tmpl.GetType() != wfv1.TemplateTypeResource && tmpl.GetType() != wfv1.TemplateTypeData) || (tmpl.GetType() == wfv1.TemplateTypeResource && tmpl.SaveLogsAsArtifact())
+	// In init-less mode there is no init container to stage input artifacts, and a
+	// resource template that isn't archiving logs otherwise runs without a supervisor.
+	// A `manifestFrom` resource sources its manifest from an input artifact that
+	// `argoexec resource` reads from disk, so it needs the supervisor to download that
+	// artifact during pre-main. (Legacy mode is unaffected: its init container stages
+	// the artifact regardless of whether a wait container is present.)
+	if woc.controller.isInitlessPodEnabled() && tmpl.GetType() == wfv1.TemplateTypeResource && tmpl.Resource.ManifestFrom != nil {
+		needsAuxCtr = true
+	}
+	if needsAuxCtr {
 		var auxCtr *apiv1.Container
 		if woc.controller.isInitlessPodEnabled() {
 			auxCtr = woc.newSupervisorContainer(ctx, tmpl)
