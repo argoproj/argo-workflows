@@ -159,6 +159,6 @@ Artifact plugins continue to use the same `driver.ArtifactDriver` interface. The
 
 ## Open questions / known gaps
 
-- **Latency**: in legacy mode, plugin Load runs in parallel init containers. In init-less mode, `supervisor` parallelizes plugin loads with non-plugin loads via an `errgroup`, so per-pod latency should be equivalent to or better than legacy. If you observe a regression, please file an issue.
+- **Latency**: in legacy mode, plugin Load runs in parallel init containers. In init-less mode, `supervisor` parallelizes plugin loads with non-plugin loads, so per-pod latency should be equivalent to or better than legacy. If you observe a regression, please file an issue.
 - **Plugin failure granularity**: the controller cannot currently distinguish "supervisor failed during plugin Load" from "supervisor failed during plugin Save" — both surface as supervisor-container failures. The `/var/run/argo/status` marker contents and supervisor logs are the authoritative source.
 - **`readOnlyRootFilesystem` + input artifacts**: init-less delivers input artifacts by symlinking into `main`'s own filesystem, so `readOnlyRootFilesystem: true` makes the symlink fail with `EROFS` when `art.Path` is on the read-only root. Legacy mode is unaffected (kubelet bind mount). See [`readOnlyRootFilesystem` is incompatible with init-less input artifacts](#readonlyrootfilesystem-is-incompatible-with-init-less-input-artifacts) for the workaround.
