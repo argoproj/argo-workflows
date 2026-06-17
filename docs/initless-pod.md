@@ -143,6 +143,8 @@ In init-less mode, `main` and `supervisor` start concurrently. If kubelet sets u
 
 For the common cases — reading the artifact, feeding it to a program, extracting a tar, etc. — behavior is byte-for-byte identical. If your workflow code calls `lstat`/`readlink` on an input artifact path, or removes/renames the path, it will observe the difference. Overlapping user volumes are unaffected: supervisor still writes those via the legacy `/mainctrfs/<art.Path>` path and no symlink is created.
 
+An input artifact path that is an **ancestor** of a volume mount (e.g. artifact `path: /data` with a volume mounted at `/data/shared`) is **rejected in init-less mode**: the controller fails pod creation with a clear error. Staging the artifact would clear `art.Path` (the emissary `RemoveAll`s it before symlinking), which would recurse into and destroy the mounted volume. The emissary also refuses at runtime as a second line of defence — it will not clear a path that is or contains a mount point. (An artifact path *inside* a mount — `path: /data/shared/file` — is the ordinary overlap case and works: the artifact is written into the volume.)
+
 When an input artifact path is **also an output artifact path** (read an artifact, transform it, write the result back to the same path), the produced output is captured correctly regardless of how `main` writes it — overwriting through the symlink, or replacing the symlink via `rm` + recreate or the idiomatic write-temp-then-`rename`. The emissary inside `main` stages the live file from `main`'s own filesystem before `supervisor` collects it, so the original input is never mistaken for the output.
 
 ### `readOnlyRootFilesystem` is incompatible with init-less input artifacts

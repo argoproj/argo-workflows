@@ -41,6 +41,29 @@ func isSubPath(path string, normalizedMountPath string) bool {
 	return strings.HasPrefix(path, normalizedMountPath+"/")
 }
 
+// FindVolumeMountNestedUnderPath returns the first volume mount whose mount path
+// is strictly nested beneath path (i.e. path is a proper ancestor directory of
+// the mount). This is the opposite direction to FindOverlappingVolume, which
+// finds a mount that *contains* path.
+//
+// It exists to detect a dangerous input-artifact configuration: an artifact path
+// that is an ancestor of a mounted volume (e.g. artifact path /data with a volume
+// mounted at /data/shared). In init-less mode the emissary clears art.Path before
+// symlinking the artifact into place, and os.RemoveAll on such a path would
+// recurse into and destroy the mounted volume. An exact path==mountPath match is
+// NOT reported here — that is the ordinary overlap case handled by
+// FindOverlappingVolume (the artifact is routed into the volume).
+func FindVolumeMountNestedUnderPath(tmpl *wfv1.Template, path string) *apiv1.VolumeMount {
+	normalizedPath := strings.TrimRight(path, "/")
+	for _, mnt := range tmpl.GetVolumeMounts() {
+		normalizedMountPath := strings.TrimRight(mnt.MountPath, "/")
+		if isSubPath(normalizedMountPath, normalizedPath) {
+			return &mnt
+		}
+	}
+	return nil
+}
+
 // ExecPodContainer runs a command in a container in a pod and returns the remotecommand.Executor
 func ExecPodContainer(ctx context.Context, restConfig *rest.Config, namespace string, pod string, container string, stdout bool, stderr bool, command ...string) (exec remotecommand.Executor, err error) {
 	log := logging.RequireLoggerFromContext(ctx)

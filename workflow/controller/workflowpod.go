@@ -1368,6 +1368,25 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(ctx context.Context, pod *ap
 	if len(tmpl.Inputs.Artifacts) == 0 {
 		return nil
 	}
+	// In init-less mode the emissary stages each input artifact by clearing
+	// art.Path (os.RemoveAll) and symlinking the downloaded file into place. If
+	// art.Path is an ancestor of a mounted volume (e.g. art.Path /data with a
+	// volume mounted at /data/shared), that RemoveAll would recurse into and
+	// destroy the live volume. Reject the configuration up front. (Legacy mode is
+	// unaffected: it delivers via a kubelet bind mount and never deletes, so the
+	// check is scoped to init-less to avoid rejecting configs that work today.)
+	if woc.controller.isInitlessPodEnabled() {
+		for _, art := range tmpl.Inputs.Artifacts {
+			if art.Path == "" {
+				continue
+			}
+			if mnt := common.FindVolumeMountNestedUnderPath(tmpl, art.Path); mnt != nil {
+				return errors.Errorf(errors.CodeBadRequest,
+					"input artifact %q path %q is an ancestor of volume mount %q (%s); this is not supported in init-less pod mode because staging the artifact would clear the mounted volume",
+					art.Name, art.Path, mnt.Name, mnt.MountPath)
+			}
+		}
+	}
 	artVol := apiv1.Volume{
 		Name: inputArtifactsVolumeName,
 		VolumeSource: apiv1.VolumeSource{

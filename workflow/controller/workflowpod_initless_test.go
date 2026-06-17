@@ -601,6 +601,72 @@ func TestCreateWorkflowPod_LegacyResourceManifestFrom(t *testing.T) {
 	}
 }
 
+// artifactPathAncestorOfMountWf has an input artifact whose path (/data) is an
+// ancestor of a user volume mount (/data/shared). In init-less mode staging the
+// artifact would os.RemoveAll(/data) and recurse into the mounted volume, so the
+// controller must reject this configuration.
+var artifactPathAncestorOfMountWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: artifact-ancestor-of-mount
+spec:
+  entrypoint: main
+  volumes:
+  - name: shared
+    emptyDir: {}
+  templates:
+  - name: main
+    inputs:
+      artifacts:
+      - name: in
+        path: /data
+        raw:
+          data: hi
+    container:
+      image: argoproj/argosay:v2
+      command: [sh, -c, "true"]
+      volumeMounts:
+      - name: shared
+        mountPath: /data/shared
+`
+
+// TestCreateWorkflowPod_InitlessRejectsArtifactPathAncestorOfMount asserts the
+// controller refuses to build a pod where an input artifact path is an ancestor
+// of a mounted volume in init-less mode (data-loss guard).
+func TestCreateWorkflowPod_InitlessRejectsArtifactPathAncestorOfMount(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(artifactPathAncestorOfMountWf)
+	cancel, controller := newController(ctx, wf, defaultServiceAccount)
+	defer cancel()
+	controller.Config.InitlessPod = &config.InitlessPodConfig{Enabled: true}
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	tmpl := &woc.execWf.Spec.Templates[0]
+	mainCtr := tmpl.Container.DeepCopy()
+	_, err := woc.createWorkflowPod(ctx, tmpl.Name, []apiv1.Container{*mainCtr}, tmpl, &createWorkflowPodOpts{})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "ancestor of volume mount")
+}
+
+// TestCreateWorkflowPod_LegacyAllowsArtifactPathAncestorOfMount guards that the
+// rejection is init-less-only: legacy delivers via a bind mount and never
+// deletes, so the same config must still build a pod.
+func TestCreateWorkflowPod_LegacyAllowsArtifactPathAncestorOfMount(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(artifactPathAncestorOfMountWf)
+	cancel, controller := newController(ctx, wf, defaultServiceAccount)
+	defer cancel()
+	// InitlessPod not set → legacy.
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	tmpl := &woc.execWf.Spec.Templates[0]
+	mainCtr := tmpl.Container.DeepCopy()
+	pod, err := woc.createWorkflowPod(ctx, tmpl.Name, []apiv1.Container{*mainCtr}, tmpl, &createWorkflowPodOpts{})
+	require.NoError(t, err)
+	require.NotNil(t, pod)
+}
+
 // TestAddArtifactPluginsInitless_SupervisorWiring drives the function
 // directly to assert the supervisor receives socket-volume mounts copied
 // from each plugin sidecar AND the input-artifacts mount, and that the
