@@ -3,9 +3,9 @@
 let
   # Access packages from the argo-flake input
   argoFlakePackages = inputs.argo-flake.packages.${pkgs.stdenv.hostPlatform.system};
-  
+
   argoConfig = import ./dev/nix/conf.nix;
-  
+
   mkEnvSerialize = (envKey: envValue: "export ${envKey}=${envValue};");
   mkEnv = (envAttrs:
     lib.concatStrings
@@ -41,6 +41,8 @@ in
     buf
     nodeDependencies
     golangci-lint
+    typos
+    cspell
   ];
 
   # Set up environment
@@ -78,7 +80,7 @@ in
     # We isolate the Go environment into the project folder to keep Nix pure.
     unset GOPATH GOROOT
     mkdir -p .go/src .gocache .goenv .devenv
-    
+
     export GOPATH="$PWD/.go"
     export GOCACHE="$PWD/.gocache"
     export GOENV="$PWD/.goenv"
@@ -103,12 +105,12 @@ in
         "github.com/grpc-ecosystem/grpc-gateway@v1.16.0"
         "k8s.io/kube-openapi@424119656bbf"
       )
-      
+
       export GOFLAGS="-mod=mod"
       for MOD in "''${MODULES[@]}"; do
         # Ensure module is in cache
         go mod download "$MOD"
-        
+
         # Resolve the literal directory in the Nix/Go cache
         MOD_NAME=$(echo "$MOD" | cut -d'@' -f1)
         CACHE_PATH=$(go list -m -f '{{.Dir}}' "$MOD")
@@ -116,11 +118,11 @@ in
         if [ -n "$CACHE_PATH" ] && [ -d "$CACHE_PATH" ]; then
           TARGET_PATH="$GOPATH/src/$MOD_NAME"
           mkdir -p "$(dirname "$TARGET_PATH")"
-          
+
           # Create a symbolic link farm (fast, space-efficient)
           rm -rf "$TARGET_PATH"
           cp -as "$CACHE_PATH" "$TARGET_PATH"
-          
+
           # Reset permissions (Nix/Go cache is read-only 0444)
           chmod -R +w "$TARGET_PATH"
         else
@@ -151,7 +153,7 @@ in
 
     if [ -n "$SEARCH_PATHS" ]; then
       LATEST_CHANGE=$(find $SEARCH_PATHS -type f -printf '%T@ %p\n' 2>/dev/null | sort -n | tail -1 | cut -f2- -d" ")
-      
+
       if [ ! -f .devenv/make_installed ] || [ "$LATEST_CHANGE" -nt .devenv/make_installed ]; then
         echo "🛠️  Local source or manifests changed. Running make install..."
         make install PROFILE=minimal
