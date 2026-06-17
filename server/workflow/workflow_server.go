@@ -864,13 +864,16 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 		return workflow, nil
 	}
 
+	// Store the result separately: a failed Create returns an empty object, so reusing wf would
+	// feed a stripped workflow into the next retry.
+	var created *wfv1.Workflow
 	err = waitutil.Backoff(retry.DefaultRetry(ctx), func() (bool, error) {
 		var createErr error
-		wf, createErr = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+		created, createErr = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Create(ctx, wf, metav1.CreateOptions{})
 		return !errorsutil.IsTransientErr(ctx, createErr), createErr
 	})
 	if err != nil {
-		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
+		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
-	return wf, nil
+	return created, nil
 }

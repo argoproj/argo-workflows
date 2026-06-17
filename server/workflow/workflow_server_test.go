@@ -9,6 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,6 +33,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/server/workflow/store"
 	"github.com/argoproj/argo-workflows/v4/server/workflowtemplate"
 	"github.com/argoproj/argo-workflows/v4/util"
+	errorsutil "github.com/argoproj/argo-workflows/v4/util/errors"
 	"github.com/argoproj/argo-workflows/v4/util/instanceid"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
@@ -1077,4 +1080,54 @@ func TestSubmitWorkflowFromResource(t *testing.T) {
 		assert.Contains(t, wf.Labels, common.LabelKeyCreator)
 		assert.Equal(t, userEmailLabel, wf.Labels[common.LabelKeyCreatorEmail])
 	})
+}
+
+// TestSubmitWorkflowRetriesTransientError verifies a transient Create failure (e.g. the
+// ResourceQuota 409 from #14106) is retried and the submit still succeeds with its labels intact.
+func TestSubmitWorkflowRetriesTransientError(t *testing.T) {
+	server, ctx := getWorkflowServer(t)
+	wfClient := ctx.Value(auth.WfKey).(*v1alpha.Clientset)
+
+	var attempts int
+	wfClient.PrependReactor("create", "workflows", func(action ktesting.Action) (bool, runtime.Object, error) {
+		attempts++
+		if attempts == 1 {
+			return true, nil, errorsutil.NewErrTransient("simulated transient ResourceQuota conflict")
+		}
+		// let the default chain (incl. generateNameReactor) handle the successful create
+		return false, nil, nil
+	})
+
+	opts := v1alpha1.SubmitOpts{Parameters: []string{"message=hello"}}
+	wf, err := server.SubmitWorkflow(ctx, &workflowpkg.WorkflowSubmitRequest{
+		Namespace:     "workflows",
+		ResourceKind:  "workflowtemplate",
+		ResourceName:  "workflow-template-whalesay-template",
+		SubmitOptions: &opts,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, wf)
+	assert.GreaterOrEqual(t, attempts, 2, "create should have been retried after the transient error")
+	assert.Contains(t, wf.Labels, common.LabelKeyControllerInstanceID)
+}
+
+// TestSubmitWorkflowReturnsInternalOnRetryExhaustion verifies an exhausted retry returns
+// codes.Internal, not the previous InvalidArgument.
+func TestSubmitWorkflowReturnsInternalOnRetryExhaustion(t *testing.T) {
+	server, ctx := getWorkflowServer(t)
+	wfClient := ctx.Value(auth.WfKey).(*v1alpha.Clientset)
+
+	wfClient.PrependReactor("create", "workflows", func(action ktesting.Action) (bool, runtime.Object, error) {
+		return true, nil, errorsutil.NewErrTransient("persistent transient failure")
+	})
+
+	opts := v1alpha1.SubmitOpts{Parameters: []string{"message=hello"}}
+	_, err := server.SubmitWorkflow(ctx, &workflowpkg.WorkflowSubmitRequest{
+		Namespace:     "workflows",
+		ResourceKind:  "workflowtemplate",
+		ResourceName:  "workflow-template-whalesay-template",
+		SubmitOptions: &opts,
+	})
+	require.Error(t, err)
+	assert.Equal(t, codes.Internal, status.Code(err))
 }
