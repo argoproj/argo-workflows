@@ -1343,72 +1343,10 @@ func (we *WorkflowExecutor) Wait(ctx context.Context) error {
 	return nil
 }
 
-// waitMainContainers blocks until the given containers have completed. It races
-// two completion signals and returns as soon as the first fires:
-//
-//   - the emissary's per-container exit-code files (RuntimeExecutor.Wait) — the
-//     normal path; and
-//   - the Kubernetes container statuses (waitMainContainersTerminated) — a
-//     fallback for a container that terminated WITHOUT writing its exit-code
-//     file. The clearest case is an OOM kill: cgroup v2 oom.group kills every
-//     process in the container's cgroup, including the emissary (PID 1), before
-//     it can record the exit code. Without this fallback RuntimeExecutor.Wait
-//     would block forever and the auxiliary container (wait/supervisor) would
-//     never run its post-main phase, leaving the pod Running indefinitely.
+// waitMainContainers blocks until the given containers have completed, as
+// signalled by the emissary's per-container exit-code files.
 func (we *WorkflowExecutor) waitMainContainers(ctx context.Context, containerNames []string) error {
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel() // stop the slower watcher once one of them returns
-
-	done := make(chan error, 2)
-	go func() { done <- we.RuntimeExecutor.Wait(ctx, containerNames) }()
-	go func() { done <- we.waitMainContainersTerminated(ctx, containerNames) }()
-	// Take the first result; the loser observes the cancel above and is ignored.
-	return <-done
-}
-
-// waitMainContainersTerminated polls the pod and returns once every named
-// container has reached a Terminated state, regardless of whether it recorded an
-// exit-code file. It is the API-based fallback used by waitMainContainers.
-func (we *WorkflowExecutor) waitMainContainersTerminated(ctx context.Context, containerNames []string) error {
-	wanted := make(map[string]bool, len(containerNames))
-	for _, n := range containerNames {
-		wanted[n] = true
-	}
-	logger := logging.RequireLoggerFromContext(ctx)
-	ticker := time.NewTicker(3 * time.Second)
-	defer ticker.Stop()
-	for {
-		pod, err := we.ClientSet.CoreV1().Pods(we.Namespace).Get(ctx, we.PodName, metav1.GetOptions{})
-		if err != nil {
-			// Transient API errors shouldn't abort the fallback — the exit-code
-			// file watch is still running in parallel; just retry on the next tick.
-			logger.WithError(err).Debug(ctx, "container-termination watch: failed to get pod, retrying")
-		} else if allContainersTerminated(pod, wanted) {
-			logger.Info(ctx, "all main containers have terminated (observed via pod status)")
-			return nil
-		}
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-ticker.C:
-		}
-	}
-}
-
-// allContainersTerminated reports whether every container named in wanted is
-// present in the pod's container statuses and in a Terminated state.
-func allContainersTerminated(pod *apiv1.Pod, wanted map[string]bool) bool {
-	terminated := 0
-	for _, cs := range pod.Status.ContainerStatuses {
-		if !wanted[cs.Name] {
-			continue
-		}
-		if cs.State.Terminated == nil {
-			return false
-		}
-		terminated++
-	}
-	return terminated == len(wanted)
+	return we.RuntimeExecutor.Wait(ctx, containerNames)
 }
 
 // monitorProgress monitors for self-reported progress in the progressFile and patches the pod annotations with the parsed progress.

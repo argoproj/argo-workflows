@@ -4,7 +4,6 @@ import (
 	"archive/tar"
 	"archive/zip"
 	"compress/gzip"
-	"context"
 	"fmt"
 	"io"
 	"os"
@@ -869,65 +868,17 @@ func TestUnzipMaliciousSymlink(t *testing.T) {
 	assert.Equal(t, "safe", string(content), "File outside should NOT be overwritten by unzip")
 }
 
-func TestAllContainersTerminated(t *testing.T) {
-	wanted := map[string]bool{"a": true, "b": true}
-	term := corev1.ContainerState{Terminated: &corev1.ContainerStateTerminated{}}
-	run := corev1.ContainerState{Running: &corev1.ContainerStateRunning{}}
-	pod := func(cs ...corev1.ContainerStatus) *corev1.Pod {
-		return &corev1.Pod{Status: corev1.PodStatus{ContainerStatuses: cs}}
-	}
-
-	assert.True(t, allContainersTerminated(pod(
-		corev1.ContainerStatus{Name: "a", State: term},
-		corev1.ContainerStatus{Name: "b", State: term},
-		corev1.ContainerStatus{Name: "wait", State: run}, // unrelated container ignored
-	), wanted))
-
-	assert.False(t, allContainersTerminated(pod(
-		corev1.ContainerStatus{Name: "a", State: term},
-		corev1.ContainerStatus{Name: "b", State: run}, // b still running
-	), wanted))
-
-	assert.False(t, allContainersTerminated(pod(
-		corev1.ContainerStatus{Name: "a", State: term}, // b missing entirely
-	), wanted))
-}
-
 func TestWaitMainContainers(t *testing.T) {
-	terminatedPod := &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{Name: fakePodName, Namespace: fakeNamespace},
-		Status: corev1.PodStatus{ContainerStatuses: []corev1.ContainerStatus{
-			{Name: "main", State: corev1.ContainerState{Terminated: &corev1.ContainerStateTerminated{ExitCode: 137, Reason: "OOMKilled"}}},
-		}},
-	}
-
-	t.Run("falls back to pod status when the exit-code file never appears", func(t *testing.T) {
-		ctx := logging.TestContext(t.Context())
-		rt := &mocks.ContainerRuntimeExecutor{}
-		// Simulate an OOMKilled container whose emissary never wrote its exit-code
-		// file: RuntimeExecutor.Wait blocks until its context is cancelled.
-		rt.On("Wait", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
-			<-args.Get(0).(context.Context).Done()
-		}).Return(context.Canceled)
-		we := &WorkflowExecutor{
-			PodName:         fakePodName,
-			Namespace:       fakeNamespace,
-			ClientSet:       fake.NewClientset(terminatedPod),
-			RuntimeExecutor: rt,
-		}
-		require.NoError(t, we.waitMainContainers(ctx, []string{"main"}), "pod-status fallback must win when no exit-code file appears")
-	})
-
-	t.Run("returns via the exit-code file watch on the normal path", func(t *testing.T) {
+	t.Run("delegates to the runtime executor's exit-code file watch", func(t *testing.T) {
 		ctx := logging.TestContext(t.Context())
 		rt := &mocks.ContainerRuntimeExecutor{}
 		rt.On("Wait", mock.Anything, mock.Anything).Return(nil)
 		we := &WorkflowExecutor{
 			PodName:         fakePodName,
 			Namespace:       fakeNamespace,
-			ClientSet:       fake.NewClientset(), // no pod → fallback can't complete
 			RuntimeExecutor: rt,
 		}
-		require.NoError(t, we.waitMainContainers(ctx, []string{"main"}), "exit-code file watch must win")
+		require.NoError(t, we.waitMainContainers(ctx, []string{"main"}))
+		rt.AssertExpectations(t)
 	})
 }
