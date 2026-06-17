@@ -147,43 +147,6 @@
               ];
               doCheck = false;
             };
-          editdistpy = with pythonPkgs;
-            buildPythonPackage rec {
-              pname = "editdistpy";
-              version = "0.1.6";
-              src = fetchPypi {
-                inherit pname version;
-                hash = "sha256-M87zqCxusAftwCr2XYyZ1nt1zo6cmAEF2kvYJWvLSyU=";
-              };
-              pyproject = true;
-              build-system = [ setuptools cython ];
-            };
-          symspellpy = with pythonPkgs;
-            buildPythonPackage rec {
-              pname = "symspellpy";
-              version = "6.7.7";
-              src = fetchPypi {
-                inherit pname version;
-                hash = "sha256-9sMVGHeAvC3TD8nKMu8Hb4m7/LKns/mjd5JvH2reAIU=";
-              };
-              pyproject = true;
-              build-system = [ setuptools ];
-              propagatedBuildInputs = [ editdistpy ];
-            };
-          mkdocs-spellcheck = with pythonPkgs; # upgrade this in the Makefile if upgraded here
-            buildPythonPackage rec {
-              pname = "mkdocs-spellcheck";
-              version = "0.2.1";
-              src = fetchPypi {
-                inherit pname version;
-                hash = "sha256-g8neboAWGGN04EWsSBKj4oHyKVN/iKP4wANO+Ba3nI4=";
-              };
-              pyproject = true;
-              build-system = [ pdm-pep517 ];
-              propagatedBuildInputs = [
-                symspellpy
-              ];
-            };
           pythonEnv = pkgs.python312.withPackages (ps: [
             ps.pytest
             ps.typing-extensions
@@ -193,7 +156,6 @@
             mkdocs
             mkdocs-material-extensions
             mkdocs-material
-            mkdocs-spellcheck
           ]);
 
           mkEnvSerialize = (envKey: envValue: "export ${envKey}=${envValue};");
@@ -440,7 +402,7 @@
 
             nodeDependencies = nodePackages.shell.nodeDependencies;
 
-            inherit (pkgs) go jq protobuf diffutils golangci-lint kustomize gotools kubectl k3d docker gettext lsof;
+            inherit (pkgs) go jq protobuf diffutils golangci-lint kustomize gotools kubectl k3d docker gettext lsof typos cspell;
             inherit nodejs;
             yarn = myyarn;
 
@@ -478,6 +440,8 @@
                 config.packages.${package.name}
                 config.packages.kubeauto
                 nodePackages.shell.nodeDependencies
+                typos
+                cspell
                 gopls
                 go
                 config.packages.goimports
@@ -521,6 +485,8 @@
                     config.packages.snipdoc
                     config.packages.kubeauto
                     nodePackages.shell.nodeDependencies
+                    typos
+                    cspell
                     gopls
                     go
                     config.packages.goimports

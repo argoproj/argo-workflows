@@ -107,7 +107,8 @@ jobs:
               - hack/featuregen/**
               - .markdownlint.yaml
               - .mlc_config.json
-              - .spelling
+              - .cspell.json
+              - _typos.toml
               - mkdocs.yml
               - go.mod
               - go.sum
