@@ -4,10 +4,10 @@ import v "github.com/argoproj/argo-workflows/v4/util/variables"
 
 // retryableKinds are the template kinds that practice has shown actually
 // honour retryStrategy and substitute {{retries}} / {{lastRetry.*}} into
-// their bodies on each attempt. The validator
-// (workflow/validate/validate.go:490) injects retries / lastRetry.* into
-// the per-template scope for any tmpl.RetryStrategy != nil regardless of
-// kind, and operator.go:2393-2419 substitutes them into processedTmpl.
+// their bodies on each attempt. The validator (validate.go) injects
+// retries / lastRetry.* into the per-template scope for any
+// tmpl.RetryStrategy != nil regardless of kind, and the operator
+// substitutes them into processedTmpl.
 // Empirically verified end-to-end (initial + 2 retries, per-attempt
 // substitution observed) for Container, ContainerSet, Script, Resource,
 // Steps, DAG, HTTP, Data, and Plugin templates.
