@@ -31,6 +31,8 @@ func GenerateMarkdown() string {
 	mdoc.PlainText("")
 	mdoc.PlainTextf("Auto-generated from `util/variables` via `GenerateMarkdown()`. %d variables registered.", len(all))
 	mdoc.PlainText("")
+	mdoc.PlainText("See [`variables-showcase.yaml`](variables-showcase.yaml) for a runnable workflow that exercises these variables.")
+	mdoc.PlainText("")
 
 	mdoc.H2("1. Alphabetical index")
 	mdoc.PlainText("")

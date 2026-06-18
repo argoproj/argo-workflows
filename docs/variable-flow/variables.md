@@ -2,6 +2,8 @@
 
 Auto-generated from `util/variables` via `GenerateMarkdown()`. 83 variables registered.
 
+See [`variables-showcase.yaml`](variables-showcase.yaml) for a runnable workflow that exercises these variables.
+
 ## 1. Alphabetical index
 
 |                    Key                    |     Kind      |      Type      |                        Availability                        |                                                                                                                                                                            Description                                                                                                                                                                            |
