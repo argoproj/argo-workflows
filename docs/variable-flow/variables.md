@@ -2,7 +2,7 @@
 
 Auto-generated from `util/variables` via `GenerateMarkdown()`. 83 variables registered.
 
-See [`variables-showcase.yaml`](variables-showcase.yaml) for a runnable workflow that exercises these variables.
+A runnable [`variables-showcase.yaml`](../../examples/variables-showcase.yaml) workflow that exercises these variables is embedded at the end of this page.
 
 ## 1. Alphabetical index
 
@@ -582,3 +582,11 @@ Which variables are in scope for each template type. `•` = in scope, blank = n
 | `cronworkflow.name`              | cron-workflow | string     |
 | `cronworkflow.namespace`         | cron-workflow | string     |
 | `cronworkflow.succeeded`         | cron-workflow | int        |
+
+## 5. Showcase workflow
+
+The runnable example below exercises the variables catalogued above. It is embedded at docs-build time from `examples/variables-showcase.yaml` (the same file the example tests validate and run).
+
+```yaml title="examples/variables-showcase.yaml"
+--8<-- "examples/variables-showcase.yaml"
+```

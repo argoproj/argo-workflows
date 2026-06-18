@@ -31,7 +31,7 @@ func GenerateMarkdown() string {
 	mdoc.PlainText("")
 	mdoc.PlainTextf("Auto-generated from `util/variables` via `GenerateMarkdown()`. %d variables registered.", len(all))
 	mdoc.PlainText("")
-	mdoc.PlainText("See [`variables-showcase.yaml`](variables-showcase.yaml) for a runnable workflow that exercises these variables.")
+	mdoc.PlainText("A runnable [`variables-showcase.yaml`](../../examples/variables-showcase.yaml) workflow that exercises these variables is embedded at the end of this page.")
 	mdoc.PlainText("")
 
 	mdoc.H2("1. Alphabetical index")
@@ -52,6 +52,18 @@ func GenerateMarkdown() string {
 	mdoc.PlainText("")
 	writePhaseLegend(mdoc)
 	writeByPhase(mdoc, all)
+
+	mdoc.H2("5. Showcase workflow")
+	mdoc.PlainText("")
+	mdoc.PlainText("The runnable example below exercises the variables catalogued above. It is embedded at docs-build time from `examples/variables-showcase.yaml` (the same file the example tests validate and run).")
+	mdoc.PlainText("")
+	// Emit a pymdownx snippets directive rather than inlining the file, so the
+	// example stays the single source of truth and is pulled in at site-build
+	// time (no second copy to keep in sync here).
+	mdoc.PlainText("```yaml title=\"examples/variables-showcase.yaml\"")
+	mdoc.PlainText("--8<-- \"examples/variables-showcase.yaml\"")
+	mdoc.PlainText("```")
+	mdoc.PlainText("")
 
 	_ = mdoc.Build()
 	return buf.String()
