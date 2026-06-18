@@ -48,8 +48,9 @@ func (s *wfScope) getParameters() common.Parameters {
 	return common.Parameters(s.scope.AsStringMap())
 }
 
-// resolveVar resolves a parameter or artifact
-func (s *wfScope) resolveVar(v string) (any, error) {
+// resolveVar resolves a parameter or artifact and additionally returns the unwrapped tag
+// (v with the surrounding "{{" / "}}" stripped) so callers can reuse it without re-parsing.
+func (s *wfScope) resolveVar(v string) (string, any, error) {
 	m := s.scope.AsAnyMap()
 	if s.tmpl != nil {
 		for _, a := range s.tmpl.Inputs.Artifacts {
@@ -59,19 +60,23 @@ func (s *wfScope) resolveVar(v string) (any, error) {
 	return template.ResolveVar(v, m)
 }
 
-func (s *wfScope) resolveParameter(p *wfv1.ValueFrom) (any, error) {
+// resolveParameter resolves a ValueFrom and additionally reports whether the source was a
+// skipped/omitted step's placeholder output (only meaningful for the Parameter form).
+func (s *wfScope) resolveParameter(p *wfv1.ValueFrom) (any, bool, error) {
 	if p == nil || (p.Parameter == "" && p.Expression == "") {
-		return "", nil
+		return "", false, nil
 	}
 	if p.Expression != "" {
 		env := env.GetFuncMap(s.scope.AsAnyMap())
 		program, err := expr.Compile(p.Expression, expr.Env(env))
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
-		return expr.Run(program, env)
+		val, err := expr.Run(program, env)
+		return val, false, err
 	}
-	return s.resolveVar(p.Parameter)
+	tag, val, err := s.resolveVar(p.Parameter)
+	return val, s.scope.IsSkipped(tag), err
 }
 
 func (s *wfScope) resolveArtifact(ctx context.Context, art *wfv1.Artifact) (*wfv1.Artifact, error) {
@@ -93,7 +98,7 @@ func (s *wfScope) resolveArtifact(ctx context.Context, art *wfv1.Artifact) (*wfv
 			return nil, err
 		}
 	} else {
-		val, err = s.resolveVar(art.From)
+		_, val, err = s.resolveVar(art.From)
 	}
 
 	if err != nil {

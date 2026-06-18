@@ -129,7 +129,7 @@ func writePhaseLegend(mdoc *md.Markdown) {
 		{string(PhDuringExecute), "Inside a template body; inputs.* are bound."},
 		{string(PhInsideLoop), "Inside a withItems/withParam expansion; `item`, `item.<key>` are bound."},
 		{string(PhInsideRetry), "Inside a retryStrategy template; retries.* are bound."},
-		{string(PhAfterNodeInit), "A referenced node has been initialised by the controller (id, status, startedAt are populated — startedAt is set at node-init time, before any pod is created, for all node types including non-pod ones like Suspend / HTTP / Plugin / Steps / DAG)."},
+		{string(PhAfterNodeInit), "A referenced node has been initialized by the controller (id, status, startedAt are populated — startedAt is set at node-init time, before any pod is created, for all node types including non-pod ones like Suspend / HTTP / Plugin / Steps / DAG)."},
 		{string(PhAfterPodStart), "The referenced node's pod has started; ip, hostNodeName are populated (k8s-supplied; meaningless for non-pod node types)."},
 		{string(PhAfterNodeComplete), "The referenced node has finished (any terminal phase); finishedAt, exitCode are populated."},
 		{string(PhAfterNodeSucceeded), "The referenced node has finished with Succeeded; outputs.result, outputs.parameters.*, outputs.artifacts.* are populated."},

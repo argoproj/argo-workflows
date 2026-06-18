@@ -214,7 +214,7 @@ func (we *WorkflowExecutor) loadArtifact(ctx context.Context, pluginName wfv1.Ar
 
 	if !art.HasLocationOrKey() {
 		if art.Optional {
-			logger.WithField("name", art.Name).Warn(ctx, "Ignoring optional artifact which was not supplied")
+			logger.WithField("name", art.Name).Info(ctx, "Ignoring optional artifact which was not supplied")
 			return nil
 		}
 		return argoerrs.Errorf(argoerrs.CodeNotFound, "required artifact '%s' not supplied", art.Name)

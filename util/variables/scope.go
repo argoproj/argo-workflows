@@ -4,10 +4,16 @@ import "maps"
 
 // Scope holds variable values. Writes only via Key.Set.
 type Scope struct {
-	data map[string]any
+	data    map[string]any
+	skipped map[string]bool
 }
 
-func NewScope() *Scope { return &Scope{data: map[string]any{}} }
+func NewScope() *Scope {
+	return &Scope{
+		data:    map[string]any{},
+		skipped: map[string]bool{},
+	}
+}
 
 // AsAnyMap returns a snapshot. Nil-safe.
 func (s *Scope) AsAnyMap() map[string]any {
@@ -33,7 +39,18 @@ func (s *Scope) AsStringMap() map[string]string {
 	return out
 }
 
-// Set writes through a Key — the only public write path.
+func (s *Scope) IsSkipped(key string) bool {
+	return s.skipped[key]
+}
+
+// Set writes through a Key
 func (k *Key) Set(s *Scope, value any, args ...string) {
 	s.data[k.Concretize(args...)] = value
+}
+
+// SetSkipped writes through a Key, marking the variable as skipped
+func (k *Key) SetSkipped(s *Scope, value any, args ...string) {
+	concrete := k.Concretize(args...)
+	s.data[concrete] = value
+	s.skipped[concrete] = true
 }

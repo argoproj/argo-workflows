@@ -162,6 +162,26 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 				woc.buildLocalScope(stepsCtx.scope, varkeys.StepsNodeRef, step.Name, sgNode)
 			} else {
 				woc.buildLocalScope(stepsCtx.scope, varkeys.StepsNodeRef, step.Name, childNode)
+
+				if (childNode.Phase == wfv1.NodeSkipped || childNode.Phase == wfv1.NodeOmitted) && childNode.Outputs == nil {
+					_, stepTmpl, _, resolveErr := stepsCtx.tmplCtx.ResolveTemplate(ctx, &step)
+
+					if resolveErr != nil {
+						woc.log.WithError(resolveErr).Debug(ctx, "failed to resolve template for skipped step, outputs will not be populated in scope")
+					}
+
+					if resolveErr == nil && stepTmpl != nil {
+						for _, param := range stepTmpl.Outputs.Parameters {
+							varkeys.StepsNodeRef.OutputsParameterByName.SetSkipped(stepsCtx.scope.scope, "", step.Name, param.Name)
+						}
+						for _, artifact := range stepTmpl.Outputs.Artifacts {
+							varkeys.StepsNodeRef.OutputsArtifactByName.Set(stepsCtx.scope.scope, wfv1.Artifact{}, step.Name, artifact.Name)
+						}
+						if stepTmpl.Outputs.Result != nil {
+							varkeys.StepsNodeRef.OutputsResult.SetSkipped(stepsCtx.scope.scope, "", step.Name)
+						}
+					}
+				}
 			}
 		}
 	}

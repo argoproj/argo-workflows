@@ -284,9 +284,11 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 	for _, taskName := range targetTasks {
 		woc.executeDAGTask(ctx, dagCtx, taskName)
 
-		// It is possible that target tasks are not reconsidered (i.e. executeDAGTask is not called on them) once they are
-		// complete (since the DAG itself will have succeeded). To ensure that their exit handlers are run we also run them here. Note that
-		// calls to runOnExitNode are idempotent: it is fine if they are called more than once for the same task.
+		// The exit hook for each target task is started by executeDAGTask -> processTask.
+		// We only inspect the onExit node's status here to decide whether the DAG can be
+		// considered complete; calling runOnExitNode (and therefore executeTemplate) a second
+		// time on the same onExit node would re-run checkParallelism against the count this
+		// very pass just bumped.
 		taskNode := dagCtx.getTaskNode(ctx, taskName)
 
 		if taskNode != nil {
@@ -303,15 +305,10 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 				woc.markNodeError(ctx, node.Name, hookErr)
 				return node, hookErr
 			}
-			if taskNode.Fulfilled() {
-				if taskNode.Completed() {
-					hasOnExitNode, onExitNode, exitErr := woc.runOnExitNode(ctx, dagCtx.GetTask(ctx, taskName).GetExitHook(woc.execWf.Spec.Arguments), taskNode, dagCtx.boundaryID, dagCtx.tmplCtx, varkeys.TasksNodeRef, taskName, scope)
-					if exitErr != nil {
-						return node, exitErr
-					}
-					if hasOnExitNode && (onExitNode == nil || !onExitNode.Fulfilled()) {
-						onExitCompleted = false
-					}
+			if taskNode.Fulfilled() && taskNode.Completed() {
+				onExitNodeName := common.GenerateOnExitNodeName(taskNode.Name)
+				if onExitNode, onExitErr := woc.wf.GetNodeByName(onExitNodeName); onExitErr == nil && onExitNode != nil && !onExitNode.Fulfilled() {
+					onExitCompleted = false
 				}
 			}
 		}
@@ -713,10 +710,10 @@ func (woc *wfOperationCtx) buildLocalScopeFromTask(ctx context.Context, dagCtx *
 			_, tmpl, _, err := dagCtx.tmplCtx.ResolveTemplate(ctx, ancestorTask)
 			if err == nil && tmpl != nil {
 				for _, param := range tmpl.Outputs.Parameters {
-					varkeys.TasksNodeRef.OutputsParameterByName.Set(scope.scope, "", ancestor, param.Name)
+					varkeys.TasksNodeRef.OutputsParameterByName.SetSkipped(scope.scope, "", ancestor, param.Name)
 				}
 				if tmpl.Outputs.Result != nil {
-					varkeys.TasksNodeRef.OutputsResult.Set(scope.scope, "", ancestor)
+					varkeys.TasksNodeRef.OutputsResult.SetSkipped(scope.scope, "", ancestor)
 				}
 			}
 		}

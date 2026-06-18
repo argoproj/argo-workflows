@@ -44,7 +44,6 @@ git-ask-pass.sh
 /v3/
 /cmd/argoexec/commands/test.txt
 /db-dumps/
-.spelling.tmp
 
 # Do not commit rendered installation manifests since they are misleading to users.
 manifests/install.yaml
@@ -57,3 +56,6 @@ result
 .*-vendor
 proto_vendor
 .github.com
+.go/
+.goenv/
+.gocache/

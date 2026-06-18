@@ -5,6 +5,8 @@
 # Even then the buildFlags are not passed into Go, meaning you won't see the correct version info yet. 
 # This is only intended for quick developing at the moment, gradually more functionality will be pushed here. 
 rec {
+  # Keep in sync with go.mod
+  goVersion = "1.26.1";
   version = "latest";
   env = {
     DEFAULT_REQUEUE_TIME = "1s";
@@ -46,6 +48,7 @@ rec {
   argoServer = {
     env = {
       UPPERIO_DB_DEBUG = "${env.UPPERIO_DB_DEBUG}";
+      CI_ONLY_DISABLE_ARTIFACT_SERVER_CHECKS = "true";
     };
     args = "--loglevel ${env.LOG_LEVEL} server --namespaced=${env.NAMESPACED} --auth-mode ${env.AUTH_MODE} --secure=${env.SECURE} --x-frame-options=SAMEORIGIN";
   };

@@ -773,8 +773,10 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		woc.log.WithPanic().Error(ctx, "cannot persist updates with mismatched resource versions")
 	}
 	wfClient := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows(woc.wf.Namespace)
-	// try and compress nodes if needed
+
 	nodes := woc.wf.Status.Nodes
+
+	// try and compress nodes if needed
 	err := woc.controller.hydrator.Dehydrate(ctx, woc.wf)
 	if err != nil {
 		woc.log.WithError(err).Warn(ctx, "Failed to dehydrate")
@@ -789,7 +791,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	}
 
 	// Remove completed taskset status before update workflow.
-	err = woc.removeCompletedTaskSetStatus(ctx)
+	err = woc.removeCompletedTaskSetStatus(ctx, nodes)
 	if err != nil {
 		woc.log.WithError(err).Warn(ctx, "error updating taskset")
 	}
@@ -2108,7 +2110,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	node, err = woc.wf.GetNodeByName(nodeName)
 	if err != nil {
 		// Will be initialized via woc.initializeNodeOrMarkError
-		woc.log.Warn(ctx, "Node was nil, will be initialized as type Skipped")
+		woc.log.Info(ctx, "Node was nil, will be initialized as type Skipped")
 	}
 
 	if node != nil {
@@ -3321,12 +3323,15 @@ func (woc *wfOperationCtx) getTemplateOutputsFromScope(ctx context.Context, tmpl
 			if param.ValueFrom == nil {
 				return nil, fmt.Errorf("output parameters must have a valueFrom specified")
 			}
-			val, err := scope.resolveParameter(param.ValueFrom)
+			val, skipped, err := scope.resolveParameter(param.ValueFrom)
 			if err != nil {
 				// We have a default value to use instead of returning an error
 				if param.ValueFrom.Default == nil {
 					return nil, err
 				}
+				val = param.ValueFrom.Default.String()
+			} else if skipped && param.ValueFrom.Default != nil {
+				// The referenced step was skipped/omitted and produced no output; use the declared default.
 				val = param.ValueFrom.Default.String()
 			}
 			param.Value = wfv1.AnyStringPtr(val)
