@@ -88,16 +88,22 @@
             inherit nodeEnv;
           };
           pythonPkgs = pkgs.python312Packages;
-          mkdocs = with pythonPkgs; # upgrade this in the Makefile if upgraded here
+          # ProperDocs is the MkDocs fork we build the docs with (see the Makefile
+          # and docs/requirements.txt — keep the version aligned). It is not yet in
+          # nixpkgs, so we build it from its PyPI wheel; the Material theme,
+          # mkdocs-redirects and pymdown-extensions come from nixpkgs, which also
+          # pulls in the `mkdocs` package that those plugins import at runtime.
+          properdocs = with pythonPkgs; # upgrade this in the Makefile if upgraded here
             buildPythonPackage rec {
-              pname = "mkdocs";
-              version = "1.2.4";
+              pname = "properdocs";
+              version = "1.6.7";
+              format = "wheel";
               src = fetchPypi {
-                inherit pname version;
-                hash = "sha256-jnlwomGDSH/ioQQZQMb9A6oNvlVJ5Qw+cZT1Zcs8Z4o=";
+                inherit pname version format;
+                dist = "py3";
+                python = "py3";
+                hash = "sha256-b6DPouAb8zj2hIksilBs9w6oiufzR5yTO2+iAWgQHL0=";
               };
-              pyproject = true;
-              build-system = [ setuptools ];
               propagatedBuildInputs = [
                 mergedeep markdown click
                 pyyaml
@@ -105,45 +111,11 @@
                 jinja2
                 watchdog
                 importlib-metadata
-                typing-extensions
                 packaging
-                colorama
+                pathspec
+                platformdirs
+                markupsafe
                 ghp-import
-              ];
-              doCheck = false;
-            };
-          mkdocs-material-extensions = with pythonPkgs; # upgrade this in the Makefile if upgraded here
-            buildPythonPackage rec {
-              pname = "mkdocs_material_extensions";
-              version = "1.1.1";
-              src = fetchPypi {
-                inherit pname version;
-                hash = "sha256-nAA9px4swkk9kQI3RIxnLgDO/IANPWrpPS/GmXnjvZM=";
-              };
-              pyproject = true;
-              build-system = [ hatchling ];
-              dependencies = [ babel ];
-            };
-          mkdocs-material = with pythonPkgs; # upgrade this in the Makefile if upgraded here
-            buildPythonPackage rec {
-              pname = "mkdocs-material";
-              version = "8.1.9";
-              src = fetchPypi {
-                inherit pname version;
-                hash = "sha256-oVhzpeEWv0YVr0/O3IWgU3SSRkNlKGy6UDENlvsGaVg=";
-              };
-              pyproject = true;
-              build-system = [ setuptools ];
-              propagatedBuildInputs = [
-                mkdocs-material-extensions
-                pygments
-                markdown
-                mkdocs
-                pymdown-extensions
-                jinja2
-                colorama
-                regex
-                requests
               ];
               doCheck = false;
             };
@@ -153,9 +125,9 @@
             ps.mypy
             ps.autopep8
             ps.pip
-            mkdocs
-            mkdocs-material-extensions
-            mkdocs-material
+            properdocs
+            ps.mkdocs-material
+            ps.mkdocs-redirects
           ]);
 
           mkEnvSerialize = (envKey: envValue: "export ${envKey}=${envValue};");

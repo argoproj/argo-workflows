@@ -109,7 +109,7 @@ jobs:
               - .mlc_config.json
               - .cspell.json
               - _typos.toml
-              - mkdocs.yml
+              - properdocs.yml
               - go.mod
               - go.sum
             ui:
