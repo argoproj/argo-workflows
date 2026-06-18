@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"math"
 	"os"
 	"reflect"
@@ -358,7 +359,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		return
 	}
 
-	err = woc.substituteParamsInVolumes(ctx, woc.globalParams)
+	err = woc.substituteParamsInVolumes(ctx, template.ToAnyMap(woc.globalParams))
 	if err != nil {
 		woc.log.WithError(err).Error(ctx, "volumes global param substitution error")
 		woc.markWorkflowError(ctx, err)
@@ -3320,6 +3321,12 @@ func (woc *wfOperationCtx) getTemplateOutputsFromScope(ctx context.Context, tmpl
 				// The referenced step was skipped/omitted and produced no output; use the declared default.
 				val = param.ValueFrom.Default.String()
 			}
+			if val == nil {
+				// Skipped/omitted output with no default anywhere — neither the producer's
+				// valueFrom.default nor this aggregating parameter's own — is an unhandled absent
+				// optional: fail terminally, mirroring simple-tag substitution semantics.
+				return nil, argoerrors.Errorf(argoerrors.CodeBadRequest, "output parameter %q: %q is an absent optional (skipped/omitted node output with no default)", param.Name, param.ValueFrom.Parameter)
+			}
 			param.Value = wfv1.AnyStringPtr(val)
 			param.ValueFrom = nil
 			outputs.Parameters = append(outputs.Parameters, param)
@@ -3914,12 +3921,10 @@ func addRawOutputFields(node *wfv1.NodeStatus, tmpl *wfv1.Template) *wfv1.NodeSt
 	return node
 }
 
-func processItem(ctx context.Context, tmpl template.Template, name string, index int, item wfv1.Item, obj any, whenCondition string, globalScope map[string]string) (string, error) {
+func processItem(ctx context.Context, tmpl template.Template, name string, index int, item wfv1.Item, obj any, whenCondition string, globalScope map[string]any) (string, error) {
 	replaceMap := make(map[string]any)
 	// Start with the global scope
-	for k, v := range globalScope {
-		replaceMap[k] = v
-	}
+	maps.Copy(replaceMap, globalScope)
 	var newName string
 
 	switch item.GetType() {
@@ -3967,7 +3972,16 @@ func processItem(ctx context.Context, tmpl template.Template, name string, index
 	// The parameterised when will get handle by the task-expansion
 	proceed, err := shouldExecute(whenCondition)
 	if err == nil && !proceed {
-		newStepStr, err = tmpl.Replace(ctx, replaceMap, true)
+		// The step/task will never execute, so absent optionals (nil scope values for
+		// skipped/omitted outputs) in its body must not fail the group: drop them so their
+		// tags are left unresolved instead of erroring terminally.
+		lenientMap := make(map[string]any, len(replaceMap))
+		for k, v := range replaceMap {
+			if v != nil {
+				lenientMap[k] = v
+			}
+		}
+		newStepStr, err = tmpl.Replace(ctx, lenientMap, true)
 	} else {
 		newStepStr, err = tmpl.Replace(ctx, replaceMap, false)
 	}
@@ -4044,7 +4058,7 @@ func expandSequence(seq *wfv1.Sequence) ([]wfv1.Item, error) {
 	return items, nil
 }
 
-func (woc *wfOperationCtx) substituteParamsInVolumes(ctx context.Context, params map[string]string) error {
+func (woc *wfOperationCtx) substituteParamsInVolumes(ctx context.Context, params map[string]any) error {
 	if woc.volumes == nil {
 		return nil
 	}
@@ -4087,7 +4101,7 @@ func (woc *wfOperationCtx) createTemplateContext(ctx context.Context, scope wfv1
 	}
 }
 
-func (woc *wfOperationCtx) computeMetrics(ctx context.Context, metricList []*wfv1.Prometheus, localScope map[string]string, realTimeScope map[string]func() float64, realTimeOnly bool) {
+func (woc *wfOperationCtx) computeMetrics(ctx context.Context, metricList []*wfv1.Prometheus, localScope map[string]any, realTimeScope map[string]func() float64, realTimeOnly bool) {
 	for _, metricTmpl := range metricList {
 		// Don't process real time metrics after execution
 		if realTimeOnly && !metricTmpl.IsRealtime() {
@@ -4528,7 +4542,7 @@ func (woc *wfOperationCtx) substituteGlobalVariables(ctx context.Context, params
 		return err
 	}
 
-	resolveSpec, err := template.Replace(ctx, string(wfSpec), params, true)
+	resolveSpec, err := template.Replace(ctx, string(wfSpec), template.ToAnyMap(params), true)
 	if err != nil {
 		return err
 	}
