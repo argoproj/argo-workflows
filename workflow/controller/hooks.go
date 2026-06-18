@@ -68,7 +68,8 @@ func (woc *wfOperationCtx) executeTmplLifeCycleHook(ctx context.Context, scope *
 		if hook.Expression == "" {
 			return false, errors.Errorf(errors.CodeBadRequest, "Expression required for hook %s", hookNodeName)
 		}
-		execute, err := argoexpr.EvalBool(hook.Expression, env.GetFuncMap(template.EnvMap(woc.globalParams.Merge(scope.getParameters()))))
+		// nil-preserving view so expressions can apply `??` fallbacks to skipped/omitted outputs
+		execute, err := argoexpr.EvalBool(hook.Expression, env.GetFuncMap(scope.getParametersAny(woc.globalParams)))
 		if err != nil {
 			return false, err
 		}
@@ -79,6 +80,7 @@ func (woc *wfOperationCtx) executeTmplLifeCycleHook(ctx context.Context, scope *
 				outputs = lastChildNode.Outputs
 			}
 			woc.log.WithField("lifeCycleHook", hookName).WithField("node", hookNodeName).WithField("hookName", hookName).Info(ctx, "Running hooks")
+			hookStep := &wfv1.WorkflowStep{Template: hook.Template, TemplateRef: hook.TemplateRef}
 			resolvedArgs := hook.Arguments
 			var err error
 			if !resolvedArgs.IsEmpty() && outputs != nil {
@@ -87,7 +89,7 @@ func (woc *wfOperationCtx) executeTmplLifeCycleHook(ctx context.Context, scope *
 					return false, err
 				}
 			}
-			hookNode, err := woc.executeTemplate(ctx, hookNodeName, &wfv1.WorkflowStep{Template: hook.Template, TemplateRef: hook.TemplateRef}, tmplCtx, resolvedArgs, &executeTemplateOpts{
+			hookNode, err := woc.executeTemplate(ctx, hookNodeName, hookStep, tmplCtx, resolvedArgs, &executeTemplateOpts{
 				boundaryID: boundaryID,
 				nodeFlag:   &wfv1.NodeFlag{Hooked: true},
 			})
