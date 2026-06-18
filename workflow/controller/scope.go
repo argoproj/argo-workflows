@@ -44,12 +44,6 @@ func createScope(tmpl *wfv1.Template) *wfScope {
 	return scope
 }
 
-// getParameters returns a string-only snapshot of the scope, suitable for
-// passing into common.Parameters consumers.
-func (s *wfScope) getParameters() common.Parameters {
-	return common.Parameters(s.scope.AsStringMap())
-}
-
 // getParametersAny returns the scope's parameters merged over the given globals, preserving nil
 // (absent optional) values so expression tags can distinguish absent from empty (e.g. via `??`).
 // A simple tag resolving to a nil value is a terminal substitution error; arguments rescued by a
