@@ -24,8 +24,8 @@ var anyTmpl = []v.TemplateKind{v.TmplAll}
 // podKindsOnExit covers every body type that produces a real Pod plus the
 // exit-handler context (an onExit template that is itself one of those
 // pod-producing types inherits all pod-side variables: pod.name, mount
-// paths, …). Distinct from PodKinds because retry- and loop-context
-// variables must not leak into the exit handler.
+// paths, …). It is the bare pod-producing set plus TmplExitHandler;
+// retry- and loop-context variables must not leak into the exit handler.
 //
 // The pod-producing set mirrors Template.IsPodType() in pkg/apis/workflow/
 // v1alpha1: Container, ContainerSet, Script, Resource, and Data all run

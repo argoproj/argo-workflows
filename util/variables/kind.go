@@ -65,10 +65,6 @@ var AllTemplateKinds = []TemplateKind{
 	TmplCronWorkflow,
 }
 
-// PodKinds are the body types that produce a real Kubernetes Pod.
-// Mirrors `Template.IsPodType()` in pkg/apis/workflow/v1alpha1.
-var PodKinds = []TemplateKind{TmplContainer, TmplContainerSet, TmplScript, TmplResource, TmplData}
-
 // ReachablePhases returns the lifecycle phases that can actually fire from
 // inside a template body of the given kind. Used by the doc generator to
 // gate matrix `•` marks: a variable is only shown reachable from a
