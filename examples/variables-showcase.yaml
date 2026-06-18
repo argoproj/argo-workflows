@@ -161,7 +161,7 @@ spec:
             path: /tmp/payload.txt            # → outputs.artifacts.<n>.path
             globalName: prepared              # → workflow.outputs.artifacts.prepared
       script:
-        image: alpine:3.19
+        image: alpine:3.23
         command: [sh]
         source: |
           set -eu
@@ -233,12 +233,12 @@ spec:
             valueFrom:
               path: /work/echoed.txt
       script:
-        image: alpine:3.19
+        image: alpine:3.23
         command: [sh]
         source: |
-          # Loop aggregation parses each child's stdout as JSON
-          # (workflow/controller/operator.go:3627), so diagnostics go to
-          # stderr and the final line on stdout is a JSON value.
+          # Loop aggregation parses each child's stdout as JSON, so
+          # diagnostics go to stderr and the final line on stdout is a
+          # JSON value.
           {
             set -eu
             # `item` and `item.<key>` are referenced at the call site
@@ -290,7 +290,7 @@ spec:
           - name: seed-art                  # forwarded from main's inputs.artifacts.seed
             path: /tmp/seed.txt
       container:
-        image: alpine:3.19
+        image: alpine:3.23
         command: [sh, -c]
         args:
           - |
@@ -396,7 +396,7 @@ spec:
           - name: bundle
             path: /work/bundle.txt
       script:
-        image: alpine:3.19
+        image: alpine:3.23
         command: [sh]
         source: |
           # Same JSON-on-stdout convention as per-item: c-loop calls this
@@ -425,7 +425,7 @@ spec:
           - name: loop-all-params
           - name: loop-named-params
       container:
-        image: alpine:3.19
+        image: alpine:3.23
         command: [sh, -c]
         args:
           - |
@@ -440,7 +440,7 @@ spec:
     - name: svc-daemon
       daemon: true
       container:
-        image: alpine:3.19
+        image: alpine:3.23
         command: [sh, -c]
         args: ["nc -lk -p 9999 -e /bin/true"]
         readinessProbe:
@@ -484,7 +484,7 @@ spec:
           - name: global-art
             path: /tmp/global.txt
       container:
-        image: alpine:3.19
+        image: alpine:3.23
         command: [sh, -c]
         args:
           - |
