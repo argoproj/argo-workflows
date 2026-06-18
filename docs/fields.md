@@ -351,6 +351,8 @@ Workflow is the definition of a workflow resource
 
 - [`title-and-description-with-markdown.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/title-and-description-with-markdown.yaml)
 
+- [`variables-showcase.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/variables-showcase.yaml)
+
 - [`volumes-emptydir.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-emptydir.yaml)
 
 - [`volumes-existing.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-existing.yaml)
@@ -836,6 +838,8 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`title-and-description-with-markdown.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/title-and-description-with-markdown.yaml)
 
+- [`variables-showcase.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/variables-showcase.yaml)
+
 - [`volumes-emptydir.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-emptydir.yaml)
 
 - [`volumes-existing.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-existing.yaml)
@@ -1302,6 +1306,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`title-and-description-with-markdown.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/title-and-description-with-markdown.yaml)
 
+- [`variables-showcase.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/variables-showcase.yaml)
+
 - [`volumes-emptydir.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-emptydir.yaml)
 
 - [`volumes-existing.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-existing.yaml)
@@ -1584,6 +1590,8 @@ Arguments to a template
 
 - [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level.yaml)
 
+- [`variables-showcase.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/variables-showcase.yaml)
+
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
 
 - [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
@@ -1695,6 +1703,8 @@ Metrics are a list of metrics emitted from a Workflow/Template
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/custom-metrics.yaml)
 
 - [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-custom-metrics.yaml)
+
+- [`variables-showcase.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/variables-showcase.yaml)
 </details>
 
 ### Fields
@@ -1767,6 +1777,8 @@ RetryStrategy provides controls on how to retry a workflow step
 - [`steps-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-daemon-retry-strategy.yaml)
 
 - [`template-defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/template-defaults.yaml)
+
+- [`variables-showcase.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/variables-showcase.yaml)
 
 - [`templates.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/templates.yaml)
 </details>
@@ -2100,6 +2112,8 @@ Outputs hold parameters, artifacts, and results from a step
 
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/suspend-template-outputs.yaml)
 
+- [`variables-showcase.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/variables-showcase.yaml)
+
 - [`webhdfs-input-output-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/webhdfs-input-output-artifacts.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
@@ -2266,6 +2280,8 @@ Artifact indicates an artifact to place at a specified path
 - [`output-artifact-gcs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/output-artifact-gcs.yaml)
 
 - [`output-artifact-s3.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/output-artifact-s3.yaml)
+
+- [`variables-showcase.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/variables-showcase.yaml)
 
 - [`webhdfs-input-output-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/webhdfs-input-output-artifacts.yaml)
 
@@ -2476,6 +2492,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`synchronization-mutex-tmpl-level.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/synchronization-mutex-tmpl-level.yaml)
 
+- [`variables-showcase.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/variables-showcase.yaml)
+
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
 
 - [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
@@ -2553,6 +2571,8 @@ Prometheus is a prometheus metric to be emitted
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/custom-metrics.yaml)
 
 - [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-custom-metrics.yaml)
+
+- [`variables-showcase.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/variables-showcase.yaml)
 </details>
 
 ### Fields
@@ -2762,6 +2782,8 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 
 - [`resubmit.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resubmit.yaml)
 
+- [`variables-showcase.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/variables-showcase.yaml)
+
 - [`dag.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/dag.yaml)
 
 - [`templates.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/templates.yaml)
@@ -2786,6 +2808,8 @@ Data is a data template
 - [`data-transformations.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/data-transformations.yaml)
 
 - [`input-artifact-raw.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/input-artifact-raw.yaml)
+
+- [`variables-showcase.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/variables-showcase.yaml)
 </details>
 
 ### Fields
@@ -3069,6 +3093,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/suspend-template-outputs.yaml)
 
+- [`variables-showcase.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/variables-showcase.yaml)
+
 - [`webhdfs-input-output-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/webhdfs-input-output-artifacts.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
@@ -3211,6 +3237,8 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 - [`scripts-javascript.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/scripts-javascript.yaml)
 
 - [`scripts-python.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/scripts-python.yaml)
+
+- [`variables-showcase.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/variables-showcase.yaml)
 
 - [`withsequence-nested-result.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/withsequence-nested-result.yaml)
 
@@ -3411,6 +3439,8 @@ WorkflowStep is a reference to a template to execute in a series of step Note: C
 - [`template-on-exit.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/template-on-exit.yaml)
 
 - [`timeouts-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/timeouts-workflow.yaml)
+
+- [`variables-showcase.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/variables-showcase.yaml)
 
 - [`volumes-existing.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-existing.yaml)
 
@@ -3825,6 +3855,8 @@ RawArtifact allows raw string content to be placed as an artifact in a container
 - [`artifact-path-placeholders.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-path-placeholders.yaml)
 
 - [`input-artifact-raw.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/input-artifact-raw.yaml)
+
+- [`variables-showcase.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/variables-showcase.yaml)
 </details>
 
 ### Fields
@@ -3904,6 +3936,8 @@ ValueFrom describes a location in which to obtain the value to a parameter
 
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/suspend-template-outputs.yaml)
 
+- [`variables-showcase.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/variables-showcase.yaml)
+
 - [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
 
 - [`github-path-filter-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workfloweventbinding.yaml)
@@ -3949,6 +3983,8 @@ Gauge is a Gauge prometheus metric
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/custom-metrics.yaml)
 
 - [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-custom-metrics.yaml)
+
+- [`variables-showcase.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/variables-showcase.yaml)
 </details>
 
 ### Fields
@@ -3984,6 +4020,8 @@ MetricLabel is a single label for a prometheus metric
 - [`custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/custom-metrics.yaml)
 
 - [`dag-custom-metrics.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/dag-custom-metrics.yaml)
+
+- [`variables-showcase.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/variables-showcase.yaml)
 </details>
 
 ### Fields
@@ -4102,6 +4140,8 @@ ContainerSetRetryStrategy provides controls on how to retry a container set
 
 - [`template-defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/template-defaults.yaml)
 
+- [`variables-showcase.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/variables-showcase.yaml)
+
 - [`templates.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/templates.yaml)
 </details>
 
@@ -4181,6 +4221,8 @@ DAGTask represents a node in the graph during DAG execution Note: CEL validation
 - [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/pod-spec-from-previous-step.yaml)
 
 - [`resubmit.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resubmit.yaml)
+
+- [`variables-showcase.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/variables-showcase.yaml)
 
 - [`dag.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/dag.yaml)
 
@@ -4269,6 +4311,8 @@ DataSource sources external data into a data template
 - [`scripts-javascript.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/scripts-javascript.yaml)
 
 - [`scripts-python.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/scripts-python.yaml)
+
+- [`variables-showcase.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/variables-showcase.yaml)
 
 - [`withsequence-nested-result.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/withsequence-nested-result.yaml)
 
@@ -4401,6 +4445,8 @@ Item expands a single workflow step into multiple parallel steps The value of It
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/parameter-aggregation.yaml)
 
 - [`timeouts-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/timeouts-workflow.yaml)
+
+- [`variables-showcase.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/variables-showcase.yaml)
 </details>
 
 ## Sequence
@@ -4810,6 +4856,8 @@ _No description available_
 - [`secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/secrets.yaml)
 
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/suspend-template-outputs.yaml)
+
+- [`variables-showcase.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/variables-showcase.yaml)
 
 - [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
 
@@ -5234,6 +5282,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`title-and-description-with-markdown.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/title-and-description-with-markdown.yaml)
 
+- [`variables-showcase.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/variables-showcase.yaml)
+
 - [`volumes-emptydir.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-emptydir.yaml)
 
 - [`volumes-existing.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-existing.yaml)
@@ -5555,6 +5605,8 @@ _No description available_
 
 - [`template-defaults.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/template-defaults.yaml)
 
+- [`variables-showcase.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/variables-showcase.yaml)
+
 - [`templates.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/templates.yaml)
 </details>
 
@@ -5850,6 +5902,8 @@ A single application container that you want to run within a pod.
 - [`timeouts-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/timeouts-workflow.yaml)
 
 - [`title-and-description-with-markdown.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/title-and-description-with-markdown.yaml)
+
+- [`variables-showcase.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/variables-showcase.yaml)
 
 - [`volumes-emptydir.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-emptydir.yaml)
 
@@ -6871,6 +6925,8 @@ ImageVolumeSource represents a image volume resource.
 
 - [`title-and-description-with-markdown.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/title-and-description-with-markdown.yaml)
 
+- [`variables-showcase.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/variables-showcase.yaml)
+
 - [`volumes-emptydir.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-emptydir.yaml)
 
 - [`volumes-existing.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-existing.yaml)
@@ -7130,6 +7186,8 @@ EnvVarSource represents a source for the value of an EnvVar.
 
 - [`suspend-template-outputs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/suspend-template-outputs.yaml)
 
+- [`variables-showcase.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/variables-showcase.yaml)
+
 - [`event-consumer-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/event-consumer-workfloweventbinding.yaml)
 
 - [`github-path-filter-workfloweventbinding.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workfloweventbinding.yaml)
@@ -7233,6 +7291,12 @@ HTTPGetAction describes an action based on HTTP Get requests.
 ## TCPSocketAction
 
 TCPSocketAction describes an action based on opening a socket
+
+<details markdown>
+<summary>Examples with this field (click to open)</summary>
+
+- [`variables-showcase.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/variables-showcase.yaml)
+</details>
 
 ### Fields
 | Field Name | Field Type | Description   |
