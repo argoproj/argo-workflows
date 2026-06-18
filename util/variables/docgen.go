@@ -31,6 +31,8 @@ func GenerateMarkdown() string {
 	mdoc.PlainText("")
 	mdoc.PlainTextf("Auto-generated from `util/variables` via `GenerateMarkdown()`. %d variables registered.", len(all))
 	mdoc.PlainText("")
+	mdoc.PlainText("**Skipped and omitted nodes:** when a step or task is skipped (its `when` evaluates false) or omitted (its dependencies never ran), it produces no real outputs. Its `outputs.parameters.<name>`, `outputs.result` and `outputs.artifacts.<name>` variables are still populated with empty placeholder values, so downstream references resolve to empty rather than leaving the workflow stuck on an unresolvable variable.")
+	mdoc.PlainText("")
 	mdoc.PlainText("A runnable [`variables-showcase.yaml`](../../examples/variables-showcase.yaml) workflow that exercises these variables is embedded at the end of this page.")
 	mdoc.PlainText("")
 
