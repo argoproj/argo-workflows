@@ -8,14 +8,13 @@ import (
 	"os"
 	"reflect"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 
 	"github.com/expr-lang/expr"
 	"github.com/expr-lang/expr/ast"
-	"github.com/expr-lang/expr/file"
 	"github.com/expr-lang/expr/parser"
-	"github.com/expr-lang/expr/parser/lexer"
 
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/maps"
@@ -41,10 +40,33 @@ var (
 	}
 )
 
+// missingVarsInEnv returns the identifiers referenced by the expression that are absent from env
+// (a present-but-nil leaf counts as present). Errors if the expression cannot be parsed.
+func missingVarsInEnv(expression string, env map[string]any) ([]string, error) {
+	identifiers, err := getIdentifiers(expression)
+	if err != nil {
+		return nil, err
+	}
+	var missing []string
+	for _, id := range identifiers {
+		if !hasVarInEnv(env, id) {
+			missing = append(missing, id)
+		}
+	}
+	return missing, nil
+}
+
+// anyVarNotInEnv returns the first late-binding variable (variablesToCheck) that the expression
+// references but env lacks, or nil if there is none.
 func anyVarNotInEnv(expression string, env map[string]any) *string {
-	for _, variable := range variablesToCheck {
-		if hasVariableInExpression(expression, variable) && !hasVarInEnv(env, variable) {
-			return &variable
+	missing, err := missingVarsInEnv(expression, env)
+	if err != nil {
+		// Unparseable expressions can't be checked; compile/run will surface the error.
+		return nil
+	}
+	for _, id := range missing {
+		if slices.Contains(variablesToCheck, id) {
+			return &id
 		}
 	}
 	return nil
@@ -59,17 +81,10 @@ func expressionReplaceStrict(ctx context.Context, w io.Writer, expression string
 		return expressionReplaceCore(ctx, w, expression, env, false)
 	}
 
-	identifiers, err := getIdentifiers(unmarshalledExpression)
+	missingIdentifiers, err := missingVarsInEnv(unmarshalledExpression, env)
 	if err != nil {
 		// If we can't parse, we can't check variables. Fallback to expressionReplaceCore(false) to report syntax error.
 		return expressionReplaceCore(ctx, w, expression, env, false)
-	}
-
-	missingIdentifiers := []string{}
-	for _, id := range identifiers {
-		if !hasVarInEnv(env, id) {
-			missingIdentifiers = append(missingIdentifiers, id)
-		}
 	}
 
 	for _, id := range missingIdentifiers {
@@ -227,57 +242,6 @@ func EnvMap(replaceMap map[string]string) map[string]any {
 		envMap[k] = v
 	}
 	return envMap
-}
-
-func searchTokens(haystack []lexer.Token, needle []lexer.Token) bool {
-	if len(needle) > len(haystack) {
-		return false
-	}
-	if len(needle) == 0 {
-		return true
-	}
-outer:
-	for i := 0; i <= len(haystack)-len(needle); i++ {
-		for j := range needle {
-			if haystack[i+j].String() != needle[j].String() {
-				continue outer
-			}
-		}
-		return true
-	}
-	return false
-}
-
-func filterEOF(toks []lexer.Token) []lexer.Token {
-	newToks := []lexer.Token{}
-	for _, tok := range toks {
-		if tok.Kind != lexer.EOF {
-			newToks = append(newToks, tok)
-		}
-	}
-	return newToks
-}
-
-// hasVariableInExpression checks if an expression contains a variable.
-// This function is somewhat cursed and I have attempted my best to
-// remove this curse, but it still exists.
-// The strings.Contains is needed because the lexer doesn't do
-// any whitespace processing (workflow .status will be seen as workflow.status)
-func hasVariableInExpression(expression, variable string) bool {
-	if !strings.Contains(expression, variable) {
-		return false
-	}
-	tokens, err := lexer.Lex(file.NewSource(expression))
-	if err != nil {
-		return false
-	}
-	variableTokens, err := lexer.Lex(file.NewSource(variable))
-	if err != nil {
-		return false
-	}
-	variableTokens = filterEOF(variableTokens)
-
-	return searchTokens(tokens, variableTokens)
 }
 
 // hasVarInEnv checks if a parameter is in env or not

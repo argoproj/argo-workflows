@@ -14,6 +14,32 @@ This variable controlled whether to write workflow updates back to the informer 
 Alternative mechanisms now prevent reprocessing, making both behaviors unnecessary.
 If you have this variable set, it can be safely removed from your configuration.
 
+## Upgrading to v4.0.7 and v3.7.16
+
+### Outputs of skipped and omitted steps and tasks now resolve
+
+In v4.0.6, v3.7.15, and earlier, referencing an output parameter of a step or task that was Skipped (its `when` condition was false) or Omitted (its `depends` condition was not satisfied) could leave the consumer stuck: simple tag references requeued forever and expression references failed.
+
+These references now resolve deterministically.
+If the producing template declares a `valueFrom.default` for the output, references resolve to that default.
+Otherwise the output is treated as absent: an argument that is purely such a reference lets the consuming input's `default` apply, and expression tags see `nil` so `??` fallbacks work.
+A reference that handles the absence in none of these ways — a simple tag such as `{{tasks.producer.outputs.parameters.msg}}` with no consumer input default, or an expression that does not handle the `nil` (for example a bare `{{= tasks.producer.outputs.parameters.msg}}` without `??`) — fails the node with a terminal error instead of leaving the workflow stuck.
+To handle the absence, declare a `valueFrom.default` on the producer's output, a `default` on the consuming input, or use a `??` expression fallback.
+This applies uniformly wherever such a reference appears, including `spec.volumes` and artifact `subPath` fields; only steps and tasks whose own `when` evaluates to false tolerate unhandled absent references, since they never run.
+
+See [Outputs of Skipped and Omitted Nodes](variables.md#outputs-of-skipped-and-omitted-nodes) for the full rules.
+
+There is no configuration flag or environment variable to opt out: the new behavior applies to every workflow on upgrade.
+To keep the old empty-string behavior, handle the absence as described above (a producer `valueFrom.default`, a consumer input `default`, or a `??` fallback) before upgrading.
+
+### Template output parameter expressions that evaluate to `nil` now fail
+
+This change also applies when no node was skipped or omitted.
+A template `outputs.parameters` entry whose `valueFrom.expression` evaluates to `nil` previously produced the literal string `<nil>`.
+It now fails the node with a terminal error unless that output parameter declares a `valueFrom.default`.
+Expressions can return `nil` even when the referenced steps all ran, for example a missing map key (`someMap['absent']`) or a `find()` with no match.
+To keep a value, declare a `valueFrom.default` on the output parameter, or rewrite the expression to handle `nil` (for example with `??`).
+
 ## Upgrading to v4.0
 
 ### Deprecations
