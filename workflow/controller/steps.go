@@ -656,8 +656,6 @@ func (woc *wfOperationCtx) expandStep(ctx context.Context, step wfv1.WorkflowSte
 }
 
 func (woc *wfOperationCtx) prepareDefaultMetricScope() (map[string]any, map[string]func() float64) {
-	
-
 	localScope := template.ToAnyMap(woc.globalParams())
 	localScope[varkeys.MetricDuration.Template()] = "0"
 	localScope[varkeys.MetricStatus.Template()] = string(wfv1.NodePending)
