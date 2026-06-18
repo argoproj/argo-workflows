@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	stderrors "errors"
 	"fmt"
+	"maps"
 	"math"
 	"os"
 	"reflect"
@@ -343,7 +344,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		return
 	}
 
-	err = woc.substituteParamsInVolumes(woc.globalParams)
+	err = woc.substituteParamsInVolumes(template.ToAnyMap(woc.globalParams))
 	if err != nil {
 		woc.log.WithError(err).Error("volumes global param substitution error")
 		woc.markWorkflowError(ctx, err)
@@ -3182,14 +3183,22 @@ func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Out
 			if param.ValueFrom == nil {
 				return nil, fmt.Errorf("output parameters must have a valueFrom specified")
 			}
-			val, err := scope.resolveParameter(param.ValueFrom)
+			val, skipped, err := scope.resolveParameter(param.ValueFrom)
 			if err != nil {
 				// We have a default value to use instead of returning an error
-				if param.ValueFrom.Default != nil {
-					val = param.ValueFrom.Default.String()
-				} else {
+				if param.ValueFrom.Default == nil {
 					return nil, err
 				}
+				val = param.ValueFrom.Default.String()
+			} else if skipped && param.ValueFrom.Default != nil {
+				// The referenced step was skipped/omitted and produced no output; use the declared default.
+				val = param.ValueFrom.Default.String()
+			}
+			if val == nil {
+				// Skipped/omitted output with no default anywhere — neither the producer's
+				// valueFrom.default nor this aggregating parameter's own — is an unhandled absent
+				// optional: fail terminally, mirroring simple-tag substitution semantics.
+				return nil, errors.Errorf(errors.CodeBadRequest, "output parameter %q: %q is an absent optional (skipped/omitted node output with no default)", param.Name, param.ValueFrom.Parameter)
 			}
 			param.Value = wfv1.AnyStringPtr(val)
 			param.ValueFrom = nil
@@ -3792,17 +3801,18 @@ func addRawOutputFields(node *wfv1.NodeStatus, tmpl *wfv1.Template) *wfv1.NodeSt
 	return node
 }
 
-func processItem(tmpl template.Template, name string, index int, item wfv1.Item, obj interface{}, whenCondition string, globalScope map[string]string) (string, error) {
+func processItem(tmpl template.Template, name string, index int, item wfv1.Item, obj interface{}, whenCondition string, globalScope map[string]any) (string, error) {
 	replaceMap := make(map[string]interface{})
 	// Start with the global scope
-	for k, v := range globalScope {
-		replaceMap[k] = v
-	}
+	maps.Copy(replaceMap, globalScope)
 	var newName string
 
 	switch item.GetType() {
-	case wfv1.String, wfv1.Number, wfv1.Bool:
+	case wfv1.Number, wfv1.Bool:
 		replaceMap["item"] = fmt.Sprintf("%v", item)
+		newName = generateNodeName(name, index, item)
+	case wfv1.String:
+		replaceMap["item"] = item.GetStrVal()
 		newName = generateNodeName(name, index, item)
 	case wfv1.Map:
 		// Handle the case when withItems is a list of maps.
@@ -3843,7 +3853,16 @@ func processItem(tmpl template.Template, name string, index int, item wfv1.Item,
 	// The parameterised when will get handle by the task-expansion
 	proceed, err := shouldExecute(whenCondition)
 	if err == nil && !proceed {
-		newStepStr, err = tmpl.Replace(replaceMap, true)
+		// The step/task will never execute, so absent optionals (nil scope values for
+		// skipped/omitted outputs) in its body must not fail the group: drop them so their
+		// tags are left unresolved instead of erroring terminally.
+		lenientMap := make(map[string]any, len(replaceMap))
+		for k, v := range replaceMap {
+			if v != nil {
+				lenientMap[k] = v
+			}
+		}
+		newStepStr, err = tmpl.Replace(lenientMap, true)
 	} else {
 		newStepStr, err = tmpl.Replace(replaceMap, false)
 	}
@@ -3919,7 +3938,7 @@ func expandSequence(seq *wfv1.Sequence) ([]wfv1.Item, error) {
 	return items, nil
 }
 
-func (woc *wfOperationCtx) substituteParamsInVolumes(params map[string]string) error {
+func (woc *wfOperationCtx) substituteParamsInVolumes(params map[string]any) error {
 	if woc.volumes == nil {
 		return nil
 	}
@@ -3962,7 +3981,7 @@ func (woc *wfOperationCtx) createTemplateContext(scope wfv1.ResourceScope, resou
 	}
 }
 
-func (woc *wfOperationCtx) computeMetrics(ctx context.Context, metricList []*wfv1.Prometheus, localScope map[string]string, realTimeScope map[string]func() float64, realTimeOnly bool) {
+func (woc *wfOperationCtx) computeMetrics(ctx context.Context, metricList []*wfv1.Prometheus, localScope map[string]any, realTimeScope map[string]func() float64, realTimeOnly bool) {
 	for _, metricTmpl := range metricList {
 
 		// Don't process real time metrics after execution
@@ -4406,7 +4425,7 @@ func (woc *wfOperationCtx) substituteGlobalVariables(params common.Parameters) e
 		return err
 	}
 
-	resolveSpec, err := template.Replace(string(wfSpec), params, true)
+	resolveSpec, err := template.Replace(string(wfSpec), template.ToAnyMap(params), true)
 	if err != nil {
 		return err
 	}

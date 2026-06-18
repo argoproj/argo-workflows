@@ -23,7 +23,8 @@ func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, exitHook *wfv1.Lif
 		execute := true
 		var err error
 		if exitHook.Expression != "" {
-			execute, err = argoexpr.EvalBool(exitHook.Expression, env.GetFuncMap(template.EnvMap(woc.globalParams.Merge(scope.getParameters()))))
+			// nil-preserving view so expressions can apply `??` fallbacks to skipped/omitted outputs
+			execute, err = argoexpr.EvalBool(exitHook.Expression, env.GetFuncMap(scope.getParametersAny(woc.globalParams)))
 			if err != nil {
 				return true, nil, err
 			}
@@ -31,6 +32,7 @@ func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, exitHook *wfv1.Lif
 		if execute {
 			woc.log.WithField("lifeCycleHook", exitHook).Infof("Running OnExit handler")
 			onExitNodeName := common.GenerateOnExitNodeName(parentNode.Name)
+			hookStep := &wfv1.WorkflowStep{Template: exitHook.Template, TemplateRef: exitHook.TemplateRef}
 			resolvedArgs := exitHook.Arguments
 			if !resolvedArgs.IsEmpty() {
 				resolvedArgs, err = woc.resolveExitTmplArgument(exitHook.Arguments, prefix, outputs, scope)
@@ -39,7 +41,7 @@ func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, exitHook *wfv1.Lif
 				}
 
 			}
-			onExitNode, err := woc.executeTemplate(ctx, onExitNodeName, &wfv1.WorkflowStep{Template: exitHook.Template, TemplateRef: exitHook.TemplateRef}, tmplCtx, resolvedArgs, &executeTemplateOpts{
+			onExitNode, err := woc.executeTemplate(ctx, onExitNodeName, hookStep, tmplCtx, resolvedArgs, &executeTemplateOpts{
 				boundaryID:     boundaryID,
 				onExitTemplate: true,
 				nodeFlag:       &wfv1.NodeFlag{Hooked: true},
@@ -68,11 +70,18 @@ func (woc *wfOperationCtx) resolveExitTmplArgument(args wfv1.Arguments, prefix s
 		}
 	}
 
+	// Mirror task/step argument handling: a pure reference to a skipped/omitted output with no
+	// producer default is replaced with a sentinel BEFORE substitution; common.ProcessArgs treats
+	// it as unsupplied so the hook template's own input default applies (or fails terminally).
+	scope.markAbsentOptionalArgs(&args)
+
 	stepBytes, err := json.Marshal(args)
 	if err != nil {
 		return args, err
 	}
-	newStepStr, err := template.Replace(string(stepBytes), woc.globalParams.Merge(scope.getParameters()), true)
+	// nil-preserving view (and no strict prefixes, preserving the allow-unresolved behavior) so
+	// expression tags can apply `??` fallbacks to skipped/omitted outputs, mirroring task/step args
+	newStepStr, err := template.ReplaceStrictAny(string(stepBytes), scope.getParametersAny(woc.globalParams), nil)
 	if err != nil {
 		return args, err
 	}

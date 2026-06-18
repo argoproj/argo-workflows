@@ -3081,7 +3081,7 @@ func TestSuspendTimeoutWithInputDefaults(t *testing.T) {
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-	ctx := t.Context()
+	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(suspendWithInputDefaultsTemplate)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
@@ -5667,7 +5667,7 @@ func TestReferenceModeBlocksDisallowedFields(t *testing.T) {
 			TemplateReferencing: config.TemplateReferencingStrict,
 		}
 		woc := newWorkflowOperationCtx(wfWithPatch, controller)
-		woc.operate(t.Context())
+		woc.operate(context.Background())
 		assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
 		assert.Contains(t, woc.wf.Status.Message, "PodSpecPatch")
 		assert.Contains(t, woc.wf.Status.Message, "not permitted")
@@ -5683,7 +5683,7 @@ func TestReferenceModeBlocksDisallowedFields(t *testing.T) {
 			TemplateReferencing: config.TemplateReferencingSecure,
 		}
 		woc := newWorkflowOperationCtx(wfWithPatch, controller)
-		woc.operate(t.Context())
+		woc.operate(context.Background())
 		assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
 		assert.Contains(t, woc.wf.Status.Message, "PodSpecPatch")
 		assert.Contains(t, woc.wf.Status.Message, "not permitted")
@@ -5699,7 +5699,7 @@ func TestReferenceModeBlocksDisallowedFields(t *testing.T) {
 			TemplateReferencing: config.TemplateReferencingStrict,
 		}
 		woc := newWorkflowOperationCtx(wfCopy, controller)
-		woc.operate(t.Context())
+		woc.operate(context.Background())
 		assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
 		assert.Contains(t, woc.wf.Status.Message, "ServiceAccountName")
 	})
@@ -5714,7 +5714,7 @@ func TestReferenceModeBlocksDisallowedFields(t *testing.T) {
 			TemplateReferencing: config.TemplateReferencingStrict,
 		}
 		woc := newWorkflowOperationCtx(wfCopy, controller)
-		woc.operate(t.Context())
+		woc.operate(context.Background())
 		assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
 		assert.Contains(t, woc.wf.Status.Message, "SecurityContext")
 	})
@@ -5729,7 +5729,7 @@ func TestReferenceModeBlocksDisallowedFields(t *testing.T) {
 			TemplateReferencing: config.TemplateReferencingStrict,
 		}
 		woc := newWorkflowOperationCtx(wfCopy, controller)
-		woc.operate(t.Context())
+		woc.operate(context.Background())
 		assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
 		assert.Contains(t, woc.wf.Status.Message, "Templates")
 	})
@@ -5744,7 +5744,7 @@ func TestReferenceModeBlocksDisallowedFields(t *testing.T) {
 			TemplateReferencing: config.TemplateReferencingStrict,
 		}
 		woc := newWorkflowOperationCtx(wfCopy, controller)
-		woc.operate(t.Context())
+		woc.operate(context.Background())
 		assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
 		assert.Contains(t, woc.wf.Status.Message, "Volumes")
 	})
@@ -5760,7 +5760,7 @@ func TestReferenceModeBlocksDisallowedFields(t *testing.T) {
 			TemplateReferencing: config.TemplateReferencingStrict,
 		}
 		woc := newWorkflowOperationCtx(wfCopy, controller)
-		woc.operate(t.Context())
+		woc.operate(context.Background())
 		assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
 		assert.Contains(t, woc.wf.Status.Message, "HostNetwork")
 	})
@@ -5773,7 +5773,7 @@ func TestReferenceModeBlocksDisallowedFields(t *testing.T) {
 
 		controller.Config.WorkflowRestrictions = nil
 		woc := newWorkflowOperationCtx(wfWithPatch, controller)
-		woc.operate(t.Context())
+		woc.operate(context.Background())
 		assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	})
 
@@ -5789,7 +5789,7 @@ func TestReferenceModeBlocksDisallowedFields(t *testing.T) {
 			TemplateReferencing: config.TemplateReferencingStrict,
 		}
 		woc := newWorkflowOperationCtx(wfCopy, controller)
-		woc.operate(t.Context())
+		woc.operate(context.Background())
 		// Shutdown=Terminate means it won't reach Running, but it shouldn't be Error
 		assert.NotEqual(t, wfv1.WorkflowError, woc.wf.Status.Phase)
 	})
@@ -5802,7 +5802,7 @@ func TestReferenceModeBlocksDisallowedFields(t *testing.T) {
 			TemplateReferencing: config.TemplateReferencingStrict,
 		}
 		woc := newWorkflowOperationCtx(wf, controller)
-		woc.operate(t.Context())
+		woc.operate(context.Background())
 		assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	})
 }
@@ -7240,7 +7240,7 @@ func Test_processItem(t *testing.T) {
 
 	var newTask wfv1.DAGTask
 	tmpl, _ := template.NewTemplate(string(taskBytes))
-	newTaskName, err := processItem(tmpl, "task-name", 0, items[0], &newTask, "", map[string]string{})
+	newTaskName, err := processItem(tmpl, "task-name", 0, items[0], &newTask, "", map[string]any{})
 	require.NoError(t, err)
 	assert.Equal(t, `task-name(0:json:{"list":[0,"1"],"number":2,"string":"foo"},list:[0,"1"],number:2,string:foo)`, newTaskName)
 }
@@ -12800,7 +12800,7 @@ func TestWithSequenceExpressionPreservesGlobalScope(t *testing.T) {
 		woc := newWorkflowOperationCtx(wf, controller)
 
 		// Operate to trigger step expansion
-		woc.operate(t.Context())
+		woc.operate(context.Background())
 
 		// The key test is that the workflow should be Running (not Failed)
 		// If the expression failed, the workflow would be in Failed state

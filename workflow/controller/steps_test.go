@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -696,8 +697,8 @@ spec:
 // This mirrors a real-world pattern where a dynamic list parameter controls which
 // withParam items execute.
 func TestStepsWhenExprWithParamFilter(t *testing.T) {
-	ctx := t.Context()
-	cancel, controller := newController(ctx)
+	ctx := context.Background()
+	cancel, controller := newController()
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
@@ -732,4 +733,219 @@ func TestStepsWhenExprWithParamFilter(t *testing.T) {
 	node3 := woc.wf.Status.Nodes.FindByDisplayName("fst(3:name:fourth)")
 	require.NotNil(t, node3)
 	assert.Equal(t, wfv1.NodePending, node3.Phase)
+}
+
+var stepsSkippedOutputDefault = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: steps-skipped-output-default-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: producer
+        template: produce
+        when: "false"
+    - - name: consumer
+        template: consume
+        arguments:
+          parameters:
+          - name: in
+            value: "{{steps.producer.outputs.parameters.msg}}"
+  - name: produce
+    outputs:
+      parameters:
+      - name: msg
+        valueFrom:
+          path: /tmp/out.txt
+          default: "default-from-producer"
+    container:
+      image: alpine:3.23
+      command: [sh, -c]
+      args: ["echo hello > /tmp/out.txt"]
+  - name: consume
+    inputs:
+      parameters:
+      - name: in
+    container:
+      image: alpine:3.23
+      command: [echo, "{{inputs.parameters.in}}"]
+`
+
+// TestStepsSkippedOutputDefault verifies that when a step is skipped and its template declares an
+// output parameter with a valueFrom.default, a downstream step referencing that output in its INPUT
+// receives the producer's declared default instead of an empty string.
+func TestStepsSkippedOutputDefault(t *testing.T) {
+	ctx := context.Background()
+	cancel, controller := newController()
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	wf := wfv1.MustUnmarshalWorkflow(stepsSkippedOutputDefault)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+
+	producer := woc.wf.Status.Nodes.FindByDisplayName("producer")
+	require.NotNil(t, producer)
+	require.Equal(t, wfv1.NodeSkipped, producer.Phase)
+
+	consumer := woc.wf.Status.Nodes.FindByDisplayName("consumer")
+	require.NotNil(t, consumer, "consumer should be scheduled even though producer was skipped")
+	require.NotNil(t, consumer.Inputs)
+	in := consumer.Inputs.GetParameterByName("in")
+	require.NotNil(t, in)
+	require.NotNil(t, in.Value)
+	assert.Equal(t, "default-from-producer", in.Value.String())
+}
+
+var skippedRefConsumeWorkflowTemplate = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: skipped-ref-consume
+  namespace: default
+spec:
+  templates:
+  - name: consume
+    inputs:
+      parameters:
+      - name: in
+        default: "FALLBACK"
+    container:
+      image: alpine:3.23
+      command: [echo, "{{inputs.parameters.in}}"]
+`
+
+var stepsSkippedRefDynamicTemplateName = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: steps-skipped-ref-dynamic-template
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: producer
+        template: produce
+        when: "false"
+    - - name: consumer
+        templateRef:
+          name: "{{item.wftmpl}}"
+          template: "{{item.tmpl}}"
+        withItems:
+        - { wftmpl: "skipped-ref-consume", tmpl: "consume" }
+        arguments:
+          parameters:
+          - name: in
+            value: "{{steps.producer.outputs.parameters.msg}}"
+  - name: produce
+    outputs:
+      parameters:
+      - name: msg
+        valueFrom:
+          path: /tmp/out.txt
+    container:
+      image: alpine:3.23
+      command: [sh, -c]
+      args: ["echo hello > /tmp/out.txt"]
+`
+
+// TestStepsSkippedRefDynamicTemplateName verifies that a step whose templateRef is itself templated
+// ("{{item.*}}", resolved only at expansion) is still rescued by the consumed template's input
+// default when an argument references a skipped defaultless output: the argument is marked with the
+// absent-optional sentinel before substitution and ProcessArgs interprets it at consumption time,
+// when the dynamic templateRef has been resolved.
+func TestStepsSkippedRefDynamicTemplateName(t *testing.T) {
+	ctx := context.Background()
+	cancel, controller := newController(wfv1.MustUnmarshalWorkflow(stepsSkippedRefDynamicTemplateName), wfv1.MustUnmarshalWorkflowTemplate(skippedRefConsumeWorkflowTemplate))
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(wfv1.MustUnmarshalWorkflow(stepsSkippedRefDynamicTemplateName), controller)
+	woc.operate(ctx)
+
+	producer := woc.wf.Status.Nodes.FindByDisplayName("producer")
+	require.NotNil(t, producer)
+	require.Equal(t, wfv1.NodeSkipped, producer.Phase)
+
+	var consumer *wfv1.NodeStatus
+	for _, node := range woc.wf.Status.Nodes {
+		assert.NotEqual(t, wfv1.NodeError, node.Phase, "node %q should not error: %s", node.DisplayName, node.Message)
+		if strings.HasPrefix(node.DisplayName, "consumer(") {
+			n := node
+			consumer = &n
+		}
+	}
+	require.NotNil(t, consumer, "consumer should be scheduled even though producer was skipped")
+	require.NotNil(t, consumer.Inputs)
+	in := consumer.Inputs.GetParameterByName("in")
+	require.NotNil(t, in)
+	require.NotNil(t, in.Value)
+	assert.Equal(t, "FALLBACK", in.Value.String())
+}
+
+var stepsWhenFalseSkippedRefDrop = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: steps-when-false-skipped-ref-drop
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: producer
+        template: produce
+        when: "false"
+    - - name: consumer
+        templateRef:
+          name: "{{item.wftmpl}}"
+          template: "{{item.tmpl}}"
+        withItems:
+        - { wftmpl: "skipped-ref-consume", tmpl: "consume" }
+        when: "false"
+        arguments:
+          parameters:
+          - name: in
+            value: "{{steps.producer.outputs.parameters.msg}}"
+  - name: produce
+    outputs:
+      parameters:
+      - name: msg
+        valueFrom:
+          path: /tmp/out.txt
+    container:
+      image: alpine:3.23
+      command: [sh, -c]
+      args: ["echo hello > /tmp/out.txt"]
+`
+
+// TestStepsWhenFalseSkipsDropPass verifies that a step whose when-clause evaluates to false does
+// not fail on an absent-optional argument: a when-false step never substitutes its body (and item
+// expansion strips nils for never-executing steps), so the absent optional is never hit and the
+// step group proceeds with the step Skipped.
+func TestStepsWhenFalseSkipsDropPass(t *testing.T) {
+	ctx := context.Background()
+	cancel, controller := newController(wfv1.MustUnmarshalWorkflow(stepsWhenFalseSkippedRefDrop), wfv1.MustUnmarshalWorkflowTemplate(skippedRefConsumeWorkflowTemplate))
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(wfv1.MustUnmarshalWorkflow(stepsWhenFalseSkippedRefDrop), controller)
+	woc.operate(ctx)
+
+	producer := woc.wf.Status.Nodes.FindByDisplayName("producer")
+	require.NotNil(t, producer)
+	require.Equal(t, wfv1.NodeSkipped, producer.Phase)
+
+	for _, node := range woc.wf.Status.Nodes {
+		assert.NotEqual(t, wfv1.NodeError, node.Phase, "node %q should not error: %s", node.DisplayName, node.Message)
+	}
+	assert.NotEqual(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+	assert.NotEqual(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 }

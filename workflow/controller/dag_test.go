@@ -208,6 +208,52 @@ func TestArtifactResolutionWhenSkippedDAG(t *testing.T) {
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
+func TestExpandTaskWithParam(t *testing.T) {
+	task := wfv1.DAGTask{
+		Name:     "fanout-param",
+		Template: "tmpl",
+		Arguments: wfv1.Arguments{
+			Parameters: []wfv1.Parameter{{
+				Name:  "msg",
+				Value: wfv1.AnyStringPtr("{{item}}"),
+			}},
+		},
+		WithParam: `[1234, "foo\tbar", true, []]`,
+	}
+
+	expanded, err := expandTask(task, map[string]any{})
+	require.NoError(t, err)
+	require.Len(t, expanded, 4)
+
+	expectedExpandedTasks := []struct {
+		Name      string
+		Parameter string
+	}{
+		{
+			Name:      "fanout-param(0:1234)",
+			Parameter: "1234",
+		},
+		{
+			Name:      `fanout-param(1:foo\tbar)`,
+			Parameter: "foo\tbar",
+		},
+		{
+			Name:      "fanout-param(2:true)",
+			Parameter: "true",
+		},
+		{
+			Name:      "fanout-param(3:[])",
+			Parameter: "[]",
+		},
+	}
+
+	for i, expected := range expectedExpandedTasks {
+		assert.Equal(t, expected.Name, expanded[i].Name)
+		assert.Equal(t, "tmpl", expanded[i].Template)
+		assert.Equal(t, expected.Parameter, expanded[i].Arguments.Parameters[0].Value.String())
+	}
+}
+
 func TestEvaluateDependsLogic(t *testing.T) {
 	testTasks := []wfv1.DAGTask{
 		{
@@ -3982,8 +4028,8 @@ spec:
 // Currently fails because SubstituteParams evaluates all expression templates in the entire DAG
 // template before individual task "when" conditions are checked.
 func TestDAGWhenExprSkipEval(t *testing.T) {
-	ctx := t.Context()
-	cancel, controller := newController(ctx)
+	ctx := context.Background()
+	cancel, controller := newController()
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
@@ -4111,22 +4157,423 @@ status:
       message: when '"false" == "true"' evaluated false
 `
 
-// TestDAGSkippedOutputRef verifies that a DAG task can reference outputs from a skipped
-// dependency without causing a requeue loop.
+// TestDAGSkippedOutputRef verifies that a DAG task referencing the output of a skipped dependency
+// does not cause a requeue loop: the reference is an absent optional (no producer valueFrom.default,
+// no consumer input default, no `??` fallback), so the task fails terminally with a clear message
+// instead of either requeuing forever or silently receiving an empty string.
 // Scenario: stage-a succeeds with output parameters, stage-b is skipped (when evaluates false),
-// stage-c depends on both and references outputs from both. stage-c should still be scheduled
-// even though tasks.stage-b.outputs.parameters.output-message is unresolvable.
+// stage-c depends on both and references outputs from both.
 func TestDAGSkippedOutputRef(t *testing.T) {
-	ctx := t.Context()
+	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(dagSkippedOutputRef)
-	cancel, controller := newController(ctx, wf)
+	cancel, controller := newController(wf)
 	defer cancel()
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate(ctx)
 
-	// stage-c should be created and pending, not stuck in a requeue loop
+	// stage-c must resolve to a terminal error, not get stuck in a requeue loop
 	nodeC := woc.wf.Status.Nodes.FindByDisplayName("stage-c")
 	require.NotNil(t, nodeC, "stage-c should be created even though stage-b was skipped")
-	assert.Equal(t, wfv1.NodePending, nodeC.Phase)
+	assert.Equal(t, wfv1.NodeError, nodeC.Phase, "an unhandled absent optional must fail the task terminally")
+	assert.Contains(t, nodeC.Message, "absent optional")
+}
+
+var dagSkippedOutputDefault = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-skipped-output-default-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: producer
+        template: produce
+        when: "false"
+      - name: consumer
+        template: consume
+        depends: "producer.Succeeded || producer.Skipped"
+        arguments:
+          parameters:
+          - name: in
+            value: "{{tasks.producer.outputs.parameters.msg}}"
+  - name: produce
+    outputs:
+      parameters:
+      - name: msg
+        valueFrom:
+          path: /tmp/out.txt
+          default: "default-from-producer"
+    container:
+      image: alpine:3.23
+      command: [sh, -c]
+      args: ["echo hello > /tmp/out.txt"]
+  - name: consume
+    inputs:
+      parameters:
+      - name: in
+    container:
+      image: alpine:3.23
+      command: [echo, "{{inputs.parameters.in}}"]
+`
+
+// TestDAGSkippedOutputDefault verifies that when a DAG task is skipped and its template declares
+// an output parameter with a valueFrom.default, a downstream task referencing that output in its
+// INPUT receives the producer's declared default instead of an empty string.
+func TestDAGSkippedOutputDefault(t *testing.T) {
+	ctx := context.Background()
+	cancel, controller := newController()
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	wf := wfv1.MustUnmarshalWorkflow(dagSkippedOutputDefault)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+
+	producer := woc.wf.Status.Nodes.FindByDisplayName("producer")
+	require.NotNil(t, producer)
+	require.Equal(t, wfv1.NodeSkipped, producer.Phase)
+
+	consumer := woc.wf.Status.Nodes.FindByDisplayName("consumer")
+	require.NotNil(t, consumer, "consumer should be scheduled even though producer was skipped")
+	require.NotNil(t, consumer.Inputs)
+	in := consumer.Inputs.GetParameterByName("in")
+	require.NotNil(t, in)
+	require.NotNil(t, in.Value)
+	assert.Equal(t, "default-from-producer", in.Value.String())
+}
+
+var dagSkippedOutputDefaultAggregate = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-skipped-output-default-aggregate
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: producer
+        template: produce
+        when: "false"
+    outputs:
+      parameters:
+      - name: result
+        valueFrom:
+          parameter: "{{tasks.producer.outputs.parameters.msg}}"
+          default: "default-from-aggregator"
+  - name: produce
+    outputs:
+      parameters:
+      - name: msg
+        valueFrom:
+          path: /tmp/out.txt
+          default: "default-from-producer"
+    container:
+      image: alpine:3.23
+      command: [sh, -c]
+      args: ["echo hello > /tmp/out.txt"]
+`
+
+// TestDAGSkippedOutputDefaultAggregate verifies the precedence decision: when a skipped producer
+// declares an output valueFrom.default AND the aggregating template's output parameter declares its
+// own valueFrom.default, the producer's default wins (it populates scope as a real value, so the
+// aggregator's skipped-fallback never fires).
+func TestDAGSkippedOutputDefaultAggregate(t *testing.T) {
+	ctx := context.Background()
+	cancel, controller := newController()
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	wf := wfv1.MustUnmarshalWorkflow(dagSkippedOutputDefaultAggregate)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+
+	dagNode := woc.wf.Status.Nodes.FindByDisplayName("dag-skipped-output-default-aggregate")
+	require.NotNil(t, dagNode)
+	require.NotNil(t, dagNode.Outputs)
+	require.Len(t, dagNode.Outputs.Parameters, 1)
+	assert.Equal(t, "default-from-producer", dagNode.Outputs.Parameters[0].Value.String())
+}
+
+var dagSkippedOutputExprDefaultAggregate = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-skipped-output-expr-default-aggregate
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: producer
+        template: produce
+        when: "false"
+    outputs:
+      parameters:
+      - name: result
+        valueFrom:
+          expression: "tasks.producer.outputs.parameters.msg"
+          default: "default-from-aggregator"
+  - name: produce
+    outputs:
+      parameters:
+      - name: msg
+        valueFrom:
+          path: /tmp/out.txt
+    container:
+      image: alpine:3.23
+      command: [sh, -c]
+      args: ["echo hello > /tmp/out.txt"]
+`
+
+// TestDAGSkippedOutputExprDefaultAggregate verifies that a ValueFrom.Expression referencing a skipped
+// defaultless output WITHOUT handling the absent (nil) optional mirrors the inline {{= ...}} semantics:
+// the expression fails to resolve, and the output parameter's own valueFrom.default applies via the
+// error fallback (instead of silently emitting "").
+func TestDAGSkippedOutputExprDefaultAggregate(t *testing.T) {
+	ctx := context.Background()
+	cancel, controller := newController()
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	wf := wfv1.MustUnmarshalWorkflow(dagSkippedOutputExprDefaultAggregate)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+
+	dagNode := woc.wf.Status.Nodes.FindByDisplayName("dag-skipped-output-expr-default-aggregate")
+	require.NotNil(t, dagNode)
+	require.NotNil(t, dagNode.Outputs)
+	require.Len(t, dagNode.Outputs.Parameters, 1)
+	assert.Equal(t, "default-from-aggregator", dagNode.Outputs.Parameters[0].Value.String())
+}
+
+var dagSkippedRefDynamicTemplateName = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-skipped-ref-dynamic-template
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: producer
+        template: produce
+        when: "false"
+      - name: consumer
+        templateRef:
+          name: "{{item.wftmpl}}"
+          template: "{{item.tmpl}}"
+        withItems:
+        - { wftmpl: "skipped-ref-consume", tmpl: "consume" }
+        depends: "producer.Succeeded || producer.Skipped"
+        arguments:
+          parameters:
+          - name: in
+            value: "{{tasks.producer.outputs.parameters.msg}}"
+  - name: produce
+    outputs:
+      parameters:
+      - name: msg
+        valueFrom:
+          path: /tmp/out.txt
+    container:
+      image: alpine:3.23
+      command: [sh, -c]
+      args: ["echo hello > /tmp/out.txt"]
+`
+
+// TestDAGSkippedRefDynamicTemplateName verifies that a task whose templateRef is itself templated
+// ("{{item.*}}", resolved only at expansion) is still rescued by the consumed template's input
+// default when an argument references a skipped defaultless output: the argument is marked with the
+// absent-optional sentinel before substitution and ProcessArgs interprets it at consumption time,
+// when the dynamic templateRef has been resolved.
+func TestDAGSkippedRefDynamicTemplateName(t *testing.T) {
+	ctx := context.Background()
+	cancel, controller := newController(wfv1.MustUnmarshalWorkflow(dagSkippedRefDynamicTemplateName), wfv1.MustUnmarshalWorkflowTemplate(skippedRefConsumeWorkflowTemplate))
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(wfv1.MustUnmarshalWorkflow(dagSkippedRefDynamicTemplateName), controller)
+	woc.operate(ctx)
+
+	producer := woc.wf.Status.Nodes.FindByDisplayName("producer")
+	require.NotNil(t, producer)
+	require.Equal(t, wfv1.NodeSkipped, producer.Phase)
+
+	var consumer *wfv1.NodeStatus
+	for _, node := range woc.wf.Status.Nodes {
+		assert.NotEqual(t, wfv1.NodeError, node.Phase, "node %q should not error: %s", node.DisplayName, node.Message)
+		if strings.HasPrefix(node.DisplayName, "consumer(") {
+			n := node
+			consumer = &n
+		}
+	}
+	require.NotNil(t, consumer, "consumer should be scheduled even though producer was skipped")
+	require.NotNil(t, consumer.Inputs)
+	in := consumer.Inputs.GetParameterByName("in")
+	require.NotNil(t, in)
+	require.NotNil(t, in.Value)
+	assert.Equal(t, "FALLBACK", in.Value.String())
+}
+
+// dagSkippedInputDefaultSuppressed mirrors default-demo.yaml: the producer is skipped and its
+// output parameter declares NO valueFrom.default; the consumer references that output in its input,
+// and the consumer's input declares its own default. This is the case where the skipped-marker "" is
+// written into scope, substituted into the consumer's argument, and then clobbers the input default.
+var dagSkippedInputDefaultSuppressed = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-skipped-input-default-suppressed
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: producer
+        template: produce
+        when: "false"
+      - name: consumer
+        template: consume
+        depends: "producer.Succeeded || producer.Skipped"
+        arguments:
+          parameters:
+          - name: in
+            value: "{{tasks.producer.outputs.parameters.msg}}"
+  - name: produce
+    outputs:
+      parameters:
+      - name: msg
+        valueFrom:
+          path: /tmp/out.txt   # NOTE: no valueFrom.default here
+    container:
+      image: alpine:3.23
+      command: [sh, -c]
+      args: ["echo hello > /tmp/out.txt"]
+  - name: consume
+    inputs:
+      parameters:
+      - name: in
+        default: "FALLBACK-FROM-INPUT"
+    container:
+      image: alpine:3.23
+      command: [echo, "{{inputs.parameters.in}}"]
+`
+
+// TestDAGSkippedInputDefaultUsed verifies that when a producer is skipped and its output declares NO
+// valueFrom.default, a consumer referencing that output in its input falls back to the consumer's OWN
+// input default rather than receiving the empty skipped-marker.
+func TestDAGSkippedInputDefaultUsed(t *testing.T) {
+	ctx := context.Background()
+	cancel, controller := newController()
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	wf := wfv1.MustUnmarshalWorkflow(dagSkippedInputDefaultSuppressed)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+
+	producer := woc.wf.Status.Nodes.FindByDisplayName("producer")
+	require.NotNil(t, producer)
+	require.Equal(t, wfv1.NodeSkipped, producer.Phase)
+
+	consumer := woc.wf.Status.Nodes.FindByDisplayName("consumer")
+	require.NotNil(t, consumer, "consumer should be scheduled even though producer was skipped")
+	require.NotNil(t, consumer.Inputs)
+	in := consumer.Inputs.GetParameterByName("in")
+	require.NotNil(t, in)
+	require.NotNil(t, in.Value)
+	// The skipped reference must NOT clobber the consumer's own input default.
+	assert.Equal(t, "FALLBACK-FROM-INPUT", in.Value.String(),
+		"a skipped output reference should fall back to the consumer's input default")
+}
+
+var dagSkippedInlineExpressionFallback = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-skipped-inline-expr-fallback-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: producer
+        template: produce
+        when: "false"
+      - name: consumer
+        template: consume
+        depends: "producer.Succeeded || producer.Skipped"
+        arguments:
+          parameters:
+          - name: in
+            value: "{{= tasks.producer.outputs.parameters.msg ?? 'inline-fallback'}}"
+  - name: produce
+    outputs:
+      parameters:
+      - name: msg
+        valueFrom:
+          path: /tmp/out.txt
+    container:
+      image: alpine:3.23
+      command: [sh, -c]
+      args: ["echo hello > /tmp/out.txt"]
+  - name: consume
+    inputs:
+      parameters:
+      - name: in
+    container:
+      image: alpine:3.23
+      command: [echo, "{{inputs.parameters.in}}"]
+`
+
+// TestDAGSkippedInlineExpressionFallback verifies that an inline {{= ... ?? ...}} expression in a
+// task argument sees a skipped/omitted dependency's defaultless output as nil (absent), so the ??
+// fallback applies, instead of the empty-string flattening that previously made ?? a no-op.
+func TestDAGSkippedInlineExpressionFallback(t *testing.T) {
+	ctx := context.Background()
+	cancel, controller := newController()
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	wf := wfv1.MustUnmarshalWorkflow(dagSkippedInlineExpressionFallback)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate(ctx)
+
+	producer := woc.wf.Status.Nodes.FindByDisplayName("producer")
+	require.NotNil(t, producer)
+	require.Equal(t, wfv1.NodeSkipped, producer.Phase)
+
+	consumer := woc.wf.Status.Nodes.FindByDisplayName("consumer")
+	require.NotNil(t, consumer, "consumer should be scheduled even though producer was skipped")
+	require.NotNil(t, consumer.Inputs)
+	in := consumer.Inputs.GetParameterByName("in")
+	require.NotNil(t, in)
+	require.NotNil(t, in.Value)
+	assert.Equal(t, "inline-fallback", in.Value.String())
 }

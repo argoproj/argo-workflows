@@ -20,7 +20,7 @@ func Test_Replace(t *testing.T) {
 	})
 	t.Run("Simple", func(t *testing.T) {
 		t.Run("Valid", func(t *testing.T) {
-			r, err := Replace(toJSONString("{{foo}}"), map[string]string{"foo": "bar"}, false)
+			r, err := Replace(toJSONString("{{foo}}"), map[string]any{"foo": "bar"}, false)
 			require.NoError(t, err)
 			assert.Equal(t, toJSONString("bar"), r)
 		})
@@ -37,28 +37,28 @@ func Test_Replace(t *testing.T) {
 	})
 	t.Run("Expression", func(t *testing.T) {
 		t.Run("Valid", func(t *testing.T) {
-			r, err := Replace(toJSONString("{{=foo}}"), map[string]string{"foo": "bar"}, false)
+			r, err := Replace(toJSONString("{{=foo}}"), map[string]any{"foo": "bar"}, false)
 			require.NoError(t, err)
 			assert.Equal(t, toJSONString("bar"), r)
 		})
 		t.Run("Valid With Variadic Sprig Expression", func(t *testing.T) {
-			r, err := Replace(toJSONString("{{=sprig.dig('status', nil, workflow)}}"), map[string]string{"workflow.status": "Succeeded"}, false)
+			r, err := Replace(toJSONString("{{=sprig.dig('status', nil, workflow)}}"), map[string]any{"workflow.status": "Succeeded"}, false)
 			require.NoError(t, err)
 			assert.Equal(t, toJSONString("Succeeded"), r)
 		})
 		t.Run("Valid WorkflowStatus", func(t *testing.T) {
-			replaced, err := Replace(toJSONString(`{{=workflow.status == "Succeeded" ? "SUCCESSFUL" : "FAILED"}}`), map[string]string{"workflow.status": "Succeeded"}, false)
+			replaced, err := Replace(toJSONString(`{{=workflow.status == "Succeeded" ? "SUCCESSFUL" : "FAILED"}}`), map[string]any{"workflow.status": "Succeeded"}, false)
 			require.NoError(t, err)
 			assert.Equal(t, toJSONString(`SUCCESSFUL`), replaced)
-			replaced, err = Replace(toJSONString(`{{=workflow.status == "Succeeded" ? "SUCCESSFUL" : "FAILED"}}`), map[string]string{"workflow.status": "Failed"}, false)
+			replaced, err = Replace(toJSONString(`{{=workflow.status == "Succeeded" ? "SUCCESSFUL" : "FAILED"}}`), map[string]any{"workflow.status": "Failed"}, false)
 			require.NoError(t, err)
 			assert.Equal(t, toJSONString(`FAILED`), replaced)
 		})
 		t.Run("Valid WorkflowFailures", func(t *testing.T) {
-			replaced, err := Replace(toJSONString(`{{=workflow.failures == "{\"foo\":\"bar\"}" ? "SUCCESSFUL" : "FAILED"}}`), map[string]string{"workflow.failures": `{"foo":"bar"}`}, false)
+			replaced, err := Replace(toJSONString(`{{=workflow.failures == "{\"foo\":\"bar\"}" ? "SUCCESSFUL" : "FAILED"}}`), map[string]any{"workflow.failures": `{"foo":"bar"}`}, false)
 			require.NoError(t, err)
 			assert.Equal(t, toJSONString(`SUCCESSFUL`), replaced)
-			replaced, err = Replace(toJSONString(`{{=workflow.failures == "{\"foo\":\"bar\"}" ? "SUCCESSFUL" : "FAILED"}}`), map[string]string{"workflow.failures": `{"foo":"barr"}`}, false)
+			replaced, err = Replace(toJSONString(`{{=workflow.failures == "{\"foo\":\"bar\"}" ? "SUCCESSFUL" : "FAILED"}}`), map[string]any{"workflow.failures": `{"foo":"barr"}`}, false)
 			require.NoError(t, err)
 			assert.Equal(t, toJSONString(`FAILED`), replaced)
 		})
@@ -103,7 +103,8 @@ func Test_Replace(t *testing.T) {
 }
 
 func TestNestedReplaceString(t *testing.T) {
-	replaceMap := map[string]string{"inputs.parameters.message": "hello world"}
+
+	replaceMap := map[string]any{"inputs.parameters.message": "hello world"}
 
 	test := toJSONString(`{{- with secret "{{inputs.parameters.message}}" -}}
     {{ .Data.data.gitcreds }}
@@ -154,7 +155,8 @@ func TestNestedReplaceString(t *testing.T) {
 }
 
 func TestReplaceStringWithWhiteSpace(t *testing.T) {
-	replaceMap := map[string]string{"inputs.parameters.message": "hello world"}
+
+	replaceMap := map[string]any{"inputs.parameters.message": "hello world"}
 
 	test := toJSONString(`{{ inputs.parameters.message }}`)
 	replacement, err := Replace(test, replaceMap, true)
@@ -163,7 +165,8 @@ func TestReplaceStringWithWhiteSpace(t *testing.T) {
 }
 
 func TestReplaceStringWithExpression(t *testing.T) {
-	replaceMap := map[string]string{"inputs.parameters.message": "hello world"}
+
+	replaceMap := map[string]any{"inputs.parameters.message": "hello world"}
 
 	test := toJSONString(`test {{= sprig.trunc(5, inputs.parameters.message) }}`)
 	replacement, err := Replace(test, replaceMap, true)
@@ -174,4 +177,83 @@ func TestReplaceStringWithExpression(t *testing.T) {
 	replacement, err = Replace(test, replaceMap, true)
 	require.NoError(t, err)
 	assert.Equal(t, toJSONString("test world"), replacement)
+}
+
+// TestReplaceStrictAnyNilValues verifies the absent-optional (nil) semantics: expression tags can
+// distinguish a present-but-nil value (skipped step output with no default) from an empty string
+// via ??, and a simple tag resolving to nil is a terminal error (not a missing-variable requeue).
+func TestReplaceStrictAnyNilValues(t *testing.T) {
+	replaceMap := map[string]any{
+		"tasks.producer.outputs.parameters.msg": nil,
+		"tasks.other.outputs.parameters.msg":    "real",
+	}
+
+	t.Run("ExpressionFallbackFires", func(t *testing.T) {
+		r, err := ReplaceStrictAny(toJSONString(`{{= tasks.producer.outputs.parameters.msg ?? 'fallback'}}`), replaceMap, []string{"tasks", "steps"})
+		require.NoError(t, err)
+		assert.Equal(t, toJSONString("fallback"), r)
+	})
+	t.Run("ExpressionFallbackNotFiredForEmptyString", func(t *testing.T) {
+		emptyValueMap := map[string]any{"tasks.producer.outputs.parameters.msg": ""}
+		r, err := ReplaceStrictAny(toJSONString(`{{= tasks.producer.outputs.parameters.msg ?? 'fallback'}}`), emptyValueMap, []string{"tasks", "steps"})
+		require.NoError(t, err)
+		assert.Equal(t, toJSONString(""), r)
+	})
+	t.Run("BareExpressionRefNilErrors", func(t *testing.T) {
+		_, err := ReplaceStrictAny(toJSONString(`{{= tasks.producer.outputs.parameters.msg}}`), replaceMap, []string{"tasks", "steps"})
+		require.Error(t, err)
+	})
+	t.Run("SimpleTagAbsentValueErrors", func(t *testing.T) {
+		_, err := ReplaceStrictAny(toJSONString(`pre-{{tasks.producer.outputs.parameters.msg}}-post`), replaceMap, []string{"tasks", "steps"})
+		require.ErrorContains(t, err, "absent optional")
+		assert.False(t, IsMissingVariableErr(err), "absent optional must be terminal, not a requeue")
+	})
+	t.Run("SimpleTagEmptyStringStillSubstitutes", func(t *testing.T) {
+		emptyValueMap := map[string]any{"tasks.producer.outputs.parameters.msg": ""}
+		r, err := ReplaceStrictAny(toJSONString(`pre-{{tasks.producer.outputs.parameters.msg}}-post`), emptyValueMap, []string{"tasks", "steps"})
+		require.NoError(t, err)
+		assert.Equal(t, toJSONString("pre--post"), r)
+	})
+	t.Run("RealValueStillWins", func(t *testing.T) {
+		r, err := ReplaceStrictAny(toJSONString(`{{= tasks.other.outputs.parameters.msg ?? 'fallback'}}`), replaceMap, []string{"tasks", "steps"})
+		require.NoError(t, err)
+		assert.Equal(t, toJSONString("real"), r)
+	})
+	t.Run("MissingStrictIdentifierStillErrors", func(t *testing.T) {
+		_, err := ReplaceStrictAny(toJSONString(`{{= tasks.unknown.outputs.parameters.msg}}`), replaceMap, []string{"tasks", "steps"})
+		require.Error(t, err)
+	})
+}
+
+// TestReplaceStrictAnyNilNestedTag verifies that a nested tag whose value is a present-but-nil
+// absent optional (a skipped step's defaultless output) is a terminal resolution error: the
+// composite outer tag cannot meaningfully resolve from an absent value, and the error must not be
+// classified as a missing-variable error (which would requeue forever). A real empty string nested
+// value still collapses as before.
+func TestReplaceStrictAnyNilNestedTag(t *testing.T) {
+	const input = `{{outer-{{steps.x.outputs.parameters.key}}}}`
+
+	t.Run("AbsentNestedValueErrors", func(t *testing.T) {
+		replaceMap := map[string]any{
+			"steps.x.outputs.parameters.key": nil, // skipped, no producer default
+			"outer-":                         "resolved-outer",
+		}
+		_, err := ReplaceStrictAny(toJSONString(input), replaceMap, []string{"tasks", "steps"})
+		require.Error(t, err)
+		assert.False(t, IsMissingVariableErr(err), "absent nested value must be terminal, not a requeue")
+	})
+
+	t.Run("EmptyNestedValueStillCollapses", func(t *testing.T) {
+		replaceMap := map[string]any{
+			"steps.x.outputs.parameters.key": "", // produced a real empty string
+			"outer-":                         "resolved-outer",
+		}
+		pass1, err := ReplaceStrictAny(toJSONString(input), replaceMap, []string{"tasks", "steps"})
+		require.NoError(t, err)
+		assert.Equal(t, toJSONString("{{outer-}}"), pass1)
+
+		pass2, err := ReplaceStrictAny(pass1, replaceMap, []string{"tasks", "steps"})
+		require.NoError(t, err)
+		assert.Equal(t, toJSONString("resolved-outer"), pass2)
+	})
 }
