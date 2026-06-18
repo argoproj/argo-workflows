@@ -8,9 +8,17 @@ import (
 	"strings"
 
 	md "github.com/nao1215/markdown"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 )
+
+// titleKind upper-cases the first letter of a Kind's string form for use as a
+// section heading. Kind strings are single-word lowercase ASCII (kind.go), so
+// capitalizing the leading byte is sufficient.
+func titleKind(s string) string {
+	if s == "" {
+		return s
+	}
+	return strings.ToUpper(s[:1]) + s[1:]
+}
 
 // GenerateMarkdown renders the catalog as Markdown. Sections:
 // alphabetical index, by Kind, matrix by TemplateKind, by LifecyclePhase.
@@ -65,9 +73,8 @@ func writeByKind(mdoc *md.Markdown, all []*Key) {
 		groups[k.kind] = append(groups[k.kind], k)
 	}
 	slices.Sort(kinds)
-	titler := cases.Title(language.English)
 	for _, kd := range kinds {
-		mdoc.H3(titler.String(kd.String()))
+		mdoc.H3(titleKind(kd.String()))
 		mdoc.PlainText("")
 		rows := make([][]string, len(groups[kd]))
 		for i, k := range groups[kd] {

@@ -141,7 +141,7 @@ Auto-generated from `util/variables` via `GenerateMarkdown()`. 83 variables regi
 | `outputs.artifacts.<name>.path`  | string | during-execute | Declared output artifact path for the current template (pod side)  |
 | `outputs.parameters.<name>.path` | string | during-execute | Declared output parameter path for the current template (pod side) |
 
-### Node-Ref
+### Node-ref
 
 |                    Key                    |     Type      |         Availability         |                                             Description                                             |
 |-------------------------------------------|---------------|------------------------------|-----------------------------------------------------------------------------------------------------|
@@ -191,7 +191,7 @@ Auto-generated from `util/variables` via `GenerateMarkdown()`. 83 variables regi
 | `lastRetry.status`   | string | inside-retry | Phase of the previous attempt (or empty on first)         |
 | `retries`            | string | inside-retry | 0-based retry attempt index                               |
 
-### Node-Ctx
+### Node-ctx
 
 |     Key      |  Type  |         Availability         |                       Description                       |
 |--------------|--------|------------------------------|---------------------------------------------------------|
@@ -211,7 +211,7 @@ Auto-generated from `util/variables` via `GenerateMarkdown()`. 83 variables regi
 | `resourcesDuration.<resource>` | string | metric-emission | Current node's resource duration in seconds, keyed by Kubernetes resource name (e.g. cpu, memory) |
 | `status`                       | string | metric-emission | Current node's phase                                                                              |
 
-### Cron-Workflow
+### Cron-workflow
 
 |               Key                |    Type    | Availability |                                         Description                                          |
 |----------------------------------|------------|--------------|----------------------------------------------------------------------------------------------|
