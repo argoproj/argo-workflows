@@ -177,7 +177,7 @@ sprig.trim(inputs.parameters['my-string-param'])
 
 ### Outputs of Skipped and Omitted Nodes
 
-> v3.7.15, v4.0.6, and after
+> v3.7.16, v4.0.7, and after
 
 A step or task that was Skipped (its `when` condition was false) or Omitted (its `depends` condition was not satisfied) never ran, so it produced no outputs.
 References to its declared output parameters and `outputs.result` resolve as follows:
