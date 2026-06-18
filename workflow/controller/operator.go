@@ -190,9 +190,6 @@ func newWorkflowOperationCtx(ctx context.Context, wf *wfv1.Workflow, wfc *Workfl
 	return &woc
 }
 
-// operate is the main operator logic of a workflow. It evaluates the current state of the workflow,
-// and its pods and decides how to proceed down the execution path.
-// TODO: an error returned by this method should result in requeuing the workflow to be retried at a
 // globalParams returns a snapshot of the workflow-level scope as a
 // common.Parameters map. This is the read path; writes must go through
 // varkeys.X.Set(woc.scope, ...).
@@ -200,6 +197,9 @@ func (woc *wfOperationCtx) globalParams() common.Parameters {
 	return common.Parameters(woc.scope.AsStringMap())
 }
 
+// operate is the main operator logic of a workflow. It evaluates the current state of the workflow,
+// and its pods and decides how to proceed down the execution path.
+// TODO: an error returned by this method should result in requeuing the workflow to be retried at a
 // later time
 // As you must not call `persistUpdates` twice, you must not call `operate` twice.
 func (woc *wfOperationCtx) operate(ctx context.Context) {
