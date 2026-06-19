@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -29,16 +30,30 @@ func FindOverlappingVolume(tmpl *wfv1.Template, path string) *apiv1.VolumeMount 
 		return len(volumeMounts[i].MountPath) > len(volumeMounts[j].MountPath)
 	})
 	for _, mnt := range volumeMounts {
-		normalizedMountPath := strings.TrimRight(mnt.MountPath, "/")
-		if path == normalizedMountPath || isSubPath(path, normalizedMountPath) {
+		// path is the mount itself or a descendant of it.
+		if _, ok := relWithin(mnt.MountPath, path); ok {
 			return &mnt
 		}
 	}
 	return nil
 }
 
-func isSubPath(path string, normalizedMountPath string) bool {
-	return strings.HasPrefix(path, normalizedMountPath+"/")
+// relWithin reports the path of target relative to base, and whether target is
+// base itself (rel == ".") or a descendant of it. It uses filepath.Rel rather
+// than hand-rolled string prefixing so path separators, trailing slashes and
+// "." segments are handled per the host OS — notably so the comparison holds on
+// Windows (where the supervisor also runs), where filesystem-resolved paths use
+// backslashes. ok is false when target escapes base via ".." or the two cannot
+// be related (e.g. different Windows volumes).
+func relWithin(base, target string) (rel string, ok bool) {
+	rel, err := filepath.Rel(base, target)
+	if err != nil {
+		return "", false
+	}
+	if rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return rel, false
+	}
+	return rel, true
 }
 
 // FindVolumeMountNestedUnderPath returns the first volume mount whose mount path
@@ -54,10 +69,10 @@ func isSubPath(path string, normalizedMountPath string) bool {
 // NOT reported here — that is the ordinary overlap case handled by
 // FindOverlappingVolume (the artifact is routed into the volume).
 func FindVolumeMountNestedUnderPath(tmpl *wfv1.Template, path string) *apiv1.VolumeMount {
-	normalizedPath := strings.TrimRight(path, "/")
 	for _, mnt := range tmpl.GetVolumeMounts() {
-		normalizedMountPath := strings.TrimRight(mnt.MountPath, "/")
-		if isSubPath(normalizedMountPath, normalizedPath) {
+		// The mount is strictly beneath path: a descendant (ok), but not path
+		// itself (rel == ".", the ordinary overlap case handled elsewhere).
+		if rel, ok := relWithin(path, mnt.MountPath); ok && rel != "." {
 			return &mnt
 		}
 	}
