@@ -207,7 +207,7 @@ TOOL_CSPELL                 := cspell
 TOOL_MARKDOWN_LINK_CHECK    := markdown-link-check
 TOOL_MARKDOWNLINT           := markdownlint
 TOOL_DEVCONTAINER           := devcontainer
-TOOL_MKDOCS                 := mkdocs
+TOOL_PROPERDOCS             := properdocs
 else
 TOOL_CLANG_FORMAT           := /usr/local/bin/clang-format
 TOOL_TYPOS                  := $(GOPATH)/bin/typos
@@ -215,8 +215,8 @@ TOOL_CSPELL                 := $(NVM_BIN)/cspell
 TOOL_MARKDOWN_LINK_CHECK    := $(NVM_BIN)/markdown-link-check
 TOOL_MARKDOWNLINT           := $(NVM_BIN)/markdownlint
 TOOL_DEVCONTAINER           := $(NVM_BIN)/devcontainer
-TOOL_MKDOCS_DIR             := $(HOME)/.venv/mkdocs
-TOOL_MKDOCS                 := $(TOOL_MKDOCS_DIR)/bin/mkdocs
+TOOL_PROPERDOCS_DIR         := $(HOME)/.venv/properdocs
+TOOL_PROPERDOCS             := $(TOOL_PROPERDOCS_DIR)/bin/properdocs
 endif
 
 # Spell-check tool versions. Sourced from nixpkgs under USE_NIX; pinned here for
@@ -1002,16 +1002,16 @@ docs-lint: $(QUICK_GENERATED_DOCS)
 	# lint docs
 	$(TOOL_MARKDOWNLINT) docs --fix --ignore docs/fields.md --ignore docs/executor_swagger.md --ignore docs/cli --ignore docs/walk-through/the-structure-of-workflow-specs.md --ignore docs/tested-kubernetes-versions.md --ignore docs/go-sdk-guide.md --ignore docs/database-migrations.md
 
-$(TOOL_MKDOCS): docs/requirements.txt
+$(TOOL_PROPERDOCS): docs/requirements.txt
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	python3 -m venv $(TOOL_MKDOCS_DIR)
-	$(TOOL_MKDOCS_DIR)/bin/pip install --no-cache-dir -r $<
+	python3 -m venv $(TOOL_PROPERDOCS_DIR)
+	$(TOOL_PROPERDOCS_DIR)/bin/pip install --no-cache-dir -r $<
 endif
 
 .PHONY: docs
 ifneq ($(USE_NIX), true)
-docs: $(TOOL_MKDOCS)
+docs: $(TOOL_PROPERDOCS)
 endif
 docs: docs-spellcheck docs-lint ## Build docs TODO: This is temporarily disabled to unblock merging PRs.
 	# docs-linkcheck
@@ -1023,13 +1023,13 @@ docs: docs-spellcheck docs-lint ## Build docs TODO: This is temporarily disabled
 ifeq ($(shell echo $(GIT_BRANCH) | head -c 8),release-)
 	./hack/docs/tested-versions.sh > docs/tested-kubernetes-versions.md
 endif
-	TZ=UTC $(TOOL_MKDOCS) build --strict
+	TZ=UTC $(TOOL_PROPERDOCS) build --strict
 	# tell the user the fastest way to edit docs
-	@echo "ℹ️ If you want to preview your docs, open site/index.html. If you want to edit them with hot-reload, run 'make docs-serve' to start mkdocs on port 8000"
+	@echo "ℹ️ If you want to preview your docs, open site/index.html. If you want to edit them with hot-reload, run 'make docs-serve' to start properdocs on port 8000"
 
 .PHONY: docs-serve
 docs-serve: docs ## Build and serve the docs on localhost
-	$(TOOL_MKDOCS) serve
+	$(TOOL_PROPERDOCS) serve
 
 # pre-commit checks
 

@@ -5,7 +5,7 @@
 
 # Documentation
 /docs/**              @argoproj/argo-workflows-approvers-docs @argoproj/argo-workflows-approvers
-/mkdocs.yml           @argoproj/argo-workflows-approvers-docs @argoproj/argo-workflows-approvers
+/properdocs.yml       @argoproj/argo-workflows-approvers-docs @argoproj/argo-workflows-approvers
 /.features/**/*.md    @argoproj/argo-workflows-approvers-docs @argoproj/argo-workflows-approvers
 /community/**         @argoproj/argo-workflows-approvers-docs @argoproj/argo-workflows-approvers
 /examples/README.md   @argoproj/argo-workflows-approvers-docs @argoproj/argo-workflows-approvers
