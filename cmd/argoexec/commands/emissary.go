@@ -337,17 +337,13 @@ func readTemplateAt(filePath, offloadDir string) ([]byte, error) {
 // artifacts/<name>), so no entry appears in the input-artifacts directory
 // and we skip the symlink — main already sees the file at art.Path via
 // its user volume.
-// procSelfMountinfo is the kernel's mount table for the current process, used to
-// detect mount points nested under an artifact path before clearing it.
-const procSelfMountinfo = "/proc/self/mountinfo"
-
 func linkInputArtifacts(ctx context.Context, tmpl *wfv1.Template) error {
-	return linkInputArtifactsAt(ctx, common.ExecutorArtifactBaseDir, procSelfMountinfo, tmpl)
+	return linkInputArtifactsAt(ctx, common.ExecutorArtifactBaseDir, tmpl)
 }
 
 // linkInputArtifactsAt is the parameterized form used by tests; production calls
 // linkInputArtifacts with the constants.
-func linkInputArtifactsAt(ctx context.Context, baseDir, mountinfoPath string, tmpl *wfv1.Template) error {
+func linkInputArtifactsAt(ctx context.Context, baseDir string, tmpl *wfv1.Template) error {
 	logger := logging.RequireLoggerFromContext(ctx)
 	for _, art := range tmpl.Inputs.Artifacts {
 		src := filepath.Join(baseDir, art.Name)
@@ -367,29 +363,40 @@ func linkInputArtifactsAt(ctx context.Context, baseDir, mountinfoPath string, tm
 				return fmt.Errorf("failed to create parent directory for artifact %q at %s: %w", art.Name, dst, err)
 			}
 		}
-		// Clear whatever the container image ships at art.Path so the symlink can
-		// replace it — including a directory (e.g. a directory or git artifact).
-		// This is normally safe: properly-detected overlapping user volumes never
-		// reach here (the supervisor writes those into the volume and `src` is then
-		// absent, so we `continue` above), so dst is the container's own ephemeral
-		// filesystem, where replacing it matches the legacy SubPath mount's
-		// shadowing. As defence in depth against an undetected overlap (the
-		// controller rejects art.Path that is an ancestor of a mount, but guard at
-		// runtime too), refuse to RemoveAll across a mount boundary: that would
-		// recurse into and destroy a live PVC/hostPath/emptyDir.
-		if _, err := os.Lstat(dst); err == nil {
-			mp, mErr := mountPointAtOrUnder(mountinfoPath, dst)
-			if mErr != nil {
-				return fmt.Errorf("failed to check for mounts under artifact path %q at %s: %w", art.Name, dst, mErr)
+		// If nothing exists at art.Path, just create the symlink. Creating is
+		// always safe — os.Symlink returns EEXIST rather than overwriting and the
+		// MkdirAll above only ever creates — so even when art.Path resolves into a
+		// user volume we deliberately let the artifact land there (the user asked
+		// for it). Only an *overwrite* can destroy data, and that is gated below.
+		if _, err := os.Lstat(dst); err != nil {
+			if !os.IsNotExist(err) {
+				return fmt.Errorf("failed to stat artifact path %q at %s: %w", art.Name, dst, err)
 			}
-			if mp != "" {
-				return fmt.Errorf("refusing to stage input artifact %q at %s: the path is or contains mount point %s, and clearing it would destroy the mounted volume; change the artifact path or volume mount so they do not overlap", art.Name, dst, mp)
+		} else {
+			// Something is already at art.Path. Replacing it (os.RemoveAll then
+			// symlink) reproduces the legacy SubPath mount's shadowing — but only
+			// when it is safe. RemoveAll resolves symlinks in the parent chain, so
+			// resolve the parent to find where the delete would actually land
+			// (resolve the parent, not the final element, so an image symlink *at*
+			// art.Path is just unlinked rather than followed). If that resolved
+			// path overlaps a user-declared volume, clearing it would recurse into
+			// and destroy a live PVC/hostPath/emptyDir, so refuse. Benign system
+			// mounts (tmpfs /run, the overlay rootfs) are not declared user volumes
+			// and so remain safe to shadow.
+			realParent, evalErr := filepath.EvalSymlinks(filepath.Dir(dst))
+			if evalErr != nil {
+				return fmt.Errorf("failed to resolve parent of artifact path %q at %s: %w", art.Name, dst, evalErr)
+			}
+			resolved := filepath.Join(realParent, filepath.Base(dst))
+			if mnt := common.FindOverlappingVolume(tmpl, resolved); mnt != nil {
+				return fmt.Errorf("refusing to stage input artifact %q at %s: it resolves to %s inside volume mount %q (%s), and clearing it would destroy the mounted volume; change the artifact path or volume mount so they do not overlap", art.Name, dst, resolved, mnt.Name, mnt.MountPath)
+			}
+			if mnt := common.FindVolumeMountNestedUnderPath(tmpl, resolved); mnt != nil {
+				return fmt.Errorf("refusing to stage input artifact %q at %s: it resolves to %s which contains volume mount %q (%s), and clearing it would destroy the mounted volume; change the artifact path or volume mount so they do not overlap", art.Name, dst, resolved, mnt.Name, mnt.MountPath)
 			}
 			if rmErr := os.RemoveAll(dst); rmErr != nil {
 				return fmt.Errorf("failed to clear existing path for artifact %q at %s: %w", art.Name, dst, rmErr)
 			}
-		} else if !os.IsNotExist(err) {
-			return fmt.Errorf("failed to stat artifact path %q at %s: %w", art.Name, dst, err)
 		}
 		if err := os.Symlink(src, dst); err != nil {
 			return fmt.Errorf("failed to symlink input artifact %q (%s -> %s): %w", art.Name, dst, src, err)
@@ -397,42 +404,6 @@ func linkInputArtifactsAt(ctx context.Context, baseDir, mountinfoPath string, tm
 		logger.WithFields(logging.Fields{"name": art.Name, "src": src, "dst": dst}).Debug(ctx, "linked input artifact")
 	}
 	return nil
-}
-
-// mountPointAtOrUnder consults the kernel mount table at mountinfoPath and
-// returns a mount point that is dst itself or nested beneath dst, or "" if there
-// is none. It lets the artifact-staging code refuse to os.RemoveAll across a
-// mount boundary, which would recurse into and destroy a live volume.
-func mountPointAtOrUnder(mountinfoPath, dst string) (string, error) {
-	data, err := os.ReadFile(mountinfoPath)
-	if err != nil {
-		return "", err
-	}
-	cleanDst := filepath.Clean(dst)
-	prefix := cleanDst + string(os.PathSeparator)
-	for line := range strings.SplitSeq(string(data), "\n") {
-		// /proc/.../mountinfo: "ID parent major:minor root mountpoint opts...";
-		// the mount point is the 5th field. Fields before it never contain
-		// unescaped spaces, so Fields splitting is safe.
-		fields := strings.Fields(line)
-		if len(fields) < 5 {
-			continue
-		}
-		mp := filepath.Clean(unescapeMountinfoField(fields[4]))
-		if mp == cleanDst || strings.HasPrefix(mp, prefix) {
-			return mp, nil
-		}
-	}
-	return "", nil
-}
-
-// unescapeMountinfoField reverses the octal escaping the kernel applies to
-// mountinfo path fields (space, tab, newline, backslash).
-func unescapeMountinfoField(s string) string {
-	if !strings.Contains(s, `\`) {
-		return s
-	}
-	return strings.NewReplacer(`\040`, " ", `\011`, "\t", `\012`, "\n", `\134`, `\`).Replace(s)
 }
 
 // waitForSupervisorReady blocks until the supervisor's status marker reports a

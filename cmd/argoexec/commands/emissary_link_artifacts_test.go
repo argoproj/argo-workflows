@@ -8,20 +8,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	apiv1 "k8s.io/api/core/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
-
-// emptyMountinfo writes a mountinfo file with no entries and returns its path,
-// so linkInputArtifactsAt's mount-boundary guard finds no mounts and proceeds
-// as it would on a path with nothing mounted beneath it.
-func emptyMountinfo(t *testing.T, dir string) string {
-	t.Helper()
-	p := filepath.Join(dir, "mountinfo")
-	require.NoError(t, os.WriteFile(p, nil, 0o644))
-	return p
-}
 
 func TestLinkInputArtifacts_Normal(t *testing.T) {
 	ctx := logging.WithLogger(context.Background(), logging.InitLogger())
@@ -38,7 +29,7 @@ func TestLinkInputArtifacts_Normal(t *testing.T) {
 		},
 	}
 
-	require.NoError(t, linkInputArtifactsAt(ctx, srcBase, emptyMountinfo(t, dir), tmpl))
+	require.NoError(t, linkInputArtifactsAt(ctx, srcBase, tmpl))
 
 	info, err := os.Lstat(dstPath)
 	require.NoError(t, err)
@@ -66,12 +57,16 @@ func TestLinkInputArtifacts_MissingSourceIsSkipped(t *testing.T) {
 		},
 	}
 
-	require.NoError(t, linkInputArtifactsAt(ctx, srcBase, emptyMountinfo(t, dir), tmpl))
+	require.NoError(t, linkInputArtifactsAt(ctx, srcBase, tmpl))
 
 	_, err := os.Lstat(dstPath)
 	assert.True(t, os.IsNotExist(err), "no symlink must be created when source missing")
 }
 
+// TestLinkInputArtifacts_OverwritesExistingFile covers the legacy-parity case: a
+// file baked into the user's image at art.Path, on the container's own ephemeral
+// filesystem (no declared volume), must be replaced by the symlink — matching
+// what the legacy SubPath bind mount shadowed.
 func TestLinkInputArtifacts_OverwritesExistingFile(t *testing.T) {
 	ctx := logging.WithLogger(context.Background(), logging.InitLogger())
 	dir := t.TempDir()
@@ -79,9 +74,6 @@ func TestLinkInputArtifacts_OverwritesExistingFile(t *testing.T) {
 	require.NoError(t, os.MkdirAll(srcBase, 0o755))
 	require.NoError(t, os.WriteFile(filepath.Join(srcBase, "data"), []byte("new"), 0o644))
 
-	// Simulate a file already at art.Path — e.g. baked into the user's
-	// container image. Legacy SubPath bind mount shadowed it; the symlink
-	// approach replaces it.
 	dstDir := filepath.Join(dir, "container", "tmp")
 	require.NoError(t, os.MkdirAll(dstDir, 0o755))
 	dstPath := filepath.Join(dstDir, "data")
@@ -93,21 +85,17 @@ func TestLinkInputArtifacts_OverwritesExistingFile(t *testing.T) {
 		},
 	}
 
-	require.NoError(t, linkInputArtifactsAt(ctx, srcBase, emptyMountinfo(t, dir), tmpl))
+	require.NoError(t, linkInputArtifactsAt(ctx, srcBase, tmpl))
 
 	data, err := os.ReadFile(dstPath)
 	require.NoError(t, err)
 	assert.Equal(t, "new", string(data), "pre-existing file at dst must be replaced by the symlink target's content")
 }
 
-// TestLinkInputArtifacts_OverwritesExistingDirectory exercises the case
-// where a stale directory sits at art.Path; RemoveAll handles directories
-// where os.Remove would fail.
 // TestLinkInputArtifacts_OverwritesExistingDirectory covers a directory artifact
 // whose path already holds a directory on the container's ephemeral filesystem
 // (e.g. a git/directory artifact at /tmp/git): linking must replace it with the
-// symlink rather than failing. Overlapping user volumes never reach this code
-// (they're skipped earlier), so this only ever clears ephemeral container paths.
+// symlink rather than failing. No declared volume → safe to clear.
 func TestLinkInputArtifacts_OverwritesExistingDirectory(t *testing.T) {
 	ctx := logging.WithLogger(context.Background(), logging.InitLogger())
 	dir := t.TempDir()
@@ -127,7 +115,7 @@ func TestLinkInputArtifacts_OverwritesExistingDirectory(t *testing.T) {
 		},
 	}
 
-	require.NoError(t, linkInputArtifactsAt(ctx, srcBase, emptyMountinfo(t, dir), tmpl))
+	require.NoError(t, linkInputArtifactsAt(ctx, srcBase, tmpl))
 
 	info, err := os.Lstat(dstPath)
 	require.NoError(t, err)
@@ -151,83 +139,131 @@ func TestLinkInputArtifacts_EmptyPathSkipped(t *testing.T) {
 		},
 	}
 
-	require.NoError(t, linkInputArtifactsAt(ctx, srcBase, emptyMountinfo(t, dir), tmpl))
+	require.NoError(t, linkInputArtifactsAt(ctx, srcBase, tmpl))
 }
 
-// TestLinkInputArtifacts_RefusesToClearAcrossMount is the runtime guard against
-// the data-loss case where art.Path is an ancestor of a mounted volume (the
-// controller rejects this up front, but the emissary must not destroy a live
-// volume even if it ever reaches this code). With a mount nested under art.Path,
-// staging must fail rather than os.RemoveAll into the mount.
-func TestLinkInputArtifacts_RefusesToClearAcrossMount(t *testing.T) {
+// TestLinkInputArtifacts_RefusesOverwriteResolvingIntoVolume is the reported-bug
+// guard: art.Path is /data/sub where the image ships /data as a symlink into a
+// user-declared volume (/data -> volume). Overwriting would os.RemoveAll through
+// the symlink and destroy live volume data, so staging must refuse and leave the
+// volume untouched.
+func TestLinkInputArtifacts_RefusesOverwriteResolvingIntoVolume(t *testing.T) {
 	ctx := logging.WithLogger(context.Background(), logging.InitLogger())
 	dir := t.TempDir()
 	srcBase := filepath.Join(dir, "inputs")
 	require.NoError(t, os.MkdirAll(srcBase, 0o755))
 	require.NoError(t, os.WriteFile(filepath.Join(srcBase, "data"), []byte("new"), 0o644))
 
-	// art.Path is a directory with a "mounted volume" nested under it.
-	dataDir := filepath.Join(dir, "container", "data")
-	sharedDir := filepath.Join(dataDir, "shared")
-	require.NoError(t, os.MkdirAll(sharedDir, 0o755))
-	liveFile := filepath.Join(sharedDir, "important.txt")
+	// The "volume" is a real directory holding irreplaceable data, declared as a
+	// volume mount on the template.
+	volumeDir := filepath.Join(dir, "volume")
+	require.NoError(t, os.MkdirAll(filepath.Join(volumeDir, "sub"), 0o755))
+	liveFile := filepath.Join(volumeDir, "sub", "important.txt")
 	require.NoError(t, os.WriteFile(liveFile, []byte("precious"), 0o644))
+	realVolumeDir, err := filepath.EvalSymlinks(volumeDir)
+	require.NoError(t, err)
 
-	// mountinfo declaring sharedDir as a mount point nested under dataDir.
-	miPath := filepath.Join(dir, "mountinfo")
-	require.NoError(t, os.WriteFile(miPath, []byte("36 35 0:42 / "+sharedDir+" rw,relatime - tmpfs tmpfs rw\n"), 0o644))
+	// The image ships /data as a symlink into the volume, so art.Path /data/sub
+	// resolves to volume/sub.
+	rootfs := filepath.Join(dir, "container")
+	require.NoError(t, os.MkdirAll(rootfs, 0o755))
+	dataLink := filepath.Join(rootfs, "data")
+	require.NoError(t, os.Symlink(volumeDir, dataLink))
+	artPath := filepath.Join(dataLink, "sub")
 
 	tmpl := &wfv1.Template{
+		Container: &apiv1.Container{
+			VolumeMounts: []apiv1.VolumeMount{{Name: "vol", MountPath: realVolumeDir}},
+		},
 		Inputs: wfv1.Inputs{
-			Artifacts: wfv1.Artifacts{{Name: "data", Path: dataDir}},
+			Artifacts: wfv1.Artifacts{{Name: "data", Path: artPath}},
 		},
 	}
 
-	err := linkInputArtifactsAt(ctx, srcBase, miPath, tmpl)
+	err = linkInputArtifactsAt(ctx, srcBase, tmpl)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "mount point")
+	assert.Contains(t, err.Error(), "volume mount")
 
-	// The live volume's contents must be untouched.
+	// The volume's contents must be untouched.
 	data, readErr := os.ReadFile(liveFile)
 	require.NoError(t, readErr)
-	assert.Equal(t, "precious", string(data), "RemoveAll must not have crossed the mount boundary")
-	// And no symlink should have replaced art.Path.
-	info, statErr := os.Lstat(dataDir)
-	require.NoError(t, statErr)
-	assert.True(t, info.IsDir(), "art.Path must remain the original directory, not a symlink")
+	assert.Equal(t, "precious", string(data), "RemoveAll must not have crossed the symlink into the volume")
 }
 
-// TestMountPointAtOrUnder unit-tests the mount-table scan directly.
-func TestMountPointAtOrUnder(t *testing.T) {
+// TestLinkInputArtifacts_CreateResolvingIntoVolumeAllowed documents the grown-up
+// create behavior: when art.Path resolves into a user volume but nothing exists
+// there yet, staging creates the symlink anyway (the user asked for it). Creating
+// can never destroy data, so it is not gated.
+func TestLinkInputArtifacts_CreateResolvingIntoVolumeAllowed(t *testing.T) {
+	ctx := logging.WithLogger(context.Background(), logging.InitLogger())
 	dir := t.TempDir()
-	miPath := filepath.Join(dir, "mountinfo")
-	content := "" +
-		"1 0 8:1 / / rw - ext4 /dev/sda1 rw\n" +
-		"42 1 0:50 / /data/shared rw - nfs server:/x rw\n" +
-		"43 1 0:51 / /weird\\040dir/vol rw - tmpfs tmpfs rw\n"
-	require.NoError(t, os.WriteFile(miPath, []byte(content), 0o644))
+	srcBase := filepath.Join(dir, "inputs")
+	require.NoError(t, os.MkdirAll(srcBase, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(srcBase, "data"), []byte("payload"), 0o644))
 
-	// Mount nested under /data is found.
-	mp, err := mountPointAtOrUnder(miPath, "/data")
+	volumeDir := filepath.Join(dir, "volume")
+	require.NoError(t, os.MkdirAll(volumeDir, 0o755))
+	realVolumeDir, err := filepath.EvalSymlinks(volumeDir)
 	require.NoError(t, err)
-	assert.Equal(t, "/data/shared", mp)
 
-	// Exact mount point matches.
-	mp, err = mountPointAtOrUnder(miPath, "/data/shared")
+	rootfs := filepath.Join(dir, "container")
+	require.NoError(t, os.MkdirAll(rootfs, 0o755))
+	dataLink := filepath.Join(rootfs, "data")
+	require.NoError(t, os.Symlink(volumeDir, dataLink))
+	// art.Path resolves to volume/newfile, which does not exist yet.
+	artPath := filepath.Join(dataLink, "newfile")
+
+	tmpl := &wfv1.Template{
+		Container: &apiv1.Container{
+			VolumeMounts: []apiv1.VolumeMount{{Name: "vol", MountPath: realVolumeDir}},
+		},
+		Inputs: wfv1.Inputs{
+			Artifacts: wfv1.Artifacts{{Name: "data", Path: artPath}},
+		},
+	}
+
+	require.NoError(t, linkInputArtifactsAt(ctx, srcBase, tmpl))
+
+	target, err := os.Readlink(artPath)
 	require.NoError(t, err)
-	assert.Equal(t, "/data/shared", mp)
-
-	// Unrelated path finds nothing.
-	mp, err = mountPointAtOrUnder(miPath, "/tmp/work")
+	assert.Equal(t, filepath.Join(srcBase, "data"), target)
+	data, err := os.ReadFile(artPath)
 	require.NoError(t, err)
-	assert.Empty(t, mp)
+	assert.Equal(t, "payload", string(data))
+}
 
-	// A path that is an ancestor of an escaped-space mount is detected.
-	mp, err = mountPointAtOrUnder(miPath, "/weird dir")
+// TestLinkInputArtifacts_ReplacesImageSymlinkInRootfs covers an image symlink
+// sitting *at* art.Path within the container's own rootfs (no declared volume).
+// os.RemoveAll removes the symlink itself (it does not follow the final element),
+// so staging safely replaces it and the symlink's old target is untouched.
+func TestLinkInputArtifacts_ReplacesImageSymlinkInRootfs(t *testing.T) {
+	ctx := logging.WithLogger(context.Background(), logging.InitLogger())
+	dir := t.TempDir()
+	srcBase := filepath.Join(dir, "inputs")
+	require.NoError(t, os.MkdirAll(srcBase, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(srcBase, "data"), []byte("new"), 0o644))
+
+	dstDir := filepath.Join(dir, "container", "tmp")
+	require.NoError(t, os.MkdirAll(dstDir, 0o755))
+	// The image ships art.Path as a symlink to some other rootfs file.
+	oldTarget := filepath.Join(dstDir, "image-default")
+	require.NoError(t, os.WriteFile(oldTarget, []byte("image-default"), 0o644))
+	dstPath := filepath.Join(dstDir, "data")
+	require.NoError(t, os.Symlink(oldTarget, dstPath))
+
+	tmpl := &wfv1.Template{
+		Inputs: wfv1.Inputs{
+			Artifacts: wfv1.Artifacts{{Name: "data", Path: dstPath}},
+		},
+	}
+
+	require.NoError(t, linkInputArtifactsAt(ctx, srcBase, tmpl))
+
+	target, err := os.Readlink(dstPath)
 	require.NoError(t, err)
-	assert.Equal(t, "/weird dir/vol", mp)
-
-	// Unreadable mountinfo surfaces an error (caller fails closed).
-	_, err = mountPointAtOrUnder(filepath.Join(dir, "nope"), "/data")
-	require.Error(t, err)
+	assert.Equal(t, filepath.Join(srcBase, "data"), target, "image symlink must be replaced by the artifact symlink")
+	// RemoveAll removed the symlink, not its old target.
+	old, err := os.ReadFile(oldTarget)
+	require.NoError(t, err)
+	assert.Equal(t, "image-default", string(old), "the image symlink's old target must be untouched")
 }
