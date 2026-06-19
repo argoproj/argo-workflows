@@ -134,8 +134,13 @@ func NewEmissaryCommand() *cobra.Command {
 				if waitErr := waitForSupervisorReady(ctx); waitErr != nil {
 					// Distinct exit code so the controller attributes the failure
 					// to supervisor pre-main setup rather than the user command.
+					// The process exit code (not just the exitcode file) must carry
+					// the sentinel, because inferFailedReason keys off the container's
+					// terminated exit code; wrap so main propagates 65 while keeping
+					// waitErr's message.
 					exitCode = common.ExitCodeSupervisorPreMainFailure
-					return waitErr
+					logger.WithError(waitErr).Error(ctx, "supervisor failed before main container started")
+					return argoerrors.NewExitErrWithCause(exitCode, waitErr)
 				}
 			}
 
@@ -157,8 +162,11 @@ func NewEmissaryCommand() *cobra.Command {
 			// children and sidecars don't get artifact paths symlinked in.
 			if waitForReady && containerName == common.MainContainerName {
 				if linkErr := linkInputArtifacts(ctx, template); linkErr != nil {
+					// As above: propagate the sentinel as the process exit code so
+					// inferFailedReason attributes this to supervisor pre-main setup.
 					exitCode = common.ExitCodeSupervisorPreMainFailure
-					return linkErr
+					logger.WithError(linkErr).Error(ctx, "failed to stage input artifacts before main container started")
+					return argoerrors.NewExitErrWithCause(exitCode, linkErr)
 				}
 			}
 
