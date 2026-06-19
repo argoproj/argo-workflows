@@ -5,7 +5,9 @@ import (
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha256"
 	"crypto/x509"
+	"encoding/base64"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -52,6 +54,7 @@ var _ Interface = &sso{}
 type Config = config.SSOConfig
 
 type sso struct {
+	enablePKCEAuthentication bool
 	config            *oauth2.Config
 	issuer            string
 	idTokenVerifier   *oidc.IDTokenVerifier
@@ -242,9 +245,32 @@ func (s *sso) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
+	cookieValue := finalRedirectURL
+	var extraOptions []oauth2.AuthCodeOption
+
+	if s.enablePKCEAuthentication {
+		verifier, err := pkgrand.String(43)
+		if err != nil {
+			s.logger.WithError(err).Error(r.Context(), "failed to create PKCE code verifier")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		hash := sha256.Sum256([]byte(verifier))
+		challenge := base64.RawURLEncoding.EncodeToString(hash[:])
+
+		extraOptions = append(extraOptions,
+			oauth2.SetAuthURLParam("code_challenge", challenge),
+			oauth2.SetAuthURLParam("code_challenge_method", "S256"),
+		)
+
+		cookieValue = verifier + "|" + finalRedirectURL
+	}
+
 	http.SetCookie(w, &http.Cookie{
 		Name:     state,
-		Value:    finalRedirectURL,
+		Value:    cookieValue,
 		Expires:  time.Now().Add(3 * time.Minute),
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
@@ -252,7 +278,9 @@ func (s *sso) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 	})
 
 	redirectOption := oauth2.SetAuthURLParam("redirect_uri", s.getRedirectURL(r))
-	http.Redirect(w, r, s.config.AuthCodeURL(state, redirectOption), http.StatusFound)
+	extraOptions = append(extraOptions, redirectOption)
+
+	http.Redirect(w, r, s.config.AuthCodeURL(state, extraOptions...), http.StatusFound)
 }
 
 func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
@@ -265,10 +293,25 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+
+	cookieVal := cookie.Value
+	var exchangeOptions []oauth2.AuthCodeOption
+
+	if strings.Contains(cookieVal, "|") {
+		parts := strings.SplitN(cookieVal, "|", 2)
+		if len(parts) == 2 {
+			verifier := parts[0]
+			exchangeOptions = append(exchangeOptions, oauth2.SetAuthURLParam("code_verifier", verifier))
+			cookieVal = parts[1]
+		}
+	}
+
 	redirectOption := oauth2.SetAuthURLParam("redirect_uri", s.getRedirectURL(r))
+	exchangeOptions = append(exchangeOptions, redirectOption)
+
 	// Use sso.httpClient in order to respect TLSOptions
 	oauth2Context := context.WithValue(ctx, oauth2.HTTPClient, s.httpClient)
-	oauth2Token, err := s.config.Exchange(oauth2Context, r.URL.Query().Get("code"), redirectOption)
+	oauth2Token, err := s.config.Exchange(oauth2Context, r.URL.Query().Get("code"), exchangeOptions...)
 	if err != nil {
 		s.logger.WithError(err).Error(r.Context(), "failed to get oauth2Token by using code from the oauth2 server")
 		w.WriteHeader(http.StatusUnauthorized)
