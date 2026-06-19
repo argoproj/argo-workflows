@@ -122,7 +122,7 @@ pod:
 
 ## Input artifacts: symlink vs bind mount
 
-In legacy mode, each input artifact is delivered to `main` via a per-artifact Kubernetes `SubPath` mount — kubelet bind-mounts `<input-artifacts-emptyDir>/<art.Name>` onto `art.Path` inside the container. The result is a **regular file** at `art.Path`.
+In legacy mode, each input artifact is delivered to `main` via a per-artifact Kubernetes `SubPath` mount — kubelet bind-mounts the downloaded file onto the artifact's `path` inside the container. The result is a **regular file** at that path.
 
 In init-less mode, `main` and `supervisor` start concurrently. If kubelet sets up a `SubPath` mount before supervisor has written the file, it pre-creates the path as an empty directory in the shared emptyDir, which then causes supervisor's artifact-rename to fail. To avoid this race, init-less mode:
 
@@ -131,27 +131,34 @@ In init-less mode, `main` and `supervisor` start concurrently. If kubelet sets u
 
 **What this means for workflow authors**:
 
-| Operation on `art.Path` | Legacy (bind mount) | Init-less (symlink) |
+| Operation on the artifact's path | Legacy (bind mount) | Init-less (symlink) |
 | --- | --- | --- |
 | `cat`, `open()`, `read()`, `tar`, `cp`, shell redirection | regular file contents | follows symlink → same contents |
 | Permissions / ownership | target file's | target file's (symlink has no separate mode) |
-| Writes through `art.Path` | land in the shared emptyDir | land in the shared emptyDir (via symlink) |
+| Writes through the path | land in the shared emptyDir | land in the shared emptyDir (via symlink) |
 | `ls -l` / `stat` (default) | regular file | **symlink** pointing at `/argo/inputs/artifacts/<name>` |
 | `lstat`, `readlink` | fails / reports regular file | returns the symlink target |
-| `rm art.Path` | removes the bind-mounted view | removes the symlink only; the artifact file remains in the shared emptyDir |
-| `mv art.Path /elsewhere` | fails / undefined | relocates the symlink (target unchanged) |
+| `rm` the path | removes the bind-mounted view | removes the symlink only; the artifact file remains in the shared emptyDir |
+| `mv` the path elsewhere | fails / undefined | relocates the symlink (target unchanged) |
 
-For the common cases — reading the artifact, feeding it to a program, extracting a tar, etc. — behavior is byte-for-byte identical. If your workflow code calls `lstat`/`readlink` on an input artifact path, or removes/renames the path, it will observe the difference. Overlapping user volumes are unaffected: supervisor still writes those via the legacy `/mainctrfs/<art.Path>` path and no symlink is created.
+For the common cases — reading the artifact, feeding it to a program, extracting a tar, etc. — behavior is byte-for-byte identical. If your workflow code calls `lstat`/`readlink` on an input artifact path, or removes/renames the path, it will observe the difference. Overlapping user volumes are unaffected: supervisor writes those directly into the volume and no symlink is created.
 
-An input artifact path that is an **ancestor** of a volume mount (e.g. artifact `path: /data` with a volume mounted at `/data/shared`) is **rejected in init-less mode**: the controller fails pod creation with a clear error. Staging the artifact would clear `art.Path` (the emissary `RemoveAll`s it before symlinking), which would recurse into and destroy the mounted volume. The emissary also refuses at runtime as a second line of defence — it will not clear a path that is or contains a mount point. (An artifact path *inside* a mount — `path: /data/shared/file` — is the ordinary overlap case and works: the artifact is written into the volume.)
+An input artifact path that is an **ancestor** of a declared volume mount (e.g. artifact `path: /data` with a volume mounted at `/data/shared`) is **rejected at admission**: the controller fails pod creation with a clear error, because staging the artifact would clear the artifact's path and recurse into the mounted volume.
+
+When the emissary stages an artifact it does not blindly clear the artifact's path:
+
+- If **nothing exists** at the path, it creates the symlink — even when the path resolves into a mounted volume. Creating a symlink can never destroy data (it only ever creates), so an artifact deliberately pointed into a volume is written there.
+- If **something already exists** at the path, it replaces that content (clearing it first, the way the legacy bind mount shadows image content) **only when doing so is safe**. It resolves any symlinks in the path's parent directories and, if the real target lands inside a declared user volume, refuses — failing the step with a clear error rather than destroying live volume data. This catches overlaps the controller cannot see at admission, such as a user image that ships a symlink (`/data → /mnt/vol`) at or above the artifact's path.
+
+An artifact path *inside* a declared mount (`path: /data/shared/file`) is the ordinary overlap case and works: the artifact is written into the volume by `supervisor` and no symlink is created.
 
 When an input artifact path is **also an output artifact path** (read an artifact, transform it, write the result back to the same path), the produced output is captured correctly regardless of how `main` writes it — overwriting through the symlink, or replacing the symlink via `rm` + recreate or the idiomatic write-temp-then-`rename`. The emissary inside `main` stages the live file from `main`'s own filesystem before `supervisor` collects it, so the original input is never mistaken for the output.
 
 ### `readOnlyRootFilesystem` is incompatible with init-less input artifacts
 
-Because init-less mode creates the symlink *inside `main`'s own filesystem* — the emissary calls `MkdirAll` on the parent directory, `RemoveAll` on any pre-existing path, and `Symlink` at `art.Path` — those operations require `art.Path` to be on a **writable** filesystem. If `main`'s container sets `securityContext.readOnlyRootFilesystem: true` (a common Pod Security / policy hardening) and `art.Path` falls on the read-only root filesystem, the symlink step fails with `EROFS` and the step errors before the user command runs. The same workflow succeeds in legacy mode, because there kubelet establishes the input artifact's `SubPath` bind mount at the mount-namespace level before the container starts — independent of whether the container's root filesystem is read-only.
+Because init-less mode creates the symlink *inside `main`'s own filesystem* — it creates the parent directory and the symlink at the artifact's path (removing any pre-existing content first when it is replacing it) — those operations require the path to be on a **writable** filesystem. If `main`'s container sets `securityContext.readOnlyRootFilesystem: true` (a common Pod Security / policy hardening) and the artifact's path falls on the read-only root filesystem, the symlink step fails with `EROFS` and the step errors before the user command runs. The same workflow succeeds in legacy mode, because there kubelet establishes the input artifact's `SubPath` bind mount at the mount-namespace level before the container starts — independent of whether the container's root filesystem is read-only.
 
-To use input artifacts under `readOnlyRootFilesystem: true` in init-less mode, mount a **writable volume** (e.g. an `emptyDir`) at the directory that contains each `art.Path`, so the symlink lands on a writable mount rather than the read-only root. Artifacts whose `art.Path` already sits under a user-provided volume are unaffected. If neither is possible, run the affected template in legacy mode.
+To use input artifacts under `readOnlyRootFilesystem: true` in init-less mode, mount a **writable volume** (e.g. an `emptyDir`) at the directory that contains each artifact's path, so the symlink lands on a writable mount rather than the read-only root. Artifacts whose path already sits under a user-provided volume are unaffected. If neither is possible, run the affected template in legacy mode.
 
 ## Plugin author notes
 
@@ -161,4 +168,4 @@ Artifact plugins continue to use the same `driver.ArtifactDriver` interface. The
 
 - **Latency**: in legacy mode, plugin Load runs in parallel init containers. In init-less mode, `supervisor` parallelizes plugin loads with non-plugin loads, so per-pod latency should be equivalent to or better than legacy. If you observe a regression, please file an issue.
 - **Plugin failure granularity**: the controller cannot currently distinguish "supervisor failed during plugin Load" from "supervisor failed during plugin Save" — both surface as supervisor-container failures. The `/var/run/argo/status` marker contents and supervisor logs are the authoritative source.
-- **`readOnlyRootFilesystem` + input artifacts**: init-less delivers input artifacts by symlinking into `main`'s own filesystem, so `readOnlyRootFilesystem: true` makes the symlink fail with `EROFS` when `art.Path` is on the read-only root. Legacy mode is unaffected (kubelet bind mount). See [`readOnlyRootFilesystem` is incompatible with init-less input artifacts](#readonlyrootfilesystem-is-incompatible-with-init-less-input-artifacts) for the workaround.
+- **`readOnlyRootFilesystem` + input artifacts**: init-less delivers input artifacts by symlinking into `main`'s own filesystem, so `readOnlyRootFilesystem: true` makes the symlink fail with `EROFS` when the artifact's path is on the read-only root. Legacy mode is unaffected (kubelet bind mount). See [`readOnlyRootFilesystem` is incompatible with init-less input artifacts](#readonlyrootfilesystem-is-incompatible-with-init-less-input-artifacts) for the workaround.
