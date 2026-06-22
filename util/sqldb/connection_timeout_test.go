@@ -24,7 +24,7 @@ type silentListener struct {
 
 func newSilentListener(t *testing.T) *silentListener {
 	t.Helper()
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	ln, err := (&net.ListenConfig{}).Listen(t.Context(), "tcp", "127.0.0.1:0")
 	require.NoError(t, err)
 	sl := &silentListener{ln: ln}
 	go func() {
