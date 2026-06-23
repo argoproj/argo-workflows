@@ -87,9 +87,13 @@ func expressionReplaceStrict(w io.Writer, expression string, env map[string]any,
 type identifierVisitor struct {
 	identifiers []string
 	seen        map[string]bool
+	guarded     map[ast.Node]bool
 }
 
 func (v *identifierVisitor) Visit(node *ast.Node) {
+	if v.guarded[*node] {
+		return
+	}
 	if n, ok := (*node).(*ast.IdentifierNode); ok {
 		if !v.seen[n.Value] {
 			v.identifiers = append(v.identifiers, n.Value)
@@ -111,6 +115,9 @@ func getMemberPath(node *ast.MemberNode) (string, bool) {
 	var parts []string
 	curr := node
 	for {
+		if curr.Optional {
+			return "", false
+		}
 		prop, ok := curr.Property.(*ast.StringNode)
 		if !ok {
 			return "", false
@@ -130,13 +137,49 @@ func getMemberPath(node *ast.MemberNode) (string, bool) {
 	}
 }
 
+// guardVisitor collects the member nodes whose access is guarded by the
+// nil-coalescing (??) or optional-chaining (?.) operators, so they are not
+// reported as strictly-required identifiers. Base identifiers are left
+// untouched so a genuinely-unavailable variable still triggers a requeue.
+type guardVisitor struct {
+	guarded map[ast.Node]bool
+}
+
+func (v *guardVisitor) Visit(node *ast.Node) {
+	switch n := (*node).(type) {
+	case *ast.BinaryNode:
+		if n.Operator == "??" {
+			ast.Walk(&n.Left, &memberMarker{guarded: v.guarded})
+		}
+	case *ast.MemberNode:
+		if n.Optional {
+			if _, ok := n.Node.(*ast.MemberNode); ok {
+				v.guarded[n.Node] = true
+			}
+		}
+	}
+}
+
+type memberMarker struct {
+	guarded map[ast.Node]bool
+}
+
+func (m *memberMarker) Visit(node *ast.Node) {
+	if _, ok := (*node).(*ast.MemberNode); ok {
+		m.guarded[*node] = true
+	}
+}
+
 func getIdentifiers(expression string) ([]string, error) {
 	tree, err := parser.Parse(expression)
 	if err != nil {
 		return nil, err
 	}
+	guarded := make(map[ast.Node]bool)
+	ast.Walk(&tree.Node, &guardVisitor{guarded: guarded})
 	visitor := &identifierVisitor{
-		seen: make(map[string]bool),
+		seen:    make(map[string]bool),
+		guarded: guarded,
 	}
 	ast.Walk(&tree.Node, visitor)
 	return visitor.identifiers, nil
