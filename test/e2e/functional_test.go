@@ -1642,7 +1642,7 @@ func (s *FunctionalSuite) TestWorkflowInvalidServiceAccountError() {
 // the cache ConfigMap contains actual output values and NOT null.
 func (s *FunctionalSuite) TestDAGMemoizeCacheOutputsNotNull() {
 	var cacheConfigMapName = "dag-memo-regression-cache"
-	
+
 	s.Given().
 		Workflow(`apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -1656,7 +1656,7 @@ spec:
       tasks:
       - name: memo-task
         template: memoized-dag
-  
+
   - name: memoized-dag
     dag:
       tasks:
@@ -1673,7 +1673,7 @@ spec:
       cache:
         configMap:
           name: dag-memo-regression-cache
-  
+
   - name: hello
     outputs:
       parameters:
@@ -1690,7 +1690,7 @@ spec:
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-			
+
 			// Find the memoized node
 			var memoizedNode *wfv1.NodeStatus
 			for _, node := range status.Nodes {
@@ -1716,10 +1716,10 @@ spec:
 			cm, err := s.KubeClient.CoreV1().ConfigMaps(fixtures.Namespace).Get(ctx, cacheConfigMapName, metav1.GetOptions{})
 			require.NoError(t, err, "should be able to get cache ConfigMap")
 			require.NotNil(t, cm, "cache ConfigMap should exist")
-			
+
 			// Check the data field contains cache entries
 			require.NotEmpty(t, cm.Data, "cache ConfigMap should have data")
-			
+
 			// Verify the cache entry contains actual outputs, not null
 			// The bug would cause "outputs":null in the cache
 			// With the fix, actual outputs should be present
@@ -1727,7 +1727,7 @@ spec:
 			for _, v := range cm.Data {
 				cacheData += v
 			}
-			
+
 			assert.NotContains(t, cacheData, `"outputs":null`,
 				"REGRESSION #16094: Cache should NOT contain null outputs")
 			assert.Contains(t, cacheData, `"outputs":`,
@@ -1742,7 +1742,7 @@ spec:
 // the cache ConfigMap contains actual output values and NOT null.
 func (s *FunctionalSuite) TestStepsMemoizeCacheOutputsNotNull() {
 	var cacheConfigMapName = "steps-memo-regression-cache"
-	
+
 	s.Given().
 		Workflow(`apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -1755,7 +1755,7 @@ spec:
     steps:
     - - name: memo-step
         template: memoized-steps
-  
+
   - name: memoized-steps
     steps:
     - - name: child-step
@@ -1771,7 +1771,7 @@ spec:
       cache:
         configMap:
           name: steps-memo-regression-cache
-  
+
   - name: hello
     outputs:
       parameters:
@@ -1788,7 +1788,7 @@ spec:
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-			
+
 			// Find the memoized node
 			var memoizedNode *wfv1.NodeStatus
 			for _, node := range status.Nodes {
@@ -1814,10 +1814,10 @@ spec:
 			cm, err := s.KubeClient.CoreV1().ConfigMaps(fixtures.Namespace).Get(ctx, cacheConfigMapName, metav1.GetOptions{})
 			require.NoError(t, err, "should be able to get cache ConfigMap")
 			require.NotNil(t, cm, "cache ConfigMap should exist")
-			
+
 			// Check the data field contains cache entries
 			require.NotEmpty(t, cm.Data, "cache ConfigMap should have data")
-			
+
 			// Verify the cache entry contains actual outputs, not null
 			// The bug would cause "outputs":null in the cache
 			// With the fix, actual outputs should be present
@@ -1825,7 +1825,7 @@ spec:
 			for _, v := range cm.Data {
 				cacheData += v
 			}
-			
+
 			assert.NotContains(t, cacheData, `"outputs":null`,
 				"REGRESSION #16094: Cache should NOT contain null outputs")
 			assert.Contains(t, cacheData, `"outputs":`,
