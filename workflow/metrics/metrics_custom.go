@@ -108,15 +108,17 @@ func (i *customInstrument) customCallback(ctx context.Context, o metric.Observer
 	ud.mutex.RLock()
 	defer ud.mutex.RUnlock()
 	for _, value := range ud.values {
-		// Manual RLock/RUnlock here instead of defer because we are in a loop.
-		// There are no return paths inside this loop, so this is safe.
-		value.mutex.RLock()
-		if value.rtValueFunc != nil {
-			i.ObserveFloat(ctx, o, value.rtValueFunc(), value.getLabels())
-		} else {
-			i.ObserveFloat(ctx, o, value.prometheusValue, value.getLabels())
-		}
-		value.mutex.RUnlock()
+		// Wrapped in a closure so defer runs per iteration, protecting against
+		// panics in rtValueFunc leaving the lock permanently held.
+		func() {
+			value.mutex.RLock()
+			defer value.mutex.RUnlock()
+			if value.rtValueFunc != nil {
+				i.ObserveFloat(ctx, o, value.rtValueFunc(), value.getLabels())
+			} else {
+				i.ObserveFloat(ctx, o, value.prometheusValue, value.getLabels())
+			}
+		}()
 	}
 	return nil
 }
