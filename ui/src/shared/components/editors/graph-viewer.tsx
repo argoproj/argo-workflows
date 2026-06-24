@@ -141,7 +141,9 @@ export function populateGraphFromWorkflow(workflow: Workflow | WorkflowTemplate 
                 const dependencyLabel = task.depends ? task.depends : task.dependencies.join(' && ');
                 dependencies.forEach((dep: string) => {
                     let dependancyName = `${parentNodeName}.${dep}`;
-                    if (graph.nodes.get(dependancyName).genre == 'Pod') {
+                    const depTask = template.dag.tasks.find(t => t.name === dep);
+                    const depGenre = depTask ? getTaskGenre(depTask) : undefined;
+                    if (depGenre == 'Pod') {
                         if (retryStrategy) {
                             createEdge(dependancyName, retryNodeName);
                             dependancyName = retryNodeName;
