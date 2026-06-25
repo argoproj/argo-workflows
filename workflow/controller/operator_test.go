@@ -10997,6 +10997,111 @@ func TestFailNodesWithoutCreatedPodsAfterDeadlineOrShutdown(t *testing.T) {
 		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Nodes[step2NodeName].Phase)
 	})
 
+	t.Run("RetryNodeMarkedFailedOnTerminate", func(t *testing.T) {
+		workflow := wfv1.MustUnmarshalWorkflow(workflowShuttingDownWithNodesInPendingAfterReconciliation)
+		woc := newWorkflowOperationCtx(ctx, workflow, controller)
+
+		woc.execWf.Spec.Shutdown = "Terminate"
+		woc.execWf.Spec.ActiveDeadlineSeconds = nil
+
+		retryNodeName := "retry-node"
+		childNodeName := "retry-node(0)"
+		retryNodeID := woc.wf.NodeID(retryNodeName)
+		childNodeID := woc.wf.NodeID(childNodeName)
+
+		childNode := wfv1.NodeStatus{
+			ID:    childNodeID,
+			Name:  childNodeName,
+			Type:  wfv1.NodeTypePod,
+			Phase: wfv1.NodeFailed,
+		}
+		retryNode := wfv1.NodeStatus{
+			ID:       retryNodeID,
+			Name:     retryNodeName,
+			Type:     wfv1.NodeTypeRetry,
+			Phase:    wfv1.NodeRunning,
+			Children: []string{childNodeID},
+		}
+		woc.wf.Status.Nodes.Set(ctx, childNodeID, childNode)
+		woc.wf.Status.Nodes.Set(ctx, retryNodeID, retryNode)
+
+		assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Nodes[retryNodeID].Phase)
+
+		woc.failNodesWithoutCreatedPodsAfterDeadlineOrShutdown(ctx)
+
+		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Nodes[retryNodeID].Phase)
+		assert.Equal(t, "Stopped with strategy 'Terminate'", woc.wf.Status.Nodes[retryNodeID].Message)
+	})
+
+	t.Run("RetryNodeStaysRunningWhenChildStillRunning", func(t *testing.T) {
+		workflow := wfv1.MustUnmarshalWorkflow(workflowShuttingDownWithNodesInPendingAfterReconciliation)
+		woc := newWorkflowOperationCtx(ctx, workflow, controller)
+
+		woc.execWf.Spec.Shutdown = "Terminate"
+		woc.execWf.Spec.ActiveDeadlineSeconds = nil
+
+		retryNodeName := "retry-node"
+		childNodeName := "retry-node(0)"
+		retryNodeID := woc.wf.NodeID(retryNodeName)
+		childNodeID := woc.wf.NodeID(childNodeName)
+
+		childNode := wfv1.NodeStatus{
+			ID:    childNodeID,
+			Name:  childNodeName,
+			Type:  wfv1.NodeTypePod,
+			Phase: wfv1.NodeRunning,
+		}
+		retryNode := wfv1.NodeStatus{
+			ID:       retryNodeID,
+			Name:     retryNodeName,
+			Type:     wfv1.NodeTypeRetry,
+			Phase:    wfv1.NodeRunning,
+			Children: []string{childNodeID},
+		}
+		woc.wf.Status.Nodes.Set(ctx, childNodeID, childNode)
+		woc.wf.Status.Nodes.Set(ctx, retryNodeID, retryNode)
+
+		woc.failNodesWithoutCreatedPodsAfterDeadlineOrShutdown(ctx)
+
+		assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Nodes[retryNodeID].Phase)
+	})
+
+	t.Run("RetryNodeMarkedFailedOnStop", func(t *testing.T) {
+		workflow := wfv1.MustUnmarshalWorkflow(workflowShuttingDownWithNodesInPendingAfterReconciliation)
+		woc := newWorkflowOperationCtx(ctx, workflow, controller)
+
+		woc.execWf.Spec.Shutdown = "Stop"
+		woc.execWf.Spec.ActiveDeadlineSeconds = nil
+
+		retryNodeName := "retry-node"
+		childNodeName := "retry-node(0)"
+		retryNodeID := woc.wf.NodeID(retryNodeName)
+		childNodeID := woc.wf.NodeID(childNodeName)
+
+		childNode := wfv1.NodeStatus{
+			ID:    childNodeID,
+			Name:  childNodeName,
+			Type:  wfv1.NodeTypePod,
+			Phase: wfv1.NodeFailed,
+		}
+		retryNode := wfv1.NodeStatus{
+			ID:       retryNodeID,
+			Name:     retryNodeName,
+			Type:     wfv1.NodeTypeRetry,
+			Phase:    wfv1.NodeRunning,
+			Children: []string{childNodeID},
+		}
+		woc.wf.Status.Nodes.Set(ctx, childNodeID, childNode)
+		woc.wf.Status.Nodes.Set(ctx, retryNodeID, retryNode)
+
+		assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Nodes[retryNodeID].Phase)
+
+		woc.failNodesWithoutCreatedPodsAfterDeadlineOrShutdown(ctx)
+
+		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Nodes[retryNodeID].Phase)
+		assert.Equal(t, "Stopped with strategy 'Stop'", woc.wf.Status.Nodes[retryNodeID].Message)
+	})
+
 	t.Run("Deadline", func(t *testing.T) {
 		workflow := wfv1.MustUnmarshalWorkflow(workflowShuttingDownWithNodesInPendingAfterReconciliation)
 		woc := newWorkflowOperationCtx(ctx, workflow, controller)
