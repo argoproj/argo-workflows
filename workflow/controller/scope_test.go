@@ -305,3 +305,53 @@ func TestResolveParameters(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal("5", result)
 }
+
+// TestSkippedOptionalExpressionResolution verifies the *string/nil-for-optional model: a skipped
+// output (no producer default) is stored as nil, so a ValueFrom.Expression can fall back via `??`,
+// while a legitimately empty output ("") is NOT treated as absent.
+func TestSkippedOptionalExpressionResolution(t *testing.T) {
+	const ref = "tasks.producer.outputs.parameters.msg"
+	const expr = "tasks.producer.outputs.parameters.msg ?? 'fallback-from-expr'"
+
+	t.Run("skipped resolves to fallback", func(t *testing.T) {
+		scope := createScope(nil)
+		scope.addSkippedParamToScope(ref) // skipped, no producer default -> nil
+		val, _, err := scope.resolveParameter(&wfv1.ValueFrom{Expression: expr})
+		require.NoError(t, err)
+		assert.Equal(t, "fallback-from-expr", val)
+	})
+
+	t.Run("real empty value is preserved", func(t *testing.T) {
+		scope := createScope(nil)
+		scope.addParamToScope(ref, "") // produced an empty string -> NOT absent
+		val, _, err := scope.resolveParameter(&wfv1.ValueFrom{Expression: expr})
+		require.NoError(t, err)
+		assert.Empty(t, val)
+	})
+
+	t.Run("unhandled nil errors like inline expressions", func(t *testing.T) {
+		scope := createScope(nil)
+		scope.addSkippedParamToScope(ref) // skipped, no producer default -> nil
+		_, _, err := scope.resolveParameter(&wfv1.ValueFrom{Expression: ref})
+		require.ErrorContains(t, err, "failed to evaluate expression")
+	})
+}
+
+// TestAbsentOptionalRefRequiresTag verifies that absentOptionalRef only matches a real pure
+// "{{...}}" reference: a literal argument value that merely spells out a scope key is data, not a
+// reference, and must not be treated as a skipped-output ref (which would get the argument silently
+// replaced with the absent-optional sentinel); composite and nested values are not pure references either.
+func TestAbsentOptionalRefRequiresTag(t *testing.T) {
+	const ref = "tasks.producer.outputs.parameters.msg"
+	scope := createScope(nil)
+	scope.addSkippedParamToScope(ref)
+	scope.addParamToScope("tasks.real.outputs.parameters.msg", "value")
+
+	assert.True(t, scope.absentOptionalRef("{{"+ref+"}}"), "a pure tag referencing the skipped output should match")
+	assert.True(t, scope.absentOptionalRef("{{ "+ref+" }}"), "inner whitespace is trimmed like simple-tag resolution")
+	assert.False(t, scope.absentOptionalRef(ref), "a brace-less literal equal to a scope key is data, not a reference")
+	assert.False(t, scope.absentOptionalRef("x-{{"+ref+"}}-y"), "composite values are not pure references")
+	assert.False(t, scope.absentOptionalRef("{{outer-{{"+ref+"}}}}"), "nested tags are not pure references")
+	assert.False(t, scope.absentOptionalRef("{{tasks.real.outputs.parameters.msg}}"), "a reference to a produced value is not absent")
+	assert.False(t, scope.absentOptionalRef("{{tasks.unknown.outputs.parameters.msg}}"), "an unknown key is unresolved, not absent")
+}
