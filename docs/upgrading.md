@@ -5,6 +5,43 @@ For the upgrading guide to a specific version of workflows change the documentat
 Breaking changes  typically (sometimes we don't realise they are breaking) have "!" in the commit message, as per
 the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summary).
 
+## Upgrading to v5.0
+
+### Escaping of special characters in `withItems`
+
+Previously, when using [withItems](./fields.md#item) with strings containing characters that are escaped when JSON-encoded (e.g. newlines), the value passed to the step is incorrectly double-escaped.
+For example, the value for the following item would get translated to `multi\nline`:
+
+```yaml
+withItems:
+  - key: |
+      multi
+      line
+```
+
+Now, special characters are passed unescaped.
+If you have workflows that assume the prior behavior and unescapes such strings, they'll need to be updated.
+
+The following shell script can be used to identify workflows that are potentially impacted.
+It uses `kubectl` to iterate over every Workflow, WorkflowTemplate, ClusterWorkflowTemplate, and CronWorkflow and prints it if it uses `withItems` with affected strings.
+
+```bash
+kubectl get wf,wftmpl,clusterwftmpl,cronwf -o=template='
+{{- range .items }}
+  {{- $kind := .kind -}}
+  {{- $name := .metadata.name -}}
+  {{- range .spec.templates }}
+    {{- range .steps -}}
+      {{- range . -}}
+        {{- range .withItems }}
+{{ $kind }}/{{ $name }},{{ . | urlquery }},{{ . | js | urlquery }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+{{- end }}' | awk -F ',' '$2 != $3 { print $1 }'
+```
+
 ## Upgrading to v4.1
 
 ### INFORMER_WRITE_BACK environment variable removed
