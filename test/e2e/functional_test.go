@@ -1637,109 +1637,10 @@ func (s *FunctionalSuite) TestWorkflowInvalidServiceAccountError() {
 		})
 }
 
-// TestDAGMemoizeCacheOutputsNotNull is a regression test for https://github.com/argoproj/argo-workflows/issues/16094
-// It verifies that when a DAG template with memoization and outputs executes,
-// the cache ConfigMap contains actual output values and NOT null.
-func (s *FunctionalSuite) TestDAGMemoizeCacheOutputsNotNull() {
-	var cacheConfigMapName = "dag-memo-regression-cache"
-
-	s.Given().
-		Workflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: dag-memo-outputs-
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    dag:
-      tasks:
-      - name: memo-task
-        template: memoized-dag
-
-  - name: memoized-dag
-    dag:
-      tasks:
-      - name: child-task
-        template: hello
-    outputs:
-      parameters:
-      - name: result
-        valueFrom:
-          parameter: "{{tasks.child-task.outputs.parameters.message}}"
-    memoize:
-      key: "dag-regression-16094"
-      maxAge: "10s"
-      cache:
-        configMap:
-          name: dag-memo-regression-cache
-
-  - name: hello
-    outputs:
-      parameters:
-      - name: message
-        value: "hello from child"
-    container:
-      image: argoproj/argosay:v2
-      command: [echo]
-      args: ["hello from child"]
-`).
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeSucceeded).
-		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
-
-			// Find the memoized node
-			var memoizedNode *wfv1.NodeStatus
-			for _, node := range status.Nodes {
-				if node.TemplateName == "memoized-dag" && node.MemoizationStatus != nil {
-					n := node
-					memoizedNode = &n
-					break
-				}
-			}
-			require.NotNil(t, memoizedNode, "memoized node should exist")
-			require.False(t, memoizedNode.MemoizationStatus.Hit, "first execution should be cache miss")
-			require.NotNil(t, memoizedNode.Outputs, "memoized node should have outputs")
-			require.Len(t, memoizedNode.Outputs.Parameters, 1, "should have 1 output parameter")
-			assert.Equal(t, "result", memoizedNode.Outputs.Parameters[0].Name)
-			assert.Equal(t, "hello from child", memoizedNode.Outputs.Parameters[0].Value.String())
-		}).
-		// Now check the cache ConfigMap - this is the critical assertion for the bug fix
-		When().
-		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			// Get the cache ConfigMap
-			ctx := logging.TestContext(t.Context())
-			cm, err := s.KubeClient.CoreV1().ConfigMaps(fixtures.Namespace).Get(ctx, cacheConfigMapName, metav1.GetOptions{})
-			require.NoError(t, err, "should be able to get cache ConfigMap")
-			require.NotNil(t, cm, "cache ConfigMap should exist")
-
-			// Check the data field contains cache entries
-			require.NotEmpty(t, cm.Data, "cache ConfigMap should have data")
-
-			// Verify the cache entry contains actual outputs, not null
-			// The bug would cause "outputs":null in the cache
-			// With the fix, actual outputs should be present
-			cacheData := ""
-			for _, v := range cm.Data {
-				cacheData += v
-			}
-
-			assert.NotContains(t, cacheData, `"outputs":null`,
-				"REGRESSION #16094: Cache should NOT contain null outputs")
-			assert.Contains(t, cacheData, `"outputs":`,
-				"Cache should contain outputs field")
-			assert.Contains(t, cacheData, "hello from child",
-				"Cache should contain actual output value")
-		})
-}
-
 // TestStepsMemoizeCacheOutputsNotNull is a regression test for https://github.com/argoproj/argo-workflows/issues/16094
-// It verifies that when a Steps template with memoization and outputs executes,
+// It verifies that when a steps template with memoization and outputs executes,
 // the cache ConfigMap contains actual output values and NOT null.
+// This test uses the exact workflow structure from the bug report.
 func (s *FunctionalSuite) TestStepsMemoizeCacheOutputsNotNull() {
 	var cacheConfigMapName = "steps-memo-regression-cache"
 
@@ -1747,40 +1648,48 @@ func (s *FunctionalSuite) TestStepsMemoizeCacheOutputsNotNull() {
 		Workflow(`apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: steps-memo-outputs-
+  generateName: memo-steps-
 spec:
   entrypoint: main
   templates:
   - name: main
     steps:
-    - - name: memo-step
-        template: memoized-steps
-
-  - name: memoized-steps
-    steps:
-    - - name: child-step
-        template: hello
-    outputs:
-      parameters:
-      - name: result
-        valueFrom:
-          parameter: "{{steps.child-step.outputs.parameters.message}}"
+    - - name: echo-and-wait-step
+        template: echo-and-wait
+        arguments:
+          parameters:
+          - name: time
+            value: "5"
+          - name: message
+            value: "hello"
     memoize:
-      key: "steps-regression-16094"
-      maxAge: "10s"
+      key: "hello-5"
       cache:
         configMap:
           name: steps-memo-regression-cache
-
-  - name: hello
     outputs:
       parameters:
       - name: message
-        value: "hello from child"
-    container:
-      image: argoproj/argosay:v2
-      command: [echo]
-      args: ["hello from child"]
+        valueFrom:
+          parameter: "{{steps.echo-and-wait-step.outputs.parameters.message}}"
+
+  - name: echo-and-wait
+    inputs:
+      parameters:
+      - name: message
+      - name: time
+    script:
+      image: alpine:3.17.2
+      command: [sh]
+      source: |
+        set -e
+        echo {{inputs.parameters.message}} > /tmp/msg
+        sleep {{inputs.parameters.time}}
+    outputs:
+      parameters:
+      - name: message
+        valueFrom:
+          path: /tmp/msg
 `).
 		When().
 		SubmitWorkflow().
@@ -1789,10 +1698,10 @@ spec:
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
 
-			// Find the memoized node
+			// Find the memoized node (the main template)
 			var memoizedNode *wfv1.NodeStatus
 			for _, node := range status.Nodes {
-				if node.TemplateName == "memoized-steps" && node.MemoizationStatus != nil {
+				if node.TemplateName == "main" && node.MemoizationStatus != nil {
 					n := node
 					memoizedNode = &n
 					break
@@ -1802,8 +1711,8 @@ spec:
 			require.False(t, memoizedNode.MemoizationStatus.Hit, "first execution should be cache miss")
 			require.NotNil(t, memoizedNode.Outputs, "memoized node should have outputs")
 			require.Len(t, memoizedNode.Outputs.Parameters, 1, "should have 1 output parameter")
-			assert.Equal(t, "result", memoizedNode.Outputs.Parameters[0].Name)
-			assert.Equal(t, "hello from child", memoizedNode.Outputs.Parameters[0].Value.String())
+			assert.Equal(t, "message", memoizedNode.Outputs.Parameters[0].Name)
+			assert.Contains(t, memoizedNode.Outputs.Parameters[0].Value.String(), "hello")
 		}).
 		// Now check the cache ConfigMap - this is the critical assertion for the bug fix
 		When().
@@ -1830,7 +1739,115 @@ spec:
 				"REGRESSION #16094: Cache should NOT contain null outputs")
 			assert.Contains(t, cacheData, `"outputs":`,
 				"Cache should contain outputs field")
-			assert.Contains(t, cacheData, "hello from child",
+			assert.Contains(t, cacheData, "hello",
+				"Cache should contain actual output value")
+		})
+}
+
+// TestDAGMemoizeCacheOutputsNotNull is a regression test for https://github.com/argoproj/argo-workflows/issues/16094
+// It verifies that when a DAG template with memoization and outputs executes,
+// the cache ConfigMap contains actual output values and NOT null.
+// This test uses a DAG version of the workflow structure from the bug report.
+func (s *FunctionalSuite) TestDAGMemoizeCacheOutputsNotNull() {
+	var cacheConfigMapName = "dag-memo-regression-cache"
+
+	s.Given().
+		Workflow(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: memo-dag-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: echo-and-wait-task
+        template: echo-and-wait
+        arguments:
+          parameters:
+          - name: time
+            value: "5"
+          - name: message
+            value: "hello"
+    memoize:
+      key: "dag-hello-5"
+      cache:
+        configMap:
+          name: dag-memo-regression-cache
+    outputs:
+      parameters:
+      - name: message
+        valueFrom:
+          parameter: "{{tasks.echo-and-wait-task.outputs.parameters.message}}"
+
+  - name: echo-and-wait
+    inputs:
+      parameters:
+      - name: message
+      - name: time
+    script:
+      image: alpine:3.17.2
+      command: [sh]
+      source: |
+        set -e
+        echo {{inputs.parameters.message}} > /tmp/msg
+        sleep {{inputs.parameters.time}}
+    outputs:
+      parameters:
+      - name: message
+        valueFrom:
+          path: /tmp/msg
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+
+			// Find the memoized node (the main template)
+			var memoizedNode *wfv1.NodeStatus
+			for _, node := range status.Nodes {
+				if node.TemplateName == "main" && node.MemoizationStatus != nil {
+					n := node
+					memoizedNode = &n
+					break
+				}
+			}
+			require.NotNil(t, memoizedNode, "memoized node should exist")
+			require.False(t, memoizedNode.MemoizationStatus.Hit, "first execution should be cache miss")
+			require.NotNil(t, memoizedNode.Outputs, "memoized node should have outputs")
+			require.Len(t, memoizedNode.Outputs.Parameters, 1, "should have 1 output parameter")
+			assert.Equal(t, "message", memoizedNode.Outputs.Parameters[0].Name)
+			assert.Contains(t, memoizedNode.Outputs.Parameters[0].Value.String(), "hello")
+		}).
+		// Now check the cache ConfigMap - this is the critical assertion for the bug fix
+		When().
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			// Get the cache ConfigMap
+			ctx := logging.TestContext(t.Context())
+			cm, err := s.KubeClient.CoreV1().ConfigMaps(fixtures.Namespace).Get(ctx, cacheConfigMapName, metav1.GetOptions{})
+			require.NoError(t, err, "should be able to get cache ConfigMap")
+			require.NotNil(t, cm, "cache ConfigMap should exist")
+
+			// Check the data field contains cache entries
+			require.NotEmpty(t, cm.Data, "cache ConfigMap should have data")
+
+			// Verify the cache entry contains actual outputs, not null
+			// The bug would cause "outputs":null in the cache
+			// With the fix, actual outputs should be present
+			cacheData := ""
+			for _, v := range cm.Data {
+				cacheData += v
+			}
+
+			assert.NotContains(t, cacheData, `"outputs":null`,
+				"REGRESSION #16094: Cache should NOT contain null outputs")
+			assert.Contains(t, cacheData, `"outputs":`,
+				"Cache should contain outputs field")
+			assert.Contains(t, cacheData, "hello",
 				"Cache should contain actual output value")
 		})
 }
