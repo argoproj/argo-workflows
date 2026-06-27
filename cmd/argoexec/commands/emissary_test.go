@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 	"syscall"
 	"testing"
@@ -14,6 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	cmdutil "github.com/argoproj/argo-workflows/v4/util/cmd"
 	"github.com/argoproj/argo-workflows/v4/util/errors"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
@@ -209,14 +211,29 @@ func TestEmissary(t *testing.T) {
 func TestSaveParameterPathTraversal(t *testing.T) {
 	tmp := t.TempDir()
 	varRunArgo = tmp
+	template = &wfv1.Template{} // isolate from any template left by other tests
 	ctx := logging.TestContext(t.Context())
-
-	srcFile := "result.txt"
-	require.NoError(t, os.WriteFile(filepath.Join(tmp, srcFile), []byte("hello"), 0o644))
+	// Open source paths relative to tmp so legitimate writes resolve there.
+	t.Chdir(tmp)
 
 	t.Run("LegitimateRelativePath", func(t *testing.T) {
-		err := saveParameter(ctx, srcFile)
+		require.NoError(t, os.WriteFile("result.txt", []byte("hello"), 0o644))
+		err := saveParameter(ctx, "result.txt")
 		require.NoError(t, err)
+		// The write path must actually run: the parameter is copied under outputs/parameters.
+		data, err := os.ReadFile(filepath.Join(tmp, "outputs/parameters/result.txt"))
+		require.NoError(t, err)
+		assert.Equal(t, "hello", string(data))
+	})
+	t.Run("LegitimateInternalDotDot", func(t *testing.T) {
+		require.NoError(t, os.MkdirAll("sub", 0o755))
+		require.NoError(t, os.WriteFile("sub/p.txt", []byte("world"), 0o644))
+		// sub/../sub/p.txt cleans to sub/p.txt, which stays in bounds and must succeed.
+		err := saveParameter(ctx, "sub/../sub/p.txt")
+		require.NoError(t, err)
+		data, err := os.ReadFile(filepath.Join(tmp, "outputs/parameters/sub/p.txt"))
+		require.NoError(t, err)
+		assert.Equal(t, "world", string(data))
 	})
 	t.Run("TraversalToArgoexec", func(t *testing.T) {
 		err := saveParameter(ctx, "../../argoexec")
@@ -238,8 +255,29 @@ func TestSaveParameterPathTraversal(t *testing.T) {
 func TestSaveArtifactPathTraversal(t *testing.T) {
 	tmp := t.TempDir()
 	varRunArgo = tmp
+	template = &wfv1.Template{} // isolate from any template left by other tests
 	ctx := logging.TestContext(t.Context())
+	t.Chdir(tmp)
 
+	t.Run("LegitimateAbsolutePath", func(t *testing.T) {
+		require.NoError(t, os.WriteFile(filepath.Join(tmp, "artifact"), []byte("hello"), 0o644))
+		err := saveArtifact(ctx, filepath.Join(tmp, "artifact"))
+		require.NoError(t, err)
+		// The tarball must actually be written under outputs/artifacts.
+		data, err := os.ReadFile(filepath.Join(tmp, "outputs/artifacts", strings.TrimPrefix(tmp, "/"), "artifact.tgz"))
+		require.NoError(t, err)
+		assert.NotEmpty(t, data) // tgz content
+	})
+	t.Run("LegitimateInternalDotDot", func(t *testing.T) {
+		require.NoError(t, os.MkdirAll("dir", 0o755))
+		require.NoError(t, os.WriteFile("dir/a", []byte("hi"), 0o644))
+		// dir/../dir/a cleans to dir/a, in bounds, must succeed and write the tarball.
+		err := saveArtifact(ctx, "dir/../dir/a")
+		require.NoError(t, err)
+		data, err := os.ReadFile(filepath.Join(tmp, "outputs/artifacts/dir/a.tgz"))
+		require.NoError(t, err)
+		assert.NotEmpty(t, data)
+	})
 	t.Run("TraversalToArgoexec", func(t *testing.T) {
 		err := saveArtifact(ctx, "../../argoexec")
 		require.Error(t, err)

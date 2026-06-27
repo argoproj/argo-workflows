@@ -401,32 +401,35 @@ func saveArtifact(ctx context.Context, srcPath string) error {
 		logger.WithField("srcPath", srcPath).Info(ctx, "no need to save artifact - on overlapping volume")
 		return nil
 	}
-	// Normalize absolute paths (e.g. /tmp/artifact → tmp/artifact) so that
-	// filepath.IsLocal can validate the result, and os.Root.Create can safely
-	// write it within the outputs directory.
-	relSrc := strings.TrimPrefix(strings.TrimSuffix(srcPath, "/"), "/")
-	dstRel := relSrc + ".tgz"
-	if !filepath.IsLocal(dstRel) {
+	// Map the (possibly absolute) source path to a path relative to the outputs
+	// directory, e.g. /tmp/artifact -> tmp/artifact. TrimLeft drops any leading
+	// slashes (including "//"); Clean collapses any in-bounds "..". IsLocal then
+	// rejects anything that would still escape (leading "..", absolute paths).
+	relSrc := filepath.Clean(strings.TrimLeft(strings.TrimSuffix(srcPath, "/"), "/"))
+	if !filepath.IsLocal(relSrc) {
 		return fmt.Errorf("path traversal in output artifact path %q", srcPath)
 	}
-	artifactsDir := filepath.Join(varRunArgo, "outputs/artifacts")
-	dstPath := filepath.Join(artifactsDir, dstRel)
 	if _, err := os.Stat(srcPath); os.IsNotExist(err) { // might be optional, so we ignore
 		logger.WithField("srcPath", srcPath).WithError(err).Warn(ctx, "cannot save artifact")
 		return nil
 	}
+	// dstRel is relative to varRunArgo; both the directory and the file are
+	// created through a single os.Root opened at that trusted base, so a
+	// symlinked path component cannot redirect the write outside the tree.
+	dstRel := filepath.Join("outputs/artifacts", relSrc+".tgz")
+	dstPath := filepath.Join(varRunArgo, dstRel)
 	logger.WithFields(logging.Fields{
 		"src": srcPath,
 		"dst": dstPath,
 	}).Info(ctx, "saving artifact")
-	if err := os.MkdirAll(filepath.Dir(dstPath), 0o755); err != nil { // chmod rwxr-xr-x
+	root, err := os.OpenRoot(varRunArgo)
+	if err != nil {
+		return fmt.Errorf("failed to open output root %s: %w", varRunArgo, err)
+	}
+	defer func() { _ = root.Close() }()
+	if err = root.MkdirAll(filepath.Dir(dstRel), 0o755); err != nil { // chmod rwxr-xr-x
 		return fmt.Errorf("failed to create directory %s: %w", filepath.Dir(dstPath), err)
 	}
-	root, err := os.OpenRoot(artifactsDir)
-	if err != nil {
-		return fmt.Errorf("failed to open artifacts output root: %w", err)
-	}
-	defer root.Close()
 	dst, err := root.Create(dstRel)
 	if err != nil {
 		return fmt.Errorf("failed to create destination %s: %w", dstPath, err)
@@ -448,15 +451,19 @@ func saveParameter(ctx context.Context, srcPath string) error {
 		logger.WithField("src", srcPath).Info(ctx, "no need to save parameter - on overlapping volume")
 		return nil
 	}
-	// Normalize absolute paths (e.g. /tmp/parameter → tmp/parameter) so that
-	// filepath.IsLocal can validate the result, and os.Root.Create can safely
-	// write it within the outputs directory.
-	relPath := strings.TrimPrefix(srcPath, "/")
-	if !filepath.IsLocal(relPath) {
+	// Map the (possibly absolute) source path to a path relative to the outputs
+	// directory, e.g. /tmp/parameter -> tmp/parameter. TrimLeft drops any leading
+	// slashes (including "//"); Clean collapses any in-bounds "..". IsLocal then
+	// rejects anything that would still escape (leading "..", absolute paths).
+	relSrc := filepath.Clean(strings.TrimLeft(srcPath, "/"))
+	if !filepath.IsLocal(relSrc) {
 		return fmt.Errorf("path traversal in output parameter path %q", srcPath)
 	}
-	parametersDir := filepath.Join(varRunArgo, "outputs/parameters")
-	dstPath := filepath.Join(parametersDir, relPath)
+	// dstRel is relative to varRunArgo; both the directory and the file are
+	// created through a single os.Root opened at that trusted base, so a
+	// symlinked path component cannot redirect the write outside the tree.
+	dstRel := filepath.Join("outputs/parameters", relSrc)
+	dstPath := filepath.Join(varRunArgo, dstRel)
 	src, err := os.Open(filepath.Clean(srcPath))
 	if os.IsNotExist(err) { // might be optional, so we ignore
 		logger.WithField("src", srcPath).WithError(err).Error(ctx, "cannot save parameter, does not exist")
@@ -470,15 +477,15 @@ func saveParameter(ctx context.Context, srcPath string) error {
 		"src": srcPath,
 		"dst": dstPath,
 	}).Info(ctx, "saving parameter")
-	if mkdirErr := os.MkdirAll(filepath.Dir(dstPath), 0o755); mkdirErr != nil { // chmod rwxr-xr-x
+	root, err := os.OpenRoot(varRunArgo)
+	if err != nil {
+		return fmt.Errorf("failed to open output root %s: %w", varRunArgo, err)
+	}
+	defer func() { _ = root.Close() }()
+	if mkdirErr := root.MkdirAll(filepath.Dir(dstRel), 0o755); mkdirErr != nil { // chmod rwxr-xr-x
 		return fmt.Errorf("failed to create directory %s: %w", filepath.Dir(dstPath), mkdirErr)
 	}
-	root, err := os.OpenRoot(parametersDir)
-	if err != nil {
-		return fmt.Errorf("failed to open parameters output root: %w", err)
-	}
-	defer root.Close()
-	dst, err := root.Create(relPath)
+	dst, err := root.Create(dstRel)
 	if err != nil {
 		return fmt.Errorf("failed to create %s: %w", srcPath, err)
 	}
