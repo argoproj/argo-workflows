@@ -356,7 +356,10 @@ func (a *ArtifactServer) getArtifactByUID(w http.ResponseWriter, r *http.Request
 		return
 	}
 	ctx, err = a.gateKeeping(r, types.NamespaceHolder(wf.GetNamespace()))
-
+	if err != nil {
+		a.unauthorizedError(w)
+		return
+	}
 	// return 401 if the client does not have permission to get wf
 	err = a.validateAccess(ctx, wf)
 	if err != nil {
