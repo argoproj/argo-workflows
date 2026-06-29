@@ -1,7 +1,7 @@
 // Renders the sticky PR-readiness comment. One comment per PR, identified by
 // MARKER, edited in place. A hidden state blob carries data between runs.
 
-import type { AiIssue, CommentVariant, State } from './types.ts';
+import type { CommentVariant, State, TemplateIssue } from './types.ts';
 
 export const MARKER = '<!-- pr-readiness-bot -->';
 
@@ -24,12 +24,12 @@ interface FailureItem {
 interface RenderArgs {
   variant: CommentVariant | null;
   failures: ReadonlyArray<FailureItem>;
-  aiIssues: AiIssue[] | null;
+  templateIssues: TemplateIssue[] | null;
   drafted: boolean;
   state: State;
 }
 
-export function renderComment({ variant, failures, aiIssues, drafted, state }: RenderArgs): string {
+export function renderComment({ variant, failures, templateIssues, drafted, state }: RenderArgs): string {
   const head = [MARKER, stateLine(state), ''];
 
   if (variant === 'allclear') {
@@ -66,7 +66,7 @@ export function renderComment({ variant, failures, aiIssues, drafted, state }: R
     lines.push(`- **${f.title}** — ${f.guidance} ([log](${f.url}))`);
   }
 
-  if (aiIssues && aiIssues.length > 0) {
+  if (templateIssues && templateIssues.length > 0) {
     lines.push(
       '',
       '<details>',
@@ -75,10 +75,10 @@ export function renderComment({ variant, failures, aiIssues, drafted, state }: R
       'The PR description does not appear to follow [the template](https://github.com/argoproj/argo-workflows/blob/main/.github/pull_request_template.md):',
       ''
     );
-    for (const issue of aiIssues) {
+    for (const issue of templateIssues) {
       lines.push(`- **${issue.section}**: ${issue.problem}`);
     }
-    lines.push('', '_(Advisory — based on an automated read of your description. A maintainer may waive this.)_', '</details>');
+    lines.push('', '_(A maintainer may waive this.)_', '</details>');
   }
 
   if (drafted) {

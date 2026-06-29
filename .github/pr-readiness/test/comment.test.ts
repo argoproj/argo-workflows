@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { MARKER, renderComment, parseState } from '../comment.ts';
 import type { State } from '../types.ts';
 
-const baseState: State = { v: 1, bodyHash: 'abc123', failing: ['lint'], aiFindings: null, aiCompliant: null, draftedSha: null };
+const baseState: State = { v: 1, failing: ['lint'], draftedSha: null };
 
 test('renderComment issues variant lists each failure with guidance and log link', () => {
   const body = renderComment({
@@ -12,7 +12,7 @@ test('renderComment issues variant lists each failure with guidance and log link
       { id: 'lint', title: 'Lint', guidance: 'Run `make pre-commit -B`.', url: 'https://github.com/x/y/runs/1' },
       { id: 'dco', title: 'DCO (sign-off)', guidance: 'Sign off your commits.', url: 'https://github.com/x/y/runs/2' },
     ],
-    aiIssues: null,
+    templateIssues: null,
     drafted: false,
     state: baseState,
   });
@@ -24,25 +24,25 @@ test('renderComment issues variant lists each failure with guidance and log link
   assert.ok(!body.includes('✅ PR readiness: all clear'));
 });
 
-test('renderComment includes AI description findings in a details block marked advisory', () => {
+test('renderComment includes template findings in a waivable details block', () => {
   const body = renderComment({
     variant: 'issues',
     failures: [],
-    aiIssues: [{ section: 'Motivation', problem: 'still contains the template TODO placeholder' }],
+    templateIssues: [{ section: 'Motivation', problem: 'still contains the template placeholder' }],
     drafted: false,
     state: baseState,
   });
   assert.ok(body.includes('<details>'));
   assert.ok(body.includes('Motivation'));
-  assert.ok(body.includes('still contains the template TODO placeholder'));
-  assert.ok(/advisory/i.test(body));
+  assert.ok(body.includes('still contains the template placeholder'));
+  assert.ok(/waive/i.test(body));
 });
 
 test('renderComment notes draft conversion when drafted', () => {
   const body = renderComment({
     variant: 'issues',
     failures: [{ id: 'lint', title: 'Lint', guidance: 'g', url: 'u' }],
-    aiIssues: null,
+    templateIssues: null,
     drafted: true,
     state: baseState,
   });
@@ -51,27 +51,27 @@ test('renderComment notes draft conversion when drafted', () => {
 });
 
 test('renderComment all-clear variant is short and positive', () => {
-  const body = renderComment({ variant: 'allclear', failures: [], aiIssues: null, drafted: false, state: { ...baseState, failing: [] } });
+  const body = renderComment({ variant: 'allclear', failures: [], templateIssues: null, drafted: false, state: { ...baseState, failing: [] } });
   assert.ok(body.startsWith(MARKER));
   assert.ok(body.includes('✅'));
   assert.ok(!body.includes('<details>'));
 });
 
 test('renderComment waiting variant mentions waiting for checks', () => {
-  const body = renderComment({ variant: 'waiting', failures: [], aiIssues: null, drafted: false, state: baseState });
+  const body = renderComment({ variant: 'waiting', failures: [], templateIssues: null, drafted: false, state: baseState });
   assert.ok(body.startsWith(MARKER));
   assert.ok(/waiting/i.test(body));
 });
 
 test('renderComment footer says tests are not covered and it is automated', () => {
-  const body = renderComment({ variant: 'issues', failures: [{ id: 'x', title: 'X', guidance: 'g', url: 'u' }], aiIssues: null, drafted: false, state: baseState });
+  const body = renderComment({ variant: 'issues', failures: [{ id: 'x', title: 'X', guidance: 'g', url: 'u' }], templateIssues: null, drafted: false, state: baseState });
   assert.ok(/unit\/e2e/i.test(body));
   assert.ok(/automated/i.test(body));
 });
 
 test('state round-trips through the rendered comment', () => {
-  const state: State = { v: 1, bodyHash: 'deadbeef', failing: ['lint', 'dco'], aiFindings: [{ section: 'AI', problem: 'missing' }], aiCompliant: false, draftedSha: 'cafe01' };
-  const body = renderComment({ variant: 'issues', failures: [{ id: 'lint', title: 'L', guidance: 'g', url: 'u' }], aiIssues: null, drafted: false, state });
+  const state: State = { v: 1, failing: ['lint', 'dco'], draftedSha: 'cafe01' };
+  const body = renderComment({ variant: 'issues', failures: [{ id: 'lint', title: 'L', guidance: 'g', url: 'u' }], templateIssues: null, drafted: false, state });
   assert.deepEqual(parseState(body), state);
 });
 

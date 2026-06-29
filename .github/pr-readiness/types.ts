@@ -45,22 +45,19 @@ export interface JobStep {
   conclusion: string | null;
 }
 
-export interface AiIssue {
+export interface TemplateIssue {
   section: string;
   problem: string;
 }
 
-export interface AiVerdict {
+export interface TemplateVerdict {
   compliant: boolean;
-  issues: AiIssue[];
+  issues: TemplateIssue[];
 }
 
 export interface State {
   v: number;
-  bodyHash?: string;
   failing: string[];
-  aiFindings?: AiIssue[] | null;
-  aiCompliant?: boolean | null;
   draftedSha?: string | null;
 }
 
@@ -76,7 +73,7 @@ export interface Decision {
   shouldComment: boolean;
   shouldDraft: boolean;
   failing: string[];
-  aiBlocking: boolean;
+  templateBlocking: boolean;
 }
 
 export interface GitHubUser {

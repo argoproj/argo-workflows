@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { classifySignals, diagnostics, decide, isExemptAuthor, parseOwners, findPullRequest } from '../classify.ts';
+import { classifySignals, diagnostics, decide, isExemptAuthor, parseOwners, findPullRequest, pickStepGuidance } from '../classify.ts';
 import type { CheckRun, Config, SignalState } from '../types.ts';
 
 const config = createRequire(import.meta.url)('../checks.config.json') as Config;
@@ -66,7 +66,7 @@ const S = (id: string, state: SignalState) => ({ id, state, title: id, guidance:
 test('decide: failures present -> issues comment, draft requested', () => {
   const d = decide({
     signals: [S('lint', 'failure'), S('docs', 'pending')],
-    aiVerdict: null,
+    templateVerdict: null,
     existingState: null,
     hasExistingComment: false,
     pr: { draft: false, headSha: 'sha1' },
@@ -77,10 +77,10 @@ test('decide: failures present -> issues comment, draft requested', () => {
   assert.deepEqual(d.failing, ['lint']);
 });
 
-test('decide: AI non-compliant alone is blocking -> issues + draft', () => {
+test('decide: a non-compliant template alone is blocking -> issues + draft', () => {
   const d = decide({
     signals: [S('lint', 'success')],
-    aiVerdict: { compliant: false },
+    templateVerdict: { compliant: false },
     existingState: null,
     hasExistingComment: false,
     pr: { draft: false, headSha: 'sha1' },
@@ -93,7 +93,7 @@ test('decide: never post when no failures and no existing comment', () => {
   for (const state of ['pending', 'success'] as SignalState[]) {
     const d = decide({
       signals: [S('lint', state)],
-      aiVerdict: { compliant: true },
+      templateVerdict: { compliant: true },
       existingState: null,
       hasExistingComment: false,
       pr: { draft: false, headSha: 'sha1' },
@@ -106,8 +106,8 @@ test('decide: never post when no failures and no existing comment', () => {
 test('decide: existing comment + no failures + pending -> waiting variant', () => {
   const d = decide({
     signals: [S('lint', 'success'), S('docs', 'pending')],
-    aiVerdict: null,
-    existingState: { failing: ['lint'] } as never,
+    templateVerdict: null,
+    existingState: { draftedSha: null },
     hasExistingComment: true,
     pr: { draft: false, headSha: 'sha1' },
   });
@@ -119,8 +119,8 @@ test('decide: existing comment + no failures + pending -> waiting variant', () =
 test('decide: existing comment + all terminal green -> all-clear', () => {
   const d = decide({
     signals: [S('lint', 'success'), S('ui', 'not-applicable')],
-    aiVerdict: { compliant: true },
-    existingState: { failing: ['lint'] } as never,
+    templateVerdict: { compliant: true },
+    existingState: { draftedSha: null },
     hasExistingComment: true,
     pr: { draft: false, headSha: 'sha1' },
   });
@@ -132,7 +132,7 @@ test('decide: existing comment + all terminal green -> all-clear', () => {
 test('decide: does not draft a PR that is already a draft', () => {
   const d = decide({
     signals: [S('lint', 'failure')],
-    aiVerdict: null,
+    templateVerdict: null,
     existingState: null,
     hasExistingComment: false,
     pr: { draft: true, headSha: 'sha1' },
@@ -144,7 +144,7 @@ test('decide: does not draft a PR that is already a draft', () => {
 test('decide: drafts at most once per head SHA (human undraft is respected)', () => {
   const d = decide({
     signals: [S('lint', 'failure')],
-    aiVerdict: null,
+    templateVerdict: null,
     existingState: { draftedSha: 'sha1' },
     hasExistingComment: true,
     pr: { draft: false, headSha: 'sha1' },
@@ -153,7 +153,7 @@ test('decide: drafts at most once per head SHA (human undraft is respected)', ()
   // but a new head re-asserts
   const d2 = decide({
     signals: [S('lint', 'failure')],
-    aiVerdict: null,
+    templateVerdict: null,
     existingState: { draftedSha: 'sha1' },
     hasExistingComment: true,
     pr: { draft: false, headSha: 'sha2' },
@@ -161,11 +161,11 @@ test('decide: drafts at most once per head SHA (human undraft is respected)', ()
   assert.equal(d2.shouldDraft, true);
 });
 
-test('decide: AI error (null verdict) never drafts on its own', () => {
+test('decide: no failures and a compliant template never drafts', () => {
   const d = decide({
     signals: [S('lint', 'success')],
-    aiVerdict: null,
-    existingState: { failing: [] } as never,
+    templateVerdict: { compliant: true },
+    existingState: { draftedSha: null },
     hasExistingComment: true,
     pr: { draft: false, headSha: 'sha1' },
   });
@@ -200,4 +200,28 @@ test('findPullRequest matches open PR by head sha', () => {
   ];
   assert.equal(findPullRequest(prs, 'bbb')!.number, 2);
   assert.equal(findPullRequest(prs, 'zzz'), null);
+});
+
+// --- pickStepGuidance: choose per-step guidance for the features check ---
+
+const featureSignal = {
+  guidance: 'generic feature guidance',
+  stepGuidance: {
+    'No ./.features/*.md addition': 'run make feature-new',
+    'Validate ./.features/*.md changes': 'run make features-validate',
+  },
+};
+
+test('pickStepGuidance returns the failing step guidance', () => {
+  const steps = [
+    { name: 'Check if feature PR', conclusion: 'success' },
+    { name: 'No ./.features/*.md addition', conclusion: 'failure' },
+  ];
+  assert.equal(pickStepGuidance(featureSignal, steps), 'run make feature-new');
+});
+
+test('pickStepGuidance falls back to generic guidance when no mapped step failed', () => {
+  assert.equal(pickStepGuidance(featureSignal, [{ name: 'something else', conclusion: 'failure' }]), 'generic feature guidance');
+  assert.equal(pickStepGuidance(featureSignal, null), 'generic feature guidance');
+  assert.equal(pickStepGuidance({ guidance: 'g', stepGuidance: null }, []), 'g');
 });

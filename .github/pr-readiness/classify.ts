@@ -69,17 +69,17 @@ export function diagnostics(checkRuns: CheckRun[], config: Config): { unmapped: 
 
 interface DecideArgs {
   signals: ReadonlyArray<{ id: string; state: string }>;
-  aiVerdict: { compliant: boolean } | null;
+  templateVerdict: { compliant: boolean } | null;
   existingState: { draftedSha?: string | null } | null;
   hasExistingComment: boolean;
   pr: { draft: boolean; headSha: string };
 }
 
 // The convergence rules. See README.md for the decision table.
-export function decide({ signals, aiVerdict, existingState, hasExistingComment, pr }: DecideArgs): Decision {
+export function decide({ signals, templateVerdict, existingState, hasExistingComment, pr }: DecideArgs): Decision {
   const failing = signals.filter((s) => s.state === 'failure').map((s) => s.id);
-  const aiBlocking = Boolean(aiVerdict && aiVerdict.compliant === false);
-  const blocking = failing.length > 0 || aiBlocking;
+  const templateBlocking = Boolean(templateVerdict && templateVerdict.compliant === false);
+  const blocking = failing.length > 0 || templateBlocking;
   const anyPending = signals.some((s) => s.state === 'pending');
 
   let variant: Decision['variant'] = null;
@@ -95,7 +95,7 @@ export function decide({ signals, aiVerdict, existingState, hasExistingComment, 
   const alreadyDraftedThisSha = Boolean(existingState && existingState.draftedSha === pr.headSha);
   const shouldDraft = blocking && !pr.draft && !alreadyDraftedThisSha;
 
-  return { variant, shouldComment, shouldDraft, failing, aiBlocking };
+  return { variant, shouldComment, shouldDraft, failing, templateBlocking };
 }
 
 // OWNERS is a small YAML subset: three keys, each a list of logins.
