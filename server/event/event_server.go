@@ -74,12 +74,15 @@ func (s *Controller) ReceiveEvent(ctx context.Context, req *eventpkg.EventReques
 	options := metav1.ListOptions{}
 	s.instanceIDService.With(&options)
 
-	list, err := auth.GetWfClient(ctx).ArgoprojV1alpha1().WorkflowEventBindings(req.Namespace).List(ctx, options)
+	// Use the tolerant dynamic list so a single malformed WorkflowEventBinding
+	// cannot 500 every inbound event (the failure class this package guards).
+	gvr := wfv1.SchemeGroupVersion.WithResource(workflow.WorkflowEventBindingPlural)
+	items, _, err := sutils.TolerantList[wfv1.WorkflowEventBinding](ctx, auth.GetDynamicClient(ctx), gvr, req.Namespace, options)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
 
-	operation, err := dispatch.NewOperation(ctx, s.instanceIDService, s.eventRecorderManager.Get(ctx, req.Namespace), list.Items, req.Namespace, req.Discriminator, req.Payload)
+	operation, err := dispatch.NewOperation(ctx, s.instanceIDService, s.eventRecorderManager.Get(ctx, req.Namespace), items, req.Namespace, req.Discriminator, req.Payload)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}

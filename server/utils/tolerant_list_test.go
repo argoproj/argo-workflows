@@ -67,6 +67,28 @@ func TestTolerantList_PropagatesListError(t *testing.T) {
 	require.Error(t, err)
 }
 
+// TestTolerantList_PropagatesListMeta asserts the returned ListMeta carries the
+// upstream pagination fields. Callers wrap meta into their *List response to feed
+// the Continue token; a dropped token would silently break pagination.
+func TestTolerantList_PropagatesListMeta(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	scheme := runtime.NewScheme()
+	require.NoError(t, wfv1.AddToScheme(scheme))
+	dyn := dynamicfake.NewSimpleDynamicClient(scheme)
+	dyn.PrependReactor("list", "workflowtemplates", func(k8stesting.Action) (bool, runtime.Object, error) {
+		list := &unstructured.UnstructuredList{}
+		list.SetResourceVersion("123")
+		list.SetContinue("next-token")
+		return true, list, nil
+	})
+
+	gvr := wfv1.SchemeGroupVersion.WithResource(workflow.WorkflowTemplatePlural)
+	_, meta, err := TolerantList[wfv1.WorkflowTemplate](ctx, dyn, gvr, "ns1", metav1.ListOptions{})
+	require.NoError(t, err)
+	assert.Equal(t, "123", meta.ResourceVersion)
+	assert.Equal(t, "next-token", meta.Continue)
+}
+
 func TestTolerantList_AllValid(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	scheme := runtime.NewScheme()
@@ -82,6 +104,27 @@ func TestTolerantList_AllValid(t *testing.T) {
 	items, _, err := TolerantList[wfv1.WorkflowTemplate](ctx, dyn, gvr, "ns1", metav1.ListOptions{})
 	require.NoError(t, err)
 	assert.Len(t, items, 2)
+}
+
+// TestTolerantList_ClearsTypeMeta guards that decoded items carry empty TypeMeta,
+// matching the typed clientset this path replaces (its codec strips Kind/APIVersion
+// on decode). The JSON roundtrip leaves them populated, which would change every
+// list response and break golden tests / list-then-resubmit flows.
+func TestTolerantList_ClearsTypeMeta(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	scheme := runtime.NewScheme()
+	require.NoError(t, wfv1.AddToScheme(scheme))
+
+	wf := &wfv1.WorkflowTemplate{ObjectMeta: metav1.ObjectMeta{Name: "a", Namespace: "ns1"}}
+	wf.SetGroupVersionKind(wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowTemplateKind))
+
+	dyn := dynamicfake.NewSimpleDynamicClient(scheme, wf)
+	gvr := wfv1.SchemeGroupVersion.WithResource(workflow.WorkflowTemplatePlural)
+	items, _, err := TolerantList[wfv1.WorkflowTemplate](ctx, dyn, gvr, "ns1", metav1.ListOptions{})
+	require.NoError(t, err)
+	require.Len(t, items, 1)
+	assert.Empty(t, items[0].Kind)
+	assert.Empty(t, items[0].APIVersion)
 }
 
 // TestTolerantList_PreservesCustomUnmarshalers guards against a regression where

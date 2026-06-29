@@ -58,6 +58,10 @@ metadata:
   namespace: my-ns
 `, &unlabelled)
 
+	// List now reads through the dynamic client while Create still writes through
+	// the typed client, so the two fakes are seeded independently. The typed fake
+	// omits cronWf so CreateCronWorkflow below doesn't hit AlreadyExists; the
+	// dynamic fake includes it so ListCronWorkflows has something to return.
 	wfClientset := wftFake.NewClientset(&unlabelled)
 	dynClient := dynamicfake.NewSimpleDynamicClient(wfscheme.Scheme, &unlabelled, &cronWf)
 	wftmplStore := workflowtemplate.NewClientStore()

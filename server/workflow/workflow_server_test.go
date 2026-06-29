@@ -12,6 +12,7 @@ import (
 	authorizationv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/rand"
@@ -23,7 +24,6 @@ import (
 	"github.com/argoproj/argo-workflows/v4/persist/sqldb/mocks"
 	workflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow"
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
 	v1alpha "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
 	wfscheme "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/scheme"
 	"github.com/argoproj/argo-workflows/v4/server/auth"
@@ -665,6 +665,7 @@ func getWorkflowServer(t *testing.T) (workflowpkg.WorkflowServiceServer, context
 	wftmplStore := workflowtemplate.NewClientStore()
 	cwftmplStore := clusterworkflowtemplate.NewClientStore()
 	dynClient := dynamicfake.NewSimpleDynamicClient(wfscheme.Scheme, &unlabelledObj, &wfObj1, &wfObj2, &wfObj3, &wfObj4, &wfObj5, &failedWfObj)
+	ctx = context.WithValue(ctx, auth.DynamicKey, dynClient)
 	server := NewServer(ctx, instanceIDSvc, offloadNodeStatusRepo, archivedRepo, dynClient, wfStore, wfStore, wftmplStore, cwftmplStore, nil, &namespaceAll)
 	return server, ctx
 }
@@ -754,10 +755,51 @@ func TestGetWorkflowWithNotFound(t *testing.T) {
 
 func TestGetLatestWorkflow(t *testing.T) {
 	_, ctx := getWorkflowServer(t)
-	wfClient := ctx.Value(auth.WfKey).(versioned.Interface)
-	wf, err := getLatestWorkflow(ctx, wfClient, "test")
+	wf, err := getLatestWorkflow(ctx, "test")
 	require.NoError(t, err)
 	assert.Equal(t, "hello-world-9tql2-test", wf.Name)
+}
+
+func TestGetLatestWorkflowMalformed(t *testing.T) {
+	mkWF := func(name, created string, spec any) *unstructured.Unstructured {
+		return &unstructured.Unstructured{Object: map[string]any{
+			"apiVersion": "argoproj.io/v1alpha1",
+			"kind":       "Workflow",
+			"metadata": map[string]any{
+				"name":              name,
+				"namespace":         "test",
+				"creationTimestamp": created,
+			},
+			"spec": spec,
+		}}
+	}
+	validSpec := map[string]any{"entrypoint": "main"}
+	badSpec := "this-should-be-an-object" // fails decode into the typed WorkflowSpec
+
+	ctxWith := func(objs ...runtime.Object) context.Context {
+		dynClient := dynamicfake.NewSimpleDynamicClient(wfscheme.Scheme, objs...)
+		return context.WithValue(logging.TestContext(t.Context()), auth.DynamicKey, dynClient)
+	}
+
+	t.Run("malformed newest surfaces an error, not the older workflow", func(t *testing.T) {
+		ctx := ctxWith(
+			mkWF("valid-older", "2020-01-01T00:00:00Z", validSpec),
+			mkWF("malformed-newer", "2030-01-01T00:00:00Z", badSpec),
+		)
+		_, err := getLatestWorkflow(ctx, "test")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "malformed-newer")
+	})
+
+	t.Run("malformed older is ignored", func(t *testing.T) {
+		ctx := ctxWith(
+			mkWF("malformed-older", "2020-01-01T00:00:00Z", badSpec),
+			mkWF("valid-newer", "2030-01-01T00:00:00Z", validSpec),
+		)
+		wf, err := getLatestWorkflow(ctx, "test")
+		require.NoError(t, err)
+		assert.Equal(t, "valid-newer", wf.Name)
+	})
 }
 
 func TestGetWorkflow(t *testing.T) {

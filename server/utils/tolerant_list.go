@@ -12,22 +12,42 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
-// decodeUnstructured converts an *unstructured.Unstructured into *out via a
-// JSON marshal/unmarshal roundtrip.
+// DecodeUnstructured converts an *unstructured.Unstructured into *out via a
+// JSON marshal/unmarshal roundtrip — the same decode the typed client performs on
+// the wire bytes this path replaces.
 //
-// We deliberately do NOT use runtime.DefaultUnstructuredConverter.FromUnstructured
-// here: it copies fields with reflection and never invokes custom
-// json.Unmarshaler implementations. Several workflow types rely on custom
-// unmarshalers (ParallelSteps is an anonymous list, Item/AnyString/Plugin/
-// Amount/Object accept multiple shapes), so reflection-based conversion silently
-// produces zero values for those fields — or, for ParallelSteps, drops the
-// whole object — and the list comes back empty in production.
-func decodeUnstructured[T any](un *unstructured.Unstructured, out *T) error {
+// Going through json.Unmarshal is what invokes the custom json.Unmarshaler
+// implementations several workflow types rely on (ParallelSteps is an anonymous
+// list; Item/AnyString/Plugin/Amount/Object accept multiple shapes); a naive
+// reflective field copy would silently zero or drop them. (Current apimachinery's
+// runtime.DefaultUnstructuredConverter.FromUnstructured does honor custom
+// unmarshalers too, so it would also work — the JSON roundtrip is just the most
+// direct equivalent of the typed decode it stands in for.)
+//
+// ponytail: the roundtrip is 3 serialization passes per item (wire→unstructured by
+// the dynamic client, then marshal→unmarshal here) and runs per item on every list
+// and per event on the long-lived workflow reflector, where objects can be large.
+// Swap to FromUnstructured (one reflective pass, no re-marshal) if this shows up in
+// a CPU profile; TestTolerantList_PreservesCustomUnmarshalers guards the unmarshaler
+// behavior that switch must not regress.
+func DecodeUnstructured[T any](un *unstructured.Unstructured, out *T) error {
 	data, err := un.MarshalJSON()
 	if err != nil {
 		return err
 	}
-	return json.Unmarshal(data, out)
+	if err := json.Unmarshal(data, out); err != nil {
+		return err
+	}
+	// The typed clientset this path replaces returns items with empty TypeMeta —
+	// the scheme's codec strips Kind/APIVersion on decode since the Go type implies
+	// the GVK. The JSON roundtrip here leaves them populated, which would change
+	// every list/watch response (golden tests, list-then-resubmit flows). Clear them
+	// to preserve the original contract. All CRD types embed metav1.TypeMeta, so the
+	// returned pointer satisfies schema.ObjectKind.
+	if objKind, ok := any(out).(schema.ObjectKind); ok {
+		objKind.SetGroupVersionKind(schema.GroupVersionKind{})
+	}
+	return nil
 }
 
 // TolerantList lists `gvr` via the dynamic client and converts each item into a
@@ -66,7 +86,7 @@ func TolerantList[T any](
 	for i := range ul.Items {
 		raw := &ul.Items[i]
 		var item T
-		if convErr := decodeUnstructured(raw, &item); convErr != nil {
+		if convErr := DecodeUnstructured(raw, &item); convErr != nil {
 			logger.
 				WithField("namespace", raw.GetNamespace()).
 				WithField("name", raw.GetName()).

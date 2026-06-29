@@ -9,11 +9,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	dynamicfake "k8s.io/client-go/dynamic/fake"
 	fakekube "k8s.io/client-go/kubernetes/fake"
 
 	eventpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/event"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
+	wfscheme "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/scheme"
 	"github.com/argoproj/argo-workflows/v4/server/auth"
 	"github.com/argoproj/argo-workflows/v4/util/instanceid"
 	"github.com/argoproj/argo-workflows/v4/workflow/events"
@@ -21,7 +23,8 @@ import (
 
 func TestController(t *testing.T) {
 	clientset := fake.NewClientset()
-	ctx := context.WithValue(logging.TestContext(t.Context()), auth.WfKey, clientset)
+	dynClient := dynamicfake.NewSimpleDynamicClient(wfscheme.Scheme)
+	ctx := context.WithValue(context.WithValue(logging.TestContext(t.Context()), auth.WfKey, clientset), auth.DynamicKey, dynClient)
 	instanceIDService := instanceid.NewService("my-instanceid")
 	eventRecorderManager := events.NewEventRecorderManager(fakekube.NewClientset())
 	newController := func(asyncDispatch bool) *Controller {
