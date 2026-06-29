@@ -1,0 +1,72 @@
+{
+  "comment": "Classification of contributor-fixable PR checks. See README.md. 'match.check' is the CHECK-RUN name (= job name or job id), not a step name.",
+  "signals": [
+    {
+      "id": "lint",
+      "match": { "check": "Lint" },
+      "title": "Lint",
+      "guidance": "Run `make pre-commit -B` locally to auto-fix most lint issues, then commit and push the result."
+    },
+    {
+      "id": "codegen",
+      "match": { "check": "Codegen" },
+      "title": "Codegen",
+      "guidance": "Generated files are out of date with your changes. Run `make codegen -B` (or `make pre-commit -B`) locally and commit the regenerated files."
+    },
+    {
+      "id": "ui",
+      "match": { "check": "UI" },
+      "title": "UI",
+      "guidance": "The UI build/lint failed. Run `yarn --cwd ui install && yarn --cwd ui build && yarn --cwd ui lint` locally and commit any fixes."
+    },
+    {
+      "id": "build-cli",
+      "match": { "check": "Build Binaries (cli)" },
+      "title": "Build (CLI)",
+      "guidance": "The CLI failed to compile. Reproduce with `make cli` and fix the build error — the compiler output is in the linked log."
+    },
+    {
+      "id": "build-controller",
+      "match": { "check": "Build Binaries (controller)" },
+      "title": "Build (controller)",
+      "guidance": "The controller failed to compile. Reproduce with `make controller` and fix the build error — the compiler output is in the linked log."
+    },
+    {
+      "id": "docs",
+      "match": { "check": "docs" },
+      "title": "Docs",
+      "guidance": "The documentation build/lint failed. Run `make docs` locally (it auto-fixes some issues) and commit the result."
+    },
+    {
+      "id": "pr-title",
+      "match": { "check": "title-check" },
+      "title": "PR title",
+      "guidance": "Your PR title must follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/), e.g. `fix: ...`, `feat: ...`, `docs: ...`. Edit the PR title (no push needed)."
+    },
+    {
+      "id": "features",
+      "match": { "check": "feature-pr-handling" },
+      "title": "Feature description (.features/)",
+      "guidance": "Feature PRs need a valid `.features/pending/*.md` file. Run `make feature-new` to create one, edit it, then check it with `make features-validate`.",
+      "stepGuidance": {
+        "No ./.features/*.md addition": "This is a `feat:` PR but no feature description file was added. Run `make feature-new` and edit the generated file under `.features/pending/`.",
+        "Validate ./.features/*.md changes": "Your `.features/pending/*.md` file failed validation. Run `make features-validate` locally and fix the reported problems."
+      }
+    },
+    {
+      "id": "dco",
+      "match": { "check": "DCO", "app": "dco" },
+      "title": "DCO (sign-off)",
+      "guidance": "One or more commits are missing the `Signed-off-by` line. Sign off (`git commit --amend --signoff` for the last commit, or `git rebase --signoff main`) and force-push. See the [DCO app](https://github.com/apps/dco) for details."
+    }
+  ],
+  "ignoreChecks": [
+    "Unit Tests",
+    "Windows Unit Tests",
+    "E2E Tests*",
+    "argo-images*",
+    "Get changed files",
+    "review"
+  ],
+  "coveredApps": ["github-actions", "dco"]
+}
