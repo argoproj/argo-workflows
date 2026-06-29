@@ -1869,6 +1869,21 @@ spec:
                               - key
                               type: object
                               x-kubernetes-map-type: atomic
+                            addressingStyle:
+                              description: |-
+                                AddressingStyle defines how buckets are addressed by the S3 client.
+                                This is required for some S3-compatible providers that only support
+                                virtual-hosted-style bucket addressing.
+
+                                Valid values are:
+                                - "" (default, auto-detect)
+                                - "path"
+                                - "virtual-hosted"
+                              enum:
+                              - ""
+                              - path
+                              - virtual-hosted
+                              type: string
                             bucket:
                               description: Bucket is the name of the bucket
                               type: string
@@ -3199,6 +3214,21 @@ spec:
                                     - key
                                     type: object
                                     x-kubernetes-map-type: atomic
+                                  addressingStyle:
+                                    description: |-
+                                      AddressingStyle defines how buckets are addressed by the S3 client.
+                                      This is required for some S3-compatible providers that only support
+                                      virtual-hosted-style bucket addressing.
+
+                                      Valid values are:
+                                      - "" (default, auto-detect)
+                                      - "path"
+                                      - "virtual-hosted"
+                                    enum:
+                                    - ""
+                                    - path
+                                    - virtual-hosted
+                                    type: string
                                   bucket:
                                     description: Bucket is the name of the bucket
                                     type: string
@@ -5163,6 +5193,12 @@ spec:
                             - key
                             type: object
                             x-kubernetes-map-type: atomic
+                          addressingStyle:
+                            enum:
+                            - ""
+                            - path
+                            - virtual-hosted
+                            type: string
                           bucket:
                             type: string
                           caSecret:
@@ -7248,6 +7284,12 @@ spec:
                                             - key
                                             type: object
                                             x-kubernetes-map-type: atomic
+                                          addressingStyle:
+                                            enum:
+                                            - ""
+                                            - path
+                                            - virtual-hosted
+                                            type: string
                                           bucket:
                                             type: string
                                           caSecret:
@@ -7916,6 +7958,12 @@ spec:
                                                   - key
                                                   type: object
                                                   x-kubernetes-map-type: atomic
+                                                addressingStyle:
+                                                  enum:
+                                                  - ""
+                                                  - path
+                                                  - virtual-hosted
+                                                  type: string
                                                 bucket:
                                                   type: string
                                                 caSecret:
@@ -8652,6 +8700,12 @@ spec:
                                     - key
                                     type: object
                                     x-kubernetes-map-type: atomic
+                                  addressingStyle:
+                                    enum:
+                                    - ""
+                                    - path
+                                    - virtual-hosted
+                                    type: string
                                   bucket:
                                     type: string
                                   caSecret:
@@ -10056,6 +10110,12 @@ spec:
                                   - key
                                   type: object
                                   x-kubernetes-map-type: atomic
+                                addressingStyle:
+                                  enum:
+                                  - ""
+                                  - path
+                                  - virtual-hosted
+                                  type: string
                                 bucket:
                                   type: string
                                 caSecret:
@@ -10828,6 +10888,12 @@ spec:
                                   - key
                                   type: object
                                   x-kubernetes-map-type: atomic
+                                addressingStyle:
+                                  enum:
+                                  - ""
+                                  - path
+                                  - virtual-hosted
+                                  type: string
                                 bucket:
                                   type: string
                                 caSecret:
@@ -11512,6 +11578,12 @@ spec:
                                     - key
                                     type: object
                                     x-kubernetes-map-type: atomic
+                                  addressingStyle:
+                                    enum:
+                                    - ""
+                                    - path
+                                    - virtual-hosted
+                                    type: string
                                   bucket:
                                     type: string
                                   caSecret:
@@ -13693,6 +13765,12 @@ spec:
                                           - key
                                           type: object
                                           x-kubernetes-map-type: atomic
+                                        addressingStyle:
+                                          enum:
+                                          - ""
+                                          - path
+                                          - virtual-hosted
+                                          type: string
                                         bucket:
                                           type: string
                                         caSecret:
@@ -14355,6 +14433,12 @@ spec:
                                                 - key
                                                 type: object
                                                 x-kubernetes-map-type: atomic
+                                              addressingStyle:
+                                                enum:
+                                                - ""
+                                                - path
+                                                - virtual-hosted
+                                                type: string
                                               bucket:
                                                 type: string
                                               caSecret:
@@ -17207,6 +17291,21 @@ spec:
                               - key
                               type: object
                               x-kubernetes-map-type: atomic
+                            addressingStyle:
+                              description: |-
+                                AddressingStyle defines how buckets are addressed by the S3 client.
+                                This is required for some S3-compatible providers that only support
+                                virtual-hosted-style bucket addressing.
+
+                                Valid values are:
+                                - "" (default, auto-detect)
+                                - "path"
+                                - "virtual-hosted"
+                              enum:
+                              - ""
+                              - path
+                              - virtual-hosted
+                              type: string
                             bucket:
                               description: Bucket is the name of the bucket
                               type: string
@@ -21548,6 +21647,21 @@ spec:
                                               - key
                                               type: object
                                               x-kubernetes-map-type: atomic
+                                            addressingStyle:
+                                              description: |-
+                                                AddressingStyle defines how buckets are addressed by the S3 client.
+                                                This is required for some S3-compatible providers that only support
+                                                virtual-hosted-style bucket addressing.
+
+                                                Valid values are:
+                                                - "" (default, auto-detect)
+                                                - "path"
+                                                - "virtual-hosted"
+                                              enum:
+                                              - ""
+                                              - path
+                                              - virtual-hosted
+                                              type: string
                                             bucket:
                                               description: Bucket is the name of the
                                                 bucket
@@ -22929,6 +23043,21 @@ spec:
                                                     - key
                                                     type: object
                                                     x-kubernetes-map-type: atomic
+                                                  addressingStyle:
+                                                    description: |-
+                                                      AddressingStyle defines how buckets are addressed by the S3 client.
+                                                      This is required for some S3-compatible providers that only support
+                                                      virtual-hosted-style bucket addressing.
+
+                                                      Valid values are:
+                                                      - "" (default, auto-detect)
+                                                      - "path"
+                                                      - "virtual-hosted"
+                                                    enum:
+                                                    - ""
+                                                    - path
+                                                    - virtual-hosted
+                                                    type: string
                                                   bucket:
                                                     description: Bucket is the name
                                                       of the bucket
@@ -24327,6 +24456,21 @@ spec:
                                       - key
                                       type: object
                                       x-kubernetes-map-type: atomic
+                                    addressingStyle:
+                                      description: |-
+                                        AddressingStyle defines how buckets are addressed by the S3 client.
+                                        This is required for some S3-compatible providers that only support
+                                        virtual-hosted-style bucket addressing.
+
+                                        Valid values are:
+                                        - "" (default, auto-detect)
+                                        - "path"
+                                        - "virtual-hosted"
+                                      enum:
+                                      - ""
+                                      - path
+                                      - virtual-hosted
+                                      type: string
                                     bucket:
                                       description: Bucket is the name of the bucket
                                       type: string
@@ -27099,6 +27243,21 @@ spec:
                                     - key
                                     type: object
                                     x-kubernetes-map-type: atomic
+                                  addressingStyle:
+                                    description: |-
+                                      AddressingStyle defines how buckets are addressed by the S3 client.
+                                      This is required for some S3-compatible providers that only support
+                                      virtual-hosted-style bucket addressing.
+
+                                      Valid values are:
+                                      - "" (default, auto-detect)
+                                      - "path"
+                                      - "virtual-hosted"
+                                    enum:
+                                    - ""
+                                    - path
+                                    - virtual-hosted
+                                    type: string
                                   bucket:
                                     description: Bucket is the name of the bucket
                                     type: string
@@ -28482,6 +28641,21 @@ spec:
                                     - key
                                     type: object
                                     x-kubernetes-map-type: atomic
+                                  addressingStyle:
+                                    description: |-
+                                      AddressingStyle defines how buckets are addressed by the S3 client.
+                                      This is required for some S3-compatible providers that only support
+                                      virtual-hosted-style bucket addressing.
+
+                                      Valid values are:
+                                      - "" (default, auto-detect)
+                                      - "path"
+                                      - "virtual-hosted"
+                                    enum:
+                                    - ""
+                                    - path
+                                    - virtual-hosted
+                                    type: string
                                   bucket:
                                     description: Bucket is the name of the bucket
                                     type: string
@@ -29760,6 +29934,21 @@ spec:
                                       - key
                                       type: object
                                       x-kubernetes-map-type: atomic
+                                    addressingStyle:
+                                      description: |-
+                                        AddressingStyle defines how buckets are addressed by the S3 client.
+                                        This is required for some S3-compatible providers that only support
+                                        virtual-hosted-style bucket addressing.
+
+                                        Valid values are:
+                                        - "" (default, auto-detect)
+                                        - "path"
+                                        - "virtual-hosted"
+                                      enum:
+                                      - ""
+                                      - path
+                                      - virtual-hosted
+                                      type: string
                                     bucket:
                                       description: Bucket is the name of the bucket
                                       type: string
@@ -34337,6 +34526,21 @@ spec:
                                             - key
                                             type: object
                                             x-kubernetes-map-type: atomic
+                                          addressingStyle:
+                                            description: |-
+                                              AddressingStyle defines how buckets are addressed by the S3 client.
+                                              This is required for some S3-compatible providers that only support
+                                              virtual-hosted-style bucket addressing.
+
+                                              Valid values are:
+                                              - "" (default, auto-detect)
+                                              - "path"
+                                              - "virtual-hosted"
+                                            enum:
+                                            - ""
+                                            - path
+                                            - virtual-hosted
+                                            type: string
                                           bucket:
                                             description: Bucket is the name of the
                                               bucket
@@ -35685,6 +35889,21 @@ spec:
                                                   - key
                                                   type: object
                                                   x-kubernetes-map-type: atomic
+                                                addressingStyle:
+                                                  description: |-
+                                                    AddressingStyle defines how buckets are addressed by the S3 client.
+                                                    This is required for some S3-compatible providers that only support
+                                                    virtual-hosted-style bucket addressing.
+
+                                                    Valid values are:
+                                                    - "" (default, auto-detect)
+                                                    - "path"
+                                                    - "virtual-hosted"
+                                                  enum:
+                                                  - ""
+                                                  - path
+                                                  - virtual-hosted
+                                                  type: string
                                                 bucket:
                                                   description: Bucket is the name
                                                     of the bucket
