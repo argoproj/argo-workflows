@@ -53,6 +53,31 @@ func TestTolerantList(t *testing.T) {
 	assert.Equal(t, "good", items[0].Name)
 }
 
+// TestCountList_CountsMalformed guards that CountList counts every item including
+// malformed ones — the same good+broken fixture that TolerantList trims to 1 must
+// count as 2, so the count never silently undercounts.
+func TestCountList_CountsMalformed(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	good := &wfv1.WorkflowTemplate{ObjectMeta: metav1.ObjectMeta{Name: "good", Namespace: "ns1"}}
+	good.SetGroupVersionKind(wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowTemplateKind))
+	broken := &unstructured.Unstructured{Object: map[string]any{
+		"apiVersion": wfv1.SchemeGroupVersion.String(),
+		"kind":       workflow.WorkflowTemplateKind,
+		"metadata":   map[string]any{"name": "broken", "namespace": "ns1"},
+		"spec":       map[string]any{"podMetadata": map[string]any{"labels": map[string]any{"foo": int64(1)}}},
+	}}
+
+	scheme := runtime.NewScheme()
+	require.NoError(t, wfv1.AddToScheme(scheme))
+	dyn := dynamicfake.NewSimpleDynamicClient(scheme, good, broken)
+
+	gvr := wfv1.SchemeGroupVersion.WithResource(workflow.WorkflowTemplatePlural)
+	n, err := CountList(ctx, dyn, gvr, "ns1", metav1.ListOptions{})
+	require.NoError(t, err)
+	assert.Equal(t, int64(2), n, "count must include the malformed item, not drop it")
+}
+
 func TestTolerantList_PropagatesListError(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	scheme := runtime.NewScheme()
@@ -127,11 +152,12 @@ func TestTolerantList_ClearsTypeMeta(t *testing.T) {
 	assert.Empty(t, items[0].APIVersion)
 }
 
-// TestTolerantList_PreservesCustomUnmarshalers guards against a regression where
-// reflection-based conversion silently dropped every Workflow with `steps`
-// because ParallelSteps relies on a custom json.Unmarshaler (it serializes as
-// an anonymous list, not a struct). The fix routes per-item decoding through
-// json.Unmarshal, which invokes UnmarshalJSON correctly.
+// TestTolerantList_PreservesCustomUnmarshalers asserts decoding invokes the custom
+// json.Unmarshaler several workflow types rely on — here ParallelSteps, which
+// serializes as an anonymous list, not a struct. DecodeUnstructured's JSON roundtrip
+// invokes UnmarshalJSON by construction; this guards that the steps survive (and
+// that a future switch to FromUnstructured, which also honors these unmarshalers,
+// would not silently regress it).
 func TestTolerantList_PreservesCustomUnmarshalers(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	scheme := runtime.NewScheme()

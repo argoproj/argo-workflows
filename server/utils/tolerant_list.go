@@ -16,13 +16,15 @@ import (
 // JSON marshal/unmarshal roundtrip — the same decode the typed client performs on
 // the wire bytes this path replaces.
 //
-// Going through json.Unmarshal is what invokes the custom json.Unmarshaler
-// implementations several workflow types rely on (ParallelSteps is an anonymous
-// list; Item/AnyString/Plugin/Amount/Object accept multiple shapes); a naive
-// reflective field copy would silently zero or drop them. (Current apimachinery's
-// runtime.DefaultUnstructuredConverter.FromUnstructured does honor custom
-// unmarshalers too, so it would also work — the JSON roundtrip is just the most
-// direct equivalent of the typed decode it stands in for.)
+// Going through json.Unmarshal invokes the custom json.Unmarshaler implementations
+// several workflow types rely on (ParallelSteps is an anonymous list;
+// Item/AnyString/Plugin/Amount/Object accept multiple shapes). It is the same
+// decode the typed client this path replaces performs on the wire bytes, so the
+// result is identical by construction. apimachinery's
+// runtime.DefaultUnstructuredConverter.FromUnstructured also honors these custom
+// unmarshalers (it decodes ParallelSteps correctly), so a single-pass
+// FromUnstructured would work too — the JSON roundtrip is chosen only as the most
+// direct equivalent of the typed decode it stands in for.
 //
 // ponytail: the roundtrip is 3 serialization passes per item (wire→unstructured by
 // the dynamic client, then marshal→unmarshal here) and runs per item on every list
@@ -50,6 +52,29 @@ func DecodeUnstructured[T any](un *unstructured.Unstructured, out *T) error {
 	return nil
 }
 
+// listUnstructured fetches the raw list, honoring the empty-namespace =>
+// cluster-scoped convention shared by the tolerant helpers below.
+func listUnstructured(ctx context.Context, dyn dynamic.Interface, gvr schema.GroupVersionResource, namespace string, opts metav1.ListOptions) (*unstructured.UnstructuredList, error) {
+	resource := dyn.Resource(gvr)
+	if namespace == "" {
+		return resource.List(ctx, opts)
+	}
+	return resource.Namespace(namespace).List(ctx, opts)
+}
+
+// CountList returns the number of items in the raw list without per-item decode.
+// Unlike TolerantList it deliberately counts malformed items too: a count must
+// not silently undercount, and decoding to typed objects only to discard them
+// would pay the per-item roundtrip for nothing. Pass an empty `namespace` for
+// cluster-scoped resources.
+func CountList(ctx context.Context, dyn dynamic.Interface, gvr schema.GroupVersionResource, namespace string, opts metav1.ListOptions) (int64, error) {
+	ul, err := listUnstructured(ctx, dyn, gvr, namespace, opts)
+	if err != nil {
+		return 0, err
+	}
+	return int64(len(ul.Items)), nil
+}
+
 // TolerantList lists `gvr` via the dynamic client and converts each item into a
 // fresh value of T. Items that fail per-item decoding (e.g. a field whose JSON
 // shape does not match the typed Go struct) are logged and skipped so the list
@@ -69,14 +94,7 @@ func TolerantList[T any](
 	namespace string,
 	opts metav1.ListOptions,
 ) ([]T, metav1.ListMeta, error) {
-	resource := dyn.Resource(gvr)
-	var ul *unstructured.UnstructuredList
-	var err error
-	if namespace == "" {
-		ul, err = resource.List(ctx, opts)
-	} else {
-		ul, err = resource.Namespace(namespace).List(ctx, opts)
-	}
+	ul, err := listUnstructured(ctx, dyn, gvr, namespace, opts)
 	if err != nil {
 		return nil, metav1.ListMeta{}, err
 	}

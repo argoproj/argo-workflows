@@ -36,9 +36,9 @@ func (k *kubeLister) ListWorkflows(ctx context.Context, namespace, nameFilter, c
 }
 
 func (k *kubeLister) CountWorkflows(ctx context.Context, namespace, nameFilter, createdAfter, finishedBefore string, listOptions metav1.ListOptions) (int64, error) {
-	wfList, err := k.ListWorkflows(ctx, namespace, nameFilter, createdAfter, finishedBefore, listOptions)
-	if err != nil {
-		return 0, err
-	}
-	return int64(len(wfList.Items)), nil
+	// Count off the raw list: counting needs no typed objects, and going through
+	// ListWorkflows/TolerantList would both pay the per-item JSON roundtrip and
+	// silently undercount by dropping malformed workflows.
+	gvr := wfv1.SchemeGroupVersion.WithResource(workflow.WorkflowPlural)
+	return sutils.CountList(ctx, k.dyn, gvr, namespace, listOptions)
 }
