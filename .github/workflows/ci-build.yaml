@@ -81,6 +81,10 @@ jobs:
               - cmd/**
               - examples/** # examples are used within the fields lists
               - manifests/** # a few of these are generated and committed
+              - config/** # docs/workflow-controller-configmap.md is generated from config/*.go
+              - persist/** # docs/database-migrations.md is generated from persist/sqldb/migrate.go
+              - util/sync/db/** # docs/database-migrations.md is generated from util/sync/db/migrate.go
+              - util/telemetry/builder/** # docs/metrics.md and docs/tracing.md are generated from util/telemetry/builder/values.yaml
               # generation scripts
               - hack/api/**
               - hack/docs/**
