@@ -151,7 +151,10 @@ func (a *ArtifactServer) GetArtifactFile(w http.ResponseWriter, r *http.Request)
 			a.serverInternalError(ctx, err, w)
 			return
 		}
-
+		if wf == nil {
+			a.httpFromError(ctx, argoerrors.New(argoerrors.CodeNotFound, "workflow not yet archived"), w)
+			return
+		}
 		// check that the namespace passed in matches this workflow's namespace
 		if wf.GetNamespace() != namespace {
 			a.httpBadRequestError(w)
@@ -349,13 +352,15 @@ func (a *ArtifactServer) getArtifactByUID(w http.ResponseWriter, r *http.Request
 		a.httpFromError(ctx, err, w)
 		return
 	}
-
+	if wf == nil {
+		a.httpFromError(ctx, argoerrors.New(argoerrors.CodeNotFound, "workflow not yet archived"), w)
+		return
+	}
 	ctx, err = a.gateKeeping(r, types.NamespaceHolder(wf.GetNamespace()))
 	if err != nil {
 		a.unauthorizedError(w)
 		return
 	}
-
 	// return 401 if the client does not have permission to get wf
 	err = a.validateAccess(ctx, wf)
 	if err != nil {
