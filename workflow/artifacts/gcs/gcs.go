@@ -318,8 +318,6 @@ func uploadObject(ctx context.Context, client *storage.Client, bucket, key, loca
 	ext := filepath.Ext(localPath)
 	mimeType := mime.TypeByExtension(ext)
 
-	fmt.Println("mimeType =", mimeType)
-
 	if mimeType == "" {
 		mimeType = "application/octet-stream"
 	}
