@@ -32,8 +32,8 @@ schema = 3
     version = "v1.2.0"
     hash = "sha256-VOgoreEdslftsR/MyEnZAlutqvph4T57NR1mT9+APfg="
   [mod."github.com/Azure/azure-sdk-for-go/sdk/azcore"]
-    version = "v1.21.1"
-    hash = "sha256-JlPV6OOP1K4/bgaC1/sBGm7BdF6dzOWnzPOyA79g/ZA="
+    version = "v1.22.0"
+    hash = "sha256-JhJgAeC3G0l+th1Xdu0Vf+FzWXTALHyb5FSIsKYTgBo="
   [mod."github.com/Azure/azure-sdk-for-go/sdk/azidentity"]
     version = "v1.13.1"
     hash = "sha256-PGB5CIcrLDr4BssBXNCnd1mOzkfQBhrfJqUh1f3ofK8="
