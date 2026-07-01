@@ -20,18 +20,20 @@ jobs:
         with:
           # Use the default ref (the branch that was pushed)
           token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
-        with:
-          go-version: '1.26.1'  # Match project version
-      - uses: nixbuild/nix-quick-install-action@2c9db80fb984ceb1bcaa77cdda3fdf8cfba92035
+      - uses: nixbuild/nix-quick-install-action@2c9db80fb984ceb1bcaa77cdda3fdf8cfba92035 # v34
       - name: Install gomod2nix
-        run: nix profile install github:nix-community/gomod2nix
+        # Install from the repo's own flake, not upstream `github:nix-community/gomod2nix`.
+        # The dev/nix overlay builds gomod2nix against the Go version pinned in
+        # dev/nix/conf.nix (single source of truth, kept in sync with go.mod), so the
+        # `go mod download` it runs uses the right toolchain. Installing upstream would
+        # pull gomod2nix's own stale nixpkgs and an older Go, failing on `go 1.26.1`.
+        run: nix profile install ./dev/nix#gomod2nix
 
       - name: Run gomod2nix
         run: gomod2nix
 
       - name: Commit and push changes
-        uses: stefanzweifel/git-auto-commit-action@04702edda442b2e678b25b537cec683a1493fcb9
+        uses: stefanzweifel/git-auto-commit-action@04702edda442b2e678b25b537cec683a1493fcb9 # v7.1.0
         with:
           commit_message: "chore(nix): update gomod2nix.toml"
           file_pattern: gomod2nix.toml
