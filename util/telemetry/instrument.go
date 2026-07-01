@@ -3,6 +3,7 @@ package telemetry
 import (
 	"fmt"
 	"sort"
+	"sync"
 
 	"go.opentelemetry.io/otel/metric"
 
@@ -13,6 +14,7 @@ type Instrument struct {
 	name        string
 	description string
 	otel        interface{}
+	mutex       sync.RWMutex
 	userdata    interface{}
 }
 
@@ -159,9 +161,13 @@ func (i *Instrument) GetOtel() interface{} {
 }
 
 func (i *Instrument) SetUserdata(data interface{}) {
+	i.mutex.Lock()
+	defer i.mutex.Unlock()
 	i.userdata = data
 }
 
 func (i *Instrument) GetUserdata() interface{} {
+	i.mutex.RLock()
+	defer i.mutex.RUnlock()
 	return i.userdata
 }

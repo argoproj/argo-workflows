@@ -17,6 +17,7 @@ import (
 type RealTimeValueFunc func() float64
 
 type customMetricValue struct {
+	mutex sync.RWMutex
 	// We are faking a settable and incrementable up/down gauge/coutner
 	// for compatibility with prometheus. callback() reads this.
 	// This is used for counters, gauges and realtime custom metrics,
@@ -100,15 +101,24 @@ type customInstrument struct {
 // For non-realtime we have to fake observability as prometheus provides
 // up/down and set on the same gauge type, which otel forbids.
 func (i *customInstrument) customCallback(_ context.Context, o metric.Observer) error {
-	ud := customUserData(i.Instrument, true)
+	ud := customUserData(i.Instrument, false)
+	if ud == nil {
+		return nil
+	}
 	ud.mutex.RLock()
 	defer ud.mutex.RUnlock()
 	for _, value := range ud.values {
-		if value.rtValueFunc != nil {
-			i.ObserveFloat(o, value.rtValueFunc(), value.getLabels())
-		} else {
-			i.ObserveFloat(o, value.prometheusValue, value.getLabels())
-		}
+		// Wrapped in a closure so defer runs per iteration, protecting against
+		// panics in rtValueFunc leaving the lock permanently held.
+		func() {
+			value.mutex.RLock()
+			defer value.mutex.RUnlock()
+			if value.rtValueFunc != nil {
+				i.ObserveFloat(o, value.rtValueFunc(), value.getLabels())
+			} else {
+				i.ObserveFloat(o, value.prometheusValue, value.getLabels())
+			}
+		}()
 	}
 	return nil
 }
@@ -156,11 +166,30 @@ func (m *Metrics) matchExistingMetric(metricSpec *wfv1.Prometheus) (*telemetry.I
 }
 
 func (m *Metrics) ensureBaseMetric(metricSpec *wfv1.Prometheus, ownerKey string) (*telemetry.Instrument, error) {
+	// Fast path: check if metric already exists and is fully initialized (double-checked locking).
 	metric, err := m.matchExistingMetric(metricSpec)
 	if err != nil {
 		return nil, err
 	}
 	if metric != nil {
+		if customUserData(metric, false) != nil {
+			m.attachCustomMetricToWorkflow(metricSpec, ownerKey)
+			return metric, nil
+		}
+	}
+
+	m.customMetricsMutex.Lock()
+	defer m.customMetricsMutex.Unlock()
+
+	// Slow path: re-check under lock before creating.
+	metric, err = m.matchExistingMetric(metricSpec)
+	if err != nil {
+		return nil, err
+	}
+	if metric != nil {
+		if customUserData(metric, false) == nil {
+			metric.SetUserdata(newUserData())
+		}
 		m.attachCustomMetricToWorkflow(metricSpec, ownerKey)
 		return metric, nil
 	}
@@ -173,7 +202,9 @@ func (m *Metrics) ensureBaseMetric(metricSpec *wfv1.Prometheus, ownerKey string)
 	if inst == nil {
 		return nil, fmt.Errorf("Failed to create new metric %s", metricSpec.Name)
 	}
-	inst.SetUserdata(newUserData())
+	if customUserData(inst, false) == nil {
+		inst.SetUserdata(newUserData())
+	}
 	return inst, nil
 }
 
@@ -186,6 +217,8 @@ func (m *Metrics) UpsertCustomMetric(ctx context.Context, metricSpec *wfv1.Prome
 		return err
 	}
 	metricValue := getOrCreateValue(baseMetric, metricSpec.GetKey(), metricSpec.Labels)
+	metricValue.mutex.Lock()
+	defer metricValue.mutex.Unlock()
 	metricValue.lastUpdated = time.Now()
 
 	metricType := metricSpec.GetMetricType()
@@ -213,6 +246,7 @@ func (m *Metrics) UpsertCustomMetric(ctx context.Context, metricSpec *wfv1.Prome
 		if err != nil {
 			return err
 		}
+		// Record does its own locking if needed by the exporter
 		baseMetric.Record(ctx, val, metricValue.getLabels())
 	case metricType == wfv1.MetricTypeCounter:
 		val, err := strconv.ParseFloat(metricSpec.Counter.Value, 64)
@@ -263,6 +297,9 @@ func (m *Metrics) createCustomMetric(metricSpec *wfv1.Prometheus) error {
 			return err
 		}
 		inst := m.GetInstrument(metricSpec.Name)
+		if customUserData(inst, false) == nil {
+			inst.SetUserdata(newUserData())
+		}
 		customInst := customInstrument{Instrument: inst}
 		return inst.RegisterCallback(m.Metrics, customInst.customCallback)
 	default:
@@ -276,6 +313,9 @@ func (m *Metrics) createCustomGauge(metricSpec *wfv1.Prometheus) error {
 		return err
 	}
 	inst := m.GetInstrument(metricSpec.Name)
+	if customUserData(inst, false) == nil {
+		inst.SetUserdata(newUserData())
+	}
 	customInst := customInstrument{Instrument: inst}
 	return inst.RegisterCallback(m.Metrics, customInst.customCallback)
 }
@@ -288,11 +328,17 @@ func (m *Metrics) runCustomGC(ttl time.Duration) {
 		}
 		ud.mutex.Lock()
 		for key, value := range ud.values {
-			if time.Since(value.lastUpdated) > ttl {
+			value.mutex.RLock()
+			lastUpdated := value.lastUpdated
+			isRealtime := value.rtValueFunc != nil
+			completed := value.completed
+			value.mutex.RUnlock()
+
+			if time.Since(lastUpdated) > ttl {
 				switch {
-				case value.rtValueFunc != nil && value.completed:
+				case isRealtime && completed:
 					delete(ud.values, key)
-				case value.rtValueFunc == nil:
+				case !isRealtime:
 					delete(ud.values, key)
 				}
 			}
@@ -338,7 +384,9 @@ func (m *Metrics) handleRealtimeMetricsForWfUID(key string, op operation) {
 		switch op {
 		case Complete:
 			if value, ok := ud.values[metric.key]; ok && value != nil {
+				value.mutex.Lock()
 				value.completed = true
+				value.mutex.Unlock()
 			}
 		case Delete:
 			delete(ud.values, metric.key)
