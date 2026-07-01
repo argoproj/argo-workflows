@@ -257,3 +257,53 @@ func TestReplaceStrictAnyNilNestedTag(t *testing.T) {
 		assert.Equal(t, toJSONString("resolved-outer"), pass2)
 	})
 }
+
+// Test_ReplaceStrict_NilCoalescing verifies that a member path guarded by nil-coalescing (??) or
+// optional-chaining (?.) is not treated as a strictly-required identifier, so an absent optional key
+// falls back instead of triggering a missing-variable failure, while the base variable stays required.
+func Test_ReplaceStrict_NilCoalescing(t *testing.T) {
+	itemPresent := map[string]any{"item": map[string]any{"name": "a", "optionalKey": "value"}}
+	itemMissing := map[string]any{"item": map[string]any{"name": "b"}}
+
+	tests := []struct {
+		name        string
+		expression  string
+		wantPresent string
+		wantMissing string
+	}{
+		{
+			name:        "nil-coalescing",
+			expression:  `{{= item.optionalKey ?? 'fallback' }}`,
+			wantPresent: "value",
+			wantMissing: "fallback",
+		},
+		{
+			name:        "nil-coalescing with bracket notation",
+			expression:  `{{= item['optionalKey'] ?? 'fallback' }}`,
+			wantPresent: "value",
+			wantMissing: "fallback",
+		},
+		{
+			name:        "optional chaining with nil-coalescing",
+			expression:  `{{= item?.optionalKey ?? 'fallback' }}`,
+			wantPresent: "value",
+			wantMissing: "fallback",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			out, err := ReplaceStrictAny(toJSONString(tt.expression), itemPresent, []string{"item"})
+			require.NoError(t, err)
+			assert.Equal(t, toJSONString(tt.wantPresent), out)
+
+			out, err = ReplaceStrictAny(toJSONString(tt.expression), itemMissing, []string{"item"})
+			require.NoError(t, err)
+			assert.Equal(t, toJSONString(tt.wantMissing), out)
+		})
+	}
+
+	t.Run("missing base variable still fails strict check", func(t *testing.T) {
+		_, err := ReplaceStrictAny(toJSONString(`{{= item.optionalKey ?? 'fallback' }}`), map[string]any{}, []string{"item"})
+		require.EqualError(t, err, "failed to evaluate expression: item is missing")
+	})
+}
