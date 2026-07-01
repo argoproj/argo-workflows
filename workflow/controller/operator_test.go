@@ -7324,7 +7324,7 @@ func Test_processItem(t *testing.T) {
 			wfv1.MustUnmarshal([]byte(tt.withParam), &items)
 
 			var newTask wfv1.DAGTask
-			newTaskName, err := processItem(ctx, tmpl, "task-name", 0, items[0], &newTask, "", map[string]string{})
+			newTaskName, err := processItem(ctx, tmpl, "task-name", 0, items[0], &newTask, "", map[string]any{})
 
 			require.NoError(t, err)
 			assert.Equal(t, tt.expectedName, newTaskName)

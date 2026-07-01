@@ -161,6 +161,7 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 				woc.buildLocalScope(stepsCtx.scope, prefix, sgNode)
 			} else {
 				woc.buildLocalScope(stepsCtx.scope, prefix, childNode)
+				woc.addSkippedNodeOutputsToScope(ctx, stepsCtx.tmplCtx, stepsCtx.scope, prefix, childNode, &step, true)
 			}
 		}
 	}
@@ -431,7 +432,7 @@ func (woc *wfOperationCtx) resolveReferences(ctx context.Context, stepGroup []wf
 	newStepGroup := make([]wfv1.WorkflowStep, len(stepGroup))
 
 	// Step 0: replace all parameter scope references for volumes
-	err := woc.substituteParamsInVolumes(ctx, scope.getParameters())
+	err := woc.substituteParamsInVolumes(ctx, scope.getParametersAny(nil))
 	if err != nil {
 		return nil, err
 	}
@@ -443,7 +444,8 @@ func (woc *wfOperationCtx) resolveReferences(ctx context.Context, stepGroup []wf
 		originalHooks := step.Hooks
 		step.Hooks = nil
 
-		mergedParams := woc.globalParams.Merge(scope.getParameters())
+		// nil-preserving view so expression tags can apply `??` fallbacks to skipped/omitted outputs
+		mergedParams := scope.getParametersAny(woc.globalParams)
 
 		// Resolve the "when" clause first to check if this step should execute before resolving the full step.
 		// This avoids unnecessary requeues when a step won't execute but other fields have unresolved references.
@@ -452,7 +454,7 @@ func (woc *wfOperationCtx) resolveReferences(ctx context.Context, stepGroup []wf
 			if err != nil {
 				return argoerrors.InternalWrapError(err)
 			}
-			resolvedWhenStr, err := template.ReplaceStrict(ctx, string(whenBytes), mergedParams, []string{"steps", "tasks"})
+			resolvedWhenStr, err := template.ReplaceStrictAny(ctx, string(whenBytes), mergedParams, []string{"steps", "tasks"})
 			if err != nil {
 				if template.IsMissingVariableErr(err) {
 					woc.requeue()
@@ -482,11 +484,18 @@ func (woc *wfOperationCtx) resolveReferences(ctx context.Context, stepGroup []wf
 			}
 		}
 
+		// Replace arguments that are pure references to a skipped/omitted step's output with no
+		// producer default with a sentinel BEFORE substitution; common.ProcessArgs interprets it as
+		// "unsupplied" at consumption time so the consumed template's input default applies (or
+		// fails terminally if it has none). When-false steps returned early above and never
+		// execute. Allocates a fresh Parameters slice, so the caller's step group is never mutated.
+		scope.markAbsentOptionalArgs(&step.Arguments)
+
 		stepBytes, err := json.Marshal(step)
 		if err != nil {
 			return argoerrors.InternalWrapError(err)
 		}
-		newStepStr, err := template.ReplaceStrict(ctx, string(stepBytes), mergedParams, []string{"steps", "tasks"})
+		newStepStr, err := template.ReplaceStrictAny(ctx, string(stepBytes), mergedParams, []string{"steps", "tasks"})
 		if err != nil {
 			if template.IsMissingVariableErr(err) {
 				woc.requeue()
@@ -630,7 +639,7 @@ func (woc *wfOperationCtx) expandStep(ctx context.Context, step wfv1.WorkflowSte
 
 	for i, item := range items {
 		var newStep wfv1.WorkflowStep
-		newStepName, err := processItem(ctx, t, step.Name, i, item, &newStep, step.When, woc.globalParams.Merge(scope.getParameters()))
+		newStepName, err := processItem(ctx, t, step.Name, i, item, &newStep, step.When, scope.getParametersAny(woc.globalParams))
 		if err != nil {
 			return nil, err
 		}
@@ -641,11 +650,11 @@ func (woc *wfOperationCtx) expandStep(ctx context.Context, step wfv1.WorkflowSte
 	return expandedStep, nil
 }
 
-func (woc *wfOperationCtx) prepareDefaultMetricScope() (map[string]string, map[string]func() float64) {
+func (woc *wfOperationCtx) prepareDefaultMetricScope() (map[string]any, map[string]func() float64) {
 	durationCPU := fmt.Sprintf("%s.%s", common.LocalVarResourcesDuration, v1.ResourceCPU)
 	durationMem := fmt.Sprintf("%s.%s", common.LocalVarResourcesDuration, v1.ResourceMemory)
 
-	localScope := woc.globalParams.DeepCopy()
+	localScope := template.ToAnyMap(woc.globalParams)
 	localScope[common.LocalVarDuration] = "0"
 	localScope[common.LocalVarStatus] = string(wfv1.NodePending)
 	localScope[durationCPU] = "0"
@@ -658,7 +667,7 @@ func (woc *wfOperationCtx) prepareDefaultMetricScope() (map[string]string, map[s
 	return localScope, realTimeScope
 }
 
-func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus) (map[string]string, map[string]func() float64) {
+func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus) (map[string]any, map[string]func() float64) {
 	localScope, realTimeScope := woc.prepareDefaultMetricScope()
 	if node.Fulfilled() {
 		localScope[common.LocalVarDuration] = fmt.Sprintf("%f", node.FinishedAt.Sub(node.StartedAt.Time).Seconds())

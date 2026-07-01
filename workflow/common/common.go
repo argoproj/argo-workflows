@@ -289,6 +289,16 @@ const (
 	ArgoProgressPath = VarRunArgoPath + "/progress"
 
 	ConfigMapName = "workflow-controller-configmap"
+
+	// AbsentOptionalArgumentValue marks an argument whose value was a single pure reference to a
+	// skipped/omitted node's output with no producer valueFrom.default (an absent optional). The
+	// controller's reference resolution writes it (wfScope.markAbsentOptionalArgs) so that textual
+	// substitution succeeds where the raw absent value would be a terminal error; ProcessArgs
+	// interprets it at consumption time — when the consumed template is fully resolved — as
+	// "unsupplied", letting the input's own default apply and failing terminally when there is
+	// none. It is an internal controller contract: user-supplied values are never expected to
+	// collide with it, and a collision merely makes the argument behave as if it were omitted.
+	AbsentOptionalArgumentValue = "__argo-internal.absent-optional-output__"
 )
 
 // AnnotationKeyKillCmd specifies the command to use to kill to container, useful for injected sidecars
