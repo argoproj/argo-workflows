@@ -13,10 +13,11 @@ import (
 type Metrics struct {
 	*telemetry.Metrics
 
-	callbacks         Callbacks
-	realtimeMutex     sync.Mutex
-	realtimeWorkflows map[string][]realtimeTracker
-	fallbackLogger    logging.Logger // use a logger from context if available
+	callbacks          Callbacks
+	realtimeMutex      sync.Mutex
+	customMetricsMutex sync.Mutex
+	realtimeWorkflows  map[string][]realtimeTracker
+	fallbackLogger     logging.Logger // use a logger from context if available
 }
 
 func New(ctx context.Context, serviceName, prometheusName string, config *telemetry.Config, callbacks Callbacks, extraOpts ...metricsdk.Option) (*Metrics, error) {
