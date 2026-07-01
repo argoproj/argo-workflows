@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"testing"
@@ -10,8 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/metric"
 
-	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v4/util/logging"
+	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 )
 
 type dummyObserver struct {
@@ -22,8 +22,8 @@ func (d *dummyObserver) ObserveFloat64(metric.Float64Observable, float64, ...met
 func (d *dummyObserver) ObserveInt64(metric.Int64Observable, int64, ...metric.ObserveOption)       {}
 
 func TestUpsertCustomMetric_Concurrency(t *testing.T) {
-	ctx := logging.TestContext(t.Context())
-	m, _, err := CreateDefaultTestMetrics(ctx)
+	ctx := context.Background()
+	m, _, err := CreateDefaultTestMetrics()
 	require.NoError(t, err)
 
 	trueVal := true
@@ -105,8 +105,8 @@ func TestUpsertCustomMetric_Concurrency(t *testing.T) {
 }
 
 func TestUpsertCustomMetric_PanicWindow(t *testing.T) {
-	ctx := logging.TestContext(t.Context())
-	m, _, err := CreateDefaultTestMetrics(ctx)
+	ctx := context.Background()
+	m, _, err := CreateDefaultTestMetrics()
 	require.NoError(t, err)
 
 	metricSpec := &wfv1.Prometheus{
