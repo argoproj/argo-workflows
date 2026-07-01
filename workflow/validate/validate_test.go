@@ -3586,14 +3586,14 @@ func TestDynamicStepNameWithInputParameters(t *testing.T) {
 		defer func() { _ = deleteWorkflowTemplate(ctx, wftmpl.Name) }()
 
 		wf := wfv1.MustUnmarshalWorkflow(dynamicStepNameWorkflow15896)
-		err = Workflow(ctx, wftmplGetter, cwftmplGetter, wf, nil, Opts{})
+		err = ValidateWorkflow(ctx, wftmplGetter, cwftmplGetter, wf, nil, ValidateOpts{})
 		require.NoError(t, err, "workflow with dynamic step names via templateRef should pass validation")
 	})
 
 	// Test with inline templates (local workflow, no templateRef)
 	t.Run("WithInlineSteps", func(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow(dynamicStepNameWorkflowLocal15896)
-		err := Workflow(ctx, wftmplGetter, cwftmplGetter, wf, nil, Opts{})
+		err := ValidateWorkflow(ctx, wftmplGetter, cwftmplGetter, wf, nil, ValidateOpts{})
 		require.NoError(t, err, "workflow with dynamic step names in local templates should pass validation")
 	})
 }
@@ -3645,7 +3645,7 @@ spec:
 // the surrounding characters are still checked.
 func TestDynamicStepNameInvalidSkeletonStillFails(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(dynamicStepNameInvalidSkeleton15896)
-	err := Workflow(logging.TestContext(t.Context()), wftmplGetter, cwftmplGetter, wf, nil, Opts{})
+	err := ValidateWorkflow(logging.TestContext(t.Context()), wftmplGetter, cwftmplGetter, wf, nil, ValidateOpts{})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "is invalid")
 }
