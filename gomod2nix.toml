@@ -53,8 +53,8 @@ schema = 3
     version = "v1.7.2"
     hash = "sha256-zB4M5bgMGDcjvF4GKu2t+NHTIHm9xQbsw9CUGT0tkk8="
   [mod."github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp"]
-    version = "v1.31.0"
-    hash = "sha256-KeDm6O9FKL78kuZQhqoOfY00m0rYkxB1gtoKZzx+nGs="
+    version = "v1.32.0"
+    hash = "sha256-qkLtEOoEFlKy5+GbFeGqq0D/6yBD5uiQUUMmy/eLJxg="
   [mod."github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric"]
     version = "v0.55.0"
     hash = "sha256-a9I5LzWtYVjKo0gA7wZGEKTEECtU1cmOyuCHomX/LLo="
@@ -863,8 +863,8 @@ schema = 3
     version = "v1.2.1"
     hash = "sha256-73bFYhnxNf4SfeQ52ebnwOWywdQbqc9lWawCcSgofvE="
   [mod."go.opentelemetry.io/contrib/detectors/gcp"]
-    version = "v1.42.0"
-    hash = "sha256-t/C8HDYw0zKSF+X8je/HEMEdqHE1vv2X6E5xvFaMQKk="
+    version = "v1.43.0"
+    hash = "sha256-u+MgeLA1+ZbH9Y9C9WbIY8FEfmvbtM/SF1rDScGM1po="
   [mod."go.opentelemetry.io/contrib/instrumentation/github.com/aws/aws-sdk-go-v2/otelaws"]
     version = "v0.69.0"
     hash = "sha256-0Vm58PlYzdhMOPERiYAslHDd74DXNKoeZBLYMQvlWNY="
@@ -962,8 +962,8 @@ schema = 3
     version = "v0.0.0-20260526163538-3dc84a4a5aaa"
     hash = "sha256-ldJTTb7hhj1mdmzTn9IEkQVwCoj3KRlENZtUSEKHABU="
   [mod."google.golang.org/grpc"]
-    version = "v1.81.1"
-    hash = "sha256-YZ5KMHmN1HvsMxyIBIl3SmFmL3r+6bwjzzFLxUFhm1o="
+    version = "v1.82.0"
+    hash = "sha256-qmNBIHFIpR3bCGwtjXBCa79fBK4sTkpxgqsQMy2GsAw="
   [mod."google.golang.org/protobuf"]
     version = "v1.36.11"
     hash = "sha256-7W+6jntfI/awWL3JP6yQedxqP5S9o3XvPgJ2XxxsIeE="
