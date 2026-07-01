@@ -16,11 +16,11 @@ jobs:
   gomod2nix:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           # Use the default ref (the branch that was pushed)
           token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: actions/setup-go@04702edda442b2e678b25b537cec683a1493fcb9
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version: '1.24.10'  # Match project version
       - uses: nixbuild/nix-quick-install-action@2c9db80fb984ceb1bcaa77cdda3fdf8cfba92035
