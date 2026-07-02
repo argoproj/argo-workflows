@@ -32,8 +32,8 @@ schema = 3
     version = "v1.2.0"
     hash = "sha256-VOgoreEdslftsR/MyEnZAlutqvph4T57NR1mT9+APfg="
   [mod."github.com/Azure/azure-sdk-for-go/sdk/azcore"]
-    version = "v1.21.1"
-    hash = "sha256-JlPV6OOP1K4/bgaC1/sBGm7BdF6dzOWnzPOyA79g/ZA="
+    version = "v1.22.0"
+    hash = "sha256-JhJgAeC3G0l+th1Xdu0Vf+FzWXTALHyb5FSIsKYTgBo="
   [mod."github.com/Azure/azure-sdk-for-go/sdk/azidentity"]
     version = "v1.13.1"
     hash = "sha256-PGB5CIcrLDr4BssBXNCnd1mOzkfQBhrfJqUh1f3ofK8="
@@ -44,8 +44,8 @@ schema = 3
     version = "v1.12.0"
     hash = "sha256-jX/JR3WToz0vEWowfDBVjpul9EE2V2xGF1EfckrhDus="
   [mod."github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"]
-    version = "v1.7.0"
-    hash = "sha256-ZY4oyQEDDZTht7rsO473dIRuCPxbeUt0udHgdvp4crI="
+    version = "v1.8.0"
+    hash = "sha256-q3JD+vnG+IUDbf5QiTIMy0mbZNJOeUlrmewQ0k+IrnQ="
   [mod."github.com/Azure/go-ansiterm"]
     version = "v0.0.0-20250102033503-faa5f7b0171c"
     hash = "sha256-4WYKJtxjnm3egDAh9ocTR+gy5UUqVoY3knHy9c17XIY="
