@@ -30,6 +30,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/telemetry"
 	"github.com/argoproj/argo-workflows/v4/util/template"
+	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/entrypoint"
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/indexes"
@@ -93,7 +94,7 @@ func (woc *wfOperationCtx) processPodSpecPatch(ctx context.Context, tmpl *wfv1.T
 	podSpecPatches := []string{}
 	localParams := make(map[string]string)
 	if tmpl.IsPodType() {
-		localParams[common.LocalVarPodName] = pod.Name
+		localParams[varkeys.PodName.Template()] = pod.Name
 	}
 	toProcess := []string{}
 	if woc.execWf.Spec.HasPodSpecPatch() {
@@ -106,7 +107,7 @@ func (woc *wfOperationCtx) processPodSpecPatch(ctx context.Context, tmpl *wfv1.T
 	for _, patch := range toProcess {
 		newTmpl := tmpl.DeepCopy()
 		newTmpl.PodSpecPatch = patch
-		processedTmpl, err := common.ProcessArgs(ctx, newTmpl, &wfv1.Arguments{}, woc.globalParams, localParams, false, woc.wf.Namespace, woc.controller.configMapInformer.GetIndexer())
+		processedTmpl, err := common.ProcessArgs(ctx, newTmpl, &wfv1.Arguments{}, woc.globalParams(), localParams, false, woc.wf.Namespace, woc.controller.configMapInformer.GetIndexer())
 		if err != nil {
 			return nil, errors.Wrap(err, "", "Failed to substitute the PodSpecPatch variables")
 		}
@@ -398,7 +399,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	// Perform one last variable substitution here. Some variables come from the from workflow
 	// configmap (e.g. archive location) or volumes attribute, and were not substituted
 	// in executeTemplate.
-	pod, err = substitutePodParams(ctx, pod, woc.globalParams, tmpl)
+	pod, err = substitutePodParams(ctx, pod, woc.globalParams(), tmpl)
 	if err != nil {
 		return nil, err
 	}
@@ -711,9 +712,9 @@ func (woc *wfOperationCtx) getDeadline(opts *createWorkflowPodOpts) *time.Time {
 func substitutePodParams(ctx context.Context, pod *apiv1.Pod, globalParams common.Parameters, tmpl *wfv1.Template) (*apiv1.Pod, error) {
 	podParams := globalParams.DeepCopy()
 	for _, inParam := range tmpl.Inputs.Parameters {
-		podParams["inputs.parameters."+inParam.Name] = inParam.Value.String()
+		podParams[varkeys.InputsParameterByName.Concretize(inParam.Name)] = inParam.Value.String()
 	}
-	podParams[common.LocalVarPodName] = pod.Name
+	podParams[varkeys.PodName.Template()] = pod.Name
 	specBytes, err := json.Marshal(pod)
 	if err != nil {
 		return nil, err
