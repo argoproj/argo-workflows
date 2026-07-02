@@ -660,7 +660,7 @@ func substitutePodParams(pod *apiv1.Pod, globalParams common.Parameters, tmpl *w
 	if err != nil {
 		return nil, err
 	}
-	newSpecBytes, err := template.Replace(string(specBytes), podParams, true)
+	newSpecBytes, err := template.Replace(string(specBytes), template.ToAnyMap(podParams), true)
 	if err != nil {
 		return nil, err
 	}

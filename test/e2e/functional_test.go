@@ -4,6 +4,7 @@ package e2e
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -461,6 +462,9 @@ func (s *FunctionalSuite) TestDAGEmptyParam() {
 		})
 }
 
+// TestDAGOmittedOutputRef tests that referencing an output parameter of an omitted task with no
+// producer valueFrom.default and no consumer input default fails the consuming task terminally
+// rather than requeuing forever.
 func (s *FunctionalSuite) TestDAGOmittedOutputRef() {
 	s.Given().
 		Workflow("@functional/dag-omitted-output-ref.yaml").
@@ -469,7 +473,7 @@ func (s *FunctionalSuite) TestDAGOmittedOutputRef() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			assert.Equal(t, wfv1.WorkflowError, status.Phase)
 			nodeA := status.Nodes.FindByDisplayName("stage-a")
 			if assert.NotNil(t, nodeA) {
 				assert.Equal(t, wfv1.NodeSucceeded, nodeA.Phase)
@@ -480,11 +484,15 @@ func (s *FunctionalSuite) TestDAGOmittedOutputRef() {
 			}
 			nodeC := status.Nodes.FindByDisplayName("stage-c")
 			if assert.NotNil(t, nodeC) {
-				assert.Equal(t, wfv1.NodeSucceeded, nodeC.Phase)
+				assert.Equal(t, wfv1.NodeError, nodeC.Phase)
+				assert.Contains(t, nodeC.Message, "absent optional")
 			}
 		})
 }
 
+// TestDAGSkippedOutputRef tests that referencing an output parameter of a skipped task with no
+// producer valueFrom.default and no consumer input default fails the consuming task terminally
+// rather than requeuing forever.
 func (s *FunctionalSuite) TestDAGSkippedOutputRef() {
 	s.Given().
 		Workflow("@functional/dag-skipped-output-ref.yaml").
@@ -493,7 +501,7 @@ func (s *FunctionalSuite) TestDAGSkippedOutputRef() {
 		WaitForWorkflow().
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			assert.Equal(t, wfv1.WorkflowError, status.Phase)
 			nodeA := status.Nodes.FindByDisplayName("stage-a")
 			if assert.NotNil(t, nodeA) {
 				assert.Equal(t, wfv1.NodeSucceeded, nodeA.Phase)
@@ -504,7 +512,215 @@ func (s *FunctionalSuite) TestDAGSkippedOutputRef() {
 			}
 			nodeC := status.Nodes.FindByDisplayName("stage-c")
 			if assert.NotNil(t, nodeC) {
-				assert.Equal(t, wfv1.NodeSucceeded, nodeC.Phase)
+				assert.Equal(t, wfv1.NodeError, nodeC.Phase)
+				assert.Contains(t, nodeC.Message, "absent optional")
+			}
+		})
+}
+
+// TestDAGSkippedProducerOutputDefault tests that when a skipped task's output parameter declares a
+// valueFrom.default, a downstream reference to that output resolves to the declared default.
+func (s *FunctionalSuite) TestDAGSkippedProducerOutputDefault() {
+	s.Given().
+		Workflow("@functional/dag-skipped-producer-default.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			producer := status.Nodes.FindByDisplayName("producer")
+			if assert.NotNil(t, producer) {
+				assert.Equal(t, wfv1.NodeSkipped, producer.Phase)
+			}
+			consumer := status.Nodes.FindByDisplayName("consumer")
+			if assert.NotNil(t, consumer) {
+				assert.Equal(t, wfv1.NodeSucceeded, consumer.Phase)
+				if assert.NotNil(t, consumer.Inputs) && assert.Len(t, consumer.Inputs.Parameters, 1) {
+					assert.Equal(t, "hello-from-producer", consumer.Inputs.Parameters[0].Value.String())
+				}
+			}
+		})
+}
+
+// TestDAGSkippedConsumerInputDefault tests that when a skipped task's output parameter has no
+// valueFrom.default, an argument that is purely that reference is dropped so the consuming
+// template's own input default applies.
+func (s *FunctionalSuite) TestDAGSkippedConsumerInputDefault() {
+	s.Given().
+		Workflow("@functional/dag-skipped-consumer-default.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			producer := status.Nodes.FindByDisplayName("producer")
+			if assert.NotNil(t, producer) {
+				assert.Equal(t, wfv1.NodeSkipped, producer.Phase)
+			}
+			consumer := status.Nodes.FindByDisplayName("consumer")
+			if assert.NotNil(t, consumer) {
+				assert.Equal(t, wfv1.NodeSucceeded, consumer.Phase)
+				if assert.NotNil(t, consumer.Inputs) && assert.Len(t, consumer.Inputs.Parameters, 1) {
+					assert.Equal(t, "fallback-from-input", consumer.Inputs.Parameters[0].Value.String())
+				}
+			}
+		})
+}
+
+// TestDAGSkippedVolumeRefProducerDefault tests that a spec.volumes entry referencing a skipped
+// task's output parameter resolves to the producer's valueFrom.default, so the consuming pod is
+// created with a valid volume.
+func (s *FunctionalSuite) TestDAGSkippedVolumeRefProducerDefault() {
+	s.Given().
+		Workflow("@functional/dag-skipped-volume-default.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			producer := status.Nodes.FindByDisplayName("producer")
+			if assert.NotNil(t, producer) {
+				assert.Equal(t, wfv1.NodeSkipped, producer.Phase)
+			}
+			consumer := status.Nodes.FindByDisplayName("consumer")
+			if assert.NotNil(t, consumer) {
+				assert.Equal(t, wfv1.NodeSucceeded, consumer.Phase)
+			}
+		})
+}
+
+// TestDAGSkippedArtifactSubPathRef tests that an artifact subPath referencing an output parameter
+// of a skipped task with no producer valueFrom.default fails the consuming task terminally rather
+// than silently resolving to an empty subPath.
+func (s *FunctionalSuite) TestDAGSkippedArtifactSubPathRef() {
+	s.Given().
+		Workflow("@functional/dag-skipped-artifact-subpath-ref.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowError, status.Phase)
+			producer := status.Nodes.FindByDisplayName("param-producer")
+			if assert.NotNil(t, producer) {
+				assert.Equal(t, wfv1.NodeSkipped, producer.Phase)
+			}
+			consumer := status.Nodes.FindByDisplayName("consumer")
+			if assert.NotNil(t, consumer) {
+				assert.Equal(t, wfv1.NodeError, consumer.Phase)
+				assert.Contains(t, consumer.Message, "absent optional")
+			}
+		})
+}
+
+// TestDAGSkippedWithParamProducerDefault tests that a withParam sourced from a skipped task's
+// output parameter expands using the producer's valueFrom.default.
+func (s *FunctionalSuite) TestDAGSkippedWithParamProducerDefault() {
+	s.Given().
+		Workflow("@functional/dag-skipped-withparam-default.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			producer := status.Nodes.FindByDisplayName("producer")
+			if assert.NotNil(t, producer) {
+				assert.Equal(t, wfv1.NodeSkipped, producer.Phase)
+			}
+			for i, item := range []string{"a", "b"} {
+				child := status.Nodes.FindByDisplayName(fmt.Sprintf("consumer(%d:%s)", i, item))
+				if assert.NotNil(t, child, "expanded child for item %q should exist", item) {
+					assert.Equal(t, wfv1.NodeSucceeded, child.Phase)
+					if assert.NotNil(t, child.Inputs) && assert.Len(t, child.Inputs.Parameters, 1) {
+						assert.Equal(t, item, child.Inputs.Parameters[0].Value.String())
+					}
+				}
+			}
+		})
+}
+
+// TestStepsSkippedWithParamRef tests that a withParam sourced from a skipped step's output
+// parameter with no producer valueFrom.default fails the step group terminally rather than
+// requeuing forever or expanding to nothing.
+func (s *FunctionalSuite) TestStepsSkippedWithParamRef() {
+	s.Given().
+		Workflow("@functional/steps-skipped-withparam-ref.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			// the errored step group rolls up to the steps template as Failed (not Error)
+			assert.Equal(t, wfv1.WorkflowFailed, status.Phase)
+			producer := status.Nodes.FindByDisplayName("producer")
+			if assert.NotNil(t, producer) {
+				assert.Equal(t, wfv1.NodeSkipped, producer.Phase)
+			}
+			// the step group expanding from the absent output errors before consumer nodes exist
+			var errored *wfv1.NodeStatus
+			for _, node := range status.Nodes {
+				if node.Phase == wfv1.NodeError {
+					errored = &node
+					break
+				}
+			}
+			if assert.NotNil(t, errored, "a node should fail terminally on the absent optional") {
+				assert.Contains(t, errored.Message, "absent optional")
+			}
+		})
+}
+
+// TestStepsSkippedProducerOutputDefault tests that when a skipped step's output parameter declares
+// a valueFrom.default, a downstream reference to that output resolves to the declared default.
+func (s *FunctionalSuite) TestStepsSkippedProducerOutputDefault() {
+	s.Given().
+		Workflow("@functional/steps-skipped-producer-default.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			producer := status.Nodes.FindByDisplayName("producer")
+			if assert.NotNil(t, producer) {
+				assert.Equal(t, wfv1.NodeSkipped, producer.Phase)
+			}
+			consumer := status.Nodes.FindByDisplayName("consumer")
+			if assert.NotNil(t, consumer) {
+				assert.Equal(t, wfv1.NodeSucceeded, consumer.Phase)
+				if assert.NotNil(t, consumer.Inputs) && assert.Len(t, consumer.Inputs.Parameters, 1) {
+					assert.Equal(t, "hello-from-producer", consumer.Inputs.Parameters[0].Value.String())
+				}
+			}
+		})
+}
+
+// TestStepsSkippedConsumerInputDefault tests that when a skipped step's output parameter has no
+// valueFrom.default, an argument that is purely that reference is dropped so the consuming
+// template's own input default applies.
+func (s *FunctionalSuite) TestStepsSkippedConsumerInputDefault() {
+	s.Given().
+		Workflow("@functional/steps-skipped-consumer-default.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow().
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+			producer := status.Nodes.FindByDisplayName("producer")
+			if assert.NotNil(t, producer) {
+				assert.Equal(t, wfv1.NodeSkipped, producer.Phase)
+			}
+			consumer := status.Nodes.FindByDisplayName("consumer")
+			if assert.NotNil(t, consumer) {
+				assert.Equal(t, wfv1.NodeSucceeded, consumer.Phase)
+				if assert.NotNil(t, consumer.Inputs) && assert.Len(t, consumer.Inputs.Parameters, 1) {
+					assert.Equal(t, "fallback-from-input", consumer.Inputs.Parameters[0].Value.String())
+				}
 			}
 		})
 }

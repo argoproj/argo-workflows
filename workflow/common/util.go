@@ -169,7 +169,18 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 
 		// overwrite value from argument (if supplied)
 		argParam := args.GetParameterByName(inParam.Name)
-		overwriteWithArguments(argParam, &inParam)
+		if argParam != nil && argParam.Value != nil && argParam.Value.String() == AbsentOptionalArgumentValue {
+			// The argument was a pure reference to a skipped/omitted node's output with no producer
+			// default (see AbsentOptionalArgumentValue): treat it as unsupplied so the input's own
+			// default (already applied above) or ValueFrom source takes over. With neither, the
+			// absence is unhandled — fail terminally with the real cause; the message must not
+			// match template.IsMissingVariableErr, which would requeue forever.
+			if inParam.Value == nil && inParam.ValueFrom == nil {
+				return nil, errors.Errorf(errors.CodeBadRequest, "inputs.parameters.%s: argument references an absent optional (skipped/omitted node output with no default)", inParam.Name)
+			}
+		} else {
+			overwriteWithArguments(argParam, &inParam)
+		}
 
 		// substitute configmap string and get value from store
 		err := substituteAndGetConfigMapValue(&inParam, globalParams, namespace, configMapStore)
@@ -226,7 +237,7 @@ func SubstituteParams(tmpl *wfv1.Template, globalParams, localParams Parameters)
 		return nil, errors.InternalWrapError(err)
 	}
 	// First replace globals & locals, then replace inputs because globals could be referenced in the inputs
-	replaceMap := globalParams.Merge(localParams)
+	replaceMap := template.ToAnyMap(globalParams.Merge(localParams))
 	globalReplacedTmplStr, err := template.Replace(string(tmplBytes), replaceMap, true)
 	if err != nil {
 		return nil, err
