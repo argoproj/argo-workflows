@@ -611,8 +611,8 @@ schema = 3
     version = "v0.2.0"
     hash = "sha256-iM2QPtXIkcKIZOnr61ySpnw6lMRvsYH0QnAY4PF2pbs="
   [mod."github.com/moby/moby/api"]
-    version = "v1.54.2"
-    hash = "sha256-JKAoP3YqK/w90hrkNtHl8RGKvs+Quf3XFQ2gUS37ONM="
+    version = "v1.55.0"
+    hash = "sha256-D2gQFKJgoNDcFzcMp+3iWMJK7w6QakqA5RMrcXbZWBw="
   [mod."github.com/moby/moby/client"]
     version = "v0.4.1"
     hash = "sha256-G49VpC6ykDsC9ackHwQ3voF+CYzCX1UTmhtWBMCaZSc="
