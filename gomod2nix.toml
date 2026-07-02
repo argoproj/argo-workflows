@@ -590,8 +590,8 @@ schema = 3
     version = "v1.1.2"
     hash = "sha256-vykcXvy2VBBAXnJott/XsGTT0gk2UL36JzZKfJ1KAUY="
   [mod."github.com/minio/minio-go/v7"]
-    version = "v7.2.0"
-    hash = "sha256-0e0RvasrbLhWBZJQKowFbFoh7jq77CqDBux6qCHOef8="
+    version = "v7.2.1"
+    hash = "sha256-P0DMI8oXFq/l1gKn8tx4AzLtkcR9Cmn84BIWNHYDdzM="
   [mod."github.com/mitchellh/copystructure"]
     version = "v1.2.0"
     hash = "sha256-VR9cPZvyW62IHXgmMw8ee+hBDThzd2vftgPksQYR/Mc="
