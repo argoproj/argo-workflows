@@ -46,7 +46,7 @@ require (
 	github.com/moby/moby/api v1.54.2
 	github.com/nao1215/markdown v0.13.0
 	github.com/prometheus/client_golang v1.23.2
-	github.com/prometheus/common v0.68.1
+	github.com/prometheus/common v0.69.0
 	github.com/prometheus/otlptranslator v1.0.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/sethvargo/go-limiter v1.1.0
