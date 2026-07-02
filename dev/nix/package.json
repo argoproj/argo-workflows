@@ -4,6 +4,6 @@
   "repository": "git@github.com:argoproj/argo-workflows.git",
   "dependencies": {
     "markdown-link-check": "3.11.1",
-    "markdownlint-cli": "0.33.0"
+    "markdownlint-cli": "0.49.0"
   }
 }
