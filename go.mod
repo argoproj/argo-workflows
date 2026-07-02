@@ -42,7 +42,7 @@ require (
 	github.com/jcmturner/gokrb5/v8 v8.4.4
 	github.com/klauspost/pgzip v1.2.6
 	github.com/lib/pq v1.12.3
-	github.com/minio/minio-go/v7 v7.2.0
+	github.com/minio/minio-go/v7 v7.2.1
 	github.com/moby/moby/api v1.55.0
 	github.com/nao1215/markdown v0.13.0
 	github.com/prometheus/client_golang v1.23.2
