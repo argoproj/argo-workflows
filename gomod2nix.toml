@@ -35,8 +35,8 @@ schema = 3
     version = "v1.22.0"
     hash = "sha256-JhJgAeC3G0l+th1Xdu0Vf+FzWXTALHyb5FSIsKYTgBo="
   [mod."github.com/Azure/azure-sdk-for-go/sdk/azidentity"]
-    version = "v1.13.1"
-    hash = "sha256-PGB5CIcrLDr4BssBXNCnd1mOzkfQBhrfJqUh1f3ofK8="
+    version = "v1.14.0"
+    hash = "sha256-oUoSbjql472sT24daGzICuBMEQLjpHXooGT83KtnUfc="
   [mod."github.com/Azure/azure-sdk-for-go/sdk/containers/azcontainerregistry"]
     version = "v0.2.3"
     hash = "sha256-CWJLUdzbAwvZmTTRr/VTVoneIo3nOnDJyjYmhEuZnkA="
