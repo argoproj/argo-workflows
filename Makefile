@@ -58,6 +58,7 @@ endif
 E2E_WAIT_TIMEOUT      ?= 90s # timeout for wait conditions
 E2E_PARALLEL          ?= 20
 E2E_SUITE_TIMEOUT     ?= 30m
+UNIT_TEST_TIMEOUT     ?= 15m # per-package timeout for unit tests
 TEST_RETRIES          ?= 2
 JSON_TEST_OUTPUT      := test/reports/json
 # gotest function: gotest(packages, name, parameters)
@@ -589,7 +590,7 @@ lint-ui: ui/dist/app/index.html
 .PHONY: test
 test: ui/dist/app/index.html util/telemetry/metrics_list.go util/telemetry/attributes.go $(TOOL_GOTESTSUM) $(JSON_TEST_OUTPUT) ## Run tests
 	go build ./...
-	env KUBECONFIG=/dev/null $(call gotest,./...,unit,-p 20)
+	env KUBECONFIG=/dev/null $(call gotest,./...,unit,-p 20 -timeout $(UNIT_TEST_TIMEOUT))
 	# marker file, based on it's modification time, we know how long ago this target was run
 	@mkdir -p dist
 	touch dist/test
