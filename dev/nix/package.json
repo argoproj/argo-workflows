@@ -3,7 +3,7 @@
   "version": "latest",
   "repository": "git@github.com:argoproj/argo-workflows.git",
   "dependencies": {
-    "markdown-link-check": "3.11.1",
+    "markdown-link-check": "3.14.2",
     "markdownlint-cli": "0.49.0"
   }
 }
