@@ -20,7 +20,7 @@ jobs:
         with:
           # Use the default ref (the branch that was pushed)
           token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: nixbuild/nix-quick-install-action@2c9db80fb984ceb1bcaa77cdda3fdf8cfba92035 # v34
+      - uses: nixbuild/nix-quick-install-action@9f63be77f412a248c9d9a65a4c82cf066cdf8f0c # v35
       - name: Install gomod2nix
         # Install from the repo's own flake, not upstream `github:nix-community/gomod2nix`.
         # The dev/nix overlay builds gomod2nix against the Go version pinned in
