@@ -1,7 +1,7 @@
 Description: Allow for configuring the allow list when using workflow template refs.
 Authors: [Isitha Subasinghe](https://github.com/isubasinghe)
 Component: General
-Issues: 23
+Issues: 16345
 
 When the controller runs with `templateReferencing: Strict` or `Secure`, workflows using a `workflowTemplateRef` may only set an allow-listed set of `WorkflowSpec` fields (`arguments`, `entrypoint`, `suspend`, and other benign knobs); every other field is blocked so a submitter cannot override the template's security settings.
 The `WORKFLOW_USER_OVERRIDE_ALLOWLIST` environment variable lets operators add fields to this allow-list.
