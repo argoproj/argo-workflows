@@ -794,8 +794,8 @@ schema = 3
     version = "v0.42.0"
     hash = "sha256-S6P3I8GV2xS8o0sLeluy3K+4qPm7/W5wz4EOm920sl8="
   [mod."github.com/testcontainers/testcontainers-go/modules/postgres"]
-    version = "v0.42.0"
-    hash = "sha256-j466rwVrI+7X9Zb3uAM2HBhd6NoFL8Y5B6xK0bA4Ldk="
+    version = "v0.43.0"
+    hash = "sha256-o4Dos+7Df3xb4YR+tNoRoXCDXRndbOhEAVVrb7eeV9Q="
   [mod."github.com/tidwall/gjson"]
     version = "v1.19.0"
     hash = "sha256-H0tqaftwuKVjuvlPov1Fr1a5W0JZmWUkOlPxY5qtSTE="
