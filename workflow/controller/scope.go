@@ -3,8 +3,6 @@ package controller
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"maps"
 	"strings"
 
 	"github.com/expr-lang/expr"
@@ -13,29 +11,34 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/expr/env"
 	"github.com/argoproj/argo-workflows/v4/util/template"
+	"github.com/argoproj/argo-workflows/v4/util/variables"
+	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/templateresolution"
 )
 
-// wfScope contains the current scope of variables available when executing a template
+// wfScope contains the current scope of variables available when executing a
+// template. The underlying *variables.Scope has no exported subscript or
+// write helper, so the only way to populate it is via Key.Set — which means
+// the only writable variables are those declared in util/variables/keys.
 type wfScope struct {
 	tmpl  *wfv1.Template
-	scope map[string]any
+	scope *variables.Scope
 }
 
 func createScope(tmpl *wfv1.Template) *wfScope {
 	scope := &wfScope{
 		tmpl:  tmpl,
-		scope: make(map[string]any),
+		scope: variables.NewScope(),
 	}
 	if tmpl != nil {
 		for _, param := range scope.tmpl.Inputs.Parameters {
-			key := fmt.Sprintf("inputs.parameters.%s", param.Name)
-			scope.scope[key] = scope.tmpl.Inputs.GetParameterByName(param.Name).Value.String()
+			val := scope.tmpl.Inputs.GetParameterByName(param.Name).Value.String()
+			varkeys.InputsParameterByName.Set(scope.scope, val, param.Name)
 		}
 		for _, param := range scope.tmpl.Inputs.Artifacts {
-			key := fmt.Sprintf("inputs.artifacts.%s", param.Name)
-			scope.scope[key] = scope.tmpl.Inputs.GetArtifactByName(param.Name)
+			art := scope.tmpl.Inputs.GetArtifactByName(param.Name)
+			varkeys.InputsArtifactByName.Set(scope.scope, art, param.Name)
 		}
 	}
 	return scope
@@ -46,11 +49,12 @@ func createScope(tmpl *wfv1.Template) *wfScope {
 // A simple tag resolving to a nil value is a terminal substitution error; arguments rescued by a
 // consumer input default are replaced with a sentinel before substitution (see markAbsentOptionalArgs).
 func (s *wfScope) getParametersAny(globals common.Parameters) map[string]any {
-	params := make(map[string]any, len(globals)+len(s.scope))
+	scopeParams := s.scope.AsAnyMap()
+	params := make(map[string]any, len(globals)+len(scopeParams))
 	for key, val := range globals {
 		params[key] = val
 	}
-	for key, val := range s.scope {
+	for key, val := range scopeParams {
 		switch val.(type) {
 		case string, nil:
 			params[key] = val
@@ -59,32 +63,12 @@ func (s *wfScope) getParametersAny(globals common.Parameters) map[string]any {
 	return params
 }
 
-func (s *wfScope) addParamToScope(key, val string) {
-	s.scope[key] = val
-}
-
-func (s *wfScope) addArtifactToScope(key string, artifact wfv1.Artifact) {
-	s.scope[key] = artifact
-}
-
-// addSkippedParamToScope registers a parameter key for a skipped/omitted step's output that declared
-// no default. The value is stored as nil (an absent optional) so structured consumers and expressions
-// can tell it apart from a legitimately empty output (e.g. `ref ?? "fallback"`). A simple tag
-// resolving to the nil is a terminal substitution error unless the referencing argument was replaced
-// with a sentinel for ProcessArgs to interpret (markAbsentOptionalArgs); this applies uniformly to every
-// substitution surface (arguments, when clauses, volumes, artifact subPath, item expansion). nil is
-// stored ONLY by this method, so a present-but-nil scope value is the definition of "skipped with
-// no default".
-func (s *wfScope) addSkippedParamToScope(key string) {
-	s.scope[key] = nil
-}
-
 // absentOptionalRef reports whether an argument value is a single pure reference (e.g.
 // "{{tasks.x.outputs.parameters.y}}") to a key holding an absent optional, i.e. a skipped/omitted
 // node output that declared no producer default. A brace-less literal that merely spells out a
 // scope key is data, not a reference, and composite values like "x-{{key}}-y" or nested tags are
-// not pure references. nil is only ever written by addSkippedParamToScope, so a present-but-nil
-// value identifies the skipped placeholder.
+// not pure references. An absent optional is exactly a key written via Key.SetSkipped with a nil
+// value (see addSkippedNodeOutputsToScope), so IsSkipped identifies the placeholder.
 func (s *wfScope) absentOptionalRef(v string) bool {
 	if !strings.HasPrefix(v, "{{") || !strings.HasSuffix(v, "}}") {
 		return false
@@ -93,8 +77,7 @@ func (s *wfScope) absentOptionalRef(v string) bool {
 	if strings.Contains(key, "{{") || strings.Contains(key, "}}") {
 		return false
 	}
-	val, ok := s.scope[key]
-	return ok && val == nil
+	return s.scope.IsSkipped(key)
 }
 
 // markAbsentOptionalArgs replaces arguments that are pure references to a skipped/omitted node's
@@ -131,7 +114,7 @@ func (s *wfScope) markAbsentOptionalArgs(args *wfv1.Arguments) {
 // template's declared output artifacts: steps relies on this to keep artifact references resolvable,
 // while DAG deliberately leaves them unresolved (resolveDependencyReferences omits optional artifacts
 // and errors on required ones).
-func (woc *wfOperationCtx) addSkippedNodeOutputsToScope(ctx context.Context, tmplCtx *templateresolution.TemplateContext, scope *wfScope, prefix string, node *wfv1.NodeStatus, tmplHolder wfv1.TemplateReferenceHolder, includeArtifacts bool) {
+func (woc *wfOperationCtx) addSkippedNodeOutputsToScope(ctx context.Context, tmplCtx *templateresolution.TemplateContext, scope *wfScope, ref varkeys.NodeRefKeys, name string, node *wfv1.NodeStatus, tmplHolder wfv1.TemplateReferenceHolder, includeArtifacts bool) {
 	if node == nil || node.Outputs != nil {
 		return
 	}
@@ -147,37 +130,30 @@ func (woc *wfOperationCtx) addSkippedNodeOutputsToScope(ctx context.Context, tmp
 		return
 	}
 	for _, param := range tmpl.Outputs.Parameters {
-		key := fmt.Sprintf("%s.outputs.parameters.%s", prefix, param.Name)
-		scope.addSkippedOutputParamToScope(key, param.ValueFrom)
+		// A declared producer default is a real value every consumer (task/step inputs and
+		// template-output aggregation alike) should see. Without one, the output is an absent
+		// optional: stored as nil and marked skipped so consumers can tell it apart from a
+		// legitimately empty output (e.g. `ref ?? "fallback"`).
+		if param.ValueFrom != nil && param.ValueFrom.Default != nil {
+			ref.OutputsParameterByName.Set(scope.scope, param.ValueFrom.Default.String(), name, param.Name)
+		} else {
+			ref.OutputsParameterByName.SetSkipped(scope.scope, nil, name, param.Name)
+		}
 	}
 	if includeArtifacts {
 		for _, artifact := range tmpl.Outputs.Artifacts {
-			key := fmt.Sprintf("%s.outputs.artifacts.%s", prefix, artifact.Name)
-			scope.addArtifactToScope(key, wfv1.Artifact{})
+			ref.OutputsArtifactByName.Set(scope.scope, wfv1.Artifact{}, name, artifact.Name)
 		}
 	}
 	if tmpl.Outputs.Result != nil {
-		scope.addSkippedParamToScope(fmt.Sprintf("%s.outputs.result", prefix))
+		ref.OutputsResult.SetSkipped(scope.scope, nil, name)
 	}
-}
-
-// addSkippedOutputParamToScope registers an output parameter of a skipped/omitted node. If the
-// producing template declared a valueFrom.default for the parameter, that default is used as the
-// scope value so every consumer (task inputs and template-output aggregation alike) sees it.
-// Otherwise it falls back to addSkippedParamToScope's nil (absent optional) behavior.
-func (s *wfScope) addSkippedOutputParamToScope(key string, valueFrom *wfv1.ValueFrom) {
-	if valueFrom != nil && valueFrom.Default != nil {
-		s.addParamToScope(key, valueFrom.Default.String())
-		return
-	}
-	s.addSkippedParamToScope(key)
 }
 
 // resolveVar resolves a parameter or artifact and additionally returns the unwrapped tag
 // (v with the surrounding "{{" / "}}" stripped) so callers can reuse it without re-parsing.
 func (s *wfScope) resolveVar(v string) (string, any, error) {
-	m := make(map[string]any)
-	maps.Copy(m, s.scope)
+	m := s.scope.AsAnyMap()
 	if s.tmpl != nil {
 		for _, a := range s.tmpl.Inputs.Artifacts {
 			m["inputs.artifacts."+a.Name] = a // special case for artifacts
@@ -193,7 +169,7 @@ func (s *wfScope) resolveParameter(p *wfv1.ValueFrom) (any, bool, error) {
 		return "", false, nil
 	}
 	if p.Expression != "" {
-		env := env.GetFuncMap(s.scope)
+		env := env.GetFuncMap(s.scope.AsAnyMap())
 		program, err := expr.Compile(p.Expression, expr.Env(env))
 		if err != nil {
 			return nil, false, err
@@ -210,9 +186,10 @@ func (s *wfScope) resolveParameter(p *wfv1.ValueFrom) (any, bool, error) {
 		}
 		return val, false, nil
 	}
-	_, val, err := s.resolveVar(p.Parameter)
-	// nil is only ever stored by addSkippedParamToScope, so it identifies a skipped placeholder.
-	return val, err == nil && val == nil, err
+	tag, val, err := s.resolveVar(p.Parameter)
+	// IsSkipped is true only for a placeholder written via Key.SetSkipped (a skipped/omitted node
+	// output with no producer default), i.e. an absent optional.
+	return val, s.scope.IsSkipped(tag), err
 }
 
 func (s *wfScope) resolveArtifact(ctx context.Context, art *wfv1.Artifact) (*wfv1.Artifact, error) {
@@ -224,7 +201,7 @@ func (s *wfScope) resolveArtifact(ctx context.Context, art *wfv1.Artifact) (*wfv
 	var val any
 
 	if art.FromExpression != "" {
-		envMap := env.GetFuncMap(s.scope)
+		envMap := env.GetFuncMap(s.scope.AsAnyMap())
 		program, compileErr := expr.Compile(art.FromExpression, expr.Env(envMap))
 		if compileErr != nil {
 			return nil, compileErr

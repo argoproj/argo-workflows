@@ -25,6 +25,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/sorting"
 	"github.com/argoproj/argo-workflows/v4/util/template"
+	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
 	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/hdfs"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/metrics"
@@ -66,11 +67,11 @@ type templateValidationCtx struct {
 
 func newTemplateValidationCtx(wf *wfv1.Workflow, opts Opts) *templateValidationCtx {
 	globalParams := make(map[string]string)
-	globalParams[common.GlobalVarWorkflowName] = placeholderGenerator.NextPlaceholder()
-	globalParams[common.GlobalVarWorkflowNamespace] = placeholderGenerator.NextPlaceholder()
-	globalParams[common.GlobalVarWorkflowMainEntrypoint] = placeholderGenerator.NextPlaceholder()
-	globalParams[common.GlobalVarWorkflowServiceAccountName] = placeholderGenerator.NextPlaceholder()
-	globalParams[common.GlobalVarWorkflowUID] = placeholderGenerator.NextPlaceholder()
+	globalParams[varkeys.WorkflowName.Template()] = placeholderGenerator.NextPlaceholder()
+	globalParams[varkeys.WorkflowNamespace.Template()] = placeholderGenerator.NextPlaceholder()
+	globalParams[varkeys.WorkflowMainEntrypoint.Template()] = placeholderGenerator.NextPlaceholder()
+	globalParams[varkeys.WorkflowServiceAccountName.Template()] = placeholderGenerator.NextPlaceholder()
+	globalParams[varkeys.WorkflowUID.Template()] = placeholderGenerator.NextPlaceholder()
 	return &templateValidationCtx{
 		Opts:         opts,
 		globalParams: globalParams,
@@ -79,13 +80,21 @@ func newTemplateValidationCtx(wf *wfv1.Workflow, opts Opts) *templateValidationC
 	}
 }
 
-const (
+// Magic placeholder values written to validation scopes when a name can only
+// be resolved at runtime (e.g. an output globalName that is itself a
+// parameter). resolveAllVariables() looks for these to decide whether to
+// accept any reference under the corresponding prefix. Derived from the
+// varkeys templates so the catalog stays the single source of truth.
+var (
 	// anyItemMagicValue is a magic value set in addItemsToScope() and checked in
 	// resolveAllVariables() to determine if any {{item.name}} can be accepted during
 	// variable resolution (to support withParam)
-	anyItemMagicValue                    = "item.*"
-	anyWorkflowOutputParameterMagicValue = "workflow.outputs.parameters.*"
-	anyWorkflowOutputArtifactMagicValue  = "workflow.outputs.artifacts.*"
+	anyItemMagicValue                    = varkeys.ItemByKey.Concretize("*")
+	anyWorkflowOutputParameterMagicValue = varkeys.WorkflowOutputsParameterByName.Concretize("*")
+	anyWorkflowOutputArtifactMagicValue  = varkeys.WorkflowOutputsArtifactByName.Concretize("*")
+)
+
+const (
 	// The maximum length of maxCharsInObjectName is 63 characters because of the limitation of Kubernetes label
 	// For details, please refer to: https://stackoverflow.com/questions/50412837/kubernetes-label-name-63-character-limit
 	maxCharsInObjectName = 63
@@ -195,16 +204,16 @@ func Workflow(ctx context.Context, wftmplGetter templateresolution.WorkflowTempl
 		return err
 	}
 	if len(wfArgs.Parameters) > 0 {
-		tctx.globalParams[common.GlobalVarWorkflowParameters] = placeholderGenerator.NextPlaceholder()
-		tctx.globalParams[common.GlobalVarWorkflowParametersJSON] = placeholderGenerator.NextPlaceholder()
+		tctx.globalParams[varkeys.WorkflowParametersAll.Template()] = placeholderGenerator.NextPlaceholder()
+		tctx.globalParams[varkeys.WorkflowParametersJSON.Template()] = placeholderGenerator.NextPlaceholder()
 	}
 
 	for _, param := range wfArgs.Parameters {
 		if param.Name != "" {
 			if param.Value != nil {
-				tctx.globalParams["workflow.parameters."+param.Name] = param.Value.String()
+				tctx.globalParams[varkeys.WorkflowParametersByName.Concretize(param.Name)] = param.Value.String()
 			} else {
-				tctx.globalParams["workflow.parameters."+param.Name] = placeholderGenerator.NextPlaceholder()
+				tctx.globalParams[varkeys.WorkflowParametersByName.Concretize(param.Name)] = placeholderGenerator.NextPlaceholder()
 			}
 		}
 	}
@@ -227,21 +236,21 @@ func Workflow(ctx context.Context, wftmplGetter templateresolution.WorkflowTempl
 	mergedLabels := getUniqueKeys(labelSources...)
 
 	for k := range mergedAnnotations {
-		tctx.globalParams["workflow.annotations."+k] = placeholderGenerator.NextPlaceholder()
+		tctx.globalParams[varkeys.WorkflowAnnotationsByName.Concretize(k)] = placeholderGenerator.NextPlaceholder()
 	}
-	tctx.globalParams[common.GlobalVarWorkflowAnnotations] = placeholderGenerator.NextPlaceholder()
-	tctx.globalParams[common.GlobalVarWorkflowAnnotationsJSON] = placeholderGenerator.NextPlaceholder()
+	tctx.globalParams[varkeys.WorkflowAnnotationsAll.Template()] = placeholderGenerator.NextPlaceholder()
+	tctx.globalParams[varkeys.WorkflowAnnotationsJSON.Template()] = placeholderGenerator.NextPlaceholder()
 
 	for k := range mergedLabels {
-		tctx.globalParams["workflow.labels."+k] = placeholderGenerator.NextPlaceholder()
+		tctx.globalParams[varkeys.WorkflowLabelsByName.Concretize(k)] = placeholderGenerator.NextPlaceholder()
 	}
-	tctx.globalParams[common.GlobalVarWorkflowLabels] = placeholderGenerator.NextPlaceholder()
-	tctx.globalParams[common.GlobalVarWorkflowLabelsJSON] = placeholderGenerator.NextPlaceholder()
+	tctx.globalParams[varkeys.WorkflowLabelsAll.Template()] = placeholderGenerator.NextPlaceholder()
+	tctx.globalParams[varkeys.WorkflowLabelsJSON.Template()] = placeholderGenerator.NextPlaceholder()
 
 	if wf.Spec.Priority != nil {
-		tctx.globalParams[common.GlobalVarWorkflowPriority] = strconv.Itoa(int(*wf.Spec.Priority))
+		tctx.globalParams[varkeys.WorkflowPriority.Template()] = strconv.Itoa(int(*wf.Spec.Priority))
 	}
-	tctx.globalParams[common.GlobalVarWorkflowStatus] = placeholderGenerator.NextPlaceholder()
+	tctx.globalParams[varkeys.WorkflowStatus.Template()] = placeholderGenerator.NextPlaceholder()
 
 	if !opts.IgnoreEntrypoint && entrypoint == "" {
 		return errors.New(errors.CodeBadRequest, "spec.entrypoint is required")
@@ -280,7 +289,7 @@ func Workflow(ctx context.Context, wftmplGetter templateresolution.WorkflowTempl
 		tmplHolder = &wfv1.WorkflowStep{TemplateRef: wf.Spec.WorkflowTemplateRef.ToTemplateRef(wfSpecHolder.GetWorkflowSpec().OnExit)}
 	}
 	if tmplHolder != nil {
-		tctx.globalParams[common.GlobalVarWorkflowFailures] = placeholderGenerator.NextPlaceholder()
+		tctx.globalParams[varkeys.WorkflowFailures.Template()] = placeholderGenerator.NextPlaceholder()
 
 		// Check if any template has parametrized global artifacts, if so enable global artifact resolution for exit handlers
 		hasParametrizedGlobalArtifacts := false
@@ -475,30 +484,30 @@ func (tctx *templateValidationCtx) validateTemplate(ctx context.Context, tmpl *w
 
 	localParams := make(map[string]string)
 	if tmpl.IsPodType() {
-		localParams[common.LocalVarPodName] = placeholderGenerator.NextPlaceholder()
-		scope[common.LocalVarPodName] = placeholderGenerator.NextPlaceholder()
+		localParams[varkeys.PodName.Template()] = placeholderGenerator.NextPlaceholder()
+		scope[varkeys.PodName.Template()] = placeholderGenerator.NextPlaceholder()
 	}
 	if tmpl.RetryStrategy != nil {
-		localParams[common.LocalVarRetries] = placeholderGenerator.NextPlaceholder()
-		localParams[common.LocalVarRetriesLastExitCode] = placeholderGenerator.NextPlaceholder()
-		localParams[common.LocalVarRetriesLastStatus] = placeholderGenerator.NextPlaceholder()
-		localParams[common.LocalVarRetriesLastDuration] = placeholderGenerator.NextPlaceholder()
-		localParams[common.LocalVarRetriesLastMessage] = placeholderGenerator.NextPlaceholder()
-		scope[common.LocalVarRetries] = placeholderGenerator.NextPlaceholder()
-		scope[common.LocalVarRetriesLastExitCode] = placeholderGenerator.NextPlaceholder()
-		scope[common.LocalVarRetriesLastStatus] = placeholderGenerator.NextPlaceholder()
-		scope[common.LocalVarRetriesLastDuration] = placeholderGenerator.NextPlaceholder()
-		scope[common.LocalVarRetriesLastMessage] = placeholderGenerator.NextPlaceholder()
+		localParams[varkeys.Retries.Template()] = placeholderGenerator.NextPlaceholder()
+		localParams[varkeys.RetriesLastExitCode.Template()] = placeholderGenerator.NextPlaceholder()
+		localParams[varkeys.RetriesLastStatus.Template()] = placeholderGenerator.NextPlaceholder()
+		localParams[varkeys.RetriesLastDuration.Template()] = placeholderGenerator.NextPlaceholder()
+		localParams[varkeys.RetriesLastMessage.Template()] = placeholderGenerator.NextPlaceholder()
+		scope[varkeys.Retries.Template()] = placeholderGenerator.NextPlaceholder()
+		scope[varkeys.RetriesLastExitCode.Template()] = placeholderGenerator.NextPlaceholder()
+		scope[varkeys.RetriesLastStatus.Template()] = placeholderGenerator.NextPlaceholder()
+		scope[varkeys.RetriesLastDuration.Template()] = placeholderGenerator.NextPlaceholder()
+		scope[varkeys.RetriesLastMessage.Template()] = placeholderGenerator.NextPlaceholder()
 	}
 	if tmpl.IsLeaf() {
 		for _, art := range tmpl.Outputs.Artifacts {
 			if art.Path != "" {
-				scope[fmt.Sprintf("outputs.artifacts.%s.path", art.Name)] = true
+				scope[varkeys.OutputsArtifactPathByName.Concretize(art.Name)] = true
 			}
 		}
 		for _, param := range tmpl.Outputs.Parameters {
 			if param.ValueFrom != nil && param.ValueFrom.Path != "" {
-				scope[fmt.Sprintf("outputs.parameters.%s.path", param.Name)] = true
+				scope[varkeys.OutputsParameterPathByName.Concretize(param.Name)] = true
 			}
 		}
 	}
@@ -672,21 +681,21 @@ func validateInputs(tmpl *wfv1.Template) (map[string]any, error) {
 	}
 	scope := make(map[string]any)
 	for _, param := range tmpl.Inputs.Parameters {
-		scope[fmt.Sprintf("inputs.parameters.%s", param.Name)] = true
+		scope[varkeys.InputsParameterByName.Concretize(param.Name)] = true
 	}
 	if len(tmpl.Inputs.Parameters) > 0 {
-		scope["inputs.parameters"] = true
+		scope[varkeys.InputsParametersAll.Template()] = true
 	}
 
 	for _, art := range tmpl.Inputs.Artifacts {
-		artRef := fmt.Sprintf("inputs.artifacts.%s", art.Name)
+		artRef := varkeys.InputsArtifactByName.Concretize(art.Name)
 		scope[artRef] = true
 		if tmpl.IsLeaf() {
 			err = art.CleanPath()
 			if err != nil {
 				return nil, errors.Errorf(errors.CodeBadRequest, "error in templates.%s.%s: %s", tmpl.Name, artRef, err.Error())
 			}
-			scope[fmt.Sprintf("inputs.artifacts.%s.path", art.Name)] = true
+			scope[varkeys.InputsArtifactPathByName.Concretize(art.Name)] = true
 		} else if art.Path != "" {
 			return nil, errors.Errorf(errors.CodeBadRequest, "templates.%s.%s.path only valid in container/script templates", tmpl.Name, artRef)
 		}
@@ -734,23 +743,23 @@ func resolveAllVariables(scope map[string]any, globalParams map[string]string, t
 		_, isGlobal := globalParams[trimmedTag]
 		if !ok && !isGlobal {
 			switch {
-			case (trimmedTag == "item" || strings.HasPrefix(trimmedTag, "item.")) && allowAllItemRefs:
+			case (trimmedTag == varkeys.Item.Template() || strings.HasPrefix(trimmedTag, varkeys.ItemByKey.Concretize(""))) && allowAllItemRefs:
 				// we are *probably* referencing a undetermined item using withParam
 				// NOTE: this is far from foolproof.
-			case strings.HasPrefix(trimmedTag, "workflow.outputs.parameters.") && allowAllWorkflowOutputParameterRefs:
+			case strings.HasPrefix(trimmedTag, varkeys.WorkflowOutputsParameterByName.Concretize("")) && allowAllWorkflowOutputParameterRefs:
 				// Allow runtime resolution of workflow output parameter names
-			case strings.HasPrefix(trimmedTag, "workflow.outputs.artifacts.") && allowAllWorkflowOutputArtifactRefs:
+			case strings.HasPrefix(trimmedTag, varkeys.WorkflowOutputsArtifactByName.Concretize("")) && allowAllWorkflowOutputArtifactRefs:
 				// Allow runtime resolution of workflow output artifact names
 			case strings.HasPrefix(trimmedTag, "outputs."):
 				// We are self referencing for metric emission, allow it.
-			case strings.HasPrefix(trimmedTag, common.GlobalVarWorkflowCreationTimestamp):
-			case strings.HasPrefix(trimmedTag, common.GlobalVarWorkflowCronScheduleTime):
+			case strings.HasPrefix(trimmedTag, varkeys.WorkflowCreationTimestamp.Template()):
+			case strings.HasPrefix(trimmedTag, varkeys.WorkflowScheduledTime.Template()):
 				// Allow runtime resolution for "scheduledTime" which will pass from CronWorkflow
-			case strings.HasPrefix(trimmedTag, common.GlobalVarWorkflowDuration):
-			case strings.HasPrefix(trimmedTag, "tasks.name"):
-			case strings.HasPrefix(trimmedTag, "steps.name"):
-			case strings.HasPrefix(trimmedTag, "node.name"):
-			case strings.HasPrefix(trimmedTag, "workflow.parameters") && workflowTemplateValidation:
+			case strings.HasPrefix(trimmedTag, varkeys.WorkflowDuration.Template()):
+			case strings.HasPrefix(trimmedTag, varkeys.TasksName.Template()):
+			case strings.HasPrefix(trimmedTag, varkeys.StepsName.Template()):
+			case strings.HasPrefix(trimmedTag, varkeys.NodeName.Template()):
+			case strings.HasPrefix(trimmedTag, varkeys.WorkflowParametersAll.Template()) && workflowTemplateValidation:
 				// If we are simply validating a WorkflowTemplate in isolation, some of the parameters may come from the Workflow that uses it
 			default:
 				return fmt.Errorf("failed to resolve {{%s}}", tag)
@@ -799,7 +808,7 @@ func (tctx *templateValidationCtx) validateLeaf(scope map[string]any, tmplCtx *t
 			if prev, ok := mountPaths[art.Path]; ok {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.inputs.artifacts[%d].path '%s' already mounted in %s", tmpl.Name, i, art.Path, prev)
 			}
-			mountPaths[art.Path] = fmt.Sprintf("inputs.artifacts.%s", art.Name)
+			mountPaths[art.Path] = varkeys.InputsArtifactByName.Concretize(art.Name)
 		}
 		if tmpl.Container.Image == "" {
 			switch baseTemplate := tmplCtx.GetCurrentTemplateBase().(type) {
@@ -990,8 +999,7 @@ func (tctx *templateValidationCtx) validateSteps(ctx context.Context, scope map[
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].name '%s' is invalid: %s", tmpl.Name, i, step.Name, strings.Join(errs, ";"))
 			}
 			stepNames[step.Name] = true
-			prefix := fmt.Sprintf("steps.%s", step.Name)
-			scope[fmt.Sprintf("%s.status", prefix)] = true
+			scope[varkeys.StepsNodeRef.Status.Concretize(step.Name)] = true
 			err := addItemsToScope(step.WithItems, step.WithParam, step.WithSequence, scope)
 			if err != nil {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].%s %s", tmpl.Name, i, step.Name, err.Error())
@@ -1006,7 +1014,7 @@ func (tctx *templateValidationCtx) validateSteps(ctx context.Context, scope map[
 			}
 
 			if step.HasExitHook() {
-				tctx.addOutputsToScope(ctx, resolvedTmpl, fmt.Sprintf("steps.%s", step.Name), scope, false, false)
+				tctx.addOutputsToScope(ctx, resolvedTmpl, varkeys.StepsNodeRef, varkeys.StepsAggregate, step.Name, scope, false, false)
 			}
 			resolvedTemplates[step.Name] = resolvedTmpl
 
@@ -1025,7 +1033,7 @@ func (tctx *templateValidationCtx) validateSteps(ctx context.Context, scope map[
 
 			if i := step.Inline; i != nil {
 				for _, p := range i.Inputs.Parameters {
-					stepScope["inputs.parameters."+p.Name] = placeholderGenerator.NextPlaceholder()
+					stepScope[varkeys.InputsParameterByName.Concretize(p.Name)] = placeholderGenerator.NextPlaceholder()
 				}
 			}
 
@@ -1036,7 +1044,7 @@ func (tctx *templateValidationCtx) validateSteps(ctx context.Context, scope map[
 
 			aggregate := len(step.WithItems) > 0 || step.WithParam != ""
 
-			tctx.addOutputsToScope(ctx, resolvedTmpl, fmt.Sprintf("steps.%s", step.Name), scope, aggregate, false)
+			tctx.addOutputsToScope(ctx, resolvedTmpl, varkeys.StepsNodeRef, varkeys.StepsAggregate, step.Name, scope, aggregate, false)
 
 			// Validate the template again with actual arguments.
 			_, err = tctx.validateTemplateHolder(ctx, &step, tmplCtx, &step.Arguments, workflowTemplateValidation)
@@ -1068,21 +1076,21 @@ func addItemsToScope(withItems []wfv1.Item, withParam string, withSequence *wfv1
 			val := withItems[i]
 			switch val.GetType() {
 			case wfv1.String, wfv1.Number, wfv1.Bool:
-				scope["item"] = true
+				scope[varkeys.Item.Template()] = true
 			case wfv1.List:
 				for i := range val.GetListVal() {
-					scope[fmt.Sprintf("item.[%v]", i)] = true
+					scope[varkeys.ItemByKey.Concretize(fmt.Sprintf("[%v]", i))] = true
 				}
 			case wfv1.Map:
 				for itemKey := range val.GetMapVal() {
-					scope[fmt.Sprintf("item.%s", itemKey)] = true
+					scope[varkeys.ItemByKey.Concretize(itemKey)] = true
 				}
 			default:
 				return fmt.Errorf("unsupported withItems type: %v", val)
 			}
 		}
 	case withParam != "":
-		scope["item"] = true
+		scope[varkeys.Item.Template()] = true
 		// 'item.*' is magic placeholder value which resolveAllVariables() will look for
 		// when considering if all variables are resolveable.
 		scope[anyItemMagicValue] = true
@@ -1090,31 +1098,31 @@ func addItemsToScope(withItems []wfv1.Item, withParam string, withSequence *wfv1
 		if withSequence.Count != nil && withSequence.End != nil {
 			return errors.New(errors.CodeBadRequest, "only one of count or end can be defined in withSequence")
 		}
-		scope["item"] = true
+		scope[varkeys.Item.Template()] = true
 	}
 	return nil
 }
 
-func (tctx *templateValidationCtx) addOutputsToScope(ctx context.Context, tmpl *wfv1.Template, prefix string, scope map[string]any, aggregate bool, isAncestor bool) {
-	scope[fmt.Sprintf("%s.id", prefix)] = true
-	scope[fmt.Sprintf("%s.startedAt", prefix)] = true
-	scope[fmt.Sprintf("%s.finishedAt", prefix)] = true
-	scope[fmt.Sprintf("%s.hostNodeName", prefix)] = true
+func (tctx *templateValidationCtx) addOutputsToScope(ctx context.Context, tmpl *wfv1.Template, ref varkeys.NodeRefKeys, agg varkeys.AggregateKeys, name string, scope map[string]any, aggregate bool, isAncestor bool) {
+	scope[ref.ID.Concretize(name)] = true
+	scope[ref.StartedAt.Concretize(name)] = true
+	scope[ref.FinishedAt.Concretize(name)] = true
+	scope[ref.HostNodeName.Concretize(name)] = true
 	if tmpl == nil {
 		return
 	}
 	if tmpl.Daemon != nil && *tmpl.Daemon {
-		scope[fmt.Sprintf("%s.ip", prefix)] = true
+		scope[ref.IP.Concretize(name)] = true
 	}
 	if tmpl.HasOutput() {
-		scope[fmt.Sprintf("%s.outputs.result", prefix)] = true
-		scope[fmt.Sprintf("%s.exitCode", prefix)] = true
+		scope[ref.OutputsResult.Concretize(name)] = true
+		scope[ref.ExitCode.Concretize(name)] = true
 	}
 	for _, param := range tmpl.Outputs.Parameters {
-		scope[fmt.Sprintf("%s.outputs.parameters.%s", prefix, param.Name)] = true
+		scope[ref.OutputsParameterByName.Concretize(name, param.Name)] = true
 		if param.GlobalName != "" {
 			if !isParameter(param.GlobalName) {
-				globalParamName := fmt.Sprintf("workflow.outputs.parameters.%s", param.GlobalName)
+				globalParamName := varkeys.WorkflowOutputsParameterByName.Concretize(param.GlobalName)
 				scope[globalParamName] = true
 				tctx.globalParams[globalParamName] = placeholderGenerator.NextPlaceholder()
 			} else {
@@ -1124,10 +1132,10 @@ func (tctx *templateValidationCtx) addOutputsToScope(ctx context.Context, tmpl *
 		}
 	}
 	for _, art := range tmpl.Outputs.Artifacts {
-		scope[fmt.Sprintf("%s.outputs.artifacts.%s", prefix, art.Name)] = true
+		scope[ref.OutputsArtifactByName.Concretize(name, art.Name)] = true
 		if art.GlobalName != "" {
 			if !isParameter(art.GlobalName) {
-				globalArtName := fmt.Sprintf("workflow.outputs.artifacts.%s", art.GlobalName)
+				globalArtName := varkeys.WorkflowOutputsArtifactByName.Concretize(art.GlobalName)
 				scope[globalArtName] = true
 				tctx.globalParams[globalArtName] = placeholderGenerator.NextPlaceholder()
 			} else {
@@ -1141,15 +1149,15 @@ func (tctx *templateValidationCtx) addOutputsToScope(ctx context.Context, tmpl *
 		// Not that we don't also include TemplateTypeContainer here, even though it uses `outputs.result` it uses
 		// `outputs.parameters` as its aggregator.
 		case wfv1.TemplateTypeScript, wfv1.TemplateTypeContainerSet:
-			scope[fmt.Sprintf("%s.outputs.result", prefix)] = true
-			scope[fmt.Sprintf("%s.exitCode", prefix)] = true
-			scope[fmt.Sprintf("%s.outputs.parameters", prefix)] = true
+			scope[ref.OutputsResult.Concretize(name)] = true
+			scope[ref.ExitCode.Concretize(name)] = true
+			scope[agg.Parameters.Concretize(name)] = true
 		default:
-			scope[fmt.Sprintf("%s.outputs.parameters", prefix)] = true
+			scope[agg.Parameters.Concretize(name)] = true
 		}
 	}
 	if isAncestor {
-		scope[fmt.Sprintf("%s.status", prefix)] = true
+		scope[ref.Status.Concretize(name)] = true
 	}
 }
 
@@ -1397,9 +1405,8 @@ func (tctx *templateValidationCtx) validateDAG(ctx context.Context, scope map[st
 
 		resolvedTemplates[task.Name] = resolvedTmpl
 
-		prefix := fmt.Sprintf("tasks.%s", task.Name)
 		aggregate := len(task.WithItems) > 0 || task.WithParam != ""
-		tctx.addOutputsToScope(ctx, resolvedTmpl, prefix, scope, aggregate, false)
+		tctx.addOutputsToScope(ctx, resolvedTmpl, varkeys.TasksNodeRef, varkeys.TasksAggregate, task.Name, scope, aggregate, false)
 
 		err = common.ValidateTaskResults(&task)
 		if err != nil {
@@ -1434,14 +1441,13 @@ func (tctx *templateValidationCtx) validateDAG(ctx context.Context, scope map[st
 	for _, task := range tmpl.DAG.Tasks {
 		resolvedTmpl := resolvedTemplates[task.Name]
 		// add all tasks outputs to scope so that a nested DAGs can have outputs
-		prefix := fmt.Sprintf("tasks.%s", task.Name)
 		// add self status reference for  hooks
 		if task.Hooks != nil {
-			scope[fmt.Sprintf("%s.status", prefix)] = true
+			scope[varkeys.TasksNodeRef.Status.Concretize(task.Name)] = true
 		}
-		tctx.addOutputsToScope(ctx, resolvedTmpl, prefix, scope, false, false)
+		tctx.addOutputsToScope(ctx, resolvedTmpl, varkeys.TasksNodeRef, varkeys.TasksAggregate, task.Name, scope, false, false)
 		if task.HasExitHook() {
-			tctx.addOutputsToScope(ctx, resolvedTmpl, prefix, scope, false, false)
+			tctx.addOutputsToScope(ctx, resolvedTmpl, varkeys.TasksNodeRef, varkeys.TasksAggregate, task.Name, scope, false, false)
 		}
 		taskBytes, err := json.Marshal(task)
 		if err != nil {
@@ -1453,13 +1459,12 @@ func (tctx *templateValidationCtx) validateDAG(ctx context.Context, scope map[st
 		for _, ancestor := range ancestry {
 			ancestorTask := dagValidationCtx.GetTask(ctx, ancestor)
 			resolvedTmpl := resolvedTemplates[ancestor]
-			ancestorPrefix := fmt.Sprintf("tasks.%s", ancestor)
 			aggregate := len(ancestorTask.WithItems) > 0 || ancestorTask.WithParam != ""
-			tctx.addOutputsToScope(ctx, resolvedTmpl, ancestorPrefix, taskScope, aggregate, true)
+			tctx.addOutputsToScope(ctx, resolvedTmpl, varkeys.TasksNodeRef, varkeys.TasksAggregate, ancestor, taskScope, aggregate, true)
 		}
 		if i := task.Inline; i != nil {
 			for _, p := range i.Inputs.Parameters {
-				taskScope["inputs.parameters."+p.Name] = placeholderGenerator.NextPlaceholder()
+				taskScope[varkeys.InputsParameterByName.Concretize(p.Name)] = placeholderGenerator.NextPlaceholder()
 			}
 		}
 

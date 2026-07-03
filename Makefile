@@ -295,7 +295,7 @@ PROTO_BINARIES := $(TOOL_PROTOC_GEN_GOGO) $(TOOL_PROTOC_GEN_GOGOFAST) $(TOOL_GOI
 ifneq ($(USE_NIX), true)
 pkg/apiclient/%.swagger.json: $(PROTO_BINARIES)
 endif
-QUICK_GENERATED_DOCS := docs/metrics.md docs/tracing.md docs/database-migrations.md
+QUICK_GENERATED_DOCS := docs/metrics.md docs/tracing.md docs/database-migrations.md docs/variable-flow/variables.md
 GENERATED_DOCS := $(QUICK_GENERATED_DOCS) docs/fields.md docs/cli/argo.md docs/workflow-controller-configmap.md docs/go-sdk-guide.md
 
 # protoc,my.proto
@@ -849,6 +849,10 @@ docs/tracing.md: $(TELEMETRY_BUILDER) util/telemetry/builder/values.yaml
 
 docs/database-migrations.md: persist/sqldb/migrate.go util/sync/db/migrate.go hack/docs/migrations/main.go
 	GOFLAGS="$(GOFLAGS) -mod=mod" go run ./hack/docs/migrations
+
+docs/variable-flow/variables.md: $(wildcard util/variables/*.go) $(wildcard util/variables/keys/*.go)
+	@echo Rebuilding $@
+	go test -run TestGenerateMarkdown -count=1 ./util/variables/ -args -write
 
 # swagger
 ifneq ($(USE_NIX), true)

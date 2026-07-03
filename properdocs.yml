@@ -126,6 +126,7 @@ nav:
       - Features:
           # this is a bit of a dumping ground, I've tried to order with key features first
           - variables.md
+          - Variable catalog: variable-flow/variables.md
           - retries.md
           - lifecyclehook.md
           - synchronization.md

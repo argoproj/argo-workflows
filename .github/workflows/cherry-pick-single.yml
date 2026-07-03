@@ -41,10 +41,14 @@ jobs:
           private-key: ${{ secrets.CHERRYPICK_APP_PRIVATE_KEY }}
 
       - name: Checkout repository
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
         with:
           fetch-depth: 0
           token: ${{ steps.generate-token.outputs.token }}
+          # An explicit ref avoids checkout v7's fork-PR guard: on a merged
+          # fork PR the default checkout commit is the base branch tip, which
+          # equals merge_commit_sha and is refused under pull_request_target.
+          ref: main
 
       - name: Configure Git
         run: |
@@ -122,3 +126,6 @@ jobs:
             --body "❌ Cherry-pick failed for ${{ inputs.version_number }}. Please check the [workflow logs](https://github.com/argoproj/argo-workflows/actions/runs/${{ github.run_id }}) for details."
         env:
           GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+          # This step must work even when the checkout failed, so don't rely
+          # on a local git repository for repo context
+          GH_REPO: ${{ github.repository }}
