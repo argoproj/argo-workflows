@@ -15,11 +15,24 @@ permissions:
 jobs:
   gomod2nix:
     runs-on: ubuntu-latest
+    env:
+      HAS_APP: ${{ secrets.GOMOD2NIX_APP_ID != '' }}
     steps:
+      - name: Generate a token
+        id: generate-token
+        # Pushing with GITHUB_TOKEN leaves the PR's CI runs stuck in an
+        # "approval required" state, so push as a GitHub App instead.
+        # Skipped on forks without the app; the GITHUB_TOKEN fallback still
+        # pushes, it just won't re-trigger CI.
+        if: env.HAS_APP == 'true'
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ secrets.GOMOD2NIX_APP_ID }}
+          private-key: ${{ secrets.GOMOD2NIX_APP_PRIVATE_KEY }}
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           # Use the default ref (the branch that was pushed)
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ steps.generate-token.outputs.token || secrets.GITHUB_TOKEN }}
       - uses: nixbuild/nix-quick-install-action@9f63be77f412a248c9d9a65a4c82cf066cdf8f0c # v35
       - name: Install gomod2nix
         # Install from the repo's own flake, not upstream `github:nix-community/gomod2nix`.
