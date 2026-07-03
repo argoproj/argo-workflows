@@ -3,8 +3,10 @@ package util
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"reflect"
 	"sort"
+	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
@@ -31,6 +33,65 @@ var allowedUserOverrideFields = map[string]bool{
 	"WorkflowTemplateRef":   true,
 	"Metrics":               true,
 	"ArtifactGC":            true,
+}
+
+// userOverrideAllowlistEnv names an env var operators may set to ADD WorkflowSpec
+// field names to allowedUserOverrideFields (comma-separated, e.g.
+// "podSpecPatch,volumes"). Field names are the YAML/JSON names operators write in
+// their workflows, not Go identifiers. This re-opens overrides that are blocked by
+// default, so it is opt-in and validated against real field names.
+// Note: the nested ArtifactGC.PodSpecPatch/ServiceAccountName/PodMetadata blocks
+// are enforced separately and are NOT relaxed by this var.
+const userOverrideAllowlistEnv = "WORKFLOW_USER_OVERRIDE_ALLOWLIST"
+
+// ConfigureUserOverrideAllowlistFromEnv adds the WorkflowSpec field names listed
+// in $WORKFLOW_USER_OVERRIDE_ALLOWLIST to allowedUserOverrideFields. It is
+// controller-only configuration and must be called once at controller startup,
+// so an invalid field name fails the controller rather than any binary (CLI,
+// argoexec) that merely imports this package.
+func ConfigureUserOverrideAllowlistFromEnv() error {
+	fields, err := parseUserOverrideAllowlist(os.Getenv(userOverrideAllowlistEnv))
+	if err != nil {
+		return err
+	}
+	for _, f := range fields {
+		allowedUserOverrideFields[f] = true
+	}
+	return nil
+}
+
+// parseUserOverrideAllowlist parses a comma-separated list of WorkflowSpec field
+// names (the YAML/JSON names operators write, e.g. "podSpecPatch"), returning the
+// corresponding Go field names that key allowedUserOverrideFields. It errors on any
+// name that is not a real WorkflowSpec field so an operator typo is surfaced rather
+// than silently leaving a field blocked.
+func parseUserOverrideAllowlist(env string) ([]string, error) {
+	if strings.TrimSpace(env) == "" {
+		return nil, nil
+	}
+	// Map YAML/JSON name -> Go field name; allowedUserOverrideFields is keyed by Go name.
+	goName := map[string]string{}
+	t := reflect.TypeFor[wfv1.WorkflowSpec]()
+	for field := range t.Fields() {
+		name := strings.Split(field.Tag.Get("json"), ",")[0]
+		if name == "" || name == "-" {
+			name = field.Name // ponytail: fall back to Go name for any untagged field
+		}
+		goName[name] = field.Name
+	}
+	var fields []string
+	for f := range strings.SplitSeq(env, ",") {
+		f = strings.TrimSpace(f)
+		if f == "" {
+			continue
+		}
+		g, ok := goName[f]
+		if !ok {
+			return nil, fmt.Errorf("%s: %q is not a WorkflowSpec field name", userOverrideAllowlistEnv, f)
+		}
+		fields = append(fields, g)
+	}
+	return fields, nil
 }
 
 // ValidateUserOverrides checks that a user-submitted WorkflowSpec only sets
