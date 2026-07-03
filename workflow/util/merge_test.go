@@ -45,6 +45,26 @@ spec:
     strategy: OnPodSuccess
 `
 
+func TestParseUserOverrideAllowlist(t *testing.T) {
+	for _, env := range []string{"", "  "} {
+		got, err := parseUserOverrideAllowlist(env)
+		require.NoError(t, err)
+		assert.Nil(t, got)
+	}
+
+	// Input is the YAML/JSON name; output is the Go field name that keys allowedUserOverrideFields.
+	got, err := parseUserOverrideAllowlist(" podSpecPatch , volumes ")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"PodSpecPatch", "Volumes"}, got)
+
+	// Go identifiers are not accepted — operators write YAML names.
+	_, err = parseUserOverrideAllowlist("PodSpecPatch")
+	require.EqualError(t, err, `WORKFLOW_USER_OVERRIDE_ALLOWLIST: "PodSpecPatch" is not a WorkflowSpec field name`)
+
+	_, err = parseUserOverrideAllowlist("notAField")
+	require.EqualError(t, err, `WORKFLOW_USER_OVERRIDE_ALLOWLIST: "notAField" is not a WorkflowSpec field name`)
+}
+
 func TestMergeWorkflows(t *testing.T) {
 	patchWf := wfv1.MustUnmarshalWorkflow(origWF)
 	targetWf := wfv1.MustUnmarshalWorkflow(patchWF)
