@@ -36,7 +36,11 @@ import (
 
 // ExecResource will run kubectl action against a manifest
 func (we *WorkflowExecutor) ExecResource(ctx context.Context, action string, manifestPath string, flags []string) (string, string, string, error) {
-	args, err := we.getKubectlArguments(action, manifestPath, flags)
+	var mergeStrategy string
+	if we.Template.Resource != nil {
+		mergeStrategy = we.Template.Resource.MergeStrategy
+	}
+	args, err := getKubectlArguments(action, manifestPath, flags, mergeStrategy)
 	if err != nil {
 		return "", "", "", err
 	}
@@ -86,14 +90,19 @@ func (we *WorkflowExecutor) ExecResource(ctx context.Context, action string, man
 	return obj.GetNamespace(), resourceFullName, selfLink, nil
 }
 
+// inferPluralName guesses the lowercase plural resource name for a kind.
+// This is the best guess we can do here and is what `kubectl` uses under the hood. Hopefully future versions of the
+// REST client would remove the need to infer the plural name.
+func inferPluralName(kind string) string {
+	lowercaseNamer := namer.NewAllLowercasePluralNamer(map[string]string{})
+	return lowercaseNamer.Name(&gengotypes.Type{Name: gengotypes.Name{
+		Name: kind,
+	}})
+}
+
 func inferObjectSelfLink(obj unstructured.Unstructured) string {
 	gvk := obj.GroupVersionKind()
-	// This is the best guess we can do here and is what `kubectl` uses under the hood. Hopefully future versions of the
-	// REST client would remove the need to infer the plural name.
-	lowercaseNamer := namer.NewAllLowercasePluralNamer(map[string]string{})
-	pluralName := lowercaseNamer.Name(&gengotypes.Type{Name: gengotypes.Name{
-		Name: gvk.Kind,
-	}})
+	pluralName := inferPluralName(gvk.Kind)
 
 	var selfLinkPrefix string
 	if gvk.Group == "" {
@@ -112,7 +121,7 @@ func inferObjectSelfLink(obj unstructured.Unstructured) string {
 	return selfLink
 }
 
-func (we *WorkflowExecutor) getKubectlArguments(action string, manifestPath string, flags []string) ([]string, error) {
+func getKubectlArguments(action string, manifestPath string, flags []string, mergeStrategy string) ([]string, error) {
 	buff, err := os.ReadFile(filepath.Clean(manifestPath))
 	if err != nil {
 		return []string{}, argoerrors.New(argoerrors.CodeBadRequest, err.Error())
@@ -134,9 +143,8 @@ func (we *WorkflowExecutor) getKubectlArguments(action string, manifestPath stri
 
 	appendFileFlag := true
 	if action == "patch" {
-		mergeStrategy := "strategic"
-		if we.Template.Resource.MergeStrategy != "" {
-			mergeStrategy = we.Template.Resource.MergeStrategy
+		if mergeStrategy == "" {
+			mergeStrategy = "strategic"
 		}
 		args = append(args, "--type")
 		args = append(args, mergeStrategy)
