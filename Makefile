@@ -129,6 +129,7 @@ UPPERIO_DB_DEBUG              := 0
 DEFAULT_REQUEUE_TIME          ?= 1s # by keeping this short we speed up tests
 ALWAYS_OFFLOAD_NODE_STATUS 	  := false
 POD_STATUS_CAPTURE_FINALIZER  ?= true
+DEBUG                         ?= # run components under Delve, e.g. DEBUG=controller,server
 NAMESPACED                    := true
 MANAGED_NAMESPACE             ?= $(KUBE_NAMESPACE)
 SECURE                        ?= false# whether or not to start Argo in TLS mode
@@ -779,7 +780,8 @@ start: tilt k3d-up ## Start the dev stack in-cluster via Tilt
 	# forward ports). The argo server/UI/metrics forwards bind 0.0.0.0 too.
 	tilt up --host=0.0.0.0 -- --profile=$(PROFILE) --auth-mode=$(AUTH_MODE) \
 		--secure=$(SECURE) --api=$(API) \
-		--pod-status-capture-finalizer=$(POD_STATUS_CAPTURE_FINALIZER)
+		--pod-status-capture-finalizer=$(POD_STATUS_CAPTURE_FINALIZER) \
+		$(if $(DEBUG),--debug=$(DEBUG))
 
 .PHONY: postgres-cli
 postgres-cli:

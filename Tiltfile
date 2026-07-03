@@ -15,6 +15,9 @@
 #   --secure=true                       argo-server serves TLS
 #   --api=false                         don't build or run the argo-server
 #   --pod-status-capture-finalizer=...  controller pod-status-capture finalizer toggle
+#   --debug=controller,server           run the named components under headless Delve
+#                                       (controller :2345, server :2346) and attach an
+#                                       IDE. See docs/running-locally.md.
 
 # Allow more resources to build concurrently than the default of 3, so the
 # controller/CLI/executor compiles run in parallel on a cold start.
@@ -26,6 +29,9 @@ config.define_string('auth-mode')
 config.define_string('secure')
 config.define_string('api')
 config.define_string('pod-status-capture-finalizer')
+# --debug=controller,server runs the named components under headless Delve. See
+# the "Debugging under Tilt" section of docs/running-locally.md.
+config.define_string_list('debug')
 cfg = config.parse()
 profile = cfg.get('profile', 'minimal')
 mode = cfg.get('mode', 'up')
@@ -34,6 +40,18 @@ auth_mode = cfg.get('auth-mode', 'hybrid')
 secure = cfg.get('secure', 'false')
 api = cfg.get('api', 'true') != 'false'
 finalizer = cfg.get('pod-status-capture-finalizer', 'true')
+# Debugging is a dev-only convenience; force it off under CI so `tilt ci` builds
+# the real production images and never wraps them in dlv. Tilt's string_list
+# collects repeated flags but doesn't split on commas, so split here to accept
+# both `--debug=controller,server` and `--debug=controller --debug=server`.
+debug = []
+if not is_ci:
+    for item in cfg.get('debug', []):
+        debug.extend(item.split(','))
+debug_controller = 'controller' in debug
+debug_server = 'server' in debug
+DLV_CTRL_PORT = 2345
+DLV_SERVER_PORT = 2346
 
 ctx = k8s_context()
 if not ctx.startswith('k3d-'):
@@ -67,6 +85,32 @@ if not api:
     _dep, rest = filter_yaml(rest, kind='^Deployment$', name='^argo-server$')
     _svc, rest = filter_yaml(rest, kind='^Service$', name='^argo-server$')
 
+# Run a container under headless Delve. The deployment's explicit command/args
+# override the image ENTRYPOINT, so wrap the command here (the dev images bake in
+# /bin/dlv). --continue starts the program immediately so readiness probes stay
+# green and you can attach on demand; --accept-multiclient lets you reconnect
+# after detaching. SYS_PTRACE is required: the default seccomp profile blocks the
+# ptrace syscall even on dlv's own child. readOnlyRootFilesystem is relaxed to
+# give dlv scratch space. Must run AFTER the component's own command/args are
+# finalised, so the real flags land after the `--`.
+def dlvify(container, binary, port):
+    args = container.get('command', []) + container.get('args', [])
+    if args and args[0] == binary.split('/')[-1]:
+        args = args[1:]  # drop a leading bare entrypoint name (e.g. 'workflow-controller')
+    container['command'] = ['/bin/dlv', 'exec', '--headless',
+        '--listen=:%d' % port, '--api-version=2', '--accept-multiclient',
+        '--continue', binary, '--'] + args
+    container['args'] = []
+    sc = container.get('securityContext', {})
+    caps = sc.get('capabilities', {})
+    caps['add'] = caps.get('add', []) + ['SYS_PTRACE']
+    sc['capabilities'] = caps
+    sc['readOnlyRootFilesystem'] = False
+    container['securityContext'] = sc
+    ports = container.get('ports', [])
+    ports.append({'containerPort': port, 'name': 'dlv'})
+    container['ports'] = ports
+
 # Apply the Makefile-controlled settings. The old host-process flow injected
 # these as env vars on the local processes; patch them into the in-cluster
 # manifests instead.
@@ -78,7 +122,14 @@ for o in objs:
     if o['metadata']['name'] == 'workflow-controller':
         env = container.get('env', [])
         env.append({'name': 'ARGO_POD_STATUS_CAPTURE_FINALIZER', 'value': finalizer})
+        if debug_controller:
+            # Pausing at a breakpoint stalls lease renewal; the controller then
+            # loses leadership and exits. Run single-instance so a paused session
+            # survives.
+            env.append({'name': 'LEADER_ELECTION_DISABLE', 'value': 'true'})
         container['env'] = env
+        if debug_controller:
+            dlvify(container, '/bin/workflow-controller', DLV_CTRL_PORT)
     if o['metadata']['name'] == 'argo-server':
         # the e2e base sets both args; replace them, or append if a future
         # manifest reshuffle drops them (a silent no-op here would deploy a
@@ -101,6 +152,8 @@ for o in objs:
             if not probe.get('httpGet'):
                 fail('argo-server has no httpGet readinessProbe; cannot patch its scheme for --secure=true')
             probe['httpGet']['scheme'] = 'HTTPS'
+        if debug_server:
+            dlvify(container, '/bin/argo', DLV_SERVER_PORT)
 rest = encode_yaml_stream(objs)
 
 k8s_yaml('test/e2e/manifests/argo-ns.yaml')
@@ -158,8 +211,14 @@ if is_ci:
     exec_target = 'argoexec'
 else:
     # Dev: compile each binary once on the host; the dev images just COPY it in.
-    local_resource('controller-compile', cmd='make dist/workflow-controller',
-        deps=ctrl_src, labels=['compile'])
+    # When debugging, build with `-N -l` (no optimisation/inlining) so dlv can map
+    # source lines and locals, and switch the compile to manual trigger mode so an
+    # on-save rebuild doesn't recreate the pod out from under a live debug session
+    # — Tilt still flags the change; you click to rebuild when you're ready.
+    ctrl_gcflags = " GCFLAGS='all=-N -l'" if debug_controller else ''
+    ctrl_trigger = TRIGGER_MODE_MANUAL if debug_controller else TRIGGER_MODE_AUTO
+    local_resource('controller-compile', cmd='make dist/workflow-controller' + ctrl_gcflags,
+        deps=ctrl_src, trigger_mode=ctrl_trigger, labels=['compile'])
     k3d_build(IMAGE_NS + '/workflow-controller', 'workflow-controller-dev',
         ['dist/workflow-controller', 'hack/ssh_known_hosts', 'hack/nsswitch.conf', 'Dockerfile'])
     cli_target = 'argocli-dev'
@@ -173,8 +232,10 @@ else:
 # `argo stop` steps in the artifact and retry suites).
 if api:
     if not is_ci:
-        local_resource('cli-compile', cmd='make dist/argo STATIC_FILES=false',
-            deps=cli_src, labels=['compile'])
+        cli_gcflags = " GCFLAGS='all=-N -l'" if debug_server else ''
+        cli_trigger = TRIGGER_MODE_MANUAL if debug_server else TRIGGER_MODE_AUTO
+        local_resource('cli-compile', cmd='make dist/argo STATIC_FILES=false' + cli_gcflags,
+            deps=cli_src, trigger_mode=cli_trigger, labels=['compile'])
     k3d_build(IMAGE_NS + '/argocli', cli_target, cli_deps, canonical=CLI_CANONICAL)
 else:
     cli_cmd = ' && '.join(([cli_prebuild] if cli_prebuild else []) + [
@@ -193,10 +254,17 @@ local_resource('argoexec-image', cmd=exec_cmd, deps=exec_src, labels=['images'])
 # reachable via the container's IP — e.g. when running in a devcontainer via the
 # devcontainer CLI, which (unlike the VS Code extension) doesn't forward ports.
 # This matches kit, whose server process bound 0.0.0.0.
-k8s_resource('workflow-controller', port_forwards=[port_forward(9090, host='0.0.0.0')],
+# When debugging, also forward the dlv port so an IDE on the host can attach.
+ctrl_forwards = [port_forward(9090, host='0.0.0.0')]
+if debug_controller:
+    ctrl_forwards.append(port_forward(DLV_CTRL_PORT, host='0.0.0.0'))
+k8s_resource('workflow-controller', port_forwards=ctrl_forwards,
              resource_deps=(['argo-crds'] if is_ci else ['argo-crds', 'controller-compile']))
 if api:
-    k8s_resource('argo-server', port_forwards=[port_forward(2746, host='0.0.0.0')],
+    server_forwards = [port_forward(2746, host='0.0.0.0')]
+    if debug_server:
+        server_forwards.append(port_forward(DLV_SERVER_PORT, host='0.0.0.0'))
+    k8s_resource('argo-server', port_forwards=server_forwards,
                  resource_deps=(['argo-crds'] if is_ci else ['argo-crds', 'cli-compile']))
 
 # Port-forward the backing services that the e2e tests (and SSO logins) reach

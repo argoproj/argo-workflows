@@ -38,15 +38,17 @@
               "name": "Attach to argo server",
               "type": "go",
               "request": "attach",
-              "mode": "local",
-              "processId": "argo"
+              "mode": "remote",
+              "host": "127.0.0.1",
+              "port": 2346
             },
             {
               "name": "Attach to workflow controller",
               "type": "go",
               "request": "attach",
-              "mode": "local",
-              "processId": "workflow-controller"
+              "mode": "remote",
+              "host": "127.0.0.1",
+              "port": 2345
             }
           ]
         }

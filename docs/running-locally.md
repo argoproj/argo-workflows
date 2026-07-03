@@ -220,11 +220,49 @@ Flags:
 Use "db [command] --help" for more information about a command.
 ```
 
-### Debugging using Visual Studio Code
+### Debugging under Tilt
 
-When using the Dev Container with VSCode, use the `Attach to argo server` and/or `Attach to workflow controller` launch configurations to attach to the `argo` or `workflow-controller` processes, respectively.
+The controller and server run in-cluster, so debugging means running them under
+[Delve](https://github.com/go-delve/delve) and attaching from your IDE over a forwarded
+port. Start the dev stack naming the component(s) you want to debug:
 
-This will allow you to start a debug session, where you can inspect variables and set breakpoints.
+```bash
+make start DEBUG=controller          # controller on :2345
+make start DEBUG=controller,server   # also server on :2346
+```
+
+(equivalently, `tilt up -- --profile=minimal --debug=controller,server`). The `--debug`
+flag is dev-only (it is ignored under `tilt ci`). It does three things for each named
+component: rebuilds the binary with `-gcflags='all=-N -l'` (no optimisation/inlining, so the
+debugger can map source lines and locals), wraps its in-cluster command with
+`dlv exec --headless --listen=:<port> --continue --accept-multiclient`, and adds a port
+forward for the Delve port. `--continue` means the program starts immediately, so the pod
+stays Ready and you can attach whenever you like.
+
+**Attach from your IDE** to `127.0.0.1:2345` (controller) or `127.0.0.1:2346` (server):
+
+* **VS Code** — use the `Attach to workflow controller` / `Attach to argo server` launch
+  configurations (shipped via `.devcontainer/devcontainer.json`; the same configs work
+  outside the dev container if copied into a local `.vscode/launch.json`).
+* **GoLand / JetBrains** — create a *Go Remote* run configuration pointing at the port, and
+  uncheck *Shutdown remote debugger on disconnect* so detaching leaves Delve running.
+
+Because the binaries are compiled on the host, their debug info already points at your local
+source tree — no remote path mapping is needed.
+
+Two things to know:
+
+* While `--debug` is set, the component's compile step switches to **manual trigger mode**.
+  Editing source no longer recreates the pod out from under your session; Tilt flags the
+  change and you click the resource's update button when you are ready to rebuild and
+  re-attach. Non-debugged components (and the UI dev server) keep rebuilding automatically.
+* Debugging the controller sets `LEADER_ELECTION_DISABLE=true` (you will see it log
+  *"Running in single-instance mode"*). Without this, pausing at a breakpoint stalls lease
+  renewal and the controller exits when it loses leadership.
+* In dev the server pod serves the **API only** — the UI is a separate webpack dev server
+  (`yarn start`, on <http://localhost:8080>) that proxies API calls to the server on `:2746`.
+  So while the server is paused at a breakpoint, in-flight UI requests will hang until you
+  continue; you can use the UI to trigger an API call and hit a server breakpoint.
 
 ## Committing
 
