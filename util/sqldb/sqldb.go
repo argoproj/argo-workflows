@@ -135,6 +135,22 @@ func createPostGresDBSessionWithConnector(cfg *config.PostgreSQLConfig, persistP
 	return newPostgresSession(sqlDB, persistPool)
 }
 
+// timeoutConnector wraps a driver.Connector so that Connect bounds only connection
+// establishment (dial + handshake read) to timeout, leaving queries on the resulting
+// connection unaffected. This gives MySQL the same "half-open server" protection that
+// PostgreSQL gets from lib/pq's connect_timeout, without go-sql-driver's ReadTimeout
+// (which would apply to every subsequent query read, not just the handshake).
+type timeoutConnector struct {
+	driver.Connector
+	timeout time.Duration
+}
+
+func (c *timeoutConnector) Connect(ctx context.Context) (driver.Conn, error) {
+	ctx, cancel := context.WithTimeout(ctx, c.timeout)
+	defer cancel()
+	return c.Connector.Connect(ctx)
+}
+
 // createPostGresDBSessionWithAzure creates postgresDB session with azure token
 func createPostGresDBSessionWithAzure(cfg *config.PostgreSQLConfig, persistPool *config.ConnectionPool, username string, connectTimeout time.Duration) (db.Session, error) {
 	dsn := buildPostgresDSN(cfg, username, connectTimeout)
@@ -220,13 +236,18 @@ func buildMySQLConfig(cfg *config.MySQLConfig, username, password string, connec
 
 func createMySQLDBSessionWithCreds(cfg *config.MySQLConfig, persistPool *config.ConnectionPool, username, password string, connectTimeout time.Duration) (db.Session, error) {
 	mysqlCfg := buildMySQLConfig(cfg, username, password, connectTimeout)
-	dsn := mysqlCfg.FormatDSN()
+
+	// Wrap the MySQL connector so Connect (dial + handshake read) is bounded by
+	// connectTimeout, protecting against a half-open server the same way lib/pq's
+	// connect_timeout protects PostgreSQL.
+	connector, err := mysql.NewConnector(&mysqlCfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create mysql connector: %w", err)
+	}
+	wrapped := &timeoutConnector{Connector: connector, timeout: connectTimeout}
 
 	// Create traced *sql.DB using otelsql
-	sqlDB, err := otelsql.Open("mysql", dsn, otelSQLOptions(semconv.DBSystemNameMySQL, cfg.Database)...)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open traced mysql connection: %w", err)
-	}
+	sqlDB := otelsql.OpenDB(wrapped, otelSQLOptions(semconv.DBSystemNameMySQL, cfg.Database)...)
 
 	// Wrap with upper/db
 	session, err := mysqladp.New(sqlDB)

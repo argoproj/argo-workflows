@@ -117,6 +117,42 @@ func TestBuildMySQLConfigTimeout(t *testing.T) {
 	}
 	mysqlCfg := buildMySQLConfig(cfg, "user", "pass", 7*time.Second)
 	assert.Equal(t, 7*time.Second, mysqlCfg.Timeout)
-	// ReadTimeout is intentionally left unset (see buildMySQLConfig).
+	// ReadTimeout is intentionally left unset: it would apply to every query read,
+	// not just the handshake. The half-open case is instead handled by wrapping the
+	// connector in timeoutConnector (see createMySQLDBSessionWithCreds), which bounds
+	// only Connect.
 	assert.Zero(t, mysqlCfg.ReadTimeout)
+}
+
+// CreateDBSessionWithCreds must return an error within a bounded time instead of
+// blocking forever. go-sql-driver has no DSN option covering both dial and the
+// handshake read, so this is enforced by timeoutConnector (see sqldb.go).
+func TestMySQLConnectionTimeoutHalfOpen(t *testing.T) {
+	sl := newSilentListener(t)
+	host, port := sl.hostPort(t)
+
+	dbConfig := config.DBConfig{
+		MySQL: &config.MySQLConfig{
+			DatabaseConfig: config.DatabaseConfig{
+				Host:     host,
+				Port:     port,
+				Database: "test",
+			},
+		},
+		ConnectionTimeoutSeconds: 1,
+	}
+
+	done := make(chan error, 1)
+	go func() {
+		_, _, err := CreateDBSessionWithCreds(dbConfig, "user", "pass")
+		done <- err
+	}()
+
+	select {
+	case err := <-done:
+		// Before the fix this never returns; after it, the connector's timeout fires.
+		require.Error(t, err)
+	case <-time.After(10 * time.Second):
+		t.Fatal("CreateDBSessionWithCreds did not return within 10s; connect timeout not applied")
+	}
 }
