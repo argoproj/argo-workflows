@@ -15,7 +15,7 @@ require (
 	github.com/aliyun/credentials-go v1.4.12
 	github.com/argoproj/argo-events v1.9.10
 	github.com/argoproj/pkg v0.13.7-0.20250123033407-65f2d4777bfd
-	github.com/aws/aws-sdk-go-v2/feature/rds/auth v1.6.27
+	github.com/aws/aws-sdk-go-v2/feature/rds/auth v1.6.30
 	github.com/blushft/go-diagrams v0.0.0-20250322201119-d91ac4ca5de4
 	github.com/colinmarc/hdfs/v2 v2.4.0
 	github.com/coreos/go-oidc/v3 v3.19.0
