@@ -57,9 +57,6 @@ const (
 	// the strategy whose artifacts are being deleted
 	AnnotationKeyArtifactGCStrategy = workflow.WorkflowFullName + "/artifact-gc-strategy"
 
-	// AnnotationKeyLastSeenVersion stores the last seen version of the workflow when it was last successfully processed by the controller
-	AnnotationKeyLastSeenVersion = workflow.WorkflowFullName + "/last-seen-version"
-
 	// LabelParallelismLimit is a label applied on namespace objects to control the per namespace parallelism.
 	LabelParallelismLimit = workflow.WorkflowFullName + "/parallelism-limit"
 
@@ -205,43 +202,6 @@ const (
 	// Finalizer blocks the deletion of pods until the controller captures their status.
 	FinalizerPodStatus = workflow.WorkflowFullName + "/status"
 
-	// Variables that are added to the scope during template execution and can be referenced using {{}} syntax
-
-	// GlobalVarWorkflowName is a global workflow variable referencing the workflow's metadata.name field
-	GlobalVarWorkflowName = "workflow.name"
-	// GlobalVarWorkflowNamespace is a global workflow variable referencing the workflow's metadata.namespace field
-	GlobalVarWorkflowNamespace = "workflow.namespace"
-	// GlobalVarWorkflowMainEntrypoint is a global workflow variable referencing the workflow's top level entrypoint name
-	GlobalVarWorkflowMainEntrypoint = "workflow.mainEntrypoint"
-	// GlobalVarWorkflowServiceAccountName is a global workflow variable referencing the workflow's spec.serviceAccountName field
-	GlobalVarWorkflowServiceAccountName = "workflow.serviceAccountName"
-	// GlobalVarWorkflowUID is a global workflow variable referencing the workflow's metadata.uid field
-	GlobalVarWorkflowUID = "workflow.uid"
-	// GlobalVarWorkflowStatus is a global workflow variable referencing the workflow's status.phase field
-	GlobalVarWorkflowStatus = "workflow.status"
-	// GlobalVarWorkflowCreationTimestamp is the workflow variable referencing the workflow's metadata.creationTimestamp field
-	GlobalVarWorkflowCreationTimestamp = "workflow.creationTimestamp"
-	// GlobalVarWorkflowPriority is the workflow variable referencing the workflow's priority field
-	GlobalVarWorkflowPriority = "workflow.priority"
-	// GlobalVarWorkflowFailures is a global variable of a JSON map referencing the workflow's failed nodes
-	GlobalVarWorkflowFailures = "workflow.failures"
-	// GlobalVarWorkflowDuration is the current duration of this workflow
-	GlobalVarWorkflowDuration = "workflow.duration"
-	// GlobalVarWorkflowAnnotations is a JSON string containing all workflow annotations - which will be deprecated in favor of GlobalVarWorkflowAnnotationsJSON
-	GlobalVarWorkflowAnnotations = "workflow.annotations"
-	// GlobalVarWorkflowAnnotationsJSON is a JSON string containing all workflow annotations
-	GlobalVarWorkflowAnnotationsJSON = "workflow.annotations.json"
-	// GlobalVarWorkflowLabels is a JSON string containing all workflow labels - which will be deprecated in favor of GlobalVarWorkflowLabelsJSON
-	GlobalVarWorkflowLabels = "workflow.labels"
-	// GlobalVarWorkflowLabelsJSON is a JSON string containing all workflow labels
-	GlobalVarWorkflowLabelsJSON = "workflow.labels.json"
-	// GlobalVarWorkflowParameters is a JSON string containing all workflow parameters - which will be deprecated in favor of GlobalVarWorkflowParametersJSON
-	GlobalVarWorkflowParameters = "workflow.parameters"
-	// GlobalVarWorkflowParametersJSON is a JSON string containing all workflow parameters
-	GlobalVarWorkflowParametersJSON = "workflow.parameters.json"
-	// GlobalVarWorkflowCronScheduleTime is the scheduled timestamp of a Workflow started by a CronWorkflow
-	GlobalVarWorkflowCronScheduleTime = "workflow.scheduledTime"
-
 	// LabelKeyConfigMapType is the label key for the type of configmap.
 	LabelKeyConfigMapType = "workflows.argoproj.io/configmap-type"
 	// LabelValueTypeConfigMapCache is a key for configmaps that are memoization cache.
@@ -250,28 +210,6 @@ const (
 	LabelValueTypeConfigMapParameter = "Parameter"
 	// LabelValueTypeConfigMapExecutorPlugin is a key for configmaps that contains an executor plugin.
 	LabelValueTypeConfigMapExecutorPlugin = "ExecutorPlugin"
-
-	// LocalVarPodName is a step level variable that references the name of the pod
-	LocalVarPodName = "pod.name"
-	// LocalVarRetries is a step level variable that references the retries number if retryStrategy is specified
-	LocalVarRetries = "retries"
-	// LocalVarDuration is a step level variable (currently only available in metric emission) that tracks the duration of the step
-	LocalVarDuration = "duration"
-	// LocalVarStatus is a step level variable (currently only available in metric emission) that tracks the duration of the step
-	LocalVarStatus = "status"
-	// LocalVarResourcesDuration is a step level variable (currently only available in metric emission) that tracks the resources duration of the step
-	LocalVarResourcesDuration = "resourcesDuration"
-	// LocalVarExitCode is a step level variable (currently only available in metric emission) that tracks the step's exit code
-	LocalVarExitCode = "exitCode"
-
-	// LocalVarRetriesLastExitCode is a variable that references information about the last retry's exit code
-	LocalVarRetriesLastExitCode = "lastRetry.exitCode"
-	// LocalVarRetriesLastStatus is a variable that references information about the last retry's status
-	LocalVarRetriesLastStatus = "lastRetry.status"
-	// LocalVarRetriesLastDuration is a variable that references information about the last retry's duration, in seconds
-	LocalVarRetriesLastDuration = "lastRetry.duration"
-	// LocalVarRetriesLastMessage is a variable that references information about the last retry's failure message
-	LocalVarRetriesLastMessage = "lastRetry.message"
 
 	KubeConfigDefaultMountPath    = "/kube/config"
 	KubeConfigDefaultVolumeName   = "kubeconfig"
@@ -298,6 +236,16 @@ const (
 	ArgoProgressPath = VarRunArgoPath + "/progress"
 
 	ConfigMapName = "workflow-controller-configmap"
+
+	// AbsentOptionalArgumentValue marks an argument whose value was a single pure reference to a
+	// skipped/omitted node's output with no producer valueFrom.default (an absent optional). The
+	// controller's reference resolution writes it (wfScope.markAbsentOptionalArgs) so that textual
+	// substitution succeeds where the raw absent value would be a terminal error; ProcessArgs
+	// interprets it at consumption time — when the consumed template is fully resolved — as
+	// "unsupplied", letting the input's own default apply and failing terminally when there is
+	// none. It is an internal controller contract: user-supplied values are never expected to
+	// collide with it, and a collision merely makes the argument behave as if it were omitted.
+	AbsentOptionalArgumentValue = "__argo-internal.absent-optional-output__"
 )
 
 // AnnotationKeyKillCmd specifies the command to use to kill to container, useful for injected sidecars

@@ -48,6 +48,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/retry"
 	unstructutil "github.com/argoproj/argo-workflows/v4/util/unstructured"
+	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
 	waitutil "github.com/argoproj/argo-workflows/v4/util/wait"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
@@ -510,7 +511,7 @@ func AddParamToGlobalScope(ctx context.Context, wf *wfv1.Workflow, param wfv1.Pa
 	} else {
 		wf.Status.Outputs = &wfv1.Outputs{}
 	}
-	paramName := fmt.Sprintf("workflow.outputs.parameters.%s", param.GlobalName)
+	paramName := varkeys.WorkflowOutputsParameterByName.Concretize(param.GlobalName)
 	if index == -1 {
 		log.WithFields(logging.Fields{"paramName": paramName, "paramValue": param.Value}).Info(ctx, "setting param")
 		gParam := wfv1.Parameter{Name: param.GlobalName, Value: param.Value}
