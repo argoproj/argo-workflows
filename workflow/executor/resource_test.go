@@ -23,32 +23,15 @@ import (
 // are properly passed to `kubectl` command
 func TestResourceFlags(t *testing.T) {
 	manifestPath := "../../examples/hello-world.yaml"
-	fakeClientset := fake.NewClientset()
 	fakeFlags := []string{"--fake=true"}
 
-	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
-
-	template := wfv1.Template{
-		Resource: &wfv1.ResourceTemplate{
-			Action: "fake",
-			Flags:  fakeFlags,
-		},
-	}
-
-	we := WorkflowExecutor{
-		PodName:         fakePodName,
-		Template:        template,
-		ClientSet:       fakeClientset,
-		Namespace:       fakeNamespace,
-		RuntimeExecutor: &mockRuntimeExecutor,
-	}
-	args, err := we.getKubectlArguments("fake", manifestPath, fakeFlags)
+	args, err := getKubectlArguments("fake", manifestPath, fakeFlags, "")
 	require.NoError(t, err)
 	assert.Contains(t, args, fakeFlags[0])
 
-	_, err = we.getKubectlArguments("fake", manifestPath, nil)
+	_, err = getKubectlArguments("fake", manifestPath, nil, "")
 	require.NoError(t, err)
-	_, err = we.getKubectlArguments("fake", "unknown-location", fakeFlags)
+	_, err = getKubectlArguments("fake", "unknown-location", fakeFlags, "")
 	if runtime.GOOS == "windows" {
 		require.EqualError(t, err, "open unknown-location: The system cannot find the file specified.")
 	} else {
@@ -58,7 +41,7 @@ func TestResourceFlags(t *testing.T) {
 	emptyFile, err := os.CreateTemp("/tmp", "empty-manifest")
 	require.NoError(t, err)
 	defer func() { _ = os.Remove(emptyFile.Name()) }()
-	_, err = we.getKubectlArguments("fake", emptyFile.Name(), nil)
+	_, err = getKubectlArguments("fake", emptyFile.Name(), nil, "")
 	require.EqualError(t, err, "Must provide at least one of flags or manifest.")
 }
 
@@ -118,7 +101,7 @@ func TestResourcePatchFlags(t *testing.T) {
 				Namespace:       fakeNamespace,
 				RuntimeExecutor: &mockRuntimeExecutor,
 			}
-			args, err := we.getKubectlArguments("patch", tt.manifestPath, fakeFlags)
+			args, err := getKubectlArguments("patch", tt.manifestPath, fakeFlags, we.Template.Resource.MergeStrategy)
 
 			require.NoError(t, err)
 			assert.Equal(t, expectedArgs, args)

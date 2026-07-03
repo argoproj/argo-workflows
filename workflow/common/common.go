@@ -39,6 +39,12 @@ const (
 	// AnnotationKeyNodeStartTime is the node's start timestamp.
 	AnnotationKeyNodeStartTime = workflow.WorkflowFullName + "/node-start-time"
 
+	// AnnotationKeySuccessCondition and AnnotationKeyFailureCondition carry a resource
+	// template's conditions on the resource the agent created, so informer event handlers can
+	// evaluate any event (or a post-restart re-list) without agent-side bookkeeping.
+	AnnotationKeySuccessCondition = workflow.WorkflowFullName + "/success-condition"
+	AnnotationKeyFailureCondition = workflow.WorkflowFullName + "/failure-condition"
+
 	// AnnotationKeyRBACRule is a rule to match the claims
 	AnnotationKeyRBACRule           = workflow.WorkflowFullName + "/rbac-rule"
 	AnnotationKeyRBACRulePrecedence = workflow.WorkflowFullName + "/rbac-rule-precedence"
@@ -99,6 +105,14 @@ const (
 	LabelKeyWorkflowArchivingStatus = workflow.WorkflowFullName + "/workflow-archiving-status"
 	// LabelKeyWorkflow is the pod metadata label to indicate the associated workflow name
 	LabelKeyWorkflow = workflow.WorkflowFullName + "/workflow"
+	// LabelKeyWorkflowUID is applied to WorkflowTaskSets to identify the owning workflow by UID,
+	// so per-workflow agents can select exactly their own taskset.
+	LabelKeyWorkflowUID = workflow.WorkflowFullName + "/workflow-uid"
+	// LabelKeyAgentResource is applied to resources created by the agent's resource templates,
+	// valued with the owning workflow's UID. Unlike LabelKeyWorkflow (which is also stamped on
+	// workflow pods and is name-based, so reused across delete/recreate), this selects exactly
+	// the resources the agent created, so its informers can watch them.
+	LabelKeyAgentResource = workflow.WorkflowFullName + "/agent-resource"
 	// LabelKeyComponent determines what component within a workflow, intentionally similar to app.kubernetes.io/component.
 	// See https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/
 	LabelKeyComponent = workflow.WorkflowFullName + "/component"
