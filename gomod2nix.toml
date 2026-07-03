@@ -1025,8 +1025,8 @@ schema = 3
     version = "v0.35.4"
     hash = "sha256-qQ+d6Be34puAk4cYSltBU5Dz4azZ4dzYXGAw/HYsj/c="
   [mod."k8s.io/utils"]
-    version = "v0.0.0-20260507154919-ff6756f316d2"
-    hash = "sha256-FDXwN0ebhU9HhxbN9bxGM4bRt7wiy5bKhY0FJqDxLGE="
+    version = "v0.0.0-20260626114624-be93311217bd"
+    hash = "sha256-oxvZoQ4Z/v/OYbkllb6pTJTRW18PCuBg6WxE5o6L3Jc="
   [mod."modernc.org/libc"]
     version = "v1.65.8"
     hash = "sha256-JFsFcP6sB/AUhzxNMFlzgWm/VF445PIvVKk5tGt/wLg="
