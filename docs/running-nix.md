@@ -23,7 +23,7 @@ This is fairly trivial in Nix, the idea is to just change the version string to 
 
 ### Changing a python dependency version
 
-If we look at the `mkdocs` dependency, we see a call to `buildPythonPackage`, to change the version we need to just modify the version string.
+If we look at the `properdocs` dependency, we see a call to `buildPythonPackage`, to change the version we need to just modify the version string.
 Doing this will display a failure because the hash from the `fetchPypi` command will now differ, it will also display the correct hash, copy this hash
 and replace the existing hash value.
 

@@ -11,7 +11,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
-	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
 )
 
 func TestExecuteWfLifeCycleHook(t *testing.T) {
@@ -992,7 +992,7 @@ spec:
 	node := woc.wf.Status.Nodes.FindByDisplayName("hook-failures.hooks.failure")
 	assert.NotNil(t, node)
 	assert.Contains(t,
-		woc.globalParams[common.GlobalVarWorkflowFailures],
+		woc.globalParams()[varkeys.WorkflowFailures.Template()],
 		`[{\"displayName\":\"hook-failures\",\"message\":\"Pod failed\",\"templateName\":\"intentional-fail\",\"phase\":\"Failed\",\"podName\":\"hook-failures\"`,
 	)
 	assert.Equal(t, wfv1.NodePending, node.Phase)
@@ -1257,4 +1257,89 @@ spec:
 	assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
 	assert.Nil(t, node.NodeFlag)
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+}
+
+var stepsSkippedRefExitHook = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: steps-skipped-ref-exit-hook
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: producer
+        template: produce
+        when: "false"
+    - - name: work
+        template: simple
+        hooks:
+          exit:
+            template: consume
+            arguments:
+              parameters:
+              - name: in
+                value: "{{steps.producer.outputs.parameters.msg}}"
+              - name: in2
+                value: "{{= steps.producer.outputs.parameters.msg ?? 'hook-fallback'}}"
+  - name: produce
+    outputs:
+      parameters:
+      - name: msg
+        valueFrom:
+          path: /tmp/out.txt
+    container:
+      image: alpine:3.23
+      command: [sh, -c]
+      args: ["echo hello > /tmp/out.txt"]
+  - name: simple
+    container:
+      image: alpine:3.23
+      command: [echo, "hello"]
+  - name: consume
+    inputs:
+      parameters:
+      - name: in
+        default: "FALLBACK"
+      - name: in2
+    container:
+      image: alpine:3.23
+      command: [echo, "{{inputs.parameters.in}} {{inputs.parameters.in2}}"]
+`
+
+// TestExitHookSkippedOutputAbsenceSemantics verifies that hook/exit-handler arguments mirror the
+// task/step absence semantics for a skipped node's defaultless output: a pure reference is dropped
+// so the hook template's own input default applies, and an inline `??` expression sees the absent
+// (nil) optional and falls back, instead of both being clobbered with "".
+func TestExitHookSkippedOutputAbsenceSemantics(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(stepsSkippedRefExitHook)
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx) // producer skipped, work pod created
+
+	producer := woc.wf.Status.Nodes.FindByDisplayName("producer")
+	require.NotNil(t, producer)
+	require.Equal(t, wfv1.NodeSkipped, producer.Phase)
+
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx) // work succeeded -> exit hook fires
+
+	hook := woc.wf.Status.Nodes.FindByDisplayName("work.onExit")
+	require.NotNil(t, hook, "exit hook should run")
+	require.NotNil(t, hook.Inputs)
+
+	in := hook.Inputs.GetParameterByName("in")
+	require.NotNil(t, in)
+	require.NotNil(t, in.Value)
+	assert.Equal(t, "FALLBACK", in.Value.String(), "hook template's own input default must apply for a skipped defaultless ref")
+
+	in2 := hook.Inputs.GetParameterByName("in2")
+	require.NotNil(t, in2)
+	require.NotNil(t, in2.Value)
+	assert.Equal(t, "hook-fallback", in2.Value.String(), "?? must fire on the absent optional in hook arguments")
 }

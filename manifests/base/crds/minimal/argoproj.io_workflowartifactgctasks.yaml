@@ -486,6 +486,12 @@ spec:
                               - key
                               type: object
                               x-kubernetes-map-type: atomic
+                            addressingStyle:
+                              enum:
+                              - ""
+                              - path
+                              - virtual-hosted
+                              type: string
                             bucket:
                               type: string
                             caSecret:
@@ -1068,6 +1074,12 @@ spec:
                                 - key
                                 type: object
                                 x-kubernetes-map-type: atomic
+                              addressingStyle:
+                                enum:
+                                - ""
+                                - path
+                                - virtual-hosted
+                                type: string
                               bucket:
                                 type: string
                               caSecret:

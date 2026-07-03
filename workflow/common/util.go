@@ -18,6 +18,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/template"
+	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
 )
 
 // FindOverlappingVolume looks an artifact path, checks if it overlaps with any
@@ -170,7 +171,18 @@ func ProcessArgs(ctx context.Context, tmpl *wfv1.Template, args wfv1.ArgumentsPr
 
 		// overwrite value from argument (if supplied)
 		argParam := args.GetParameterByName(inParam.Name)
-		overwriteWithArguments(argParam, &inParam)
+		if argParam != nil && argParam.Value != nil && argParam.Value.String() == AbsentOptionalArgumentValue {
+			// The argument was a pure reference to a skipped/omitted node's output with no producer
+			// default (see AbsentOptionalArgumentValue): treat it as unsupplied so the input's own
+			// default (already applied above) or ValueFrom source takes over. With neither, the
+			// absence is unhandled — fail terminally with the real cause; the message must not
+			// match template.IsMissingVariableErr, which would requeue forever.
+			if inParam.Value == nil && inParam.ValueFrom == nil {
+				return nil, errors.Errorf(errors.CodeBadRequest, "inputs.parameters.%s: argument references an absent optional (skipped/omitted node output with no default)", inParam.Name)
+			}
+		} else {
+			overwriteWithArguments(argParam, &inParam)
+		}
 
 		// substitute configmap string and get value from store
 		err := substituteAndGetConfigMapValue(ctx, &inParam, globalParams, namespace, configMapStore)
@@ -226,7 +238,7 @@ func SubstituteParams(ctx context.Context, tmpl *wfv1.Template, globalParams, lo
 		return nil, errors.InternalWrapError(err)
 	}
 	// First replace globals & locals, then replace inputs because globals could be referenced in the inputs
-	replaceMap := globalParams.Merge(localParams)
+	replaceMap := template.ToAnyMap(globalParams.Merge(localParams))
 	globalReplacedTmplStr, err := template.Replace(ctx, string(tmplBytes), replaceMap, true)
 	if err != nil {
 		return nil, err
@@ -241,7 +253,7 @@ func SubstituteParams(ctx context.Context, tmpl *wfv1.Template, globalParams, lo
 		if inParam.Value == nil && inParam.ValueFrom == nil {
 			return nil, errors.InternalErrorf("inputs.parameters.%s had no value", inParam.Name)
 		} else if inParam.Value != nil {
-			replaceMap["inputs.parameters."+inParam.Name] = inParam.Value.String()
+			replaceMap[varkeys.InputsParameterByName.Concretize(inParam.Name)] = inParam.Value.String()
 		}
 	}
 	// allow {{inputs.parameters}} to fetch the entire input parameters list as JSON
@@ -249,20 +261,20 @@ func SubstituteParams(ctx context.Context, tmpl *wfv1.Template, globalParams, lo
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
 	}
-	replaceMap["inputs.parameters"] = string(jsonInputParametersBytes)
+	replaceMap[varkeys.InputsParametersAll.Template()] = string(jsonInputParametersBytes)
 	for _, inArt := range globalReplacedTmpl.Inputs.Artifacts {
 		if inArt.Path != "" {
-			replaceMap["inputs.artifacts."+inArt.Name+".path"] = inArt.Path
+			replaceMap[varkeys.InputsArtifactPathByName.Concretize(inArt.Name)] = inArt.Path
 		}
 	}
 	for _, outArt := range globalReplacedTmpl.Outputs.Artifacts {
 		if outArt.Path != "" {
-			replaceMap["outputs.artifacts."+outArt.Name+".path"] = outArt.Path
+			replaceMap[varkeys.OutputsArtifactPathByName.Concretize(outArt.Name)] = outArt.Path
 		}
 	}
 	for _, param := range globalReplacedTmpl.Outputs.Parameters {
 		if param.ValueFrom != nil && param.ValueFrom.Path != "" {
-			replaceMap["outputs.parameters."+param.Name+".path"] = param.ValueFrom.Path
+			replaceMap[varkeys.OutputsParameterPathByName.Concretize(param.Name)] = param.ValueFrom.Path
 		}
 	}
 

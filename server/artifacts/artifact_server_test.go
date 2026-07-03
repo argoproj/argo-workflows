@@ -790,3 +790,77 @@ func TestArtifactServer_httpFromError(t *testing.T) {
 	s.httpFromError(ctx, err, recorder)
 	assert.Equal(t, http.StatusNotFound, recorder.Result().StatusCode)
 }
+
+// TestArtifactServer_GetArtifactByUID_WorkflowNotInArchive verifies that querying an artifact
+// by UID for a workflow that is not yet in the archive returns 404 instead of panicking
+// with a nil pointer dereference. This covers the race window between workflow completion
+// and the archiver persisting the record.
+func TestArtifactServer_GetArtifactByUID_WorkflowNotInArchive(t *testing.T) {
+	gatekeeper := &authmocks.Gatekeeper{}
+	kube := kubefake.NewClientset()
+	instanceID := "my-instanceid"
+	argo := fakewfv1.NewClientset()
+	ctx := context.WithValue(context.WithValue(logging.TestContext(t.Context()), auth.KubeKey, kube), auth.WfKey, argo)
+	gatekeeper.On("ContextWithRequest", mock.Anything, mock.Anything).Return(ctx, nil)
+
+	a := &sqldbmocks.WorkflowArchive{}
+	// Simulate the race: workflow exists but is not yet archived — GetWorkflow returns (nil, nil).
+	a.On("GetWorkflow", mock.Anything, "not-yet-archived-uid", "", "").Return((*wfv1.Workflow)(nil), nil)
+
+	fakeArtifactDriverFactory := func(_ context.Context, _ *wfv1.Artifact, _ resource.Interface) (artifactscommon.ArtifactDriver, error) {
+		return &fakeArtifactDriver{data: []byte("my-data")}, nil
+	}
+	artifactRepositories := armocks.DummyArtifactRepositories(&wfv1.ArtifactRepository{
+		S3: &wfv1.S3ArtifactRepository{
+			S3Bucket: wfv1.S3Bucket{Endpoint: "my-endpoint", Bucket: "my-bucket"},
+		},
+	})
+	s := newArtifactServer(gatekeeper, hydratorfake.Noop, a, instanceid.NewService(instanceID), fakeArtifactDriverFactory, artifactRepositories, logging.RequireLoggerFromContext(ctx))
+
+	t.Run("GetOutputArtifactByUID", func(t *testing.T) {
+		r := &http.Request{}
+		r.URL = mustParse("/artifacts/not-yet-archived-uid/my-node-1/my-artifact")
+		recorder := httptest.NewRecorder()
+		s.GetOutputArtifactByUID(recorder, r)
+		assert.Equal(t, http.StatusNotFound, recorder.Result().StatusCode)
+	})
+
+	t.Run("GetInputArtifactByUID", func(t *testing.T) {
+		r := &http.Request{}
+		r.URL = mustParse("/input-artifacts/not-yet-archived-uid/my-node-1/my-artifact")
+		recorder := httptest.NewRecorder()
+		s.GetInputArtifactByUID(recorder, r)
+		assert.Equal(t, http.StatusNotFound, recorder.Result().StatusCode)
+	})
+}
+
+// TestArtifactServer_GetArtifactFile_ArchivedWorkflowNotFound verifies that the
+// archived-workflows branch of GetArtifactFile returns 404 when GetWorkflow returns
+// (nil, nil) instead of panicking with a nil pointer dereference.
+func TestArtifactServer_GetArtifactFile_ArchivedWorkflowNotFound(t *testing.T) {
+	gatekeeper := &authmocks.Gatekeeper{}
+	kube := kubefake.NewClientset()
+	instanceID := "my-instanceid"
+	argo := fakewfv1.NewClientset()
+	ctx := context.WithValue(context.WithValue(logging.TestContext(t.Context()), auth.KubeKey, kube), auth.WfKey, argo)
+	gatekeeper.On("ContextWithRequest", mock.Anything, mock.Anything).Return(ctx, nil)
+
+	a := &sqldbmocks.WorkflowArchive{}
+	a.On("GetWorkflow", mock.Anything, "not-yet-archived-uid", "", "").Return((*wfv1.Workflow)(nil), nil)
+
+	fakeArtifactDriverFactory := func(_ context.Context, _ *wfv1.Artifact, _ resource.Interface) (artifactscommon.ArtifactDriver, error) {
+		return &fakeArtifactDriver{data: []byte("my-data")}, nil
+	}
+	artifactRepositories := armocks.DummyArtifactRepositories(&wfv1.ArtifactRepository{
+		S3: &wfv1.S3ArtifactRepository{
+			S3Bucket: wfv1.S3Bucket{Endpoint: "my-endpoint", Bucket: "my-bucket"},
+		},
+	})
+	s := newArtifactServer(gatekeeper, hydratorfake.Noop, a, instanceid.NewService(instanceID), fakeArtifactDriverFactory, artifactRepositories, logging.RequireLoggerFromContext(ctx))
+
+	r := &http.Request{}
+	r.URL = mustParse("/artifact-files/my-ns/archived-workflows/not-yet-archived-uid/my-node-1/outputs/my-artifact")
+	recorder := httptest.NewRecorder()
+	s.GetArtifactFile(recorder, r)
+	assert.Equal(t, http.StatusNotFound, recorder.Result().StatusCode)
+}

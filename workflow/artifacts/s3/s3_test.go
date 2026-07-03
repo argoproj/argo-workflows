@@ -740,3 +740,20 @@ func TestDisallowedComboOptions(t *testing.T) {
 		assert.Error(t, err)
 	})
 }
+
+func TestParseAddressingStyle(t *testing.T) {
+	tests := map[string]struct {
+		input    string
+		expected AddressingStyle
+	}{
+		"empty string returns auto-detect":  {input: "", expected: AutoDetectStyle},
+		"path returns path style":           {input: "path", expected: PathStyle},
+		"virtual-hosted returns virtual":    {input: "virtual-hosted", expected: VirtualHostedStyle},
+		"unknown value returns auto-detect": {input: "garbage", expected: AutoDetectStyle},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			assert.Equal(t, tc.expected, parseAddressingStyle(tc.input))
+		})
+	}
+}
