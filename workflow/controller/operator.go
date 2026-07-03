@@ -209,7 +209,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		}
 	}()
 
-	woc.log.WithFields(logging.Fields{"phase": woc.wf.Status.Phase, "resourceVersion": woc.wf.ObjectMeta.ResourceVersion, "lastSeenVersion": woc.wf.GetAnnotations()[common.AnnotationKeyLastSeenVersion]}).Info(ctx, "Processing workflow")
+	woc.log.WithFields(logging.Fields{"phase": woc.wf.Status.Phase, "resourceVersion": woc.wf.ObjectMeta.ResourceVersion}).Info(ctx, "Processing workflow")
 
 	// Set the Execute workflow spec for execution
 	// ExecWF is a runtime execution spec which merged from Wf, WFT and Wfdefault
@@ -767,9 +767,6 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		woc.log.WithError(err).Warn(ctx, "error updating taskset")
 	}
 
-	oldRV := woc.wf.ResourceVersion
-	woc.updateLastSeenVersionAnnotation(oldRV)
-	wf, err := wfClient.Update(ctx, woc.wf, metav1.UpdateOptions{})
 	if err != nil {
 		woc.log.WithField("error", err).WithField("reason", apierr.ReasonForError(err)).Warn(ctx, "Error updating workflow")
 		if argokubeerr.IsRequestEntityTooLargeErr(err) {
@@ -792,7 +789,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		woc.controller.hydrator.HydrateWithNodes(woc.wf, nodes)
 	}
 
-	woc.updateLastSeenVersion(oldRV)
+	woc.controller.recordWorkflowWrite(woc.wf)
 	// The workflow returned from wfClient.Update doesn't have a TypeMeta associated
 	// with it, so copy from the original workflow.
 	woc.wf.TypeMeta = woc.orig.TypeMeta
@@ -804,7 +801,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		panic("workflow should be hydrated")
 	}
 
-	woc.log.WithFields(logging.Fields{"resourceVersion": woc.wf.ResourceVersion, "phase": woc.wf.Status.Phase, "lastSeenVersion": woc.wf.GetAnnotations()[common.AnnotationKeyLastSeenVersion]}).Info(ctx, "Workflow update successful")
+	woc.log.WithFields(logging.Fields{"resourceVersion": woc.wf.ResourceVersion, "phase": woc.wf.Status.Phase}).Info(ctx, "Workflow update successful")
 
 	switch os.Getenv("INFORMER_WRITE_BACK") {
 	// this does not reduce errors, but does reduce
@@ -875,13 +872,11 @@ func (woc *wfOperationCtx) writeBackToInformer() error {
 func (woc *wfOperationCtx) persistWorkflowSizeLimitErr(ctx context.Context, wfClient v1alpha1.WorkflowInterface, err error) {
 	woc.wf = woc.orig.DeepCopy()
 	woc.markWorkflowError(ctx, err)
-	oldRV := woc.wf.ResourceVersion
-	woc.updateLastSeenVersionAnnotation(oldRV)
-	_, err = wfClient.Update(ctx, woc.wf, metav1.UpdateOptions{})
+	wf, err := wfClient.Update(ctx, woc.wf, metav1.UpdateOptions{})
 	if err != nil {
 		woc.log.WithError(err).Warn(ctx, "Error updating workflow with size error")
 	} else {
-		woc.updateLastSeenVersion(oldRV)
+		woc.controller.recordWorkflowWrite(wf)
 	}
 }
 
@@ -4599,20 +4594,4 @@ func (woc *wfOperationCtx) setNodeDisplayName(ctx context.Context, node *wfv1.No
 	newNode := node.DeepCopy()
 	newNode.DisplayName = displayName
 	woc.wf.Status.Nodes.Set(ctx, nodeID, *newNode)
-}
-
-func (woc *wfOperationCtx) updateLastSeenVersionAnnotation(value string) {
-	if woc.wf.GetAnnotations() == nil {
-		woc.wf.SetAnnotations(make(map[string]string))
-	}
-	woc.wf.GetAnnotations()[common.AnnotationKeyLastSeenVersion] = value
-}
-
-func (woc *wfOperationCtx) updateLastSeenVersion(value string) {
-	woc.controller.lastSeenVersions.mutex.Lock()
-	defer woc.controller.lastSeenVersions.mutex.Unlock()
-	if woc.controller.lastSeenVersions.versions == nil {
-		woc.controller.lastSeenVersions.versions = make(map[string]string)
-	}
-	woc.controller.lastSeenVersions.versions[woc.controller.getLastSeenVersionKey(woc.wf)] = value
 }
