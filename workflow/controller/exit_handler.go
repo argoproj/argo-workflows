@@ -9,11 +9,12 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/expr/argoexpr"
 	"github.com/argoproj/argo-workflows/v4/util/expr/env"
 	"github.com/argoproj/argo-workflows/v4/util/template"
+	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/templateresolution"
 )
 
-func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, exitHook *wfv1.LifecycleHook, parentNode *wfv1.NodeStatus, boundaryID string, tmplCtx *templateresolution.TemplateContext, prefix string, scope *wfScope) (bool, *wfv1.NodeStatus, error) {
+func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, exitHook *wfv1.LifecycleHook, parentNode *wfv1.NodeStatus, boundaryID string, tmplCtx *templateresolution.TemplateContext, ref varkeys.NodeRefKeys, name string, scope *wfScope) (bool, *wfv1.NodeStatus, error) {
 	outputs := parentNode.Outputs
 	if lastChildNode := woc.possiblyGetRetryChildNode(parentNode); lastChildNode != nil {
 		outputs = lastChildNode.Outputs
@@ -24,7 +25,7 @@ func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, exitHook *wfv1.Lif
 		var err error
 		if exitHook.Expression != "" {
 			// nil-preserving view so expressions can apply `??` fallbacks to skipped/omitted outputs
-			execute, err = argoexpr.EvalBool(exitHook.Expression, env.GetFuncMap(scope.getParametersAny(woc.globalParams)))
+			execute, err = argoexpr.EvalBool(exitHook.Expression, env.GetFuncMap(scope.getParametersAny(woc.globalParams())))
 			if err != nil {
 				return true, nil, err
 			}
@@ -35,7 +36,7 @@ func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, exitHook *wfv1.Lif
 			hookStep := &wfv1.WorkflowStep{Template: exitHook.Template, TemplateRef: exitHook.TemplateRef}
 			resolvedArgs := exitHook.Arguments
 			if !resolvedArgs.IsEmpty() {
-				resolvedArgs, err = woc.resolveExitTmplArgument(ctx, exitHook.Arguments, prefix, outputs, scope)
+				resolvedArgs, err = woc.resolveExitTmplArgument(ctx, exitHook.Arguments, ref, name, outputs, scope)
 				if err != nil {
 					return true, nil, err
 				}
@@ -52,7 +53,7 @@ func (woc *wfOperationCtx) runOnExitNode(ctx context.Context, exitHook *wfv1.Lif
 	return false, nil, nil
 }
 
-func (woc *wfOperationCtx) resolveExitTmplArgument(ctx context.Context, args wfv1.Arguments, prefix string, outputs *wfv1.Outputs, scope *wfScope) (wfv1.Arguments, error) {
+func (woc *wfOperationCtx) resolveExitTmplArgument(ctx context.Context, args wfv1.Arguments, ref varkeys.NodeRefKeys, name string, outputs *wfv1.Outputs, scope *wfScope) (wfv1.Arguments, error) {
 	if scope == nil {
 		scope = createScope(nil)
 	}
@@ -62,10 +63,10 @@ func (woc *wfOperationCtx) resolveExitTmplArgument(ctx context.Context, args wfv
 			if param.Value != nil {
 				value = param.Value.String()
 			}
-			scope.addParamToScope(fmt.Sprintf("%s.outputs.parameters.%s", prefix, param.Name), value)
+			ref.OutputsParameterByName.Set(scope.scope, value, name, param.Name)
 		}
 		for _, arts := range outputs.Artifacts {
-			scope.addArtifactToScope(fmt.Sprintf("%s.outputs.artifacts.%s", prefix, arts.Name), arts)
+			ref.OutputsArtifactByName.Set(scope.scope, arts, name, arts.Name)
 		}
 	}
 
@@ -80,7 +81,7 @@ func (woc *wfOperationCtx) resolveExitTmplArgument(ctx context.Context, args wfv
 	}
 	// nil-preserving view (and no strict prefixes, preserving the allow-unresolved behavior) so
 	// expression tags can apply `??` fallbacks to skipped/omitted outputs, mirroring task/step args
-	newStepStr, err := template.ReplaceStrictAny(ctx, string(stepBytes), scope.getParametersAny(woc.globalParams), nil)
+	newStepStr, err := template.ReplaceStrictAny(ctx, string(stepBytes), scope.getParametersAny(woc.globalParams()), nil)
 	if err != nil {
 		return args, err
 	}

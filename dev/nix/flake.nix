@@ -374,7 +374,7 @@
 
             nodeDependencies = nodePackages.shell.nodeDependencies;
 
-            inherit (pkgs) go jq protobuf diffutils golangci-lint kustomize gotools kubectl k3d docker gettext lsof typos cspell;
+            inherit (pkgs) go jq protobuf diffutils golangci-lint kustomize gotools kubectl k3d docker gettext lsof typos cspell gomod2nix;
             inherit nodejs;
             yarn = myyarn;
 

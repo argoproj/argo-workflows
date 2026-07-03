@@ -11,7 +11,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
-	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/util/variables"
 )
 
 // TestStepsFailedRetries ensures a steps template will recognize exhausted retries
@@ -253,7 +253,7 @@ func TestResourceDurationMetric(t *testing.T) {
       type: Pod
 `
 
-	woc := wfOperationCtx{globalParams: make(common.Parameters)}
+	woc := wfOperationCtx{scope: variables.NewScope()}
 	var node wfv1.NodeStatus
 	wfv1.MustUnmarshal([]byte(nodeStatus), &node)
 	localScope, _ := woc.prepareMetricScope(&node)
@@ -265,8 +265,8 @@ func TestResourceDurationMetric(t *testing.T) {
 func TestResourceDurationMetricDefaultMetricScope(t *testing.T) {
 	wf := wfv1.Workflow{Status: wfv1.WorkflowStatus{StartedAt: metav1.NewTime(time.Now())}}
 	woc := wfOperationCtx{
-		globalParams: make(common.Parameters),
-		wf:           &wf,
+		scope: variables.NewScope(),
+		wf:    &wf,
 	}
 
 	localScope, realTimeScope := woc.prepareDefaultMetricScope()
@@ -285,8 +285,8 @@ func TestResourceDurationMetricDefaultMetricScope(t *testing.T) {
 func TestRealTimeWorkflowDurationBeforeStartedAt(t *testing.T) {
 	wf := wfv1.Workflow{}
 	woc := wfOperationCtx{
-		globalParams: make(common.Parameters),
-		wf:           &wf,
+		scope: variables.NewScope(),
+		wf:    &wf,
 	}
 
 	_, realTimeScope := woc.prepareDefaultMetricScope()

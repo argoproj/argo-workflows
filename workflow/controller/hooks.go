@@ -9,6 +9,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/expr/argoexpr"
 	"github.com/argoproj/argo-workflows/v4/util/expr/env"
 	"github.com/argoproj/argo-workflows/v4/util/template"
+	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
 	"github.com/argoproj/argo-workflows/v4/workflow/templateresolution"
 )
 
@@ -25,7 +26,7 @@ func (woc *wfOperationCtx) executeWfLifeCycleHook(ctx context.Context, tmplCtx *
 		if hook.Expression == "" {
 			return true, errors.Errorf(errors.CodeBadRequest, "Expression required for hook %s", hookNodeName)
 		}
-		execute, err := argoexpr.EvalBool(hook.Expression, env.GetFuncMap(template.EnvMap(woc.globalParams)))
+		execute, err := argoexpr.EvalBool(hook.Expression, env.GetFuncMap(template.EnvMap(woc.globalParams())))
 		if err != nil {
 			return true, err
 		}
@@ -55,7 +56,7 @@ func (woc *wfOperationCtx) executeWfLifeCycleHook(ctx context.Context, tmplCtx *
 	return true, nil
 }
 
-func (woc *wfOperationCtx) executeTmplLifeCycleHook(ctx context.Context, scope *wfScope, lifeCycleHooks wfv1.LifecycleHooks, parentNode *wfv1.NodeStatus, boundaryID string, tmplCtx *templateresolution.TemplateContext, prefix string) (bool, error) {
+func (woc *wfOperationCtx) executeTmplLifeCycleHook(ctx context.Context, scope *wfScope, lifeCycleHooks wfv1.LifecycleHooks, parentNode *wfv1.NodeStatus, boundaryID string, tmplCtx *templateresolution.TemplateContext, ref varkeys.NodeRefKeys, name string) (bool, error) {
 	var hookNodes []*wfv1.NodeStatus
 	for hookName, hook := range lifeCycleHooks {
 		// exit hook will be executed in runOnExitNode
@@ -69,7 +70,7 @@ func (woc *wfOperationCtx) executeTmplLifeCycleHook(ctx context.Context, scope *
 			return false, errors.Errorf(errors.CodeBadRequest, "Expression required for hook %s", hookNodeName)
 		}
 		// nil-preserving view so expressions can apply `??` fallbacks to skipped/omitted outputs
-		execute, err := argoexpr.EvalBool(hook.Expression, env.GetFuncMap(scope.getParametersAny(woc.globalParams)))
+		execute, err := argoexpr.EvalBool(hook.Expression, env.GetFuncMap(scope.getParametersAny(woc.globalParams())))
 		if err != nil {
 			return false, err
 		}
@@ -84,7 +85,7 @@ func (woc *wfOperationCtx) executeTmplLifeCycleHook(ctx context.Context, scope *
 			resolvedArgs := hook.Arguments
 			var err error
 			if !resolvedArgs.IsEmpty() && outputs != nil {
-				resolvedArgs, err = woc.resolveExitTmplArgument(ctx, hook.Arguments, prefix, outputs, scope)
+				resolvedArgs, err = woc.resolveExitTmplArgument(ctx, hook.Arguments, ref, name, outputs, scope)
 				if err != nil {
 					return false, err
 				}
