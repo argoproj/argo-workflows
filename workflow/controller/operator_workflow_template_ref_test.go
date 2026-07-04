@@ -2,6 +2,7 @@ package controller
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -125,6 +126,52 @@ func TestWorkflowTemplateRefInvalidWF(t *testing.T) {
 	t.Run("ProcessWFWithStoredWFT", func(t *testing.T) {
 		cancel, controller := newController(logging.TestContext(t.Context()), wf)
 		defer cancel()
+		ctx := logging.TestContext(t.Context())
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		woc.operate(ctx)
+		// The workflow's CreationTimestamp is the zero value, so the NotFound grace period (measured from
+		// creation) has long since elapsed and the workflow fails terminally, as it did before the fix.
+		assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+	})
+}
+
+// TestWorkflowTemplateRefNotFoundGracePeriod covers #14615: a Workflow referencing a WorkflowTemplate that
+// is not yet available (e.g. created together with the Workflow via GitOps, or informer cache lag) should be
+// retried in the Pending state within a bounded grace period instead of failing immediately, and should fall
+// back to a terminal error once the grace period elapses.
+func TestWorkflowTemplateRefNotFoundGracePeriod(t *testing.T) {
+	// invalidWF references workflowTemplateRef "not-exists"; the controller is created without it.
+	t.Run("WithinGracePeriodMarksPending", func(t *testing.T) {
+		wf := wfv1.MustUnmarshalWorkflow(invalidWF)
+		wf.CreationTimestamp = metav1.Now() // just created → within the default grace period
+		cancel, controller := newController(logging.TestContext(t.Context()), wf)
+		defer cancel()
+		ctx := logging.TestContext(t.Context())
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		woc.operate(ctx)
+		assert.Equal(t, wfv1.WorkflowPending, woc.wf.Status.Phase)
+		assert.Contains(t, woc.wf.Status.Message, "Waiting for referenced WorkflowTemplate")
+		// The template was never resolved, so the stored spec must remain unset for a later retry.
+		assert.Nil(t, woc.wf.Status.StoredWorkflowSpec)
+	})
+
+	t.Run("AfterGracePeriodFailsTerminally", func(t *testing.T) {
+		wf := wfv1.MustUnmarshalWorkflow(invalidWF)
+		wf.CreationTimestamp = metav1.NewTime(time.Now().Add(-time.Hour)) // created long ago → grace elapsed
+		cancel, controller := newController(logging.TestContext(t.Context()), wf)
+		defer cancel()
+		ctx := logging.TestContext(t.Context())
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		woc.operate(ctx)
+		assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+	})
+
+	t.Run("ZeroGracePeriodDisablesTolerance", func(t *testing.T) {
+		wf := wfv1.MustUnmarshalWorkflow(invalidWF)
+		wf.CreationTimestamp = metav1.Now()
+		cancel, controller := newController(logging.TestContext(t.Context()), wf)
+		defer cancel()
+		controller.Config.WorkflowTemplateNotFoundGracePeriod = &metav1.Duration{Duration: 0}
 		ctx := logging.TestContext(t.Context())
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		woc.operate(ctx)

@@ -415,6 +415,11 @@ data:
   # adds initial delay (for K8S clusters with mutating webhooks) to prevent workflow getting modified by MWC.
   # initialDelay: 5s
 
+  # WorkflowTemplateNotFoundGracePeriod is how long, measured from a Workflow's creation, it is kept Pending
+  # and retried while its referenced WorkflowTemplate is not yet available (e.g. applied together via GitOps,
+  # or informer cache lag) before being failed. Defaults to 30 seconds.
+  # workflowTemplateNotFoundGracePeriod: 30s
+
   # Workflow retention by number of workflows
   # retentionPolicy: |
   #   completed: 10

@@ -135,6 +135,8 @@ var (
 	ErrMaxDepthExceeded = argoerrors.New(argoerrors.CodeTimeout, fmt.Sprintf("Maximum recursion depth exceeded. See %s", help.ConfigureMaximumRecursionDepth()))
 	// ErrRequeue indicates the workflow should be requeued for later processing
 	ErrRequeue = errors.New("requeue")
+	// ErrWorkflowTemplateNotReady indicates the referenced WorkflowTemplate is not yet available in the informer cache.
+	ErrWorkflowTemplateNotReady = errors.New("workflow template not yet available, will retry")
 )
 
 // maxOperationTime is the maximum time a workflow operation is allowed to run
@@ -228,6 +230,11 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 	// ExecWF is a runtime execution spec which merged from Wf, WFT and Wfdefault
 	ctx, err := woc.setExecWorkflow(ctx)
 	if err != nil {
+		// Waiting for a not-yet-available WorkflowTemplate: already marked Pending and requeued, so return
+		// quietly (execWf is unresolved on this path, and logging an error every retry would be misleading).
+		if errors.Is(err, ErrWorkflowTemplateNotReady) {
+			return
+		}
 		woc.log.WithError(err).Error(ctx, "Unable to set ExecWorkflow")
 		return
 	}
@@ -4360,6 +4367,15 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) (context.Context
 		}
 		err := woc.setStoredWfSpec(ctx)
 		if err != nil {
+			// Tolerate a not-yet-available WorkflowTemplate (applied together via GitOps, or informer cache
+			// lag): within a grace period measured from creation, keep the workflow Pending and requeue so it
+			// starts once the template appears; after that, fail so a genuinely missing template still fails fast.
+			gracePeriod := woc.controller.Config.GetWorkflowTemplateNotFoundGracePeriod()
+			if apierr.IsNotFound(err) && time.Since(woc.wf.CreationTimestamp.Time) < gracePeriod {
+				ctx = woc.markWorkflowPhase(ctx, wfv1.WorkflowPending, fmt.Sprintf("Waiting for referenced WorkflowTemplate to become available: %v", err))
+				woc.requeueAfter(GetRequeueTime())
+				return ctx, ErrWorkflowTemplateNotReady
+			}
 			ctx = woc.markWorkflowError(ctx, err)
 			return ctx, err
 		}

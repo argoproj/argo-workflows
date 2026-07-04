@@ -133,6 +133,11 @@ type Config struct {
 	// This is useful when external agents are responsible for executing these templates and the controller should not create agent pods.
 	// Note: when this is set to true, HTTP templates will not be reconciled and the controller will not attempt to create agent pods for them.
 	DisableAgentPodCreation bool `json:"disableAgentPodCreation,omitempty"`
+
+	// WorkflowTemplateNotFoundGracePeriod is how long, measured from a Workflow's creation, it is kept
+	// Pending and retried while its referenced WorkflowTemplate is not yet available (e.g. applied together
+	// via GitOps, or informer cache lag) before being failed. Defaults to 30 seconds.
+	WorkflowTemplateNotFoundGracePeriod *metav1.Duration `json:"workflowTemplateNotFoundGracePeriod,omitempty"`
 }
 
 // FailedPodRestartConfig configures automatic restart of pods that fail before entering Running state.
@@ -226,6 +231,16 @@ func (c Config) GetPodGCDeleteDelayDuration() time.Duration {
 	}
 
 	return c.PodGCDeleteDelayDuration.Duration
+}
+
+// GetWorkflowTemplateNotFoundGracePeriod returns how long a Workflow referencing a not-yet-available
+// WorkflowTemplate is retried in the Pending state before being failed. Defaults to 30 seconds.
+func (c Config) GetWorkflowTemplateNotFoundGracePeriod() time.Duration {
+	if c.WorkflowTemplateNotFoundGracePeriod == nil {
+		return 30 * time.Second
+	}
+
+	return c.WorkflowTemplateNotFoundGracePeriod.Duration
 }
 
 func (c Config) ValidateProtocol(inputProtocol string, allowedProtocol []string) error {
