@@ -745,3 +745,71 @@ func TestUnzipMaliciousSymlink(t *testing.T) {
 
 	assert.Equal(t, "safe", string(content), "File outside should NOT be overwritten by unzip")
 }
+
+func TestGenerateArtifactKey(t *testing.T) {
+	tests := []struct {
+		name       string
+		archiveKey string
+		fileName   string
+		preSetKey  bool
+		expectKey  string
+	}{
+		{
+			name:       "sets key when not already set",
+			archiveKey: "my-bucket/workflow-name/node-id",
+			fileName:   "my-artifact.tgz",
+			preSetKey:  false,
+			expectKey:  "my-bucket/workflow-name/node-id/my-artifact.tgz",
+		},
+		{
+			name:       "preserves key when already set",
+			archiveKey: "my-bucket/workflow-name/node-id",
+			fileName:   "my-artifact.tgz",
+			preSetKey:  true,
+			expectKey:  "already-set-key",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			art := &wfv1.Artifact{Name: "test-artifact"}
+			if tt.preSetKey {
+				art.S3 = &wfv1.S3Artifact{Key: "already-set-key"}
+			}
+			we := &WorkflowExecutor{
+				Template: wfv1.Template{
+					ArchiveLocation: &wfv1.ArtifactLocation{
+						S3: &wfv1.S3Artifact{Key: tt.archiveKey},
+					},
+				},
+			}
+			err := we.generateArtifactKey(art, tt.fileName)
+			require.NoError(t, err)
+			assert.True(t, art.HasKey())
+			key, err := art.GetKey()
+			require.NoError(t, err)
+			assert.Equal(t, tt.expectKey, key)
+		})
+	}
+}
+
+func TestGenerateArtifactOutputs_EmptyOutputs(t *testing.T) {
+	we := &WorkflowExecutor{
+		Template: wfv1.Template{
+			Outputs: wfv1.Outputs{},
+		},
+	}
+	ctx := logging.TestContext(t.Context())
+	staged, err := we.GenerateArtifactOutputs(ctx)
+	require.NoError(t, err)
+	assert.Nil(t, staged, "expected nil for empty outputs")
+}
+
+func TestSaveArtifactsAsync_EmptyList(t *testing.T) {
+	we := &WorkflowExecutor{}
+	ctx := logging.TestContext(t.Context())
+	err := we.SaveArtifactsAsync(ctx, nil)
+	require.NoError(t, err)
+	err = we.SaveArtifactsAsync(ctx, []StagedArtifact{})
+	require.NoError(t, err)
+}

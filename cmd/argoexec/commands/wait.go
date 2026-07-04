@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/argoproj/argo-workflows/v4/cmd/argoexec/executor"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/tracing"
 )
@@ -88,19 +89,33 @@ func waitContainer(ctx context.Context) error {
 		wfExecutor.AddError(ctx, err)
 	}
 
-	// Saving output artifacts
-	artifacts, err := wfExecutor.SaveArtifacts(bgCtx)
+	// Stage artifacts and generate metadata (keys/types) without uploading.
+	// This allows outputs to be reported early while uploads proceed asynchronously.
+	staged, err := wfExecutor.GenerateArtifactOutputs(bgCtx)
 	if err != nil {
 		wfExecutor.AddError(ctx, err)
 	}
 
-	// Save log artifacts
+	// Build the artifact list for reporting
+	artifacts := make(wfv1.Artifacts, 0, len(staged))
+	for _, s := range staged {
+		artifacts = append(artifacts, s.Artifact)
+	}
 	logArtifacts := wfExecutor.SaveLogs(bgCtx)
 	artifacts = append(artifacts, logArtifacts...)
 
+	// Report outputs with artifact metadata immediately, before the uploads complete.
 	err = wfExecutor.ReportOutputs(bgCtx, artifacts)
 	if err != nil {
 		wfExecutor.AddError(ctx, err)
+	}
+
+	// Upload artifacts concurrently. Blocks until all uploads finish.
+	if len(staged) > 0 {
+		err = wfExecutor.SaveArtifactsAsync(bgCtx, staged)
+		if err != nil {
+			wfExecutor.AddError(ctx, err)
+		}
 	}
 
 	return wfExecutor.HasError()
