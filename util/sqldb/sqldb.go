@@ -220,18 +220,24 @@ func createPostGresDBSessionWithCreds(cfg *config.PostgreSQLConfig, persistPool 
 // buildMySQLConfig constructs the mysql.Config (DSN inputs) for a MySQL session,
 // using mysql.Config to safely handle special characters in credentials and
 // configuring the connection-establishment (dial) timeout.
+//
+// Start from mysql.NewConfig() rather than a struct literal so the driver
+// defaults are applied — most importantly Loc: time.UTC. When the session was
+// opened from a DSN string, ParseDSN restored those defaults; NewConnector
+// consumes the config directly, so a bare literal would leave Loc nil and
+// panic ("missing Location in call to Time.In") on the first time.Time written.
 func buildMySQLConfig(cfg *config.MySQLConfig, username, password string, connectTimeout time.Duration) mysql.Config {
-	return mysql.Config{
-		User:                 username,
-		Passwd:               password,
-		Net:                  "tcp",
-		Addr:                 cfg.GetHostname(),
-		DBName:               cfg.Database,
-		ParseTime:            true,
-		AllowNativePasswords: true, // Required for MariaDB which uses mysql_native_password by default
-		Params:               cfg.Options,
-		Timeout:              connectTimeout,
-	}
+	mysqlCfg := mysql.NewConfig()
+	mysqlCfg.User = username
+	mysqlCfg.Passwd = password
+	mysqlCfg.Net = "tcp"
+	mysqlCfg.Addr = cfg.GetHostname()
+	mysqlCfg.DBName = cfg.Database
+	mysqlCfg.ParseTime = true
+	mysqlCfg.AllowNativePasswords = true // Required for MariaDB which uses mysql_native_password by default
+	mysqlCfg.Params = cfg.Options
+	mysqlCfg.Timeout = connectTimeout
+	return *mysqlCfg
 }
 
 func createMySQLDBSessionWithCreds(cfg *config.MySQLConfig, persistPool *config.ConnectionPool, username, password string, connectTimeout time.Duration) (db.Session, error) {
