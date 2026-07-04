@@ -20,6 +20,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -340,7 +341,7 @@ func (we *WorkflowExecutor) unarchiveArtifact(ctx context.Context, art wfv1.Arti
 		err = unzip(unarchiveCtx, tempArtPath, artPath)
 		_ = os.Remove(tempArtPath)
 	default:
-		err = os.Rename(tempArtPath, artPath)
+		err = renameOrMerge(tempArtPath, artPath)
 	}
 	return err
 }
@@ -1232,7 +1233,7 @@ func unpack(srcPath string, destPath string, decompressor func(string, string) e
 		// if the tar is comprised of single file or directory,
 		// rename that file to the desired location
 		filePath := path.Join(tmpDir, files[0].Name())
-		err = os.Rename(filePath, destPath)
+		err = renameOrMerge(filePath, destPath)
 		if err != nil {
 			return argoerrs.InternalWrapError(err)
 		}
@@ -1243,12 +1244,115 @@ func unpack(srcPath string, destPath string, decompressor func(string, string) e
 	} else {
 		// the tar extracted into multiple files. In this case,
 		// just rename the temp directory to the dest path
-		err = os.Rename(tmpDir, destPath)
+		err = renameOrMerge(tmpDir, destPath)
 		if err != nil {
 			return argoerrs.InternalWrapError(err)
 		}
 	}
 	return nil
+}
+
+// renameOrMerge moves src onto dst. It first attempts os.Rename (atomic,
+// preferred). If that fails because src and dst sit on different file
+// systems (EXDEV), because dst is busy as a mount point (EBUSY), or because
+// the kernel refuses to replace the destination (EEXIST, ENOTEMPTY) — all
+// of which happen when an input artifact's destination path is itself a
+// volume mount root — it falls back to copying src's contents into dst
+// recursively and then removing src.
+//
+// Without this fallback, plugin and built-in artifact drivers that load into
+// a volume mount root cannot ever succeed: the staging path (`dst + ".tmp"`
+// or `dst + ".tmpdir"`) lives on the init container's local filesystem,
+// while dst is on the volume mount, and Rename across that boundary is
+// impossible.
+func renameOrMerge(src, dst string) error {
+	err := os.Rename(src, dst)
+	if err == nil {
+		return nil
+	}
+	if !isRenameFallbackError(err) {
+		return err
+	}
+	srcInfo, statErr := os.Lstat(src)
+	if statErr != nil {
+		return statErr
+	}
+	if err := mergeInto(src, dst, srcInfo); err != nil {
+		return err
+	}
+	return nil
+}
+
+func isRenameFallbackError(err error) bool {
+	var linkErr *os.LinkError
+	if !errors.As(err, &linkErr) {
+		return false
+	}
+	switch {
+	case errors.Is(linkErr.Err, syscall.EXDEV), errors.Is(linkErr.Err, syscall.EBUSY), errors.Is(linkErr.Err, syscall.EEXIST), errors.Is(linkErr.Err, syscall.ENOTEMPTY):
+		return true
+	}
+	return false
+}
+
+// mergeInto recursively copies src into dst, then removes src. It is the
+// fallback path used by renameOrMerge when os.Rename can't perform the move
+// atomically. Directory and symlink modes are preserved; regular file
+// contents are streamed.
+func mergeInto(src, dst string, srcInfo os.FileInfo) error {
+	mode := srcInfo.Mode()
+	switch {
+	case mode&os.ModeSymlink != 0:
+		target, err := os.Readlink(src)
+		if err != nil {
+			return err
+		}
+		// Replace any pre-existing entry at dst so the symlink lands cleanly.
+		_ = os.Remove(dst)
+		if err := os.Symlink(target, dst); err != nil {
+			return err
+		}
+		return os.Remove(src)
+	case mode.IsDir():
+		if err := os.MkdirAll(dst, mode.Perm()); err != nil {
+			return err
+		}
+		entries, err := os.ReadDir(src)
+		if err != nil {
+			return err
+		}
+		for _, entry := range entries {
+			childSrc := filepath.Join(src, entry.Name())
+			childDst := filepath.Join(dst, entry.Name())
+			if err := renameOrMerge(childSrc, childDst); err != nil {
+				return err
+			}
+		}
+		return os.Remove(src)
+	default:
+		// Regular file (or device — we treat unsupported modes by attempting
+		// a regular copy, mirroring io.Copy's behavior).
+		in, err := os.Open(src)
+		if err != nil {
+			return err
+		}
+		defer in.Close()
+		out, err := os.OpenFile(dst, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, mode.Perm())
+		if err != nil {
+			return err
+		}
+		if _, err := io.Copy(out, in); err != nil {
+			_ = out.Close()
+			return err
+		}
+		if err := out.Close(); err != nil {
+			return err
+		}
+		if err := in.Close(); err != nil {
+			return err
+		}
+		return os.Remove(src)
+	}
 }
 
 func chmod(artPath string, mode int32, recurse bool) error {
