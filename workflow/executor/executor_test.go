@@ -691,9 +691,10 @@ func TestSaveLogs(t *testing.T) {
 
 		we.SaveLogs(ctx)
 
-		for _, err := range we.errors {
-			assert.NotErrorIs(t, err, fs.ErrNotExist, "should not be a fatal error when combined file does not exist")
-		}
+		// exactly one error (main's storage error); init / wait are skipped on
+		// ErrNotExist and must not record any error.
+		require.Len(t, we.errors, 1, "only the main container's storage error is expected")
+		assert.EqualError(t, we.errors[0], artStorageError)
 	})
 
 	t.Run("wait logs are saved last", func(t *testing.T) {

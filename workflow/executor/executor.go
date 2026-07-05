@@ -750,6 +750,7 @@ func (we *WorkflowExecutor) SaveLogs(ctx context.Context) []wfv1.Artifact {
 				art, err := we.saveContainerLogs(ctx, tempLogsDir, containerName)
 				if err != nil {
 					if errors.Is(err, fs.ErrNotExist) {
+						logging.RequireLoggerFromContext(ctx).WithField("container", containerName).Debug(ctx, "System container combined log file not found, skipping")
 						continue
 					}
 					we.AddError(ctx, err)

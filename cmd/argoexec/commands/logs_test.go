@@ -36,7 +36,6 @@ func Test_teeContainerLogs(t *testing.T) {
 
 		newCtx, closer, err := teeContainerLogs(ctx, varRunArgo, common.InitContainerName)
 		require.NoError(t, err)
-		defer closer()
 
 		logging.RequireLoggerFromContext(newCtx).Info(newCtx, "test log message")
 		closer()
