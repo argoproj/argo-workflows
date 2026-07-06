@@ -767,7 +767,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		woc.log.WithError(err).Warn(ctx, "error updating taskset")
 	}
 
-	if err != nil {
+	if wf, err := wfClient.Update(ctx, woc.wf, metav1.UpdateOptions{}); err != nil {
 		woc.log.WithField("error", err).WithField("reason", apierr.ReasonForError(err)).Warn(ctx, "Error updating workflow")
 		if argokubeerr.IsRequestEntityTooLargeErr(err) {
 			woc.persistWorkflowSizeLimitErr(ctx, wfClient, err)
@@ -777,7 +777,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 			return
 		}
 		woc.log.Info(ctx, "Re-applying updates on latest version and retrying update")
-		wf, err := woc.reapplyUpdate(ctx, wfClient, nodes)
+		wf, err = woc.reapplyUpdate(ctx, wfClient, nodes)
 		if err != nil {
 			woc.wf.Labels[common.LabelKeyReApplyFailed] = "true"
 			woc.log.WithError(err).Info(ctx, "Failed to re-apply update")
@@ -824,7 +824,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 		}
 	}
 	// If Finalizer exists, requeue to make sure Finalizer can be removed.
-	if woc.wf.Status.Fulfilled() && len(wf.GetFinalizers()) > 0 {
+	if woc.wf.Status.Fulfilled() && len(woc.wf.GetFinalizers()) > 0 {
 		woc.requeueAfter(5 * time.Second)
 	}
 
