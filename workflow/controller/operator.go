@@ -1559,32 +1559,33 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		updated.Outputs.ExitCode = new(fmt.Sprint(*exitCode))
 	}
 
-	waitContainerCleanedUp := true
-	// We cannot fail the node if the wait container is still running because it may be busy saving outputs, and these
-	// would not get captured successfully.
+	auxContainerCleanedUp := true
+	// We cannot fail the node if the wait (or, in init-less mode, supervisor)
+	// container is still running because it may be busy saving outputs, and
+	// these would not get captured successfully.
 	for _, c := range pod.Status.ContainerStatuses {
-		if c.Name == common.WaitContainerName {
-			waitContainerCleanedUp = false
+		if c.Name == common.WaitContainerName || c.Name == common.SupervisorContainerName {
+			auxContainerCleanedUp = false
 			switch {
 			case c.State.Running != nil && updated.Phase.Completed() && pod.Status.Phase != apiv1.PodFailed:
-				woc.log.WithField("updated.phase", updated.Phase).Info(ctx, "leaving phase un-changed: wait container is not yet terminated ")
+				woc.log.WithField("updated.phase", updated.Phase).Info(ctx, "leaving phase un-changed: aux container is not yet terminated ")
 				updated.Phase = old.Phase
 			case c.State.Terminated != nil && c.State.Terminated.ExitCode != 0:
-				// Mark its taskResult as completed directly since wait container did not exit normally,
+				// Mark its taskResult as completed directly since the aux container did not exit normally,
 				// and it will never have a chance to report taskResult correctly.
 				nodeID := woc.nodeID(pod)
-				woc.log.WithFields(logging.Fields{"nodeID": nodeID, "exitCode": c.State.Terminated.ExitCode, "reason": c.State.Terminated.Reason}).
-					Warn(ctx, "marking its taskResult as completed since wait container did not exit normally")
+				woc.log.WithFields(logging.Fields{"nodeID": nodeID, "container": c.Name, "exitCode": c.State.Terminated.ExitCode, "reason": c.State.Terminated.Reason}).
+					Warn(ctx, "marking its taskResult as completed since aux container did not exit normally")
 				woc.wf.Status.MarkTaskResultComplete(ctx, nodeID)
 			}
 		}
 	}
-	if pod.Status.Phase == apiv1.PodFailed && pod.Status.Reason == "Evicted" && waitContainerCleanedUp {
-		// Mark its taskResult as completed directly since wait container has been cleaned up because of pod evicted,
+	if pod.Status.Phase == apiv1.PodFailed && pod.Status.Reason == "Evicted" && auxContainerCleanedUp {
+		// Mark its taskResult as completed directly since the aux container has been cleaned up because of pod evicted,
 		// and it will never have a chance to report taskResult correctly.
 		nodeID := woc.nodeID(pod)
 		woc.log.WithFields(logging.Fields{"nodeID": nodeID}).
-			Warn(ctx, "marking its taskResult as completed since wait container has been cleaned up.")
+			Warn(ctx, "marking its taskResult as completed since aux container has been cleaned up.")
 		woc.wf.Status.MarkTaskResultComplete(ctx, nodeID)
 	}
 
@@ -1732,9 +1733,32 @@ func (woc *wfOperationCtx) inferFailedReason(ctx context.Context, pod *apiv1.Pod
 
 	// We only get one message to set for the overall node status.
 	// If multiple containers failed, in order of preference:
-	// init containers (will be appended later), main (annotated), main (exit code), wait, sidecars.
+	// init containers (will be appended later), main (annotated), main (exit
+	// code), wait/supervisor, sidecars.
+	//
+	// The init-less supervisor subsumes both init (pre-main) and wait (post-main)
+	// responsibilities. It is ranked above main ONLY when main exited with the
+	// supervisor-pre-main sentinel (65): in that case main's code is a
+	// placeholder and the supervisor carries the real pre-main error. For any
+	// other main failure (e.g. the user's command failed) the supervisor must
+	// rank below main — exactly as legacy `wait` does — so that a post-main
+	// supervisor error (e.g. an artifact-save failure caused by main never
+	// producing its outputs) does not mask the genuine user failure.
+	mainExitedWithSupervisorSentinel := false
+	for _, ctr := range pod.Status.ContainerStatuses {
+		if tmpl.IsMainContainerName(ctr.Name) && ctr.State.Terminated != nil &&
+			int(ctr.State.Terminated.ExitCode) == common.ExitCodeSupervisorPreMainFailure {
+			mainExitedWithSupervisorSentinel = true
+			break
+		}
+	}
 	order := func(n string) int {
 		switch {
+		case n == common.SupervisorContainerName:
+			if mainExitedWithSupervisorSentinel {
+				return 0 // surface the supervisor's real pre-main error over main's placeholder 65
+			}
+			return 2 // post-main supervisor error ranks below main, like legacy wait
 		case tmpl.IsMainContainerName(n):
 			return 1
 		case n == common.WaitContainerName:
@@ -1774,7 +1798,7 @@ func (woc *wfOperationCtx) inferFailedReason(ctx context.Context, pod *apiv1.Pod
 		if t.ExitCode == 0 {
 			if tmpl.IsMainContainerName(ctr.Name) {
 				mainContainerSucceeded = true
-			} else if ctr.Name == common.WaitContainerName {
+			} else if ctr.Name == common.WaitContainerName || ctr.Name == common.SupervisorContainerName {
 				waitContainerSucceeded = true
 			}
 			continue
@@ -1792,6 +1816,11 @@ func (woc *wfOperationCtx) inferFailedReason(ctx context.Context, pod *apiv1.Pod
 		case tmpl.IsMainContainerName(ctr.Name):
 			return wfv1.NodeFailed, msg
 		case ctr.Name == common.WaitContainerName:
+			return wfv1.NodeError, msg
+		case ctr.Name == common.SupervisorContainerName:
+			// Init-less supervisor subsumes both init and wait responsibilities;
+			// either a pre-main or post-main failure surfaces as NodeError, same as
+			// the legacy init/wait paths do separately.
 			return wfv1.NodeError, msg
 		default:
 			if t.ExitCode != 137 && t.ExitCode != 143 {
@@ -2007,7 +2036,7 @@ func (woc *wfOperationCtx) possiblyGetRetryChildNode(node *wfv1.NodeStatus) *wfv
 	if node.Type == wfv1.NodeTypeRetry && (node.MemoizationStatus == nil || !node.MemoizationStatus.Hit) {
 		// If a retry node has hooks, the hook nodes will also become its children,
 		// so we need to filter out the hook nodes when finding the last child node of the retry node.
-		for i := len(node.Children) - 1; i >= 0; i-- {
+		for i := range slices.Backward(node.Children) {
 			childNode := getChildNodeIndex(node, woc.wf.Status.Nodes, i)
 			if childNode == nil {
 				continue
@@ -4525,7 +4554,7 @@ func (woc *wfOperationCtx) mergedTemplateDefaultsInto(originalTmpl *wfv1.Templat
 	for i := 0; i < v.NumField(); i++ {
 		field := v.Type().Field(i)
 		// Check if the field is a pointer to a struct.
-		if field.Type.Kind() != reflect.Ptr || field.Type.Elem().Kind() != reflect.Struct {
+		if field.Type.Kind() != reflect.Pointer || field.Type.Elem().Kind() != reflect.Struct {
 			continue
 		}
 
