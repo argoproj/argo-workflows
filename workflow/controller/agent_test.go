@@ -247,6 +247,35 @@ func Test_createAgentPod_rateLimited(t *testing.T) {
 		require.NotNil(t, pod)
 		assert.True(t, strings.HasSuffix(pod.Name, "-agent"))
 	})
+
+	t.Run("RateLimitedRecoversExistingPod", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx, wf, defaultServiceAccount, func(c *WorkflowController) {
+			c.Config.ResourceRateLimit = &config.ResourceRateLimit{Limit: 0, Burst: 0}
+		})
+		defer cancel()
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+		// Pre-create the agent pod in the fake cluster WITHOUT populating the
+		// informer store: the early informer GetPod misses it, and the rate
+		// limiter denies the create before the AlreadyExists→Get recovery in
+		// createPodFromBuild can run. createAgentPod must recover the existing
+		// pod via a direct Get instead of requeueing with no pod.
+		podName := woc.getAgentPodName()
+		existing := &apiv1.Pod{
+			ObjectMeta: v1.ObjectMeta{
+				Name:      podName,
+				Namespace: "default",
+			},
+		}
+		_, err := woc.controller.kubeclientset.CoreV1().Pods("default").Create(ctx, existing, v1.CreateOptions{})
+		require.NoError(t, err)
+
+		pod, err := woc.createAgentPod(ctx)
+		require.NoError(t, err)
+		require.NotNil(t, pod, "rate-limited create must recover the pre-existing agent pod")
+		assert.Equal(t, podName, pod.Name)
+	})
 }
 
 // Test_createAgentPod_alreadyExists asserts the AlreadyExists recovery path:

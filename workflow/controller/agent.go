@@ -268,6 +268,18 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		// rate-limited agent pod creation requeues gracefully instead of
 		// surfacing a hard error.
 		if errorsutil.IsTransientErr(ctx, err) || errors.Is(err, ErrResourceRateLimitReached) {
+			// The rate limiter runs before Create, so on the rate-limited path
+			// the AlreadyExists→Get recovery inside createPodFromBuild never
+			// runs. A pod created by a prior reconcile that has not yet reached
+			// the informer (checked at the top of this function) must be
+			// recovered with a direct Get rather than requeued as though no pod
+			// existed.
+			if errors.Is(err, ErrResourceRateLimitReached) {
+				if existing, getErr := woc.getPod(ctx, podName); getErr == nil {
+					log.Info(ctx, "Recovered existing Agent pod on rate-limited create")
+					return existing, nil
+				}
+			}
 			woc.requeue()
 			return nil, nil
 		}
