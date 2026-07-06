@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: default-resource-agent
+  annotations:
+    workflows.argoproj.io/description: |
+      The resource agent pod runs under `<workflow service account>-resource-agent`,
+      so workflows using the default service account need this to exist.
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: default-resource-agent.service-account-token
+  annotations:
+    kubernetes.io/service-account.name: default-resource-agent
+type: kubernetes.io/service-account-token

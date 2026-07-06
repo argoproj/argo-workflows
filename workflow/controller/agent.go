@@ -27,6 +27,10 @@ func (woc *wfOperationCtx) getAgentPodName() string {
 	return woc.wf.NodeID("agent") + "-agent"
 }
 
+func (woc *wfOperationCtx) getResourceAgentPodName() string {
+	return woc.wf.NodeID("resource-agent") + "-resource-agent"
+}
+
 func (woc *wfOperationCtx) isAgentPod(pod *apiv1.Pod) bool {
 	return pod.Name == woc.getAgentPodName()
 }
@@ -36,13 +40,33 @@ func (woc *wfOperationCtx) reconcileAgentPod(ctx context.Context) error {
 	if len(woc.taskSet) == 0 {
 		return nil
 	}
-	pod, err := woc.createAgentPod(ctx)
-	if err != nil {
-		return err
+	hasResourceTmpl := false
+	hasOtherTmpl := false
+	for _, tmpl := range woc.taskSet {
+		if tmpl.GetType() == wfv1.TemplateTypeResource {
+			hasResourceTmpl = true
+		} else {
+			hasOtherTmpl = true
+		}
 	}
-	// Check Pod is just created
-	if pod != nil && pod.Status.Phase != "" {
-		woc.updateAgentPodStatus(ctx, pod)
+	if hasOtherTmpl {
+		pod, err := woc.createAgentPod(ctx)
+		if err != nil {
+			return err
+		}
+		// Check Pod is just created
+		if pod != nil && pod.Status.Phase != "" {
+			woc.updateAgentPodStatus(ctx, pod)
+		}
+	}
+	if hasResourceTmpl {
+		pod, err := woc.createResourceAgentPod(ctx)
+		if err != nil {
+			return err
+		}
+		if pod != nil && pod.Status.Phase != "" {
+			woc.updateAgentPodStatus(ctx, pod)
+		}
 	}
 	return nil
 }
@@ -112,10 +136,23 @@ func (woc *wfOperationCtx) getCertVolumeMount(ctx context.Context, name string) 
 }
 
 func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, error) {
+	return woc.createTaskSetAgentPod(ctx, false)
+}
+
+func (woc *wfOperationCtx) createResourceAgentPod(ctx context.Context) (*apiv1.Pod, error) {
+	return woc.createTaskSetAgentPod(ctx, true)
+}
+
+func (woc *wfOperationCtx) createTaskSetAgentPod(ctx context.Context, resourceAgent bool) (*apiv1.Pod, error) {
 	if woc.controller.Config.DisableAgentPodCreation {
 		return nil, nil
 	}
 	podName := woc.getAgentPodName()
+	component := "agent"
+	if resourceAgent {
+		podName = woc.getResourceAgentPodName()
+		component = "resource-agent"
+	}
 	ctx, log := woc.log.WithField("podName", podName).InContext(ctx)
 
 	pod, err := woc.controller.PodController.GetPod(woc.wf.Namespace, podName)
@@ -131,17 +168,22 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		return nil, err
 	}
 
-	pluginSidecars, pluginVolumes, err := woc.getExecutorPlugins(ctx)
-	if err != nil {
-		return nil, err
-	}
-
+	var pluginSidecars []apiv1.Container
+	var pluginVolumes []apiv1.Volume
 	envVars := []apiv1.EnvVar{
 		{Name: common.EnvVarWorkflowName, Value: woc.wf.Name},
 		{Name: common.EnvVarWorkflowUID, Value: string(woc.wf.UID)},
 		{Name: common.EnvAgentPatchRate, Value: env.LookupEnvStringOr(common.EnvAgentPatchRate, GetRequeueTime().String())},
-		{Name: common.EnvVarPluginAddresses, Value: wfv1.MustMarshallJSON(addresses(pluginSidecars))},
-		{Name: common.EnvVarPluginNames, Value: wfv1.MustMarshallJSON(names(pluginSidecars))},
+	}
+	if !resourceAgent {
+		pluginSidecars, pluginVolumes, err = woc.getExecutorPlugins(ctx)
+		if err != nil {
+			return nil, err
+		}
+		envVars = append(envVars,
+			apiv1.EnvVar{Name: common.EnvVarPluginAddresses, Value: wfv1.MustMarshallJSON(addresses(pluginSidecars))},
+			apiv1.EnvVar{Name: common.EnvVarPluginNames, Value: wfv1.MustMarshallJSON(names(pluginSidecars))},
+		)
 	}
 
 	// If the default number of task workers is overridden, then pass it to the agent pod.
@@ -153,6 +195,15 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	}
 
 	serviceAccountName := woc.execWf.Spec.ServiceAccountName
+	if resourceAgent {
+		// The resource agent's informers need list+watch on whole GVRs — broader than
+		// workflow pods should carry — so it runs under a dedicated service account,
+		// following the `<name>-executor-plugin` convention. Fails if the SA is missing.
+		if serviceAccountName == "" {
+			serviceAccountName = "default"
+		}
+		serviceAccountName += "-resource-agent"
+	}
 	tokenVolume, tokenVolumeMount, err := woc.getServiceAccountTokenVolume(ctx, serviceAccountName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get token volumes: %w", err)
@@ -188,14 +239,20 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		},
 		VolumeMounts: podVolumeMounts,
 	}
-	// the `init` container populates the shared empty-dir volume with tokens
-	agentInitCtr := agentCtrTemplate.DeepCopy()
-	agentInitCtr.Name = common.InitContainerName
-	agentInitCtr.Args = append([]string{"agent", "init"}, woc.getExecutorLogOpts(ctx)...)
 	// the `main` container runs the actual work
 	agentMainCtr := agentCtrTemplate.DeepCopy()
 	agentMainCtr.Name = common.MainContainerName
 	agentMainCtr.Args = append([]string{"agent", "main"}, woc.getExecutorLogOpts(ctx)...)
+	var initContainers []apiv1.Container
+	if resourceAgent {
+		agentMainCtr.Args = append([]string{"resource-agent"}, woc.getExecutorLogOpts(ctx)...)
+	} else {
+		// the `init` container populates the shared empty-dir volume with plugin tokens
+		agentInitCtr := agentCtrTemplate.DeepCopy()
+		agentInitCtr.Name = common.InitContainerName
+		agentInitCtr.Args = append([]string{"agent", "init"}, woc.getExecutorLogOpts(ctx)...)
+		initContainers = append(initContainers, *agentInitCtr)
+	}
 
 	pod = &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -204,7 +261,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 			Labels: map[string]string{
 				common.LabelKeyWorkflow:  woc.wf.Name, // Allows filtering by pods related to specific workflow
 				common.LabelKeyCompleted: "false",     // Allows filtering by incomplete workflow pods
-				common.LabelKeyComponent: "agent",     // Allows you to identify agent pods and use a different NetworkPolicy on them
+				common.LabelKeyComponent: component,   // Allows you to identify agent pods and use a different NetworkPolicy on them
 			},
 			Annotations: map[string]string{
 				common.AnnotationKeyDefaultContainer: common.MainContainerName,
@@ -220,9 +277,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 			ServiceAccountName:           serviceAccountName,
 			AutomountServiceAccountToken: new(false),
 			Volumes:                      podVolumes,
-			InitContainers: []apiv1.Container{
-				*agentInitCtr,
-			},
+			InitContainers:               initContainers,
 			Containers: append(
 				pluginSidecars,
 				*agentMainCtr,
