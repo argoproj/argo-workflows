@@ -1916,10 +1916,10 @@ func (pb *podBuilder) addSidecars(ctx context.Context, pod *apiv1.Pod, tmpl *wfv
 	return pb.layout.wireArtifactPlugins(ctx, pb, pod, tmpl, config)
 }
 
+// addArtifactPluginsLegacy wires output-artifact plugin sidecars for the
+// legacy layout. Layout dispatch happens in podLayout.wireArtifactPlugins, so
+// this must not re-check the init-less flag itself.
 func (woc *wfOperationCtx) addArtifactPluginsLegacy(ctx context.Context, pod *apiv1.Pod, tmpl *wfv1.Template, config *config.Config) error {
-	if woc.controller.isInitlessPodEnabled() {
-		return woc.addArtifactPluginsInitless(ctx, pod, tmpl)
-	}
 	plugins := tmpl.Outputs.Artifacts.GetPluginNames(ctx, woc.artifactRepository, wfv1.IncludeLogs, tmpl.ArchiveLocation)
 	drivers, err := config.GetArtifactDrivers(plugins)
 	if err != nil {
