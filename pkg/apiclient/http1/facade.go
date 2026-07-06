@@ -78,22 +78,9 @@ func (h Facade) EventStreamReader(ctx context.Context, in any, path string) (*bu
 	req.Header.Set("Accept", "text/event-stream")
 	req.Header.Set("Authorization", h.authorization)
 	log.WithField("url", u).Debug(ctx, "curl -H 'Accept: text/event-stream' -H 'Authorization: ******'")
-	proxyURL, err := h.proxyFunc()(req)
+	client, err := h.client(req, false)
 	if err != nil {
 		return nil, err
-	}
-	client := h.httpClient
-	if h.httpClient == nil {
-		tlsConfig, err := tls.GetTLSConfig(h.clientCert, h.clientKey, h.insecureSkipVerify)
-		if err != nil {
-			return nil, err
-		}
-		client = &http.Client{
-			Transport: &http.Transport{
-				Proxy:           http.ProxyURL(proxyURL),
-				TLSClientConfig: tlsConfig,
-			},
-		}
 	}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -132,23 +119,9 @@ func (h Facade) do(ctx context.Context, in any, out any, method string, path str
 	req.Header = headers
 	req.Header.Set("Authorization", h.authorization)
 	log.WithFields(logging.Fields{"url": u, "method": method, "data": string(data)}).Debug(ctx, "curl -X")
-	proxyURL, err := h.proxyFunc()(req)
+	client, err := h.client(req, true)
 	if err != nil {
 		return err
-	}
-	client := h.httpClient
-	if h.httpClient == nil {
-		tlsConfig, err := tls.GetTLSConfig(h.clientCert, h.clientKey, h.insecureSkipVerify)
-		if err != nil {
-			return err
-		}
-		client = &http.Client{
-			Transport: &http.Transport{
-				Proxy:             http.ProxyURL(proxyURL),
-				TLSClientConfig:   tlsConfig,
-				DisableKeepAlives: true,
-			},
-		}
 	}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -163,6 +136,27 @@ func (h Facade) do(ctx context.Context, in any, out any, method string, path str
 		return json.NewDecoder(resp.Body).Decode(out)
 	}
 	return nil
+}
+
+func (h Facade) client(req *http.Request, disableKeepAlives bool) (*http.Client, error) {
+	proxyURL, err := h.proxyFunc()(req)
+	if err != nil {
+		return nil, err
+	}
+	if h.httpClient != nil {
+		return h.httpClient, nil
+	}
+	tlsConfig, err := tls.GetTLSConfig(h.clientCert, h.clientKey, h.insecureSkipVerify)
+	if err != nil {
+		return nil, err
+	}
+	return &http.Client{
+		Transport: &http.Transport{
+			Proxy:             http.ProxyURL(proxyURL),
+			TLSClientConfig:   tlsConfig,
+			DisableKeepAlives: disableKeepAlives,
+		},
+	}, nil
 }
 
 func (h Facade) url(method, path string, in any) (*url.URL, error) {

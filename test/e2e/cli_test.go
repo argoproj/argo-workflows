@@ -2256,6 +2256,7 @@ func (s *CLISuite) runCliWithClientCerts(tlsServerAddr, clientCertPath, clientKe
 	baseArgs = append(baseArgs, args...)
 
 	s.Given().RunCli(baseArgs, func(t *testing.T, output string, err error) {
+		require.NoError(t, err)
 	})
 
 	select {

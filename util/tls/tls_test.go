@@ -1,6 +1,7 @@
 package tls
 
 import (
+	cryptotls "crypto/tls"
 	"crypto/x509"
 	"testing"
 	"time"
@@ -46,6 +47,7 @@ func TestGetTLSConfig(t *testing.T) {
 		clientKey          string
 		insecureSkipVerify bool
 		wantErr            bool
+		wantErrContains    string
 	}{
 		{
 			name:               "Valid certificate and key",
@@ -73,6 +75,18 @@ func TestGetTLSConfig(t *testing.T) {
 			clientKey:  "testdata/nonexistent.key",
 			wantErr:    true,
 		},
+		{
+			name:            "Missing key for certificate",
+			clientCert:      "testdata/valid_tls.crt",
+			wantErr:         true,
+			wantErrContains: "requires both clientCert and clientKey",
+		},
+		{
+			name:            "Missing certificate for key",
+			clientKey:       "testdata/valid_tls.key",
+			wantErr:         true,
+			wantErrContains: "requires both clientCert and clientKey",
+		},
 	}
 
 	for _, tt := range tests {
@@ -81,6 +95,9 @@ func TestGetTLSConfig(t *testing.T) {
 
 			if tt.wantErr {
 				require.Error(t, err)
+				if tt.wantErrContains != "" {
+					require.ErrorContains(t, err, tt.wantErrContains)
+				}
 				assert.Nil(t, config)
 				return
 			}
@@ -88,6 +105,7 @@ func TestGetTLSConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, config)
 			assert.Equal(t, tt.insecureSkipVerify, config.InsecureSkipVerify)
+			assert.Equal(t, uint16(cryptotls.VersionTLS12), config.MinVersion)
 
 			if tt.clientCert != "" && tt.clientKey != "" {
 				assert.Len(t, config.Certificates, 1)

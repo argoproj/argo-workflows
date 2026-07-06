@@ -157,6 +157,10 @@ func GetServerTLSConfigFromSecret(ctx context.Context, kubectlConfig kubernetes.
 func GetTLSConfig(clientCert, clientKey string, insecureSkipVerify bool) (*tls.Config, error) {
 	tlsConfig := &tls.Config{
 		InsecureSkipVerify: insecureSkipVerify,
+		MinVersion:         tls.VersionTLS12,
+	}
+	if (clientCert == "") != (clientKey == "") {
+		return nil, fmt.Errorf("client certificate authentication requires both clientCert and clientKey")
 	}
 	// Load client certificate if paths are provided
 	if clientCert != "" && clientKey != "" {

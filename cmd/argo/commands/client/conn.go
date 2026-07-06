@@ -36,7 +36,7 @@ func AddKubectlFlagsToCmd(cmd *cobra.Command) {
 	clientcmd.BindOverrideFlags(&overrides, cmd.PersistentFlags(), kflags)
 }
 
-// some kubectl flags apply to server mode as well
+// AddKubectlFlagsToArgoServerOpts applies kubectl flags to server mode as well.
 func AddKubectlFlagsToArgoServerOpts() {
 	ArgoServerOpts.ClientCert = overrides.AuthInfo.ClientCertificate
 	ArgoServerOpts.ClientKey = overrides.AuthInfo.ClientKey
