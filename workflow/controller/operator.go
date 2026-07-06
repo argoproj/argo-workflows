@@ -2241,7 +2241,9 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		if node.Type == wfv1.NodeTypePod {
 			// delete the timed-out pod so the resources it was waiting for are freed.
 			// Deletion is by UID so a pod recreated by a retry cannot be affected.
-			if pod, exists, podErr := woc.podExists(node.ID); podErr == nil && exists {
+			if pod, exists, podErr := woc.podExists(node.ID); podErr != nil {
+				woc.log.WithError(podErr).Warn(ctx, "failed to check pod existence while cleaning up timed-out node")
+			} else if exists {
 				woc.controller.PodController.DeletePodByUID(ctx, pod.Namespace, pod.Name, string(pod.UID))
 			}
 		}
