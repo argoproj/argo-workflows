@@ -371,14 +371,17 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 	node, err := woc.executeTemplate(ctx, woc.wf.Name, &wfv1.WorkflowStep{Template: woc.execWf.Spec.Entrypoint}, tmplCtx, woc.execWf.Spec.Arguments, &executeTemplateOpts{})
 	if err != nil {
-		woc.log.WithError(err).Error("error in entry template execution")
 		// we wrap this error up to report a clear message
 		x := fmt.Errorf("error in entry template execution: %w", err)
 		switch err {
 		case ErrDeadlineExceeded:
+			woc.log.WithError(err).Error("error in entry template execution")
 			woc.eventRecorder.Event(woc.wf, apiv1.EventTypeWarning, "WorkflowTimedOut", x.Error())
 		case ErrParallelismReached:
+			// parallelism is a normal, transient backpressure condition, not an error: the workflow waits and is requeued
+			woc.log.WithError(err).Info("entry template execution deferred, will requeue")
 		default:
+			woc.log.WithError(err).Error("error in entry template execution")
 			if !errorsutil.IsTransientErr(err) && !woc.wf.Status.Phase.Completed() && os.Getenv("BUBBLE_ENTRY_TEMPLATE_ERR") != "false" {
 				woc.markWorkflowError(ctx, x)
 
