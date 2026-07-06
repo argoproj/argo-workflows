@@ -749,20 +749,17 @@ tilt: ## Install the pinned Tilt to $(GOPATH)/bin if not already present
 			&& tar -xzf "$$tmp" -C "$$dir" tilt && rm -f "$$tmp" ; \
 	fi
 
-# renovate: datasource=github-releases depName=k3d-io/k3d
-K3D_VERSION           ?= 5.8.3
-
 .PHONY: k3d
 k3d: ## Install the pinned k3d to $(GOPATH)/bin if not already present
-	@if k3d version 2>/dev/null | grep -q "k3d version v$(K3D_VERSION)" ; then \
-		echo "k3d v$(K3D_VERSION) already installed" ; \
+	@. hack/k8s-versions.sh && if k3d version 2>/dev/null | grep -q "k3d version v$${K3D_VERSION}" ; then \
+		echo "k3d v$${K3D_VERSION} already installed" ; \
 	else \
-		echo "installing k3d v$(K3D_VERSION)" ; \
+		echo "installing k3d v$${K3D_VERSION}" ; \
 		: "go install pulls from the module proxy (proxy.golang.org), which is" ; \
 		: "far more reliable under CI load than GitHub's release-asset CDN. The" ; \
 		: "ldflags stamp the version k3d reports and uses to tag its helper image" ; \
-		go install -ldflags "-X github.com/k3d-io/k3d/v5/version.Version=v$(K3D_VERSION)" \
-			github.com/k3d-io/k3d/v5@v$(K3D_VERSION) ; \
+		go install -ldflags "-X github.com/k3d-io/k3d/v5/version.Version=v$${K3D_VERSION}" \
+			github.com/k3d-io/k3d/v5@v$${K3D_VERSION} ; \
 	fi
 
 .PHONY: k3d-up

@@ -14,10 +14,10 @@
   },
   "customManagers": [
     {
-      "description": "Update tool versions annotated with `# renovate:` in the Makefile",
+      "description": "Update tool versions annotated with `# renovate:` in hack/k8s-versions.sh",
       "customType": "regex",
       "managerFilePatterns": [
-        "/(^|/)Makefile$/"
+        "/(^|/)hack/k8s-versions.sh$/"
       ],
       "matchStrings": [
         "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)( versioning=(?<versioning>\\S+))?\\s+\\w+\\s*\\??=\\s*\"?(?<currentValue>[^\\s\"]+)\"?"
