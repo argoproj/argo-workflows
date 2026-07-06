@@ -152,7 +152,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 
 	if exists {
 		woc.log.WithFields(logging.Fields{"podPhase": existing.Status.Phase, "nodeName": nodeName, "nodeID": nodeID}).Debug(ctx, "Skipped pod creation: already exists")
-		_, err, _ = woc.checkTemplateTimeouts(tmpl, node)
+		_, _, err = woc.checkTemplateTimeouts(tmpl, node)
 		if err != nil {
 			return nil, err
 		}
@@ -359,12 +359,12 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	// Set initial progress from pod metadata if exists.
 	if x, ok := pod.Annotations[common.AnnotationKeyProgress]; ok {
 		if p, ok := wfv1.ParseProgress(x); ok {
-			node, getNodeErr := woc.wf.Status.Nodes.Get(nodeID)
+			progressNode, getNodeErr := woc.wf.Status.Nodes.Get(nodeID)
 			if getNodeErr != nil {
 				log.WithPanic().Error(ctx, "was unable to obtain node")
 			}
-			node.Progress = p
-			woc.wf.Status.Nodes.Set(ctx, nodeID, *node)
+			progressNode.Progress = p
+			woc.wf.Status.Nodes.Set(ctx, nodeID, *progressNode)
 		}
 	}
 
@@ -715,7 +715,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	}
 
 	// Check if the template has exceeded its timeout duration. If it hasn't set the applicable activeDeadlineSeconds
-	templateDeadline, err, pendingOnly := woc.checkTemplateTimeouts(tmpl, node)
+	templateDeadline, pendingOnly, err := woc.checkTemplateTimeouts(tmpl, node)
 	if err != nil {
 		return nil, err
 	}

@@ -2235,7 +2235,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	// Check the template deadline for Pending nodes
 	// This check will cover the resource forbidden, synchronization scenario,
 	// In above scenario, only Node will be created in pending state
-	deadline, err, _ := woc.checkTemplateTimeouts(processedTmpl, node)
+	deadline, _, err := woc.checkTemplateTimeouts(processedTmpl, node)
 	if err != nil {
 		woc.log.WithField("template", processedTmpl.Name).Warn(ctx, "Template exceeded its deadline")
 		return woc.markNodePhase(ctx, nodeName, wfv1.NodeFailed, err.Error()), err
@@ -2610,37 +2610,35 @@ func getTimeoutAsDeadline(startedAt *time.Time, timeoutVal string) (*time.Time, 
 }
 
 // Checks if the template has exceeded its Timeout or PendingTimeout
-func (woc *wfOperationCtx) checkTemplateTimeouts(tmpl *wfv1.Template, node *wfv1.NodeStatus) (*time.Time, error, bool) {
+func (woc *wfOperationCtx) checkTemplateTimeouts(tmpl *wfv1.Template, node *wfv1.NodeStatus) (*time.Time, bool, error) {
 	if node == nil {
-		return nil, nil, false
+		return nil, false, nil
 	}
 
 	if tmpl.PendingTimeout != "" {
 		tmplTimeout, err := getTimeoutAsDeadline(&node.StartedAt.Time, tmpl.PendingTimeout)
 		if err != nil {
-			return nil, err, true
+			return nil, true, err
 		}
 		if node.Phase == wfv1.NodePending {
 			if time.Now().After(*tmplTimeout) {
-				return nil, ErrTimeout, true
-			} else {
-				return tmplTimeout, nil, true
+				return nil, true, ErrTimeout
 			}
+			return tmplTimeout, true, nil
 		}
 	}
 	if tmpl.Timeout != "" {
 		tmplTimeout, err := getTimeoutAsDeadline(&node.StartedAt.Time, tmpl.Timeout)
 		if err != nil {
-			return nil, err, false
+			return nil, false, err
 		}
 		if time.Now().After(*tmplTimeout) {
-			return nil, ErrTimeout, false
-		} else {
-			return tmplTimeout, nil, false
+			return nil, false, ErrTimeout
 		}
+		return tmplTimeout, false, nil
 	}
 
-	return nil, nil, false
+	return nil, false, nil
 }
 
 // recordWorkflowPhaseChange stores the metrics associated with the workflow phase changing

@@ -13169,7 +13169,7 @@ func TestCheckTemplateTimeouts(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("my-ns")
 	wf := wfv1.MustUnmarshalWorkflow(pendingTimeoutWf)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	wf = woc.wf
@@ -13179,14 +13179,14 @@ func TestCheckTemplateTimeouts(t *testing.T) {
 	wf = woc.wf
 
 	node, err := wf.GetNodeByName("hello-world-dag.dag1")
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, node)
 	tmpl, err := woc.GetNodeTemplate(ctx, node)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
-	deadline, err, pendingOnly := woc.checkTemplateTimeouts(tmpl, node)
+	deadline, pendingOnly, err := woc.checkTemplateTimeouts(tmpl, node)
 
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	deadlineUntil := time.Until(*deadline)
 	assert.True(t, 0 <= deadlineUntil && deadlineUntil < (time.Second*2))
 	assert.True(t, pendingOnly)
@@ -13194,9 +13194,9 @@ func TestCheckTemplateTimeouts(t *testing.T) {
 	// pending timeout
 	deadlineUntil += 1 * time.Millisecond
 	time.Sleep(deadlineUntil)
-	deadline, err, pendingOnly = woc.checkTemplateTimeouts(tmpl, node)
+	deadline, pendingOnly, err = woc.checkTemplateTimeouts(tmpl, node)
 	assert.Nil(t, deadline)
-	assert.Equal(t, err, ErrTimeout)
+	require.ErrorIs(t, err, ErrTimeout)
 	assert.True(t, pendingOnly)
 
 	makePodsPhase(ctx, woc, apiv1.PodRunning)
@@ -13205,22 +13205,22 @@ func TestCheckTemplateTimeouts(t *testing.T) {
 	wf = woc.wf
 
 	node, err = wf.GetNodeByName("hello-world-dag.dag1")
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
-	deadline, err, pendingOnly = woc.checkTemplateTimeouts(tmpl, node)
+	deadline, pendingOnly, err = woc.checkTemplateTimeouts(tmpl, node)
 	deadlineUntil = time.Duration(0)
 	if deadline != nil {
 		deadlineUntil = time.Until(*deadline)
 	}
 	assert.True(t, 0 < deadlineUntil && deadlineUntil < (time.Second*4))
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.False(t, pendingOnly)
 
 	// general timeout
 	deadlineUntil += 1 * time.Millisecond
 	time.Sleep(deadlineUntil)
-	deadline, err, pendingOnly = woc.checkTemplateTimeouts(tmpl, node)
+	deadline, pendingOnly, err = woc.checkTemplateTimeouts(tmpl, node)
 	assert.Nil(t, deadline)
-	assert.Equal(t, err, ErrTimeout)
+	require.ErrorIs(t, err, ErrTimeout)
 	assert.False(t, pendingOnly)
 }
