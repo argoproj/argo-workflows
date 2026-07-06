@@ -6873,7 +6873,7 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 					},
 					"pendingTimeout": {
 						SchemaProps: spec.SchemaProps{
-							Description: "PendingTimeout allows to set the maximum time spent in pending status counting from the node's start time. This duration may not be applied to Step or DAG templates.",
+							Description: "PendingTimeout allows to set the maximum time spent in pending status counting from the node's start time. It is enforced by the controller, so a pod that starts running just as the timeout expires may still be failed. This duration may not be applied to Step or DAG templates.",
 							Type:        []string{"string"},
 							Format:      "",
 						},

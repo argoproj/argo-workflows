@@ -2232,15 +2232,25 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		return node, ErrDeadlineExceeded
 	}
 
-	// Check the template deadline for Pending nodes
-	// This check will cover the resource forbidden, synchronization scenario,
-	// In above scenario, only Node will be created in pending state
-	deadline, _, err := woc.checkTemplateTimeouts(processedTmpl, node)
+	// Check the timeout and pendingTimeout deadlines for Pending nodes.
+	// This also covers the resource-forbidden and synchronization scenarios,
+	// where only the node exists, in a pending state, with no pod created.
+	deadline, pendingDeadline, err := woc.checkTemplateTimeouts(processedTmpl, node)
 	if err != nil {
 		woc.log.WithField("template", processedTmpl.Name).Warn(ctx, "Template exceeded its deadline")
+		if node.Type == wfv1.NodeTypePod {
+			// delete the timed-out pod so the resources it was waiting for are freed.
+			// Deletion is by UID so a pod recreated by a retry cannot be affected.
+			if pod, exists, podErr := woc.podExists(node.ID); podErr == nil && exists {
+				woc.controller.PodController.DeletePodByUID(ctx, pod.Namespace, pod.Name, string(pod.UID))
+			}
+		}
 		return woc.markNodePhase(ctx, nodeName, wfv1.NodeFailed, err.Error()), err
 	}
-	// Ensure that we will check again soon after the deadline
+	// Ensure that we will check again soon after the earliest deadline
+	if deadline == nil || (pendingDeadline != nil && pendingDeadline.Before(*deadline)) {
+		deadline = pendingDeadline
+	}
 	if deadline != nil && time.Now().Before(*deadline) {
 		woc.requeueAfter(time.Until(*deadline))
 	}
@@ -2601,7 +2611,7 @@ func (woc *wfOperationCtx) handleNodeFulfilled(ctx context.Context, nodeName str
 }
 
 func getTimeoutAsDeadline(startedAt *time.Time, timeoutVal string) (*time.Time, error) {
-	tmplTimeout, err := time.ParseDuration(timeoutVal)
+	tmplTimeout, err := wfv1.ParseStringToDuration(timeoutVal)
 	if err != nil {
 		return nil, fmt.Errorf("invalid timeout format %w", err)
 	}
@@ -2609,36 +2619,36 @@ func getTimeoutAsDeadline(startedAt *time.Time, timeoutVal string) (*time.Time, 
 	return &tmplDeadline, nil
 }
 
-// Checks if the template has exceeded its Timeout or PendingTimeout
-func (woc *wfOperationCtx) checkTemplateTimeouts(tmpl *wfv1.Template, node *wfv1.NodeStatus) (*time.Time, bool, error) {
+// checkTemplateTimeouts checks if the template has exceeded its Timeout or PendingTimeout.
+// It returns the deadline computed from Timeout (enforced via the pod's activeDeadlineSeconds)
+// and the deadline computed from PendingTimeout (only set while the node is pending).
+// ErrTimeout is returned if the node is pending past either deadline.
+func (woc *wfOperationCtx) checkTemplateTimeouts(tmpl *wfv1.Template, node *wfv1.NodeStatus) (deadline, pendingDeadline *time.Time, err error) {
 	if node == nil {
-		return nil, false, nil
+		return nil, nil, nil
 	}
 
-	if tmpl.PendingTimeout != "" {
-		tmplTimeout, err := getTimeoutAsDeadline(&node.StartedAt.Time, tmpl.PendingTimeout)
-		if err != nil {
-			return nil, true, err
-		}
-		if node.Phase == wfv1.NodePending {
-			if time.Now().After(*tmplTimeout) {
-				return nil, true, ErrTimeout
-			}
-			return tmplTimeout, true, nil
-		}
-	}
 	if tmpl.Timeout != "" {
-		tmplTimeout, err := getTimeoutAsDeadline(&node.StartedAt.Time, tmpl.Timeout)
+		deadline, err = getTimeoutAsDeadline(&node.StartedAt.Time, tmpl.Timeout)
 		if err != nil {
-			return nil, false, err
+			return nil, nil, err
 		}
-		if time.Now().After(*tmplTimeout) {
-			return nil, false, ErrTimeout
+		if node.Phase == wfv1.NodePending && time.Now().After(*deadline) {
+			return nil, nil, ErrTimeout
 		}
-		return tmplTimeout, false, nil
 	}
 
-	return nil, false, nil
+	if tmpl.PendingTimeout != "" && node.Phase == wfv1.NodePending {
+		pendingDeadline, err = getTimeoutAsDeadline(&node.StartedAt.Time, tmpl.PendingTimeout)
+		if err != nil {
+			return nil, nil, err
+		}
+		if time.Now().After(*pendingDeadline) {
+			return nil, nil, ErrTimeout
+		}
+	}
+
+	return deadline, pendingDeadline, nil
 }
 
 // recordWorkflowPhaseChange stores the metrics associated with the workflow phase changing
