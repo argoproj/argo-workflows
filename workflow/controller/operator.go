@@ -2237,7 +2237,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	// Check the timeout and pendingTimeout deadlines for Pending nodes.
 	// This also covers the resource-forbidden and synchronization scenarios,
 	// where only the node exists, in a pending state, with no pod created.
-	deadline, pendingDeadline, err := woc.checkTemplateTimeouts(processedTmpl, node)
+	deadline, pendingDeadline, err := woc.checkTemplateTimeouts(processedTmpl, node, time.Now().UTC())
 	if err != nil {
 		woc.log.WithField("template", processedTmpl.Name).Warn(ctx, "Template exceeded its deadline")
 		if node.Type == wfv1.NodeTypePod {
@@ -2626,8 +2626,12 @@ func getTimeoutAsDeadline(startedAt *time.Time, timeoutVal string) (*time.Time, 
 // checkTemplateTimeouts checks if the template has exceeded its Timeout or PendingTimeout.
 // It returns the deadline computed from Timeout (enforced via the pod's activeDeadlineSeconds)
 // and the deadline computed from PendingTimeout (only set while the node is pending).
-// ErrTimeout is returned if the node is pending past either deadline.
-func (woc *wfOperationCtx) checkTemplateTimeouts(tmpl *wfv1.Template, node *wfv1.NodeStatus) (deadline, pendingDeadline *time.Time, err error) {
+// ErrTimeout is returned if the node is pending past either deadline as of now.
+// now is supplied by the caller rather than read from time.Now here so the
+// caller controls which clock is used: the pure pod builder passes pb.in.now (the
+// captured snapshot time) to keep build() deterministic for a given snapshot,
+// while the live executeTemplate path passes the current wall-clock.
+func (woc *wfOperationCtx) checkTemplateTimeouts(tmpl *wfv1.Template, node *wfv1.NodeStatus, now time.Time) (deadline, pendingDeadline *time.Time, err error) {
 	if node == nil {
 		return nil, nil, nil
 	}
@@ -2637,7 +2641,7 @@ func (woc *wfOperationCtx) checkTemplateTimeouts(tmpl *wfv1.Template, node *wfv1
 		if err != nil {
 			return nil, nil, err
 		}
-		if node.Phase == wfv1.NodePending && time.Now().After(*deadline) {
+		if node.Phase == wfv1.NodePending && now.After(*deadline) {
 			return nil, nil, ErrTimeout
 		}
 	}
@@ -2647,7 +2651,7 @@ func (woc *wfOperationCtx) checkTemplateTimeouts(tmpl *wfv1.Template, node *wfv1
 		if err != nil {
 			return nil, nil, err
 		}
-		if time.Now().After(*pendingDeadline) {
+		if now.After(*pendingDeadline) {
 			return nil, nil, ErrTimeout
 		}
 	}

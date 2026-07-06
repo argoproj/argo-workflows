@@ -645,6 +645,60 @@ func Test_createWorkflowPod_rateLimited(t *testing.T) {
 	}
 }
 
+// Test_submitPod_activePods_accounting locks in the activePods accounting
+// contract: a genuinely fresh pod create increments activePods exactly once,
+// while the AlreadyExists-recovery path (pod already exists in the cluster, but
+// not in the informer) recovers the existing pod WITHOUT incrementing
+// activePods. Re-incrementing on recovery would over-count parallelism and is
+// the regression this test guards against.
+func Test_submitPod_activePods_accounting(t *testing.T) {
+	newSubmitPod := func(woc *wfOperationCtx) *apiv1.Pod {
+		return &apiv1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:        "test-active-pods-accounting",
+				Namespace:   woc.wf.Namespace,
+				Annotations: map[string]string{},
+				Labels:      map[string]string{},
+			},
+		}
+	}
+
+	t.Run("FreshCreateIncrements", func(t *testing.T) {
+		wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx, wf, defaultServiceAccount)
+		defer cancel()
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+		before := woc.activePods
+		pod, err := woc.submitPod(ctx, &podBuildResult{Pod: newSubmitPod(woc)}, "node", "node-id", woc.log)
+		require.NoError(t, err)
+		require.NotNil(t, pod)
+		assert.Equal(t, before+1, woc.activePods, "fresh create must increment activePods by exactly one")
+	})
+
+	t.Run("AlreadyExistsRecoveryDoesNotIncrement", func(t *testing.T) {
+		wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx, wf, defaultServiceAccount)
+		defer cancel()
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+		// Pre-create the pod directly in the fake cluster under the deterministic
+		// name. The informer store is NOT populated with it, so createPod hits
+		// AlreadyExists and recovers via a direct Get.
+		existing := newSubmitPod(woc)
+		_, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).Create(ctx, existing, metav1.CreateOptions{})
+		require.NoError(t, err)
+
+		before := woc.activePods
+		pod, err := woc.submitPod(ctx, &podBuildResult{Pod: newSubmitPod(woc)}, "node", "node-id", woc.log)
+		require.NoError(t, err)
+		require.NotNil(t, pod)
+		assert.Equal(t, before, woc.activePods, "AlreadyExists recovery must NOT increment activePods")
+	})
+}
+
 func Test_createWorkflowPod_containerName(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx)
@@ -2225,7 +2279,7 @@ func TestArtifactPluginSidecar(t *testing.T) {
 		ctx, err := woc.setExecWorkflow(ctx)
 		require.NoError(t, err)
 
-		err = woc.addArtifactPlugins(ctx, pod, tmpl, cfg)
+		err = woc.addArtifactPluginsLegacy(ctx, pod, tmpl, cfg)
 		require.NoError(t, err)
 
 		// Volumes are normally added in addOutputArtifactsVolumes
