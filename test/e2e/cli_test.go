@@ -2217,8 +2217,7 @@ func (s *CLISuite) startTLSServerWithClientAuth() (string, string, string, chan 
 			receivedCertCh <- false
 		}
 		w.WriteHeader(http.StatusOK)
-		_, err = w.Write([]byte(`{"version": "v0.0.0"}`))
-		s.CheckError(err)
+		_, _ = w.Write([]byte(`{"version": "v0.0.0"}`))
 	})
 
 	server := &http.Server{
