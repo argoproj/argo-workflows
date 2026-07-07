@@ -3,16 +3,12 @@ package commands
 import (
 	"context"
 	"fmt"
-	"time"
 
-	"github.com/argoproj/pkg/stats"
 	"github.com/spf13/cobra"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/argoproj/argo-workflows/v4/cmd/argoexec/executor"
-	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
-	"github.com/argoproj/argo-workflows/v4/workflow/executor/tracing"
+	wfexecutor "github.com/argoproj/argo-workflows/v4/workflow/executor"
 )
 
 func NewWaitCommand() *cobra.Command {
@@ -20,14 +16,8 @@ func NewWaitCommand() *cobra.Command {
 		Use:   "wait",
 		Short: "wait for main container to finish and save artifacts",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx, closer, err := teeContainerLogs(cmd.Context(), varRunArgo, common.WaitContainerName)
+			err := waitContainer(cmd.Context())
 			if err != nil {
-				// log tee failure is a log-archive failure; wait's primary processing continues
-				logging.RequireLoggerFromContext(ctx).WithError(err).Error(ctx, "Failed to set up log tee")
-			} else {
-				defer closer()
-			}
-			if err := waitContainer(ctx); err != nil {
 				return fmt.Errorf("%w", err)
 			}
 			return nil
@@ -36,79 +26,15 @@ func NewWaitCommand() *cobra.Command {
 	return &command
 }
 
-//nolint:contextcheck
 func waitContainer(ctx context.Context) error {
-	ctx = tracing.InjectTraceContext(ctx)
-	wfExecutor := executor.Init(ctx, clientConfig, varRunArgo)
-	defer func() {
-		if err := wfExecutor.Tracing.Shutdown(context.WithoutCancel(ctx)); err != nil {
-			logging.RequireLoggerFromContext(ctx).WithError(err).Error(ctx, "Failed to shutdown tracing")
-		}
-	}()
-	ctx, span := wfExecutor.Tracing.StartRunWaitContainer(ctx, wfExecutor.WorkflowName(), wfExecutor.Namespace)
-	defer span.End()
-
-	// Don't allow cancellation to impact capture of results, parameters, artifacts, or defers.
-	//nolint:contextcheck
-	bgCtx := trace.ContextWithSpan(logging.RequireLoggerFromContext(ctx).NewBackgroundContext(), span)
-
-	errHandler := wfExecutor.HandleError(bgCtx)
-	defer errHandler()                     // Must be placed at the bottom of defers stack.
-	defer wfExecutor.FinalizeOutput(bgCtx) // Ensures the LabelKeyReportOutputsCompleted is set to true.
-	defer func() {
-		err := wfExecutor.KillArtifactSidecars(bgCtx)
-		if err != nil {
-			wfExecutor.AddError(bgCtx, err)
-		}
-	}()
-	defer stats.LogStats()
-
-	stats.StartStatsTicker(5 * time.Minute)
-
-	// Create a new empty (placeholder) task result with LabelKeyReportOutputsCompleted set to false.
-	wfExecutor.InitializeOutput(bgCtx)
-
-	// Wait for main container to complete
-	err := wfExecutor.Wait(ctx)
-	if err != nil {
-		wfExecutor.AddError(ctx, err)
-	}
-
-	if wfExecutor.Template.Resource != nil {
-		// Save log artifacts for resource template
-		err = wfExecutor.ReportOutputsLogs(bgCtx)
-		if err != nil {
-			wfExecutor.AddError(ctx, err)
-		}
-		return wfExecutor.HasError()
-	}
-
-	// Capture output script result
-	err = wfExecutor.CaptureScriptResult(bgCtx)
-	if err != nil {
-		wfExecutor.AddError(ctx, err)
-	}
-
-	// Saving output parameters
-	err = wfExecutor.SaveParameters(bgCtx)
-	if err != nil {
-		wfExecutor.AddError(ctx, err)
-	}
-
-	// Saving output artifacts
-	artifacts, err := wfExecutor.SaveArtifacts(bgCtx)
-	if err != nil {
-		wfExecutor.AddError(ctx, err)
-	}
-
-	// Save log artifacts
-	logArtifacts := wfExecutor.SaveLogs(bgCtx)
-	artifacts = append(artifacts, logArtifacts...)
-
-	err = wfExecutor.ReportOutputs(bgCtx, artifacts)
-	if err != nil {
-		wfExecutor.AddError(ctx, err)
-	}
-
-	return wfExecutor.HasError()
+	return runAuxiliaryContainer(ctx, common.WaitContainerName,
+		func(we *wfexecutor.WorkflowExecutor, ctx context.Context) (context.Context, trace.Span) {
+			return we.Tracing.StartRunWaitContainer(ctx, we.WorkflowName(), we.Namespace)
+		},
+		func(ctx, bgCtx context.Context, we *wfexecutor.WorkflowExecutor) error {
+			// Legacy wait: pre-main ran in the init container; if it failed
+			// the pod never got here. Always pass preMainFailed=false.
+			return we.PostMain(ctx, bgCtx, false)
+		},
+	)
 }

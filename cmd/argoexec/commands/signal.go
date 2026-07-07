@@ -14,6 +14,26 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/osspecific"
 )
 
+// forwardSignals starts a goroutine that forwards OS signals received on the
+// given channel to the process with the given pid. Signals that can be ignored
+// are dropped; when ignoreTerm is true SIGTERM is dropped as well (artifact
+// sidecars stay alive to assist the aux container and are terminated only via
+// the file-signal mechanism). The caller owns the channel's lifecycle
+// (signal.Notify / signal.Reset / close).
+func forwardSignals(ctx context.Context, signals <-chan os.Signal, pid int, ignoreTerm bool) {
+	logger := logging.RequireLoggerFromContext(ctx)
+	go func() {
+		for s := range signals {
+			if osspecific.CanIgnoreSignal(s) || (ignoreTerm && s == syscall.SIGTERM) {
+				logger.WithField("signal", s).Debug(ctx, "ignore signal")
+				continue
+			}
+			logger.WithField("signal", s).Debug(ctx, "forwarding signal")
+			_ = osspecific.Kill(pid, s.(syscall.Signal))
+		}
+	}()
+}
+
 // startFileSignalHandler starts a goroutine that watches a signal file via
 // inotify. Whenever the file is written to, the integer signal value is read,
 // the file is removed, and the signal is forwarded to the given process.

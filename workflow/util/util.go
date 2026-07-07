@@ -1633,3 +1633,15 @@ func FindWaitCtrIndex(pod *apiv1.Pod) (int, error) {
 	}
 	return waitCtrIndex, nil
 }
+
+// FindAuxiliaryCtrIndex returns the index of the auxiliary executor container
+// on the pod — wait in the legacy layout, supervisor in the init-less layout.
+// Returns -1 and an error if neither is found.
+func FindAuxiliaryCtrIndex(pod *apiv1.Pod) (int, error) {
+	for i, ctr := range pod.Spec.Containers {
+		if ctr.Name == common.WaitContainerName || ctr.Name == common.SupervisorContainerName {
+			return i, nil
+		}
+	}
+	return -1, errors.Errorf("-1", "Could not find wait or supervisor container in pod spec")
+}

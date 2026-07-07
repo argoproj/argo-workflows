@@ -181,6 +181,105 @@ func TestIsBaseImagePath(t *testing.T) {
 	assert.True(t, we.isBaseImagePath("/user-mount-coincidence"))
 }
 
+// TestIsBaseImagePathInitless covers the init-less divergence in isBaseImagePath:
+// when an output path overlaps an input artifact path, init-less mode must treat
+// it as a base image path so the output is read from the emissary-staged live
+// file rather than the shared input emptyDir (which would silently upload the
+// stale input when the user replaces the file via rm+recreate or rename). Legacy
+// mode keeps reading the shared mount, where the SubPath bind mount stays current.
+func TestIsBaseImagePathInitless(t *testing.T) {
+	newWe := func() *WorkflowExecutor {
+		return &WorkflowExecutor{
+			Template: wfv1.Template{
+				Container: &corev1.Container{},
+				Inputs: wfv1.Inputs{
+					Artifacts: []wfv1.Artifact{{Name: "samedir", Path: "/samedir"}},
+				},
+				Outputs: wfv1.Outputs{
+					Artifacts: []wfv1.Artifact{{Name: "samedir", Path: "/samedir"}},
+				},
+			},
+		}
+	}
+
+	t.Run("legacy mode reads the shared input mount", func(t *testing.T) {
+		we := newWe()
+		// Exact overlap and sub-path overlap both come from the shared emptyDir.
+		assert.False(t, we.isBaseImagePath("/samedir"))
+		we.Template.Outputs.Artifacts[0].Path = "/samedir/inner"
+		assert.False(t, we.isBaseImagePath("/samedir/inner"))
+	})
+
+	t.Run("init-less mode reads the live emissary-staged output", func(t *testing.T) {
+		t.Setenv(common.EnvVarInitlessPod, "true")
+		we := newWe()
+		assert.True(t, we.isBaseImagePath("/samedir"))
+		we.Template.Outputs.Artifacts[0].Path = "/samedir/inner"
+		assert.True(t, we.isBaseImagePath("/samedir/inner"))
+	})
+
+	t.Run("init-less mode still reads user volumes from the mirror", func(t *testing.T) {
+		t.Setenv(common.EnvVarInitlessPod, "true")
+		we := newWe()
+		// A user-declared volume overlap is delivered into the real (shared) volume
+		// and the emissary intentionally skips staging it, so it must keep reading
+		// the mirror even in init-less mode.
+		we.Template.Inputs.Artifacts = nil
+		we.Template.Container.VolumeMounts = []corev1.VolumeMount{{Name: "workdir", MountPath: "/user-mount"}}
+		we.Template.Outputs.Artifacts[0].Path = "/user-mount/some-path"
+		assert.False(t, we.isBaseImagePath("/user-mount/some-path"))
+	})
+}
+
+// TestStageArchiveFileInitlessOverlap proves the read-side fix end to end: with
+// an input artifact and an output artifact sharing a path, init-less staging
+// fetches the live output through the runtime executor (the emissary already
+// tarred main's current file), while legacy staging reads the mirrored mount and
+// never touches the live-output path.
+func TestStageArchiveFileInitlessOverlap(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	tr, err := tracing.New(ctx, "argoexec")
+	require.NoError(t, err)
+
+	newWe := func(rt *mocks.ContainerRuntimeExecutor) *WorkflowExecutor {
+		return &WorkflowExecutor{
+			Template: wfv1.Template{
+				Inputs:  wfv1.Inputs{Artifacts: []wfv1.Artifact{{Name: "samedir", Path: "/samedir"}}},
+				Outputs: wfv1.Outputs{Artifacts: []wfv1.Artifact{{Name: "samedir", Path: "/samedir"}}},
+			},
+			RuntimeExecutor: rt,
+			Tracing:         tr,
+		}
+	}
+
+	t.Run("init-less fetches the live output via the runtime executor", func(t *testing.T) {
+		t.Setenv(common.EnvVarInitlessPod, "true")
+		rt := &mocks.ContainerRuntimeExecutor{}
+		// CopyFile is the live-output path: the emissary inside main has already
+		// staged the current (possibly rm+recreated) file. Reading the input
+		// emptyDir instead would skip CopyFile and upload the stale input.
+		rt.On("CopyFile", mock.Anything, common.MainContainerName, "/samedir", mock.Anything, mock.Anything).Return(nil)
+		we := newWe(rt)
+		art := we.Template.Outputs.Artifacts[0]
+		fileName, localArtPath, err := we.stageArchiveFile(ctx, common.MainContainerName, &art)
+		require.NoError(t, err)
+		assert.Equal(t, "samedir.tgz", fileName)
+		assert.NotEmpty(t, localArtPath)
+		rt.AssertCalled(t, "CopyFile", mock.Anything, common.MainContainerName, "/samedir", mock.Anything, mock.Anything)
+	})
+
+	t.Run("legacy reads the mirrored mount, never the live-output path", func(t *testing.T) {
+		rt := &mocks.ContainerRuntimeExecutor{}
+		we := newWe(rt)
+		art := we.Template.Outputs.Artifacts[0]
+		// Legacy staging reads /mainctrfs/samedir directly. There is no such file in
+		// this unit test so staging fails, but the point is that the live-output
+		// path (CopyFile) is never used in legacy mode.
+		_, _, _ = we.stageArchiveFile(ctx, common.MainContainerName, &art)
+		rt.AssertNotCalled(t, "CopyFile")
+	})
+}
+
 func TestDefaultParameters(t *testing.T) {
 	fakeClientset := fake.NewClientset()
 	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
@@ -453,11 +552,11 @@ func TestSaveArtifacts(t *testing.T) {
 	tracing, err := tracing.New(ctx, `argoexec`) // TODO arguments here
 	require.NoError(t, err)
 	tests := []struct {
-		workflowExecutor WorkflowExecutor
+		workflowExecutor *WorkflowExecutor
 		expectError      bool
 	}{
 		{
-			workflowExecutor: WorkflowExecutor{
+			workflowExecutor: &WorkflowExecutor{
 				PodName:          fakePodName,
 				Template:         templateWithOutParam,
 				ClientSet:        fakeClientset,
@@ -469,7 +568,7 @@ func TestSaveArtifacts(t *testing.T) {
 			expectError: false,
 		},
 		{
-			workflowExecutor: WorkflowExecutor{
+			workflowExecutor: &WorkflowExecutor{
 				PodName:          fakePodName,
 				Template:         templateOptionFalse,
 				ClientSet:        fakeClientset,
@@ -481,7 +580,7 @@ func TestSaveArtifacts(t *testing.T) {
 			expectError: true,
 		},
 		{
-			workflowExecutor: WorkflowExecutor{
+			workflowExecutor: &WorkflowExecutor{
 				PodName:          fakePodName,
 				Template:         templateZipArchive,
 				ClientSet:        fakeClientset,
@@ -719,6 +818,84 @@ func TestSaveLogs(t *testing.T) {
 		require.NotEmpty(t, callOrder)
 		assert.Equal(t, "wait", callOrder[len(callOrder)-1], "wait logs should be saved last")
 	})
+
+	t.Run("init-less: supervisor archived, init and wait skipped", func(t *testing.T) {
+		// In init-less pods there is no init/wait container - a single
+		// supervisor container plays both roles. SaveLogs must archive the
+		// supervisor's combined log and not touch init/wait.
+		t.Setenv(common.EnvVarInitlessPod, "true")
+
+		ctx := logging.TestContext(t.Context())
+		tr, err := tracing.New(ctx, `argoexec`)
+		require.NoError(t, err)
+
+		mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
+		mockRuntimeExecutor.On("GetOutputStream", mock.Anything, "main", true).Return(io.NopCloser(strings.NewReader("main log")), nil)
+		mockRuntimeExecutor.On("GetOutputStream", mock.Anything, "supervisor", true).Return(io.NopCloser(strings.NewReader("supervisor log")), nil)
+
+		we := WorkflowExecutor{
+			Template:        templateWithMainAndSystemLogs,
+			RuntimeExecutor: &mockRuntimeExecutor,
+			Tracing:         tr,
+		}
+
+		we.SaveLogs(ctx)
+
+		mockRuntimeExecutor.AssertCalled(t, "GetOutputStream", mock.Anything, "main", true)
+		mockRuntimeExecutor.AssertCalled(t, "GetOutputStream", mock.Anything, "supervisor", true)
+		mockRuntimeExecutor.AssertNotCalled(t, "GetOutputStream", mock.Anything, "init", true)
+		mockRuntimeExecutor.AssertNotCalled(t, "GetOutputStream", mock.Anything, "wait", true)
+	})
+
+	t.Run("init-less: supervisor skipped when combined file is missing", func(t *testing.T) {
+		// ErrorNotExist must be skipped, not recorded as
+		// an error - a returned error crash-loops the supervisor.
+		t.Setenv(common.EnvVarInitlessPod, "true")
+
+		ctx := logging.TestContext(t.Context())
+		tr, err := tracing.New(ctx, `argoexec`)
+		require.NoError(t, err)
+
+		mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
+		mockRuntimeExecutor.On("GetOutputStream", mock.Anything, "main", true).Return(io.NopCloser(strings.NewReader("main log")), nil)
+		mockRuntimeExecutor.On("GetOutputStream", mock.Anything, "supervisor", true).Return(nil, fs.ErrNotExist)
+
+		we := WorkflowExecutor{
+			Template:        templateWithMainAndSystemLogs,
+			RuntimeExecutor: &mockRuntimeExecutor,
+			Tracing:         tr,
+		}
+
+		we.SaveLogs(ctx)
+
+		mockRuntimeExecutor.AssertCalled(t, "GetOutputStream", mock.Anything, "supervisor", true)
+		// only main's storage error; supervisor is skipped on ErrNotExist.
+		require.Len(t, we.errors, 1, "only the main container's storage error is expected")
+		assert.EqualError(t, we.errors[0], artStorageError)
+	})
+
+	t.Run("container with no log file is skipped, not an error", func(t *testing.T) {
+		// A container killed before its command ran (e.g. a containerSet member
+		// whose dependency failed, then SIGTERM'd) has no combined log. SaveLogs
+		// must skip it, not record an error — otherwise the init-less supervisor
+		// crash-loops and the pod never completes.
+		ctx := logging.TestContext(t.Context())
+		tr, err := tracing.New(ctx, `argoexec`)
+		require.NoError(t, err)
+		rt := &mocks.ContainerRuntimeExecutor{}
+		rt.On("GetOutputStream", mock.Anything, mock.AnythingOfType("string"), true).
+			Return((io.ReadCloser)(nil), os.ErrNotExist)
+		we := WorkflowExecutor{
+			Template:        wfv1.Template{ArchiveLocation: &wfv1.ArtifactLocation{ArchiveLogs: new(true)}},
+			RuntimeExecutor: rt,
+			Tracing:         tr,
+		}
+
+		logArtifacts := we.SaveLogs(ctx)
+
+		assert.Empty(t, logArtifacts)
+		assert.NoError(t, we.HasError(), "a missing combined log must not be a fatal error")
+	})
 }
 
 func TestReportOutputs(t *testing.T) {
@@ -887,4 +1064,19 @@ func TestUnzipMaliciousSymlink(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, "safe", string(content), "File outside should NOT be overwritten by unzip")
+}
+
+func TestWaitMainContainers(t *testing.T) {
+	t.Run("delegates to the runtime executor's exit-code file watch", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		rt := &mocks.ContainerRuntimeExecutor{}
+		rt.On("Wait", mock.Anything, mock.Anything).Return(nil)
+		we := &WorkflowExecutor{
+			PodName:         fakePodName,
+			Namespace:       fakeNamespace,
+			RuntimeExecutor: rt,
+		}
+		require.NoError(t, we.waitMainContainers(ctx, []string{"main"}))
+		rt.AssertExpectations(t)
+	})
 }

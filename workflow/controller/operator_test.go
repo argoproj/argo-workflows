@@ -7802,6 +7802,98 @@ func TestPodFailureWithContainerOOM(t *testing.T) {
 	}
 }
 
+// podWithSupervisorPreMainFailure exercises the init-less mode failure path
+// where supervisor pre-main fails: supervisor writes the failed marker and
+// exits non-zero, emissary in main observes the marker and exits with 65
+// (sysexits.h EX_DATAERR). inferFailedReason must surface the supervisor's
+// real message rather than main's placeholder exit-65; this is why
+// SupervisorContainerName sorts ahead of main in the order() helper.
+var podWithSupervisorPreMainFailure = `
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: main
+    env:
+    - name: ARGO_CONTAINER_NAME
+      value: main
+  - name: supervisor
+status:
+  phase: Failed
+  containerStatuses:
+  - name: main
+    ready: false
+    state:
+      terminated:
+        exitCode: 65
+        reason: Error
+        message: ""
+  - name: supervisor
+    ready: false
+    state:
+      terminated:
+        exitCode: 1
+        reason: Error
+        message: "failed to load input artifacts from plugin \"s3-driver\": connection refused"
+`
+
+func TestInferFailedReason_SupervisorPreMainFailure(t *testing.T) {
+	var pod apiv1.Pod
+	wfv1.MustUnmarshal(podWithSupervisorPreMainFailure, &pod)
+	ctx := logging.TestContext(t.Context())
+	nodeStatus, msg := newWoc(ctx).inferFailedReason(ctx, &pod, nil)
+	// Supervisor's NodeError must win over main's exit-65 NodeFailed; the
+	// emitted message must name the supervisor and quote its real reason.
+	assert.Equal(t, wfv1.NodeError, nodeStatus)
+	assert.Contains(t, msg, "supervisor")
+	assert.Contains(t, msg, "connection refused")
+	// Precedence, not a merge: main's placeholder exit-65 must not leak through.
+	assert.NotContains(t, msg, "exit code 65")
+}
+
+// When the supervisor exits cleanly (post-main success) but main fails with
+// a real user error, main's failure must still surface — supervisor's order=0
+// ranking only kicks in when supervisor itself failed.
+var podWithSupervisorOKAndMainFail = `
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: main
+    env:
+    - name: ARGO_CONTAINER_NAME
+      value: main
+  - name: supervisor
+status:
+  phase: Failed
+  containerStatuses:
+  - name: main
+    ready: false
+    state:
+      terminated:
+        exitCode: 1
+        reason: Error
+        message: "user command failed"
+  - name: supervisor
+    ready: false
+    state:
+      terminated:
+        exitCode: 0
+        reason: Completed
+`
+
+func TestInferFailedReason_SupervisorSuccessMainFailure(t *testing.T) {
+	var pod apiv1.Pod
+	wfv1.MustUnmarshal(podWithSupervisorOKAndMainFail, &pod)
+	ctx := logging.TestContext(t.Context())
+	nodeStatus, msg := newWoc(ctx).inferFailedReason(ctx, &pod, nil)
+	assert.Equal(t, wfv1.NodeFailed, nodeStatus)
+	assert.Contains(t, msg, "main")
+	assert.Contains(t, msg, "user command failed")
+	// A clean (post-main) supervisor must not appear in the user-failure message.
+	assert.NotContains(t, msg, "supervisor")
+}
+
 func TestResubmitPendingPods(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(`
 apiVersion: argoproj.io/v1alpha1
