@@ -99,6 +99,12 @@ endif
 PROFILE               ?= minimal
 KUBE_NAMESPACE        ?= argo # namespace where Kubernetes resources/RBAC will be installed
 PLUGINS               ?= $(shell [ $(PROFILE) = plugins ] && echo true || echo false)
+INITLESS              ?= false # enable opt-in init-less pod layout (requires K8s image volumes — Beta in 1.33 behind a feature gate, GA in 1.36)
+ifeq ($(INITLESS),true)
+INSTALL_PROFILE       := $(PROFILE)-initless
+else
+INSTALL_PROFILE       := $(PROFILE)
+endif
 UI_SECURE             ?= false # start the UI with HTTPS
 API                   ?= true# deploy the Argo Server (API=false skips it)
 
@@ -681,8 +687,8 @@ endif
 install: githooks ## Install Argo to the current Kubernetes cluster
 	kubectl get ns $(KUBE_NAMESPACE) || kubectl create ns $(KUBE_NAMESPACE)
 	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
-	@echo "installing PROFILE=$(PROFILE)"
-	kubectl kustomize --load-restrictor=LoadRestrictionsNone test/e2e/manifests/$(PROFILE) \
+	@echo "installing PROFILE=$(PROFILE) INITLESS=$(INITLESS) (manifests=$(INSTALL_PROFILE))"
+	kubectl kustomize --load-restrictor=LoadRestrictionsNone test/e2e/manifests/$(INSTALL_PROFILE) \
 		| sed 's|quay.io/argoproj/|$(IMAGE_NAMESPACE)/|' \
 		| sed 's/namespace: argo/namespace: $(KUBE_NAMESPACE)/' \
 		| sed 's|http://localhost:8080/oauth2/callback|$(SSO_REDIRECT_URL)|' \
@@ -776,7 +782,7 @@ start: tilt k3d-up ## Start the dev stack in-cluster via Tilt
 	# via the container IP in a devcontainer (the devcontainer CLI doesn't
 	# forward ports). The argo server/UI/metrics forwards bind 0.0.0.0 too.
 	tilt up --host=0.0.0.0 -- --profile=$(PROFILE) --auth-mode=$(AUTH_MODE) \
-		--secure=$(SECURE) --api=$(API) \
+		--secure=$(SECURE) --api=$(API) --initless=$(INITLESS) \
 		--pod-status-capture-finalizer=$(POD_STATUS_CAPTURE_FINALIZER) \
 		$(if $(DEBUG),--debug=$(DEBUG))
 
@@ -802,14 +808,14 @@ mysql-dump:
 test-cli: ./dist/argo
 
 test-%: $(TOOL_GOTESTSUM) $(JSON_TEST_OUTPUT)
-	E2E_WAIT_TIMEOUT=$(E2E_WAIT_TIMEOUT) $(call gotest,./test/e2e,$@,-timeout $(E2E_SUITE_TIMEOUT) --tags $*)
+	E2E_WAIT_TIMEOUT=$(E2E_WAIT_TIMEOUT) E2E_INITLESS=$(INITLESS) $(call gotest,./test/e2e,$@,-timeout $(E2E_SUITE_TIMEOUT) --tags $*)
 
 .PHONY: test-%-sdk
 test-%-sdk:
 	make --directory sdks/$* install test -B
 
 Test%: $(TOOL_GOTESTSUM) $(JSON_TEST_OUTPUT)
-	E2E_WAIT_TIMEOUT=$(E2E_WAIT_TIMEOUT) $(call gotest,./test/e2e,$@,-timeout $(E2E_SUITE_TIMEOUT) -count 1 --tags $(ALL_BUILD_TAGS) -parallel $(E2E_PARALLEL) -run='.*/$*')
+	E2E_WAIT_TIMEOUT=$(E2E_WAIT_TIMEOUT) E2E_INITLESS=$(INITLESS) $(call gotest,./test/e2e,$@,-timeout $(E2E_SUITE_TIMEOUT) -count 1 --tags $(ALL_BUILD_TAGS) -parallel $(E2E_PARALLEL) -run='.*/$*')
 
 Benchmark%: $(TOOL_GOTESTSUM) $(JSON_TEST_OUTPUT)
 	$(call gotest,./test/e2e,$@,--tags $(ALL_BUILD_TAGS) -run='$@' -benchmem -count=$(BENCHMARK_COUNT) -bench .)

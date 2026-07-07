@@ -23,6 +23,10 @@ else
 fi
 
 # No image registry is needed: Tilt delivers images via `k3d image import`.
+# k3d runs k3s with its embedded containerd (2.x in these k3s versions), which
+# supports the Kubernetes image volumes the init-less pod layout uses to
+# deliver argoexec; the imported images satisfy them because the e2e executor
+# config sets imagePullPolicy: IfNotPresent.
 
 if k3d cluster list "${CLUSTER_NAME}" >/dev/null 2>&1; then
   echo "k3d cluster '${CLUSTER_NAME}' already exists"

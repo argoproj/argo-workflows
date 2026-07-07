@@ -22,6 +22,10 @@ The internals of a Pod are also shown. Each Step and each DAG Task cause a Pod t
 
 Look in [`cmd/argoexec`](https://github.com/argoproj/argo-workflows/blob/main/cmd/argoexec) for this code.
 
+### Init-less pod layout (opt-in, beta)
+
+When the controller is configured with `initlessPod.enabled: true`, workflow pods use an alternate two-container layout with zero init containers. The `argoexec` binary is delivered into `main` via a Kubernetes image volume ([KEP-4639](https://kep.k8s.io/4639) — Beta in 1.33 behind a feature gate, GA in 1.36), and a new `supervisor` container takes over both the pre-main responsibilities of the legacy init container (template write, script staging, input artifact download) and the post-main responsibilities of the legacy `wait` container (observe main, capture outputs, save artifacts and logs). Artifact plugins run as regular sidecars rather than as init containers, and `supervisor` drives each sidecar for both Load (pre-main) and Save (post-main). See [Init-less Pod Layout](initless-pod.md) for details.
+
 ![diagram](assets/overview.jpeg)
 
 ---

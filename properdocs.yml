@@ -271,6 +271,7 @@ nav:
           - telemetry-configuration.md
           - deprecations.md
           - workflow-executors.md
+          - initless-pod.md
           - workflow-restrictions.md
           - sidecar-injection.md
           - service-account-secrets.md

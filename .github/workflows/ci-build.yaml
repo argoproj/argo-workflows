@@ -223,15 +223,31 @@ jobs:
           - test: test-artifacts
             profile: minimal
             use-api: false
+          - test: test-artifacts
+            profile: minimal
+            use-api: false
+            initless: true
           - test: test-executor
+            profile: minimal
+            use-api: false
+          - test: test-executor
+            profile: minimal
+            use-api: false
+            initless: true
+          - test: test-corefunctional
             profile: minimal
             use-api: false
           - test: test-corefunctional
             profile: minimal
             use-api: false
+            initless: true
           - test: test-functional
             profile: minimal
             use-api: false
+          - test: test-functional
+            profile: minimal
+            use-api: false
+            initless: true
           - test: test-api
             profile: mysql
             use-api: true
@@ -263,9 +279,18 @@ jobs:
             profile: minimal
             use-api: false
             retries: 0
+          - test: test-examples
+            profile: minimal
+            use-api: false
+            retries: 0
+            initless: true
           - test: test-plugins
             profile: plugins
             use-api: false
+          - test: test-plugins
+            profile: plugins
+            use-api: false
+            initless: true
           - test: test-go-sdk
             profile: minimal
             use-api: true
@@ -327,15 +352,18 @@ jobs:
           distribution: adopt
           cache: maven
       - name: Install socat
-        # socat is needed for "kubectl port-forward" to work when using cri-dockerd: https://github.com/k3s-io/cri-dockerd/blob/4995f339edcffdf890406b3f1477d34e38477f18/streaming/streaming_others.go#L46
-        # Both cri-o and containerd removed it as a dependency awhile ago, but that hasn't been ported to cri-dockerd.
+        # socat supports "kubectl port-forward": cri-dockerd needed it (https://github.com/k3s-io/cri-dockerd/blob/4995f339edcffdf890406b3f1477d34e38477f18/streaming/streaming_others.go#L46);
+        # k3d's k3s uses embedded containerd, which doesn't, so this is defensive and harmless.
         run: sudo apt-get -y install socat
       - name: Create k3d cluster
         env:
           # hack/tilt/k3d-up.sh maps this key via hack/k8s-versions.sh to a k3s image
           K8S_VERSION: ${{ matrix.k8s_version || 'max' }}
         run: |
-          # k3d and Tilt come from the e2e-tools artifact (installed above)
+          # k3d and Tilt come from the e2e-tools artifact (installed above).
+          # k3d runs k3s with its embedded containerd (2.x in these k3s
+          # versions), which supports the Kubernetes image volumes the
+          # init-less pod layout uses to deliver argoexec.
           make k3d-up
           # tests and debug steps assume the argo namespace is the current context
           kubectl config set-context --current --namespace=argo
@@ -361,6 +389,7 @@ jobs:
             --api=${{matrix.use-api}} \
             --secure=${{matrix.secure || 'false'}} \
             --auth-mode=client \
+            --initless=${{matrix.initless || 'false'}} \
             --pod-status-capture-finalizer=true > /tmp/tilt.log 2>&1 &
           # resources only register once the Tiltfile finishes evaluating; wait
           # for one we know is always defined before trusting `--all`, which
@@ -382,12 +411,12 @@ jobs:
           # don't default in the expression: `matrix.retries || '2'` would turn
           # an explicit `retries: 0` into 2, because 0 is falsy
           MATRIX_RETRIES: ${{ matrix.retries }}
-        run: make ${{matrix.test}} E2E_SUITE_TIMEOUT=30m STATIC_FILES=false TEST_RETRIES="${MATRIX_RETRIES:-2}"
+        run: make ${{matrix.test}} E2E_SUITE_TIMEOUT=30m STATIC_FILES=false INITLESS=${{ matrix.initless || 'false' }} TEST_RETRIES="${MATRIX_RETRIES:-2}"
       - name: Upload test results
         if: ${{ always() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: test-results-${{matrix.test}}-${{matrix.profile}}-k8s-${{matrix.k8s_version || 'max'}}
+          name: test-results-${{matrix.test}}-${{matrix.profile}}-k8s-${{matrix.k8s_version || 'max'}}${{ matrix.initless && '-initless' || '' }}
           path: test/reports/json/${{matrix.test}}.json
           if-no-files-found: warn
           retention-days: 10
@@ -435,9 +464,9 @@ jobs:
         if: ${{ failure() }}
         run: kubectl logs --all-containers -l workflows.argoproj.io/workflow --prefix
 
-  # workaround for status checks -- check this one job instead of each individual E2E job in the matrix
-  # this allows us to skip the entire matrix when it doesn't need to run while still having accurate status checks
-  # see https://github.com/orgs/community/discussions/9141#discussioncomment-2296809 and https://github.com/orgs/community/discussions/26822#discussioncomment-3305794
+        # workaround for status checks -- check this one job instead of each individual E2E job in the matrix
+        # this allows us to skip the entire matrix when it doesn't need to run while still having accurate status checks
+        # see https://github.com/orgs/community/discussions/9141#discussioncomment-2296809 and https://github.com/orgs/community/discussions/26822#discussioncomment-3305794
   e2e-tests-composite-result:
     name: E2E Tests - Composite result
     needs: [ e2e-tools, e2e-tests ]

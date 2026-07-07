@@ -303,7 +303,7 @@ func (s *CLISuite) TestLogs() {
 	})
 	s.Run("ContainerLogs", func() {
 		s.Given().
-			RunCli([]string{"logs", name, name, "-c", "wait"}, func(t *testing.T, output string, err error) {
+			RunCli([]string{"logs", name, name, "-c", fixtures.AuxContainerName()}, func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				assert.Contains(t, output, "Executor")
 			})

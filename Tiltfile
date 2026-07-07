@@ -14,6 +14,9 @@
 #   --auth-mode=<mode>                  argo-server auth mode (hybrid; sso for PROFILE=sso)
 #   --secure=true                       argo-server serves TLS
 #   --api=false                         don't build or run the argo-server
+#   --initless=true                     deploy the <profile>-initless manifests, enabling the
+#                                       init-less pod layout (requires K8s image volumes —
+#                                       Beta in 1.33 behind a feature gate, GA in 1.36)
 #   --pod-status-capture-finalizer=...  controller pod-status-capture finalizer toggle
 #   --debug=controller,server           run the named components under headless Delve
 #                                       (controller :2345, server :2346) and attach an
@@ -24,6 +27,7 @@
 update_settings(max_parallel_updates=4)
 
 config.define_string('profile')
+config.define_string('initless')
 config.define_string('mode')
 config.define_string('auth-mode')
 config.define_string('secure')
@@ -34,6 +38,7 @@ config.define_string('pod-status-capture-finalizer')
 config.define_string_list('debug')
 cfg = config.parse()
 profile = cfg.get('profile', 'minimal')
+initless = cfg.get('initless', 'false') == 'true'
 mode = cfg.get('mode', 'up')
 is_ci = mode == 'ci'
 auth_mode = cfg.get('auth-mode', 'hybrid')
@@ -71,7 +76,12 @@ BUILD_ARGS = '--build-arg GIT_COMMIT=%s --build-arg GIT_TAG=%s --build-arg GIT_T
 # annotation exceeds 256KB), so apply them server-side out of band, like
 # `make install` does. The namespace must exist before anything else; the
 # e2e manifests don't create it (kit created it imperatively).
-full_yaml = kustomize('test/e2e/manifests/' + profile)
+# initless layers the init-less pod component over the base profile, same as
+# the Makefile's INSTALL_PROFILE (only <profile>-initless overlays that exist
+# in test/e2e/manifests can be selected). `profile` itself stays the base name
+# for everything else (backing-service forwards below).
+install_profile = profile + '-initless' if initless else profile
+full_yaml = kustomize('test/e2e/manifests/' + install_profile)
 crds, rest = filter_yaml(full_yaml, kind='CustomResourceDefinition')
 local('mkdir -p .tilt && cat > .tilt/crds.yaml', stdin=crds, quiet=True, echo_off=True)
 
