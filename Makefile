@@ -304,10 +304,19 @@ endif
 QUICK_GENERATED_DOCS := docs/metrics.md docs/tracing.md docs/database-migrations.md docs/variable-flow/variables.md
 GENERATED_DOCS := $(QUICK_GENERATED_DOCS) docs/fields.md docs/cli/argo.md docs/workflow-controller-configmap.md docs/go-sdk-guide.md
 
+# `go mod vendor` rewrites vendor/modules.txt on every run
+# so depend on vendor/modules.txt in places where we want it up to date
+vendor/modules.txt: go.mod go.sum
+	go mod vendor
+	@touch $@
+
+# Targets generated via $(call protoc) need a fresh vendor tree.
+# _.primary/_.secondary.swagger.json are not built via protoc, so are excluded.
+$(filter-out pkg/apiclient/_.%,$(SWAGGER_FILES)) pkg/apiclient/artifact/artifact.swagger.json: vendor/modules.txt
+
 # protoc,my.proto
 define protoc
 	# protoc $(1)
-    [ -e ./vendor ] || go mod vendor
     [ -e ./proto_vendor ] || $(MAKE) proto-vendor
     mkdir -p $(GOPATH)/src github.com/argoproj
     [ -e github.com/argoproj/argo-workflows ] || ln -s ../.. github.com/argoproj/argo-workflows
@@ -352,16 +361,16 @@ dist/argo-windows-amd64: GOARGS = GOOS=windows GOARCH=amd64
 dist/argo-windows-%.gz: dist/argo-windows-%
 	gzip --force --keep dist/argo-windows-$*.exe
 
-dist/argo-windows-%: ui/dist/app/index.html $(CLI_PKG_FILES) go.sum
+dist/argo-windows-%: ui/dist/app/index.html $(CLI_PKG_FILES) vendor/modules.txt
 	CGO_ENABLED=0 $(GOARGS) go build -v -gcflags '${GCFLAGS}' -ldflags '${LDFLAGS} -extldflags -static' -o $@.exe ./cmd/argo
 
 dist/argo-%.gz: dist/argo-%
 	gzip --force --keep dist/argo-$*
 
-dist/argo-%: ui/dist/app/index.html $(CLI_PKG_FILES) go.sum
+dist/argo-%: ui/dist/app/index.html $(CLI_PKG_FILES) vendor/modules.txt
 	CGO_ENABLED=0 $(GOARGS) go build -v -gcflags '${GCFLAGS}' -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argo
 
-dist/argo: ui/dist/app/index.html $(CLI_PKG_FILES) go.sum
+dist/argo: ui/dist/app/index.html $(CLI_PKG_FILES) vendor/modules.txt
 ifeq ($(shell uname -s),Darwin)
 	# if local, then build fast: use CGO and dynamic-linking
 	go build -v -gcflags '${GCFLAGS}' -ldflags '${LDFLAGS}' -o $@ ./cmd/argo
@@ -379,7 +388,7 @@ clis: dist/argo-linux-amd64.gz dist/argo-linux-arm64.gz dist/argo-linux-ppc64le.
 .PHONY: controller
 controller: dist/workflow-controller ## Build the workflow controller
 
-dist/workflow-controller: $(CONTROLLER_PKG_FILES) go.sum
+dist/workflow-controller: $(CONTROLLER_PKG_FILES) vendor/modules.txt
 ifeq ($(shell uname -s),Darwin)
 	# if local, then build fast: use CGO and dynamic-linking
 	go build -gcflags '${GCFLAGS}' -v -ldflags '${LDFLAGS}' -o $@ ./cmd/workflow-controller
@@ -391,7 +400,7 @@ workflow-controller-image:
 
 # argoexec
 
-dist/argoexec: $(ARGOEXEC_PKG_FILES) go.sum
+dist/argoexec: $(ARGOEXEC_PKG_FILES) vendor/modules.txt
 ifeq ($(shell uname -s),Darwin)
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -gcflags '${GCFLAGS}' -v -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argoexec
 else
@@ -431,7 +440,7 @@ argoexec-nonroot-image:
 ifneq ($(USE_NIX), true)
 codegen: $(TOOL_MOCKERY) $(TOOL_BUF)
 endif
-codegen: types swagger manifests $(GENERATED_DOCS) ## Generate code via `go generate`, as well as SDKs
+codegen: types swagger manifests $(GENERATED_DOCS) vendor/modules.txt ## Generate code via `go generate`, as well as SDKs
 	go generate ./...
 	$(TOOL_MOCKERY) --config .mockery.yaml
 	make --directory sdks/java USE_NIX=$(USE_NIX) generate
@@ -543,7 +552,7 @@ endif
 ifneq ($(USE_NIX), true)
 pkg/apis/workflow/v1alpha1/generated.proto: $(TOOL_GO_TO_PROTOBUF) $(PROTO_BINARIES)
 endif
-pkg/apis/workflow/v1alpha1/generated.proto: $(TYPES) proto-vendor
+pkg/apis/workflow/v1alpha1/generated.proto: $(TYPES) proto-vendor vendor/modules.txt
 	# These files are generated on a v4/ folder by the tool. Link them to the root folder
 	mkdir -p github.com/argoproj
 	[ -e github.com/argoproj/argo-workflows ] || ln -s ../.. github.com/argoproj/argo-workflows
@@ -553,7 +562,6 @@ pkg/apis/workflow/v1alpha1/generated.proto: $(TYPES) proto-vendor
 	@echo "*** This will fail if your code has compilation errors, without reporting those as the cause."
 	@echo "*** So fix them first."
 	find pkg/apiclient -name '*.proto'|xargs clang-format -i
-	[ -e ./vendor ] || go mod vendor
 	GOFLAGS="$(GOFLAGS) -mod=vendor" $(TOOL_GO_TO_PROTOBUF) \
 		--go-header-file=$(CURDIR)/hack/custom-boilerplate.go.txt \
 		--packages=github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1 \
@@ -665,7 +673,9 @@ $(TOOL_GOLANGCI_LINT): Makefile
 .PHONY: lint lint-go lint-ui
 lint: lint-go lint-ui features-validate ## Lint the project
 ifneq ($(USE_NIX), true)
-lint-go: $(TOOL_GOLANGCI_LINT)
+# golangci-lint loads packages in implicit vendor mode, so the vendor tree must
+# be fresh. Skipped under Nix, which deletes vendor/ in the recipe below.
+lint-go: $(TOOL_GOLANGCI_LINT) vendor/modules.txt
 endif
 lint-go: ui/dist/app/index.html
 ifeq ($(USE_NIX), true)
@@ -677,6 +687,10 @@ endif
 	@awk '(/woc.wf.Spec/ || /woc.execWf.Status/) && !/not-woc-misuse/ {print FILENAME ":" FNR "\t" $0 ; exit 1}' $(shell find workflow/controller -type f -name '*.go' -not -name '*test*')
 	# Tidy Go modules
 	go mod tidy
+ifneq ($(USE_NIX), true)
+	# Re-vendor if tidy changed go.mod or go.sum, so the lint below sees a consistent tree
+	[ vendor/modules.txt -nt go.mod ] && [ vendor/modules.txt -nt go.sum ] || go mod vendor
+endif
 	# Lint Go files (with auto-discovered build tags)
 	$(TOOL_GOLANGCI_LINT) run --fix --verbose --build-tags="$(GO_BUILD_TAGS)"
 
@@ -821,17 +835,17 @@ mysql-dump:
 
 test-cli: ./dist/argo
 
-test-%: $(TOOL_GOTESTSUM) $(JSON_TEST_OUTPUT)
+test-%: $(TOOL_GOTESTSUM) $(JSON_TEST_OUTPUT) vendor/modules.txt
 	E2E_WAIT_TIMEOUT=$(E2E_WAIT_TIMEOUT) E2E_INITLESS=$(INITLESS) $(call gotest,./test/e2e,$@,-timeout $(E2E_SUITE_TIMEOUT) --tags $*)
 
 .PHONY: test-%-sdk
 test-%-sdk:
 	make --directory sdks/$* install test -B
 
-Test%: $(TOOL_GOTESTSUM) $(JSON_TEST_OUTPUT)
+Test%: $(TOOL_GOTESTSUM) $(JSON_TEST_OUTPUT) vendor/modules.txt
 	E2E_WAIT_TIMEOUT=$(E2E_WAIT_TIMEOUT) E2E_INITLESS=$(INITLESS) $(call gotest,./test/e2e,$@,-timeout $(E2E_SUITE_TIMEOUT) -count 1 --tags $(ALL_BUILD_TAGS) -parallel $(E2E_PARALLEL) -run='.*/$*')
 
-Benchmark%: $(TOOL_GOTESTSUM) $(JSON_TEST_OUTPUT)
+Benchmark%: $(TOOL_GOTESTSUM) $(JSON_TEST_OUTPUT) vendor/modules.txt
 	$(call gotest,./test/e2e,$@,--tags $(ALL_BUILD_TAGS) -run='$@' -benchmem -count=$(BENCHMARK_COUNT) -bench .)
 
 # clean
@@ -845,26 +859,26 @@ clean: ## Clean the directory of build files
 # Telemetry Go files generated via go generate, run as part of codegen.
 TELEMETRY_BUILDER := $(shell find util/telemetry/builder -type f -name '*.go')
 
-docs/metrics.md: $(TELEMETRY_BUILDER) util/telemetry/builder/values.yaml
+docs/metrics.md: $(TELEMETRY_BUILDER) util/telemetry/builder/values.yaml vendor/modules.txt
 	@echo Rebuilding $@
 	go run ./util/telemetry/builder --metricsDocs $@
 
-docs/tracing.md: $(TELEMETRY_BUILDER) util/telemetry/builder/values.yaml
+docs/tracing.md: $(TELEMETRY_BUILDER) util/telemetry/builder/values.yaml vendor/modules.txt
 	@echo Rebuilding $@
 	go run ./util/telemetry/builder --tracingDocs $@
 
 docs/database-migrations.md: persist/sqldb/migrate.go util/sync/db/migrate.go hack/docs/migrations/main.go
 	GOFLAGS="$(GOFLAGS) -mod=mod" go run ./hack/docs/migrations
 
-docs/variable-flow/variables.md: $(wildcard util/variables/*.go) $(wildcard util/variables/keys/*.go)
+docs/variable-flow/variables.md: $(wildcard util/variables/*.go) $(wildcard util/variables/keys/*.go) vendor/modules.txt
 	@echo Rebuilding $@
 	go test -run TestGenerateMarkdown -count=1 ./util/variables/ -args -write
 
 # swagger
-ifneq ($(USE_NIX), true)
+rifneq ($(USE_NIX), true)
 pkg/apis/workflow/v1alpha1/openapi_generated.go: $(TOOL_OPENAPI_GEN)
 endif
-pkg/apis/workflow/v1alpha1/openapi_generated.go: $(TYPES)
+pkg/apis/workflow/v1alpha1/openapi_generated.go: $(TYPES) vendor/modules.txt
 	# These files are generated on a v4/ folder by the tool. Link them to the root folder
 	[ -e ./v4 ] || ln -s . v4
 	$(TOOL_OPENAPI_GEN) \
@@ -883,7 +897,7 @@ pkg/apis/workflow/v1alpha1/openapi_generated.go: $(TYPES)
 ifneq ($(USE_NIX), true)
 pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TOOL_GO_TO_PROTOBUF)
 endif
-pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TYPES)
+pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TYPES) vendor/modules.txt
 	CODEGEN_DIR=$$(go list -mod=mod -m -f '{{.Dir}}' k8s.io/code-generator@v0.35.1); \
 	bash -c "source $$CODEGEN_DIR/kube_codegen.sh && \
 		kube::codegen::gen_helpers \
@@ -1095,7 +1109,7 @@ features-release: hack/featuregen/featuregen $(TOOL_MARKDOWNLINT)
 	$< update --version $(VERSION) --final
 	$(TOOL_MARKDOWNLINT) ./docs/new-features.md
 
-hack/featuregen/featuregen: hack/featuregen/main.go hack/featuregen/contents.go hack/featuregen/contents_test.go hack/featuregen/main_test.go
+hack/featuregen/featuregen: hack/featuregen/main.go hack/featuregen/contents.go hack/featuregen/contents_test.go hack/featuregen/main_test.go vendor/modules.txt
 	go test ./hack/featuregen
 	go build -o $@ ./hack/featuregen
 
