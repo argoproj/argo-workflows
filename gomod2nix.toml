@@ -956,10 +956,10 @@ schema = 3
     version = "v0.0.0-20260519071638-aa98bba5eb94"
     hash = "sha256-RVGF5xfos6LnKy4O+vBB3ubi34+bTJbwqEg5enLB89c="
   [mod."google.golang.org/genproto/googleapis/api"]
-    version = "v0.0.0-20260615183401-62b3387ff324"
-    hash = "sha256-p69+PrsVk3bj1bB/wb03KvfVXWBPLqpj18SU0+C6in8="
+    version = "v0.0.0-20260706201446-f0a921348800"
+    hash = "sha256-hOlaXTTdL9trLNdHcyRbjLlObkuGImPrwiR5a9zcrJE="
   [mod."google.golang.org/genproto/googleapis/rpc"]
-    version = "v0.0.0-20260622175928-b703f567277d"
+    version = "v0.0.0-20260630182238-925bb5da69e7"
     hash = "sha256-ldJTTb7hhj1mdmzTn9IEkQVwCoj3KRlENZtUSEKHABU="
   [mod."google.golang.org/grpc"]
     version = "v1.82.0"
