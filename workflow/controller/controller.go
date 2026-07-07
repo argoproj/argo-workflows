@@ -48,6 +48,7 @@ import (
 	"github.com/argoproj/argo-workflows/v3/util/env"
 	"github.com/argoproj/argo-workflows/v3/util/errors"
 	rbacutil "github.com/argoproj/argo-workflows/v3/util/rbac"
+	"github.com/argoproj/argo-workflows/v3/util/resourceversion"
 	"github.com/argoproj/argo-workflows/v3/util/retry"
 	"github.com/argoproj/argo-workflows/v3/util/telemetry"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
@@ -71,19 +72,21 @@ import (
 
 const maxAllowedStackDepth = 100
 
-type recentlyCompletedWorkflow struct {
-	key  string
-	when time.Time
+// lastWrittenVersion records the most recent resourceVersion of a workflow
+// that this controller has written, or has seen complete or be deleted.
+type lastWrittenVersion struct {
+	resourceVersion string
+	// completedAt is set when the workflow completed or was deleted. The
+	// record is retained for completedVersionRetention afterwards so that
+	// stale copies of the workflow re-entering the informer can still be
+	// rejected, and is then expired.
+	completedAt time.Time
 }
 
-type recentCompletions struct {
-	completions []recentlyCompletedWorkflow
+type lastWrittenVersions struct {
+	versions    map[types.UID]lastWrittenVersion
+	nextCleanup time.Time
 	mutex       gosync.RWMutex
-}
-
-type lastSeenVersions struct {
-	versions map[string]string
-	mutex    gosync.RWMutex
 }
 
 // WorkflowController is the controller for workflow resources
@@ -154,11 +157,10 @@ type WorkflowController struct {
 	progressFileTickDuration time.Duration
 	executorPlugins          map[string]map[string]*spec.Plugin // namespace -> name -> plugin
 
-	recentCompletions recentCompletions
 	// lastUnreconciledWorkflows is a map of workflows that have been recently unreconciled
 	lastUnreconciledWorkflows map[string]*wfv1.Workflow
 
-	lastSeenVersions lastSeenVersions // key: workflow UID, value: resource version
+	lastWrittenVersions lastWrittenVersions
 }
 
 const (
@@ -212,8 +214,8 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		eventRecorderManager:       events.NewEventRecorderManager(kubeclientset),
 		progressPatchTickDuration:  env.LookupEnvDurationOr(common.EnvVarProgressPatchTickDuration, 1*time.Minute),
 		progressFileTickDuration:   env.LookupEnvDurationOr(common.EnvVarProgressFileTickDuration, 3*time.Second),
-		lastSeenVersions: lastSeenVersions{
-			versions: make(map[string]string),
+		lastWrittenVersions: lastWrittenVersions{
+			versions: make(map[types.UID]lastWrittenVersion),
 			mutex:    gosync.RWMutex{},
 		},
 	}
@@ -735,7 +737,11 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 		return true
 	}
 
-	if wfc.isOutdated(un) {
+	if outdated, completed := wfc.isOutdated(un); outdated {
+		if completed {
+			log.WithField("key", key).Warn("Rejecting stale copy of a completed workflow")
+			return true
+		}
 		log.WithField("key", key).Debug("Skipping outdated workflow event")
 		wfc.wfQueue.AddRateLimited(key)
 		return true
@@ -752,11 +758,6 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 		woc := newWorkflowOperationCtx(wf, wfc)
 		woc.markWorkflowFailed(ctx, fmt.Sprintf("cannot unmarshall spec: %s", err.Error()))
 		woc.persistUpdates(ctx)
-		return true
-	}
-
-	if wf.Status.Phase != "" && wfc.checkRecentlyCompleted(wf.Name) {
-		log.WithFields(log.Fields{"name": wf.ObjectMeta.Name}).Warn("Cache: Rejecting recently deleted")
 		return true
 	}
 
@@ -888,56 +889,56 @@ func getWfPriority(obj interface{}) (int32, time.Time) {
 	return int32(priority), un.GetCreationTimestamp().Time
 }
 
-// 10 minutes in the past
-const maxCompletedStoreTime = time.Second * -600
+// how long to retain the record of a completed or deleted workflow
+const completedVersionRetention = 10 * time.Minute
 
-// This is a helper function for expiring old records of workflows
-// completed more than maxCompletedStoreTime ago
-func (wfc *WorkflowController) cleanCompletedWorkflowsRecord() {
-	cutoff := time.Now().Add(maxCompletedStoreTime)
-	removeIndex := -1
-	wfc.recentCompletions.mutex.Lock()
-	defer wfc.recentCompletions.mutex.Unlock()
+// how often, at most, to scan for expired completed workflow records
+const versionCleanupPeriod = time.Minute
 
-	for i, val := range wfc.recentCompletions.completions {
-		if val.when.After(cutoff) {
-			removeIndex = i - 1
-			break
-		}
+// expireCompletedVersions removes records of workflows that completed or were
+// deleted more than completedVersionRetention ago. Scans are throttled to at
+// most one per versionCleanupPeriod. The caller must hold the
+// lastWrittenVersions write lock.
+func (wfc *WorkflowController) expireCompletedVersions() {
+	now := time.Now()
+	if now.Before(wfc.lastWrittenVersions.nextCleanup) {
+		return
 	}
-	if removeIndex >= 0 {
-		wfc.recentCompletions.completions = wfc.recentCompletions.completions[removeIndex+1:]
+	wfc.lastWrittenVersions.nextCleanup = now.Add(versionCleanupPeriod)
+	for uid, last := range wfc.lastWrittenVersions.versions {
+		if !last.completedAt.IsZero() && now.Sub(last.completedAt) > completedVersionRetention {
+			delete(wfc.lastWrittenVersions.versions, uid)
+		}
 	}
 }
 
-// Records a workflow as recently completed in the list
-// if it isn't already in the list
-func (wfc *WorkflowController) recordCompletedWorkflow(key string) {
-	if !wfc.checkRecentlyCompleted(key) {
-		wfc.recentCompletions.mutex.Lock()
-		defer wfc.recentCompletions.mutex.Unlock()
-		wfc.recentCompletions.completions = append(wfc.recentCompletions.completions,
-			recentlyCompletedWorkflow{
-				key:  key,
-				when: time.Now(),
-			})
-	}
+// recordWorkflowWrite records the resourceVersion of a workflow just written
+// by this controller, so that older copies of it can be recognized as stale.
+func (wfc *WorkflowController) recordWorkflowWrite(wf metav1.Object) {
+	wfc.lastWrittenVersions.mutex.Lock()
+	defer wfc.lastWrittenVersions.mutex.Unlock()
+	wfc.expireCompletedVersions()
+	wfc.lastWrittenVersions.versions[wf.GetUID()] = lastWrittenVersion{resourceVersion: wf.GetResourceVersion()}
 }
 
-// Returns true if the workflow given by key is in the recently completed
-// list. Will perform expiry cleanup before checking.
-func (wfc *WorkflowController) checkRecentlyCompleted(key string) bool {
-	wfc.cleanCompletedWorkflowsRecord()
-	recent := false
-	wfc.recentCompletions.mutex.RLock()
-	defer wfc.recentCompletions.mutex.RUnlock()
-	for _, val := range wfc.recentCompletions.completions {
-		if val.key == key {
-			recent = true
-			break
+// recordWorkflowCompleted marks a workflow as completed or deleted, retaining
+// its latest known resourceVersion for completedVersionRetention so that
+// stale copies of it re-entering the informer can be rejected.
+func (wfc *WorkflowController) recordWorkflowCompleted(wf metav1.Object) {
+	wfc.lastWrittenVersions.mutex.Lock()
+	defer wfc.lastWrittenVersions.mutex.Unlock()
+	wfc.expireCompletedVersions()
+	rv := wf.GetResourceVersion()
+	if last, ok := wfc.lastWrittenVersions.versions[wf.GetUID()]; ok {
+		// never regress the recorded version: this event may itself be stale
+		if cmp, err := resourceversion.CompareResourceVersion(rv, last.resourceVersion); err != nil || cmp < 0 {
+			rv = last.resourceVersion
 		}
 	}
-	return recent
+	wfc.lastWrittenVersions.versions[wf.GetUID()] = lastWrittenVersion{
+		resourceVersion: rv,
+		completedAt:     time.Now(),
+	}
 }
 
 func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) error {
@@ -955,9 +956,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 				}
 				needed := reconciliationNeeded(un)
 				if !needed {
-					key, _ := cache.MetaNamespaceKeyFunc(un)
-					wfc.recordCompletedWorkflow(key)
-					wfc.deleteLastSeenVersionKey(wfc.getLastSeenVersionKey(un))
+					wfc.recordWorkflowCompleted(un)
 				}
 				return needed
 			},
@@ -1011,11 +1010,10 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 					key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 					if err == nil {
 						wfc.releaseAllWorkflowLocks(obj)
-						wfc.recordCompletedWorkflow(key)
 						// no need to add to the queue - this workflow is done
 						wfc.throttler.Remove(key)
 					}
-					wfc.deleteLastSeenVersionKey(wfc.getLastSeenVersionKey(obj.(*unstructured.Unstructured)))
+					wfc.recordWorkflowCompleted(obj.(*unstructured.Unstructured))
 				},
 			},
 		},
@@ -1357,24 +1355,22 @@ func (wfc *WorkflowController) IsLeader() bool {
 	return wfc.wfInformer != nil
 }
 
-func (wfc *WorkflowController) isOutdated(wf metav1.Object) bool {
-	wfc.lastSeenVersions.mutex.RLock()
-	defer wfc.lastSeenVersions.mutex.RUnlock()
-	lastSeenRV, ok := wfc.lastSeenVersions.versions[wfc.getLastSeenVersionKey(wf)]
+// isOutdated returns whether this copy of the workflow is older than the
+// version last written by this controller, and whether that version was the
+// completed or deleted state of the workflow.
+func (wfc *WorkflowController) isOutdated(wf metav1.Object) (outdated bool, completedWorkflow bool) {
+	wfc.lastWrittenVersions.mutex.RLock()
+	defer wfc.lastWrittenVersions.mutex.RUnlock()
+	last, ok := wfc.lastWrittenVersions.versions[wf.GetUID()]
 	// always process if not seen before
-	if !ok || lastSeenRV == "" {
-		return false
+	if !ok {
+		return false, false
 	}
-	annotations := wf.GetAnnotations()[common.AnnotationKeyLastSeenVersion]
-	return annotations != lastSeenRV
-}
-
-func (wfc *WorkflowController) getLastSeenVersionKey(wf metav1.Object) string {
-	return string(wf.GetUID())
-}
-
-func (wfc *WorkflowController) deleteLastSeenVersionKey(key string) {
-	wfc.lastSeenVersions.mutex.Lock()
-	defer wfc.lastSeenVersions.mutex.Unlock()
-	delete(wfc.lastSeenVersions.versions, key)
+	cmp, err := resourceversion.CompareResourceVersion(wf.GetResourceVersion(), last.resourceVersion)
+	if err != nil {
+		// resourceVersions on this cluster are not comparable, so process everything
+		log.WithError(err).WithField("name", wf.GetName()).Warn("Cannot compare workflow resource versions")
+		return false, false
+	}
+	return cmp < 0, !last.completedAt.IsZero()
 }
