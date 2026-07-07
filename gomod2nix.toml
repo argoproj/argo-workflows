@@ -179,8 +179,8 @@ schema = 3
     version = "v1.36.8"
     hash = "sha256-SOq43DtbYqIUFQn73A/SWHj5nYvfS6DM01MU+10ZCJk="
   [mod."github.com/aws/aws-sdk-go-v2/service/sts"]
-    version = "v1.43.5"
-    hash = "sha256-EXtdMI7ST3HnzxrOUWCE2zfr3tNgvIcGx33m9L7GQmE="
+    version = "v1.44.0"
+    hash = "sha256-CLwb6UOg0WLy1Pi8z1rgcPYyryt4OnJMmFhGmambOlg="
   [mod."github.com/aws/smithy-go"]
     version = "v1.27.3"
     hash = "sha256-pk7QdAi0PjT7DdN9UxaxhFO4fYanpR9pjAWUFC5dU/4="
