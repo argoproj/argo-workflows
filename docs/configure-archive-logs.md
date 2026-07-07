@@ -84,6 +84,10 @@ workflow-controller config (on) > workflow spec (on/off) > template (on/off)
 The two settings are independent: you can archive the system container logs without archiving the `main`
 container logs (`archiveLogs: false`, `archiveSystemContainerLogs: true`), and vice versa.
 
+In [init-less pod mode](initless-pod.md) there is no separate `init` and `wait` container — a single
+`supervisor` container performs both roles. In that mode `archiveSystemContainerLogs: true` archives the
+supervisor's log as a single artifact named `supervisor-logs` instead of `init-logs` and `wait-logs`.
+
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
