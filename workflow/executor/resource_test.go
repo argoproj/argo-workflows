@@ -49,8 +49,6 @@ func TestResourceFlags(t *testing.T) {
 // are properly passed to `kubectl patch` command
 func TestResourcePatchFlags(t *testing.T) {
 	fakeFlags := []string{"pod", "mypod"}
-	fakeClientset := fake.NewClientset()
-	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
 
 	tests := []struct {
 		name           string
@@ -94,14 +92,7 @@ func TestResourcePatchFlags(t *testing.T) {
 					MergeStrategy: tt.patchType,
 				},
 			}
-			we := WorkflowExecutor{
-				PodName:         fakePodName,
-				Template:        template,
-				ClientSet:       fakeClientset,
-				Namespace:       fakeNamespace,
-				RuntimeExecutor: &mockRuntimeExecutor,
-			}
-			args, err := getKubectlArguments("patch", tt.manifestPath, fakeFlags, we.Template.Resource.MergeStrategy)
+			args, err := getKubectlArguments("patch", tt.manifestPath, fakeFlags, template.Resource.MergeStrategy)
 
 			require.NoError(t, err)
 			assert.Equal(t, expectedArgs, args)

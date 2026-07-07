@@ -13,16 +13,6 @@ import (
 	"sync"
 	"time"
 
-	argoerrors "github.com/argoproj/argo-workflows/v4/errors"
-	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
-	workflow "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v4/pkg/client/informers/externalversions"
-	"github.com/argoproj/argo-workflows/v4/util/env"
-	argoerr "github.com/argoproj/argo-workflows/v4/util/errors"
-	"github.com/argoproj/argo-workflows/v4/util/logging"
-	"github.com/argoproj/argo-workflows/v4/workflow/artifacts"
-	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
@@ -40,6 +30,17 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	kubectlget "k8s.io/kubectl/pkg/cmd/get"
 	"sigs.k8s.io/yaml"
+
+	argoerrors "github.com/argoproj/argo-workflows/v4/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	workflow "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/pkg/client/informers/externalversions"
+	"github.com/argoproj/argo-workflows/v4/util/env"
+	argoerr "github.com/argoproj/argo-workflows/v4/util/errors"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 // taskKey identifies a task within a WorkflowTaskSet; Spec.Tasks is keyed by node ID.
@@ -136,7 +137,10 @@ func (rae *ResourceAgentExecutor) createAndWatchResource(ctx context.Context, tm
 		rae.reportSucceeded(ctx, nodeID, tmpl, obj)
 		return
 	}
-	rae.ensureInformerFor(ctx, obj)
+	if err = rae.ensureInformerFor(ctx, obj); err != nil {
+		logger.WithError(err).Error(ctx, "failed to watch resource")
+		rae.report(ctx, nodeID, wfv1.NodeResult{Phase: wfv1.NodeFailed, Message: fmt.Sprintf("failed to watch resource: %v", err)})
+	}
 }
 
 func (rae *ResourceAgentExecutor) report(ctx context.Context, nodeID string, result wfv1.NodeResult) {
@@ -247,18 +251,18 @@ func parseConditions(successCondition, failureCondition string) (*resourceCondit
 	return rc, nil
 }
 
-func (rae *ResourceAgentExecutor) ensureInformerFor(ctx context.Context, obj *unstructured.Unstructured) cache.SharedIndexInformer {
+func (rae *ResourceAgentExecutor) ensureInformerFor(ctx context.Context, obj *unstructured.Unstructured) error {
 	gvk := obj.GroupVersionKind()
 	gvr := gvk.GroupVersion().WithResource(inferPluralName(gvk.Kind))
 	return rae.ensureInformer(ctx, gvr, obj.GetNamespace())
 }
 
-func (rae *ResourceAgentExecutor) ensureInformer(ctx context.Context, gvr schema.GroupVersionResource, namespace string) cache.SharedIndexInformer {
+func (rae *ResourceAgentExecutor) ensureInformer(ctx context.Context, gvr schema.GroupVersionResource, namespace string) error {
 	key := informerKey{gvr: gvr, namespace: namespace}
 	rae.informersMutex.Lock()
 	defer rae.informersMutex.Unlock()
-	if informer, ok := rae.informers[key]; ok {
-		return informer
+	if _, ok := rae.informers[key]; ok {
+		return nil
 	}
 
 	resync := env.LookupEnvDurationOr(ctx, "ARGO_AGENT_RESOURCE_INFORMER_RESYNC", 10*time.Minute)
@@ -283,17 +287,20 @@ func (rae *ResourceAgentExecutor) ensureInformer(ctx context.Context, gvr schema
 			nodeID:    obj.GetAnnotations()[common.AnnotationKeyNodeID],
 		})
 	}
-	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	_, err := informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    enqueue,
 		UpdateFunc: func(_, newObj any) { enqueue(newObj) },
 		DeleteFunc: enqueue,
 	})
+	if err != nil {
+		return fmt.Errorf("failed to add resource event handler: %w", err)
+	}
 	go informer.Run(ctx.Done())
 	if rae.informers == nil {
 		rae.informers = map[informerKey]cache.SharedIndexInformer{}
 	}
 	rae.informers[key] = informer
-	return informer
+	return nil
 }
 
 func (rae *ResourceAgentExecutor) runEventWorker(ctx context.Context) {
@@ -388,7 +395,8 @@ func (rae *ResourceAgentExecutor) resolveManifest(ctx context.Context, tmpl *wfv
 	}
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 	downloadPath := filepath.Join(tmpDir, "download")
-	if err := driver.Load(ctx, driverArt, downloadPath); err != nil {
+	err = driver.Load(ctx, driverArt, downloadPath)
+	if err != nil {
 		return nil, fmt.Errorf("manifestFrom artifact %q failed to load: %w", name, err)
 	}
 
@@ -460,11 +468,13 @@ func (rae *ResourceAgentExecutor) createResource(ctx context.Context, resource *
 	}
 	manifestPath := tmpFile.Name()
 	defer func() { _ = os.Remove(manifestPath) }()
-	if _, err := tmpFile.Write(manifest); err != nil {
+	_, err = tmpFile.Write(manifest)
+	if err != nil {
 		_ = tmpFile.Close()
 		return nil, argoerrors.InternalWrapError(err)
 	}
-	if err := tmpFile.Close(); err != nil {
+	err = tmpFile.Close()
+	if err != nil {
 		return nil, argoerrors.InternalWrapError(err)
 	}
 
