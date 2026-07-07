@@ -18,7 +18,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/tracing"
 )
 
-// ponytail: flat command, no init/main subcommands — agent's init only exists for plugin token files
+// NewResourceAgentCommand returns the resource agent command.
 func NewResourceAgentCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:          "resource-agent",
