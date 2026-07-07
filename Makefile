@@ -875,7 +875,7 @@ docs/variable-flow/variables.md: $(wildcard util/variables/*.go) $(wildcard util
 	go test -run TestGenerateMarkdown -count=1 ./util/variables/ -args -write
 
 # swagger
-rifneq ($(USE_NIX), true)
+ifneq ($(USE_NIX), true)
 pkg/apis/workflow/v1alpha1/openapi_generated.go: $(TOOL_OPENAPI_GEN)
 endif
 pkg/apis/workflow/v1alpha1/openapi_generated.go: $(TYPES) vendor/modules.txt
