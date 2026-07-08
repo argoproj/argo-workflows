@@ -250,6 +250,15 @@ func TestSaveParameterPathTraversal(t *testing.T) {
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "path traversal")
 	})
+	t.Run("RootPathCleansToDot", func(t *testing.T) {
+		// "/" and "x/.." both clean to "." which filepath.IsLocal accepts; the
+		// guard must still reject them (never a valid single output path).
+		for _, p := range []string{"/", "/tmp/..", ""} {
+			err := saveParameter(ctx, p)
+			require.Error(t, err, "expected rejection for %q", p)
+			assert.Contains(t, err.Error(), "path traversal")
+		}
+	})
 }
 
 func TestSaveArtifactPathTraversal(t *testing.T) {
@@ -287,6 +296,15 @@ func TestSaveArtifactPathTraversal(t *testing.T) {
 		err := saveArtifact(ctx, "../../ctr/sidecar/exitcode")
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "path traversal")
+	})
+	t.Run("RootPathCleansToDot", func(t *testing.T) {
+		// "/" cleans to "."; without the guard this would tar the whole source
+		// root. "/tmp/.." and "" also clean to "." and must be rejected.
+		for _, p := range []string{"/", "/tmp/..", ""} {
+			err := saveArtifact(ctx, p)
+			require.Error(t, err, "expected rejection for %q", p)
+			assert.Contains(t, err.Error(), "path traversal")
+		}
 	})
 }
 

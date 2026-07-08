@@ -406,7 +406,10 @@ func saveArtifact(ctx context.Context, srcPath string) error {
 	// slashes (including "//"); Clean collapses any in-bounds "..". IsLocal then
 	// rejects anything that would still escape (leading "..", absolute paths).
 	relSrc := filepath.Clean(strings.TrimLeft(strings.TrimSuffix(srcPath, "/"), "/"))
-	if !filepath.IsLocal(relSrc) {
+	// relSrc == "." means srcPath was "/", empty, or cleaned away by ".." (e.g.
+	// "/tmp/.."); that is never a valid single output path and, for artifacts,
+	// would otherwise tar the whole source root, so reject it alongside escapes.
+	if relSrc == "." || !filepath.IsLocal(relSrc) {
 		return fmt.Errorf("path traversal in output artifact path %q", srcPath)
 	}
 	if _, err := os.Stat(srcPath); os.IsNotExist(err) { // might be optional, so we ignore
@@ -456,7 +459,10 @@ func saveParameter(ctx context.Context, srcPath string) error {
 	// slashes (including "//"); Clean collapses any in-bounds "..". IsLocal then
 	// rejects anything that would still escape (leading "..", absolute paths).
 	relSrc := filepath.Clean(strings.TrimLeft(srcPath, "/"))
-	if !filepath.IsLocal(relSrc) {
+	// relSrc == "." means srcPath was "/", empty, or cleaned away by ".." (e.g.
+	// "/tmp/.."); that is never a valid single output path, so reject it
+	// alongside escapes.
+	if relSrc == "." || !filepath.IsLocal(relSrc) {
 		return fmt.Errorf("path traversal in output parameter path %q", srcPath)
 	}
 	// dstRel is relative to varRunArgo; both the directory and the file are
