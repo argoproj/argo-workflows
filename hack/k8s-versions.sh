@@ -6,3 +6,6 @@ declare -A K8S_VERSIONS=(
   [min]=v1.33.10
   [max]=v1.36.0
 )
+
+# renovate: datasource=github-releases depName=k3d-io/k3d
+K3D_VERSION=5.8.3
