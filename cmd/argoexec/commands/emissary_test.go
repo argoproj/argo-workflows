@@ -259,6 +259,22 @@ func TestSaveParameterPathTraversal(t *testing.T) {
 			assert.Contains(t, err.Error(), "path traversal")
 		}
 	})
+	t.Run("SymlinkedDestComponentBlocked", func(t *testing.T) {
+		// "escape/p.txt" passes the lexical guard (IsLocal), so it reaches the
+		// filesystem layer. If the main container planted outputs/parameters/escape
+		// as a symlink out of the tree, the os.Root write must refuse to follow it.
+		// This is the only test that exercises the os.Root sandbox: reverting to
+		// os.Create/os.MkdirAll would let this write escape and must fail here.
+		external := t.TempDir() // outside varRunArgo
+		require.NoError(t, os.MkdirAll("escape", 0o755))
+		require.NoError(t, os.WriteFile("escape/p.txt", []byte("data"), 0o644))
+		require.NoError(t, os.MkdirAll(filepath.Join(tmp, "outputs/parameters"), 0o755))
+		require.NoError(t, os.Symlink(external, filepath.Join(tmp, "outputs/parameters/escape")))
+
+		err := saveParameter(ctx, "escape/p.txt")
+		require.Error(t, err)
+		require.NoFileExists(t, filepath.Join(external, "p.txt")) // must not escape the tree
+	})
 }
 
 func TestSaveArtifactPathTraversal(t *testing.T) {
@@ -297,6 +313,11 @@ func TestSaveArtifactPathTraversal(t *testing.T) {
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "path traversal")
 	})
+	t.Run("TraversalToTemplate", func(t *testing.T) {
+		err := saveArtifact(ctx, "../template")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "path traversal")
+	})
 	t.Run("RootPathCleansToDot", func(t *testing.T) {
 		// "/" cleans to "."; without the guard this would tar the whole source
 		// root. "/tmp/.." and "" also clean to "." and must be rejected.
@@ -305,6 +326,22 @@ func TestSaveArtifactPathTraversal(t *testing.T) {
 			require.Error(t, err, "expected rejection for %q", p)
 			assert.Contains(t, err.Error(), "path traversal")
 		}
+	})
+	t.Run("SymlinkedDestComponentBlocked", func(t *testing.T) {
+		// "escape/a" passes the lexical guard (IsLocal), so it reaches the
+		// filesystem layer. If the main container planted outputs/artifacts/escape
+		// as a symlink out of the tree, the os.Root write must refuse to follow it.
+		// This is the only test that exercises the os.Root sandbox: reverting to
+		// os.Create/os.MkdirAll would let this write escape and must fail here.
+		external := t.TempDir() // outside varRunArgo
+		require.NoError(t, os.MkdirAll("escape", 0o755))
+		require.NoError(t, os.WriteFile("escape/a", []byte("data"), 0o644))
+		require.NoError(t, os.MkdirAll(filepath.Join(tmp, "outputs/artifacts"), 0o755))
+		require.NoError(t, os.Symlink(external, filepath.Join(tmp, "outputs/artifacts/escape")))
+
+		err := saveArtifact(ctx, "escape/a")
+		require.Error(t, err)
+		require.NoFileExists(t, filepath.Join(external, "a.tgz")) // must not escape the tree
 	})
 }
 
