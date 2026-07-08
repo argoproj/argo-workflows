@@ -211,8 +211,8 @@ func TestEmissary(t *testing.T) {
 // setupTraversalTest nests varRunArgo two levels under a fresh tempdir and
 // creates existing out-of-bounds targets reachable via escaping paths, so the
 // guard is exercised on real (existing) sources rather than skipped as missing
-// (the existence check runs before the guard). It returns the outer root.
-func setupTraversalTest(t *testing.T) string {
+// (the existence check runs before the guard).
+func setupTraversalTest(t *testing.T) {
 	t.Helper()
 	root := t.TempDir()
 	varRunArgo = filepath.Join(root, "run", "argo")
@@ -224,7 +224,6 @@ func setupTraversalTest(t *testing.T) string {
 	require.NoError(t, os.MkdirAll(filepath.Join(root, "ctr/sidecar"), 0o755))
 	require.NoError(t, os.WriteFile(filepath.Join(root, "ctr/sidecar/exitcode"), []byte("0"), 0o644))
 	require.NoError(t, os.WriteFile(filepath.Join(root, "run/template"), []byte("{}"), 0o644))
-	return root
 }
 
 func TestSaveParameterPathTraversal(t *testing.T) {
