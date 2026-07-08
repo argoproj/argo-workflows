@@ -401,20 +401,24 @@ func saveArtifact(ctx context.Context, srcPath string) error {
 		logger.WithField("srcPath", srcPath).Info(ctx, "no need to save artifact - on overlapping volume")
 		return nil
 	}
+	// A missing output is optional and silently skipped; run this before the
+	// traversal guard so a nonexistent optional output never fails the step,
+	// regardless of the shape of its path (matches the pre-guard behavior).
+	if _, err := os.Stat(srcPath); os.IsNotExist(err) {
+		logger.WithField("srcPath", srcPath).WithError(err).Warn(ctx, "cannot save artifact")
+		return nil
+	}
 	// Map the (possibly absolute) source path to a path relative to the outputs
-	// directory, e.g. /tmp/artifact -> tmp/artifact. TrimLeft drops any leading
-	// slashes (including "//"); Clean collapses any in-bounds "..". IsLocal then
-	// rejects anything that would still escape (leading "..", absolute paths).
-	relSrc := filepath.Clean(strings.TrimLeft(strings.TrimSuffix(srcPath, "/"), "/"))
+	// directory, e.g. /tmp/artifact -> tmp/artifact. TrimLeft/TrimRight drop any
+	// leading/trailing separators ("/" and "\" for Windows parity); Clean
+	// collapses any in-bounds "..". IsLocal then rejects anything that would
+	// still escape (leading "..", absolute/rooted paths, Windows reserved names).
+	relSrc := filepath.Clean(strings.TrimLeft(strings.TrimRight(srcPath, `/\`), `/\`))
 	// relSrc == "." means srcPath was "/", empty, or cleaned away by ".." (e.g.
 	// "/tmp/.."); that is never a valid single output path and, for artifacts,
 	// would otherwise tar the whole source root, so reject it alongside escapes.
 	if relSrc == "." || !filepath.IsLocal(relSrc) {
 		return fmt.Errorf("path traversal in output artifact path %q", srcPath)
-	}
-	if _, err := os.Stat(srcPath); os.IsNotExist(err) { // might be optional, so we ignore
-		logger.WithField("srcPath", srcPath).WithError(err).Warn(ctx, "cannot save artifact")
-		return nil
 	}
 	// dstRel is relative to varRunArgo; both the directory and the file are
 	// created through a single os.Root opened at that trusted base, so a
@@ -454,11 +458,24 @@ func saveParameter(ctx context.Context, srcPath string) error {
 		logger.WithField("src", srcPath).Info(ctx, "no need to save parameter - on overlapping volume")
 		return nil
 	}
+	// A missing output is optional and silently skipped; open the source before
+	// the traversal guard so a nonexistent optional output never fails the step,
+	// regardless of the shape of its path (matches the pre-guard behavior).
+	src, err := os.Open(filepath.Clean(srcPath))
+	if os.IsNotExist(err) {
+		logger.WithField("src", srcPath).WithError(err).Error(ctx, "cannot save parameter, does not exist")
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("failed to open %s: %w", srcPath, err)
+	}
+	defer func() { _ = src.Close() }()
 	// Map the (possibly absolute) source path to a path relative to the outputs
-	// directory, e.g. /tmp/parameter -> tmp/parameter. TrimLeft drops any leading
-	// slashes (including "//"); Clean collapses any in-bounds "..". IsLocal then
-	// rejects anything that would still escape (leading "..", absolute paths).
-	relSrc := filepath.Clean(strings.TrimLeft(srcPath, "/"))
+	// directory, e.g. /tmp/parameter -> tmp/parameter. TrimLeft/TrimRight drop any
+	// leading/trailing separators ("/" and "\" for Windows parity); Clean
+	// collapses any in-bounds "..". IsLocal then rejects anything that would
+	// still escape (leading "..", absolute/rooted paths, Windows reserved names).
+	relSrc := filepath.Clean(strings.TrimLeft(strings.TrimRight(srcPath, `/\`), `/\`))
 	// relSrc == "." means srcPath was "/", empty, or cleaned away by ".." (e.g.
 	// "/tmp/.."); that is never a valid single output path, so reject it
 	// alongside escapes.
@@ -470,15 +487,6 @@ func saveParameter(ctx context.Context, srcPath string) error {
 	// symlinked path component cannot redirect the write outside the tree.
 	dstRel := filepath.Join("outputs/parameters", relSrc)
 	dstPath := filepath.Join(varRunArgo, dstRel)
-	src, err := os.Open(filepath.Clean(srcPath))
-	if os.IsNotExist(err) { // might be optional, so we ignore
-		logger.WithField("src", srcPath).WithError(err).Error(ctx, "cannot save parameter, does not exist")
-		return nil
-	}
-	if err != nil {
-		return fmt.Errorf("failed to open %s: %w", srcPath, err)
-	}
-	defer func() { _ = src.Close() }()
 	logger.WithFields(logging.Fields{
 		"src": srcPath,
 		"dst": dstPath,
@@ -493,7 +501,7 @@ func saveParameter(ctx context.Context, srcPath string) error {
 	}
 	dst, err := root.Create(dstRel)
 	if err != nil {
-		return fmt.Errorf("failed to create %s: %w", srcPath, err)
+		return fmt.Errorf("failed to create %s: %w", dstPath, err)
 	}
 	defer func() { _ = dst.Close() }()
 	if _, err = io.Copy(dst, src); err != nil {
