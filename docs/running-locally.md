@@ -196,6 +196,35 @@ Tests often fail: that's good. To diagnose failure:
 
 If tests run slowly or time out, factory reset your Kubernetes cluster.
 
+### Running UI E2E tests locally
+
+The UI has browser-level end-to-end tests written with [Playwright](https://playwright.dev), separate from the
+Jest unit tests (`yarn --cwd ui test`). They drive a real browser against a running stack.
+
+Start the dev stack in one terminal — Tilt serves the UI on <http://localhost:8080>:
+
+```bash
+make start
+```
+
+Then run the tests in another terminal:
+
+```bash
+yarn --cwd ui install
+yarn --cwd ui playwright install chromium   # first run only
+make test-ui-e2e                            # or: yarn --cwd ui e2e
+```
+
+Useful extras:
+
+* `yarn --cwd ui e2e:ui` — interactive/headed runner for debugging.
+* `yarn --cwd ui playwright show-report` — open the HTML report (including traces and videos for failures).
+
+The tests authenticate by reading the `argo-server` service-account token (the same secret the Go e2e suite uses)
+and log workflows in via the REST API, waiting for them to complete before making UI assertions. See
+`ui/e2e/README.md` for details, and `ARGO_TOKEN` / `ARGO_UI_BASE_URL` for pointing at a different cluster or URL
+(CI, for example, sets `ARGO_UI_BASE_URL=http://localhost:2746` to test the production UI bundle served in-cluster).
+
 ### Database Tooling
 
 The `go run ./hack/db` CLI provides a few useful commands for working with the DB locally:
