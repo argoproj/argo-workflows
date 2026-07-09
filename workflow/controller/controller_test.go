@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -362,7 +363,10 @@ func newController(ctx context.Context, options ...any) (context.CancelFunc, *Wo
 			}
 		}
 	}
-	return cancel, wfc
+	return func() {
+		cancel()
+		wfc.wfQueue.ShutDown()
+	}, wfc
 }
 
 func newControllerWithDefaults(ctx context.Context) (context.CancelFunc, *WorkflowController) {
@@ -569,10 +573,28 @@ func makePodsPhase(ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhas
 			}
 			if phase == apiv1.PodSucceeded {
 				nodeID := woc.nodeID(&pod)
+
 				woc.wf.Status.MarkTaskResultComplete(ctx, nodeID)
 			}
 		}
 	}
+}
+
+// forceNodePhaseForTest directly overwrites a node's phase in wf.Status.Nodes
+// without going through markNodePhase. Tests use this when they need to
+// simulate state transitions (e.g. demoting a retry parent from Succeeded
+// back to Running, or rewinding a child between attempts) that production
+// code does not perform. Production code must continue to use markNodePhase
+// so the node phase SM is enforced; this helper is only for synthetic test
+// setup of pre-existing recorded state.
+func forceNodePhaseForTest(woc *wfOperationCtx, nodeName string, phase wfv1.NodePhase) {
+	nodeID := woc.wf.NodeID(nodeName)
+	node, ok := woc.wf.Status.Nodes[nodeID]
+	if !ok {
+		panic(fmt.Sprintf("forceNodePhaseForTest: node %q not found", nodeName))
+	}
+	node.Phase = phase
+	woc.wf.Status.Nodes[nodeID] = node
 }
 
 func deletePods(ctx context.Context, woc *wfOperationCtx) {

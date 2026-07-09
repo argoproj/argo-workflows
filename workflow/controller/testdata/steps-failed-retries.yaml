@@ -88,6 +88,8 @@ status:
       id: failed-retries-tjjsc-759866442
       message: failed with exit code 1
       name: failed-retries-tjjsc[0].fail(1)
+      nodeFlag:
+        retried: true
       phase: Failed
       startedAt: "2019-01-03T01:23:27Z"
       templateName: fail
@@ -99,6 +101,8 @@ status:
       id: failed-retries-tjjsc-1229492679
       message: failed with exit code 1
       name: failed-retries-tjjsc[0].fail(0)
+      nodeFlag:
+        retried: true
       phase: Failed
       startedAt: "2019-01-03T01:23:18Z"
       templateName: fail
@@ -110,6 +114,8 @@ status:
       id: failed-retries-tjjsc-1375221696
       message: failed with exit code 1
       name: failed-retries-tjjsc[0].delayed-fail(0)
+      nodeFlag:
+        retried: true
       phase: Failed
       startedAt: "2019-01-03T01:23:18Z"
       templateName: delayed-fail
@@ -145,6 +151,8 @@ status:
       id: failed-retries-tjjsc-2113289837
       message: failed with exit code 1
       name: failed-retries-tjjsc[0].delayed-fail(1)
+      nodeFlag:
+        retried: true
       phase: Failed
       startedAt: "2019-01-03T01:23:28Z"
       templateName: delayed-fail

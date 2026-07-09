@@ -1136,3 +1136,480 @@ spec:
 		}
 	}
 }
+
+const dagWithSequenceMutex = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-seq-mutex
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: client
+        template: client
+        withSequence:
+          count: "3"
+  - name: client
+    synchronization:
+      mutexes:
+        - name: dag-seq-mutex-shared
+    container:
+      image: alpine:3.23
+      command: [echo, hi]
+`
+
+// TestSynchronizationWithDAGWithSequence verifies that when a DAG task uses
+// withSequence and each child holds the same mutex, the lock held by a completed
+// child is released so the next child can acquire it.
+func TestSynchronizationWithDAGWithSequence(t *testing.T) {
+	cancel, controller := newController(logging.TestContext(t.Context()))
+	defer cancel()
+	ctx := logging.TestContext(t.Context())
+	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
+	}, workflowExistenceFunc, false)
+
+	wf := wfv1.MustUnmarshalWorkflow(dagWithSequenceMutex)
+	wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	// First child should be Pending (acquired the mutex). The other two should be
+	// either created and Pending (waiting for the lock) or not yet expanded.
+	require.NotNil(t, woc.wf.Status.Synchronization)
+	require.NotNil(t, woc.wf.Status.Synchronization.Mutex)
+	assert.Len(t, woc.wf.Status.Synchronization.Mutex.Holding, 1, "exactly one child should be holding the mutex initially")
+
+	// Complete client(0:0)'s pod.
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+
+	// Re-operate. The lock held by client(0:0) must be released so client(1:0) can
+	// acquire it. The bug we're fixing: the engine never releases sync locks for
+	// fulfilled children of a withSequence task, so the mutex stays held forever.
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	// client(0:0) should be Succeeded, and the workflow status must no longer list
+	// it as holding the mutex.
+	displayToID := make(map[string]string)
+	for _, node := range woc.wf.Status.Nodes {
+		displayToID[node.DisplayName] = node.ID
+	}
+	firstID, ok := displayToID["client(0:0)"]
+	require.True(t, ok, "client(0:0) node must exist")
+	firstChild, err := woc.wf.Status.Nodes.Get(firstID)
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeSucceeded, firstChild.Phase)
+
+	require.NotNil(t, woc.wf.Status.Synchronization)
+	require.NotNil(t, woc.wf.Status.Synchronization.Mutex)
+	wfPrefix := fmt.Sprintf("%s/%s/", woc.wf.Namespace, woc.wf.Name)
+	holdingIDs := make(map[string]bool)
+	for _, holding := range woc.wf.Status.Synchronization.Mutex.Holding {
+		holdingIDs[strings.TrimPrefix(holding.Holder, wfPrefix)] = true
+	}
+	assert.False(t, holdingIDs[firstID],
+		"completed client(0:0) must not still be recorded as holding the mutex")
+
+	// And one of the waiting siblings must have acquired the freed lock.
+	// converge iterates `results` (a map), so dispatch order between siblings is
+	// non-deterministic — either client(1:1) or client(2:2) may grab the lock
+	// first. Asserting one specific sibling is racy; assert that *some* waiter took it.
+	nextHolderFound := false
+	for _, name := range []string{"client(1:1)", "client(2:2)"} {
+		id, ok := displayToID[name]
+		if ok && holdingIDs[id] {
+			nextHolderFound = true
+			break
+		}
+	}
+	assert.True(t, nextHolderFound,
+		"a waiting sibling must hold the mutex after client(0:0) completes")
+	require.Len(t, woc.wf.Status.Synchronization.Mutex.Holding, 1,
+		"exactly one sibling holds the mutex; the other still waits")
+}
+
+const dagWithItemsMutex = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-items-mutex
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: client
+        template: client
+        arguments:
+          parameters:
+          - name: msg
+            value: "{{item}}"
+        withItems: ["a", "b", "c"]
+  - name: client
+    inputs:
+      parameters:
+      - name: msg
+    synchronization:
+      mutexes:
+        - name: dag-items-mutex-shared
+    container:
+      image: alpine:3.23
+      command: [echo, "{{inputs.parameters.msg}}"]
+`
+
+// TestSynchronizationWithDAGWithItems mirrors TestSynchronizationWithDAGWithSequence
+// but uses withItems instead. Same per-child reconciliation path; different expansion source.
+func TestSynchronizationWithDAGWithItems(t *testing.T) {
+	cancel, controller := newController(logging.TestContext(t.Context()))
+	defer cancel()
+	ctx := logging.TestContext(t.Context())
+	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
+	}, workflowExistenceFunc, false)
+
+	wf := wfv1.MustUnmarshalWorkflow(dagWithItemsMutex)
+	wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	require.NotNil(t, woc.wf.Status.Synchronization)
+	require.NotNil(t, woc.wf.Status.Synchronization.Mutex)
+	assert.Len(t, woc.wf.Status.Synchronization.Mutex.Holding, 1,
+		"exactly one withItems child should hold the mutex initially")
+
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	displayToID := make(map[string]string)
+	for _, node := range woc.wf.Status.Nodes {
+		displayToID[node.DisplayName] = node.ID
+	}
+	firstID, ok := displayToID["client(0:a)"]
+	require.True(t, ok, "client(0:a) node must exist")
+
+	wfPrefix := fmt.Sprintf("%s/%s/", woc.wf.Namespace, woc.wf.Name)
+	holdingIDs := make(map[string]bool)
+	for _, holding := range woc.wf.Status.Synchronization.Mutex.Holding {
+		holdingIDs[strings.TrimPrefix(holding.Holder, wfPrefix)] = true
+	}
+	assert.False(t, holdingIDs[firstID], "completed first child must not still be holding the mutex")
+
+	// One of the waiting siblings must hold the freed lock. Dispatch order
+	// between siblings is non-deterministic (converge iterates a map), so we
+	// can't assume a specific child takes the lock — only that one of them does.
+	require.Len(t, woc.wf.Status.Synchronization.Mutex.Holding, 1)
+	nextHolderFound := false
+	for _, name := range []string{"client(1:b)", "client(2:c)"} {
+		if id, ok := displayToID[name]; ok && holdingIDs[id] {
+			nextHolderFound = true
+			break
+		}
+	}
+	assert.True(t, nextHolderFound, "a waiting withItems sibling must hold the freed mutex")
+}
+
+// TestSynchronizationWithDAGWithSequenceCompletesAll drives a withSequence to
+// completion across multiple operate cycles, verifying that the lock is
+// transferred from one child to the next on every release and that the
+// workflow ultimately reaches Succeeded with no holders left.
+func TestSynchronizationWithDAGWithSequenceCompletesAll(t *testing.T) {
+	cancel, controller := newController(logging.TestContext(t.Context()))
+	defer cancel()
+	ctx := logging.TestContext(t.Context())
+	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
+	}, workflowExistenceFunc, false)
+
+	wf := wfv1.MustUnmarshalWorkflow(dagWithSequenceMutex)
+	wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	allChildren := map[string]bool{"client(0:0)": true, "client(1:1)": true, "client(2:2)": true}
+
+	wfPrefix := fmt.Sprintf("%s/%s/", woc.wf.Namespace, woc.wf.Name)
+	idToDisplay := func() map[string]string {
+		m := make(map[string]string, len(woc.wf.Status.Nodes))
+		for _, n := range woc.wf.Status.Nodes {
+			m[n.ID] = n.DisplayName
+		}
+		return m
+	}
+	currentHolder := func(t *testing.T) (displayName string) {
+		t.Helper()
+		require.NotNil(t, woc.wf.Status.Synchronization)
+		require.NotNil(t, woc.wf.Status.Synchronization.Mutex)
+		require.Len(t, woc.wf.Status.Synchronization.Mutex.Holding, 1,
+			"exactly one child holds the mutex at a time")
+		raw := strings.TrimPrefix(woc.wf.Status.Synchronization.Mutex.Holding[0].Holder, wfPrefix)
+		return idToDisplay()[raw]
+	}
+
+	// Drive each child to completion in whatever order the engine picks them.
+	// After each cycle, the previous holder must be Succeeded and a different
+	// not-yet-completed sibling must hold the lock — until the last one.
+	completed := map[string]bool{}
+	for cycle := range 3 {
+		holderName := currentHolder(t)
+		assert.True(t, allChildren[holderName],
+			"holder must be one of the expanded children, got %q", holderName)
+		assert.False(t, completed[holderName],
+			"holder %q has already completed in a previous cycle", holderName)
+
+		// Complete the current holder's pod.
+		makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc.operate(ctx)
+
+		// The just-completed holder must be Succeeded.
+		for _, n := range woc.wf.Status.Nodes {
+			if n.DisplayName == holderName {
+				assert.Equal(t, wfv1.NodeSucceeded, n.Phase, "%q must be Succeeded", holderName)
+				break
+			}
+		}
+		completed[holderName] = true
+
+		if cycle == 2 {
+			// Last child done — no holders left.
+			if woc.wf.Status.Synchronization != nil && woc.wf.Status.Synchronization.Mutex != nil {
+				assert.Empty(t, woc.wf.Status.Synchronization.Mutex.Holding,
+					"after the last child completes, no one should hold the mutex")
+			}
+			continue
+		}
+		// Otherwise a sibling that hasn't completed yet must now hold the lock.
+		nextName := currentHolder(t)
+		assert.True(t, allChildren[nextName] && !completed[nextName],
+			"new holder must be an uncompleted sibling, got %q", nextName)
+	}
+	assert.Len(t, completed, 3, "every child should have held and released the mutex exactly once")
+}
+
+const dagWithParamMutex = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-param-mutex
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: source
+        template: produce-list
+      - name: client
+        depends: source
+        template: client
+        arguments:
+          parameters:
+          - name: msg
+            value: "{{item}}"
+        withParam: "{{tasks.source.outputs.result}}"
+  - name: produce-list
+    script:
+      image: alpine:3.23
+      command: [sh, -c]
+      source: |
+        echo '["a","b","c"]'
+  - name: client
+    inputs:
+      parameters:
+      - name: msg
+    synchronization:
+      mutexes:
+        - name: dag-param-mutex-shared
+    container:
+      image: alpine:3.23
+      command: [echo, "{{inputs.parameters.msg}}"]
+`
+
+// TestSynchronizationWithDAGWithParam covers the third expansion mechanism
+// (withParam, where the item set comes from an upstream task's output rather
+// than a literal list or count). The per-child path must work the same way.
+func TestSynchronizationWithDAGWithParam(t *testing.T) {
+	cancel, controller := newController(logging.TestContext(t.Context()))
+	defer cancel()
+	ctx := logging.TestContext(t.Context())
+	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
+	}, workflowExistenceFunc, false)
+
+	wf := wfv1.MustUnmarshalWorkflow(dagWithParamMutex)
+	wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	// Drive the source task to Succeeded with a JSON-array output so that
+	// withParam can resolve. The output comes back via the task-result path,
+	// so we mark both pod phase and the task result manually.
+	resultStr := `["a","b","c"]`
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded, withOutputs(ctx, wfv1.Outputs{Result: &resultStr}))
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	// At this point the children should be expanded and one of them holding the mutex.
+	require.NotNil(t, woc.wf.Status.Synchronization)
+	require.NotNil(t, woc.wf.Status.Synchronization.Mutex)
+	assert.Len(t, woc.wf.Status.Synchronization.Mutex.Holding, 1,
+		"a single withParam child should hold the mutex; siblings wait")
+
+	// Complete the lock-holding pod and reoperate. The lock must transfer.
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	require.NotNil(t, woc.wf.Status.Synchronization)
+	require.NotNil(t, woc.wf.Status.Synchronization.Mutex)
+	require.Len(t, woc.wf.Status.Synchronization.Mutex.Holding, 1,
+		"after the first child finishes, the next withParam child must take the lock")
+}
+
+const stepsWithSequenceMutex = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: steps-seq-mutex
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: client
+        template: client
+        withSequence:
+          count: "3"
+  - name: client
+    synchronization:
+      mutexes:
+        - name: steps-seq-mutex-shared
+    container:
+      image: alpine:3.23
+      command: [echo, hi]
+`
+
+// TestSynchronizationWithStepsWithSequence verifies the per-child path also
+// works under a Steps template (different boundary naming: "[0].client" vs
+// the DAG "client"), exercising the Steps-shaped branch of taskNameFromNodeName.
+func TestSynchronizationWithStepsWithSequence(t *testing.T) {
+	cancel, controller := newController(logging.TestContext(t.Context()))
+	defer cancel()
+	ctx := logging.TestContext(t.Context())
+	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
+	}, workflowExistenceFunc, false)
+
+	wf := wfv1.MustUnmarshalWorkflow(stepsWithSequenceMutex)
+	wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	require.NotNil(t, woc.wf.Status.Synchronization)
+	require.NotNil(t, woc.wf.Status.Synchronization.Mutex)
+	require.Len(t, woc.wf.Status.Synchronization.Mutex.Holding, 1,
+		"one Steps withSequence child should hold the mutex initially")
+
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	require.NotNil(t, woc.wf.Status.Synchronization)
+	require.NotNil(t, woc.wf.Status.Synchronization.Mutex)
+	require.Len(t, woc.wf.Status.Synchronization.Mutex.Holding, 1,
+		"the freed Steps mutex must be picked up by the next sibling")
+}
+
+const dagSequenceMutexFailFirstChild = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-seq-fail-first
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: client
+        template: client
+        withSequence:
+          count: "3"
+  - name: client
+    synchronization:
+      mutexes:
+        - name: dag-seq-fail-first-shared
+    container:
+      image: alpine:3.23
+      command: [echo, hi]
+`
+
+// TestSynchronizationFailedFirstChildReleasesLock guards against a regression
+// where a Failed child wouldn't release the mutex (the lock is released in
+// assessNodeStatus regardless of phase, but the per-child evaluator must not
+// re-dispatch the failed child while still letting siblings progress).
+func TestSynchronizationFailedFirstChildReleasesLock(t *testing.T) {
+	cancel, controller := newController(logging.TestContext(t.Context()))
+	defer cancel()
+	ctx := logging.TestContext(t.Context())
+	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
+	}, workflowExistenceFunc, false)
+
+	wf := wfv1.MustUnmarshalWorkflow(dagSequenceMutexFailFirstChild)
+	wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	// First child holds the lock.
+	require.NotNil(t, woc.wf.Status.Synchronization)
+	require.NotNil(t, woc.wf.Status.Synchronization.Mutex)
+	require.Len(t, woc.wf.Status.Synchronization.Mutex.Holding, 1)
+
+	// Mark the holder's pod as Failed. assessNodeStatus must release the lock.
+	makePodsPhase(ctx, woc, apiv1.PodFailed)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	// Find the failed child and confirm it's terminal AND not still a holder.
+	var firstID string
+	for _, n := range woc.wf.Status.Nodes {
+		if n.DisplayName == "client(0:0)" {
+			firstID = n.ID
+			assert.True(t, n.Phase.FailedOrError(), "client(0:0) must be terminal Failed/Error")
+			break
+		}
+	}
+	require.NotEmpty(t, firstID)
+
+	wfPrefix := fmt.Sprintf("%s/%s/", woc.wf.Namespace, woc.wf.Name)
+	holdingIDs := make(map[string]bool)
+	if woc.wf.Status.Synchronization != nil && woc.wf.Status.Synchronization.Mutex != nil {
+		for _, h := range woc.wf.Status.Synchronization.Mutex.Holding {
+			holdingIDs[strings.TrimPrefix(h.Holder, wfPrefix)] = true
+		}
+	}
+	assert.False(t, holdingIDs[firstID], "failed child must not still be holding the mutex")
+
+	// One of the next children must have acquired the freed lock.
+	nextHolderFound := false
+	for _, n := range woc.wf.Status.Nodes {
+		if (n.DisplayName == "client(1:1)" || n.DisplayName == "client(2:2)") && holdingIDs[n.ID] {
+			nextHolderFound = true
+			break
+		}
+	}
+	assert.True(t, nextHolderFound,
+		"a sibling must have picked up the lock after the holder failed")
+}

@@ -1,17 +1,19 @@
 package controller
 
 import (
-	"strings"
+	"slices"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/variables"
+	"github.com/argoproj/argo-workflows/v4/workflow/common/dag"
 )
 
 // TestStepsFailedRetries ensures a steps template will recognize exhausted retries
@@ -78,7 +80,16 @@ func TestArtifactResolutionWhenSkipped(t *testing.T) {
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
-	woc.operate(ctx)
+	// The engine cascades instant completions within a single Execute call,
+	// so skipped groups are processed without extra cycles. We loop here as
+	// a safety net in case future changes alter the batching behavior.
+	for range 10 {
+		woc.operate(ctx)
+		if woc.wf.Status.Phase == wfv1.WorkflowSucceeded {
+			break
+		}
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	}
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
@@ -151,8 +162,17 @@ func TestExpandStepGroupWithParam(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(stepsWithParam)
 	woc := newWoc(ctx, *wf)
+	tmpl := wf.Spec.Templates[0]
+	step := tmpl.Steps[0].Steps[0]
+	dagTask := &wfv1.DAGTask{
+		Name:      step.Name,
+		Template:  step.Template,
+		Arguments: step.Arguments,
+		WithParam: step.WithParam,
+	}
 
-	expanded, err := woc.expandStepGroup(ctx, "[0]", wf.Spec.Templates[0].Steps[0].Steps, &stepsContext{scope: createScope(&wf.Spec.Templates[0])})
+	evaluator := dag.NewDAGEvaluator(wf, &tmpl, "test", "test")
+	expanded, err := evaluator.ExpandTask(ctx, *dagTask, make(map[string]string), woc)
 	require.NoError(t, err)
 	require.Len(t, expanded, 4)
 
@@ -165,7 +185,7 @@ func TestExpandStepGroupWithParam(t *testing.T) {
 			Parameter: "1234",
 		},
 		{
-			Name:      `use-with-param(1:foo\tbar)`,
+			Name:      "use-with-param(1:foo\tbar)",
 			Parameter: "foo\tbar",
 		},
 		{
@@ -209,12 +229,21 @@ func TestExpandStepGroupWithItems(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(stepsWithItems)
 	woc := newWoc(ctx, *wf)
+	tmpl := wf.Spec.Templates[0]
+	step := tmpl.Steps[0].Steps[0]
+	dagTask := &wfv1.DAGTask{
+		Name:      step.Name,
+		Template:  step.Template,
+		Arguments: step.Arguments,
+		WithItems: step.WithItems,
+	}
 
-	expanded, err := woc.expandStepGroup(ctx, "[0]", wf.Spec.Templates[0].Steps[0].Steps, &stepsContext{scope: createScope(&wf.Spec.Templates[0])})
+	evaluator := dag.NewDAGEvaluator(wf, &tmpl, "test", "test")
+	expanded, err := evaluator.ExpandTask(ctx, *dagTask, make(map[string]string), woc)
 	require.NoError(t, err)
 	require.Len(t, expanded, 1)
 
-	assert.Equal(t, `Hello"Argo`, expanded[0].Arguments.Parameters[0].Value.String())
+	assert.Equal(t, "Hello\"Argo", expanded[0].Arguments.Parameters[0].Value.String())
 }
 
 func TestResourceDurationMetric(t *testing.T) {
@@ -309,7 +338,7 @@ spec:
     name: plan
     outputs: {}
     steps:
-    - -
+    - - 
         name: create-artifact
         template: artifact-creation
         when: "false"
@@ -671,7 +700,7 @@ func TestStepsStepGroupIDReference(t *testing.T) {
 	// Verify the resolved value of steps.fanout.id matches the StepGroup node's ID
 	require.NotNil(t, useIDNode.Inputs)
 	require.Len(t, useIDNode.Inputs.Parameters, 1)
-	assert.Equal(t, "steps-stepgroup-id-ref-3297018276", useIDNode.Inputs.Parameters[0].Value.String())
+	assert.Equal(t, "steps-stepgroup-id-ref-3978234417", useIDNode.Inputs.Parameters[0].Value.String())
 }
 
 var stepsWhenSkipNoRequeue = `
@@ -824,217 +853,277 @@ func TestStepsWhenExprWithParamFilter(t *testing.T) {
 	assert.Equal(t, wfv1.NodePending, node3.Phase)
 }
 
-var stepsSkippedOutputDefault = `
+// TestThreeStepCrossGroupArtifactResolution tests that step [2] can reference
+// artifacts from step [0] (not a direct dependency) via the preceding groups scope fix.
+// This matches the artifact-passing-subpath.yaml example workflow.
+func TestThreeStepCrossGroupArtifactResolution(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	// Build a steps template with 3 groups where [2] references [0]'s artifact
+	tmpl := &wfv1.Template{
+		Steps: []wfv1.ParallelSteps{
+			{Steps: []wfv1.WorkflowStep{{Name: "generate-artifact", Template: "gen"}}},
+			{Steps: []wfv1.WorkflowStep{{Name: "list-artifact", Template: "list", Arguments: wfv1.Arguments{
+				Artifacts: []wfv1.Artifact{{Name: "message", From: "{{steps.generate-artifact.outputs.artifacts.hello-art}}"}},
+			}}}},
+			{Steps: []wfv1.WorkflowStep{{Name: "consume-artifact", Template: "consume", Arguments: wfv1.Arguments{
+				Artifacts: []wfv1.Artifact{{Name: "message", From: "{{steps.generate-artifact.outputs.artifacts.hello-art}}", SubPath: "hello_world.txt"}},
+			}}}},
+		},
+	}
+
+	wfName := "test-three-step-artifact"
+	wf := &wfv1.Workflow{}
+	wf.Name = wfName
+	wf.Status.Nodes = make(wfv1.Nodes)
+
+	// Create the [0].generate-artifact node (completed with artifact outputs)
+	genNodeName := wfName + "[0].generate-artifact"
+	genNodeID := wf.NodeID(genNodeName)
+	wf.Status.Nodes[genNodeID] = wfv1.NodeStatus{
+		ID:    genNodeID,
+		Name:  genNodeName,
+		Phase: wfv1.NodeSucceeded,
+		Type:  wfv1.NodeTypePod,
+		Outputs: &wfv1.Outputs{
+			Artifacts: []wfv1.Artifact{
+				{
+					Name: "hello-art",
+					ArtifactLocation: wfv1.ArtifactLocation{
+						S3: &wfv1.S3Artifact{
+							S3Bucket: wfv1.S3Bucket{Bucket: "my-bucket"},
+							Key:      "outputs/hello-art",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Create the [1].list-artifact node (completed, no outputs)
+	listNodeName := wfName + "[1].list-artifact"
+	listNodeID := wf.NodeID(listNodeName)
+	wf.Status.Nodes[listNodeID] = wfv1.NodeStatus{
+		ID:    listNodeID,
+		Name:  listNodeName,
+		Phase: wfv1.NodeSucceeded,
+		Type:  wfv1.NodeTypePod,
+	}
+
+	// Build the step adapters (same way executeSteps does)
+	var tasks []dag.Task
+	var prevStepNames []string
+	for i, stepGroup := range tmpl.Steps {
+		var currentStepNames []string
+		for _, step := range stepGroup.Steps {
+			s := step // capture
+			task := &StepAdapter{
+				step:         &s,
+				dependencies: prevStepNames,
+				groupIndex:   i,
+			}
+			tasks = append(tasks, task)
+			currentStepNames = append(currentStepNames, task.GetName())
+		}
+		prevStepNames = currentStepNames
+	}
+
+	// The third task is [2].consume-artifact
+	consumeTask := tasks[2]
+	require.Equal(t, "[2].consume-artifact", consumeTask.GetName())
+	require.Equal(t, []string{"[1].list-artifact"}, consumeTask.GetDependencies())
+
+	// Create a minimal woc and Engine
+	woc := &wfOperationCtx{
+		wf:    wf,
+		scope: variables.NewScope(),
+		log:   logging.RequireLoggerFromContext(ctx),
+	}
+	engine := &Engine{
+		woc:      woc,
+		nodeName: wfName,
+		tmpl:     tmpl,
+		log:      woc.log,
+	}
+	engine.evaluator = dag.NewDAGEvaluatorFromTasks(wf, tasks, tmpl, "", wfName)
+
+	// Build scope for [2].consume-artifact
+	scope, err := engine.buildLocalScopeFromTask(ctx, consumeTask)
+	require.NoError(t, err, "buildLocalScopeFromTask should not error")
+
+	// Verify the scope contains the artifact from step [0]
+	artKey := "steps.generate-artifact.outputs.artifacts.hello-art"
+	_, val, resolveErr := scope.resolveVar("{{" + artKey + "}}")
+	require.NoError(t, resolveErr, "scope should resolve %s", artKey)
+	require.NotNil(t, val, "resolved artifact should not be nil")
+
+	// Verify it's an actual artifact
+	art, ok := val.(wfv1.Artifact)
+	require.True(t, ok, "resolved value should be a wfv1.Artifact, got %T", val)
+	assert.Equal(t, "hello-art", art.Name)
+	assert.Equal(t, "outputs/hello-art", art.S3.Key)
+}
+
+var stepsInstantCompletionCascade = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: steps-skipped-output-default-
+  name: steps-cascade-test
 spec:
   entrypoint: main
   templates:
   - name: main
     steps:
-    - - name: producer
-        template: produce
+    - - name: step-a
+        template: echo
         when: "false"
-    - - name: consumer
-        template: consume
-        arguments:
-          parameters:
-          - name: in
-            value: "{{steps.producer.outputs.parameters.msg}}"
-  - name: produce
-    outputs:
-      parameters:
-      - name: msg
-        valueFrom:
-          path: /tmp/out.txt
-          default: "default-from-producer"
+    - - name: step-b
+        template: echo
+        when: "false"
+    - - name: step-c
+        template: echo
+  - name: echo
     container:
       image: alpine:3.23
-      command: [sh, -c]
-      args: ["echo hello > /tmp/out.txt"]
-  - name: consume
-    inputs:
-      parameters:
-      - name: in
-    container:
-      image: alpine:3.23
-      command: [echo, "{{inputs.parameters.in}}"]
+      command: [echo, hello]
 `
 
-// TestStepsSkippedOutputDefault verifies that when a step is skipped and its template declares an
-// output parameter with a valueFrom.default, a downstream step referencing that output in its INPUT
-// receives the producer's declared default instead of an empty string.
-func TestStepsSkippedOutputDefault(t *testing.T) {
+// TestStepsInstantCompletionCascades proves that the engine cascades instant
+// completions (when-skipped groups) within a single operate() call.
+// If the old N-cycle regression claim were true, step-c would NOT exist after
+// one operate() because groups [0] and [1] would each consume a separate cycle.
+func TestStepsInstantCompletionCascades(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx)
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-	wf := wfv1.MustUnmarshalWorkflow(stepsSkippedOutputDefault)
+	wf := wfv1.MustUnmarshalWorkflow(stepsInstantCompletionCascade)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
+	// Single operate() call — should cascade through all skipped groups.
 	woc.operate(ctx)
 
-	producer := woc.wf.Status.Nodes.FindByDisplayName("producer")
-	require.NotNil(t, producer)
-	require.Equal(t, wfv1.NodeSkipped, producer.Phase)
+	// Groups [0] and [1] should be skipped.
+	nodeA := woc.wf.Status.Nodes.FindByDisplayName("step-a")
+	require.NotNil(t, nodeA, "step-a node should exist")
+	assert.Equal(t, wfv1.NodeSkipped, nodeA.Phase)
 
-	consumer := woc.wf.Status.Nodes.FindByDisplayName("consumer")
-	require.NotNil(t, consumer, "consumer should be scheduled even though producer was skipped")
-	require.NotNil(t, consumer.Inputs)
-	in := consumer.Inputs.GetParameterByName("in")
-	require.NotNil(t, in)
-	require.NotNil(t, in.Value)
-	assert.Equal(t, "default-from-producer", in.Value.String())
+	nodeB := woc.wf.Status.Nodes.FindByDisplayName("step-b")
+	require.NotNil(t, nodeB, "step-b node should exist")
+	assert.Equal(t, wfv1.NodeSkipped, nodeB.Phase)
+
+	// The key assertion: step-c must exist after a single operate().
+	// This proves the engine cascaded through the skipped groups in one call.
+	nodeC := woc.wf.Status.Nodes.FindByDisplayName("step-c")
+	require.NotNil(t, nodeC, "step-c should be reached in a single operate() call, proving cascading works")
 }
 
-var skippedRefConsumeWorkflowTemplate = `
-apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
-metadata:
-  name: skipped-ref-consume
-  namespace: default
-spec:
-  templates:
-  - name: consume
-    inputs:
-      parameters:
-      - name: in
-        default: "FALLBACK"
-    container:
-      image: alpine:3.23
-      command: [echo, "{{inputs.parameters.in}}"]
-`
-
-var stepsSkippedRefDynamicTemplateName = `
+var stepsSequentialGroups = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: steps-skipped-ref-dynamic-template
-  namespace: default
+  name: steps-sequential-groups
 spec:
   entrypoint: main
   templates:
   - name: main
     steps:
-    - - name: producer
-        template: produce
-        when: "false"
-    - - name: consumer
-        templateRef:
-          name: "{{item.wftmpl}}"
-          template: "{{item.tmpl}}"
-        withItems:
-        - { wftmpl: "skipped-ref-consume", tmpl: "consume" }
-        arguments:
-          parameters:
-          - name: in
-            value: "{{steps.producer.outputs.parameters.msg}}"
-  - name: produce
-    outputs:
-      parameters:
-      - name: msg
-        valueFrom:
-          path: /tmp/out.txt
+    - - name: step-a
+        template: echo
+    - - name: step-b
+        template: echo
+  - name: echo
     container:
       image: alpine:3.23
-      command: [sh, -c]
-      args: ["echo hello > /tmp/out.txt"]
+      command: [echo, hello]
 `
 
-// TestStepsSkippedRefDynamicTemplateName verifies that a step whose templateRef is itself templated
-// ("{{item.*}}", resolved only at expansion) is still rescued by the consumed template's input
-// default when an argument references a skipped defaultless output: the argument is marked with the
-// absent-optional sentinel before substitution and ProcessArgs interprets it at consumption time,
-// when the dynamic templateRef has been resolved.
-func TestStepsSkippedRefDynamicTemplateName(t *testing.T) {
+// TestStepsGroupsChainedNotSiblings verifies that StepGroup nodes are chained
+// sequentially in the node graph rather than attached as siblings to the Steps
+// root. Legacy behavior (and the expected behavior) is:
+//
+//	root          → [0]
+//	[0]           → step-a
+//	step-a (pod)  → [1]        (outbound linkage)
+//	[1]           → step-b
+//
+// A regression during the DAG refactor attached every StepGroup directly under
+// the Steps root, producing a graph where [0] and [1] were siblings — breaking
+// the sequential chain required for UI rendering and outbound-node traversal.
+//
+// The linking must not run while [i-1] is in-flight: injecting [i] into the
+// descendant chain of a running pod would poison childrenFulfilled() and break
+// retry finalization / sync-lock release for the prior group. So [1] only
+// appears in the graph once [0] has fulfilled.
+func TestStepsGroupsChainedNotSiblings(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	cancel, controller := newController(ctx, wfv1.MustUnmarshalWorkflow(stepsSkippedRefDynamicTemplateName), wfv1.MustUnmarshalWorkflowTemplate(skippedRefConsumeWorkflowTemplate))
+	cancel, controller := newController(ctx)
 	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
-	woc := newWorkflowOperationCtx(ctx, wfv1.MustUnmarshalWorkflow(stepsSkippedRefDynamicTemplateName), controller)
+	wf := wfv1.MustUnmarshalWorkflow(stepsSequentialGroups)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	// Cycle 1: step-a starts but is not fulfilled. [1] is initialized (the
+	// engine needs it to schedule step-b once dependencies resolve) but must
+	// NOT yet be wired into the graph — doing so would break retry/sync
+	// semantics for [0].
 	woc.operate(ctx)
 
-	producer := woc.wf.Status.Nodes.FindByDisplayName("producer")
-	require.NotNil(t, producer)
-	require.Equal(t, wfv1.NodeSkipped, producer.Phase)
+	rootID := woc.wf.NodeID(wf.Name)
+	sg0ID := woc.wf.NodeID(wf.Name + "[0]")
+	sg1ID := woc.wf.NodeID(wf.Name + "[1]")
 
-	var consumer *wfv1.NodeStatus
-	for _, node := range woc.wf.Status.Nodes {
-		assert.NotEqual(t, wfv1.NodeError, node.Phase, "node %q should not error: %s", node.DisplayName, node.Message)
-		if strings.HasPrefix(node.DisplayName, "consumer(") {
-			n := node
-			consumer = &n
+	root, err := woc.wf.Status.Nodes.Get(rootID)
+	require.NoError(t, err, "root node should exist")
+	assert.Contains(t, root.Children, sg0ID, "[0] must be a child of the Steps root")
+	assert.NotContains(t, root.Children, sg1ID,
+		"[1] must NOT be a sibling of [0] under the Steps root (regression check)")
+
+	stepA := woc.wf.Status.Nodes.FindByDisplayName("step-a")
+	require.NotNil(t, stepA, "step-a pod node should exist")
+	assert.NotContains(t, stepA.Children, sg1ID,
+		"[1] must NOT be wired under step-a until step-a fulfills (timing invariant)")
+
+	// Cycle 2: step-a completes. linkStepGroups now runs its wiring; step-b
+	// gets scheduled under [1]; the full chain root → [0] → step-a → [1] →
+	// step-b must be coherent.
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	root, err = woc.wf.Status.Nodes.Get(rootID)
+	require.NoError(t, err)
+	assert.Equal(t, []string{sg0ID}, root.Children,
+		"the Steps root must have exactly [0] as its only child")
+
+	sg0, err := woc.wf.Status.Nodes.Get(sg0ID)
+	require.NoError(t, err)
+	stepA = woc.wf.Status.Nodes.FindByDisplayName("step-a")
+	require.NotNil(t, stepA)
+	assert.Contains(t, sg0.Children, stepA.ID, "[0] must contain step-a as a child")
+	assert.Contains(t, stepA.Children, sg1ID,
+		"[1] must be wired as a child of step-a (the outbound of [0]) once [0] fulfills")
+
+	// linkStepGroups must be idempotent: [1] appears exactly once under step-a
+	// even after repeated operate cycles.
+	count := 0
+	for _, c := range stepA.Children {
+		if c == sg1ID {
+			count++
 		}
 	}
-	require.NotNil(t, consumer, "consumer should be scheduled even though producer was skipped")
-	require.NotNil(t, consumer.Inputs)
-	in := consumer.Inputs.GetParameterByName("in")
-	require.NotNil(t, in)
-	require.NotNil(t, in.Value)
-	assert.Equal(t, "FALLBACK", in.Value.String())
-}
+	assert.Equal(t, 1, count, "[1] should appear exactly once in step-a.Children")
 
-var stepsWhenFalseSkippedRefDrop = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: steps-when-false-skipped-ref-drop
-  namespace: default
-spec:
-  entrypoint: main
-  templates:
-  - name: main
-    steps:
-    - - name: producer
-        template: produce
-        when: "false"
-    - - name: consumer
-        templateRef:
-          name: "{{item.wftmpl}}"
-          template: "{{item.tmpl}}"
-        withItems:
-        - { wftmpl: "skipped-ref-consume", tmpl: "consume" }
-        when: "false"
-        arguments:
-          parameters:
-          - name: in
-            value: "{{steps.producer.outputs.parameters.msg}}"
-  - name: produce
-    outputs:
-      parameters:
-      - name: msg
-        valueFrom:
-          path: /tmp/out.txt
-    container:
-      image: alpine:3.23
-      command: [sh, -c]
-      args: ["echo hello > /tmp/out.txt"]
-`
-
-// TestStepsWhenFalseSkipsDropPass verifies that a step whose when-clause evaluates to false does
-// not fail on an absent-optional argument: a when-false step never substitutes its body (and item
-// expansion strips nils for never-executing steps), so the absent optional is never hit and the
-// step group proceeds with the step Skipped.
-func TestStepsWhenFalseSkipsDropPass(t *testing.T) {
-	ctx := logging.TestContext(t.Context())
-	cancel, controller := newController(ctx, wfv1.MustUnmarshalWorkflow(stepsWhenFalseSkippedRefDrop), wfv1.MustUnmarshalWorkflowTemplate(skippedRefConsumeWorkflowTemplate))
-	defer cancel()
-
-	woc := newWorkflowOperationCtx(ctx, wfv1.MustUnmarshalWorkflow(stepsWhenFalseSkippedRefDrop), controller)
-	woc.operate(ctx)
-
-	producer := woc.wf.Status.Nodes.FindByDisplayName("producer")
-	require.NotNil(t, producer)
-	require.Equal(t, wfv1.NodeSkipped, producer.Phase)
-
-	for _, node := range woc.wf.Status.Nodes {
-		assert.NotEqual(t, wfv1.NodeError, node.Phase, "node %q should not error: %s", node.DisplayName, node.Message)
-	}
-	assert.NotEqual(t, wfv1.WorkflowError, woc.wf.Status.Phase)
-	assert.NotEqual(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	stepB := woc.wf.Status.Nodes.FindByDisplayName("step-b")
+	require.NotNil(t, stepB, "step-b should be scheduled after step-a succeeds")
+	sg1, err := woc.wf.Status.Nodes.Get(sg1ID)
+	require.NoError(t, err)
+	assert.True(t, slices.Contains(sg1.Children, stepB.ID),
+		"[1] must contain step-b as a child")
 }

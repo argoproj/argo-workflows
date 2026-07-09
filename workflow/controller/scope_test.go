@@ -6,10 +6,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
-
-	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 func unsupportedArtifactSubPathResolution(t *testing.T, artifactString string) {
@@ -358,4 +358,72 @@ func TestAbsentOptionalRefRequiresTag(t *testing.T) {
 	assert.False(t, scope.absentOptionalRef("{{outer-{{"+ref+"}}}}"), "nested tags are not pure references")
 	assert.False(t, scope.absentOptionalRef("{{tasks.real.outputs.parameters.msg}}"), "a reference to a produced value is not absent")
 	assert.False(t, scope.absentOptionalRef("{{tasks.unknown.outputs.parameters.msg}}"), "an unknown key is unresolved, not absent")
+}
+
+// TestBug_ResolveArguments_DoesNotMutateSourceArtifacts verifies that resolving
+// arguments does not write through to the caller's Artifacts backing array.
+// Regression: scope.go args.Artifacts[i] = *resolvedArt mutated the
+// shared slice because args wfv1.Arguments was passed by value but the
+// slice header's backing array was shared with the task spec.
+func TestBug_ResolveArguments_DoesNotMutateSourceArtifacts(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	scope := createScope(nil)
+	varkeys.TasksNodeRef.OutputsArtifactByName.Set(scope.scope, wfv1.Artifact{
+		Name: "out",
+		ArtifactLocation: wfv1.ArtifactLocation{
+			S3: &wfv1.S3Artifact{Key: "k"},
+		},
+	}, "producer", "out")
+
+	source := wfv1.Arguments{Artifacts: wfv1.Artifacts{{
+		Name: "in",
+		From: "{{tasks.producer.outputs.artifacts.out}}",
+	}}}
+	expectedFrom := source.Artifacts[0].From
+
+	_, err := scope.resolveArguments(ctx, source, common.Parameters{})
+	require.NoError(t, err)
+
+	assert.Equal(t, expectedFrom, source.Artifacts[0].From,
+		"source.Artifacts[0].From must not be mutated by resolveArguments")
+	assert.Nil(t, source.Artifacts[0].S3,
+		"source.Artifacts[0].S3 must not be populated by resolveArguments")
+}
+
+// TestBug_ResolveArguments_OptionalArtifactDropped verifies that an optional
+// artifact whose source cannot be resolved is omitted from the resulting
+// Arguments.Artifacts (matching legacy resolveDependencyReferences). The
+// pre-fix code left the unresolved entry in place, causing downstream
+// ProcessArgs to see a stale From/FromExpression reference.
+func TestBug_ResolveArguments_OptionalArtifactDropped(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	scope := createScope(nil)
+	// No producer registered — resolution will fail.
+
+	source := wfv1.Arguments{Artifacts: wfv1.Artifacts{{
+		Name:     "in",
+		From:     "{{tasks.nonexistent.outputs.artifacts.out}}",
+		Optional: true,
+	}}}
+
+	resolved, err := scope.resolveArguments(ctx, source, common.Parameters{})
+	require.NoError(t, err)
+	assert.Empty(t, resolved.Artifacts,
+		"optional artifact that failed to resolve must be dropped from arguments")
+}
+
+func TestCreateScope_NilParamValue(t *testing.T) {
+	tmpl := &wfv1.Template{
+		Inputs: wfv1.Inputs{
+			Parameters: []wfv1.Parameter{
+				{Name: "has-value", Value: wfv1.AnyStringPtr("hello")},
+				{Name: "no-value", Default: wfv1.AnyStringPtr("default-val")},
+			},
+		},
+	}
+	assert.NotPanics(t, func() {
+		scope := createScope(tmpl)
+		assert.Equal(t, "hello", scope.scope.AsAnyMap()["inputs.parameters.has-value"])
+		assert.Equal(t, "default-val", scope.scope.AsAnyMap()["inputs.parameters.no-value"])
+	})
 }

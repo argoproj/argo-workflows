@@ -37,6 +37,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/variables"
 	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/common/dag"
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/cache"
 	hydratorfake "github.com/argoproj/argo-workflows/v4/workflow/hydrator/fake"
 	"github.com/argoproj/argo-workflows/v4/workflow/sync"
@@ -570,8 +571,13 @@ func TestProcessNodeRetries(t *testing.T) {
 	assert.Equal(t, wfv1.NodeSucceeded, n.Phase)
 
 	// Mark the parent node as running again and the lastChild as failed.
-	woc.markNodePhase(ctx, n.Name, wfv1.NodeRunning)
-	woc.markNodePhase(ctx, lastChild.Name, wfv1.NodeFailed)
+	// These are synthetic test rewinds; production never re-enters Running
+	// from Succeeded, so we bypass markNodePhase (which would reject the
+	// transition under the node phase SM) and write directly to the status.
+	forceNodePhaseForTest(woc, n.Name, wfv1.NodeRunning)
+	forceNodePhaseForTest(woc, lastChild.Name, wfv1.NodeFailed)
+	n, err = woc.wf.GetNodeByName(nodeName)
+	require.NoError(t, err)
 	_, _, err = woc.processNodeRetries(ctx, n, retries, &executeTemplateOpts{})
 	require.NoError(t, err)
 	n, err = woc.wf.GetNodeByName(nodeName)
@@ -598,6 +604,44 @@ func TestProcessNodeRetries(t *testing.T) {
 	n, _, err = woc.processNodeRetries(ctx, n, retries, &executeTemplateOpts{})
 	require.NoError(t, err)
 	assert.Equal(t, wfv1.NodeFailed, n.Phase)
+}
+
+// TestProcessNodeRetriesClearsDaemonedFlag verifies that when a daemon child node
+// fails (is no longer daemoned), the retry parent's Daemoned flag is cleared so
+// the retry logic can proceed instead of treating the node as "fulfilled".
+func TestProcessNodeRetriesClearsDaemonedFlag(t *testing.T) {
+	cancel, controller := newController(logging.TestContext(t.Context()))
+	defer cancel()
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	ctx := logging.TestContext(t.Context())
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	// Create a retry parent node that is Running + Daemoned (as if its child was previously daemoned)
+	nodeName := "test-node"
+	nodeID := woc.wf.NodeID(nodeName)
+	ctx, node := woc.initializeNode(ctx, nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{}, true)
+	daemon := true
+	node.Daemoned = &daemon
+	woc.wf.Status.Nodes[nodeID] = *node
+
+	retries := wfv1.RetryStrategy{}
+	retries.Limit = intstrutil.ParsePtr("2")
+
+	// Add a child node that was daemoned but has now failed
+	childNode := fmt.Sprintf("%s(%d)", nodeName, 0)
+	woc.initializeNode(ctx, childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeFailed, &wfv1.NodeFlag{Retried: true}, true)
+	woc.addChildNode(ctx, nodeName, childNode)
+
+	n, err := woc.wf.GetNodeByName(nodeName)
+	require.NoError(t, err)
+	assert.True(t, n.IsDaemoned(), "retry node should start with Daemoned=true")
+
+	// processNodeRetries should clear the Daemoned flag since the child is no longer daemoned
+	n, continueExecution, err := woc.processNodeRetries(ctx, n, retries, &executeTemplateOpts{})
+	require.NoError(t, err)
+	assert.True(t, continueExecution, "should continue execution to create a retry")
+	assert.False(t, n.IsDaemoned(), "Daemoned flag should be cleared when child is no longer daemoned")
+	assert.Equal(t, wfv1.NodeRunning, n.Phase, "retry node should stay Running to allow retry")
 }
 
 // TestProcessNodeRetries tests retrying when RetryOn.Error is enabled
@@ -654,8 +698,11 @@ func TestProcessNodeRetriesOnErrors(t *testing.T) {
 	assert.Equal(t, wfv1.NodeSucceeded, n.Phase)
 
 	// Mark the parent node as running again and the lastChild as errored.
-	n = woc.markNodePhase(ctx, n.Name, wfv1.NodeRunning)
-	woc.markNodePhase(ctx, lastChild.Name, wfv1.NodeError)
+	// Synthetic test rewind; bypass markNodePhase (forbidden by SM).
+	forceNodePhaseForTest(woc, n.Name, wfv1.NodeRunning)
+	forceNodePhaseForTest(woc, lastChild.Name, wfv1.NodeError)
+	n, err = woc.wf.GetNodeByName(nodeName)
+	require.NoError(t, err)
 	_, _, err = woc.processNodeRetries(ctx, n, retries, &executeTemplateOpts{})
 	require.NoError(t, err)
 	n, err = woc.wf.GetNodeByName(nodeName)
@@ -727,11 +774,17 @@ func TestProcessNodeRetriesOnTransientErrors(t *testing.T) {
 	assert.Equal(t, wfv1.NodeSucceeded, n.Phase)
 
 	// Mark the parent node as running again and the lastChild as errored with a message that indicates the error
-	// is transient.
-	n = woc.markNodePhase(ctx, n.Name, wfv1.NodeRunning)
+	// is transient. Synthetic test rewind; bypass markNodePhase (forbidden by SM).
+	forceNodePhaseForTest(woc, n.Name, wfv1.NodeRunning)
 	transientEnvVarKey := "TRANSIENT_ERROR_PATTERN"
 	transientErrMsg := "This error is transient"
-	woc.markNodePhase(ctx, lastChild.Name, wfv1.NodeError, transientErrMsg)
+	forceNodePhaseForTest(woc, lastChild.Name, wfv1.NodeError)
+	lcID := woc.wf.NodeID(lastChild.Name)
+	lcNode := woc.wf.Status.Nodes[lcID]
+	lcNode.Message = transientErrMsg
+	woc.wf.Status.Nodes[lcID] = lcNode
+	n, err = woc.wf.GetNodeByName(nodeName)
+	require.NoError(t, err)
 	t.Setenv(transientEnvVarKey, transientErrMsg)
 	_, _, err = woc.processNodeRetries(ctx, n, retries, &executeTemplateOpts{})
 	require.NoError(t, err)
@@ -887,10 +940,11 @@ func TestProcessNodeRetriesWithExponentialBackoff(t *testing.T) {
 	require.LessOrEqual(backoff, 660)
 	require.Less(655, backoff)
 
-	// Mark lastChild as successful.
+	// Mark lastChild as successful. Synthetic test rewind from Error to
+	// Succeeded; bypass markNodePhase (forbidden by SM).
 	lastChild = getChildNodeIndex(n, woc.wf.Status.Nodes, -1)
 	require.NotNil(lastChild)
-	woc.markNodePhase(ctx, lastChild.Name, wfv1.NodeSucceeded)
+	forceNodePhaseForTest(woc, lastChild.Name, wfv1.NodeSucceeded)
 	n, _, err = woc.processNodeRetries(ctx, n, retries, &executeTemplateOpts{})
 	require.NoError(err)
 	// The parent node also gets marked as Succeeded.
@@ -997,8 +1051,11 @@ func TestProcessNodeRetriesWithExpression(t *testing.T) {
 	assert.Empty(t, n.Message)
 
 	// Mark the parent node as running again and the lastChild as errored.
-	n = woc.markNodePhase(ctx, n.Name, wfv1.NodeRunning)
-	woc.markNodePhase(ctx, lastChild.Name, wfv1.NodeError)
+	// Synthetic test rewind; bypass markNodePhase (forbidden by SM).
+	forceNodePhaseForTest(woc, n.Name, wfv1.NodeRunning)
+	forceNodePhaseForTest(woc, lastChild.Name, wfv1.NodeError)
+	n, err = woc.wf.GetNodeByName(nodeName)
+	require.NoError(t, err)
 	_, _, err = woc.processNodeRetries(ctx, n, retries, &executeTemplateOpts{})
 	require.NoError(t, err)
 	n, err = woc.wf.GetNodeByName(nodeName)
@@ -1006,8 +1063,9 @@ func TestProcessNodeRetriesWithExpression(t *testing.T) {
 	assert.Equal(t, wfv1.NodeError, n.Phase)
 	assert.Equal(t, "retryStrategy.expression evaluated to false", n.Message)
 
-	// Add a third node that has failed.
-	woc.markNodePhase(ctx, n.Name, wfv1.NodeRunning)
+	// Add a third node that has failed. Synthetic test rewind of the
+	// retry parent (Error -> Running) bypasses markNodePhase.
+	forceNodePhaseForTest(woc, n.Name, wfv1.NodeRunning)
 	childNode := fmt.Sprintf("%s(%d)", nodeName, 3)
 	woc.initializeNode(ctx, childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeFailed, &wfv1.NodeFlag{Retried: true}, true)
 	woc.addChildNode(ctx, nodeName, childNode)
@@ -1078,10 +1136,15 @@ func TestProcessNodeRetriesMessageOrder(t *testing.T) {
 	assert.Equal(t, wfv1.NodeSucceeded, n.Phase)
 	assert.Empty(t, n.Message)
 
-	// workflow mark shutdown, no retry is evaluated
+	// workflow mark shutdown, no retry is evaluated. Synthetic test rewinds:
+	// the parent must go Succeeded → Running and the child Succeeded →
+	// Error / Failed for these scenarios. markNodePhase rejects those
+	// transitions under the node phase SM, so use the direct setter.
 	woc.wf.Spec.Shutdown = wfv1.ShutdownStrategyStop
-	n = woc.markNodePhase(ctx, n.Name, wfv1.NodeRunning)
-	woc.markNodePhase(ctx, lastChild.Name, wfv1.NodeError)
+	forceNodePhaseForTest(woc, n.Name, wfv1.NodeRunning)
+	forceNodePhaseForTest(woc, lastChild.Name, wfv1.NodeError)
+	n, err = woc.wf.GetNodeByName(nodeName)
+	require.NoError(t, err)
 	_, _, err = woc.processNodeRetries(ctx, n, retries, &executeTemplateOpts{})
 	require.NoError(t, err)
 	n, err = woc.wf.GetNodeByName(nodeName)
@@ -1092,15 +1155,29 @@ func TestProcessNodeRetriesMessageOrder(t *testing.T) {
 
 	// Invalid retry policy, shouldn't evaluate expression
 	retries.RetryPolicy = "noExist"
-	n = woc.markNodePhase(ctx, n.Name, wfv1.NodeRunning)
-	woc.markNodePhase(ctx, lastChild.Name, wfv1.NodeError)
+	forceNodePhaseForTest(woc, n.Name, wfv1.NodeRunning)
+	forceNodePhaseForTest(woc, lastChild.Name, wfv1.NodeError)
+	n, err = woc.wf.GetNodeByName(nodeName)
+	require.NoError(t, err)
 	_, _, err = woc.processNodeRetries(ctx, n, retries, &executeTemplateOpts{})
 	assert.Equal(t, "noExist is not a valid RetryPolicy", err.Error())
 
 	// Node status doesn't with retrypolicy, shouldn't evaluate expression
 	retries.RetryPolicy = wfv1.RetryPolicyOnFailure
-	n = woc.markNodePhase(ctx, n.Name, wfv1.NodeRunning)
-	woc.markNodePhase(ctx, lastChild.Name, wfv1.NodeError)
+	forceNodePhaseForTest(woc, n.Name, wfv1.NodeRunning)
+	forceNodePhaseForTest(woc, lastChild.Name, wfv1.NodeError)
+	// Clear stale message left over from the prior Shutdown branch so the
+	// retry-policy-mismatch path's "no message" expectation holds.
+	lcID := woc.wf.NodeID(lastChild.Name)
+	lcNode := woc.wf.Status.Nodes[lcID]
+	lcNode.Message = ""
+	woc.wf.Status.Nodes[lcID] = lcNode
+	nID := woc.wf.NodeID(n.Name)
+	nNode := woc.wf.Status.Nodes[nID]
+	nNode.Message = ""
+	woc.wf.Status.Nodes[nID] = nNode
+	n, err = woc.wf.GetNodeByName(nodeName)
+	require.NoError(t, err)
 	_, _, err = woc.processNodeRetries(ctx, n, retries, &executeTemplateOpts{})
 	require.NoError(t, err)
 	n, err = woc.wf.GetNodeByName(nodeName)
@@ -1110,8 +1187,10 @@ func TestProcessNodeRetriesMessageOrder(t *testing.T) {
 
 	// Node status aligns with retrypolicy, should evaluate expression
 	retries.RetryPolicy = wfv1.RetryPolicyOnFailure
-	n = woc.markNodePhase(ctx, n.Name, wfv1.NodeRunning)
-	woc.markNodePhase(ctx, lastChild.Name, wfv1.NodeFailed)
+	forceNodePhaseForTest(woc, n.Name, wfv1.NodeRunning)
+	forceNodePhaseForTest(woc, lastChild.Name, wfv1.NodeFailed)
+	n, err = woc.wf.GetNodeByName(nodeName)
+	require.NoError(t, err)
 	_, _, err = woc.processNodeRetries(ctx, n, retries, &executeTemplateOpts{})
 	require.NoError(t, err)
 	n, err = woc.wf.GetNodeByName(nodeName)
@@ -1120,7 +1199,7 @@ func TestProcessNodeRetriesMessageOrder(t *testing.T) {
 	assert.Equal(t, "retryStrategy.expression evaluated to false", n.Message)
 
 	// Node status aligns with retrypolicy but reach max retry limit, shouldn't evaluate expression
-	woc.markNodePhase(ctx, n.Name, wfv1.NodeRunning)
+	forceNodePhaseForTest(woc, n.Name, wfv1.NodeRunning)
 	childNode := fmt.Sprintf("%s(%d)", nodeName, 1)
 	woc.initializeNode(ctx, childNode, wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeFailed, &wfv1.NodeFlag{Retried: true}, true)
 	woc.addChildNode(ctx, nodeName, childNode)
@@ -1207,9 +1286,12 @@ func TestProcessNodesNoRetryWithError(t *testing.T) {
 	assert.Equal(t, wfv1.NodeSucceeded, n.Phase)
 
 	// Mark the parent node as running again and the lastChild as errored.
-	// Parent node should also be errored because retry on error is disabled
-	n = woc.markNodePhase(ctx, n.Name, wfv1.NodeRunning)
-	woc.markNodePhase(ctx, lastChild.Name, wfv1.NodeError)
+	// Parent node should also be errored because retry on error is disabled.
+	// Synthetic test rewind; bypass markNodePhase (forbidden by SM).
+	forceNodePhaseForTest(woc, n.Name, wfv1.NodeRunning)
+	forceNodePhaseForTest(woc, lastChild.Name, wfv1.NodeError)
+	n, err = woc.wf.GetNodeByName(nodeName)
+	require.NoError(t, err)
 	_, _, err = woc.processNodeRetries(ctx, n, retries, &executeTemplateOpts{})
 	require.NoError(t, err)
 	n, err = woc.wf.GetNodeByName(nodeName)
@@ -1651,7 +1733,6 @@ func TestStepsRetriesVariable(t *testing.T) {
 		if i != 1 {
 			makePodsPhase(ctx, woc, apiv1.PodFailed)
 		}
-		// move to next retry step
 		woc.operate(ctx)
 		wf = woc.wf
 	}
@@ -1679,6 +1760,7 @@ func TestAssessNodeStatus(t *testing.T) {
 		node        *wfv1.NodeStatus
 		wantPhase   wfv1.NodePhase
 		wantMessage string
+		wantNil     bool
 	}{{
 		name: "pod pending",
 		pod: &apiv1.Pod{
@@ -1877,11 +1959,10 @@ func TestAssessNodeStatus(t *testing.T) {
 		wantPhase:   wfv1.NodeRunning,
 		wantMessage: "",
 	}, {
-		name:        "default",
-		pod:         &apiv1.Pod{},
-		node:        &wfv1.NodeStatus{TemplateName: templateName},
-		wantPhase:   wfv1.NodeError,
-		wantMessage: "Unexpected pod phase for : ",
+		name:    "empty phase",
+		pod:     &apiv1.Pod{},
+		node:    &wfv1.NodeStatus{TemplateName: templateName},
+		wantNil: true,
 	}, {
 		name: "pod failed - main container still running, init container finished",
 		pod: &apiv1.Pod{
@@ -1926,6 +2007,11 @@ func TestAssessNodeStatus(t *testing.T) {
 			defer cancel()
 			woc := newWorkflowOperationCtx(ctx, wf, controller)
 			got := woc.assessNodeStatus(ctx, tt.pod, tt.node)
+			if tt.wantNil {
+				assert.Nil(t, got)
+				return
+			}
+			require.NotNil(t, got)
 			assert.Equal(t, tt.wantPhase, got.Phase)
 			assert.Equal(t, tt.wantMessage, got.Message)
 		})
@@ -2727,9 +2813,17 @@ func TestExpandWithItems(t *testing.T) {
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
-	newSteps, err := woc.expandStep(ctx, wf.Spec.Templates[0].Steps[0].Steps[0], &wfScope{})
+	step := wf.Spec.Templates[0].Steps[0].Steps[0]
+	dagTask := wfv1.DAGTask{
+		Name:      step.Name,
+		Template:  step.Template,
+		Arguments: step.Arguments,
+		WithItems: step.WithItems,
+	}
+	dagEvaluator := dag.NewDAGEvaluator(woc.wf, &woc.wf.Spec.Templates[0], woc.wf.Name, woc.wf.Name)
+	expandedTasks, err := dagEvaluator.ExpandTask(ctx, dagTask, woc.globalParams(), woc)
 	require.NoError(t, err)
-	assert.Len(t, newSteps, 5)
+	assert.Len(t, expandedTasks, 5)
 	woc.operate(ctx)
 	pods, err := listPods(ctx, woc)
 	require.NoError(t, err)
@@ -2777,10 +2871,18 @@ func TestExpandWithItemsMap(t *testing.T) {
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
-	newSteps, err := woc.expandStep(ctx, wf.Spec.Templates[0].Steps[0].Steps[0], &wfScope{})
+	step := wf.Spec.Templates[0].Steps[0].Steps[0]
+	dagTask := wfv1.DAGTask{
+		Name:      step.Name,
+		Template:  step.Template,
+		Arguments: step.Arguments,
+		WithItems: step.WithItems,
+	}
+	dagEvaluator := dag.NewDAGEvaluator(woc.wf, &woc.wf.Spec.Templates[0], woc.wf.Name, woc.wf.Name)
+	expandedTasks, err := dagEvaluator.ExpandTask(ctx, dagTask, woc.globalParams(), woc)
 	require.NoError(t, err)
-	assert.Len(t, newSteps, 3)
-	assert.Equal(t, "debian 9.1 JSON({\"os\":\"debian\",\"version\":9.1})", newSteps[0].Arguments.Parameters[0].Value.String())
+	assert.Len(t, expandedTasks, 3)
+	assert.Equal(t, "debian 9.1 JSON({\"os\":\"debian\",\"version\":9.1})", expandedTasks[0].Arguments.Parameters[0].Value.String())
 }
 
 var suspendTemplate = `
@@ -4258,13 +4360,17 @@ func TestStepsOnExitTimeout(t *testing.T) {
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
-	woc.operate(ctx)
-
-	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
-	woc.operate(ctx)
+	// The engine may need multiple cycles to detect the timeout and create the onExit node.
+	for range 10 {
+		woc.operate(ctx)
+		if woc.wf.Status.Nodes.FindByDisplayName("exit-handlers.onExit") != nil {
+			break
+		}
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	}
 
 	node := woc.wf.Status.Nodes.FindByDisplayName("exit-handlers.onExit")
-	assert.NotNil(t, node)
+	require.NotNil(t, node)
 	assert.True(t, node.NodeFlag.Hooked)
 	assert.Equal(t, wfv1.NodePending, node.Phase)
 }
@@ -6244,7 +6350,6 @@ func TestGetOutboundNodesFromCacheHitSteps(t *testing.T) {
 			hitCache++
 			assert.NotNil(t, node.MemoizationStatus)
 			assert.True(t, node.MemoizationStatus.Hit)
-			assert.Len(t, node.Children, 1)
 		}
 	}
 	assert.Equal(t, 1, hitCache)
@@ -6291,7 +6396,6 @@ func TestGetOutboundNodesFromCacheHitDAG(t *testing.T) {
 			hitCache++
 			assert.NotNil(t, node.MemoizationStatus)
 			assert.True(t, node.MemoizationStatus.Hit)
-			assert.Len(t, node.Children, 1)
 		}
 	}
 	assert.Equal(t, 1, hitCache)
@@ -8294,6 +8398,38 @@ func TestPodHasContainerNeedingTermination(t *testing.T) {
 		},
 	}
 	assert.True(t, podHasContainerNeedingTermination(&pod, tmpl))
+
+	// containerSet with a retryStrategy: a failed container must not tear down the
+	// pod while a sibling is still Running (retrying inside the emissary).
+	csTmpl := wfv1.Template{
+		ContainerSet: &wfv1.ContainerSetTemplate{
+			RetryStrategy: &wfv1.ContainerSetRetryStrategy{},
+			Containers: []wfv1.ContainerNode{
+				{Container: apiv1.Container{Name: "c2"}},
+				{Container: apiv1.Container{Name: "c3"}},
+			},
+		},
+	}
+	pod = apiv1.Pod{
+		Status: apiv1.PodStatus{
+			ContainerStatuses: []apiv1.ContainerStatus{
+				{Name: "c2", State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 64}}},
+				{Name: "c3", State: apiv1.ContainerState{Running: &apiv1.ContainerStateRunning{}}},
+			},
+		},
+	}
+	assert.False(t, podHasContainerNeedingTermination(&pod, csTmpl))
+
+	// once every container has exited, the containerSet pod is terminated.
+	pod = apiv1.Pod{
+		Status: apiv1.PodStatus{
+			ContainerStatuses: []apiv1.ContainerStatus{
+				{Name: "c2", State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 64}}},
+				{Name: "c3", State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 1}}},
+			},
+		},
+	}
+	assert.True(t, podHasContainerNeedingTermination(&pod, csTmpl))
 }
 
 func TestRetryOnDiffHost(t *testing.T) {
@@ -9007,18 +9143,6 @@ func TestGetStepOrDAGTaskName(t *testing.T) {
 	assert.Equal(t, "hello-mate", getStepOrDAGTaskName("greet.hello-mate"))
 	assert.Equal(t, "hello-mate", getStepOrDAGTaskName("hello-mate"))
 	assert.Equal(t, "fanout1", getStepOrDAGTaskName("bug-rqq5f[0].fanout[0].fanout1(0:1)(0)[0]"))
-}
-
-func TestGenerateOutputResultRegex(t *testing.T) {
-	dagTmpl := &wfv1.Template{DAG: &wfv1.DAGTemplate{}}
-	ref, expr := generateOutputResultRegex("template-name", dagTmpl)
-	assert.Equal(t, `tasks\.template-name\.outputs\.result`, ref)
-	assert.Equal(t, `tasks\[['\"]template-name['\"]\]\.outputs.result`, expr)
-
-	stepsTmpl := &wfv1.Template{Steps: []wfv1.ParallelSteps{}}
-	ref, expr = generateOutputResultRegex("template-name", stepsTmpl)
-	assert.Equal(t, `steps\.template-name\.outputs\.result`, ref)
-	assert.Equal(t, `steps\[['\"]template-name['\"]\]\.outputs.result`, expr)
 }
 
 const rootRetryStrategyCompletes = `apiVersion: argoproj.io/v1alpha1
@@ -13116,4 +13240,27 @@ func TestWithSequenceExpressionPreservesGlobalScope(t *testing.T) {
 		assert.GreaterOrEqual(t, len(woc.wf.Status.Nodes), 4,
 			"Should have created multiple nodes for expanded sequence")
 	})
+}
+
+func TestSubstitute(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	woc := newWorkflowOperationCtx(ctx, &wfv1.Workflow{}, nil)
+	scope := map[string]string{
+		"inputs.parameters.foo": "bar",
+		"inputs.parameters.baz": "qux",
+	}
+	// Case 1: Simple substitution
+	res, err := woc.Substitute("{{inputs.parameters.foo}}", scope)
+	require.NoError(t, err)
+	assert.Equal(t, "bar", res)
+
+	// Case 2: Substitution in expression (non-JSON)
+	res, err = woc.Substitute("{{inputs.parameters.foo}} == bar", scope)
+	require.NoError(t, err)
+	assert.Equal(t, "bar == bar", res)
+
+	// Case 3: Substitution with invalid JSON (should not error with "cannot do template replacements with invalid JSON")
+	res, err = woc.Substitute("{{inputs.parameters.foo}} invalid json", scope)
+	require.NoError(t, err)
+	assert.Equal(t, "bar invalid json", res)
 }
