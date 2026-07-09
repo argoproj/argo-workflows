@@ -6,10 +6,6 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
-// NodePhaseSM documents and enforces valid node phase transitions.
-// The zero value is usable.
-type NodePhaseSM struct{}
-
 // validTransitions is the single authoritative table of all valid node phase transitions.
 //
 // State legend:
@@ -61,14 +57,11 @@ var validTransitions = map[wfv1.NodePhase][]wfv1.NodePhase{
 	wfv1.NodeOmitted:   {},
 }
 
-// IsValidTransition reports whether transitioning from → to is a documented valid transition.
+// isValidPhaseTransition reports whether transitioning from → to is a documented valid transition.
 // Same-phase transitions are always valid (idempotent updates).
-func (NodePhaseSM) IsValidTransition(from, to wfv1.NodePhase) bool {
+func isValidPhaseTransition(from, to wfv1.NodePhase) bool {
 	if from == to {
 		return true
 	}
 	return slices.Contains(validTransitions[from], to)
 }
-
-// nodePhaseSM is the package-level singleton used by markNodePhase.
-var nodePhaseSM = NodePhaseSM{}

@@ -140,7 +140,7 @@ func TestWorkflowTasks_NewWorkflowTasks(t *testing.T) {
 		tasks := newWorkflowTasks(toTasks(dagTasks))
 
 		assert.NotNil(t, tasks)
-		assert.Len(t, tasks.Tasks(), 2)
+		assert.Len(t, tasks.TaskNames(), 2)
 	})
 }
 
