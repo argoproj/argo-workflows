@@ -476,6 +476,20 @@ func TestDAGOnExit(t *testing.T) {
 	assert.True(t, onExitNodeIsPresent)
 
 	makePodsPhase(ctx, woc1, apiv1.PodSucceeded)
+	for idx, node := range woc1.wf.Status.Nodes {
+		if strings.Contains(node.Name, ".leafA") {
+			node.Outputs = &wfv1.Outputs{
+				Parameters: []wfv1.Parameter{
+					{
+						Name:  "result",
+						Value: wfv1.AnyStringPtr("welcome"),
+					},
+				},
+			}
+			woc1.wf.Status.Nodes[idx] = node
+			woc.wf.Status.MarkTaskResultComplete(ctx, node.ID)
+		}
+	}
 	woc2 := newWorkflowOperationCtx(ctx, woc1.wf, controller)
 	woc2.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc2.wf.Status.Phase)
@@ -1063,7 +1077,7 @@ spec:
 	hookNode := woc.wf.Status.Nodes.FindByDisplayName(exitNodeName)
 
 	require.NotNil(t, hookNode)
-	assert.NotNil(t, hookNode.Inputs)
+	require.NotNil(t, hookNode.Inputs)
 	require.Len(t, hookNode.Inputs.Parameters, 1)
 	assert.NotNil(t, hookNode.Inputs.Parameters[0].Value)
 	assert.Equal(t, hookNode.Inputs.Parameters[0].Value.String(), string(apiv1.PodFailed))

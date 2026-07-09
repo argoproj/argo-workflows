@@ -175,6 +175,29 @@ func (trc *Tracing) RecoverWorkflowContext(ctx context.Context, id string) conte
 	return ctx
 }
 
+// ContextWithNode returns ctx with the node's span installed as the active span.
+// Child spans started afterwards (e.g. createWorkflowPod) then parent under the
+// node span even when the node was first initialized in an earlier operate cycle
+// (or earlier converge pass) and its span context is no longer carried in ctx —
+// the case that otherwise produces "incorrect trace parentage". If the node span
+// is unknown (tracing disabled, or node not yet started), ctx is returned unchanged.
+func (trc *Tracing) ContextWithNode(ctx context.Context, name, namespace, nodeID string) context.Context {
+	wfID := workflowID(name, namespace)
+	trc.mutex.RLock()
+	wfs, ok := trc.workflows[wfID]
+	trc.mutex.RUnlock()
+	if !ok {
+		return ctx
+	}
+	wfs.mutex.RLock()
+	node, ok := wfs.nodes[nodeID]
+	wfs.mutex.RUnlock()
+	if !ok || node.node == nil {
+		return ctx
+	}
+	return trace.ContextWithSpan(ctx, *node.node)
+}
+
 func (trc *Tracing) RecordStartNode(ctx context.Context, name, namespace string, nodeID string, nodeType string, phase wfv1.NodePhase, message string) context.Context {
 	logger := logging.RequireLoggerFromContext(ctx)
 	wfID := namespace + "/" + name

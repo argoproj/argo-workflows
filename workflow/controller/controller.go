@@ -122,7 +122,7 @@ type WorkflowController struct {
 	wfclientset      wfclientset.Interface
 
 	// maxStackDepth is a configurable limit to the depth of the "stack", which is increased with every nested call to
-	// woc.executeTemplate and decreased when such calls return. This is used to prevent infinite recursion
+	// woc.reconcileTemplate and decreased when such calls return. This is used to prevent infinite recursion
 	maxStackDepth int
 
 	// datastructures to support the processing of workflows and workflow pods

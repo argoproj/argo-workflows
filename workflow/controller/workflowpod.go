@@ -125,7 +125,7 @@ func (woc *wfOperationCtx) processPodSpecPatch(ctx context.Context, tmpl *wfv1.T
 	for _, patch := range toProcess {
 		newTmpl := tmpl.DeepCopy()
 		newTmpl.PodSpecPatch = patch
-		processedTmpl, err := common.ProcessArgs(ctx, newTmpl, &wfv1.Arguments{}, woc.globalParams(), localParams, false, woc.wf.Namespace, woc.controller.configMapInformer.GetIndexer())
+		processedTmpl, err := common.ProcessArgs(ctx, newTmpl, &wfv1.Arguments{}, woc.globalParams(), localParams, false, true, woc.wf.Namespace, woc.controller.configMapInformer.GetIndexer())
 		if err != nil {
 			return nil, errors.Wrap(err, "", "Failed to substitute the PodSpecPatch variables")
 		}
@@ -150,6 +150,12 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		return existing, nil
 	}
 
+	// Re-root under the node span: on a re-entry (informer-lag re-creation, or a
+	// later converge pass) the node already exists, so the leaf executor skipped
+	// the initializeExecutableNode call that would have carried the node span in
+	// ctx, leaving the workflow span active. Without this the pod span parents
+	// under the workflow span instead of the node.
+	ctx = woc.controller.tracing.ContextWithNode(ctx, woc.wf.Name, woc.wf.Namespace, nodeID)
 	ctx, span := woc.controller.tracing.StartCreateWorkflowPod(ctx, nodeID)
 	defer span.End()
 
