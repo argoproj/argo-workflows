@@ -28,7 +28,6 @@ type dagTopology struct {
 
 // WorkflowTasks holds the task collection and pre-computed topology for a DAG evaluation.
 type WorkflowTasks struct {
-	tasks    []Task
 	taskMap  map[string]Task
 	topology *dagTopology
 }
@@ -76,7 +75,6 @@ func newWorkflowTasks(tasks []Task) *WorkflowTasks {
 	topoOrder := topologicalSort(dependencies)
 
 	return &WorkflowTasks{
-		tasks:   tasks,
 		taskMap: taskMap,
 		topology: &dagTopology{
 			dependencies:  dependencies,
@@ -98,11 +96,6 @@ func (w *WorkflowTasks) GetDependencies(_ context.Context, key Key) ([]Key, erro
 		return deps, nil
 	}
 	return nil, nil
-}
-
-// Keys returns all task names (sorted).
-func (w *WorkflowTasks) Keys() []Key {
-	return w.TaskNames()
 }
 
 // GetDependsLogic returns the normalized depends expression for a task.
@@ -131,11 +124,6 @@ func (w *WorkflowTasks) TaskNames() []string {
 	}
 	sort.Strings(names)
 	return names
-}
-
-// Tasks returns the slice of tasks.
-func (w *WorkflowTasks) Tasks() []Task {
-	return w.tasks
 }
 
 // GetTask returns the Task with the given name, or nil if not found.

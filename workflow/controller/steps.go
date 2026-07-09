@@ -89,8 +89,8 @@ func (s *StepAdapter) GetExitHook(args wfv1.Arguments) *wfv1.LifecycleHook {
 }
 
 func (s *StepAdapter) Expand(ctx context.Context, scope map[string]string, substitutor dag.Substitutor) ([]dag.Task, error) {
-	// Construct a temporary DAGTask to use existing ExpandTask logic
-	dt := &wfv1.DAGTask{
+	// Construct a temporary DAGTask to reuse the DAG expansion logic
+	dt := &dag.DAGTask{DAGTask: &wfv1.DAGTask{
 		Name:         s.GetName(),
 		Template:     s.step.Template,
 		Arguments:    s.step.Arguments,
@@ -103,17 +103,8 @@ func (s *StepAdapter) Expand(ctx context.Context, scope map[string]string, subst
 		TemplateRef:  s.step.TemplateRef,
 		Hooks:        s.step.Hooks,
 		Dependencies: s.dependencies,
-	}
-	expanded, err := dag.ExpandTask(ctx, *dt, scope, substitutor)
-	if err != nil {
-		return nil, err
-	}
-	tasks := make([]dag.Task, len(expanded))
-	for i := range expanded {
-		val := expanded[i]
-		tasks[i] = &dag.DAGTask{DAGTask: &val}
-	}
-	return tasks, nil
+	}}
+	return dt.Expand(ctx, scope, substitutor)
 }
 
 // executeSteps executes a Steps template by converting step groups into DAG tasks

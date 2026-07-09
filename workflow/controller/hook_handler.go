@@ -64,8 +64,6 @@ func (h *hookHandler) ExecuteExitHandler(ctx context.Context, exitHook *wfv1.Lif
 		return false, nil, nil
 	}
 
-	scopePrefix := h.prefix + "." + displayName
-
 	if exitHook.Expression != "" {
 		// nil-preserving view so expressions can apply `??` fallbacks to skipped/omitted outputs
 		execute, err := argoexpr.EvalBool(exitHook.Expression,
@@ -80,9 +78,13 @@ func (h *hookHandler) ExecuteExitHandler(ctx context.Context, exitHook *wfv1.Lif
 
 	onExitNodeName := common.GenerateOnExitNodeName(taskNode.Name)
 	onExitNode, err := h.woc.wf.GetNodeByName(onExitNodeName)
-	if err != nil {
-		// Exit handler node doesn't exist yet — create and execute it.
-		h.log.Info(ctx, fmt.Sprintf("Running OnExit node for %s", taskNode.Name))
+	creating := err != nil
+	// Create the exit handler node, or re-enter reconcileTemplate to advance an
+	// unfulfilled one (e.g., process pod completions in a nested Steps template).
+	if creating || !onExitNode.Fulfilled() {
+		if creating {
+			h.log.Info(ctx, fmt.Sprintf("Running OnExit node for %s", taskNode.Name))
+		}
 		resolvedArgs := exitHook.Arguments
 		// Resolve even when the task produced no outputs: exit-hook args may reference a SIBLING's
 		// skipped/omitted output (an absent optional), which resolveExitTmplArgument rescues via the
@@ -99,37 +101,12 @@ func (h *hookHandler) ExecuteExitHandler(ctx context.Context, exitHook *wfv1.Lif
 			onExitTemplate: true,
 			nodeFlag:       &wfv1.NodeFlag{Hooked: true},
 			scope:          scope,
-			scopePrefix:    scopePrefix,
 		})
 		if err != nil {
 			return true, nil, err
 		}
-		if onExitNode != nil {
+		if creating && onExitNode != nil {
 			h.woc.addChildNode(ctx, taskNode.Name, onExitNode.Name)
-		}
-	} else if !onExitNode.Fulfilled() {
-		// Exit handler node exists but hasn't completed — re-enter reconcileTemplate
-		// to advance it (e.g., process pod completions in a nested Steps template).
-		resolvedArgs := exitHook.Arguments
-		// Resolve even when the task produced no outputs: exit-hook args may reference a SIBLING's
-		// skipped/omitted output (an absent optional), which resolveExitTmplArgument rescues via the
-		// scope. The task's own outputs (possibly nil) are merged in by resolveExitTmplArgument.
-		if !resolvedArgs.IsEmpty() {
-			resolvedArgs, err = h.woc.resolveExitTmplArgument(ctx,
-				exitHook.Arguments, h.ref, displayName, taskNode.Outputs, scope)
-			if err != nil {
-				return true, nil, err
-			}
-		}
-		onExitNode, err = h.woc.reconcileTemplate(ctx, onExitNodeName, toTemplateReferenceHolder(exitHook), h.tmplCtx, resolvedArgs, &executeTemplateOpts{
-			boundaryID:     h.boundaryID,
-			onExitTemplate: true,
-			nodeFlag:       &wfv1.NodeFlag{Hooked: true},
-			scope:          scope,
-			scopePrefix:    scopePrefix,
-		})
-		if err != nil {
-			return true, nil, err
 		}
 	}
 	return true, onExitNode, nil
