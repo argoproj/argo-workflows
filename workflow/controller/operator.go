@@ -1816,6 +1816,14 @@ func (woc *wfOperationCtx) inferFailedReason(ctx context.Context, pod *apiv1.Pod
 		case ctr.Name == common.InitContainerName:
 			return wfv1.NodeError, msg
 		case tmpl.IsMainContainerName(ctr.Name):
+			// A daemon's main container is deliberately SIGTERM'd/SIGKILL'd (143/137)
+			// by argoexec once downstream steps complete, so those exit codes are the
+			// expected teardown, not a failure. Any other non-zero code still fails.
+			if tmpl.IsDaemon() && (t.ExitCode == 137 || t.ExitCode == 143) {
+				woc.log.WithFields(logging.Fields{"exitCode": t.ExitCode, "containerName": ctr.Name}).Info(ctx, "ignoring daemon main container exit code")
+				mainContainerSucceeded = true
+				continue
+			}
 			return wfv1.NodeFailed, msg
 		case ctr.Name == common.WaitContainerName:
 			return wfv1.NodeError, msg

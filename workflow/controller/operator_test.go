@@ -7686,6 +7686,85 @@ func TestPodFailureWithSidecarSigkill(t *testing.T) {
 	assert.Empty(t, msg)
 }
 
+// A daemon's main container is deliberately SIGTERM'd (143) by argoexec once
+// downstream steps complete, so that is the expected teardown rather than a
+// failure. Regression test for #16397.
+var daemonTemplate = `
+name: daemon-tmpl
+daemon: true
+container:
+  name: main
+  image: argoproj/argosay:v2
+`
+
+var podDaemonMainSigterm = `
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-pod
+status:
+  phase: Failed
+  containerStatuses:
+  - name: main
+    ready: false
+    state:
+      terminated:
+        exitCode: 143
+        reason: Error
+  - name: wait
+    ready: false
+    state:
+      terminated:
+        exitCode: 0
+        reason: Completed
+`
+
+func TestPodFailureWithDaemonMainSigterm(t *testing.T) {
+	var pod apiv1.Pod
+	wfv1.MustUnmarshal(podDaemonMainSigterm, &pod)
+	var tmpl wfv1.Template
+	wfv1.MustUnmarshal(daemonTemplate, &tmpl)
+	require.True(t, tmpl.IsDaemon(), "check the test case is valid")
+	ctx := logging.TestContext(t.Context())
+	nodeStatus, msg := newWoc(ctx).inferFailedReason(ctx, &pod, &tmpl)
+	// Daemon main was SIGTERM'd (143) and wait succeeded, so the node succeeds.
+	assert.Equal(t, wfv1.NodeSucceeded, nodeStatus)
+	assert.Empty(t, msg)
+}
+
+var podDaemonMainCrash = `
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-pod
+status:
+  phase: Failed
+  containerStatuses:
+  - name: main
+    ready: false
+    state:
+      terminated:
+        exitCode: 1
+        reason: Error
+  - name: wait
+    ready: false
+    state:
+      terminated:
+        exitCode: 0
+        reason: Completed
+`
+
+func TestPodFailureWithDaemonMainCrash(t *testing.T) {
+	var pod apiv1.Pod
+	wfv1.MustUnmarshal(podDaemonMainCrash, &pod)
+	var tmpl wfv1.Template
+	wfv1.MustUnmarshal(daemonTemplate, &tmpl)
+	ctx := logging.TestContext(t.Context())
+	nodeStatus, _ := newWoc(ctx).inferFailedReason(ctx, &pod, &tmpl)
+	// A genuine non-signal crash of a daemon's main container still fails.
+	assert.Equal(t, wfv1.NodeFailed, nodeStatus)
+}
+
 var podWithWaitContainerOOM = `
 apiVersion: v1
 kind: Pod
