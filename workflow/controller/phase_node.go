@@ -13,14 +13,6 @@ type phaseNode struct {
 	phase  wfv1.NodePhase
 }
 
-func generatePhaseNodes(children []string, branchPhase wfv1.NodePhase) []phaseNode {
-	out := make([]phaseNode, len(children))
-	for i, child := range children {
-		out[i] = phaseNode{nodeID: child, phase: branchPhase}
-	}
-	return out
-}
-
 type uniquePhaseNodeQueue struct {
 	seen  map[string]bool
 	queue []phaseNode
