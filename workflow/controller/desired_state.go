@@ -28,12 +28,6 @@ type DesiredTask struct {
 	// TemplateRef is the original reference (needed for some executeTemplate calls)
 	TemplateRef wfv1.TemplateReferenceHolder
 
-	// Arguments are the inputs to the template
-	Arguments wfv1.Arguments
-
-	// ResolvedArguments are the processed arguments with values substituted
-	ResolvedArguments wfv1.Arguments
-
 	// NodeFlag contains execution flags like Retried, Hooked, etc.
 	NodeFlag *wfv1.NodeFlag
 

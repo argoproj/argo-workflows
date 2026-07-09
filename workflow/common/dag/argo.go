@@ -39,18 +39,6 @@ type DAGEvaluator struct {
 	retryStrategies map[string]*wfv1.RetryStrategy
 }
 
-// NewDAGEvaluator creates a new DAGEvaluator for a workflow and DAG template.
-func NewDAGEvaluator(wf *wfv1.Workflow, tmpl *wfv1.Template, boundaryID, boundaryName string) *DAGEvaluator {
-	var dagTasks []Task
-	if tmpl.DAG != nil {
-		dagTasks = make([]Task, len(tmpl.DAG.Tasks))
-		for i := range tmpl.DAG.Tasks {
-			dagTasks[i] = &DAGTask{DAGTask: &tmpl.DAG.Tasks[i]}
-		}
-	}
-	return NewDAGEvaluatorFromTasks(wf, dagTasks, tmpl, boundaryID, boundaryName)
-}
-
 // NewDAGEvaluatorFromTasks creates a new DAGEvaluator for a workflow and a list of tasks.
 func NewDAGEvaluatorFromTasks(wf *wfv1.Workflow, tasks []Task, tmpl *wfv1.Template, boundaryID, boundaryName string) *DAGEvaluator {
 	store := newWorkflowStore(wf, boundaryID, boundaryName)
@@ -390,7 +378,7 @@ func (e *DAGEvaluator) evaluateAllStates(ctx context.Context) {
 // FindLeafTaskNames returns tasks that no other task depends on.
 func (e *DAGEvaluator) FindLeafTaskNames(ctx context.Context) []Key {
 	isLeaf := make(map[Key]bool)
-	for _, key := range e.tasks.Keys() {
+	for _, key := range e.tasks.TaskNames() {
 		if _, ok := isLeaf[key]; !ok {
 			isLeaf[key] = true
 		}
@@ -408,13 +396,6 @@ func (e *DAGEvaluator) FindLeafTaskNames(ctx context.Context) []Key {
 	}
 	sort.Strings(leaves)
 	return leaves
-}
-
-// EvaluateTask evaluates a single task and returns its evaluation result.
-func (e *DAGEvaluator) EvaluateTask(ctx context.Context, taskName string) EvaluationResult {
-	// Run evaluateAllStates to handle cascading omission
-	e.evaluateAllStates(ctx)
-	return e.evaluateTaskResult(ctx, taskName)
 }
 
 // evaluateTaskResult builds an EvaluationResult for a single task.
