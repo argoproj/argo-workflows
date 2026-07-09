@@ -198,6 +198,45 @@ A counter of the number of API requests sent to the Kubernetes API.
 
 This metric is calculable from `k8s_request_duration`, and it is suggested you just collect that metric instead.
 
+#### `locks_held`
+
+A gauge of the number of synchronization locks currently held.
+Reports, per lock, how many holders currently hold the lock right now. For a mutex this is
+`0` or `1`; for a semaphore it is between `0` and the semaphore limit. Sourced from the live
+lock state at scrape time, so it is correct across controller restarts and leader failover.
+
+|  attribute  |                                    explanation                                     |
+|-------------|------------------------------------------------------------------------------------|
+| `type`      | The type of the lock: `mutex` or `semaphore`                                       |
+| `storage`   | The storage backend of the lock: `configmap` (in-memory) or `database` (persisted) |
+| `lock_name` | ⚠️ The name of the synchronization lock                                             |
+| `namespace` | The namespace of the lock                                                          |
+
+#### `locks_pending`
+
+A gauge of the number of pending synchronization lock requests.
+Reports, per lock, how many workflows are currently waiting to acquire the lock. A sustained
+non-zero value alongside a held lock is the clearest signal of lock contention or an
+unreleased lock blocking other workflows.
+
+|  attribute  |                                    explanation                                     |
+|-------------|------------------------------------------------------------------------------------|
+| `type`      | The type of the lock: `mutex` or `semaphore`                                       |
+| `storage`   | The storage backend of the lock: `configmap` (in-memory) or `database` (persisted) |
+| `lock_name` | ⚠️ The name of the synchronization lock                                             |
+| `namespace` | The namespace of the lock                                                          |
+
+#### `locks_taken_total`
+
+A counter of the number of synchronization locks taken.
+
+|  attribute  |                                    explanation                                     |
+|-------------|------------------------------------------------------------------------------------|
+| `type`      | The type of the lock: `mutex` or `semaphore`                                       |
+| `storage`   | The storage backend of the lock: `configmap` (in-memory) or `database` (persisted) |
+| `lock_name` | ⚠️ The name of the synchronization lock                                             |
+| `namespace` | The namespace of the lock                                                          |
+
 #### `log_messages`
 
 A count of log messages emitted by the controller by log level: `error`, `warn` and `info`.
@@ -205,24 +244,6 @@ A count of log messages emitted by the controller by log level: `error`, `warn` 
 | attribute |         explanation          |
 |-----------|------------------------------|
 | `level`   | The log level of the message |
-
-#### `mutex_released_total`
-
-A counter of the number of mutexes released.
-
-|     attribute     |        explanation         |
-|-------------------|----------------------------|
-| `name`            | The name of the mutex      |
-| `mutex_namespace` | The namespace of the mutex |
-
-#### `mutex_taken_total`
-
-A counter of the number of mutexes taken.
-
-|     attribute     |        explanation         |
-|-------------------|----------------------------|
-| `name`            | The name of the mutex      |
-| `mutex_namespace` | The namespace of the mutex |
 
 #### `operation_duration_seconds`
 
@@ -445,26 +466,6 @@ This rate limiter is not on by default
 This metric has no attributes.
 
 Default bucket sizes: 0, 0.1, 0.5, 1, 5, 10, 30, 60, 180
-
-#### `semaphore_released_total`
-
-A counter of the number of semaphores released.
-
-|    attribute     |                         explanation                         |
-|------------------|-------------------------------------------------------------|
-| `configmap_name` | The name of the ConfigMap used to store the semaphore state |
-| `name`           | The name of the semaphore                                   |
-| `namespace`      | The namespace of the semaphore                              |
-
-#### `semaphore_taken_total`
-
-A counter of the number of semaphores taken.
-
-|    attribute     |                         explanation                         |
-|------------------|-------------------------------------------------------------|
-| `configmap_name` | The name of the ConfigMap used to store the semaphore state |
-| `name`           | The name of the semaphore                                   |
-| `namespace`      | The namespace of the semaphore                              |
 
 #### `total_count`
 

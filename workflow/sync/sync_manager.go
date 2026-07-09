@@ -42,8 +42,13 @@ type Manager struct {
 	metrics           syncMetrics
 }
 
-func (sm *Manager) WithMetrics(m *wfmetrics.Metrics) *Manager {
+func (sm *Manager) WithMetrics(ctx context.Context, m *wfmetrics.Metrics) *Manager {
 	sm.metrics = m
+	if m != nil {
+		if err := m.RegisterLockGauges(sm.LockMetrics); err != nil {
+			sm.log.WithError(err).WithFatal().Error(ctx, "failed to register lock gauge callbacks")
+		}
+	}
 	return sm
 }
 
@@ -660,12 +665,11 @@ func (sm *Manager) recordAcquisitions(ctx context.Context, wf *wfv1.Workflow, ne
 		return
 	}
 	for _, l := range newly {
-		switch l.kind {
-		case wfv1.SynchronizationTypeMutex:
-			sm.metrics.AddMutex(ctx, l.name, wf.Namespace)
-		case wfv1.SynchronizationTypeSemaphore:
-			sm.metrics.AddSemaphore(ctx, l.name, wf.Namespace)
+		namespace, name, storage, ok := parseLockKey(l.name)
+		if !ok {
+			continue
 		}
+		sm.metrics.RecordLockTaken(ctx, syncTypeLabel(l.kind), storage, name, namespace)
 	}
 }
 
@@ -703,14 +707,6 @@ func (sm *Manager) Release(ctx context.Context, wf *wfv1.Workflow, nodeName stri
 			lockKey := lockName
 			if wf.Status.Synchronization != nil {
 				wf.Status.Synchronization.GetStatus(syncItem.getType()).LockReleased(holderKey, lockKey.String(ctx))
-				if sm.metrics != nil {
-					switch syncItem.getType() {
-					case wfv1.SynchronizationTypeMutex:
-						sm.metrics.RemoveMutex(ctx, lockKey.String(ctx), wf.Namespace)
-					case wfv1.SynchronizationTypeSemaphore:
-						sm.metrics.RemoveSemaphore(ctx, lockKey.String(ctx), wf.Namespace)
-					}
-				}
 			}
 		}
 	}
@@ -735,9 +731,6 @@ func (sm *Manager) ReleaseAll(ctx context.Context, wf *wfv1.Workflow) bool {
 				syncLockHolder.release(ctx, holderKey)
 				wf.Status.Synchronization.Semaphore.LockReleased(holderKey, holding.Semaphore)
 				sm.log.WithFields(logging.Fields{"holderKey": holderKey, "semaphore": holding.Semaphore}).Info(ctx, "Lock released")
-				if sm.metrics != nil {
-					sm.metrics.RemoveSemaphore(ctx, holding.Semaphore, wf.Namespace)
-				}
 			}
 		}
 
@@ -767,9 +760,6 @@ func (sm *Manager) ReleaseAll(ctx context.Context, wf *wfv1.Workflow) bool {
 			syncLockHolder.release(ctx, holding.Holder)
 			wf.Status.Synchronization.Mutex.LockReleased(holding.Holder, holding.Mutex)
 			sm.log.WithFields(logging.Fields{"holderKey": holding.Holder, "mutex": holding.Mutex}).Info(ctx, "Lock released")
-			if sm.metrics != nil {
-				sm.metrics.RemoveMutex(ctx, holding.Mutex, wf.Namespace)
-			}
 		}
 
 		// Remove the pending Workflow level mutex keys

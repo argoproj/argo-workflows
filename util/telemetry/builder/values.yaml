@@ -51,18 +51,22 @@ attributes:
     type: bool
   - name: LockName
     displayName: lock_name
-    description: The name of the synchronization lock
+    description: "⚠️ The name of the synchronization lock"
+  - name: LockNamespace
+    displayName: namespace
+    description: The namespace of the lock
+  - name: LockStorage
+    displayName: storage
+    description: "The storage backend of the lock: `configmap` (in-memory) or `database` (persisted)"
+  - name: LockType
+    displayName: type
+    description: "The type of the lock: `mutex` or `semaphore`"
   - name: LogLevel
     displayName: level
     description: The log level of the message
   - name: Message
     displayName: message
     description: The message associated with the node at the end
-  - name: MutexName
-    displayName: name
-    description: The name of the mutex
-  - name: MutexNamespace
-    description: The namespace of the mutex
   - name: NodeID
     description: "The unique ID of a node in a DAG"
   - name: NodePhase
@@ -100,15 +104,6 @@ attributes:
   - name: RequestVerb
     displayName: verb
     description: "The verb of the request, such as `Get` or `List`"
-  - name: SemaphoreConfigMapName
-    displayName: configmap_name
-    description: The name of the ConfigMap used to store the semaphore state
-  - name: SemaphoreName
-    displayName: name
-    description: The name of the semaphore
-  - name: SemaphoreNamespace
-    displayName: namespace
-    description: The namespace of the semaphore
   - name: TaskResultCompleted
     displayName: completed
     description: "True if the task result is marked completed"
@@ -238,25 +233,46 @@ metrics:
       - name: RequestCode
     unit: "{request}"
     type: Int64Counter
+  - name: LocksHeld
+    description: A gauge of the number of synchronization locks currently held
+    extendedDescription: |
+      Reports, per lock, how many holders currently hold the lock right now. For a mutex this is
+      `0` or `1`; for a semaphore it is between `0` and the semaphore limit. Sourced from the live
+      lock state at scrape time, so it is correct across controller restarts and leader failover.
+    attributes:
+      - name: LockType
+      - name: LockStorage
+      - name: LockName
+      - name: LockNamespace
+    unit: "{lock}"
+    type: Int64ObservableGauge
+  - name: LocksPending
+    description: A gauge of the number of pending synchronization lock requests
+    extendedDescription: |
+      Reports, per lock, how many workflows are currently waiting to acquire the lock. A sustained
+      non-zero value alongside a held lock is the clearest signal of lock contention or an
+      unreleased lock blocking other workflows.
+    attributes:
+      - name: LockType
+      - name: LockStorage
+      - name: LockName
+      - name: LockNamespace
+    unit: "{lock}"
+    type: Int64ObservableGauge
+  - name: LocksTakenTotal
+    description: A counter of the number of synchronization locks taken
+    attributes:
+      - name: LockType
+      - name: LockStorage
+      - name: LockName
+      - name: LockNamespace
+    unit: "{lock}"
+    type: Int64Counter
   - name: LogMessages
     description: "A count of log messages emitted by the controller by log level: `error`, `warn` and `info`"
     attributes:
       - name: LogLevel
     unit: "{message}"
-    type: Int64Counter
-  - name: MutexReleasedTotal
-    description: A counter of the number of mutexes released
-    attributes:
-      - name: MutexName
-      - name: MutexNamespace
-    unit: "{mutex}"
-    type: Int64Counter
-  - name: MutexTakenTotal
-    description: A counter of the number of mutexes taken
-    attributes:
-      - name: MutexName
-      - name: MutexNamespace
-    unit: "{mutex}"
     type: Int64Counter
   - name: OperationDurationSeconds
     description: A histogram of durations of operations
@@ -453,22 +469,6 @@ metrics:
     unit: s
     type: Float64Histogram
     defaultBuckets: [0.0, 0.1, 0.5, 1.0, 5.0, 10.0, 30.0, 60.0, 180.0]
-  - name: SemaphoreReleasedTotal
-    description: A counter of the number of semaphores released
-    attributes:
-      - name: SemaphoreConfigMapName
-      - name: SemaphoreName
-      - name: SemaphoreNamespace
-    unit: "{semaphore}"
-    type: Int64Counter
-  - name: SemaphoreTakenTotal
-    description: A counter of the number of semaphores taken
-    attributes:
-      - name: SemaphoreConfigMapName
-      - name: SemaphoreName
-      - name: SemaphoreNamespace
-    unit: "{semaphore}"
-    type: Int64Counter
   - name: TotalCount
     description: A counter of workflows that have entered each phase for tracking them through their life-cycle, by namespace
     attributes:

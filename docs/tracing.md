@@ -317,7 +317,7 @@ Attempting to acquire a synchronization lock.
 
 |  attribute  |                explanation                 |
 |-------------|--------------------------------------------|
-| `lock_name` | The name of the synchronization lock       |
+| `lock_name` | ⚠️ The name of the synchronization lock     |
 | `acquired`  | Whether the lock was successfully acquired |
 
 #### `unarchive_artifact`
