@@ -157,7 +157,8 @@ func DecodeDecompressString(ctx context.Context, content string) (string, error)
 // by `CompressionAlgorithmEnvVarKey` (gzip by default). DecompressContent
 // detects the algorithm from the content, so the variable only affects writes.
 func CompressContent(ctx context.Context, content []byte) []byte {
-	switch env.GetString(CompressionAlgorithmEnvVarKey, GZipAlgorithm) {
+	algorithm := env.GetString(CompressionAlgorithmEnvVarKey, GZipAlgorithm)
+	switch algorithm {
 	case ZStdAlgorithm:
 		level := zstd.EncoderLevel(compressionLevel(ctx, int(zstd.SpeedDefault), int(zstd.SpeedFastest), int(zstd.SpeedBestCompression)))
 		return zstdEncoderForLevel(level).EncodeAll(content, nil)
@@ -170,6 +171,10 @@ func CompressContent(ctx context.Context, content []byte) []byte {
 		}
 		closeFile(ctx, brotliWriter)
 		return buf.Bytes()
+	case GZipAlgorithm, "":
+	default:
+		logging.RequireLoggerFromContext(ctx).WithField("algorithm", algorithm).
+			Warn(ctx, "Unknown compression algorithm, using gzip")
 	}
 	level := compressionLevel(ctx, gzip.DefaultCompression, gzip.BestSpeed, gzip.BestCompression)
 	var buf bytes.Buffer
@@ -195,7 +200,11 @@ func CompressContent(ctx context.Context, content []byte) []byte {
 // as brotli (the only other algorithm we write).
 func DecompressContent(ctx context.Context, content []byte) ([]byte, error) {
 	if bytes.HasPrefix(content, zstdMagic) {
-		return zstdDecoder.DecodeAll(content, nil)
+		decompressed, err := zstdDecoder.DecodeAll(content, nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decompress: %w", err)
+		}
+		return decompressed, nil
 	}
 	if !bytes.HasPrefix(content, gzipMagic) {
 		decompressed, err := io.ReadAll(brotli.NewReader(bytes.NewReader(content)))

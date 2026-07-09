@@ -5,4 +5,4 @@ Issues: 16262
 
 Large workflow node statuses can now be compressed with `zstd` or `brotli` instead of gzip via the `WORKFLOW_COMPRESSION_ALGORITHM` environment variable, with `WORKFLOW_COMPRESSION_LEVEL` tuning the level.
 Decompression auto-detects the algorithm.
-See [node status compression](../docs/offloading-large-workflows.md#node-status-compression).
+See [node status compression](offloading-large-workflows.md#node-status-compression).
