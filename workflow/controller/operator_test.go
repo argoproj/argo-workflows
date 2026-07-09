@@ -1711,6 +1711,43 @@ func TestAssessNodeStatus(t *testing.T) {
 		wantPhase:   wfv1.NodeFailed,
 		wantMessage: "can't find failed message for pod  namespace ", // daemoned nodes currently don't have a fail message
 	}, {
+		// node already marked Succeeded by killDaemonedChildren; PodFailed event must be ignored.
+		name: "pod failed - daemoned, already marked succeeded by teardown",
+		pod: &apiv1.Pod{
+			Status: apiv1.PodStatus{
+				Phase: apiv1.PodFailed,
+			},
+		},
+		daemon:      true,
+		node:        &wfv1.NodeStatus{TemplateName: templateName, Phase: wfv1.NodeSucceeded},
+		wantPhase:   wfv1.NodeSucceeded,
+		wantMessage: "",
+	}, {
+		// non-daemon node that previously Succeeded must still go through inferFailedReason.
+		name: "pod failed - not daemoned, previously succeeded",
+		pod: &apiv1.Pod{
+			Status: apiv1.PodStatus{
+				Message: "failed for some reason",
+				Phase:   apiv1.PodFailed,
+			},
+		},
+		daemon:      false,
+		node:        &wfv1.NodeStatus{TemplateName: templateName, Phase: wfv1.NodeSucceeded},
+		wantPhase:   wfv1.NodeFailed,
+		wantMessage: "failed for some reason",
+	}, {
+		// node already marked Succeeded by killDaemonedChildren; PodSucceeded must not overwrite to NodeFailed.
+		name: "pod succeeded - daemoned, already marked succeeded by teardown",
+		pod: &apiv1.Pod{
+			Status: apiv1.PodStatus{
+				Phase: apiv1.PodSucceeded,
+			},
+		},
+		daemon:      true,
+		node:        &wfv1.NodeStatus{TemplateName: templateName, Phase: wfv1.NodeSucceeded},
+		wantPhase:   wfv1.NodeSucceeded,
+		wantMessage: "",
+	}, {
 		name: "daemon, pod running, node failed",
 		pod: &apiv1.Pod{
 			Status: apiv1.PodStatus{

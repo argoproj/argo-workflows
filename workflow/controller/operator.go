@@ -1432,8 +1432,9 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		}
 	case apiv1.PodSucceeded:
 		// if the pod is succeeded, we need to check if it is a daemoned step or not
-		// if it is daemoned, we need to mark it as failed, since daemon pods should run indefinitely
-		if tmpl.IsDaemon() {
+		// if it is daemoned, we need to mark it as failed, since daemon pods should run indefinitely.
+		// If killDaemonedChildren already marked it Succeeded, preserve that status.
+		if tmpl.IsDaemon() && old.Phase != wfv1.NodeSucceeded {
 			woc.log.WithField("podName", pod.Name).Debug(ctx, "Daemoned pod succeeded. Marking it as failed")
 			updated.Phase = wfv1.NodeFailed
 		} else {
@@ -1443,6 +1444,13 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		updated.Daemoned = nil
 		updated.RestartingPodUID = ""
 	case apiv1.PodFailed:
+		// If killDaemonedChildren already marked this daemon node Succeeded, the PodFailed event is
+		// due to intentional teardown — preserve the status rather than re-assessing exit codes.
+		if tmpl.IsDaemon() && old.Phase == wfv1.NodeSucceeded {
+			woc.log.WithFields(logging.Fields{"displayName": old.DisplayName, "pod": pod.Name}).Info(ctx, "Daemon pod already marked Succeeded by teardown; ignoring PodFailed event")
+			updated.Daemoned = nil
+			break
+		}
 		// ignore pod failure for daemoned steps
 		updated.Phase, updated.Message = woc.inferFailedReason(ctx, pod, tmpl)
 		woc.log.WithFields(logging.Fields{"message": updated.Message, "displayName": old.DisplayName, "templateName": wfutil.GetTemplateFromNode(*old), "pod": pod.Name}).Info(ctx, "Pod failed")
