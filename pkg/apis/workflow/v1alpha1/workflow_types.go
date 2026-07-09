@@ -467,6 +467,12 @@ type WorkflowSpec struct {
 	// ArtifactGC describes the strategy to use when deleting artifacts from completed or deleted workflows (applies to all output Artifacts
 	// unless Artifact.ArtifactGC is specified, which overrides this)
 	ArtifactGC *WorkflowLevelArtifactGC `json:"artifactGC,omitempty" protobuf:"bytes,43,opt,name=artifactGC"`
+
+	// PodResources defines pod-level resource requests and limits to apply to all workflow pods.
+	// Will be overridden if a template's podResources is set.
+	// Requires the PodLevelResources feature gate to be enabled on the cluster (beta since Kubernetes v1.34).
+	// +optional
+	PodResources *apiv1.ResourceRequirements `json:"podResources,omitempty" protobuf:"bytes,44,opt,name=podResources"`
 }
 
 type LabelValueFrom struct {
@@ -798,6 +804,12 @@ type Template struct {
 
 	// Annotations is a list of annotations to add to the template at runtime
 	Annotations map[string]string `json:"annotations,omitempty" protobuf:"bytes,44,opt,name=annotations"`
+
+	// PodResources defines pod-level resource requests and limits for this template's pod.
+	// Overrides the workflow-level podResources.
+	// Requires the PodLevelResources feature gate to be enabled on the cluster (beta since Kubernetes v1.34).
+	// +optional
+	PodResources *apiv1.ResourceRequirements `json:"podResources,omitempty" protobuf:"bytes,45,opt,name=podResources"`
 }
 
 // SetType will set the template object based on template type.

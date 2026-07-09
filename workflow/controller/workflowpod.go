@@ -1210,6 +1210,13 @@ func (woc *wfOperationCtx) addSchedulingConstraints(ctx context.Context, pod *ap
 	} else if wfSpec.SecurityContext != nil {
 		pod.Spec.SecurityContext = wfSpec.SecurityContext
 	}
+
+	// set pod-level resources (if specified)
+	if tmpl.PodResources != nil {
+		pod.Spec.Resources = tmpl.PodResources
+	} else if wfSpec.PodResources != nil {
+		pod.Spec.Resources = wfSpec.PodResources
+	}
 }
 
 // GetBoundaryTemplate get a template through the nodeName

@@ -3398,6 +3398,11 @@ func (in *Template) DeepCopyInto(out *Template) {
 			(*out)[key] = val
 		}
 	}
+	if in.PodResources != nil {
+		in, out := &in.PodResources, &out.PodResources
+		*out = new(v1.ResourceRequirements)
+		(*in).DeepCopyInto(*out)
+	}
 	return
 }
 
@@ -3987,6 +3992,11 @@ func (in *WorkflowSpec) DeepCopyInto(out *WorkflowSpec) {
 	if in.ArtifactGC != nil {
 		in, out := &in.ArtifactGC, &out.ArtifactGC
 		*out = new(WorkflowLevelArtifactGC)
+		(*in).DeepCopyInto(*out)
+	}
+	if in.PodResources != nil {
+		in, out := &in.PodResources, &out.PodResources
+		*out = new(v1.ResourceRequirements)
 		(*in).DeepCopyInto(*out)
 	}
 	return

@@ -1,0 +1,23 @@
+# This example demonstrates setting pod-level resource requests and limits,
+# which apply to the pod as a whole rather than to individual containers.
+# Requires the PodLevelResources feature gate (beta since Kubernetes v1.34).
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: pod-resources-
+spec:
+  entrypoint: hello-world
+  # Applies to all pods in the workflow, unless overridden at the template level.
+  podResources:
+    requests:
+      cpu: 100m
+      memory: 64Mi
+    limits:
+      cpu: "1"
+      memory: 256Mi
+  templates:
+  - name: hello-world
+    container:
+      image: busybox
+      command: [echo]
+      args: ["hello world"]

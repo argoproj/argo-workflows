@@ -4761,6 +4761,8 @@ definitions:
                 type: integer
             plugin:
                 $ref: '#/definitions/Plugin'
+            podResources:
+                $ref: '#/definitions/ResourceRequirements'
             podSpecPatch:
                 description: |-
                     PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of

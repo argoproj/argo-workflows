@@ -888,6 +888,39 @@ func TestPriorityClass(t *testing.T) {
 	assert.Equal(t, "foo", pod.Spec.PriorityClassName)
 }
 
+// TestPodResources verifies pod-level resources are carried forward, with the
+// template-level value overriding the workflow-level one.
+func TestPodResources(t *testing.T) {
+	wfLevel := &apiv1.ResourceRequirements{
+		Limits: apiv1.ResourceList{apiv1.ResourceCPU: resource.MustParse("1")},
+	}
+	tmplLevel := &apiv1.ResourceRequirements{
+		Limits: apiv1.ResourceList{apiv1.ResourceCPU: resource.MustParse("2")},
+	}
+	for name, tt := range map[string]struct {
+		tmplResources *apiv1.ResourceRequirements
+		expected      *apiv1.ResourceRequirements
+	}{
+		"WorkflowLevel": {nil, wfLevel},
+		"TemplateLevelOverrides": {tmplLevel, tmplLevel},
+	} {
+		t.Run(name, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			woc := newWoc(ctx)
+			woc.execWf.Spec.PodResources = wfLevel
+			woc.execWf.Spec.Templates[0].PodResources = tt.tmplResources
+			tmplCtx, err := woc.createTemplateContext(ctx, wfv1.ResourceScopeLocal, "")
+			require.NoError(t, err)
+			_, err = woc.executeContainer(ctx, woc.execWf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.execWf.Spec.Templates[0], &wfv1.WorkflowStep{}, &executeTemplateOpts{})
+			require.NoError(t, err)
+			pods, err := listPods(ctx, woc)
+			require.NoError(t, err)
+			assert.Len(t, pods.Items, 1)
+			assert.Equal(t, tt.expected, pods.Items[0].Spec.Resources)
+		})
+	}
+}
+
 // TestSchedulerName verifies the ability to carry forward schedulerName.
 func TestSchedulerName(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
