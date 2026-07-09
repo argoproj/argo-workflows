@@ -313,7 +313,7 @@ func (pb *podBuilder) processPodSpecPatch(ctx context.Context, tmpl *wfv1.Templa
 	for _, patch := range toProcess {
 		newTmpl := tmpl.DeepCopy()
 		newTmpl.PodSpecPatch = patch
-		processedTmpl, err := common.ProcessArgs(ctx, newTmpl, &wfv1.Arguments{}, pb.in.globalParams, localParams, false, pb.in.namespace, pb.in.configMapIndexer)
+		processedTmpl, err := common.ProcessArgs(ctx, newTmpl, &wfv1.Arguments{}, pb.in.globalParams, localParams, false, true, pb.in.namespace, pb.in.configMapIndexer)
 		if err != nil {
 			return nil, errors.Wrap(err, "", "Failed to substitute the PodSpecPatch variables")
 		}
@@ -361,6 +361,13 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		woc.log.WithFields(logging.Fields{"podPhase": existing.Status.Phase, "nodeName": nodeName, "nodeID": nodeID}).Debug(ctx, "Skipped pod creation: already exists")
 		return existing, nil
 	}
+
+	// Re-root under the node span: on a re-entry (informer-lag re-creation, or a
+	// later converge pass) the node already exists, so the leaf executor skipped
+	// the initializeExecutableNode call that would have carried the node span in
+	// ctx, leaving the workflow span active. Without this the pod span (started
+	// below) parents under the workflow span instead of the node.
+	ctx = woc.controller.tracing.ContextWithNode(ctx, woc.wf.Name, woc.wf.Namespace, nodeID)
 
 	// (b) shutdown-strategy guard. Do not create pods if we are shutting down.
 	if !woc.GetShutdownStrategy().ShouldExecute(opts.onExitPod) {
