@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/Knetic/govaluate"
 
@@ -548,33 +547,38 @@ func (e *Engine) reconcileExpandedChildren(ctx context.Context, task dag.Task) {
 		if err != nil || !child.Fulfilled() {
 			continue
 		}
-		// Build local params for this child and process args with global params
-		// to resolve {{workflow.uid}} etc. in synchronization configs.
-		localParams := make(common.Parameters)
-		localParams["node.name"] = child.Name
-		if e.tmpl.GetType() == wfv1.TemplateTypeSteps {
-			localParams["steps.name"] = task.GetDisplayName()
-		} else {
-			localParams["tasks.name"] = task.GetDisplayName()
-		}
-		args := task.GetArguments()
-		processedTmpl, procErr := common.ProcessArgs(ctx, resolvedTmpl, &args, e.woc.globalParams(), localParams, false, true, e.woc.wf.Namespace, e.woc.controller.configMapInformer.GetIndexer())
-		if procErr != nil {
-			continue
-		}
-		if err := e.reconciler.Reconcile(ctx, []DesiredTask{{
-			TaskName:      child.Name,
-			TemplateScope: e.tmplCtx.GetTemplateScope(),
-			TmplCtx:       newTmplCtx,
-			Template:      processedTmpl,
-			TemplateRef:   task.GetTemplateReferenceHolder(),
-			Arguments:     args,
-			BoundaryID:    e.boundaryID,
-			IsOnExit:      e.onExitTemplate,
-		}}); err != nil {
+		if err := e.reconcileFulfilledNode(ctx, task, resolvedTmpl, newTmplCtx, child.Name); err != nil {
 			e.log.WithFields(logging.Fields{"child": child.Name}).WithError(err).Warn(ctx, "failed to reconcile expanded child")
 		}
 	}
+}
+
+// reconcileFulfilledNode re-runs an already-fulfilled node through the reconciler
+// so postExecutionHandling fires (sync lock release, metric emission). Local params
+// are built with global params so {{workflow.uid}} etc. in synchronization configs
+// resolve.
+func (e *Engine) reconcileFulfilledNode(ctx context.Context, task dag.Task, resolvedTmpl *wfv1.Template, newTmplCtx *templateresolution.TemplateContext, nodeName string) error {
+	localParams := make(common.Parameters)
+	localParams["node.name"] = nodeName
+	if e.tmpl.GetType() == wfv1.TemplateTypeSteps {
+		localParams["steps.name"] = task.GetDisplayName()
+	} else {
+		localParams["tasks.name"] = task.GetDisplayName()
+	}
+	args := task.GetArguments()
+	processedTmpl, err := common.ProcessArgs(ctx, resolvedTmpl, &args, e.woc.globalParams(), localParams, false, true, e.woc.wf.Namespace, e.woc.controller.configMapInformer.GetIndexer())
+	if err != nil {
+		return err
+	}
+	return e.reconciler.Reconcile(ctx, []DesiredTask{{
+		TaskName:      nodeName,
+		TemplateScope: e.tmplCtx.GetTemplateScope(),
+		TmplCtx:       newTmplCtx,
+		Template:      processedTmpl,
+		TemplateRef:   task.GetTemplateReferenceHolder(),
+		BoundaryID:    e.boundaryID,
+		IsOnExit:      e.onExitTemplate,
+	}})
 }
 
 // reconcileExternalCompletions handles tasks that completed between operate cycles
@@ -612,30 +616,7 @@ func (e *Engine) reconcileExternalCompletions(ctx context.Context, tasks []dag.T
 			e.log.WithFields(logging.Fields{"task": task.GetName()}).WithError(err).Warn(ctx, "failed to merge template defaults for completed task")
 			continue
 		}
-		taskNodeName := e.taskNodeName(task.GetName())
-		localParams := make(common.Parameters)
-		localParams["node.name"] = taskNodeName
-		if e.tmpl.GetType() == wfv1.TemplateTypeSteps {
-			localParams["steps.name"] = task.GetDisplayName()
-		} else {
-			localParams["tasks.name"] = task.GetDisplayName()
-		}
-		args := task.GetArguments()
-		processedTmpl, err := common.ProcessArgs(ctx, resolvedTmpl, &args, e.woc.globalParams(), localParams, false, true, e.woc.wf.Namespace, e.woc.controller.configMapInformer.GetIndexer())
-		if err != nil {
-			e.log.WithFields(logging.Fields{"task": task.GetName()}).WithError(err).Warn(ctx, "failed to process args for completed task")
-			continue
-		}
-		if err := e.reconciler.Reconcile(ctx, []DesiredTask{{
-			TaskName:      taskNodeName,
-			TemplateScope: e.tmplCtx.GetTemplateScope(),
-			TmplCtx:       newTmplCtx,
-			Template:      processedTmpl,
-			TemplateRef:   task.GetTemplateReferenceHolder(),
-			Arguments:     args,
-			BoundaryID:    e.boundaryID,
-			IsOnExit:      e.onExitTemplate,
-		}}); err != nil {
+		if err := e.reconcileFulfilledNode(ctx, task, resolvedTmpl, newTmplCtx, e.taskNodeName(task.GetName())); err != nil {
 			e.log.WithFields(logging.Fields{"task": task.GetName()}).WithError(err).Warn(ctx, "failed to reconcile completed task (metrics/locks may be missed)")
 		}
 	}
@@ -1090,23 +1071,16 @@ func (e *Engine) createDesiredTask(ctx context.Context, task dag.Task, addChild 
 		return nil, err
 	}
 
-	resolvedArgs := wfv1.Arguments{
-		Parameters: processedTmpl.Inputs.Parameters,
-		Artifacts:  processedTmpl.Inputs.Artifacts,
-	}
-
 	return []DesiredTask{{
-		TaskName:          taskNodeName,
-		OriginalTaskName:  taskName,
-		TemplateScope:     e.tmplCtx.GetTemplateScope(),
-		TmplCtx:           newTmplCtx,
-		Template:          processedTmpl,
-		TemplateRef:       task.GetTemplateReferenceHolder(),
-		Arguments:         task.GetArguments(),
-		ResolvedArguments: resolvedArgs,
-		BoundaryID:        e.boundaryID,
-		IsOnExit:          e.onExitTemplate,
-		ParentNodeNames:   parentNodeNames,
+		TaskName:         taskNodeName,
+		OriginalTaskName: taskName,
+		TemplateScope:    e.tmplCtx.GetTemplateScope(),
+		TmplCtx:          newTmplCtx,
+		Template:         processedTmpl,
+		TemplateRef:      task.GetTemplateReferenceHolder(),
+		BoundaryID:       e.boundaryID,
+		IsOnExit:         e.onExitTemplate,
+		ParentNodeNames:  parentNodeNames,
 	}}, nil
 }
 
@@ -1270,17 +1244,6 @@ func (e *Engine) inheritedBranchPhaseHelper(ctx context.Context, taskName string
 	return worst
 }
 
-func (e *Engine) GetTaskFinishedAtTime(ctx context.Context, taskName string) time.Time {
-	node := e.getTaskNode(ctx, taskName)
-	if node == nil {
-		return time.Time{}
-	} // zero time
-	if !node.FinishedAt.IsZero() {
-		return node.FinishedAt.Time
-	}
-	return node.StartedAt.Time
-}
-
 // addChildNode adds a child node to the appropriate parent.
 // For Steps templates, step tasks are linked to their StepGroup node (restoring pre-refactor behavior).
 // For DAG templates, tasks are linked to their dependencies' outbound nodes or the DAG root.
@@ -1365,6 +1328,27 @@ func (e *Engine) getChildNodes(node *wfv1.NodeStatus) []wfv1.NodeStatus {
 	return children
 }
 
+// addTaskNodeToScope adds one dependency/step node's outputs to scope: aggregates
+// TaskGroup children so {{tasks.X.outputs.parameters.foo}} resolves to the JSON array
+// of all values, adds the live scope entries, and back-fills a skipped/omitted node's
+// declared outputs (producer's valueFrom.default where present, else nil) so downstream
+// refs resolve instead of requeuing forever. The task (not the node) is the template
+// holder: a skipped node alone resolves to the boundary template, not its own.
+func (e *Engine) addTaskNodeToScope(ctx context.Context, scope *wfScope, ref varkeys.NodeRefKeys, agg varkeys.AggregateKeys, refName, taskName string, node *wfv1.NodeStatus, includeArtifacts bool) error {
+	if node.Type == wfv1.NodeTypeTaskGroup {
+		if err := e.woc.processAggregateNodeOutputs(scope, agg, refName, e.getChildNodes(node)); err != nil {
+			return fmt.Errorf("failed to aggregate outputs for %s: %w", taskName, err)
+		}
+	}
+	e.woc.buildLocalScope(scope, ref, refName, node)
+	holder := wfv1.TemplateReferenceHolder(node)
+	if t := e.evaluator.GetTask(taskName); t != nil {
+		holder = t.GetTemplateReferenceHolder()
+	}
+	e.woc.addSkippedNodeOutputsToScope(ctx, e.tmplCtx, scope, ref, refName, node, holder, includeArtifacts)
+	return nil
+}
+
 // buildLocalScopeFromTask builds a local scope for a task.
 func (e *Engine) buildLocalScopeFromTask(ctx context.Context, task dag.Task) (*wfScope, error) {
 	scope := createScope(e.tmpl)
@@ -1390,25 +1374,11 @@ func (e *Engine) buildLocalScopeFromTask(ctx context.Context, task dag.Task) (*w
 			}
 		}
 
-		// For TaskGroup nodes (withItems/withParam expansion), aggregate child outputs
-		// so that {{tasks.X.outputs.parameters.foo}} resolves to the JSON array of all values.
-		if depNode.Type == wfv1.NodeTypeTaskGroup {
-			childNodes := e.getChildNodes(depNode)
-			if err := e.woc.processAggregateNodeOutputs(scope, agg, refName, childNodes); err != nil {
-				return nil, fmt.Errorf("failed to aggregate outputs for %s: %w", depName, err)
-			}
+		// Steps keeps skipped-node artifact placeholders resolvable (includeArtifacts); DAG
+		// leaves them to resolveArguments' optional-drop / required-error handling.
+		if err := e.addTaskNodeToScope(ctx, scope, ref, agg, refName, depName, depNode, e.tmpl.GetType() == wfv1.TemplateTypeSteps); err != nil {
+			return nil, err
 		}
-		e.woc.buildLocalScope(scope, ref, refName, depNode)
-		// Populate a skipped/omitted dependency's declared outputs (using the producer's
-		// valueFrom.default where present, else nil) so downstream refs resolve instead of
-		// requeuing forever. Steps keeps artifact placeholders resolvable; DAG leaves them to
-		// resolveArguments' optional-drop / required-error handling. The task (not the node) is
-		// the template holder: a skipped node alone resolves to the boundary template, not its own.
-		depHolder := wfv1.TemplateReferenceHolder(depNode)
-		if depTask := e.evaluator.GetTask(depName); depTask != nil {
-			depHolder = depTask.GetTemplateReferenceHolder()
-		}
-		e.woc.addSkippedNodeOutputsToScope(ctx, e.tmplCtx, scope, ref, refName, depNode, depHolder, e.tmpl.GetType() == wfv1.TemplateTypeSteps)
 	}
 
 	// Add workflow-level global outputs to scope so that references like
@@ -1436,18 +1406,9 @@ func (e *Engine) buildLocalScopeFromTask(ctx context.Context, task dag.Task) (*w
 				if stepNode == nil {
 					continue
 				}
-				if stepNode.Type == wfv1.NodeTypeTaskGroup {
-					childNodes := e.getChildNodes(stepNode)
-					if err := e.woc.processAggregateNodeOutputs(scope, varkeys.StepsAggregate, step.Name, childNodes); err != nil {
-						return nil, fmt.Errorf("failed to aggregate outputs for %s: %w", stepTaskName, err)
-					}
+				if err := e.addTaskNodeToScope(ctx, scope, varkeys.StepsNodeRef, varkeys.StepsAggregate, step.Name, stepTaskName, stepNode, true); err != nil {
+					return nil, err
 				}
-				e.woc.buildLocalScope(scope, varkeys.StepsNodeRef, step.Name, stepNode)
-				stepHolder := wfv1.TemplateReferenceHolder(stepNode)
-				if stepTask := e.evaluator.GetTask(stepTaskName); stepTask != nil {
-					stepHolder = stepTask.GetTemplateReferenceHolder()
-				}
-				e.woc.addSkippedNodeOutputsToScope(ctx, e.tmplCtx, scope, varkeys.StepsNodeRef, step.Name, stepNode, stepHolder, true)
 			}
 		}
 	}

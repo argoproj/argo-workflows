@@ -2210,8 +2210,6 @@ type executeTemplateOpts struct {
 	executionDeadline time.Time
 	// scope holds the scope of the template
 	scope *wfScope
-	// scopePrefix is the prefix of the scope
-	scopePrefix string
 	// templateScope overrides tmplCtx.GetTemplateScope() for node creation.
 	// When set, this represents the parent scope (where the template reference was made from),
 	// while tmplCtx may be the resolved context (for child template resolution).
@@ -2272,16 +2270,14 @@ func (woc *wfOperationCtx) reconcileTemplate(ctx context.Context, nodeName strin
 
 	reconciler := NewK8sTaskReconciler(woc, newTmplCtx, nodeName)
 	err = reconciler.Reconcile(ctx, []DesiredTask{{
-		TaskName:          nodeName,
-		OriginalTaskName:  nodeName,
-		TemplateScope:     newTmplCtx.GetTemplateScope(),
-		Template:          processedTmpl,
-		TemplateRef:       orgTmpl,
-		Arguments:         args,
-		ResolvedArguments: wfv1.Arguments{Parameters: processedTmpl.Inputs.Parameters, Artifacts: processedTmpl.Inputs.Artifacts},
-		NodeFlag:          opts.nodeFlag,
-		BoundaryID:        opts.boundaryID,
-		IsOnExit:          opts.onExitTemplate,
+		TaskName:         nodeName,
+		OriginalTaskName: nodeName,
+		TemplateScope:    newTmplCtx.GetTemplateScope(),
+		Template:         processedTmpl,
+		TemplateRef:      orgTmpl,
+		NodeFlag:         opts.nodeFlag,
+		BoundaryID:       opts.boundaryID,
+		IsOnExit:         opts.onExitTemplate,
 	}})
 	if err != nil {
 		return nil, err
@@ -2881,7 +2877,7 @@ func (woc *wfOperationCtx) markNodePhase(ctx context.Context, nodeName string, p
 		node.TaskResultSynced = &tmp
 	}
 	if node.Phase != phase {
-		if !nodePhaseSM.IsValidTransition(node.Phase, phase) {
+		if !isValidPhaseTransition(node.Phase, phase) {
 			woc.log.WithFields(logging.Fields{
 				"nodeName":  node.Name,
 				"fromPhase": node.Phase,
@@ -3271,23 +3267,44 @@ func (woc *wfOperationCtx) getTemplateOutputsFromScope(ctx context.Context, tmpl
 	return &outputs, nil
 }
 
+func generateOutputResultRegex(name string, parentTmpl *wfv1.Template) (string, string) {
+	referenceRegex := fmt.Sprintf(`\.%s\.outputs\.result`, name)
+	expressionRegex := fmt.Sprintf(`\[['\"]%s['\"]\]\.outputs.result`, name)
+	if parentTmpl.DAG != nil {
+		referenceRegex = "tasks" + referenceRegex
+		expressionRegex = "tasks" + expressionRegex
+	} else if parentTmpl.Steps != nil {
+		referenceRegex = "steps" + referenceRegex
+		expressionRegex = "steps" + expressionRegex
+	}
+	return referenceRegex, expressionRegex
+}
+
 // hasOutputResultRef will check given template output has any reference
 func (woc *wfOperationCtx) hasOutputResultRef(ctx context.Context, name string, parentTmpl *wfv1.Template) bool {
-	// 1. Use structural traversal to parse expressions in known fields (DAG, Steps, Arguments, When, etc.)
-	if TraverseTemplateForOutputRef(parentTmpl, name) {
-		return true
-	}
-
-	// 2. Fallback: Scan the entire template JSON for any {{...}} tags we might have missed in traversal
-	// (e.g. inside other fields we didn't explicitly traverse).
-	// This uses the expr parser on the tag content, so it avoids false positives from simple string matches.
 	jsonValue, err := json.Marshal(parentTmpl)
 	if err != nil {
 		woc.log.WithField("template", parentTmpl).WithError(err).Warn(ctx, "Unable to marshal template")
-		return false
 	}
 
-	return hasOutputRefTemplate(string(jsonValue), name)
+	// First consider usual case (e.g.: `value: "{{steps.generate.outputs.result}}"`)
+	// This is most common, so should be done first.
+	referenceRegex, expressionRegex := generateOutputResultRegex(name, parentTmpl)
+	contains, err := regexp.Match(referenceRegex, jsonValue)
+	if err != nil {
+		woc.log.WithField("regex", referenceRegex).WithError(err).Warn(ctx, "Error in regex compilation")
+	}
+
+	if contains {
+		return true
+	}
+
+	// Next, consider expression case (e.g.: `expression: "steps['generate-random-1'].outputs.result"`)
+	contains, err = regexp.Match(expressionRegex, jsonValue)
+	if err != nil {
+		woc.log.WithField("regex", expressionRegex).WithError(err).Warn(ctx, "Error in regex compilation")
+	}
+	return contains
 }
 
 // getStepOrDAGTaskName will extract the node from NodeStatus Name

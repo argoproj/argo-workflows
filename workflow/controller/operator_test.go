@@ -37,7 +37,6 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/variables"
 	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
-	"github.com/argoproj/argo-workflows/v4/workflow/common/dag"
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/cache"
 	hydratorfake "github.com/argoproj/argo-workflows/v4/workflow/hydrator/fake"
 	"github.com/argoproj/argo-workflows/v4/workflow/sync"
@@ -2820,7 +2819,7 @@ func TestExpandWithItems(t *testing.T) {
 		Arguments: step.Arguments,
 		WithItems: step.WithItems,
 	}
-	dagEvaluator := dag.NewDAGEvaluator(woc.wf, &woc.wf.Spec.Templates[0], woc.wf.Name, woc.wf.Name)
+	dagEvaluator := newDAGEvaluator(woc.wf, &woc.wf.Spec.Templates[0], woc.wf.Name, woc.wf.Name)
 	expandedTasks, err := dagEvaluator.ExpandTask(ctx, dagTask, woc.globalParams(), woc)
 	require.NoError(t, err)
 	assert.Len(t, expandedTasks, 5)
@@ -2878,7 +2877,7 @@ func TestExpandWithItemsMap(t *testing.T) {
 		Arguments: step.Arguments,
 		WithItems: step.WithItems,
 	}
-	dagEvaluator := dag.NewDAGEvaluator(woc.wf, &woc.wf.Spec.Templates[0], woc.wf.Name, woc.wf.Name)
+	dagEvaluator := newDAGEvaluator(woc.wf, &woc.wf.Spec.Templates[0], woc.wf.Name, woc.wf.Name)
 	expandedTasks, err := dagEvaluator.ExpandTask(ctx, dagTask, woc.globalParams(), woc)
 	require.NoError(t, err)
 	assert.Len(t, expandedTasks, 3)
