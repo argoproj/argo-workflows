@@ -4,7 +4,7 @@ import {TextInput} from './text-input';
 
 export const NumberInput = ({onChange, value, placeholder, readOnly}: {value: number; onChange: (value: number | undefined) => void; readOnly?: boolean; placeholder?: string}) => {
     if (readOnly) {
-        return <>{value}</>;
+        return <>{value != null && !isNaN(value) ? value : ''}</>;
     }
     return (
         <TextInput
