@@ -39,6 +39,7 @@ jobs:
           files_yaml: |
             common: &common
               - .github/workflows/ci-build.yaml
+              - .github/actions/**
               - Makefile
               - Tiltfile
               - Dockerfile
@@ -326,27 +327,11 @@ jobs:
             profile: postgres
             use-api: false
     steps:
-      - name: Free up unused disk space
-        run: |
-          printf "==> Available space before cleanup\n"
-          df -h
-          # these directories are not used by E2E tests
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
-          printf "==> Available space after cleanup\n"
-          df -h
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version: "1.26"
           cache: true
-      - name: Download k3d and Tilt
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: e2e-tools
-          path: tools-bin
-      - name: Install k3d and Tilt onto PATH
-        # built once by the e2e-tools job; artifacts don't preserve the +x bit
-        run: install -m 0755 tools-bin/k3d tools-bin/tilt "$(go env GOPATH)/bin/"
       - name: Install Java for the SDK
         if: ${{matrix.test == 'test-java-sdk'}}
         uses: actions/setup-java@1bcf9fb12cf4aa7d266a90ae39939e61372fe520 # v5.4.0
@@ -354,33 +339,11 @@ jobs:
           java-version: '8'
           distribution: adopt
           cache: maven
-      - name: Install socat
-        # socat supports "kubectl port-forward": cri-dockerd needed it (https://github.com/k3s-io/cri-dockerd/blob/4995f339edcffdf890406b3f1477d34e38477f18/streaming/streaming_others.go#L46);
-        # k3d's k3s uses embedded containerd, which doesn't, so this is defensive and harmless.
-        run: sudo apt-get -y install socat
-      - name: Create k3d cluster
-        env:
-          # hack/tilt/k3d-up.sh maps this key via hack/k8s-versions.sh to a k3s image
-          K8S_VERSION: ${{ matrix.k8s_version || 'max' }}
-        run: |
-          # k3d and Tilt come from the e2e-tools artifact (installed above).
-          # k3d runs k3s with its embedded containerd (2.x in these k3s
-          # versions), which supports the Kubernetes image volumes the
-          # init-less pod layout uses to deliver argoexec.
-          make k3d-up
-          # tests and debug steps assume the argo namespace is the current context
-          kubectl config set-context --current --namespace=argo
-          # the CLI auth e2e tests (TestTokenArg) use this kubeconfig user
-          echo "- name: fake_token_user" >> $KUBECONFIG
-          echo "  user:" >> $KUBECONFIG
-          echo "    token: xxxxxx" >> $KUBECONFIG
-      - name: Set-up /etc/hosts
-        run: |
-          echo '127.0.0.1 dex'      | sudo tee -a /etc/hosts
-          echo '127.0.0.1 minio'    | sudo tee -a /etc/hosts
-          echo '127.0.0.1 postgres' | sudo tee -a /etc/hosts
-          echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
-          echo '127.0.0.1 azurite'  | sudo tee -a /etc/hosts
+      - name: Set up k3d cluster and E2E tooling
+        uses: ./.github/actions/e2e-cluster-up
+        with:
+          k8s-version: ${{ matrix.k8s_version || 'max' }}
+          cli-auth-kubeconfig: "true"
       - name: Build images and start Argo in-cluster
         # tilt builds the production images, deploys them, and then keeps
         # running through the test steps so its port-forwards (argo-server,
@@ -425,9 +388,9 @@ jobs:
           retention-days: 10
 
       # failure debugging below
-      - name: Failure debug - k3d server logs
+      - name: Failure debug - logs
         if: ${{ failure() }}
-        run: docker logs k3d-k3s-default-server-0 || true
+        uses: ./.github/actions/e2e-failure-debug
       - name: Failure debug - describe MinIO/Database deployment
         if: ${{ failure() }}
         run: |
@@ -443,29 +406,12 @@ jobs:
       - name: Failure debug - MinIO/MySQL logs
         if: ${{ failure() }}
         run: kubectl logs -l '!workflows.argoproj.io/workflow' --prefix
-      - name: Failure debug - Controller/API logs
-        if: ${{ failure() }}
-        run: |
-          kubectl -n argo logs deploy/workflow-controller --prefix --tail=-1 || true
-          kubectl -n argo logs deploy/argo-server --prefix --tail=-1 || true
-      - name: Failure debug - Tilt logs
-        if: ${{ failure() }}
-        run: '[ -e /tmp/tilt.log ] && cat /tmp/tilt.log || true'
-      - if: ${{ failure() }}
-        name: Failure debug - describe Workflows
-        run: |
-          set -eux
-          kubectl get wf
-          kubectl describe wf
       - name: Failure debug - describe Workflow pods
         if: ${{ failure() }}
         run: |
           set -eux
           kubectl get pods -l workflows.argoproj.io/workflow
           kubectl describe pods -l workflows.argoproj.io/workflow
-      - name: Failure debug - Workflow Pod logs
-        if: ${{ failure() }}
-        run: kubectl logs --all-containers -l workflows.argoproj.io/workflow --prefix
 
         # workaround for status checks -- check this one job instead of each individual E2E job in the matrix
         # this allows us to skip the entire matrix when it doesn't need to run while still having accurate status checks
@@ -593,13 +539,6 @@ jobs:
       # there — this also gives production-bundle coverage.
       ARGO_UI_BASE_URL: http://localhost:2746
     steps:
-      - name: Free up unused disk space
-        run: |
-          printf "==> Available space before cleanup\n"
-          df -h
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
-          printf "==> Available space after cleanup\n"
-          df -h
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
@@ -610,31 +549,8 @@ jobs:
           node-version: "24" # change in all GH Workflows
           cache: yarn
           cache-dependency-path: ui/yarn.lock
-      - name: Download k3d and Tilt
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: e2e-tools
-          path: tools-bin
-      - name: Install k3d and Tilt onto PATH
-        # built once by the e2e-tools job; artifacts don't preserve the +x bit
-        run: install -m 0755 tools-bin/k3d tools-bin/tilt "$(go env GOPATH)/bin/"
-      - name: Install socat
-        run: sudo apt-get -y install socat
-      - name: Create k3d cluster
-        env:
-          # hack/tilt/k3d-up.sh maps this key via hack/k8s-versions.sh to a k3s image
-          K8S_VERSION: max
-        run: |
-          make k3d-up
-          # tests and global-setup assume the argo namespace is the current context
-          kubectl config set-context --current --namespace=argo
-      - name: Set-up /etc/hosts
-        run: |
-          echo '127.0.0.1 dex'      | sudo tee -a /etc/hosts
-          echo '127.0.0.1 minio'    | sudo tee -a /etc/hosts
-          echo '127.0.0.1 postgres' | sudo tee -a /etc/hosts
-          echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
-          echo '127.0.0.1 azurite'  | sudo tee -a /etc/hosts
+      - name: Set up k3d cluster and E2E tooling
+        uses: ./.github/actions/e2e-cluster-up
       - name: Install UI dependencies and Playwright browser
         run: |
           yarn --cwd ui install
@@ -676,23 +592,6 @@ jobs:
           retention-days: 10
 
       # failure debugging below
-      - name: Failure debug - k3d server logs
+      - name: Failure debug - logs
         if: ${{ failure() }}
-        run: docker logs k3d-k3s-default-server-0 || true
-      - name: Failure debug - Controller/API logs
-        if: ${{ failure() }}
-        run: |
-          kubectl -n argo logs deploy/workflow-controller --prefix --tail=-1 || true
-          kubectl -n argo logs deploy/argo-server --prefix --tail=-1 || true
-      - name: Failure debug - Tilt logs
-        if: ${{ failure() }}
-        run: '[ -e /tmp/tilt.log ] && cat /tmp/tilt.log || true'
-      - name: Failure debug - describe Workflows
-        if: ${{ failure() }}
-        run: |
-          set -eux
-          kubectl get wf
-          kubectl describe wf
-      - name: Failure debug - Workflow Pod logs
-        if: ${{ failure() }}
-        run: kubectl logs --all-containers -l workflows.argoproj.io/workflow --prefix || true
+        uses: ./.github/actions/e2e-failure-debug
