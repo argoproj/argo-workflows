@@ -1448,6 +1448,7 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		// due to intentional teardown — preserve the status rather than re-assessing exit codes.
 		if tmpl.IsDaemon() && old.Phase == wfv1.NodeSucceeded {
 			woc.log.WithFields(logging.Fields{"displayName": old.DisplayName, "pod": pod.Name}).Info(ctx, "Daemon pod already marked Succeeded by teardown; ignoring PodFailed event")
+			updated.Phase = wfv1.NodeSucceeded
 			updated.Daemoned = nil
 			break
 		}
