@@ -3923,3 +3923,90 @@ func TestWorkflowWithoutParameterizedArtifactsFails(t *testing.T) {
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to resolve {{workflow.outputs.artifacts.nonexistent}}")
 }
+
+var podResourcesInvalidResourceName = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: pod-resources-
+spec:
+  entrypoint: main
+  podResources:
+    limits:
+      nvidia.com/gpu: "1"
+  templates:
+  - name: main
+    container:
+      image: alpine:3.23
+`
+
+var podResourcesClaims = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: pod-resources-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    podResources:
+      claims:
+      - name: gpu
+    container:
+      image: alpine:3.23
+`
+
+var podResourcesOnHTTPTemplate = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: pod-resources-
+spec:
+  entrypoint: main
+  podResources:
+    limits:
+      cpu: "1"
+  templates:
+  - name: main
+    podResources:
+      limits:
+        cpu: "1"
+    http:
+      url: https://example.com
+`
+
+var podResourcesValid = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: pod-resources-
+spec:
+  entrypoint: main
+  podResources:
+    requests:
+      cpu: 100m
+      memory: 64Mi
+    limits:
+      cpu: "1"
+      memory: 256Mi
+  templates:
+  - name: main
+    podResources:
+      limits:
+        cpu: "2"
+        memory: 512Mi
+    container:
+      image: alpine:3.23
+`
+
+func TestPodResourcesValidation(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	err := validate(ctx, podResourcesInvalidResourceName)
+	require.ErrorContains(t, err, `spec.podResources: "nvidia.com/gpu" is not a valid pod-level resource`)
+	err = validate(ctx, podResourcesClaims)
+	require.ErrorContains(t, err, "templates.main.podResources.claims is not supported")
+	err = validate(ctx, podResourcesOnHTTPTemplate)
+	require.ErrorContains(t, err, "templates.main.podResources is not supported for HTTP templates")
+	err = validate(ctx, podResourcesValid)
+	require.NoError(t, err)
+}

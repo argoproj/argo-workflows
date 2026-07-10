@@ -2,7 +2,11 @@
 # workflow-level default. Pod-level resources set a single budget shared by
 # all containers in the pod (main, sidecars, init), which is simpler than
 # sizing each container individually.
-# Requires the PodLevelResources feature gate (beta since Kubernetes v1.34).
+# Requires the PodLevelResources feature gate (beta since Kubernetes v1.34);
+# without it the API server silently drops the field (the controller emits a
+# PodLevelResourcesDropped warning event when that happens).
+# Note: the budget must also cover the init and wait containers Argo injects
+# into each pod (sized by the controller's executor resources configuration).
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:

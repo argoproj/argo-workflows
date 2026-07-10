@@ -347,6 +347,15 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	woc.addSchedulingConstraints(ctx, pod, wfSpec, tmpl, nodeName)
 	woc.addMetadata(pod, tmpl)
 
+	// Set pod-level resources, the template level overriding the workflow level.
+	// This is deliberately not in addSchedulingConstraints: the agent pod also calls
+	// that, and its containers have fixed sizing a task-sized budget would violate.
+	if tmpl.PodResources != nil {
+		pod.Spec.Resources = tmpl.PodResources
+	} else if wfSpec.PodResources != nil {
+		pod.Spec.Resources = wfSpec.PodResources
+	}
+
 	// Set initial progress from pod metadata if exists.
 	if x, ok := pod.Annotations[common.AnnotationKeyProgress]; ok {
 		if p, ok := wfv1.ParseProgress(x); ok {
@@ -762,6 +771,12 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 		return nil, errors.InternalWrapError(err)
 	}
 	log.Info(ctx, "Created pod")
+	if pod.Spec.Resources != nil && created.Spec.Resources == nil {
+		// The API server strips pod-level resources when the PodLevelResources
+		// feature gate is off, leaving the pod unbounded with no other signal.
+		woc.eventRecorder.Eventf(woc.wf, apiv1.EventTypeWarning, "PodLevelResourcesDropped",
+			"pod %q: the API server dropped podResources; the PodLevelResources feature gate (beta since Kubernetes v1.34) is not enabled on this cluster", pod.Name)
+	}
 	woc.activePods++
 	return created, nil
 }
@@ -1209,13 +1224,6 @@ func (woc *wfOperationCtx) addSchedulingConstraints(ctx context.Context, pod *ap
 		pod.Spec.SecurityContext = tmpl.SecurityContext
 	} else if wfSpec.SecurityContext != nil {
 		pod.Spec.SecurityContext = wfSpec.SecurityContext
-	}
-
-	// set pod-level resources (if specified)
-	if tmpl.PodResources != nil {
-		pod.Spec.Resources = tmpl.PodResources
-	} else if wfSpec.PodResources != nil {
-		pod.Spec.Resources = wfSpec.PodResources
 	}
 }
 

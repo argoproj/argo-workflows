@@ -19,6 +19,13 @@ func DurationForPod(pod *corev1.Pod) wfv1.ResourcesDuration {
 			// https://medium.com/@betz.mark/understanding-resource-limits-in-kubernetes-memory-6b41e9a955f9
 			corev1.ResourceMemory: resource.MustParse("100Mi"),
 		}}
+		// Pod-level resources bound containers that declare none of their own, so they
+		// beat the defaults above. Attributing the whole pod budget to each such
+		// container can over-count multi-container pods, which share the one budget.
+		if pod.Spec.Resources != nil {
+			maps.Copy(summaries[c.Name].ResourceList, pod.Spec.Resources.Limits)
+			maps.Copy(summaries[c.Name].ResourceList, pod.Spec.Resources.Requests)
+		}
 		// Update with user-configured resources (falls back to limits as == requests, same as Kubernetes).
 		maps.Copy(summaries[c.Name].ResourceList, c.Resources.Limits)
 		maps.Copy(summaries[c.Name].ResourceList, c.Resources.Requests)

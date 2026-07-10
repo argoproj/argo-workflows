@@ -901,7 +901,7 @@ func TestPodResources(t *testing.T) {
 		tmplResources *apiv1.ResourceRequirements
 		expected      *apiv1.ResourceRequirements
 	}{
-		"WorkflowLevel": {nil, wfLevel},
+		"WorkflowLevel":          {nil, wfLevel},
 		"TemplateLevelOverrides": {tmplLevel, tmplLevel},
 	} {
 		t.Run(name, func(t *testing.T) {

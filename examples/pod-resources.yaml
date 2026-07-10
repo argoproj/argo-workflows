@@ -1,6 +1,10 @@
 # This example demonstrates setting pod-level resource requests and limits,
 # which apply to the pod as a whole rather than to individual containers.
-# Requires the PodLevelResources feature gate (beta since Kubernetes v1.34).
+# Requires the PodLevelResources feature gate (beta since Kubernetes v1.34);
+# without it the API server silently drops the field (the controller emits a
+# PodLevelResourcesDropped warning event when that happens).
+# Note: the budget must also cover the init and wait containers Argo injects
+# into each pod (sized by the controller's executor resources configuration).
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
