@@ -8,24 +8,3 @@ Template-level `podResources` overrides the workflow-level value.
 This lets you set a single resource budget shared by all containers in a pod (main, init, wait and sidecars) instead of sizing each container individually.
 Requires the `PodLevelResources` feature gate to be enabled on the cluster (beta and on by default since Kubernetes v1.34).
 If the feature gate is disabled, the API server strips the field and the controller emits a `PodLevelResourcesDropped` warning event on the workflow.
-
-```yaml
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: pod-level-resources-
-spec:
-  entrypoint: main
-  podResources:
-    requests:
-      cpu: 100m
-      memory: 128Mi
-    limits:
-      cpu: "1"
-      memory: 512Mi
-  templates:
-    - name: main
-      container:
-        image: busybox
-        command: [echo, hello]
-```
