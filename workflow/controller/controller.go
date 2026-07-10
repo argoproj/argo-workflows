@@ -198,6 +198,10 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		return nil, err
 	}
 
+	if err = util.ConfigureUserOverrideAllowlistFromEnv(); err != nil {
+		return nil, err
+	}
+
 	wfc := WorkflowController{
 		restConfig:                 restConfig,
 		kubeclientset:              kubeclientset,
