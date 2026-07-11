@@ -12,6 +12,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -1144,6 +1145,39 @@ func TestArtifactServer_UploadInputArtifact(t *testing.T) {
 		s.UploadInputArtifact(recorder, req)
 
 		assert.Equal(t, http.StatusRequestEntityTooLarge, recorder.Result().StatusCode)
+	})
+
+	t.Run("Success - multipart temp files removed after successful upload", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		t.Setenv("TMPDIR", tmpDir)
+		s := newServerForUpload(t, nil)
+		recorder := httptest.NewRecorder()
+		// Exceeds the handler's 32MiB in-memory threshold, forcing multipart to spill to disk.
+		largeContent := bytes.Repeat([]byte("a"), 33<<20)
+		req := createMultipartRequest(t, "/upload-artifacts/my-ns/my-wft/input-artifact", largeContent)
+
+		s.UploadInputArtifact(recorder, req)
+
+		assert.Equal(t, http.StatusOK, recorder.Result().StatusCode)
+		leaked, err := filepath.Glob(filepath.Join(tmpDir, "multipart-*"))
+		require.NoError(t, err)
+		assert.Empty(t, leaked)
+	})
+
+	t.Run("Error - multipart temp files removed after SaveStream error", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		t.Setenv("TMPDIR", tmpDir)
+		s := newServerForUpload(t, errors.New("storage error"))
+		recorder := httptest.NewRecorder()
+		largeContent := bytes.Repeat([]byte("a"), 33<<20)
+		req := createMultipartRequest(t, "/upload-artifacts/my-ns/my-wft/input-artifact", largeContent)
+
+		s.UploadInputArtifact(recorder, req)
+
+		assert.Equal(t, http.StatusInternalServerError, recorder.Result().StatusCode)
+		leaked, err := filepath.Glob(filepath.Join(tmpDir, "multipart-*"))
+		require.NoError(t, err)
+		assert.Empty(t, leaked)
 	})
 }
 
