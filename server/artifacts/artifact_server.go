@@ -26,6 +26,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/server/auth"
 	"github.com/argoproj/argo-workflows/v4/server/types"
+	sutils "github.com/argoproj/argo-workflows/v4/server/utils"
 	"github.com/argoproj/argo-workflows/v4/util/instanceid"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/artifactrepositories"
@@ -242,6 +243,10 @@ func (a *ArtifactServer) UploadInputArtifact(w http.ResponseWriter, r *http.Requ
 	}
 	// Replace the key with uploaded file path under uploads/
 	newKey := fmt.Sprintf("uploads/%s/%s/%s", namespace, uploadUUID, sanitizedFilename)
+	if validateErr := sutils.ValidateUploadedArtifactKey(namespace, newKey); validateErr != nil {
+		a.serverInternalError(ctx, fmt.Errorf("generated artifact key failed self-validation: %w", validateErr), w)
+		return
+	}
 
 	// Create a copy of the artifact for uploading (using artifactCopy which has resolved location)
 	outputArtifact := artifactCopy.DeepCopy()

@@ -1173,7 +1173,7 @@ func TestSubmitWorkflowWithArtifactOverride(t *testing.T) {
 			ResourceKind: "WorkflowTemplate",
 			ResourceName: "wft-with-artifact",
 			SubmitOptions: &v1alpha1.SubmitOpts{
-				Artifacts: []string{"input-artifact=uploads/test-ns/uuid123/uploaded-file.zip"},
+				Artifacts: []string{"input-artifact=uploads/test-ns/12345678-1234-4234-8234-123456789012/uploaded-file.zip"},
 			},
 		})
 		require.NoError(t, err)
@@ -1183,7 +1183,7 @@ func TestSubmitWorkflowWithArtifactOverride(t *testing.T) {
 		require.Len(t, wf.Spec.Arguments.Artifacts, 1)
 		key, err := wf.Spec.Arguments.Artifacts[0].GetKey()
 		require.NoError(t, err)
-		assert.Equal(t, "uploads/test-ns/uuid123/uploaded-file.zip", key)
+		assert.Equal(t, "uploads/test-ns/12345678-1234-4234-8234-123456789012/uploaded-file.zip", key)
 
 		// Verify original location settings are preserved
 		assert.Equal(t, "s3.amazonaws.com", wf.Spec.Arguments.Artifacts[0].S3.Endpoint)
@@ -1206,7 +1206,7 @@ func TestSubmitWorkflowWithArtifactOverride(t *testing.T) {
 			ResourceKind: "WorkflowTemplate",
 			ResourceName: "wft-no-location",
 			SubmitOptions: &v1alpha1.SubmitOpts{
-				Artifacts: []string{"input-artifact=uploads/test-ns/uuid456/uploaded-file.zip"},
+				Artifacts: []string{"input-artifact=uploads/test-ns/87654321-4321-4321-8321-210987654321/uploaded-file.zip"},
 			},
 		})
 		require.NoError(t, err)
@@ -1216,7 +1216,7 @@ func TestSubmitWorkflowWithArtifactOverride(t *testing.T) {
 		require.Len(t, wf.Spec.Arguments.Artifacts, 1)
 		key, err := wf.Spec.Arguments.Artifacts[0].GetKey()
 		require.NoError(t, err)
-		assert.Equal(t, "uploads/test-ns/uuid456/uploaded-file.zip", key)
+		assert.Equal(t, "uploads/test-ns/87654321-4321-4321-8321-210987654321/uploaded-file.zip", key)
 
 		// Verify location was resolved from default repository
 		assert.Equal(t, "default-endpoint", wf.Spec.Arguments.Artifacts[0].S3.Endpoint)

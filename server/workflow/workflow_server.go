@@ -910,6 +910,9 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 					}
 				}
 
+				if validateErr := sutils.ValidateUploadedArtifactKey(req.Namespace, newKey); validateErr != nil {
+					return nil, sutils.ToStatusError(fmt.Errorf("invalid artifact key override for %s: %w", tmplArt.Name, validateErr), codes.InvalidArgument)
+				}
 				if setErr := artCopy.SetKey(newKey); setErr != nil {
 					return nil, sutils.ToStatusError(fmt.Errorf("failed to set key for artifact %s: %w", tmplArt.Name, setErr), codes.Internal)
 				}
