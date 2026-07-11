@@ -935,3 +935,50 @@ func TestJoinWorkflowSpecWithArtifactOverride(t *testing.T) {
 	assert.Equal("uploads/argo/12345678-1234-1234-1234-123456789012/file.zip", key)
 	assert.NotEqual("input-file/placeholder", key)
 }
+
+// TestJoinWorkflowSpec_ArtifactFieldMerge verifies that a key-only artifact
+// override at the workflow level does not drop bucket/endpoint inherited
+// from the workflow-defaults level, since those fields live on the same S3
+// backend and only the key is meant to change.
+func TestJoinWorkflowSpec_ArtifactFieldMerge(t *testing.T) {
+	wfSpec := &wfv1.WorkflowSpec{
+		Arguments: wfv1.Arguments{
+			Artifacts: wfv1.Artifacts{
+				{
+					Name: "my-artifact",
+					ArtifactLocation: wfv1.ArtifactLocation{
+						S3: &wfv1.S3Artifact{Key: "override-key"},
+					},
+				},
+			},
+		},
+	}
+	wfDefaultSpec := &wfv1.WorkflowSpec{
+		Arguments: wfv1.Arguments{
+			Artifacts: wfv1.Artifacts{
+				{
+					Name: "my-artifact",
+					ArtifactLocation: wfv1.ArtifactLocation{
+						S3: &wfv1.S3Artifact{
+							S3Bucket: wfv1.S3Bucket{
+								Endpoint: "s3.amazonaws.com",
+								Bucket:   "my-bucket",
+							},
+							Key: "default-key",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	targetWf, err := JoinWorkflowSpec(wfSpec, nil, wfDefaultSpec)
+	require.NoError(t, err)
+
+	require.Len(t, targetWf.Spec.Arguments.Artifacts, 1)
+	merged := targetWf.Spec.Arguments.Artifacts[0].S3
+	require.NotNil(t, merged)
+	assert.Equal(t, "s3.amazonaws.com", merged.Endpoint)
+	assert.Equal(t, "my-bucket", merged.Bucket)
+	assert.Equal(t, "override-key", merged.Key)
+}
