@@ -9,6 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -1238,6 +1240,28 @@ func TestSubmitWorkflowWithArtifactOverride(t *testing.T) {
 		// because workflowTemplateRef is used and no override was provided
 		assert.Empty(t, wf.Spec.Arguments.Artifacts)
 	})
+
+	for name, key := range map[string]string{
+		"traversal":               "uploads/test-ns/12345678-1234-4234-8234-123456789012/../../../etc/passwd",
+		"wrong namespace":         "uploads/other-ns/12345678-1234-4234-8234-123456789012/file.zip",
+		"bad uuid segment":        "uploads/test-ns/not-a-uuid/file.zip",
+		"missing uploads/ prefix": "some/other/key/file.zip",
+	} {
+		t.Run("Reject override with "+name, func(t *testing.T) {
+			server, ctx := getWorkflowServerWithArtifacts(t, wftWithArtifact, nil)
+
+			_, err := server.SubmitWorkflow(ctx, &workflowpkg.WorkflowSubmitRequest{
+				Namespace:    "test-ns",
+				ResourceKind: "WorkflowTemplate",
+				ResourceName: "wft-with-artifact",
+				SubmitOptions: &v1alpha1.SubmitOpts{
+					Artifacts: []string{"input-artifact=" + key},
+				},
+			})
+			require.Error(t, err)
+			assert.Equal(t, codes.InvalidArgument, status.Code(err))
+		})
+	}
 }
 
 // getWorkflowServerWithArtifacts creates a workflow server with artifact support for testing
