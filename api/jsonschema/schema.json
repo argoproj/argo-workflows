@@ -7198,7 +7198,7 @@
           "type": "string"
         },
         "artifacts": {
-          "description": "Artifacts overrides input artifact locations. Format: name=s3://bucket/key or name=key",
+          "description": "Artifacts overrides input artifact locations. Format: name=key",
           "items": {
             "type": "string"
           },

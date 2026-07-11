@@ -1700,7 +1700,7 @@ message SubmitOpts {
   // are processed first.
   optional int32 priority = 14;
 
-  // Artifacts overrides input artifact locations. Format: name=s3://bucket/key or name=key
+  // Artifacts overrides input artifact locations. Format: name=key
   repeated string artifacts = 15;
 }
 

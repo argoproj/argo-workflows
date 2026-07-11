@@ -6428,7 +6428,7 @@ func schema_pkg_apis_workflow_v1alpha1_SubmitOpts(ref common.ReferenceCallback) 
 					},
 					"artifacts": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Artifacts overrides input artifact locations. Format: name=s3://bucket/key or name=key",
+							Description: "Artifacts overrides input artifact locations. Format: name=key",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
