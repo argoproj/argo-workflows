@@ -139,8 +139,22 @@ func (a *ArtifactServer) UploadInputArtifact(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	// Enforce a hard cap on the total request body size before buffering any
+	// of it, so a caller cannot exhaust server disk/memory with an oversized upload.
+	maxUploadBytes, err := env.GetInt("ARGO_SERVER_MAX_ARTIFACT_UPLOAD_BYTES", 1<<30)
+	if err != nil {
+		a.serverInternalError(ctx, err, w)
+		return
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, int64(maxUploadBytes))
+
 	// Parse multipart form (max 32MB in memory, rest on disk)
 	if parseErr := r.ParseMultipartForm(32 << 20); parseErr != nil {
+		var maxBytesErr *http.MaxBytesError
+		if errors.As(parseErr, &maxBytesErr) {
+			http.Error(w, http.StatusText(http.StatusRequestEntityTooLarge), http.StatusRequestEntityTooLarge)
+			return
+		}
 		http.Error(w, "Failed to parse multipart form: "+parseErr.Error(), http.StatusBadRequest)
 		return
 	}
