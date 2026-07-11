@@ -17,6 +17,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/uuid"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -1018,6 +1019,18 @@ func TestArtifactServer_UploadInputArtifact(t *testing.T) {
 		assert.Equal(t, "input-artifact", response["name"])
 		assert.Contains(t, response["key"], "uploads/my-ns/")
 		assert.Contains(t, response["key"], "test-file.zip")
+
+		// key must be uploads/{namespace}/{uuid}/{filename}, with the uuid segment
+		// a proper RFC-4122 (version 4, variant 10) UUID rather than an arbitrary
+		// hex string that happens to parse.
+		key, ok := response["key"].(string)
+		require.True(t, ok)
+		parts := strings.Split(key, "/")
+		require.Len(t, parts, 4)
+		parsed, err := uuid.Parse(parts[2])
+		require.NoError(t, err)
+		assert.Equal(t, uuid.Version(4), parsed.Version())
+		assert.Equal(t, uuid.RFC4122, parsed.Variant())
 	})
 
 	t.Run("Success - upload artifact without location (uses default repository)", func(t *testing.T) {
