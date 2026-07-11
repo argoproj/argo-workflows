@@ -16,6 +16,7 @@ import (
 	"strings"
 	"testing"
 
+	authorizationv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 
@@ -25,7 +26,9 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	kubefake "k8s.io/client-go/kubernetes/fake"
+	ktesting "k8s.io/client-go/testing"
 
 	sqldbmocks "github.com/argoproj/argo-workflows/v4/persist/sqldb/mocks"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
@@ -876,8 +879,20 @@ func TestArtifactServer_GetArtifactFile_ArchivedWorkflowNotFound(t *testing.T) {
 // newServerForUpload creates a test server with WorkflowTemplate for upload tests
 func newServerForUpload(t *testing.T, saveStreamError error) *ArtifactServer {
 	t.Helper()
+	return newServerForUploadWithAuth(t, saveStreamError, true)
+}
+
+// newServerForUploadWithAuth is like newServerForUpload but lets the caller control
+// whether SelfSubjectAccessReview checks (auth.CanI) are allowed or denied.
+func newServerForUploadWithAuth(t *testing.T, saveStreamError error, authorized bool) *ArtifactServer {
+	t.Helper()
 	gatekeeper := &authmocks.Gatekeeper{}
-	kube := kubefake.NewSimpleClientset()
+	kube := kubefake.NewClientset()
+	kube.PrependReactor("create", "selfsubjectaccessreviews", func(_ ktesting.Action) (bool, runtime.Object, error) {
+		return true, &authorizationv1.SelfSubjectAccessReview{
+			Status: authorizationv1.SubjectAccessReviewStatus{Allowed: authorized},
+		}, nil
+	})
 	instanceID := "my-instanceid"
 
 	// WorkflowTemplate with artifact in arguments
@@ -885,6 +900,7 @@ func newServerForUpload(t *testing.T, saveStreamError error) *ArtifactServer {
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "my-ns",
 			Name:      "my-wft",
+			Labels:    map[string]string{common.LabelKeyControllerInstanceID: instanceID},
 		},
 		Spec: wfv1.WorkflowSpec{
 			Entrypoint: "main",
@@ -922,6 +938,7 @@ func newServerForUpload(t *testing.T, saveStreamError error) *ArtifactServer {
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "my-ns",
 			Name:      "my-wft-no-location",
+			Labels:    map[string]string{common.LabelKeyControllerInstanceID: instanceID},
 		},
 		Spec: wfv1.WorkflowSpec{
 			Entrypoint: "main",
@@ -1106,4 +1123,27 @@ func TestArtifactServer_UploadInputArtifact(t *testing.T) {
 
 		assert.Equal(t, http.StatusBadRequest, recorder.Result().StatusCode)
 	})
+
+	t.Run("Error - upload without workflows.create returns 403 before body read", func(t *testing.T) {
+		s := newServerForUploadWithAuth(t, nil, false)
+		recorder := httptest.NewRecorder()
+		req := createMultipartRequest(t, "/upload-artifacts/my-ns/my-wft/input-artifact", []byte("test content"))
+		req.Body = io.NopCloser(&failOnReadReader{t: t})
+
+		s.UploadInputArtifact(recorder, req)
+
+		assert.Equal(t, http.StatusForbidden, recorder.Result().StatusCode)
+	})
+}
+
+// failOnReadReader fails the test if its Read method is invoked. It is used to prove
+// that the request body is never consumed when authorization is denied.
+type failOnReadReader struct {
+	t *testing.T
+}
+
+func (r *failOnReadReader) Read(_ []byte) (int, error) {
+	r.t.Helper()
+	r.t.Fatal("request body must not be read before authorization checks pass")
+	return 0, io.EOF
 }
