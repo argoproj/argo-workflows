@@ -3,8 +3,6 @@ package artifacts
 import (
 	"bytes"
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,6 +13,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -233,11 +232,7 @@ func (a *ArtifactServer) UploadInputArtifact(w http.ResponseWriter, r *http.Requ
 	}
 
 	// Generate unique key for the artifact
-	uuid, uuidErr := generateUUID()
-	if uuidErr != nil {
-		http.Error(w, fmt.Sprintf("Failed to generate UUID: %v", uuidErr), http.StatusInternalServerError)
-		return
-	}
+	uploadUUID := uuid.NewString()
 	originalKey, _ := artifactCopy.GetKey()
 	// Sanitize filename to prevent path traversal attacks
 	sanitizedFilename := path.Base(header.Filename)
@@ -246,7 +241,7 @@ func (a *ArtifactServer) UploadInputArtifact(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	// Replace the key with uploaded file path under uploads/
-	newKey := fmt.Sprintf("uploads/%s/%s/%s", namespace, uuid, sanitizedFilename)
+	newKey := fmt.Sprintf("uploads/%s/%s/%s", namespace, uploadUUID, sanitizedFilename)
 
 	// Create a copy of the artifact for uploading (using artifactCopy which has resolved location)
 	outputArtifact := artifactCopy.DeepCopy()
@@ -291,15 +286,6 @@ func (a *ArtifactServer) UploadInputArtifact(w http.ResponseWriter, r *http.Requ
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		a.logger.WithError(err).Error(ctx, "Failed to encode response")
 	}
-}
-
-// generateUUID generates a simple UUID for unique artifact keys
-func generateUUID() (string, error) {
-	b := make([]byte, 16)
-	if _, err := rand.Read(b); err != nil {
-		return "", fmt.Errorf("failed to generate random bytes: %w", err)
-	}
-	return hex.EncodeToString(b), nil
 }
 
 // GetArtifactFile is a single endpoint to handle serving directories as well as files, both those that have been archived and those that haven't.
