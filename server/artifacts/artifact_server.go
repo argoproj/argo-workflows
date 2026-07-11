@@ -106,6 +106,39 @@ func (a *ArtifactServer) UploadInputArtifact(w http.ResponseWriter, r *http.Requ
 		"artifactName":         artifactName,
 	}).Info(ctx, "Upload artifact")
 
+	// Authorize before reading the request body, so an unprivileged caller
+	// cannot force the server to buffer a large upload just to be rejected.
+	allowed, err := auth.CanI(ctx, "get", "workflowtemplates", namespace, workflowTemplateName)
+	if err != nil {
+		a.serverInternalError(ctx, err, w)
+		return
+	}
+	if !allowed {
+		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+		return
+	}
+	allowed, err = auth.CanI(ctx, "create", "workflows", namespace, "")
+	if err != nil {
+		a.serverInternalError(ctx, err, w)
+		return
+	}
+	if !allowed {
+		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+		return
+	}
+
+	// Get WorkflowTemplate to find artifact configuration
+	wfClient := auth.GetWfClient(ctx)
+	wfTemplate, err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(namespace).Get(ctx, workflowTemplateName, metav1.GetOptions{})
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to get WorkflowTemplate %s/%s: %v", namespace, workflowTemplateName, err), http.StatusNotFound)
+		return
+	}
+	if err := a.instanceIDService.Validate(wfTemplate); err != nil {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+
 	// Parse multipart form (max 32MB in memory, rest on disk)
 	if parseErr := r.ParseMultipartForm(32 << 20); parseErr != nil {
 		http.Error(w, "Failed to parse multipart form: "+parseErr.Error(), http.StatusBadRequest)
@@ -123,14 +156,6 @@ func (a *ArtifactServer) UploadInputArtifact(w http.ResponseWriter, r *http.Requ
 		"filename": header.Filename,
 		"size":     header.Size,
 	}).Info(ctx, "Received file for upload")
-
-	// Get WorkflowTemplate to find artifact configuration
-	wfClient := auth.GetWfClient(ctx)
-	wfTemplate, err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(namespace).Get(ctx, workflowTemplateName, metav1.GetOptions{})
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to get WorkflowTemplate %s/%s: %v", namespace, workflowTemplateName, err), http.StatusNotFound)
-		return
-	}
 
 	// Find the artifact in the WorkflowTemplate's arguments.artifacts
 	var templateArtifact *wfv1.Artifact
