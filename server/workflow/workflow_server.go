@@ -833,12 +833,6 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 	creator.LabelCreator(ctx, wf)
 
 	logger := logging.RequireLoggerFromContext(ctx)
-	if req.SubmitOptions != nil {
-		logger.WithFields(logging.Fields{
-			"artifactsCount":         len(req.SubmitOptions.Artifacts),
-			"hasWorkflowTemplateRef": wf.Spec.WorkflowTemplateRef != nil,
-		}).Debug(ctx, "SubmitWorkflow: checking conditions")
-	}
 
 	err := util.ApplySubmitOpts(wf, req.SubmitOptions)
 	if err != nil {
@@ -920,14 +914,6 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 					return nil, sutils.ToStatusError(fmt.Errorf("failed to set key for artifact %s: %w", tmplArt.Name, setErr), codes.Internal)
 				}
 				wf.Spec.Arguments.Artifacts = append(wf.Spec.Arguments.Artifacts, *artCopy)
-
-				// Log the artifact override
-				overriddenKey, _ := artCopy.GetKey()
-				logger.WithFields(logging.Fields{
-					"artifactName": tmplArt.Name,
-					"originalKey":  func() string { k, _ := tmplArt.ArtifactLocation.GetKey(); return k }(),
-					"newKey":       overriddenKey,
-				}).Debug(ctx, "Applied artifact key override")
 			}
 		}
 
@@ -958,22 +944,6 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 			return nil, sutils.ToStatusError(dryRunErr, codes.InvalidArgument)
 		}
 		return workflow, nil
-	}
-
-	// Log final workflow artifacts before creation
-	if len(wf.Spec.Arguments.Artifacts) > 0 {
-		logger := logging.RequireLoggerFromContext(ctx)
-		artifactDetails := make([]map[string]string, 0, len(wf.Spec.Arguments.Artifacts))
-		for _, art := range wf.Spec.Arguments.Artifacts {
-			key, _ := art.GetKey()
-			artifactDetails = append(artifactDetails, map[string]string{
-				"name": art.Name,
-				"key":  key,
-			})
-		}
-		logger.WithFields(logging.Fields{
-			"artifacts": artifactDetails,
-		}).Debug(ctx, "Final workflow artifacts before creation")
 	}
 
 	wf, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Create(ctx, wf, metav1.CreateOptions{})
