@@ -1134,6 +1134,17 @@ func TestArtifactServer_UploadInputArtifact(t *testing.T) {
 
 		assert.Equal(t, http.StatusForbidden, recorder.Result().StatusCode)
 	})
+
+	t.Run("Error - upload over ARGO_SERVER_MAX_ARTIFACT_UPLOAD_BYTES returns 413", func(t *testing.T) {
+		t.Setenv("ARGO_SERVER_MAX_ARTIFACT_UPLOAD_BYTES", "10")
+		s := newServerForUpload(t, nil)
+		recorder := httptest.NewRecorder()
+		req := createMultipartRequest(t, "/upload-artifacts/my-ns/my-wft/input-artifact", []byte("this content is longer than 10 bytes"))
+
+		s.UploadInputArtifact(recorder, req)
+
+		assert.Equal(t, http.StatusRequestEntityTooLarge, recorder.Result().StatusCode)
+	})
 }
 
 // failOnReadReader fails the test if its Read method is invoked. It is used to prove
