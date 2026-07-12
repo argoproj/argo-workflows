@@ -137,3 +137,27 @@ func TestSaveHTTPArtifactRedirect(t *testing.T) {
 		require.NoError(t, err)
 	})
 }
+
+func TestSaveStreamNilArtifactLocation(t *testing.T) {
+	driver := &ArtifactDriver{Client: http.DefaultClient}
+	ctx := logging.TestContext(t.Context())
+
+	t.Run("nil HTTP and nil Artifactory", func(t *testing.T) {
+		art := &wfv1.Artifact{}
+		err := driver.SaveStream(ctx, bytes.NewReader([]byte("content")), art)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "Either Artifactory or HTTP artifact needs to be configured")
+	})
+
+	t.Run("both HTTP and Artifactory set", func(t *testing.T) {
+		art := &wfv1.Artifact{
+			ArtifactLocation: wfv1.ArtifactLocation{
+				HTTP:        &wfv1.HTTPArtifact{URL: "https://example.com/artifact"},
+				Artifactory: &wfv1.ArtifactoryArtifact{URL: "https://example.com/artifactory"},
+			},
+		}
+		err := driver.SaveStream(ctx, bytes.NewReader([]byte("content")), art)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "Either Artifactory or HTTP artifact needs to be configured")
+	})
+}
