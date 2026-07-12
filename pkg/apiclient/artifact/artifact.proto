@@ -87,6 +87,24 @@ message IsDirectoryResponse {
   string error = 2;
 }
 
+// SaveStreamArtifactRequest is sent as a stream of frames: the first frame carries
+// output_artifact (metadata only), and every subsequent frame carries a chunk of the
+// artifact's content.
+message SaveStreamArtifactRequest {
+  Artifact output_artifact = 1;
+  bytes chunk = 2;
+}
+
+message GetCapabilitiesRequest {
+}
+
+message GetCapabilitiesResponse {
+  // supports_save_stream indicates whether this plugin implements the streaming
+  // SaveStream RPC. Callers should check this before invoking SaveStream, since a
+  // reader already partially consumed cannot be rewound to fall back to Save.
+  bool supports_save_stream = 1;
+}
+
 service ArtifactService {
   rpc Load(LoadArtifactRequest) returns (LoadArtifactResponse) {
     option (google.api.http) = {
@@ -129,4 +147,16 @@ service ArtifactService {
       body : "*"
     };
   }
+
+  // SaveStream is a client-streaming RPC for plugins that can accept an artifact's
+  // content chunk by chunk instead of buffering it to a temp file first. No HTTP
+  // gateway is exposed for this RPC: plugins communicate over a direct gRPC
+  // connection on a unix socket, so no HTTP transcoding is needed, and
+  // grpc-gateway v1 cannot cleanly represent client-streaming RPCs anyway.
+  rpc SaveStream(stream SaveStreamArtifactRequest) returns (SaveArtifactResponse);
+
+  // GetCapabilities lets a caller check whether a plugin supports SaveStream before
+  // it starts reading the artifact's content, since a partially consumed reader
+  // cannot be rewound to fall back to Save.
+  rpc GetCapabilities(GetCapabilitiesRequest) returns (GetCapabilitiesResponse);
 }
