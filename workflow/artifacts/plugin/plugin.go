@@ -215,9 +215,73 @@ func (d *Driver) Save(ctx context.Context, path string, outputArtifact *wfv1.Art
 	return nil
 }
 
-// SaveStream implements ArtifactDriver.SaveStream by using a temporary file
-// Note: gRPC streaming upload is complex, so we use a temp file fallback
+// saveStreamChunkSize is the size of each chunk sent over the streaming SaveStream RPC.
+const saveStreamChunkSize = 64 * 1024
+
+// SaveStream implements ArtifactDriver.SaveStream. If the plugin implements the
+// streaming SaveStream RPC (per GetCapabilities), the reader is streamed directly
+// with no local buffering. Otherwise it falls back to buffering to a temp file and
+// calling the existing unary Save, since HDFS-style plugins may not support
+// streaming writes.
+//
+// Capability is checked before reader is touched: once GetCapabilities confirms
+// streaming support and chunks start being sent, a mid-stream failure is returned
+// as an error rather than retried via the fallback, since the reader may already be
+// partially consumed and cannot be rewound.
 func (d *Driver) SaveStream(ctx context.Context, reader io.Reader, outputArtifact *wfv1.Artifact) error {
+	if !d.supportsSaveStream(ctx) {
+		return d.saveStreamViaTempFile(ctx, reader, outputArtifact)
+	}
+
+	stream, err := d.client.SaveStream(ctx)
+	if err != nil {
+		return fmt.Errorf("plugin %s save stream failed to open: %w", d.pluginName, err)
+	}
+
+	if err := stream.Send(&artifact.SaveStreamArtifactRequest{OutputArtifact: convertToGRPC(outputArtifact)}); err != nil {
+		return fmt.Errorf("plugin %s save stream failed to send metadata: %w", d.pluginName, err)
+	}
+
+	buf := make([]byte, saveStreamChunkSize)
+	for {
+		n, readErr := reader.Read(buf)
+		if n > 0 {
+			if sendErr := stream.Send(&artifact.SaveStreamArtifactRequest{Chunk: buf[:n]}); sendErr != nil {
+				return fmt.Errorf("plugin %s save stream failed mid-transfer: %w", d.pluginName, sendErr)
+			}
+		}
+		if errors.Is(readErr, io.EOF) {
+			break
+		}
+		if readErr != nil {
+			return fmt.Errorf("plugin %s save stream failed to read artifact content: %w", d.pluginName, readErr)
+		}
+	}
+
+	resp, err := stream.CloseAndRecv()
+	if err != nil {
+		return fmt.Errorf("plugin %s save stream failed: %w", d.pluginName, err)
+	}
+	if !resp.Success {
+		return fmt.Errorf("plugin %s save stream failed: %s", d.pluginName, resp.Error)
+	}
+	return nil
+}
+
+// supportsSaveStream reports whether the plugin implements the streaming SaveStream
+// RPC. An error (including Unimplemented from an older plugin) is treated the same
+// as supports_save_stream=false, since either way SaveStream must fall back.
+func (d *Driver) supportsSaveStream(ctx context.Context) bool {
+	resp, err := d.client.GetCapabilities(ctx, &artifact.GetCapabilitiesRequest{})
+	if err != nil {
+		return false
+	}
+	return resp.GetSupportsSaveStream()
+}
+
+// saveStreamViaTempFile is the fallback used when the plugin doesn't implement
+// streaming SaveStream: buffer to a temp file and call the existing unary Save.
+func (d *Driver) saveStreamViaTempFile(ctx context.Context, reader io.Reader, outputArtifact *wfv1.Artifact) error {
 	tmpFilePath, cleanup, err := common.BufferReaderToTempFile(reader, "plugin-upload-*")
 	if err != nil {
 		return fmt.Errorf("plugin %s failed to buffer stream: %w", d.pluginName, err)
