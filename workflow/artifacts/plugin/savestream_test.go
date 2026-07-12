@@ -78,7 +78,7 @@ func startMockPluginServer(t *testing.T, mock *mockArtifactServer) *Driver {
 	ctx := logging.TestContext(t.Context())
 
 	socketPath := filepath.Join(t.TempDir(), "plugin.sock")
-	listener, err := net.Listen("unix", socketPath)
+	listener, err := (&net.ListenConfig{}).Listen(t.Context(), "unix", socketPath)
 	require.NoError(t, err)
 
 	server := grpc.NewServer()

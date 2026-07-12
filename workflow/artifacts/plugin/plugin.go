@@ -238,8 +238,8 @@ func (d *Driver) SaveStream(ctx context.Context, reader io.Reader, outputArtifac
 		return fmt.Errorf("plugin %s save stream failed to open: %w", d.pluginName, err)
 	}
 
-	if err := stream.Send(&artifact.SaveStreamArtifactRequest{OutputArtifact: convertToGRPC(outputArtifact)}); err != nil {
-		return fmt.Errorf("plugin %s save stream failed to send metadata: %w", d.pluginName, err)
+	if sendErr := stream.Send(&artifact.SaveStreamArtifactRequest{OutputArtifact: convertToGRPC(outputArtifact)}); sendErr != nil {
+		return fmt.Errorf("plugin %s save stream failed to send metadata: %w", d.pluginName, sendErr)
 	}
 
 	buf := make([]byte, saveStreamChunkSize)
