@@ -141,6 +141,10 @@ func (h *ArtifactDriver) Save(ctx context.Context, path string, outputArtifact *
 }
 
 // SaveStream saves an artifact from an io.Reader to HTTP URL
+//
+// Unlike Save, req.GetBody is not set here: reader is a one-shot io.Reader that
+// cannot be reopened, so a 307/308 redirect (e.g. webHDFS) cannot be followed with
+// a re-sent body. Such redirects surface as a request error rather than retrying.
 func (h *ArtifactDriver) SaveStream(ctx context.Context, reader io.Reader, outputArtifact *wfv1.Artifact) error {
 	var req *http.Request
 	var url string
