@@ -334,19 +334,49 @@ func overrideParameters(wf *wfv1.Workflow, parameters []string) error {
 	return nil
 }
 
+// ParseArtifactOverrides parses "name=key" override strings into a map, keyed by artifact name.
+// Fails fast on the first malformed entry (no "=", or an empty name or key). If the same name
+// appears more than once, the last occurrence wins.
+func ParseArtifactOverrides(overrides []string) (map[string]string, error) {
+	result := make(map[string]string, len(overrides))
+	for _, artifactStr := range overrides {
+		parts := strings.SplitN(artifactStr, "=", 2)
+		if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+			return nil, fmt.Errorf("expected artifact of the form: NAME=KEY. Received: %s", artifactStr)
+		}
+		result[parts[0]] = parts[1]
+	}
+	return result, nil
+}
+
+// ApplyOverridesToTemplateArtifacts returns a deep copy of each artifact in templateArtifacts
+// whose name has an entry in overrides, with its key set to the override value. Artifacts
+// without a matching override are omitted from the result. This is a pure function: it does
+// not resolve artifact repositories or mutate its inputs.
+func ApplyOverridesToTemplateArtifacts(templateArtifacts []wfv1.Artifact, overrides map[string]string) ([]wfv1.Artifact, error) {
+	applied := make([]wfv1.Artifact, 0, len(overrides))
+	for _, tmplArt := range templateArtifacts {
+		newKey, ok := overrides[tmplArt.Name]
+		if !ok {
+			continue
+		}
+		artCopy := tmplArt.DeepCopy()
+		if err := artCopy.SetKey(newKey); err != nil {
+			return nil, fmt.Errorf("failed to set key for artifact %s: %w", tmplArt.Name, err)
+		}
+		applied = append(applied, *artCopy)
+	}
+	return applied, nil
+}
+
 func overrideArtifacts(wf *wfv1.Workflow, artifacts []string) error {
 	if len(artifacts) == 0 {
 		return nil
 	}
 
-	// Parse artifact overrides: name=key format
-	overrides := make(map[string]string)
-	for _, artifactStr := range artifacts {
-		parts := strings.SplitN(artifactStr, "=", 2)
-		if len(parts) != 2 {
-			return fmt.Errorf("expected artifact of the form: NAME=KEY. Received: %s", artifactStr)
-		}
-		overrides[parts[0]] = parts[1]
+	overrides, err := ParseArtifactOverrides(artifacts)
+	if err != nil {
+		return err
 	}
 
 	// Override artifact keys in workflow arguments

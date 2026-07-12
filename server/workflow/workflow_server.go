@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"sort"
-	"strings"
 	"sync"
 	"time"
 
@@ -865,48 +864,41 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 			artifactRepositoryRef = wftmpl.Spec.ArtifactRepositoryRef
 		}
 
-		// Parse artifact overrides: name=key format
-		overrides := make(map[string]string)
-		for _, artifactStr := range req.SubmitOptions.Artifacts {
-			parts := strings.SplitN(artifactStr, "=", 2)
-			if len(parts) == 2 {
-				overrides[parts[0]] = parts[1]
-			} else {
-				logger.WithField("artifact", artifactStr).Warn(ctx, "Ignoring malformed artifact override (expected name=key format)")
+		overrides, parseErr := util.ParseArtifactOverrides(req.SubmitOptions.Artifacts)
+		if parseErr != nil {
+			return nil, sutils.ToStatusError(parseErr, codes.InvalidArgument)
+		}
+
+		// Resolve the default artifact repository location for overridden artifacts that
+		// don't already have one, before handing off to the pure ApplyOverridesToTemplateArtifacts.
+		resolvedTmplArtifacts := make([]wfv1.Artifact, len(tmplArtifacts))
+		copy(resolvedTmplArtifacts, tmplArtifacts)
+		if s.artifactRepositories != nil {
+			for i := range resolvedTmplArtifacts {
+				if _, overridden := overrides[resolvedTmplArtifacts[i].Name]; !overridden || resolvedTmplArtifacts[i].HasLocation() {
+					continue
+				}
+				archiveLocation, resolveErr := sutils.ResolveArtifactLocation(ctx, s.artifactRepositories, artifactRepositoryRef, req.Namespace)
+				if resolveErr != nil {
+					logger.WithError(resolveErr).Debug(ctx, "Failed to resolve artifact repository for artifact override")
+					continue
+				}
+				if archiveLocation != nil && archiveLocation.HasLocation() {
+					resolvedTmplArtifacts[i].ArtifactLocation = *archiveLocation.DeepCopy()
+				}
 			}
 		}
 
-		logger.WithFields(logging.Fields{
-			"overrides":         overrides,
-			"templateArtifacts": len(tmplArtifacts),
-		}).Debug(ctx, "Parsed artifact overrides")
-
-		// Copy artifacts from template and override keys
-		for _, tmplArt := range tmplArtifacts {
-			if newKey, ok := overrides[tmplArt.Name]; ok {
-				// Deep copy the artifact and set the new key
-				artCopy := tmplArt.DeepCopy()
-
-				// If the artifact doesn't have a full location, try to resolve from default artifact repository.
-				// This handles cases where the template artifact relies on the default repository configuration.
-				if !artCopy.HasLocation() && s.artifactRepositories != nil {
-					archiveLocation, resolveErr := sutils.ResolveArtifactLocation(ctx, s.artifactRepositories, artifactRepositoryRef, req.Namespace)
-					if resolveErr != nil {
-						logger.WithError(resolveErr).Debug(ctx, "Failed to resolve artifact repository for artifact override")
-					} else if archiveLocation != nil && archiveLocation.HasLocation() {
-						artCopy.ArtifactLocation = *archiveLocation.DeepCopy()
-						logger.WithField("artifactName", tmplArt.Name).Debug(ctx, "Resolved artifact location from default repository for override")
-					}
-				}
-
-				if validateErr := sutils.ValidateUploadedArtifactKey(req.Namespace, newKey); validateErr != nil {
-					return nil, sutils.ToStatusError(fmt.Errorf("invalid artifact key override for %s: %w", tmplArt.Name, validateErr), codes.InvalidArgument)
-				}
-				if setErr := artCopy.SetKey(newKey); setErr != nil {
-					return nil, sutils.ToStatusError(fmt.Errorf("failed to set key for artifact %s: %w", tmplArt.Name, setErr), codes.Internal)
-				}
-				wf.Spec.Arguments.Artifacts = append(wf.Spec.Arguments.Artifacts, *artCopy)
+		appliedArtifacts, applyErr := util.ApplyOverridesToTemplateArtifacts(resolvedTmplArtifacts, overrides)
+		if applyErr != nil {
+			return nil, sutils.ToStatusError(applyErr, codes.Internal)
+		}
+		for _, art := range appliedArtifacts {
+			key, _ := art.GetKey()
+			if validateErr := sutils.ValidateUploadedArtifactKey(req.Namespace, key); validateErr != nil {
+				return nil, sutils.ToStatusError(fmt.Errorf("invalid artifact key override for %s: %w", art.Name, validateErr), codes.InvalidArgument)
 			}
+			wf.Spec.Arguments.Artifacts = append(wf.Spec.Arguments.Artifacts, art)
 		}
 
 		logger.WithFields(logging.Fields{
