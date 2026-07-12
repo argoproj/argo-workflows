@@ -196,34 +196,22 @@ func (a *ArtifactServer) UploadInputArtifact(w http.ResponseWriter, r *http.Requ
 	// Create a deep copy to avoid modifying the original template artifact
 	artifactCopy := templateArtifact.DeepCopy()
 
-	// If the artifact doesn't have a full location, try to resolve from default artifact repository
+	// If the artifact doesn't have a full location, try to resolve from default artifact repository.
+	// This handles cases where:
+	// 1. WorkflowTemplate specifies artifactRepositoryRef explicitly
+	// 2. Namespace has artifact-repositories ConfigMap
+	// 3. workflow-controller-configmap has default artifactRepository
+	// We don't use Relocate() because it requires an existing key, but for uploads we generate a new key anyway.
 	if !artifactCopy.HasLocation() {
-		// Try to resolve default artifact repository for the namespace
-		// This handles cases where:
-		// 1. WorkflowTemplate specifies artifactRepositoryRef explicitly
-		// 2. Namespace has artifact-repositories ConfigMap
-		// 3. workflow-controller-configmap has default artifactRepository
-		repoRef, resolveErr := a.artifactRepositories.Resolve(ctx, wfTemplate.Spec.ArtifactRepositoryRef, namespace)
+		archiveLocation, resolveErr := sutils.ResolveArtifactLocation(ctx, a.artifactRepositories, wfTemplate.Spec.ArtifactRepositoryRef, namespace)
 		if resolveErr != nil {
 			a.logger.WithError(resolveErr).Debug(ctx, "Failed to resolve artifact repository, will check if artifact has location anyway")
-		} else {
-			repo, getErr := a.artifactRepositories.Get(ctx, repoRef)
-			if getErr != nil {
-				a.logger.WithError(getErr).Debug(ctx, "Failed to get artifact repository")
-			} else if repo != nil {
-				// Get the default artifact location from the repository
-				// We don't use Relocate() because it requires an existing key,
-				// but for uploads we generate a new key anyway
-				archiveLocation := repo.ToArtifactLocation()
-				if archiveLocation != nil && archiveLocation.HasLocation() {
-					// Copy the location settings (bucket, endpoint, etc.) to our artifact
-					artifactCopy.ArtifactLocation = *archiveLocation.DeepCopy()
-					a.logger.WithFields(logging.Fields{
-						"artifactName": artifactName,
-						"repoRef":      repoRef,
-					}).Info(ctx, "Resolved artifact location from default repository")
-				}
-			}
+		} else if archiveLocation != nil && archiveLocation.HasLocation() {
+			// Copy the location settings (bucket, endpoint, etc.) to our artifact
+			artifactCopy.ArtifactLocation = *archiveLocation.DeepCopy()
+			a.logger.WithFields(logging.Fields{
+				"artifactName": artifactName,
+			}).Info(ctx, "Resolved artifact location from default repository")
 		}
 	}
 

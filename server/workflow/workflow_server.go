@@ -887,26 +887,15 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 				// Deep copy the artifact and set the new key
 				artCopy := tmplArt.DeepCopy()
 
-				// If the artifact doesn't have a full location, try to resolve from default artifact repository
-				// This handles cases where the template artifact relies on the default repository configuration
+				// If the artifact doesn't have a full location, try to resolve from default artifact repository.
+				// This handles cases where the template artifact relies on the default repository configuration.
 				if !artCopy.HasLocation() && s.artifactRepositories != nil {
-					repoRef, resolveErr := s.artifactRepositories.Resolve(ctx, artifactRepositoryRef, req.Namespace)
+					archiveLocation, resolveErr := sutils.ResolveArtifactLocation(ctx, s.artifactRepositories, artifactRepositoryRef, req.Namespace)
 					if resolveErr != nil {
 						logger.WithError(resolveErr).Debug(ctx, "Failed to resolve artifact repository for artifact override")
-					} else {
-						repo, getErr := s.artifactRepositories.Get(ctx, repoRef)
-						if getErr != nil {
-							logger.WithError(getErr).Debug(ctx, "Failed to get artifact repository for artifact override")
-						} else if repo != nil {
-							archiveLocation := repo.ToArtifactLocation()
-							if archiveLocation != nil && archiveLocation.HasLocation() {
-								artCopy.ArtifactLocation = *archiveLocation.DeepCopy()
-								logger.WithFields(logging.Fields{
-									"artifactName": tmplArt.Name,
-									"repoRef":      repoRef,
-								}).Debug(ctx, "Resolved artifact location from default repository for override")
-							}
-						}
+					} else if archiveLocation != nil && archiveLocation.HasLocation() {
+						artCopy.ArtifactLocation = *archiveLocation.DeepCopy()
+						logger.WithField("artifactName", tmplArt.Name).Debug(ctx, "Resolved artifact location from default repository for override")
 					}
 				}
 
