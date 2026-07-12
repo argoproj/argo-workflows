@@ -875,13 +875,13 @@ spec:
       - name: my-uploaded-file
         s3:
           endpoint: s3.amazonaws.com
-          bucket: panicboat-sandbox-723535945756
+          bucket: my-bucket
           key: uploads/argo/12345678-1234-1234-1234-123456789012/file.zip
           accessKeySecret:
-            name: debug-s3-creds
+            name: s3-creds
             key: accessKey
           secretKeySecret:
-            name: debug-s3-creds
+            name: s3-creds
             key: secretKey
 `
 
@@ -897,13 +897,13 @@ spec:
       - name: my-uploaded-file
         s3:
           endpoint: s3.amazonaws.com
-          bucket: panicboat-sandbox-723535945756
+          bucket: my-bucket
           key: input-file/placeholder
           accessKeySecret:
-            name: debug-s3-creds
+            name: s3-creds
             key: accessKey
           secretKeySecret:
-            name: debug-s3-creds
+            name: s3-creds
             key: secretKey
   templates:
     - name: argosay
