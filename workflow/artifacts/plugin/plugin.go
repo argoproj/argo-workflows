@@ -233,6 +233,12 @@ func (d *Driver) SaveStream(ctx context.Context, reader io.Reader, outputArtifac
 		return d.saveStreamViaTempFile(ctx, reader, outputArtifact)
 	}
 
+	// Cancelled on every return path (including reader errors, which don't close the
+	// stream themselves) so the server's blocking Recv() is released instead of
+	// waiting on the caller's ctx, which may outlive this call.
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	stream, err := d.client.SaveStream(ctx)
 	if err != nil {
 		return fmt.Errorf("plugin %s save stream failed to open: %w", d.pluginName, err)

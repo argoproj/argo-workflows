@@ -12,6 +12,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/argoproj/argo-workflows/v4/pkg/apiclient/artifact"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
@@ -35,6 +37,11 @@ type mockArtifactServer struct {
 	// saveCalled records whether the unary Save RPC was invoked (fallback path).
 	saveCalled bool
 	savePath   string
+
+	// serverCanceled, if non-nil, is closed when the server's Recv() observes
+	// context.Canceled, confirming the client released the stream instead of
+	// leaving the server blocked in Recv().
+	serverCanceled chan struct{}
 }
 
 func (m *mockArtifactServer) GetCapabilities(_ context.Context, _ *artifact.GetCapabilitiesRequest) (*artifact.GetCapabilitiesResponse, error) {
@@ -45,7 +52,12 @@ func (m *mockArtifactServer) SaveStream(stream artifact.ArtifactService_SaveStre
 	first := true
 	for {
 		req, err := stream.Recv()
-		if errors.Is(err, context.Canceled) {
+		// A client-side ctx cancel surfaces here as a gRPC status error (codes.Canceled),
+		// not as context.Canceled itself, since it crossed the wire.
+		if errors.Is(err, context.Canceled) || status.Code(err) == codes.Canceled {
+			if m.serverCanceled != nil {
+				close(m.serverCanceled)
+			}
 			return err
 		}
 		if err != nil {
@@ -138,4 +150,30 @@ func TestDriverSaveStream(t *testing.T) {
 		require.Error(t, err)
 		assert.False(t, mock.saveCalled, "must not silently fall back to Save after streaming has started")
 	})
+
+	t.Run("reader error cancels the stream instead of leaking it", func(t *testing.T) {
+		mock := &mockArtifactServer{supportsSaveStream: true, serverCanceled: make(chan struct{})}
+		driver := startMockPluginServer(t, mock)
+		ctx := logging.TestContext(t.Context())
+
+		readerErr := errors.New("simulated reader failure")
+		err := driver.SaveStream(ctx, &erroringReader{err: readerErr}, outputArtifact)
+		require.ErrorIs(t, err, readerErr)
+
+		select {
+		case <-mock.serverCanceled:
+		case <-time.After(5 * time.Second):
+			t.Fatal("server never observed stream cancellation; SaveStream leaked the stream on a reader error")
+		}
+	})
+}
+
+// erroringReader is an io.Reader whose Read always fails, simulating a reader that
+// breaks partway through a SaveStream call.
+type erroringReader struct {
+	err error
+}
+
+func (r *erroringReader) Read([]byte) (int, error) {
+	return 0, r.err
 }
