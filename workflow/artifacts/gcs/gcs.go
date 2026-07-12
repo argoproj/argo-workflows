@@ -241,6 +241,44 @@ func (h *ArtifactDriver) Save(ctx context.Context, path string, outputArtifact *
 	return err
 }
 
+// SaveStream saves an artifact from an io.Reader to GCS compliant storage
+func (h *ArtifactDriver) SaveStream(ctx context.Context, reader io.Reader, outputArtifact *wfv1.Artifact) error {
+	// Buffer to a temp file so the reader can be re-read on retry
+	tmpFilePath, cleanup, err := common.BufferReaderToTempFile(reader, "gcs-upload-*")
+	if err != nil {
+		return err
+	}
+	defer cleanup()
+
+	err = waitutil.Backoff(defaultRetry,
+		func() (bool, error) {
+			key := filepath.Clean(outputArtifact.GCS.Key)
+			logging.RequireLoggerFromContext(ctx).WithField("key", key).Info(ctx, "GCS SaveStream")
+			client, retryErr := h.newGCSClient(ctx)
+			if retryErr != nil {
+				return !isTransientGCSErr(ctx, retryErr), retryErr
+			}
+			defer client.Close()
+
+			f, retryErr := os.Open(tmpFilePath)
+			if retryErr != nil {
+				return true, fmt.Errorf("failed to reopen temp file: %w", retryErr)
+			}
+			defer f.Close()
+
+			wc := client.Bucket(outputArtifact.GCS.Bucket).Object(key).NewWriter(ctx)
+			if _, retryErr = io.Copy(wc, f); retryErr != nil {
+				wc.Close()
+				return !isTransientGCSErr(ctx, retryErr), retryErr
+			}
+			if retryErr = wc.Close(); retryErr != nil {
+				return !isTransientGCSErr(ctx, retryErr), retryErr
+			}
+			return true, nil
+		})
+	return err
+}
+
 // list all the file relative paths under a dir
 // path is suppoese to be a dir
 // relPath is a given relative path to be inserted in front

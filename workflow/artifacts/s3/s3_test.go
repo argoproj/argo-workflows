@@ -46,6 +46,11 @@ func (s *mockClient) PutFile(bucket, key, path string) error {
 	return s.getMockedErr("PutFile")
 }
 
+// PutStream puts a stream to a bucket at the specified key
+func (s *mockClient) PutStream(bucket, key string, reader io.Reader, objectSize int64) error {
+	return s.getMockedErr("PutStream")
+}
+
 // PutDirectory puts a complete directory into a bucket key prefix, with each file in the directory
 // a separate key in the bucket.
 func (s *mockClient) PutDirectory(bucket, key, path string) error {

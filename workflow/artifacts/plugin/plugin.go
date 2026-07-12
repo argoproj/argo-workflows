@@ -17,6 +17,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/pkg/apiclient/artifact"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/common"
 )
 
 // Driver implements the ArtifactDriver interface by making gRPC calls to a plugin service
@@ -212,6 +213,17 @@ func (d *Driver) Save(ctx context.Context, path string, outputArtifact *wfv1.Art
 		return fmt.Errorf("plugin %s save failed: %s", d.pluginName, resp.Error)
 	}
 	return nil
+}
+
+// SaveStream implements ArtifactDriver.SaveStream by using a temporary file
+// Note: gRPC streaming upload is complex, so we use a temp file fallback
+func (d *Driver) SaveStream(ctx context.Context, reader io.Reader, outputArtifact *wfv1.Artifact) error {
+	tmpFilePath, cleanup, err := common.BufferReaderToTempFile(reader, "plugin-upload-*")
+	if err != nil {
+		return fmt.Errorf("plugin %s failed to buffer stream: %w", d.pluginName, err)
+	}
+	defer cleanup()
+	return d.Save(ctx, tmpFilePath, outputArtifact)
 }
 
 // Delete implements ArtifactDriver.Delete by calling the plugin service

@@ -140,6 +140,48 @@ func (h *ArtifactDriver) Save(ctx context.Context, path string, outputArtifact *
 	return nil
 }
 
+// SaveStream saves an artifact from an io.Reader to HTTP URL
+func (h *ArtifactDriver) SaveStream(ctx context.Context, reader io.Reader, outputArtifact *wfv1.Artifact) error {
+	var req *http.Request
+	var url string
+	var err error
+	switch {
+	case outputArtifact.Artifactory != nil && outputArtifact.HTTP == nil:
+		url = outputArtifact.Artifactory.URL
+		req, err = http.NewRequestWithContext(ctx, http.MethodPut, url, reader)
+		if err != nil {
+			return err
+		}
+		req.SetBasicAuth(h.Username, h.Password)
+	case outputArtifact.Artifactory == nil && outputArtifact.HTTP != nil:
+		url = outputArtifact.HTTP.URL
+		req, err = http.NewRequestWithContext(ctx, http.MethodPut, url, reader)
+		if err != nil {
+			return err
+		}
+		for _, h := range outputArtifact.HTTP.Headers {
+			req.Header.Add(h.Name, h.Value)
+		}
+		if h.Username != "" && h.Password != "" {
+			req.SetBasicAuth(h.Username, h.Password)
+		}
+	default:
+		return errors.InternalErrorf("Either Artifactory or HTTP artifact needs to be configured")
+	}
+
+	res, err := h.Client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = res.Body.Close()
+	}()
+	if res.StatusCode < 200 || res.StatusCode >= 300 {
+		return errors.InternalErrorf("saving stream to %s failed with reason: %s", url, res.Status)
+	}
+	return nil
+}
+
 // Delete is unsupported for the http artifacts
 func (h *ArtifactDriver) Delete(ctx context.Context, s *wfv1.Artifact) error {
 	return common.ErrDeleteNotSupported
