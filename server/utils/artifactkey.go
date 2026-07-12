@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"path"
+	"slices"
 	"strings"
 
 	"github.com/google/uuid"
@@ -35,10 +36,8 @@ func ValidateUploadedArtifactKey(namespace, key string) error {
 	if len(parts) != 4 {
 		return fmt.Errorf("artifact key %q must have exactly 4 segments: uploads/{namespace}/{uuid}/{filename}", key)
 	}
-	for _, part := range parts {
-		if part == "" {
-			return fmt.Errorf("artifact key %q must not contain empty segments", key)
-		}
+	if slices.Contains(parts, "") {
+		return fmt.Errorf("artifact key %q must not contain empty segments", key)
 	}
 
 	uuidSegment := parts[2]

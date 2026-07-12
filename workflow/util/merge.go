@@ -342,8 +342,11 @@ func JoinWorkflowSpec(wfSpec, wftSpec, wfDefaultSpec *wfv1.WorkflowSpec) (*wfv1.
 // base's location, since merging fields from two different backend types
 // would produce an invalid artifact with more than one location type set.
 func mergeArtifactOverride(base, override wfv1.Artifact) (wfv1.Artifact, error) {
-	baseType, baseErr := base.ArtifactLocation.Get()
-	overrideType, overrideErr := override.ArtifactLocation.Get()
+	baseType, baseErr := base.Get()
+	overrideType, overrideErr := override.Get()
+	// SILENT: an unconfigured location on either side is not a fatal error here;
+	// it just means there is nothing to field-merge, so fall back to a full replace.
+	//nolint:nilerr
 	if baseErr != nil || overrideErr != nil || reflect.TypeOf(baseType) != reflect.TypeOf(overrideType) {
 		return *override.DeepCopy(), nil
 	}

@@ -76,7 +76,8 @@ func (a *ArtifactServer) GetInputArtifact(w http.ResponseWriter, r *http.Request
 // Method: POST
 // Body: multipart/form-data with "file" field
 // Response: JSON with artifact location information
-// nolint: contextcheck
+//
+//nolint:contextcheck
 func (a *ArtifactServer) UploadInputArtifact(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -134,7 +135,7 @@ func (a *ArtifactServer) UploadInputArtifact(w http.ResponseWriter, r *http.Requ
 		http.Error(w, fmt.Sprintf("Failed to get WorkflowTemplate %s/%s: %v", namespace, workflowTemplateName, err), http.StatusNotFound)
 		return
 	}
-	if err := a.instanceIDService.Validate(wfTemplate); err != nil {
+	if validateErr := a.instanceIDService.Validate(wfTemplate); validateErr != nil {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
