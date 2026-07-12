@@ -304,6 +304,9 @@ func (s3Driver *ArtifactDriver) SaveStream(ctx context.Context, reader io.Reader
 			if retryErr != nil {
 				return !isTransientS3Err(ctx, retryErr), fmt.Errorf("failed to create new S3 client: %w", retryErr)
 			}
+			if ok, bucketErr := ensureBucketExists(ctx, s3cli, outputArtifact); bucketErr != nil {
+				return ok, bucketErr
+			}
 			f, retryErr := os.Open(tmpFilePath)
 			if retryErr != nil {
 				return true, fmt.Errorf("failed to reopen temp file: %w", retryErr)
@@ -357,6 +360,33 @@ func (s3Driver *ArtifactDriver) Delete(ctx context.Context, artifact *wfv1.Artif
 	return err
 }
 
+// ensureBucketExists creates outputArtifact.S3.Bucket when CreateBucketIfNotPresent
+// is configured and the bucket doesn't already exist. Shared by saveS3Artifact and
+// SaveStream so bucket auto-creation behaves the same for both upload paths.
+// returns true if the caller can stop retrying (success or non-transient error)
+// returns false if the caller should retry (transient error)
+func ensureBucketExists(ctx context.Context, s3cli Client, outputArtifact *wfv1.Artifact) (bool, error) {
+	createBucketIfNotPresent := outputArtifact.S3.CreateBucketIfNotPresent
+	if createBucketIfNotPresent == nil {
+		return true, nil
+	}
+	log := logging.RequireLoggerFromContext(ctx)
+	log.WithField("bucket", outputArtifact.S3.Bucket).Info(ctx, "creating bucket")
+	makeBucketErr := s3cli.MakeBucket(outputArtifact.S3.Bucket, minio.MakeBucketOptions{
+		Region:        outputArtifact.S3.Region,
+		ObjectLocking: outputArtifact.S3.CreateBucketIfNotPresent.ObjectLocking,
+	})
+	alreadyExists := bucketAlreadyExistsErr(makeBucketErr)
+	log.WithField("bucket", outputArtifact.S3.Bucket).
+		WithField("alreadyExists", alreadyExists).
+		WithError(makeBucketErr).
+		Info(ctx, "create bucket failed")
+	if makeBucketErr != nil && !alreadyExists {
+		return !isTransientS3Err(ctx, makeBucketErr), fmt.Errorf("failed to create bucket %s: %w", outputArtifact.S3.Bucket, makeBucketErr)
+	}
+	return true, nil
+}
+
 // saveS3Artifact uploads artifacts to an S3 compliant storage
 // returns true if the upload is completed or can't be retried (non-transient error)
 // returns false if it can be retried (transient error)
@@ -365,22 +395,8 @@ func saveS3Artifact(ctx context.Context, s3cli Client, path string, outputArtifa
 	if err != nil {
 		return true, fmt.Errorf("failed to test if %s is a directory: %w", path, err)
 	}
-	log := logging.RequireLoggerFromContext(ctx)
-	createBucketIfNotPresent := outputArtifact.S3.CreateBucketIfNotPresent
-	if createBucketIfNotPresent != nil {
-		log.WithField("bucket", outputArtifact.S3.Bucket).Info(ctx, "creating bucket")
-		makeBucketErr := s3cli.MakeBucket(outputArtifact.S3.Bucket, minio.MakeBucketOptions{
-			Region:        outputArtifact.S3.Region,
-			ObjectLocking: outputArtifact.S3.CreateBucketIfNotPresent.ObjectLocking,
-		})
-		alreadyExists := bucketAlreadyExistsErr(makeBucketErr)
-		log.WithField("bucket", outputArtifact.S3.Bucket).
-			WithField("alreadyExists", alreadyExists).
-			WithError(makeBucketErr).
-			Info(ctx, "create bucket failed")
-		if makeBucketErr != nil && !alreadyExists {
-			return !isTransientS3Err(ctx, makeBucketErr), fmt.Errorf("failed to create bucket %s: %w", outputArtifact.S3.Bucket, makeBucketErr)
-		}
+	if ok, bucketErr := ensureBucketExists(ctx, s3cli, outputArtifact); bucketErr != nil {
+		return ok, bucketErr
 	}
 
 	if isDir {

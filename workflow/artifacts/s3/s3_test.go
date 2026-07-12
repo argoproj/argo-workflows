@@ -548,6 +548,78 @@ func TestSaveS3Artifact(t *testing.T) {
 	}
 }
 
+func TestEnsureBucketExists(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	tests := map[string]struct {
+		s3client                 Client
+		createBucketIfNotPresent *wfv1.CreateS3BucketOptions
+		done                     bool
+		errMsg                   string
+	}{
+		"No-op when CreateBucketIfNotPresent is unset": {
+			s3client: newMockClient(
+				map[string][]string{},
+				map[string]error{
+					"MakeBucket": minio.ErrorResponse{Code: "AccessDenied"},
+				}),
+			createBucketIfNotPresent: nil,
+			done:                     true,
+			errMsg:                   "",
+		},
+		"Creates bucket": {
+			s3client: newMockClient(
+				map[string][]string{},
+				map[string]error{}),
+			createBucketIfNotPresent: &wfv1.CreateS3BucketOptions{},
+			done:                     true,
+			errMsg:                   "",
+		},
+		"Bucket already exists is not an error": {
+			s3client: newMockClient(
+				map[string][]string{},
+				map[string]error{
+					"MakeBucket": minio.ErrorResponse{Code: "BucketAlreadyOwnedByYou"},
+				}),
+			createBucketIfNotPresent: &wfv1.CreateS3BucketOptions{},
+			done:                     true,
+			errMsg:                   "",
+		},
+		"Make Bucket Access Denied": {
+			s3client: newMockClient(
+				map[string][]string{},
+				map[string]error{
+					"MakeBucket": minio.ErrorResponse{Code: "AccessDenied"},
+				}),
+			createBucketIfNotPresent: &wfv1.CreateS3BucketOptions{},
+			done:                     true,
+			errMsg:                   "failed to create bucket my-bucket: Access Denied.",
+		},
+	}
+
+	for name, tc := range tests {
+		t.Setenv(transientEnvVarKey, "this error is transient")
+		t.Run(name, func(t *testing.T) {
+			done, err := ensureBucketExists(ctx, tc.s3client, &wfv1.Artifact{
+				ArtifactLocation: wfv1.ArtifactLocation{
+					S3: &wfv1.S3Artifact{
+						S3Bucket: wfv1.S3Bucket{
+							Bucket:                   "my-bucket",
+							CreateBucketIfNotPresent: tc.createBucketIfNotPresent,
+						},
+					},
+				},
+			})
+			assert.Equal(t, tc.done, done)
+			if err != nil {
+				assert.Equal(t, tc.errMsg, err.Error())
+			} else {
+				assert.Empty(t, tc.errMsg)
+			}
+		})
+	}
+}
+
 func TestListObjects(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	tests := map[string]struct {
