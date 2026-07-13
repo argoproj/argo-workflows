@@ -93,6 +93,37 @@ func (h *ArtifactDriver) OpenStream(ctx context.Context, inputArtifact *wfv1.Art
 	return res.Body, nil
 }
 
+// buildPutRequest constructs the PUT request for the artifact's Artifactory or
+// HTTP destination, applying auth and headers. Exactly one of the two locations
+// must be set; both or neither is a configuration error.
+func (h *ArtifactDriver) buildPutRequest(ctx context.Context, body io.Reader, outputArtifact *wfv1.Artifact) (*http.Request, string, error) {
+	switch {
+	case outputArtifact.Artifactory != nil && outputArtifact.HTTP == nil:
+		url := outputArtifact.Artifactory.URL
+		req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, body)
+		if err != nil {
+			return nil, "", err
+		}
+		req.SetBasicAuth(h.Username, h.Password)
+		return req, url, nil
+	case outputArtifact.Artifactory == nil && outputArtifact.HTTP != nil:
+		url := outputArtifact.HTTP.URL
+		req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, body)
+		if err != nil {
+			return nil, "", err
+		}
+		for _, header := range outputArtifact.HTTP.Headers {
+			req.Header.Add(header.Name, header.Value)
+		}
+		if h.Username != "" && h.Password != "" {
+			req.SetBasicAuth(h.Username, h.Password)
+		}
+		return req, url, nil
+	default:
+		return nil, "", errors.InternalErrorf("Either Artifactory or HTTP artifact needs to be configured")
+	}
+}
+
 // Save writes the artifact to the URL
 func (h *ArtifactDriver) Save(ctx context.Context, path string, outputArtifact *wfv1.Artifact) error {
 	cleanPath := filepath.Clean(path)
@@ -100,27 +131,9 @@ func (h *ArtifactDriver) Save(ctx context.Context, path string, outputArtifact *
 	if err != nil {
 		return err
 	}
-	var req *http.Request
-	var url string
-	if outputArtifact.Artifactory != nil && outputArtifact.HTTP == nil {
-		url = outputArtifact.Artifactory.URL
-		req, err = http.NewRequestWithContext(ctx, http.MethodPut, url, f)
-		if err != nil {
-			return err
-		}
-		req.SetBasicAuth(h.Username, h.Password)
-	} else {
-		url = outputArtifact.HTTP.URL
-		req, err = http.NewRequestWithContext(ctx, http.MethodPut, url, f)
-		if err != nil {
-			return err
-		}
-		for _, h := range outputArtifact.HTTP.Headers {
-			req.Header.Add(h.Name, h.Value)
-		}
-		if h.Username != "" && h.Password != "" {
-			req.SetBasicAuth(h.Username, h.Password)
-		}
+	req, url, err := h.buildPutRequest(ctx, f, outputArtifact)
+	if err != nil {
+		return err
 	}
 	// we set the GetBody func of the request in order to enable following 307 POST/PUT redirects, needed e.g. for webHDFS
 	req.GetBody = func() (io.ReadCloser, error) {
@@ -146,31 +159,9 @@ func (h *ArtifactDriver) Save(ctx context.Context, path string, outputArtifact *
 // cannot be reopened, so a 307/308 redirect (e.g. webHDFS) cannot be followed with
 // a re-sent body. Such redirects surface as a request error rather than retrying.
 func (h *ArtifactDriver) SaveStream(ctx context.Context, reader io.Reader, outputArtifact *wfv1.Artifact) error {
-	var req *http.Request
-	var url string
-	var err error
-	switch {
-	case outputArtifact.Artifactory != nil && outputArtifact.HTTP == nil:
-		url = outputArtifact.Artifactory.URL
-		req, err = http.NewRequestWithContext(ctx, http.MethodPut, url, reader)
-		if err != nil {
-			return err
-		}
-		req.SetBasicAuth(h.Username, h.Password)
-	case outputArtifact.Artifactory == nil && outputArtifact.HTTP != nil:
-		url = outputArtifact.HTTP.URL
-		req, err = http.NewRequestWithContext(ctx, http.MethodPut, url, reader)
-		if err != nil {
-			return err
-		}
-		for _, h := range outputArtifact.HTTP.Headers {
-			req.Header.Add(h.Name, h.Value)
-		}
-		if h.Username != "" && h.Password != "" {
-			req.SetBasicAuth(h.Username, h.Password)
-		}
-	default:
-		return errors.InternalErrorf("Either Artifactory or HTTP artifact needs to be configured")
+	req, url, err := h.buildPutRequest(ctx, reader, outputArtifact)
+	if err != nil {
+		return err
 	}
 
 	res, err := h.Client.Do(req)
