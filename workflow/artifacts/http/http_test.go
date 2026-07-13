@@ -161,3 +161,33 @@ func TestSaveStreamNilArtifactLocation(t *testing.T) {
 		assert.Contains(t, err.Error(), "Either Artifactory or HTTP artifact needs to be configured")
 	})
 }
+
+// TestSaveInvalidArtifactLocation pins the behavior Save gained by sharing
+// buildPutRequest with SaveStream: an ambiguous (both set) or missing location
+// is now rejected with an error, where it previously dereferenced nil HTTP or
+// silently preferred HTTP over Artifactory.
+func TestSaveInvalidArtifactLocation(t *testing.T) {
+	driver := &ArtifactDriver{Client: http.DefaultClient}
+	ctx := logging.TestContext(t.Context())
+
+	tempFile := filepath.Join(t.TempDir(), "artifact")
+	require.NoError(t, os.WriteFile(tempFile, []byte("content"), 0o600))
+
+	t.Run("nil HTTP and nil Artifactory", func(t *testing.T) {
+		err := driver.Save(ctx, tempFile, &wfv1.Artifact{})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "Either Artifactory or HTTP artifact needs to be configured")
+	})
+
+	t.Run("both HTTP and Artifactory set", func(t *testing.T) {
+		art := &wfv1.Artifact{
+			ArtifactLocation: wfv1.ArtifactLocation{
+				HTTP:        &wfv1.HTTPArtifact{URL: "https://example.com/artifact"},
+				Artifactory: &wfv1.ArtifactoryArtifact{URL: "https://example.com/artifactory"},
+			},
+		}
+		err := driver.Save(ctx, tempFile, art)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "Either Artifactory or HTTP artifact needs to be configured")
+	})
+}
