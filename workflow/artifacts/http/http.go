@@ -133,6 +133,8 @@ func (h *ArtifactDriver) Save(ctx context.Context, path string, outputArtifact *
 	}
 	req, url, err := h.buildPutRequest(ctx, f, outputArtifact)
 	if err != nil {
+		// The request never gets sent, so nothing else will close f.
+		_ = f.Close()
 		return err
 	}
 	// we set the GetBody func of the request in order to enable following 307 POST/PUT redirects, needed e.g. for webHDFS
