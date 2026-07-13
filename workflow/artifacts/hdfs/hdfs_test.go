@@ -1,6 +1,8 @@
 package hdfs
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -10,20 +12,17 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
-// TestSaveStreamTempFileCreation tests that SaveStream correctly creates a temp file
-func TestSaveStreamTempFileCreation(t *testing.T) {
+// TestSaveStreamRemovesTempFileOnSaveError tests that when the delegated Save
+// fails (unreachable HDFS), SaveStream returns the error and leaves no buffered
+// temp file behind
+func TestSaveStreamRemovesTempFileOnSaveError(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 
-	// Create a driver that will fail at the Save step (no HDFS connection)
-	// This tests that the temp file creation and writing works correctly
 	driver := &ArtifactDriver{
 		Addresses: []string{"nonexistent:8020"},
 		Path:      "/test/path",
 		HDFSUser:  "testuser",
 	}
-
-	testContent := "test content"
-	reader := strings.NewReader(testContent)
 
 	outputArtifact := &wfv1.Artifact{
 		ArtifactLocation: wfv1.ArtifactLocation{
@@ -37,9 +36,12 @@ func TestSaveStreamTempFileCreation(t *testing.T) {
 		},
 	}
 
-	// This will fail at the HDFS client creation step, but verifies
-	// that the temp file logic doesn't panic
-	err := driver.SaveStream(ctx, reader, outputArtifact)
-	// We expect an error due to no HDFS connection
-	require.Error(t, err)
+	err := driver.SaveStream(ctx, strings.NewReader("test content"), outputArtifact)
+	require.Error(t, err, "Save must fail against an unreachable HDFS address")
+
+	// The "hdfs-upload-*" pattern is unique to this driver, so any leftover match
+	// means the buffered temp file leaked.
+	leftovers, globErr := filepath.Glob(filepath.Join(os.TempDir(), "hdfs-upload-*"))
+	require.NoError(t, globErr)
+	require.Empty(t, leftovers, "buffered temp file must be removed after SaveStream returns")
 }
