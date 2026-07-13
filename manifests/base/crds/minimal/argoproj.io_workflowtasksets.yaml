@@ -836,6 +836,8 @@ spec:
                                 - value
                                 type: object
                               type: array
+                            saveStreamViaFile:
+                              type: boolean
                             url:
                               type: string
                           required:
@@ -2908,6 +2910,8 @@ spec:
                                                 - value
                                                 type: object
                                               type: array
+                                            saveStreamViaFile:
+                                              type: boolean
                                             url:
                                               type: string
                                           required:
@@ -3573,6 +3577,8 @@ spec:
                                                       - value
                                                       type: object
                                                     type: array
+                                                  saveStreamViaFile:
+                                                    type: boolean
                                                   url:
                                                     type: string
                                                 required:
@@ -4292,6 +4298,8 @@ spec:
                                         - value
                                         type: object
                                       type: array
+                                    saveStreamViaFile:
+                                      type: boolean
                                     url:
                                       type: string
                                   required:
@@ -5694,6 +5702,8 @@ spec:
                                       - value
                                       type: object
                                     type: array
+                                  saveStreamViaFile:
+                                    type: boolean
                                   url:
                                     type: string
                                 required:
@@ -6460,6 +6470,8 @@ spec:
                                       - value
                                       type: object
                                     type: array
+                                  saveStreamViaFile:
+                                    type: boolean
                                   url:
                                     type: string
                                 required:
@@ -7142,6 +7154,8 @@ spec:
                                         - value
                                         type: object
                                       type: array
+                                    saveStreamViaFile:
+                                      type: boolean
                                     url:
                                       type: string
                                   required:
@@ -9321,6 +9335,8 @@ spec:
                                                   - value
                                                   type: object
                                                 type: array
+                                              saveStreamViaFile:
+                                                type: boolean
                                               url:
                                                 type: string
                                             required:
@@ -9980,6 +9996,8 @@ spec:
                                                         - value
                                                         type: object
                                                       type: array
+                                                    saveStreamViaFile:
+                                                      type: boolean
                                                     url:
                                                       type: string
                                                   required:
@@ -11929,6 +11947,13 @@ spec:
                                       - value
                                       type: object
                                     type: array
+                                  saveStreamViaFile:
+                                    description: |-
+                                      SaveStreamViaFile buffers a streamed upload to a temporary file before sending it,
+                                      so a 307/308 redirect (e.g. webHDFS) can be followed by re-sending the body. When
+                                      false (the default) SaveStream sends the reader directly and cannot follow such a
+                                      redirect, since a one-shot reader cannot be replayed.
+                                    type: boolean
                                   url:
                                     description: URL of the artifact
                                     type: string

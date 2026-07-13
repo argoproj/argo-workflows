@@ -3417,6 +3417,13 @@ func schema_pkg_apis_workflow_v1alpha1_HTTPArtifact(ref common.ReferenceCallback
 							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.HTTPAuth"),
 						},
 					},
+					"saveStreamViaFile": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SaveStreamViaFile buffers a streamed upload to a temporary file before sending it, so a 307/308 redirect (e.g. webHDFS) can be followed by re-sending the body. When false (the default) SaveStream sends the reader directly and cannot follow such a redirect, since a one-shot reader cannot be replayed.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"url"},
 			},
