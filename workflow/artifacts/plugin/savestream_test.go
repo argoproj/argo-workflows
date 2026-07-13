@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"net"
+	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -36,8 +37,9 @@ type mockArtifactServer struct {
 	received bytes.Buffer
 
 	// saveCalled records whether the unary Save RPC was invoked (fallback path).
-	saveCalled bool
-	savePath   string
+	saveCalled   bool
+	savePath     string
+	savedContent []byte
 
 	// serverCanceled, if non-nil, is closed when the server's Recv() observes
 	// context.Canceled, confirming the client released the stream instead of
@@ -81,12 +83,34 @@ func (m *mockArtifactServer) SaveStream(stream artifact.ArtifactService_SaveStre
 func (m *mockArtifactServer) Save(_ context.Context, req *artifact.SaveArtifactRequest) (*artifact.SaveArtifactResponse, error) {
 	m.saveCalled = true
 	m.savePath = req.GetPath()
+	// Server and driver share a filesystem in-test, so read back the buffered file
+	// to prove the fallback wrote the reader's content, not an empty/truncated file.
+	if data, err := os.ReadFile(req.GetPath()); err == nil {
+		m.savedContent = data
+	}
 	return &artifact.SaveArtifactResponse{Success: true}, nil
 }
 
-// startMockPluginServer starts a gRPC server serving mockArtifactServer over a unix
-// socket and returns a connected Driver, cleaning both up on test completion.
-func startMockPluginServer(t *testing.T, mock *mockArtifactServer) *Driver {
+// legacyMockServer implements only Save, leaving GetCapabilities and SaveStream
+// unimplemented so the gRPC framework returns codes.Unimplemented for them —
+// exactly how a plugin built before streaming existed behaves.
+type legacyMockServer struct {
+	artifact.UnimplementedArtifactServiceServer
+	saveCalled   bool
+	savedContent []byte
+}
+
+func (m *legacyMockServer) Save(_ context.Context, req *artifact.SaveArtifactRequest) (*artifact.SaveArtifactResponse, error) {
+	m.saveCalled = true
+	if data, err := os.ReadFile(req.GetPath()); err == nil {
+		m.savedContent = data
+	}
+	return &artifact.SaveArtifactResponse{Success: true}, nil
+}
+
+// startMockPluginServer starts a gRPC server serving srv over a unix socket and
+// returns a connected Driver, cleaning both up on test completion.
+func startMockPluginServer(t *testing.T, srv artifact.ArtifactServiceServer) *Driver {
 	t.Helper()
 	if runtime.GOOS == "windows" {
 		// Artifact plugins communicate over a unix socket, which Windows does not
@@ -100,7 +124,7 @@ func startMockPluginServer(t *testing.T, mock *mockArtifactServer) *Driver {
 	require.NoError(t, err)
 
 	server := grpc.NewServer()
-	artifact.RegisterArtifactServiceServer(server, mock)
+	artifact.RegisterArtifactServiceServer(server, srv)
 	go func() {
 		_ = server.Serve(listener)
 	}()
@@ -142,6 +166,21 @@ func TestDriverSaveStream(t *testing.T) {
 		require.NoError(t, err)
 		assert.True(t, mock.saveCalled, "unary Save must be called as the fallback")
 		assert.NotEmpty(t, mock.savePath)
+		assert.Equal(t, "fallback content", string(mock.savedContent),
+			"the buffered file handed to Save must hold the reader's content")
+	})
+
+	t.Run("falls back to Save when the plugin does not implement GetCapabilities", func(t *testing.T) {
+		// A pre-streaming plugin has no GetCapabilities method, so the gRPC framework
+		// returns codes.Unimplemented, which must map to the buffered Save fallback.
+		mock := &legacyMockServer{}
+		driver := startMockPluginServer(t, mock)
+		ctx := logging.TestContext(t.Context())
+
+		err := driver.SaveStream(ctx, bytes.NewReader([]byte("legacy content")), outputArtifact)
+		require.NoError(t, err)
+		assert.True(t, mock.saveCalled, "unary Save must be called when GetCapabilities is Unimplemented")
+		assert.Equal(t, "legacy content", string(mock.savedContent))
 	})
 
 	t.Run("mid-stream failure is returned as an error, not a fallback", func(t *testing.T) {
