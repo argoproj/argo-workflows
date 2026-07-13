@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"io"
 	"net"
 	"os"
 	"path/filepath"
@@ -63,10 +64,10 @@ func (m *mockArtifactServer) SaveStream(stream artifact.ArtifactService_SaveStre
 			}
 			return err
 		}
+		if errors.Is(err, io.EOF) {
+			return stream.SendAndClose(&artifact.SaveArtifactResponse{Success: true})
+		}
 		if err != nil {
-			if err.Error() == "EOF" {
-				return stream.SendAndClose(&artifact.SaveArtifactResponse{Success: true})
-			}
 			return err
 		}
 		if first {
