@@ -244,16 +244,29 @@ func (d *Driver) SaveStream(ctx context.Context, reader io.Reader, outputArtifac
 		return fmt.Errorf("plugin %s save stream failed to open: %w", d.pluginName, err)
 	}
 
-	if sendErr := stream.Send(&artifact.SaveStreamArtifactRequest{OutputArtifact: convertToGRPC(outputArtifact)}); sendErr != nil {
-		return fmt.Errorf("plugin %s save stream failed to send metadata: %w", d.pluginName, sendErr)
+	// Once the server aborts the stream, grpc-go makes Send return io.EOF instead
+	// of the failure; the plugin's actual error is only retrievable via CloseAndRecv.
+	sendFrame := func(req *artifact.SaveStreamArtifactRequest, action string) error {
+		sendErr := stream.Send(req)
+		if sendErr == nil {
+			return nil
+		}
+		if _, recvErr := stream.CloseAndRecv(); recvErr != nil {
+			return fmt.Errorf("plugin %s save stream failed %s: %w", d.pluginName, action, recvErr)
+		}
+		return fmt.Errorf("plugin %s save stream failed %s: %w", d.pluginName, action, sendErr)
+	}
+
+	if sendErr := sendFrame(&artifact.SaveStreamArtifactRequest{OutputArtifact: convertToGRPC(outputArtifact)}, "to send metadata"); sendErr != nil {
+		return sendErr
 	}
 
 	buf := make([]byte, saveStreamChunkSize)
 	for {
 		n, readErr := reader.Read(buf)
 		if n > 0 {
-			if sendErr := stream.Send(&artifact.SaveStreamArtifactRequest{Chunk: buf[:n]}); sendErr != nil {
-				return fmt.Errorf("plugin %s save stream failed mid-transfer: %w", d.pluginName, sendErr)
+			if sendErr := sendFrame(&artifact.SaveStreamArtifactRequest{Chunk: buf[:n]}, "mid-transfer"); sendErr != nil {
+				return sendErr
 			}
 		}
 		if errors.Is(readErr, io.EOF) {

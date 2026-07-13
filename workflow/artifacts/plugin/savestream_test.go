@@ -120,7 +120,7 @@ func TestDriverSaveStream(t *testing.T) {
 		driver := startMockPluginServer(t, mock)
 		ctx := logging.TestContext(t.Context())
 
-		content := bytes.Repeat([]byte("abcdefghij"), 20000) // larger than one chunk
+		content := bytes.Repeat([]byte("abcdefghij"), 600000) // 6MB: spans multiple chunks
 		err := driver.SaveStream(ctx, bytes.NewReader(content), outputArtifact)
 		require.NoError(t, err)
 		assert.Equal(t, content, mock.received.Bytes())
@@ -146,8 +146,12 @@ func TestDriverSaveStream(t *testing.T) {
 		driver := startMockPluginServer(t, mock)
 		ctx := logging.TestContext(t.Context())
 
-		err := driver.SaveStream(ctx, bytes.NewReader([]byte("content that will fail partway")), outputArtifact)
-		require.Error(t, err)
+		// Multi-chunk payload: once the server aborts, a subsequent Send returns
+		// io.EOF, so this exercises the CloseAndRecv recovery of the real error.
+		content := bytes.Repeat([]byte("content that will fail partway"), 300000) // ~9MB
+		err := driver.SaveStream(ctx, bytes.NewReader(content), outputArtifact)
+		require.ErrorContains(t, err, "simulated mid-stream failure",
+			"the plugin's actual error must surface, not a bare EOF")
 		assert.False(t, mock.saveCalled, "must not silently fall back to Save after streaming has started")
 	})
 
