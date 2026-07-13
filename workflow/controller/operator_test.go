@@ -7424,6 +7424,33 @@ spec:
       command: [cowsay]
       args: ["hello world"]
 `
+var pendingTimeoutWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world-dag
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: dag1
+        template: whalesay
+        arguments:
+          parameters:
+          - name: sleep_time
+            value: 3s
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: sleep_time
+    pendingTimeout: 2s
+    timeout: 4s
+    container:
+      image: debian:9.5-slim
+      command: [sleep, "{{inputs.parameters.sleep_time}}"]
+`
 
 func TestTemplateTimeoutDuration(t *testing.T) {
 	t.Run("Step Template Deadline", func(t *testing.T) {
@@ -7490,6 +7517,45 @@ func TestTemplateTimeoutDuration(t *testing.T) {
 		jsonByte, err := json.Marshal(woc.wf)
 		require.NoError(t, err)
 		assert.Contains(t, string(jsonByte), "doesn't support timeout field")
+	})
+	t.Run("PendingTimeout in step", func(t *testing.T) {
+		wf := wfv1.MustUnmarshalWorkflow(stepTimeoutWf)
+		tmpl := wf.Spec.Templates[0]
+		tmpl.PendingTimeout = "23s"
+		wf.Spec.Templates[0] = tmpl
+		cancel, controller := newController(logging.TestContext(t.Context()), wf)
+		defer cancel()
+
+		ctx := logging.TestContext(t.Context())
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		woc.operate(ctx)
+		assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+		jsonByte, err := json.Marshal(woc.wf)
+		require.NoError(t, err)
+		assert.Contains(t, string(jsonByte), "doesn't support pendingTimeout field")
+	})
+	t.Run("PendingTimeout", func(t *testing.T) {
+		wf := wfv1.MustUnmarshalWorkflow(pendingTimeoutWf)
+		cancel, controller := newController(logging.TestContext(t.Context()), wf)
+		defer cancel()
+
+		ctx := logging.TestContext(t.Context())
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		woc.operate(ctx)
+		assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+		makePodsPhase(ctx, woc, apiv1.PodPending)
+		time.Sleep(6 * time.Second)
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc.operate(ctx)
+
+		assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Nodes.FindByDisplayName("hello-world-dag").Phase)
+
+		// the timed-out pending pod is queued for deletion
+		assert.True(t, controller.PodController.TestingProcessNextItem(ctx))
+		pods, err := listPods(ctx, woc)
+		require.NoError(t, err)
+		assert.Empty(t, pods.Items)
 	})
 }
 
@@ -13153,4 +13219,71 @@ func TestWithSequenceExpressionPreservesGlobalScope(t *testing.T) {
 		assert.GreaterOrEqual(t, len(woc.wf.Status.Nodes), 4,
 			"Should have created multiple nodes for expanded sequence")
 	})
+}
+
+func TestCheckTemplateTimeouts(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("my-ns")
+	wf := wfv1.MustUnmarshalWorkflow(pendingTimeoutWf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	wf = woc.wf
+	makePodsPhase(ctx, woc, apiv1.PodPending)
+	woc = newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	wf = woc.wf
+
+	node, err := wf.GetNodeByName("hello-world-dag.dag1")
+	require.NoError(t, err)
+	assert.NotNil(t, node)
+	tmpl, err := woc.GetNodeTemplate(ctx, node)
+	require.NoError(t, err)
+
+	// both deadlines are returned while the node is pending
+	deadline, pendingDeadline, err := woc.checkTemplateTimeouts(tmpl, node)
+
+	require.NoError(t, err)
+	deadlineUntil := time.Until(*deadline)
+	assert.True(t, 0 <= deadlineUntil && deadlineUntil <= (time.Second*4))
+	pendingUntil := time.Until(*pendingDeadline)
+	assert.True(t, 0 <= pendingUntil && pendingUntil <= (time.Second*2))
+	assert.True(t, pendingDeadline.Before(*deadline))
+
+	// pending timeout
+	pendingUntil += 1 * time.Millisecond
+	time.Sleep(pendingUntil)
+	deadline, pendingDeadline, err = woc.checkTemplateTimeouts(tmpl, node)
+	assert.Nil(t, deadline)
+	assert.Nil(t, pendingDeadline)
+	require.ErrorIs(t, err, ErrTimeout)
+
+	makePodsPhase(ctx, woc, apiv1.PodRunning)
+	woc = newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	wf = woc.wf
+
+	node, err = wf.GetNodeByName("hello-world-dag.dag1")
+	require.NoError(t, err)
+
+	deadline, pendingDeadline, err = woc.checkTemplateTimeouts(tmpl, node)
+	require.NoError(t, err)
+	assert.Nil(t, pendingDeadline)
+	deadlineUntil = time.Duration(0)
+	if deadline != nil {
+		deadlineUntil = time.Until(*deadline)
+	}
+	assert.True(t, 0 < deadlineUntil && deadlineUntil < (time.Second*4))
+
+	// general timeout is not enforced by the controller for running nodes;
+	// the deadline is still returned so it can be set as activeDeadlineSeconds
+	deadlineUntil += 1 * time.Millisecond
+	time.Sleep(deadlineUntil)
+	deadline, pendingDeadline, err = woc.checkTemplateTimeouts(tmpl, node)
+	assert.NotNil(t, deadline)
+	assert.Nil(t, pendingDeadline)
+	require.NoError(t, err)
 }

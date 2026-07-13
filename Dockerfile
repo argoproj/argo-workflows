@@ -26,6 +26,16 @@ COPY . .
 
 ####################################################################################################
 
+# Delve debugger, copied into the `-dev` images so the controller/server/executor
+# can be run under `dlv exec` when Tilt is invoked with `--debug=...`. Pinned to a
+# release that supports the builder's Go toolchain. Dev-only: never used by the
+# distroless production targets.
+FROM builder AS dlv-build
+RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
+    go install github.com/go-delve/delve/cmd/dlv@v1.27.0
+
+####################################################################################################
+
 FROM node:20-alpine AS argo-ui
 
 RUN apk update && apk add --no-cache git
@@ -128,3 +138,43 @@ COPY hack/nsswitch.conf /etc/
 COPY --from=argocli-build /go/src/github.com/argoproj/argo-workflows/dist/argo /bin/
 
 ENTRYPOINT [ "argo" ]
+
+####################################################################################################
+# Dev-only stages for Tilt. Small alpine base; NOT shipped to users. The
+# binaries are compiled on the host (by Tilt local_resources) and COPYed from
+# the build context, so each binary is built exactly once. On change Tilt
+# rebuilds these (trivial COPY) and recreates the pod.
+
+FROM alpine:3.23 AS workflow-controller-dev
+RUN apk add --no-cache ca-certificates
+COPY hack/ssh_known_hosts /etc/ssh/
+COPY hack/nsswitch.conf /etc/
+COPY dist/workflow-controller /bin/workflow-controller
+# Delve, for `tilt up -- --debug=controller` (the Tiltfile wraps the entrypoint).
+COPY --from=dlv-build /go/bin/dlv /bin/dlv
+# Match the prod image's non-root user so runAsNonRoot is satisfied.
+USER 8737
+ENTRYPOINT [ "workflow-controller" ]
+
+####################################################################################################
+
+FROM alpine:3.23 AS argocli-dev
+RUN apk add --no-cache ca-certificates
+WORKDIR /home/argo
+COPY hack/ssh_known_hosts /etc/ssh/
+COPY hack/nsswitch.conf /etc/
+COPY dist/argo /bin/argo
+# Delve, for `tilt up -- --debug=server` (the Tiltfile wraps the entrypoint).
+COPY --from=dlv-build /go/bin/dlv /bin/dlv
+USER 8737
+ENTRYPOINT [ "argo" ]
+
+####################################################################################################
+
+FROM alpine:3.23 AS argoexec-dev
+RUN apk add --no-cache ca-certificates mailcap
+COPY hack/ssh_known_hosts /etc/ssh/
+COPY hack/nsswitch.conf /etc/
+COPY dist/argoexec /bin/argoexec
+USER 8737
+ENTRYPOINT [ "argoexec" ]

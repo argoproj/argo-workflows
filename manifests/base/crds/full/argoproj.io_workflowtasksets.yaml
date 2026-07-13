@@ -6724,6 +6724,8 @@ spec:
                       format: int64
                       minimum: 1
                       type: integer
+                    pendingTimeout:
+                      type: string
                     plugin:
                       type: object
                       x-kubernetes-preserve-unknown-fields: true

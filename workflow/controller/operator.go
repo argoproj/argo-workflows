@@ -2242,13 +2242,29 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		return node, ErrDeadlineExceeded
 	}
 
-	// Check the template deadline for Pending nodes
-	// This check will cover the resource forbidden, synchronization scenario,
-	// In above scenario, only Node will be created in pending state
-	_, err = woc.checkTemplateTimeout(processedTmpl, node)
+	// Check the timeout and pendingTimeout deadlines for Pending nodes.
+	// This also covers the resource-forbidden and synchronization scenarios,
+	// where only the node exists, in a pending state, with no pod created.
+	deadline, pendingDeadline, err := woc.checkTemplateTimeouts(processedTmpl, node)
 	if err != nil {
 		woc.log.WithField("template", processedTmpl.Name).Warn(ctx, "Template exceeded its deadline")
+		if node.Type == wfv1.NodeTypePod {
+			// delete the timed-out pod so the resources it was waiting for are freed.
+			// Deletion is by UID so a pod recreated by a retry cannot be affected.
+			if pod, exists, podErr := woc.podExists(node.ID); podErr != nil {
+				woc.log.WithError(podErr).Warn(ctx, "failed to check pod existence while cleaning up timed-out node")
+			} else if exists {
+				woc.controller.PodController.DeletePodByUID(ctx, pod.Namespace, pod.Name, string(pod.UID))
+			}
+		}
 		return woc.markNodePhase(ctx, nodeName, wfv1.NodeFailed, err.Error()), err
+	}
+	// Ensure that we will check again soon after the earliest deadline
+	if deadline == nil || (pendingDeadline != nil && pendingDeadline.Before(*deadline)) {
+		deadline = pendingDeadline
+	}
+	if deadline != nil && time.Now().Before(*deadline) {
+		woc.requeueAfter(time.Until(*deadline))
 	}
 
 	// Check if we exceeded template or workflow parallelism and immediately return if we did
@@ -2606,27 +2622,45 @@ func (woc *wfOperationCtx) handleNodeFulfilled(ctx context.Context, nodeName str
 	return node
 }
 
-// Checks if the template has exceeded its deadline
-func (woc *wfOperationCtx) checkTemplateTimeout(tmpl *wfv1.Template, node *wfv1.NodeStatus) (*time.Time, error) {
+func getTimeoutAsDeadline(startedAt *time.Time, timeoutVal string) (*time.Time, error) {
+	tmplTimeout, err := wfv1.ParseStringToDuration(timeoutVal)
+	if err != nil {
+		return nil, fmt.Errorf("invalid timeout format %w", err)
+	}
+	tmplDeadline := startedAt.Add(tmplTimeout)
+	return &tmplDeadline, nil
+}
+
+// checkTemplateTimeouts checks if the template has exceeded its Timeout or PendingTimeout.
+// It returns the deadline computed from Timeout (enforced via the pod's activeDeadlineSeconds)
+// and the deadline computed from PendingTimeout (only set while the node is pending).
+// ErrTimeout is returned if the node is pending past either deadline.
+func (woc *wfOperationCtx) checkTemplateTimeouts(tmpl *wfv1.Template, node *wfv1.NodeStatus) (deadline, pendingDeadline *time.Time, err error) {
 	if node == nil {
-		return nil, nil
+		return nil, nil, nil
 	}
 
 	if tmpl.Timeout != "" {
-		tmplTimeout, err := time.ParseDuration(tmpl.Timeout)
+		deadline, err = getTimeoutAsDeadline(&node.StartedAt.Time, tmpl.Timeout)
 		if err != nil {
-			return nil, fmt.Errorf("invalid timeout format. %w", err)
+			return nil, nil, err
 		}
-
-		deadline := node.StartedAt.Add(tmplTimeout)
-
-		if node.Phase == wfv1.NodePending && time.Now().After(deadline) {
-			return nil, ErrTimeout
+		if node.Phase == wfv1.NodePending && time.Now().After(*deadline) {
+			return nil, nil, ErrTimeout
 		}
-		return &deadline, nil
 	}
 
-	return nil, nil
+	if tmpl.PendingTimeout != "" && node.Phase == wfv1.NodePending {
+		pendingDeadline, err = getTimeoutAsDeadline(&node.StartedAt.Time, tmpl.PendingTimeout)
+		if err != nil {
+			return nil, nil, err
+		}
+		if time.Now().After(*pendingDeadline) {
+			return nil, nil, ErrTimeout
+		}
+	}
+
+	return deadline, pendingDeadline, nil
 }
 
 // recordWorkflowPhaseChange stores the metrics associated with the workflow phase changing

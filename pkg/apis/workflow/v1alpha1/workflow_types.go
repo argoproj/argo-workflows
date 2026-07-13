@@ -798,6 +798,11 @@ type Template struct {
 
 	// Annotations is a list of annotations to add to the template at runtime
 	Annotations map[string]string `json:"annotations,omitempty" protobuf:"bytes,44,opt,name=annotations"`
+
+	// PendingTimeout allows to set the maximum time spent in pending status counting from the node's start time.
+	// It is enforced by the controller, so a pod that starts running just as the timeout expires may still be failed.
+	// This duration may not be applied to Step or DAG templates.
+	PendingTimeout string `json:"pendingTimeout,omitempty" protobuf:"bytes,45,opt,name=pendingTimeout"`
 }
 
 // SetType will set the template object based on template type.
