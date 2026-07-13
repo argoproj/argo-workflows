@@ -1116,10 +1116,16 @@ type ArtifactServiceClient interface {
 	// gateway is exposed for this RPC: plugins communicate over a direct gRPC
 	// connection on a unix socket, so no HTTP transcoding is needed, and
 	// grpc-gateway v1 cannot cleanly represent client-streaming RPCs anyway.
+	//
+	// EXPERIMENTAL: this RPC ships ahead of its in-tree consumer. Its framing (a
+	// metadata-only first frame, then chunk frames) and the GetCapabilities handshake
+	// may change until a consumer lands, so plugins implementing it should expect churn.
 	SaveStream(ctx context.Context, opts ...grpc.CallOption) (ArtifactService_SaveStreamClient, error)
 	// GetCapabilities lets a caller check whether a plugin supports SaveStream before
 	// it starts reading the artifact's content, since a partially consumed reader
 	// cannot be rewound to fall back to Save.
+	//
+	// EXPERIMENTAL: see SaveStream. Subject to change until an in-tree consumer lands.
 	GetCapabilities(ctx context.Context, in *GetCapabilitiesRequest, opts ...grpc.CallOption) (*GetCapabilitiesResponse, error)
 }
 
@@ -1264,10 +1270,16 @@ type ArtifactServiceServer interface {
 	// gateway is exposed for this RPC: plugins communicate over a direct gRPC
 	// connection on a unix socket, so no HTTP transcoding is needed, and
 	// grpc-gateway v1 cannot cleanly represent client-streaming RPCs anyway.
+	//
+	// EXPERIMENTAL: this RPC ships ahead of its in-tree consumer. Its framing (a
+	// metadata-only first frame, then chunk frames) and the GetCapabilities handshake
+	// may change until a consumer lands, so plugins implementing it should expect churn.
 	SaveStream(ArtifactService_SaveStreamServer) error
 	// GetCapabilities lets a caller check whether a plugin supports SaveStream before
 	// it starts reading the artifact's content, since a partially consumed reader
 	// cannot be rewound to fall back to Save.
+	//
+	// EXPERIMENTAL: see SaveStream. Subject to change until an in-tree consumer lands.
 	GetCapabilities(context.Context, *GetCapabilitiesRequest) (*GetCapabilitiesResponse, error)
 }
 
