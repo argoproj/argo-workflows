@@ -1264,8 +1264,134 @@ func TestSubmitWorkflowWithArtifactOverride(t *testing.T) {
 	}
 }
 
-// getWorkflowServerWithArtifacts creates a workflow server with artifact support for testing
-func getWorkflowServerWithArtifacts(t *testing.T, wft *v1alpha1.WorkflowTemplate, defaultRepo *v1alpha1.ArtifactRepository) (workflowpkg.WorkflowServiceServer, context.Context) {
+// TestSubmitWorkflowWithArtifactOverride_ClusterScope tests that submitting a workflow
+// from a ClusterWorkflowTemplate resolves the template artifacts via the cluster-scoped
+// client (not the namespace-scoped one) and applies the override the same way.
+func TestSubmitWorkflowWithArtifactOverride_ClusterScope(t *testing.T) {
+	cwftWithArtifact := &v1alpha1.ClusterWorkflowTemplate{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "cwft-with-artifact",
+		},
+		Spec: v1alpha1.WorkflowSpec{
+			Entrypoint: "main",
+			Arguments: v1alpha1.Arguments{
+				Artifacts: []v1alpha1.Artifact{
+					{
+						Name: "input-artifact",
+						ArtifactLocation: v1alpha1.ArtifactLocation{
+							S3: &v1alpha1.S3Artifact{
+								S3Bucket: v1alpha1.S3Bucket{
+									Endpoint: "s3.amazonaws.com",
+									Bucket:   "my-bucket",
+								},
+								Key: "original/key.zip",
+							},
+						},
+					},
+				},
+			},
+			Templates: []v1alpha1.Template{
+				{
+					Name: "main",
+					Container: &corev1.Container{
+						Image:   "alpine",
+						Command: []string{"cat"},
+						Args:    []string{"/tmp/input"},
+					},
+					Inputs: v1alpha1.Inputs{
+						Artifacts: v1alpha1.Artifacts{
+							{Name: "input-artifact", Path: "/tmp/input"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	server, ctx := getWorkflowServerWithArtifacts(t, cwftWithArtifact, nil)
+
+	wf, err := server.SubmitWorkflow(ctx, &workflowpkg.WorkflowSubmitRequest{
+		Namespace:    "test-ns",
+		ResourceKind: "ClusterWorkflowTemplate",
+		ResourceName: "cwft-with-artifact",
+		SubmitOptions: &v1alpha1.SubmitOpts{
+			Artifacts: []string{"input-artifact=uploads/test-ns/12345678-1234-4234-8234-123456789012/uploaded-file.zip"},
+		},
+	})
+	require.NoError(t, err)
+	require.NotNil(t, wf)
+
+	// Cluster-scoped template artifact should be copied into the workflow with its key overridden
+	// and its non-key S3 location fields (endpoint, bucket) preserved.
+	require.Len(t, wf.Spec.Arguments.Artifacts, 1)
+	key, err := wf.Spec.Arguments.Artifacts[0].GetKey()
+	require.NoError(t, err)
+	assert.Equal(t, "uploads/test-ns/12345678-1234-4234-8234-123456789012/uploaded-file.zip", key)
+	assert.Equal(t, "s3.amazonaws.com", wf.Spec.Arguments.Artifacts[0].S3.Endpoint)
+	assert.Equal(t, "my-bucket", wf.Spec.Arguments.Artifacts[0].S3.Bucket)
+}
+
+// TestSubmitWorkflowWithArtifactOverride_MalformedOverride tests that malformed
+// SubmitOpts.Artifacts entries (missing `=`, empty name, empty key) are rejected
+// with codes.InvalidArgument by the ParseArtifactOverrides fail-fast semantics.
+func TestSubmitWorkflowWithArtifactOverride_MalformedOverride(t *testing.T) {
+	wftWithArtifact := &v1alpha1.WorkflowTemplate{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "test-ns",
+			Name:      "wft-with-artifact",
+		},
+		Spec: v1alpha1.WorkflowSpec{
+			Entrypoint: "main",
+			Arguments: v1alpha1.Arguments{
+				Artifacts: []v1alpha1.Artifact{
+					{
+						Name: "input-artifact",
+						ArtifactLocation: v1alpha1.ArtifactLocation{
+							S3: &v1alpha1.S3Artifact{
+								S3Bucket: v1alpha1.S3Bucket{Endpoint: "s3.amazonaws.com", Bucket: "my-bucket"},
+								Key:      "original/key.zip",
+							},
+						},
+					},
+				},
+			},
+			Templates: []v1alpha1.Template{
+				{
+					Name:      "main",
+					Container: &corev1.Container{Image: "alpine", Command: []string{"cat"}, Args: []string{"/tmp/input"}},
+					Inputs:    v1alpha1.Inputs{Artifacts: v1alpha1.Artifacts{{Name: "input-artifact", Path: "/tmp/input"}}},
+				},
+			},
+		},
+	}
+
+	// Each entry is a single malformed value that should trip ParseArtifactOverrides fail-fast.
+	for name, override := range map[string]string{
+		"no equals sign": "input-artifact",
+		"empty name":     "=uploads/test-ns/12345678-1234-4234-8234-123456789012/file.zip",
+		"empty key":      "input-artifact=",
+	} {
+		t.Run(name, func(t *testing.T) {
+			server, ctx := getWorkflowServerWithArtifacts(t, wftWithArtifact, nil)
+
+			_, err := server.SubmitWorkflow(ctx, &workflowpkg.WorkflowSubmitRequest{
+				Namespace:    "test-ns",
+				ResourceKind: "WorkflowTemplate",
+				ResourceName: "wft-with-artifact",
+				SubmitOptions: &v1alpha1.SubmitOpts{
+					Artifacts: []string{override},
+				},
+			})
+			require.Error(t, err)
+			assert.Equal(t, codes.InvalidArgument, status.Code(err))
+		})
+	}
+}
+
+// getWorkflowServerWithArtifacts creates a workflow server with artifact support for testing.
+// Pass either a *v1alpha1.WorkflowTemplate or *v1alpha1.ClusterWorkflowTemplate (or both)
+// so the same helper can back namespaced- and cluster-scoped tests.
+func getWorkflowServerWithArtifacts(t *testing.T, template runtime.Object, defaultRepo *v1alpha1.ArtifactRepository) (workflowpkg.WorkflowServiceServer, context.Context) {
 	t.Helper()
 
 	offloadNodeStatusRepo := &mocks.OffloadNodeStatusRepo{}
@@ -1281,7 +1407,7 @@ func getWorkflowServerWithArtifacts(t *testing.T, wft *v1alpha1.WorkflowTemplate
 		}, nil
 	})
 
-	wfClientset := v1alpha.NewClientset(wft)
+	wfClientset := v1alpha.NewClientset(template)
 	wfClientset.PrependReactor("create", "workflows", generateNameReactor)
 
 	ctx := logging.TestContext(t.Context())
