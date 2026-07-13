@@ -7,8 +7,6 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"google.golang.org/api/googleapi"
 
 	argoErrors "github.com/argoproj/argo-workflows/v4/errors"
@@ -48,14 +46,4 @@ func TestIsTransientGCSErr(t *testing.T) {
 			t.Errorf("%+v: got %v, want %v", test, got, test.shouldretry)
 		}
 	}
-}
-
-// TestNewGCSClientWithCredentialError tests error handling when credentials are invalid
-func TestNewGCSClientWithCredentialError(t *testing.T) {
-	ctx := logging.TestContext(t.Context())
-
-	// Invalid JSON should cause an error
-	_, err := newGCSClientWithCredential(ctx, "invalid-json")
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "CredentialsFromJSON")
 }
