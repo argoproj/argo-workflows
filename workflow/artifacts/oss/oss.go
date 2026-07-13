@@ -275,62 +275,16 @@ func (ossDriver *ArtifactDriver) Save(ctx context.Context, path string, outputAr
 	return err
 }
 
-// SaveStream saves an artifact from an io.Reader to OSS compliant storage
+// SaveStream saves an artifact from an io.Reader to OSS compliant storage.
+// The reader is buffered to a temp file and handed to Save so bucket creation,
+// lifecycle rules, and retry semantics stay identical to Save.
 func (ossDriver *ArtifactDriver) SaveStream(ctx context.Context, reader io.Reader, outputArtifact *wfv1.Artifact) error {
-	// Buffer to a temp file so the reader can be re-read on retry
 	tmpFilePath, cleanup, err := common.BufferReaderToTempFile(reader, "oss-upload-*")
 	if err != nil {
 		return err
 	}
 	defer cleanup()
-
-	err = waitutil.Backoff(defaultRetry,
-		func() (bool, error) {
-			logger := logging.RequireLoggerFromContext(ctx)
-			logger.WithField("key", outputArtifact.OSS.Key).Info(ctx, "OSS SaveStream")
-			osscli, retryErr := ossDriver.newOSSClient(ctx)
-			if retryErr != nil {
-				return !isTransientOSSErr(ctx, retryErr), retryErr
-			}
-			bucketName := outputArtifact.OSS.Bucket
-			retryErr = setBucketLogging(osscli, bucketName)
-			if retryErr != nil {
-				return !isTransientOSSErr(ctx, retryErr), retryErr
-			}
-			if outputArtifact.OSS.CreateBucketIfNotPresent {
-				exists, existsErr := osscli.IsBucketExist(bucketName)
-				if existsErr != nil {
-					return !isTransientOSSErr(ctx, existsErr), fmt.Errorf("failed to check if bucket %s exists: %w", bucketName, existsErr)
-				}
-				if !exists {
-					retryErr = osscli.CreateBucket(bucketName)
-					if retryErr != nil {
-						return !isTransientOSSErr(ctx, retryErr), fmt.Errorf("failed to automatically create bucket %s when it's not present: %w", bucketName, retryErr)
-					}
-				}
-			}
-			if outputArtifact.OSS.LifecycleRule != nil {
-				retryErr = setBucketLifecycleRule(osscli, outputArtifact.OSS)
-				if retryErr != nil {
-					return !isTransientOSSErr(ctx, retryErr), retryErr
-				}
-			}
-			bucket, retryErr := osscli.Bucket(bucketName)
-			if retryErr != nil {
-				return !isTransientOSSErr(ctx, retryErr), retryErr
-			}
-			f, retryErr := os.Open(tmpFilePath)
-			if retryErr != nil {
-				return true, fmt.Errorf("failed to reopen temp file: %w", retryErr)
-			}
-			defer f.Close()
-			retryErr = bucket.PutObject(outputArtifact.OSS.Key, f)
-			if retryErr != nil {
-				return !isTransientOSSErr(ctx, retryErr), retryErr
-			}
-			return true, nil
-		})
-	return err
+	return ossDriver.Save(ctx, tmpFilePath, outputArtifact)
 }
 
 // Delete deletes an artifact from an OSS compliant storage
