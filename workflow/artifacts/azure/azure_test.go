@@ -158,7 +158,8 @@ func TestIsSASAccountKey(t *testing.T) {
 	}
 }
 
-// TestArtifactDriverMissingAccountKey tests that SaveStream fails without credentials
+// TestArtifactDriverMissingAccountKey tests that container client construction
+// (the first step of Save and SaveStream) fails without credentials
 func TestArtifactDriverMissingAccountKey(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 
