@@ -178,6 +178,35 @@ func TestSaveStream(t *testing.T) {
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "saving stream")
 	})
+
+	t.Run("follows a 307 redirect when SaveStreamViaFile is set", func(t *testing.T) {
+		var received string
+		firstRequest := true
+		svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if firstRequest {
+				w.Header().Add("Location", r.RequestURI)
+				w.WriteHeader(http.StatusTemporaryRedirect)
+				firstRequest = false
+				return
+			}
+			buf := new(bytes.Buffer)
+			_, err := buf.ReadFrom(r.Body)
+			assert.NoError(t, err)
+			received = buf.String()
+			w.WriteHeader(http.StatusCreated)
+		}))
+		defer svr.Close()
+
+		driver := &ArtifactDriver{Client: svr.Client()}
+		art := &wfv1.Artifact{
+			ArtifactLocation: wfv1.ArtifactLocation{
+				HTTP: &wfv1.HTTPArtifact{URL: svr.URL, SaveStreamViaFile: true},
+			},
+		}
+		err := driver.SaveStream(ctx, strings.NewReader(content), art)
+		require.NoError(t, err)
+		assert.Equal(t, content, received)
+	})
 }
 
 func TestSaveStreamNilArtifactLocation(t *testing.T) {
