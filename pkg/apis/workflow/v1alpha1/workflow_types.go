@@ -3121,6 +3121,12 @@ type HTTPArtifact struct {
 
 	// Auth contains information for client authentication
 	Auth *HTTPAuth `json:"auth,omitempty" protobuf:"bytes,3,opt,name=auth"`
+
+	// SaveStreamViaFile buffers a streamed upload to a temporary file before sending it,
+	// so a 307/308 redirect (e.g. webHDFS) can be followed by re-sending the body. When
+	// false (the default) SaveStream sends the reader directly and cannot follow such a
+	// redirect, since a one-shot reader cannot be replayed.
+	SaveStreamViaFile bool `json:"saveStreamViaFile,omitempty" protobuf:"varint,4,opt,name=saveStreamViaFile"`
 }
 
 func (h *HTTPArtifact) GetKey() (string, error) {

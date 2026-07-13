@@ -855,6 +855,12 @@ message HTTPArtifact {
 
   // Auth contains information for client authentication
   optional HTTPAuth auth = 3;
+
+  // SaveStreamViaFile buffers a streamed upload to a temporary file before sending it,
+  // so a 307/308 redirect (e.g. webHDFS) can be followed by re-sending the body. When
+  // false (the default) SaveStream sends the reader directly and cannot follow such a
+  // redirect, since a one-shot reader cannot be replayed.
+  optional bool saveStreamViaFile = 4;
 }
 
 message HTTPAuth {

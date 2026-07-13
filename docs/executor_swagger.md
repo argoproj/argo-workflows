@@ -1684,6 +1684,7 @@ into the Pod's container.
 |------|------|---------|:--------:| ------- |-------------|---------|
 | auth | [HTTPAuth](#http-auth)| `HTTPAuth` |  | |  |  |
 | headers | [][Header](#header)| `[]*Header` |  | | Headers are an optional list of headers to send with HTTP requests for artifacts |  |
+| saveStreamViaFile | boolean| `bool` |  | | SaveStreamViaFile buffers a streamed upload to a temporary file before sending it,</br>so a 307/308 redirect (e.g. webHDFS) can be followed by re-sending the body. When</br>false (the default) SaveStream sends the reader directly and cannot follow such a</br>redirect, since a one-shot reader cannot be replayed. |  |
 | url | string| `string` |  | | URL of the artifact |  |
 
 

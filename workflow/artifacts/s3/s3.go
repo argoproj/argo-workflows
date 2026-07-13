@@ -281,6 +281,13 @@ func (s3Driver *ArtifactDriver) Save(ctx context.Context, path string, outputArt
 	return err
 }
 
+// SaveStream saves an artifact from an io.Reader to S3 compliant storage
+func (s3Driver *ArtifactDriver) SaveStream(ctx context.Context, reader io.Reader, outputArtifact *wfv1.Artifact) error {
+	return artifactscommon.SaveStreamViaTempFile(reader, "s3-upload-*", func(path string) error {
+		return s3Driver.Save(ctx, path, outputArtifact)
+	})
+}
+
 // Delete deletes an artifact from an S3 compliant storage
 func (s3Driver *ArtifactDriver) Delete(ctx context.Context, artifact *wfv1.Artifact) error {
 	ctx, cancel := context.WithCancel(ctx)
