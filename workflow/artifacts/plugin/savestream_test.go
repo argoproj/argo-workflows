@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -87,6 +88,11 @@ func (m *mockArtifactServer) Save(_ context.Context, req *artifact.SaveArtifactR
 // socket and returns a connected Driver, cleaning both up on test completion.
 func startMockPluginServer(t *testing.T, mock *mockArtifactServer) *Driver {
 	t.Helper()
+	if runtime.GOOS == "windows" {
+		// Artifact plugins communicate over a unix socket, which Windows does not
+		// support (and plugins are unsupported on Windows).
+		t.Skip("plugin artifact driver is not supported on Windows")
+	}
 	ctx := logging.TestContext(t.Context())
 
 	socketPath := filepath.Join(t.TempDir(), "plugin.sock")
