@@ -1,7 +1,6 @@
 package hdfs
 
 import (
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -17,6 +16,11 @@ import (
 // temp file behind
 func TestSaveStreamRemovesTempFileOnSaveError(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
+
+	// Isolate the driver's os.CreateTemp("", ...) into a per-test dir so the
+	// leftover check does not race with other tests or with residue in shared /tmp.
+	tmpDir := t.TempDir()
+	t.Setenv("TMPDIR", tmpDir)
 
 	driver := &ArtifactDriver{
 		Addresses: []string{"nonexistent:8020"},
@@ -39,9 +43,7 @@ func TestSaveStreamRemovesTempFileOnSaveError(t *testing.T) {
 	err := driver.SaveStream(ctx, strings.NewReader("test content"), outputArtifact)
 	require.Error(t, err, "Save must fail against an unreachable HDFS address")
 
-	// The "hdfs-upload-*" pattern is unique to this driver, so any leftover match
-	// means the buffered temp file leaked.
-	leftovers, globErr := filepath.Glob(filepath.Join(os.TempDir(), "hdfs-upload-*"))
+	leftovers, globErr := filepath.Glob(filepath.Join(tmpDir, "hdfs-upload-*"))
 	require.NoError(t, globErr)
 	require.Empty(t, leftovers, "buffered temp file must be removed after SaveStream returns")
 }
