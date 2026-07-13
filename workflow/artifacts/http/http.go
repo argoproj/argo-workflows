@@ -124,6 +124,22 @@ func (h *ArtifactDriver) buildPutRequest(ctx context.Context, body io.Reader, ou
 	}
 }
 
+// doPutRequest sends req and fails on a non-2xx response. what describes the
+// operation in error messages, e.g. "saving file /tmp/x" or "saving stream".
+func (h *ArtifactDriver) doPutRequest(req *http.Request, url, what string) error {
+	res, err := h.Client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = res.Body.Close()
+	}()
+	if res.StatusCode < 200 || res.StatusCode >= 300 {
+		return errors.InternalErrorf("%s to %s failed with reason: %s", what, url, res.Status)
+	}
+	return nil
+}
+
 // Save writes the artifact to the URL
 func (h *ArtifactDriver) Save(ctx context.Context, path string, outputArtifact *wfv1.Artifact) error {
 	cleanPath := filepath.Clean(path)
@@ -141,18 +157,7 @@ func (h *ArtifactDriver) Save(ctx context.Context, path string, outputArtifact *
 	req.GetBody = func() (io.ReadCloser, error) {
 		return os.Open(cleanPath)
 	}
-
-	res, err := h.Client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		_ = res.Body.Close()
-	}()
-	if res.StatusCode < 200 || res.StatusCode >= 300 {
-		return errors.InternalErrorf("saving file %s to %s failed with reason: %s", path, url, res.Status)
-	}
-	return nil
+	return h.doPutRequest(req, url, fmt.Sprintf("saving file %s", path))
 }
 
 // SaveStream saves an artifact from an io.Reader to HTTP URL
@@ -165,18 +170,7 @@ func (h *ArtifactDriver) SaveStream(ctx context.Context, reader io.Reader, outpu
 	if err != nil {
 		return err
 	}
-
-	res, err := h.Client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		_ = res.Body.Close()
-	}()
-	if res.StatusCode < 200 || res.StatusCode >= 300 {
-		return errors.InternalErrorf("saving stream to %s failed with reason: %s", url, res.Status)
-	}
-	return nil
+	return h.doPutRequest(req, url, "saving stream")
 }
 
 // Delete is unsupported for the http artifacts
