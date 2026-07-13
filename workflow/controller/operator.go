@@ -683,7 +683,7 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 		case param.Value != nil:
 			varkeys.WorkflowParametersByName.Set(woc.scope, param.Value.String(), param.Name)
 		case param.ValueFrom != nil && param.ValueFrom.ConfigMapKeyRef != nil:
-			cmValue, err := common.GetConfigMapValue(woc.controller.configMapInformer.GetIndexer(), woc.wf.Namespace, param.ValueFrom.ConfigMapKeyRef.Name, param.ValueFrom.ConfigMapKeyRef.Key)
+			cmValue, err := common.GetConfigMapValue(woc.controller.typedConfigMapInformer.GetIndexer(), woc.wf.Namespace, param.ValueFrom.ConfigMapKeyRef.Name, param.ValueFrom.ConfigMapKeyRef.Key)
 			if err != nil {
 				if param.ValueFrom.Default == nil {
 					return fmt.Errorf("failed to set global parameter %s from configmap with name %s and key %s: %w",
@@ -2198,7 +2198,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	localParams[varkeys.NodeName.Template()] = nodeName
 
 	// Inputs has been processed with arguments already, so pass empty arguments.
-	processedTmpl, err := common.ProcessArgs(ctx, resolvedTmpl, &args, woc.globalParams(), localParams, false, woc.wf.Namespace, woc.controller.configMapInformer.GetIndexer())
+	processedTmpl, err := common.ProcessArgs(ctx, resolvedTmpl, &args, woc.globalParams(), localParams, false, woc.wf.Namespace, woc.controller.typedConfigMapInformer.GetIndexer())
 	if err != nil {
 		errNode := woc.initializeNodeOrMarkError(ctx, node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err)
 		return errNode, err
