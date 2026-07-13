@@ -833,6 +833,15 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 
 	logger := logging.RequireLoggerFromContext(ctx)
 
+	// Validate SubmitOpts.Artifacts syntax up front so a malformed entry surfaces as
+	// InvalidArgument regardless of whether ApplySubmitOpts (non-templateRef path) or
+	// the templateRef branch below is the one that would consume it.
+	if req.SubmitOptions != nil && len(req.SubmitOptions.Artifacts) > 0 {
+		if _, parseErr := util.ParseArtifactOverrides(req.SubmitOptions.Artifacts); parseErr != nil {
+			return nil, sutils.ToStatusError(parseErr, codes.InvalidArgument)
+		}
+	}
+
 	err := util.ApplySubmitOpts(wf, req.SubmitOptions)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
