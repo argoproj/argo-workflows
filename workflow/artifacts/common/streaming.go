@@ -6,6 +6,19 @@ import (
 	"os"
 )
 
+// SaveStreamViaTempFile buffers reader to a temp file and hands the path to save,
+// so drivers whose storage SDK needs a seekable input reuse their existing Save
+// logic (bucket creation, key normalization, retries) unchanged instead of
+// reimplementing it per driver.
+func SaveStreamViaTempFile(reader io.Reader, pattern string, save func(path string) error) error {
+	path, cleanup, err := BufferReaderToTempFile(reader, pattern)
+	if err != nil {
+		return err
+	}
+	defer cleanup()
+	return save(path)
+}
+
 // BufferReaderToTempFile buffers reader into a new temp file (named per the os.CreateTemp
 // pattern, e.g. "s3-upload-*") so its content can be re-read multiple times, which most
 // storage SDKs require for retry/backoff. It returns the temp file's path and a cleanup

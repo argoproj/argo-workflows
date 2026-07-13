@@ -57,3 +57,42 @@ type errorReader struct{}
 func (r *errorReader) Read(_ []byte) (int, error) {
 	return 0, assert.AnError
 }
+
+func TestSaveStreamViaTempFile(t *testing.T) {
+	t.Run("save receives a path holding the reader's content and the file is removed after", func(t *testing.T) {
+		var savedPath string
+		err := SaveStreamViaTempFile(strings.NewReader("stream content"), "delegate-test-*", func(path string) error {
+			savedPath = path
+			content, readErr := os.ReadFile(path)
+			require.NoError(t, readErr)
+			assert.Equal(t, "stream content", string(content))
+			return nil
+		})
+		require.NoError(t, err)
+
+		_, statErr := os.Stat(savedPath)
+		assert.True(t, os.IsNotExist(statErr), "temp file must be removed after save returns")
+	})
+
+	t.Run("save error is propagated and the temp file is removed", func(t *testing.T) {
+		var savedPath string
+		err := SaveStreamViaTempFile(strings.NewReader("x"), "delegate-test-*", func(path string) error {
+			savedPath = path
+			return assert.AnError
+		})
+		require.ErrorIs(t, err, assert.AnError)
+
+		_, statErr := os.Stat(savedPath)
+		assert.True(t, os.IsNotExist(statErr), "temp file must be removed even when save fails")
+	})
+
+	t.Run("reader error is returned without calling save", func(t *testing.T) {
+		saveCalled := false
+		err := SaveStreamViaTempFile(&errorReader{}, "delegate-test-*", func(string) error {
+			saveCalled = true
+			return nil
+		})
+		require.Error(t, err)
+		assert.False(t, saveCalled)
+	})
+}

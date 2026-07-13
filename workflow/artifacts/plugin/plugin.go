@@ -288,12 +288,9 @@ func (d *Driver) supportsSaveStream(ctx context.Context) bool {
 // saveStreamViaTempFile is the fallback used when the plugin doesn't implement
 // streaming SaveStream: buffer to a temp file and call the existing unary Save.
 func (d *Driver) saveStreamViaTempFile(ctx context.Context, reader io.Reader, outputArtifact *wfv1.Artifact) error {
-	tmpFilePath, cleanup, err := common.BufferReaderToTempFile(reader, "plugin-upload-*")
-	if err != nil {
-		return fmt.Errorf("plugin %s failed to buffer stream: %w", d.pluginName, err)
-	}
-	defer cleanup()
-	return d.Save(ctx, tmpFilePath, outputArtifact)
+	return common.SaveStreamViaTempFile(reader, "plugin-upload-*", func(path string) error {
+		return d.Save(ctx, path, outputArtifact)
+	})
 }
 
 // Delete implements ArtifactDriver.Delete by calling the plugin service

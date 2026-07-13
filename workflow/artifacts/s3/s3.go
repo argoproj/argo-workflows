@@ -281,16 +281,11 @@ func (s3Driver *ArtifactDriver) Save(ctx context.Context, path string, outputArt
 	return err
 }
 
-// SaveStream saves an artifact from an io.Reader to S3 compliant storage.
-// The reader is buffered to a temp file and handed to Save so bucket creation,
-// multipart part-size tuning, and retry semantics stay identical to Save.
+// SaveStream saves an artifact from an io.Reader to S3 compliant storage
 func (s3Driver *ArtifactDriver) SaveStream(ctx context.Context, reader io.Reader, outputArtifact *wfv1.Artifact) error {
-	tmpFilePath, cleanup, err := artifactscommon.BufferReaderToTempFile(reader, "s3-upload-*")
-	if err != nil {
-		return err
-	}
-	defer cleanup()
-	return s3Driver.Save(ctx, tmpFilePath, outputArtifact)
+	return artifactscommon.SaveStreamViaTempFile(reader, "s3-upload-*", func(path string) error {
+		return s3Driver.Save(ctx, path, outputArtifact)
+	})
 }
 
 // Delete deletes an artifact from an S3 compliant storage

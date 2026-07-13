@@ -235,14 +235,10 @@ func (driver *ArtifactDriver) Save(ctx context.Context, path string, outputArtif
 }
 
 // SaveStream saves an artifact from an io.Reader to HDFS compliant storage
-// Uses a temporary file as a fallback since HDFS doesn't support direct stream writes
 func (driver *ArtifactDriver) SaveStream(ctx context.Context, reader io.Reader, outputArtifact *wfv1.Artifact) error {
-	tmpFilePath, cleanup, err := common.BufferReaderToTempFile(reader, "hdfs-upload-*")
-	if err != nil {
-		return err
-	}
-	defer cleanup()
-	return driver.Save(ctx, tmpFilePath, outputArtifact)
+	return common.SaveStreamViaTempFile(reader, "hdfs-upload-*", func(path string) error {
+		return driver.Save(ctx, path, outputArtifact)
+	})
 }
 
 // Delete is unsupported for the hdfs artifacts

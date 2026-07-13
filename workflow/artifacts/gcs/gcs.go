@@ -241,16 +241,11 @@ func (h *ArtifactDriver) Save(ctx context.Context, path string, outputArtifact *
 	return err
 }
 
-// SaveStream saves an artifact from an io.Reader to GCS compliant storage.
-// The reader is buffered to a temp file and handed to Save so key normalization
-// and retry semantics stay identical to Save.
+// SaveStream saves an artifact from an io.Reader to GCS compliant storage
 func (h *ArtifactDriver) SaveStream(ctx context.Context, reader io.Reader, outputArtifact *wfv1.Artifact) error {
-	tmpFilePath, cleanup, err := common.BufferReaderToTempFile(reader, "gcs-upload-*")
-	if err != nil {
-		return err
-	}
-	defer cleanup()
-	return h.Save(ctx, tmpFilePath, outputArtifact)
+	return common.SaveStreamViaTempFile(reader, "gcs-upload-*", func(path string) error {
+		return h.Save(ctx, path, outputArtifact)
+	})
 }
 
 // list all the file relative paths under a dir
