@@ -216,7 +216,9 @@ func (d *Driver) Save(ctx context.Context, path string, outputArtifact *wfv1.Art
 }
 
 // saveStreamChunkSize is the size of each chunk sent over the streaming SaveStream RPC.
-const saveStreamChunkSize = 64 * 1024
+// 2MiB stays well under gRPC's default 4MiB max message size while keeping the
+// per-chunk marshal/syscall overhead low for multi-GB artifacts.
+const saveStreamChunkSize = 2 * 1024 * 1024
 
 // SaveStream implements ArtifactDriver.SaveStream. If the plugin implements the
 // streaming SaveStream RPC (per GetCapabilities), the reader is streamed directly
