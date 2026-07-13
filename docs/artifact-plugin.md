@@ -160,15 +160,17 @@ Your GRPC server must implement these six required methods from the `ArtifactSer
 
 #### Optional Methods
 
+These methods are **experimental**: they ship ahead of their in-tree consumer, so their framing and capability handshake may change. A plugin that implements them should expect churn until a consumer lands.
+
 1. **`SaveStream(stream SaveStreamArtifactRequest)` → `SaveArtifactResponse`**
     - Client-streaming counterpart to `Save`: accepts an artifact's content chunk by chunk instead of requiring it to already be at a local path
     - The first frame carries `output_artifact` (metadata only); every subsequent frame carries a `chunk` of content
-    - Optional. If your plugin doesn't implement this, Argo Server buffers the incoming content to a temp file and calls `Save` instead. Implement it if your storage system can accept a stream directly, to avoid that extra buffering.
+    - Optional. If your plugin doesn't implement this, Argo buffers the incoming content to a temp file and calls `Save` instead. Implement it if your storage system can accept a stream directly, to avoid that extra buffering.
 
 2. **`GetCapabilities(GetCapabilitiesRequest)` → `GetCapabilitiesResponse`**
     - Reports whether the plugin implements `SaveStream`, via `supports_save_stream`
-    - Argo Server calls this **before** it starts reading the artifact's content, since a partially consumed stream can't be rewound to fall back to `Save`
-    - If unimplemented (older plugins), Argo Server treats that the same as `supports_save_stream: false` and uses the `Save` fallback
+    - Argo calls this **before** it starts reading the artifact's content, since a partially consumed stream can't be rewound to fall back to `Save`
+    - If unimplemented (older plugins), Argo treats that the same as `supports_save_stream: false` and uses the `Save` fallback
 
 #### Implementation Notes
 
