@@ -1,6 +1,8 @@
 package common
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -10,9 +12,12 @@ import (
 
 const (
 	// Container names used in the workflow pod
-	MainContainerName           = "main"
-	InitContainerName           = "init"
-	WaitContainerName           = "wait"
+	MainContainerName = "main"
+	InitContainerName = "init"
+	WaitContainerName = "wait"
+	// SupervisorContainerName is the name of the init-less auxiliary container
+	// that replaces `wait` when initlessPod is enabled.
+	SupervisorContainerName     = "supervisor"
 	ArtifactPluginSidecarPrefix = "artifact-plugin-"
 	ArtifactPluginInitPrefix    = InitContainerName + "-artifact-"
 
@@ -56,9 +61,6 @@ const (
 	// AnnotationKeyArtifactGCStrategy is listed as an annotation on the Artifact GC Pod to identify
 	// the strategy whose artifacts are being deleted
 	AnnotationKeyArtifactGCStrategy = workflow.WorkflowFullName + "/artifact-gc-strategy"
-
-	// AnnotationKeyLastSeenVersion stores the last seen version of the workflow when it was last successfully processed by the controller
-	AnnotationKeyLastSeenVersion = workflow.WorkflowFullName + "/last-seen-version"
 
 	// LabelParallelismLimit is a label applied on namespace objects to control the per namespace parallelism.
 	LabelParallelismLimit = workflow.WorkflowFullName + "/parallelism-limit"
@@ -148,8 +150,24 @@ const (
 
 	// EnvVarArtifactGCPodHash is applied as a Label on the WorkflowTaskSets read by the Artifact GC Pod, so that the Pod can find them
 	EnvVarArtifactGCPodHash = "ARGO_ARTIFACT_POD_NAME"
-	// EnvVarArtifactPluginNames is the env var for artifact GC pods containing the names of the artifact plugins
+	// EnvVarArtifactPluginNames is a comma-separated list of artifact plugin
+	// container names. It is set on the artifact GC pod, on the legacy `wait`
+	// container, and on the init-less `supervisor` container, which use it to
+	// locate and (for wait/supervisor) drive Save on each plugin sidecar.
 	EnvVarArtifactPluginNames = "ARGO_ARTIFACT_PLUGIN_NAMES"
+	// EnvVarInputArtifactPluginNames is the comma-separated list of input artifact plugin names
+	// the supervisor container must invoke for Load in init-less pod mode.
+	EnvVarInputArtifactPluginNames = "ARGO_INPUT_ARTIFACT_PLUGIN_NAMES"
+	// EnvVarWaitForReady tells the emissary to block on the /var/run/argo/status
+	// marker before reading the template and exec'ing the user command.
+	// Set by the controller on main-level containers in init-less pod mode.
+	EnvVarWaitForReady = "ARGO_WAIT_FOR_READY"
+	// EnvVarInitlessPod signals that the executor is running inside an
+	// init-less pod (i.e. as `argoexec supervisor`). The controller sets it
+	// on the supervisor container. Used to gate init-less-specific code
+	// paths in the executor (e.g. the input-artifacts overlap fallback in
+	// stageArchiveFile).
+	EnvVarInitlessPod = "ARGO_INITLESS_POD"
 	// EnvVarPodName contains the name of the pod (currently unused)
 	EnvVarPodName = "ARGO_POD_NAME"
 	// EnvVarPodUID is the workflow's UID
@@ -190,6 +208,10 @@ const (
 	EnvVarDefaultRequeueTime = "DEFAULT_REQUEUE_TIME"
 	// EnvVarPodStatusCaptureFinalizer is used to prevent pod garbage collected before argo captures its exit status
 	EnvVarPodStatusCaptureFinalizer = "ARGO_POD_STATUS_CAPTURE_FINALIZER"
+	// EnvVarS3UploadThreads is the number of threads for artifact upload through S3. Default: 4.
+	EnvVarS3UploadThreads = "ARTIFACT_S3_UPLOAD_THREADS"
+	// EnvVarS3UploadPartSizeMiB is the size in MiB of the part of a MultiPartUpload. Default: let Minio calculate automatically (16MiB for file <= 156GiB).
+	EnvVarS3UploadPartSizeMiB = "ARTIFACT_S3_UPLOAD_PART_SIZE_MIB"
 	// EnvAgentTaskWorkers is the number of task workers for the agent pod
 	EnvAgentTaskWorkers = "ARGO_AGENT_TASK_WORKERS"
 	// EnvAgentPatchRate is the rate that the Argo Agent will patch the Workflow TaskSet
@@ -201,43 +223,6 @@ const (
 	// Finalizer blocks the deletion of pods until the controller captures their status.
 	FinalizerPodStatus = workflow.WorkflowFullName + "/status"
 
-	// Variables that are added to the scope during template execution and can be referenced using {{}} syntax
-
-	// GlobalVarWorkflowName is a global workflow variable referencing the workflow's metadata.name field
-	GlobalVarWorkflowName = "workflow.name"
-	// GlobalVarWorkflowNamespace is a global workflow variable referencing the workflow's metadata.namespace field
-	GlobalVarWorkflowNamespace = "workflow.namespace"
-	// GlobalVarWorkflowMainEntrypoint is a global workflow variable referencing the workflow's top level entrypoint name
-	GlobalVarWorkflowMainEntrypoint = "workflow.mainEntrypoint"
-	// GlobalVarWorkflowServiceAccountName is a global workflow variable referencing the workflow's spec.serviceAccountName field
-	GlobalVarWorkflowServiceAccountName = "workflow.serviceAccountName"
-	// GlobalVarWorkflowUID is a global workflow variable referencing the workflow's metadata.uid field
-	GlobalVarWorkflowUID = "workflow.uid"
-	// GlobalVarWorkflowStatus is a global workflow variable referencing the workflow's status.phase field
-	GlobalVarWorkflowStatus = "workflow.status"
-	// GlobalVarWorkflowCreationTimestamp is the workflow variable referencing the workflow's metadata.creationTimestamp field
-	GlobalVarWorkflowCreationTimestamp = "workflow.creationTimestamp"
-	// GlobalVarWorkflowPriority is the workflow variable referencing the workflow's priority field
-	GlobalVarWorkflowPriority = "workflow.priority"
-	// GlobalVarWorkflowFailures is a global variable of a JSON map referencing the workflow's failed nodes
-	GlobalVarWorkflowFailures = "workflow.failures"
-	// GlobalVarWorkflowDuration is the current duration of this workflow
-	GlobalVarWorkflowDuration = "workflow.duration"
-	// GlobalVarWorkflowAnnotations is a JSON string containing all workflow annotations - which will be deprecated in favor of GlobalVarWorkflowAnnotationsJSON
-	GlobalVarWorkflowAnnotations = "workflow.annotations"
-	// GlobalVarWorkflowAnnotationsJSON is a JSON string containing all workflow annotations
-	GlobalVarWorkflowAnnotationsJSON = "workflow.annotations.json"
-	// GlobalVarWorkflowLabels is a JSON string containing all workflow labels - which will be deprecated in favor of GlobalVarWorkflowLabelsJSON
-	GlobalVarWorkflowLabels = "workflow.labels"
-	// GlobalVarWorkflowLabelsJSON is a JSON string containing all workflow labels
-	GlobalVarWorkflowLabelsJSON = "workflow.labels.json"
-	// GlobalVarWorkflowParameters is a JSON string containing all workflow parameters - which will be deprecated in favor of GlobalVarWorkflowParametersJSON
-	GlobalVarWorkflowParameters = "workflow.parameters"
-	// GlobalVarWorkflowParametersJSON is a JSON string containing all workflow parameters
-	GlobalVarWorkflowParametersJSON = "workflow.parameters.json"
-	// GlobalVarWorkflowCronScheduleTime is the scheduled timestamp of a Workflow started by a CronWorkflow
-	GlobalVarWorkflowCronScheduleTime = "workflow.scheduledTime"
-
 	// LabelKeyConfigMapType is the label key for the type of configmap.
 	LabelKeyConfigMapType = "workflows.argoproj.io/configmap-type"
 	// LabelValueTypeConfigMapCache is a key for configmaps that are memoization cache.
@@ -246,28 +231,6 @@ const (
 	LabelValueTypeConfigMapParameter = "Parameter"
 	// LabelValueTypeConfigMapExecutorPlugin is a key for configmaps that contains an executor plugin.
 	LabelValueTypeConfigMapExecutorPlugin = "ExecutorPlugin"
-
-	// LocalVarPodName is a step level variable that references the name of the pod
-	LocalVarPodName = "pod.name"
-	// LocalVarRetries is a step level variable that references the retries number if retryStrategy is specified
-	LocalVarRetries = "retries"
-	// LocalVarDuration is a step level variable (currently only available in metric emission) that tracks the duration of the step
-	LocalVarDuration = "duration"
-	// LocalVarStatus is a step level variable (currently only available in metric emission) that tracks the duration of the step
-	LocalVarStatus = "status"
-	// LocalVarResourcesDuration is a step level variable (currently only available in metric emission) that tracks the resources duration of the step
-	LocalVarResourcesDuration = "resourcesDuration"
-	// LocalVarExitCode is a step level variable (currently only available in metric emission) that tracks the step's exit code
-	LocalVarExitCode = "exitCode"
-
-	// LocalVarRetriesLastExitCode is a variable that references information about the last retry's exit code
-	LocalVarRetriesLastExitCode = "lastRetry.exitCode"
-	// LocalVarRetriesLastStatus is a variable that references information about the last retry's status
-	LocalVarRetriesLastStatus = "lastRetry.status"
-	// LocalVarRetriesLastDuration is a variable that references information about the last retry's duration, in seconds
-	LocalVarRetriesLastDuration = "lastRetry.duration"
-	// LocalVarRetriesLastMessage is a variable that references information about the last retry's failure message
-	LocalVarRetriesLastMessage = "lastRetry.message"
 
 	KubeConfigDefaultMountPath    = "/kube/config"
 	KubeConfigDefaultVolumeName   = "kubeconfig"
@@ -290,10 +253,49 @@ const (
 	// VarRunArgoPath is the standard path for the shared volume
 	VarRunArgoPath = "/var/run/argo"
 
+	// LegacyArgoExecBinPath is where the init container copies argoexec in the
+	// legacy pod layout (it lives in the shared VarRunArgoPath emptyDir).
+	LegacyArgoExecBinPath = VarRunArgoPath + "/argoexec"
+
+	// ArgoExecBinImageVolumeName / ArgoExecBinMountPath / ArgoExecBinPath describe
+	// the image volume that delivers the argoexec binary to main-level containers
+	// in init-less pod mode (there is no init container to copy it into
+	// VarRunArgoPath). argoexec lives at /bin/argoexec inside the argoexec image.
+	ArgoExecBinImageVolumeName = "argoexec-bin"
+	ArgoExecBinMountPath       = "/argo-bin"
+	ArgoExecBinPath            = ArgoExecBinMountPath + "/bin/argoexec"
+
 	// ArgoProgressPath defines the path to a file used for self reporting progress
 	ArgoProgressPath = VarRunArgoPath + "/progress"
 
+	// StatusMarkerPath is the marker file the supervisor writes atomically once
+	// pre-main setup concludes (init-less pod mode). The emissary in main waits
+	// for it before exec'ing the user command. Its contents encode the outcome:
+	// empty means success; a non-empty body is the failure reason, which the
+	// emissary logs before exiting non-zero.
+	StatusMarkerPath = VarRunArgoPath + "/status"
+
+	// ExitCodeSupervisorPreMainFailure is the exit code main's emissary uses
+	// when the supervisor's status marker reports a failure before exec'ing the user
+	// command (init-less pod mode). 65 = sysexits.h EX_DATAERR, chosen to be
+	// distinct from the user command's likely codes (0-2, 126-128, 137, 143) so
+	// the controller can attribute the failure to supervisor pre-main setup
+	// rather than the user command. The controller (inferFailedReason) keys off
+	// this value to surface the supervisor's real error instead of the
+	// placeholder code on main.
+	ExitCodeSupervisorPreMainFailure = 65
+
 	ConfigMapName = "workflow-controller-configmap"
+
+	// AbsentOptionalArgumentValue marks an argument whose value was a single pure reference to a
+	// skipped/omitted node's output with no producer valueFrom.default (an absent optional). The
+	// controller's reference resolution writes it (wfScope.markAbsentOptionalArgs) so that textual
+	// substitution succeeds where the raw absent value would be a terminal error; ProcessArgs
+	// interprets it at consumption time — when the consumed template is fully resolved — as
+	// "unsupplied", letting the input's own default apply and failing terminally when there is
+	// none. It is an internal controller contract: user-supplied values are never expected to
+	// collide with it, and a collision merely makes the argument behave as if it were omitted.
+	AbsentOptionalArgumentValue = "__argo-internal.absent-optional-output__"
 )
 
 // AnnotationKeyKillCmd specifies the command to use to kill to container, useful for injected sidecars
@@ -313,10 +315,59 @@ func IsArtifactPluginSidecar(containerName string) bool {
 	return strings.HasPrefix(containerName, ArtifactPluginSidecarPrefix)
 }
 
+func IsArgoAuxilliary(containerName string) bool {
+	return containerName == WaitContainerName || containerName == SupervisorContainerName
+}
+
 func IsArgoSidecar(containerName string) bool {
-	return containerName == WaitContainerName || IsArtifactPluginSidecar(containerName)
+	return IsArgoAuxilliary(containerName) || IsArtifactPluginSidecar(containerName)
 }
 
 func IsArtifactPluginInit(containerName string) bool {
 	return strings.HasPrefix(containerName, ArtifactPluginInitPrefix)
+}
+
+// IsInitlessPod reports whether the executor is running under the init-less pod
+// layout, signalled by the controller via EnvVarInitlessPod on the supervisor
+// and main-level containers. Several output-staging and lifecycle code paths
+// diverge from the legacy init-container + wait layout in this mode.
+func IsInitlessPod() bool {
+	return os.Getenv(EnvVarInitlessPod) == "true"
+}
+
+// JoinPluginNames serializes artifact-plugin sidecar names into the
+// comma-separated form the controller writes to EnvVarArtifactPluginNames /
+// EnvVarInputArtifactPluginNames. Paired with SplitPluginNames.
+func JoinPluginNames(names []string) string {
+	return strings.Join(names, ",")
+}
+
+// SplitPluginNames parses the comma-separated value written by JoinPluginNames,
+// trimming surrounding whitespace and dropping empty entries so callers never
+// see a blank name from a trailing or doubled comma.
+func SplitPluginNames(raw string) []string {
+	if raw == "" {
+		return nil
+	}
+	parts := strings.Split(raw, ",")
+	names := make([]string, 0, len(parts))
+	for _, p := range parts {
+		if p = strings.TrimSpace(p); p != "" {
+			names = append(names, p)
+		}
+	}
+	return names
+}
+
+// ResolveTemplateEnvValue takes a raw ARGO_TEMPLATE env value and returns
+// the actual template JSON. If raw is the offloaded sentinel, reads from
+// the configmap mount at offloadDir/EnvVarTemplate; otherwise returns the
+// raw value unchanged. Shared between the legacy init container
+// (cmd/argoexec/executor) and the emissary (cmd/argoexec/commands) so the
+// offload protocol stays in one place.
+func ResolveTemplateEnvValue(raw string, offloadDir string) ([]byte, error) {
+	if raw == EnvVarTemplateOffloaded {
+		return os.ReadFile(filepath.Join(offloadDir, EnvVarTemplate))
+	}
+	return []byte(raw), nil
 }

@@ -22,6 +22,13 @@ func simpleReplaceStrict(ctx context.Context, w io.Writer, tag string, replaceMa
 			nestedTagPrefix := tag[:index]
 			nestedTag := tag[index+2:]
 			if replNested, replOk := replaceMap[nestedTag]; replOk {
+				if replNested == nil {
+					// A present-but-nil nested value is an absent optional (a skipped node's output
+					// with no default): the composite outer tag cannot meaningfully resolve from an
+					// absent value. Fail terminally — the message must NOT match IsMissingVariableErr,
+					// which would requeue forever.
+					return 0, errors.Errorf(errors.CodeBadRequest, "unable to substitute nested tag {{%s}}: %q is an absent optional", tag, nestedTag)
+				}
 				replStr, isStr := replNested.(string)
 				if isStr {
 					replStr = strconv.Quote(replStr)
@@ -48,6 +55,14 @@ func simpleReplaceStrict(ctx context.Context, w io.Writer, tag string, replaceMa
 		return fmt.Fprintf(w, "{{%s}}", tag)
 	}
 
+	if replacement == nil {
+		// A present-but-nil value is a genuinely absent optional (a skipped/omitted node's output
+		// with no default) that nothing handled: no producer valueFrom.default, no consumer input
+		// default (which would have dropped the argument before substitution), no expression `??`
+		// fallback. Fail terminally — the message must NOT match IsMissingVariableErr, which would
+		// requeue forever.
+		return 0, errors.Errorf(errors.CodeBadRequest, "unable to substitute {{%s}}: output is an absent optional (skipped/omitted node with no default)", tag)
+	}
 	replacementStr, isStr := replacement.(string)
 	if !isStr {
 		return 0, errors.Errorf(errors.CodeBadRequest, "failed to resolve {{%s}} to string", tag)

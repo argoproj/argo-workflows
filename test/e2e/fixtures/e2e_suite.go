@@ -51,6 +51,19 @@ var defaultTimeout = env.LookupEnvDurationOr(logging.InitLoggerInContext(), "E2E
 
 var EnvFactor = env.LookupEnvIntOr(logging.InitLoggerInContext(), "E2E_ENV_FACTOR", 1)
 
+// AuxContainerName returns the name of Argo's auxiliary executor container for
+// the pod layout under test: "supervisor" when the controller runs the init-less
+// pod layout (E2E_INITLESS=true, set by the Makefile from the INITLESS var),
+// "wait" otherwise. Tests that reference the auxiliary container by name (its
+// logs, resources, etc.) must use this instead of hard-coding "wait" so they
+// pass under both the legacy and init-less layouts.
+func AuxContainerName() string {
+	if os.Getenv("E2E_INITLESS") == "true" {
+		return common.SupervisorContainerName
+	}
+	return common.WaitContainerName
+}
+
 type E2ESuite struct {
 	suite.Suite
 	Config            *config.Config

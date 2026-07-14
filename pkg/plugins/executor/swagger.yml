@@ -132,7 +132,7 @@ definitions:
             globalName:
                 description: |-
                     GlobalName exports an output artifact to the global scope, making it available as
-                    '{{workflow.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts
+                    workflow.outputs.artifacts.XXXX and in workflow.status.outputs.artifacts
                 type: string
             hdfs:
                 $ref: '#/definitions/HDFSArtifact'
@@ -249,7 +249,7 @@ definitions:
             globalName:
                 description: |-
                     GlobalName exports an output artifact to the global scope, making it available as
-                    '{{workflow.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts
+                    workflow.outputs.artifacts.XXXX and in workflow.status.outputs.artifacts
                 type: string
             hdfs:
                 $ref: '#/definitions/HDFSArtifact'
@@ -1953,6 +1953,13 @@ definitions:
                 items:
                     $ref: '#/definitions/Header'
                 type: array
+            saveStreamViaFile:
+                description: |-
+                    SaveStreamViaFile buffers a streamed upload to a temporary file before sending it,
+                    so a 307/308 redirect (e.g. webHDFS) can be followed by re-sending the body. When
+                    false (the default) SaveStream sends the reader directly and cannot follow such a
+                    redirect, since a one-shot reader cannot be replayed.
+                type: boolean
             url:
                 description: URL of the artifact
                 type: string
@@ -2774,7 +2781,7 @@ definitions:
             globalName:
                 description: |-
                     GlobalName exports an output parameter to the global scope, making it available as
-                    '{{workflow.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters
+                    workflow.outputs.parameters.XXXX and in workflow.status.outputs.parameters
                 type: string
             name:
                 description: |-
@@ -3915,6 +3922,19 @@ definitions:
         properties:
             accessKeySecret:
                 $ref: '#/definitions/SecretKeySelector'
+            addressingStyle:
+                description: |-
+                    AddressingStyle defines how buckets are addressed by the S3 client.
+                    This is required for some S3-compatible providers that only support
+                    virtual-hosted-style bucket addressing.
+
+                    Valid values are:
+                    "" (default, auto-detect)
+                    "path"
+                    "virtual-hosted"
+
+                    +kubebuilder:validation:Enum="";path;virtual-hosted
+                type: string
             bucket:
                 description: Bucket is the name of the bucket
                 type: string
@@ -4746,6 +4766,12 @@ definitions:
                     +kubebuilder:validation:Minimum=1
                 format: int64
                 type: integer
+            pendingTimeout:
+                description: |-
+                    PendingTimeout allows to set the maximum time spent in pending status counting from the node's start time.
+                    It is enforced by the controller, so a pod that starts running just as the timeout expires may still be failed.
+                    This duration may not be applied to Step or DAG templates.
+                type: string
             plugin:
                 $ref: '#/definitions/Plugin'
             podSpecPatch:
@@ -5185,7 +5211,7 @@ definitions:
             parameter:
                 description: |-
                     Parameter reference to a step or dag task in which to retrieve an output parameter value from
-                    (e.g. '{{steps.mystep.outputs.myparam}}')
+                    (e.g. steps.mystep.outputs.myparam)
                 type: string
             path:
                 description: Path in the container to retrieve an output parameter value from in container templates

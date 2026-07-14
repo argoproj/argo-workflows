@@ -18,7 +18,7 @@ Prebuilt [development container](https://containers.dev/) images are provided fo
 You can use the development container in a few different ways:
 
 1. [Visual Studio Code](https://code.visualstudio.com/) with [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers). Open your `argo-workflows` folder in VSCode and it should offer to use the development container automatically. VSCode will allow you to forward ports to allow your external browser to access the running components.
-1. [`devcontainer` CLI](https://github.com/devcontainers/cli). In your `argo-workflows` folder, run `make devcontainer-up`, which will automatically install the CLI and start the container. Then, use `devcontainer exec --workspace-folder . /bin/bash` to get a shell where you can build the code. You can use any editor outside the container to edit code; any changes will be mirrored inside the container. Due to a limitation of the CLI, only port 8080 (the Web UI) will be exposed for you to access if you run this way. Other services are usable from the shell inside.
+1. [`devcontainer` CLI](https://github.com/devcontainers/cli). In your `argo-workflows` folder, run `make devcontainer-up`, which will automatically install the CLI and start the container. Then, use `devcontainer exec --workspace-folder . /bin/bash` to get a shell where you can build the code. You can use any editor outside the container to edit code; any changes will be mirrored inside the container. Unlike the VS Code extension, the CLI does not forward ports to your host. The dev stack binds its services (UI `8080`, server `2746`, metrics `9090`, Tilt UI `10350`) to `0.0.0.0`, so reach them via the container's IP — `docker inspect <container> --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}'`, then e.g. `http://<ip>:8080`.
 1. [GitHub Codespaces](https://github.com/codespaces). You can start editing as soon as VSCode is open, though you may want to wait for `pre-build.sh` to finish installing dependencies, building binaries, and setting up the cluster before running any commands in the terminal. Once you start running services (see next steps below), you can click on the "PORTS" tab in the VSCode terminal to see all forwarded ports. You can open the Web UI in a new tab from there.
 
 Once you have entered the container, continue to [Developing Locally](#developing-locally).
@@ -36,7 +36,8 @@ To build on your own machine without using the Dev Container you will need:
 * [Docker](https://docs.docker.com/get-docker/)
 * [`protoc`](http://google.github.io/proto-lens/installing-protoc.html)
 * [`node`](https://nodejs.org/download/release/latest-v16.x/) for running the UI
-* A local Kubernetes cluster ([`k3d`](https://k3d.io/), [`kind`](https://kind.sigs.k8s.io/docs/user/quick-start/#installation), or [`minikube`](https://minikube.sigs.k8s.io/docs/start/))
+* [`k3d`](https://k3d.io/) to run a local Kubernetes cluster
+* [Tilt](https://tilt.dev/) to build images and run Argo in that cluster
 * The following entries in your `/etc/hosts` file:
 
     ```text
@@ -47,84 +48,60 @@ To build on your own machine without using the Dev Container you will need:
     127.0.0.1 azurite
     ```
 
-We recommend using [K3D](https://k3d.io/) to set up the local Kubernetes cluster since this will allow you to test RBAC
-set-up and is fast. You can set-up K3D to be part of your default kube config as follows:
+We use [k3d](https://k3d.io/) for the local Kubernetes cluster since it is fast and lets you test RBAC set-up. You don't
+need to create the cluster by hand — `make start` (below) runs `make k3d-up`, which creates it if needed (pinned to a
+supported Kubernetes version from `hack/k8s-versions.sh`) and wires up your kube config. No image registry is needed:
+Tilt delivers images straight to the cluster with `k3d image import`. To create or delete the cluster directly:
 
 ```bash
-k3d cluster start --wait
+make k3d-up    # create the cluster
+make k3d-down  # delete the cluster
 ```
 
-Alternatively, you can use [Minikube](https://github.com/kubernetes/minikube) to set up the local Kubernetes cluster.
-Once a local Kubernetes cluster has started via `minikube start`, your kube config will use Minikube's context
-automatically.
+!!! Note
+    If your `KUBECONFIG` lists multiple files, `make k3d-up` writes the cluster's kube config to a dedicated file
+    (`~/.kube/configs/k3d-k3s-default.yaml`) and prints how to add it to your `KUBECONFIG`.
 
 !!! Warning
     Do not use Docker Desktop's embedded Kubernetes, it does not support Kubernetes RBAC (i.e. `kubectl auth can-i` always returns `allowed`).
 
 ## Developing locally
 
-To start:
-
-* The controller, so you can run workflows.
-* MinIO (<http://localhost:9000>, use admin/password) so you can use artifacts.
-
-Run:
+Everything runs in your local k3d cluster via [Tilt](https://tilt.dev/). To start:
 
 ```bash
 make start
 ```
 
-Make sure you don't see any errors in your terminal. This runs the Workflow Controller locally on your machine (not in Docker/Kubernetes).
+This ensures the k3d cluster exists (`make k3d-up`) and runs `tilt up`. Tilt then:
 
-You can submit a workflow for testing using `kubectl`:
+* Builds the controller, server and executor images and runs them **in-cluster** (not as host processes).
+* Runs the UI (`yarn start`) with hot-reload on <http://localhost:8080>.
+* Port-forwards the Argo Server to <http://localhost:2746> and the controller metrics to <http://localhost:9090>.
+* Port-forwards the backing services for the profile: MinIO (<http://localhost:9000>, use `admin`/`password`) so you
+  can use artifacts, plus the database (`mysql`/`postgres` profiles) and Dex (`sso` profile).
+
+Tilt prints a web UI (default <http://localhost:10350>) where you can watch each resource and tail its logs.
+
+You can submit a workflow for testing using `kubectl` (the cluster's current namespace is `argo`):
 
 ```bash
 kubectl create -f examples/hello-world.yaml
 ```
 
-We recommend running `make clean` before `make start` to ensure recompilation.
+### Inner loop
 
-If you made changes to the executor, you need to build the image:
-
-```bash
-make argoexec-image
-```
-
-You can use the `TARGET_PLATFORM` environment variable to compile images for specific platforms:
-
-```bash
-# compile for both arm64 and amd64
-make argoexec-image TARGET_PLATFORM=linux/arm64,linux/amd64
-```
+When you edit Go source, Tilt recompiles the affected binary on the host, rebuilds its (small) image and recreates the
+pod — typically around ten seconds. UI edits hot-reload via webpack. There is no separate build step to run, and you do
+not need to build the executor image by hand (`make argoexec-image`) — Tilt builds and imports it for you.
 
 !!! Note "Error `expected 'package', found signal_darwin`"
     You may see this error if symlinks are not configured for your `git` installation.
     Run `git config core.symlinks true` to correct this.
 
-To also start the API on <http://localhost:2746>:
+### Profiles
 
-```bash
-make start API=true
-```
-
-This runs the Argo Server (in addition to the Workflow Controller) locally on your machine.
-
-To also start the UI on <http://localhost:8080> (`UI=true` implies `API=true`):
-
-```bash
-make start UI=true
-```
-
-![diagram](assets/make-start-UI-true.png)
-
-If you are making change to the CLI (i.e. Argo Server), you can build it separately if you want:
-
-```bash
-make cli
-./dist/argo submit examples/hello-world.yaml ;# new CLI is created as `./dist/argo`
-```
-
-Although, note that this will be built automatically if you do: `make start API=true`.
+Use `PROFILE` to choose what gets deployed; it is passed to Tilt as `--profile`. The default is `minimal`.
 
 To test the workflow archive, use `PROFILE=mysql` or `PROFILE=postgres`:
 
@@ -154,50 +131,31 @@ make postgres-cli < db-dumps/2024-10-16T17:11:58Z.sql
 To test SSO integration, use `PROFILE=sso`:
 
 ```bash
-make start UI=true PROFILE=sso
+make start PROFILE=sso
 ```
 
-### Proxying
+Other profiles include `plugins` (executor plugins) and `telemetry` (OpenTelemetry tracing to an in-cluster collector).
 
-When using `UI=true`, `make start` will start [webpack-dev-server](https://github.com/webpack/webpack-dev-server) to serve requests to <http://localhost:8080>, while proxying API requests to the Argo Server at <http://localhost:2746>.
-
-Use `BASE_HREF` to customize the [base HREF](argo-server.md#base-href), which will cause webpack-dev-server to strip out the provided path when proxying requests to the Argo Server.
-For example, to make the UI accessible at <http://localhost:8080/argo/>:
-
-```bash
-make start UI=true BASE_HREF=/argo/
-```
-
-Note that if you're using `PROFILE=sso`, you may need to run `kubectl rollout restart deploy dex` to restart Dex after changing the base HREF.
-
-### TLS
-
-By default, `make start` will start Argo in [plain text mode](tls.md#plain-text).
-To simulate a TLS proxy in front of Argo, use `UI_SECURE=true` (which implies `UI=true`):
-
-```bash
-make start UI_SECURE=true
-```
-
-To start Argo in [encrypted mode](tls.md#encrypted), use `SECURE=true`, which can be optionally combined with `UI_SECURE=true`:
-
-```bash
-make start SECURE=true UI_SECURE=true
-```
+Other `make start` options, passed through to the in-cluster manifests: `API=false` (skip the Argo Server),
+`SECURE=true` (serve the API over TLS) and `POD_STATUS_CAPTURE_FINALIZER=false` (disable the pod status capture
+finalizer on the controller).
 
 ### Running E2E tests locally
 
 Start up Argo Workflows using the following:
 
 ```bash
-make start PROFILE=mysql AUTH_MODE=client STATIC_FILES=false API=true
+make start PROFILE=mysql
 ```
+
+The E2E tests run on your machine and reach the in-cluster services (Argo Server, MinIO, the database, Dex) over
+`localhost` — Tilt port-forwards all of them, so no extra port-forwarding is needed.
 
 If you want to run Azure tests against a local Azurite:
 
 ```bash
-kubectl -n $KUBE_NAMESPACE apply -f test/e2e/azure/deploy-azurite.yaml
-make start
+kubectl -n argo apply -f test/e2e/azure/deploy-azurite.yaml
+kubectl -n argo port-forward deploy/azurite 10000:10000
 ```
 
 #### Running One Test
@@ -232,7 +190,8 @@ Tests often fail: that's good. To diagnose failure:
 * Run `kubectl get pods`, are pods in the state you expect?
 * Run `kubectl get wf`, is your workflow in the state you expect?
 * What do the pod logs say? I.e. `kubectl logs`.
-* Check the controller and argo-server logs. These are printed to the console you ran `make start` in. Is anything
+* Check the controller and argo-server logs via `kubectl -n argo logs deploy/workflow-controller` and
+  `kubectl -n argo logs deploy/argo-server`, or in the Tilt web UI (<http://localhost:10350>). Is anything
   logged at `level=error`?
 
 If tests run slowly or time out, factory reset your Kubernetes cluster.
@@ -261,11 +220,49 @@ Flags:
 Use "db [command] --help" for more information about a command.
 ```
 
-### Debugging using Visual Studio Code
+### Debugging under Tilt
 
-When using the Dev Container with VSCode, use the `Attach to argo server` and/or `Attach to workflow controller` launch configurations to attach to the `argo` or `workflow-controller` processes, respectively.
+The controller and server run in-cluster, so debugging means running them under
+[Delve](https://github.com/go-delve/delve) and attaching from your IDE over a forwarded
+port. Start the dev stack naming the component(s) you want to debug:
 
-This will allow you to start a debug session, where you can inspect variables and set breakpoints.
+```bash
+make start DEBUG=controller          # controller on :2345
+make start DEBUG=controller,server   # also server on :2346
+```
+
+(equivalently, `tilt up -- --profile=minimal --debug=controller,server`). The `--debug`
+flag is dev-only (it is ignored under `tilt ci`). It does three things for each named
+component: rebuilds the binary with `-gcflags='all=-N -l'` (no optimisation/inlining, so the
+debugger can map source lines and locals), wraps its in-cluster command with
+`dlv exec --headless --listen=:<port> --continue --accept-multiclient`, and adds a port
+forward for the Delve port. `--continue` means the program starts immediately, so the pod
+stays Ready and you can attach whenever you like.
+
+**Attach from your IDE** to `127.0.0.1:2345` (controller) or `127.0.0.1:2346` (server):
+
+* **VS Code** — use the `Attach to workflow controller` / `Attach to argo server` launch
+  configurations (shipped via `.devcontainer/devcontainer.json`; the same configs work
+  outside the dev container if copied into a local `.vscode/launch.json`).
+* **GoLand / JetBrains** — create a *Go Remote* run configuration pointing at the port, and
+  uncheck *Shutdown remote debugger on disconnect* so detaching leaves Delve running.
+
+Because the binaries are compiled on the host, their debug info already points at your local
+source tree — no remote path mapping is needed.
+
+Two things to know:
+
+* While `--debug` is set, the component's compile step switches to **manual trigger mode**.
+  Editing source no longer recreates the pod out from under your session; Tilt flags the
+  change and you click the resource's update button when you are ready to rebuild and
+  re-attach. Non-debugged components (and the UI dev server) keep rebuilding automatically.
+* Debugging the controller sets `LEADER_ELECTION_DISABLE=true` (you will see it log
+  *"Running in single-instance mode"*). Without this, pausing at a breakpoint stalls lease
+  renewal and the controller exits when it loses leadership.
+* In dev the server pod serves the **API only** — the UI is a separate webpack dev server
+  (`yarn start`, on <http://localhost:8080>) that proxies API calls to the server on `:2746`.
+  So while the server is paused at a breakpoint, in-flight UI requests will hang until you
+  continue; you can use the UI to trigger an API call and hit a server breakpoint.
 
 ## Committing
 

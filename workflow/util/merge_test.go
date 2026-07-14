@@ -45,6 +45,26 @@ spec:
     strategy: OnPodSuccess
 `
 
+func TestParseUserOverrideAllowlist(t *testing.T) {
+	for _, env := range []string{"", "  "} {
+		got, err := parseUserOverrideAllowlist(env)
+		require.NoError(t, err)
+		assert.Nil(t, got)
+	}
+
+	// Input is the YAML/JSON name; output is the Go field name that keys allowedUserOverrideFields.
+	got, err := parseUserOverrideAllowlist(" podSpecPatch , volumes ")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"PodSpecPatch", "Volumes"}, got)
+
+	// Go identifiers are not accepted — operators write YAML names.
+	_, err = parseUserOverrideAllowlist("PodSpecPatch")
+	require.EqualError(t, err, `WORKFLOW_USER_OVERRIDE_ALLOWLIST: "PodSpecPatch" is not a WorkflowSpec field name`)
+
+	_, err = parseUserOverrideAllowlist("notAField")
+	require.EqualError(t, err, `WORKFLOW_USER_OVERRIDE_ALLOWLIST: "notAField" is not a WorkflowSpec field name`)
+}
+
 func TestMergeWorkflows(t *testing.T) {
 	patchWf := wfv1.MustUnmarshalWorkflow(origWF)
 	targetWf := wfv1.MustUnmarshalWorkflow(patchWF)
@@ -708,6 +728,92 @@ func TestSanitizeUserWorkflowSpec(t *testing.T) {
 
 func TestSanitizeUserWorkflowSpec_Nil(t *testing.T) {
 	assert.Nil(t, SanitizeUserWorkflowSpec(nil))
+}
+
+// TestValidateUserOverrides_ArtifactGCNestedFields guards against the
+// GHSA-3775-99mw-8rp4 (CVE-2026-42296) bug class: ArtifactGC is allow-listed,
+// but its nested ServiceAccountName/PodSpecPatch/PodMetadata reach the
+// artifact-GC Pod and so must be rejected under Strict/Secure mode.
+func TestValidateUserOverrides_ArtifactGCNestedFields(t *testing.T) {
+	t.Run("benign ArtifactGC fields are allowed", func(t *testing.T) {
+		spec := &wfv1.WorkflowSpec{
+			WorkflowTemplateRef: &wfv1.WorkflowTemplateRef{Name: "my-template"},
+			ArtifactGC: &wfv1.WorkflowLevelArtifactGC{
+				ArtifactGC:            wfv1.ArtifactGC{Strategy: wfv1.ArtifactGCOnWorkflowCompletion},
+				ForceFinalizerRemoval: true,
+			},
+		}
+		assert.NoError(t, ValidateUserOverrides(spec))
+	})
+
+	tests := []struct {
+		name  string
+		agc   *wfv1.WorkflowLevelArtifactGC
+		field string
+	}{
+		{
+			name:  "ServiceAccountName",
+			agc:   &wfv1.WorkflowLevelArtifactGC{ArtifactGC: wfv1.ArtifactGC{ServiceAccountName: "privileged"}},
+			field: "ArtifactGC.ServiceAccountName",
+		},
+		{
+			name:  "PodSpecPatch",
+			agc:   &wfv1.WorkflowLevelArtifactGC{PodSpecPatch: `{"containers":[{"name":"main","image":"attacker/x"}]}`},
+			field: "ArtifactGC.PodSpecPatch",
+		},
+		{
+			name:  "PodMetadata",
+			agc:   &wfv1.WorkflowLevelArtifactGC{ArtifactGC: wfv1.ArtifactGC{PodMetadata: &wfv1.Metadata{Labels: map[string]string{"a": "b"}}}},
+			field: "ArtifactGC.PodMetadata",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			spec := &wfv1.WorkflowSpec{
+				WorkflowTemplateRef: &wfv1.WorkflowTemplateRef{Name: "my-template"},
+				ArtifactGC:          tt.agc,
+			}
+			err := ValidateUserOverrides(spec)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tt.field)
+			assert.Contains(t, err.Error(), "not permitted")
+		})
+	}
+}
+
+// TestSanitizeUserWorkflowSpec_ArtifactGC verifies defense-in-depth: the
+// security-sensitive nested ArtifactGC fields are stripped while benign ones are
+// kept, and the caller's original spec is not mutated.
+func TestSanitizeUserWorkflowSpec_ArtifactGC(t *testing.T) {
+	spec := &wfv1.WorkflowSpec{
+		WorkflowTemplateRef: &wfv1.WorkflowTemplateRef{Name: "my-template"},
+		ArtifactGC: &wfv1.WorkflowLevelArtifactGC{
+			ArtifactGC: wfv1.ArtifactGC{
+				Strategy:           wfv1.ArtifactGCOnWorkflowCompletion,
+				ServiceAccountName: "privileged",
+				PodMetadata:        &wfv1.Metadata{Labels: map[string]string{"a": "b"}},
+			},
+			ForceFinalizerRemoval: true,
+			PodSpecPatch:          `{"containers":[]}`,
+		},
+	}
+
+	sanitized := SanitizeUserWorkflowSpec(spec)
+
+	// Benign fields are preserved.
+	require.NotNil(t, sanitized.ArtifactGC)
+	assert.Equal(t, wfv1.ArtifactGCOnWorkflowCompletion, sanitized.ArtifactGC.Strategy)
+	assert.True(t, sanitized.ArtifactGC.ForceFinalizerRemoval)
+
+	// Security-sensitive fields are stripped.
+	assert.Empty(t, sanitized.ArtifactGC.ServiceAccountName)
+	assert.Empty(t, sanitized.ArtifactGC.PodSpecPatch)
+	assert.Nil(t, sanitized.ArtifactGC.PodMetadata)
+
+	// The original spec must not be mutated.
+	assert.Equal(t, "privileged", spec.ArtifactGC.ServiceAccountName)
+	assert.JSONEq(t, `{"containers":[]}`, spec.ArtifactGC.PodSpecPatch)
+	assert.NotNil(t, spec.ArtifactGC.PodMetadata)
 }
 
 // TestAllWorkflowSpecFieldsAccountedFor is a compile-time safety net.

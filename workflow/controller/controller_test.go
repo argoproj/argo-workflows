@@ -15,6 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	dynamicfake "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
@@ -300,6 +301,9 @@ func newController(ctx context.Context, options ...any) (context.CancelFunc, *Wo
 		progressPatchTickDuration: envutil.LookupEnvDurationOr(ctx, common.EnvVarProgressPatchTickDuration, 1*time.Minute),
 		progressFileTickDuration:  envutil.LookupEnvDurationOr(ctx, common.EnvVarProgressFileTickDuration, 3*time.Second),
 		maxStackDepth:             maxAllowedStackDepth,
+		lastWrittenVersions: lastWrittenVersions{
+			versions: make(map[types.UID]lastWrittenVersion),
+		},
 	}
 
 	for _, opt := range options {
@@ -1355,4 +1359,77 @@ func TestPodSpecPatchTemplateLevel(t *testing.T) {
 	}
 	require.NotNil(t, mainContainer)
 	assert.Equal(t, "25Mi", mainContainer.Resources.Requests.Memory().String())
+}
+
+func TestIsOutdated(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+
+	obj := func(uid types.UID, rv string) metav1.Object {
+		return &metav1.ObjectMeta{UID: uid, ResourceVersion: rv}
+	}
+	assertOutdated := func(t *testing.T, wantOutdated, wantCompleted bool, wf metav1.Object) {
+		t.Helper()
+		outdated, completed := controller.isOutdated(ctx, wf)
+		assert.Equal(t, wantOutdated, outdated, "outdated")
+		assert.Equal(t, wantCompleted, completed, "completed")
+	}
+
+	// workflows the controller has never written are always processed
+	assertOutdated(t, false, false, obj("wf-1", "99"))
+
+	controller.recordWorkflowWrite(obj("wf-1", "100"))
+	assertOutdated(t, true, false, obj("wf-1", "99"))
+	assertOutdated(t, false, false, obj("wf-1", "100"))
+	// a newer version written by another actor is not outdated
+	assertOutdated(t, false, false, obj("wf-1", "101"))
+
+	// incomparable resourceVersions must fail open and process the workflow
+	assertOutdated(t, false, false, obj("wf-1", "not-a-number"))
+
+	// stale copy of a completed workflow is rejected: regression test for
+	// https://github.com/argoproj/argo-workflows/issues/16305
+	controller.recordWorkflowCompleted(obj("wf-1", "110"))
+	assertOutdated(t, true, true, obj("wf-1", "99"))
+	// a retried workflow keeps its UID but has a newer resourceVersion
+	assertOutdated(t, false, true, obj("wf-1", "120"))
+	// a recreated workflow with the same name has a different UID
+	assertOutdated(t, false, false, obj("wf-2", "50"))
+
+	// a stale completion event must not regress the recorded version
+	controller.recordWorkflowCompleted(obj("wf-1", "105"))
+	assertOutdated(t, true, true, obj("wf-1", "109"))
+
+	// the controller's first write of a retried workflow clears the
+	// completed state, restoring requeue rather than drop for stale copies
+	controller.recordWorkflowWrite(obj("wf-1", "160"))
+	assertOutdated(t, true, false, obj("wf-1", "150"))
+}
+
+func TestExpireCompletedVersions(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+
+	inFlight := &metav1.ObjectMeta{UID: "wf-in-flight", ResourceVersion: "100"}
+	completed := &metav1.ObjectMeta{UID: "wf-completed", ResourceVersion: "200"}
+	controller.recordWorkflowWrite(inFlight)
+	controller.recordWorkflowCompleted(completed)
+
+	// age the completed record beyond retention and force a cleanup scan
+	controller.lastWrittenVersions.mutex.Lock()
+	last := controller.lastWrittenVersions.versions[completed.UID]
+	last.completedAt = time.Now().Add(-completedVersionRetention - time.Minute)
+	controller.lastWrittenVersions.versions[completed.UID] = last
+	controller.lastWrittenVersions.nextCleanup = time.Time{}
+	controller.lastWrittenVersions.mutex.Unlock()
+
+	controller.recordWorkflowWrite(&metav1.ObjectMeta{UID: "wf-other", ResourceVersion: "300"})
+
+	outdated, completedWf := controller.isOutdated(ctx, &metav1.ObjectMeta{UID: completed.UID, ResourceVersion: "199"})
+	assert.False(t, outdated, "expired completed record should be forgotten")
+	assert.False(t, completedWf)
+	outdated, _ = controller.isOutdated(ctx, &metav1.ObjectMeta{UID: inFlight.UID, ResourceVersion: "99"})
+	assert.True(t, outdated, "in-flight records must not expire")
 }

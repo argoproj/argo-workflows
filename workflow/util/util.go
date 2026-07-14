@@ -48,6 +48,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/retry"
 	unstructutil "github.com/argoproj/argo-workflows/v4/util/unstructured"
+	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
 	waitutil "github.com/argoproj/argo-workflows/v4/util/wait"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
@@ -510,7 +511,7 @@ func AddParamToGlobalScope(ctx context.Context, wf *wfv1.Workflow, param wfv1.Pa
 	} else {
 		wf.Status.Outputs = &wfv1.Outputs{}
 	}
-	paramName := fmt.Sprintf("workflow.outputs.parameters.%s", param.GlobalName)
+	paramName := varkeys.WorkflowOutputsParameterByName.Concretize(param.GlobalName)
 	if index == -1 {
 		log.WithFields(logging.Fields{"paramName": paramName, "paramValue": param.Value}).Info(ctx, "setting param")
 		gParam := wfv1.Parameter{Name: param.GlobalName, Value: param.Value}
@@ -1631,4 +1632,16 @@ func FindWaitCtrIndex(pod *apiv1.Pod) (int, error) {
 		return -1, err
 	}
 	return waitCtrIndex, nil
+}
+
+// FindAuxiliaryCtrIndex returns the index of the auxiliary executor container
+// on the pod — wait in the legacy layout, supervisor in the init-less layout.
+// Returns -1 and an error if neither is found.
+func FindAuxiliaryCtrIndex(pod *apiv1.Pod) (int, error) {
+	for i, ctr := range pod.Spec.Containers {
+		if ctr.Name == common.WaitContainerName || ctr.Name == common.SupervisorContainerName {
+			return i, nil
+		}
+	}
+	return -1, errors.Errorf("-1", "Could not find wait or supervisor container in pod spec")
 }

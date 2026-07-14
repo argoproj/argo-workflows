@@ -37,7 +37,14 @@ reviews:
     - "!**/sdks/python/client/**"
 
   auto_review:
-    enabled: false
+    # Automatically review PRs targeting the default branch (main).
+    # base_branches is intentionally left empty so only main is covered.
+    enabled: true
+
+    # Skip PRs labelled as dependency updates (dependabot/renovate use
+    # the "type/dependencies" label). The "!" prefix is a negative match.
+    labels:
+      - "!type/dependencies"
 
   # Tools configuration
   tools:

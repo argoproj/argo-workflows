@@ -425,7 +425,7 @@ func schema_pkg_apis_workflow_v1alpha1_Artifact(ref common.ReferenceCallback) co
 					},
 					"globalName": {
 						SchemaProps: spec.SchemaProps{
-							Description: "GlobalName exports an output artifact to the global scope, making it available as '{{workflow.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts",
+							Description: "GlobalName exports an output artifact to the global scope, making it available as workflow.outputs.artifacts.XXXX and in workflow.status.outputs.artifacts",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -804,7 +804,7 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactPaths(ref common.ReferenceCallbac
 					},
 					"globalName": {
 						SchemaProps: spec.SchemaProps{
-							Description: "GlobalName exports an output artifact to the global scope, making it available as '{{workflow.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts",
+							Description: "GlobalName exports an output artifact to the global scope, making it available as workflow.outputs.artifacts.XXXX and in workflow.status.outputs.artifacts",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -3417,6 +3417,13 @@ func schema_pkg_apis_workflow_v1alpha1_HTTPArtifact(ref common.ReferenceCallback
 							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.HTTPAuth"),
 						},
 					},
+					"saveStreamViaFile": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SaveStreamViaFile buffers a streamed upload to a temporary file before sending it, so a 307/308 redirect (e.g. webHDFS) can be followed by re-sending the body. When false (the default) SaveStream sends the reader directly and cannot follow such a redirect, since a one-shot reader cannot be replayed.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"url"},
 			},
@@ -4933,7 +4940,7 @@ func schema_pkg_apis_workflow_v1alpha1_Parameter(ref common.ReferenceCallback) c
 					},
 					"globalName": {
 						SchemaProps: spec.SchemaProps{
-							Description: "GlobalName exports an output parameter to the global scope, making it available as '{{workflow.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters",
+							Description: "GlobalName exports an output parameter to the global scope, making it available as workflow.outputs.parameters.XXXX and in workflow.status.outputs.parameters",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -5426,6 +5433,13 @@ func schema_pkg_apis_workflow_v1alpha1_S3Artifact(ref common.ReferenceCallback) 
 							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 						},
 					},
+					"addressingStyle": {
+						SchemaProps: spec.SchemaProps{
+							Description: "AddressingStyle defines how buckets are addressed by the S3 client. This is required for some S3-compatible providers that only support virtual-hosted-style bucket addressing.\n\nValid values are: - \"\" (default, auto-detect) - \"path\" - \"virtual-hosted\"",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 					"key": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Key is the key in the bucket where the artifact resides",
@@ -5523,6 +5537,13 @@ func schema_pkg_apis_workflow_v1alpha1_S3ArtifactRepository(ref common.Reference
 						SchemaProps: spec.SchemaProps{
 							Description: "CASecret specifies the secret that contains the CA, used to verify the TLS connection",
 							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
+						},
+					},
+					"addressingStyle": {
+						SchemaProps: spec.SchemaProps{
+							Description: "AddressingStyle defines how buckets are addressed by the S3 client. This is required for some S3-compatible providers that only support virtual-hosted-style bucket addressing.\n\nValid values are: - \"\" (default, auto-detect) - \"path\" - \"virtual-hosted\"",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 					"keyFormat": {
@@ -5629,6 +5650,13 @@ func schema_pkg_apis_workflow_v1alpha1_S3Bucket(ref common.ReferenceCallback) co
 						SchemaProps: spec.SchemaProps{
 							Description: "CASecret specifies the secret that contains the CA, used to verify the TLS connection",
 							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
+						},
+					},
+					"addressingStyle": {
+						SchemaProps: spec.SchemaProps{
+							Description: "AddressingStyle defines how buckets are addressed by the S3 client. This is required for some S3-compatible providers that only support virtual-hosted-style bucket addressing.\n\nValid values are: - \"\" (default, auto-detect) - \"path\" - \"virtual-hosted\"",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 				},
@@ -6850,6 +6878,13 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 							},
 						},
 					},
+					"pendingTimeout": {
+						SchemaProps: spec.SchemaProps{
+							Description: "PendingTimeout allows to set the maximum time spent in pending status counting from the node's start time. It is enforced by the controller, so a pod that starts running just as the timeout expires may still be failed. This duration may not be applied to Step or DAG templates.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 			},
 		},
@@ -7275,7 +7310,7 @@ func schema_pkg_apis_workflow_v1alpha1_ValueFrom(ref common.ReferenceCallback) c
 					},
 					"parameter": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. '{{steps.mystep.outputs.myparam}}')",
+							Description: "Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. steps.mystep.outputs.myparam)",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -7859,7 +7894,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 					},
 					"arguments": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Arguments contain the parameters and artifacts sent to the workflow entrypoint Parameters are referencable globally using the 'workflow' variable prefix. e.g. {{workflow.parameters.myparam}}",
+							Description: "Arguments contain the parameters and artifacts sent to the workflow entrypoint Parameters are referencable globally using the 'workflow' variable prefix. e.g. workflow.parameters.myparam",
 							Default:     map[string]interface{}{},
 							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Arguments"),
 						},

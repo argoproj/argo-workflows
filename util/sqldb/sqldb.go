@@ -6,6 +6,7 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"net/url"
+	"strconv"
 	"time"
 
 	"github.com/XSAM/otelsql"
@@ -26,13 +27,13 @@ import (
 
 func CreateDBSession(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, dbConfig config.DBConfig) (db.Session, DBType, error) {
 	if dbConfig.PostgreSQL != nil {
-		session, err := createPostGresDBSession(ctx, kubectlConfig, namespace, dbConfig.PostgreSQL, dbConfig.ConnectionPool)
+		session, err := createPostGresDBSession(ctx, kubectlConfig, namespace, dbConfig.PostgreSQL, dbConfig.ConnectionPool, dbConfig.ConnectionTimeout())
 		if err != nil {
 			return nil, Invalid, err
 		}
 		return session, Postgres, nil
 	} else if dbConfig.MySQL != nil {
-		session, err := createMySQLDBSession(ctx, kubectlConfig, namespace, dbConfig.MySQL, dbConfig.ConnectionPool)
+		session, err := createMySQLDBSession(ctx, kubectlConfig, namespace, dbConfig.MySQL, dbConfig.ConnectionPool, dbConfig.ConnectionTimeout())
 		if err != nil {
 			return nil, Invalid, err
 		}
@@ -44,13 +45,13 @@ func CreateDBSession(ctx context.Context, kubectlConfig kubernetes.Interface, na
 // CreateDBSessionWithCreds creates a database session using direct username and password
 func CreateDBSessionWithCreds(dbConfig config.DBConfig, username, password string) (db.Session, DBType, error) {
 	if dbConfig.PostgreSQL != nil {
-		session, err := createPostGresDBSessionWithCreds(dbConfig.PostgreSQL, dbConfig.ConnectionPool, username, password)
+		session, err := createPostGresDBSessionWithCreds(dbConfig.PostgreSQL, dbConfig.ConnectionPool, username, password, dbConfig.ConnectionTimeout())
 		if err != nil {
 			return nil, Invalid, err
 		}
 		return session, Postgres, err
 	} else if dbConfig.MySQL != nil {
-		session, err := createMySQLDBSessionWithCreds(dbConfig.MySQL, dbConfig.ConnectionPool, username, password)
+		session, err := createMySQLDBSessionWithCreds(dbConfig.MySQL, dbConfig.ConnectionPool, username, password, dbConfig.ConnectionTimeout())
 		if err != nil {
 			return nil, Invalid, err
 		}
@@ -60,7 +61,7 @@ func CreateDBSessionWithCreds(dbConfig config.DBConfig, username, password strin
 }
 
 // createPostGresDBSession creates postgresDB session
-func createPostGresDBSession(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, cfg *config.PostgreSQLConfig, persistPool *config.ConnectionPool) (db.Session, error) {
+func createPostGresDBSession(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, cfg *config.PostgreSQLConfig, persistPool *config.ConnectionPool, connectTimeout time.Duration) (db.Session, error) {
 	azureEnabled := cfg.AzureToken != nil && cfg.AzureToken.Enabled
 	awsEnabled := cfg.AWSRDSToken != nil && cfg.AWSRDSToken.Enabled
 
@@ -78,11 +79,11 @@ func createPostGresDBSession(ctx context.Context, kubectlConfig kubernetes.Inter
 	}
 
 	if azureEnabled {
-		return createPostGresDBSessionWithAzure(cfg, persistPool, string(userNameByte))
+		return createPostGresDBSessionWithAzure(cfg, persistPool, string(userNameByte), connectTimeout)
 	}
 
 	if awsEnabled {
-		return createPostGresDBSessionWithAWSRDS(cfg, persistPool, string(userNameByte))
+		return createPostGresDBSessionWithAWSRDS(cfg, persistPool, string(userNameByte), connectTimeout)
 	}
 
 	passwordByte, err := util.GetSecrets(ctx, kubectlConfig, namespace, cfg.PasswordSecret.Name, cfg.PasswordSecret.Key)
@@ -90,11 +91,11 @@ func createPostGresDBSession(ctx context.Context, kubectlConfig kubernetes.Inter
 		return nil, err
 	}
 
-	return createPostGresDBSessionWithCreds(cfg, persistPool, string(userNameByte), string(passwordByte))
+	return createPostGresDBSessionWithCreds(cfg, persistPool, string(userNameByte), string(passwordByte), connectTimeout)
 }
 
 // createMySQLDBSession creates Mysql DB session
-func createMySQLDBSession(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, cfg *config.MySQLConfig, persistPool *config.ConnectionPool) (db.Session, error) {
+func createMySQLDBSession(ctx context.Context, kubectlConfig kubernetes.Interface, namespace string, cfg *config.MySQLConfig, persistPool *config.ConnectionPool, connectTimeout time.Duration) (db.Session, error) {
 	userNameByte, err := util.GetSecrets(ctx, kubectlConfig, namespace, cfg.UsernameSecret.Name, cfg.UsernameSecret.Key)
 	if err != nil {
 		return nil, err
@@ -104,21 +105,25 @@ func createMySQLDBSession(ctx context.Context, kubectlConfig kubernetes.Interfac
 		return nil, err
 	}
 
-	return createMySQLDBSessionWithCreds(cfg, persistPool, string(userNameByte), string(passwordByte))
+	return createMySQLDBSessionWithCreds(cfg, persistPool, string(userNameByte), string(passwordByte), connectTimeout)
 }
 
-// buildPostgresDSN constructs a PostgreSQL DSN from config and username, with SSL options configured.
-func buildPostgresDSN(cfg *config.PostgreSQLConfig, username string) string {
+// buildPostgresDSN constructs a PostgreSQL DSN from config and username, with SSL options
+// and a connection-establishment timeout configured.
+func buildPostgresDSN(cfg *config.PostgreSQLConfig, username string, connectTimeout time.Duration) string {
 	settings := postgresqladp.ConnectionURL{
 		User:     username,
 		Host:     cfg.GetHostname(),
 		Database: cfg.Database,
 	}
 
+	// connect_timeout limits connection setup (dial + handshake) to ensure fast failure if the DB is unreachable.
+	// lib/pq resets this deadline afterward, leaving subsequent queries unaffected.
+	settings.Options = map[string]string{
+		"connect_timeout": strconv.Itoa(int(connectTimeout.Seconds())),
+	}
 	if cfg.SSL && cfg.SSLMode != "" {
-		settings.Options = map[string]string{
-			"sslmode": cfg.SSLMode,
-		}
+		settings.Options["sslmode"] = cfg.SSLMode
 	}
 
 	if cfg.Schema != "" {
@@ -137,9 +142,25 @@ func createPostGresDBSessionWithConnector(cfg *config.PostgreSQLConfig, persistP
 	return newPostgresSession(sqlDB, persistPool)
 }
 
+// timeoutConnector wraps a driver.Connector so that Connect bounds only connection
+// establishment (dial + handshake read) to timeout, leaving queries on the resulting
+// connection unaffected. This gives MySQL the same "half-open server" protection that
+// PostgreSQL gets from lib/pq's connect_timeout, without go-sql-driver's ReadTimeout
+// (which would apply to every subsequent query read, not just the handshake).
+type timeoutConnector struct {
+	driver.Connector
+	timeout time.Duration
+}
+
+func (c *timeoutConnector) Connect(ctx context.Context) (driver.Conn, error) {
+	ctx, cancel := context.WithTimeout(ctx, c.timeout)
+	defer cancel()
+	return c.Connector.Connect(ctx)
+}
+
 // createPostGresDBSessionWithAzure creates postgresDB session with azure token
-func createPostGresDBSessionWithAzure(cfg *config.PostgreSQLConfig, persistPool *config.ConnectionPool, username string) (db.Session, error) {
-	dsn := buildPostgresDSN(cfg, username)
+func createPostGresDBSessionWithAzure(cfg *config.PostgreSQLConfig, persistPool *config.ConnectionPool, username string, connectTimeout time.Duration) (db.Session, error) {
+	dsn := buildPostgresDSN(cfg, username, connectTimeout)
 
 	scope := cfg.AzureToken.Scope
 	if scope == "" {
@@ -155,8 +176,8 @@ func createPostGresDBSessionWithAzure(cfg *config.PostgreSQLConfig, persistPool 
 }
 
 // createPostGresDBSessionWithAWSRDS creates postgresDB session with AWS RDS IAM auth
-func createPostGresDBSessionWithAWSRDS(cfg *config.PostgreSQLConfig, persistPool *config.ConnectionPool, username string) (db.Session, error) {
-	dsn := buildPostgresDSN(cfg, username)
+func createPostGresDBSessionWithAWSRDS(cfg *config.PostgreSQLConfig, persistPool *config.ConnectionPool, username string, connectTimeout time.Duration) (db.Session, error) {
+	dsn := buildPostgresDSN(cfg, username, connectTimeout)
 
 	connector := &awsRDSConnector{
 		dsn:      dsn,
@@ -169,7 +190,7 @@ func createPostGresDBSessionWithAWSRDS(cfg *config.PostgreSQLConfig, persistPool
 }
 
 // createPostGresDBSessionWithCreds creates postgresDB session with direct credentials
-func createPostGresDBSessionWithCreds(cfg *config.PostgreSQLConfig, persistPool *config.ConnectionPool, username, password string) (db.Session, error) {
+func createPostGresDBSessionWithCreds(cfg *config.PostgreSQLConfig, persistPool *config.ConnectionPool, username, password string, connectTimeout time.Duration) (db.Session, error) {
 	// Build PostgreSQL DSN using url.URL for safe percent-encoding of credentials
 	connURL := url.URL{
 		Scheme: "postgres",
@@ -193,6 +214,9 @@ func createPostGresDBSessionWithCreds(cfg *config.PostgreSQLConfig, persistPool 
 		query.Set("search_path", cfg.Schema)
 	}
 
+	// connect_timeout limits connection setup (dial + handshake) to ensure fast failure if the DB is unreachable.
+	// lib/pq resets this deadline afterward, leaving subsequent queries unaffected.
+	query.Set("connect_timeout", strconv.Itoa(int(connectTimeout.Seconds())))
 	connURL.RawQuery = query.Encode()
 	dsn := connURL.String()
 
@@ -205,25 +229,43 @@ func createPostGresDBSessionWithCreds(cfg *config.PostgreSQLConfig, persistPool 
 }
 
 // createMySQLDBSessionWithCreds creates MySQL DB session with direct credentials
-func createMySQLDBSessionWithCreds(cfg *config.MySQLConfig, persistPool *config.ConnectionPool, username, password string) (db.Session, error) {
-	// Build MySQL DSN using mysql.Config to safely handle special characters in credentials
-	mysqlCfg := mysql.Config{
-		User:                 username,
-		Passwd:               password,
-		Net:                  "tcp",
-		Addr:                 cfg.GetHostname(),
-		DBName:               cfg.Database,
-		ParseTime:            true,
-		AllowNativePasswords: true, // Required for MariaDB which uses mysql_native_password by default
-		Params:               cfg.Options,
+// buildMySQLConfig constructs the mysql.Config (DSN inputs) for a MySQL session,
+// using mysql.Config to safely handle special characters in credentials and
+// configuring the connection-establishment (dial) timeout.
+//
+// Start from mysql.NewConfig() rather than a struct literal so the driver
+// defaults are applied — most importantly Loc: time.UTC. When the session was
+// opened from a DSN string, ParseDSN restored those defaults; NewConnector
+// consumes the config directly, so a bare literal would leave Loc nil and
+// panic ("missing Location in call to Time.In") on the first time.Time written.
+func buildMySQLConfig(cfg *config.MySQLConfig, username, password string, connectTimeout time.Duration) mysql.Config {
+	mysqlCfg := mysql.NewConfig()
+	mysqlCfg.User = username
+	mysqlCfg.Passwd = password
+	mysqlCfg.Net = "tcp"
+	mysqlCfg.Addr = cfg.GetHostname()
+	mysqlCfg.DBName = cfg.Database
+	mysqlCfg.ParseTime = true
+	mysqlCfg.AllowNativePasswords = true // Required for MariaDB which uses mysql_native_password by default
+	mysqlCfg.Params = cfg.Options
+	mysqlCfg.Timeout = connectTimeout
+	return *mysqlCfg
+}
+
+func createMySQLDBSessionWithCreds(cfg *config.MySQLConfig, persistPool *config.ConnectionPool, username, password string, connectTimeout time.Duration) (db.Session, error) {
+	mysqlCfg := buildMySQLConfig(cfg, username, password, connectTimeout)
+
+	// Wrap the MySQL connector so Connect (dial + handshake read) is bounded by
+	// connectTimeout, protecting against a half-open server the same way lib/pq's
+	// connect_timeout protects PostgreSQL.
+	connector, err := mysql.NewConnector(&mysqlCfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create mysql connector: %w", err)
 	}
-	dsn := mysqlCfg.FormatDSN()
+	wrapped := &timeoutConnector{Connector: connector, timeout: connectTimeout}
 
 	// Create traced *sql.DB using otelsql
-	sqlDB, err := otelsql.Open("mysql", dsn, otelSQLOptions(semconv.DBSystemNameMySQL, cfg.Database)...)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open traced mysql connection: %w", err)
-	}
+	sqlDB := otelsql.OpenDB(wrapped, otelSQLOptions(semconv.DBSystemNameMySQL, cfg.Database)...)
 
 	// Wrap with upper/db
 	session, err := mysqladp.New(sqlDB)
