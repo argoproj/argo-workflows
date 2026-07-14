@@ -57,6 +57,17 @@ export function SubmitWorkflowPanel(props: Props) {
         });
     };
 
+    const handleArtifactUploadError = (artifactName: string, err: Error) => {
+        setError(err);
+        // Clear the upload-in-progress marker on failure too, otherwise the Submit
+        // button stays disabled ("Uploading...") until the page is reloaded.
+        setUploadingArtifacts(prev => {
+            const next = new Set(prev);
+            next.delete(artifactName);
+            return next;
+        });
+    };
+
     useEffect(() => {
         const templatePropertiesInQuery = getWorkflowParametersFromQuery(props.history);
         // Get the user arguments from the query params
@@ -154,7 +165,7 @@ export function SubmitWorkflowPanel(props: Props) {
                                     artifactName={artifact.name}
                                     onUploadStart={() => handleArtifactUploadStart(artifact.name)}
                                     onUploadComplete={response => handleArtifactUpload(artifact.name, response)}
-                                    onError={setError}
+                                    onError={err => handleArtifactUploadError(artifact.name, err)}
                                 />
                                 {uploadedArtifacts[artifact.name] && <small style={{color: 'green'}}>✓ Uploaded: {uploadedArtifacts[artifact.name].key}</small>}
                             </div>
