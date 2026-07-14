@@ -350,11 +350,11 @@ schema = 3
     version = "v1.2.6"
     hash = "sha256-+oxitLeJxYF19Z6g+6CgmCHJ1Y5D8raMi2Cb3M6nXCs="
   [mod."github.com/go-openapi/jsonpointer"]
-    version = "v0.23.1"
-    hash = "sha256-1vusGH4zPsJU1nPOJK73gh/qF8bvgM7K9ufMoV/Oa50="
+    version = "v1.0.0"
+    hash = "sha256-he4+Ue27HuNS0imS55XaS4g54v2OrKFJppdhz8cO94s="
   [mod."github.com/go-openapi/jsonreference"]
-    version = "v0.21.6"
-    hash = "sha256-nHNlDmvnGNhZTiZbPPbRvqqS+yJaWDNVNLPyQ595V28="
+    version = "v1.0.0"
+    hash = "sha256-+UaHDX6kNBxmhH6N2BE22KyXISiEvxPyTpJF5i6l+GE="
   [mod."github.com/go-openapi/swag"]
     version = "v0.25.4"
     hash = "sha256-aFQeLf95JC5gWLwIJXxhZHK9RxiGhh9IYV0MEYldDr4="
