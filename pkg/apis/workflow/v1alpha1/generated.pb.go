@@ -3607,6 +3607,14 @@ func (m *HTTPArtifact) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	i--
+	if m.SaveStreamViaFile {
+		dAtA[i] = 1
+	} else {
+		dAtA[i] = 0
+	}
+	i--
+	dAtA[i] = 0x20
 	if m.Auth != nil {
 		{
 			size, err := m.Auth.MarshalToSizedBuffer(dAtA[:i])
@@ -6903,6 +6911,13 @@ func (m *Template) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	i -= len(m.PendingTimeout)
+	copy(dAtA[i:], m.PendingTimeout)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.PendingTimeout)))
+	i--
+	dAtA[i] = 0x2
+	i--
+	dAtA[i] = 0xea
 	if len(m.Annotations) > 0 {
 		keysForAnnotations := make([]string, 0, len(m.Annotations))
 		for k := range m.Annotations {
@@ -10757,6 +10772,7 @@ func (m *HTTPArtifact) Size() (n int) {
 		l = m.Auth.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
+	n += 2
 	return n
 }
 
@@ -12140,6 +12156,8 @@ func (m *Template) Size() (n int) {
 			n += mapEntrySize + 2 + sovGenerated(uint64(mapEntrySize))
 		}
 	}
+	l = len(m.PendingTimeout)
+	n += 2 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -13743,6 +13761,7 @@ func (this *HTTPArtifact) String() string {
 		`URL:` + fmt.Sprintf("%v", this.URL) + `,`,
 		`Headers:` + repeatedStringForHeaders + `,`,
 		`Auth:` + strings.Replace(this.Auth.String(), "HTTPAuth", "HTTPAuth", 1) + `,`,
+		`SaveStreamViaFile:` + fmt.Sprintf("%v", this.SaveStreamViaFile) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -14738,6 +14757,7 @@ func (this *Template) String() string {
 		`HTTP:` + strings.Replace(this.HTTP.String(), "HTTP", "HTTP", 1) + `,`,
 		`Plugin:` + strings.Replace(this.Plugin.String(), "Plugin", "Plugin", 1) + `,`,
 		`Annotations:` + mapStringForAnnotations + `,`,
+		`PendingTimeout:` + fmt.Sprintf("%v", this.PendingTimeout) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -25543,6 +25563,26 @@ func (m *HTTPArtifact) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SaveStreamViaFile", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.SaveStreamViaFile = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGenerated(dAtA[iNdEx:])
@@ -37240,6 +37280,38 @@ func (m *Template) Unmarshal(dAtA []byte) error {
 				}
 			}
 			m.Annotations[mapkey] = mapvalue
+			iNdEx = postIndex
+		case 45:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PendingTimeout", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PendingTimeout = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

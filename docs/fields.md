@@ -1881,6 +1881,7 @@ Template is a reusable and composable unit of execution in a workflow
 |`nodeSelector`|`Map< string , string >`|NodeSelector is a selector to schedule this step of the workflow to be run on the selected node(s). Overrides the selector set at the workflow level.|
 |`outputs`|[`Outputs`](#outputs)|Outputs describe the parameters and artifacts that this template produces|
 |`parallelism`|`integer`|Parallelism limits the max total parallel pods that can execute at the same time within the boundaries of this template invocation. If additional steps/dag templates are invoked, the pods created by those templates will not be counted towards this total.|
+|`pendingTimeout`|`string`|PendingTimeout allows to set the maximum time spent in pending status counting from the node's start time. It is enforced by the controller, so a pod that starts running just as the timeout expires may still be failed. This duration may not be applied to Step or DAG templates.|
 |`plugin`|[`Plugin`](#plugin)|Plugin is a plugin template Note: the structure of a plugin template is free-form, so we need to have "x-kubernetes-preserve-unknown-fields: true" in the validation schema.|
 |`podSpecPatch`|`string`|PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).|
 |`priorityClassName`|`string`|PriorityClassName to apply to workflow pods.|
@@ -3850,6 +3851,7 @@ HTTPArtifact allows a file served on HTTP to be placed as an input artifact in a
 |:----------:|:----------:|---------------|
 |`auth`|[`HTTPAuth`](#httpauth)|Auth contains information for client authentication|
 |`headers`|`Array<`[`Header`](#header)`>`|Headers are an optional list of headers to send with HTTP requests for artifacts|
+|`saveStreamViaFile`|`boolean`|SaveStreamViaFile buffers a streamed upload to a temporary file before sending it, so a 307/308 redirect (e.g. webHDFS) can be followed by re-sending the body. When false (the default) SaveStream sends the reader directly and cannot follow such a redirect, since a one-shot reader cannot be replayed.|
 |`url`|`string`|URL of the artifact|
 
 ## OSSArtifact

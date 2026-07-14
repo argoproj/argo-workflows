@@ -307,6 +307,19 @@ type DBConfig struct {
 	ConnectionPool *ConnectionPool `json:"connectionPool,omitempty"`
 	// DBReconnectConfig are configuration options for database retries and reconnections
 	DBReconnectConfig *DBReconnectConfig `json:"reconnectionConfig,omitempty"`
+	// ConnectionTimeoutSeconds is the timeout in seconds for establishing a database connection, 5 seconds if not set.
+	ConnectionTimeoutSeconds int32 `json:"connectionTimeoutSeconds,omitempty"`
+}
+
+const defaultDBConnectionTimeout = 5 * time.Second
+
+// ConnectionTimeout returns the database connection-establishment timeout,
+// defaulting to 5s when unset.
+func (c DBConfig) ConnectionTimeout() time.Duration {
+	if c.ConnectionTimeoutSeconds != 0 {
+		return time.Duration(c.ConnectionTimeoutSeconds) * time.Second
+	}
+	return defaultDBConnectionTimeout
 }
 
 // DBReconnectConfig contains database reconnect settings

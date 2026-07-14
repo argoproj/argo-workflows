@@ -528,6 +528,10 @@ func (tctx *templateValidationCtx) validateTemplate(ctx context.Context, tmpl *w
 		}
 	}
 
+	if newTmpl.PendingTimeout != "" && !newTmpl.IsLeaf() {
+		return fmt.Errorf("%s template doesn't support pendingTimeout field", newTmpl.GetType())
+	}
+
 	templateScope := tmplCtx.GetTemplateScope()
 	tmplID := getTemplateID(tmpl)
 	_, ok := tctx.results[templateScope+tmplID]

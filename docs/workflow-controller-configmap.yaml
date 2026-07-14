@@ -270,6 +270,10 @@ data:
 
   # enable persistence using postgres
   persistence: |
+    # Timeout in seconds for establishing a database connection. Default 5s.
+    # Prevents the controller from hanging indefinitely when the DB is unreachable
+    # or half-open; on timeout it fails fast so Kubernetes can restart it.
+    connectionTimeoutSeconds: 5
     connectionPool:
       maxIdleConns: 100
       maxOpenConns: 0
@@ -335,6 +339,11 @@ data:
   synchronization: |
     # Enable or disable database synchronization API (default: false)
     enableAPI: false
+
+    # Timeout in seconds for establishing a database connection. Default 5s.
+    # Prevents the controller from hanging indefinitely when the DB is unreachable
+    # or half-open; on timeout it fails fast so Kubernetes can restart it.
+    connectionTimeoutSeconds: 5
 
     # Connection pool settings, similar to persistence connectionPool
     connectionPool:

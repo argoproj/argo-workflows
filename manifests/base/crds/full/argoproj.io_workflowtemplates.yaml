@@ -1687,6 +1687,13 @@ spec:
                                 - value
                                 type: object
                               type: array
+                            saveStreamViaFile:
+                              description: |-
+                                SaveStreamViaFile buffers a streamed upload to a temporary file before sending it,
+                                so a 307/308 redirect (e.g. webHDFS) can be followed by re-sending the body. When
+                                false (the default) SaveStream sends the reader directly and cannot follow such a
+                                redirect, since a one-shot reader cannot be replayed.
+                              type: boolean
                             url:
                               description: URL of the artifact
                               type: string
@@ -3031,6 +3038,13 @@ spec:
                                       - value
                                       type: object
                                     type: array
+                                  saveStreamViaFile:
+                                    description: |-
+                                      SaveStreamViaFile buffers a streamed upload to a temporary file before sending it,
+                                      so a 307/308 redirect (e.g. webHDFS) can be followed by re-sending the body. When
+                                      false (the default) SaveStream sends the reader directly and cannot follow such a
+                                      redirect, since a one-shot reader cannot be replayed.
+                                    type: boolean
                                   url:
                                     description: URL of the artifact
                                     type: string
@@ -5112,6 +5126,8 @@ spec:
                               - value
                               type: object
                             type: array
+                          saveStreamViaFile:
+                            type: boolean
                           url:
                             type: string
                         required:
@@ -7191,6 +7207,8 @@ spec:
                                               - value
                                               type: object
                                             type: array
+                                          saveStreamViaFile:
+                                            type: boolean
                                           url:
                                             type: string
                                         required:
@@ -7867,6 +7885,8 @@ spec:
                                                     - value
                                                     type: object
                                                   type: array
+                                                saveStreamViaFile:
+                                                  type: boolean
                                                 url:
                                                   type: string
                                               required:
@@ -8611,6 +8631,8 @@ spec:
                                       - value
                                       type: object
                                     type: array
+                                  saveStreamViaFile:
+                                    type: boolean
                                   url:
                                     type: string
                                 required:
@@ -10023,6 +10045,8 @@ spec:
                                     - value
                                     type: object
                                   type: array
+                                saveStreamViaFile:
+                                  type: boolean
                                 url:
                                   type: string
                               required:
@@ -10803,6 +10827,8 @@ spec:
                                     - value
                                     type: object
                                   type: array
+                                saveStreamViaFile:
+                                  type: boolean
                                 url:
                                   type: string
                               required:
@@ -11075,6 +11101,8 @@ spec:
                     format: int64
                     minimum: 1
                     type: integer
+                  pendingTimeout:
+                    type: string
                   plugin:
                     type: object
                     x-kubernetes-preserve-unknown-fields: true
@@ -11495,6 +11523,8 @@ spec:
                                       - value
                                       type: object
                                     type: array
+                                  saveStreamViaFile:
+                                    type: boolean
                                   url:
                                     type: string
                                 required:
@@ -13684,6 +13714,8 @@ spec:
                                             - value
                                             type: object
                                           type: array
+                                        saveStreamViaFile:
+                                          type: boolean
                                         url:
                                           type: string
                                       required:
@@ -14354,6 +14386,8 @@ spec:
                                                   - value
                                                   type: object
                                                 type: array
+                                              saveStreamViaFile:
+                                                type: boolean
                                               url:
                                                 type: string
                                             required:
@@ -17160,6 +17194,13 @@ spec:
                                 - value
                                 type: object
                               type: array
+                            saveStreamViaFile:
+                              description: |-
+                                SaveStreamViaFile buffers a streamed upload to a temporary file before sending it,
+                                so a 307/308 redirect (e.g. webHDFS) can be followed by re-sending the body. When
+                                false (the default) SaveStream sends the reader directly and cannot follow such a
+                                redirect, since a one-shot reader cannot be replayed.
+                              type: boolean
                             url:
                               description: URL of the artifact
                               type: string
@@ -21473,6 +21514,13 @@ spec:
                                                 - value
                                                 type: object
                                               type: array
+                                            saveStreamViaFile:
+                                              description: |-
+                                                SaveStreamViaFile buffers a streamed upload to a temporary file before sending it,
+                                                so a 307/308 redirect (e.g. webHDFS) can be followed by re-sending the body. When
+                                                false (the default) SaveStream sends the reader directly and cannot follow such a
+                                                redirect, since a one-shot reader cannot be replayed.
+                                              type: boolean
                                             url:
                                               description: URL of the artifact
                                               type: string
@@ -22865,6 +22913,13 @@ spec:
                                                       - value
                                                       type: object
                                                     type: array
+                                                  saveStreamViaFile:
+                                                    description: |-
+                                                      SaveStreamViaFile buffers a streamed upload to a temporary file before sending it,
+                                                      so a 307/308 redirect (e.g. webHDFS) can be followed by re-sending the body. When
+                                                      false (the default) SaveStream sends the reader directly and cannot follow such a
+                                                      redirect, since a one-shot reader cannot be replayed.
+                                                    type: boolean
                                                   url:
                                                     description: URL of the artifact
                                                     type: string
@@ -24307,6 +24362,13 @@ spec:
                                         - value
                                         type: object
                                       type: array
+                                    saveStreamViaFile:
+                                      description: |-
+                                        SaveStreamViaFile buffers a streamed upload to a temporary file before sending it,
+                                        so a 307/308 redirect (e.g. webHDFS) can be followed by re-sending the body. When
+                                        false (the default) SaveStream sends the reader directly and cannot follow such a
+                                        redirect, since a one-shot reader cannot be replayed.
+                                      type: boolean
                                     url:
                                       description: URL of the artifact
                                       type: string
@@ -27100,6 +27162,13 @@ spec:
                                       - value
                                       type: object
                                     type: array
+                                  saveStreamViaFile:
+                                    description: |-
+                                      SaveStreamViaFile buffers a streamed upload to a temporary file before sending it,
+                                      so a 307/308 redirect (e.g. webHDFS) can be followed by re-sending the body. When
+                                      false (the default) SaveStream sends the reader directly and cannot follow such a
+                                      redirect, since a one-shot reader cannot be replayed.
+                                    type: boolean
                                   url:
                                     description: URL of the artifact
                                     type: string
@@ -28502,6 +28571,13 @@ spec:
                                       - value
                                       type: object
                                     type: array
+                                  saveStreamViaFile:
+                                    description: |-
+                                      SaveStreamViaFile buffers a streamed upload to a temporary file before sending it,
+                                      so a 307/308 redirect (e.g. webHDFS) can be followed by re-sending the body. When
+                                      false (the default) SaveStream sends the reader directly and cannot follow such a
+                                      redirect, since a one-shot reader cannot be replayed.
+                                    type: boolean
                                   url:
                                     description: URL of the artifact
                                     type: string
@@ -29016,6 +29092,12 @@ spec:
                       format: int64
                       minimum: 1
                       type: integer
+                    pendingTimeout:
+                      description: |-
+                        PendingTimeout allows to set the maximum time spent in pending status counting from the node's start time.
+                        It is enforced by the controller, so a pod that starts running just as the timeout expires may still be failed.
+                        This duration may not be applied to Step or DAG templates.
+                      type: string
                     plugin:
                       description: |-
                         Plugin is a plugin template
@@ -29797,6 +29879,13 @@ spec:
                                         - value
                                         type: object
                                       type: array
+                                    saveStreamViaFile:
+                                      description: |-
+                                        SaveStreamViaFile buffers a streamed upload to a temporary file before sending it,
+                                        so a 307/308 redirect (e.g. webHDFS) can be followed by re-sending the body. When
+                                        false (the default) SaveStream sends the reader directly and cannot follow such a
+                                        redirect, since a one-shot reader cannot be replayed.
+                                      type: boolean
                                     url:
                                       description: URL of the artifact
                                       type: string
@@ -34382,6 +34471,13 @@ spec:
                                               - value
                                               type: object
                                             type: array
+                                          saveStreamViaFile:
+                                            description: |-
+                                              SaveStreamViaFile buffers a streamed upload to a temporary file before sending it,
+                                              so a 307/308 redirect (e.g. webHDFS) can be followed by re-sending the body. When
+                                              false (the default) SaveStream sends the reader directly and cannot follow such a
+                                              redirect, since a one-shot reader cannot be replayed.
+                                            type: boolean
                                           url:
                                             description: URL of the artifact
                                             type: string
@@ -35742,6 +35838,13 @@ spec:
                                                     - value
                                                     type: object
                                                   type: array
+                                                saveStreamViaFile:
+                                                  description: |-
+                                                    SaveStreamViaFile buffers a streamed upload to a temporary file before sending it,
+                                                    so a 307/308 redirect (e.g. webHDFS) can be followed by re-sending the body. When
+                                                    false (the default) SaveStream sends the reader directly and cannot follow such a
+                                                    redirect, since a one-shot reader cannot be replayed.
+                                                  type: boolean
                                                 url:
                                                   description: URL of the artifact
                                                   type: string

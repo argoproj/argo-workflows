@@ -1,0 +1,12 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workflow-controller
+spec:
+  template:
+    spec:
+      containers:
+        - name: workflow-controller
+          env:
+            - name: ARGO_EXECUTOR_PLUGINS
+              value: "true"

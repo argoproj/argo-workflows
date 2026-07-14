@@ -801,6 +801,11 @@ type Template struct {
 
 	// Annotations is a list of annotations to add to the template at runtime
 	Annotations map[string]string `json:"annotations,omitempty" protobuf:"bytes,44,opt,name=annotations"`
+
+	// PendingTimeout allows to set the maximum time spent in pending status counting from the node's start time.
+	// It is enforced by the controller, so a pod that starts running just as the timeout expires may still be failed.
+	// This duration may not be applied to Step or DAG templates.
+	PendingTimeout string `json:"pendingTimeout,omitempty" protobuf:"bytes,45,opt,name=pendingTimeout"`
 }
 
 // SetType will set the template object based on template type.
@@ -3126,6 +3131,12 @@ type HTTPArtifact struct {
 
 	// Auth contains information for client authentication
 	Auth *HTTPAuth `json:"auth,omitempty" protobuf:"bytes,3,opt,name=auth"`
+
+	// SaveStreamViaFile buffers a streamed upload to a temporary file before sending it,
+	// so a 307/308 redirect (e.g. webHDFS) can be followed by re-sending the body. When
+	// false (the default) SaveStream sends the reader directly and cannot follow such a
+	// redirect, since a one-shot reader cannot be replayed.
+	SaveStreamViaFile bool `json:"saveStreamViaFile,omitempty" protobuf:"varint,4,opt,name=saveStreamViaFile"`
 }
 
 func (h *HTTPArtifact) GetKey() (string, error) {

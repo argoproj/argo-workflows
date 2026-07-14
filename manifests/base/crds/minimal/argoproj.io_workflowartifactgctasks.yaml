@@ -393,6 +393,8 @@ spec:
                                 - value
                                 type: object
                               type: array
+                            saveStreamViaFile:
+                              type: boolean
                             url:
                               type: string
                           required:
@@ -967,6 +969,8 @@ spec:
                                   - value
                                   type: object
                                 type: array
+                              saveStreamViaFile:
+                                type: boolean
                               url:
                                 type: string
                             required:

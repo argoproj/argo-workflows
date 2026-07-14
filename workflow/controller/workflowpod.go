@@ -710,7 +710,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	if err != nil {
 		log.Warn(ctx, "couldn't retrieve node, will get nil templateDeadline")
 	}
-	templateDeadline, err := woc.checkTemplateTimeout(tmpl, node)
+	templateDeadline, _, err := woc.checkTemplateTimeouts(tmpl, node)
 	if err != nil {
 		return nil, err
 	}
