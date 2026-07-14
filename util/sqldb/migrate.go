@@ -61,10 +61,13 @@ func Migrate(ctx context.Context, session db.Session, dbType DBType, schema stri
 		}
 
 		// Check if primary key exists
-		rows, err := session.SQL().Query(
-			fmt.Sprintf("select 1 from information_schema.table_constraints where constraint_type = 'PRIMARY KEY' and table_name = '%s' and %s = ?",
-				versionTableName, dbIdentifierColumn),
-			session.Name())
+		query := fmt.Sprintf("select 1 from information_schema.table_constraints where constraint_type = 'PRIMARY KEY' and table_name = '%s' and %s = ?", versionTableName, dbIdentifierColumn)
+		args := []interface{}{session.Name()}
+		if dbType == Postgres && schema != "" {
+			query += " and table_schema = ?"
+			args = append(args, schema)
+		}
+		rows, err := session.SQL().Query(query, args...)
 		if err != nil {
 			return err
 		}
