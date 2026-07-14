@@ -1,3 +1,4 @@
+import {Autocomplete} from 'argo-ui/src/components/autocomplete/autocomplete';
 import {Checkbox} from 'argo-ui/src/components/checkbox';
 import {Select} from 'argo-ui/src/components/select/select';
 import * as React from 'react';
@@ -7,7 +8,12 @@ import {TextInput} from '../shared/components/text-input';
 import {ConcurrencyPolicy, CronWorkflowSpec} from '../shared/models';
 import {ScheduleValidator} from './schedule-validator';
 
+const timezones = Intl.supportedValuesOf('timeZone');
+
 export function CronWorkflowSpecEditor({onChange, spec}: {spec: CronWorkflowSpec; onChange: (spec: CronWorkflowSpec) => void}) {
+    const timezone = spec.timezone || '';
+    const filteredTimezones = timezones.filter(tz => tz.startsWith(timezone) || timezone === '');
+
     return (
         <div className='white-box'>
             <div className='white-box__details'>
@@ -35,7 +41,12 @@ export function CronWorkflowSpecEditor({onChange, spec}: {spec: CronWorkflowSpec
                 <div className='row white-box__details-row'>
                     <div className='columns small-3'>Timezone</div>
                     <div className='columns small-9'>
-                        <TextInput value={spec.timezone} onChange={timezone => onChange({...spec, timezone})} />
+                        <Autocomplete
+                            items={filteredTimezones}
+                            value={timezone}
+                            onChange={event => onChange({...spec, timezone: event.target.value})}
+                            onSelect={selectedTimezone => onChange({...spec, timezone: selectedTimezone})}
+                        />
                     </div>
                 </div>
                 <div className='row white-box__details-row'>
