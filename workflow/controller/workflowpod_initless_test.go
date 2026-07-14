@@ -601,6 +601,81 @@ func TestCreateWorkflowPod_LegacyResourceManifestFrom(t *testing.T) {
 	}
 }
 
+// resourceSystemLogsOnlyWf is a Resource template that archives ONLY the system
+// container logs (archiveLogs stays false). The aux container must still be
+// scheduled, because it is the one that collects the system logs in SaveLogs.
+var resourceSystemLogsOnlyWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: resource-system-logs-only
+spec:
+  archiveLogs: false
+  archiveSystemContainerLogs: true
+  entrypoint: create-pod
+  templates:
+  - name: create-pod
+    resource:
+      action: create
+      manifest: |
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+         name: example
+`
+
+// TestCreateWorkflowPod_LegacyResourceSystemLogsOnly guards that a resource
+// template with only archiveSystemContainerLogs set still gets a wait
+// container; without it nothing would run SaveLogs and the flag would be a
+// silent no-op.
+func TestCreateWorkflowPod_LegacyResourceSystemLogsOnly(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(resourceSystemLogsOnlyWf)
+	cancel, controller := newController(ctx, wf, defaultServiceAccount)
+	defer cancel()
+	// InitlessPod not set → legacy.
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	pods, err := listPods(ctx, woc)
+	require.NoError(t, err)
+	require.Len(t, pods.Items, 1)
+
+	hasWait := false
+	for _, c := range pods.Items[0].Spec.Containers {
+		if c.Name == common.WaitContainerName {
+			hasWait = true
+		}
+	}
+	assert.True(t, hasWait, "resource template with archiveSystemContainerLogs must get a wait container to collect the system logs")
+}
+
+// TestCreateWorkflowPod_InitlessResourceSystemLogsOnly is the init-less
+// counterpart: the same template must get a supervisor container.
+func TestCreateWorkflowPod_InitlessResourceSystemLogsOnly(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(resourceSystemLogsOnlyWf)
+	cancel, controller := newController(ctx, wf, defaultServiceAccount)
+	defer cancel()
+	controller.Config.InitlessPod = &config.InitlessPodConfig{Enabled: true}
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	pods, err := listPods(ctx, woc)
+	require.NoError(t, err)
+	require.Len(t, pods.Items, 1)
+
+	hasSupervisor := false
+	for _, c := range pods.Items[0].Spec.Containers {
+		if c.Name == common.SupervisorContainerName {
+			hasSupervisor = true
+		}
+	}
+	assert.True(t, hasSupervisor, "init-less resource template with archiveSystemContainerLogs must get a supervisor container to collect the system logs")
+}
+
 // artifactPathAncestorOfMountWf has an input artifact whose path (/data) is an
 // ancestor of a user volume mount (/data/shared). In init-less mode staging the
 // artifact would os.RemoveAll(/data) and recurse into the mounted volume, so the
