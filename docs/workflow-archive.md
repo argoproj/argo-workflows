@@ -69,6 +69,18 @@ The database user/role must have `CREATE` and `USAGE` permissions on the schema 
 
 When using a custom PostgreSQL schema via `persistence.postgresql.schema`, the user/role must also have permissions to create the schema.
 
+The database user or role requires specific permissions on the database schema (either the default `public` schema or a custom schema defined via `persistence.postgresql.schema`) to ensure tables can be successfully created during migration.
+
+If you are using a custom PostgreSQL schema, you must follow one of these two supported setup paths:
+
+* Path 1: Automatic Schema Creation (Database-level permissions)  
+If the custom schema does not yet exist and you want the migration process to create it automatically, you must grant the role `CREATE` privileges on the database.
+
+* Path 2: Pre-created Schema (Schema-level permissions)  
+If you prefer to manually create the custom schema beforehand, you must grant the role `USAGE` and `CREATE` privileges on that specific schema.
+
+Important Note: Schema-level permissions alone are only applicable if the schema already exists. If the schema is absent, granting permissions on it will not work, and you must use the database-level permissions outlined in Path 1.
+
 ## Archive TTL
 
 You can configure the time period to keep archived workflows before they will be deleted by the archived workflow garbage collection function.
@@ -110,5 +122,5 @@ Only available on PostgreSQL.
 Example:
 
     persistence:
-      postgresql
+      postgresql:
         schema: argo
