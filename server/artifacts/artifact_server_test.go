@@ -1127,6 +1127,35 @@ func TestArtifactServer_UploadInputArtifact(t *testing.T) {
 		assert.NotContains(t, response["key"], "..")
 	})
 
+	t.Run("Success - Windows-style backslash traversal in filename is sanitized", func(t *testing.T) {
+		s := newServerForUpload(t, nil)
+		recorder := httptest.NewRecorder()
+
+		body := &bytes.Buffer{}
+		writer := multipart.NewWriter(body)
+		part, err := writer.CreateFormFile("file", `..\..\etc\passwd`)
+		require.NoError(t, err)
+		_, err = part.Write([]byte("malicious content"))
+		require.NoError(t, err)
+		err = writer.Close()
+		require.NoError(t, err)
+
+		req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/upload-artifacts/my-ns/my-wft/input-artifact", body)
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+
+		s.UploadInputArtifact(recorder, req)
+
+		assert.Equal(t, http.StatusOK, recorder.Result().StatusCode)
+		var response map[string]any
+		err = json.NewDecoder(recorder.Body).Decode(&response)
+		require.NoError(t, err)
+		key, ok := response["key"].(string)
+		require.True(t, ok)
+		assert.True(t, strings.HasSuffix(key, "/passwd"), "expected key to end with /passwd, got %q", key)
+		assert.NotContains(t, key, `\`)
+		assert.NotContains(t, key, "..")
+	})
+
 	t.Run("Error - missing file in form", func(t *testing.T) {
 		s := newServerForUpload(t, nil)
 		recorder := httptest.NewRecorder()

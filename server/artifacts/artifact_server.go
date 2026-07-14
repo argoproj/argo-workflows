@@ -149,6 +149,15 @@ func (a *ArtifactServer) UploadInputArtifact(w http.ResponseWriter, r *http.Requ
 	}
 	r.Body = http.MaxBytesReader(w, r.Body, int64(maxUploadBytes))
 
+	// mime/multipart.ReadForm already removes temp files on parse error, but
+	// registering cleanup here makes the handler's correctness independent of
+	// that stdlib internal — any future error return still frees temp files.
+	defer func() {
+		if r.MultipartForm != nil {
+			_ = r.MultipartForm.RemoveAll()
+		}
+	}()
+
 	// Parse multipart form (max 32MB in memory, rest on disk)
 	if parseErr := r.ParseMultipartForm(32 << 20); parseErr != nil {
 		var maxBytesErr *http.MaxBytesError
@@ -159,11 +168,6 @@ func (a *ArtifactServer) UploadInputArtifact(w http.ResponseWriter, r *http.Requ
 		http.Error(w, "Failed to parse multipart form: "+parseErr.Error(), http.StatusBadRequest)
 		return
 	}
-	defer func() {
-		if r.MultipartForm != nil {
-			_ = r.MultipartForm.RemoveAll()
-		}
-	}()
 
 	file, header, err := r.FormFile("file")
 	if err != nil {
@@ -224,8 +228,9 @@ func (a *ArtifactServer) UploadInputArtifact(w http.ResponseWriter, r *http.Requ
 	// Generate unique key for the artifact
 	uploadUUID := uuid.NewString()
 	originalKey, _ := artifactCopy.GetKey()
-	// Sanitize filename to prevent path traversal attacks
-	sanitizedFilename := path.Base(header.Filename)
+	// Sanitize filename to prevent path traversal attacks. path.Base only
+	// recognises '/' as a separator, so normalise Windows-style '\' first.
+	sanitizedFilename := path.Base(strings.ReplaceAll(header.Filename, "\\", "/"))
 	if sanitizedFilename == "." || sanitizedFilename == "/" || sanitizedFilename == "" {
 		http.Error(w, "Invalid filename", http.StatusBadRequest)
 		return
