@@ -36,6 +36,7 @@
         "react-monaco-editor": "^0.50.1",
         "react-router": "^4.3.1",
         "react-router-dom": "^4.2.2",
+        "remark-breaks": "^3",
         "remark-gfm": "^3.0.0",
         "rxjs": "^7.8.1",
         "superagent": "^10.2.3",
@@ -95,5 +96,5 @@
         "semver": "^7.5.2",
         "types-ramda": "0.29.4",
         "qs": ">=6.14.1"
-	}
+    }
 }
