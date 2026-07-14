@@ -950,8 +950,8 @@ schema = 3
     version = "v0.15.0"
     hash = "sha256-5D24A65wn7k93Jj3+918UKjB9ccmGHPBEqjD2XDB92E="
   [mod."google.golang.org/api"]
-    version = "v0.287.0"
-    hash = "sha256-xTU78uoxe7TX/NxqWd6ae+6FdNqrSBR1uah60smBhaE="
+    version = "v0.288.0"
+    hash = "sha256-1icaXHslQSC34x8/Db0ufBAoZt784ixXsd35I5iJj2A="
   [mod."google.golang.org/genproto"]
     version = "v0.0.0-20260519071638-aa98bba5eb94"
     hash = "sha256-RVGF5xfos6LnKy4O+vBB3ubi34+bTJbwqEg5enLB89c="
