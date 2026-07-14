@@ -67,17 +67,20 @@ func (s *FunctionalSuite) TestArchiveSystemContainerLogs() {
 // verifies behavior when input artifact loading fails with system-container-log archiving enabled.
 // Legacy layout: the init container fails, wait never starts, so no system logs are archived and
 // the workflow must still end cleanly (regression guard for the tee added in init.go).
-// Init-less layout: the supervisor's pre-main fails but PostMain still runs, so supervisor-logs
-// IS archived — an improvement over the legacy layout.
+// Init-less layout: the supervisor's pre-main fails and the supervisor exits non-zero, so the
+// workflow ends in the Error phase just like the legacy layout — but PostMain still runs first,
+// so supervisor-logs IS archived. An improvement over the legacy layout.
 func (s *FunctionalSuite) TestArchiveSystemContainerLogsWhenArtifactLoadFails() {
 	if os.Getenv("E2E_INITLESS") == "true" {
 		s.Given().
 			Workflow(`@testdata/workflow-archive-artifact-load-fail.yaml`).
 			When().
 			SubmitWorkflow().
-			WaitForWorkflow(fixtures.ToBeFailed).
+			WaitForWorkflow(fixtures.ToBeErrored).
 			Then().
-			ExpectWorkflowNode(wfv1.FailedPodNode, func(t *testing.T, n *wfv1.NodeStatus, _ *apiv1.Pod) {
+			ExpectWorkflowNode(func(status wfv1.NodeStatus) bool {
+				return status.Type == wfv1.NodeTypePod && status.Phase == wfv1.NodeError
+			}, func(t *testing.T, n *wfv1.NodeStatus, _ *apiv1.Pod) {
 				require.NotNil(t, n.Outputs, "outputs should exist")
 				artifactNames := make([]string, 0, len(n.Outputs.Artifacts))
 				for _, a := range n.Outputs.Artifacts {
