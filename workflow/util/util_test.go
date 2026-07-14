@@ -5219,10 +5219,12 @@ func TestApplyOverridesToTemplateArtifacts(t *testing.T) {
 		assert.Equal(t, "new-a", key)
 	})
 
-	t.Run("name mismatch is ignored", func(t *testing.T) {
-		applied, err := ApplyOverridesToTemplateArtifacts(templateArtifacts, map[string]string{"no-such-artifact": "new-key"})
-		require.NoError(t, err)
-		assert.Empty(t, applied)
+	t.Run("unmatched override name is an error", func(t *testing.T) {
+		// A typo'd or stale override that matches no template artifact must surface as an
+		// error, not be silently dropped after the caller was told the upload succeeded.
+		_, err := ApplyOverridesToTemplateArtifacts(templateArtifacts, map[string]string{"no-such-artifact": "new-key"})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "no-such-artifact")
 	})
 
 	t.Run("empty overrides yields empty result", func(t *testing.T) {
@@ -5314,5 +5316,35 @@ func TestApplySubmitOptsWithArtifacts(t *testing.T) {
 		key, err := wf.Spec.Arguments.Artifacts[0].GetKey()
 		require.NoError(t, err)
 		assert.Equal(t, "uploads/new-key", key)
+	})
+
+	t.Run("unmatched override on a self-contained workflow is an error", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			Spec: wfv1.WorkflowSpec{
+				Arguments: wfv1.Arguments{
+					Artifacts: []wfv1.Artifact{
+						{Name: "input-artifact", ArtifactLocation: wfv1.ArtifactLocation{S3: &wfv1.S3Artifact{Key: "default-key"}}},
+					},
+				},
+			},
+		}
+
+		err := ApplySubmitOpts(wf, &wfv1.SubmitOpts{Artifacts: []string{"typo=uploads/new-key"}})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "typo")
+	})
+
+	t.Run("unmatched override on a workflowTemplateRef workflow is deferred, not an error", func(t *testing.T) {
+		// A templateRef workflow has no artifacts of its own here; the overrides target the
+		// referenced template and are validated on the templateRef path instead, so this
+		// no-op must not error.
+		wf := &wfv1.Workflow{
+			Spec: wfv1.WorkflowSpec{
+				WorkflowTemplateRef: &wfv1.WorkflowTemplateRef{Name: "some-template"},
+			},
+		}
+
+		err := ApplySubmitOpts(wf, &wfv1.SubmitOpts{Artifacts: []string{"input-artifact=uploads/new-key"}})
+		require.NoError(t, err)
 	})
 }

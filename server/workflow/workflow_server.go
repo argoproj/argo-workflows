@@ -862,12 +862,21 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 			if getErr != nil {
 				return nil, sutils.ToStatusError(fmt.Errorf("failed to get ClusterWorkflowTemplate for artifact override: %w", getErr), codes.Internal)
 			}
+			// This Get bypasses the instance-ID-filtered template store, so enforce the
+			// instance-ID boundary here to avoid copying artifact config from a template
+			// managed by a different Argo Server instance.
+			if validateErr := s.instanceIDService.Validate(cwftmpl); validateErr != nil {
+				return nil, sutils.ToStatusError(fmt.Errorf("ClusterWorkflowTemplate %q not found", wf.Spec.WorkflowTemplateRef.Name), codes.NotFound)
+			}
 			tmplArtifacts = cwftmpl.Spec.Arguments.Artifacts
 			artifactRepositoryRef = cwftmpl.Spec.ArtifactRepositoryRef
 		} else {
 			wftmpl, getErr := wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace).Get(ctx, wf.Spec.WorkflowTemplateRef.Name, metav1.GetOptions{})
 			if getErr != nil {
 				return nil, sutils.ToStatusError(fmt.Errorf("failed to get WorkflowTemplate for artifact override: %w", getErr), codes.Internal)
+			}
+			if validateErr := s.instanceIDService.Validate(wftmpl); validateErr != nil {
+				return nil, sutils.ToStatusError(fmt.Errorf("WorkflowTemplate %q not found", wf.Spec.WorkflowTemplateRef.Name), codes.NotFound)
 			}
 			tmplArtifacts = wftmpl.Spec.Arguments.Artifacts
 			artifactRepositoryRef = wftmpl.Spec.ArtifactRepositoryRef
@@ -900,7 +909,9 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 
 		appliedArtifacts, applyErr := util.ApplyOverridesToTemplateArtifacts(resolvedTmplArtifacts, overrides)
 		if applyErr != nil {
-			return nil, sutils.ToStatusError(applyErr, codes.Internal)
+			// applyErr is driven by the client's override input (an override naming an unknown
+			// artifact, or a key that fails SetKey), so it is InvalidArgument, not Internal.
+			return nil, sutils.ToStatusError(applyErr, codes.InvalidArgument)
 		}
 		for _, art := range appliedArtifacts {
 			key, _ := art.GetKey()
