@@ -273,11 +273,11 @@ func (a *ArtifactServer) UploadInputArtifact(w http.ResponseWriter, r *http.Requ
 		"key":          newKey,
 	}).Info(ctx, "Successfully uploaded artifact")
 
-	// Return the artifact location as JSON
+	// Return only name/key. The resolved ArtifactLocation contains bucket
+	// endpoints and Secret selector names that the client does not need.
 	response := map[string]any{
-		"name":     artifactName,
-		"key":      newKey,
-		"location": outputArtifact.ArtifactLocation,
+		"name": artifactName,
+		"key":  newKey,
 	}
 
 	w.Header().Set("Content-Type", "application/json")

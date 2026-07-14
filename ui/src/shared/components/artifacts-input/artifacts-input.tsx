@@ -15,7 +15,6 @@ interface ArtifactsInputProps {
 export interface ArtifactUploadResponse {
     name: string;
     key: string;
-    location: Record<string, unknown>;
 }
 
 type UploadStatus = 'idle' | 'uploading' | 'success' | 'error';

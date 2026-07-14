@@ -79,7 +79,7 @@ describe('ArtifactsInput', () => {
 
         // Simulate a successful upload response.
         xhr.status = 201;
-        xhr.responseText = JSON.stringify({name: 'input-artifact', key: 'uploads/argo/abc/input.zip', location: {}});
+        xhr.responseText = JSON.stringify({name: 'input-artifact', key: 'uploads/argo/abc/input.zip'});
         act(() => {
             xhr.onload?.();
         });
