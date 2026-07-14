@@ -29,18 +29,20 @@ jobs:
       ui: ${{ steps.changed-files.outputs.ui_any_modified == 'true' }}
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 50 # assume PRs are less than 50 commits
       - name: Get relevant files changed per group
         id: changed-files
-        uses: tj-actions/changed-files@22103cc46bda19c2b464ffe86db46df6922fd323 # v47.0.5
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
         with:
           files_yaml: |
             common: &common
               - .github/workflows/ci-build.yaml
               - Makefile
-              - tasks.yaml
+              - Tiltfile
+              - Dockerfile
+              - hack/tilt/**
             tests: &tests
               - *common
               - cmd/**
@@ -81,6 +83,10 @@ jobs:
               - cmd/**
               - examples/** # examples are used within the fields lists
               - manifests/** # a few of these are generated and committed
+              - config/** # docs/workflow-controller-configmap.md is generated from config/*.go
+              - persist/** # docs/database-migrations.md is generated from persist/sqldb/migrate.go
+              - util/sync/db/** # docs/database-migrations.md is generated from util/sync/db/migrate.go
+              - util/telemetry/builder/** # docs/metrics.md and docs/tracing.md are generated from util/telemetry/builder/values.yaml
               # generation scripts
               - hack/api/**
               - hack/docs/**
@@ -107,8 +113,9 @@ jobs:
               - hack/featuregen/**
               - .markdownlint.yaml
               - .mlc_config.json
-              - .spelling
-              - mkdocs.yml
+              - .cspell.json
+              - _typos.toml
+              - properdocs.yml
               - go.mod
               - go.sum
             ui:
@@ -122,15 +129,15 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version: "1.26"
           cache: true
       - run: make test STATIC_FILES=false GOTEST='go test -p 20 -covermode=atomic -coverprofile=coverage.out'
       - name: Upload test results
         if: ${{ always() }}
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: test-results-unit
           path: test/reports/json/unit.json
@@ -139,7 +146,7 @@ jobs:
       - name: Upload coverage report
         # engineers just ignore this in PRs, so lets not even run it
         if: github.ref == 'refs/heads/main'
-        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
           fail_ci_if_error: true
         env:
@@ -152,8 +159,8 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version: "1.26"
           cache: true
@@ -164,72 +171,43 @@ jobs:
       - name: Upload coverage report
         # engineers just ignore this in PRs, so lets not even run it
         if: github.ref == 'refs/heads/main'
-        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
           fail_ci_if_error: true
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-  build-binaries:
-    name: Build Binaries
+  e2e-tools:
+    name: E2E Tools
     needs: [ changed-files ]
     if: ${{ needs.changed-files.outputs.e2e-tests == 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - target: controller
-          - target: cli
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version: "1.26"
           cache: true
-      - name: Build
-        run: make ${{matrix.target}}
-      - name: Upload
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+      - name: Build k3d and Tilt once
+        # The whole e2e matrix shares these binaries via the artifact below, so
+        # we hit the k3d module proxy and the Tilt release CDN once each — not in
+        # ~14 parallel jobs, which throttles the CDN. This is why neither install
+        # needs download retries.
+        run: |
+          make k3d tilt
+          mkdir -p tools-bin
+          cp "$(go env GOPATH)/bin/k3d" "$(go env GOPATH)/bin/tilt" tools-bin/
+      - name: Upload tools
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: ${{matrix.target}}
-          path: dist
-          if-no-files-found: error
-
-  argo-images:
-    name: argo-images
-    # needs: [ lint ]
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - image: argoexec
-          - image: argocli
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
-      - name: Build and export
-        uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7.0.0
-        with:
-          context: .
-          tags: quay.io/argoproj/${{matrix.image}}:latest
-          outputs: type=docker,dest=/tmp/${{matrix.image}}_image.tar
-          target: ${{matrix.image}}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-      - name: Upload
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
-        with:
-          name: ${{matrix.image}}_image.tar
-          path: /tmp/${{matrix.image}}_image.tar
+          name: e2e-tools
+          path: tools-bin
           if-no-files-found: error
 
   e2e-tests:
     name: E2E Tests
-    needs: [ changed-files, argo-images, build-binaries ]
+    needs: [ changed-files, e2e-tools ]
     if: ${{ needs.changed-files.outputs.e2e-tests == 'true' }}
     runs-on: ubuntu-24.04
     # These tests usually finish in ~25m, but occasionally they take much longer due to resource
@@ -245,15 +223,31 @@ jobs:
           - test: test-artifacts
             profile: minimal
             use-api: false
+          - test: test-artifacts
+            profile: minimal
+            use-api: false
+            initless: true
           - test: test-executor
+            profile: minimal
+            use-api: false
+          - test: test-executor
+            profile: minimal
+            use-api: false
+            initless: true
+          - test: test-corefunctional
             profile: minimal
             use-api: false
           - test: test-corefunctional
             profile: minimal
             use-api: false
+            initless: true
           - test: test-functional
             profile: minimal
             use-api: false
+          - test: test-functional
+            profile: minimal
+            use-api: false
+            initless: true
           - test: test-api
             profile: mysql
             use-api: true
@@ -285,9 +279,18 @@ jobs:
             profile: minimal
             use-api: false
             retries: 0
+          - test: test-examples
+            profile: minimal
+            use-api: false
+            retries: 0
+            initless: true
           - test: test-plugins
             profile: plugins
             use-api: false
+          - test: test-plugins
+            profile: plugins
+            use-api: false
+            initless: true
           - test: test-go-sdk
             profile: minimal
             use-api: true
@@ -328,66 +331,46 @@ jobs:
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
           printf "==> Available space after cleanup\n"
           df -h
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version: "1.26"
           cache: true
+      - name: Download k3d and Tilt
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: e2e-tools
+          path: tools-bin
+      - name: Install k3d and Tilt onto PATH
+        # built once by the e2e-tools job; artifacts don't preserve the +x bit
+        run: install -m 0755 tools-bin/k3d tools-bin/tilt "$(go env GOPATH)/bin/"
       - name: Install Java for the SDK
         if: ${{matrix.test == 'test-java-sdk'}}
-        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        uses: actions/setup-java@1bcf9fb12cf4aa7d266a90ae39939e61372fe520 # v5.4.0
         with:
           java-version: '8'
           distribution: adopt
           cache: maven
-      - name: Install socat (needed by Kubernetes) and kit
-        # socat is needed for "kubectl port-forward" to work when using cri-dockerd: https://github.com/k3s-io/cri-dockerd/blob/4995f339edcffdf890406b3f1477d34e38477f18/streaming/streaming_others.go#L46
-        # Both cri-o and containerd removed it as a dependency awhile ago, but that hasn't been ported to cri-dockerd.
-        # Running "make kit" isn't strictly necessary, since it would be installed automatically by "make start",
-        # but it's noisy and makes the logs for "Start controller/API" hard to follow.
-        run: sudo apt-get -y install socat && make kit
-      - name: Install and start K3S
+      - name: Install socat
+        # socat supports "kubectl port-forward": cri-dockerd needed it (https://github.com/k3s-io/cri-dockerd/blob/4995f339edcffdf890406b3f1477d34e38477f18/streaming/streaming_others.go#L46);
+        # k3d's k3s uses embedded containerd, which doesn't, so this is defensive and harmless.
+        run: sudo apt-get -y install socat
+      - name: Create k3d cluster
         env:
+          # hack/tilt/k3d-up.sh maps this key via hack/k8s-versions.sh to a k3s image
           K8S_VERSION: ${{ matrix.k8s_version || 'max' }}
-          TEST_RETRIES: ${{ matrix.retries || '2' }}
         run: |
-          . hack/k8s-versions.sh
-          export INSTALL_K3S_VERSION="${K8S_VERSIONS[$K8S_VERSION]}+k3s1"
-
-          curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=stable \
-            INSTALL_K3S_EXEC="--docker --kubelet-arg=config=${GITHUB_WORKSPACE}/test/e2e/manifests/kubelet-configuration.yaml" \
-            K3S_KUBECONFIG_MODE=644 \
-            sh -
-          until kubectl --kubeconfig=/etc/rancher/k3s/k3s.yaml cluster-info ; do sleep 10s ; done
-          mkdir -p .kube
-          cp /etc/rancher/k3s/k3s.yaml /home/runner/.kube/config
+          # k3d and Tilt come from the e2e-tools artifact (installed above).
+          # k3d runs k3s with its embedded containerd (2.x in these k3s
+          # versions), which supports the Kubernetes image volumes the
+          # init-less pod layout uses to deliver argoexec.
+          make k3d-up
+          # tests and debug steps assume the argo namespace is the current context
+          kubectl config set-context --current --namespace=argo
+          # the CLI auth e2e tests (TestTokenArg) use this kubeconfig user
           echo "- name: fake_token_user" >> $KUBECONFIG
           echo "  user:" >> $KUBECONFIG
           echo "    token: xxxxxx" >> $KUBECONFIG
-          until kubectl cluster-info ; do sleep 10s ; done
-      - name: Download images
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          pattern: '*_image.tar'
-          path: /tmp
-      - name: Load images
-        run: |
-          set -eux
-          docker load < /tmp/argoexec_image.tar/argoexec_image.tar
-          docker load < /tmp/argocli_image.tar/argocli_image.tar
-      - name: Download controller
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: controller
-          path: dist/
-      - name: Download CLI
-        if: ${{matrix.use-api}}
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: cli
-          path: dist/
-      - name: Prepare binaries
-        run: chmod +x dist/* && make --touch dist/*
       - name: Set-up /etc/hosts
         run: |
           echo '127.0.0.1 dex'      | sudo tee -a /etc/hosts
@@ -395,34 +378,53 @@ jobs:
           echo '127.0.0.1 postgres' | sudo tee -a /etc/hosts
           echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
           echo '127.0.0.1 azurite'  | sudo tee -a /etc/hosts
-      - name: Start controller/API
+      - name: Build images and start Argo in-cluster
+        # tilt builds the production images, deploys them, and then keeps
+        # running through the test steps so its port-forwards (argo-server,
+        # minio, databases) keep serving the tests over localhost. `tilt wait`
+        # gates on every resource (image builds, deploys, readiness probes)
+        # becoming Ready; the step timeout bounds the wait.
         run: |
-          make start PROFILE=${{matrix.profile}} \
-            AUTH_MODE=client STATIC_FILES=false \
-            LOG_LEVEL=info \
-            API=${{matrix.use-api}} \
-            UI=false \
-            SECURE=${{ matrix.secure || 'false' }} \
-            POD_STATUS_CAPTURE_FINALIZER=true 2>&1 | tee /tmp/argo.log &
-          make wait PROFILE=${{matrix.profile}} API=${{matrix.use-api}} SECURE=${{ matrix.secure || 'false' }}
-        timeout-minutes: 5
+          tilt up --stream -- --mode=ci --profile=${{matrix.profile}} \
+            --api=${{matrix.use-api}} \
+            --secure=${{matrix.secure || 'false'}} \
+            --auth-mode=client \
+            --initless=${{matrix.initless || 'false'}} \
+            --pod-status-capture-finalizer=true > /tmp/tilt.log 2>&1 &
+          # resources only register once the Tiltfile finishes evaluating; wait
+          # for one we know is always defined before trusting `--all`, which
+          # would otherwise pass on the (Tiltfile) resource alone
+          until tilt get uiresource workflow-controller >/dev/null 2>&1; do
+            echo "waiting for Tilt to load..."
+            sleep 2
+          done
+          until tilt wait --for=condition=Ready uiresource --all --timeout=15s 2>/dev/null; do
+            echo "waiting for Tilt resources to become ready..."
+            tilt get uiresources 2>/dev/null || true
+            sleep 5
+          done
+        timeout-minutes: 15
       - name: Validate release manifests
         run: make manifests-validate
       - name: Run tests ${{matrix.test}}
-        run: make ${{matrix.test}} E2E_SUITE_TIMEOUT=30m STATIC_FILES=false
+        env:
+          # don't default in the expression: `matrix.retries || '2'` would turn
+          # an explicit `retries: 0` into 2, because 0 is falsy
+          MATRIX_RETRIES: ${{ matrix.retries }}
+        run: make ${{matrix.test}} E2E_SUITE_TIMEOUT=30m STATIC_FILES=false INITLESS=${{ matrix.initless || 'false' }} TEST_RETRIES="${MATRIX_RETRIES:-2}"
       - name: Upload test results
         if: ${{ always() }}
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: test-results-${{matrix.test}}-${{matrix.profile}}-k8s-${{matrix.k8s_version || 'max'}}
+          name: test-results-${{matrix.test}}-${{matrix.profile}}-k8s-${{matrix.k8s_version || 'max'}}${{ matrix.initless && '-initless' || '' }}
           path: test/reports/json/${{matrix.test}}.json
           if-no-files-found: warn
           retention-days: 10
 
       # failure debugging below
-      - name: Failure debug - k3s logs
+      - name: Failure debug - k3d server logs
         if: ${{ failure() }}
-        run: journalctl -u k3s
+        run: docker logs k3d-k3s-default-server-0 || true
       - name: Failure debug - describe MinIO/Database deployment
         if: ${{ failure() }}
         run: |
@@ -441,7 +443,11 @@ jobs:
       - name: Failure debug - Controller/API logs
         if: ${{ failure() }}
         run: |
-          [ -e /tmp/argo.log ] && cat /tmp/argo.log
+          kubectl -n argo logs deploy/workflow-controller --prefix --tail=-1 || true
+          kubectl -n argo logs deploy/argo-server --prefix --tail=-1 || true
+      - name: Failure debug - Tilt logs
+        if: ${{ failure() }}
+        run: '[ -e /tmp/tilt.log ] && cat /tmp/tilt.log || true'
       - if: ${{ failure() }}
         name: Failure debug - describe Workflows
         run: |
@@ -458,17 +464,22 @@ jobs:
         if: ${{ failure() }}
         run: kubectl logs --all-containers -l workflows.argoproj.io/workflow --prefix
 
-  # workaround for status checks -- check this one job instead of each individual E2E job in the matrix
-  # this allows us to skip the entire matrix when it doesn't need to run while still having accurate status checks
-  # see https://github.com/orgs/community/discussions/9141#discussioncomment-2296809 and https://github.com/orgs/community/discussions/26822#discussioncomment-3305794
+        # workaround for status checks -- check this one job instead of each individual E2E job in the matrix
+        # this allows us to skip the entire matrix when it doesn't need to run while still having accurate status checks
+        # see https://github.com/orgs/community/discussions/9141#discussioncomment-2296809 and https://github.com/orgs/community/discussions/26822#discussioncomment-3305794
   e2e-tests-composite-result:
     name: E2E Tests - Composite result
-    needs: [ e2e-tests ]
+    needs: [ e2e-tools, e2e-tests ]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     steps:
       - run: |
+          tools="${{ needs.e2e-tools.result }}"
           result="${{ needs.e2e-tests.result }}"
+          # a tools failure skips the matrix, which must not count as a pass
+          if [[ $tools == "failure" ]]; then
+            exit 1
+          fi
           # mark as successful even if skipped
           if [[ $result == "success" || $result == "skipped" ]]; then
             exit 0
@@ -485,8 +496,8 @@ jobs:
     env:
       GOPATH: /home/runner/go
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version: "1.26"
           cache: true
@@ -522,8 +533,8 @@ jobs:
     env:
       GOPATH: /home/runner/go
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version: "1.26"
           cache: true
@@ -533,7 +544,7 @@ jobs:
         run: git diff --exit-code
       # lint GH Actions
       - name: Ensure GH Actions are pinned to SHAs
-        uses: zgosalvez/github-actions-ensure-sha-pinned-actions@70c4af2ed5282c51ba40566d026d6647852ffa3e # v5.0.1
+        uses: zgosalvez/github-actions-ensure-sha-pinned-actions@3db98c0363e2fa5df3e1c4c471777a7c10b24cc9 # v5.0.5
 
   ui:
     name: UI
@@ -544,10 +555,10 @@ jobs:
     env:
       NODE_OPTIONS: --max-old-space-size=4096
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
-          node-version: "20" # change in all GH Workflows
+          node-version: "24" # change in all GH Workflows
           cache: yarn
           cache-dependency-path: ui/yarn.lock
       - run: yarn --cwd ui install

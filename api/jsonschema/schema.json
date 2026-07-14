@@ -4119,7 +4119,7 @@
           "description": "Git contains git artifact location details"
         },
         "globalName": {
-          "description": "GlobalName exports an output artifact to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts",
+          "description": "GlobalName exports an output artifact to the global scope, making it available as io.argoproj.workflow.v1alpha1.outputs.artifacts.XXXX and in workflow.status.outputs.artifacts",
           "type": "string"
         },
         "hdfs": {
@@ -4288,7 +4288,7 @@
           "description": "Git contains git artifact location details"
         },
         "globalName": {
-          "description": "GlobalName exports an output artifact to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts",
+          "description": "GlobalName exports an output artifact to the global scope, making it available as io.argoproj.workflow.v1alpha1.outputs.artifacts.XXXX and in workflow.status.outputs.artifacts",
           "type": "string"
         },
         "hdfs": {
@@ -4384,6 +4384,7 @@
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.ArtifactRepositoryRef": {
+      "description": "ArtifactRepositoryRef is a reference to an artifact repository config map.",
       "properties": {
         "configMap": {
           "description": "The name of the config map. Defaults to \"artifact-repositories\".",
@@ -4397,6 +4398,7 @@
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.ArtifactRepositoryRefStatus": {
+      "description": "ArtifactRepositoryRefStatus is the resolved artifact repository reference with namespace io.argoproj.workflow.v1alpha1.",
       "properties": {
         "artifactRepository": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactRepository",
@@ -5653,6 +5655,10 @@
           },
           "type": "array"
         },
+        "saveStreamViaFile": {
+          "description": "SaveStreamViaFile buffers a streamed upload to a temporary file before sending it, so a 307/308 redirect (e.g. webHDFS) can be followed by re-sending the body. When false (the default) SaveStream sends the reader directly and cannot follow such a redirect, since a one-shot reader cannot be replayed.",
+          "type": "boolean"
+        },
         "url": {
           "description": "URL of the artifact",
           "type": "string"
@@ -5832,7 +5838,7 @@
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.LabelValues": {
-      "description": "Labels is list of workflow labels",
+      "description": "LabelValues is a list of workflow labels.",
       "properties": {
         "items": {
           "items": {
@@ -5865,7 +5871,7 @@
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.Link": {
-      "description": "A link to another app.",
+      "description": "Link is a link to another app.",
       "properties": {
         "name": {
           "description": "The name of the link, E.g. \"Workflow Logs\" or \"Pod Logs\"",
@@ -5952,7 +5958,7 @@
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.Memoize": {
-      "description": "Memoization enables caching for the Outputs of the template",
+      "description": "Memoize enables caching for the Outputs of the template.",
       "properties": {
         "cache": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Cache",
@@ -5975,7 +5981,7 @@
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.Metadata": {
-      "description": "Pod metadata",
+      "description": "Metadata is pod metadata.",
       "properties": {
         "annotations": {
           "additionalProperties": {
@@ -6266,7 +6272,7 @@
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.OAuth2EndpointParam": {
-      "description": "EndpointParam is for requesting optional fields that should be sent in the oauth request",
+      "description": "OAuth2EndpointParam is an optional field that should be sent in the OAuth request.",
       "properties": {
         "key": {
           "description": "Name is the header name",
@@ -6440,7 +6446,7 @@
           "type": "array"
         },
         "globalName": {
-          "description": "GlobalName exports an output parameter to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters",
+          "description": "GlobalName exports an output parameter to the global scope, making it available as io.argoproj.workflow.v1alpha1.outputs.parameters.XXXX and in workflow.status.outputs.parameters",
           "type": "string"
         },
         "name": {
@@ -6720,6 +6726,10 @@
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
           "description": "AccessKeySecret is the secret selector to the bucket's access key"
         },
+        "addressingStyle": {
+          "description": "AddressingStyle defines how buckets are addressed by the S3 client. This is required for some S3-compatible providers that only support virtual-hosted-style bucket addressing.\n\nValid values are: - \"\" (default, auto-detect) - \"path\" - \"virtual-hosted\"",
+          "type": "string"
+        },
         "bucket": {
           "description": "Bucket is the name of the bucket",
           "type": "string"
@@ -6776,6 +6786,10 @@
         "accessKeySecret": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
           "description": "AccessKeySecret is the secret selector to the bucket's access key"
+        },
+        "addressingStyle": {
+          "description": "AddressingStyle defines how buckets are addressed by the S3 client. This is required for some S3-compatible providers that only support virtual-hosted-style bucket addressing.\n\nValid values are: - \"\" (default, auto-detect) - \"path\" - \"virtual-hosted\"",
+          "type": "string"
         },
         "bucket": {
           "description": "Bucket is the name of the bucket",
@@ -7388,6 +7402,10 @@
           "description": "Parallelism limits the max total parallel pods that can execute at the same time within the boundaries of this template invocation. If additional steps/dag templates are invoked, the pods created by those templates will not be counted towards this total.",
           "type": "integer"
         },
+        "pendingTimeout": {
+          "description": "PendingTimeout allows to set the maximum time spent in pending status counting from the node's start time. It is enforced by the controller, so a pod that starts running just as the timeout expires may still be failed. This duration may not be applied to Step or DAG templates.",
+          "type": "string"
+        },
         "plugin": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Plugin",
           "description": "Plugin is a plugin template Note: the structure of a plugin template is free-form, so we need to have \"x-kubernetes-preserve-unknown-fields: true\" in the validation schema."
@@ -7716,7 +7734,7 @@
           "type": "string"
         },
         "parameter": {
-          "description": "Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. '{{steps.mystep.outputs.myparam}}')",
+          "description": "Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. steps.mystep.outputs.myparam)",
           "type": "string"
         },
         "path": {
@@ -8099,7 +8117,7 @@
         },
         "arguments": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments",
-          "description": "Arguments contain the parameters and artifacts sent to the workflow entrypoint Parameters are referencable globally using the 'workflow' variable prefix. e.g. {{io.argoproj.workflow.v1alpha1.parameters.myparam}}"
+          "description": "Arguments contain the parameters and artifacts sent to the workflow entrypoint Parameters are referencable globally using the 'workflow' variable prefix. e.g. io.argoproj.workflow.v1alpha1.parameters.myparam"
         },
         "artifactGC": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowLevelArtifactGC",

@@ -1,0 +1,48 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-skipped-artifact-subpath-ref-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: artifact-producer
+            template: produce-artifact
+          - name: param-producer
+            template: produce-param
+            when: "false" # -> Skipped, produces no real output and declares no default
+          - name: consumer
+            template: consume
+            depends: "artifact-producer && (param-producer.Succeeded || param-producer.Skipped)"
+            arguments:
+              artifacts:
+                - name: data
+                  from: "{{tasks.artifact-producer.outputs.artifacts.out}}"
+                  subPath: "{{tasks.param-producer.outputs.parameters.dir}}"
+    - name: produce-artifact
+      outputs:
+        artifacts:
+          - name: out
+            path: /tmp/message
+      container:
+        image: argoproj/argosay:v2
+        args: ["echo", "hello", "/tmp/message"]
+    - name: produce-param
+      outputs:
+        parameters:
+          - name: dir
+            valueFrom:
+              path: /tmp/dir.txt # NOTE: no default here
+      container:
+        image: argoproj/argosay:v2
+        args: ["echo", "subdir", "/tmp/dir.txt"]
+    - name: consume
+      inputs:
+        artifacts:
+          - name: data
+            path: /tmp/in
+      container:
+        image: argoproj/argosay:v2
+        args: ["echo", "consumed"]

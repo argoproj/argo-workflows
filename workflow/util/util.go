@@ -48,6 +48,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/retry"
 	unstructutil "github.com/argoproj/argo-workflows/v4/util/unstructured"
+	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
 	waitutil "github.com/argoproj/argo-workflows/v4/util/wait"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
@@ -239,7 +240,7 @@ func PopulateSubmitOpts(command *cobra.Command, submitOpts *wfv1.SubmitOpts, par
 	}
 }
 
-// Apply the Submit options into workflow object
+// ApplySubmitOpts applies the submit options to a workflow object.
 func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 	if wf == nil {
 		return fmt.Errorf("workflow cannot be nil")
@@ -510,7 +511,7 @@ func AddParamToGlobalScope(ctx context.Context, wf *wfv1.Workflow, param wfv1.Pa
 	} else {
 		wf.Status.Outputs = &wfv1.Outputs{}
 	}
-	paramName := fmt.Sprintf("workflow.outputs.parameters.%s", param.GlobalName)
+	paramName := varkeys.WorkflowOutputsParameterByName.Concretize(param.GlobalName)
 	if index == -1 {
 		log.WithFields(logging.Fields{"paramName": paramName, "paramValue": param.Value}).Info(ctx, "setting param")
 		gParam := wfv1.Parameter{Name: param.GlobalName, Value: param.Value}
@@ -1177,7 +1178,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 		if node.FailedOrError() && isExecutionNodeType(node.Type) {
 			// Check its parent if current node is retry node
 			if node.NodeFlag != nil && node.NodeFlag.Retried {
-				node = *wf.Status.Nodes.FindByChild(nodeID)
+				node = *wf.Status.Nodes.FindRetryNodeByChild(nodeID)
 			}
 			if !isDescendantNodeSucceeded(ctx, wf, node, deleteNodesMap) {
 				failed[nodeID] = true
@@ -1231,6 +1232,27 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 		}
 		toReset = setUnion(toReset, pathToReset)
 		toDelete = setUnion(toDelete, pathToDelete)
+	}
+
+	// Delete children of TaskGroup/StepGroup nodes being reset when parameters are overridden,
+	// so the controller can re-expand them with the new values. Fixes #15802.
+	if len(parameters) > 0 {
+		for nodeID := range toReset {
+			if toDelete[nodeID] {
+				continue
+			}
+			n, ok := wf.Status.Nodes[nodeID]
+			if !ok {
+				continue
+			}
+			if n.Type == wfv1.NodeTypeTaskGroup || n.Type == wfv1.NodeTypeStepGroup {
+				if dagNode, okNode := nodesMap[nodeID]; okNode {
+					for childID := range getChildren(dagNode) {
+						toDelete[childID] = true
+					}
+				}
+			}
+		}
 	}
 
 	for nodeID := range toReset {
@@ -1450,7 +1472,7 @@ func SetWorkflow(ctx context.Context, wfClient v1alpha1.WorkflowInterface, hydra
 	return fmt.Errorf("'set' currently only targets suspend nodes, use a node field selector to target them")
 }
 
-// Reads from stdin
+// ReadFromStdin reads from stdin.
 func ReadFromStdin() ([]byte, error) {
 	reader := bufio.NewReader(os.Stdin)
 	body, err := io.ReadAll(reader)
@@ -1460,7 +1482,7 @@ func ReadFromStdin() ([]byte, error) {
 	return body, err
 }
 
-// Reads the content of a url
+// ReadFromURL reads the content of a URL.
 func ReadFromURL(ctx context.Context, url string) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
@@ -1610,4 +1632,16 @@ func FindWaitCtrIndex(pod *apiv1.Pod) (int, error) {
 		return -1, err
 	}
 	return waitCtrIndex, nil
+}
+
+// FindAuxiliaryCtrIndex returns the index of the auxiliary executor container
+// on the pod — wait in the legacy layout, supervisor in the init-less layout.
+// Returns -1 and an error if neither is found.
+func FindAuxiliaryCtrIndex(pod *apiv1.Pod) (int, error) {
+	for i, ctr := range pod.Spec.Containers {
+		if ctr.Name == common.WaitContainerName || ctr.Name == common.SupervisorContainerName {
+			return i, nil
+		}
+	}
+	return -1, errors.Errorf("-1", "Could not find wait or supervisor container in pod spec")
 }
