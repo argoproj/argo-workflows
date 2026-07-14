@@ -87,7 +87,8 @@ func (woc *wfOperationCtx) markNodeFailedOnShutdown(ctx context.Context, nodeNam
 func (woc *wfOperationCtx) setNodeProgress(ctx context.Context, nodeID string, progress wfv1.Progress) {
 	node, getNodeErr := woc.wf.Status.Nodes.Get(nodeID)
 	if getNodeErr != nil {
-		logging.RequireLoggerFromContext(ctx).WithPanic().Error(ctx, "was unable to obtain node")
+		logging.RequireLoggerFromContext(ctx).WithError(getNodeErr).Error(ctx, "was unable to obtain node")
+		return
 	}
 	node.Progress = progress
 	woc.wf.Status.Nodes.Set(ctx, nodeID, *node)
