@@ -5,6 +5,7 @@ package e2e
 import (
 	"context"
 	"fmt"
+	"os"
 	"testing"
 	"time"
 
@@ -38,8 +39,8 @@ func (s *FunctionalSuite) TestArchiveStrategies() {
 		})
 }
 
-// verifies that init / wait container logs are saved as artifacts when archiveSystemContainerLogs: true
-func (s *FunctionalSuite) TestArchiveInitWaitLogs() {
+// verifies that system container logs (init/wait, or supervisor in the init-less layout) are saved as artifacts when archiveSystemContainerLogs: true
+func (s *FunctionalSuite) TestArchiveSystemContainerLogs() {
 	s.Given().
 		Workflow(`@testdata/workflow-archive-init-wait-logs.yaml`).
 		When().
@@ -53,17 +54,41 @@ func (s *FunctionalSuite) TestArchiveInitWaitLogs() {
 				artifactNames = append(artifactNames, a.Name)
 			}
 			assert.Contains(t, artifactNames, "main-logs", "main-logs artifact should exist")
-			assert.Contains(t, artifactNames, "init-logs", "init-logs artifact should exist")
-			assert.Contains(t, artifactNames, "wait-logs", "wait-logs artifact should exist")
+
+			auxLogs := fixtures.AuxContainerName() + "-logs"
+			assert.Contains(t, artifactNames, auxLogs, auxLogs+" artifact should exist")
+
+			if os.Getenv("E2E_INITLESS") != "true" {
+				assert.Contains(t, artifactNames, "init-logs", "init-logs artifact should exist")
+			}
 		})
 }
 
-// verifies that an init container failure still ends cleanly in the error phase when
-// system-container-log archiving is enabled (regression guard for the tee added in init.go).
-// init-logs is absent because wait never starts, which is a known limitation.
-func (s *FunctionalSuite) TestArchiveSystemContainerLogsWhenInitFails() {
+// verifies behavior when input artifact loading fails with system-container-log archiving enabled.
+// Legacy layout: the init container fails, wait never starts, so no system logs are archived and
+// the workflow must still end cleanly (regression guard for the tee added in init.go).
+// Init-less layout: the supervisor's pre-main fails but PostMain still runs, so supervisor-logs
+// IS archived — an improvement over the legacy layout.
+func (s *FunctionalSuite) TestArchiveSystemContainerLogsWhenArtifactLoadFails() {
+	if os.Getenv("E2E_INITLESS") == "true" {
+		s.Given().
+			Workflow(`@testdata/workflow-archive-artifact-load-fail.yaml`).
+			When().
+			SubmitWorkflow().
+			WaitForWorkflow(fixtures.ToBeFailed).
+			Then().
+			ExpectWorkflowNode(wfv1.FailedPodNode, func(t *testing.T, n *wfv1.NodeStatus, _ *apiv1.Pod) {
+				require.NotNil(t, n.Outputs, "outputs should exist")
+				artifactNames := make([]string, 0, len(n.Outputs.Artifacts))
+				for _, a := range n.Outputs.Artifacts {
+					artifactNames = append(artifactNames, a.Name)
+				}
+				assert.Contains(t, artifactNames, "supervisor-logs", "supervisor-logs artifact should exist")
+			})
+		return
+	}
 	s.Given().
-		Workflow(`@testdata/workflow-archive-init-fail.yaml`).
+		Workflow(`@testdata/workflow-archive-artifact-load-fail.yaml`).
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeErrored).

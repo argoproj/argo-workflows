@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: archive-init-fail-
+  generateName: archive-artifact-load-fail-
   labels:
     workflows.argoproj.io/test: "true"
 spec:
@@ -21,9 +21,12 @@ spec:
           secretKeySecret:
             name: my-minio-cred
             key: secretkey
-      # Force the argoexec init (Argo system init) container to fail.
+      # Force input artifact loading to fail.
       # Rather than a user-defined initContainer, reference a nonexistent input artifact
-      # so that argoexec init itself fails and the wait container never starts.
+      # so that Argo's own pre-main phase fails: in the legacy layout the argoexec init
+      # container fails and the wait container never starts; in the init-less layout the
+      # supervisor's pre-main fails but the supervisor still runs post-main and archives
+      # its own log.
       inputs:
         artifacts:
           - name: nonexistent-artifact
