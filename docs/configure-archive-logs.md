@@ -65,10 +65,10 @@ spec:
 ## Archiving Init and Wait Container Logs
 
 By default, only the `main` container's logs are archived.
-Every Workflow Pod also runs Argo's own system containers — an `init` container (which loads input artifacts) and a `wait` container (which saves outputs and logs) — whose logs are normally not archived.
+In the legacy pod layout, every Workflow Pod also runs Argo's own system containers — an `init` container (which loads input artifacts) and a `wait` container (which saves outputs and logs) — whose logs are normally not archived.
 
 Set `archiveSystemContainerLogs: true` to also archive the `init` and `wait` container logs.
-They are stored alongside `main-logs` as artifacts named `init-logs` and `wait-logs`, and can be viewed from the Argo UI for garbage collected Pods.
+They are stored alongside `main-logs` as artifacts named `init-logs` and `wait-logs`, and can be viewed from the Argo UI for garbage-collected Pods.
 This is mainly useful for inspecting what the system containers did after the Pod is gone, such as debugging artifact/output upload failures in `wait`, or reviewing which input artifacts the `init` container loaded.
 Note that a *failing* `init` container is not captured (see [Limitations](#limitations) below).
 

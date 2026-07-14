@@ -3492,6 +3492,7 @@ func (tmpl *Template) SaveLogsAsArtifact() bool {
 	return tmpl != nil && tmpl.ArchiveLocation.IsArchiveLogs()
 }
 
+// SaveSystemContainerLogsAsArtifact reports whether the system container logs should be saved as an artifact.
 func (tmpl *Template) SaveSystemContainerLogsAsArtifact() bool {
 	return tmpl != nil && tmpl.ArchiveLocation.IsArchiveSystemContainerLogs()
 }

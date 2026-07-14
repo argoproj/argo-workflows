@@ -6,7 +6,7 @@ Issues: 12640
 Set `archiveSystemContainerLogs: true` to also archive the logs of Argo's own system containers — the `init` container, which loads input artifacts, and the `wait` container, which saves outputs and logs.
 By default only the `main` container's logs are archived.
 
-The system container logs are stored alongside `main-logs` as artifacts named `init-logs` and `wait-logs`, and can be viewed from the Argo UI for garbage collected Pods.
+The system container logs are stored alongside `main-logs` as artifacts named `init-logs` and `wait-logs`, and can be viewed from the Argo UI for garbage-collected Pods.
 Under the opt-in init-less pod layout, the single `supervisor` container performs both roles, so its log is archived as one `supervisor-logs` artifact instead.
 This is useful for inspecting what the system containers did after the Pod is gone, such as debugging output or artifact upload failures in `wait`, or reviewing which input artifacts the `init` container loaded.
 
