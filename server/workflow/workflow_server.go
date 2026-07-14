@@ -487,6 +487,10 @@ func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.Wor
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
 	}
 
+	if wf.Spec.DisableRetry {
+		return nil, status.Errorf(codes.FailedPrecondition, "retry is disabled for workflow %s", wf.Name)
+	}
+
 	err = s.hydrator.Hydrate(ctx, wf)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
@@ -541,6 +545,10 @@ func (s *workflowServer) ResubmitWorkflow(ctx context.Context, req *workflowpkg.
 	err = s.validateWorkflow(wf)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
+	}
+
+	if wf.Spec.DisableResubmit {
+		return nil, status.Errorf(codes.FailedPrecondition, "resubmit is disabled for workflow %s", wf.Name)
 	}
 
 	newWF, err := util.FormulateResubmitWorkflow(ctx, wf, req.Memoized, req.Parameters)

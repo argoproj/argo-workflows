@@ -888,6 +888,16 @@ export interface WorkflowSpec {
      * workflowTemplateRef is the reference to the workflow template resource to execute.
      */
     workflowTemplateRef?: WorkflowTemplateRef;
+
+    /**
+     * DisableRetry prevents manual retry of this workflow once it has completed.
+     */
+    disableRetry?: boolean;
+
+    /**
+     * DisableResubmit prevents resubmission of this workflow once it has completed.
+     */
+    disableResubmit?: boolean;
 }
 
 export interface WorkflowTemplateRef {

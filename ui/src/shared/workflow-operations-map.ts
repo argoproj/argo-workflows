@@ -26,6 +26,9 @@ export const WorkflowOperationsMap: WorkflowOperations = {
         title: 'RETRY',
         iconClassName: 'fa fa-undo',
         disabled: (wf: Workflow) => {
+            if (wf?.spec?.disableRetry) {
+                return true;
+            }
             const workflowPhase: NodePhase = wf && wf.status ? wf.status.phase : undefined;
             return workflowPhase === undefined || !(workflowPhase === 'Failed' || workflowPhase === 'Error');
         },
@@ -34,7 +37,7 @@ export const WorkflowOperationsMap: WorkflowOperations = {
     RESUBMIT: {
         title: 'RESUBMIT',
         iconClassName: 'fa fa-plus-circle',
-        disabled: () => false,
+        disabled: (wf: Workflow) => wf?.spec?.disableResubmit === true,
         action: (wf: Workflow) => services.workflows.resubmit(wf.metadata.name, wf.metadata.namespace, null)
     },
     SUSPEND: {
