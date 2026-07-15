@@ -4985,11 +4985,9 @@ status:
 // chosen by Go map iteration order, retrying the same workflow can reset different
 // nodes from one call to the next. The set of nodes a retry resets must be stable.
 func TestFormulateRetryWorkflowDeterministicReset(t *testing.T) {
-	ctx := logging.TestContext(t.Context())
-
 	resetNodeIDs := func() map[string]bool {
 		wf := wfv1.MustUnmarshalWorkflow(retryMultiParentTaskGroup)
-		newWf, _, err := FormulateRetryWorkflow(ctx, wf, false, "", nil)
+		newWf, _, err := FormulateRetryWorkflow(t.Context(), wf, false, "", nil)
 		require.NoError(t, err)
 		reset := make(map[string]bool)
 		for _, node := range newWf.Status.Nodes {
