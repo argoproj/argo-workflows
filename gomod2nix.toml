@@ -23,8 +23,8 @@ schema = 3
     version = "v1.29.0"
     hash = "sha256-Hn/YZtZle8ObXy8yft4pgiNslqScuCdVnK8ztPnyEqw="
   [mod."cloud.google.com/go/storage"]
-    version = "v1.63.0"
-    hash = "sha256-LKtMIrQFR9qGU+bmoRcunMQ8v/jbtABlMeJBX2F6cB8="
+    version = "v1.63.1"
+    hash = "sha256-zlPcQEztb0G7ItNXNhTCay5zFGH42lbO+F/r1f1wLBw="
   [mod."dario.cat/mergo"]
     version = "v1.0.2"
     hash = "sha256-p6jdiHlLEfZES8vJnDywG4aVzIe16p0CU6iglglIweA="
@@ -449,8 +449,8 @@ schema = 3
     version = "v0.3.17"
     hash = "sha256-Xrmaq7p10YUxyt2OS9DEzVuucZgQ42ftoSyCBIBPSv4="
   [mod."github.com/googleapis/gax-go/v2"]
-    version = "v2.22.0"
-    hash = "sha256-EEoIpOYGDuzhiQdhJcpjMs4mSb2oMw3uPYRhCHCESR0="
+    version = "v2.23.0"
+    hash = "sha256-aIJepJZI5PCsc9eteAP9x+n4RSSyOWi4kPnI5mmrBXk="
   [mod."github.com/gorilla/handlers"]
     version = "v1.5.2"
     hash = "sha256-2WQeVCe7vQg+8MpNLMhOGsRdbrcWLpbtUhUX8mbiQrs="
