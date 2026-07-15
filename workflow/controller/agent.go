@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"slices"
@@ -11,11 +12,10 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo-workflows/v4/pkg/plugins/spec"
-
-	"github.com/argoproj/argo-workflows/v4/errors"
+	argoerrors "github.com/argoproj/argo-workflows/v4/errors"
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/pkg/plugins/spec"
 	"github.com/argoproj/argo-workflows/v4/util/env"
 	errorsutil "github.com/argoproj/argo-workflows/v4/util/errors"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
@@ -231,14 +231,15 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	}
 
 	tmpl := &wfv1.Template{}
-	woc.addSchedulingConstraints(ctx, pod, woc.execWf.Spec.DeepCopy(), tmpl, "")
+	// Agent pods have no boundary node, so there is no boundary template to apply.
+	woc.addSchedulingConstraints(ctx, pod, woc.execWf.Spec.DeepCopy(), tmpl, nil)
 	woc.addMetadata(pod, tmpl)
 	woc.addDNSConfig(pod)
 
 	if woc.execWf.Spec.HasPodSpecPatch() {
 		patchedPodSpec, patchErr := util.ApplyPodSpecPatch(pod.Spec, woc.execWf.Spec.PodSpecPatch)
 		if patchErr != nil {
-			return nil, errors.Wrap(patchErr, "", "Error applying PodSpecPatch")
+			return nil, argoerrors.Wrap(patchErr, "", "Error applying PodSpecPatch")
 		}
 		pod.Spec = *patchedPodSpec
 	}
@@ -249,20 +250,44 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 
 	log.Debug(ctx, "Creating Agent pod")
 
-	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(ctx, pod, metav1.CreateOptions{})
+	// Submission goes through the SHARED createPodFromBuild primitive
+	// (workflowpod_submit.go), the same impure half the workload path uses. The
+	// agent pod carries none of the workload-only machinery (no podLayout, no
+	// init-less/legacy split, no node-status side effects), so it wraps the bare
+	// pod in a podBuildResult and submits it directly.
+	// The fresh flag (genuine create vs AlreadyExists recovery) is irrelevant
+	// here: agent pods are not subject to workflow parallelism limits and do
+	// not count toward activePods, so it is deliberately discarded.
+	created, _, err := woc.createPodFromBuild(ctx, &podBuildResult{Pod: pod}, log)
 	if err != nil {
 		log.WithError(err).Info(ctx, "Failed to create Agent pod")
-		if apierr.IsAlreadyExists(err) {
-			// get a reference to the currently existing Pod since the created pod returned before was nil.
-			if existing, getErr := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Get(ctx, pod.Name, metav1.GetOptions{}); getErr == nil {
-				return existing, nil
+		// The agent's transient-error contract: requeue and report no pod,
+		// rather than propagating the error up through reconcileAgentPod.
+		// createPodFromBuild routes the agent through the shared rate limiter,
+		// which returns ErrResourceRateLimitReached when throttled; treat it
+		// like the workload path's requeueIfTransientErr condition so a
+		// rate-limited agent pod creation requeues gracefully instead of
+		// surfacing a hard error.
+		if errorsutil.IsTransientErr(ctx, err) || errors.Is(err, ErrResourceRateLimitReached) {
+			// The rate limiter runs before Create, so on the rate-limited path
+			// the AlreadyExists→Get recovery inside createPodFromBuild never
+			// runs. A pod created by a prior reconcile that has not yet reached
+			// the informer (checked at the top of this function) must be
+			// recovered with a direct Get rather than requeued as though no pod
+			// existed.
+			if errors.Is(err, ErrResourceRateLimitReached) {
+				if existing, getErr := woc.getPod(ctx, podName); getErr == nil {
+					log.Info(ctx, "Recovered existing Agent pod on rate-limited create")
+					return existing, nil
+				}
 			}
-		}
-		if errorsutil.IsTransientErr(ctx, err) {
 			woc.requeue()
-			return created, nil
+			return nil, nil
 		}
-		return nil, errors.InternalWrapError(fmt.Errorf("failed to create Agent pod. Reason: %w", err))
+		// createPodFromBuild wraps non-transient failures generically; add the
+		// agent-pod context so an agent-pod creation failure is distinguishable
+		// from a workload-pod one in logs/status.
+		return nil, fmt.Errorf("failed to create Agent pod: %w", err)
 	}
 	log.Info(ctx, "Created Agent pod")
 	return created, nil
