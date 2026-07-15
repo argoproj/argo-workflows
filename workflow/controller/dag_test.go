@@ -4628,9 +4628,8 @@ spec:
 		id(leaf):   {ID: id(leaf), Name: leaf, Type: wfv1.NodeTypePod, Phase: wfv1.NodeSucceeded, BoundaryID: id(root), TemplateName: "echo"},
 	}
 
-	ctx := logging.TestContext(t.Context())
-	woc := newWoc(ctx, *wf)
-	woc.operate(ctx)
+	woc := newWoc(*wf)
+	woc.operate(t.Context())
 
 	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Nodes[id(fanout)].Phase, "orphaned TaskGroup should be completed from its children")
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, "workflow should complete")
