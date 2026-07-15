@@ -236,8 +236,8 @@ schema = 3
     version = "v0.2.1"
     hash = "sha256-XQdg/tnn5uKNzUc/dMmoIS9wgarx7SxaqZ5uJ9ZglA0="
   [mod."github.com/coreos/go-oidc/v3"]
-    version = "v3.19.0"
-    hash = "sha256-WYK1ZZraFCp2DEXWKwrrXbEl+mgIybqacfXMDOh+WDA="
+    version = "v3.20.0"
+    hash = "sha256-mlYeWQ7OKatN8ag+q+DjipcPSXwQJ+V5dOYswjcE76w="
   [mod."github.com/cpuguy83/dockercfg"]
     version = "v0.3.2"
     hash = "sha256-Jm0B99cXSJwMT53P0C6rhqDnZUykZXMVTdlvDrDvrxQ="
