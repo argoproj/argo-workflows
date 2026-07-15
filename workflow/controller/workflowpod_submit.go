@@ -21,11 +21,9 @@ import (
 //
 // The order below is correctness-critical:
 //
-//	c. ExtraObjects (ConfigMaps FIRST) — the pod mounts them, AlreadyExists OK
-//	d. rate-limiter reserve    — throttle resource creation
-//	e. k8s Pod Create          — with AlreadyExists recovery via Get
-//	f. activePods++            — parallelism accounting
-//	g. apply ProgressToApply   — initial node-status progress write
+//	c-e. shared submit core — see createPodFromBuild, which owns these steps
+//	f.   activePods++          — parallelism accounting
+//	g.   apply ProgressToApply — initial node-status progress write
 //
 // Step (g) runs only after a successful create so the workflow status never
 // records progress for a pod that failed to be created.

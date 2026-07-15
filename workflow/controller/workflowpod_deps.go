@@ -20,8 +20,10 @@ import (
 // here (createConfigMap, createPod, reserveRateLimiter, incrementActivePods,
 // setNodeProgress, markNodeFailedOnShutdown, getPod, startCreateWorkflowPodSpan)
 // are NOT part of podBuilderDeps; they are called by the submit core
-// (woc.createPodFromBuild / woc.submitPod, workflowpod_submit.go) and by the
-// dispatch layer woc.createWorkflowPod.
+// (woc.createPodFromBuild / woc.submitPod, workflowpod_submit.go), by the
+// dispatch layer woc.createWorkflowPod, and by the agent path
+// (woc.createAgentPod, agent.go — createPodFromBuild and, for rate-limited
+// recovery, getPod).
 
 // compile-time assertion that *wfOperationCtx satisfies podBuilderDeps.
 var _ podBuilderDeps = (*wfOperationCtx)(nil)
@@ -87,6 +89,11 @@ func (woc *wfOperationCtx) markNodeFailedOnShutdown(ctx context.Context, nodeNam
 func (woc *wfOperationCtx) setNodeProgress(ctx context.Context, nodeID string, progress wfv1.Progress) {
 	node, getNodeErr := woc.wf.Status.Nodes.Get(nodeID)
 	if getNodeErr != nil {
+		// Unlike the fail-loud missing-node handling elsewhere in the operator,
+		// this runs AFTER the pod was successfully created: panicking here would
+		// abort the reconcile with the side effect already applied, for the sake
+		// of a progress value that the progress subsystem re-derives anyway. Log
+		// and skip instead.
 		logging.RequireLoggerFromContext(ctx).WithError(getNodeErr).Error(ctx, "was unable to obtain node")
 		return
 	}
@@ -127,8 +134,10 @@ func (woc *wfOperationCtx) createPod(ctx context.Context, pod *apiv1.Pod) (*apiv
 	return woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(ctx, pod, metav1.CreateOptions{})
 }
 
-// getPod fetches an existing pod by name (AlreadyExists recovery). Side effect —
-// called by woc.createPodFromBuild.
+// getPod fetches an existing pod by name. Side effect — called by
+// woc.createPodFromBuild (AlreadyExists recovery) and by woc.createAgentPod
+// (recovery of an existing agent pod when the rate limiter fires before
+// Create).
 func (woc *wfOperationCtx) getPod(ctx context.Context, name string) (*apiv1.Pod, error) {
 	return woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Get(ctx, name, metav1.GetOptions{})
 }

@@ -186,7 +186,6 @@ func newTestPodBuilder(tmpl *wfv1.Template, mainCtrs []apiv1.Container, initless
 			artifactRepository: &wfv1.ArtifactRepository{},
 			config:             &config.Config{},
 			executorImage:      testStubExecutorImage,
-			initless:           initless,
 			now:                time.Now().UTC(),
 			podNameVersion:     util.PodNameV2,
 			log:                logging.RequireLoggerFromContext(logging.TestContext(context.Background())),

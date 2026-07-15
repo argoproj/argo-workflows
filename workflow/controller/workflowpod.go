@@ -101,8 +101,11 @@ type createWorkflowPodOpts struct {
 // Every value is gathered once, in newPodBuilder, from the owning
 // *wfOperationCtx / *WorkflowController so that build (and its phase methods)
 // never hold or dereference those god-objects. Slices/pointers that the
-// builder must not see mutate underneath it (the template, the workflow spec)
-// are deep-copied at capture time.
+// builder must not see mutate underneath it (e.g. the workflow spec, volumes,
+// mainCtrs) are deep-copied at capture time; the template is captured raw and
+// deep-copied inside build before any mutation. Live workflow status (node
+// lookups, PVC references) is intentionally NOT snapshotted — build reads it
+// at build time through the podBuilderDeps methods documented as live reads.
 type podBuilderInputs struct {
 	// node identity
 	nodeName  string
@@ -148,7 +151,6 @@ type podBuilderInputs struct {
 	mainContainerDefaults     *apiv1.Container
 	kubeConfig                *config.KubeConfig
 	executorImage             string
-	initless                  bool
 	progressPatchTickDuration time.Duration
 	progressFileTickDuration  time.Duration
 
@@ -182,9 +184,10 @@ type podBuilderInputs struct {
 
 // podBuilderDeps is the set of impure-but-read-only operations the pure pod
 // builder performs: live workflow-status reads, informer/k8s lookups, and the
-// read-only entrypoint/image lookup. True side effects (pod/ConfigMap
-// creation, rate limiting, status mutation, active-pod accounting) live in
-// woc.submitPod, not here. It is injected as an interface so podBuilder holds
+// read-only entrypoint/image lookup. True side effects live in the submit core
+// (workflowpod_submit.go), not here: pod/ConfigMap creation and rate limiting
+// in woc.createPodFromBuild, status mutation and active-pod accounting in
+// woc.submitPod. It is injected as an interface so podBuilder holds
 // no concrete *wfOperationCtx / *WorkflowController reference. *wfOperationCtx
 // satisfies it.
 type podBuilderDeps interface {
@@ -279,7 +282,6 @@ func (woc *wfOperationCtx) newPodBuilder(ctx context.Context, nodeName string, m
 			mainContainerDefaults:     wfc.Config.MainContainer,
 			kubeConfig:                wfc.Config.KubeConfig,
 			executorImage:             wfc.executorImage(),
-			initless:                  wfc.isInitlessPodEnabled(),
 			progressPatchTickDuration: wfc.progressPatchTickDuration,
 			progressFileTickDuration:  wfc.progressFileTickDuration,
 			workflowDeadline:          woc.workflowDeadline,
@@ -533,15 +535,10 @@ func (pb *podBuilder) build(ctx context.Context) (*podBuildResult, error) {
 	// outputs or errors, making it redundant. For resource templates we add one to
 	// collect logs.
 	needsAuxCtr := (tmpl.GetType() != wfv1.TemplateTypeResource && tmpl.GetType() != wfv1.TemplateTypeData) || (tmpl.GetType() == wfv1.TemplateTypeResource && tmpl.SaveLogsAsArtifact())
-	// In init-less mode there is no init container to stage input artifacts, and a
-	// resource template that isn't archiving logs otherwise runs without a supervisor.
-	// A `manifestFrom` resource sources its manifest from an input artifact that
-	// `argoexec resource` reads from disk, so it needs the supervisor to download that
-	// artifact during pre-main. (Legacy mode is unaffected: its init container stages
-	// the artifact regardless of whether a wait container is present.)
-	if pb.in.initless && tmpl.GetType() == wfv1.TemplateTypeResource && tmpl.Resource.ManifestFrom != nil {
-		needsAuxCtr = true
-	}
+	// The layout may require the aux container for templates the base rule
+	// skips (e.g. init-less `manifestFrom` resources, which need the supervisor
+	// to stage the manifest artifact pre-main).
+	needsAuxCtr = needsAuxCtr || pb.layout.templateRequiresAuxContainer(tmpl)
 	if needsAuxCtr {
 		auxCtr := pb.layout.auxContainer(ctx, pb, tmpl)
 		pod.Spec.Containers = append(pod.Spec.Containers, *auxCtr)
@@ -672,10 +669,10 @@ func (pb *podBuilder) build(ctx context.Context) (*podBuildResult, error) {
 		if c.Name == common.SupervisorContainerName {
 			c.Env = append(c.Env, apiv1.EnvVar{Name: common.EnvVarTemplate, Value: envVarTemplateValue})
 		}
-		// Data and resource-without-logs templates don't run a supervisor in
-		// init-less mode; there is no one to write /var/run/argo/template for
-		// main's emissary to read. Give main the template via env var instead.
-		if pb.in.initless && !hasAuxCtr && c.Name == common.MainContainerName {
+		// In layouts where no other container stages /var/run/argo/template for
+		// main (init-less templates without a supervisor), deliver the template
+		// to main via env var instead.
+		if pb.layout.mainNeedsTemplateEnv(hasAuxCtr) && c.Name == common.MainContainerName {
 			c.Env = append(c.Env, apiv1.EnvVar{Name: common.EnvVarTemplate, Value: envVarTemplateValue})
 		}
 		pod.Spec.Containers[i] = c
@@ -1330,9 +1327,11 @@ func (woc *wfOperationCtx) addDNSConfig(pod *apiv1.Pod) {
 
 // addSchedulingConstraints applies any node selectors or affinity rules to the pod, either set in the workflow or the template
 func (woc *wfOperationCtx) addSchedulingConstraints(_ context.Context, pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *wfv1.Template, boundaryTemplate *wfv1.Template) {
-	// boundaryTemplate (the boundary node's template, if any) is resolved by the
-	// caller from the immutable build snapshot, so this function performs no live
-	// woc.wf reads and stays consistent with the rest of the pure pod builder.
+	// boundaryTemplate (the boundary node's template, if any) is supplied by the
+	// caller — pb.build passes the snapshot's pb.in.boundaryTemplate, and
+	// createAgentPod passes nil (agent pods have no boundary node) — so this
+	// function performs no live woc.wf reads and stays consistent with the rest
+	// of the pure pod builder.
 	// Set nodeSelector (if specified)
 	switch {
 	case len(tmpl.NodeSelector) > 0:

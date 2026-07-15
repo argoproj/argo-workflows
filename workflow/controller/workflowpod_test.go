@@ -699,6 +699,34 @@ func Test_submitPod_activePods_accounting(t *testing.T) {
 	})
 }
 
+// Test_setNodeProgress covers both halves of the progress write that runs
+// after a successful pod create: an existing node gets the progress applied,
+// and a missing node is logged and skipped (no panic, no status mutation) —
+// the pod already exists at this point, so aborting the reconcile would be
+// worse than dropping a derivable progress value.
+func Test_setNodeProgress(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	woc := newWoc(ctx)
+
+	nodeID := "test-node-id"
+	woc.wf.Status.Nodes = wfv1.Nodes{nodeID: wfv1.NodeStatus{ID: nodeID, Name: "test-node"}}
+
+	// Existing node: progress lands on the node status.
+	woc.setNodeProgress(ctx, nodeID, wfv1.Progress("25/100"))
+	node, err := woc.wf.Status.Nodes.Get(nodeID)
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.Progress("25/100"), node.Progress)
+
+	// Missing node: logged and skipped without panicking or touching status.
+	assert.NotPanics(t, func() {
+		woc.setNodeProgress(ctx, "no-such-node", wfv1.Progress("50/100"))
+	})
+	assert.Len(t, woc.wf.Status.Nodes, 1)
+	node, err = woc.wf.Status.Nodes.Get(nodeID)
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.Progress("25/100"), node.Progress)
+}
+
 func Test_createWorkflowPod_containerName(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx)

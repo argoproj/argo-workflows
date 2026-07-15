@@ -21,6 +21,17 @@ type podLayout interface {
 	// `supervisor` container in the init-less layout.
 	auxContainer(ctx context.Context, pb *podBuilder, tmpl *wfv1.Template) *apiv1.Container
 
+	// templateRequiresAuxContainer reports whether the layout needs the aux
+	// container for a template that build's layout-independent rule would skip
+	// (resource and data templates normally run without one). Never weakens the
+	// base rule — build ORs it in.
+	templateRequiresAuxContainer(tmpl *wfv1.Template) bool
+
+	// mainNeedsTemplateEnv reports whether the main container must receive
+	// ARGO_TEMPLATE via env var because no other container in this layout will
+	// stage /var/run/argo/template for main's emissary to read.
+	mainNeedsTemplateEnv(hasAuxCtr bool) bool
+
 	// initContainers returns the pod's init containers: the standard (and
 	// plugin) init containers in the legacy layout, or none in the init-less
 	// layout (the supervisor runs as a regular container and takes on the
@@ -70,6 +81,17 @@ func (legacyLayout) auxContainer(ctx context.Context, pb *podBuilder, tmpl *wfv1
 	return pb.newWaitContainer(ctx, tmpl)
 }
 
+func (legacyLayout) templateRequiresAuxContainer(tmpl *wfv1.Template) bool {
+	// The legacy init container stages input artifacts regardless of whether a
+	// wait container is present, so no template needs one beyond the base rule.
+	return false
+}
+
+func (legacyLayout) mainNeedsTemplateEnv(hasAuxCtr bool) bool {
+	// The legacy init container always writes /var/run/argo/template for main.
+	return false
+}
+
 func (legacyLayout) initContainers(ctx context.Context, pb *podBuilder, tmpl *wfv1.Template) ([]apiv1.Container, error) {
 	return pb.deps.newInitContainers(ctx, tmpl)
 }
@@ -96,6 +118,22 @@ type initlessLayout struct{}
 
 func (initlessLayout) auxContainer(ctx context.Context, pb *podBuilder, tmpl *wfv1.Template) *apiv1.Container {
 	return pb.deps.newSupervisorContainer(ctx, tmpl)
+}
+
+func (initlessLayout) templateRequiresAuxContainer(tmpl *wfv1.Template) bool {
+	// There is no init container to stage input artifacts, and a resource
+	// template that isn't archiving logs otherwise runs without a supervisor.
+	// A `manifestFrom` resource sources its manifest from an input artifact that
+	// `argoexec resource` reads from disk, so it needs the supervisor to download
+	// that artifact during pre-main.
+	return tmpl.GetType() == wfv1.TemplateTypeResource && tmpl.Resource.ManifestFrom != nil
+}
+
+func (initlessLayout) mainNeedsTemplateEnv(hasAuxCtr bool) bool {
+	// Data and resource-without-logs templates don't run a supervisor; there is
+	// no one to write /var/run/argo/template for main's emissary to read. Give
+	// main the template via env var instead.
+	return !hasAuxCtr
 }
 
 func (initlessLayout) initContainers(ctx context.Context, pb *podBuilder, tmpl *wfv1.Template) ([]apiv1.Container, error) {
