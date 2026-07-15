@@ -24,7 +24,7 @@
         "cronstrue": "^2.50.0",
         "dagre": "^0.8.5",
         "history": "^4.10.1",
-        "linkify-it": "^5.0.0",
+        "linkify-it": "^6.0.0",
         "moment": "^2.30.1",
         "monaco-editor": "^0.45.0",
         "prop-types": "^15.8.1",
