@@ -13,9 +13,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	argoerrors "github.com/argoproj/argo-workflows/v4/errors"
-	"github.com/argoproj/argo-workflows/v4/pkg/plugins/spec"
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/pkg/plugins/spec"
 	"github.com/argoproj/argo-workflows/v4/util/env"
 	errorsutil "github.com/argoproj/argo-workflows/v4/util/errors"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
