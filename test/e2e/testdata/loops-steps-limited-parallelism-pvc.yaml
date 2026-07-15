@@ -56,7 +56,7 @@ spec:
       parameters:
       - name: pvc
     script:
-      image: busybox:stable
+      image: argoproj/argosay:v2
       command: ["sh"]
       source: | 
         echo "Hello! i'm writing to pvc; '{{inputs.parameters.pvc}}'" >> /pvc/msg
@@ -68,7 +68,7 @@ spec:
       parameters:
       - name: pvc
     script:
-      image: busybox:stable
+      image: argoproj/argosay:v2
       command: ["sh"]
       source: | 
         echo "Found the following message;"

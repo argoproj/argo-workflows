@@ -17,6 +17,6 @@ spec:
               name: workflow-template-submittable
               template: whalesay-template
   synchronization:
-    mutex:
-      name:  "{{workflow.labels.mutexName}}"
+    mutexes:
+      - name:  "{{workflow.labels.mutexName}}"
   schedulerName:  "{{workflow.annotations.schedulerName}}"

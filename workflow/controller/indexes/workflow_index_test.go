@@ -9,9 +9,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
 func TestWorkflowIndexFunc(t *testing.T) {
@@ -78,9 +78,9 @@ func TestWorkflowSemaphoreKeysIndexFunc(t *testing.T) {
 			},
 			Spec: wfv1.WorkflowSpec{
 				Synchronization: &wfv1.Synchronization{
-					Semaphore: &wfv1.SemaphoreRef{
+					Semaphores: []*wfv1.SemaphoreRef{{
 						ConfigMapKeyRef: &apiv1.ConfigMapKeySelector{},
-					},
+					}},
 				},
 			},
 		})
@@ -97,9 +97,9 @@ func TestWorkflowSemaphoreKeysIndexFunc(t *testing.T) {
 			},
 			Spec: wfv1.WorkflowSpec{
 				Synchronization: &wfv1.Synchronization{
-					Semaphore: &wfv1.SemaphoreRef{
+					Semaphores: []*wfv1.SemaphoreRef{{
 						ConfigMapKeyRef: &apiv1.ConfigMapKeySelector{},
-					},
+					}},
 				},
 			},
 		})

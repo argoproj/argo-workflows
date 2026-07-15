@@ -6,54 +6,59 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
+
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
 func unsupportedArtifactSubPathResolution(t *testing.T, artifactString string) {
+	ctx := logging.TestContext(t.Context())
 	scope := createScope(nil)
 
 	artifact := unmarshalArtifact(artifactString)
 
-	scope.addArtifactToScope("steps.test.outputs.artifacts.art", *artifact)
+	varkeys.StepsNodeRef.OutputsArtifactByName.Set(scope.scope, *artifact, "test", "art")
 
 	// Ensure that normal artifact resolution without adding subpaths works
-	resolvedArtifact, err := scope.resolveArtifact(&wfv1.Artifact{From: "{{steps.test.outputs.artifacts.art}}"})
+	resolvedArtifact, err := scope.resolveArtifact(ctx, &wfv1.Artifact{From: "{{steps.test.outputs.artifacts.art}}"})
 	require.NoError(t, err)
 	assert.Equal(t, resolvedArtifact, artifact)
 
 	// Ensure that we allow whitespaces in between names and brackets
-	resolvedArtifact, err = scope.resolveArtifact(&wfv1.Artifact{From: "{{steps.test.outputs.artifacts.art}}"})
+	resolvedArtifact, err = scope.resolveArtifact(ctx, &wfv1.Artifact{From: "{{steps.test.outputs.artifacts.art}}"})
 	require.NoError(t, err)
 	assert.Equal(t, resolvedArtifact, artifact)
 
 	// Ensure that adding a subpath results in an error being thrown
-	_, err = scope.resolveArtifact(&wfv1.Artifact{SubPath: "some/subkey", From: "{{steps.test.outputs.artifacts.art}}"})
+	_, err = scope.resolveArtifact(ctx, &wfv1.Artifact{SubPath: "some/subkey", From: "{{steps.test.outputs.artifacts.art}}"})
 	require.Error(t, err)
 }
 
 func artifactSubPathResolution(t *testing.T, artifactString string, subPathArtifactString string) {
+	ctx := logging.TestContext(t.Context())
 	scope := createScope(nil)
 
 	artifact := unmarshalArtifact(artifactString)
 	originalArtifact := artifact.DeepCopy()
 	artifactWithSubPath := unmarshalArtifact(subPathArtifactString)
 
-	scope.addArtifactToScope("steps.test.outputs.artifacts.art", *artifact)
+	varkeys.StepsNodeRef.OutputsArtifactByName.Set(scope.scope, *artifact, "test", "art")
 
 	// Ensure that normal artifact resolution without adding subpaths works
-	resolvedArtifact, err := scope.resolveArtifact(&wfv1.Artifact{From: "{{steps.test.outputs.artifacts.art}}"})
+	resolvedArtifact, err := scope.resolveArtifact(ctx, &wfv1.Artifact{From: "{{steps.test.outputs.artifacts.art}}"})
 	require.NoError(t, err)
 	assert.Equal(t, resolvedArtifact, artifact)
 
 	// Ensure that adding a subpath results in artifact key being modified
-	resolvedArtifact, err = scope.resolveArtifact(&wfv1.Artifact{SubPath: "some/subkey", From: "{{steps.test.outputs.artifacts.art}}"})
+	resolvedArtifact, err = scope.resolveArtifact(ctx, &wfv1.Artifact{SubPath: "some/subkey", From: "{{steps.test.outputs.artifacts.art}}"})
 	require.NoError(t, err)
 	assert.Equal(t, resolvedArtifact, artifactWithSubPath)
 
 	// Ensure that subpath template values are also resolved
-	scope.addParamToScope("steps.test.outputs.parameters.subkey", "some")
+	varkeys.StepsNodeRef.OutputsParameterByName.Set(scope.scope, "some", "test", "subkey")
 
-	resolvedArtifact, err = scope.resolveArtifact(&wfv1.Artifact{SubPath: "{{steps.test.outputs.parameters.subkey}}/subkey", From: "{{steps.test.outputs.artifacts.art}}"})
+	resolvedArtifact, err = scope.resolveArtifact(ctx, &wfv1.Artifact{SubPath: "{{steps.test.outputs.parameters.subkey}}/subkey", From: "{{steps.test.outputs.artifacts.art}}"})
 	require.NoError(t, err)
 	assert.Equal(t, resolvedArtifact, artifactWithSubPath)
 	assert.Equal(t, artifact, originalArtifact)
@@ -262,42 +267,95 @@ func TestResolveParameters(t *testing.T) {
 	}
 
 	scope := createScope(&tmpl)
-	scope.addParamToScope("steps.t1.outputs.parameters.result", "4")
-	scope.addParamToScope("workflows.arguments.param", "head")
-	scope.addParamToScope("steps.coin-flip.outputs.parameters.result", "5")
+	varkeys.StepsNodeRef.OutputsParameterByName.Set(scope.scope, "4", "t1", "result")
+	varkeys.WorkflowParametersByName.Set(scope.scope, "head", "param")
+	varkeys.StepsNodeRef.OutputsParameterByName.Set(scope.scope, "5", "coin-flip", "result")
 
 	valFrom := &wfv1.ValueFrom{
 		Expression: "inputs.parameters.one == '1' ? inputs.parameters.two: steps.t1.outputs.parameters.result",
 	}
-	result, err := scope.resolveParameter(valFrom)
+	result, _, err := scope.resolveParameter(valFrom)
 	require.NoError(t, err)
 	assert.Equal("2", result)
 
 	valFrom = &wfv1.ValueFrom{
 		Parameter: "{{steps.t1.outputs.parameters.result}}",
 	}
-	result, err = scope.resolveParameter(valFrom)
+	result, _, err = scope.resolveParameter(valFrom)
 	require.NoError(t, err)
 	assert.Equal("4", result)
 
 	valFrom = &wfv1.ValueFrom{
-		Expression: "inputs.parameters.one == 2 ? steps.t1.outputs.parameters.result :workflows.arguments.param",
+		Expression: "inputs.parameters.one == 2 ? steps.t1.outputs.parameters.result : workflow.parameters.param",
 	}
-	result, err = scope.resolveParameter(valFrom)
+	result, _, err = scope.resolveParameter(valFrom)
 	require.NoError(t, err)
 	assert.Equal("head", result)
 
 	valFrom = &wfv1.ValueFrom{
-		Expression: "asInt(inputs.parameters.one) == 1 ? steps['coin-flip'].outputs.parameters.result :workflows.arguments.param",
+		Expression: "asInt(inputs.parameters.one) == 1 ? steps['coin-flip'].outputs.parameters.result : workflow.parameters.param",
 	}
-	result, err = scope.resolveParameter(valFrom)
+	result, _, err = scope.resolveParameter(valFrom)
 	require.NoError(t, err)
 	assert.Equal("5", result)
 
 	valFrom = &wfv1.ValueFrom{
-		Expression: "asInt(inputs.parameters.one) == 1 ? steps[\"coin-flip\"].outputs.parameters.result :workflows.arguments.param",
+		Expression: "asInt(inputs.parameters.one) == 1 ? steps[\"coin-flip\"].outputs.parameters.result : workflow.parameters.param",
 	}
-	result, err = scope.resolveParameter(valFrom)
+	result, _, err = scope.resolveParameter(valFrom)
 	require.NoError(t, err)
 	assert.Equal("5", result)
+}
+
+// TestSkippedOptionalExpressionResolution verifies the *string/nil-for-optional model: a skipped
+// output (no producer default) is stored as nil, so a ValueFrom.Expression can fall back via `??`,
+// while a legitimately empty output ("") is NOT treated as absent.
+func TestSkippedOptionalExpressionResolution(t *testing.T) {
+	const ref = "tasks.producer.outputs.parameters.msg"
+	const expr = "tasks.producer.outputs.parameters.msg ?? 'fallback-from-expr'"
+
+	t.Run("skipped resolves to fallback", func(t *testing.T) {
+		scope := createScope(nil)
+		// skipped, no producer default -> nil + marked skipped
+		varkeys.TasksNodeRef.OutputsParameterByName.SetSkipped(scope.scope, nil, "producer", "msg")
+		val, _, err := scope.resolveParameter(&wfv1.ValueFrom{Expression: expr})
+		require.NoError(t, err)
+		assert.Equal(t, "fallback-from-expr", val)
+	})
+
+	t.Run("real empty value is preserved", func(t *testing.T) {
+		scope := createScope(nil)
+		// produced an empty string -> NOT absent
+		varkeys.TasksNodeRef.OutputsParameterByName.Set(scope.scope, "", "producer", "msg")
+		val, _, err := scope.resolveParameter(&wfv1.ValueFrom{Expression: expr})
+		require.NoError(t, err)
+		assert.Empty(t, val)
+	})
+
+	t.Run("unhandled nil errors like inline expressions", func(t *testing.T) {
+		scope := createScope(nil)
+		// skipped, no producer default -> nil + marked skipped
+		varkeys.TasksNodeRef.OutputsParameterByName.SetSkipped(scope.scope, nil, "producer", "msg")
+		_, _, err := scope.resolveParameter(&wfv1.ValueFrom{Expression: ref})
+		require.ErrorContains(t, err, "failed to evaluate expression")
+	})
+}
+
+// TestAbsentOptionalRefRequiresTag verifies that absentOptionalRef only matches a real pure
+// "{{...}}" reference: a literal argument value that merely spells out a scope key is data, not a
+// reference, and must not be treated as a skipped-output ref (which would get the argument silently
+// replaced with the absent-optional sentinel); composite and nested values are not pure references either.
+func TestAbsentOptionalRefRequiresTag(t *testing.T) {
+	const ref = "tasks.producer.outputs.parameters.msg"
+	scope := createScope(nil)
+	varkeys.TasksNodeRef.OutputsParameterByName.SetSkipped(scope.scope, nil, "producer", "msg")
+	varkeys.TasksNodeRef.OutputsParameterByName.Set(scope.scope, "value", "real", "msg")
+
+	assert.True(t, scope.absentOptionalRef("{{"+ref+"}}"), "a pure tag referencing the skipped output should match")
+	assert.True(t, scope.absentOptionalRef("{{ "+ref+" }}"), "inner whitespace is trimmed like simple-tag resolution")
+	assert.False(t, scope.absentOptionalRef(ref), "a brace-less literal equal to a scope key is data, not a reference")
+	assert.False(t, scope.absentOptionalRef("x-{{"+ref+"}}-y"), "composite values are not pure references")
+	assert.False(t, scope.absentOptionalRef("{{outer-{{"+ref+"}}}}"), "nested tags are not pure references")
+	assert.False(t, scope.absentOptionalRef("{{tasks.real.outputs.parameters.msg}}"), "a reference to a produced value is not absent")
+	assert.False(t, scope.absentOptionalRef("{{tasks.unknown.outputs.parameters.msg}}"), "an unknown key is unresolved, not absent")
 }

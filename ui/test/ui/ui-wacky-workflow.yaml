@@ -66,7 +66,7 @@ spec:
   # Generate a list of numbers in JSON format
   - name: gen-number-list1
     script:
-      image: python:alpine3.6
+      image: python:alpine3.23
       command: [python]
       source: |
         import json
@@ -75,7 +75,7 @@ spec:
   
   - name: gen-number-list2
     script:
-      image: python:alpine3.6
+      image: python:alpine3.23
       command: [python]
       source: |
         import json
@@ -84,7 +84,7 @@ spec:
   
   - name: gen-number-list3
     script:
-      image: python:alpine3.6
+      image: python:alpine3.23
       command: [python]
       source: |
         import json
@@ -114,7 +114,7 @@ spec:
       parameters:
       - name: seconds
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo sleeping for {{inputs.parameters.seconds}} seconds; sleep {{inputs.parameters.seconds}}; echo done"]
   
@@ -123,6 +123,6 @@ spec:
       parameters:
       - name: seconds
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo input was {{inputs.parameters.seconds}} seconds; echo done"]

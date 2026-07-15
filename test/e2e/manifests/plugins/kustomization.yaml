@@ -6,9 +6,9 @@ resources:
   - hello-executor-plugin-serviceaccount.yaml
   - hello-executor-plugin.service-account-token-secret.yaml
   - hello-executor-plugin-configmap.yaml
+  - massive-executor-plugin-configmap.yaml
 
-labels:
-  - includeSelectors: true
-    pairs:
-      app.kubernetes.io/part-of: argo
+patches:
+  - path: workflow-controller-deployment.yaml
+
 namespace: argo

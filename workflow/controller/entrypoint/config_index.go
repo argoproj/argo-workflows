@@ -3,7 +3,7 @@ package entrypoint
 import (
 	"context"
 
-	"github.com/argoproj/argo-workflows/v3/config"
+	"github.com/argoproj/argo-workflows/v4/config"
 )
 
 type configIndex map[string]config.Image

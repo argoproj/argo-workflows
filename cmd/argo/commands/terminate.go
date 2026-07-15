@@ -7,9 +7,9 @@ import (
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
-	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/client"
+	workflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
 type terminateOption struct {
@@ -69,12 +69,13 @@ func NewTerminateCommand() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
+			ctx := cmd.Context()
+			ctx, apiClient, err := client.NewAPIClient(ctx)
 			if err != nil {
 				return err
 			}
-			serviceClient := apiClient.NewWorkflowServiceClient()
-			t.namespace = client.Namespace()
+			serviceClient := apiClient.NewWorkflowServiceClient(ctx)
+			t.namespace = client.Namespace(ctx)
 
 			var workflows wfv1.Workflows
 

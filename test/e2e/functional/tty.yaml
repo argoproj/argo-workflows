@@ -16,7 +16,7 @@ spec:
       script:
         tty: true
         stdin: true
-        image: alpine:latest
+        image: alpine:3.23
         command: [sh]
         source: |
           if [[ ! -t 0 ]]; then
@@ -26,7 +26,7 @@ spec:
 
     - name: tty-false
       script:
-        image: alpine:latest
+        image: alpine:3.23
         command: [sh]
         source: |
           if [[ -t 0 ]]; then

@@ -7,6 +7,6 @@ spec:
   workflowTemplateRef:
     name: workflow-template-submittable
   synchronization:
-    mutex:
-      name:  "{{workflow.labels.mutexName}}"
+    mutexes:
+      - name:  "{{workflow.labels.mutexName}}"
   schedulerName:  "{{workflow.annotations.schedulerName}}"

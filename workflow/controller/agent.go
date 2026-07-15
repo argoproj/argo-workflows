@@ -4,22 +4,23 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"slices"
 
-	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/tools/cache"
-	"k8s.io/utils/ptr"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/env"
-	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
+	"github.com/argoproj/argo-workflows/v4/pkg/plugins/spec"
+
+	"github.com/argoproj/argo-workflows/v4/errors"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/env"
+	errorsutil "github.com/argoproj/argo-workflows/v4/util/errors"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
 func (woc *wfOperationCtx) getAgentPodName() string {
@@ -31,7 +32,7 @@ func (woc *wfOperationCtx) isAgentPod(pod *apiv1.Pod) bool {
 }
 
 func (woc *wfOperationCtx) reconcileAgentPod(ctx context.Context) error {
-	woc.log.Infof("reconcileAgentPod")
+	woc.log.Info(ctx, "reconcileAgentPod")
 	if len(woc.taskSet) == 0 {
 		return nil
 	}
@@ -41,25 +42,26 @@ func (woc *wfOperationCtx) reconcileAgentPod(ctx context.Context) error {
 	}
 	// Check Pod is just created
 	if pod != nil && pod.Status.Phase != "" {
-		woc.updateAgentPodStatus(pod)
+		woc.updateAgentPodStatus(ctx, pod)
 	}
 	return nil
 }
 
-func (woc *wfOperationCtx) updateAgentPodStatus(pod *apiv1.Pod) {
-	woc.log.Info("updateAgentPodStatus")
-	newPhase, message := assessAgentPodStatus(pod)
+func (woc *wfOperationCtx) updateAgentPodStatus(ctx context.Context, pod *apiv1.Pod) {
+	woc.log.Info(ctx, "updateAgentPodStatus")
+	newPhase, message := assessAgentPodStatus(ctx, pod)
 	if newPhase == wfv1.NodeFailed || newPhase == wfv1.NodeError {
-		woc.markTaskSetNodesError(fmt.Errorf(`agent pod failed with reason:"%s"`, message))
+		woc.markTaskSetNodesError(ctx, fmt.Errorf(`agent pod failed with reason:"%s"`, message))
 	}
 }
 
-func assessAgentPodStatus(pod *apiv1.Pod) (wfv1.NodePhase, string) {
+func assessAgentPodStatus(ctx context.Context, pod *apiv1.Pod) (wfv1.NodePhase, string) {
 	var newPhase wfv1.NodePhase
 	var message string
-	log.WithField("namespace", pod.Namespace).
+	logger := logging.RequireLoggerFromContext(ctx)
+	logger.WithField("namespace", pod.Namespace).
 		WithField("podName", pod.Name).
-		Info("assessAgentPodStatus")
+		Info(ctx, "assessAgentPodStatus")
 	switch pod.Status.Phase {
 	case apiv1.PodSucceeded, apiv1.PodRunning, apiv1.PodPending:
 		return "", ""
@@ -68,7 +70,7 @@ func assessAgentPodStatus(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 		message = pod.Status.Message
 	default:
 		newPhase = wfv1.NodeError
-		message = fmt.Sprintf("Unexpected pod phase for %s: %s", pod.ObjectMeta.Name, pod.Status.Phase)
+		message = fmt.Sprintf("Unexpected pod phase for %s: %s", pod.Name, pod.Status.Phase)
 	}
 	return newPhase, message
 }
@@ -87,7 +89,7 @@ func (woc *wfOperationCtx) secretExists(ctx context.Context, name string) (bool,
 func (woc *wfOperationCtx) getCertVolumeMount(ctx context.Context, name string) (*apiv1.Volume, *apiv1.VolumeMount, error) {
 	exists, err := woc.secretExists(ctx, name)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to check if secret %s exists: %v", name, err)
+		return nil, nil, fmt.Errorf("failed to check if secret %s exists: %w", name, err)
 	}
 	if exists {
 		certVolume := &apiv1.Volume{
@@ -110,19 +112,18 @@ func (woc *wfOperationCtx) getCertVolumeMount(ctx context.Context, name string) 
 }
 
 func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, error) {
+	if woc.controller.Config.DisableAgentPodCreation {
+		return nil, nil
+	}
 	podName := woc.getAgentPodName()
-	log := woc.log.WithField("podName", podName)
+	ctx, log := woc.log.WithField("podName", podName).InContext(ctx)
 
-	obj, exists, err := woc.controller.podInformer.GetStore().Get(cache.ExplicitKey(woc.wf.Namespace + "/" + podName))
+	pod, err := woc.controller.PodController.GetPod(woc.wf.Namespace, podName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pod from informer store: %w", err)
 	}
-	if exists {
-		existing, ok := obj.(*apiv1.Pod)
-		if ok {
-			log.WithField("podPhase", existing.Status.Phase).Debug("Skipped pod creation: already exists")
-			return existing, nil
-		}
+	if pod != nil {
+		return pod, nil
 	}
 
 	certVolume, certVolumeMount, err := woc.getCertVolumeMount(ctx, common.CACertificatesVolumeMountName)
@@ -157,10 +158,9 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		return nil, fmt.Errorf("failed to get token volumes: %w", err)
 	}
 
-	podVolumes := append(
+	podVolumes := slices.Concat(
 		pluginVolumes,
-		volumeVarArgo,
-		*tokenVolume,
+		[]apiv1.Volume{volumeVarArgo, *tokenVolume},
 	)
 	podVolumeMounts := []apiv1.VolumeMount{
 		volumeMountVarArgo,
@@ -191,16 +191,16 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	// the `init` container populates the shared empty-dir volume with tokens
 	agentInitCtr := agentCtrTemplate.DeepCopy()
 	agentInitCtr.Name = common.InitContainerName
-	agentInitCtr.Args = append([]string{"agent", "init"}, woc.getExecutorLogOpts()...)
+	agentInitCtr.Args = append([]string{"agent", "init"}, woc.getExecutorLogOpts(ctx)...)
 	// the `main` container runs the actual work
 	agentMainCtr := agentCtrTemplate.DeepCopy()
 	agentMainCtr.Name = common.MainContainerName
-	agentMainCtr.Args = append([]string{"agent", "main"}, woc.getExecutorLogOpts()...)
+	agentMainCtr.Args = append([]string{"agent", "main"}, woc.getExecutorLogOpts(ctx)...)
 
-	pod := &apiv1.Pod{
+	pod = &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      podName,
-			Namespace: woc.wf.ObjectMeta.Namespace,
+			Namespace: woc.wf.Namespace,
 			Labels: map[string]string{
 				common.LabelKeyWorkflow:  woc.wf.Name, // Allows filtering by pods related to specific workflow
 				common.LabelKeyCompleted: "false",     // Allows filtering by incomplete workflow pods
@@ -218,7 +218,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 			ImagePullSecrets:             woc.execWf.Spec.ImagePullSecrets,
 			SecurityContext:              common.MinimalPodSC(),
 			ServiceAccountName:           serviceAccountName,
-			AutomountServiceAccountToken: ptr.To(false),
+			AutomountServiceAccountToken: new(false),
 			Volumes:                      podVolumes,
 			InitContainers: []apiv1.Container{
 				*agentInitCtr,
@@ -236,35 +236,35 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 	woc.addDNSConfig(pod)
 
 	if woc.execWf.Spec.HasPodSpecPatch() {
-		patchedPodSpec, err := util.ApplyPodSpecPatch(pod.Spec, woc.execWf.Spec.PodSpecPatch)
-		if err != nil {
-			return nil, errors.Wrap(err, "", "Error applying PodSpecPatch")
+		patchedPodSpec, patchErr := util.ApplyPodSpecPatch(pod.Spec, woc.execWf.Spec.PodSpecPatch)
+		if patchErr != nil {
+			return nil, errors.Wrap(patchErr, "", "Error applying PodSpecPatch")
 		}
 		pod.Spec = *patchedPodSpec
 	}
 
 	if woc.controller.Config.InstanceID != "" {
-		pod.ObjectMeta.Labels[common.LabelKeyControllerInstanceID] = woc.controller.Config.InstanceID
+		pod.Labels[common.LabelKeyControllerInstanceID] = woc.controller.Config.InstanceID
 	}
 
-	log.Debug("Creating Agent pod")
+	log.Debug(ctx, "Creating Agent pod")
 
 	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(ctx, pod, metav1.CreateOptions{})
 	if err != nil {
-		log.WithError(err).Info("Failed to create Agent pod")
+		log.WithError(err).Info(ctx, "Failed to create Agent pod")
 		if apierr.IsAlreadyExists(err) {
 			// get a reference to the currently existing Pod since the created pod returned before was nil.
-			if existing, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Get(ctx, pod.Name, metav1.GetOptions{}); err == nil {
+			if existing, getErr := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Get(ctx, pod.Name, metav1.GetOptions{}); getErr == nil {
 				return existing, nil
 			}
 		}
-		if errorsutil.IsTransientErr(err) {
+		if errorsutil.IsTransientErr(ctx, err) {
 			woc.requeue()
 			return created, nil
 		}
-		return nil, errors.InternalWrapError(fmt.Errorf("failed to create Agent pod. Reason: %v", err))
+		return nil, errors.InternalWrapError(fmt.Errorf("failed to create Agent pod. Reason: %w", err))
 	}
-	log.Info("Created Agent pod")
+	log.Info(ctx, "Created Agent pod")
 	return created, nil
 }
 
@@ -274,29 +274,63 @@ func (woc *wfOperationCtx) getExecutorPlugins(ctx context.Context) ([]apiv1.Cont
 	namespaces := map[string]bool{} // de-dupes executorPlugins when their namespaces are the same
 	namespaces[woc.controller.namespace] = true
 	namespaces[woc.wf.Namespace] = true
-	for namespace := range namespaces {
-		for _, plug := range woc.controller.executorPlugins[namespace] {
-			s := plug.Spec.Sidecar
-			c := s.Container.DeepCopy()
-			c.VolumeMounts = append(c.VolumeMounts, apiv1.VolumeMount{
-				Name:      volumeMountVarArgo.Name,
-				MountPath: volumeMountVarArgo.MountPath,
-				ReadOnly:  true,
-				// only mount the token for this plugin, not others
-				SubPath: c.Name,
-			})
-			if s.AutomountServiceAccountToken {
-				volume, volumeMount, err := woc.getServiceAccountTokenVolume(ctx, plug.Name+"-executor-plugin")
+	wFPlugins, err := woc.execWf.Spec.AsExecutorPluginSpec()
+	if err != nil {
+		return nil, nil, err
+	}
+	isGetPluginsFromWorkflow := len(wFPlugins) > 0
+	if isGetPluginsFromWorkflow && !woc.controller.enableWorkflowLevelExecutorPlugins {
+		return nil, nil, fmt.Errorf(
+			"workflow-level executor plugins are disabled in the controller. To enable them, set the environment variable ARGO_WORKFLOW_LEVEL_EXECUTOR_PLUGINS=true",
+		)
+	}
+	if isGetPluginsFromWorkflow {
+		for _, plugin := range wFPlugins {
+			sidecar, pluginVolume, err := woc.getExecutorPluginComponents(ctx, plugin)
+			if err != nil {
+				return nil, nil, err
+			}
+			sidecars = append(sidecars, *sidecar)
+			if pluginVolume != nil {
+				volumes = append(volumes, *pluginVolume)
+			}
+		}
+	} else {
+		for namespace := range namespaces {
+			for _, plug := range woc.controller.executorPlugins[namespace] {
+				sidecar, pluginVolume, err := woc.getExecutorPluginComponents(ctx, *plug)
 				if err != nil {
 					return nil, nil, err
 				}
-				volumes = append(volumes, *volume)
-				c.VolumeMounts = append(c.VolumeMounts, *volumeMount)
+				sidecars = append(sidecars, *sidecar)
+				if pluginVolume != nil {
+					volumes = append(volumes, *pluginVolume)
+				}
 			}
-			sidecars = append(sidecars, *c)
 		}
 	}
 	return sidecars, volumes, nil
+}
+
+func (woc *wfOperationCtx) getExecutorPluginComponents(ctx context.Context, plug spec.Plugin) (*apiv1.Container, *apiv1.Volume, error) {
+	s := plug.Spec.Sidecar
+	c := s.Container.DeepCopy()
+	c.VolumeMounts = append(c.VolumeMounts, apiv1.VolumeMount{
+		Name:      volumeMountVarArgo.Name,
+		MountPath: volumeMountVarArgo.MountPath,
+		ReadOnly:  true,
+		// only mount the token for this plugin, not others
+		SubPath: c.Name,
+	})
+	if !s.AutomountServiceAccountToken {
+		return c, nil, nil
+	}
+	volume, volumeMount, err := woc.getServiceAccountTokenVolume(ctx, plug.Name+"-executor-plugin")
+	if err != nil {
+		return nil, nil, err
+	}
+	c.VolumeMounts = append(c.VolumeMounts, *volumeMount)
+	return c, volume, nil
 }
 
 func addresses(containers []apiv1.Container) []string {

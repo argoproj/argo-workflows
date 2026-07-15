@@ -2,7 +2,7 @@
 
 ## Docs
 
-* [Quick start](../quick-start.md) and [training](../training.md)
+* Try out [Hera](https://hera.readthedocs.io/en/stable/) for writing Workflows in Python.
 
 ## Videos
 

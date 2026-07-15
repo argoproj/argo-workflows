@@ -1,0 +1,14 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: artgc-step-wf-tmpl-plugin-
+spec:
+  entrypoint: artgc-step-wf-tmpl
+  templates:
+  - name: artgc-step-wf-tmpl
+    steps:                             
+      - - name: call-template
+          templateRef:                 
+            name: artgc-template-plugin  
+            template: artgc-template-main 
+            clusterScope: false         

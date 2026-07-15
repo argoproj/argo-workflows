@@ -1,46 +1,51 @@
 # Workflow Executors
 
-A workflow executor is a process that conforms to a specific interface that allows Argo to perform certain actions like monitoring pod logs, collecting artifacts, managing container life-cycles, etc.
+A Workflow executor runs in the Pods that execute your workloads.
+It runs as both an init container and as a sidecar to the container you specify.
+It allows Argo to perform certain actions like monitoring Pod logs, providing and collecting artifacts, and managing container life-cycles.
 
-## Emissary (emissary)
+Historically there were multiple available executor types, but as of 3.4 the only available executor is called `emissary`.
 
-> v3.1 and after
-
-Default in >= v3.3.
-Only option in >= v3.4.
-
-This is the most fully featured executor.
+## Emissary Executor
 
 * Reliability:
     * Works on GKE Autopilot
-    * Does not require `init` process to kill sub-processes.
-* More secure:
+    * Does not require `init` process to kill sub-processes
+* Security:
     * No `privileged` access
     * Cannot escape the privileges of the pod's service account
-    * Can [`runAsNonRoot`](workflow-pod-security-context.md).
-* Scalable:
-    * It reads and writes to and from the container's disk and typically does not use any network APIs unless resource
-    type template is used.
+    * Supports [running as non-root](workflow-pod-security-context.md)
+* Scalability:
+    * Reads and writes to and from the container's disk
+    * Typically does not use network APIs unless resource type template is used
 * Artifacts:
-    * Output artifacts can be located on the base layer (e.g. `/tmp`).
-* Configuration:
-    * `command` should be specified for containers.
+    * Output artifacts can be located on the base layer (e.g. `/tmp`)
 
-You can determine values as follows:
+### Container Command
+
+You can determine the default command for a container image using:
 
 ```bash
-docker image inspect -f '{{.Config.Entrypoint}} {{.Config.Cmd}}' argoproj/argosay:v2
+docker pull alpine:3.23
+docker image inspect -f '{{.Config.Entrypoint}} {{.Config.Cmd}}' alpine:3.23
 ```
 
 [Learn more about command and args](https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#notes)
 
 ### Image Index/Cache
 
-If you don't provide command to run, the emissary will grab it from container image. You can also specify it using the workflow spec or emissary will look it up in the **image index**. This is nothing more fancy than
-a [configuration item](workflow-controller-configmap.yaml).
+The emissary executor determines the command to run in this order:
 
-Emissary will create a cache entry, using image with version as key and command as value, and it will reuse it for specific image/version.
+1. Command specified in the workflow spec
+2. Command from the image index cache
+3. Command from the container image
 
-### Exit Code 64
+The image index is a [configuration item](workflow-controller-configmap.yaml), called `images`.
 
-The emissary will exit with code 64 if it fails. This may indicate a bug in the emissary.
+The controller creates a cache entry using the image with version as key and command as value.
+It reuses this cache for specific image:version combinations, so you may get surprising behavior if you update the command in an image without changing its version tag.
+
+### Troubleshooting
+
+The emissary will exit with code 64 if it fails.
+This may indicate a bug in the emissary.

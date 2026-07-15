@@ -36,5 +36,5 @@ spec:
       parameters:
       - name: msg
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [echo, "{{inputs.parameters.msg}}"]

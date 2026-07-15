@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/suite"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/test/e2e/fixtures"
 )
 
 type DaemonPodSuite struct {
@@ -174,6 +174,59 @@ func (s *DaemonPodSuite) TestMarkDaemonedPodSucceeded() {
 			node := status.Nodes.FindByDisplayName("daemoned")
 			require.NotNil(t, node)
 			assert.Equal(t, v1alpha1.NodeSucceeded, node.Phase)
+		})
+}
+
+func (s *DaemonPodSuite) TestDaemonPodRetry() {
+	s.Given().
+		Workflow(`
+metadata:
+  name: daemon-retry
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+        - name: daemoned
+          template: daemoned
+        - name: whale
+          dependencies: [daemoned]
+          template: whale-tmpl
+  - name: daemoned
+    retryStrategy:
+      limit: 2
+    daemon: true
+    container:
+      image: argoproj/argosay:v2
+      command: ["bash"]
+      args:
+        - "-c"
+        - |
+          echo "Attempt {{retries}}";
+          if [ "{{retries}}" -eq 0 ]; then
+            sleep 10 && exit 1;
+          else
+            sleep 120 && exit 1;
+          fi
+  - name: whale-tmpl
+    container:
+      image: argoproj/argosay:v2
+      command: ["bash"]
+      args: ["-c", "echo hi & sleep 15 && echo bye"]
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflow(func(t *testing.T, md *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
+			failedNode := status.Nodes.FindByDisplayName("daemoned(0)")
+			succeededNode := status.Nodes.FindByDisplayName("daemoned(1)")
+			require.NotNil(t, failedNode)
+			require.NotNil(t, succeededNode)
+			assert.Equal(t, v1alpha1.NodeFailed, failedNode.Phase)
+			assert.Equal(t, v1alpha1.NodeSucceeded, succeededNode.Phase)
+			assert.Equal(t, v1alpha1.WorkflowSucceeded, status.Phase)
 		})
 }
 

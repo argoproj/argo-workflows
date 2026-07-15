@@ -11,8 +11,9 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/test/e2e/fixtures"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 type WorkflowTemplateSuite struct {
@@ -184,6 +185,36 @@ spec:
 			assert.Contains(t, status.Message, "error in entry template execution")
 		}).
 		ExpectPVCDeleted()
+}
+
+func (s *WorkflowTemplateSuite) TestWorkflowFromWorkflowTemplateHasLabel() {
+	s.Given().
+		WorkflowTemplate(`apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: workflow-template-label-test
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    container:
+      image: argoproj/argosay:v2
+      command: [/argosay]`).
+		Workflow(`
+metadata:
+  generateName: workflow-from-template-label-
+spec:
+  workflowTemplateRef:
+    name: workflow-template-label-test
+`).
+		When().
+		CreateWorkflowTemplates().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
+			assert.Equal(t, "workflow-template-label-test", metadata.Labels[common.LabelKeyWorkflowTemplate])
+		})
 }
 
 func TestWorkflowTemplateSuite(t *testing.T) {

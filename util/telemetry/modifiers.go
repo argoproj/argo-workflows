@@ -5,15 +5,15 @@ import (
 	metricsdk "go.opentelemetry.io/otel/sdk/metric"
 )
 
-// Modifier holds options to change the behaviour for a single metric
-type Modifier struct {
+// MetricsModifier holds options to change the behaviour for a single metric
+type MetricsModifier struct {
 	Disabled           bool
 	DisabledAttributes []string
 	HistogramBuckets   []float64
 }
 
 // Create an opentelemetry 'view' which disables whole metrics or aggregates across attributes
-func view(config *Config) metricsdk.Option {
+func view(config *MetricsConfig) metricsdk.Option {
 	views := make([]metricsdk.View, 0)
 	for metric, modifier := range config.Modifiers {
 		if modifier.Disabled {
@@ -29,4 +29,11 @@ func view(config *Config) metricsdk.Option {
 		}
 	}
 	return metricsdk.WithView(views...)
+}
+
+// TracingModifier holds options to change the behaviour for a trace
+type TracingModifier struct {
+	Disabled           bool
+	DisableChildren    bool
+	DisabledAttributes []string
 }

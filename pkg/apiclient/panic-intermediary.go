@@ -16,11 +16,11 @@ func (w abstractIntermediary) CloseSend() error {
 	panic("implement me")
 }
 
-func (w abstractIntermediary) SendMsg(interface{}) error {
+func (w abstractIntermediary) SendMsg(any) error {
 	panic("implement me")
 }
 
-func (w abstractIntermediary) RecvMsg(interface{}) error {
+func (w abstractIntermediary) RecvMsg(any) error {
 	panic("implement me")
 }
 

@@ -9,7 +9,16 @@ This means it may go up once or many times for a single event.
 If the number is going up the feature is still in use by your system.
 If the metric is not present or no longer increasing are no longer using the monitored deprecated features.
 
-## `cronworkflow schedule`
+## Deprecated features
+
+There are currently no deprecated features.
+
+## Removed features
+
+These features are removed in this version of workflows.
+The [`convert`](cli/argo_convert.md) command in the CLI can update your Workflows, WorkflowTemplates, ClusterWorkflowTemplate and CronWorkflows to the modern syntax.
+
+### `cronworkflow schedule`
 
 The spec field `schedule` which takes a single value is replaced by `schedules` which takes a list.
 To update this replace the `schedule` with `schedules` as in the following example
@@ -27,7 +36,7 @@ spec:
     - "30 1 * * *"
 ```
 
-## `synchronization mutex`
+### `synchronization mutex`
 
 The synchronization field `mutex` which takes a single value is replaced by `mutexes` which takes a list.
 To update this replace `mutex` with `mutexes` as in the following example
@@ -46,7 +55,7 @@ synchronization:
     - name: foobar
 ```
 
-## `synchronization semaphore`
+### `synchronization semaphore`
 
 The synchronization field `semaphore` which takes a single value is replaced by `semaphores` which takes a list.
 To update this replace `semaphore` with `semaphores` as in the following example
@@ -69,7 +78,9 @@ synchronization:
         key: workflow
 ```
 
-## `workflow podpriority`
+### `workflow podpriority`
 
 The Workflow spec field `podPriority` which takes a numeric value is deprecated and `podPriorityClassName` should be used instead.
 To update this you will need a [PriorityClass](https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/#priorityclass) in your cluster and refer to that using `podPriorityClassName`.
+
+This field cannot be updated by the CLI `convert` command.

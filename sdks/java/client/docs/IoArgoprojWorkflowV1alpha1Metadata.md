@@ -2,7 +2,7 @@
 
 # IoArgoprojWorkflowV1alpha1Metadata
 
-Pod metdata
+Metadata is pod metadata.
 
 ## Properties
 

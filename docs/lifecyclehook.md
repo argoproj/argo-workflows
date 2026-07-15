@@ -23,6 +23,8 @@ In other words, a `LifecycleHook` functions like an [exit handler](https://githu
 - [`templateRef`](fields.md#templateref)
 - [`arguments`](https://github.com/argoproj/argo-workflows/blob/main/examples/conditionals.yaml)
 
+Hook arguments and expressions that reference outputs of a skipped or omitted step resolve according to [Outputs of Skipped and Omitted Nodes](variables.md#outputs-of-skipped-and-omitted-nodes).
+
 ## Unsupported conditions
 
 - [`outputs`](fields.md#outputs) are not usable since `LifecycleHook` executes during execution time and `outputs` are not produced until the step is completed. You can use outputs from previous steps, just not the one you're hooking into. If you'd like to use outputs create an exit handler instead - all the status variable are available there so you can still conditionally decide what to do.
@@ -52,7 +54,7 @@ spec:
 
    - name: heads
      container:
-       image: alpine:3.6
+       image: alpine:3.23
        command: [sh, -c]
        args: ["echo \"it was heads\""]
 

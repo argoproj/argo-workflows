@@ -3,15 +3,14 @@
 package v1alpha1
 
 import (
-	"context"
-	"time"
+	context "context"
 
-	v1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	scheme "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/scheme"
+	workflowv1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	scheme "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/scheme"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
-	rest "k8s.io/client-go/rest"
+	gentype "k8s.io/client-go/gentype"
 )
 
 // WorkflowArtifactGCTasksGetter has a method to return a WorkflowArtifactGCTaskInterface.
@@ -22,158 +21,36 @@ type WorkflowArtifactGCTasksGetter interface {
 
 // WorkflowArtifactGCTaskInterface has methods to work with WorkflowArtifactGCTask resources.
 type WorkflowArtifactGCTaskInterface interface {
-	Create(ctx context.Context, workflowArtifactGCTask *v1alpha1.WorkflowArtifactGCTask, opts v1.CreateOptions) (*v1alpha1.WorkflowArtifactGCTask, error)
-	Update(ctx context.Context, workflowArtifactGCTask *v1alpha1.WorkflowArtifactGCTask, opts v1.UpdateOptions) (*v1alpha1.WorkflowArtifactGCTask, error)
-	UpdateStatus(ctx context.Context, workflowArtifactGCTask *v1alpha1.WorkflowArtifactGCTask, opts v1.UpdateOptions) (*v1alpha1.WorkflowArtifactGCTask, error)
+	Create(ctx context.Context, workflowArtifactGCTask *workflowv1alpha1.WorkflowArtifactGCTask, opts v1.CreateOptions) (*workflowv1alpha1.WorkflowArtifactGCTask, error)
+	Update(ctx context.Context, workflowArtifactGCTask *workflowv1alpha1.WorkflowArtifactGCTask, opts v1.UpdateOptions) (*workflowv1alpha1.WorkflowArtifactGCTask, error)
+	// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
+	UpdateStatus(ctx context.Context, workflowArtifactGCTask *workflowv1alpha1.WorkflowArtifactGCTask, opts v1.UpdateOptions) (*workflowv1alpha1.WorkflowArtifactGCTask, error)
 	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
 	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
-	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1alpha1.WorkflowArtifactGCTask, error)
-	List(ctx context.Context, opts v1.ListOptions) (*v1alpha1.WorkflowArtifactGCTaskList, error)
+	Get(ctx context.Context, name string, opts v1.GetOptions) (*workflowv1alpha1.WorkflowArtifactGCTask, error)
+	List(ctx context.Context, opts v1.ListOptions) (*workflowv1alpha1.WorkflowArtifactGCTaskList, error)
 	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
-	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.WorkflowArtifactGCTask, err error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *workflowv1alpha1.WorkflowArtifactGCTask, err error)
 	WorkflowArtifactGCTaskExpansion
 }
 
 // workflowArtifactGCTasks implements WorkflowArtifactGCTaskInterface
 type workflowArtifactGCTasks struct {
-	client rest.Interface
-	ns     string
+	*gentype.ClientWithList[*workflowv1alpha1.WorkflowArtifactGCTask, *workflowv1alpha1.WorkflowArtifactGCTaskList]
 }
 
 // newWorkflowArtifactGCTasks returns a WorkflowArtifactGCTasks
 func newWorkflowArtifactGCTasks(c *ArgoprojV1alpha1Client, namespace string) *workflowArtifactGCTasks {
 	return &workflowArtifactGCTasks{
-		client: c.RESTClient(),
-		ns:     namespace,
+		gentype.NewClientWithList[*workflowv1alpha1.WorkflowArtifactGCTask, *workflowv1alpha1.WorkflowArtifactGCTaskList](
+			"workflowartifactgctasks",
+			c.RESTClient(),
+			scheme.ParameterCodec,
+			namespace,
+			func() *workflowv1alpha1.WorkflowArtifactGCTask { return &workflowv1alpha1.WorkflowArtifactGCTask{} },
+			func() *workflowv1alpha1.WorkflowArtifactGCTaskList {
+				return &workflowv1alpha1.WorkflowArtifactGCTaskList{}
+			},
+		),
 	}
-}
-
-// Get takes name of the workflowArtifactGCTask, and returns the corresponding workflowArtifactGCTask object, and an error if there is any.
-func (c *workflowArtifactGCTasks) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.WorkflowArtifactGCTask, err error) {
-	result = &v1alpha1.WorkflowArtifactGCTask{}
-	err = c.client.Get().
-		Namespace(c.ns).
-		Resource("workflowartifactgctasks").
-		Name(name).
-		VersionedParams(&options, scheme.ParameterCodec).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// List takes label and field selectors, and returns the list of WorkflowArtifactGCTasks that match those selectors.
-func (c *workflowArtifactGCTasks) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.WorkflowArtifactGCTaskList, err error) {
-	var timeout time.Duration
-	if opts.TimeoutSeconds != nil {
-		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
-	}
-	result = &v1alpha1.WorkflowArtifactGCTaskList{}
-	err = c.client.Get().
-		Namespace(c.ns).
-		Resource("workflowartifactgctasks").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Watch returns a watch.Interface that watches the requested workflowArtifactGCTasks.
-func (c *workflowArtifactGCTasks) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
-	var timeout time.Duration
-	if opts.TimeoutSeconds != nil {
-		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
-	}
-	opts.Watch = true
-	return c.client.Get().
-		Namespace(c.ns).
-		Resource("workflowartifactgctasks").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Watch(ctx)
-}
-
-// Create takes the representation of a workflowArtifactGCTask and creates it.  Returns the server's representation of the workflowArtifactGCTask, and an error, if there is any.
-func (c *workflowArtifactGCTasks) Create(ctx context.Context, workflowArtifactGCTask *v1alpha1.WorkflowArtifactGCTask, opts v1.CreateOptions) (result *v1alpha1.WorkflowArtifactGCTask, err error) {
-	result = &v1alpha1.WorkflowArtifactGCTask{}
-	err = c.client.Post().
-		Namespace(c.ns).
-		Resource("workflowartifactgctasks").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(workflowArtifactGCTask).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Update takes the representation of a workflowArtifactGCTask and updates it. Returns the server's representation of the workflowArtifactGCTask, and an error, if there is any.
-func (c *workflowArtifactGCTasks) Update(ctx context.Context, workflowArtifactGCTask *v1alpha1.WorkflowArtifactGCTask, opts v1.UpdateOptions) (result *v1alpha1.WorkflowArtifactGCTask, err error) {
-	result = &v1alpha1.WorkflowArtifactGCTask{}
-	err = c.client.Put().
-		Namespace(c.ns).
-		Resource("workflowartifactgctasks").
-		Name(workflowArtifactGCTask.Name).
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(workflowArtifactGCTask).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// UpdateStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *workflowArtifactGCTasks) UpdateStatus(ctx context.Context, workflowArtifactGCTask *v1alpha1.WorkflowArtifactGCTask, opts v1.UpdateOptions) (result *v1alpha1.WorkflowArtifactGCTask, err error) {
-	result = &v1alpha1.WorkflowArtifactGCTask{}
-	err = c.client.Put().
-		Namespace(c.ns).
-		Resource("workflowartifactgctasks").
-		Name(workflowArtifactGCTask.Name).
-		SubResource("status").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(workflowArtifactGCTask).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Delete takes name of the workflowArtifactGCTask and deletes it. Returns an error if one occurs.
-func (c *workflowArtifactGCTasks) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
-	return c.client.Delete().
-		Namespace(c.ns).
-		Resource("workflowartifactgctasks").
-		Name(name).
-		Body(&opts).
-		Do(ctx).
-		Error()
-}
-
-// DeleteCollection deletes a collection of objects.
-func (c *workflowArtifactGCTasks) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	var timeout time.Duration
-	if listOpts.TimeoutSeconds != nil {
-		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
-	}
-	return c.client.Delete().
-		Namespace(c.ns).
-		Resource("workflowartifactgctasks").
-		VersionedParams(&listOpts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Body(&opts).
-		Do(ctx).
-		Error()
-}
-
-// Patch applies the patch and returns the patched workflowArtifactGCTask.
-func (c *workflowArtifactGCTasks) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.WorkflowArtifactGCTask, err error) {
-	result = &v1alpha1.WorkflowArtifactGCTask{}
-	err = c.client.Patch(pt).
-		Namespace(c.ns).
-		Resource("workflowartifactgctasks").
-		Name(name).
-		SubResource(subresources...).
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(data).
-		Do(ctx).
-		Into(result)
-	return
 }

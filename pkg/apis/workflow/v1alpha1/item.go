@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
-	jsonutil "github.com/argoproj/argo-workflows/v3/util/json"
+	jsonutil "github.com/argoproj/argo-workflows/v4/util/json"
 )
 
 // Type represents the stored type of Item.
@@ -23,7 +23,6 @@ const (
 // The value of Item can be a map, string, bool, or number
 //
 // +protobuf.options.(gogoproto.goproto_stringer)=false
-// +kubebuilder:validation:Type=object
 type Item struct {
 	Value json.RawMessage `json:"-" protobuf:"bytes,1,opt,name=value,casttype=encoding/json.RawMessage"`
 }
@@ -44,11 +43,11 @@ func (i *Item) GetType() Type {
 	if _, err := strconv.ParseBool(strValue); err == nil {
 		return Bool
 	}
-	var list []interface{}
+	var list []any
 	if err := json.Unmarshal(i.Value, &list); err == nil {
 		return List
 	}
-	var object map[string]interface{}
+	var object map[string]any
 	if err := json.Unmarshal(i.Value, &object); err == nil {
 		return Map
 	}
@@ -72,7 +71,7 @@ func (i *Item) String() string {
 }
 
 func (i Item) Format(s fmt.State, _ rune) {
-	_, _ = fmt.Fprintf(s, "%s", i.String()) //nolint
+	_, _ = fmt.Fprintf(s, "%s", i.String())
 }
 
 func (i Item) MarshalJSON() ([]byte, error) {
@@ -90,6 +89,7 @@ func (i *Item) DeepCopyInto(out *Item) {
 	}
 }
 
+// OpenAPISchemaType returns the OpenAPI schema type for Item.
 // See: https://github.com/kubernetes/kube-openapi/tree/master/pkg/generators
 func (i Item) OpenAPISchemaType() []string {
 	return nil
@@ -97,21 +97,21 @@ func (i Item) OpenAPISchemaType() []string {
 
 func (i Item) OpenAPISchemaFormat() string { return "" }
 
-// you MUST assert `GetType() == Map` before invocation as this does not return errors
+// GetMapVal returns the Item value as a map. You MUST assert `GetType() == Map` before invocation as this does not return errors.
 func (i *Item) GetMapVal() map[string]Item {
 	val := make(map[string]Item)
 	_ = json.Unmarshal(i.Value, &val)
 	return val
 }
 
-// you MUST assert `GetType() == List` before invocation as this does not return errors
+// GetListVal returns the Item value as a list. You MUST assert `GetType() == List` before invocation as this does not return errors.
 func (i *Item) GetListVal() []Item {
 	val := make([]Item, 0)
 	_ = json.Unmarshal(i.Value, &val)
 	return val
 }
 
-// you MUST assert `GetType() == String` before invocation as this does not return errors
+// GetStrVal returns the Item value as a string. You MUST assert `GetType() == String` before invocation as this does not return errors.
 func (i *Item) GetStrVal() string {
 	val := ""
 	_ = json.Unmarshal(i.Value, &val)

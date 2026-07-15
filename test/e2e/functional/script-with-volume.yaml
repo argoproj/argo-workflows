@@ -11,7 +11,7 @@ spec:
   templates:
   - name: script-with-vol
     script:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh]
       source: |
         ls /mnt/vol

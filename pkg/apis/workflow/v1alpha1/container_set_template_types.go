@@ -27,18 +27,18 @@ type ContainerSetRetryStrategy struct {
 	Retries *intstr.IntOrString `json:"retries" protobuf:"bytes,2,rep,name=retries"`
 }
 
-func (t *ContainerSetTemplate) GetRetryStrategy() (wait.Backoff, error) {
-	if t == nil || t.RetryStrategy == nil || t.RetryStrategy.Retries == nil {
+func (in *ContainerSetTemplate) GetRetryStrategy() (wait.Backoff, error) {
+	if in == nil || in.RetryStrategy == nil || in.RetryStrategy.Retries == nil {
 		return wait.Backoff{Steps: 1}, nil
 	}
 
-	backoff := wait.Backoff{Steps: t.RetryStrategy.Retries.IntValue()}
+	backoff := wait.Backoff{Steps: in.RetryStrategy.Retries.IntValue()}
 
-	if t.RetryStrategy.Duration == "" {
+	if in.RetryStrategy.Duration == "" {
 		return backoff, nil
 	}
 
-	baseDuration, err := time.ParseDuration(t.RetryStrategy.Duration)
+	baseDuration, err := time.ParseDuration(in.RetryStrategy.Duration)
 	if err != nil {
 		return wait.Backoff{}, err
 	}

@@ -1,0 +1,57 @@
+# This is an example WorkflowEventBinding with a compplex event selector.
+# Both event selectors and parameters's valueFrom use expr-lang syntax
+#
+# In this example, the Workflow will only be run if the commit affects files
+# that are either in `subpath/A/` or `subpath/B/`
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowEventBinding
+metadata:
+  name: github-path-filter
+spec:
+  event:
+    selector: |
+      metadata["x-github-event"] == ["push"]
+
+      // The discriminator is the last subpath of URL path
+      && discriminator == "github-path-filter"
+
+      // for each of these file paths
+      && any([ "subpath/A/", "subpath/B/" ], {
+          let prefix = #;
+
+          // loop over every commit
+          any(payload.commits ?? [], {
+            let commit = #;
+
+            // loop over each file action in the commit
+            any(["added", "removed", "modified"], {
+              let file_action = #;
+
+              // Loop over each of the files in the file action
+              any(commit[file_action] ?? [], {
+                let filepath = #;
+
+                // return true if the given file is in our subpath
+                hasPrefix(filepath, prefix)
+              })
+            })
+          })
+        })
+  submit:
+    workflowTemplateRef:
+      name: github-path-filter
+    arguments:
+      parameters:
+        - name: files
+          valueFrom:
+            event: |
+              // Use the reduce function to collect all files affeccted by commits in this push
+              reduce(
+                payload.commits ?? [],
+                {
+                  let commit = #;
+                  concat(#acc, commit["added"], commit["removed"], commit["modified"])
+                },
+                []
+              )
+

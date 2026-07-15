@@ -7,10 +7,9 @@ import (
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/common"
 )
 
 func NewLogsCommand() *cobra.Command {
@@ -67,7 +66,7 @@ func NewLogsCommand() *cobra.Command {
 			}
 
 			if since > 0 {
-				logOptions.SinceSeconds = ptr.To(int64(since.Seconds()))
+				logOptions.SinceSeconds = new(int64(since.Seconds()))
 			}
 
 			if sinceTime != "" {
@@ -80,16 +79,17 @@ func NewLogsCommand() *cobra.Command {
 			}
 
 			if tailLines >= 0 {
-				logOptions.TailLines = ptr.To(tailLines)
+				logOptions.TailLines = new(tailLines)
 			}
 
 			// set-up
-			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
+			ctx := cmd.Context()
+			ctx, apiClient, err := client.NewAPIClient(ctx)
 			if err != nil {
 				return err
 			}
-			serviceClient := apiClient.NewWorkflowServiceClient()
-			namespace := client.Namespace()
+			serviceClient := apiClient.NewWorkflowServiceClient(ctx)
+			namespace := client.Namespace(ctx)
 
 			return common.LogWorkflow(ctx, serviceClient, namespace, workflow, podName, grep, selector, logOptions)
 		},

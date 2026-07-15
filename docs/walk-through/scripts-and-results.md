@@ -30,7 +30,7 @@ spec:
 
   - name: gen-random-int-python
     script:
-      image: python:alpine3.6
+      image: python:alpine3.23
       command: [python]
       source: |
         import random
@@ -50,11 +50,14 @@ spec:
       parameters:
       - name: message
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo result was: {{inputs.parameters.message}}"]
 ```
 
-The `script` keyword allows the specification of the script body using the `source` tag. This creates a temporary file containing the script body and then passes the name of the temporary file as the final parameter to `command`, which should be an interpreter that executes the script body.
+The `script` keyword allows the specification of the script body using the `source` tag.
+This creates a temporary file containing the script body and then passes the name of the temporary file as the final parameter to `command`, which should be an interpreter that executes the script body.
 
-The use of the `script` feature also assigns the standard output of running the script to a special output parameter named `result`. This allows you to use the result of running the script itself in the rest of the workflow spec. In this example, the result is simply echoed by the print-message template.
+In the same way as `container` templates do, the use of the `script` feature also assigns the standard output of running the script to a special output parameter named `result`.
+This allows you to use the result of running the script itself in the rest of the workflow spec.
+In this example, the result is simply echoed by the print-message template.

@@ -31,6 +31,7 @@ See https://argo-workflows.readthedocs.io/en/latest/argo-server/
       --kube-api-burst int                   Burst to use while talking with kube-apiserver. (default 30)
       --kube-api-qps float32                 QPS to use while talking with kube-apiserver. (default 20)
       --log-format string                    The formatter to use for logs. One of: text|json (default "text")
+      --loglevel string                      Set the logging level. One of: debug|info|warn|error (default "info")
       --managed-namespace string             namespace that watches, default to the installation namespace
       --namespaced                           run as namespaced mode
   -p, --port int                             Port to listen on (default 2746)
@@ -60,7 +61,6 @@ See https://argo-workflows.readthedocs.io/en/latest/argo-server/
   -k, --insecure-skip-verify           If true, the Argo Server's certificate will not be checked for validity. This will make your HTTPS connections insecure. Defaults to the ARGO_INSECURE_SKIP_VERIFY environment variable.
       --instanceid string              submit with a specific controller's instance id label. Default to the ARGO_INSTANCEID environment variable.
       --kubeconfig string              Path to a kube config. Only required if out-of-cluster
-      --loglevel string                Set the logging level. One of: debug|info|warn|error (default "info")
   -n, --namespace string               If present, the namespace scope for this CLI request
       --password string                Password for basic authentication to the API server
       --proxy-url string               If provided, this URL will be used to connect via proxy

@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"context"
 	"strings"
 	"testing"
 
@@ -10,8 +9,9 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 func TestExecuteTaskSet(t *testing.T) {
@@ -46,7 +46,6 @@ spec:
        url: "{{inputs.parameters.url}}"
 
 `)
-	ctx := context.Background()
 	var ts wfv1.WorkflowTaskSet
 	wfv1.MustUnmarshal(`apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTaskSet
@@ -89,9 +88,10 @@ status:
     `, &ts)
 
 	t.Run("CreateTaskSet", func(t *testing.T) {
-		cancel, controller := newController(wf, ts, defaultServiceAccount)
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx, wf, ts, defaultServiceAccount)
 		defer cancel()
-		woc := newWorkflowOperationCtx(wf, controller)
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		woc.operate(ctx)
 		tslist, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").List(ctx, v1.ListOptions{})
 		require.NoError(t, err)
@@ -114,10 +114,11 @@ status:
 		}
 	})
 	t.Run("CreateTaskSetWithInstanceID", func(t *testing.T) {
-		cancel, controller := newController(wf, ts, defaultServiceAccount)
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx, wf, ts, defaultServiceAccount)
 		defer cancel()
 		controller.Config.InstanceID = "testID"
-		woc := newWorkflowOperationCtx(wf, controller)
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		woc.operate(ctx)
 		tslist, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").List(ctx, v1.ListOptions{})
 		require.NoError(t, err)
@@ -136,37 +137,198 @@ status:
 		for _, pod := range pods.Items {
 			assert.NotNil(t, pod)
 			assert.True(t, strings.HasSuffix(pod.Name, "-agent"))
-			assert.Equal(t, "testID", pod.ObjectMeta.Labels[common.LabelKeyControllerInstanceID])
+			assert.Equal(t, "testID", pod.Labels[common.LabelKeyControllerInstanceID])
 			assert.Equal(t, "virtual-node", pod.Spec.NodeName)
 		}
 	})
 }
 
 func TestAssessAgentPodStatus(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
 	t.Run("Failed", func(t *testing.T) {
 		pod1 := &apiv1.Pod{
 			Status: apiv1.PodStatus{Phase: apiv1.PodFailed},
 		}
-		nodeStatus, msg := assessAgentPodStatus(pod1)
+		nodeStatus, msg := assessAgentPodStatus(ctx, pod1)
 		assert.Equal(t, wfv1.NodeFailed, nodeStatus)
-		assert.Equal(t, "", msg)
+		assert.Empty(t, msg)
 	})
 	t.Run("Running", func(t *testing.T) {
 		pod1 := &apiv1.Pod{
 			Status: apiv1.PodStatus{Phase: apiv1.PodRunning},
 		}
 
-		nodeStatus, msg := assessAgentPodStatus(pod1)
+		nodeStatus, msg := assessAgentPodStatus(ctx, pod1)
 		assert.Equal(t, wfv1.NodePhase(""), nodeStatus)
-		assert.Equal(t, "", msg)
+		assert.Empty(t, msg)
 	})
 	t.Run("Success", func(t *testing.T) {
 		pod1 := &apiv1.Pod{
 			Status: apiv1.PodStatus{Phase: apiv1.PodSucceeded},
 		}
-		nodeStatus, msg := assessAgentPodStatus(pod1)
+		nodeStatus, msg := assessAgentPodStatus(ctx, pod1)
 		assert.Equal(t, wfv1.NodePhase(""), nodeStatus)
-		assert.Equal(t, "", msg)
+		assert.Empty(t, msg)
+	})
+}
+
+func TestDisableAgentPodCreation(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: http-template
+  namespace: default
+spec:
+  podSpecPatch: |
+    nodeName: virtual-node
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: good
+            template: http
+            arguments:
+              parameters: [{name: url, value: "https://raw.githubusercontent.com/argoproj/argo-workflows/4e450e250168e6b4d51a126b784e90b11a0162bc/pkg/apis/workflow/v1alpha1/generated.swagger.json"}]
+        - - name: bad
+            template: http
+            continueOn:
+              failed: true
+            arguments:
+              parameters: [{name: url, value: "http://openlibrary.org/people/george08/nofound.json"}]
+
+    - name: http
+      inputs:
+        parameters:
+          - name: url
+      http:
+       url: "{{inputs.parameters.url}}"
+
+`)
+	cancel, controller := newController(ctx, wf, defaultServiceAccount)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.controller.Config.DisableAgentPodCreation = true
+	defer cancel()
+	woc.operate(ctx)
+	pods, err := woc.controller.kubeclientset.CoreV1().Pods("default").List(ctx, v1.ListOptions{})
+	require.NoError(t, err)
+	assert.Empty(t, pods.Items)
+}
+
+func TestWorkflowDefinedExecutorPluginsUsage(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: http-template
+  namespace: default
+spec:
+  podSpecPatch: |
+    nodeName: virtual-node
+  entrypoint: main
+  executorPlugins:
+  - spec:
+      sidecar:
+        container:
+          name: test-sidecar
+          image: busybox:1.35
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            runAsNonRoot: true
+    metadata:
+      name: test-sidecar
+  templates:
+    - name: main
+      steps:
+        - - name: good
+            template: http
+            arguments:
+              parameters: [{name: url, value: "https://raw.githubusercontent.com/argoproj/argo-workflows/4e450e250168e6b4d51a126b784e90b11a0162bc/pkg/apis/workflow/v1alpha1/generated.swagger.json"}]
+        - - name: bad
+            template: http
+            continueOn:
+              failed: true
+            arguments:
+              parameters: [{name: url, value: "http://openlibrary.org/people/george08/nofound.json"}]
+
+    - name: http
+      inputs:
+        parameters:
+          - name: url
+      http:
+        url: "{{inputs.parameters.url}}"
+`)
+	assert.NotNil(t, wf)
+	assert.Len(t, wf.Spec.ExecutorPlugins, 1)
+
+	t.Run("ExecutorPluginLoadedFromWorkflowSpec", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		var ts wfv1.WorkflowTaskSet
+		cancel, controller := newController(ctx, wf, ts, defaultServiceAccount)
+		defer cancel()
+
+		controller.Config.InstanceID = "testID"
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		sidecars, volumes, err := woc.getExecutorPlugins(ctx)
+		require.NoError(t, err)
+		assert.Len(t, sidecars, 1)
+		assert.Equal(t, "test-sidecar", sidecars[0].Name)
+		assert.Equal(t, "busybox:1.35", sidecars[0].Image)
+
+		assert.Nil(t, volumes)
 	})
 
+	t.Run("AgentPodCreatedSuccessfully", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		var ts wfv1.WorkflowTaskSet
+		cancel, controller := newController(ctx, wf, ts, defaultServiceAccount)
+		defer cancel()
+
+		controller.Config.InstanceID = "testID"
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		pod, err := woc.createAgentPod(ctx)
+		require.NoError(t, err)
+		require.NotNil(t, pod)
+
+		containers := pod.Spec.Containers
+		assert.NotEmpty(t, containers)
+
+		var executorSidecar *apiv1.Container
+		for _, container := range containers {
+			if container.Name == "test-sidecar" && container.Image == "busybox:1.35" {
+				executorSidecar = &container
+			}
+		}
+		assert.NotNil(t, pod.Spec.Volumes)
+		assert.NotNil(t, executorSidecar)
+	})
+
+	t.Run("AgentPodPluginFailedDueToSAMount", func(t *testing.T) {
+		// NOTE: We do NOT create a ServiceAccount beforehand.
+		// This test verifies that CreateAgentPod attempts to select
+		// the correct ServiceAccount if the plugin has AutomountServiceAccountToken set
+		wfCopy := wf.DeepCopy()
+		var ts wfv1.WorkflowTaskSet
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx, wfCopy, ts, defaultServiceAccount)
+		defer cancel()
+
+		wfCopy.Spec.ExecutorPlugins[0].Spec.Sidecar.AutomountServiceAccountToken = true
+		controller.Config.InstanceID = "testID"
+		woc := newWorkflowOperationCtx(ctx, wfCopy, controller)
+		pod, err := woc.createAgentPod(ctx)
+		// agent tried to mount the service account with the correct name "test-sidecar-executor-plugin",
+		// according to executorPlugin.metadata.name.
+		require.ErrorContains(t, err, "serviceaccounts \"test-sidecar-executor-plugin\" not found")
+		require.Nil(t, pod)
+	})
 }

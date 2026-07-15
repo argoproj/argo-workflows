@@ -24,7 +24,7 @@ argo node ACTION WORKFLOW FLAGS [flags]
 ```
   -h, --help                           help for node
   -m, --message string                 Set the message of a node, eg: --message "Hello, world!"
-      --node-field-selector string     Selector of node to set, eg: --node-field-selector inputs.paramaters.myparam.value=abc
+      --node-field-selector string     Selector of node to set, eg: --node-field-selector inputs.parameters.myparam.value=abc
   -p, --output-parameter stringArray   Set a "supplied" output parameter of node, eg: --output-parameter parameter-name="Hello, world!"
       --phase string                   Phase to set the node to, eg: --phase Succeeded
 ```
@@ -50,6 +50,7 @@ argo node ACTION WORKFLOW FLAGS [flags]
   -k, --insecure-skip-verify           If true, the Argo Server's certificate will not be checked for validity. This will make your HTTPS connections insecure. Defaults to the ARGO_INSECURE_SKIP_VERIFY environment variable.
       --instanceid string              submit with a specific controller's instance id label. Default to the ARGO_INSTANCEID environment variable.
       --kubeconfig string              Path to a kube config. Only required if out-of-cluster
+      --log-format string              The formatter to use for logs. One of: text|json (default "text")
       --loglevel string                Set the logging level. One of: debug|info|warn|error (default "info")
   -n, --namespace string               If present, the namespace scope for this CLI request
       --password string                Password for basic authentication to the API server

@@ -5,8 +5,8 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
-	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	workflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 // CliSubmitOpts holds submission options specific to CLI submission (e.g. controlling output)
@@ -41,7 +41,7 @@ func WaitWatchOrLog(ctx context.Context, serviceClient workflowpkg.WorkflowServi
 		}
 	}
 	if cliSubmitOpts.Wait {
-		WaitWorkflows(ctx, serviceClient, namespace, workflowNames, false, !(cliSubmitOpts.Output.String() == "" || cliSubmitOpts.Output.String() == "wide"))
+		WaitWorkflows(ctx, serviceClient, namespace, workflowNames, false, cliSubmitOpts.Output.String() != "" && cliSubmitOpts.Output.String() != "wide")
 	} else if cliSubmitOpts.Watch {
 		for _, workflow := range workflowNames {
 			if err := WatchWorkflow(ctx, serviceClient, namespace, workflow, cliSubmitOpts.GetArgs); err != nil {

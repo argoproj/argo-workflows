@@ -20,6 +20,7 @@ type TemplateHolder interface {
 	GroupVersionKind() schema.GroupVersionKind
 	GetTemplateByName(name string) *Template
 	GetResourceScope() ResourceScope
+	GetPodMetadata() *Metadata
 }
 
 // WorkflowSpecHolder is an object that holds a WorkflowSpec; e.g., WorkflowTemplate, and ClusterWorkflowTemplate

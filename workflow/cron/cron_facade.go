@@ -1,8 +1,7 @@
 package cron
 
 import (
-	"fmt"
-	"reflect"
+	"context"
 	"sync"
 	"time"
 
@@ -17,7 +16,7 @@ type cronFacade struct {
 	entryIDs map[string][]cron.EntryID
 }
 
-type ScheduledTimeFunc func() time.Time
+type ScheduledTimeFunc func(ctx context.Context) time.Time
 
 func newCronFacade() *cronFacade {
 	return &cronFacade{
@@ -59,7 +58,7 @@ func (f *cronFacade) AddJob(key, schedule string, cwoc *cronWfOperationCtx) (Sch
 	// Return a function to return the last scheduled time.
 	// If multiple schedules are configured, it will return
 	// the most recent schedule time for the key
-	return func() time.Time {
+	return func(_ context.Context) time.Time {
 		f.mu.Lock()
 		defer f.mu.Unlock()
 		var t time.Time
@@ -71,24 +70,4 @@ func (f *cronFacade) AddJob(key, schedule string, cwoc *cronWfOperationCtx) (Sch
 		}
 		return t
 	}, nil
-}
-
-func (f *cronFacade) Load(key string) ([]*cronWfOperationCtx, error) {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	entryIDs, ok := f.entryIDs[key]
-	if !ok {
-		return nil, fmt.Errorf("entry ID for %s not found", key)
-	}
-	cwocs := make([]*cronWfOperationCtx, len(entryIDs))
-	for i, entryID := range entryIDs {
-		entry := f.cron.Entry(entryID).Job
-		cwoc, ok := entry.(*cronWfOperationCtx)
-		if !ok {
-			return nil, fmt.Errorf("job entry ID for %s was not a *cronWfOperationCtx, was %v", key, reflect.TypeOf(entry))
-		}
-		cwocs[i] = cwoc
-	}
-
-	return cwocs, nil
 }

@@ -9,13 +9,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	apiv1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/test/e2e/fixtures"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 type ExecutorPluginsSuite struct {
@@ -38,11 +36,11 @@ func (s *ExecutorPluginsSuite) TestTemplateExecutor() {
 			require.Len(t, pods, 1)
 			pod := pods[0]
 			spec := pod.Spec
-			assert.Equal(t, ptr.To(false), spec.AutomountServiceAccountToken)
+			assert.Equal(t, new(false), spec.AutomountServiceAccountToken)
 			assert.Equal(t, &apiv1.PodSecurityContext{
-				RunAsUser:      ptr.To(int64(8737)),
-				RunAsNonRoot:   ptr.To(true),
-				SeccompProfile: &v1.SeccompProfile{Type: "RuntimeDefault"},
+				RunAsUser:      new(int64(8737)),
+				RunAsNonRoot:   new(true),
+				SeccompProfile: &apiv1.SeccompProfile{Type: "RuntimeDefault"},
 			}, spec.SecurityContext)
 			require.Len(t, spec.Volumes, 4)
 			assert.Contains(t, spec.Volumes[0].Name, "kube-api-access-")
@@ -50,29 +48,30 @@ func (s *ExecutorPluginsSuite) TestTemplateExecutor() {
 			assert.Contains(t, spec.Volumes[2].Name, "kube-api-access-")
 			assert.Equal(t, "argo-workflows-agent-ca-certificates", spec.Volumes[3].Name)
 
-			require.Len(t, spec.Containers, 2)
+			require.Len(t, spec.Containers, 3)
 			{
-				plug := spec.Containers[0]
+				plug := requireFindContainerByName(t, spec.Containers, "hello-executor-plugin")
+				require.NotNil(t, plug)
 				require.Equal(t, "hello-executor-plugin", plug.Name)
 				require.Len(t, plug.VolumeMounts, 2)
 				assert.Equal(t, "var-run-argo", plug.VolumeMounts[0].Name)
 				assert.Contains(t, plug.VolumeMounts[1].Name, "kube-api-access-")
 			}
 			{
-				agent := spec.Containers[1]
+				agent := requireFindContainerByName(t, spec.Containers, "main")
 				require.Equal(t, "main", agent.Name)
 				require.Len(t, agent.VolumeMounts, 3)
 				assert.Equal(t, "var-run-argo", agent.VolumeMounts[0].Name)
 				assert.Contains(t, agent.VolumeMounts[1].Name, "kube-api-access-")
 				assert.Equal(t, "argo-workflows-agent-ca-certificates", agent.VolumeMounts[2].Name)
 				assert.Equal(t, &apiv1.SecurityContext{
-					RunAsUser:                ptr.To(int64(8737)),
-					RunAsNonRoot:             ptr.To(true),
-					AllowPrivilegeEscalation: ptr.To(false),
-					ReadOnlyRootFilesystem:   ptr.To(true),
-					Privileged:               ptr.To(false),
+					RunAsUser:                new(int64(8737)),
+					RunAsNonRoot:             new(true),
+					AllowPrivilegeEscalation: new(false),
+					ReadOnlyRootFilesystem:   new(true),
+					Privileged:               new(false),
 					Capabilities:             &apiv1.Capabilities{Drop: []apiv1.Capability{"ALL"}},
-					SeccompProfile:           &v1.SeccompProfile{Type: "RuntimeDefault"},
+					SeccompProfile:           &apiv1.SeccompProfile{Type: "RuntimeDefault"},
 				}, agent.SecurityContext)
 			}
 		}).
@@ -84,6 +83,66 @@ func (s *ExecutorPluginsSuite) TestTemplateExecutor() {
 		})
 }
 
+func (s *ExecutorPluginsSuite) TestCompressedTemplateExecutor_WorkflowTaskSetIsProperlyCleaned() {
+	s.Given().
+		Workflow("@testdata/plugins/executor/massive-executor-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflowCompressed().
+		ExpectWorkflowTaskSet(func(t *testing.T, wfts *wfv1.WorkflowTaskSet) {
+			assert.NotNil(t, wfts)
+			assert.Empty(t, wfts.Status.Nodes)
+			assert.Empty(t, wfts.Spec.Tasks)
+			assert.Equal(t, "true", wfts.Labels[common.LabelKeyCompleted])
+		})
+}
+
+func (s *ExecutorPluginsSuite) TestWorkflowLevelTemplateExecutor() {
+	s.Given().
+		Workflow("@testdata/plugins/executor/workflow-level-template-executor-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflow(func(t *testing.T, md *metav1.ObjectMeta, s *wfv1.WorkflowStatus) {
+			n := s.Nodes[md.Name]
+			assert.Contains(t, n.Message, "Workflow-level hello")
+			assert.Len(t, n.Outputs.Parameters, 1)
+			assert.Equal(t, "workflow-level-foo", n.Outputs.Parameters[0].Name)
+			assert.Equal(t, "workflow-level-bar", n.Outputs.Parameters[0].Value.String())
+		}).
+		ExpectPods(func(t *testing.T, pods []apiv1.Pod) {
+			require.Len(t, pods, 1)
+			containers := pods[0].Spec.Containers
+
+			var containerNames []string
+			for _, container := range containers {
+				containerNames = append(containerNames, container.Name)
+			}
+			assert.ElementsMatch(t, []string{"workflow-level-hello-executor-plugin", "main"}, containerNames)
+		}).
+		ExpectWorkflowTaskSet(func(t *testing.T, wfts *wfv1.WorkflowTaskSet) {
+			assert.NotNil(t, wfts)
+			assert.Empty(t, wfts.Status.Nodes)
+			assert.Empty(t, wfts.Spec.Tasks)
+			assert.Equal(t, "true", wfts.Labels[common.LabelKeyCompleted])
+		})
+}
+
 func TestExecutorPluginsSuite(t *testing.T) {
 	suite.Run(t, new(ExecutorPluginsSuite))
+}
+
+func requireFindContainerByName(t *testing.T, containers []apiv1.Container, name string) *apiv1.Container {
+	var result *apiv1.Container
+	for _, container := range containers {
+		if container.Name == name {
+			result = &container
+			break
+		}
+	}
+	require.NotNil(t, result, "could not find container %s", name)
+	return result
 }

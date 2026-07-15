@@ -3,7 +3,7 @@ package webhook
 import (
 	"net/http"
 
-	"gopkg.in/go-playground/webhooks.v5/github"
+	"github.com/go-playground/webhooks/v6/github"
 )
 
 func githubMatch(secret string, r *http.Request) bool {
@@ -14,12 +14,16 @@ func githubMatch(secret string, r *http.Request) bool {
 	_, err = hook.Parse(r,
 		github.CheckRunEvent,
 		github.CheckSuiteEvent,
+		github.CodeScanningAlertEvent,
 		github.CommitCommentEvent,
 		github.CreateEvent,
 		github.DeleteEvent,
+		github.DependabotAlertEvent,
+		github.DeployKeyEvent,
 		github.DeploymentEvent,
 		github.DeploymentStatusEvent,
 		github.ForkEvent,
+		github.GitHubAppAuthorizationEvent,
 		github.GollumEvent,
 		github.InstallationEvent,
 		github.InstallationRepositoriesEvent,
@@ -52,6 +56,9 @@ func githubMatch(secret string, r *http.Request) bool {
 		github.TeamEvent,
 		github.TeamAddEvent,
 		github.WatchEvent,
+		github.WorkflowDispatchEvent,
+		github.WorkflowJobEvent,
+		github.WorkflowRunEvent,
 	)
 	return err == nil
 }

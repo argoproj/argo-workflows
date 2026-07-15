@@ -13,7 +13,7 @@ spec:
   templates:
   - name: sleep
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo sleeping for 1m; sleep 60; echo done"]
 ```
@@ -31,7 +31,7 @@ spec:
   - name: sleep
     activeDeadlineSeconds: 10 # terminate container template after 10 seconds
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo sleeping for 1m; sleep 60; echo done"]
 ```

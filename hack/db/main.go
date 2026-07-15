@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -11,16 +10,21 @@ import (
 	"github.com/upper/db/v4"
 	mysqladp "github.com/upper/db/v4/adapter/mysql"
 	postgresqladp "github.com/upper/db/v4/adapter/postgresql"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/uuid"
 
-	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/instanceid"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/argoproj/argo-workflows/v4/config"
+	persistsqldb "github.com/argoproj/argo-workflows/v4/persist/sqldb"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/instanceid"
+	"github.com/argoproj/argo-workflows/v4/util/sqldb"
 )
 
-var session db.Session
+var (
+	session db.Session
+	dbType  sqldb.DBType
+)
 
 func main() {
 	var dsn string
@@ -29,7 +33,7 @@ func main() {
 		Short: "CLI for developers to use when working on the DB locally",
 	}
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) (err error) {
-		session, err = createDBSession(dsn)
+		session, dbType, err = createDBSession(dsn)
 		return
 	}
 	rootCmd.PersistentFlags().StringVarP(&dsn, "dsn", "d", "postgres://postgres@localhost:5432/postgres", "DSN connection string. For MySQL, use 'mysql:password@tcp/argo'.")
@@ -47,7 +51,7 @@ func NewMigrateCommand() *cobra.Command {
 		Use:   "migrate",
 		Short: "Force DB migration for given cluster/table",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return sqldb.NewMigrate(session, cluster, table).Exec(context.Background())
+			return persistsqldb.Migrate(cmd.Context(), session, cluster, table, dbType)
 		},
 	}
 	migrationCmd.Flags().StringVar(&cluster, "cluster", "default", "Cluster name")
@@ -69,11 +73,14 @@ func NewFakeDataCommand() *cobra.Command {
 			instanceIDService := instanceid.NewService("")
 			wfTmpl := wfv1.MustUnmarshalWorkflow(template)
 
+			ctx := cmd.Context()
 			for i := 0; i < rows; i++ {
 				wf := randomizeWorkflow(wfTmpl, namespaces)
 				cluster := clusters[rand.Intn(len(clusters))]
-				wfArchive := sqldb.NewWorkflowArchive(session, cluster, "", instanceIDService)
-				if err := wfArchive.ArchiveWorkflow(wf); err != nil {
+				dbConfig := dbConfigFromType(dbType)
+				proxy := sqldb.NewSessionProxyFromSession(session, dbConfig, "", "")
+				wfArchive := persistsqldb.NewWorkflowArchive(proxy, cluster, "", instanceIDService)
+				if err := wfArchive.ArchiveWorkflow(ctx, wf); err != nil {
 					return err
 				}
 			}
@@ -89,19 +96,27 @@ func NewFakeDataCommand() *cobra.Command {
 	return fakeDataCmd
 }
 
-func createDBSession(dsn string) (db.Session, error) {
+func createDBSession(dsn string) (db.Session, sqldb.DBType, error) {
 	if strings.HasPrefix(dsn, "postgres") {
 		url, err := postgresqladp.ParseURL(dsn)
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
-		return postgresqladp.Open(url)
+		session, err := postgresqladp.Open(url)
+		if err != nil {
+			return nil, sqldb.Invalid, err
+		}
+		return session, sqldb.Postgres, err
 	} else {
 		url, err := mysqladp.ParseURL(dsn)
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
-		return mysqladp.Open(url)
+		session, err := mysqladp.Open(url)
+		if err != nil {
+			return nil, sqldb.Invalid, err
+		}
+		return session, sqldb.MySQL, err
 	}
 }
 
@@ -118,6 +133,17 @@ func randomTime() time.Time {
 	min := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC).Unix()
 	max := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC).Unix()
 	return time.Unix(rand.Int63nRange(min, max), 0)
+}
+
+func dbConfigFromType(dbType sqldb.DBType) *config.DBConfig {
+	switch dbType {
+	case sqldb.Postgres:
+		return &config.DBConfig{PostgreSQL: &config.PostgreSQLConfig{}}
+	case sqldb.MySQL:
+		return &config.DBConfig{MySQL: &config.MySQLConfig{}}
+	default:
+		return &config.DBConfig{}
+	}
 }
 
 func randomizeWorkflow(wfTmpl *wfv1.Workflow, namespaces []string) *wfv1.Workflow {

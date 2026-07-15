@@ -16,7 +16,7 @@ spec:
       automountServiceAccountToken: false
       containers:
         - name: main
-          image: minio/minio:RELEASE.2022-11-17T23-20-09Z
+          image: quay.io/minio/minio:RELEASE.2022-11-17T23-20-09Z@sha256:b2a98df34c3e8d605a5e96f0bc1657dd440a5bd53d95465a7b342e736da9c6cf
           env:
             - name: MINIO_ACCESS_KEY
               value: admin

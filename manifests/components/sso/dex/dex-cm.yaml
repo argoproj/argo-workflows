@@ -1,0 +1,89 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dex
+# this contains secret data -- do not use in production
+data:
+  # https://github.com/dexidp/dex/blob/master/examples/config-dev.yaml
+  config.yaml: |
+    issuer: http://dex:5556/dex
+    storage:
+      type: sqlite3
+      config:
+        file: ":memory:"
+    web:
+      http: 0.0.0.0:5556
+      https: 0.0.0.0:5554
+      tlsCert: /data/tls.crt
+      tlsKey: /data/tls.key
+    logger:
+      level: debug
+    staticClients:
+      - id: argo-server
+        redirectURIs:
+          - http://localhost:2746/oauth2/callback
+          - http://localhost:8080/oauth2/callback
+          - https://localhost:8080/oauth2/callback
+        name: Argo Server
+        secret: ZXhhbXBsZS1hcHAtc2VjcmV0
+    connectors:
+      - type: mockCallback
+        id: mock
+        name: Example
+    enablePasswordDB: true
+    staticPasswords:
+      - email: admin@example.com
+        hash: $2a$10$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W
+        username: admin
+        userID: 08a8684b-db88-4b73-90a9-3cd1661f5466
+  # Self-signed certificate generated via https://github.com/dexidp/dex/blob/7e2225c0e6594dafd049b5cb3a9fe1fd1941f385/examples/k8s/gencert.sh
+  # Expires on 2035/11/07
+  tls.crt: |
+    -----BEGIN CERTIFICATE-----
+    MIIDHDCCAgSgAwIBAgIUbheSqdU5mYJvB4tYDfYv1xYGUMAwDQYJKoZIhvcNAQEL
+    BQAwEjEQMA4GA1UEAwwHa3ViZS1jYTAeFw0yNTExMDkwMjMwMTRaFw0zNTExMDcw
+    MjMwMTRaMBIxEDAOBgNVBAMMB2t1YmUtY2EwggEiMA0GCSqGSIb3DQEBAQUAA4IB
+    DwAwggEKAoIBAQDFbXaZUsfc+MGNOBCVcYPv8Hfv0SBWn1c347PJ0xTqRfJSL604
+    FX6CZCQ8ZWSJqxgXsLKUF6Tlnz0AHTFrgtVhBVQlbusq2cdWSd2z1PSqnASop4x4
+    Fa9nvFwju9qxvcEb0b9EXi+NTjOzbr5Sb3hVRk3CyDucH9EH2OSQ1nGfoUE7r/W5
+    8ILV14QRI5yAAHvnlKW04iopcXlS6yXTywjFRGXc3XEfBMTYcCCFxooKxLZMeLUF
+    JQI+y/oPTdGJhStjYwcLW0D2P6TPpugmDxiHZocyOEa9vMZxjsjEelEQ1R2vQqDF
+    aHZN84ZmkjdnrKMo4LmhpXzbl4TrjcKfIJeTAgMBAAGjajBoMAkGA1UdEwQCMAAw
+    CwYDVR0PBAQDAgXgMA4GA1UdEQQHMAWCA2RleDAdBgNVHQ4EFgQU88mr/kxjHPTb
+    gCyK7ZiOnHMmaTcwHwYDVR0jBBgwFoAUzIcLcqg2CFKJTEyI8hZitG+jN8AwDQYJ
+    KoZIhvcNAQELBQADggEBAESweFp7IFMZgEvlAuEHiYGZrE3hIjeRnoVInEbPvmO5
+    9YaodVEK6DMF8gkqM4v/PMK8alFtUBDmU8yqBpXx7RNYqPLdjffugVfwTD6VANqz
+    omG5NThYNNGxa22vCjWyrV/z1bgnvqbm+XXctpOPJCJYw15g0ggYSk/WwkwOQCcz
+    9hxwacl6P3ll5xPcjs4UCRjVbVdJAKltpBm7atxTnKqxFfXn8wO0BF2Zf7xfM9Yp
+    f4kI5JS7GQm20y0imWTw8v73XpJvSF4WTOW9wuRTdZ3vFMueUCpCXD/W6qsu8fLG
+    3Bql04SsAzrL1bMu8QZrEfWqpHPybe7cvAbWMlQf3X0=
+    -----END CERTIFICATE-----
+  tls.key: |
+    -----BEGIN PRIVATE KEY-----
+    MIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQDFbXaZUsfc+MGN
+    OBCVcYPv8Hfv0SBWn1c347PJ0xTqRfJSL604FX6CZCQ8ZWSJqxgXsLKUF6Tlnz0A
+    HTFrgtVhBVQlbusq2cdWSd2z1PSqnASop4x4Fa9nvFwju9qxvcEb0b9EXi+NTjOz
+    br5Sb3hVRk3CyDucH9EH2OSQ1nGfoUE7r/W58ILV14QRI5yAAHvnlKW04iopcXlS
+    6yXTywjFRGXc3XEfBMTYcCCFxooKxLZMeLUFJQI+y/oPTdGJhStjYwcLW0D2P6TP
+    pugmDxiHZocyOEa9vMZxjsjEelEQ1R2vQqDFaHZN84ZmkjdnrKMo4LmhpXzbl4Tr
+    jcKfIJeTAgMBAAECggEAXts5IHGllYXveOp3DVZ9Dct71L2ly/jC7xd4SoAgjG8O
+    /m3pzAiHwB5dSqdspriN2tQK+RxjHfBkXqmoFP/HhdYJl/KzCuOX4t2ap8ypwU80
+    7dOSqh/BJxZZLtITQVLqdXNRcofOURZBwPR0fScRqecddXi/K0QeKqcLKoveC9OW
+    cWDlbi6V18QmvlLY5dyj0kZPA8sR5ccucWktyl1WJmpkRGat3gCoAVBoZ7b33SWM
+    iOb3Im3WDj9IxwrDfs6wKh7JHrYVCXHYhvP2PigV3q9/Hbvu7901M2DNafo40Sg1
+    4QTjbuRU7GbwuZoVSd8WgYTf4U2c56O7TwoakpaYAQKBgQDlN1HXW+I4ZYD7kXbs
+    VoA+Rn2jvLQkcc6yNE9jcpbcVoAdcDfM0BAhB73IYRL4UC2KO74fTodUZga7Bte6
+    1ecyhrGM9/e4CVW1I4SVOpuM57l5ZMvLuzKt5EtNCl1+8hr2MD1Ydg8KXD/qKvkJ
+    PL3ahOycj39/PHIw5iCGr1oGPQKBgQDcfzwcrxBW3/8hdEeOZnbL0SM5j+cU7hDs
+    H3UAZlEMJFsXIibLS3SXT7e6jILsGhdahFe5BOJsUU/8YUcsejvE41YA3D2mlnvf
+    FJ4vIVGPuzWoO0CrkH1Oh+Gn3fPz2UFhspNLiABqP0OA6UySTFP74zXsXsljLCYV
+    sJHWwqDCDwKBgQCOq5gtS+vK3qMh8rDq+gxotseNGu+ln5DgKt8fLzvneY/Uwvx4
+    Zyki5gaiqol8Naui1vzHz8E8LyURVHkCuhFlyaDJ9a4ixuyqCqmDmS8ozTMM9EhF
+    TweEZQzZrxHy6g8OHYiRfyptcG33+zd3IG+rjAEakdbyA1WwSg0EyDBooQKBgQDR
+    rwGIOYbtRriFpOGDbrdcHbdEvy8+fSKEmWmXhrVeOZiSSDziKRBn8DxFX+gFBM7e
+    mmodnaKA5VaOKCgaCOeb1aDs0oSiTgrgWugO471/VMWzBR37yT0QmDGkhHLAmwMN
+    GFfwhRX388+K4NGbcpCPQkP+UylqcQqKp84YkB92SwKBgQDGLdT5lFeawRI/gcAl
+    0STaHKFPGjOsUsMSc+A59+fBJtDvS+8mcqIoOlO+1bTfGkyGzLUPjoLy4ltNktbp
+    +nN+/FMtomkM98WS96G8cg5vgOdHIAOURwnfrDosL15gavEuex9c2r6i6MLPy6fX
+    FRTNBD9v3HpiiGoQq5v4wFdthw==
+    -----END PRIVATE KEY-----

@@ -31,7 +31,7 @@ Then, copy the commands below to apply the quick-start manifest:
 
 ```bash
 kubectl create namespace argo
-kubectl apply -n argo -f "https://github.com/argoproj/argo-workflows/releases/download/${ARGO_WORKFLOWS_VERSION}/quick-start-minimal.yaml"
+kubectl apply --server-side -n argo -f "https://github.com/argoproj/argo-workflows/releases/download/${ARGO_WORKFLOWS_VERSION}/quick-start-minimal.yaml"
 ```
 
 ## Install the Argo Workflows CLI
@@ -81,6 +81,9 @@ argo logs -n argo @latest
     ```bash
     kubectl -n argo port-forward service/argo-server 2746:2746
     ```
+
+    !!! Note "Helm installations"
+        If you installed Argo Workflows using the [Helm chart](https://github.com/argoproj/argo-helm/tree/main/charts/argo-workflows), use `service/argo-workflows-server` instead of `service/argo-server`.
 
 1. Navigate your browser to <https://localhost:2746>.
     * **Note**: The URL uses `https` and not `http`. Navigating to `http` will result in a server-side error.

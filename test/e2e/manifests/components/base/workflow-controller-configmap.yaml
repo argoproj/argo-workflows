@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: workflow-controller-configmap
+data:
+  workflowDefaults: |
+    spec:
+      activeDeadlineSeconds: 300
+      podSpecPatch: |
+        terminationGracePeriodSeconds: 10
+      workflowMetadata:
+        labels:
+          default-label: thisLabelIsFromWorkflowDefaults
+  executor: |
+    imagePullPolicy: IfNotPresent
+    resources:
+      requests:
+        cpu: 0.1
+        memory: 64Mi
+      limits:
+        cpu: 0.5
+        memory: 256Mi
+  retentionPolicy: |
+    completed: 10
+    failed: 2
+    errored: 2
+  artifactDrivers: |
+    - name: test
+      image: ghcr.io/argoproj-labs/artifact-driver-s3:v0.3.1
+  failedPodRestart: |
+    enabled: true
+    maxRestarts: 3

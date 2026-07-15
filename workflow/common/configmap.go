@@ -5,11 +5,11 @@ import (
 
 	apiv1 "k8s.io/api/core/v1"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
+	"github.com/argoproj/argo-workflows/v4/errors"
 )
 
 type ConfigMapStore interface {
-	GetByKey(key string) (interface{}, bool, error)
+	GetByKey(key string) (any, bool, error)
 }
 
 // GetConfigMapValue retrieves a configmap value

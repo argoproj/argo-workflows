@@ -6,15 +6,14 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric"
 )
 
-func createDefaultTestMetrics() (*Metrics, *TestMetricsExporter, error) {
-	config := Config{
+func createDefaultTestMetrics(ctx context.Context) (*Metrics, *TestMetricsExporter, error) {
+	config := MetricsConfig{
 		Enabled: true,
 	}
-	return createTestMetrics(&config)
+	return createTestMetrics(ctx, &config)
 }
 
-func createTestMetrics(config *Config) (*Metrics, *TestMetricsExporter, error) {
-	ctx /* with cancel*/ := context.Background()
+func createTestMetrics(ctx context.Context, config *MetricsConfig) (*Metrics, *TestMetricsExporter, error) {
 	te := NewTestMetricsExporter()
 
 	m, err := NewMetrics(ctx, TestScopeName, TestScopeName, config, metric.WithReader(te))
@@ -44,7 +43,7 @@ func addTestingHistogram(_ context.Context, m *Metrics) error {
 }
 
 func (m *Metrics) TestingHistogramRecord(ctx context.Context, value float64) {
-	m.Record(ctx, nameTestingHistogram, value, InstAttribs{})
+	m.Record(ctx, nameTestingHistogram, value, Attributes{})
 }
 
 func addTestingCounter(ctx context.Context, m *Metrics) error {
@@ -57,9 +56,9 @@ func addTestingCounter(ctx context.Context, m *Metrics) error {
 }
 
 func (m *Metrics) TestingErrorA(ctx context.Context) {
-	m.AddInt(ctx, nameTestingCounter, 1, InstAttribs{{Name: AttribErrorCause, Value: errorCauseTestingB}})
+	m.AddInt(ctx, nameTestingCounter, 1, Attributes{{Name: AttribErrorCause, Value: errorCauseTestingB}})
 }
 
 func (m *Metrics) TestingErrorB(ctx context.Context) {
-	m.AddInt(ctx, nameTestingCounter, 1, InstAttribs{{Name: AttribErrorCause, Value: errorCauseTestingB}})
+	m.AddInt(ctx, nameTestingCounter, 1, Attributes{{Name: AttribErrorCause, Value: errorCauseTestingB}})
 }

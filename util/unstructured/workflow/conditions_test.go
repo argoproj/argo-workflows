@@ -7,13 +7,13 @@ import (
 	corev1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
 func TestGetConditions(t *testing.T) {
 	t.Run("Nil", func(t *testing.T) {
-		un := &unstructured.Unstructured{Object: map[string]interface{}{}}
+		un := &unstructured.Unstructured{Object: map[string]any{}}
 
 		assert.Nil(t, GetConditions(un))
 	})

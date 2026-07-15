@@ -1,15 +1,17 @@
-package executor
+package artifacts
 
 import (
 	"context"
 	"testing"
 
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apiv1 "k8s.io/api/core/v1"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/s3"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/s3"
 )
 
 type mockResourceInterface struct{}
@@ -54,11 +56,33 @@ func TestNewDriverS3(t *testing.T) {
 		}},
 	}
 
-	got, err := newDriver(context.TODO(), art, &mockResourceInterface{})
+	got, err := newDriver(logging.TestContext(t.Context()), art, &mockResourceInterface{})
 	require.NoError(t, err)
 
 	artDriver := got.(*s3.ArtifactDriver)
 	assert.Equal(t, art.S3.AccessKeySecret.Key+"-secret", artDriver.AccessKey)
 	assert.Equal(t, art.S3.SecretKeySecret.Key+"-secret", artDriver.SecretKey)
 	assert.Equal(t, art.S3.SessionTokenSecret.Key+"-secret", artDriver.SessionToken)
+}
+
+func TestNewDriverS3AddressingStyle(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	for _, style := range []string{"", "path", "virtual-hosted"} {
+		t.Run(style, func(t *testing.T) {
+			art := &wfv1.Artifact{
+				ArtifactLocation: wfv1.ArtifactLocation{S3: &wfv1.S3Artifact{
+					S3Bucket: wfv1.S3Bucket{
+						Endpoint:        "endpoint",
+						Bucket:          "bucket",
+						AddressingStyle: style,
+					},
+					Key: "art",
+				}},
+			}
+			got, err := newDriver(ctx, art, &mockResourceInterface{})
+			require.NoError(t, err)
+			artDriver := got.(*s3.ArtifactDriver)
+			assert.Equal(t, style, artDriver.AddressingStyle)
+		})
+	}
 }

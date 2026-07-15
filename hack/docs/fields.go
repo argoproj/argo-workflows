@@ -95,7 +95,7 @@ func link(text, linkTo string) string {
 	return fmt.Sprintf("[%s](%s)", text, linkTo)
 }
 
-func getDescFromField(field map[string]interface{}) string {
+func getDescFromField(field map[string]any) string {
 	if val, ok := field["description"]; ok {
 		return cleanDesc(val.(string))
 	} else if val, ok := field["title"]; ok {
@@ -115,9 +115,9 @@ func getExamples(examples Set, summary string) string {
 	return out
 }
 
-func getKeyValueFieldTypes(field map[string]interface{}) (string, string) {
+func getKeyValueFieldTypes(field map[string]any) (string, string) {
 	keyType, valType := "string", "string"
-	addProps := field["additionalProperties"].(map[string]interface{})
+	addProps := field["additionalProperties"].(map[string]any)
 	if val, ok := addProps["type"]; ok {
 		keyType = val.(string)
 	}
@@ -127,23 +127,23 @@ func getKeyValueFieldTypes(field map[string]interface{}) (string, string) {
 	return keyType, valType
 }
 
-func getObjectType(field map[string]interface{}, addToQueue func(string)) string {
+func getObjectType(field map[string]any, addToQueue func(string)) string {
 	objTypeRaw := field["type"].(string)
 	if objTypeRaw == "array" {
-		if ref, ok := field["items"].(map[string]interface{})["$ref"]; ok {
+		if ref, ok := field["items"].(map[string]any)["$ref"]; ok {
 			refString := ref.(string)[14:]
 			addToQueue(refString)
 
 			name := getNameFromFullName(refString)
 			if refString == "io.argoproj.workflow.v1alpha1.ParallelSteps" {
-				return fmt.Sprintf("`Array<Array<`%s`>>`", link(fmt.Sprintf("`%s`", "WorkflowStep"), fmt.Sprintf("#"+strings.ToLower("WorkflowStep"))))
+				return fmt.Sprintf("`Array<Array<`%s`>>`", link("`WorkflowStep`", "#"+strings.ToLower("WorkflowStep")))
 			}
-			return fmt.Sprintf("`Array<`%s`>`", link(fmt.Sprintf("`%s`", name), fmt.Sprintf("#"+strings.ToLower(name))))
+			return fmt.Sprintf("`Array<`%s`>`", link(fmt.Sprintf("`%s`", name), "#"+strings.ToLower(name)))
 		}
-		fullName := field["items"].(map[string]interface{})["type"].(string)
+		fullName := field["items"].(map[string]any)["type"].(string)
 		return fmt.Sprintf("`Array< %s >`", getNameFromFullName(fullName))
 	} else if objTypeRaw == "object" {
-		if ref, ok := field["additionalProperties"].(map[string]interface{})["$ref"]; ok {
+		if ref, ok := field["additionalProperties"].(map[string]any)["$ref"]; ok {
 			refString := ref.(string)[14:]
 			addToQueue(refString)
 			name := getNameFromFullName(refString)
@@ -168,7 +168,7 @@ func glob(dir string, ext string) ([]string, error) {
 	return files, err
 }
 
-func sortedMapInterfaceKeys(in map[string]interface{}) []string {
+func sortedMapInterfaceKeys(in map[string]any) []string {
 	var stringList []string
 	for key := range in {
 		stringList = append(stringList, key)
@@ -192,10 +192,19 @@ type DocGeneratorContext struct {
 	external   []string
 	index      map[string]Set
 	jsonName   map[string]string
-	defs       map[string]interface{}
+	defs       map[string]any
 }
 
 type Set map[string]bool
+
+func (c *DocGeneratorContext) addToIndex(indexName, fileName string) {
+	if set, ok := c.index[indexName]; ok {
+		set[fileName] = true
+	} else {
+		c.index[indexName] = make(Set)
+		c.index[indexName][fileName] = true
+	}
+}
 
 func NewDocGeneratorContext() *DocGeneratorContext {
 	return &DocGeneratorContext{
@@ -203,11 +212,12 @@ func NewDocGeneratorContext() *DocGeneratorContext {
 		queue: []string{
 			"io.argoproj.workflow.v1alpha1.Workflow", "io.argoproj.workflow.v1alpha1.CronWorkflow",
 			"io.argoproj.workflow.v1alpha1.WorkflowTemplate", "io.argoproj.workflow.v1alpha1.WorkflowEventBinding",
+			"io.argoproj.workflow.v1alpha1.InfoResponse",
 		},
 		external: []string{},
 		index:    make(map[string]Set),
 		jsonName: make(map[string]string),
-		defs:     make(map[string]interface{}),
+		defs:     make(map[string]any),
 	}
 }
 
@@ -216,12 +226,12 @@ func (c *DocGeneratorContext) loadFiles() {
 	if err != nil {
 		panic(err)
 	}
-	swagger := make(map[string]interface{})
+	swagger := make(map[string]any)
 	err = json.Unmarshal(bytes, &swagger)
 	if err != nil {
 		panic(err)
 	}
-	c.defs = swagger["definitions"].(map[string]interface{})
+	c.defs = swagger["definitions"].(map[string]any)
 
 	files, err := glob("examples/", ".yaml")
 	if err != nil {
@@ -239,26 +249,24 @@ FILES:
 		for _, m := range matches {
 			kind := m[1]
 			switch kind {
-			case "ClusterWorkflowTemplate", "CronWorkflow", "Workflow", "WorkflowTemplate", "WorkflowEventBinding":
+			case "ClusterWorkflowTemplate", "CronWorkflow", "Workflow", "WorkflowTemplate", "WorkflowEventBinding", "InfoResponse":
 			default:
 				continue FILES
 			}
-			if set, ok := c.index[kind]; ok {
-				set[fileName] = true
-			} else {
-				c.index[kind] = make(Set)
-				c.index[kind][fileName] = true
-			}
+			c.addToIndex(kind, fileName)
 		}
 
 		r = regexp.MustCompile(`([a-zA-Z]+?):`)
 		finds := r.FindAllStringSubmatch(string(bytes), -1)
 		for _, find := range finds {
-			if set, ok := c.index[find[1]]; ok {
-				set[fileName] = true
-			} else {
-				c.index[find[1]] = make(Set)
-				c.index[find[1]][fileName] = true
+			c.addToIndex(find[1], fileName)
+		}
+
+		// Index by type name for specific patterns where field name matching is too broad.
+		// MetricLabel is used in prometheus metrics config - match files with both "prometheus:" and "labels:".
+		if _, hasPrometheus := c.index["prometheus"][fileName]; hasPrometheus {
+			if _, hasLabels := c.index["labels"][fileName]; hasLabels {
+				c.addToIndex("MetricLabel", fileName)
 			}
 		}
 	}
@@ -280,7 +288,7 @@ func (c *DocGeneratorContext) addToQueue(ref, jsonFieldName string) {
 }
 
 func (c *DocGeneratorContext) getDesc(key string) string {
-	obj, ok := c.defs[key].(map[string]interface{})
+	obj, ok := c.defs[key].(map[string]any)
 	if !ok {
 		return "_No description available_"
 	}
@@ -303,26 +311,35 @@ func (c *DocGeneratorContext) getTemplate(key string) string {
 		if set, ok := c.index[jsonName]; ok {
 			// HACK: The "spec" field usually refers to a WorkflowSpec, but other CRDs
 			// have different definitions, and the examples with "spec" aren't applicable.
-			if jsonName != "spec" || name == "WorkflowSpec" || name == "CronWorkflowSpec" {
+			// Similarly, "labels" appears in metadata.labels for every workflow, but we
+			// only want examples that actually use the field (e.g., MetricLabel in prometheus.labels).
+			showExamples := true
+			if jsonName == "spec" && name != "WorkflowSpec" && name != "CronWorkflowSpec" {
+				showExamples = false
+			}
+			if jsonName == "labels" && name != "ObjectMeta" {
+				showExamples = false
+			}
+			if showExamples {
 				out += getExamples(set, "Examples with this field")
 			}
 		}
 	}
 
-	var properties map[string]interface{}
+	var properties map[string]any
 	def, ok := c.defs[key]
 	if !ok {
 		return out
 	}
-	if props, ok := def.(map[string]interface{})["properties"]; ok {
-		properties = props.(map[string]interface{})
+	if props, ok := def.(map[string]any)["properties"]; ok {
+		properties = props.(map[string]any)
 	} else {
 		return out
 	}
 
 	out += fieldTableHeader
 	for _, jsonFieldName := range sortedMapInterfaceKeys(properties) {
-		field := properties[jsonFieldName].(map[string]interface{})
+		field := properties[jsonFieldName].(map[string]any)
 		if ref, ok := field["$ref"]; ok {
 			refString := ref.(string)[14:]
 			c.addToQueue(refString, jsonFieldName)

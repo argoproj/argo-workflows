@@ -9,14 +9,14 @@ import (
 
 func TestSimpleSummarize(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
-		msg := formatterSimple{}.Summarize(&LintResults{
+		msg := formatterSimple{}.Summarize(&Results{
 			Success: true,
 		})
 		expected := "no linting errors found!\n"
 		assert.Equal(t, expected, msg)
 	})
 	t.Run("Nothing linted", func(t *testing.T) {
-		msg := formatterSimple{}.Summarize(&LintResults{
+		msg := formatterSimple{}.Summarize(&Results{
 			anythingLinted: false,
 			Success:        false,
 		})
@@ -27,7 +27,7 @@ func TestSimpleSummarize(t *testing.T) {
 
 func TestSimpleFormat(t *testing.T) {
 	t.Run("Multiple", func(t *testing.T) {
-		msg := formatterSimple{}.Format(&LintResult{
+		msg := formatterSimple{}.Format(&Result{
 			File: "test1",
 			Errs: []error{
 				fmt.Errorf("some error"),
@@ -42,7 +42,7 @@ test1: some error2
 	})
 
 	t.Run("One", func(t *testing.T) {
-		msg := formatterSimple{}.Format(&LintResult{
+		msg := formatterSimple{}.Format(&Result{
 			File: "test2",
 			Errs: []error{
 				fmt.Errorf("some error"),
@@ -54,7 +54,7 @@ test1: some error2
 	})
 
 	t.Run("NotLinted", func(t *testing.T) {
-		msg := formatterSimple{}.Format(&LintResult{
+		msg := formatterSimple{}.Format(&Result{
 			File:   "test3",
 			Linted: false,
 		})

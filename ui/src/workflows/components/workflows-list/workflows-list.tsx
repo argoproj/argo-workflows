@@ -8,6 +8,7 @@ import {uiUrl} from '../../../shared/base';
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
 import {ErrorNotice} from '../../../shared/components/error-notice';
 import {ExampleManifests} from '../../../shared/components/example-manifests';
+import {openLinkWithKey} from '../../../shared/components/links';
 import {Loading} from '../../../shared/components/loading';
 import {PaginationPanel} from '../../../shared/components/pagination-panel';
 import {TimestampSwitch} from '../../../shared/components/timestamp';
@@ -31,6 +32,8 @@ import {WorkflowsSummaryContainer} from '../workflows-summary-container/workflow
 import {WorkflowsToolbar} from '../workflows-toolbar/workflows-toolbar';
 
 import './workflows-list.scss';
+
+import {useQueryParams} from '../../../shared/use-query-params';
 
 interface WorkflowListRenderOptions {
     paginationLimit: number;
@@ -60,6 +63,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
 
     const isFirstRender = useRef(true);
     const [namespace, setNamespace] = useState(nsUtils.getNamespace(match.params.namespace) || '');
+    const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') || '');
     const [pagination, setPagination] = useState<Pagination>(() => {
         const savedPaginationLimit = storage.getItem('options', {}).paginationLimit || undefined;
         return {
@@ -105,15 +109,10 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
         return nowDisabled;
     }, [selectedWorkflows]);
 
-    const filteredWorkflows = workflows?.filter(w => nullSafeTimeFilter(createdAfter, finishedBefore, w)).slice(0, pagination.limit || 999999);
-    const counts = countsByCompleted(filteredWorkflows);
+    const counts = countsByCompleted(workflows);
 
     function clearSelectedWorkflows() {
         setSelectedWorkflows(new Map<string, models.Workflow>());
-    }
-
-    function getSidePanel() {
-        return queryParams.get('sidePanel');
     }
 
     // run once on first render
@@ -125,12 +124,15 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
         })();
     }, []);
 
+    useEffect(
+        useQueryParams(history, p => {
+            setSidePanel(p.get('sidePanel') || '');
+        }),
+        [history]
+    );
+
     // save history and localStorage
     useEffect(() => {
-        if (isFirstRender.current) {
-            isFirstRender.current = false;
-            return;
-        }
         // add empty selectedPhases + selectedLabels for forward-compat w/ old version: previous code relies on them existing, so if you move up a version and back down, it breaks
         const options = {selectedPhases: [], selectedLabels: []} as unknown as WorkflowListRenderOptions;
         options.phases = phases;
@@ -140,7 +142,28 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
         }
         storage.setItem('options', options, {} as WorkflowListRenderOptions);
 
-        const params = new URLSearchParams(history.location.search);
+        const params = new URLSearchParams();
+        const currentParams = new URLSearchParams(history.location.search);
+
+        if (currentParams.has('namespace')) {
+            params.set('namespace', currentParams.get('namespace'));
+        }
+
+        if (sidePanel) {
+            params.set('sidePanel', sidePanel);
+
+            // preserve template name and parameters if sidePanel is open
+            if (currentParams.has('template')) {
+                params.append('template', currentParams.get('template'));
+            }
+            currentParams.forEach((v, k) => {
+                if (k.startsWith('parameters')) {
+                    params.append(k, v);
+                }
+            });
+        }
+
+        // phases
         phases?.forEach(phase => params.append('phase', phase));
         labels?.forEach(label => params.append('label', label));
         if (pagination.offset) {
@@ -152,12 +175,21 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
         if (nameValue) {
             params.append(nameFilter, nameValue);
         }
-        history.push(historyUrl('workflows' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {namespace, extraSearchParams: params}));
-    }, [namespace, phases.toString(), labels.toString(), pagination.limit, pagination.offset, nameValue, nameFilter]); // referential equality, so use values, not refs
+        if (createdAfter) {
+            params.append('createdAfter', createdAfter.toISOString());
+        }
+        if (finishedBefore) {
+            params.append('finishedBefore', finishedBefore.toISOString());
+        }
+        (isFirstRender.current ? history.replace : history.push)(
+            historyUrl('workflows' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {namespace, extraSearchParams: params})
+        );
+        isFirstRender.current = false;
+    }, [namespace, phases.toString(), labels.toString(), pagination.limit, pagination.offset, nameValue, nameFilter, createdAfter, finishedBefore, sidePanel]); // referential equality, so use values, not refs
 
     useEffect(() => {
         const listWatch = new ListWatch(
-            () => services.workflows.list(namespace, phases, labels, pagination, undefined, nameValue, nameFilter),
+            () => services.workflows.list(namespace, phases, labels, pagination, undefined, nameValue, nameFilter, createdAfter, finishedBefore),
             (resourceVersion: string) => services.workflows.watchFields({namespace, phases, labels, resourceVersion}),
             metadata => {
                 setError(null);
@@ -175,7 +207,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
             clearSelectedWorkflows();
             listWatch.stop();
         };
-    }, [namespace, phases.toString(), labels.toString(), pagination.limit, pagination.offset, nameValue, nameFilter]); // referential equality, so use values, not refs
+    }, [namespace, phases.toString(), labels.toString(), pagination.limit, pagination.offset, nameValue, nameFilter, createdAfter, finishedBefore]); // referential equality, so use values, not refs
 
     useCollectEvent('openedWorkflowList');
 
@@ -195,12 +227,12 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                         {
                             title: 'Submit New Workflow',
                             iconClassName: 'fa fa-plus',
-                            action: () => navigation.goto('.', {sidePanel: 'submit-new-workflow'})
+                            action: () => setSidePanel('submit-new-workflow')
                         },
                         ...links.map(link => ({
                             title: link.name,
                             iconClassName: 'fa fa-external-link',
-                            action: () => (window.location.href = link.url)
+                            action: () => openLinkWithKey(link.url, link.target)
                         }))
                     ]
                 }
@@ -213,10 +245,10 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
             />
             <div className={`row ${selectedWorkflows.size === 0 ? '' : 'pt-60'}`}>
                 <div className='columns small-12 xlarge-2'>
-                    <WorkflowsSummaryContainer workflows={filteredWorkflows} />
+                    <WorkflowsSummaryContainer workflows={workflows} />
                     <div>
                         <WorkflowFilters
-                            workflows={filteredWorkflows || []}
+                            workflows={workflows || []}
                             namespace={namespace}
                             phaseItems={WorkflowPhases}
                             phases={phases}
@@ -245,7 +277,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                     <ErrorNotice error={error} />
                     {!workflows ? (
                         <Loading />
-                    ) : filteredWorkflows.length === 0 ? (
+                    ) : workflows.length === 0 ? (
                         <ZeroState title='No workflows'>
                             <p>To create a new workflow, use the button above.</p>
                             <p>
@@ -265,15 +297,15 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                                         <input
                                             type='checkbox'
                                             className='workflows-list__status--checkbox'
-                                            checked={filteredWorkflows.length === selectedWorkflows.size}
+                                            checked={workflows.length === selectedWorkflows.size}
                                             onClick={e => {
                                                 e.stopPropagation();
                                             }}
                                             onChange={() => {
                                                 const newSelections = new Map<string, models.Workflow>();
                                                 // Not all workflows are selected, select them all
-                                                if (filteredWorkflows.length !== selectedWorkflows.size) {
-                                                    filteredWorkflows.forEach(wf => newSelections.set(wf.metadata.uid, wf));
+                                                if (workflows.length !== selectedWorkflows.size) {
+                                                    workflows.forEach(wf => newSelections.set(wf.metadata.uid, wf));
                                                 }
                                                 setSelectedWorkflows(newSelections);
                                             }}
@@ -307,7 +339,7 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                                         })}
                                     </div>
                                 </div>
-                                {filteredWorkflows.map(wf => {
+                                {workflows.map(wf => {
                                     return (
                                         <WorkflowsRow
                                             workflow={wf}
@@ -346,28 +378,13 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
                                     );
                                 })}
                             </div>
-                            <PaginationPanel onChange={setPagination} pagination={pagination} numRecords={(filteredWorkflows || []).length} />
+                            <PaginationPanel onChange={setPagination} pagination={pagination} numRecords={(workflows || []).length} />
                         </>
                     )}
                 </div>
             </div>
-            <SlidingPanel
-                isShown={!!getSidePanel()}
-                onClose={() => {
-                    const qParams: {[key: string]: string | null} = {
-                        sidePanel: null
-                    };
-                    // Remove any lingering query params
-                    for (const key of queryParams.keys()) {
-                        qParams[key] = null;
-                    }
-                    // Add back the pagination and namespace params.
-                    qParams.limit = pagination.limit.toString();
-                    qParams.offset = pagination.offset || null;
-                    qParams.namespace = namespace;
-                    navigation.goto('.', qParams);
-                }}>
-                {getSidePanel() === 'submit-new-workflow' && (
+            <SlidingPanel isShown={!!sidePanel} onClose={() => setSidePanel('')}>
+                {sidePanel === 'submit-new-workflow' && (
                     <WorkflowCreator
                         namespace={nsUtils.getNamespaceWithDefault(namespace)}
                         history={history}
@@ -377,25 +394,6 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
             </SlidingPanel>
         </Page>
     );
-}
-
-function nullSafeTimeFilter(createdAfter: Date, finishedBefore: Date, w: Workflow): boolean {
-    const createdAt = w.metadata.creationTimestamp; // this should always be defined
-    const finishedAt = w.status.finishedAt; // this can be undefined
-    const createdDate: Date = new Date(createdAt);
-    const finishedDate: Date = new Date(finishedAt);
-
-    // check for undefined date filters as well
-    // equivalent to back-end logic: https://github.com/argoproj/argo-workflows/blob/f5e31f8f36b32883087f783cb1227490bbe36bbd/pkg/apis/workflow/v1alpha1/workflow_types.go#L222
-    if (createdAfter && finishedBefore) {
-        return createdDate > createdAfter && finishedAt && finishedDate < finishedBefore;
-    } else if (createdAfter && !finishedBefore) {
-        return createdDate > createdAfter;
-    } else if (!createdAfter && finishedBefore) {
-        return finishedAt && finishedDate < finishedBefore;
-    } else {
-        return true;
-    }
 }
 
 function countsByCompleted(workflows?: Workflow[]) {

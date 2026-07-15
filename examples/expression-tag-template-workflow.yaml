@@ -2,8 +2,6 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: expression-tag-template-
-  labels:
-    workflows.argoproj.io/test: "true"
   annotations:
     # available in v3.1.0
     workflows.argoproj.io/version: ">= 3.1.0"

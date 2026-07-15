@@ -15,10 +15,6 @@ const (
 	ProgressDefault   = Progress("0/1")
 )
 
-func NewProgress(n, m int64) (Progress, bool) {
-	return ParseProgress(fmt.Sprintf("%v/%v", n, m))
-}
-
 func ParseProgress(s string) (Progress, bool) {
 	v := Progress(s)
 	return v, v.IsValid()

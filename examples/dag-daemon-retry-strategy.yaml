@@ -1,0 +1,51 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-daemon-retry-
+  labels:
+    workflows.argoproj.io/no-test: "duration"
+spec:
+  entrypoint: main
+
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: server
+        template: server
+      - name: client
+        depends: server
+        template: client
+        arguments:
+          parameters:
+          - name: server-ip
+            value: "{{tasks.server.ip}}"
+        withSequence:
+          count: "6"
+
+  - name: server
+    retryStrategy:
+      limit: "6"
+    daemon: true
+    container:
+      image: nginx:1.13
+      command: ["nginx"]
+      args: ["-g", "daemon off;"]
+      readinessProbe:
+        httpGet:
+          path: /
+          port: 80
+        initialDelaySeconds: 2
+        timeoutSeconds: 1
+
+  - name: client
+    inputs:
+      parameters:
+      - name: server-ip
+    synchronization:
+      mutexes:
+        - name: client-{{workflow.uid}}
+    container:
+      image: curlimages/curl:latest
+      command: ["/bin/sh", "-c"]
+      args: ["echo curl --silent -G http://{{inputs.parameters.server-ip}}:80/ && curl --silent -G http://{{inputs.parameters.server-ip}}:80/"]

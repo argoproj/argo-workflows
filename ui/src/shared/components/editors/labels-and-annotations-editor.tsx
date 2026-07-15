@@ -8,7 +8,7 @@ export function LabelsAndAnnotationsEditor({value, onChange}: {value: kubernetes
         <>
             <div className='white-box'>
                 <h5>Labels</h5>
-                <KeyValueEditor keyValues={value && value.labels} onChange={labels => onChange({...value, labels})} />
+                <KeyValueEditor keyValues={value && value.labels} onChange={labels => onChange({...value, labels})} source={'labels'} />
             </div>
             <div className='white-box'>
                 <h5>Annotations</h5>
@@ -16,6 +16,7 @@ export function LabelsAndAnnotationsEditor({value, onChange}: {value: kubernetes
                     keyValues={value && value.annotations}
                     onChange={annotations => onChange({...value, annotations})}
                     hide={key => key === 'kubectl.kubernetes.io/last-applied-configuration'}
+                    source={'annotations'}
                 />
             </div>
         </>

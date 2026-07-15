@@ -17,6 +17,38 @@ export function NewVersionModal({version, dismiss}: {version: string; dismiss: (
             <h4 className='new-version-modal-title'>
                 It looks like <b>{version}</b> has just been installed!
             </h4>
+            <h5>v4.0</h5>
+            <ul className='new-version-modal-bullets'>
+                <li>Artifact drivers as plugins</li>
+                <li>CLI improvements — including creating semaphores</li>
+                <li>Full CRDs with validation</li>
+                <li>Deprecated singular items (mutex, semaphore, schedule).</li>
+            </ul>
+            <p>
+                <a href='https://medium.com/@joibel/argo-workflows-4-0-rc2-70def0d672ef' target='_blank' rel='noreferrer'>
+                    Learn more
+                </a>{' '}
+                or{' '}
+                <a href='https://argo-workflows.readthedocs.io/en/release-4.0/new-features/?utm_source=argo-ui' target='_blank' rel='noreferrer'>
+                    See the list of changes
+                </a>
+            </p>
+            <h5>v3.7</h5>
+            <ul className='new-version-modal-bullets'>
+                <li>Enhanced retry strategies with daemon container support, backoff caps, and retry variables in expressions</li>
+                <li>Multi-controller locks (semaphores and mutexes) and dynamic namespace parallelism</li>
+                <li>UI improvements: visualize workflows before submitting, markdown support in templates, and pre-filled submit forms</li>
+                <li>Cron workflow backfill support and non-root argoexec image for improved security</li>
+            </ul>
+            <p>
+                <a href='https://blog.argoproj.io/argo-workflows-3-7-4eb9a2f0f918' target='_blank' rel='noreferrer'>
+                    Learn more
+                </a>{' '}
+                or{' '}
+                <a href='https://argo-workflows.readthedocs.io/en/release-3.7/new-features/?utm_source=argo-ui' target='_blank' rel='noreferrer'>
+                    See the list of changes
+                </a>
+            </p>
             <h5>v3.6</h5>
             <ul className='new-version-modal-bullets'>
                 <li>
@@ -27,7 +59,7 @@ export function NewVersionModal({version, dismiss}: {version: string; dismiss: (
                     protocol, and there are a number of new or changed metrics
                 </li>
                 <li>
-                    <a href='https://argo-workflows.readthedocs.io/en/release-3.5/cron-workflows?utm_source=argo-ui' target='_blank' rel='noreferrer'>
+                    <a href='https://argo-workflows.readthedocs.io/en/release-3.6/cron-workflows?utm_source=argo-ui' target='_blank' rel='noreferrer'>
                         CronWorkflows
                     </a>{' '}
                     have many more scheduling options including multiple schedules, a <code>when</code> expression, and a <code>stopStrategy</code> expression
@@ -41,7 +73,7 @@ export function NewVersionModal({version, dismiss}: {version: string; dismiss: (
                     Learn more
                 </a>{' '}
                 or{' '}
-                <a href='https://argo-workflows.readthedocs.io/en/release-3.6/features-3.6/?utm_source=argo-ui' target='_blank' rel='noreferrer'>
+                <a href='https://argo-workflows.readthedocs.io/en/release-3.6/new-features/?utm_source=argo-ui' target='_blank' rel='noreferrer'>
                     see the list of changes
                 </a>
             </p>

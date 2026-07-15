@@ -23,10 +23,9 @@ spec:
                 value: "suspend2-{{steps.step1.outputs.result}}"
 
     - name: whalesay
-      script:
-        image: python:alpine3.6
-        command: [sh]
-        source: echo tag1
+      container:
+        image: argoproj/argosay:v2
+        args: ["echo", "tag1"]
 
     - name: suspend
       inputs:

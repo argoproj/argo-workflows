@@ -1,0 +1,12 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+spec:
+  template:
+    spec:
+      containers:
+        - name: prometheus
+          args:
+            - --config.file=/config/prometheus.yaml
+            - --web.enable-remote-write-receiver

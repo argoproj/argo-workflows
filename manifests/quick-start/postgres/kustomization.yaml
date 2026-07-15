@@ -3,9 +3,7 @@ kind: Kustomization
 
 resources:
   - ../base
-  - argo-postgres-config-secret.yaml
-  - postgres-deployment.yaml
-  - postgres-service.yaml
+  - ../../base/crds/full
 
-patches:
-  - path: overlays/workflow-controller-configmap.yaml
+components:
+  - ../../components/postgres

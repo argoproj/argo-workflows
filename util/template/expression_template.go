@@ -1,18 +1,24 @@
 package template
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
+	"reflect"
+	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 
-	"github.com/doublerebel/bellows"
 	"github.com/expr-lang/expr"
-	"github.com/expr-lang/expr/file"
-	"github.com/expr-lang/expr/parser/lexer"
-	log "github.com/sirupsen/logrus"
+	"github.com/expr-lang/expr/ast"
+	"github.com/expr-lang/expr/parser"
+
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/maps"
+	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
 )
 
 func init() {
@@ -21,48 +27,229 @@ func init() {
 	}
 }
 
-func expressionReplace(w io.Writer, expression string, env map[string]interface{}, allowUnresolved bool) (int, error) {
+var (
+	variablesToCheck = []string{
+		varkeys.Item.Template(),
+		varkeys.Retries.Template(),
+		varkeys.RetriesLastExitCode.Template(),
+		varkeys.RetriesLastStatus.Template(),
+		varkeys.RetriesLastDuration.Template(),
+		varkeys.RetriesLastMessage.Template(),
+		varkeys.WorkflowStatus.Template(),
+		varkeys.WorkflowFailures.Template(),
+	}
+)
+
+// missingVarsInEnv returns the identifiers referenced by the expression that are absent from env
+// (a present-but-nil leaf counts as present). Errors if the expression cannot be parsed.
+func missingVarsInEnv(expression string, env map[string]any) ([]string, error) {
+	identifiers, err := getIdentifiers(expression)
+	if err != nil {
+		return nil, err
+	}
+	var missing []string
+	for _, id := range identifiers {
+		if !hasVarInEnv(env, id) {
+			missing = append(missing, id)
+		}
+	}
+	return missing, nil
+}
+
+// anyVarNotInEnv returns the first late-binding variable (variablesToCheck) that the expression
+// references but env lacks, or nil if there is none.
+func anyVarNotInEnv(expression string, env map[string]any) *string {
+	missing, err := missingVarsInEnv(expression, env)
+	if err != nil {
+		// Unparseable expressions can't be checked; compile/run will surface the error.
+		return nil
+	}
+	for _, id := range missing {
+		if slices.Contains(variablesToCheck, id) {
+			return &id
+		}
+	}
+	return nil
+}
+
+func expressionReplaceStrict(ctx context.Context, w io.Writer, expression string, env map[string]any, strictRegex *regexp.Regexp) (int, error) {
 	// The template is JSON-marshaled. This JSON-unmarshals the expression to undo any character escapes.
 	var unmarshalledExpression string
-	err := json.Unmarshal([]byte(fmt.Sprintf(`"%s"`, expression)), &unmarshalledExpression)
+	err := json.Unmarshal(fmt.Appendf(nil, `"%s"`, expression), &unmarshalledExpression)
+	if err != nil {
+		// If we can't unmarshal, we can't parse. Fallback to expressionReplaceCore to handle it (likely error).
+		return expressionReplaceCore(ctx, w, expression, env, false)
+	}
+
+	missingIdentifiers, err := missingVarsInEnv(unmarshalledExpression, env)
+	if err != nil {
+		// If we can't parse, we can't check variables. Fallback to expressionReplaceCore(false) to report syntax error.
+		return expressionReplaceCore(ctx, w, expression, env, false)
+	}
+
+	for _, id := range missingIdentifiers {
+		if strictRegex != nil && strictRegex.MatchString(id) {
+			return 0, fmt.Errorf("failed to evaluate expression: %s is missing", id)
+		}
+	}
+
+	// If we have missing identifiers but they are NOT strict, we allow unresolved.
+	// If we have NO missing identifiers, we enforce resolution (to catch runtime errors),
+	// unless the caller allows unresolved (strictRegex == nil), in which case runtime
+	// failures are tolerated and the expression is left unresolved for later evaluation.
+	allowUnresolved := len(missingIdentifiers) > 0 || strictRegex == nil
+	return expressionReplaceCore(ctx, w, expression, env, allowUnresolved)
+}
+
+type identifierVisitor struct {
+	identifiers []string
+	seen        map[string]bool
+	guarded     map[ast.Node]bool
+}
+
+func (v *identifierVisitor) Visit(node *ast.Node) {
+	if v.guarded[*node] {
+		return
+	}
+	if n, ok := (*node).(*ast.IdentifierNode); ok {
+		if !v.seen[n.Value] {
+			v.identifiers = append(v.identifiers, n.Value)
+			v.seen[n.Value] = true
+		}
+	}
+	if n, ok := (*node).(*ast.MemberNode); ok {
+		path, ok := getMemberPath(n)
+		if ok {
+			if !v.seen[path] {
+				v.identifiers = append(v.identifiers, path)
+				v.seen[path] = true
+			}
+		}
+	}
+}
+
+func getMemberPath(node *ast.MemberNode) (string, bool) {
+	var parts []string
+	curr := node
+	for {
+		if curr.Optional {
+			return "", false
+		}
+		prop, ok := curr.Property.(*ast.StringNode)
+		if !ok {
+			return "", false
+		}
+		parts = append([]string{prop.Value}, parts...)
+
+		if id, isIdent := curr.Node.(*ast.IdentifierNode); isIdent {
+			parts = append([]string{id.Value}, parts...)
+			return strings.Join(parts, "."), true
+		}
+
+		next, ok := curr.Node.(*ast.MemberNode)
+		if !ok {
+			return "", false
+		}
+		curr = next
+	}
+}
+
+// guardVisitor collects the member nodes whose access is guarded by the
+// nil-coalescing (??) or optional-chaining (?.) operators, so they are not
+// reported as strictly-required identifiers. Base identifiers are left
+// untouched so a genuinely-unavailable variable still triggers a requeue.
+type guardVisitor struct {
+	guarded map[ast.Node]bool
+}
+
+func (v *guardVisitor) Visit(node *ast.Node) {
+	switch n := (*node).(type) {
+	case *ast.BinaryNode:
+		if n.Operator == "??" {
+			ast.Walk(&n.Left, &memberMarker{guarded: v.guarded})
+		}
+	case *ast.MemberNode:
+		if n.Optional {
+			if _, ok := n.Node.(*ast.MemberNode); ok {
+				v.guarded[n.Node] = true
+			}
+		}
+	}
+}
+
+type memberMarker struct {
+	guarded map[ast.Node]bool
+}
+
+func (m *memberMarker) Visit(node *ast.Node) {
+	if _, ok := (*node).(*ast.MemberNode); ok {
+		m.guarded[*node] = true
+	}
+}
+
+func getIdentifiers(expression string) ([]string, error) {
+	tree, err := parser.Parse(expression)
+	if err != nil {
+		return nil, err
+	}
+	guarded := make(map[ast.Node]bool)
+	ast.Walk(&tree.Node, &guardVisitor{guarded: guarded})
+	visitor := &identifierVisitor{
+		seen:    make(map[string]bool),
+		guarded: guarded,
+	}
+	ast.Walk(&tree.Node, visitor)
+	return visitor.identifiers, nil
+}
+
+func expressionReplaceCore(ctx context.Context, w io.Writer, expression string, env map[string]any, allowUnresolved bool) (int, error) {
+	shouldAllowFailure := false
+
+	maps.VisitMap(env, func(key string, value any) bool {
+		rv := reflect.Indirect(reflect.ValueOf(value))
+		if rv.Kind() == reflect.String {
+			if IsPlaceholder(rv.String()) {
+				shouldAllowFailure = true
+				return false
+			}
+		}
+		return true
+	})
+
+	log := logging.RequireLoggerFromContext(ctx)
+	// The template is JSON-marshaled. This JSON-unmarshals the expression to undo any character escapes.
+	var unmarshalledExpression string
+	err := json.Unmarshal(fmt.Appendf(nil, `"%s"`, expression), &unmarshalledExpression)
 	if err != nil && allowUnresolved {
-		log.WithError(err).Debug("unresolved is allowed ")
-		return w.Write([]byte(fmt.Sprintf("{{%s%s}}", kindExpression, expression)))
+		log.WithError(err).Debug(ctx, "unresolved is allowed")
+		return fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)
 	}
 	if err != nil {
 		return 0, fmt.Errorf("failed to unmarshall JSON expression: %w", err)
 	}
 
-	if _, ok := env["retries"]; !ok && hasRetries(unmarshalledExpression) && allowUnresolved {
-		// this is to make sure expressions like `sprig.int(retries)` don't get resolved to 0 when `retries` don't exist in the env
-		// See https://github.com/argoproj/argo-workflows/issues/5388
-		log.WithError(err).Debug("Retries are present and unresolved is allowed")
-		return w.Write([]byte(fmt.Sprintf("{{%s%s}}", kindExpression, expression)))
-	}
-
-	// This is to make sure expressions which contains `workflow.status` and `work.failures` don't get resolved to nil
-	// when `workflow.status` and `workflow.failures` don't exist in the env.
-	// See https://github.com/argoproj/argo-workflows/issues/10393, https://github.com/expr-lang/expr/issues/330
-	// This issue doesn't happen to other template parameters since `workflow.status` and `workflow.failures` only exist in the env
-	// when the exit handlers complete.
-	if ((hasWorkflowStatus(unmarshalledExpression) && !hasVarInEnv(env, "workflow.status")) ||
-		(hasWorkflowFailures(unmarshalledExpression) && !hasVarInEnv(env, "workflow.failures"))) &&
-		allowUnresolved {
-		return w.Write([]byte(fmt.Sprintf("{{%s%s}}", kindExpression, expression)))
+	varNameNotInEnv := anyVarNotInEnv(unmarshalledExpression, env)
+	if varNameNotInEnv != nil && allowUnresolved {
+		// this is to make sure expressions don't get resolved to nil or an empty string when certain variables
+		// don't exist in the env during the "global" replacement.
+		// See https://github.com/argoproj/argo-workflows/issues/5388, https://github.com/argoproj/argo-workflows/issues/15008,
+		// https://github.com/argoproj/argo-workflows/issues/10393, https://github.com/expr-lang/expr/issues/330
+		log.WithField("variable", *varNameNotInEnv).Debug(ctx, "variable not in env but unresolved is allowed")
+		return fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)
 	}
 
 	program, err := expr.Compile(unmarshalledExpression, expr.Env(env))
 	// This allowUnresolved check is not great
 	// it allows for errors that are obviously
 	// not failed reference checks to also pass
-	if err != nil && !allowUnresolved {
+	if err != nil && !allowUnresolved && !shouldAllowFailure {
 		return 0, fmt.Errorf("failed to evaluate expression: %w", err)
 	}
 	result, err := expr.Run(program, env)
-	if (err != nil || result == nil) && allowUnresolved {
+	if (err != nil || result == nil) && (allowUnresolved || shouldAllowFailure) {
 		//  <nil> result is also un-resolved, and any error can be unresolved
-		log.WithError(err).Debug("Result and error are unresolved")
-		return w.Write([]byte(fmt.Sprintf("{{%s%s}}", kindExpression, expression)))
+		log.WithError(err).Debug(ctx, "Result and error are unresolved")
+		return fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)
 	}
 	if err != nil {
 		return 0, fmt.Errorf("failed to evaluate expression: %w", err)
@@ -72,8 +259,8 @@ func expressionReplace(w io.Writer, expression string, env map[string]interface{
 	}
 	resultMarshaled, err := json.Marshal(result)
 	if (err != nil || resultMarshaled == nil) && allowUnresolved {
-		log.WithError(err).Debug("resultMarshaled is nil and unresolved is allowed ")
-		return w.Write([]byte(fmt.Sprintf("{{%s%s}}", kindExpression, expression)))
+		log.WithError(err).Debug(ctx, "resultMarshaled is nil and unresolved is allowed ")
+		return fmt.Fprintf(w, "{{%s%s}}", kindExpression, expression)
 	}
 	if err != nil {
 		return 0, fmt.Errorf("failed to marshal evaluated expression: %w", err)
@@ -92,69 +279,111 @@ func expressionReplace(w io.Writer, expression string, env map[string]interface{
 	return w.Write(resultQuoted[1 : len(resultQuoted)-1])
 }
 
-func EnvMap(replaceMap map[string]string) map[string]interface{} {
-	envMap := make(map[string]interface{})
+func EnvMap(replaceMap map[string]string) map[string]any {
+	envMap := make(map[string]any)
 	for k, v := range replaceMap {
 		envMap[k] = v
 	}
 	return envMap
 }
 
-// hasRetries checks if the variable `retries` exists in the expression template
-func hasRetries(expression string) bool {
-	tokens, err := lexer.Lex(file.NewSource(expression))
-	if err != nil {
-		return false
-	}
-	for _, token := range tokens {
-		if token.Kind == lexer.Identifier && token.Value == "retries" {
-			return true
-		}
-	}
-	return false
-}
-
-// hasWorkflowStatus checks if expression contains `workflow.status`
-func hasWorkflowStatus(expression string) bool {
-	if !strings.Contains(expression, "workflow.status") {
-		return false
-	}
-	// Even if the expression contains `workflow.status`, it could be the case that it represents a string (`"workflow.status"`),
-	// not a variable, so we need to parse it and handle filter the string case.
-	tokens, err := lexer.Lex(file.NewSource(expression))
-	if err != nil {
-		return false
-	}
-	for i := 0; i < len(tokens)-2; i++ {
-		if tokens[i].Value+tokens[i+1].Value+tokens[i+2].Value == "workflow.status" {
-			return true
-		}
-	}
-	return false
-}
-
-// hasWorkflowFailures checks if expression contains `workflow.failures`
-func hasWorkflowFailures(expression string) bool {
-	if !strings.Contains(expression, "workflow.failures") {
-		return false
-	}
-	// Even if the expression contains `workflow.failures`, it could be the case that it represents a string (`"workflow.failures"`),
-	// not a variable, so we need to parse it and handle filter the string case.
-	tokens, err := lexer.Lex(file.NewSource(expression))
-	if err != nil {
-		return false
-	}
-	for i := 0; i < len(tokens)-2; i++ {
-		if tokens[i].Value+tokens[i+1].Value+tokens[i+2].Value == "workflow.failures" {
-			return true
-		}
-	}
-	return false
-}
-
 // hasVarInEnv checks if a parameter is in env or not
-func hasVarInEnv(env map[string]interface{}, parameter string) bool {
-	flattenEnv := bellows.Flatten(env)
-	_, ok := flattenEnv[parameter]
-	return ok
+func hasVarInEnv(env map[string]any, parameter string) bool {
+	if _, ok := env[parameter]; ok {
+		return true
+	}
+
+	parts := strings.Split(parameter, ".")
+	var current any
+	found := false
+	remainingParts := parts
+
+	// Try to find the longest matching prefix in env
+	for i := len(parts); i > 0; i-- {
+		prefix := strings.Join(parts[:i], ".")
+		if val, ok := env[prefix]; ok {
+			current = val
+			remainingParts = parts[i:]
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		// If no prefix found, start from env itself (if env is the root object)
+		// But in our case env is a map[string]any, so if no key matched, we probably can't traverse.
+		// However, let's keep existing behavior: start traversing from env as if it's the root.
+		current = env
+		remainingParts = parts
+	}
+
+	// Traverse the remaining parts
+	for i, part := range remainingParts {
+		if current == nil {
+			return false
+		}
+
+		rVal := reflect.ValueOf(current)
+		for rVal.Kind() == reflect.Ptr {
+			if rVal.IsNil() {
+				return false
+			}
+			rVal = rVal.Elem()
+		}
+
+		switch rVal.Kind() {
+		case reflect.Map:
+			val := rVal.MapIndex(reflect.ValueOf(part))
+			if !val.IsValid() {
+				return false
+			}
+			current = val.Interface()
+		case reflect.Struct:
+			field := rVal.FieldByName(part)
+			if !field.IsValid() {
+				// Search anonymous fields manually to ensure we find embedded fields
+				for j := 0; j < rVal.NumField(); j++ {
+					fType := rVal.Type().Field(j)
+					if fType.Anonymous {
+						embeddedValue := rVal.Field(j)
+						// Handle pointer to embedded struct
+						for embeddedValue.Kind() == reflect.Ptr {
+							if embeddedValue.IsNil() {
+								break
+							}
+							embeddedValue = embeddedValue.Elem()
+						}
+						if embeddedValue.Kind() == reflect.Struct {
+							// If we are looking for the embedded type itself (e.g. "Time" in metav1.Time)
+							if fType.Name == part {
+								field = rVal.Field(j)
+								break
+							}
+							if foundField := embeddedValue.FieldByName(part); foundField.IsValid() {
+								field = foundField
+								break
+							}
+						}
+					}
+				}
+			}
+
+			if !field.IsValid() {
+				return false
+			}
+			if !field.CanInterface() {
+				return false
+			}
+			current = field.Interface()
+		default:
+			return false
+		}
+
+		// If this was the last part, we found it
+		if i == len(remainingParts)-1 {
+			return true
+		}
+	}
+
+	return found && len(remainingParts) == 0
 }

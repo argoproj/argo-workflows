@@ -13,8 +13,8 @@ const aggregationWithAnnotationsEnvKey = "EVENT_AGGREGATION_WITH_ANNOTATIONS"
 func TestCustomEventAggregatorFuncWithAnnotations(t *testing.T) {
 	event := apiv1.Event{}
 	key, msg := customEventAggregatorFuncWithAnnotations(&event)
-	assert.Equal(t, "", key)
-	assert.Equal(t, "", msg)
+	assert.Empty(t, key)
+	assert.Empty(t, msg)
 
 	event.Source = apiv1.EventSource{Component: "component1", Host: "host1"}
 	event.InvolvedObject.Name = "name1"
@@ -25,7 +25,7 @@ func TestCustomEventAggregatorFuncWithAnnotations(t *testing.T) {
 	assert.Equal(t, "message1", msg)
 
 	// Test default behavior where annotations are not used for aggregation
-	event.ObjectMeta.Annotations = map[string]string{"key1": "val1", "key2": "val2"}
+	event.Annotations = map[string]string{"key1": "val1", "key2": "val2"}
 	key, msg = customEventAggregatorFuncWithAnnotations(&event)
 	assert.Equal(t, "component1host1name1", key)
 	assert.Equal(t, "message1", msg)
@@ -37,7 +37,7 @@ func TestCustomEventAggregatorFuncWithAnnotations(t *testing.T) {
 
 	// Test annotations with values in different order
 	t.Setenv(aggregationWithAnnotationsEnvKey, "true")
-	event.ObjectMeta.Annotations = map[string]string{"key2": "val2", "key1": "val1"}
+	event.Annotations = map[string]string{"key2": "val2", "key1": "val1"}
 	key, msg = customEventAggregatorFuncWithAnnotations(&event)
 	assert.Equal(t, "component1host1name1val1val2", key)
 	assert.Equal(t, "message1", msg)

@@ -14,6 +14,7 @@ Name | Type | Description | Notes
 **gcs** | [**IoArgoprojWorkflowV1alpha1GCSArtifactRepository**](IoArgoprojWorkflowV1alpha1GCSArtifactRepository.md) |  |  [optional]
 **hdfs** | [**IoArgoprojWorkflowV1alpha1HDFSArtifactRepository**](IoArgoprojWorkflowV1alpha1HDFSArtifactRepository.md) |  |  [optional]
 **oss** | [**IoArgoprojWorkflowV1alpha1OSSArtifactRepository**](IoArgoprojWorkflowV1alpha1OSSArtifactRepository.md) |  |  [optional]
+**plugin** | [**IoArgoprojWorkflowV1alpha1PluginArtifactRepository**](IoArgoprojWorkflowV1alpha1PluginArtifactRepository.md) |  |  [optional]
 **s3** | [**IoArgoprojWorkflowV1alpha1S3ArtifactRepository**](IoArgoprojWorkflowV1alpha1S3ArtifactRepository.md) |  |  [optional]
 
 

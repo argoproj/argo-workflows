@@ -6,7 +6,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/file"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 func TestDefault(t *testing.T) {
@@ -14,7 +16,9 @@ func TestDefault(t *testing.T) {
 }
 
 func TestDecompressWorkflow(t *testing.T) {
-	defer SetMaxWorkflowSize(260)()
+	cleanup := SetMaxWorkflowSize(230)
+	defer cleanup()
+	ctx := logging.TestContext(t.Context())
 
 	t.Run("SmallWorkflow", func(t *testing.T) {
 		wf := &wfv1.Workflow{
@@ -22,36 +26,43 @@ func TestDecompressWorkflow(t *testing.T) {
 				Nodes: wfv1.Nodes{"foo": wfv1.NodeStatus{}},
 			},
 		}
-		err := CompressWorkflowIfNeeded(wf)
+		err := CompressWorkflowIfNeeded(ctx, wf)
 		require.NoError(t, err)
 		assert.NotNil(t, wf)
 		assert.NotEmpty(t, wf.Status.Nodes)
 		assert.Empty(t, wf.Status.CompressedNodes)
 
-		err = DecompressWorkflow(wf)
+		err = DecompressWorkflow(ctx, wf)
 		require.NoError(t, err)
 		assert.NotNil(t, wf)
 		assert.NotEmpty(t, wf.Status.Nodes)
 		assert.Empty(t, wf.Status.CompressedNodes)
 	})
-	t.Run("LargeWorkflow", func(t *testing.T) {
-		wf := &wfv1.Workflow{
-			Status: wfv1.WorkflowStatus{
-				Nodes: wfv1.Nodes{"foo": wfv1.NodeStatus{}, "bar": wfv1.NodeStatus{}},
-			},
-		}
-		err := CompressWorkflowIfNeeded(wf)
-		require.NoError(t, err)
-		assert.NotNil(t, wf)
-		assert.Empty(t, wf.Status.Nodes)
-		assert.NotEmpty(t, wf.Status.CompressedNodes)
+	for name, algorithm := range map[string]string{
+		"LargeWorkflow":       "",
+		"LargeWorkflowZstd":   file.ZStdAlgorithm,
+		"LargeWorkflowBrotli": file.BrotliAlgorithm,
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Setenv(file.CompressionAlgorithmEnvVarKey, algorithm)
+			wf := &wfv1.Workflow{
+				Status: wfv1.WorkflowStatus{
+					Nodes: wfv1.Nodes{"foo": wfv1.NodeStatus{}, "bar": wfv1.NodeStatus{}},
+				},
+			}
+			err := CompressWorkflowIfNeeded(ctx, wf)
+			require.NoError(t, err)
+			assert.NotNil(t, wf)
+			assert.Empty(t, wf.Status.Nodes)
+			assert.NotEmpty(t, wf.Status.CompressedNodes)
 
-		err = DecompressWorkflow(wf)
-		require.NoError(t, err)
-		assert.NotNil(t, wf)
-		assert.NotEmpty(t, wf.Status.Nodes)
-		assert.Empty(t, wf.Status.CompressedNodes)
-	})
+			err = DecompressWorkflow(ctx, wf)
+			require.NoError(t, err)
+			assert.NotNil(t, wf)
+			assert.NotEmpty(t, wf.Status.Nodes)
+			assert.Empty(t, wf.Status.CompressedNodes)
+		})
+	}
 	t.Run("TooLargeToCompressWorkflow", func(t *testing.T) {
 		wf := &wfv1.Workflow{
 			Spec: wfv1.WorkflowSpec{Entrypoint: "main"},
@@ -59,7 +70,7 @@ func TestDecompressWorkflow(t *testing.T) {
 				Nodes: wfv1.Nodes{"foo": wfv1.NodeStatus{}, "bar": wfv1.NodeStatus{}, "baz": wfv1.NodeStatus{}, "qux": wfv1.NodeStatus{}},
 			},
 		}
-		err := CompressWorkflowIfNeeded(wf)
+		err := CompressWorkflowIfNeeded(ctx, wf)
 		require.Error(t, err)
 		assert.True(t, IsTooLargeError(err))
 		// if too large, we want the original back please

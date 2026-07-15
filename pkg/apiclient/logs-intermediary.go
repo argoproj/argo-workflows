@@ -5,7 +5,7 @@ import (
 
 	"google.golang.org/grpc/metadata"
 
-	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
+	workflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow"
 )
 
 type logsIntermediary struct {

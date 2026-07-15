@@ -5,7 +5,8 @@ metadata:
   labels:
     workflows.argoproj.io/test: "true"
 spec:
-  schedule: "* * * * *"
+  schedules:
+    - "* * * * *"
   concurrencyPolicy: "Allow"
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 4
@@ -25,6 +26,5 @@ spec:
           parameters:
             - name: message
         container:
-          image: python:alpine3.6
-          command: ["sh", -c]
-          args: ["echo {{inputs.parameters.message}}"]
+          image: argoproj/argosay:v2
+          args: ["echo", "{{inputs.parameters.message}}"]

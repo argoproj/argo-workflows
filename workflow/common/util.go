@@ -5,22 +5,21 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
+	"path/filepath"
 	"sort"
 	"strings"
 
-	"github.com/gorilla/websocket"
-	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util"
-	"github.com/argoproj/argo-workflows/v3/util/template"
+	"github.com/argoproj/argo-workflows/v4/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/template"
+	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
 )
 
 // FindOverlappingVolume looks an artifact path, checks if it overlaps with any
@@ -32,42 +31,65 @@ func FindOverlappingVolume(tmpl *wfv1.Template, path string) *apiv1.VolumeMount 
 		return len(volumeMounts[i].MountPath) > len(volumeMounts[j].MountPath)
 	})
 	for _, mnt := range volumeMounts {
-		normalizedMountPath := strings.TrimRight(mnt.MountPath, "/")
-		if path == normalizedMountPath || isSubPath(path, normalizedMountPath) {
+		// path is the mount itself or a descendant of it.
+		if _, ok := relWithin(mnt.MountPath, path); ok {
 			return &mnt
 		}
 	}
 	return nil
 }
 
-func isSubPath(path string, normalizedMountPath string) bool {
-	return strings.HasPrefix(path, normalizedMountPath+"/")
-}
-
-type RoundTripCallback func(conn *websocket.Conn, resp *http.Response, err error) error
-
-type WebsocketRoundTripper struct {
-	Dialer *websocket.Dialer
-	Do     RoundTripCallback
-}
-
-func (d *WebsocketRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
-	conn, resp, err := d.Dialer.Dial(r.URL.String(), r.Header)
-	if err == nil {
-		defer util.Close(conn)
+// relWithin reports the path of target relative to base, and whether target is
+// base itself (rel == ".") or a descendant of it. It uses filepath.Rel rather
+// than hand-rolled string prefixing so path separators, trailing slashes and
+// "." segments are handled per the host OS — notably so the comparison holds on
+// Windows (where the supervisor also runs), where filesystem-resolved paths use
+// backslashes. ok is false when target escapes base via ".." or the two cannot
+// be related (e.g. different Windows volumes).
+func relWithin(base, target string) (rel string, ok bool) {
+	rel, err := filepath.Rel(base, target)
+	if err != nil {
+		return "", false
 	}
-	return resp, d.Do(conn, resp, err)
+	if rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return rel, false
+	}
+	return rel, true
+}
+
+// FindVolumeMountNestedUnderPath returns the first volume mount whose mount path
+// is strictly nested beneath path (i.e. path is a proper ancestor directory of
+// the mount). This is the opposite direction to FindOverlappingVolume, which
+// finds a mount that *contains* path.
+//
+// It exists to detect a dangerous input-artifact configuration: an artifact path
+// that is an ancestor of a mounted volume (e.g. artifact path /data with a volume
+// mounted at /data/shared). In init-less mode the emissary clears art.Path before
+// symlinking the artifact into place, and os.RemoveAll on such a path would
+// recurse into and destroy the mounted volume. An exact path==mountPath match is
+// NOT reported here — that is the ordinary overlap case handled by
+// FindOverlappingVolume (the artifact is routed into the volume).
+func FindVolumeMountNestedUnderPath(tmpl *wfv1.Template, path string) *apiv1.VolumeMount {
+	for _, mnt := range tmpl.GetVolumeMounts() {
+		// The mount is strictly beneath path: a descendant (ok), but not path
+		// itself (rel == ".", the ordinary overlap case handled elsewhere).
+		if rel, ok := relWithin(path, mnt.MountPath); ok && rel != "." {
+			return &mnt
+		}
+	}
+	return nil
 }
 
 // ExecPodContainer runs a command in a container in a pod and returns the remotecommand.Executor
-func ExecPodContainer(restConfig *rest.Config, namespace string, pod string, container string, stdout bool, stderr bool, command ...string) (exec remotecommand.Executor, err error) {
+func ExecPodContainer(ctx context.Context, restConfig *rest.Config, namespace string, pod string, container string, stdout bool, stderr bool, command ...string) (exec remotecommand.Executor, err error) {
+	log := logging.RequireLoggerFromContext(ctx)
 	defer func() {
-		log.WithField("namespace", namespace).
-			WithField("pod", pod).
-			WithField("container", container).
-			WithField("command", command).
-			WithError(err).
-			Debug("exec container command")
+		log.WithFields(logging.Fields{
+			"namespace": namespace,
+			"pod":       pod,
+			"container": container,
+			"command":   command,
+		}).WithError(err).Debug(ctx, "exec container command")
 	}()
 
 	clientset, err := kubernetes.NewForConfig(restConfig)
@@ -89,7 +111,7 @@ func ExecPodContainer(restConfig *rest.Config, namespace string, pod string, con
 		execRequest = execRequest.Param("command", cmd)
 	}
 
-	log.Info(execRequest.URL())
+	log.Info(ctx, execRequest.URL().String())
 	exec, err = remotecommand.NewSPDYExecutor(restConfig, "POST", execRequest.URL())
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
@@ -130,34 +152,34 @@ func overwriteWithArguments(argParam, inParam *wfv1.Parameter) {
 	}
 }
 
-func substituteAndGetConfigMapValue(inParam *wfv1.Parameter, globalParams Parameters, namespace string, configMapStore ConfigMapStore) error {
+func substituteAndGetConfigMapValue(ctx context.Context, inParam *wfv1.Parameter, globalParams Parameters, namespace string, configMapStore ConfigMapStore) error {
+	log := logging.RequireLoggerFromContext(ctx)
 	if inParam.ValueFrom != nil && inParam.ValueFrom.ConfigMapKeyRef != nil {
 		if configMapStore != nil {
-			replaceMap := make(map[string]interface{})
+			replaceMap := make(map[string]any)
 			for k, v := range globalParams {
 				replaceMap[k] = v
 			}
 
 			// SubstituteParams is called only at the end of this method. To support parametrization of the configmap
 			// we need to perform a substitution here over the name and the key of the ConfigMapKeyRef.
-			cmName, err := substituteConfigMapKeyRefParam(inParam.ValueFrom.ConfigMapKeyRef.Name, replaceMap)
+			cmName, err := substituteConfigMapKeyRefParam(ctx, inParam.ValueFrom.ConfigMapKeyRef.Name, replaceMap)
 			if err != nil {
-				log.WithError(err).Error("unable to substitute name for ConfigMapKeyRef")
+				log.WithError(err).Error(ctx, "unable to substitute name for ConfigMapKeyRef")
 				return err
 			}
-			cmKey, err := substituteConfigMapKeyRefParam(inParam.ValueFrom.ConfigMapKeyRef.Key, replaceMap)
+			cmKey, err := substituteConfigMapKeyRefParam(ctx, inParam.ValueFrom.ConfigMapKeyRef.Key, replaceMap)
 			if err != nil {
-				log.WithError(err).Error("unable to substitute key for ConfigMapKeyRef")
+				log.WithError(err).Error(ctx, "unable to substitute key for ConfigMapKeyRef")
 				return err
 			}
 
 			cmValue, err := GetConfigMapValue(configMapStore, namespace, cmName, cmKey)
 			if err != nil {
-				if inParam.ValueFrom.Default != nil && errors.IsCode(errors.CodeNotFound, err) {
-					inParam.Value = inParam.ValueFrom.Default
-				} else {
+				if inParam.ValueFrom.Default == nil || !errors.IsCode(errors.CodeNotFound, err) {
 					return errors.Errorf(errors.CodeBadRequest, "unable to retrieve inputs.parameters.%s from ConfigMap: %s", inParam.Name, err)
 				}
+				inParam.Value = inParam.ValueFrom.Default
 			} else {
 				inParam.Value = wfv1.AnyStringPtr(cmValue)
 			}
@@ -175,7 +197,7 @@ func substituteAndGetConfigMapValue(inParam *wfv1.Parameter, globalParams Parame
 // * parameters in the template from the arguments
 // * global parameters (e.g. {{workflow.parameters.XX}}, {{workflow.name}}, {{workflow.status}})
 // * local parameters (e.g. {{pod.name}})
-func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams, localParams Parameters, validateOnly bool, namespace string, configMapStore ConfigMapStore) (*wfv1.Template, error) {
+func ProcessArgs(ctx context.Context, tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams, localParams Parameters, validateOnly bool, namespace string, configMapStore ConfigMapStore) (*wfv1.Template, error) {
 	// For each input parameter:
 	// 1) check if was supplied as argument. if so use the supplied value from arg
 	// 2) if not, use default value.
@@ -187,10 +209,21 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 
 		// overwrite value from argument (if supplied)
 		argParam := args.GetParameterByName(inParam.Name)
-		overwriteWithArguments(argParam, &inParam)
+		if argParam != nil && argParam.Value != nil && argParam.Value.String() == AbsentOptionalArgumentValue {
+			// The argument was a pure reference to a skipped/omitted node's output with no producer
+			// default (see AbsentOptionalArgumentValue): treat it as unsupplied so the input's own
+			// default (already applied above) or ValueFrom source takes over. With neither, the
+			// absence is unhandled — fail terminally with the real cause; the message must not
+			// match template.IsMissingVariableErr, which would requeue forever.
+			if inParam.Value == nil && inParam.ValueFrom == nil {
+				return nil, errors.Errorf(errors.CodeBadRequest, "inputs.parameters.%s: argument references an absent optional (skipped/omitted node output with no default)", inParam.Name)
+			}
+		} else {
+			overwriteWithArguments(argParam, &inParam)
+		}
 
 		// substitute configmap string and get value from store
-		err := substituteAndGetConfigMapValue(&inParam, globalParams, namespace, configMapStore)
+		err := substituteAndGetConfigMapValue(ctx, &inParam, globalParams, namespace, configMapStore)
 		if err != nil {
 			return nil, err
 		}
@@ -201,7 +234,6 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 	// Performs substitutions of input artifacts
 	artifacts := newTmpl.Inputs.Artifacts
 	for i, inArt := range artifacts {
-
 		argArt := args.GetArtifactByName(inArt.Name)
 
 		if !inArt.Optional && !inArt.HasLocationOrKey() {
@@ -221,16 +253,16 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 		}
 	}
 
-	return SubstituteParams(newTmpl, globalParams, localParams)
+	return SubstituteParams(ctx, newTmpl, globalParams, localParams)
 }
 
 // substituteConfigMapKeyRefParam performs template substitution for ConfigMapKeyRef
-func substituteConfigMapKeyRefParam(in string, replaceMap map[string]interface{}) (string, error) {
+func substituteConfigMapKeyRefParam(ctx context.Context, in string, replaceMap map[string]any) (string, error) {
 	tmpl, err := template.NewTemplate(in)
 	if err != nil {
 		return "", err
 	}
-	replacedString, err := tmpl.Replace(replaceMap, false)
+	replacedString, err := tmpl.Replace(ctx, replaceMap, false)
 	if err != nil {
 		return "", fmt.Errorf("failed to substitute configMapKeyRef: %w", err)
 	}
@@ -238,14 +270,14 @@ func substituteConfigMapKeyRefParam(in string, replaceMap map[string]interface{}
 }
 
 // SubstituteParams returns a new copy of the template with global, pod, and input parameters substituted
-func SubstituteParams(tmpl *wfv1.Template, globalParams, localParams Parameters) (*wfv1.Template, error) {
+func SubstituteParams(ctx context.Context, tmpl *wfv1.Template, globalParams, localParams Parameters) (*wfv1.Template, error) {
 	tmplBytes, err := json.Marshal(tmpl)
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
 	}
 	// First replace globals & locals, then replace inputs because globals could be referenced in the inputs
-	replaceMap := globalParams.Merge(localParams)
-	globalReplacedTmplStr, err := template.Replace(string(tmplBytes), replaceMap, true)
+	replaceMap := template.ToAnyMap(globalParams.Merge(localParams))
+	globalReplacedTmplStr, err := template.Replace(ctx, string(tmplBytes), replaceMap, true)
 	if err != nil {
 		return nil, err
 	}
@@ -255,12 +287,11 @@ func SubstituteParams(tmpl *wfv1.Template, globalParams, localParams Parameters)
 		return nil, errors.InternalWrapError(err)
 	}
 	// Now replace the rest of substitutions (the ones that can be made) in the template
-	replaceMap = make(map[string]string)
 	for _, inParam := range globalReplacedTmpl.Inputs.Parameters {
 		if inParam.Value == nil && inParam.ValueFrom == nil {
 			return nil, errors.InternalErrorf("inputs.parameters.%s had no value", inParam.Name)
 		} else if inParam.Value != nil {
-			replaceMap["inputs.parameters."+inParam.Name] = inParam.Value.String()
+			replaceMap[varkeys.InputsParameterByName.Concretize(inParam.Name)] = inParam.Value.String()
 		}
 	}
 	// allow {{inputs.parameters}} to fetch the entire input parameters list as JSON
@@ -268,24 +299,24 @@ func SubstituteParams(tmpl *wfv1.Template, globalParams, localParams Parameters)
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
 	}
-	replaceMap["inputs.parameters"] = string(jsonInputParametersBytes)
+	replaceMap[varkeys.InputsParametersAll.Template()] = string(jsonInputParametersBytes)
 	for _, inArt := range globalReplacedTmpl.Inputs.Artifacts {
 		if inArt.Path != "" {
-			replaceMap["inputs.artifacts."+inArt.Name+".path"] = inArt.Path
+			replaceMap[varkeys.InputsArtifactPathByName.Concretize(inArt.Name)] = inArt.Path
 		}
 	}
 	for _, outArt := range globalReplacedTmpl.Outputs.Artifacts {
 		if outArt.Path != "" {
-			replaceMap["outputs.artifacts."+outArt.Name+".path"] = outArt.Path
+			replaceMap[varkeys.OutputsArtifactPathByName.Concretize(outArt.Name)] = outArt.Path
 		}
 	}
 	for _, param := range globalReplacedTmpl.Outputs.Parameters {
 		if param.ValueFrom != nil && param.ValueFrom.Path != "" {
-			replaceMap["outputs.parameters."+param.Name+".path"] = param.ValueFrom.Path
+			replaceMap[varkeys.OutputsParameterPathByName.Concretize(param.Name)] = param.ValueFrom.Path
 		}
 	}
 
-	s, err := template.Replace(globalReplacedTmplStr, replaceMap, true)
+	s, err := template.Replace(ctx, globalReplacedTmplStr, replaceMap, true)
 	if err != nil {
 		return nil, err
 	}
@@ -310,9 +341,8 @@ func GetTemplateHolderString(tmplHolder wfv1.TemplateReferenceHolder) string {
 		return fmt.Sprintf("%T (%s)", tmplHolder, x)
 	} else if x := tmplHolder.GetTemplateRef(); x != nil {
 		return fmt.Sprintf("%T (%s/%s#%v)", tmplHolder, x.Name, x.Template, x.ClusterScope)
-	} else {
-		return fmt.Sprintf("%T invalid (https://argo-workflows.readthedocs.io/en/latest/templates/)", tmplHolder)
 	}
+	return fmt.Sprintf("%T invalid (https://argo-workflows.readthedocs.io/en/latest/templates/)", tmplHolder)
 }
 
 func GenerateOnExitNodeName(parentNodeName string) string {
@@ -325,7 +355,7 @@ func IsDone(un *unstructured.Unstructured) bool {
 		un.GetLabels()[LabelKeyWorkflowArchivingStatus] != "Pending"
 }
 
-// Check whether child hooked nodes Fulfilled
+// CheckAllHooksFullfilled checks whether child hooked nodes are fulfilled.
 func CheckAllHooksFullfilled(node *wfv1.NodeStatus, nodes wfv1.Nodes) bool {
 	childs := node.Children
 	for _, id := range childs {

@@ -1,9 +1,9 @@
 syntax = "proto3";
-option go_package = "github.com/argoproj/argo-workflows/pkg/apiclient/workflowtemplate";
+option go_package = "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflowtemplate";
 
 import "google/api/annotations.proto";
 import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
-import "github.com/argoproj/argo-workflows/pkg/apis/workflow/v1alpha1/generated.proto";
+import "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1/generated.proto";
 
 // Workflow Service
 //
@@ -12,7 +12,7 @@ package workflowtemplate;
 
 message WorkflowTemplateCreateRequest {
   string namespace = 1;
-  github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.WorkflowTemplate template = 2;
+  github.com.argoproj.argo_workflows.v4.pkg.apis.workflow.v1alpha1.WorkflowTemplate template = 2;
   k8s.io.apimachinery.pkg.apis.meta.v1.CreateOptions createOptions = 3;
 }
 
@@ -32,7 +32,7 @@ message WorkflowTemplateUpdateRequest {
   // DEPRECATED: This field is ignored.
   string name = 1 [ deprecated = true ];
   string namespace = 2;
-  github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.WorkflowTemplate template = 3;
+  github.com.argoproj.argo_workflows.v4.pkg.apis.workflow.v1alpha1.WorkflowTemplate template = 3;
 }
 
 message WorkflowTemplateDeleteRequest {
@@ -44,27 +44,27 @@ message WorkflowTemplateDeleteResponse {
 }
 message WorkflowTemplateLintRequest {
   string namespace = 1;
-  github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.WorkflowTemplate template = 2;
+  github.com.argoproj.argo_workflows.v4.pkg.apis.workflow.v1alpha1.WorkflowTemplate template = 2;
   k8s.io.apimachinery.pkg.apis.meta.v1.CreateOptions createOptions = 3;
 }
 
 service WorkflowTemplateService {
-  rpc CreateWorkflowTemplate(WorkflowTemplateCreateRequest) returns (github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.WorkflowTemplate) {
+  rpc CreateWorkflowTemplate(WorkflowTemplateCreateRequest) returns (github.com.argoproj.argo_workflows.v4.pkg.apis.workflow.v1alpha1.WorkflowTemplate) {
     option (google.api.http) = {
       post : "/api/v1/workflow-templates/{namespace}"
       body : "*"
     };
   }
 
-  rpc GetWorkflowTemplate(WorkflowTemplateGetRequest) returns (github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.WorkflowTemplate) {
+  rpc GetWorkflowTemplate(WorkflowTemplateGetRequest) returns (github.com.argoproj.argo_workflows.v4.pkg.apis.workflow.v1alpha1.WorkflowTemplate) {
     option (google.api.http).get = "/api/v1/workflow-templates/{namespace}/{name}";
   }
 
-  rpc ListWorkflowTemplates(WorkflowTemplateListRequest) returns (github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.WorkflowTemplateList) {
+  rpc ListWorkflowTemplates(WorkflowTemplateListRequest) returns (github.com.argoproj.argo_workflows.v4.pkg.apis.workflow.v1alpha1.WorkflowTemplateList) {
     option (google.api.http).get = "/api/v1/workflow-templates/{namespace}";
   }
 
-  rpc UpdateWorkflowTemplate(WorkflowTemplateUpdateRequest) returns (github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.WorkflowTemplate) {
+  rpc UpdateWorkflowTemplate(WorkflowTemplateUpdateRequest) returns (github.com.argoproj.argo_workflows.v4.pkg.apis.workflow.v1alpha1.WorkflowTemplate) {
     option (google.api.http) = {
       put : "/api/v1/workflow-templates/{namespace}/{name}"
       body : "*"
@@ -75,7 +75,7 @@ service WorkflowTemplateService {
     option (google.api.http).delete = "/api/v1/workflow-templates/{namespace}/{name}";
   }
 
-  rpc LintWorkflowTemplate(WorkflowTemplateLintRequest) returns (github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.WorkflowTemplate) {
+  rpc LintWorkflowTemplate(WorkflowTemplateLintRequest) returns (github.com.argoproj.argo_workflows.v4.pkg.apis.workflow.v1alpha1.WorkflowTemplate) {
     option (google.api.http) = {
       post : "/api/v1/workflow-templates/{namespace}/lint"
       body : "*"

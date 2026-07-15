@@ -1,0 +1,21 @@
+# This example demonstrates the use of a database Synchronization lock on workflow execution. Synchronization lock limits the number of concurrent workflow execution in the namespace which has same Synchronization lock.
+# Synchronization limit value can be configured in the database.
+# INSERT INTO sync_limit (name, sizeLimit) VALUES ('<namespace>/workflow', 2);
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: synchronization-db-wf-level-
+  labels:
+    workflows.argoproj.io/no-test: "environment"
+spec:
+  entrypoint: hello-world
+  synchronization:
+    semaphores:
+      - database: # v3.7 and after
+          key: workflow
+  templates:
+    - name: hello-world
+      container:
+        image: busybox
+        command: [echo]
+        args: ["hello world"]

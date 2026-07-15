@@ -61,7 +61,7 @@ spec:
             template: progress
     - name: progress
       container:
-        image: alpine:3.14
+        image: alpine:3.23
         command: [ "/bin/sh", "-c" ]
         args:
           - |

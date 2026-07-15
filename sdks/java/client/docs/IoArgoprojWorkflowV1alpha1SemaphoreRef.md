@@ -9,6 +9,7 @@ SemaphoreRef is a reference of Semaphore
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **configMapKeyRef** | [**io.kubernetes.client.openapi.models.V1ConfigMapKeySelector**](io.kubernetes.client.openapi.models.V1ConfigMapKeySelector.md) |  |  [optional]
+**database** | [**IoArgoprojWorkflowV1alpha1SyncDatabaseRef**](IoArgoprojWorkflowV1alpha1SyncDatabaseRef.md) |  |  [optional]
 **namespace** | **String** | Namespace is the namespace of the configmap, default: [namespace of workflow] |  [optional]
 
 

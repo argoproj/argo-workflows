@@ -77,10 +77,10 @@ spec:
           jqFilter: '.data.some | fromjson | .one_value'
       - name: one_dict
         valueFrom:
-          jqfilter: '.data.some | fromjson | .one_dict'
+          jqFilter: '.data.some | fromjson | .one_dict'
       - name: one_list
         valueFrom:
-          jqfilter: '.data.some | fromjson | .one_list'
+          jqFilter: '.data.some | fromjson | .one_list'
 
   # create a configmap with json payload
   - name: create-param

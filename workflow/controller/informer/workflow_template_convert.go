@@ -1,16 +1,17 @@
 package informer
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/client/informers/externalversions/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/workflow/templateresolution"
+	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
 func objectToWorkflowTemplate(object runtime.Object) (*wfv1.WorkflowTemplate, error) {
@@ -25,7 +26,7 @@ func objectsToWorkflowTemplates(list []runtime.Object) []*wfv1.WorkflowTemplate 
 	return ret
 }
 
-func interfaceToWorkflowTemplate(object interface{}) (*wfv1.WorkflowTemplate, error) {
+func interfaceToWorkflowTemplate(object any) (*wfv1.WorkflowTemplate, error) {
 	v := &wfv1.WorkflowTemplate{}
 	un, ok := object.(*unstructured.Unstructured)
 	if !ok {
@@ -38,14 +39,13 @@ func interfaceToWorkflowTemplate(object interface{}) (*wfv1.WorkflowTemplate, er
 	return v, nil
 }
 
-// Get WorkflowTemplates from Informer
+// WorkflowTemplateFromInformerGetter gets WorkflowTemplates from an Informer.
 type WorkflowTemplateFromInformerGetter struct {
 	wftmplInformer wfextvv1alpha1.WorkflowTemplateInformer
 	namespace      string
 }
 
-func (getter *WorkflowTemplateFromInformerGetter) Get(name string) (*wfv1.WorkflowTemplate, error) {
-
+func (getter *WorkflowTemplateFromInformerGetter) Get(_ context.Context, name string) (*wfv1.WorkflowTemplate, error) {
 	obj, exists, err := getter.wftmplInformer.Informer().GetStore().GetByKey(getter.namespace + "/" + name)
 	if err != nil {
 		return nil, err

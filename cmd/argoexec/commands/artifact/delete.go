@@ -12,14 +12,16 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	workflow "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
-	wfv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/retry"
-	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
-	executor "github.com/argoproj/argo-workflows/v3/workflow/artifacts"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v4/cmd/argoexec/executor"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	workflow "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
+	wfv1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/retry"
+	waitutil "github.com/argoproj/argo-workflows/v4/util/wait"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 func NewArtifactDeleteCommand() *cobra.Command {
@@ -27,34 +29,47 @@ func NewArtifactDeleteCommand() *cobra.Command {
 		Use:          "delete",
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-
-			namespace := client.Namespace()
+			ctx := cmd.Context()
+			logger := logging.RequireLoggerFromContext(ctx)
+			namespace := client.Namespace(ctx)
 			clientConfig := client.GetConfig()
+			wfExecutor := executor.Init(ctx, clientConfig, common.VarRunArgoPath)
+
+			errHandler := wfExecutor.HandleError(ctx)
+			defer errHandler()
+			defer wfExecutor.FinalizeOutput(ctx)
+			defer func() {
+				err := wfExecutor.KillArtifactSidecars(ctx)
+				if err != nil {
+					wfExecutor.AddError(ctx, err)
+				}
+			}()
 
 			if podName, ok := os.LookupEnv(common.EnvVarArtifactGCPodHash); ok {
-
 				config, err := clientConfig.ClientConfig()
 				workflowInterface := workflow.NewForConfigOrDie(config)
 				if err != nil {
-					return err
+					wfExecutor.AddError(ctx, err)
+					return wfExecutor.HasError()
 				}
 
 				artifactGCTaskInterface := workflowInterface.ArgoprojV1alpha1().WorkflowArtifactGCTasks(namespace)
 				labelSelector := fmt.Sprintf("%s = %s", common.LabelKeyArtifactGCPodHash, podName)
 
-				err = deleteArtifacts(labelSelector, cmd.Context(), artifactGCTaskInterface)
+				err = deleteArtifacts(ctx, labelSelector, artifactGCTaskInterface)
 				if err != nil {
-					return err
+					wfExecutor.AddError(ctx, err)
+					return wfExecutor.HasError()
 				}
+				logger.Info(ctx, "artifacts deleted")
 			}
-			return nil
+			return wfExecutor.HasError()
 		},
 	}
 }
 
-func deleteArtifacts(labelSelector string, ctx context.Context, artifactGCTaskInterface wfv1alpha1.WorkflowArtifactGCTaskInterface) error {
-
-	taskList, err := artifactGCTaskInterface.List(context.Background(), metav1.ListOptions{LabelSelector: labelSelector})
+func deleteArtifacts(ctx context.Context, labelSelector string, artifactGCTaskInterface wfv1alpha1.WorkflowArtifactGCTaskInterface) error {
+	taskList, err := artifactGCTaskInterface.List(ctx, metav1.ListOptions{LabelSelector: labelSelector})
 	if err != nil {
 		return err
 	}
@@ -62,7 +77,6 @@ func deleteArtifacts(labelSelector string, ctx context.Context, artifactGCTaskIn
 	for _, task := range taskList.Items {
 		task.Status.ArtifactResultsByNode = make(map[string]v1alpha1.ArtifactResultNodeStatus)
 		for nodeName, artifactNodeSpec := range task.Spec.ArtifactsByNode {
-
 			var archiveLocation *v1alpha1.ArtifactLocation
 			artResultNodeStatus := v1alpha1.ArtifactResultNodeStatus{ArtifactResults: make(map[string]v1alpha1.ArtifactResult)}
 			if artifactNodeSpec.ArchiveLocation != nil {
@@ -79,13 +93,13 @@ func deleteArtifacts(labelSelector string, ctx context.Context, artifactGCTaskIn
 					}
 				}
 
-				drv, err := executor.NewDriver(ctx, &artifact, resources)
+				drv, err := artifacts.NewDriver(ctx, &artifact, resources)
 				if err != nil {
 					return err
 				}
 
-				err = waitutil.Backoff(retry.DefaultRetry, func() (bool, error) {
-					err = drv.Delete(&artifact)
+				err = waitutil.Backoff(retry.DefaultRetry(ctx), func() (bool, error) {
+					err = drv.Delete(ctx, &artifact)
 					if err != nil {
 						errString := err.Error()
 						artResultNodeStatus.ArtifactResults[artifact.Name] = v1alpha1.ArtifactResult{Name: artifact.Name, Success: false, Error: &errString}
@@ -98,11 +112,11 @@ func deleteArtifacts(labelSelector string, ctx context.Context, artifactGCTaskIn
 
 			task.Status.ArtifactResultsByNode[nodeName] = artResultNodeStatus
 		}
-		patch, err := json.Marshal(map[string]interface{}{"status": v1alpha1.ArtifactGCStatus{ArtifactResultsByNode: task.Status.ArtifactResultsByNode}})
+		patch, err := json.Marshal(map[string]any{"status": v1alpha1.ArtifactGCStatus{ArtifactResultsByNode: task.Status.ArtifactResultsByNode}})
 		if err != nil {
 			return err
 		}
-		_, err = artifactGCTaskInterface.Patch(context.Background(), task.Name, types.MergePatchType, patch, metav1.PatchOptions{}, "status")
+		_, err = artifactGCTaskInterface.Patch(ctx, task.Name, types.MergePatchType, patch, metav1.PatchOptions{}, "status")
 		if err != nil {
 			return err
 		}
@@ -116,7 +130,6 @@ type resources struct {
 }
 
 func (r resources) GetSecret(ctx context.Context, name, key string) (string, error) {
-
 	path := filepath.Join(common.SecretVolMountPath, name, key)
 	if file, ok := r.Files[path]; ok {
 		return string(file), nil
@@ -125,10 +138,9 @@ func (r resources) GetSecret(ctx context.Context, name, key string) (string, err
 	file, err := os.ReadFile(path)
 	if err != nil {
 		return "", err
-	} else {
-		r.Files[path] = file
-		return string(file), err
 	}
+	r.Files[path] = file
+	return string(file), nil
 }
 
 func (r resources) GetConfigMapKey(ctx context.Context, name, key string) (string, error) {

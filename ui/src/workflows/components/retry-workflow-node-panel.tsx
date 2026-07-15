@@ -1,9 +1,9 @@
 import {Checkbox} from 'argo-ui/src/components/checkbox';
-import {Tooltip} from 'argo-ui/src/components/tooltip/tooltip';
 import React, {useState} from 'react';
 
 import {ErrorNotice} from '../../shared/components/error-notice';
 import {getValueFromParameter, ParametersInput} from '../../shared/components/parameters-input';
+import {Tooltip} from '../../shared/components/tooltip';
 import {Parameter, RetryOpts, Workflow} from '../../shared/models';
 import {services} from '../../shared/services';
 
@@ -51,7 +51,7 @@ export function RetryWorkflowNode(props: Props) {
             <p>Note: Retrying this node will re-execute this node and all downstream nodes.</p>
 
             {error && <ErrorNotice error={error} />}
-            <div className='white-box'>
+            <div className='white-box' style={{overflow: 'auto', maxHeight: '55vh'}}>
                 {/* Override Parameters */}
                 <div key='override-parameters' style={{marginBottom: 25}}>
                     <label>Override Parameters</label>

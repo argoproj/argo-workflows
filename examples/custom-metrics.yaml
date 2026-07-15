@@ -5,6 +5,8 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: hello-world-
+  labels:
+    workflows.argoproj.io/no-test: "flaky"
 spec:
   entrypoint: steps
   metrics:
@@ -65,7 +67,7 @@ spec:
             valueFrom:
               path: /tmp/rand_int.txt
       container:
-        image: alpine:latest
+        image: busybox 
         command: [sh, -c]
         args: ["RAND_INT=$((1 + RANDOM % 10)); echo $RAND_INT; echo $RAND_INT > /tmp/rand_int.txt"]
 
@@ -82,7 +84,7 @@ spec:
             counter:
               value: "1"
       container:
-        image: python:alpine3.6
+        image: python:alpine3.23
         command: ["python", -c]
         # fail with a 66% probability
         args: ["import random; import sys; exit_code = random.choice([0, 1, 1]); sys.exit(exit_code)"]

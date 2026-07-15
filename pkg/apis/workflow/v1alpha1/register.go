@@ -5,7 +5,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
 )
 
 // SchemeGroupVersion is group version used to register these objects
@@ -13,11 +13,6 @@ var (
 	SchemeGroupVersion             = schema.GroupVersion{Group: workflow.Group, Version: "v1alpha1"}
 	WorkflowSchemaGroupVersionKind = schema.GroupVersionKind{Group: workflow.Group, Version: "v1alpha1", Kind: workflow.WorkflowKind}
 )
-
-// Kind takes an unqualified kind and returns back a Group qualified GroupKind
-func Kind(kind string) schema.GroupKind {
-	return SchemeGroupVersion.WithKind(kind).GroupKind()
-}
 
 // Resource takes an unqualified resource and returns a Group-qualified GroupResource.
 func Resource(resource string) schema.GroupResource {

@@ -1,6 +1,8 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
+  labels:
+    workflows.argoproj.io/no-test: "environment"
   generateName: ci-output-artifact-
 spec:
   entrypoint: ci-example
@@ -76,7 +78,7 @@ spec:
 
   - name: release-artifact
     container:
-      image: alpine:3.8
+      image: alpine:3.23
       volumeMounts:
       - name: workdir
         mountPath: /go

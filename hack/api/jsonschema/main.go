@@ -39,10 +39,10 @@ func main() {
 			props["kind"].(obj)["const"] = kind
 		}
 		schema := obj{
-			"$id":     "http://workflows.argoproj.io/workflows.json", // don't really know what this should be
-			"$schema": "http://json-schema.org/schema#",
+			"$id":     "https://raw.githubusercontent.com/argoproj/argo-workflows/HEAD/api/jsonschema/schema.json",
+			"$schema": "https://json-schema.org/draft/2020-12/schema",
 			"type":    "object",
-			"oneOf": []interface{}{
+			"oneOf": []any{
 				obj{"$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplate"},
 				obj{"$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CronWorkflow"},
 				obj{"$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"},

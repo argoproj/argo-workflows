@@ -15,7 +15,8 @@ spec:
           }
       sources:
         - cron:
-            schedule: "*/3 * * * *"
+            schedules:
+              -"*/3 * * * *"
       sinks:
         - stan:
             subject: event-bus

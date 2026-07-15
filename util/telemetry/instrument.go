@@ -3,21 +3,23 @@ package telemetry
 import (
 	"fmt"
 	"sort"
+	"sync"
 
 	"go.opentelemetry.io/otel/metric"
 
-	"github.com/argoproj/argo-workflows/v3/util/help"
+	"github.com/argoproj/argo-workflows/v4/util/help"
 )
 
 type Instrument struct {
 	name        string
 	description string
-	otel        interface{}
-	userdata    interface{}
+	otel        any
+	mutex       sync.RWMutex
+	userdata    any
 }
 
 func (m *Metrics) preCreateCheck(name string) error {
-	if _, exists := m.AllInstruments[name]; exists {
+	if inst := m.GetInstrument(name); inst != nil {
 		return fmt.Errorf("Instrument called %s already exists", name)
 	}
 	return nil
@@ -32,8 +34,7 @@ type instrumentType int
 const (
 	Float64ObservableGauge instrumentType = iota
 	Float64Histogram
-	Float64UpDownCounter
-	Float64ObservableUpDownCounter
+	Float64ObservableCounter
 	Int64ObservableGauge
 	Int64UpDownCounter
 	Int64Counter
@@ -45,21 +46,22 @@ type instrumentOptions struct {
 	defaultBuckets []float64
 }
 
-type instrumentOption func(*instrumentOptions)
+// InstrumentOption is a functional option for configuring instruments.
+type InstrumentOption func(*instrumentOptions)
 
-func WithAsBuiltIn() instrumentOption {
+func WithAsBuiltIn() InstrumentOption {
 	return func(o *instrumentOptions) {
 		o.builtIn = true
 	}
 }
 
-func WithDefaultBuckets(buckets []float64) instrumentOption {
+func WithDefaultBuckets(buckets []float64) InstrumentOption {
 	return func(o *instrumentOptions) {
 		o.defaultBuckets = buckets
 	}
 }
 
-func collectOptions(options ...instrumentOption) instrumentOptions {
+func collectOptions(options ...InstrumentOption) instrumentOptions {
 	var o instrumentOptions
 	for _, opt := range options {
 		opt(&o)
@@ -67,10 +69,8 @@ func collectOptions(options ...instrumentOption) instrumentOptions {
 	return o
 }
 
-func (m *Metrics) CreateInstrument(instType instrumentType, name, desc, unit string, options ...instrumentOption) error {
+func (m *Metrics) CreateInstrument(instType instrumentType, name, desc, unit string, options ...InstrumentOption) error {
 	opts := collectOptions(options...)
-	m.Mutex.Lock()
-	defer m.Mutex.Unlock()
 	err := m.preCreateCheck(name)
 	if err != nil {
 		return err
@@ -79,7 +79,7 @@ func (m *Metrics) CreateInstrument(instType instrumentType, name, desc, unit str
 	if opts.builtIn {
 		desc = addHelpLink(name, desc)
 	}
-	var instPtr interface{}
+	var instPtr any
 	switch instType {
 	case Float64ObservableGauge:
 		inst, insterr := (*m.otelMeter).Float64ObservableGauge(name,
@@ -96,15 +96,8 @@ func (m *Metrics) CreateInstrument(instType instrumentType, name, desc, unit str
 		)
 		instPtr = &inst
 		err = insterr
-	case Float64UpDownCounter:
-		inst, insterr := (*m.otelMeter).Float64UpDownCounter(name,
-			metric.WithDescription(desc),
-			metric.WithUnit(unit),
-		)
-		instPtr = &inst
-		err = insterr
-	case Float64ObservableUpDownCounter:
-		inst, insterr := (*m.otelMeter).Float64ObservableUpDownCounter(name,
+	case Float64ObservableCounter:
+		inst, insterr := (*m.otelMeter).Float64ObservableCounter(name,
 			metric.WithDescription(desc),
 			metric.WithUnit(unit),
 		)
@@ -137,11 +130,11 @@ func (m *Metrics) CreateInstrument(instType instrumentType, name, desc, unit str
 	if err != nil {
 		return err
 	}
-	m.AllInstruments[name] = &Instrument{
+	m.AddInstrument(name, &Instrument{
 		name:        name,
 		description: desc,
 		otel:        instPtr,
-	}
+	})
 	return nil
 }
 
@@ -164,14 +157,18 @@ func (i *Instrument) GetDescription() string {
 	return i.description
 }
 
-func (i *Instrument) GetOtel() interface{} {
+func (i *Instrument) GetOtel() any {
 	return i.otel
 }
 
-func (i *Instrument) SetUserdata(data interface{}) {
+func (i *Instrument) SetUserdata(data any) {
+	i.mutex.Lock()
+	defer i.mutex.Unlock()
 	i.userdata = data
 }
 
-func (i *Instrument) GetUserdata() interface{} {
+func (i *Instrument) GetUserdata() any {
+	i.mutex.RLock()
+	defer i.mutex.RUnlock()
 	return i.userdata
 }

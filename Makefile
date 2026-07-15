@@ -1,10 +1,30 @@
 export SHELL:=bash
 export SHELLOPTS:=$(if $(SHELLOPTS),$(SHELLOPTS):)pipefail:errexit
+# k8s v0.35 moved ProtoMessage() behind a build tag. We need it unconditionally
+# for gogo protobuf + grpc-gateway v1 compatibility (gRPC codec requires proto.Message).
+export GOFLAGS += -tags=kubernetes_protomessage_one_more_release
+
+.PHONY: help
+help: ## Showcase the help instructions for all documented `make` commands (not an exhaustive list)
+	@echo "Find more help on how to contribute at docs/contributing.md and running locally at docs/running-locally.md"
+	@echo ""
+	@echo "Documented make targets:"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 # NOTE: Please ensure dependencies are synced with the flake.nix file in dev/nix/flake.nix before upgrading
 # any external dependency. There is documentation on how to do this under the Developer Guide
 
-USE_NIX := false
+USE_NIX ?= false
+
+ifeq ($(USE_NIX), true)
+GOPATH ?= .go
+endif
+
+ifndef GOPATH
+	GOPATH := $(shell go env GOPATH)
+	export GOPATH
+endif
+
 # https://stackoverflow.com/questions/4122831/disable-make-builtin-rules-and-variables-from-inside-the-make-file
 MAKEFLAGS += --no-builtin-rules
 .SUFFIXES:
@@ -19,7 +39,9 @@ GIT_REMOTE            := origin
 GIT_BRANCH            := $(shell git rev-parse --symbolic-full-name --verify --quiet --abbrev-ref HEAD)
 RELEASE_TAG           := $(shell if [[ "$(GIT_TAG)" =~ ^v[0-9]+\.[0-9]+\.[0-9]+.*$$ ]]; then echo "true"; else echo "false"; fi)
 DEV_BRANCH            := $(shell [ "$(GIT_BRANCH)" = main ] || [ `echo $(GIT_BRANCH) | cut -c -8` = release- ] || [ `echo $(GIT_BRANCH) | cut -c -4` = dev- ] || [ $(RELEASE_TAG) = true ] && echo false || echo true)
+ifneq ($(USE_NIX), true)
 SRC                   := $(GOPATH)/src/github.com/argoproj/argo-workflows
+endif
 VERSION               := latest
 # VERSION is the version to be used for files in manifests and should always be latest unless we are releasing
 # we assume HEAD means you are on a tag
@@ -33,11 +55,36 @@ DOCKER_PUSH           ?= false
 TARGET_PLATFORM       ?= linux/$(shell go env GOARCH)
 K3D_CLUSTER_NAME      ?= k3s-default # declares which cluster to import to in case it's not the default name
 
+# -- dev container options
+DEVCONTAINER_PUSH     ?= false
+# Extract image name from devcontainer.json
+DEVCONTAINER_IMAGE    ?= $(shell sed --quiet 's/^ *"image": "\([^"]*\)",/\1/p' .devcontainer/devcontainer.json)
+ifeq ($(DEVCONTAINER_PUSH),true)
+# Export both image and cache to the registry using zstd, since that produces much smaller images than gzip.
+# Docs: https://docs.docker.com/build/exporters/image-registry/ and https://docs.docker.com/build/cache/backends/registry/
+DEVCONTAINER_EXPORTER_COMMON_FLAGS ?= type=registry,compression=zstd,force-compression=true,oci-mediatypes=true
+DEVCONTAINER_FLAGS    ?= --output $(DEVCONTAINER_EXPORTER_COMMON_FLAGS) \
+	--cache-to $(DEVCONTAINER_EXPORTER_COMMON_FLAGS),ref=$(DEVCONTAINER_IMAGE):cache,mode=max
+else
+DEVCONTAINER_FLAGS    ?= --output type=cacheonly
+endif
+
 # -- test options
 E2E_WAIT_TIMEOUT      ?= 90s # timeout for wait conditions
 E2E_PARALLEL          ?= 20
-E2E_SUITE_TIMEOUT     ?= 15m
-GOTEST                ?= go test -v -p 20
+E2E_SUITE_TIMEOUT     ?= 30m
+TEST_RETRIES          ?= 2
+JSON_TEST_OUTPUT      := test/reports/json
+# gotest function: gotest(packages, name, parameters)
+# packages: passed to gotestsum via --packages parameter
+# name: not used currently
+# parameters: passed to go test after the --
+$(JSON_TEST_OUTPUT):
+	mkdir -p $(JSON_TEST_OUTPUT)
+
+define gotest
+	$(TOOL_GOTESTSUM) --rerun-fails-run-root-test --rerun-fails=$(TEST_RETRIES) --jsonfile=$(JSON_TEST_OUTPUT)/$(2).json --format=testname --packages $(1) -- $(3)
+endef
 ALL_BUILD_TAGS        ?= api,cli,cron,executor,examples,corefunctional,functional,plugins
 BENCHMARK_COUNT       ?= 6
 
@@ -51,32 +98,36 @@ endif
 # -- install & run options
 PROFILE               ?= minimal
 KUBE_NAMESPACE        ?= argo # namespace where Kubernetes resources/RBAC will be installed
-PLUGINS               ?= $(shell [ $PROFILE = plugins ] && echo false || echo true)
-UI                    ?= false # start the UI with HTTP
+PLUGINS               ?= $(shell [ $(PROFILE) = plugins ] && echo true || echo false)
+INITLESS              ?= false # enable opt-in init-less pod layout (requires K8s image volumes — Beta in 1.33 behind a feature gate, GA in 1.36)
+ifeq ($(INITLESS),true)
+INSTALL_PROFILE       := $(PROFILE)-initless
+else
+INSTALL_PROFILE       := $(PROFILE)
+endif
 UI_SECURE             ?= false # start the UI with HTTPS
-API                   ?= $(UI) # start the Argo Server
-TASKS                 := controller
-ifeq ($(API),true)
-TASKS                 := controller server
-endif
+API                   ?= true# deploy the Argo Server (API=false skips it)
+
+# -- SSO options
+# Need to rewrite the SSO redirect URL referenced in ConfigMaps when UI_SECURE and/or BASE_HREF is set.
+# Can't use "kustomize" or "kubectl patch" because the SSO config is a YAML string in those ConfigMaps.
+SSO_REDIRECT_URL   := http
+SSO_ISSUER_URL     := http://dex:5556/dex
 ifeq ($(UI_SECURE),true)
-TASKS                 := controller server ui
+SSO_REDIRECT_URL   := https
+SSO_ISSUER_URL     := https://dex:5554/dex
 endif
-ifeq ($(UI),true)
-TASKS                 := controller server ui
+ifeq ($(BASE_HREF),)
+BASE_HREF          := /
+else
+# Ensure base URL has a single trailing/leading slash to match the logic in getIndexData() in server/static/static.go
+override BASE_HREF := /$(BASE_HREF:/%=%)
+override BASE_HREF := $(BASE_HREF:%/=%)/
 endif
-# Which mode to run in:
-# * `local` run the workflow–controller and argo-server as single replicas on the local machine (default)
-# * `kubernetes` run the workflow-controller and argo-server on the Kubernetes cluster
-RUN_MODE              := local
+SSO_REDIRECT_URL   := $(SSO_REDIRECT_URL)://localhost:8080$(BASE_HREF)oauth2/callback
+
 KUBECTX               := $(shell [[ "`which kubectl`" != '' ]] && kubectl config current-context || echo none)
 K3D                   := $(shell [[ "$(KUBECTX)" == "k3d-"* ]] && echo true || echo false)
-ifeq ($(PROFILE),prometheus)
-RUN_MODE              := kubernetes
-endif
-ifeq ($(PROFILE),stress)
-RUN_MODE              := kubernetes
-endif
 
 # -- controller + server + executor env vars
 LOG_LEVEL                     := debug
@@ -84,31 +135,110 @@ UPPERIO_DB_DEBUG              := 0
 DEFAULT_REQUEUE_TIME          ?= 1s # by keeping this short we speed up tests
 ALWAYS_OFFLOAD_NODE_STATUS 	  := false
 POD_STATUS_CAPTURE_FINALIZER  ?= true
+DEBUG                         ?= # run components under Delve, e.g. DEBUG=controller,server
 NAMESPACED                    := true
 MANAGED_NAMESPACE             ?= $(KUBE_NAMESPACE)
-SECURE                        := false # whether or not to start Argo in TLS mode
+SECURE                        ?= false# whether or not to start Argo in TLS mode
 AUTH_MODE                     := hybrid
 ifeq ($(PROFILE),sso)
 AUTH_MODE                     := sso
 endif
 
-$(info GIT_COMMIT=$(GIT_COMMIT) GIT_BRANCH=$(GIT_BRANCH) GIT_TAG=$(GIT_TAG) GIT_TREE_STATE=$(GIT_TREE_STATE) RELEASE_TAG=$(RELEASE_TAG) DEV_BRANCH=$(DEV_BRANCH) VERSION=$(VERSION))
-$(info KUBECTX=$(KUBECTX) K3D=$(K3D) DOCKER_PUSH=$(DOCKER_PUSH) TARGET_PLATFORM=$(TARGET_PLATFORM))
-$(info RUN_MODE=$(RUN_MODE) PROFILE=$(PROFILE) AUTH_MODE=$(AUTH_MODE) SECURE=$(SECURE) STATIC_FILES=$(STATIC_FILES) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) LOG_LEVEL=$(LOG_LEVEL) NAMESPACED=$(NAMESPACED))
+# Makefile managed tools
+ifeq ($(USE_NIX), true)
+TOOL_MOCKERY                := mockery
+TOOL_CONTROLLER_GEN         := controller-gen
+TOOL_GO_TO_PROTOBUF         := go-to-protobuf
+TOOL_PROTOC_GEN_GOGO        := protoc-gen-gogo
+TOOL_PROTOC_GEN_GOGOFAST    := protoc-gen-gogofast
+TOOL_PROTOC_GEN_GRPC_GATEWAY:= protoc-gen-grpc-gateway
+TOOL_PROTOC_GEN_SWAGGER     := protoc-gen-swagger
+TOOL_OPENAPI_GEN            := openapi-gen
+TOOL_SWAGGER                := swagger
+TOOL_GOIMPORTS              := goimports
+TOOL_GOLANGCI_LINT          := golangci-lint
+TOOL_GOTESTSUM              := gotestsum
+TOOL_BUF                    := buf
+else
+TOOL_MOCKERY                := $(GOPATH)/bin/mockery
+TOOL_CONTROLLER_GEN         := $(GOPATH)/bin/controller-gen
+TOOL_GO_TO_PROTOBUF         := $(GOPATH)/bin/go-to-protobuf
+TOOL_PROTOC_GEN_GOGO        := $(GOPATH)/bin/protoc-gen-gogo
+TOOL_PROTOC_GEN_GOGOFAST    := $(GOPATH)/bin/protoc-gen-gogofast
+TOOL_PROTOC_GEN_GRPC_GATEWAY:= $(GOPATH)/bin/protoc-gen-grpc-gateway
+TOOL_PROTOC_GEN_SWAGGER     := $(GOPATH)/bin/protoc-gen-swagger
+TOOL_OPENAPI_GEN            := $(GOPATH)/bin/openapi-gen
+TOOL_SWAGGER                := $(GOPATH)/bin/swagger
+TOOL_GOIMPORTS              := $(GOPATH)/bin/goimports
+TOOL_GOLANGCI_LINT          := $(GOPATH)/bin/golangci-lint
+TOOL_GOTESTSUM              := $(GOPATH)/bin/gotestsum
+TOOL_BUF                    := $(GOPATH)/bin/buf
+endif
+# Extract custom build tags for linting (excluding platform-specific ones)
+GO_BUILD_TAGS               := $(shell grep -rh '//go:build' --include='*.go' --exclude-dir=vendor --exclude-dir=".??*" . 2>/dev/null | grep -v vendor | sed 's|.*//go:build ||' | tr '&|!() ' '\n' | grep -v '^$$' | grep -vE '^(windows|darwin|linux|ignore_autogenerated)$$' | sort -u | tr '\n' ',' | sed 's/,$$//')
+TOOL_EMBEDDOC               := hack/embeddoc/embeddoc
 
-override LDFLAGS += \
-  -X github.com/argoproj/argo-workflows/v3.version=$(VERSION) \
-  -X github.com/argoproj/argo-workflows/v3.buildDate=$(BUILD_DATE) \
-  -X github.com/argoproj/argo-workflows/v3.gitCommit=$(GIT_COMMIT) \
-  -X github.com/argoproj/argo-workflows/v3.gitTreeState=$(GIT_TREE_STATE)
-
-ifneq ($(GIT_TAG),)
-override LDFLAGS += -X github.com/argoproj/argo-workflows/v3.gitTag=${GIT_TAG}
+# npm bin -g will do this on later npms than we have
+NVM_BIN                     ?= $(shell npm config get prefix)/bin
+ifeq ($(USE_NIX), true)
+TOOL_CLANG_FORMAT           := clang-format
+TOOL_TYPOS                  := typos
+TOOL_CSPELL                 := cspell
+TOOL_MARKDOWN_LINK_CHECK    := markdown-link-check
+TOOL_MARKDOWNLINT           := markdownlint
+TOOL_DEVCONTAINER           := devcontainer
+TOOL_PROPERDOCS             := properdocs
+else
+TOOL_CLANG_FORMAT           := /usr/local/bin/clang-format
+TOOL_TYPOS                  := $(GOPATH)/bin/typos
+TOOL_CSPELL                 := $(NVM_BIN)/cspell
+TOOL_MARKDOWN_LINK_CHECK    := $(NVM_BIN)/markdown-link-check
+TOOL_MARKDOWNLINT           := $(NVM_BIN)/markdownlint
+TOOL_DEVCONTAINER           := $(NVM_BIN)/devcontainer
+TOOL_PROPERDOCS_DIR         := $(HOME)/.venv/properdocs
+TOOL_PROPERDOCS             := $(TOOL_PROPERDOCS_DIR)/bin/properdocs
 endif
 
-ifndef $(GOPATH)
-	GOPATH:=$(shell go env GOPATH)
-	export GOPATH
+# Spell-check tool versions. Sourced from nixpkgs under USE_NIX; pinned here for
+# the npm/binary installs below. Keep aligned with dev/nix when bumping.
+CSPELL_VERSION              := 9.7.0
+TYPOS_VERSION               := 1.47.0
+# Map `uname` output to the target triple used by typos' release tarballs.
+TYPOS_UNAME_ARCH            := $(shell uname -m)
+ifeq ($(TYPOS_UNAME_ARCH),arm64)
+TYPOS_ARCH                  := aarch64
+else
+TYPOS_ARCH                  := $(TYPOS_UNAME_ARCH)
+endif
+ifeq ($(shell uname -s),Darwin)
+TYPOS_TARGET                := $(TYPOS_ARCH)-apple-darwin
+else
+TYPOS_TARGET                := $(TYPOS_ARCH)-unknown-linux-musl
+endif
+
+.PHONY: print-variables
+print-variables: ## Print Makefile variables
+	@echo GIT_COMMIT=$(GIT_COMMIT) GIT_BRANCH=$(GIT_BRANCH) GIT_TAG=$(GIT_TAG) GIT_TREE_STATE=$(GIT_TREE_STATE) RELEASE_TAG=$(RELEASE_TAG) DEV_BRANCH=$(DEV_BRANCH) VERSION=$(VERSION)
+	@echo KUBECTX=$(KUBECTX) K3D=$(K3D) DOCKER_PUSH=$(DOCKER_PUSH) TARGET_PLATFORM=$(TARGET_PLATFORM)
+	@echo PROFILE=$(PROFILE) AUTH_MODE=$(AUTH_MODE) SECURE=$(SECURE) STATIC_FILES=$(STATIC_FILES) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) LOG_LEVEL=$(LOG_LEVEL) NAMESPACED=$(NAMESPACED) BASE_HREF=$(BASE_HREF) GOPATH=$(GOPATH)
+
+ifneq ($(USE_NIX), true)
+proto_vendor: $(TOOL_BUF)
+endif
+proto_vendor: argo-proto.yaml
+	GOFLAGS="$(GOFLAGS) -mod=mod" go run hack/proto-export/*.go --out proto_vendor
+	touch proto_vendor
+
+.PHONY: proto-vendor
+proto-vendor: proto_vendor
+override LDFLAGS += \
+  -X github.com/argoproj/argo-workflows/v4.version=$(VERSION) \
+  -X github.com/argoproj/argo-workflows/v4.buildDate=$(BUILD_DATE) \
+  -X github.com/argoproj/argo-workflows/v4.gitCommit=$(GIT_COMMIT) \
+  -X github.com/argoproj/argo-workflows/v4.gitTreeState=$(GIT_TREE_STATE)
+
+ifneq ($(GIT_TAG),)
+override LDFLAGS += -X github.com/argoproj/argo-workflows/v4.gitTag=${GIT_TAG}
 endif
 
 # -- file lists
@@ -117,15 +247,15 @@ endif
 ifneq (,$(filter dist/argoexec dist/workflow-controller dist/argo dist/argo-% docs/cli/argo.md,$(MAKECMDGOALS)))
 HACK_PKG_FILES_AS_PKGS ?= false
 ifeq ($(HACK_PKG_FILES_AS_PKGS),false)
-	ARGOEXEC_PKG_FILES        := $(shell go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/ |  grep 'argoproj/argo-workflows/v3/' | xargs go list -f '{{ range $$file := .GoFiles }}{{ print $$.ImportPath "/" $$file "\n" }}{{ end }}' | cut -c 39-)
-	CLI_PKG_FILES             := $(shell [ -f ui/dist/app/index.html ] || (mkdir -p ui/dist/app && touch ui/dist/app/placeholder); go list -f '{{ join .Deps "\n" }}' ./cmd/argo/ |  grep 'argoproj/argo-workflows/v3/' | xargs go list -f '{{ range $$file := .GoFiles }}{{ print $$.ImportPath "/" $$file "\n" }}{{ end }}' | cut -c 39-)
-	CONTROLLER_PKG_FILES      := $(shell go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ |  grep 'argoproj/argo-workflows/v3/' | xargs go list -f '{{ range $$file := .GoFiles }}{{ print $$.ImportPath "/" $$file "\n" }}{{ end }}' | cut -c 39-)
+	ARGOEXEC_PKG_FILES        := $(shell go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/ |  grep 'argoproj/argo-workflows/v4/' | xargs go list -f '{{ range $$file := .GoFiles }}{{ print $$.ImportPath "/" $$file "\n" }}{{ end }}' | cut -c 39-)
+	CLI_PKG_FILES             := $(shell [ -f ui/dist/app/index.html ] || (mkdir -p ui/dist/app && touch ui/dist/app/placeholder); go list -f '{{ join .Deps "\n" }}' ./cmd/argo/ |  grep 'argoproj/argo-workflows/v4/' | xargs go list -f '{{ range $$file := .GoFiles }}{{ print $$.ImportPath "/" $$file "\n" }}{{ end }}' | cut -c 39-)
+	CONTROLLER_PKG_FILES      := $(shell go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ |  grep 'argoproj/argo-workflows/v4/' | xargs go list -f '{{ range $$file := .GoFiles }}{{ print $$.ImportPath "/" $$file "\n" }}{{ end }}' | cut -c 39-)
 else
 # Building argoexec on windows cannot rebuild the openapi, we need to fall back to the old
 # behaviour where we fake dependencies and therefore don't rebuild
-	ARGOEXEC_PKG_FILES    := $(shell echo cmd/argoexec            && go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/            | grep 'argoproj/argo-workflows/v3/' | cut -c 39-)
-	CLI_PKG_FILES         := $(shell echo cmd/argo                && go list -f '{{ join .Deps "\n" }}' ./cmd/argo/                | grep 'argoproj/argo-workflows/v3/' | cut -c 39-)
-	CONTROLLER_PKG_FILES  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo-workflows/v3/' | cut -c 39-)
+	ARGOEXEC_PKG_FILES    := $(shell echo cmd/argoexec            && go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/            | grep 'argoproj/argo-workflows/v4/' | cut -c 39-)
+	CLI_PKG_FILES         := $(shell echo cmd/argo                && go list -f '{{ join .Deps "\n" }}' ./cmd/argo/                | grep 'argoproj/argo-workflows/v4/' | cut -c 39-)
+	CONTROLLER_PKG_FILES  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo-workflows/v4/' | cut -c 39-)
 endif
 else
 	ARGOEXEC_PKG_FILES    :=
@@ -145,32 +275,48 @@ SWAGGER_FILES := pkg/apiclient/_.primary.swagger.json \
 	pkg/apiclient/sensor/sensor.swagger.json \
 	pkg/apiclient/workflow/workflow.swagger.json \
 	pkg/apiclient/workflowarchive/workflow-archive.swagger.json \
-	pkg/apiclient/workflowtemplate/workflow-template.swagger.json
-PROTO_BINARIES := $(GOPATH)/bin/protoc-gen-gogo $(GOPATH)/bin/protoc-gen-gogofast $(GOPATH)/bin/goimports $(GOPATH)/bin/protoc-gen-grpc-gateway $(GOPATH)/bin/protoc-gen-swagger /usr/local/bin/clang-format
+	pkg/apiclient/workflowtemplate/workflow-template.swagger.json \
+	pkg/apiclient/sync/sync.swagger.json
+PROTO_BINARIES := $(TOOL_PROTOC_GEN_GOGO) $(TOOL_PROTOC_GEN_GOGOFAST) $(TOOL_GOIMPORTS) $(TOOL_PROTOC_GEN_GRPC_GATEWAY) $(TOOL_PROTOC_GEN_SWAGGER) $(TOOL_CLANG_FORMAT)
+ifneq ($(USE_NIX), true)
+pkg/apiclient/%.swagger.json: $(PROTO_BINARIES)
+endif
+QUICK_GENERATED_DOCS := docs/metrics.md docs/tracing.md docs/database-migrations.md docs/variable-flow/variables.md
+GENERATED_DOCS := $(QUICK_GENERATED_DOCS) docs/fields.md docs/cli/argo.md docs/workflow-controller-configmap.md docs/go-sdk-guide.md
+
+# `go mod vendor` rewrites vendor/modules.txt on every run
+# so depend on vendor/modules.txt in places where we want it up to date
+vendor/modules.txt: go.mod go.sum
+	go mod vendor
+	@touch $@
+
+# Targets generated via $(call protoc) need a fresh vendor tree.
+# _.primary/_.secondary.swagger.json are not built via protoc, so are excluded.
+$(filter-out pkg/apiclient/_.%,$(SWAGGER_FILES)) pkg/apiclient/artifact/artifact.swagger.json: vendor/modules.txt
 
 # protoc,my.proto
 define protoc
 	# protoc $(1)
-    [ -e ./vendor ] || go mod vendor
+    [ -e ./proto_vendor ] || $(MAKE) proto-vendor
+    mkdir -p $(GOPATH)/src github.com/argoproj
+    [ -e github.com/argoproj/argo-workflows ] || ln -s ../.. github.com/argoproj/argo-workflows
+    [ -e v4 ] || ln -s . v4
     protoc \
       -I /usr/local/include \
       -I $(CURDIR) \
-      -I $(CURDIR)/vendor \
-      -I $(GOPATH)/src \
-      -I $(GOPATH)/pkg/mod/github.com/gogo/protobuf@v1.3.2/gogoproto \
-      -I $(GOPATH)/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v1.16.0/third_party/googleapis \
+      -I $(CURDIR)/proto_vendor \
       --gogofast_out=plugins=grpc:$(GOPATH)/src \
       --grpc-gateway_out=logtostderr=true:$(GOPATH)/src \
       --swagger_out=logtostderr=true,fqn_for_swagger_name=true:. \
       $(1)
-     perl -i -pe 's|argoproj/argo-workflows/|argoproj/argo-workflows/v3/|g' `echo "$(1)" | sed 's/proto/pb.go/g'`
-
+    perl -i -pe 's|argoproj/argo-workflows/(?!v4/)|argoproj/argo-workflows/v4/|g' `echo "$(1)" | sed 's/proto/pb.go/g'`
+    rm -rf github.com v4
 endef
 
 # cli
 
 .PHONY: cli
-cli: dist/argo
+cli: dist/argo ## Build the CLI
 
 ui/dist/app/index.html: $(shell find ui/src -type f && find ui -maxdepth 1 -type f)
 ifeq ($(STATIC_FILES),true)
@@ -195,16 +341,16 @@ dist/argo-windows-amd64: GOARGS = GOOS=windows GOARCH=amd64
 dist/argo-windows-%.gz: dist/argo-windows-%
 	gzip --force --keep dist/argo-windows-$*.exe
 
-dist/argo-windows-%: ui/dist/app/index.html $(CLI_PKG_FILES) go.sum
+dist/argo-windows-%: ui/dist/app/index.html $(CLI_PKG_FILES) vendor/modules.txt
 	CGO_ENABLED=0 $(GOARGS) go build -v -gcflags '${GCFLAGS}' -ldflags '${LDFLAGS} -extldflags -static' -o $@.exe ./cmd/argo
 
 dist/argo-%.gz: dist/argo-%
 	gzip --force --keep dist/argo-$*
 
-dist/argo-%: ui/dist/app/index.html $(CLI_PKG_FILES) go.sum
+dist/argo-%: ui/dist/app/index.html $(CLI_PKG_FILES) vendor/modules.txt
 	CGO_ENABLED=0 $(GOARGS) go build -v -gcflags '${GCFLAGS}' -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argo
 
-dist/argo: ui/dist/app/index.html $(CLI_PKG_FILES) go.sum
+dist/argo: ui/dist/app/index.html $(CLI_PKG_FILES) vendor/modules.txt
 ifeq ($(shell uname -s),Darwin)
 	# if local, then build fast: use CGO and dynamic-linking
 	go build -v -gcflags '${GCFLAGS}' -ldflags '${LDFLAGS}' -o $@ ./cmd/argo
@@ -220,9 +366,9 @@ clis: dist/argo-linux-amd64.gz dist/argo-linux-arm64.gz dist/argo-linux-ppc64le.
 # controller
 
 .PHONY: controller
-controller: dist/workflow-controller
+controller: dist/workflow-controller ## Build the workflow controller
 
-dist/workflow-controller: $(CONTROLLER_PKG_FILES) go.sum
+dist/workflow-controller: $(CONTROLLER_PKG_FILES) vendor/modules.txt
 ifeq ($(shell uname -s),Darwin)
 	# if local, then build fast: use CGO and dynamic-linking
 	go build -gcflags '${GCFLAGS}' -v -ldflags '${LDFLAGS}' -o $@ ./cmd/workflow-controller
@@ -234,42 +380,57 @@ workflow-controller-image:
 
 # argoexec
 
-dist/argoexec: $(ARGOEXEC_PKG_FILES) go.sum
+dist/argoexec: $(ARGOEXEC_PKG_FILES) vendor/modules.txt
 ifeq ($(shell uname -s),Darwin)
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -gcflags '${GCFLAGS}' -v -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argoexec
 else
 	CGO_ENABLED=0 go build -v -gcflags '${GCFLAGS}' -ldflags '${LDFLAGS} -extldflags -static' -o $@ ./cmd/argoexec
 endif
 
-argoexec-image:
+argoexec-image: ## Build the executor image
+argoexec-nonroot-image:
 
 %-image:
 	[ ! -e dist/$* ] || mv dist/$* .
+	# Special handling for argoexec-nonroot to create argoexec:VERSION-nonroot instead of argoexec-nonroot:VERSION
+	if [ "$*" = "argoexec-nonroot" ]; then \
+		image_name="$(IMAGE_NAMESPACE)/argoexec:$(VERSION)-nonroot"; \
+	else \
+		image_name="$(IMAGE_NAMESPACE)/$*:$(VERSION)"; \
+	fi; \
 	docker buildx build \
 		--platform $(TARGET_PLATFORM) \
 		--build-arg GIT_COMMIT=$(GIT_COMMIT) \
 		--build-arg GIT_TAG=$(GIT_TAG) \
 		--build-arg GIT_TREE_STATE=$(GIT_TREE_STATE) \
-		-t $(IMAGE_NAMESPACE)/$*:$(VERSION) \
+		-t $$image_name \
 		--target $* \
 		--load \
-		 .
-	[ ! -e $* ] || mv $* dist/
-	docker run --rm -t $(IMAGE_NAMESPACE)/$*:$(VERSION) version
-	if [ $(K3D) = true ]; then k3d image import -c $(K3D_CLUSTER_NAME) $(IMAGE_NAMESPACE)/$*:$(VERSION); fi
-	if [ $(DOCKER_PUSH) = true ] && [ $(IMAGE_NAMESPACE) != argoproj ] ; then docker push $(IMAGE_NAMESPACE)/$*:$(VERSION) ; fi
+		.; \
+	[ ! -e $* ] || mv $* dist/; \
+	docker run --rm -t $$image_name version; \
+	if [ $(K3D) = true ]; then \
+		k3d image import -c $(K3D_CLUSTER_NAME) $$image_name; \
+	fi; \
+	if [ $(DOCKER_PUSH) = true ] && [ $(IMAGE_NAMESPACE) != argoproj ] ; then \
+		docker push $$image_name; \
+	fi
 
 .PHONY: codegen
-codegen: types swagger manifests $(GOPATH)/bin/mockery docs/fields.md docs/cli/argo.md
+ifneq ($(USE_NIX), true)
+codegen: $(TOOL_MOCKERY) $(TOOL_BUF)
+endif
+codegen: types swagger manifests $(GENERATED_DOCS) vendor/modules.txt ## Generate code via `go generate`, as well as SDKs
 	go generate ./...
+	$(TOOL_MOCKERY) --config .mockery.yaml
 	make --directory sdks/java USE_NIX=$(USE_NIX) generate
-	make --directory sdks/python USE_NIX=$(USE_NIX) generate
 
 .PHONY: check-pwd
 check-pwd:
-
+ifneq ($(USE_NIX), true)
 ifneq ($(SRC),$(PWD))
 	@echo "⚠️ Code generation will not work if code in not checked out into $(SRC)" >&2
+endif
 endif
 
 .PHONY: types
@@ -286,71 +447,78 @@ swagger: \
 	pkg/apiclient/workflow/workflow.swagger.json \
 	pkg/apiclient/workflowarchive/workflow-archive.swagger.json \
 	pkg/apiclient/workflowtemplate/workflow-template.swagger.json \
+	pkg/apiclient/sync/sync.swagger.json \
 	manifests/base/crds/full/argoproj.io_workflows.yaml \
 	manifests \
 	api/openapi-spec/swagger.json \
 	api/jsonschema/schema.json
 
 
-$(GOPATH)/bin/mockery: Makefile
+$(TOOL_MOCKERY): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	go install github.com/vektra/mockery/v2@v2.42.2
+	GOTOOLCHAIN=go1.26.1 go install github.com/vektra/mockery/v3@v3.5.1
 endif
-$(GOPATH)/bin/controller-gen: Makefile
+$(TOOL_CONTROLLER_GEN): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.16.5
+	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.18.0
 endif
-$(GOPATH)/bin/go-to-protobuf: Makefile
+$(TOOL_GO_TO_PROTOBUF): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	# TODO: currently fails on v0.30.3 with
-	# Unable to clean package k8s.io.api.core.v1: remove /home/runner/go/pkg/mod/k8s.io/api@v0.30.3/core/v1/generated.proto: permission denied
-	go install k8s.io/code-generator/cmd/go-to-protobuf@v0.21.5
+	go install k8s.io/code-generator/cmd/go-to-protobuf@v0.35.1
 endif
-$(GOPATH)/src/github.com/gogo/protobuf: Makefile
-# update this in Nix when upgrading it here
-ifneq ($(USE_NIX), true)
-	[ -e $@ ] || git clone --depth 1 https://github.com/gogo/protobuf.git -b v1.3.2 $@
-endif
-$(GOPATH)/bin/protoc-gen-gogo: Makefile
+$(TOOL_PROTOC_GEN_GOGO): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
 	go install github.com/gogo/protobuf/protoc-gen-gogo@v1.3.2
 endif
-$(GOPATH)/bin/protoc-gen-gogofast: Makefile
+$(TOOL_PROTOC_GEN_GOGOFAST): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
 	go install github.com/gogo/protobuf/protoc-gen-gogofast@v1.3.2
 endif
-$(GOPATH)/bin/protoc-gen-grpc-gateway: Makefile
+$(TOOL_PROTOC_GEN_GRPC_GATEWAY): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
 	go install github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway@v1.16.0
 endif
-$(GOPATH)/bin/protoc-gen-swagger: Makefile
+$(TOOL_PROTOC_GEN_SWAGGER): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
 	go install github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger@v1.16.0
 endif
-$(GOPATH)/bin/openapi-gen: Makefile
+$(TOOL_OPENAPI_GEN): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
 	go install k8s.io/kube-openapi/cmd/openapi-gen@v0.0.0-20220124234850-424119656bbf
 endif
-$(GOPATH)/bin/swagger: Makefile
+$(TOOL_SWAGGER): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	go install github.com/go-swagger/go-swagger/cmd/swagger@v0.31.0
+	go install github.com/go-swagger/go-swagger/cmd/swagger@v0.33.1
 endif
-$(GOPATH)/bin/goimports: Makefile
+$(TOOL_GOIMPORTS): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	go install golang.org/x/tools/cmd/goimports@v0.1.7
+	go install golang.org/x/tools/cmd/goimports@v0.35.0
+endif
+$(TOOL_GOTESTSUM): Makefile
+# update this in Nix when upgrading it here
+ifneq ($(USE_NIX), true)
+	go install gotest.tools/gotestsum@v1.12.3
+endif
+$(TOOL_BUF): Makefile
+# update this in Nix when upgrading it here
+ifneq ($(USE_NIX), true)
+	go install github.com/bufbuild/buf/cmd/buf@v1.65.0
 endif
 
-/usr/local/bin/clang-format:
+$(TOOL_EMBEDDOC): hack/embeddoc/main.go hack/embeddoc/go.mod
+	cd hack/embeddoc && go build -o embeddoc .
+
+$(TOOL_CLANG_FORMAT):
 ifeq (, $(shell which clang-format))
 ifeq ($(shell uname),Darwin)
 	brew install clang-format
@@ -360,52 +528,74 @@ else
 endif
 endif
 
-pkg/apis/workflow/v1alpha1/generated.proto: $(GOPATH)/bin/go-to-protobuf $(PROTO_BINARIES) $(TYPES) $(GOPATH)/src/github.com/gogo/protobuf
-	# These files are generated on a v3/ folder by the tool. Link them to the root folder
-	[ -e ./v3 ] || ln -s . v3
+# go-to-protobuf fails with mysterious errors on code that doesn't compile
+ifneq ($(USE_NIX), true)
+pkg/apis/workflow/v1alpha1/generated.proto: $(TOOL_GO_TO_PROTOBUF) $(PROTO_BINARIES)
+endif
+pkg/apis/workflow/v1alpha1/generated.proto: $(TYPES) proto-vendor vendor/modules.txt
+	# These files are generated on a v4/ folder by the tool. Link them to the root folder
+	mkdir -p github.com/argoproj
+	[ -e github.com/argoproj/argo-workflows ] || ln -s ../.. github.com/argoproj/argo-workflows
+	[ -e v4 ] || ln -s . v4
 	# Format proto files. Formatting changes generated code, so we do it here, rather that at lint time.
 	# Why clang-format? Google uses it.
+	@echo "*** This will fail if your code has compilation errors, without reporting those as the cause."
+	@echo "*** So fix them first."
 	find pkg/apiclient -name '*.proto'|xargs clang-format -i
-	$(GOPATH)/bin/go-to-protobuf \
-		--go-header-file=./hack/custom-boilerplate.go.txt \
-		--packages=github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1 \
-		--apimachinery-packages=+k8s.io/apimachinery/pkg/util/intstr,+k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/runtime/schema,+k8s.io/apimachinery/pkg/runtime,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/api/core/v1,k8s.io/api/policy/v1 \
-		--proto-import $(GOPATH)/src
-	# Delete the link
-	[ -e ./v3 ] && rm -rf v3
-	touch pkg/apis/workflow/v1alpha1/generated.proto
+	GOFLAGS="$(GOFLAGS) -mod=vendor" $(TOOL_GO_TO_PROTOBUF) \
+		--go-header-file=$(CURDIR)/hack/custom-boilerplate.go.txt \
+		--packages=github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1 \
+		--apimachinery-packages=+k8s.io/apimachinery/pkg/util/intstr,+k8s.io/apimachinery/pkg/api/resource,+k8s.io/apimachinery/pkg/runtime/schema,+k8s.io/apimachinery/pkg/runtime,+k8s.io/apimachinery/pkg/apis/meta/v1,+k8s.io/api/core/v1,+k8s.io/api/policy/v1 \
+		--proto-import $(CURDIR) \
+		--proto-import $(CURDIR)/proto_vendor
+	# go-to-protobuf v0.35 puts ProtoMessage() methods in generated.protomessage.pb.go
+	# behind a build tag. Strip it so codegen tools (mockery, etc.) can compile without
+	# requiring the tag. Runtime builds use GOFLAGS for k8s vendor types instead.
+	perl -i -ne 'print unless /kubernetes_protomessage_one_more_release/' pkg/apis/workflow/v1alpha1/generated.protomessage.pb.go
+	# Delete the link and created k8s.io directory
+	rm -rf github.com v4 k8s.io
+	# Restore vendor if go-to-protobuf deleted files
+	go mod vendor
+	touch $@
 
 # this target will also create a .pb.go and a .pb.gw.go file, but in Make 3 we cannot use _grouped target_, instead we must choose
 # on file to represent all of them
-pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.proto
+pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.swagger.json: $(TYPES) pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.proto
 	$(call protoc,pkg/apiclient/clusterworkflowtemplate/cluster-workflow-template.proto)
 
-pkg/apiclient/cronworkflow/cron-workflow.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclient/cronworkflow/cron-workflow.proto
+pkg/apiclient/cronworkflow/cron-workflow.swagger.json: $(TYPES) pkg/apiclient/cronworkflow/cron-workflow.proto
 	$(call protoc,pkg/apiclient/cronworkflow/cron-workflow.proto)
 
-pkg/apiclient/event/event.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclient/event/event.proto
+pkg/apiclient/event/event.swagger.json: $(TYPES) pkg/apiclient/event/event.proto
 	$(call protoc,pkg/apiclient/event/event.proto)
 
-pkg/apiclient/eventsource/eventsource.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclient/eventsource/eventsource.proto
+pkg/apiclient/eventsource/eventsource.swagger.json: $(TYPES) pkg/apiclient/eventsource/eventsource.proto
 	$(call protoc,pkg/apiclient/eventsource/eventsource.proto)
 
-pkg/apiclient/info/info.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclient/info/info.proto
+pkg/apiclient/info/info.swagger.json: $(TYPES) pkg/apiclient/info/info.proto
 	$(call protoc,pkg/apiclient/info/info.proto)
 
-pkg/apiclient/sensor/sensor.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclient/sensor/sensor.proto
+pkg/apiclient/sensor/sensor.swagger.json: $(TYPES) pkg/apiclient/sensor/sensor.proto
 	$(call protoc,pkg/apiclient/sensor/sensor.proto)
 
-pkg/apiclient/workflow/workflow.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclient/workflow/workflow.proto
+pkg/apiclient/workflow/workflow.swagger.json: $(TYPES) pkg/apiclient/workflow/workflow.proto
 	$(call protoc,pkg/apiclient/workflow/workflow.proto)
+	perl -i -pe 's/return resp\.Recv\(\) \}, mux\.GetForwardResponseOptions\(\)\.\.\.\)/return wrapEventAsProtoMessage(resp.Recv()) }, mux.GetForwardResponseOptions()...)/ if /forward_WorkflowService_WatchEvents_0/' pkg/apiclient/workflow/workflow.pb.gw.go
 
-pkg/apiclient/workflowarchive/workflow-archive.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclient/workflowarchive/workflow-archive.proto
+pkg/apiclient/workflowarchive/workflow-archive.swagger.json: $(TYPES) pkg/apiclient/workflowarchive/workflow-archive.proto
 	$(call protoc,pkg/apiclient/workflowarchive/workflow-archive.proto)
 
-pkg/apiclient/workflowtemplate/workflow-template.swagger.json: $(PROTO_BINARIES) $(TYPES) pkg/apiclient/workflowtemplate/workflow-template.proto
+pkg/apiclient/workflowtemplate/workflow-template.swagger.json: $(TYPES) pkg/apiclient/workflowtemplate/workflow-template.proto
 	$(call protoc,pkg/apiclient/workflowtemplate/workflow-template.proto)
 
+pkg/apiclient/sync/sync.swagger.json: $(TYPES) pkg/apiclient/sync/sync.proto
+	$(call protoc,pkg/apiclient/sync/sync.proto)
+
 # generate other files for other CRDs
-manifests/base/crds/full/argoproj.io_workflows.yaml: $(GOPATH)/bin/controller-gen $(TYPES) ./hack/manifests/crdgen.sh ./hack/manifests/crds.go
+ifneq ($(USE_NIX), true)
+manifests/base/crds/full/argoproj.io_workflows.yaml: $(TOOL_CONTROLLER_GEN)
+endif
+manifests/base/crds/full/argoproj.io_workflows.yaml: $(TYPES) ./hack/manifests/crdgen.sh ./hack/manifests/crds.go
 	./hack/manifests/crdgen.sh
 
 .PHONY: manifests
@@ -415,11 +605,13 @@ manifests: \
 	manifests/quick-start-minimal.yaml \
 	manifests/quick-start-mysql.yaml \
 	manifests/quick-start-postgres.yaml \
+	manifests/quick-start-telemetry.yaml \
 	dist/manifests/install.yaml \
 	dist/manifests/namespace-install.yaml \
 	dist/manifests/quick-start-minimal.yaml \
 	dist/manifests/quick-start-mysql.yaml \
-	dist/manifests/quick-start-postgres.yaml
+	dist/manifests/quick-start-postgres.yaml \
+	dist/manifests/quick-start-telemetry.yaml
 
 .PHONY: manifests/install.yaml
 manifests/install.yaml: /dev/null
@@ -441,26 +633,48 @@ manifests/quick-start-mysql.yaml: /dev/null
 manifests/quick-start-postgres.yaml: /dev/null
 	kubectl kustomize --load-restrictor=LoadRestrictionsNone manifests/quick-start/postgres | ./hack/manifests/auto-gen-msg.sh > manifests/quick-start-postgres.yaml
 
+.PHONY: manifests/quick-start-telemetry.yaml
+manifests/quick-start-telemetry.yaml: /dev/null
+	kubectl kustomize --load-restrictor=LoadRestrictionsNone manifests/quick-start/telemetry | ./hack/manifests/auto-gen-msg.sh > manifests/quick-start-telemetry.yaml
+
 dist/manifests/%: manifests/%
 	@mkdir -p dist/manifests
 	sed 's/:latest/:$(VERSION)/' manifests/$* > $@
 
 # lint/test/etc
 
-$(GOPATH)/bin/golangci-lint: Makefile
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.61.0
+.PHONE: manifests-validate
+manifests-validate:
+	kubectl apply --server-side --validate=strict --dry-run=server -f 'manifests/*.yaml'
 
-.PHONY: lint
-lint: ui/dist/app/index.html $(GOPATH)/bin/golangci-lint
+$(TOOL_GOLANGCI_LINT): Makefile
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v2.11.3
+
+.PHONY: lint lint-go lint-ui
+lint: lint-go lint-ui features-validate ## Lint the project
+ifneq ($(USE_NIX), true)
+# golangci-lint loads packages in implicit vendor mode, so the vendor tree must
+# be fresh. Skipped under Nix, which deletes vendor/ in the recipe below.
+lint-go: $(TOOL_GOLANGCI_LINT) vendor/modules.txt
+endif
+lint-go: ui/dist/app/index.html
+ifeq ($(USE_NIX), true)
 	rm -Rf v3 vendor
+endif
 	# If you're using `woc.wf.Spec` or `woc.execWf.Status` your code probably won't work with WorkflowTemplate.
 	# * Change `woc.wf.Spec` to `woc.execWf.Spec`.
 	# * Change `woc.execWf.Status` to `woc.wf.Status`.
 	@awk '(/woc.wf.Spec/ || /woc.execWf.Status/) && !/not-woc-misuse/ {print FILENAME ":" FNR "\t" $0 ; exit 1}' $(shell find workflow/controller -type f -name '*.go' -not -name '*test*')
 	# Tidy Go modules
 	go mod tidy
-	# Lint Go files
-	$(GOPATH)/bin/golangci-lint run --fix --verbose
+ifneq ($(USE_NIX), true)
+	# Re-vendor if tidy changed go.mod or go.sum, so the lint below sees a consistent tree
+	[ vendor/modules.txt -nt go.mod ] && [ vendor/modules.txt -nt go.sum ] || go mod vendor
+endif
+	# Lint Go files (with auto-discovered build tags)
+	$(TOOL_GOLANGCI_LINT) run --fix --verbose --build-tags="$(GO_BUILD_TAGS)"
+
+lint-ui: ui/dist/app/index.html
 	# Lint the UI
 	if [ -e ui/node_modules ]; then yarn --cwd ui lint ; fi
 	# Deduplicate Node modules
@@ -468,28 +682,34 @@ lint: ui/dist/app/index.html $(GOPATH)/bin/golangci-lint
 
 # for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test
-test: ui/dist/app/index.html util/telemetry/metrics_list.go util/telemetry/attributes.go
+ifneq ($(USE_NIX), true)
+test: $(TOOL_GOTESTSUM) $(TOOL_BUF)
+endif
+test: ui/dist/app/index.html $(JSON_TEST_OUTPUT) ## Run tests
+ifneq ($(USE_NIX), true)
+	go mod vendor
+	go build -mod=vendor ./...
+else
 	go build ./...
-	env KUBECONFIG=/dev/null $(GOTEST) ./...
+endif
+	env KUBECONFIG=/dev/null $(call gotest,./...,unit,-p 20)
 	# marker file, based on it's modification time, we know how long ago this target was run
 	@mkdir -p dist
 	touch dist/test
 
 .PHONY: install
-install: githooks
+install: githooks ## Install Argo to the current Kubernetes cluster
 	kubectl get ns $(KUBE_NAMESPACE) || kubectl create ns $(KUBE_NAMESPACE)
 	kubectl config set-context --current --namespace=$(KUBE_NAMESPACE)
-	@echo "installing PROFILE=$(PROFILE)"
-	kubectl kustomize --load-restrictor=LoadRestrictionsNone test/e2e/manifests/$(PROFILE) | sed 's|quay.io/argoproj/|$(IMAGE_NAMESPACE)/|' | sed 's/namespace: argo/namespace: $(KUBE_NAMESPACE)/' | kubectl -n $(KUBE_NAMESPACE) apply --prune -l app.kubernetes.io/part-of=argo -f -
+	@echo "installing PROFILE=$(PROFILE) INITLESS=$(INITLESS) (manifests=$(INSTALL_PROFILE))"
+	kubectl kustomize --load-restrictor=LoadRestrictionsNone test/e2e/manifests/$(INSTALL_PROFILE) \
+		| sed 's|quay.io/argoproj/|$(IMAGE_NAMESPACE)/|' \
+		| sed 's/namespace: argo/namespace: $(KUBE_NAMESPACE)/' \
+		| sed 's|http://localhost:8080/oauth2/callback|$(SSO_REDIRECT_URL)|' \
+		| sed 's|http://dex:5556/dex|$(SSO_ISSUER_URL)|' \
+		| KUBECTL_APPLYSET=true kubectl -n $(KUBE_NAMESPACE) apply --applyset=configmaps/install --server-side --prune -f -
 ifeq ($(PROFILE),stress)
 	kubectl -n $(KUBE_NAMESPACE) apply -f test/stress/massive-workflow.yaml
-endif
-ifeq ($(RUN_MODE),kubernetes)
-	kubectl -n $(KUBE_NAMESPACE) scale deploy/workflow-controller --replicas 1
-	kubectl -n $(KUBE_NAMESPACE) scale deploy/argo-server --replicas 1
-endif
-ifeq ($(UI_SECURE)$(PROFILE),truesso)
-	KUBE_NAMESPACE=$(KUBE_NAMESPACE) ./hack/update-sso-redirect-url.sh
 endif
 
 .PHONY: argosay
@@ -527,58 +747,58 @@ dist/argosay:
 	mkdir -p dist
 	cp test/e2e/images/argosay/v2/argosay dist/
 
-.PHONY: kit
-kit: Makefile
-ifeq ($(shell command -v kit),)
-ifeq ($(shell uname),Darwin)
-	brew tap kitproj/kit --custom-remote https://github.com/kitproj/kit
-	brew install kit
-else
-	curl -q https://raw.githubusercontent.com/kitproj/kit/main/install.sh | tag=v0.1.8 sh
-endif
-endif
+# renovate: datasource=github-releases depName=tilt-dev/tilt
+TILT_VERSION          ?= 0.37.3
 
+.PHONY: tilt
+tilt: ## Install the pinned Tilt to $(GOPATH)/bin if not already present
+	@if tilt version 2>/dev/null | grep -q "v$(TILT_VERSION)," ; then \
+		echo "tilt v$(TILT_VERSION) already installed" ; \
+	else \
+		os=$$(uname -s | tr 'A-Z' 'a-z') ; [ "$$os" = darwin ] && os=mac ; \
+		arch=$$(uname -m) ; [ "$$arch" = aarch64 ] && arch=arm64 ; \
+		dir=$$(go env GOPATH)/bin ; mkdir -p "$$dir" ; \
+		echo "installing tilt v$(TILT_VERSION) to $$dir" ; \
+		: "tilt can't be go installed (its go.mod has replace directives), so it" ; \
+		: "comes from GitHub's release CDN. CI builds it once (the e2e-tools job)" ; \
+		: "and shares it across the matrix, rather than fetching it in 14 parallel" ; \
+		: "jobs (which throttles the CDN) — so no download retries are needed." ; \
+		: "Download to a temp file so a truncated download fails tar cleanly." ; \
+		tmp=$$(mktemp) ; \
+		curl -fsSL "https://github.com/tilt-dev/tilt/releases/download/v$(TILT_VERSION)/tilt.$(TILT_VERSION).$$os.$$arch.tar.gz" -o "$$tmp" \
+			&& tar -xzf "$$tmp" -C "$$dir" tilt && rm -f "$$tmp" ; \
+	fi
+
+.PHONY: k3d
+k3d: ## Install the pinned k3d to $(GOPATH)/bin if not already present
+	@. hack/k8s-versions.sh && if k3d version 2>/dev/null | grep -q "k3d version v$${K3D_VERSION}" ; then \
+		echo "k3d v$${K3D_VERSION} already installed" ; \
+	else \
+		echo "installing k3d v$${K3D_VERSION}" ; \
+		: "go install pulls from the module proxy (proxy.golang.org), which is" ; \
+		: "far more reliable under CI load than GitHub's release-asset CDN. The" ; \
+		: "ldflags stamp the version k3d reports and uses to tag its helper image" ; \
+		go install -ldflags "-X github.com/k3d-io/k3d/v5/version.Version=v$${K3D_VERSION}" \
+			github.com/k3d-io/k3d/v5@v$${K3D_VERSION} ; \
+	fi
+
+.PHONY: k3d-up
+k3d-up: ## Create the k3d cluster used by Tilt
+	K3D_CLUSTER_NAME=$(K3D_CLUSTER_NAME) ./hack/tilt/k3d-up.sh
+
+.PHONY: k3d-down
+k3d-down: ## Delete the k3d cluster used by Tilt
+	K3D_CLUSTER_NAME=$(K3D_CLUSTER_NAME) ./hack/tilt/k3d-down.sh
 
 .PHONY: start
-ifeq ($(RUN_MODE),local)
-start: kit
-else
-start: install kit
-endif
-	@echo "starting STATIC_FILES=$(STATIC_FILES) (DEV_BRANCH=$(DEV_BRANCH), GIT_BRANCH=$(GIT_BRANCH)), AUTH_MODE=$(AUTH_MODE), RUN_MODE=$(RUN_MODE), MANAGED_NAMESPACE=$(MANAGED_NAMESPACE)"
-ifneq ($(API),true)
-	@echo "⚠️️  not starting API. If you want to test the API, use 'make start API=true' to start it"
-endif
-ifneq ($(UI),true)
-	@echo "⚠️  not starting UI. If you want to test the UI, run 'make start UI=true' to start it"
-endif
-ifneq ($(PLUGINS),true)
-	@echo "⚠️  not starting plugins. If you want to test plugins, run 'make start PROFILE=plugins' to start it"
-endif
-	# Check dex, minio, postgres and mysql are in hosts file
-ifeq ($(AUTH_MODE),sso)
-	grep '127.0.0.1.*dex' /etc/hosts
-endif
-	grep '127.0.0.1.*azurite' /etc/hosts
-	grep '127.0.0.1.*minio' /etc/hosts
-	grep '127.0.0.1.*postgres' /etc/hosts
-	grep '127.0.0.1.*mysql' /etc/hosts
-ifeq ($(RUN_MODE),local)
-	env DEFAULT_REQUEUE_TIME=$(DEFAULT_REQUEUE_TIME) ARGO_SECURE=$(SECURE) ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) ARGO_LOGLEVEL=$(LOG_LEVEL) UPPERIO_DB_DEBUG=$(UPPERIO_DB_DEBUG) ARGO_AUTH_MODE=$(AUTH_MODE) ARGO_NAMESPACED=$(NAMESPACED) ARGO_NAMESPACE=$(KUBE_NAMESPACE) ARGO_MANAGED_NAMESPACE=$(MANAGED_NAMESPACE) ARGO_EXECUTOR_PLUGINS=$(PLUGINS) ARGO_POD_STATUS_CAPTURE_FINALIZER=$(POD_STATUS_CAPTURE_FINALIZER) ARGO_UI_SECURE=$(UI_SECURE) PROFILE=$(PROFILE) kit $(TASKS)
-endif
-
-.PHONY: wait
-wait:
-	# Wait for workflow controller
-	until lsof -i :9090 > /dev/null ; do sleep 10s ; done
-ifeq ($(API),true)
-	# Wait for Argo Server
-	until lsof -i :2746 > /dev/null ; do sleep 10s ; done
-endif
-ifeq ($(PROFILE),mysql)
-	# Wait for MySQL
-	until (: < /dev/tcp/localhost/3306) ; do sleep 10s ; done
-endif
+start: tilt k3d-up ## Start the dev stack in-cluster via Tilt
+	# --host=0.0.0.0 binds the Tilt web UI to all interfaces so it is reachable
+	# via the container IP in a devcontainer (the devcontainer CLI doesn't
+	# forward ports). The argo server/UI/metrics forwards bind 0.0.0.0 too.
+	tilt up --host=0.0.0.0 -- --profile=$(PROFILE) --auth-mode=$(AUTH_MODE) \
+		--secure=$(SECURE) --api=$(API) --initless=$(INITLESS) \
+		--pod-status-capture-finalizer=$(POD_STATUS_CAPTURE_FINALIZER) \
+		$(if $(DEBUG),--debug=$(DEBUG))
 
 .PHONY: postgres-cli
 postgres-cli:
@@ -601,183 +821,219 @@ mysql-dump:
 
 test-cli: ./dist/argo
 
-test-%:
-	E2E_WAIT_TIMEOUT=$(E2E_WAIT_TIMEOUT) go test -failfast -v -timeout $(E2E_SUITE_TIMEOUT) -count 1 --tags $* -parallel $(E2E_PARALLEL) ./test/e2e
-
-.PHONY: test-examples
-test-examples:
-	./hack/test-examples.sh
+test-%: $(TOOL_GOTESTSUM) $(JSON_TEST_OUTPUT) vendor/modules.txt
+	E2E_WAIT_TIMEOUT=$(E2E_WAIT_TIMEOUT) E2E_INITLESS=$(INITLESS) $(call gotest,./test/e2e,$@,-timeout $(E2E_SUITE_TIMEOUT) --tags $*)
 
 .PHONY: test-%-sdk
 test-%-sdk:
 	make --directory sdks/$* install test -B
 
-Test%:
-	E2E_WAIT_TIMEOUT=$(E2E_WAIT_TIMEOUT) go test -failfast -v -timeout $(E2E_SUITE_TIMEOUT) -count 1 --tags $(ALL_BUILD_TAGS) -parallel $(E2E_PARALLEL) ./test/e2e  -run='.*/$*'
+Test%: $(TOOL_GOTESTSUM) $(JSON_TEST_OUTPUT) vendor/modules.txt
+	E2E_WAIT_TIMEOUT=$(E2E_WAIT_TIMEOUT) E2E_INITLESS=$(INITLESS) $(call gotest,./test/e2e,$@,-timeout $(E2E_SUITE_TIMEOUT) -count 1 --tags $(ALL_BUILD_TAGS) -parallel $(E2E_PARALLEL) -run='.*/$*')
 
-Benchmark%:
-	go test --tags $(ALL_BUILD_TAGS) ./test/e2e -run='$@' -benchmem -count=$(BENCHMARK_COUNT) -bench .
+Benchmark%: $(TOOL_GOTESTSUM) $(JSON_TEST_OUTPUT) vendor/modules.txt
+	$(call gotest,./test/e2e,$@,--tags $(ALL_BUILD_TAGS) -run='$@' -benchmem -count=$(BENCHMARK_COUNT) -bench .)
 
 # clean
 
 .PHONY: clean
-clean:
+clean: ## Clean the directory of build files
 	go clean
-	rm -Rf test-results node_modules vendor v2 v3 argoexec-linux-amd64 dist/* ui/dist
+	rm -Rf test/reports test-results node_modules vendor v2 v3 v4 argoexec-linux-amd64 dist/* ui/dist
 
 # Build telemetry files
+# Telemetry Go files generated via go generate, run as part of codegen.
 TELEMETRY_BUILDER := $(shell find util/telemetry/builder -type f -name '*.go')
-docs/metrics.md: $(TELEMETRY_BUILDER) util/telemetry/builder/values.yaml
+
+docs/metrics.md: $(TELEMETRY_BUILDER) util/telemetry/builder/values.yaml vendor/modules.txt
 	@echo Rebuilding $@
 	go run ./util/telemetry/builder --metricsDocs $@
 
-util/telemetry/metrics_list.go: $(TELEMETRY_BUILDER) util/telemetry/builder/values.yaml
+docs/tracing.md: $(TELEMETRY_BUILDER) util/telemetry/builder/values.yaml vendor/modules.txt
 	@echo Rebuilding $@
-	go run ./util/telemetry/builder --metricsListGo $@
+	go run ./util/telemetry/builder --tracingDocs $@
 
-util/telemetry/attributes.go: $(TELEMETRY_BUILDER) util/telemetry/builder/values.yaml
+docs/database-migrations.md: persist/sqldb/migrate.go util/sync/db/migrate.go hack/docs/migrations/main.go
+	GOFLAGS="$(GOFLAGS) -mod=mod" go run ./hack/docs/migrations
+
+docs/variable-flow/variables.md: $(wildcard util/variables/*.go) $(wildcard util/variables/keys/*.go) vendor/modules.txt
 	@echo Rebuilding $@
-	go run ./util/telemetry/builder --attributesGo $@
+	go test -run TestGenerateMarkdown -count=1 ./util/variables/ -args -write
 
 # swagger
-pkg/apis/workflow/v1alpha1/openapi_generated.go: $(GOPATH)/bin/openapi-gen $(TYPES)
-	# These files are generated on a v3/ folder by the tool. Link them to the root folder
-	[ -e ./v3 ] || ln -s . v3
-	$(GOPATH)/bin/openapi-gen \
+ifneq ($(USE_NIX), true)
+pkg/apis/workflow/v1alpha1/openapi_generated.go: $(TOOL_OPENAPI_GEN)
+endif
+pkg/apis/workflow/v1alpha1/openapi_generated.go: $(TYPES) vendor/modules.txt
+	# These files are generated on a v4/ folder by the tool. Link them to the root folder
+	[ -e ./v4 ] || ln -s . v4
+	$(TOOL_OPENAPI_GEN) \
 	  --go-header-file ./hack/custom-boilerplate.go.txt \
-	  --input-dirs github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1 \
-	  --output-package github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1 \
+	  --input-dirs github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1 \
+	  --output-package github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1 \
 	  --report-filename pkg/apis/api-rules/violation_exceptions.list
 	# Force the timestamp to be up to date
 	touch $@
 	# Delete the link
-	[ -e ./v3 ] && rm -rf v3
+	[ -e ./v4 ] && rm -rf v4
 
 
 # generates many other files (listers, informers, client etc).
 .PRECIOUS: pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go
-pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(GOPATH)/bin/go-to-protobuf $(TYPES)
-	# These files are generated on a v3/ folder by the tool. Link them to the root folder
-	[ -e ./v3 ] || ln -s . v3
-	bash $(GOPATH)/pkg/mod/k8s.io/code-generator@v0.21.5/generate-groups.sh \
-	    "deepcopy,client,informer,lister" \
-	    github.com/argoproj/argo-workflows/v3/pkg/client github.com/argoproj/argo-workflows/v3/pkg/apis \
-	    workflow:v1alpha1 \
-	    --go-header-file ./hack/custom-boilerplate.go.txt
+ifneq ($(USE_NIX), true)
+pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TOOL_GO_TO_PROTOBUF)
+endif
+pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TYPES) vendor/modules.txt
+	CODEGEN_DIR=$$(go list -mod=mod -m -f '{{.Dir}}' k8s.io/code-generator@v0.35.1); \
+	bash -c "source $$CODEGEN_DIR/kube_codegen.sh && \
+		kube::codegen::gen_helpers \
+			--boilerplate ./hack/custom-boilerplate.go.txt \
+			./pkg/apis && \
+		kube::codegen::gen_client \
+			--boilerplate ./hack/custom-boilerplate.go.txt \
+			--output-dir ./pkg/client \
+			--output-pkg github.com/argoproj/argo-workflows/v4/pkg/client \
+			--with-watch \
+			./pkg/apis"
 	# Force the timestamp to be up to date
 	touch $@
-	# Delete the link
-	[ -e ./v3 ] && rm -rf v3
 
 dist/kubernetes.swagger.json: Makefile
 	@mkdir -p dist
 	# recurl will only fetch if the file doesn't exist, so delete it
 	rm -f $@
-	./hack/recurl.sh $@ https://raw.githubusercontent.com/kubernetes/kubernetes/v1.31.3/api/openapi-spec/swagger.json
+	./hack/recurl.sh $@ https://raw.githubusercontent.com/kubernetes/kubernetes/v1.35.1/api/openapi-spec/swagger.json
 
 pkg/apiclient/_.secondary.swagger.json: hack/api/swagger/secondaryswaggergen.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
-	rm -Rf v3 vendor
 	# We have `hack/api/swagger` so that most hack script do not depend on the whole code base and are therefore slow.
-	go run ./hack/api/swagger secondaryswaggergen
+	GOFLAGS="$(GOFLAGS) -mod=mod" go run ./hack/api/swagger secondaryswaggergen
 
 # we always ignore the conflicts, so lets automated figuring out how many there will be and just use that
-dist/swagger-conflicts: $(GOPATH)/bin/swagger $(SWAGGER_FILES)
+dist/swagger-conflicts: $(TOOL_SWAGGER) $(SWAGGER_FILES)
 	swagger mixin $(SWAGGER_FILES) 2>&1 | grep -c skipping > dist/swagger-conflicts || true
 
-dist/mixed.swagger.json: $(GOPATH)/bin/swagger $(SWAGGER_FILES) dist/swagger-conflicts
+dist/mixed.swagger.json: $(TOOL_SWAGGER) $(SWAGGER_FILES) dist/swagger-conflicts
 	swagger mixin -c $(shell cat dist/swagger-conflicts) $(SWAGGER_FILES) -o dist/mixed.swagger.json
 
 dist/swaggifed.swagger.json: dist/mixed.swagger.json hack/api/swagger/swaggify.sh
 	cat dist/mixed.swagger.json | ./hack/api/swagger/swaggify.sh > dist/swaggifed.swagger.json
 
 dist/kubeified.swagger.json: dist/swaggifed.swagger.json dist/kubernetes.swagger.json
-	go run ./hack/api/swagger kubeifyswagger dist/swaggifed.swagger.json dist/kubeified.swagger.json
+	GOFLAGS="$(GOFLAGS) -mod=mod" go run ./hack/api/swagger kubeifyswagger dist/swaggifed.swagger.json dist/kubeified.swagger.json
 
-dist/swagger.0.json: $(GOPATH)/bin/swagger dist/kubeified.swagger.json
-	swagger flatten --with-flatten minimal --with-flatten remove-unused dist/kubeified.swagger.json -o dist/swagger.0.json
+dist/swagger.0.json: $(TOOL_SWAGGER) dist/kubeified.swagger.json
+	$(TOOL_SWAGGER) flatten --with-flatten minimal --with-flatten remove-unused dist/kubeified.swagger.json -o dist/swagger.0.json
 
-api/openapi-spec/swagger.json: $(GOPATH)/bin/swagger dist/swagger.0.json
-	swagger flatten --with-flatten remove-unused dist/swagger.0.json -o api/openapi-spec/swagger.json
+api/openapi-spec/swagger.json: $(TOOL_SWAGGER) dist/swagger.0.json
+	$(TOOL_SWAGGER) flatten --with-flatten remove-unused dist/swagger.0.json -o api/openapi-spec/swagger.json
 
 api/jsonschema/schema.json: api/openapi-spec/swagger.json hack/api/jsonschema/main.go
-	go run ./hack/api/jsonschema
+	GOFLAGS="$(GOFLAGS) -mod=mod" go run ./hack/api/jsonschema
 
 go-diagrams/diagram.dot: ./hack/docs/diagram.go
 	rm -Rf go-diagrams
-	go run ./hack/docs diagram
+	GOFLAGS="$(GOFLAGS) -mod=mod" go run ./hack/docs diagram
 
 docs/assets/diagram.png: go-diagrams/diagram.dot
 	cd go-diagrams && dot -Tpng diagram.dot -o ../docs/assets/diagram.png
 
 docs/fields.md: api/openapi-spec/swagger.json $(shell find examples -type f) ui/dist/app/index.html hack/docs/fields.go
-	env ARGO_SECURE=false ARGO_INSECURE_SKIP_VERIFY=false ARGO_SERVER= ARGO_INSTANCEID= go run ./hack/docs fields
+	env ARGO_SECURE=false ARGO_INSECURE_SKIP_VERIFY=false ARGO_SERVER= ARGO_INSTANCEID= GOFLAGS="$(GOFLAGS) -mod=mod" go run ./hack/docs fields
+
+docs/workflow-controller-configmap.md: config/*.go hack/docs/workflow-controller-configmap.md hack/docs/configdoc.go
+	GOFLAGS="$(GOFLAGS) -mod=mod" go run ./hack/docs configdoc
 
 # generates several other files
 docs/cli/argo.md: $(CLI_PKG_FILES) go.sum ui/dist/app/index.html hack/docs/cli.go
-	go run ./hack/docs cli
+	GOFLAGS="$(GOFLAGS) -mod=mod" go run ./hack/docs cli
 
-# docs
+docs/go-sdk-guide.md: $(TOOL_EMBEDDOC)
+	$(TOOL_EMBEDDOC)
 
-/usr/local/bin/mdspell: Makefile
+$(TOOL_CSPELL): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	npm list -g markdown-spellcheck@1.3.1 > /dev/null || npm i -g markdown-spellcheck@1.3.1
+	npm list -g cspell@$(CSPELL_VERSION) > /dev/null || npm i -g cspell@$(CSPELL_VERSION)
 endif
 
-.PHONY: docs-spellcheck
-docs-spellcheck: /usr/local/bin/mdspell docs/metrics.md
-	# check docs for spelling mistakes
-	mdspell --ignore-numbers --ignore-acronyms --en-us --no-suggestions --report $(shell find docs -name '*.md' -not -name upgrading.md -not -name README.md -not -name fields.md -not -name upgrading.md -not -name executor_swagger.md -not -path '*/cli/*')
-	# alphabetize spelling file -- ignore first line (comment), then sort the rest case-sensitive and remove duplicates
-	$(shell cat .spelling | awk 'NR<2{ print $0; next } { print $0 | "LC_COLLATE=C sort" }' | uniq | tee .spelling > /dev/null)
+$(TOOL_TYPOS): Makefile
+# update this in Nix when upgrading it here
+ifneq ($(USE_NIX), true)
+	# typos has no npm package; install the prebuilt static binary
+	mkdir -p $(GOPATH)/bin
+	curl -sSfL https://github.com/crate-ci/typos/releases/download/v$(TYPOS_VERSION)/typos-v$(TYPOS_VERSION)-$(TYPOS_TARGET).tar.gz | tar -xz -C $(GOPATH)/bin ./typos
+endif
 
-/usr/local/bin/markdown-link-check:
+# Markdown to spell-check: all tracked Markdown except SDKs, changelogs and the
+# generated API reference docs (whose typos come from upstream/vendored comments).
+SPELLCHECK_MD               = $(shell git ls-files '*.md' | grep -vE '^(sdks/|CHANGELOG|USERS\.md|docs/(fields|executor_swagger)\.md)')
+
+.PHONY: docs-spellcheck
+ifneq ($(USE_NIX), true)
+docs-spellcheck: $(TOOL_TYPOS) $(TOOL_CSPELL)
+endif
+docs-spellcheck: $(QUICK_GENERATED_DOCS) ## Spell check docs
+	# catch common misspellings across all docs (config: _typos.toml)
+	$(TOOL_TYPOS) $(SPELLCHECK_MD)
+	# dictionary-based spell check of prose docs (config: .cspell.json)
+	$(TOOL_CSPELL) lint --no-progress --config .cspell.json "docs/**/*.md"
+
+$(TOOL_MARKDOWN_LINK_CHECK): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
 	npm list -g markdown-link-check@3.11.1 > /dev/null || npm i -g markdown-link-check@3.11.1
 endif
 
 .PHONY: docs-linkcheck
-docs-linkcheck: /usr/local/bin/markdown-link-check
+ifneq ($(USE_NIX), true)
+docs-linkcheck: $(TOOL_MARKDOWN_LINK_CHECK)
+endif
+docs-linkcheck:
 	# check docs for broken links
-	markdown-link-check -q -c .mlc_config.json $(shell find docs -name '*.md' -not -name fields.md -not -name executor_swagger.md)
+	$(TOOL_MARKDOWN_LINK_CHECK) -q -c .mlc_config.json $(shell find docs -name '*.md' -not -name fields.md -not -name executor_swagger.md)
 
-/usr/local/bin/markdownlint:
+$(TOOL_MARKDOWNLINT): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
 	npm list -g markdownlint-cli@0.33.0 > /dev/null || npm i -g markdownlint-cli@0.33.0
 endif
 
-
 .PHONY: docs-lint
-docs-lint: /usr/local/bin/markdownlint docs/metrics.md
+ifneq ($(USE_NIX), true)
+docs-lint: $(TOOL_MARKDOWNLINT)
+endif
+docs-lint: $(QUICK_GENERATED_DOCS)
 	# lint docs
-	markdownlint docs --fix --ignore docs/fields.md --ignore docs/executor_swagger.md --ignore docs/cli --ignore docs/walk-through/the-structure-of-workflow-specs.md
+	$(TOOL_MARKDOWNLINT) docs --fix --ignore docs/fields.md --ignore docs/executor_swagger.md --ignore docs/cli --ignore docs/walk-through/the-structure-of-workflow-specs.md --ignore docs/tested-kubernetes-versions.md --ignore docs/go-sdk-guide.md --ignore docs/database-migrations.md
 
-/usr/local/bin/mkdocs:
+$(TOOL_PROPERDOCS): docs/requirements.txt
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	python -m pip install --no-cache-dir -r docs/requirements.txt
+	python3 -m venv $(TOOL_PROPERDOCS_DIR)
+	$(TOOL_PROPERDOCS_DIR)/bin/pip install --no-cache-dir -r $<
 endif
 
 .PHONY: docs
-docs: /usr/local/bin/mkdocs \
-	docs-spellcheck \
-	docs-lint \
-	# TODO: This is temporarily disabled to unblock merging PRs.
+ifneq ($(USE_NIX), true)
+docs: $(TOOL_PROPERDOCS)
+endif
+docs: docs-spellcheck docs-lint ## Build docs TODO: This is temporarily disabled to unblock merging PRs.
 	# docs-linkcheck
 	# copy README.md to docs/README.md
 	./hack/docs/copy-readme.sh
 	# check environment-variables.md contains all variables mentioned in the code
 	./hack/docs/check-env-doc.sh
 	# build the docs
-	TZ=UTC mkdocs build --strict
+ifeq ($(shell echo $(GIT_BRANCH) | head -c 8),release-)
+	./hack/docs/tested-versions.sh > docs/tested-kubernetes-versions.md
+endif
+	TZ=UTC $(TOOL_PROPERDOCS) build --strict
 	# tell the user the fastest way to edit docs
-	@echo "ℹ️ If you want to preview your docs, open site/index.html. If you want to edit them with hot-reload, run 'make docs-serve' to start mkdocs on port 8000"
+	@echo "ℹ️ If you want to preview your docs, open site/index.html. If you want to edit them with hot-reload, run 'make docs-serve' to start properdocs on port 8000"
 
 .PHONY: docs-serve
-docs-serve: docs
-	mkdocs serve
+docs-serve: docs ## Build and serve the docs on localhost
+	$(TOOL_PROPERDOCS) serve
 
 # pre-commit checks
 
@@ -789,7 +1045,10 @@ docs-serve: docs
 githooks: .git/hooks/pre-commit .git/hooks/commit-msg
 
 .PHONY: pre-commit
-pre-commit: codegen lint docs
+ifneq ($(USE_NIX), true)
+pre-commit: $(TOOL_BUF)
+endif
+pre-commit: codegen lint docs  ## Run the pre-commit hooks
 	# marker file, based on it's modification time, we know how long ago this target was run
 	touch dist/pre-commit
 
@@ -801,3 +1060,77 @@ release-notes: /dev/null
 .PHONY: checksums
 checksums:
 	sha256sum ./dist/argo-*.gz | awk -F './dist/' '{print $$1 $$2}' > ./dist/argo-workflows-cli-checksums.txt
+
+# feature notes
+FEATURE_FILENAME?=$(shell git branch --show-current)
+.PHONY: feature-new
+feature-new: hack/featuregen/featuregen
+	# Create a new feature documentation file in .features/pending/ ready for editing
+	# Uses the current branch name as the filename by default, or specify with FEATURE_FILENAME=name
+	$< new --filename $(FEATURE_FILENAME)
+
+.PHONY: features-validate
+features-validate: hack/featuregen/featuregen $(TOOL_MARKDOWNLINT)
+	# Validate all pending feature documentation files
+	$< validate
+	$< update --dry |  tail +4 | $(TOOL_MARKDOWNLINT) -s
+
+.PHONY: features-preview
+features-preview: hack/featuregen/featuregen
+	# Preview how the features will appear in the documentation (dry run)
+	# Output to stdout
+	$< update --dry
+
+.PHONY: features-update
+features-update: hack/featuregen/featuregen $(TOOL_MARKDOWNLINT)
+	# Update the features documentation, but keep the feature files in the pending directory
+	# Updates docs/new-features.md for release-candidates
+	$< update --version $(VERSION)
+	$(TOOL_MARKDOWNLINT) ./docs/new-features.md
+
+.PHONY: features-release
+features-release: hack/featuregen/featuregen $(TOOL_MARKDOWNLINT)
+	# Update the features documentation AND move the feature files to the released directory
+	# Use this for the final update when releasing a version
+	$< update --version $(VERSION) --final
+	$(TOOL_MARKDOWNLINT) ./docs/new-features.md
+
+hack/featuregen/featuregen: hack/featuregen/main.go hack/featuregen/contents.go hack/featuregen/contents_test.go hack/featuregen/main_test.go vendor/modules.txt
+	go test ./hack/featuregen
+	go build -o $@ ./hack/featuregen
+
+# dev container
+
+$(TOOL_DEVCONTAINER): Makefile
+ifeq (, $(shell command -v devcontainer 2>/dev/null))
+	npm list -g @devcontainers/cli@0.75.0 > /dev/null || npm i -g @devcontainers/cli@0.75.0
+endif
+
+.PHONY: devcontainer-build
+devcontainer-build: $(TOOL_DEVCONTAINER)
+	devcontainer build \
+		--workspace-folder . \
+		--config .devcontainer/builder/devcontainer.json \
+		--platform $(TARGET_PLATFORM) \
+		--image-name $(DEVCONTAINER_IMAGE) \
+		--cache-from $(DEVCONTAINER_IMAGE):cache \
+		$(DEVCONTAINER_FLAGS)
+
+.PHONY: devcontainer-up
+devcontainer-up: $(TOOL_DEVCONTAINER)
+	devcontainer up --workspace-folder .
+
+# gRPC/protobuf generation for artifact.proto
+pkg/apiclient/artifact/artifact.swagger.json: $(TYPES) pkg/apiclient/artifact/artifact.proto
+	$(call protoc,pkg/apiclient/artifact/artifact.proto)
+
+# Add artifact-proto to swagger dependencies
+swagger: pkg/apiclient/artifact/artifact.swagger.json
+
+.PHONY: test-go-sdk
+test-go-sdk: ## Run all Go SDK examples
+	./hack/test-go-sdk.sh
+
+.PHONY: gomod2nix
+gomod2nix: ## Run gomod2nix via Docker to update gomod2nix.toml
+	docker run --rm -v $$(PWD):/app -w /app nixos/nix nix --extra-experimental-features "nix-command flakes" run github:nix-community/gomod2nix

@@ -5,10 +5,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/lint"
-	wf "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/common"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/lint"
+	wf "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
 )
 
 func NewLintCommand() *cobra.Command {
@@ -25,14 +25,15 @@ func NewLintCommand() *cobra.Command {
 		Short: "validate a file or directory of workflow template manifests",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
+			ctx := cmd.Context()
+			ctx, apiClient, err := client.NewAPIClient(ctx)
 			if err != nil {
 				return err
 			}
-			opts := lint.LintOptions{
+			opts := lint.Options{
 				Files:            args,
 				Strict:           strict,
-				DefaultNamespace: client.Namespace(),
+				DefaultNamespace: client.Namespace(ctx),
 				Printer:          os.Stdout,
 			}
 			return lint.RunLint(ctx, apiClient, []string{wf.WorkflowTemplatePlural}, output.String(), false, opts)

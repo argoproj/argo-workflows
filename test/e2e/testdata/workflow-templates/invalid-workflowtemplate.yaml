@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
-  name: basic
+  name: basic-invalid
 spec:
   workflowMetadata:
     labels:

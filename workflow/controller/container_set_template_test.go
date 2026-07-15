@@ -1,15 +1,15 @@
 package controller
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 func TestContainerSetTemplate(t *testing.T) {
@@ -31,16 +31,16 @@ spec:
           - name: ctr-0
             image: argoproj/argosay:v2
 `)
-	cancel, controller := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
-
-	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate(context.Background())
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
 
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	assert.Len(t, woc.wf.Status.Nodes, 2)
 
-	pod, err := getPod(woc, "pod")
+	pod, err := getPod(ctx, woc, "pod")
 	require.NoError(t, err)
 
 	assert.ElementsMatch(t, []corev1.Volume{
@@ -99,16 +99,16 @@ spec:
           - name: main
             image: argoproj/argosay:v2
 `)
-	cancel, controller := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
-
-	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate(context.Background())
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
 
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	assert.Len(t, woc.wf.Status.Nodes, 2)
 
-	pod, err := getPod(woc, "pod")
+	pod, err := getPod(ctx, woc, "pod")
 	require.NoError(t, err)
 
 	assert.ElementsMatch(t, []corev1.Volume{
@@ -178,16 +178,16 @@ spec:
            raw:
              data: hi
 `)
-	cancel, controller := newController(wf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
 	defer cancel()
-
-	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate(context.Background())
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
 
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 	assert.Len(t, woc.wf.Status.Nodes, 2)
 
-	pod, err := getPod(woc, "pod")
+	pod, err := getPod(ctx, woc, "pod")
 	require.NoError(t, err)
 
 	assert.ElementsMatch(t, []corev1.Volume{

@@ -3,7 +3,7 @@ set -eu -o pipefail
 
 # order is important, "REPLACEME" -> "workflow"
 cat \
-    | sed 's/github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1./io.argoproj.REPLACEME.v1alpha1./' \
+    | sed 's/github.com.argoproj.argo_workflows.v4.pkg.apis.workflow.v1alpha1./io.argoproj.REPLACEME.v1alpha1./' \
     | sed 's/github.com.argoproj.argo_events.pkg.apis.common./io.argoproj.events.v1alpha1./' \
     | sed 's/github.com.argoproj.argo_events.pkg.apis.eventsource.v1alpha1./io.argoproj.events.v1alpha1./' \
     | sed 's/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1./io.argoproj.events.v1alpha1./' \

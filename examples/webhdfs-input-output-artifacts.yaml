@@ -5,6 +5,8 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
+  labels:
+    workflows.argoproj.io/no-test: "environment"
   generateName: input-output-artifact-webhdfs-
 spec:
   entrypoint: input-output-artifact-webhdfs-example
@@ -49,7 +51,6 @@ spec:
       artifacts:
       - name: my-art2
         path: /my-artifact
-        overwrite: true
         http:
           # below is an example on how to use authentication via certificates
           # clientCert.clientCertSecret: points to a kubernetes secret named cert-sec with a data entry of "certificate.pem"

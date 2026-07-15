@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: parameter-aggregation-steps-with-retry
+spec:
+  retryStrategy:
+    limit: 1
+  entrypoint: fanout-steps-with-output
+  templates:
+    - name: echo-value
+      inputs:
+        parameters:
+          - name: message
+      container:
+        image: argoproj/argosay:v2
+      outputs:
+        parameters:
+          - name: dummy-output
+            value: '{{inputs.parameters.message}}'
+    - name: fanout-steps-with-output
+      steps:
+        - - name: echo-list
+            template: echo-value
+            arguments:
+              parameters:
+                - name: message
+                  value: '{{item}}'
+            withItems: [1, 2, 3]
+      outputs:
+        parameters:
+          - name: dummy-steps-output
+            valueFrom:
+              parameter: '{{steps.echo-list.outputs.parameters.dummy-output}}'

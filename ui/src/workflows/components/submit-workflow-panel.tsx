@@ -6,14 +6,16 @@ import {uiUrl} from '../../shared/base';
 import {ErrorNotice} from '../../shared/components/error-notice';
 import {getValueFromParameter, ParametersInput} from '../../shared/components/parameters-input';
 import {TagsInput} from '../../shared/components/tags-input/tags-input';
+import {TextInput} from '../../shared/components/text-input';
 import {Context} from '../../shared/context';
 import {getWorkflowParametersFromQuery} from '../../shared/get_workflow_params';
 import {Parameter, Template} from '../../shared/models';
 import {services} from '../../shared/services';
 
 interface Props {
-    kind: string;
+    kind: 'ClusterWorkflowTemplate' | 'WorkflowTemplate';
     namespace: string;
+    onNamespaceChange?: (namespace: string) => void;
     name: string;
     entrypoint: string;
     templates: Template[];
@@ -42,7 +44,7 @@ export function SubmitWorkflowPanel(props: Props) {
         const templatePropertiesInQuery = getWorkflowParametersFromQuery(props.history);
         // Get the user arguments from the query params
         const updatedParams = workflowParameters.map(param => ({
-            name: param.name,
+            ...param,
             value: templatePropertiesInQuery[param.name] || param.value
         }));
         setWorkflowParameters(updatedParams);
@@ -85,6 +87,12 @@ export function SubmitWorkflowPanel(props: Props) {
             </h5>
             {error && <ErrorNotice error={error} />}
             <div className='white-box'>
+                {props.onNamespaceChange && (
+                    <div key='namespace' style={{marginBottom: 25}}>
+                        <label>Namespace</label>
+                        <TextInput value={props.namespace} onChange={props.onNamespaceChange} />
+                    </div>
+                )}
                 <div key='entrypoint' title='Entrypoint' style={{marginBottom: 25}}>
                     <label>Entrypoint</label>
                     <Select

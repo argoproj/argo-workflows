@@ -1,0 +1,49 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: workflow-controller-configmap
+data:
+  persistence: |
+    connectionPool:
+      maxIdleConns: 100
+      maxOpenConns: 0
+      connMaxLifetime: 0s
+    nodeStatusOffLoad: true
+    archive: true
+    archiveTTL: 7d
+    postgresql:
+      host: postgres
+      port: 5432
+      database: postgres
+      tableName: argo_workflows
+      userNameSecret:
+        name: argo-postgres-config
+        key: username
+      passwordSecret:
+        name: argo-postgres-config
+        key: password
+  synchronization: |
+    enableAPI: true
+    connectionPool:
+      maxIdleConns: 100
+      maxOpenConns: 0
+      connMaxLifetime: 0s
+    controllerName: test
+    limitTableName: sync_limit
+    stateTableName: sync_state
+    controllerTableName: sync_controller
+    inactiveControllerSeconds: 300
+    postgresql:
+      host: postgres
+      port: 5432
+      database: postgres
+      userNameSecret:
+        name: argo-postgres-config
+        key: username
+      passwordSecret:
+        name: argo-postgres-config
+        key: password
+  retentionPolicy: |
+    completed: 10
+    failed: 3
+    errored: 3

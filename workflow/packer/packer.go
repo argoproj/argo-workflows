@@ -1,14 +1,15 @@
 package packer
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
 	"strings"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/file"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/file"
 )
 
 const envVarName = "MAX_WORKFLOW_SIZE"
@@ -26,9 +27,9 @@ func SetMaxWorkflowSize(s int) func() {
 	return func() { _ = os.Unsetenv(envVarName) }
 }
 
-func DecompressWorkflow(wf *wfv1.Workflow) error {
+func DecompressWorkflow(ctx context.Context, wf *wfv1.Workflow) error {
 	if len(wf.Status.Nodes) == 0 && wf.Status.CompressedNodes != "" {
-		nodeContent, err := file.DecodeDecompressString(wf.Status.CompressedNodes)
+		nodeContent, err := file.DecodeDecompressString(ctx, wf.Status.CompressedNodes)
 		if err != nil {
 			return err
 		}
@@ -59,7 +60,7 @@ func IsTooLargeError(err error) bool {
 	return err != nil && strings.HasPrefix(err.Error(), tooLarge)
 }
 
-func CompressWorkflowIfNeeded(wf *wfv1.Workflow) error {
+func CompressWorkflowIfNeeded(ctx context.Context, wf *wfv1.Workflow) error {
 	large, err := IsLargeWorkflow(wf)
 	if err != nil {
 		return err
@@ -67,16 +68,16 @@ func CompressWorkflowIfNeeded(wf *wfv1.Workflow) error {
 	if !large {
 		return nil
 	}
-	return compressWorkflow(wf)
+	return compressWorkflow(ctx, wf)
 }
 
-func compressWorkflow(wf *wfv1.Workflow) error {
+func compressWorkflow(ctx context.Context, wf *wfv1.Workflow) error {
 	nodes := wf.Status.Nodes
 	nodeContent, err := json.Marshal(nodes)
 	if err != nil {
 		return err
 	}
-	wf.Status.CompressedNodes = file.CompressEncodeString(string(nodeContent))
+	wf.Status.CompressedNodes = file.CompressEncodeString(ctx, string(nodeContent))
 	wf.Status.Nodes = nil
 	// still too large?
 	large, err := IsLargeWorkflow(wf)

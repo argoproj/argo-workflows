@@ -6,22 +6,22 @@ import (
 	"strconv"
 )
 
-// * It's JSON type is just string.
-// * It will unmarshall int64, int32, float64, float32, boolean, a plain string and represents it as string.
-// * It will marshall back to string - marshalling is not symmetric.
+// AnyString is a string type whose JSON type is just string.
+// It will unmarshall int64, int32, float64, float32, boolean, a plain string and represents it as string.
+// It will marshall back to string - marshalling is not symmetric.
 type AnyString string
 
-func ParseAnyString(val interface{}) AnyString {
+func ParseAnyString(val any) AnyString {
 	return AnyString(fmt.Sprintf("%v", val))
 }
 
-func AnyStringPtr(val interface{}) *AnyString {
+func AnyStringPtr(val any) *AnyString {
 	i := ParseAnyString(val)
 	return &i
 }
 
 func (i *AnyString) UnmarshalJSON(value []byte) error {
-	var v interface{}
+	var v any
 	err := json.Unmarshal(value, &v)
 	if err != nil {
 		return err

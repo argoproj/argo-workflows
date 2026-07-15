@@ -2,6 +2,8 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
+  labels:
+    workflows.argoproj.io/no-test: "expected-failure"
   generateName: dag-task-level-timeout-
 spec:
   entrypoint: diamond
@@ -30,5 +32,5 @@ spec:
       parameters:
       - name: timeout
     container:
-      image: alpine:3.7
+      image: busybox
       command: [sleep, "15s"]

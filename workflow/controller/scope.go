@@ -1,68 +1,159 @@
 package controller
 
 import (
+	"context"
 	"encoding/json"
-	"fmt"
+	"strings"
 
 	"github.com/expr-lang/expr"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/expr/env"
-	"github.com/argoproj/argo-workflows/v3/util/template"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/expr/env"
+	"github.com/argoproj/argo-workflows/v4/util/template"
+	"github.com/argoproj/argo-workflows/v4/util/variables"
+	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/templateresolution"
 )
 
-// wfScope contains the current scope of variables available when executing a template
+// wfScope contains the current scope of variables available when executing a
+// template. The underlying *variables.Scope has no exported subscript or
+// write helper, so the only way to populate it is via Key.Set — which means
+// the only writable variables are those declared in util/variables/keys.
 type wfScope struct {
 	tmpl  *wfv1.Template
-	scope map[string]interface{}
+	scope *variables.Scope
 }
 
 func createScope(tmpl *wfv1.Template) *wfScope {
 	scope := &wfScope{
 		tmpl:  tmpl,
-		scope: make(map[string]interface{}),
+		scope: variables.NewScope(),
 	}
 	if tmpl != nil {
 		for _, param := range scope.tmpl.Inputs.Parameters {
-			key := fmt.Sprintf("inputs.parameters.%s", param.Name)
-			scope.scope[key] = scope.tmpl.Inputs.GetParameterByName(param.Name).Value.String()
+			val := scope.tmpl.Inputs.GetParameterByName(param.Name).Value.String()
+			varkeys.InputsParameterByName.Set(scope.scope, val, param.Name)
 		}
 		for _, param := range scope.tmpl.Inputs.Artifacts {
-			key := fmt.Sprintf("inputs.artifacts.%s", param.Name)
-			scope.scope[key] = scope.tmpl.Inputs.GetArtifactByName(param.Name)
+			art := scope.tmpl.Inputs.GetArtifactByName(param.Name)
+			varkeys.InputsArtifactByName.Set(scope.scope, art, param.Name)
 		}
 	}
 	return scope
 }
 
-// getParameters returns a map of strings intended to be used simple string substitution
-func (s *wfScope) getParameters() common.Parameters {
-	params := make(common.Parameters)
-	for key, val := range s.scope {
-		valStr, ok := val.(string)
-		if ok {
-			params[key] = valStr
+// getParametersAny returns the scope's parameters merged over the given globals, preserving nil
+// (absent optional) values so expression tags can distinguish absent from empty (e.g. via `??`).
+// A simple tag resolving to a nil value is a terminal substitution error; arguments rescued by a
+// consumer input default are replaced with a sentinel before substitution (see markAbsentOptionalArgs).
+func (s *wfScope) getParametersAny(globals common.Parameters) map[string]any {
+	scopeParams := s.scope.AsAnyMap()
+	params := make(map[string]any, len(globals)+len(scopeParams))
+	for key, val := range globals {
+		params[key] = val
+	}
+	for key, val := range scopeParams {
+		switch val.(type) {
+		case string, nil:
+			params[key] = val
 		}
 	}
 	return params
 }
 
-func (s *wfScope) addParamToScope(key, val string) {
-	s.scope[key] = val
-}
-
-func (s *wfScope) addArtifactToScope(key string, artifact wfv1.Artifact) {
-	s.scope[key] = artifact
-}
-
-// resolveVar resolves a parameter or artifact
-func (s *wfScope) resolveVar(v string) (interface{}, error) {
-	m := make(map[string]interface{})
-	for k, v := range s.scope {
-		m[k] = v
+// absentOptionalRef reports whether an argument value is a single pure reference (e.g.
+// "{{tasks.x.outputs.parameters.y}}") to a key holding an absent optional, i.e. a skipped/omitted
+// node output that declared no producer default. A brace-less literal that merely spells out a
+// scope key is data, not a reference, and composite values like "x-{{key}}-y" or nested tags are
+// not pure references. An absent optional is exactly a key written via Key.SetSkipped with a nil
+// value (see addSkippedNodeOutputsToScope), so IsSkipped identifies the placeholder.
+func (s *wfScope) absentOptionalRef(v string) bool {
+	if !strings.HasPrefix(v, "{{") || !strings.HasSuffix(v, "}}") {
+		return false
 	}
+	key := strings.TrimSpace(v[2 : len(v)-2])
+	if strings.Contains(key, "{{") || strings.Contains(key, "}}") {
+		return false
+	}
+	return s.scope.IsSkipped(key)
+}
+
+// markAbsentOptionalArgs replaces arguments that are pure references to a skipped/omitted node's
+// output with no producer default (an absent optional, nil in scope) with the
+// common.AbsentOptionalArgumentValue sentinel, BEFORE substitution. The sentinel survives textual
+// substitution — where the raw absent value would be a terminal error — and is interpreted by
+// common.ProcessArgs at consumption time, when the consumed template is fully resolved (even for
+// dynamic "{{item.*}}" templateRefs): the argument is treated as unsupplied so the input's own
+// default applies, and an input with no default fails terminally. Composite values like
+// "x-{{ref}}-y" are not pure references and still fail substitution. Builds a fresh Parameters
+// slice: args may alias a step/task still shared with the caller.
+func (s *wfScope) markAbsentOptionalArgs(args *wfv1.Arguments) {
+	var marked []wfv1.Parameter
+	for i, p := range args.Parameters {
+		if p.Value != nil && s.absentOptionalRef(p.Value.String()) {
+			if marked == nil {
+				marked = make([]wfv1.Parameter, len(args.Parameters))
+				copy(marked, args.Parameters)
+			}
+			marked[i].Value = wfv1.AnyStringPtr(common.AbsentOptionalArgumentValue)
+		}
+	}
+	if marked != nil {
+		args.Parameters = marked
+	}
+}
+
+// addSkippedNodeOutputsToScope populates scope with the declared output parameters of a skipped or
+// omitted node that produced no outputs, so downstream references — task/step inputs, when-clauses, and
+// DAG/steps output aggregation (including ValueFrom.Expression) — resolve to the producer's declared
+// default or to an absent (nil) optional instead of requeuing forever; an unhandled absent optional
+// fails terminally rather than leaving the workflow stuck. No-op for any node
+// that actually produced outputs. includeArtifacts additionally registers empty placeholders for the
+// template's declared output artifacts: steps relies on this to keep artifact references resolvable,
+// while DAG deliberately leaves them unresolved (resolveDependencyReferences omits optional artifacts
+// and errors on required ones).
+func (woc *wfOperationCtx) addSkippedNodeOutputsToScope(ctx context.Context, tmplCtx *templateresolution.TemplateContext, scope *wfScope, ref varkeys.NodeRefKeys, name string, node *wfv1.NodeStatus, tmplHolder wfv1.TemplateReferenceHolder, includeArtifacts bool) {
+	if node == nil || node.Outputs != nil {
+		return
+	}
+	if node.Phase != wfv1.NodeSkipped && node.Phase != wfv1.NodeOmitted {
+		return
+	}
+	_, tmpl, _, err := tmplCtx.ResolveTemplate(ctx, tmplHolder)
+	if err != nil {
+		woc.log.WithError(err).Debug(ctx, "failed to resolve template for skipped node, outputs will not be populated in scope")
+		return
+	}
+	if tmpl == nil {
+		return
+	}
+	for _, param := range tmpl.Outputs.Parameters {
+		// A declared producer default is a real value every consumer (task/step inputs and
+		// template-output aggregation alike) should see. Without one, the output is an absent
+		// optional: stored as nil and marked skipped so consumers can tell it apart from a
+		// legitimately empty output (e.g. `ref ?? "fallback"`).
+		if param.ValueFrom != nil && param.ValueFrom.Default != nil {
+			ref.OutputsParameterByName.Set(scope.scope, param.ValueFrom.Default.String(), name, param.Name)
+		} else {
+			ref.OutputsParameterByName.SetSkipped(scope.scope, nil, name, param.Name)
+		}
+	}
+	if includeArtifacts {
+		for _, artifact := range tmpl.Outputs.Artifacts {
+			ref.OutputsArtifactByName.Set(scope.scope, wfv1.Artifact{}, name, artifact.Name)
+		}
+	}
+	if tmpl.Outputs.Result != nil {
+		ref.OutputsResult.SetSkipped(scope.scope, nil, name)
+	}
+}
+
+// resolveVar resolves a parameter or artifact and additionally returns the unwrapped tag
+// (v with the surrounding "{{" / "}}" stripped) so callers can reuse it without re-parsing.
+func (s *wfScope) resolveVar(v string) (string, any, error) {
+	m := s.scope.AsAnyMap()
 	if s.tmpl != nil {
 		for _, a := range s.tmpl.Inputs.Artifacts {
 			m["inputs.artifacts."+a.Name] = a // special case for artifacts
@@ -71,43 +162,56 @@ func (s *wfScope) resolveVar(v string) (interface{}, error) {
 	return template.ResolveVar(v, m)
 }
 
-func (s *wfScope) resolveParameter(p *wfv1.ValueFrom) (interface{}, error) {
+// resolveParameter resolves a ValueFrom and additionally reports whether the source was a
+// skipped/omitted step's placeholder output (only meaningful for the Parameter form).
+func (s *wfScope) resolveParameter(p *wfv1.ValueFrom) (any, bool, error) {
 	if p == nil || (p.Parameter == "" && p.Expression == "") {
-		return "", nil
+		return "", false, nil
 	}
 	if p.Expression != "" {
-		env := env.GetFuncMap(s.scope)
+		env := env.GetFuncMap(s.scope.AsAnyMap())
 		program, err := expr.Compile(p.Expression, expr.Env(env))
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
-		return expr.Run(program, env)
-	} else {
-		return s.resolveVar(p.Parameter)
+		val, err := expr.Run(program, env)
+		if err != nil {
+			return nil, false, err
+		}
+		if val == nil {
+			// A nil result is an unhandled absent optional (e.g. a skipped node's defaultless output
+			// referenced without `??`). Mirror the inline {{= ...}} semantics and treat it as a
+			// resolution failure; the caller's error path applies valueFrom.default when declared.
+			return nil, false, errors.Errorf(errors.CodeBadRequest, "failed to evaluate expression %q", p.Expression)
+		}
+		return val, false, nil
 	}
+	tag, val, err := s.resolveVar(p.Parameter)
+	// IsSkipped is true only for a placeholder written via Key.SetSkipped (a skipped/omitted node
+	// output with no producer default), i.e. an absent optional.
+	return val, s.scope.IsSkipped(tag), err
 }
 
-func (s *wfScope) resolveArtifact(art *wfv1.Artifact) (*wfv1.Artifact, error) {
+func (s *wfScope) resolveArtifact(ctx context.Context, art *wfv1.Artifact) (*wfv1.Artifact, error) {
 	if art == nil || (art.From == "" && art.FromExpression == "") {
 		return nil, nil
 	}
 
 	var err error
-	var val interface{}
+	var val any
 
 	if art.FromExpression != "" {
-		env := env.GetFuncMap(s.scope)
-		program, err := expr.Compile(art.FromExpression, expr.Env(env))
+		envMap := env.GetFuncMap(s.scope.AsAnyMap())
+		program, compileErr := expr.Compile(art.FromExpression, expr.Env(envMap))
+		if compileErr != nil {
+			return nil, compileErr
+		}
+		val, err = expr.Run(program, envMap)
 		if err != nil {
 			return nil, err
 		}
-		val, err = expr.Run(program, env)
-		if err != nil {
-			return nil, err
-		}
-
 	} else {
-		val, err = s.resolveVar(art.From)
+		_, val, err = s.resolveVar(art.From)
 	}
 
 	if err != nil {
@@ -115,37 +219,36 @@ func (s *wfScope) resolveArtifact(art *wfv1.Artifact) (*wfv1.Artifact, error) {
 	}
 	valArt, ok := val.(wfv1.Artifact)
 	if !ok {
-		//If the workflow refers itself input artifacts in fromExpression, the val type is "*wfv1.Artifact"
+		// If the workflow refers itself input artifacts in fromExpression, the val type is "*wfv1.Artifact"
 		ptArt, ok := val.(*wfv1.Artifact)
-		if ok {
-			valArt = *ptArt
-		} else {
+		if !ok {
 			return nil, errors.Errorf(errors.CodeBadRequest, "Variable {{%v}} is not an artifact", art)
 		}
+		valArt = *ptArt
 	}
 
 	if art.SubPath != "" {
 		// Copy resolved artifact pointer before adding subpath
 		copyArt := valArt.DeepCopy()
 
-		subPathAsJson, err := json.Marshal(art.SubPath)
+		subPathAsJSON, err := json.Marshal(art.SubPath)
 		if err != nil {
 			return copyArt, errors.New(errors.CodeBadRequest, "failed to marshal artifact subpath for templating")
 		}
 
-		resolvedSubPathAsJson, err := template.Replace(string(subPathAsJson), s.getParameters(), true)
+		resolvedSubPathAsJSON, err := template.Replace(ctx, string(subPathAsJSON), s.getParametersAny(nil), true)
 		if err != nil {
 			return nil, err
 		}
 
 		var resolvedSubPath string
-		err = json.Unmarshal([]byte(resolvedSubPathAsJson), &resolvedSubPath)
+		err = json.Unmarshal([]byte(resolvedSubPathAsJSON), &resolvedSubPath)
 		if err != nil {
 			return copyArt, errors.New(errors.CodeBadRequest, "failed to unmarshal artifact subpath for templating")
 		}
 
 		err = copyArt.AppendToKey(resolvedSubPath)
-		if err != nil && copyArt.Optional { //Ignore error when artifact optional
+		if err != nil && copyArt.Optional { // Ignore error when artifact optional
 			return copyArt, nil
 		}
 		return copyArt, err

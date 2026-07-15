@@ -3,17 +3,26 @@
 get a workflow in the archive
 
 ```
-argo archive get UID [flags]
+argo archive get WORKFLOW [flags]
 ```
 
 ### Examples
 
 ```
-# Get information about an archived workflow by its UID:
-  argo archive get abc123-def456-ghi789-jkl012
+# Get information about an archived workflow by name:
+  argo archive get my-workflow
+
+# Get information about an archived workflow by UID (auto-detected):
+  argo archive get a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11
 
 # Get information about an archived workflow in YAML format:
-  argo archive get abc123-def456-ghi789-jkl012 -o yaml
+  argo archive get my-workflow -o yaml
+
+# Get information about an archived workflow by name (forced):
+  argo archive get my-workflow --name
+
+# Get information about an archived workflow by UID (forced):
+  argo archive get a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11 --uid
 
 ```
 
@@ -21,7 +30,9 @@ argo archive get UID [flags]
 
 ```
   -h, --help            help for get
+      --name            force the argument to be treated as a name
   -o, --output string   Output format. One of: json|yaml|wide (default "wide")
+      --uid             force the argument to be treated as a UID
 ```
 
 ### Options inherited from parent commands
@@ -45,6 +56,7 @@ argo archive get UID [flags]
   -k, --insecure-skip-verify           If true, the Argo Server's certificate will not be checked for validity. This will make your HTTPS connections insecure. Defaults to the ARGO_INSECURE_SKIP_VERIFY environment variable.
       --instanceid string              submit with a specific controller's instance id label. Default to the ARGO_INSTANCEID environment variable.
       --kubeconfig string              Path to a kube config. Only required if out-of-cluster
+      --log-format string              The formatter to use for logs. One of: text|json (default "text")
       --loglevel string                Set the logging level. One of: debug|info|warn|error (default "info")
   -n, --namespace string               If present, the namespace scope for this CLI request
       --password string                Password for basic authentication to the API server

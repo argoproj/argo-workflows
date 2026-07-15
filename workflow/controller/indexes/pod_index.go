@@ -4,7 +4,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-func PodPhaseIndexFunc(obj interface{}) ([]string, error) {
+func PodPhaseIndexFunc(obj any) ([]string, error) {
 	pod, ok := obj.(*corev1.Pod)
 
 	if !ok {

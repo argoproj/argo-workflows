@@ -21,7 +21,7 @@ spec:
   # primary workflow template
   - name: intentional-fail
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo intentional failure; exit 1"]
 
@@ -41,17 +41,17 @@ spec:
         when: "{{workflow.status}} != Succeeded"
   - name: send-email
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo send e-mail: {{workflow.name}} {{workflow.status}} {{workflow.duration}}"]
   - name: celebrate
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo hooray!"]
   - name: cry
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["echo boohoo!"]
 ```

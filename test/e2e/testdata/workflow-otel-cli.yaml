@@ -1,0 +1,41 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: otel-cli-test-
+  labels:
+    workflows.argoproj.io/test: "true"
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: operation-1
+        template: otel-span
+        arguments:
+          parameters:
+          - name: span-name
+            value: "user-operation-1"
+    - - name: operation-2
+        template: otel-span
+        arguments:
+          parameters:
+          - name: span-name
+            value: "user-operation-2"
+  - name: otel-span
+    inputs:
+      parameters:
+      - name: span-name
+    container:
+      image: ghcr.io/equinix-labs/otel-cli:v0.4.5
+      args:
+      - span
+      - --name
+      - "{{inputs.parameters.span-name}}"
+      - --verbose
+      env:
+      - name: OTEL_EXPORTER_OTLP_INSECURE
+        value: "true"
+      - name: OTEL_EXPORTER_OTLP_ENDPOINT
+        value: http://otel-collector.argo.svc.cluster.local:4317
+      - name: OTEL_EXPORTER_OTLP_PROTOCOL
+        value: grpc

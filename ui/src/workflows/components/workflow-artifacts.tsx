@@ -1,9 +1,9 @@
 import * as React from 'react';
 
-import {Timestamp} from '../../shared/components/timestamp';
+import {Timestamp, TimestampSwitch} from '../../shared/components/timestamp';
 import * as models from '../../shared/models';
 import {services} from '../../shared/services';
-import {TIMESTAMP_KEYS} from '../../shared/use-timestamp';
+import useTimestamp, {TIMESTAMP_KEYS} from '../../shared/use-timestamp';
 
 interface Props {
     workflow: models.Workflow;
@@ -12,6 +12,7 @@ interface Props {
 
 export function WorkflowArtifacts(props: Props) {
     const workflowStatusNodes = (props.workflow.status && props.workflow.status.nodes) || {};
+    const [storedDisplayISOFormat, setStoredDisplayISOFormat] = useTimestamp(TIMESTAMP_KEYS.WORKFLOW_NODE_ARTIFACT_CREATED);
     const artifacts =
         Object.keys(workflowStatusNodes)
             .map(nodeName => {
@@ -40,21 +41,33 @@ export function WorkflowArtifacts(props: Props) {
     return (
         <div className='white-box'>
             <div className='white-box__details'>
+                <div className='row header'>
+                    <div className='columns artifact-name'>Name</div>
+                    <div className='columns step-name'>Step Name</div>
+                    <div className='columns path'>Path</div>
+                    <div className='columns created-at'>
+                        Created at <TimestampSwitch storedDisplayISOFormat={storedDisplayISOFormat} setStoredDisplayISOFormat={setStoredDisplayISOFormat} />
+                    </div>
+                </div>
+
                 {artifacts.map(artifact => (
-                    <div className='row white-box__details-row' key={artifact.downloadUrl}>
-                        <div className='columns small-2'>
-                            <span>
-                                <a href={artifact.downloadUrl}>
-                                    {' '}
-                                    <i className='fa fa-download' />
-                                </a>{' '}
-                                {artifact.name}
-                            </span>
+                    <div className='row artifact-row' key={artifact.name}>
+                        <div className='columns artifact-name'>
+                            <a href={artifact.downloadUrl}>
+                                <i className='fa fa-download' />
+                            </a>
+                            <span className='hoverable'>{artifact.name}</span>
                         </div>
-                        <div className='columns small-4'>{artifact.stepName}</div>
-                        <div className='columns small-3'>{artifact.path}</div>
-                        <div className='columns small-3'>
-                            <Timestamp date={artifact.dateCreated} timestampKey={TIMESTAMP_KEYS.WORKFLOW_ARTIFACTS_CREATED} />
+                        <div className='columns step-name'>
+                            <span className='hoverable'>{artifact.stepName}</span>
+                        </div>
+                        <div className='columns path'>
+                            <span className='hoverable'>{artifact.path}</span>
+                        </div>
+                        <div className='columns created-at'>
+                            <span className='hoverable'>
+                                <Timestamp date={artifact.dateCreated} displayISOFormat={storedDisplayISOFormat} />
+                            </span>
                         </div>
                     </div>
                 ))}
