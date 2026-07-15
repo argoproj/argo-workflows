@@ -4889,3 +4889,127 @@ status:
 	assert.Contains(t, podsToDelete, "workflow-retry-passfail-3976347509",
 		"Stale succeeded pod should also be in deletion list")
 }
+
+// retryMultiParentTaskGroup is a diamond where the failed leaf X has two ancestry
+// branches: one through a plain pod (P) and one through a fan-out TaskGroup (G,
+// expanded into G0/G1). X therefore has more than one parent, and whether a retry
+// resets G depends on which branch resetPath walks up from X.
+const retryMultiParentTaskGroup = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  annotations:
+    workflows.argoproj.io/pod-name-format: v2
+  name: retry-multiparent
+  namespace: argo
+  labels:
+    workflows.argoproj.io/completed: "true"
+    workflows.argoproj.io/phase: Failed
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: P
+        template: echo
+      - name: G
+        template: echo
+        withItems: [a, b]
+      - name: X
+        template: echo
+        depends: P && G
+  - name: echo
+    container:
+      image: alpine:3.7
+      command: [echo]
+status:
+  phase: Failed
+  nodes:
+    retry-multiparent:
+      id: retry-multiparent
+      name: retry-multiparent
+      displayName: retry-multiparent
+      type: DAG
+      phase: Failed
+      templateName: main
+      children:
+      - retry-multiparent-P
+      - retry-multiparent-G
+    retry-multiparent-P:
+      id: retry-multiparent-P
+      name: retry-multiparent.P
+      displayName: P
+      type: Pod
+      phase: Succeeded
+      boundaryID: retry-multiparent
+      templateName: echo
+      children:
+      - retry-multiparent-X
+    retry-multiparent-G:
+      id: retry-multiparent-G
+      name: retry-multiparent.G
+      displayName: G
+      type: TaskGroup
+      phase: Succeeded
+      boundaryID: retry-multiparent
+      templateName: echo
+      nodeFlag: {}
+      children:
+      - retry-multiparent-G0
+      - retry-multiparent-G1
+    retry-multiparent-G0:
+      id: retry-multiparent-G0
+      name: retry-multiparent.G(0:a)
+      displayName: G(0:a)
+      type: Pod
+      phase: Succeeded
+      boundaryID: retry-multiparent
+      templateName: echo
+      children:
+      - retry-multiparent-X
+    retry-multiparent-G1:
+      id: retry-multiparent-G1
+      name: retry-multiparent.G(1:b)
+      displayName: G(1:b)
+      type: Pod
+      phase: Succeeded
+      boundaryID: retry-multiparent
+      templateName: echo
+      children:
+      - retry-multiparent-X
+    retry-multiparent-X:
+      id: retry-multiparent-X
+      name: retry-multiparent.X
+      displayName: X
+      type: Pod
+      phase: Failed
+      boundaryID: retry-multiparent
+      templateName: echo
+`
+
+// TestFormulateRetryWorkflowDeterministicReset guards against map-order dependence
+// in FormulateRetryWorkflow. A node with more than one parent is assigned a single
+// parent by newWorkflowsDag, and resetPath walks that one chain. If the parent is
+// chosen by Go map iteration order, retrying the same workflow can reset different
+// nodes from one call to the next. The set of nodes a retry resets must be stable.
+func TestFormulateRetryWorkflowDeterministicReset(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	resetNodeIDs := func() map[string]bool {
+		wf := wfv1.MustUnmarshalWorkflow(retryMultiParentTaskGroup)
+		newWf, _, err := FormulateRetryWorkflow(ctx, wf, false, "", nil)
+		require.NoError(t, err)
+		reset := make(map[string]bool)
+		for _, node := range newWf.Status.Nodes {
+			if node.Phase == wfv1.NodeRunning {
+				reset[node.ID] = true
+			}
+		}
+		return reset
+	}
+
+	want := resetNodeIDs()
+	for i := range 50 {
+		require.Equal(t, want, resetNodeIDs(), "reset set differed between retry invocations on iteration %d", i)
+	}
+}
