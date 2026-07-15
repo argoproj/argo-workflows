@@ -704,14 +704,14 @@ schema = 3
     version = "v0.6.2"
     hash = "sha256-q6Fh6v8iNJN9ypD47LjWmx66YITa3FyRjZMRsuRTFeQ="
   [mod."github.com/prometheus/common"]
-    version = "v0.69.0"
-    hash = "sha256-rqui1G7KMtVtGXDFY7XpWD9tA721UtoPC+/JLh8axrA="
+    version = "v0.70.0"
+    hash = "sha256-LWehDuOdmzw/YB2jo3wAzZr4jiQP1W4chqkgxAndOfo="
   [mod."github.com/prometheus/otlptranslator"]
     version = "v1.0.0"
     hash = "sha256-94Aw8ltEH2XFotIEHzBghJiOt3KJiwW9cX8JVaNRTNk="
   [mod."github.com/prometheus/procfs"]
-    version = "v0.20.1"
-    hash = "sha256-L6RuVGYgdBCCke8BibA7cXgfwizGE2pA0gNo9dGJ8WQ="
+    version = "v0.21.0"
+    hash = "sha256-q6ZRm1gKRUcksCPQld0a11BGEAwhoAlw+rbj8c2eJpc="
   [mod."github.com/remyoudompheng/bigfft"]
     version = "v0.0.0-20230129092748-24d4a6f8daec"
     hash = "sha256-vYmpyCE37eBYP/navhaLV4oX4/nu0Z/StAocLIFqrmM="
