@@ -56,7 +56,6 @@
         "@types/dagre": "^0.7.52",
         "@types/history": "^4.6.2",
         "@types/jest": "^26.0.15",
-        "@types/linkify-it": "^5.0.0",
         "@types/prop-types": "^15.7.11",
         "@types/react": "^16.8.5",
         "@types/react-autocomplete": "^1.8.10",
