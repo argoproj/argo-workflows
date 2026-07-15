@@ -4577,3 +4577,61 @@ func TestDAGSkippedInlineExpressionFallback(t *testing.T) {
 	require.NotNil(t, in.Value)
 	assert.Equal(t, "inline-fallback", in.Value.String())
 }
+
+// TestDAGOrphanedTaskGroupCompletes verifies that a fan-out TaskGroup left Running
+// with every expanded child already fulfilled — the state a retry can produce when
+// it resets the group but never re-runs it, because its dependents already
+// completed — does not hold the DAG Running forever. executeDAGTask never revisits
+// such a group, so the controller must complete it from its children during DAG
+// assessment.
+func TestDAGOrphanedTaskGroupCompletes(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-orphaned-taskgroup
+  namespace: argo
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: fanout
+        template: echo
+        withItems: [a, b]
+      - name: leaf
+        template: echo
+        depends: fanout
+  - name: echo
+    container:
+      image: alpine:3.23
+      command: [sh, -c, "exit 0"]
+`)
+	wf.Status.Phase = wfv1.WorkflowRunning
+	wf.Status.StartedAt = metav1.Now()
+
+	root := wf.Name
+	fanout := root + ".fanout"
+	child0 := root + ".fanout(0:a)"
+	child1 := root + ".fanout(1:b)"
+	leaf := root + ".leaf"
+	id := wf.NodeID
+
+	// The fan-out TaskGroup is Running while its children and the downstream leaf
+	// have all Succeeded — an orphaned group that nothing will otherwise complete.
+	wf.Status.Nodes = wfv1.Nodes{
+		id(root):   {ID: id(root), Name: root, Type: wfv1.NodeTypeDAG, Phase: wfv1.NodeRunning, TemplateName: "main", Children: []string{id(fanout)}},
+		id(fanout): {ID: id(fanout), Name: fanout, Type: wfv1.NodeTypeTaskGroup, Phase: wfv1.NodeRunning, BoundaryID: id(root), TemplateName: "echo", Children: []string{id(child0), id(child1)}},
+		id(child0): {ID: id(child0), Name: child0, Type: wfv1.NodeTypePod, Phase: wfv1.NodeSucceeded, BoundaryID: id(root), TemplateName: "echo", Children: []string{id(leaf)}},
+		id(child1): {ID: id(child1), Name: child1, Type: wfv1.NodeTypePod, Phase: wfv1.NodeSucceeded, BoundaryID: id(root), TemplateName: "echo", Children: []string{id(leaf)}},
+		id(leaf):   {ID: id(leaf), Name: leaf, Type: wfv1.NodeTypePod, Phase: wfv1.NodeSucceeded, BoundaryID: id(root), TemplateName: "echo"},
+	}
+
+	ctx := logging.TestContext(t.Context())
+	woc := newWoc(ctx, *wf)
+	woc.operate(ctx)
+
+	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Nodes[id(fanout)].Phase, "orphaned TaskGroup should be completed from its children")
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, "workflow should complete")
+}

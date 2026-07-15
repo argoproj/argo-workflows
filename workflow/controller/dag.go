@@ -57,6 +57,11 @@ type dagContext struct {
 	// Because this resolved "depends" is computed using regex and regex is expensive, we cache the results so that they
 	// are only computed once per operation
 	dependsLogic map[string]string
+
+	// taskGroupsToComplete collects the names of TaskGroup nodes that assessDAGPhase
+	// found stuck Running with all of their children fulfilled, mapped to the phase
+	// they should complete with. executeDAG marks them once assessment is done.
+	taskGroupsToComplete map[string]wfv1.NodePhase
 }
 
 func (d *dagContext) GetTaskDependencies(taskName string) []string {
@@ -166,11 +171,23 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes, isSh
 		branchPhase := curr.phase
 
 		if !node.Fulfilled() {
-			return wfv1.NodeRunning, nil
-		}
-
-		// Only overwrite the branchPhase if this node completed. (If it didn't we can just inherit our parent's branchPhase).
-		if node.Completed() {
+			// A fan-out TaskGroup can be left Running with every expanded child
+			// already fulfilled, for example when a retry resets the group but never
+			// re-runs it because its dependents have already completed. executeDAGTask
+			// only visits unfulfilled tasks, so it never revisits such a group, which
+			// would then hold the DAG Running forever. Complete it from its children
+			// instead of blocking here.
+			groupPhase, ok := completableTaskGroupPhase(node, nodes)
+			if !ok {
+				return wfv1.NodeRunning, nil
+			}
+			if d.taskGroupsToComplete == nil {
+				d.taskGroupsToComplete = make(map[string]wfv1.NodePhase)
+			}
+			d.taskGroupsToComplete[node.Name] = groupPhase
+			branchPhase = groupPhase
+		} else if node.Completed() {
+			// Only overwrite the branchPhase if this node completed. (If it didn't we can just inherit our parent's branchPhase).
 			branchPhase = node.Phase
 		}
 
@@ -222,6 +239,28 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes, isSh
 	}
 
 	return result, nil
+}
+
+// completableTaskGroupPhase reports whether node is a TaskGroup that is not yet
+// fulfilled even though all of its expanded children are, and if so the phase it
+// should complete with (Succeeded unless a child failed or errored, matching the
+// aggregation executeDAGTask uses). Such a group is never revisited by
+// executeDAGTask, so it must be completed during DAG assessment.
+func completableTaskGroupPhase(node *wfv1.NodeStatus, nodes wfv1.Nodes) (wfv1.NodePhase, bool) {
+	if node.Type != wfv1.NodeTypeTaskGroup || len(node.Children) == 0 {
+		return "", false
+	}
+	phase := wfv1.NodeSucceeded
+	for _, childID := range node.Children {
+		child, err := nodes.Get(childID)
+		if err != nil || !child.Fulfilled() {
+			return "", false
+		}
+		if child.FailedOrError() {
+			phase = child.Phase
+		}
+	}
+	return phase, true
 }
 
 func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmplCtx *templateresolution.Context, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
@@ -314,6 +353,13 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 	dagPhase, err := dagCtx.assessDAGPhase(targetTasks, woc.wf.Status.Nodes, woc.GetShutdownStrategy().Enabled() && onExitCompleted)
 	if err != nil {
 		return nil, err
+	}
+
+	// Complete any orphaned TaskGroups that assessment found stuck Running with all
+	// children fulfilled. Done regardless of the overall DAG phase so a group is
+	// healed even while other tasks are still legitimately running.
+	for name, phase := range dagCtx.taskGroupsToComplete {
+		woc.markNodePhase(ctx, name, phase)
 	}
 
 	switch dagPhase {
