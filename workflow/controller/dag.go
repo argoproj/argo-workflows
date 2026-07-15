@@ -359,7 +359,7 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 	// children fulfilled. Done regardless of the overall DAG phase so a group is
 	// healed even while other tasks are still legitimately running.
 	for name, phase := range dagCtx.taskGroupsToComplete {
-		woc.markNodePhase(ctx, name, phase)
+		woc.markNodePhase(name, phase)
 	}
 
 	switch dagPhase {
