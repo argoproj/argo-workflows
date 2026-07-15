@@ -367,7 +367,7 @@ func saveParameter(ctx context.Context, srcPath string) error {
 	}
 	src, err := os.Open(filepath.Clean(srcPath))
 	if os.IsNotExist(err) { // might be optional, so we ignore
-		logger.WithField("src", srcPath).WithError(err).Error(ctx, "cannot save parameter, does not exist")
+		logger.WithField("src", srcPath).WithError(err).Warn(ctx, "cannot save parameter, does not exist")
 		return nil
 	}
 	if err != nil {
