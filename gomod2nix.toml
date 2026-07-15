@@ -863,8 +863,8 @@ schema = 3
     version = "v0.69.0"
     hash = "sha256-0Vm58PlYzdhMOPERiYAslHDd74DXNKoeZBLYMQvlWNY="
   [mod."go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"]
-    version = "v0.68.0"
-    hash = "sha256-u3x5NLbkkAUyrcKyxwX+LFOZOzH9TtzTRil5pPCv8sw="
+    version = "v0.69.0"
+    hash = "sha256-37oe5RsiBWxaOs7lZXJWEUN4P49jkr2ej+64FQ4ybT8="
   [mod."go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"]
     version = "v0.69.0"
     hash = "sha256-ypZB41ebghWCNZmuoDgdGbWyTjCglBEirLZ+s7jqCgc="
