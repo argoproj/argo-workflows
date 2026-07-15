@@ -99,6 +99,12 @@ func (*Event) ProtoMessage() {}
 
 func (*ExecutorConfig) ProtoMessage() {}
 
+func (*ExecutorPlugin) ProtoMessage() {}
+
+func (*ExecutorPluginSidecar) ProtoMessage() {}
+
+func (*ExecutorPluginSpec) ProtoMessage() {}
+
 func (*GCSArtifact) ProtoMessage() {}
 
 func (*GCSArtifactRepository) ProtoMessage() {}
