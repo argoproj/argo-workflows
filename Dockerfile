@@ -145,7 +145,7 @@ ENTRYPOINT [ "argo" ]
 # the build context, so each binary is built exactly once. On change Tilt
 # rebuilds these (trivial COPY) and recreates the pod.
 
-FROM alpine:3.23 AS workflow-controller-dev
+FROM alpine:3.24 AS workflow-controller-dev
 RUN apk add --no-cache ca-certificates
 COPY hack/ssh_known_hosts /etc/ssh/
 COPY hack/nsswitch.conf /etc/
@@ -158,7 +158,7 @@ ENTRYPOINT [ "workflow-controller" ]
 
 ####################################################################################################
 
-FROM alpine:3.23 AS argocli-dev
+FROM alpine:3.24 AS argocli-dev
 RUN apk add --no-cache ca-certificates
 WORKDIR /home/argo
 COPY hack/ssh_known_hosts /etc/ssh/
@@ -171,7 +171,7 @@ ENTRYPOINT [ "argo" ]
 
 ####################################################################################################
 
-FROM alpine:3.23 AS argoexec-dev
+FROM alpine:3.24 AS argoexec-dev
 RUN apk add --no-cache ca-certificates mailcap
 COPY hack/ssh_known_hosts /etc/ssh/
 COPY hack/nsswitch.conf /etc/
