@@ -10,3 +10,5 @@ spec:
           env:
             - name: ARGO_EXECUTOR_PLUGINS
               value: "true"
+            - name: ARGO_WORKFLOW_LEVEL_EXECUTOR_PLUGINS
+              value: "true"

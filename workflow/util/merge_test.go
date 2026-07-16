@@ -605,6 +605,7 @@ var blockedUserOverrideFields = map[string]bool{
 	"PodMetadata":                  true,
 	"Hooks":                        true,
 	"PodResources":                 true,
+	"ExecutorPlugins":              true,
 }
 
 func TestValidateUserOverrides_AllowedFields(t *testing.T) {
@@ -667,6 +668,22 @@ func TestValidateUserOverrides_BlockedFields(t *testing.T) {
 			spec:  wfv1.WorkflowSpec{Hooks: wfv1.LifecycleHooks{"exit": wfv1.LifecycleHook{Template: "evil"}}},
 			field: "Hooks",
 		},
+		{
+			name: "ExecutorPlugins",
+			spec: wfv1.WorkflowSpec{
+				ExecutorPlugins: []wfv1.ExecutorPlugin{
+					{
+						ObjectMeta: metav1.ObjectMeta{Name: "example-plugin"},
+						Spec: wfv1.ExecutorPluginSpec{
+							Sidecar: wfv1.ExecutorPluginSidecar{
+								Container: apiv1.Container{Name: "example-plugin", Image: "example/plugin:latest"},
+							},
+						},
+					},
+				},
+			},
+			field: "ExecutorPlugins",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -710,6 +727,16 @@ func TestSanitizeUserWorkflowSpec(t *testing.T) {
 		Templates:           []wfv1.Template{{Name: "evil"}},
 		Shutdown:            wfv1.ShutdownStrategyTerminate,
 		WorkflowTemplateRef: &wfv1.WorkflowTemplateRef{Name: "my-template"},
+		ExecutorPlugins: []wfv1.ExecutorPlugin{
+			{
+				ObjectMeta: metav1.ObjectMeta{Name: "example-plugin"},
+				Spec: wfv1.ExecutorPluginSpec{
+					Sidecar: wfv1.ExecutorPluginSidecar{
+						Container: apiv1.Container{Name: "example-plugin", Image: "example/plugin:latest"},
+					},
+				},
+			},
+		},
 	}
 
 	sanitized := SanitizeUserWorkflowSpec(spec)
@@ -725,6 +752,7 @@ func TestSanitizeUserWorkflowSpec(t *testing.T) {
 	assert.Nil(t, sanitized.HostNetwork)
 	assert.Nil(t, sanitized.Volumes)
 	assert.Nil(t, sanitized.Templates)
+	assert.Nil(t, sanitized.ExecutorPlugins)
 }
 
 func TestSanitizeUserWorkflowSpec_Nil(t *testing.T) {

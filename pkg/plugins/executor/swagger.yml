@@ -1953,6 +1953,13 @@ definitions:
                 items:
                     $ref: '#/definitions/Header'
                 type: array
+            saveStreamViaFile:
+                description: |-
+                    SaveStreamViaFile buffers a streamed upload to a temporary file before sending it,
+                    so a 307/308 redirect (e.g. webHDFS) can be followed by re-sending the body. When
+                    false (the default) SaveStream sends the reader directly and cannot follow such a
+                    redirect, since a one-shot reader cannot be replayed.
+                type: boolean
             url:
                 description: URL of the artifact
                 type: string
@@ -4759,6 +4766,12 @@ definitions:
                     +kubebuilder:validation:Minimum=1
                 format: int64
                 type: integer
+            pendingTimeout:
+                description: |-
+                    PendingTimeout allows to set the maximum time spent in pending status counting from the node's start time.
+                    It is enforced by the controller, so a pod that starts running just as the timeout expires may still be failed.
+                    This duration may not be applied to Step or DAG templates.
+                type: string
             plugin:
                 $ref: '#/definitions/Plugin'
             podResources:

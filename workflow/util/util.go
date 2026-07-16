@@ -847,7 +847,12 @@ func newWorkflowsDag(wf *wfv1.Workflow) ([]*dagNode, error) {
 
 	// create mapping from node to parent
 	// as well as creating temp mappings from nodeID to node
-	for _, wfNode := range wf.Status.Nodes {
+	// A node may appear as a child of more than one node (e.g. a task that
+	// `depends` on several others). Only one parent is recorded, so iterate in a
+	// deterministic order to keep the resulting parent chain, and therefore the
+	// reset set computed by resetPath, stable across invocations.
+	for _, nodeID := range slices.Sorted(maps.Keys(wf.Status.Nodes)) {
+		wfNode := wf.Status.Nodes[nodeID]
 		n := dagNode{}
 		n.n = &wfNode
 		nodes[wfNode.ID] = &n

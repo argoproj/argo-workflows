@@ -284,6 +284,114 @@ func TestResolveOutputParameterPathPlaceholder(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestExecutorPluginsValidation(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	tests := []struct {
+		name      string
+		plugins   string
+		wantError string
+	}{
+		{
+			name: "EmptyList",
+			plugins: `
+  executorPlugins: []
+`,
+		},
+		{
+			name: "Valid",
+			plugins: `
+  executorPlugins:
+  - metadata:
+      name: workflow-level-hello-executor-plugin
+    spec:
+      sidecar:
+        container:
+          name: workflow-level-hello-executor-plugin
+          image: python:alpine3.23
+          ports:
+          - containerPort: 4356
+          resources:
+            limits:
+              cpu: 200m
+              memory: 64Mi
+            requests:
+              cpu: 100m
+              memory: 32Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+`,
+		},
+		{
+			name: "MissingName",
+			plugins: `
+  executorPlugins:
+  - spec:
+      sidecar:
+        container:
+          name: workflow-level-hello-executor-plugin
+          image: python:alpine3.23
+          ports:
+          - containerPort: 4356
+          resources:
+            limits:
+              cpu: 200m
+              memory: 64Mi
+            requests:
+              cpu: 100m
+              memory: 32Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+`,
+			wantError: "spec.executorPlugins: executor plugin metadata name is mandatory",
+		},
+		{
+			name: "InvalidSidecar",
+			plugins: `
+  executorPlugins:
+  - metadata:
+      name: workflow-level-hello-executor-plugin
+    spec:
+      sidecar:
+        container:
+          name: workflow-level-hello-executor-plugin
+          image: python:alpine3.23
+          resources:
+            limits:
+              cpu: 200m
+              memory: 64Mi
+            requests:
+              cpu: 100m
+              memory: 32Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+`,
+			wantError: "spec.executorPlugins: at least one port is mandatory",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validate(ctx, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: workflow-level-executor-plugin-
+spec:
+  entrypoint: main
+`+tt.plugins+`
+  templates:
+  - name: main
+    container:
+      image: busybox
+`)
+			if tt.wantError == "" {
+				require.NoError(t, err)
+				return
+			}
+			require.EqualError(t, err, tt.wantError)
+		})
+	}
+}
+
 var stepOutputReferences = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
