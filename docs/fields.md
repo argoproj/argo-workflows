@@ -2273,6 +2273,8 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/hello-world.yaml)
 
+- [`input-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/input-artifacts.yaml)
+
 - [`retry-with-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/retry-with-steps.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/steps.yaml)
@@ -6856,6 +6858,8 @@ SecretKeySelector selects a key of a Secret.
 - [`webhdfs-input-output-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/webhdfs-input-output-artifacts.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
+
+- [`input-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/input-artifacts.yaml)
 </details>
 
 ### Fields
