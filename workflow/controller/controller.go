@@ -26,6 +26,8 @@ import (
 	"k8s.io/client-go/dynamic"
 	v1 "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/metadata"
+	"k8s.io/client-go/metadata/metadatainformer"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
@@ -41,6 +43,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/pkg/client/informers/externalversions"
 	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/client/informers/externalversions/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/pkg/plugins/spec"
+	authutil "github.com/argoproj/argo-workflows/v4/util/auth"
 	wfctx "github.com/argoproj/argo-workflows/v4/util/context"
 	"github.com/argoproj/argo-workflows/v4/util/deprecation"
 	"github.com/argoproj/argo-workflows/v4/util/env"
@@ -113,11 +116,12 @@ type WorkflowController struct {
 	cliExecutorLogFormat string
 
 	// restConfig is used by controller to send a SIGUSR1 to the wait sidecar using remotecommand.NewSPDYExecutor().
-	restConfig       *rest.Config
-	kubeclientset    kubernetes.Interface
-	rateLimiter      *rate.Limiter
-	dynamicInterface dynamic.Interface
-	wfclientset      wfclientset.Interface
+	restConfig        *rest.Config
+	kubeclientset     kubernetes.Interface
+	rateLimiter       *rate.Limiter
+	dynamicInterface  dynamic.Interface
+	metadataInterface metadata.Interface
+	wfclientset       wfclientset.Interface
 
 	// maxStackDepth is a configurable limit to the depth of the "stack", which is increased with every nested call to
 	// woc.executeTemplate and decreased when such calls return. This is used to prevent infinite recursion
@@ -204,6 +208,11 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		return nil, err
 	}
 
+	metadataInterface, err := metadata.NewForConfig(restConfig)
+	if err != nil {
+		return nil, err
+	}
+
 	if err = util.ConfigureUserOverrideAllowlistFromEnv(); err != nil {
 		return nil, err
 	}
@@ -212,6 +221,7 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		restConfig:                 restConfig,
 		kubeclientset:              kubeclientset,
 		dynamicInterface:           dynamicInterface,
+		metadataInterface:          metadataInterface,
 		wfclientset:                wfclientset,
 		namespace:                  namespace,
 		managedNamespace:           managedNamespace,
@@ -320,13 +330,29 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 
 	ctx, span := wfc.tracing.StartStartupController(ctx)
 	logger := logging.RequireLoggerFromContext(ctx)
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	// Reload the configuration before anything acts on it: this only runs on gaining
+	// leadership, so the configuration loaded at process start may be stale (e.g. edited
+	// while this instance was a standby). The informer's initial sync re-runs UpdateConfig,
+	// and waiting for handler delivery here means nothing below reads config mid-update.
+	if os.Getenv("WATCH_CONTROLLER_SEMAPHORE_CONFIGMAPS") != "false" {
+		var handlerSynced cache.InformerSynced
+		wfc.controllerConfigMapInformer, handlerSynced = wfc.newControllerConfigMapInformer(ctx)
+		if wfc.controllerConfigMapInformer != nil {
+			go wfc.controllerConfigMapInformer.Run(ctx.Done())
+			if !cache.WaitForCacheSync(ctx.Done(), handlerSynced) {
+				logger.WithFatal().Error(ctx, "Timed out waiting for controller config map to sync")
+			}
+		}
+	}
+
 	// init DB after leader election (if enabled)
 	if err := wfc.initDB(ctx); err != nil {
 		logger.WithError(err).WithFatal().Error(ctx, "Failed to init db")
 	}
-
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
 
 	defer wfc.wfQueue.ShutDown()
 
@@ -371,13 +397,11 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	}
 
 	if os.Getenv("WATCH_CONTROLLER_SEMAPHORE_CONFIGMAPS") != "false" {
-		wfc.controllerConfigMapInformer = wfc.newControllerConfigMapInformer(ctx)
 		wfc.semaphoreConfigMapInformer = wfc.newSemaphoreConfigMapInformer(ctx)
 	}
 
 	// namespace informer only works if has RBAC access
 	nsInformerHasSynced := startOptionalInformer(ctx, wfc.nsInformer)
-	controllerConfigMapInformerHasSynced := startOptionalInformer(ctx, wfc.controllerConfigMapInformer)
 	semaphoreConfigMapInformerHasSynced := startOptionalInformer(ctx, wfc.semaphoreConfigMapInformer)
 
 	go wfc.wfInformer.Run(ctx.Done())
@@ -398,7 +422,6 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		wfc.wftmplInformer.Informer().HasSynced,
 		wfc.PodController.HasSynced(),
 		wfc.typedConfigMapInformer.HasSynced,
-		controllerConfigMapInformerHasSynced,
 		semaphoreConfigMapInformerHasSynced,
 		wfc.wfTaskSetInformer.Informer().HasSynced,
 		wfc.artGCTaskInformer.Informer().HasSynced,
@@ -522,36 +545,74 @@ func (wfc *WorkflowController) initManagers(ctx context.Context) error {
 	return nil
 }
 
+// resourceVersionUnchanged reports whether an informer update event carries the same
+// resource version on both sides, i.e. it is a store replay (relist or resync) rather
+// than a real change. Objects without accessible metadata are treated as changed.
+func resourceVersionUnchanged(oldObj, newObj any) bool {
+	oldMeta, err := meta.Accessor(oldObj)
+	if err != nil {
+		return false
+	}
+	newMeta, err := meta.Accessor(newObj)
+	if err != nil {
+		return false
+	}
+	return oldMeta.GetResourceVersion() == newMeta.GetResourceVersion()
+}
+
 // newControllerConfigMapInformer returns an informer for the controller's own configmap,
-// which reloads the controller configuration whenever it changes.
-func (wfc *WorkflowController) newControllerConfigMapInformer(ctx context.Context) cache.SharedIndexInformer {
-	informer := v1.NewFilteredConfigMapInformer(wfc.kubeclientset, wfc.configController.GetNamespace(), configMapResyncPeriod, cache.Indexers{}, func(opts *metav1.ListOptions) {
+// which reloads the controller configuration whenever it changes, along with the handler's
+// HasSynced, which reports true once the initial sync events have been delivered.
+// It returns nil if the controller lacks RBAC access to list and watch configmaps in its
+// own namespace, in which case the configuration loaded at startup stays in effect.
+func (wfc *WorkflowController) newControllerConfigMapInformer(ctx context.Context) (cache.SharedIndexInformer, cache.InformerSynced) {
+	ctx, logger := logging.RequireLoggerFromContext(ctx).WithField("component", "config_watcher").InContext(ctx)
+	can, err := authutil.CanI(ctx, wfc.kubeclientset, []string{"list", "watch"}, "", wfc.configController.GetNamespace(), "configmaps")
+	if err != nil || !can {
+		logger.WithError(err).WithField("namespace", wfc.configController.GetNamespace()).Warn(ctx, "was unable to get permissions for list/watch verbs on configmaps in the controller's namespace, configuration changes will not be applied until the controller restarts")
+		return nil, nil
+	}
+	// resyncPeriod 0: resyncs replay the store as same-resource-version updates, which
+	// the RV-equality guard in UpdateFunc drops, so periodic resyncs would be pure churn
+	informer := v1.NewFilteredConfigMapInformer(wfc.kubeclientset, wfc.configController.GetNamespace(), 0, cache.Indexers{}, func(opts *metav1.ListOptions) {
 		opts.FieldSelector = fmt.Sprintf("metadata.name=%s", wfc.configController.GetName())
 	})
-	ctx, logger := logging.RequireLoggerFromContext(ctx).WithField("component", "config_watcher").InContext(ctx)
-	//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)
-	informer.AddEventHandler(cache.ResourceEventHandlerDetailedFuncs{
-		// AddFunc covers the configmap being recreated after a deletion; adds from the
-		// informer's initial sync are skipped as the configuration is loaded at startup
-		AddFunc: func(obj any, isInInitialList bool) {
-			if isInInitialList {
-				return
-			}
+	// the ignored error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)
+	registration, _ := informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		// AddFunc fires on the informer's initial sync as well as on recreation after a
+		// deletion. The initial-sync reload is deliberate: the informer only starts on
+		// leadership, so edits made after the configuration was first loaded at process
+		// start (e.g. while an HA standby waited to be promoted) are picked up here.
+		AddFunc: func(obj any) {
 			cm := obj.(*apiv1.ConfigMap)
 			logger.WithFields(logging.Fields{"namespace": cm.Namespace, "name": cm.Name}).Info(ctx, "Received Workflow Controller config map creation")
-			wfc.UpdateConfig(ctx)
+			wfc.updateConfigFromConfigMap(ctx, cm)
 		},
 		UpdateFunc: func(oldObj, newObj any) {
-			oldCM := oldObj.(*apiv1.ConfigMap)
-			newCM := newObj.(*apiv1.ConfigMap)
-			if oldCM.ResourceVersion == newCM.ResourceVersion {
+			if resourceVersionUnchanged(oldObj, newObj) {
 				return
 			}
+			newCM := newObj.(*apiv1.ConfigMap)
 			logger.WithFields(logging.Fields{"namespace": newCM.Namespace, "name": newCM.Name}).Info(ctx, "Received Workflow Controller config map update")
+			wfc.updateConfigFromConfigMap(ctx, newCM)
+		},
+		// DeleteFunc makes a deletion of the controller's configmap loud. Unlike the
+		// handlers above it deliberately re-fetches live via UpdateConfig, which fails
+		// fatally when the configmap is really gone, surfacing the deletion immediately
+		// rather than leaving the controller running on configuration that will fail to
+		// load on its next restart. If the configmap was already recreated by the time
+		// this runs, the fetch succeeds and this is just a reload.
+		DeleteFunc: func(obj any) {
+			key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+			if err != nil {
+				logger.WithError(err).Warn(ctx, "failed to get key of deleted config map")
+				return
+			}
+			logger.WithField("key", key).Error(ctx, "Received Workflow Controller config map deletion")
 			wfc.UpdateConfig(ctx)
 		},
 	})
-	return informer
+	return informer, registration.HasSynced
 }
 
 // startOptionalInformer runs an informer that may not have been created (due to
@@ -567,67 +628,82 @@ func startOptionalInformer(ctx context.Context, informer cache.SharedIndexInform
 
 // newSemaphoreConfigMapInformer returns an informer for configmaps in the managed namespace,
 // which requeues workflows waiting on a semaphore whose configuration changed.
+// It returns nil if the controller lacks RBAC access to list and watch configmaps in the
+// managed namespace, in which case workflows are not requeued when semaphore configmaps
+// change and re-evaluate on their normal requeue cycle instead.
 func (wfc *WorkflowController) newSemaphoreConfigMapInformer(ctx context.Context) cache.SharedIndexInformer {
-	informer := v1.NewConfigMapInformer(wfc.kubeclientset, wfc.GetManagedNamespace(), configMapResyncPeriod, cache.Indexers{})
-	// This informer watches all configmaps in the managed namespace, as semaphore configmaps
-	// cannot be identified by a label selector. Only identifying metadata is needed to notify
-	// waiting workflows, so strip everything else to keep the cache small.
+	ctx, logger := logging.RequireLoggerFromContext(ctx).WithField("component", "semaphore_config_watcher").InContext(ctx)
+	can, err := authutil.CanI(ctx, wfc.kubeclientset, []string{"list", "watch"}, "", wfc.GetManagedNamespace(), "configmaps")
+	if err != nil || !can {
+		logger.WithError(err).WithField("namespace", wfc.GetManagedNamespace()).Warn(ctx, "was unable to get permissions for list/watch verbs on configmaps, workflows will not be requeued when semaphore configmaps change")
+		return nil
+	}
+	// This informer watches all configmaps in the managed namespace (the whole cluster for
+	// a cluster-scoped install), as semaphore configmaps cannot be identified by a label
+	// selector. It is metadata-only so the API server never sends the configmap payloads,
+	// keeping the initial list cheap on both sides no matter how many configmaps exist.
+	// Only identifying metadata is needed to notify waiting workflows, so strip everything
+	// else to keep the cache small.
+	// resyncPeriod 0: resyncs replay the store as same-resource-version updates, which
+	// the RV-equality guard in UpdateFunc drops, so periodic resyncs would only be a
+	// pointless walk of every configmap in scope
+	informer := metadatainformer.NewFilteredMetadataInformer(wfc.metadataInterface, apiv1.SchemeGroupVersion.WithResource("configmaps"), wfc.GetManagedNamespace(), 0, cache.Indexers{}, nil).Informer()
 	//nolint:errcheck // the error only happens if the informer was already started, and it hasn't been
 	informer.SetTransform(func(obj any) (any, error) {
-		cm, ok := obj.(*apiv1.ConfigMap)
+		m, ok := obj.(*metav1.PartialObjectMetadata)
 		if !ok {
 			return obj, nil
 		}
-		return &apiv1.ConfigMap{ObjectMeta: metav1.ObjectMeta{
-			Namespace:       cm.Namespace,
-			Name:            cm.Name,
-			ResourceVersion: cm.ResourceVersion,
-		}}, nil
+		return &metav1.PartialObjectMetadata{
+			TypeMeta: m.TypeMeta,
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace:       m.Namespace,
+				Name:            m.Name,
+				ResourceVersion: m.ResourceVersion,
+			},
+		}, nil
 	})
-	ctx, logger := logging.RequireLoggerFromContext(ctx).WithField("component", "semaphore_config_watcher").InContext(ctx)
 	//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)
 	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		// AddFunc fires for every configmap on the informer's initial sync, and afterwards for
 		// newly created configmaps, covering semaphore configmaps created after workflows
 		// started waiting on them
 		AddFunc: func(obj any) {
-			cm := obj.(*apiv1.ConfigMap)
-			wfc.notifySemaphoreConfigUpdate(ctx, cm)
+			cm := obj.(*metav1.PartialObjectMetadata)
+			wfc.notifySemaphoreConfigUpdate(ctx, cm.Namespace, cm.Name)
 		},
 		UpdateFunc: func(oldObj, newObj any) {
-			oldCM := oldObj.(*apiv1.ConfigMap)
-			newCM := newObj.(*apiv1.ConfigMap)
-			if oldCM.ResourceVersion == newCM.ResourceVersion {
+			if resourceVersionUnchanged(oldObj, newObj) {
 				return
 			}
+			newCM := newObj.(*metav1.PartialObjectMetadata)
 			logger.WithFields(logging.Fields{"namespace": newCM.Namespace, "name": newCM.Name}).Debug(ctx, "received config map update")
-			wfc.notifySemaphoreConfigUpdate(ctx, newCM)
+			wfc.notifySemaphoreConfigUpdate(ctx, newCM.Namespace, newCM.Name)
 		},
 		// DeleteFunc requeues waiting workflows so they re-evaluate promptly instead of
 		// waiting indefinitely on a semaphore whose configmap no longer exists
 		DeleteFunc: func(obj any) {
-			cm, ok := obj.(*apiv1.ConfigMap)
-			if !ok {
-				tombstone, isTombstone := obj.(cache.DeletedFinalStateUnknown)
-				if !isTombstone {
-					return
-				}
-				cm, ok = tombstone.Obj.(*apiv1.ConfigMap)
-				if !ok {
-					return
-				}
+			key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+			if err != nil {
+				logger.WithError(err).Warn(ctx, "failed to get key of deleted config map")
+				return
 			}
-			logger.WithFields(logging.Fields{"namespace": cm.Namespace, "name": cm.Name}).Debug(ctx, "received config map delete")
-			wfc.notifySemaphoreConfigUpdate(ctx, cm)
+			namespace, name, err := cache.SplitMetaNamespaceKey(key)
+			if err != nil {
+				logger.WithError(err).WithField("key", key).Warn(ctx, "failed to split key of deleted config map")
+				return
+			}
+			logger.WithFields(logging.Fields{"namespace": namespace, "name": name}).Debug(ctx, "received config map delete")
+			wfc.notifySemaphoreConfigUpdate(ctx, namespace, name)
 		},
 	})
 	return informer
 }
 
 // notifySemaphoreConfigUpdate will notify semaphore config update to pending workflows
-func (wfc *WorkflowController) notifySemaphoreConfigUpdate(ctx context.Context, cm *apiv1.ConfigMap) {
+func (wfc *WorkflowController) notifySemaphoreConfigUpdate(ctx context.Context, namespace, name string) {
 	logger := logging.RequireLoggerFromContext(ctx)
-	wfs, err := wfc.wfInformer.GetIndexer().ByIndex(indexes.SemaphoreConfigIndexName, fmt.Sprintf("%s/%s", cm.Namespace, cm.Name))
+	wfs, err := wfc.wfInformer.GetIndexer().ByIndex(indexes.SemaphoreConfigIndexName, fmt.Sprintf("%s/%s", namespace, name))
 	if err != nil {
 		logger.WithError(err).Error(ctx, "failed get the workflow from informer")
 	}
@@ -668,10 +744,26 @@ func (wfc *WorkflowController) UpdateConfig(ctx context.Context) {
 	if err != nil {
 		logger.WithError(err).WithFatal().Error(ctx, "Failed to register watch for controller config map")
 	}
-	wfc.Config = *c
-	err = wfc.updateConfig(ctx)
+	wfc.applyConfig(ctx, c)
+}
+
+// updateConfigFromConfigMap applies the configuration from an informer-delivered copy of
+// the controller's configmap, avoiding the round-trip of re-fetching an object the event
+// handler already holds (which could also fail, fatally, if the configmap changed again
+// or the API server became unavailable in the meantime).
+func (wfc *WorkflowController) updateConfigFromConfigMap(ctx context.Context, cm *apiv1.ConfigMap) {
+	logger := logging.RequireLoggerFromContext(ctx)
+	c, err := wfc.configController.Parse(cm)
 	if err != nil {
-		logger.WithError(err).WithFatal().Error(ctx, "Failed to update config")
+		logger.WithError(err).WithFatal().Error(ctx, "Failed to parse controller config map")
+	}
+	wfc.applyConfig(ctx, c)
+}
+
+func (wfc *WorkflowController) applyConfig(ctx context.Context, c *config.Config) {
+	wfc.Config = *c
+	if err := wfc.updateConfig(ctx); err != nil {
+		logging.RequireLoggerFromContext(ctx).WithError(err).WithFatal().Error(ctx, "Failed to update config")
 	}
 }
 
