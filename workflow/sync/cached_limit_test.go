@@ -151,3 +151,39 @@ func TestGetLimitErrorThenSuccess(t *testing.T) {
 
 	assert.True(t, changed, "Limit should be marked as changed after successful refresh")
 }
+
+func TestGetLimitErrorReturnsCachedValue(t *testing.T) {
+	ctx := context.Background()
+	// Setup
+	mockNow = time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
+	expectedError := errors.New("limit service unavailable")
+	shouldFail := false
+
+	mockGetter := func(ctx context.Context, key string) (int, error) {
+		if shouldFail {
+			return 0, expectedError
+		}
+		return 5, nil
+	}
+
+	cl := newCachedLimit(mockGetter, 10*time.Minute)
+
+	// First call populates the cache
+	limit, _, err := cl.get(ctx, "test-key")
+	require.NoError(t, err)
+	require.Equal(t, 5, limit)
+
+	// Past TTL, the getter fails: the last known limit is returned alongside the error
+	advanceTime(15 * time.Minute)
+	shouldFail = true
+	limit, changed, err := cl.get(ctx, "test-key")
+	require.ErrorIs(t, err, expectedError)
+	assert.Equal(t, 5, limit, "last known limit should be returned on error")
+	assert.False(t, changed)
+
+	// The failed fetch must not refresh the timestamp, so the next call retries the getter
+	shouldFail = false
+	limit, _, err = cl.get(ctx, "test-key")
+	require.NoError(t, err)
+	assert.Equal(t, 5, limit)
+}

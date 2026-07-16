@@ -52,8 +52,14 @@ func (s *prioritySemaphore) getName() string {
 func (s *prioritySemaphore) getLimit(ctx context.Context) int {
 	limit, changed, err := s.limitGetter.get(ctx, s.name)
 	if err != nil {
-		s.logger(ctx).WithError(err).WithField("name", s.name).Error(ctx, "failed to get limit for semaphore")
-		return 0
+		// Fall back to the last known limit (returned by the cache alongside
+		// the error). Returning 0 here would make release() treat a transient
+		// fetch failure as a downward resize and permanently leak a slot.
+		s.logger(ctx).WithError(err).WithFields(logging.Fields{
+			"name":          s.name,
+			"fallbackLimit": limit,
+		}).Error(ctx, "failed to get limit for semaphore, using last known limit")
+		return limit
 	}
 	if changed {
 		s.resize(ctx, limit)
