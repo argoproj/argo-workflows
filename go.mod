@@ -84,7 +84,7 @@ require (
 	golang.org/x/time v0.15.0
 	google.golang.org/api v0.288.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20260713224248-f5fc221cf8c4
-	google.golang.org/grpc v1.82.0
+	google.golang.org/grpc v1.82.1
 	gopkg.in/go-playground/webhooks.v5 v5.17.0
 	k8s.io/api v0.35.4
 	k8s.io/apiextensions-apiserver v0.35.4
@@ -251,7 +251,7 @@ require (
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/ProtonMail/go-crypto v1.3.0 // indirect
 	github.com/ajg/form v1.5.1 // indirect
-	github.com/andybalholm/brotli v1.1.0
+	github.com/andybalholm/brotli v1.2.2
 	github.com/awalterschulze/gographviz v2.0.3+incompatible // indirect
 	github.com/aws/aws-sdk-go-v2 v1.42.1 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.32.30
@@ -292,7 +292,7 @@ require (
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/go-containerregistry/pkg/authn/kubernetes v0.0.0-20250521000321-4eb8c4d84ef0 // indirect
 	github.com/google/go-querystring v1.2.0 // indirect
-	github.com/google/uuid v1.6.0 // indirect
+	github.com/google/uuid v1.6.0
 	github.com/googleapis/enterprise-certificate-proxy v0.3.17 // indirect
 	github.com/googleapis/gax-go/v2 v2.23.0 // indirect
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79 // indirect

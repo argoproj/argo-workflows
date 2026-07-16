@@ -6691,6 +6691,15 @@ func (m *SubmitOpts) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if len(m.Artifacts) > 0 {
+		for iNdEx := len(m.Artifacts) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.Artifacts[iNdEx])
+			copy(dAtA[i:], m.Artifacts[iNdEx])
+			i = encodeVarintGenerated(dAtA, i, uint64(len(m.Artifacts[iNdEx])))
+			i--
+			dAtA[i] = 0x7a
+		}
+	}
 	if m.Priority != nil {
 		i = encodeVarintGenerated(dAtA, i, uint64(*m.Priority))
 		i--
@@ -12069,6 +12078,12 @@ func (m *SubmitOpts) Size() (n int) {
 	if m.Priority != nil {
 		n += 1 + sovGenerated(uint64(*m.Priority))
 	}
+	if len(m.Artifacts) > 0 {
+		for _, s := range m.Artifacts {
+			l = len(s)
+			n += 1 + l + sovGenerated(uint64(l))
+		}
+	}
 	return n
 }
 
@@ -14789,6 +14804,7 @@ func (this *SubmitOpts) String() string {
 		`Annotations:` + fmt.Sprintf("%v", this.Annotations) + `,`,
 		`PodPriorityClassName:` + fmt.Sprintf("%v", this.PodPriorityClassName) + `,`,
 		`Priority:` + valueToStringGenerated(this.Priority) + `,`,
+		`Artifacts:` + fmt.Sprintf("%v", this.Artifacts) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -35638,6 +35654,38 @@ func (m *SubmitOpts) Unmarshal(dAtA []byte) error {
 				}
 			}
 			m.Priority = &v
+		case 15:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Artifacts", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Artifacts = append(m.Artifacts, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGenerated(dAtA[iNdEx:])

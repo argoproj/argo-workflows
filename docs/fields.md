@@ -447,6 +447,8 @@ WorkflowTemplate is the definition of a workflow template resource
 
 - [`github-path-filter-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workflowtemplate.yaml)
 
+- [`input-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/input-artifacts.yaml)
+
 - [`templates.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/templates.yaml)
 </details>
 
@@ -881,6 +883,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`dag.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/dag.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/hello-world.yaml)
+
+- [`input-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/input-artifacts.yaml)
 
 - [`retry-with-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/retry-with-steps.yaml)
 
@@ -1360,6 +1364,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/hello-world.yaml)
 
+- [`input-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/input-artifacts.yaml)
+
 - [`retry-with-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/retry-with-steps.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/steps.yaml)
@@ -1637,6 +1643,8 @@ Arguments to a template
 - [`dag.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/dag.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/hello-world.yaml)
+
+- [`input-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/input-artifacts.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/steps.yaml)
 
@@ -2339,6 +2347,8 @@ Artifact indicates an artifact to place at a specified path
 - [`webhdfs-input-output-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/webhdfs-input-output-artifacts.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
+
+- [`input-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/input-artifacts.yaml)
 </details>
 
 ### Fields
@@ -3184,6 +3194,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 - [`github-path-filter-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workflowtemplate.yaml)
 
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-of-workflows.yaml)
+
+- [`input-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/input-artifacts.yaml)
 
 - [`templates.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/templates.yaml)
 </details>
@@ -5443,6 +5455,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/hello-world.yaml)
 
+- [`input-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/input-artifacts.yaml)
+
 - [`retry-with-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/retry-with-steps.yaml)
 
 - [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/steps.yaml)
@@ -6061,6 +6075,8 @@ A single application container that you want to run within a pod.
 - [`github-path-filter-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workflowtemplate.yaml)
 
 - [`workflow-level-executor-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-level-executor-plugin.yaml)
+
+- [`input-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/input-artifacts.yaml)
 
 - [`templates.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/templates.yaml)
 
@@ -7103,6 +7119,8 @@ ImageVolumeSource represents a image volume resource.
 - [`github-path-filter-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workflowtemplate.yaml)
 
 - [`workflow-level-executor-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-level-executor-plugin.yaml)
+
+- [`input-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/input-artifacts.yaml)
 
 - [`templates.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/templates.yaml)
 

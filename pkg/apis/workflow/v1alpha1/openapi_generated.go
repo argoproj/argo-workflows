@@ -6454,6 +6454,21 @@ func schema_pkg_apis_workflow_v1alpha1_SubmitOpts(ref common.ReferenceCallback) 
 							Format:      "int32",
 						},
 					},
+					"artifacts": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Artifacts overrides input artifact locations. Format: name=key",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 		},
