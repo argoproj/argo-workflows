@@ -4,123 +4,124 @@ import {useState} from 'react';
 import {Link} from 'react-router-dom';
 
 import {ANNOTATION_DESCRIPTION, ANNOTATION_TITLE} from '../../../shared/annotations';
-import {uiUrl} from '../../../shared/base';
 import {DurationPanel} from '../../../shared/components/duration-panel';
-import {PhaseIcon} from '../../../shared/components/phase-icon';
-import {SuspenseReactMarkdownGfm} from '../../../shared/components/suspense-react-markdown-gfm';
+import {Phase} from '../../../shared/components/phase';
 import {Timestamp} from '../../../shared/components/timestamp';
-import {wfDuration} from '../../../shared/duration';
+import {useContext} from '../../../shared/context';
 import * as models from '../../../shared/models';
-import {isArchivedWorkflow, Workflow} from '../../../shared/models';
-import {escapeInvalidMarkdown} from '../../utils';
+import {Workflow} from '../../../shared/models';
 import {WorkflowDrawer} from '../workflow-drawer/workflow-drawer';
 
-require('./workflows-row.scss');
+import './workflows-row.scss';
 
 interface WorkflowsRowProps {
-    workflow: Workflow;
-    onChange: (key: string) => void;
-    select: (wf: Workflow) => void;
+    workflow: models.Workflow;
+    onChange: (...args: any[]) => void;
     checked: boolean;
-    columns: models.Column[];
+    onCheck?: (...args: any[]) => void;
+    columns: models.Column[] | string[];
+    select: (...args: any[]) => void;
     displayISOFormatStart: boolean;
     displayISOFormatFinished: boolean;
 }
 
+function escapeInvalidMarkdown(text: string): string {
+    return text.replace(/([\\`*_{}[\]()#+\-.!])/g, '\\$1');
+}
+
 export function WorkflowsRow(props: WorkflowsRowProps) {
-    const [hideDrawer, setHideDrawer] = useState(true);
-    const wf = props.workflow;
-    // title + description vars
-    const title = (wf.metadata.annotations?.[ANNOTATION_TITLE] && `${escapeInvalidMarkdown(wf.metadata.annotations[ANNOTATION_TITLE])}`) ?? wf.metadata.name;
+    const {workflow: wf} = props;
+    const {navigation} = useContext();
+    const [isOpen, setIsOpen] = useState(false);
+
+    const hasAnnotation = !!(wf.metadata.annotations?.[ANNOTATION_DESCRIPTION] || wf.metadata.annotations?.[ANNOTATION_TITLE]);
     const description = (wf.metadata.annotations?.[ANNOTATION_DESCRIPTION] && `\n${escapeInvalidMarkdown(wf.metadata.annotations[ANNOTATION_DESCRIPTION])}`) || '';
-    const hasAnnotation = title !== wf.metadata.name || description !== '';
-    const markdown = `${title}${description}`;
+
+    const renderColumns = () => {
+        return props.columns.map((column: any) => {
+            const col = typeof column === 'string' ? column : column?.name;
+            if (col === 'name') {
+                return (
+                    <div key={col} className='columns workflows-list__col-name' onClick={e => e.stopPropagation()}>
+                        <input type='checkbox' checked={props.checked} onChange={props.onCheck} style={{marginRight: '10px'}} />
+                        <Link to={navigation.apis.workflows.getLink(wf.metadata.namespace, wf.metadata.name)}>
+                            {wf.metadata.name}
+                        </Link>
+                        {hasAnnotation && (
+                            <span className='workflows-list__has-annotation' title={description}>
+                                <i className='fa fa-comment-alt' style={{marginLeft: '10px', color: '#6d7f8b'}} />
+                            </span>
+                        )}
+                    </div>
+                );
+            }
+            if (col === 'namespace') {
+                return (
+                    <div key={col} className='columns workflows-list__col-namespace'>
+                        {wf.metadata.namespace}
+                    </div>
+                );
+            }
+            if (col === 'phase') {
+                return (
+                    <div key={col} className='columns workflows-list__col-phase'>
+                        <Phase value={wf.status?.phase} />
+                    </div>
+                );
+            }
+            if (col === 'started') {
+                return (
+                    <div key={col} className='columns workflows-list__col-started'>
+                        <Timestamp date={wf.status?.startedAt} displayISOFormat={props.displayISOFormatStart} />
+                    </div>
+                );
+            }
+            if (col === 'finished') {
+                return (
+                    <div key={col} className='columns workflows-list__col-finished'>
+                        <Timestamp date={wf.status?.finishedAt} displayISOFormat={props.displayISOFormatFinished} />
+                    </div>
+                );
+            }
+            if (col === 'duration') {
+                return (
+                    <div key={col} className='columns workflows-list__col-duration'>
+                        <Ticker>
+                            {now => {
+                                const end = wf.status?.finishedAt ? new Date(wf.status.finishedAt) : now;
+                                const duration = wf.status?.startedAt ? (end.getTime() - new Date(wf.status.startedAt).getTime()) / 1000 : 0;
+                                return <DurationPanel duration={duration} phase={wf.status?.phase} />;
+                            }}
+                        </Ticker>
+                    </div>
+                );
+            }
+            if (col === 'progress') {
+                return (
+                    <div key={col} className='columns workflows-list__col-progress'>
+                        {wf.status?.progress || '-'}
+                    </div>
+                );
+            }
+            return null;
+        });
+    };
 
     return (
-        <div className='workflows-list__row-container'>
-            <div className='row argo-table-list__row'>
-                <div className='columns small-1 workflows-list__status'>
-                    <input
-                        type='checkbox'
-                        className='workflows-list__status--checkbox'
-                        checked={props.checked}
-                        onClick={e => {
-                            e.stopPropagation();
-                        }}
-                        onChange={() => {
-                            props.select(props.workflow);
-                        }}
+        <div className='workflows-row' onClick={props.select}>
+            <div className='row workflows-list__row-content'>{renderColumns()}</div>
+            {hasAnnotation && (
+                <div onClick={e => e.stopPropagation()}>
+                    <WorkflowDrawer
+                        description={wf.metadata.annotations?.[ANNOTATION_DESCRIPTION]}
+                        hasAnnotation={hasAnnotation}
+                        name={wf.metadata.name}
+                        namespace={wf.metadata.namespace}
+                        onChange={props.onChange}
+                        title={wf.metadata.annotations?.[ANNOTATION_TITLE]}
                     />
-                    <PhaseIcon value={wf.status.phase} />
                 </div>
-                <div className='small-11 row'>
-                    <Link
-                        to={{
-                            pathname: uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`),
-                            search: `?uid=${wf.metadata.uid}`
-                        }}
-                        className='columns small-2'>
-                        <div className={description.length ? 'wf-rows-name' : ''} aria-valuetext={markdown}>
-                            <SuspenseReactMarkdownGfm markdown={markdown} />
-                        </div>
-                    </Link>
-                    <div className='columns small-1'>{wf.metadata.namespace}</div>
-                    <div className={`columns small-1 ${props.displayISOFormatStart ? 'workflows-list__timestamp' : ''}`}>
-                        <Timestamp date={wf.status.startedAt} displayISOFormat={props.displayISOFormatStart} />
-                    </div>
-                    <div className={`columns small-1 ${props.displayISOFormatFinished ? 'workflows-list__timestamp' : ''}`}>
-                        <Timestamp date={wf.status.finishedAt} displayISOFormat={props.displayISOFormatFinished} />
-                    </div>
-                    <div className='columns small-1'>
-                        <Ticker>{() => <DurationPanel phase={wf.status.phase} duration={wfDuration(wf.status)} estimatedDuration={wf.status.estimatedDuration} />}</Ticker>
-                    </div>
-                    <div className='columns small-1'>{wf.status.progress || '-'}</div>
-                    {/* CSS has text-overflow, but sometimes it's still too long for the column for some reason, so slice it too. 180 chars are not visible on a 4k screen */}
-                    <div className='columns small-2'>{wf.status.message?.slice(0, 180) || '-'}</div>
-                    <div className='columns small-1'>
-                        <div className='workflows-list__labels-container'>
-                            <div
-                                onClick={e => {
-                                    e.preventDefault();
-                                    setHideDrawer(!hideDrawer);
-                                }}
-                                className={`workflows-row__action workflows-row__action--${hideDrawer ? 'show' : 'hide'}`}>
-                                {hideDrawer ? (
-                                    <span>
-                                        SHOW <i className='fas fa-caret-down' />{' '}
-                                    </span>
-                                ) : (
-                                    <span>
-                                        HIDE <i className='fas fa-caret-up' />
-                                    </span>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                    <div className='columns small-1'>{isArchivedWorkflow(wf) ? 'true' : 'false'}</div>
-                    {(props.columns || []).map(column => {
-                        // best not to make any assumptions and wait until this data is filled
-                        const value = (column.type === 'label' ? wf?.metadata?.labels?.[column.key] : wf?.metadata?.annotations?.[column.key]) ?? 'unknown';
-                        return (
-                            <div key={column.name} className='columns small-1'>
-                                {value}
-                            </div>
-                        );
-                    })}
-                    {hideDrawer ? (
-                        <span />
-                    ) : (
-                        <WorkflowDrawer
-                            description={wf.metadata.annotations[ANNOTATION_DESCRIPTION]}
-                            hasAnnotation={hasAnnotation}
-                            name={wf.metadata.name}
-                            namespace={wf.metadata.namespace}
-                            onChange={props.onChange}
-                            title={wf.metadata.annotations[ANNOTATION_TITLE]}
-                        />
-                    )}
-                </div>
-            </div>
+            )}
         </div>
     );
 }

@@ -78,7 +78,9 @@ const AttributeRow = (attr: {title: string; value: string | React.JSX.Element}) 
 const AttributeRows = (props: {attributes: {title: string; value: string | React.JSX.Element}[]}) => (
     <div className='workflow-details__attribute-grid'>
         {props.attributes.map(attr => (
-            <AttributeRow key={attr.title} {...attr} />
+            <React.Fragment key={attr.title}>
+                <AttributeRow {...attr} />
+            </React.Fragment>
         ))}
     </div>
 );
@@ -226,7 +228,10 @@ function WorkflowNodeSummary(props: Props) {
                         object={{
                             metadata: {
                                 namespace: props.workflow.metadata.namespace,
-                                name: podName
+                                name: podName,
+                                annotations: (props.workflow.spec && props.workflow.spec.templates) 
+                                    ? (props.workflow.spec.templates.find(t => t.name === props.node.templateName) as any)?.metadata?.annotations 
+                                    : undefined
                             },
                             workflow: props.workflow,
                             status: {
