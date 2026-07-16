@@ -194,6 +194,9 @@ func Workflow(ctx context.Context, wftmplGetter templateresolution.WorkflowTempl
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "spec.templates%s", err.Error())
 	}
+	if err = validateExecutorPlugins(wf.Spec); err != nil {
+		return err
+	}
 
 	// if we are linting, we don't care if spec.arguments.parameters.XXX doesn't have an
 	// explicit value. Workflow templates without a default value are also a desired use
@@ -378,6 +381,16 @@ func WorkflowTemplateRefFields(wfSpec wfv1.WorkflowSpec) error {
 	return nil
 }
 
+func validateExecutorPlugins(wfSpec wfv1.WorkflowSpec) error {
+	if len(wfSpec.ExecutorPlugins) == 0 {
+		return nil
+	}
+	if _, err := wfSpec.AsExecutorPluginSpec(); err != nil {
+		return errors.Errorf(errors.CodeBadRequest, "spec.executorPlugins: %s", err)
+	}
+	return nil
+}
+
 // WorkflowTemplate accepts a workflow template and performs validation against it.
 func WorkflowTemplate(ctx context.Context, wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wftmpl *wfv1.WorkflowTemplate, wfDefaults *wfv1.Workflow, opts Opts) error {
 	if len(wftmpl.Name) > maxCharsInObjectName {
@@ -526,6 +539,10 @@ func (tctx *templateValidationCtx) validateTemplate(ctx context.Context, tmpl *w
 		if atoiErr == nil {
 			return fmt.Errorf("%s has invalid duration format in timeout", newTmpl.Name)
 		}
+	}
+
+	if newTmpl.PendingTimeout != "" && !newTmpl.IsLeaf() {
+		return fmt.Errorf("%s template doesn't support pendingTimeout field", newTmpl.GetType())
 	}
 
 	templateScope := tmplCtx.GetTemplateScope()

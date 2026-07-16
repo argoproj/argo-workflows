@@ -11,12 +11,15 @@ import (
 
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 
 	"github.com/argoproj/argo-workflows/v4/pkg/apiclient/artifact"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/common"
 )
 
 // Driver implements the ArtifactDriver interface by making gRPC calls to a plugin service
@@ -212,6 +215,112 @@ func (d *Driver) Save(ctx context.Context, path string, outputArtifact *wfv1.Art
 		return fmt.Errorf("plugin %s save failed: %s", d.pluginName, resp.Error)
 	}
 	return nil
+}
+
+// saveStreamChunkSize is the size of each chunk sent over the streaming SaveStream RPC.
+// 2MiB stays well under gRPC's default 4MiB max message size while keeping the
+// per-chunk marshal/syscall overhead low for multi-GB artifacts.
+const saveStreamChunkSize = 2 * 1024 * 1024
+
+// SaveStream implements ArtifactDriver.SaveStream. If the plugin advertises
+// streaming support (per GetCapabilities), the reader is streamed directly with no
+// local buffering. Otherwise it falls back to buffering to a temp file and calling
+// the existing unary Save, so a plugin that predates streaming keeps working.
+//
+// Capability is checked before reader is touched: once GetCapabilities confirms
+// streaming support and chunks start being sent, a mid-stream failure is returned
+// as an error rather than retried via the fallback, since the reader may already be
+// partially consumed and cannot be rewound.
+func (d *Driver) SaveStream(ctx context.Context, reader io.Reader, outputArtifact *wfv1.Artifact) error {
+	supported, err := d.supportsSaveStream(ctx)
+	if err != nil {
+		return err
+	}
+	if !supported {
+		return d.saveStreamViaTempFile(ctx, reader, outputArtifact)
+	}
+
+	// Cancelled on every return path (including reader errors, which don't close the
+	// stream themselves) so the server's blocking Recv() is released instead of
+	// waiting on the caller's ctx, which may outlive this call.
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	stream, err := d.client.SaveStream(ctx)
+	if err != nil {
+		return fmt.Errorf("plugin %s save stream failed to open: %w", d.pluginName, err)
+	}
+
+	// Once the server aborts the stream, grpc-go makes Send return io.EOF instead
+	// of the failure; the plugin's actual error is only retrievable via CloseAndRecv.
+	sendFrame := func(req *artifact.SaveStreamArtifactRequest, action string) error {
+		sendErr := stream.Send(req)
+		if sendErr == nil {
+			return nil
+		}
+		if _, recvErr := stream.CloseAndRecv(); recvErr != nil {
+			return fmt.Errorf("plugin %s save stream failed %s: %w", d.pluginName, action, recvErr)
+		}
+		return fmt.Errorf("plugin %s save stream failed %s: %w", d.pluginName, action, sendErr)
+	}
+
+	if sendErr := sendFrame(&artifact.SaveStreamArtifactRequest{OutputArtifact: convertToGRPC(outputArtifact)}, "to send metadata"); sendErr != nil {
+		return sendErr
+	}
+
+	buf := make([]byte, saveStreamChunkSize)
+	for {
+		n, readErr := reader.Read(buf)
+		if n > 0 {
+			// gRPC forbids mutating a message after Send (a lazy stats handler may
+			// read it later), so copy the chunk instead of aliasing buf, which the
+			// next Read overwrites.
+			chunk := make([]byte, n)
+			copy(chunk, buf[:n])
+			if sendErr := sendFrame(&artifact.SaveStreamArtifactRequest{Chunk: chunk}, "mid-transfer"); sendErr != nil {
+				return sendErr
+			}
+		}
+		if errors.Is(readErr, io.EOF) {
+			break
+		}
+		if readErr != nil {
+			return fmt.Errorf("plugin %s save stream failed to read artifact content: %w", d.pluginName, readErr)
+		}
+	}
+
+	resp, err := stream.CloseAndRecv()
+	if err != nil {
+		return fmt.Errorf("plugin %s save stream failed: %w", d.pluginName, err)
+	}
+	if !resp.Success {
+		return fmt.Errorf("plugin %s save stream failed: %s", d.pluginName, resp.Error)
+	}
+	return nil
+}
+
+// supportsSaveStream reports whether the plugin advertises streaming support.
+// A plugin that predates GetCapabilities returns codes.Unimplemented, which maps to
+// (false, nil) so SaveStream falls back to the buffered Save. Any other error is
+// returned rather than silently downgrading to buffering a potentially large artifact
+// to disk before the real failure would resurface via Save.
+func (d *Driver) supportsSaveStream(ctx context.Context) (bool, error) {
+	resp, err := d.client.GetCapabilities(ctx, &artifact.GetCapabilitiesRequest{})
+	if err != nil {
+		if status.Code(err) == codes.Unimplemented {
+			return false, nil
+		}
+		return false, fmt.Errorf("plugin %s get capabilities failed: %w", d.pluginName, err)
+	}
+	return resp.GetSupportsSaveStream(), nil
+}
+
+// saveStreamViaTempFile is the fallback used when the plugin doesn't implement
+// streaming SaveStream: buffer to a temp file and call the existing unary Save.
+func (d *Driver) saveStreamViaTempFile(ctx context.Context, reader io.Reader, outputArtifact *wfv1.Artifact) error {
+	return common.SaveStreamViaTempFile(reader, "plugin-upload-*", func(path string) error {
+		return d.Save(ctx, path, outputArtifact)
+	})
 }
 
 // Delete implements ArtifactDriver.Delete by calling the plugin service

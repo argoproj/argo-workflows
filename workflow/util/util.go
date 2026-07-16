@@ -290,6 +290,10 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 	if err != nil {
 		return err
 	}
+	err = overrideArtifacts(wf, opts.Artifacts)
+	if err != nil {
+		return err
+	}
 	if opts.GenerateName != "" {
 		wf.GenerateName = opts.GenerateName
 	}
@@ -327,6 +331,112 @@ func overrideParameters(wf *wfv1.Workflow, parameters []string) error {
 			wf.Status.StoredWorkflowSpec.Arguments.Parameters = newParams
 		}
 	}
+	return nil
+}
+
+// ParseArtifactOverrides parses "name=key" override strings into a map, keyed by artifact name.
+// Fails fast on the first malformed entry (no "=", or an empty name or key). If the same name
+// appears more than once, the last occurrence wins.
+func ParseArtifactOverrides(overrides []string) (map[string]string, error) {
+	result := make(map[string]string, len(overrides))
+	for _, artifactStr := range overrides {
+		parts := strings.SplitN(artifactStr, "=", 2)
+		if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+			return nil, fmt.Errorf("expected artifact of the form: NAME=KEY. Received: %s", artifactStr)
+		}
+		result[parts[0]] = parts[1]
+	}
+	return result, nil
+}
+
+// ApplyOverridesToTemplateArtifacts returns a deep copy of each artifact in templateArtifacts
+// whose name has an entry in overrides, with its key set to the override value. Artifacts
+// without a matching override are omitted from the result. Every override must match a
+// template artifact; an override naming an unknown artifact is an error rather than a silent
+// no-op, so a typo'd or stale override does not run the workflow with default settings after
+// the caller was told the upload succeeded. This is a pure function: it does not resolve
+// artifact repositories or mutate its inputs.
+func ApplyOverridesToTemplateArtifacts(templateArtifacts []wfv1.Artifact, overrides map[string]string) ([]wfv1.Artifact, error) {
+	applied := make([]wfv1.Artifact, 0, len(overrides))
+	consumed := make(map[string]bool, len(overrides))
+	for _, tmplArt := range templateArtifacts {
+		newKey, ok := overrides[tmplArt.Name]
+		if !ok {
+			continue
+		}
+		consumed[tmplArt.Name] = true
+		artCopy := tmplArt.DeepCopy()
+		if err := artCopy.SetKey(newKey); err != nil {
+			return nil, fmt.Errorf("failed to set key for artifact %s: %w", tmplArt.Name, err)
+		}
+		applied = append(applied, *artCopy)
+	}
+	if err := unmatchedOverridesError(overrides, consumed); err != nil {
+		return nil, err
+	}
+	return applied, nil
+}
+
+// unmatchedOverridesError names any override whose artifact name matched no artifact, so a
+// typo'd or stale override surfaces as an error instead of being silently dropped. Returns
+// nil when every override was consumed.
+func unmatchedOverridesError(overrides map[string]string, consumed map[string]bool) error {
+	unmatched := make([]string, 0)
+	for name := range overrides {
+		if !consumed[name] {
+			unmatched = append(unmatched, name)
+		}
+	}
+	if len(unmatched) == 0 {
+		return nil
+	}
+	slices.Sort(unmatched)
+	return fmt.Errorf("artifact override(s) matched no artifact: %s", strings.Join(unmatched, ", "))
+}
+
+func overrideArtifacts(wf *wfv1.Workflow, artifacts []string) error {
+	if len(artifacts) == 0 {
+		return nil
+	}
+
+	overrides, err := ParseArtifactOverrides(artifacts)
+	if err != nil {
+		return err
+	}
+
+	// Override artifact keys in workflow arguments
+	// Note: For workflowTemplateRef workflows, artifacts are handled in workflow_server.go
+	// which has access to the WorkflowTemplate to copy the full artifact configuration
+	consumed := make(map[string]bool, len(overrides))
+	for i, artifact := range wf.Spec.Arguments.Artifacts {
+		if newKey, ok := overrides[artifact.Name]; ok {
+			consumed[artifact.Name] = true
+			if err := wf.Spec.Arguments.Artifacts[i].SetKey(newKey); err != nil {
+				return fmt.Errorf("failed to set key for artifact %s: %w", artifact.Name, err)
+			}
+		}
+	}
+
+	// Also update StoredWorkflowSpec if present
+	if wf.Status.StoredWorkflowSpec != nil {
+		for i, artifact := range wf.Status.StoredWorkflowSpec.Arguments.Artifacts {
+			if newKey, ok := overrides[artifact.Name]; ok {
+				consumed[artifact.Name] = true
+				if err := wf.Status.StoredWorkflowSpec.Arguments.Artifacts[i].SetKey(newKey); err != nil {
+					return fmt.Errorf("failed to set key for artifact %s in stored spec: %w", artifact.Name, err)
+				}
+			}
+		}
+	}
+
+	// For workflowTemplateRef workflows the artifacts live in the template, not here, so
+	// unmatched overrides are expected and are validated on the templateRef path instead
+	// (ApplyOverridesToTemplateArtifacts). Only flag unmatched overrides when this workflow
+	// is the authority for its own artifacts.
+	if wf.Spec.WorkflowTemplateRef == nil {
+		return unmatchedOverridesError(overrides, consumed)
+	}
+
 	return nil
 }
 
@@ -847,7 +957,12 @@ func newWorkflowsDag(wf *wfv1.Workflow) ([]*dagNode, error) {
 
 	// create mapping from node to parent
 	// as well as creating temp mappings from nodeID to node
-	for _, wfNode := range wf.Status.Nodes {
+	// A node may appear as a child of more than one node (e.g. a task that
+	// `depends` on several others). Only one parent is recorded, so iterate in a
+	// deterministic order to keep the resulting parent chain, and therefore the
+	// reset set computed by resetPath, stable across invocations.
+	for _, nodeID := range slices.Sorted(maps.Keys(wf.Status.Nodes)) {
+		wfNode := wf.Status.Nodes[nodeID]
 		n := dagNode{}
 		n.n = &wfNode
 		nodes[wfNode.ID] = &n

@@ -77,8 +77,13 @@ func (s *databaseSemaphore) getLimit(ctx context.Context) int {
 	logger.WithField("dbKey", s.shortDBKey).Info(ctx, "getLimit")
 	limit, _, err := s.limitGetter.get(ctx, s.shortDBKey)
 	if err != nil {
-		logger.WithField("name", s.name).WithError(err).Error(ctx, "Failed to get limit")
-		return 0
+		// Fall back to the last known limit (returned by the cache alongside
+		// the error) rather than misreporting a transient failure as limit 0.
+		logger.WithFields(logging.Fields{
+			"name":          s.name,
+			"fallbackLimit": limit,
+		}).WithError(err).Error(ctx, "Failed to get limit, using last known limit")
+		return limit
 	}
 	return limit
 }

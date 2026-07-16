@@ -30,6 +30,74 @@ You should ensure that the credentials provided to your workflow limits access t
 
 Argo-workflows explicitly allows path traversal where a key containing "../" may allow users to traverse up the "directory structure".
 
+### Abandoned Upload Cleanup
+
+⚠️ When [uploading input artifacts from the UI](workflow-submitting-workflow.md), the uploaded file
+is written to `uploads/{namespace}/{uuid}/{filename}` in the artifact repository before the workflow
+is submitted. If the workflow is never submitted (the user navigates away, or the browser tab is
+closed), that object is not tied to any workflow's lifecycle and is not automatically deleted.
+
+Operators should configure a lifecycle/TTL rule on the `uploads/` prefix of their artifact bucket to
+reclaim these abandoned uploads.
+
+**S3**:
+
+```json
+{
+  "Rules": [
+    {
+      "ID": "expire-abandoned-uploads",
+      "Filter": { "Prefix": "uploads/" },
+      "Status": "Enabled",
+      "Expiration": { "Days": 7 }
+    }
+  ]
+}
+```
+
+```bash
+aws s3api put-bucket-lifecycle-configuration \
+  --bucket my-artifact-bucket \
+  --lifecycle-configuration file://lifecycle.json
+```
+
+**GCS**:
+
+```json
+{
+  "rule": [
+    {
+      "action": { "type": "Delete" },
+      "condition": { "age": 7, "matchesPrefix": ["uploads/"] }
+    }
+  ]
+}
+```
+
+```bash
+gcloud storage buckets update gs://my-artifact-bucket \
+  --lifecycle-file=lifecycle.json
+```
+
+**OSS (Alibaba Cloud)**:
+
+```json
+{
+  "Rule": [
+    {
+      "ID": "expire-abandoned-uploads",
+      "Prefix": "uploads/",
+      "Status": "Enabled",
+      "Expiration": { "Days": 7 }
+    }
+  ]
+}
+```
+
+```bash
+aliyun oss lifecycle --method put oss://my-artifact-bucket lifecycle.json
+```
+
 ## Configuring MinIO
 
 You can install MinIO into your cluster via Helm.

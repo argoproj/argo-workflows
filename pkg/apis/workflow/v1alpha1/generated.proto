@@ -671,6 +671,26 @@ message ExecutorConfig {
   optional string serviceAccountName = 1;
 }
 
+// ExecutorPlugin describes workflow-level executor plugin
+message ExecutorPlugin {
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 2;
+
+  optional ExecutorPluginSpec spec = 1;
+}
+
+message ExecutorPluginSidecar {
+  // AutomountServiceAccountToken enables mounting the service account token.
+  // The service account must be named <plugin-name>-executor-plugin.
+  optional bool automountServiceAccountToken = 1;
+
+  // Container defines the Kubernetes container specification for the sidecar.
+  optional .k8s.io.api.core.v1.Container container = 2;
+}
+
+message ExecutorPluginSpec {
+  optional ExecutorPluginSidecar sidecar = 1;
+}
+
 // GCSArtifact is the location of a GCS artifact
 message GCSArtifact {
   optional GCSBucket gCSBucket = 1;
@@ -855,6 +875,12 @@ message HTTPArtifact {
 
   // Auth contains information for client authentication
   optional HTTPAuth auth = 3;
+
+  // SaveStreamViaFile buffers a streamed upload to a temporary file before sending it,
+  // so a 307/308 redirect (e.g. webHDFS) can be followed by re-sending the body. When
+  // false (the default) SaveStream sends the reader directly and cannot follow such a
+  // redirect, since a one-shot reader cannot be replayed.
+  optional bool saveStreamViaFile = 4;
 }
 
 message HTTPAuth {
@@ -1673,6 +1699,9 @@ message SubmitOpts {
   // Priority is used if controller is configured to process limited number of workflows in parallel, higher priority workflows
   // are processed first.
   optional int32 priority = 14;
+
+  // Artifacts overrides input artifact locations. Format: name=key
+  repeated string artifacts = 15;
 }
 
 // SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.
@@ -1881,6 +1910,11 @@ message Template {
 
   // Annotations is a list of annotations to add to the template at runtime
   map<string, string> annotations = 44;
+
+  // PendingTimeout allows to set the maximum time spent in pending status counting from the node's start time.
+  // It is enforced by the controller, so a pod that starts running just as the timeout expires may still be failed.
+  // This duration may not be applied to Step or DAG templates.
+  optional string pendingTimeout = 45;
 }
 
 // TemplateRef is a reference of template resource.
@@ -2233,6 +2267,18 @@ message WorkflowSpec {
   // ArtifactGC describes the strategy to use when deleting artifacts from completed or deleted workflows (applies to all output Artifacts
   // unless Artifact.ArtifactGC is specified, which overrides this)
   optional WorkflowLevelArtifactGC artifactGC = 43;
+
+  // Specifies executor plugins at the workflow level.
+  //
+  // This field is effective only when the ARGO_WORKFLOW_LEVEL_EXECUTOR_PLUGINS
+  // feature gate is enabled.
+  //
+  // If this field contains one or more executor plugins, executor plugin
+  // settings from the controller ConfigMap are ignored.
+  //
+  // If this field is empty or not set, the controller falls back to the
+  // ConfigMap configuration.
+  repeated ExecutorPlugin executorPlugins = 44;
 }
 
 // WorkflowStatus contains overall status information about a workflow

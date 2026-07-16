@@ -314,6 +314,7 @@ func newController(ctx context.Context, options ...any) (context.CancelFunc, *Wo
 		lastWrittenVersions: lastWrittenVersions{
 			versions: make(map[types.UID]lastWrittenVersion),
 		},
+		enableWorkflowLevelExecutorPlugins: true,
 	}
 
 	for _, opt := range options {
