@@ -56,22 +56,19 @@ func TestNormalizeGCSKey(t *testing.T) {
 	// as the production code being tested.
 	windowsBackslashesAreSeparators := os.PathSeparator == '\\'
 
-	for _, test := range []struct {
-		key      string
-		expected string
-	}{
-		{"utils\\p4", "utils\\p4"},
-		{"some\\prefix\\some-file.exe", "some\\prefix\\some-file.exe"},
-		{"some/prefix/some-file.exe", "some/prefix/some-file.exe"},
-		{"no-separators", "no-separators"},
+	for _, key := range []string{
+		"utils\\p4",
+		"some\\prefix\\some-file.exe",
+		"some/prefix/some-file.exe",
+		"no-separators",
 	} {
-		expected := test.expected
+		expected := key
 		if windowsBackslashesAreSeparators {
-			expected = strings.ReplaceAll(test.key, "\\", "/")
+			expected = strings.ReplaceAll(key, "\\", "/")
 		}
-		got := normalizeGCSKey(test.key)
+		got := normalizeGCSKey(key)
 		if got != expected {
-			t.Errorf("normalizeGCSKey(%q): got %q, want %q", test.key, got, expected)
+			t.Errorf("normalizeGCSKey(%q): got %q, want %q", key, got, expected)
 		}
 	}
 }
