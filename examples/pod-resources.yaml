@@ -3,8 +3,9 @@
 # Requires the PodLevelResources feature gate (beta since Kubernetes v1.34);
 # without it the API server silently drops the field (the controller emits a
 # PodLevelResourcesDropped warning event when that happens).
-# Note: the budget must also cover the init and wait containers Argo injects
-# into each pod (sized by the controller's executor resources configuration).
+# Note: the budget must also cover the containers Argo injects into each pod
+# (sized by the controller's executor resources configuration): the API server
+# rejects a pod whose pod-level limits are below any single container's limits.
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -18,7 +19,7 @@ spec:
       memory: 64Mi
     limits:
       cpu: "1"
-      memory: 256Mi
+      memory: 512Mi
   templates:
   - name: hello-world
     container:
