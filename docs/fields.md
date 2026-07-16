@@ -3666,6 +3666,7 @@ ResourceTemplate is a template subtype to manipulate kubernetes resources
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`action`|`string`|Action is the action to perform to the resource. Must be one of: get, create, apply, delete, replace, patch|
+|`agent`|`boolean`|Agent, when true, runs this resource template on the shared per-workflow resource agent pod (which creates the resource and watches it for its success/failure conditions) instead of a dedicated per-node pod. See docs/resource-template.md.|
 |`failureCondition`|`string`|FailureCondition is a label selector expression which describes the conditions of the k8s resource in which the step was considered failed|
 |`flags`|`Array< string >`|Flags is a set of additional options passed to kubectl before submitting a resource I.e. to disable resource validation: flags: [ 	"--validate=false" # disable resource validation ]|
 |`manifest`|`string`|Manifest contains the kubernetes manifest|

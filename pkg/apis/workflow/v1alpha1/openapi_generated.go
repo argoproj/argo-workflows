@@ -5343,6 +5343,13 @@ func schema_pkg_apis_workflow_v1alpha1_ResourceTemplate(ref common.ReferenceCall
 							},
 						},
 					},
+					"agent": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Agent, when true, runs this resource template on the shared per-workflow resource agent pod (which creates the resource and watches it for its success/failure conditions) instead of a dedicated per-node pod. See docs/resource-template.md.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"action"},
 			},

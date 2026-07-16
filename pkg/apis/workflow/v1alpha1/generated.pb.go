@@ -5870,6 +5870,14 @@ func (m *ResourceTemplate) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	i--
+	if m.Agent {
+		dAtA[i] = 1
+	} else {
+		dAtA[i] = 0
+	}
+	i--
+	dAtA[i] = 0x48
 	if m.ManifestFrom != nil {
 		{
 			size, err := m.ManifestFrom.MarshalToSizedBuffer(dAtA[:i])
@@ -11769,6 +11777,7 @@ func (m *ResourceTemplate) Size() (n int) {
 		l = m.ManifestFrom.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
+	n += 2
 	return n
 }
 
@@ -14595,6 +14604,7 @@ func (this *ResourceTemplate) String() string {
 		`FailureCondition:` + fmt.Sprintf("%v", this.FailureCondition) + `,`,
 		`Flags:` + fmt.Sprintf("%v", this.Flags) + `,`,
 		`ManifestFrom:` + strings.Replace(this.ManifestFrom.String(), "ManifestFrom", "ManifestFrom", 1) + `,`,
+		`Agent:` + fmt.Sprintf("%v", this.Agent) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -33022,6 +33032,26 @@ func (m *ResourceTemplate) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 9:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Agent", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Agent = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGenerated(dAtA[iNdEx:])

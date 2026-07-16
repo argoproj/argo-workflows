@@ -233,6 +233,11 @@ func (ae *AgentExecutor) processTask(ctx context.Context, tmpl wfv1.Template) (*
 		executeTemplate = ae.executeHTTPTemplate
 	case tmpl.Plugin != nil:
 		executeTemplate = ae.executePluginTemplate
+	case tmpl.Resource != nil:
+		// Agent-based resource templates share this WorkflowTaskSet but are served by the dedicated
+		// resource agent. Ignore them here (empty phase => no result patched) so this agent does not
+		// spuriously fail them, mirroring how the resource agent skips non-resource tasks.
+		return &wfv1.NodeResult{}, 0, nil
 	default:
 		return nil, 0, fmt.Errorf("agent cannot execute: unknown task type: %v", tmpl.GetType())
 	}

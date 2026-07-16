@@ -2201,7 +2201,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	localParams := make(map[string]string)
 	// Inject the pod name. If the pod has a retry strategy, the pod name will be changed and will be injected when it
 	// is determined
-	if resolvedTmpl.IsPodType() && woc.retryStrategy(resolvedTmpl) == nil {
+	if resolvedTmpl.ProvidesPodNameVar() && woc.retryStrategy(resolvedTmpl) == nil {
 		localParams[varkeys.PodName.Template()] = woc.getPodName(nodeName, resolvedTmpl.Name)
 	}
 	if orgTmpl.IsDAGTask() {
@@ -2465,7 +2465,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 
 		localParams = make(map[string]string)
 		// Change the `pod.name` variable to the new retry node name
-		if processedTmpl.IsPodType() {
+		if processedTmpl.ProvidesPodNameVar() {
 			localParams[varkeys.PodName.Template()] = woc.getPodName(nodeName, processedTmpl.Name)
 		}
 		// Inject the retryAttempt number
@@ -2508,7 +2508,11 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	case wfv1.TemplateTypeScript:
 		node, err = woc.executeScript(ctx, nodeName, templateScope, processedTmpl, orgTmpl, opts)
 	case wfv1.TemplateTypeResource:
-		node, err = woc.executeResource(ctx, nodeName, templateScope, processedTmpl, orgTmpl, opts)
+		if processedTmpl.Resource != nil && processedTmpl.Resource.Agent {
+			node = woc.executeResourceMonitor(ctx, nodeName, templateScope, processedTmpl, orgTmpl, opts)
+		} else {
+			node, err = woc.executeResource(ctx, nodeName, templateScope, processedTmpl, orgTmpl, opts)
+		}
 	case wfv1.TemplateTypeDAG:
 		node, err = woc.executeDAG(ctx, nodeName, newTmplCtx, templateScope, processedTmpl, orgTmpl, opts)
 	case wfv1.TemplateTypeSuspend:
@@ -2798,7 +2802,9 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 		}
 		woc.updated = true
 		if woc.hasTaskSetNodes() {
+			// both agent pods carry LabelKeyComponent, so PodGC skips them; delete explicitly here
 			woc.controller.PodController.DeletePod(ctx, woc.wf.Namespace, woc.getAgentPodName())
+			woc.controller.PodController.DeletePod(ctx, woc.wf.Namespace, woc.getResourceAgentPodName())
 		}
 	}
 	return ctx
@@ -3346,7 +3352,7 @@ func (woc *wfOperationCtx) getOutboundNodes(ctx context.Context, nodeID string) 
 		woc.log.WithPanic().WithField("nodeID", nodeID).Error(ctx, "was unable to obtain node")
 	}
 	switch node.Type {
-	case wfv1.NodeTypeSkipped, wfv1.NodeTypeSuspend, wfv1.NodeTypeHTTP, wfv1.NodeTypePlugin:
+	case wfv1.NodeTypeSkipped, wfv1.NodeTypeSuspend, wfv1.NodeTypeHTTP, wfv1.NodeTypePlugin, wfv1.NodeTypeResourceMonitor:
 		return []string{node.ID}
 	case wfv1.NodeTypePod:
 

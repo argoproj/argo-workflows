@@ -8,9 +8,11 @@ metadata:
       This is the minimum recommended permissions needed if you want to use agent-based
       resource templates.
 
-      In addition to these rules, you must grant `create`, `list` and `watch` on every
-      resource kind your resource templates create, so the agent can create the resource
-      and then watch it for its success/failure conditions.
+      In addition to these rules, you must grant, on every resource kind your resource
+      templates touch, the verbs matching your actions plus the ones the agent always needs:
+      `create`, `get`, `list` and `watch` at minimum (create the resource, read it back for
+      restart-safety, and watch/poll it for its success/failure conditions), plus `update`
+      for apply/replace, `patch` for patch, and `delete` for delete.
 rules:
   - apiGroups:
       - argoproj.io

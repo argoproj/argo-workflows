@@ -6789,6 +6789,8 @@ spec:
                           - replace
                           - patch
                           type: string
+                        agent:
+                          type: boolean
                         failureCondition:
                           type: string
                         flags:
