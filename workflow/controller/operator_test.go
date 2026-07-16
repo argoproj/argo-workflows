@@ -13207,7 +13207,7 @@ func TestCheckTemplateTimeouts(t *testing.T) {
 	require.NoError(t, err)
 
 	// both deadlines are returned while the node is pending
-	deadline, pendingDeadline, err := woc.checkTemplateTimeouts(tmpl, node)
+	deadline, pendingDeadline, err := woc.checkTemplateTimeouts(tmpl, node, time.Now().UTC())
 
 	require.NoError(t, err)
 	deadlineUntil := time.Until(*deadline)
@@ -13219,7 +13219,7 @@ func TestCheckTemplateTimeouts(t *testing.T) {
 	// pending timeout
 	pendingUntil += 1 * time.Millisecond
 	time.Sleep(pendingUntil)
-	deadline, pendingDeadline, err = woc.checkTemplateTimeouts(tmpl, node)
+	deadline, pendingDeadline, err = woc.checkTemplateTimeouts(tmpl, node, time.Now().UTC())
 	assert.Nil(t, deadline)
 	assert.Nil(t, pendingDeadline)
 	require.ErrorIs(t, err, ErrTimeout)
@@ -13232,7 +13232,7 @@ func TestCheckTemplateTimeouts(t *testing.T) {
 	node, err = wf.GetNodeByName("hello-world-dag.dag1")
 	require.NoError(t, err)
 
-	deadline, pendingDeadline, err = woc.checkTemplateTimeouts(tmpl, node)
+	deadline, pendingDeadline, err = woc.checkTemplateTimeouts(tmpl, node, time.Now().UTC())
 	require.NoError(t, err)
 	assert.Nil(t, pendingDeadline)
 	deadlineUntil = time.Duration(0)
@@ -13245,7 +13245,7 @@ func TestCheckTemplateTimeouts(t *testing.T) {
 	// the deadline is still returned so it can be set as activeDeadlineSeconds
 	deadlineUntil += 1 * time.Millisecond
 	time.Sleep(deadlineUntil)
-	deadline, pendingDeadline, err = woc.checkTemplateTimeouts(tmpl, node)
+	deadline, pendingDeadline, err = woc.checkTemplateTimeouts(tmpl, node, time.Now().UTC())
 	assert.NotNil(t, deadline)
 	assert.Nil(t, pendingDeadline)
 	require.NoError(t, err)

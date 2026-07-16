@@ -197,31 +197,19 @@ func TestCreateWorkflowPod_InitlessShape(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, pod)
 
-	// 1. Zero init containers.
-	assert.Empty(t, pod.Spec.InitContainers, "init-less pods must have zero init containers")
+	// Shared layout-shape divergences (single source of truth, also asserted by
+	// TestBuild_InitlessLayout_PureSpec against the pure build() path): zero init
+	// containers, supervisor (not wait) aux container, argoexec-bin volume,
+	// /argo-bin mount + ARGO_WAIT_FOR_READY on main, ARGO_TEMPLATE on supervisor.
+	assertInitlessPodShape(t, pod)
 
-	// 2. Supervisor container present with `argoexec supervisor` command.
-	var supervisor, main *apiv1.Container
-	for i, c := range pod.Spec.Containers {
-		switch c.Name {
-		case common.SupervisorContainerName:
-			supervisor = &pod.Spec.Containers[i]
-		case common.MainContainerName:
-			main = &pod.Spec.Containers[i]
-		}
-	}
-	require.NotNil(t, supervisor, "supervisor container must exist")
+	// Below: assertions UNIQUE to the production createWorkflowPod path — the
+	// concrete executor image reference, the read-only /argo-bin mount path, and
+	// main's emissary command resolving to /bin/argoexec inside the image volume.
+	main := containerByName(pod.Spec.Containers, common.MainContainerName)
 	require.NotNil(t, main, "main container must exist")
-	require.GreaterOrEqual(t, len(supervisor.Command), 2)
-	assert.Equal(t, "argoexec", supervisor.Command[0])
-	assert.Equal(t, "supervisor", supervisor.Command[1])
 
-	// 3. Legacy wait container is NOT present.
-	for _, c := range pod.Spec.Containers {
-		assert.NotEqual(t, common.WaitContainerName, c.Name, "wait container must not appear in init-less mode")
-	}
-
-	// 4. argoexec-bin image volume present with the executor image reference.
+	// argoexec-bin image volume carries the configured executor image reference.
 	var argoBinVolume *apiv1.Volume
 	for i, v := range pod.Spec.Volumes {
 		if v.Name == argoBinVolumeName {
@@ -233,7 +221,7 @@ func TestCreateWorkflowPod_InitlessShape(t *testing.T) {
 	require.NotNil(t, argoBinVolume.Image, "volume source must be Image (KEP-4639)")
 	assert.Equal(t, "quay.io/argoproj/argoexec:initless-test", argoBinVolume.Image.Reference)
 
-	// 5. /argo-bin mount on main, read-only.
+	// /argo-bin mount on main, read-only, at the expected path.
 	var binMount *apiv1.VolumeMount
 	for i, vm := range main.VolumeMounts {
 		if vm.Name == argoBinVolumeName {
@@ -245,31 +233,9 @@ func TestCreateWorkflowPod_InitlessShape(t *testing.T) {
 	assert.Equal(t, argoBinMountPath, binMount.MountPath)
 	assert.True(t, binMount.ReadOnly, "/argo-bin must be read-only on main")
 
-	// 6. main's emissary command prepended with the /argo-bin path.
+	// main's emissary command prepended with the /argo-bin path.
 	require.NotEmpty(t, main.Command)
 	assert.Equal(t, argoBinMountPath+"/bin/argoexec", main.Command[0], "main's emissary must exec from the image volume path (/bin/argoexec inside the argoexec image)")
-
-	// 7. ARGO_WAIT_FOR_READY=true env on main.
-	var waitReadyEnv *apiv1.EnvVar
-	for i, e := range main.Env {
-		if e.Name == common.EnvVarWaitForReady {
-			waitReadyEnv = &main.Env[i]
-			break
-		}
-	}
-	require.NotNil(t, waitReadyEnv, "main must have ARGO_WAIT_FOR_READY env in init-less mode")
-	assert.Equal(t, "true", waitReadyEnv.Value)
-
-	// 8. ARGO_TEMPLATE set on supervisor so it can write /var/run/argo/template.
-	var tmplEnv *apiv1.EnvVar
-	for i, e := range supervisor.Env {
-		if e.Name == common.EnvVarTemplate {
-			tmplEnv = &supervisor.Env[i]
-			break
-		}
-	}
-	require.NotNil(t, tmplEnv, "supervisor must have ARGO_TEMPLATE env")
-	assert.NotEmpty(t, tmplEnv.Value)
 }
 
 // TestCreateWorkflowPod_LegacyShape asserts that with initlessPod disabled,
@@ -289,36 +255,11 @@ func TestCreateWorkflowPod_LegacyShape(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, pod)
 
-	// Init container present.
-	require.NotEmpty(t, pod.Spec.InitContainers, "legacy pods must have an init container")
-	assert.Equal(t, common.InitContainerName, pod.Spec.InitContainers[0].Name)
-
-	// Wait container present, supervisor not.
-	var hasWait, hasSupervisor bool
-	for _, c := range pod.Spec.Containers {
-		if c.Name == common.WaitContainerName {
-			hasWait = true
-		}
-		if c.Name == common.SupervisorContainerName {
-			hasSupervisor = true
-		}
-	}
-	assert.True(t, hasWait, "legacy pod must have wait container")
-	assert.False(t, hasSupervisor, "legacy pod must not have supervisor container")
-
-	// No argoexec-bin image volume.
-	for _, v := range pod.Spec.Volumes {
-		assert.NotEqual(t, argoBinVolumeName, v.Name, "legacy pod must not have argoexec-bin image volume")
-	}
-
-	// main must NOT have ARGO_WAIT_FOR_READY.
-	for _, c := range pod.Spec.Containers {
-		if c.Name == common.MainContainerName {
-			for _, e := range c.Env {
-				assert.NotEqual(t, common.EnvVarWaitForReady, e.Name, "main must not have ARGO_WAIT_FOR_READY in legacy mode")
-			}
-		}
-	}
+	// Shared layout-shape divergences (single source of truth, also asserted by
+	// TestBuild_LegacyLayout_PureSpec against the pure build() path): one init
+	// container, wait (not supervisor) aux container, no argoexec-bin volume, and
+	// main without the /argo-bin mount or ARGO_WAIT_FOR_READY env.
+	assertLegacyPodShape(t, pod)
 }
 
 // helloWorldWithInputArtifactWf exercises the init-less input-artifact path
@@ -447,31 +388,11 @@ func TestCreateWorkflowPod_InitlessNoAuxContainer(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, pod)
 
-	// No supervisor in this mode — there's no pre-main work and no post-main
-	// outputs to capture.
-	for _, c := range pod.Spec.Containers {
-		assert.NotEqual(t, common.SupervisorContainerName, c.Name,
-			"resource-without-logs templates must not schedule a supervisor")
-	}
-
-	// main carries ARGO_TEMPLATE inline so emissary readTemplate falls back to env.
-	var main *apiv1.Container
-	for i, c := range pod.Spec.Containers {
-		if c.Name == common.MainContainerName {
-			main = &pod.Spec.Containers[i]
-			break
-		}
-	}
-	require.NotNil(t, main)
-	var tmplEnv *apiv1.EnvVar
-	for i, e := range main.Env {
-		if e.Name == common.EnvVarTemplate {
-			tmplEnv = &main.Env[i]
-			break
-		}
-	}
-	require.NotNil(t, tmplEnv, "main must carry ARGO_TEMPLATE env var when there's no supervisor")
-	assert.NotEmpty(t, tmplEnv.Value)
+	// Shared supervisor-less shape (single source of truth, also asserted by
+	// TestBuild_InitlessLayout_NoAuxContainer against the pure build() path): no
+	// supervisor is scheduled and main carries ARGO_TEMPLATE inline so emissary
+	// readTemplate falls back to the env var.
+	assertInitlessNoAuxContainerShape(t, pod)
 }
 
 // resourceManifestFromInitlessWf is a Resource template that is NOT archiving

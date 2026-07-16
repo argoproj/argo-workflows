@@ -3,12 +3,14 @@ package controller
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apiv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/argoproj/argo-workflows/v4/config"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
@@ -172,6 +174,142 @@ func TestAssessAgentPodStatus(t *testing.T) {
 	})
 }
 
+var agentTaskSetWf = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: http-template
+  namespace: default
+spec:
+  podSpecPatch: |
+    nodeName: virtual-node
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: good
+            template: http
+            arguments:
+              parameters: [{name: url, value: "https://example.com/foo.json"}]
+    - name: http
+      inputs:
+        parameters:
+          - name: url
+      http:
+       url: "{{inputs.parameters.url}}"
+`
+
+// Test_createAgentPod_rateLimited asserts the transient-error contract of
+// createAgentPod. When the controller's resource rate limiter denies the
+// reservation, createPodFromBuild returns ErrResourceRateLimitReached, which
+// createAgentPod must treat as transient: requeue the workflow and return
+// (nil, nil), not a pod and not a hard error.
+func Test_createAgentPod_rateLimited(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(agentTaskSetWf)
+
+	t.Run("RateLimitedRequeuesAndReturnsNilNil", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		// Limit 0 / Burst 0 forces every Reserve() to be denied.
+		cancel, controller := newController(ctx, wf, defaultServiceAccount, func(c *WorkflowController) {
+			c.Config.ResourceRateLimit = &config.ResourceRateLimit{Limit: 0, Burst: 0}
+		})
+		defer cancel()
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+		pod, err := woc.createAgentPod(ctx)
+
+		// Transient rate-limit contract: no error, no pod.
+		require.NoError(t, err)
+		assert.Nil(t, pod)
+		// The workflow must have been requeued for a later retry. requeue() uses
+		// AddRateLimited, which schedules the add after a short backoff, so poll
+		// until the item lands on the queue.
+		assert.Eventually(t, func() bool {
+			return woc.controller.wfQueue.Len() > 0
+		}, 5*time.Second, 5*time.Millisecond, "expected the workflow to be requeued after rate-limit")
+		// No agent pod should have been created in the cluster.
+		pods, err := woc.controller.kubeclientset.CoreV1().Pods("default").List(ctx, v1.ListOptions{})
+		require.NoError(t, err)
+		assert.Empty(t, pods.Items)
+	})
+
+	t.Run("NotRateLimitedCreatesPod", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		// Limit 1 / Burst 1 allows the single reservation to succeed.
+		cancel, controller := newController(ctx, wf, defaultServiceAccount, func(c *WorkflowController) {
+			c.Config.ResourceRateLimit = &config.ResourceRateLimit{Limit: 1, Burst: 1}
+		})
+		defer cancel()
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+		pod, err := woc.createAgentPod(ctx)
+
+		require.NoError(t, err)
+		require.NotNil(t, pod)
+		assert.True(t, strings.HasSuffix(pod.Name, "-agent"))
+	})
+
+	t.Run("RateLimitedRecoversExistingPod", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx, wf, defaultServiceAccount, func(c *WorkflowController) {
+			c.Config.ResourceRateLimit = &config.ResourceRateLimit{Limit: 0, Burst: 0}
+		})
+		defer cancel()
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+		// Pre-create the agent pod in the fake cluster WITHOUT populating the
+		// informer store: the early informer GetPod misses it, and the rate
+		// limiter denies the create before the AlreadyExists→Get recovery in
+		// createPodFromBuild can run. createAgentPod must recover the existing
+		// pod via a direct Get instead of requeueing with no pod.
+		podName := woc.getAgentPodName()
+		existing := &apiv1.Pod{
+			ObjectMeta: v1.ObjectMeta{
+				Name:      podName,
+				Namespace: "default",
+			},
+		}
+		_, err := woc.controller.kubeclientset.CoreV1().Pods("default").Create(ctx, existing, v1.CreateOptions{})
+		require.NoError(t, err)
+
+		pod, err := woc.createAgentPod(ctx)
+		require.NoError(t, err)
+		require.NotNil(t, pod, "rate-limited create must recover the pre-existing agent pod")
+		assert.Equal(t, podName, pod.Name)
+	})
+}
+
+// Test_createAgentPod_alreadyExists asserts the AlreadyExists recovery path:
+// when the informer store is empty (so the early GetPod returns nil) but the
+// pod already exists in the cluster, createPod returns an AlreadyExists error
+// and createPodFromBuild recovers by fetching the existing pod. createAgentPod
+// must return that existing pod with no error.
+func Test_createAgentPod_alreadyExists(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(agentTaskSetWf)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf, defaultServiceAccount)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	// Pre-create a pod under the deterministic agent pod name directly in the
+	// fake cluster. The informer store is NOT populated with it, so the early
+	// informer GetPod returns nil and createAgentPod proceeds to createPod,
+	// which then hits AlreadyExists and recovers via a direct Get.
+	podName := woc.getAgentPodName()
+	existing := &apiv1.Pod{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      podName,
+			Namespace: "default",
+		},
+	}
+	_, err := woc.controller.kubeclientset.CoreV1().Pods("default").Create(ctx, existing, v1.CreateOptions{})
+	require.NoError(t, err)
+
+	pod, err := woc.createAgentPod(ctx)
+	require.NoError(t, err)
+	require.NotNil(t, pod)
+	assert.Equal(t, podName, pod.Name)
+}
+
 func TestDisableAgentPodCreation(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
@@ -213,4 +351,122 @@ spec:
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods("default").List(ctx, v1.ListOptions{})
 	require.NoError(t, err)
 	assert.Empty(t, pods.Items)
+}
+
+func TestWorkflowDefinedExecutorPluginsUsage(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: http-template
+  namespace: default
+spec:
+  podSpecPatch: |
+    nodeName: virtual-node
+  entrypoint: main
+  executorPlugins:
+  - spec:
+      sidecar:
+        container:
+          name: test-sidecar
+          image: busybox:1.35
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            runAsNonRoot: true
+    metadata:
+      name: test-sidecar
+  templates:
+    - name: main
+      steps:
+        - - name: good
+            template: http
+            arguments:
+              parameters: [{name: url, value: "https://raw.githubusercontent.com/argoproj/argo-workflows/4e450e250168e6b4d51a126b784e90b11a0162bc/pkg/apis/workflow/v1alpha1/generated.swagger.json"}]
+        - - name: bad
+            template: http
+            continueOn:
+              failed: true
+            arguments:
+              parameters: [{name: url, value: "http://openlibrary.org/people/george08/nofound.json"}]
+
+    - name: http
+      inputs:
+        parameters:
+          - name: url
+      http:
+        url: "{{inputs.parameters.url}}"
+`)
+	assert.NotNil(t, wf)
+	assert.Len(t, wf.Spec.ExecutorPlugins, 1)
+
+	t.Run("ExecutorPluginLoadedFromWorkflowSpec", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		var ts wfv1.WorkflowTaskSet
+		cancel, controller := newController(ctx, wf, ts, defaultServiceAccount)
+		defer cancel()
+
+		controller.Config.InstanceID = "testID"
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		sidecars, volumes, err := woc.getExecutorPlugins(ctx)
+		require.NoError(t, err)
+		assert.Len(t, sidecars, 1)
+		assert.Equal(t, "test-sidecar", sidecars[0].Name)
+		assert.Equal(t, "busybox:1.35", sidecars[0].Image)
+
+		assert.Nil(t, volumes)
+	})
+
+	t.Run("AgentPodCreatedSuccessfully", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		var ts wfv1.WorkflowTaskSet
+		cancel, controller := newController(ctx, wf, ts, defaultServiceAccount)
+		defer cancel()
+
+		controller.Config.InstanceID = "testID"
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		pod, err := woc.createAgentPod(ctx)
+		require.NoError(t, err)
+		require.NotNil(t, pod)
+
+		containers := pod.Spec.Containers
+		assert.NotEmpty(t, containers)
+
+		var executorSidecar *apiv1.Container
+		for _, container := range containers {
+			if container.Name == "test-sidecar" && container.Image == "busybox:1.35" {
+				executorSidecar = &container
+			}
+		}
+		assert.NotNil(t, pod.Spec.Volumes)
+		assert.NotNil(t, executorSidecar)
+	})
+
+	t.Run("AgentPodPluginFailedDueToSAMount", func(t *testing.T) {
+		// NOTE: We do NOT create a ServiceAccount beforehand.
+		// This test verifies that CreateAgentPod attempts to select
+		// the correct ServiceAccount if the plugin has AutomountServiceAccountToken set
+		wfCopy := wf.DeepCopy()
+		var ts wfv1.WorkflowTaskSet
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx, wfCopy, ts, defaultServiceAccount)
+		defer cancel()
+
+		wfCopy.Spec.ExecutorPlugins[0].Spec.Sidecar.AutomountServiceAccountToken = true
+		controller.Config.InstanceID = "testID"
+		woc := newWorkflowOperationCtx(ctx, wfCopy, controller)
+		pod, err := woc.createAgentPod(ctx)
+		// agent tried to mount the service account with the correct name "test-sidecar-executor-plugin",
+		// according to executorPlugin.metadata.name.
+		require.ErrorContains(t, err, "serviceaccounts \"test-sidecar-executor-plugin\" not found")
+		require.Nil(t, pod)
+	})
 }

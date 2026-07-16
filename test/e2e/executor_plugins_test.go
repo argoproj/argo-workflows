@@ -99,6 +99,38 @@ func (s *ExecutorPluginsSuite) TestCompressedTemplateExecutor_WorkflowTaskSetIsP
 		})
 }
 
+func (s *ExecutorPluginsSuite) TestWorkflowLevelTemplateExecutor() {
+	s.Given().
+		Workflow("@testdata/plugins/executor/workflow-level-template-executor-workflow.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflow(func(t *testing.T, md *metav1.ObjectMeta, s *wfv1.WorkflowStatus) {
+			n := s.Nodes[md.Name]
+			assert.Contains(t, n.Message, "Workflow-level hello")
+			assert.Len(t, n.Outputs.Parameters, 1)
+			assert.Equal(t, "workflow-level-foo", n.Outputs.Parameters[0].Name)
+			assert.Equal(t, "workflow-level-bar", n.Outputs.Parameters[0].Value.String())
+		}).
+		ExpectPods(func(t *testing.T, pods []apiv1.Pod) {
+			require.Len(t, pods, 1)
+			containers := pods[0].Spec.Containers
+
+			var containerNames []string
+			for _, container := range containers {
+				containerNames = append(containerNames, container.Name)
+			}
+			assert.ElementsMatch(t, []string{"workflow-level-hello-executor-plugin", "main"}, containerNames)
+		}).
+		ExpectWorkflowTaskSet(func(t *testing.T, wfts *wfv1.WorkflowTaskSet) {
+			assert.NotNil(t, wfts)
+			assert.Empty(t, wfts.Status.Nodes)
+			assert.Empty(t, wfts.Spec.Tasks)
+			assert.Equal(t, "true", wfts.Labels[common.LabelKeyCompleted])
+		})
+}
+
 func TestExecutorPluginsSuite(t *testing.T) {
 	suite.Run(t, new(ExecutorPluginsSuite))
 }
