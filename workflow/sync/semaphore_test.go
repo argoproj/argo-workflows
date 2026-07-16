@@ -247,3 +247,43 @@ func TestCheckAcquireNotifiesCorrectKeyForTemplateSemaphore(t *testing.T) {
 		})
 	}
 }
+
+// TestInternalSemaphoreReleaseWithLimitFetchFailure is a regression test: a transient
+// error fetching the ConfigMap limit during release() used to make getLimit return 0,
+// which release() mistook for a downward resize — the holder was removed from the map
+// but the weighted-semaphore slot was never freed, permanently leaking capacity until
+// controller restart.
+func TestInternalSemaphoreReleaseWithLimitFetchFailure(t *testing.T) {
+	fail := false
+	getter := func(_ string) (int, error) {
+		if fail {
+			return 0, fmt.Errorf("transient apiserver error")
+		}
+		return 1, nil
+	}
+	nextWorkflow := func(_ string) {}
+
+	// TTL 0 forces a live limit fetch on every getLimit call
+	sem, err := newInternalSemaphore("default/ConfigMap/my-config/workflow", nextWorkflow, getter, 0)
+	require.NoError(t, err)
+
+	require.NoError(t, sem.addToQueue("default/wf-a", 0, time.Now()))
+	acquired, _, err := sem.tryAcquire("default/wf-a", nil)
+	require.NoError(t, err)
+	require.True(t, acquired, "wf-a should acquire the only slot")
+
+	// The limit fetch fails transiently while wf-a releases.
+	fail = true
+	sem.release("default/wf-a")
+	fail = false
+
+	holders, err := sem.getCurrentHolders()
+	require.NoError(t, err)
+	assert.Empty(t, holders)
+
+	// wf-b must be able to acquire: limit is 1 and there are no holders.
+	require.NoError(t, sem.addToQueue("default/wf-b", 0, time.Now()))
+	acquired, _, err = sem.tryAcquire("default/wf-b", nil)
+	require.NoError(t, err)
+	assert.True(t, acquired, "wf-b should acquire the slot released by wf-a")
+}

@@ -125,8 +125,10 @@ func (s *databaseSemaphore) getLimit() int {
 	}).Infof("getLimit")
 	limit, _, err := s.limitGetter.get(s.shortDBKey)
 	if err != nil {
-		s.log.WithError(err).Errorf("Failed to get limit for semaphore %s", s.name)
-		return 0
+		// Fall back to the last known limit (returned by the cache alongside
+		// the error) rather than misreporting a transient failure as limit 0.
+		s.log.WithError(err).WithField("fallbackLimit", limit).Errorf("Failed to get limit for semaphore %s, using last known limit", s.name)
+		return limit
 	}
 	return limit
 }
