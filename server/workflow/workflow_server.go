@@ -18,6 +18,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/argoproj/argo-workflows/v4/errors"
@@ -69,7 +70,7 @@ type workflowServer struct {
 var _ Server = &workflowServer{}
 
 // NewServer returns a new Server
-func NewServer(ctx context.Context, instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, wfClientSet versioned.Interface, wfLister store.WorkflowLister, wfStore store.WorkflowStore, wftmplStore servertypes.WorkflowTemplateStore, cwftmplStore servertypes.ClusterWorkflowTemplateStore, wfDefaults *wfv1.Workflow, namespace *string) Server {
+func NewServer(ctx context.Context, instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, dyn dynamic.Interface, wfLister store.WorkflowLister, wfStore store.WorkflowStore, wftmplStore servertypes.WorkflowTemplateStore, cwftmplStore servertypes.ClusterWorkflowTemplateStore, wfDefaults *wfv1.Workflow, namespace *string) Server {
 	ws := &workflowServer{
 		instanceIDService:     instanceIDService,
 		offloadNodeStatusRepo: offloadNodeStatusRepo,
@@ -81,12 +82,17 @@ func NewServer(ctx context.Context, instanceIDService instanceid.Service, offloa
 		wfDefaults:            wfDefaults,
 	}
 	if wfStore != nil && namespace != nil {
+		gvr := wfv1.SchemeGroupVersion.WithResource(workflow.WorkflowPlural)
 		lw := &cache.ListWatch{
 			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
-				return wfClientSet.ArgoprojV1alpha1().Workflows(*namespace).List(ctx, options)
+				items, meta, err := sutils.TolerantList[wfv1.Workflow](ctx, dyn, gvr, *namespace, options)
+				if err != nil {
+					return nil, err
+				}
+				return &wfv1.WorkflowList{ListMeta: meta, Items: items}, nil
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-				return wfClientSet.ArgoprojV1alpha1().Workflows(*namespace).Watch(ctx, options)
+				return sutils.TolerantWatch[wfv1.Workflow, *wfv1.Workflow](ctx, dyn, gvr, *namespace, options)
 			},
 		}
 		wfReflector := cache.NewReflector(lw, &wfv1.Workflow{}, wfStore, reSyncDuration)
@@ -330,8 +336,12 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 		}
 	}
 	s.instanceIDService.With(opts)
-	wfIf := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace)
-	watch, err := wfIf.Watch(ctx, *opts)
+	// Use the tolerant dynamic watch so a single malformed workflow in the namespace
+	// cannot tear down this user-facing stream with a decode error — the outage class
+	// this package exists to prevent. Malformed Add/Modify events are dropped; the
+	// stream stays alive for every other workflow.
+	gvr := wfv1.SchemeGroupVersion.WithResource(workflow.WorkflowPlural)
+	watch, err := sutils.TolerantWatch[wfv1.Workflow, *wfv1.Workflow](ctx, auth.GetDynamicClient(ctx), gvr, req.Namespace, *opts)
 	if err != nil {
 		return sutils.ToStatusError(err, codes.Internal)
 	}
@@ -748,7 +758,7 @@ func (s *workflowServer) WorkflowLogs(req *workflowpkg.WorkflowLogRequest, ws wo
 func (s *workflowServer) getWorkflow(ctx context.Context, wfClient versioned.Interface, namespace string, name string, uid string, options metav1.GetOptions) (*wfv1.Workflow, error) {
 	logger := logging.RequireLoggerFromContext(ctx)
 	if name == latestAlias {
-		latest, err := getLatestWorkflow(ctx, wfClient, namespace)
+		latest, err := getLatestWorkflow(ctx, namespace)
 		if err != nil {
 			return nil, sutils.ToStatusError(err, codes.Internal)
 		}
@@ -788,19 +798,35 @@ func (s *workflowServer) validateWorkflow(wf *wfv1.Workflow) error {
 	return sutils.ToStatusError(s.instanceIDService.Validate(wf), codes.InvalidArgument)
 }
 
-func getLatestWorkflow(ctx context.Context, wfClient versioned.Interface, namespace string) (*wfv1.Workflow, error) {
-	wfList, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).List(ctx, metav1.ListOptions{})
+// getLatestWorkflow resolves the `@latest` alias. It picks the newest workflow by
+// creationTimestamp across the raw (undecoded) list, then decodes only that one.
+//
+// This deliberately does NOT use the tolerant list's drop-and-continue: @latest
+// feeds destructive ops (get/retry/resubmit/stop/terminate), so silently resolving
+// to an older workflow when the genuinely newest one fails to decode would mutate
+// the wrong resource. A malformed newest workflow surfaces an error here instead. A
+// malformed *older* workflow is still ignored, so one bad row does not 500 every
+// @latest-keyed op — the outage class this package exists to prevent.
+func getLatestWorkflow(ctx context.Context, namespace string) (*wfv1.Workflow, error) {
+	gvr := wfv1.SchemeGroupVersion.WithResource(workflow.WorkflowPlural)
+	list, err := auth.GetDynamicClient(ctx).Resource(gvr).Namespace(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
-	if len(wfList.Items) < 1 {
+	if len(list.Items) < 1 {
 		return nil, sutils.ToStatusError(fmt.Errorf("no workflows found"), codes.NotFound)
 	}
-	latest := wfList.Items[0]
-	for _, wf := range wfList.Items {
-		if latest.CreationTimestamp.Before(&wf.CreationTimestamp) {
-			latest = wf
+	newest := &list.Items[0]
+	for i := range list.Items {
+		newestCreated := newest.GetCreationTimestamp()
+		created := list.Items[i].GetCreationTimestamp()
+		if newestCreated.Before(&created) {
+			newest = &list.Items[i]
 		}
+	}
+	var latest wfv1.Workflow
+	if err := sutils.DecodeUnstructured(newest, &latest); err != nil {
+		return nil, sutils.ToStatusError(fmt.Errorf("latest workflow %q failed to decode: %w", newest.GetName(), err), codes.Internal)
 	}
 	return &latest, nil
 }

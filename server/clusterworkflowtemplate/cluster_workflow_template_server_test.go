@@ -9,12 +9,14 @@ import (
 	"github.com/stretchr/testify/require"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	dynamicfake "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes/fake"
 	k8stesting "k8s.io/client-go/testing"
 
 	clusterwftmplpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/clusterworkflowtemplate"
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	wftFake "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
+	wfscheme "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/scheme"
 	"github.com/argoproj/argo-workflows/v4/server/auth"
 	"github.com/argoproj/argo-workflows/v4/server/auth/types"
 	"github.com/argoproj/argo-workflows/v4/util/instanceid"
@@ -162,7 +164,9 @@ func getClusterWorkflowTemplateServer(t *testing.T) (clusterwftmplpkg.ClusterWor
 		}, nil
 	})
 	wfClientset := wftFake.NewClientset(&unlabelled, &cwftObj2, &cwftObj3)
+	dynClient := dynamicfake.NewSimpleDynamicClient(wfscheme.Scheme, &unlabelled, &cwftObj2, &cwftObj3)
 	ctx := context.WithValue(logging.TestContext(t.Context()), auth.WfKey, wfClientset)
+	ctx = context.WithValue(ctx, auth.DynamicKey, dynClient)
 	ctx = context.WithValue(ctx, auth.KubeKey, kubeClientSet)
 	ctx = context.WithValue(ctx, auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}, Email: "my-sub@your.org"})
 	return NewClusterWorkflowTemplateServer(instanceid.NewService("my-instanceid"), nil, nil), ctx

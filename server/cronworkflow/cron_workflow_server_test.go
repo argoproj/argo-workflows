@@ -7,10 +7,12 @@ import (
 	"github.com/go-jose/go-jose/v4/jwt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	dynamicfake "k8s.io/client-go/dynamic/fake"
 
 	cronworkflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/cronworkflow"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	wftFake "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
+	wfscheme "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/scheme"
 	"github.com/argoproj/argo-workflows/v4/server/auth"
 	"github.com/argoproj/argo-workflows/v4/server/auth/types"
 	"github.com/argoproj/argo-workflows/v4/server/clusterworkflowtemplate"
@@ -56,11 +58,17 @@ metadata:
   namespace: my-ns
 `, &unlabelled)
 
+	// List now reads through the dynamic client while Create still writes through
+	// the typed client, so the two fakes are seeded independently. The typed fake
+	// omits cronWf so CreateCronWorkflow below doesn't hit AlreadyExists; the
+	// dynamic fake includes it so ListCronWorkflows has something to return.
 	wfClientset := wftFake.NewClientset(&unlabelled)
+	dynClient := dynamicfake.NewSimpleDynamicClient(wfscheme.Scheme, &unlabelled, &cronWf)
 	wftmplStore := workflowtemplate.NewClientStore()
 	cwftmplStore := clusterworkflowtemplate.NewClientStore()
 	server := NewCronWorkflowServer(instanceid.NewService("my-instanceid"), wftmplStore, cwftmplStore, nil)
 	ctx := context.WithValue(logging.TestContext(t.Context()), auth.WfKey, wfClientset)
+	ctx = context.WithValue(ctx, auth.DynamicKey, dynClient)
 	ctx = context.WithValue(ctx, auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}, Email: "my-sub@your.org"})
 	userEmailLabel := "my-sub.at.your.org"
 

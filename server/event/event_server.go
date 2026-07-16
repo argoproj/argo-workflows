@@ -9,6 +9,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	eventpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/event"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/server/auth"
 	"github.com/argoproj/argo-workflows/v4/server/event/dispatch"
@@ -73,12 +74,15 @@ func (s *Controller) ReceiveEvent(ctx context.Context, req *eventpkg.EventReques
 	options := metav1.ListOptions{}
 	s.instanceIDService.With(&options)
 
-	list, err := auth.GetWfClient(ctx).ArgoprojV1alpha1().WorkflowEventBindings(req.Namespace).List(ctx, options)
+	// Use the tolerant dynamic list so a single malformed WorkflowEventBinding
+	// cannot 500 every inbound event (the failure class this package guards).
+	gvr := wfv1.SchemeGroupVersion.WithResource(workflow.WorkflowEventBindingPlural)
+	items, _, err := sutils.TolerantList[wfv1.WorkflowEventBinding](ctx, auth.GetDynamicClient(ctx), gvr, req.Namespace, options)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
 
-	operation, err := dispatch.NewOperation(ctx, s.instanceIDService, s.eventRecorderManager.Get(ctx, req.Namespace), list.Items, req.Namespace, req.Discriminator, req.Payload)
+	operation, err := dispatch.NewOperation(ctx, s.instanceIDService, s.eventRecorderManager.Get(ctx, req.Namespace), items, req.Namespace, req.Discriminator, req.Payload)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
@@ -103,9 +107,10 @@ func (s *Controller) ListWorkflowEventBindings(ctx context.Context, in *eventpkg
 	if in.ListOptions != nil {
 		listOptions = *in.ListOptions
 	}
-	eventBindings, err := auth.GetWfClient(ctx).ArgoprojV1alpha1().WorkflowEventBindings(in.Namespace).List(ctx, listOptions)
+	gvr := wfv1.SchemeGroupVersion.WithResource(workflow.WorkflowEventBindingPlural)
+	items, meta, err := sutils.TolerantList[wfv1.WorkflowEventBinding](ctx, auth.GetDynamicClient(ctx), gvr, in.Namespace, listOptions)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
-	return eventBindings, nil
+	return &wfv1.WorkflowEventBindingList{ListMeta: meta, Items: items}, nil
 }
