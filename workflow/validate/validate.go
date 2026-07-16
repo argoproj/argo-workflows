@@ -513,7 +513,7 @@ func (tctx *templateValidationCtx) validateTemplate(ctx context.Context, tmpl *w
 	}
 
 	localParams := make(map[string]string)
-	if tmpl.IsPodType() {
+	if tmpl.ProvidesPodNameVar() {
 		localParams[varkeys.PodName.Template()] = placeholderGenerator.NextPlaceholder()
 		scope[varkeys.PodName.Template()] = placeholderGenerator.NextPlaceholder()
 	}

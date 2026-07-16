@@ -6,6 +6,19 @@ See [Kubernetes Resources](walk-through/kubernetes-resources.md).
 
 ## Agent-based execution
 
+Set `resource.agent: true` on a resource template to run it on the shared per-workflow resource
+agent pod instead of a dedicated per-node pod:
+
+```yaml
+- name: create-thing
+  resource:
+    action: create
+    agent: true
+    successCondition: status.phase == Running
+    manifest: |
+      ...
+```
+
 When resource templates are executed by the agent instead of a per-node pod, be aware of the following:
 
 * Agent-based resource templates run in their own pod, named `<workflow>-<id>-resource-agent` and
@@ -33,11 +46,14 @@ The service account needs:
 
 * `list` and `watch` on `workflowtasksets`, and `patch` on `workflowtasksets/status` (to receive
   tasks and report results, the same as the [HTTP agent](workflow-rbac.md)),
-* `create`, `list` and `watch` on every resource kind your templates create,
+* on every resource kind your templates touch, the verbs matching your actions plus the ones the
+  agent always needs: `create`, `get`, `list` and `watch` at minimum (the agent creates the
+  resource, reads it back for restart-safety, and watches/polls it for its success and failure
+  conditions), plus `update` for `apply`/`replace`, `patch` for `patch`, and `delete` for `delete`,
 * `get` on `secrets` and `configmaps` if you use `manifestFrom` artifacts, since the agent
   resolves them via the Kubernetes API rather than an init container.
 
-For example, for templates that create `sparkapplications`:
+For example, for templates that create and watch `sparkapplications`:
 
 ```yaml
 apiVersion: rbac.authorization.k8s.io/v1
@@ -64,6 +80,7 @@ rules:
       - sparkapplications
     verbs:
       - create
+      - get
       - list
       - watch
 ```

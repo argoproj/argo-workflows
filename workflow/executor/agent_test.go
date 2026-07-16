@@ -10,6 +10,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
@@ -38,6 +39,19 @@ func TestUnsupportedTemplateTaskWorker(t *testing.T) {
 	response := <-responseQueue
 	assert.Equal(t, v1alpha1.NodeError, response.Result.Phase)
 	assert.Contains(t, response.Result.Message, "agent cannot execute: unknown task type")
+}
+
+func TestAgentSkipsResourceTasks(t *testing.T) {
+	// Agent-based resource templates share the taskset but are served by the resource agent. The
+	// plain agent must ignore them (empty phase => nothing patched), not error them.
+	ctx := logging.TestContext(t.Context())
+	ae := &AgentExecutor{consideredTasks: &sync.Map{}}
+	result, requeue, err := ae.processTask(ctx, v1alpha1.Template{
+		Resource: &v1alpha1.ResourceTemplate{Action: "create", Agent: true},
+	})
+	require.NoError(t, err)
+	assert.Equal(t, time.Duration(0), requeue)
+	assert.Empty(t, string(result.Phase))
 }
 
 func TestAgentPluginExecuteTaskSet(t *testing.T) {

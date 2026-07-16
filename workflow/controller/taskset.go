@@ -52,9 +52,11 @@ func (woc *wfOperationCtx) getDeleteTaskAndNodePatch(nodes wfv1.Nodes) (tasksPat
 	return
 }
 
-func (woc *wfOperationCtx) markTaskSetNodesError(ctx context.Context, err error) {
+// markTaskSetNodesError marks taskset nodes as errored. If match is non-nil, only nodes for which
+// it returns true are marked (used to scope a single agent pod's failure to the nodes it serves).
+func (woc *wfOperationCtx) markTaskSetNodesError(ctx context.Context, err error, match func(wfv1.NodeStatus) bool) {
 	for _, node := range woc.wf.Status.Nodes {
-		if node.IsTaskSetNode() && !node.Fulfilled() {
+		if node.IsTaskSetNode() && !node.Fulfilled() && (match == nil || match(node)) {
 			woc.markNodeError(ctx, node.Name, err)
 		}
 	}
@@ -103,11 +105,9 @@ func (woc *wfOperationCtx) taskSetReconciliation(ctx context.Context) {
 		woc.log.WithError(err).Error(ctx, "error in workflowtaskset reconciliation")
 		return
 	}
-	if err := woc.reconcileAgentPod(ctx); err != nil {
-		woc.log.WithError(err).Error(ctx, "error in agent pod reconciliation")
-		woc.markTaskSetNodesError(ctx, fmt.Errorf(`create agent pod failed with reason:"%w"`, err))
-		return
-	}
+	// reconcileAgentPod scopes any creation failure to the nodes served by the failed pod, so no
+	// blanket markTaskSetNodesError is needed here (that would fail healthy nodes on the other pod).
+	woc.reconcileAgentPod(ctx)
 }
 
 func (woc *wfOperationCtx) nodeRequiresTaskSetReconciliation(ctx context.Context, nodeName string) bool {

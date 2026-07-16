@@ -1211,7 +1211,7 @@ func isGroupNodeType(nodeType wfv1.NodeType) bool {
 }
 
 func isExecutionNodeType(nodeType wfv1.NodeType) bool {
-	return nodeType == wfv1.NodeTypeContainer || nodeType == wfv1.NodeTypePod || nodeType == wfv1.NodeTypeHTTP || nodeType == wfv1.NodeTypePlugin
+	return nodeType == wfv1.NodeTypeContainer || nodeType == wfv1.NodeTypePod || nodeType == wfv1.NodeTypeHTTP || nodeType == wfv1.NodeTypePlugin || nodeType == wfv1.NodeTypeResourceMonitor
 }
 
 // dagSortedNodes sorts the nodes based on topological order, omits onExitNode

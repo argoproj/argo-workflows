@@ -1471,6 +1471,11 @@ message ResourceTemplate {
   // 	"--validate=false"  # disable resource validation
   // ]
   repeated string flags = 7;
+
+  // Agent, when true, runs this resource template on the shared per-workflow resource agent pod
+  // (which creates the resource and watches it for its success/failure conditions) instead of a
+  // dedicated per-node pod. See docs/resource-template.md.
+  optional bool agent = 9;
 }
 
 // RetryAffinity prevents running steps on the same host.

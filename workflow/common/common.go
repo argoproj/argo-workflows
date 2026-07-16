@@ -228,6 +228,8 @@ const (
 	EnvAgentTaskWorkers = "ARGO_AGENT_TASK_WORKERS"
 	// EnvAgentPatchRate is the rate that the Argo Agent will patch the Workflow TaskSet
 	EnvAgentPatchRate = "ARGO_AGENT_PATCH_RATE"
+	// EnvAgentResourceInformerResync is the resync period for the resource agent's informers
+	EnvAgentResourceInformerResync = "ARGO_AGENT_RESOURCE_INFORMER_RESYNC"
 
 	// Finalizer to block deletion of the workflow if deletion of artifacts fail for some reason.
 	FinalizerArtifactGC = workflow.WorkflowFullName + "/artifact-gc"
@@ -382,4 +384,16 @@ func ResolveTemplateEnvValue(raw string, offloadDir string) ([]byte, error) {
 		return os.ReadFile(filepath.Join(offloadDir, EnvVarTemplate))
 	}
 	return []byte(raw), nil
+}
+
+// ManifestDocCount counts the non-empty YAML documents in a manifest. Used to reject multi-document
+// manifests for agent-based resource templates, which apply exactly one object per node.
+func ManifestDocCount(manifest []byte) int {
+	count := 0
+	for doc := range strings.SplitSeq(string(manifest), "\n---") {
+		if strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(doc), "---")) != "" {
+			count++
+		}
+	}
+	return count
 }

@@ -12971,6 +12971,8 @@ spec:
                             - replace
                             - patch
                             type: string
+                          agent:
+                            type: boolean
                           failureCondition:
                             type: string
                           flags:
@@ -31322,6 +31324,12 @@ spec:
                               - replace
                               - patch
                               type: string
+                            agent:
+                              description: |-
+                                Agent, when true, runs this resource template on the shared per-workflow resource agent pod
+                                (which creates the resource and watches it for its success/failure conditions) instead of a
+                                dedicated per-node pod. See docs/resource-template.md.
+                              type: boolean
                             failureCondition:
                               description: |-
                                 FailureCondition is a label selector expression which describes the conditions

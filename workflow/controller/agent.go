@@ -32,13 +32,13 @@ func (woc *wfOperationCtx) getResourceAgentPodName() string {
 }
 
 func (woc *wfOperationCtx) isAgentPod(pod *apiv1.Pod) bool {
-	return pod.Name == woc.getAgentPodName()
+	return pod.Name == woc.getAgentPodName() || pod.Name == woc.getResourceAgentPodName()
 }
 
-func (woc *wfOperationCtx) reconcileAgentPod(ctx context.Context) error {
+func (woc *wfOperationCtx) reconcileAgentPod(ctx context.Context) {
 	woc.log.Info(ctx, "reconcileAgentPod")
 	if len(woc.taskSet) == 0 {
-		return nil
+		return
 	}
 	hasResourceTmpl := false
 	hasOtherTmpl := false
@@ -49,33 +49,49 @@ func (woc *wfOperationCtx) reconcileAgentPod(ctx context.Context) error {
 			hasOtherTmpl = true
 		}
 	}
+	// The two agent pods share one taskset. Reconcile each independently and scope any failure to
+	// the nodes it serves, so one pod's failure never fails the other pod's (healthy) nodes.
 	if hasOtherTmpl {
-		pod, err := woc.createAgentPod(ctx)
-		if err != nil {
-			return err
-		}
-		// Check Pod is just created
-		if pod != nil && pod.Status.Phase != "" {
-			woc.updateAgentPodStatus(ctx, pod)
-		}
+		woc.reconcileOneAgentPod(ctx, false)
 	}
 	if hasResourceTmpl {
-		pod, err := woc.createResourceAgentPod(ctx)
-		if err != nil {
-			return err
-		}
-		if pod != nil && pod.Status.Phase != "" {
-			woc.updateAgentPodStatus(ctx, pod)
-		}
+		woc.reconcileOneAgentPod(ctx, true)
 	}
-	return nil
+}
+
+// reconcileOneAgentPod creates (or recovers) a single agent pod and, on a non-transient creation
+// failure, marks only the taskset nodes that pod serves as errored — resource-monitor nodes for the
+// resource agent, HTTP/plugin nodes for the normal agent — leaving the other pod's nodes untouched.
+func (woc *wfOperationCtx) reconcileOneAgentPod(ctx context.Context, resourceAgent bool) {
+	var pod *apiv1.Pod
+	var err error
+	if resourceAgent {
+		pod, err = woc.createResourceAgentPod(ctx)
+	} else {
+		pod, err = woc.createAgentPod(ctx)
+	}
+	if err != nil {
+		woc.markTaskSetNodesError(ctx, fmt.Errorf(`create agent pod failed with reason:"%w"`, err), func(node wfv1.NodeStatus) bool {
+			return (node.Type == wfv1.NodeTypeResourceMonitor) == resourceAgent
+		})
+		return
+	}
+	// Check Pod is just created
+	if pod != nil && pod.Status.Phase != "" {
+		woc.updateAgentPodStatus(ctx, pod)
+	}
 }
 
 func (woc *wfOperationCtx) updateAgentPodStatus(ctx context.Context, pod *apiv1.Pod) {
 	woc.log.Info(ctx, "updateAgentPodStatus")
 	newPhase, message := assessAgentPodStatus(ctx, pod)
 	if newPhase == wfv1.NodeFailed || newPhase == wfv1.NodeError {
-		woc.markTaskSetNodesError(ctx, fmt.Errorf(`agent pod failed with reason:"%s"`, message))
+		// Two agent pods can share the taskset (resource-agent + http/plugin agent). Only fail the
+		// nodes served by the pod that actually failed, not every taskset node.
+		resourceAgent := pod.Name == woc.getResourceAgentPodName()
+		woc.markTaskSetNodesError(ctx, fmt.Errorf(`agent pod failed with reason:"%s"`, message), func(node wfv1.NodeStatus) bool {
+			return (node.Type == wfv1.NodeTypeResourceMonitor) == resourceAgent
+		})
 	}
 }
 
@@ -192,6 +208,15 @@ func (woc *wfOperationCtx) createTaskSetAgentPod(ctx context.Context, resourceAg
 			Name:  common.EnvAgentTaskWorkers,
 			Value: taskWorkers,
 		})
+	}
+	// The resource agent's informer resync period is tunable; pass it through when overridden.
+	if resourceAgent {
+		if resync, exists := os.LookupEnv(common.EnvAgentResourceInformerResync); exists {
+			envVars = append(envVars, apiv1.EnvVar{
+				Name:  common.EnvAgentResourceInformerResync,
+				Value: resync,
+			})
+		}
 	}
 
 	serviceAccountName := woc.execWf.Spec.ServiceAccountName

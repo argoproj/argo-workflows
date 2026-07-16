@@ -45,25 +45,8 @@ func (we *WorkflowExecutor) ExecResource(ctx context.Context, action string, man
 		return "", "", "", err
 	}
 
-	var out []byte
-	err = retry.OnError(retry.DefaultBackoff, func(err error) bool {
-		return argoerr.IsTransientErr(ctx, err)
-	}, func() error {
-		out, err = runKubectl(ctx, args...)
-		if err != nil {
-			return err
-		}
-		return nil
-	})
+	out, err := runKubectlWithRetry(ctx, args...)
 	if err != nil {
-		var exErr *exec.ExitError
-		if errors.As(err, &exErr) {
-			errMsg := strings.TrimSpace(string(exErr.Stderr))
-			err = argoerrors.Wrap(err, argoerrors.CodeBadRequest, errMsg)
-		} else {
-			err = argoerrors.Wrap(err, argoerrors.CodeBadRequest, err.Error())
-		}
-		err = argoerrors.Wrap(err, argoerrors.CodeBadRequest, "no more retries "+err.Error())
 		return "", "", "", err
 	}
 	if action == "delete" {
@@ -88,6 +71,29 @@ func (we *WorkflowExecutor) ExecResource(ctx context.Context, action string, man
 	logger := logging.RequireLoggerFromContext(ctx)
 	logger.WithFields(logging.Fields{"namespace": obj.GetNamespace(), "resource": resourceFullName, "selfLink": selfLink}).Info(ctx, "Resource")
 	return obj.GetNamespace(), resourceFullName, selfLink, nil
+}
+
+// runKubectlWithRetry runs kubectl with transient-error retry and normalizes a failure into an
+// argoerror carrying kubectl's stderr. Shared by the per-pod executor and the resource agent.
+func runKubectlWithRetry(ctx context.Context, args ...string) ([]byte, error) {
+	var out []byte
+	err := retry.OnError(retry.DefaultBackoff, func(err error) bool {
+		return argoerr.IsTransientErr(ctx, err)
+	}, func() error {
+		var runErr error
+		out, runErr = runKubectl(ctx, args...)
+		return runErr
+	})
+	if err != nil {
+		var exErr *exec.ExitError
+		if errors.As(err, &exErr) {
+			err = argoerrors.Wrap(err, argoerrors.CodeBadRequest, strings.TrimSpace(string(exErr.Stderr)))
+		} else {
+			err = argoerrors.Wrap(err, argoerrors.CodeBadRequest, err.Error())
+		}
+		err = argoerrors.Wrap(err, argoerrors.CodeBadRequest, "no more retries "+err.Error())
+	}
+	return out, err
 }
 
 // inferPluralName guesses the lowercase plural resource name for a kind.
@@ -209,43 +215,33 @@ func (g gjsonLabels) Lookup(label string) (string, bool) {
 // WaitResource waits for a specific resource to satisfy either the success or failure condition
 func (we *WorkflowExecutor) WaitResource(ctx context.Context, resourceNamespace, resourceName, selfLink string) error {
 	logger := logging.RequireLoggerFromContext(ctx)
+	// Only skip the wait when both conditions are genuinely absent. A non-empty condition — even a
+	// whitespace-only one produced by a parameter substitution — must still poll at least once, so a
+	// resource deleted mid-check surfaces as NotFound instead of being reported a spurious success.
 	if we.Template.Resource.SuccessCondition == "" && we.Template.Resource.FailureCondition == "" {
 		return nil
 	}
-	var successReqs labels.Requirements
-	if we.Template.Resource.SuccessCondition != "" {
-		successSelector, err := labels.Parse(we.Template.Resource.SuccessCondition)
-		if err != nil {
-			return argoerrors.Errorf(argoerrors.CodeBadRequest, "success condition '%s' failed to parse: %v", we.Template.Resource.SuccessCondition, err)
-		}
-		logger.WithField("conditions", successSelector).Info(ctx, "Waiting for conditions")
-		successReqs, _ = successSelector.Requirements()
+	rc, err := parseConditions(we.Template.Resource.SuccessCondition, we.Template.Resource.FailureCondition)
+	if err != nil {
+		return err
 	}
-
-	var failReqs labels.Requirements
-	if we.Template.Resource.FailureCondition != "" {
-		failSelector, err := labels.Parse(we.Template.Resource.FailureCondition)
-		if err != nil {
-			return argoerrors.Errorf(argoerrors.CodeBadRequest, "fail condition '%s' failed to parse: %v", we.Template.Resource.FailureCondition, err)
-		}
-		logger.WithField("conditions", failSelector).Info(ctx, "Failing for conditions")
-		failReqs, _ = failSelector.Requirements()
-	}
-	err := wait.PollUntilContextCancel(ctx, envutil.LookupEnvDurationOr(ctx, "RESOURCE_STATE_CHECK_INTERVAL", time.Second*5),
+	successReqs, failReqs := rc.successReqs, rc.failReqs
+	logger.WithFields(logging.Fields{"success": successReqs, "failure": failReqs}).Info(ctx, "Waiting for conditions")
+	err = wait.PollUntilContextCancel(ctx, envutil.LookupEnvDurationOr(ctx, "RESOURCE_STATE_CHECK_INTERVAL", time.Second*5),
 		true,
 		func(ctx context.Context) (bool, error) {
-			isErrRetryable, err := we.checkResourceState(ctx, selfLink, successReqs, failReqs)
-			if err == nil {
+			isErrRetryable, resourceErr := we.checkResourceState(ctx, selfLink, successReqs, failReqs)
+			if resourceErr == nil {
 				logger.WithFields(logging.Fields{"name": resourceName, "namespace": resourceNamespace}).Info(ctx, "Returning from successful wait for resource")
 				return true, nil
 			}
-			if isErrRetryable || argoerr.IsTransientErr(ctx, err) {
-				logger.WithFields(logging.Fields{"name": resourceName, "namespace": resourceNamespace, "error": err}).Info(ctx, "Waiting for resource resulted in retryable error")
+			if isErrRetryable || argoerr.IsTransientErr(ctx, resourceErr) {
+				logger.WithFields(logging.Fields{"name": resourceName, "namespace": resourceNamespace, "error": resourceErr}).Info(ctx, "Waiting for resource resulted in retryable error")
 				return false, nil
 			}
 
-			logger.WithField("name", resourceName).WithField("namespace", resourceNamespace).WithError(err).Warn(ctx, "Waiting for resource resulted in non-retryable error")
-			return false, err
+			logger.WithField("name", resourceName).WithField("namespace", resourceNamespace).WithError(resourceErr).Warn(ctx, "Waiting for resource resulted in non-retryable error")
+			return false, resourceErr
 		})
 	if err != nil {
 		if wait.Interrupted(err) {

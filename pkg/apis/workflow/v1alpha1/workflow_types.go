@@ -3427,6 +3427,11 @@ type ResourceTemplate struct {
 	// 	"--validate=false"  # disable resource validation
 	// ]
 	Flags []string `json:"flags,omitempty" protobuf:"varint,7,opt,name=flags"`
+
+	// Agent, when true, runs this resource template on the shared per-workflow resource agent pod
+	// (which creates the resource and watches it for its success/failure conditions) instead of a
+	// dedicated per-node pod. See docs/resource-template.md.
+	Agent bool `json:"agent,omitempty" protobuf:"varint,9,opt,name=agent"`
 }
 
 type ManifestFrom struct {
@@ -3474,7 +3479,12 @@ func (tmpl *Template) GetNodeType() NodeType {
 		return NodeTypeRetry
 	}
 	switch tmpl.GetType() {
-	case TemplateTypeContainer, TemplateTypeContainerSet, TemplateTypeScript, TemplateTypeResource, TemplateTypeData:
+	case TemplateTypeResource:
+		if tmpl.Resource != nil && tmpl.Resource.Agent {
+			return NodeTypeResourceMonitor
+		}
+		return NodeTypePod
+	case TemplateTypeContainer, TemplateTypeContainerSet, TemplateTypeScript, TemplateTypeData:
 		return NodeTypePod
 	case TemplateTypeDAG:
 		return NodeTypeDAG
@@ -3493,10 +3503,21 @@ func (tmpl *Template) GetNodeType() NodeType {
 // IsPodType returns whether or not the template is a pod type
 func (tmpl *Template) IsPodType() bool {
 	switch tmpl.GetType() {
-	case TemplateTypeContainer, TemplateTypeContainerSet, TemplateTypeScript, TemplateTypeResource, TemplateTypeData:
+	case TemplateTypeResource:
+		// agent-based resource templates run on the shared agent pod, not a per-node pod
+		return tmpl.Resource == nil || !tmpl.Resource.Agent
+	case TemplateTypeContainer, TemplateTypeContainerSet, TemplateTypeScript, TemplateTypeData:
 		return true
 	}
 	return false
+}
+
+// ProvidesPodNameVar reports whether the {{pod.name}} variable should be injected into this
+// template's scope. Pod templates always do; resource templates do too (including the agent
+// variant, which is not IsPodType) so that a manifest referencing {{pod.name}} keeps resolving
+// the same way regardless of resource.agent.
+func (tmpl *Template) ProvidesPodNameVar() bool {
+	return tmpl.IsPodType() || tmpl.GetType() == TemplateTypeResource
 }
 
 // IsLeaf returns whether or not the template is a leaf
