@@ -7197,6 +7197,13 @@
           "description": "Annotations adds to metadata.labels",
           "type": "string"
         },
+        "artifacts": {
+          "description": "Artifacts overrides input artifact locations. Format: name=key",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
         "dryRun": {
           "description": "DryRun validates the workflow on the client-side without creating it. This option is not supported in API",
           "type": "boolean"

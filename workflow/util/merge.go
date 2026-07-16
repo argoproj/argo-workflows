@@ -309,7 +309,67 @@ func JoinWorkflowSpec(wfSpec, wftSpec, wfDefaultSpec *wfv1.WorkflowSpec) (*wfv1.
 			// If none of the above conditions are met, we can safely assume that the parameter is set from the wfDefaultSpec.
 		}
 	}
+
+	// Apply the same priority logic for artifacts.
+	// Artifacts from the workflow spec should take precedence over those from the template.
+	wfArtifactsMap := artifactsToMapByName(wfSpec)
+	wftArtifactsMap := artifactsToMapByName(wftSpec)
+	for index, artifact := range targetWf.Spec.Arguments.Artifacts {
+		if art, ok := wfArtifactsMap[artifact.Name]; ok {
+			merged, err := mergeArtifactOverride(artifact, art)
+			if err != nil {
+				return nil, err
+			}
+			targetWf.Spec.Arguments.Artifacts[index] = merged
+		} else if art, ok := wftArtifactsMap[artifact.Name]; ok {
+			merged, err := mergeArtifactOverride(artifact, art)
+			if err != nil {
+				return nil, err
+			}
+			targetWf.Spec.Arguments.Artifacts[index] = merged
+		}
+		// If none of the above conditions are met, we can safely assume that the artifact is set from the wfDefaultSpec.
+	}
+
 	return &targetWf, nil
+}
+
+// mergeArtifactOverride applies override on top of base, giving override
+// precedence. If both use the same storage backend (e.g. S3), fields not set
+// on override (e.g. bucket/endpoint inherited from a lower-priority source)
+// are preserved instead of being dropped by a full overwrite. If the backend
+// differs (or either has no location configured), override fully replaces
+// base's location, since merging fields from two different backend types
+// would produce an invalid artifact with more than one location type set.
+func mergeArtifactOverride(base, override wfv1.Artifact) (wfv1.Artifact, error) {
+	baseType, baseErr := base.Get()
+	overrideType, overrideErr := override.Get()
+	// SILENT: an unconfigured location on either side is not a fatal error here;
+	// it just means there is nothing to field-merge, so fall back to a full replace.
+	//nolint:nilerr
+	if baseErr != nil || overrideErr != nil || reflect.TypeOf(baseType) != reflect.TypeOf(overrideType) {
+		return *override.DeepCopy(), nil
+	}
+
+	baseJSON, err := json.Marshal(base.ArtifactLocation)
+	if err != nil {
+		return wfv1.Artifact{}, err
+	}
+	overrideJSON, err := json.Marshal(override.ArtifactLocation)
+	if err != nil {
+		return wfv1.Artifact{}, err
+	}
+	mergedLocationJSON, err := strategicpatch.StrategicMergePatch(baseJSON, overrideJSON, wfv1.ArtifactLocation{})
+	if err != nil {
+		return wfv1.Artifact{}, err
+	}
+
+	merged := *override.DeepCopy()
+	merged.ArtifactLocation = wfv1.ArtifactLocation{}
+	if err := json.Unmarshal(mergedLocationJSON, &merged.ArtifactLocation); err != nil {
+		return wfv1.Artifact{}, err
+	}
+	return merged, nil
 }
 
 func parametersToMapByName(spec *wfv1.WorkflowSpec) map[string]wfv1.Parameter {
@@ -322,6 +382,16 @@ func parametersToMapByName(spec *wfv1.WorkflowSpec) map[string]wfv1.Parameter {
 		}
 	}
 	return parameterMap
+}
+
+func artifactsToMapByName(spec *wfv1.WorkflowSpec) map[string]wfv1.Artifact {
+	artifactMap := make(map[string]wfv1.Artifact)
+	if spec != nil {
+		for _, artifact := range spec.Arguments.Artifacts {
+			artifactMap[artifact.Name] = artifact
+		}
+	}
+	return artifactMap
 }
 
 // mergeMetadata will merge the labels and annotations into the target metadata.
