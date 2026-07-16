@@ -35,6 +35,8 @@ type SSOConfig struct {
 	FilterGroupsRegex []string `json:"filterGroupsRegex,omitempty"`
 	// custom PEM encoded CA certificate file contents
 	RootCA string `json:"rootCA,omitempty"`
+	// EnablePKCEAuthentication enables optional PKCE support for OAuth2 SSO
+	EnablePKCEAuthentication bool `json:"enablePKCEAuthentication,omitempty"`
 }
 
 func (c SSOConfig) GetSessionExpiry() time.Duration {
