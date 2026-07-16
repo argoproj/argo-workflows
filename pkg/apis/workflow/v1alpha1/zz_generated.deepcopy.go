@@ -3101,6 +3101,11 @@ func (in *SubmitOpts) DeepCopyInto(out *SubmitOpts) {
 		*out = new(int32)
 		**out = **in
 	}
+	if in.Artifacts != nil {
+		in, out := &in.Artifacts, &out.Artifacts
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	return
 }
 
@@ -4046,17 +4051,17 @@ func (in *WorkflowSpec) DeepCopyInto(out *WorkflowSpec) {
 		*out = new(WorkflowLevelArtifactGC)
 		(*in).DeepCopyInto(*out)
 	}
-	if in.PodResources != nil {
-		in, out := &in.PodResources, &out.PodResources
-		*out = new(v1.ResourceRequirements)
-		(*in).DeepCopyInto(*out)
-	}
 	if in.ExecutorPlugins != nil {
 		in, out := &in.ExecutorPlugins, &out.ExecutorPlugins
 		*out = make([]ExecutorPlugin, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
+	}
+	if in.PodResources != nil {
+		in, out := &in.PodResources, &out.PodResources
+		*out = new(v1.ResourceRequirements)
+		(*in).DeepCopyInto(*out)
 	}
 	return
 }

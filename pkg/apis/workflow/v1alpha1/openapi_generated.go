@@ -6426,6 +6426,21 @@ func schema_pkg_apis_workflow_v1alpha1_SubmitOpts(ref common.ReferenceCallback) 
 							Format:      "int32",
 						},
 					},
+					"artifacts": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Artifacts overrides input artifact locations. Format: name=key",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 		},
@@ -6959,17 +6974,17 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 							},
 						},
 					},
-					"podResources": {
-						SchemaProps: spec.SchemaProps{
-							Description: "PodResources defines pod-level resource requests and limits for this template's pod. Overrides the workflow-level podResources. Requires the PodLevelResources feature gate to be enabled on the cluster (beta since Kubernetes v1.34).",
-							Ref:         ref("k8s.io/api/core/v1.ResourceRequirements"),
-						},
-					},
 					"pendingTimeout": {
 						SchemaProps: spec.SchemaProps{
 							Description: "PendingTimeout allows to set the maximum time spent in pending status counting from the node's start time. It is enforced by the controller, so a pod that starts running just as the timeout expires may still be failed. This duration may not be applied to Step or DAG templates.",
 							Type:        []string{"string"},
 							Format:      "",
+						},
+					},
+					"podResources": {
+						SchemaProps: spec.SchemaProps{
+							Description: "PodResources defines pod-level resource requests and limits for this template's pod. Overrides the workflow-level podResources. Requires the PodLevelResources feature gate to be enabled on the cluster (beta since Kubernetes v1.34).",
+							Ref:         ref("k8s.io/api/core/v1.ResourceRequirements"),
 						},
 					},
 				},
@@ -8310,12 +8325,6 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowLevelArtifactGC"),
 						},
 					},
-					"podResources": {
-						SchemaProps: spec.SchemaProps{
-							Description: "PodResources defines pod-level resource requests and limits to apply to all workflow pods. Will be overridden if a template's podResources is set. Requires the PodLevelResources feature gate to be enabled on the cluster (beta since Kubernetes v1.34).",
-							Ref:         ref("k8s.io/api/core/v1.ResourceRequirements"),
-						},
-					},
 					"executorPlugins": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Specifies executor plugins at the workflow level.\n\nThis field is effective only when the ARGO_WORKFLOW_LEVEL_EXECUTOR_PLUGINS feature gate is enabled.\n\nIf this field contains one or more executor plugins, executor plugin settings from the controller ConfigMap are ignored.\n\nIf this field is empty or not set, the controller falls back to the ConfigMap configuration.",
@@ -8328,6 +8337,12 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 									},
 								},
 							},
+						},
+					},
+					"podResources": {
+						SchemaProps: spec.SchemaProps{
+							Description: "PodResources defines pod-level resource requests and limits to apply to all workflow pods. Will be overridden if a template's podResources is set. Requires the PodLevelResources feature gate to be enabled on the cluster (beta since Kubernetes v1.34).",
+							Ref:         ref("k8s.io/api/core/v1.ResourceRequirements"),
 						},
 					},
 				},

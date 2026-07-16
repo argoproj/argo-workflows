@@ -1699,6 +1699,9 @@ message SubmitOpts {
   // Priority is used if controller is configured to process limited number of workflows in parallel, higher priority workflows
   // are processed first.
   optional int32 priority = 14;
+
+  // Artifacts overrides input artifact locations. Format: name=key
+  repeated string artifacts = 15;
 }
 
 // SuppliedValueFrom is a placeholder for a value to be filled in directly, either through the CLI, API, etc.
@@ -1912,12 +1915,6 @@ message Template {
   // It is enforced by the controller, so a pod that starts running just as the timeout expires may still be failed.
   // This duration may not be applied to Step or DAG templates.
   optional string pendingTimeout = 45;
-
-  // PodResources defines pod-level resource requests and limits for this template's pod.
-  // Overrides the workflow-level podResources.
-  // Requires the PodLevelResources feature gate to be enabled on the cluster (beta since Kubernetes v1.34).
-  // +optional
-  optional .k8s.io.api.core.v1.ResourceRequirements podResources = 46;
 }
 
 // TemplateRef is a reference of template resource.
@@ -2282,12 +2279,6 @@ message WorkflowSpec {
   // If this field is empty or not set, the controller falls back to the
   // ConfigMap configuration.
   repeated ExecutorPlugin executorPlugins = 44;
-
-  // PodResources defines pod-level resource requests and limits to apply to all workflow pods.
-  // Will be overridden if a template's podResources is set.
-  // Requires the PodLevelResources feature gate to be enabled on the cluster (beta since Kubernetes v1.34).
-  // +optional
-  optional .k8s.io.api.core.v1.ResourceRequirements podResources = 45;
 }
 
 // WorkflowStatus contains overall status information about a workflow
