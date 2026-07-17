@@ -1,7 +1,7 @@
 Description: Execute resource templates with a shared resource agent
 Authors: [Isitha Subasinghe](https://github.com/isubasinghe)
 Component: General
-Issues: 99999
+Issues: 16126
 
 Resource templates can now opt into agent-based execution by setting `resource.agent: true`.
 Instead of creating a separate workflow pod for every resource-template node, a shared resource agent pod executes and monitors all opted-in resource templates for the workflow. This reduces pod creation overhead for workflows that manage many Kubernetes resources.
