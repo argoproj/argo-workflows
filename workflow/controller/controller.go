@@ -481,7 +481,7 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 		logging.RequireLoggerFromContext(ctx).WithError(err).Error(ctx, "Failed to create sync lock manager")
 		return
 	}
-	wfc.syncManager = syncManager
+	wfc.syncManager = syncManager.WithMetrics(ctx, wfc.metrics)
 }
 
 // list all running workflows to initialize throttler and syncManager

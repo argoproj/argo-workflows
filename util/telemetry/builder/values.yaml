@@ -51,7 +51,16 @@ attributes:
     type: bool
   - name: LockName
     displayName: lock_name
-    description: The name of the synchronization lock
+    description: "⚠️ The name of the synchronization lock"
+  - name: LockNamespace
+    displayName: namespace
+    description: The namespace of the lock
+  - name: LockStorage
+    displayName: storage
+    description: "The storage backend of the lock: `configmap` (in-memory) or `database` (persisted)"
+  - name: LockType
+    displayName: type
+    description: "The type of the lock: `mutex` or `semaphore`"
   - name: LogLevel
     displayName: level
     description: The log level of the message
@@ -223,6 +232,41 @@ metrics:
       - name: RequestVerb
       - name: RequestCode
     unit: "{request}"
+    type: Int64Counter
+  - name: LocksHeld
+    description: A gauge of the number of synchronization locks currently held
+    extendedDescription: |
+      Reports, per lock, how many holders currently hold the lock right now. For a mutex this is
+      `0` or `1`; for a semaphore it is between `0` and the semaphore limit. Sourced from the live
+      lock state at scrape time, so it is correct across controller restarts and leader failover.
+    attributes:
+      - name: LockType
+      - name: LockStorage
+      - name: LockName
+      - name: LockNamespace
+    unit: "{lock}"
+    type: Int64ObservableGauge
+  - name: LocksPending
+    description: A gauge of the number of pending synchronization lock requests
+    extendedDescription: |
+      Reports, per lock, how many workflows are currently waiting to acquire the lock. A sustained
+      non-zero value alongside a held lock is the clearest signal of lock contention or an
+      unreleased lock blocking other workflows.
+    attributes:
+      - name: LockType
+      - name: LockStorage
+      - name: LockName
+      - name: LockNamespace
+    unit: "{lock}"
+    type: Int64ObservableGauge
+  - name: LocksTakenTotal
+    description: A counter of the number of synchronization locks taken
+    attributes:
+      - name: LockType
+      - name: LockStorage
+      - name: LockName
+      - name: LockNamespace
+    unit: "{lock}"
     type: Int64Counter
   - name: LogMessages
     description: "A count of log messages emitted by the controller by log level: `error`, `warn` and `info`"

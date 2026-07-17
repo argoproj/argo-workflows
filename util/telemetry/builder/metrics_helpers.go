@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"text/template"
 )
@@ -65,7 +66,7 @@ func writeMetricsHelpersGo(filename string, metrics *metricsList, attributes *at
 	defer f.Close()
 
 	// Write file header
-	err = metricHeaderTmpl.Execute(f, map[string]string{"Banner": generatedBanner, "Filename": filename})
+	err = metricHeaderTmpl.Execute(f, map[string]string{"Banner": generatedBanner, "Filename": filepath.Base(filename)})
 	if err != nil {
 		return err
 	}

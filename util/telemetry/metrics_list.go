@@ -149,6 +149,69 @@ var InstrumentK8sRequestTotal = BuiltinInstrument{
 	},
 }
 
+var InstrumentLocksHeld = BuiltinInstrument{
+	name:        "locks_held",
+	description: "A gauge of the number of synchronization locks currently held",
+	unit:        "{lock}",
+	instType:    Int64ObservableGauge,
+	attributes: []BuiltinAttribute{
+		{
+			name: AttribLockType,
+		},
+		{
+			name: AttribLockStorage,
+		},
+		{
+			name: AttribLockName,
+		},
+		{
+			name: AttribLockNamespace,
+		},
+	},
+}
+
+var InstrumentLocksPending = BuiltinInstrument{
+	name:        "locks_pending",
+	description: "A gauge of the number of pending synchronization lock requests",
+	unit:        "{lock}",
+	instType:    Int64ObservableGauge,
+	attributes: []BuiltinAttribute{
+		{
+			name: AttribLockType,
+		},
+		{
+			name: AttribLockStorage,
+		},
+		{
+			name: AttribLockName,
+		},
+		{
+			name: AttribLockNamespace,
+		},
+	},
+}
+
+var InstrumentLocksTakenTotal = BuiltinInstrument{
+	name:        "locks_taken_total",
+	description: "A counter of the number of synchronization locks taken",
+	unit:        "{lock}",
+	instType:    Int64Counter,
+	attributes: []BuiltinAttribute{
+		{
+			name: AttribLockType,
+		},
+		{
+			name: AttribLockStorage,
+		},
+		{
+			name: AttribLockName,
+		},
+		{
+			name: AttribLockNamespace,
+		},
+	},
+}
+
 var InstrumentLogMessages = BuiltinInstrument{
 	name:        "log_messages",
 	description: "A count of log messages emitted by the controller by log level: `error`, `warn` and `info`",
