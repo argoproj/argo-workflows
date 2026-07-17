@@ -3333,6 +3333,7 @@ cause implementors to also use a fixed point implementation.
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | action | string| `string` |  | | Action is the action to perform to the resource.</br>Must be one of: get, create, apply, delete, replace, patch </br>*Allowed values: get, create, apply, delete, replace, patch.*|  |
+| agent | boolean| `bool` |  | | Agent, when true, runs this resource template on the shared per-workflow resource agent pod</br>(which creates the resource and watches it for its success/failure conditions) instead of a</br>dedicated per-node pod. See docs/resource-template.md. |  |
 | failureCondition | string| `string` |  | | FailureCondition is a label selector expression which describes the conditions</br>of the k8s resource in which the step was considered failed |  |
 | flags | []string| `[]string` |  | | Flags is a set of additional options passed to kubectl before submitting a resource</br>I.e. to disable resource validation:</br>flags: [</br>"--validate=false"  # disable resource validation</br>] |  |
 | manifest | string| `string` |  | | Manifest contains the kubernetes manifest |  |
