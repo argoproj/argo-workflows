@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strconv"
 
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -150,31 +151,42 @@ func (woc *wfOperationCtx) reconcileTaskSet(ctx context.Context) error {
 				return err
 			}
 
-			// A still-running node sits in the taskset until it finishes; re-applying it unchanged
-			// every reconcile would re-stamp FinishedAt and set updated=true forever, hot-looping the
-			// controller. Terminal nodes are pruned right after this loop, so they don't churn — skip
-			// only unchanged non-terminal (e.g. resource-monitor Running) nodes.
-			if !taskResult.Phase.Completed() && node.Phase == taskResult.Phase && node.Message == taskResult.Message {
+			// A node that already reached a terminal phase is final. A stale non-terminal taskset
+			// result — e.g. the agent's last Running result still sitting in the taskset after
+			// out-of-band handling (a failed agent pod) already errored the node — must not drag it
+			// back to Running.
+			if node.Phase.Completed() && !taskResult.Phase.Completed() {
 				continue
 			}
 
-			node.Outputs = taskResult.Outputs.DeepCopy()
-			node.Phase = taskResult.Phase
-			node.Message = taskResult.Message
-			// Only a terminal result finishes the node; a Running result must not carry a finish time.
-			if taskResult.Phase.Completed() {
-				node.FinishedAt = metav1.Now()
+			// Apply the result only when it actually changed something. Re-applying it unchanged every
+			// reconcile would re-stamp FinishedAt and set updated=true forever, hot-looping the
+			// controller. Outputs are compared too — an agent can refresh a running node's outputs
+			// while Phase and Message hold steady (e.g. the plugin path), and dropping that would
+			// leave stale outputs on the node.
+			if node.Phase != taskResult.Phase || node.Message != taskResult.Message || !reflect.DeepEqual(node.Outputs, taskResult.Outputs) {
+				node.Outputs = taskResult.Outputs.DeepCopy()
+				node.Phase = taskResult.Phase
+				node.Message = taskResult.Message
+				// Only a terminal result finishes the node, and only once — never re-stamp a node a
+				// prior reconcile (or out-of-band error handling) already finished.
+				if taskResult.Phase.Completed() && node.FinishedAt.IsZero() {
+					node.FinishedAt = metav1.Now()
+				}
+				woc.wf.Status.Nodes.Set(ctx, nodeID, *node)
+				woc.updated = true
 			}
 
-			woc.wf.Status.Nodes.Set(ctx, nodeID, *node)
+			// Save memoized outputs whenever the node is succeeded, independent of whether it changed
+			// this reconcile: the save is idempotent, and a crash between persisting the node and
+			// saving the cache must still recover on a later reconcile. (Failure here is only logged,
+			// so it does not itself block the node.)
 			if node.MemoizationStatus != nil && node.Succeeded() {
 				c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, node.MemoizationStatus.CacheName)
-				err := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs)
-				if err != nil {
+				if err := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs); err != nil {
 					woc.log.WithFields(logging.Fields{"nodeID": node.ID}).WithError(err).Error(ctx, "Failed to save node outputs to cache")
 				}
 			}
-			woc.updated = true
 		}
 	}
 	return woc.createTaskSet(ctx)

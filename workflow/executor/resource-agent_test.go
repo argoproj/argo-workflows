@@ -10,6 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/watch"
 	dynamicfake "k8s.io/client-go/dynamic/fake"
 	k8stesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/cache"
@@ -31,6 +32,10 @@ func TestManifestDocCount(t *testing.T) {
 		{"trailing-separator", "apiVersion: v1\nkind: ConfigMap\n---\n", 1},
 		{"multi", "kind: ConfigMap\n---\nkind: Secret", 2},
 		{"multi-with-trailing", "kind: ConfigMap\n---\nkind: Secret\n---\n", 2},
+		// the "..." document-end marker must count as a boundary; a naive split on "---" misses it
+		{"multi-with-dots", "kind: ConfigMap\n...\nkind: Secret", 2},
+		{"single-with-trailing-dots", "kind: ConfigMap\n...\n", 1},
+		{"dots-then-separator", "kind: ConfigMap\n...\n---\nkind: Secret", 2},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -97,24 +102,76 @@ func TestParseConditions(t *testing.T) {
 }
 
 func TestEnsureInformerRBAC(t *testing.T) {
-	// When the agent's service account cannot list/watch a GVR, ensureInformer must surface the
+	// When the agent's service account cannot list or watch a GVR, ensureInformer must surface the
 	// error instead of starting an informer that silently retries forever and hangs the node.
-	ctx := logging.TestContext(t.Context())
 	gvr := schema.GroupVersionResource{Group: "example.com", Version: "v1", Resource: "widgets"}
-	client := dynamicfake.NewSimpleDynamicClientWithCustomListKinds(runtime.NewScheme(),
-		map[schema.GroupVersionResource]string{gvr: "WidgetList"})
-	client.PrependReactor("list", "*", func(k8stesting.Action) (bool, runtime.Object, error) {
+	newClient := func() *dynamicfake.FakeDynamicClient {
+		return dynamicfake.NewSimpleDynamicClientWithCustomListKinds(runtime.NewScheme(),
+			map[schema.GroupVersionResource]string{gvr: "WidgetList"})
+	}
+	forbidden := func(k8stesting.Action) (bool, runtime.Object, error) {
 		return true, nil, apierrors.NewForbidden(schema.GroupResource{Resource: "widgets"}, "", errors.New("forbidden"))
-	})
-	rae := &ResourceAgentExecutor{
-		WorkflowUID:   "uid-1",
-		DynamicClient: client,
-		informers:     map[informerKey]cache.SharedIndexInformer{},
 	}
 
-	err := rae.ensureInformer(ctx, gvr, "default")
-	require.ErrorContains(t, err, "cannot watch")
-	assert.Empty(t, rae.informers, "no informer should be registered when the watch is forbidden")
+	t.Run("list forbidden", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		client := newClient()
+		client.PrependReactor("list", "*", forbidden)
+		rae := &ResourceAgentExecutor{WorkflowUID: "uid-1", DynamicClient: client, informers: map[informerKey]cache.SharedIndexInformer{}}
+		err := rae.ensureInformer(ctx, gvr, "default")
+		require.ErrorContains(t, err, "cannot list")
+		assert.Empty(t, rae.informers, "no informer should be registered when list is forbidden")
+	})
+
+	t.Run("list allowed but watch forbidden", func(t *testing.T) {
+		// A role that grants list but not watch passes the list probe, then the informer's watch
+		// would be denied and retried silently forever. The watch probe must catch this.
+		ctx := logging.TestContext(t.Context())
+		client := newClient()
+		client.PrependWatchReactor("*", func(k8stesting.Action) (bool, watch.Interface, error) {
+			return true, nil, apierrors.NewForbidden(schema.GroupResource{Resource: "widgets"}, "", errors.New("forbidden"))
+		})
+		rae := &ResourceAgentExecutor{WorkflowUID: "uid-1", DynamicClient: client, informers: map[informerKey]cache.SharedIndexInformer{}}
+		err := rae.ensureInformer(ctx, gvr, "default")
+		require.ErrorContains(t, err, "cannot watch")
+		assert.Empty(t, rae.informers, "no informer should be registered when watch is forbidden")
+	})
+}
+
+func TestFindExistingResource(t *testing.T) {
+	// Adoption of a previously-created resource must be matched by both the workflow-UID label and
+	// the node-ID annotation the agent stamps, so a restart reuses its own object (restart-safe,
+	// including generateName) but never adopts a foreign or another node's same-kind object.
+	ctx := logging.TestContext(t.Context())
+	gvr := schema.GroupVersionResource{Group: "example.com", Version: "v1", Resource: "widgets"}
+	mine := &unstructured.Unstructured{Object: map[string]any{
+		"apiVersion": "example.com/v1", "kind": "Widget",
+		"metadata": map[string]any{
+			"name": "mine-abc123", "namespace": "default",
+			"labels":      map[string]any{common.LabelKeyAgentResource: "uid-1"},
+			"annotations": map[string]any{common.AnnotationKeyNodeID: "node-1"},
+		},
+	}}
+	foreign := &unstructured.Unstructured{Object: map[string]any{
+		"apiVersion": "example.com/v1", "kind": "Widget",
+		"metadata": map[string]any{"name": "foreign", "namespace": "default"},
+	}}
+	client := dynamicfake.NewSimpleDynamicClientWithCustomListKinds(runtime.NewScheme(),
+		map[schema.GroupVersionResource]string{gvr: "WidgetList"}, mine, foreign)
+	rae := &ResourceAgentExecutor{WorkflowUID: "uid-1", Namespace: "default", DynamicClient: client}
+	obj := &unstructured.Unstructured{Object: map[string]any{"metadata": map[string]any{"namespace": "default"}}}
+
+	t.Run("adopts this node's own object", func(t *testing.T) {
+		got, found, err := rae.findExistingResource(ctx, gvr, true, obj, "node-1")
+		require.NoError(t, err)
+		require.True(t, found)
+		assert.Equal(t, "mine-abc123", got.GetName())
+	})
+	t.Run("does not adopt another node's object", func(t *testing.T) {
+		_, found, err := rae.findExistingResource(ctx, gvr, true, obj, "node-2")
+		require.NoError(t, err)
+		assert.False(t, found)
+	})
 }
 
 func TestSaveResourceParameters(t *testing.T) {

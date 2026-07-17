@@ -32,6 +32,27 @@ rules:
       - ""
     resources:
       - secrets
-      - configmaps
     verbs:
       - get
+  # the bundled examples create ConfigMaps and Pods; the agent also reads them back and lists/watches
+  # them to evaluate their success/failure conditions (configmaps get also covers `manifestFrom`)
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+      - pods
+    verbs:
+      - create
+      - get
+      - list
+      - watch
+  # the workflow-of-workflows examples create child Workflows
+  - apiGroups:
+      - argoproj.io
+    resources:
+      - workflows
+    verbs:
+      - create
+      - get
+      - list
+      - watch

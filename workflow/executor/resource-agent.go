@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 	"time"
 
@@ -161,6 +160,18 @@ func (rae *ResourceAgentExecutor) createAndWatchResource(ctx context.Context, tm
 	if err = rae.ensureInformer(ctx, gvr, obj.GetNamespace()); err != nil {
 		logger.WithError(err).Error(ctx, "failed to watch resource")
 		rae.report(nodeID, wfv1.NodeResult{Phase: wfv1.NodeFailed, Message: fmt.Sprintf("failed to watch resource: %v", err)})
+		return
+	}
+	// Close the create-to-watch gap: the object was created before the informer synced, so a delete
+	// in that window yields neither an initial-list nor a watch event and the node would wait for an
+	// event that never comes. The watch is now established, so confirm the object still exists; if it
+	// vanished, report it rather than watching forever. Mirrors WaitResource's deleted-mid-check.
+	ns := obj.GetNamespace()
+	if namespaced && ns == "" {
+		ns = rae.Namespace
+	}
+	if _, getErr := rae.getResource(ctx, gvr, namespaced, ns, obj.GetName()); apierrors.IsNotFound(getErr) {
+		rae.report(nodeID, wfv1.NodeResult{Phase: wfv1.NodeFailed, Message: "the resource was deleted while its status was still being checked"})
 	}
 }
 
@@ -370,36 +381,40 @@ func informerResync(ctx context.Context) time.Duration {
 func (rae *ResourceAgentExecutor) ensureInformer(ctx context.Context, gvr schema.GroupVersionResource, namespace string) error {
 	key := informerKey{gvr: gvr, namespace: namespace}
 	rae.informersMutex.Lock()
-	_, exists := rae.informers[key]
+	existing, exists := rae.informers[key]
 	rae.informersMutex.Unlock()
 	if exists {
-		return nil
+		return rae.waitInformerSynced(ctx, existing)
 	}
 
-	// Confirm the agent can actually watch this GVR before relying on the informer. An informer
-	// whose list/watch the agent service account may not perform never delivers an event and never
-	// reports the failure to us — client-go's reflector just retries in the background — so the
-	// node would hang until the workflow times out. A one-shot List surfaces the RBAC (or other)
-	// error synchronously, the way the per-pod executor's GET does. Probed without the informers
-	// lock held so a slow API server can't stall event processing for other resources.
-	// ponytail: probes list, not watch; a role granting list but not watch (rare) still hangs.
+	// Confirm the agent can actually list AND watch this GVR before relying on the informer. An
+	// informer whose list/watch the agent service account may not perform never delivers an event
+	// and never reports the failure to us — client-go's reflector just retries in the background —
+	// so the node would hang until the workflow times out. One-shot List+Watch probes surface the
+	// RBAC (or other) error synchronously, the way the per-pod executor's GET does. Probed without
+	// the informers lock held so a slow API server can't stall event processing for other resources.
 	probeCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 	lister := rae.DynamicClient.Resource(gvr)
-	var probeErr error
+	nsLister := dynamic.ResourceInterface(lister)
 	if namespace != "" {
-		_, probeErr = lister.Namespace(namespace).List(probeCtx, metav1.ListOptions{Limit: 1})
-	} else {
-		_, probeErr = lister.List(probeCtx, metav1.ListOptions{Limit: 1})
+		nsLister = lister.Namespace(namespace)
 	}
+	if _, probeErr := nsLister.List(probeCtx, metav1.ListOptions{Limit: 1}); probeErr != nil {
+		return fmt.Errorf("cannot list %s: %w", gvr.Resource, probeErr)
+	}
+	// The informer needs watch, not just list; a role granting list but not watch would pass the
+	// List probe and then hang silently as the reflector retries the denied watch forever.
+	w, probeErr := nsLister.Watch(probeCtx, metav1.ListOptions{Limit: 1})
 	if probeErr != nil {
 		return fmt.Errorf("cannot watch %s: %w", gvr.Resource, probeErr)
 	}
+	w.Stop()
 
 	rae.informersMutex.Lock()
-	defer rae.informersMutex.Unlock()
-	if _, ok := rae.informers[key]; ok {
-		return nil // another worker created it while we probed
+	if inf, ok := rae.informers[key]; ok {
+		rae.informersMutex.Unlock()
+		return rae.waitInformerSynced(ctx, inf) // another worker created it while we probed
 	}
 
 	informer := dynamicinformer.NewFilteredDynamicInformer(rae.DynamicClient, gvr, namespace, informerResync(ctx),
@@ -428,10 +443,25 @@ func (rae *ResourceAgentExecutor) ensureInformer(ctx context.Context, gvr schema
 		DeleteFunc: func(o any) { enqueue(o, true) },
 	})
 	if err != nil {
+		rae.informersMutex.Unlock()
 		return fmt.Errorf("failed to add resource event handler: %w", err)
 	}
 	go informer.Run(ctx.Done())
 	rae.informers[key] = informer
+	rae.informersMutex.Unlock()
+	// Block until the initial list/watch is established so the caller's follow-up GET can't race
+	// ahead of the watch (see createAndWatchResource).
+	return rae.waitInformerSynced(ctx, informer)
+}
+
+// waitInformerSynced blocks until the informer's cache completes its initial sync, bounded by a
+// timeout so a wedged informer fails the node loudly instead of hanging it forever.
+func (rae *ResourceAgentExecutor) waitInformerSynced(ctx context.Context, informer cache.SharedIndexInformer) error {
+	syncCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	if !cache.WaitForCacheSync(syncCtx.Done(), informer.HasSynced) {
+		return fmt.Errorf("timed out waiting for resource informer cache to sync")
+	}
 	return nil
 }
 
@@ -604,6 +634,15 @@ func (rae *ResourceAgentExecutor) createResource(ctx context.Context, resource *
 		return nil, schema.GroupVersionResource{}, false, err
 	}
 
+	// Restart-safe: if this agent already created this node's resource, adopt it instead of creating
+	// a duplicate. Matched by the workflow-UID label and node-ID annotation the agent stamps on every
+	// object it creates. This is the only recovery path for generateName resources (a re-run create
+	// gets a fresh server-assigned name, so it never collides), and it refuses foreign same-named
+	// objects, which carry neither marker, when create hits AlreadyExists below.
+	if existing, found, findErr := rae.findExistingResource(ctx, gvr, namespaced, obj, nodeID); findErr == nil && found {
+		return existing, gvr, namespaced, nil
+	}
+
 	tmpFile, err := os.CreateTemp("", "manifest-*.yaml")
 	if err != nil {
 		return nil, gvr, namespaced, argoerrors.InternalWrapError(err)
@@ -632,16 +671,9 @@ func (rae *ResourceAgentExecutor) createResource(ctx context.Context, resource *
 	out, err := runKubectlWithRetry(ctx, args...)
 	rae.kubeCTLMutex.Unlock()
 	if err != nil {
-		// restart-safe: a re-run create for a resource this agent already made returns the existing one
-		if strings.Contains(err.Error(), "AlreadyExists") && obj.GetName() != "" {
-			ns := obj.GetNamespace()
-			if namespaced && ns == "" {
-				ns = rae.Namespace
-			}
-			if existing, getErr := rae.getResource(ctx, gvr, namespaced, ns, obj.GetName()); getErr == nil {
-				return existing, gvr, namespaced, nil
-			}
-		}
+		// findExistingResource above already adopted any object this agent created, so an
+		// AlreadyExists here is a same-named object the agent does not own. Adopting it would make
+		// the agent monitor (and garbage-collect) an unrelated resource, so fail instead.
 		return nil, gvr, namespaced, err
 	}
 
@@ -659,6 +691,35 @@ func (rae *ResourceAgentExecutor) getResource(ctx context.Context, gvr schema.Gr
 		return rae.DynamicClient.Resource(gvr).Namespace(namespace).Get(ctx, name, metav1.GetOptions{})
 	}
 	return rae.DynamicClient.Resource(gvr).Get(ctx, name, metav1.GetOptions{})
+}
+
+// findExistingResource looks for a resource this agent already created for the given node, matched by
+// the workflow-UID label and node-ID annotation it stamps on every created object. It makes create
+// idempotent across agent restarts, including for generateName resources whose server-assigned name
+// a re-run create could never recover by name. The LIST hits the API server directly (strongly
+// consistent), so a resource this agent created is always found.
+func (rae *ResourceAgentExecutor) findExistingResource(ctx context.Context, gvr schema.GroupVersionResource, namespaced bool, obj *unstructured.Unstructured, nodeID string) (*unstructured.Unstructured, bool, error) {
+	opts := metav1.ListOptions{LabelSelector: common.LabelKeyAgentResource + "=" + rae.WorkflowUID}
+	var list *unstructured.UnstructuredList
+	var err error
+	if namespaced {
+		ns := obj.GetNamespace()
+		if ns == "" {
+			ns = rae.Namespace
+		}
+		list, err = rae.DynamicClient.Resource(gvr).Namespace(ns).List(ctx, opts)
+	} else {
+		list, err = rae.DynamicClient.Resource(gvr).List(ctx, opts)
+	}
+	if err != nil {
+		return nil, false, err
+	}
+	for i := range list.Items {
+		if list.Items[i].GetAnnotations()[common.AnnotationKeyNodeID] == nodeID {
+			return &list.Items[i], true, nil
+		}
+	}
+	return nil, false, nil
 }
 
 func (rae *ResourceAgentExecutor) runResourceAgentWorker(ctx context.Context, taskQueue chan string) {
@@ -757,6 +818,12 @@ func (rae *ResourceAgentExecutor) Agent(ctx context.Context) error {
 	if requeueTime <= 0 {
 		logger.WithField("requeueTime", requeueTime).Warn(ctx, "invalid ARGO_AGENT_PATCH_RATE; falling back to 10s")
 		requeueTime = 10 * time.Second
+	}
+	// `for range taskWorkers` starts zero consumers when this is non-positive, so every task would
+	// sit on the queue forever. Clamp to the default, as requeueTime does above.
+	if taskWorkers <= 0 {
+		logger.WithField("taskWorkers", taskWorkers).Warn(ctx, "invalid ARGO_AGENT_TASK_WORKERS; falling back to 16")
+		taskWorkers = 16
 	}
 	logger.WithField("taskWorkers", taskWorkers).
 		WithField("requeueTime", requeueTime).
