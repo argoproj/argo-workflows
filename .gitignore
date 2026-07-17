@@ -9,6 +9,10 @@ dist/
 # delve debug binaries
 cmd/**/debug
 hack/**/debug
+# binaries built in-place (e.g. `go build ./cmd/argoexec` from its own dir)
+cmd/argo/argo
+cmd/argoexec/argoexec
+cmd/workflow-controller/workflow-controller
 hack/embeddoc/embeddoc
 hack/featuregen/featuregen
 /argo

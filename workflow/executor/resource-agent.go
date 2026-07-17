@@ -34,6 +34,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	argoerrors "github.com/argoproj/argo-workflows/v4/errors"
+	apiworkflow "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	workflow "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
@@ -148,6 +149,9 @@ func (rae *ResourceAgentExecutor) createAndWatchResource(ctx context.Context, tm
 		rae.reportSucceeded(ctx, nodeID, tmpl, obj)
 		return
 	}
+	// The resource exists and the agent is about to watch it (possibly for a long time); surface
+	// that as Running so the node doesn't sit Pending and then jump straight to Succeeded.
+	rae.reportRunning(nodeID)
 	// A get does not write the agent-resource label onto the live object, so the label-filtered
 	// informer would never deliver its events. Poll it by name instead, as WaitResource does.
 	if tmpl.Resource.Action == "get" {
@@ -219,6 +223,21 @@ func (rae *ResourceAgentExecutor) report(nodeID string, result wfv1.NodeResult) 
 	}
 	rae.reported[nodeID] = true
 	rae.pending[nodeID] = result
+}
+
+// reportRunning marks a node Running while the agent watches its resource. Unlike report() it does
+// not set the reported latch, so the terminal result still follows; it is called once per node and
+// skips if a terminal result already won the race, so it cannot regress or churn.
+func (rae *ResourceAgentExecutor) reportRunning(nodeID string) {
+	if nodeID == "" {
+		return
+	}
+	rae.resultsMutex.Lock()
+	defer rae.resultsMutex.Unlock()
+	if rae.reported[nodeID] {
+		return
+	}
+	rae.pending[nodeID] = wfv1.NodeResult{Phase: wfv1.NodeRunning}
 }
 
 func (rae *ResourceAgentExecutor) isReported(nodeID string) bool {
@@ -571,7 +590,7 @@ func (rae *ResourceAgentExecutor) createResource(ctx context.Context, resource *
 	if len(manifest) == 0 {
 		return nil, schema.GroupVersionResource{}, false, argoerrors.New(argoerrors.CodeBadRequest, "resource template has no manifest")
 	}
-	labeled, obj, err := withAgentMetadata(manifest, rae.WorkflowUID, nodeID, resource)
+	labeled, obj, err := withAgentMetadata(manifest, rae.WorkflowName, rae.WorkflowUID, nodeID, resource)
 	if err != nil {
 		return nil, schema.GroupVersionResource{}, false, err
 	}
@@ -832,13 +851,21 @@ func (rae *ResourceAgentExecutor) Agent(ctx context.Context) error {
 // It returns both the re-marshaled manifest and the parsed object.
 // ponytail: single-document manifests only; multi-doc is rejected rather than silently partly
 // applied. Upgrade path: split on YAML doc boundaries and label/create/watch each.
-func withAgentMetadata(manifest []byte, workflowUID, nodeID string, resource *wfv1.ResourceTemplate) ([]byte, *unstructured.Unstructured, error) {
+func withAgentMetadata(manifest []byte, workflowName, workflowUID, nodeID string, resource *wfv1.ResourceTemplate) ([]byte, *unstructured.Unstructured, error) {
 	if common.ManifestDocCount(manifest) > 1 {
 		return nil, nil, argoerrors.New(argoerrors.CodeBadRequest, "agent-based resource templates support only a single manifest document")
 	}
 	obj := &unstructured.Unstructured{}
 	if err := yaml.Unmarshal(manifest, &obj.Object); err != nil {
 		return nil, nil, argoerrors.New(argoerrors.CodeBadRequest, err.Error())
+	}
+	// Inject the workflow ownerReference so the created object is garbage-collected with the workflow.
+	// Done here (not in the controller, as executeResource does) because the controller never sees a
+	// manifestFrom manifest's content, so injecting there would silently skip manifestFrom objects.
+	if resource.SetOwnerReference {
+		owner := &metav1.ObjectMeta{Name: workflowName, UID: types.UID(workflowUID)}
+		ref := *metav1.NewControllerRef(owner, wfv1.SchemeGroupVersion.WithKind(apiworkflow.WorkflowKind))
+		obj.SetOwnerReferences(append(obj.GetOwnerReferences(), ref))
 	}
 	labels := obj.GetLabels()
 	if labels == nil {

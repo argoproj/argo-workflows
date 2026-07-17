@@ -44,12 +44,14 @@ func TestWithAgentMetadata(t *testing.T) {
 
 	t.Run("single doc gets label and annotations", func(t *testing.T) {
 		manifest := "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: cm"
-		out, obj, err := withAgentMetadata([]byte(manifest), "uid-1", "node-1", resource)
+		out, obj, err := withAgentMetadata([]byte(manifest), "wf-1", "uid-1", "node-1", resource)
 		require.NoError(t, err)
 		assert.Equal(t, "cm", obj.GetName())
 		assert.Equal(t, "uid-1", obj.GetLabels()[common.LabelKeyAgentResource])
 		assert.Equal(t, "node-1", obj.GetAnnotations()[common.AnnotationKeyNodeID])
 		assert.Equal(t, "status.phase == Running", obj.GetAnnotations()[common.AnnotationKeySuccessCondition])
+		// no ownerReference unless setOwnerReference is requested
+		assert.Empty(t, obj.GetOwnerReferences())
 
 		// the returned manifest round-trips the same metadata
 		reparsed := map[string]any{}
@@ -57,9 +59,23 @@ func TestWithAgentMetadata(t *testing.T) {
 		assert.Equal(t, "cm", reparsed["metadata"].(map[string]any)["name"])
 	})
 
+	t.Run("setOwnerReference injects the workflow owner ref", func(t *testing.T) {
+		manifest := "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: cm"
+		ownedResource := &wfv1.ResourceTemplate{SetOwnerReference: true}
+		_, obj, err := withAgentMetadata([]byte(manifest), "wf-1", "uid-1", "node-1", ownedResource)
+		require.NoError(t, err)
+		refs := obj.GetOwnerReferences()
+		require.Len(t, refs, 1)
+		assert.Equal(t, "wf-1", refs[0].Name)
+		assert.Equal(t, "uid-1", string(refs[0].UID))
+		assert.Equal(t, "Workflow", refs[0].Kind)
+		require.NotNil(t, refs[0].Controller)
+		assert.True(t, *refs[0].Controller)
+	})
+
 	t.Run("multi doc is rejected, not silently partly applied", func(t *testing.T) {
 		manifest := "kind: ConfigMap\nmetadata:\n  name: cm\n---\nkind: Secret\nmetadata:\n  name: s"
-		_, _, err := withAgentMetadata([]byte(manifest), "uid-1", "node-1", resource)
+		_, _, err := withAgentMetadata([]byte(manifest), "wf-1", "uid-1", "node-1", resource)
 		require.Error(t, err)
 	})
 }

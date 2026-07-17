@@ -271,6 +271,13 @@ func (woc *wfOperationCtx) createTaskSetAgentPod(ctx context.Context, resourceAg
 	var initContainers []apiv1.Container
 	if resourceAgent {
 		agentMainCtr.Args = append([]string{"resource-agent"}, woc.getExecutorLogOpts(ctx)...)
+		// resource-agent writes manifests to temp files, but MinimalCtrSC sets a
+		// read-only root filesystem; give it a writable /tmp like regular pods have.
+		podVolumes = append(podVolumes, volumeTmpDir)
+		agentMainCtr.VolumeMounts = append(agentMainCtr.VolumeMounts, apiv1.VolumeMount{
+			Name:      volumeTmpDir.Name,
+			MountPath: "/tmp",
+		})
 	} else {
 		// the `init` container populates the shared empty-dir volume with plugin tokens
 		agentInitCtr := agentCtrTemplate.DeepCopy()
