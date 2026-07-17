@@ -1,0 +1,57 @@
+# This example runs resource templates on a shared per-workflow resource-agent
+# pod instead of creating one pod for every resource node.
+#
+# The resource agent uses a dedicated service account named after the workflow
+# service account with a "-resource-agent" suffix. For this workflow, create the
+# "default-resource-agent" service account and grant it:
+#   * list/watch on workflowtasksets and patch on workflowtasksets/status
+#   * create/get/list/watch on configmaps
+# See docs/resource-template.md for the complete RBAC requirements.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-agent-
+  namespace: argo
+  labels:
+    workflows.argoproj.io/no-test: "environment"
+  annotations:
+    workflows.argoproj.io/no-test-reasons: |
+      Requires a default-resource-agent service account with permission to
+      create, get, list, and watch ConfigMaps.
+spec:
+  entrypoint: create-configmaps
+  templates:
+  - name: create-configmaps
+    steps:
+    - - name: create-configmap
+        template: create-configmap
+        arguments:
+          parameters:
+          - name: suffix
+            value: "{{item}}"
+        withItems:
+        - first
+        - second
+
+  - name: create-configmap
+    inputs:
+      parameters:
+      - name: suffix
+    resource:
+      action: create
+      agent: true
+      successCondition: data.state == ready
+      setOwnerReference: true
+      manifest: |
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          generateName: resource-agent-{{inputs.parameters.suffix}}-
+        data:
+          state: ready
+          message: created by the resource agent
+    outputs:
+      parameters:
+      - name: configmap-name
+        valueFrom:
+          jsonPath: '{.metadata.name}'

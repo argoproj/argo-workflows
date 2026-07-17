@@ -19,6 +19,9 @@ agent pod instead of a dedicated per-node pod:
       ...
 ```
 
+See [`resource-agent.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-agent.yaml)
+for a complete workflow example.
+
 When resource templates are executed by the agent instead of a per-node pod, be aware of the following:
 
 * Agent-based resource templates run in their own pod, named `<workflow>-<id>-resource-agent` and
