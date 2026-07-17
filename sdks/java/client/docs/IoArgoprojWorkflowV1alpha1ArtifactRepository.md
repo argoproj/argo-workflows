@@ -9,7 +9,7 @@ ArtifactRepository represents an artifact repository in which a controller will 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **archiveLogs** | **Boolean** | ArchiveLogs enables log archiving |  [optional]
-**archiveSystemContainerLogs** | **Boolean** | ArchiveSystemContainerLogs enables log archiving for system containers (init/wait) |  [optional]
+**archiveSystemContainerLogs** | **Boolean** | ArchiveSystemContainerLogs enables log archiving for system containers (init/wait in legacy Pods, supervisor in init-less Pods) |  [optional]
 **artifactory** | [**IoArgoprojWorkflowV1alpha1ArtifactoryArtifactRepository**](IoArgoprojWorkflowV1alpha1ArtifactoryArtifactRepository.md) |  |  [optional]
 **azure** | [**IoArgoprojWorkflowV1alpha1AzureArtifactRepository**](IoArgoprojWorkflowV1alpha1AzureArtifactRepository.md) |  |  [optional]
 **gcs** | [**IoArgoprojWorkflowV1alpha1GCSArtifactRepository**](IoArgoprojWorkflowV1alpha1GCSArtifactRepository.md) |  |  [optional]

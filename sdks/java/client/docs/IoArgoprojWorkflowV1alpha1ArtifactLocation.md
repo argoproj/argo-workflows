@@ -9,7 +9,7 @@ ArtifactLocation describes a location for a single or multiple artifacts. It is 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **archiveLogs** | **Boolean** | ArchiveLogs indicates if the container logs should be archived |  [optional]
-**archiveSystemContainerLogs** | **Boolean** | ArchiveSystemContainerLogs indicates if the init/wait container logs should be archived |  [optional]
+**archiveSystemContainerLogs** | **Boolean** | ArchiveSystemContainerLogs indicates if the system container logs should be archived (init/wait in legacy Pods, supervisor in init-less Pods) |  [optional]
 **artifactory** | [**IoArgoprojWorkflowV1alpha1ArtifactoryArtifact**](IoArgoprojWorkflowV1alpha1ArtifactoryArtifact.md) |  |  [optional]
 **azure** | [**IoArgoprojWorkflowV1alpha1AzureArtifact**](IoArgoprojWorkflowV1alpha1AzureArtifact.md) |  |  [optional]
 **gcs** | [**IoArgoprojWorkflowV1alpha1GCSArtifact**](IoArgoprojWorkflowV1alpha1GCSArtifact.md) |  |  [optional]

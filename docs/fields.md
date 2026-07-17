@@ -905,7 +905,7 @@ WorkflowSpec is the specification of a Workflow.
 |`activeDeadlineSeconds`|`integer`|Optional duration in seconds relative to the workflow start time which the workflow is allowed to run before the controller terminates the io.argoproj.workflow.v1alpha1. A value of zero is used to terminate a Running workflow|
 |`affinity`|[`Affinity`](#affinity)|Affinity sets the scheduling constraints for all pods in the io.argoproj.workflow.v1alpha1. Can be overridden by an affinity specified in the template|
 |`archiveLogs`|`boolean`|ArchiveLogs indicates if the container logs should be archived|
-|`archiveSystemContainerLogs`|`boolean`|ArchiveSystemContainerLogs indicates if the init/wait container logs should be archived|
+|`archiveSystemContainerLogs`|`boolean`|ArchiveSystemContainerLogs indicates if the system container logs should be archived (init/wait in legacy Pods, supervisor in init-less Pods)|
 |`arguments`|[`Arguments`](#arguments)|Arguments contain the parameters and artifacts sent to the workflow entrypoint Parameters are referencable globally using the 'workflow' variable prefix. e.g. io.argoproj.workflow.v1alpha1.parameters.myparam|
 |`artifactGC`|[`WorkflowLevelArtifactGC`](#workflowlevelartifactgc)|ArtifactGC describes the strategy to use when deleting artifacts from completed or deleted workflows (applies to all output Artifacts unless Artifact.ArtifactGC is specified, which overrides this)|
 |`artifactRepositoryRef`|[`ArtifactRepositoryRef`](#artifactrepositoryref)|ArtifactRepositoryRef specifies the configMap name and key containing the artifact repository config.|
@@ -2356,7 +2356,7 @@ Artifact indicates an artifact to place at a specified path
 |:----------:|:----------:|---------------|
 |`archive`|[`ArchiveStrategy`](#archivestrategy)|Archive controls how the artifact will be saved to the artifact repository.|
 |`archiveLogs`|`boolean`|ArchiveLogs indicates if the container logs should be archived|
-|`archiveSystemContainerLogs`|`boolean`|ArchiveSystemContainerLogs indicates if the init/wait container logs should be archived|
+|`archiveSystemContainerLogs`|`boolean`|ArchiveSystemContainerLogs indicates if the system container logs should be archived (init/wait in legacy Pods, supervisor in init-less Pods)|
 |`artifactGC`|[`ArtifactGC`](#artifactgc)|ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows|
 |`artifactory`|[`ArtifactoryArtifact`](#artifactoryartifact)|Artifactory contains artifactory artifact location details|
 |`azure`|[`AzureArtifact`](#azureartifact)|Azure contains Azure Storage artifact location details|
@@ -2752,7 +2752,7 @@ ArtifactLocation describes a location for a single or multiple artifacts. It is 
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`archiveLogs`|`boolean`|ArchiveLogs indicates if the container logs should be archived|
-|`archiveSystemContainerLogs`|`boolean`|ArchiveSystemContainerLogs indicates if the init/wait container logs should be archived|
+|`archiveSystemContainerLogs`|`boolean`|ArchiveSystemContainerLogs indicates if the system container logs should be archived (init/wait in legacy Pods, supervisor in init-less Pods)|
 |`artifactory`|[`ArtifactoryArtifact`](#artifactoryartifact)|Artifactory contains artifactory artifact location details|
 |`azure`|[`AzureArtifact`](#azureartifact)|Azure contains Azure Storage artifact location details|
 |`gcs`|[`GCSArtifact`](#gcsartifact)|GCS contains GCS artifact location details|
@@ -3621,7 +3621,7 @@ ArtifactRepository represents an artifact repository in which a controller will 
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`archiveLogs`|`boolean`|ArchiveLogs enables log archiving|
-|`archiveSystemContainerLogs`|`boolean`|ArchiveSystemContainerLogs enables log archiving for system containers (init/wait)|
+|`archiveSystemContainerLogs`|`boolean`|ArchiveSystemContainerLogs enables log archiving for system containers (init/wait in legacy Pods, supervisor in init-less Pods)|
 |`artifactory`|[`ArtifactoryArtifactRepository`](#artifactoryartifactrepository)|Artifactory stores artifacts to JFrog Artifactory|
 |`azure`|[`AzureArtifactRepository`](#azureartifactrepository)|Azure stores artifact in an Azure Storage account|
 |`gcs`|[`GCSArtifactRepository`](#gcsartifactrepository)|GCS stores artifact in a GCS object store|
@@ -4914,7 +4914,7 @@ ArtifactPaths expands a step from a collection of artifacts
 |:----------:|:----------:|---------------|
 |`archive`|[`ArchiveStrategy`](#archivestrategy)|Archive controls how the artifact will be saved to the artifact repository.|
 |`archiveLogs`|`boolean`|ArchiveLogs indicates if the container logs should be archived|
-|`archiveSystemContainerLogs`|`boolean`|ArchiveSystemContainerLogs indicates if the init/wait container logs should be archived|
+|`archiveSystemContainerLogs`|`boolean`|ArchiveSystemContainerLogs indicates if the system container logs should be archived (init/wait in legacy Pods, supervisor in init-less Pods)|
 |`artifactGC`|[`ArtifactGC`](#artifactgc)|ArtifactGC describes the strategy to use when to deleting an artifact from completed or deleted workflows|
 |`artifactory`|[`ArtifactoryArtifact`](#artifactoryartifact)|Artifactory contains artifactory artifact location details|
 |`azure`|[`AzureArtifact`](#azureartifact)|Azure contains Azure Storage artifact location details|

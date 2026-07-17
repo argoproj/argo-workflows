@@ -29,7 +29,7 @@ type ArtifactRepository struct {
 	Azure *AzureArtifactRepository `json:"azure,omitempty" protobuf:"bytes,7,opt,name=azure"`
 	// Plugin stores artifact in a plugin-specific artifact repository
 	Plugin *PluginArtifactRepository `json:"plugin,omitempty" protobuf:"bytes,8,opt,name=plugin"`
-	// ArchiveSystemContainerLogs enables log archiving for system containers (init/wait)
+	// ArchiveSystemContainerLogs enables log archiving for system containers (init/wait in legacy Pods, supervisor in init-less Pods)
 	ArchiveSystemContainerLogs *bool `json:"archiveSystemContainerLogs,omitempty" protobuf:"varint,9,opt,name=archiveSystemContainerLogs"`
 }
 

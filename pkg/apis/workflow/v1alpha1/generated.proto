@@ -168,7 +168,7 @@ message ArtifactLocation {
   // Plugin contains plugin artifact location details
   optional PluginArtifact plugin = 11;
 
-  // ArchiveSystemContainerLogs indicates if the init/wait container logs should be archived
+  // ArchiveSystemContainerLogs indicates if the system container logs should be archived (init/wait in legacy Pods, supervisor in init-less Pods)
   optional bool archiveSystemContainerLogs = 12;
 }
 
@@ -213,7 +213,7 @@ message ArtifactRepository {
   // Plugin stores artifact in a plugin-specific artifact repository
   optional PluginArtifactRepository plugin = 8;
 
-  // ArchiveSystemContainerLogs enables log archiving for system containers (init/wait)
+  // ArchiveSystemContainerLogs enables log archiving for system containers (init/wait in legacy Pods, supervisor in init-less Pods)
   optional bool archiveSystemContainerLogs = 9;
 }
 
@@ -2286,7 +2286,7 @@ message WorkflowSpec {
   // ConfigMap configuration.
   repeated ExecutorPlugin executorPlugins = 44;
 
-  // ArchiveSystemContainerLogs indicates if the init/wait container logs should be archived
+  // ArchiveSystemContainerLogs indicates if the system container logs should be archived (init/wait in legacy Pods, supervisor in init-less Pods)
   optional bool archiveSystemContainerLogs = 45;
 }
 

@@ -482,7 +482,7 @@ type WorkflowSpec struct {
 	// ConfigMap configuration.
 	ExecutorPlugins []ExecutorPlugin `json:"executorPlugins,omitempty" protobuf:"bytes,44,rep,name=executorPlugins"`
 
-	// ArchiveSystemContainerLogs indicates if the init/wait container logs should be archived
+	// ArchiveSystemContainerLogs indicates if the system container logs should be archived (init/wait in legacy Pods, supervisor in init-less Pods)
 	ArchiveSystemContainerLogs *bool `json:"archiveSystemContainerLogs,omitempty" protobuf:"varint,45,opt,name=archiveSystemContainerLogs"`
 }
 
@@ -1387,7 +1387,7 @@ type ArtifactLocation struct {
 	// Plugin contains plugin artifact location details
 	Plugin *PluginArtifact `json:"plugin,omitempty" protobuf:"bytes,11,opt,name=plugin"`
 
-	// ArchiveSystemContainerLogs indicates if the init/wait container logs should be archived
+	// ArchiveSystemContainerLogs indicates if the system container logs should be archived (init/wait in legacy Pods, supervisor in init-less Pods)
 	ArchiveSystemContainerLogs *bool `json:"archiveSystemContainerLogs,omitempty" protobuf:"varint,12,opt,name=archiveSystemContainerLogs"`
 }
 

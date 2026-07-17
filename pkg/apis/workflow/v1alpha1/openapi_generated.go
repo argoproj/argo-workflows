@@ -428,7 +428,7 @@ func schema_pkg_apis_workflow_v1alpha1_Artifact(ref common.ReferenceCallback) co
 					},
 					"archiveSystemContainerLogs": {
 						SchemaProps: spec.SchemaProps{
-							Description: "ArchiveSystemContainerLogs indicates if the init/wait container logs should be archived",
+							Description: "ArchiveSystemContainerLogs indicates if the system container logs should be archived (init/wait in legacy Pods, supervisor in init-less Pods)",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
@@ -667,7 +667,7 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactLocation(ref common.ReferenceCall
 					},
 					"archiveSystemContainerLogs": {
 						SchemaProps: spec.SchemaProps{
-							Description: "ArchiveSystemContainerLogs indicates if the init/wait container logs should be archived",
+							Description: "ArchiveSystemContainerLogs indicates if the system container logs should be archived (init/wait in legacy Pods, supervisor in init-less Pods)",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
@@ -821,7 +821,7 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactPaths(ref common.ReferenceCallbac
 					},
 					"archiveSystemContainerLogs": {
 						SchemaProps: spec.SchemaProps{
-							Description: "ArchiveSystemContainerLogs indicates if the init/wait container logs should be archived",
+							Description: "ArchiveSystemContainerLogs indicates if the system container logs should be archived (init/wait in legacy Pods, supervisor in init-less Pods)",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
@@ -947,7 +947,7 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactRepository(ref common.ReferenceCa
 					},
 					"archiveSystemContainerLogs": {
 						SchemaProps: spec.SchemaProps{
-							Description: "ArchiveSystemContainerLogs enables log archiving for system containers (init/wait)",
+							Description: "ArchiveSystemContainerLogs enables log archiving for system containers (init/wait in legacy Pods, supervisor in init-less Pods)",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
@@ -8363,7 +8363,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 					},
 					"archiveSystemContainerLogs": {
 						SchemaProps: spec.SchemaProps{
-							Description: "ArchiveSystemContainerLogs indicates if the init/wait container logs should be archived",
+							Description: "ArchiveSystemContainerLogs indicates if the system container logs should be archived (init/wait in legacy Pods, supervisor in init-less Pods)",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},

@@ -4087,7 +4087,7 @@
           "type": "boolean"
         },
         "archiveSystemContainerLogs": {
-          "description": "ArchiveSystemContainerLogs indicates if the init/wait container logs should be archived",
+          "description": "ArchiveSystemContainerLogs indicates if the system container logs should be archived (init/wait in legacy Pods, supervisor in init-less Pods)",
           "type": "boolean"
         },
         "artifactGC": {
@@ -4206,7 +4206,7 @@
           "type": "boolean"
         },
         "archiveSystemContainerLogs": {
-          "description": "ArchiveSystemContainerLogs indicates if the init/wait container logs should be archived",
+          "description": "ArchiveSystemContainerLogs indicates if the system container logs should be archived (init/wait in legacy Pods, supervisor in init-less Pods)",
           "type": "boolean"
         },
         "artifactory": {
@@ -4264,7 +4264,7 @@
           "type": "boolean"
         },
         "archiveSystemContainerLogs": {
-          "description": "ArchiveSystemContainerLogs indicates if the init/wait container logs should be archived",
+          "description": "ArchiveSystemContainerLogs indicates if the system container logs should be archived (init/wait in legacy Pods, supervisor in init-less Pods)",
           "type": "boolean"
         },
         "artifactGC": {
@@ -4365,7 +4365,7 @@
           "type": "boolean"
         },
         "archiveSystemContainerLogs": {
-          "description": "ArchiveSystemContainerLogs enables log archiving for system containers (init/wait)",
+          "description": "ArchiveSystemContainerLogs enables log archiving for system containers (init/wait in legacy Pods, supervisor in init-less Pods)",
           "type": "boolean"
         },
         "artifactory": {
@@ -8182,7 +8182,7 @@
           "type": "boolean"
         },
         "archiveSystemContainerLogs": {
-          "description": "ArchiveSystemContainerLogs indicates if the init/wait container logs should be archived",
+          "description": "ArchiveSystemContainerLogs indicates if the system container logs should be archived (init/wait in legacy Pods, supervisor in init-less Pods)",
           "type": "boolean"
         },
         "arguments": {
