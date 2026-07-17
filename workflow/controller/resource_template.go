@@ -4,11 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"sigs.k8s.io/yaml"
-
-	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
@@ -21,28 +16,12 @@ func (woc *wfOperationCtx) executeResourceMonitor(ctx context.Context, nodeName 
 		_, node = woc.initializeExecutableNode(ctx, nodeName, wfv1.NodeTypeResourceMonitor, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, opts.nodeFlag, true)
 	}
 	if !node.Fulfilled() {
-		// The agent applies exactly one object per node. A multi-document inline manifest can't be
-		// supported, and the setOwnerReference round-trip below (yaml.Unmarshal into a single
-		// unstructured) would silently drop all but the first document — reporting Succeeded having
-		// applied only doc 1. Reject it loudly here, matching the agent's own single-doc guard.
+		// The agent applies exactly one object per node; a multi-document inline manifest would be
+		// silently partly applied (only doc 1 created, reported Succeeded). Reject it loudly here,
+		// matching the agent's own single-doc guard. setOwnerReference is injected by the agent's
+		// create path (withAgentMetadata) so it also covers manifestFrom, whose content we never see.
 		if common.ManifestDocCount([]byte(tmpl.Resource.Manifest)) > 1 {
 			return woc.markNodeError(ctx, nodeName, fmt.Errorf("agent-based resource templates support only a single manifest document"))
-		}
-		tmpl = tmpl.DeepCopy()
-		// Mirror executeResource: inject the workflow ownerReference so the created object is
-		// garbage-collected with the workflow. The agent's create path does not do this, so it
-		// must happen here on the inline manifest before it goes into the taskset.
-		if tmpl.Resource.SetOwnerReference && tmpl.Resource.Manifest != "" {
-			obj := unstructured.Unstructured{}
-			if unmarshalErr := yaml.Unmarshal([]byte(tmpl.Resource.Manifest), &obj); unmarshalErr != nil {
-				return woc.markNodeError(ctx, nodeName, unmarshalErr)
-			}
-			obj.SetOwnerReferences(append(obj.GetOwnerReferences(), *metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind))))
-			bytes, marshalErr := yaml.Marshal(obj.Object)
-			if marshalErr != nil {
-				return woc.markNodeError(ctx, nodeName, marshalErr)
-			}
-			tmpl.Resource.Manifest = string(bytes)
 		}
 		woc.taskSet[node.ID] = *tmpl
 	}

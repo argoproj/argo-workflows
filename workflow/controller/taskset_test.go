@@ -332,6 +332,64 @@ func TestNonHTTPTemplateScenario(t *testing.T) {
 	})
 }
 
+func TestReconcileTaskSetRunning(t *testing.T) {
+	// A resource-monitor node reports Running while the agent watches its resource. The reconcile
+	// must surface Running without a finish time, and must be idempotent so a persisting Running
+	// node does not hot-loop the controller.
+	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: resource-monitor-1
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      resource:
+        action: create
+        agent: true
+status:
+  nodes:
+    resource-monitor-1-123:
+      id: resource-monitor-1-123
+      name: main
+      phase: Pending
+      templateName: main
+      type: ResourceMonitor
+  phase: Running
+`)
+	ctx := logging.TestContext(t.Context())
+	var ts wfv1.WorkflowTaskSet
+	wfv1.MustUnmarshal(`apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTaskSet
+metadata:
+  name: resource-monitor-1
+  namespace: default
+status:
+  nodes:
+    resource-monitor-1-123:
+      phase: Running
+`, &ts)
+
+	cancel, controller := newController(ctx, wf, ts)
+	defer cancel()
+	_, err := controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskSets("default").Create(ctx, &ts, v1.CreateOptions{})
+	require.NoError(t, err)
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	time.Sleep(1 * time.Second) // let the taskset informer sync
+	require.NoError(t, woc.reconcileTaskSet(ctx))
+	node, err := woc.wf.Status.Nodes.Get("resource-monitor-1-123")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeRunning, node.Phase)
+	assert.True(t, node.FinishedAt.IsZero(), "a running node must not have a finish time")
+
+	// Second reconcile with the node already Running and the taskset unchanged: nothing to do.
+	woc.updated = false
+	require.NoError(t, woc.reconcileTaskSet(ctx))
+	assert.False(t, woc.updated, "reconciling an unchanged running node must be a no-op")
+}
+
 func TestReconcileTaskSetWithMemoization(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
 kind: Workflow

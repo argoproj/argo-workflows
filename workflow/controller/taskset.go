@@ -150,10 +150,21 @@ func (woc *wfOperationCtx) reconcileTaskSet(ctx context.Context) error {
 				return err
 			}
 
+			// A still-running node sits in the taskset until it finishes; re-applying it unchanged
+			// every reconcile would re-stamp FinishedAt and set updated=true forever, hot-looping the
+			// controller. Terminal nodes are pruned right after this loop, so they don't churn — skip
+			// only unchanged non-terminal (e.g. resource-monitor Running) nodes.
+			if !taskResult.Phase.Completed() && node.Phase == taskResult.Phase && node.Message == taskResult.Message {
+				continue
+			}
+
 			node.Outputs = taskResult.Outputs.DeepCopy()
 			node.Phase = taskResult.Phase
 			node.Message = taskResult.Message
-			node.FinishedAt = metav1.Now()
+			// Only a terminal result finishes the node; a Running result must not carry a finish time.
+			if taskResult.Phase.Completed() {
+				node.FinishedAt = metav1.Now()
+			}
 
 			woc.wf.Status.Nodes.Set(ctx, nodeID, *node)
 			if node.MemoizationStatus != nil && node.Succeeded() {
