@@ -285,6 +285,16 @@ Workflow is the definition of a workflow resource
 
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/recursive-for-loop.yaml)
 
+- [`resource-agent-manifest-from.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-agent-manifest-from.yaml)
+
+- [`resource-agent-pod.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-agent-pod.yaml)
+
+- [`resource-agent-workflow-of-workflows-scale.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-agent-workflow-of-workflows-scale.yaml)
+
+- [`resource-agent-workflow-of-workflows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-agent-workflow-of-workflows.yaml)
+
+- [`resource-agent.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-agent.yaml)
+
 - [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-delete-with-flags.yaml)
 
 - [`resource-flags.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-flags.yaml)
@@ -790,6 +800,10 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/recursive-for-loop.yaml)
 
+- [`resource-agent-workflow-of-workflows-scale.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-agent-workflow-of-workflows-scale.yaml)
+
+- [`resource-agent-workflow-of-workflows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-agent-workflow-of-workflows.yaml)
+
 - [`resubmit.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resubmit.yaml)
 
 - [`retry-backoff.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-backoff.yaml)
@@ -1274,6 +1288,10 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/recursive-for-loop.yaml)
 
+- [`resource-agent-workflow-of-workflows-scale.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-agent-workflow-of-workflows-scale.yaml)
+
+- [`resource-agent-workflow-of-workflows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-agent-workflow-of-workflows.yaml)
+
 - [`resubmit.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resubmit.yaml)
 
 - [`retry-backoff.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-backoff.yaml)
@@ -1611,6 +1629,10 @@ Arguments to a template
 - [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/pod-spec-yaml-patch.yaml)
 
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/recursive-for-loop.yaml)
+
+- [`resource-agent-workflow-of-workflows-scale.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-agent-workflow-of-workflows-scale.yaml)
+
+- [`resource-agent-workflow-of-workflows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-agent-workflow-of-workflows.yaml)
 
 - [`retry-conditional.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-conditional.yaml)
 
@@ -2564,6 +2586,10 @@ Outputs hold parameters, artifacts, and results from a step
 
 - [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/pod-spec-from-previous-step.yaml)
 
+- [`resource-agent-workflow-of-workflows-scale.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-agent-workflow-of-workflows-scale.yaml)
+
+- [`resource-agent-workflow-of-workflows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-agent-workflow-of-workflows.yaml)
+
 - [`consumer-input-default.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/skipped-output-defaults/consumer-input-default.yaml)
 
 - [`expression-fallback.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/skipped-output-defaults/expression-fallback.yaml)
@@ -2931,6 +2957,10 @@ Parameter indicate a passed string parameter to a service template with an optio
 - [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/pod-spec-yaml-patch.yaml)
 
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/recursive-for-loop.yaml)
+
+- [`resource-agent-workflow-of-workflows-scale.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-agent-workflow-of-workflows-scale.yaml)
+
+- [`resource-agent-workflow-of-workflows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-agent-workflow-of-workflows.yaml)
 
 - [`retry-conditional.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-conditional.yaml)
 
@@ -3568,6 +3598,10 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/recursive-for-loop.yaml)
 
+- [`resource-agent-workflow-of-workflows-scale.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-agent-workflow-of-workflows-scale.yaml)
+
+- [`resource-agent-workflow-of-workflows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-agent-workflow-of-workflows.yaml)
+
 - [`retry-conditional.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-conditional.yaml)
 
 - [`scripts-bash.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/scripts-bash.yaml)
@@ -3658,6 +3692,10 @@ ResourceTemplate is a template subtype to manipulate kubernetes resources
 - [`k8s-patch-merge-pod.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-patch-merge-pod.yaml)
 
 - [`k8s-wait-wf.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/k8s-wait-wf.yaml)
+
+- [`resource-agent-workflow-of-workflows-scale.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-agent-workflow-of-workflows-scale.yaml)
+
+- [`resource-agent-workflow-of-workflows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-agent-workflow-of-workflows.yaml)
 
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-of-workflows.yaml)
 </details>
@@ -3903,6 +3941,10 @@ WorkflowStep is a reference to a template to execute in a series of step Note: C
 - [`pod-resources-template-override.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/pod-resources-template-override.yaml)
 
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/recursive-for-loop.yaml)
+
+- [`resource-agent-workflow-of-workflows-scale.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-agent-workflow-of-workflows-scale.yaml)
+
+- [`resource-agent-workflow-of-workflows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-agent-workflow-of-workflows.yaml)
 
 - [`resubmit.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resubmit.yaml)
 
@@ -4437,6 +4479,10 @@ ValueFrom describes a location in which to obtain the value to a parameter
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/parameter-aggregation.yaml)
 
 - [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/pod-spec-from-previous-step.yaml)
+
+- [`resource-agent-workflow-of-workflows-scale.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-agent-workflow-of-workflows-scale.yaml)
+
+- [`resource-agent-workflow-of-workflows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-agent-workflow-of-workflows.yaml)
 
 - [`secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/secrets.yaml)
 
@@ -4978,6 +5024,8 @@ Item expands a single workflow step into multiple parallel steps The value of It
 
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/parameter-aggregation.yaml)
 
+- [`resource-agent-workflow-of-workflows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-agent-workflow-of-workflows.yaml)
+
 - [`timeouts-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/timeouts-workflow.yaml)
 
 - [`variables-showcase.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/variables-showcase.yaml)
@@ -4997,6 +5045,8 @@ Sequence expands a workflow step into numeric range
 - [`handle-large-output-results.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/handle-large-output-results.yaml)
 
 - [`loops-sequence.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/loops-sequence.yaml)
+
+- [`resource-agent-workflow-of-workflows-scale.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-agent-workflow-of-workflows-scale.yaml)
 
 - [`steps-daemon-retry-strategy.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/steps-daemon-retry-strategy.yaml)
 
@@ -5390,6 +5440,10 @@ _No description available_
 
 - [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/pod-spec-from-previous-step.yaml)
 
+- [`resource-agent-workflow-of-workflows-scale.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-agent-workflow-of-workflows-scale.yaml)
+
+- [`resource-agent-workflow-of-workflows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-agent-workflow-of-workflows.yaml)
+
 - [`secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/secrets.yaml)
 
 - [`consumer-input-default.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/skipped-output-defaults/consumer-input-default.yaml)
@@ -5762,6 +5816,10 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/pod-spec-yaml-patch.yaml)
 
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/recursive-for-loop.yaml)
+
+- [`resource-agent-workflow-of-workflows-scale.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-agent-workflow-of-workflows-scale.yaml)
+
+- [`resource-agent-workflow-of-workflows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-agent-workflow-of-workflows.yaml)
 
 - [`resubmit.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resubmit.yaml)
 
@@ -6468,6 +6526,10 @@ A single application container that you want to run within a pod.
 - [`pod-spec-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/pod-spec-patch.yaml)
 
 - [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/pod-spec-yaml-patch.yaml)
+
+- [`resource-agent-workflow-of-workflows-scale.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-agent-workflow-of-workflows-scale.yaml)
+
+- [`resource-agent-workflow-of-workflows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-agent-workflow-of-workflows.yaml)
 
 - [`resubmit.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resubmit.yaml)
 
@@ -7566,6 +7628,10 @@ ImageVolumeSource represents a image volume resource.
 
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/recursive-for-loop.yaml)
 
+- [`resource-agent-workflow-of-workflows-scale.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-agent-workflow-of-workflows-scale.yaml)
+
+- [`resource-agent-workflow-of-workflows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-agent-workflow-of-workflows.yaml)
+
 - [`resubmit.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resubmit.yaml)
 
 - [`retry-backoff.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-backoff.yaml)
@@ -7898,6 +7964,10 @@ EnvVarSource represents a source for the value of an EnvVar.
 - [`parameter-aggregation.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/parameter-aggregation.yaml)
 
 - [`pod-spec-from-previous-step.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/pod-spec-from-previous-step.yaml)
+
+- [`resource-agent-workflow-of-workflows-scale.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-agent-workflow-of-workflows-scale.yaml)
+
+- [`resource-agent-workflow-of-workflows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-agent-workflow-of-workflows.yaml)
 
 - [`secrets.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/secrets.yaml)
 
