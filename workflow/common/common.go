@@ -1,10 +1,14 @@
 package common
 
 import (
+	"bytes"
+	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
 
+	goyaml "go.yaml.in/yaml/v3"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
@@ -386,12 +390,29 @@ func ResolveTemplateEnvValue(raw string, offloadDir string) ([]byte, error) {
 	return []byte(raw), nil
 }
 
-// ManifestDocCount counts the non-empty YAML documents in a manifest. Used to reject multi-document
-// manifests for agent-based resource templates, which apply exactly one object per node.
+// ManifestDocCount counts the YAML documents in a manifest. Used to reject multi-document manifests
+// for agent-based resource templates, which apply exactly one object per node. It decodes with a real
+// YAML parser so both the "---" separator and the "..." document-end marker are honored; a naive
+// string split on "---" miscounts a manifest that ends documents with "...". The single-object parser
+// (sigs.k8s.io/yaml.Unmarshal) silently keeps only the first document for any of these forms, so the
+// count exists to catch what it would truncate.
 func ManifestDocCount(manifest []byte) int {
 	count := 0
-	for doc := range strings.SplitSeq(string(manifest), "\n---") {
-		if strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(doc), "---")) != "" {
+	dec := goyaml.NewDecoder(bytes.NewReader(manifest))
+	for {
+		var doc any
+		err := dec.Decode(&doc)
+		if err != nil {
+			// A non-EOF error after at least one document means there is trailing content the decoder
+			// could not attach to the first document (e.g. "...\n<more>") — content the single-object
+			// parser would silently drop. Count it so the guard rejects it. A parse error on the very
+			// first document is a malformed single manifest, which the create path surfaces on its own.
+			if count > 0 && !errors.Is(err, io.EOF) {
+				count++
+			}
+			break
+		}
+		if doc != nil { // skip empty documents (e.g. a trailing separator)
 			count++
 		}
 	}
