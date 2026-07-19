@@ -829,6 +829,8 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	// make sure this is removed from the throttler is complete
 	defer func() {
 		// must be done with woc
+		// reapplyFailed (set in memory when Update failed) also blocks Remove so we do not free
+		// parallelism while woc.wf may not match the API object (e.g. connection reset before persist).
 		if !reconciliationNeeded(woc.wf) && !reapplyFailed(woc.wf) {
 			wfc.throttler.Remove(key)
 		}

@@ -753,6 +753,16 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 	return nil
 }
 
+// markInMemoryReapplyFailed sets LabelKeyReApplyFailed on woc.wf without persisting it.
+// persistUpdates uses this when Update fails so the throttler slot is not released while the
+// in-memory workflow may not match the API object (e.g. connection reset before persist).
+func (woc *wfOperationCtx) markInMemoryReapplyFailed() {
+	if woc.wf.Labels == nil {
+		woc.wf.Labels = make(map[string]string)
+	}
+	woc.wf.Labels[common.LabelKeyReApplyFailed] = "true"
+}
+
 // persistUpdates will update a workflow with any updates made during workflow operation.
 // It also labels any pods as completed if we have extracted everything we need from it.
 // NOTE: a previous implementation used Patch instead of Update, but Patch does not work with
@@ -806,12 +816,15 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 			return
 		}
 		if !apierr.IsConflict(err) {
+			// Non-conflict errors (e.g. connection reset) may leave woc.wf out of sync with the API,
+			// so keep the throttler slot until a later successful reconciliation.
+			woc.markInMemoryReapplyFailed()
 			return
 		}
 		woc.log.Info(ctx, "Re-applying updates on latest version and retrying update")
 		wf, err = woc.reapplyUpdate(ctx, wfClient, nodes)
 		if err != nil {
-			woc.wf.Labels[common.LabelKeyReApplyFailed] = "true"
+			woc.markInMemoryReapplyFailed()
 			woc.log.WithError(err).Info(ctx, "Failed to re-apply update")
 			return
 		}
@@ -882,6 +895,7 @@ func (woc *wfOperationCtx) persistWorkflowSizeLimitErr(ctx context.Context, wfCl
 
 	wf, err := wfClient.Update(ctx, woc.wf, metav1.UpdateOptions{})
 	if err != nil {
+		woc.markInMemoryReapplyFailed()
 		woc.log.WithError(err).Warn(ctx, "Error updating workflow with size error")
 	} else {
 		woc.controller.recordWorkflowWrite(wf)
