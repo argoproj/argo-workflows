@@ -236,6 +236,8 @@ func TestNamespaceParallelismUpdate(t *testing.T) {
 	assert.False(throttler.Admit("argo/b"))
 }
 
+// TestNamespaceParallelismDefaultUpdate verifies that raising the default namespace parallelism
+// at runtime admits a previously throttled workflow in a namespace without an explicit override.
 func TestNamespaceParallelismDefaultUpdate(t *testing.T) {
 	assert := assert.New(t)
 	throttler := NewMultiThrottler(4, 1, func(Key) {})

@@ -162,6 +162,8 @@ func (m *multiThrottler) UpdateParallelism(limit int) {
 	m.queueThrottled()
 }
 
+// UpdateNamespaceParallelismDefault updates the default per-namespace parallelism limit
+// applied to namespaces without an explicit override, and re-queues throttled items.
 func (m *multiThrottler) UpdateNamespaceParallelismDefault(limit int) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
