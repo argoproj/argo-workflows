@@ -231,6 +231,12 @@ func MigrateChanges(clusterName, tableName string, dbType sqldb.DBType) []sqldb.
 			sqldb.Postgres: sqldb.AnsiSQLChange(`drop index argo_archived_workflows_i1`),
 		}),
 		sqldb.AnsiSQLChange(`create index argo_archived_workflows_i1 on argo_archived_workflows (clustername, instanceid, namespace, startedat DESC)`),
+		// store compressed node status to avoid MySQL max_allowed_packet ceiling on offload.
+		sqldb.ByType(dbType, sqldb.TypedChanges{
+			sqldb.MySQL:    sqldb.AnsiSQLChange(`alter table ` + tableName + ` add column compressednodes longtext`),
+			sqldb.Postgres: sqldb.AnsiSQLChange(`alter table ` + tableName + ` add column compressednodes text`),
+		}),
+		sqldb.AnsiSQLChange(`update ` + tableName + ` set compressednodes = '' where compressednodes is null`),
 	}
 }
 
