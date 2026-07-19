@@ -255,6 +255,12 @@ drop index argo_archived_workflows_i1 on argo_archived_workflows;
 -- Step 68
 create index argo_archived_workflows_i1 on argo_archived_workflows (clustername, instanceid, namespace, startedat DESC);
 
+-- Step 69
+alter table argo_workflows add column compressednodes longtext;
+
+-- Step 70
+update argo_workflows set compressednodes = '' where compressednodes is null;
+
 ```
 
 ### PostgreSQL
@@ -492,6 +498,12 @@ drop index argo_archived_workflows_i1;
 
 -- Step 68
 create index argo_archived_workflows_i1 on argo_archived_workflows (clustername, instanceid, namespace, startedat DESC);
+
+-- Step 69
+alter table argo_workflows add column compressednodes text;
+
+-- Step 70
+update argo_workflows set compressednodes = '' where compressednodes is null;
 
 ```
 
