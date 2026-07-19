@@ -3,6 +3,8 @@ package errors
 import (
 	"context"
 	"errors"
+	"fmt"
+	"io"
 	"net"
 	"net/url"
 	"os"
@@ -146,5 +148,9 @@ func TestIsTransientUErr(t *testing.T) {
 	})
 	t.Run("EOFUErr", func(t *testing.T) {
 		assert.True(t, IsTransientErr(ctx, EOFUErr))
+	})
+	t.Run("ClientGoResponseBodyReadErr", func(t *testing.T) {
+		err := fmt.Errorf("unexpected error when reading response body. Please retry. Original error: %w", io.ErrUnexpectedEOF)
+		assert.True(t, IsTransientErr(ctx, err))
 	})
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/url"
 	"os"
@@ -94,6 +95,10 @@ func isTransientEtcdErr(err error) bool {
 }
 
 func isTransientNetworkErr(err error) bool {
+	if errors.Is(err, io.ErrUnexpectedEOF) {
+		return true
+	}
+
 	var dnsErr *net.DNSError
 	var opErr *net.OpError
 	var unknownNetErr net.UnknownNetworkError
@@ -103,6 +108,10 @@ func isTransientNetworkErr(err error) bool {
 
 	errorString := generateErrorString(err)
 	switch {
+	case strings.Contains(errorString, "unexpected error when reading response body") ||
+		strings.Contains(errorString, "stream error when reading response body"):
+		// client-go rest.Request: body read failed mid-response; the message asks to retry.
+		return true
 	case strings.Contains(errorString, "Connection closed by foreign host"):
 		// For a URL error, where it replies back "connection closed"
 		// retry again.
