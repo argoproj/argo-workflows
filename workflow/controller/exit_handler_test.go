@@ -12,6 +12,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 var stepsOnExitTmpl = `apiVersion: argoproj.io/v1alpha1
@@ -1067,4 +1068,95 @@ spec:
 	require.Len(t, hookNode.Inputs.Parameters, 1)
 	assert.NotNil(t, hookNode.Inputs.Parameters[0].Value)
 	assert.Equal(t, hookNode.Inputs.Parameters[0].Value.String(), string(apiv1.PodFailed))
+}
+
+var globalArtifactOnExit = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: global-artifact-on-exit
+spec:
+  entrypoint: main
+  onExit: exit-handler
+  templates:
+  - name: main
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["hello world"]
+    outputs:
+      artifacts:
+      - name: result
+        path: /tmp/hello_world.txt
+        globalName: global-result
+  - name: exit-handler
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["goodbye world"]
+`
+
+// TestTaskResultReconciliationSyncsGlobalArtifact reproduces the runtime side of
+// #11610: when a leaf pod's outputs (including a global artifact) are reported
+// asynchronously via a WorkflowTaskResult, taskResultReconciliation() must sync
+// them into the workflow-level global scope so that the global onExit handler can
+// later resolve {{workflow.outputs.artifacts.global-result}}.
+func TestTaskResultReconciliationSyncsGlobalArtifact(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(globalArtifactOnExit)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	// Locate the entrypoint pod node.
+	var nodeID string
+	for id, node := range woc.wf.Status.Nodes {
+		if node.Type == wfv1.NodeTypePod {
+			nodeID = id
+			break
+		}
+	}
+	require.NotEmpty(t, nodeID)
+
+	// Simulate the executor reporting the outputs (with a global artifact)
+	// asynchronously via a WorkflowTaskResult in the informer.
+	taskResult := &wfv1.WorkflowTaskResult{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      nodeID,
+			Namespace: woc.wf.Namespace,
+			Labels: map[string]string{
+				common.LabelKeyWorkflow:               woc.wf.Name,
+				common.LabelKeyReportOutputsCompleted: "true",
+			},
+		},
+		NodeResult: wfv1.NodeResult{
+			Phase: wfv1.NodeSucceeded,
+			Outputs: &wfv1.Outputs{
+				Artifacts: wfv1.Artifacts{
+					{
+						Name:       "result",
+						GlobalName: "global-result",
+						ArtifactLocation: wfv1.ArtifactLocation{
+							S3: &wfv1.S3Artifact{Key: "test"},
+						},
+					},
+				},
+			},
+		},
+	}
+	require.NoError(t, controller.taskResultInformer.GetIndexer().Add(taskResult))
+
+	woc.taskResultReconciliation(ctx)
+
+	// The global artifact must have been synced into the workflow-level global scope.
+	require.NotNil(t, woc.wf.Status.Outputs)
+	var globalArtifactPresent bool
+	for _, art := range woc.wf.Status.Outputs.Artifacts {
+		if art.Name == "global-result" {
+			globalArtifactPresent = true
+			break
+		}
+	}
+	assert.True(t, globalArtifactPresent, "global artifact should be synced into the global scope during task-result reconciliation")
 }

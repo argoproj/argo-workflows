@@ -139,6 +139,10 @@ func (woc *wfOperationCtx) taskResultReconciliation(ctx context.Context) {
 				WithField("nodeID", nodeID).
 				Debug(ctx, "task-result changed")
 			woc.wf.Status.Nodes.Set(ctx, nodeID, *newNode)
+			// task results may carry global artifacts/parameters; add them to the global scope
+			if newNode.Outputs != nil && newNode.Outputs.HasOutputs() {
+				woc.addOutputsToGlobalScope(ctx, newNode.Outputs)
+			}
 			woc.updated = true
 		}
 		span.End()

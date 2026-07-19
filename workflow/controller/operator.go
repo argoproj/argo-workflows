@@ -481,6 +481,12 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 	var onExitNode *wfv1.NodeStatus
 	if woc.execWf.Spec.HasExitHook() {
+		// wait for task results so global artifacts are in scope before the onExit handler runs
+		if woc.checkTaskResultsInProgress(ctx) {
+			woc.log.Info(ctx, "Waiting for task results to complete before executing global onExit handler")
+			woc.requeueAfter(GetRequeueTime())
+			return
+		}
 		woc.log.WithField("onExit", woc.execWf.Spec.OnExit).Info(ctx, "Running OnExit handler")
 		onExitNodeName := common.GenerateOnExitNodeName(woc.wf.Name)
 		onExitNode, _ = woc.execWf.GetNodeByName(onExitNodeName)
