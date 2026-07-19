@@ -235,3 +235,16 @@ func TestNamespaceParallelismUpdate(t *testing.T) {
 	assert.True(throttler.Admit("argo/a"))
 	assert.False(throttler.Admit("argo/b"))
 }
+
+func TestNamespaceParallelismDefaultUpdate(t *testing.T) {
+	assert := assert.New(t)
+	throttler := NewMultiThrottler(4, 1, func(Key) {})
+	throttler.Add("default/a", 0, time.Now())
+	throttler.Add("default/b", 0, time.Now())
+	assert.True(throttler.Admit("default/a"))
+	assert.False(throttler.Admit("default/b"))
+
+	// Raising the default limit must apply to namespaces without an explicit override.
+	throttler.UpdateNamespaceParallelismDefault(2)
+	assert.True(throttler.Admit("default/b"))
+}

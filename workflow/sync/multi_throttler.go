@@ -23,6 +23,9 @@ type Throttler interface {
 	Remove(key Key)
 	// UpdateParallelism
 	UpdateParallelism(limit int)
+	// UpdateNamespaceParallelismDefault updates the controller-config default limit for namespaces
+	// without an explicit Namespace label override.
+	UpdateNamespaceParallelismDefault(limit int)
 	// UpdateNamespaceParallelism updates the namespace parallelism
 	UpdateNamespaceParallelism(namespace string, limit int)
 	// ResetNamespaceParallelism sets the namespace parallelism to the default value
@@ -79,9 +82,11 @@ func (m *multiThrottler) Init(wfs []wfv1.Workflow) error {
 }
 
 func (m *multiThrottler) namespaceCount(namespace string) (int, int) {
-	setLimit, has := m.namespaceParallelism[namespace]
-	if !has {
-		m.namespaceParallelism[namespace] = m.namespaceParallelismDefault
+	var setLimit int
+	if lim, has := m.namespaceParallelism[namespace]; has {
+		setLimit = lim
+	} else {
+		// Use the live default so UpdateNamespaceParallelismDefault applies without a restart.
 		setLimit = m.namespaceParallelismDefault
 	}
 	if setLimit == 0 {
@@ -154,6 +159,13 @@ func (m *multiThrottler) UpdateParallelism(limit int) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	m.totalParallelism = limit
+	m.queueThrottled()
+}
+
+func (m *multiThrottler) UpdateNamespaceParallelismDefault(limit int) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	m.namespaceParallelismDefault = limit
 	m.queueThrottled()
 }
 
