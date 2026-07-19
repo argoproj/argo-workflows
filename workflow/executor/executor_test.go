@@ -698,6 +698,32 @@ func TestSaveLogs(t *testing.T) {
 		assert.Empty(t, logArtifacts)
 		assert.NoError(t, we.HasError(), "a missing combined log must not be a fatal error")
 	})
+
+	t.Run("sidecar container logs are also saved", func(t *testing.T) {
+		// SaveLogs must archive sidecar container logs in addition to the main container(s).
+		ctx := logging.TestContext(t.Context())
+		tr, err := tracing.New(ctx, `argoexec`)
+		require.NoError(t, err)
+		we := WorkflowExecutor{
+			Template: wfv1.Template{
+				ArchiveLocation: &wfv1.ArtifactLocation{ArchiveLogs: new(true)},
+				Sidecars: []wfv1.UserContainer{
+					{Container: corev1.Container{Name: "sidecar-0"}},
+				},
+			},
+			RuntimeExecutor: &mockRuntimeExecutor,
+			Tracing:         tr,
+		}
+
+		we.SaveLogs(ctx)
+
+		// One artifact-storage error per processed container (main + sidecar) proves the
+		// sidecar container was included alongside the main container.
+		require.Len(t, we.errors, 2)
+		for _, e := range we.errors {
+			assert.EqualError(t, e, artStorageError)
+		}
+	})
 }
 
 func TestReportOutputs(t *testing.T) {
