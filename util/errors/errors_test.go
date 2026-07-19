@@ -153,4 +153,12 @@ func TestIsTransientUErr(t *testing.T) {
 		err := fmt.Errorf("unexpected error when reading response body. Please retry. Original error: %w", io.ErrUnexpectedEOF)
 		assert.True(t, IsTransientErr(ctx, err))
 	})
+	t.Run("ClientGoUnexpectedResponseBodyReadErr", func(t *testing.T) {
+		err := errors.New("unexpected error when reading response body. Please retry.")
+		assert.True(t, IsTransientErr(ctx, err))
+	})
+	t.Run("ClientGoStreamResponseBodyReadErr", func(t *testing.T) {
+		err := errors.New("stream error when reading response body")
+		assert.True(t, IsTransientErr(ctx, err))
+	})
 }
