@@ -76,6 +76,11 @@ type wfOperationCtx struct {
 	// updated indicates whether or not the workflow object itself was updated
 	// and needs to be persisted back to kubernetes
 	updated bool
+	// reapplyFailed indicates that persisting the workflow failed in a way that may
+	// leave woc.wf out of sync with the API object (e.g. a non-conflict Update error).
+	// It is transient, in-memory only, and never persisted; the throttler uses it to
+	// keep the parallelism slot until a later successful reconciliation.
+	reapplyFailed bool
 	// log is a logging interfacg to correlate logs with a workflow
 	log logging.Logger
 	// controller reference to workflow controller
@@ -727,6 +732,13 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 	return nil
 }
 
+// markInMemoryReapplyFailed records, in memory only, that persisting the workflow failed.
+// persistUpdates uses this when Update fails so the throttler slot is not released while the
+// in-memory workflow may not match the API object (e.g. connection reset before persist).
+func (woc *wfOperationCtx) markInMemoryReapplyFailed() {
+	woc.reapplyFailed = true
+}
+
 // persistUpdates will update a workflow with any updates made during workflow operation.
 // It also labels any pods as completed if we have extracted everything we need from it.
 // NOTE: a previous implementation used Patch instead of Update, but Patch does not work with
@@ -777,12 +789,15 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 			return
 		}
 		if !apierr.IsConflict(err) {
+			// Non-conflict errors (e.g. connection reset) may leave woc.wf out of sync with the API,
+			// so keep the throttler slot until a later successful reconciliation.
+			woc.markInMemoryReapplyFailed()
 			return
 		}
 		woc.log.Info(ctx, "Re-applying updates on latest version and retrying update")
 		wf, err = woc.reapplyUpdate(ctx, wfClient, nodes)
 		if err != nil {
-			woc.wf.Labels[common.LabelKeyReApplyFailed] = "true"
+			woc.markInMemoryReapplyFailed()
 			woc.log.WithError(err).Info(ctx, "Failed to re-apply update")
 			return
 		}
@@ -877,6 +892,7 @@ func (woc *wfOperationCtx) persistWorkflowSizeLimitErr(ctx context.Context, wfCl
 	woc.markWorkflowError(ctx, err)
 	wf, err := wfClient.Update(ctx, woc.wf, metav1.UpdateOptions{})
 	if err != nil {
+		woc.markInMemoryReapplyFailed()
 		woc.log.WithError(err).Warn(ctx, "Error updating workflow with size error")
 	} else {
 		woc.controller.recordWorkflowWrite(wf)
