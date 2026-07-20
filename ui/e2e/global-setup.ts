@@ -67,5 +67,6 @@ export default async function globalSetup(): Promise<void> {
         ]
     };
     mkdirSync(AUTH_DIR, {recursive: true});
+    // Consumed by Playwright via `storageState` in playwright.config.ts, not imported anywhere.
     writeFileSync(STORAGE_STATE, JSON.stringify(state, null, 2));
 }

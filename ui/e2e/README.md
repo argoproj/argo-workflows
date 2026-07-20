@@ -32,7 +32,7 @@ mode, whose UI shell is also a bundled browser):
 ```bash
 export NIX_LD_LIBRARY_PATH="$(nix eval --impure --raw --expr 'with import <nixpkgs> {}; lib.makeLibraryPath [
   glib nspr nss atk at-spi2-atk at-spi2-core cups dbus expat libdrm mesa libgbm
-  libxkbcommon pango cairo alsa-lib fontconfig freetype gtk3 gdk-pixbuf
+  libxkbcommon pango cairo alsa-lib fontconfig freetype gtk3 gdk-pixbuf systemdLibs
   xorg.libX11 xorg.libXcomposite xorg.libXdamage xorg.libXext xorg.libXfixes
   xorg.libXrandr xorg.libXrender xorg.libXtst xorg.libXi xorg.libxcb xorg.libxshmfence
 ]')${NIX_LD_LIBRARY_PATH:+:$NIX_LD_LIBRARY_PATH}"
