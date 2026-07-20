@@ -7,11 +7,15 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	k8stesting "k8s.io/client-go/testing"
 
 	"github.com/argoproj/argo-workflows/v4/errors"
 	"github.com/argoproj/argo-workflows/v4/persist/sqldb/mocks"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	fakewfclientset "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
 	"github.com/argoproj/argo-workflows/v4/workflow/packer"
@@ -146,4 +150,32 @@ func TestPersistErrorWithLargeWfSupport(t *testing.T) {
 
 func makeMax() func() {
 	return packer.SetMaxWorkflowSize(50)
+}
+
+// TestPersistUpdatesMarksReapplyFailedOnNonConflictError verifies that a non-conflict
+// Update error (e.g. connection reset) marks the workflow reapply-failed in memory, so the
+// controller's throttler defer keeps the parallelism slot instead of releasing it while the
+// in-memory workflow may not match the API object.
+func TestPersistUpdatesMarksReapplyFailedOnNonConflictError(t *testing.T) {
+	cancel, controller := newController(logging.TestContext(t.Context()))
+	defer cancel()
+
+	ctx := logging.TestContext(t.Context())
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWfPersist)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	controller.offloadNodeStatusRepo, controller.hydrator = getMockDBCtx(nil, false)
+
+	// Make the workflow Update fail with a non-conflict error.
+	controller.wfclientset.(*fakewfclientset.Clientset).PrependReactor("update", "workflows", func(k8stesting.Action) (bool, runtime.Object, error) {
+		return true, nil, apierr.NewInternalError(fmt.Errorf("connection reset by peer"))
+	})
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.updated = true // force persistUpdates to attempt the Update
+	woc.persistUpdates(ctx)
+
+	assert.True(t, woc.reapplyFailed, "non-conflict persist error should mark reapply-failed to keep the throttler slot")
 }
