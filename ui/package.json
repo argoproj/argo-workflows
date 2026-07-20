@@ -8,8 +8,11 @@
     "scripts": {
         "build": "rm -Rf dist && NODE_ENV=production webpack --mode production",
         "start": "webpack-dev-server",
-        "lint": "eslint --fix ./src && tsc --noEmit",
+        "lint": "eslint --fix ./src ./e2e && tsc --noEmit && yarn e2e:typecheck",
         "test": "jest",
+        "e2e": "playwright test",
+        "e2e:ui": "playwright test --ui",
+        "e2e:typecheck": "tsc --noEmit -p e2e/tsconfig.json",
         "deduplicate": "yarn-deduplicate -s fewer yarn.lock"
     },
     "engines": {
@@ -48,6 +51,8 @@
         "@babel/preset-env": "^7.22.10",
         "@fortawesome/fontawesome-free": "^6.5.1",
         "@ianvs/prettier-plugin-sort-imports": "^4.3.1",
+        "@playwright/test": "^1.50.0",
+        "@types/node": "^20.11.0",
         "@testing-library/dom": "^10.4.0",
         "@testing-library/jest-dom": "^6.6.3",
         "@testing-library/react": "^16.3.0",
