@@ -8,7 +8,7 @@ tests (`yarn test`), these drive a real browser against a live stack.
 Start the dev stack in one terminal (Tilt serves the UI on http://localhost:8080):
 
 ```bash
-make start
+make start AUTH_MODE=client 
 ```
 
 Then, in another terminal:
