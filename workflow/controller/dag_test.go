@@ -4695,15 +4695,15 @@ status:
 // shutdownStrategy: Stop, an onExit handler that uses a DAG template is still allowed to
 // run to completion instead of being immediately failed by the shutdown fast-fail path.
 func TestOnExitDAGNotFailedOnShutdownStop(t *testing.T) {
-	ctx := logging.TestContext(t.Context())
-	cancel, controller := newController(ctx)
+	cancel, controller := newController()
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
+	ctx := context.Background()
 	wf := wfv1.MustUnmarshalWorkflow(testOnExitDAGWithShutdownStop)
 	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
 	require.NoError(t, err)
-	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate(ctx)
 
 	// The onExit DAG should be running, not immediately failed.
