@@ -129,6 +129,10 @@ func TestIsTransientErr(t *testing.T) {
 		inner := errors.New("Timeout: request did not complete within requested timeout")
 		assert.True(t, IsTransientErr(ctx, argoerrs.InternalWrapError(inner)))
 	})
+	t.Run("ClientGoRateLimiterWaitDeadline", func(t *testing.T) {
+		err := errors.New("client rate limiter Wait returned an error: rate: Wait(n=1) would exceed context deadline")
+		assert.True(t, IsTransientErr(ctx, err))
+	})
 }
 
 func TestIsTransientUErr(t *testing.T) {
