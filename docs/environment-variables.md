@@ -101,7 +101,7 @@ spec:
 
 | Name                                   | Type            | Default | Description                                                                                            |
 |----------------------------------------|-----------------|---------|--------------------------------------------------------------------------------------------------------|
-| `ARGO_AGENT_RESOURCE_INFORMER_RESYNC`  | `time.Duration` | `5m`    | How often the resource agent's informers resync as a safety net against missed watch events.          |
+| `ARGO_AGENT_RESOURCE_INFORMER_RESYNC`  | `time.Duration` | `5m`    | How often the resource agent's informers resync as a safety net against missed watch events. Read by the executor/agent process; see the other `ARGO_AGENT_*` variables in the Controller table above. |
 | `ARGO_DEBUG_PAUSE_AFTER`               | `bool`          | `false` | Enable [Debug Pause](debug-pause.md) after step execution
 | `ARGO_DEBUG_PAUSE_BEFORE`              | `bool`          | `false` | Enable [Debug Pause](debug-pause.md) before step execution
 | `ARTIFACT_S3_UPLOAD_THREADS`           | `int`               | `4`                                                                                         | Number of threads for artifact upload through S3. Default: 4.                                                                                                                                                                                                            |

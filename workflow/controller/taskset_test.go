@@ -355,7 +355,7 @@ status:
       name: main
       phase: Pending
       templateName: main
-      type: ResourceMonitor
+      type: ResourceAgent
   phase: Running
 `)
 	ctx := logging.TestContext(t.Context())
@@ -414,7 +414,7 @@ status:
       message: agent pod failed
       finishedAt: "2020-01-01T00:00:00Z"
       templateName: main
-      type: ResourceMonitor
+      type: ResourceAgent
   phase: Running
 `)
 	ctx := logging.TestContext(t.Context())

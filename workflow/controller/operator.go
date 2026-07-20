@@ -2509,7 +2509,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		node, err = woc.executeScript(ctx, nodeName, templateScope, processedTmpl, orgTmpl, opts)
 	case wfv1.TemplateTypeResource:
 		if processedTmpl.Resource != nil && processedTmpl.Resource.Agent {
-			node = woc.executeResourceMonitor(ctx, nodeName, templateScope, processedTmpl, orgTmpl, opts)
+			node = woc.executeResourceAgent(ctx, nodeName, templateScope, processedTmpl, orgTmpl, opts)
 		} else {
 			node, err = woc.executeResource(ctx, nodeName, templateScope, processedTmpl, orgTmpl, opts)
 		}
@@ -3352,7 +3352,7 @@ func (woc *wfOperationCtx) getOutboundNodes(ctx context.Context, nodeID string) 
 		woc.log.WithPanic().WithField("nodeID", nodeID).Error(ctx, "was unable to obtain node")
 	}
 	switch node.Type {
-	case wfv1.NodeTypeSkipped, wfv1.NodeTypeSuspend, wfv1.NodeTypeHTTP, wfv1.NodeTypePlugin, wfv1.NodeTypeResourceMonitor:
+	case wfv1.NodeTypeSkipped, wfv1.NodeTypeSuspend, wfv1.NodeTypeHTTP, wfv1.NodeTypePlugin, wfv1.NodeTypeResourceAgent:
 		return []string{node.ID}
 	case wfv1.NodeTypePod:
 

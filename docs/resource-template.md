@@ -36,6 +36,11 @@ When resource templates are executed by the agent instead of a per-node pod, be 
   is harmless.
 * Output parameters (`jsonPath`/`jqFilter`) are resolved from the watched object's state at the
   moment its success conditions are met, not via `kubectl get`.
+* Only a single manifest document is supported per template. A multi-document manifest
+  (`---`-separated) is rejected; split it into separate resource templates.
+* `manifestFrom` loads the artifact in-process, so it works only with the native artifact drivers
+  (`s3`, `gcs`, `oss`, `http`, `git`, `raw`). A `plugin:`-backed artifact cannot be used, because the
+  agent pod runs no artifact-plugin sidecars.
 
 ### Service account and RBAC
 

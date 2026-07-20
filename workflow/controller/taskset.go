@@ -198,9 +198,7 @@ func (woc *wfOperationCtx) createTaskSet(ctx context.Context) error {
 	}
 
 	woc.log.Info(ctx, "Creating TaskSet")
-	labels := map[string]string{
-		common.LabelKeyWorkflowUID: string(woc.wf.UID),
-	}
+	labels := map[string]string{}
 	if woc.controller.Config.InstanceID != "" {
 		labels[common.LabelKeyControllerInstanceID] = woc.controller.Config.InstanceID
 	}
@@ -235,8 +233,7 @@ func (woc *wfOperationCtx) createTaskSet(ctx context.Context) error {
 		spec := map[string]any{
 			"metadata": metav1.ObjectMeta{
 				Labels: map[string]string{
-					common.LabelKeyCompleted:   strconv.FormatBool(woc.wf.Status.Fulfilled()),
-					common.LabelKeyWorkflowUID: string(woc.wf.UID),
+					common.LabelKeyCompleted: strconv.FormatBool(woc.wf.Status.Fulfilled()),
 				},
 			},
 			"spec": wfv1.WorkflowTaskSetSpec{Tasks: woc.taskSet},
