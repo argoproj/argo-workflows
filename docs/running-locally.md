@@ -211,7 +211,7 @@ Then run the tests in another terminal:
 
 ```bash
 yarn --cwd ui install
-yarn --cwd ui playwright install chromium   # first run only
+yarn --cwd ui playwright install --with-deps chromium   # first run only
 make test-ui-e2e                            # or: yarn --cwd ui e2e
 ```
 
