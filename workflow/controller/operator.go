@@ -78,6 +78,11 @@ type wfOperationCtx struct {
 	// updated indicates whether or not the workflow object itself was updated
 	// and needs to be persisted back to kubernetes
 	updated bool
+	// reapplyFailed indicates that persisting the workflow failed in a way that may
+	// leave woc.wf out of sync with the API object (e.g. a non-conflict Update error).
+	// It is transient, in-memory only, and never persisted; the throttler uses it to
+	// keep the parallelism slot until a later successful reconciliation.
+	reapplyFailed bool
 	// log is a logging interfacg to correlate logs with a workflow
 	log logging.Logger
 	// controller reference to workflow controller
@@ -753,14 +758,11 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 	return nil
 }
 
-// markInMemoryReapplyFailed sets LabelKeyReApplyFailed on woc.wf without persisting it.
+// markInMemoryReapplyFailed records, in memory only, that persisting the workflow failed.
 // persistUpdates uses this when Update fails so the throttler slot is not released while the
 // in-memory workflow may not match the API object (e.g. connection reset before persist).
 func (woc *wfOperationCtx) markInMemoryReapplyFailed() {
-	if woc.wf.Labels == nil {
-		woc.wf.Labels = make(map[string]string)
-	}
-	woc.wf.Labels[common.LabelKeyReApplyFailed] = "true"
+	woc.reapplyFailed = true
 }
 
 // persistUpdates will update a workflow with any updates made during workflow operation.

@@ -181,5 +181,5 @@ func TestPersistUpdatesMarksReapplyFailedOnNonConflictError(t *testing.T) {
 	woc.updated = true // force persistUpdates to attempt the Update
 	woc.persistUpdates(ctx)
 
-	assert.True(t, reapplyFailed(woc.wf), "non-conflict persist error should mark reapply-failed to keep the throttler slot")
+	assert.True(t, woc.reapplyFailed, "non-conflict persist error should mark reapply-failed to keep the throttler slot")
 }
