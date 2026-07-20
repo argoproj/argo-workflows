@@ -243,10 +243,14 @@ func TestNamespaceParallelismDefaultUpdate(t *testing.T) {
 	throttler := NewMultiThrottler(4, 1, func(Key) {})
 	throttler.Add("default/a", 0, time.Now())
 	throttler.Add("default/b", 0, time.Now())
+	throttler.Add("default/c", 0, time.Now())
 	assert.True(throttler.Admit("default/a"))
 	assert.False(throttler.Admit("default/b"))
+	assert.False(throttler.Admit("default/c"))
 
-	// Raising the default limit must apply to namespaces without an explicit override.
-	throttler.UpdateNamespaceParallelismDefault(2)
+	// Raising the default limit must apply to namespaces without an explicit override,
+	// and must admit all newly eligible workflows at once, not just one.
+	throttler.UpdateNamespaceParallelismDefault(3)
 	assert.True(throttler.Admit("default/b"))
+	assert.True(throttler.Admit("default/c"))
 }

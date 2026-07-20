@@ -159,7 +159,7 @@ func (m *multiThrottler) UpdateParallelism(limit int) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	m.totalParallelism = limit
-	m.queueThrottled()
+	m.drainThrottled()
 }
 
 // UpdateNamespaceParallelismDefault updates the default per-namespace parallelism limit
@@ -168,14 +168,14 @@ func (m *multiThrottler) UpdateNamespaceParallelismDefault(limit int) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	m.namespaceParallelismDefault = limit
-	m.queueThrottled()
+	m.drainThrottled()
 }
 
 func (m *multiThrottler) UpdateNamespaceParallelism(namespace string, limit int) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	m.namespaceParallelism[namespace] = limit
-	m.queueThrottled()
+	m.drainThrottled()
 }
 
 func (m *multiThrottler) ResetNamespaceParallelism(namespace string) {
@@ -184,9 +184,19 @@ func (m *multiThrottler) ResetNamespaceParallelism(namespace string) {
 	delete(m.namespaceParallelism, namespace)
 }
 
-func (m *multiThrottler) queueThrottled() {
+// drainThrottled repeatedly admits eligible queued workflows until no further
+// capacity is available. Used when a parallelism limit is raised so that all newly
+// eligible workflows are released immediately, rather than one per subsequent event.
+func (m *multiThrottler) drainThrottled() {
+	for m.queueThrottled() {
+	}
+}
+
+// queueThrottled admits at most one eligible queued workflow and returns true if it
+// admitted one, so callers can loop to drain all newly eligible workflows.
+func (m *multiThrottler) queueThrottled() bool {
 	if m.totalParallelism != 0 && len(m.running) >= m.totalParallelism {
-		return
+		return false
 	}
 
 	minPq := &priorityQueue{itemByKey: make(map[string]*item)}
@@ -199,7 +209,7 @@ func (m *multiThrottler) queueThrottled() {
 
 		namespace, _, err := cache.SplitMetaNamespaceKey(currItem.key)
 		if err != nil {
-			return
+			return false
 		}
 		if !m.namespaceAllows(namespace) {
 			continue
@@ -213,7 +223,9 @@ func (m *multiThrottler) queueThrottled() {
 		m.pending[bestNamespace].pop()
 		m.running[bestItem.key] = true
 		m.queue(bestItem.key)
+		return true
 	}
+	return false
 }
 
 type item struct {
