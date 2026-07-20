@@ -118,6 +118,10 @@ func TestIsTransientErr(t *testing.T) {
 	t.Run("ConnectionRefusedTransientErr", func(t *testing.T) {
 		assert.True(t, IsTransientErr(ctx, connectionRefusedErr))
 	})
+	t.Run("ClientGoRateLimiterWaitDeadline", func(t *testing.T) {
+		err := errors.New("client rate limiter Wait returned an error: rate: Wait(n=1) would exceed context deadline")
+		assert.True(t, IsTransientErr(ctx, err))
+	})
 }
 
 func TestIsTransientUErr(t *testing.T) {
