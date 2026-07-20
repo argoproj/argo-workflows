@@ -204,7 +204,7 @@ Jest unit tests (`yarn --cwd ui test`). They drive a real browser against a runn
 Start the dev stack in one terminal — Tilt serves the UI on <http://localhost:8080>:
 
 ```bash
-make start
+make start AUTH_MODE=client 
 ```
 
 Then run the tests in another terminal:
