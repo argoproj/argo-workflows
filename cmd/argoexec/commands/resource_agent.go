@@ -48,8 +48,6 @@ func initResourceAgentExecutor(ctx context.Context) *executor.ResourceAgentExecu
 	clientSet, err := kubernetes.NewForConfig(config)
 	argoexecex.CheckErr(err)
 
-	restClient := clientSet.RESTClient()
-
 	workflowName, ok := os.LookupEnv(common.EnvVarWorkflowName)
 	if !ok {
 		logger.WithFatal().Error(ctx, fmt.Sprintf("Unable to determine workflow name from environment variable %s", common.EnvVarWorkflowName))
@@ -61,5 +59,5 @@ func initResourceAgentExecutor(ctx context.Context) *executor.ResourceAgentExecu
 		os.Exit(1)
 	}
 
-	return executor.NewResourceAgentExecutor(clientSet, restClient, config, namespace, workflowName, workflowUID)
+	return executor.NewResourceAgentExecutor(clientSet, config, namespace, workflowName, workflowUID)
 }

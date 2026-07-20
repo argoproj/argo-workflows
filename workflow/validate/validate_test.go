@@ -1821,6 +1821,39 @@ func TestInvalidResourceWorkflow(t *testing.T) {
 	require.EqualError(t, err, "templates.whalesay.resource.action must be one of: get, create, apply, delete, replace, patch")
 }
 
+var multiDocAgentResourceWorkflow = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: multi-doc-agent-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    resource:
+      action: apply
+      agent: true
+      manifest: |
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: cm-a
+        ---
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: cm-b
+`
+
+// TestMultiDocAgentResourceWorkflow verifies an agent-based resource template with a multi-document
+// manifest is rejected at submit time rather than failing mid-run.
+func TestMultiDocAgentResourceWorkflow(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := unmarshalWf(multiDocAgentResourceWorkflow)
+	err := Workflow(ctx, wftmplGetter, cwftmplGetter, wf, nil, Opts{})
+	require.EqualError(t, err, "templates.main.resource: agent-based resource templates support only a single manifest document")
+}
+
 var invalidPodGC = `
 metadata:
   generateName: pod-gc-strategy-unknown-

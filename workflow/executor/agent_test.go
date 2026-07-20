@@ -42,16 +42,19 @@ func TestUnsupportedTemplateTaskWorker(t *testing.T) {
 }
 
 func TestAgentSkipsResourceTasks(t *testing.T) {
-	// Agent-based resource templates share the taskset but are served by the resource agent. The
-	// plain agent must ignore them (empty phase => nothing patched), not error them.
+	// Resource templates share the taskset but are served by the resource agent. The plain agent must
+	// ignore them (empty phase => nothing patched), not error them. processTask skips them by template
+	// type — not the resource.agent flag and without touching consideredTasks — so it holds either way.
 	ctx := logging.TestContext(t.Context())
-	ae := &AgentExecutor{consideredTasks: &sync.Map{}}
-	result, requeue, err := ae.processTask(ctx, v1alpha1.Template{
-		Resource: &v1alpha1.ResourceTemplate{Action: "create", Agent: true},
-	})
-	require.NoError(t, err)
-	assert.Equal(t, time.Duration(0), requeue)
-	assert.Empty(t, string(result.Phase))
+	ae := &AgentExecutor{}
+	for _, agent := range []bool{true, false} {
+		result, requeue, err := ae.processTask(ctx, v1alpha1.Template{
+			Resource: &v1alpha1.ResourceTemplate{Action: "create", Agent: agent},
+		})
+		require.NoError(t, err)
+		assert.Equal(t, time.Duration(0), requeue)
+		assert.Empty(t, string(result.Phase))
+	}
 }
 
 func TestAgentPluginExecuteTaskSet(t *testing.T) {

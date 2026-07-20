@@ -109,9 +109,6 @@ const (
 	LabelKeyWorkflowArchivingStatus = workflow.WorkflowFullName + "/workflow-archiving-status"
 	// LabelKeyWorkflow is the pod metadata label to indicate the associated workflow name
 	LabelKeyWorkflow = workflow.WorkflowFullName + "/workflow"
-	// LabelKeyWorkflowUID is applied to WorkflowTaskSets to identify the owning workflow by UID,
-	// so per-workflow agents can select exactly their own taskset.
-	LabelKeyWorkflowUID = workflow.WorkflowFullName + "/workflow-uid"
 	// LabelKeyAgentResource is applied to resources created by the agent's resource templates,
 	// valued with the owning workflow's UID. Unlike LabelKeyWorkflow (which is also stamped on
 	// workflow pods and is name-based, so reused across delete/recreate), this selects exactly

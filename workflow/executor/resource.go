@@ -96,19 +96,14 @@ func runKubectlWithRetry(ctx context.Context, args ...string) ([]byte, error) {
 	return out, err
 }
 
-// inferPluralName guesses the lowercase plural resource name for a kind.
-// This is the best guess we can do here and is what `kubectl` uses under the hood. Hopefully future versions of the
-// REST client would remove the need to infer the plural name.
-func inferPluralName(kind string) string {
-	lowercaseNamer := namer.NewAllLowercasePluralNamer(map[string]string{})
-	return lowercaseNamer.Name(&gengotypes.Type{Name: gengotypes.Name{
-		Name: kind,
-	}})
-}
-
 func inferObjectSelfLink(obj unstructured.Unstructured) string {
 	gvk := obj.GroupVersionKind()
-	pluralName := inferPluralName(gvk.Kind)
+	// This is the best guess we can do here and is what `kubectl` uses under the hood. Hopefully future versions of the
+	// REST client would remove the need to infer the plural name.
+	lowercaseNamer := namer.NewAllLowercasePluralNamer(map[string]string{})
+	pluralName := lowercaseNamer.Name(&gengotypes.Type{Name: gengotypes.Name{
+		Name: gvk.Kind,
+	}})
 
 	var selfLinkPrefix string
 	if gvk.Group == "" {

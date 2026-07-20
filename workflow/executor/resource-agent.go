@@ -75,7 +75,6 @@ type ResourceAgentExecutor struct {
 	ClientSet         kubernetes.Interface
 	DynamicClient     dynamic.Interface
 	WorkflowInterface workflow.Interface
-	RESTClient        rest.Interface
 	RESTMapper        meta.ResettableRESTMapper
 	Namespace         string
 
@@ -97,14 +96,13 @@ type ResourceAgentExecutor struct {
 }
 
 // NewResourceAgentExecutor returns a new ResourceAgentExecutor
-func NewResourceAgentExecutor(clientSet kubernetes.Interface, restClient rest.Interface, config *rest.Config, namespace, workflowName, workflowUID string) *ResourceAgentExecutor {
+func NewResourceAgentExecutor(clientSet kubernetes.Interface, config *rest.Config, namespace, workflowName, workflowUID string) *ResourceAgentExecutor {
 	return &ResourceAgentExecutor{
 		WorkflowName:      workflowName,
 		WorkflowUID:       workflowUID,
 		ClientSet:         clientSet,
 		DynamicClient:     dynamic.NewForConfigOrDie(config),
 		WorkflowInterface: workflow.NewForConfigOrDie(config),
-		RESTClient:        restClient,
 		// discovery-backed mapper resolves the real resource (plural) for any kind, including CRDs
 		RESTMapper: restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(clientSet.Discovery())),
 		Namespace:  namespace,
@@ -117,6 +115,10 @@ func NewResourceAgentExecutor(clientSet kubernetes.Interface, restClient rest.In
 }
 
 func (rae *ResourceAgentExecutor) createAndWatchResource(ctx context.Context, tmpl *wfv1.Template, nodeID string) {
+	// This agent and the HTTP/plugin AgentExecutor share one WorkflowTaskSet and partition it by
+	// template type: this agent serves only resource tasks, and AgentExecutor.processTask skips them
+	// (its `case tmpl.Resource != nil`). The two skips must stay complementary — a new agent-served
+	// template type needs matching skips on both sides or the node errors spuriously.
 	if tmpl == nil || tmpl.Resource == nil {
 		return
 	}
@@ -142,18 +144,24 @@ func (rae *ResourceAgentExecutor) createAndWatchResource(ctx context.Context, tm
 	}
 	logger.WithFields(logging.Fields{"namespace": obj.GetNamespace(), "name": obj.GetName(), "kind": obj.GetKind()}).Info(ctx, "Created resource")
 
-	// A delete leaves no live object to watch, and zero requirements (empty or whitespace-only
-	// conditions) mean there is nothing to wait for: succeed immediately, as WaitResource does.
-	if tmpl.Resource.Action == "delete" || (len(rc.successReqs) == 0 && len(rc.failReqs) == 0) {
+	// A delete leaves no live object to watch, and genuinely-absent conditions mean there is nothing
+	// to wait for: succeed immediately off the create response, as WaitResource does. Match on the raw
+	// strings, not the parsed requirement counts: a whitespace-only condition (e.g. from a parameter
+	// substitution) is non-empty but parses to zero requirements, and WaitResource still reads it back
+	// once — so it must fall through to the poll below rather than be reported a spurious success.
+	if tmpl.Resource.Action == "delete" || (tmpl.Resource.SuccessCondition == "" && tmpl.Resource.FailureCondition == "") {
 		rae.reportSucceeded(ctx, nodeID, tmpl, obj)
 		return
 	}
 	// The resource exists and the agent is about to watch it (possibly for a long time); surface
 	// that as Running so the node doesn't sit Pending and then jump straight to Succeeded.
 	rae.reportRunning(nodeID)
-	// A get does not write the agent-resource label onto the live object, so the label-filtered
-	// informer would never deliver its events. Poll it by name instead, as WaitResource does.
-	if tmpl.Resource.Action == "get" {
+	// Poll by name rather than watch when either the action is get — its live object never carries the
+	// agent-resource label the informer selects on, so watch events would never arrive — or the parsed
+	// conditions are empty (whitespace-only): there is nothing for the watch to match, but the resource
+	// must still be read back once (as WaitResource does) so a mid-create deletion surfaces as a failure
+	// instead of a spurious success. A single poll of zero requirements succeeds on the first read.
+	if tmpl.Resource.Action == "get" || (len(rc.successReqs) == 0 && len(rc.failReqs) == 0) {
 		go rae.pollResource(ctx, nodeID, tmpl, gvr, namespaced, obj, rc)
 		return
 	}
@@ -666,7 +674,11 @@ func (rae *ResourceAgentExecutor) createResource(ctx context.Context, resource *
 		return nil, gvr, namespaced, err
 	}
 
-	// runKubectl mutates global os.Args and kubectl's fatal handler; serialize across workers.
+	// runKubectl mutates global os.Args and kubectl's fatal handler, so it cannot run concurrently;
+	// serialize across workers. This caps resource-creation throughput at one in-flight kubectl at a
+	// time regardless of ARGO_AGENT_TASK_WORKERS — a conscious trade-off to keep kubectl's behavior
+	// parity (resource.Flags passthrough, merge strategies, server-side apply). The watch/report paths
+	// stay concurrent; only the create/apply/patch/replace/delete step is serialized here.
 	rae.kubeCTLMutex.Lock()
 	out, err := runKubectlWithRetry(ctx, args...)
 	rae.kubeCTLMutex.Unlock()
@@ -722,14 +734,14 @@ func (rae *ResourceAgentExecutor) findExistingResource(ctx context.Context, gvr 
 	return nil, false, nil
 }
 
-func (rae *ResourceAgentExecutor) runResourceAgentWorker(ctx context.Context, taskQueue chan string) {
+func (rae *ResourceAgentExecutor) runResourceAgentWorker(ctx context.Context, taskQueue workqueue.TypedInterface[string]) {
 	for {
-		select {
-		case <-ctx.Done():
+		nodeID, shutdown := taskQueue.Get()
+		if shutdown {
 			return
-		case nodeID := <-taskQueue:
-			rae.createAndWatchResource(ctx, rae.templateForNode(nodeID), nodeID)
 		}
+		rae.createAndWatchResource(ctx, rae.templateForNode(nodeID), nodeID)
+		taskQueue.Done(nodeID)
 	}
 }
 
@@ -829,7 +841,13 @@ func (rae *ResourceAgentExecutor) Agent(ctx context.Context) error {
 		WithField("requeueTime", requeueTime).
 		Info(ctx, "Starting Agent")
 
-	taskQueue := make(chan string, 32)
+	// Derived so the informer handlers can stop the agent early (the self-exits below).
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	// A workqueue (like eventQueue) never blocks Add, so the informer's delivery goroutine can't
+	// stall when a large fan-out of tasks outpaces the workers — unlike a bounded channel send.
+	taskQueue := workqueue.NewTyped[string]()
 
 	resync := informerResync(ctx)
 	factory := externalversions.NewSharedInformerFactoryWithOptions(rae.WorkflowInterface, resync,
@@ -866,25 +884,36 @@ func (rae *ResourceAgentExecutor) Agent(ctx context.Context) error {
 		}
 		rae.tasksMutex.Unlock()
 		for _, nodeID := range newIDs {
-			taskQueue <- nodeID
+			taskQueue.Add(nodeID)
 		}
+	}
+
+	// The controller deletes the agent pod when the workflow completes; these self-exits are
+	// belt-and-suspenders (mirroring AgentExecutor) so a missed teardown can't leave the agent
+	// running forever — stop when our taskset is marked completed or is deleted.
+	upsert := func(ts *wfv1.WorkflowTaskSet) {
+		if ts != nil && IsWorkflowCompleted(ts) {
+			logger.Info(ctx, "Workflow completed; stopping resource agent")
+			cancel()
+			return
+		}
+		enqueue(ts)
 	}
 
 	_, err := informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj any) {
 			ts := asTaskSet(obj)
 			logger.WithField("name", tsName(ts)).Info(ctx, "WorkflowTaskSet added")
-			enqueue(ts)
+			upsert(ts)
 		},
 		UpdateFunc: func(_, obj any) {
 			ts := asTaskSet(obj)
 			logger.WithField("name", tsName(ts)).Info(ctx, "WorkflowTaskSet updated")
-			enqueue(ts)
+			upsert(ts)
 		},
 		DeleteFunc: func(obj any) {
-			if ts := asTaskSet(obj); ts != nil {
-				logger.WithField("name", ts.Name).Info(ctx, "WorkflowTaskSet deleted")
-			}
+			logger.WithField("name", tsName(asTaskSet(obj))).Info(ctx, "WorkflowTaskSet deleted; stopping resource agent")
+			cancel()
 		},
 	})
 	if err != nil {
@@ -904,6 +933,7 @@ func (rae *ResourceAgentExecutor) Agent(ctx context.Context) error {
 	go rae.runEventWorker(ctx)
 	go func() {
 		<-ctx.Done()
+		taskQueue.ShutDown()
 		rae.eventQueue.ShutDown()
 	}()
 
@@ -916,8 +946,8 @@ func (rae *ResourceAgentExecutor) Agent(ctx context.Context) error {
 // node ID as annotations, making every event self-describing — handlers can evaluate and
 // attribute results with no agent-side state, and a restarted agent's re-list resumes cleanly.
 // It returns both the re-marshaled manifest and the parsed object.
-// ponytail: single-document manifests only; multi-doc is rejected rather than silently partly
-// applied. Upgrade path: split on YAML doc boundaries and label/create/watch each.
+// Note: single-document manifests only; multi-doc is rejected rather than silently partly
+// applied. A future enhancement could split on YAML doc boundaries and label/create/watch each.
 func withAgentMetadata(manifest []byte, workflowName, workflowUID, nodeID string, resource *wfv1.ResourceTemplate) ([]byte, *unstructured.Unstructured, error) {
 	if common.ManifestDocCount(manifest) > 1 {
 		return nil, nil, argoerrors.New(argoerrors.CodeBadRequest, "agent-based resource templates support only a single manifest document")

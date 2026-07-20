@@ -944,6 +944,12 @@ func (tctx *templateValidationCtx) validateLeaf(scope map[string]any, tmplCtx *t
 				if err != nil {
 					return errors.Errorf(errors.CodeBadRequest, "templates.%s.resource.manifest must be a valid yaml", tmpl.Name)
 				}
+				// Agent-based resource templates support only a single manifest document; catch a static
+				// multi-document manifest at submit time rather than failing mid-run. (A manifestFrom
+				// manifest is unknown here, so that case stays a runtime check in the agent.)
+				if tmpl.Resource.Agent && common.ManifestDocCount([]byte(tmpl.Resource.Manifest)) > 1 {
+					return errors.Errorf(errors.CodeBadRequest, "templates.%s.resource: agent-based resource templates support only a single manifest document", tmpl.Name)
+				}
 			}
 		}
 	}

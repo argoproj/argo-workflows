@@ -72,7 +72,7 @@ func (woc *wfOperationCtx) reconcileOneAgentPod(ctx context.Context, resourceAge
 	}
 	if err != nil {
 		woc.markTaskSetNodesError(ctx, fmt.Errorf(`create agent pod failed with reason:"%w"`, err), func(node wfv1.NodeStatus) bool {
-			return (node.Type == wfv1.NodeTypeResourceMonitor) == resourceAgent
+			return (node.Type == wfv1.NodeTypeResourceAgent) == resourceAgent
 		})
 		return
 	}
@@ -90,7 +90,7 @@ func (woc *wfOperationCtx) updateAgentPodStatus(ctx context.Context, pod *apiv1.
 		// nodes served by the pod that actually failed, not every taskset node.
 		resourceAgent := pod.Name == woc.getResourceAgentPodName()
 		woc.markTaskSetNodesError(ctx, fmt.Errorf(`agent pod failed with reason:"%s"`, message), func(node wfv1.NodeStatus) bool {
-			return (node.Type == wfv1.NodeTypeResourceMonitor) == resourceAgent
+			return (node.Type == wfv1.NodeTypeResourceAgent) == resourceAgent
 		})
 	}
 }
