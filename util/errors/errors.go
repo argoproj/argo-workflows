@@ -58,9 +58,18 @@ func isTransientErr(err error) bool {
 		apierr.IsTimeout(err) ||
 		apierr.IsServiceUnavailable(err) ||
 		isTransientEtcdErr(err) ||
+		isClientGoRateLimiterWaitErr(err) ||
 		matchTransientErrPattern(err) ||
 		errors.Is(err, NewErrTransient("")) ||
 		isTransientSqbErr(err)
+}
+
+// isClientGoRateLimiterWaitErr matches client-go's rest.Request error when the
+// client-side QPS limiter blocks until the request context would expire
+// ("rate: Wait(n=1) would exceed context deadline"). This is backpressure, not
+// a terminal failure; the controller should requeue (see createWorkflowPod).
+func isClientGoRateLimiterWaitErr(err error) bool {
+	return strings.Contains(generateErrorString(err), "client rate limiter Wait returned an error")
 }
 
 func matchTransientErrPattern(err error) bool {
