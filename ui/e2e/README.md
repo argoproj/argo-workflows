@@ -15,7 +15,7 @@ Then, in another terminal:
 
 ```bash
 yarn --cwd ui install
-yarn --cwd ui playwright install chromium   # first run only
+yarn --cwd ui playwright install --with-deps chromium   # first run only
 yarn --cwd ui e2e                            # headless
 yarn --cwd ui e2e:ui                         # interactive/headed debugging
 yarn --cwd ui playwright show-report         # open the last HTML report
