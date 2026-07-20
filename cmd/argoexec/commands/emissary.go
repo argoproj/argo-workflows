@@ -368,7 +368,7 @@ func saveParameter(srcPath string) error {
 	}
 	src, err := os.Open(filepath.Clean(srcPath))
 	if os.IsNotExist(err) { // might be optional, so we ignore
-		logger.WithError(err).Errorf("cannot save parameter %s", srcPath)
+		logger.WithError(err).Warnf("cannot save parameter %s", srcPath)
 		return nil
 	}
 	if err != nil {
