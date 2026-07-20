@@ -31,6 +31,7 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 	wfc.archiveLabelSelector = labels.Everything()
 	if wfc.throttler != nil {
 		wfc.throttler.UpdateParallelism(wfc.Config.Parallelism)
+		wfc.throttler.UpdateNamespaceParallelismDefault(wfc.Config.NamespaceParallelism)
 	}
 
 	persistence := wfc.Config.Persistence
