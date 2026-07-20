@@ -13,6 +13,7 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
+	argoerrs "github.com/argoproj/argo-workflows/v4/errors"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
@@ -117,6 +118,14 @@ func TestIsTransientErr(t *testing.T) {
 	})
 	t.Run("ConnectionRefusedTransientErr", func(t *testing.T) {
 		assert.True(t, IsTransientErr(ctx, connectionRefusedErr))
+	})
+	t.Run("GRPCClientRequestTimeout", func(t *testing.T) {
+		err := errors.New("Timeout: request did not complete within requested timeout")
+		assert.True(t, IsTransientErr(ctx, err))
+	})
+	t.Run("GRPCClientRequestTimeoutInternalWrap", func(t *testing.T) {
+		inner := errors.New("Timeout: request did not complete within requested timeout")
+		assert.True(t, IsTransientErr(ctx, argoerrs.InternalWrapError(inner)))
 	})
 }
 
