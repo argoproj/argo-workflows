@@ -15,6 +15,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	argoerrs "github.com/argoproj/argo-workflows/v3/errors"
 )
 
 type netError string
@@ -121,6 +123,14 @@ func TestIsTransientErr(t *testing.T) {
 	t.Run("ClientGoRateLimiterWaitDeadline", func(t *testing.T) {
 		err := errors.New("client rate limiter Wait returned an error: rate: Wait(n=1) would exceed context deadline")
 		assert.True(t, IsTransientErr(err))
+	})
+	t.Run("GRPCClientRequestTimeout", func(t *testing.T) {
+		err := errors.New("Timeout: request did not complete within requested timeout")
+		assert.True(t, IsTransientErr(err))
+	})
+	t.Run("GRPCClientRequestTimeoutInternalWrap", func(t *testing.T) {
+		inner := errors.New("Timeout: request did not complete within requested timeout")
+		assert.True(t, IsTransientErr(argoerrs.InternalWrapError(inner)))
 	})
 }
 

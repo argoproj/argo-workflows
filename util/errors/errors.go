@@ -144,6 +144,9 @@ func isTransientNetworkErr(err error) bool {
 		return true
 	} else if strings.Contains(errorString, "http2: server sent GOAWAY and closed the connection") {
 		return true
+	} else if strings.Contains(errorString, "request did not complete within requested timeout") {
+		// gRPC-go client deadline (often seen from apiserver Create); retry pod create on next reconcile.
+		return true
 	} else if strings.Contains(errorString, "connect: connection refused") {
 		// If err is connection refused, retry.
 		return true
