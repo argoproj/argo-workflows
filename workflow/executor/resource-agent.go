@@ -27,7 +27,6 @@ import (
 	"k8s.io/client-go/restmapper"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/jsonpath"
-	"k8s.io/client-go/util/retry"
 	"k8s.io/client-go/util/workqueue"
 	kubectlget "k8s.io/kubectl/pkg/cmd/get"
 	"sigs.k8s.io/yaml"
@@ -80,8 +79,6 @@ type ResourceAgentExecutor struct {
 
 	tasksMutex sync.RWMutex
 	tasks      map[string]*wfv1.Template // keyed by node ID
-
-	kubeCTLMutex sync.Mutex
 
 	informersMutex sync.Mutex
 	informers      map[informerKey]cache.SharedIndexInformer
@@ -674,14 +671,13 @@ func (rae *ResourceAgentExecutor) createResource(ctx context.Context, resource *
 		return nil, gvr, namespaced, err
 	}
 
-	// runKubectl mutates global os.Args and kubectl's fatal handler, so it cannot run concurrently;
-	// serialize across workers. This caps resource-creation throughput at one in-flight kubectl at a
-	// time regardless of ARGO_AGENT_TASK_WORKERS — a conscious trade-off to keep kubectl's behavior
-	// parity (resource.Flags passthrough, merge strategies, server-side apply). The watch/report paths
-	// stay concurrent; only the create/apply/patch/replace/delete step is serialized here.
-	rae.kubeCTLMutex.Lock()
+	// In-process kubectl (rather than the DynamicClient) keeps behavior parity with the per-pod
+	// executor: resource.Flags passthrough, merge strategies, server-side apply. kubectl binds
+	// flags to package globals, so runKubectl serializes itself internally — capping resource
+	// creation at one in-flight kubectl regardless of ARGO_AGENT_TASK_WORKERS, a conscious
+	// trade-off for that parity. The watch/report paths stay concurrent; only this
+	// create/apply/patch/replace/delete step is serialized.
 	out, err := runKubectlWithRetry(ctx, args...)
-	rae.kubeCTLMutex.Unlock()
 	if err != nil {
 		// findExistingResource above already adopted any object this agent created, so an
 		// AlreadyExists here is a same-named object the agent does not own. Adopting it would make
@@ -763,25 +759,7 @@ func (rae *ResourceAgentExecutor) patchWorker(ctx context.Context, taskSetInterf
 			rae.pending = map[string]wfv1.NodeResult{}
 			rae.resultsMutex.Unlock()
 
-			patch, err := json.Marshal(map[string]any{"status": wfv1.WorkflowTaskSetStatus{Nodes: batch}})
-			if err != nil {
-				logger.WithError(err).Error(ctx, "Generating Patch Failed")
-				rae.requeueResults(batch)
-				continue
-			}
-			err = retry.OnError(wait.Backoff{
-				Duration: time.Second,
-				Factor:   2,
-				Jitter:   0.1,
-				Steps:    10,
-				Cap:      60 * time.Second,
-			}, func(retryErr error) bool {
-				return argoerr.IsTransientErr(ctx, retryErr)
-			}, func() error {
-				_, patchErr := taskSetInterface.Patch(ctx, rae.WorkflowName, types.MergePatchType, patch, metav1.PatchOptions{}, "status")
-				return patchErr
-			})
-			if err != nil {
+			if err := patchTaskSetStatusNodes(ctx, taskSetInterface, rae.WorkflowName, batch); err != nil {
 				if !argoerr.IsTransientErr(ctx, err) {
 					// Non-transient (RBAC, validation, deleted taskset): retrying the same payload
 					// forever would hang the workflow. Propagate the failure to the nodes as

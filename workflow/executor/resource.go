@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/itchyny/gojq"
@@ -389,22 +390,43 @@ func jqFilter(ctx context.Context, input []byte, filter string) (string, error) 
 	return strings.TrimSpace(buf.String()), nil
 }
 
-func runKubectl(ctx context.Context, args ...string) ([]byte, error) {
+// kubectlFatal carries a kubectl fatal error (paths that would otherwise os.Exit) out of Execute
+// as a panic; runKubectl recovers it back into an error. BehaviorOnFatal installs a process-global
+// handler, so it is set once to this stateless one rather than per call.
+type kubectlFatal struct {
+	msg  string
+	code int
+}
+
+var installKubectlFatalHandler = sync.OnceFunc(func() {
+	kubectlutil.BehaviorOnFatal(func(msg string, code int) {
+		panic(kubectlFatal{msg: msg, code: code})
+	})
+})
+
+// kubectlMutex serializes in-process kubectl: NewKubectlCommand binds flags to kubectl
+// package-level variables (e.g. profiling.go), so concurrent construction/parsing races even
+// with per-call args and IO streams. Callers such as the resource agent's task workers may call
+// runKubectl concurrently; the lock lives here so the invariant cannot drift to call sites.
+var kubectlMutex sync.Mutex
+
+func runKubectl(ctx context.Context, args ...string) (out []byte, err error) {
 	logging.RequireLoggerFromContext(ctx).Info(ctx, strings.Join(args, " "))
-	osArgs := append([]string{}, os.Args...)
-	os.Args = args
+	installKubectlFatalHandler()
+	kubectlMutex.Lock()
+	defer kubectlMutex.Unlock()
 	defer func() {
-		os.Args = osArgs
+		if r := recover(); r != nil {
+			f, ok := r.(kubectlFatal)
+			if !ok {
+				panic(r)
+			}
+			out, err = nil, argoerrors.New(fmt.Sprint(f.code), f.msg)
+		}
 	}()
 
-	var fatalErr error
-	// catch `os.Exit(1)` from kubectl
-	kubectlutil.BehaviorOnFatal(func(msg string, code int) {
-		fatalErr = argoerrors.New(fmt.Sprint(code), msg)
-	})
-
 	var buf bytes.Buffer
-	if err := kubectlcmd.NewKubectlCommand(kubectlcmd.KubectlOptions{
+	cmd := kubectlcmd.NewKubectlCommand(kubectlcmd.KubectlOptions{
 		Arguments: args,
 		// TODO(vadasambar): use `DefaultConfigFlags` variable from upstream
 		// as value for `ConfigFlags` once https://github.com/kubernetes/kubernetes/pull/120024 is merged
@@ -413,11 +435,11 @@ func runKubectl(ctx context.Context, args ...string) ([]byte, error) {
 			WithDiscoveryBurst(300).
 			WithDiscoveryQPS(50.0),
 		IOStreams: genericclioptions.IOStreams{Out: &buf, ErrOut: os.Stderr},
-	}).Execute(); err != nil {
+	})
+	// Execute parses os.Args unless told otherwise (kubectl's own tests set args the same way).
+	cmd.SetArgs(args[1:])
+	if err := cmd.Execute(); err != nil {
 		return nil, err
-	}
-	if fatalErr != nil {
-		return nil, fatalErr
 	}
 	return buf.Bytes(), nil
 }

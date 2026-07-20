@@ -6,7 +6,7 @@ export const genres = {
     HTTP: true,
     Pod: true,
     Plugin: true,
-    ResourceMonitor: true,
+    ResourceAgent: true,
     Retry: true,
     Skipped: true,
     StepGroup: false,

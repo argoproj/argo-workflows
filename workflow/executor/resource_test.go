@@ -4,6 +4,7 @@ import (
 	"os"
 	"path"
 	"runtime"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -219,4 +220,31 @@ func Test_runKubectl(t *testing.T) {
 	out, err := runKubectl(ctx, "kubectl", "version", "--client=true", "--output", "json")
 	require.NoError(t, err)
 	assert.Contains(t, string(out), "clientVersion")
+}
+
+// The resource agent runs kubectl from multiple task workers; runKubectl must not race on
+// process-global state (os.Args, the fatal handler).
+func Test_runKubectl_concurrent(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	outs := make([][]byte, 3)
+	errs := make([]error, 3)
+	var wg sync.WaitGroup
+	for i := range 3 {
+		wg.Go(func() {
+			outs[i], errs[i] = runKubectl(ctx, "kubectl", "version", "--client=true", "--output", "json")
+		})
+	}
+	wg.Wait()
+	for i := range 3 {
+		require.NoError(t, errs[i])
+		assert.Contains(t, string(outs[i]), "clientVersion")
+	}
+}
+
+// kubectl reports some failures through its fatal handler (which would os.Exit) rather than
+// Execute's return value; runKubectl must surface those as errors.
+func Test_runKubectl_fatal(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	_, err := runKubectl(ctx, "kubectl", "version", "--client=true", "--output", "bogus")
+	require.Error(t, err)
 }
