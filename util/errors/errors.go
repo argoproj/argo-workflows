@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/url"
 	"os"
@@ -50,9 +51,18 @@ func isTransientErr(err error) bool {
 		apierr.IsTimeout(err) ||
 		apierr.IsServiceUnavailable(err) ||
 		isTransientEtcdErr(err) ||
+		isClientGoRateLimiterWaitErr(err) ||
 		matchTransientErrPattern(err) ||
 		errors.Is(err, NewErrTransient("")) ||
 		isTransientSqbErr(err)
+}
+
+// isClientGoRateLimiterWaitErr matches client-go's rest.Request error when the
+// client-side QPS limiter blocks until the request context would expire
+// ("rate: Wait(n=1) would exceed context deadline"). This is backpressure, not
+// a terminal failure; the controller should requeue (see createWorkflowPod).
+func isClientGoRateLimiterWaitErr(err error) bool {
+	return strings.Contains(generateErrorString(err), "client rate limiter Wait returned an error")
 }
 
 func matchTransientErrPattern(err error) bool {
@@ -94,6 +104,10 @@ func isTransientEtcdErr(err error) bool {
 }
 
 func isTransientNetworkErr(err error) bool {
+	if errors.Is(err, io.ErrUnexpectedEOF) {
+		return true
+	}
+
 	var dnsErr *net.DNSError
 	var opErr *net.OpError
 	var unknownNetErr net.UnknownNetworkError
@@ -103,6 +117,10 @@ func isTransientNetworkErr(err error) bool {
 
 	errorString := generateErrorString(err)
 	switch {
+	case strings.Contains(errorString, "unexpected error when reading response body") ||
+		strings.Contains(errorString, "stream error when reading response body"):
+		// client-go rest.Request: body read failed mid-response; the message asks to retry.
+		return true
 	case strings.Contains(errorString, "Connection closed by foreign host"):
 		// For a URL error, where it replies back "connection closed"
 		// retry again.
@@ -123,6 +141,9 @@ func isTransientNetworkErr(err error) bool {
 		// If err is http2 transport ping timeout, retry.
 		return true
 	case strings.Contains(errorString, "http2: server sent GOAWAY and closed the connection"):
+		return true
+	case strings.Contains(errorString, "request did not complete within requested timeout"):
+		// gRPC-go client deadline (often seen from apiserver Create); retry pod create on next reconcile.
 		return true
 	case strings.Contains(errorString, "connect: connection refused"):
 		// If err is connection refused, retry.

@@ -371,6 +371,8 @@ Workflow is the definition of a workflow resource
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
 
+- [`workflow-level-executor-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-level-executor-plugin.yaml)
+
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-of-workflows.yaml)
 
 - [`dag.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/dag.yaml)
@@ -444,6 +446,8 @@ WorkflowTemplate is the definition of a workflow template resource
 - [`event-consumer-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/event-consumer-workflowtemplate.yaml)
 
 - [`github-path-filter-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workflowtemplate.yaml)
+
+- [`input-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/input-artifacts.yaml)
 
 - [`templates.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/templates.yaml)
 </details>
@@ -872,11 +876,15 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`github-path-filter-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workflowtemplate.yaml)
 
+- [`workflow-level-executor-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-level-executor-plugin.yaml)
+
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-of-workflows.yaml)
 
 - [`dag.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/dag.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/hello-world.yaml)
+
+- [`input-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/input-artifacts.yaml)
 
 - [`retry-with-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/retry-with-steps.yaml)
 
@@ -905,6 +913,7 @@ WorkflowSpec is the specification of a Workflow.
 |`dnsPolicy`|`string`|Set DNS policy for workflow pods. Defaults to "ClusterFirst". Valid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'. DNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy. To have DNS options set along with hostNetwork, you have to specify DNS policy explicitly to 'ClusterFirstWithHostNet'.|
 |`entrypoint`|`string`|Entrypoint is a template reference to the starting point of the io.argoproj.workflow.v1alpha1.|
 |`executor`|[`ExecutorConfig`](#executorconfig)|Executor holds configurations of executor containers of the io.argoproj.workflow.v1alpha1.|
+|`executorPlugins`|`Array<`[`ExecutorPlugin`](#executorplugin)`>`|Specifies executor plugins at the workflow level. This field is effective only when the ARGO_WORKFLOW_LEVEL_EXECUTOR_PLUGINS feature gate is enabled. If this field contains one or more executor plugins, executor plugin settings from the controller ConfigMap are ignored. If this field is empty or not set, the controller falls back to the ConfigMap configuration.|
 |`hooks`|[`LifecycleHook`](#lifecyclehook)|Hooks holds the lifecycle hook which is invoked at lifecycle of step, irrespective of the success, failure, or error status of the primary step|
 |`hostAliases`|`Array<`[`HostAlias`](#hostalias)`>`|_No description available_|
 |`hostNetwork`|`boolean`|Host networking requested for this workflow pod. Default to false.|
@@ -1346,11 +1355,15 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`github-path-filter-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workflowtemplate.yaml)
 
+- [`workflow-level-executor-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-level-executor-plugin.yaml)
+
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-of-workflows.yaml)
 
 - [`dag.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/dag.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/hello-world.yaml)
+
+- [`input-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/input-artifacts.yaml)
 
 - [`retry-with-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/retry-with-steps.yaml)
 
@@ -1630,6 +1643,8 @@ Arguments to a template
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/hello-world.yaml)
 
+- [`input-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/input-artifacts.yaml)
+
 - [`steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/steps.yaml)
 
 - [`templates.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/templates.yaml)
@@ -1686,6 +1701,22 @@ ExecutorConfig holds configurations of an executor container.
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`serviceAccountName`|`string`|ServiceAccountName specifies the service account name of the executor container.|
+
+## ExecutorPlugin
+
+ExecutorPlugin describes workflow-level executor plugin
+
+<details markdown>
+<summary>Examples with this field (click to open)</summary>
+
+- [`workflow-level-executor-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-level-executor-plugin.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`metadata`|[`ObjectMeta`](#objectmeta)|_No description available_|
+|`spec`|[`ExecutorPluginSpec`](#executorpluginspec)|_No description available_|
 
 ## LifecycleHook
 
@@ -1880,6 +1911,7 @@ Template is a reusable and composable unit of execution in a workflow
 |`nodeSelector`|`Map< string , string >`|NodeSelector is a selector to schedule this step of the workflow to be run on the selected node(s). Overrides the selector set at the workflow level.|
 |`outputs`|[`Outputs`](#outputs)|Outputs describe the parameters and artifacts that this template produces|
 |`parallelism`|`integer`|Parallelism limits the max total parallel pods that can execute at the same time within the boundaries of this template invocation. If additional steps/dag templates are invoked, the pods created by those templates will not be counted towards this total.|
+|`pendingTimeout`|`string`|PendingTimeout allows to set the maximum time spent in pending status counting from the node's start time. It is enforced by the controller, so a pod that starts running just as the timeout expires may still be failed. This duration may not be applied to Step or DAG templates.|
 |`plugin`|[`Plugin`](#plugin)|Plugin is a plugin template Note: the structure of a plugin template is free-form, so we need to have "x-kubernetes-preserve-unknown-fields: true" in the validation schema.|
 |`podSpecPatch`|`string`|PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).|
 |`priorityClassName`|`string`|PriorityClassName to apply to workflow pods.|
@@ -2314,6 +2346,8 @@ Artifact indicates an artifact to place at a specified path
 - [`webhdfs-input-output-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/webhdfs-input-output-artifacts.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
+
+- [`input-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/input-artifacts.yaml)
 </details>
 
 ### Fields
@@ -2561,6 +2595,15 @@ Parameter indicate a passed string parameter to a service template with an optio
 |`name`|`string`|Name is the parameter name|
 |`value`|`string`|Value is the literal value to use for the parameter. If specified in the context of an input parameter, any passed values take precedence over the specified value|
 |`valueFrom`|[`ValueFrom`](#valuefrom)|ValueFrom is the source for the output parameter's value|
+
+## ExecutorPluginSpec
+
+_No description available_
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`sidecar`|[`ExecutorPluginSidecar`](#executorpluginsidecar)|_No description available_|
 
 ## TemplateRef
 
@@ -3149,6 +3192,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-of-workflows.yaml)
 
+- [`input-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/input-artifacts.yaml)
+
 - [`templates.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/templates.yaml)
 </details>
 
@@ -3183,6 +3228,8 @@ Plugin is an Object with exactly one key
 <summary>Examples with this field (click to open)</summary>
 
 - [`artifact-passing-explicit-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-passing-explicit-plugin.yaml)
+
+- [`workflow-level-executor-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-level-executor-plugin.yaml)
 </details>
 
 ## ResourceTemplate
@@ -3846,6 +3893,7 @@ HTTPArtifact allows a file served on HTTP to be placed as an input artifact in a
 |:----------:|:----------:|---------------|
 |`auth`|[`HTTPAuth`](#httpauth)|Auth contains information for client authentication|
 |`headers`|`Array<`[`Header`](#header)`>`|Headers are an optional list of headers to send with HTTP requests for artifacts|
+|`saveStreamViaFile`|`boolean`|SaveStreamViaFile buffers a streamed upload to a temporary file before sending it, so a 307/308 redirect (e.g. webHDFS) can be followed by re-sending the body. When false (the default) SaveStream sends the reader directly and cannot follow such a redirect, since a one-shot reader cannot be replayed.|
 |`url`|`string`|URL of the artifact|
 
 ## OSSArtifact
@@ -3879,6 +3927,8 @@ PluginArtifact is the location of a plugin artifact
 <summary>Examples with this field (click to open)</summary>
 
 - [`artifact-passing-explicit-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-passing-explicit-plugin.yaml)
+
+- [`workflow-level-executor-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-level-executor-plugin.yaml)
 </details>
 
 ### Fields
@@ -4006,6 +4056,22 @@ ValueFrom describes a location in which to obtain the value to a parameter
 |`parameter`|`string`|Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. steps.mystep.outputs.myparam)|
 |`path`|`string`|Path in the container to retrieve an output parameter value from in container templates|
 |`supplied`|[`SuppliedValueFrom`](#suppliedvaluefrom)|Supplied value to be filled in directly, either through the CLI, API, etc.|
+
+## ExecutorPluginSidecar
+
+_No description available_
+
+<details markdown>
+<summary>Examples with this field (click to open)</summary>
+
+- [`workflow-level-executor-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-level-executor-plugin.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`automountServiceAccountToken`|`boolean`|AutomountServiceAccountToken enables mounting the service account token. The service account must be named <plugin-name>-executor-plugin.|
+|`container`|[`Container`](#container)|Container defines the Kubernetes container specification for the sidecar.|
 
 ## Counter
 
@@ -4650,6 +4716,8 @@ PluginArtifactRepository defines the controller configuration for a plugin artif
 <summary>Examples with this field (click to open)</summary>
 
 - [`artifact-passing-explicit-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/artifact-passing-explicit-plugin.yaml)
+
+- [`workflow-level-executor-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-level-executor-plugin.yaml)
 </details>
 
 ### Fields
@@ -5374,11 +5442,15 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`github-path-filter-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workflowtemplate.yaml)
 
+- [`workflow-level-executor-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-level-executor-plugin.yaml)
+
 - [`workflow-of-workflows.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-of-workflows.yaml)
 
 - [`dag.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/dag.yaml)
 
 - [`hello-world.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/hello-world.yaml)
+
+- [`input-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/input-artifacts.yaml)
 
 - [`retry-with-steps.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/retry-with-steps.yaml)
 
@@ -5491,6 +5563,8 @@ PodSecurityContext holds pod-level security attributes and common container sett
 <summary>Examples with this field (click to open)</summary>
 
 - [`sidecar-dind.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/sidecar-dind.yaml)
+
+- [`workflow-level-executor-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-level-executor-plugin.yaml)
 </details>
 
 ### Fields
@@ -5995,6 +6069,10 @@ A single application container that you want to run within a pod.
 
 - [`github-path-filter-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workflowtemplate.yaml)
 
+- [`workflow-level-executor-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-level-executor-plugin.yaml)
+
+- [`input-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/input-artifacts.yaml)
+
 - [`templates.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/templates.yaml)
 
 - [`workflow-archive-logs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/workflow-archive-logs.yaml)
@@ -6168,6 +6246,12 @@ Probe describes a health check to be performed against a container to determine 
 
 ContainerPort represents a network port in a single container.
 
+<details markdown>
+<summary>Examples with this field (click to open)</summary>
+
+- [`workflow-level-executor-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-level-executor-plugin.yaml)
+</details>
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -6215,6 +6299,8 @@ ResourceRequirements describes the compute resource requirements.
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-pvc.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
+
+- [`workflow-level-executor-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-level-executor-plugin.yaml)
 </details>
 
 ### Fields
@@ -6242,6 +6328,8 @@ SecurityContext holds security configuration that will be applied to a container
 <summary>Examples with this field (click to open)</summary>
 
 - [`sidecar-dind.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/sidecar-dind.yaml)
+
+- [`workflow-level-executor-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-level-executor-plugin.yaml)
 </details>
 
 ### Fields
@@ -7025,6 +7113,10 @@ ImageVolumeSource represents a image volume resource.
 
 - [`github-path-filter-workflowtemplate.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-event-binding/github-path-filter-workflowtemplate.yaml)
 
+- [`workflow-level-executor-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-level-executor-plugin.yaml)
+
+- [`input-artifacts.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/input-artifacts.yaml)
+
 - [`templates.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/templates.yaml)
 
 - [`workflow-archive-logs.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-template/workflow-archive-logs.yaml)
@@ -7414,6 +7506,8 @@ Quantity is a fixed-point representation of a number. It provides convenient mar
 - [`pod-spec-patch-wf-tmpl.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/pod-spec-patch-wf-tmpl.yaml)
 
 - [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/pod-spec-yaml-patch.yaml)
+
+- [`workflow-level-executor-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-level-executor-plugin.yaml)
 </details>
 
 ## ContainerRestartRuleOnExitCodes
@@ -7429,6 +7523,12 @@ ContainerRestartRuleOnExitCodes describes the condition for handling an exited c
 ## Capabilities
 
 Adds and removes POSIX capabilities from running containers.
+
+<details markdown>
+<summary>Examples with this field (click to open)</summary>
+
+- [`workflow-level-executor-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-level-executor-plugin.yaml)
+</details>
 
 ### Fields
 | Field Name | Field Type | Description   |
@@ -7534,6 +7634,8 @@ VolumeResourceRequirements describes the storage resource requirements for a vol
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-pvc.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
+
+- [`workflow-level-executor-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-level-executor-plugin.yaml)
 </details>
 
 ### Fields
