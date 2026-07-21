@@ -33,6 +33,7 @@ Name | Type | Description | Notes
 **parallelism** | **Integer** | Parallelism limits the max total parallel pods that can execute at the same time within the boundaries of this template invocation. If additional steps/dag templates are invoked, the pods created by those templates will not be counted towards this total. |  [optional]
 **pendingTimeout** | **String** | PendingTimeout allows to set the maximum time spent in pending status counting from the node&#39;s start time. It is enforced by the controller, so a pod that starts running just as the timeout expires may still be failed. This duration may not be applied to Step or DAG templates. |  [optional]
 **plugin** | **Object** | Plugin is an Object with exactly one key |  [optional]
+**podResources** | [**io.kubernetes.client.openapi.models.V1ResourceRequirements**](io.kubernetes.client.openapi.models.V1ResourceRequirements.md) |  |  [optional]
 **podSpecPatch** | **String** | PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits). |  [optional]
 **priorityClassName** | **String** | PriorityClassName to apply to workflow pods. |  [optional]
 **resource** | [**IoArgoprojWorkflowV1alpha1ResourceTemplate**](IoArgoprojWorkflowV1alpha1ResourceTemplate.md) |  |  [optional]

@@ -1,0 +1,49 @@
+# This example demonstrates template-level pod resources overriding the
+# workflow-level default. Pod-level resources set a single budget shared by
+# all containers in the pod (main, sidecars, init), which is simpler than
+# sizing each container individually.
+# Requires the PodLevelResources feature gate (beta since Kubernetes v1.34);
+# without it the API server silently drops the field (the controller emits a
+# PodLevelResourcesDropped warning event when that happens).
+# Note: the budget must also cover the containers Argo injects into each pod
+# (sized by the controller's executor resources configuration): the API server
+# rejects a pod whose pod-level limits are below any single container's limits.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: pod-resources-template-override-
+spec:
+  entrypoint: main
+  podResources:
+    limits:
+      cpu: "1"
+      memory: 512Mi
+  templates:
+  - name: main
+    steps:
+    - - name: small
+        template: small
+    - - name: large
+        template: large
+  # Uses the workflow-level pod resources.
+  - name: small
+    container:
+      image: busybox
+      command: [echo]
+      args: ["small step"]
+  # Overrides the workflow-level pod resources; the limit covers the main
+  # container and the sidecar combined.
+  - name: large
+    podResources:
+      limits:
+        cpu: "2"
+        memory: 1Gi
+    container:
+      image: busybox
+      command: [sh, -c]
+      args: ["sleep 5; echo large step"]
+    sidecars:
+    - name: helper
+      image: busybox
+      command: [sh, -c]
+      args: ["sleep 10"]

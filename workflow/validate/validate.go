@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/robfig/cron/v3"
+	apiv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apivalidation "k8s.io/apimachinery/pkg/util/validation"
 	"sigs.k8s.io/yaml"
@@ -342,6 +343,10 @@ func Workflow(ctx context.Context, wftmplGetter templateresolution.WorkflowTempl
 		return errors.Errorf(errors.CodeBadRequest, "podGC.labelSelector invalid: %v", err)
 	}
 
+	if err := validatePodResources("spec.podResources", wf.Spec.PodResources); err != nil {
+		return err
+	}
+
 	// Check if all templates can be resolved.
 	// If the Workflow is using a WorkflowTemplateRef, then the templates of the referred WorkflowTemplate will be validated.
 	if hasWorkflowTemplateRef {
@@ -484,6 +489,18 @@ func (tctx *templateValidationCtx) validateInitContainers(containers []wfv1.User
 func (tctx *templateValidationCtx) validateTemplate(ctx context.Context, tmpl *wfv1.Template, tmplCtx *templateresolution.TemplateContext, args wfv1.ArgumentsProvider, workflowTemplateValidation bool) error {
 	if err := validateTemplateType(tmpl); err != nil {
 		return err
+	}
+
+	if tmpl.PodResources != nil {
+		switch tmpl.GetType() {
+		case wfv1.TemplateTypeHTTP, wfv1.TemplateTypePlugin:
+			// These templates run on the shared agent pod, which has fixed container
+			// sizing, so a per-template pod budget can never be applied.
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.podResources is not supported for %s templates", tmpl.Name, tmpl.GetType())
+		}
+		if err := validatePodResources(fmt.Sprintf("templates.%s.podResources", tmpl.Name), tmpl.PodResources); err != nil {
+			return err
+		}
 	}
 
 	scope, err := validateInputs(tmpl)
@@ -666,6 +683,26 @@ func (tctx *templateValidationCtx) validateTemplateHolder(ctx context.Context, t
 	}
 
 	return resolvedTmpl, tctx.validateTemplate(ctx, resolvedTmpl, tmplCtx, args, workflowTemplateValidation)
+}
+
+// validatePodResources validates pod-level resources, which Kubernetes restricts to
+// cpu, memory and hugepages-*, with no claims. Anything else would pass submission
+// and then be rejected by the API server at pod creation, mid-workflow.
+func validatePodResources(errPrefix string, r *apiv1.ResourceRequirements) error {
+	if r == nil {
+		return nil
+	}
+	if len(r.Claims) > 0 {
+		return errors.Errorf(errors.CodeBadRequest, "%s.claims is not supported for pod-level resources", errPrefix)
+	}
+	for _, list := range []apiv1.ResourceList{r.Limits, r.Requests} {
+		for name := range list {
+			if name != apiv1.ResourceCPU && name != apiv1.ResourceMemory && !strings.HasPrefix(string(name), apiv1.ResourceHugePagesPrefix) {
+				return errors.Errorf(errors.CodeBadRequest, "%s: %q is not a valid pod-level resource, only cpu, memory and hugepages-* are supported", errPrefix, name)
+			}
+		}
+	}
+	return nil
 }
 
 // validateTemplateType validates that only one template type is defined

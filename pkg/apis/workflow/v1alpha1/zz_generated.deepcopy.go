@@ -3455,6 +3455,11 @@ func (in *Template) DeepCopyInto(out *Template) {
 			(*out)[key] = val
 		}
 	}
+	if in.PodResources != nil {
+		in, out := &in.PodResources, &out.PodResources
+		*out = new(v1.ResourceRequirements)
+		(*in).DeepCopyInto(*out)
+	}
 	return
 }
 
@@ -4052,6 +4057,11 @@ func (in *WorkflowSpec) DeepCopyInto(out *WorkflowSpec) {
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
+	}
+	if in.PodResources != nil {
+		in, out := &in.PodResources, &out.PodResources
+		*out = new(v1.ResourceRequirements)
+		(*in).DeepCopyInto(*out)
 	}
 	return
 }
