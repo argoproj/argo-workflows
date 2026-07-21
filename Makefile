@@ -828,6 +828,15 @@ test-%: $(TOOL_GOTESTSUM) $(JSON_TEST_OUTPUT) vendor/modules.txt
 test-%-sdk:
 	make --directory sdks/$* install test -B
 
+# UI browser e2e tests (Playwright). Requires a running dev stack (`make start`),
+# which serves the UI on http://localhost:8080. Override the target with
+# ARGO_UI_BASE_URL (e.g. CI points at the in-cluster server on :2746).
+# Explicit target so it is not captured by the `test-%` Go e2e pattern rule above.
+.PHONY: test-ui-e2e
+test-ui-e2e:
+	yarn --cwd ui install
+	yarn --cwd ui e2e
+
 Test%: $(TOOL_GOTESTSUM) $(JSON_TEST_OUTPUT) vendor/modules.txt
 	E2E_WAIT_TIMEOUT=$(E2E_WAIT_TIMEOUT) E2E_INITLESS=$(INITLESS) $(call gotest,./test/e2e,$@,-timeout $(E2E_SUITE_TIMEOUT) -count 1 --tags $(ALL_BUILD_TAGS) -parallel $(E2E_PARALLEL) -run='.*/$*')
 

@@ -235,3 +235,22 @@ func TestNamespaceParallelismUpdate(t *testing.T) {
 	assert.True(throttler.Admit("argo/a"))
 	assert.False(throttler.Admit("argo/b"))
 }
+
+// TestNamespaceParallelismDefaultUpdate verifies that raising the default namespace parallelism
+// at runtime admits a previously throttled workflow in a namespace without an explicit override.
+func TestNamespaceParallelismDefaultUpdate(t *testing.T) {
+	assert := assert.New(t)
+	throttler := NewMultiThrottler(4, 1, func(Key) {})
+	throttler.Add("default/a", 0, time.Now())
+	throttler.Add("default/b", 0, time.Now())
+	throttler.Add("default/c", 0, time.Now())
+	assert.True(throttler.Admit("default/a"))
+	assert.False(throttler.Admit("default/b"))
+	assert.False(throttler.Admit("default/c"))
+
+	// Raising the default limit must apply to namespaces without an explicit override,
+	// and must admit all newly eligible workflows at once, not just one.
+	throttler.UpdateNamespaceParallelismDefault(3)
+	assert.True(throttler.Admit("default/b"))
+	assert.True(throttler.Admit("default/c"))
+}

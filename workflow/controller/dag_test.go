@@ -4647,3 +4647,90 @@ spec:
 	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Nodes[id(fanout)].Phase, "orphaned TaskGroup should be completed from its children")
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, "workflow should complete")
 }
+
+var testOnExitDAGWithShutdownStop = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-onexit-shutdown
+spec:
+  entrypoint: main-dag
+  onExit: exit-dag
+  shutdown: Stop
+  templates:
+  - name: main-dag
+    dag:
+      tasks:
+      - name: main-task
+        template: echo
+  - name: exit-dag
+    dag:
+      tasks:
+      - name: on-exit-handler
+        template: echo
+  - name: echo
+    container:
+      image: alpine:latest
+      command: [echo, hello]
+status:
+  phase: Running
+  startedAt: "2020-05-29T18:11:55Z"
+  nodes:
+    dag-onexit-shutdown:
+      id: dag-onexit-shutdown
+      name: dag-onexit-shutdown
+      displayName: dag-onexit-shutdown
+      type: DAG
+      templateName: main-dag
+      templateScope: local/dag-onexit-shutdown
+      phase: Running
+      startedAt: "2020-05-29T18:11:55Z"
+      children:
+      - dag-onexit-shutdown-1234567890
+      outboundNodes:
+      - dag-onexit-shutdown-1234567890
+    dag-onexit-shutdown-1234567890:
+      id: dag-onexit-shutdown-1234567890
+      name: dag-onexit-shutdown.main-task
+      displayName: main-task
+      type: Pod
+      templateName: echo
+      templateScope: local/dag-onexit-shutdown
+      phase: Succeeded
+      boundaryID: dag-onexit-shutdown
+      startedAt: "2020-05-29T18:11:55Z"
+      finishedAt: "2020-05-29T18:11:58Z"
+      outputs:
+        exitCode: "0"
+`
+
+// TestOnExitDAGNotFailedOnShutdownStop verifies that when a workflow is stopped with
+// shutdownStrategy: Stop, an onExit handler that uses a DAG template is still allowed to
+// run to completion instead of being immediately failed by the shutdown fast-fail path.
+func TestOnExitDAGNotFailedOnShutdownStop(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	wf := wfv1.MustUnmarshalWorkflow(testOnExitDAGWithShutdownStop)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	// The onExit DAG should be running, not immediately failed.
+	onExitNode := woc.wf.Status.Nodes.FindByDisplayName("dag-onexit-shutdown.onExit")
+	if assert.NotNil(t, onExitNode, "onExit DAG node should exist") {
+		assert.Equal(t, wfv1.NodeRunning, onExitNode.Phase, "onExit DAG node should be Running, not Failed")
+	}
+
+	// The on-exit-handler pod should have been created (Pending).
+	exitHandlerNode := woc.wf.Status.Nodes.FindByDisplayName("on-exit-handler")
+	if assert.NotNil(t, exitHandlerNode, "on-exit-handler node should exist") {
+		assert.Equal(t, wfv1.NodePending, exitHandlerNode.Phase, "on-exit-handler should be Pending")
+	}
+
+	// Workflow should NOT be completed yet — it should still be Running waiting for the exit handler.
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase, "workflow should still be Running while onExit handler is executing")
+}

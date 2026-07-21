@@ -481,7 +481,7 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 		logging.RequireLoggerFromContext(ctx).WithError(err).Error(ctx, "Failed to create sync lock manager")
 		return
 	}
-	wfc.syncManager = syncManager
+	wfc.syncManager = syncManager.WithMetrics(ctx, wfc.metrics)
 }
 
 // list all running workflows to initialize throttler and syncManager
@@ -829,7 +829,9 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	// make sure this is removed from the throttler is complete
 	defer func() {
 		// must be done with woc
-		if !reconciliationNeeded(woc.wf) && !reapplyFailed(woc.wf) {
+		// woc.reapplyFailed (set in memory when Update failed) also blocks Remove so we do not free
+		// parallelism while woc.wf may not match the API object (e.g. connection reset before persist).
+		if !reconciliationNeeded(woc.wf) && !woc.reapplyFailed {
 			wfc.throttler.Remove(key)
 		}
 	}()
@@ -894,10 +896,6 @@ func (wfc *WorkflowController) getWorkflowByKey(ctx context.Context, key string)
 
 func reconciliationNeeded(wf metav1.Object) bool {
 	return wf.GetLabels()[common.LabelKeyCompleted] != "true" || slices.Contains(wf.GetFinalizers(), common.FinalizerArtifactGC)
-}
-
-func reapplyFailed(wf metav1.Object) bool {
-	return wf.GetLabels()[common.LabelKeyReApplyFailed] == "true"
 }
 
 // enqueueWfFromPodLabel will extract the workflow name from pod label and
