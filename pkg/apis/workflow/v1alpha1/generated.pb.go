@@ -119,6 +119,12 @@ func (m *Event) Reset() { *m = Event{} }
 
 func (m *ExecutorConfig) Reset() { *m = ExecutorConfig{} }
 
+func (m *ExecutorPlugin) Reset() { *m = ExecutorPlugin{} }
+
+func (m *ExecutorPluginSidecar) Reset() { *m = ExecutorPluginSidecar{} }
+
+func (m *ExecutorPluginSpec) Reset() { *m = ExecutorPluginSpec{} }
+
 func (m *GCSArtifact) Reset() { *m = GCSArtifact{} }
 
 func (m *GCSArtifactRepository) Reset() { *m = GCSArtifactRepository{} }
@@ -2988,6 +2994,123 @@ func (m *ExecutorConfig) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *ExecutorPlugin) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ExecutorPlugin) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ExecutorPlugin) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size, err := m.ObjectMeta.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x12
+	{
+		size, err := m.Spec.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
+}
+
+func (m *ExecutorPluginSidecar) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ExecutorPluginSidecar) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ExecutorPluginSidecar) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size, err := m.Container.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x12
+	i--
+	if m.AutomountServiceAccountToken {
+		dAtA[i] = 1
+	} else {
+		dAtA[i] = 0
+	}
+	i--
+	dAtA[i] = 0x8
+	return len(dAtA) - i, nil
+}
+
+func (m *ExecutorPluginSpec) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ExecutorPluginSpec) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ExecutorPluginSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size, err := m.Sidecar.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
+}
+
 func (m *GCSArtifact) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -3587,6 +3710,14 @@ func (m *HTTPArtifact) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	i--
+	if m.SaveStreamViaFile {
+		dAtA[i] = 1
+	} else {
+		dAtA[i] = 0
+	}
+	i--
+	dAtA[i] = 0x20
 	if m.Auth != nil {
 		{
 			size, err := m.Auth.MarshalToSizedBuffer(dAtA[:i])
@@ -6024,6 +6155,11 @@ func (m *S3Bucket) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	i -= len(m.AddressingStyle)
+	copy(dAtA[i:], m.AddressingStyle)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.AddressingStyle)))
+	i--
+	dAtA[i] = 0x6a
 	if m.SessionTokenSecret != nil {
 		{
 			size, err := m.SessionTokenSecret.MarshalToSizedBuffer(dAtA[:i])
@@ -6535,6 +6671,15 @@ func (m *SubmitOpts) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if len(m.Artifacts) > 0 {
+		for iNdEx := len(m.Artifacts) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.Artifacts[iNdEx])
+			copy(dAtA[i:], m.Artifacts[iNdEx])
+			i = encodeVarintGenerated(dAtA, i, uint64(len(m.Artifacts[iNdEx])))
+			i--
+			dAtA[i] = 0x7a
+		}
+	}
 	if m.Priority != nil {
 		i = encodeVarintGenerated(dAtA, i, uint64(*m.Priority))
 		i--
@@ -6878,6 +7023,27 @@ func (m *Template) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if m.PodResources != nil {
+		{
+			size, err := m.PodResources.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintGenerated(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x2
+		i--
+		dAtA[i] = 0xf2
+	}
+	i -= len(m.PendingTimeout)
+	copy(dAtA[i:], m.PendingTimeout)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.PendingTimeout)))
+	i--
+	dAtA[i] = 0x2
+	i--
+	dAtA[i] = 0xea
 	if len(m.Annotations) > 0 {
 		keysForAnnotations := make([]string, 0, len(m.Annotations))
 		for k := range m.Annotations {
@@ -8166,6 +8332,36 @@ func (m *WorkflowSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if m.PodResources != nil {
+		{
+			size, err := m.PodResources.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintGenerated(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x2
+		i--
+		dAtA[i] = 0xea
+	}
+	if len(m.ExecutorPlugins) > 0 {
+		for iNdEx := len(m.ExecutorPlugins) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.ExecutorPlugins[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintGenerated(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x2
+			i--
+			dAtA[i] = 0xe2
+		}
+	}
 	if m.ArtifactGC != nil {
 		{
 			size, err := m.ArtifactGC.MarshalToSizedBuffer(dAtA[:i])
@@ -10492,6 +10688,42 @@ func (m *ExecutorConfig) Size() (n int) {
 	return n
 }
 
+func (m *ExecutorPlugin) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Spec.Size()
+	n += 1 + l + sovGenerated(uint64(l))
+	l = m.ObjectMeta.Size()
+	n += 1 + l + sovGenerated(uint64(l))
+	return n
+}
+
+func (m *ExecutorPluginSidecar) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += 2
+	l = m.Container.Size()
+	n += 1 + l + sovGenerated(uint64(l))
+	return n
+}
+
+func (m *ExecutorPluginSpec) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Sidecar.Size()
+	n += 1 + l + sovGenerated(uint64(l))
+	return n
+}
+
 func (m *GCSArtifact) Size() (n int) {
 	if m == nil {
 		return 0
@@ -10714,6 +10946,7 @@ func (m *HTTPArtifact) Size() (n int) {
 		l = m.Auth.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
+	n += 2
 	return n
 }
 
@@ -11656,6 +11889,8 @@ func (m *S3Bucket) Size() (n int) {
 		l = m.SessionTokenSecret.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
+	l = len(m.AddressingStyle)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -11832,6 +12067,12 @@ func (m *SubmitOpts) Size() (n int) {
 	n += 1 + l + sovGenerated(uint64(l))
 	if m.Priority != nil {
 		n += 1 + sovGenerated(uint64(*m.Priority))
+	}
+	if len(m.Artifacts) > 0 {
+		for _, s := range m.Artifacts {
+			l = len(s)
+			n += 1 + l + sovGenerated(uint64(l))
+		}
 	}
 	return n
 }
@@ -12094,6 +12335,12 @@ func (m *Template) Size() (n int) {
 			mapEntrySize := 1 + len(k) + sovGenerated(uint64(len(k))) + 1 + len(v) + sovGenerated(uint64(len(v)))
 			n += mapEntrySize + 2 + sovGenerated(uint64(mapEntrySize))
 		}
+	}
+	l = len(m.PendingTimeout)
+	n += 2 + l + sovGenerated(uint64(l))
+	if m.PodResources != nil {
+		l = m.PodResources.Size()
+		n += 2 + l + sovGenerated(uint64(l))
 	}
 	return n
 }
@@ -12529,6 +12776,16 @@ func (m *WorkflowSpec) Size() (n int) {
 	}
 	if m.ArtifactGC != nil {
 		l = m.ArtifactGC.Size()
+		n += 2 + l + sovGenerated(uint64(l))
+	}
+	if len(m.ExecutorPlugins) > 0 {
+		for _, e := range m.ExecutorPlugins {
+			l = e.Size()
+			n += 2 + l + sovGenerated(uint64(l))
+		}
+	}
+	if m.PodResources != nil {
+		l = m.PodResources.Size()
 		n += 2 + l + sovGenerated(uint64(l))
 	}
 	return n
@@ -13540,6 +13797,38 @@ func (this *ExecutorConfig) String() string {
 	}, "")
 	return s
 }
+func (this *ExecutorPlugin) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ExecutorPlugin{`,
+		`Spec:` + strings.Replace(strings.Replace(this.Spec.String(), "ExecutorPluginSpec", "ExecutorPluginSpec", 1), `&`, ``, 1) + `,`,
+		`ObjectMeta:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.ObjectMeta), "ObjectMeta", "v11.ObjectMeta", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ExecutorPluginSidecar) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ExecutorPluginSidecar{`,
+		`AutomountServiceAccountToken:` + fmt.Sprintf("%v", this.AutomountServiceAccountToken) + `,`,
+		`Container:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Container), "Container", "v1.Container", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ExecutorPluginSpec) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ExecutorPluginSpec{`,
+		`Sidecar:` + strings.Replace(strings.Replace(this.Sidecar.String(), "ExecutorPluginSidecar", "ExecutorPluginSidecar", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
 func (this *GCSArtifact) String() string {
 	if this == nil {
 		return "nil"
@@ -13693,6 +13982,7 @@ func (this *HTTPArtifact) String() string {
 		`URL:` + fmt.Sprintf("%v", this.URL) + `,`,
 		`Headers:` + repeatedStringForHeaders + `,`,
 		`Auth:` + strings.Replace(this.Auth.String(), "HTTPAuth", "HTTPAuth", 1) + `,`,
+		`SaveStreamViaFile:` + fmt.Sprintf("%v", this.SaveStreamViaFile) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -14382,6 +14672,7 @@ func (this *S3Bucket) String() string {
 		`EncryptionOptions:` + strings.Replace(this.EncryptionOptions.String(), "S3EncryptionOptions", "S3EncryptionOptions", 1) + `,`,
 		`CASecret:` + strings.Replace(fmt.Sprintf("%v", this.CASecret), "SecretKeySelector", "v1.SecretKeySelector", 1) + `,`,
 		`SessionTokenSecret:` + strings.Replace(fmt.Sprintf("%v", this.SessionTokenSecret), "SecretKeySelector", "v1.SecretKeySelector", 1) + `,`,
+		`AddressingStyle:` + fmt.Sprintf("%v", this.AddressingStyle) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -14506,6 +14797,7 @@ func (this *SubmitOpts) String() string {
 		`Annotations:` + fmt.Sprintf("%v", this.Annotations) + `,`,
 		`PodPriorityClassName:` + fmt.Sprintf("%v", this.PodPriorityClassName) + `,`,
 		`Priority:` + valueToStringGenerated(this.Priority) + `,`,
+		`Artifacts:` + fmt.Sprintf("%v", this.Artifacts) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -14687,6 +14979,8 @@ func (this *Template) String() string {
 		`HTTP:` + strings.Replace(this.HTTP.String(), "HTTP", "HTTP", 1) + `,`,
 		`Plugin:` + strings.Replace(this.Plugin.String(), "Plugin", "Plugin", 1) + `,`,
 		`Annotations:` + mapStringForAnnotations + `,`,
+		`PendingTimeout:` + fmt.Sprintf("%v", this.PendingTimeout) + `,`,
+		`PodResources:` + strings.Replace(fmt.Sprintf("%v", this.PodResources), "ResourceRequirements", "v1.ResourceRequirements", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -14951,6 +15245,11 @@ func (this *WorkflowSpec) String() string {
 		repeatedStringForHostAliases += fmt.Sprintf("%v", f) + ","
 	}
 	repeatedStringForHostAliases += "}"
+	repeatedStringForExecutorPlugins := "[]ExecutorPlugin{"
+	for _, f := range this.ExecutorPlugins {
+		repeatedStringForExecutorPlugins += strings.Replace(strings.Replace(f.String(), "ExecutorPlugin", "ExecutorPlugin", 1), `&`, ``, 1) + ","
+	}
+	repeatedStringForExecutorPlugins += "}"
 	keysForNodeSelector := make([]string, 0, len(this.NodeSelector))
 	for k := range this.NodeSelector {
 		keysForNodeSelector = append(keysForNodeSelector, k)
@@ -15013,6 +15312,8 @@ func (this *WorkflowSpec) String() string {
 		`Hooks:` + mapStringForHooks + `,`,
 		`WorkflowMetadata:` + strings.Replace(this.WorkflowMetadata.String(), "WorkflowMetadata", "WorkflowMetadata", 1) + `,`,
 		`ArtifactGC:` + strings.Replace(this.ArtifactGC.String(), "WorkflowLevelArtifactGC", "WorkflowLevelArtifactGC", 1) + `,`,
+		`ExecutorPlugins:` + repeatedStringForExecutorPlugins + `,`,
+		`PodResources:` + strings.Replace(fmt.Sprintf("%v", this.PodResources), "ResourceRequirements", "v1.ResourceRequirements", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -23458,6 +23759,308 @@ func (m *ExecutorConfig) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
+func (m *ExecutorPlugin) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGenerated
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ExecutorPlugin: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ExecutorPlugin: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Spec", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Spec.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ObjectMeta", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.ObjectMeta.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGenerated(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ExecutorPluginSidecar) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGenerated
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ExecutorPluginSidecar: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ExecutorPluginSidecar: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AutomountServiceAccountToken", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.AutomountServiceAccountToken = bool(v != 0)
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Container", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Container.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGenerated(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ExecutorPluginSpec) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGenerated
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ExecutorPluginSpec: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ExecutorPluginSpec: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Sidecar", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Sidecar.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGenerated(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
 func (m *GCSArtifact) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -25449,6 +26052,26 @@ func (m *HTTPArtifact) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SaveStreamViaFile", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.SaveStreamViaFile = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGenerated(dAtA[iNdEx:])
@@ -33454,6 +34077,38 @@ func (m *S3Bucket) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 13:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AddressingStyle", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.AddressingStyle = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGenerated(dAtA[iNdEx:])
@@ -34951,6 +35606,38 @@ func (m *SubmitOpts) Unmarshal(dAtA []byte) error {
 				}
 			}
 			m.Priority = &v
+		case 15:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Artifacts", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Artifacts = append(m.Artifacts, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGenerated(dAtA[iNdEx:])
@@ -37114,6 +37801,74 @@ func (m *Template) Unmarshal(dAtA []byte) error {
 				}
 			}
 			m.Annotations[mapkey] = mapvalue
+			iNdEx = postIndex
+		case 45:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PendingTimeout", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PendingTimeout = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 46:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PodResources", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.PodResources == nil {
+				m.PodResources = &v1.ResourceRequirements{}
+			}
+			if err := m.PodResources.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -41175,6 +41930,76 @@ func (m *WorkflowSpec) Unmarshal(dAtA []byte) error {
 				m.ArtifactGC = &WorkflowLevelArtifactGC{}
 			}
 			if err := m.ArtifactGC.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 44:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ExecutorPlugins", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ExecutorPlugins = append(m.ExecutorPlugins, ExecutorPlugin{})
+			if err := m.ExecutorPlugins[len(m.ExecutorPlugins)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 45:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PodResources", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.PodResources == nil {
+				m.PodResources = &v1.ResourceRequirements{}
+			}
+			if err := m.PodResources.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

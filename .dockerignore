@@ -20,9 +20,14 @@ manifests
 plugins
 sdks
 site
-tasks.yaml
 test/e2e
 ui/dist
 ui/node_modules
 v3
 vendor
+# Re-include host-compiled binaries consumed by the Tilt dev image stages
+# (workflow-controller-dev, argocli-dev, argoexec-dev). Prod stages compile
+# in-image and do not use these.
+!dist/workflow-controller
+!dist/argo
+!dist/argoexec

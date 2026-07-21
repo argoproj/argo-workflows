@@ -5,11 +5,9 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strconv"
-	"syscall"
 
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo-workflows/v4/util/errors"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/osspecific"
 )
@@ -52,35 +50,17 @@ func NewArtifactPluginSidecarCommand() *cobra.Command {
 				}
 			}()
 
-			go func() {
-				for s := range signals {
-					// Artifact sidecars ignore SIGTERM, and only honor that signal via
-					// file based termination from the wait container. We hang around
-					// to assist wait container even when kubernetes is SIGTERMing us.
-					if osspecific.CanIgnoreSignal(s) || s == syscall.SIGTERM {
-						logger.WithField("signal", s).Debug(ctx, "ignore signal")
-						continue
-					}
-
-					logger.WithField("signal", s).Debug(ctx, "forwarding signal")
-					_ = osspecific.Kill(command.Process.Pid, s.(syscall.Signal))
-				}
-			}()
+			// Artifact sidecars ignore SIGTERM (ignoreTerm=true), and only honor
+			// that signal via file-based termination from the aux container. We hang
+			// around to assist the aux container even when kubernetes is SIGTERMing us.
+			forwardSignals(ctx, signals, command.Process.Pid, true)
 			// Use background context for signal handler so it responds to wait
 			// even after the plugin server process exits
 			signalCtx := logger.NewBackgroundContext()
 			startFileSignalHandler(signalCtx, command.Process.Pid)
 
 			cmdErr := osspecific.Wait(command.Process)
-			if cmdErr == nil {
-				exitCode = 0
-			} else if exitError, ok := cmdErr.(errors.Exited); ok {
-				if exitError.ExitCode() >= 0 {
-					exitCode = exitError.ExitCode()
-				} else {
-					exitCode = 137 // SIGTERM
-				}
-			}
+			exitCode = exitCodeFromErr(cmdErr, exitCode)
 
 			logger.Info(ctx, "artifact plugin sidecar command exited")
 			return nil

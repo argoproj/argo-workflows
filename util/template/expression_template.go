@@ -8,17 +8,17 @@ import (
 	"os"
 	"reflect"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 
 	"github.com/expr-lang/expr"
 	"github.com/expr-lang/expr/ast"
-	"github.com/expr-lang/expr/file"
 	"github.com/expr-lang/expr/parser"
-	"github.com/expr-lang/expr/parser/lexer"
 
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/maps"
+	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
 )
 
 func init() {
@@ -29,21 +29,44 @@ func init() {
 
 var (
 	variablesToCheck = []string{
-		"item",
-		"retries",
-		"lastRetry.exitCode",
-		"lastRetry.status",
-		"lastRetry.duration",
-		"lastRetry.message",
-		"workflow.status",
-		"workflow.failures",
+		varkeys.Item.Template(),
+		varkeys.Retries.Template(),
+		varkeys.RetriesLastExitCode.Template(),
+		varkeys.RetriesLastStatus.Template(),
+		varkeys.RetriesLastDuration.Template(),
+		varkeys.RetriesLastMessage.Template(),
+		varkeys.WorkflowStatus.Template(),
+		varkeys.WorkflowFailures.Template(),
 	}
 )
 
+// missingVarsInEnv returns the identifiers referenced by the expression that are absent from env
+// (a present-but-nil leaf counts as present). Errors if the expression cannot be parsed.
+func missingVarsInEnv(expression string, env map[string]any) ([]string, error) {
+	identifiers, err := getIdentifiers(expression)
+	if err != nil {
+		return nil, err
+	}
+	var missing []string
+	for _, id := range identifiers {
+		if !hasVarInEnv(env, id) {
+			missing = append(missing, id)
+		}
+	}
+	return missing, nil
+}
+
+// anyVarNotInEnv returns the first late-binding variable (variablesToCheck) that the expression
+// references but env lacks, or nil if there is none.
 func anyVarNotInEnv(expression string, env map[string]any) *string {
-	for _, variable := range variablesToCheck {
-		if hasVariableInExpression(expression, variable) && !hasVarInEnv(env, variable) {
-			return &variable
+	missing, err := missingVarsInEnv(expression, env)
+	if err != nil {
+		// Unparseable expressions can't be checked; compile/run will surface the error.
+		return nil
+	}
+	for _, id := range missing {
+		if slices.Contains(variablesToCheck, id) {
+			return &id
 		}
 	}
 	return nil
@@ -58,17 +81,10 @@ func expressionReplaceStrict(ctx context.Context, w io.Writer, expression string
 		return expressionReplaceCore(ctx, w, expression, env, false)
 	}
 
-	identifiers, err := getIdentifiers(unmarshalledExpression)
+	missingIdentifiers, err := missingVarsInEnv(unmarshalledExpression, env)
 	if err != nil {
 		// If we can't parse, we can't check variables. Fallback to expressionReplaceCore(false) to report syntax error.
 		return expressionReplaceCore(ctx, w, expression, env, false)
-	}
-
-	missingIdentifiers := []string{}
-	for _, id := range identifiers {
-		if !hasVarInEnv(env, id) {
-			missingIdentifiers = append(missingIdentifiers, id)
-		}
 	}
 
 	for _, id := range missingIdentifiers {
@@ -88,9 +104,13 @@ func expressionReplaceStrict(ctx context.Context, w io.Writer, expression string
 type identifierVisitor struct {
 	identifiers []string
 	seen        map[string]bool
+	guarded     map[ast.Node]bool
 }
 
 func (v *identifierVisitor) Visit(node *ast.Node) {
+	if v.guarded[*node] {
+		return
+	}
 	if n, ok := (*node).(*ast.IdentifierNode); ok {
 		if !v.seen[n.Value] {
 			v.identifiers = append(v.identifiers, n.Value)
@@ -112,6 +132,9 @@ func getMemberPath(node *ast.MemberNode) (string, bool) {
 	var parts []string
 	curr := node
 	for {
+		if curr.Optional {
+			return "", false
+		}
 		prop, ok := curr.Property.(*ast.StringNode)
 		if !ok {
 			return "", false
@@ -131,13 +154,49 @@ func getMemberPath(node *ast.MemberNode) (string, bool) {
 	}
 }
 
+// guardVisitor collects the member nodes whose access is guarded by the
+// nil-coalescing (??) or optional-chaining (?.) operators, so they are not
+// reported as strictly-required identifiers. Base identifiers are left
+// untouched so a genuinely-unavailable variable still triggers a requeue.
+type guardVisitor struct {
+	guarded map[ast.Node]bool
+}
+
+func (v *guardVisitor) Visit(node *ast.Node) {
+	switch n := (*node).(type) {
+	case *ast.BinaryNode:
+		if n.Operator == "??" {
+			ast.Walk(&n.Left, &memberMarker{guarded: v.guarded})
+		}
+	case *ast.MemberNode:
+		if n.Optional {
+			if _, ok := n.Node.(*ast.MemberNode); ok {
+				v.guarded[n.Node] = true
+			}
+		}
+	}
+}
+
+type memberMarker struct {
+	guarded map[ast.Node]bool
+}
+
+func (m *memberMarker) Visit(node *ast.Node) {
+	if _, ok := (*node).(*ast.MemberNode); ok {
+		m.guarded[*node] = true
+	}
+}
+
 func getIdentifiers(expression string) ([]string, error) {
 	tree, err := parser.Parse(expression)
 	if err != nil {
 		return nil, err
 	}
+	guarded := make(map[ast.Node]bool)
+	ast.Walk(&tree.Node, &guardVisitor{guarded: guarded})
 	visitor := &identifierVisitor{
-		seen: make(map[string]bool),
+		seen:    make(map[string]bool),
+		guarded: guarded,
 	}
 	ast.Walk(&tree.Node, visitor)
 	return visitor.identifiers, nil
@@ -226,57 +285,6 @@ func EnvMap(replaceMap map[string]string) map[string]any {
 		envMap[k] = v
 	}
 	return envMap
-}
-
-func searchTokens(haystack []lexer.Token, needle []lexer.Token) bool {
-	if len(needle) > len(haystack) {
-		return false
-	}
-	if len(needle) == 0 {
-		return true
-	}
-outer:
-	for i := 0; i <= len(haystack)-len(needle); i++ {
-		for j := range needle {
-			if haystack[i+j].String() != needle[j].String() {
-				continue outer
-			}
-		}
-		return true
-	}
-	return false
-}
-
-func filterEOF(toks []lexer.Token) []lexer.Token {
-	newToks := []lexer.Token{}
-	for _, tok := range toks {
-		if tok.Kind != lexer.EOF {
-			newToks = append(newToks, tok)
-		}
-	}
-	return newToks
-}
-
-// hasVariableInExpression checks if an expression contains a variable.
-// This function is somewhat cursed and I have attempted my best to
-// remove this curse, but it still exists.
-// The strings.Contains is needed because the lexer doesn't do
-// any whitespace processing (workflow .status will be seen as workflow.status)
-func hasVariableInExpression(expression, variable string) bool {
-	if !strings.Contains(expression, variable) {
-		return false
-	}
-	tokens, err := lexer.Lex(file.NewSource(expression))
-	if err != nil {
-		return false
-	}
-	variableTokens, err := lexer.Lex(file.NewSource(variable))
-	if err != nil {
-		return false
-	}
-	variableTokens = filterEOF(variableTokens)
-
-	return searchTokens(tokens, variableTokens)
 }
 
 // hasVarInEnv checks if a parameter is in env or not

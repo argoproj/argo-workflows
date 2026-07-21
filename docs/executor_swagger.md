@@ -1684,6 +1684,7 @@ into the Pod's container.
 |------|------|---------|:--------:| ------- |-------------|---------|
 | auth | [HTTPAuth](#http-auth)| `HTTPAuth` |  | |  |  |
 | headers | [][Header](#header)| `[]*Header` |  | | Headers are an optional list of headers to send with HTTP requests for artifacts |  |
+| saveStreamViaFile | boolean| `bool` |  | | SaveStreamViaFile buffers a streamed upload to a temporary file before sending it,</br>so a 307/308 redirect (e.g. webHDFS) can be followed by re-sending the body. When</br>false (the default) SaveStream sends the reader directly and cannot follow such a</br>redirect, since a one-shot reader cannot be replayed. |  |
 | url | string| `string` |  | | URL of the artifact |  |
 
 
@@ -3417,6 +3418,7 @@ cause implementors to also use a fixed point implementation.
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | accessKeySecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
+| addressingStyle | string| `string` |  | | AddressingStyle defines how buckets are addressed by the S3 client.</br>This is required for some S3-compatible providers that only support</br>virtual-hosted-style bucket addressing.</br>Valid values are:</br>"" (default, auto-detect)</br>"path"</br>"virtual-hosted"</br>*Allowed values: "", path, virtual-hosted.*|  |
 | bucket | string| `string` |  | | Bucket is the name of the bucket |  |
 | caSecret | [SecretKeySelector](#secret-key-selector)| `SecretKeySelector` |  | |  |  |
 | createBucketIfNotPresent | [CreateS3BucketOptions](#create-s3-bucket-options)| `CreateS3BucketOptions` |  | |  |  |
@@ -3994,7 +3996,9 @@ of the first container processes are calculated.
 | nodeSelector | map of string| `map[string]string` |  | | NodeSelector is a selector to schedule this step of the workflow to be</br>run on the selected node(s). Overrides the selector set at the workflow level. |  |
 | outputs | [Outputs](#outputs)| `Outputs` |  | |  |  |
 | parallelism | int64 (formatted integer)| `int64` |  | | Parallelism limits the max total parallel pods that can execute at the same time within the</br>boundaries of this template invocation. If additional steps/dag templates are invoked, the</br>pods created by those templates will not be counted towards this total. </br>*Minimum value: 1.*|  |
+| pendingTimeout | string| `string` |  | | PendingTimeout allows to set the maximum time spent in pending status counting from the node's start time.</br>It is enforced by the controller, so a pod that starts running just as the timeout expires may still be failed.</br>This duration may not be applied to Step or DAG templates. |  |
 | plugin | [Plugin](#plugin)| `Plugin` |  | |  |  |
+| podResources | [ResourceRequirements](#resource-requirements)| `ResourceRequirements` |  | |  |  |
 | podSpecPatch | string| `string` |  | | PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of</br>container fields which are not strings (e.g. resource limits). |  |
 | priorityClassName | string| `string` |  | | PriorityClassName to apply to workflow pods. |  |
 | resource | [ResourceTemplate](#resource-template)| `ResourceTemplate` |  | |  |  |

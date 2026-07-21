@@ -132,9 +132,21 @@ type ArtifactDriver struct {
 	KmsEncryptionContext  string
 	EnableEncryption      bool
 	ServerSideCustomerKey string
+	AddressingStyle       string
 }
 
 var _ artifactscommon.ArtifactDriver = &ArtifactDriver{}
+
+func parseAddressingStyle(s string) AddressingStyle {
+	switch s {
+	case "path":
+		return PathStyle
+	case "virtual-hosted":
+		return VirtualHostedStyle
+	default:
+		return AutoDetectStyle
+	}
+}
 
 // newClient instantiates a new S3 client object.
 func (s3Driver *ArtifactDriver) newClient(ctx context.Context) (Client, error) {
@@ -154,7 +166,8 @@ func (s3Driver *ArtifactDriver) newClient(ctx context.Context) (Client, error) {
 			Enabled:               s3Driver.EnableEncryption,
 			ServerSideCustomerKey: s3Driver.ServerSideCustomerKey,
 		},
-		SendContentMd5: true,
+		SendContentMd5:  true,
+		AddressingStyle: parseAddressingStyle(s3Driver.AddressingStyle),
 	}
 
 	if tr, err := GetDefaultTransport(opts); err == nil {
@@ -266,6 +279,13 @@ func (s3Driver *ArtifactDriver) Save(ctx context.Context, path string, outputArt
 			return saveS3Artifact(ctx, s3cli, path, outputArtifact)
 		})
 	return err
+}
+
+// SaveStream saves an artifact from an io.Reader to S3 compliant storage
+func (s3Driver *ArtifactDriver) SaveStream(ctx context.Context, reader io.Reader, outputArtifact *wfv1.Artifact) error {
+	return artifactscommon.SaveStreamViaTempFile(reader, "s3-upload-*", func(path string) error {
+		return s3Driver.Save(ctx, path, outputArtifact)
+	})
 }
 
 // Delete deletes an artifact from an S3 compliant storage

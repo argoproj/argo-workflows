@@ -1,0 +1,46 @@
+# Consumer's own input default applies when a skipped producer declares no output default.
+#
+# `producer` never runs (when: "false") and its output parameter `msg` declares NO default. `consumer`
+# references that (absent) output, but its own input parameter `in` declares a default. Rather than the
+# skipped reference clobbering that default with an empty string, the consumer's input default applies.
+#
+# Expected: consumer logs "consumer got: [fallback-from-input]".
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: consumer-input-default-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: producer
+            template: produce
+            when: "false"                      # -> Skipped, produces no real output
+          - name: consumer
+            template: consume
+            depends: "producer.Succeeded || producer.Skipped"
+            arguments:
+              parameters:
+                - name: in
+                  value: "{{tasks.producer.outputs.parameters.msg}}"
+
+    - name: produce
+      outputs:
+        parameters:
+          - name: msg
+            valueFrom:
+              path: /tmp/out.txt               # NOTE: no default here
+      container:
+        image: argoproj/argosay:v2
+        args: ["echo", "real-value", "/tmp/out.txt"]
+
+    - name: consume
+      inputs:
+        parameters:
+          - name: in
+            default: "fallback-from-input"     # <- applies because the reference was to a skipped output
+      container:
+        image: argoproj/argosay:v2
+        args: ["echo", "consumer got: [{{inputs.parameters.in}}]"]

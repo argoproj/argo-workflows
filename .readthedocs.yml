@@ -1,12 +1,9 @@
 version: 2
 formats: all
-mkdocs:
-  fail_on_warning: false
-  configuration: mkdocs.yml
-python:
-  install:
-    - requirements: docs/requirements.txt
 build:
   os: "ubuntu-22.04"
   tools:
     python: "3.12"
+  commands:
+    - pip install -r docs/requirements.txt
+    - properdocs build -d $READTHEDOCS_OUTPUT/html

@@ -284,6 +284,114 @@ func TestResolveOutputParameterPathPlaceholder(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestExecutorPluginsValidation(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	tests := []struct {
+		name      string
+		plugins   string
+		wantError string
+	}{
+		{
+			name: "EmptyList",
+			plugins: `
+  executorPlugins: []
+`,
+		},
+		{
+			name: "Valid",
+			plugins: `
+  executorPlugins:
+  - metadata:
+      name: workflow-level-hello-executor-plugin
+    spec:
+      sidecar:
+        container:
+          name: workflow-level-hello-executor-plugin
+          image: python:alpine3.23
+          ports:
+          - containerPort: 4356
+          resources:
+            limits:
+              cpu: 200m
+              memory: 64Mi
+            requests:
+              cpu: 100m
+              memory: 32Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+`,
+		},
+		{
+			name: "MissingName",
+			plugins: `
+  executorPlugins:
+  - spec:
+      sidecar:
+        container:
+          name: workflow-level-hello-executor-plugin
+          image: python:alpine3.23
+          ports:
+          - containerPort: 4356
+          resources:
+            limits:
+              cpu: 200m
+              memory: 64Mi
+            requests:
+              cpu: 100m
+              memory: 32Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+`,
+			wantError: "spec.executorPlugins: executor plugin metadata name is mandatory",
+		},
+		{
+			name: "InvalidSidecar",
+			plugins: `
+  executorPlugins:
+  - metadata:
+      name: workflow-level-hello-executor-plugin
+    spec:
+      sidecar:
+        container:
+          name: workflow-level-hello-executor-plugin
+          image: python:alpine3.23
+          resources:
+            limits:
+              cpu: 200m
+              memory: 64Mi
+            requests:
+              cpu: 100m
+              memory: 32Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+`,
+			wantError: "spec.executorPlugins: at least one port is mandatory",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validate(ctx, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: workflow-level-executor-plugin-
+spec:
+  entrypoint: main
+`+tt.plugins+`
+  templates:
+  - name: main
+    container:
+      image: busybox
+`)
+			if tt.wantError == "" {
+				require.NoError(t, err)
+				return
+			}
+			require.EqualError(t, err, tt.wantError)
+		})
+	}
+}
+
 var stepOutputReferences = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -2946,6 +3054,45 @@ func TestInvalidContainerSetDependencyNotFound(t *testing.T) {
 	require.ErrorContains(t, err, "templates.main.containerSet.containers.b dependency 'c' not defined")
 }
 
+func TestReservedAuxContainerNames(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	containerSetSupervisor := `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: workflow
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      containerSet:
+        containers:
+          - name: supervisor
+            image: argoproj/argosay:v2
+`
+	err := validate(ctx, containerSetSupervisor)
+	require.ErrorContains(t, err, "reserved Argo container name")
+
+	sidecarWait := `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: workflow
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+      sidecars:
+        - name: wait
+          image: argoproj/argosay:v2
+`
+	err = validate(ctx, sidecarWait)
+	require.ErrorContains(t, err, "reserved Argo container name")
+}
+
 func TestInvalidContainerSetNoMainContainer(t *testing.T) {
 	invalidContainerSetTemplateWithInputArtifacts := `
 apiVersion: argoproj.io/v1alpha1
@@ -3883,4 +4030,91 @@ func TestWorkflowWithoutParameterizedArtifactsFails(t *testing.T) {
 	err := validate(logging.TestContext(t.Context()), workflowWithoutParameterizedArtifacts)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to resolve {{workflow.outputs.artifacts.nonexistent}}")
+}
+
+var podResourcesInvalidResourceName = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: pod-resources-
+spec:
+  entrypoint: main
+  podResources:
+    limits:
+      nvidia.com/gpu: "1"
+  templates:
+  - name: main
+    container:
+      image: alpine:3.23
+`
+
+var podResourcesClaims = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: pod-resources-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    podResources:
+      claims:
+      - name: gpu
+    container:
+      image: alpine:3.23
+`
+
+var podResourcesOnHTTPTemplate = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: pod-resources-
+spec:
+  entrypoint: main
+  podResources:
+    limits:
+      cpu: "1"
+  templates:
+  - name: main
+    podResources:
+      limits:
+        cpu: "1"
+    http:
+      url: https://example.com
+`
+
+var podResourcesValid = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: pod-resources-
+spec:
+  entrypoint: main
+  podResources:
+    requests:
+      cpu: 100m
+      memory: 64Mi
+    limits:
+      cpu: "1"
+      memory: 256Mi
+  templates:
+  - name: main
+    podResources:
+      limits:
+        cpu: "2"
+        memory: 512Mi
+    container:
+      image: alpine:3.23
+`
+
+func TestPodResourcesValidation(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	err := validate(ctx, podResourcesInvalidResourceName)
+	require.ErrorContains(t, err, `spec.podResources: "nvidia.com/gpu" is not a valid pod-level resource`)
+	err = validate(ctx, podResourcesClaims)
+	require.ErrorContains(t, err, "templates.main.podResources.claims is not supported")
+	err = validate(ctx, podResourcesOnHTTPTemplate)
+	require.ErrorContains(t, err, "templates.main.podResources is not supported for HTTP templates")
+	err = validate(ctx, podResourcesValid)
+	require.NoError(t, err)
 }

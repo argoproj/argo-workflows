@@ -5,6 +5,7 @@ Pipfile
 .DS_Store
 vendor/
 dist/
+.tilt/
 # delve debug binaries
 cmd/**/debug
 hack/**/debug
@@ -44,7 +45,6 @@ git-ask-pass.sh
 /v3/
 /cmd/argoexec/commands/test.txt
 /db-dumps/
-.spelling.tmp
 
 # Do not commit rendered installation manifests since they are misleading to users.
 manifests/install.yaml
@@ -52,6 +52,11 @@ manifests/namespace-install.yaml
 /logs
 node_modules
 result
+
+# Playwright UI e2e tests
+/ui/playwright-report/
+/ui/test-results/
+/ui/e2e/.auth/
 .devenv
 .devenv.flake.nix
 .*-vendor

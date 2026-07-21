@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 	"time"
 
 	"k8s.io/apimachinery/pkg/types"
@@ -55,19 +54,19 @@ func Init(ctx context.Context, clientConfig clientcmd.ClientConfig, varRunArgo s
 
 	tmpl := &wfv1.Template{}
 	envVarTemplateValue, ok := os.LookupEnv(common.EnvVarTemplate)
-	// wait container reads template from the file written by init container, instead of from environment variable.
+	var templateBytes []byte
 	if !ok {
-		var data []byte
-		data, err = os.ReadFile(varRunArgo + "/template")
+		// Wait container reads template from the file written by init container,
+		// not from the env var.
+		templateBytes, err = os.ReadFile(varRunArgo + "/template")
 		CheckErr(err)
-		envVarTemplateValue = string(data)
-	} else if envVarTemplateValue == common.EnvVarTemplateOffloaded {
-		var data []byte
-		data, err = os.ReadFile(filepath.Join(common.EnvConfigMountPath, common.EnvVarTemplate))
+	} else {
+		// Offload-sentinel resolution is shared with the emissary via
+		// common.ResolveTemplateEnvValue so the offload protocol stays in one place.
+		templateBytes, err = common.ResolveTemplateEnvValue(envVarTemplateValue, common.EnvConfigMountPath)
 		CheckErr(err)
-		envVarTemplateValue = string(data)
 	}
-	CheckErr(json.Unmarshal([]byte(envVarTemplateValue), tmpl))
+	CheckErr(json.Unmarshal(templateBytes, tmpl))
 
 	includeScriptOutput := os.Getenv(common.EnvVarIncludeScriptOutput) == "true"
 	deadline, err := time.Parse(time.RFC3339, os.Getenv(common.EnvVarDeadline))
@@ -108,7 +107,7 @@ func Init(ctx context.Context, clientConfig clientcmd.ClientConfig, varRunArgo s
 		WithField("includeScriptOutput", includeScriptOutput).
 		WithField("deadline", deadline).
 		Info(ctx, "Executor initialized")
-	return &wfExecutor
+	return wfExecutor
 }
 
 // CheckErr is a convenience function to panic upon error

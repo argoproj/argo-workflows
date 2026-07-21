@@ -1,5 +1,40 @@
 # Changelog
 
+## v4.0.7 (2026-07-07)
+
+Full Changelog: [v4.0.6...v4.0.7](https://github.com/argoproj/argo-workflows/compare/v4.0.6...v4.0.7)
+
+### Selected Changes
+
+* [9aeb47ce1](https://github.com/argoproj/argo-workflows/commit/9aeb47ce10339f4a14819335c6a00027353ba0df) fix(ui): Fixed Azure Queue Storage icon in event flow diagram Fixes #16384 (cherry-pick #16390 for 4.0) (#16392)
+* [bb4e7ff00](https://github.com/argoproj/argo-workflows/commit/bb4e7ff00c92777ab359a567f98200e6e8a74b83) fix: reject stale copies of completed workflows using resourceVersion comparison (cherry-pick #16357 for 4.0) (#16382)
+* [0f415c4dc](https://github.com/argoproj/argo-workflows/commit/0f415c4dc2437735ead88f7113b285240e91e94f) fix: log "Max parallelism reached" at info level, not error. Fixes #16378 (cherry-pick #16379 for 4.0) (#16380)
+* [6cb6553c9](https://github.com/argoproj/argo-workflows/commit/6cb6553c9be5ec98cd32ea0062364306dcc979b5) fix(validate): validate placeholder step names (cherry-pick #15991 for 4.0) (#16318)
+* [5f856f117](https://github.com/argoproj/argo-workflows/commit/5f856f1179cb96e2bcca93c105bfeff307e45eed) fix: honor ?? and ?. guards in strict missing-variable check (cherry-pick #16274 for 4.0) (#16316)
+* [638a02fae](https://github.com/argoproj/argo-workflows/commit/638a02faee642dbda3982f85deafc549450b5821) fix!: drop values when skipped arguments are being substituted (cherry-pick #16223 for 4.0) (#16314)
+* [1a36c5de9](https://github.com/argoproj/argo-workflows/commit/1a36c5de93f6fc2a79fafef424962a4d92af3f1a) fix: resolve race condition in custom metric initialization (cherry-pick #16238 for 4.0) (#16312)
+* [f2b671c85](https://github.com/argoproj/argo-workflows/commit/f2b671c858e1e0d2ebeb83478cbd0c5eaddd930c) fix: return 404 instead of panic when archived workflow is not yet persisted (cherry-pick #16302 for 4.0) (#16307)
+* [76fb8628c](https://github.com/argoproj/argo-workflows/commit/76fb8628ce64057b67be95cd1195e41ac392c22c) fix(auth): mask sensitive token in sso callback logs (cherry-pick #16268 for 4.0) (#16309)
+* [109a2fe03](https://github.com/argoproj/argo-workflows/commit/109a2fe03b0cc75030b75dea1db30deb8e7651f3) chore(deps): update dependency linkify-it to v5.0.1 [security] (release-4.0) (#16301)
+* [33baac709](https://github.com/argoproj/argo-workflows/commit/33baac709eb8388b86a0adcd49bef0be64d2cf73) chore(deps): update dependency @babel/core to v7.29.6 [security] (release-4.0) (#16280)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Claude Fable 5
+* Claude Opus 4.8 (1M context)
+* Isitha Subasinghe
+* Knut Zuidema
+* Liketosweep
+* Nebojša Jaćović
+* panaxging
+* Rin
+* Tommaso TBA. BARBERIS
+* Ville Vesilehto
+* zvdy
+
+</details>
+
 ## v4.0.6 (2026-06-10)
 
 Full Changelog: [v4.0.5...v4.0.6](https://github.com/argoproj/argo-workflows/compare/v4.0.5...v4.0.6)
@@ -322,7 +357,7 @@ Full Changelog: [v4.0.0-rc1...v4.0.0-rc2](https://github.com/argoproj/argo-workf
 
 ## v4.0.0-rc1 (2025-12-11)
 
-Full Changelog: [v3.7.15...v4.0.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.7.15...v4.0.0-rc1)
+Full Changelog: [v3.7.16...v4.0.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.7.16...v4.0.0-rc1)
 
 ### Selected Changes
 
@@ -509,6 +544,41 @@ Full Changelog: [v3.7.15...v4.0.0-rc1](https://github.com/argoproj/argo-workflow
 * William Van Hevelingen
 * Xavier Hardy
 * Yuan Tang
+
+</details>
+
+## v3.7.16 (2026-07-07)
+
+Full Changelog: [v3.7.15...v3.7.16](https://github.com/argoproj/argo-workflows/compare/v3.7.15...v3.7.16)
+
+### Selected Changes
+
+* [26f99ff66](https://github.com/argoproj/argo-workflows/commit/26f99ff6683c4cedb1de941e01644f42cf97fb01) fix(ui): Fixed Azure Queue Storage icon in event flow diagram Fixes #16384 (cherry-pick #16390 for 3.7) (#16391)
+* [35e6ceab6](https://github.com/argoproj/argo-workflows/commit/35e6ceab6b9b288adf6b0be56539452ebaffcfc6) fix: reject stale copies of completed workflows using resourceVersion comparison (cherry-pick #16357 for 3.7) (#16383)
+* [efad91c17](https://github.com/argoproj/argo-workflows/commit/efad91c17abd37297a5de7bbfaa4900d742bf2c0) fix: log "Max parallelism reached" at info level, not error. Fixes #16378 (cherry-pick #16379 for 3.7) (#16381)
+* [43957f202](https://github.com/argoproj/argo-workflows/commit/43957f2029e83d3b0d4cbfc080cd9c34dd595caa) fix!: drop values when skipped arguments are being substituted (cherry-pick #16223 for 3.7) (#16315)
+* [d4ee3df9f](https://github.com/argoproj/argo-workflows/commit/d4ee3df9f41569b6706110084cb8f002d87388df) fix: return 404 instead of panic when archived workflow is not yet persisted (cherry-pick #16302 for 3.7) (#16320)
+* [6c7a9aaa4](https://github.com/argoproj/argo-workflows/commit/6c7a9aaa4b1e043d28a069a0e526baf58287588c) fix: honor ?? and ?. guards in strict missing-variable check (cherry-pick #16274 for 3.7) (#16317)
+* [7aa4ffc9e](https://github.com/argoproj/argo-workflows/commit/7aa4ffc9e5acd1a57b009b4a1aa81cf5a4610b60) fix: resolve race condition in custom metric initialization (cherry-pick #16238 for 3.7) (#16313)
+* [48517cc43](https://github.com/argoproj/argo-workflows/commit/48517cc434507e36c939fb17add298b3cd769035) fix(auth): mask sensitive token in sso callback logs (cherry-pick #16268 for 3.7) (#16311)
+* [bae3229d7](https://github.com/argoproj/argo-workflows/commit/bae3229d755f2e771fcd5e52eefa4deed6efa6d6) chore(deps): update dependency linkify-it to v5.0.1 [security] (release-3.7) (#16300)
+* [be8305080](https://github.com/argoproj/argo-workflows/commit/be830508037121bf1f87011d09a9934dfafe592a) fix: WorkflowTaskSets size bloat for large workflows (cherry-pick #16075 for 3.7) (#16286)
+* [953072651](https://github.com/argoproj/argo-workflows/commit/953072651ce5e5c0f20fbf84530518dfa9269843) chore(deps): update dependency @babel/core to v7.29.6 [security] (release-3.7) (#16279)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Anton Pechenin
+* Claude Fable 5
+* Claude Opus 4.8 (1M context)
+* Isitha Subasinghe
+* Knut Zuidema
+* Liketosweep
+* Nebojša Jaćović
+* panaxging
+* Rin
+* Tommaso TBA. BARBERIS
+* zvdy
 
 </details>
 

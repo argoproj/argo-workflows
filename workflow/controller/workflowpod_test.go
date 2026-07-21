@@ -645,6 +645,88 @@ func Test_createWorkflowPod_rateLimited(t *testing.T) {
 	}
 }
 
+// Test_submitPod_activePods_accounting locks in the activePods accounting
+// contract: a genuinely fresh pod create increments activePods exactly once,
+// while the AlreadyExists-recovery path (pod already exists in the cluster, but
+// not in the informer) recovers the existing pod WITHOUT incrementing
+// activePods. Re-incrementing on recovery would over-count parallelism and is
+// the regression this test guards against.
+func Test_submitPod_activePods_accounting(t *testing.T) {
+	newSubmitPod := func(woc *wfOperationCtx) *apiv1.Pod {
+		return &apiv1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:        "test-active-pods-accounting",
+				Namespace:   woc.wf.Namespace,
+				Annotations: map[string]string{},
+				Labels:      map[string]string{},
+			},
+		}
+	}
+
+	t.Run("FreshCreateIncrements", func(t *testing.T) {
+		wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx, wf, defaultServiceAccount)
+		defer cancel()
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+		before := woc.activePods
+		pod, err := woc.submitPod(ctx, &podBuildResult{Pod: newSubmitPod(woc)}, "node", "node-id", woc.log)
+		require.NoError(t, err)
+		require.NotNil(t, pod)
+		assert.Equal(t, before+1, woc.activePods, "fresh create must increment activePods by exactly one")
+	})
+
+	t.Run("AlreadyExistsRecoveryDoesNotIncrement", func(t *testing.T) {
+		wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx, wf, defaultServiceAccount)
+		defer cancel()
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+		// Pre-create the pod directly in the fake cluster under the deterministic
+		// name. The informer store is NOT populated with it, so createPod hits
+		// AlreadyExists and recovers via a direct Get.
+		existing := newSubmitPod(woc)
+		_, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).Create(ctx, existing, metav1.CreateOptions{})
+		require.NoError(t, err)
+
+		before := woc.activePods
+		pod, err := woc.submitPod(ctx, &podBuildResult{Pod: newSubmitPod(woc)}, "node", "node-id", woc.log)
+		require.NoError(t, err)
+		require.NotNil(t, pod)
+		assert.Equal(t, before, woc.activePods, "AlreadyExists recovery must NOT increment activePods")
+	})
+}
+
+// Test_setNodeProgress covers both halves of the progress write that runs
+// after a successful pod create: an existing node gets the progress applied,
+// and a missing node is logged and skipped (no panic, no status mutation) —
+// the pod already exists at this point, so aborting the reconcile would be
+// worse than dropping a derivable progress value.
+func Test_setNodeProgress(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	woc := newWoc(ctx)
+
+	nodeID := "test-node-id"
+	woc.wf.Status.Nodes = wfv1.Nodes{nodeID: wfv1.NodeStatus{ID: nodeID, Name: "test-node"}}
+
+	// Existing node: progress lands on the node status.
+	woc.setNodeProgress(ctx, nodeID, wfv1.Progress("25/100"))
+	node, err := woc.wf.Status.Nodes.Get(nodeID)
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.Progress("25/100"), node.Progress)
+
+	// Missing node: logged and skipped without panicking or touching status.
+	assert.NotPanics(t, func() {
+		woc.setNodeProgress(ctx, "no-such-node", wfv1.Progress("50/100"))
+	})
+	assert.Len(t, woc.wf.Status.Nodes, 1)
+	node, err = woc.wf.Status.Nodes.Get(nodeID)
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.Progress("25/100"), node.Progress)
+}
+
 func Test_createWorkflowPod_containerName(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx)
@@ -886,6 +968,39 @@ func TestPriorityClass(t *testing.T) {
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
 	assert.Equal(t, "foo", pod.Spec.PriorityClassName)
+}
+
+// TestPodResources verifies pod-level resources are carried forward, with the
+// template-level value overriding the workflow-level one.
+func TestPodResources(t *testing.T) {
+	wfLevel := &apiv1.ResourceRequirements{
+		Limits: apiv1.ResourceList{apiv1.ResourceCPU: resource.MustParse("1")},
+	}
+	tmplLevel := &apiv1.ResourceRequirements{
+		Limits: apiv1.ResourceList{apiv1.ResourceCPU: resource.MustParse("2")},
+	}
+	for name, tt := range map[string]struct {
+		tmplResources *apiv1.ResourceRequirements
+		expected      *apiv1.ResourceRequirements
+	}{
+		"WorkflowLevel":          {nil, wfLevel},
+		"TemplateLevelOverrides": {tmplLevel, tmplLevel},
+	} {
+		t.Run(name, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			woc := newWoc(ctx)
+			woc.execWf.Spec.PodResources = wfLevel
+			woc.execWf.Spec.Templates[0].PodResources = tt.tmplResources
+			tmplCtx, err := woc.createTemplateContext(ctx, wfv1.ResourceScopeLocal, "")
+			require.NoError(t, err)
+			_, err = woc.executeContainer(ctx, woc.execWf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.execWf.Spec.Templates[0], &wfv1.WorkflowStep{}, &executeTemplateOpts{})
+			require.NoError(t, err)
+			pods, err := listPods(ctx, woc)
+			require.NoError(t, err)
+			assert.Len(t, pods.Items, 1)
+			assert.Equal(t, tt.expected, pods.Items[0].Spec.Resources)
+		})
+	}
 }
 
 // TestSchedulerName verifies the ability to carry forward schedulerName.
@@ -2225,7 +2340,7 @@ func TestArtifactPluginSidecar(t *testing.T) {
 		ctx, err := woc.setExecWorkflow(ctx)
 		require.NoError(t, err)
 
-		err = woc.addArtifactPlugins(ctx, pod, tmpl, cfg)
+		err = woc.addArtifactPluginsLegacy(ctx, pod, tmpl, cfg)
 		require.NoError(t, err)
 
 		// Volumes are normally added in addOutputArtifactsVolumes
