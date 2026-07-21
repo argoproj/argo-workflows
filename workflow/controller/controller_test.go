@@ -2,6 +2,8 @@ package controller
 
 import (
 	"context"
+	gosync "sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -16,9 +18,11 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/watch"
 	dynamicfake "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
+	metadatafake "k8s.io/client-go/metadata/fake"
 	k8stesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
@@ -270,6 +274,11 @@ func newController(ctx context.Context, options ...any) (context.CancelFunc, *Wo
 	informerFactory := wfextv.NewSharedInformerFactory(wfclientset, 0)
 	ctx, cancel := context.WithCancel(ctx)
 	kube := fake.NewClientset(coreObjects...)
+	metadataScheme := metadatafake.NewTestScheme()
+	if err := metav1.AddMetaToScheme(metadataScheme); err != nil {
+		panic(err)
+	}
+	metadataClient := metadatafake.NewSimpleMetadataClient(metadataScheme)
 	wfc := &WorkflowController{
 		Config: config.Config{
 			Images: map[string]config.Image{
@@ -290,6 +299,7 @@ func newController(ctx context.Context, options ...any) (context.CancelFunc, *Wo
 		cliExecutorLogFormat:      "text",
 		kubeclientset:             kube,
 		dynamicInterface:          dynamicClient,
+		metadataInterface:         metadataClient,
 		wfclientset:               wfclientset,
 		workflowKeyLock:           sync.NewKeyLock(),
 		wfArchive:                 sqldb.NullWorkflowArchive,
@@ -334,7 +344,7 @@ func newController(ctx context.Context, options ...any) (context.CancelFunc, *Wo
 		_ = wfc.addWorkflowInformerHandlers(ctx)
 		wfc.PodController = pod.NewController(ctx, &wfc.Config, wfc.restConfig, "", wfc.kubeclientset, wfc.wfInformer, wfc.metrics, wfc.enqueueWfFromPodLabel)
 
-		wfc.configMapInformer = wfc.newConfigMapInformer(ctx)
+		wfc.typedConfigMapInformer = wfc.newTypedConfigMapInformer(ctx)
 		wfc.createSynchronizationManager(ctx)
 		_ = wfc.initManagers(ctx)
 
@@ -346,7 +356,7 @@ func newController(ctx context.Context, options ...any) (context.CancelFunc, *Wo
 		go wfc.taskResultInformer.Run(ctx.Done())
 		wfc.cwftmplInformer = informerFactory.Argoproj().V1alpha1().ClusterWorkflowTemplates()
 		go wfc.cwftmplInformer.Informer().Run(ctx.Done())
-		go wfc.configMapInformer.Run(ctx.Done())
+		go wfc.typedConfigMapInformer.Run(ctx.Done())
 		// wfc.waitForCacheSync() takes minimum 100ms, we can be faster
 		for _, c := range []cache.SharedIndexInformer{
 			wfc.wfInformer,
@@ -356,7 +366,7 @@ func newController(ctx context.Context, options ...any) (context.CancelFunc, *Wo
 			wfc.wfTaskSetInformer.Informer(),
 			wfc.artGCTaskInformer.Informer(),
 			wfc.taskResultInformer,
-			wfc.configMapInformer,
+			wfc.typedConfigMapInformer,
 		} {
 			for !c.HasSynced() {
 				time.Sleep(5 * time.Millisecond)
@@ -965,11 +975,8 @@ func TestNotifySemaphoreConfigUpdate(t *testing.T) {
 	cancel, controller := newController(logging.TestContext(t.Context()), wf, wf1, wf2)
 	defer cancel()
 
-	cm := apiv1.ConfigMap{ObjectMeta: metav1.ObjectMeta{
-		Name:      "my-config",
-		Namespace: "default",
-	}}
-	assert.Equal(3, controller.wfQueue.Len())
+	// the informer handlers enqueue asynchronously, after HasSynced flips
+	require.Eventually(t, func() bool { return controller.wfQueue.Len() == 3 }, 10*time.Second, 100*time.Millisecond)
 
 	// Remove all Wf from Worker queue
 	for range 3 {
@@ -981,9 +988,208 @@ func TestNotifySemaphoreConfigUpdate(t *testing.T) {
 
 	ctx := logging.TestContext(t.Context())
 
-	controller.notifySemaphoreConfigUpdate(ctx, &cm)
-	time.Sleep(2 * time.Second)
-	assert.Equal(2, controller.wfQueue.Len())
+	controller.notifySemaphoreConfigUpdate(ctx, "default", "my-config")
+	require.Eventually(t, func() bool { return controller.wfQueue.Len() == 2 }, 10*time.Second, 100*time.Millisecond)
+}
+
+func TestSemaphoreConfigMapInformer(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(wfWithSema)
+	otherWf := wf.DeepCopy()
+	otherWf.Name = "other-wf"
+	otherWf.Spec.Synchronization.Semaphores[0].ConfigMapKeyRef.Name = "other-config"
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf, otherWf)
+	defer cancel()
+
+	// the informer handlers enqueue asynchronously, after HasSynced flips
+	require.Eventually(t, func() bool { return controller.wfQueue.Len() == 2 }, 10*time.Second, 100*time.Millisecond)
+	for range 2 {
+		key, _ := controller.wfQueue.Get()
+		controller.wfQueue.Done(key)
+		controller.wfQueue.Forget(key)
+	}
+
+	allowSelfSubjectAccessReviews(controller.kubeclientset.(*fake.Clientset))
+
+	// the informer is metadata-only, so it is fed PartialObjectMetadata, not full configmaps
+	gvr := apiv1.SchemeGroupVersion.WithResource("configmaps")
+	fakeClient := controller.metadataInterface.(*metadatafake.FakeMetadataClient)
+	cm := &metav1.PartialObjectMetadata{
+		TypeMeta:   metav1.TypeMeta{APIVersion: "v1", Kind: "ConfigMap"},
+		ObjectMeta: metav1.ObjectMeta{Name: "my-config", Namespace: "default", ResourceVersion: "1", Labels: map[string]string{"argo": "config"}},
+	}
+	require.NoError(t, fakeClient.Tracker().Add(cm))
+	otherCM := &metav1.PartialObjectMetadata{
+		TypeMeta:   metav1.TypeMeta{APIVersion: "v1", Kind: "ConfigMap"},
+		ObjectMeta: metav1.ObjectMeta{Name: "other-config", Namespace: "default", ResourceVersion: "1"},
+	}
+	require.NoError(t, fakeClient.Tracker().Add(otherCM))
+
+	// signal once the informer's watch is established so the update below cannot race it
+	watchEstablished := make(chan struct{})
+	var watchOnce gosync.Once
+	fakeClient.PrependWatchReactor("configmaps", func(action k8stesting.Action) (bool, watch.Interface, error) {
+		w, watchErr := fakeClient.Tracker().Watch(action.GetResource(), action.GetNamespace())
+		if watchErr != nil {
+			return false, nil, watchErr
+		}
+		watchOnce.Do(func() { close(watchEstablished) })
+		return true, w, nil
+	})
+
+	informer := controller.newSemaphoreConfigMapInformer(ctx)
+	go informer.Run(ctx.Done())
+	require.True(t, cache.WaitForCacheSync(ctx.Done(), informer.HasSynced))
+
+	// the add events from the initial sync notify the workflows waiting on the semaphores
+	require.Eventually(t, func() bool { return controller.wfQueue.Len() == 2 }, 10*time.Second, 100*time.Millisecond)
+	for range 2 {
+		key, _ := controller.wfQueue.Get()
+		controller.wfQueue.Done(key)
+		controller.wfQueue.Forget(key)
+	}
+
+	// the transform keeps only identifying metadata in the cache
+	obj, exists, err := informer.GetStore().GetByKey("default/my-config")
+	require.NoError(t, err)
+	require.True(t, exists)
+	cached, ok := obj.(*metav1.PartialObjectMetadata)
+	require.True(t, ok)
+	assert.Equal(t, "my-config", cached.Name)
+	assert.Equal(t, "default", cached.Namespace)
+	assert.Equal(t, "1", cached.ResourceVersion)
+	assert.Empty(t, cached.Labels)
+
+	select {
+	case <-watchEstablished:
+	case <-time.After(10 * time.Second):
+		t.Fatal("timed out waiting for the informer's watch to be established")
+	}
+	cm.ResourceVersion = "2"
+	require.NoError(t, fakeClient.Tracker().Update(gvr, cm, "default"))
+
+	// the update event notifies only the workflow waiting on the updated semaphore
+	require.Eventually(t, func() bool { return controller.wfQueue.Len() == 1 }, 10*time.Second, 100*time.Millisecond)
+	key, _ := controller.wfQueue.Get()
+	assert.Equal(t, "default/hello-world", key)
+	controller.wfQueue.Done(key)
+	controller.wfQueue.Forget(key)
+}
+
+// allowSelfSubjectAccessReviews makes the fake clientset grant all RBAC self-checks,
+// which it denies by default.
+func allowSelfSubjectAccessReviews(clientset *fake.Clientset) {
+	clientset.PrependReactor("create", "selfsubjectaccessreviews", func(k8stesting.Action) (bool, runtime.Object, error) {
+		return true, &authorizationv1.SelfSubjectAccessReview{Status: authorizationv1.SubjectAccessReviewStatus{Allowed: true}}, nil
+	})
+}
+
+// recordingConfigController is a config.Controller that counts config reloads.
+type recordingConfigController struct {
+	namespace string
+	name      string
+	reloads   atomic.Int32
+}
+
+func (c *recordingConfigController) Get(_ context.Context) (*config.Config, error) {
+	c.reloads.Add(1)
+	return &config.Config{}, nil
+}
+
+func (c *recordingConfigController) Parse(_ *apiv1.ConfigMap) (*config.Config, error) {
+	c.reloads.Add(1)
+	return &config.Config{}, nil
+}
+
+func (c *recordingConfigController) GetNamespace() string { return c.namespace }
+func (c *recordingConfigController) GetName() string      { return c.name }
+
+func TestControllerConfigMapInformer(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	cc := &recordingConfigController{namespace: "default", name: "workflow-controller-configmap"}
+	// a minimal controller: Run waits for the initial config reload before starting
+	// anything that reads the config, so nothing else runs alongside the informer here
+	controller := &WorkflowController{
+		kubeclientset:    fake.NewClientset(),
+		configController: cc,
+	}
+	allowSelfSubjectAccessReviews(controller.kubeclientset.(*fake.Clientset))
+
+	cm := &apiv1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{Name: "workflow-controller-configmap", Namespace: "default", ResourceVersion: "1"},
+	}
+	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, cm, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	// signal once the informer's watch is established so the update below cannot race it
+	watchEstablished := make(chan struct{})
+	var watchOnce gosync.Once
+	fakeClient := controller.kubeclientset.(*fake.Clientset)
+	fakeClient.PrependWatchReactor("configmaps", func(action k8stesting.Action) (bool, watch.Interface, error) {
+		w, watchErr := fakeClient.Tracker().Watch(action.GetResource(), action.GetNamespace())
+		if watchErr != nil {
+			return false, nil, watchErr
+		}
+		watchOnce.Do(func() { close(watchEstablished) })
+		return true, w, nil
+	})
+
+	informer, handlerSynced := controller.newControllerConfigMapInformer(ctx)
+	go informer.Run(ctx.Done())
+
+	// handlerSynced reports true only once the initial sync events have been delivered,
+	// so the config reload that picks up edits made between the load at process start
+	// and the informer starting on leadership has happened by then
+	require.True(t, cache.WaitForCacheSync(ctx.Done(), handlerSynced))
+	assert.Equal(t, int32(1), cc.reloads.Load())
+
+	select {
+	case <-watchEstablished:
+	case <-time.After(10 * time.Second):
+		t.Fatal("timed out waiting for the informer's watch to be established")
+	}
+	cm.ResourceVersion = "2"
+	cm.Data = map[string]string{"parallelism": "42"}
+	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Update(ctx, cm, metav1.UpdateOptions{})
+	require.NoError(t, err)
+
+	// the update event reloads the config again
+	require.Eventually(t, func() bool { return cc.reloads.Load() == 2 }, 10*time.Second, 100*time.Millisecond)
+
+	// an update event with an unchanged resource version (a resync, or a no-op write)
+	// must not reload; a spurious reload here fails the exact counts asserted below
+	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Update(ctx, cm, metav1.UpdateOptions{})
+	require.NoError(t, err)
+
+	// deletion also triggers a reload attempt: in production the fetch of the deleted
+	// configmap fails fatally, surfacing the deletion immediately; the recording fake
+	// here always succeeds, so it just counts
+	require.NoError(t, controller.kubeclientset.CoreV1().ConfigMaps("default").Delete(ctx, cm.Name, metav1.DeleteOptions{}))
+	require.Eventually(t, func() bool { return cc.reloads.Load() == 3 }, 10*time.Second, 100*time.Millisecond)
+
+	// recreation reloads the config via the add event
+	cm.ResourceVersion = "3"
+	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, cm, metav1.CreateOptions{})
+	require.NoError(t, err)
+	require.Eventually(t, func() bool { return cc.reloads.Load() == 4 }, 10*time.Second, 100*time.Millisecond)
+}
+
+// without list/watch access to configmaps the informers are skipped, rather than hanging
+// startup on a list that can never succeed
+func TestConfigMapInformersNoRBACAccess(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	// the fake clientset denies SelfSubjectAccessReviews by default
+	controller := &WorkflowController{
+		kubeclientset:    fake.NewClientset(),
+		configController: &recordingConfigController{namespace: "default", name: "workflow-controller-configmap"},
+	}
+
+	informer, handlerSynced := controller.newControllerConfigMapInformer(ctx)
+	assert.Nil(t, informer)
+	assert.Nil(t, handlerSynced)
+
+	assert.Nil(t, controller.newSemaphoreConfigMapInformer(ctx))
 }
 
 func TestParallelismWithInitializeRunningWorkflows(t *testing.T) {

@@ -276,7 +276,7 @@ func (woc *wfOperationCtx) newPodBuilder(ctx context.Context, nodeName string, m
 			globalParams:              woc.globalParams(),
 			volumes:                   frozenVolumes,
 			artifactRepository:        woc.artifactRepository.DeepCopy(),
-			configMapIndexer:          wfc.configMapInformer.GetIndexer(),
+			configMapIndexer:          wfc.typedConfigMapInformer.GetIndexer(),
 			config:                    &wfc.Config,
 			instanceID:                wfc.Config.InstanceID,
 			mainContainerDefaults:     wfc.Config.MainContainer,
