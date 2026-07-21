@@ -45,7 +45,7 @@ jobs:
       actions: read # job/step conclusions for the feature check
     steps:
       # Default branch only — never the PR head.
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # The default Actions token cannot toggle a PR's draft state
       # ("Resource not accessible by integration"), so draft conversion
