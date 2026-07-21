@@ -77,7 +77,7 @@ func NewClientFromOptsWithContext(ctx context.Context, opts Opts) (context.Conte
 		if opts.AuthSupplier == nil {
 			return nil, nil, fmt.Errorf("AuthSupplier cannot be empty when connecting to Argo Server")
 		}
-		return newHTTP1Client(ctx, opts)
+		return newHTTP1Client(ctx, opts.ArgoServerOpts, opts.AuthSupplier(), opts.Proxy)
 	case opts.ArgoServerOpts.URL != "":
 		if opts.AuthSupplier == nil {
 			return nil, nil, fmt.Errorf("AuthSupplier cannot be empty when connecting to Argo Server")

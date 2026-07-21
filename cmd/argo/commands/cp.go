@@ -2,7 +2,6 @@ package commands
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
 	"io"
 	"log"
@@ -18,6 +17,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/pkg/apiclient"
 	workflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow"
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	tlsutil "github.com/argoproj/argo-workflows/v4/util/tls"
 	wfutil "github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
@@ -74,12 +74,9 @@ func NewCpCommand() *cobra.Command {
 			}
 			artifactSearchResults := workflow.SearchArtifacts(&artifactSearchQuery)
 
-			c := &http.Client{
-				Transport: &http.Transport{
-					TLSClientConfig: &tls.Config{
-						InsecureSkipVerify: client.ArgoServerOpts.InsecureSkipVerify,
-					},
-				},
+			c, err := newArtifactHTTPClient(client.ArgoServerOpts)
+			if err != nil {
+				return err
 			}
 
 			for _, artifact := range artifactSearchResults {
@@ -115,6 +112,14 @@ func NewCpCommand() *cobra.Command {
 	command.Flags().StringVar(&artifactName, "artifact-name", "", "name of output artifact in workflow")
 	command.Flags().StringVar(&customPath, "path", "{namespace}/{workflowName}/{nodeId}/outputs/{artifactName}", "use variables {workflowName}, {nodeId}, {templateName}, {artifactName}, and {namespace} to create a customized path to store the artifacts; example: {workflowName}/{templateName}/{artifactName}")
 	return command
+}
+
+func newArtifactHTTPClient(opts apiclient.ArgoServerOpts) (*http.Client, error) {
+	tlsConfig, err := tlsutil.GetClientTLSConfig(opts.ClientCert, opts.ClientKey, opts.InsecureSkipVerify)
+	if err != nil {
+		return nil, err
+	}
+	return &http.Client{Transport: &http.Transport{TLSClientConfig: tlsConfig}}, nil
 }
 
 func getAndStoreArtifactData(ctx context.Context, namespace string, workflowName string, nodeID string, artifactName string, fileName string, customPath string, c *http.Client, argoServerOpts apiclient.ArgoServerOpts) error {

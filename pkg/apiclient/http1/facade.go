@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	cryptotls "crypto/tls"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -22,18 +23,42 @@ import (
 // Facade provides a adapter from GRPC interface, but uses HTTP to send the messages.
 // Errors are extracted from message body and returned as GRPC status errors.
 type Facade struct {
-	baseURL            string
-	authorization      string
-	insecureSkipVerify bool
-	headers            []string
-	httpClient         *http.Client
-	proxy              func(*http.Request) (*url.URL, error)
-	clientCert         string
-	clientKey          string
+	baseURL       string
+	authorization string
+	headers       []string
+	httpClient    *http.Client
+	proxy         func(*http.Request) (*url.URL, error)
+	tlsConfig     *cryptotls.Config
 }
 
-func NewFacade(baseURL, authorization string, insecureSkipVerify bool, headers []string, httpClient *http.Client, proxy func(*http.Request) (*url.URL, error), clientCert, clientKey string) Facade {
-	return Facade{baseURL, authorization, insecureSkipVerify, headers, httpClient, proxy, clientCert, clientKey}
+type FacadeConfig struct {
+	BaseURL            string
+	Authorization      string
+	InsecureSkipVerify bool
+	Headers            []string
+	HTTPClient         *http.Client
+	Proxy              func(*http.Request) (*url.URL, error)
+	ClientCert         string
+	ClientKey          string
+}
+
+func NewFacade(config FacadeConfig) (Facade, error) {
+	var tlsConfig *cryptotls.Config
+	if config.HTTPClient == nil {
+		var err error
+		tlsConfig, err = tls.GetClientTLSConfig(config.ClientCert, config.ClientKey, config.InsecureSkipVerify)
+		if err != nil {
+			return Facade{}, err
+		}
+	}
+	return Facade{
+		baseURL:       config.BaseURL,
+		authorization: config.Authorization,
+		headers:       config.Headers,
+		httpClient:    config.HTTPClient,
+		proxy:         config.Proxy,
+		tlsConfig:     tlsConfig,
+	}, nil
 }
 
 func (h Facade) proxyFunc() func(*http.Request) (*url.URL, error) {
@@ -146,14 +171,10 @@ func (h Facade) client(req *http.Request, disableKeepAlives bool) (*http.Client,
 	if h.httpClient != nil {
 		return h.httpClient, nil
 	}
-	tlsConfig, err := tls.GetTLSConfig(h.clientCert, h.clientKey, h.insecureSkipVerify)
-	if err != nil {
-		return nil, err
-	}
 	return &http.Client{
 		Transport: &http.Transport{
 			Proxy:             http.ProxyURL(proxyURL),
-			TLSClientConfig:   tlsConfig,
+			TLSClientConfig:   h.tlsConfig,
 			DisableKeepAlives: disableKeepAlives,
 		},
 	}, nil

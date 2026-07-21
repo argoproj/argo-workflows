@@ -2,6 +2,8 @@ package apiclient
 
 import (
 	"context"
+	"net/http"
+	"net/url"
 
 	"github.com/argoproj/argo-workflows/v4/pkg/apiclient/clusterworkflowtemplate"
 	cronworkflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/cronworkflow"
@@ -45,15 +47,19 @@ func (h httpClient) NewSyncServiceClient(_ context.Context) (syncpkg.SyncService
 	return http1.SyncServiceClient(h), nil
 }
 
-func newHTTP1Client(ctx context.Context, opts Opts) (context.Context, Client, error) {
-	return ctx, httpClient(http1.NewFacade(
-		opts.ArgoServerOpts.GetURL(),
-		opts.AuthSupplier(),
-		opts.ArgoServerOpts.InsecureSkipVerify,
-		opts.ArgoServerOpts.Headers,
-		opts.ArgoServerOpts.HTTP1Client,
-		opts.Proxy,
-		opts.ArgoServerOpts.ClientCert,
-		opts.ArgoServerOpts.ClientKey,
-	)), nil
+func newHTTP1Client(ctx context.Context, opts ArgoServerOpts, auth string, proxy func(*http.Request) (*url.URL, error)) (context.Context, Client, error) {
+	facade, err := http1.NewFacade(http1.FacadeConfig{
+		BaseURL:            opts.GetURL(),
+		Authorization:      auth,
+		InsecureSkipVerify: opts.InsecureSkipVerify,
+		Headers:            opts.Headers,
+		HTTPClient:         opts.HTTP1Client,
+		Proxy:              proxy,
+		ClientCert:         opts.ClientCert,
+		ClientKey:          opts.ClientKey,
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	return ctx, httpClient(facade), nil
 }

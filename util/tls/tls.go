@@ -151,10 +151,10 @@ func GetServerTLSConfigFromSecret(ctx context.Context, kubectlConfig kubernetes.
 	}, nil
 }
 
-// GetTLSConfig creates a TLS configuration for client connections.
-// If clientCert and clientKey are provided, they will be loaded and included in the configuration.
-// The insecureSkipVerify parameter controls whether the server's certificate will be verified.
-func GetTLSConfig(clientCert, clientKey string, insecureSkipVerify bool) (*tls.Config, error) {
+// GetClientTLSConfig creates a TLS 1.2 or newer configuration for client connections.
+// Client certificate authentication requires both clientCert and clientKey.
+// The insecureSkipVerify parameter controls whether the server's certificate is verified.
+func GetClientTLSConfig(clientCert, clientKey string, insecureSkipVerify bool) (*tls.Config, error) {
 	tlsConfig := &tls.Config{
 		InsecureSkipVerify: insecureSkipVerify,
 		MinVersion:         tls.VersionTLS12,
@@ -162,7 +162,6 @@ func GetTLSConfig(clientCert, clientKey string, insecureSkipVerify bool) (*tls.C
 	if (clientCert == "") != (clientKey == "") {
 		return nil, fmt.Errorf("client certificate authentication requires both clientCert and clientKey")
 	}
-	// Load client certificate if paths are provided
 	if clientCert != "" && clientKey != "" {
 		cert, err := tls.LoadX509KeyPair(clientCert, clientKey)
 		if err != nil {

@@ -3,6 +3,7 @@
 package e2e
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/tls"
@@ -23,11 +24,15 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/peer"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/yaml"
 
+	infopkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/info"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/test/e2e/fixtures"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
@@ -2125,18 +2130,65 @@ func (s *CLISuite) TestWorkflowConvert() {
 
 func (s *CLISuite) TestClientCerts() {
 	s.Run("gRPC", func() {
-		tlsServerAddr, clientCertPath, clientKeyPath, receivedCertCh := s.startTLSServerWithClientAuth()
-		s.runCliWithClientCerts(tlsServerAddr, clientCertPath, clientKeyPath, []string{"version"}, receivedCertCh)
+		tlsServerAddr, clientCertPath, clientKeyPath, receivedCertCh := s.startGRPCTLSServerWithClientAuth()
+		s.runCliWithClientCerts(tlsServerAddr, clientCertPath, clientKeyPath, []string{"version", "--argo-http1=false"}, receivedCertCh)
 	})
 	s.Run("HTTP1", func() {
-		tlsServerAddr, clientCertPath, clientKeyPath, receivedCertCh := s.startTLSServerWithClientAuth()
+		tlsServerAddr, clientCertPath, clientKeyPath, receivedCertCh := s.startHTTP1TLSServerWithClientAuth()
 		s.runCliWithClientCerts(tlsServerAddr, clientCertPath, clientKeyPath, []string{"version", "--argo-http1"}, receivedCertCh)
 	})
 }
 
-func (s *CLISuite) startTLSServerWithClientAuth() (string, string, string, chan bool) {
+func (s *CLISuite) startGRPCTLSServerWithClientAuth() (string, string, string, chan bool) {
 	s.T().Helper()
+	tlsConfig, clientCertPath, clientKeyPath, expectedSerialNumber := s.clientAuthTLSConfig()
+	var listenConfig net.ListenConfig
+	listener, err := listenConfig.Listen(s.T().Context(), "tcp", "localhost:0")
+	if err != nil {
+		s.T().Fatal(err)
+	}
+	receivedCertCh := make(chan bool, 1)
+	server := grpc.NewServer(grpc.Creds(credentials.NewTLS(tlsConfig)))
+	infopkg.RegisterInfoServiceServer(server, &clientCertInfoServer{
+		receivedCertCh:       receivedCertCh,
+		expectedSerialNumber: expectedSerialNumber,
+	})
+	go func() {
+		_ = server.Serve(listener)
+	}()
+	s.T().Cleanup(func() {
+		server.Stop()
+		_ = listener.Close()
+	})
+	return listener.Addr().String(), clientCertPath, clientKeyPath, receivedCertCh
+}
 
+func (s *CLISuite) startHTTP1TLSServerWithClientAuth() (string, string, string, chan bool) {
+	s.T().Helper()
+	tlsConfig, clientCertPath, clientKeyPath, expectedSerialNumber := s.clientAuthTLSConfig()
+	listener, err := tls.Listen("tcp", "localhost:0", tlsConfig)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+	receivedCertCh := make(chan bool, 1)
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		receivedCertCh <- hasExpectedClientCertificate(r.TLS.PeerCertificates, expectedSerialNumber)
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"version": "v0.0.0"}`))
+	})
+	server := &http.Server{Handler: handler}
+	go func() {
+		_ = server.Serve(listener)
+	}()
+	s.T().Cleanup(func() {
+		_ = server.Close()
+		_ = listener.Close()
+	})
+	return listener.Addr().String(), clientCertPath, clientKeyPath, receivedCertCh
+}
+
+func (s *CLISuite) clientAuthTLSConfig() (*tls.Config, string, string, *big.Int) {
+	s.T().Helper()
 	tmpDir := s.T().TempDir()
 	caCert, caKey, err := generateCert(nil, nil, true, "Test CA")
 	if err != nil {
@@ -2192,48 +2244,34 @@ func (s *CLISuite) startTLSServerWithClientAuth() (string, string, string, chan 
 		ClientAuth:   tls.RequestClientCert,
 		ClientCAs:    certPool,
 		NextProtos:   []string{"h2", "http/1.1"},
+		MinVersion:   tls.VersionTLS12,
 	}
+	return tlsConfig, clientCertPath, clientKeyPath, clientCert.SerialNumber
+}
 
-	listener, err := tls.Listen("tcp", "localhost:0", tlsConfig)
-	if err != nil {
-		s.T().Fatal(err)
+type clientCertInfoServer struct {
+	infopkg.UnimplementedInfoServiceServer
+	receivedCertCh       chan<- bool
+	expectedSerialNumber *big.Int
+}
+
+func (s *clientCertInfoServer) GetVersion(ctx context.Context, _ *infopkg.GetVersionRequest) (*wfv1.Version, error) {
+	peerInfo, ok := peer.FromContext(ctx)
+	if !ok {
+		s.receivedCertCh <- false
+		return &wfv1.Version{Version: "v0.0.0"}, nil
 	}
-
-	port := listener.Addr().(*net.TCPAddr).Port
-	tlsServerAddr := fmt.Sprintf("localhost:%d", port)
-	receivedCertCh := make(chan bool, 1)
-	expectedSerialNumber := clientCert.SerialNumber
-
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if len(r.TLS.PeerCertificates) > 0 {
-			receivedCert := r.TLS.PeerCertificates[0]
-			// Validate that the received certificate matches the expected client certificate
-			if receivedCert.SerialNumber.Cmp(expectedSerialNumber) == 0 {
-				receivedCertCh <- true
-			} else {
-				receivedCertCh <- false
-			}
-		} else {
-			receivedCertCh <- false
-		}
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"version": "v0.0.0"}`))
-	})
-
-	server := &http.Server{
-		Handler: handler,
+	tlsInfo, ok := peerInfo.AuthInfo.(credentials.TLSInfo)
+	if !ok {
+		s.receivedCertCh <- false
+		return &wfv1.Version{Version: "v0.0.0"}, nil
 	}
+	s.receivedCertCh <- hasExpectedClientCertificate(tlsInfo.State.PeerCertificates, s.expectedSerialNumber)
+	return &wfv1.Version{Version: "v0.0.0"}, nil
+}
 
-	go func() {
-		_ = server.Serve(listener)
-	}()
-
-	s.T().Cleanup(func() {
-		server.Close()
-		listener.Close()
-	})
-
-	return tlsServerAddr, clientCertPath, clientKeyPath, receivedCertCh
+func hasExpectedClientCertificate(certificates []*x509.Certificate, expectedSerialNumber *big.Int) bool {
+	return len(certificates) > 0 && certificates[0].SerialNumber.Cmp(expectedSerialNumber) == 0
 }
 
 func (s *CLISuite) runCliWithClientCerts(tlsServerAddr, clientCertPath, clientKeyPath string, args []string, receivedCertCh chan bool) {

@@ -3,6 +3,8 @@ package tls
 import (
 	cryptotls "crypto/tls"
 	"crypto/x509"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -40,7 +42,15 @@ func TestGeneratePEM(t *testing.T) {
 	})
 }
 
-func TestGetTLSConfig(t *testing.T) {
+func TestGetClientTLSConfig(t *testing.T) {
+	certPEM, keyPEM, err := generatePEM()
+	require.NoError(t, err)
+	tmpDir := t.TempDir()
+	clientCert := filepath.Join(tmpDir, "client.crt")
+	clientKey := filepath.Join(tmpDir, "client.key")
+	require.NoError(t, os.WriteFile(clientCert, certPEM, 0o600))
+	require.NoError(t, os.WriteFile(clientKey, keyPEM, 0o600))
+
 	tests := []struct {
 		name               string
 		clientCert         string
@@ -51,8 +61,8 @@ func TestGetTLSConfig(t *testing.T) {
 	}{
 		{
 			name:               "Valid certificate and key",
-			clientCert:         "testdata/valid_tls.crt",
-			clientKey:          "testdata/valid_tls.key",
+			clientCert:         clientCert,
+			clientKey:          clientKey,
 			insecureSkipVerify: false,
 			wantErr:            false,
 		},
@@ -71,19 +81,19 @@ func TestGetTLSConfig(t *testing.T) {
 		},
 		{
 			name:       "Missing key file",
-			clientCert: "testdata/valid_tls.crt",
+			clientCert: clientCert,
 			clientKey:  "testdata/nonexistent.key",
 			wantErr:    true,
 		},
 		{
 			name:            "Missing key for certificate",
-			clientCert:      "testdata/valid_tls.crt",
+			clientCert:      clientCert,
 			wantErr:         true,
 			wantErrContains: "requires both clientCert and clientKey",
 		},
 		{
 			name:            "Missing certificate for key",
-			clientKey:       "testdata/valid_tls.key",
+			clientKey:       clientKey,
 			wantErr:         true,
 			wantErrContains: "requires both clientCert and clientKey",
 		},
@@ -91,7 +101,7 @@ func TestGetTLSConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			config, err := GetTLSConfig(tt.clientCert, tt.clientKey, tt.insecureSkipVerify)
+			config, err := GetClientTLSConfig(tt.clientCert, tt.clientKey, tt.insecureSkipVerify)
 
 			if tt.wantErr {
 				require.Error(t, err)
