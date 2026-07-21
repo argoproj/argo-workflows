@@ -2064,6 +2064,12 @@ func TestUnconfiguredSemaphores(t *testing.T) {
 				require.NoError(t, err)
 				defer cleanup()
 
+				// Cancel the context before cleanup closes the database session
+				// so the manager's background goroutines stop first (upstream
+				// these tests rely on t.Context() being canceled at test end).
+				ctx, cancel := context.WithCancel(ctx)
+				defer cancel()
+
 				// Configure sync manager
 				syncManager := createLockManager(ctx, info.session, &syncConfig, nil, func(key string) {
 				}, WorkflowExistenceFunc)
