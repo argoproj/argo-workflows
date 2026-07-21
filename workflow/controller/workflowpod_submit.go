@@ -54,6 +54,13 @@ func (woc *wfOperationCtx) submitPod(ctx context.Context, result *podBuildResult
 		return nil, err
 	}
 
+	if fresh && pod.Spec.Resources != nil && created.Spec.Resources == nil {
+		// The API server strips pod-level resources when the PodLevelResources
+		// feature gate is off, leaving the pod unbounded with no other signal.
+		woc.eventRecorder.Eventf(woc.wf, apiv1.EventTypeWarning, "PodLevelResourcesDropped",
+			"pod %q: the API server dropped podResources; the PodLevelResources feature gate (beta since Kubernetes v1.34) is not enabled on this cluster", pod.Name)
+	}
+
 	// (f) bump active-pod parallelism accounting. This is a node-dispatch concern
 	// (workload parallelism), so it lives in the workload wrapper, not the shared
 	// primitive — the agent pod is not subject to workflow parallelism limits.

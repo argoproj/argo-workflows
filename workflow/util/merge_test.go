@@ -604,6 +604,7 @@ var blockedUserOverrideFields = map[string]bool{
 	"RetryStrategy":                true,
 	"PodMetadata":                  true,
 	"Hooks":                        true,
+	"PodResources":                 true,
 	"ExecutorPlugins":              true,
 }
 
