@@ -119,8 +119,18 @@ func (h *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	return err
 }
 
+// normalizeGCSKey converts Windows path separators to forward slashes, since GCS object
+// names always use "/" regardless of host OS.
+func normalizeGCSKey(key string) string {
+	if os.PathSeparator == '\\' {
+		return strings.ReplaceAll(key, "\\", "/")
+	}
+	return key
+}
+
 // download all the objects of a key from the bucket
 func downloadObjects(client *storage.Client, bucket, key, path string) error {
+	key = normalizeGCSKey(key)
 	objNames, err := listByPrefix(client, bucket, key, "")
 	if err != nil {
 		return err
@@ -140,11 +150,7 @@ func downloadObjects(client *storage.Client, bucket, key, path string) error {
 
 // download an object from the bucket
 func downloadObject(client *storage.Client, bucket, key, objName, path string) error {
-	objPrefix := filepath.Clean(key)
-	if os.PathSeparator == '\\' {
-		objPrefix = strings.ReplaceAll(objPrefix, "\\", "/")
-	}
-
+	objPrefix := normalizeGCSKey(filepath.Clean(key))
 	relObjPath := strings.TrimPrefix(objName, objPrefix)
 	localPath := filepath.Join(path, relObjPath)
 	objectDir, _ := filepath.Split(localPath)
@@ -274,21 +280,14 @@ func uploadObjects(client *storage.Client, bucket, key, path string) error {
 			return err
 		}
 		for _, relPath := range fileRelPaths {
-			fullKey := keyPrefix + relPath
-			if os.PathSeparator == '\\' {
-				fullKey = strings.ReplaceAll(fullKey, "\\", "/")
-			}
-
+			fullKey := normalizeGCSKey(keyPrefix + relPath)
 			err = uploadObject(client, bucket, fullKey, dirName+relPath)
 			if err != nil {
 				return fmt.Errorf("upload %s: %w", dirName+relPath, err)
 			}
 		}
 	} else {
-		objectKey := filepath.Clean(key)
-		if os.PathSeparator == '\\' {
-			objectKey = strings.ReplaceAll(objectKey, "\\", "/")
-		}
+		objectKey := normalizeGCSKey(filepath.Clean(key))
 		err = uploadObject(client, bucket, objectKey, path)
 		if err != nil {
 			return fmt.Errorf("upload %s: %w", path, err)
