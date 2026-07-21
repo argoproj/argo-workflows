@@ -57,8 +57,10 @@ func setupMultipleLockManagers(t *testing.T, dbType sqldb.DBType, semaphoreSize 
 	// Create a database session for the semaphore
 	info, deferfn, cfg, err := createTestDBSession(t, dbType)
 	deferfn2 := func() {
-		deferfn()
+		// Cancel the context before closing the database session so the
+		// managers' background goroutines stop first.
 		cancel()
+		deferfn()
 	}
 	require.NoError(t, err)
 
