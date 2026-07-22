@@ -661,7 +661,7 @@ func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Argument
 		if param.Value != nil {
 			woc.globalParams["workflow.parameters."+param.Name] = param.Value.String()
 		} else if param.ValueFrom != nil && param.ValueFrom.ConfigMapKeyRef != nil {
-			cmValue, err := common.GetConfigMapValue(woc.controller.configMapInformer.GetIndexer(), woc.wf.Namespace, param.ValueFrom.ConfigMapKeyRef.Name, param.ValueFrom.ConfigMapKeyRef.Key)
+			cmValue, err := common.GetConfigMapValue(woc.controller.typedConfigMapInformer.GetIndexer(), woc.wf.Namespace, param.ValueFrom.ConfigMapKeyRef.Name, param.ValueFrom.ConfigMapKeyRef.Key)
 			if err != nil {
 				if param.ValueFrom.Default != nil {
 					woc.globalParams["workflow.parameters."+param.Name] = param.ValueFrom.Default.String()
@@ -2168,7 +2168,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	localParams["node.name"] = nodeName
 
 	// Inputs has been processed with arguments already, so pass empty arguments.
-	processedTmpl, err := common.ProcessArgs(ctx, resolvedTmpl, &args, woc.globalParams, localParams, false, woc.wf.Namespace, woc.controller.configMapInformer.GetIndexer())
+	processedTmpl, err := common.ProcessArgs(ctx, resolvedTmpl, &args, woc.globalParams, localParams, false, woc.wf.Namespace, woc.controller.typedConfigMapInformer.GetIndexer())
 	if err != nil {
 		return woc.initializeNodeOrMarkError(ctx, node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err), err
 	}
@@ -4490,7 +4490,7 @@ func (woc *wfOperationCtx) mergedTemplateDefaultsInto(originalTmpl *wfv1.Templat
 	for i := 0; i < v.NumField(); i++ {
 		field := v.Type().Field(i)
 		// Check if the field is a pointer to a struct.
-		if field.Type.Kind() != reflect.Ptr || field.Type.Elem().Kind() != reflect.Struct {
+		if field.Type.Kind() != reflect.Pointer || field.Type.Elem().Kind() != reflect.Struct {
 			continue
 		}
 
