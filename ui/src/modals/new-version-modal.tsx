@@ -17,6 +17,25 @@ export function NewVersionModal({version, dismiss}: {version: string; dismiss: (
             <h4 className='new-version-modal-title'>
                 It looks like <b>{version}</b> has just been installed!
             </h4>
+            <h5>v4.1</h5>
+            <ul className='new-version-modal-bullets'>
+                <li>Workflow tracing with OpenTelemetry spans</li>
+                <li>Faster pod startup with an opt-in initless pod layout</li>
+                <li>Artifact uploads, faster S3 uploads, and S3 virtual-hosted-style addressing</li>
+                <li>Database IAM authentication for AWS RDS and Azure Entra ID</li>
+                <li>
+                    Pod-level{' '}
+                    <a href='https://kubernetes.io/docs/tasks/configure-pod-container/assign-pod-level-resources/' target='_blank' rel='noreferrer'>
+                        resource requests and limits
+                    </a>{' '}
+                    via <code>podResources</code>
+                </li>
+            </ul>
+            <p>
+                <a href='https://argo-workflows.readthedocs.io/en/release-4.1/new-features/?utm_source=argo-ui' target='_blank' rel='noreferrer'>
+                    See the list of changes
+                </a>
+            </p>
             <h5>v4.0</h5>
             <ul className='new-version-modal-bullets'>
                 <li>Artifact drivers as plugins</li>

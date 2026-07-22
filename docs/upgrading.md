@@ -7,6 +7,15 @@ the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summar
 
 ## Upgrading to v4.1
 
+### `argo archive` commands accept a workflow name as well as a UID
+
+The `argo archive get`, `delete`, `resubmit` and `retry` commands previously took a workflow UID as their argument.
+They now accept either a workflow name or a UID ([#15198](https://github.com/argoproj/argo-workflows/pull/15198)).
+An argument that matches the UUID format is treated as a UID; anything else is treated as a name, resolved within the selected namespace.
+If multiple archived workflows share the name, the command fails and lists the matching UIDs.
+You can force the interpretation with the new `--uid` or `--name` flags, for example if a workflow's name is itself formatted as a UUID.
+Existing scripts that pass UIDs continue to work unchanged.
+
 ### INFORMER_WRITE_BACK environment variable removed
 
 The `INFORMER_WRITE_BACK` environment variable has been removed.
