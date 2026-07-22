@@ -23,7 +23,7 @@ export function NewVersionModal({version, dismiss}: {version: string; dismiss: (
                 <li>Faster pod startup with an opt-in initless pod layout</li>
                 <li>Workflow-level executor plugin configuration</li>
                 <li>Artifact uploads, faster S3 uploads, and S3 virtual-hosted-style addressing</li>
-                <li>Database IAM authentication for AWS RDS and Azure Entra ID</li>
+                <li>Database authentication via AWS RDS IAM and Azure PostgreSQL Entra ID</li>
                 <li>
                     Pod-level{' '}
                     <a href='https://kubernetes.io/docs/tasks/configure-pod-container/assign-pod-level-resources/' target='_blank' rel='noreferrer'>
