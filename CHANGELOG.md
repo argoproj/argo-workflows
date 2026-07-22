@@ -1,5 +1,52 @@
 # Changelog
 
+## v4.0.8 (2026-07-22)
+
+Full Changelog: [v4.0.7...v4.0.8](https://github.com/argoproj/argo-workflows/compare/v4.0.7...v4.0.8)
+
+### Selected Changes
+
+* [570c47058](https://github.com/argoproj/argo-workflows/commit/570c470582fc7fe41b1963d8703111679cc3d25a) chore(deps): update module golang.org/x/text to v0.39.0 [security] (release-4.0) (#16523)
+* [48f1537f9](https://github.com/argoproj/argo-workflows/commit/48f1537f9b358b3c8f66ace8d6f7ee36632d0e74) chore(deps): update module google.golang.org/grpc to v1.82.1 [security] (release-4.0) (#16520)
+* [cfa106cea](https://github.com/argoproj/argo-workflows/commit/cfa106ceae72b6e3eefdab60c7adbcef72018441) chore(deps): update module golang.org/x/net to v0.56.0 [security] (release-4.0) (#16522)
+* [94d3e4768](https://github.com/argoproj/argo-workflows/commit/94d3e4768b767b6042f09f0b33339438bca29ec3) fix: replace configmap watchers with informers (cherry-pick #16408 for 4.0) (#16516)
+* [86e0b7bbf](https://github.com/argoproj/argo-workflows/commit/86e0b7bbf7b42295dfbde4ff3f187467a97f66a2) chore(deps): update module golang.org/x/net to v0.56.0 [security] (release-4.0) (#16518)
+* [d356c8b8b](https://github.com/argoproj/argo-workflows/commit/d356c8b8bf398d5058f70583a4b9b7aa81d773ca) fix: normalize GCS artifact keys to forward slashes on Windows. Fixes #16470 (cherry-pick #16476 for 4.0) (#16507)
+* [a329a178b](https://github.com/argoproj/argo-workflows/commit/a329a178b6aa00409679a36cd66ae6793a2854d1) fix(controller): mark reapply-failed on persist errors to keep throttler slot (cherry-pick #16482 for 4.0) (#16505)
+* [c90df9a82](https://github.com/argoproj/argo-workflows/commit/c90df9a82337d75d711b51f48d7d12108a838c76) fix(errors): treat gRPC client request timeout as transient (cherry-pick #16487 for 4.0) (#16504)
+* [7d8802649](https://github.com/argoproj/argo-workflows/commit/7d8802649639cc2270b2eda559a84a6ad4081e02) feat(controller): hot-reload namespaceParallelism from config (cherry-pick #16486 for 4.0) (#16501)
+* [6cd56ceae](https://github.com/argoproj/argo-workflows/commit/6cd56ceaeac558a26f04cd619223fb5c5198c810) fix(controller): treat client-go rate limiter wait deadline as transient (cherry-pick #16485 for 4.0) (#16500)
+* [9c6aa812c](https://github.com/argoproj/argo-workflows/commit/9c6aa812cc2f680e630d9f8b86cbf25779a9c168) fix(controller): allow onExit DAG handler to complete under Stop shutdown (cherry-pick #16488 for 4.0) (#16496)
+* [751349b8f](https://github.com/argoproj/argo-workflows/commit/751349b8f4b2837ffd7e614e2241a5e5f79c7b3a) fix(errors): treat client-go response body read failures as transient (cherry-pick #16484 for 4.0) (#16498)
+* [f0b8b5649](https://github.com/argoproj/argo-workflows/commit/f0b8b56491b1e6db6e3f598217e555f953e6bc10) fix(ui): handle exceptions when retrieving user info (cherry-pick #16491 for 4.0) (#16493)
+* [11895e122](https://github.com/argoproj/argo-workflows/commit/11895e122b3d92aec8fe1ed1e99363bc6424b66e) fix: don't leak semaphore slots when limit fetch fails during release (cherry-pick #16405 for 4.0) (#16471)
+* [fef0aee08](https://github.com/argoproj/argo-workflows/commit/fef0aee08a2d35637d7106857ba43eea90f1ac58) fix: make workflow retry reset deterministic. Fixes #16450 (cherry-pick #16451 for 4.0) (#16467)
+* [30e3da0ac](https://github.com/argoproj/argo-workflows/commit/30e3da0ac2028a06340541e2cdda8d05bf7ce783) fix: complete orphaned TaskGroup nodes stuck Running. Fixes #16450 (cherry-pick #16454 for 4.0) (#16465)
+* [445b84e6f](https://github.com/argoproj/argo-workflows/commit/445b84e6f99c5a3724bc8a0d3e5f7b7a220fffd3) chore(deps): update gcr.io/distroless/static-debian13:latest docker digest to 9197324 (release-4.0) (#16460)
+* [61e0bdc09](https://github.com/argoproj/argo-workflows/commit/61e0bdc093aa112132d57a98cefab7dea6419a25) chore(deps): update dependency rxjs to v7.8.2 (release-4.0) (#16462)
+* [fe2a3b88d](https://github.com/argoproj/argo-workflows/commit/fe2a3b88df060c50e6fc1ac87df284d237586b5d) chore(deps): update dependency qs to v6.15.3 (release-4.0) (#16461)
+* [fefe0c678](https://github.com/argoproj/argo-workflows/commit/fefe0c6784ccd67284a2a939e9f944e510b5efcc) fix: log missing optional output parameter at warn level, not error. Fixes #16395 (cherry-pick #16402 for 4.0) (#16455)
+* [6119ae208](https://github.com/argoproj/argo-workflows/commit/6119ae2085ccf0d858d643b7b99d361b27be6e92) chore(deps): bump loadash+loadash-es for snyk (release-4.0) (#16452)
+* [afc4b74b6](https://github.com/argoproj/argo-workflows/commit/afc4b74b6ef886f84ad47f8c3ade8b32bac0beed) chore(deps): update dependency @types/dagre to v0.7.54 (release-4.0) (#16449)
+* [e19d0138c](https://github.com/argoproj/argo-workflows/commit/e19d0138c1bfa69320152ce7920b61e446605cbf) chore(deps): update dependency linkify-it to v5.0.2 (release-4.0) (#16446)
+* [52dba927d](https://github.com/argoproj/argo-workflows/commit/52dba927d957eff27ede9bc58d3936f88379e55b) fix(ui): resolve login logo paths with non-root baseHref (cherry-pick #16385 for 4.0) (#16412)
+* [12e83f192](https://github.com/argoproj/argo-workflows/commit/12e83f192ba3260fe44c625b1e999a4b190c84a7) feat: configurable allowlist (cherry-pick #16344 for 4.0) (#16401)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Aaron Mark
+* Alan Clucas
+* Ali Asghar
+* amarkdotdev
+* Claude Fable 5
+* Goutham Annem
+* Isitha Subasinghe
+* krisling049
+* Mason Malone
+* shuangkun tian
+
+</details>
+
 ## v4.0.7 (2026-07-07)
 
 Full Changelog: [v4.0.6...v4.0.7](https://github.com/argoproj/argo-workflows/compare/v4.0.6...v4.0.7)
@@ -357,7 +404,7 @@ Full Changelog: [v4.0.0-rc1...v4.0.0-rc2](https://github.com/argoproj/argo-workf
 
 ## v4.0.0-rc1 (2025-12-11)
 
-Full Changelog: [v3.7.16...v4.0.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.7.16...v4.0.0-rc1)
+Full Changelog: [v3.7.17...v4.0.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.7.17...v4.0.0-rc1)
 
 ### Selected Changes
 
@@ -544,6 +591,47 @@ Full Changelog: [v3.7.16...v4.0.0-rc1](https://github.com/argoproj/argo-workflow
 * William Van Hevelingen
 * Xavier Hardy
 * Yuan Tang
+
+</details>
+
+## v3.7.17 (2026-07-22)
+
+Full Changelog: [v3.7.16...v3.7.17](https://github.com/argoproj/argo-workflows/compare/v3.7.16...v3.7.17)
+
+### Selected Changes
+
+* [a75ff7d6a](https://github.com/argoproj/argo-workflows/commit/a75ff7d6ab50d1c80affc8895cdce89679741d7c) fix: replace configmap watchers with informers (cherry-pick #16408 for 3.7) (#16524)
+* [ca95201dc](https://github.com/argoproj/argo-workflows/commit/ca95201dc90eec2607c957f4a13b6815bcb77058) chore(deps): update module golang.org/x/text to v0.39.0 [security] (release-3.7) (#16521)
+* [006dd4657](https://github.com/argoproj/argo-workflows/commit/006dd4657165b53e0c93f478f14fe4ed1bb5a80f) chore(deps): update module google.golang.org/grpc to v1.82.1 [security] (release-3.7) (#16519)
+* [a1b42c4b8](https://github.com/argoproj/argo-workflows/commit/a1b42c4b80d3dda23d5cfa963c4439d0ccc296bf) chore(deps): update module golang.org/x/net to v0.56.0 [security] (release-3.7) (#16517)
+* [a8db5a03e](https://github.com/argoproj/argo-workflows/commit/a8db5a03e35dc49dc6aa61d3573ccbcf15db20fa) fix: normalize GCS artifact keys to forward slashes on Windows. Fixes #16470 (cherry-pick #16476 for 3.7) (#16509)
+* [6df5f1943](https://github.com/argoproj/argo-workflows/commit/6df5f1943acab0fa14acaf5f80ff9afb97f2daa1) fix(errors): treat gRPC client request timeout as transient (cherry-pick #16487 for 3.7) (#16506)
+* [7577bc27c](https://github.com/argoproj/argo-workflows/commit/7577bc27cbf28cfb7379d2520907f62c6e5363e6) fix(errors): treat client-go response body read failures as transient (cherry-pick #16484 for 3.7) (#16499)
+* [4b956e51d](https://github.com/argoproj/argo-workflows/commit/4b956e51d0ecc563eb49cd299dede1894a90a795) fix(controller): allow onExit DAG handler to complete under Stop shutdown (cherry-pick #16488 for 3.7) (#16502)
+* [ed1bacebd](https://github.com/argoproj/argo-workflows/commit/ed1bacebd45b0a863223b93ebcf6ed00e80c6f39) fix: log missing optional output parameter at warn level, not error. Fixes #16395 (cherry-pick #16402 for 3.7) (#16503)
+* [c8c62df6c](https://github.com/argoproj/argo-workflows/commit/c8c62df6c7d2080e0d9cb86fc0b6dd13188fa919) fix(controller): treat client-go rate limiter wait deadline as transient (cherry-pick #16485 for 3.7) (#16497)
+* [aa34f7d9d](https://github.com/argoproj/argo-workflows/commit/aa34f7d9dbc54cb05c5bd0f47039dc43106f72a3) fix(ui): handle exceptions when retrieving user info (cherry-pick #16491 for 3.7) (#16492)
+* [bfed13cba](https://github.com/argoproj/argo-workflows/commit/bfed13cbacf5003f386317347cfb0f2aa3f9479b) fix: don't leak semaphore slots when limit fetch fails during release (cherry-pick #16405 for 3.7) (#16474)
+* [8e47383a4](https://github.com/argoproj/argo-workflows/commit/8e47383a4c32004cb54a87c55a1be96c9331fa7d) fix: complete orphaned TaskGroup nodes stuck Running. Fixes #16450 (cherry-pick #16454 for 3.7) (#16468)
+* [9193fb262](https://github.com/argoproj/argo-workflows/commit/9193fb262a66c7c5e34b720ed2db9a00f3cb7090) fix: make workflow retry reset deterministic. Fixes #16450 (cherry-pick #16451 for 3.7) (#16466)
+* [5e47fa3d2](https://github.com/argoproj/argo-workflows/commit/5e47fa3d2b64c260355812609b8e4d4a1e118854) chore(deps): update dependency webpack-dev-server to v5 [security] (release-3.7) (#15470)
+* [33264659e](https://github.com/argoproj/argo-workflows/commit/33264659e2befccc9fdbebe0e4c53a8b971fa848) chore(deps): update dependency qs to v6.15.3 (release-3.7) (#16459)
+* [e03fed78a](https://github.com/argoproj/argo-workflows/commit/e03fed78a9a5f012d7bf0a92456ced042cab48f8) chore(deps): update gcr.io/distroless/static-debian13:latest docker digest to 9197324 (release-3.7) (#16458)
+* [04e72993d](https://github.com/argoproj/argo-workflows/commit/04e72993d3693ef373145e0b5f3597ec0a1f5078) chore(deps): bump loadash+loadash-es for snyk (release-3.7) (#16453)
+* [7bf19655d](https://github.com/argoproj/argo-workflows/commit/7bf19655d56488a587d36cf0296775d286231172) chore(deps): update dependency @types/dagre to v0.7.54 (release-3.7) (#16448)
+* [f1f91785b](https://github.com/argoproj/argo-workflows/commit/f1f91785bd3f8978d9f7ff5f996f05201f4b4e97) chore(deps): update dependency linkify-it to v5.0.2 (release-3.7) (#16445)
+* [1d010e5e8](https://github.com/argoproj/argo-workflows/commit/1d010e5e8238fbdee820b81ea968b72829c8074e) feat: configurable allowlist (cherry-pick #16344 for 3.7) (#16400)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Ali Asghar
+* Claude Fable 5
+* Goutham Annem
+* Isitha Subasinghe
+* krisling049
+* Mason Malone
+* shuangkun tian
 
 </details>
 
