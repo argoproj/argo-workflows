@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"crypto/tls"
+	cryptotls "crypto/tls"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -17,21 +17,49 @@ import (
 
 	"github.com/argoproj/argo-workflows/v4/util/flatten"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/tls"
 )
 
 // Facade provides a adapter from GRPC interface, but uses HTTP to send the messages.
 // Errors are extracted from message body and returned as GRPC status errors.
 type Facade struct {
-	baseURL            string
-	authorization      string
-	insecureSkipVerify bool
-	headers            []string
-	httpClient         *http.Client
-	proxy              func(*http.Request) (*url.URL, error)
+	baseURL       string
+	authorization string
+	headers       []string
+	httpClient    *http.Client
+	proxy         func(*http.Request) (*url.URL, error)
+	tlsConfig     *cryptotls.Config
 }
 
-func NewFacade(baseURL, authorization string, insecureSkipVerify bool, headers []string, httpClient *http.Client, proxy func(*http.Request) (*url.URL, error)) Facade {
-	return Facade{baseURL, authorization, insecureSkipVerify, headers, httpClient, proxy}
+type FacadeConfig struct {
+	BaseURL            string
+	Authorization      string
+	InsecureSkipVerify bool
+	Headers            []string
+	HTTPClient         *http.Client
+	Proxy              func(*http.Request) (*url.URL, error)
+	ClientCert         string
+	ClientKey          string
+	CACert             string
+}
+
+func NewFacade(config FacadeConfig) (Facade, error) {
+	var tlsConfig *cryptotls.Config
+	if config.HTTPClient == nil {
+		var err error
+		tlsConfig, err = tls.GetClientTLSConfig(config.ClientCert, config.ClientKey, config.CACert, config.InsecureSkipVerify)
+		if err != nil {
+			return Facade{}, err
+		}
+	}
+	return Facade{
+		baseURL:       config.BaseURL,
+		authorization: config.Authorization,
+		headers:       config.Headers,
+		httpClient:    config.HTTPClient,
+		proxy:         config.Proxy,
+		tlsConfig:     tlsConfig,
+	}, nil
 }
 
 func (h Facade) proxyFunc() func(*http.Request) (*url.URL, error) {
@@ -76,20 +104,9 @@ func (h Facade) EventStreamReader(ctx context.Context, in any, path string) (*bu
 	req.Header.Set("Accept", "text/event-stream")
 	req.Header.Set("Authorization", h.authorization)
 	log.WithField("url", u).Debug(ctx, "curl -H 'Accept: text/event-stream' -H 'Authorization: ******'")
-	proxyURL, err := h.proxyFunc()(req)
+	client, err := h.client(req, false)
 	if err != nil {
 		return nil, err
-	}
-	client := h.httpClient
-	if h.httpClient == nil {
-		client = &http.Client{
-			Transport: &http.Transport{
-				Proxy: http.ProxyURL(proxyURL),
-				TLSClientConfig: &tls.Config{
-					InsecureSkipVerify: h.insecureSkipVerify,
-				},
-			},
-		}
 	}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -128,21 +145,9 @@ func (h Facade) do(ctx context.Context, in any, out any, method string, path str
 	req.Header = headers
 	req.Header.Set("Authorization", h.authorization)
 	log.WithFields(logging.Fields{"url": u, "method": method, "data": string(data)}).Debug(ctx, "curl -X")
-	proxyURL, err := h.proxyFunc()(req)
+	client, err := h.client(req, true)
 	if err != nil {
 		return err
-	}
-	client := h.httpClient
-	if h.httpClient == nil {
-		client = &http.Client{
-			Transport: &http.Transport{
-				Proxy: http.ProxyURL(proxyURL),
-				TLSClientConfig: &tls.Config{
-					InsecureSkipVerify: h.insecureSkipVerify,
-				},
-				DisableKeepAlives: true,
-			},
-		}
 	}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -157,6 +162,23 @@ func (h Facade) do(ctx context.Context, in any, out any, method string, path str
 		return json.NewDecoder(resp.Body).Decode(out)
 	}
 	return nil
+}
+
+func (h Facade) client(req *http.Request, disableKeepAlives bool) (*http.Client, error) {
+	proxyURL, err := h.proxyFunc()(req)
+	if err != nil {
+		return nil, err
+	}
+	if h.httpClient != nil {
+		return h.httpClient, nil
+	}
+	return &http.Client{
+		Transport: &http.Transport{
+			Proxy:             http.ProxyURL(proxyURL),
+			TLSClientConfig:   h.tlsConfig,
+			DisableKeepAlives: disableKeepAlives,
+		},
+	}, nil
 }
 
 func (h Facade) url(method, path string, in any) (*url.URL, error) {
