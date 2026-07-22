@@ -482,8 +482,14 @@ type WorkflowSpec struct {
 	// ConfigMap configuration.
 	ExecutorPlugins []ExecutorPlugin `json:"executorPlugins,omitempty" protobuf:"bytes,44,rep,name=executorPlugins"`
 
+	// PodResources defines pod-level resource requests and limits to apply to all workflow pods.
+	// Will be overridden if a template's podResources is set.
+	// Requires the PodLevelResources feature gate to be enabled on the cluster (beta since Kubernetes v1.34).
+	// +optional
+	PodResources *apiv1.ResourceRequirements `json:"podResources,omitempty" protobuf:"bytes,45,opt,name=podResources"`
+
 	// ArchiveSystemContainerLogs indicates if the system container logs should be archived (init/wait in legacy Pods, supervisor in init-less Pods)
-	ArchiveSystemContainerLogs *bool `json:"archiveSystemContainerLogs,omitempty" protobuf:"varint,45,opt,name=archiveSystemContainerLogs"`
+	ArchiveSystemContainerLogs *bool `json:"archiveSystemContainerLogs,omitempty" protobuf:"varint,46,opt,name=archiveSystemContainerLogs"`
 }
 
 type LabelValueFrom struct {
@@ -848,6 +854,12 @@ type Template struct {
 	// It is enforced by the controller, so a pod that starts running just as the timeout expires may still be failed.
 	// This duration may not be applied to Step or DAG templates.
 	PendingTimeout string `json:"pendingTimeout,omitempty" protobuf:"bytes,45,opt,name=pendingTimeout"`
+
+	// PodResources defines pod-level resource requests and limits for this template's pod.
+	// Overrides the workflow-level podResources.
+	// Requires the PodLevelResources feature gate to be enabled on the cluster (beta since Kubernetes v1.34).
+	// +optional
+	PodResources *apiv1.ResourceRequirements `json:"podResources,omitempty" protobuf:"bytes,46,opt,name=podResources"`
 }
 
 // SetType will set the template object based on template type.

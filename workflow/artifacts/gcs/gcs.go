@@ -124,8 +124,18 @@ func (h *ArtifactDriver) Load(ctx context.Context, inputArtifact *wfv1.Artifact,
 	return err
 }
 
+// normalizeGCSKey converts Windows path separators to forward slashes, since GCS object
+// names always use "/" regardless of host OS.
+func normalizeGCSKey(key string) string {
+	if os.PathSeparator == '\\' {
+		return strings.ReplaceAll(key, "\\", "/")
+	}
+	return key
+}
+
 // download all the objects of a key from the bucket
 func downloadObjects(ctx context.Context, client *storage.Client, bucket, key, path string) error {
+	key = normalizeGCSKey(key)
 	objNames, err := listByPrefix(ctx, client, bucket, key, "")
 	if err != nil {
 		return err
@@ -145,11 +155,7 @@ func downloadObjects(ctx context.Context, client *storage.Client, bucket, key, p
 
 // download an object from the bucket
 func downloadObject(ctx context.Context, client *storage.Client, bucket, key, objName, path string) error {
-	objPrefix := filepath.Clean(key)
-	if os.PathSeparator == '\\' {
-		objPrefix = strings.ReplaceAll(objPrefix, "\\", "/")
-	}
-
+	objPrefix := normalizeGCSKey(filepath.Clean(key))
 	relObjPath := strings.TrimPrefix(objName, objPrefix)
 	localPath := filepath.Join(path, relObjPath)
 	objectDir, _ := filepath.Split(localPath)
@@ -285,21 +291,14 @@ func uploadObjects(ctx context.Context, client *storage.Client, bucket, key, pat
 			return listErr
 		}
 		for _, relPath := range fileRelPaths {
-			fullKey := keyPrefix + relPath
-			if os.PathSeparator == '\\' {
-				fullKey = strings.ReplaceAll(fullKey, "\\", "/")
-			}
-
+			fullKey := normalizeGCSKey(keyPrefix + relPath)
 			err = uploadObject(ctx, client, bucket, fullKey, dirName+relPath)
 			if err != nil {
 				return fmt.Errorf("upload %s: %w", dirName+relPath, err)
 			}
 		}
 	} else {
-		objectKey := filepath.Clean(key)
-		if os.PathSeparator == '\\' {
-			objectKey = strings.ReplaceAll(objectKey, "\\", "/")
-		}
+		objectKey := normalizeGCSKey(filepath.Clean(key))
 		err = uploadObject(ctx, client, bucket, objectKey, path)
 		if err != nil {
 			return fmt.Errorf("upload %s: %w", path, err)

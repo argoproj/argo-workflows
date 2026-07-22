@@ -277,7 +277,7 @@ func (woc *wfOperationCtx) newPodBuilder(ctx context.Context, nodeName string, m
 			globalParams:              woc.globalParams(),
 			volumes:                   frozenVolumes,
 			artifactRepository:        woc.artifactRepository.DeepCopy(),
-			configMapIndexer:          wfc.configMapInformer.GetIndexer(),
+			configMapIndexer:          wfc.typedConfigMapInformer.GetIndexer(),
 			config:                    &wfc.Config,
 			instanceID:                wfc.Config.InstanceID,
 			mainContainerDefaults:     wfc.Config.MainContainer,
@@ -578,6 +578,15 @@ func (pb *podBuilder) build(ctx context.Context) (*podBuildResult, error) {
 
 	pb.deps.addSchedulingConstraints(ctx, pod, wfSpec, tmpl, pb.in.boundaryTemplate)
 	pb.deps.addMetadata(pod, tmpl)
+
+	// Set pod-level resources, the template level overriding the workflow level.
+	// This is deliberately not in addSchedulingConstraints: the agent pod also calls
+	// that, and its containers have fixed sizing a task-sized budget would violate.
+	if tmpl.PodResources != nil {
+		pod.Spec.Resources = tmpl.PodResources
+	} else if wfSpec.PodResources != nil {
+		pod.Spec.Resources = wfSpec.PodResources
+	}
 
 	// Collect initial progress from pod metadata if exists. submitPod applies it
 	// to the node status after a successful pod create.

@@ -29,7 +29,7 @@ jobs:
       ui: ${{ steps.changed-files.outputs.ui_any_modified == 'true' }}
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 50 # assume PRs are less than 50 commits
       - name: Get relevant files changed per group
@@ -39,6 +39,7 @@ jobs:
           files_yaml: |
             common: &common
               - .github/workflows/ci-build.yaml
+              - .github/actions/**
               - Makefile
               - Tiltfile
               - Dockerfile
@@ -129,7 +130,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: "1.26"
@@ -159,7 +160,7 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: "1.26"
@@ -180,11 +181,14 @@ jobs:
   e2e-tools:
     name: E2E Tools
     needs: [ changed-files ]
-    if: ${{ needs.changed-files.outputs.e2e-tests == 'true' }}
+    # also required by e2e-ui (runs on ui-only changes); keep this condition a
+    # superset of e2e-ui's, else a skipped dependency cascades and e2e-ui is
+    # silently skipped on ui-only PRs
+    if: ${{ needs.changed-files.outputs.e2e-tests == 'true' || needs.changed-files.outputs.ui == 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: "1.26"
@@ -323,61 +327,23 @@ jobs:
             profile: postgres
             use-api: false
     steps:
-      - name: Free up unused disk space
-        run: |
-          printf "==> Available space before cleanup\n"
-          df -h
-          # these directories are not used by E2E tests
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
-          printf "==> Available space after cleanup\n"
-          df -h
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: "1.26"
           cache: true
-      - name: Download k3d and Tilt
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: e2e-tools
-          path: tools-bin
-      - name: Install k3d and Tilt onto PATH
-        # built once by the e2e-tools job; artifacts don't preserve the +x bit
-        run: install -m 0755 tools-bin/k3d tools-bin/tilt "$(go env GOPATH)/bin/"
       - name: Install Java for the SDK
         if: ${{matrix.test == 'test-java-sdk'}}
-        uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5.5.0
+        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
         with:
           java-version: '8'
           distribution: adopt
           cache: maven
-      - name: Install socat
-        # socat supports "kubectl port-forward": cri-dockerd needed it (https://github.com/k3s-io/cri-dockerd/blob/4995f339edcffdf890406b3f1477d34e38477f18/streaming/streaming_others.go#L46);
-        # k3d's k3s uses embedded containerd, which doesn't, so this is defensive and harmless.
-        run: sudo apt-get -y install socat
-      - name: Create k3d cluster
-        env:
-          # hack/tilt/k3d-up.sh maps this key via hack/k8s-versions.sh to a k3s image
-          K8S_VERSION: ${{ matrix.k8s_version || 'max' }}
-        run: |
-          # k3d and Tilt come from the e2e-tools artifact (installed above).
-          # k3d runs k3s with its embedded containerd (2.x in these k3s
-          # versions), which supports the Kubernetes image volumes the
-          # init-less pod layout uses to deliver argoexec.
-          make k3d-up
-          # tests and debug steps assume the argo namespace is the current context
-          kubectl config set-context --current --namespace=argo
-          # the CLI auth e2e tests (TestTokenArg) use this kubeconfig user
-          echo "- name: fake_token_user" >> $KUBECONFIG
-          echo "  user:" >> $KUBECONFIG
-          echo "    token: xxxxxx" >> $KUBECONFIG
-      - name: Set-up /etc/hosts
-        run: |
-          echo '127.0.0.1 dex'      | sudo tee -a /etc/hosts
-          echo '127.0.0.1 minio'    | sudo tee -a /etc/hosts
-          echo '127.0.0.1 postgres' | sudo tee -a /etc/hosts
-          echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
-          echo '127.0.0.1 azurite'  | sudo tee -a /etc/hosts
+      - name: Set up k3d cluster and E2E tooling
+        uses: ./.github/actions/e2e-cluster-up
+        with:
+          k8s-version: ${{ matrix.k8s_version || 'max' }}
+          cli-auth-kubeconfig: "true"
       - name: Build images and start Argo in-cluster
         # tilt builds the production images, deploys them, and then keeps
         # running through the test steps so its port-forwards (argo-server,
@@ -422,9 +388,9 @@ jobs:
           retention-days: 10
 
       # failure debugging below
-      - name: Failure debug - k3d server logs
+      - name: Failure debug - logs
         if: ${{ failure() }}
-        run: docker logs k3d-k3s-default-server-0 || true
+        uses: ./.github/actions/e2e-failure-debug
       - name: Failure debug - describe MinIO/Database deployment
         if: ${{ failure() }}
         run: |
@@ -440,48 +406,32 @@ jobs:
       - name: Failure debug - MinIO/MySQL logs
         if: ${{ failure() }}
         run: kubectl logs -l '!workflows.argoproj.io/workflow' --prefix
-      - name: Failure debug - Controller/API logs
-        if: ${{ failure() }}
-        run: |
-          kubectl -n argo logs deploy/workflow-controller --prefix --tail=-1 || true
-          kubectl -n argo logs deploy/argo-server --prefix --tail=-1 || true
-      - name: Failure debug - Tilt logs
-        if: ${{ failure() }}
-        run: '[ -e /tmp/tilt.log ] && cat /tmp/tilt.log || true'
-      - if: ${{ failure() }}
-        name: Failure debug - describe Workflows
-        run: |
-          set -eux
-          kubectl get wf
-          kubectl describe wf
       - name: Failure debug - describe Workflow pods
         if: ${{ failure() }}
         run: |
           set -eux
           kubectl get pods -l workflows.argoproj.io/workflow
           kubectl describe pods -l workflows.argoproj.io/workflow
-      - name: Failure debug - Workflow Pod logs
-        if: ${{ failure() }}
-        run: kubectl logs --all-containers -l workflows.argoproj.io/workflow --prefix
 
         # workaround for status checks -- check this one job instead of each individual E2E job in the matrix
         # this allows us to skip the entire matrix when it doesn't need to run while still having accurate status checks
         # see https://github.com/orgs/community/discussions/9141#discussioncomment-2296809 and https://github.com/orgs/community/discussions/26822#discussioncomment-3305794
   e2e-tests-composite-result:
     name: E2E Tests - Composite result
-    needs: [ e2e-tools, e2e-tests ]
+    needs: [ e2e-tools, e2e-tests, e2e-ui ]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     steps:
       - run: |
           tools="${{ needs.e2e-tools.result }}"
           result="${{ needs.e2e-tests.result }}"
-          # a tools failure skips the matrix, which must not count as a pass
+          ui="${{ needs.e2e-ui.result }}"
+          # a tools failure skips the dependent jobs, which must not count as a pass
           if [[ $tools == "failure" ]]; then
             exit 1
           fi
-          # mark as successful even if skipped
-          if [[ $result == "success" || $result == "skipped" ]]; then
+          # mark as successful even if skipped (e.g. a PR that touches neither)
+          if [[ ( $result == "success" || $result == "skipped" ) && ( $ui == "success" || $ui == "skipped" ) ]]; then
             exit 0
           else
             exit 1
@@ -496,7 +446,7 @@ jobs:
     env:
       GOPATH: /home/runner/go
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: "1.26"
@@ -533,7 +483,7 @@ jobs:
     env:
       GOPATH: /home/runner/go
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: "1.26"
@@ -555,7 +505,7 @@ jobs:
     env:
       NODE_OPTIONS: --max-old-space-size=4096
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "24" # change in all GH Workflows
@@ -573,3 +523,75 @@ jobs:
       - run: yarn --cwd ui start &
       - run: until curl http://localhost:8080 > /dev/null ; do sleep 10s ; done
         timeout-minutes: 1
+
+  e2e-ui:
+    name: E2E UI
+    needs: [ changed-files, e2e-tools ]
+    if: ${{ needs.changed-files.outputs.ui == 'true' || needs.changed-files.outputs.e2e-tests == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      KUBECONFIG: /home/runner/.kube/config
+      E2E_ENV_FACTOR: 2
+      NODE_OPTIONS: --max-old-space-size=4096
+      # In CI, Tilt (--mode=ci) runs no webpack dev server; the in-cluster
+      # argo-server serves the production UI bundle at :2746. Point Playwright
+      # there — this also gives production-bundle coverage.
+      ARGO_UI_BASE_URL: http://localhost:2746
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.26"
+          cache: true
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24" # change in all GH Workflows
+          cache: yarn
+          cache-dependency-path: ui/yarn.lock
+      - name: Set up k3d cluster and E2E tooling
+        uses: ./.github/actions/e2e-cluster-up
+      - name: Install UI dependencies and Playwright browser
+        run: |
+          yarn --cwd ui install
+          yarn --cwd ui playwright install --with-deps chromium
+      - name: Build images and start Argo in-cluster
+        # tilt builds the production images (UI baked in), deploys them, and keeps
+        # its argo-server port-forward (:2746) serving through the test steps.
+        run: |
+          tilt up --stream -- --mode=ci --profile=minimal \
+            --api=true \
+            --auth-mode=client \
+            --pod-status-capture-finalizer=true > /tmp/tilt.log 2>&1 &
+          # resources only register once the Tiltfile finishes evaluating; wait
+          # for one we know is always defined before trusting `--all`
+          until tilt get uiresource workflow-controller >/dev/null 2>&1; do
+            echo "waiting for Tilt to load..."
+            sleep 2
+          done
+          until tilt wait --for=condition=Ready uiresource --all --timeout=15s 2>/dev/null; do
+            echo "waiting for Tilt resources to become ready..."
+            tilt get uiresources 2>/dev/null || true
+            sleep 5
+          done
+        timeout-minutes: 15
+      - name: Wait for UI server
+        run: until curl -fs http://localhost:2746 > /dev/null ; do sleep 5s ; done
+        timeout-minutes: 3
+      - name: Run UI E2E tests
+        run: make test-ui-e2e
+      - name: Upload Playwright report
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-report
+          path: |
+            ui/playwright-report/
+            ui/test-results/
+          if-no-files-found: warn
+          retention-days: 10
+
+      # failure debugging below
+      - name: Failure debug - logs
+        if: ${{ failure() }}
+        uses: ./.github/actions/e2e-failure-debug

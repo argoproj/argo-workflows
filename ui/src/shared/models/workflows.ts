@@ -446,6 +446,10 @@ export interface Template {
      */
     outputs?: Outputs;
     /**
+     * PodResources defines pod-level resource requests and limits for this template's pod. Overrides the workflow-level podResources.
+     */
+    podResources?: kubernetes.ResourceRequirements;
+    /**
      * Resource template subtype which can run k8s resources
      */
     resource?: ResourceTemplate;
@@ -829,6 +833,10 @@ export interface WorkflowSpec {
         strategy?: string;
         deleteDelayDuration?: string;
     };
+    /**
+     * PodResources defines pod-level resource requests and limits to apply to all workflow pods. Will be overridden if a template's podResources is set.
+     */
+    podResources?: kubernetes.ResourceRequirements;
     /**
      * SecurityContext holds pod-level security attributes and common container settings.
      */
