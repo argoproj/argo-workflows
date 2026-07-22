@@ -11,7 +11,7 @@ This is a concise list of new features.
   See `docs/executor_plugins.md` for configuration details and examples.
 
 - improve S3 upload speed with customization of S3 upload threads / partsize by [Antoine Tran](https://github.com/antoinetran) ([#15636](https://github.com/argoproj/argo-workflows/issues/15636))
-  By default, the S3 upload code is configured with 4 threads and no fix part size. The part size is dynamically set by MinIO depending on the max number of chunks and file size, but generally it is 16MiB (for file size <= 156GiB).
+  By default, the S3 upload code is configured with 4 threads and no fixed part size. The part size is dynamically set by MinIO depending on the max number of chunks and file size, but generally it is 16MiB (for file size <= 156GiB).
   The feature will allow setting the number of threads and part size with env var ARTIFACT_S3_UPLOAD_THREADS and ARTIFACT_S3_UPLOAD_PART_SIZE_MIB.
 
 - add a streaming save path to artifact drivers, including gRPC streaming for plugins by [panicboat](https://github.com/panicboat) ([#12656](https://github.com/argoproj/argo-workflows/issues/12656))
@@ -51,7 +51,7 @@ This is a concise list of new features.
   See [node status compression](offloading-large-workflows.md#node-status-compression).
 
 - Disable agent pod creation for plugins by [Gaurang Mishra](https://github.com/gaurang9991) ([#7891](https://github.com/argoproj/argo-workflows/issues/7891))
-  Allow users to disable agent pod creation for plugins. Workflow Controller watches the task sets updated by external controllers or agents. User should be careful using this, when enabled it stop creating default agent pods for HTTP templates.
+  Allow users to disable agent pod creation for plugins. Workflow Controller watches the task sets updated by external controllers or agents. Users should be careful when using this: when enabled, it stops creating default agent pods for HTTP templates.
 
 - Reconnect and retry queries by [Isitha Subasinghe](https://github.com/isubasinghe) ([#15011](https://github.com/argoproj/argo-workflows/issues/15011))
   Queries against the database are now retried where a network connection issue was the cause of failure, this
@@ -114,7 +114,7 @@ This is a concise list of new features.
   Uploaded files are written under the `uploads/{namespace}/{uuid}/{filename}` key in the artifact
   repository before the workflow is submitted. The maximum accepted upload size is controlled by the
   `ARGO_SERVER_MAX_ARTIFACT_UPLOAD_BYTES` environment variable on the Argo Server (default `1073741824`,
-  i.e. 1GiB); requests over this size receive `413 Request Entity Too Large`.
+  i.e., 1 GiB); requests over this size receive `413 Request Entity Too Large`.
   Abandoned uploads (never submitted) rely on operator-configured bucket lifecycle under
   `uploads/{namespace}/`; see [Configuring Your Artifact Repository](configure-artifact-repository.md#abandoned-upload-cleanup).
 
@@ -143,7 +143,7 @@ This is a concise list of new features.
 
 - Allow archive cli commands to use workflow name instead of uid. by [Isitha Subasinghe](https://github.com/isubasinghe) ([#15199](https://github.com/argoproj/argo-workflows/issues/15199))
   This change allows for `archive` related cli commands to use the workflow name
-  instead of relying upon the uid. This is explicitly a user experience related improvement.
+  instead of relying upon the uid. This is explicitly a user-experience-related improvement.
   Note that if your name itself is a uid, you will have to manually force to fetch via uid or name, see the documentation for more detail.
 
 - Add HTTP proxy support to Argo CLI by [Shimako55](https://github.com/shimako55) ([#10794](https://github.com/argoproj/argo-workflows/issues/10794))
