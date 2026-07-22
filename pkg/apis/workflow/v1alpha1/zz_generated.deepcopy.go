@@ -279,6 +279,11 @@ func (in *ArtifactLocation) DeepCopyInto(out *ArtifactLocation) {
 		*out = new(PluginArtifact)
 		**out = **in
 	}
+	if in.ArchiveSystemContainerLogs != nil {
+		in, out := &in.ArchiveSystemContainerLogs, &out.ArchiveSystemContainerLogs
+		*out = new(bool)
+		**out = **in
+	}
 	return
 }
 
@@ -378,6 +383,11 @@ func (in *ArtifactRepository) DeepCopyInto(out *ArtifactRepository) {
 	if in.Plugin != nil {
 		in, out := &in.Plugin, &out.Plugin
 		*out = new(PluginArtifactRepository)
+		**out = **in
+	}
+	if in.ArchiveSystemContainerLogs != nil {
+		in, out := &in.ArchiveSystemContainerLogs, &out.ArchiveSystemContainerLogs
+		*out = new(bool)
 		**out = **in
 	}
 	return
@@ -4062,6 +4072,11 @@ func (in *WorkflowSpec) DeepCopyInto(out *WorkflowSpec) {
 		in, out := &in.PodResources, &out.PodResources
 		*out = new(v1.ResourceRequirements)
 		(*in).DeepCopyInto(*out)
+	}
+	if in.ArchiveSystemContainerLogs != nil {
+		in, out := &in.ArchiveSystemContainerLogs, &out.ArchiveSystemContainerLogs
+		*out = new(bool)
+		**out = **in
 	}
 	return
 }
