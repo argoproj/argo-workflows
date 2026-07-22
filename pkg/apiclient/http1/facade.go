@@ -40,13 +40,14 @@ type FacadeConfig struct {
 	Proxy              func(*http.Request) (*url.URL, error)
 	ClientCert         string
 	ClientKey          string
+	CACert             string
 }
 
 func NewFacade(config FacadeConfig) (Facade, error) {
 	var tlsConfig *cryptotls.Config
 	if config.HTTPClient == nil {
 		var err error
-		tlsConfig, err = tls.GetClientTLSConfig(config.ClientCert, config.ClientKey, config.InsecureSkipVerify)
+		tlsConfig, err = tls.GetClientTLSConfig(config.ClientCert, config.ClientKey, config.CACert, config.InsecureSkipVerify)
 		if err != nil {
 			return Facade{}, err
 		}

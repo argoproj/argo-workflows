@@ -70,7 +70,7 @@ func (a *argoServerClient) NewSyncServiceClient(_ context.Context) (syncpkg.Sync
 func newClientConn(opts ArgoServerOpts) (*grpc.ClientConn, error) {
 	creds := grpc.WithTransportCredentials(insecure.NewCredentials())
 	if opts.Secure {
-		tlsConfig, err := tls.GetClientTLSConfig(opts.ClientCert, opts.ClientKey, opts.InsecureSkipVerify)
+		tlsConfig, err := tls.GetClientTLSConfig(opts.ClientCert, opts.ClientKey, opts.CACert, opts.InsecureSkipVerify)
 		if err != nil {
 			return nil, err
 		}

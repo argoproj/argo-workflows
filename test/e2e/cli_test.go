@@ -2130,18 +2130,18 @@ func (s *CLISuite) TestWorkflowConvert() {
 
 func (s *CLISuite) TestClientCerts() {
 	s.Run("gRPC", func() {
-		tlsServerAddr, clientCertPath, clientKeyPath, receivedCertCh := s.startGRPCTLSServerWithClientAuth()
-		s.runCliWithClientCerts(tlsServerAddr, clientCertPath, clientKeyPath, []string{"version", "--argo-http1=false"}, receivedCertCh)
+		tlsServerAddr, clientCertPath, clientKeyPath, caCertPath, receivedCertCh := s.startGRPCTLSServerWithClientAuth()
+		s.runCliWithClientCerts(tlsServerAddr, clientCertPath, clientKeyPath, caCertPath, []string{"version", "--argo-http1=false"}, receivedCertCh)
 	})
 	s.Run("HTTP1", func() {
-		tlsServerAddr, clientCertPath, clientKeyPath, receivedCertCh := s.startHTTP1TLSServerWithClientAuth()
-		s.runCliWithClientCerts(tlsServerAddr, clientCertPath, clientKeyPath, []string{"version", "--argo-http1"}, receivedCertCh)
+		tlsServerAddr, clientCertPath, clientKeyPath, caCertPath, receivedCertCh := s.startHTTP1TLSServerWithClientAuth()
+		s.runCliWithClientCerts(tlsServerAddr, clientCertPath, clientKeyPath, caCertPath, []string{"version", "--argo-http1"}, receivedCertCh)
 	})
 }
 
-func (s *CLISuite) startGRPCTLSServerWithClientAuth() (string, string, string, chan bool) {
+func (s *CLISuite) startGRPCTLSServerWithClientAuth() (string, string, string, string, chan bool) {
 	s.T().Helper()
-	tlsConfig, clientCertPath, clientKeyPath, expectedSerialNumber := s.clientAuthTLSConfig()
+	tlsConfig, clientCertPath, clientKeyPath, caCertPath, expectedSerialNumber := s.clientAuthTLSConfig()
 	var listenConfig net.ListenConfig
 	listener, err := listenConfig.Listen(s.T().Context(), "tcp", "localhost:0")
 	if err != nil {
@@ -2160,12 +2160,12 @@ func (s *CLISuite) startGRPCTLSServerWithClientAuth() (string, string, string, c
 		server.Stop()
 		_ = listener.Close()
 	})
-	return listener.Addr().String(), clientCertPath, clientKeyPath, receivedCertCh
+	return listener.Addr().String(), clientCertPath, clientKeyPath, caCertPath, receivedCertCh
 }
 
-func (s *CLISuite) startHTTP1TLSServerWithClientAuth() (string, string, string, chan bool) {
+func (s *CLISuite) startHTTP1TLSServerWithClientAuth() (string, string, string, string, chan bool) {
 	s.T().Helper()
-	tlsConfig, clientCertPath, clientKeyPath, expectedSerialNumber := s.clientAuthTLSConfig()
+	tlsConfig, clientCertPath, clientKeyPath, caCertPath, expectedSerialNumber := s.clientAuthTLSConfig()
 	listener, err := tls.Listen("tcp", "localhost:0", tlsConfig)
 	if err != nil {
 		s.T().Fatal(err)
@@ -2184,10 +2184,10 @@ func (s *CLISuite) startHTTP1TLSServerWithClientAuth() (string, string, string, 
 		_ = server.Close()
 		_ = listener.Close()
 	})
-	return listener.Addr().String(), clientCertPath, clientKeyPath, receivedCertCh
+	return listener.Addr().String(), clientCertPath, clientKeyPath, caCertPath, receivedCertCh
 }
 
-func (s *CLISuite) clientAuthTLSConfig() (*tls.Config, string, string, *big.Int) {
+func (s *CLISuite) clientAuthTLSConfig() (*tls.Config, string, string, string, *big.Int) {
 	s.T().Helper()
 	tmpDir := s.T().TempDir()
 	caCert, caKey, err := generateCert(nil, nil, true, "Test CA")
@@ -2241,12 +2241,12 @@ func (s *CLISuite) clientAuthTLSConfig() (*tls.Config, string, string, *big.Int)
 
 	tlsConfig := &tls.Config{
 		Certificates: []tls.Certificate{serverTLSCert},
-		ClientAuth:   tls.RequestClientCert,
+		ClientAuth:   tls.RequireAndVerifyClientCert,
 		ClientCAs:    certPool,
 		NextProtos:   []string{"h2", "http/1.1"},
 		MinVersion:   tls.VersionTLS12,
 	}
-	return tlsConfig, clientCertPath, clientKeyPath, clientCert.SerialNumber
+	return tlsConfig, clientCertPath, clientKeyPath, caFile, clientCert.SerialNumber
 }
 
 type clientCertInfoServer struct {
@@ -2274,7 +2274,7 @@ func hasExpectedClientCertificate(certificates []*x509.Certificate, expectedSeri
 	return len(certificates) > 0 && certificates[0].SerialNumber.Cmp(expectedSerialNumber) == 0
 }
 
-func (s *CLISuite) runCliWithClientCerts(tlsServerAddr, clientCertPath, clientKeyPath string, args []string, receivedCertCh chan bool) {
+func (s *CLISuite) runCliWithClientCerts(tlsServerAddr, clientCertPath, clientKeyPath, caCertPath string, args []string, receivedCertCh chan bool) {
 	s.T().Helper()
 
 	select {
@@ -2286,8 +2286,8 @@ func (s *CLISuite) runCliWithClientCerts(tlsServerAddr, clientCertPath, clientKe
 		"--argo-server", tlsServerAddr,
 		"--client-certificate", clientCertPath,
 		"--client-key", clientKeyPath,
+		"--certificate-authority", caCertPath,
 		"--secure",
-		"--insecure-skip-verify",
 	}
 
 	baseArgs = append(baseArgs, args...)

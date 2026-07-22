@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -60,6 +61,10 @@ func NewAPIClient(ctx context.Context) (context.Context, apiclient.Client, error
 	// Reuse the explicit kubectl client certificate flags in server mode.
 	ArgoServerOpts.ClientCert = overrides.AuthInfo.ClientCertificate
 	ArgoServerOpts.ClientKey = overrides.AuthInfo.ClientKey
+	ArgoServerOpts.CACert = overrides.ClusterInfo.CertificateAuthority
+	if (ArgoServerOpts.ClientCert == "") != (ArgoServerOpts.ClientKey == "") {
+		return nil, nil, errors.New("--client-certificate and --client-key must be provided together")
+	}
 
 	var proxy func(*http.Request) (*url.URL, error)
 	if overrides.ClusterInfo.ProxyURL != "" {

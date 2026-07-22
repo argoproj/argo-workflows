@@ -5,10 +5,11 @@ Issues: 13437
 
 Use `--client-certificate` and `--client-key` when an Argo Server or its proxy requires mutual TLS authentication.
 Both flags must be provided together.
-The certificate is used by the gRPC and HTTP/1 clients, including artifact downloads with `argo cp`.
+Use `--certificate-authority` to trust the certificate authority that signed the server certificate.
+The certificates are used by the gRPC and HTTP/1 clients, including artifact downloads with `argo cp`.
 
-For example, run `argo --argo-server argo.example.com:443 --secure --client-certificate client.crt --client-key client.key list`.
+For example, run `argo --argo-server argo.example.com:443 --secure --certificate-authority ca.crt --client-certificate client.crt --client-key client.key list`.
 
-In server mode, client certificates embedded in a kubeconfig context are not used automatically.
-Pass the two flags explicitly when connecting through Argo Server.
+In server mode, client certificates and certificate authorities embedded in a kubeconfig context are not used automatically.
+Pass the three flags explicitly when connecting through Argo Server.
 The flags do not have `ARGO_*` environment variable equivalents.

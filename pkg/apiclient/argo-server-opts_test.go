@@ -7,12 +7,13 @@ import (
 )
 
 func TestArgoServerOpts_String(t *testing.T) {
-	assert.Equal(t, "(url=my-url,path=/my-path,secure=false,insecureSkipVerify=false,http=false,clientCert=,clientKey=)", ArgoServerOpts{URL: "my-url", Path: "/my-path"}.String())
-	assert.Equal(t, "(url=,path=,secure=true,insecureSkipVerify=false,http=false,clientCert=,clientKey=)", ArgoServerOpts{Secure: true}.String())
-	assert.Equal(t, "(url=,path=,secure=false,insecureSkipVerify=true,http=false,clientCert=,clientKey=)", ArgoServerOpts{InsecureSkipVerify: true}.String())
-	assert.Equal(t, "(url=,path=,secure=false,insecureSkipVerify=false,http=true,clientCert=,clientKey=)", ArgoServerOpts{HTTP1: true}.String())
-	assert.Equal(t, "(url=,path=,secure=false,insecureSkipVerify=false,http=false,clientCert=cert.pem,clientKey=)", ArgoServerOpts{ClientCert: "cert.pem"}.String())
-	assert.Equal(t, "(url=,path=,secure=false,insecureSkipVerify=false,http=false,clientCert=,clientKey=key.pem)", ArgoServerOpts{ClientKey: "key.pem"}.String())
+	assert.Equal(t, "(url=my-url,path=/my-path,secure=false,insecureSkipVerify=false,http=false,clientCert=,clientKey=,caCert=)", ArgoServerOpts{URL: "my-url", Path: "/my-path"}.String())
+	assert.Equal(t, "(url=,path=,secure=true,insecureSkipVerify=false,http=false,clientCert=,clientKey=,caCert=)", ArgoServerOpts{Secure: true}.String())
+	assert.Equal(t, "(url=,path=,secure=false,insecureSkipVerify=true,http=false,clientCert=,clientKey=,caCert=)", ArgoServerOpts{InsecureSkipVerify: true}.String())
+	assert.Equal(t, "(url=,path=,secure=false,insecureSkipVerify=false,http=true,clientCert=,clientKey=,caCert=)", ArgoServerOpts{HTTP1: true}.String())
+	assert.Equal(t, "(url=,path=,secure=false,insecureSkipVerify=false,http=false,clientCert=cert.pem,clientKey=,caCert=)", ArgoServerOpts{ClientCert: "cert.pem"}.String())
+	assert.Equal(t, "(url=,path=,secure=false,insecureSkipVerify=false,http=false,clientCert=,clientKey=key.pem,caCert=)", ArgoServerOpts{ClientKey: "key.pem"}.String())
+	assert.Equal(t, "(url=,path=,secure=false,insecureSkipVerify=false,http=false,clientCert=,clientKey=,caCert=ca.pem)", ArgoServerOpts{CACert: "ca.pem"}.String())
 }
 
 func TestArgoServerOpts_GetURL(t *testing.T) {

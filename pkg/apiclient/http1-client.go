@@ -57,6 +57,7 @@ func newHTTP1Client(ctx context.Context, opts ArgoServerOpts, auth string, proxy
 		Proxy:              proxy,
 		ClientCert:         opts.ClientCert,
 		ClientKey:          opts.ClientKey,
+		CACert:             opts.CACert,
 	})
 	if err != nil {
 		return nil, nil, err

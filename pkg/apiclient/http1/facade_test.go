@@ -33,18 +33,21 @@ func TestFacade_do(t *testing.T) {
 
 func TestNewFacade(t *testing.T) {
 	clientCert, clientKey := writeClientKeyPair(t)
+	caCert := clientCert
 
 	t.Run("loads client certificate", func(t *testing.T) {
 		f, err := NewFacade(FacadeConfig{
 			InsecureSkipVerify: true,
 			ClientCert:         clientCert,
 			ClientKey:          clientKey,
+			CACert:             caCert,
 		})
 		require.NoError(t, err)
 		require.NotNil(t, f.tlsConfig)
 		assert.True(t, f.tlsConfig.InsecureSkipVerify)
 		assert.Equal(t, uint16(tls.VersionTLS12), f.tlsConfig.MinVersion)
 		assert.Len(t, f.tlsConfig.Certificates, 1)
+		assert.NotNil(t, f.tlsConfig.RootCAs)
 	})
 
 	t.Run("rejects incomplete client certificate pair", func(t *testing.T) {

@@ -48,21 +48,25 @@ func TestGetClientTLSConfig(t *testing.T) {
 	tmpDir := t.TempDir()
 	clientCert := filepath.Join(tmpDir, "client.crt")
 	clientKey := filepath.Join(tmpDir, "client.key")
+	invalidCACert := filepath.Join(tmpDir, "invalid-ca.crt")
 	require.NoError(t, os.WriteFile(clientCert, certPEM, 0o600))
 	require.NoError(t, os.WriteFile(clientKey, keyPEM, 0o600))
+	require.NoError(t, os.WriteFile(invalidCACert, []byte("not a certificate"), 0o600))
 
 	tests := []struct {
 		name               string
 		clientCert         string
 		clientKey          string
+		caCert             string
 		insecureSkipVerify bool
 		wantErr            bool
 		wantErrContains    string
 	}{
 		{
-			name:               "Valid certificate and key",
+			name:               "Valid certificate, key, and certificate authority",
 			clientCert:         clientCert,
 			clientKey:          clientKey,
+			caCert:             clientCert,
 			insecureSkipVerify: false,
 			wantErr:            false,
 		},
@@ -97,11 +101,23 @@ func TestGetClientTLSConfig(t *testing.T) {
 			wantErr:         true,
 			wantErrContains: "requires both clientCert and clientKey",
 		},
+		{
+			name:            "Missing certificate authority file",
+			caCert:          "testdata/nonexistent-ca.crt",
+			wantErr:         true,
+			wantErrContains: "failed to read certificate authority",
+		},
+		{
+			name:            "Invalid certificate authority",
+			caCert:          invalidCACert,
+			wantErr:         true,
+			wantErrContains: "failed to parse certificate authority",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			config, err := GetClientTLSConfig(tt.clientCert, tt.clientKey, tt.insecureSkipVerify)
+			config, err := GetClientTLSConfig(tt.clientCert, tt.clientKey, tt.caCert, tt.insecureSkipVerify)
 
 			if tt.wantErr {
 				require.Error(t, err)
@@ -121,6 +137,11 @@ func TestGetClientTLSConfig(t *testing.T) {
 				assert.Len(t, config.Certificates, 1)
 			} else {
 				assert.Empty(t, config.Certificates)
+			}
+			if tt.caCert != "" {
+				assert.NotNil(t, config.RootCAs)
+			} else {
+				assert.Nil(t, config.RootCAs)
 			}
 		})
 	}

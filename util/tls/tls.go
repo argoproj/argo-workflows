@@ -152,15 +152,27 @@ func GetServerTLSConfigFromSecret(ctx context.Context, kubectlConfig kubernetes.
 }
 
 // GetClientTLSConfig creates a TLS 1.2 or newer configuration for client connections.
-// Client certificate authentication requires both clientCert and clientKey.
+// Client certificate authentication requires both clientCert and clientKey. If caCert is provided,
+// the certificate authority is used instead of the system roots to verify the server certificate.
 // The insecureSkipVerify parameter controls whether the server's certificate is verified.
-func GetClientTLSConfig(clientCert, clientKey string, insecureSkipVerify bool) (*tls.Config, error) {
+func GetClientTLSConfig(clientCert, clientKey, caCert string, insecureSkipVerify bool) (*tls.Config, error) {
 	tlsConfig := &tls.Config{
 		InsecureSkipVerify: insecureSkipVerify,
 		MinVersion:         tls.VersionTLS12,
 	}
 	if (clientCert == "") != (clientKey == "") {
 		return nil, fmt.Errorf("client certificate authentication requires both clientCert and clientKey")
+	}
+	if caCert != "" {
+		caPEM, err := os.ReadFile(caCert)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read certificate authority: %w", err)
+		}
+		certPool := x509.NewCertPool()
+		if ok := certPool.AppendCertsFromPEM(caPEM); !ok {
+			return nil, fmt.Errorf("failed to parse certificate authority %q", caCert)
+		}
+		tlsConfig.RootCAs = certPool
 	}
 	if clientCert != "" && clientKey != "" {
 		cert, err := tls.LoadX509KeyPair(clientCert, clientKey)

@@ -115,7 +115,7 @@ func NewCpCommand() *cobra.Command {
 }
 
 func newArtifactHTTPClient(opts apiclient.ArgoServerOpts) (*http.Client, error) {
-	tlsConfig, err := tlsutil.GetClientTLSConfig(opts.ClientCert, opts.ClientKey, opts.InsecureSkipVerify)
+	tlsConfig, err := tlsutil.GetClientTLSConfig(opts.ClientCert, opts.ClientKey, opts.CACert, opts.InsecureSkipVerify)
 	if err != nil {
 		return nil, err
 	}
