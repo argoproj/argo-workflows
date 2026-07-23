@@ -203,6 +203,7 @@ type podBuilderDeps interface {
 
 	// workflow-pod-only helpers reaching live state / controller config
 	IsArchiveLogs(tmpl *wfv1.Template) bool
+	IsArchiveSystemContainerLogs(tmpl *wfv1.Template) bool
 	executorServiceAccountName(tmpl *wfv1.Template) string
 	createArtifactVolumeMounts(ctx context.Context, tmpl *wfv1.Template) []apiv1.Volume
 	addInputArtifactsVolumes(ctx context.Context, pod *apiv1.Pod, tmpl *wfv1.Template) error
@@ -533,8 +534,8 @@ func (pb *podBuilder) build(ctx context.Context) (*podBuildResult, error) {
 	// We do not need the aux (wait/supervisor) container for data templates because
 	// argoexec runs as the main container and will perform the job of annotating the
 	// outputs or errors, making it redundant. For resource templates we add one to
-	// collect logs.
-	needsAuxCtr := (tmpl.GetType() != wfv1.TemplateTypeResource && tmpl.GetType() != wfv1.TemplateTypeData) || (tmpl.GetType() == wfv1.TemplateTypeResource && tmpl.SaveLogsAsArtifact())
+	// collect logs (main logs and/or system container logs).
+	needsAuxCtr := (tmpl.GetType() != wfv1.TemplateTypeResource && tmpl.GetType() != wfv1.TemplateTypeData) || (tmpl.GetType() == wfv1.TemplateTypeResource && (tmpl.SaveLogsAsArtifact() || tmpl.SaveSystemContainerLogsAsArtifact()))
 	// The layout may require the aux container for templates the base rule
 	// skips (e.g. init-less `manifestFrom` resources, which need the supervisor
 	// to stage the manifest artifact pre-main).
@@ -1735,7 +1736,8 @@ func (pb *podBuilder) addArchiveLocation(ctx context.Context, tmpl *wfv1.Templat
 		return
 	}
 	archiveLogs := pb.deps.IsArchiveLogs(tmpl)
-	needLocation := archiveLogs
+	archiveSystemContainerLogs := pb.deps.IsArchiveSystemContainerLogs(tmpl)
+	needLocation := archiveLogs || archiveSystemContainerLogs
 	artifacts := slices.Concat(tmpl.Inputs.Artifacts, tmpl.Outputs.Artifacts)
 	if tmpl.Data != nil {
 		if art, exist := tmpl.Data.Source.GetArtifactIfNeeded(); exist {
@@ -1753,6 +1755,7 @@ func (pb *podBuilder) addArchiveLocation(ctx context.Context, tmpl *wfv1.Templat
 	}
 	tmpl.ArchiveLocation = pb.in.artifactRepository.ToArtifactLocation()
 	tmpl.ArchiveLocation.ArchiveLogs = &archiveLogs
+	tmpl.ArchiveLocation.ArchiveSystemContainerLogs = &archiveSystemContainerLogs
 }
 
 // populateAllPluginArtifactTimeouts populates connection timeouts for all plugin artifacts in the template
@@ -1795,6 +1798,21 @@ func (woc *wfOperationCtx) IsArchiveLogs(tmpl *wfv1.Template) bool {
 		}
 	}
 	return archiveLogs
+}
+
+// IsArchiveSystemContainerLogs determines if system container logs should be archived
+// priorities: controller(on) > template > workflow > controller(off)
+func (woc *wfOperationCtx) IsArchiveSystemContainerLogs(tmpl *wfv1.Template) bool {
+	archiveSystemContainerLogs := woc.artifactRepository.IsArchiveSystemContainerLogs()
+	if !archiveSystemContainerLogs {
+		if woc.execWf.Spec.ArchiveSystemContainerLogs != nil {
+			archiveSystemContainerLogs = *woc.execWf.Spec.ArchiveSystemContainerLogs
+		}
+		if tmpl.ArchiveLocation != nil && tmpl.ArchiveLocation.ArchiveSystemContainerLogs != nil {
+			archiveSystemContainerLogs = *tmpl.ArchiveLocation.ArchiveSystemContainerLogs
+		}
+	}
+	return archiveSystemContainerLogs
 }
 
 // executorServiceAccountName resolves the service account the executor

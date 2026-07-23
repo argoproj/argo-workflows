@@ -746,36 +746,61 @@ func (we *WorkflowExecutor) SaveLogs(ctx context.Context) []wfv1.Artifact {
 	var logArtifacts []wfv1.Artifact
 	tempLogsDir := "/tmp/argo/outputs/logs"
 
-	if we.Template.SaveLogsAsArtifact() {
+	archiveMain := we.Template.SaveLogsAsArtifact()
+	archiveSystem := we.Template.SaveSystemContainerLogsAsArtifact()
+
+	if archiveMain || archiveSystem {
 		err := os.MkdirAll(tempLogsDir, os.ModePerm)
 		if err != nil {
 			we.AddError(ctx, argoerrs.InternalWrapError(err))
 		}
 
-		containerNames := we.Template.GetMainContainerNames()
 		logArtifacts = make([]wfv1.Artifact, 0)
 
-		for _, containerName := range containerNames {
-			// Saving logs
-			art, err := we.saveContainerLogs(ctx, tempLogsDir, containerName)
-			switch {
-			case err == nil:
-				logArtifacts = append(logArtifacts, *art)
-			case errors.Is(err, fs.ErrNotExist):
-				// The container produced no log file. This happens when it was
-				// killed before its command ran (e.g. a containerSet member whose
-				// dependency failed and was then SIGTERM'd). There are simply no
-				// logs to save, so skip it rather than failing the executor — in
-				// init-less mode a returned error crash-loops the supervisor and
-				// the pod never completes.
-				logging.RequireLoggerFromContext(ctx).WithField("container", containerName).
-					Warn(ctx, "no logs to save: container produced no output")
-			default:
-				we.AddError(ctx, err)
+		// include main container only when archiveMain is true (preserve existing error handling)
+		if archiveMain {
+			for _, containerName := range we.Template.GetMainContainerNames() {
+				// Saving logs
+				art, err := we.saveContainerLogs(ctx, tempLogsDir, containerName)
+				switch {
+				case err == nil:
+					logArtifacts = append(logArtifacts, *art)
+				case errors.Is(err, fs.ErrNotExist):
+					// The container produced no log file. This happens when it was
+					// killed before its command ran (e.g. a containerSet member whose
+					// dependency failed and was then SIGTERM'd). There are simply no
+					// logs to save, so skip it rather than failing the executor — in
+					// init-less mode a returned error crash-loops the supervisor and
+					// the pod never completes.
+					logging.RequireLoggerFromContext(ctx).WithField("container", containerName).
+						Warn(ctx, "no logs to save: container produced no output")
+				default:
+					we.AddError(ctx, err)
+				}
+			}
+		}
+
+		// include init/wait (or supervisor in init-less pods) container logs when archiveSystem is true.
+		// ErrNotExist is skipped as safety net for tee setup failure (unlike main containers)
+		if archiveSystem {
+			systemContainerNames := []string{common.InitContainerName, common.WaitContainerName}
+			if common.IsInitlessPod() {
+				systemContainerNames = []string{common.SupervisorContainerName}
+			}
+			for _, containerName := range systemContainerNames {
+				art, err := we.saveContainerLogs(ctx, tempLogsDir, containerName)
+				if err != nil {
+					if errors.Is(err, fs.ErrNotExist) {
+						logging.RequireLoggerFromContext(ctx).WithField("container", containerName).Debug(ctx, "System container combined log file not found, skipping")
+						continue
+					}
+					we.AddError(ctx, err)
+				} else {
+					logArtifacts = append(logArtifacts, *art)
+				}
 			}
 		}
 	}
-
 	return logArtifacts
 }
 

@@ -2,6 +2,7 @@ package logging
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -13,6 +14,7 @@ type slogLogger struct {
 	fields    Fields
 	logger    *slog.Logger
 	level     Level
+	format    LogType
 	hooks     map[Level][]Hook
 	withPanic bool
 	withFatal bool
@@ -65,6 +67,7 @@ func NewSlogLoggerCustom(logLevel Level, format LogType, out io.Writer, hooks ..
 		fields: f,
 		logger: l,
 		level:  logLevel,
+		format: format,
 		hooks:  mappedHooks,
 	}
 
@@ -87,6 +90,7 @@ func (s *slogLogger) WithFields(fields Fields) Logger {
 		fields:    newFields,
 		logger:    s.logger,
 		level:     s.level,
+		format:    s.format,
 		hooks:     s.hooks,
 		withFatal: s.withFatal,
 		withPanic: s.withPanic,
@@ -104,6 +108,7 @@ func (s *slogLogger) WithField(name string, value any) Logger {
 		fields:    newFields,
 		logger:    s.logger,
 		level:     s.level,
+		format:    s.format,
 		hooks:     s.hooks,
 		withFatal: s.withFatal,
 		withPanic: s.withPanic,
@@ -116,6 +121,7 @@ func (s *slogLogger) WithPanic() Logger {
 		fields:    s.fields,
 		logger:    s.logger,
 		level:     s.level,
+		format:    s.format,
 		hooks:     s.hooks,
 		withPanic: true,
 		withFatal: s.withFatal,
@@ -128,6 +134,7 @@ func (s *slogLogger) WithFatal() Logger {
 		fields:    s.fields,
 		logger:    s.logger,
 		level:     s.level,
+		format:    s.format,
 		hooks:     s.hooks,
 		withFatal: true,
 		withPanic: s.withPanic,
@@ -210,4 +217,75 @@ func (s *slogLogger) InContext(ctx context.Context) (context.Context, Logger) {
 // NewBackgroundContext returns a new context with this logger in it
 func (s *slogLogger) NewBackgroundContext() context.Context {
 	return WithLogger(context.Background(), s)
+}
+
+// multiHandler fans out each record to multiple slog.Handlers.
+type multiHandler struct {
+	handlers []slog.Handler
+}
+
+func (m *multiHandler) Enabled(ctx context.Context, level slog.Level) bool {
+	for _, h := range m.handlers {
+		if h.Enabled(ctx, level) {
+			return true
+		}
+	}
+	return false
+}
+
+func (m *multiHandler) Handle(ctx context.Context, r slog.Record) error {
+	var errs []error
+	for _, h := range m.handlers {
+		// handlers may have different levels, so re-check each rather than relying on multiHandler.Enabled
+		if h.Enabled(ctx, r.Level) {
+			if err := h.Handle(ctx, r.Clone()); err != nil {
+				errs = append(errs, err)
+			}
+		}
+	}
+	// attempt all handlers before returning, so one handler's failure does not
+	// prevent writing to the others (e.g. stderr write error must not block combined).
+	return errors.Join(errs...)
+}
+
+func (m *multiHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	handlers := make([]slog.Handler, len(m.handlers))
+	for i, h := range m.handlers {
+		handlers[i] = h.WithAttrs(attrs)
+	}
+	return &multiHandler{handlers: handlers}
+}
+
+func (m *multiHandler) WithGroup(name string) slog.Handler {
+	handlers := make([]slog.Handler, len(m.handlers))
+	for i, h := range m.handlers {
+		handlers[i] = h.WithGroup(name)
+	}
+	return &multiHandler{handlers: handlers}
+}
+
+// TeeLogger returns a new Logger that writes to both the original destination and w,
+// preserving all fields, format and hooks from the original logger.
+func TeeLogger(logger Logger, w io.Writer) Logger {
+	sl, ok := logger.(*slogLogger)
+	if !ok {
+		// if an unexpected Logger implementation is passed, return it unchanged instead of panicking
+		return logger
+	}
+	var additionalHandler slog.Handler
+	switch sl.format {
+	case Text:
+		additionalHandler = slog.NewTextHandler(w, &slog.HandlerOptions{Level: convertLevel(sl.level)})
+	default:
+		additionalHandler = slog.NewJSONHandler(w, &slog.HandlerOptions{Level: convertLevel(sl.level)})
+	}
+	return &slogLogger{
+		fields:    sl.fields,
+		logger:    slog.New(&multiHandler{handlers: []slog.Handler{sl.logger.Handler(), additionalHandler}}),
+		level:     sl.level,
+		format:    sl.format,
+		hooks:     sl.hooks,
+		withPanic: sl.withPanic,
+		withFatal: sl.withFatal,
+	}
 }

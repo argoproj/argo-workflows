@@ -167,6 +167,9 @@ message ArtifactLocation {
 
   // Plugin contains plugin artifact location details
   optional PluginArtifact plugin = 11;
+
+  // ArchiveSystemContainerLogs indicates if the system container logs should be archived (init/wait in legacy Pods, supervisor in init-less Pods)
+  optional bool archiveSystemContainerLogs = 12;
 }
 
 // ArtifactNodeSpec specifies the Artifacts that need to be deleted for a given Node
@@ -209,6 +212,9 @@ message ArtifactRepository {
 
   // Plugin stores artifact in a plugin-specific artifact repository
   optional PluginArtifactRepository plugin = 8;
+
+  // ArchiveSystemContainerLogs enables log archiving for system containers (init/wait in legacy Pods, supervisor in init-less Pods)
+  optional bool archiveSystemContainerLogs = 9;
 }
 
 // ArtifactRepositoryRef is a reference to an artifact repository config map.
@@ -2291,6 +2297,9 @@ message WorkflowSpec {
   // Requires the PodLevelResources feature gate to be enabled on the cluster (beta since Kubernetes v1.34).
   // +optional
   optional .k8s.io.api.core.v1.ResourceRequirements podResources = 45;
+
+  // ArchiveSystemContainerLogs indicates if the system container logs should be archived (init/wait in legacy Pods, supervisor in init-less Pods)
+  optional bool archiveSystemContainerLogs = 46;
 }
 
 // WorkflowStatus contains overall status information about a workflow

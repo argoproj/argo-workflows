@@ -426,6 +426,13 @@ func schema_pkg_apis_workflow_v1alpha1_Artifact(ref common.ReferenceCallback) co
 							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.PluginArtifact"),
 						},
 					},
+					"archiveSystemContainerLogs": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ArchiveSystemContainerLogs indicates if the system container logs should be archived (init/wait in legacy Pods, supervisor in init-less Pods)",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 					"globalName": {
 						SchemaProps: spec.SchemaProps{
 							Description: "GlobalName exports an output artifact to the global scope, making it available as workflow.outputs.artifacts.XXXX and in workflow.status.outputs.artifacts",
@@ -658,6 +665,13 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactLocation(ref common.ReferenceCall
 							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.PluginArtifact"),
 						},
 					},
+					"archiveSystemContainerLogs": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ArchiveSystemContainerLogs indicates if the system container logs should be archived (init/wait in legacy Pods, supervisor in init-less Pods)",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 				},
 			},
 		},
@@ -805,6 +819,13 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactPaths(ref common.ReferenceCallbac
 							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.PluginArtifact"),
 						},
 					},
+					"archiveSystemContainerLogs": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ArchiveSystemContainerLogs indicates if the system container logs should be archived (init/wait in legacy Pods, supervisor in init-less Pods)",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 					"globalName": {
 						SchemaProps: spec.SchemaProps{
 							Description: "GlobalName exports an output artifact to the global scope, making it available as workflow.outputs.artifacts.XXXX and in workflow.status.outputs.artifacts",
@@ -922,6 +943,13 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactRepository(ref common.ReferenceCa
 						SchemaProps: spec.SchemaProps{
 							Description: "Plugin stores artifact in a plugin-specific artifact repository",
 							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.PluginArtifactRepository"),
+						},
+					},
+					"archiveSystemContainerLogs": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ArchiveSystemContainerLogs enables log archiving for system containers (init/wait in legacy Pods, supervisor in init-less Pods)",
+							Type:        []string{"boolean"},
+							Format:      "",
 						},
 					},
 				},
@@ -8343,6 +8371,13 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 						SchemaProps: spec.SchemaProps{
 							Description: "PodResources defines pod-level resource requests and limits to apply to all workflow pods. Will be overridden if a template's podResources is set. Requires the PodLevelResources feature gate to be enabled on the cluster (beta since Kubernetes v1.34).",
 							Ref:         ref("k8s.io/api/core/v1.ResourceRequirements"),
+						},
+					},
+					"archiveSystemContainerLogs": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ArchiveSystemContainerLogs indicates if the system container logs should be archived (init/wait in legacy Pods, supervisor in init-less Pods)",
+							Type:        []string{"boolean"},
+							Format:      "",
 						},
 					},
 				},
