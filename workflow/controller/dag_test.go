@@ -606,6 +606,205 @@ func TestAllEvaluateDependsLogic(t *testing.T) {
 	}
 }
 
+func TestEvaluateDependsLogicShortCircuit(t *testing.T) {
+	t.Run("OR short-circuit execute", func(t *testing.T) {
+		// depends: "A.Succeeded || B.Succeeded" — if A succeeds, should short-circuit to execute without waiting for B
+		testTasks := []wfv1.DAGTask{
+			{Name: "A"},
+			{Name: "B"},
+			{Name: "C", Depends: "A.Succeeded || B.Succeeded"},
+		}
+		ctx := logging.TestContext(t.Context())
+		d := &dagContext{
+			boundaryName: "test",
+			tasks:        testTasks,
+			wf:           &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "test-wf"}},
+			dependencies: make(map[string][]string),
+			dependsLogic: make(map[string]string),
+			log:          logging.RequireLoggerFromContext(ctx),
+		}
+
+		// A succeeded, B still running
+		d.wf.Status.Nodes = map[string]wfv1.NodeStatus{
+			d.taskNodeID("A"): {Phase: wfv1.NodeSucceeded},
+			d.taskNodeID("B"): {Phase: wfv1.NodeRunning},
+		}
+
+		execute, proceed, err := d.evaluateDependsLogic(ctx, "C")
+		require.NoError(t, err)
+		assert.True(t, proceed, "should proceed via short-circuit")
+		assert.True(t, execute, "should execute because A.Succeeded is true")
+	})
+
+	t.Run("AND short-circuit omit", func(t *testing.T) {
+		// depends: "A.Succeeded && B.Succeeded" — if A fails, should short-circuit to omit without waiting for B
+		testTasks := []wfv1.DAGTask{
+			{Name: "A"},
+			{Name: "B"},
+			{Name: "C", Depends: "A.Succeeded && B.Succeeded"},
+		}
+		ctx := logging.TestContext(t.Context())
+		d := &dagContext{
+			boundaryName: "test",
+			tasks:        testTasks,
+			wf:           &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "test-wf"}},
+			dependencies: make(map[string][]string),
+			dependsLogic: make(map[string]string),
+			log:          logging.RequireLoggerFromContext(ctx),
+		}
+
+		// A failed, B still running
+		d.wf.Status.Nodes = map[string]wfv1.NodeStatus{
+			d.taskNodeID("A"): {Phase: wfv1.NodeFailed},
+			d.taskNodeID("B"): {Phase: wfv1.NodeRunning},
+		}
+
+		execute, proceed, err := d.evaluateDependsLogic(ctx, "C")
+		require.NoError(t, err)
+		assert.True(t, proceed, "should proceed via short-circuit")
+		assert.False(t, execute, "should not execute because A.Succeeded is false")
+	})
+
+	t.Run("no short-circuit when result is indeterminate", func(t *testing.T) {
+		// depends: "A.Succeeded && B.Succeeded" — if A succeeds but B is pending, result depends on B
+		testTasks := []wfv1.DAGTask{
+			{Name: "A"},
+			{Name: "B"},
+			{Name: "C", Depends: "A.Succeeded && B.Succeeded"},
+		}
+		ctx := logging.TestContext(t.Context())
+		d := &dagContext{
+			boundaryName: "test",
+			tasks:        testTasks,
+			wf:           &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "test-wf"}},
+			dependencies: make(map[string][]string),
+			dependsLogic: make(map[string]string),
+			log:          logging.RequireLoggerFromContext(ctx),
+		}
+
+		// A succeeded, B still running
+		d.wf.Status.Nodes = map[string]wfv1.NodeStatus{
+			d.taskNodeID("A"): {Phase: wfv1.NodeSucceeded},
+			d.taskNodeID("B"): {Phase: wfv1.NodeRunning},
+		}
+
+		execute, proceed, err := d.evaluateDependsLogic(ctx, "C")
+		require.NoError(t, err)
+		assert.False(t, proceed, "should not proceed because result depends on B")
+		assert.False(t, execute)
+	})
+
+	t.Run("OR short-circuit with dependency not yet started", func(t *testing.T) {
+		// depends: "A.Succeeded || B.Succeeded" — if A succeeds and B hasn't started, should short-circuit
+		testTasks := []wfv1.DAGTask{
+			{Name: "A"},
+			{Name: "B"},
+			{Name: "C", Depends: "A.Succeeded || B.Succeeded"},
+		}
+		ctx := logging.TestContext(t.Context())
+		d := &dagContext{
+			boundaryName: "test",
+			tasks:        testTasks,
+			wf:           &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "test-wf"}},
+			dependencies: make(map[string][]string),
+			dependsLogic: make(map[string]string),
+			log:          logging.RequireLoggerFromContext(ctx),
+		}
+
+		// A succeeded, B has no node at all
+		d.wf.Status.Nodes = map[string]wfv1.NodeStatus{
+			d.taskNodeID("A"): {Phase: wfv1.NodeSucceeded},
+		}
+
+		execute, proceed, err := d.evaluateDependsLogic(ctx, "C")
+		require.NoError(t, err)
+		assert.True(t, proceed, "should proceed via short-circuit")
+		assert.True(t, execute, "should execute because A.Succeeded is true")
+	})
+
+	t.Run("all deps pending no short-circuit", func(t *testing.T) {
+		// depends: "A.Succeeded || B.Succeeded" — both pending, cannot determine
+		testTasks := []wfv1.DAGTask{
+			{Name: "A"},
+			{Name: "B"},
+			{Name: "C", Depends: "A.Succeeded || B.Succeeded"},
+		}
+		ctx := logging.TestContext(t.Context())
+		d := &dagContext{
+			boundaryName: "test",
+			tasks:        testTasks,
+			wf:           &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "test-wf"}},
+			dependencies: make(map[string][]string),
+			dependsLogic: make(map[string]string),
+			log:          logging.RequireLoggerFromContext(ctx),
+		}
+
+		// Neither A nor B have nodes
+		d.wf.Status.Nodes = map[string]wfv1.NodeStatus{}
+
+		execute, proceed, err := d.evaluateDependsLogic(ctx, "C")
+		require.NoError(t, err)
+		assert.False(t, proceed, "should not proceed because both deps are pending")
+		assert.False(t, execute)
+	})
+
+	t.Run("negation prevents short-circuit", func(t *testing.T) {
+		// depends: "!A.Succeeded" — A is pending, cannot determine (could succeed or not)
+		testTasks := []wfv1.DAGTask{
+			{Name: "A"},
+			{Name: "B", Depends: "!A.Succeeded"},
+		}
+		ctx := logging.TestContext(t.Context())
+		d := &dagContext{
+			boundaryName: "test",
+			tasks:        testTasks,
+			wf:           &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "test-wf"}},
+			dependencies: make(map[string][]string),
+			dependsLogic: make(map[string]string),
+			log:          logging.RequireLoggerFromContext(ctx),
+		}
+
+		// A is still running
+		d.wf.Status.Nodes = map[string]wfv1.NodeStatus{
+			d.taskNodeID("A"): {Phase: wfv1.NodeRunning},
+		}
+
+		execute, proceed, err := d.evaluateDependsLogic(ctx, "B")
+		require.NoError(t, err)
+		assert.False(t, proceed, "should not proceed because !A.Succeeded depends on A's outcome")
+		assert.False(t, execute)
+	})
+
+	t.Run("complex OR with Failed short-circuit", func(t *testing.T) {
+		// depends: "A.Succeeded || B.Failed" — if A succeeds, should short-circuit regardless of B
+		testTasks := []wfv1.DAGTask{
+			{Name: "A"},
+			{Name: "B"},
+			{Name: "C", Depends: "A.Succeeded || B.Failed"},
+		}
+		ctx := logging.TestContext(t.Context())
+		d := &dagContext{
+			boundaryName: "test",
+			tasks:        testTasks,
+			wf:           &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "test-wf"}},
+			dependencies: make(map[string][]string),
+			dependsLogic: make(map[string]string),
+			log:          logging.RequireLoggerFromContext(ctx),
+		}
+
+		// A succeeded, B still running
+		d.wf.Status.Nodes = map[string]wfv1.NodeStatus{
+			d.taskNodeID("A"): {Phase: wfv1.NodeSucceeded},
+			d.taskNodeID("B"): {Phase: wfv1.NodeRunning},
+		}
+
+		execute, proceed, err := d.evaluateDependsLogic(ctx, "C")
+		require.NoError(t, err)
+		assert.True(t, proceed, "should proceed via short-circuit")
+		assert.True(t, execute, "should execute because A.Succeeded is true")
+	})
+}
+
 var dagAssessPhaseContinueOnExpandedTaskVariables = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
