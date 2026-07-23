@@ -163,3 +163,15 @@
     fill: $argo-color-gray-4;
   }
 }
+
+.graph-options-panel {
+  .zoom-percentage {
+    display: inline-block;
+    padding: 5px;
+    min-width: 44px;
+    text-align: center;
+    color: $argo-color-gray-6;
+    font-variant-numeric: tabular-nums;
+    user-select: none;
+  }
+}
