@@ -1711,6 +1711,43 @@ func TestAssessNodeStatus(t *testing.T) {
 		wantPhase:   wfv1.NodeFailed,
 		wantMessage: "can't find failed message for pod  namespace ", // daemoned nodes currently don't have a fail message
 	}, {
+		// node already marked Succeeded by killDaemonedChildren; PodFailed event must be ignored.
+		name: "pod failed - daemoned, already marked succeeded by teardown",
+		pod: &apiv1.Pod{
+			Status: apiv1.PodStatus{
+				Phase: apiv1.PodFailed,
+			},
+		},
+		daemon:      true,
+		node:        &wfv1.NodeStatus{TemplateName: templateName, Phase: wfv1.NodeSucceeded},
+		wantPhase:   wfv1.NodeSucceeded,
+		wantMessage: "",
+	}, {
+		// non-daemon node that previously Succeeded must still go through inferFailedReason.
+		name: "pod failed - not daemoned, previously succeeded",
+		pod: &apiv1.Pod{
+			Status: apiv1.PodStatus{
+				Message: "failed for some reason",
+				Phase:   apiv1.PodFailed,
+			},
+		},
+		daemon:      false,
+		node:        &wfv1.NodeStatus{TemplateName: templateName, Phase: wfv1.NodeSucceeded},
+		wantPhase:   wfv1.NodeFailed,
+		wantMessage: "failed for some reason",
+	}, {
+		// node already marked Succeeded by killDaemonedChildren; PodSucceeded must not overwrite to NodeFailed.
+		name: "pod succeeded - daemoned, already marked succeeded by teardown",
+		pod: &apiv1.Pod{
+			Status: apiv1.PodStatus{
+				Phase: apiv1.PodSucceeded,
+			},
+		},
+		daemon:      true,
+		node:        &wfv1.NodeStatus{TemplateName: templateName, Phase: wfv1.NodeSucceeded},
+		wantPhase:   wfv1.NodeSucceeded,
+		wantMessage: "",
+	}, {
 		name: "daemon, pod running, node failed",
 		pod: &apiv1.Pod{
 			Status: apiv1.PodStatus{
@@ -1931,6 +1968,87 @@ func TestAssessNodeStatus(t *testing.T) {
 		})
 	}
 }
+
+var daemonContainerSetWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: daemon-container-set
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    daemon: true
+    containerSet:
+      containers:
+      - name: step-1
+        image: alpine
+        command: [sh, -c, sleep 999999]
+      - name: step-2
+        image: alpine
+        command: [sh, -c, sleep 999999]
+`
+
+// TestAssessNodeStatusDaemonContainerSetTeardown verifies that when killDaemonedChildren has already
+// marked a daemon container-set pod node Succeeded, the subsequent PodFailed event (the Kubernetes
+// confirmation of the intentional teardown) does not flip the pod node or its container-set child nodes
+// to Failed. See https://github.com/argoproj/argo-workflows/issues/16397.
+func TestAssessNodeStatusDaemonContainerSetTeardown(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(daemonContainerSetWf)
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	const podNodeName = "daemon-container-set"
+	// Parent pod node, already marked Succeeded by killDaemonedChildren before the pod was signalled.
+	podNode := &wfv1.NodeStatus{
+		ID:           woc.wf.NodeID(podNodeName),
+		Name:         podNodeName,
+		DisplayName:  podNodeName,
+		Type:         wfv1.NodeTypePod,
+		TemplateName: "main",
+		Phase:        wfv1.NodeSucceeded,
+	}
+	woc.wf.Status.Nodes.Set(ctx, podNode.ID, *podNode)
+	// Container-set child nodes.
+	for _, ctr := range []string{"step-1", "step-2"} {
+		childName := podNodeName + "." + ctr
+		child := wfv1.NodeStatus{
+			ID:           woc.wf.NodeID(childName),
+			Name:         childName,
+			DisplayName:  ctr,
+			Type:         wfv1.NodeTypeContainer,
+			TemplateName: "main",
+			BoundaryID:   podNode.ID,
+			Phase:        wfv1.NodeSucceeded,
+		}
+		woc.wf.Status.Nodes.Set(ctx, child.ID, child)
+	}
+
+	// The pod is reported Failed because its containers were SIGKILLed during teardown (exit code 137).
+	pod := &apiv1.Pod{
+		Status: apiv1.PodStatus{
+			Phase: apiv1.PodFailed,
+			ContainerStatuses: []apiv1.ContainerStatus{
+				{Name: "step-1", State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 137, Reason: "Error"}}},
+				{Name: "step-2", State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 137, Reason: "Error"}}},
+			},
+		},
+	}
+
+	got := woc.assessNodeStatus(ctx, pod, podNode)
+	require.NotNil(t, got)
+	// Parent pod node must remain Succeeded.
+	assert.Equal(t, wfv1.NodeSucceeded, got.Phase)
+	// Container-set child nodes must remain Succeeded, not be flipped to Failed by the teardown.
+	for _, ctr := range []string{"step-1", "step-2"} {
+		child, err := woc.wf.GetNodeByName(podNodeName + "." + ctr)
+		require.NoError(t, err)
+		assert.Equal(t, wfv1.NodeSucceeded, child.Phase, "container node %s should stay Succeeded after teardown", ctr)
+	}
+}
+
 
 func getPodTemplate(pod *apiv1.Pod) (*wfv1.Template, error) {
 	tmpl := &wfv1.Template{}

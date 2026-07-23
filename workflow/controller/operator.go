@@ -1436,6 +1436,11 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		woc.log.Error(ctx, err.Error())
 		return nil
 	}
+	// killDaemonedChildren marks a daemon node NodeSucceeded synchronously before signalling the pod to
+	// terminate. When the resulting PodFailed/PodSucceeded event arrives it is just Kubernetes confirming the
+	// intentional teardown, so we must preserve the Succeeded status — both for the pod node itself and for any
+	// container-set child nodes assessed in the loop below.
+	daemonTeardown := tmpl.IsDaemon() && old.Phase == wfv1.NodeSucceeded
 	switch pod.Status.Phase {
 	case apiv1.PodPending:
 		updated.Phase = wfv1.NodePending
@@ -1448,8 +1453,9 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		}
 	case apiv1.PodSucceeded:
 		// if the pod is succeeded, we need to check if it is a daemoned step or not
-		// if it is daemoned, we need to mark it as failed, since daemon pods should run indefinitely
-		if tmpl.IsDaemon() {
+		// if it is daemoned, we need to mark it as failed, since daemon pods should run indefinitely.
+		// If killDaemonedChildren already marked it Succeeded, preserve that status.
+		if tmpl.IsDaemon() && !daemonTeardown {
 			woc.log.WithField("podName", pod.Name).Debug(ctx, "Daemoned pod succeeded. Marking it as failed")
 			updated.Phase = wfv1.NodeFailed
 		} else {
@@ -1459,6 +1465,14 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		updated.Daemoned = nil
 		updated.RestartingPodUID = ""
 	case apiv1.PodFailed:
+		// If killDaemonedChildren already marked this daemon node Succeeded, the PodFailed event is
+		// due to intentional teardown — preserve the status rather than re-assessing exit codes.
+		if daemonTeardown {
+			woc.log.WithFields(logging.Fields{"displayName": old.DisplayName, "pod": pod.Name}).Info(ctx, "Daemon pod already marked Succeeded by teardown; ignoring PodFailed event")
+			updated.Phase = wfv1.NodeSucceeded
+			updated.Daemoned = nil
+			break
+		}
 		// ignore pod failure for daemoned steps
 		updated.Phase, updated.Message = woc.inferFailedReason(ctx, pod, tmpl)
 		woc.log.WithFields(logging.Fields{"message": updated.Message, "displayName": old.DisplayName, "templateName": wfutil.GetTemplateFromNode(*old), "pod": pod.Name}).Info(ctx, "Pod failed")
@@ -1534,6 +1548,11 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 			continue
 		}
 		switch {
+		case daemonTeardown:
+			// The pod was intentionally torn down by killDaemonedChildren after the node was already
+			// marked Succeeded. The container termination is expected, so preserve the Succeeded status
+			// rather than marking the container-set child node Failed based on its (killed) exit code.
+			woc.markNodePhase(ctx, ctrNodeName, wfv1.NodeSucceeded)
 		case c.State.Terminated != nil:
 			exitCode := int(c.State.Terminated.ExitCode)
 			message := fmt.Sprintf("%s: %s (exit code %d): %s", c.Name, c.State.Terminated.Reason, exitCode, c.State.Terminated.Message)
