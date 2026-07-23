@@ -26,7 +26,7 @@ argo lint FILE... [flags]
       --kinds strings   Which kinds will be linted. Can be: workflows|workflowtemplates|cronworkflows|clusterworkflowtemplates (default [all])
       --no-color        Disable colorized output
       --offline         perform offline linting. For resources referencing other resources, the references will be resolved from the provided args
-  -o, --output string   Linting results output format. One of: pretty|simple (default "pretty")
+  -o, --output string   Linting results output format. One of: pretty|simple|json (default "pretty")
       --strict          Perform strict workflow validation (default true)
 ```
 
