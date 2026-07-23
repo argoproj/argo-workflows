@@ -3,9 +3,9 @@
 # second step hands it to the resource-agent, which downloads it itself (no per-node pod / init
 # container) via the in-process native S3 driver, then creates + watches the Pod.
 #
-# The resource-agent pod runs no artifact-plugin sidecars, so it can load artifacts only with an
-# in-process driver: native s3 (used here), gcs, oss, http, git, raw. It cannot load a `plugin:`-
-# backed artifact, so this uses an explicit `s3:` block rather than relying on a plugin default repo.
+# The agent loads the artifact with an in-process driver (native s3 — used here — gcs, oss, http,
+# git, raw) or, for `plugin:`-backed artifacts, through the artifact-plugin sidecars the controller
+# installs into the agent pod for every driver registered under `artifactDrivers` in its ConfigMap.
 # The s3 config below targets the quick-start minio; change it for your object store.
 #
 # The resource agent runs under "<workflow-sa>-resource-agent" (here "default-resource-agent"). Grant it:
@@ -82,7 +82,7 @@ spec:
         path: /tmp/manifest.yaml
     resource:
       action: create
-      agent: true
+      mode: agent
       successCondition: status.phase == Succeeded
       failureCondition: status.phase == Failed
       setOwnerReference: true

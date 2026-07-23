@@ -3333,14 +3333,29 @@ cause implementors to also use a fixed point implementation.
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | action | string| `string` |  | | Action is the action to perform to the resource.</br>Must be one of: get, create, apply, delete, replace, patch </br>*Allowed values: get, create, apply, delete, replace, patch.*|  |
-| agent | boolean| `bool` |  | | Agent, when true, runs this resource template on the shared per-workflow resource agent pod</br>(which creates the resource and watches it for its success/failure conditions) instead of a</br>dedicated per-node pod. See docs/resource-template.md. |  |
 | failureCondition | string| `string` |  | | FailureCondition is a label selector expression which describes the conditions</br>of the k8s resource in which the step was considered failed |  |
 | flags | []string| `[]string` |  | | Flags is a set of additional options passed to kubectl before submitting a resource</br>I.e. to disable resource validation:</br>flags: [</br>"--validate=false"  # disable resource validation</br>] |  |
 | manifest | string| `string` |  | | Manifest contains the kubernetes manifest |  |
 | manifestFrom | [ManifestFrom](#manifest-from)| `ManifestFrom` |  | |  |  |
 | mergeStrategy | string| `string` |  | | MergeStrategy is the strategy used to merge a patch. It defaults to "strategic"</br>Must be one of: strategic, merge, json </br>*Allowed values: strategic, merge, json.*|  |
+| mode | [ResourceTemplateMode](#resource-template-mode)| `ResourceTemplateMode` |  | |  |  |
 | setOwnerReference | boolean| `bool` |  | | SetOwnerReference sets the reference to the workflow on the OwnerReference of generated resource. |  |
 | successCondition | string| `string` |  | | SuccessCondition is a label selector expression which describes the conditions</br>of the k8s resource in which it is acceptable to proceed to the following step |  |
+
+
+
+### <span id="resource-template-mode"></span> ResourceTemplateMode
+
+
+> ResourceTemplateMode is where a resource template executes: on a dedicated per-node pod
+(the default) or on the shared per-workflow resource agent pod.
+  
+
+
+
+| Name | Type | Go type | Default | Description | Example |
+|------|------|---------| ------- |-------------|---------|
+| ResourceTemplateMode | string| string | | ResourceTemplateMode is where a resource template executes: on a dedicated per-node pod</br>(the default) or on the shared per-workflow resource agent pod. |  |
 
 
 

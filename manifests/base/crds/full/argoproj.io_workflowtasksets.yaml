@@ -6789,8 +6789,6 @@ spec:
                           - replace
                           - patch
                           type: string
-                        agent:
-                          type: boolean
                         failureCondition:
                           type: string
                         flags:
@@ -7400,6 +7398,8 @@ spec:
                           - strategic
                           - merge
                           - json
+                          type: string
+                        mode:
                           type: string
                         setOwnerReference:
                           type: boolean

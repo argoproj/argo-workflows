@@ -8,7 +8,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
-// executeResourceAgent routes an agent-based resource template (resource.agent: true) onto the
+// executeResourceAgent routes an agent-based resource template (resource.mode: agent) onto the
 // shared per-workflow resource agent pod via the WorkflowTaskSet, mirroring executeHTTPTemplate.
 func (woc *wfOperationCtx) executeResourceAgent(ctx context.Context, nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) *wfv1.NodeStatus {
 	node, err := woc.wf.GetNodeByName(nodeName)
@@ -22,6 +22,13 @@ func (woc *wfOperationCtx) executeResourceAgent(ctx context.Context, nodeName st
 		// create path (withAgentMetadata) so it also covers manifestFrom, whose content we never see.
 		if common.ManifestDocCount([]byte(tmpl.Resource.Manifest)) > 1 {
 			return woc.markNodeError(ctx, nodeName, fmt.Errorf("agent-based resource templates support only a single manifest document"))
+		}
+		// The shared agent pod runs under `<workflow-sa>-resource-agent`; a template-level
+		// service account cannot be honored there. Validation rejects this at submit, but
+		// templates can reach here without lint (e.g. resolved workflowtemplate refs), so
+		// refuse loudly rather than run the action under an account the user did not ask for.
+		if tmpl.ServiceAccountName != "" || (tmpl.Executor != nil && tmpl.Executor.ServiceAccountName != "") {
+			return woc.markNodeError(ctx, nodeName, fmt.Errorf("agent-based resource templates cannot use a template-level serviceAccountName or executor.serviceAccountName; the agent pod runs under the workflow service account name suffixed with -resource-agent"))
 		}
 		woc.taskSet[node.ID] = *tmpl
 	}

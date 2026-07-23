@@ -39,7 +39,7 @@ spec:
       - name: suffix
     resource:
       action: create
-      agent: true
+      mode: agent
       successCondition: data.state == ready
       setOwnerReference: true
       manifest: |

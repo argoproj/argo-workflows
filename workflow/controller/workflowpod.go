@@ -52,6 +52,14 @@ var (
 			EmptyDir: &apiv1.EmptyDirVolumeSource{},
 		},
 	}
+	// volumeMountTmpDir mounts volumeTmpDir wholesale at /tmp. Workload pods mount it
+	// with per-container SubPaths instead; this plain mount is for the resource-agent
+	// pod, where main and the artifact-plugin sidecars must share one /tmp so a plugin
+	// can write a downloaded artifact at the path main sends it over the socket.
+	volumeMountTmpDir = apiv1.VolumeMount{
+		Name:      volumeTmpDir.Name,
+		MountPath: "/tmp",
+	}
 )
 
 // argoexec-bin image volume: used by init-less pod mode to mount the

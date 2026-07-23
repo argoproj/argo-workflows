@@ -3851,12 +3851,6 @@ definitions:
                     Must be one of: get, create, apply, delete, replace, patch
                     +kubebuilder:validation:Enum=get;create;apply;delete;replace;patch
                 type: string
-            agent:
-                description: |-
-                    Agent, when true, runs this resource template on the shared per-workflow resource agent pod
-                    (which creates the resource and watches it for its success/failure conditions) instead of a
-                    dedicated per-node pod. See docs/resource-template.md.
-                type: boolean
             failureCondition:
                 description: |-
                     FailureCondition is a label selector expression which describes the conditions
@@ -3883,6 +3877,8 @@ definitions:
                     Must be one of: strategic, merge, json
                     +kubebuilder:validation:Enum=strategic;merge;json
                 type: string
+            mode:
+                $ref: '#/definitions/ResourceTemplateMode'
             setOwnerReference:
                 description: SetOwnerReference sets the reference to the workflow on the OwnerReference of generated resource.
                 type: boolean
@@ -3892,6 +3888,11 @@ definitions:
                     of the k8s resource in which it is acceptable to proceed to the following step
                 type: string
         type: object
+    ResourceTemplateMode:
+        description: |-
+            ResourceTemplateMode is where a resource template executes: on a dedicated per-node pod
+            (the default) or on the shared per-workflow resource agent pod.
+        type: string
     RetryAffinity:
         properties:
             nodeAntiAffinity:

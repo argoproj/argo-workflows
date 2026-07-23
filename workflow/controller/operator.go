@@ -2508,7 +2508,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	case wfv1.TemplateTypeScript:
 		node, err = woc.executeScript(ctx, nodeName, templateScope, processedTmpl, orgTmpl, opts)
 	case wfv1.TemplateTypeResource:
-		if processedTmpl.Resource != nil && processedTmpl.Resource.Agent {
+		if processedTmpl.Resource.IsAgent() {
 			node = woc.executeResourceAgent(ctx, nodeName, templateScope, processedTmpl, orgTmpl, opts)
 		} else {
 			node, err = woc.executeResource(ctx, nodeName, templateScope, processedTmpl, orgTmpl, opts)

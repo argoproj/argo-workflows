@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"slices"
+	"time"
 
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -222,8 +223,12 @@ func (woc *wfOperationCtx) createTaskSetAgentPod(ctx context.Context, resourceAg
 	serviceAccountName := woc.execWf.Spec.ServiceAccountName
 	if resourceAgent {
 		// The resource agent's informers need list+watch on whole GVRs — broader than
-		// workflow pods should carry — so it runs under a dedicated service account,
-		// following the `<name>-executor-plugin` convention. Fails if the SA is missing.
+		// workflow pods should carry — so it does not run under the workflow service
+		// account itself but under a dedicated `<workflow-sa>-resource-agent` account
+		// (the same derived-name scheme executor plugins use with their
+		// `<plugin>-executor-plugin` accounts). Fails if the account is missing.
+		// Template-level serviceAccountName/executor.serviceAccountName cannot be
+		// honored on this shared pod; validation and executeResourceAgent reject them.
 		if serviceAccountName == "" {
 			serviceAccountName = "default"
 		}
@@ -232,6 +237,14 @@ func (woc *wfOperationCtx) createTaskSetAgentPod(ctx context.Context, resourceAg
 	tokenVolume, tokenVolumeMount, err := woc.getServiceAccountTokenVolume(ctx, serviceAccountName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get token volumes: %w", err)
+	}
+
+	var artifactPluginMounts []apiv1.VolumeMount
+	if resourceAgent {
+		pluginSidecars, pluginVolumes, artifactPluginMounts, err = woc.getArtifactPluginSidecars(ctx, *tokenVolumeMount)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	podVolumes := slices.Concat(
@@ -274,10 +287,23 @@ func (woc *wfOperationCtx) createTaskSetAgentPod(ctx context.Context, resourceAg
 		// resource-agent writes manifests to temp files, but MinimalCtrSC sets a
 		// read-only root filesystem; give it a writable /tmp like regular pods have.
 		podVolumes = append(podVolumes, volumeTmpDir)
-		agentMainCtr.VolumeMounts = append(agentMainCtr.VolumeMounts, apiv1.VolumeMount{
-			Name:      volumeTmpDir.Name,
-			MountPath: "/tmp",
-		})
+		agentMainCtr.VolumeMounts = append(agentMainCtr.VolumeMounts, volumeMountTmpDir)
+		// One socket mount per artifact-plugin sidecar: main dials the plugin's unix
+		// socket when a manifestFrom artifact is plugin-backed.
+		agentMainCtr.VolumeMounts = append(agentMainCtr.VolumeMounts, artifactPluginMounts...)
+		if len(pluginSidecars) > 0 {
+			// The plugin sidecars run the plugin images and exec argoexec from the
+			// shared var-run-argo volume; the standard init container is what copies
+			// it there — the same mechanism the artifact GC pod uses. The env vars are
+			// required for `argoexec init` to run.
+			initCtr := woc.standardInitContainer(ctx, &wfv1.Template{Name: "artifact-driver"})
+			initCtr.VolumeMounts = []apiv1.VolumeMount{volumeMountVarArgo}
+			initCtr.Env = append(initCtr.Env,
+				apiv1.EnvVar{Name: common.EnvVarTemplate, Value: "{}"},
+				apiv1.EnvVar{Name: common.EnvVarDeadline, Value: time.Now().Format(time.RFC3339)},
+			)
+			initContainers = append(initContainers, *initCtr)
+		}
 	} else {
 		// the `init` container populates the shared empty-dir volume with plugin tokens
 		agentInitCtr := agentCtrTemplate.DeepCopy()
@@ -422,6 +448,44 @@ func (woc *wfOperationCtx) getExecutorPlugins(ctx context.Context) ([]apiv1.Cont
 		}
 	}
 	return sidecars, volumes, nil
+}
+
+// getArtifactPluginSidecars builds one artifact-plugin sidecar per artifact driver
+// registered in the controller config, plus the socket volumes they serve on and the
+// socket mounts the agent's main container needs to dial them. The resource agent
+// serves every resource template in the workflow's taskset — including templates that
+// reach the taskset only after this pod exists — so all registered drivers are
+// installed up front rather than only the ones referenced so far.
+func (woc *wfOperationCtx) getArtifactPluginSidecars(ctx context.Context, tokenVolumeMount apiv1.VolumeMount) ([]apiv1.Container, []apiv1.Volume, []apiv1.VolumeMount, error) {
+	drivers := woc.controller.Config.ArtifactDrivers
+	if len(drivers) == 0 {
+		return nil, nil, nil, nil
+	}
+	// Agent pods have no workload template; this stand-in only names the containers'
+	// origin, matching the artifact GC pod's convention.
+	tmpl := &wfv1.Template{Name: "artifact-driver"}
+	sidecars := make([]apiv1.Container, 0, len(drivers))
+	volumes := make([]apiv1.Volume, 0, len(drivers))
+	mainMounts := make([]apiv1.VolumeMount, 0, len(drivers))
+	for _, driver := range drivers {
+		ctr, err := woc.artifactSidecarContainer(ctx, tmpl, driver, legacyArgoexecBinaryPath)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		// artifactSidecarContainer leaves only the plugin's socket mount. The sidecar
+		// additionally needs: var-run-argo (argoexec, copied there by the init
+		// container, plus the ctr/<name> signal directory); the shared /tmp the agent
+		// downloads manifestFrom artifacts into, because the plugin process writes the
+		// artifact at the path main sends over the socket; and the service-account
+		// token, which workload pods hand drivers via automount but the agent pod
+		// (automount disabled) must mount explicitly — drivers use it to resolve the
+		// secret refs in their configuration.
+		ctr.VolumeMounts = append(ctr.VolumeMounts, volumeMountVarArgo, volumeMountTmpDir, tokenVolumeMount)
+		sidecars = append(sidecars, *ctr)
+		volumes = append(volumes, driver.Name.Volume())
+		mainMounts = append(mainMounts, driver.Name.VolumeMount())
+	}
+	return sidecars, volumes, mainMounts, nil
 }
 
 func (woc *wfOperationCtx) getExecutorPluginComponents(ctx context.Context, plug spec.Plugin) (*apiv1.Container, *apiv1.Volume, error) {
