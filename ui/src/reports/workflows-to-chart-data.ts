@@ -83,7 +83,8 @@ export function workflowsToChartData(workflows: Workflow[], limit: number) {
                             label: {
                                 enabled: true,
                                 position: 'left',
-                                content: 'Average'
+                                // Display calculated average duration with 1 decimal place, or show 0.0s if no data
+                                content: durationData.length > 0 ? `Average: ${(durationData.reduce((a, b) => a + b, 0) / durationData.length).toFixed(1)}s` : 'Average: 0.0s'
                             }
                         }
                     ]
