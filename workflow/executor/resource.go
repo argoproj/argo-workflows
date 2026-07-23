@@ -436,9 +436,9 @@ func runKubectl(ctx context.Context, args ...string) (out []byte, err error) {
 			WithDiscoveryQPS(50.0),
 		IOStreams: genericclioptions.IOStreams{Out: &buf, ErrOut: os.Stderr},
 	})
-	// Execute parses os.Args unless told otherwise (kubectl's own tests set args the same way).
+	// ExecuteContext parses os.Args unless told otherwise (kubectl's own tests set args the same way).
 	cmd.SetArgs(args[1:])
-	if err := cmd.Execute(); err != nil {
+	if err := cmd.ExecuteContext(ctx); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil

@@ -9,12 +9,12 @@ ResourceTemplate is a template subtype to manipulate kubernetes resources
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **action** | **String** | Action is the action to perform to the resource. Must be one of: get, create, apply, delete, replace, patch | 
-**agent** | **Boolean** | Agent, when true, runs this resource template on the shared per-workflow resource agent pod (which creates the resource and watches it for its success/failure conditions) instead of a dedicated per-node pod. See docs/resource-template.md. |  [optional]
 **failureCondition** | **String** | FailureCondition is a label selector expression which describes the conditions of the k8s resource in which the step was considered failed |  [optional]
 **flags** | **List&lt;String&gt;** | Flags is a set of additional options passed to kubectl before submitting a resource I.e. to disable resource validation: flags: [  \&quot;--validate&#x3D;false\&quot;  # disable resource validation ] |  [optional]
 **manifest** | **String** | Manifest contains the kubernetes manifest |  [optional]
 **manifestFrom** | [**IoArgoprojWorkflowV1alpha1ManifestFrom**](IoArgoprojWorkflowV1alpha1ManifestFrom.md) |  |  [optional]
 **mergeStrategy** | **String** | MergeStrategy is the strategy used to merge a patch. It defaults to \&quot;strategic\&quot; Must be one of: strategic, merge, json |  [optional]
+**mode** | **String** | Mode is where this resource template executes: on a dedicated per-node pod (\&quot;pod\&quot;, the default), or on the shared per-workflow resource agent pod (\&quot;agent\&quot;), which creates the resource and watches it for its success/failure conditions. See docs/resource-template.md. |  [optional]
 **setOwnerReference** | **Boolean** | SetOwnerReference sets the reference to the workflow on the OwnerReference of generated resource. |  [optional]
 **successCondition** | **String** | SuccessCondition is a label selector expression which describes the conditions of the k8s resource in which it is acceptable to proceed to the following step |  [optional]
 

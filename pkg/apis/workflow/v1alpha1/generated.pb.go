@@ -5870,14 +5870,11 @@ func (m *ResourceTemplate) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	i -= len(m.Mode)
+	copy(dAtA[i:], m.Mode)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Mode)))
 	i--
-	if m.Agent {
-		dAtA[i] = 1
-	} else {
-		dAtA[i] = 0
-	}
-	i--
-	dAtA[i] = 0x48
+	dAtA[i] = 0x4a
 	if m.ManifestFrom != nil {
 		{
 			size, err := m.ManifestFrom.MarshalToSizedBuffer(dAtA[:i])
@@ -11777,7 +11774,8 @@ func (m *ResourceTemplate) Size() (n int) {
 		l = m.ManifestFrom.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
-	n += 2
+	l = len(m.Mode)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -14604,7 +14602,7 @@ func (this *ResourceTemplate) String() string {
 		`FailureCondition:` + fmt.Sprintf("%v", this.FailureCondition) + `,`,
 		`Flags:` + fmt.Sprintf("%v", this.Flags) + `,`,
 		`ManifestFrom:` + strings.Replace(this.ManifestFrom.String(), "ManifestFrom", "ManifestFrom", 1) + `,`,
-		`Agent:` + fmt.Sprintf("%v", this.Agent) + `,`,
+		`Mode:` + fmt.Sprintf("%v", this.Mode) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -33033,10 +33031,10 @@ func (m *ResourceTemplate) Unmarshal(dAtA []byte) error {
 			}
 			iNdEx = postIndex
 		case 9:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Agent", wireType)
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Mode", wireType)
 			}
-			var v int
+			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowGenerated
@@ -33046,12 +33044,24 @@ func (m *ResourceTemplate) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			m.Agent = bool(v != 0)
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Mode = ResourceTemplateMode(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGenerated(dAtA[iNdEx:])

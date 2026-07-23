@@ -12792,8 +12792,6 @@ spec:
                         - replace
                         - patch
                         type: string
-                      agent:
-                        type: boolean
                       failureCondition:
                         type: string
                       flags:
@@ -13411,6 +13409,8 @@ spec:
                         - strategic
                         - merge
                         - json
+                        type: string
+                      mode:
                         type: string
                       setOwnerReference:
                         type: boolean
@@ -30831,12 +30831,6 @@ spec:
                           - replace
                           - patch
                           type: string
-                        agent:
-                          description: |-
-                            Agent, when true, runs this resource template on the shared per-workflow resource agent pod
-                            (which creates the resource and watches it for its success/failure conditions) instead of a
-                            dedicated per-node pod. See docs/resource-template.md.
-                          type: boolean
                         failureCondition:
                           description: |-
                             FailureCondition is a label selector expression which describes the conditions
@@ -31994,6 +31988,13 @@ spec:
                           - strategic
                           - merge
                           - json
+                          type: string
+                        mode:
+                          description: |-
+                            Mode is where this resource template executes: on a dedicated per-node pod ("pod",
+                            the default), or on the shared per-workflow resource agent pod ("agent"), which
+                            creates the resource and watches it for its success/failure conditions. See
+                            docs/resource-template.md.
                           type: string
                         setOwnerReference:
                           description: SetOwnerReference sets the reference to the

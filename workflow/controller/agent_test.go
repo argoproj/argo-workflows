@@ -470,3 +470,114 @@ spec:
 		require.Nil(t, pod)
 	})
 }
+
+// Test_createResourceAgentPod_artifactPluginSidecars asserts that every artifact driver
+// registered in the controller config is installed into the resource-agent pod: one
+// sidecar per driver carrying the plugin socket, var-run-argo (argoexec), the shared
+// /tmp, and the service-account token; the socket volume on the pod; the socket mount
+// on main; and the init container that copies argoexec for the sidecars. With no
+// drivers registered the pod carries none of that.
+func Test_createResourceAgentPod_artifactPluginSidecars(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(agentTaskSetWf)
+	resourceAgentServiceAccount := &apiv1.ServiceAccount{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      "default-resource-agent",
+			Namespace: "default",
+		},
+		Secrets: []apiv1.ObjectReference{{}},
+	}
+
+	t.Run("NoDriversRegistered", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx, wf, defaultServiceAccount, resourceAgentServiceAccount)
+		defer cancel()
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+		pod, err := woc.createResourceAgentPod(ctx)
+		require.NoError(t, err)
+		require.NotNil(t, pod)
+
+		assert.Len(t, pod.Spec.Containers, 1)
+		assert.Empty(t, pod.Spec.InitContainers)
+		for _, v := range pod.Spec.Volumes {
+			assert.NotContains(t, v.Name, common.ArtifactPluginSidecarPrefix)
+		}
+	})
+
+	t.Run("DriversRegistered", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx, wf, defaultServiceAccount, resourceAgentServiceAccount, func(c *WorkflowController) {
+			c.Config.ArtifactDrivers = []config.ArtifactDriver{
+				{Name: "test", Image: "my-driver"},
+				{Name: "other", Image: "my-driver"},
+			}
+			c.Config.Images["my-driver"] = config.Image{Entrypoint: []string{"/plugin-server"}}
+		})
+		defer cancel()
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+		pod, err := woc.createResourceAgentPod(ctx)
+		require.NoError(t, err)
+		require.NotNil(t, pod)
+
+		// main + one sidecar per registered driver
+		require.Len(t, pod.Spec.Containers, 3)
+
+		// the init container delivers argoexec into var-run-argo for the sidecars
+		require.Len(t, pod.Spec.InitContainers, 1)
+		initCtr := pod.Spec.InitContainers[0]
+		require.GreaterOrEqual(t, len(initCtr.Command), 2)
+		assert.Equal(t, "init", initCtr.Command[1])
+		assert.Equal(t, []apiv1.VolumeMount{volumeMountVarArgo}, initCtr.VolumeMounts)
+
+		podVolumeNames := make(map[string]bool, len(pod.Spec.Volumes))
+		for _, v := range pod.Spec.Volumes {
+			podVolumeNames[v.Name] = true
+		}
+
+		var mainCtr *apiv1.Container
+		for i, c := range pod.Spec.Containers {
+			if c.Name == common.MainContainerName {
+				mainCtr = &pod.Spec.Containers[i]
+			}
+		}
+		require.NotNil(t, mainCtr)
+		mainMounts := make(map[string]string, len(mainCtr.VolumeMounts))
+		for _, m := range mainCtr.VolumeMounts {
+			mainMounts[m.Name] = m.MountPath
+		}
+
+		for _, driver := range []wfv1.ArtifactPluginName{"test", "other"} {
+			var sidecar *apiv1.Container
+			for i, c := range pod.Spec.Containers {
+				if c.Name == common.ArtifactPluginSidecarPrefix+string(driver) {
+					sidecar = &pod.Spec.Containers[i]
+				}
+			}
+			require.NotNil(t, sidecar, "sidecar for driver %s not found", driver)
+			assert.Equal(t, "my-driver", sidecar.Image)
+
+			mounts := make(map[string]string, len(sidecar.VolumeMounts))
+			for _, m := range sidecar.VolumeMounts {
+				mounts[m.Name] = m.MountPath
+			}
+			socketVolume := driver.Volume()
+			assert.Equal(t, driver.SocketDir(), mounts[socketVolume.Name], "sidecar must serve on its socket dir")
+			assert.Equal(t, volumeMountVarArgo.MountPath, mounts[volumeMountVarArgo.Name], "sidecar must reach argoexec")
+			assert.Equal(t, "/tmp", mounts[volumeMountTmpDir.Name], "sidecar must share main's /tmp for artifact downloads")
+			// workload pods hand drivers the pod SA token via automount; the agent pod
+			// disables automount so the token must be mounted explicitly
+			foundToken := false
+			for _, m := range sidecar.VolumeMounts {
+				if m.MountPath == common.ServiceAccountTokenMountPath {
+					foundToken = true
+				}
+			}
+			assert.True(t, foundToken, "sidecar must carry the service-account token for secret resolution")
+
+			// the socket is an emptyDir volume on the pod, mounted by main so it can dial the plugin
+			assert.True(t, podVolumeNames[socketVolume.Name], "socket volume for %s missing from pod", driver)
+			assert.Equal(t, driver.SocketDir(), mainMounts[socketVolume.Name], "main must mount %s's socket dir", driver)
+		}
+	})
+}

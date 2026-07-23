@@ -27,6 +27,7 @@ import (
 	"k8s.io/client-go/restmapper"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/jsonpath"
+	"k8s.io/client-go/util/retry"
 	"k8s.io/client-go/util/workqueue"
 	kubectlget "k8s.io/kubectl/pkg/cmd/get"
 	"sigs.k8s.io/yaml"
@@ -566,27 +567,11 @@ func (rae *ResourceAgentExecutor) resolveManifest(ctx context.Context, tmpl *wfv
 	}
 
 	manifestPath := filepath.Join(tmpDir, "manifest")
-	isTar, isZip := false, false
-	switch {
-	case art.GetArchive().None != nil:
-	case art.GetArchive().Tar != nil:
-		isTar = true
-	case art.GetArchive().Zip != nil:
-		isZip = true
-	default:
-		if isTar, err = isTarball(ctx, downloadPath); err != nil {
-			return nil, err
-		}
-	}
-	switch {
-	case isTar:
-		err = untar(downloadPath, manifestPath)
-	case isZip:
-		err = unzip(ctx, downloadPath, manifestPath)
-	default:
-		err = os.Rename(downloadPath, manifestPath)
-	}
+	isTar, isZip, err := detectArchiveType(ctx, *art, downloadPath)
 	if err != nil {
+		return nil, err
+	}
+	if err := extractArchive(ctx, isTar, isZip, downloadPath, manifestPath); err != nil {
 		return nil, err
 	}
 	return os.ReadFile(manifestPath)
@@ -648,6 +633,26 @@ func (rae *ResourceAgentExecutor) createResource(ctx context.Context, resource *
 		return existing, gvr, namespaced, nil
 	}
 
+	action := resource.Action
+	if action == "" {
+		action = "create"
+	}
+
+	// A plain create needs none of kubectl's semantics (flag passthrough, merge strategies,
+	// server-side apply), so it goes through the DynamicClient directly and stays concurrent
+	// across task workers — the create-heavy fan-outs the agent targets never queue on the
+	// kubectl lock. findExistingResource above already adopted any object this agent created,
+	// so an AlreadyExists from either path is a same-named object the agent does not own;
+	// adopting it would make the agent monitor (and garbage-collect) an unrelated resource,
+	// so fail instead.
+	if action == "create" && len(resource.Flags) == 0 {
+		created, createErr := rae.dynamicCreate(ctx, gvr, namespaced, obj)
+		if createErr != nil {
+			return nil, gvr, namespaced, createErr
+		}
+		return created, gvr, namespaced, nil
+	}
+
 	tmpFile, err := os.CreateTemp("", "manifest-*.yaml")
 	if err != nil {
 		return nil, gvr, namespaced, argoerrors.InternalWrapError(err)
@@ -662,26 +667,18 @@ func (rae *ResourceAgentExecutor) createResource(ctx context.Context, resource *
 		return nil, gvr, namespaced, argoerrors.InternalWrapError(err)
 	}
 
-	action := resource.Action
-	if action == "" {
-		action = "create"
-	}
 	args, err := getKubectlArguments(action, manifestPath, resource.Flags, resource.MergeStrategy)
 	if err != nil {
 		return nil, gvr, namespaced, err
 	}
 
-	// In-process kubectl (rather than the DynamicClient) keeps behavior parity with the per-pod
-	// executor: resource.Flags passthrough, merge strategies, server-side apply. kubectl binds
-	// flags to package globals, so runKubectl serializes itself internally — capping resource
-	// creation at one in-flight kubectl regardless of ARGO_AGENT_TASK_WORKERS, a conscious
-	// trade-off for that parity. The watch/report paths stay concurrent; only this
-	// create/apply/patch/replace/delete step is serialized.
+	// The remaining actions (apply/patch/replace/delete/get, or any explicit flags) keep
+	// in-process kubectl for behavior parity with the per-pod executor. kubectl binds flags
+	// to package globals, so runKubectl serializes itself internally — capping these actions
+	// at one in-flight kubectl regardless of ARGO_AGENT_TASK_WORKERS, a conscious trade-off
+	// for that parity. The watch/report paths stay concurrent; only this step is serialized.
 	out, err := runKubectlWithRetry(ctx, args...)
 	if err != nil {
-		// findExistingResource above already adopted any object this agent created, so an
-		// AlreadyExists here is a same-named object the agent does not own. Adopting it would make
-		// the agent monitor (and garbage-collect) an unrelated resource, so fail instead.
 		return nil, gvr, namespaced, err
 	}
 
@@ -692,6 +689,31 @@ func (rae *ResourceAgentExecutor) createResource(ctx context.Context, resource *
 		return obj, gvr, namespaced, nil
 	}
 	return created, gvr, namespaced, nil
+}
+
+// dynamicCreate POSTs the labeled manifest object through the DynamicClient, retrying
+// transient errors with the same backoff runKubectlWithRetry uses. Unlike kubectl it
+// holds no process-global state, so creates from concurrent task workers do not
+// serialize. The server's response carries the assigned name for generateName manifests.
+func (rae *ResourceAgentExecutor) dynamicCreate(ctx context.Context, gvr schema.GroupVersionResource, namespaced bool, obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+	ri := rae.DynamicClient.Resource(gvr)
+	var created *unstructured.Unstructured
+	err := retry.OnError(retry.DefaultBackoff, func(err error) bool {
+		return argoerr.IsTransientErr(ctx, err)
+	}, func() error {
+		var createErr error
+		if namespaced {
+			ns := obj.GetNamespace()
+			if ns == "" {
+				ns = rae.Namespace
+			}
+			created, createErr = ri.Namespace(ns).Create(ctx, obj, metav1.CreateOptions{})
+		} else {
+			created, createErr = ri.Create(ctx, obj, metav1.CreateOptions{})
+		}
+		return createErr
+	})
+	return created, err
 }
 
 func (rae *ResourceAgentExecutor) getResource(ctx context.Context, gvr schema.GroupVersionResource, namespaced bool, namespace, name string) (*unstructured.Unstructured, error) {

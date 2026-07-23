@@ -347,7 +347,7 @@ spec:
     - name: main
       resource:
         action: create
-        agent: true
+        mode: agent
 status:
   nodes:
     resource-monitor-1-123:
@@ -404,7 +404,7 @@ spec:
     - name: main
       resource:
         action: create
-        agent: true
+        mode: agent
 status:
   nodes:
     resource-monitor-1-123:

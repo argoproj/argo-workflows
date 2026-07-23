@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -149,6 +150,41 @@ func TestFindExistingResource(t *testing.T) {
 		require.NoError(t, err)
 		assert.False(t, found)
 	})
+}
+
+func TestDynamicCreate(t *testing.T) {
+	// A plain create (no kubectl flags) goes through the DynamicClient so task workers
+	// stay concurrent. It must create in the agent's namespace when the manifest names
+	// none, and must propagate AlreadyExists for a same-named object rather than adopt it
+	// (adoption is findExistingResource's job, keyed on the agent's ownership markers).
+	ctx := logging.TestContext(t.Context())
+	gvr := schema.GroupVersionResource{Group: "example.com", Version: "v1", Resource: "widgets"}
+	newWidget := func() *unstructured.Unstructured {
+		return &unstructured.Unstructured{Object: map[string]any{
+			"apiVersion": "example.com/v1", "kind": "Widget",
+			"metadata": map[string]any{
+				"name":        "widget-1",
+				"labels":      map[string]any{common.LabelKeyAgentResource: "uid-1"},
+				"annotations": map[string]any{common.AnnotationKeyNodeID: "node-1"},
+			},
+		}}
+	}
+	client := dynamicfake.NewSimpleDynamicClientWithCustomListKinds(runtime.NewScheme(),
+		map[schema.GroupVersionResource]string{gvr: "WidgetList"})
+	rae := &ResourceAgentExecutor{WorkflowUID: "uid-1", Namespace: "default", DynamicClient: client}
+
+	created, err := rae.dynamicCreate(ctx, gvr, true, newWidget())
+	require.NoError(t, err)
+	assert.Equal(t, "widget-1", created.GetName())
+	assert.Equal(t, "uid-1", created.GetLabels()[common.LabelKeyAgentResource])
+
+	stored, err := client.Resource(gvr).Namespace("default").Get(ctx, "widget-1", metav1.GetOptions{})
+	require.NoError(t, err, "an un-namespaced manifest must be created in the agent's namespace")
+	assert.Equal(t, "node-1", stored.GetAnnotations()[common.AnnotationKeyNodeID])
+
+	_, err = rae.dynamicCreate(ctx, gvr, true, newWidget())
+	require.Error(t, err, "a same-named existing object must fail the create, not be adopted")
+	assert.True(t, apierrors.IsAlreadyExists(err))
 }
 
 func TestSaveResourceParameters(t *testing.T) {

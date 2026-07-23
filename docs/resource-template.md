@@ -6,14 +6,14 @@ See [Kubernetes Resources](walk-through/kubernetes-resources.md).
 
 ## Agent-based execution
 
-Set `resource.agent: true` on a resource template to run it on the shared per-workflow resource
+Set `resource.mode: agent` on a resource template to run it on the shared per-workflow resource
 agent pod instead of a dedicated per-node pod:
 
 ```yaml
 - name: create-thing
   resource:
     action: create
-    agent: true
+    mode: agent
     successCondition: status.phase == Running
     manifest: |
       ...
@@ -38,9 +38,13 @@ When resource templates are executed by the agent instead of a per-node pod, be 
   moment its success conditions are met, not via `kubectl get`.
 * Only a single manifest document is supported per template. A multi-document manifest
   (`---`-separated) is rejected; split it into separate resource templates.
-* `manifestFrom` loads the artifact in-process, so it works only with the native artifact drivers
-  (`s3`, `gcs`, `oss`, `http`, `git`, `raw`). A `plugin:`-backed artifact cannot be used, because the
-  agent pod runs no artifact-plugin sidecars.
+* `manifestFrom` artifacts are loaded by the agent pod itself. The native artifact drivers
+  (`s3`, `gcs`, `oss`, `http`, `git`, `raw`) run in-process; `plugin:`-backed artifacts work too,
+  because every [artifact driver plugin](configure-artifact-repository.md) registered in the
+  controller's `artifactDrivers` configuration is installed into the agent pod as a sidecar.
+* `{{pod.name}}` still resolves in agent-based resource templates — to the name the per-node pod
+  *would* have had — so manifests keep working unchanged when switching modes. No pod with that
+  name actually exists, so don't pass it to anything that expects a real pod.
 
 ### Service account and RBAC
 

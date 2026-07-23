@@ -3428,10 +3428,29 @@ type ResourceTemplate struct {
 	// ]
 	Flags []string `json:"flags,omitempty" protobuf:"varint,7,opt,name=flags"`
 
-	// Agent, when true, runs this resource template on the shared per-workflow resource agent pod
-	// (which creates the resource and watches it for its success/failure conditions) instead of a
-	// dedicated per-node pod. See docs/resource-template.md.
-	Agent bool `json:"agent,omitempty" protobuf:"varint,9,opt,name=agent"`
+	// Mode is where this resource template executes: on a dedicated per-node pod ("pod",
+	// the default), or on the shared per-workflow resource agent pod ("agent"), which
+	// creates the resource and watches it for its success/failure conditions. See
+	// docs/resource-template.md.
+	// +optional
+	Mode ResourceTemplateMode `json:"mode,omitempty" protobuf:"bytes,9,opt,name=mode,casttype=ResourceTemplateMode"`
+}
+
+// ResourceTemplateMode is where a resource template executes: on a dedicated per-node pod
+// (the default) or on the shared per-workflow resource agent pod.
+type ResourceTemplateMode string
+
+const (
+	// ResourceTemplateModePod runs the resource template on a dedicated per-node pod (the default).
+	ResourceTemplateModePod ResourceTemplateMode = "pod"
+	// ResourceTemplateModeAgent runs the resource template on the shared per-workflow resource agent pod.
+	ResourceTemplateModeAgent ResourceTemplateMode = "agent"
+)
+
+// IsAgent reports whether this resource template runs on the shared per-workflow
+// resource agent pod rather than a dedicated per-node pod.
+func (in *ResourceTemplate) IsAgent() bool {
+	return in != nil && in.Mode == ResourceTemplateModeAgent
 }
 
 type ManifestFrom struct {
@@ -3480,7 +3499,7 @@ func (tmpl *Template) GetNodeType() NodeType {
 	}
 	switch tmpl.GetType() {
 	case TemplateTypeResource:
-		if tmpl.Resource != nil && tmpl.Resource.Agent {
+		if tmpl.Resource.IsAgent() {
 			return NodeTypeResourceAgent
 		}
 		return NodeTypePod
@@ -3505,7 +3524,7 @@ func (tmpl *Template) IsPodType() bool {
 	switch tmpl.GetType() {
 	case TemplateTypeResource:
 		// agent-based resource templates run on the shared agent pod, not a per-node pod
-		return tmpl.Resource == nil || !tmpl.Resource.Agent
+		return !tmpl.Resource.IsAgent()
 	case TemplateTypeContainer, TemplateTypeContainerSet, TemplateTypeScript, TemplateTypeData:
 		return true
 	}
@@ -3515,7 +3534,7 @@ func (tmpl *Template) IsPodType() bool {
 // ProvidesPodNameVar reports whether the {{pod.name}} variable should be injected into this
 // template's scope. Pod templates always do; resource templates do too (including the agent
 // variant, which is not IsPodType) so that a manifest referencing {{pod.name}} keeps resolving
-// the same way regardless of resource.agent.
+// the same way regardless of resource.mode.
 func (tmpl *Template) ProvidesPodNameVar() bool {
 	return tmpl.IsPodType() || tmpl.GetType() == TemplateTypeResource
 }

@@ -35,7 +35,9 @@ rules:
     verbs:
       - get
   # the bundled examples create ConfigMaps and Pods; the agent also reads them back and lists/watches
-  # them to evaluate their success/failure conditions (configmaps get also covers `manifestFrom`)
+  # them to evaluate their success/failure conditions (configmaps get also covers `manifestFrom`).
+  # patch/update/delete let every resource action (apply, replace, patch, delete) work out of the
+  # box in the quick-start environment.
   - apiGroups:
       - ""
     resources:
@@ -43,8 +45,11 @@ rules:
       - pods
     verbs:
       - create
+      - delete
       - get
       - list
+      - patch
+      - update
       - watch
   # the workflow-of-workflows examples create child Workflows
   - apiGroups:
@@ -53,6 +58,9 @@ rules:
       - workflows
     verbs:
       - create
+      - delete
       - get
       - list
+      - patch
+      - update
       - watch

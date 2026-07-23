@@ -316,15 +316,25 @@ func (we *WorkflowExecutor) loadArtifact(ctx context.Context, pluginName wfv1.Ar
 }
 
 func (we *WorkflowExecutor) unarchiveArtifact(ctx context.Context, art wfv1.Artifact, tempArtPath, artPath string) error {
-	isTar := false
-	isZip := false
-	var err error
+	isTar, isZip, err := detectArchiveType(ctx, art, tempArtPath)
+	if err != nil {
+		return err
+	}
 
+	unarchiveCtx, span := we.Tracing.StartUnarchiveArtifact(ctx, artifactArchiveWord(isZip, isTar))
+	defer span.End()
+
+	return extractArchive(unarchiveCtx, isTar, isZip, tempArtPath, artPath)
+}
+
+// detectArchiveType reports whether the artifact content at path is a tarball or a zip:
+// from the artifact's explicit archive config when set, otherwise by sniffing the file.
+// Zip is never auto-detected, for backwards compatibility. Shared by the workload
+// executor's artifact staging and the resource agent's manifestFrom resolution.
+func detectArchiveType(ctx context.Context, art wfv1.Artifact, path string) (isTar, isZip bool, err error) {
 	switch {
 	case art.GetArchive().None != nil:
 		// explicitly not a tar
-		isTar = false
-		isZip = false
 	case art.GetArchive().Tar != nil:
 		// explicitly a tar
 		isTar = true
@@ -332,23 +342,21 @@ func (we *WorkflowExecutor) unarchiveArtifact(ctx context.Context, art wfv1.Arti
 		// explicitly a zip
 		isZip = true
 	default:
-		// auto-detect if tarball
-		// (don't try to autodetect zip files for backwards compatibility)
-		isTar, err = isTarball(ctx, tempArtPath)
-		if err != nil {
-			return err
-		}
+		isTar, err = isTarball(ctx, path)
 	}
+	return isTar, isZip, err
+}
 
-	unarchiveCtx, span := we.Tracing.StartUnarchiveArtifact(ctx, artifactArchiveWord(isZip, isTar))
-	defer span.End()
-
+// extractArchive untars/unzips tempArtPath to artPath — or renames it there when it is
+// not archived — removing tempArtPath once extracted.
+func extractArchive(ctx context.Context, isTar, isZip bool, tempArtPath, artPath string) error {
+	var err error
 	switch {
 	case isTar:
 		err = untar(tempArtPath, artPath)
 		_ = os.Remove(tempArtPath)
 	case isZip:
-		err = unzip(unarchiveCtx, tempArtPath, artPath)
+		err = unzip(ctx, tempArtPath, artPath)
 		_ = os.Remove(tempArtPath)
 	default:
 		err = os.Rename(tempArtPath, artPath)

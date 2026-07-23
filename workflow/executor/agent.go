@@ -174,7 +174,13 @@ func patchTaskSetStatusNodes(ctx context.Context, taskSetInterface v1alpha1.Work
 	if err != nil {
 		return err
 	}
-	return retry.OnError(wait.Backoff{
+	// This runs synchronously inside the patch workers' select loops, so a single hung
+	// Patch against a degraded API server would stall result propagation for every node
+	// the agent serves. Bound the whole retry loop to the backoff window it was designed
+	// for; results are re-flushed by the caller, so timing out here loses nothing.
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	patchErr := retry.OnError(wait.Backoff{
 		Duration: time.Second,
 		Factor:   2,
 		Jitter:   0.1,
@@ -186,6 +192,13 @@ func patchTaskSetStatusNodes(ctx context.Context, taskSetInterface v1alpha1.Work
 		_, patchErr := taskSetInterface.Patch(ctx, workflowName, types.MergePatchType, patch, metav1.PatchOptions{}, "status")
 		return patchErr
 	})
+	if patchErr != nil && ctx.Err() != nil {
+		// The bound above cut the attempt short. That is a slow or hung API server, not a
+		// payload problem, so report it as transient: both patch workers keep the results
+		// and retry next tick, rather than marking every pending node errored.
+		return fmt.Errorf("%w: %w", errors.NewErrTransient("taskset status patch timed out"), patchErr)
+	}
+	return patchErr
 }
 
 func (ae *AgentExecutor) patchWorker(ctx context.Context, taskSetInterface v1alpha1.WorkflowTaskSetInterface, responseQueue chan response, requeueTime time.Duration) {

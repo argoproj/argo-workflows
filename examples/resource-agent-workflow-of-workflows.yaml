@@ -38,7 +38,7 @@ spec:
       - name: message
     resource:
       action: create
-      agent: true
+      mode: agent
       successCondition: status.phase == Succeeded
       failureCondition: status.phase in (Failed, Error)
       setOwnerReference: true
