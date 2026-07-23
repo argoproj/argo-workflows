@@ -2126,6 +2126,7 @@ func buildRetryStrategyLocalScope(node *wfv1.NodeStatus, nodes wfv1.Nodes) map[s
 	localScope[varkeys.RetriesLastStatus.Template()] = string(lastChildNode.Phase)
 	localScope[varkeys.RetriesLastDuration.Template()] = fmt.Sprint(lastChildNode.GetDuration().Seconds())
 	localScope[varkeys.RetriesLastMessage.Template()] = lastChildNode.Message
+	localScope[varkeys.NodeType.Template()] = string(lastChildNode.Type)
 
 	return localScope
 }
@@ -2212,6 +2213,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	}
 
 	localParams[varkeys.NodeName.Template()] = nodeName
+	localParams[varkeys.NodeType.Template()] = string(resolvedTmpl.GetNodeType())
 
 	// Inputs has been processed with arguments already, so pass empty arguments.
 	processedTmpl, err := common.ProcessArgs(ctx, resolvedTmpl, &args, woc.globalParams(), localParams, false, woc.wf.Namespace, woc.controller.typedConfigMapInformer.GetIndexer())

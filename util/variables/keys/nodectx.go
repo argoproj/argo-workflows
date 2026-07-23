@@ -17,6 +17,7 @@ var (
 	// exit-handler template whose body is itself container/script/resource.
 	PodName   = nodeCtx("pod.name", "Computed pod name for pod-producing templates", podKindsOnExit)
 	NodeName  = nodeCtx("node.name", "Full node name", anyTmpl)
+	NodeType  = nodeCtx("node.type", "Node type of the current node: Pod, Steps, DAG, Suspend, HTTP, Plugin", anyTmpl)
 	StepsName = nodeCtx("steps.name", "Name of the current step (inside a Steps template body)", []v.TemplateKind{v.TmplSteps})
 	TasksName = nodeCtx("tasks.name", "Name of the current task (inside a DAG template body)", []v.TemplateKind{v.TmplDAG})
 )
