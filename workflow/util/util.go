@@ -100,6 +100,7 @@ func InstanceIDRequirement(instanceID string) labels.Requirement {
 // an Unstructured informer and converting objects to workflows. Ignores objects that failed to convert.
 type WorkflowLister interface {
 	List() ([]*wfv1.Workflow, error)
+	ListByIndex(string, string) ([]*wfv1.Workflow, error)
 }
 
 type workflowLister struct {
@@ -113,6 +114,24 @@ func (l *workflowLister) List() ([]*wfv1.Workflow, error) {
 		wf, err := FromUnstructured(m.(*unstructured.Unstructured))
 		if err != nil {
 			l.log.WithField("workflow", m).WithError(err).Warn(context.Background(), "Failed to unmarshal workflow object")
+			continue
+		}
+		workflows = append(workflows, wf)
+	}
+	return workflows, nil
+}
+
+func (l *workflowLister) ListByIndex(index, key string) ([]*wfv1.Workflow, error) {
+	workflows := make([]*wfv1.Workflow, 0)
+	objs, err := l.informer.GetIndexer().ByIndex(index, key)
+	if err != nil {
+		return workflows, err
+	}
+
+	for _, m := range objs {
+		wf, err := FromUnstructured(m.(*unstructured.Unstructured))
+		if err != nil {
+			l.log.WithField("workflow", m).WithError(err).Warn(context.Background(), "Failed to unmarshal workflow")
 			continue
 		}
 		workflows = append(workflows, wf)
@@ -165,6 +184,19 @@ func ToUnstructured(wf *wfv1.Workflow) (*unstructured.Unstructured, error) {
 	un := &unstructured.Unstructured{Object: obj}
 	// we need to add these values so that the `EventRecorder` does not error
 	un.SetKind(workflow.WorkflowKind)
+	un.SetAPIVersion(workflow.APIVersion)
+	return un, nil
+}
+
+// CronToUnstructured converts a cronworkflow to an Unstructured object
+func CronToUnstructured(cwf *wfv1.CronWorkflow) (*unstructured.Unstructured, error) {
+	obj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(cwf)
+	if err != nil {
+		return nil, err
+	}
+	un := &unstructured.Unstructured{Object: obj}
+	// we need to add these values so that the `EventRecorder` does not error
+	un.SetKind(workflow.CronWorkflowKind)
 	un.SetAPIVersion(workflow.APIVersion)
 	return un, nil
 }

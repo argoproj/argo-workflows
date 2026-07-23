@@ -18,9 +18,9 @@ type cronFacade struct {
 
 type ScheduledTimeFunc func(ctx context.Context) time.Time
 
-func newCronFacade() *cronFacade {
+func newCronFacade(opts ...cron.Option) *cronFacade {
 	return &cronFacade{
-		cron:     cron.New(),
+		cron:     cron.New(opts...),
 		entryIDs: make(map[string][]cron.EntryID),
 	}
 }
