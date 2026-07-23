@@ -139,8 +139,10 @@ func (woc *wfOperationCtx) taskResultReconciliation(ctx context.Context) {
 				WithField("nodeID", nodeID).
 				Debug(ctx, "task-result changed")
 			woc.wf.Status.Nodes.Set(ctx, nodeID, *newNode)
-			// task results may carry global artifacts/parameters; add them to the global scope
-			if newNode.Outputs != nil && newNode.Outputs.HasOutputs() {
+			// task results may carry global artifacts/parameters; add them to the global scope,
+			// but only once the task result is complete so we don't publish not-yet-final outputs
+			// (mirrors the gate in podReconciliation/assessNodeStatus, see #12537).
+			if newNode.Outputs != nil && newNode.Outputs.HasOutputs() && !woc.wf.Status.IsTaskResultIncomplete(nodeID) {
 				woc.addOutputsToGlobalScope(ctx, newNode.Outputs)
 			}
 			woc.updated = true
