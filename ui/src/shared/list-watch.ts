@@ -22,6 +22,7 @@ export class ListWatch<T extends Resource> {
     private readonly onChange: (items: T[], item?: T, type?: Type) => void;
     private readonly onError: (error: Error) => void;
     private readonly sorter: (a: T, b: T) => number;
+    private readonly limit?: number;
     private items: T[];
     private retryWatch: RetryWatch<T>;
     private timeout: any;
@@ -34,18 +35,23 @@ export class ListWatch<T extends Resource> {
         onOpen: () => void, //  called, when watches is re-established after error,  so should clear any errors
         onChange: (items: T[], item?: T, type?: Type) => void, // called whenever items change, any users that changes state should use [...items]
         onError: (error: Error) => void, // called on any error
-        sorter: Sorter = sortByYouth // show the youngest first by default
+        sorter: Sorter = sortByYouth, // show the youngest first by default
+        limit?: number // optional max items to keep after watch events, matching paginated list size
     ) {
         this.onLoad = onLoad;
         this.list = list;
         this.onChange = onChange;
         this.onError = onError;
         this.sorter = sorter;
+        this.limit = limit;
         this.retryWatch = new RetryWatch<T>(
             watch,
             onOpen,
             e => {
                 this.items = mergeItem(e.object, e.type, this.items).sort(sorter);
+                if (this.limit && this.items.length > this.limit) {
+                    this.items = this.items.slice(0, this.limit);
+                }
                 onChange(this.items, e.object, e.type);
             },
             onError
