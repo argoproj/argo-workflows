@@ -12,6 +12,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 var stepsOnExitTmpl = `apiVersion: argoproj.io/v1alpha1
@@ -1067,4 +1068,138 @@ spec:
 	require.Len(t, hookNode.Inputs.Parameters, 1)
 	assert.NotNil(t, hookNode.Inputs.Parameters[0].Value)
 	assert.Equal(t, hookNode.Inputs.Parameters[0].Value.String(), string(apiv1.PodFailed))
+}
+
+var globalArtifactOnExit = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: global-artifact-on-exit
+spec:
+  entrypoint: main
+  hooks:
+    exit:
+      template: exit-handler
+      arguments:
+        artifacts:
+        - name: message
+          from: "{{workflow.outputs.artifacts.global-result}}"
+  templates:
+  - name: main
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["hello world"]
+    outputs:
+      artifacts:
+      - name: result
+        path: /tmp/hello_world.txt
+        globalName: global-result
+  - name: exit-handler
+    inputs:
+      artifacts:
+      - name: message
+        path: /tmp/message
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["goodbye world"]
+`
+
+// TestTaskResultReconciliationSyncsGlobalArtifact reproduces the runtime side of
+// #11610: when a leaf pod's outputs (including a global artifact) are reported
+// asynchronously via a WorkflowTaskResult, taskResultReconciliation() must sync
+// them into the workflow-level global scope so that the global onExit handler can
+// later resolve {{workflow.outputs.artifacts.global-result}}.
+func TestTaskResultReconciliationSyncsGlobalArtifact(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(globalArtifactOnExit)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+
+	// Locate the entrypoint pod node. Its outputs (the global artifact) are not set
+	// here on purpose: they arrive asynchronously via a WorkflowTaskResult below, which
+	// is exactly the #11610 race this test reproduces.
+	var nodeID string
+	for id, node := range woc.wf.Status.Nodes {
+		if node.Type == wfv1.NodeTypePod {
+			nodeID = id
+			break
+		}
+	}
+	require.NotEmpty(t, nodeID)
+
+	// Guard (operator.go): while the leaf's task result is still in progress, the
+	// global onExit handler must not start, otherwise it could resolve
+	// {{workflow.outputs.artifacts.global-result}} against a not-yet-synced scope.
+	woc.wf.Status.MarkTaskResultIncomplete(ctx, nodeID)
+	wocGuard := newWorkflowOperationCtx(ctx, woc.wf, controller)
+	wocGuard.operate(ctx)
+	for _, node := range wocGuard.wf.Status.Nodes {
+		require.NotContains(t, node.Name, "onExit", "onExit handler must not start while task results are in progress")
+	}
+
+	// The executor reports the outputs (with the global artifact) asynchronously
+	// via a completed WorkflowTaskResult in the informer.
+	taskResult := &wfv1.WorkflowTaskResult{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      nodeID,
+			Namespace: wocGuard.wf.Namespace,
+			Labels: map[string]string{
+				common.LabelKeyWorkflow:               wocGuard.wf.Name,
+				common.LabelKeyReportOutputsCompleted: "true",
+			},
+		},
+		NodeResult: wfv1.NodeResult{
+			Phase: wfv1.NodeSucceeded,
+			Outputs: &wfv1.Outputs{
+				Artifacts: wfv1.Artifacts{
+					{
+						Name:       "result",
+						GlobalName: "global-result",
+						ArtifactLocation: wfv1.ArtifactLocation{
+							S3: &wfv1.S3Artifact{Key: "test"},
+						},
+					},
+				},
+			},
+		},
+	}
+	require.NoError(t, controller.taskResultInformer.GetIndexer().Add(taskResult))
+	wocGuard.wf.Status.MarkTaskResultComplete(ctx, nodeID)
+	wocGuard.taskResultReconciliation(ctx)
+
+	// The global artifact must have been synced into the workflow-level global scope.
+	require.NotNil(t, wocGuard.wf.Status.Outputs)
+	var globalArtifactPresent bool
+	for _, art := range wocGuard.wf.Status.Outputs.Artifacts {
+		if art.Name == "global-result" {
+			globalArtifactPresent = true
+			break
+		}
+	}
+	require.True(t, globalArtifactPresent, "global artifact should be synced into the global scope during task-result reconciliation")
+
+	// Now that the task result is complete and the global artifact is in scope, the
+	// onExit handler runs and must resolve {{workflow.outputs.artifacts.global-result}}.
+	woc2 := newWorkflowOperationCtx(ctx, wocGuard.wf, controller)
+	woc2.operate(ctx)
+	var onExitNode *wfv1.NodeStatus
+	for id := range woc2.wf.Status.Nodes {
+		if strings.Contains(woc2.wf.Status.Nodes[id].Name, "onExit") {
+			node := woc2.wf.Status.Nodes[id]
+			onExitNode = &node
+			break
+		}
+	}
+	require.NotNil(t, onExitNode, "onExit handler should run once task results are complete")
+	// The handler's argument {{workflow.outputs.artifacts.global-result}} must have resolved
+	// against the freshly-synced global scope. We only assert it resolved (not an
+	// unresolved-variable failure); a bare S3 key has no repository location in a unit test,
+	// which is an unrelated concern also not asserted by the sibling *OnExitTmplWithArt tests.
+	assert.NotContains(t, onExitNode.Message, "failed to resolve")
+	assert.NotContains(t, onExitNode.Message, "global-result}}")
 }
