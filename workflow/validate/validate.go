@@ -813,6 +813,7 @@ func resolveAllVariables(scope map[string]any, globalParams map[string]string, t
 			case strings.HasPrefix(trimmedTag, varkeys.TasksName.Template()):
 			case strings.HasPrefix(trimmedTag, varkeys.StepsName.Template()):
 			case strings.HasPrefix(trimmedTag, varkeys.NodeName.Template()):
+			case strings.HasPrefix(trimmedTag, varkeys.NodeType.Template()):
 			case strings.HasPrefix(trimmedTag, varkeys.WorkflowParametersAll.Template()) && workflowTemplateValidation:
 				// If we are simply validating a WorkflowTemplate in isolation, some of the parameters may come from the Workflow that uses it
 			default:
