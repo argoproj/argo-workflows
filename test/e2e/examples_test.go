@@ -80,7 +80,6 @@ func TestExampleWorkflows(t *testing.T) {
 
 			gvr := obj.GroupVersionKind().GroupVersion().WithResource(strings.ToLower(obj.GetKind() + "s"))
 			if obj.GetKind() == "ClusterWorkflowTemplate" {
-				// cluster scoped resources don't need a namespace
 				_, err = dyn.Resource(gvr).
 					Apply(
 						ctx,
@@ -158,7 +157,6 @@ func TestExampleWorkflows(t *testing.T) {
 	}
 }
 
-// helper: split multi-doc YAML
 func splitYAMLDocuments(data []byte) [][]byte {
 	sections := bytes.Split(data, []byte("---"))
 	var docs [][]byte
