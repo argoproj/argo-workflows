@@ -175,7 +175,7 @@ func (trc *Tracing) RecoverWorkflowContext(ctx context.Context, id string) conte
 	return ctx
 }
 
-func (trc *Tracing) RecordStartNode(ctx context.Context, name, namespace string, nodeID string, nodeType string, phase wfv1.NodePhase, message string) context.Context {
+func (trc *Tracing) RecordStartNode(ctx context.Context, name, namespace string, nodeID string, nodeType string, templateName string, phase wfv1.NodePhase, message string) context.Context {
 	logger := logging.RequireLoggerFromContext(ctx)
 	wfID := namespace + "/" + name
 	wf, err := trc.expectWorkflow(wfID)
@@ -188,7 +188,7 @@ func (trc *Tracing) RecordStartNode(ctx context.Context, name, namespace string,
 		logger.WithError(err).Error(ctx, "tracing create node failed")
 		return ctx
 	}
-	nodeCtx, span := trc.StartNode(ctx, nodeID, name, namespace, nodeType)
+	nodeCtx, span := trc.StartNode(ctx, nodeID, name, namespace, nodeType, templateName)
 	node.node = &span
 	wf.updateNode(nodeID, &node)
 	trc.ChangeNodePhase(nodeCtx, wfID, nodeID, phase, message)
