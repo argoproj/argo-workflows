@@ -20,6 +20,7 @@ type Config struct {
 	ControllerName            string
 	InactiveControllerTimeout time.Duration
 	SkipMigration             bool
+	Schema                    string
 }
 
 type Info struct {
@@ -86,6 +87,7 @@ func ConfigFromConfig(config *config.SyncConfig) Config {
 		InactiveControllerTimeout: SecondsToDurationWithDefault(config.InactiveControllerSeconds,
 			DefaultDBInactiveControllerSeconds),
 		SkipMigration: config.SkipMigration,
+		Schema:        GetSchema(config),
 	}
 }
 
@@ -104,4 +106,12 @@ func SessionProxyFromConfig(ctx context.Context, kubectlConfig kubernetes.Interf
 		return nil
 	}
 	return sessionProxy
+}
+
+func GetSchema(syncConfig *config.SyncConfig) string {
+	var schemaName string
+	if syncConfig.PostgreSQL != nil {
+		schemaName = syncConfig.PostgreSQL.Schema
+	}
+	return schemaName
 }

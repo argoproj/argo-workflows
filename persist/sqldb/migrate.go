@@ -234,6 +234,6 @@ func MigrateChanges(clusterName, tableName string, dbType sqldb.DBType) []sqldb.
 	}
 }
 
-func Migrate(ctx context.Context, session db.Session, clusterName, tableName string, dbType sqldb.DBType) (err error) {
-	return sqldb.Migrate(ctx, session, dbType, versionTable, MigrateChanges(clusterName, tableName, dbType))
+func Migrate(ctx context.Context, session db.Session, clusterName, schema string, tableName string, dbType sqldb.DBType) (err error) {
+	return sqldb.Migrate(ctx, session, dbType, schema, versionTable, MigrateChanges(clusterName, tableName, dbType))
 }
