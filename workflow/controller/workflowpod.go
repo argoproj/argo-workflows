@@ -628,6 +628,12 @@ func (pb *podBuilder) build(ctx context.Context) (*podBuildResult, error) {
 	simplifiedTmpl.Inputs = wfv1.Inputs{
 		Artifacts: simplifiedTmpl.Inputs.Artifacts,
 	}
+	if simplifiedTmpl.Container != nil && simplifiedTmpl.Container.Env != nil {
+		simplifiedTmpl.Container.Env = []apiv1.EnvVar{}
+	}
+	if simplifiedTmpl.Script != nil && simplifiedTmpl.Script.Env != nil {
+		simplifiedTmpl.Script.Env = []apiv1.EnvVar{}
+	}
 	envVarTemplateValue := wfv1.MustMarshallJSON(simplifiedTmpl)
 
 	// Add standard environment variables, making pod spec larger
