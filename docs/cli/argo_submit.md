@@ -46,6 +46,7 @@ argo submit [FILE... | --from `kind/name] [flags]
   -l, --labels string                Comma separated labels to apply to the workflow. Will override previous values.
       --log                          log the workflow until it completes
       --name string                  override metadata.name
+      --no-color                     Disable colorized output
       --node-field-selector string   selector of node to display, eg: --node-field-selector phase=abc
   -o, --output string                Output format. One of: name|json|yaml|wide
   -p, --parameter stringArray        pass an input parameter
