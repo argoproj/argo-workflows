@@ -9,6 +9,7 @@ interface Resource {
 
 type Type = 'ADDED' | 'MODIFIED' | 'DELETED' | 'ERROR';
 type Sorter = (a: Resource, b: Resource) => number;
+type Filter<T> = (item: T) => boolean;
 
 // put the youngest at the start of the list
 export const sortByYouth: Sorter = (a: Resource, b: Resource) => b.metadata.creationTimestamp.localeCompare(a.metadata.creationTimestamp);
@@ -22,6 +23,7 @@ export class ListWatch<T extends Resource> {
     private readonly onChange: (items: T[], item?: T, type?: Type) => void;
     private readonly onError: (error: Error) => void;
     private readonly sorter: (a: T, b: T) => number;
+    private readonly filter?: Filter<T>;
     private items: T[];
     private retryWatch: RetryWatch<T>;
     private timeout: any;
@@ -34,17 +36,22 @@ export class ListWatch<T extends Resource> {
         onOpen: () => void, //  called, when watches is re-established after error,  so should clear any errors
         onChange: (items: T[], item?: T, type?: Type) => void, // called whenever items change, any users that changes state should use [...items]
         onError: (error: Error) => void, // called on any error
-        sorter: Sorter = sortByYouth // show the youngest first by default
+        sorter: Sorter = sortByYouth, // show the youngest first by default
+        filter?: Filter<T> // optional filter for watch events, DELETED events always pass through
     ) {
         this.onLoad = onLoad;
         this.list = list;
         this.onChange = onChange;
         this.onError = onError;
         this.sorter = sorter;
+        this.filter = filter;
         this.retryWatch = new RetryWatch<T>(
             watch,
             onOpen,
             e => {
+                if (e.type !== 'DELETED' && this.filter && !this.filter(e.object)) {
+                    return;
+                }
                 this.items = mergeItem(e.object, e.type, this.items).sort(sorter);
                 onChange(this.items, e.object, e.type);
             },
