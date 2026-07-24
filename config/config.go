@@ -3,8 +3,8 @@ package config
 import (
 	"fmt"
 	"math"
-	"net/url"
 	"slices"
+	"strings"
 	"time"
 
 	metricsdk "go.opentelemetry.io/otel/sdk/metric"
@@ -258,18 +258,39 @@ func (c Config) ValidateProtocol(inputProtocol string, allowedProtocol []string)
 	return fmt.Errorf("protocol %s is not allowed", inputProtocol)
 }
 
+// schemeOf returns the URI scheme of rawURL (per RFC 3986 §3.1), lower-cased,
+// or "" if there is no valid scheme.
+// We deliberately avoid url.Parse here: it also parses the host, which fails on
+// template variables like ${metadata.name} in the hostname.
+// See https://github.com/argoproj/argo-workflows/issues/10696
+func schemeOf(rawURL string) string {
+	for i := 0; i < len(rawURL); i++ {
+		c := rawURL[i]
+		switch {
+		case 'a' <= c && c <= 'z', 'A' <= c && c <= 'Z':
+			// valid scheme character; keep scanning
+		case '0' <= c && c <= '9', c == '+', c == '-', c == '.':
+			if i == 0 {
+				return "" // scheme must start with a letter
+			}
+		case c == ':':
+			return strings.ToLower(rawURL[:i]) // schemes are case-insensitive
+		default:
+			return "" // invalid character before ':'
+		}
+	}
+	return ""
+}
+
 func (c *Config) Sanitize(allowedProtocol []string) error {
 	links := c.Links
 
 	for _, link := range links {
-		// We only validate user-supplied URL but not encode/decode it
-		// see 2.4.2 on https://www.ietf.org/rfc/rfc2396.txt
-		u, err := url.Parse(link.URL)
-		if err != nil {
-			return err
-		}
-		err = c.ValidateProtocol(u.Scheme, allowedProtocol)
-		if err != nil {
+		// Only the scheme is validated; the user-supplied URL is never
+		// encoded/decoded or rewritten.
+		// See https://github.com/argoproj/argo-workflows/issues/9935
+		scheme := schemeOf(link.URL)
+		if err := c.ValidateProtocol(scheme, allowedProtocol); err != nil {
 			return err
 		}
 	}
