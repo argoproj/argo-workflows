@@ -1771,3 +1771,33 @@ func TestSemaphoreStatus_LockAcquired_RemovesFromWaiting(t *testing.T) {
 		assert.Len(t, waiting.Holders, 2)
 	})
 }
+
+func TestSemaphoreStatus_LockWaiting_DisplayLimit(t *testing.T) {
+	holders := []string{"wf-1/n", "wf-2/n", "wf-3/n", "wf-4/n", "wf-5/n"}
+
+	t.Run("truncates to configured limit", func(t *testing.T) {
+		t.Setenv("SEMAPHORE_WAITING_HOLDERS_DISPLAY_LIMIT", "2")
+		ss := &SemaphoreStatus{}
+		ss.LockWaiting("wf-1/n", "test-semaphore", holders)
+		_, waiting := ss.GetWaiting("test-semaphore")
+		assert.Equal(t, []string{"wf-1/n", "wf-2/n"}, waiting.Holders)
+	})
+
+	t.Run("no limit when set to 0", func(t *testing.T) {
+		t.Setenv("SEMAPHORE_WAITING_HOLDERS_DISPLAY_LIMIT", "0")
+		ss := &SemaphoreStatus{}
+		ss.LockWaiting("wf-1/n", "test-semaphore", holders)
+		_, waiting := ss.GetWaiting("test-semaphore")
+		assert.Len(t, waiting.Holders, len(holders))
+	})
+
+	t.Run("updates existing waiting entry with limit", func(t *testing.T) {
+		t.Setenv("SEMAPHORE_WAITING_HOLDERS_DISPLAY_LIMIT", "3")
+		ss := &SemaphoreStatus{
+			Waiting: []SemaphoreHolding{{Semaphore: "test-semaphore", Holders: []string{"old"}}},
+		}
+		ss.LockWaiting("wf-1/n", "test-semaphore", holders)
+		_, waiting := ss.GetWaiting("test-semaphore")
+		assert.Len(t, waiting.Holders, 3)
+	})
+}
