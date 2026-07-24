@@ -116,6 +116,7 @@ func intercept(ctx context.Context, method string, target string, headers map[st
 		},
 		&corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{Name: "bitbucket-token", Namespace: "my-ns"},
+			Type:       corev1.SecretTypeServiceAccountToken,
 			Data:       map[string][]byte{"token": []byte("my-bitbucket-token")},
 		},
 		// bitbucketserver
@@ -125,6 +126,7 @@ func intercept(ctx context.Context, method string, target string, headers map[st
 		},
 		&corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{Name: "bitbucketserver-token", Namespace: "my-ns"},
+			Type:       corev1.SecretTypeServiceAccountToken,
 			Data:       map[string][]byte{"token": []byte("my-bitbucketserver-token")},
 		},
 		// github
@@ -134,6 +136,7 @@ func intercept(ctx context.Context, method string, target string, headers map[st
 		},
 		&corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{Name: "github-token", Namespace: "my-ns"},
+			Type:       corev1.SecretTypeServiceAccountToken,
 			Data:       map[string][]byte{"token": []byte("my-github-token")},
 		},
 		// gitlab
@@ -143,6 +146,7 @@ func intercept(ctx context.Context, method string, target string, headers map[st
 		},
 		&corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{Name: "gitlab-token", Namespace: "my-ns"},
+			Type:       corev1.SecretTypeServiceAccountToken,
 			Data:       map[string][]byte{"token": []byte("my-gitlab-token")},
 		},
 	)
