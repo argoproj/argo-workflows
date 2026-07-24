@@ -9627,6 +9627,49 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.ExecutorPlugin": {
+      "description": "ExecutorPlugin describes workflow-level executor plugin",
+      "type": "object",
+      "required": [
+        "metadata",
+        "spec"
+      ],
+      "properties": {
+        "metadata": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
+        },
+        "spec": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ExecutorPluginSpec"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.ExecutorPluginSidecar": {
+      "type": "object",
+      "required": [
+        "container"
+      ],
+      "properties": {
+        "automountServiceAccountToken": {
+          "description": "AutomountServiceAccountToken enables mounting the service account token. The service account must be named \u003cplugin-name\u003e-executor-plugin.",
+          "type": "boolean"
+        },
+        "container": {
+          "description": "Container defines the Kubernetes container specification for the sidecar.",
+          "$ref": "#/definitions/io.k8s.api.core.v1.Container"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.ExecutorPluginSpec": {
+      "type": "object",
+      "required": [
+        "sidecar"
+      ],
+      "properties": {
+        "sidecar": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ExecutorPluginSidecar"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.GCSArtifact": {
       "description": "GCSArtifact is the location of a GCS artifact",
       "type": "object",
@@ -9949,6 +9992,10 @@
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Header"
           }
+        },
+        "saveStreamViaFile": {
+          "description": "SaveStreamViaFile buffers a streamed upload to a temporary file before sending it, so a 307/308 redirect (e.g. webHDFS) can be followed by re-sending the body. When false (the default) SaveStream sends the reader directly and cannot follow such a redirect, since a one-shot reader cannot be replayed.",
+          "type": "boolean"
         },
         "url": {
           "description": "URL of the artifact",
@@ -11014,6 +11061,10 @@
           "description": "AccessKeySecret is the secret selector to the bucket's access key",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         },
+        "addressingStyle": {
+          "description": "AddressingStyle defines how buckets are addressed by the S3 client. This is required for some S3-compatible providers that only support virtual-hosted-style bucket addressing.\n\nValid values are: - \"\" (default, auto-detect) - \"path\" - \"virtual-hosted\"",
+          "type": "string"
+        },
         "bucket": {
           "description": "Bucket is the name of the bucket",
           "type": "string"
@@ -11070,6 +11121,10 @@
         "accessKeySecret": {
           "description": "AccessKeySecret is the secret selector to the bucket's access key",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "addressingStyle": {
+          "description": "AddressingStyle defines how buckets are addressed by the S3 client. This is required for some S3-compatible providers that only support virtual-hosted-style bucket addressing.\n\nValid values are: - \"\" (default, auto-detect) - \"path\" - \"virtual-hosted\"",
+          "type": "string"
         },
         "bucket": {
           "description": "Bucket is the name of the bucket",
@@ -11434,6 +11489,13 @@
           "description": "Annotations adds to metadata.labels",
           "type": "string"
         },
+        "artifacts": {
+          "description": "Artifacts overrides input artifact locations. Format: name=key",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
         "dryRun": {
           "description": "DryRun validates the workflow on the client-side without creating it. This option is not supported in API",
           "type": "boolean"
@@ -11682,9 +11744,17 @@
           "description": "Parallelism limits the max total parallel pods that can execute at the same time within the boundaries of this template invocation. If additional steps/dag templates are invoked, the pods created by those templates will not be counted towards this total.",
           "type": "integer"
         },
+        "pendingTimeout": {
+          "description": "PendingTimeout allows to set the maximum time spent in pending status counting from the node's start time. It is enforced by the controller, so a pod that starts running just as the timeout expires may still be failed. This duration may not be applied to Step or DAG templates.",
+          "type": "string"
+        },
         "plugin": {
           "description": "Plugin is a plugin template Note: the structure of a plugin template is free-form, so we need to have \"x-kubernetes-preserve-unknown-fields: true\" in the validation schema.",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Plugin"
+        },
+        "podResources": {
+          "description": "PodResources defines pod-level resource requests and limits for this template's pod. Overrides the workflow-level podResources. Requires the PodLevelResources feature gate to be enabled on the cluster (beta since Kubernetes v1.34).",
+          "$ref": "#/definitions/io.k8s.api.core.v1.ResourceRequirements"
         },
         "podSpecPatch": {
           "description": "PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).",
@@ -12405,6 +12475,13 @@
           "description": "Executor holds configurations of executor containers of the io.argoproj.workflow.v1alpha1.",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ExecutorConfig"
         },
+        "executorPlugins": {
+          "description": "Specifies executor plugins at the workflow level.\n\nThis field is effective only when the ARGO_WORKFLOW_LEVEL_EXECUTOR_PLUGINS feature gate is enabled.\n\nIf this field contains one or more executor plugins, executor plugin settings from the controller ConfigMap are ignored.\n\nIf this field is empty or not set, the controller falls back to the ConfigMap configuration.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ExecutorPlugin"
+          }
+        },
         "hooks": {
           "description": "Hooks holds the lifecycle hook which is invoked at lifecycle of step, irrespective of the success, failure, or error status of the primary step",
           "type": "object",
@@ -12467,6 +12544,10 @@
         "podPriorityClassName": {
           "description": "PriorityClassName to apply to workflow pods.",
           "type": "string"
+        },
+        "podResources": {
+          "description": "PodResources defines pod-level resource requests and limits to apply to all workflow pods. Will be overridden if a template's podResources is set. Requires the PodLevelResources feature gate to be enabled on the cluster (beta since Kubernetes v1.34).",
+          "$ref": "#/definitions/io.k8s.api.core.v1.ResourceRequirements"
         },
         "podSpecPatch": {
           "description": "PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).",

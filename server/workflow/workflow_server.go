@@ -35,6 +35,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/instanceid"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/logs"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifactrepositories"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/creator"
 	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
@@ -64,12 +65,13 @@ type workflowServer struct {
 	wftmplStore           servertypes.WorkflowTemplateStore
 	cwftmplStore          servertypes.ClusterWorkflowTemplateStore
 	wfDefaults            *wfv1.Workflow
+	artifactRepositories  artifactrepositories.Interface
 }
 
 var _ Server = &workflowServer{}
 
 // NewServer returns a new Server
-func NewServer(ctx context.Context, instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, wfClientSet versioned.Interface, wfLister store.WorkflowLister, wfStore store.WorkflowStore, wftmplStore servertypes.WorkflowTemplateStore, cwftmplStore servertypes.ClusterWorkflowTemplateStore, wfDefaults *wfv1.Workflow, namespace *string) Server {
+func NewServer(ctx context.Context, instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, wfClientSet versioned.Interface, wfLister store.WorkflowLister, wfStore store.WorkflowStore, wftmplStore servertypes.WorkflowTemplateStore, cwftmplStore servertypes.ClusterWorkflowTemplateStore, wfDefaults *wfv1.Workflow, namespace *string, artifactRepositories artifactrepositories.Interface) Server {
 	ws := &workflowServer{
 		instanceIDService:     instanceIDService,
 		offloadNodeStatusRepo: offloadNodeStatusRepo,
@@ -79,6 +81,7 @@ func NewServer(ctx context.Context, instanceIDService instanceid.Service, offloa
 		wftmplStore:           wftmplStore,
 		cwftmplStore:          cwftmplStore,
 		wfDefaults:            wfDefaults,
+		artifactRepositories:  artifactRepositories,
 	}
 	if wfStore != nil && namespace != nil {
 		lw := &cache.ListWatch{
@@ -840,9 +843,100 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 
 	s.instanceIDService.Label(wf)
 	creator.LabelCreator(ctx, wf)
+
+	logger := logging.RequireLoggerFromContext(ctx)
+
+	// Validate SubmitOpts.Artifacts syntax up front so a malformed entry surfaces as
+	// InvalidArgument regardless of whether ApplySubmitOpts (non-templateRef path) or
+	// the templateRef branch below is the one that would consume it.
+	if req.SubmitOptions != nil && len(req.SubmitOptions.Artifacts) > 0 {
+		if _, parseErr := util.ParseArtifactOverrides(req.SubmitOptions.Artifacts); parseErr != nil {
+			return nil, sutils.ToStatusError(parseErr, codes.InvalidArgument)
+		}
+	}
+
 	err := util.ApplySubmitOpts(wf, req.SubmitOptions)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
+	}
+
+	// Handle artifact overrides for workflowTemplateRef workflows
+	// When using workflowTemplateRef, wf.Spec.Arguments.Artifacts is empty,
+	// so we need to copy artifacts from the template and override the keys
+	if req.SubmitOptions != nil && len(req.SubmitOptions.Artifacts) > 0 && wf.Spec.WorkflowTemplateRef != nil {
+		logger.WithFields(logging.Fields{
+			"artifacts":           req.SubmitOptions.Artifacts,
+			"workflowTemplateRef": wf.Spec.WorkflowTemplateRef.Name,
+		}).Debug(ctx, "Processing artifact overrides for workflowTemplateRef")
+		var tmplArtifacts []wfv1.Artifact
+		var artifactRepositoryRef *wfv1.ArtifactRepositoryRef
+		if wf.Spec.WorkflowTemplateRef.ClusterScope {
+			cwftmpl, getErr := wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates().Get(ctx, wf.Spec.WorkflowTemplateRef.Name, metav1.GetOptions{})
+			if getErr != nil {
+				return nil, sutils.ToStatusError(fmt.Errorf("failed to get ClusterWorkflowTemplate for artifact override: %w", getErr), codes.Internal)
+			}
+			// This Get bypasses the instance-ID-filtered template store, so enforce the
+			// instance-ID boundary here to avoid copying artifact config from a template
+			// managed by a different Argo Server instance.
+			if validateErr := s.instanceIDService.Validate(cwftmpl); validateErr != nil {
+				return nil, sutils.ToStatusError(fmt.Errorf("ClusterWorkflowTemplate %q not found", wf.Spec.WorkflowTemplateRef.Name), codes.NotFound)
+			}
+			tmplArtifacts = cwftmpl.Spec.Arguments.Artifacts
+			artifactRepositoryRef = cwftmpl.Spec.ArtifactRepositoryRef
+		} else {
+			wftmpl, getErr := wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace).Get(ctx, wf.Spec.WorkflowTemplateRef.Name, metav1.GetOptions{})
+			if getErr != nil {
+				return nil, sutils.ToStatusError(fmt.Errorf("failed to get WorkflowTemplate for artifact override: %w", getErr), codes.Internal)
+			}
+			if validateErr := s.instanceIDService.Validate(wftmpl); validateErr != nil {
+				return nil, sutils.ToStatusError(fmt.Errorf("WorkflowTemplate %q not found", wf.Spec.WorkflowTemplateRef.Name), codes.NotFound)
+			}
+			tmplArtifacts = wftmpl.Spec.Arguments.Artifacts
+			artifactRepositoryRef = wftmpl.Spec.ArtifactRepositoryRef
+		}
+
+		overrides, parseErr := util.ParseArtifactOverrides(req.SubmitOptions.Artifacts)
+		if parseErr != nil {
+			return nil, sutils.ToStatusError(parseErr, codes.InvalidArgument)
+		}
+
+		// Resolve the default artifact repository location for overridden artifacts that
+		// don't already have one, before handing off to the pure ApplyOverridesToTemplateArtifacts.
+		resolvedTmplArtifacts := make([]wfv1.Artifact, len(tmplArtifacts))
+		copy(resolvedTmplArtifacts, tmplArtifacts)
+		if s.artifactRepositories != nil {
+			for i := range resolvedTmplArtifacts {
+				if _, overridden := overrides[resolvedTmplArtifacts[i].Name]; !overridden || resolvedTmplArtifacts[i].HasLocation() {
+					continue
+				}
+				archiveLocation, resolveErr := sutils.ResolveArtifactLocation(ctx, s.artifactRepositories, artifactRepositoryRef, req.Namespace)
+				if resolveErr != nil {
+					logger.WithError(resolveErr).Debug(ctx, "Failed to resolve artifact repository for artifact override")
+					continue
+				}
+				if archiveLocation != nil && archiveLocation.HasLocation() {
+					resolvedTmplArtifacts[i].ArtifactLocation = *archiveLocation.DeepCopy()
+				}
+			}
+		}
+
+		appliedArtifacts, applyErr := util.ApplyOverridesToTemplateArtifacts(resolvedTmplArtifacts, overrides)
+		if applyErr != nil {
+			// applyErr is driven by the client's override input (an override naming an unknown
+			// artifact, or a key that fails SetKey), so it is InvalidArgument, not Internal.
+			return nil, sutils.ToStatusError(applyErr, codes.InvalidArgument)
+		}
+		for _, art := range appliedArtifacts {
+			key, _ := art.GetKey()
+			if validateErr := sutils.ValidateUploadedArtifactKey(req.Namespace, key); validateErr != nil {
+				return nil, sutils.ToStatusError(fmt.Errorf("invalid artifact key override for %s: %w", art.Name, validateErr), codes.InvalidArgument)
+			}
+			wf.Spec.Arguments.Artifacts = append(wf.Spec.Arguments.Artifacts, art)
+		}
+
+		logger.WithFields(logging.Fields{
+			"totalArtifacts": len(wf.Spec.Arguments.Artifacts),
+		}).Debug(ctx, "Completed artifact override processing")
 	}
 
 	wftmplGetter := s.wftmplStore.Getter(ctx, req.Namespace)

@@ -5,20 +5,6 @@ let
   argoFlakePackages = inputs.argo-flake.packages.${pkgs.stdenv.hostPlatform.system};
 
   argoConfig = import ./dev/nix/conf.nix;
-
-  mkEnvSerialize = (envKey: envValue: "export ${envKey}=${envValue};");
-  mkEnv = (envAttrs:
-    lib.concatStrings
-      (lib.mapAttrsToList
-        mkEnvSerialize
-        envAttrs)
-  );
-  mkExec = (execName: envAttrs: execArgs:
-    "${mkEnv envAttrs}${execName} ${execArgs}"
-  );
-  controllerCmd = mkExec "./dist/workflow-controller" argoConfig.controller.env argoConfig.controller.args;
-  argoServerCmd = mkExec "./dist/argo" argoConfig.argoServer.env argoConfig.argoServer.args;
-  uiCmd = mkExec "yarn" argoConfig.ui.env argoConfig.ui.args;
 in
 {
   # Import packages from nixpkgs and the argo flake
@@ -43,6 +29,14 @@ in
     golangci-lint
     typos
     cspell
+  ] ++ [
+    # The dev stack now runs in-cluster via Tilt (replacing the old host-process
+    # flow). nixpkgs' tilt is 0.37.3 — the same version the Makefile pins — so
+    # `make tilt`/`make k3d` become no-ops. k3d also comes from nixpkgs here so
+    # the environment is self-contained.
+    pkgs.tilt
+    pkgs.k3d
+    pkgs.kubectl
   ];
 
   # Set up environment
@@ -50,30 +44,23 @@ in
     USE_NIX = "true";
   };
 
+  # Create the k3d cluster Tilt deploys into (context k3d-k3s-default), using the
+  # same script `make start` runs. Ordered before the tilt process so the cluster
+  # exists when Tilt connects.
   tasks."argo:cluster" = {
-    exec = ''
-      if ! k3d cluster get argo-dev &>/dev/null; then
-        echo "Creating k3d cluster 'argo-dev'..."
-        k3d cluster create argo-dev
-      fi
-    '';
+    exec = "make k3d-up";
+    before = [ "devenv:processes:tilt" ];
   };
 
-  tasks."argo:install" = {
-    exec = "make install PROFILE=minimal";
-    after = [ "argo:cluster@succeeded" ];
-    before = [
-      "devenv:processes:kubeauto"
-      "devenv:processes:workflow-controller"
-      "devenv:processes:argo-server"
-    ];
-  };
-
+  # Tilt builds the controller/server/executor images, runs them in-cluster, runs
+  # the UI dev server (hot-reload on :8080), and sets up the port-forwards —
+  # replacing the old host processes (kubeauto, workflow-controller, argo-server,
+  # ui) and `make install`. `--stream` prints build/pod logs to stdout instead of
+  # opening the TUI, which suits devenv's process-compose supervisor. Run tilt
+  # directly (not `make start`) to use nixpkgs' tilt/k3d rather than the Makefile's
+  # download-to-GOPATH install targets.
   processes = {
-    kubeauto.exec = "kubeauto";
-    workflow-controller.exec = controllerCmd;
-    argo-server.exec = argoServerCmd;
-    ui.exec = uiCmd;
+    tilt.exec = "tilt up --stream --host=0.0.0.0 -- --profile=minimal";
   };
   enterShell = ''
     # --- 1. Environment Guard & Local Paths ---
@@ -144,25 +131,10 @@ in
       fi
     fi
 
-    # --- 5. Smart Sync: Manifests & App Source ---
-    # Runs 'make install' if any local code or manifests are updated.
-    SEARCH_PATHS=""
-    [ -d "src" ] && SEARCH_PATHS="$SEARCH_PATHS src"
-    [ -d "manifests" ] && SEARCH_PATHS="$SEARCH_PATHS manifests"
-    [ -d "api" ] && SEARCH_PATHS="$SEARCH_PATHS api"
-
-    if [ -n "$SEARCH_PATHS" ]; then
-      LATEST_CHANGE=$(find $SEARCH_PATHS -type f -printf '%T@ %p\n' 2>/dev/null | sort -n | tail -1 | cut -f2- -d" ")
-
-      if [ ! -f .devenv/make_installed ] || [ "$LATEST_CHANGE" -nt .devenv/make_installed ]; then
-        echo "🛠️  Local source or manifests changed. Running make install..."
-        make install PROFILE=minimal
-        touch .devenv/make_installed
-      fi
-    fi
+    # Manifests and images are applied by Tilt (`devenv up`), not `make install`.
 
     echo "-------------------------------------------------------"
-    echo "✅ Environment Ready"
+    echo "✅ Environment Ready — run 'devenv up' to start the Tilt dev stack"
     echo "GOPATH: $GOPATH"
     echo "Source: $(ls .go/src | xargs)"
     echo "-------------------------------------------------------"

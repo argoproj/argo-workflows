@@ -93,6 +93,33 @@ func TestFindOverlappingVolume(t *testing.T) {
 	assert.Nil(t, FindOverlappingVolume(templateWithVolMount, "/user-mount-coincidental-prefix/"))
 }
 
+func TestFindVolumeMountNestedUnderPath(t *testing.T) {
+	mnt := corev1.VolumeMount{Name: "shared", MountPath: "/data/shared"}
+	mntTrailing := corev1.VolumeMount{Name: "aux", MountPath: "/logs/out/"}
+	tmpl := &wfv1.Template{
+		Container: &corev1.Container{
+			VolumeMounts: []corev1.VolumeMount{mnt, mntTrailing},
+		},
+	}
+
+	// path is a proper ancestor of a mount → detected.
+	assert.Equal(t, &mnt, FindVolumeMountNestedUnderPath(tmpl, "/data"))
+	assert.Equal(t, &mnt, FindVolumeMountNestedUnderPath(tmpl, "/data/"))
+	assert.Equal(t, &mntTrailing, FindVolumeMountNestedUnderPath(tmpl, "/logs"))
+
+	// Exact match is NOT reported (that's the ordinary overlap case).
+	assert.Nil(t, FindVolumeMountNestedUnderPath(tmpl, "/data/shared"))
+
+	// path inside a mount is NOT an ancestor.
+	assert.Nil(t, FindVolumeMountNestedUnderPath(tmpl, "/data/shared/sub"))
+
+	// Coincidental prefix is not an ancestor.
+	assert.Nil(t, FindVolumeMountNestedUnderPath(tmpl, "/dat"))
+
+	// Unrelated path.
+	assert.Nil(t, FindVolumeMountNestedUnderPath(tmpl, "/tmp"))
+}
+
 func TestUnknownFieldEnforcerForWorkflowStep(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	_, err := SplitWorkflowYAMLFile(ctx, []byte(validWf), false)

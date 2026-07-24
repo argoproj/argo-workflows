@@ -374,7 +374,7 @@
 
             nodeDependencies = nodePackages.shell.nodeDependencies;
 
-            inherit (pkgs) go jq protobuf diffutils golangci-lint kustomize gotools kubectl k3d docker gettext lsof typos cspell;
+            inherit (pkgs) go jq protobuf diffutils golangci-lint kustomize gotools kubectl k3d docker gettext lsof typos cspell gomod2nix;
             inherit nodejs;
             yarn = myyarn;
 
@@ -387,10 +387,10 @@
               shellHook = ''
                 unset GOROOT;
                 unset GOPATH;
-                if ! k3d cluster get argo-dev &>/dev/null; then
-                  echo "Creating k3d cluster 'argo-dev'..."
-                  k3d cluster create argo-dev
-                fi
+                # Create the k3d cluster Tilt deploys into (context k3d-k3s-default);
+                # idempotent, the same one `make start` uses. Then run `make start`
+                # (or `tilt up`) to build and run the stack in-cluster.
+                make k3d-up
               '';
               inputsFrom = [ 
                 (pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.default))
@@ -430,6 +430,7 @@
                 golangci-lint
                 gotools
                 kubectl
+                tilt
                 k3d
                 docker
                 gettext
@@ -475,6 +476,7 @@
                     golangci-lint
                     gotools
                     kubectl
+                    tilt
                     k3d
                     docker
                     gettext
@@ -487,9 +489,8 @@
                     ./hack/free-port.sh 2746;
                     ./hack/free-port.sh 8080;
                     yarn --cwd ui install;
-                    sleep 5;
                     clear;
-                    echo "Development shell is now ready, note that port-forwarding is running in the background"
+                    echo "Development shell is now ready. Run 'make start' (or 'tilt up') to build and run the stack in-cluster via Tilt."
                   '';
                 })
               ];

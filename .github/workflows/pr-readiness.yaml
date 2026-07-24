@@ -1,0 +1,80 @@
+name: PR Readiness Helper
+
+# Standalone helper that fires when CI workflows complete on a PR and keeps a
+# single sticky comment guiding the contributor through contributor-fixable
+# problems (lint, codegen, docs, title, DCO, feature files, and an unfilled
+# PR description checked against the template). Blocking problems also move the
+# PR to draft (it never undrafts).
+# See .github/pr-readiness/README.md for design, security model and tuning.
+#
+# Security: this runs with write permissions from the default branch's
+# workflow definition. It must NEVER check out or execute PR-head code, and
+# PR-controlled strings (title/body/branch) must only be handled as data.
+
+on:
+  workflow_run:
+    workflows: ["CI", "Docs", "PR Title Check", "PR Feature Check"]
+    types: [completed]
+
+permissions: {} # default deny; the job grants the minimum it needs
+
+concurrency:
+  # Serialize per head SHA: several of the above workflows can finish within
+  # seconds of each other. Never cancel — each completion must be processed
+  # so the comment converges on the final state.
+  group: pr-readiness-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: false
+
+env:
+  # Dry-run: render to the job summary instead of commenting/drafting.
+  # Flip to "false" to go live.
+  DRY_RUN: "true"
+
+jobs:
+  assess:
+    name: Assess PR readiness
+    if: github.event.workflow_run.event == 'pull_request' || github.event.workflow_run.event == 'pull_request_target'
+    runs-on: ubuntu-24.04
+    env:
+      # secrets are not available in step `if:` expressions, so surface
+      # "is the draft app configured?" as an env var here.
+      HAS_DRAFT_APP: ${{ secrets.PR_READINESS_APP_ID != '' }}
+    permissions:
+      pull-requests: write # sticky comment + draft conversion
+      contents: read # checkout of the default branch (scripts, OWNERS, template)
+      actions: read # job/step conclusions for the feature check
+    steps:
+      # Default branch only — never the PR head.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # The default Actions token cannot toggle a PR's draft state
+      # ("Resource not accessible by integration"), so draft conversion
+      # needs a GitHub App token — same pattern as the cherry-pick bot.
+      # Without these secrets the bot still comments, it just cannot draft.
+      - name: Mint draft-conversion token
+        id: draft-token
+        if: env.DRY_RUN != 'true' && env.HAS_DRAFT_APP == 'true'
+        continue-on-error: true # drafting is best-effort; never block the comment
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ secrets.PR_READINESS_APP_ID }}
+          private-key: ${{ secrets.PR_READINESS_APP_PRIVATE_KEY }}
+
+      - name: Assess PR and render comment
+        id: assess
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          DRAFT_TOKEN: ${{ steps.draft-token.outputs.token }}
+        with:
+          script: |
+            const { run } = require('./.github/pr-readiness/main.ts');
+            await run({ github, context, core });
+
+      - name: Upsert sticky comment
+        if: steps.assess.outputs.should_comment == 'true' && env.DRY_RUN != 'true'
+        uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3.0.5
+        with:
+          header: pr-readiness-bot
+          number_force: ${{ steps.assess.outputs.pr_number }}
+          path: ${{ runner.temp }}/pr-readiness/comment.md
+          skip_unchanged: true

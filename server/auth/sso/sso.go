@@ -354,7 +354,7 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	value := Prefix + raw
-	s.logger.WithField("value", value).Debug(r.Context(), "handing oauth2 callback")
+	s.logger.Debug(r.Context(), "handing oauth2 callback")
 	http.SetCookie(w, &http.Cookie{
 		Value:    value,
 		Name:     "authorization",

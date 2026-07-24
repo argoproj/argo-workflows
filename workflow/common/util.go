@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -18,6 +19,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/template"
+	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
 )
 
 // FindOverlappingVolume looks an artifact path, checks if it overlaps with any
@@ -29,16 +31,53 @@ func FindOverlappingVolume(tmpl *wfv1.Template, path string) *apiv1.VolumeMount 
 		return len(volumeMounts[i].MountPath) > len(volumeMounts[j].MountPath)
 	})
 	for _, mnt := range volumeMounts {
-		normalizedMountPath := strings.TrimRight(mnt.MountPath, "/")
-		if path == normalizedMountPath || isSubPath(path, normalizedMountPath) {
+		// path is the mount itself or a descendant of it.
+		if _, ok := relWithin(mnt.MountPath, path); ok {
 			return &mnt
 		}
 	}
 	return nil
 }
 
-func isSubPath(path string, normalizedMountPath string) bool {
-	return strings.HasPrefix(path, normalizedMountPath+"/")
+// relWithin reports the path of target relative to base, and whether target is
+// base itself (rel == ".") or a descendant of it. It uses filepath.Rel rather
+// than hand-rolled string prefixing so path separators, trailing slashes and
+// "." segments are handled per the host OS — notably so the comparison holds on
+// Windows (where the supervisor also runs), where filesystem-resolved paths use
+// backslashes. ok is false when target escapes base via ".." or the two cannot
+// be related (e.g. different Windows volumes).
+func relWithin(base, target string) (rel string, ok bool) {
+	rel, err := filepath.Rel(base, target)
+	if err != nil {
+		return "", false
+	}
+	if rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return rel, false
+	}
+	return rel, true
+}
+
+// FindVolumeMountNestedUnderPath returns the first volume mount whose mount path
+// is strictly nested beneath path (i.e. path is a proper ancestor directory of
+// the mount). This is the opposite direction to FindOverlappingVolume, which
+// finds a mount that *contains* path.
+//
+// It exists to detect a dangerous input-artifact configuration: an artifact path
+// that is an ancestor of a mounted volume (e.g. artifact path /data with a volume
+// mounted at /data/shared). In init-less mode the emissary clears art.Path before
+// symlinking the artifact into place, and os.RemoveAll on such a path would
+// recurse into and destroy the mounted volume. An exact path==mountPath match is
+// NOT reported here — that is the ordinary overlap case handled by
+// FindOverlappingVolume (the artifact is routed into the volume).
+func FindVolumeMountNestedUnderPath(tmpl *wfv1.Template, path string) *apiv1.VolumeMount {
+	for _, mnt := range tmpl.GetVolumeMounts() {
+		// The mount is strictly beneath path: a descendant (ok), but not path
+		// itself (rel == ".", the ordinary overlap case handled elsewhere).
+		if rel, ok := relWithin(path, mnt.MountPath); ok && rel != "." {
+			return &mnt
+		}
+	}
+	return nil
 }
 
 // ExecPodContainer runs a command in a container in a pod and returns the remotecommand.Executor
@@ -252,7 +291,7 @@ func SubstituteParams(ctx context.Context, tmpl *wfv1.Template, globalParams, lo
 		if inParam.Value == nil && inParam.ValueFrom == nil {
 			return nil, errors.InternalErrorf("inputs.parameters.%s had no value", inParam.Name)
 		} else if inParam.Value != nil {
-			replaceMap["inputs.parameters."+inParam.Name] = inParam.Value.String()
+			replaceMap[varkeys.InputsParameterByName.Concretize(inParam.Name)] = inParam.Value.String()
 		}
 	}
 	// allow {{inputs.parameters}} to fetch the entire input parameters list as JSON
@@ -260,20 +299,20 @@ func SubstituteParams(ctx context.Context, tmpl *wfv1.Template, globalParams, lo
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
 	}
-	replaceMap["inputs.parameters"] = string(jsonInputParametersBytes)
+	replaceMap[varkeys.InputsParametersAll.Template()] = string(jsonInputParametersBytes)
 	for _, inArt := range globalReplacedTmpl.Inputs.Artifacts {
 		if inArt.Path != "" {
-			replaceMap["inputs.artifacts."+inArt.Name+".path"] = inArt.Path
+			replaceMap[varkeys.InputsArtifactPathByName.Concretize(inArt.Name)] = inArt.Path
 		}
 	}
 	for _, outArt := range globalReplacedTmpl.Outputs.Artifacts {
 		if outArt.Path != "" {
-			replaceMap["outputs.artifacts."+outArt.Name+".path"] = outArt.Path
+			replaceMap[varkeys.OutputsArtifactPathByName.Concretize(outArt.Name)] = outArt.Path
 		}
 	}
 	for _, param := range globalReplacedTmpl.Outputs.Parameters {
 		if param.ValueFrom != nil && param.ValueFrom.Path != "" {
-			replaceMap["outputs.parameters."+param.Name+".path"] = param.ValueFrom.Path
+			replaceMap[varkeys.OutputsParameterPathByName.Concretize(param.Name)] = param.ValueFrom.Path
 		}
 	}
 

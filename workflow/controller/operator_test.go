@@ -34,6 +34,8 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/strftime"
 	"github.com/argoproj/argo-workflows/v4/util/template"
+	"github.com/argoproj/argo-workflows/v4/util/variables"
+	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/cache"
 	hydratorfake "github.com/argoproj/argo-workflows/v4/workflow/hydrator/fake"
@@ -173,12 +175,12 @@ spec:
 	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
-	assert.Equal(t, "0.000000", woc.globalParams[common.GlobalVarWorkflowDuration])
+	assert.Equal(t, "0.000000", woc.globalParams()[varkeys.WorkflowDuration.Template()])
 
 	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
 	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc.operate(ctx)
-	assert.Greater(t, woc.globalParams[common.GlobalVarWorkflowDuration], "0.000000")
+	assert.Greater(t, woc.globalParams()[varkeys.WorkflowDuration.Template()], "0.000000")
 }
 
 func TestEstimatedDuration(t *testing.T) {
@@ -360,27 +362,27 @@ func TestGlobalParams(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
-	require.Contains(t, woc.globalParams, "workflow.creationTimestamp")
-	assert.NotContains(t, woc.globalParams["workflow.creationTimestamp"], "UTC")
+	require.Contains(t, woc.globalParams(), "workflow.creationTimestamp")
+	assert.NotContains(t, woc.globalParams()["workflow.creationTimestamp"], "UTC")
 	for char := range strftime.FormatChars {
-		assert.Contains(t, woc.globalParams, fmt.Sprintf("%s.%s", "workflow.creationTimestamp", string(char)))
+		assert.Contains(t, woc.globalParams(), fmt.Sprintf("%s.%s", "workflow.creationTimestamp", string(char)))
 	}
-	assert.Contains(t, woc.globalParams, "workflow.creationTimestamp.s")
-	assert.Contains(t, woc.globalParams, "workflow.creationTimestamp.RFC3339")
+	assert.Contains(t, woc.globalParams(), "workflow.creationTimestamp.s")
+	assert.Contains(t, woc.globalParams(), "workflow.creationTimestamp.RFC3339")
 
-	assert.Contains(t, woc.globalParams, "workflow.duration")
-	assert.Contains(t, woc.globalParams, "workflow.name")
-	assert.Contains(t, woc.globalParams, "workflow.namespace")
-	assert.Contains(t, woc.globalParams, "workflow.mainEntrypoint")
-	assert.Contains(t, woc.globalParams, "workflow.parameters")
-	assert.Contains(t, woc.globalParams, "workflow.annotations")
-	assert.Contains(t, woc.globalParams, "workflow.labels")
-	assert.Contains(t, woc.globalParams, "workflow.serviceAccountName")
-	assert.Contains(t, woc.globalParams, "workflow.uid")
+	assert.Contains(t, woc.globalParams(), "workflow.duration")
+	assert.Contains(t, woc.globalParams(), "workflow.name")
+	assert.Contains(t, woc.globalParams(), "workflow.namespace")
+	assert.Contains(t, woc.globalParams(), "workflow.mainEntrypoint")
+	assert.Contains(t, woc.globalParams(), "workflow.parameters")
+	assert.Contains(t, woc.globalParams(), "workflow.annotations")
+	assert.Contains(t, woc.globalParams(), "workflow.labels")
+	assert.Contains(t, woc.globalParams(), "workflow.serviceAccountName")
+	assert.Contains(t, woc.globalParams(), "workflow.uid")
 
 	// Ensure that the phase label is included after the first operation
 	woc.operate(ctx)
-	assert.Contains(t, woc.globalParams, "workflow.labels.workflows.argoproj.io/phase")
+	assert.Contains(t, woc.globalParams(), "workflow.labels.workflows.argoproj.io/phase")
 }
 
 // TestSidecarWithVolume verifies ia sidecar can have a volumeMount reference to both existing or volumeClaimTemplate volumes
@@ -3396,7 +3398,6 @@ func TestWokflowSchedulingConstraintsSteps(t *testing.T) {
 func TestAddGlobalParamToScope(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx)
-	woc.globalParams = make(map[string]string)
 	testVal := wfv1.AnyStringPtr("test-value")
 	param := wfv1.Parameter{
 		Name:  "test-param",
@@ -3412,7 +3413,7 @@ func TestAddGlobalParamToScope(t *testing.T) {
 	assert.Len(t, woc.wf.Status.Outputs.Parameters, 1)
 	assert.Equal(t, param.GlobalName, woc.wf.Status.Outputs.Parameters[0].Name)
 	assert.Equal(t, testVal, woc.wf.Status.Outputs.Parameters[0].Value)
-	assert.Equal(t, testVal.String(), woc.globalParams["workflow.outputs.parameters.global-param"])
+	assert.Equal(t, testVal.String(), woc.globalParams()["workflow.outputs.parameters.global-param"])
 
 	// Change the value and verify it is reflected in workflow outputs
 	newValue := wfv1.AnyStringPtr("new-value")
@@ -3421,7 +3422,7 @@ func TestAddGlobalParamToScope(t *testing.T) {
 	assert.Len(t, woc.wf.Status.Outputs.Parameters, 1)
 	assert.Equal(t, param.GlobalName, woc.wf.Status.Outputs.Parameters[0].Name)
 	assert.Equal(t, newValue, woc.wf.Status.Outputs.Parameters[0].Value)
-	assert.Equal(t, newValue.String(), woc.globalParams["workflow.outputs.parameters.global-param"])
+	assert.Equal(t, newValue.String(), woc.globalParams()["workflow.outputs.parameters.global-param"])
 
 	// Add a new global parameter
 	param.GlobalName = "global-param2"
@@ -3429,7 +3430,7 @@ func TestAddGlobalParamToScope(t *testing.T) {
 	assert.Len(t, woc.wf.Status.Outputs.Parameters, 2)
 	assert.Equal(t, param.GlobalName, woc.wf.Status.Outputs.Parameters[1].Name)
 	assert.Equal(t, newValue, woc.wf.Status.Outputs.Parameters[1].Value)
-	assert.Equal(t, newValue.String(), woc.globalParams["workflow.outputs.parameters.global-param2"])
+	assert.Equal(t, newValue.String(), woc.globalParams()["workflow.outputs.parameters.global-param2"])
 }
 
 func TestAddGlobalArtifactToScope(t *testing.T) {
@@ -4219,7 +4220,7 @@ func TestStepsOnExitFailures(t *testing.T) {
 	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc.operate(ctx)
 
-	assert.Contains(t, woc.globalParams[common.GlobalVarWorkflowFailures], `[{\"displayName\":\"exit-handlers\",\"message\":\"Pod failed\",\"templateName\":\"intentional-fail\",\"phase\":\"Failed\",\"podName\":\"exit-handlers\"`)
+	assert.Contains(t, woc.globalParams()[varkeys.WorkflowFailures.Template()], `[{\"displayName\":\"exit-handlers\",\"message\":\"Pod failed\",\"templateName\":\"intentional-fail\",\"phase\":\"Failed\",\"podName\":\"exit-handlers\"`)
 	node := woc.wf.Status.Nodes.FindByDisplayName("exit-handlers")
 	assert.NotNil(t, node)
 	assert.Equal(t, wfv1.NodeFailed, node.Phase)
@@ -4815,14 +4816,14 @@ func TestRetryNodeOutputs(t *testing.T) {
 	assert.NotNil(t, retryNode)
 	fmt.Println(retryNode)
 	scope := &wfScope{
-		scope: make(map[string]any),
+		scope: variables.NewScope(),
 	}
-	woc.buildLocalScope(scope, "steps.influx", retryNode)
-	assert.Contains(t, scope.scope, "steps.influx.ip")
-	assert.Contains(t, scope.scope, "steps.influx.id")
-	assert.Contains(t, scope.scope, "steps.influx.startedAt")
-	assert.Contains(t, scope.scope, "steps.influx.finishedAt")
-	assert.Contains(t, scope.scope, "steps.influx.hostNodeName")
+	woc.buildLocalScope(scope, varkeys.StepsNodeRef, "influx", retryNode)
+	assert.Contains(t, scope.scope.AsAnyMap(), "steps.influx.ip")
+	assert.Contains(t, scope.scope.AsAnyMap(), "steps.influx.id")
+	assert.Contains(t, scope.scope.AsAnyMap(), "steps.influx.startedAt")
+	assert.Contains(t, scope.scope.AsAnyMap(), "steps.influx.finishedAt")
+	assert.Contains(t, scope.scope.AsAnyMap(), "steps.influx.hostNodeName")
 }
 
 var workflowWithPVCAndFailingStep = `
@@ -5222,7 +5223,7 @@ func TestSuppliedArgValue(t *testing.T) {
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
-	assert.Equal(t, "argo", woc.globalParams["workflow.parameters.message"])
+	assert.Equal(t, "argo", woc.globalParams()["workflow.parameters.message"])
 }
 
 var maxDurationOnErroredFirstNode = `
@@ -7386,6 +7387,33 @@ spec:
       command: [cowsay]
       args: ["hello world"]
 `
+var pendingTimeoutWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world-dag
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: dag1
+        template: whalesay
+        arguments:
+          parameters:
+          - name: sleep_time
+            value: 3s
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: sleep_time
+    pendingTimeout: 2s
+    timeout: 4s
+    container:
+      image: debian:9.5-slim
+      command: [sleep, "{{inputs.parameters.sleep_time}}"]
+`
 
 func TestTemplateTimeoutDuration(t *testing.T) {
 	t.Run("Step Template Deadline", func(t *testing.T) {
@@ -7452,6 +7480,45 @@ func TestTemplateTimeoutDuration(t *testing.T) {
 		jsonByte, err := json.Marshal(woc.wf)
 		require.NoError(t, err)
 		assert.Contains(t, string(jsonByte), "doesn't support timeout field")
+	})
+	t.Run("PendingTimeout in step", func(t *testing.T) {
+		wf := wfv1.MustUnmarshalWorkflow(stepTimeoutWf)
+		tmpl := wf.Spec.Templates[0]
+		tmpl.PendingTimeout = "23s"
+		wf.Spec.Templates[0] = tmpl
+		cancel, controller := newController(logging.TestContext(t.Context()), wf)
+		defer cancel()
+
+		ctx := logging.TestContext(t.Context())
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		woc.operate(ctx)
+		assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+		jsonByte, err := json.Marshal(woc.wf)
+		require.NoError(t, err)
+		assert.Contains(t, string(jsonByte), "doesn't support pendingTimeout field")
+	})
+	t.Run("PendingTimeout", func(t *testing.T) {
+		wf := wfv1.MustUnmarshalWorkflow(pendingTimeoutWf)
+		cancel, controller := newController(logging.TestContext(t.Context()), wf)
+		defer cancel()
+
+		ctx := logging.TestContext(t.Context())
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		woc.operate(ctx)
+		assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+		makePodsPhase(ctx, woc, apiv1.PodPending)
+		time.Sleep(6 * time.Second)
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc.operate(ctx)
+
+		assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+		assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Nodes.FindByDisplayName("hello-world-dag").Phase)
+
+		// the timed-out pending pod is queued for deletion
+		assert.True(t, controller.PodController.TestingProcessNextItem(ctx))
+		pods, err := listPods(ctx, woc)
+		require.NoError(t, err)
+		assert.Empty(t, pods.Items)
 	})
 }
 
@@ -7799,6 +7866,98 @@ func TestPodFailureWithContainerOOM(t *testing.T) {
 		assert.Equal(t, tt.phase, nodeStatus)
 		assert.Contains(t, msg, "OOMKilled")
 	}
+}
+
+// podWithSupervisorPreMainFailure exercises the init-less mode failure path
+// where supervisor pre-main fails: supervisor writes the failed marker and
+// exits non-zero, emissary in main observes the marker and exits with 65
+// (sysexits.h EX_DATAERR). inferFailedReason must surface the supervisor's
+// real message rather than main's placeholder exit-65; this is why
+// SupervisorContainerName sorts ahead of main in the order() helper.
+var podWithSupervisorPreMainFailure = `
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: main
+    env:
+    - name: ARGO_CONTAINER_NAME
+      value: main
+  - name: supervisor
+status:
+  phase: Failed
+  containerStatuses:
+  - name: main
+    ready: false
+    state:
+      terminated:
+        exitCode: 65
+        reason: Error
+        message: ""
+  - name: supervisor
+    ready: false
+    state:
+      terminated:
+        exitCode: 1
+        reason: Error
+        message: "failed to load input artifacts from plugin \"s3-driver\": connection refused"
+`
+
+func TestInferFailedReason_SupervisorPreMainFailure(t *testing.T) {
+	var pod apiv1.Pod
+	wfv1.MustUnmarshal(podWithSupervisorPreMainFailure, &pod)
+	ctx := logging.TestContext(t.Context())
+	nodeStatus, msg := newWoc(ctx).inferFailedReason(ctx, &pod, nil)
+	// Supervisor's NodeError must win over main's exit-65 NodeFailed; the
+	// emitted message must name the supervisor and quote its real reason.
+	assert.Equal(t, wfv1.NodeError, nodeStatus)
+	assert.Contains(t, msg, "supervisor")
+	assert.Contains(t, msg, "connection refused")
+	// Precedence, not a merge: main's placeholder exit-65 must not leak through.
+	assert.NotContains(t, msg, "exit code 65")
+}
+
+// When the supervisor exits cleanly (post-main success) but main fails with
+// a real user error, main's failure must still surface — supervisor's order=0
+// ranking only kicks in when supervisor itself failed.
+var podWithSupervisorOKAndMainFail = `
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: main
+    env:
+    - name: ARGO_CONTAINER_NAME
+      value: main
+  - name: supervisor
+status:
+  phase: Failed
+  containerStatuses:
+  - name: main
+    ready: false
+    state:
+      terminated:
+        exitCode: 1
+        reason: Error
+        message: "user command failed"
+  - name: supervisor
+    ready: false
+    state:
+      terminated:
+        exitCode: 0
+        reason: Completed
+`
+
+func TestInferFailedReason_SupervisorSuccessMainFailure(t *testing.T) {
+	var pod apiv1.Pod
+	wfv1.MustUnmarshal(podWithSupervisorOKAndMainFail, &pod)
+	ctx := logging.TestContext(t.Context())
+	nodeStatus, msg := newWoc(ctx).inferFailedReason(ctx, &pod, nil)
+	assert.Equal(t, wfv1.NodeFailed, nodeStatus)
+	assert.Contains(t, msg, "main")
+	assert.Contains(t, msg, "user command failed")
+	// A clean (post-main) supervisor must not appear in the user-failure message.
+	assert.NotContains(t, msg, "supervisor")
 }
 
 func TestResubmitPendingPods(t *testing.T) {
@@ -8506,7 +8665,7 @@ func TestWorkflowScheduledTimeVariable(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
-	assert.Equal(t, "2006-01-02T15:04:05-07:00", woc.globalParams[common.GlobalVarWorkflowCronScheduleTime])
+	assert.Equal(t, "2006-01-02T15:04:05-07:00", woc.globalParams()[varkeys.WorkflowScheduledTime.Template()])
 }
 
 var wfMainEntrypointVariable = `
@@ -8533,7 +8692,7 @@ func TestWorkflowMainEntrypointVariable(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
-	assert.Equal(t, "whalesay", woc.globalParams[common.GlobalVarWorkflowMainEntrypoint])
+	assert.Equal(t, "whalesay", woc.globalParams()[varkeys.WorkflowMainEntrypoint.Template()])
 }
 
 var wfNodeNameField = `
@@ -9827,11 +9986,11 @@ func TestBuildRetryStrategyLocalScope(t *testing.T) {
 	localScope := buildRetryStrategyLocalScope(retryNode, wf.Status.Nodes)
 
 	assert.Len(t, localScope, 5)
-	assert.Equal(t, "1", localScope[common.LocalVarRetries])
-	assert.Equal(t, "1", localScope[common.LocalVarRetriesLastExitCode])
-	assert.Equal(t, string(wfv1.NodeFailed), localScope[common.LocalVarRetriesLastStatus])
-	assert.Equal(t, "6", localScope[common.LocalVarRetriesLastDuration])
-	assert.Equal(t, "Error (exit code 1)", localScope[common.LocalVarRetriesLastMessage])
+	assert.Equal(t, "1", localScope[varkeys.Retries.Template()])
+	assert.Equal(t, "1", localScope[varkeys.RetriesLastExitCode.Template()])
+	assert.Equal(t, string(wfv1.NodeFailed), localScope[varkeys.RetriesLastStatus.Template()])
+	assert.Equal(t, "6", localScope[varkeys.RetriesLastDuration.Template()])
+	assert.Equal(t, "Error (exit code 1)", localScope[varkeys.RetriesLastMessage.Template()])
 }
 
 const operatorRetryExpressionError = `
@@ -13023,4 +13182,71 @@ func TestWithSequenceExpressionPreservesGlobalScope(t *testing.T) {
 		assert.GreaterOrEqual(t, len(woc.wf.Status.Nodes), 4,
 			"Should have created multiple nodes for expanded sequence")
 	})
+}
+
+func TestCheckTemplateTimeouts(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("my-ns")
+	wf := wfv1.MustUnmarshalWorkflow(pendingTimeoutWf)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	wf = woc.wf
+	makePodsPhase(ctx, woc, apiv1.PodPending)
+	woc = newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	wf = woc.wf
+
+	node, err := wf.GetNodeByName("hello-world-dag.dag1")
+	require.NoError(t, err)
+	assert.NotNil(t, node)
+	tmpl, err := woc.GetNodeTemplate(ctx, node)
+	require.NoError(t, err)
+
+	// both deadlines are returned while the node is pending
+	deadline, pendingDeadline, err := woc.checkTemplateTimeouts(tmpl, node, time.Now().UTC())
+
+	require.NoError(t, err)
+	deadlineUntil := time.Until(*deadline)
+	assert.True(t, 0 <= deadlineUntil && deadlineUntil <= (time.Second*4))
+	pendingUntil := time.Until(*pendingDeadline)
+	assert.True(t, 0 <= pendingUntil && pendingUntil <= (time.Second*2))
+	assert.True(t, pendingDeadline.Before(*deadline))
+
+	// pending timeout
+	pendingUntil += 1 * time.Millisecond
+	time.Sleep(pendingUntil)
+	deadline, pendingDeadline, err = woc.checkTemplateTimeouts(tmpl, node, time.Now().UTC())
+	assert.Nil(t, deadline)
+	assert.Nil(t, pendingDeadline)
+	require.ErrorIs(t, err, ErrTimeout)
+
+	makePodsPhase(ctx, woc, apiv1.PodRunning)
+	woc = newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	wf = woc.wf
+
+	node, err = wf.GetNodeByName("hello-world-dag.dag1")
+	require.NoError(t, err)
+
+	deadline, pendingDeadline, err = woc.checkTemplateTimeouts(tmpl, node, time.Now().UTC())
+	require.NoError(t, err)
+	assert.Nil(t, pendingDeadline)
+	deadlineUntil = time.Duration(0)
+	if deadline != nil {
+		deadlineUntil = time.Until(*deadline)
+	}
+	assert.True(t, 0 < deadlineUntil && deadlineUntil < (time.Second*4))
+
+	// general timeout is not enforced by the controller for running nodes;
+	// the deadline is still returned so it can be set as activeDeadlineSeconds
+	deadlineUntil += 1 * time.Millisecond
+	time.Sleep(deadlineUntil)
+	deadline, pendingDeadline, err = woc.checkTemplateTimeouts(tmpl, node, time.Now().UTC())
+	assert.NotNil(t, deadline)
+	assert.Nil(t, pendingDeadline)
+	require.NoError(t, err)
 }

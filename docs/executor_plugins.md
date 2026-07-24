@@ -2,9 +2,18 @@
 
 ## Configuration
 
-Executor Plugins are disabled by default in the Workflow Controller.
-To enable them, start the Controller with `ARGO_EXECUTOR_PLUGINS=true`.
-For example:
+Executor Plugins are disabled by default.
+They can be enabled either globally via the Workflow Controller ConfigMap or per workflow.
+Use the corresponding flags to enable them:
+
+- `ARGO_EXECUTOR_PLUGINS=true` enables the use of Executor Plugins defined globally in the controller’s ConfigMap.
+- `ARGO_WORKFLOW_LEVEL_EXECUTOR_PLUGINS=true` allows using Executor Plugin settings specified directly in the workflow spec. These settings take precedence over the global ones.
+
+These two options are independent of each other: you can enable only the global plugins, only the workflow-level plugins, or both at the same time.
+
+See [`workflow-level-executor-plugin.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/workflow-level-executor-plugin.yaml) for a workflow-level executor plugin example.
+
+For example, to enable both modes in the Workflow Controller deployment:
 
 ```yaml
 apiVersion: apps/v1
@@ -19,6 +28,8 @@ spec:
           env:
             - name: ARGO_EXECUTOR_PLUGINS
               value: "true"
+            - name: ARGO_WORKFLOW_LEVEL_EXECUTOR_PLUGINS
+              value: "true"
 ```
 
 When using the [Helm chart](https://github.com/argoproj/argo-helm/tree/master/charts/argo-workflows), add this to your `values.yaml`:
@@ -27,6 +38,8 @@ When using the [Helm chart](https://github.com/argoproj/argo-helm/tree/master/ch
 controller:
   extraEnv:
     - name: ARGO_EXECUTOR_PLUGINS
+      value: "true"
+    - name: ARGO_WORKFLOW_LEVEL_EXECUTOR_PLUGINS
       value: "true"
 ```
 
@@ -130,17 +143,17 @@ the script in the container.
 
 Some things to note here:
 
-* You only need to implement the calls you need.
+- You only need to implement the calls you need.
 Return 404 and it won't be called again.
-* The path is the RPC method name.
-* You should check that the `Authorization` header contains the same value as `/var/run/argo/token`.
+- The path is the RPC method name.
+- You should check that the `Authorization` header contains the same value as `/var/run/argo/token`.
 Return 403 if not.
-* The request body contains the template's input parameters.
-* The response body may contain the node's result, including the phase (e.g. "Succeeded" or "Failed") and a message.
-* If the response is `{}`, then the Executor Plugin is saying it cannot execute the Plugin template, e.g. it is a Slack Plugin,
+- The request body contains the template's input parameters.
+- The response body may contain the node's result, including the phase (e.g. "Succeeded" or "Failed") and a message.
+- If the response is `{}`, then the Executor Plugin is saying it cannot execute the Plugin template, e.g. it is a Slack Plugin,
 but the template is a Tekton job.
-* If the status code is 404, then the Executor Plugin will not be called again.
-* If you save the file as `server.*`, it will be copied to the sidecar container's `args` field.
+- If the status code is 404, then the Executor Plugin will not be called again.
+- If you save the file as `server.*`, it will be copied to the sidecar container's `args` field.
 This is useful for building self-contained Executor Plugins in scripting languages like Python or Node.JS.
 
 Next, create a manifest named `plugin.yaml`:
@@ -207,8 +220,8 @@ You'll see the Workflow complete successfully.
 
 When a workflow is run, Executor Plugins are loaded from:
 
-* The Workflow's namespace.
-* The Argo installation namespace (typically `argo`).
+- The Workflow's namespace.
+- The Argo installation namespace (typically `argo`).
 
 If two Executor Plugins have the same name, only the one in the Workflow's namespace is loaded.
 
@@ -257,11 +270,11 @@ spec:
 
 An Executor Plugin may fail as follows:
 
-* Connection/socket error - considered transient.
-* Timeout - considered transient.
-* 404 error - method is not supported by the Executor Plugin, as a result the method will not be called again (in the same workflow).
-* 503 error - considered transient.
-* Other 4xx/5xx errors - considered fatal.
+- Connection/socket error - considered transient.
+- Timeout - considered transient.
+- 404 error - method is not supported by the Executor Plugin, as a result the method will not be called again (in the same workflow).
+- 503 error - considered transient.
+- Other 4xx/5xx errors - considered fatal.
 
 Transient errors are retried, all other errors are considered fatal.
 

@@ -45,6 +45,26 @@ spec:
     strategy: OnPodSuccess
 `
 
+func TestParseUserOverrideAllowlist(t *testing.T) {
+	for _, env := range []string{"", "  "} {
+		got, err := parseUserOverrideAllowlist(env)
+		require.NoError(t, err)
+		assert.Nil(t, got)
+	}
+
+	// Input is the YAML/JSON name; output is the Go field name that keys allowedUserOverrideFields.
+	got, err := parseUserOverrideAllowlist(" podSpecPatch , volumes ")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"PodSpecPatch", "Volumes"}, got)
+
+	// Go identifiers are not accepted — operators write YAML names.
+	_, err = parseUserOverrideAllowlist("PodSpecPatch")
+	require.EqualError(t, err, `WORKFLOW_USER_OVERRIDE_ALLOWLIST: "PodSpecPatch" is not a WorkflowSpec field name`)
+
+	_, err = parseUserOverrideAllowlist("notAField")
+	require.EqualError(t, err, `WORKFLOW_USER_OVERRIDE_ALLOWLIST: "notAField" is not a WorkflowSpec field name`)
+}
+
 func TestMergeWorkflows(t *testing.T) {
 	patchWf := wfv1.MustUnmarshalWorkflow(origWF)
 	targetWf := wfv1.MustUnmarshalWorkflow(patchWF)
@@ -584,6 +604,8 @@ var blockedUserOverrideFields = map[string]bool{
 	"RetryStrategy":                true,
 	"PodMetadata":                  true,
 	"Hooks":                        true,
+	"PodResources":                 true,
+	"ExecutorPlugins":              true,
 }
 
 func TestValidateUserOverrides_AllowedFields(t *testing.T) {
@@ -646,6 +668,22 @@ func TestValidateUserOverrides_BlockedFields(t *testing.T) {
 			spec:  wfv1.WorkflowSpec{Hooks: wfv1.LifecycleHooks{"exit": wfv1.LifecycleHook{Template: "evil"}}},
 			field: "Hooks",
 		},
+		{
+			name: "ExecutorPlugins",
+			spec: wfv1.WorkflowSpec{
+				ExecutorPlugins: []wfv1.ExecutorPlugin{
+					{
+						ObjectMeta: metav1.ObjectMeta{Name: "example-plugin"},
+						Spec: wfv1.ExecutorPluginSpec{
+							Sidecar: wfv1.ExecutorPluginSidecar{
+								Container: apiv1.Container{Name: "example-plugin", Image: "example/plugin:latest"},
+							},
+						},
+					},
+				},
+			},
+			field: "ExecutorPlugins",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -689,6 +727,16 @@ func TestSanitizeUserWorkflowSpec(t *testing.T) {
 		Templates:           []wfv1.Template{{Name: "evil"}},
 		Shutdown:            wfv1.ShutdownStrategyTerminate,
 		WorkflowTemplateRef: &wfv1.WorkflowTemplateRef{Name: "my-template"},
+		ExecutorPlugins: []wfv1.ExecutorPlugin{
+			{
+				ObjectMeta: metav1.ObjectMeta{Name: "example-plugin"},
+				Spec: wfv1.ExecutorPluginSpec{
+					Sidecar: wfv1.ExecutorPluginSidecar{
+						Container: apiv1.Container{Name: "example-plugin", Image: "example/plugin:latest"},
+					},
+				},
+			},
+		},
 	}
 
 	sanitized := SanitizeUserWorkflowSpec(spec)
@@ -704,6 +752,7 @@ func TestSanitizeUserWorkflowSpec(t *testing.T) {
 	assert.Nil(t, sanitized.HostNetwork)
 	assert.Nil(t, sanitized.Volumes)
 	assert.Nil(t, sanitized.Templates)
+	assert.Nil(t, sanitized.ExecutorPlugins)
 }
 
 func TestSanitizeUserWorkflowSpec_Nil(t *testing.T) {
@@ -812,4 +861,125 @@ func TestAllWorkflowSpecFieldsAccountedFor(t *testing.T) {
 			t.Errorf("WorkflowSpec field %q appears in both allowedUserOverrideFields and blockedUserOverrideFields — it should be in exactly one", fieldName)
 		}
 	}
+}
+
+var wfWithArtifactOverride = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: workflow-with-artifact-override-
+spec:
+  workflowTemplateRef:
+    name: template-with-artifact
+  arguments:
+    artifacts:
+      - name: my-uploaded-file
+        s3:
+          endpoint: s3.amazonaws.com
+          bucket: my-bucket
+          key: uploads/argo/12345678-1234-1234-1234-123456789012/file.zip
+          accessKeySecret:
+            name: s3-creds
+            key: accessKey
+          secretKeySecret:
+            name: s3-creds
+            key: secretKey
+`
+
+var wftWithArtifact = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: template-with-artifact
+spec:
+  entrypoint: argosay
+  arguments:
+    artifacts:
+      - name: my-uploaded-file
+        s3:
+          endpoint: s3.amazonaws.com
+          bucket: my-bucket
+          key: input-file/placeholder
+          accessKeySecret:
+            name: s3-creds
+            key: accessKey
+          secretKeySecret:
+            name: s3-creds
+            key: secretKey
+  templates:
+    - name: argosay
+      inputs:
+        artifacts:
+          - name: my-uploaded-file
+            path: /tmp/file
+      container:
+        image: argoproj/argosay:v2
+        command: [sh, -c]
+        args: ["echo 'artifact loaded'"]
+`
+
+func TestJoinWorkflowSpecWithArtifactOverride(t *testing.T) {
+	assert := assert.New(t)
+	wf := wfv1.MustUnmarshalWorkflow(wfWithArtifactOverride)
+	wft := wfv1.MustUnmarshalWorkflowTemplate(wftWithArtifact)
+
+	targetWf, err := JoinWorkflowSpec(&wf.Spec, wft.GetWorkflowSpec(), nil)
+	require.NoError(t, err)
+
+	// Should have 1 artifact (my-uploaded-file)
+	assert.Len(targetWf.Spec.Arguments.Artifacts, 1)
+	assert.Equal("my-uploaded-file", targetWf.Spec.Arguments.Artifacts[0].Name)
+
+	// The key should be from the workflow (overridden), not from the template
+	key, err := targetWf.Spec.Arguments.Artifacts[0].S3.GetKey()
+	require.NoError(t, err)
+	assert.Equal("uploads/argo/12345678-1234-1234-1234-123456789012/file.zip", key)
+	assert.NotEqual("input-file/placeholder", key)
+}
+
+// TestJoinWorkflowSpec_ArtifactFieldMerge verifies that a key-only artifact
+// override at the workflow level does not drop bucket/endpoint inherited
+// from the workflow-defaults level, since those fields live on the same S3
+// backend and only the key is meant to change.
+func TestJoinWorkflowSpec_ArtifactFieldMerge(t *testing.T) {
+	wfSpec := &wfv1.WorkflowSpec{
+		Arguments: wfv1.Arguments{
+			Artifacts: wfv1.Artifacts{
+				{
+					Name: "my-artifact",
+					ArtifactLocation: wfv1.ArtifactLocation{
+						S3: &wfv1.S3Artifact{Key: "override-key"},
+					},
+				},
+			},
+		},
+	}
+	wfDefaultSpec := &wfv1.WorkflowSpec{
+		Arguments: wfv1.Arguments{
+			Artifacts: wfv1.Artifacts{
+				{
+					Name: "my-artifact",
+					ArtifactLocation: wfv1.ArtifactLocation{
+						S3: &wfv1.S3Artifact{
+							S3Bucket: wfv1.S3Bucket{
+								Endpoint: "s3.amazonaws.com",
+								Bucket:   "my-bucket",
+							},
+							Key: "default-key",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	targetWf, err := JoinWorkflowSpec(wfSpec, nil, wfDefaultSpec)
+	require.NoError(t, err)
+
+	require.Len(t, targetWf.Spec.Arguments.Artifacts, 1)
+	merged := targetWf.Spec.Arguments.Artifacts[0].S3
+	require.NotNil(t, merged)
+	assert.Equal(t, "s3.amazonaws.com", merged.Endpoint)
+	assert.Equal(t, "my-bucket", merged.Bucket)
+	assert.Equal(t, "override-key", merged.Key)
 }
