@@ -1,0 +1,62 @@
+# Workflow of workflows via the shared per-workflow resource-agent: the parent creates several child
+# Workflow resources and the agent watches each to completion, instead of one monitor pod per child.
+#
+# The resource agent runs under "<workflow-sa>-resource-agent" (here "default-resource-agent"). Grant it:
+#   * list/watch on workflowtasksets and patch on workflowtasksets/status
+#   * create/get/list/watch on workflows (argoproj.io)
+# Each child Workflow runs under its own service account and needs the usual workflow RBAC.
+# See docs/resource-template.md for the complete RBAC requirements.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-agent-wofw-
+  namespace: argo
+  labels:
+    workflows.argoproj.io/no-test: "environment"
+  annotations:
+    workflows.argoproj.io/no-test-reasons: |
+      Requires a default-resource-agent service account with permission to
+      create, get, list, and watch Workflows.
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: child
+        template: create-child
+        arguments:
+          parameters:
+          - name: message
+            value: "{{item}}"
+        withItems:
+        - hello
+        - world
+
+  - name: create-child
+    inputs:
+      parameters:
+      - name: message
+    resource:
+      action: create
+      mode: agent
+      successCondition: status.phase == Succeeded
+      failureCondition: status.phase in (Failed, Error)
+      setOwnerReference: true
+      manifest: |
+        apiVersion: argoproj.io/v1alpha1
+        kind: Workflow
+        metadata:
+          generateName: resource-agent-child-
+        spec:
+          entrypoint: echo
+          templates:
+          - name: echo
+            container:
+              image: alpine:3.20
+              command: [echo]
+              args: ["{{inputs.parameters.message}}"]
+    outputs:
+      parameters:
+      - name: child-name
+        valueFrom:
+          jsonPath: '{.metadata.name}'

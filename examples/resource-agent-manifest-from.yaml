@@ -1,0 +1,96 @@
+# Agent-based resource template sourcing its manifest from an artifact (manifestFrom) instead of an
+# inline `manifest:`. The first step generates a Pod manifest and stores it as an S3 artifact; the
+# second step hands it to the resource-agent, which downloads it itself (no per-node pod / init
+# container) via the in-process native S3 driver, then creates + watches the Pod.
+#
+# The agent loads the artifact with an in-process driver (native s3 — used here — gcs, oss, http,
+# git, raw) or, for `plugin:`-backed artifacts, through the artifact-plugin sidecars the controller
+# installs into the agent pod for every driver registered under `artifactDrivers` in its ConfigMap.
+# The s3 config below targets the quick-start minio; change it for your object store.
+#
+# The resource agent runs under "<workflow-sa>-resource-agent" (here "default-resource-agent"). Grant it:
+#   * list/watch on workflowtasksets and patch on workflowtasksets/status
+#   * get on secrets (to read the S3 credentials for the manifest artifact)
+#   * create/get/list/watch on pods
+# See docs/resource-template.md for the complete RBAC requirements.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-agent-manifest-from-
+  namespace: argo
+  labels:
+    workflows.argoproj.io/no-test: "environment"
+  annotations:
+    workflows.argoproj.io/no-test-reasons: |
+      Requires an S3 artifact repository and a default-resource-agent service
+      account with permission to create, get, list, and watch Pods.
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: generate
+        template: generate-manifest
+    - - name: apply
+        template: apply-manifest
+        arguments:
+          artifacts:
+          - name: manifest
+            from: "{{steps.generate.outputs.artifacts.manifest}}"
+
+  - name: generate-manifest
+    script:
+      image: alpine:3.20
+      command: [sh]
+      source: |
+        cat > /tmp/manifest.yaml <<'EOF'
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          generateName: manifest-from-pod-
+        spec:
+          restartPolicy: Never
+          containers:
+          - name: main
+            image: alpine:3.20
+            command: [sh, -c, "echo hello from manifestFrom; sleep 5"]
+        EOF
+    outputs:
+      artifacts:
+      - name: manifest
+        path: /tmp/manifest.yaml
+        # Explicit native S3 block so the resource-agent can read it in-process (a plugin-backed
+        # default repo would need a sidecar the agent doesn't have). Targets the quick-start minio.
+        s3:
+          endpoint: minio:9000
+          insecure: true
+          bucket: my-bucket
+          key: "resource-agent/{{workflow.name}}/manifest.yaml"
+          accessKeySecret:
+            name: my-minio-cred
+            key: accesskey
+          secretKeySecret:
+            name: my-minio-cred
+            key: secretkey
+
+  - name: apply-manifest
+    inputs:
+      # The agent downloads this artifact itself via the S3 location carried over from `from:` above,
+      # so its `path` is unused on the agent path; it is declared so manifestFrom can reference it.
+      artifacts:
+      - name: manifest
+        path: /tmp/manifest.yaml
+    resource:
+      action: create
+      mode: agent
+      successCondition: status.phase == Succeeded
+      failureCondition: status.phase == Failed
+      setOwnerReference: true
+      manifestFrom:
+        artifact:
+          name: manifest
+    outputs:
+      parameters:
+      - name: pod-name
+        valueFrom:
+          jsonPath: '{.metadata.name}'

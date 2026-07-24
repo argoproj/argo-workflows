@@ -1,0 +1,61 @@
+# Scale variant of the resource-agent workflow of workflows: the parent fans out 30 child Workflows
+# and the shared per-workflow resource-agent watches all of them, instead of 30 monitor pods.
+#
+# The resource agent runs under "<workflow-sa>-resource-agent" (here "default-resource-agent"). Grant it:
+#   * list/watch on workflowtasksets and patch on workflowtasksets/status
+#   * create/get/list/watch on workflows (argoproj.io)
+# Each child Workflow runs under its own service account and needs the usual workflow RBAC.
+# See docs/resource-template.md for the complete RBAC requirements.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-agent-wofw-scale-
+  namespace: argo
+  labels:
+    workflows.argoproj.io/no-test: "environment"
+  annotations:
+    workflows.argoproj.io/no-test-reasons: |
+      Requires a default-resource-agent service account with permission to
+      create, get, list, and watch Workflows.
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: child
+        template: create-child
+        arguments:
+          parameters:
+          - name: index
+            value: "{{item}}"
+        withSequence:
+          count: "30"
+
+  - name: create-child
+    inputs:
+      parameters:
+      - name: index
+    resource:
+      action: create
+      mode: agent
+      successCondition: status.phase == Succeeded
+      failureCondition: status.phase in (Failed, Error)
+      setOwnerReference: true
+      manifest: |
+        apiVersion: argoproj.io/v1alpha1
+        kind: Workflow
+        metadata:
+          generateName: resource-agent-child-{{inputs.parameters.index}}-
+        spec:
+          entrypoint: work
+          templates:
+          - name: work
+            container:
+              image: alpine:3.20
+              command: [sh, -c]
+              args: ["echo child {{inputs.parameters.index}} starting; sleep 10"]
+    outputs:
+      parameters:
+      - name: child-name
+        valueFrom:
+          jsonPath: '{.metadata.name}'

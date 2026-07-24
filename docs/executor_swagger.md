@@ -3338,8 +3338,24 @@ cause implementors to also use a fixed point implementation.
 | manifest | string| `string` |  | | Manifest contains the kubernetes manifest |  |
 | manifestFrom | [ManifestFrom](#manifest-from)| `ManifestFrom` |  | |  |  |
 | mergeStrategy | string| `string` |  | | MergeStrategy is the strategy used to merge a patch. It defaults to "strategic"</br>Must be one of: strategic, merge, json </br>*Allowed values: strategic, merge, json.*|  |
+| mode | [ResourceTemplateMode](#resource-template-mode)| `ResourceTemplateMode` |  | |  |  |
 | setOwnerReference | boolean| `bool` |  | | SetOwnerReference sets the reference to the workflow on the OwnerReference of generated resource. |  |
 | successCondition | string| `string` |  | | SuccessCondition is a label selector expression which describes the conditions</br>of the k8s resource in which it is acceptable to proceed to the following step |  |
+
+
+
+### <span id="resource-template-mode"></span> ResourceTemplateMode
+
+
+> ResourceTemplateMode is where a resource template executes: on a dedicated per-node pod
+(the default) or on the shared per-workflow resource agent pod.
+  
+
+
+
+| Name | Type | Go type | Default | Description | Example |
+|------|------|---------| ------- |-------------|---------|
+| ResourceTemplateMode | string| string | | ResourceTemplateMode is where a resource template executes: on a dedicated per-node pod</br>(the default) or on the shared per-workflow resource agent pod. |  |
 
 
 

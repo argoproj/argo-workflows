@@ -1,0 +1,45 @@
+# Uses the shared per-workflow resource-agent to create a Pod that sleeps for
+# 120 seconds, then waits for it to complete.
+#
+# The resource agent runs under the "<workflow-sa>-resource-agent" service
+# account (here "default-resource-agent"). Grant it:
+#   * list/watch on workflowtasksets and patch on workflowtasksets/status
+#   * create/get/list/watch on pods
+# See docs/resource-template.md for the complete RBAC requirements.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-agent-pod-
+  namespace: argo
+  labels:
+    workflows.argoproj.io/no-test: "environment"
+  annotations:
+    workflows.argoproj.io/no-test-reasons: |
+      Requires a default-resource-agent service account with permission to
+      create, get, list, and watch Pods.
+spec:
+  entrypoint: create-pod
+  templates:
+  - name: create-pod
+    resource:
+      action: create
+      mode: agent
+      successCondition: status.phase == Succeeded
+      failureCondition: status.phase == Failed
+      setOwnerReference: true
+      manifest: |
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          generateName: resource-agent-sleeper-
+        spec:
+          restartPolicy: Never
+          containers:
+          - name: main
+            image: alpine:3.20
+            command: [sleep, "120"]
+    outputs:
+      parameters:
+      - name: pod-name
+        valueFrom:
+          jsonPath: '{.metadata.name}'

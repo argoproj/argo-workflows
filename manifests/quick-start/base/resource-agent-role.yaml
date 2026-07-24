@@ -1,0 +1,66 @@
+# https://argo-workflows.readthedocs.io/en/latest/resource-template/
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: resource-agent
+  annotations:
+    workflows.argoproj.io/description: |
+      This is the minimum recommended permissions needed if you want to use agent-based
+      resource templates.
+
+      In addition to these rules, you must grant, on every resource kind your resource
+      templates touch, the verbs matching your actions plus the ones the agent always needs:
+      `create`, `get`, `list` and `watch` at minimum (create the resource, read it back for
+      restart-safety, and watch/poll it for its success/failure conditions), plus `update`
+      for apply/replace, `patch` for patch, and `delete` for delete.
+rules:
+  - apiGroups:
+      - argoproj.io
+    resources:
+      - workflowtasksets
+    verbs:
+      - list
+      - watch
+  - apiGroups:
+      - argoproj.io
+    resources:
+      - workflowtasksets/status
+    verbs:
+      - patch
+  # `manifestFrom` manifests are resolved via the Kubernetes API
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - get
+  # the bundled examples create ConfigMaps and Pods; the agent also reads them back and lists/watches
+  # them to evaluate their success/failure conditions (configmaps get also covers `manifestFrom`).
+  # patch/update/delete let every resource action (apply, replace, patch, delete) work out of the
+  # box in the quick-start environment.
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+      - pods
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  # the workflow-of-workflows examples create child Workflows
+  - apiGroups:
+      - argoproj.io
+    resources:
+      - workflows
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch

@@ -14,6 +14,7 @@ Name | Type | Description | Notes
 **manifest** | **String** | Manifest contains the kubernetes manifest |  [optional]
 **manifestFrom** | [**IoArgoprojWorkflowV1alpha1ManifestFrom**](IoArgoprojWorkflowV1alpha1ManifestFrom.md) |  |  [optional]
 **mergeStrategy** | **String** | MergeStrategy is the strategy used to merge a patch. It defaults to \&quot;strategic\&quot; Must be one of: strategic, merge, json |  [optional]
+**mode** | **String** | Mode is where this resource template executes: on a dedicated per-node pod (\&quot;pod\&quot;, the default), or on the shared per-workflow resource agent pod (\&quot;agent\&quot;), which creates the resource and watches it for its success/failure conditions. See docs/resource-template.md. |  [optional]
 **setOwnerReference** | **Boolean** | SetOwnerReference sets the reference to the workflow on the OwnerReference of generated resource. |  [optional]
 **successCondition** | **String** | SuccessCondition is a label selector expression which describes the conditions of the k8s resource in which it is acceptable to proceed to the following step |  [optional]
 

@@ -7399,6 +7399,8 @@ spec:
                           - merge
                           - json
                           type: string
+                        mode:
+                          type: string
                         setOwnerReference:
                           type: boolean
                         successCondition:

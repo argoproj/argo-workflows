@@ -166,6 +166,41 @@ func (ae *AgentExecutor) taskWorker(ctx context.Context, taskQueue chan task, re
 	}
 }
 
+// patchTaskSetStatusNodes merge-patches the given node results into the named WorkflowTaskSet's
+// status subresource, retrying transient errors with backoff. Both agents' patch workers flush
+// through this so the patch mechanics and retry policy cannot drift between them.
+func patchTaskSetStatusNodes(ctx context.Context, taskSetInterface v1alpha1.WorkflowTaskSetInterface, workflowName string, nodes map[string]wfv1.NodeResult) error {
+	patch, err := json.Marshal(map[string]any{"status": wfv1.WorkflowTaskSetStatus{Nodes: nodes}})
+	if err != nil {
+		return err
+	}
+	// This runs synchronously inside the patch workers' select loops, so a single hung
+	// Patch against a degraded API server would stall result propagation for every node
+	// the agent serves. Bound the whole retry loop to the backoff window it was designed
+	// for; results are re-flushed by the caller, so timing out here loses nothing.
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	patchErr := retry.OnError(wait.Backoff{
+		Duration: time.Second,
+		Factor:   2,
+		Jitter:   0.1,
+		Steps:    5,
+		Cap:      30 * time.Second,
+	}, func(retryErr error) bool {
+		return errors.IsTransientErr(ctx, retryErr)
+	}, func() error {
+		_, patchErr := taskSetInterface.Patch(ctx, workflowName, types.MergePatchType, patch, metav1.PatchOptions{}, "status")
+		return patchErr
+	})
+	if patchErr != nil && ctx.Err() != nil {
+		// The bound above cut the attempt short. That is a slow or hung API server, not a
+		// payload problem, so report it as transient: both patch workers keep the results
+		// and retry next tick, rather than marking every pending node errored.
+		return fmt.Errorf("%w: %w", errors.NewErrTransient("taskset status patch timed out"), patchErr)
+	}
+	return patchErr
+}
+
 func (ae *AgentExecutor) patchWorker(ctx context.Context, taskSetInterface v1alpha1.WorkflowTaskSetInterface, responseQueue chan response, requeueTime time.Duration) {
 	ticker := time.NewTicker(requeueTime)
 	defer ticker.Stop()
@@ -180,39 +215,22 @@ func (ae *AgentExecutor) patchWorker(ctx context.Context, taskSetInterface v1alp
 				continue
 			}
 
-			patch, err := json.Marshal(map[string]any{"status": wfv1.WorkflowTaskSetStatus{Nodes: nodeResults}})
-			if err != nil {
-				logger.WithError(err).Error(ctx, "Generating Patch Failed")
-				continue
-			}
-
 			logger.Info(ctx, "Processing Patch")
 
-			err = retry.OnError(wait.Backoff{
-				Duration: time.Second,
-				Factor:   2,
-				Jitter:   0.1,
-				Steps:    5,
-				Cap:      30 * time.Second,
-			}, func(retryErr error) bool {
-				return errors.IsTransientErr(ctx, retryErr)
-			}, func() error {
-				_, patchErr := taskSetInterface.Patch(ctx, ae.WorkflowName, types.MergePatchType, patch, metav1.PatchOptions{}, "status")
-				return patchErr
-			})
-
-			if err != nil && !errors.IsTransientErr(ctx, err) {
+			if err := patchTaskSetStatusNodes(ctx, taskSetInterface, ae.WorkflowName, nodeResults); err != nil {
 				logger.WithError(err).
 					Error(ctx, "TaskSet Patch Failed")
 
 				// If this is not a transient error, then it's likely that the contents of the patch have caused the error.
 				// To avoid a deadlock with the workflow overall, or an infinite loop, fail and propagate the error messages
 				// to the nodes.
-				// If this is a transient error, then simply do nothing and another patch will be retried in the next tick.
-				for node := range nodeResults {
-					nodeResults[node] = wfv1.NodeResult{
-						Phase:   wfv1.NodeError,
-						Message: fmt.Sprintf("HTTP request completed successfully but an error occurred when patching its result: %s", err),
+				// If this is a transient error, keep the results and another patch will be retried in the next tick.
+				if !errors.IsTransientErr(ctx, err) {
+					for node := range nodeResults {
+						nodeResults[node] = wfv1.NodeResult{
+							Phase:   wfv1.NodeError,
+							Message: fmt.Sprintf("HTTP request completed successfully but an error occurred when patching its result: %s", err),
+						}
 					}
 				}
 				continue
@@ -233,6 +251,11 @@ func (ae *AgentExecutor) processTask(ctx context.Context, tmpl wfv1.Template) (*
 		executeTemplate = ae.executeHTTPTemplate
 	case tmpl.Plugin != nil:
 		executeTemplate = ae.executePluginTemplate
+	case tmpl.Resource != nil:
+		// Agent-based resource templates share this WorkflowTaskSet but are served by the dedicated
+		// resource agent. Ignore them here (empty phase => no result patched) so this agent does not
+		// spuriously fail them, mirroring how the resource agent skips non-resource tasks.
+		return &wfv1.NodeResult{}, 0, nil
 	default:
 		return nil, 0, fmt.Errorf("agent cannot execute: unknown task type: %v", tmpl.GetType())
 	}
