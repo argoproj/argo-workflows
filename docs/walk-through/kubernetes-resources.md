@@ -20,7 +20,10 @@ spec:
       # If failureCondition is true, the step is considered failed.
       # If successCondition is true, the step is considered successful.
       # They use kubernetes label selection syntax and can be applied against any field
-      # of the resource (not just labels). Multiple AND conditions can be represented by comma
+      # of the resource (not just labels).
+      # For successCondition: Multiple AND conditions can be represented by comma
+      # delimited expressions.
+      # For failureCondition: Multiple OR conditions can be represented by comma
       # delimited expressions.
       # For more details: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
       successCondition: status.succeeded > 0
