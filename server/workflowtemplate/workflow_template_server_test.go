@@ -9,6 +9,8 @@ import (
 	"github.com/go-jose/go-jose/v4/jwt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -287,11 +289,18 @@ func TestWorkflowTemplateServer_DeleteWorkflowTemplate(t *testing.T) {
 
 func TestWorkflowTemplateServer_LintWorkflowTemplate(t *testing.T) {
 	server, ctx := getWorkflowTemplateServer(t)
-	tmpl, err := server.LintWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateLintRequest{
-		Template: &v1alpha1.WorkflowTemplate{},
+	t.Run("Labelled", func(t *testing.T) {
+		tmpl, err := server.LintWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateLintRequest{
+			Template: &v1alpha1.WorkflowTemplate{},
+		})
+		require.NoError(t, err)
+		assert.Contains(t, tmpl.Labels, common.LabelKeyControllerInstanceID)
 	})
-	require.NoError(t, err)
-	assert.Contains(t, tmpl.Labels, common.LabelKeyControllerInstanceID)
+	t.Run("Nil template", func(t *testing.T) {
+		_, err := server.LintWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateLintRequest{Namespace: "default"})
+		require.Error(t, err)
+		assert.Equal(t, codes.InvalidArgument, status.Code(err))
+	})
 }
 
 func TestWorkflowTemplateServer_UpdateWorkflowTemplate(t *testing.T) {
