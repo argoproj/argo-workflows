@@ -21,7 +21,14 @@ func ParseProgress(s string) (Progress, bool) {
 }
 
 func (in Progress) parts() []string {
-	return strings.SplitN(string(in), "/", 2)
+	parts := strings.SplitN(string(in), "/", 2)
+	if len(parts) < 2 {
+		// Input without a "/" separator is malformed. Pad the missing
+		// denominator so N()/M() never index out of range; IsValid() then
+		// rejects it because M() is 0.
+		return []string{parts[0], ""}
+	}
+	return parts
 }
 
 func (in Progress) N() int64 {
