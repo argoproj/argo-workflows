@@ -36,7 +36,7 @@ func TestLogoutHandler(t *testing.T) {
 			require.Len(t, cookies, 1)
 			cookie := cookies[0]
 			assert.Equal(t, "authorization", cookie.Name)
-			assert.Equal(t, "", cookie.Value)
+			assert.Empty(t, cookie.Value)
 			assert.Equal(t, tt.baseHRef, cookie.Path)
 			assert.Equal(t, -1, cookie.MaxAge)
 			assert.Equal(t, tt.secure, cookie.Secure)
