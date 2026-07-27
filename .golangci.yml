@@ -220,7 +220,7 @@ linters:
         path-except: ^workflow/controller/
       - linters: [forbidigo]
         text: "woc:"
-        path: '[^/]*test[^/]*\.go$'
+        path: '_test\.go$'
       # Selectively suppress revive comment rules (large fix count — PRs welcome)
       - linters: [revive]
         text: "exported (.+) should have comment( \\(or a comment on this block\\))? or be unexported"
