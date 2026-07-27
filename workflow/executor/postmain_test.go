@@ -12,6 +12,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	argofake "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	utilretry "github.com/argoproj/argo-workflows/v4/util/retry"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/mocks"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/tracing"
 )
@@ -34,6 +35,7 @@ func newTestPostMainExecutor(t *testing.T, tmpl wfv1.Template, mockRuntime *mock
 		taskResultClient:   argofake.NewClientset().ArgoprojV1alpha1().WorkflowTaskResults(fakeNamespace),
 		Tracing:            tracingObj,
 		memoizedConfigMaps: map[string]string{},
+		retryBackoff:       utilretry.ExecutorRetry(ctx),
 	}
 }
 
