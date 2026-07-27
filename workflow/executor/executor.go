@@ -93,6 +93,7 @@ type WorkflowExecutor struct {
 	removeLocalArtPath           bool
 	initlessPod                  bool
 	retryBackoff                 wait.Backoff
+	resourceStateCheckInterval   time.Duration
 
 	// flag to indicate if the task result was created
 	taskResultCreated bool
@@ -134,6 +135,9 @@ type Config struct {
 	// RetryBackoff is the backoff used when retrying transient failures
 	// (EXECUTOR_RETRY_BACKOFF_*, see util/retry.ExecutorRetry).
 	RetryBackoff wait.Backoff
+	// ResourceStateCheckInterval is the poll interval for resource template
+	// state checks (RESOURCE_STATE_CHECK_INTERVAL).
+	ResourceStateCheckInterval time.Duration
 }
 
 type Initializer interface {
@@ -215,6 +219,7 @@ func NewExecutor(
 		removeLocalArtPath:           cfg.RemoveLocalArtPath,
 		initlessPod:                  cfg.InitlessPod,
 		retryBackoff:                 cfg.RetryBackoff,
+		resourceStateCheckInterval:   cfg.ResourceStateCheckInterval,
 	}, err
 }
 

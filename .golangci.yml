@@ -55,7 +55,9 @@ linters:
         # one-task-per-process layout.
         - pattern: ^os\.(Getenv|LookupEnv|Environ|ExpandEnv)$
           msg: "executor-env: executor packages must not read the environment; parse env at the composition root (cmd/argoexec) and pass values in"
-        - pattern: ^env\.Lookup\w+Or$
+        # Both spellings the codebase uses for the util/env import (forbidigo
+        # matches literal source text, so each alias needs its own pattern).
+        - pattern: ^env(util)?\.Lookup\w+Or$
           msg: "executor-env: executor packages must not read the environment; parse env at the composition root (cmd/argoexec) and pass values in"
     revive:
       rules:

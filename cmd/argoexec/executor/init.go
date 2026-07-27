@@ -17,6 +17,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v4/util"
+	"github.com/argoproj/argo-workflows/v4/util/env"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/logs"
 	"github.com/argoproj/argo-workflows/v4/util/retry"
@@ -106,6 +107,7 @@ func Init(ctx context.Context, clientConfig clientcmd.ClientConfig, varRunArgo s
 			RemoveLocalArtPath:           os.Getenv("REMOVE_LOCAL_ART_PATH") == "true",
 			InitlessPod:                  common.IsInitlessPod(),
 			RetryBackoff:                 retry.ExecutorRetry(ctx),
+			ResourceStateCheckInterval:   env.LookupEnvDurationOr(ctx, "RESOURCE_STATE_CHECK_INTERVAL", 5*time.Second),
 		},
 	)
 	CheckErr(err)
