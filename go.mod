@@ -90,14 +90,13 @@ require (
 )
 
 require (
-	github.com/antlr4-go/antlr/v4 v4.13.0 // indirect
-	github.com/google/cel-go v0.23.2 // indirect
+	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
+	github.com/google/cel-go v0.29.0 // indirect
 	github.com/klauspost/crc32 v1.3.0 // indirect
 	github.com/olekukonko/cat v0.0.0-20250817074551-3280053e4e00 // indirect
 	github.com/olekukonko/errors v1.1.0 // indirect
 	github.com/olekukonko/ll v0.1.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/stoewer/go-strcase v1.3.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/exp v0.0.0-20260410095643-746e56fc9e2f // indirect
 	k8s.io/apiserver v0.33.1 // indirect
