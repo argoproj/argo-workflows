@@ -152,8 +152,9 @@ func newSso(
 		EndSessionEndpoint string `json:"end_session_endpoint"`
 	}
 	var logoutURL string
-	if claimsProvider, ok := provider.(interface{ Claims(interface{}) error }); ok {
-		if err := claimsProvider.Claims(&providerMetadata); err == nil {
+	if claimsProvider, ok := provider.(interface{ Claims(any) error }); ok {
+		claimsErr := claimsProvider.Claims(&providerMetadata)
+		if claimsErr == nil {
 			logoutURL = providerMetadata.EndSessionEndpoint
 		}
 	}

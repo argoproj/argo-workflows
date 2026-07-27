@@ -40,7 +40,7 @@ func (fakeOidcProvider) Verifier(config *oidc.Config) *oidc.IDTokenVerifier {
 	return nil
 }
 
-func (p fakeOidcProvider) Claims(v interface{}) error {
+func (p fakeOidcProvider) Claims(v any) error {
 	metadata, err := json.Marshal(map[string]string{"end_session_endpoint": p.LogoutURL})
 	if err != nil {
 		return err
