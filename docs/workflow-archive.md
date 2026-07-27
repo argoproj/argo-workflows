@@ -37,9 +37,8 @@ Example:
 
     kubectl create secret generic argo-postgres-config -n argo --from-literal=password=mypassword --from-literal=username=argodbuser
 
-Note that IAM-based authentication is not currently supported. However, you can start your database proxy as a sidecar
-(e.g. via [CloudSQL Proxy](https://github.com/GoogleCloudPlatform/cloud-sql-proxy) on GCP) and then specify your local
-proxy address, IAM username, and an empty string as your password in the persistence configuration to connect to it.
+Instead of a static password, you can authenticate to some managed PostgreSQL services with short-lived tokens.
+See [IAM-based Authentication](#iam-based-authentication).
 
 The following tables will be created in the database when you start the workflow controller with enabled archive:
 
@@ -47,6 +46,68 @@ The following tables will be created in the database when you start the workflow
 * `argo_archived_workflows`
 * `argo_archived_workflows_labels`
 * `schema_history`
+
+## IAM-based Authentication
+
+> v4.1 and after
+
+For PostgreSQL, the controller can authenticate to the database with short-lived cloud IAM tokens instead of a static password.
+Use this to avoid storing long-lived database passwords in Kubernetes secrets.
+When token authentication is enabled the `passwordSecret` is not used, but you must still provide a `userNameSecret` containing the database user that is mapped to your cloud identity.
+Only one token mechanism can be enabled at a time.
+
+These options are part of the shared database configuration, so they also apply to the databases used for [synchronization](synchronization.md#database-configuration) and [node status offloading](offloading-large-workflows.md).
+
+### Microsoft Entra ID on Azure
+
+To connect to an Azure Database for PostgreSQL using [Microsoft Entra ID](https://learn.microsoft.com/en-us/azure/postgresql/flexible-server/concepts-azure-ad-authentication), enable `azureToken`:
+
+    persistence:
+      archive: true
+      postgresql:
+        host: example.postgres.database.azure.com
+        port: 5432
+        database: postgres
+        tableName: argo_workflows
+        ssl: true
+        sslMode: require
+        userNameSecret:
+          name: argo-postgres-config
+          key: username
+        azureToken:
+          enabled: true
+
+The controller requests a token for each new database connection using the default Azure credential chain, which supports Workload Identity, Managed Identity and other standard mechanisms.
+The token scope defaults to `https://ossrdbms-aad.database.windows.net/.default` and can be overridden with `azureToken.scope`.
+
+### AWS RDS IAM
+
+To connect to an AWS RDS for PostgreSQL database using [IAM database authentication](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.IAM.html), enable `awsRDSToken`:
+
+    persistence:
+      archive: true
+      postgresql:
+        host: example.eu-west-1.rds.amazonaws.com
+        port: 5432
+        database: postgres
+        tableName: argo_workflows
+        ssl: true
+        userNameSecret:
+          name: argo-postgres-config
+          key: username
+        awsRDSToken:
+          enabled: true
+          region: eu-west-1
+
+The controller requests an IAM authentication token for each new database connection using the default AWS credential chain, which supports IAM Roles for Service Accounts (IRSA), instance profiles and other standard mechanisms.
+The `region` field is optional and is auto-detected from the environment if omitted.
+You must enable SSL with `ssl: true` to use AWS RDS IAM authentication.
+
+### Other providers
+
+For providers without direct support, you can start your database proxy as a sidecar
+(e.g. via [CloudSQL Proxy](https://github.com/GoogleCloudPlatform/cloud-sql-proxy) on GCP) and then specify your local
+proxy address, IAM username, and an empty string as your password in the persistence configuration to connect to it.
 
 ## Automatic Database Migration
 
