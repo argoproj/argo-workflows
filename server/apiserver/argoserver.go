@@ -115,11 +115,11 @@ type ArgoServerOpts struct {
 	BaseHRef          string
 	LogoutRedirectURL string
 	TLSConfig         *tls.Config
-	Namespaced               bool
-	Namespace                string
-	Clients                  *types.Clients
-	RestConfig               *rest.Config
-	AuthModes                auth.Modes
+	Namespaced        bool
+	Namespace         string
+	Clients           *types.Clients
+	RestConfig        *rest.Config
+	AuthModes         auth.Modes
 	// config map name
 	ConfigName               string
 	ManagedNamespace         string
