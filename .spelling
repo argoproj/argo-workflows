@@ -80,6 +80,7 @@ Kaniko
 Katacoda
 Katib
 Kerberos
+KeyValueEditor
 Killercoda
 KubectlExec
 Kubeflow
@@ -110,6 +111,7 @@ PersistentVolumeClaims
 Ploomber
 PostgreSQL
 Postgres
+Pre-fill
 PriorityClass
 RCs
 Risc-V
@@ -140,11 +142,13 @@ apis
 architecting
 arg
 argo
+argoexec
 argoproj
 args
 async
 auth
 backend
+backoff
 backported
 boolean
 booleans
@@ -221,6 +225,7 @@ qps
 ray
 rc2
 repo
+retryStrategy
 roadmap
 rollout
 rollouts
@@ -273,6 +278,8 @@ v3.4.4
 v3.5
 v3.6
 v3.7
+v3.7.16
+v4.0.7
 validator
 vendored
 versioned
