@@ -33,5 +33,5 @@ export function Tooltip({content, ...props}: TooltipProps) {
     ) : (
         content
     );
-    return <ArgoTooltip content={renderedContent} maxWidth={isMarkdown ? '50vw' : undefined} {...props} />;
+    return <ArgoTooltip content={renderedContent} maxWidth={isMarkdown ? '50vw' : undefined} boundary='viewport' {...props} />;
 }

@@ -70,6 +70,7 @@ describe('Tooltip', () => {
         expect(screen.getByTestId('argo-tooltip').getAttribute('data-max-width')).toBe('50vw');
         const tippyProps = argoTooltipSpy.mock.calls[0][0];
         expect(tippyProps.onCreate).toBeUndefined();
+        expect(tippyProps.boundary).toBe('viewport');
     });
 
     it('leaves non-string content untouched and does not force maxWidth', () => {
@@ -86,6 +87,7 @@ describe('Tooltip', () => {
         expect(ReactMarkdownSpy).not.toHaveBeenCalled();
         expect(screen.getByTestId('rich')).toBeInTheDocument();
         expect(screen.getByTestId('argo-tooltip').getAttribute('data-max-width')).toBe('unset');
+        expect(argoTooltipSpy.mock.calls[0][0].boundary).toBe('viewport');
     });
 
     it('opens defined hrefs via openLinkWithKey and ignores undefined hrefs', () => {
