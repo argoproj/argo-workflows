@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -25,8 +26,9 @@ const testNamespace = "argo"
 
 type fakeOidcProvider struct {
 	//nolint:containedctx
-	Ctx    context.Context
-	Issuer string
+	Ctx       context.Context
+	Issuer    string
+	LogoutURL string
 }
 
 func (fakeOidcProvider) Endpoint() oauth2.Endpoint {
@@ -37,8 +39,20 @@ func (fakeOidcProvider) Verifier(config *oidc.Config) *oidc.IDTokenVerifier {
 	return nil
 }
 
+func (p fakeOidcProvider) Claims(v interface{}) error {
+	metadata, err := json.Marshal(map[string]string{"end_session_endpoint": p.LogoutURL})
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(metadata, v)
+}
+
 func fakeOidcFactory(ctx context.Context, issuer string) (providerInterface, error) {
-	return fakeOidcProvider{ctx, issuer}, nil
+	return fakeOidcProvider{Ctx: ctx, Issuer: issuer}, nil
+}
+
+func fakeOidcFactoryWithLogoutURL(ctx context.Context, issuer string) (providerInterface, error) {
+	return fakeOidcProvider{Ctx: ctx, Issuer: issuer, LogoutURL: "https://idp.example.com/logout"}, nil
 }
 
 func getSecretKeySelector(secret, key string) apiv1.SecretKeySelector {
@@ -80,6 +94,20 @@ func TestLoadSsoClientIdFromSecret(t *testing.T) {
 	assert.Equal(t, "argo_groups", ssoObject.customClaimName)
 	assert.Empty(t, config.IssuerAlias)
 	assert.Equal(t, 10*time.Hour, ssoObject.expiry)
+}
+
+func TestLoadSsoLogoutURLFromProviderMetadata(t *testing.T) {
+	fakeClient := fake.NewClientset(ssoConfigSecret).CoreV1().Secrets(testNamespace)
+	ssoInterface, err := newSso(logging.TestContext(t.Context()), fakeOidcFactoryWithLogoutURL, Config{
+		Issuer:       "https://test-issuer",
+		ClientID:     getSecretKeySelector("argo-sso-secret", "client-id"),
+		ClientSecret: getSecretKeySelector("argo-sso-secret", "client-secret"),
+	}, fakeClient, "/", false)
+	require.NoError(t, err)
+
+	ssoObject := ssoInterface.(*sso)
+	assert.Equal(t, "https://idp.example.com/logout", ssoObject.LogoutURL())
+	assert.Equal(t, "sso-client-id-value", ssoObject.ClientID())
 }
 
 func TestNewSsoWithIssuerAlias(t *testing.T) {

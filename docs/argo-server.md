@@ -50,6 +50,10 @@ If the server is running behind reverse proxy with a sub-path different from `/`
 `/argo`), you can set an alternative sub-path with the `--base-href` flag or the `ARGO_BASE_HREF`
 environment variable.
 
+### Logout Redirect URL
+
+Use `--logout-redirect-url` to specify the URL where the identity provider should redirect users after logout. By default, users are redirected to the UI base href. When SSO is enabled and the provider advertises an OIDC `end_session_endpoint`, Argo Server redirects through that endpoint with the configured client ID and post-logout redirect URL. Configure an absolute URL when provider logout is enabled, and register it as an allowed post-logout redirect URI with the identity provider.
+
 ### Transport Layer Security
 
 See [TLS](tls.md).

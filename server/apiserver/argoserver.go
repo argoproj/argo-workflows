@@ -57,6 +57,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/server/event"
 	"github.com/argoproj/argo-workflows/v4/server/eventsource"
 	"github.com/argoproj/argo-workflows/v4/server/info"
+	"github.com/argoproj/argo-workflows/v4/server/logout"
 	"github.com/argoproj/argo-workflows/v4/server/sensor"
 	"github.com/argoproj/argo-workflows/v4/server/static"
 	serversync "github.com/argoproj/argo-workflows/v4/server/sync"
@@ -87,7 +88,8 @@ type Server interface {
 }
 
 type argoServer struct {
-	baseHRef string
+	baseHRef          string
+	logoutRedirectURL string
 	// https://itnext.io/practical-guide-to-securing-grpc-connections-with-go-and-tls-part-1-f63058e9d6d1
 	tlsConfig                *tls.Config
 	hsts                     bool
@@ -110,13 +112,14 @@ type argoServer struct {
 }
 
 type ArgoServerOpts struct {
-	BaseHRef   string
-	TLSConfig  *tls.Config
-	Namespaced bool
-	Namespace  string
-	Clients    *types.Clients
-	RestConfig *rest.Config
-	AuthModes  auth.Modes
+	BaseHRef          string
+	LogoutRedirectURL string
+	TLSConfig         *tls.Config
+	Namespaced               bool
+	Namespace                string
+	Clients                  *types.Clients
+	RestConfig               *rest.Config
+	AuthModes                auth.Modes
 	// config map name
 	ConfigName               string
 	ManagedNamespace         string
@@ -183,6 +186,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (Server, error) {
 
 	return &argoServer{
 		baseHRef:                 opts.BaseHRef,
+		logoutRedirectURL:        opts.LogoutRedirectURL,
 		tlsConfig:                opts.TLSConfig,
 		hsts:                     opts.HSTS,
 		namespace:                opts.Namespace,
@@ -472,6 +476,15 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	}
 	mux.Handle("/oauth2/redirect", handlers.ProxyHeaders(http.HandlerFunc(as.oAuth2Service.HandleRedirect)))
 	mux.Handle("/oauth2/callback", handlers.ProxyHeaders(http.HandlerFunc(as.oAuth2Service.HandleCallback)))
+	var logoutURL, clientID string
+	if logoutConfig, ok := as.oAuth2Service.(interface {
+		LogoutURL() string
+		ClientID() string
+	}); ok {
+		logoutURL = logoutConfig.LogoutURL()
+		clientID = logoutConfig.ClientID()
+	}
+	mux.Handle(logout.LogoutEndpoint, logout.NewHandler(as.baseHRef, as.logoutRedirectURL, as.tlsConfig != nil, logoutURL, clientID))
 	mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
 		if os.Getenv("ARGO_SERVER_METRICS_AUTH") != "false" {
 			md := metadata.New(map[string]string{"authorization": r.Header.Get("Authorization")})

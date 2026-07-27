@@ -53,6 +53,7 @@ type Config = config.SSOConfig
 
 type sso struct {
 	config            *oauth2.Config
+	logoutURL         string
 	issuer            string
 	idTokenVerifier   *oidc.IDTokenVerifier
 	httpClient        *http.Client
@@ -67,6 +68,17 @@ type sso struct {
 	userInfoPath      string
 	filterGroupsRegex []*regexp.Regexp
 	logger            logging.Logger
+}
+
+// LogoutURL returns the OIDC end-session endpoint discovered from the provider
+// or configured explicitly for providers with non-standard discovery metadata.
+func (s *sso) LogoutURL() string {
+	return s.logoutURL
+}
+
+// ClientID returns the OIDC client identifier used by the SSO configuration.
+func (s *sso) ClientID() string {
+	return s.config.ClientID
 }
 
 func (s *sso) IsRBACEnabled() bool {
@@ -134,6 +146,17 @@ func newSso(
 	provider, err := factory(oidcContext, c.Issuer)
 	if err != nil {
 		return nil, err
+	}
+	// Claims is implemented by oidc.Provider and contains the discovery
+	// metadata, including the optional end_session_endpoint.
+	var providerMetadata struct {
+		EndSessionEndpoint string `json:"end_session_endpoint"`
+	}
+	var logoutURL string
+	if claimsProvider, ok := provider.(interface{ Claims(interface{}) error }); ok {
+		if err := claimsProvider.Claims(&providerMetadata); err == nil {
+			logoutURL = providerMetadata.EndSessionEndpoint
+		}
 	}
 	var clientIDObj *apiv1.Secret
 	if c.ClientID.Name == c.ClientSecret.Name {
@@ -221,6 +244,7 @@ func newSso(
 
 	return &sso{
 		config:            config,
+		logoutURL:         logoutURL,
 		idTokenVerifier:   idTokenVerifier,
 		baseHRef:          baseHRef,
 		httpClient:        httpClient,
