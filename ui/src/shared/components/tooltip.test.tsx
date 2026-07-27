@@ -90,6 +90,15 @@ describe('Tooltip', () => {
         expect(argoTooltipSpy.mock.calls[0][0].boundary).toBe('viewport');
     });
 
+    it('always enforces boundary=viewport even if a caller passes a conflicting boundary prop', () => {
+        render(
+            <Tooltip content='some string' boundary='scrollParent'>
+                <span>trigger</span>
+            </Tooltip>
+        );
+        expect(argoTooltipSpy.mock.calls[0][0].boundary).toBe('viewport');
+    });
+
     it('opens defined hrefs via openLinkWithKey and ignores undefined hrefs', () => {
         const spy = jest.spyOn(links, 'openLinkWithKey').mockImplementation(() => undefined);
         render(
