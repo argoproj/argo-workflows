@@ -25,7 +25,7 @@ func TestLogoutHandler(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			recorder := httptest.NewRecorder()
-			request := httptest.NewRequest(http.MethodGet, LogoutEndpoint, nil)
+			request := httptest.NewRequestWithContext(t.Context(), http.MethodGet, LogoutEndpoint, nil)
 
 			NewHandler(tt.baseHRef, tt.redirectURL, tt.secure, tt.logoutURL, tt.clientID).ServeHTTP(recorder, request)
 
@@ -36,7 +36,7 @@ func TestLogoutHandler(t *testing.T) {
 			require.Len(t, cookies, 1)
 			cookie := cookies[0]
 			assert.Equal(t, "authorization", cookie.Name)
-			assert.Equal(t, "", cookie.Value)
+			assert.Empty(t, cookie.Value)
 			assert.Equal(t, tt.baseHRef, cookie.Path)
 			assert.Equal(t, -1, cookie.MaxAge)
 			assert.Equal(t, tt.secure, cookie.Secure)

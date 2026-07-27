@@ -69,9 +69,7 @@ export function Login({location}: RouteComponentProps<any>) {
                     </div>
                     <div className='white-box login__logout-section'>
                         <p>Something wrong? Try logging out and logging back in:</p>
-                        <a
-                            className='argo-button argo-button--base-o'
-                            href={uiUrl('auth/logout')}>
+                        <a className='argo-button argo-button--base-o' href={uiUrl('auth/logout')}>
                             <i className='fa fa-sign-out-alt' /> Logout
                         </a>
                     </div>
