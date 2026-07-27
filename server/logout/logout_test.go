@@ -36,7 +36,7 @@ func TestLogoutHandler(t *testing.T) {
 			require.Len(t, cookies, 1)
 			cookie := cookies[0]
 			assert.Equal(t, "authorization", cookie.Name)
-			assert.Empty(t, cookie.Value)
+			assert.Equal(t, "", cookie.Value)
 			assert.Equal(t, tt.baseHRef, cookie.Path)
 			assert.Equal(t, -1, cookie.MaxAge)
 			assert.Equal(t, tt.secure, cookie.Secure)
@@ -48,7 +48,7 @@ func TestLogoutHandler(t *testing.T) {
 
 func TestConstructLogoutURL(t *testing.T) {
 	assert.Equal(t, "https://example.com/", constructLogoutURL("", "client", "https://example.com/"))
-	assert.Equal(t, "https://example.com/logout", constructLogoutURL("https://example.com/logout", "", "https://app.example.com/"))
+	assert.Equal(t, "https://example.com/logout?post_logout_redirect_uri=https%3A%2F%2Fapp.example.com%2F", constructLogoutURL("https://example.com/logout", "", "https://app.example.com/"))
 	assert.Equal(t, "https://example.com/", constructLogoutURL("://bad", "client", "https://example.com/"))
 	assert.Equal(t, "https://example.com/", constructLogoutURL("javascript://example.com/logout", "client", "https://example.com/"))
 }
