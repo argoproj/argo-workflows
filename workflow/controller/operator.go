@@ -2679,11 +2679,11 @@ func (woc *wfOperationCtx) checkTemplateTimeouts(tmpl *wfv1.Template, node *wfv1
 func (woc *wfOperationCtx) recordWorkflowPhaseChange(ctx context.Context) {
 	phase := metrics.ConvertWorkflowPhase(woc.wf.Status.Phase)
 	woc.controller.metrics.ChangeWorkflowPhase(ctx, phase, woc.wf.Namespace)
-	if woc.wf.Spec.WorkflowTemplateRef != nil { // not-woc-misuse
-		woc.controller.metrics.CountWorkflowTemplate(ctx, phase, woc.wf.Spec.WorkflowTemplateRef.Name, woc.wf.Namespace, woc.wf.Spec.WorkflowTemplateRef.ClusterScope) // not-woc-misuse
+	if woc.wf.Spec.WorkflowTemplateRef != nil { //nolint:forbidigo // not-woc-misuse
+		woc.controller.metrics.CountWorkflowTemplate(ctx, phase, woc.wf.Spec.WorkflowTemplateRef.Name, woc.wf.Namespace, woc.wf.Spec.WorkflowTemplateRef.ClusterScope) //nolint:forbidigo // not-woc-misuse
 		if woc.wf.Status.Phase.Completed() {
 			duration := time.Since(woc.wf.Status.StartedAt.Time)
-			woc.controller.metrics.RecordWorkflowTemplateTime(ctx, duration, woc.wf.Spec.WorkflowTemplateRef.Name, woc.wf.Namespace, woc.wf.Spec.WorkflowTemplateRef.ClusterScope) // not-woc-misuse
+			woc.controller.metrics.RecordWorkflowTemplateTime(ctx, duration, woc.wf.Spec.WorkflowTemplateRef.Name, woc.wf.Namespace, woc.wf.Spec.WorkflowTemplateRef.ClusterScope) //nolint:forbidigo // not-woc-misuse
 			woc.log.Info(ctx, "Recording template time")
 		}
 	}
@@ -4400,23 +4400,23 @@ func (woc *wfOperationCtx) includeScriptOutput(ctx context.Context, nodeName, bo
 }
 
 func (woc *wfOperationCtx) fetchWorkflowSpec(ctx context.Context) (wfv1.WorkflowSpecHolder, error) {
-	if woc.wf.Spec.WorkflowTemplateRef == nil { // not-woc-misuse
+	if woc.wf.Spec.WorkflowTemplateRef == nil { //nolint:forbidigo // not-woc-misuse
 		return nil, fmt.Errorf("cannot fetch workflow spec without workflowTemplateRef")
 	}
 
 	var specHolder wfv1.WorkflowSpecHolder
 	var err error
 	// Logic for workflow refers Workflow template
-	if woc.wf.Spec.WorkflowTemplateRef.ClusterScope { // not-woc-misuse
+	if woc.wf.Spec.WorkflowTemplateRef.ClusterScope { //nolint:forbidigo // not-woc-misuse
 		if woc.controller.cwftmplInformer == nil {
 			woc.log.WithError(err).Error(ctx, "clusterWorkflowTemplate RBAC is missing")
 			return nil, fmt.Errorf("cannot get resource clusterWorkflowTemplate at cluster scope")
 		}
-		woc.controller.metrics.CountWorkflowTemplate(ctx, metrics.WorkflowNew, woc.wf.Spec.WorkflowTemplateRef.Name, woc.wf.Namespace, true) // not-woc-misuse
-		specHolder, err = woc.controller.cwftmplInformer.Lister().Get(woc.wf.Spec.WorkflowTemplateRef.Name)                                  // not-woc-misuse
+		woc.controller.metrics.CountWorkflowTemplate(ctx, metrics.WorkflowNew, woc.wf.Spec.WorkflowTemplateRef.Name, woc.wf.Namespace, true) //nolint:forbidigo // not-woc-misuse
+		specHolder, err = woc.controller.cwftmplInformer.Lister().Get(woc.wf.Spec.WorkflowTemplateRef.Name)                                  //nolint:forbidigo // not-woc-misuse
 	} else {
-		woc.controller.metrics.CountWorkflowTemplate(ctx, metrics.WorkflowNew, woc.wf.Spec.WorkflowTemplateRef.Name, woc.wf.Namespace, false)  // not-woc-misuse
-		specHolder, err = woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace).Get(woc.wf.Spec.WorkflowTemplateRef.Name) // not-woc-misuse
+		woc.controller.metrics.CountWorkflowTemplate(ctx, metrics.WorkflowNew, woc.wf.Spec.WorkflowTemplateRef.Name, woc.wf.Namespace, false)  //nolint:forbidigo // not-woc-misuse
+		specHolder, err = woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace).Get(woc.wf.Spec.WorkflowTemplateRef.Name) //nolint:forbidigo // not-woc-misuse
 	}
 	if err != nil {
 		return nil, err
@@ -4433,12 +4433,12 @@ func (woc *wfOperationCtx) retryStrategy(tmpl *wfv1.Template) *wfv1.RetryStrateg
 
 func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) (context.Context, error) {
 	switch {
-	case woc.wf.Spec.WorkflowTemplateRef != nil: // not-woc-misuse
+	case woc.wf.Spec.WorkflowTemplateRef != nil: //nolint:forbidigo // not-woc-misuse
 		// When workflow restrictions require template referencing (Strict/Secure mode),
 		// reject workflows that set any non-allowed fields, as they could override
 		// security settings defined in the WorkflowTemplate.
 		if woc.controller.Config.WorkflowRestrictions.MustUseReference() { // not-woc-misuse: intentionally checking the user-submitted spec
-			if err := wfutil.ValidateUserOverrides(&woc.wf.Spec); err != nil { // not-woc-misuse
+			if err := wfutil.ValidateUserOverrides(&woc.wf.Spec); err != nil { //nolint:forbidigo // not-woc-misuse
 				ctx = woc.markWorkflowError(ctx, err)
 				return ctx, err
 			}
@@ -4461,7 +4461,7 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) (context.Context
 			ctx = woc.markWorkflowError(ctx, err)
 			return ctx, err
 		}
-		woc.volumes = woc.wf.Spec.DeepCopy().Volumes // not-woc-misuse
+		woc.volumes = woc.wf.Spec.DeepCopy().Volumes //nolint:forbidigo // not-woc-misuse
 	}
 
 	// Perform one-time workflow validation
@@ -4539,9 +4539,9 @@ func (woc *wfOperationCtx) needsStoredWfSpecUpdate() bool {
 	// woc.wf.Status.StoredWorkflowSpec.Entrypoint == "" check is mainly to support  backward compatible with 2.11.x workflow to 2.12.x
 	// Need to recalculate StoredWorkflowSpec in 2.12.x format.
 	// This check can be removed once all user migrated from 2.11.x to 2.12.x
-	return woc.wf.Status.StoredWorkflowSpec == nil || (woc.wf.Spec.Entrypoint != "" && woc.wf.Status.StoredWorkflowSpec.Entrypoint == "") || // not-woc-misuse
-		(woc.wf.Spec.Suspend != woc.wf.Status.StoredWorkflowSpec.Suspend) || // not-woc-misuse
-		(woc.wf.Spec.Shutdown != woc.wf.Status.StoredWorkflowSpec.Shutdown) // not-woc-misuse
+	return woc.wf.Status.StoredWorkflowSpec == nil || (woc.wf.Spec.Entrypoint != "" && woc.wf.Status.StoredWorkflowSpec.Entrypoint == "") || //nolint:forbidigo // not-woc-misuse
+		(woc.wf.Spec.Suspend != woc.wf.Status.StoredWorkflowSpec.Suspend) || //nolint:forbidigo // not-woc-misuse
+		(woc.wf.Spec.Shutdown != woc.wf.Status.StoredWorkflowSpec.Shutdown) //nolint:forbidigo // not-woc-misuse
 }
 
 func (woc *wfOperationCtx) setStoredWfSpec(ctx context.Context) error {
@@ -4566,9 +4566,9 @@ func (woc *wfOperationCtx) setStoredWfSpec(ctx context.Context) error {
 	if woc.needsStoredWfSpecUpdate() {
 		// In reference mode, sanitize the user spec before merging so that
 		// only allow-listed fields participate in the strategic merge patch.
-		userSpec := &woc.wf.Spec // not-woc-misuse
+		userSpec := &woc.wf.Spec //nolint:forbidigo // not-woc-misuse
 		if woc.controller.Config.WorkflowRestrictions.MustUseReference() {
-			userSpec = wfutil.SanitizeUserWorkflowSpec(&woc.wf.Spec) // not-woc-misuse
+			userSpec = wfutil.SanitizeUserWorkflowSpec(&woc.wf.Spec) //nolint:forbidigo // not-woc-misuse
 		}
 		// Join workflow, workflow template, and workflow default metadata to workflow spec.
 		mergedWf, err := wfutil.JoinWorkflowSpec(userSpec, workflowTemplateSpec, &wfDefault.Spec)
@@ -4582,9 +4582,9 @@ func (woc *wfOperationCtx) setStoredWfSpec(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		userSpec := &woc.wf.Spec // not-woc-misuse
+		userSpec := &woc.wf.Spec //nolint:forbidigo // not-woc-misuse
 		if woc.controller.Config.WorkflowRestrictions.MustUseReference() {
-			userSpec = wfutil.SanitizeUserWorkflowSpec(&woc.wf.Spec) // not-woc-misuse
+			userSpec = wfutil.SanitizeUserWorkflowSpec(&woc.wf.Spec) //nolint:forbidigo // not-woc-misuse
 		}
 		mergedWf, err := wfutil.JoinWorkflowSpec(userSpec, wftHolder.GetWorkflowSpec(), &wfDefault.Spec)
 		if err != nil {

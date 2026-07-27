@@ -12,6 +12,7 @@ linters:
     - errcheck
     - errorlint
     - exptostd
+    - forbidigo
     - gocheckcompilerdirectives
     - gocritic
     - gosec
@@ -42,6 +43,15 @@ linters:
     - wastedassign
     - whitespace
   settings:
+    forbidigo:
+      # Patterns are grouped by their msg prefix ("woc:", ...) so that exclusion
+      # rules below can scope each group to a set of paths via `text` matching.
+      # If a use is genuinely correct, mark the line: //nolint:forbidigo // not-woc-misuse
+      forbid:
+        - pattern: woc\.wf\.Spec.*
+          msg: "woc: woc.wf.Spec won't work with WorkflowTemplate; use woc.execWf.Spec instead"
+        - pattern: woc\.execWf\.Status.*
+          msg: "woc: woc.execWf.Status won't work with WorkflowTemplate; use woc.wf.Status instead"
     revive:
       rules:
         # defaults
@@ -202,6 +212,15 @@ linters:
     presets:
       - std-error-handling
     rules:
+      # The "woc:" forbidigo patterns only guard misuse in the non-test workflow
+      # controller code (see the forbidigo settings above). Future pattern groups
+      # can be scoped to other paths with their own msg prefix + rules like these.
+      - linters: [forbidigo]
+        text: "woc:"
+        path-except: ^workflow/controller/
+      - linters: [forbidigo]
+        text: "woc:"
+        path: '[^/]*test[^/]*\.go$'
       # Selectively suppress revive comment rules (large fix count — PRs welcome)
       - linters: [revive]
         text: "exported (.+) should have comment( \\(or a comment on this block\\))? or be unexported"
