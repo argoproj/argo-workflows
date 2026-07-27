@@ -110,8 +110,8 @@ schema = 3
     version = "v1.2.2"
     hash = "sha256-XVnD/ruaOOYmt1Eipv/kIzNStI9fqOYc3hJHJ7ao9Yg="
   [mod."github.com/antlr4-go/antlr/v4"]
-    version = "v4.13.0"
-    hash = "sha256-98nKVlsgv1S7vMvGuKOQINOKkiEvrlX5DCSmyr6Mr+A="
+    version = "v4.13.1"
+    hash = "sha256-beAuxHNRUuhzcSJUh/8ztVf1zCUiaT72fg2Jvx0AuNQ="
   [mod."github.com/argoproj/argo-events"]
     version = "v1.9.11"
     hash = "sha256-i9ufsJB4PiF91dPV0vF4LhDt3GvLwFb50d6maBOZX0c="
@@ -419,8 +419,8 @@ schema = 3
     version = "v1.1.3"
     hash = "sha256-/6Us2eNRFi2IIp7p5uPUXLridilAdk4SmZhcTYR0csw="
   [mod."github.com/google/cel-go"]
-    version = "v0.26.0"
-    hash = "sha256-SIM9SqhrnfTwAsYZbfWrbF33qa87vej9lUhffjicHj0="
+    version = "v0.29.0"
+    hash = "sha256-j+zKJBywrA2UKzB/TAElEHwKsCa39+iEmzcbvsws3d4="
   [mod."github.com/google/gnostic-models"]
     version = "v0.7.0"
     hash = "sha256-sxShRxqOUVlz9IkAz0C/NP/7CmLBW3ffwoZTdh+rIOc="
@@ -769,9 +769,6 @@ schema = 3
   [mod."github.com/spiffe/go-spiffe/v2"]
     version = "v2.6.0"
     hash = "sha256-8fvyGwDgSAFebzE1TA/cMTsFjH2CgxvHP5WoPfhw4Fk="
-  [mod."github.com/stoewer/go-strcase"]
-    version = "v1.3.0"
-    hash = "sha256-X0ilcefeqVQ44B9WT6euCMcigs7oLFypOQaGI33kGr8="
   [mod."github.com/stretchr/objx"]
     version = "v0.5.3"
     hash = "sha256-4s8d7MdRKq4r7QjkIFCdwjKehc6Hi5mS4xuZ2v2QYR8="
