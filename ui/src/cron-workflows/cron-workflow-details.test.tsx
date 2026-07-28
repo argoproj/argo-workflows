@@ -32,14 +32,16 @@ jest.mock('./cron-workflow-editor', () => ({
 }));
 
 describe('CronWorkflowDetails deletion', () => {
+    let testBase: HTMLBaseElement;
+
     beforeEach(() => {
-        const base = document.createElement('base');
-        base.setAttribute('href', '/');
-        document.head.appendChild(base);
+        testBase = document.createElement('base');
+        testBase.setAttribute('href', '/');
+        document.head.appendChild(testBase);
     });
 
     afterEach(() => {
-        document.querySelector('base')?.remove();
+        testBase.remove();
         jest.restoreAllMocks();
     });
 
