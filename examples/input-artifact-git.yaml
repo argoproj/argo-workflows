@@ -37,8 +37,10 @@ spec:
           # - Create a GitHub App, with at least "contents: read" permissions for the repo
           # - Install the GH App to the repo, noting the InstallID found in the URL
           # - Use ExternalSecretsOperator to generate rolling Access Tokens via the GH App credentials:
-          #  ESO Docs: https://external-secrets.io/main/api/generator/github/
-          #  Ensure the templated Secret has `username: x-access-token`, `password: "{{ .token }}"`
+          #   ESO Docs: https://external-secrets.io/main/api/generator/github/
+          #   Ensure the templated Secret has `username: x-access-token`, `password: "{{ .token }}"`
+          # - Use `usernameSecret` and `passwordSecret` here to reference the name and keys of the 
+          #   ESO generated GitHub token secret, which will automatically refresh every `refreshInterval` 
           #
           # insecureIgnoreHostKey disables SSH strict host key checking during the git clone
           # NOTE: this is unnecessary for the well-known public SSH keys from the major git
