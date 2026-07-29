@@ -151,12 +151,13 @@ func jsonPointerValue(doc any, tokens []string) (any, bool) {
 }
 
 // realErrors flattens a jsonschema.ValidationError tree down to the
-// field-level errors that aren't the accepted mismatch above. The schema's
-// top-level "oneOf" (a Workflow/WorkflowTemplate/CronWorkflow/... union)
-// means every document legitimately fails all but one branch: when exactly
-// one branch's "/kind" const matches the document's own kind, only that
-// branch's errors are reported instead of every branch's, falling back to
-// the full set when the matching branch can't be determined.
+// field-level errors that aren't the accepted mismatch above. Any "oneOf"
+// node in the tree (the schema currently has exactly one, at the root,
+// discriminating Workflow/WorkflowTemplate/CronWorkflow/...) means every
+// document legitimately fails all but one branch: when exactly one branch's
+// "/kind" const matches the document's own kind, only that branch's errors
+// are reported instead of every branch's, falling back to the full set when
+// the matching branch can't be determined.
 func realErrors(doc any, err *jsonschema.ValidationError) []*jsonschema.ValidationError {
 	if len(err.Causes) == 0 {
 		if isAcceptedTypeMismatch(doc, err) {
