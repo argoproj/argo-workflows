@@ -1,5 +1,5 @@
 Description: Add OIDC provider logout support for Argo Server
-Authors: [Darcy Cleaver](https://github.com/your-github-handle)
+Authors: [Darcy Cleaver](https://github.com/decleaver)
 Component: General
 Issues: 12389
 
