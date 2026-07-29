@@ -737,6 +737,63 @@ func TestStepsWhenSkipNoRequeue(t *testing.T) {
 	assert.Equal(t, wfv1.NodeSkipped, nodeB.Phase)
 }
 
+var stepsWhenSkipWithExpression = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: steps-when-skip-with-expression-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: A
+        template: script-echo
+        when: "false"
+    - - name: B
+        template: echo-with-param
+        arguments:
+          parameters:
+          - name: msg
+            value: "{{= steps.A.status == 'Skipped' ? 'skipped' : steps.A.outputs.result}}"
+  - name: script-echo
+    script:
+      image: alpine:3.23
+      command: [sh]
+      source: |
+        echo hello
+  - name: echo-with-param
+    inputs:
+      parameters:
+      - name: msg
+    container:
+      image: alpine:3.23
+      command: [echo, "{{inputs.parameters.msg}}"]
+`
+
+func TestStepsWhenSkipExpression(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	wf := wfv1.MustUnmarshalWorkflow(stepsWhenSkipWithExpression)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	woc.operate(ctx)
+
+	// Verify the resolved value of steps.B.msg
+	nodeB := woc.wf.Status.Nodes.FindByDisplayName("B")
+	require.NotNil(t, nodeB)
+
+	require.NotNil(t, nodeB.Inputs)
+	require.Len(t, nodeB.Inputs.Parameters, 1)
+	assert.Equal(t, "skipped", nodeB.Inputs.Parameters[0].Value.String())
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+}
+
 var stepsWhenExprWithParamFilter = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow

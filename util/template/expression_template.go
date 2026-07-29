@@ -168,6 +168,9 @@ func (v *guardVisitor) Visit(node *ast.Node) {
 		if n.Operator == "??" {
 			ast.Walk(&n.Left, &memberMarker{guarded: v.guarded})
 		}
+	case *ast.ConditionalNode:
+		ast.Walk(&n.Exp1, &memberMarker{guarded: v.guarded})
+		ast.Walk(&n.Exp2, &memberMarker{guarded: v.guarded})
 	case *ast.MemberNode:
 		if n.Optional {
 			if _, ok := n.Node.(*ast.MemberNode); ok {

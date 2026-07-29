@@ -140,6 +140,11 @@ func Test_getIdentifiers(t *testing.T) {
 			expression: "tasks.a.outputs.result ?? 'default'",
 			want:       []string{"tasks"},
 		},
+		{
+			name:       "ternary guards both branches independently",
+			expression: "cond ? x.y : z.w",
+			want:       []string{"cond", "x", "z"},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
