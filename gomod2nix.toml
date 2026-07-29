@@ -730,9 +730,9 @@ schema = 3
   [mod."github.com/sanity-io/litter"]
     version = "v1.5.5"
     hash = "sha256-D1oP7mL4+sFaMU1S1WBmuwWYPMmr4ahi46SD4hPl/+0="
-  [mod."github.com/santhosh-tekuri/jsonschema/v5"]
-    version = "v5.3.1"
-    hash = "sha256-G3shtLAutSrPjni+C9LAWDIeYfkr4R5pdKUVfAkB518="
+  [mod."github.com/santhosh-tekuri/jsonschema/v6"]
+    version = "v6.0.2"
+    hash = "sha256-rPRYeV00NRyt6rb+gFJRK1K4TlVxy92cocRK/X9Wef4="
   [mod."github.com/segmentio/fasthash"]
     version = "v1.0.3"
     hash = "sha256-Bm1sq6fFfoySkE6W7qib1drLBDQlOHMKJx8WyXzcNHM="

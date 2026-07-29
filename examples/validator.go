@@ -10,9 +10,14 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/santhosh-tekuri/jsonschema/v5"
+	"github.com/santhosh-tekuri/jsonschema/v6"
+	"github.com/santhosh-tekuri/jsonschema/v6/kind"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 	"sigs.k8s.io/yaml"
 )
+
+var messagePrinter = message.NewPrinter(language.English)
 
 func ValidateArgoYamlRecursively(fromPath string, skipFileNames []string) (map[string][]string, error) {
 	schemaBytes, err := os.ReadFile("../api/jsonschema/schema.json")
@@ -20,9 +25,14 @@ func ValidateArgoYamlRecursively(fromPath string, skipFileNames []string) (map[s
 		return nil, err
 	}
 
+	schemaDoc, err := jsonschema.UnmarshalJSON(bytes.NewReader(schemaBytes))
+	if err != nil {
+		return nil, err
+	}
+
 	c := jsonschema.NewCompiler()
-	c.AssertFormat = true
-	if err := c.AddResource("schema.json", bytes.NewReader(schemaBytes)); err != nil {
+	c.AssertFormat()
+	if err := c.AddResource("schema.json", schemaDoc); err != nil {
 		return nil, err
 	}
 	schema, err := c.Compile("schema.json")
@@ -63,11 +73,11 @@ func ValidateArgoYamlRecursively(fromPath string, skipFileNames []string) (map[s
 			if errs := realErrors(doc, ve); len(errs) > 0 {
 				errorDescriptions := make([]string, 0, len(errs))
 				for _, e := range errs {
-					loc := e.InstanceLocation
-					if loc == "" {
-						loc = "(root)"
+					loc := "(root)"
+					if len(e.InstanceLocation) > 0 {
+						loc = "/" + strings.Join(e.InstanceLocation, "/")
 					}
-					errorDescriptions = append(errorDescriptions, fmt.Sprintf("%s in %s", e.Message, loc))
+					errorDescriptions = append(errorDescriptions, fmt.Sprintf("%s in %s", e.ErrorKind.LocalizedString(messagePrinter), loc))
 				}
 				failed[path] = errorDescriptions
 			}
@@ -90,8 +100,11 @@ func ValidateArgoYamlRecursively(fromPath string, skipFileNames []string) (map[s
 // integral values are tolerated; a non-integral number at these locations is
 // still a genuine mismatch.
 func isAcceptedTypeMismatch(doc any, err *jsonschema.ValidationError) bool {
-	if !((strings.HasSuffix(err.InstanceLocation, "/httpGet/port") || strings.HasSuffix(err.InstanceLocation, "/podDisruptionBudget/minAvailable")) &&
-		err.Message == "expected string, but got number") {
+	if !isHttpGetPortOrMinAvailable(err.InstanceLocation) {
+		return false
+	}
+	typeErr, ok := err.ErrorKind.(*kind.Type)
+	if !ok || typeErr.Got != "number" {
 		return false
 	}
 	val, ok := jsonPointerValue(doc, err.InstanceLocation)
@@ -102,15 +115,21 @@ func isAcceptedTypeMismatch(doc any, err *jsonschema.ValidationError) bool {
 	return ok && num == math.Trunc(num)
 }
 
-// jsonPointerValue resolves the RFC 6901 JSON Pointer used by
+// isHttpGetPortOrMinAvailable reports whether loc points at a
+// httpGet.port or podDisruptionBudget.minAvailable field.
+func isHttpGetPortOrMinAvailable(loc []string) bool {
+	if len(loc) < 2 {
+		return false
+	}
+	parent, field := loc[len(loc)-2], loc[len(loc)-1]
+	return (parent == "httpGet" && field == "port") || (parent == "podDisruptionBudget" && field == "minAvailable")
+}
+
+// jsonPointerValue resolves the token path used by
 // ValidationError.InstanceLocation against the decoded document.
-func jsonPointerValue(doc any, pointer string) (any, bool) {
+func jsonPointerValue(doc any, tokens []string) (any, bool) {
 	cur := doc
-	for _, tok := range strings.Split(pointer, "/") {
-		if tok == "" {
-			continue
-		}
-		tok = strings.NewReplacer("~1", "/", "~0", "~").Replace(tok)
+	for _, tok := range tokens {
 		switch v := cur.(type) {
 		case map[string]any:
 			val, ok := v[tok]
@@ -146,7 +165,7 @@ func realErrors(doc any, err *jsonschema.ValidationError) []*jsonschema.Validati
 		return []*jsonschema.ValidationError{err}
 	}
 
-	if err.KeywordLocation == "/oneOf" {
+	if _, ok := err.ErrorKind.(*kind.OneOf); ok {
 		if branch := matchingKindBranch(err.Causes); branch != nil {
 			return realErrors(doc, branch)
 		}
@@ -180,7 +199,7 @@ func matchingKindBranch(branches []*jsonschema.ValidationError) *jsonschema.Vali
 // for the document's "/kind" field, i.e. the document's kind doesn't match
 // this branch's expected kind.
 func hasKindMismatch(err *jsonschema.ValidationError) bool {
-	if err.InstanceLocation == "/kind" {
+	if len(err.InstanceLocation) == 1 && err.InstanceLocation[0] == "kind" {
 		return true
 	}
 	for _, cause := range err.Causes {
