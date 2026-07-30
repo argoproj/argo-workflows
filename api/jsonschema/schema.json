@@ -11977,7 +11977,10 @@
       "type": "string"
     },
     "io.k8s.apimachinery.pkg.util.intstr.IntOrString": {
-      "type": "string"
+      "type": [
+        "string",
+        "integer"
+      ]
     },
     "sensor.CreateSensorRequest": {
       "properties": {

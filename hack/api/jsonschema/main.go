@@ -19,6 +19,14 @@ func main() {
 	}
 	{
 		definitions := swagger["definitions"]
+		// Swagger 2.0 cannot express "string or integer" for a single
+		// field, so upstream Kubernetes models IntOrString as a bare
+		// string. Every schema.json field typed IntOrString (e.g.
+		// httpGet.port, podDisruptionBudget.minAvailable) accepts an
+		// integer in practice, so relax it here instead of special
+		// casing each affected field downstream.
+		intOrString := definitions.(obj)["io.k8s.apimachinery.pkg.util.intstr.IntOrString"].(obj)
+		intOrString["type"] = []string{"string", "integer"}
 		for _, kind := range []string{
 			"CronWorkflow",
 			"ClusterWorkflowTemplate",
