@@ -61,6 +61,14 @@ func (woc *wfOperationCtx) submitPod(ctx context.Context, result *podBuildResult
 			"pod %q: the API server dropped podResources; the PodLevelResources feature gate (beta since Kubernetes v1.34) is not enabled on this cluster", pod.Name)
 	}
 
+	if fresh && len(pod.Spec.ResourceClaims) > 0 && len(created.Spec.ResourceClaims) == 0 {
+		// The API server strips resource claims when DynamicResourceAllocation is
+		// off, so the pod runs without the device it asked for and nothing else
+		// says so.
+		woc.eventRecorder.Eventf(woc.wf, apiv1.EventTypeWarning, "ResourceClaimsDropped",
+			"pod %q: the API server dropped resourceClaims; the DynamicResourceAllocation feature gate is not enabled on this cluster", pod.Name)
+	}
+
 	// (f) bump active-pod parallelism accounting. This is a node-dispatch concern
 	// (workload parallelism), so it lives in the workload wrapper, not the shared
 	// primitive — the agent pod is not subject to workflow parallelism limits.

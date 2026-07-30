@@ -2,6 +2,7 @@ package validate
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 	"strings"
 	"testing"
@@ -4117,4 +4118,866 @@ func TestPodResourcesValidation(t *testing.T) {
 	require.ErrorContains(t, err, "templates.main.podResources is not supported for HTTP templates")
 	err = validate(ctx, podResourcesValid)
 	require.NoError(t, err)
+}
+
+var resourceClaimsValid = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+spec:
+  entrypoint: main
+  resourceClaims:
+  - name: shared
+    resourceClaimName: existing-claim
+  templates:
+  - name: main
+    resourceClaims:
+    - name: accelerator
+      resourceClaimTemplateName: gpu-claim-template
+    container:
+      image: alpine:3.23
+      resources:
+        claims:
+        - name: accelerator
+`
+
+var resourceClaimsParameterisedSource = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+    - name: claim-template
+      value: gpu-claim-template
+  templates:
+  - name: main
+    resourceClaims:
+    - name: accelerator
+      resourceClaimTemplateName: "{{workflow.parameters.claim-template}}"
+    container:
+      image: alpine:3.23
+`
+
+var resourceClaimsMissingName = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    resourceClaims:
+    - resourceClaimName: existing-claim
+    container:
+      image: alpine:3.23
+`
+
+var resourceClaimsDuplicateName = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    resourceClaims:
+    - name: accelerator
+      resourceClaimName: first
+    - name: accelerator
+      resourceClaimName: second
+    container:
+      image: alpine:3.23
+`
+
+var resourceClaimsBothSources = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    resourceClaims:
+    - name: accelerator
+      resourceClaimName: existing-claim
+      resourceClaimTemplateName: gpu-claim-template
+    container:
+      image: alpine:3.23
+`
+
+var resourceClaimsNoSource = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+spec:
+  entrypoint: main
+  resourceClaims:
+  - name: accelerator
+  templates:
+  - name: main
+    container:
+      image: alpine:3.23
+`
+
+var resourceClaimsOnHTTPTemplate = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    resourceClaims:
+    - name: accelerator
+      resourceClaimTemplateName: gpu-claim-template
+    http:
+      url: https://example.com
+`
+
+var resourceClaimsWorkflowLevelRef = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+spec:
+  entrypoint: main
+  resourceClaims:
+  - name: accelerator
+    resourceClaimTemplateName: gpu-claim-template
+  templates:
+  - name: main
+    container:
+      image: alpine:3.23
+      resources:
+        claims:
+        - name: accelerator
+`
+
+var resourceClaimsEmptySourceBesideAnother = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    resourceClaims:
+    - name: accelerator
+      resourceClaimName: ""
+      resourceClaimTemplateName: gpu-claim-template
+    container:
+      image: alpine:3.23
+`
+
+var resourceClaimsEmptySourceAlone = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    resourceClaims:
+    - name: accelerator
+      resourceClaimTemplateName: ""
+    container:
+      image: alpine:3.23
+`
+
+var resourceClaimsUnknownContainerRef = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    resourceClaims:
+    - name: accelerator
+      resourceClaimTemplateName: gpu-claim-template
+    container:
+      image: alpine:3.23
+      resources:
+        claims:
+        - name: acclerator
+`
+
+var resourceClaimsUnknownSidecarRef = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    resourceClaims:
+    - name: accelerator
+      resourceClaimTemplateName: gpu-claim-template
+    container:
+      image: alpine:3.23
+    sidecars:
+    - name: helper
+      image: alpine:3.23
+      resources:
+        claims:
+        - name: nope
+`
+
+var resourceClaimsUnknownRefWithPodSpecPatch = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    podSpecPatch: |
+      resourceClaims:
+      - name: patched
+        resourceClaimName: shared
+    container:
+      image: alpine:3.23
+      resources:
+        claims:
+        - name: patched
+`
+
+var resourceClaimsOnStepsTemplate = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    resourceClaims:
+    - name: accelerator
+      resourceClaimTemplateName: gpu-claim-template
+    steps:
+    - - name: run
+        template: worker
+  - name: worker
+    container:
+      image: alpine:3.23
+`
+
+var resourceClaimsWFT = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: resource-claims-wft
+  namespace: default
+spec:
+  entrypoint: main
+  resourceClaims:
+  - name: accelerator
+    resourceClaimTemplateName: gpu-claim-template
+  templates:
+  - name: main
+    container:
+      image: alpine:3.23
+      resources:
+        claims:
+        - name: accelerator
+`
+
+var resourceClaimsWFTRef = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+  namespace: default
+spec:
+  workflowTemplateRef:
+    name: resource-claims-wft
+`
+
+// TestPodResourceClaimsFromWorkflowTemplateRef pins that a template inherits the
+// workflow-level claims of the WorkflowTemplate it came from. A workflow that
+// only carries a workflowTemplateRef has no claims of its own, so reading them
+// off the submitted spec would reject a container reference that is in fact
+// satisfied.
+func TestPodResourceClaimsFromWorkflowTemplateRef(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	require.NoError(t, createWorkflowTemplateFromSpec(ctx, resourceClaimsWFT))
+	require.NoError(t, validate(ctx, resourceClaimsWFTRef))
+}
+
+var resourceClaimsInvalidNames = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    resourceClaims:
+    - name: INVALID_NAME
+      resourceClaimName: valid-claim
+    container:
+      image: alpine:3.23
+`
+
+var resourceClaimsInvalidSourceName = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    resourceClaims:
+    - name: accelerator
+      resourceClaimName: Invalid/Claim/Name
+    container:
+      image: alpine:3.23
+`
+
+var resourceClaimsFromTemplateDefaults = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+spec:
+  entrypoint: main
+  templateDefaults:
+    resourceClaims:
+    - name: accelerator
+      resourceClaimTemplateName: gpu-claim-template
+  templates:
+  - name: main
+    container:
+      image: alpine:3.23
+      resources:
+        claims:
+        - name: accelerator
+`
+
+var resourceClaimsInvalidInTemplateDefaults = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+spec:
+  entrypoint: main
+  templateDefaults:
+    resourceClaims:
+    - name: accelerator
+      resourceClaimName: one
+      resourceClaimTemplateName: two
+  templates:
+  - name: main
+    container:
+      image: alpine:3.23
+`
+
+// TestPodResourceClaimsFromTemplateDefaults pins that claims supplied by
+// templateDefaults are visible to validation. They are merged into the template
+// at run time, well after this, so reading only the template and the workflow
+// level would reject a container reference that is in fact satisfied.
+func TestPodResourceClaimsFromTemplateDefaults(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	require.NoError(t, validate(ctx, resourceClaimsFromTemplateDefaults))
+	require.ErrorContains(t, validate(ctx, resourceClaimsInvalidInTemplateDefaults),
+		"spec.templateDefaults.resourceClaims[0] must set exactly one of resourceClaimName and resourceClaimTemplateName")
+}
+
+var resourceClaimsTemplateDefaultsPatch = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+spec:
+  entrypoint: main
+  templateDefaults:
+    podSpecPatch: |
+      resourceClaims:
+      - name: patched
+        resourceClaimName: shared
+  templates:
+  - name: main
+    container:
+      image: alpine:3.23
+      resources:
+        claims:
+        - name: patched
+`
+
+var resourceClaimsInlineParameterised = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: run
+        inline:
+          container:
+            image: alpine:3.23
+          resourceClaims:
+          - name: accelerator
+            resourceClaimTemplateName: "gpu-{{workflow.name}}"
+`
+
+var resourceClaimsParameterisedContainerRef = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+    - name: which
+      value: accelerator
+  templates:
+  - name: main
+    resourceClaims:
+    - name: accelerator
+      resourceClaimTemplateName: gpu-claim-template
+    container:
+      image: alpine:3.23
+      resources:
+        claims:
+        - name: "{{workflow.parameters.which}}"
+`
+
+var resourceClaimsNoneDeclared = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    container:
+      image: alpine:3.23
+      resources:
+        claims:
+        - name: accelerator
+`
+
+// TestPodResourceClaimsClaimSources pins the ways a pod can end up with a claim
+// that this validation does not see directly. Rejecting a container reference
+// any of them satisfies would block a workflow that runs today, which is worse
+// than leaving the reference to the API server.
+func TestPodResourceClaimsClaimSources(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	// templateDefaults.podSpecPatch is merged into every template at run time and
+	// may add claims, the same as a template's own patch.
+	require.NoError(t, validate(ctx, resourceClaimsTemplateDefaultsPatch))
+
+	// An inline template is resolved before this check, so a global has already
+	// become an internal placeholder by the time the name is read.
+	require.NoError(t, validate(ctx, resourceClaimsInlineParameterised))
+
+	// A container may name its claim through a parameter, just as the claim may.
+	require.NoError(t, validate(ctx, resourceClaimsParameterisedContainerRef))
+
+	// The controller merges its workflowDefaults before it validates, but the API
+	// server validates the submitted spec, so the defaults have to be read here.
+	defaults := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: workflow-defaults
+spec:
+  resourceClaims:
+  - name: accelerator
+    resourceClaimTemplateName: gpu-claim-template
+`)
+	wf := wfv1.MustUnmarshalWorkflow(resourceClaimsNoneDeclared)
+	require.NoError(t, Workflow(ctx, wftmplGetter, cwftmplGetter, wf, defaults, Opts{}))
+
+	// A default written in terms of a parameter the defaults also supply has to
+	// resolve, or the claim reads as an expression and the workflow is rejected
+	// for something the controller resolves without trouble.
+	paramDefaults := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: workflow-defaults
+spec:
+  arguments:
+    parameters:
+    - name: claim-name
+      value: accelerator
+  resourceClaims:
+  - name: "{{workflow.parameters.claim-name}}"
+    resourceClaimTemplateName: gpu-claim-template
+`)
+	wf = wfv1.MustUnmarshalWorkflow(resourceClaimsNoneDeclared)
+	require.NoError(t, Workflow(ctx, wftmplGetter, cwftmplGetter, wf, paramDefaults, Opts{}))
+
+	// Resolving it also means a reference that does not match is caught.
+	mismatch := wfv1.MustUnmarshalWorkflow(strings.Replace(resourceClaimsNoneDeclared, "- name: accelerator", "- name: acclerator", 1))
+	require.ErrorContains(t, Workflow(ctx, wftmplGetter, cwftmplGetter, mismatch, paramDefaults, Opts{}),
+		`templates.main.container.resources.claims[0].name "acclerator" is not one of the resourceClaims available to this template`)
+
+	// With no claims declared anywhere the pod may still be given some by an
+	// admission webhook, which is how a container could name a claim before this
+	// field existed, so the reference is left to the API server.
+	require.NoError(t, validate(ctx, resourceClaimsNoneDeclared))
+}
+
+func resourceClaimsWithContainerRefs(refs string) string {
+	return fmt.Sprintf(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    resourceClaims:
+    - name: accelerator
+      resourceClaimTemplateName: gpu-claim-template
+    container:
+      image: alpine:3.23
+      resources:
+        claims:
+%s
+`, refs)
+}
+
+var resourceClaimsParameterisedClaimName = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+    - name: cname
+      value: accelerator
+  templates:
+  - name: main
+    resourceClaims:
+    - name: "{{workflow.parameters.cname}}"
+      resourceClaimTemplateName: gpu-claim-template
+    container:
+      image: alpine:3.23
+      resources:
+        claims:
+        - name: accelerator
+`
+
+// TestPodResourceClaimsContainerRefRules follows the API server: a container may
+// not ask for the same claim twice, nor for a whole claim alongside one of its
+// requests in either order, while two distinct requests of one claim are fine.
+// Each verdict below was checked against a live API server with a server-side
+// dry run before being pinned here.
+func TestPodResourceClaimsContainerRefRules(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	require.ErrorContains(t, validate(ctx, resourceClaimsWithContainerRefs(
+		"        - name: accelerator\n        - name: accelerator")),
+		`templates.main.container.resources.claims[1] references "accelerator" more than once`)
+
+	require.ErrorContains(t, validate(ctx, resourceClaimsWithContainerRefs(
+		"        - name: accelerator\n        - name: accelerator\n          request: req-a")),
+		`templates.main.container.resources.claims[1] references "accelerator" more than once`)
+
+	require.ErrorContains(t, validate(ctx, resourceClaimsWithContainerRefs(
+		"        - name: accelerator\n          request: req-a\n        - name: accelerator")),
+		`templates.main.container.resources.claims[1] references "accelerator" more than once`)
+
+	require.NoError(t, validate(ctx, resourceClaimsWithContainerRefs(
+		"        - name: accelerator\n          request: req-a\n        - name: accelerator\n          request: req-b")))
+
+	require.ErrorContains(t, validate(ctx, resourceClaimsWithContainerRefs(
+		"        - name: accelerator\n          request: INVALID_Req")),
+		`templates.main.container.resources.claims[0].request "INVALID_Req" is invalid`)
+
+	// A claim named through a parameter is checked as the value it resolves to,
+	// so the reference matching that value is accepted.
+	require.NoError(t, validate(ctx, resourceClaimsParameterisedClaimName))
+
+	// The same, with the reference misspelled: substitution happens before the
+	// check, so the mismatch is caught rather than waved through.
+	require.ErrorContains(t, validate(ctx, strings.Replace(resourceClaimsParameterisedClaimName, "- name: accelerator\n", "- name: acclerator\n", 1)),
+		`templates.main.container.resources.claims[0].name "acclerator" is not one of the resourceClaims available to this template`)
+}
+
+func resourceClaimsGapWorkflow(specExtra, claims, refs string) string {
+	return fmt.Sprintf(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+spec:
+  entrypoint: main
+%s  templates:
+  - name: main
+%s    container:
+      image: alpine:3.23
+      resources:
+        claims:
+%s
+`, specExtra, claims, refs)
+}
+
+// TestPodResourceClaimsStructuralChecksAlwaysRun pins that giving up on knowing
+// which claims the pod will have does not give up on the shape of a reference.
+// A duplicate reference or a malformed request is wrong whatever the pod ends up
+// with, so those are still reported when membership cannot be decided: when a
+// claim is named through a parameter, when the workflow declares no claims and a
+// webhook may supply them, and when a podSpecPatch may add its own.
+func TestPodResourceClaimsStructuralChecksAlwaysRun(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	dynamicClaim := "    resourceClaims:\n    - name: \"{{workflow.parameters.n}}\"\n      resourceClaimTemplateName: gpu-claim-template\n"
+	literalClaim := "    resourceClaims:\n    - name: accelerator\n      resourceClaimTemplateName: gpu-claim-template\n"
+	withParam := "  arguments: {parameters: [{name: n, value: accelerator}]}\n"
+	withPatch := "  podSpecPatch: |\n    resourceClaims:\n    - name: patched\n      resourceClaimName: shared\n"
+
+	duplicate := "        - name: accelerator\n        - name: accelerator"
+	badRequest := "        - name: accelerator\n          request: INVALID_Req"
+
+	for name, spec := range map[string][2]string{
+		"parameterised claim name": {withParam, dynamicClaim},
+		"no claims declared":       {"", ""},
+		"podSpecPatch in play":     {withPatch, literalClaim},
+	} {
+		t.Run(name, func(t *testing.T) {
+			require.ErrorContains(t, validate(ctx, resourceClaimsGapWorkflow(spec[0], spec[1], duplicate)),
+				`templates.main.container.resources.claims[1] references "accelerator" more than once`)
+			require.ErrorContains(t, validate(ctx, resourceClaimsGapWorkflow(spec[0], spec[1], badRequest)),
+				`templates.main.container.resources.claims[0].request "INVALID_Req" is invalid`)
+		})
+	}
+}
+
+func resourceClaimsWorkflowLevelParam(ref string) string {
+	return `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+    - name: cname
+      value: accelerator
+  resourceClaims:
+  - name: "{{workflow.parameters.cname}}"
+    resourceClaimTemplateName: gpu-claim-template
+  templates:
+  - name: main
+    container:
+      image: alpine:3.23
+      resources:
+        claims:
+        - name: ` + ref + `
+`
+}
+
+func resourceClaimsTemplateDefaultsInputParam(ref string) string {
+	return `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+spec:
+  entrypoint: main
+  templateDefaults:
+    resourceClaims:
+    - name: "{{inputs.parameters.claim-name}}"
+      resourceClaimTemplateName: gpu-claim-template
+  templates:
+  - name: main
+    inputs:
+      parameters:
+      - name: claim-name
+        value: accelerator
+    container:
+      image: alpine:3.23
+      resources:
+        claims:
+        - name: ` + ref + `
+`
+}
+
+// TestPodResourceClaimsInheritedNamesAreSubstituted pins that an inherited claim
+// named through a parameter is matched as the value it resolves to. The claims a
+// template inherits are put on it before it is substituted, so the validator and
+// the controller resolve them the same way. Reading them raw afterwards would see
+// an expression instead, and give up on checking the reference at all. Inputs
+// matter here as well as workflow parameters, since templateDefaults reaches
+// every template and may be written in terms of a template's own inputs.
+func TestPodResourceClaimsInheritedNamesAreSubstituted(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	require.NoError(t, validate(ctx, resourceClaimsWorkflowLevelParam("accelerator")))
+	require.ErrorContains(t, validate(ctx, resourceClaimsWorkflowLevelParam("acclerator")),
+		`templates.main.container.resources.claims[0].name "acclerator" is not one of the resourceClaims available to this template`)
+
+	require.NoError(t, validate(ctx, resourceClaimsTemplateDefaultsInputParam("accelerator")))
+	require.ErrorContains(t, validate(ctx, resourceClaimsTemplateDefaultsInputParam("acclerator")),
+		`templates.main.container.resources.claims[0].name "acclerator" is not one of the resourceClaims available to this template`)
+}
+
+var resourceClaimsInvalidRefName = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    podSpecPatch: |
+      resourceClaims:
+      - name: patched
+        resourceClaimName: shared
+    container:
+      image: alpine:3.23
+      resources:
+        claims:
+        - name: INVALID_NAME
+`
+
+// TestPodResourceClaimsReferenceNameIsAlwaysChecked pins that a reference name is
+// validated even where membership is not. No pod claim can carry a name that is
+// not a DNS label, so such a reference cannot match whatever the pod is given,
+// including by a webhook, and saying so does not depend on knowing the claim set.
+func TestPodResourceClaimsReferenceNameIsAlwaysChecked(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	require.ErrorContains(t, validate(ctx, resourceClaimsInvalidRefName),
+		`templates.main.container.resources.claims[0].name "INVALID_NAME" is invalid`)
+}
+
+var resourceClaimsCrossScopeWFT = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: resource-claims-cross-scope
+  namespace: default
+spec:
+  entrypoint: main
+  resourceClaims:
+  - name: accelerator
+    resourceClaimTemplateName: gpu-claim-template
+  templates:
+  - name: main
+    container:
+      image: alpine:3.23
+      resources:
+        claims:
+        - name: accelerator
+`
+
+var resourceClaimsCrossScopeCaller = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+  namespace: default
+spec:
+  entrypoint: entry
+  templates:
+  - name: entry
+    steps:
+    - - name: run
+        templateRef:
+          name: resource-claims-cross-scope
+          template: main
+`
+
+// TestPodResourceClaimsTemplateRefDoesNotInheritSpecClaims pins the boundary a
+// templateRef draws. A referenced WorkflowTemplate's spec-level claims stay with
+// that spec: the pod builder reads the calling workflow's, so the template gets
+// the caller's claims and not its own workflow's. Submission is still accepted
+// here, because with no claims declared anywhere a webhook may supply them, so a
+// reusable template of this shape has to declare its claims at the template level
+// or be called by a workflow that declares them. Use workflowTemplateRef to
+// inherit the referenced spec instead.
+func TestPodResourceClaimsTemplateRefDoesNotInheritSpecClaims(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	require.NoError(t, createWorkflowTemplateFromSpec(ctx, resourceClaimsCrossScopeWFT))
+	require.NoError(t, validateWorkflowTemplate(ctx, resourceClaimsCrossScopeWFT, Opts{}))
+	require.NoError(t, validate(ctx, resourceClaimsCrossScopeCaller))
+}
+
+func TestPodResourceClaimsValidation(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	err := validate(ctx, resourceClaimsValid)
+	require.NoError(t, err)
+	// A source name may be a parameter, which is only resolved once the pod is built,
+	// so it must not be rejected at submission.
+	err = validate(ctx, resourceClaimsParameterisedSource)
+	require.NoError(t, err)
+	err = validate(ctx, resourceClaimsMissingName)
+	require.ErrorContains(t, err, "templates.main.resourceClaims[0].name is required")
+	err = validate(ctx, resourceClaimsDuplicateName)
+	require.ErrorContains(t, err, `templates.main.resourceClaims[1].name "accelerator" is duplicated`)
+	err = validate(ctx, resourceClaimsBothSources)
+	require.ErrorContains(t, err, "templates.main.resourceClaims[0] must set exactly one of resourceClaimName and resourceClaimTemplateName")
+	err = validate(ctx, resourceClaimsNoSource)
+	require.ErrorContains(t, err, "spec.resourceClaims[0] must set exactly one of resourceClaimName and resourceClaimTemplateName")
+	err = validate(ctx, resourceClaimsOnHTTPTemplate)
+	require.ErrorContains(t, err, "templates.main.resourceClaims is not supported for HTTP templates")
+
+	// A template without its own claims inherits the workflow-level list, so a
+	// container may reference one of those.
+	err = validate(ctx, resourceClaimsWorkflowLevelRef)
+	require.NoError(t, err)
+
+	// The API server counts a source by presence, not by emptiness, so an empty
+	// resourceClaimName beside a template name is two sources to it.
+	err = validate(ctx, resourceClaimsEmptySourceBesideAnother)
+	require.ErrorContains(t, err, "templates.main.resourceClaims[0] must set exactly one of resourceClaimName and resourceClaimTemplateName")
+
+	err = validate(ctx, resourceClaimsEmptySourceAlone)
+	require.ErrorContains(t, err, "templates.main.resourceClaims[0].resourceClaimTemplateName is set but empty")
+
+	// A container may only ask for a claim the pod will have.
+	err = validate(ctx, resourceClaimsUnknownContainerRef)
+	require.ErrorContains(t, err, `templates.main.container.resources.claims[0].name "acclerator" is not one of the resourceClaims available to this template`)
+
+	err = validate(ctx, resourceClaimsUnknownSidecarRef)
+	require.ErrorContains(t, err, `templates.main.sidecars.helper.resources.claims[0].name "nope" is not one of the resourceClaims available to this template`)
+
+	// podSpecPatch can add claims after the typed list, so an unresolvable
+	// reference is left to the API server rather than rejected here.
+	err = validate(ctx, resourceClaimsUnknownRefWithPodSpecPatch)
+	require.NoError(t, err)
+
+	// Names the API server would reject are caught now, unless they still hold a
+	// parameter, which resourceClaimsParameterisedSource above covers.
+	err = validate(ctx, resourceClaimsInvalidNames)
+	require.ErrorContains(t, err, `templates.main.resourceClaims[0].name "INVALID_NAME" is invalid`)
+
+	err = validate(ctx, resourceClaimsInvalidSourceName)
+	require.ErrorContains(t, err, `templates.main.resourceClaims[0].resourceClaimName "Invalid/Claim/Name" is invalid`)
+
+	// A template that never creates a pod has nowhere to attach a claim, so
+	// accepting the field there would silently do nothing.
+	err = validate(ctx, resourceClaimsOnStepsTemplate)
+	require.ErrorContains(t, err, "templates.main.resourceClaims is not supported for Steps templates, which do not create a pod")
 }
