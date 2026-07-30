@@ -1028,6 +1028,9 @@ func (wfc *WorkflowController) processNextArchiveItem(ctx context.Context) bool 
 	obj, exists, err := wfc.wfInformer.GetIndexer().GetByKey(key)
 	if err != nil {
 		logger.WithField("key", key).WithError(err).Error(ctx, "Failed to get workflow from informer")
+		// The indexer never returns an error today, but drop the backoff rather
+		// than leave the only exit that keeps rate-limiter state behind.
+		wfc.wfArchiveQueue.Forget(key)
 		return true
 	}
 	if !exists {
@@ -1048,6 +1051,12 @@ func (wfc *WorkflowController) processNextArchiveItem(ctx context.Context) bool 
 	// common.IsDone is deliberately not used here: it treats a Pending
 	// archiving-status as not-done, so it is false for precisely the workflows
 	// this queue exists to archive.
+	//
+	// This reads the informer cache, so it closes the long window the rate
+	// limiter opens, not the short one where the cache has yet to catch up with
+	// a write. Archiving stays at-least-once for that reason: ArchiveWorkflow
+	// deletes and re-inserts by uid, so a repeat is wasted work rather than
+	// corruption. The GC controller's equivalent check has the same property.
 	un, ok := obj.(*unstructured.Unstructured)
 	if !ok {
 		logger.WithField("key", key).Error(ctx, "Workflow from the informer is not unstructured")
@@ -1331,9 +1340,9 @@ func (wfc *WorkflowController) archiveWorkflow(ctx context.Context, obj any) err
 	// Archive once, and hand a failure back to the caller so it can requeue:
 	// a transient database error, such as a MySQL deadlock between two
 	// workflows archiving at the same time, otherwise leaves the workflow at
-	// archiving-status=Pending until the controller restarts.
+	// archiving-status=Pending until the controller restarts. The caller logs
+	// the failure, so it is not logged again here.
 	if err := wfc.archiveWorkflowAux(ctx, obj); err != nil {
-		logger.WithField("key", key).WithError(err).Error(ctx, "failed to archive workflow")
 		return err
 	}
 	return nil

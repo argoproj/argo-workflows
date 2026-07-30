@@ -332,6 +332,7 @@ func newController(ctx context.Context, options ...any) (context.CancelFunc, *Wo
 		wfc.metrics, testExporter, _ = metrics.CreateDefaultTestMetrics(ctx)
 		wfc.entrypoint = entrypoint.New(kube, wfc.Config.Images)
 		wfc.wfQueue = workqueue.NewTypedRateLimitingQueue(workqueue.DefaultTypedControllerRateLimiter[string]())
+		wfc.wfArchiveQueue = workqueue.NewTypedRateLimitingQueue(workqueue.DefaultTypedControllerRateLimiter[string]())
 		wfc.throttler = wfc.newThrottler()
 		wfc.rateLimiter = wfc.newRateLimiter()
 	}
@@ -934,20 +935,10 @@ func TestWorkflowController_processNextArchiveItem_RequeuesThenForgets(t *testin
 	archive.EXPECT().ArchiveWorkflow(mock.Anything, mock.Anything).
 		Return(errors.New("Error 1213 (40001): Deadlock found when trying to get lock; try restarting transaction")).Once()
 	archive.EXPECT().ArchiveWorkflow(mock.Anything, mock.Anything).Return(nil).Once()
-	// The workflow is seeded straight into the informer store rather than
-	// through the fake client, so the archive informer handler does not enqueue
-	// it before this test builds the queue below.
-	cancel, controller := newController(ctx, func(wfc *WorkflowController) {
+	cancel, controller := newController(ctx, wf, func(wfc *WorkflowController) {
 		wfc.wfArchive = archive
 	})
 	defer cancel()
-
-	un, err := util.ToUnstructured(wf)
-	require.NoError(t, err)
-	require.NoError(t, controller.wfInformer.GetIndexer().Add(un))
-
-	// newController does not build the archive queue, so make one here.
-	controller.wfArchiveQueue = workqueue.NewTypedRateLimitingQueue(workqueue.DefaultTypedControllerRateLimiter[string]())
 	defer controller.wfArchiveQueue.ShutDown()
 
 	key := "argo/my-wf"
@@ -960,6 +951,12 @@ func TestWorkflowController_processNextArchiveItem_RequeuesThenForgets(t *testin
 	// The requeued key archives cleanly, and its backoff is forgotten.
 	assert.True(t, controller.processNextArchiveItem(ctx))
 	assert.Equal(t, 0, controller.wfArchiveQueue.NumRequeues(key))
+
+	// The archive is only half the work: the workflow must also be labelled, or
+	// it stays Pending and is archived again on the next resync.
+	got, err := controller.wfclientset.ArgoprojV1alpha1().Workflows("argo").Get(ctx, "my-wf", metav1.GetOptions{})
+	require.NoError(t, err)
+	assert.Equal(t, "Archived", got.Labels[common.LabelKeyWorkflowArchivingStatus])
 }
 
 // TestWorkflowController_processNextArchiveItem_SkipsRetriedWorkflow pins that a
@@ -976,18 +973,10 @@ func TestWorkflowController_processNextArchiveItem_SkipsRetriedWorkflow(t *testi
 	// The only archive attempt is the first one, which fails.
 	archive.EXPECT().ArchiveWorkflow(mock.Anything, mock.Anything).
 		Return(errors.New("Error 1213 (40001): Deadlock found when trying to get lock; try restarting transaction")).Once()
-	// Seeded straight into the informer store so the archive informer handler
-	// does not enqueue it before this test builds the queue below.
-	cancel, controller := newController(ctx, func(wfc *WorkflowController) {
+	cancel, controller := newController(ctx, wf, func(wfc *WorkflowController) {
 		wfc.wfArchive = archive
 	})
 	defer cancel()
-
-	un, err := util.ToUnstructured(wf)
-	require.NoError(t, err)
-	require.NoError(t, controller.wfInformer.GetIndexer().Add(un))
-
-	controller.wfArchiveQueue = workqueue.NewTypedRateLimitingQueue(workqueue.DefaultTypedControllerRateLimiter[string]())
 	defer controller.wfArchiveQueue.ShutDown()
 
 	key := "argo/my-wf"
