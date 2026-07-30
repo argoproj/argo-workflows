@@ -9,11 +9,14 @@ import {ErrorNotice} from '../shared/components/error-notice';
 import {ExampleManifests} from '../shared/components/example-manifests';
 import {InfoIcon} from '../shared/components/fa-icons';
 import {Loading} from '../shared/components/loading';
+import {PaginationPanel} from '../shared/components/pagination-panel';
 import {Timestamp, TimestampSwitch} from '../shared/components/timestamp';
 import {ZeroState} from '../shared/components/zero-state';
 import {Context} from '../shared/context';
 import {Footnote} from '../shared/footnote';
 import * as models from '../shared/models';
+import {Pagination, parseLimit} from '../shared/pagination';
+import {ScopedLocalStorage} from '../shared/scoped-local-storage';
 import {services} from '../shared/services';
 import {useCollectEvent} from '../shared/use-collect-event';
 import {useQueryParams} from '../shared/use-query-params';
@@ -29,11 +32,18 @@ export function ClusterWorkflowTemplateList({history, location}: RouteComponentP
     const [templates, setTemplates] = useState<models.ClusterWorkflowTemplate[]>();
     const [error, setError] = useState<Error>();
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel'));
+    const storage = new ScopedLocalStorage('ClusterWorkflowTemplateListOptions');
+    const savedPaginationLimit = storage.getItem('paginationLimit', 0);
+    const [pagination, setPagination] = useState<Pagination>({
+        offset: queryParams.get('offset'),
+        limit: parseLimit(queryParams.get('limit')) || savedPaginationLimit || 500
+    });
 
     async function fetchClusterWorkflowTemplates() {
         try {
-            const retrievedTemplates = await services.clusterWorkflowTemplate.list();
-            setTemplates(retrievedTemplates);
+            const retrievedTemplates = await services.clusterWorkflowTemplate.list(pagination);
+            setPagination({...pagination, nextOffset: retrievedTemplates.metadata.continue});
+            setTemplates(retrievedTemplates.items || []);
             setError(null);
         } catch (err) {
             setError(err);
@@ -49,7 +59,11 @@ export function ClusterWorkflowTemplateList({history, location}: RouteComponentP
 
     useEffect(() => {
         fetchClusterWorkflowTemplates();
-    }, []);
+    }, [pagination.offset, pagination.limit]);
+
+    useEffect(() => {
+        storage.setItem('paginationLimit', pagination.limit, 0);
+    }, [pagination.limit]);
 
     useCollectEvent('openedClusterWorkflowTemplateList');
 
@@ -106,6 +120,7 @@ export function ClusterWorkflowTemplateList({history, location}: RouteComponentP
                 <Footnote>
                     <InfoIcon /> Cluster scoped Workflow templates are reusable templates you can create new workflows from. <ExampleManifests />. {learnMore}.
                 </Footnote>
+                <PaginationPanel onChange={setPagination} pagination={pagination} numRecords={null} />
             </>
         );
     }
