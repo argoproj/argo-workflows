@@ -872,8 +872,7 @@ func TestWorkflowController_archiveWorkflow_ArchivesOnce(t *testing.T) {
 	un, err := util.ToUnstructured(wf)
 	require.NoError(t, err)
 
-	err = controller.archiveWorkflow(ctx, un)
-	require.NoError(t, err)
+	controller.archiveWorkflow(ctx, un)
 	archive.AssertNumberOfCalls(t, "ArchiveWorkflow", 1)
 }
 
