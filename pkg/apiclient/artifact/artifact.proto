@@ -1,12 +1,13 @@
 syntax = "proto3";
-option go_package = "github.com/argoproj/argo-workflows/v4/pkg/apiclient/artifact";
-
-import "google/api/annotations.proto";
 
 // Artifact Service
 //
 // Artifact Service API provides GRPC access to artifact operations
 package artifact;
+
+import "google/api/annotations.proto";
+
+option go_package = "github.com/argoproj/argo-workflows/v4/pkg/apiclient/artifact";
 
 // Plugin Artifact configuration
 message PluginArtifact {
@@ -95,8 +96,7 @@ message SaveStreamArtifactRequest {
   bytes chunk = 2;
 }
 
-message GetCapabilitiesRequest {
-}
+message GetCapabilitiesRequest {}
 
 message GetCapabilitiesResponse {
   // supports_save_stream indicates whether this plugin implements the streaming
@@ -108,43 +108,43 @@ message GetCapabilitiesResponse {
 service ArtifactService {
   rpc Load(LoadArtifactRequest) returns (LoadArtifactResponse) {
     option (google.api.http) = {
-      post : "/api/v1/artifacts/load"
-      body : "*"
+      post: "/api/v1/artifacts/load"
+      body: "*"
     };
   }
 
   rpc OpenStream(OpenStreamRequest) returns (stream OpenStreamResponse) {
     option (google.api.http) = {
-      post : "/api/v1/artifacts/stream"
-      body : "*"
+      post: "/api/v1/artifacts/stream"
+      body: "*"
     };
   }
 
   rpc Save(SaveArtifactRequest) returns (SaveArtifactResponse) {
     option (google.api.http) = {
-      post : "/api/v1/artifacts/save"
-      body : "*"
+      post: "/api/v1/artifacts/save"
+      body: "*"
     };
   }
 
   rpc Delete(DeleteArtifactRequest) returns (DeleteArtifactResponse) {
     option (google.api.http) = {
-      post : "/api/v1/artifacts/delete"
-      body : "*"
+      post: "/api/v1/artifacts/delete"
+      body: "*"
     };
   }
 
   rpc ListObjects(ListObjectsRequest) returns (ListObjectsResponse) {
     option (google.api.http) = {
-      post : "/api/v1/artifacts/list"
-      body : "*"
+      post: "/api/v1/artifacts/list"
+      body: "*"
     };
   }
 
   rpc IsDirectory(IsDirectoryRequest) returns (IsDirectoryResponse) {
     option (google.api.http) = {
-      post : "/api/v1/artifacts/is-directory"
-      body : "*"
+      post: "/api/v1/artifacts/is-directory"
+      body: "*"
     };
   }
 
