@@ -88,6 +88,15 @@ describe('Tooltip', () => {
         expect(screen.getByTestId('argo-tooltip').getAttribute('data-max-width')).toBe('unset');
     });
 
+    it('defaults boundary to viewport so tooltips are not clipped by scrollable ancestors', () => {
+        render(
+            <Tooltip content='some string'>
+                <span>trigger</span>
+            </Tooltip>
+        );
+        expect(argoTooltipSpy.mock.calls[0][0].boundary).toBe('viewport');
+    });
+
     it('opens defined hrefs via openLinkWithKey and ignores undefined hrefs', () => {
         const spy = jest.spyOn(links, 'openLinkWithKey').mockImplementation(() => undefined);
         render(
