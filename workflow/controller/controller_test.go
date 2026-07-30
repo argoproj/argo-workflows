@@ -874,7 +874,7 @@ func TestWorkflowController_archiveWorkflow_ArchivesOnce(t *testing.T) {
 	un, err := util.ToUnstructured(wf)
 	require.NoError(t, err)
 
-	err = controller.archiveWorkflow(ctx, un)
+	err = controller.archiveWorkflowAux(ctx, un)
 	require.NoError(t, err)
 	archive.AssertNumberOfCalls(t, "ArchiveWorkflow", 1)
 }
@@ -902,7 +902,7 @@ func TestWorkflowController_archiveWorkflow_ReturnsErrorOnce(t *testing.T) {
 	un, err := util.ToUnstructured(wf)
 	require.NoError(t, err)
 
-	err = controller.archiveWorkflow(ctx, un)
+	err = controller.archiveWorkflowAux(ctx, un)
 	require.ErrorIs(t, err, deadlock)
 	archive.AssertNumberOfCalls(t, "ArchiveWorkflow", 1)
 }
@@ -958,6 +958,53 @@ func TestWorkflowController_processNextArchiveItem_RequeuesThenForgets(t *testin
 	got, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Get(ctx, wf.Name, metav1.GetOptions{})
 	require.NoError(t, err)
 	assert.Equal(t, "Archived", got.Labels[common.LabelKeyWorkflowArchivingStatus])
+}
+
+// TestWorkflowController_processNextArchiveItem_RejectsStaleInformerCopy pins the
+// isOutdated guard on the archive path. The label check reads the informer, so a
+// copy that was Pending when written still looks Pending after the workflow has
+// moved on; processNextItem rejects such copies (#15090) and this worker has to
+// do the same, or an informer that regresses re-archives the workflow and
+// re-patches whatever currently holds that name.
+func TestWorkflowController_processNextArchiveItem_RejectsStaleInformerCopy(t *testing.T) {
+	wf := pendingArchiveWorkflow()
+	wf.UID = "uid-1"
+	wf.ResourceVersion = "100"
+	ctx := logging.TestContext(t.Context())
+	archive := sqldbmocks.NewWorkflowArchive(t)
+	cancel, controller := newController(ctx, wf, func(wfc *WorkflowController) {
+		wfc.wfArchive = archive
+	})
+	defer cancel()
+	defer controller.wfArchiveQueue.ShutDown()
+
+	// The controller has already written a newer version of this workflow.
+	controller.lastWrittenVersions.versions[wf.UID] = lastWrittenVersion{
+		resourceVersion: "200",
+		completedAt:     time.Now(),
+	}
+
+	key := "argo/my-wf"
+	controller.wfArchiveQueue.Add(key)
+	assert.True(t, controller.processNextArchiveItem(ctx))
+
+	// The mock has no ArchiveWorkflow expectation, so any call fails the test.
+	archive.AssertNotCalled(t, "ArchiveWorkflow")
+	// Requeued rather than dropped: the workflow still needs archiving once the
+	// informer catches up, and dropping it would wait for the next resync.
+	assert.Equal(t, 1, controller.wfArchiveQueue.NumRequeues(key))
+
+	// Once the informer holds a copy at least as new as the last write, the
+	// same key archives normally.
+	archive.EXPECT().ArchiveWorkflow(mock.Anything, mock.Anything).Return(nil).Once()
+	current := wf.DeepCopy()
+	current.ResourceVersion = "200"
+	currentUn, err := util.ToUnstructured(current)
+	require.NoError(t, err)
+	require.NoError(t, controller.wfInformer.GetIndexer().Update(currentUn))
+	assert.True(t, controller.processNextArchiveItem(ctx))
+	archive.AssertNumberOfCalls(t, "ArchiveWorkflow", 1)
+	assert.Equal(t, 0, controller.wfArchiveQueue.NumRequeues(key))
 }
 
 // TestWorkflowController_processNextArchiveItem_SkipsRetriedWorkflow pins that a
