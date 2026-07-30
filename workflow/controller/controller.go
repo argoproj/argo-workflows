@@ -1037,6 +1037,29 @@ func (wfc *WorkflowController) processNextArchiveItem(ctx context.Context) bool 
 		return true
 	}
 
+	// The queue holds only namespace/name, and a rate-limited retry can fire
+	// long after the key was added, so re-check the condition the informer
+	// filter matched on before acting on it. `argo retry` deletes this label
+	// and puts the workflow back to Unknown, and a same-named workflow may have
+	// been recreated in the meantime; archiving either would write a running
+	// workflow to the archive and then label it Archived. The GC controller
+	// re-checks the current object for the same reason, see #12636.
+	//
+	// common.IsDone is deliberately not used here: it treats a Pending
+	// archiving-status as not-done, so it is false for precisely the workflows
+	// this queue exists to archive.
+	un, ok := obj.(*unstructured.Unstructured)
+	if !ok {
+		logger.WithField("key", key).Error(ctx, "Workflow from the informer is not unstructured")
+		wfc.wfArchiveQueue.Forget(key)
+		return true
+	}
+	if un.GetLabels()[common.LabelKeyWorkflowArchivingStatus] != "Pending" {
+		logger.WithField("key", key).Info(ctx, "Workflow is no longer pending archiving, skipping")
+		wfc.wfArchiveQueue.Forget(key)
+		return true
+	}
+
 	if err := wfc.archiveWorkflow(ctx, obj); err != nil {
 		logger.WithField("key", key).WithError(err).Warn(ctx, "failed to archive workflow, requeuing")
 		wfc.wfArchiveQueue.AddRateLimited(key)
