@@ -25,7 +25,7 @@ require (
 	github.com/evilmonkeyinc/jsonpath v0.8.1
 	github.com/expr-lang/expr v1.17.8
 	github.com/gavv/httpexpect/v2 v2.17.0
-	github.com/go-git/go-git/v5 v5.19.1
+	github.com/go-git/go-git/v5 v5.19.2
 	github.com/go-jose/go-jose/v4 v4.1.4
 	github.com/go-openapi/jsonreference v1.0.0
 	github.com/go-playground/webhooks/v6 v6.4.0
