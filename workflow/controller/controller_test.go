@@ -776,6 +776,73 @@ spec:
 	}
 }
 
+// A Running workflow that has been dropped from the throttler (e.g. an archive attempt
+// failed mid-flight after throttler.Remove) must not be postponed by the parallelism
+// limit: it must still be reconciled, or its pods are orphaned. Regression test for
+// #14123; the fix from #14606 was accidentally reverted by the slog refactor (#14527).
+func TestParallelismDoesNotPostponeRunningWorkflows(t *testing.T) {
+	for tt, f := range map[string]func(controller *WorkflowController){
+		"Parallelism": func(x *WorkflowController) {
+			x.Config.Parallelism = 1
+		},
+		"NamespaceParallelism": func(x *WorkflowController) {
+			x.Config.NamespaceParallelism = 1
+		},
+	} {
+		t.Run(tt, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			cancel, controller := newController(ctx,
+				wfv1.MustUnmarshalWorkflow(`
+metadata:
+  name: my-wf-0
+  labels:
+    workflows.argoproj.io/phase: Running
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: my-image
+status:
+  phase: Running
+`),
+				wfv1.MustUnmarshalWorkflow(`
+metadata:
+  name: my-wf-1
+  labels:
+    workflows.argoproj.io/phase: Running
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: my-image
+status:
+  phase: Running
+`),
+				f,
+			)
+			defer cancel()
+
+			// Both workflows are admitted at startup by throttler.Init. Simulate my-wf-1
+			// being dropped mid-life, as the archived-workflow path does.
+			controller.throttler.Remove("my-wf-1")
+
+			// my-wf-0 is still admitted and occupies the only slot.
+			assert.True(t, controller.processNextItem(ctx))
+
+			// my-wf-1 is Running but no longer admitted; it must be reconciled anyway,
+			// not postponed. Reconciliation creates its entrypoint node.
+			assert.True(t, controller.processNextItem(ctx))
+			expectWorkflow(ctx, controller, "my-wf-1", func(wf *wfv1.Workflow) {
+				require.NotNil(t, wf)
+				assert.Equal(t, wfv1.WorkflowRunning, wf.Status.Phase)
+				assert.NotEmpty(t, wf.Status.Nodes)
+			})
+		})
+	}
+}
+
 func TestWorkflowController_archivedWorkflowGarbageCollector(t *testing.T) {
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
