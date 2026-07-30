@@ -704,8 +704,8 @@ schema = 3
     version = "v0.6.2"
     hash = "sha256-q6Fh6v8iNJN9ypD47LjWmx66YITa3FyRjZMRsuRTFeQ="
   [mod."github.com/prometheus/common"]
-    version = "v0.70.0"
-    hash = "sha256-LWehDuOdmzw/YB2jo3wAzZr4jiQP1W4chqkgxAndOfo="
+    version = "v0.70.1"
+    hash = "sha256-xlhVEswCWaBnAXn53KOUzquoDEnZVd/NcTbj52EJ6rE="
   [mod."github.com/prometheus/otlptranslator"]
     version = "v1.0.0"
     hash = "sha256-94Aw8ltEH2XFotIEHzBghJiOt3KJiwW9cX8JVaNRTNk="
