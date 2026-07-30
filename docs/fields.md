@@ -2759,6 +2759,7 @@ Artifact indicates an artifact to place at a specified path
 |`artifactory`|[`ArtifactoryArtifact`](#artifactoryartifact)|Artifactory contains artifactory artifact location details|
 |`azure`|[`AzureArtifact`](#azureartifact)|Azure contains Azure Storage artifact location details|
 |`deleted`|`boolean`|Has this been deleted?|
+|`description`|`string`|Description is the artifact description|
 |`from`|`string`|From allows an artifact to reference an artifact from a previous step|
 |`fromExpression`|`string`|FromExpression, if defined, is evaluated to specify the value for the artifact|
 |`gcs`|[`GCSArtifact`](#gcsartifact)|GCS contains GCS artifact location details|
@@ -5324,6 +5325,7 @@ ArtifactPaths expands a step from a collection of artifacts
 |`artifactory`|[`ArtifactoryArtifact`](#artifactoryartifact)|Artifactory contains artifactory artifact location details|
 |`azure`|[`AzureArtifact`](#azureartifact)|Azure contains Azure Storage artifact location details|
 |`deleted`|`boolean`|Has this been deleted?|
+|`description`|`string`|Description is the artifact description|
 |`from`|`string`|From allows an artifact to reference an artifact from a previous step|
 |`fromExpression`|`string`|FromExpression, if defined, is evaluated to specify the value for the artifact|
 |`gcs`|[`GCSArtifact`](#gcsartifact)|GCS contains GCS artifact location details|
