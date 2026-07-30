@@ -335,8 +335,8 @@ schema = 3
     version = "v5.9.0"
     hash = "sha256-6+i1Xk8kR6EY8y6YSE9Oyj8ykcvyHUHZv04GfwOIzzs="
   [mod."github.com/go-git/go-git/v5"]
-    version = "v5.19.1"
-    hash = "sha256-C0e3oOXYRgLUhm1TQk9mBwRwwj6iusxFAt5U9vqWz8A="
+    version = "v5.19.2"
+    hash = "sha256-2du2hn5JDTEEYTWuGX+heSftkmd7HoaJXyWJG4bZeSM="
   [mod."github.com/go-jose/go-jose/v4"]
     version = "v4.1.4"
     hash = "sha256-MKoJKXup1jfwOyN8mHXu1CQ8fvFJTaEf3K2LVtNSRhc="
