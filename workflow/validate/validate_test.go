@@ -4872,6 +4872,129 @@ func TestPodResourceClaimsReferenceNameIsAlwaysChecked(t *testing.T) {
 		`templates.main.container.resources.claims[0].name "INVALID_NAME" is invalid`)
 }
 
+var resourceClaimsDeclaredOnSteps = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    resourceClaims:
+    - name: accelerator
+      resourceClaimTemplateName: gpu-claim-template
+    steps:
+    - - name: run
+        template: worker
+  - name: worker
+    container:
+      image: alpine:3.23
+`
+
+// resourceClaimsStepsParentScope builds a workflow whose Steps template and the
+// pod template it calls give the same input name different values. The workflow
+// level claim is named through that input, and only the pod template's value ever
+// reaches it.
+func resourceClaimsStepsParentScope(childValue string) string {
+	return `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+spec:
+  entrypoint: main
+  resourceClaims:
+  - name: "{{inputs.parameters.claim-name}}"
+    resourceClaimTemplateName: gpu-claim-template
+  templates:
+  - name: main
+    inputs:
+      parameters:
+      - name: claim-name
+        value: NOT_A_LABEL
+    steps:
+    - - name: run
+        template: worker
+        arguments:
+          parameters:
+          - name: claim-name
+            value: ` + childValue + `
+  - name: worker
+    inputs:
+      parameters:
+      - name: claim-name
+    container:
+      image: alpine:3.23
+      resources:
+        claims:
+        - name: accelerator
+`
+}
+
+// resourceClaimsDAGParentScope is the same shape with a DAG template, inheriting
+// from templateDefaults rather than the workflow level.
+func resourceClaimsDAGParentScope(childValue string) string {
+	return `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+spec:
+  entrypoint: main
+  templateDefaults:
+    resourceClaims:
+    - name: "{{inputs.parameters.claim-name}}"
+      resourceClaimTemplateName: gpu-claim-template
+  templates:
+  - name: main
+    inputs:
+      parameters:
+      - name: claim-name
+        value: NOT_A_LABEL
+    dag:
+      tasks:
+      - name: run
+        template: worker
+        arguments:
+          parameters:
+          - name: claim-name
+            value: ` + childValue + `
+  - name: worker
+    inputs:
+      parameters:
+      - name: claim-name
+    container:
+      image: alpine:3.23
+      resources:
+        claims:
+        - name: accelerator
+`
+}
+
+// TestPodResourceClaimsInheritedScopeIsThePodTemplate pins which template's inputs
+// resolve an inherited claim. Steps and DAG templates create no pod of their own,
+// so a claim they never carry must not be resolved, or validated, against their
+// inputs: the same input name means one thing to the template orchestrating the
+// work and another to the pod template doing it. The pod template's scope is still
+// checked, so a name that is invalid where it does land is rejected.
+func TestPodResourceClaimsInheritedScopeIsThePodTemplate(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	require.NoError(t, validate(ctx, resourceClaimsStepsParentScope("accelerator")))
+	require.ErrorContains(t, validate(ctx, resourceClaimsStepsParentScope("NOT_A_LABEL")),
+		`spec.resourceClaims[0].name "NOT_A_LABEL" is invalid`)
+
+	require.NoError(t, validate(ctx, resourceClaimsDAGParentScope("accelerator")))
+	require.ErrorContains(t, validate(ctx, resourceClaimsDAGParentScope("NOT_A_LABEL")),
+		`spec.templateDefaults.resourceClaims[0].name "NOT_A_LABEL" is invalid`)
+
+	// Writing claims on such a template is still an error: nothing inherited them
+	// there, so they were meant for a pod this template never creates.
+	require.ErrorContains(t, validate(ctx, resourceClaimsDeclaredOnSteps),
+		"templates.main.resourceClaims is not supported for Steps templates, which do not create a pod")
+}
+
 var resourceClaimsCrossScopeWFT = `
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
@@ -4922,6 +5045,67 @@ func TestPodResourceClaimsTemplateRefDoesNotInheritSpecClaims(t *testing.T) {
 	require.NoError(t, createWorkflowTemplateFromSpec(ctx, resourceClaimsCrossScopeWFT))
 	require.NoError(t, validateWorkflowTemplate(ctx, resourceClaimsCrossScopeWFT, Opts{}))
 	require.NoError(t, validate(ctx, resourceClaimsCrossScopeCaller))
+}
+
+var resourceClaimsCrossScopeDefaultsWFT = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: resource-claims-cross-scope-defaults
+  namespace: default
+spec:
+  entrypoint: main
+  templateDefaults:
+    resourceClaims:
+    - name: accelerator
+      resourceClaimTemplateName: gpu-claim-template
+  templates:
+  - name: main
+    container:
+      image: alpine:3.23
+      resources:
+        claims:
+        - name: accelerator
+`
+
+var resourceClaimsCrossScopeDefaultsCaller = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+  namespace: default
+spec:
+  entrypoint: entry
+  templates:
+  - name: entry
+    steps:
+    - - name: run
+        templateRef:
+          name: resource-claims-cross-scope-defaults
+          template: main
+`
+
+// TestPodResourceClaimsTemplateRefDoesNotInheritDefaultClaims draws the same
+// boundary for templateDefaults that a templateRef draws for spec-level claims.
+// The controller applies the executing workflow's templateDefaults to a template
+// once it has been resolved, so the defining WorkflowTemplate's own defaults are
+// left behind and the pod is built without them. Validating the caller against
+// them would judge it on claims its pods never get, so the reference here is left
+// undecided rather than accepted as a match, the same as any other workflow that
+// declares no claims.
+func TestPodResourceClaimsTemplateRefDoesNotInheritDefaultClaims(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	require.NoError(t, createWorkflowTemplateFromSpec(ctx, resourceClaimsCrossScopeDefaultsWFT))
+	require.NoError(t, validateWorkflowTemplate(ctx, resourceClaimsCrossScopeDefaultsWFT, Opts{}))
+	require.NoError(t, validate(ctx, resourceClaimsCrossScopeDefaultsCaller))
+
+	// The caller's own defaults do reach it, so a reference they do not cover is
+	// still caught: the boundary is about whose defaults apply, not about skipping
+	// the check.
+	require.ErrorContains(t, validate(ctx, strings.Replace(resourceClaimsCrossScopeDefaultsCaller,
+		"spec:\n  entrypoint: entry",
+		"spec:\n  entrypoint: entry\n  templateDefaults:\n    resourceClaims:\n    - name: other\n      resourceClaimTemplateName: gpu-claim-template", 1)),
+		`templates.main.container.resources.claims[0].name "accelerator" is not one of the resourceClaims available to this template`)
 }
 
 func TestPodResourceClaimsValidation(t *testing.T) {

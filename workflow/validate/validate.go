@@ -554,17 +554,6 @@ func (tctx *templateValidationCtx) validateTemplate(ctx context.Context, tmpl *w
 		}
 	}
 
-	if len(tmpl.ResourceClaims) > 0 {
-		// Claims are attached to the pod a template runs, so a template that never
-		// creates one has nowhere to put them. Steps, DAG and Suspend orchestrate
-		// other templates, and HTTP and Plugin run on the shared agent pod, so
-		// accepting the field there would silently do nothing. Asking the template
-		// what it is keeps this right as new kinds arrive.
-		if !tmpl.IsPodType() {
-			return errors.Errorf(errors.CodeBadRequest, "templates.%s.resourceClaims is not supported for %s templates, which do not create a pod", tmpl.Name, tmpl.GetType())
-		}
-	}
-
 	scope, err := validateInputs(tmpl)
 	if err != nil {
 		return err
@@ -608,8 +597,9 @@ func (tctx *templateValidationCtx) validateTemplate(ctx context.Context, tmpl *w
 	// substituted, so they go through the same resolution the controller applies
 	// rather than being read raw afterwards. Precedence is the pod builder's: the
 	// template's own list, then templateDefaults, then the workflow level.
+	claimsDeclaredOnTemplate := len(tmpl.ResourceClaims) > 0
 	effectiveTmpl, claimsField := tmpl, fmt.Sprintf("templates.%s.resourceClaims", tmpl.Name)
-	if len(tmpl.ResourceClaims) == 0 {
+	if !claimsDeclaredOnTemplate {
 		switch {
 		case len(tctx.templateDefaultResourceClaims) > 0:
 			effectiveTmpl, claimsField = tmpl.DeepCopy(), "spec.templateDefaults.resourceClaims"
@@ -625,11 +615,26 @@ func (tctx *templateValidationCtx) validateTemplate(ctx context.Context, tmpl *w
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", tmpl.Name, err)
 	}
 
-	// Validate the claims on the substituted template, so a name written as a
-	// parameter is checked as the value it resolves to rather than as the
-	// expression. Values that only settle at run time stay as placeholders here
-	// and are skipped.
-	if claimsErr := validatePodResourceClaims(claimsField, newTmpl.ResourceClaims); claimsErr != nil {
+	// Claims are attached to the pod a template runs, so a template that never
+	// creates one has nowhere to put them: Steps, DAG and Suspend orchestrate other
+	// templates, and HTTP and Plugin run on the shared agent pod. Declaring them
+	// there is an error, while inheriting them is not, since a workflow-level list
+	// is written for whichever templates do create pods, and an inherited list is
+	// dropped here rather than judged on a value it never carries. An orchestration
+	// template and the pod template it calls can give the same input name different
+	// values, and only the pod's reaches the claim.
+	//
+	// Which kind a template is can itself be written as a parameter, so this is
+	// asked once substitution has settled it. The claims are validated on the
+	// substituted template for the same reason: a name written as a parameter is
+	// checked as the value it resolves to rather than as the expression. Values
+	// that only settle at run time stay as placeholders here and are skipped.
+	if !newTmpl.IsPodType() {
+		if claimsDeclaredOnTemplate {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.resourceClaims is not supported for %s templates, which do not create a pod", newTmpl.Name, newTmpl.GetType())
+		}
+		newTmpl.ResourceClaims = nil
+	} else if claimsErr := validatePodResourceClaims(claimsField, newTmpl.ResourceClaims); claimsErr != nil {
 		return claimsErr
 	}
 	// A container may only ask for a claim the pod will have, mirroring what the
