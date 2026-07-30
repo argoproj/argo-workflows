@@ -941,7 +941,8 @@ func TestWorkflowController_processNextArchiveItem_RequeuesThenForgets(t *testin
 	defer cancel()
 	defer controller.wfArchiveQueue.ShutDown()
 
-	key := "argo/my-wf"
+	key, err := cache.MetaNamespaceKeyFunc(wf)
+	require.NoError(t, err)
 	controller.wfArchiveQueue.Add(key)
 
 	// The deadlock puts the key back on the queue instead of dropping it.
@@ -954,7 +955,7 @@ func TestWorkflowController_processNextArchiveItem_RequeuesThenForgets(t *testin
 
 	// The archive is only half the work: the workflow must also be labelled, or
 	// it stays Pending and is archived again on the next resync.
-	got, err := controller.wfclientset.ArgoprojV1alpha1().Workflows("argo").Get(ctx, "my-wf", metav1.GetOptions{})
+	got, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Get(ctx, wf.Name, metav1.GetOptions{})
 	require.NoError(t, err)
 	assert.Equal(t, "Archived", got.Labels[common.LabelKeyWorkflowArchivingStatus])
 }
@@ -979,7 +980,8 @@ func TestWorkflowController_processNextArchiveItem_SkipsRetriedWorkflow(t *testi
 	defer cancel()
 	defer controller.wfArchiveQueue.ShutDown()
 
-	key := "argo/my-wf"
+	key, err := cache.MetaNamespaceKeyFunc(wf)
+	require.NoError(t, err)
 	controller.wfArchiveQueue.Add(key)
 	assert.True(t, controller.processNextArchiveItem(ctx))
 	assert.Equal(t, 1, controller.wfArchiveQueue.NumRequeues(key))

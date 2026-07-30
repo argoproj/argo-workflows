@@ -1332,10 +1332,6 @@ func (wfc *WorkflowController) archiveWorkflow(ctx context.Context, obj any) err
 	}
 	wfc.workflowKeyLock.Lock(key)
 	defer wfc.workflowKeyLock.Unlock(key)
-	if _, err := cache.MetaNamespaceKeyFunc(obj); err != nil {
-		logger.Error(ctx, "failed to get key for object after locking")
-		return nil // non-retryable
-	}
 	// Archive once, and hand a failure back to the caller so it can requeue:
 	// a transient database error, such as a MySQL deadlock between two
 	// workflows archiving at the same time, otherwise leaves the workflow at
