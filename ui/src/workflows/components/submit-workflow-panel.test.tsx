@@ -34,10 +34,15 @@ function renderPanel(workflowArtifacts: Artifact[]) {
 
 describe('SubmitWorkflowPanel artifact descriptions', () => {
     it('shows a tooltip only for artifacts with descriptions', () => {
-        const {container} = renderPanel([{name: 'documented-artifact', description: 'Upload a ZIP archive'}, {name: 'undocumented-artifact'}]);
+        const {container} = renderPanel([
+            {name: 'documented-artifact', description: 'Upload a ZIP archive'},
+            {name: 'undocumented-artifact'},
+            {name: 'empty-description-artifact', description: ''}
+        ]);
 
         expect(screen.getByText('documented-artifact')).toBeInTheDocument();
         expect(screen.getByText('undocumented-artifact')).toBeInTheDocument();
+        expect(screen.getByText('empty-description-artifact')).toBeInTheDocument();
 
         const tooltips = screen.getAllByTestId('artifact-description-tooltip');
         expect(tooltips).toHaveLength(1);
