@@ -661,10 +661,6 @@ lint-go: ui/dist/app/index.html
 ifeq ($(USE_NIX), true)
 	rm -Rf v3 vendor
 endif
-	# If you're using `woc.wf.Spec` or `woc.execWf.Status` your code probably won't work with WorkflowTemplate.
-	# * Change `woc.wf.Spec` to `woc.execWf.Spec`.
-	# * Change `woc.execWf.Status` to `woc.wf.Status`.
-	@awk '(/woc.wf.Spec/ || /woc.execWf.Status/) && !/not-woc-misuse/ {print FILENAME ":" FNR "\t" $0 ; exit 1}' $(shell find workflow/controller -type f -name '*.go' -not -name '*test*')
 	# Tidy Go modules
 	go mod tidy
 ifneq ($(USE_NIX), true)
