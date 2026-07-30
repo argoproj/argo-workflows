@@ -968,7 +968,10 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	// immediately. Only read from wf on this path, never mutate it.
 	shutdownStrategy := wf.Spec.Shutdown
 
-	if (!shutdownStrategy.Enabled() || shutdownStrategy != wfv1.ShutdownStrategyTerminate) && !wfc.throttler.Admit(key) {
+	// A Running workflow must never be postponed, even if the throttler no longer admits
+	// it (e.g. it was removed when an archive attempt failed mid-flight): skipping
+	// reconciliation would orphan its pods (#14123).
+	if (!shutdownStrategy.Enabled() || shutdownStrategy != wfv1.ShutdownStrategyTerminate) && !wfc.throttler.Admit(key) && wf.Status.Phase != wfv1.WorkflowRunning {
 		logger.WithFields(logging.Fields{"workflow": wf.Name, "namespace": wf.Namespace, "key": key}).
 			Info(ctx, "Workflow processing has been postponed due to max parallelism limit")
 		if wf.Status.Phase == wfv1.WorkflowUnknown {
