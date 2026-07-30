@@ -962,17 +962,27 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	// this will ensure we process every incomplete workflow once every 20m
 	wfc.wfQueue.AddAfter(key, workflowResyncPeriod)
 
-	woc := newWorkflowOperationCtx(ctx, wf, wfc)
-	ctx = logging.WithLogger(ctx, woc.log)
+	// Check the parallelism limit before building the operation context: newWorkflowOperationCtx
+	// deep-copies the entire Workflow, and for a workflow that is postponed that copy is discarded
+	// immediately. Only read from wf on this path, never mutate it.
+	shutdownStrategy := wf.Spec.Shutdown
 
-	if (!woc.GetShutdownStrategy().Enabled() || woc.GetShutdownStrategy() != wfv1.ShutdownStrategyTerminate) && !wfc.throttler.Admit(key) {
-		woc.log.WithField("key", key).Info(ctx, "Workflow processing has been postponed due to max parallelism limit")
-		if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
+	if (!shutdownStrategy.Enabled() || shutdownStrategy != wfv1.ShutdownStrategyTerminate) && !wfc.throttler.Admit(key) {
+		logger.WithFields(logging.Fields{"workflow": wf.Name, "namespace": wf.Namespace, "key": key}).
+			Info(ctx, "Workflow processing has been postponed due to max parallelism limit")
+		if wf.Status.Phase == wfv1.WorkflowUnknown {
+			// Only this branch mutates and persists the workflow, so only it needs the deep copy.
+			// It runs once per workflow, the first time that workflow is postponed.
+			woc := newWorkflowOperationCtx(ctx, wf, wfc)
+			ctx = logging.WithLogger(ctx, woc.log)
 			ctx = woc.markWorkflowPhase(ctx, wfv1.WorkflowPending, "Workflow processing has been postponed because too many workflows are already running")
 			woc.persistUpdates(ctx)
 		}
 		return true
 	}
+
+	woc := newWorkflowOperationCtx(ctx, wf, wfc)
+	ctx = logging.WithLogger(ctx, woc.log)
 
 	// make sure this is removed from the throttler is complete
 	defer func() {
