@@ -9,6 +9,7 @@ import (
 
 	"github.com/argoproj/pkg/sync"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	apiv1 "k8s.io/api/core/v1"
@@ -30,6 +31,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v4/config"
 	"github.com/argoproj/argo-workflows/v4/persist/sqldb"
+	sqldbmocks "github.com/argoproj/argo-workflows/v4/persist/sqldb/mocks"
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
@@ -848,6 +850,31 @@ func TestWorkflowController_archivedWorkflowGarbageCollector(t *testing.T) {
 	defer cancel()
 
 	controller.archivedWorkflowGarbageCollector(logging.TestContext(t.Context()))
+}
+
+// TestWorkflowController_archiveWorkflow_ArchivesOnce pins that a successfully
+// archived workflow is written to the archive exactly once. archiveWorkflow used
+// to call archiveWorkflowAux twice on the success path, double-archiving every
+// workflow and inverting its non-retryable error handling.
+func TestWorkflowController_archiveWorkflow_ArchivesOnce(t *testing.T) {
+	wf := &wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{Name: "my-wf", Namespace: "argo"},
+		Status:     wfv1.WorkflowStatus{Phase: wfv1.WorkflowSucceeded},
+	}
+	ctx := logging.TestContext(t.Context())
+	archive := sqldbmocks.NewWorkflowArchive(t)
+	archive.EXPECT().ArchiveWorkflow(mock.Anything, mock.Anything).Return(nil)
+	cancel, controller := newController(ctx, wf, func(wfc *WorkflowController) {
+		wfc.wfArchive = archive
+	})
+	defer cancel()
+
+	un, err := util.ToUnstructured(wf)
+	require.NoError(t, err)
+
+	err = controller.archiveWorkflow(ctx, un)
+	require.NoError(t, err)
+	archive.AssertNumberOfCalls(t, "ArchiveWorkflow", 1)
 }
 
 const wfWithTmplRef = `

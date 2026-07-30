@@ -1303,9 +1303,8 @@ func (wfc *WorkflowController) archiveWorkflow(ctx context.Context, obj any) err
 	err = wfc.archiveWorkflowAux(ctx, obj)
 	if err != nil {
 		logger.WithField("key", key).WithError(err).Error(ctx, "failed to archive workflow")
-		return nil // non-retryable
 	}
-	return wfc.archiveWorkflowAux(ctx, obj)
+	return nil // non-retryable
 }
 
 func (wfc *WorkflowController) archiveWorkflowAux(ctx context.Context, obj any) error {
