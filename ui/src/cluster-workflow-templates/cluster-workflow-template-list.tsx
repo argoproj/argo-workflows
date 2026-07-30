@@ -34,21 +34,11 @@ export function ClusterWorkflowTemplateList({history, location}: RouteComponentP
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel'));
     const storage = new ScopedLocalStorage('ClusterWorkflowTemplateListOptions');
     const savedPaginationLimit = storage.getItem('paginationLimit', 0);
+    const urlLimit = parseLimit(queryParams.get('limit'));
     const [pagination, setPagination] = useState<Pagination>({
         offset: queryParams.get('offset'),
-        limit: parseLimit(queryParams.get('limit')) || savedPaginationLimit || 500
+        limit: urlLimit !== null && urlLimit >= 0 ? urlLimit : savedPaginationLimit || 500
     });
-
-    async function fetchClusterWorkflowTemplates() {
-        try {
-            const retrievedTemplates = await services.clusterWorkflowTemplate.list(pagination);
-            setPagination({...pagination, nextOffset: retrievedTemplates.metadata.continue});
-            setTemplates(retrievedTemplates.items || []);
-            setError(null);
-        } catch (err) {
-            setError(err);
-        }
-    }
 
     useEffect(
         useQueryParams(history, p => {
@@ -58,7 +48,25 @@ export function ClusterWorkflowTemplateList({history, location}: RouteComponentP
     );
 
     useEffect(() => {
-        fetchClusterWorkflowTemplates();
+        let cancelled = false;
+        services.clusterWorkflowTemplate
+            .list(pagination)
+            .then(retrievedTemplates => {
+                if (cancelled) {
+                    return;
+                }
+                setPagination(current => ({...current, nextOffset: retrievedTemplates.metadata.continue}));
+                setTemplates(retrievedTemplates.items || []);
+                setError(null);
+            })
+            .catch(err => {
+                if (!cancelled) {
+                    setError(err);
+                }
+            });
+        return () => {
+            cancelled = true;
+        };
     }, [pagination.offset, pagination.limit]);
 
     useEffect(() => {
