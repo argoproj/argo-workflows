@@ -979,12 +979,18 @@ func TestWorkflowController_processNextArchiveItem_RejectsStaleInformerCopy(t *t
 	defer controller.wfArchiveQueue.ShutDown()
 
 	// The controller has already written a newer version of this workflow.
-	controller.lastWrittenVersions.versions[wf.UID] = lastWrittenVersion{
-		resourceVersion: "200",
-		completedAt:     time.Now(),
-	}
+	// Recorded through the production helper rather than by writing the map:
+	// newController has started the workflow informer, whose FilterFunc calls
+	// recordWorkflowCompleted for a completed workflow, so an unguarded write
+	// here races that goroutine. Going through the helper also keeps this
+	// deterministic if the informer records resourceVersion 100 afterwards,
+	// since the helper never regresses the recorded version.
+	newer := wf.DeepCopy()
+	newer.ResourceVersion = "200"
+	controller.recordWorkflowCompleted(newer)
 
-	key := "argo/my-wf"
+	key, err := cache.MetaNamespaceKeyFunc(wf)
+	require.NoError(t, err)
 	controller.wfArchiveQueue.Add(key)
 	assert.True(t, controller.processNextArchiveItem(ctx))
 
