@@ -1004,8 +1004,9 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	err = wfc.hydrator.Hydrate(ctx, woc.wf)
 	if err != nil {
 		woc.log.WithError(err).Error(ctx, "hydration failed")
-		ctx = woc.markWorkflowError(ctx, err)
-		woc.persistUpdates(ctx)
+		// We could not read this workflow's node status, so we do not know its state.
+		// Never make a terminal decision from ignorance — try again later.
+		wfc.wfQueue.AddRateLimited(key)
 		return true
 	}
 	ctx = wfctx.InjectObjectMeta(ctx, &woc.wf.ObjectMeta)
