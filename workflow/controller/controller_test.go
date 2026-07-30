@@ -854,11 +854,11 @@ func TestWorkflowController_archivedWorkflowGarbageCollector(t *testing.T) {
 	controller.archivedWorkflowGarbageCollector(logging.TestContext(t.Context()))
 }
 
-// TestWorkflowController_archiveWorkflow_ArchivesOnce pins that a successfully
+// TestWorkflowController_archiveWorkflowAux_ArchivesOnce pins that a successfully
 // archived workflow is written to the archive exactly once. archiveWorkflow used
 // to call archiveWorkflowAux a second time on the success path, archiving every
 // workflow twice.
-func TestWorkflowController_archiveWorkflow_ArchivesOnce(t *testing.T) {
+func TestWorkflowController_archiveWorkflowAux_ArchivesOnce(t *testing.T) {
 	wf := &wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{Name: "my-wf", Namespace: "argo"},
 		Status:     wfv1.WorkflowStatus{Phase: wfv1.WorkflowSucceeded},
@@ -879,12 +879,12 @@ func TestWorkflowController_archiveWorkflow_ArchivesOnce(t *testing.T) {
 	archive.AssertNumberOfCalls(t, "ArchiveWorkflow", 1)
 }
 
-// TestWorkflowController_archiveWorkflow_ReturnsErrorOnce pins that a failed
+// TestWorkflowController_archiveWorkflowAux_ReturnsArchiveError pins that a failed
 // archive is attempted exactly once and that the error reaches the caller, so
 // processNextArchiveItem can requeue it. The retry added in #15780 never fired,
 // because a first-attempt failure returned nil and only the duplicate second
 // attempt could surface an error.
-func TestWorkflowController_archiveWorkflow_ReturnsErrorOnce(t *testing.T) {
+func TestWorkflowController_archiveWorkflowAux_ReturnsArchiveError(t *testing.T) {
 	wf := &wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{Name: "my-wf", Namespace: "argo"},
 		Status:     wfv1.WorkflowStatus{Phase: wfv1.WorkflowSucceeded},
