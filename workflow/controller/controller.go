@@ -1332,8 +1332,7 @@ func (wfc *WorkflowController) archiveWorkflow(ctx context.Context, obj any) err
 	}
 	wfc.workflowKeyLock.Lock(key)
 	defer wfc.workflowKeyLock.Unlock(key)
-	key, err = cache.MetaNamespaceKeyFunc(obj)
-	if err != nil {
+	if _, err := cache.MetaNamespaceKeyFunc(obj); err != nil {
 		logger.Error(ctx, "failed to get key for object after locking")
 		return nil // non-retryable
 	}
@@ -1342,10 +1341,7 @@ func (wfc *WorkflowController) archiveWorkflow(ctx context.Context, obj any) err
 	// workflows archiving at the same time, otherwise leaves the workflow at
 	// archiving-status=Pending until the controller restarts. The caller logs
 	// the failure, so it is not logged again here.
-	if err := wfc.archiveWorkflowAux(ctx, obj); err != nil {
-		return err
-	}
-	return nil
+	return wfc.archiveWorkflowAux(ctx, obj)
 }
 
 func (wfc *WorkflowController) archiveWorkflowAux(ctx context.Context, obj any) error {
