@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	gosync "sync"
 	"sync/atomic"
 	"testing"
@@ -854,8 +855,8 @@ func TestWorkflowController_archivedWorkflowGarbageCollector(t *testing.T) {
 
 // TestWorkflowController_archiveWorkflow_ArchivesOnce pins that a successfully
 // archived workflow is written to the archive exactly once. archiveWorkflow used
-// to call archiveWorkflowAux twice on the success path, double-archiving every
-// workflow and inverting its non-retryable error handling.
+// to call archiveWorkflowAux a second time on the success path, archiving every
+// workflow twice.
 func TestWorkflowController_archiveWorkflow_ArchivesOnce(t *testing.T) {
 	wf := &wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{Name: "my-wf", Namespace: "argo"},
@@ -872,8 +873,76 @@ func TestWorkflowController_archiveWorkflow_ArchivesOnce(t *testing.T) {
 	un, err := util.ToUnstructured(wf)
 	require.NoError(t, err)
 
-	controller.archiveWorkflow(ctx, un)
+	err = controller.archiveWorkflow(ctx, un)
+	require.NoError(t, err)
 	archive.AssertNumberOfCalls(t, "ArchiveWorkflow", 1)
+}
+
+// TestWorkflowController_archiveWorkflow_ReturnsErrorOnce pins that a failed
+// archive is attempted exactly once and that the error reaches the caller, so
+// processNextArchiveItem can requeue it. The retry added in #15780 never fired,
+// because a first-attempt failure returned nil and only the duplicate second
+// attempt could surface an error.
+func TestWorkflowController_archiveWorkflow_ReturnsErrorOnce(t *testing.T) {
+	wf := &wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{Name: "my-wf", Namespace: "argo"},
+		Status:     wfv1.WorkflowStatus{Phase: wfv1.WorkflowSucceeded},
+	}
+	ctx := logging.TestContext(t.Context())
+	archive := sqldbmocks.NewWorkflowArchive(t)
+	// The transient failure #15780 was written for.
+	deadlock := errors.New("Error 1213 (40001): Deadlock found when trying to get lock; try restarting transaction")
+	archive.EXPECT().ArchiveWorkflow(mock.Anything, mock.Anything).Return(deadlock)
+	cancel, controller := newController(ctx, wf, func(wfc *WorkflowController) {
+		wfc.wfArchive = archive
+	})
+	defer cancel()
+
+	un, err := util.ToUnstructured(wf)
+	require.NoError(t, err)
+
+	err = controller.archiveWorkflow(ctx, un)
+	require.ErrorIs(t, err, deadlock)
+	archive.AssertNumberOfCalls(t, "ArchiveWorkflow", 1)
+}
+
+// TestWorkflowController_processNextArchiveItem_RequeuesThenForgets pins the
+// other half of that retry: a failure requeues the key rate-limited rather than
+// dropping it until the controller restarts, and a later success clears the
+// backoff the rate limiter recorded, so its per-key state does not accumulate.
+func TestWorkflowController_processNextArchiveItem_RequeuesThenForgets(t *testing.T) {
+	wf := &wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{Name: "my-wf", Namespace: "argo"},
+		Status:     wfv1.WorkflowStatus{Phase: wfv1.WorkflowSucceeded},
+	}
+	ctx := logging.TestContext(t.Context())
+	archive := sqldbmocks.NewWorkflowArchive(t)
+	archive.EXPECT().ArchiveWorkflow(mock.Anything, mock.Anything).
+		Return(errors.New("Error 1213 (40001): Deadlock found when trying to get lock; try restarting transaction")).Once()
+	archive.EXPECT().ArchiveWorkflow(mock.Anything, mock.Anything).Return(nil).Once()
+	cancel, controller := newController(ctx, wf, func(wfc *WorkflowController) {
+		wfc.wfArchive = archive
+	})
+	defer cancel()
+
+	un, err := util.ToUnstructured(wf)
+	require.NoError(t, err)
+	require.NoError(t, controller.wfInformer.GetIndexer().Add(un))
+
+	// newController does not build the archive queue, so make one here.
+	controller.wfArchiveQueue = workqueue.NewTypedRateLimitingQueue(workqueue.DefaultTypedControllerRateLimiter[string]())
+	defer controller.wfArchiveQueue.ShutDown()
+
+	key := "argo/my-wf"
+	controller.wfArchiveQueue.Add(key)
+
+	// The deadlock puts the key back on the queue instead of dropping it.
+	assert.True(t, controller.processNextArchiveItem(ctx))
+	assert.Equal(t, 1, controller.wfArchiveQueue.NumRequeues(key))
+
+	// The requeued key archives cleanly, and its backoff is forgotten.
+	assert.True(t, controller.processNextArchiveItem(ctx))
+	assert.Equal(t, 0, controller.wfArchiveQueue.NumRequeues(key))
 }
 
 const wfWithTmplRef = `

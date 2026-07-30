@@ -1031,10 +1031,18 @@ func (wfc *WorkflowController) processNextArchiveItem(ctx context.Context) bool 
 		return true
 	}
 	if !exists {
+		// The workflow is gone, so no further attempt will be made: drop any
+		// backoff the rate limiter is still holding for this key.
+		wfc.wfArchiveQueue.Forget(key)
 		return true
 	}
 
-	wfc.archiveWorkflow(ctx, obj)
+	if err := wfc.archiveWorkflow(ctx, obj); err != nil {
+		logger.WithField("key", key).WithError(err).Warn(ctx, "failed to archive workflow, requeuing")
+		wfc.wfArchiveQueue.AddRateLimited(key)
+		return true
+	}
+	wfc.wfArchiveQueue.Forget(key)
 	return true
 }
 
@@ -1283,25 +1291,29 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 	return nil
 }
 
-func (wfc *WorkflowController) archiveWorkflow(ctx context.Context, obj any) {
+func (wfc *WorkflowController) archiveWorkflow(ctx context.Context, obj any) error {
 	logger := logging.RequireLoggerFromContext(ctx)
 	key, err := cache.MetaNamespaceKeyFunc(obj)
 	if err != nil {
 		logger.Error(ctx, "failed to get key for object")
-		return // non-retryable
+		return nil // non-retryable
 	}
 	wfc.workflowKeyLock.Lock(key)
 	defer wfc.workflowKeyLock.Unlock(key)
 	key, err = cache.MetaNamespaceKeyFunc(obj)
 	if err != nil {
 		logger.Error(ctx, "failed to get key for object after locking")
-		return // non-retryable
+		return nil // non-retryable
 	}
-	// Archiving failures are non-retryable: log and swallow.
-	err = wfc.archiveWorkflowAux(ctx, obj)
-	if err != nil {
+	// Archive once, and hand a failure back to the caller so it can requeue:
+	// a transient database error, such as a MySQL deadlock between two
+	// workflows archiving at the same time, otherwise leaves the workflow at
+	// archiving-status=Pending until the controller restarts.
+	if err := wfc.archiveWorkflowAux(ctx, obj); err != nil {
 		logger.WithField("key", key).WithError(err).Error(ctx, "failed to archive workflow")
+		return err
 	}
+	return nil
 }
 
 func (wfc *WorkflowController) archiveWorkflowAux(ctx context.Context, obj any) error {
