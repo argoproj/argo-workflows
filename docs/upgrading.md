@@ -7,6 +7,12 @@ the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summar
 
 ## Upgrading to v4.1
 
+### Controller caches no longer store `managedFields`
+
+The workflow-controller (and the parts of the argo-server that share its informers) now strips `metadata.managedFields` from objects before storing them in its informer caches ([#16563](https://github.com/argoproj/argo-workflows/pull/16563)).
+This reduces controller memory usage — As a rough guide `managedFields` might be about 20% of the memory usage of objects, and at scale informer objects use most of the controllers memory footprint.
+This is internal to the controller's caches; objects stored in the cluster are unaffected.
+
 ### `argo archive` commands accept a workflow name as well as a UID
 
 The `argo archive get`, `delete`, `resubmit` and `retry` commands previously took a workflow UID as their argument.

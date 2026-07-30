@@ -2032,6 +2032,9 @@ func TestPodExists(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, existingPod)
 	assert.True(t, doesExist)
+	// the informer cache strips managedFields from the pod returned by the API
+	assert.Nil(t, existingPod.ManagedFields)
+	pod.ManagedFields = nil
 	assert.Equal(t, pod, existingPod)
 }
 
