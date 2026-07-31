@@ -1,5 +1,41 @@
 # Changelog
 
+## v4.1.0-rc2 (2026-07-31)
+
+Full Changelog: [v4.1.0-rc1...v4.1.0-rc2](https://github.com/argoproj/argo-workflows/compare/v4.1.0-rc1...v4.1.0-rc2)
+
+### Selected Changes
+
+* [c5cb81b7c](https://github.com/argoproj/argo-workflows/commit/c5cb81b7c3b4e2ffd1b18a9be66e1908d4e623ca) feat: add first-class DRA resource claims. Fixes #16576 (#16587)
+* [b365f9089](https://github.com/argoproj/argo-workflows/commit/b365f908959d6791b81203d55e2b3d4cf0f6eb34) refactor(executor): parse env at the argoexec composition root, enforce with forbidigo (#16554)
+* [9642f1e15](https://github.com/argoproj/argo-workflows/commit/9642f1e15b822e1e94511d2e4909b839d4b1dcdd) fix(controller): archive each workflow once, and retry failed archives. Fixes #16575 (#16577)
+* [f86b3523b](https://github.com/argoproj/argo-workflows/commit/f86b3523be851bce8bddac7aefd60921a2865415) fix(ui): show CronWorkflow errors in list. Fixes #10264 (#16578)
+* [5992135e9](https://github.com/argoproj/argo-workflows/commit/5992135e9f69b950835752e7a9f2639d0de4aa65) chore(deps): update module github.com/go-logr/logr to v1.4.4 (#16583)
+* [4f741c926](https://github.com/argoproj/argo-workflows/commit/4f741c926afc7aefbba57045a47fe176125f4ea0) chore(deps): update module github.com/prometheus/common to v0.70.1 (#16585)
+* [ea918bd5b](https://github.com/argoproj/argo-workflows/commit/ea918bd5b8f20540ec6c59a1a62fadfbe6654283) chore(deps): update module github.com/go-git/go-git/v5 to v5.19.2 (#16582)
+* [0ebb540ae](https://github.com/argoproj/argo-workflows/commit/0ebb540ae69c263726f0a6707e28e2dd51e5ca55) chore(deps): update module github.com/klauspost/compress to v1.19.1 (#16584)
+* [1df5e9c54](https://github.com/argoproj/argo-workflows/commit/1df5e9c54cd007fe078ed83f1b33944e2a976dac) chore(deps): update actions/stale action to v11 (main) (#16586)
+* [a862e823b](https://github.com/argoproj/argo-workflows/commit/a862e823b0ddc8bff4531acdc533a5b63ea38d45) fix(controller): do not postpone already-Running workflows. Fixes #14123 (#16569)
+* [8498c4efb](https://github.com/argoproj/argo-workflows/commit/8498c4efbe604e81c68dcd17ecbb18c0915b072d) feat(controller): strip managedFields from informer caches. Fixes #16564 (#16563)
+* [bf648dde4](https://github.com/argoproj/argo-workflows/commit/bf648dde474b3247beb7ca0f9cf91d2bd86aeccf) fix(ui): keep markdown tooltips within the viewport (#16549)
+* [b39b572bc](https://github.com/argoproj/argo-workflows/commit/b39b572bc71165ccad229fa627146758dfe35cf2) perf(controller): avoid full Workflow DeepCopy for postponed workflows. Fixes #16559 (#16560)
+* [402bbe098](https://github.com/argoproj/argo-workflows/commit/402bbe098c3619ec01230c03ac47d824b90b8c2e) chore(deps): update module github.com/google/cel-go to v0.29.0 [security] (main) (#16547)
+* [3c6644803](https://github.com/argoproj/argo-workflows/commit/3c6644803c6ec6f6d0b703bf8165fd306017c087) chore(deps): update dependency pymdown-extensions to v11 [security] (main) (#16532)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Arthur Kepler
+* Claude Fable 5
+* hyzaw
+* Joibel
+* Juhef
+* panicboat
+* Zuhef Ahmed
+* 秀吉
+
+</details>
+
 ## v4.1.0-rc1 (2026-07-23)
 
 Full Changelog: [v4.0.8...v4.1.0-rc1](https://github.com/argoproj/argo-workflows/compare/v4.0.8...v4.1.0-rc1)
