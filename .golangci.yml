@@ -12,6 +12,7 @@ linters:
     - errcheck
     - errorlint
     - exptostd
+    - forbidigo
     - gocheckcompilerdirectives
     - gocritic
     - gosec
@@ -42,6 +43,22 @@ linters:
     - wastedassign
     - whitespace
   settings:
+    forbidigo:
+      # Patterns are grouped by their msg prefix ("executor-env:", ...) so that
+      # exclusion rules below can scope each group to a set of paths via `text`
+      # matching. If a use is genuinely correct, mark the line:
+      # //nolint:forbidigo // <reason>
+      forbid:
+        # Executor packages must not read the environment: parse env at the
+        # composition root in cmd/argoexec and pass values in, so executor code
+        # stays testable without env mutation and reusable outside the
+        # one-task-per-process layout.
+        - pattern: ^os\.(Getenv|LookupEnv|Environ|ExpandEnv)$
+          msg: "executor-env: executor packages must not read the environment; parse env at the composition root (cmd/argoexec) and pass values in"
+        # Both spellings the codebase uses for the util/env import (forbidigo
+        # matches literal source text, so each alias needs its own pattern).
+        - pattern: ^env(util)?\.Lookup\w+Or$
+          msg: "executor-env: executor packages must not read the environment; parse env at the composition root (cmd/argoexec) and pass values in"
     revive:
       rules:
         # defaults
@@ -222,6 +239,13 @@ linters:
         # The nolintlint fixer erroneous removes the nolint directives in this file
         linters:
           - contextcheck
+      # The "executor-env:" forbidigo patterns only guard env reads in the
+      # executor packages (see the forbidigo settings above); everywhere else
+      # env access is unrestricted. Future pattern groups can be scoped to
+      # other paths with their own msg prefix + rules like these.
+      - linters: [forbidigo]
+        text: "executor-env:"
+        path-except: ^workflow/executor/
     paths:
       - dist
       - docs

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"time"
 
 	"k8s.io/apimachinery/pkg/types"
@@ -16,8 +17,10 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v4/util"
+	"github.com/argoproj/argo-workflows/v4/util/env"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/logs"
+	"github.com/argoproj/argo-workflows/v4/util/retry"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/emissary"
@@ -84,18 +87,28 @@ func Init(ctx context.Context, clientConfig clientcmd.ClientConfig, varRunArgo s
 		clientset,
 		versioned.NewForConfigOrDie(config).ArgoprojV1alpha1().WorkflowTaskResults(namespace),
 		restClient,
-		podName,
-		types.UID(os.Getenv(common.EnvVarPodUID)),
-		os.Getenv(common.EnvVarWorkflowName),
-		types.UID(os.Getenv(common.EnvVarWorkflowUID)),
-		os.Getenv(common.EnvVarNodeID),
-		namespace,
 		cre,
-		*tmpl,
-		includeScriptOutput,
-		deadline,
-		annotationPatchTickDuration,
-		progressFileTickDuration,
+		executor.Config{
+			PodName:                      podName,
+			PodUID:                       types.UID(os.Getenv(common.EnvVarPodUID)),
+			WorkflowName:                 os.Getenv(common.EnvVarWorkflowName),
+			WorkflowUID:                  types.UID(os.Getenv(common.EnvVarWorkflowUID)),
+			NodeID:                       os.Getenv(common.EnvVarNodeID),
+			Namespace:                    namespace,
+			Template:                     *tmpl,
+			IncludeScriptOutput:          includeScriptOutput,
+			Deadline:                     deadline,
+			AnnotationPatchTickDuration:  annotationPatchTickDuration,
+			ReadProgressFileTickDuration: progressFileTickDuration,
+			ProgressFile:                 os.Getenv(common.EnvVarProgressFile),
+			InstanceID:                   os.Getenv(common.EnvVarInstanceID),
+			TerminationGracePeriod:       TerminationGracePeriodDuration(),
+			ArtifactPluginNames:          os.Getenv(common.EnvVarArtifactPluginNames),
+			RemoveLocalArtPath:           os.Getenv("REMOVE_LOCAL_ART_PATH") == "true",
+			InitlessPod:                  common.IsInitlessPod(),
+			RetryBackoff:                 retry.ExecutorRetry(ctx),
+			ResourceStateCheckInterval:   env.LookupEnvDurationOr(ctx, "RESOURCE_STATE_CHECK_INTERVAL", 5*time.Second),
+		},
 	)
 	CheckErr(err)
 
@@ -108,6 +121,17 @@ func Init(ctx context.Context, clientConfig clientcmd.ClientConfig, varRunArgo s
 		WithField("deadline", deadline).
 		Info(ctx, "Executor initialized")
 	return wfExecutor
+}
+
+// TerminationGracePeriodDuration returns the terminationGracePeriodSeconds of
+// the pod spec in time.Duration format, parsed from the environment
+// (ARGO_TERMINATION_GRACE_PERIOD_SECONDS).
+func TerminationGracePeriodDuration() time.Duration {
+	x, _ := strconv.ParseInt(os.Getenv(common.EnvVarTerminationGracePeriodSeconds), 10, 64)
+	if x > 0 {
+		return time.Duration(x) * time.Second
+	}
+	return 30 * time.Second
 }
 
 // CheckErr is a convenience function to panic upon error

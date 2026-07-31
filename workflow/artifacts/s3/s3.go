@@ -30,10 +30,10 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/file"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	executorretry "github.com/argoproj/argo-workflows/v4/util/retry"
 	waitutil "github.com/argoproj/argo-workflows/v4/util/wait"
 	artifactscommon "github.com/argoproj/argo-workflows/v4/workflow/artifacts/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
-	executorretry "github.com/argoproj/argo-workflows/v4/workflow/executor/retry"
 	"github.com/argoproj/argo-workflows/v4/workflow/tracing"
 )
 
