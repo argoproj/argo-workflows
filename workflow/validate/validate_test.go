@@ -4892,6 +4892,114 @@ spec:
       image: alpine:3.23
 `
 
+// resourceClaimsDynamicName puts the value under test everywhere a claim name is
+// read: on the claim itself and on the container reference to it.
+func resourceClaimsDynamicName(name string) string {
+	return fmt.Sprintf(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+    - name: a
+      value: one
+    - name: b
+      value: two
+  templates:
+  - name: main
+    container:
+      image: alpine:3.23
+      resources:
+        claims:
+        - name: %q
+    resourceClaims:
+    - name: %q
+      resourceClaimTemplateName: gpu-claim-template
+`, name, name)
+}
+
+func resourceClaimsDynamicSource(source string) string {
+	return fmt.Sprintf(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    container:
+      image: alpine:3.23
+      resources:
+        claims:
+        - name: accelerator
+    resourceClaims:
+    - name: accelerator
+      resourceClaimTemplateName: %q
+`, source)
+}
+
+func resourceClaimsDynamicRequest(request string) string {
+	return fmt.Sprintf(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    container:
+      image: alpine:3.23
+      resources:
+        claims:
+        - name: accelerator
+          request: %q
+    resourceClaims:
+    - name: accelerator
+      resourceClaimTemplateName: gpu-claim-template
+`, request)
+}
+
+// TestPodResourceClaimsExpressionsAreJudgedOnWhatIsLiteral pins that a name is
+// read for the characters it states, whatever its expressions turn out to be.
+// Those characters reach the pod as written and in the same places, so a name
+// carrying one that is not allowed could never have resolved into a valid one,
+// and the API server was always going to reject the pod. Leaving the whole name
+// unchecked because part of it was still an expression let that through.
+func TestPodResourceClaimsExpressionsAreJudgedOnWhatIsLiteral(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	for _, name := range []string{
+		"{{workflow.name}}",
+		"gpu-{{workflow.name}}",
+		"{{workflow.name}}-gpu",
+		"{{workflow.parameters.a}}-{{workflow.parameters.b}}",
+		"{{not.a.real.variable}}",
+	} {
+		require.NoError(t, validate(ctx, resourceClaimsDynamicName(name)), name)
+	}
+	for _, name := range []string{"INVALID_{{workflow.name}}", "{{workflow.name}}_INVALID"} {
+		require.ErrorContains(t, validate(ctx, resourceClaimsDynamicName(name)),
+			fmt.Sprintf("%q is invalid", strings.ReplaceAll(name, "{{workflow.name}}", "{{...}}")), name)
+	}
+
+	// A source is a DNS subdomain, so a dot between its parts is allowed where a
+	// slash is not.
+	require.NoError(t, validate(ctx, resourceClaimsDynamicSource("team.{{workflow.name}}")))
+	for _, source := range []string{"{{workflow.name}}/invalid", "claim_{{workflow.name}}", "foo..{{workflow.name}}"} {
+		require.ErrorContains(t, validate(ctx, resourceClaimsDynamicSource(source)),
+			fmt.Sprintf("%q is invalid", strings.ReplaceAll(source, "{{workflow.name}}", "{{...}}")), source)
+	}
+
+	require.NoError(t, validate(ctx, resourceClaimsDynamicRequest("req-{{workflow.name}}")))
+	require.ErrorContains(t, validate(ctx, resourceClaimsDynamicRequest("REQ_{{workflow.name}}")),
+		`"REQ_{{...}}" is invalid`)
+}
+
 // resourceClaimsStepsParentScope builds a workflow whose Steps template and the
 // pod template it calls give the same input name different values. The workflow
 // level claim is named through that input, and only the pod template's value ever

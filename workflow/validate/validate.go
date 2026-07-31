@@ -844,32 +844,49 @@ func validatePodResourceClaims(errPrefix string, claims []apiv1.PodResourceClaim
 			return errors.Errorf(errors.CodeBadRequest, "%s[%d].resourceClaimTemplateName is set but empty", errPrefix, i)
 		}
 		// Names the API server would reject are worth catching now rather than on a
-		// pod halfway through a run. A value still holding a parameter is skipped,
-		// since it is substituted before the pod is built.
+		// pod halfway through a run, and a name is judged on what it states even
+		// where part of it is still an expression.
 		if errs := isValidClaimName(claim.Name, apivalidation.IsDNS1123Label); len(errs) > 0 {
-			return errors.Errorf(errors.CodeBadRequest, "%s[%d].name %q is invalid: %s", errPrefix, i, claim.Name, errs[0])
+			return errors.Errorf(errors.CodeBadRequest, "%s[%d].name %q is invalid: %s", errPrefix, i, displayClaimName(claim.Name), errs[0])
 		}
 		if hasClaim {
 			if errs := isValidClaimName(*claim.ResourceClaimName, apivalidation.IsDNS1123Subdomain); len(errs) > 0 {
-				return errors.Errorf(errors.CodeBadRequest, "%s[%d].resourceClaimName %q is invalid: %s", errPrefix, i, *claim.ResourceClaimName, errs[0])
+				return errors.Errorf(errors.CodeBadRequest, "%s[%d].resourceClaimName %q is invalid: %s", errPrefix, i, displayClaimName(*claim.ResourceClaimName), errs[0])
 			}
 		}
 		if hasTemplate {
 			if errs := isValidClaimName(*claim.ResourceClaimTemplateName, apivalidation.IsDNS1123Subdomain); len(errs) > 0 {
-				return errors.Errorf(errors.CodeBadRequest, "%s[%d].resourceClaimTemplateName %q is invalid: %s", errPrefix, i, *claim.ResourceClaimTemplateName, errs[0])
+				return errors.Errorf(errors.CodeBadRequest, "%s[%d].resourceClaimTemplateName %q is invalid: %s", errPrefix, i, displayClaimName(*claim.ResourceClaimTemplateName), errs[0])
 			}
 		}
 	}
 	return nil
 }
 
-// isValidClaimName runs check over value unless it still holds a template
-// expression, which only resolves to its final form once the pod is built.
+var (
+	// claimNamePlaceholder matches what validation swaps a global for while
+	// resolving an inline template.
+	claimNamePlaceholder = regexp.MustCompile(regexp.QuoteMeta(template.PlaceholderPrefix) + `\d+`)
+	// claimNameDynamic matches every part of a name that has yet to reach its
+	// final form: those placeholders, and the expressions a user wrote.
+	claimNameDynamic = regexp.MustCompile(`\{\{.*?\}\}|` + claimNamePlaceholder.String())
+)
+
+// displayClaimName gives a name back in the terms it was written in. Validation
+// reads a template once its globals have been swapped for internal placeholders,
+// and quoting one of those back at whoever wrote the workflow explains nothing.
+func displayClaimName(value string) string {
+	return claimNamePlaceholder.ReplaceAllString(value, "{{...}}")
+}
+
+// isValidClaimName judges a name on what it says whatever its unsettled parts
+// turn out to be, by standing each of those down to a single character that is
+// legal wherever a name is and checking what is left. The literal characters
+// reach the pod as written and in the same places, so a name rejected here could
+// not have been valid however it resolved. What the expressions expand to, and
+// the length that leaves, is still for the API server to judge.
 func isValidClaimName(value string, check func(string) []string) []string {
-	if holdsExpression(value) {
-		return nil
-	}
-	return check(value)
+	return check(claimNameDynamic.ReplaceAllString(value, "x"))
 }
 
 // holdsExpression reports whether a value has yet to reach its final form: either
@@ -926,10 +943,8 @@ func validateContainerResourceClaimRefs(errPrefix string, tmpl *wfv1.Template, c
 			// No pod claim can carry a name that is not a DNS label, so a reference
 			// that is not one cannot match whatever the pod is given, including by
 			// a webhook. That is independent of knowing the claim set.
-			if !holdsExpression(ref.Name) {
-				if errs := apivalidation.IsDNS1123Label(ref.Name); len(errs) > 0 {
-					return errors.Errorf(errors.CodeBadRequest, "%s.%s.resources.claims[%d].name %q is invalid: %s", errPrefix, where, i, ref.Name, errs[0])
-				}
+			if errs := isValidClaimName(ref.Name, apivalidation.IsDNS1123Label); len(errs) > 0 {
+				return errors.Errorf(errors.CodeBadRequest, "%s.%s.resources.claims[%d].name %q is invalid: %s", errPrefix, where, i, displayClaimName(ref.Name), errs[0])
 			}
 			// A reference may name its claim through a parameter, the same as the
 			// claim itself may, and only resolves once the pod is built, so only
@@ -937,9 +952,9 @@ func validateContainerResourceClaimRefs(errPrefix string, tmpl *wfv1.Template, c
 			if checkMembership && !holdsExpression(ref.Name) && !declared[ref.Name] {
 				return errors.Errorf(errors.CodeBadRequest, "%s.%s.resources.claims[%d].name %q is not one of the resourceClaims available to this template", errPrefix, where, i, ref.Name)
 			}
-			if ref.Request != "" && !holdsExpression(ref.Request) {
-				if errs := apivalidation.IsDNS1123Label(ref.Request); len(errs) > 0 {
-					return errors.Errorf(errors.CodeBadRequest, "%s.%s.resources.claims[%d].request %q is invalid: %s", errPrefix, where, i, ref.Request, errs[0])
+			if ref.Request != "" {
+				if errs := isValidClaimName(ref.Request, apivalidation.IsDNS1123Label); len(errs) > 0 {
+					return errors.Errorf(errors.CodeBadRequest, "%s.%s.resources.claims[%d].request %q is invalid: %s", errPrefix, where, i, displayClaimName(ref.Request), errs[0])
 				}
 			}
 			// The API server rejects the same claim twice, and rejects asking for a
