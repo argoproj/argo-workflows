@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/template"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -4891,6 +4892,65 @@ spec:
     container:
       image: alpine:3.23
 `
+
+var resourceClaimsDuplicateDynamicName = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    resourceClaims:
+    - name: "{{workflow.name}}"
+      resourceClaimTemplateName: gpu-claim-template
+    - name: "{{workflow.name}}"
+      resourceClaimName: shared
+    container:
+      image: alpine:3.23
+`
+
+var resourceClaimsDuplicateDynamicRef = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    resourceClaims:
+    - name: "{{workflow.name}}"
+      resourceClaimTemplateName: gpu-claim-template
+    container:
+      image: alpine:3.23
+      resources:
+        claims:
+        - name: "{{workflow.name}}"
+        - name: "{{workflow.name}}"
+`
+
+// TestPodResourceClaimsErrorsSpeakTheUsersTerms pins that a message quotes a name
+// the way it was written. Validation reads a template once its globals have been
+// swapped for internal placeholders, and a name written as {{workflow.name}}
+// coming back as __argo__internal__placeholder-0 tells whoever wrote the workflow
+// nothing about what to change.
+func TestPodResourceClaimsErrorsSpeakTheUsersTerms(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	for _, wf := range []string{
+		resourceClaimsDuplicateDynamicName,
+		resourceClaimsDuplicateDynamicRef,
+		resourceClaimsDynamicName("INVALID_{{workflow.name}}"),
+		resourceClaimsDynamicSource("{{workflow.name}}/invalid"),
+		resourceClaimsDynamicRequest("REQ_{{workflow.name}}"),
+	} {
+		err := validate(ctx, wf)
+		require.Error(t, err)
+		require.NotContains(t, err.Error(), template.PlaceholderPrefix)
+		require.Contains(t, err.Error(), "{{")
+	}
+}
 
 // resourceClaimsDynamicName puts the value under test everywhere a claim name is
 // read: on the claim itself and on the container reference to it.

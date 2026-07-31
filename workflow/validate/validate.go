@@ -824,7 +824,7 @@ func validatePodResourceClaims(errPrefix string, claims []apiv1.PodResourceClaim
 			return errors.Errorf(errors.CodeBadRequest, "%s[%d].name is required", errPrefix, i)
 		}
 		if names[claim.Name] {
-			return errors.Errorf(errors.CodeBadRequest, "%s[%d].name %q is duplicated", errPrefix, i, claim.Name)
+			return errors.Errorf(errors.CodeBadRequest, "%s[%d].name %q is duplicated", errPrefix, i, displayClaimName(claim.Name))
 		}
 		names[claim.Name] = true
 		// Presence decides this, not emptiness: the API server reads an empty
@@ -961,7 +961,7 @@ func validateContainerResourceClaimRefs(errPrefix string, tmpl *wfv1.Template, c
 			// whole claim alongside one of its requests, in either order. Two
 			// distinct requests of one claim are fine.
 			if whole[ref.Name] || (ref.Request == "" && len(requests[ref.Name]) > 0) || requests[ref.Name][ref.Request] {
-				return errors.Errorf(errors.CodeBadRequest, "%s.%s.resources.claims[%d] references %q more than once", errPrefix, where, i, ref.Name)
+				return errors.Errorf(errors.CodeBadRequest, "%s.%s.resources.claims[%d] references %q more than once", errPrefix, where, i, displayClaimName(ref.Name))
 			}
 			if ref.Request == "" {
 				whole[ref.Name] = true
