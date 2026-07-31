@@ -26,6 +26,7 @@ import (
 	"github.com/minio/minio-go/v7"
 	"k8s.io/client-go/util/retry"
 
+	"github.com/argoproj/argo-workflows/v4"
 	argoerrs "github.com/argoproj/argo-workflows/v4/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/file"
@@ -517,6 +518,8 @@ func NewClient(ctx context.Context, opts ClientOpts) (Client, error) {
 	if err != nil {
 		return nil, err
 	}
+	// appended to minio-go's own User-Agent, matching the tag we set on Kubernetes API requests
+	minioClient.SetAppInfo("argo-workflows", argo.GetVersion().Version)
 	if opts.Trace {
 		minioClient.TraceOn(os.Stderr)
 	}
