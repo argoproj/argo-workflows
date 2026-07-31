@@ -600,6 +600,38 @@ func TestProcessNodeRetries(t *testing.T) {
 	assert.Equal(t, wfv1.NodeFailed, n.Phase)
 }
 
+// TestProcessNodeRetriesWithDaemonFailure keeps daemon retry coverage free of
+// wall-clock sleeps and Kubernetes pod reconciliation.
+func TestProcessNodeRetriesWithDaemonFailure(t *testing.T) {
+	cancel, controller := newController(logging.TestContext(t.Context()))
+	defer cancel()
+
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	parentName := "daemon-retry"
+	_, parent := woc.initializeNode(ctx, parentName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{}, true)
+	retries := wfv1.RetryStrategy{
+		Limit:       intstrutil.ParsePtr("2"),
+		RetryPolicy: wfv1.RetryPolicyOnFailure,
+	}
+
+	_, child := woc.initializeNode(ctx, parentName+"(0)", wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeFailed, &wfv1.NodeFlag{Retried: true}, true)
+	child.Daemoned = new(true)
+	woc.wf.Status.Nodes.Set(ctx, child.ID, *child)
+	woc.addChildNode(ctx, parent.Name, child.Name)
+	parent, err := woc.wf.GetNodeByName(parentName)
+	require.NoError(t, err)
+
+	processed, proceed, err := woc.processNodeRetries(ctx, parent, retries, &executeTemplateOpts{})
+	require.NoError(t, err)
+	assert.True(t, proceed)
+	assert.Equal(t, wfv1.NodeRunning, processed.Phase)
+	require.NotNil(t, processed.Daemoned)
+	assert.True(t, *processed.Daemoned)
+}
+
 // TestProcessNodeRetries tests retrying when RetryOn.Error is enabled
 func TestProcessNodeRetriesOnErrors(t *testing.T) {
 	cancel, controller := newController(logging.TestContext(t.Context()))
