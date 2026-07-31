@@ -1700,16 +1700,56 @@ func TestAssessNodeStatus(t *testing.T) {
 		wantPhase:   wfv1.NodeSucceeded,
 		wantMessage: "",
 	}, {
-		name: "pod failed - daemoned",
+		name: "pod failed - daemoned (unexpected failure, still active)",
 		pod: &apiv1.Pod{
 			Status: apiv1.PodStatus{
 				Phase: apiv1.PodFailed,
 			},
 		},
 		daemon:      true,
-		node:        &wfv1.NodeStatus{TemplateName: templateName},
+		node:        &wfv1.NodeStatus{TemplateName: templateName, Phase: wfv1.NodeSucceeded, Daemoned: new(true)},
 		wantPhase:   wfv1.NodeFailed,
-		wantMessage: "can't find failed message for pod  namespace ", // daemoned nodes currently don't have a fail message
+		wantMessage: "can't find failed message for pod  namespace ",
+	}, {
+		name: "pod failed - daemon killed by SIGTERM after killDaemonedChildren (Daemoned=nil)",
+		pod: &apiv1.Pod{
+			Status: apiv1.PodStatus{
+				Phase: apiv1.PodFailed,
+			},
+		},
+		daemon:    true,
+		node:      &wfv1.NodeStatus{TemplateName: templateName, Phase: wfv1.NodeSucceeded},
+		wantPhase: wfv1.NodeSucceeded,
+	}, {
+		name: "daemon pod succeeded unexpectedly while still active (node phase not yet set)",
+		pod: &apiv1.Pod{
+			Status: apiv1.PodStatus{
+				Phase: apiv1.PodSucceeded,
+			},
+		},
+		daemon:    true,
+		node:      &wfv1.NodeStatus{TemplateName: templateName, Phase: wfv1.NodeRunning},
+		wantPhase: wfv1.NodeFailed,
+	}, {
+		name: "daemon pod succeeded unexpectedly while still active (realistic state: Phase=Succeeded, Daemoned=true)",
+		pod: &apiv1.Pod{
+			Status: apiv1.PodStatus{
+				Phase: apiv1.PodSucceeded,
+			},
+		},
+		daemon:    true,
+		node:      &wfv1.NodeStatus{TemplateName: templateName, Phase: wfv1.NodeSucceeded, Daemoned: new(true)},
+		wantPhase: wfv1.NodeFailed,
+	}, {
+		name: "daemon pod succeeded after killDaemonedChildren set node to Succeeded (Daemoned=nil)",
+		pod: &apiv1.Pod{
+			Status: apiv1.PodStatus{
+				Phase: apiv1.PodSucceeded,
+			},
+		},
+		daemon:    true,
+		node:      &wfv1.NodeStatus{TemplateName: templateName, Phase: wfv1.NodeSucceeded},
+		wantPhase: wfv1.NodeSucceeded,
 	}, {
 		name: "daemon, pod running, node failed",
 		pod: &apiv1.Pod{
