@@ -1163,8 +1163,20 @@ func getWfPriority(obj any) (int32, time.Time) {
 	return int32(priority), un.GetCreationTimestamp().Time
 }
 
-// how long to retain the record of a completed or deleted workflow
-const completedVersionRetention = 10 * time.Minute
+// The ceiling of the exponential backoff in
+// workqueue.DefaultTypedControllerRateLimiter, which both controller queues use.
+// Named here because the retention below has to outlast it.
+const maxQueueBackoff = 1000 * time.Second
+
+// How long to retain the record of a completed or deleted workflow.
+//
+// It has to exceed maxQueueBackoff. A rate-limited archive key can fire up to
+// 16m40s after it was enqueued, and if its record has been cleaned up by then
+// isOutdated finds nothing and reports the workflow as current -- so the
+// stale-copy guard would be missing from exactly the long-delayed retries that
+// restoring the archive retry makes possible. The cost is holding one small
+// entry per completed workflow for longer, bounded by the completion rate.
+const completedVersionRetention = maxQueueBackoff + 5*time.Minute
 
 // how often, at most, to scan for expired completed workflow records
 const versionCleanupPeriod = time.Minute
