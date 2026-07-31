@@ -1391,7 +1391,7 @@ func (wfc *WorkflowController) archiveWorkflowAux(ctx context.Context, obj any) 
 		if apierr.IsNotFound(err) {
 			return nil
 		}
-		return fmt.Errorf("failed to archive workflow: %w", err)
+		return fmt.Errorf("failed to mark the workflow archived: %w", err)
 	}
 	return nil
 }
