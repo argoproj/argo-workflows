@@ -1007,8 +1007,12 @@ func TestPodResources(t *testing.T) {
 }
 
 func TestPodResourceClaims(t *testing.T) {
+	// Deliberately different names. With the same name at both levels, replacing
+	// the workflow list and merging over it by name produce the same pod, so the
+	// override case would pass either way. Here a merge would leave "shared"
+	// behind, and replacement drops it.
 	wfLevel := []apiv1.PodResourceClaim{
-		{Name: "accelerator", ResourceClaimTemplateName: new("workflow-gpu")},
+		{Name: "shared", ResourceClaimName: new("workflow-shared")},
 	}
 	tmplLevel := []apiv1.PodResourceClaim{
 		{Name: "accelerator", ResourceClaimTemplateName: new("template-gpu")},

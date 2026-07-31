@@ -64,16 +64,6 @@ type templateValidationCtx struct {
 	// wf is the Workflow resource which is used to validate templates.
 	// It will be omitted in WorkflowTemplate validation.
 	wf *wfv1.Workflow
-	// workflowResourceClaims are the claims a template inherits when it declares
-	// none of its own, resolved through a workflowTemplateRef where there is one.
-	workflowResourceClaims []apiv1.PodResourceClaim
-	// templateDefaultResourceClaims are the claims templateDefaults supplies to a
-	// template that declares none. They are merged into the template at run time,
-	// after validation, so they have to be carried here to be seen at all.
-	templateDefaultResourceClaims []apiv1.PodResourceClaim
-	// workflowHasPodSpecPatch records whether a patch may add claims this
-	// validation cannot see, resolved the same way.
-	workflowHasPodSpecPatch bool
 }
 
 func newTemplateValidationCtx(wf *wfv1.Workflow, opts Opts) *templateValidationCtx {
@@ -194,38 +184,6 @@ func Workflow(ctx context.Context, wftmplGetter templateresolution.WorkflowTempl
 		}
 		wfTmplRef = wf.Spec.WorkflowTemplateRef.ToTemplateRef(entrypoint)
 	}
-	// Record the workflow-level claims a template inherits when it declares none.
-	// A workflow that only carries a workflowTemplateRef has none of its own, so
-	// the referenced spec supplies them, the same way the controller resolves the
-	// spec it runs. The podSpecPatch flag rides along because it decides whether a
-	// container may reference a claim this validation cannot see. This has to be
-	// settled before any template is validated, entrypoint included.
-	specs := []*wfv1.WorkflowSpec{&wf.Spec}
-	if hasWorkflowTemplateRef {
-		specs = append(specs, wfSpecHolder.GetWorkflowSpec())
-	}
-	if wfDefaults != nil {
-		specs = append(specs, &wfDefaults.Spec)
-	}
-	for _, spec := range specs {
-		if len(tctx.workflowResourceClaims) == 0 {
-			tctx.workflowResourceClaims = spec.ResourceClaims
-		}
-		if spec.TemplateDefaults != nil {
-			if len(tctx.templateDefaultResourceClaims) == 0 {
-				tctx.templateDefaultResourceClaims = spec.TemplateDefaults.ResourceClaims
-			}
-			tctx.workflowHasPodSpecPatch = tctx.workflowHasPodSpecPatch || spec.TemplateDefaults.PodSpecPatch != ""
-		}
-		tctx.workflowHasPodSpecPatch = tctx.workflowHasPodSpecPatch || spec.PodSpecPatch != ""
-	}
-	if err = validatePodResourceClaims("spec.resourceClaims", tctx.workflowResourceClaims); err != nil {
-		return err
-	}
-	if err = validatePodResourceClaims("spec.templateDefaults.resourceClaims", tctx.templateDefaultResourceClaims); err != nil {
-		return err
-	}
-
 	err = validateWorkflowFieldNames(wf.Spec.Templates)
 
 	wfArgs := wf.Spec.Arguments
@@ -233,15 +191,6 @@ func Workflow(ctx context.Context, wftmplGetter templateresolution.WorkflowTempl
 	if hasWorkflowTemplateRef {
 		wfArgs.Parameters = util.MergeParameters(wfArgs.Parameters, wfSpecHolder.GetWorkflowSpec().Arguments.Parameters)
 		wfArgs.Artifacts = util.MergeArtifacts(wfArgs.Artifacts, wfSpecHolder.GetWorkflowSpec().Arguments.Artifacts)
-	}
-	if wfDefaults != nil {
-		// The controller merges its workflow defaults into the workflow before it
-		// runs, arguments included, so a default written in terms of a parameter it
-		// also supplies resolves there. Reading the defaults for claims but not for
-		// the arguments they are written against would leave those unresolvable.
-		// Lowest precedence, matching the merge order the controller uses.
-		wfArgs.Parameters = util.MergeParameters(wfArgs.Parameters, wfDefaults.Spec.Arguments.Parameters)
-		wfArgs.Artifacts = util.MergeArtifacts(wfArgs.Artifacts, wfDefaults.Spec.Arguments.Artifacts)
 	}
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "spec.templates%s", err.Error())
@@ -593,67 +542,21 @@ func (tctx *templateValidationCtx) validateTemplate(ctx context.Context, tmpl *w
 		}
 	}
 
-	// Put the claims the pod will actually be given onto the template before it is
-	// substituted, so they go through the same resolution the controller applies
-	// rather than being read raw afterwards. Precedence is the pod builder's: the
-	// template's own list, then templateDefaults, then the workflow level.
-	claimsDeclaredOnTemplate := len(tmpl.ResourceClaims) > 0
-	effectiveTmpl, claimsField := tmpl, fmt.Sprintf("templates.%s.resourceClaims", tmpl.Name)
-	if !claimsDeclaredOnTemplate {
-		switch {
-		case len(tctx.templateDefaultResourceClaims) > 0:
-			effectiveTmpl, claimsField = tmpl.DeepCopy(), "spec.templateDefaults.resourceClaims"
-			effectiveTmpl.ResourceClaims = slices.Clone(tctx.templateDefaultResourceClaims)
-		case len(tctx.workflowResourceClaims) > 0:
-			effectiveTmpl, claimsField = tmpl.DeepCopy(), "spec.resourceClaims"
-			effectiveTmpl.ResourceClaims = slices.Clone(tctx.workflowResourceClaims)
-		}
-	}
-
-	newTmpl, err := common.ProcessArgs(ctx, effectiveTmpl, args, tctx.globalParams, localParams, true, "", nil)
+	newTmpl, err := common.ProcessArgs(ctx, tmpl, args, tctx.globalParams, localParams, true, "", nil)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", tmpl.Name, err)
 	}
 
 	// Claims are attached to the pod a template runs, so a template that never
-	// creates one has nowhere to put them: Steps, DAG and Suspend orchestrate other
-	// templates, and HTTP and Plugin run on the shared agent pod. Declaring them
-	// there is an error, while inheriting them is not, since a workflow-level list
-	// is written for whichever templates do create pods, and an inherited list is
-	// dropped here rather than judged on a value it never carries. An orchestration
-	// template and the pod template it calls can give the same input name different
-	// values, and only the pod's reaches the claim.
+	// creates one has nowhere to put them: Steps, DAG and Suspend orchestrate
+	// other templates, and HTTP and Plugin run on the shared agent pod.
 	//
 	// Which kind a template is can itself be written as a parameter, so this is
-	// asked once substitution has settled it. The claims are validated on the
-	// substituted template for the same reason: a name written as a parameter is
-	// checked as the value it resolves to rather than as the expression. Values
-	// that only settle at run time stay as placeholders here and are skipped.
-	if !newTmpl.IsPodType() {
-		if claimsDeclaredOnTemplate {
-			return errors.Errorf(errors.CodeBadRequest, "templates.%s.resourceClaims is not supported for %s templates, which do not create a pod", newTmpl.Name, newTmpl.GetType())
-		}
-		newTmpl.ResourceClaims = nil
-	} else if claimsErr := validatePodResourceClaims(claimsField, newTmpl.ResourceClaims); claimsErr != nil {
-		return claimsErr
-	}
-	// A container may only ask for a claim the pod will have, mirroring what the
-	// pod ends up with: the template's own claims win, then the ones
-	// templateDefaults merges in, then the workflow-level list. The check is
-	// skipped when a podSpecPatch is in play, since it runs after the typed list
-	// and can add claims of its own, and when the workflow declares no claims at
-	// all, since the pod may still be given some by an admission webhook, which is
-	// how a container could already name a claim before this field existed.
-	claims := newTmpl.ResourceClaims
-	// The shape of a reference is always checked. Whether it names a claim the pod
-	// will have is only decidable when no patch can add one and the workflow
-	// declares claims at all: with neither, the pod may still be given some by an
-	// admission webhook, which is how a container could name a claim before this
-	// field existed.
-	hasPodSpecPatch := newTmpl.PodSpecPatch != "" || tctx.workflowHasPodSpecPatch
-	checkMembership := !hasPodSpecPatch && len(claims) > 0
-	if refErr := validateContainerResourceClaimRefs(fmt.Sprintf("templates.%s", newTmpl.Name), newTmpl, claims, checkMembership); refErr != nil {
-		return refErr
+	// asked of the substituted template rather than the one as written.
+	if len(tmpl.ResourceClaims) > 0 && !newTmpl.IsPodType() {
+		return errors.Errorf(errors.CodeBadRequest,
+			"templates.%s.resourceClaims is not supported for %s templates, which do not create a pod",
+			tmpl.Name, newTmpl.GetType())
 	}
 
 	if newTmpl.Timeout != "" {
@@ -808,168 +711,6 @@ func validatePodResources(errPrefix string, r *apiv1.ResourceRequirements) error
 		for name := range list {
 			if name != apiv1.ResourceCPU && name != apiv1.ResourceMemory && !strings.HasPrefix(string(name), apiv1.ResourceHugePagesPrefix) {
 				return errors.Errorf(errors.CodeBadRequest, "%s: %q is not a valid pod-level resource, only cpu, memory and hugepages-* are supported", errPrefix, name)
-			}
-		}
-	}
-	return nil
-}
-
-// validatePodResourceClaims validates pod-level resource claims, which Kubernetes requires
-// to be uniquely named within the pod and to name exactly one source. Anything else would
-// pass submission and then be rejected by the API server at pod creation, mid-workflow.
-func validatePodResourceClaims(errPrefix string, claims []apiv1.PodResourceClaim) error {
-	names := make(map[string]bool, len(claims))
-	for i, claim := range claims {
-		if claim.Name == "" {
-			return errors.Errorf(errors.CodeBadRequest, "%s[%d].name is required", errPrefix, i)
-		}
-		if names[claim.Name] {
-			return errors.Errorf(errors.CodeBadRequest, "%s[%d].name %q is duplicated", errPrefix, i, displayClaimName(claim.Name))
-		}
-		names[claim.Name] = true
-		// Presence decides this, not emptiness: the API server reads an empty
-		// resourceClaimName next to a resourceClaimTemplateName as two sources and
-		// rejects the pod, so treating it as one source here would wave through
-		// exactly what this check exists to stop.
-		hasClaim := claim.ResourceClaimName != nil
-		hasTemplate := claim.ResourceClaimTemplateName != nil
-		if hasClaim == hasTemplate {
-			return errors.Errorf(errors.CodeBadRequest, "%s[%d] must set exactly one of resourceClaimName and resourceClaimTemplateName", errPrefix, i)
-		}
-		// A source that is set but empty names nothing.
-		if hasClaim && *claim.ResourceClaimName == "" {
-			return errors.Errorf(errors.CodeBadRequest, "%s[%d].resourceClaimName is set but empty", errPrefix, i)
-		}
-		if hasTemplate && *claim.ResourceClaimTemplateName == "" {
-			return errors.Errorf(errors.CodeBadRequest, "%s[%d].resourceClaimTemplateName is set but empty", errPrefix, i)
-		}
-		// Names the API server would reject are worth catching now rather than on a
-		// pod halfway through a run, and a name is judged on what it states even
-		// where part of it is still an expression.
-		if errs := isValidClaimName(claim.Name, apivalidation.IsDNS1123Label); len(errs) > 0 {
-			return errors.Errorf(errors.CodeBadRequest, "%s[%d].name %q is invalid: %s", errPrefix, i, displayClaimName(claim.Name), errs[0])
-		}
-		if hasClaim {
-			if errs := isValidClaimName(*claim.ResourceClaimName, apivalidation.IsDNS1123Subdomain); len(errs) > 0 {
-				return errors.Errorf(errors.CodeBadRequest, "%s[%d].resourceClaimName %q is invalid: %s", errPrefix, i, displayClaimName(*claim.ResourceClaimName), errs[0])
-			}
-		}
-		if hasTemplate {
-			if errs := isValidClaimName(*claim.ResourceClaimTemplateName, apivalidation.IsDNS1123Subdomain); len(errs) > 0 {
-				return errors.Errorf(errors.CodeBadRequest, "%s[%d].resourceClaimTemplateName %q is invalid: %s", errPrefix, i, displayClaimName(*claim.ResourceClaimTemplateName), errs[0])
-			}
-		}
-	}
-	return nil
-}
-
-var (
-	// claimNamePlaceholder matches what validation swaps a global for while
-	// resolving an inline template.
-	claimNamePlaceholder = regexp.MustCompile(regexp.QuoteMeta(template.PlaceholderPrefix) + `\d+`)
-	// claimNameDynamic matches every part of a name that has yet to reach its
-	// final form: those placeholders, and the expressions a user wrote.
-	claimNameDynamic = regexp.MustCompile(`\{\{.*?\}\}|` + claimNamePlaceholder.String())
-)
-
-// displayClaimName gives a name back in the terms it was written in. Validation
-// reads a template once its globals have been swapped for internal placeholders,
-// and quoting one of those back at whoever wrote the workflow explains nothing.
-func displayClaimName(value string) string {
-	return claimNamePlaceholder.ReplaceAllString(value, "{{...}}")
-}
-
-// isValidClaimName judges a name on what it says whatever its unsettled parts
-// turn out to be, by standing each of those down to a single character that is
-// legal wherever a name is and checking what is left. The literal characters
-// reach the pod as written and in the same places, so a name rejected here could
-// not have been valid however it resolved. What the expressions expand to, and
-// the length that leaves, is still for the API server to judge.
-func isValidClaimName(value string, check func(string) []string) []string {
-	return check(claimNameDynamic.ReplaceAllString(value, "x"))
-}
-
-// holdsExpression reports whether a value has yet to reach its final form: either
-// the expression a user wrote, or the placeholder validation swaps a global for
-// while resolving an inline template.
-func holdsExpression(value string) bool {
-	return strings.Contains(value, "{{") || strings.Contains(value, template.PlaceholderPrefix)
-}
-
-// validateContainerResourceClaimRefs checks that every resources.claims entry names
-// a claim the pod will actually have. The API server rejects a name that does not,
-// which would otherwise surface as a failed pod halfway through the workflow.
-func validateContainerResourceClaimRefs(errPrefix string, tmpl *wfv1.Template, claims []apiv1.PodResourceClaim, checkMembership bool) error {
-	declared := make(map[string]bool, len(claims))
-	for _, claim := range claims {
-		// A claim named through an expression could resolve to anything, so which
-		// names the pod ends up with is unknowable. Only membership depends on
-		// that; the shape of a reference does not, so the rest still runs.
-		if holdsExpression(claim.Name) {
-			checkMembership = false
-		}
-		declared[claim.Name] = true
-	}
-
-	containers := map[string]*apiv1.Container{}
-	if tmpl.Container != nil {
-		containers["container"] = tmpl.Container
-	}
-	if tmpl.Script != nil {
-		containers["script"] = &tmpl.Script.Container
-	}
-	if tmpl.ContainerSet != nil {
-		for i := range tmpl.ContainerSet.Containers {
-			c := &tmpl.ContainerSet.Containers[i]
-			containers[fmt.Sprintf("containerSet.containers.%s", c.Name)] = &c.Container
-		}
-	}
-	for i := range tmpl.InitContainers {
-		c := &tmpl.InitContainers[i]
-		containers[fmt.Sprintf("initContainers.%s", c.Name)] = &c.Container
-	}
-	for i := range tmpl.Sidecars {
-		c := &tmpl.Sidecars[i]
-		containers[fmt.Sprintf("sidecars.%s", c.Name)] = &c.Container
-	}
-
-	for _, where := range slices.Sorted(maps.Keys(containers)) {
-		whole := map[string]bool{}
-		requests := map[string]map[string]bool{}
-		for i, ref := range containers[where].Resources.Claims {
-			if ref.Name == "" {
-				return errors.Errorf(errors.CodeBadRequest, "%s.%s.resources.claims[%d].name is required", errPrefix, where, i)
-			}
-			// No pod claim can carry a name that is not a DNS label, so a reference
-			// that is not one cannot match whatever the pod is given, including by
-			// a webhook. That is independent of knowing the claim set.
-			if errs := isValidClaimName(ref.Name, apivalidation.IsDNS1123Label); len(errs) > 0 {
-				return errors.Errorf(errors.CodeBadRequest, "%s.%s.resources.claims[%d].name %q is invalid: %s", errPrefix, where, i, displayClaimName(ref.Name), errs[0])
-			}
-			// A reference may name its claim through a parameter, the same as the
-			// claim itself may, and only resolves once the pod is built, so only
-			// membership is skipped for it.
-			if checkMembership && !holdsExpression(ref.Name) && !declared[ref.Name] {
-				return errors.Errorf(errors.CodeBadRequest, "%s.%s.resources.claims[%d].name %q is not one of the resourceClaims available to this template", errPrefix, where, i, ref.Name)
-			}
-			if ref.Request != "" {
-				if errs := isValidClaimName(ref.Request, apivalidation.IsDNS1123Label); len(errs) > 0 {
-					return errors.Errorf(errors.CodeBadRequest, "%s.%s.resources.claims[%d].request %q is invalid: %s", errPrefix, where, i, displayClaimName(ref.Request), errs[0])
-				}
-			}
-			// The API server rejects the same claim twice, and rejects asking for a
-			// whole claim alongside one of its requests, in either order. Two
-			// distinct requests of one claim are fine.
-			if whole[ref.Name] || (ref.Request == "" && len(requests[ref.Name]) > 0) || requests[ref.Name][ref.Request] {
-				return errors.Errorf(errors.CodeBadRequest, "%s.%s.resources.claims[%d] references %q more than once", errPrefix, where, i, displayClaimName(ref.Name))
-			}
-			if ref.Request == "" {
-				whole[ref.Name] = true
-			} else {
-				if requests[ref.Name] == nil {
-					requests[ref.Name] = map[string]bool{}
-				}
-				requests[ref.Name][ref.Request] = true
 			}
 		}
 	}
