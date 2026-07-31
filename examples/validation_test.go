@@ -61,10 +61,10 @@ func TestValidateArgoYamlRecursivelyReportsFailures(t *testing.T) {
 		"  - name: x\n"+
 		"    container:\n"+
 		"      image: alpine\n"+
-		"    livenessProbe:\n"+
-		"      httpGet:\n"+
-		"        port: 80\n"+
-		"        path: /\n")
+		"      livenessProbe:\n"+
+		"        httpGet:\n"+
+		"          port: 80\n"+
+		"          path: /\n")
 
 	listRoot := writeYaml("list-root.yaml", "- not-a-workflow\n")
 	empty := writeYaml("empty.yaml", "")
