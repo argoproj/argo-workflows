@@ -1,23 +1,13 @@
 <!-- markdownlint-disable MD041 -- this is rendered within existing HTML, so allow starting without an H1 -->
 
-<!--
+See the [pull request guide](https://argo-workflows.readthedocs.io/en/latest/pull-requests/) for details on each item.
 
-### Before you open your PR
-
-- Run `make pre-commit -B` to fix codegen and lint problems (build will fail).
-- [Signed-off your commits](https://github.com/apps/dco/) (otherwise the DCO check will fail).
-- Used [a conventional commit message](https://www.conventionalcommits.org/en/v1.0.0/).
-
-### When you open your PR
-
-- PR title format should also conform to [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/).
-- "Fixes #" is in both the PR title (for release notes) and this description (to automatically link and close the issue).
-- Create the PR as draft.
-- Once builds are green, mark your PR "Ready for review".
-
-When changes are requested, please address them and then dismiss the review to get it reviewed again.
-
--->
+- [ ] Ran `make pre-commit -B`
+- [ ] Signed-off commits with [Conventional Commit](https://www.conventionalcommits.org/en/v1.0.0/) messages
+- [ ] PR title is a conventional commit message (it becomes the release notes entry)
+- [ ] Unit or e2e tests cover the change
+- [ ] For features: an associated issue and a feature description file (`make feature-new`)
+- [ ] Opened as draft; will mark "Ready for review" once builds are green
 
 <!-- Does this PR fix an issue -->
 
