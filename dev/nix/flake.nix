@@ -1,4 +1,4 @@
-# NOTE: all dependencies changed here must also be changed in the Makefile. 
+# NOTE: all dependencies changed here must also be changed in the Makefile.
 
 {
   inputs = {
@@ -53,7 +53,7 @@
           initialFilteredSrc = filter {
             root = ../../.;
             include = [
-              "." # Way easier to tell it what to exclude than what to include so include all. 
+              "." # Way easier to tell it what to exclude than what to include so include all.
               "devenv.yaml"
             ];
             exclude = [
@@ -392,9 +392,9 @@
                 # (or `tilt up`) to build and run the stack in-cluster.
                 make k3d-up
               '';
-              inputsFrom = [ 
+              inputsFrom = [
                 (pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.default))
-                config.packages.${package.name} 
+                config.packages.${package.name}
               ];
               packages = with pkgs; [
                 (rust-bin.selectLatestNightlyWith (toolchain: toolchain.default))
@@ -420,7 +420,6 @@
                 jq
                 nodejs
                 pythonEnv
-                clang-tools
                 protobuf
                 myyarn
                 diffutils
@@ -466,7 +465,6 @@
                     jq
                     nodejs
                     pythonEnv
-                    clang-tools
                     protobuf
                     myyarn
                     diffutils

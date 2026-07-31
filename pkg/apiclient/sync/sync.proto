@@ -1,9 +1,10 @@
 syntax = "proto3";
-option go_package = "github.com/argoproj/argo-workflows/v4/pkg/apiclient/sync";
+
+package sync;
 
 import "google/api/annotations.proto";
 
-package sync;
+option go_package = "github.com/argoproj/argo-workflows/v4/pkg/apiclient/sync";
 
 enum SyncConfigType {
   CONFIGMAP = 0;
@@ -48,26 +49,25 @@ message DeleteSyncLimitRequest {
   string key = 4;
 }
 
-message DeleteSyncLimitResponse {
-}
+message DeleteSyncLimitResponse {}
 
 service SyncService {
   rpc CreateSyncLimit(CreateSyncLimitRequest) returns (SyncLimitResponse) {
     option (google.api.http) = {
-      post : "/api/v1/sync/{namespace}"
-      body : "*"
+      post: "/api/v1/sync/{namespace}"
+      body: "*"
     };
   }
   rpc GetSyncLimit(GetSyncLimitRequest) returns (SyncLimitResponse) {
     option (google.api.http).get = "/api/v1/sync/{namespace}/{key}";
-  };
+  }
   rpc UpdateSyncLimit(UpdateSyncLimitRequest) returns (SyncLimitResponse) {
     option (google.api.http) = {
-      put : "/api/v1/sync/{namespace}/{key}"
-      body : "*"
+      put: "/api/v1/sync/{namespace}/{key}"
+      body: "*"
     };
   }
   rpc DeleteSyncLimit(DeleteSyncLimitRequest) returns (DeleteSyncLimitResponse) {
     option (google.api.http).delete = "/api/v1/sync/{namespace}/{key}";
-  };
+  }
 }

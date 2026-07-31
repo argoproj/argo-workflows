@@ -92,7 +92,6 @@ jobs:
               - hack/api/**
               - hack/docs/**
               - hack/manifests/**
-              - .clang-format
               - go.mod
               - go.sum
             lint:
