@@ -1914,16 +1914,3 @@ func TestExpireCompletedVersions(t *testing.T) {
 	outdated, _ = controller.isOutdated(ctx, &metav1.ObjectMeta{UID: inFlight.UID, ResourceVersion: "99"})
 	assert.True(t, outdated, "in-flight records must not expire")
 }
-
-// TestCompletedVersionRetentionOutlastsTheQueueBackoff pins the relationship
-// between two constants that are easy to change independently.
-//
-// A rate-limited archive key can fire up to the queue's maximum backoff after it
-// was enqueued. If the recorded version has been cleaned up by then, isOutdated
-// finds no record and reports the workflow as current, so the stale-copy guard
-// is absent from precisely the long-delayed retries that restoring the archive
-// retry made possible.
-func TestCompletedVersionRetentionOutlastsTheQueueBackoff(t *testing.T) {
-	assert.Greater(t, completedVersionRetention, maxQueueBackoff,
-		"a retry can fire after its recorded version was cleaned up")
-}

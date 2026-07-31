@@ -1163,19 +1163,27 @@ func getWfPriority(obj any) (int32, time.Time) {
 	return int32(priority), un.GetCreationTimestamp().Time
 }
 
-// The ceiling of the exponential backoff in
-// workqueue.DefaultTypedControllerRateLimiter, which both controller queues use.
-// Named here because the retention below has to outlast it.
+// The ceiling of the per-item exponential backoff in
+// workqueue.DefaultTypedControllerRateLimiter, which the archive queue uses.
+// The workflow queue is rate limited differently.
+//
+// This is not the queue's worst case. That limiter takes the maximum of the
+// exponential and a global 10 qps token bucket, whose delay grows with the
+// number of keys waiting and has no ceiling, and a key waits again for a free
+// worker after it becomes ready.
 const maxQueueBackoff = 1000 * time.Second
 
 // How long to retain the record of a completed or deleted workflow.
 //
-// It has to exceed maxQueueBackoff. A rate-limited archive key can fire up to
-// 16m40s after it was enqueued, and if its record has been cleaned up by then
+// Sized past maxQueueBackoff. A rate-limited archive key can fire up to 16m40s
+// after it was enqueued, and if its record has been cleaned up by then
 // isOutdated finds nothing and reports the workflow as current -- so the
 // stale-copy guard would be missing from exactly the long-delayed retries that
-// restoring the archive retry makes possible. The cost is holding one small
-// entry per completed workflow for longer, bounded by the completion rate.
+// restoring the archive retry makes possible. This covers the delay a retry
+// actually takes in normal operation; it is not a bound, since the terms above
+// are unbounded and a retry has no total deadline. The cost is holding one
+// small entry per completed workflow for longer, bounded by the completion
+// rate.
 const completedVersionRetention = maxQueueBackoff + 5*time.Minute
 
 // how often, at most, to scan for expired completed workflow records
