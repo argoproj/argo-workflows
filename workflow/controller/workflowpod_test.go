@@ -17,6 +17,9 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes/fake"
+	k8stesting "k8s.io/client-go/testing"
 
 	"github.com/argoproj/argo-workflows/v4/config"
 	"github.com/argoproj/argo-workflows/v4/errors"
@@ -1001,6 +1004,81 @@ func TestPodResources(t *testing.T) {
 			assert.Equal(t, tt.expected, pods.Items[0].Spec.Resources)
 		})
 	}
+}
+
+func TestPodResourceClaims(t *testing.T) {
+	// Deliberately different names. With the same name at both levels, replacing
+	// the workflow list and merging over it by name produce the same pod, so the
+	// override case would pass either way. Here a merge would leave "shared"
+	// behind, and replacement drops it.
+	wfLevel := []apiv1.PodResourceClaim{
+		{Name: "shared", ResourceClaimName: new("workflow-shared")},
+	}
+	tmplLevel := []apiv1.PodResourceClaim{
+		{Name: "accelerator", ResourceClaimTemplateName: new("template-gpu")},
+	}
+	for name, tt := range map[string]struct {
+		tmplClaims []apiv1.PodResourceClaim
+		expected   []apiv1.PodResourceClaim
+	}{
+		"WorkflowLevel":          {nil, wfLevel},
+		"TemplateLevelOverrides": {tmplLevel, tmplLevel},
+		// An empty list cannot be told apart from an unset one once the spec has been
+		// through the API server, since the field is omitempty, so it inherits.
+		"TemplateLevelEmptyInherits": {[]apiv1.PodResourceClaim{}, wfLevel},
+	} {
+		t.Run(name, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			woc := newWoc(ctx)
+			woc.execWf.Spec.ResourceClaims = wfLevel
+			woc.execWf.Spec.Templates[0].ResourceClaims = tt.tmplClaims
+			tmplCtx, err := woc.createTemplateContext(ctx, wfv1.ResourceScopeLocal, "")
+			require.NoError(t, err)
+			_, err = woc.executeContainer(ctx, woc.execWf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.execWf.Spec.Templates[0], &wfv1.WorkflowStep{}, &executeTemplateOpts{})
+			require.NoError(t, err)
+			pods, err := listPods(ctx, woc)
+			require.NoError(t, err)
+			assert.Len(t, pods.Items, 1)
+			assert.Equal(t, tt.expected, pods.Items[0].Spec.ResourceClaims)
+		})
+	}
+}
+
+// TestPodResourceClaimsPodSpecPatch pins that podSpecPatch keeps its precedence over the
+// typed field. The patch merges into the PodSpec by claim name, so it can retarget an
+// existing claim and add a new one while leaving the rest alone. Swapping a claim to the
+// other source needs the old one set to null explicitly, as asserted below: without that
+// the merge would leave both sources set and the API server would reject the pod.
+func TestPodResourceClaimsPodSpecPatch(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	woc := newWoc(ctx)
+	woc.execWf.Spec.ResourceClaims = []apiv1.PodResourceClaim{
+		{Name: "accelerator", ResourceClaimTemplateName: new("gpu-template-a")},
+		{Name: "storage", ResourceClaimName: new("fast-disk")},
+	}
+	woc.execWf.Spec.Templates[0].PodSpecPatch = `{"resourceClaims":[{"name":"accelerator","resourceClaimTemplateName":null,"resourceClaimName":"shared-gpu"},{"name":"network","resourceClaimName":"shared-nic"}]}`
+
+	tmplCtx, err := woc.createTemplateContext(ctx, wfv1.ResourceScopeLocal, "")
+	require.NoError(t, err)
+	_, err = woc.executeContainer(ctx, woc.execWf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.execWf.Spec.Templates[0], &wfv1.WorkflowStep{}, &executeTemplateOpts{})
+	require.NoError(t, err)
+	pods, err := listPods(ctx, woc)
+	require.NoError(t, err)
+	require.Len(t, pods.Items, 1)
+
+	claims := pods.Items[0].Spec.ResourceClaims
+	require.Len(t, claims, 3)
+	byName := map[string]apiv1.PodResourceClaim{}
+	for _, c := range claims {
+		byName[c.Name] = c
+	}
+	accelerator := byName["accelerator"]
+	assert.Equal(t, new("shared-gpu"), accelerator.ResourceClaimName)
+	assert.Nil(t, accelerator.ResourceClaimTemplateName, "the patched claim must not keep both sources")
+	// A typed claim the patch does not mention survives, so the patch merges over the
+	// typed list rather than replacing it.
+	assert.Equal(t, new("fast-disk"), byName["storage"].ResourceClaimName)
+	assert.Equal(t, new("shared-nic"), byName["network"].ResourceClaimName)
 }
 
 // TestSchedulerName verifies the ability to carry forward schedulerName.
@@ -2664,4 +2742,75 @@ spec:
 		}
 	}
 	assert.True(t, foundVolume, "Pod should have ConfigMap volume")
+}
+
+// TestPodResourceClaimsDroppedWarning pins that Argo says something when the API
+// server strips the claims, which is what happens with DynamicResourceAllocation
+// disabled. The pod then runs without the device it asked for, and nothing else
+// in the workflow reports it.
+func TestPodResourceClaimsDroppedWarning(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	woc := newWoc(ctx)
+	woc.execWf.Spec.ResourceClaims = []apiv1.PodResourceClaim{
+		{Name: "accelerator", ResourceClaimTemplateName: new("gpu-claim-template")},
+	}
+	woc.controller.kubeclientset.(*fake.Clientset).PrependReactor("create", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		pod := action.(k8stesting.CreateAction).GetObject().(*apiv1.Pod).DeepCopy()
+		pod.Spec.ResourceClaims = nil // what an API server without the feature gate returns
+		return true, pod, nil
+	})
+
+	tmplCtx, err := woc.createTemplateContext(ctx, wfv1.ResourceScopeLocal, "")
+	require.NoError(t, err)
+	_, err = woc.executeContainer(ctx, woc.execWf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.execWf.Spec.Templates[0], &wfv1.WorkflowStep{}, &executeTemplateOpts{})
+	require.NoError(t, err)
+
+	c := woc.controller.eventRecorderManager.(*testEventRecorderManager).eventRecorder.Events
+	var dropped bool
+	for len(c) > 0 {
+		if strings.Contains(<-c, "ResourceClaimsDropped") {
+			dropped = true
+		}
+	}
+	assert.True(t, dropped, "expected a ResourceClaimsDropped warning")
+}
+
+// TestPodResourceClaimsParameterSubstitution pins that a claim named through a
+// parameter reaches the pod resolved, at both levels. substitutePodParams
+// rewrites the whole pod, so the claims ride along with everything else, but
+// nothing else asserted that, and a claim left holding an expression would be
+// rejected by the API server rather than allocated.
+func TestPodResourceClaimsParameterSubstitution(t *testing.T) {
+	for name, atTemplateLevel := range map[string]bool{
+		"WorkflowLevel": false,
+		"TemplateLevel": true,
+	} {
+		t.Run(name, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			woc := newWoc(ctx)
+			woc.execWf.Spec.Arguments.Parameters = []wfv1.Parameter{
+				{Name: "gpu-template", Value: wfv1.AnyStringPtr("resolved-gpu-template")},
+			}
+			require.NoError(t, woc.setGlobalParameters(woc.execWf.Spec.Arguments))
+
+			claims := []apiv1.PodResourceClaim{
+				{Name: "accelerator", ResourceClaimTemplateName: new("{{workflow.parameters.gpu-template}}")},
+			}
+			if atTemplateLevel {
+				woc.execWf.Spec.Templates[0].ResourceClaims = claims
+			} else {
+				woc.execWf.Spec.ResourceClaims = claims
+			}
+
+			tmplCtx, err := woc.createTemplateContext(ctx, wfv1.ResourceScopeLocal, "")
+			require.NoError(t, err)
+			_, err = woc.executeContainer(ctx, woc.execWf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.execWf.Spec.Templates[0], &wfv1.WorkflowStep{}, &executeTemplateOpts{})
+			require.NoError(t, err)
+			pods, err := listPods(ctx, woc)
+			require.NoError(t, err)
+			require.Len(t, pods.Items, 1)
+			require.Len(t, pods.Items[0].Spec.ResourceClaims, 1)
+			assert.Equal(t, new("resolved-gpu-template"), pods.Items[0].Spec.ResourceClaims[0].ResourceClaimTemplateName)
+		})
+	}
 }

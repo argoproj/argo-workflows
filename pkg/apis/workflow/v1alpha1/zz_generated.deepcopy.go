@@ -3460,6 +3460,13 @@ func (in *Template) DeepCopyInto(out *Template) {
 		*out = new(v1.ResourceRequirements)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.ResourceClaims != nil {
+		in, out := &in.ResourceClaims, &out.ResourceClaims
+		*out = make([]v1.PodResourceClaim, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
 	return
 }
 
@@ -4062,6 +4069,13 @@ func (in *WorkflowSpec) DeepCopyInto(out *WorkflowSpec) {
 		in, out := &in.PodResources, &out.PodResources
 		*out = new(v1.ResourceRequirements)
 		(*in).DeepCopyInto(*out)
+	}
+	if in.ResourceClaims != nil {
+		in, out := &in.ResourceClaims, &out.ResourceClaims
+		*out = make([]v1.PodResourceClaim, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
 	}
 	return
 }

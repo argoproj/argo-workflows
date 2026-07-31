@@ -3328,6 +3328,47 @@ definitions:
             when volume is mounted.
             +enum
         type: string
+    PodResourceClaim:
+        description: |-
+            It adds a name to it that uniquely identifies the ResourceClaim inside the Pod.
+            Containers that need access to the ResourceClaim reference it with this name.
+        properties:
+            name:
+                description: |-
+                    Name uniquely identifies this resource claim inside the pod.
+                    This must be a DNS_LABEL.
+                type: string
+            resourceClaimName:
+                description: |-
+                    ResourceClaimName is the name of a ResourceClaim object in the same
+                    namespace as this pod.
+
+                    Exactly one of ResourceClaimName and ResourceClaimTemplateName must
+                    be set.
+                type: string
+            resourceClaimTemplateName:
+                description: |-
+                    ResourceClaimTemplateName is the name of a ResourceClaimTemplate
+                    object in the same namespace as this pod.
+
+                    The template will be used to create a new ResourceClaim, which will
+                    be bound to this pod. When this pod is deleted, the ResourceClaim
+                    will also be deleted. The pod name and resource name, along with a
+                    generated component, will be used to form a unique name for the
+                    ResourceClaim, which will be recorded in pod.status.resourceClaimStatuses.
+
+                    This field is immutable and no changes will be made to the
+                    corresponding ResourceClaim by the control plane after creating the
+                    ResourceClaim.
+
+                    Exactly one of ResourceClaimName and ResourceClaimTemplateName must
+                    be set.
+                type: string
+        title: |-
+            PodResourceClaim references exactly one ResourceClaim, either directly
+            or by naming a ResourceClaimTemplate which is then turned into a ResourceClaim
+            for the pod.
+        type: object
     PodSELinuxChangePolicy:
         title: PodSELinuxChangePolicy defines how the container's SELinux label is applied to all volumes used by the Pod.
         type: string
@@ -4786,6 +4827,19 @@ definitions:
                 type: string
             resource:
                 $ref: '#/definitions/ResourceTemplate'
+            resourceClaims:
+                description: |-
+                    ResourceClaims defines the ResourceClaims that must be allocated and reserved before this template's pod is allowed to start.
+                    Each entry names either an existing ResourceClaim or a ResourceClaimTemplate in the workflow's namespace, and containers ask for one by name through resources.claims.
+                    Replaces the workflow-level resourceClaims as a whole rather than merging with it.
+                    Not supported for a template that creates no pod: Steps, DAG and Suspend, which orchestrate other templates, and HTTP and Plugin, which run on the shared agent pod.
+                    A template reached through a templateRef keeps its own claims, and falls back to those of the workflow calling it rather than to the spec-level claims of the WorkflowTemplate it was defined in.
+                    Requires the DynamicResourceAllocation feature gate to be enabled on the cluster.
+                    +listType=atomic
+                    +optional
+                items:
+                    $ref: '#/definitions/PodResourceClaim'
+                type: array
             retryStrategy:
                 $ref: '#/definitions/RetryStrategy'
             schedulerName:

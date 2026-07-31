@@ -606,6 +606,7 @@ var blockedUserOverrideFields = map[string]bool{
 	"Hooks":                        true,
 	"PodResources":                 true,
 	"ExecutorPlugins":              true,
+	"ResourceClaims":               true,
 }
 
 func TestValidateUserOverrides_AllowedFields(t *testing.T) {
@@ -935,6 +936,35 @@ func TestJoinWorkflowSpecWithArtifactOverride(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal("uploads/argo/12345678-1234-1234-1234-123456789012/file.zip", key)
 	assert.NotEqual("input-file/placeholder", key)
+}
+
+// TestJoinWorkflowSpec_ResourceClaimsAreReplaced verifies that a workflow's
+// resourceClaims replace the WorkflowTemplate's list rather than merging by
+// claim name. Merging would union the two entries, leaving a claim with both
+// resourceClaimName and resourceClaimTemplateName set, which the API server
+// rejects when the pod is created, halfway through the workflow. Neither spec
+// is invalid on its own, so validation never sees the combination.
+func TestJoinWorkflowSpec_ResourceClaimsAreReplaced(t *testing.T) {
+	wftSpec := &wfv1.WorkflowSpec{
+		ResourceClaims: []apiv1.PodResourceClaim{
+			{Name: "gpu", ResourceClaimTemplateName: new("template-gpu")},
+			{Name: "nic", ResourceClaimTemplateName: new("template-nic")},
+		},
+	}
+	wfSpec := &wfv1.WorkflowSpec{
+		ResourceClaims: []apiv1.PodResourceClaim{
+			{Name: "gpu", ResourceClaimName: new("shared-gpu")},
+		},
+	}
+
+	got, err := JoinWorkflowSpec(wfSpec, wftSpec, nil)
+	require.NoError(t, err)
+
+	require.Len(t, got.Spec.ResourceClaims, 1, "the workflow's list replaces the template's, so nic must not be inherited")
+	claim := got.Spec.ResourceClaims[0]
+	assert.Equal(t, "gpu", claim.Name)
+	assert.Equal(t, new("shared-gpu"), claim.ResourceClaimName)
+	assert.Nil(t, claim.ResourceClaimTemplateName, "a claim must never end up with both sources set")
 }
 
 // TestJoinWorkflowSpec_ArtifactFieldMerge verifies that a key-only artifact
