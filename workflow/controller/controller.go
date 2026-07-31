@@ -359,6 +359,9 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	}
 
 	defer wfc.wfQueue.ShutDown()
+	// The archive workers block in Get() until the queue shuts down, so
+	// cancelling their context alone does not release them.
+	defer wfc.wfArchiveQueue.ShutDown()
 
 	logger.WithFields(argo.GetVersion().Fields()).WithFields(logging.Fields{
 		"instanceID":         wfc.Config.InstanceID,
@@ -1025,19 +1028,70 @@ func (wfc *WorkflowController) processNextArchiveItem(ctx context.Context) bool 
 	logger := logging.RequireLoggerFromContext(ctx)
 	defer wfc.wfArchiveQueue.Done(key)
 
+	// Same order as processNextItem: hold the key lock, then read the current
+	// object, then decide. The queue holds only namespace/name, and a
+	// rate-limited retry can fire long after the key was added, so nothing about
+	// the object may be assumed from the key alone.
+	wfc.workflowKeyLock.Lock(key)
+	defer wfc.workflowKeyLock.Unlock(key)
+
 	obj, exists, err := wfc.wfInformer.GetIndexer().GetByKey(key)
 	if err != nil {
 		logger.WithField("key", key).WithError(err).Error(ctx, "Failed to get workflow from informer")
+		// The indexer never returns an error today, but drop the backoff rather
+		// than leave the only exit that keeps rate-limiter state behind.
+		wfc.wfArchiveQueue.Forget(key)
 		return true
 	}
 	if !exists {
+		// The workflow is gone, so no further attempt will be made: drop any
+		// backoff the rate limiter is still holding for this key.
+		wfc.wfArchiveQueue.Forget(key)
+		return true
+	}
+	un, ok := obj.(*unstructured.Unstructured)
+	if !ok {
+		logger.WithField("key", key).Error(ctx, "Workflow from the informer is not unstructured")
+		wfc.wfArchiveQueue.Forget(key)
 		return true
 	}
 
-	if err := wfc.archiveWorkflow(ctx, obj); err != nil {
+	// A stale copy still carries the labels it had when it was written, so the
+	// eligibility check below cannot tell it from a current one. Reject it the
+	// way processNextItem does (#15090): ArchiveWorkflow deletes and re-inserts
+	// by uid, so archiving an older snapshot does not merely repeat work, it
+	// replaces a newer archived record with an older one. Requeue rather than
+	// drop, so the archive still happens once the informer catches up.
+	if outdated, _ := wfc.isOutdated(ctx, un); outdated {
+		logger.WithField("key", key).Debug(ctx, "Waiting for a current copy of the workflow before archiving")
+		wfc.wfArchiveQueue.AddRateLimited(key)
+		return true
+	}
+
+	// Re-check what the informer filter matched on. `argo retry` removes both
+	// labels and puts the workflow back to Unknown, and a same-named workflow
+	// may have been recreated meanwhile; archiving either would write a running
+	// workflow to the archive and then label it Archived. The GC controller
+	// re-checks the current object for the same reason, see #12636.
+	//
+	// common.IsDone is deliberately not used: it treats a Pending
+	// archiving-status as not-done, so it is false for precisely the workflows
+	// this queue exists to archive.
+	labels := un.GetLabels()
+	if labels[common.LabelKeyCompleted] != "true" ||
+		labels[common.LabelKeyWorkflowArchivingStatus] != "Pending" {
+		logger.WithField("key", key).Info(ctx, "Workflow is no longer pending archiving, skipping")
+		wfc.wfArchiveQueue.Forget(key)
+		return true
+	}
+
+	// The caller holds the key lock, so archiveWorkflowAux is entered directly.
+	if err := wfc.archiveWorkflowAux(ctx, obj); err != nil {
 		logger.WithField("key", key).WithError(err).Warn(ctx, "failed to archive workflow, requeuing")
 		wfc.wfArchiveQueue.AddRateLimited(key)
+		return true
 	}
+	wfc.wfArchiveQueue.Forget(key)
 	return true
 }
 
@@ -1109,8 +1163,28 @@ func getWfPriority(obj any) (int32, time.Time) {
 	return int32(priority), un.GetCreationTimestamp().Time
 }
 
-// how long to retain the record of a completed or deleted workflow
-const completedVersionRetention = 10 * time.Minute
+// The ceiling of the per-item exponential backoff in
+// workqueue.DefaultTypedControllerRateLimiter, which the archive queue uses.
+// The workflow queue is rate limited differently.
+//
+// This is not the queue's worst case. That limiter takes the maximum of the
+// exponential and a global 10 qps token bucket, whose delay grows with the
+// number of keys waiting and has no ceiling, and a key waits again for a free
+// worker after it becomes ready.
+const maxQueueBackoff = 1000 * time.Second
+
+// How long to retain the record of a completed or deleted workflow.
+//
+// Sized past maxQueueBackoff. A rate-limited archive key can fire up to 16m40s
+// after it was enqueued, and if its record has been cleaned up by then
+// isOutdated finds nothing and reports the workflow as current -- so the
+// stale-copy guard would be missing from exactly the long-delayed retries that
+// restoring the archive retry makes possible. This covers the delay a retry
+// actually takes in normal operation; it is not a bound, since the terms above
+// are unbounded and a retry has no total deadline. The cost is holding one
+// small entry per completed workflow for longer, bounded by the completion
+// rate.
+const completedVersionRetention = maxQueueBackoff + 5*time.Minute
 
 // how often, at most, to scan for expired completed workflow records
 const versionCleanupPeriod = time.Minute
@@ -1245,8 +1319,17 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 	_, err = wfc.wfInformer.AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: func(obj any) bool {
 			un, ok := obj.(*unstructured.Unstructured)
-			// no need to check the `common.LabelKeyCompleted` as we already know it must be complete
-			return ok && un.GetLabels()[common.LabelKeyWorkflowArchivingStatus] == "Pending"
+			if !ok {
+				return false
+			}
+			// Require both labels rather than assuming completion from the
+			// archiving status: nothing in this handler enforces that the two
+			// were set together, so a hand-applied Pending label would otherwise
+			// queue a running workflow for archiving. The completion path sets
+			// both in one update, so this excludes nothing legitimate.
+			labels := un.GetLabels()
+			return labels[common.LabelKeyCompleted] == "true" &&
+				labels[common.LabelKeyWorkflowArchivingStatus] == "Pending"
 		},
 		Handler: cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj any) {
@@ -1284,28 +1367,6 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 		return err
 	}
 	return nil
-}
-
-func (wfc *WorkflowController) archiveWorkflow(ctx context.Context, obj any) error {
-	logger := logging.RequireLoggerFromContext(ctx)
-	key, err := cache.MetaNamespaceKeyFunc(obj)
-	if err != nil {
-		logger.Error(ctx, "failed to get key for object")
-		return nil // non-retryable
-	}
-	wfc.workflowKeyLock.Lock(key)
-	defer wfc.workflowKeyLock.Unlock(key)
-	key, err = cache.MetaNamespaceKeyFunc(obj)
-	if err != nil {
-		logger.Error(ctx, "failed to get key for object after locking")
-		return nil // non-retryable
-	}
-	err = wfc.archiveWorkflowAux(ctx, obj)
-	if err != nil {
-		logger.WithField("key", key).WithError(err).Error(ctx, "failed to archive workflow")
-		return nil // non-retryable
-	}
-	return wfc.archiveWorkflowAux(ctx, obj)
 }
 
 func (wfc *WorkflowController) archiveWorkflowAux(ctx context.Context, obj any) error {
@@ -1350,7 +1411,7 @@ func (wfc *WorkflowController) archiveWorkflowAux(ctx context.Context, obj any) 
 		if apierr.IsNotFound(err) {
 			return nil
 		}
-		return fmt.Errorf("failed to archive workflow: %w", err)
+		return fmt.Errorf("failed to mark the workflow archived: %w", err)
 	}
 	return nil
 }
