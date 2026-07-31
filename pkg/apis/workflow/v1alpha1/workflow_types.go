@@ -872,7 +872,7 @@ type Template struct {
 	// Each entry names either an existing ResourceClaim or a ResourceClaimTemplate in the workflow's namespace, and containers ask for one by name through resources.claims.
 	// Replaces the workflow-level resourceClaims as a whole rather than merging with it.
 	// Not supported for a template that creates no pod: Steps, DAG and Suspend, which orchestrate other templates, and HTTP and Plugin, which run on the shared agent pod.
-	// A template reached through a templateRef is given the claims of the workflow calling it, not those of the WorkflowTemplate it was defined in.
+	// A template reached through a templateRef keeps its own claims, and falls back to those of the workflow calling it rather than to the spec-level claims of the WorkflowTemplate it was defined in.
 	// Requires the DynamicResourceAllocation feature gate to be enabled on the cluster.
 	// +listType=atomic
 	// +optional
