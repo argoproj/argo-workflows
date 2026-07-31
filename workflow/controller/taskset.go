@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strconv"
 
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -52,9 +53,11 @@ func (woc *wfOperationCtx) getDeleteTaskAndNodePatch(nodes wfv1.Nodes) (tasksPat
 	return
 }
 
-func (woc *wfOperationCtx) markTaskSetNodesError(ctx context.Context, err error) {
+// markTaskSetNodesError marks taskset nodes as errored. If match is non-nil, only nodes for which
+// it returns true are marked (used to scope a single agent pod's failure to the nodes it serves).
+func (woc *wfOperationCtx) markTaskSetNodesError(ctx context.Context, err error, match func(wfv1.NodeStatus) bool) {
 	for _, node := range woc.wf.Status.Nodes {
-		if node.IsTaskSetNode() && !node.Fulfilled() {
+		if node.IsTaskSetNode() && !node.Fulfilled() && (match == nil || match(node)) {
 			woc.markNodeError(ctx, node.Name, err)
 		}
 	}
@@ -103,11 +106,9 @@ func (woc *wfOperationCtx) taskSetReconciliation(ctx context.Context) {
 		woc.log.WithError(err).Error(ctx, "error in workflowtaskset reconciliation")
 		return
 	}
-	if err := woc.reconcileAgentPod(ctx); err != nil {
-		woc.log.WithError(err).Error(ctx, "error in agent pod reconciliation")
-		woc.markTaskSetNodesError(ctx, fmt.Errorf(`create agent pod failed with reason:"%w"`, err))
-		return
-	}
+	// reconcileAgentPod scopes any creation failure to the nodes served by the failed pod, so no
+	// blanket markTaskSetNodesError is needed here (that would fail healthy nodes on the other pod).
+	woc.reconcileAgentPod(ctx)
 }
 
 func (woc *wfOperationCtx) nodeRequiresTaskSetReconciliation(ctx context.Context, nodeName string) bool {
@@ -150,20 +151,42 @@ func (woc *wfOperationCtx) reconcileTaskSet(ctx context.Context) error {
 				return err
 			}
 
-			node.Outputs = taskResult.Outputs.DeepCopy()
-			node.Phase = taskResult.Phase
-			node.Message = taskResult.Message
-			node.FinishedAt = metav1.Now()
+			// A node that already reached a terminal phase is final. A stale non-terminal taskset
+			// result — e.g. the agent's last Running result still sitting in the taskset after
+			// out-of-band handling (a failed agent pod) already errored the node — must not drag it
+			// back to Running.
+			if node.Phase.Completed() && !taskResult.Phase.Completed() {
+				continue
+			}
 
-			woc.wf.Status.Nodes.Set(ctx, nodeID, *node)
+			// Apply the result only when it actually changed something. Re-applying it unchanged every
+			// reconcile would re-stamp FinishedAt and set updated=true forever, hot-looping the
+			// controller. Outputs are compared too — an agent can refresh a running node's outputs
+			// while Phase and Message hold steady (e.g. the plugin path), and dropping that would
+			// leave stale outputs on the node.
+			if node.Phase != taskResult.Phase || node.Message != taskResult.Message || !reflect.DeepEqual(node.Outputs, taskResult.Outputs) {
+				node.Outputs = taskResult.Outputs.DeepCopy()
+				node.Phase = taskResult.Phase
+				node.Message = taskResult.Message
+				// Only a terminal result finishes the node, and only once — never re-stamp a node a
+				// prior reconcile (or out-of-band error handling) already finished.
+				if taskResult.Phase.Completed() && node.FinishedAt.IsZero() {
+					node.FinishedAt = metav1.Now()
+				}
+				woc.wf.Status.Nodes.Set(ctx, nodeID, *node)
+				woc.updated = true
+			}
+
+			// Save memoized outputs whenever the node is succeeded, independent of whether it changed
+			// this reconcile: the save is idempotent, and a crash between persisting the node and
+			// saving the cache must still recover on a later reconcile. (Failure here is only logged,
+			// so it does not itself block the node.)
 			if node.MemoizationStatus != nil && node.Succeeded() {
 				c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, node.MemoizationStatus.CacheName)
-				err := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs)
-				if err != nil {
+				if err := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs); err != nil {
 					woc.log.WithFields(logging.Fields{"nodeID": node.ID}).WithError(err).Error(ctx, "Failed to save node outputs to cache")
 				}
 			}
-			woc.updated = true
 		}
 	}
 	return woc.createTaskSet(ctx)

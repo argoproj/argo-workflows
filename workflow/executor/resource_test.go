@@ -4,6 +4,7 @@ import (
 	"os"
 	"path"
 	"runtime"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -23,32 +24,15 @@ import (
 // are properly passed to `kubectl` command
 func TestResourceFlags(t *testing.T) {
 	manifestPath := "../../examples/hello-world.yaml"
-	fakeClientset := fake.NewClientset()
 	fakeFlags := []string{"--fake=true"}
 
-	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
-
-	template := wfv1.Template{
-		Resource: &wfv1.ResourceTemplate{
-			Action: "fake",
-			Flags:  fakeFlags,
-		},
-	}
-
-	we := WorkflowExecutor{
-		PodName:         fakePodName,
-		Template:        template,
-		ClientSet:       fakeClientset,
-		Namespace:       fakeNamespace,
-		RuntimeExecutor: &mockRuntimeExecutor,
-	}
-	args, err := we.getKubectlArguments("fake", manifestPath, fakeFlags)
+	args, err := getKubectlArguments("fake", manifestPath, fakeFlags, "")
 	require.NoError(t, err)
 	assert.Contains(t, args, fakeFlags[0])
 
-	_, err = we.getKubectlArguments("fake", manifestPath, nil)
+	_, err = getKubectlArguments("fake", manifestPath, nil, "")
 	require.NoError(t, err)
-	_, err = we.getKubectlArguments("fake", "unknown-location", fakeFlags)
+	_, err = getKubectlArguments("fake", "unknown-location", fakeFlags, "")
 	if runtime.GOOS == "windows" {
 		require.EqualError(t, err, "open unknown-location: The system cannot find the file specified.")
 	} else {
@@ -58,7 +42,7 @@ func TestResourceFlags(t *testing.T) {
 	emptyFile, err := os.CreateTemp("/tmp", "empty-manifest")
 	require.NoError(t, err)
 	defer func() { _ = os.Remove(emptyFile.Name()) }()
-	_, err = we.getKubectlArguments("fake", emptyFile.Name(), nil)
+	_, err = getKubectlArguments("fake", emptyFile.Name(), nil, "")
 	require.EqualError(t, err, "Must provide at least one of flags or manifest.")
 }
 
@@ -66,8 +50,6 @@ func TestResourceFlags(t *testing.T) {
 // are properly passed to `kubectl patch` command
 func TestResourcePatchFlags(t *testing.T) {
 	fakeFlags := []string{"pod", "mypod"}
-	fakeClientset := fake.NewClientset()
-	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
 
 	tests := []struct {
 		name           string
@@ -111,14 +93,7 @@ func TestResourcePatchFlags(t *testing.T) {
 					MergeStrategy: tt.patchType,
 				},
 			}
-			we := WorkflowExecutor{
-				PodName:         fakePodName,
-				Template:        template,
-				ClientSet:       fakeClientset,
-				Namespace:       fakeNamespace,
-				RuntimeExecutor: &mockRuntimeExecutor,
-			}
-			args, err := we.getKubectlArguments("patch", tt.manifestPath, fakeFlags)
+			args, err := getKubectlArguments("patch", tt.manifestPath, fakeFlags, template.Resource.MergeStrategy)
 
 			require.NoError(t, err)
 			assert.Equal(t, expectedArgs, args)
@@ -245,4 +220,31 @@ func Test_runKubectl(t *testing.T) {
 	out, err := runKubectl(ctx, "kubectl", "version", "--client=true", "--output", "json")
 	require.NoError(t, err)
 	assert.Contains(t, string(out), "clientVersion")
+}
+
+// The resource agent runs kubectl from multiple task workers; runKubectl must not race on
+// process-global state (os.Args, the fatal handler).
+func Test_runKubectl_concurrent(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	outs := make([][]byte, 3)
+	errs := make([]error, 3)
+	var wg sync.WaitGroup
+	for i := range 3 {
+		wg.Go(func() {
+			outs[i], errs[i] = runKubectl(ctx, "kubectl", "version", "--client=true", "--output", "json")
+		})
+	}
+	wg.Wait()
+	for i := range 3 {
+		require.NoError(t, errs[i])
+		assert.Contains(t, string(outs[i]), "clientVersion")
+	}
+}
+
+// kubectl reports some failures through its fatal handler (which would os.Exit) rather than
+// Execute's return value; runKubectl must surface those as errors.
+func Test_runKubectl_fatal(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	_, err := runKubectl(ctx, "kubectl", "version", "--client=true", "--output", "bogus")
+	require.Error(t, err)
 }

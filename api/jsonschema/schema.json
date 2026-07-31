@@ -6660,6 +6660,10 @@
           "description": "MergeStrategy is the strategy used to merge a patch. It defaults to \"strategic\" Must be one of: strategic, merge, json",
           "type": "string"
         },
+        "mode": {
+          "description": "Mode is where this resource template executes: on a dedicated per-node pod (\"pod\", the default), or on the shared per-workflow resource agent pod (\"agent\"), which creates the resource and watches it for its success/failure conditions. See docs/resource-template.md.",
+          "type": "string"
+        },
         "setOwnerReference": {
           "description": "SetOwnerReference sets the reference to the workflow on the OwnerReference of generated resource.",
           "type": "boolean"

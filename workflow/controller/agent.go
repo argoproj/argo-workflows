@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"slices"
+	"time"
 
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -27,31 +28,71 @@ func (woc *wfOperationCtx) getAgentPodName() string {
 	return woc.wf.NodeID("agent") + "-agent"
 }
 
-func (woc *wfOperationCtx) isAgentPod(pod *apiv1.Pod) bool {
-	return pod.Name == woc.getAgentPodName()
+func (woc *wfOperationCtx) getResourceAgentPodName() string {
+	return woc.wf.NodeID("resource-agent") + "-resource-agent"
 }
 
-func (woc *wfOperationCtx) reconcileAgentPod(ctx context.Context) error {
+func (woc *wfOperationCtx) isAgentPod(pod *apiv1.Pod) bool {
+	return pod.Name == woc.getAgentPodName() || pod.Name == woc.getResourceAgentPodName()
+}
+
+func (woc *wfOperationCtx) reconcileAgentPod(ctx context.Context) {
 	woc.log.Info(ctx, "reconcileAgentPod")
 	if len(woc.taskSet) == 0 {
-		return nil
+		return
 	}
-	pod, err := woc.createAgentPod(ctx)
+	hasResourceTmpl := false
+	hasOtherTmpl := false
+	for _, tmpl := range woc.taskSet {
+		if tmpl.GetType() == wfv1.TemplateTypeResource {
+			hasResourceTmpl = true
+		} else {
+			hasOtherTmpl = true
+		}
+	}
+	// The two agent pods share one taskset. Reconcile each independently and scope any failure to
+	// the nodes it serves, so one pod's failure never fails the other pod's (healthy) nodes.
+	if hasOtherTmpl {
+		woc.reconcileOneAgentPod(ctx, false)
+	}
+	if hasResourceTmpl {
+		woc.reconcileOneAgentPod(ctx, true)
+	}
+}
+
+// reconcileOneAgentPod creates (or recovers) a single agent pod and, on a non-transient creation
+// failure, marks only the taskset nodes that pod serves as errored — resource-monitor nodes for the
+// resource agent, HTTP/plugin nodes for the normal agent — leaving the other pod's nodes untouched.
+func (woc *wfOperationCtx) reconcileOneAgentPod(ctx context.Context, resourceAgent bool) {
+	var pod *apiv1.Pod
+	var err error
+	if resourceAgent {
+		pod, err = woc.createResourceAgentPod(ctx)
+	} else {
+		pod, err = woc.createAgentPod(ctx)
+	}
 	if err != nil {
-		return err
+		woc.markTaskSetNodesError(ctx, fmt.Errorf(`create agent pod failed with reason:"%w"`, err), func(node wfv1.NodeStatus) bool {
+			return (node.Type == wfv1.NodeTypeResourceAgent) == resourceAgent
+		})
+		return
 	}
 	// Check Pod is just created
 	if pod != nil && pod.Status.Phase != "" {
 		woc.updateAgentPodStatus(ctx, pod)
 	}
-	return nil
 }
 
 func (woc *wfOperationCtx) updateAgentPodStatus(ctx context.Context, pod *apiv1.Pod) {
 	woc.log.Info(ctx, "updateAgentPodStatus")
 	newPhase, message := assessAgentPodStatus(ctx, pod)
 	if newPhase == wfv1.NodeFailed || newPhase == wfv1.NodeError {
-		woc.markTaskSetNodesError(ctx, fmt.Errorf(`agent pod failed with reason:"%s"`, message))
+		// Two agent pods can share the taskset (resource-agent + http/plugin agent). Only fail the
+		// nodes served by the pod that actually failed, not every taskset node.
+		resourceAgent := pod.Name == woc.getResourceAgentPodName()
+		woc.markTaskSetNodesError(ctx, fmt.Errorf(`agent pod failed with reason:"%s"`, message), func(node wfv1.NodeStatus) bool {
+			return (node.Type == wfv1.NodeTypeResourceAgent) == resourceAgent
+		})
 	}
 }
 
@@ -112,10 +153,23 @@ func (woc *wfOperationCtx) getCertVolumeMount(ctx context.Context, name string) 
 }
 
 func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, error) {
+	return woc.createTaskSetAgentPod(ctx, false)
+}
+
+func (woc *wfOperationCtx) createResourceAgentPod(ctx context.Context) (*apiv1.Pod, error) {
+	return woc.createTaskSetAgentPod(ctx, true)
+}
+
+func (woc *wfOperationCtx) createTaskSetAgentPod(ctx context.Context, resourceAgent bool) (*apiv1.Pod, error) {
 	if woc.controller.Config.DisableAgentPodCreation {
 		return nil, nil
 	}
 	podName := woc.getAgentPodName()
+	component := "agent"
+	if resourceAgent {
+		podName = woc.getResourceAgentPodName()
+		component = "resource-agent"
+	}
 	ctx, log := woc.log.WithField("podName", podName).InContext(ctx)
 
 	pod, err := woc.controller.PodController.GetPod(woc.wf.Namespace, podName)
@@ -131,17 +185,22 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		return nil, err
 	}
 
-	pluginSidecars, pluginVolumes, err := woc.getExecutorPlugins(ctx)
-	if err != nil {
-		return nil, err
-	}
-
+	var pluginSidecars []apiv1.Container
+	var pluginVolumes []apiv1.Volume
 	envVars := []apiv1.EnvVar{
 		{Name: common.EnvVarWorkflowName, Value: woc.wf.Name},
 		{Name: common.EnvVarWorkflowUID, Value: string(woc.wf.UID)},
 		{Name: common.EnvAgentPatchRate, Value: env.LookupEnvStringOr(common.EnvAgentPatchRate, GetRequeueTime().String())},
-		{Name: common.EnvVarPluginAddresses, Value: wfv1.MustMarshallJSON(addresses(pluginSidecars))},
-		{Name: common.EnvVarPluginNames, Value: wfv1.MustMarshallJSON(names(pluginSidecars))},
+	}
+	if !resourceAgent {
+		pluginSidecars, pluginVolumes, err = woc.getExecutorPlugins(ctx)
+		if err != nil {
+			return nil, err
+		}
+		envVars = append(envVars,
+			apiv1.EnvVar{Name: common.EnvVarPluginAddresses, Value: wfv1.MustMarshallJSON(addresses(pluginSidecars))},
+			apiv1.EnvVar{Name: common.EnvVarPluginNames, Value: wfv1.MustMarshallJSON(names(pluginSidecars))},
+		)
 	}
 
 	// If the default number of task workers is overridden, then pass it to the agent pod.
@@ -151,11 +210,41 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 			Value: taskWorkers,
 		})
 	}
+	// The resource agent's informer resync period is tunable; pass it through when overridden.
+	if resourceAgent {
+		if resync, exists := os.LookupEnv(common.EnvAgentResourceInformerResync); exists {
+			envVars = append(envVars, apiv1.EnvVar{
+				Name:  common.EnvAgentResourceInformerResync,
+				Value: resync,
+			})
+		}
+	}
 
 	serviceAccountName := woc.execWf.Spec.ServiceAccountName
+	if resourceAgent {
+		// The resource agent's informers need list+watch on whole GVRs — broader than
+		// workflow pods should carry — so it does not run under the workflow service
+		// account itself but under a dedicated `<workflow-sa>-resource-agent` account
+		// (the same derived-name scheme executor plugins use with their
+		// `<plugin>-executor-plugin` accounts). Fails if the account is missing.
+		// Template-level serviceAccountName/executor.serviceAccountName cannot be
+		// honored on this shared pod; validation and executeResourceAgent reject them.
+		if serviceAccountName == "" {
+			serviceAccountName = "default"
+		}
+		serviceAccountName += "-resource-agent"
+	}
 	tokenVolume, tokenVolumeMount, err := woc.getServiceAccountTokenVolume(ctx, serviceAccountName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get token volumes: %w", err)
+	}
+
+	var artifactPluginMounts []apiv1.VolumeMount
+	if resourceAgent {
+		pluginSidecars, pluginVolumes, artifactPluginMounts, err = woc.getArtifactPluginSidecars(ctx, *tokenVolumeMount)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	podVolumes := slices.Concat(
@@ -188,14 +277,40 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 		},
 		VolumeMounts: podVolumeMounts,
 	}
-	// the `init` container populates the shared empty-dir volume with tokens
-	agentInitCtr := agentCtrTemplate.DeepCopy()
-	agentInitCtr.Name = common.InitContainerName
-	agentInitCtr.Args = append([]string{"agent", "init"}, woc.getExecutorLogOpts(ctx)...)
 	// the `main` container runs the actual work
 	agentMainCtr := agentCtrTemplate.DeepCopy()
 	agentMainCtr.Name = common.MainContainerName
 	agentMainCtr.Args = append([]string{"agent", "main"}, woc.getExecutorLogOpts(ctx)...)
+	var initContainers []apiv1.Container
+	if resourceAgent {
+		agentMainCtr.Args = append([]string{"resource-agent"}, woc.getExecutorLogOpts(ctx)...)
+		// resource-agent writes manifests to temp files, but MinimalCtrSC sets a
+		// read-only root filesystem; give it a writable /tmp like regular pods have.
+		podVolumes = append(podVolumes, volumeTmpDir)
+		agentMainCtr.VolumeMounts = append(agentMainCtr.VolumeMounts, volumeMountTmpDir)
+		// One socket mount per artifact-plugin sidecar: main dials the plugin's unix
+		// socket when a manifestFrom artifact is plugin-backed.
+		agentMainCtr.VolumeMounts = append(agentMainCtr.VolumeMounts, artifactPluginMounts...)
+		if len(pluginSidecars) > 0 {
+			// The plugin sidecars run the plugin images and exec argoexec from the
+			// shared var-run-argo volume; the standard init container is what copies
+			// it there — the same mechanism the artifact GC pod uses. The env vars are
+			// required for `argoexec init` to run.
+			initCtr := woc.standardInitContainer(ctx, &wfv1.Template{Name: "artifact-driver"})
+			initCtr.VolumeMounts = []apiv1.VolumeMount{volumeMountVarArgo}
+			initCtr.Env = append(initCtr.Env,
+				apiv1.EnvVar{Name: common.EnvVarTemplate, Value: "{}"},
+				apiv1.EnvVar{Name: common.EnvVarDeadline, Value: time.Now().Format(time.RFC3339)},
+			)
+			initContainers = append(initContainers, *initCtr)
+		}
+	} else {
+		// the `init` container populates the shared empty-dir volume with plugin tokens
+		agentInitCtr := agentCtrTemplate.DeepCopy()
+		agentInitCtr.Name = common.InitContainerName
+		agentInitCtr.Args = append([]string{"agent", "init"}, woc.getExecutorLogOpts(ctx)...)
+		initContainers = append(initContainers, *agentInitCtr)
+	}
 
 	pod = &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -204,7 +319,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 			Labels: map[string]string{
 				common.LabelKeyWorkflow:  woc.wf.Name, // Allows filtering by pods related to specific workflow
 				common.LabelKeyCompleted: "false",     // Allows filtering by incomplete workflow pods
-				common.LabelKeyComponent: "agent",     // Allows you to identify agent pods and use a different NetworkPolicy on them
+				common.LabelKeyComponent: component,   // Allows you to identify agent pods and use a different NetworkPolicy on them
 			},
 			Annotations: map[string]string{
 				common.AnnotationKeyDefaultContainer: common.MainContainerName,
@@ -220,9 +335,7 @@ func (woc *wfOperationCtx) createAgentPod(ctx context.Context) (*apiv1.Pod, erro
 			ServiceAccountName:           serviceAccountName,
 			AutomountServiceAccountToken: new(false),
 			Volumes:                      podVolumes,
-			InitContainers: []apiv1.Container{
-				*agentInitCtr,
-			},
+			InitContainers:               initContainers,
 			Containers: append(
 				pluginSidecars,
 				*agentMainCtr,
@@ -335,6 +448,44 @@ func (woc *wfOperationCtx) getExecutorPlugins(ctx context.Context) ([]apiv1.Cont
 		}
 	}
 	return sidecars, volumes, nil
+}
+
+// getArtifactPluginSidecars builds one artifact-plugin sidecar per artifact driver
+// registered in the controller config, plus the socket volumes they serve on and the
+// socket mounts the agent's main container needs to dial them. The resource agent
+// serves every resource template in the workflow's taskset — including templates that
+// reach the taskset only after this pod exists — so all registered drivers are
+// installed up front rather than only the ones referenced so far.
+func (woc *wfOperationCtx) getArtifactPluginSidecars(ctx context.Context, tokenVolumeMount apiv1.VolumeMount) ([]apiv1.Container, []apiv1.Volume, []apiv1.VolumeMount, error) {
+	drivers := woc.controller.Config.ArtifactDrivers
+	if len(drivers) == 0 {
+		return nil, nil, nil, nil
+	}
+	// Agent pods have no workload template; this stand-in only names the containers'
+	// origin, matching the artifact GC pod's convention.
+	tmpl := &wfv1.Template{Name: "artifact-driver"}
+	sidecars := make([]apiv1.Container, 0, len(drivers))
+	volumes := make([]apiv1.Volume, 0, len(drivers))
+	mainMounts := make([]apiv1.VolumeMount, 0, len(drivers))
+	for _, driver := range drivers {
+		ctr, err := woc.artifactSidecarContainer(ctx, tmpl, driver, legacyArgoexecBinaryPath)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		// artifactSidecarContainer leaves only the plugin's socket mount. The sidecar
+		// additionally needs: var-run-argo (argoexec, copied there by the init
+		// container, plus the ctr/<name> signal directory); the shared /tmp the agent
+		// downloads manifestFrom artifacts into, because the plugin process writes the
+		// artifact at the path main sends over the socket; and the service-account
+		// token, which workload pods hand drivers via automount but the agent pod
+		// (automount disabled) must mount explicitly — drivers use it to resolve the
+		// secret refs in their configuration.
+		ctr.VolumeMounts = append(ctr.VolumeMounts, volumeMountVarArgo, volumeMountTmpDir, tokenVolumeMount)
+		sidecars = append(sidecars, *ctr)
+		volumes = append(volumes, driver.Name.Volume())
+		mainMounts = append(mainMounts, driver.Name.VolumeMount())
+	}
+	return sidecars, volumes, mainMounts, nil
 }
 
 func (woc *wfOperationCtx) getExecutorPluginComponents(ctx context.Context, plug spec.Plugin) (*apiv1.Container, *apiv1.Volume, error) {

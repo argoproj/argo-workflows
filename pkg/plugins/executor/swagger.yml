@@ -3877,6 +3877,8 @@ definitions:
                     Must be one of: strategic, merge, json
                     +kubebuilder:validation:Enum=strategic;merge;json
                 type: string
+            mode:
+                $ref: '#/definitions/ResourceTemplateMode'
             setOwnerReference:
                 description: SetOwnerReference sets the reference to the workflow on the OwnerReference of generated resource.
                 type: boolean
@@ -3886,6 +3888,11 @@ definitions:
                     of the k8s resource in which it is acceptable to proceed to the following step
                 type: string
         type: object
+    ResourceTemplateMode:
+        description: |-
+            ResourceTemplateMode is where a resource template executes: on a dedicated per-node pod
+            (the default) or on the shared per-workflow resource agent pod.
+        type: string
     RetryAffinity:
         properties:
             nodeAntiAffinity:

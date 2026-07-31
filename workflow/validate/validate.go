@@ -513,7 +513,7 @@ func (tctx *templateValidationCtx) validateTemplate(ctx context.Context, tmpl *w
 	}
 
 	localParams := make(map[string]string)
-	if tmpl.IsPodType() {
+	if tmpl.ProvidesPodNameVar() {
 		localParams[varkeys.PodName.Template()] = placeholderGenerator.NextPlaceholder()
 		scope[varkeys.PodName.Template()] = placeholderGenerator.NextPlaceholder()
 	}
@@ -913,6 +913,25 @@ func (tctx *templateValidationCtx) validateLeaf(scope map[string]any, tmplCtx *t
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.resource.action must be one of: get, create, apply, delete, replace, patch", tmpl.Name)
 			}
 		}
+		if !placeholderGenerator.IsPlaceholder(string(tmpl.Resource.Mode)) {
+			switch tmpl.Resource.Mode {
+			case "", wfv1.ResourceTemplateModePod, wfv1.ResourceTemplateModeAgent:
+				// OK
+			default:
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s.resource.mode must be one of: pod, agent", tmpl.Name)
+			}
+		}
+		// Agent-based resource templates run on the shared per-workflow agent pod, which uses
+		// the dedicated `<workflow-sa>-resource-agent` service account; a template-level
+		// service account cannot be honored there, so reject it rather than silently ignore it.
+		if tmpl.Resource.IsAgent() {
+			if tmpl.ServiceAccountName != "" {
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s.serviceAccountName cannot be used with resource.mode: agent; the agent pod runs under the workflow service account name suffixed with -resource-agent", tmpl.Name)
+			}
+			if tmpl.Executor != nil && tmpl.Executor.ServiceAccountName != "" {
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s.executor.serviceAccountName cannot be used with resource.mode: agent; the agent pod runs under the workflow service account name suffixed with -resource-agent", tmpl.Name)
+			}
+		}
 		if tmpl.Resource.Action != "delete" && tmpl.Resource.Action != "get" {
 			if tmpl.Resource.Manifest == "" && tmpl.Resource.ManifestFrom == nil {
 				return errors.Errorf(errors.CodeBadRequest, "either templates.%s.resource.manifest or templates.%s.resource.manifestFrom must be specified", tmpl.Name, tmpl.Name)
@@ -943,6 +962,12 @@ func (tctx *templateValidationCtx) validateLeaf(scope map[string]any, tmplCtx *t
 				err := yaml.Unmarshal([]byte(replaced), &obj)
 				if err != nil {
 					return errors.Errorf(errors.CodeBadRequest, "templates.%s.resource.manifest must be a valid yaml", tmpl.Name)
+				}
+				// Agent-based resource templates support only a single manifest document; catch a static
+				// multi-document manifest at submit time rather than failing mid-run. (A manifestFrom
+				// manifest is unknown here, so that case stays a runtime check in the agent.)
+				if tmpl.Resource.IsAgent() && common.ManifestDocCount([]byte(tmpl.Resource.Manifest)) > 1 {
+					return errors.Errorf(errors.CodeBadRequest, "templates.%s.resource: agent-based resource templates support only a single manifest document", tmpl.Name)
 				}
 			}
 		}

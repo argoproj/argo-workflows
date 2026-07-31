@@ -13412,6 +13412,8 @@ spec:
                         - merge
                         - json
                         type: string
+                      mode:
+                        type: string
                       setOwnerReference:
                         type: boolean
                       successCondition:
@@ -31988,6 +31990,13 @@ spec:
                           - strategic
                           - merge
                           - json
+                          type: string
+                        mode:
+                          description: |-
+                            Mode is where this resource template executes: on a dedicated per-node pod ("pod",
+                            the default), or on the shared per-workflow resource agent pod ("agent"), which
+                            creates the resource and watches it for its success/failure conditions. See
+                            docs/resource-template.md.
                           type: string
                         setOwnerReference:
                           description: SetOwnerReference sets the reference to the
@@ -56343,6 +56352,8 @@ spec:
                             - merge
                             - json
                             type: string
+                          mode:
+                            type: string
                           setOwnerReference:
                             type: boolean
                           successCondition:
@@ -75278,6 +75289,13 @@ spec:
                               - strategic
                               - merge
                               - json
+                              type: string
+                            mode:
+                              description: |-
+                                Mode is where this resource template executes: on a dedicated per-node pod ("pod",
+                                the default), or on the shared per-workflow resource agent pod ("agent"), which
+                                creates the resource and watches it for its success/failure conditions. See
+                                docs/resource-template.md.
                               type: string
                             setOwnerReference:
                               description: SetOwnerReference sets the reference to
@@ -102191,6 +102209,8 @@ spec:
                         - merge
                         - json
                         type: string
+                      mode:
+                        type: string
                       setOwnerReference:
                         type: boolean
                       successCondition:
@@ -120767,6 +120787,13 @@ spec:
                           - strategic
                           - merge
                           - json
+                          type: string
+                        mode:
+                          description: |-
+                            Mode is where this resource template executes: on a dedicated per-node pod ("pod",
+                            the default), or on the shared per-workflow resource agent pod ("agent"), which
+                            creates the resource and watches it for its success/failure conditions. See
+                            docs/resource-template.md.
                           type: string
                         setOwnerReference:
                           description: SetOwnerReference sets the reference to the
@@ -143513,6 +143540,8 @@ spec:
                           - merge
                           - json
                           type: string
+                        mode:
+                          type: string
                         setOwnerReference:
                           type: boolean
                         successCondition:
@@ -162031,6 +162060,8 @@ spec:
                         - strategic
                         - merge
                         - json
+                        type: string
+                      mode:
                         type: string
                       setOwnerReference:
                         type: boolean
@@ -180609,6 +180640,13 @@ spec:
                           - merge
                           - json
                           type: string
+                        mode:
+                          description: |-
+                            Mode is where this resource template executes: on a dedicated per-node pod ("pod",
+                            the default), or on the shared per-workflow resource agent pod ("agent"), which
+                            creates the resource and watches it for its success/failure conditions. See
+                            docs/resource-template.md.
+                          type: string
                         setOwnerReference:
                           description: SetOwnerReference sets the reference to the
                             workflow on the OwnerReference of generated resource.
@@ -191388,6 +191426,15 @@ metadata:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
+  annotations:
+    workflows.argoproj.io/description: |
+      The resource agent pod runs under `<workflow service account>-resource-agent`,
+      so workflows using the default service account need this to exist.
+  name: default-resource-agent
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
   name: github.com
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -191490,6 +191537,66 @@ rules:
   - create
   - get
   - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  annotations:
+    workflows.argoproj.io/description: |
+      This is the minimum recommended permissions needed if you want to use agent-based
+      resource templates.
+
+      In addition to these rules, you must grant, on every resource kind your resource
+      templates touch, the verbs matching your actions plus the ones the agent always needs:
+      `create`, `get`, `list` and `watch` at minimum (create the resource, read it back for
+      restart-safety, and watch/poll it for its success/failure conditions), plus `update`
+      for apply/replace, `patch` for patch, and `delete` for delete.
+  name: resource-agent
+rules:
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflowtasksets
+  verbs:
+  - list
+  - watch
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflowtasksets/status
+  verbs:
+  - patch
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  - pods
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflows
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -191919,6 +192026,18 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
+  name: resource-agent-default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: resource-agent
+subjects:
+- kind: ServiceAccount
+  name: default-resource-agent
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
   name: workflow-manager-default
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -192193,6 +192312,14 @@ stringData:
   gitlab.com: |-
     type: gitlab
     secret: "shh!"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  annotations:
+    kubernetes.io/service-account.name: default-resource-agent
+  name: default-resource-agent.service-account-token
+type: kubernetes.io/service-account-token
 ---
 apiVersion: v1
 kind: Secret

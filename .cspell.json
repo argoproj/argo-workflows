@@ -87,6 +87,8 @@
     "Triaging",
     "wftmpl",
     "workflowkey",
+    "workflowtasksets",
+    "sparkapplications",
     "workflowtemplate",
     "workflowtemplates",
     "zstd"

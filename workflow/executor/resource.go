@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/itchyny/gojq"
@@ -36,30 +37,17 @@ import (
 
 // ExecResource will run kubectl action against a manifest
 func (we *WorkflowExecutor) ExecResource(ctx context.Context, action string, manifestPath string, flags []string) (string, string, string, error) {
-	args, err := we.getKubectlArguments(action, manifestPath, flags)
+	var mergeStrategy string
+	if we.Template.Resource != nil {
+		mergeStrategy = we.Template.Resource.MergeStrategy
+	}
+	args, err := getKubectlArguments(action, manifestPath, flags, mergeStrategy)
 	if err != nil {
 		return "", "", "", err
 	}
 
-	var out []byte
-	err = retry.OnError(retry.DefaultBackoff, func(err error) bool {
-		return argoerr.IsTransientErr(ctx, err)
-	}, func() error {
-		out, err = runKubectl(ctx, args...)
-		if err != nil {
-			return err
-		}
-		return nil
-	})
+	out, err := runKubectlWithRetry(ctx, args...)
 	if err != nil {
-		var exErr *exec.ExitError
-		if errors.As(err, &exErr) {
-			errMsg := strings.TrimSpace(string(exErr.Stderr))
-			err = argoerrors.Wrap(err, argoerrors.CodeBadRequest, errMsg)
-		} else {
-			err = argoerrors.Wrap(err, argoerrors.CodeBadRequest, err.Error())
-		}
-		err = argoerrors.Wrap(err, argoerrors.CodeBadRequest, "no more retries "+err.Error())
 		return "", "", "", err
 	}
 	if action == "delete" {
@@ -84,6 +72,29 @@ func (we *WorkflowExecutor) ExecResource(ctx context.Context, action string, man
 	logger := logging.RequireLoggerFromContext(ctx)
 	logger.WithFields(logging.Fields{"namespace": obj.GetNamespace(), "resource": resourceFullName, "selfLink": selfLink}).Info(ctx, "Resource")
 	return obj.GetNamespace(), resourceFullName, selfLink, nil
+}
+
+// runKubectlWithRetry runs kubectl with transient-error retry and normalizes a failure into an
+// argoerror carrying kubectl's stderr. Shared by the per-pod executor and the resource agent.
+func runKubectlWithRetry(ctx context.Context, args ...string) ([]byte, error) {
+	var out []byte
+	err := retry.OnError(retry.DefaultBackoff, func(err error) bool {
+		return argoerr.IsTransientErr(ctx, err)
+	}, func() error {
+		var runErr error
+		out, runErr = runKubectl(ctx, args...)
+		return runErr
+	})
+	if err != nil {
+		var exErr *exec.ExitError
+		if errors.As(err, &exErr) {
+			err = argoerrors.Wrap(err, argoerrors.CodeBadRequest, strings.TrimSpace(string(exErr.Stderr)))
+		} else {
+			err = argoerrors.Wrap(err, argoerrors.CodeBadRequest, err.Error())
+		}
+		err = argoerrors.Wrap(err, argoerrors.CodeBadRequest, "no more retries "+err.Error())
+	}
+	return out, err
 }
 
 func inferObjectSelfLink(obj unstructured.Unstructured) string {
@@ -112,7 +123,7 @@ func inferObjectSelfLink(obj unstructured.Unstructured) string {
 	return selfLink
 }
 
-func (we *WorkflowExecutor) getKubectlArguments(action string, manifestPath string, flags []string) ([]string, error) {
+func getKubectlArguments(action string, manifestPath string, flags []string, mergeStrategy string) ([]string, error) {
 	buff, err := os.ReadFile(filepath.Clean(manifestPath))
 	if err != nil {
 		return []string{}, argoerrors.New(argoerrors.CodeBadRequest, err.Error())
@@ -134,9 +145,8 @@ func (we *WorkflowExecutor) getKubectlArguments(action string, manifestPath stri
 
 	appendFileFlag := true
 	if action == "patch" {
-		mergeStrategy := "strategic"
-		if we.Template.Resource.MergeStrategy != "" {
-			mergeStrategy = we.Template.Resource.MergeStrategy
+		if mergeStrategy == "" {
+			mergeStrategy = "strategic"
 		}
 		args = append(args, "--type")
 		args = append(args, mergeStrategy)
@@ -201,43 +211,33 @@ func (g gjsonLabels) Lookup(label string) (string, bool) {
 // WaitResource waits for a specific resource to satisfy either the success or failure condition
 func (we *WorkflowExecutor) WaitResource(ctx context.Context, resourceNamespace, resourceName, selfLink string) error {
 	logger := logging.RequireLoggerFromContext(ctx)
+	// Only skip the wait when both conditions are genuinely absent. A non-empty condition — even a
+	// whitespace-only one produced by a parameter substitution — must still poll at least once, so a
+	// resource deleted mid-check surfaces as NotFound instead of being reported a spurious success.
 	if we.Template.Resource.SuccessCondition == "" && we.Template.Resource.FailureCondition == "" {
 		return nil
 	}
-	var successReqs labels.Requirements
-	if we.Template.Resource.SuccessCondition != "" {
-		successSelector, err := labels.Parse(we.Template.Resource.SuccessCondition)
-		if err != nil {
-			return argoerrors.Errorf(argoerrors.CodeBadRequest, "success condition '%s' failed to parse: %v", we.Template.Resource.SuccessCondition, err)
-		}
-		logger.WithField("conditions", successSelector).Info(ctx, "Waiting for conditions")
-		successReqs, _ = successSelector.Requirements()
+	rc, err := parseConditions(we.Template.Resource.SuccessCondition, we.Template.Resource.FailureCondition)
+	if err != nil {
+		return err
 	}
-
-	var failReqs labels.Requirements
-	if we.Template.Resource.FailureCondition != "" {
-		failSelector, err := labels.Parse(we.Template.Resource.FailureCondition)
-		if err != nil {
-			return argoerrors.Errorf(argoerrors.CodeBadRequest, "fail condition '%s' failed to parse: %v", we.Template.Resource.FailureCondition, err)
-		}
-		logger.WithField("conditions", failSelector).Info(ctx, "Failing for conditions")
-		failReqs, _ = failSelector.Requirements()
-	}
-	err := wait.PollUntilContextCancel(ctx, envutil.LookupEnvDurationOr(ctx, "RESOURCE_STATE_CHECK_INTERVAL", time.Second*5),
+	successReqs, failReqs := rc.successReqs, rc.failReqs
+	logger.WithFields(logging.Fields{"success": successReqs, "failure": failReqs}).Info(ctx, "Waiting for conditions")
+	err = wait.PollUntilContextCancel(ctx, envutil.LookupEnvDurationOr(ctx, "RESOURCE_STATE_CHECK_INTERVAL", time.Second*5),
 		true,
 		func(ctx context.Context) (bool, error) {
-			isErrRetryable, err := we.checkResourceState(ctx, selfLink, successReqs, failReqs)
-			if err == nil {
+			isErrRetryable, resourceErr := we.checkResourceState(ctx, selfLink, successReqs, failReqs)
+			if resourceErr == nil {
 				logger.WithFields(logging.Fields{"name": resourceName, "namespace": resourceNamespace}).Info(ctx, "Returning from successful wait for resource")
 				return true, nil
 			}
-			if isErrRetryable || argoerr.IsTransientErr(ctx, err) {
-				logger.WithFields(logging.Fields{"name": resourceName, "namespace": resourceNamespace, "error": err}).Info(ctx, "Waiting for resource resulted in retryable error")
+			if isErrRetryable || argoerr.IsTransientErr(ctx, resourceErr) {
+				logger.WithFields(logging.Fields{"name": resourceName, "namespace": resourceNamespace, "error": resourceErr}).Info(ctx, "Waiting for resource resulted in retryable error")
 				return false, nil
 			}
 
-			logger.WithField("name", resourceName).WithField("namespace", resourceNamespace).WithError(err).Warn(ctx, "Waiting for resource resulted in non-retryable error")
-			return false, err
+			logger.WithField("name", resourceName).WithField("namespace", resourceNamespace).WithError(resourceErr).Warn(ctx, "Waiting for resource resulted in non-retryable error")
+			return false, resourceErr
 		})
 	if err != nil {
 		if wait.Interrupted(err) {
@@ -390,22 +390,43 @@ func jqFilter(ctx context.Context, input []byte, filter string) (string, error) 
 	return strings.TrimSpace(buf.String()), nil
 }
 
-func runKubectl(ctx context.Context, args ...string) ([]byte, error) {
+// kubectlFatal carries a kubectl fatal error (paths that would otherwise os.Exit) out of Execute
+// as a panic; runKubectl recovers it back into an error. BehaviorOnFatal installs a process-global
+// handler, so it is set once to this stateless one rather than per call.
+type kubectlFatal struct {
+	msg  string
+	code int
+}
+
+var installKubectlFatalHandler = sync.OnceFunc(func() {
+	kubectlutil.BehaviorOnFatal(func(msg string, code int) {
+		panic(kubectlFatal{msg: msg, code: code})
+	})
+})
+
+// kubectlMutex serializes in-process kubectl: NewKubectlCommand binds flags to kubectl
+// package-level variables (e.g. profiling.go), so concurrent construction/parsing races even
+// with per-call args and IO streams. Callers such as the resource agent's task workers may call
+// runKubectl concurrently; the lock lives here so the invariant cannot drift to call sites.
+var kubectlMutex sync.Mutex
+
+func runKubectl(ctx context.Context, args ...string) (out []byte, err error) {
 	logging.RequireLoggerFromContext(ctx).Info(ctx, strings.Join(args, " "))
-	osArgs := append([]string{}, os.Args...)
-	os.Args = args
+	installKubectlFatalHandler()
+	kubectlMutex.Lock()
+	defer kubectlMutex.Unlock()
 	defer func() {
-		os.Args = osArgs
+		if r := recover(); r != nil {
+			f, ok := r.(kubectlFatal)
+			if !ok {
+				panic(r)
+			}
+			out, err = nil, argoerrors.New(fmt.Sprint(f.code), f.msg)
+		}
 	}()
 
-	var fatalErr error
-	// catch `os.Exit(1)` from kubectl
-	kubectlutil.BehaviorOnFatal(func(msg string, code int) {
-		fatalErr = argoerrors.New(fmt.Sprint(code), msg)
-	})
-
 	var buf bytes.Buffer
-	if err := kubectlcmd.NewKubectlCommand(kubectlcmd.KubectlOptions{
+	cmd := kubectlcmd.NewKubectlCommand(kubectlcmd.KubectlOptions{
 		Arguments: args,
 		// TODO(vadasambar): use `DefaultConfigFlags` variable from upstream
 		// as value for `ConfigFlags` once https://github.com/kubernetes/kubernetes/pull/120024 is merged
@@ -414,11 +435,11 @@ func runKubectl(ctx context.Context, args ...string) ([]byte, error) {
 			WithDiscoveryBurst(300).
 			WithDiscoveryQPS(50.0),
 		IOStreams: genericclioptions.IOStreams{Out: &buf, ErrOut: os.Stderr},
-	}).Execute(); err != nil {
+	})
+	// ExecuteContext parses os.Args unless told otherwise (kubectl's own tests set args the same way).
+	cmd.SetArgs(args[1:])
+	if err := cmd.ExecuteContext(ctx); err != nil {
 		return nil, err
-	}
-	if fatalErr != nil {
-		return nil, fatalErr
 	}
 	return buf.Bytes(), nil
 }
