@@ -588,6 +588,12 @@ func (woc *wfOperationCtx) processArtifactGCCompletion(ctx context.Context) erro
 	forceFinalizerRemoval := woc.execWf.Spec.ArtifactGC != nil && woc.execWf.Spec.ArtifactGC.ForceFinalizerRemoval
 	if forceFinalizerRemoval {
 		removeFinalizer = woc.wf.Status.ArtifactGCStatus.AllArtifactGCPodsRecouped()
+		// If PodsRecouped is nil (no GC pods were ever created, e.g. due to node status offloading
+		// causing findArtifactsToGC to return empty), but all strategies have been processed,
+		// we should still remove the finalizer to prevent it from being stuck forever.
+		if !removeFinalizer && woc.wf.Status.ArtifactGCStatus.PodsRecouped == nil && woc.allStrategiesProcessed() {
+			removeFinalizer = true
+		}
 	} else {
 		// check if all artifacts have been deleted and if so remove Finalizer
 		removeFinalizer = woc.allArtifactsDeleted()
@@ -613,6 +619,25 @@ func (woc *wfOperationCtx) allArtifactsDeleted() bool {
 		}
 	}
 	return true
+}
+
+// allStrategiesProcessed returns true if all applicable artifact GC strategies have been processed.
+func (woc *wfOperationCtx) allStrategiesProcessed() bool {
+	strategies := woc.artifactGCStrategiesReady()
+	for strategy := range strategies {
+		if !woc.wf.Status.ArtifactGCStatus.IsArtifactGCStrategyProcessed(strategy) {
+			return false
+		}
+	}
+	if len(strategies) > 0 {
+		return true
+	}
+	// If no strategies are currently ready, check if any were ever processed.
+	// This handles the case where all strategies were already processed,
+	// e.g. when node status offloading caused findArtifactsToGC to return empty,
+	// and the strategies were marked processed without creating any GC pods.
+	return woc.wf.Status.ArtifactGCStatus.IsArtifactGCStrategyProcessed(wfv1.ArtifactGCOnWorkflowCompletion) ||
+		woc.wf.Status.ArtifactGCStatus.IsArtifactGCStrategyProcessed(wfv1.ArtifactGCOnWorkflowDeletion)
 }
 
 func (woc *wfOperationCtx) findArtifactsToGC(strategy wfv1.ArtifactGCStrategy) wfv1.ArtifactSearchResults {
