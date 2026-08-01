@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -334,6 +335,82 @@ status:
       type: Pod
   phase: Succeeded
   progress: 2/2
+  resourcesDuration:
+    cpu: 7
+    memory: 4
+  startedAt: "2022-08-01T22:29:58Z"
+
+`
+
+// artgcWorkflowDeletionOnly is a workflow whose artifacts all use OnWorkflowDeletion strategy.
+// Used to verify the finalizer is not removed during completion reconciliation when deletion
+// has not occurred yet.
+var artgcWorkflowDeletionOnly = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  annotations:
+    workflows.argoproj.io/pod-name-format: v2
+  creationTimestamp: "2022-08-01T22:29:58Z"
+  finalizers:
+  - workflows.argoproj.io/artifact-gc
+  generateName: deletion-only-
+  generation: 12
+  labels:
+    workflows.argoproj.io/completed: "true"
+    workflows.argoproj.io/phase: Succeeded
+  name: deletion-only-8tcvt
+  namespace: argo
+  resourceVersion: "7738582"
+  uid: 9fe40595-8612-4312-ba2c-d64bad1fb3ee
+spec:
+  activeDeadlineSeconds: 300
+  arguments: {}
+  artifactGC:
+    forceFinalizerRemoval: true
+    serviceAccountName: default
+  entrypoint: entrypoint
+  templates:
+  - inputs: {}
+    metadata: {}
+    name: entrypoint
+    outputs: {}
+    steps:
+    - - arguments: {}
+        name: call-first
+        template: first
+  - container:
+      args:
+      - |
+        echo "hello world" > /tmp/message
+      command:
+      - sh
+      - -c
+      image: argoproj/argosay:v2
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: first
+    outputs:
+      artifacts:
+      - artifactGC:
+          strategy: OnWorkflowDeletion
+        name: on-deletion
+        path: /tmp/message
+        s3:
+          accessKeySecret:
+            key: accesskey
+            name: my-minio-cred
+          bucket: my-bucket
+          endpoint: minio:9000
+          insecure: true
+          key: on-deletion
+          secretKeySecret:
+            key: secretkey
+            name: my-minio-cred
+status:
+  phase: Succeeded
+  progress: 1/1
   resourcesDuration:
     cpu: 7
     memory: 4
@@ -913,4 +990,128 @@ func TestArtifactGCPodWithPlugins(t *testing.T) {
 	// Verify main container has artifact delete command
 	assert.Contains(t, mainContainer.Args, "artifact")
 	assert.Contains(t, mainContainer.Args, "delete")
+}
+
+func TestProcessArtifactGCCompletion(t *testing.T) {
+	tests := []struct {
+		name                   string
+		forceFinalizer         bool
+		strategiesProcessed    map[wfv1.ArtifactGCStrategy]bool
+		podsRecouped           map[string]bool
+		setDeletionTimestamp   bool
+		clearOutputArtifacts   bool
+		expectFinalizerRemoved bool
+	}{
+		{
+			name:                   "no strategies processed - should not remove finalizer",
+			forceFinalizer:         true,
+			expectFinalizerRemoved: false,
+		},
+		{
+			name:           "all pods recouped - should remove finalizer",
+			forceFinalizer: true,
+			strategiesProcessed: map[wfv1.ArtifactGCStrategy]bool{
+				wfv1.ArtifactGCOnWorkflowCompletion: true,
+			},
+			podsRecouped: map[string]bool{
+				"gc-pod-1": true,
+			},
+			expectFinalizerRemoved: true,
+		},
+		{
+			name:           "no output artifacts, strategy processed - should remove finalizer",
+			forceFinalizer: true,
+			strategiesProcessed: map[wfv1.ArtifactGCStrategy]bool{
+				wfv1.ArtifactGCOnWorkflowCompletion: true,
+			},
+			clearOutputArtifacts:   true,
+			expectFinalizerRemoved: true,
+		},
+		{
+			name:           "no GC pods found, all strategies processed - should remove finalizer",
+			forceFinalizer: true,
+			strategiesProcessed: map[wfv1.ArtifactGCStrategy]bool{
+				wfv1.ArtifactGCOnWorkflowCompletion: true,
+				wfv1.ArtifactGCOnWorkflowDeletion:   true,
+			},
+			setDeletionTimestamp:   true,
+			expectFinalizerRemoved: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			wf := wfv1.MustUnmarshalWorkflow(artgcWorkflow)
+			if tt.forceFinalizer {
+				wf.Spec.ArtifactGC.ForceFinalizerRemoval = true
+			}
+			wf.Labels[common.LabelKeyCompleted] = "true"
+
+			ctx := logging.TestContext(t.Context())
+			cancel, controller := newController(ctx, wf)
+			defer cancel()
+
+			woc := newWorkflowOperationCtx(ctx, wf, controller)
+			woc.wf.Status.ArtifactGCStatus = &wfv1.ArtGCStatus{}
+
+			if tt.strategiesProcessed != nil {
+				woc.wf.Status.ArtifactGCStatus.StrategiesProcessed = tt.strategiesProcessed
+			}
+			if tt.podsRecouped != nil {
+				woc.wf.Status.ArtifactGCStatus.PodsRecouped = tt.podsRecouped
+			}
+
+			if tt.setDeletionTimestamp {
+				now := metav1.Now()
+				woc.wf.DeletionTimestamp = &now
+			}
+			if tt.clearOutputArtifacts {
+				// Simulate a workflow with no output artifacts at all (no GC configured).
+				for i := range woc.execWf.Spec.Templates {
+					woc.execWf.Spec.Templates[i].Outputs.Artifacts = nil
+				}
+				woc.wf.Status.StoredTemplates = nil
+			}
+
+			err := woc.processArtifactGCCompletion(ctx)
+			require.NoError(t, err)
+
+			hasFinalizer := slices.Contains(woc.wf.Finalizers, common.FinalizerArtifactGC)
+
+			if tt.expectFinalizerRemoved {
+				assert.False(t, hasFinalizer, "expected artifact GC finalizer to be removed")
+			} else {
+				assert.True(t, hasFinalizer, "expected artifact GC finalizer to remain")
+			}
+		})
+	}
+}
+
+// TestProcessArtifactGCCompletionDeletionOnly verifies that when a workflow only has
+// OnWorkflowDeletion artifacts, the finalizer is NOT removed during completion reconciliation.
+// OnWorkflowCompletion will fire (because the workflow completed), find no matching artifacts,
+// and mark itself processed. But allStrategiesProcessed() must account for the configured
+// OnWorkflowDeletion strategy that hasn't become ready yet (no deletionTimestamp).
+func TestProcessArtifactGCCompletionDeletionOnly(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(artgcWorkflowDeletionOnly)
+
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.wf.Status.ArtifactGCStatus = &wfv1.ArtGCStatus{}
+
+	// Simulate: OnWorkflowCompletion fired, found no OnWorkflowCompletion artifacts
+	woc.wf.Status.ArtifactGCStatus.SetArtifactGCStrategyProcessed(wfv1.ArtifactGCOnWorkflowCompletion, true)
+
+	// No deletionTimestamp — OnWorkflowDeletion has not been triggered yet.
+	// The finalizer must NOT be removed because the configured OnWorkflowDeletion
+	// strategy still needs to run.
+
+	err := woc.processArtifactGCCompletion(ctx)
+	require.NoError(t, err)
+
+	hasFinalizer := slices.Contains(woc.wf.Finalizers, common.FinalizerArtifactGC)
+	assert.True(t, hasFinalizer, "expected artifact GC finalizer to remain for deletion-only workflow")
 }

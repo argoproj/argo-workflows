@@ -553,11 +553,13 @@ func (woc *wfOperationCtx) processArtifactGCCompletion(ctx context.Context) erro
 		return fmt.Errorf("failed to get pods from informer: %w", err)
 	}
 
+	var hasGCPods bool
 	for _, obj := range pods {
 		pod := obj.(*corev1.Pod)
 		if pod.Labels[common.LabelKeyComponent] != artifactGCComponent { // make sure it's an Artifact GC Pod
 			continue
 		}
+		hasGCPods = true
 
 		// make sure we didn't already process this one
 		if woc.wf.Status.ArtifactGCStatus.IsArtifactGCPodRecouped(pod.Name) {
@@ -588,10 +590,12 @@ func (woc *wfOperationCtx) processArtifactGCCompletion(ctx context.Context) erro
 	forceFinalizerRemoval := woc.execWf.Spec.ArtifactGC != nil && woc.execWf.Spec.ArtifactGC.ForceFinalizerRemoval
 	if forceFinalizerRemoval {
 		removeFinalizer = woc.wf.Status.ArtifactGCStatus.AllArtifactGCPodsRecouped()
-		// If PodsRecouped is nil (no GC pods were ever created, e.g. due to node status offloading
-		// causing findArtifactsToGC to return empty), but all strategies have been processed,
+		// If all configured strategies have been processed but no GC pods were found
+		// (e.g. node status offloading caused findArtifactsToGC to return empty),
 		// we should still remove the finalizer to prevent it from being stuck forever.
-		if !removeFinalizer && woc.wf.Status.ArtifactGCStatus.PodsRecouped == nil && woc.allStrategiesProcessed() {
+		// Checking hasGCPods avoids the race condition of inferring this from
+		// PodsRecouped==nil, which can also mean pods exist but haven't completed yet.
+		if !removeFinalizer && woc.allStrategiesProcessed() && !hasGCPods {
 			removeFinalizer = true
 		}
 	} else {
@@ -621,7 +625,9 @@ func (woc *wfOperationCtx) allArtifactsDeleted() bool {
 	return true
 }
 
-// allStrategiesProcessed returns true if all applicable artifact GC strategies have been processed.
+// allStrategiesProcessed returns true if all artifact GC strategies that this workflow actually
+// needs have been processed. It checks both currently-ready strategies and strategies that may
+// become applicable later (e.g. OnWorkflowDeletion which requires deletionTimestamp).
 func (woc *wfOperationCtx) allStrategiesProcessed() bool {
 	strategies := woc.artifactGCStrategiesReady()
 	for strategy := range strategies {
@@ -632,12 +638,48 @@ func (woc *wfOperationCtx) allStrategiesProcessed() bool {
 	if len(strategies) > 0 {
 		return true
 	}
-	// If no strategies are currently ready, check if any were ever processed.
-	// This handles the case where all strategies were already processed,
-	// e.g. when node status offloading caused findArtifactsToGC to return empty,
-	// and the strategies were marked processed without creating any GC pods.
-	return woc.wf.Status.ArtifactGCStatus.IsArtifactGCStrategyProcessed(wfv1.ArtifactGCOnWorkflowCompletion) ||
-		woc.wf.Status.ArtifactGCStatus.IsArtifactGCStrategyProcessed(wfv1.ArtifactGCOnWorkflowDeletion)
+	// If no strategies are currently ready, verify that all strategies this workflow actually
+	// configures have been processed. This prevents the finalizer from being removed early
+	// when the workflow has OnWorkflowDeletion artifacts but hasn't been deleted yet.
+	configured := woc.configuredArtifactGCStrategies()
+	if len(configured) == 0 {
+		// This workflow has no output artifacts at all, so no GC strategies are
+		// "configured" in the traditional sense. Fall back to checking whether any
+		// strategy has been processed (e.g. OnWorkflowCompletion always fires on
+		// completion and will be marked processed). If at least one strategy was
+		// processed, there is nothing to GC and we can safely say "all done".
+		return len(woc.wf.Status.ArtifactGCStatus.StrategiesProcessed) > 0
+	}
+	for s := range configured {
+		if !woc.wf.Status.ArtifactGCStatus.IsArtifactGCStrategyProcessed(s) {
+			return false
+		}
+	}
+	return true
+}
+
+// configuredArtifactGCStrategies returns the set of artifact GC strategies actually used by
+// this workflow's artifacts. It checks both execWf.Spec.Templates and wf.Status.StoredTemplates
+// to cover artifacts defined directly and those in referenced WorkflowTemplates.
+func (woc *wfOperationCtx) configuredArtifactGCStrategies() map[wfv1.ArtifactGCStrategy]struct{} {
+	strategies := make(map[wfv1.ArtifactGCStrategy]struct{})
+	for _, template := range woc.execWf.Spec.Templates {
+		for _, artifact := range template.Outputs.Artifacts {
+			s := woc.execWf.GetArtifactGCStrategy(&artifact)
+			if s != wfv1.ArtifactGCStrategyUndefined && s != wfv1.ArtifactGCNever {
+				strategies[s] = struct{}{}
+			}
+		}
+	}
+	for _, template := range woc.wf.Status.StoredTemplates {
+		for _, artifact := range template.Outputs.Artifacts {
+			s := woc.execWf.GetArtifactGCStrategy(&artifact)
+			if s != wfv1.ArtifactGCStrategyUndefined && s != wfv1.ArtifactGCNever {
+				strategies[s] = struct{}{}
+			}
+		}
+	}
+	return strategies
 }
 
 func (woc *wfOperationCtx) findArtifactsToGC(strategy wfv1.ArtifactGCStrategy) wfv1.ArtifactSearchResults {
