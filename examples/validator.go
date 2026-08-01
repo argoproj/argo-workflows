@@ -2,6 +2,7 @@ package validation
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"math"
 	"os"
@@ -149,15 +150,22 @@ func isAcceptedTypeMismatch(doc any, u *jsonschema.OutputUnit) bool {
 		return false
 	}
 	typeErr, ok := u.Error.Kind.(*kind.Type)
-	if !ok || typeErr.Got != "number" {
+	if !ok || typeErr.Got != "number" || !slices.Contains(typeErr.Want, "string") {
 		return false
 	}
 	val, ok := jsonPointerValue(doc, u.InstanceLocation)
 	if !ok {
 		return false
 	}
-	num, ok := val.(float64)
-	return ok && num == math.Trunc(num)
+	switch num := val.(type) {
+	case float64:
+		return num == math.Trunc(num)
+	case json.Number:
+		_, err := num.Int64()
+		return err == nil
+	default:
+		return false
+	}
 }
 
 // isHttpGetPortOrMinAvailable reports whether loc is a JSON pointer to a
