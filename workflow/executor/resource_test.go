@@ -1,6 +1,8 @@
 package executor
 
 import (
+	"context"
+	"encoding/json"
 	"os"
 	"path"
 	"runtime"
@@ -15,8 +17,10 @@ import (
 	"k8s.io/client-go/util/retry"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	argofake "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/mocks"
+	"github.com/argoproj/argo-workflows/v4/workflow/executor/tracing"
 )
 
 // TestResourceFlags tests whether Resource Flags
@@ -238,6 +242,137 @@ func Test_jqFilter(t *testing.T) {
 			assert.Equal(t, testCase.want, got)
 		})
 	}
+}
+
+const resourceJSON = `{
+  "apiVersion": "v1",
+  "kind": "Pod",
+  "metadata": {
+    "name": "my-pod",
+    "namespace": "my-ns",
+    "labels": {"app": "my-app"},
+    "managedFields": [{"manager": "kubectl"}]
+  },
+  "spec": {"containers": [{"name": "a"}, {"name": "b"}]}
+}`
+
+func Test_jsonPathFilter(t *testing.T) {
+	obj := &unstructured.Unstructured{}
+	require.NoError(t, json.Unmarshal([]byte(resourceJSON), obj))
+
+	for _, tc := range []struct {
+		expression string
+		want       string
+		wantErr    bool
+	}{
+		{expression: "{.metadata.name}", want: "my-pod"},
+		{expression: "{.metadata.labels.app}", want: "my-app"},
+		{expression: "{.spec.containers[*].name}", want: "a b"},
+		// kubectl passes `-o jsonpath=` templates to the JSONPath printer verbatim: text outside
+		// braces is literal, it is not relaxed into `{.metadata.name}`.
+		{expression: "metadata.name", want: "metadata.name"},
+		// kubectl defaults to --allow-missing-template-keys=true.
+		{expression: "{.metadata.nope}", want: ""},
+		// managedFields are still visible, as they were with `-o jsonpath=`.
+		{expression: "{.metadata.managedFields[0].manager}", want: "kubectl"},
+		{expression: "{unparseable", wantErr: true},
+	} {
+		t.Run(tc.expression, func(t *testing.T) {
+			got, err := jsonPathFilter(obj, tc.expression)
+			if tc.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
+func Test_saveResourceParameters(t *testing.T) {
+	tracingObj, err := tracing.New(logging.TestContext(t.Context()), `argoexec`)
+	require.NoError(t, err)
+	newExecutor := func(params ...wfv1.Parameter) *WorkflowExecutor {
+		return &WorkflowExecutor{
+			PodName:         fakePodName,
+			Namespace:       fakeNamespace,
+			nodeID:          fakeNodeID,
+			ClientSet:       fake.NewClientset(),
+			RuntimeExecutor: &mocks.ContainerRuntimeExecutor{},
+			Tracing:         tracingObj,
+			Template:        wfv1.Template{Outputs: wfv1.Outputs{Parameters: params}},
+		}
+	}
+	param := func(name string, valueFrom *wfv1.ValueFrom) wfv1.Parameter {
+		return wfv1.Parameter{Name: name, ValueFrom: valueFrom}
+	}
+
+	t.Run("reads the resource once for all parameters", func(t *testing.T) {
+		we := newExecutor(
+			param("name", &wfv1.ValueFrom{JSONPath: "{.metadata.name}"}),
+			param("app", &wfv1.ValueFrom{JSONPath: "{.metadata.labels.app}"}),
+			param("jq", &wfv1.ValueFrom{JQFilter: ".spec.containers[].name"}),
+		)
+		var calls [][]string
+		kubectl := func(_ context.Context, args ...string) ([]byte, error) {
+			calls = append(calls, args)
+			return []byte(resourceJSON), nil
+		}
+		ctx := logging.TestContext(t.Context())
+		require.NoError(t, we.saveResourceParameters(ctx, "my-ns", "pod./my-pod", kubectl))
+
+		require.Len(t, calls, 1, "the resource must be read exactly once, not once per parameter")
+		assert.Equal(t, []string{"kubectl", "-n", "my-ns", "get", "pod./my-pod", "-o", "json", "--show-managed-fields=true"}, calls[0])
+
+		out := we.Template.Outputs.Parameters
+		assert.Equal(t, "my-pod", out[0].Value.String())
+		assert.Equal(t, "my-app", out[1].Value.String())
+		assert.Equal(t, "a\nb", out[2].Value.String())
+	})
+
+	t.Run("jqFilter does not see managedFields", func(t *testing.T) {
+		we := newExecutor(param("keys", &wfv1.ValueFrom{JQFilter: ".metadata | keys | join(\",\")"}))
+		kubectl := func(_ context.Context, _ ...string) ([]byte, error) { return []byte(resourceJSON), nil }
+		ctx := logging.TestContext(t.Context())
+		require.NoError(t, we.saveResourceParameters(ctx, "my-ns", "pod./my-pod", kubectl))
+		assert.Equal(t, "labels,name,namespace", we.Template.Outputs.Parameters[0].Value.String())
+	})
+
+	t.Run("no read when no parameter needs the resource", func(t *testing.T) {
+		we := newExecutor(param("supplied", &wfv1.ValueFrom{Supplied: &wfv1.SuppliedValueFrom{}}))
+		calls := 0
+		kubectl := func(_ context.Context, _ ...string) ([]byte, error) {
+			calls++
+			return []byte(resourceJSON), nil
+		}
+		ctx := logging.TestContext(t.Context())
+		require.NoError(t, we.saveResourceParameters(ctx, "my-ns", "pod./my-pod", kubectl))
+		assert.Equal(t, 0, calls)
+	})
+
+	// SaveResourceParameters must keep short-circuiting before ReportOutputs when the template has
+	// no output parameters, otherwise every resource template would start writing a task result.
+	t.Run("no output parameters reports nothing", func(t *testing.T) {
+		we := newExecutor()
+		argoClientset := argofake.NewClientset()
+		we.taskResultClient = argoClientset.ArgoprojV1alpha1().WorkflowTaskResults(fakeNamespace)
+		ctx := logging.TestContext(t.Context())
+		require.NoError(t, we.SaveResourceParameters(ctx, "my-ns", "pod./my-pod"))
+		assert.Empty(t, argoClientset.Actions(), "no task result should be written when there are no output parameters")
+	})
+
+	t.Run("no resource falls back to the default", func(t *testing.T) {
+		we := newExecutor(param("name", &wfv1.ValueFrom{JSONPath: "{.metadata.name}", Default: wfv1.AnyStringPtr("fallback")}))
+		calls := 0
+		kubectl := func(_ context.Context, _ ...string) ([]byte, error) {
+			calls++
+			return []byte(resourceJSON), nil
+		}
+		ctx := logging.TestContext(t.Context())
+		require.NoError(t, we.saveResourceParameters(ctx, "", "", kubectl))
+		assert.Equal(t, 0, calls)
+		assert.Equal(t, "fallback", we.Template.Outputs.Parameters[0].Value.String())
+	})
 }
 
 func Test_runKubectl(t *testing.T) {
