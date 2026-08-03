@@ -28,10 +28,10 @@ import (
 // a run that takes ~25 minutes in a real cluster completes here in milliseconds.
 //
 // What it measures is the shape of promotion, not wall-clock makespan. The test
-// reports one number, reconciles per workflow: tryAcquires divided by the number
-// of workflows. Every workflow acquires exactly once, so this is one successful
-// reconcile plus every wasted one -- the admission amplification factor, where 1.0
-// means each workflow is looked at once and admitted.
+// reports total tryAcquire calls both per workflow and absolute. Every workflow
+// acquires exactly once, so the per-workflow figure is one successful reconcile
+// plus every wasted one -- the admission amplification factor, where 1.0 means
+// each workflow is looked at once and admitted.
 //
 // The simulation tracks more than it prints, for use when investigating:
 //
@@ -336,6 +336,12 @@ var benchScenarios = []scenario{
 	// slots are free. What the limit does buy is waste, since it widens the woken
 	// set. The grant set is what makes the limit mean anything.
 	{name: "limit500_wf2000", limit: 500, total: 2000, holdRounds: 1, workers: 16},
+	// Same limit, 2.5x the backlog. This is the pair that does isolate a single
+	// dimension: holding limit at 500, reconciles/wf rises 261 -> 279 while the
+	// absolute count rises 522k -> 1.39M. Cost per workflow is roughly flat in the
+	// backlog, so the total grows with it -- superlinearly overall, since each of
+	// the extra workflows also costs ~limit/2 reconciles of its own.
+	{name: "limit500_wf5000", limit: 500, total: 5000, holdRounds: 1, workers: 16},
 }
 
 // variants are the two implementations compared side by side. "before" emulates
@@ -365,7 +371,10 @@ func TestSemaphorePromotionCost(t *testing.T) {
 	// once, so this is tryAcquires/total -- one successful reconcile plus every
 	// wasted one. It is the admission amplification factor: 1.0 would mean each
 	// workflow is looked at once and admitted.
-	t.Logf("%-18s %8s %14s", "scenario", "variant", "reconciles/wf")
+	// reconciles is the same quantity unnormalized: total tryAcquire calls across
+	// the whole drain, i.e. reconciles/wf x total. It is the absolute load the
+	// controller and apiserver actually carry.
+	t.Logf("%-18s %8s %14s %12s", "scenario", "variant", "reconciles/wf", "reconciles")
 
 	for _, sc := range benchScenarios {
 		for _, v := range variants {
@@ -381,8 +390,9 @@ func TestSemaphorePromotionCost(t *testing.T) {
 				completed, hitCap := sim.run(ctx, maxRounds)
 				elapsed := time.Since(start)
 
-				t.Logf("%-18s %8s %14.1f",
-					sc.name, v.name, float64(sim.tryAcquires)/float64(sc.total))
+				t.Logf("%-18s %8s %14.1f %12d",
+					sc.name, v.name, float64(sim.tryAcquires)/float64(sc.total),
+					sim.tryAcquires)
 
 				// The number above is only meaningful if every workflow actually got
 				// through, so this is an assertion rather than a reported column.
