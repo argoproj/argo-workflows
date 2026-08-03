@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"sort"
-	"strconv"
-	"strings"
 	"testing"
 	"time"
 
@@ -15,10 +13,11 @@ import (
 // Benchmark harness for semaphore promotion throughput. See
 // TestSemaphorePromotionCost below for how to run it and what it measures.
 //
-// Both columns come from a single run on this commit: "before" emulates the
-// pre-grant-set admission gate in the harness (see reconcileSim.singleFront)
-// rather than requiring a checkout of the parent revision. Everything is seedless,
-// so two runs on the same commit produce byte-identical numbers.
+// This measures whichever semaphore implementation it is compiled against, and
+// prints one RESULT line per scenario. It does not emulate the old implementation:
+// hack/semaphore-before-after.sh checks out two revisions, runs the same harness
+// at each, and joins the numbers. Everything is seedless, so a given revision
+// produces byte-identical numbers run to run.
 //
 // The simulation tracks more than it prints, for use when investigating:
 //
@@ -36,12 +35,10 @@ import (
 //	              it overstates distinct reconciles. Use bounces for per-workflow
 //	              cost and rounds for latency.
 //
-// The reconcile loop is a model of the controller, not the controller itself. It
-// is calibrated against the real thing at one point: the reference shape measured
-// 884 rounds here against 894 on the actual pre-grant-set commit. Nothing else is
-// corroborated end-to-end, so treat the absolute counts as the cost of the
-// promotion strategy under this model, and the before/after ratio -- which shares
-// the model, and so most of its error -- as the load-bearing result.
+// The reconcile loop is a model of the controller, not the controller itself: one
+// round is one reconcile pass over everything woken, where real workers have
+// staggered latency and retry backoff. Both sides of the comparison run the same
+// model, so the ratio is more trustworthy than the absolute counts.
 
 // reconcileSim drives a semaphore the way the workflow controller does: a set of
 // pending workflows, each of which is reconciled once per round, attempting to
@@ -55,16 +52,6 @@ type reconcileSim struct {
 	// workers is the controller's --workflow-workers: how many reconciles are in
 	// flight at once. Bounds how far reconcile order may deviate from queue order.
 	workers int
-
-	// singleFront emulates the pre-grant-set controller, so the "before" column is
-	// reproducible from this commit instead of requiring a checkout of the parent
-	// revision. Upstream had two separate widths: notifyWaiters woke the top
-	// (limit - holders) waiters, but checkAcquire admitted only pending.items[0].
-	// The gate lives here rather than in the semaphore because it is a property of
-	// the old code, not a configuration anyone should be able to select. Emulating
-	// it means both columns of the before/after comparison are reproducible with a
-	// single `go test` on this commit; see the header comment for how to run it.
-	singleFront bool
 
 	// enqueued is the controller workqueue: keys that nextWorkflow asked to be
 	// reconciled. A real controller also periodically resyncs, but the point of
@@ -86,18 +73,17 @@ type reconcileSim struct {
 	utilization []int
 }
 
-// newReconcileSim builds a simulation. Set singleFront to measure the
-// pre-grant-set baseline (see reconcileSim.singleFront); leave it false to measure
-// the grant-set implementation in this commit.
-func newReconcileSim(ctx context.Context, tb testing.TB, limit, total, holdRounds, workers int, singleFront bool) *reconcileSim {
+// newReconcileSim builds a simulation against whatever semaphore implementation
+// is compiled in. There is no before/after switch: the harness measures the tree
+// it is built from, and hack/semaphore-before-after.sh runs it at two revisions.
+func newReconcileSim(ctx context.Context, tb testing.TB, limit, total, holdRounds, workers int) *reconcileSim {
 	tb.Helper()
 	sim := &reconcileSim{
-		limit:       limit,
-		total:       total,
-		holdRounds:  holdRounds,
-		workers:     workers,
-		singleFront: singleFront,
-		enqueued:    make(map[string]bool, total),
+		limit:      limit,
+		total:      total,
+		holdRounds: holdRounds,
+		workers:    workers,
+		enqueued:   make(map[string]bool, total),
 	}
 	sem, err := newInternalSemaphore(ctx, "bench", func(key string) {
 		sim.enqueues++
@@ -111,21 +97,6 @@ func newReconcileSim(ctx context.Context, tb testing.TB, limit, total, holdRound
 }
 
 func benchKey(i int) string { return fmt.Sprintf("default/wf-%05d", i) }
-
-// pendingHead returns the current head of the priority queue, i.e. the only key
-// upstream's checkAcquire would have admitted. Used solely by the singleFront
-// baseline.
-func (s *reconcileSim) pendingHead() (string, bool) {
-	if s.sem.pending.Len() == 0 {
-		return "", false
-	}
-	return s.sem.pending.items[0].key, true
-}
-
-func (s *reconcileSim) isPendingHead(key string) bool {
-	head, ok := s.pendingHead()
-	return ok && head == key
-}
 
 // shuffleDeterministic permutes keys using a seedless xorshift, so reconcile
 // order is decoupled from priority order without introducing run-to-run
@@ -232,26 +203,7 @@ func (s *reconcileSim) run(ctx context.Context, maxRounds int) (completed int, h
 		clear(s.enqueued)
 		shuffleInBatches(batch, s.rounds, s.workers)
 
-		if s.singleFront {
-			// Upstream had no grant set, so a waiter that had already been woken was
-			// woken again on the next release. Clearing the grants each round restores
-			// that repeated-wake behaviour; without this, grantWaiters would suppress
-			// the re-wakes and understate the churn being measured.
-			clear(s.sem.granted)
-		}
-
 		for _, key := range batch {
-			if s.singleFront && !s.isPendingHead(key) {
-				// Upstream checkAcquire admitted only pending.items[0]. Everyone else
-				// bounced with "isn't at the front" after enqueueing the head.
-				s.bounces++
-				s.tryAcquires++
-				if head, ok := s.pendingHead(); ok {
-					s.enqueues++
-					s.enqueued[head] = true
-				}
-				continue
-			}
 			s.tryAcquires++
 			acquired, _, err := s.sem.tryAcquire(ctx, key, nil)
 			if err != nil {
@@ -335,31 +287,22 @@ var benchScenarios = []scenario{
 	{name: "limit500_wf5000", limit: 500, total: 5000, holdRounds: 1, workers: 16},
 }
 
-// variants are the two implementations compared side by side. "before" emulates
-// the pre-grant-set controller (see reconcileSim.singleFront); "after" is the
-// grant-set code in this commit. Both columns are therefore reproducible from a
-// single checkout, with no need to build the parent revision.
-var variants = []struct {
-	name        string
-	singleFront bool
-}{
-	{name: "before", singleFront: true},
-	{name: "after", singleFront: false},
-}
-
 // TestSemaphorePromotionCost is the headline measurement.
 //
-// Run it with:
+// For the before/after comparison, use the script -- it runs this test at the
+// pre-grant-set revision and at HEAD, and prints a markdown table:
+//
+//	./hack/semaphore-before-after.sh
+//
+// To run just this revision:
 //
 //	go test ./workflow/sync/ -run TestSemaphorePromotionCost -count=1 -v
 //
-// -v is required, since the results come out through t.Logf. Takes about 3s. Add
-// a scenario name to narrow it:
+// -v is required, since results come out through t.Logf. Takes about 3s. Append a
+// scenario name to narrow it (-run '.../limit500_wf2000').
 //
-//	go test ./workflow/sync/ -run 'TestSemaphorePromotionCost/limit500_wf2000' -count=1 -v
-//
-// Narrowing further to one variant (-run '.../before') runs but prints no table:
-// a row needs both variants to compute its reduction factor, so it is skipped.
+// It reports whichever implementation it was built from; there is no before/after
+// switch in the harness.
 //
 // What it does: queue `total` workflows against one semaphore of size `limit`,
 // then reconcile in rounds until all have run. Each round reconciles every
@@ -370,11 +313,11 @@ var variants = []struct {
 // Kubernetes, no pods, no database, and the workflow body is virtual time -- a
 // drain that takes ~25 minutes on a cluster runs here in under a second.
 //
-// What it reports: total tryAcquire calls to drain the queue, absolute and per
-// workflow. Every workflow acquires exactly once, so the per-workflow figure is
-// one useful reconcile plus every wasted one, and 1.0 is the floor. That is the
-// cost of the promotion strategy, since the work of running the workflows
-// themselves is identical in both columns.
+// What it reports: total tryAcquire calls to drain the queue. Every workflow
+// acquires exactly once, so divided by the workflow count this is one useful
+// reconcile plus every wasted one, and 1.0 is the floor. That isolates the cost of
+// the promotion strategy, since the work of running the workflows themselves is
+// identical across revisions.
 //
 // It is a test rather than a Benchmark because the quantity is a structural count
 // that is identical run to run, not a time needing repetition to stabilize.
@@ -382,80 +325,39 @@ var variants = []struct {
 func TestSemaphorePromotionCost(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 
-	// reconciles is total tryAcquire calls across the drain: the absolute load the
-	// controller and apiserver carry. Per workflow it is the admission
-	// amplification factor, since every workflow acquires exactly once -- one
-	// successful reconcile plus every wasted one, where 1.0 would mean each
-	// workflow is looked at once and admitted.
-	//
-	// One row per scenario with before and after side by side, emitted as a
-	// markdown table so the result can be pasted into a PR or issue unedited.
-	rows := make([]string, 0, len(benchScenarios))
-
+	// One RESULT line per scenario, in a fixed parseable format, because this test
+	// measures whichever revision it was compiled from and cannot know the other
+	// side. hack/semaphore-before-after.sh runs it at two revisions and joins the
+	// lines into the before/after table.
 	for _, sc := range benchScenarios {
-		perVariant := make(map[string]int, len(variants))
+		t.Run(sc.name, func(t *testing.T) {
+			sim := newReconcileSim(ctx, t, sc.limit, sc.total, sc.holdRounds, sc.workers)
 
-		for _, v := range variants {
-			t.Run(sc.name+"/"+v.name, func(t *testing.T) {
-				sim := newReconcileSim(ctx, t, sc.limit, sc.total, sc.holdRounds, sc.workers, v.singleFront)
+			// Cap generously: the quadratic case needs ~limit rounds per wave, so
+			// allow that plus slack. Hitting the cap is reported, not hidden.
+			waves := (sc.total + sc.limit - 1) / sc.limit
+			maxRounds := waves * (sc.limit + sc.holdRounds) * 4
 
-				// Cap generously: the quadratic case needs ~limit rounds per wave, so
-				// allow that plus slack. Hitting the cap is reported, not hidden.
-				waves := (sc.total + sc.limit - 1) / sc.limit
-				maxRounds := waves * (sc.limit + sc.holdRounds) * 4
+			start := time.Now()
+			completed, hitCap := sim.run(ctx, maxRounds)
+			elapsed := time.Since(start)
 
-				start := time.Now()
-				completed, hitCap := sim.run(ctx, maxRounds)
-				elapsed := time.Since(start)
+			// The counts are only meaningful if every workflow got through, so this
+			// is an assertion rather than a reported column.
+			if hitCap || completed != sc.total {
+				t.Fatalf("only %d/%d workflows drained within %d rounds (%s)",
+					completed, sc.total, maxRounds, elapsed.Round(time.Millisecond))
+			}
 
-				// The counts are only meaningful if every workflow got through, so
-				// this is an assertion rather than a reported column.
-				if hitCap || completed != sc.total {
-					t.Fatalf("only %d/%d workflows drained within %d rounds (%s)",
-						completed, sc.total, maxRounds, elapsed.Round(time.Millisecond))
-				}
-				perVariant[v.name] = sim.tryAcquires
-			})
-		}
-
-		// A subtest that failed leaves its variant unrecorded; skip the row rather
-		// than printing a ratio against a zero.
-		before, okBefore := perVariant["before"]
-		after, okAfter := perVariant["after"]
-		if !okBefore || !okAfter {
-			continue
-		}
-		rows = append(rows, fmt.Sprintf("| %d | %d | %s | %s | %.0fx |",
-			sc.limit, sc.total,
-			reconcileCell(before, sc.total), reconcileCell(after, sc.total),
-			float64(before)/float64(after)))
+			// reconciles is total tryAcquire calls across the drain: the absolute
+			// load the controller and apiserver carry. Divided by the workflow count
+			// it is the admission amplification factor, since every workflow acquires
+			// exactly once -- one useful reconcile plus every wasted one, where 1.0
+			// would mean each workflow is looked at once and admitted.
+			t.Logf("RESULT scenario=%s limit=%d workflows=%d reconciles=%d rounds=%d",
+				sc.name, sc.limit, sc.total, sim.tryAcquires, sim.rounds)
+		})
 	}
-
-	t.Logf("\n%s\n%s\n%s",
-		"| limit | workflows | before | after | reduction |",
-		"|------:|----------:|-------:|------:|----------:|",
-		strings.Join(rows, "\n"))
-}
-
-// reconcileCell renders a reconcile count as "total (N.N/wf)", the absolute load
-// alongside the same figure normalized per workflow.
-func reconcileCell(reconciles, total int) string {
-	return fmt.Sprintf("%s (%.1f/wf)", humanCount(reconciles),
-		float64(reconciles)/float64(total))
-}
-
-// humanCount groups thousands with commas: 1394953 -> "1,394,953". Six-digit
-// reconcile counts are the point of the table and are hard to compare unseparated.
-func humanCount(n int) string {
-	s := strconv.Itoa(n)
-	var b strings.Builder
-	for i, c := range s {
-		if i > 0 && (len(s)-i)%3 == 0 {
-			b.WriteByte(',')
-		}
-		b.WriteRune(c)
-	}
-	return b.String()
 }
 
 // BenchmarkSemaphorePromotion measures wall-clock cost of draining the reference
@@ -464,18 +366,16 @@ func humanCount(n int) string {
 func BenchmarkSemaphorePromotion(b *testing.B) {
 	ctx := logging.TestContext(b.Context())
 	for _, sc := range benchScenarios {
-		for _, v := range variants {
-			b.Run(sc.name+"/"+v.name, func(b *testing.B) {
-				waves := (sc.total + sc.limit - 1) / sc.limit
-				maxRounds := waves * (sc.limit + sc.holdRounds) * 4
-				b.ReportAllocs()
-				for b.Loop() {
-					sim := newReconcileSim(ctx, b, sc.limit, sc.total, sc.holdRounds, sc.workers, v.singleFront)
-					sim.run(ctx, maxRounds)
-					b.ReportMetric(float64(sim.rounds), "rounds")
-					b.ReportMetric(float64(sim.bounces)/float64(sc.total), "bounces/wf")
-				}
-			})
-		}
+		b.Run(sc.name, func(b *testing.B) {
+			waves := (sc.total + sc.limit - 1) / sc.limit
+			maxRounds := waves * (sc.limit + sc.holdRounds) * 4
+			b.ReportAllocs()
+			for b.Loop() {
+				sim := newReconcileSim(ctx, b, sc.limit, sc.total, sc.holdRounds, sc.workers)
+				sim.run(ctx, maxRounds)
+				b.ReportMetric(float64(sim.rounds), "rounds")
+				b.ReportMetric(float64(sim.bounces)/float64(sc.total), "bounces/wf")
+			}
+		})
 	}
 }
