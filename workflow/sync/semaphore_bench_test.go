@@ -27,17 +27,23 @@ import (
 // workflow body is virtual time (a hold that spans a fixed number of rounds), so
 // a run that takes ~25 minutes in a real cluster completes here in milliseconds.
 //
-// What it measures is the shape of promotion, not wall-clock makespan:
+// What it measures is the shape of promotion, not wall-clock makespan. The test
+// reports one number, reconciles per workflow: tryAcquires divided by the number
+// of workflows. Every workflow acquires exactly once, so this is one successful
+// reconcile plus every wasted one -- the admission amplification factor, where 1.0
+// means each workflow is looked at once and admitted.
+//
+// The simulation tracks more than it prints, for use when investigating:
 //
 //	rounds      - reconcile rounds needed to drain every workflow. The controller
 //	              cannot admit faster than one round per requeue, so rounds is the
 //	              latency multiplier that turns into real time on a cluster.
-//	tryAcquires - total tryAcquire calls. Divided by the number of workflows this
-//	              is admission amplification: 1.0 is perfect, higher means
-//	              workflows are bouncing off the semaphore and re-queueing.
-//	bounces     - reconciles that attempted acquisition and failed. Divided by the
-//	              number of workflows, this is how many times the average workflow
-//	              is woken, fails, and must wait to be woken again.
+//	bounces     - reconciles that attempted acquisition and failed, i.e.
+//	              tryAcquires minus the one success per workflow.
+//	utilization - held slots per round; meanUtilization reports occupancy as a
+//	              fraction of the limit. Deep underutilization with a large backlog
+//	              is the same bug seen from the semaphore's side rather than the
+//	              workflow's.
 //	enqueues    - raw nextWorkflow callbacks. NOTE: this counts repeat callbacks
 //	              against the same key, which the real workqueue would dedupe, so
 //	              it overstates distinct reconciles. Use bounces for per-workflow
@@ -293,8 +299,8 @@ func (s *reconcileSim) meanUtilization() float64 {
 	return float64(sum) / float64(len(s.utilization)) / float64(s.limit)
 }
 
-// scenario is one workload shape. The reference case is limit=400/total=1500; the
-// smaller shapes show how the cost scales with limit, which is the signature of
+// scenario is one workload shape. The reference case is limit=500/total=2000; the
+// smaller shape shows how the cost scales with limit, which is the signature of
 // the quadratic behaviour.
 type scenario struct {
 	name       string
@@ -306,29 +312,29 @@ type scenario struct {
 	workers int
 }
 
+// Two shapes, an order of magnitude apart in both dimensions, which is enough to
+// show that the amplification tracks the limit rather than being a property of one
+// workload size.
+//
+// holdRounds=1 isolates promotion cost from hold duration -- a longer hold only
+// adds a constant per wave, whereas promotion cost is what differs between
+// implementations. workers=16 is half the --workflow-workers default of 32, so the
+// numbers describe a conservatively-sized controller rather than the most
+// favourable one; admissions per round are near-flat in W anyway (1.76 at W=4,
+// 1.66 at W=32, 1.70 at W=512), so it is not a tuned choice.
 var benchScenarios = []scenario{
-	{name: "limit10_wf50", limit: 10, total: 50, holdRounds: 1, workers: 16},
-	{name: "limit50_wf200", limit: 50, total: 200, holdRounds: 1, workers: 16},
 	{name: "limit100_wf400", limit: 100, total: 400, holdRounds: 1, workers: 16},
-	// The reference workload: 400 slots, 1500 workflows. holdRounds=1 isolates
-	// promotion cost from hold duration -- a longer hold only adds a constant per
-	// wave, whereas the promotion cost is what differs between implementations.
-	// workers=16 across all scenarios: half the --workflow-workers default of 32,
-	// so the numbers describe a conservatively-sized controller rather than the
-	// most favourable one. Rounds are near-flat in W anyway (1.76 admissions per
-	// round at W=4, 1.66 at W=32, 1.70 at W=512), so this is not a tuned choice.
-	{name: "limit400_wf1500", limit: 400, total: 1500, holdRounds: 1, workers: 16},
-	// Same backlog, different limits. These two exist to isolate the sharpest
-	// symptom: under the single-front gate, rounds-to-drain is a function of the
-	// backlog alone and does not respond to the limit. Both report the same round
-	// count, as do limit=200 and limit=1000 at this backlog -- admissions hold at
-	// ~1.7 workflows per round no matter how many slots are free, because only the
-	// queue head may acquire and a round admits the head plus however many
-	// successors happen to be reconciled after it. Raising the limit therefore buys
-	// no throughput at all; it only enlarges the woken set, so the wasted-reconcile
-	// count grows as limit x total. The grant set is what makes the limit mean
-	// something: "after", both drain in one round per wave.
-	{name: "limit400_wf2000", limit: 400, total: 2000, holdRounds: 1, workers: 16},
+	// The larger shape. Both dimensions are 5x the smaller one, so the gap between
+	// the two "before" figures does not by itself say which dimension drives the
+	// cost. Holding the backlog at 2000 and sweeping the limit answers that: 114
+	// wasted reconciles per workflow at limit=200 rising to 451 at limit=1000, while
+	// every one of those limits takes the same 1195 rounds to drain.
+	//
+	// So under the single-front gate the limit buys no throughput at all -- only the
+	// queue head may acquire, so a round admits the head plus whichever successors
+	// happen to be reconciled after it, about 1.7 workflows per round however many
+	// slots are free. What the limit does buy is waste, since it widens the woken
+	// set. The grant set is what makes the limit mean anything.
 	{name: "limit500_wf2000", limit: 500, total: 2000, holdRounds: 1, workers: 16},
 }
 
