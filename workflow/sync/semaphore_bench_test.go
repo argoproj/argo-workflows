@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -366,17 +368,19 @@ var variants = []struct {
 func TestSemaphorePromotionCost(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 
-	// reconciles/wf is the whole result: how many times the average workflow is
-	// reconciled before it holds the semaphore. Every workflow acquires exactly
-	// once, so this is tryAcquires/total -- one successful reconcile plus every
-	// wasted one. It is the admission amplification factor: 1.0 would mean each
+	// reconciles is total tryAcquire calls across the drain: the absolute load the
+	// controller and apiserver carry. Per workflow it is the admission
+	// amplification factor, since every workflow acquires exactly once -- one
+	// successful reconcile plus every wasted one, where 1.0 would mean each
 	// workflow is looked at once and admitted.
-	// reconciles is the same quantity unnormalized: total tryAcquire calls across
-	// the whole drain, i.e. reconciles/wf x total. It is the absolute load the
-	// controller and apiserver actually carry.
-	t.Logf("%-18s %8s %14s %12s", "scenario", "variant", "reconciles/wf", "reconciles")
+	//
+	// One row per scenario with before and after side by side, emitted as a
+	// markdown table so the result can be pasted into a PR or issue unedited.
+	rows := make([]string, 0, len(benchScenarios))
 
 	for _, sc := range benchScenarios {
+		perVariant := make(map[string]int, len(variants))
+
 		for _, v := range variants {
 			t.Run(sc.name+"/"+v.name, func(t *testing.T) {
 				sim := newReconcileSim(ctx, t, sc.limit, sc.total, sc.holdRounds, sc.workers, v.singleFront)
@@ -390,19 +394,54 @@ func TestSemaphorePromotionCost(t *testing.T) {
 				completed, hitCap := sim.run(ctx, maxRounds)
 				elapsed := time.Since(start)
 
-				t.Logf("%-18s %8s %14.1f %12d",
-					sc.name, v.name, float64(sim.tryAcquires)/float64(sc.total),
-					sim.tryAcquires)
-
-				// The number above is only meaningful if every workflow actually got
-				// through, so this is an assertion rather than a reported column.
+				// The counts are only meaningful if every workflow got through, so
+				// this is an assertion rather than a reported column.
 				if hitCap || completed != sc.total {
 					t.Fatalf("only %d/%d workflows drained within %d rounds (%s)",
 						completed, sc.total, maxRounds, elapsed.Round(time.Millisecond))
 				}
+				perVariant[v.name] = sim.tryAcquires
 			})
 		}
+
+		// A subtest that failed leaves its variant unrecorded; skip the row rather
+		// than printing a ratio against a zero.
+		before, okBefore := perVariant["before"]
+		after, okAfter := perVariant["after"]
+		if !okBefore || !okAfter {
+			continue
+		}
+		rows = append(rows, fmt.Sprintf("| %d | %d | %s | %s | %.0fx |",
+			sc.limit, sc.total,
+			reconcileCell(before, sc.total), reconcileCell(after, sc.total),
+			float64(before)/float64(after)))
 	}
+
+	t.Logf("\n%s\n%s\n%s",
+		"| limit | workflows | before | after | reduction |",
+		"|------:|----------:|-------:|------:|----------:|",
+		strings.Join(rows, "\n"))
+}
+
+// reconcileCell renders a reconcile count as "total (N.N/wf)", the absolute load
+// alongside the same figure normalized per workflow.
+func reconcileCell(reconciles, total int) string {
+	return fmt.Sprintf("%s (%.1f/wf)", humanCount(reconciles),
+		float64(reconciles)/float64(total))
+}
+
+// humanCount groups thousands with commas: 1394953 -> "1,394,953". Six-digit
+// reconcile counts are the point of the table and are hard to compare unseparated.
+func humanCount(n int) string {
+	s := strconv.Itoa(n)
+	var b strings.Builder
+	for i, c := range s {
+		if i > 0 && (len(s)-i)%3 == 0 {
+			b.WriteByte(',')
+		}
+		b.WriteRune(c)
+	}
+	return b.String()
 }
 
 // BenchmarkSemaphorePromotion measures wall-clock cost of draining the reference
