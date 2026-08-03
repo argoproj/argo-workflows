@@ -6,6 +6,7 @@ import * as React from 'react';
 
 import 'argo-ui/src/styles/main.scss';
 
+import {ChunkLoadErrorBoundary} from './app/chunk-load-error-boundary';
 import {AppRouter} from './app-router';
 import {ContextApis, Provider} from './shared/context';
 
@@ -22,8 +23,10 @@ export function App({history}: {history: History}) {
     };
 
     return (
-        <Provider value={providerContext}>
-            <AppRouter history={history} notificationsManager={notificationsManager} popupManager={popupManager} />
-        </Provider>
+        <ChunkLoadErrorBoundary>
+            <Provider value={providerContext}>
+                <AppRouter history={history} notificationsManager={notificationsManager} popupManager={popupManager} />
+            </Provider>
+        </ChunkLoadErrorBoundary>
     );
 }
