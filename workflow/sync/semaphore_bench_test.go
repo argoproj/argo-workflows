@@ -12,6 +12,16 @@ import (
 
 // Tier 1 benchmark harness for semaphore promotion throughput.
 //
+// To reproduce the before/after comparison:
+//
+//	go test ./workflow/sync/ -run TestSemaphorePromotionCost -count=1 -v
+//
+// Both columns come from this one command. "before" emulates the pre-grant-set
+// admission gate in the harness (see reconcileSim.singleFront) rather than
+// requiring a checkout of the parent revision, so the comparison is a single
+// deterministic run with no build juggling. Everything is seedless, so two runs
+// on the same commit produce byte-identical numbers.
+//
 // This models the controller's reconcile loop against the in-memory
 // prioritySemaphore directly: no Kubernetes, no pods, no database. The 6-minute
 // workflow body is virtual time (a hold that spans a fixed number of rounds), so
@@ -25,8 +35,13 @@ import (
 //	tryAcquires - total tryAcquire calls. Divided by the number of workflows this
 //	              is admission amplification: 1.0 is perfect, higher means
 //	              workflows are bouncing off the semaphore and re-queueing.
-//	enqueues    - nextWorkflow callbacks. This is the workqueue churn that the
-//	              O(N^2) re-wake storm produces.
+//	bounces     - reconciles that attempted acquisition and failed. Divided by the
+//	              number of workflows, this is how many times the average workflow
+//	              is woken, fails, and must wait to be woken again.
+//	enqueues    - raw nextWorkflow callbacks. NOTE: this counts repeat callbacks
+//	              against the same key, which the real workqueue would dedupe, so
+//	              it overstates distinct reconciles. Use bounces for per-workflow
+//	              cost and rounds for latency.
 //
 // The reconcile loop is a model of the controller, not the controller itself;
 // Tier 2 (fake-clientset controller test) exists to corroborate these numbers.
@@ -40,6 +55,19 @@ type reconcileSim struct {
 	limit      int
 	total      int
 	holdRounds int
+	// workers is the controller's --workflow-workers: how many reconciles are in
+	// flight at once. Bounds how far reconcile order may deviate from queue order.
+	workers int
+
+	// singleFront emulates the pre-grant-set controller, so the "before" column is
+	// reproducible from this commit instead of requiring a checkout of the parent
+	// revision. Upstream had two separate widths: notifyWaiters woke the top
+	// (limit - holders) waiters, but checkAcquire admitted only pending.items[0].
+	// The gate lives here rather than in the semaphore because it is a property of
+	// the old code, not a configuration anyone should be able to select. Emulating
+	// it means both columns of the before/after comparison are reproducible with a
+	// single `go test` on this commit; see the header comment for how to run it.
+	singleFront bool
 
 	// enqueued is the controller workqueue: keys that nextWorkflow asked to be
 	// reconciled. A real controller also periodically resyncs, but the point of
@@ -51,18 +79,28 @@ type reconcileSim struct {
 	rounds      int
 	tryAcquires int
 	enqueues    int
+	// bounces is the number of reconciles that attempted acquisition and failed.
+	// Divided by total, this is the average number of times a workflow is woken,
+	// fails, and has to wait to be woken again. Bounded by the wake path: a
+	// workflow only bounces if something enqueued it.
+	bounces int
 
 	// utilization[i] is the number of held slots at the end of round i.
 	utilization []int
 }
 
-func newReconcileSim(ctx context.Context, tb testing.TB, limit, total, holdRounds int) *reconcileSim {
+// newReconcileSim builds a simulation. Set singleFront to measure the
+// pre-grant-set baseline (see reconcileSim.singleFront); leave it false to measure
+// the grant-set implementation in this commit.
+func newReconcileSim(ctx context.Context, tb testing.TB, limit, total, holdRounds, workers int, singleFront bool) *reconcileSim {
 	tb.Helper()
 	sim := &reconcileSim{
-		limit:      limit,
-		total:      total,
-		holdRounds: holdRounds,
-		enqueued:   make(map[string]bool, total),
+		limit:       limit,
+		total:       total,
+		holdRounds:  holdRounds,
+		workers:     workers,
+		singleFront: singleFront,
+		enqueued:    make(map[string]bool, total),
 	}
 	sem, err := newInternalSemaphore(ctx, "bench", func(key string) {
 		sim.enqueues++
@@ -77,17 +115,55 @@ func newReconcileSim(ctx context.Context, tb testing.TB, limit, total, holdRound
 
 func benchKey(i int) string { return fmt.Sprintf("default/wf-%05d", i) }
 
+// pendingHead returns the current head of the priority queue, i.e. the only key
+// upstream's checkAcquire would have admitted. Used solely by the singleFront
+// baseline.
+func (s *reconcileSim) pendingHead() (string, bool) {
+	if s.sem.pending.Len() == 0 {
+		return "", false
+	}
+	return s.sem.pending.items[0].key, true
+}
+
+func (s *reconcileSim) isPendingHead(key string) bool {
+	head, ok := s.pendingHead()
+	return ok && head == key
+}
+
 // shuffleDeterministic permutes keys using a seedless xorshift, so reconcile
 // order is decoupled from priority order without introducing run-to-run
 // variance. round is mixed into the state so successive rounds differ.
 func shuffleDeterministic(keys []string, round int) {
+	shuffleInBatches(keys, round, 0)
+}
+
+// shuffleInBatches models the controller's worker pool. The controller runs
+// --workflow-workers goroutines against a shared workqueue, so at any instant only
+// W workflows are in flight; the queue hands out keys in arrival order but the
+// workers finish in a nondeterministic order within each group of W.
+//
+// So: chop the wake set into consecutive batches of `workers` and permute within
+// each batch, leaving batch order intact. A key that entered the queue early is
+// still reconciled early -- it just races with the W-1 keys alongside it. This is
+// strictly weaker than a whole-set shuffle, which lets a key at the back of the
+// queue be reconciled first.
+//
+// workers <= 0 means unbounded (one batch, i.e. a full shuffle), which is the
+// worst case for the single-front gate and the original harness behaviour.
+func shuffleInBatches(keys []string, round, workers int) {
+	if workers <= 0 || workers > len(keys) {
+		workers = len(keys)
+	}
 	state := uint64(round)*2862933555777941757 + 3037000493
-	for i := len(keys) - 1; i > 0; i-- {
-		state ^= state << 13
-		state ^= state >> 7
-		state ^= state << 17
-		j := int(state % uint64(i+1))
-		keys[i], keys[j] = keys[j], keys[i]
+	for start := 0; start < len(keys); start += workers {
+		end := min(start+workers, len(keys))
+		for i := end - 1; i > start; i-- {
+			state ^= state << 13
+			state ^= state >> 7
+			state ^= state << 17
+			j := start + int(state%uint64(i-start+1))
+			keys[i], keys[j] = keys[j], keys[i]
+		}
 	}
 }
 
@@ -146,9 +222,28 @@ func (s *reconcileSim) run(ctx context.Context, maxRounds int) (completed int, h
 		}
 		sort.Strings(batch)
 		clear(s.enqueued)
-		shuffleDeterministic(batch, s.rounds)
+		shuffleInBatches(batch, s.rounds, s.workers)
+
+		if s.singleFront {
+			// Upstream had no grant set, so a waiter that had already been woken was
+			// woken again on the next release. Clearing the grants each round restores
+			// that repeated-wake behaviour; without this, grantWaiters would suppress
+			// the re-wakes and understate the churn being measured.
+			clear(s.sem.granted)
+		}
 
 		for _, key := range batch {
+			if s.singleFront && !s.isPendingHead(key) {
+				// Upstream checkAcquire admitted only pending.items[0]. Everyone else
+				// bounced with "isn't at the front" after enqueueing the head.
+				s.bounces++
+				s.tryAcquires++
+				if head, ok := s.pendingHead(); ok {
+					s.enqueues++
+					s.enqueued[head] = true
+				}
+				continue
+			}
 			s.tryAcquires++
 			acquired, _, err := s.sem.tryAcquire(ctx, key, nil)
 			if err != nil {
@@ -157,10 +252,15 @@ func (s *reconcileSim) run(ctx context.Context, maxRounds int) (completed int, h
 			if acquired {
 				releaseAt[key] = s.rounds + s.holdRounds
 			} else {
-				// Bounced: the controller re-queues it to try again. This is the
-				// cost the grant set removes.
-				s.enqueued[key] = true
+				s.bounces++
 			}
+			// A bounced workflow is NOT re-queued here. The controller marks it
+			// Pending and returns; it is only reconciled again when something wakes
+			// it (notifyWaiters on a release, or the not-at-front path in
+			// checkAcquire enqueueing the head). Those wakes arrive through the
+			// nextWorkflow callback, which populates s.enqueued. Re-adding every
+			// bouncer here would reconcile workflows the controller left alone and
+			// inflate tryAcquires past what the wake path can produce.
 		}
 
 		s.utilization = append(s.utilization, len(s.sem.lockHolder))
@@ -182,24 +282,40 @@ func (s *reconcileSim) meanUtilization() float64 {
 	return float64(sum) / float64(len(s.utilization)) / float64(s.limit)
 }
 
-// scenario is one workload shape. The Databricks reference case is
-// limit=400/total=1500; the smaller shapes show how the cost scales with limit,
-// which is the signature of the quadratic behaviour.
+// scenario is one workload shape. The reference case is limit=400/total=1500; the
+// smaller shapes show how the cost scales with limit, which is the signature of
+// the quadratic behaviour.
 type scenario struct {
 	name       string
 	limit      int
 	total      int
 	holdRounds int
+	// workers is the controller's --workflow-workers. Zero means unbounded, i.e.
+	// every woken workflow may be reconciled in any order within a round.
+	workers int
 }
 
 var benchScenarios = []scenario{
-	{name: "limit10_wf50", limit: 10, total: 50, holdRounds: 1},
-	{name: "limit50_wf200", limit: 50, total: 200, holdRounds: 1},
-	{name: "limit100_wf400", limit: 100, total: 400, holdRounds: 1},
+	{name: "limit10_wf50", limit: 10, total: 50, holdRounds: 1, workers: 32},
+	{name: "limit50_wf200", limit: 50, total: 200, holdRounds: 1, workers: 32},
+	{name: "limit100_wf400", limit: 100, total: 400, holdRounds: 1, workers: 32},
 	// The reference workload: 400 slots, 1500 workflows. holdRounds=1 isolates
 	// promotion cost from hold duration -- a longer hold only adds a constant per
 	// wave, whereas the promotion cost is what differs between implementations.
-	{name: "limit400_wf1500", limit: 400, total: 1500, holdRounds: 1},
+	// workers=32 is the controller's --workflow-workers default.
+	{name: "limit400_wf1500", limit: 400, total: 1500, holdRounds: 1, workers: 32},
+}
+
+// variants are the two implementations compared side by side. "before" emulates
+// the pre-grant-set controller (see reconcileSim.singleFront); "after" is the
+// grant-set code in this commit. Both columns are therefore reproducible from a
+// single checkout, with no need to build the parent revision.
+var variants = []struct {
+	name        string
+	singleFront bool
+}{
+	{name: "before", singleFront: true},
+	{name: "after", singleFront: false},
 }
 
 // TestSemaphorePromotionCost is the headline measurement, written as a test
@@ -212,37 +328,40 @@ var benchScenarios = []scenario{
 func TestSemaphorePromotionCost(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 
-	t.Logf("%-18s %7s %7s %9s %9s %7s %7s %6s",
-		"scenario", "limit", "wfs", "rounds", "optimum", "ratio", "ampl", "util")
+	t.Logf("%-18s %7s %7s %8s %9s %9s %7s %8s %6s",
+		"scenario", "limit", "wfs", "variant", "rounds", "optimum", "ratio", "bounce/wf", "util")
 
 	for _, sc := range benchScenarios {
-		t.Run(sc.name, func(t *testing.T) {
-			sim := newReconcileSim(ctx, t, sc.limit, sc.total, sc.holdRounds)
+		for _, v := range variants {
+			t.Run(sc.name+"/"+v.name, func(t *testing.T) {
+				sim := newReconcileSim(ctx, t, sc.limit, sc.total, sc.holdRounds, sc.workers, v.singleFront)
 
-			// Cap generously: the quadratic case needs ~limit rounds per wave, so
-			// allow that plus slack. Hitting the cap is reported, not hidden.
-			waves := (sc.total + sc.limit - 1) / sc.limit
-			maxRounds := waves * (sc.limit + sc.holdRounds) * 4
+				// Cap generously: the quadratic case needs ~limit rounds per wave, so
+				// allow that plus slack. Hitting the cap is reported, not hidden.
+				waves := (sc.total + sc.limit - 1) / sc.limit
+				maxRounds := waves * (sc.limit + sc.holdRounds) * 4
 
-			start := time.Now()
-			completed, hitCap := sim.run(ctx, maxRounds)
-			elapsed := time.Since(start)
+				start := time.Now()
+				completed, hitCap := sim.run(ctx, maxRounds)
+				elapsed := time.Since(start)
 
-			optimum := waves * sc.holdRounds
-			ratio := float64(sim.rounds) / float64(optimum)
-			ampl := float64(sim.tryAcquires) / float64(sc.total)
+				optimum := waves * sc.holdRounds
+				ratio := float64(sim.rounds) / float64(optimum)
+				bouncesPerWf := float64(sim.bounces) / float64(sc.total)
 
-			t.Logf("%-18s %7d %7d %9d %9d %6.1fx %6.1fx %5.0f%%",
-				sc.name, sc.limit, sc.total, sim.rounds, optimum, ratio, ampl,
-				sim.meanUtilization()*100)
-			t.Logf("  completed=%d/%d enqueues=%d tryAcquires=%d wall=%s hitRoundCap=%v",
-				completed, sc.total, sim.enqueues, sim.tryAcquires, elapsed.Round(time.Millisecond), hitCap)
+				t.Logf("%-18s %7d %7d %8s %9d %9d %6.1fx %8.1f %5.0f%%",
+					sc.name, sc.limit, sc.total, v.name, sim.rounds, optimum, ratio,
+					bouncesPerWf, sim.meanUtilization()*100)
+				t.Logf("  completed=%d/%d bounces=%d tryAcquires=%d enqueues=%d wall=%s hitRoundCap=%v",
+					completed, sc.total, sim.bounces, sim.tryAcquires, sim.enqueues,
+					elapsed.Round(time.Millisecond), hitCap)
 
-			if completed != sc.total {
-				t.Logf("  NOTE: only %d/%d workflows drained within %d rounds",
-					completed, sc.total, maxRounds)
-			}
-		})
+				if completed != sc.total {
+					t.Logf("  NOTE: only %d/%d workflows drained within %d rounds",
+						completed, sc.total, maxRounds)
+				}
+			})
+		}
 	}
 }
 
@@ -252,16 +371,18 @@ func TestSemaphorePromotionCost(t *testing.T) {
 func BenchmarkSemaphorePromotion(b *testing.B) {
 	ctx := logging.TestContext(b.Context())
 	for _, sc := range benchScenarios {
-		b.Run(sc.name, func(b *testing.B) {
-			waves := (sc.total + sc.limit - 1) / sc.limit
-			maxRounds := waves * (sc.limit + sc.holdRounds) * 4
-			b.ReportAllocs()
-			for b.Loop() {
-				sim := newReconcileSim(ctx, b, sc.limit, sc.total, sc.holdRounds)
-				sim.run(ctx, maxRounds)
-				b.ReportMetric(float64(sim.rounds), "rounds")
-				b.ReportMetric(float64(sim.tryAcquires)/float64(sc.total), "tryAcquire/wf")
-			}
-		})
+		for _, v := range variants {
+			b.Run(sc.name+"/"+v.name, func(b *testing.B) {
+				waves := (sc.total + sc.limit - 1) / sc.limit
+				maxRounds := waves * (sc.limit + sc.holdRounds) * 4
+				b.ReportAllocs()
+				for b.Loop() {
+					sim := newReconcileSim(ctx, b, sc.limit, sc.total, sc.holdRounds, sc.workers, v.singleFront)
+					sim.run(ctx, maxRounds)
+					b.ReportMetric(float64(sim.rounds), "rounds")
+					b.ReportMetric(float64(sim.bounces)/float64(sc.total), "bounces/wf")
+				}
+			})
+		}
 	}
 }
