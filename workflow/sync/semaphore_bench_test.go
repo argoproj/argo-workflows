@@ -354,8 +354,12 @@ var variants = []struct {
 func TestSemaphorePromotionCost(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 
-	t.Logf("%-18s %7s %7s %8s %9s %9s %7s %8s %6s",
-		"scenario", "limit", "wfs", "variant", "rounds", "optimum", "ratio", "bounce/wf", "util")
+	// reconciles/wf is the whole result: how many times the average workflow is
+	// reconciled before it holds the semaphore. Every workflow acquires exactly
+	// once, so this is tryAcquires/total -- one successful reconcile plus every
+	// wasted one. It is the admission amplification factor: 1.0 would mean each
+	// workflow is looked at once and admitted.
+	t.Logf("%-18s %8s %14s", "scenario", "variant", "reconciles/wf")
 
 	for _, sc := range benchScenarios {
 		for _, v := range variants {
@@ -371,20 +375,14 @@ func TestSemaphorePromotionCost(t *testing.T) {
 				completed, hitCap := sim.run(ctx, maxRounds)
 				elapsed := time.Since(start)
 
-				optimum := waves * sc.holdRounds
-				ratio := float64(sim.rounds) / float64(optimum)
-				bouncesPerWf := float64(sim.bounces) / float64(sc.total)
+				t.Logf("%-18s %8s %14.1f",
+					sc.name, v.name, float64(sim.tryAcquires)/float64(sc.total))
 
-				t.Logf("%-18s %7d %7d %8s %9d %9d %6.1fx %8.1f %5.0f%%",
-					sc.name, sc.limit, sc.total, v.name, sim.rounds, optimum, ratio,
-					bouncesPerWf, sim.meanUtilization()*100)
-				t.Logf("  completed=%d/%d bounces=%d tryAcquires=%d enqueues=%d wall=%s hitRoundCap=%v",
-					completed, sc.total, sim.bounces, sim.tryAcquires, sim.enqueues,
-					elapsed.Round(time.Millisecond), hitCap)
-
-				if completed != sc.total {
-					t.Logf("  NOTE: only %d/%d workflows drained within %d rounds",
-						completed, sc.total, maxRounds)
+				// The number above is only meaningful if every workflow actually got
+				// through, so this is an assertion rather than a reported column.
+				if hitCap || completed != sc.total {
+					t.Fatalf("only %d/%d workflows drained within %d rounds (%s)",
+						completed, sc.total, maxRounds, elapsed.Round(time.Millisecond))
 				}
 			})
 		}
