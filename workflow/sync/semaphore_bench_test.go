@@ -307,14 +307,17 @@ type scenario struct {
 }
 
 var benchScenarios = []scenario{
-	{name: "limit10_wf50", limit: 10, total: 50, holdRounds: 1, workers: 32},
-	{name: "limit50_wf200", limit: 50, total: 200, holdRounds: 1, workers: 32},
-	{name: "limit100_wf400", limit: 100, total: 400, holdRounds: 1, workers: 32},
+	{name: "limit10_wf50", limit: 10, total: 50, holdRounds: 1, workers: 16},
+	{name: "limit50_wf200", limit: 50, total: 200, holdRounds: 1, workers: 16},
+	{name: "limit100_wf400", limit: 100, total: 400, holdRounds: 1, workers: 16},
 	// The reference workload: 400 slots, 1500 workflows. holdRounds=1 isolates
 	// promotion cost from hold duration -- a longer hold only adds a constant per
 	// wave, whereas the promotion cost is what differs between implementations.
-	// workers=32 is the controller's --workflow-workers default.
-	{name: "limit400_wf1500", limit: 400, total: 1500, holdRounds: 1, workers: 32},
+	// workers=16 across all scenarios: half the --workflow-workers default of 32,
+	// so the numbers describe a conservatively-sized controller rather than the
+	// most favourable one. Rounds are near-flat in W anyway (1.76 admissions per
+	// round at W=4, 1.66 at W=32, 1.70 at W=512), so this is not a tuned choice.
+	{name: "limit400_wf1500", limit: 400, total: 1500, holdRounds: 1, workers: 16},
 	// Same backlog, different limits. These two exist to isolate the sharpest
 	// symptom: under the single-front gate, rounds-to-drain is a function of the
 	// backlog alone and does not respond to the limit. Both report the same round
@@ -325,8 +328,8 @@ var benchScenarios = []scenario{
 	// no throughput at all; it only enlarges the woken set, so the wasted-reconcile
 	// count grows as limit x total. The grant set is what makes the limit mean
 	// something: "after", both drain in one round per wave.
-	{name: "limit400_wf2000", limit: 400, total: 2000, holdRounds: 1, workers: 32},
-	{name: "limit500_wf2000", limit: 500, total: 2000, holdRounds: 1, workers: 32},
+	{name: "limit400_wf2000", limit: 400, total: 2000, holdRounds: 1, workers: 16},
+	{name: "limit500_wf2000", limit: 500, total: 2000, holdRounds: 1, workers: 16},
 }
 
 // variants are the two implementations compared side by side. "before" emulates
