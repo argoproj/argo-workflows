@@ -150,7 +150,18 @@ func shuffleDeterministic(keys []string, round int) {
 //
 // workers <= 0 means unbounded (one batch, i.e. a full shuffle), which is the
 // worst case for the single-front gate and the original harness behaviour.
+//
+// workers == 1 is rejected rather than supported. Batches of one cannot be
+// permuted, so the wake set would be left in the caller's sorted order, which is
+// priority order -- and iterating in priority order lets each acquire unblock the
+// next key within the same round, cascading the whole backlog through and hiding
+// the head-of-line blocking this harness exists to measure. It reports 88 rounds
+// where every W >= 4 reports ~1200. Measured admissions per round are otherwise
+// flat in W (1.76 at W=4, 1.70 at W=512), so no real setting needs W=1.
 func shuffleInBatches(keys []string, round, workers int) {
+	if workers == 1 {
+		panic("shuffleInBatches: workers=1 leaves keys in priority order, which defeats the measurement; use 0 for a full shuffle")
+	}
 	if workers <= 0 || workers > len(keys) {
 		workers = len(keys)
 	}
@@ -304,6 +315,18 @@ var benchScenarios = []scenario{
 	// wave, whereas the promotion cost is what differs between implementations.
 	// workers=32 is the controller's --workflow-workers default.
 	{name: "limit400_wf1500", limit: 400, total: 1500, holdRounds: 1, workers: 32},
+	// Same backlog, different limits. These two exist to isolate the sharpest
+	// symptom: under the single-front gate, rounds-to-drain is a function of the
+	// backlog alone and does not respond to the limit. Both report the same round
+	// count, as do limit=200 and limit=1000 at this backlog -- admissions hold at
+	// ~1.7 workflows per round no matter how many slots are free, because only the
+	// queue head may acquire and a round admits the head plus however many
+	// successors happen to be reconciled after it. Raising the limit therefore buys
+	// no throughput at all; it only enlarges the woken set, so the wasted-reconcile
+	// count grows as limit x total. The grant set is what makes the limit mean
+	// something: "after", both drain in one round per wave.
+	{name: "limit400_wf2000", limit: 400, total: 2000, holdRounds: 1, workers: 32},
+	{name: "limit500_wf2000", limit: 500, total: 2000, holdRounds: 1, workers: 32},
 }
 
 // variants are the two implementations compared side by side. "before" emulates
