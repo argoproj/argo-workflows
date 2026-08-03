@@ -37,7 +37,7 @@ func forwardSignals(ctx context.Context, signals <-chan os.Signal, pid int, igno
 // startFileSignalHandler starts a goroutine that watches a signal file via
 // inotify. Whenever the file is written to, the integer signal value is read,
 // the file is removed, and the signal is forwarded to the given process.
-func startFileSignalHandler(ctx context.Context, pid int) {
+func startFileSignalHandler(ctx context.Context, pid int, containerName string) {
 	logger := logging.RequireLoggerFromContext(ctx)
 	signalPath := filepath.Clean(filepath.Join(varRunArgo, "ctr", containerName, "signal"))
 	logger.WithField("signalPath", signalPath).Info(ctx, "waiting for signals")

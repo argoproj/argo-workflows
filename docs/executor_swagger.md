@@ -2887,6 +2887,27 @@ when volume is mounted.
 
 
 
+### <span id="pod-resource-claim"></span> PodResourceClaim
+
+
+> It adds a name to it that uniquely identifies the ResourceClaim inside the Pod.
+Containers that need access to the ResourceClaim reference it with this name.
+  
+
+
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| name | string| `string` |  | | Name uniquely identifies this resource claim inside the pod.</br>This must be a DNS_LABEL. |  |
+| resourceClaimName | string| `string` |  | | ResourceClaimName is the name of a ResourceClaim object in the same</br>namespace as this pod.</br>Exactly one of ResourceClaimName and ResourceClaimTemplateName must</br>be set. |  |
+| resourceClaimTemplateName | string| `string` |  | | ResourceClaimTemplateName is the name of a ResourceClaimTemplate</br>object in the same namespace as this pod.</br>The template will be used to create a new ResourceClaim, which will</br>be bound to this pod. When this pod is deleted, the ResourceClaim</br>will also be deleted. The pod name and resource name, along with a</br>generated component, will be used to form a unique name for the</br>ResourceClaim, which will be recorded in pod.status.resourceClaimStatuses.</br>This field is immutable and no changes will be made to the</br>corresponding ResourceClaim by the control plane after creating the</br>ResourceClaim.</br>Exactly one of ResourceClaimName and ResourceClaimTemplateName must</br>be set. |  |
+
+
+
 ### <span id="pod-s-e-linux-change-policy"></span> PodSELinuxChangePolicy
 
 
@@ -4002,6 +4023,7 @@ of the first container processes are calculated.
 | podSpecPatch | string| `string` |  | | PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of</br>container fields which are not strings (e.g. resource limits). |  |
 | priorityClassName | string| `string` |  | | PriorityClassName to apply to workflow pods. |  |
 | resource | [ResourceTemplate](#resource-template)| `ResourceTemplate` |  | |  |  |
+| resourceClaims | [][PodResourceClaim](#pod-resource-claim)| `[]*PodResourceClaim` |  | | ResourceClaims defines the ResourceClaims that must be allocated and reserved before this template's pod is allowed to start.</br>Each entry names either an existing ResourceClaim or a ResourceClaimTemplate in the workflow's namespace, and containers ask for one by name through resources.claims.</br>Replaces the workflow-level resourceClaims as a whole rather than merging with it.</br>Not supported for a template that creates no pod: Steps, DAG and Suspend, which orchestrate other templates, and HTTP and Plugin, which run on the shared agent pod.</br>A template reached through a templateRef keeps its own claims, and falls back to those of the workflow calling it rather than to the spec-level claims of the WorkflowTemplate it was defined in.</br>Requires the DynamicResourceAllocation feature gate to be enabled on the cluster. </br>*Optional.*|  |
 | retryStrategy | [RetryStrategy](#retry-strategy)| `RetryStrategy` |  | |  |  |
 | schedulerName | string| `string` |  | | If specified, the pod will be dispatched by specified scheduler.</br>Or it will be dispatched by workflow scope scheduler if specified.</br>If neither specified, the pod will be dispatched by default scheduler. </br>*Optional.*|  |
 | script | [ScriptTemplate](#script-template)| `ScriptTemplate` |  | |  |  |

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 
@@ -17,6 +18,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4"
 	argoexecex "github.com/argoproj/argo-workflows/v4/cmd/argoexec/executor"
 	executorplugins "github.com/argoproj/argo-workflows/v4/pkg/plugins/executor"
+	"github.com/argoproj/argo-workflows/v4/util/env"
 	"github.com/argoproj/argo-workflows/v4/util/logs"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor"
@@ -139,5 +141,8 @@ func initAgentExecutor(ctx context.Context) *executor.AgentExecutor {
 		plugins = append(plugins, rpc.New(address, string(data)))
 	}
 
-	return executor.NewAgentExecutor(clientSet, restClient, config, namespace, workflowName, workflowUID, plugins)
+	taskWorkers := env.LookupEnvIntOr(ctx, common.EnvAgentTaskWorkers, 16)
+	requeueTime := env.LookupEnvDurationOr(ctx, common.EnvAgentPatchRate, 10*time.Second)
+
+	return executor.NewAgentExecutor(clientSet, restClient, config, namespace, workflowName, workflowUID, plugins, taskWorkers, requeueTime)
 }

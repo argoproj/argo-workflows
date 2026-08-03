@@ -1,12 +1,13 @@
 syntax = "proto3";
-option go_package = "github.com/argoproj/argo-workflows/v4/pkg/apiclient/eventsource";
-
-import "google/api/annotations.proto";
-import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
-import "k8s.io/api/core/v1/generated.proto";
-import "github.com/argoproj/argo-events/pkg/apis/events/v1alpha1/generated.proto";
 
 package eventsource;
+
+import "github.com/argoproj/argo-events/pkg/apis/events/v1alpha1/generated.proto";
+import "google/api/annotations.proto";
+import "k8s.io/api/core/v1/generated.proto";
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
+
+option go_package = "github.com/argoproj/argo-workflows/v4/pkg/apiclient/eventsource";
 
 message CreateEventSourceRequest {
   string namespace = 1;
@@ -66,15 +67,13 @@ message EventSourceWatchEvent {
   github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventSource object = 2;
 }
 
-message EventSourceDeletedResponse {
-}
+message EventSourceDeletedResponse {}
 
 service EventSourceService {
-
   rpc CreateEventSource(CreateEventSourceRequest) returns (github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventSource) {
     option (google.api.http) = {
-      post : "/api/v1/event-sources/{namespace}"
-      body : "*"
+      post: "/api/v1/event-sources/{namespace}"
+      body: "*"
     };
   }
 
@@ -88,8 +87,8 @@ service EventSourceService {
 
   rpc UpdateEventSource(UpdateEventSourceRequest) returns (github.com.argoproj.argo_events.pkg.apis.events.v1alpha1.EventSource) {
     option (google.api.http) = {
-      put : "/api/v1/event-sources/{namespace}/{name}"
-      body : "*"
+      put: "/api/v1/event-sources/{namespace}/{name}"
+      body: "*"
     };
   }
 

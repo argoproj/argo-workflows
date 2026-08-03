@@ -33,5 +33,7 @@ export function Tooltip({content, ...props}: TooltipProps) {
     ) : (
         content
     );
-    return <ArgoTooltip content={renderedContent} maxWidth={isMarkdown ? '50vw' : undefined} {...props} />;
+    // `boundary` is the tippy v5 (Popper 1) top-level API; on a v6 bump this
+    // moves into `popperOptions` and 'viewport' is no longer a valid value.
+    return <ArgoTooltip content={renderedContent} maxWidth={isMarkdown ? '50vw' : undefined} boundary='viewport' {...props} />;
 }

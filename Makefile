@@ -181,7 +181,6 @@ TOOL_EMBEDDOC               := hack/embeddoc/embeddoc
 # npm bin -g will do this on later npms than we have
 NVM_BIN                     ?= $(shell npm config get prefix)/bin
 ifeq ($(USE_NIX), true)
-TOOL_CLANG_FORMAT           := clang-format
 TOOL_TYPOS                  := typos
 TOOL_CSPELL                 := cspell
 TOOL_MARKDOWN_LINK_CHECK    := markdown-link-check
@@ -189,7 +188,6 @@ TOOL_MARKDOWNLINT           := markdownlint
 TOOL_DEVCONTAINER           := devcontainer
 TOOL_PROPERDOCS             := properdocs
 else
-TOOL_CLANG_FORMAT           := /usr/local/bin/clang-format
 TOOL_TYPOS                  := $(GOPATH)/bin/typos
 TOOL_CSPELL                 := $(NVM_BIN)/cspell
 TOOL_MARKDOWN_LINK_CHECK    := $(NVM_BIN)/markdown-link-check
@@ -277,7 +275,7 @@ SWAGGER_FILES := pkg/apiclient/_.primary.swagger.json \
 	pkg/apiclient/workflowarchive/workflow-archive.swagger.json \
 	pkg/apiclient/workflowtemplate/workflow-template.swagger.json \
 	pkg/apiclient/sync/sync.swagger.json
-PROTO_BINARIES := $(TOOL_PROTOC_GEN_GOGO) $(TOOL_PROTOC_GEN_GOGOFAST) $(TOOL_GOIMPORTS) $(TOOL_PROTOC_GEN_GRPC_GATEWAY) $(TOOL_PROTOC_GEN_SWAGGER) $(TOOL_CLANG_FORMAT)
+PROTO_BINARIES := $(TOOL_PROTOC_GEN_GOGO) $(TOOL_PROTOC_GEN_GOGOFAST) $(TOOL_GOIMPORTS) $(TOOL_PROTOC_GEN_GRPC_GATEWAY) $(TOOL_PROTOC_GEN_SWAGGER) $(TOOL_BUF)
 ifneq ($(USE_NIX), true)
 pkg/apiclient/%.swagger.json: $(PROTO_BINARIES)
 endif
@@ -518,16 +516,6 @@ endif
 $(TOOL_EMBEDDOC): hack/embeddoc/main.go hack/embeddoc/go.mod
 	cd hack/embeddoc && go build -o embeddoc .
 
-$(TOOL_CLANG_FORMAT):
-ifeq (, $(shell which clang-format))
-ifeq ($(shell uname),Darwin)
-	brew install clang-format
-else
-	sudo apt update
-	sudo apt install -y clang-format
-endif
-endif
-
 # go-to-protobuf fails with mysterious errors on code that doesn't compile
 ifneq ($(USE_NIX), true)
 pkg/apis/workflow/v1alpha1/generated.proto: $(TOOL_GO_TO_PROTOBUF) $(PROTO_BINARIES)
@@ -538,10 +526,9 @@ pkg/apis/workflow/v1alpha1/generated.proto: $(TYPES) proto-vendor vendor/modules
 	[ -e github.com/argoproj/argo-workflows ] || ln -s ../.. github.com/argoproj/argo-workflows
 	[ -e v4 ] || ln -s . v4
 	# Format proto files. Formatting changes generated code, so we do it here, rather that at lint time.
-	# Why clang-format? Google uses it.
 	@echo "*** This will fail if your code has compilation errors, without reporting those as the cause."
 	@echo "*** So fix them first."
-	find pkg/apiclient -name '*.proto'|xargs clang-format -i
+	$(TOOL_BUF) format -w pkg/apiclient
 	GOFLAGS="$(GOFLAGS) -mod=vendor" $(TOOL_GO_TO_PROTOBUF) \
 		--go-header-file=$(CURDIR)/hack/custom-boilerplate.go.txt \
 		--packages=github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1 \
