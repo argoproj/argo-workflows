@@ -455,9 +455,11 @@ func (woc *wfOperationCtx) resolveReferences(ctx context.Context, stepGroup []wf
 		// nil-preserving view so expression tags can apply `??` fallbacks to skipped/omitted outputs
 		mergedParams := scope.getParametersAny(woc.globalParams())
 
-		// Resolve the "when" clause first to check if this step should execute before resolving the full step.
-		// This avoids unnecessary requeues when a step won't execute but other fields have unresolved references.
-		if step.When != "" {
+		// Resolve the "when" clause first for non-expanding steps (requiring further resolution) to check if this step
+		// should execute before resolving the full step. This avoids unnecessary requeues when a step won't execute but
+		// other fields have unresolved references.
+		// The `!step.ShouldExpand()` guard was added to fix bug #16270
+		if step.When != "" && !step.ShouldExpand() {
 			whenBytes, err := json.Marshal(step.When)
 			if err != nil {
 				return argoerrors.InternalWrapError(err)
