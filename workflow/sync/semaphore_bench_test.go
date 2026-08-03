@@ -12,28 +12,13 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
-// Tier 1 benchmark harness for semaphore promotion throughput.
+// Benchmark harness for semaphore promotion throughput. See
+// TestSemaphorePromotionCost below for how to run it and what it measures.
 //
-// To reproduce the before/after comparison:
-//
-//	go test ./workflow/sync/ -run TestSemaphorePromotionCost -count=1 -v
-//
-// Both columns come from this one command. "before" emulates the pre-grant-set
-// admission gate in the harness (see reconcileSim.singleFront) rather than
-// requiring a checkout of the parent revision, so the comparison is a single
-// deterministic run with no build juggling. Everything is seedless, so two runs
-// on the same commit produce byte-identical numbers.
-//
-// This models the controller's reconcile loop against the in-memory
-// prioritySemaphore directly: no Kubernetes, no pods, no database. The 6-minute
-// workflow body is virtual time (a hold that spans a fixed number of rounds), so
-// a run that takes ~25 minutes in a real cluster completes here in milliseconds.
-//
-// What it measures is the shape of promotion, not wall-clock makespan. The test
-// reports total tryAcquire calls both per workflow and absolute. Every workflow
-// acquires exactly once, so the per-workflow figure is one successful reconcile
-// plus every wasted one -- the admission amplification factor, where 1.0 means
-// each workflow is looked at once and admitted.
+// Both columns come from a single run on this commit: "before" emulates the
+// pre-grant-set admission gate in the harness (see reconcileSim.singleFront)
+// rather than requiring a checkout of the parent revision. Everything is seedless,
+// so two runs on the same commit produce byte-identical numbers.
 //
 // The simulation tracks more than it prints, for use when investigating:
 //
@@ -51,8 +36,12 @@ import (
 //	              it overstates distinct reconciles. Use bounces for per-workflow
 //	              cost and rounds for latency.
 //
-// The reconcile loop is a model of the controller, not the controller itself;
-// Tier 2 (fake-clientset controller test) exists to corroborate these numbers.
+// The reconcile loop is a model of the controller, not the controller itself. It
+// is calibrated against the real thing at one point: the reference shape measured
+// 884 rounds here against 894 on the actual pre-grant-set commit. Nothing else is
+// corroborated end-to-end, so treat the absolute counts as the cost of the
+// promotion strategy under this model, and the before/after ratio -- which shares
+// the model, and so most of its error -- as the load-bearing result.
 
 // reconcileSim drives a semaphore the way the workflow controller does: a set of
 // pending workflows, each of which is reconciled once per round, attempting to
@@ -358,13 +347,38 @@ var variants = []struct {
 	{name: "after", singleFront: false},
 }
 
-// TestSemaphorePromotionCost is the headline measurement, written as a test
-// rather than a Benchmark because the interesting quantity is a structural count
-// (rounds, amplification) that is identical run to run, not a time that needs
-// repetition to stabilize.
+// TestSemaphorePromotionCost is the headline measurement.
 //
-// The optimum is ceil(total/limit) waves, each taking holdRounds. Any excess is
-// promotion overhead.
+// Run it with:
+//
+//	go test ./workflow/sync/ -run TestSemaphorePromotionCost -count=1 -v
+//
+// -v is required, since the results come out through t.Logf. Takes about 3s. Add
+// a scenario name to narrow it:
+//
+//	go test ./workflow/sync/ -run 'TestSemaphorePromotionCost/limit500_wf2000' -count=1 -v
+//
+// Narrowing further to one variant (-run '.../before') runs but prints no table:
+// a row needs both variants to compute its reduction factor, so it is skipped.
+//
+// What it does: queue `total` workflows against one semaphore of size `limit`,
+// then reconcile in rounds until all have run. Each round reconciles every
+// workflow the controller has been asked to look at, in an order deliberately
+// decoupled from priority order; whoever acquires holds its slot for holdRounds
+// rounds and then releases, which wakes waiters. A workflow that fails to acquire
+// is not re-reconciled until something wakes it, exactly as in the controller. No
+// Kubernetes, no pods, no database, and the workflow body is virtual time -- a
+// drain that takes ~25 minutes on a cluster runs here in under a second.
+//
+// What it reports: total tryAcquire calls to drain the queue, absolute and per
+// workflow. Every workflow acquires exactly once, so the per-workflow figure is
+// one useful reconcile plus every wasted one, and 1.0 is the floor. That is the
+// cost of the promotion strategy, since the work of running the workflows
+// themselves is identical in both columns.
+//
+// It is a test rather than a Benchmark because the quantity is a structural count
+// that is identical run to run, not a time needing repetition to stabilize.
+// BenchmarkSemaphorePromotion below covers the wall-clock and allocation side.
 func TestSemaphorePromotionCost(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 
