@@ -138,8 +138,8 @@ func realErrors(doc any, u *jsonschema.OutputUnit) []*jsonschema.OutputUnit {
 	return errs
 }
 
-// isAcceptedTypeMismatch reports whether u is the one known, accepted
-// mismatch between the schema and the examples: httpGet.port and
+// isAcceptedTypeMismatch reports whether u is one of the known, accepted
+// mismatches between the schema and the examples: httpGet.port and
 // podDisruptionBudget.minAvailable are given as YAML integers even though
 // the schema (mirroring the Kubernetes swagger) requires a string, because
 // swagger 2.0 cannot express "string or integer" for a single field. Only
