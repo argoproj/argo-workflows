@@ -9985,12 +9985,13 @@ func TestBuildRetryStrategyLocalScope(t *testing.T) {
 
 	localScope := buildRetryStrategyLocalScope(retryNode, wf.Status.Nodes)
 
-	assert.Len(t, localScope, 5)
+	assert.Len(t, localScope, 6)
 	assert.Equal(t, "1", localScope[varkeys.Retries.Template()])
 	assert.Equal(t, "1", localScope[varkeys.RetriesLastExitCode.Template()])
 	assert.Equal(t, string(wfv1.NodeFailed), localScope[varkeys.RetriesLastStatus.Template()])
 	assert.Equal(t, "6", localScope[varkeys.RetriesLastDuration.Template()])
 	assert.Equal(t, "Error (exit code 1)", localScope[varkeys.RetriesLastMessage.Template()])
+	assert.Equal(t, string(wfv1.NodeTypePod), localScope[varkeys.NodeType.Template()])
 }
 
 const operatorRetryExpressionError = `
