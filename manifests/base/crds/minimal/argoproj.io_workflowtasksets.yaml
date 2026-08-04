@@ -7420,6 +7420,20 @@ spec:
                       required:
                       - action
                       type: object
+                    resourceClaims:
+                      items:
+                        properties:
+                          name:
+                            type: string
+                          resourceClaimName:
+                            type: string
+                          resourceClaimTemplateName:
+                            type: string
+                        required:
+                        - name
+                        type: object
+                      type: array
+                      x-kubernetes-list-type: atomic
                     retryStrategy:
                       properties:
                         affinity:

@@ -9,7 +9,7 @@ ARG TARGETARCH
 SHELL ["/bin/bash", "-c"]
 
 # install protocol buffer tools
-RUN apt-get update && apt-get install -y protobuf-compiler clang-format
+RUN apt-get update && apt-get install -y protobuf-compiler
 
 # install kubectl
 COPY hack/k8s-versions.sh /tmp/

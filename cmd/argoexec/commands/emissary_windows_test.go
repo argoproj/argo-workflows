@@ -17,7 +17,6 @@ func TestEmissary(t *testing.T) {
 	tmp := t.TempDir()
 
 	varRunArgo = tmp
-	includeScriptOutput = true
 
 	err := os.WriteFile(varRunArgo+"/template", []byte(`{}`), 0o600)
 	require.NoError(t, err)
@@ -46,10 +45,9 @@ func TestEmissary(t *testing.T) {
 
 func run(script string) error {
 	cmd := NewEmissaryCommand()
-	_, _, err := cmdutil.ContextWithLogger(cmd, "info", "text")
+	ctx, _, err := cmdutil.ContextWithLogger(cmd, "info", "text")
 	if err != nil {
 		return err
 	}
-	containerName = "main"
-	return cmd.RunE(cmd, append([]string{"powershell", "-c"}, script))
+	return runEmissary(ctx, "main", true, append([]string{"powershell", "-c"}, script))
 }

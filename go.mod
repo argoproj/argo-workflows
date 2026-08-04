@@ -25,7 +25,7 @@ require (
 	github.com/evilmonkeyinc/jsonpath v0.8.1
 	github.com/expr-lang/expr v1.17.8
 	github.com/gavv/httpexpect/v2 v2.17.0
-	github.com/go-git/go-git/v5 v5.19.1
+	github.com/go-git/go-git/v5 v5.19.2
 	github.com/go-jose/go-jose/v4 v4.1.4
 	github.com/go-openapi/jsonreference v1.0.0
 	github.com/go-playground/webhooks/v6 v6.4.0
@@ -46,7 +46,7 @@ require (
 	github.com/moby/moby/api v1.55.0
 	github.com/nao1215/markdown v0.13.0
 	github.com/prometheus/client_golang v1.23.2
-	github.com/prometheus/common v0.70.0
+	github.com/prometheus/common v0.70.1
 	github.com/prometheus/otlptranslator v1.0.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/sethvargo/go-limiter v1.1.0
@@ -102,7 +102,7 @@ require (
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/containers/azcontainerregistry v0.2.3 // indirect
-	github.com/antlr4-go/antlr/v4 v4.13.0 // indirect
+	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/v4a v1.4.31 // indirect
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.57.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.12.0 // indirect
@@ -126,13 +126,12 @@ require (
 	github.com/go-openapi/swag/stringutils v0.26.1 // indirect
 	github.com/go-openapi/swag/typeutils v0.26.1 // indirect
 	github.com/go-openapi/swag/yamlutils v0.26.1 // indirect
-	github.com/google/cel-go v0.26.0 // indirect
+	github.com/google/cel-go v0.29.0 // indirect
 	github.com/klauspost/crc32 v1.3.0 // indirect
 	github.com/moby/moby/client v0.4.1 // indirect
 	github.com/olekukonko/cat v0.0.0-20250911104152-50322a0618f6 // indirect
 	github.com/olekukonko/errors v1.1.0 // indirect
 	github.com/olekukonko/ll v0.1.4-0.20260115111900-9e59c2286df0 // indirect
-	github.com/stoewer/go-strcase v1.3.0 // indirect
 	github.com/zeebo/xxh3 v1.1.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.44.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
@@ -284,7 +283,7 @@ require (
 	github.com/go-errors/errors v1.5.1 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.9.0 // indirect
-	github.com/go-logr/logr v1.4.3
+	github.com/go-logr/logr v1.4.4
 	github.com/go-openapi/jsonpointer v1.0.0 // indirect
 	github.com/go-openapi/swag v0.26.1 // indirect
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
@@ -306,7 +305,7 @@ require (
 	github.com/jonboulle/clockwork v0.5.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
-	github.com/klauspost/compress v1.19.0
+	github.com/klauspost/compress v1.19.1
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de // indirect

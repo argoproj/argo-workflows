@@ -12,6 +12,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/cmd/argoexec/executor"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 func NewArtifactPluginInitCommand() *cobra.Command {
@@ -22,12 +23,14 @@ func NewArtifactPluginInitCommand() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			logger := logging.RequireLoggerFromContext(ctx)
+			containerName := os.Getenv(common.EnvVarContainerName)
+			includeScriptOutput := os.Getenv(common.EnvVarIncludeScriptOutput) == "true"
 
 			name, args := args[0], args[1:]
 			logger.WithFields(logging.Fields{"name": name, "args": args}).Debug(ctx, "starting command")
 
 			go func() {
-				command, closer, err := startCommand(ctx, name, args, template)
+				command, closer, err := startCommand(ctx, name, args, &wfv1.Template{}, containerName, includeScriptOutput)
 				if err != nil {
 					logger.WithError(err).Error(ctx, "failed to start command")
 					return

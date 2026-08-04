@@ -15,7 +15,7 @@ This feature works with all supported artifact repositories (S3, GCS, Azure Blob
 Uploaded files are written under the `uploads/{namespace}/{uuid}/{filename}` key in the artifact
 repository before the workflow is submitted. The maximum accepted upload size is controlled by the
 `ARGO_SERVER_MAX_ARTIFACT_UPLOAD_BYTES` environment variable on the Argo Server (default `1073741824`,
-i.e. 1GiB); requests over this size receive `413 Request Entity Too Large`.
+i.e., 1 GiB); requests over this size receive `413 Request Entity Too Large`.
 
 Abandoned uploads (never submitted) rely on operator-configured bucket lifecycle under
 `uploads/{namespace}/`; see [Configuring Your Artifact Repository](configure-artifact-repository.md#abandoned-upload-cleanup).
