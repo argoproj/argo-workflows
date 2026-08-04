@@ -3,7 +3,7 @@ import React, {useState} from 'react';
 
 import {ErrorNotice} from '../../shared/components/error-notice';
 import {getValueFromParameter, ParametersInput} from '../../shared/components/parameters-input';
-import {Tooltip} from '../../shared/components/tooltip';
+import {TooltipIcon} from '../../shared/components/tooltip';
 import {Parameter, RetryOpts, Workflow} from '../../shared/models';
 import {services} from '../../shared/services';
 
@@ -77,10 +77,7 @@ export function RetryWorkflowNode(props: Props) {
                 {/* Restart Successful */}
                 <div key='restart-successful' style={{marginBottom: 25}}>
                     <label>
-                        Restart Successful{' '}
-                        <Tooltip content='Leaving this box unchecked avoids re-running nodes that have run successfully before'>
-                            <i className='fa fa-question-circle' style={{marginLeft: 4}} />
-                        </Tooltip>
+                        Restart Successful <TooltipIcon content='Leaving this box unchecked avoids re-running nodes that have run successfully before' style={{marginLeft: 4}} />
                     </label>
                     <div className='columns small-9'>
                         <Checkbox checked={restartSuccessful} onChange={setRestartSuccessful} />
