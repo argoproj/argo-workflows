@@ -7846,6 +7846,54 @@ status:
   startTime: "2021-01-22T10:28:12Z"
 `
 
+var podWithSidecarOOM = `
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: main
+    env:
+    - name: ARGO_CONTAINER_NAME
+      value: main
+status:
+  containerStatuses:
+  - name: main
+    ready: false
+    restartCount: 0
+    started: false
+    state:
+      terminated:
+        exitCode: 0
+        finishedAt: "2021-01-22T09:50:17Z"
+        reason: Completed
+        startedAt: "2021-01-22T09:50:16Z"
+  - name: wait
+    ready: false
+    restartCount: 0
+    started: false
+    state:
+      terminated:
+        exitCode: 0
+        finishedAt: "2021-01-22T09:50:18Z"
+        reason: Completed
+        startedAt: "2021-01-22T09:50:16Z"
+  - name: istio-proxy
+    ready: false
+    restartCount: 0
+    started: false
+    state:
+      terminated:
+        exitCode: 137
+        finishedAt: "2021-01-22T09:50:17Z"
+        reason: OOMKilled
+        startedAt: "2021-01-22T09:50:16Z"
+  hostIP: 172.19.0.2
+  phase: Failed
+  podIP: 10.42.0.74
+  qosClass: Burstable
+  startTime: "2021-01-22T09:50:15Z"
+`
+
 func TestPodFailureWithContainerOOM(t *testing.T) {
 	tests := []struct {
 		podDetail string
@@ -7855,6 +7903,10 @@ func TestPodFailureWithContainerOOM(t *testing.T) {
 		phase:     wfv1.NodeError,
 	}, {
 		podDetail: podWithMainContainerOOM,
+		phase:     wfv1.NodeFailed,
+	}, {
+		// A sidecar OOMKilled (exit 137) must fail the node, not be ignored as a SIGKILL.
+		podDetail: podWithSidecarOOM,
 		phase:     wfv1.NodeFailed,
 	}}
 	var pod apiv1.Pod

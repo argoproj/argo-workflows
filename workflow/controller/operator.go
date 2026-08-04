@@ -1841,6 +1841,13 @@ func (woc *wfOperationCtx) inferFailedReason(ctx context.Context, pod *apiv1.Pod
 			// the legacy init/wait paths do separately.
 			return wfv1.NodeError, msg
 		default:
+			// A sidecar that was OOMKilled terminates with exit code 137, which would
+			// otherwise be treated as an argoexec-initiated SIGKILL and ignored below.
+			// OOMKilled is a genuine failure the wait container may not observe, so
+			// surface it as a node failure.
+			if t.Reason == "OOMKilled" {
+				return wfv1.NodeFailed, msg
+			}
 			if t.ExitCode != 137 && t.ExitCode != 143 {
 				return wfv1.NodeFailed, msg
 			}
