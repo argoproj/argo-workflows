@@ -825,8 +825,6 @@ func TestSaveLogs(t *testing.T) {
 		// In init-less pods there is no init/wait container - a single
 		// supervisor container plays both roles. SaveLogs must archive the
 		// supervisor's combined log and not touch init/wait.
-		t.Setenv(common.EnvVarInitlessPod, "true")
-
 		ctx := logging.TestContext(t.Context())
 		tr, err := tracing.New(ctx, `argoexec`)
 		require.NoError(t, err)
@@ -839,6 +837,7 @@ func TestSaveLogs(t *testing.T) {
 			Template:        templateWithMainAndSystemLogs,
 			RuntimeExecutor: &mockRuntimeExecutor,
 			Tracing:         tr,
+			initlessPod:     true,
 		}
 
 		we.SaveLogs(ctx)
@@ -852,8 +851,6 @@ func TestSaveLogs(t *testing.T) {
 	t.Run("init-less: supervisor skipped when combined file is missing", func(t *testing.T) {
 		// ErrorNotExist must be skipped, not recorded as
 		// an error - a returned error crash-loops the supervisor.
-		t.Setenv(common.EnvVarInitlessPod, "true")
-
 		ctx := logging.TestContext(t.Context())
 		tr, err := tracing.New(ctx, `argoexec`)
 		require.NoError(t, err)
@@ -866,6 +863,7 @@ func TestSaveLogs(t *testing.T) {
 			Template:        templateWithMainAndSystemLogs,
 			RuntimeExecutor: &mockRuntimeExecutor,
 			Tracing:         tr,
+			initlessPod:     true,
 		}
 
 		we.SaveLogs(ctx)

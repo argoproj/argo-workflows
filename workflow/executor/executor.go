@@ -830,7 +830,7 @@ func (we *WorkflowExecutor) SaveLogs(ctx context.Context) []wfv1.Artifact {
 		// ErrNotExist is skipped as safety net for tee setup failure (unlike main containers)
 		if archiveSystem {
 			systemContainerNames := []string{common.InitContainerName, common.WaitContainerName}
-			if common.IsInitlessPod() {
+			if we.initlessPod {
 				systemContainerNames = []string{common.SupervisorContainerName}
 			}
 			for _, containerName := range systemContainerNames {
