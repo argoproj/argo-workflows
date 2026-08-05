@@ -76,9 +76,8 @@ export function RetryWorkflowNode(props: Props) {
 
                 {/* Restart Successful */}
                 <div key='restart-successful' style={{marginBottom: 25}}>
-                    <label>
-                        Restart Successful <TooltipIcon content='Leaving this box unchecked avoids re-running nodes that have run successfully before' style={{marginLeft: 4}} />
-                    </label>
+                    <label>Restart Successful</label>
+                    <TooltipIcon content='Leaving this box unchecked avoids re-running nodes that have run successfully before' style={{marginLeft: 4}} />
                     <div className='columns small-9'>
                         <Checkbox checked={restartSuccessful} onChange={setRestartSuccessful} />
                     </div>
