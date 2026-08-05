@@ -3934,9 +3934,18 @@ definitions:
         title: RetryAffinity prevents running steps on the same host.
         type: object
     RetryNodeAntiAffinity:
-        description: In order to prevent running steps on the same host, it uses "kubernetes.io/hostname".
-        title: RetryNodeAntiAffinity is a placeholder for future expansion, only empty nodeAntiAffinity is allowed.
+        description: In order to identify hosts, it uses "kubernetes.io/hostname".
+        properties:
+            type:
+                $ref: '#/definitions/RetryNodeAntiAffinityType'
+        title: RetryNodeAntiAffinity prevents running steps on the hosts that previous attempts ran on.
         type: object
+    RetryNodeAntiAffinityType:
+        description: |-
+            RetryNodeAntiAffinityType determines how strictly a retry avoids the hosts that
+            previous attempts ran on.
+            +kubebuilder:validation:Enum="";Required;Preferred
+        type: string
     RetryPolicy:
         description: +kubebuilder:validation:Enum=Always;OnFailure;OnError;OnTransientError
         title: RetryPolicy defines the policy for retrying workflow steps.

@@ -31,6 +31,17 @@ spec:
 * `limit` is the maximum number of times the container will be retried.
 * `retryPolicy` specifies if a container will be retried on failure, error, both, or only transient errors (e.g. i/o or TLS handshake timeout). "Always" retries on both errors and failures. Also available: `OnFailure` (default), "`OnError`", and "`OnTransientError`" (available after v3.0.0-rc2).
 * `backoff` is an exponential back-off
-* `nodeAntiAffinity` prevents running steps on the same host.  Current implementation allows only empty `nodeAntiAffinity` (i.e. `nodeAntiAffinity: {}`) and by default it uses label `kubernetes.io/hostname` as the selector.
+* `nodeAntiAffinity` prevents running steps on the same host. By default it uses label `kubernetes.io/hostname` as the selector.
+  Its `type` controls how strictly earlier hosts are avoided:
+    * `Required` (the default, and what an empty `nodeAntiAffinity: {}` gives you) excludes those hosts outright, so a retry stays unschedulable once every eligible host has been tried.
+    * `Preferred` only de-prioritises them, so retries keep running after every eligible host has been tried. Use this when the retry limit is higher than the number of eligible nodes.
+
+```yaml
+    retryStrategy:
+      limit: 10
+      affinity:
+        nodeAntiAffinity:
+          type: Preferred
+```
 
 Providing an empty `retryStrategy` (i.e. `retryStrategy: {}`) will cause a container to retry until completion.

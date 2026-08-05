@@ -2359,9 +2359,28 @@ type Backoff struct {
 	Cap string `json:"cap,omitempty" protobuf:"varint,4,opt,name=cap"`
 }
 
-// RetryNodeAntiAffinity is a placeholder for future expansion, only empty nodeAntiAffinity is allowed.
-// In order to prevent running steps on the same host, it uses "kubernetes.io/hostname".
-type RetryNodeAntiAffinity struct{}
+// RetryNodeAntiAffinityType determines how strictly a retry avoids the hosts that
+// previous attempts ran on.
+// +kubebuilder:validation:Enum="";Required;Preferred
+type RetryNodeAntiAffinityType string
+
+const (
+	// RetryNodeAntiAffinityRequired excludes previously used hosts outright. A retry stays
+	// unschedulable once every eligible host has been tried. This is the default.
+	RetryNodeAntiAffinityRequired RetryNodeAntiAffinityType = "Required"
+	// RetryNodeAntiAffinityPreferred only de-prioritises previously used hosts, so a retry
+	// can still be scheduled after every eligible host has been tried.
+	RetryNodeAntiAffinityPreferred RetryNodeAntiAffinityType = "Preferred"
+)
+
+// RetryNodeAntiAffinity prevents running steps on the hosts that previous attempts ran on.
+// In order to identify hosts, it uses "kubernetes.io/hostname".
+type RetryNodeAntiAffinity struct {
+	// Type determines whether previously used hosts are excluded outright ("Required", the
+	// default) or merely de-prioritised ("Preferred"). Use "Preferred" when retries must
+	// remain schedulable even after every eligible host has been tried.
+	Type RetryNodeAntiAffinityType `json:"type,omitempty" protobuf:"bytes,1,opt,name=type,casttype=RetryNodeAntiAffinityType"`
+}
 
 // RetryAffinity prevents running steps on the same host.
 type RetryAffinity struct {

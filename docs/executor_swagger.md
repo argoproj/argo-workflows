@@ -3382,12 +3382,35 @@ cause implementors to also use a fixed point implementation.
 ### <span id="retry-node-anti-affinity"></span> RetryNodeAntiAffinity
 
 
-> In order to prevent running steps on the same host, it uses "kubernetes.io/hostname".
+> In order to identify hosts, it uses "kubernetes.io/hostname".
   
 
 
 
-`any`
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| type | [RetryNodeAntiAffinityType](#retry-node-anti-affinity-type)| `RetryNodeAntiAffinityType` |  | |  |  |
+
+
+
+### <span id="retry-node-anti-affinity-type"></span> RetryNodeAntiAffinityType
+
+
+> RetryNodeAntiAffinityType determines how strictly a retry avoids the hosts that
+previous attempts ran on.
+  
+
+
+
+| Name | Type | Go type | Default | Description | Example |
+|------|------|---------| ------- |-------------|---------|
+| RetryNodeAntiAffinityType | string| string | | RetryNodeAntiAffinityType determines how strictly a retry avoids the hosts that</br>previous attempts ran on. </br>*Allowed values: "", Required, Preferred.*|  |
+
+
 
 ### <span id="retry-policy"></span> RetryPolicy
 
