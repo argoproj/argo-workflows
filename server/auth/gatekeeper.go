@@ -181,35 +181,52 @@ func (s *gatekeeper) getClients(ctx context.Context, req any) (*servertypes.Clie
 	}
 	switch mode {
 	case Client:
-		restConfig, clients, err := s.clientForAuthorization(authorization, s.restConfig)
-		if err != nil {
-			return nil, nil, status.Error(codes.Unauthenticated, err.Error())
-		}
-		claims, _ := serviceaccount.ClaimSetFor(restConfig)
-		return clients, claims, nil
+		return s.authenticateClient(authorization)
 	case Server:
-		claims, _ := serviceaccount.ClaimSetFor(s.restConfig)
-		return s.clients, claims, nil
+		return s.authenticateServer()
 	case SSO:
-		logger := logging.RequireLoggerFromContext(ctx)
-		claims, err := s.ssoIf.Authorize(authorization)
-		if err != nil {
-			return nil, nil, status.Error(codes.Unauthenticated, err.Error())
-		}
-		if s.ssoIf.IsRBACEnabled() {
-			clients, err := s.rbacAuthorization(ctx, claims, req)
-			if err != nil {
-				logger.WithError(err).Error(ctx, "failed to perform RBAC authorization")
-				return nil, nil, status.Error(codes.PermissionDenied, "not allowed")
-			}
-			return clients, claims, nil
-		}
-		// important! write an audit entry (i.e. log entry) so we know which user performed an operation
-		logger.WithFields(addClaimsLogFields(claims, nil)).Info(ctx, "using the default service account for user")
-		return s.clients, claims, nil
+		return s.authenticateSSO(ctx, authorization, req)
 	default:
 		panic("this should never happen")
 	}
+}
+
+func (s *gatekeeper) authenticateClient(authorization string) (*servertypes.Clients, *authTypes.Claims, error) {
+	restConfig, clients, err := s.clientForAuthorization(authorization, s.restConfig)
+	if err != nil {
+		return nil, nil, status.Error(codes.Unauthenticated, err.Error())
+	}
+
+	claims, _ := serviceaccount.ClaimSetFor(restConfig)
+	return clients, claims, nil
+}
+
+func (s *gatekeeper) authenticateServer() (*servertypes.Clients, *authTypes.Claims, error) {
+	claims, _ := serviceaccount.ClaimSetFor(s.restConfig)
+	return s.clients, claims, nil
+}
+
+func (s *gatekeeper) authenticateSSO(
+	ctx context.Context,
+	authorization string,
+	req any,
+) (*servertypes.Clients, *authTypes.Claims, error) {
+	logger := logging.RequireLoggerFromContext(ctx)
+	claims, err := s.ssoIf.Authorize(authorization)
+	if err != nil {
+		return nil, nil, status.Error(codes.Unauthenticated, err.Error())
+	}
+	if s.ssoIf.IsRBACEnabled() {
+		clients, err := s.rbacAuthorization(ctx, claims, req)
+		if err != nil {
+			logger.WithError(err).Error(ctx, "failed to perform RBAC authorization")
+			return nil, nil, status.Error(codes.PermissionDenied, "not allowed")
+		}
+		return clients, claims, nil
+	}
+	// important! write an audit entry (i.e. log entry) so we know which user performed an operation
+	logger.WithFields(addClaimsLogFields(claims, nil)).Info(ctx, "using the default service account for user")
+	return s.clients, claims, nil
 }
 
 func getNamespace(req any) string {
