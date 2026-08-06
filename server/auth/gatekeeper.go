@@ -159,36 +159,47 @@ func getAuthHeaders(md metadata.MD) []string {
 
 func (s *gatekeeper) getClients(ctx context.Context, req any) (*servertypes.Clients, *authTypes.Claims, error) {
 	md, _ := metadata.FromIncomingContext(ctx)
+	//
+	// Authorization Header Authentication
+	//
 	authorizations := getAuthHeaders(md)
-	// Required for GetMode() with Server auth when no auth header specified
-	if len(authorizations) == 0 {
-		authorizations = append(authorizations, "")
-	}
-	valid := false
-	var mode Mode
-	var authorization string
+	if len(authorizations) > 0 {
+		for _, authorization := range authorizations {
+			if authorization == "" {
+				continue
+			}
 
-	for _, token := range authorizations {
-		mode, valid = s.Modes.GetMode(token)
-		// Stop checking after the first valid token
-		if valid {
-			authorization = token
-			break
+			if s.Modes[SSO] && strings.HasPrefix(authorization, sso.Prefix) {
+				return s.authenticateSSO(ctx, authorization, req)
+			}
+
+			if s.Modes[Client] &&
+				(strings.HasPrefix(authorization, "Bearer ") ||
+					strings.HasPrefix(authorization, "Basic ")) {
+				return s.authenticateClient(authorization)
+			}
+
+			return nil, nil, status.Error(
+				codes.Unauthenticated,
+				"token not valid. see https://argo-workflows.readthedocs.io/en/latest/faq/",
+			)
 		}
+
+		// All Authorization headers were empty.
+		// Fall through to the next authentication method.
 	}
-	if !valid {
-		return nil, nil, status.Error(codes.Unauthenticated, "token not valid. see https://argo-workflows.readthedocs.io/en/latest/faq/")
-	}
-	switch mode {
-	case Client:
-		return s.authenticateClient(authorization)
-	case Server:
+	//
+	// Trusted Header Authentication
+	//
+	// TODO: Authenticate using trusted headers.
+	if s.Modes[Server] {
 		return s.authenticateServer()
-	case SSO:
-		return s.authenticateSSO(ctx, authorization, req)
-	default:
-		panic("this should never happen")
 	}
+
+	return nil, nil, status.Error(
+		codes.Unauthenticated,
+		"token not valid. see https://argo-workflows.readthedocs.io/en/latest/faq/",
+	)
 }
 
 func (s *gatekeeper) authenticateClient(authorization string) (*servertypes.Clients, *authTypes.Claims, error) {
