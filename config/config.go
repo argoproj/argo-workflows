@@ -118,6 +118,9 @@ type Config struct {
 	// SSO in settings for single-sign on
 	SSO SSOConfig `json:"sso,omitzero"`
 
+	// Header in settings for trusted header authentication
+	Header HeaderConfig `json:"header,omitzero"`
+
 	// Synchronization via databases config
 	Synchronization *SyncConfig `json:"synchronization,omitempty"`
 
