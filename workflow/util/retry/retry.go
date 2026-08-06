@@ -93,6 +93,11 @@ func AddHostnamesToPreferredAffinity(hostSelector string, hostNames []string, ta
 			matchExpression := &targetTerms[i].Preference.MatchExpressions[j]
 			if matchExpression.Key == hostSelector && matchExpression.Operator == apiv1.NodeSelectorOpNotIn {
 				matchExpression.Values = RemoveDuplicates(append(matchExpression.Values, hostNames...))
+				// the retry hostnames now ride on this term, so it has to carry the
+				// anti-affinity weight rather than whatever lower weight it was declared with
+				if targetTerms[i].Weight < PreferredHostAntiAffinityWeight {
+					targetTerms[i].Weight = PreferredHostAntiAffinityWeight
+				}
 				return targetAffinity
 			}
 		}

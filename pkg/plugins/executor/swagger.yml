@@ -3943,7 +3943,8 @@ definitions:
     RetryNodeAntiAffinityType:
         description: |-
             RetryNodeAntiAffinityType determines how strictly a retry avoids the hosts that
-            previous attempts ran on.
+            previous attempts ran on. An omitted or empty value is treated as "Required", which
+            is the behaviour of releases before this field existed.
             +kubebuilder:validation:Enum="";Required;Preferred
         type: string
     RetryPolicy:

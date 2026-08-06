@@ -3401,14 +3401,15 @@ cause implementors to also use a fixed point implementation.
 
 
 > RetryNodeAntiAffinityType determines how strictly a retry avoids the hosts that
-previous attempts ran on.
+previous attempts ran on. An omitted or empty value is treated as "Required", which
+is the behaviour of releases before this field existed.
   
 
 
 
 | Name | Type | Go type | Default | Description | Example |
 |------|------|---------| ------- |-------------|---------|
-| RetryNodeAntiAffinityType | string| string | | RetryNodeAntiAffinityType determines how strictly a retry avoids the hosts that</br>previous attempts ran on. </br>*Allowed values: "", Required, Preferred.*|  |
+| RetryNodeAntiAffinityType | string| string | | RetryNodeAntiAffinityType determines how strictly a retry avoids the hosts that</br>previous attempts ran on. An omitted or empty value is treated as "Required", which</br>is the behaviour of releases before this field existed. </br>*Allowed values: "", Required, Preferred.*|  |
 
 
 

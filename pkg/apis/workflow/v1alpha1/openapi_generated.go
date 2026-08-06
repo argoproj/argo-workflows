@@ -5381,7 +5381,7 @@ func schema_pkg_apis_workflow_v1alpha1_RetryNodeAntiAffinity(ref common.Referenc
 				Properties: map[string]spec.Schema{
 					"type": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Type determines whether previously used hosts are excluded outright (\"Required\", the default) or merely de-prioritised (\"Preferred\"). Use \"Preferred\" when retries must remain schedulable even after every eligible host has been tried.",
+							Description: "Type determines whether previously used hosts are excluded outright (\"Required\", the default) or merely de-prioritised (\"Preferred\"). Use \"Preferred\" when a retry should still be able to run on a previously used host once every eligible host has been tried, rather than staying pending.",
 							Type:        []string{"string"},
 							Format:      "",
 						},

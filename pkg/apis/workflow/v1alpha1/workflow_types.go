@@ -2360,16 +2360,20 @@ type Backoff struct {
 }
 
 // RetryNodeAntiAffinityType determines how strictly a retry avoids the hosts that
-// previous attempts ran on.
+// previous attempts ran on. An omitted or empty value is treated as "Required", which
+// is the behaviour of releases before this field existed.
 // +kubebuilder:validation:Enum="";Required;Preferred
 type RetryNodeAntiAffinityType string
 
 const (
 	// RetryNodeAntiAffinityRequired excludes previously used hosts outright. A retry stays
-	// unschedulable once every eligible host has been tried. This is the default.
+	// unschedulable once every eligible host has been tried. This is the default, and is
+	// what an omitted or empty type resolves to.
 	RetryNodeAntiAffinityRequired RetryNodeAntiAffinityType = "Required"
 	// RetryNodeAntiAffinityPreferred only de-prioritises previously used hosts, so a retry
-	// can still be scheduled after every eligible host has been tried.
+	// can still be scheduled onto a previously used host once every eligible host has been
+	// tried. It expresses a preference, not a guarantee: other scheduling constraints can
+	// still leave the retry pending.
 	RetryNodeAntiAffinityPreferred RetryNodeAntiAffinityType = "Preferred"
 )
 
@@ -2377,8 +2381,9 @@ const (
 // In order to identify hosts, it uses "kubernetes.io/hostname".
 type RetryNodeAntiAffinity struct {
 	// Type determines whether previously used hosts are excluded outright ("Required", the
-	// default) or merely de-prioritised ("Preferred"). Use "Preferred" when retries must
-	// remain schedulable even after every eligible host has been tried.
+	// default) or merely de-prioritised ("Preferred"). Use "Preferred" when a retry should
+	// still be able to run on a previously used host once every eligible host has been
+	// tried, rather than staying pending.
 	Type RetryNodeAntiAffinityType `json:"type,omitempty" protobuf:"bytes,1,opt,name=type,casttype=RetryNodeAntiAffinityType"`
 }
 

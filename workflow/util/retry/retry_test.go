@@ -468,6 +468,50 @@ func TestAddHostnamesToPreferredAffinity(t *testing.T) {
 			[]string{"hostname1", "hostnameA", "hostnameB", "hostnameC"},
 			preferred[0].Preference.MatchExpressions[0].Values,
 			"hostnameA was already present and must not be duplicated")
+		assert.Equal(t, PreferredHostAntiAffinityWeight, preferred[0].Weight)
+	})
+	t.Run("RaisesWeightOfExistingLowerWeightedTerm", func(t *testing.T) {
+		existingAffinity := &apiv1.Affinity{
+			NodeAffinity: &apiv1.NodeAffinity{
+				PreferredDuringSchedulingIgnoredDuringExecution: []apiv1.PreferredSchedulingTerm{
+					{
+						Weight: 1,
+						Preference: apiv1.NodeSelectorTerm{
+							MatchExpressions: []apiv1.NodeSelectorRequirement{
+								{
+									Key:      hostSelector,
+									Operator: apiv1.NodeSelectorOpNotIn,
+									Values:   []string{"hostname1"},
+								},
+							},
+						},
+					},
+					{
+						Weight: 50,
+						Preference: apiv1.NodeSelectorTerm{
+							MatchExpressions: []apiv1.NodeSelectorRequirement{
+								{
+									Key:      "topology.kubernetes.io/zone",
+									Operator: apiv1.NodeSelectorOpIn,
+									Values:   []string{"zone-a"},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		targetAffinity := AddHostnamesToPreferredAffinity(hostSelector, hostNames, existingAffinity)
+		preferred := targetAffinity.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution
+		require.Len(t, preferred, 2)
+		// merging into a term declared at weight 1 must not leave the retry hostnames
+		// ranked below the user's unrelated weight-50 preference
+		assert.Equal(t, PreferredHostAntiAffinityWeight, preferred[0].Weight,
+			"the merged term must carry the anti-affinity weight, not the weight it was declared with")
+		assert.Equal(t,
+			[]string{"hostname1", "hostnameA", "hostnameB", "hostnameC"},
+			preferred[0].Preference.MatchExpressions[0].Values)
+		assert.Equal(t, int32(50), preferred[1].Weight, "an unrelated preference must keep its own weight")
 	})
 	t.Run("AppendsAlongsideUnrelatedTerm", func(t *testing.T) {
 		unrelatedTerm := apiv1.PreferredSchedulingTerm{

@@ -34,7 +34,7 @@ spec:
 * `nodeAntiAffinity` prevents running steps on the same host. By default it uses label `kubernetes.io/hostname` as the selector.
   Its `type` controls how strictly earlier hosts are avoided:
     * `Required` (the default, and what an empty `nodeAntiAffinity: {}` gives you) excludes those hosts outright, so a retry stays unschedulable once every eligible host has been tried.
-    * `Preferred` only de-prioritises them, so retries keep running after every eligible host has been tried. Use this when the retry limit is higher than the number of eligible nodes.
+    * `Preferred` only de-prioritises them, so a retry can be scheduled onto a previously tried host once every eligible host has been tried. This is a preference rather than a guarantee — other scheduling constraints can still leave the retry pending. Use this when the retry limit is higher than the number of eligible nodes.
 
 ```yaml
     retryStrategy:
