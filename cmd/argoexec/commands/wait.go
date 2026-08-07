@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"go.opentelemetry.io/otel/trace"
 
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	wfexecutor "github.com/argoproj/argo-workflows/v4/workflow/executor"
 )
 
@@ -26,7 +27,7 @@ func NewWaitCommand() *cobra.Command {
 }
 
 func waitContainer(ctx context.Context) error {
-	return runAuxiliaryContainer(ctx,
+	return runAuxiliaryContainer(ctx, common.WaitContainerName,
 		func(we *wfexecutor.WorkflowExecutor, ctx context.Context) (context.Context, trace.Span) {
 			return we.Tracing.StartRunWaitContainer(ctx, we.WorkflowName(), we.Namespace)
 		},

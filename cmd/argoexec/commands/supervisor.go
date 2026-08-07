@@ -57,7 +57,7 @@ func NewSupervisorCommand() *cobra.Command {
 }
 
 func supervisorContainer(ctx context.Context) error {
-	return runAuxiliaryContainer(ctx,
+	return runAuxiliaryContainer(ctx, common.SupervisorContainerName,
 		func(we *wfexecutor.WorkflowExecutor, ctx context.Context) (context.Context, trace.Span) {
 			return we.Tracing.StartRunSupervisorContainer(ctx, we.WorkflowName(), we.Namespace)
 		},

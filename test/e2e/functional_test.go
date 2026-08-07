@@ -5,6 +5,7 @@ package e2e
 import (
 	"context"
 	"fmt"
+	"os"
 	"testing"
 	"time"
 
@@ -35,6 +36,68 @@ func (s *FunctionalSuite) TestArchiveStrategies() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.WorkflowSucceeded, status.Phase)
+		})
+}
+
+// verifies that system container logs (init/wait, or supervisor in the init-less layout) are saved as artifacts when archiveSystemContainerLogs: true
+func (s *FunctionalSuite) TestArchiveSystemContainerLogs() {
+	s.Given().
+		Workflow(`@testdata/workflow-archive-init-wait-logs.yaml`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded).
+		Then().
+		ExpectWorkflowNode(wfv1.SucceededPodNode, func(t *testing.T, n *wfv1.NodeStatus, p *apiv1.Pod) {
+			require.NotNil(t, n.Outputs, "outputs should exist")
+			artifactNames := make([]string, 0, len(n.Outputs.Artifacts))
+			for _, a := range n.Outputs.Artifacts {
+				artifactNames = append(artifactNames, a.Name)
+			}
+			assert.Contains(t, artifactNames, "main-logs", "main-logs artifact should exist")
+
+			auxLogs := fixtures.AuxContainerName() + "-logs"
+			assert.Contains(t, artifactNames, auxLogs, auxLogs+" artifact should exist")
+
+			if os.Getenv("E2E_INITLESS") != "true" {
+				assert.Contains(t, artifactNames, "init-logs", "init-logs artifact should exist")
+			}
+		})
+}
+
+// verifies behavior when input artifact loading fails with system-container-log archiving enabled.
+// Legacy layout: the init container fails, wait never starts, so no system logs are archived and
+// the workflow must still end cleanly (regression guard for the tee added in init.go).
+// Init-less layout: the supervisor's pre-main fails and the supervisor exits non-zero, so the
+// workflow ends in the Error phase just like the legacy layout — but PostMain still runs first,
+// so supervisor-logs IS archived. An improvement over the legacy layout.
+func (s *FunctionalSuite) TestArchiveSystemContainerLogsWhenArtifactLoadFails() {
+	if os.Getenv("E2E_INITLESS") == "true" {
+		s.Given().
+			Workflow(`@testdata/workflow-archive-artifact-load-fail.yaml`).
+			When().
+			SubmitWorkflow().
+			WaitForWorkflow(fixtures.ToBeErrored).
+			Then().
+			ExpectWorkflowNode(func(status wfv1.NodeStatus) bool {
+				return status.Type == wfv1.NodeTypePod && status.Phase == wfv1.NodeError
+			}, func(t *testing.T, n *wfv1.NodeStatus, _ *apiv1.Pod) {
+				require.NotNil(t, n.Outputs, "outputs should exist")
+				artifactNames := make([]string, 0, len(n.Outputs.Artifacts))
+				for _, a := range n.Outputs.Artifacts {
+					artifactNames = append(artifactNames, a.Name)
+				}
+				assert.Contains(t, artifactNames, "supervisor-logs", "supervisor-logs artifact should exist")
+			})
+		return
+	}
+	s.Given().
+		Workflow(`@testdata/workflow-archive-artifact-load-fail.yaml`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeErrored).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.WorkflowError, status.Phase)
 		})
 }
 

@@ -115,6 +115,9 @@ data:
   artifactRepository: |
     # archiveLogs will archive the main container logs as an artifact
     archiveLogs: true
+    # archiveSystemContainerLogs will also archive the logs of Argo's system containers
+    # (init and wait, or supervisor in the init-less pod layout)
+    archiveSystemContainerLogs: true
 
     s3:
       # Use the corresponding endpoint depending on your S3 provider:

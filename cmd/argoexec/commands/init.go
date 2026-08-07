@@ -9,6 +9,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v4/cmd/argoexec/executor"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/tracing"
 )
 
@@ -18,8 +19,15 @@ func NewInitCommand() *cobra.Command {
 		Short: "Load artifacts",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := tracing.InjectTraceContext(cmd.Context())
-			err := loadArtifacts(ctx)
+			ctx, closer, err := teeContainerLogs(ctx, varRunArgo, common.InitContainerName)
 			if err != nil {
+				// log tee failure is a log-archive failure; init's primary processing continues
+				logging.RequireLoggerFromContext(ctx).WithError(err).Error(ctx, "Failed to set up log tee")
+			} else {
+				defer closer()
+			}
+
+			if err := loadArtifacts(ctx); err != nil {
 				return fmt.Errorf("%w", err)
 			}
 			return nil

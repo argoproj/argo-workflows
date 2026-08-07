@@ -41,9 +41,10 @@ const testStubExecutorImage = "argoproj/argoexec:build-unit-test"
 // metadata, DNS), it reproduces just enough of the real behaviour to let the
 // assertions below distinguish the two layouts.
 type stubPodBuilderDeps struct {
-	executorImage     string
-	archiveLogs       bool
-	initContainerName string // name of the init container legacyLayout asks for
+	executorImage              string
+	archiveLogs                bool
+	archiveSystemContainerLogs bool
+	initContainerName          string // name of the init container legacyLayout asks for
 
 	// gotTimeoutNow records the now value build threads into checkTemplateTimeouts,
 	// so a test can assert build uses the captured snapshot time rather than the
@@ -79,7 +80,10 @@ func (s *stubPodBuilderDeps) addDNSConfig(_ *apiv1.Pod)                  {}
 func (s *stubPodBuilderDeps) addSchedulingConstraints(_ context.Context, _ *apiv1.Pod, _ *wfv1.WorkflowSpec, _ *wfv1.Template, _ *wfv1.Template) {
 }
 
-func (s *stubPodBuilderDeps) IsArchiveLogs(_ *wfv1.Template) bool                { return s.archiveLogs }
+func (s *stubPodBuilderDeps) IsArchiveLogs(_ *wfv1.Template) bool { return s.archiveLogs }
+func (s *stubPodBuilderDeps) IsArchiveSystemContainerLogs(_ *wfv1.Template) bool {
+	return s.archiveSystemContainerLogs
+}
 func (s *stubPodBuilderDeps) executorServiceAccountName(_ *wfv1.Template) string { return "" }
 func (s *stubPodBuilderDeps) createArtifactVolumeMounts(_ context.Context, _ *wfv1.Template) []apiv1.Volume {
 	return nil
@@ -419,6 +423,7 @@ func TestBuild_InitlessLayout_NoAuxContainer(t *testing.T) {
 
 	deps := newStubDeps()
 	deps.archiveLogs = false // resource-without-logs: no aux container
+	deps.archiveSystemContainerLogs = false
 	pb := newTestPodBuilder(tmpl, []apiv1.Container{main}, true, deps)
 	result, err := pb.build(ctx)
 	require.NoError(t, err)
@@ -502,6 +507,7 @@ func TestBuild_LegacyResourceManifestFrom_NoAuxContainer(t *testing.T) {
 
 	deps := newStubDeps()
 	deps.archiveLogs = false
+	deps.archiveSystemContainerLogs = false
 	pb := newTestPodBuilder(tmpl, []apiv1.Container{main}, false, deps)
 	result, err := pb.build(ctx)
 	require.NoError(t, err)
@@ -511,6 +517,74 @@ func TestBuild_LegacyResourceManifestFrom_NoAuxContainer(t *testing.T) {
 
 	assert.Nil(t, containerByName(pod.Spec.Containers, common.WaitContainerName),
 		"legacy manifestFrom resource without logs must not gain a wait container")
+	assert.Nil(t, containerByName(pod.Spec.Containers, common.SupervisorContainerName))
+}
+
+// TestBuild_InitlessResourceSystemLogsOnly_SchedulesSupervisor pins the
+// system-logs half of the aux-container rule in the pure build() path: a
+// resource template that archives only the system-container logs (archiveLogs
+// stays false) must still schedule a supervisor, because it is the one that
+// collects those logs in SaveLogs.
+func TestBuild_InitlessResourceSystemLogsOnly_SchedulesSupervisor(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	tmpl := &wfv1.Template{
+		Name: "t",
+		Resource: &wfv1.ResourceTemplate{
+			Action:   "get",
+			Manifest: "apiVersion: v1\nkind: Pod\nmetadata:\n  name: example\n",
+		},
+	}
+	main := apiv1.Container{
+		Name:    common.MainContainerName,
+		Image:   testStubExecutorImage,
+		Command: []string{"argoexec", "resource", "get"},
+	}
+
+	deps := newStubDeps()
+	deps.archiveLogs = false
+	deps.archiveSystemContainerLogs = true
+	pb := newTestPodBuilder(tmpl, []apiv1.Container{main}, true, deps)
+	result, err := pb.build(ctx)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	pod := result.Pod
+	require.NotNil(t, pod)
+
+	supervisor := containerByName(pod.Spec.Containers, common.SupervisorContainerName)
+	require.NotNil(t, supervisor, "resource template archiving only system-container logs must schedule a supervisor")
+	assert.Nil(t, containerByName(pod.Spec.Containers, common.WaitContainerName))
+}
+
+// TestBuild_LegacyResourceSystemLogsOnly_SchedulesWaitContainer is the legacy
+// counterpart: the same template must gain a wait container (and no
+// supervisor).
+func TestBuild_LegacyResourceSystemLogsOnly_SchedulesWaitContainer(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	tmpl := &wfv1.Template{
+		Name: "t",
+		Resource: &wfv1.ResourceTemplate{
+			Action:   "get",
+			Manifest: "apiVersion: v1\nkind: Pod\nmetadata:\n  name: example\n",
+		},
+	}
+	main := apiv1.Container{
+		Name:    common.MainContainerName,
+		Image:   testStubExecutorImage,
+		Command: []string{"argoexec", "resource", "get"},
+	}
+
+	deps := newStubDeps()
+	deps.archiveLogs = false
+	deps.archiveSystemContainerLogs = true
+	pb := newTestPodBuilder(tmpl, []apiv1.Container{main}, false, deps)
+	result, err := pb.build(ctx)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	pod := result.Pod
+	require.NotNil(t, pod)
+
+	wait := containerByName(pod.Spec.Containers, common.WaitContainerName)
+	require.NotNil(t, wait, "resource template archiving only system-container logs must schedule a wait container")
 	assert.Nil(t, containerByName(pod.Spec.Containers, common.SupervisorContainerName))
 }
 
