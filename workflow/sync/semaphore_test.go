@@ -254,6 +254,55 @@ func TestCheckAcquireNotifiesCorrectKeyForTemplateSemaphore(t *testing.T) {
 	}
 }
 
+// testTryAcquireRemovesAcquiringKeyFromQueue is a regression test: checkAcquire lets a
+// node acquire the lock while a sibling node of the same workflow is at the front of the
+// pending queue. tryAcquire used to pop the front entry rather than the acquiring one, so
+// the sibling was silently dropped from the queue - no later notifyWaiters iteration
+// included it - while the acquiring node's own entry was left behind as a stale
+// front-of-queue entry.
+func testTryAcquireRemovesAcquiringKeyFromQueue(t *testing.T, factory semaphoreFactory) {
+	t.Helper()
+	ctx := logging.TestContext(t.Context())
+	nextWorkflow := func(_ string) {}
+
+	s, sessionProxy, cleanup := factory(ctx, t, "bar", "foo", 1, nextWorkflow)
+	defer cleanup()
+
+	now := time.Now()
+	require.NoError(t, s.addToQueue(ctx, "foo/wf-01/node-aaa", 0, now))
+	require.NoError(t, s.addToQueue(ctx, "foo/wf-01/node-bbb", 0, now.Add(time.Second)))
+	require.NoError(t, s.addToQueue(ctx, "foo/wf-02/node-ccc", 0, now.Add(2*time.Second)))
+
+	tx := sessionProxy
+	// node-bbb isn't at the front, but node-aaa is and belongs to the same workflow,
+	// so node-bbb is allowed to acquire.
+	acquired, _, err := s.tryAcquire(ctx, "foo/wf-01/node-bbb", tx)
+	require.NoError(t, err)
+	require.True(t, acquired)
+
+	// Only node-bbb's entry may be gone: node-aaa is still waiting for its turn.
+	pending, err := s.getCurrentPending(ctx)
+	require.NoError(t, err)
+	assert.ElementsMatch(t, []string{"foo/wf-01/node-aaa", "foo/wf-02/node-ccc"}, pending)
+
+	s.release(ctx, "foo/wf-01/node-bbb")
+	require.NoError(t, s.removeFromQueue(ctx, "foo/wf-01/node-bbb"))
+
+	// node-aaa is still the front of the queue, so it takes the released lock.
+	acquired, _, err = s.tryAcquire(ctx, "foo/wf-01/node-aaa", tx)
+	require.NoError(t, err)
+	assert.True(t, acquired, "node-aaa should still be queued and acquire the released lock")
+}
+
+// TestTryAcquireRemovesAcquiringKeyFromQueue runs the queue removal test for all implementations
+func TestTryAcquireRemovesAcquiringKeyFromQueue(t *testing.T) {
+	for name, factory := range semaphoreFactories {
+		t.Run(name, func(t *testing.T) {
+			testTryAcquireRemovesAcquiringKeyFromQueue(t, factory)
+		})
+	}
+}
+
 // TestInternalSemaphoreReleaseWithLimitFetchFailure is a regression test: a transient
 // error fetching the ConfigMap limit during release() used to make getLimit return 0,
 // which release() mistook for a downward resize — the holder was removed from the map
