@@ -953,38 +953,45 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 		return true
 	}
 
-	wf, err := util.FromUnstructured(un)
-	if err != nil {
-		logger.WithField("key", key).WithError(err).Warn(ctx, "Failed to unmarshal key to workflow object")
-		woc := newWorkflowOperationCtx(ctx, wf, wfc)
-		ctx = logging.WithLogger(ctx, woc.log)
-		woc.markWorkflowFailed(ctx, fmt.Sprintf("cannot unmarshall spec: %s", err.Error()))
-		woc.persistUpdates(ctx)
-		return true
-	}
-
 	// this will ensure we process every incomplete workflow once every 20m
 	wfc.wfQueue.AddAfter(key, workflowResyncPeriod)
 
-	// Check the parallelism limit before building the operation context: newWorkflowOperationCtx
-	// deep-copies the entire Workflow, and for a workflow that is postponed that copy is discarded
-	// immediately. Only read from wf on this path, never mutate it.
-	shutdownStrategy := wf.Spec.Shutdown
+	// Check the parallelism limit before converting the object: util.FromUnstructured
+	// allocates a whole typed Workflow, and for a workflow that is postponed that
+	// allocation is discarded immediately. Deciding only needs spec.shutdown and
+	// status.phase, both of which can be read straight from the unstructured object.
+	shutdownStrategy := wfv1.ShutdownStrategy(nestedString(un, "spec", "shutdown"))
+	phase := wfv1.WorkflowPhase(nestedString(un, "status", "phase"))
 
 	// A Running workflow must never be postponed, even if the throttler no longer admits
 	// it (e.g. it was removed when an archive attempt failed mid-flight): skipping
 	// reconciliation would orphan its pods (#14123).
-	if (!shutdownStrategy.Enabled() || shutdownStrategy != wfv1.ShutdownStrategyTerminate) && !wfc.throttler.Admit(key) && wf.Status.Phase != wfv1.WorkflowRunning {
-		logger.WithFields(logging.Fields{"workflow": wf.Name, "namespace": wf.Namespace, "key": key}).
+	if (!shutdownStrategy.Enabled() || shutdownStrategy != wfv1.ShutdownStrategyTerminate) && !wfc.throttler.Admit(key) && phase != wfv1.WorkflowRunning {
+		logger.WithFields(logging.Fields{"workflow": un.GetName(), "namespace": un.GetNamespace(), "key": key}).
 			Info(ctx, "Workflow processing has been postponed due to max parallelism limit")
-		if wf.Status.Phase == wfv1.WorkflowUnknown {
-			// Only this branch mutates and persists the workflow, so only it needs the deep copy.
-			// It runs once per workflow, the first time that workflow is postponed.
+		if phase == wfv1.WorkflowUnknown {
+			// Only this branch mutates and persists the workflow, so only it needs the typed
+			// object and the deep copy newWorkflowOperationCtx makes: that copy becomes
+			// woc.orig, the pristine baseline persistUpdates diffs against to build its merge
+			// patch. It runs only until the workflow has been successfully marked Pending; if
+			// persistUpdates fails the stored phase stays Unknown and it runs again on the
+			// next requeue.
+			wf, err := util.FromUnstructured(un)
+			if err != nil {
+				wfc.markWorkflowUnmarshalFailed(ctx, wf, err, key, logger)
+				return true
+			}
 			woc := newWorkflowOperationCtx(ctx, wf, wfc)
 			ctx = logging.WithLogger(ctx, woc.log)
 			ctx = woc.markWorkflowPhase(ctx, wfv1.WorkflowPending, "Workflow processing has been postponed because too many workflows are already running")
 			woc.persistUpdates(ctx)
 		}
+		return true
+	}
+
+	wf, err := util.FromUnstructured(un)
+	if err != nil {
+		wfc.markWorkflowUnmarshalFailed(ctx, wf, err, key, logger)
 		return true
 	}
 
@@ -1108,6 +1115,26 @@ func (wfc *WorkflowController) getWorkflowByKey(ctx context.Context, key string)
 		return nil, false
 	}
 	return obj, true
+}
+
+// nestedString reads a string field from an unstructured object, returning "" when the
+// field is absent or is not a string.
+func nestedString(un *unstructured.Unstructured, fields ...string) string {
+	value, found, err := unstructured.NestedString(un.Object, fields...)
+	if err != nil || !found {
+		return ""
+	}
+	return value
+}
+
+// markWorkflowUnmarshalFailed marks a workflow that cannot be converted to a typed object
+// as failed, so it does not sit in the queue forever.
+func (wfc *WorkflowController) markWorkflowUnmarshalFailed(ctx context.Context, wf *wfv1.Workflow, err error, key string, logger logging.Logger) {
+	logger.WithField("key", key).WithError(err).Warn(ctx, "Failed to unmarshal key to workflow object")
+	woc := newWorkflowOperationCtx(ctx, wf, wfc)
+	ctx = logging.WithLogger(ctx, woc.log)
+	woc.markWorkflowFailed(ctx, fmt.Sprintf("cannot unmarshall spec: %s", err.Error()))
+	woc.persistUpdates(ctx)
 }
 
 func reconciliationNeeded(wf metav1.Object) bool {
