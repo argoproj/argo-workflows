@@ -16,6 +16,7 @@ func newInternalMutex(name string, nextWorkflow NextWorkflow) *prioritySemaphore
 		pending:      &priorityQueue{itemByKey: make(map[string]*item)},
 		semaphore:    sema.NewWeighted(int64(1)),
 		lockHolder:   make(map[string]bool),
+		granted:      make(map[string]bool),
 		nextWorkflow: nextWorkflow,
 		logger:       logger.get,
 	}

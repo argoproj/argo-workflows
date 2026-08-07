@@ -18,6 +18,7 @@ type prioritySemaphore struct {
 	pending      *priorityQueue
 	semaphore    *sema.Weighted
 	lockHolder   map[string]bool
+	granted      map[string]bool
 	nextWorkflow NextWorkflow
 	logger       loggerFn
 }
@@ -35,6 +36,7 @@ func newInternalSemaphore(ctx context.Context, name string, nextWorkflow NextWor
 		pending:      &priorityQueue{itemByKey: make(map[string]*item)},
 		semaphore:    sema.NewWeighted(int64(0)),
 		lockHolder:   make(map[string]bool),
+		granted:      make(map[string]bool),
 		nextWorkflow: nextWorkflow,
 		logger:       logger.get,
 	}
@@ -126,12 +128,29 @@ func (s *prioritySemaphore) release(ctx context.Context, key string) bool {
 	return true
 }
 
-// notifyWaiters enqueues the next N workflows who are waiting for the semaphore to the workqueue,
-// where N is the availability of the semaphore. If semaphore is out of capacity, this does nothing.
 func (s *prioritySemaphore) notifyWaiters(ctx context.Context) {
-	triggerCount := min(s.pending.Len(), s.getLimit(ctx)-len(s.lockHolder))
-	for idx := range triggerCount {
+	s.grantWaiters(ctx, "")
+}
+
+// grantWaiters grants the top-priority waiters (up to the free slots) and enqueues each
+// newly-granted key. A workflow may only acquire while granted, so this fills K freed slots
+// in one round instead of one per round. Already-granted keys are skipped, so release bursts
+// don't re-wake the same head. skipKey is granted but not enqueued (the caller is already
+// reconciling it). The weighted semaphore is still the hard limit, so an over-grant never
+// over-acquires.
+func (s *prioritySemaphore) grantWaiters(ctx context.Context, skipKey string) {
+	grantCount := s.getLimit(ctx) - len(s.lockHolder) - len(s.granted)
+	granted := 0
+	for idx := 0; idx < s.pending.Len() && granted < grantCount; idx++ {
 		item := s.pending.items[idx]
+		if s.granted[item.key] {
+			continue
+		}
+		s.granted[item.key] = true
+		granted++
+		if item.key == skipKey {
+			continue
+		}
 		wfKey := workflowKey(item.key)
 		s.logger(ctx).WithField("workflow", wfKey).Debug(ctx, "Enqueue the workflow")
 		s.nextWorkflow(wfKey)
@@ -165,6 +184,8 @@ func (s *prioritySemaphore) addToQueue(ctx context.Context, holderKey string, pr
 
 func (s *prioritySemaphore) removeFromQueue(ctx context.Context, holderKey string) error {
 	logger := s.logger(ctx)
+	// Drop any grant too, so a removed workflow leaves no stale grant behind.
+	delete(s.granted, holderKey)
 	s.pending.remove(holderKey)
 	logger.WithField("holderKey", holderKey).Debug(ctx, "Removed from queue")
 	return nil
@@ -193,6 +214,10 @@ func (s *prioritySemaphore) reacquire(_ context.Context, holderKey string, _ *sq
 	}
 	s.semaphore.TryAcquire(1) // best effort: take a slot if one is free
 	s.lockHolder[holderKey] = true
+	// A reestablished holder is no longer a waiter, so drop any grant it held.
+	// Leaving one behind would count against grantCount forever and permanently
+	// shrink the grant set.
+	delete(s.granted, holderKey)
 	return nil
 }
 
@@ -232,17 +257,12 @@ func (s *prioritySemaphore) checkAcquire(ctx context.Context, holderKey string, 
 
 	waitingMsg := fmt.Sprintf("Waiting for %s lock. Lock status: %d/%d", s.name, limit-len(s.lockHolder), limit)
 
-	// Check whether requested holdkey is in front of priority queue.
-	// If it is in front position, it will allow to acquire lock.
-	// If it is not a front key, it needs to wait for its turn.
-	if s.pending.Len() > 0 {
-		item := s.pending.peek()
-		if !isSameWorkflowNodeKeys(holderKey, item.key) {
-			// Enqueue the front workflow if lock is available
-			if len(s.lockHolder) < limit {
-				s.nextWorkflow(workflowKey(item.key))
-			}
-			logger.WithField("holderKey", holderKey).Info(ctx, "isn't at the front")
+	// A workflow may only acquire while granted. If not yet granted, try to grant now
+	// (covers a fresh arrival and the first acquire); skipKey avoids a self-enqueue.
+	if !s.granted[holderKey] {
+		s.grantWaiters(ctx, holderKey)
+		if !s.granted[holderKey] {
+			logger.WithField("holderKey", holderKey).Info(ctx, "isn't granted a slot")
 			return false, false, waitingMsg
 		}
 	}
@@ -266,7 +286,9 @@ func (s *prioritySemaphore) tryAcquire(ctx context.Context, holderKey string, tx
 	}
 	acquired, _ := s.acquire(ctx, holderKey, tx)
 	if acquired {
-		s.pending.pop()
+		// Remove by key, not pop(): the acquirer isn't necessarily the pending head.
+		delete(s.granted, holderKey)
+		s.pending.remove(holderKey)
 		limit := s.getLimit(ctx)
 		logger.WithFields(logging.Fields{
 			"name":      s.name,
