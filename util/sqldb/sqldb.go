@@ -126,6 +126,13 @@ func buildPostgresDSN(cfg *config.PostgreSQLConfig, username string, connectTime
 		settings.Options["sslmode"] = cfg.SSLMode
 	}
 
+	if cfg.Schema != "" {
+		if settings.Options == nil {
+			settings.Options = map[string]string{}
+		}
+		settings.Options["search_path"] = cfg.Schema
+	}
+
 	return settings.String()
 }
 
@@ -202,6 +209,11 @@ func createPostGresDBSessionWithCreds(cfg *config.PostgreSQLConfig, persistPool 
 		// which used sslmode=prefer. lib/pq defaults to sslmode=require.
 		query.Set("sslmode", "prefer")
 	}
+
+	if cfg.Schema != "" {
+		query.Set("search_path", cfg.Schema)
+	}
+
 	// connect_timeout limits connection setup (dial + handshake) to ensure fast failure if the DB is unreachable.
 	// lib/pq resets this deadline afterward, leaving subsequent queries unaffected.
 	query.Set("connect_timeout", strconv.Itoa(int(connectTimeout.Seconds())))

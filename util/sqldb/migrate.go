@@ -33,11 +33,20 @@ func ByType(dbType DBType, changes TypedChanges) Change {
 	return TypedChange{DBType: dbType, Changes: changes}
 }
 
-func Migrate(ctx context.Context, session db.Session, dbType DBType, versionTableName string, changes []Change) error {
+func Migrate(ctx context.Context, session db.Session, dbType DBType, schema string, versionTableName string, changes []Change) error {
 	ctx, logger := logging.RequireLoggerFromContext(ctx).WithField("dbType", dbType).InContext(ctx)
 	logger.Info(ctx, "Migrating database schema")
 
 	{
+		// Create the schema in the postgres database. MySQL does not have a concept of schema separate from database, so we skip this step for MySQL
+		if dbType == Postgres && schema != "" {
+			_, err := session.SQL().Exec(fmt.Sprintf("create schema if not exists %s", schema))
+
+			if err != nil {
+				return err
+			}
+		}
+
 		// poor mans SQL migration
 		_, err := session.SQL().Exec(fmt.Sprintf("create table if not exists %s(schema_version int not null, primary key(schema_version))", versionTableName))
 		if err != nil {
@@ -52,10 +61,13 @@ func Migrate(ctx context.Context, session db.Session, dbType DBType, versionTabl
 		}
 
 		// Check if primary key exists
-		rows, err := session.SQL().Query(
-			fmt.Sprintf("select 1 from information_schema.table_constraints where constraint_type = 'PRIMARY KEY' and table_name = '%s' and %s = ?",
-				versionTableName, dbIdentifierColumn),
-			session.Name())
+		query := fmt.Sprintf("select 1 from information_schema.table_constraints where constraint_type = 'PRIMARY KEY' and table_name = '%s' and %s = ?", versionTableName, dbIdentifierColumn)
+		args := []interface{}{session.Name()}
+		if dbType == Postgres && schema != "" {
+			query += " and table_schema = ?"
+			args = append(args, schema)
+		}
+		rows, err := session.SQL().Query(query, args...)
 		if err != nil {
 			return err
 		}

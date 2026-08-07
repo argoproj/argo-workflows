@@ -17,3 +17,11 @@ func GetTableName(persistConfig *config.PersistConfig) (string, error) {
 	}
 	return tableName, nil
 }
+
+func GetSchema(persistConfig *config.PersistConfig) string {
+	var schemaName string
+	if persistConfig.PostgreSQL != nil {
+		schemaName = persistConfig.PostgreSQL.Schema
+	}
+	return schemaName
+}

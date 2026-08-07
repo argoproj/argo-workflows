@@ -68,7 +68,7 @@ func setupMySQLArchiveTest(ctx context.Context, t *testing.T, v usqldb.MySQLVari
 	})
 	require.NoError(t, err)
 
-	err = Migrate(ctx, proxy.Session(), "test", "argo_workflows", proxy.DBType())
+	err = Migrate(ctx, proxy.Session(), "test", "", "argo_workflows", proxy.DBType())
 	require.NoError(t, err)
 
 	t.Cleanup(func() { proxy.Close() })
