@@ -40,6 +40,10 @@ interface Props {
 }
 
 const defaultNodeSize = 64;
+// zoomStep is 10% of the default node size, so zoom always lands on exact
+// multiples of 10% (e.g. 90%, 100%, 110%) and can return to exactly 100%.
+const zoomStep = defaultNodeSize / 10;
+const minNodeSize = zoomStep; // 10% minimum zoom
 
 const merge = (a: {[key: string]: boolean}, b: {[key: string]: boolean}) => b && Object.assign(Object.assign({}, b), a);
 
@@ -183,10 +187,13 @@ export function GraphPanel(props: Props) {
                     <a onClick={() => setHorizontal(s => !s)} title='Horizontal/vertical layout'>
                         <i className={`fa ${horizontal ? 'fa-long-arrow-alt-right' : 'fa-long-arrow-alt-down'} fa-fw`} />
                     </a>
-                    <a onClick={() => setNodeSize(s => s * 1.2)} title='Zoom in'>
+                    <a onClick={() => setNodeSize(s => s + zoomStep)} title='Zoom in'>
                         <i className='fa fa-search-plus fa-fw' />
                     </a>
-                    <a onClick={() => setNodeSize(s => s / 1.2)} title='Zoom out'>
+                    <span className='zoom-percentage' title='Current zoom level'>
+                        {Math.round((nodeSize / defaultNodeSize) * 100)}%
+                    </span>
+                    <a onClick={() => setNodeSize(s => Math.max(minNodeSize, s - zoomStep))} title='Zoom out'>
                         <i className='fa fa-search-minus fa-fw' />
                     </a>
                     <a onClick={() => setFast(s => !s)} title='Use faster, but less pretty renderer' className={fast ? 'active' : ''}>
