@@ -338,7 +338,9 @@ func (we *WorkflowExecutor) saveResourceParameters(ctx context.Context, resource
 		// `-o json`, `-o jsonpath=` never stripped managedFields.
 		args := []string{"kubectl", "-n", resourceNamespace, "get", resourceName, "-o", "json", "--show-managed-fields=true"}
 		out, err := kubectl(ctx, args...)
-		logger.WithError(err).WithField("out", string(out)).WithField("args", args).Info(ctx, "kubectl")
+		// Deliberately not logging `out`: this reads the whole resource, including managedFields and
+		// any Secret/ConfigMap data, so the body must not reach the executor log at Info.
+		logger.WithError(err).WithField("args", args).WithField("bytes", len(out)).Info(ctx, "kubectl")
 		if err != nil {
 			return err
 		}
