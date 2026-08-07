@@ -1013,3 +1013,69 @@ func TestJoinWorkflowSpec_ArtifactFieldMerge(t *testing.T) {
 	assert.Equal(t, "my-bucket", merged.Bucket)
 	assert.Equal(t, "override-key", merged.Key)
 }
+
+func TestArtifactDescriptionMerge(t *testing.T) {
+	t.Run("inherits description without aliasing for the same backend", func(t *testing.T) {
+		base := wfv1.Artifact{
+			Description: wfv1.AnyStringPtr("base description"),
+			ArtifactLocation: wfv1.ArtifactLocation{
+				S3: &wfv1.S3Artifact{Key: "base-key"},
+			},
+		}
+		override := wfv1.Artifact{
+			ArtifactLocation: wfv1.ArtifactLocation{
+				S3: &wfv1.S3Artifact{Key: "override-key"},
+			},
+		}
+
+		merged, err := mergeArtifactOverride(base, override)
+		require.NoError(t, err)
+		require.NotNil(t, merged.Description)
+		assert.Equal(t, "base description", merged.Description.String())
+
+		*merged.Description = wfv1.ParseAnyString("changed description")
+		assert.Equal(t, "base description", base.Description.String())
+	})
+
+	t.Run("inherits description when the location is replaced", func(t *testing.T) {
+		base := wfv1.Artifact{
+			Description: wfv1.AnyStringPtr("base description"),
+			ArtifactLocation: wfv1.ArtifactLocation{
+				S3: &wfv1.S3Artifact{Key: "base-key"},
+			},
+		}
+		override := wfv1.Artifact{
+			ArtifactLocation: wfv1.ArtifactLocation{
+				HTTP: &wfv1.HTTPArtifact{URL: "https://example.com/artifact"},
+			},
+		}
+
+		merged, err := mergeArtifactOverride(base, override)
+		require.NoError(t, err)
+		require.NotNil(t, merged.Description)
+		assert.Equal(t, "base description", merged.Description.String())
+		require.NotNil(t, merged.HTTP)
+		assert.Equal(t, "https://example.com/artifact", merged.HTTP.URL)
+		assert.Nil(t, merged.S3)
+	})
+
+	t.Run("preserves an explicit override description", func(t *testing.T) {
+		base := wfv1.Artifact{Description: wfv1.AnyStringPtr("base description")}
+		override := wfv1.Artifact{Description: wfv1.AnyStringPtr("override description")}
+
+		merged, err := mergeArtifactOverride(base, override)
+		require.NoError(t, err)
+		require.NotNil(t, merged.Description)
+		assert.Equal(t, "override description", merged.Description.String())
+	})
+
+	t.Run("preserves an explicit empty override description", func(t *testing.T) {
+		base := wfv1.Artifact{Description: wfv1.AnyStringPtr("base description")}
+		override := wfv1.Artifact{Description: wfv1.AnyStringPtr("")}
+
+		merged, err := mergeArtifactOverride(base, override)
+		require.NoError(t, err)
+		require.NotNil(t, merged.Description)
+		assert.Empty(t, merged.Description.String())
+	})
+}

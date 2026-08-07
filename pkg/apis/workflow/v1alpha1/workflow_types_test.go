@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -299,6 +300,35 @@ func TestArtifact_ValidatePath(t *testing.T) {
 		err = a3.CleanPath()
 		require.NoError(t, err)
 		assert.Equal(t, ensureRootPathSeparator(filepath.Join("tmp", "abcd", "some-artifact.txt")), a3.Path)
+	})
+}
+
+func TestArtifactDescription(t *testing.T) {
+	t.Run("preserves description through JSON and deep copy", func(t *testing.T) {
+		artifact := Artifact{
+			Name:        "input-archive",
+			Description: AnyStringPtr("Upload the ZIP archive to process"),
+		}
+
+		data, err := json.Marshal(artifact)
+		require.NoError(t, err)
+		assert.JSONEq(t, `{"name":"input-archive","description":"Upload the ZIP archive to process"}`, string(data))
+
+		var decoded Artifact
+		require.NoError(t, json.Unmarshal(data, &decoded))
+		require.NotNil(t, decoded.Description)
+		assert.Equal(t, "Upload the ZIP archive to process", decoded.Description.String())
+
+		copied := decoded.DeepCopy()
+		require.NotNil(t, copied.Description)
+		*copied.Description = ParseAnyString("Changed description")
+		assert.Equal(t, "Upload the ZIP archive to process", decoded.Description.String())
+	})
+
+	t.Run("omits unset description", func(t *testing.T) {
+		data, err := json.Marshal(Artifact{Name: "input-archive"})
+		require.NoError(t, err)
+		assert.JSONEq(t, `{"name":"input-archive"}`, string(data))
 	})
 }
 
