@@ -5521,6 +5521,13 @@ func schema_pkg_apis_workflow_v1alpha1_S3Artifact(ref common.ReferenceCallback) 
 							Format:      "",
 						},
 					},
+					"storageClass": {
+						SchemaProps: spec.SchemaProps{
+							Description: "StorageClass specifies the storage class used when uploading objects.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 					"key": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Key is the key in the bucket where the artifact resides",

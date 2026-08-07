@@ -1572,6 +1572,9 @@ message S3Bucket {
   //
   // +kubebuilder:validation:Enum="";path;virtual-hosted
   optional string addressingStyle = 13;
+
+  // StorageClass specifies the storage class used when uploading objects.
+  optional string storageClass = 14;
 }
 
 // S3EncryptionOptions used to determine encryption options during s3 operations
@@ -2513,4 +2516,3 @@ message WorkflowTemplateRef {
 // ZipStrategy will unzip zipped input artifacts
 message ZipStrategy {
 }
-
