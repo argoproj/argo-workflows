@@ -48,6 +48,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/estimation"
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/pod"
 	"github.com/argoproj/argo-workflows/v4/workflow/events"
+	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
 	hydratorfake "github.com/argoproj/argo-workflows/v4/workflow/hydrator/fake"
 	"github.com/argoproj/argo-workflows/v4/workflow/metrics"
 	"github.com/argoproj/argo-workflows/v4/workflow/tracing"
@@ -1663,6 +1664,60 @@ spec:
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 	podCleanupKey := "test/my-wf/labelPodCompleted"
 	assert.Equal(t, 0, controller.PodController.TestingQueueNumRequeues(podCleanupKey))
+}
+
+// TestHydrationFailureRequeuesWithoutMarkingError is the regression test for #14907: a
+// workflow whose node status is offloaded to SQL and fails to hydrate (e.g. because the
+// DB connection was dropped) must be requeued, not marked Error — and its live progress/
+// resourcesDuration aggregates must not be clobbered by recomputing them from an empty
+// (not-yet-hydrated) node map.
+func TestHydrationFailureRequeuesWithoutMarkingError(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(`
+metadata:
+  name: my-wf
+  namespace: test
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: step
+        template: work
+  - name: work
+    container:
+      image: my-image
+status:
+  phase: Running
+  progress: 1031/1033
+  resourcesDuration:
+    cpu: 100
+    memory: 200
+  offloadNodeStatusVersion: "abc123"
+  nodes: {}
+`)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
+	defer cancel()
+
+	repo := &sqldbmocks.OffloadNodeStatusRepo{}
+	repo.On("IsEnabled").Return(true)
+	repo.On("Get", mock.Anything, mock.Anything).Return(wfv1.Nodes(nil), errors.New("FATAL: terminating connection due to administrator command (SQLSTATE 57P01)"))
+	repo.On("Save", mock.Anything, mock.Anything, mock.Anything).Return("should-not-be-called", nil)
+	controller.offloadNodeStatusRepo = repo
+	controller.hydrator = hydrator.New(repo)
+
+	ctx := logging.TestContext(t.Context())
+	assert.True(t, controller.processNextItem(ctx))
+
+	persisted, err := controller.wfclientset.ArgoprojV1alpha1().Workflows("test").Get(ctx, "my-wf", metav1.GetOptions{})
+	require.NoError(t, err)
+
+	assert.Equal(t, wfv1.WorkflowRunning, persisted.Status.Phase, "hydration failure must not mark the workflow Error")
+	assert.True(t, persisted.Status.FinishedAt.IsZero(), "workflow must not be marked completed")
+	assert.NotEqual(t, wfv1.ProgressZero, persisted.Status.Progress, "progress must not be clobbered from the empty node map")
+	assert.NotEmpty(t, persisted.Status.ResourcesDuration, "resourcesDuration must not be wiped")
+	assert.NotContains(t, persisted.Labels, common.LabelKeyWorkflowArchivingStatus, "workflow must not be queued for archiving")
+
+	repo.AssertNotCalled(t, "Save", mock.Anything, mock.Anything, mock.Anything)
 }
 
 func TestPodCleanupDeletePendingPodWhenTerminate(t *testing.T) {
