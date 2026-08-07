@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -1711,6 +1712,43 @@ func TestAssessNodeStatus(t *testing.T) {
 		wantPhase:   wfv1.NodeFailed,
 		wantMessage: "can't find failed message for pod  namespace ", // daemoned nodes currently don't have a fail message
 	}, {
+		// node already marked Succeeded by killDaemonedChildren; PodFailed event must be ignored.
+		name: "pod failed - daemoned, already marked succeeded by teardown",
+		pod: &apiv1.Pod{
+			Status: apiv1.PodStatus{
+				Phase: apiv1.PodFailed,
+			},
+		},
+		daemon:      true,
+		node:        &wfv1.NodeStatus{TemplateName: templateName, Phase: wfv1.NodeSucceeded},
+		wantPhase:   wfv1.NodeSucceeded,
+		wantMessage: "",
+	}, {
+		// non-daemon node that previously Succeeded must still go through inferFailedReason.
+		name: "pod failed - not daemoned, previously succeeded",
+		pod: &apiv1.Pod{
+			Status: apiv1.PodStatus{
+				Message: "failed for some reason",
+				Phase:   apiv1.PodFailed,
+			},
+		},
+		daemon:      false,
+		node:        &wfv1.NodeStatus{TemplateName: templateName, Phase: wfv1.NodeSucceeded},
+		wantPhase:   wfv1.NodeFailed,
+		wantMessage: "failed for some reason",
+	}, {
+		// node already marked Succeeded by killDaemonedChildren; PodSucceeded must not overwrite to NodeFailed.
+		name: "pod succeeded - daemoned, already marked succeeded by teardown",
+		pod: &apiv1.Pod{
+			Status: apiv1.PodStatus{
+				Phase: apiv1.PodSucceeded,
+			},
+		},
+		daemon:      true,
+		node:        &wfv1.NodeStatus{TemplateName: templateName, Phase: wfv1.NodeSucceeded},
+		wantPhase:   wfv1.NodeSucceeded,
+		wantMessage: "",
+	}, {
 		name: "daemon, pod running, node failed",
 		pod: &apiv1.Pod{
 			Status: apiv1.PodStatus{
@@ -1928,6 +1966,289 @@ func TestAssessNodeStatus(t *testing.T) {
 			got := woc.assessNodeStatus(ctx, tt.pod, tt.node)
 			assert.Equal(t, tt.wantPhase, got.Phase)
 			assert.Equal(t, tt.wantMessage, got.Message)
+		})
+	}
+}
+
+var daemonContainerSetWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: daemon-container-set
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    daemon: true
+    containerSet:
+      containers:
+      - name: step-1
+        image: alpine
+        command: [sh, -c, sleep 999999]
+      - name: step-2
+        image: alpine
+        command: [sh, -c, sleep 999999]
+`
+
+// TestAssessNodeStatusDaemonContainerSetTeardown verifies that when killDaemonedChildren has already
+// marked a daemon container-set pod node Succeeded, the subsequent PodFailed event (the Kubernetes
+// confirmation of the intentional teardown) does not flip the pod node or its container-set child nodes
+// to Failed. See https://github.com/argoproj/argo-workflows/issues/16397.
+func TestAssessNodeStatusDaemonContainerSetTeardown(t *testing.T) {
+	const podNodeName = "daemon-container-set"
+
+	// setup builds a woc whose daemon container-set pod node was already marked Succeeded by
+	// killDaemonedChildren, then assesses the given container statuses against it.
+	setup := func(t *testing.T) (*wfOperationCtx, *wfv1.NodeStatus, context.Context) {
+		t.Helper()
+		ctx := logging.TestContext(t.Context())
+		wf := wfv1.MustUnmarshalWorkflow(daemonContainerSetWf)
+		cancel, controller := newController(ctx, wf)
+		t.Cleanup(cancel)
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+		// Parent pod node, already marked Succeeded by killDaemonedChildren before the pod was signalled.
+		podNode := &wfv1.NodeStatus{
+			ID:           woc.wf.NodeID(podNodeName),
+			Name:         podNodeName,
+			DisplayName:  podNodeName,
+			Type:         wfv1.NodeTypePod,
+			TemplateName: "main",
+			Phase:        wfv1.NodeSucceeded,
+		}
+		woc.wf.Status.Nodes.Set(ctx, podNode.ID, *podNode)
+		// Container-set child nodes. killDaemonedChildren only marks the pod node, since only it is
+		// ever Daemoned, so the children are still Running when the PodFailed event arrives.
+		for _, ctr := range []string{"step-1", "step-2"} {
+			childName := podNodeName + "." + ctr
+			child := wfv1.NodeStatus{
+				ID:           woc.wf.NodeID(childName),
+				Name:         childName,
+				DisplayName:  ctr,
+				Type:         wfv1.NodeTypeContainer,
+				TemplateName: "main",
+				BoundaryID:   podNode.ID,
+				Phase:        wfv1.NodeRunning,
+			}
+			woc.wf.Status.Nodes.Set(ctx, child.ID, child)
+		}
+		return woc, podNode, ctx
+	}
+
+	// terminated states that killDaemonedChildren's SIGTERM/SIGKILL can plausibly produce.
+	for _, tc := range []struct {
+		name     string
+		state    apiv1.ContainerState
+		expected wfv1.NodePhase
+	}{{
+		name:     "SIGKILLed by teardown",
+		state:    apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 137, Reason: "Error"}},
+		expected: wfv1.NodeSucceeded,
+	}, {
+		name:     "SIGTERMed by teardown",
+		state:    apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 143, Reason: "Error"}},
+		expected: wfv1.NodeSucceeded,
+	}, {
+		name:     "exited cleanly on SIGTERM",
+		state:    apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 0}},
+		expected: wfv1.NodeSucceeded,
+	}, {
+		name:     "kill still in flight, container running",
+		state:    apiv1.ContainerState{Running: &apiv1.ContainerStateRunning{}},
+		expected: wfv1.NodeSucceeded,
+	}, {
+		// A genuine failure racing with the teardown must NOT be masked as Succeeded.
+		name:     "genuine failure racing with teardown",
+		state:    apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 1, Reason: "Error"}},
+		expected: wfv1.NodeFailed,
+	}, {
+		// Emissary error exit code must still surface as NodeError.
+		name:     "emissary error racing with teardown",
+		state:    apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 64, Reason: "Error"}},
+		expected: wfv1.NodeError,
+	}, {
+		// The kubelet also reports 137 for OOMKilled. That is a genuine failure and must not be
+		// laundered into Succeeded just because a teardown was in progress.
+		name:     "OOMKilled racing with teardown",
+		state:    apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 137, Reason: "OOMKilled"}},
+		expected: wfv1.NodeFailed,
+	}} {
+		t.Run(tc.name, func(t *testing.T) {
+			woc, podNode, ctx := setup(t)
+			// step-1 takes the state under test; step-2 is always a plain teardown kill.
+			pod := &apiv1.Pod{
+				Status: apiv1.PodStatus{
+					Phase: apiv1.PodFailed,
+					ContainerStatuses: []apiv1.ContainerStatus{
+						{Name: "step-1", State: tc.state},
+						{Name: "step-2", State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 137, Reason: "Error"}}},
+					},
+				},
+			}
+
+			got := woc.assessNodeStatus(ctx, pod, podNode)
+			require.NotNil(t, got)
+			// The parent pod node stays Succeeded: the teardown was intentional.
+			assert.Equal(t, wfv1.NodeSucceeded, got.Phase)
+
+			step1, err := woc.wf.GetNodeByName(podNodeName + ".step-1")
+			require.NoError(t, err)
+			assert.Equal(t, tc.expected, step1.Phase, "container node step-1")
+
+			// The container killed by teardown always stays Succeeded.
+			step2, err := woc.wf.GetNodeByName(podNodeName + ".step-2")
+			require.NoError(t, err)
+			assert.Equal(t, wfv1.NodeSucceeded, step2.Phase, "container node step-2 should stay Succeeded after teardown")
+		})
+	}
+}
+
+var daemonContainerSetStepsWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: daemon-cs-steps
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: daemon
+        template: cs
+    - - name: after
+        template: noop
+  - name: cs
+    daemon: true
+    containerSet:
+      containers:
+      - name: step-1
+        image: alpine
+        command: [sh, -c, sleep 999999]
+      - name: step-2
+        image: alpine
+        command: [sh, -c, sleep 999999]
+  - name: noop
+    container:
+      image: alpine
+      command: [sh, -c, "true"]
+`
+
+// TestDaemonContainerSetTeardownEndToEnd drives the whole teardown sequence through the real code
+// path, rather than hand-building node status: operate, bring the daemon pod up Running and Ready,
+// let killDaemonedChildren stop it when the step group completes, then deliver the PodFailed event
+// that Kubernetes reports because the containers were SIGKILLed.
+//
+// This is the container-set-run-as-daemon case raised in review on
+// https://github.com/argoproj/argo-workflows/pull/16396: killDaemonedChildren only ever marks the
+// pod node (it filters on IsDaemoned, and only the pod node is Daemoned), so the container child
+// nodes are still Running when the event arrives and the ContainerStatuses loop in assessNodeStatus
+// would otherwise mark them Failed from their exit codes.
+func TestDaemonContainerSetTeardownEndToEnd(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(daemonContainerSetStepsWf)
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	// Bring the daemon container-set pod up: Running with every container Ready, which is what makes
+	// assessNodeStatus mark the node Daemoned.
+	pods, err := listPods(ctx, woc)
+	require.NoError(t, err)
+	require.NotEmpty(t, pods.Items)
+	for _, p := range pods.Items {
+		pod := p
+		pod.Status.Phase = apiv1.PodRunning
+		// The fake client does not populate ContainerStatuses, so synthesize what a kubelet reports.
+		pod.Status.ContainerStatuses = nil
+		for _, c := range pod.Spec.Containers {
+			pod.Status.ContainerStatuses = append(pod.Status.ContainerStatuses, apiv1.ContainerStatus{
+				Name:  c.Name,
+				Ready: true,
+				State: apiv1.ContainerState{Running: &apiv1.ContainerStateRunning{}},
+			})
+		}
+		_, updateErr := controller.kubeclientset.CoreV1().Pods(pod.Namespace).Update(ctx, &pod, metav1.UpdateOptions{})
+		require.NoError(t, updateErr)
+	}
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	daemonNode, err := woc.wf.GetNodeByName("daemon-cs-steps[0].daemon")
+	require.NoError(t, err)
+	require.True(t, daemonNode.IsDaemoned(), "daemon pod node should be Daemoned before teardown")
+
+	// The step group has completed, so the daemon is stopped. This marks the pod node Succeeded and
+	// signals the pod, but deliberately leaves the container children as they are.
+	woc.killDaemonedChildren(ctx, daemonNode.BoundaryID)
+
+	daemonNode, err = woc.wf.GetNodeByName("daemon-cs-steps[0].daemon")
+	require.NoError(t, err)
+	require.Equal(t, wfv1.NodeSucceeded, daemonNode.Phase, "killDaemonedChildren should mark the pod node Succeeded")
+	for _, ctr := range []string{"step-1", "step-2"} {
+		child, childErr := woc.wf.GetNodeByName("daemon-cs-steps[0].daemon." + ctr)
+		require.NoError(t, childErr)
+		require.Equal(t, wfv1.NodeRunning, child.Phase,
+			"precondition: killDaemonedChildren leaves container node %s Running", ctr)
+	}
+
+	// Kubernetes now reports the pod Failed, its containers SIGKILLed by the teardown.
+	pods, err = listPods(ctx, woc)
+	require.NoError(t, err)
+	var daemonPod *apiv1.Pod
+	for i := range pods.Items {
+		if pods.Items[i].Annotations[common.AnnotationKeyNodeID] == daemonNode.ID {
+			daemonPod = &pods.Items[i]
+		}
+	}
+	require.NotNil(t, daemonPod, "daemon pod")
+	daemonPod.Status.Phase = apiv1.PodFailed
+	for i := range daemonPod.Status.ContainerStatuses {
+		daemonPod.Status.ContainerStatuses[i].State = apiv1.ContainerState{
+			Terminated: &apiv1.ContainerStateTerminated{ExitCode: 137, Reason: "Error"},
+		}
+	}
+
+	// assessNodeStatus returns nil when it made no change to the pod node, which is the intent here:
+	// the node was already Succeeded and must stay that way.
+	if updated := woc.assessNodeStatus(ctx, daemonPod, daemonNode); updated != nil {
+		assert.Equal(t, wfv1.NodeSucceeded, updated.Phase, "daemon pod node should stay Succeeded")
+	}
+
+	// The container children must not be dragged to Failed by the teardown.
+	for _, ctr := range []string{"step-1", "step-2"} {
+		child, childErr := woc.wf.GetNodeByName("daemon-cs-steps[0].daemon." + ctr)
+		require.NoError(t, childErr)
+		assert.Equal(t, wfv1.NodeSucceeded, child.Phase,
+			"container node %s must not be Failed by the intentional teardown", ctr)
+	}
+}
+
+func TestKilledByDaemonTeardown(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		state apiv1.ContainerState
+		want  bool
+	}{
+		{"not terminated - running", apiv1.ContainerState{Running: &apiv1.ContainerStateRunning{}}, true},
+		{"not terminated - waiting", apiv1.ContainerState{Waiting: &apiv1.ContainerStateWaiting{}}, true},
+		{"exit 0", apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 0}}, true},
+		{"exit 137 SIGKILL", apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 137}}, true},
+		{"exit 143 SIGTERM", apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 143}}, true},
+		{"exit 1 genuine failure", apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 1}}, false},
+		{"exit 64 emissary error", apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 64}}, false},
+		{"exit 2 genuine failure", apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 2}}, false},
+		// 137 is also what the kubelet reports for OOMKilled, which is a real failure and must not
+		// be mistaken for our own SIGKILL.
+		{"exit 137 OOMKilled", apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 137, Reason: "OOMKilled"}}, false},
+		{"exit 137 Evicted", apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 137, Reason: "Evicted"}}, false},
+		{"exit 137 DeadlineExceeded", apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 137, Reason: "DeadlineExceeded"}}, false},
+		{"exit 143 OOMKilled", apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 143, Reason: "OOMKilled"}}, false},
+		{"exit 137 empty reason", apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 137}}, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, killedByDaemonTeardown(apiv1.ContainerStatus{Name: "c", State: tc.state}))
 		})
 	}
 }
