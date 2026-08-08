@@ -19,7 +19,7 @@ See https://argo-workflows.readthedocs.io/en/latest/argo-server/
       --access-control-allow-origin string   Set Access-Control-Allow-Origin header in HTTP responses.
       --allowed-link-protocol stringArray    Allowed protocols for links feature. (default [http,https])
       --api-rate-limit uint                  Set limit per IP for api ratelimiter (default 1000)
-      --auth-mode stringArray                API server authentication mode. Any 1 or more length permutation of: client,server,sso (default [client])
+      --auth-mode stringArray                API server authentication mode. Any 1 or more length permutation of: client,server,sso,header (default [client])
       --base-href string                     Value for base href in index.html. Used if the server is running behind reverse proxy under subpath different from /. (default "/")
   -b, --browser                              enable automatic launching of the browser [local mode]
       --configmap string                     Name of K8s configmap to retrieve workflow controller configuration (default "workflow-controller-configmap")
