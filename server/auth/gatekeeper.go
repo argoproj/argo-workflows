@@ -23,6 +23,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	workflow "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo-workflows/v4/server/auth/header"
 	"github.com/argoproj/argo-workflows/v4/server/auth/serviceaccount"
 	"github.com/argoproj/argo-workflows/v4/server/auth/sso"
 	authTypes "github.com/argoproj/argo-workflows/v4/server/auth/types"
@@ -60,6 +61,7 @@ type gatekeeper struct {
 	clients                *servertypes.Clients
 	restConfig             *rest.Config
 	ssoIf                  sso.Interface
+	headerIf               header.Interface
 	clientForAuthorization ClientForAuthorization
 	// The namespace the server is installed in.
 	namespace    string
@@ -68,7 +70,7 @@ type gatekeeper struct {
 	cache        *cache.ResourceCache
 }
 
-func NewGatekeeper(modes Modes, clients *servertypes.Clients, restConfig *rest.Config, ssoIf sso.Interface, clientForAuthorization ClientForAuthorization, namespace string, ssoNamespace string, namespaced bool, cache *cache.ResourceCache) (Gatekeeper, error) {
+func NewGatekeeper(modes Modes, clients *servertypes.Clients, restConfig *rest.Config, ssoIf sso.Interface, headerIf header.Interface, clientForAuthorization ClientForAuthorization, namespace string, ssoNamespace string, namespaced bool, cache *cache.ResourceCache) (Gatekeeper, error) {
 	if len(modes) == 0 {
 		return nil, fmt.Errorf("must specify at least one auth mode")
 	}
@@ -77,6 +79,7 @@ func NewGatekeeper(modes Modes, clients *servertypes.Clients, restConfig *rest.C
 		clients,
 		restConfig,
 		ssoIf,
+		headerIf,
 		clientForAuthorization,
 		namespace,
 		ssoNamespace,
@@ -191,7 +194,9 @@ func (s *gatekeeper) getClients(ctx context.Context, req any) (*servertypes.Clie
 	//
 	// Trusted Header Authentication
 	//
-	// TODO: Authenticate using trusted headers.
+	if s.Modes[Header] {
+		return s.authenticateHeader(ctx, md, req)
+	}
 	if s.Modes[Server] {
 		return s.authenticateServer()
 	}
@@ -222,11 +227,37 @@ func (s *gatekeeper) authenticateSSO(
 	authorization string,
 	req any,
 ) (*servertypes.Clients, *authTypes.Claims, error) {
-	logger := logging.RequireLoggerFromContext(ctx)
 	claims, err := s.ssoIf.Authorize(authorization)
+
 	if err != nil {
 		return nil, nil, status.Error(codes.Unauthenticated, err.Error())
 	}
+
+	return s.authenticateClaims(ctx, claims, req)
+
+}
+
+func (s *gatekeeper) authenticateHeader(
+	ctx context.Context,
+	md metadata.MD,
+	req any,
+) (*servertypes.Clients, *authTypes.Claims, error) {
+
+	claims, err := s.headerIf.Authorize(md)
+	if err != nil {
+		return nil, nil, status.Error(codes.Unauthenticated, err.Error())
+	}
+
+	return s.authenticateClaims(ctx, claims, req)
+}
+
+func (s *gatekeeper) authenticateClaims(
+	ctx context.Context,
+	claims *authTypes.Claims,
+	req any,
+) (*servertypes.Clients, *authTypes.Claims, error) {
+	logger := logging.RequireLoggerFromContext(ctx)
+
 	if s.ssoIf.IsRBACEnabled() {
 		clients, err := s.rbacAuthorization(ctx, claims, req)
 		if err != nil {
@@ -235,6 +266,7 @@ func (s *gatekeeper) authenticateSSO(
 		}
 		return clients, claims, nil
 	}
+
 	// important! write an audit entry (i.e. log entry) so we know which user performed an operation
 	logger.WithFields(addClaimsLogFields(claims, nil)).Info(ctx, "using the default service account for user")
 	return s.clients, claims, nil
