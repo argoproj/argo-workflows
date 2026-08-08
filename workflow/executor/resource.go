@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/itchyny/gojq"
@@ -19,6 +20,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/printers"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/gengo/namer"
 	gengotypes "k8s.io/gengo/types"
@@ -304,14 +306,56 @@ func matchConditions(ctx context.Context, jsonBytes []byte, successReqs labels.R
 	return true, argoerrors.Errorf(argoerrors.CodeNotFound, "Neither success condition nor the failure condition has been matched. Retrying...")
 }
 
+// kubectlRunner runs kubectl and returns its standard output. It exists so that tests can
+// substitute runKubectl, which needs a cluster.
+type kubectlRunner func(ctx context.Context, args ...string) ([]byte, error)
+
 // SaveResourceParameters will save any resource output parameters
 func (we *WorkflowExecutor) SaveResourceParameters(ctx context.Context, resourceNamespace string, resourceName string) error {
-	logger := logging.RequireLoggerFromContext(ctx)
 	if len(we.Template.Outputs.Parameters) == 0 {
-		logger.Info(ctx, "No output parameters")
+		logging.RequireLoggerFromContext(ctx).Info(ctx, "No output parameters")
 		return nil
 	}
+	if err := we.saveResourceParameters(ctx, resourceNamespace, resourceName, runKubectl); err != nil {
+		return err
+	}
+	return we.ReportOutputs(ctx, nil)
+}
+
+// saveResourceParameters resolves the resource template's output parameters. The resource is read
+// at most once, however many output parameters there are, so that they are all resolved against the
+// same version of it.
+func (we *WorkflowExecutor) saveResourceParameters(ctx context.Context, resourceNamespace string, resourceName string, kubectl kubectlRunner) error {
+	logger := logging.RequireLoggerFromContext(ctx)
 	logger.Info(ctx, "Saving resource output parameters")
+
+	// obj is the resource as `kubectl get -o jsonpath=` used to see it; jsonBytes is the same
+	// resource as `kubectl get -o json` used to print it for jqFilter, i.e. without managedFields.
+	var obj *unstructured.Unstructured
+	var jsonBytes []byte
+	if (resourceNamespace != "" || resourceName != "") && slices.ContainsFunc(we.Template.Outputs.Parameters, needsResourceRead) {
+		// --show-managed-fields so that jsonPath expressions still see the whole object: unlike
+		// `-o json`, `-o jsonpath=` never stripped managedFields.
+		args := []string{"kubectl", "-n", resourceNamespace, "get", resourceName, "-o", "json", "--show-managed-fields=true"}
+		out, err := kubectl(ctx, args...)
+		// Deliberately not logging `out`: this reads the whole resource, including managedFields and
+		// any Secret/ConfigMap data, so the body must not reach the executor log at Info.
+		logger.WithError(err).WithField("args", args).WithField("bytes", len(out)).Info(ctx, "kubectl")
+		if err != nil {
+			return err
+		}
+		obj = &unstructured.Unstructured{}
+		if err = json.Unmarshal(out, obj); err != nil {
+			return err
+		}
+		withoutManagedFields := obj.DeepCopy()
+		withoutManagedFields.SetManagedFields(nil)
+		jsonBytes, err = withoutManagedFields.MarshalJSON()
+		if err != nil {
+			return err
+		}
+	}
+
 	for i, param := range we.Template.Outputs.Parameters {
 		if param.ValueFrom == nil {
 			continue
@@ -324,35 +368,47 @@ func (we *WorkflowExecutor) SaveResourceParameters(ctx context.Context, resource
 			we.Template.Outputs.Parameters[i].Value = wfv1.AnyStringPtr(output)
 			continue
 		}
-		var outputFormat string
+		var output string
+		var err error
 		switch {
 		case param.ValueFrom.JSONPath != "":
-			outputFormat = fmt.Sprintf("jsonpath=%s", param.ValueFrom.JSONPath)
+			output, err = jsonPathFilter(obj, param.ValueFrom.JSONPath)
+			logger.WithError(err).WithField("jsonPath", param.ValueFrom.JSONPath).Info(ctx, "jsonpath")
 		case param.ValueFrom.JQFilter != "":
-			outputFormat = "json"
+			output, err = jqFilter(ctx, jsonBytes, param.ValueFrom.JQFilter)
+			logger.WithError(err).WithField("filter", param.ValueFrom.JQFilter).Info(ctx, "gojq")
 		default:
 			continue
 		}
-		args := []string{"kubectl", "-n", resourceNamespace, "get", resourceName, "-o", outputFormat}
-		out, err := runKubectl(ctx, args...)
-		logger.WithError(err).WithField("out", string(out)).WithField("args", args).Info(ctx, "kubectl")
 		if err != nil {
 			return err
-		}
-		output := string(out)
-		if param.ValueFrom.JQFilter != "" {
-			output, err = jqFilter(ctx, out, param.ValueFrom.JQFilter)
-			logger.WithError(err).WithField("out", string(out)).WithField("filter", param.ValueFrom.JQFilter).Info(ctx, "gojq")
-			if err != nil {
-				return err
-			}
 		}
 
 		we.Template.Outputs.Parameters[i].Value = wfv1.AnyStringPtr(output)
 		logger.WithFields(logging.Fields{"name": param.Name, "value": output}).Info(ctx, "Saved output parameter")
 	}
-	err := we.ReportOutputs(ctx, nil)
-	return err
+	return nil
+}
+
+// needsResourceRead reports whether resolving this output parameter requires reading the resource.
+func needsResourceRead(param wfv1.Parameter) bool {
+	return param.ValueFrom != nil && (param.ValueFrom.JSONPath != "" || param.ValueFrom.JQFilter != "")
+}
+
+// jsonPathFilter evaluates a JSONPath expression against obj exactly as
+// `kubectl get -o jsonpath=<expression>` does: the same printer, and the same
+// --allow-missing-template-keys default.
+func jsonPathFilter(obj *unstructured.Unstructured, expression string) (string, error) {
+	printer, err := printers.NewJSONPathPrinter(expression)
+	if err != nil {
+		return "", argoerrors.Errorf(argoerrors.CodeBadRequest, "error parsing jsonpath %s, %v", expression, err)
+	}
+	printer.AllowMissingKeys(true)
+	var buf bytes.Buffer
+	if err := printer.PrintObj(obj, &buf); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
 }
 
 func jqFilter(ctx context.Context, input []byte, filter string) (string, error) {
