@@ -26,7 +26,7 @@ type UUIDVersion struct {
 type OffloadNodeStatusRepo interface {
 	Save(ctx context.Context, uid, namespace string, nodes wfv1.Nodes) (string, error)
 	Get(ctx context.Context, uid, version string) (wfv1.Nodes, error)
-	List(ctx context.Context, namespace string) (map[UUIDVersion]wfv1.Nodes, error)
+	List(ctx context.Context, namespace string, keys []UUIDVersion) (map[UUIDVersion]wfv1.Nodes, error)
 	ListOldOffloads(ctx context.Context, namespace string) (map[string][]string, error)
 	Delete(ctx context.Context, uid, version string) error
 	IsEnabled() bool
@@ -149,8 +149,28 @@ func (wdc *nodeOffloadRepo) Get(ctx context.Context, uid, version string) (wfv1.
 	return nodes, nil
 }
 
-func (wdc *nodeOffloadRepo) List(ctx context.Context, namespace string) (map[UUIDVersion]wfv1.Nodes, error) {
-	wdc.log.WithFields(logging.Fields{"namespace": namespace}).Debug(ctx, "Listing offloaded nodes")
+// uuidVersionIn matches exactly the given (uid, version) pairs. Written as OR-of-ANDs rather
+// than a row value `(uid, version) IN ((?,?),...)` so that it behaves the same on MySQL,
+// MariaDB, Postgres and SQLite.
+//
+// Each pair costs two placeholders, so this tops out at roughly 32k pairs on MySQL. A page
+// that large is not a real scenario; batch the keys here if that ever changes.
+func uuidVersionIn(keys []UUIDVersion) db.LogicalExpr {
+	conds := make([]db.LogicalExpr, len(keys))
+	for i, key := range keys {
+		conds[i] = db.And(db.Cond{"uid": key.UID}, db.Cond{"version": key.Version})
+	}
+	return db.Or(conds...)
+}
+
+// List returns the offloaded nodes for the given keys only.
+func (wdc *nodeOffloadRepo) List(ctx context.Context, namespace string, keys []UUIDVersion) (map[UUIDVersion]wfv1.Nodes, error) {
+	// This is not merely an optimisation: db.Or() with no arguments is an empty condition,
+	// so the query would silently widen back to every nodes blob in the namespace.
+	if len(keys) == 0 {
+		return map[UUIDVersion]wfv1.Nodes{}, nil
+	}
+	wdc.log.WithFields(logging.Fields{"namespace": namespace, "keys": len(keys)}).Debug(ctx, "Listing offloaded nodes")
 	var res map[UUIDVersion]wfv1.Nodes
 	err := wdc.sessionProxy.With(ctx, func(s db.Session) error {
 		var records []nodesRecord
@@ -159,6 +179,7 @@ func (wdc *nodeOffloadRepo) List(ctx context.Context, namespace string) (map[UUI
 			From(wdc.tableName).
 			Where(db.Cond{"clustername": wdc.clusterName}).
 			And(namespaceEqual(namespace)).
+			And(uuidVersionIn(keys)).
 			All(&records)
 		if err != nil {
 			return err

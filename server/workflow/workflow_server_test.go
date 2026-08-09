@@ -598,7 +598,7 @@ func getWorkflowServer(t *testing.T) (workflowpkg.WorkflowServiceServer, context
 
 	offloadNodeStatusRepo := &mocks.OffloadNodeStatusRepo{}
 	offloadNodeStatusRepo.On("IsEnabled", mock.Anything).Return(true)
-	offloadNodeStatusRepo.On("List", mock.Anything).Return(map[sqldb.UUIDVersion]v1alpha1.Nodes{}, nil)
+	offloadNodeStatusRepo.On("List", mock.Anything, mock.Anything).Return(map[sqldb.UUIDVersion]v1alpha1.Nodes{}, nil)
 
 	archivedRepo := &mocks.WorkflowArchive{}
 
@@ -1501,7 +1501,7 @@ func getWorkflowServerWithArtifacts(t *testing.T, template runtime.Object, defau
 
 	offloadNodeStatusRepo := &mocks.OffloadNodeStatusRepo{}
 	offloadNodeStatusRepo.On("IsEnabled", mock.Anything).Return(true)
-	offloadNodeStatusRepo.On("List", mock.Anything).Return(map[sqldb.UUIDVersion]v1alpha1.Nodes{}, nil)
+	offloadNodeStatusRepo.On("List", mock.Anything, mock.Anything).Return(map[sqldb.UUIDVersion]v1alpha1.Nodes{}, nil)
 
 	archivedRepo := &mocks.WorkflowArchive{}
 
