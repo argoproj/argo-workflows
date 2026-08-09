@@ -44,7 +44,7 @@ You can use `CronWorkflow.spec.workflowMetadata` to add `labels` and `annotation
 
 | Option Name                  | Default Value          | Description |
 |:----------------------------:|:----------------------:|-------------|
-| `schedules`                  | None | v3.6 and after: List of [Cron schedules](#cron-schedule-syntax) to run `Workflows`. Example: `5 4 * * *`, `0 1 * * *`. Required to be a non-empty list. Supports [hashed schedules](#hashed-schedules) such as `H H * * *`. |
+| `schedules`                  | None | v3.6 and after: List of [Cron schedules](#cron-schedule-syntax) to run `Workflows`. Example: `5 4 * * *`, `0 1 * * *`. Required to be a non-empty list. v4.1 and after: also accepts [hashed schedules](#hashed-schedules) such as `H H * * *` |
 | `timezone`                   | Machine timezone       | [IANA Timezone](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) to run `Workflows`. Example: `America/Los_Angeles` |
 | `suspend`                    | `false`                | If `true` Workflow scheduling will not occur. Can be set from the CLI, GitOps, or directly |
 | `concurrencyPolicy`          | `Allow`                | What to do if multiple `Workflows` are scheduled at the same time. `Allow`: allow all, `Replace`: remove all old before scheduling new, `Forbid`: do not allow any new while there are old  |
@@ -61,6 +61,8 @@ The implementation is the same as `CronJobs`, using [`robfig/cron`](https://pkg.
 
 #### Hashed Schedules
 
+> v4.1 and after
+
 If many `CronWorkflows` share a schedule such as `0 0 * * *`, they all start at the same time and create a load spike.
 To avoid this, a field can use `H` (hash), the same way [Jenkins](https://www.jenkins.io/doc/book/pipeline/syntax/#cron-syntax) does.
 `H` resolves to a value which is derived from `metadata.name` and `metadata.namespace`, so it is spread out over the field's range but never changes for a given `CronWorkflow`:
@@ -73,7 +75,7 @@ metadata:
   namespace: argo
 spec:
   schedules:
-    - "H H * * *"   # once a day, at a fixed but arbitrary time, e.g. 06:09
+    - "H H * * *"   # once a day, at a fixed but arbitrary time, for example 06:09
 ```
 
 | Syntax             | Meaning                                                                           | Example expansion |
@@ -86,11 +88,15 @@ spec:
 Notes:
 
 - `H` is resolved per field, so `H H * * *` does not use the same value for the minute and the hour.
-- A bare `H` in the day of month resolves within `1-28`, so that a schedule such as `H H H * *` runs in every month. An explicit range may go beyond that, up to the `1-31` cron itself accepts.
+- A bare `H` in the day of month resolves within `1-28`, so that a schedule such as `H H H * *` runs in every month.
+  An explicit range may go beyond that, up to the `1-31` cron itself accepts.
 - `H` cannot be used in the `@daily` style descriptors or in `@every 1h`.
+- The hash is over `metadata.namespace` and `metadata.name` only.
+  Renaming a `CronWorkflow`, or applying the same manifest in another namespace, therefore resolves `H` to a different time.
 
 The `spec.schedules` you configure are never rewritten.
-To see what `H` resolved to, read `status.resolvedSchedules`, which maps each schedule using a `H` to the schedule it runs on. The Controller sets it once it has scheduled the `CronWorkflow`:
+To see what `H` resolved to, read `status.resolvedSchedules`, which maps each schedule using a `H` to the schedule it runs on.
+The Controller sets it once it has scheduled the `CronWorkflow`:
 
 ```bash
 kubectl get cronworkflow my-cron-wf -o jsonpath-as-json='{.status.resolvedSchedules}'
