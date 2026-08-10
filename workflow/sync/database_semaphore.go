@@ -199,7 +199,7 @@ func (s *databaseSemaphore) notifyWaiters(ctx context.Context) {
 		}
 		key := workflowKey(item.Key)
 		logger.WithFields(logging.Fields{"key": item.Key, "workflowKey": key}).Debug(ctx, "Enqueueing workflow for semaphore notification")
-		s.nextWorkflow(key)
+		s.nextWorkflow(key, 0)
 	}
 }
 
@@ -309,7 +309,7 @@ func (s *databaseSemaphore) checkAcquire(ctx context.Context, holderKey string, 
 	if !isSameWorkflowNodeKeys(holderKey, queue[0].Key) {
 		// Enqueue the queue[0] workflow if lock is available
 		if len(holders) < limit {
-			s.nextWorkflow(workflowKey(queue[0].Key))
+			s.nextWorkflow(workflowKey(queue[0].Key), 0)
 		}
 		logger.WithFields(logging.Fields{
 			"key":          holderKey,

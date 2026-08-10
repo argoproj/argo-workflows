@@ -95,7 +95,7 @@ func TestIsSameWorkflowNodeKeys(t *testing.T) {
 func testTryAcquireSemaphore(t *testing.T, factory semaphoreFactory) {
 	t.Helper()
 	ctx := logging.TestContext(t.Context())
-	nextWorkflow := func(key string) {}
+	nextWorkflow := func(string, time.Duration) {}
 
 	s, sessionProxy, cleanup := factory(ctx, t, "bar", "default", 2, nextWorkflow)
 	defer cleanup()
@@ -139,7 +139,7 @@ func testNotifyWaitersAcquire(t *testing.T, factory semaphoreFactory) {
 	t.Helper()
 	ctx := logging.TestContext(t.Context())
 	notified := make(map[string]bool)
-	nextWorkflow := func(key string) {
+	nextWorkflow := func(key string, _ time.Duration) {
 		notified[key] = true
 	}
 
@@ -189,7 +189,7 @@ func testNotifyWorkflowFromTemplateSemaphore(t *testing.T, factory semaphoreFact
 	t.Helper()
 	ctx := logging.TestContext(t.Context())
 	notified := make(map[string]bool)
-	nextWorkflow := func(key string) {
+	nextWorkflow := func(key string, _ time.Duration) {
 		notified[key] = true
 	}
 
@@ -224,7 +224,7 @@ func testCheckAcquireNotifiesCorrectKeyForTemplateSemaphore(t *testing.T, factor
 	t.Helper()
 	ctx := logging.TestContext(t.Context())
 	notified := make(map[string]bool)
-	nextWorkflow := func(key string) {
+	nextWorkflow := func(key string, _ time.Duration) {
 		notified[key] = true
 	}
 
@@ -268,7 +268,7 @@ func TestInternalSemaphoreReleaseWithLimitFetchFailure(t *testing.T) {
 		}
 		return 1, nil
 	}
-	nextWorkflow := func(_ string) {}
+	nextWorkflow := func(_ string, _ time.Duration) {}
 
 	// TTL 0 forces a live limit fetch on every getLimit call
 	sem, err := newInternalSemaphore(ctx, "default/ConfigMap/my-config/workflow", nextWorkflow, getter, 0)

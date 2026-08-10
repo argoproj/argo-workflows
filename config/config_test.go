@@ -40,3 +40,22 @@ func TestSanitize(t *testing.T) {
 		}
 	}
 }
+
+func TestDBRetryConfig(t *testing.T) {
+	defaults := (*DBRetryConfig)(nil).Backoff()
+	assert.Equal(t, 5, defaults.Steps)
+	assert.Equal(t, 10*time.Millisecond, defaults.Duration)
+	assert.InEpsilon(t, 2.0, defaults.Factor, 0.001)
+	assert.InEpsilon(t, 0.5, defaults.Jitter, 0.001)
+	assert.Equal(t, 600*time.Millisecond, defaults.Cap)
+
+	// an unset field keeps its default rather than becoming zero
+	partial := (&DBRetryConfig{Steps: 10}).Backoff()
+	assert.Equal(t, 10, partial.Steps)
+	assert.Equal(t, 10*time.Millisecond, partial.Duration)
+	assert.InEpsilon(t, 2.0, partial.Factor, 0.001)
+
+	assert.True(t, (*DBRetryConfig)(nil).RequeueEnabled())
+	assert.True(t, (&DBRetryConfig{Steps: 10}).RequeueEnabled())
+	assert.False(t, (&DBRetryConfig{Requeue: new(false)}).RequeueEnabled())
+}

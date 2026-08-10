@@ -362,7 +362,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("InitializeSynchronization", func(t *testing.T) {
-		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
+		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string, _ time.Duration) {
 		}, WorkflowExistenceFunc, false)
 		require.NoError(t, err)
 
@@ -377,7 +377,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		assert.Len(t, syncManager.syncLockMap, 1)
 	})
 	t.Run("InitializeSynchronizationWithInvalid", func(t *testing.T) {
-		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
+		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string, _ time.Duration) {
 		}, WorkflowExistenceFunc, false)
 		require.NoError(t, err)
 
@@ -408,7 +408,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		}, metav1.CreateOptions{})
 		require.NoError(t, err)
 
-		syncManager, err := NewLockManager(ctx, kubeClient, "", nil, GetSyncLimitFunc(kubeClient), func(key string) {
+		syncManager, err := NewLockManager(ctx, kubeClient, "", nil, GetSyncLimitFunc(kubeClient), func(key string, _ time.Duration) {
 		}, WorkflowExistenceFunc, false)
 		require.NoError(t, err)
 
@@ -448,7 +448,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		// its holders only in memory, so leaving it absent would let a later
 		// rebuild start with zero holders and a racer double-acquire this hold.
 		kubeClient := fake.NewClientset() // no ConfigMap created
-		syncManager, err := NewLockManager(ctx, kubeClient, "", nil, GetSyncLimitFunc(kubeClient), func(key string) {
+		syncManager, err := NewLockManager(ctx, kubeClient, "", nil, GetSyncLimitFunc(kubeClient), func(key string, _ time.Duration) {
 		}, WorkflowExistenceFunc, false)
 		require.NoError(t, err)
 
@@ -480,7 +480,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		}, metav1.CreateOptions{})
 		require.NoError(t, err)
 
-		syncManager, err := NewLockManager(ctx, kubeClient, "", nil, GetSyncLimitFunc(kubeClient), func(key string) {
+		syncManager, err := NewLockManager(ctx, kubeClient, "", nil, GetSyncLimitFunc(kubeClient), func(key string, _ time.Duration) {
 		}, WorkflowExistenceFunc, false)
 		require.NoError(t, err)
 
@@ -522,7 +522,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		// Before the fix, getWorkflowSyncLevelByName could not find the mutex in
 		// the empty spec, Initialize hit "cannot obtain lock level" and dropped
 		// the holder, leaving the lock free for a racing workflow to acquire.
-		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
+		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string, _ time.Duration) {
 		}, WorkflowExistenceFunc, false)
 		require.NoError(t, err)
 
@@ -566,7 +566,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		// synchronization block in spec or stored spec) must poison the lock,
 		// rather than silently dropping the holder. Otherwise a racing workflow
 		// could acquire a mutex that persisted state says is already held.
-		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
+		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string, _ time.Duration) {
 		}, WorkflowExistenceFunc, false)
 		require.NoError(t, err)
 
@@ -609,7 +609,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		// we can neither poison the lock (no key) nor prove the spec re-acquires
 		// it, so continuing risks a silent double-acquire. Initialize must fail
 		// closed (return an error) so the controller halts for an operator.
-		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
+		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string, _ time.Duration) {
 		}, WorkflowExistenceFunc, false)
 		require.NoError(t, err)
 
@@ -638,7 +638,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		// database session (e.g. the DB was unreachable at startup). The lock
 		// cannot be re-established, so Initialize must fail closed and let the
 		// controller crashloop until the database is reachable.
-		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
+		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string, _ time.Duration) {
 		}, WorkflowExistenceFunc, false)
 		require.NoError(t, err)
 		require.Nil(t, syncManager.dbInfo.SessionProxy)
@@ -664,7 +664,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 
 	t.Run("WfLevelAcquireAndRelease", func(t *testing.T) {
 		var nextKey string
-		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
+		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string, _ time.Duration) {
 			nextKey = key
 		}, WorkflowExistenceFunc, false)
 		require.NoError(t, err)
@@ -772,7 +772,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		_, err := kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 		require.NoError(t, err)
 
-		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
+		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string, _ time.Duration) {
 			// nextKey = key
 		}, WorkflowExistenceFunc, false)
 		require.NoError(t, err)
@@ -847,7 +847,7 @@ func TestResizeSemaphoreSize(t *testing.T) {
 
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("WfLevelAcquireAndRelease", func(t *testing.T) {
-		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
+		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string, _ time.Duration) {
 		}, WorkflowExistenceFunc, false)
 		require.NoError(t, err)
 
@@ -925,7 +925,7 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("TemplateLevelAcquireAndRelease", func(t *testing.T) {
 		// var nextKey string
-		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
+		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string, _ time.Duration) {
 			// nextKey = key
 		}, WorkflowExistenceFunc, false)
 		require.NoError(t, err)
@@ -1007,7 +1007,7 @@ func TestSemaphoreSizeCache(t *testing.T) {
 			SemaphoreLimitCacheSeconds: new(int64(1)),
 		}
 
-		syncManager, err := NewLockManager(ctx, kube, "", &config, mock.getSyncLimit, func(key string) {
+		syncManager, err := NewLockManager(ctx, kube, "", &config, mock.getSyncLimit, func(key string, _ time.Duration) {
 		}, WorkflowExistenceFunc, false)
 		require.NoError(t, err)
 
@@ -1096,7 +1096,7 @@ func TestSemaphoreSizeCache(t *testing.T) {
 			SemaphoreLimitCacheSeconds: new(int64(1)),
 		}
 
-		syncManager, err := NewLockManager(ctx, kube, "", &config, mock.getSyncLimit, func(key string) {
+		syncManager, err := NewLockManager(ctx, kube, "", &config, mock.getSyncLimit, func(key string, _ time.Duration) {
 		}, WorkflowExistenceFunc, false)
 		require.NoError(t, err)
 
@@ -1192,7 +1192,7 @@ func TestTriggerWFWithAvailableLock(t *testing.T) {
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("TriggerWfsWithAvailableLocks", func(t *testing.T) {
 		triggerCount := 0
-		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
+		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string, _ time.Duration) {
 			triggerCount++
 		}, WorkflowExistenceFunc, false)
 		require.NoError(t, err)
@@ -1232,7 +1232,7 @@ func TestMutexWfLevel(t *testing.T) {
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("WorkflowLevelMutexAcquireAndRelease", func(t *testing.T) {
 		// var nextKey string
-		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
+		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string, _ time.Duration) {
 			// nextKey = key
 		}, WorkflowExistenceFunc, false)
 		require.NoError(t, err)
@@ -1277,7 +1277,7 @@ func TestMutexWfLevel(t *testing.T) {
 	})
 
 	t.Run("WorkflowLevelMutexAcquireAndReleaseWithMultipleMutex", func(t *testing.T) {
-		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
+		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string, _ time.Duration) {
 			// nextKey = key
 		}, WorkflowExistenceFunc, false)
 		require.NoError(t, err)
@@ -1327,7 +1327,7 @@ func TestCheckWorkflowExistence(t *testing.T) {
 
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("WorkflowDeleted", func(t *testing.T) {
-		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
+		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string, _ time.Duration) {
 			// nextKey = key
 		}, func(s string) bool {
 			return strings.Contains(s, "test1")
@@ -1532,7 +1532,7 @@ status:
 `)
 	syncLimitFunc := GetSyncLimitFunc(kube)
 
-	syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
+	syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string, _ time.Duration) {
 		// nextKey = key
 	}, WorkflowExistenceFunc, false)
 	require.NoError(t, err)
@@ -1798,7 +1798,7 @@ func TestMutexMigration(t *testing.T) {
 
 	syncLimitFunc := GetSyncLimitFunc(kube)
 
-	syncMgr, mgrErr := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
+	syncMgr, mgrErr := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string, _ time.Duration) {
 	}, WorkflowExistenceFunc, false)
 	require.NoError(mgrErr)
 
@@ -1842,7 +1842,7 @@ func TestMutexMigration(t *testing.T) {
 		assert.True(status)
 	})
 
-	syncMgr, mgrErr = NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
+	syncMgr, mgrErr = NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string, _ time.Duration) {
 	}, WorkflowExistenceFunc, false)
 	require.NoError(mgrErr)
 
@@ -1981,7 +1981,7 @@ func TestBackgroundNotifierClearsExpiredLocks(t *testing.T) {
 			_, err = info.SessionProxy.Session().SQL().Exec("INSERT INTO sync_limit (name, sizelimit) VALUES (?, ?)", "foo/test-semaphore", 100)
 			require.NoError(t, err)
 			// Initialize a semaphore so it gets added to the syncLockMap
-			testsem, err := newDatabaseSemaphore(ctx, "test-semaphore", "foo/test-semaphore", func(key string) {}, info, 0)
+			testsem, err := newDatabaseSemaphore(ctx, "test-semaphore", "foo/test-semaphore", func(string, time.Duration) {}, info, 0)
 			require.NoError(t, err)
 			syncLockMap := make(map[string]semaphore)
 			syncLockMap["sem/test-semaphore"] = testsem
@@ -2016,7 +2016,7 @@ func TestUnconfiguredSemaphores(t *testing.T) {
 	t.Run("UnconfiguredConfigMapSemaphore", func(t *testing.T) {
 		// Setup with a fake k8s client but no ConfigMap created
 		syncLimitFunc := GetSyncLimitFunc(kube)
-		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
+		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string, _ time.Duration) {
 		}, WorkflowExistenceFunc, false)
 		require.NoError(t, err)
 
@@ -2068,7 +2068,7 @@ func TestUnconfiguredSemaphores(t *testing.T) {
 					}
 				}
 
-				syncManager, err := NewLockManager(ctx, kube, "", syncConfig, nil, func(key string) {
+				syncManager, err := NewLockManager(ctx, kube, "", syncConfig, nil, func(key string, _ time.Duration) {
 				}, WorkflowExistenceFunc, false)
 				require.NoError(t, err)
 
@@ -2092,7 +2092,7 @@ func TestUnconfiguredSemaphores(t *testing.T) {
 		// Setup a LockManager with no database configuration. This doesn't need to distinguish between Postgres and MySQL, neither are configured
 		syncConfig := &config.SyncConfig{}
 
-		syncManager, err := NewLockManager(ctx, kube, "", syncConfig, nil, func(key string) {
+		syncManager, err := NewLockManager(ctx, kube, "", syncConfig, nil, func(key string, _ time.Duration) {
 		}, WorkflowExistenceFunc, false)
 		require.NoError(t, err)
 
@@ -2119,7 +2119,7 @@ func TestUnconfiguredSemaphores(t *testing.T) {
 				defer cleanup()
 
 				// Configure sync manager
-				syncManager := createLockManager(ctx, info.SessionProxy, &syncConfig, nil, func(key string) {
+				syncManager := createLockManager(ctx, info.SessionProxy, &syncConfig, nil, func(key string, _ time.Duration) {
 				}, WorkflowExistenceFunc)
 				require.NotNil(t, syncManager)
 				require.NotNil(t, syncManager.dbInfo.SessionProxy.Session())
@@ -2171,7 +2171,7 @@ func TestDatabaseInitializeLoweredLimitAfterRestart(t *testing.T) {
 			require.NoError(t, err)
 
 			// --- Controller instance #1: two workflows acquire the semaphore. ---
-			mgr1 := createLockManager(ctx, info.SessionProxy, &syncConfig, nil, func(key string) {}, WorkflowExistenceFunc)
+			mgr1 := createLockManager(ctx, info.SessionProxy, &syncConfig, nil, func(string, time.Duration) {}, WorkflowExistenceFunc)
 
 			creationTime := metav1.NewTime(time.Now())
 			wf1 := wfv1.MustUnmarshalWorkflow(wfWithDBSemaphore)
@@ -2198,7 +2198,7 @@ func TestDatabaseInitializeLoweredLimitAfterRestart(t *testing.T) {
 			require.NoError(t, err)
 
 			// --- Controller instance #2: restart. Initialize from the running workflows. ---
-			mgr2 := createLockManager(ctx, info.SessionProxy, &syncConfig, nil, func(key string) {}, WorkflowExistenceFunc)
+			mgr2 := createLockManager(ctx, info.SessionProxy, &syncConfig, nil, func(string, time.Duration) {}, WorkflowExistenceFunc)
 			staleHolds, err := mgr2.Initialize(ctx, []wfv1.Workflow{*wf1, *wf2})
 			require.NoError(t, err)
 			require.Empty(t, staleHolds, "holders backed by database rows must not be reported stale")
@@ -2273,7 +2273,7 @@ func TestDatabaseInitializeStaleHoldFailsWorkflow(t *testing.T) {
 			require.NoError(t, err)
 
 			// --- Controller instance #1: two workflows acquire the semaphore. ---
-			mgr1 := createLockManager(ctx, info.SessionProxy, &syncConfig, nil, func(key string) {}, WorkflowExistenceFunc)
+			mgr1 := createLockManager(ctx, info.SessionProxy, &syncConfig, nil, func(string, time.Duration) {}, WorkflowExistenceFunc)
 
 			creationTime := metav1.NewTime(time.Now())
 			wf1 := wfv1.MustUnmarshalWorkflow(wfWithDBSemaphore)
@@ -2297,7 +2297,7 @@ func TestDatabaseInitializeStaleHoldFailsWorkflow(t *testing.T) {
 			require.NoError(t, err)
 
 			// --- Controller instance #2: restart. Initialize from the running workflows. ---
-			mgr2 := createLockManager(ctx, info.SessionProxy, &syncConfig, nil, func(key string) {}, WorkflowExistenceFunc)
+			mgr2 := createLockManager(ctx, info.SessionProxy, &syncConfig, nil, func(string, time.Duration) {}, WorkflowExistenceFunc)
 			staleHolds, err := mgr2.Initialize(ctx, []wfv1.Workflow{*wf1, *wf2})
 			require.NoError(t, err, "a stale hold is not fatal: the workflow is failed, not the controller")
 

@@ -31,7 +31,7 @@ func TestDatabaseMutexAcquireRelease(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	for _, dbType := range testDBTypes {
 		t.Run(string(dbType), func(t *testing.T) {
-			nextWorkflow := func(key string) {}
+			nextWorkflow := func(string, time.Duration) {}
 
 			mutex, tx, deferfunc := createTestDatabaseMutex(ctx, t, "test-mutex", "default", nextWorkflow, dbType)
 			defer deferfunc()
@@ -67,7 +67,7 @@ func TestDatabaseMutexQueueOrder(t *testing.T) {
 	for _, dbType := range testDBTypes {
 		t.Run(string(dbType), func(t *testing.T) {
 			notified := make(map[string]bool)
-			nextWorkflow := func(key string) {
+			nextWorkflow := func(key string, _ time.Duration) {
 				notified[key] = true
 			}
 

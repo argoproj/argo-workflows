@@ -2,6 +2,7 @@ package sync
 
 import (
 	"testing"
+	"time"
 
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 
@@ -114,7 +115,7 @@ func TestMutexLock(t *testing.T) {
 	kube := fake.NewClientset()
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("InitializeSynchronization", func(t *testing.T) {
-		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
+		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string, _ time.Duration) {
 		}, WorkflowExistenceFunc, false)
 		require.NoError(t, err)
 
@@ -130,7 +131,7 @@ func TestMutexLock(t *testing.T) {
 	})
 	t.Run("WfLevelMutexAcquireAndRelease", func(t *testing.T) {
 		var nextWorkflow string
-		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
+		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string, _ time.Duration) {
 			nextWorkflow = key
 		}, WorkflowExistenceFunc, false)
 		require.NoError(t, err)
@@ -213,7 +214,7 @@ func TestMutexLock(t *testing.T) {
 
 	t.Run("WfLevelMutexOthernamespace", func(t *testing.T) {
 		var nextWorkflow string
-		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
+		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string, _ time.Duration) {
 			nextWorkflow = key
 		}, WorkflowExistenceFunc, false)
 		require.NoError(t, err)
@@ -406,7 +407,7 @@ func TestMutexTmplLevel(t *testing.T) {
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("TemplateLevelAcquireAndRelease", func(t *testing.T) {
 		// var nextKey string
-		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {
+		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string, _ time.Duration) {
 			// nextKey = key
 		}, WorkflowExistenceFunc, false)
 		require.NoError(t, err)

@@ -12,6 +12,7 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
@@ -392,6 +393,79 @@ type SyncConfig struct {
 	// SemaphoreLimitCacheSeconds specifies the duration in seconds before the workflow controller will re-fetch the limit
 	// for a semaphore from its associated data source. Defaults to 0 seconds (re-fetch every time the semaphore is checked).
 	SemaphoreLimitCacheSeconds *int64 `json:"semaphoreLimitCacheSeconds,omitempty"`
+	// DBRetryConfig tunes the retrying of database lock transactions that abort with a
+	// serialization failure, and what happens once those retries are exhausted
+	DBRetryConfig *DBRetryConfig `json:"dbRetryConfig,omitempty"`
+}
+
+// GetDBRetryConfig returns the database lock retry settings, tolerating a nil SyncConfig.
+func (c *SyncConfig) GetDBRetryConfig() *DBRetryConfig {
+	if c == nil {
+		return nil
+	}
+	return c.DBRetryConfig
+}
+
+const (
+	defaultDBRetrySteps    = 5
+	defaultDBRetryDuration = 10 * time.Millisecond
+	defaultDBRetryFactor   = 2.0
+	defaultDBRetryJitter   = 0.5
+	defaultDBRetryCap      = 600 * time.Millisecond
+)
+
+// DBRetryConfig mirrors wait.Backoff for database semaphore and mutex transactions that
+// abort with a serialization failure. Each unset field keeps its default, so a single field can be
+// overridden on its own.
+type DBRetryConfig struct {
+	// Steps is the number of attempts made before giving up. Default: 5
+	Steps int `json:"steps,omitempty"`
+	// Duration is the delay before the first retry. Default: 10ms
+	Duration TTL `json:"duration,omitempty"`
+	// Factor is the growth factor applied to the delay after each attempt. Default: 2.0
+	Factor float64 `json:"factor,omitempty"`
+	// Jitter randomises each delay by up to this fraction of itself. Default: 0.5
+	Jitter float64 `json:"jitter,omitempty"`
+	// Cap is the upper bound on any single delay. Default: 600ms
+	Cap TTL `json:"cap,omitempty"`
+	// Requeue treats exhausted retries as a failure to obtain the lock, leaving the workflow
+	// pending and requeueing it, rather than failing the workflow. Default: true
+	Requeue *bool `json:"requeue,omitempty"`
+}
+
+// Backoff returns the retry backoff, substituting the default for every unset field.
+func (c *DBRetryConfig) Backoff() wait.Backoff {
+	backoff := wait.Backoff{
+		Steps:    defaultDBRetrySteps,
+		Duration: defaultDBRetryDuration,
+		Factor:   defaultDBRetryFactor,
+		Jitter:   defaultDBRetryJitter,
+		Cap:      defaultDBRetryCap,
+	}
+	if c == nil {
+		return backoff
+	}
+	if c.Steps != 0 {
+		backoff.Steps = c.Steps
+	}
+	if c.Duration != 0 {
+		backoff.Duration = time.Duration(c.Duration)
+	}
+	if c.Factor != 0 {
+		backoff.Factor = c.Factor
+	}
+	if c.Jitter != 0 {
+		backoff.Jitter = c.Jitter
+	}
+	if c.Cap != 0 {
+		backoff.Cap = time.Duration(c.Cap)
+	}
+	return backoff
+}
+
+// RequeueEnabled reports whether exhausted retries requeue the workflow instead of failing it.
+func (c *DBRetryConfig) RequeueEnabled() bool {
+	return c == nil || c.Requeue == nil || *c.Requeue
 }
 
 // ConnectionPool contains database connection pool settings

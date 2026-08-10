@@ -24,7 +24,9 @@ import (
 )
 
 type (
-	NextWorkflow   func(string)
+	// NextWorkflow enqueues a workflow key after the given delay. A zero delay means the
+	// caller has no opinion and the controller's default notification delay applies.
+	NextWorkflow   func(string, time.Duration)
 	GetSyncLimit   func(context.Context, string) (int, error)
 	WorkflowExists func(string) bool
 )
@@ -36,6 +38,8 @@ type Manager struct {
 	getSyncLimit      GetSyncLimit
 	syncLimitCacheTTL time.Duration
 	workflowExists    WorkflowExists
+	dbRetryBackoff    wait.Backoff
+	dbRetryRequeue    bool
 	dbInfo            syncdb.Info
 	queries           syncdb.SyncQueries
 	log               logging.Logger
@@ -80,6 +84,7 @@ func createLockManager(ctx context.Context, sessionProxy *sqldb.SessionProxy, co
 	ctx, log := logging.RequireLoggerFromContext(ctx).WithField("component", "lock_manager").InContext(ctx)
 
 	log.WithField("syncLimitCacheTTL", syncLimitCacheTTL).Info(ctx, "Sync manager ttl")
+	dbRetry := config.GetDBRetryConfig()
 	dbInfo := syncdb.Info{
 		SessionProxy: sessionProxy,
 		Config:       syncdb.ConfigFromConfig(config),
@@ -91,6 +96,8 @@ func createLockManager(ctx context.Context, sessionProxy *sqldb.SessionProxy, co
 		getSyncLimit:      getSyncLimit,
 		syncLimitCacheTTL: syncLimitCacheTTL,
 		workflowExists:    workflowExists,
+		dbRetryBackoff:    dbRetry.Backoff(),
+		dbRetryRequeue:    dbRetry.RequeueEnabled(),
 		dbInfo:            dbInfo,
 		queries:           syncdb.NewSyncQueries(sessionProxy, dbInfo.Config),
 		log:               log,
@@ -488,16 +495,10 @@ func (sm *Manager) TryAcquire(ctx context.Context, wf *wfv1.Workflow, nodeName s
 		var already bool
 		var msg string
 		var newly []*acquiredLock
-		// Backoff bounds: sm.lock is held for the whole loop, so cap each sleep
-		// modestly. Jitter prevents a fleet of replicas from retrying in lockstep
-		// after a shared conflict burst.
-		backoff := wait.Backoff{
-			Steps:    5,
-			Duration: 10 * time.Millisecond,
-			Factor:   2.0,
-			Jitter:   0.5,
-			Cap:      600 * time.Millisecond,
-		}
+		// Backoff bounds: sm.lock is held for the whole loop, so keep each sleep
+		// modest. Jitter prevents a fleet of replicas from retrying in lockstep
+		// after a shared conflict burst. Tunable via synchronization.dbRetryConfig.
+		backoff := sm.dbRetryBackoff
 		attempt := 0
 		err = retry.OnError(backoff, isRetryableSyncError, func() error {
 			attempt++
@@ -521,6 +522,18 @@ func (sm *Manager) TryAcquire(ctx context.Context, wf *wfv1.Workflow, nodeName s
 			return txErr
 		})
 		if err != nil {
+			// The aborted transaction rolled back the queue row too, so nothing will
+			// notify this workflow later: requeue it ourselves and report it as simply
+			// not having got the lock.
+			if sm.dbRetryRequeue && isRetryableSyncError(err) {
+				sm.log.WithFields(logging.Fields{
+					"holderKey": holderKey,
+					"attempts":  attempt,
+					"error":     err,
+				}).Info(ctx, "TryAcquire - retries exhausted, requeueing")
+				sm.nextWorkflow(workflowKey(holderKey), dbRetryRequeueDelay)
+				return false, false, dbRetryRequeueMsg, failedLockName, nil
+			}
 			return false, false, "", failedLockName, err
 		}
 		sm.recordAcquisitions(ctx, wf, newly)
@@ -532,6 +545,13 @@ func (sm *Manager) TryAcquire(ctx context.Context, wf *wfv1.Workflow, nodeName s
 	}
 	return already, updated, msg, failedLockName, err
 }
+
+const (
+	// dbRetryRequeueDelay is how long to wait before retrying a lock acquisition that
+	// exhausted its retries. Long enough to let the conflicting writers drain.
+	dbRetryRequeueDelay = 10 * time.Second
+	dbRetryRequeueMsg   = "Waiting for lock: database contention, will retry"
+)
 
 // isRetryableSyncError reports whether a TryAcquire transaction failure should
 // be retried. Matches PostgreSQL SERIALIZABLE conflict (40001), deadlock
