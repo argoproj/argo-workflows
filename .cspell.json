@@ -51,6 +51,7 @@
     "artifactgc",
     "clientset",
     "clusterworkflowtemplate",
+    "crds",
     "Creds",
     "cronworkflow",
     "cronworkflows",

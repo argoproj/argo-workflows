@@ -387,6 +387,7 @@ endif
 
 argoexec-image: ## Build the executor image
 argoexec-nonroot-image:
+argo-workflows-crdinstaller-image: ## Build the CRD installer image
 
 %-image:
 	[ ! -e dist/$* ] || mv dist/$* .
@@ -406,7 +407,11 @@ argoexec-nonroot-image:
 		--load \
 		.; \
 	[ ! -e $* ] || mv $* dist/; \
-	docker run --rm -t $$image_name version; \
+	if [ "$*" = "argo-workflows-crdinstaller" ]; then \
+		docker run --rm -t $$image_name version --client; \
+	else \
+		docker run --rm -t $$image_name version; \
+	fi; \
 	if [ $(K3D) = true ]; then \
 		k3d image import -c $(K3D_CLUSTER_NAME) $$image_name; \
 	fi; \

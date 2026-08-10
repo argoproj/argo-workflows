@@ -140,6 +140,16 @@ COPY --from=argocli-build /go/src/github.com/argoproj/argo-workflows/dist/argo /
 ENTRYPOINT [ "argo" ]
 
 ####################################################################################################
+
+FROM registry.k8s.io/kubectl:v1.36.3 AS argo-workflows-crdinstaller
+
+USER 8737
+
+COPY manifests/base/crds/full/argoproj.io_*.yaml /crds/full/
+
+CMD [ "apply", "--server-side", "--force-conflicts", "-f", "/crds/full/" ]
+
+####################################################################################################
 # Dev-only stages for Tilt. Small alpine base; NOT shipped to users. The
 # binaries are compiled on the host (by Tilt local_resources) and COPYed from
 # the build context, so each binary is built exactly once. On change Tilt
