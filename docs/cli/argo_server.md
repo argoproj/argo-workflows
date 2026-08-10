@@ -32,7 +32,7 @@ See https://argo-workflows.readthedocs.io/en/latest/argo-server/
       --kube-api-qps float32                 QPS to use while talking with kube-apiserver. (default 20)
       --log-format string                    The formatter to use for logs. One of: text|json (default "text")
       --loglevel string                      Set the logging level. One of: debug|info|warn|error (default "info")
-      --logout-redirect-url string           URL to redirect to after logout. Defaults to the base href.
+      --logout-redirect-url string           Absolute HTTP(S) URL to redirect to after logout and use for OIDC provider logout. When unset, provider logout is disabled and users are redirected locally to the base href.
       --managed-namespace string             namespace that watches, default to the installation namespace
       --namespaced                           run as namespaced mode
   -p, --port int                             Port to listen on (default 2746)

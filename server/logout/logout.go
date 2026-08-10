@@ -1,8 +1,10 @@
 package logout
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -21,8 +23,31 @@ type Handler struct {
 func NewHandler(baseHRef, redirectURL string, secure bool, logoutURL, clientID string) *Handler {
 	if redirectURL == "" {
 		redirectURL = baseHRef
+		logoutURL = ""
 	}
 	return &Handler{baseHRef: baseHRef, redirectURL: redirectURL, secure: secure, logoutURL: logoutURL, clientID: clientID}
+}
+
+// ValidateRedirectURL validates the optional post-logout redirect URL supplied by an operator.
+func ValidateRedirectURL(redirectURL string) error {
+	if redirectURL != "" && !isAbsoluteHTTPURL(redirectURL) {
+		return fmt.Errorf("--logout-redirect-url must be an absolute HTTP(S) URL: %q", redirectURL)
+	}
+	return nil
+}
+
+// ValidateEndSessionURL validates the optional end-session endpoint discovered from an OIDC provider.
+func ValidateEndSessionURL(logoutURL string) error {
+	if logoutURL != "" && !isAbsoluteHTTPURL(logoutURL) {
+		return fmt.Errorf("oidc end-session endpoint must be an absolute HTTP(S) URL: %q", logoutURL)
+	}
+	return nil
+}
+
+func isAbsoluteHTTPURL(rawURL string) bool {
+	parsedURL, err := url.ParseRequestURI(rawURL)
+	return err == nil && parsedURL.Host != "" &&
+		(strings.EqualFold(parsedURL.Scheme, "http") || strings.EqualFold(parsedURL.Scheme, "https"))
 }
 
 func constructLogoutURL(logoutURL, clientID, redirectURL string) string {
@@ -30,8 +55,9 @@ func constructLogoutURL(logoutURL, clientID, redirectURL string) string {
 		return redirectURL
 	}
 
-	parsedURL, err := url.Parse(logoutURL)
-	if err != nil || parsedURL.Host == "" || (parsedURL.Scheme != "http" && parsedURL.Scheme != "https") {
+	parsedURL, err := url.ParseRequestURI(logoutURL)
+	if err != nil || parsedURL.Host == "" ||
+		(!strings.EqualFold(parsedURL.Scheme, "http") && !strings.EqualFold(parsedURL.Scheme, "https")) {
 		return redirectURL
 	}
 
