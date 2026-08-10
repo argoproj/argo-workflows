@@ -147,7 +147,7 @@ USER 8737
 
 COPY manifests/base/crds/full/argoproj.io_*.yaml /crds/full/
 
-CMD [ "apply", "--server-side", "--force-conflicts", "-f", "/crds/full/" ]
+CMD [ "apply", "--server-side", "--force-conflicts", "-v=6", "-f", "/crds/full/" ]
 
 ####################################################################################################
 # Dev-only stages for Tilt. Small alpine base; NOT shipped to users. The
