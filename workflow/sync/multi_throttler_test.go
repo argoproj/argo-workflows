@@ -207,12 +207,18 @@ func TestPriorityAcrossNamespaces(t *testing.T) {
 func TestParallelismUpdate(t *testing.T) {
 	assert := assert.New(t)
 	throttler := NewMultiThrottler(4, 0, func(Key) {})
-	throttler.Add("a/0", 0, time.Now())
-	throttler.Add("b/0", 0, time.Now())
-	throttler.Add("c/0", 0, time.Now())
-	throttler.Add("d/0", 0, time.Now())
-	throttler.Add("e/0", 0, time.Now())
-	throttler.Add("f/0", 0, time.Now())
+	// Each item is in its own namespace, so admission order is decided across
+	// namespaces by creationTime. Use strictly increasing times rather than
+	// time.Now() for every Add: on coarse-resolution clocks (e.g. Windows) the
+	// calls can return identical instants, and the resulting ties are broken by
+	// map-iteration order, making this test flaky.
+	now := time.Now()
+	throttler.Add("a/0", 0, now)
+	throttler.Add("b/0", 0, now.Add(1*time.Millisecond))
+	throttler.Add("c/0", 0, now.Add(2*time.Millisecond))
+	throttler.Add("d/0", 0, now.Add(3*time.Millisecond))
+	throttler.Add("e/0", 0, now.Add(4*time.Millisecond))
+	throttler.Add("f/0", 0, now.Add(5*time.Millisecond))
 
 	assert.True(throttler.Admit("a/0"))
 	assert.True(throttler.Admit("b/0"))
