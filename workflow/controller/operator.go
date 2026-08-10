@@ -3238,8 +3238,17 @@ func (woc *wfOperationCtx) markNodeWaitingForLock(ctx context.Context, nodeName 
 
 func (woc *wfOperationCtx) findLeafNodeWithType(ctx context.Context, boundaryID string, nodeType wfv1.NodeType) *wfv1.NodeStatus {
 	var leafNode *wfv1.NodeStatus
+	// A node ID collision can leave a node reachable from itself. Track the
+	// current path rather than every node seen, so that a node shared by two
+	// branches is still walked once per branch, as it is today.
+	onPath := make(map[string]bool)
 	var dfs func(nodeID string)
 	dfs = func(nodeID string) {
+		if onPath[nodeID] {
+			return
+		}
+		onPath[nodeID] = true
+		defer delete(onPath, nodeID)
 		node, err := woc.wf.Status.Nodes.Get(nodeID)
 		if err != nil {
 			woc.log.WithField("nodeID", nodeID).Error(ctx, "was unable to obtain node for nodeID")

@@ -13278,6 +13278,50 @@ func TestChildrenFulfilledNodeIDCollision(t *testing.T) {
 	assert.False(t, woc.childrenFulfilled(ctx, root))
 }
 
+func TestFindLeafNodeWithTypeCycle(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	woc := newWoc(ctx, *wf)
+
+	// The same shape a node ID collision leaves behind: a node reachable from
+	// itself through its own children.
+	woc.wf.Status.Nodes = wfv1.Nodes{}
+	for _, n := range []wfv1.NodeStatus{
+		{ID: "a", Name: "a", Type: wfv1.NodeTypeSteps, Children: []string{"b"}},
+		{ID: "b", Name: "b", Type: wfv1.NodeTypeStepGroup, Children: []string{"a"}},
+	} {
+		woc.wf.Status.Nodes.Set(ctx, n.ID, n)
+	}
+
+	got := woc.findLeafNodeWithType(ctx, "a", wfv1.NodeTypeStepGroup)
+	require.NotNil(t, got)
+	assert.Equal(t, "b", got.ID)
+}
+
+func TestFindLeafNodeWithTypeSharedChild(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	woc := newWoc(ctx, *wf)
+
+	// A DAG task with two dependencies is a child of both, so the walk reaches
+	// n twice. It is the last step group it reaches that wins, and skipping the
+	// second visit would hand back m instead.
+	woc.wf.Status.Nodes = wfv1.Nodes{}
+	for _, n := range []wfv1.NodeStatus{
+		{ID: "root", Name: "root", Type: wfv1.NodeTypeDAG, Children: []string{"b", "c"}},
+		{ID: "b", Name: "b", Type: wfv1.NodeTypeDAG, Children: []string{"n"}},
+		{ID: "c", Name: "c", Type: wfv1.NodeTypeDAG, Children: []string{"m", "n"}},
+		{ID: "m", Name: "m", Type: wfv1.NodeTypeStepGroup},
+		{ID: "n", Name: "n", Type: wfv1.NodeTypeStepGroup},
+	} {
+		woc.wf.Status.Nodes.Set(ctx, n.ID, n)
+	}
+
+	got := woc.findLeafNodeWithType(ctx, "root", wfv1.NodeTypeStepGroup)
+	require.NotNil(t, got)
+	assert.Equal(t, "n", got.ID)
+}
+
 func TestChildrenFulfilled(t *testing.T) {
 	node := func(id string, phase wfv1.NodePhase, children ...string) wfv1.NodeStatus {
 		return wfv1.NodeStatus{ID: id, Name: id, Phase: phase, Children: children}
