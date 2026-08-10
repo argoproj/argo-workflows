@@ -46,7 +46,7 @@ func ValidateEndSessionURL(logoutURL string) error {
 
 func isAbsoluteHTTPURL(rawURL string) bool {
 	parsedURL, err := url.Parse(rawURL)
-	return err == nil && parsedURL.Host != "" && parsedURL.Fragment == "" &&
+	return err == nil && parsedURL.Hostname() != "" && parsedURL.Fragment == "" &&
 		(strings.EqualFold(parsedURL.Scheme, "http") || strings.EqualFold(parsedURL.Scheme, "https"))
 }
 

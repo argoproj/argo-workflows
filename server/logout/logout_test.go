@@ -61,11 +61,13 @@ func TestValidateRedirectURL(t *testing.T) {
 	require.Error(t, ValidateRedirectURL("/signed-out"))
 	require.Error(t, ValidateRedirectURL("//example.com/signed-out"))
 	require.Error(t, ValidateRedirectURL("javascript://example.com/signed-out"))
-	assert.Error(t, ValidateRedirectURL("https://example.com/signed-out#fragment"))
+	require.Error(t, ValidateRedirectURL("https://example.com/signed-out#fragment"))
+	require.Error(t, ValidateRedirectURL("https://:443/signed-out"))
 }
 
 func TestValidateEndSessionURL(t *testing.T) {
 	assert.NoError(t, ValidateEndSessionURL(""))
 	assert.NoError(t, ValidateEndSessionURL("https://idp.example.com/logout?client=workflows"))
-	assert.Error(t, ValidateEndSessionURL("/logout"))
+	require.Error(t, ValidateEndSessionURL("/logout"))
+	require.Error(t, ValidateEndSessionURL("https://:443/logout"))
 }
