@@ -483,6 +483,70 @@ func TestChmod(t *testing.T) {
 	}
 }
 
+func TestChmodDefault(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("chmod does not work in windows")
+	}
+
+	// A single file artifact, which is what `archive: none` gives you for a file. Its
+	// mode is whatever the driver created it with.
+	t.Run("single file", func(t *testing.T) {
+		artPath := filepath.Join(t.TempDir(), "myfile.txt")
+		require.NoError(t, os.WriteFile(artPath, []byte("test content\n"), 0o644))
+
+		require.NoError(t, chmodDefault(artPath))
+
+		info, err := os.Stat(artPath)
+		require.NoError(t, err)
+		assert.Equal(t, "-rw-------", info.Mode().String())
+	})
+
+	// A directory artifact, as `untar` or a directory download leaves it. The whole
+	// tree is covered, and directories keep the execute bit so they can be entered.
+	t.Run("directory", func(t *testing.T) {
+		root := t.TempDir()
+		nested := filepath.Join(root, "nested")
+		require.NoError(t, os.Mkdir(nested, 0o755))
+		file := filepath.Join(nested, "script.sh")
+		require.NoError(t, os.WriteFile(file, []byte("#!/bin/sh\n"), 0o755))
+		require.NoError(t, os.Chmod(root, 0o755))
+
+		require.NoError(t, chmodDefault(root))
+
+		want := map[string]string{root: "drwx------", nested: "drwx------", file: "-rw-------"}
+		for path, mode := range want {
+			info, err := os.Stat(path)
+			require.NoError(t, err)
+			assert.Equal(t, mode, info.Mode().String(), path)
+		}
+	})
+
+	// os.Chmod follows symlinks, and untar preserves the symlinks in an artifact, so
+	// following one would chmod a file outside the artifact.
+	t.Run("does not follow symlinks out of the artifact", func(t *testing.T) {
+		outside := filepath.Join(t.TempDir(), "outside.txt")
+		require.NoError(t, os.WriteFile(outside, []byte("not part of the artifact\n"), 0o644))
+
+		root := t.TempDir()
+		require.NoError(t, os.Symlink(outside, filepath.Join(root, "link")))
+
+		require.NoError(t, chmodDefault(root))
+
+		info, err := os.Stat(outside)
+		require.NoError(t, err)
+		assert.Equal(t, "-rw-r--r--", info.Mode().String())
+	})
+
+	// A dangling symlink must not fail the artifact load, which did not chmod at all
+	// before this default existed.
+	t.Run("dangling symlink artifact", func(t *testing.T) {
+		artPath := filepath.Join(t.TempDir(), "link")
+		require.NoError(t, os.Symlink("/does/not/exist", artPath))
+
+		require.NoError(t, chmodDefault(artPath))
+	})
+}
+
 func TestSaveArtifacts(t *testing.T) {
 	fakeClientset := fake.NewClientset()
 	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}

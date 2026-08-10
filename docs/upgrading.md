@@ -29,6 +29,31 @@ This variable controlled whether to write workflow updates back to the informer 
 Alternative mechanisms now prevent reprocessing, making both behaviors unnecessary.
 If you have this variable set, it can be safely removed from your configuration.
 
+### Input artifacts without `mode` now default to `0600`
+
+An input artifact that does not set `mode` is now given a fixed set of permissions once it has been loaded: `0600` for its files and `0700` for its directories ([#14792](https://github.com/argoproj/argo-workflows/issues/14792)).
+This covers the whole artifact, not only its top level, since an artifact can be a directory.
+Symlinks within an artifact are left alone, and artifacts loaded by an artifact plugin keep their existing `0666` default.
+Setting `mode` still overrides all of this, and `recurseMode` continues to control how an explicit `mode` is applied.
+
+Previously no default was applied, so the permissions an artifact ended up with depended on how it had been stored rather than on the template consuming it.
+A tarball (the default `archive` strategy) restores the modes recorded in its headers, so a file saved as `0644` was loaded as `0644`; the same file saved with `archive: none: {}` is stored without any permission metadata and was loaded as `0600`.
+Object stores generally cannot preserve filesystem permissions, and some artifact repositories (`http`, for example) have nowhere to record them at all, so the producing template's permissions were never something a consuming template could rely on.
+
+Set `mode` (and `recurseMode` for a directory) explicitly on any input artifact that needs more than owner access.
+The two cases most likely to need it are a file that has to stay executable, and a `main` container that runs as a different user than the one that loaded the artifact — `0600` and `0700` are owner-only, so a differing `runAsUser` can no longer read the artifact:
+
+```yaml
+inputs:
+  artifacts:
+    - name: my-script
+      path: /tmp/my-script.sh
+      mode: 0755
+```
+
+Note that when an artifact's `path` falls inside a volume you mounted yourself, it is loaded into that volume rather than into the `input-artifacts` volume.
+For a `persistentVolumeClaim` the new permissions therefore outlive the pod, so a later step reading the file directly from the claim sees them too.
+
 ## Upgrading to v4.0.7 and v3.7.16
 
 ### Outputs of skipped and omitted steps and tasks now resolve

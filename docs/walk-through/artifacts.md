@@ -132,6 +132,9 @@ For example:
 It is good practice to specify the `mode` of the input file, to ensure your container code can always interact with it (reading/writing/executing) as expected.
 [This article](https://www.redhat.com/en/blog/linux-file-permissions-explained) explains file permissions and octal values.
 
+An input artifact that does not specify `mode` is loaded with a fixed set of permissions: `0600` for its files and `0700` for its directories.
+Do not rely on the permissions the template that produced the artifact gave it: an artifact repository generally cannot store file permissions, so they only survive if the artifact was archived (see [Archive Strategy](#archive-strategy) above).
+
 For example, to allow the user to execute `/bin/kubectl`, we set `mode: 0755`.
 
 ```yaml
