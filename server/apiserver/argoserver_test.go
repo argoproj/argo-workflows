@@ -14,6 +14,11 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
+func TestNewArgoServerRejectsInvalidLogoutRedirectURL(t *testing.T) {
+	_, err := NewArgoServer(logging.TestContext(t.Context()), ArgoServerOpts{LogoutRedirectURL: "/signed-out"})
+	require.EqualError(t, err, `--logout-redirect-url must be an absolute HTTP(S) URL: "/signed-out"`)
+}
+
 func TestValidateArtifactDriverImages(t *testing.T) {
 	tests := []struct {
 		name           string

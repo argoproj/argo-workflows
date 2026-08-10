@@ -52,7 +52,23 @@ environment variable.
 
 ### Logout Redirect URL
 
-Use `--logout-redirect-url` to specify the URL where the identity provider should redirect users after logout. By default, users are redirected to the UI base href. When SSO is enabled and the provider advertises an OIDC `end_session_endpoint`, Argo Server redirects through that endpoint with the configured client ID and post-logout redirect URL. Configure an absolute URL when provider logout is enabled, and register it as an allowed post-logout redirect URI with the identity provider.
+By default, logout clears the Argo session and redirects users directly to the UI base href.
+This behavior does not log users out of their identity provider.
+
+OIDC provider logout is enabled only when both of the following are true:
+
+- The provider advertises an OIDC `end_session_endpoint`.
+- `--logout-redirect-url` is set to an absolute HTTP(S) URL.
+
+Argo Server rejects an explicitly configured relative or invalid URL at startup.
+
+When provider logout is enabled, Argo Server redirects users through the discovered
+`end_session_endpoint`, passing the configured client ID and `--logout-redirect-url` as the
+`post_logout_redirect_uri`. Register the exact redirect URL as an allowed post-logout redirect URI
+with the identity provider before enabling this option.
+
+Argo Server does not send an `id_token_hint` in the logout request, so the identity provider may
+show the user a logout confirmation prompt.
 
 ### Transport Layer Security
 

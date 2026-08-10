@@ -21,6 +21,7 @@ func TestLogoutHandler(t *testing.T) {
 	}{
 		{name: "defaults to base href", baseHRef: "/argo/", wantRedirect: "/argo/"},
 		{name: "uses configured redirect URL", baseHRef: "/argo/", redirectURL: "https://example.com/", secure: true, wantRedirect: "https://example.com/"},
+		{name: "does not use the OIDC end-session endpoint with the default relative redirect", baseHRef: "/argo/", logoutURL: "https://idp.example.com/logout", clientID: "workflows", wantRedirect: "/argo/"},
 		{name: "redirects through the OIDC end-session endpoint", baseHRef: "/argo/", redirectURL: "https://example.com/", logoutURL: "https://idp.example.com/logout?foo=bar", clientID: "workflows", wantRedirect: "https://idp.example.com/logout?client_id=workflows&foo=bar&post_logout_redirect_uri=https%3A%2F%2Fexample.com%2F"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -51,4 +52,20 @@ func TestConstructLogoutURL(t *testing.T) {
 	assert.Equal(t, "https://example.com/logout?post_logout_redirect_uri=https%3A%2F%2Fapp.example.com%2F", constructLogoutURL("https://example.com/logout", "", "https://app.example.com/"))
 	assert.Equal(t, "https://example.com/", constructLogoutURL("://bad", "client", "https://example.com/"))
 	assert.Equal(t, "https://example.com/", constructLogoutURL("javascript://example.com/logout", "client", "https://example.com/"))
+}
+
+func TestValidateRedirectURL(t *testing.T) {
+	assert.NoError(t, ValidateRedirectURL(""))
+	assert.NoError(t, ValidateRedirectURL("https://example.com/signed-out"))
+	assert.NoError(t, ValidateRedirectURL("HTTPS://example.com/signed-out"))
+	assert.Error(t, ValidateRedirectURL("/signed-out"))
+	assert.Error(t, ValidateRedirectURL("//example.com/signed-out"))
+	assert.Error(t, ValidateRedirectURL("javascript://example.com/signed-out"))
+	assert.Error(t, ValidateRedirectURL("https://example.com/signed-out#fragment"))
+}
+
+func TestValidateEndSessionURL(t *testing.T) {
+	assert.NoError(t, ValidateEndSessionURL(""))
+	assert.NoError(t, ValidateEndSessionURL("https://idp.example.com/logout?client=workflows"))
+	assert.Error(t, ValidateEndSessionURL("/logout"))
 }

@@ -150,6 +150,9 @@ func getResourceCacheNamespace(managedNamespace string) string {
 }
 
 func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (Server, error) {
+	if err := logout.ValidateRedirectURL(opts.LogoutRedirectURL); err != nil {
+		return nil, err
+	}
 	configController := config.NewController(opts.Namespace, opts.ConfigName, opts.Clients.Kubernetes)
 	log := logging.RequireLoggerFromContext(ctx)
 	var resourceCache *cache.ResourceCache
@@ -483,6 +486,10 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	}); ok {
 		logoutURL = logoutConfig.LogoutURL()
 		clientID = logoutConfig.ClientID()
+	}
+	if err := logout.ValidateEndSessionURL(logoutURL); err != nil {
+		log.WithError(err).Warn(ctx, "Ignoring invalid OIDC end-session endpoint")
+		logoutURL = ""
 	}
 	mux.Handle(logout.LogoutEndpoint, logout.NewHandler(as.baseHRef, as.logoutRedirectURL, as.tlsConfig != nil, logoutURL, clientID))
 	mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
