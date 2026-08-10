@@ -46,7 +46,7 @@ func ValidateEndSessionURL(logoutURL string) error {
 
 func isAbsoluteHTTPURL(rawURL string) bool {
 	parsedURL, err := url.ParseRequestURI(rawURL)
-	return err == nil && parsedURL.Host != "" &&
+	return err == nil && parsedURL.Host != "" && parsedURL.Fragment == "" &&
 		(strings.EqualFold(parsedURL.Scheme, "http") || strings.EqualFold(parsedURL.Scheme, "https"))
 }
 
@@ -55,11 +55,11 @@ func constructLogoutURL(logoutURL, clientID, redirectURL string) string {
 		return redirectURL
 	}
 
-	parsedURL, err := url.ParseRequestURI(logoutURL)
-	if err != nil || parsedURL.Host == "" ||
-		(!strings.EqualFold(parsedURL.Scheme, "http") && !strings.EqualFold(parsedURL.Scheme, "https")) {
+	if !isAbsoluteHTTPURL(logoutURL) {
 		return redirectURL
 	}
+
+	parsedURL, _ := url.ParseRequestURI(logoutURL)
 
 	query := parsedURL.Query()
 	if clientID != "" {

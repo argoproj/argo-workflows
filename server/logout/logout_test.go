@@ -58,9 +58,9 @@ func TestValidateRedirectURL(t *testing.T) {
 	assert.NoError(t, ValidateRedirectURL(""))
 	assert.NoError(t, ValidateRedirectURL("https://example.com/signed-out"))
 	assert.NoError(t, ValidateRedirectURL("HTTPS://example.com/signed-out"))
-	assert.Error(t, ValidateRedirectURL("/signed-out"))
-	assert.Error(t, ValidateRedirectURL("//example.com/signed-out"))
-	assert.Error(t, ValidateRedirectURL("javascript://example.com/signed-out"))
+	require.Error(t, ValidateRedirectURL("/signed-out"))
+	require.Error(t, ValidateRedirectURL("//example.com/signed-out"))
+	require.Error(t, ValidateRedirectURL("javascript://example.com/signed-out"))
 	assert.Error(t, ValidateRedirectURL("https://example.com/signed-out#fragment"))
 }
 
