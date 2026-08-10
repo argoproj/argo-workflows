@@ -530,7 +530,7 @@ func (sm *Manager) TryAcquire(ctx context.Context, wf *wfv1.Workflow, nodeName s
 					"holderKey": holderKey,
 					"attempts":  attempt,
 					"error":     err,
-				}).Info(ctx, "TryAcquire - retries exhausted, requeueing")
+				}).Info(ctx, "TryAcquire - retries exhausted, requeuing")
 				sm.nextWorkflow(workflowKey(holderKey), dbRetryRequeueDelay)
 				return false, false, dbRetryRequeueMsg, failedLockName, nil
 			}

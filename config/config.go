@@ -429,7 +429,7 @@ type DBRetryConfig struct {
 	// Cap is the upper bound on any single delay. Default: 600ms
 	Cap TTL `json:"cap,omitempty"`
 	// Requeue treats exhausted retries as a failure to obtain the lock, leaving the workflow
-	// pending and requeueing it, rather than failing the workflow. Default: true
+	// pending and requeuing it, rather than failing the workflow. Default: true
 	Requeue *bool `json:"requeue,omitempty"`
 }
 
