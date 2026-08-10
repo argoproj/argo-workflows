@@ -57,8 +57,8 @@ This behavior does not log users out of their identity provider.
 
 OIDC provider logout is enabled only when both of the following are true:
 
-- The provider advertises an OIDC `end_session_endpoint`.
-- `--logout-redirect-url` is set to an absolute HTTP(S) URL.
+* The provider advertises an OIDC `end_session_endpoint`.
+* `--logout-redirect-url` is set to an absolute HTTP(S) URL.
 
 Argo Server rejects an explicitly configured relative or invalid URL at startup.
 
