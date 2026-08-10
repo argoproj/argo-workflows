@@ -46,9 +46,9 @@ A deterministic check ([`template.ts`](template.ts)) compares the description ag
 - PR title/body/branch are attacker-controlled: they are only ever handled as data, never interpolated into shell or scripts. The comment never echoes contributor-supplied text — only the bot's own guidance, check titles/URLs, and template section names.
 - All actions are pinned to full commit SHAs (enforced by repo lint).
 
-## Dry run & rollout
+## Dry run
 
-`DRY_RUN: "true"` in the workflow renders the would-be comment and decisions to the job's **step summary** instead of commenting or drafting. Roll out: merge with dry-run on → watch summaries on real PRs (correct PR resolution, author gating, sensible text) → flip to `"false"`.
+Setting `DRY_RUN: "true"` in the workflow renders the would-be comment and decisions to the job's **step summary** instead of commenting or drafting. Use it to test changes to the bot against real PRs (correct PR resolution, author gating, sensible text) without posting.
 
 ## Maintenance notes
 
