@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"sigs.k8s.io/yaml"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
@@ -55,7 +56,14 @@ func TestDBRetryConfig(t *testing.T) {
 	assert.Equal(t, 10*time.Millisecond, partial.Duration)
 	assert.InEpsilon(t, 2.0, partial.Factor, 0.001)
 
+	disabled := false
 	assert.True(t, (*DBRetryConfig)(nil).RequeueEnabled())
 	assert.True(t, (&DBRetryConfig{Steps: 10}).RequeueEnabled())
-	assert.False(t, (&DBRetryConfig{Requeue: new(false)}).RequeueEnabled())
+	assert.False(t, (&DBRetryConfig{Requeue: &disabled}).RequeueEnabled())
+
+	// sub-second delays must survive unmarshalling: config.TTL cannot express them
+	var parsed DBRetryConfig
+	require.NoError(t, yaml.Unmarshal([]byte("duration: 25ms\ncap: 1500ms\n"), &parsed))
+	assert.Equal(t, 25*time.Millisecond, parsed.Backoff().Duration)
+	assert.Equal(t, 1500*time.Millisecond, parsed.Backoff().Cap)
 }

@@ -421,13 +421,13 @@ type DBRetryConfig struct {
 	// Steps is the number of attempts made before giving up. Default: 5
 	Steps int `json:"steps,omitempty"`
 	// Duration is the delay before the first retry. Default: 10ms
-	Duration TTL `json:"duration,omitempty"`
+	Duration metav1.Duration `json:"duration,omitzero"`
 	// Factor is the growth factor applied to the delay after each attempt. Default: 2.0
 	Factor float64 `json:"factor,omitempty"`
 	// Jitter randomises each delay by up to this fraction of itself. Default: 0.5
 	Jitter float64 `json:"jitter,omitempty"`
 	// Cap is the upper bound on any single delay. Default: 600ms
-	Cap TTL `json:"cap,omitempty"`
+	Cap metav1.Duration `json:"cap,omitzero"`
 	// Requeue treats exhausted retries as a failure to obtain the lock, leaving the workflow
 	// pending and requeuing it, rather than failing the workflow. Default: true
 	Requeue *bool `json:"requeue,omitempty"`
@@ -448,8 +448,8 @@ func (c *DBRetryConfig) Backoff() wait.Backoff {
 	if c.Steps != 0 {
 		backoff.Steps = c.Steps
 	}
-	if c.Duration != 0 {
-		backoff.Duration = time.Duration(c.Duration)
+	if c.Duration.Duration != 0 {
+		backoff.Duration = c.Duration.Duration
 	}
 	if c.Factor != 0 {
 		backoff.Factor = c.Factor
@@ -457,8 +457,8 @@ func (c *DBRetryConfig) Backoff() wait.Backoff {
 	if c.Jitter != 0 {
 		backoff.Jitter = c.Jitter
 	}
-	if c.Cap != 0 {
-		backoff.Cap = time.Duration(c.Cap)
+	if c.Cap.Duration != 0 {
+		backoff.Cap = c.Cap.Duration
 	}
 	return backoff
 }
