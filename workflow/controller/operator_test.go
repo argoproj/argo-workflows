@@ -13250,3 +13250,125 @@ func TestCheckTemplateTimeouts(t *testing.T) {
 	assert.Nil(t, pendingDeadline)
 	require.NoError(t, err)
 }
+
+// The workflow in #16376 is named custom-job-thbh7 and its step, the template it
+// references and that template's own step are all named alike. Two of the node
+// names that produces hash to one ID, which is how a node becomes its own child.
+func TestChildrenFulfilledNodeIDCollision(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	wf.Name = "custom-job-thbh7"
+	woc := newWoc(ctx, *wf)
+
+	outer := woc.wf.NodeID("custom-job-thbh7[0]")
+	inner := woc.wf.NodeID("custom-job-thbh7[0].custom-job[0].custom-job-main")
+	require.Equal(t, outer, inner, "these names no longer collide, so this test no longer covers the issue")
+
+	stepGroup := woc.wf.NodeID("custom-job-thbh7[0].custom-job")
+	woc.wf.Status.Nodes = wfv1.Nodes{}
+	for _, n := range []wfv1.NodeStatus{
+		{ID: outer, Name: "custom-job-thbh7[0]", Phase: wfv1.NodeSucceeded, Children: []string{stepGroup}},
+		{ID: stepGroup, Name: "custom-job-thbh7[0].custom-job", Phase: wfv1.NodeSucceeded, Children: []string{outer}},
+	} {
+		woc.wf.Status.Nodes.Set(ctx, n.ID, n)
+	}
+
+	root, err := woc.wf.Status.Nodes.Get(outer)
+	require.NoError(t, err)
+	assert.False(t, woc.childrenFulfilled(ctx, root))
+}
+
+func TestChildrenFulfilled(t *testing.T) {
+	node := func(id string, phase wfv1.NodePhase, children ...string) wfv1.NodeStatus {
+		return wfv1.NodeStatus{ID: id, Name: id, Phase: phase, Children: children}
+	}
+
+	for _, tc := range []struct {
+		name  string
+		nodes []wfv1.NodeStatus
+		want  bool
+		// wantLoopNode is the node the walk should name when it reports a loop,
+		// empty when it should not report one at all.
+		wantLoopNode string
+	}{
+		{
+			name:  "fulfilled leaf",
+			nodes: []wfv1.NodeStatus{node("a", wfv1.NodeSucceeded)},
+			want:  true,
+		},
+		{
+			name: "child still running",
+			nodes: []wfv1.NodeStatus{
+				node("a", wfv1.NodeSucceeded, "b"),
+				node("b", wfv1.NodeRunning),
+			},
+			want: false,
+		},
+		{
+			// Both branches reach d. That is a shared child, not a loop, so it must
+			// not be mistaken for one.
+			name: "diamond reaches the same child twice",
+			nodes: []wfv1.NodeStatus{
+				node("a", wfv1.NodeSucceeded, "b", "c"),
+				node("b", wfv1.NodeSucceeded, "d"),
+				node("c", wfv1.NodeSucceeded, "d"),
+				node("d", wfv1.NodeSucceeded),
+			},
+			want: true,
+		},
+		{
+			// Regression for https://github.com/argoproj/argo-workflows/issues/16376.
+			// A node ID collision can leave a node as its own descendant, which used
+			// to recurse until the controller ran out of stack.
+			name:         "self loop",
+			nodes:        []wfv1.NodeStatus{node("a", wfv1.NodeSucceeded, "a")},
+			want:         false,
+			wantLoopNode: "a",
+		},
+		{
+			name: "two node loop",
+			nodes: []wfv1.NodeStatus{
+				node("a", wfv1.NodeSucceeded, "b"),
+				node("b", wfv1.NodeSucceeded, "a"),
+			},
+			want:         false,
+			wantLoopNode: "a",
+		},
+		{
+			name: "loop below the root",
+			nodes: []wfv1.NodeStatus{
+				node("a", wfv1.NodeSucceeded, "b"),
+				node("b", wfv1.NodeSucceeded, "c"),
+				node("c", wfv1.NodeSucceeded, "b"),
+			},
+			want:         false,
+			wantLoopNode: "b",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			hook := logging.NewTestHook()
+			ctx := logging.WithLogger(t.Context(), logging.NewTestLogger(logging.Info, logging.Text, hook))
+			woc := newWoc(ctx)
+			woc.wf.Status.Nodes = wfv1.Nodes{}
+			for _, n := range tc.nodes {
+				woc.wf.Status.Nodes.Set(ctx, n.ID, n)
+			}
+
+			root, err := woc.wf.Status.Nodes.Get(tc.nodes[0].ID)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, woc.childrenFulfilled(ctx, root))
+
+			var loopNode any
+			for _, e := range hook.AllEntries() {
+				if e.Level == logging.Error && strings.Contains(e.Msg, "Cycle in the workflow node graph") {
+					loopNode = e.Fields["nodeID"]
+				}
+			}
+			if tc.wantLoopNode == "" {
+				assert.Nil(t, loopNode, "no loop should have been reported")
+			} else {
+				assert.Equal(t, tc.wantLoopNode, loopNode)
+			}
+		})
+	}
+}

@@ -239,7 +239,7 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 	if err != nil {
 		return nil, err
 	}
-	if node.Fulfilled() && woc.childrenFulfilled(node) {
+	if node.Fulfilled() && woc.childrenFulfilled(ctx, node) {
 		woc.log.WithField("node", node).Debug(ctx, "Step group node already marked completed")
 		return node, nil
 	}

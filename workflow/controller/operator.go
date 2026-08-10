@@ -1375,7 +1375,7 @@ func (woc *wfOperationCtx) failNodesWithoutCreatedPodsAfterDeadlineOrShutdown(ct
 			// itself was left Running because processNodeRetries returned early while a
 			// child pod was still running at the moment of shutdown
 			if node.Type == wfv1.NodeTypeRetry {
-				if woc.childrenFulfilled(&node) {
+				if woc.childrenFulfilled(ctx, &node) {
 					message := fmt.Sprintf("Stopped with strategy '%s'", woc.GetShutdownStrategy())
 					woc.markNodePhase(ctx, node.Name, wfv1.NodeFailed, message)
 					continue
@@ -2417,7 +2417,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		childNodeIDs, lastChildNode := getChildNodeIdsAndLastRetriedNode(retryParentNode, woc.wf.Status.Nodes)
 
 		// The retry node might have completed by now.
-		if retryParentNode.Fulfilled() && (woc.childrenFulfilled(retryParentNode) || (retryParentNode.IsDaemoned() && retryParentNode.FailedOrError())) { // if retry node is daemoned we want to check those explicitly
+		if retryParentNode.Fulfilled() && (woc.childrenFulfilled(ctx, retryParentNode) || (retryParentNode.IsDaemoned() && retryParentNode.FailedOrError())) { // if retry node is daemoned we want to check those explicitly
 			// If retry node has completed, set the output of the last child node to its output.
 			// Runtime parameters (e.g., `status`, `resourceDuration`) in the output will be used to emit metrics.
 			if lastChildNode != nil {
@@ -2829,10 +2829,18 @@ func (woc *wfOperationCtx) hasDaemonNodes() bool {
 	return false
 }
 
-func (woc *wfOperationCtx) childrenFulfilledHelper(node *wfv1.NodeStatus, cache map[string]bool) bool {
+// visiting holds the nodes on the current walk. cache is only written once a node's
+// whole subtree is done, so it never closes a loop, and a node that reaches itself
+// through its own children would otherwise recurse until the stack runs out.
+func (woc *wfOperationCtx) childrenFulfilledHelper(ctx context.Context, node *wfv1.NodeStatus, cache map[string]bool, visiting map[string]bool) bool {
 	res, has := cache[node.ID]
 	if has {
 		return res
+	}
+
+	if visiting[node.ID] {
+		woc.log.WithField("nodeID", node.ID).Error(ctx, "Cycle in the workflow node graph, cannot tell whether children are fulfilled")
+		return false
 	}
 
 	if len(node.Children) == 0 {
@@ -2840,12 +2848,15 @@ func (woc *wfOperationCtx) childrenFulfilledHelper(node *wfv1.NodeStatus, cache 
 		return node.Fulfilled()
 	}
 
+	visiting[node.ID] = true
+	defer delete(visiting, node.ID)
+
 	for _, childID := range node.Children {
 		childNode, err := woc.wf.Status.Nodes.Get(childID)
 		if err != nil {
 			continue
 		}
-		isChildrenFulfilled := woc.childrenFulfilledHelper(childNode, cache)
+		isChildrenFulfilled := woc.childrenFulfilledHelper(ctx, childNode, cache, visiting)
 		if !isChildrenFulfilled {
 			cache[node.ID] = false
 			return false
@@ -2856,10 +2867,9 @@ func (woc *wfOperationCtx) childrenFulfilledHelper(node *wfv1.NodeStatus, cache 
 	return true
 }
 
-// check if all of the nodes children are fulffilled
-func (woc *wfOperationCtx) childrenFulfilled(node *wfv1.NodeStatus) bool {
-	m := make(map[string]bool)
-	return woc.childrenFulfilledHelper(node, m)
+// check if all of the nodes children are fulfilled
+func (woc *wfOperationCtx) childrenFulfilled(ctx context.Context, node *wfv1.NodeStatus) bool {
+	return woc.childrenFulfilledHelper(ctx, node, make(map[string]bool), make(map[string]bool))
 }
 
 func (woc *wfOperationCtx) GetNodeTemplate(ctx context.Context, node *wfv1.NodeStatus) (*wfv1.Template, error) {
