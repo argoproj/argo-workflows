@@ -140,6 +140,20 @@ COPY --from=argocli-build /go/src/github.com/argoproj/argo-workflows/dist/argo /
 ENTRYPOINT [ "argo" ]
 
 ####################################################################################################
+
+FROM registry.k8s.io/kubectl:v1.36.3@sha256:6e4fce3c83651edb91b74bc67701c5cd263dd8aa3cd4254b1798d6425a5ab789 AS argo-workflows-crdinstaller
+
+USER 8737
+
+# The base image sets no HOME, so kubectl would put its discovery cache in
+# /.kube/cache, which UID 8737 cannot write. /tmp is world-writable (1777).
+ENV HOME=/tmp
+
+COPY manifests/base/crds/full/argoproj.io_*.yaml /crds/full/
+
+CMD [ "apply", "--server-side", "--force-conflicts", "-v=6", "-f", "/crds/full/" ]
+
+####################################################################################################
 # Dev-only stages for Tilt. Small alpine base; NOT shipped to users. The
 # binaries are compiled on the host (by Tilt local_resources) and COPYed from
 # the build context, so each binary is built exactly once. On change Tilt
