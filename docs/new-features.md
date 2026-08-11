@@ -1,4 +1,4 @@
-# New features in latest (2026-08-11)
+# New features in v4.1 (2026-08-11)
 
 This is a concise list of new features.
 
