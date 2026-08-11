@@ -13278,27 +13278,30 @@ func TestChildrenFulfilledNodeIDCollision(t *testing.T) {
 	assert.False(t, woc.childrenFulfilled(ctx, root))
 }
 
-func TestFindLeafNodeWithTypeCycle(t *testing.T) {
+func TestFindLeafStepGroupNodeCycle(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 	woc := newWoc(ctx, *wf)
 
 	// The same shape a node ID collision leaves behind: a node reachable from
-	// itself through its own children.
+	// itself through its own children. The healthy step group is there because
+	// the walk carries on past the loop, and the caller fails whatever comes
+	// back, so coming back with it would fail a node that is doing nothing
+	// wrong.
 	woc.wf.Status.Nodes = wfv1.Nodes{}
 	for _, n := range []wfv1.NodeStatus{
+		{ID: "root", Name: "root", Type: wfv1.NodeTypeSteps, Children: []string{"a", "healthy"}},
 		{ID: "a", Name: "a", Type: wfv1.NodeTypeSteps, Children: []string{"b"}},
 		{ID: "b", Name: "b", Type: wfv1.NodeTypeStepGroup, Children: []string{"a"}},
+		{ID: "healthy", Name: "healthy", Type: wfv1.NodeTypeStepGroup},
 	} {
 		woc.wf.Status.Nodes.Set(ctx, n.ID, n)
 	}
 
-	got := woc.findLeafNodeWithType(ctx, "a", wfv1.NodeTypeStepGroup)
-	require.NotNil(t, got)
-	assert.Equal(t, "b", got.ID)
+	assert.Nil(t, woc.findLeafStepGroupNode(ctx, "root"))
 }
 
-func TestFindLeafNodeWithTypeSharedChild(t *testing.T) {
+func TestFindLeafStepGroupNodeSharedChild(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 	woc := newWoc(ctx, *wf)
@@ -13317,7 +13320,7 @@ func TestFindLeafNodeWithTypeSharedChild(t *testing.T) {
 		woc.wf.Status.Nodes.Set(ctx, n.ID, n)
 	}
 
-	got := woc.findLeafNodeWithType(ctx, "root", wfv1.NodeTypeStepGroup)
+	got := woc.findLeafStepGroupNode(ctx, "root")
 	require.NotNil(t, got)
 	assert.Equal(t, "n", got.ID)
 }

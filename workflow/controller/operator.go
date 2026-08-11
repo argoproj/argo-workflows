@@ -3236,15 +3236,19 @@ func (woc *wfOperationCtx) markNodeWaitingForLock(ctx context.Context, nodeName 
 	return node, nil
 }
 
-func (woc *wfOperationCtx) findLeafNodeWithType(ctx context.Context, boundaryID string, nodeType wfv1.NodeType) *wfv1.NodeStatus {
+func (woc *wfOperationCtx) findLeafStepGroupNode(ctx context.Context, boundaryID string) *wfv1.NodeStatus {
 	var leafNode *wfv1.NodeStatus
 	// A node ID collision can leave a node reachable from itself. Track the
 	// current path rather than every node seen, so that a node shared by two
 	// branches is still walked once per branch, as it is today.
 	onPath := make(map[string]bool)
+	cyclic := false
 	var dfs func(nodeID string)
 	dfs = func(nodeID string) {
 		if onPath[nodeID] {
+			cyclic = true
+			woc.log.WithFields(logging.Fields{"boundaryID": boundaryID, "nodeID": nodeID}).
+				Error(ctx, "Cycle in the workflow node graph, cannot tell which step group is the leaf")
 			return
 		}
 		onPath[nodeID] = true
@@ -3254,7 +3258,7 @@ func (woc *wfOperationCtx) findLeafNodeWithType(ctx context.Context, boundaryID 
 			woc.log.WithField("nodeID", nodeID).Error(ctx, "was unable to obtain node for nodeID")
 			return
 		}
-		if node.Type == nodeType {
+		if node.Type == wfv1.NodeTypeStepGroup {
 			leafNode = node
 		}
 		for _, childID := range node.Children {
@@ -3262,6 +3266,11 @@ func (woc *wfOperationCtx) findLeafNodeWithType(ctx context.Context, boundaryID 
 		}
 	}
 	dfs(boundaryID)
+	// Whatever we reached after cutting a loop short is not an answer, and the
+	// caller would fail that node.
+	if cyclic {
+		return nil
+	}
 	return leafNode
 }
 
@@ -3278,7 +3287,7 @@ func (woc *wfOperationCtx) checkParallelism(ctx context.Context, tmpl *wfv1.Temp
 		if tmpl.IsFailFast() && woc.getUnsuccessfulChildren(node.ID) > 0 {
 			if woc.getActivePods(node.ID) == 0 {
 				if tmpl.GetType() == wfv1.TemplateTypeSteps {
-					if leafStepGroupNode := woc.findLeafNodeWithType(ctx, node.ID, wfv1.NodeTypeStepGroup); leafStepGroupNode != nil {
+					if leafStepGroupNode := woc.findLeafStepGroupNode(ctx, node.ID); leafStepGroupNode != nil {
 						woc.markNodePhase(ctx, leafStepGroupNode.Name, wfv1.NodeFailed, "template has failed or errored children and failFast enabled")
 					}
 				}
@@ -3314,7 +3323,7 @@ func (woc *wfOperationCtx) checkParallelism(ctx context.Context, tmpl *wfv1.Temp
 		if boundaryTemplate != nil && boundaryTemplate.IsFailFast() && woc.getUnsuccessfulChildren(boundaryID) > 0 {
 			if woc.getActivePods(boundaryID) == 0 {
 				if boundaryTemplate.GetType() == wfv1.TemplateTypeSteps {
-					if leafStepGroupNode := woc.findLeafNodeWithType(ctx, boundaryID, wfv1.NodeTypeStepGroup); leafStepGroupNode != nil {
+					if leafStepGroupNode := woc.findLeafStepGroupNode(ctx, boundaryID); leafStepGroupNode != nil {
 						woc.markNodePhase(ctx, leafStepGroupNode.Name, wfv1.NodeFailed, "template has failed or errored children and failFast enabled")
 					}
 				}
