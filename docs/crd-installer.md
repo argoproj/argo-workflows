@@ -1,6 +1,6 @@
 # CRD Installer Image
 
-> v4.0 and after
+> v4.0.9 and 4.1.0 and after
 
 The `argo-workflows-crdinstaller` image installs the [full CRDs](installation.md#full-crds) into a cluster.
 It bundles `kubectl` together with the full CRD manifests for exactly the Argo Workflows version the image is tagged with, so it can install them without any network access to GitHub — including in air-gapped clusters.
@@ -19,10 +19,11 @@ The [community Helm chart](https://github.com/argoproj/argo-helm) runs it as a p
 The default command is:
 
 ```bash
-kubectl apply --server-side --force-conflicts -f /crds/full/
+kubectl apply --server-side --force-conflicts -v=6 -f /crds/full/
 ```
 
 [Server-side apply](https://kubernetes.io/docs/reference/using-api/server-side-apply/) is required because the full CRDs exceed the size limit of the `last-applied-configuration` annotation used by client-side apply.
+`-v=6` logs each API request `kubectl` makes, so the Job's logs record which CRDs it applied.
 
 You can override the arguments, for example to preview changes with `apply --server-side --dry-run=server -f /crds/full/`.
 
