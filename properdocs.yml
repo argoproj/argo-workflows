@@ -253,6 +253,7 @@ nav:
           - argo watch: cli/argo_watch.md
   - Operator Manual:
       - installation.md
+      - crd-installer.md
       - releases.md
       - upgrading.md
       - new-features.md
