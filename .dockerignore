@@ -26,3 +26,5 @@ ui/dist
 ui/node_modules
 v3
 vendor
+# Re-include the full CRDs bundled into the argo-workflows-crdinstaller image
+!manifests/base/crds/full/argoproj.io_*.yaml
