@@ -1,5 +1,20 @@
 # Changelog
 
+## v4.1.0 (2026-08-11)
+
+Full Changelog: [v4.1.0-rc2...v4.1.0](https://github.com/argoproj/argo-workflows/compare/v4.1.0-rc2...v4.1.0)
+
+### Selected Changes
+
+* [e5ed20d5c](https://github.com/argoproj/argo-workflows/commit/e5ed20d5cb54d4708d5aeb29148b3e49922f795c) feat: add argo-workflows-crdinstaller image. Fixes #16621 (cherry-pick #16622 for 4.1) (#16630)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Claude Fable 5
+
+</details>
+
 ## v4.1.0-rc2 (2026-07-31)
 
 Full Changelog: [v4.1.0-rc1...v4.1.0-rc2](https://github.com/argoproj/argo-workflows/compare/v4.1.0-rc1...v4.1.0-rc2)
