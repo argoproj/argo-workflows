@@ -29,9 +29,9 @@ This variable controlled whether to write workflow updates back to the informer 
 Alternative mechanisms now prevent reprocessing, making both behaviors unnecessary.
 If you have this variable set, it can be safely removed from your configuration.
 
-### Input artifacts without `mode` now default to `0600`
+### Input artifacts without `mode` now default to `0644`
 
-An input artifact that does not set `mode` is now given a fixed set of permissions once it has been loaded: `0600` for its files and `0700` for its directories ([#14792](https://github.com/argoproj/argo-workflows/issues/14792)).
+An input artifact that does not set `mode` is now given a fixed set of permissions once it has been loaded: `0644` for its files and `0755` for its directories ([#14792](https://github.com/argoproj/argo-workflows/issues/14792)).
 This covers the whole artifact, not only its top level, since an artifact can be a directory.
 Symlinks within an artifact are left alone, and artifacts loaded by an artifact plugin keep their existing `0666` default.
 Setting `mode` still overrides all of this, and `recurseMode` continues to control how an explicit `mode` is applied.
@@ -39,9 +39,10 @@ Setting `mode` still overrides all of this, and `recurseMode` continues to contr
 Previously no default was applied, so the permissions an artifact ended up with depended on how it had been stored rather than on the template consuming it.
 A tarball (the default `archive` strategy) restores the modes recorded in its headers, so a file saved as `0644` was loaded as `0644`; the same file saved with `archive: none: {}` is stored without any permission metadata and was loaded as `0600`.
 Object stores generally cannot preserve filesystem permissions, and some artifact repositories (`http`, for example) have nowhere to record them at all, so the producing template's permissions were never something a consuming template could rely on.
+The new default is world-readable rather than owner-only, since a step that saves the artifact through an artifact plugin reads it from a separate sidecar container that is not guaranteed to run as the same user as the container that loaded it.
 
-Set `mode` (and `recurseMode` for a directory) explicitly on any input artifact that needs more than owner access.
-The two cases most likely to need it are a file that has to stay executable, and a `main` container that runs as a different user than the one that loaded the artifact — `0600` and `0700` are owner-only, so a differing `runAsUser` can no longer read the artifact:
+Set `mode` (and `recurseMode` for a directory) explicitly on any input artifact that needs more than this.
+The main case that still needs it is a file that has to stay executable, or one that a container running as a different user than the one that loaded it needs to write to — `0644` gives the owner no execute bit and gives no one but the owner write access:
 
 ```yaml
 inputs:

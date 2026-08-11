@@ -344,12 +344,13 @@ func (we *WorkflowExecutor) loadArtifact(ctx context.Context, pluginName wfv1.Ar
 	}
 
 	logger.WithField("path", artPath).Info(ctx, "Successfully download file")
-	if art.Mode != nil {
+	switch {
+	case art.Mode != nil:
 		err = chmod(artPath, *art.Mode, art.RecurseMode)
 		if err != nil {
 			return err
 		}
-	} else if driverArt.Plugin != nil {
+	case driverArt.Plugin != nil:
 		// For plugin artifacts without explicit mode, ensure the file is writable
 		// by setting mode to 0666 so the main container can read/write it
 		err = chmod(artPath, 0666, art.RecurseMode)
@@ -357,7 +358,7 @@ func (we *WorkflowExecutor) loadArtifact(ctx context.Context, pluginName wfv1.Ar
 			logger.WithError(err).Error(ctx, "Failed to chmod plugin artifact")
 			return err
 		}
-	} else {
+	default:
 		err = chmodDefault(artPath)
 		if err != nil {
 			return err
@@ -1338,11 +1339,13 @@ func unpack(srcPath string, destPath string, decompressor func(string, string) e
 
 const (
 	// defaultArtifactFileMode is applied to the files of an input artifact that does not
-	// set `mode`.
-	defaultArtifactFileMode = 0o600
+	// set `mode`. It is world-readable rather than owner-only because an artifact-plugin
+	// output step reads the file from a separate sidecar container, which is not
+	// guaranteed to run as the same user as the container that loaded the artifact.
+	defaultArtifactFileMode = 0o644
 	// defaultArtifactDirMode is defaultArtifactFileMode with the execute bit added, as a
 	// directory has to be traversable to be of any use.
-	defaultArtifactDirMode = 0o700
+	defaultArtifactDirMode = 0o755
 )
 
 // chmodDefault gives an input artifact that does not set `mode` a well known set of

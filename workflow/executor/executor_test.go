@@ -498,7 +498,7 @@ func TestChmodDefault(t *testing.T) {
 
 		info, err := os.Stat(artPath)
 		require.NoError(t, err)
-		assert.Equal(t, "-rw-------", info.Mode().String())
+		assert.Equal(t, "-rw-r--r--", info.Mode().String())
 	})
 
 	// A directory artifact, as `untar` or a directory download leaves it. The whole
@@ -513,7 +513,7 @@ func TestChmodDefault(t *testing.T) {
 
 		require.NoError(t, chmodDefault(root))
 
-		want := map[string]string{root: "drwx------", nested: "drwx------", file: "-rw-------"}
+		want := map[string]string{root: "drwxr-xr-x", nested: "drwxr-xr-x", file: "-rw-r--r--"}
 		for path, mode := range want {
 			info, err := os.Stat(path)
 			require.NoError(t, err)
