@@ -372,22 +372,6 @@ SyncConfig contains synchronization configuration for database locks (semaphores
 | `HeartbeatSeconds`           | `int`                                     | HeartbeatSeconds specifies how often to update controller heartbeat, if not set, the default value is 60 seconds                                                                                                                           |
 | `InactiveControllerSeconds`  | `int`                                     | InactiveControllerSeconds specifies when to consider a controller dead, if not set, the default value is 300 seconds                                                                                                                       |
 | `SemaphoreLimitCacheSeconds` | `int64`                                   | SemaphoreLimitCacheSeconds specifies the duration in seconds before the workflow controller will re-fetch the limit for a semaphore from its associated data source. Defaults to 0 seconds (re-fetch every time the semaphore is checked). |
-| `DBRetryConfig`              | [`DBRetryConfig`](#dbretryconfig)         | DBRetryConfig tunes the retrying of database lock transactions that abort with a serialization failure, and what happens once those retries are exhausted                                                                                  |
-
-## DBRetryConfig
-
-DBRetryConfig mirrors wait.Backoff for database semaphore and mutex transactions that abort with a serialization failure. Each unset field keeps its default, so a single field can be overridden on its own.
-
-### Fields
-
-| Field Name |                                                 Field Type                                                 |                                                                           Description                                                                            |
-|------------|------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `Steps`    | `int`                                                                                                      | Steps is the number of attempts made before giving up. Default: 5                                                                                                |
-| `Duration` | [`metav1.Duration`](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#duration-v1-meta) | Duration is the delay before the first retry. Default: 10ms                                                                                                      |
-| `Factor`   | `float64`                                                                                                  | Factor is the growth factor applied to the delay after each attempt. Default: 2.0                                                                                |
-| `Jitter`   | `float64`                                                                                                  | Jitter randomises each delay by up to this fraction of itself. Default: 0.5                                                                                      |
-| `Cap`      | [`metav1.Duration`](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#duration-v1-meta) | Cap is the upper bound on any single delay. Default: 600ms                                                                                                       |
-| `Requeue`  | `bool`                                                                                                     | Requeue treats exhausted retries as a failure to obtain the lock, leaving the workflow pending and requeuing it, rather than failing the workflow. Default: true |
 
 ## ArtifactDriver
 

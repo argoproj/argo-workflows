@@ -134,7 +134,7 @@ func (s *prioritySemaphore) notifyWaiters(ctx context.Context) {
 		item := s.pending.items[idx]
 		wfKey := workflowKey(item.key)
 		s.logger(ctx).WithField("workflow", wfKey).Debug(ctx, "Enqueue the workflow")
-		s.nextWorkflow(wfKey, 0)
+		s.nextWorkflow(wfKey)
 	}
 }
 
@@ -240,7 +240,7 @@ func (s *prioritySemaphore) checkAcquire(ctx context.Context, holderKey string, 
 		if !isSameWorkflowNodeKeys(holderKey, item.key) {
 			// Enqueue the front workflow if lock is available
 			if len(s.lockHolder) < limit {
-				s.nextWorkflow(workflowKey(item.key), 0)
+				s.nextWorkflow(workflowKey(item.key))
 			}
 			logger.WithField("holderKey", holderKey).Info(ctx, "isn't at the front")
 			return false, false, waitingMsg

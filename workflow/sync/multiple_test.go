@@ -3,7 +3,6 @@ package sync
 import (
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 
@@ -43,7 +42,7 @@ func TestMultipleMutexLock(t *testing.T) {
 	kube := fake.NewClientset()
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("MultipleMutex", func(t *testing.T) {
-		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(string, time.Duration) {},
+		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {},
 			WorkflowExistenceFunc, false)
 		require.NoError(t, err)
 
@@ -125,7 +124,7 @@ func TestMultipleMutexLock(t *testing.T) {
 		assert.True(t, wfUpdate)
 	})
 	t.Run("MultipleMutexOrdering", func(t *testing.T) {
-		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(string, time.Duration) {},
+		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {},
 			WorkflowExistenceFunc, false)
 		require.NoError(t, err)
 
@@ -208,7 +207,7 @@ func TestMutexAndSemaphore(t *testing.T) {
 
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("MutexSemaphore", func(t *testing.T) {
-		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(string, time.Duration) {},
+		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {},
 			WorkflowExistenceFunc, false)
 		require.NoError(t, err)
 
@@ -327,7 +326,7 @@ func TestPriority(t *testing.T) {
 	kube := fake.NewClientset()
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("Priority", func(t *testing.T) {
-		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(string, time.Duration) {},
+		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {},
 			WorkflowExistenceFunc, false)
 		require.NoError(t, err)
 
@@ -406,7 +405,7 @@ func TestDuplicates(t *testing.T) {
 	kube := fake.NewClientset()
 	syncLimitFunc := GetSyncLimitFunc(kube)
 	t.Run("Mutex", func(t *testing.T) {
-		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(string, time.Duration) {},
+		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {},
 			WorkflowExistenceFunc, false)
 		require.NoError(t, err)
 
@@ -419,7 +418,7 @@ func TestDuplicates(t *testing.T) {
 		assert.Error(t, err)
 	})
 	t.Run("Semaphore", func(t *testing.T) {
-		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(string, time.Duration) {},
+		syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {},
 			WorkflowExistenceFunc, false)
 		require.NoError(t, err)
 

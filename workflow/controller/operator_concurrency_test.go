@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -165,7 +164,7 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx)
 	defer cancel()
-	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string, _ time.Duration) {
+	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc, false)
 	var cm apiv1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
@@ -226,7 +225,7 @@ func TestSemaphoreScriptTmplLevel(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx)
 	defer cancel()
-	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string, _ time.Duration) {
+	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc, false)
 	var cm apiv1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
@@ -286,7 +285,7 @@ func TestSemaphoreScriptConfigMapInDifferentNamespace(t *testing.T) {
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	ctx := logging.TestContext(t.Context())
-	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string, _ time.Duration) {
+	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc, false)
 	var cm apiv1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
@@ -348,7 +347,7 @@ func TestSemaphoreResourceTmplLevel(t *testing.T) {
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	ctx := logging.TestContext(t.Context())
-	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string, _ time.Duration) {
+	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc, false)
 	var cm apiv1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
@@ -410,7 +409,7 @@ func TestSemaphoreWithOutConfigMap(t *testing.T) {
 	defer cancel()
 
 	ctx := logging.TestContext(t.Context())
-	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string, _ time.Duration) {
+	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc, false)
 
 	t.Run("SemaphoreRefWithOutConfigMap", func(t *testing.T) {
@@ -466,7 +465,7 @@ func TestMutexInDAG(t *testing.T) {
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	ctx := logging.TestContext(t.Context())
-	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string, _ time.Duration) {
+	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc, false)
 	t.Run("MutexWithDAG", func(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow(DAGWithMutex)
@@ -538,7 +537,7 @@ func TestMutexInDAGWithInterpolation(t *testing.T) {
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	ctx := logging.TestContext(t.Context())
-	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string, _ time.Duration) {
+	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc, false)
 	t.Run("InterpolatedMutexWithDAG", func(t *testing.T) {
 		wf := wfv1.MustUnmarshalWorkflow(DAGWithInterpolatedMutex)
@@ -602,7 +601,7 @@ func TestSynchronizationWithRetry(t *testing.T) {
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	ctx := logging.TestContext(t.Context())
-	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string, _ time.Duration) {
+	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc, false)
 	var cm apiv1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
@@ -810,7 +809,7 @@ func TestSynchronizationWithStep(t *testing.T) {
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	ctx := logging.TestContext(t.Context())
-	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string, _ time.Duration) {
+	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc, false)
 	var cm apiv1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
@@ -887,7 +886,7 @@ func TestSynchronizationWithStepRetry(t *testing.T) {
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	ctx := logging.TestContext(t.Context())
-	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string, _ time.Duration) {
+	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc, false)
 	var cm apiv1.ConfigMap
 	wfv1.MustUnmarshal([]byte(configMap), &cm)
@@ -950,7 +949,7 @@ func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 	ctx := logging.TestContext(t.Context())
-	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string, _ time.Duration) {
+	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc, false)
 
 	t.Run("PendingShuttingdownTerminatingWf", func(t *testing.T) {

@@ -33,7 +33,7 @@ func TestInactiveControllerDBSemaphore(t *testing.T) {
 	for _, dbType := range testDBTypes {
 		t.Run(string(dbType), func(t *testing.T) {
 			// Only run this test for the database semaphore
-			nextWorkflow := func(string, time.Duration) {}
+			nextWorkflow := func(key string) {}
 
 			// Create the database semaphore
 			s, info, deferfunc := createTestDatabaseSemaphore(ctx, t, "bar", "foo", 1, 0, nextWorkflow, dbType)
@@ -77,7 +77,7 @@ func TestOtherControllerDBSemaphore(t *testing.T) {
 	for _, dbType := range testDBTypes {
 		t.Run(string(dbType), func(t *testing.T) {
 			// Create a semaphore with limit 1
-			nextWorkflow := func(string, time.Duration) {}
+			nextWorkflow := func(key string) {}
 			s, info, deferfunc := createTestDatabaseSemaphore(ctx, t, "bar", "foo", 1, 0, nextWorkflow, dbType)
 			defer deferfunc()
 
@@ -139,7 +139,7 @@ func TestDifferentSemaphoreDBSemaphore(t *testing.T) {
 	for _, dbType := range testDBTypes {
 		t.Run(string(dbType), func(t *testing.T) {
 			// Create a semaphore with limit 1
-			nextWorkflow := func(string, time.Duration) {}
+			nextWorkflow := func(key string) {}
 			s, info, deferfunc := createTestDatabaseSemaphore(ctx, t, "bar", "foo", 1, 0, nextWorkflow, dbType)
 			defer deferfunc()
 
@@ -191,7 +191,7 @@ func TestMutexAndSemaphoreWithSameName(t *testing.T) {
 			// Setup the same key name for both
 			sharedKey := "foo/shared-name"
 
-			nextWorkflow := func(string, time.Duration) {}
+			nextWorkflow := func(key string) {}
 
 			// Create a semaphore with limit 2 using the helper function
 			semaphore, info, deferfunc := createTestDatabaseSemaphore(ctx, t, "shared-name", "foo", 2, 0, nextWorkflow, dbType)
@@ -299,7 +299,7 @@ func TestSyncLimitCacheDB(t *testing.T) {
 	for _, dbType := range testDBTypes {
 		t.Run(string(dbType), func(t *testing.T) {
 			t.Run("RefreshesAfterTTL", func(t *testing.T) {
-				nextWorkflow := func(string, time.Duration) {}
+				nextWorkflow := func(key string) {}
 
 				// Create a semaphore with initial limit of 5 and a 10 second TTL
 				cacheTTL := 10 * time.Second
@@ -342,7 +342,7 @@ func TestSyncLimitCacheDB(t *testing.T) {
 			})
 
 			t.Run("ZeroTTLAlwaysRefreshes", func(t *testing.T) {
-				nextWorkflow := func(string, time.Duration) {}
+				nextWorkflow := func(key string) {}
 
 				// Create a semaphore with initial limit of 5 and a 0 second TTL
 				s, info, deferfunc := createTestDatabaseSemaphore(ctx, t, "test-semaphore-zero", "foo", 5, 0, nextWorkflow, dbType)

@@ -54,7 +54,7 @@ func newTestManagerWithMetrics(ctx context.Context, t *testing.T) (*Manager, *te
 	t.Helper()
 	kube := fake.NewSimpleClientset()
 	syncLimitFunc := func(ctx context.Context, s string) (int, error) { return 1, nil }
-	mgr, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(string, time.Duration) {}, func(string) bool { return false }, false)
+	mgr, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(string) {}, func(string) bool { return false }, false)
 	require.NoError(t, err)
 	rec := newTestMetricsRecorder()
 	mgr.metrics = rec
@@ -255,7 +255,7 @@ func TestLockMetricsDatabase(t *testing.T) {
 			_, err = info.SessionProxy.Session().SQL().Exec("INSERT INTO sync_limit (name, sizelimit) VALUES (?, ?)", dbLimitKey, 2)
 			require.NoError(t, err)
 
-			mgr := createLockManager(ctx, info.SessionProxy, &syncConfig, nil, func(string, time.Duration) {}, WorkflowExistenceFunc)
+			mgr := createLockManager(ctx, info.SessionProxy, &syncConfig, nil, func(key string) {}, WorkflowExistenceFunc)
 
 			creationTime := metav1.NewTime(time.Now())
 			newWF := func(name string) *wfv1.Workflow {

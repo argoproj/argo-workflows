@@ -9519,7 +9519,7 @@ func TestMutexWfPendingWithNoPod(t *testing.T) {
 	cancel, controller := newController(logging.TestContext(t.Context()), wf)
 	defer cancel()
 	ctx := logging.TestContext(t.Context())
-	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string, _ time.Duration) {
+	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc, false)
 
 	// preempt lock

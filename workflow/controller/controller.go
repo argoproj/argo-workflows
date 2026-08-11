@@ -492,11 +492,8 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 		return strconv.Atoi(value)
 	}
 
-	nextWorkflow := func(key string, after time.Duration) {
-		if after == 0 {
-			after = semaphoreNotifyDelay
-		}
-		wfc.wfQueue.AddAfter(key, after)
+	nextWorkflow := func(key string) {
+		wfc.wfQueue.AddAfter(key, semaphoreNotifyDelay)
 	}
 
 	workflowExists := func(key string) bool {
