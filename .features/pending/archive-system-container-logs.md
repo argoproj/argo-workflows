@@ -1,4 +1,4 @@
-Description: Archive the `init` and `wait` container logs, not just the `main` container
+Description: Archive the logs of Argo's system containers, not just the `main` container
 Authors: [myzk-a](https://github.com/myzk-a)
 Component: General
 Issues: 12640
@@ -12,6 +12,7 @@ This is useful for inspecting what the system containers did after the Pod is go
 
 `archiveSystemContainerLogs` is controlled separately from `archiveLogs`, so you only pay to store these extra logs when you need them.
 It can be set at the workflow-controller config-map, workflow spec, or template level, following the same priorities as `archiveLogs`.
+Note that enabling it in the workflow-controller config-map turns it on for every workflow, and individual workflows and templates cannot then disable it.
 
 In the legacy pod layout a *failing* `init` container is not captured, because the `wait` container never starts to archive it; the init-less layout does capture the `supervisor` log even when loading input artifacts fails.
-See [Configuring Archive Logs](https://argo-workflows.readthedocs.io/en/latest/configure-archive-logs/) for the example manifest and the full list of limitations.
+See [Configuring Archive Logs](configure-archive-logs.md#archiving-system-container-logs) for the example manifest and the full list of limitations.
