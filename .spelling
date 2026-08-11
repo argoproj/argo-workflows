@@ -38,6 +38,7 @@ Breitgand
 CRD
 CRDs
 CloudSQL
+ClusterRole
 ClusterRoleBinding
 ClusterRoles
 ClusterWorkflowTemplate
@@ -138,6 +139,7 @@ WorkflowEventBinding
 WorkflowTemplate
 WorkflowTemplates
 a.m.
+air-gapped
 anded
 apis
 architecting
@@ -222,6 +224,8 @@ parameterizing
 params
 pprof
 pre-commit
+pre-install
+pre-upgrade
 programmatically
 proxying
 pytorch
@@ -289,6 +293,7 @@ v3.7.0
 v3.7.16
 v4.0
 v4.0.7
+v4.0.9
 validator
 vendored
 versioned
