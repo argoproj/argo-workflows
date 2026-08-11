@@ -319,46 +319,6 @@ func (_c *Throttler_UpdateNamespaceParallelism_Call) RunAndReturn(run func(names
 	return _c
 }
 
-// UpdateParallelism provides a mock function for the type Throttler
-func (_mock *Throttler) UpdateParallelism(limit int) {
-	_mock.Called(limit)
-	return
-}
-
-// Throttler_UpdateParallelism_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateParallelism'
-type Throttler_UpdateParallelism_Call struct {
-	*mock.Call
-}
-
-// UpdateParallelism is a helper method to define mock.On call
-//   - limit int
-func (_e *Throttler_Expecter) UpdateParallelism(limit interface{}) *Throttler_UpdateParallelism_Call {
-	return &Throttler_UpdateParallelism_Call{Call: _e.mock.On("UpdateParallelism", limit)}
-}
-
-func (_c *Throttler_UpdateParallelism_Call) Run(run func(limit int)) *Throttler_UpdateParallelism_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 int
-		if args[0] != nil {
-			arg0 = args[0].(int)
-		}
-		run(
-			arg0,
-		)
-	})
-	return _c
-}
-
-func (_c *Throttler_UpdateParallelism_Call) Return() *Throttler_UpdateParallelism_Call {
-	_c.Call.Return()
-	return _c
-}
-
-func (_c *Throttler_UpdateParallelism_Call) RunAndReturn(run func(limit int)) *Throttler_UpdateParallelism_Call {
-	_c.Run(run)
-	return _c
-}
-
 // UpdateNamespaceParallelismDefault provides a mock function for the type Throttler
 func (_mock *Throttler) UpdateNamespaceParallelismDefault(limit int) {
 	_mock.Called(limit)
@@ -395,6 +355,46 @@ func (_c *Throttler_UpdateNamespaceParallelismDefault_Call) Return() *Throttler_
 }
 
 func (_c *Throttler_UpdateNamespaceParallelismDefault_Call) RunAndReturn(run func(limit int)) *Throttler_UpdateNamespaceParallelismDefault_Call {
+	_c.Run(run)
+	return _c
+}
+
+// UpdateParallelism provides a mock function for the type Throttler
+func (_mock *Throttler) UpdateParallelism(limit int) {
+	_mock.Called(limit)
+	return
+}
+
+// Throttler_UpdateParallelism_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateParallelism'
+type Throttler_UpdateParallelism_Call struct {
+	*mock.Call
+}
+
+// UpdateParallelism is a helper method to define mock.On call
+//   - limit int
+func (_e *Throttler_Expecter) UpdateParallelism(limit interface{}) *Throttler_UpdateParallelism_Call {
+	return &Throttler_UpdateParallelism_Call{Call: _e.mock.On("UpdateParallelism", limit)}
+}
+
+func (_c *Throttler_UpdateParallelism_Call) Run(run func(limit int)) *Throttler_UpdateParallelism_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 int
+		if args[0] != nil {
+			arg0 = args[0].(int)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *Throttler_UpdateParallelism_Call) Return() *Throttler_UpdateParallelism_Call {
+	_c.Call.Return()
+	return _c
+}
+
+func (_c *Throttler_UpdateParallelism_Call) RunAndReturn(run func(limit int)) *Throttler_UpdateParallelism_Call {
 	_c.Run(run)
 	return _c
 }
