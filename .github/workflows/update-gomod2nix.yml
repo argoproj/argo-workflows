@@ -39,7 +39,7 @@ jobs:
         # The dev/nix overlay builds gomod2nix against the Go version pinned in
         # dev/nix/conf.nix (single source of truth, kept in sync with go.mod), so the
         # `go mod download` it runs uses the right toolchain. Installing upstream would
-        # pull gomod2nix's own stale nixpkgs and an older Go, failing on `go 1.26.1`.
+        # pull gomod2nix's own stale nixpkgs and an older Go, failing on `go 1.26.5`.
         run: nix profile install ./dev/nix#gomod2nix
 
       - name: Run gomod2nix

@@ -460,7 +460,7 @@ swagger: \
 $(TOOL_MOCKERY): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	GOTOOLCHAIN=go1.26.1 go install github.com/vektra/mockery/v3@v3.5.1
+	GOTOOLCHAIN=go1.26.5 go install github.com/vektra/mockery/v3@v3.5.1
 endif
 $(TOOL_CONTROLLER_GEN): Makefile
 # update this in Nix when upgrading it here
