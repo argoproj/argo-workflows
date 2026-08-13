@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
+	"slices"
 	"strings"
 	"time"
 
@@ -15,8 +16,6 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/sqldb"
 )
-
-const OffloadNodeStatusDisabled = "Workflow has offloaded nodes, but offloading has been disabled"
 
 type UUIDVersion struct {
 	UID     string `db:"uid"`
@@ -149,12 +148,15 @@ func (wdc *nodeOffloadRepo) Get(ctx context.Context, uid, version string) (wfv1.
 	return nodes, nil
 }
 
+// offloadListBatchSize caps how many keys go into a single query. MySQL and Postgres allow
+// 65535 placeholders per prepared statement and each pair costs two, so this leaves plenty of
+// headroom. A ceiling is needed because the caller decides the key count: ListWorkflows treats
+// an unset limit as "the whole namespace", and `argo list` defaults --chunk-size to 0.
+const offloadListBatchSize = 1000
+
 // uuidVersionIn matches exactly the given (uid, version) pairs. Written as OR-of-ANDs rather
 // than a row value `(uid, version) IN ((?,?),...)` so that it behaves the same on MySQL,
-// MariaDB, Postgres and SQLite.
-//
-// Each pair costs two placeholders, so this tops out at roughly 32k pairs on MySQL. A page
-// that large is not a real scenario; batch the keys here if that ever changes.
+// MariaDB and Postgres.
 func uuidVersionIn(keys []UUIDVersion) db.LogicalExpr {
 	conds := make([]db.LogicalExpr, len(keys))
 	for i, key := range keys {
@@ -171,33 +173,34 @@ func (wdc *nodeOffloadRepo) List(ctx context.Context, namespace string, keys []U
 		return map[UUIDVersion]wfv1.Nodes{}, nil
 	}
 	wdc.log.WithFields(logging.Fields{"namespace": namespace, "keys": len(keys)}).Debug(ctx, "Listing offloaded nodes")
-	var res map[UUIDVersion]wfv1.Nodes
-	err := wdc.sessionProxy.With(ctx, func(s db.Session) error {
-		var records []nodesRecord
-		err := s.SQL().
-			Select("uid", "version", "nodes").
-			From(wdc.tableName).
-			Where(db.Cond{"clustername": wdc.clusterName}).
-			And(namespaceEqual(namespace)).
-			And(uuidVersionIn(keys)).
-			All(&records)
-		if err != nil {
-			return err
-		}
-
-		res = make(map[UUIDVersion]wfv1.Nodes)
-		for _, r := range records {
-			nodes := &wfv1.Nodes{}
-			err = json.Unmarshal([]byte(r.Nodes), nodes)
+	res := make(map[UUIDVersion]wfv1.Nodes)
+	for batch := range slices.Chunk(keys, offloadListBatchSize) {
+		err := wdc.sessionProxy.With(ctx, func(s db.Session) error {
+			var records []nodesRecord
+			err := s.SQL().
+				Select("uid", "version", "nodes").
+				From(wdc.tableName).
+				Where(db.Cond{"clustername": wdc.clusterName}).
+				And(namespaceEqual(namespace)).
+				And(uuidVersionIn(batch)).
+				All(&records)
 			if err != nil {
 				return err
 			}
-			res[UUIDVersion{UID: r.UID, Version: r.Version}] = *nodes
+
+			for _, r := range records {
+				nodes := &wfv1.Nodes{}
+				err = json.Unmarshal([]byte(r.Nodes), nodes)
+				if err != nil {
+					return err
+				}
+				res[UUIDVersion{UID: r.UID, Version: r.Version}] = *nodes
+			}
+			return nil
+		})
+		if err != nil {
+			return nil, err
 		}
-		return nil
-	})
-	if err != nil {
-		return nil, err
 	}
 	return res, nil
 }

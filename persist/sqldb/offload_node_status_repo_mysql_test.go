@@ -31,17 +31,32 @@ func saveOffload(ctx context.Context, t *testing.T, repo OffloadNodeStatusRepo, 
 }
 
 // TestMySQLListOnlyReturnsRequestedKeys covers the behaviour the list path depends on: the
-// query is scoped to the keys it is given, so a caller that needs one page of workflows does
+// query matches whole (uid, version) pairs, so a caller that needs one page of workflows does
 // not pull every offloaded blob in the namespace.
+//
+// Save deliberately leaves superseded rows behind for the garbage collector, so uid-a and uid-b
+// each have two versions here and only one version of each is requested.
+//
+// The version is a hash of the node contents, so two workflows only share a version value when
+// they store identical nodes. That is arranged deliberately: without it every version value is
+// unique to one uid, and a `uid IN (...) AND version IN (...)` cross-product happens to return
+// the right rows anyway. With shared version values the cross-product matches all four rows,
+// while matching whole pairs returns two.
 func TestMySQLListOnlyReturnsRequestedKeys(t *testing.T) {
 	for name, variant := range usqldb.MySQLVariants {
 		t.Run(name, func(t *testing.T) {
 			ctx := logging.TestContext(t.Context())
 			repo := setupMySQLOffloadTest(ctx, t, variant)
 
-			wantedA := UUIDVersion{UID: "uid-a", Version: saveOffload(ctx, t, repo, "uid-a", "node-a")}
-			wantedB := UUIDVersion{UID: "uid-b", Version: saveOffload(ctx, t, repo, "uid-b", "node-b")}
+			versionX := saveOffload(ctx, t, repo, "uid-a", "node-x")
+			versionY := saveOffload(ctx, t, repo, "uid-a", "node-y")
+			require.NotEqual(t, versionX, versionY, "different nodes must produce different versions")
+			require.Equal(t, versionX, saveOffload(ctx, t, repo, "uid-b", "node-x"), "identical nodes must share a version")
+			require.Equal(t, versionY, saveOffload(ctx, t, repo, "uid-b", "node-y"), "identical nodes must share a version")
 			unwanted := UUIDVersion{UID: "uid-c", Version: saveOffload(ctx, t, repo, "uid-c", "node-c")}
+
+			wantedA := UUIDVersion{UID: "uid-a", Version: versionX}
+			wantedB := UUIDVersion{UID: "uid-b", Version: versionY}
 
 			got, err := repo.List(ctx, "argo", []UUIDVersion{wantedA, wantedB})
 			require.NoError(t, err)
@@ -49,28 +64,9 @@ func TestMySQLListOnlyReturnsRequestedKeys(t *testing.T) {
 			assert.Len(t, got, 2)
 			assert.Contains(t, got, wantedA)
 			assert.Contains(t, got, wantedB)
-			assert.NotContains(t, got, unwanted, "a key that was not asked for must not come back")
+			assert.NotContains(t, got, UUIDVersion{UID: "uid-a", Version: versionY}, "a version that was not asked for must not come back")
+			assert.NotContains(t, got, UUIDVersion{UID: "uid-b", Version: versionX}, "a version that was not asked for must not come back")
+			assert.NotContains(t, got, unwanted, "a uid that was not asked for must not come back")
 		})
 	}
-}
-
-// TestMySQLListExcludesSupersededVersions pins down why the version has to be part of the
-// condition. Older offloads of the same workflow stay in the table until they are garbage
-// collected, so filtering on the uid alone would drag those blobs back too.
-// Dialect portability is already covered on both engines by TestMySQLListOnlyReturnsRequestedKeys,
-// so one engine is enough here.
-func TestMySQLListExcludesSupersededVersions(t *testing.T) {
-	ctx := logging.TestContext(t.Context())
-	repo := setupMySQLOffloadTest(ctx, t, usqldb.MySQLVariants["MySQL"])
-
-	oldVersion := saveOffload(ctx, t, repo, "uid-a", "node-old")
-	newVersion := saveOffload(ctx, t, repo, "uid-a", "node-new")
-	require.NotEqual(t, oldVersion, newVersion, "the two writes must produce different versions")
-
-	got, err := repo.List(ctx, "argo", []UUIDVersion{{UID: "uid-a", Version: newVersion}})
-	require.NoError(t, err)
-
-	assert.Len(t, got, 1)
-	assert.Contains(t, got, UUIDVersion{UID: "uid-a", Version: newVersion})
-	assert.NotContains(t, got, UUIDVersion{UID: "uid-a", Version: oldVersion})
 }

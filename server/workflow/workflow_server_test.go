@@ -578,6 +578,43 @@ const clusterworkflowtmpl = `
 
 const userEmailLabel = "my-sub.at.your.org"
 
+// testServerOpts collects the parts the harnesses in this package actually vary. Everything
+// they share — the selfsubjectaccessreviews reactor, the auth context chain, the template
+// stores and the 12-argument NewServer call — lives in newTestServer.
+type testServerOpts struct {
+	instanceIDSvc instanceid.Service
+	offloadRepo   sqldb.OffloadNodeStatusRepo
+	archivedRepo  sqldb.WorkflowArchive
+	wfClientset   versioned.Interface
+	wfLister      store.WorkflowLister
+	wfStore       store.WorkflowStore
+	namespace     string
+	claims        *types.Claims
+	artifactRepos artifactrepositories.Interface
+}
+
+// newTestServer builds a workflow server backed by fakes. Callers own the mocks they pass in,
+// so a test that needs to assert on one keeps its own reference.
+func newTestServer(t *testing.T, o testServerOpts) (Server, context.Context) {
+	t.Helper()
+
+	kubeClientSet := fake.NewClientset()
+	kubeClientSet.PrependReactor("create", "selfsubjectaccessreviews", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+		return true, &authorizationv1.SelfSubjectAccessReview{
+			Status: authorizationv1.SubjectAccessReviewStatus{Allowed: true},
+		}, nil
+	})
+
+	ctx := logging.TestContext(t.Context())
+	ctx = context.WithValue(ctx, auth.WfKey, o.wfClientset)
+	ctx = context.WithValue(ctx, auth.KubeKey, kubeClientSet)
+	ctx = context.WithValue(ctx, auth.ClaimsKey, o.claims)
+
+	server := NewServer(ctx, o.instanceIDSvc, o.offloadRepo, o.archivedRepo, o.wfClientset, o.wfLister, o.wfStore,
+		workflowtemplate.NewClientStore(), clusterworkflowtemplate.NewClientStore(), nil, &o.namespace, o.artifactRepos)
+	return server, ctx
+}
+
 func getWorkflowServer(t *testing.T) (workflowpkg.WorkflowServiceServer, context.Context) {
 	t.Helper()
 	var unlabelledObj, wfObj1, wfObj2, wfObj3, wfObj4, wfObj5, failedWfObj v1alpha1.Workflow
@@ -637,16 +674,8 @@ func getWorkflowServer(t *testing.T) (workflowpkg.WorkflowServiceServer, context
 	archivedRepo.On("ListWorkflows", mock.Anything, sutils.ListOptions{Namespace: "test", Limit: -1, LabelRequirements: r}).Return(v1alpha1.Workflows{wfObj4}, nil)
 	archivedRepo.On("HasMoreWorkflows", mock.Anything, sutils.ListOptions{Namespace: "test", LabelRequirements: r}).Return(false, nil)
 
-	kubeClientSet := fake.NewClientset()
-	kubeClientSet.PrependReactor("create", "selfsubjectaccessreviews", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
-		return true, &authorizationv1.SelfSubjectAccessReview{
-			Status: authorizationv1.SubjectAccessReviewStatus{Allowed: true},
-		}, nil
-	})
 	wfClientset := v1alpha.NewClientset(&unlabelledObj, &wfObj1, &wfObj2, &wfObj3, &wfObj4, &wfObj5, &failedWfObj, &wftmpl, &cronwfObj, &cwfTmpl)
 	wfClientset.PrependReactor("create", "workflows", generateNameReactor)
-	ctx := logging.TestContext(t.Context())
-	ctx = context.WithValue(context.WithValue(context.WithValue(ctx, auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}, Email: "my-sub@your.org"})
 	listOptions := &metav1.ListOptions{}
 	instanceIDSvc := instanceid.NewService("my-instanceid")
 	instanceIDSvc.With(listOptions)
@@ -663,11 +692,16 @@ func getWorkflowServer(t *testing.T) (workflowpkg.WorkflowServiceServer, context
 	if err = wfStore.Add(&wfObj5); err != nil {
 		panic(err)
 	}
-	namespaceAll := metav1.NamespaceAll
-	wftmplStore := workflowtemplate.NewClientStore()
-	cwftmplStore := clusterworkflowtemplate.NewClientStore()
-	server := NewServer(ctx, instanceIDSvc, offloadNodeStatusRepo, archivedRepo, wfClientset, wfStore, wfStore, wftmplStore, cwftmplStore, nil, &namespaceAll, nil)
-	return server, ctx
+	return newTestServer(t, testServerOpts{
+		instanceIDSvc: instanceIDSvc,
+		offloadRepo:   offloadNodeStatusRepo,
+		archivedRepo:  archivedRepo,
+		wfClientset:   wfClientset,
+		wfLister:      wfStore,
+		wfStore:       wfStore,
+		namespace:     metav1.NamespaceAll,
+		claims:        &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}, Email: "my-sub@your.org"},
+	})
 }
 
 // generateNameReactor implements the logic required for the GenerateName field to work when using
@@ -1505,34 +1539,27 @@ func getWorkflowServerWithArtifacts(t *testing.T, template runtime.Object, defau
 
 	archivedRepo := &mocks.WorkflowArchive{}
 
-	kubeClientSet := fake.NewSimpleClientset()
-	kubeClientSet.PrependReactor("create", "selfsubjectaccessreviews", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
-		return true, &authorizationv1.SelfSubjectAccessReview{
-			Status: authorizationv1.SubjectAccessReviewStatus{Allowed: true},
-		}, nil
-	})
-
 	wfClientset := v1alpha.NewClientset(template)
 	wfClientset.PrependReactor("create", "workflows", generateNameReactor)
 
-	ctx := logging.TestContext(t.Context())
-	ctx = context.WithValue(ctx, auth.WfKey, wfClientset)
-	ctx = context.WithValue(ctx, auth.KubeKey, kubeClientSet)
-	ctx = context.WithValue(ctx, auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
-
-	wfStore, err := store.NewSQLiteStore(instanceid.NewService("my-instanceid"))
+	instanceIDSvc := instanceid.NewService("my-instanceid")
+	wfStore, err := store.NewSQLiteStore(instanceIDSvc)
 	require.NoError(t, err)
-
-	wftmplStore := workflowtemplate.NewClientStore()
-	cwftmplStore := clusterworkflowtemplate.NewClientStore()
 
 	var artifactRepos artifactrepositories.Interface
 	if defaultRepo != nil {
 		artifactRepos = armocks.DummyArtifactRepositories(defaultRepo)
 	}
 
-	namespaceAll := metav1.NamespaceAll
-	server := NewServer(ctx, instanceid.NewService("my-instanceid"), offloadNodeStatusRepo, archivedRepo, wfClientset, wfStore, wfStore, wftmplStore, cwftmplStore, nil, &namespaceAll, artifactRepos)
-
-	return server, ctx
+	return newTestServer(t, testServerOpts{
+		instanceIDSvc: instanceIDSvc,
+		offloadRepo:   offloadNodeStatusRepo,
+		archivedRepo:  archivedRepo,
+		wfClientset:   wfClientset,
+		wfLister:      wfStore,
+		wfStore:       wfStore,
+		namespace:     metav1.NamespaceAll,
+		claims:        &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}},
+		artifactRepos: artifactRepos,
+	})
 }
