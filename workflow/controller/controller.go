@@ -131,6 +131,21 @@ type WorkflowController struct {
 	// indexWorkflowSemaphoreKeys enables the bySemaphoreConfigMap informer index (INDEX_WORKFLOW_SEMAPHORE_KEYS)
 	indexWorkflowSemaphoreKeys bool
 
+	// cacheGCPeriod controls how often memoization caches are GC'd; 0 disables GC (CACHE_GC_PERIOD)
+	cacheGCPeriod time.Duration
+	// semaphoreNotifyDelay is a slight delay when notifying/enqueueing workflows to the workqueue
+	// that are waiting on a semaphore. This value is passed to AddAfter(). We delay adding the next
+	// workflow because if we add immediately with AddRateLimited(), the next workflow will likely
+	// be reconciled at a point in time before we have finished the current workflow reconciliation
+	// as well as incrementing the semaphore counter availability, and so the next workflow will
+	// believe it cannot run. By delaying for 1s, we would have finished the semaphore counter
+	// updates, and the next workflow will see the updated availability. (SEMAPHORE_NOTIFY_DELAY)
+	semaphoreNotifyDelay time.Duration
+	// gcAfterNotHitDuration is how long a memoization cache entry may go unhit before GC removes it (CACHE_GC_AFTER_NOT_HIT_DURATION)
+	gcAfterNotHitDuration time.Duration
+	// healthzAge is the max age a workflow may go unreconciled before /healthz reports failure (HEALTHZ_AGE)
+	healthzAge time.Duration
+
 	// datastructures to support the processing of workflows and workflow pods
 	wfInformer      cache.SharedIndexInformer
 	nsInformer      cache.SharedIndexInformer
@@ -187,25 +202,6 @@ const (
 	configMapResyncPeriod               = 20 * time.Minute
 )
 
-var (
-	cacheGCPeriod = env.LookupEnvDurationOr(logging.InitLoggerInContext(), "CACHE_GC_PERIOD", 0)
-
-	// semaphoreNotifyDelay is a slight delay when notifying/enqueueing workflows to the workqueue
-	// that are waiting on a semaphore. This value is passed to AddAfter(). We delay adding the next
-	// workflow because if we add immediately with AddRateLimited(), the next workflow will likely
-	// be reconciled at a point in time before we have finished the current workflow reconciliation
-	// as well as incrementing the semaphore counter availability, and so the next workflow will
-	// believe it cannot run. By delaying for 1s, we would have finished the semaphore counter
-	// updates, and the next workflow will see the updated availability.
-	semaphoreNotifyDelay = env.LookupEnvDurationOr(logging.InitLoggerInContext(), "SEMAPHORE_NOTIFY_DELAY", time.Second)
-)
-
-func init() {
-	if cacheGCPeriod != 0 {
-		logging.InitLogger().WithField("cacheGCPeriod", cacheGCPeriod).Info(context.Background(), "GC for memoization caches will be performed every")
-	}
-}
-
 // NewWorkflowController instantiates a new WorkflowController
 func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, executorLogFormat, configMap string, executorPlugins bool, workflowLevelExecutorPlugins bool) (*WorkflowController, error) {
 	dynamicInterface, err := dynamic.NewForConfig(restConfig)
@@ -240,12 +236,21 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		progressPatchTickDuration:  env.LookupEnvDurationOr(ctx, common.EnvVarProgressPatchTickDuration, 1*time.Minute),
 		progressFileTickDuration:   env.LookupEnvDurationOr(ctx, common.EnvVarProgressFileTickDuration, 3*time.Second),
 		indexWorkflowSemaphoreKeys: os.Getenv("INDEX_WORKFLOW_SEMAPHORE_KEYS") != "false",
+		cacheGCPeriod:              env.LookupEnvDurationOr(ctx, "CACHE_GC_PERIOD", 0),
+		semaphoreNotifyDelay:       env.LookupEnvDurationOr(ctx, "SEMAPHORE_NOTIFY_DELAY", time.Second),
+		gcAfterNotHitDuration:      env.LookupEnvDurationOr(ctx, "CACHE_GC_AFTER_NOT_HIT_DURATION", 30*time.Second),
+		healthzAge:                 env.LookupEnvDurationOr(ctx, "HEALTHZ_AGE", 5*time.Minute),
 		lastWrittenVersions: lastWrittenVersions{
 			versions: make(map[types.UID]lastWrittenVersion),
 			mutex:    gosync.RWMutex{},
 		},
 	}
-	logging.RequireLoggerFromContext(ctx).WithField("indexWorkflowSemaphoreKeys", wfc.indexWorkflowSemaphoreKeys).Info(ctx, "index config")
+	logger := logging.RequireLoggerFromContext(ctx)
+	logger.WithField("indexWorkflowSemaphoreKeys", wfc.indexWorkflowSemaphoreKeys).Info(ctx, "index config")
+	if wfc.cacheGCPeriod != 0 {
+		logger.WithField("cacheGCPeriod", wfc.cacheGCPeriod).Info(ctx, "GC for memoization caches will be performed every")
+	}
+	logger.WithField("gcAfterNotHitDuration", wfc.gcAfterNotHitDuration).Info(ctx, "Memoization caches will be garbage-collected if they have not been hit after")
 
 	if executorPlugins {
 		wfc.executorPlugins = map[string]map[string]*spec.Plugin{}
@@ -464,8 +469,8 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	for range wfArchiveWorkers {
 		go wait.UntilWithContext(archiveCtx, wfc.runArchiveWorker, time.Second)
 	}
-	if cacheGCPeriod != 0 {
-		go wait.JitterUntilWithContext(ctx, wfc.syncAllCacheForGC, cacheGCPeriod, 0.0, true)
+	if wfc.cacheGCPeriod != 0 {
+		go wait.JitterUntilWithContext(ctx, wfc.syncAllCacheForGC, wfc.cacheGCPeriod, 0.0, true)
 	}
 	<-ctx.Done()
 }
@@ -500,7 +505,7 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 	}
 
 	nextWorkflow := func(key string) {
-		wfc.wfQueue.AddAfter(key, semaphoreNotifyDelay)
+		wfc.wfQueue.AddAfter(key, wfc.semaphoreNotifyDelay)
 	}
 
 	workflowExists := func(key string) bool {

@@ -315,6 +315,10 @@ func newController(ctx context.Context, options ...any) (context.CancelFunc, *Wo
 		progressFileTickDuration:   envutil.LookupEnvDurationOr(ctx, common.EnvVarProgressFileTickDuration, 3*time.Second),
 		maxStackDepth:              maxAllowedStackDepth,
 		indexWorkflowSemaphoreKeys: true,
+		cacheGCPeriod:              0,
+		semaphoreNotifyDelay:       time.Second,
+		gcAfterNotHitDuration:      30 * time.Second,
+		healthzAge:                 5 * time.Minute,
 		lastWrittenVersions: lastWrittenVersions{
 			versions: make(map[types.UID]lastWrittenVersion),
 		},
