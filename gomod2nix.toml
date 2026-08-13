@@ -737,8 +737,8 @@ schema = 3
     version = "v1.3.2-0.20230802210424-5b0b94c5c0d3"
     hash = "sha256-UcLU83CPMbSoKI8RLvLJ7nvGaE2xRSL1RjoHCVkMzUM="
   [mod."github.com/sethvargo/go-limiter"]
-    version = "v1.1.0"
-    hash = "sha256-QJ+GrKb/ZQxkT9AgCZXCFmQKypMTF3cnXj6quL1JCSQ="
+    version = "v1.2.0"
+    hash = "sha256-/km0GECCqwhXRCJRzbQGLzeJai6Mk9+92U7HHSccyY0="
   [mod."github.com/shirou/gopsutil/v4"]
     version = "v4.26.6"
     hash = "sha256-kIvsWsYifL7Lyd1SsvuirHPET0YMYO9RL2fk3e5K0to="
