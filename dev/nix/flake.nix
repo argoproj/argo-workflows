@@ -2,7 +2,7 @@
 
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     flake-parts = { url = "github:hercules-ci/flake-parts"; inputs.nixpkgs-lib.follows = "nixpkgs"; };
     devenv = {
       url = "github:cachix/devenv/v1.6.1";
@@ -186,8 +186,8 @@
             overlays = [
               inputs.rust-overlay.overlays.default
               (self: super: {
-                go = super.go_1_24;
-                buildGoModule = super.buildGo124Module;
+                go = super.go_1_25;
+                buildGoModule = super.buildGo125Module;
               })
             ];
           };
