@@ -15,7 +15,6 @@ type slogLogger struct {
 	level     Level
 	hooks     map[Level][]Hook
 	withPanic bool
-	withFatal bool
 }
 
 func fieldsToAttrs(fields Fields) []slog.Attr {
@@ -88,7 +87,6 @@ func (s *slogLogger) WithFields(fields Fields) Logger {
 		logger:    s.logger,
 		level:     s.level,
 		hooks:     s.hooks,
-		withFatal: s.withFatal,
 		withPanic: s.withPanic,
 	}
 }
@@ -105,7 +103,6 @@ func (s *slogLogger) WithField(name string, value any) Logger {
 		logger:    s.logger,
 		level:     s.level,
 		hooks:     s.hooks,
-		withFatal: s.withFatal,
 		withPanic: s.withPanic,
 	}
 }
@@ -118,19 +115,6 @@ func (s *slogLogger) WithPanic() Logger {
 		level:     s.level,
 		hooks:     s.hooks,
 		withPanic: true,
-		withFatal: s.withFatal,
-	}
-}
-
-// Only works with Error()
-func (s *slogLogger) WithFatal() Logger {
-	return &slogLogger{
-		fields:    s.fields,
-		logger:    s.logger,
-		level:     s.level,
-		hooks:     s.hooks,
-		withFatal: true,
-		withPanic: s.withPanic,
 	}
 }
 
@@ -161,14 +145,7 @@ func (s *slogLogger) executeHooks(ctx context.Context, level Level, msg string) 
 func (s *slogLogger) commonLog(ctx context.Context, level Level, msg string) {
 	s.executeHooks(ctx, level, msg)
 	s.logger.LogAttrs(ctx, convertLevel(level), msg, fieldsToAttrs(s.fields)...)
-	switch {
-	case s.withFatal:
-		exitFunc := GetExitFunc()
-		if exitFunc == nil {
-			os.Exit(1)
-		}
-		exitFunc(1)
-	case s.withPanic:
+	if s.withPanic {
 		panic(msg)
 	}
 }

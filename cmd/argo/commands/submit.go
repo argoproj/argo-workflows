@@ -107,13 +107,13 @@ func NewSubmitCommand() *cobra.Command {
 	// Only complete files with appropriate extension.
 	ctx, _, err := cmdutil.ContextWithLogger(command, string(logging.Info), string(logging.Text))
 	if err != nil {
-		logging.InitLogger().WithError(err).WithFatal().Error(ctx, "Failed to create submit logger")
+		logging.InitLogger().WithError(err).Error(ctx, "Failed to create submit logger")
 		os.Exit(1)
 	}
 	logger := logging.RequireLoggerFromContext(ctx)
 	err = command.Flags().SetAnnotation("parameter-file", cobra.BashCompFilenameExt, []string{"json", "yaml", "yml"})
 	if err != nil {
-		logger.WithError(err).WithFatal().Error(ctx, "Failed to set annotation")
+		logger.WithError(err).Error(ctx, "Failed to set annotation")
 		os.Exit(1)
 	}
 	return command
@@ -275,7 +275,7 @@ func unmarshalWorkflows(ctx context.Context, wfBytes []byte, strict bool) []wfv1
 	if err == nil {
 		return yamlWfs
 	}
-	logging.RequireLoggerFromContext(ctx).WithError(err).WithFatal().Error(ctx, "Failed to parse workflow")
+	logging.RequireLoggerFromContext(ctx).WithError(err).Error(ctx, "Failed to parse workflow")
 	os.Exit(1)
 	return nil
 }

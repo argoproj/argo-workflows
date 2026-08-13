@@ -179,6 +179,7 @@ func isTransientSqbErr(err error) bool {
 func CheckError(ctx context.Context, err error) {
 	if err != nil {
 		logger := logging.RequireLoggerFromContext(ctx)
-		logger.WithError(err).WithFatal().Error(ctx, "An error occurred during execution")
+		logger.WithError(err).Error(ctx, "An error occurred during execution")
+		os.Exit(1)
 	}
 }

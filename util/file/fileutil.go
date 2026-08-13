@@ -239,7 +239,7 @@ func WalkManifests(ctx context.Context, root string, fn func(path string, data [
 			}
 			defer func() {
 				if closeErr := f.Close(); closeErr != nil {
-					logging.RequireLoggerFromContext(ctx).WithError(closeErr).WithField("path", path).WithFatal().Error(ctx, "Error closing file")
+					logging.RequireLoggerFromContext(ctx).WithError(closeErr).WithField("path", path).Error(ctx, "Error closing file")
 				}
 			}()
 			r = f

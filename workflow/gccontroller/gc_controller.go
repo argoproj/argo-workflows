@@ -75,7 +75,8 @@ func NewController(ctx context.Context, wfClientset wfclientset.Interface, wfInf
 		},
 	})
 	if err != nil {
-		log.WithError(err).WithFatal().Error(ctx, "Failed to add queue event handler")
+		log.WithError(err).Error(ctx, "Failed to add queue event handler")
+		os.Exit(1)
 	}
 
 	_, err = wfInformer.AddEventHandler(cache.FilteringResourceEventHandler{
@@ -93,7 +94,8 @@ func NewController(ctx context.Context, wfClientset wfclientset.Interface, wfInf
 		},
 	})
 	if err != nil {
-		log.WithError(err).WithFatal().Error(ctx, "Failed to add retention event handler")
+		log.WithError(err).Error(ctx, "Failed to add retention event handler")
+		os.Exit(1)
 	}
 	return controller
 }

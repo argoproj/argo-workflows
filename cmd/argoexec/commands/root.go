@@ -39,7 +39,7 @@ func NewRootCommand() *cobra.Command {
 			initConfig()
 			ctx, logger, err := cmdutil.ContextWithLogger(cmd, logLevel, logFormat)
 			if err != nil {
-				logging.InitLogger().WithError(err).WithFatal().Error(cmd.Context(), "Failed to create argoexec pre-run logger")
+				logging.InitLogger().WithError(err).Error(cmd.Context(), "Failed to create argoexec pre-run logger")
 				os.Exit(1)
 			}
 
@@ -76,7 +76,7 @@ func NewRootCommand() *cobra.Command {
 
 	ctx, logger, err := cmdutil.ContextWithLogger(&command, logLevel, logFormat)
 	if err != nil {
-		logging.InitLogger().WithError(err).WithFatal().Error(command.Context(), "Failed to create argoexec logger")
+		logging.InitLogger().WithError(err).Error(command.Context(), "Failed to create argoexec logger")
 		os.Exit(1)
 	}
 

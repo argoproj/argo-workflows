@@ -231,10 +231,11 @@ func (we *WorkflowExecutor) HandleError(ctx context.Context) func() {
 	return func() {
 		if r := recover(); r != nil {
 			util.WriteTerminateMessage(fmt.Sprintf("%v", r))
-			logging.RequireLoggerFromContext(ctx).WithFatal().WithFields(logging.Fields{
+			logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{
 				"error": r,
 				"stack": debug.Stack(),
 			}).Error(ctx, "executor panic")
+			os.Exit(1)
 		} else if len(we.errors) > 0 {
 			util.WriteTerminateMessage(we.errors[0].Error())
 		}
@@ -1100,7 +1101,7 @@ func isTarball(ctx context.Context, filePath string) (bool, error) {
 	}
 	defer func() {
 		if closeErr := f.Close(); closeErr != nil {
-			logger.WithFatal().WithField("path", filePath).WithError(closeErr).Error(ctx, "Error closing file")
+			logger.WithField("path", filePath).WithError(closeErr).Error(ctx, "Error closing file")
 		}
 	}()
 	gzr, err := gzip.NewReader(f)

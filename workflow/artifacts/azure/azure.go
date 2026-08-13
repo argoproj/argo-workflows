@@ -183,7 +183,7 @@ func DownloadFile(ctx context.Context, containerClient *container.Client, blobNa
 	defer func() {
 		if closeErr := outFile.Close(); closeErr != nil {
 			logger := logging.RequireLoggerFromContext(ctx)
-			logger.WithFatal().WithError(closeErr).Warn(ctx, "unable to close file")
+			logger.WithError(closeErr).Warn(ctx, "unable to close file")
 		}
 	}()
 
