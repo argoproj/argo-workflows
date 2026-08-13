@@ -319,6 +319,7 @@ func newController(ctx context.Context, options ...any) (context.CancelFunc, *Wo
 		semaphoreNotifyDelay:       time.Second,
 		gcAfterNotHitDuration:      30 * time.Second,
 		healthzAge:                 5 * time.Minute,
+		maxOperationTime:           30 * time.Second,
 		lastWrittenVersions: lastWrittenVersions{
 			versions: make(map[types.UID]lastWrittenVersion),
 		},

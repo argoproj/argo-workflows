@@ -145,6 +145,8 @@ type WorkflowController struct {
 	gcAfterNotHitDuration time.Duration
 	// healthzAge is the max age a workflow may go unreconciled before /healthz reports failure (HEALTHZ_AGE)
 	healthzAge time.Duration
+	// maxOperationTime is the maximum time a workflow operation is allowed to run for before requeuing the workflow onto the workqueue (MAX_OPERATION_TIME)
+	maxOperationTime time.Duration
 
 	// datastructures to support the processing of workflows and workflow pods
 	wfInformer      cache.SharedIndexInformer
@@ -240,6 +242,7 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		semaphoreNotifyDelay:       env.LookupEnvDurationOr(ctx, "SEMAPHORE_NOTIFY_DELAY", time.Second),
 		gcAfterNotHitDuration:      env.LookupEnvDurationOr(ctx, "CACHE_GC_AFTER_NOT_HIT_DURATION", 30*time.Second),
 		healthzAge:                 env.LookupEnvDurationOr(ctx, "HEALTHZ_AGE", 5*time.Minute),
+		maxOperationTime:           env.LookupEnvDurationOr(ctx, "MAX_OPERATION_TIME", 30*time.Second),
 		lastWrittenVersions: lastWrittenVersions{
 			versions: make(map[types.UID]lastWrittenVersion),
 			mutex:    gosync.RWMutex{},
