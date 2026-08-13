@@ -257,8 +257,8 @@ schema = 3
     version = "v0.6.0"
     hash = "sha256-gr4tL+qz4jKyAtl8LINcxMSanztdt+pybj1T+2ulQv4="
   [mod."github.com/docker/cli"]
-    version = "v29.5.3+incompatible"
-    hash = "sha256-UcKvGHHpa5BZ3cpG79NI2Rwu8mmCV8DQ9JHqScZWv30="
+    version = "v29.6.2+incompatible"
+    hash = "sha256-xEZJxyYudJL7Js7rt2DqzLXAxJIGX+CbmhEFe8PBgBo="
   [mod."github.com/docker/docker-credential-helpers"]
     version = "v0.9.5"
     hash = "sha256-7fm66H8bvqjiEssTy/oiAMmQd7T15aVS+EANrw+4H4U="
@@ -431,8 +431,8 @@ schema = 3
     version = "v0.21.7"
     hash = "sha256-LyHukzZEVrcQSjprkakCi9Wg0DzFlP5QP9Cl7N8iydU="
   [mod."github.com/google/go-containerregistry/pkg/authn/k8schain"]
-    version = "v0.0.0-20260416183851-f80cb9a75083"
-    hash = "sha256-B3OgLdfW6kXmcSYqdniUgLrSz8v5VgV8ccybyAIHs2c="
+    version = "v0.0.0-20260811190025-d3bca10fb174"
+    hash = "sha256-Iswk7hdRZEszWj0hzuRn4J/aNYSoz8ZD6ZXUdKrQoC8="
   [mod."github.com/google/go-containerregistry/pkg/authn/kubernetes"]
     version = "v0.0.0-20250521000321-4eb8c4d84ef0"
     hash = "sha256-VbAngxn71qJIazVNJJ6nNIjRXQpRYMnw4ObKh1FtT70="
@@ -956,8 +956,8 @@ schema = 3
     version = "v1.82.1"
     hash = "sha256-5Q85pZWiKulJSGRAjYcVrlBe7y4tfa9gsjCqYiBhLUU="
   [mod."google.golang.org/protobuf"]
-    version = "v1.36.11"
-    hash = "sha256-7W+6jntfI/awWL3JP6yQedxqP5S9o3XvPgJ2XxxsIeE="
+    version = "v1.36.12-0.20260120151049-f2248ac996af"
+    hash = "sha256-G6dblBo/FH3sIvIrHuco6fpaRIWBdV2xtorLFU49r5I="
   [mod."gopkg.in/evanphx/json-patch.v4"]
     version = "v4.13.0"
     hash = "sha256-1iyZpBaeBLmNkJ3T4A9fAEXEYB9nk9V02ug4pwl5dy0="
@@ -974,14 +974,14 @@ schema = 3
     version = "v3.0.1"
     hash = "sha256-FqL9TKYJ0XkNwJFnq9j0VvJ5ZUU1RvH/52h/f5bkYAU="
   [mod."k8s.io/api"]
-    version = "v0.35.4"
-    hash = "sha256-QiykPDGY9yD/uwEXd3P56VHgImHudLiE9Sag4+GY8f4="
+    version = "v0.36.3"
+    hash = "sha256-h3Uog5d1UsO4e+Yu5rtHpy9IEgCw7G8kmBOMcssVSM8="
   [mod."k8s.io/apiextensions-apiserver"]
     version = "v0.35.4"
     hash = "sha256-F0jPg+DzBHE1FyqGDGgmHRfS7hIx9JWb0iypA0PPVnI="
   [mod."k8s.io/apimachinery"]
-    version = "v0.35.4"
-    hash = "sha256-2THXGj+IHegAUB6l+4FVW1apliSNgrfgz6M4saX66yY="
+    version = "v0.36.3"
+    hash = "sha256-My1lGvhUG7HVQ4UR12FVVD/Nrn0i34326CojEeEIN0U="
   [mod."k8s.io/apiserver"]
     version = "v0.35.4"
     hash = "sha256-WzXOOT5A+2861nr/jZAQ2/PiTFHhy97Q+V/lROSCDeU="
@@ -989,8 +989,8 @@ schema = 3
     version = "v0.35.4"
     hash = "sha256-+FB9XGPssOXSTVPf65lbQCYEkI3LIQJL8Eg/9ar9tcg="
   [mod."k8s.io/client-go"]
-    version = "v0.35.4"
-    hash = "sha256-gnzJG0M89eu2LpgAXiFQak91eX/1byIfoOI8nk6huNo="
+    version = "v0.36.3"
+    hash = "sha256-GOdjoHmmgJaQzorUe+X0fXG+R5ynhdeZ74lJAmYCSzY="
   [mod."k8s.io/component-base"]
     version = "v0.35.4"
     hash = "sha256-EfWkrAxyQZApPUGS+R2gptCnLgDCerRk23hWbhaHndA="
