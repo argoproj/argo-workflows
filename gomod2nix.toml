@@ -698,8 +698,8 @@ schema = 3
     version = "v0.0.0-20240221224432-82ca36839d55"
     hash = "sha256-ujzuJ1ttQgjHQJEij4O/2+I8DZaUVZQCQgA4ysfqulI="
   [mod."github.com/prometheus/client_golang"]
-    version = "v1.23.2"
-    hash = "sha256-3GD4fBFa1tJu8MS4TNP6r2re2eViUE+kWUaieIOQXCg="
+    version = "v1.24.1"
+    hash = "sha256-HAOFVYyPiU7hVS1XXMMjkbGgTT7/UN0zVHXYOnjr7is="
   [mod."github.com/prometheus/client_model"]
     version = "v0.6.2"
     hash = "sha256-q6Fh6v8iNJN9ypD47LjWmx66YITa3FyRjZMRsuRTFeQ="
@@ -710,8 +710,8 @@ schema = 3
     version = "v1.0.0"
     hash = "sha256-94Aw8ltEH2XFotIEHzBghJiOt3KJiwW9cX8JVaNRTNk="
   [mod."github.com/prometheus/procfs"]
-    version = "v0.21.0"
-    hash = "sha256-q6ZRm1gKRUcksCPQld0a11BGEAwhoAlw+rbj8c2eJpc="
+    version = "v0.21.1"
+    hash = "sha256-5SpWprdX29oVntHJyadiICOk9UAP+hu+xJM51/A8Ig4="
   [mod."github.com/remyoudompheng/bigfft"]
     version = "v0.0.0-20230129092748-24d4a6f8daec"
     hash = "sha256-vYmpyCE37eBYP/navhaLV4oX4/nu0Z/StAocLIFqrmM="
