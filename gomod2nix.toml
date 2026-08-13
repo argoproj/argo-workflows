@@ -881,8 +881,8 @@ schema = 3
     version = "v1.45.0"
     hash = "sha256-+q9AqsCDxlrXTmELo5IJwR5yNiHzCk/dk7mtxxmqCf8="
   [mod."go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"]
-    version = "v1.44.0"
-    hash = "sha256-hQeEeRqWCiMr2m1GHWlIOSbA6YTHgW6EW+M3e26lDn0="
+    version = "v1.45.0"
+    hash = "sha256-fqrhkxeR2Go6sA9W9xKRYpXQfHBZ78/7MVWnyuRpWSU="
   [mod."go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"]
     version = "v1.45.0"
     hash = "sha256-GT6dy7rdPY6WK3aByofcuWkMHuT5IhULkiisuzStqag="
