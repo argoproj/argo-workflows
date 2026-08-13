@@ -134,7 +134,7 @@ func TestDBLockRetryExhaustion(t *testing.T) {
 
 				require.NoError(t, err, "a retryable conflict that exhausts its retries must not surface as an error")
 				assert.False(t, acquired)
-				assert.False(t, updated)
+				assert.True(t, updated, "the restored waiting status must be reported so the caller persists it")
 				assert.Equal(t, dbRetryRequeueMsg, msg)
 				assert.Equal(t, "default/Database/sem-b", failedLockName, "the lock whose acquisition failed must be attributed")
 
@@ -149,6 +149,17 @@ func TestDBLockRetryExhaustion(t *testing.T) {
 				require.NotNil(t, wf.Status.Synchronization.Semaphore)
 				assert.Empty(t, wf.Status.Synchronization.Semaphore.Holding,
 					"aborted transactions must not leave in-memory holds the database rolled back")
+
+				// prepAcquire queued this workflow against both locks outside the
+				// transaction, so both queue rows outlive the abort. The waiting
+				// entries are what ReleaseAll walks to remove them, so rolling the
+				// status back must not take them with it.
+				waiting := []string{}
+				for _, w := range wf.Status.Synchronization.Semaphore.Waiting {
+					waiting = append(waiting, w.Semaphore)
+				}
+				assert.ElementsMatch(t, []string{"default/Database/sem-a", "default/Database/sem-b"}, waiting,
+					"every lock left with a surviving queue row must be recorded as waiting")
 
 				mu.Lock()
 				defer mu.Unlock()

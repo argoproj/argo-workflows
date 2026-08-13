@@ -548,13 +548,21 @@ func (sm *Manager) TryAcquire(ctx context.Context, wf *wfv1.Workflow, nodeName s
 					// need a name to mark what the node is waiting on.
 					failedLockName = lockKeys[0]
 				}
+				// prepAcquire queued this holder against every lock outside the
+				// aborted transaction, so those queue rows survive. The in-memory
+				// rollback above discarded the waiting entries that ReleaseAll
+				// walks to find them, so re-record them: otherwise a workflow
+				// released before a later attempt succeeds - the shutdown path
+				// does exactly that on this return - leaves its rows queued with
+				// nothing left to remove them.
+				updated = sm.recordWaiting(ctx, wf, holderKey, syncItems, lockKeys)
 				sm.log.WithFields(logging.Fields{
 					"holderKey": holderKey,
 					"attempts":  attempt,
 					"error":     err,
 				}).Info(ctx, "TryAcquire - retries exhausted, requeuing")
 				sm.nextWorkflow(workflowKey(holderKey))
-				return false, false, dbRetryRequeueMsg, failedLockName, nil
+				return false, updated, dbRetryRequeueMsg, failedLockName, nil
 			}
 			return false, false, "", failedLockName, err
 		}
@@ -710,6 +718,28 @@ func (sm *Manager) tryAcquireImpl(ctx context.Context, wf *wfv1.Workflow, tx *sq
 		}
 		return false, updated, msg, failedLockName, nil, nil
 	}
+}
+
+// recordWaiting marks wf as waiting on every lock it has been queued against,
+// mirroring what tryAcquireImpl does when a lock is simply unavailable. It
+// reports whether the workflow status changed, so callers can have it persisted.
+func (sm *Manager) recordWaiting(ctx context.Context, wf *wfv1.Workflow, holderKey string, syncItems []*syncItem, lockKeys []string) bool {
+	updated := false
+	for i, lockKey := range lockKeys {
+		currentHolders, err := sm.getCurrentLockHolders(ctx, lockKey)
+		if err != nil {
+			// Best effort: the database has just aborted a transaction under us,
+			// so a follow-up query failing is expected. The queue row is still
+			// re-driven by the notifier poll.
+			sm.log.WithField("lockKey", lockKey).WithError(err).Warn(ctx, "Failed to get current lock holders while recording waiting status")
+			continue
+		}
+		ensureInit(wf, syncItems[i].getType())
+		if wf.Status.Synchronization.GetStatus(syncItems[i].getType()).LockWaiting(holderKey, lockKey, currentHolders) {
+			updated = true
+		}
+	}
+	return updated
 }
 
 func (sm *Manager) recordAcquisitions(ctx context.Context, wf *wfv1.Workflow, newly []*acquiredLock) {
