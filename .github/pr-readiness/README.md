@@ -1,6 +1,6 @@
 # PR Readiness Helper
 
-A standalone bot ([`pr-readiness.yaml`](../workflows/pr-readiness.yaml)) that lowers maintainer burden: when CI finishes on a PR, it keeps **one sticky comment** telling the contributor exactly how to fix contributor-fixable problems, moves not-ready PRs to **draft**, and gets out of the way once everything is green.
+A standalone bot ([`pr-readiness.yaml`](../workflows/pr-readiness.yaml)) that lowers maintainer burden: when CI finishes on a PR, it keeps **one sticky comment** telling the contributor exactly how to fix contributor-fixable problems, moves not-ready PRs to **draft**, and hands them back — ready for review — once everything is green.
 
 ## What it covers
 
@@ -25,10 +25,11 @@ Tune guidance, add or remove signals in [`checks.config.json`](checks.config.jso
 - Fires on `workflow_run: completed` of CI / Docs / PR Title Check / PR Feature Check. Title and feature checks re-run on PR `edited`, so title/description edits re-evaluate too. `/retest` re-runs CI and therefore re-evaluates.
 - **Never posts** on a PR that never had a covered issue.
 - While issues exist: one comment listing only the failing items, each with a fix command and a log link. Pending checks are not mentioned.
-- Blocking issues (any covered check failure, or a description that doesn't follow the template) also **convert the PR to draft**. The bot **never** marks ready-for-review — that's the contributor's call — and it drafts at most once per head SHA, so a human re-marking it ready is respected until new commits arrive.
-- Draft conversion needs a **GitHub App token**: the default Actions token cannot toggle draft state (`Resource not accessible by integration` — verified live). Provision an app with **Pull requests: Read & write** only (do not reuse the cherry-pick app, which can push code), install it on the repo, and set the `PR_READINESS_APP_ID` / `PR_READINESS_APP_PRIVATE_KEY` secrets — the same `actions/create-github-app-token` pattern as `cherry-pick-single.yml`. Without the secrets the bot comments but does not draft.
+- Blocking issues (any covered check failure, or a description that doesn't follow the template) also **convert the PR to draft**, at most once per head SHA — so a human re-marking it ready is respected until new commits arrive. For as long as that draft is in force the comment carries a note saying the bot drafted the PR and will mark it ready again itself; the note disappears as soon as it doesn't apply.
+- Once everything is green again the bot **marks the PR ready for review**, because a draft PR is invisible to reviewers and a contributor who fixed everything should not have to know that. It only ever lifts a draft **it imposed itself**: its claim on the PR's draft state starts when it drafts and ends the moment the PR is ready for review again, however that happened — so a draft the contributor sets is never touched. If lifting fails, the all-clear comment asks them to mark it ready instead.
+- Toggling draft state needs a **GitHub App token**: the default Actions token cannot do it (`Resource not accessible by integration` — verified live). Provision an app with **Pull requests: Read & write** only (do not reuse the cherry-pick app, which can push code), install it on the repo, and set the `PR_READINESS_APP_ID` / `PR_READINESS_APP_PRIVATE_KEY` secrets — the same `actions/create-github-app-token` pattern as `cherry-pick-single.yml`. Without the secrets the bot comments but does not draft.
 - When issues are resolved but other covered checks are still running: the comment shows a short "waiting" state.
-- When everything is terminal and green: the comment is edited to a short ✅ all-clear.
+- When everything is terminal and green: the comment is edited to a short ✅ all-clear, and any draft the bot imposed is lifted.
 - Skipped: PRs by anyone in [`OWNERS`](../../OWNERS) (owners/approvers/reviewers) and by bots.
 
 ## PR description check

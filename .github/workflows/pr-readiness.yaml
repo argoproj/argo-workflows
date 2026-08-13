@@ -4,7 +4,8 @@ name: PR Readiness Helper
 # single sticky comment guiding the contributor through contributor-fixable
 # problems (lint, codegen, docs, title, DCO, feature files, and an unfilled
 # PR description checked against the template). Blocking problems also move the
-# PR to draft (it never undrafts).
+# PR to draft; the bot lifts that draft again once everything is green, and
+# never touches a draft the contributor set themselves.
 # See .github/pr-readiness/README.md for design, security model and tuning.
 #
 # Security: this runs with write permissions from the default branch's
@@ -27,7 +28,7 @@ concurrency:
 
 env:
   # Dry-run: set to "true" to render to the job summary instead of
-  # commenting/drafting.
+  # commenting or changing draft state.
   DRY_RUN: "false"
 
 jobs:
@@ -40,7 +41,7 @@ jobs:
       # "is the draft app configured?" as an env var here.
       HAS_DRAFT_APP: ${{ secrets.PR_READINESS_APP_ID != '' }}
     permissions:
-      pull-requests: write # sticky comment + draft conversion
+      pull-requests: write # sticky comment + draft state
       contents: read # checkout of the default branch (scripts, OWNERS, template)
       actions: read # job/step conclusions for the feature check
     steps:
@@ -48,10 +49,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # The default Actions token cannot toggle a PR's draft state
-      # ("Resource not accessible by integration"), so draft conversion
-      # needs a GitHub App token — same pattern as the cherry-pick bot.
-      # Without these secrets the bot still comments, it just cannot draft.
-      - name: Mint draft-conversion token
+      # ("Resource not accessible by integration"), so drafting — and
+      # lifting that draft again — needs a GitHub App token, same pattern as
+      # the cherry-pick bot. Without these secrets the bot still comments,
+      # it just cannot draft.
+      - name: Mint draft-toggle token
         id: draft-token
         if: env.DRY_RUN != 'true' && env.HAS_DRAFT_APP == 'true'
         continue-on-error: true # drafting is best-effort; never block the comment

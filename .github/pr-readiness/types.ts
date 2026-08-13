@@ -58,7 +58,12 @@ export interface TemplateVerdict {
 export interface State {
   v: number;
   failing: string[];
+  // Head SHA at which the bot last converted the PR to draft.
   draftedSha?: string | null;
+  // The `draftedSha` of the draft episode the bot has already lifted: once
+  // these two are equal the bot has handed the PR back and stops touching
+  // its draft state until it drafts again.
+  undraftedSha?: string | null;
 }
 
 export interface PrRef {
@@ -72,6 +77,9 @@ export interface Decision {
   variant: CommentVariant | null;
   shouldComment: boolean;
   shouldDraft: boolean;
+  shouldUndraft: boolean;
+  // The bot drafted this PR and has not handed it back yet.
+  draftEpisodeOpen: boolean;
   failing: string[];
   templateBlocking: boolean;
 }

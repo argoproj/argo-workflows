@@ -70,7 +70,7 @@ export function diagnostics(checkRuns: CheckRun[], config: Config): { unmapped: 
 interface DecideArgs {
   signals: ReadonlyArray<{ id: string; state: string }>;
   templateVerdict: { compliant: boolean } | null;
-  existingState: { draftedSha?: string | null } | null;
+  existingState: { draftedSha?: string | null; undraftedSha?: string | null } | null;
   hasExistingComment: boolean;
   pr: { draft: boolean; headSha: string };
 }
@@ -95,7 +95,16 @@ export function decide({ signals, templateVerdict, existingState, hasExistingCom
   const alreadyDraftedThisSha = Boolean(existingState && existingState.draftedSha === pr.headSha);
   const shouldDraft = blocking && !pr.draft && !alreadyDraftedThisSha;
 
-  return { variant, shouldComment, shouldDraft, failing, templateBlocking };
+  // The bot cleans up after itself: a draft it imposed is lifted once
+  // everything it drafted for is green, because nobody reviews a draft. An
+  // episode stays open from the draft until we lift it, so a draft the
+  // contributor set themselves is never touched, and we never lift twice.
+  const draftEpisodeOpen = Boolean(
+    existingState && existingState.draftedSha && existingState.undraftedSha !== existingState.draftedSha
+  );
+  const shouldUndraft = variant === 'allclear' && pr.draft && draftEpisodeOpen;
+
+  return { variant, shouldComment, shouldDraft, shouldUndraft, draftEpisodeOpen, failing, templateBlocking };
 }
 
 // OWNERS is a small YAML subset: three keys, each a list of logins.

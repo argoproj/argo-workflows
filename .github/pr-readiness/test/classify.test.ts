@@ -161,6 +161,90 @@ test('decide: drafts at most once per head SHA (human undraft is respected)', ()
   assert.equal(d2.shouldDraft, true);
 });
 
+// --- decide: lifting the bot's own draft ---
+
+const allGreen = { signals: [S('lint', 'success')], templateVerdict: { compliant: true }, hasExistingComment: true };
+
+test('decide: lifts its own draft once everything is green', () => {
+  const d = decide({
+    ...allGreen,
+    existingState: { draftedSha: 'sha1' },
+    pr: { draft: true, headSha: 'sha2' }, // fixed by a new push, so a new head
+  });
+  assert.equal(d.variant, 'allclear');
+  assert.equal(d.shouldUndraft, true);
+});
+
+test('decide: the episode stays open across later runs, so the comment keeps explaining the draft', () => {
+  const d = decide({
+    signals: [S('lint', 'failure')], // a later CI completion, still failing
+    templateVerdict: { compliant: true },
+    existingState: { draftedSha: 'sha1' },
+    hasExistingComment: true,
+    pr: { draft: true, headSha: 'sha1' },
+  });
+  assert.equal(d.draftEpisodeOpen, true);
+  assert.equal(d.shouldDraft, false); // already drafted, nothing to redo
+});
+
+test('decide: state written before undrafting existed counts as an open episode', () => {
+  // Comments already on open PRs have no undraftedSha, so those PRs — drafted
+  // by the bot and left stranded — are handed back on the first run after this.
+  const d = decide({ ...allGreen, existingState: { draftedSha: 'sha1' }, pr: { draft: true, headSha: 'sha2' } });
+  assert.equal(d.shouldUndraft, true);
+});
+
+test('decide: does not lift a draft it did not impose', () => {
+  const d = decide({ ...allGreen, existingState: { draftedSha: null }, pr: { draft: true, headSha: 'sha1' } });
+  assert.equal(d.shouldUndraft, false);
+});
+
+test('decide: lifts a given draft only once, leaving later human drafts alone', () => {
+  const d = decide({
+    ...allGreen,
+    existingState: { draftedSha: 'sha1', undraftedSha: 'sha1' }, // episode already closed
+    pr: { draft: true, headSha: 'sha2' },
+  });
+  assert.equal(d.shouldUndraft, false);
+  // ...until the bot drafts again, which opens a new episode
+  const d2 = decide({
+    ...allGreen,
+    existingState: { draftedSha: 'sha3', undraftedSha: 'sha1' },
+    pr: { draft: true, headSha: 'sha3' },
+  });
+  assert.equal(d2.shouldUndraft, true);
+});
+
+test('decide: waits for pending checks before lifting its draft', () => {
+  const d = decide({
+    signals: [S('lint', 'success'), S('docs', 'pending')],
+    templateVerdict: { compliant: true },
+    existingState: { draftedSha: 'sha1' },
+    hasExistingComment: true,
+    pr: { draft: true, headSha: 'sha2' },
+  });
+  assert.equal(d.variant, 'waiting');
+  assert.equal(d.shouldUndraft, false);
+});
+
+test('decide: never lifts a draft while blocking issues remain', () => {
+  const d = decide({
+    signals: [S('lint', 'failure')],
+    templateVerdict: { compliant: true },
+    existingState: { draftedSha: 'sha1' },
+    hasExistingComment: true,
+    pr: { draft: true, headSha: 'sha1' },
+  });
+  assert.equal(d.shouldUndraft, false);
+  assert.equal(d.shouldDraft, false); // already a draft
+});
+
+test('decide: green and not a draft is a no-op either way', () => {
+  const d = decide({ ...allGreen, existingState: { draftedSha: 'sha1' }, pr: { draft: false, headSha: 'sha2' } });
+  assert.equal(d.shouldUndraft, false);
+  assert.equal(d.shouldDraft, false);
+});
+
 test('decide: no failures and a compliant template never drafts', () => {
   const d = decide({
     signals: [S('lint', 'success')],

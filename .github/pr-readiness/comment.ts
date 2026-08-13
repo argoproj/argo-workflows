@@ -25,19 +25,39 @@ interface RenderArgs {
   variant: CommentVariant | null;
   failures: ReadonlyArray<FailureItem>;
   templateIssues: TemplateIssue[] | null;
-  drafted: boolean;
+  // The PR is a draft the bot imposed and has not lifted yet.
+  holdingDraft: boolean;
+  // The bot drafted this PR and could not lift the draft itself, so the
+  // all-clear must ask the contributor to do it rather than tell them to wait
+  // for a maintainer who cannot see a draft PR.
+  needsReadyForReview: boolean;
   state: State;
 }
 
-export function renderComment({ variant, failures, templateIssues, drafted, state }: RenderArgs): string {
+export function renderComment({ variant, failures, templateIssues, holdingDraft, needsReadyForReview, state }: RenderArgs): string {
   const head = [MARKER, stateLine(state), ''];
+
+  // Rendered on every pass while the bot holds the draft, not just the one
+  // that imposed it: the comment is edited in place, so whatever it says last
+  // is all the contributor sees. It must always explain why the PR is a draft
+  // and that they are not the ones who have to undo it.
+  const draftNote = holdingDraft
+    ? [
+        '',
+        '> [!NOTE]',
+        '> This PR was moved to **draft** by this helper. It will be marked',
+        '> **Ready for review** again automatically once everything here is green.',
+      ]
+    : [];
 
   if (variant === 'allclear') {
     return head
       .concat([
         '#### ✅ PR readiness: all clear',
         '',
-        'All contributor-fixable checks are passing. A maintainer will take it from here — thanks!',
+        needsReadyForReview
+          ? 'All contributor-fixable checks are passing. This PR is still a **draft** — mark it **Ready for review** so a maintainer picks it up.'
+          : 'All contributor-fixable checks are passing. A maintainer will take it from here — thanks!',
         FOOTER,
       ])
       .join('\n');
@@ -45,12 +65,9 @@ export function renderComment({ variant, failures, templateIssues, drafted, stat
 
   if (variant === 'waiting') {
     return head
-      .concat([
-        '#### ⏳ PR readiness',
-        '',
-        'The earlier issues are resolved — waiting for the remaining checks to finish…',
-        FOOTER,
-      ])
+      .concat(['#### ⏳ PR readiness', '', 'The earlier issues are resolved — waiting for the remaining checks to finish…'])
+      .concat(draftNote)
+      .concat([FOOTER])
       .join('\n');
   }
 
@@ -81,14 +98,7 @@ export function renderComment({ variant, failures, templateIssues, drafted, stat
     lines.push('', '_(A maintainer may waive this.)_', '</details>');
   }
 
-  if (drafted) {
-    lines.push(
-      '',
-      '> [!NOTE]',
-      '> This PR has been moved to **draft** while the items above are addressed. Mark it **Ready for review** once they are fixed.'
-    );
-  }
-
+  lines.push(...draftNote);
   lines.push(FOOTER);
   return lines.join('\n');
 }

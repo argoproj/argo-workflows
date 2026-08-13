@@ -58,6 +58,24 @@ function errMessage(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
 }
 
+// Toggling a PR's draft state is GraphQL-only, and the default Actions token
+// cannot do it ("Resource not accessible by integration"), so both directions
+// go through the app token minted by the workflow. Throws on any error.
+async function setDraftState(token: string, nodeId: string, draft: boolean): Promise<void> {
+  const mutation = draft
+    ? 'mutation($id: ID!) { convertPullRequestToDraft(input: {pullRequestId: $id}) { pullRequest { isDraft } } }'
+    : 'mutation($id: ID!) { markPullRequestReadyForReview(input: {pullRequestId: $id}) { pullRequest { isDraft } } }';
+  const res = await fetch('https://api.github.com/graphql', {
+    method: 'POST',
+    headers: { authorization: `bearer ${token}`, 'content-type': 'application/json' },
+    body: JSON.stringify({ query: mutation, variables: { id: nodeId } }),
+  });
+  const result = (await res.json()) as { errors?: Array<{ message: string }> };
+  if (!res.ok || result.errors) {
+    throw new Error(result.errors ? result.errors.map((e) => e.message).join('; ') : `HTTP ${res.status}`);
+  }
+}
+
 export async function run({ github, context, core }: { github: Octokit; context: RepoContext; core: Core }): Promise<void> {
   const { owner, repo } = context.repo;
   const headSha = context.payload.workflow_run.head_sha;
@@ -125,50 +143,56 @@ export async function run({ github, context, core }: { github: Octokit; context:
     pr: { draft: pr.draft, headSha },
   });
 
-  // Draft conversion: at most once per head SHA; undrafting is human-only.
-  // The default Actions token cannot toggle draft state ("Resource not
-  // accessible by integration"), so this requires the app token minted by
-  // the workflow. Best-effort: failure never blocks the comment.
+  // Draft conversion: at most once per head SHA, and lifted again once the
+  // PR is green — the bot only ever moves a draft it imposed itself, so a
+  // contributor's own draft is left alone. Both directions are best-effort:
+  // failure never blocks the comment, which then tells the contributor to
+  // mark the PR ready themselves.
+  const wanted = decision.shouldDraft ? 'draft' : decision.shouldUndraft ? 'undraft' : null;
   let draftedNow = false;
-  if (decision.shouldDraft && !dryRun) {
+  let undraftedNow = false;
+  if (wanted && !dryRun) {
     const token = process.env.DRAFT_TOKEN;
     if (!token) {
       core.warning(
-        `PR #${pr.number} should be drafted, but no draft token is available ` +
+        `PR #${pr.number} should be ${wanted}ed, but no draft token is available ` +
           '(PR_READINESS_APP_ID / PR_READINESS_APP_PRIVATE_KEY secrets not configured?)'
       );
     } else {
       try {
-        const res = await fetch('https://api.github.com/graphql', {
-          method: 'POST',
-          headers: { authorization: `bearer ${token}`, 'content-type': 'application/json' },
-          body: JSON.stringify({
-            query: 'mutation($id: ID!) { convertPullRequestToDraft(input: {pullRequestId: $id}) { pullRequest { isDraft } } }',
-            variables: { id: pr.node_id },
-          }),
-        });
-        const result = (await res.json()) as { errors?: Array<{ message: string }> };
-        if (!res.ok || result.errors) {
-          throw new Error(result.errors ? result.errors.map((e) => e.message).join('; ') : `HTTP ${res.status}`);
-        }
-        draftedNow = true;
+        await setDraftState(token, pr.node_id, wanted === 'draft');
+        draftedNow = wanted === 'draft';
+        undraftedNow = wanted === 'undraft';
       } catch (e) {
-        core.warning(`could not convert PR #${pr.number} to draft: ${errMessage(e)}`);
+        core.warning(`could not ${wanted} PR #${pr.number}: ${errMessage(e)}`);
       }
     }
   }
 
+  const priorDraftedSha = (existingState && existingState.draftedSha) || null;
+  // A draft episode runs from the bot drafting a PR until that PR is ready
+  // for review again, whether the bot lifted the draft or a human did: seeing
+  // the PR ready is proof the bot is no longer holding one. Only while an
+  // episode is open does the bot touch draft state, so closing it promptly is
+  // what stops the bot from later lifting a draft the contributor chose.
+  // (`draftedNow` excluded: pr.draft is the state we read *before* drafting.)
+  const episodeClosed = undraftedNow || (!draftedNow && !pr.draft);
   const state = {
     v: 1,
     failing: decision.failing,
-    draftedSha: draftedNow ? headSha : (existingState && existingState.draftedSha) || null,
+    draftedSha: draftedNow ? headSha : priorDraftedSha,
+    undraftedSha: episodeClosed ? priorDraftedSha : (existingState && existingState.undraftedSha) || null,
   };
 
   const commentBody = renderComment({
     variant: decision.variant,
     failures: signals.filter((s) => decision.failing.includes(s.id)),
     templateIssues: decision.templateBlocking ? templateVerdict.issues : null,
-    drafted: draftedNow,
+    // Holding the draft: either we just imposed it (pr.draft is the state we
+    // read before that), or an earlier run did and it is still in force.
+    holdingDraft: draftedNow || (pr.draft && decision.draftEpisodeOpen && !undraftedNow),
+    // We meant to hand the PR back and couldn't, so the contributor has to.
+    needsReadyForReview: decision.shouldUndraft && !undraftedNow && !dryRun,
     state,
   });
 
@@ -180,7 +204,9 @@ export async function run({ github, context, core }: { github: Octokit; context:
     `PR #${pr.number} by ${pr.user.login} head=${headSha} | signals: ` +
       signals.map((s) => `${s.id}=${s.state}`).join(' ') +
       ` | template=${templateVerdict.compliant ? 'ok' : 'issues'}` +
-      ` | comment=${decision.shouldComment} variant=${decision.variant || 'n/a'} draft=${decision.shouldDraft} draftedNow=${draftedNow}`
+      ` | comment=${decision.shouldComment} variant=${decision.variant || 'n/a'}` +
+      ` draft=${decision.shouldDraft} draftedNow=${draftedNow}` +
+      ` undraft=${decision.shouldUndraft} undraftedNow=${undraftedNow}`
   );
   if (decision.shouldComment) {
     core.startGroup('rendered comment');
@@ -192,7 +218,8 @@ export async function run({ github, context, core }: { github: Octokit; context:
     core.summary
       .addHeading('PR Readiness Helper — dry run', 3)
       .addRaw(`PR: #${pr.number} · head: \`${headSha}\` · would comment: **${decision.shouldComment}**` +
-        ` (variant: ${decision.variant || 'n/a'}) · would draft: **${decision.shouldDraft}**\n\n`)
+        ` (variant: ${decision.variant || 'n/a'}) · would draft: **${decision.shouldDraft}**` +
+        ` · would undraft: **${decision.shouldUndraft}**\n\n`)
       .addRaw(decision.shouldComment ? '#### Rendered comment\n\n' + commentBody + '\n' : '')
       .addTable([
         [{ data: 'signal', header: true }, { data: 'state', header: true }],
