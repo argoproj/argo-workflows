@@ -26,7 +26,7 @@ This command also checks the docs for spelling, broken links, and lint issues.
 
 ### Entering a PR
 
-See [the pull request template](https://github.com/argoproj/argo-workflows/blob/main/.github/pull_request_template.md).
+Follow the [pull request checklist](pull-requests.md).
 
 On entering a PR, our CI will run the same checks as `make docs-serve`, and fail the build if any issues are found.
 
