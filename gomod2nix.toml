@@ -275,8 +275,8 @@ schema = 3
     version = "v1.0.1"
     hash = "sha256-yuvxYYngpfVkUg9yAmG99IUVmADTQA0tMbBXe0Fq0Mc="
   [mod."github.com/ebitengine/purego"]
-    version = "v0.10.0"
-    hash = "sha256-NPS88SNvsm4QEAx1zVmNGzMwtR1EBhdQYywQU1JdRqM="
+    version = "v0.10.1"
+    hash = "sha256-LiJz/PNyealSiA8m/OPE0JnF1XD17YtpIlhx44jd34U="
   [mod."github.com/emicklei/go-restful/v3"]
     version = "v3.13.0"
     hash = "sha256-lB2Z29RDLiVQE5NrsV1s2iHeQ4ciGwNj5OG1zJxwZV8="
@@ -311,8 +311,8 @@ schema = 3
     version = "v1.1.0"
     hash = "sha256-OCmubTLF1anwNnkvFZDYHnF6hFlX0WDoe/9+dDlaMPM="
   [mod."github.com/felixge/httpsnoop"]
-    version = "v1.0.4"
-    hash = "sha256-c1JKoRSndwwOyOxq9ddCe+8qn7mG9uRq2o/822x5O/c="
+    version = "v1.1.0"
+    hash = "sha256-oePAjhI+dYRrMQAeUWnJ3o+PdHFU1tk1Z/R3/kGdjnw="
   [mod."github.com/fsnotify/fsnotify"]
     version = "v1.10.1"
     hash = "sha256-6LBLgsh4nKkMpgRKVsYFEaGDSU1fncBcWVSjKBdfgjU="
@@ -347,8 +347,8 @@ schema = 3
     version = "v1.2.2"
     hash = "sha256-rRweAP7XIb4egtT1f2gkz4sYOu7LDHmcJ5iNsJUd0sE="
   [mod."github.com/go-ole/go-ole"]
-    version = "v1.2.6"
-    hash = "sha256-+oxitLeJxYF19Z6g+6CgmCHJ1Y5D8raMi2Cb3M6nXCs="
+    version = "v1.3.0"
+    hash = "sha256-tF8t3VcV71jQ4jbPL91BwR59AKDpUAFV1waIKzkXJu8="
   [mod."github.com/go-openapi/jsonpointer"]
     version = "v1.0.0"
     hash = "sha256-he4+Ue27HuNS0imS55XaS4g54v2OrKFJppdhz8cO94s="
@@ -566,8 +566,8 @@ schema = 3
     version = "v1.1.0"
     hash = "sha256-QO/M6cKlZNSKODtZyfRS4yr4y647JCzChFdlzcanDf8="
   [mod."github.com/lufia/plan9stats"]
-    version = "v0.0.0-20211012122336-39d0f177ccd0"
-    hash = "sha256-thb+rkDx5IeWMgw5/5jgu5gZ+6RjJAUXeMgSkJHhRlA="
+    version = "v0.0.0-20260330125221-c963978e514e"
+    hash = "sha256-BmFzkPZ+UeYgJom+1VesNiqIrTwKEGhUmYY0cWzAwfE="
   [mod."github.com/magiconair/properties"]
     version = "v1.8.10"
     hash = "sha256-smE+l2A9yDnDJFI7iNCjjF9NQnPySxEFFnbRUHyCq7I="
@@ -611,8 +611,8 @@ schema = 3
     version = "v1.55.0"
     hash = "sha256-D2gQFKJgoNDcFzcMp+3iWMJK7w6QakqA5RMrcXbZWBw="
   [mod."github.com/moby/moby/client"]
-    version = "v0.4.1"
-    hash = "sha256-G49VpC6ykDsC9ackHwQ3voF+CYzCX1UTmhtWBMCaZSc="
+    version = "v0.5.0"
+    hash = "sha256-dp52f3KEMADpAoLKcVJhChpUev9JxOyk5p35E7S1Odg="
   [mod."github.com/moby/patternmatcher"]
     version = "v0.6.1"
     hash = "sha256-Oj3pxvOxwUnKpRXC7eNz4VECOzmwAMFgboqK06aKu3U="
@@ -620,8 +620,8 @@ schema = 3
     version = "v0.5.1"
     hash = "sha256-2vAgWBcBoG+DRVG+3rHsSnzovw68oTYb0DFozh1uBUI="
   [mod."github.com/moby/sys/sequential"]
-    version = "v0.6.0"
-    hash = "sha256-ZNWZuuvn+iDYMsL08IU6wvXC4OfAa7rol4kaCvytZ64="
+    version = "v0.7.0"
+    hash = "sha256-Rqaj/Wk9Q9R97xTTyzzvhQmPoGKhT+u+Zkvd193visE="
   [mod."github.com/moby/sys/user"]
     version = "v0.4.0"
     hash = "sha256-Lk9pZFh/ERYGWkcKfVKhlDW66J13FESGD0yJcBc8+ts="
@@ -740,8 +740,8 @@ schema = 3
     version = "v1.1.0"
     hash = "sha256-QJ+GrKb/ZQxkT9AgCZXCFmQKypMTF3cnXj6quL1JCSQ="
   [mod."github.com/shirou/gopsutil/v4"]
-    version = "v4.26.5"
-    hash = "sha256-ODPWgxRHQqlARId7n9Crvpgiv54YFr96PnqZg+IAWpI="
+    version = "v4.26.6"
+    hash = "sha256-kIvsWsYifL7Lyd1SsvuirHPET0YMYO9RL2fk3e5K0to="
   [mod."github.com/shopspring/decimal"]
     version = "v1.4.0"
     hash = "sha256-U36bC271jQsjuWFF8BfLz4WicxPJUcPHRGxLvTz4Mdw="
@@ -779,8 +779,8 @@ schema = 3
     version = "v1.6.0"
     hash = "sha256-LspbjTniiq2xAICSXmgqP7carwlNaLqnCTQfw2pa80A="
   [mod."github.com/testcontainers/testcontainers-go"]
-    version = "v0.43.0"
-    hash = "sha256-SetPoobsB7A2TKgMoGDUvn9b2xgTp+eq+4etFbcuLYY="
+    version = "v0.44.0"
+    hash = "sha256-RbqBM+Gc6jGOZzaBr5zQKlJ4Uhb/z/1q083goQXPmow="
   [mod."github.com/testcontainers/testcontainers-go/modules/mysql"]
     version = "v0.43.0"
     hash = "sha256-N8gT+Zx5irmu/N3cxrKL13T/Mk8EsdXb6KI1fmVXE7I="
@@ -800,11 +800,11 @@ schema = 3
     version = "v1.6.1"
     hash = "sha256-R2LutHQFZ7HAqeyzHqzMeyAJHxcYc+n1x7ysyrXefmQ="
   [mod."github.com/tklauser/go-sysconf"]
-    version = "v0.3.16"
-    hash = "sha256-hNVbsk0G+M9bLtHNywPD0nCW0z/9pM4jQV53nnDo/MY="
+    version = "v0.4.0"
+    hash = "sha256-8zTRLfBMOenFqvpMuZOkRERAFN3r7C2Jjvr7sh5andY="
   [mod."github.com/tklauser/numcpus"]
-    version = "v0.11.0"
-    hash = "sha256-ObydGqAvRiHwVfO2ytmL28pRHyuCWYWwjH4hWdgI/Vs="
+    version = "v0.12.0"
+    hash = "sha256-jxPbfsDXNqpx4qR+BSw0wmthRf9D1MV7CD1mK7ZSbbQ="
   [mod."github.com/upper/db/v4"]
     version = "v4.10.0"
     hash = "sha256-7idARF/fgIDJVAAYoREAOjkVJK33a+NYSsSz8zfHzGo="
