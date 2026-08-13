@@ -961,9 +961,6 @@ schema = 3
   [mod."gopkg.in/evanphx/json-patch.v4"]
     version = "v4.13.0"
     hash = "sha256-1iyZpBaeBLmNkJ3T4A9fAEXEYB9nk9V02ug4pwl5dy0="
-  [mod."gopkg.in/go-playground/webhooks.v5"]
-    version = "v5.17.0"
-    hash = "sha256-dajSrYoD7vtKDb4Q+oS179KpwoxXk1u+u8k283C2LpU="
   [mod."gopkg.in/inf.v0"]
     version = "v0.9.1"
     hash = "sha256-z84XlyeWLcoYOvWLxPkPFgLkpjyb2Y4pdeGMyySOZQI="
