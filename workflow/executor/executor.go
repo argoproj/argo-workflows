@@ -1092,7 +1092,7 @@ func (we *WorkflowExecutor) AddAnnotation(ctx context.Context, key, value string
 }
 
 // isTarball returns whether or not the file is a tarball
-func isTarball(ctx context.Context, filePath string) (bool, error) {
+func isTarball(ctx context.Context, filePath string) (ok bool, retErr error) {
 	logger := logging.RequireLoggerFromContext(ctx)
 	logger.WithField("path", filePath).Info(ctx, "Detecting if file is a tarball")
 	f, err := os.Open(filepath.Clean(filePath))
@@ -1102,6 +1102,9 @@ func isTarball(ctx context.Context, filePath string) (bool, error) {
 	defer func() {
 		if closeErr := f.Close(); closeErr != nil {
 			logger.WithField("path", filePath).WithError(closeErr).Error(ctx, "Error closing file")
+			if retErr == nil {
+				retErr = closeErr
+			}
 		}
 	}()
 	gzr, err := gzip.NewReader(f)

@@ -169,7 +169,7 @@ func (azblobDriver *ArtifactDriver) Load(ctx context.Context, artifact *wfv1.Art
 }
 
 // DownloadFile downloads a single file from Azure Blob Storage
-func DownloadFile(ctx context.Context, containerClient *container.Client, blobName, path string) error {
+func DownloadFile(ctx context.Context, containerClient *container.Client, blobName, path string) (retErr error) {
 	blobClient := containerClient.NewBlobClient(blobName)
 
 	err := os.MkdirAll(filepath.Dir(path), 0755)
@@ -184,6 +184,9 @@ func DownloadFile(ctx context.Context, containerClient *container.Client, blobNa
 		if closeErr := outFile.Close(); closeErr != nil {
 			logger := logging.RequireLoggerFromContext(ctx)
 			logger.WithError(closeErr).Warn(ctx, "unable to close file")
+			if retErr == nil {
+				retErr = fmt.Errorf("unable to close file %s: %w", path, closeErr)
+			}
 		}
 	}()
 
