@@ -15,7 +15,7 @@ import (
 )
 
 func TestLinkInputArtifacts_Normal(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.InitLogger())
+	ctx := logging.WithLogger(context.Background(), logging.NewTestLogger(logging.Info, logging.Text))
 	dir := t.TempDir()
 	srcBase := filepath.Join(dir, "inputs")
 	require.NoError(t, os.MkdirAll(srcBase, 0o755))
@@ -43,7 +43,7 @@ func TestLinkInputArtifacts_Normal(t *testing.T) {
 }
 
 func TestLinkInputArtifacts_MissingSourceIsSkipped(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.InitLogger())
+	ctx := logging.WithLogger(context.Background(), logging.NewTestLogger(logging.Info, logging.Text))
 	dir := t.TempDir()
 	srcBase := filepath.Join(dir, "inputs")
 	require.NoError(t, os.MkdirAll(srcBase, 0o755))
@@ -68,7 +68,7 @@ func TestLinkInputArtifacts_MissingSourceIsSkipped(t *testing.T) {
 // filesystem (no declared volume), must be replaced by the symlink — matching
 // what the legacy SubPath bind mount shadowed.
 func TestLinkInputArtifacts_OverwritesExistingFile(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.InitLogger())
+	ctx := logging.WithLogger(context.Background(), logging.NewTestLogger(logging.Info, logging.Text))
 	dir := t.TempDir()
 	srcBase := filepath.Join(dir, "inputs")
 	require.NoError(t, os.MkdirAll(srcBase, 0o755))
@@ -97,7 +97,7 @@ func TestLinkInputArtifacts_OverwritesExistingFile(t *testing.T) {
 // (e.g. a git/directory artifact at /tmp/git): linking must replace it with the
 // symlink rather than failing. No declared volume → safe to clear.
 func TestLinkInputArtifacts_OverwritesExistingDirectory(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.InitLogger())
+	ctx := logging.WithLogger(context.Background(), logging.NewTestLogger(logging.Info, logging.Text))
 	dir := t.TempDir()
 	srcBase := filepath.Join(dir, "inputs")
 	require.NoError(t, os.MkdirAll(srcBase, 0o755))
@@ -127,7 +127,7 @@ func TestLinkInputArtifacts_OverwritesExistingDirectory(t *testing.T) {
 
 // TestLinkInputArtifacts_EmptyPathSkipped covers art.Path == "".
 func TestLinkInputArtifacts_EmptyPathSkipped(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.InitLogger())
+	ctx := logging.WithLogger(context.Background(), logging.NewTestLogger(logging.Info, logging.Text))
 	dir := t.TempDir()
 	srcBase := filepath.Join(dir, "inputs")
 	require.NoError(t, os.MkdirAll(srcBase, 0o755))
@@ -148,7 +148,7 @@ func TestLinkInputArtifacts_EmptyPathSkipped(t *testing.T) {
 // the symlink and destroy live volume data, so staging must refuse and leave the
 // volume untouched.
 func TestLinkInputArtifacts_RefusesOverwriteResolvingIntoVolume(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.InitLogger())
+	ctx := logging.WithLogger(context.Background(), logging.NewTestLogger(logging.Info, logging.Text))
 	dir := t.TempDir()
 	srcBase := filepath.Join(dir, "inputs")
 	require.NoError(t, os.MkdirAll(srcBase, 0o755))
@@ -195,7 +195,7 @@ func TestLinkInputArtifacts_RefusesOverwriteResolvingIntoVolume(t *testing.T) {
 // there yet, staging creates the symlink anyway (the user asked for it). Creating
 // can never destroy data, so it is not gated.
 func TestLinkInputArtifacts_CreateResolvingIntoVolumeAllowed(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.InitLogger())
+	ctx := logging.WithLogger(context.Background(), logging.NewTestLogger(logging.Info, logging.Text))
 	dir := t.TempDir()
 	srcBase := filepath.Join(dir, "inputs")
 	require.NoError(t, os.MkdirAll(srcBase, 0o755))
@@ -237,7 +237,7 @@ func TestLinkInputArtifacts_CreateResolvingIntoVolumeAllowed(t *testing.T) {
 // os.RemoveAll removes the symlink itself (it does not follow the final element),
 // so staging safely replaces it and the symlink's old target is untouched.
 func TestLinkInputArtifacts_ReplacesImageSymlinkInRootfs(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.InitLogger())
+	ctx := logging.WithLogger(context.Background(), logging.NewTestLogger(logging.Info, logging.Text))
 	dir := t.TempDir()
 	srcBase := filepath.Join(dir, "inputs")
 	require.NoError(t, os.MkdirAll(srcBase, 0o755))
