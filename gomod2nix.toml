@@ -146,8 +146,8 @@ schema = 3
     version = "v1.4.37"
     hash = "sha256-ztfFe7+vxCuJRFptnOidy+W1z93uQcSLN2drZwHv6Nc="
   [mod."github.com/aws/aws-sdk-go-v2/service/dynamodb"]
-    version = "v1.57.4"
-    hash = "sha256-Dg3C6I4Lu2gtRf/RinNXcu+caWINRQ5y6vL+8rxqDKA="
+    version = "v1.62.3"
+    hash = "sha256-4uPHOtvtHvSgmqzYktx5q1zjYs81eRaH6ymra/VrlBo="
   [mod."github.com/aws/aws-sdk-go-v2/service/ecr"]
     version = "v1.55.3"
     hash = "sha256-J9v9A2bMBTPM0K/aHM3TrS0nBkuTNFVQyqtnc1ZwE7w="
@@ -158,8 +158,8 @@ schema = 3
     version = "v1.13.16"
     hash = "sha256-W2MvmhkgVCe/XgGq5sPVWejJkGWQzYIXUg9zGvjTQS0="
   [mod."github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery"]
-    version = "v1.12.0"
-    hash = "sha256-OT9tWrZZaHUUThpK8cjemBloxBJlaBqIxtctoBr0hiU="
+    version = "v1.12.11"
+    hash = "sha256-2z745rW+jMacE2qsarSDCCXL9n9x9uoWcliBs4S0czw="
   [mod."github.com/aws/aws-sdk-go-v2/service/internal/presigned-url"]
     version = "v1.13.36"
     hash = "sha256-+fTuTzz+4eje0BKMeqvi3o6WV8NTZji3eyY9gdev6pw="
@@ -167,11 +167,11 @@ schema = 3
     version = "v1.4.1"
     hash = "sha256-mbdJNJR8Zj61xJGYh4aLuBxAoSZR1I8wIN8bo1MrJ7c="
   [mod."github.com/aws/aws-sdk-go-v2/service/sns"]
-    version = "v1.39.17"
-    hash = "sha256-BNH4dAmXhvr3OJ+xUUHImteKiafqN0+kzN5xY4BgHuI="
+    version = "v1.42.3"
+    hash = "sha256-Pri3cqQ+c0OvmHb711D3gWXwbitulG/UbdCjLmo1AzA="
   [mod."github.com/aws/aws-sdk-go-v2/service/sqs"]
-    version = "v1.42.27"
-    hash = "sha256-xzG9Q3mXoC1hiQZsR+4FncqG//htkPCT0ALnQY9UYkA="
+    version = "v1.46.3"
+    hash = "sha256-nSg1kFNFlZEa4b5SFuErJk29MX1sW7SSIs/hlGImt1s="
   [mod."github.com/aws/aws-sdk-go-v2/service/sso"]
     version = "v1.32.1"
     hash = "sha256-hT8r+TRmZOXPY91H1GxcoKqOMW30dF7TZwH03X3vU38="
@@ -857,8 +857,8 @@ schema = 3
     version = "v1.44.0"
     hash = "sha256-dp+EQTl8DCYVrRKEJ/IpRMUomgIRx/M0z2LkeCctwiY="
   [mod."go.opentelemetry.io/contrib/instrumentation/github.com/aws/aws-sdk-go-v2/otelaws"]
-    version = "v0.69.0"
-    hash = "sha256-0Vm58PlYzdhMOPERiYAslHDd74DXNKoeZBLYMQvlWNY="
+    version = "v0.70.0"
+    hash = "sha256-H8UEoecwEy6E0emDapu51yC7r+zuvc919MLp53BC9Ps="
   [mod."go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"]
     version = "v0.70.0"
     hash = "sha256-XqsiMDG7h1XgVuOR0x36ZgboMOjsVaXU4C2GyNn95+0="
