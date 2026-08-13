@@ -356,41 +356,41 @@ schema = 3
     version = "v1.0.0"
     hash = "sha256-+UaHDX6kNBxmhH6N2BE22KyXISiEvxPyTpJF5i6l+GE="
   [mod."github.com/go-openapi/swag"]
-    version = "v0.26.1"
-    hash = "sha256-eAD1EGpAppIOZQBxec+FEe11rmYnd/akI4C3eKsElLI="
+    version = "v0.27.1"
+    hash = "sha256-fnQYC3SKQX1aCG3KNDSqfAmuw9ThzOrvCshsnKKqNjI="
   [mod."github.com/go-openapi/swag/cmdutils"]
-    version = "v0.26.1"
+    version = "v0.27.1"
     hash = "sha256-YaE9Sv3b/AMELBYnjcsfe9QtKlyye88OmHTHN8cUn/8="
   [mod."github.com/go-openapi/swag/conv"]
-    version = "v0.26.1"
-    hash = "sha256-VPkxP4sbzh+LN/jTJikJStGE6vo+rLv5BbaFSic8bvg="
+    version = "v0.27.1"
+    hash = "sha256-Z3iJurP1+GTQ3jZll6I628x8zitd/e9ezW9V7lNh6Uk="
   [mod."github.com/go-openapi/swag/fileutils"]
-    version = "v0.26.1"
-    hash = "sha256-EOl1ugoSuxepix1kqVJqamWHHW8/V/gk5RcGhAMv+Pg="
-  [mod."github.com/go-openapi/swag/jsonname"]
-    version = "v0.26.1"
-    hash = "sha256-vyUIndj7CckGhyJ8QBHuchWHM4d/N325ccyuTS66gbM="
+    version = "v0.27.1"
+    hash = "sha256-v/dkW9DeKAI4RAySe6sXedPQcVks6k1RnXii1+NSQGk="
   [mod."github.com/go-openapi/swag/jsonutils"]
-    version = "v0.26.1"
-    hash = "sha256-FuMe1qlrZqS29rMFMZ2KKNAiMCcYAUDa2yS8vqlTelE="
+    version = "v0.27.1"
+    hash = "sha256-wbTCIpFUusWT0daDu+We4MJ5MABMNHe/vzgJQ0WPpSg="
   [mod."github.com/go-openapi/swag/loading"]
-    version = "v0.26.1"
-    hash = "sha256-45rD0Kd1LluM6bqSk3IfAClAfFoXRFdT57fB1gH9LLc="
+    version = "v0.27.1"
+    hash = "sha256-ZMYEEdxlDjiPkQoivRT1z/P0JNF+AdQzT8dpS1YUvVI="
   [mod."github.com/go-openapi/swag/mangling"]
-    version = "v0.26.1"
-    hash = "sha256-LZLUjreEo+xjdQnqPQCLtsROBfVlU8cxglwL0EuOWDw="
+    version = "v0.27.1"
+    hash = "sha256-7G229jLKn8PITP8r1uE9FClAnALKQM7GVn6jXi4bv6Q="
   [mod."github.com/go-openapi/swag/netutils"]
-    version = "v0.26.1"
-    hash = "sha256-zuSbhOhXiNWPgZamL3jtgBN0v6cLWLkUtwaVmX7bpwM="
+    version = "v0.27.1"
+    hash = "sha256-c5F5kVtDfHy4V6fnMpyt8QgFsj7EEzb4kEHp16gJcp8="
+  [mod."github.com/go-openapi/swag/pools"]
+    version = "v0.27.1"
+    hash = "sha256-v6e+U41LGxzT1aT4KV6PQvowY3N0Y6Z2zCItIpAuoG0="
   [mod."github.com/go-openapi/swag/stringutils"]
-    version = "v0.26.1"
-    hash = "sha256-f2oHoSu93xlhEzSP2xWTtMVk7xdOOLoZx/McBiRgQeI="
+    version = "v0.27.1"
+    hash = "sha256-QnCMIHYGwrMMzZBRFz3zvOoQWPgzToMIMRCfujww8Vw="
   [mod."github.com/go-openapi/swag/typeutils"]
-    version = "v0.26.1"
-    hash = "sha256-9fQSIyretdcKilp8PKJ7FMAy52LqvAkcOvgh3AsC3pY="
+    version = "v0.27.1"
+    hash = "sha256-7DkJz+zFA2Zu6iIkoExf2H3gKKRg47KfzGE2aSXiehs="
   [mod."github.com/go-openapi/swag/yamlutils"]
-    version = "v0.26.1"
-    hash = "sha256-JgqsyBwaJYRfPkJarbpxlqEhyRs6tg1/StljmV++UmY="
+    version = "v0.27.1"
+    hash = "sha256-5u/USJQRwcGNSWn5BYDgFuCQLD09vjOWE+gZ7S0TQoo="
   [mod."github.com/go-playground/webhooks/v6"]
     version = "v6.4.0"
     hash = "sha256-kii4Lhr2JYfBb+iInphVi6ThpctpGivWF2rG5DN4hLQ="
@@ -1007,8 +1007,8 @@ schema = 3
     version = "v2.140.0"
     hash = "sha256-TbA5ZdLRzxa7WRnz3zgPPtTplgC33eY9yKKqVFDrPWU="
   [mod."k8s.io/kube-openapi"]
-    version = "v0.0.0-20260603220949-865597e52e25"
-    hash = "sha256-7gba4oTHFdGRluG9UFEwQyak+bu+c4v5TvY2ax1zRL8="
+    version = "v0.0.0-20260721132016-d427ff9ee9ad"
+    hash = "sha256-/ZpSQoKak2V16wkm3voqS4oow2zCP5vJ4znIQQLKsLY="
   [mod."k8s.io/kubectl"]
     version = "v0.35.4"
     hash = "sha256-F5GQjWI/xxoOnfxVW6IRJuQI38aVlXXeMcVhPFAadgk="
@@ -1049,8 +1049,8 @@ schema = 3
     version = "v1.0.0"
     hash = "sha256-xldQxDwW84hmlihdSOFfjXyauhxEWV9KmIDLZMTcYNo="
   [mod."sigs.k8s.io/structured-merge-diff/v6"]
-    version = "v6.3.2"
-    hash = "sha256-4ZUkeHKvdhsZmFSSZKAL/1GZdPO6735BY6FqRc+8tog="
+    version = "v6.4.1"
+    hash = "sha256-9ZoaaRvTiiv4GpROcm1oa6NPlmEtUGuH+O5XBiaWq7k="
   [mod."sigs.k8s.io/yaml"]
     version = "v1.6.0"
     hash = "sha256-49hg7IVPzwxeovp+HTMiWa/10NMMTSTjAdCmIv6p9dw="
