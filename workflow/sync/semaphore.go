@@ -266,7 +266,7 @@ func (s *prioritySemaphore) tryAcquire(ctx context.Context, holderKey string, tx
 	}
 	acquired, _ := s.acquire(ctx, holderKey, tx)
 	if acquired {
-		s.pending.pop()
+		s.pending.remove(holderKey)
 		limit := s.getLimit(ctx)
 		logger.WithFields(logging.Fields{
 			"name":      s.name,

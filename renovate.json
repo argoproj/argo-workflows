@@ -6,8 +6,8 @@
   ],
   "baseBranchPatterns": [
     "main",
-    "release-3.7",
-    "release-4.0"
+    "release-4.0",
+    "release-4.1"
   ],
   "nix": {
     "enabled": true
@@ -38,8 +38,8 @@
     {
       "description": "Only allow patch updates on release branches",
       "matchBaseBranches": [
-        "release-3.7",
-        "release-4.0"
+        "release-4.0",
+        "release-4.1"
       ],
       "matchUpdateTypes": [
         "major",
@@ -50,8 +50,8 @@
     {
       "description": "Use conservative lock file updates on release branches",
       "matchBaseBranches": [
-        "release-3.7",
-        "release-4.0"
+        "release-4.0",
+        "release-4.1"
       ],
       "rangeStrategy": "in-range-only"
     },
@@ -76,8 +76,8 @@
     {
       "description": "Disable lock file maintenance on release branches",
       "matchBaseBranches": [
-        "release-3.7",
-        "release-4.0"
+        "release-4.0",
+        "release-4.1"
       ],
       "matchUpdateTypes": [
         "lockFileMaintenance"
