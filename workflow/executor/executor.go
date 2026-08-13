@@ -235,7 +235,7 @@ func (we *WorkflowExecutor) HandleError(ctx context.Context) func() {
 				"error": r,
 				"stack": debug.Stack(),
 			}).Error(ctx, "executor panic")
-			os.Exit(1)
+			logging.Exit(1)
 		} else if len(we.errors) > 0 {
 			util.WriteTerminateMessage(we.errors[0].Error())
 		}

@@ -3,7 +3,6 @@ package cron
 import (
 	"context"
 	"fmt"
-	"os"
 	"reflect"
 	"time"
 
@@ -70,7 +69,7 @@ func init() {
 	_, err := time.Parse(time.RFC822, "17 Oct 07 14:03 PST")
 	if err != nil {
 		logging.InitLogger().WithError(err).Error(context.Background(), "failed to parse time")
-		os.Exit(1)
+		logging.Exit(1)
 	}
 	cronSyncPeriod = env.LookupEnvDurationOr(logging.InitLoggerInContext(), "CRON_SYNC_PERIOD", 10*time.Second)
 	logging.InitLogger().WithField("cronSyncPeriod", cronSyncPeriod).Info(context.Background(), "cron config")
@@ -115,7 +114,7 @@ func (cc *Controller) Run(ctx context.Context) {
 	err := cc.addCronWorkflowInformerHandler(ctx)
 	if err != nil {
 		cc.logger.Error(ctx, err.Error())
-		os.Exit(1)
+		logging.Exit(1)
 	}
 
 	wfInformer := util.NewWorkflowInformer(ctx, cc.dynamicInterface, cc.managedNamespace, cronWorkflowResyncPeriod,

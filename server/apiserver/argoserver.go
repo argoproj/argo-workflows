@@ -136,7 +136,7 @@ func init() {
 	MaxGRPCMessageSize, err = env.GetInt("GRPC_MESSAGE_SIZE", 100*1024*1024)
 	if err != nil {
 		logging.InitLogger().WithError(err).Error(context.Background(), "GRPC_MESSAGE_SIZE environment variable must be set as an integer")
-		os.Exit(1)
+		logging.Exit(1)
 	}
 }
 
@@ -180,7 +180,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (Server, error) {
 	})
 	if err != nil {
 		log.Error(ctx, err.Error())
-		os.Exit(1)
+		logging.Exit(1)
 	}
 
 	return &argoServer{
@@ -218,12 +218,12 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	config, err := as.configController.Get(ctx)
 	if err != nil {
 		log.Error(ctx, err.Error())
-		os.Exit(1)
+		logging.Exit(1)
 	}
 	err = config.Sanitize(as.allowedLinkProtocol)
 	if err != nil {
 		log.Error(ctx, err.Error())
-		os.Exit(1)
+		logging.Exit(1)
 	}
 
 	// Rather than attempt to run CI with an artifact server alongside
@@ -232,13 +232,13 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		// Validate artifact driver images against server pod images
 		if validateErr := as.validateArtifactDriverImages(ctx, config); validateErr != nil {
 			log.WithError(validateErr).Error(ctx, "failed to validate artifact driver images")
-			os.Exit(1)
+			logging.Exit(1)
 		}
 
 		// Validate artifact driver connections
 		if validateErr := as.validateArtifactDriverConnections(ctx, config); validateErr != nil {
 			log.WithError(validateErr).Error(ctx, "failed to validate artifact driver connections")
-			os.Exit(1)
+			logging.Exit(1)
 		}
 	}
 
@@ -256,19 +256,19 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		})
 		if sessionErr != nil {
 			log.Error(ctx, sessionErr.Error())
-			os.Exit(1)
+			logging.Exit(1)
 		}
 		tableName, tableErr := persist.GetTableName(persistence)
 		if tableErr != nil {
 			log.Error(ctx, tableErr.Error())
-			os.Exit(1)
+			logging.Exit(1)
 		}
 		// we always enable node offload, as this is read-only for the Argo Server, i.e. you can turn it off if you
 		// like and the controller won't offload newly created workflows, but you can still read them
 		offloadRepo, err = persist.NewOffloadNodeStatusRepo(ctx, log, sessionProxy, persistence.GetClusterName(), tableName)
 		if err != nil {
 			log.WithError(err).Error(ctx, err.Error())
-			os.Exit(1)
+			logging.Exit(1)
 		}
 		// we always enable the archive for the Argo Server, as the Argo Server does not write records, so you can
 		// disable the archiving - and still read old records
@@ -278,7 +278,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	wftmplStore, err := workflowtemplate.NewInformer(as.restConfig, resourceCacheNamespace)
 	if err != nil {
 		log.Error(ctx, err.Error())
-		os.Exit(1)
+		logging.Exit(1)
 	}
 	kubeclientset := kubernetes.NewForConfigOrDie(as.restConfig)
 	var cwftmplInformer clusterworkflowtemplate.Informer
@@ -286,7 +286,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		cwftmplInformer, err = clusterworkflowtemplate.NewInformer(as.restConfig)
 		if err != nil {
 			log.Error(ctx, err.Error())
-			os.Exit(1)
+			logging.Exit(1)
 		}
 	} else {
 		cwftmplInformer = clusterworkflowtemplate.NewNullClusterWorkflowTemplate()
@@ -301,7 +301,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	wfStore, err := store.NewSQLiteStore(instanceIDService)
 	if err != nil {
 		log.Error(ctx, err.Error())
-		os.Exit(1)
+		logging.Exit(1)
 	}
 	workflowServer := workflow.NewServer(ctx, instanceIDService, offloadRepo, wfArchive, as.clients.Workflow, wfStore, wfStore, wftmplStore, cwftmplInformer, config.WorkflowDefaults, &resourceCacheNamespace, artifactRepositories)
 	grpcServer := as.newGRPCServer(ctx, instanceIDService, workflowServer, wftmplStore, cwftmplInformer, wfArchiveServer, syncServer, eventServer, config.Links, config.Columns, config.NavColor, config.WorkflowDefaults)
@@ -426,7 +426,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	rateLimitMiddleware, err := httplimit.NewMiddleware(as.apiRateLimiter, ipKeyFunc)
 	if err != nil {
 		log.Error(ctx, err.Error())
-		os.Exit(1)
+		logging.Exit(1)
 	}
 
 	mux := http.NewServeMux()
@@ -623,15 +623,15 @@ func mustRegisterGWHandler(ctx context.Context, register registerFunc, mux *runt
 func (as *argoServer) checkServeErr(ctx context.Context, name string, err error) {
 	log := logging.RequireLoggerFromContext(ctx)
 	nameField := logging.Fields{"name": name}
-	if err != nil {
-		if as.stopCh == nil {
-			// a nil stopCh indicates a graceful shutdown
-			log.WithFields(nameField).WithError(err).Info(ctx, "graceful shutdown with error")
-		} else {
-			log.WithFields(nameField).WithError(err).Error(ctx, "server failure")
-			os.Exit(1)
-		}
-	} else {
+	if err == nil {
 		log.WithFields(nameField).Info(ctx, "graceful shutdown")
+		return
 	}
+	if as.stopCh == nil {
+		// a nil stopCh indicates a graceful shutdown
+		log.WithFields(nameField).WithError(err).Info(ctx, "graceful shutdown with error")
+		return
+	}
+	log.WithFields(nameField).WithError(err).Error(ctx, "server failure")
+	logging.Exit(1)
 }
