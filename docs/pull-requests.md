@@ -7,8 +7,30 @@ The [pull request template](https://github.com/argoproj/argo-workflows/blob/main
 
 * Features need an associated issue, and should be discussed there before development.
 * Changes without either unit or e2e tests are unlikely to be accepted.
-* Dependencies increase the risk of security issues and have on-going maintenance costs, so new dependencies must have a strong use case, an acceptable license (for example MIT), active maintenance, and no known security issues.
+* New dependencies must pass the [dependency tests](#dependencies).
 * Documentation changes must follow the [docs contribution guide](doc-changes.md).
+
+## Dependencies
+
+Dependencies increase the risk of security issues and have on-going maintenance costs.
+
+A new dependency must pass these tests:
+
+* A strong use case.
+* It has an acceptable license (e.g. MIT).
+* It is actively maintained.
+* It has no security issues.
+
+Example, should we add `fasttemplate`, [view the Snyk report](https://snyk.io/advisor/golang/github.com/valyala/fasttemplate):
+
+| Test                                    | Outcome                             |
+|-----------------------------------------|-------------------------------------|
+| A strong use case.                      | ❌ Fail. We can use `text/template`. |
+| It has an acceptable license (e.g. MIT) | ✅ Pass. MIT license.               |
+| It is actively maintained.              | ❌ Fail. Project is inactive.        |
+| It has no security issues.              | ✅ Pass. No known security issues.  |
+
+No, we should not add that dependency.
 
 ## Commits
 

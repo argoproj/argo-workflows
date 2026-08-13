@@ -48,7 +48,7 @@ jobs:
         run: |
           echo "No feature description was added to the ./.features/pending/ directory for this feature PR."
           echo "Please add a .md file to the ./.features/pending/ directory."
-          echo "See docs/running-locally.md for more details."
+          echo "See docs/pull-requests.md for more details."
           false
 
       - name: Validate ./.features/*.md changes
