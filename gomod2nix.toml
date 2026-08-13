@@ -866,8 +866,8 @@ schema = 3
     version = "v0.69.0"
     hash = "sha256-ypZB41ebghWCNZmuoDgdGbWyTjCglBEirLZ+s7jqCgc="
   [mod."go.opentelemetry.io/contrib/instrumentation/runtime"]
-    version = "v0.69.0"
-    hash = "sha256-JYiBPgJwgqjE7UZRWhEniyBDB9wJH5ZKP2fcLs53mMg="
+    version = "v0.70.0"
+    hash = "sha256-N6TsUbaJghFvP6Snk4voebP6ZyQcu/lG7Oxmqd7BgVI="
   [mod."go.opentelemetry.io/otel"]
     version = "v1.45.0"
     hash = "sha256-ORef6E6hxMrpVU8b+4vh311bMbv2zGbYAIJ9ZE8gXvc="
