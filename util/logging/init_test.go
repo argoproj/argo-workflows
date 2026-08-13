@@ -194,8 +194,6 @@ func TestInitLogger(t *testing.T) {
 		})
 	})
 
-
-
 	t.Run("concurrent access", func(t *testing.T) {
 		resetInitStorage()
 		var buf bytes.Buffer
