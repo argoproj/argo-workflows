@@ -84,7 +84,7 @@ func TestWorkflowSemaphoreKeysIndexFunc(t *testing.T) {
 				},
 			},
 		})
-		result, err := WorkflowSemaphoreKeysIndexFunc()(un)
+		result, err := WorkflowSemaphoreKeysIndexFunc(true)(un)
 		require.NoError(t, err)
 		assert.Len(t, result, 1)
 	})
@@ -103,7 +103,7 @@ func TestWorkflowSemaphoreKeysIndexFunc(t *testing.T) {
 				},
 			},
 		})
-		result, err := WorkflowSemaphoreKeysIndexFunc()(un)
+		result, err := WorkflowSemaphoreKeysIndexFunc(true)(un)
 		require.NoError(t, err)
 		assert.Len(t, result, 1)
 	})
@@ -115,7 +115,24 @@ func TestWorkflowSemaphoreKeysIndexFunc(t *testing.T) {
 				},
 			},
 		})
-		result, err := WorkflowSemaphoreKeysIndexFunc()(un)
+		result, err := WorkflowSemaphoreKeysIndexFunc(true)(un)
+		require.NoError(t, err)
+		assert.Nil(t, result)
+	})
+	t.Run("Disabled", func(t *testing.T) {
+		un, _ := util.ToUnstructured(&wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Labels: map[string]string{},
+			},
+			Spec: wfv1.WorkflowSpec{
+				Synchronization: &wfv1.Synchronization{
+					Semaphores: []*wfv1.SemaphoreRef{{
+						ConfigMapKeyRef: &apiv1.ConfigMapKeySelector{},
+					}},
+				},
+			},
+		})
+		result, err := WorkflowSemaphoreKeysIndexFunc(false)(un)
 		require.NoError(t, err)
 		assert.Nil(t, result)
 	})

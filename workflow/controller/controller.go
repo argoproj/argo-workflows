@@ -128,6 +128,9 @@ type WorkflowController struct {
 	// woc.executeTemplate and decreased when such calls return. This is used to prevent infinite recursion
 	maxStackDepth int
 
+	// indexWorkflowSemaphoreKeys enables the bySemaphoreConfigMap informer index (INDEX_WORKFLOW_SEMAPHORE_KEYS)
+	indexWorkflowSemaphoreKeys bool
+
 	// datastructures to support the processing of workflows and workflow pods
 	wfInformer      cache.SharedIndexInformer
 	nsInformer      cache.SharedIndexInformer
@@ -236,11 +239,13 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		eventRecorderManager:       events.NewEventRecorderManager(kubeclientset),
 		progressPatchTickDuration:  env.LookupEnvDurationOr(ctx, common.EnvVarProgressPatchTickDuration, 1*time.Minute),
 		progressFileTickDuration:   env.LookupEnvDurationOr(ctx, common.EnvVarProgressFileTickDuration, 3*time.Second),
+		indexWorkflowSemaphoreKeys: os.Getenv("INDEX_WORKFLOW_SEMAPHORE_KEYS") != "false",
 		lastWrittenVersions: lastWrittenVersions{
 			versions: make(map[types.UID]lastWrittenVersion),
 			mutex:    gosync.RWMutex{},
 		},
 	}
+	logging.RequireLoggerFromContext(ctx).WithField("indexWorkflowSemaphoreKeys", wfc.indexWorkflowSemaphoreKeys).Info(ctx, "index config")
 
 	if executorPlugins {
 		wfc.executorPlugins = map[string]map[string]*spec.Plugin{}
@@ -307,15 +312,17 @@ func (wfc *WorkflowController) runCronController(ctx context.Context, cronWorkfl
 	cronController.Run(ctx)
 }
 
-var indexers = cache.Indexers{
-	indexes.ClusterWorkflowTemplateIndex: indexes.MetaNamespaceLabelIndexFunc(common.LabelKeyClusterWorkflowTemplate),
-	indexes.CronWorkflowIndex:            indexes.MetaNamespaceLabelIndexFunc(common.LabelKeyCronWorkflow),
-	indexes.WorkflowTemplateIndex:        indexes.MetaNamespaceLabelIndexFunc(common.LabelKeyWorkflowTemplate),
-	indexes.SemaphoreConfigIndexName:     indexes.WorkflowSemaphoreKeysIndexFunc(),
-	indexes.WorkflowPhaseIndex:           indexes.MetaWorkflowPhaseIndexFunc(),
-	indexes.ConditionsIndex:              indexes.ConditionsIndexFunc,
-	indexes.UIDIndex:                     indexes.MetaUIDFunc,
-	cache.NamespaceIndex:                 cache.MetaNamespaceIndexFunc,
+func newIndexers(semaphoreKeysEnabled bool) cache.Indexers {
+	return cache.Indexers{
+		indexes.ClusterWorkflowTemplateIndex: indexes.MetaNamespaceLabelIndexFunc(common.LabelKeyClusterWorkflowTemplate),
+		indexes.CronWorkflowIndex:            indexes.MetaNamespaceLabelIndexFunc(common.LabelKeyCronWorkflow),
+		indexes.WorkflowTemplateIndex:        indexes.MetaNamespaceLabelIndexFunc(common.LabelKeyWorkflowTemplate),
+		indexes.SemaphoreConfigIndexName:     indexes.WorkflowSemaphoreKeysIndexFunc(semaphoreKeysEnabled),
+		indexes.WorkflowPhaseIndex:           indexes.MetaWorkflowPhaseIndexFunc(),
+		indexes.ConditionsIndex:              indexes.ConditionsIndexFunc,
+		indexes.UIDIndex:                     indexes.MetaUIDFunc,
+		cache.NamespaceIndex:                 cache.MetaNamespaceIndexFunc,
+	}
 }
 
 // ShutdownTracing flushes any remaining spans and shuts down the trace provider.
@@ -375,7 +382,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		"workflowArchive":     wfArchiveWorkers,
 	}).Info(ctx, "Current Worker Numbers")
 
-	wfc.wfInformer = util.NewWorkflowInformer(ctx, wfc.dynamicInterface, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListRequestListOptions, wfc.tweakWatchRequestListOptions, indexers)
+	wfc.wfInformer = util.NewWorkflowInformer(ctx, wfc.dynamicInterface, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListRequestListOptions, wfc.tweakWatchRequestListOptions, newIndexers(wfc.indexWorkflowSemaphoreKeys))
 	nsInformer, err := wfc.newNamespaceInformer(ctx, wfc.kubeclientset)
 	if err != nil {
 		logger.WithError(err).WithFatal().Error(ctx, "Failed to create namespace informer")
