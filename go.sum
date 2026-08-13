@@ -787,8 +787,8 @@ github.com/subosito/gotenv v1.6.0/go.mod h1:Dk4QP5c2W3ibzajGcXpNraDfq2IrhjMIvMSW
 github.com/tailscale/depaware v0.0.0-20210622194025-720c4b409502/go.mod h1:p9lPsd+cx33L3H9nNoecRRxPssFKUwwI50I3pZ0yT+8=
 github.com/testcontainers/testcontainers-go v0.44.0 h1:/Fwh6HY1mIikhnm9e7HwoxGycx0lzRAE0f5VQpjFxzI=
 github.com/testcontainers/testcontainers-go v0.44.0/go.mod h1:IcnwQrYTO86xHXu5bvMaBH7ATlbS3Qn1M1QWW3c66rE=
-github.com/testcontainers/testcontainers-go/modules/mysql v0.43.0 h1:AaHaJoMolGB4Y5Q06bRYQSOCR3n1WE7iIFZJW1M9TG0=
-github.com/testcontainers/testcontainers-go/modules/mysql v0.43.0/go.mod h1:EBP0BV3X80GE0muSleZ43AbRT625mzGCic1P1zntNLc=
+github.com/testcontainers/testcontainers-go/modules/mysql v0.44.0 h1:oJPJPxNE6YQ0zlq6mZKh06JOlyimCky4ruQUimdDet4=
+github.com/testcontainers/testcontainers-go/modules/mysql v0.44.0/go.mod h1:MSOAU6ukCpehJVHQDN1k9JgOZXZuqHD+2pT20M3JkIg=
 github.com/testcontainers/testcontainers-go/modules/postgres v0.44.0 h1:8fdv/9y3JMxjQ+ULAcOG8RtgeNu5t9XF9LolSXDuTwM=
 github.com/testcontainers/testcontainers-go/modules/postgres v0.44.0/go.mod h1:CFr2LncGYokw+OKjXcr8ARCKG1SaC2UEnGxFBovE86g=
 github.com/tidwall/gjson v1.19.0 h1:xwxm7n691Uf3u5OFjzngavjGTh55KX5q/9w9xHW88JU=
