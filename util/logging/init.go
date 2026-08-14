@@ -5,9 +5,7 @@ import (
 	"io"
 	"maps"
 	"os"
-	"os/signal"
 	"sync"
-	"syscall"
 )
 
 //
@@ -27,15 +25,12 @@ type storage struct {
 	out      io.Writer // for testing purposes only
 }
 
-var (
-	initStorage = &storage{
-		initLogs: make([]initLog, 0),
-		mutex:    sync.Mutex{},
-		fatal:    false,
-		out:      os.Stderr,
-	}
-	setupOnce sync.Once
-)
+var initStorage = &storage{
+	initLogs: make([]initLog, 0),
+	mutex:    sync.Mutex{},
+	fatal:    false,
+	out:      os.Stderr,
+}
 
 var _ Logger = &initLogger{}
 
@@ -65,23 +60,9 @@ func (i initLogger) InContext(ctx context.Context) (context.Context, Logger) {
 	panic("not implemented, don't implement this")
 }
 
-func initSignalHandlers() {
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-
-	go func() {
-		<-c
-		// Emit any remaining init logs before exit
-		if len(initStorage.initLogs) > 0 {
-			emitInitLogs(context.Background(), NewSlogLoggerCustom(Debug, JSON, os.Stderr))
-		}
-	}()
-}
-
 // Caller must hold the lock
 func (i initLogger) add(level Level, message string) {
 	i.storage.initLogs = append(i.storage.initLogs, initLog{level: level, message: message, fields: i.fields})
-	setupOnce.Do(initSignalHandlers)
 }
 
 func (i initLogger) Level() Level {
