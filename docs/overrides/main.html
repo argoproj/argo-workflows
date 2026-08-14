@@ -1,4 +1,50 @@
 {% extends "base.html" %}
+
+{# Banner shown on release branches that have reached end of life.
+   Keep this block out of `main` and delete it from a release branch only if
+   that branch becomes supported again. The link deliberately points at the
+   bare Read the Docs URL so it always lands on the current default version. #}
+{% block announce %}
+<div class="eol-banner">
+  <strong>This version of Argo Workflows is no longer supported.</strong>
+  It receives no bug fixes or security updates.
+  <a href="https://argo-workflows.readthedocs.io/">See the documentation for a supported version</a>.
+</div>
+{% endblock %}
+
+{% block extrahead %}
+{{ super() }}
+<style>
+  .md-banner {
+    background-color: #f8d7da;
+    border-bottom: 2px solid #dc3545;
+  }
+
+  .md-banner .eol-banner {
+    text-align: center;
+  }
+
+  .md-banner .eol-banner,
+  .md-banner .eol-banner a {
+    color: #58151c;
+  }
+
+  .md-banner .eol-banner a {
+    font-weight: 700;
+    text-decoration: underline;
+  }
+
+  [data-md-color-scheme="slate"] .md-banner {
+    background-color: #4a1015;
+  }
+
+  [data-md-color-scheme="slate"] .md-banner .eol-banner,
+  [data-md-color-scheme="slate"] .md-banner .eol-banner a {
+    color: #f5c2c7;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 {{ super() }}
 
