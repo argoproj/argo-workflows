@@ -1,5 +1,33 @@
 # Changelog
 
+## v4.1.1 (2026-08-14)
+
+Full Changelog: [v4.1.0...v4.1.1](https://github.com/argoproj/argo-workflows/compare/v4.1.0...v4.1.1)
+
+### Selected Changes
+
+* [eaefb4518](https://github.com/argoproj/argo-workflows/commit/eaefb4518483312d69ace640479b565ccd688fdc) fix(logging): remove process-wide signal handler from the init logger. Fixes #15863 (cherry-pick #16693 for 4.1) (#16714)
+* [c8bc68f0e](https://github.com/argoproj/argo-workflows/commit/c8bc68f0e90231103851bd958c86ba24b5736543) fix(ci): create ~/.m2 before bind mounting it for Java SDK publish (cherry-pick #16701 for 4.1) (#16704)
+* [72a8e6c14](https://github.com/argoproj/argo-workflows/commit/72a8e6c1475c6028a0401be6dacc5bf92fee8878) chore(deps): update k8s.io/kube-openapi digest to d427ff9 (release-4.1) (#16660)
+* [47062f954](https://github.com/argoproj/argo-workflows/commit/47062f95426c5f06999a84cf10c8348b9a1bad40) chore(deps): update google.golang.org/genproto/googleapis/api digest to ec0a776 (release-4.1) (#16659)
+* [799f79665](https://github.com/argoproj/argo-workflows/commit/799f79665c74becc9d9d1892334b09699d717079) chore(deps): update golang docker tag to v1.26.5 (main) (cherry-pick #16644 for 4.1) (#16651)
+* [ed2e836a3](https://github.com/argoproj/argo-workflows/commit/ed2e836a37fe6ffa2cfa08206ed326a7cc1fe0e2) fix(sync): remove the acquiring key from the pending queue, not the front. Fixes #16567 (cherry-pick #16613 for 4.1) (#16641)
+* [13eb8a69a](https://github.com/argoproj/argo-workflows/commit/13eb8a69ac2464379c9e223477ddff7c9bfc7b6a) fix(test): de-flake TestParallelismUpdate on coarse-resolution clocks (cherry-pick #16224 for 4.1) (#16646)
+* [3a18911b1](https://github.com/argoproj/argo-workflows/commit/3a18911b1c7c6cc31575b6966bd0c55338fa278c) fix: avoid nil pointer (cherry-pick #16608 for 4.1) (#16629)
+* [6dfc3a5ef](https://github.com/argoproj/argo-workflows/commit/6dfc3a5efeaf8e6870185b6511ae27e0251e9581) chore(deps): sync sdk go modules with root dependencies (cherry-pick #16612 for 4.1) (#16627)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Claude Fable 5
+* Claude Opus 4.8 (1M context)
+* Claude Opus 5 (1M context)
+* ham
+* Max Xu
+* spaced
+
+</details>
+
 ## v4.1.0 (2026-08-11)
 
 Full Changelog: [v4.1.0-rc2...v4.1.0](https://github.com/argoproj/argo-workflows/compare/v4.1.0-rc2...v4.1.0)
@@ -53,7 +81,7 @@ Full Changelog: [v4.1.0-rc1...v4.1.0-rc2](https://github.com/argoproj/argo-workf
 
 ## v4.1.0-rc1 (2026-07-23)
 
-Full Changelog: [v4.0.8...v4.1.0-rc1](https://github.com/argoproj/argo-workflows/compare/v4.0.8...v4.1.0-rc1)
+Full Changelog: [v4.0.9...v4.1.0-rc1](https://github.com/argoproj/argo-workflows/compare/v4.0.9...v4.1.0-rc1)
 
 ### Selected Changes
 
@@ -676,6 +704,42 @@ Full Changelog: [v4.0.8...v4.1.0-rc1](https://github.com/argoproj/argo-workflows
 
 </details>
 
+## v4.0.9 (2026-08-14)
+
+Full Changelog: [v4.0.8...v4.0.9](https://github.com/argoproj/argo-workflows/compare/v4.0.8...v4.0.9)
+
+### Selected Changes
+
+* [bea996636](https://github.com/argoproj/argo-workflows/commit/bea996636e9614155bd7c8b505a0ed992c7c80ff) fix(logging): remove process-wide signal handler from the init logger. Fixes #15863 (cherry-pick #16693 for 4.0) (#16713)
+* [e37f9035d](https://github.com/argoproj/argo-workflows/commit/e37f9035d090cc103d23d2626ad1dd8c5aece53a) fix(controller): memoize outputs for steps templates (release-4.0) (#16696)
+* [aa35e305c](https://github.com/argoproj/argo-workflows/commit/aa35e305ceb04bfd799ee081a2d43936783a3bbd) chore(deps): update k8s.io/utils digest to cf1189d (release-4.0) (#16657)
+* [0e40809a6](https://github.com/argoproj/argo-workflows/commit/0e40809a68e75cb0330e99d1ed9fbb5e67dfe2c1) chore(deps): update google.golang.org/genproto/googleapis/api digest to ec0a776 (release-4.0) (#16656)
+* [02be3e32a](https://github.com/argoproj/argo-workflows/commit/02be3e32af67209465b106eefd42e2f2fde6bc8e) chore(deps): update golang to v1.25.12 (release-4.0) (#16650)
+* [880f9f86b](https://github.com/argoproj/argo-workflows/commit/880f9f86b60afd725b28ecffd5bbb8ea4cf761b2) fix(sync): remove the acquiring key from the pending queue, not the front. Fixes #16567 (cherry-pick #16613 for 4.0) (#16642)
+* [9d385c413](https://github.com/argoproj/argo-workflows/commit/9d385c413e0a672777a78fb0732060116f905d87) fix(test): de-flake TestParallelismUpdate on coarse-resolution clocks (cherry-pick #16224 for 4.0) (#16647)
+* [37da91cfc](https://github.com/argoproj/argo-workflows/commit/37da91cfcbd312b58711b45232ffe4512b0baad8) feat: add argo-workflows-crdinstaller image. Fixes #16621 (cherry-pick #16622 for 4.0) (#16634)
+* [06bd7b19a](https://github.com/argoproj/argo-workflows/commit/06bd7b19a180d71ade98e262e121a68380719511) fix: avoid nil pointer (cherry-pick #16608 for 4.0) (#16628)
+* [a6d15d0dd](https://github.com/argoproj/argo-workflows/commit/a6d15d0ddd48968e1ec83d596d1744ea09b6b7fa) chore(deps): update module github.com/go-git/go-git/v5 to v5.19.2 [security] (release-4.0) (#16617)
+* [4d636bab9](https://github.com/argoproj/argo-workflows/commit/4d636bab900dc2e3bdf864c567aad4a94a5e25c6) fix(controller): archive each workflow once, and retry failed archives. Fixes #16575 (cherry-pick #16577 for 4.0) (#16591)
+* [57107c6e3](https://github.com/argoproj/argo-workflows/commit/57107c6e3f3edec3ded8c9fa111d8f43c6d9f626) fix(controller): do not postpone already-Running workflows. Fixes #14123 (cherry-pick #16569 for 4.0) (#16572)
+* [3d58f8ca1](https://github.com/argoproj/argo-workflows/commit/3d58f8ca1c2235e1f1145346a19a5f2cb741abd2) chore(deps): update module github.com/klauspost/compress to v1.18.7 [security] (release-4.0) (#16581)
+* [4eeafbd63](https://github.com/argoproj/argo-workflows/commit/4eeafbd63f947bdc54802477d7e643907e489ec3) chore(deps): update module github.com/google/cel-go to v0.29.0 [security] (release-4.0) (#16542)
+* [df6f1e380](https://github.com/argoproj/argo-workflows/commit/df6f1e380fe8537326554be11dfc20fa51b9a2af) chore(deps): update module go.opentelemetry.io/otel to v1.44.0 [security] (release-4.0) (#16535)
+* [f334b4ab3](https://github.com/argoproj/argo-workflows/commit/f334b4ab32b58bf498d819e116fc36428f6cf1ee) chore(deps): update dependency pymdown-extensions to v11 [security] (release-4.0) (#16536)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Arthur Kepler
+* Claude Fable 5
+* Claude Opus 4.8 (1M context)
+* Claude Opus 5 (1M context)
+* heewonham
+* spaced
+* 秀吉
+
+</details>
+
 ## v4.0.8 (2026-07-22)
 
 Full Changelog: [v4.0.7...v4.0.8](https://github.com/argoproj/argo-workflows/compare/v4.0.7...v4.0.8)
@@ -1080,7 +1144,7 @@ Full Changelog: [v4.0.0-rc1...v4.0.0-rc2](https://github.com/argoproj/argo-workf
 
 ## v4.0.0-rc1 (2025-12-11)
 
-Full Changelog: [v3.7.17...v4.0.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.7.17...v4.0.0-rc1)
+Full Changelog: [v3.7.18...v4.0.0-rc1](https://github.com/argoproj/argo-workflows/compare/v3.7.18...v4.0.0-rc1)
 
 ### Selected Changes
 
@@ -1267,6 +1331,29 @@ Full Changelog: [v3.7.17...v4.0.0-rc1](https://github.com/argoproj/argo-workflow
 * William Van Hevelingen
 * Xavier Hardy
 * Yuan Tang
+
+</details>
+
+## v3.7.18 (2026-08-14)
+
+Full Changelog: [v3.7.17...v3.7.18](https://github.com/argoproj/argo-workflows/compare/v3.7.17...v3.7.18)
+
+### Selected Changes
+
+* [66e32e5cc](https://github.com/argoproj/argo-workflows/commit/66e32e5cc367f223e2ecf4fbe852b95eaed83034) fix(controller): memoize outputs for steps templates (release-3.7) (#16697)
+* [e066986a8](https://github.com/argoproj/argo-workflows/commit/e066986a811bbc4abb6bf4c556a45c8f9c7847d2) fix(sync): remove the acquiring key from the pending queue, not the front. Fixes #16567 (cherry-pick #16613 for 3.7) (#16699)
+* [b71ced286](https://github.com/argoproj/argo-workflows/commit/b71ced28666b5e805b5c8822293feec2300003f3) fix: avoid nil pointer (cherry-pick #16608 for 3.7) (#16635)
+* [36fb0992d](https://github.com/argoproj/argo-workflows/commit/36fb0992da3c711c60b2cf64a99330c5d35074bc) chore(deps): update module github.com/go-git/go-git/v5 to v5.19.2 [security] (release-3.7) (#16616)
+* [018bbd573](https://github.com/argoproj/argo-workflows/commit/018bbd57313d642c287c9ae56296b0e2ba266c79) chore(deps): update module github.com/klauspost/compress to v1.18.7 [security] (release-3.7) (#16580)
+* [f9e71cd35](https://github.com/argoproj/argo-workflows/commit/f9e71cd35d690c12bcd7de1d40dffec4fdbd7fda) chore(deps): update module go.opentelemetry.io/otel to v1.44.0 [security] (release-3.7) (#16533)
+* [948793ccf](https://github.com/argoproj/argo-workflows/commit/948793ccf637994d311e1f952428846629812096) chore(deps): update dependency pymdown-extensions to v11 [security] (release-3.7) (#16534)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Claude Fable 5
+* ham
+* spaced
 
 </details>
 
