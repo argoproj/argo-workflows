@@ -80,7 +80,7 @@ func NewRootCommand() *cobra.Command {
 			defer runtimeutil.HandleCrashWithContext(c.Context(), runtimeutil.PanicHandlers...)
 			ctx, log, err := cmdutil.ContextWithLogger(c, logLevel, logFormat)
 			if err != nil {
-				logging.InitLogger().WithError(err).WithFatal().Error(c.Context(), "Failed to create workflow-controller cmd logger")
+				cmdutil.FatalBootstrap(logFormat, err, "Failed to create workflow-controller cmd logger")
 				return err
 			}
 
@@ -224,8 +224,7 @@ func NewRootCommand() *cobra.Command {
 	command.Flags().BoolVar(&workflowLevelExecutorPlugins, "workflow-level-executor-plugins", false, "enable workflow-level executor plugins")
 	ctx, log, err := cmdutil.ContextWithLogger(&command, logLevel, logFormat)
 	if err != nil {
-		logging.InitLogger().WithError(err).WithFatal().Error(command.Context(), "Failed to create workflow-controller logger")
-		os.Exit(1)
+		cmdutil.FatalBootstrap(logFormat, err, "Failed to create workflow-controller logger")
 	}
 
 	// set-up env vars for the CLI such that ARGO_* env vars can be used instead of flags

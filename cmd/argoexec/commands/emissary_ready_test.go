@@ -21,7 +21,7 @@ const (
 )
 
 func TestWaitForSupervisorReady_ReadyAppears(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.InitLogger())
+	ctx := logging.WithLogger(context.Background(), logging.NewTestLogger(logging.Info, logging.Text))
 	dir := t.TempDir()
 	statusPath := filepath.Join(dir, "status")
 
@@ -36,7 +36,7 @@ func TestWaitForSupervisorReady_ReadyAppears(t *testing.T) {
 }
 
 func TestWaitForSupervisorReady_FailedAppears(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.InitLogger())
+	ctx := logging.WithLogger(context.Background(), logging.NewTestLogger(logging.Info, logging.Text))
 	dir := t.TempDir()
 	statusPath := filepath.Join(dir, "status")
 
@@ -53,7 +53,7 @@ func TestWaitForSupervisorReady_FailedAppears(t *testing.T) {
 }
 
 func TestWaitForSupervisorReady_AlreadyReady(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.InitLogger())
+	ctx := logging.WithLogger(context.Background(), logging.NewTestLogger(logging.Info, logging.Text))
 	dir := t.TempDir()
 	statusPath := filepath.Join(dir, "status")
 
@@ -65,7 +65,7 @@ func TestWaitForSupervisorReady_AlreadyReady(t *testing.T) {
 }
 
 func TestWaitForSupervisorReady_AlreadyFailed(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.InitLogger())
+	ctx := logging.WithLogger(context.Background(), logging.NewTestLogger(logging.Info, logging.Text))
 	dir := t.TempDir()
 	statusPath := filepath.Join(dir, "status")
 
@@ -82,7 +82,7 @@ func TestWaitForSupervisorReady_AlreadyFailed(t *testing.T) {
 // path: a RUNNING marker keeps main waiting (a generous timeout means staleness
 // never fires), and the later terminal READY write releases it.
 func TestWaitForSupervisorReady_RunningThenReady(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.InitLogger())
+	ctx := logging.WithLogger(context.Background(), logging.NewTestLogger(logging.Info, logging.Text))
 	dir := t.TempDir()
 	statusPath := filepath.Join(dir, "status")
 
@@ -101,7 +101,7 @@ func TestWaitForSupervisorReady_RunningThenReady(t *testing.T) {
 // wrote RUNNING then died without ever writing a terminal status: the marker's
 // mtime goes stale past the timeout and main fails fast instead of hanging.
 func TestWaitForSupervisorReady_StaleRunningPresumedDead(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.InitLogger())
+	ctx := logging.WithLogger(context.Background(), logging.NewTestLogger(logging.Info, logging.Text))
 	dir := t.TempDir()
 	statusPath := filepath.Join(dir, "status")
 
@@ -121,7 +121,7 @@ func TestWaitForSupervisorReady_StaleRunningPresumedDead(t *testing.T) {
 // died before writing any marker: main bounds the wait by the timeout rather
 // than blocking to the pod deadline.
 func TestWaitForSupervisorReady_NeverAppearsPresumedDead(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.InitLogger())
+	ctx := logging.WithLogger(context.Background(), logging.NewTestLogger(logging.Info, logging.Text))
 	dir := t.TempDir()
 	statusPath := filepath.Join(dir, "status")
 
@@ -133,7 +133,7 @@ func TestWaitForSupervisorReady_NeverAppearsPresumedDead(t *testing.T) {
 }
 
 func TestWaitForSupervisorReady_ContextCancelled(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.InitLogger())
+	ctx := logging.WithLogger(context.Background(), logging.NewTestLogger(logging.Info, logging.Text))
 	dir := t.TempDir()
 	statusPath := filepath.Join(dir, "status")
 
@@ -150,7 +150,7 @@ func TestWaitForSupervisorReady_ContextCancelled(t *testing.T) {
 // nil and mistaken for a ready supervisor. With no marker present, an explicit
 // cancel must surface as an error, not success.
 func TestWaitForSupervisorReady_ParentCancelledPropagates(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.InitLogger())
+	ctx := logging.WithLogger(context.Background(), logging.NewTestLogger(logging.Info, logging.Text))
 	dir := t.TempDir()
 	statusPath := filepath.Join(dir, "status")
 
