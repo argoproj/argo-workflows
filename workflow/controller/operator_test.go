@@ -11455,6 +11455,40 @@ func TestMemoizationTemplateLevelCacheWithStepWithCache(t *testing.T) {
 	require.Nil(t, node, "Whalesay step should not have been executed")
 }
 
+// TestMemoizationTemplateLevelCacheStepSavesOutputs ensures that the outputs of a memoized
+// steps template are written to the cache, so that a later cache hit can replay them.
+func TestMemoizationTemplateLevelCacheStepSavesOutputs(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(workflowWithTemplateLevelMemoizationAndChildStep)
+
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
+	defer cancel()
+
+	ctx := logging.TestContext(t.Context())
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc.operate(ctx)
+
+	node := woc.wf.Status.Nodes.Find(nodeWithTemplateName("entrypoint"))
+	require.NotNil(t, node, "Entrypoint should exist")
+	require.Equal(t, wfv1.NodeSucceeded, node.Phase)
+
+	cm, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Get(ctx, "cache-top-entrypoint", metav1.GetOptions{})
+	require.NoError(t, err, "Memoization cache ConfigMap should have been created")
+
+	rawEntry, ok := cm.Data["entrypoint-key-1"]
+	require.True(t, ok, "Memoization cache should contain an entry for the memoize key")
+
+	var entry cache.Entry
+	require.NoError(t, json.Unmarshal([]byte(rawEntry), &entry))
+	require.NotNil(t, entry.Outputs, "Cached entry should contain the template outputs, got %s", rawEntry)
+	require.Len(t, entry.Outputs.Parameters, 1)
+	assert.Equal(t, "url", entry.Outputs.Parameters[0].Name)
+	assert.Contains(t, entry.Outputs.Parameters[0].Value.String(), "https://argo-workflows.company.com/workflows/namepace/")
+}
+
 var workflowWithTemplateLevelMemoizationAndChildDag = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
