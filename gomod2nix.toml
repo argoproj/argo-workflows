@@ -125,14 +125,14 @@ schema = 3
     version = "v1.43.5"
     hash = "sha256-UTUKtiIdtXG1oWYf3VUwenazEwG923Wmi7jEcVukoYA="
   [mod."github.com/aws/aws-sdk-go-v2/config"]
-    version = "v1.32.30"
-    hash = "sha256-mTI+p/ZIlIXqUaUmYHPuCEVA/todlPfqRRCpY4jNk8U="
+    version = "v1.32.36"
+    hash = "sha256-tSeNNbLL1UuhI/MXrb+7kh4MhjJv1J2aoj7ysmDZUlM="
   [mod."github.com/aws/aws-sdk-go-v2/credentials"]
-    version = "v1.19.29"
-    hash = "sha256-ZjKQH6Dw15tyMGvNft+N7LRS9d6fexveP5aJ85YFVK0="
+    version = "v1.19.35"
+    hash = "sha256-aLTM6IblSyr7GBRsHl4ZL7D5393m6LAYK7ZQ1VvVQb8="
   [mod."github.com/aws/aws-sdk-go-v2/feature/ec2/imds"]
-    version = "v1.18.30"
-    hash = "sha256-o3uRJ6fMcsNuSkKHeaNBLcnPKoc4Cia3m0ulEO4b5o0="
+    version = "v1.18.36"
+    hash = "sha256-FMcYld3neeiRAPK/2aLg1oWYrT+xX3Cx1zQlb7IUuM8="
   [mod."github.com/aws/aws-sdk-go-v2/feature/rds/auth"]
     version = "v1.6.30"
     hash = "sha256-pezAAnSxge84pDBL7UX73GQUHDlTXsM99CNiOTIpc0A="
@@ -164,8 +164,8 @@ schema = 3
     version = "v1.13.36"
     hash = "sha256-+fTuTzz+4eje0BKMeqvi3o6WV8NTZji3eyY9gdev6pw="
   [mod."github.com/aws/aws-sdk-go-v2/service/signin"]
-    version = "v1.4.1"
-    hash = "sha256-mbdJNJR8Zj61xJGYh4aLuBxAoSZR1I8wIN8bo1MrJ7c="
+    version = "v1.5.5"
+    hash = "sha256-9YiVFHWgvLW0RYyz2QYOaDrUXpfCgw4ikpLlf5+4TYs="
   [mod."github.com/aws/aws-sdk-go-v2/service/sns"]
     version = "v1.42.3"
     hash = "sha256-Pri3cqQ+c0OvmHb711D3gWXwbitulG/UbdCjLmo1AzA="
@@ -173,11 +173,11 @@ schema = 3
     version = "v1.46.3"
     hash = "sha256-nSg1kFNFlZEa4b5SFuErJk29MX1sW7SSIs/hlGImt1s="
   [mod."github.com/aws/aws-sdk-go-v2/service/sso"]
-    version = "v1.32.1"
-    hash = "sha256-hT8r+TRmZOXPY91H1GxcoKqOMW30dF7TZwH03X3vU38="
+    version = "v1.33.5"
+    hash = "sha256-vAijnHt9Jc+LE9Qx4KTKjn1McVO+Q2xniAYTZSS6wJQ="
   [mod."github.com/aws/aws-sdk-go-v2/service/ssooidc"]
-    version = "v1.37.1"
-    hash = "sha256-qaeGgEaQyhVWXYuPh4qZqbO/eoCM2oeWzPV6FtQ618I="
+    version = "v1.38.5"
+    hash = "sha256-NZ74YPQe1isPBRSbuufTAR5HncG8qBgWzCMvZGJiljw="
   [mod."github.com/aws/aws-sdk-go-v2/service/sts"]
     version = "v1.45.5"
     hash = "sha256-BpbEzCIifcPeSuCokYENsjuSAgxfw+mZgJHbxUI57XA="
