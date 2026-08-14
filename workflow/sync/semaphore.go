@@ -257,7 +257,7 @@ func (s *prioritySemaphore) tryAcquire(holderKey string, tx *transaction) (bool,
 	}
 	acquired, _ := s.acquire(holderKey, tx)
 	if acquired {
-		s.pending.pop()
+		s.pending.remove(holderKey)
 		limit := s.getLimit()
 		s.log.Infof("%s acquired by %s. Lock availability: %d/%d", s.name, holderKey, limit-len(s.lockHolder), limit)
 		s.notifyWaiters()
