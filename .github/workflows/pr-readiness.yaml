@@ -26,9 +26,9 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  # Dry-run: render to the job summary instead of commenting/drafting.
-  # Flip to "false" to go live.
-  DRY_RUN: "true"
+  # Dry-run: set to "true" to render to the job summary instead of
+  # commenting/drafting.
+  DRY_RUN: "false"
 
 jobs:
   assess:

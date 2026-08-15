@@ -387,6 +387,7 @@ endif
 
 argoexec-image: ## Build the executor image
 argoexec-nonroot-image:
+argo-workflows-crdinstaller-image: ## Build the CRD installer image
 
 %-image:
 	[ ! -e dist/$* ] || mv dist/$* .
@@ -406,7 +407,11 @@ argoexec-nonroot-image:
 		--load \
 		.; \
 	[ ! -e $* ] || mv $* dist/; \
-	docker run --rm -t $$image_name version; \
+	if [ "$*" = "argo-workflows-crdinstaller" ]; then \
+		docker run --rm -t $$image_name version --client; \
+	else \
+		docker run --rm -t $$image_name version; \
+	fi; \
 	if [ $(K3D) = true ]; then \
 		k3d image import -c $(K3D_CLUSTER_NAME) $$image_name; \
 	fi; \
@@ -455,7 +460,7 @@ swagger: \
 $(TOOL_MOCKERY): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	GOTOOLCHAIN=go1.26.1 go install github.com/vektra/mockery/v3@v3.5.1
+	GOTOOLCHAIN=go1.26.5 go install github.com/vektra/mockery/v3@v3.5.1
 endif
 $(TOOL_CONTROLLER_GEN): Makefile
 # update this in Nix when upgrading it here
@@ -635,7 +640,7 @@ manifests-validate:
 	kubectl apply --server-side --validate=strict --dry-run=server -f 'manifests/*.yaml'
 
 $(TOOL_GOLANGCI_LINT): Makefile
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v2.11.3
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/v2.12.2/install.sh | sh -s -- -b `go env GOPATH`/bin v2.12.2
 
 .PHONY: lint lint-go lint-ui
 lint: lint-go lint-ui features-validate ## Lint the project

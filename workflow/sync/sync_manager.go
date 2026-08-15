@@ -706,7 +706,10 @@ func (sm *Manager) Release(ctx context.Context, wf *wfv1.Workflow, nodeName stri
 			}
 			lockKey := lockName
 			if wf.Status.Synchronization != nil {
-				wf.Status.Synchronization.GetStatus(syncItem.getType()).LockReleased(holderKey, lockKey.String(ctx))
+				s := wf.Status.Synchronization.GetStatus(syncItem.getType())
+				if s != nil {
+					s.LockReleased(holderKey, lockKey.String(ctx))
+				}
 			}
 		}
 	}

@@ -17,6 +17,7 @@ git_log() {
   git log \
     --no-merges \
     --perl-regexp \
+    --abbrev=9 \
     --invert-grep '--grep=^(build|chore|ci|docs|test)(\((?!deps).*\))?:' \
     --invert-grep '--grep=^(.+)(\(docs|deps-dev\)):' \
     --invert-grep '--grep=^chore\(deps\):\sbump\s(actions|dependabot)/.*' \
@@ -62,13 +63,17 @@ git tag -l 'v*' | grep -v 0.0.0 | sed 's/-rc/~/' | sort -rV | sed 's/~/-rc/' | w
   tag=$last
 
   # skip versions older than v3.x.x as those have been split into a separate file
-  if [ "$tag" = "v2.12.13" ]; then
+  if [ "$tag" = "v3.7.18" ]; then
     break
   fi
 done
 
 # footer for versions older than 3.x.x
 echo
+echo "## v3.7.18 (2026-08-14)"
+echo
+echo "For v3 releases, see [CHANGELOG-3-x-x.md](CHANGELOG-3-x-x.md)"
+echo
 echo "## v2.12.13 (2021-08-18)"
 echo
-echo "For v2.12.13 and earlier, see [CHANGELOG-2-x-x.md](CHANGELOG-2-x-x.md)"
+echo "For v2 releases, see [CHANGELOG-2-x-x.md](CHANGELOG-2-x-x.md)"
