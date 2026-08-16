@@ -12,6 +12,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/env"
+	"github.com/argoproj/argo-workflows/v4/util/file"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/sqldb"
 )
@@ -45,6 +46,8 @@ type nodesRecord struct {
 	UUIDVersion
 	Namespace string `db:"namespace"`
 	Nodes     string `db:"nodes"`
+	// Base64-encoded compressed node status; empty on legacy rows written before compression.
+	CompressedNodes string `db:"compressednodes"`
 }
 
 type nodeOffloadRepo struct {
@@ -84,7 +87,9 @@ func (wdc *nodeOffloadRepo) Save(ctx context.Context, uid, namespace string, nod
 			Version: version,
 		},
 		Namespace: namespace,
-		Nodes:     marshalled,
+		// nodes is json not null; payload actually lives in CompressedNodes.
+		Nodes:           "null",
+		CompressedNodes: file.CompressEncodeString(ctx, marshalled),
 	}
 
 	logCtx := wdc.log.WithFields(logging.Fields{"uid": uid, "version": version})
@@ -135,8 +140,15 @@ func (wdc *nodeOffloadRepo) Get(ctx context.Context, uid, version string) (wfv1.
 		if err != nil {
 			return err
 		}
+		nodesJSON := r.Nodes
+		if r.CompressedNodes != "" {
+			nodesJSON, err = file.DecodeDecompressString(ctx, r.CompressedNodes)
+			if err != nil {
+				return err
+			}
+		}
 		n := &wfv1.Nodes{}
-		err = json.Unmarshal([]byte(r.Nodes), n)
+		err = json.Unmarshal([]byte(nodesJSON), n)
 		if err != nil {
 			return err
 		}
@@ -155,7 +167,7 @@ func (wdc *nodeOffloadRepo) List(ctx context.Context, namespace string) (map[UUI
 	err := wdc.sessionProxy.With(ctx, func(s db.Session) error {
 		var records []nodesRecord
 		err := s.SQL().
-			Select("uid", "version", "nodes").
+			Select("uid", "version", "nodes", "compressednodes").
 			From(wdc.tableName).
 			Where(db.Cond{"clustername": wdc.clusterName}).
 			And(namespaceEqual(namespace)).
@@ -166,8 +178,15 @@ func (wdc *nodeOffloadRepo) List(ctx context.Context, namespace string) (map[UUI
 
 		res = make(map[UUIDVersion]wfv1.Nodes)
 		for _, r := range records {
+			nodesJSON := r.Nodes
+			if r.CompressedNodes != "" {
+				nodesJSON, err = file.DecodeDecompressString(ctx, r.CompressedNodes)
+				if err != nil {
+					return err
+				}
+			}
 			nodes := &wfv1.Nodes{}
-			err = json.Unmarshal([]byte(r.Nodes), nodes)
+			err = json.Unmarshal([]byte(nodesJSON), nodes)
 			if err != nil {
 				return err
 			}
