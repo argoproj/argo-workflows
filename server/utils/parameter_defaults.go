@@ -15,6 +15,10 @@ func EvaluateParameterDefaults(ctx context.Context, spec *v1alpha1.WorkflowSpec)
 	globalParameters := make(map[string]any)
 	for i := range spec.Arguments.Parameters {
 		parameter := &spec.Arguments.Parameters[i]
+		if parameter.Value != nil {
+			globalParameters[parameter.Name] = parameter.Value.String()
+			continue
+		}
 		value, resolved, expression, err := evaluateParameterDefault(ctx, parameter.Default, nil)
 		if err != nil {
 			return fmt.Errorf("failed to evaluate default for workflow parameter %q: %w", parameter.Name, err)
@@ -37,6 +41,9 @@ func EvaluateParameterDefaults(ctx context.Context, spec *v1alpha1.WorkflowSpec)
 	for i := range spec.Templates {
 		for j := range spec.Templates[i].Inputs.Parameters {
 			parameter := &spec.Templates[i].Inputs.Parameters[j]
+			if parameter.Value != nil {
+				continue
+			}
 			value, resolved, _, err := evaluateParameterDefault(ctx, parameter.Default, replaceMap)
 			if err != nil {
 				return fmt.Errorf("failed to evaluate default for template %q input parameter %q: %w", spec.Templates[i].Name, parameter.Name, err)
