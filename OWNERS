@@ -1,17 +1,20 @@
 owners:
 - joibel
-- sarabala1979
 - terrytangyuan
 
 approvers:
-- alexec
 - alexmt
-- edlee2121
 - isubasinghe
 - jessesuen
 - juliev0
+- masonm
 - tczhao
 
 reviewers:
+- alexec
+- blkperl
+- eduardodbr
+- edlee2121
 - jswxstw
+- sarabala1979
 - shuangkun

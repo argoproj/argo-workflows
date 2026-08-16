@@ -6,17 +6,17 @@ import (
 	"os"
 	"testing"
 
-	cmdutil "github.com/argoproj/argo-workflows/v3/util/cmd"
-	"github.com/argoproj/argo-workflows/v3/util/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	cmdutil "github.com/argoproj/argo-workflows/v4/util/cmd"
+	"github.com/argoproj/argo-workflows/v4/util/errors"
 )
 
 func TestEmissary(t *testing.T) {
 	tmp := t.TempDir()
 
 	varRunArgo = tmp
-	includeScriptOutput = true
 
 	err := os.WriteFile(varRunArgo+"/template", []byte(`{}`), 0o600)
 	require.NoError(t, err)
@@ -45,10 +45,9 @@ func TestEmissary(t *testing.T) {
 
 func run(script string) error {
 	cmd := NewEmissaryCommand()
-	_, _, err := cmdutil.CmdContextWithLogger(cmd, "info", "text")
+	ctx, _, err := cmdutil.ContextWithLogger(cmd, "info", "text")
 	if err != nil {
 		return err
 	}
-	containerName = "main"
-	return cmd.RunE(cmd, append([]string{"powershell", "-c"}, script))
+	return runEmissary(ctx, "main", true, append([]string{"powershell", "-c"}, script))
 }

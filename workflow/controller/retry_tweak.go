@@ -4,8 +4,8 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/utils/env"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	wfretry "github.com/argoproj/argo-workflows/v3/workflow/util/retry"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	wfretry "github.com/argoproj/argo-workflows/v4/workflow/util/retry"
 )
 
 // RetryTweak is a 2nd order function interface for tweaking the retry
@@ -13,11 +13,11 @@ type RetryTweak = func(retryStrategy wfv1.RetryStrategy, nodes wfv1.Nodes, pod *
 
 // FindRetryNode locates the closest retry node ancestor to nodeID
 func FindRetryNode(nodes wfv1.Nodes, nodeID string) *wfv1.NodeStatus {
-	if parentNode := nodes.FindByChild(nodeID); parentNode != nil && parentNode.Type == wfv1.NodeTypeRetry {
+	if parentNode := nodes.FindRetryNodeByChild(nodeID); parentNode != nil {
 		return parentNode
 	}
 	boundaryID := nodes[nodeID].BoundaryID
-	if parentNode := nodes.FindByChild(boundaryID); parentNode != nil && parentNode.Type == wfv1.NodeTypeRetry {
+	if parentNode := nodes.FindRetryNodeByChild(boundaryID); parentNode != nil {
 		return parentNode
 	}
 	return nil

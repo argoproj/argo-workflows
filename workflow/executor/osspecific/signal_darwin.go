@@ -5,7 +5,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/util/errors"
+	"github.com/argoproj/argo-workflows/v4/util/errors"
 )
 
 var (

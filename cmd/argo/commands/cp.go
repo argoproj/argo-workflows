@@ -1,7 +1,7 @@
 package commands
 
 import (
-	"crypto/tls"
+	"context"
 	"fmt"
 	"io"
 	"log"
@@ -13,11 +13,12 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
-	"github.com/argoproj/argo-workflows/v3/pkg/apiclient"
-	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	wfutil "github.com/argoproj/argo-workflows/v3/workflow/util"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v4/pkg/apiclient"
+	workflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	tlsutil "github.com/argoproj/argo-workflows/v4/util/tls"
+	wfutil "github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
 func NewCpCommand() *cobra.Command {
@@ -73,26 +74,23 @@ func NewCpCommand() *cobra.Command {
 			}
 			artifactSearchResults := workflow.SearchArtifacts(&artifactSearchQuery)
 
-			c := &http.Client{
-				Transport: &http.Transport{
-					TLSClientConfig: &tls.Config{
-						InsecureSkipVerify: client.ArgoServerOpts.InsecureSkipVerify,
-					},
-				},
+			c, err := newArtifactHTTPClient(client.ArgoServerOpts)
+			if err != nil {
+				return err
 			}
 
 			for _, artifact := range artifactSearchResults {
-				customPath := filepath.Join(outputDir, customPath)
+				outputPath := filepath.Join(outputDir, customPath)
 				nodeInfo := workflow.Status.Nodes.Find(func(n v1alpha1.NodeStatus) bool { return n.ID == artifact.NodeID })
 				if nodeInfo == nil {
 					return fmt.Errorf("could not get node status for node ID %s", artifact.NodeID)
 				}
-				customPath = strings.Replace(customPath, "{templateName}", wfutil.GetTemplateFromNode(*nodeInfo), 1)
-				customPath = strings.Replace(customPath, "{namespace}", namespace, 1)
-				customPath = strings.Replace(customPath, "{workflowName}", workflowName, 1)
-				customPath = strings.Replace(customPath, "{nodeId}", artifact.NodeID, 1)
-				customPath = strings.Replace(customPath, "{artifactName}", artifact.Name, 1)
-				err = os.MkdirAll(customPath, os.ModePerm)
+				outputPath = strings.Replace(outputPath, "{templateName}", wfutil.GetTemplateFromNode(*nodeInfo), 1)
+				outputPath = strings.Replace(outputPath, "{namespace}", namespace, 1)
+				outputPath = strings.Replace(outputPath, "{workflowName}", workflowName, 1)
+				outputPath = strings.Replace(outputPath, "{nodeId}", artifact.NodeID, 1)
+				outputPath = strings.Replace(outputPath, "{artifactName}", artifact.Name, 1)
+				err = os.MkdirAll(outputPath, os.ModePerm)
 				if err != nil {
 					return fmt.Errorf("failed to create folder path: %w", err)
 				}
@@ -100,7 +98,7 @@ func NewCpCommand() *cobra.Command {
 				if err != nil {
 					return fmt.Errorf("error getting key for artifact: %w", err)
 				}
-				err = getAndStoreArtifactData(namespace, workflowName, artifact.NodeID, artifact.Name, path.Base(key), customPath, c, client.ArgoServerOpts)
+				err = getAndStoreArtifactData(ctx, namespace, workflowName, artifact.NodeID, artifact.Name, path.Base(key), outputPath, c, client.ArgoServerOpts)
 				if err != nil {
 					return fmt.Errorf("failed to get and store artifact data: %w", err)
 				}
@@ -116,12 +114,20 @@ func NewCpCommand() *cobra.Command {
 	return command
 }
 
-func getAndStoreArtifactData(namespace string, workflowName string, nodeID string, artifactName string, fileName string, customPath string, c *http.Client, argoServerOpts apiclient.ArgoServerOpts) error {
-	request, err := http.NewRequest("GET", fmt.Sprintf("%s/artifacts/%s/%s/%s/%s", argoServerOpts.GetURL(), namespace, workflowName, nodeID, artifactName), nil)
+func newArtifactHTTPClient(opts apiclient.ArgoServerOpts) (*http.Client, error) {
+	tlsConfig, err := tlsutil.GetClientTLSConfig(opts.ClientCert, opts.ClientKey, opts.CACert, opts.InsecureSkipVerify)
+	if err != nil {
+		return nil, err
+	}
+	return &http.Client{Transport: &http.Transport{TLSClientConfig: tlsConfig}}, nil
+}
+
+func getAndStoreArtifactData(ctx context.Context, namespace string, workflowName string, nodeID string, artifactName string, fileName string, customPath string, c *http.Client, argoServerOpts apiclient.ArgoServerOpts) error {
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/artifacts/%s/%s/%s/%s", argoServerOpts.GetURL(), namespace, workflowName, nodeID, artifactName), nil)
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
-	authString, err := client.GetAuthString()
+	authString, err := client.GetAuthString(ctx)
 	if err != nil {
 		return err
 	}
@@ -131,7 +137,7 @@ func getAndStoreArtifactData(namespace string, workflowName string, nodeID strin
 		return fmt.Errorf("request failed with: %w", err)
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("request failed %s", resp.Status)
 	}
 	artifactFilePath := filepath.Join(customPath, fileName)

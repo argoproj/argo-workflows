@@ -4,14 +4,14 @@ import (
 	"os"
 	"testing"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 
 	"k8s.io/client-go/util/homedir"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
 func TestGitArtifactDriver_Save(t *testing.T) {
@@ -27,7 +27,6 @@ func TestGitArtifactDriver_Load(t *testing.T) {
 		assert.DirExists(t, path)
 	})
 	t.Run("PrivateRepo", func(t *testing.T) {
-
 		// TODO: temp - skip private repo test for everyone
 		t.SkipNow()
 

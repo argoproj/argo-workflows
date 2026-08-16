@@ -2,7 +2,7 @@
 
 # GithubComArgoprojArgoEventsPkgApisEventsV1alpha1URLArtifact
 
-URLArtifact contains information about an artifact at an http endpoint.
+URLArtifact contains information about an artifact at an HTTP endpoint.
 
 ## Properties
 

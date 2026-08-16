@@ -2,13 +2,10 @@ package logging
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"maps"
 	"os"
-	"os/signal"
 	"sync"
-	"syscall"
 )
 
 //
@@ -28,15 +25,12 @@ type storage struct {
 	out      io.Writer // for testing purposes only
 }
 
-var (
-	initStorage = &storage{
-		initLogs: make([]initLog, 0),
-		mutex:    sync.Mutex{},
-		fatal:    false,
-		out:      os.Stderr,
-	}
-	setupOnce sync.Once
-)
+var initStorage = &storage{
+	initLogs: make([]initLog, 0),
+	mutex:    sync.Mutex{},
+	fatal:    false,
+	out:      os.Stderr,
+}
 
 var _ Logger = &initLogger{}
 
@@ -66,23 +60,9 @@ func (i initLogger) InContext(ctx context.Context) (context.Context, Logger) {
 	panic("not implemented, don't implement this")
 }
 
-func initSignalHandlers() {
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-
-	go func() {
-		<-c
-		// Emit any remaining init logs before exit
-		if len(initStorage.initLogs) > 0 {
-			emitInitLogs(context.Background(), NewSlogLoggerCustom(Debug, JSON, os.Stderr))
-		}
-	}()
-}
-
 // Caller must hold the lock
 func (i initLogger) add(level Level, message string) {
 	i.storage.initLogs = append(i.storage.initLogs, initLog{level: level, message: message, fields: i.fields})
-	setupOnce.Do(initSignalHandlers)
 }
 
 func (i initLogger) Level() Level {
@@ -92,7 +72,7 @@ func (i initLogger) Level() Level {
 func (i initLogger) WithFatal() Logger {
 	i.storage.mutex.Lock()
 	defer i.storage.mutex.Unlock()
-	i = DeepCopy(i)
+	i = deepCopy(i)
 	i.storage.fatal = true
 	return i
 }
@@ -104,7 +84,7 @@ func (i initLogger) WithPanic() Logger {
 func (i initLogger) WithField(name string, value any) Logger {
 	i.storage.mutex.Lock()
 	defer i.storage.mutex.Unlock()
-	i = DeepCopy(i)
+	i = deepCopy(i)
 	i.fields[name] = value
 	return i
 }
@@ -112,20 +92,17 @@ func (i initLogger) WithField(name string, value any) Logger {
 func (i initLogger) WithFields(fields Fields) Logger {
 	i.storage.mutex.Lock()
 	defer i.storage.mutex.Unlock()
-	i = DeepCopy(i)
-	maps.Copy(fields, i.fields)
+	i = deepCopy(i)
+	maps.Copy(i.fields, fields)
 	return i
 }
 
 func (i initLogger) WithError(err error) Logger {
 	i.storage.mutex.Lock()
 	defer i.storage.mutex.Unlock()
+	i = deepCopy(i)
 	i.fields["error"] = err
 	return i
-}
-
-func (i initLogger) Debugf(ctx context.Context, format string, args ...any) {
-	i.Debug(ctx, fmt.Sprintf(format, args...))
 }
 
 func (i initLogger) Debug(ctx context.Context, message string) {
@@ -134,18 +111,10 @@ func (i initLogger) Debug(ctx context.Context, message string) {
 	i.add(Debug, message)
 }
 
-func (i initLogger) Infof(ctx context.Context, format string, args ...any) {
-	i.Info(ctx, fmt.Sprintf(format, args...))
-}
-
 func (i initLogger) Info(ctx context.Context, message string) {
 	i.storage.mutex.Lock()
 	defer i.storage.mutex.Unlock()
 	i.add(Info, message)
-}
-
-func (i initLogger) Warnf(ctx context.Context, format string, args ...any) {
-	i.Warn(ctx, fmt.Sprintf(format, args...))
 }
 
 func (i initLogger) Warn(ctx context.Context, message string) {
@@ -154,22 +123,20 @@ func (i initLogger) Warn(ctx context.Context, message string) {
 	i.add(Warn, message)
 }
 
-func (i initLogger) Errorf(ctx context.Context, format string, args ...any) {
-	i.Error(ctx, fmt.Sprintf(format, args...))
-}
-
+//nolint:gocritic
 func (i initLogger) Error(ctx context.Context, message string) {
 	i.storage.mutex.Lock()
 	defer i.storage.mutex.Unlock()
 	i.add(Error, message)
 	if i.storage.fatal {
-		// nolint:contextcheck
+		//nolint:contextcheck
 		emitInitLogs(ctx, NewSlogLoggerCustom(Debug, JSON, i.storage.out))
-		if exitFunc := GetExitFunc(); exitFunc != nil {
-			exitFunc(1)
-		} else {
+		exitFunc := GetExitFunc()
+		if exitFunc == nil {
 			os.Exit(1)
 		}
+		exitFunc(1)
+		return
 	}
 }
 
@@ -189,7 +156,7 @@ func emitInitLogs(ctx context.Context, logger Logger) {
 	initStorage.initLogs = make([]initLog, 0)
 }
 
-func DeepCopy(i initLogger) initLogger {
+func deepCopy(i initLogger) initLogger {
 	return initLogger{
 		storage: i.storage,
 		fields:  maps.Clone(i.fields),

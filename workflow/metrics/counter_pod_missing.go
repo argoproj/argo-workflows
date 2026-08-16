@@ -3,7 +3,7 @@ package metrics
 import (
 	"context"
 
-	"github.com/argoproj/argo-workflows/v3/util/telemetry"
+	"github.com/argoproj/argo-workflows/v4/util/telemetry"
 )
 
 func addPodMissingCounter(_ context.Context, m *Metrics) error {
@@ -11,10 +11,7 @@ func addPodMissingCounter(_ context.Context, m *Metrics) error {
 }
 
 func (m *Metrics) incPodMissing(ctx context.Context, val int64, recentlyStarted bool, phase string) {
-	m.AddInt(ctx, telemetry.InstrumentPodMissing.Name(), val, telemetry.InstAttribs{
-		{Name: telemetry.AttribRecentlyStarted, Value: recentlyStarted},
-		{Name: telemetry.AttribNodePhase, Value: phase},
-	})
+	m.AddPodMissing(ctx, val, phase, recentlyStarted)
 }
 
 func (m *Metrics) PodMissingEnsure(ctx context.Context, recentlyStarted bool, phase string) {

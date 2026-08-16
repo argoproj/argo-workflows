@@ -5,10 +5,10 @@ import (
 
 	"google.golang.org/grpc"
 
-	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
-	"github.com/argoproj/argo-workflows/v3/workflow/validate"
+	workflowtemplatepkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflowtemplate"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/workflow/templateresolution"
+	"github.com/argoproj/argo-workflows/v4/workflow/validate"
 )
 
 type OfflineWorkflowTemplateServiceClient struct {
@@ -39,7 +39,7 @@ func (o OfflineWorkflowTemplateServiceClient) DeleteWorkflowTemplate(_ context.C
 }
 
 func (o OfflineWorkflowTemplateServiceClient) LintWorkflowTemplate(ctx context.Context, req *workflowtemplatepkg.WorkflowTemplateLintRequest, _ ...grpc.CallOption) (*v1alpha1.WorkflowTemplate, error) {
-	err := validate.ValidateWorkflowTemplate(ctx, o.namespacedWorkflowTemplateGetterMap.GetNamespaceGetter(req.Namespace), o.clusterWorkflowTemplateGetter, req.Template, nil, validate.ValidateOpts{Lint: true})
+	err := validate.WorkflowTemplate(ctx, o.namespacedWorkflowTemplateGetterMap.GetNamespaceGetter(req.Namespace), o.clusterWorkflowTemplateGetter, req.Template, nil, validate.Opts{Lint: true})
 	if err != nil {
 		return nil, err
 	}

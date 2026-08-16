@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/util/secrets"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/secrets"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -34,21 +34,21 @@ var webhookParsers = map[string]matcher{
 
 const pathPrefix = "/api/v1/events/"
 
-type WebhookInterceptor struct {
+type Interceptor struct {
 	logger logging.Logger
 }
 
-func NewWebhookInterceptor(logger logging.Logger) *WebhookInterceptor {
-	return &WebhookInterceptor{logger: logger}
+func NewInterceptor(logger logging.Logger) *Interceptor {
+	return &Interceptor{logger: logger}
 }
 
 // Interceptor creates an annotator that verifies webhook signatures and adds the appropriate access token to the request.
-func (i *WebhookInterceptor) Interceptor(client kubernetes.Interface) func(w http.ResponseWriter, r *http.Request, next http.Handler) {
+func (i *Interceptor) Interceptor(client kubernetes.Interface) func(w http.ResponseWriter, r *http.Request, next http.Handler) {
 	return func(w http.ResponseWriter, r *http.Request, next http.Handler) {
 		err := i.addWebhookAuthorization(r, client)
 		if err != nil {
 			i.logger.WithError(err).Error(r.Context(), "Failed to process webhook request")
-			w.WriteHeader(403)
+			w.WriteHeader(http.StatusForbidden)
 			// hide the message from the user, because it could help them attack us
 			_, _ = w.Write([]byte(`{"message": "failed to process webhook request"}`))
 		} else {
@@ -57,9 +57,9 @@ func (i *WebhookInterceptor) Interceptor(client kubernetes.Interface) func(w htt
 	}
 }
 
-func (i *WebhookInterceptor) addWebhookAuthorization(r *http.Request, kube kubernetes.Interface) error {
+func (i *Interceptor) addWebhookAuthorization(r *http.Request, kube kubernetes.Interface) error {
 	// try and exit quickly before we do anything API calls
-	if r.Method != "POST" || len(r.Header["Authorization"]) > 0 || !strings.HasPrefix(r.URL.Path, pathPrefix) {
+	if r.Method != http.MethodPost || len(r.Header["Authorization"]) > 0 || !strings.HasPrefix(r.URL.Path, pathPrefix) {
 		return nil
 	}
 	parts := strings.SplitN(strings.TrimPrefix(r.URL.Path, pathPrefix), "/", 2)
@@ -75,8 +75,16 @@ func (i *WebhookInterceptor) addWebhookAuthorization(r *http.Request, kube kuber
 		return fmt.Errorf("failed to get webhook clients: %w", err)
 	}
 	// we need to read the request body to check the signature, but we still need it for the GRPC request,
-	// so read it all now, and then reinstate when we are done
-	buf, _ := io.ReadAll(r.Body)
+	// so read it all now, and then reinstate when we are done.
+	// Limit to 2MB to prevent denial-of-service via oversized webhook payloads.
+	const maxWebhookSize = 2 * 1024 * 1024 // 2MB
+	buf, err2 := io.ReadAll(io.LimitReader(r.Body, maxWebhookSize+1))
+	if err2 != nil {
+		return fmt.Errorf("failed to read webhook request body: %w", err2)
+	}
+	if len(buf) > maxWebhookSize {
+		return fmt.Errorf("webhook request body exceeds maximum size of 2MB")
+	}
 	defer func() { r.Body = io.NopCloser(bytes.NewBuffer(buf)) }()
 	serviceAccountInterface := kube.CoreV1().ServiceAccounts(namespace)
 	for serviceAccountName, data := range webhookClients.Data {

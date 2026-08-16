@@ -19,7 +19,7 @@ import (
 
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/argoproj/argo-workflows/v3/util"
+	"github.com/argoproj/argo-workflows/v4/util"
 )
 
 const (
@@ -30,7 +30,7 @@ const (
 	tlsKeySecretKey = "tls.key"
 )
 
-func pemBlockForKey(priv interface{}) *pem.Block {
+func pemBlockForKey(priv any) *pem.Block {
 	switch k := priv.(type) {
 	case *ecdsa.PrivateKey:
 		b, err := x509.MarshalECPrivateKey(k)
@@ -50,7 +50,7 @@ func generate() ([]byte, crypto.PrivateKey, error) {
 	var err error
 	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to generate private key: %s", err)
+		return nil, nil, fmt.Errorf("failed to generate private key: %w", err)
 	}
 
 	notBefore := time.Now()
@@ -59,7 +59,7 @@ func generate() ([]byte, crypto.PrivateKey, error) {
 	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
 	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to generate serial number: %s", err)
+		return nil, nil, fmt.Errorf("failed to generate serial number: %w", err)
 	}
 
 	template := x509.Certificate{
@@ -85,7 +85,7 @@ func generate() ([]byte, crypto.PrivateKey, error) {
 
 	certBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, &privateKey.PublicKey, privateKey)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create certificate: %s", err)
+		return nil, nil, fmt.Errorf("failed to create certificate: %w", err)
 	}
 	return certBytes, privateKey, nil
 }
@@ -115,7 +115,6 @@ func GenerateX509KeyPair() (*tls.Certificate, error) {
 }
 
 func GenerateX509KeyPairTLSConfig(tlsMinVersion uint16) (*tls.Config, error) {
-
 	cer, err := GenerateX509KeyPair()
 	if err != nil {
 		return nil, err
@@ -123,7 +122,7 @@ func GenerateX509KeyPairTLSConfig(tlsMinVersion uint16) (*tls.Config, error) {
 
 	return &tls.Config{
 		Certificates:       []tls.Certificate{*cer},
-		MinVersion:         uint16(tlsMinVersion),
+		MinVersion:         tlsMinVersion,
 		InsecureSkipVerify: true,
 		NextProtos:         []string{"h2"},
 	}, nil
@@ -147,7 +146,40 @@ func GetServerTLSConfigFromSecret(ctx context.Context, kubectlConfig kubernetes.
 
 	return &tls.Config{
 		Certificates: []tls.Certificate{cert},
-		MinVersion:   uint16(tlsMinVersion),
+		MinVersion:   tlsMinVersion,
 		NextProtos:   []string{"h2"},
 	}, nil
+}
+
+// GetClientTLSConfig creates a TLS 1.2 or newer configuration for client connections.
+// Client certificate authentication requires both clientCert and clientKey. If caCert is provided,
+// the certificate authority is used instead of the system roots to verify the server certificate.
+// The insecureSkipVerify parameter controls whether the server's certificate is verified.
+func GetClientTLSConfig(clientCert, clientKey, caCert string, insecureSkipVerify bool) (*tls.Config, error) {
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: insecureSkipVerify,
+		MinVersion:         tls.VersionTLS12,
+	}
+	if (clientCert == "") != (clientKey == "") {
+		return nil, fmt.Errorf("client certificate authentication requires both clientCert and clientKey")
+	}
+	if caCert != "" {
+		caPEM, err := os.ReadFile(caCert)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read certificate authority: %w", err)
+		}
+		certPool := x509.NewCertPool()
+		if ok := certPool.AppendCertsFromPEM(caPEM); !ok {
+			return nil, fmt.Errorf("failed to parse certificate authority %q", caCert)
+		}
+		tlsConfig.RootCAs = certPool
+	}
+	if clientCert != "" && clientKey != "" {
+		cert, err := tls.LoadX509KeyPair(clientCert, clientKey)
+		if err != nil {
+			return nil, err
+		}
+		tlsConfig.Certificates = []tls.Certificate{cert}
+	}
+	return tlsConfig, nil
 }

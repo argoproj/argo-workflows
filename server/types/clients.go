@@ -5,7 +5,7 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 
-	workflow "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
+	workflow "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
 )
 
 type Clients struct {

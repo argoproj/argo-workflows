@@ -3,36 +3,39 @@ package cron
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/Knetic/govaluate"
 	"github.com/robfig/cron/v3"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	argoerrs "github.com/argoproj/argo-workflows/v3/errors"
+	argoerrs "github.com/argoproj/argo-workflows/v4/errors"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
-	typed "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
-	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
-	"github.com/argoproj/argo-workflows/v3/util/expr/argoexpr"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/util/retry"
-	"github.com/argoproj/argo-workflows/v3/util/template"
-	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
+	typed "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/client/informers/externalversions/workflow/v1alpha1"
+	errorsutil "github.com/argoproj/argo-workflows/v4/util/errors"
+	"github.com/argoproj/argo-workflows/v4/util/expr/argoexpr"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/retry"
+	"github.com/argoproj/argo-workflows/v4/util/template"
+	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
+	waitutil "github.com/argoproj/argo-workflows/v4/util/wait"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/metrics"
 
-	"github.com/argoproj/argo-workflows/v3/workflow/controller/informer"
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
-	"github.com/argoproj/argo-workflows/v3/workflow/validate"
+	"github.com/argoproj/argo-workflows/v4/workflow/controller/informer"
+	"github.com/argoproj/argo-workflows/v4/workflow/util"
+	"github.com/argoproj/argo-workflows/v4/workflow/validate"
 )
 
 const (
@@ -52,7 +55,7 @@ type cronWfOperationCtx struct {
 	metrics         *metrics.Metrics
 	// scheduledTimeFunc returns the last scheduled time when it is called
 	scheduledTimeFunc ScheduledTimeFunc
-	// nolint: containedctx
+	//nolint: containedctx
 	ctx context.Context
 }
 
@@ -128,7 +131,7 @@ func (woc *cronWfOperationCtx) run(ctx context.Context, scheduledRuntime time.Ti
 	runWf, err := util.SubmitWorkflow(ctx, woc.wfClient, woc.wfClientset, woc.cronWf.Namespace, wf, woc.wfDefaults, &v1alpha1.SubmitOpts{})
 	if err != nil {
 		// If the workflow already exists (i.e. this is a duplicate submission), do not report an error
-		if errors.IsAlreadyExists(err) {
+		if apierrors.IsAlreadyExists(err) {
 			return
 		}
 		woc.reportCronWorkflowError(ctx, v1alpha1.ConditionTypeSubmissionError, fmt.Sprintf("Failed to submit Workflow: %s", err))
@@ -144,7 +147,7 @@ func (woc *cronWfOperationCtx) run(ctx context.Context, scheduledRuntime time.Ti
 func (woc *cronWfOperationCtx) validateCronWorkflow(ctx context.Context) error {
 	wftmplGetter := informer.NewWorkflowTemplateFromInformerGetter(woc.wftmplInformer, woc.cronWf.Namespace)
 	cwftmplGetter := informer.NewClusterWorkflowTemplateFromInformerGetter(woc.cwftmplInformer)
-	err := validate.ValidateCronWorkflow(ctx, wftmplGetter, cwftmplGetter, woc.cronWf, woc.wfDefaults)
+	err := validate.CronWorkflow(ctx, wftmplGetter, cwftmplGetter, woc.cronWf, woc.wfDefaults)
 	if err != nil {
 		woc.reportCronWorkflowError(ctx, v1alpha1.ConditionTypeSpecError, fmt.Sprint(err))
 	} else {
@@ -167,23 +170,23 @@ func getWorkflowObjectReference(wf *v1alpha1.Workflow, runWf *v1alpha1.Workflow)
 }
 
 func (woc *cronWfOperationCtx) persistUpdate(ctx context.Context) {
-	woc.patch(ctx, map[string]interface{}{"status": woc.cronWf.Status, "metadata": map[string]interface{}{"annotations": woc.cronWf.Annotations, "labels": woc.cronWf.Labels}})
+	woc.patch(ctx, map[string]any{"status": woc.cronWf.Status, "metadata": map[string]any{"annotations": woc.cronWf.Annotations, "labels": woc.cronWf.Labels}})
 }
 
 func (woc *cronWfOperationCtx) persistCurrentWorkflowStatus(ctx context.Context) {
-	woc.patch(ctx, map[string]interface{}{"status": map[string]interface{}{"active": woc.cronWf.Status.Active, "succeeded": woc.cronWf.Status.Succeeded, "failed": woc.cronWf.Status.Failed, "phase": woc.cronWf.Status.Phase}})
+	woc.patch(ctx, map[string]any{"status": map[string]any{"active": woc.cronWf.Status.Active, "succeeded": woc.cronWf.Status.Succeeded, "failed": woc.cronWf.Status.Failed, "phase": woc.cronWf.Status.Phase}})
 }
 
-func (woc *cronWfOperationCtx) patch(ctx context.Context, patch map[string]interface{}) {
+func (woc *cronWfOperationCtx) patch(ctx context.Context, patch map[string]any) {
 	data, err := json.Marshal(patch)
 	if err != nil {
 		woc.log.WithError(err).Error(ctx, "failed to marshall cron workflow status.active data")
 		return
 	}
 	err = waitutil.Backoff(retry.DefaultRetry(ctx), func() (bool, error) {
-		cronWf, err := woc.cronWfIf.Patch(ctx, woc.cronWf.Name, types.MergePatchType, data, v1.PatchOptions{})
-		if err != nil {
-			return !errorsutil.IsTransientErr(ctx, err), err
+		cronWf, patchErr := woc.cronWfIf.Patch(ctx, woc.cronWf.Name, types.MergePatchType, data, v1.PatchOptions{})
+		if patchErr != nil {
+			return !errorsutil.IsTransientErr(ctx, patchErr), patchErr
 		}
 		woc.cronWf = cronWf
 		return true, nil
@@ -221,15 +224,17 @@ func evalWhen(ctx context.Context, cron *v1alpha1.CronWorkflow) (bool, error) {
 		return true, nil
 	}
 
-	t, err := template.NewTemplate(string(cron.Spec.When))
+	t, err := template.NewTemplate(cron.Spec.When)
 	if err != nil {
 		return false, err
 	}
-	env := make(map[string]interface{})
-	addSetField := func(name string, value interface{}) {
-		env[fmt.Sprintf("%s.%s", variablePrefix, name)] = value
+	env := make(map[string]any)
+	setField := func(name string, value any) {
+		// `name` is the full canonical "cronworkflow.X" — store flat for
+		// template substitution against {{cronworkflow.X}}.
+		env[name] = value
 	}
-	err = expressionEnv(cron, addSetField)
+	err = expressionEnv(cron, setField)
 	if err != nil {
 		return false, err
 	}
@@ -290,16 +295,16 @@ func (woc *cronWfOperationCtx) terminateOutstandingWorkflows(ctx context.Context
 		woc.log.WithField("name", wfObjectRef.Name).Info(ctx, "stopping")
 		err := util.TerminateWorkflow(ctx, woc.wfClient, wfObjectRef.Name)
 		if err != nil {
-			if errors.IsNotFound(err) {
+			if apierrors.IsNotFound(err) {
 				woc.log.WithField("name", wfObjectRef.Name).Warn(ctx, "workflow not found when trying to terminate outstanding workflows")
 				continue
 			}
-			alreadyShutdownErr, ok := err.(util.AlreadyShutdownError)
-			if ok {
+			var alreadyShutdownErr util.AlreadyShutdownError
+			if errors.As(err, &alreadyShutdownErr) {
 				woc.log.Warn(ctx, alreadyShutdownErr.Error())
 				continue
 			}
-			return fmt.Errorf("error stopping workflow %s: %e", wfObjectRef.Name, err)
+			return fmt.Errorf("error stopping workflow %s: %w", wfObjectRef.Name, err)
 		}
 	}
 	return nil
@@ -324,7 +329,7 @@ func (woc *cronWfOperationCtx) shouldOutstandingWorkflowsBeRun(ctx context.Conte
 	}
 	// If this CronWorkflow has been run before, check if we have missed any scheduled executions
 	if woc.cronWf.Status.LastScheduledTime != nil {
-		for _, schedule := range woc.cronWf.Spec.GetSchedulesWithTimezone(ctx) {
+		for _, schedule := range woc.cronWf.Spec.GetSchedulesWithTimezone() {
 			var now time.Time
 			var cronSchedule cron.Schedule
 			now = time.Now()
@@ -381,7 +386,7 @@ func (woc *cronWfOperationCtx) reconcileActiveWfs(ctx context.Context, workflows
 				woc.updateWfPhaseCounter(fulfilled.phase)
 				completed, err := woc.checkStopingCondition()
 				if err != nil {
-					return fmt.Errorf("failed to check CronWorkflow '%s' stopping condition: %s", woc.cronWf.Name, err)
+					return fmt.Errorf("failed to check CronWorkflow '%s' stopping condition: %w", woc.cronWf.Name, err)
 				} else if completed {
 					woc.setAsCompleted()
 				}
@@ -430,7 +435,7 @@ func (woc *cronWfOperationCtx) enforceHistoryLimit(ctx context.Context, workflow
 	}
 	err := woc.deleteOldestWorkflows(ctx, successfulWorkflows, int(workflowsToKeep))
 	if err != nil {
-		return fmt.Errorf("unable to delete Successful Workflows of CronWorkflow '%s': %s", woc.cronWf.Name, err)
+		return fmt.Errorf("unable to delete Successful Workflows of CronWorkflow '%s': %w", woc.cronWf.Name, err)
 	}
 
 	workflowsToKeep = int32(1)
@@ -439,7 +444,7 @@ func (woc *cronWfOperationCtx) enforceHistoryLimit(ctx context.Context, workflow
 	}
 	err = woc.deleteOldestWorkflows(ctx, failedWorkflows, int(workflowsToKeep))
 	if err != nil {
-		return fmt.Errorf("unable to delete Failed Workflows of CronWorkflow '%s': %s", woc.cronWf.Name, err)
+		return fmt.Errorf("unable to delete Failed Workflows of CronWorkflow '%s': %w", woc.cronWf.Name, err)
 	}
 	return nil
 }
@@ -456,11 +461,11 @@ func (woc *cronWfOperationCtx) deleteOldestWorkflows(ctx context.Context, jobLis
 	for _, wf := range jobList[workflowsToKeep:] {
 		err := woc.wfClient.Delete(ctx, wf.Name, v1.DeleteOptions{})
 		if err != nil {
-			if errors.IsNotFound(err) {
+			if apierrors.IsNotFound(err) {
 				woc.log.WithField("workflow", wf.Name).Info(ctx, "Workflow was already deleted")
 				continue
 			}
-			return fmt.Errorf("error deleting workflow '%s': %e", wf.Name, err)
+			return fmt.Errorf("error deleting workflow '%s': %w", wf.Name, err)
 		}
 		woc.log.WithField("workflow", wf.Name).Info(ctx, "Deleted Workflow due to CronWorkflow history limit")
 	}
@@ -493,13 +498,18 @@ func (woc *cronWfOperationCtx) updateWfPhaseCounter(phase v1alpha1.WorkflowPhase
 	}
 }
 
-func expressionEnv(cron *v1alpha1.CronWorkflow, addSetField func(name string, value interface{})) error {
-	addSetField("name", cron.Name)
-	addSetField("namespace", cron.Namespace)
-	addSetField("labels", cron.Labels)
-	addSetField("annotations", cron.Labels)
-	addSetField("failed", cron.Status.Failed)
-	addSetField("succeeded", cron.Status.Succeeded)
+// expressionEnv populates a CronWorkflow expression scope. The setField
+// callback receives the full canonical name (e.g. "cronworkflow.failed")
+// drawn from util/variables/keys; how it stores the entry — flat for
+// template substitution, or nested under "cronworkflow" for expr-lang
+// member-access — is the caller's choice.
+func expressionEnv(cron *v1alpha1.CronWorkflow, setField func(name string, value any)) error {
+	setField(varkeys.CronWorkflowName.Template(), cron.Name)
+	setField(varkeys.CronWorkflowNamespace.Template(), cron.Namespace)
+	setField(varkeys.CronWorkflowLabels.Template(), cron.Labels)
+	setField(varkeys.CronWorkflowAnnotations.Template(), cron.Labels)
+	setField(varkeys.CronWorkflowFailed.Template(), cron.Status.Failed)
+	setField(varkeys.CronWorkflowSucceeded.Template(), cron.Status.Succeeded)
 
 	labelsStr, err := json.Marshal(&cron.Labels)
 	if err != nil {
@@ -511,8 +521,8 @@ func expressionEnv(cron *v1alpha1.CronWorkflow, addSetField func(name string, va
 		return err
 	}
 
-	addSetField("annotations.json", annotationsStr)
-	addSetField("labels.json", labelsStr)
+	setField(varkeys.CronWorkflowAnnotationsJSON.Template(), annotationsStr)
+	setField(varkeys.CronWorkflowLabelsJSON.Template(), labelsStr)
 
 	var tm *time.Time
 	tm = nil
@@ -521,7 +531,7 @@ func expressionEnv(cron *v1alpha1.CronWorkflow, addSetField func(name string, va
 		tm = &cron.Status.LastScheduledTime.Time
 	}
 
-	addSetField("lastScheduledTime", tm)
+	setField(varkeys.CronWorkflowLastScheduledTime.Template(), tm)
 
 	return nil
 }
@@ -530,13 +540,17 @@ func (woc *cronWfOperationCtx) checkStopingCondition() (bool, error) {
 	if woc.cronWf.Spec.StopStrategy == nil {
 		return false, nil
 	}
-	prefixedEnv := make(map[string]interface{})
-	addSetField := func(name string, value interface{}) {
-		prefixedEnv[name] = value
+	prefixedEnv := make(map[string]any)
+	prefix := variablePrefix + "."
+	setField := func(name string, value any) {
+		// `name` is the canonical "cronworkflow.X". Strip the
+		// "cronworkflow." prefix because we expose the inner map under the
+		// "cronworkflow" key for expr-lang member access.
+		prefixedEnv[strings.TrimPrefix(name, prefix)] = value
 	}
-	env := make(map[string]interface{})
+	env := make(map[string]any)
 	env[variablePrefix] = prefixedEnv
-	err := expressionEnv(woc.cronWf, addSetField)
+	err := expressionEnv(woc.cronWf, setField)
 	if err != nil {
 		return false, err
 	}

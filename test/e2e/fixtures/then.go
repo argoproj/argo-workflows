@@ -18,12 +18,12 @@ import (
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
+	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
 type Then struct {
@@ -83,7 +83,19 @@ func (t *Then) ExpectWorkflowDeleted() *Then {
 	return t
 }
 
-// Check on a specific node in the workflow.
+func (t *Then) ExpectWorkflowCompressed() *Then {
+	ctx := logging.TestContext(t.t.Context())
+	wf, err := t.client.Get(ctx, t.wf.Name, metav1.GetOptions{})
+	if err != nil {
+		t.t.Fatal(err)
+	}
+	if wf.Status.CompressedNodes == "" {
+		t.t.Errorf("expected workflow to be compressed")
+	}
+	return t
+}
+
+// ExpectWorkflowNode checks on a specific node in the workflow.
 // If no node matches the selector, then the NodeStatus and Pod will be nil.
 // If the pod does not exist (e.g. because it was deleted) then the Pod will be nil too.
 func (t *Then) ExpectWorkflowNode(selector func(status wfv1.NodeStatus) bool, f func(t *testing.T, status *wfv1.NodeStatus, pod *apiv1.Pod)) *Then {
@@ -187,7 +199,7 @@ func (t *Then) ExpectAuditEvents(filter func(event apiv1.Event) bool, num int, b
 		case event := <-eventList.ResultChan():
 			e, ok := event.Object.(*apiv1.Event)
 			if !ok {
-				t.t.Errorf("event is not an event: %v", reflect.TypeOf(e).String())
+				t.t.Errorf("event is not an event: %v", reflect.TypeFor[*apiv1.Event]().String())
 				return t
 			}
 			if filter(*e) {
@@ -219,11 +231,12 @@ func (t *Then) ExpectPVCDeleted() *Then {
 			pvcClient := t.kubeClient.CoreV1().PersistentVolumeClaims(t.wf.Namespace)
 			for _, p := range t.wf.Status.PersistentVolumeClaims {
 				_, err := pvcClient.Get(ctx, p.PersistentVolumeClaim.ClaimName, metav1.GetOptions{})
-				if err == nil {
-					break
-				} else if apierr.IsNotFound(err) {
+				switch {
+				case err == nil:
+					// PVC exists, continue checking others
+				case apierr.IsNotFound(err):
 					num--
-				} else {
+				default:
 					t.t.Fatal(err)
 					return t
 				}
@@ -245,8 +258,13 @@ func (t *Then) ExpectArtifact(nodeName string, artifactName string, bucketName s
 	n, err := t.wf.GetNodeByName(nodeName)
 	if err != nil {
 		t.t.Error("was unable to get node by name")
+		return
 	}
 	a := n.GetOutputs().GetArtifactByName(artifactName)
+	if a == nil {
+		t.t.Error("was unable to get artifact by name")
+		return
+	}
 	key, _ := a.GetKey()
 
 	t.ExpectArtifactByKey(key, bucketName, f)
@@ -315,7 +333,8 @@ func (t *Then) ExpectWorkflowTaskSet(block func(t *testing.T, wfts *wfv1.Workflo
 
 func (t *Then) RunCli(args []string, block func(t *testing.T, output string, err error)) *Then {
 	t.t.Helper()
-	output, err := Exec("../../dist/argo", append([]string{"-n", Namespace}, args...)...)
+	ctx := logging.TestContext(t.t.Context())
+	output, err := Exec(ctx, "../../dist/argo", "", append([]string{"-n", Namespace}, args...)...)
 	block(t.t, output, err)
 	return t
 }

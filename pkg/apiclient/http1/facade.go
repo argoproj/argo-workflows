@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"crypto/tls"
+	cryptotls "crypto/tls"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -15,48 +15,84 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/argoproj/argo-workflows/v3/util/flatten"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/flatten"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/tls"
 )
 
 // Facade provides a adapter from GRPC interface, but uses HTTP to send the messages.
 // Errors are extracted from message body and returned as GRPC status errors.
 type Facade struct {
-	baseURL            string
-	authorization      string
-	insecureSkipVerify bool
-	headers            []string
-	httpClient         *http.Client
+	baseURL       string
+	authorization string
+	headers       []string
+	httpClient    *http.Client
+	proxy         func(*http.Request) (*url.URL, error)
+	tlsConfig     *cryptotls.Config
 }
 
-func NewFacade(baseURL, authorization string, insecureSkipVerify bool, headers []string, httpClient *http.Client) Facade {
-	return Facade{baseURL, authorization, insecureSkipVerify, headers, httpClient}
+type FacadeConfig struct {
+	BaseURL            string
+	Authorization      string
+	InsecureSkipVerify bool
+	Headers            []string
+	HTTPClient         *http.Client
+	Proxy              func(*http.Request) (*url.URL, error)
+	ClientCert         string
+	ClientKey          string
+	CACert             string
 }
 
-func (h Facade) Get(ctx context.Context, in, out interface{}, path string) error {
+func NewFacade(config FacadeConfig) (Facade, error) {
+	var tlsConfig *cryptotls.Config
+	if config.HTTPClient == nil {
+		var err error
+		tlsConfig, err = tls.GetClientTLSConfig(config.ClientCert, config.ClientKey, config.CACert, config.InsecureSkipVerify)
+		if err != nil {
+			return Facade{}, err
+		}
+	}
+	return Facade{
+		baseURL:       config.BaseURL,
+		authorization: config.Authorization,
+		headers:       config.Headers,
+		httpClient:    config.HTTPClient,
+		proxy:         config.Proxy,
+		tlsConfig:     tlsConfig,
+	}, nil
+}
+
+func (h Facade) proxyFunc() func(*http.Request) (*url.URL, error) {
+	if h.proxy != nil {
+		return h.proxy
+	}
+	return http.ProxyFromEnvironment
+}
+
+func (h Facade) Get(ctx context.Context, in, out any, path string) error {
 	return h.do(ctx, in, out, "GET", path)
 }
 
-func (h Facade) Put(ctx context.Context, in, out interface{}, path string) error {
+func (h Facade) Put(ctx context.Context, in, out any, path string) error {
 	return h.do(ctx, in, out, "PUT", path)
 }
 
-func (h Facade) Post(ctx context.Context, in, out interface{}, path string) error {
+func (h Facade) Post(ctx context.Context, in, out any, path string) error {
 	return h.do(ctx, in, out, "POST", path)
 }
 
-func (h Facade) Delete(ctx context.Context, in, out interface{}, path string) error {
+func (h Facade) Delete(ctx context.Context, in, out any, path string) error {
 	return h.do(ctx, in, out, "DELETE", path)
 }
 
-func (h Facade) EventStreamReader(ctx context.Context, in interface{}, path string) (*bufio.Reader, error) {
+func (h Facade) EventStreamReader(ctx context.Context, in any, path string) (*bufio.Reader, error) {
 	log := logging.RequireLoggerFromContext(ctx)
 	method := "GET"
 	u, err := h.url(method, path, in)
 	if err != nil {
 		return nil, err
 	}
-	req, err := http.NewRequestWithContext(ctx, "GET", u.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -68,15 +104,9 @@ func (h Facade) EventStreamReader(ctx context.Context, in interface{}, path stri
 	req.Header.Set("Accept", "text/event-stream")
 	req.Header.Set("Authorization", h.authorization)
 	log.WithField("url", u).Debug(ctx, "curl -H 'Accept: text/event-stream' -H 'Authorization: ******'")
-	client := h.httpClient
-	if h.httpClient == nil {
-		client = &http.Client{
-			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{
-					InsecureSkipVerify: h.insecureSkipVerify,
-				},
-			},
-		}
+	client, err := h.client(req, false)
+	if err != nil {
+		return nil, err
 	}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -90,10 +120,10 @@ func (h Facade) EventStreamReader(ctx context.Context, in interface{}, path stri
 	return bufio.NewReader(resp.Body), nil
 }
 
-func (h Facade) do(ctx context.Context, in interface{}, out interface{}, method string, path string) error {
+func (h Facade) do(ctx context.Context, in any, out any, method string, path string) error {
 	log := logging.RequireLoggerFromContext(ctx)
 	var data []byte
-	if method != "GET" {
+	if method != "GET" && method != "DELETE" {
 		var err error
 		data, err = json.Marshal(in)
 		if err != nil {
@@ -115,16 +145,9 @@ func (h Facade) do(ctx context.Context, in interface{}, out interface{}, method 
 	req.Header = headers
 	req.Header.Set("Authorization", h.authorization)
 	log.WithFields(logging.Fields{"url": u, "method": method, "data": string(data)}).Debug(ctx, "curl -X")
-	client := h.httpClient
-	if h.httpClient == nil {
-		client = &http.Client{
-			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{
-					InsecureSkipVerify: h.insecureSkipVerify,
-				},
-				DisableKeepAlives: true,
-			},
-		}
+	client, err := h.client(req, true)
+	if err != nil {
+		return err
 	}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -137,18 +160,34 @@ func (h Facade) do(ctx context.Context, in interface{}, out interface{}, method 
 	}
 	if out != nil {
 		return json.NewDecoder(resp.Body).Decode(out)
-	} else {
-		return nil
 	}
+	return nil
 }
 
-func (h Facade) url(method, path string, in interface{}) (*url.URL, error) {
+func (h Facade) client(req *http.Request, disableKeepAlives bool) (*http.Client, error) {
+	proxyURL, err := h.proxyFunc()(req)
+	if err != nil {
+		return nil, err
+	}
+	if h.httpClient != nil {
+		return h.httpClient, nil
+	}
+	return &http.Client{
+		Transport: &http.Transport{
+			Proxy:             http.ProxyURL(proxyURL),
+			TLSClientConfig:   h.tlsConfig,
+			DisableKeepAlives: disableKeepAlives,
+		},
+	}, nil
+}
+
+func (h Facade) url(method, path string, in any) (*url.URL, error) {
 	query := url.Values{}
 	for s, v := range flatten.Flatten(in) {
 		x := "{" + s + "}"
 		if strings.Contains(path, x) {
 			path = strings.Replace(path, x, v, 1)
-		} else if method == "GET" {
+		} else if method == "GET" || method == "DELETE" {
 			query.Set(s, v)
 		}
 	}

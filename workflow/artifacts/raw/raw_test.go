@@ -7,13 +7,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/raw"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/raw"
 )
 
 const (
@@ -22,9 +22,9 @@ const (
 
 func TestLoad(t *testing.T) {
 	content := fmt.Sprintf("time: %v", time.Now().UnixNano())
-	lf, err := os.CreateTemp("", LoadFileName)
+	lf, err := os.CreateTemp(t.TempDir(), LoadFileName)
+	lf.Close()
 	require.NoError(t, err)
-	defer os.Remove(lf.Name())
 
 	art := &wfv1.Artifact{}
 	art.Raw = &wfv1.RawArtifact{

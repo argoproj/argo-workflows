@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 
 	md "github.com/nao1215/markdown"
@@ -238,10 +239,8 @@ func processFieldWithNames(field *ast.Field, typeStr string, names []string, row
 
 // addToRecursionList adds a type to the recursion list only if it's not already present
 func addToRecursionList(typesToRecurse *[]string, baseType string) {
-	for _, existing := range *typesToRecurse {
-		if existing == baseType {
-			return // Already in the list, skip
-		}
+	if slices.Contains(*typesToRecurse, baseType) {
+		return // Already in the list, skip
 	}
 	*typesToRecurse = append(*typesToRecurse, baseType)
 }
@@ -274,19 +273,19 @@ func createTypeLinkWithSpacing(baseType string) (string, bool) {
 		return fmt.Sprintf("[`%s`](#%s)", cleanBaseType, strings.ToLower(baseType)), true
 	}
 
-	if strings.HasPrefix(baseType, "wfv1.") {
-		wfType := strings.TrimPrefix(baseType, "wfv1.")
+	if after, ok := strings.CutPrefix(baseType, "wfv1."); ok {
+		wfType := after
 		return fmt.Sprintf("[`%s`](fields.md#%s)", wfType, strings.ToLower(wfType)), true
 	}
 
-	if strings.HasPrefix(baseType, "apiv1.") {
-		typeName := strings.TrimPrefix(baseType, "apiv1.")
+	if after, ok := strings.CutPrefix(baseType, "apiv1."); ok {
+		typeName := after
 		anchor := strings.ToLower(typeName)
 		return fmt.Sprintf("[`%s`](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#%s-v1-core)", typeName, anchor), true
 	}
 
-	if strings.HasPrefix(baseType, "metav1.") {
-		typeName := strings.TrimPrefix(baseType, "metav1.")
+	if after, ok := strings.CutPrefix(baseType, "metav1."); ok {
+		typeName := after
 		anchor := strings.ToLower(typeName)
 		return fmt.Sprintf("[`%s`](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#%s-v1-meta)", typeName, anchor), true
 	}
@@ -437,6 +436,12 @@ func normalizeComment(comment string) string {
 
 // getInlineTypeDoc returns inline documentation for type aliases from AST
 func getInlineTypeDoc(typeName string) string {
+	// Handle specific type aliases that need to be documented inline as they are not in the openapi-gen generated swagger.json
+	switch typeName {
+	case "ArtifactPluginName", "wfv1.ArtifactPluginName":
+		return "string (name of an artifact plugin)"
+	}
+
 	ts, exists := typeSpecs[typeName]
 	if !exists {
 		return ""

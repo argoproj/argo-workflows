@@ -1,7 +1,7 @@
 package http1
 
 import (
-	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
+	workflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow"
 )
 
 type watchWorkflowsClient struct{ serverSentEventsClient }

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"io"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
 // ArtifactDriver is the interface for loading and saving of artifacts
@@ -23,6 +23,12 @@ type ArtifactDriver interface {
 
 	// Save uploads the path to artifact destination
 	Save(ctx context.Context, path string, outputArtifact *v1alpha1.Artifact) error
+
+	// SaveStream saves an artifact from an io.Reader.
+	// Whether the reader is streamed directly or buffered to a temp file first is
+	// implementation-specific, so the reader may be partially consumed on failure;
+	// callers must not retry with the same reader.
+	SaveStream(ctx context.Context, reader io.Reader, outputArtifact *v1alpha1.Artifact) error
 
 	Delete(ctx context.Context, artifact *v1alpha1.Artifact) error
 

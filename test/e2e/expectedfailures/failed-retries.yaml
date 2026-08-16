@@ -17,7 +17,7 @@ spec:
     retryStrategy:
       limit: 1
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["exit 1"]
 
@@ -25,6 +25,6 @@ spec:
     retryStrategy:
       limit: 1
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh, -c]
       args: ["sleep 1; exit 1"]

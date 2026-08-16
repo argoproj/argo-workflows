@@ -1,6 +1,7 @@
 package main
 
 import (
+	"slices"
 	"strings"
 )
 
@@ -17,12 +18,7 @@ var validComponents = []string{
 }
 
 func isValidComponent(component string) bool {
-	for _, c := range validComponents {
-		if c == component {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(validComponents, component)
 }
 
 func listValidComponents() string {

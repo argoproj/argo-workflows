@@ -256,14 +256,23 @@ export function EventFlowPage({history, location, match}: RouteComponentProps<an
                         }
                     ]
                 },
-                tools: [<NamespaceFilter key='namespace-filter' value={namespace} onChange={setNamespace} />]
+                tools: [
+                    <NamespaceFilter
+                        key='namespace-filter'
+                        value={namespace}
+                        onChange={setNamespace}
+                        extraNamespaces={nsUtils.getUniqueNamespaces([...(eventSources || []), ...(sensors || []), ...(workflows || [])])}
+                    />
+                ]
             }}>
             <ErrorNotice error={error} />
             {emptyGraph ? (
                 <ZeroState>
                     <p>Argo Events allow you to trigger workflows, lambdas, and other actions when an event such as a webhooks, message, or a cron schedule occurs.</p>
                     <p>
-                        <a href='https://argoproj.github.io/argo-events/'>Learn more</a>
+                        <a href='https://argoproj.github.io/argo-events/' target='_blank' rel='noreferrer'>
+                            Learn more
+                        </a>
                     </p>
                 </ZeroState>
             ) : (

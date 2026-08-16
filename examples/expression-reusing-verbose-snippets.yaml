@@ -38,7 +38,7 @@ spec:
             value: "{{=jsonpath(inputs.parameters['week-temps'], '$.min')}}"
           - name: MAX
             value: "{{=jsonpath(inputs.parameters['week-temps'], '$.max')}}"
-        image: debian:9.4
-        command: [bash]
+        image: busybox
+        command: [sh]
         source: |
           echo "The week's average temperature was $AVG with a minimum of $MIN and a maximum of $MAX."

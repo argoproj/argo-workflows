@@ -31,7 +31,8 @@ var FormatChars = map[rune]string{
 // Format formats a time object using strftime syntax
 func Format(format string, t time.Time) string {
 	retval := make([]byte, 0, len(format))
-	for i, ni := 0, 0; i < len(format); i = ni + 2 {
+	var ni int
+	for i := 0; i < len(format); i = ni + 2 {
 		ni = strings.IndexByte(format[i:], '%')
 		if ni < 0 {
 			ni = len(format)
@@ -50,10 +51,8 @@ func Format(format string, t time.Time) string {
 					retval = append(retval, '%', c)
 				}
 			}
-		} else {
-			if ni < len(format) {
-				retval = append(retval, '%')
-			}
+		} else if ni < len(format) {
+			retval = append(retval, '%')
 		}
 	}
 	return string(retval)

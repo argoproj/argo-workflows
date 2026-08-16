@@ -1,23 +1,24 @@
 package types
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 
-	"github.com/go-jose/go-jose/v3/jwt"
+	"github.com/go-jose/go-jose/v4/jwt"
 )
 
 type Claims struct {
 	jwt.Claims
-	Groups                  []string               `json:"groups,omitempty"`
-	Email                   string                 `json:"email,omitempty"`
-	EmailVerified           bool                   `json:"-"`
-	Name                    string                 `json:"name,omitempty"`
-	ServiceAccountName      string                 `json:"service_account_name,omitempty"`
-	ServiceAccountNamespace string                 `json:"service_account_namespace,omitempty"`
-	PreferredUsername       string                 `json:"preferred_username,omitempty"`
-	RawClaim                map[string]interface{} `json:"-"`
+	Groups                  []string       `json:"groups,omitempty"`
+	Email                   string         `json:"email,omitempty"`
+	EmailVerified           bool           `json:"-"`
+	Name                    string         `json:"name,omitempty"`
+	ServiceAccountName      string         `json:"service_account_name,omitempty"`
+	ServiceAccountNamespace string         `json:"service_account_namespace,omitempty"`
+	PreferredUsername       string         `json:"preferred_username,omitempty"`
+	RawClaim                map[string]any `json:"-"`
 }
 
 type UserInfo struct {
@@ -68,7 +69,7 @@ func (c *Claims) GetCustomGroup(customKeyName string) ([]string, error) {
 		return nil, fmt.Errorf("no claim found for key: %v", customKeyName)
 	}
 
-	sliceInterface, ok := groups.([]interface{})
+	sliceInterface, ok := groups.([]any)
 	if !ok {
 		return nil, fmt.Errorf("expected an array, got %v", groups)
 	}
@@ -85,9 +86,9 @@ func (c *Claims) GetCustomGroup(customKeyName string) ([]string, error) {
 	return newSlice, nil
 }
 
-func (c *Claims) GetUserInfoGroups(httpClient HTTPClient, accessToken, issuer, userInfoPath string) ([]string, error) {
+func (c *Claims) GetUserInfoGroups(ctx context.Context, httpClient HTTPClient, accessToken, issuer, userInfoPath string) ([]string, error) {
 	url := fmt.Sprintf("%s%s", issuer, userInfoPath)
-	request, err := http.NewRequest("GET", url, nil)
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 
 	if err != nil {
 		return nil, err

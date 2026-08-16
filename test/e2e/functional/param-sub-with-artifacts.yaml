@@ -22,6 +22,6 @@ spec:
           url: "{{inputs.parameters.artifact-url}}"
 
     container:
-      image: alpine:latest
+      image: alpine:3.23
       command: ["cat"]
       args: ["/tmp/foo.txt"]

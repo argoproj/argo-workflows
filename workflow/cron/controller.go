@@ -23,17 +23,18 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
-	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
-	wfctx "github.com/argoproj/argo-workflows/v3/util/context"
-	"github.com/argoproj/argo-workflows/v3/util/env"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/events"
-	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
+	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/client/informers/externalversions/workflow/v1alpha1"
+	wfctx "github.com/argoproj/argo-workflows/v4/util/context"
+	"github.com/argoproj/argo-workflows/v4/util/env"
+	informerutil "github.com/argoproj/argo-workflows/v4/util/informer"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/events"
+	"github.com/argoproj/argo-workflows/v4/workflow/metrics"
+	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
 // Controller is a controller for cron workflows
@@ -107,6 +108,8 @@ func (cc *Controller) Run(ctx context.Context) {
 	cc.cronWfInformer = dynamicinformer.NewFilteredDynamicSharedInformerFactory(cc.dynamicInterface, cronWorkflowResyncPeriod, cc.managedNamespace, func(options *v1.ListOptions) {
 		cronWfInformerListOptionsFunc(options, cc.instanceID)
 	}).ForResource(schema.GroupVersionResource{Group: workflow.Group, Version: workflow.Version, Resource: workflow.CronWorkflowPlural})
+	//nolint:errcheck // the error only happens if the informer was already started, and it hasn't been
+	cc.cronWfInformer.Informer().SetTransform(informerutil.StripManagedFields)
 	err := cc.addCronWorkflowInformerHandler(ctx)
 	if err != nil {
 		cc.logger.WithFatal().Error(ctx, err.Error())
@@ -199,7 +202,7 @@ func (cc *Controller) processNextCronItem(ctx context.Context) bool {
 	// The job is currently scheduled, remove it and re add it.
 	cc.cron.Delete(key)
 
-	for _, schedule := range cronWf.Spec.GetSchedulesWithTimezone(ctx) {
+	for _, schedule := range cronWf.Spec.GetSchedulesWithTimezone() {
 		lastScheduledTimeFunc, err := cc.cron.AddJob(key, schedule, cronWorkflowOperationCtx)
 		if err != nil {
 			logger.WithError(err).Error(ctx, "could not schedule CronWorkflow")
@@ -216,7 +219,7 @@ func (cc *Controller) processNextCronItem(ctx context.Context) bool {
 func (cc *Controller) addCronWorkflowInformerHandler(ctx context.Context) error {
 	_, err := cc.cronWfInformer.Informer().AddEventHandler(
 		cache.FilteringResourceEventHandler{
-			FilterFunc: func(obj interface{}) bool {
+			FilterFunc: func(obj any) bool {
 				un, ok := obj.(*unstructured.Unstructured)
 				if !ok {
 					cc.logger.WithField("obj", obj).Warn(ctx, "Cron Workflow FilterFunc: is not an unstructured")
@@ -225,19 +228,19 @@ func (cc *Controller) addCronWorkflowInformerHandler(ctx context.Context) error 
 				return !isCompleted(un)
 			},
 			Handler: cache.ResourceEventHandlerFuncs{
-				AddFunc: func(obj interface{}) {
+				AddFunc: func(obj any) {
 					key, err := cache.MetaNamespaceKeyFunc(obj)
 					if err == nil {
 						cc.cronWfQueue.Add(key)
 					}
 				},
-				UpdateFunc: func(old, new interface{}) {
-					key, err := cache.MetaNamespaceKeyFunc(new)
+				UpdateFunc: func(old, newObj any) {
+					key, err := cache.MetaNamespaceKeyFunc(newObj)
 					if err == nil {
 						cc.cronWfQueue.Add(key)
 					}
 				},
-				DeleteFunc: func(obj interface{}) {
+				DeleteFunc: func(obj any) {
 					key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 					if err == nil {
 						cc.cronWfQueue.Add(key)

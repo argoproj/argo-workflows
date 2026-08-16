@@ -2,7 +2,6 @@
 
 ## Docs
 
-* [Quick start](../quick-start.md) and [training](../training.md)
 * Learn about [webhooks](../webhooks.md) for triggering pipelines.
 * Head to the [Argo CD](https://github.com/argoproj/argo-cd/) docs.
 

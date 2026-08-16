@@ -39,7 +39,7 @@ export function WorkflowsRow(props: WorkflowsRowProps) {
     return (
         <div className='workflows-list__row-container'>
             <div className='row argo-table-list__row'>
-                <div className='columns small-1 workflows-list__status'>
+                <div className='columns small-1 workflows-list__status' data-testid='workflow-status'>
                     <input
                         type='checkbox'
                         className='workflows-list__status--checkbox'
@@ -65,10 +65,10 @@ export function WorkflowsRow(props: WorkflowsRowProps) {
                         </div>
                     </Link>
                     <div className='columns small-1'>{wf.metadata.namespace}</div>
-                    <div className={`columns small-1' ${props.displayISOFormatStart ? 'workflows-list__timestamp' : ''}`}>
+                    <div className={`columns small-1 ${props.displayISOFormatStart ? 'workflows-list__timestamp' : ''}`}>
                         <Timestamp date={wf.status.startedAt} displayISOFormat={props.displayISOFormatStart} />
                     </div>
-                    <div className={`columns small-1' ${props.displayISOFormatFinished ? 'workflows-list__timestamp' : ''}`}>
+                    <div className={`columns small-1 ${props.displayISOFormatFinished ? 'workflows-list__timestamp' : ''}`}>
                         <Timestamp date={wf.status.finishedAt} displayISOFormat={props.displayISOFormatFinished} />
                     </div>
                     <div className='columns small-1'>

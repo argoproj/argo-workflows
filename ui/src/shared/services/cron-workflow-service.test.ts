@@ -50,18 +50,6 @@ describe('cron workflow service', () => {
             expect(requests.get).toHaveBeenCalledWith(`api/v1/cron-workflows/ns/${cronWf.metadata.name}`);
         });
 
-        test('with old CronWorkflow using "schedule"', async () => {
-            const cronWf = exampleCronWorkflow('otherns') as any;
-            cronWf.spec.schedule = '* * * * *';
-            delete cronWf.spec.schedules;
-            jest.spyOn(requests, 'get').mockResolvedValue({body: cronWf} as any);
-
-            const result = await CronWorkflowService.get(cronWf.metadata.name, 'otherns');
-
-            expect(result.spec.schedules).toEqual(['* * * * *']);
-            expect(requests.get).toHaveBeenCalledWith(`api/v1/cron-workflows/otherns/${cronWf.metadata.name}`);
-        });
-
         test('with invalid CronWorkflow missing "schedules"', async () => {
             const cronWf = exampleCronWorkflow('otherns');
             delete cronWf.spec.schedules;

@@ -10,11 +10,11 @@ import (
 	"github.com/jcmturner/gokrb5/v8/credentials"
 	"github.com/jcmturner/gokrb5/v8/keytab"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/file"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/resource"
+	"github.com/argoproj/argo-workflows/v4/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/file"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/resource"
 )
 
 // ArtifactDriver is a driver for HDFS
@@ -172,12 +172,10 @@ func (driver *ArtifactDriver) Load(ctx context.Context, _ *wfv1.Artifact, path s
 				return err
 			}
 		}
-	} else {
-		if driver.Force {
-			err = os.Remove(path)
-			if err != nil && !os.IsNotExist(err) {
-				return err
-			}
+	} else if driver.Force {
+		err = os.Remove(path)
+		if err != nil && !os.IsNotExist(err) {
+			return err
 		}
 	}
 
@@ -226,16 +224,21 @@ func (driver *ArtifactDriver) Save(ctx context.Context, path string, outputArtif
 				return err
 			}
 		}
-	} else {
-		if driver.Force {
-			err = hdfscli.Remove(driver.Path)
-			if err != nil && !os.IsNotExist(err) {
-				return err
-			}
+	} else if driver.Force {
+		err = hdfscli.Remove(driver.Path)
+		if err != nil && !os.IsNotExist(err) {
+			return err
 		}
 	}
 
 	return hdfscli.CopyToRemote(path, driver.Path)
+}
+
+// SaveStream saves an artifact from an io.Reader to HDFS compliant storage
+func (driver *ArtifactDriver) SaveStream(ctx context.Context, reader io.Reader, outputArtifact *wfv1.Artifact) error {
+	return common.SaveStreamViaTempFile(reader, "hdfs-upload-*", func(path string) error {
+		return driver.Save(ctx, path, outputArtifact)
+	})
 }
 
 // Delete is unsupported for the hdfs artifacts

@@ -14,9 +14,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/argoproj/argo-workflows/v3/util/file"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/util/rand"
+	"github.com/argoproj/argo-workflows/v4/util/file"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/rand"
 )
 
 // TestCompressContentString ensures compressing then decompressing a content string works as expected
@@ -34,6 +34,99 @@ func TestCompressContentString(t *testing.T) {
 		resultString, _ := file.DecodeDecompressString(ctx, compString)
 
 		assert.Equal(t, content, resultString)
+	}
+}
+
+// compressibleContent is the fixture shared by the compression tests: enough
+// distinct-but-similar entries that compression-level differences show up in
+// the output.
+var compressibleContent = func() []byte {
+	var buf bytes.Buffer
+	for i := range 100 {
+		fmt.Fprintf(&buf, "{\"pod-limits-rrdm8-%09d\":{\"id\":\"pod-limits-rrdm8-%09d\",\"phase\":\"Succeeded\"}}", i, i)
+	}
+	return buf.Bytes()
+}()
+
+// compressWith returns compressibleContent compressed with the given
+// algorithm and level set via the environment ("" means default).
+func compressWith(t *testing.T, algorithm, level string) []byte {
+	t.Helper()
+	t.Setenv(file.CompressionAlgorithmEnvVarKey, algorithm)
+	t.Setenv(file.CompressionLevelEnvVarKey, level)
+	return file.CompressContent(logging.TestContext(t.Context()), compressibleContent)
+}
+
+// TestZstdCompression ensures the writer switches to zstd via the environment
+// variable while the reader detects the algorithm from the content alone.
+func TestZstdCompression(t *testing.T) {
+	t.Run("CompressWithZstd", func(t *testing.T) {
+		compressed := compressWith(t, file.ZStdAlgorithm, "")
+		assert.Equal(t, []byte{0x28, 0xb5, 0x2f, 0xfd}, compressed[:4], "expected zstd magic bytes")
+	})
+
+	t.Run("DecompressDetectsZstd", func(t *testing.T) {
+		compressed := compressWith(t, file.ZStdAlgorithm, "")
+		// the reader must detect zstd from the content, not the env var
+		t.Setenv(file.CompressionAlgorithmEnvVarKey, file.GZipAlgorithm)
+		decompressed, err := file.DecompressContent(logging.TestContext(t.Context()), compressed)
+		require.NoError(t, err)
+		assert.Equal(t, compressibleContent, decompressed)
+	})
+
+	t.Run("UnknownAlgorithmFallsBackToGzip", func(t *testing.T) {
+		compressed := compressWith(t, "lz4", "")
+		assert.Equal(t, []byte{0x1f, 0x8b}, compressed[:2], "expected gzip magic bytes")
+		decompressed, err := file.DecompressContent(logging.TestContext(t.Context()), compressed)
+		require.NoError(t, err)
+		assert.Equal(t, compressibleContent, decompressed)
+	})
+}
+
+// TestBrotliCompression ensures brotli writes round-trip and are detected by
+// the reader by elimination (no gzip/zstd magic bytes), with the level knob
+// falling back to the default when invalid.
+func TestBrotliCompression(t *testing.T) {
+	t.Run("CompressWithBrotli", func(t *testing.T) {
+		compressed := compressWith(t, file.BrotliAlgorithm, "")
+		assert.NotEqual(t, []byte{0x1f, 0x8b}, compressed[:2], "must not look like gzip")
+		assert.NotEqual(t, []byte{0x28, 0xb5, 0x2f, 0xfd}, compressed[:4], "must not look like zstd")
+	})
+
+	t.Run("DecompressDetectsBrotli", func(t *testing.T) {
+		compressed := compressWith(t, file.BrotliAlgorithm, "")
+		// the reader must detect brotli from the content, not the env var
+		t.Setenv(file.CompressionAlgorithmEnvVarKey, file.GZipAlgorithm)
+		decompressed, err := file.DecompressContent(logging.TestContext(t.Context()), compressed)
+		require.NoError(t, err)
+		assert.Equal(t, compressibleContent, decompressed)
+	})
+
+	t.Run("InvalidLevelFallsBackToDefault", func(t *testing.T) {
+		invalid := compressWith(t, file.BrotliAlgorithm, "banana")
+		dflt := compressWith(t, file.BrotliAlgorithm, "")
+		assert.Equal(t, dflt, invalid, "invalid level must produce the same output as the default")
+	})
+}
+
+// TestCompressionLevel ensures WORKFLOW_COMPRESSION_LEVEL has an observable
+// effect for each algorithm: minimum- and maximum-level outputs differ, with
+// the maximum level compressing at least as well.
+func TestCompressionLevel(t *testing.T) {
+	for algo, levels := range map[string][2]string{
+		file.GZipAlgorithm:   {"1", "9"},
+		file.ZStdAlgorithm:   {"1", "4"},
+		file.BrotliAlgorithm: {"0", "11"},
+	} {
+		t.Run(algo, func(t *testing.T) {
+			fastest := compressWith(t, algo, levels[0])
+			best := compressWith(t, algo, levels[1])
+			assert.NotEqual(t, fastest, best, "the level must affect the output")
+			assert.LessOrEqual(t, len(best), len(fastest))
+			decompressed, err := file.DecompressContent(logging.TestContext(t.Context()), best)
+			require.NoError(t, err)
+			assert.Equal(t, compressibleContent, decompressed)
+		})
 	}
 }
 
@@ -173,7 +266,7 @@ func TestIsDirectory(t *testing.T) {
 
 func TestExists(t *testing.T) {
 	assert.True(t, file.Exists("/"))
-	path, err := rand.RandString(10)
+	path, err := rand.String(10)
 	require.NoError(t, err)
 	randFilePath := fmt.Sprintf("/%s", path)
 	assert.False(t, file.Exists(randFilePath))

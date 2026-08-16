@@ -6,20 +6,24 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
 
-	"github.com/argoproj/argo-workflows/v3"
-	executorplugins "github.com/argoproj/argo-workflows/v3/pkg/plugins/executor"
-	"github.com/argoproj/argo-workflows/v3/util/logs"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/executor"
-	"github.com/argoproj/argo-workflows/v3/workflow/executor/plugins/rpc"
+	"github.com/argoproj/argo-workflows/v4"
+	argoexecex "github.com/argoproj/argo-workflows/v4/cmd/argoexec/executor"
+	executorplugins "github.com/argoproj/argo-workflows/v4/pkg/plugins/executor"
+	"github.com/argoproj/argo-workflows/v4/util/env"
+	"github.com/argoproj/argo-workflows/v4/util/logs"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/executor"
+	"github.com/argoproj/argo-workflows/v4/workflow/executor/plugins/rpc"
+	"github.com/argoproj/argo-workflows/v4/workflow/tracing"
 )
 
 func NewAgentCommand() *cobra.Command {
@@ -94,17 +98,18 @@ func initAgentExecutor(ctx context.Context) *executor.AgentExecutor {
 	logger := logging.RequireLoggerFromContext(ctx)
 	logger.WithFields(logging.Fields{"version": version.Version}).Info(ctx, "Starting Workflow Executor")
 	config, err := clientConfig.ClientConfig()
-	checkErr(err)
+	argoexecex.CheckErr(err)
 
 	config = restclient.AddUserAgent(config, fmt.Sprintf("argo-workflows/%s argo-executor/%s", version.Version, "agent Executor"))
 
 	logs.AddK8SLogTransportWrapper(ctx, config) // lets log all request as we should typically do < 5 per pod, so this is will show up problems
+	tracing.AddTracingTransportWrapper(ctx, config)
 
 	namespace, _, err := clientConfig.Namespace()
-	checkErr(err)
+	argoexecex.CheckErr(err)
 
 	clientSet, err := kubernetes.NewForConfig(config)
-	checkErr(err)
+	argoexecex.CheckErr(err)
 
 	restClient := clientSet.RESTClient()
 
@@ -136,5 +141,8 @@ func initAgentExecutor(ctx context.Context) *executor.AgentExecutor {
 		plugins = append(plugins, rpc.New(address, string(data)))
 	}
 
-	return executor.NewAgentExecutor(clientSet, restClient, config, namespace, workflowName, workflowUID, plugins)
+	taskWorkers := env.LookupEnvIntOr(ctx, common.EnvAgentTaskWorkers, 16)
+	requeueTime := env.LookupEnvDurationOr(ctx, common.EnvAgentPatchRate, 10*time.Second)
+
+	return executor.NewAgentExecutor(clientSet, restClient, config, namespace, workflowName, workflowUID, plugins, taskWorkers, requeueTime)
 }

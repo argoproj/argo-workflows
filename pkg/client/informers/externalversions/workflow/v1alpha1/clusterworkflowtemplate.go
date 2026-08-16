@@ -3,13 +3,13 @@
 package v1alpha1
 
 import (
-	"context"
+	context "context"
 	time "time"
 
-	workflowv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	versioned "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
-	internalinterfaces "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/internalinterfaces"
-	v1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/listers/workflow/v1alpha1"
+	apisworkflowv1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	versioned "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
+	internalinterfaces "github.com/argoproj/argo-workflows/v4/pkg/client/informers/externalversions/internalinterfaces"
+	workflowv1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/client/listers/workflow/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -20,7 +20,7 @@ import (
 // ClusterWorkflowTemplates.
 type ClusterWorkflowTemplateInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1alpha1.ClusterWorkflowTemplateLister
+	Lister() workflowv1alpha1.ClusterWorkflowTemplateLister
 }
 
 type clusterWorkflowTemplateInformer struct {
@@ -40,21 +40,33 @@ func NewClusterWorkflowTemplateInformer(client versioned.Interface, resyncPeriod
 // one. This reduces memory footprint and number of connections to the server.
 func NewFilteredClusterWorkflowTemplateInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
-		&cache.ListWatch{
+		cache.ToListWatcherWithWatchListSemantics(&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.ArgoprojV1alpha1().ClusterWorkflowTemplates().List(context.TODO(), options)
+				return client.ArgoprojV1alpha1().ClusterWorkflowTemplates().List(context.Background(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.ArgoprojV1alpha1().ClusterWorkflowTemplates().Watch(context.TODO(), options)
+				return client.ArgoprojV1alpha1().ClusterWorkflowTemplates().Watch(context.Background(), options)
 			},
-		},
-		&workflowv1alpha1.ClusterWorkflowTemplate{},
+			ListWithContextFunc: func(ctx context.Context, options v1.ListOptions) (runtime.Object, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.ArgoprojV1alpha1().ClusterWorkflowTemplates().List(ctx, options)
+			},
+			WatchFuncWithContext: func(ctx context.Context, options v1.ListOptions) (watch.Interface, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.ArgoprojV1alpha1().ClusterWorkflowTemplates().Watch(ctx, options)
+			},
+		}, client),
+		&apisworkflowv1alpha1.ClusterWorkflowTemplate{},
 		resyncPeriod,
 		indexers,
 	)
@@ -65,9 +77,9 @@ func (f *clusterWorkflowTemplateInformer) defaultInformer(client versioned.Inter
 }
 
 func (f *clusterWorkflowTemplateInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&workflowv1alpha1.ClusterWorkflowTemplate{}, f.defaultInformer)
+	return f.factory.InformerFor(&apisworkflowv1alpha1.ClusterWorkflowTemplate{}, f.defaultInformer)
 }
 
-func (f *clusterWorkflowTemplateInformer) Lister() v1alpha1.ClusterWorkflowTemplateLister {
-	return v1alpha1.NewClusterWorkflowTemplateLister(f.Informer().GetIndexer())
+func (f *clusterWorkflowTemplateInformer) Lister() workflowv1alpha1.ClusterWorkflowTemplateLister {
+	return workflowv1alpha1.NewClusterWorkflowTemplateLister(f.Informer().GetIndexer())
 }

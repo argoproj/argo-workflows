@@ -4,7 +4,7 @@ import (
 	v1Label "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/cache"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
 type tolerantClusterWorkflowTemplateLister struct {

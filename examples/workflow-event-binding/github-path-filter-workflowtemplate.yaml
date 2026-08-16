@@ -7,7 +7,7 @@ spec:
   arguments:
     parameters:
       - name: files
-        value: []
+        value: "[]"
   templates:
     - name: main
       steps:

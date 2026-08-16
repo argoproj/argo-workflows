@@ -26,8 +26,8 @@ Historically there were multiple available executor types, but as of 3.4 the onl
 You can determine the default command for a container image using:
 
 ```bash
-docker pull alpine:latest
-docker image inspect -f '{{.Config.Entrypoint}} {{.Config.Cmd}}' alpine:latest
+docker pull alpine:3.23
+docker image inspect -f '{{.Config.Entrypoint}} {{.Config.Cmd}}' alpine:3.23
 ```
 
 [Learn more about command and args](https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#notes)

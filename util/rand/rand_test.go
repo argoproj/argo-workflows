@@ -7,11 +7,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestRandString(t *testing.T) {
-	ss, err := RandString(10)
+func TestString(t *testing.T) {
+	ss, err := String(10)
 	require.NoError(t, err)
 	assert.Len(t, ss, 10)
-	ss, err = RandString(5)
+	ss, err = String(5)
 	require.NoError(t, err)
 	assert.Len(t, ss, 5)
 }

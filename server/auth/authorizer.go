@@ -3,7 +3,7 @@ package auth
 import (
 	"context"
 
-	authUtil "github.com/argoproj/argo-workflows/v3/util/auth"
+	authUtil "github.com/argoproj/argo-workflows/v4/util/auth"
 )
 
 func CanI(ctx context.Context, verb, resource, namespace, name string) (bool, error) {

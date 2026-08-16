@@ -20,5 +20,9 @@
     },
     "include": [
         "./**/*"
+    ],
+    "exclude": [
+        "e2e",
+        "playwright.config.ts"
     ]
 }

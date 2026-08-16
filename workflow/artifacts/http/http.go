@@ -8,9 +8,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
+	"github.com/argoproj/argo-workflows/v4/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/common"
 )
 
 // ArtifactDriver is the artifact driver for artifactory and http URLs
@@ -22,20 +22,21 @@ type ArtifactDriver struct {
 
 var _ common.ArtifactDriver = &ArtifactDriver{}
 
-func (h *ArtifactDriver) retrieveContent(inputArtifact *wfv1.Artifact) (http.Response, error) {
+func (h *ArtifactDriver) retrieveContent(ctx context.Context, inputArtifact *wfv1.Artifact) (http.Response, error) {
 	var req *http.Request
 	var url string
 	var err error
-	if inputArtifact.Artifactory != nil && inputArtifact.HTTP == nil {
+	switch {
+	case inputArtifact.Artifactory != nil && inputArtifact.HTTP == nil:
 		url = inputArtifact.Artifactory.URL
-		req, err = http.NewRequest(http.MethodGet, url, nil)
+		req, err = http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 		if err != nil {
 			return http.Response{}, err
 		}
 		req.SetBasicAuth(h.Username, h.Password)
-	} else if inputArtifact.Artifactory == nil && inputArtifact.HTTP != nil {
+	case inputArtifact.Artifactory == nil && inputArtifact.HTTP != nil:
 		url = inputArtifact.HTTP.URL
-		req, err = http.NewRequest(http.MethodGet, url, nil)
+		req, err = http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 		if err != nil {
 			return http.Response{}, err
 		}
@@ -45,7 +46,7 @@ func (h *ArtifactDriver) retrieveContent(inputArtifact *wfv1.Artifact) (http.Res
 		if h.Username != "" && h.Password != "" {
 			req.SetBasicAuth(h.Username, h.Password)
 		}
-	} else {
+	default:
 		return http.Response{}, errors.InternalErrorf("Either Artifactory or HTTP artifact needs to be configured")
 	}
 
@@ -55,7 +56,7 @@ func (h *ArtifactDriver) retrieveContent(inputArtifact *wfv1.Artifact) (http.Res
 	if err != nil {
 		return http.Response{}, err
 	}
-	if res.StatusCode == 404 {
+	if res.StatusCode == http.StatusNotFound {
 		return http.Response{}, errors.New(errors.CodeNotFound, res.Status)
 	}
 	if res.StatusCode < 200 || res.StatusCode >= 300 {
@@ -73,7 +74,7 @@ func (h *ArtifactDriver) Load(ctx context.Context, inputArtifact *wfv1.Artifact,
 	defer func() {
 		_ = lf.Close()
 	}()
-	res, err := h.retrieveContent(inputArtifact)
+	res, err := h.retrieveContent(ctx, inputArtifact)
 	if err != nil {
 		return err
 	}
@@ -85,11 +86,58 @@ func (h *ArtifactDriver) Load(ctx context.Context, inputArtifact *wfv1.Artifact,
 }
 
 func (h *ArtifactDriver) OpenStream(ctx context.Context, inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
-	res, err := h.retrieveContent(inputArtifact)
+	res, err := h.retrieveContent(ctx, inputArtifact)
 	if err != nil {
 		return nil, err
 	}
 	return res.Body, nil
+}
+
+// buildPutRequest constructs the PUT request for the artifact's Artifactory or
+// HTTP destination, applying auth and headers. Exactly one of the two locations
+// must be set; both or neither is a configuration error.
+func (h *ArtifactDriver) buildPutRequest(ctx context.Context, body io.Reader, outputArtifact *wfv1.Artifact) (*http.Request, string, error) {
+	switch {
+	case outputArtifact.Artifactory != nil && outputArtifact.HTTP == nil:
+		url := outputArtifact.Artifactory.URL
+		req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, body)
+		if err != nil {
+			return nil, "", err
+		}
+		req.SetBasicAuth(h.Username, h.Password)
+		return req, url, nil
+	case outputArtifact.Artifactory == nil && outputArtifact.HTTP != nil:
+		url := outputArtifact.HTTP.URL
+		req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, body)
+		if err != nil {
+			return nil, "", err
+		}
+		for _, header := range outputArtifact.HTTP.Headers {
+			req.Header.Add(header.Name, header.Value)
+		}
+		if h.Username != "" && h.Password != "" {
+			req.SetBasicAuth(h.Username, h.Password)
+		}
+		return req, url, nil
+	default:
+		return nil, "", errors.InternalErrorf("Either Artifactory or HTTP artifact needs to be configured")
+	}
+}
+
+// doPutRequest sends req and fails on a non-2xx response. what describes the
+// operation in error messages, e.g. "saving file /tmp/x" or "saving stream".
+func (h *ArtifactDriver) doPutRequest(req *http.Request, url, what string) error {
+	res, err := h.Client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = res.Body.Close()
+	}()
+	if res.StatusCode < 200 || res.StatusCode >= 300 {
+		return errors.InternalErrorf("%s to %s failed with reason: %s", what, url, res.Status)
+	}
+	return nil
 }
 
 // Save writes the artifact to the URL
@@ -99,44 +147,37 @@ func (h *ArtifactDriver) Save(ctx context.Context, path string, outputArtifact *
 	if err != nil {
 		return err
 	}
-	var req *http.Request
-	var url string
-	if outputArtifact.Artifactory != nil && outputArtifact.HTTP == nil {
-		url = outputArtifact.Artifactory.URL
-		req, err = http.NewRequest(http.MethodPut, url, f)
-		if err != nil {
-			return err
-		}
-		req.SetBasicAuth(h.Username, h.Password)
-	} else {
-		url = outputArtifact.HTTP.URL
-		req, err = http.NewRequest(http.MethodPut, url, f)
-		if err != nil {
-			return err
-		}
-		for _, h := range outputArtifact.HTTP.Headers {
-			req.Header.Add(h.Name, h.Value)
-		}
-		if h.Username != "" && h.Password != "" {
-			req.SetBasicAuth(h.Username, h.Password)
-		}
+	req, url, err := h.buildPutRequest(ctx, f, outputArtifact)
+	if err != nil {
+		// The request never gets sent, so nothing else will close f.
+		_ = f.Close()
+		return err
 	}
 	// we set the GetBody func of the request in order to enable following 307 POST/PUT redirects, needed e.g. for webHDFS
 	req.GetBody = func() (io.ReadCloser, error) {
 		return os.Open(cleanPath)
 	}
+	return h.doPutRequest(req, url, fmt.Sprintf("saving file %s", path))
+}
 
-	res, err := h.Client.Do(req)
+// SaveStream saves an artifact from an io.Reader to HTTP URL
+//
+// By default req.GetBody is not set: reader is a one-shot io.Reader that cannot be
+// reopened, so a 307/308 redirect (e.g. webHDFS) cannot be followed with a re-sent
+// body and surfaces as a request error. Destinations that need redirect support can
+// set HTTP.SaveStreamViaFile to buffer the stream to a temp file and delegate to Save,
+// which sets GetBody.
+func (h *ArtifactDriver) SaveStream(ctx context.Context, reader io.Reader, outputArtifact *wfv1.Artifact) error {
+	if outputArtifact.HTTP != nil && outputArtifact.HTTP.SaveStreamViaFile {
+		return common.SaveStreamViaTempFile(reader, "http-upload-*", func(path string) error {
+			return h.Save(ctx, path, outputArtifact)
+		})
+	}
+	req, url, err := h.buildPutRequest(ctx, reader, outputArtifact)
 	if err != nil {
 		return err
 	}
-	defer func() {
-		_ = res.Body.Close()
-	}()
-	if res.StatusCode < 200 || res.StatusCode >= 300 {
-		return errors.InternalErrorf("saving file %s to %s failed with reason: %s", path, url, res.Status)
-	}
-	return nil
+	return h.doPutRequest(req, url, "saving stream")
 }
 
 // Delete is unsupported for the http artifacts

@@ -10,8 +10,6 @@ import (
 	gosync "sync"
 	"time"
 
-	"github.com/upper/db/v4"
-
 	syncpkg "github.com/argoproj/pkg/sync"
 	"golang.org/x/time/rate"
 	apiv1 "k8s.io/api/core/v1"
@@ -22,63 +20,75 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/resourceversion"
 	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
 	v1 "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/metadata"
+	"k8s.io/client-go/metadata/metadatainformer"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
-	apiwatch "k8s.io/client-go/tools/watch"
 	"k8s.io/client-go/util/workqueue"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 
-	"github.com/argoproj/argo-workflows/v3"
-	"github.com/argoproj/argo-workflows/v3/config"
-	argoErr "github.com/argoproj/argo-workflows/v3/errors"
-	"github.com/argoproj/argo-workflows/v3/persist/sqldb"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	wfclientset "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions"
-	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/pkg/plugins/spec"
-	wfctx "github.com/argoproj/argo-workflows/v3/util/context"
-	"github.com/argoproj/argo-workflows/v3/util/deprecation"
-	"github.com/argoproj/argo-workflows/v3/util/env"
-	"github.com/argoproj/argo-workflows/v3/util/errors"
-	rbacutil "github.com/argoproj/argo-workflows/v3/util/rbac"
-	"github.com/argoproj/argo-workflows/v3/util/retry"
-	"github.com/argoproj/argo-workflows/v3/util/telemetry"
-	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	controllercache "github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
-	"github.com/argoproj/argo-workflows/v3/workflow/controller/entrypoint"
-	"github.com/argoproj/argo-workflows/v3/workflow/controller/estimation"
-	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
-	"github.com/argoproj/argo-workflows/v3/workflow/controller/informer"
-	"github.com/argoproj/argo-workflows/v3/workflow/controller/pod"
-	"github.com/argoproj/argo-workflows/v3/workflow/cron"
-	"github.com/argoproj/argo-workflows/v3/workflow/events"
-	"github.com/argoproj/argo-workflows/v3/workflow/gccontroller"
-	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
-	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
-	"github.com/argoproj/argo-workflows/v3/workflow/sync"
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
-	plugin "github.com/argoproj/argo-workflows/v3/workflow/util/plugins"
+	"github.com/argoproj/argo-workflows/v4"
+	"github.com/argoproj/argo-workflows/v4/config"
+	argoErr "github.com/argoproj/argo-workflows/v4/errors"
+	"github.com/argoproj/argo-workflows/v4/persist/sqldb"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	wfclientset "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo-workflows/v4/pkg/client/informers/externalversions"
+	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/client/informers/externalversions/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/pkg/plugins/spec"
+	authutil "github.com/argoproj/argo-workflows/v4/util/auth"
+	wfctx "github.com/argoproj/argo-workflows/v4/util/context"
+	"github.com/argoproj/argo-workflows/v4/util/deprecation"
+	"github.com/argoproj/argo-workflows/v4/util/env"
+	"github.com/argoproj/argo-workflows/v4/util/errors"
+	informerutil "github.com/argoproj/argo-workflows/v4/util/informer"
+	rbacutil "github.com/argoproj/argo-workflows/v4/util/rbac"
+	"github.com/argoproj/argo-workflows/v4/util/retry"
+	utilsqldb "github.com/argoproj/argo-workflows/v4/util/sqldb"
+	"github.com/argoproj/argo-workflows/v4/util/telemetry"
+	waitutil "github.com/argoproj/argo-workflows/v4/util/wait"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifactrepositories"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	controllercache "github.com/argoproj/argo-workflows/v4/workflow/controller/cache"
+	"github.com/argoproj/argo-workflows/v4/workflow/controller/entrypoint"
+	"github.com/argoproj/argo-workflows/v4/workflow/controller/estimation"
+	"github.com/argoproj/argo-workflows/v4/workflow/controller/indexes"
+	"github.com/argoproj/argo-workflows/v4/workflow/controller/informer"
+	"github.com/argoproj/argo-workflows/v4/workflow/controller/pod"
+	"github.com/argoproj/argo-workflows/v4/workflow/cron"
+	"github.com/argoproj/argo-workflows/v4/workflow/events"
+	"github.com/argoproj/argo-workflows/v4/workflow/gccontroller"
+	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
+	"github.com/argoproj/argo-workflows/v4/workflow/metrics"
+	"github.com/argoproj/argo-workflows/v4/workflow/sync"
+	"github.com/argoproj/argo-workflows/v4/workflow/tracing"
+	"github.com/argoproj/argo-workflows/v4/workflow/util"
+	"github.com/argoproj/argo-workflows/v4/workflow/util/plugin"
 )
 
 const maxAllowedStackDepth = 100
 
-type recentlyCompletedWorkflow struct {
-	key  string
-	when time.Time
+// lastWrittenVersion records the most recent resourceVersion of a workflow
+// that this controller has written, or has seen complete or be deleted.
+type lastWrittenVersion struct {
+	resourceVersion string
+	// completedAt is set when the workflow completed or was deleted. The
+	// record is retained for completedVersionRetention afterwards so that
+	// stale copies of the workflow re-entering the informer can still be
+	// rejected, and is then expired.
+	completedAt time.Time
 }
 
-type recentCompletions struct {
-	completions []recentlyCompletedWorkflow
+type lastWrittenVersions struct {
+	versions    map[types.UID]lastWrittenVersion
+	nextCleanup time.Time
 	mutex       gosync.RWMutex
 }
 
@@ -107,61 +117,71 @@ type WorkflowController struct {
 	cliExecutorLogFormat string
 
 	// restConfig is used by controller to send a SIGUSR1 to the wait sidecar using remotecommand.NewSPDYExecutor().
-	restConfig       *rest.Config
-	kubeclientset    kubernetes.Interface
-	rateLimiter      *rate.Limiter
-	dynamicInterface dynamic.Interface
-	wfclientset      wfclientset.Interface
+	restConfig        *rest.Config
+	kubeclientset     kubernetes.Interface
+	rateLimiter       *rate.Limiter
+	dynamicInterface  dynamic.Interface
+	metadataInterface metadata.Interface
+	wfclientset       wfclientset.Interface
 
 	// maxStackDepth is a configurable limit to the depth of the "stack", which is increased with every nested call to
 	// woc.executeTemplate and decreased when such calls return. This is used to prevent infinite recursion
 	maxStackDepth int
 
 	// datastructures to support the processing of workflows and workflow pods
-	wfInformer            cache.SharedIndexInformer
-	nsInformer            cache.SharedIndexInformer
-	wftmplInformer        wfextvv1alpha1.WorkflowTemplateInformer
-	cwftmplInformer       wfextvv1alpha1.ClusterWorkflowTemplateInformer
-	PodController         *pod.Controller // Currently public for woc to access, but would rather an accessor
-	configMapInformer     cache.SharedIndexInformer
-	wfQueue               workqueue.TypedRateLimitingInterface[string]
-	wfArchiveQueue        workqueue.TypedRateLimitingInterface[string]
-	throttler             sync.Throttler
-	workflowKeyLock       syncpkg.KeyLock // used to lock workflows for exclusive modification or access
-	session               db.Session
-	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
-	hydrator              hydrator.Interface
-	wfArchive             sqldb.WorkflowArchive
-	estimatorFactory      estimation.EstimatorFactory
-	syncManager           *sync.Manager
-	metrics               *metrics.Metrics
-	eventRecorderManager  events.EventRecorderManager
-	archiveLabelSelector  labels.Selector
-	cacheFactory          controllercache.Factory
-	wfTaskSetInformer     wfextvv1alpha1.WorkflowTaskSetInformer
-	artGCTaskInformer     wfextvv1alpha1.WorkflowArtifactGCTaskInformer
-	taskResultInformer    cache.SharedIndexInformer
+	wfInformer      cache.SharedIndexInformer
+	nsInformer      cache.SharedIndexInformer
+	wftmplInformer  wfextvv1alpha1.WorkflowTemplateInformer
+	cwftmplInformer wfextvv1alpha1.ClusterWorkflowTemplateInformer
+	PodController   *pod.Controller // Currently public for woc to access, but would rather an accessor
+	// typedConfigMapInformer watches configmaps labelled with workflows.argoproj.io/configmap-type,
+	// used to resolve parameters sourced from configmaps and to GC memoization caches
+	typedConfigMapInformer cache.SharedIndexInformer
+	// controllerConfigMapInformer watches the controller's own configmap to reload configuration on change
+	controllerConfigMapInformer cache.SharedIndexInformer
+	// semaphoreConfigMapInformer watches configmaps in the managed namespace to requeue workflows waiting on a semaphore whose configuration changed
+	semaphoreConfigMapInformer cache.SharedIndexInformer
+	wfQueue                    workqueue.TypedRateLimitingInterface[string]
+	wfArchiveQueue             workqueue.TypedRateLimitingInterface[string]
+	throttler                  sync.Throttler
+	workflowKeyLock            syncpkg.KeyLock // used to lock workflows for exclusive modification or access
+	sessionProxy               *utilsqldb.SessionProxy
+	offloadNodeStatusRepo      sqldb.OffloadNodeStatusRepo
+	hydrator                   hydrator.Interface
+	wfArchive                  sqldb.WorkflowArchive
+	estimatorFactory           estimation.EstimatorFactory
+	syncManager                *sync.Manager
+	metrics                    *metrics.Metrics
+	tracing                    *tracing.Tracing
+	eventRecorderManager       events.EventRecorderManager
+	archiveLabelSelector       labels.Selector
+	cacheFactory               controllercache.Factory
+	wfTaskSetInformer          wfextvv1alpha1.WorkflowTaskSetInformer
+	artGCTaskInformer          wfextvv1alpha1.WorkflowArtifactGCTaskInformer
+	taskResultInformer         cache.SharedIndexInformer
 
 	// progressPatchTickDuration defines how often the executor will patch pod annotations if an updated progress is found.
 	// Default is 1m and can be configured using the env var ARGO_PROGRESS_PATCH_TICK_DURATION.
 	progressPatchTickDuration time.Duration
 	// progressFileTickDuration defines how often the progress file is read.
 	// Default is 3s and can be configured using the env var ARGO_PROGRESS_FILE_TICK_DURATION
-	progressFileTickDuration time.Duration
-	executorPlugins          map[string]map[string]*spec.Plugin // namespace -> name -> plugin
+	progressFileTickDuration           time.Duration
+	executorPlugins                    map[string]map[string]*spec.Plugin // namespace -> name -> plugin
+	enableWorkflowLevelExecutorPlugins bool
 
-	recentCompletions recentCompletions
 	// lastUnreconciledWorkflows is a map of workflows that have been recently unreconciled
 	lastUnreconciledWorkflows map[string]*wfv1.Workflow
+
+	lastWrittenVersions lastWrittenVersions
 }
 
 const (
 	workflowResyncPeriod                = 20 * time.Minute
 	workflowTemplateResyncPeriod        = 20 * time.Minute
-	podResyncPeriod                     = 30 * time.Minute
 	clusterWorkflowTemplateResyncPeriod = 20 * time.Minute
 	workflowExistenceCheckPeriod        = 1 * time.Minute
 	workflowTaskSetResyncPeriod         = 20 * time.Minute
+	configMapResyncPeriod               = 20 * time.Minute
 )
 
 var (
@@ -184,9 +204,18 @@ func init() {
 }
 
 // NewWorkflowController instantiates a new WorkflowController
-func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, executorLogFormat, configMap string, executorPlugins bool) (*WorkflowController, error) {
+func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, executorLogFormat, configMap string, executorPlugins bool, workflowLevelExecutorPlugins bool) (*WorkflowController, error) {
 	dynamicInterface, err := dynamic.NewForConfig(restConfig)
 	if err != nil {
+		return nil, err
+	}
+
+	metadataInterface, err := metadata.NewForConfig(restConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = util.ConfigureUserOverrideAllowlistFromEnv(); err != nil {
 		return nil, err
 	}
 
@@ -194,6 +223,7 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		restConfig:                 restConfig,
 		kubeclientset:              kubeclientset,
 		dynamicInterface:           dynamicInterface,
+		metadataInterface:          metadataInterface,
 		wfclientset:                wfclientset,
 		namespace:                  namespace,
 		managedNamespace:           managedNamespace,
@@ -206,11 +236,17 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		eventRecorderManager:       events.NewEventRecorderManager(kubeclientset),
 		progressPatchTickDuration:  env.LookupEnvDurationOr(ctx, common.EnvVarProgressPatchTickDuration, 1*time.Minute),
 		progressFileTickDuration:   env.LookupEnvDurationOr(ctx, common.EnvVarProgressFileTickDuration, 3*time.Second),
+		lastWrittenVersions: lastWrittenVersions{
+			versions: make(map[types.UID]lastWrittenVersion),
+			mutex:    gosync.RWMutex{},
+		},
 	}
 
 	if executorPlugins {
 		wfc.executorPlugins = map[string]map[string]*spec.Plugin{}
 	}
+
+	wfc.enableWorkflowLevelExecutorPlugins = workflowLevelExecutorPlugins
 
 	wfc.UpdateConfig(ctx)
 	wfc.maxStackDepth = wfc.getMaxStackDepth()
@@ -224,6 +260,10 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 			WorkflowCondition: wfc.getWorkflowConditionMetrics,
 			IsLeader:          wfc.IsLeader,
 		})
+	if err != nil {
+		return nil, err
+	}
+	wfc.tracing, err = tracing.New(ctx, `workflows-controller`)
 	if err != nil {
 		return nil, err
 	}
@@ -278,20 +318,50 @@ var indexers = cache.Indexers{
 	cache.NamespaceIndex:                 cache.MetaNamespaceIndexFunc,
 }
 
+// ShutdownTracing flushes any remaining spans and shuts down the trace provider.
+func (wfc *WorkflowController) ShutdownTracing(ctx context.Context) error {
+	return wfc.tracing.Shutdown(ctx)
+}
+
+// ShutdownMetrics flushes any remaining metrics and shuts down the meter provider.
+func (wfc *WorkflowController) ShutdownMetrics(ctx context.Context) error {
+	return wfc.metrics.Shutdown(ctx)
+}
+
 // Run starts a Workflow resource controller
 func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWorkers, podCleanupWorkers, cronWorkflowWorkers, wfArchiveWorkers int) {
 	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
 
+	ctx, span := wfc.tracing.StartStartupController(ctx)
 	logger := logging.RequireLoggerFromContext(ctx)
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	// Reload the configuration before anything acts on it: this only runs on gaining
+	// leadership, so the configuration loaded at process start may be stale (e.g. edited
+	// while this instance was a standby). The informer's initial sync re-runs UpdateConfig,
+	// and waiting for handler delivery here means nothing below reads config mid-update.
+	if os.Getenv("WATCH_CONTROLLER_SEMAPHORE_CONFIGMAPS") != "false" {
+		var handlerSynced cache.InformerSynced
+		wfc.controllerConfigMapInformer, handlerSynced = wfc.newControllerConfigMapInformer(ctx)
+		if wfc.controllerConfigMapInformer != nil {
+			go wfc.controllerConfigMapInformer.Run(ctx.Done())
+			if !cache.WaitForCacheSync(ctx.Done(), handlerSynced) {
+				logger.WithFatal().Error(ctx, "Timed out waiting for controller config map to sync")
+			}
+		}
+	}
+
 	// init DB after leader election (if enabled)
 	if err := wfc.initDB(ctx); err != nil {
 		logger.WithError(err).WithFatal().Error(ctx, "Failed to init db")
 	}
 
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
 	defer wfc.wfQueue.ShutDown()
+	// The archive workers block in Get() until the queue shuts down, so
+	// cancelling their context alone does not release them.
+	defer wfc.wfArchiveQueue.ShutDown()
 
 	logger.WithFields(argo.GetVersion().Fields()).WithFields(logging.Fields{
 		"instanceID":         wfc.Config.InstanceID,
@@ -324,7 +394,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 
 	wfc.updateEstimatorFactory(ctx)
 
-	wfc.configMapInformer = wfc.newConfigMapInformer(ctx)
+	wfc.typedConfigMapInformer = wfc.newTypedConfigMapInformer(ctx)
 
 	// Create Synchronization Manager
 	wfc.createSynchronizationManager(ctx)
@@ -334,23 +404,16 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	}
 
 	if os.Getenv("WATCH_CONTROLLER_SEMAPHORE_CONFIGMAPS") != "false" {
-		go wfc.runConfigMapWatcher(ctx)
+		wfc.semaphoreConfigMapInformer = wfc.newSemaphoreConfigMapInformer(ctx)
 	}
 
 	// namespace informer only works if has RBAC access
-	var nsInformerHasSynced func() bool
-	if wfc.nsInformer != nil {
-		go wfc.nsInformer.Run(ctx.Done())
-		nsInformerHasSynced = wfc.nsInformer.HasSynced
-	} else {
-		nsInformerHasSynced = func() bool {
-			return true
-		}
-	}
+	nsInformerHasSynced := startOptionalInformer(ctx, wfc.nsInformer)
+	semaphoreConfigMapInformerHasSynced := startOptionalInformer(ctx, wfc.semaphoreConfigMapInformer)
 
 	go wfc.wfInformer.Run(ctx.Done())
 	go wfc.wftmplInformer.Informer().Run(ctx.Done())
-	go wfc.configMapInformer.Run(ctx.Done())
+	go wfc.typedConfigMapInformer.Run(ctx.Done())
 	go wfc.wfTaskSetInformer.Informer().Run(ctx.Done())
 	go wfc.artGCTaskInformer.Informer().Run(ctx.Done())
 	go wfc.taskResultInformer.Run(ctx.Done())
@@ -358,19 +421,24 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	go wfc.runPodController(ctx, podCleanupWorkers)
 
 	// Wait for all involved caches to be synced, before processing items from the queue is started
+	_, syncSpan := wfc.tracing.StartStartupCacheSync(ctx)
 	if !cache.WaitForCacheSync(
 		ctx.Done(),
 		wfc.wfInformer.HasSynced,
 		nsInformerHasSynced,
 		wfc.wftmplInformer.Informer().HasSynced,
 		wfc.PodController.HasSynced(),
-		wfc.configMapInformer.HasSynced,
+		wfc.typedConfigMapInformer.HasSynced,
+		semaphoreConfigMapInformerHasSynced,
 		wfc.wfTaskSetInformer.Informer().HasSynced,
 		wfc.artGCTaskInformer.Informer().HasSynced,
 		wfc.taskResultInformer.HasSynced,
 	) {
 		logger.WithFatal().Error(ctx, "Timed out waiting for caches to sync")
 	}
+	syncSpan.End()
+	span.End()
+	ctx = wfc.tracing.BreakTrace(ctx)
 
 	go wfc.workflowGarbageCollector(ctx)
 	go wfc.archivedWorkflowGarbageCollector(ctx)
@@ -381,12 +449,12 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	go wait.UntilWithContext(ctx, wfc.syncManager.CheckWorkflowExistence, workflowExistenceCheckPeriod)
 
 	workerCtx, _ := logger.WithField("component", "workflow_worker").InContext(ctx)
-	for i := 0; i < wfWorkers; i++ {
+	for range wfWorkers {
 		go wait.UntilWithContext(workerCtx, wfc.runWorker, time.Second)
 	}
 
 	archiveCtx, _ := logger.WithField("component", "archive_worker").InContext(ctx)
-	for i := 0; i < wfArchiveWorkers; i++ {
+	for range wfArchiveWorkers {
 		go wait.UntilWithContext(archiveCtx, wfc.runArchiveWorker, time.Second)
 	}
 	if cacheGCPeriod != 0 {
@@ -406,20 +474,20 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 		if err != nil {
 			return 0, err
 		}
-		configmapsIf := wfc.kubeclientset.CoreV1().ConfigMaps(lockName.Namespace)
+		configmapsIf := wfc.kubeclientset.CoreV1().ConfigMaps(lockName.GetNamespace())
 		var configMap *apiv1.ConfigMap
 		err = waitutil.Backoff(retry.DefaultRetry(ctx), func() (bool, error) {
-			var err error
-			configMap, err = configmapsIf.Get(ctx, lockName.ResourceName, metav1.GetOptions{})
-			return !errors.IsTransientErr(ctx, err), err
+			var getErr error
+			configMap, getErr = configmapsIf.Get(ctx, lockName.GetResourceName(), metav1.GetOptions{})
+			return !errors.IsTransientErr(ctx, getErr), getErr
 		})
 		if err != nil {
 			return 0, err
 		}
 
-		value, found := configMap.Data[lockName.Key]
+		value, found := configMap.Data[lockName.GetKey()]
 		if !found {
-			return 0, argoErr.New(argoErr.CodeBadRequest, fmt.Sprintf("Sync configuration key '%s' not found in ConfigMap", lockName.Key))
+			return 0, argoErr.New(argoErr.CodeBadRequest, fmt.Sprintf("Sync configuration key '%s' not found in ConfigMap", lockName.GetKey()))
 		}
 		return strconv.Atoi(value)
 	}
@@ -428,7 +496,7 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 		wfc.wfQueue.AddAfter(key, semaphoreNotifyDelay)
 	}
 
-	isWFDeleted := func(key string) bool {
+	workflowExists := func(key string) bool {
 		_, exists, err := wfc.wfInformer.GetIndexer().GetByKey(key)
 		if err != nil {
 			logging.RequireLoggerFromContext(ctx).WithField("key", key).WithError(err).Error(ctx, "Failed to get workflow from informer")
@@ -437,7 +505,12 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 		return exists
 	}
 
-	wfc.syncManager = sync.NewLockManager(ctx, wfc.kubeclientset, wfc.namespace, wfc.Config.Synchronization, getSyncLimit, nextWorkflow, isWFDeleted)
+	syncManager, err := sync.NewLockManager(ctx, wfc.kubeclientset, wfc.namespace, wfc.Config.Synchronization, getSyncLimit, nextWorkflow, workflowExists, true)
+	if err != nil {
+		logging.RequireLoggerFromContext(ctx).WithError(err).Error(ctx, "Failed to create sync lock manager")
+		return
+	}
+	wfc.syncManager = syncManager.WithMetrics(ctx, wfc.metrics)
 }
 
 // list all running workflows to initialize throttler and syncManager
@@ -453,7 +526,24 @@ func (wfc *WorkflowController) initManagers(ctx context.Context) error {
 		return err
 	}
 
-	wfc.syncManager.Initialize(ctx, wfList.Items)
+	// A non-nil error means a recorded lock holder could not be re-established
+	// (undecodable lock name, or an unavailable database session). This is fatal
+	// by design: we fail closed rather than risk a silent double-acquire.
+	staleHolds, err := wfc.syncManager.Initialize(ctx, wfList.Items)
+	if err != nil {
+		return err
+	}
+	// Stale holds are workflows whose recorded hold on a database-backed lock
+	// the database no longer has (e.g. expired while the controller was down,
+	// possibly acquired by someone else since). The database is the source of
+	// truth, so these workflows must not keep running on a hold it does not
+	// back: fail them; persistUpdates releases any locks they still hold.
+	for _, stale := range staleHolds {
+		woc := newWorkflowOperationCtx(ctx, stale.WF, wfc)
+		wocCtx := logging.WithLogger(ctx, woc.log)
+		wocCtx = woc.markWorkflowFailed(wocCtx, fmt.Sprintf("Failed to re-establish synchronization lock at controller startup: %s", stale.Reason))
+		woc.persistUpdates(wocCtx)
+	}
 
 	if err := wfc.throttler.Init(wfList.Items); err != nil {
 		return err
@@ -462,43 +552,165 @@ func (wfc *WorkflowController) initManagers(ctx context.Context) error {
 	return nil
 }
 
-func (wfc *WorkflowController) runConfigMapWatcher(ctx context.Context) {
-	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
-	ctx, logger := logging.RequireLoggerFromContext(ctx).WithField("component", "configmap_watcher").InContext(ctx)
-	retryWatcher, err := apiwatch.NewRetryWatcherWithContext(ctx, "1", &cache.ListWatch{
-		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			return wfc.kubeclientset.CoreV1().ConfigMaps(wfc.managedNamespace).Watch(ctx, metav1.ListOptions{})
+// resourceVersionUnchanged reports whether an informer update event carries the same
+// resource version on both sides, i.e. it is a store replay (relist or resync) rather
+// than a real change. Objects without accessible metadata are treated as changed.
+func resourceVersionUnchanged(oldObj, newObj any) bool {
+	oldMeta, err := meta.Accessor(oldObj)
+	if err != nil {
+		return false
+	}
+	newMeta, err := meta.Accessor(newObj)
+	if err != nil {
+		return false
+	}
+	return oldMeta.GetResourceVersion() == newMeta.GetResourceVersion()
+}
+
+// newControllerConfigMapInformer returns an informer for the controller's own configmap,
+// which reloads the controller configuration whenever it changes, along with the handler's
+// HasSynced, which reports true once the initial sync events have been delivered.
+// It returns nil if the controller lacks RBAC access to list and watch configmaps in its
+// own namespace, in which case the configuration loaded at startup stays in effect.
+func (wfc *WorkflowController) newControllerConfigMapInformer(ctx context.Context) (cache.SharedIndexInformer, cache.InformerSynced) {
+	ctx, logger := logging.RequireLoggerFromContext(ctx).WithField("component", "config_watcher").InContext(ctx)
+	can, err := authutil.CanI(ctx, wfc.kubeclientset, []string{"list", "watch"}, "", wfc.configController.GetNamespace(), "configmaps")
+	if err != nil || !can {
+		logger.WithError(err).WithField("namespace", wfc.configController.GetNamespace()).Warn(ctx, "was unable to get permissions for list/watch verbs on configmaps in the controller's namespace, configuration changes will not be applied until the controller restarts")
+		return nil, nil
+	}
+	// resyncPeriod 0: resyncs replay the store as same-resource-version updates, which
+	// the RV-equality guard in UpdateFunc drops, so periodic resyncs would be pure churn
+	informer := v1.NewFilteredConfigMapInformer(wfc.kubeclientset, wfc.configController.GetNamespace(), 0, cache.Indexers{}, func(opts *metav1.ListOptions) {
+		opts.FieldSelector = fmt.Sprintf("metadata.name=%s", wfc.configController.GetName())
+	})
+	// the ignored error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)
+	registration, _ := informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		// AddFunc fires on the informer's initial sync as well as on recreation after a
+		// deletion. The initial-sync reload is deliberate: the informer only starts on
+		// leadership, so edits made after the configuration was first loaded at process
+		// start (e.g. while an HA standby waited to be promoted) are picked up here.
+		AddFunc: func(obj any) {
+			cm := obj.(*apiv1.ConfigMap)
+			logger.WithFields(logging.Fields{"namespace": cm.Namespace, "name": cm.Name}).Info(ctx, "Received Workflow Controller config map creation")
+			wfc.updateConfigFromConfigMap(ctx, cm)
+		},
+		UpdateFunc: func(oldObj, newObj any) {
+			if resourceVersionUnchanged(oldObj, newObj) {
+				return
+			}
+			newCM := newObj.(*apiv1.ConfigMap)
+			logger.WithFields(logging.Fields{"namespace": newCM.Namespace, "name": newCM.Name}).Info(ctx, "Received Workflow Controller config map update")
+			wfc.updateConfigFromConfigMap(ctx, newCM)
+		},
+		// DeleteFunc makes a deletion of the controller's configmap loud. Unlike the
+		// handlers above it deliberately re-fetches live via UpdateConfig, which fails
+		// fatally when the configmap is really gone, surfacing the deletion immediately
+		// rather than leaving the controller running on configuration that will fail to
+		// load on its next restart. If the configmap was already recreated by the time
+		// this runs, the fetch succeeds and this is just a reload.
+		DeleteFunc: func(obj any) {
+			key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+			if err != nil {
+				logger.WithError(err).Warn(ctx, "failed to get key of deleted config map")
+				return
+			}
+			logger.WithField("key", key).Error(ctx, "Received Workflow Controller config map deletion")
+			wfc.UpdateConfig(ctx)
 		},
 	})
-	if err != nil {
-		panic(err)
-	}
-	defer retryWatcher.Stop()
+	return informer, registration.HasSynced
+}
 
-	for {
-		select {
-		case event := <-retryWatcher.ResultChan():
-			cm, ok := event.Object.(*apiv1.ConfigMap)
-			if !ok {
-				logger.Error(ctx, "invalid config map object received in config watcher. Ignored processing")
-				continue
-			}
-			logger.WithFields(logging.Fields{"namespace": cm.Namespace, "name": cm.Name}).Debug(ctx, "received config map update")
-			if cm.GetName() == wfc.configController.GetName() && wfc.namespace == cm.GetNamespace() {
-				logger.WithFields(logging.Fields{"namespace": cm.Namespace, "name": cm.Name}).Info(ctx, "Received Workflow Controller config map update")
-				wfc.UpdateConfig(ctx)
-			}
-			wfc.notifySemaphoreConfigUpdate(ctx, cm)
-		case <-ctx.Done():
-			return
-		}
+// startOptionalInformer runs an informer that may not have been created (due to
+// configuration or RBAC restrictions), returning its HasSynced, or a function that
+// reports synced when there is no informer to wait for.
+func startOptionalInformer(ctx context.Context, informer cache.SharedIndexInformer) func() bool {
+	if informer == nil {
+		return func() bool { return true }
 	}
+	go informer.Run(ctx.Done())
+	return informer.HasSynced
+}
+
+// newSemaphoreConfigMapInformer returns an informer for configmaps in the managed namespace,
+// which requeues workflows waiting on a semaphore whose configuration changed.
+// It returns nil if the controller lacks RBAC access to list and watch configmaps in the
+// managed namespace, in which case workflows are not requeued when semaphore configmaps
+// change and re-evaluate on their normal requeue cycle instead.
+func (wfc *WorkflowController) newSemaphoreConfigMapInformer(ctx context.Context) cache.SharedIndexInformer {
+	ctx, logger := logging.RequireLoggerFromContext(ctx).WithField("component", "semaphore_config_watcher").InContext(ctx)
+	can, err := authutil.CanI(ctx, wfc.kubeclientset, []string{"list", "watch"}, "", wfc.GetManagedNamespace(), "configmaps")
+	if err != nil || !can {
+		logger.WithError(err).WithField("namespace", wfc.GetManagedNamespace()).Warn(ctx, "was unable to get permissions for list/watch verbs on configmaps, workflows will not be requeued when semaphore configmaps change")
+		return nil
+	}
+	// This informer watches all configmaps in the managed namespace (the whole cluster for
+	// a cluster-scoped install), as semaphore configmaps cannot be identified by a label
+	// selector. It is metadata-only so the API server never sends the configmap payloads,
+	// keeping the initial list cheap on both sides no matter how many configmaps exist.
+	// Only identifying metadata is needed to notify waiting workflows, so strip everything
+	// else to keep the cache small.
+	// resyncPeriod 0: resyncs replay the store as same-resource-version updates, which
+	// the RV-equality guard in UpdateFunc drops, so periodic resyncs would only be a
+	// pointless walk of every configmap in scope
+	informer := metadatainformer.NewFilteredMetadataInformer(wfc.metadataInterface, apiv1.SchemeGroupVersion.WithResource("configmaps"), wfc.GetManagedNamespace(), 0, cache.Indexers{}, nil).Informer()
+	//nolint:errcheck // the error only happens if the informer was already started, and it hasn't been
+	informer.SetTransform(func(obj any) (any, error) {
+		m, ok := obj.(*metav1.PartialObjectMetadata)
+		if !ok {
+			return obj, nil
+		}
+		return &metav1.PartialObjectMetadata{
+			TypeMeta: m.TypeMeta,
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace:       m.Namespace,
+				Name:            m.Name,
+				ResourceVersion: m.ResourceVersion,
+			},
+		}, nil
+	})
+	//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)
+	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		// AddFunc fires for every configmap on the informer's initial sync, and afterwards for
+		// newly created configmaps, covering semaphore configmaps created after workflows
+		// started waiting on them
+		AddFunc: func(obj any) {
+			cm := obj.(*metav1.PartialObjectMetadata)
+			wfc.notifySemaphoreConfigUpdate(ctx, cm.Namespace, cm.Name)
+		},
+		UpdateFunc: func(oldObj, newObj any) {
+			if resourceVersionUnchanged(oldObj, newObj) {
+				return
+			}
+			newCM := newObj.(*metav1.PartialObjectMetadata)
+			logger.WithFields(logging.Fields{"namespace": newCM.Namespace, "name": newCM.Name}).Debug(ctx, "received config map update")
+			wfc.notifySemaphoreConfigUpdate(ctx, newCM.Namespace, newCM.Name)
+		},
+		// DeleteFunc requeues waiting workflows so they re-evaluate promptly instead of
+		// waiting indefinitely on a semaphore whose configmap no longer exists
+		DeleteFunc: func(obj any) {
+			key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+			if err != nil {
+				logger.WithError(err).Warn(ctx, "failed to get key of deleted config map")
+				return
+			}
+			namespace, name, err := cache.SplitMetaNamespaceKey(key)
+			if err != nil {
+				logger.WithError(err).WithField("key", key).Warn(ctx, "failed to split key of deleted config map")
+				return
+			}
+			logger.WithFields(logging.Fields{"namespace": namespace, "name": name}).Debug(ctx, "received config map delete")
+			wfc.notifySemaphoreConfigUpdate(ctx, namespace, name)
+		},
+	})
+	return informer
 }
 
 // notifySemaphoreConfigUpdate will notify semaphore config update to pending workflows
-func (wfc *WorkflowController) notifySemaphoreConfigUpdate(ctx context.Context, cm *apiv1.ConfigMap) {
+func (wfc *WorkflowController) notifySemaphoreConfigUpdate(ctx context.Context, namespace, name string) {
 	logger := logging.RequireLoggerFromContext(ctx)
-	wfs, err := wfc.wfInformer.GetIndexer().ByIndex(indexes.SemaphoreConfigIndexName, fmt.Sprintf("%s/%s", cm.Namespace, cm.Name))
+	wfs, err := wfc.wfInformer.GetIndexer().ByIndex(indexes.SemaphoreConfigIndexName, fmt.Sprintf("%s/%s", namespace, name))
 	if err != nil {
 		logger.WithError(err).Error(ctx, "failed get the workflow from informer")
 	}
@@ -517,7 +729,7 @@ func (wfc *WorkflowController) notifySemaphoreConfigUpdate(ctx context.Context, 
 // Check if the controller has RBAC access to ClusterWorkflowTemplates
 func (wfc *WorkflowController) createClusterWorkflowTemplateInformer(ctx context.Context) {
 	logger := logging.RequireLoggerFromContext(ctx)
-	if rbacutil.HasAccessToClusterWorkflowTemplates(ctx, wfc.kubeclientset, wfc.namespace) {
+	if rbacutil.HasAccessToClusterWorkflowTemplates(ctx, wfc.kubeclientset) {
 		wfc.cwftmplInformer = informer.NewTolerantClusterWorkflowTemplateInformer(wfc.dynamicInterface, clusterWorkflowTemplateResyncPeriod)
 		go wfc.cwftmplInformer.Informer().Run(ctx.Done())
 
@@ -539,10 +751,26 @@ func (wfc *WorkflowController) UpdateConfig(ctx context.Context) {
 	if err != nil {
 		logger.WithError(err).WithFatal().Error(ctx, "Failed to register watch for controller config map")
 	}
-	wfc.Config = *c
-	err = wfc.updateConfig(ctx)
+	wfc.applyConfig(ctx, c)
+}
+
+// updateConfigFromConfigMap applies the configuration from an informer-delivered copy of
+// the controller's configmap, avoiding the round-trip of re-fetching an object the event
+// handler already holds (which could also fail, fatally, if the configmap changed again
+// or the API server became unavailable in the meantime).
+func (wfc *WorkflowController) updateConfigFromConfigMap(ctx context.Context, cm *apiv1.ConfigMap) {
+	logger := logging.RequireLoggerFromContext(ctx)
+	c, err := wfc.configController.Parse(cm)
 	if err != nil {
-		logger.WithError(err).WithFatal().Error(ctx, "Failed to update config")
+		logger.WithError(err).WithFatal().Error(ctx, "Failed to parse controller config map")
+	}
+	wfc.applyConfig(ctx, c)
+}
+
+func (wfc *WorkflowController) applyConfig(ctx context.Context, c *config.Config) {
+	wfc.Config = *c
+	if err := wfc.updateConfig(ctx); err != nil {
+		logging.RequireLoggerFromContext(ctx).WithError(err).WithFatal().Error(ctx, "Failed to update config")
 	}
 }
 
@@ -710,6 +938,16 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 		return true
 	}
 
+	if outdated, completed := wfc.isOutdated(ctx, un); outdated {
+		if completed {
+			logger.WithField("key", key).Warn(ctx, "Rejecting stale copy of a completed workflow")
+			return true
+		}
+		logger.WithField("key", key).Debug(ctx, "Skipping outdated workflow event")
+		wfc.wfQueue.AddRateLimited(key)
+		return true
+	}
+
 	if !reconciliationNeeded(un) {
 		logger.WithField("key", key).Debug(ctx, "Won't process Workflow since it's completed")
 		return true
@@ -725,30 +963,40 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 		return true
 	}
 
-	if wf.Status.Phase != "" && wfc.checkRecentlyCompleted(wf.Name) {
-		logger.WithField("name", wf.ObjectMeta.Name).Warn(ctx, "Cache: Rejecting recently deleted")
-		return true
-	}
-
 	// this will ensure we process every incomplete workflow once every 20m
 	wfc.wfQueue.AddAfter(key, workflowResyncPeriod)
 
-	woc := newWorkflowOperationCtx(ctx, wf, wfc)
-	ctx = logging.WithLogger(ctx, woc.log)
+	// Check the parallelism limit before building the operation context: newWorkflowOperationCtx
+	// deep-copies the entire Workflow, and for a workflow that is postponed that copy is discarded
+	// immediately. Only read from wf on this path, never mutate it.
+	shutdownStrategy := wf.Spec.Shutdown
 
-	if (!woc.GetShutdownStrategy().Enabled() || woc.GetShutdownStrategy() != wfv1.ShutdownStrategyTerminate) && !wfc.throttler.Admit(key) {
-		woc.log.WithField("key", key).Info(ctx, "Workflow processing has been postponed due to max parallelism limit")
-		if woc.wf.Status.Phase == wfv1.WorkflowUnknown {
-			woc.markWorkflowPhase(ctx, wfv1.WorkflowPending, "Workflow processing has been postponed because too many workflows are already running")
+	// A Running workflow must never be postponed, even if the throttler no longer admits
+	// it (e.g. it was removed when an archive attempt failed mid-flight): skipping
+	// reconciliation would orphan its pods (#14123).
+	if (!shutdownStrategy.Enabled() || shutdownStrategy != wfv1.ShutdownStrategyTerminate) && !wfc.throttler.Admit(key) && wf.Status.Phase != wfv1.WorkflowRunning {
+		logger.WithFields(logging.Fields{"workflow": wf.Name, "namespace": wf.Namespace, "key": key}).
+			Info(ctx, "Workflow processing has been postponed due to max parallelism limit")
+		if wf.Status.Phase == wfv1.WorkflowUnknown {
+			// Only this branch mutates and persists the workflow, so only it needs the deep copy.
+			// It runs once per workflow, the first time that workflow is postponed.
+			woc := newWorkflowOperationCtx(ctx, wf, wfc)
+			ctx = logging.WithLogger(ctx, woc.log)
+			ctx = woc.markWorkflowPhase(ctx, wfv1.WorkflowPending, "Workflow processing has been postponed because too many workflows are already running")
 			woc.persistUpdates(ctx)
 		}
 		return true
 	}
 
+	woc := newWorkflowOperationCtx(ctx, wf, wfc)
+	ctx = logging.WithLogger(ctx, woc.log)
+
 	// make sure this is removed from the throttler is complete
 	defer func() {
 		// must be done with woc
-		if !reconciliationNeeded(woc.wf) {
+		// woc.reapplyFailed (set in memory when Update failed) also blocks Remove so we do not free
+		// parallelism while woc.wf may not match the API object (e.g. connection reset before persist).
+		if !reconciliationNeeded(woc.wf) && !woc.reapplyFailed {
 			wfc.throttler.Remove(key)
 		}
 	}()
@@ -756,7 +1004,7 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	err = wfc.hydrator.Hydrate(ctx, woc.wf)
 	if err != nil {
 		woc.log.WithError(err).Error(ctx, "hydration failed")
-		woc.markWorkflowError(ctx, err)
+		ctx = woc.markWorkflowError(ctx, err)
 		woc.persistUpdates(ctx)
 		return true
 	}
@@ -780,20 +1028,74 @@ func (wfc *WorkflowController) processNextArchiveItem(ctx context.Context) bool 
 	logger := logging.RequireLoggerFromContext(ctx)
 	defer wfc.wfArchiveQueue.Done(key)
 
+	// Same order as processNextItem: hold the key lock, then read the current
+	// object, then decide. The queue holds only namespace/name, and a
+	// rate-limited retry can fire long after the key was added, so nothing about
+	// the object may be assumed from the key alone.
+	wfc.workflowKeyLock.Lock(key)
+	defer wfc.workflowKeyLock.Unlock(key)
+
 	obj, exists, err := wfc.wfInformer.GetIndexer().GetByKey(key)
 	if err != nil {
 		logger.WithField("key", key).WithError(err).Error(ctx, "Failed to get workflow from informer")
+		// The indexer never returns an error today, but drop the backoff rather
+		// than leave the only exit that keeps rate-limiter state behind.
+		wfc.wfArchiveQueue.Forget(key)
 		return true
 	}
 	if !exists {
+		// The workflow is gone, so no further attempt will be made: drop any
+		// backoff the rate limiter is still holding for this key.
+		wfc.wfArchiveQueue.Forget(key)
+		return true
+	}
+	un, ok := obj.(*unstructured.Unstructured)
+	if !ok {
+		logger.WithField("key", key).Error(ctx, "Workflow from the informer is not unstructured")
+		wfc.wfArchiveQueue.Forget(key)
 		return true
 	}
 
-	wfc.archiveWorkflow(ctx, obj)
+	// A stale copy still carries the labels it had when it was written, so the
+	// eligibility check below cannot tell it from a current one. Reject it the
+	// way processNextItem does (#15090): ArchiveWorkflow deletes and re-inserts
+	// by uid, so archiving an older snapshot does not merely repeat work, it
+	// replaces a newer archived record with an older one. Requeue rather than
+	// drop, so the archive still happens once the informer catches up.
+	if outdated, _ := wfc.isOutdated(ctx, un); outdated {
+		logger.WithField("key", key).Debug(ctx, "Waiting for a current copy of the workflow before archiving")
+		wfc.wfArchiveQueue.AddRateLimited(key)
+		return true
+	}
+
+	// Re-check what the informer filter matched on. `argo retry` removes both
+	// labels and puts the workflow back to Unknown, and a same-named workflow
+	// may have been recreated meanwhile; archiving either would write a running
+	// workflow to the archive and then label it Archived. The GC controller
+	// re-checks the current object for the same reason, see #12636.
+	//
+	// common.IsDone is deliberately not used: it treats a Pending
+	// archiving-status as not-done, so it is false for precisely the workflows
+	// this queue exists to archive.
+	labels := un.GetLabels()
+	if labels[common.LabelKeyCompleted] != "true" ||
+		labels[common.LabelKeyWorkflowArchivingStatus] != "Pending" {
+		logger.WithField("key", key).Info(ctx, "Workflow is no longer pending archiving, skipping")
+		wfc.wfArchiveQueue.Forget(key)
+		return true
+	}
+
+	// The caller holds the key lock, so archiveWorkflowAux is entered directly.
+	if err := wfc.archiveWorkflowAux(ctx, obj); err != nil {
+		logger.WithField("key", key).WithError(err).Warn(ctx, "failed to archive workflow, requeuing")
+		wfc.wfArchiveQueue.AddRateLimited(key)
+		return true
+	}
+	wfc.wfArchiveQueue.Forget(key)
 	return true
 }
 
-func (wfc *WorkflowController) getWorkflowByKey(ctx context.Context, key string) (interface{}, bool) {
+func (wfc *WorkflowController) getWorkflowByKey(ctx context.Context, key string) (any, bool) {
 	logger := logging.RequireLoggerFromContext(ctx)
 	obj, exists, err := wfc.wfInformer.GetIndexer().GetByKey(key)
 	if err != nil {
@@ -816,12 +1118,12 @@ func reconciliationNeeded(wf metav1.Object) bool {
 // enqueue workflow for processing
 func (wfc *WorkflowController) enqueueWfFromPodLabel(pod *apiv1.Pod) error {
 	if pod.Labels == nil {
-		return fmt.Errorf("Pod did not have labels")
+		return fmt.Errorf("pod did not have labels")
 	}
 	workflowName, ok := pod.Labels[common.LabelKeyWorkflow]
 	if !ok {
 		// Ignore pods unrelated to workflow (this shouldn't happen unless the watch is setup incorrectly)
-		return fmt.Errorf("Watch returned pod unrelated to any workflow")
+		return fmt.Errorf("watch returned pod unrelated to any workflow")
 	}
 	wfc.wfQueue.AddRateLimited(pod.Namespace + "/" + workflowName)
 	return nil
@@ -833,7 +1135,10 @@ func (wfc *WorkflowController) tweakListRequestListOptions(options *metav1.ListO
 	options.LabelSelector = labelSelector.String()
 	// `ResourceVersion=0` does not honor the `limit` in API calls, which results in making significant List calls
 	// without `limit`. For details, see https://github.com/argoproj/argo-workflows/pull/11343
-	options.ResourceVersion = ""
+	// Check if ResourceVersion is "0" and reset it to empty string to ensure proper pagination behavior
+	if options.ResourceVersion == "0" {
+		options.ResourceVersion = ""
+	}
 }
 
 func (wfc *WorkflowController) tweakWatchRequestListOptions(options *metav1.ListOptions) {
@@ -842,7 +1147,7 @@ func (wfc *WorkflowController) tweakWatchRequestListOptions(options *metav1.List
 	options.LabelSelector = labelSelector.String()
 }
 
-func getWfPriority(obj interface{}) (int32, time.Time) {
+func getWfPriority(obj any) (int32, time.Time) {
 	un, ok := obj.(*unstructured.Unstructured)
 	if !ok {
 		return 0, time.Now()
@@ -858,56 +1163,76 @@ func getWfPriority(obj interface{}) (int32, time.Time) {
 	return int32(priority), un.GetCreationTimestamp().Time
 }
 
-// 10 minutes in the past
-const maxCompletedStoreTime = time.Second * -600
+// The ceiling of the per-item exponential backoff in
+// workqueue.DefaultTypedControllerRateLimiter, which the archive queue uses.
+// The workflow queue is rate limited differently.
+//
+// This is not the queue's worst case. That limiter takes the maximum of the
+// exponential and a global 10 qps token bucket, whose delay grows with the
+// number of keys waiting and has no ceiling, and a key waits again for a free
+// worker after it becomes ready.
+const maxQueueBackoff = 1000 * time.Second
 
-// This is a helper function for expiring old records of workflows
-// completed more than maxCompletedStoreTime ago
-func (wfc *WorkflowController) cleanCompletedWorkflowsRecord() {
-	cutoff := time.Now().Add(maxCompletedStoreTime)
-	removeIndex := -1
-	wfc.recentCompletions.mutex.Lock()
-	defer wfc.recentCompletions.mutex.Unlock()
+// How long to retain the record of a completed or deleted workflow.
+//
+// Sized past maxQueueBackoff. A rate-limited archive key can fire up to 16m40s
+// after it was enqueued, and if its record has been cleaned up by then
+// isOutdated finds nothing and reports the workflow as current -- so the
+// stale-copy guard would be missing from exactly the long-delayed retries that
+// restoring the archive retry makes possible. This covers the delay a retry
+// actually takes in normal operation; it is not a bound, since the terms above
+// are unbounded and a retry has no total deadline. The cost is holding one
+// small entry per completed workflow for longer, bounded by the completion
+// rate.
+const completedVersionRetention = maxQueueBackoff + 5*time.Minute
 
-	for i, val := range wfc.recentCompletions.completions {
-		if val.when.After(cutoff) {
-			removeIndex = i - 1
-			break
-		}
+// how often, at most, to scan for expired completed workflow records
+const versionCleanupPeriod = time.Minute
+
+// expireCompletedVersions removes records of workflows that completed or were
+// deleted more than completedVersionRetention ago. Scans are throttled to at
+// most one per versionCleanupPeriod. The caller must hold the
+// lastWrittenVersions write lock.
+func (wfc *WorkflowController) expireCompletedVersions() {
+	now := time.Now()
+	if now.Before(wfc.lastWrittenVersions.nextCleanup) {
+		return
 	}
-	if removeIndex >= 0 {
-		wfc.recentCompletions.completions = wfc.recentCompletions.completions[removeIndex+1:]
+	wfc.lastWrittenVersions.nextCleanup = now.Add(versionCleanupPeriod)
+	for uid, last := range wfc.lastWrittenVersions.versions {
+		if !last.completedAt.IsZero() && now.Sub(last.completedAt) > completedVersionRetention {
+			delete(wfc.lastWrittenVersions.versions, uid)
+		}
 	}
 }
 
-// Records a workflow as recently completed in the list
-// if it isn't already in the list
-func (wfc *WorkflowController) recordCompletedWorkflow(key string) {
-	if !wfc.checkRecentlyCompleted(key) {
-		wfc.recentCompletions.mutex.Lock()
-		defer wfc.recentCompletions.mutex.Unlock()
-		wfc.recentCompletions.completions = append(wfc.recentCompletions.completions,
-			recentlyCompletedWorkflow{
-				key:  key,
-				when: time.Now(),
-			})
-	}
+// recordWorkflowWrite records the resourceVersion of a workflow just written
+// by this controller, so that older copies of it can be recognized as stale.
+func (wfc *WorkflowController) recordWorkflowWrite(wf metav1.Object) {
+	wfc.lastWrittenVersions.mutex.Lock()
+	defer wfc.lastWrittenVersions.mutex.Unlock()
+	wfc.expireCompletedVersions()
+	wfc.lastWrittenVersions.versions[wf.GetUID()] = lastWrittenVersion{resourceVersion: wf.GetResourceVersion()}
 }
 
-// Returns true if the workflow given by key is in the recently completed
-// list. Will perform expiry cleanup before checking.
-func (wfc *WorkflowController) checkRecentlyCompleted(key string) bool {
-	wfc.cleanCompletedWorkflowsRecord()
-	recent := false
-	wfc.recentCompletions.mutex.RLock()
-	defer wfc.recentCompletions.mutex.RUnlock()
-	for _, val := range wfc.recentCompletions.completions {
-		if val.key == key {
-			recent = true
-			break
+// recordWorkflowCompleted marks a workflow as completed or deleted, retaining
+// its latest known resourceVersion for completedVersionRetention so that
+// stale copies of it re-entering the informer can be rejected.
+func (wfc *WorkflowController) recordWorkflowCompleted(wf metav1.Object) {
+	wfc.lastWrittenVersions.mutex.Lock()
+	defer wfc.lastWrittenVersions.mutex.Unlock()
+	wfc.expireCompletedVersions()
+	rv := wf.GetResourceVersion()
+	if last, ok := wfc.lastWrittenVersions.versions[wf.GetUID()]; ok {
+		// never regress the recorded version: this event may itself be stale
+		if cmp, err := resourceversion.CompareResourceVersion(rv, last.resourceVersion); err != nil || cmp < 0 {
+			rv = last.resourceVersion
 		}
 	}
-	return recent
+	wfc.lastWrittenVersions.versions[wf.GetUID()] = lastWrittenVersion{
+		resourceVersion: rv,
+		completedAt:     time.Now(),
+	}
 }
 
 func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) error {
@@ -918,7 +1243,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 			// informer cache and can be used to reject things from
 			// the cache. When they are rejected (this returns false)
 			// they will be deleted.
-			FilterFunc: func(obj interface{}) bool {
+			FilterFunc: func(obj any) bool {
 				un, ok := obj.(*unstructured.Unstructured)
 				if !ok {
 					logger.WithField("obj", obj).Warn(ctx, "Workflow FilterFunc: is not an unstructured")
@@ -926,15 +1251,14 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 				}
 				needed := reconciliationNeeded(un)
 				if !needed {
-					key, _ := cache.MetaNamespaceKeyFunc(un)
-					wfc.recordCompletedWorkflow(key)
+					wfc.recordWorkflowCompleted(un)
 				}
 				return needed
 			},
 			Handler: cache.ResourceEventHandlerFuncs{
 				// This function is called when a new to the informer object
 				// is to be added to the informer
-				AddFunc: func(obj interface{}) {
+				AddFunc: func(obj any) {
 					key, err := cache.MetaNamespaceKeyFunc(obj)
 					if err == nil {
 						// for a new workflow, we do not want to rate limit its execution using AddRateLimited
@@ -945,22 +1269,22 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 				},
 				// This function is called when an updated (we already know about this object)
 				// is to be updated in the informer
-				UpdateFunc: func(old, new interface{}) {
-					oldWf, newWf := old.(*unstructured.Unstructured), new.(*unstructured.Unstructured)
+				UpdateFunc: func(old, newObj any) {
+					oldWf, newWf := old.(*unstructured.Unstructured), newObj.(*unstructured.Unstructured)
 					// this check is very important to prevent doing many reconciliations we do not need to do
 					if oldWf.GetResourceVersion() == newWf.GetResourceVersion() {
 						return
 					}
-					key, err := cache.MetaNamespaceKeyFunc(new)
+					key, err := cache.MetaNamespaceKeyFunc(newObj)
 					if err == nil {
 						wfc.wfQueue.AddRateLimited(key)
-						priority, creation := getWfPriority(new)
+						priority, creation := getWfPriority(newObj)
 						wfc.throttler.Add(key, priority, creation)
 					}
 				},
 				// This function is called when an object is to be removed
 				// from the informer
-				DeleteFunc: func(obj interface{}) {
+				DeleteFunc: func(obj any) {
 					// IndexerInformer uses a delta queue, therefore for deletes we have to use this
 					// key function.
 
@@ -981,10 +1305,10 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 					key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 					if err == nil {
 						wfc.releaseAllWorkflowLocks(ctx, obj)
-						wfc.recordCompletedWorkflow(key)
 						// no need to add to the queue - this workflow is done
 						wfc.throttler.Remove(key)
 					}
+					wfc.recordWorkflowCompleted(obj.(*unstructured.Unstructured))
 				},
 			},
 		},
@@ -993,21 +1317,30 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 		return err
 	}
 	_, err = wfc.wfInformer.AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: func(obj interface{}) bool {
+		FilterFunc: func(obj any) bool {
 			un, ok := obj.(*unstructured.Unstructured)
-			// no need to check the `common.LabelKeyCompleted` as we already know it must be complete
-			return ok && un.GetLabels()[common.LabelKeyWorkflowArchivingStatus] == "Pending"
+			if !ok {
+				return false
+			}
+			// Require both labels rather than assuming completion from the
+			// archiving status: nothing in this handler enforces that the two
+			// were set together, so a hand-applied Pending label would otherwise
+			// queue a running workflow for archiving. The completion path sets
+			// both in one update, so this excludes nothing legitimate.
+			labels := un.GetLabels()
+			return labels[common.LabelKeyCompleted] == "true" &&
+				labels[common.LabelKeyWorkflowArchivingStatus] == "Pending"
 		},
 		Handler: cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-				key, err := cache.MetaNamespaceKeyFunc(obj)
-				if err == nil {
+			AddFunc: func(obj any) {
+				key, keyErr := cache.MetaNamespaceKeyFunc(obj)
+				if keyErr == nil {
 					wfc.wfArchiveQueue.Add(key)
 				}
 			},
-			UpdateFunc: func(_, obj interface{}) {
-				key, err := cache.MetaNamespaceKeyFunc(obj)
-				if err == nil {
+			UpdateFunc: func(_, obj any) {
+				key, keyErr := cache.MetaNamespaceKeyFunc(obj)
+				if keyErr == nil {
 					wfc.wfArchiveQueue.Add(key)
 				}
 			},
@@ -1017,9 +1350,15 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 		return err
 	}
 	_, err = wfc.wfInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		DeleteFunc: func(obj interface{}) {
-			wf, ok := obj.(*unstructured.Unstructured)
-			if ok { // maybe cache.DeletedFinalStateUnknown
+		DeleteFunc: func(obj any) {
+			var wf *unstructured.Unstructured
+			switch x := obj.(type) {
+			case *unstructured.Unstructured:
+				wf = x
+			case cache.DeletedFinalStateUnknown:
+				wf, _ = x.Obj.(*unstructured.Unstructured)
+			}
+			if wf != nil {
 				wfc.metrics.DeleteRealtimeMetricsForWfUID(string(wf.GetUID()))
 			}
 		},
@@ -1030,27 +1369,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 	return nil
 }
 
-func (wfc *WorkflowController) archiveWorkflow(ctx context.Context, obj interface{}) {
-	logger := logging.RequireLoggerFromContext(ctx)
-	key, err := cache.MetaNamespaceKeyFunc(obj)
-	if err != nil {
-		logger.Error(ctx, "failed to get key for object")
-		return
-	}
-	wfc.workflowKeyLock.Lock(key)
-	defer wfc.workflowKeyLock.Unlock(key)
-	key, err = cache.MetaNamespaceKeyFunc(obj)
-	if err != nil {
-		logger.Error(ctx, "failed to get key for object after locking")
-		return
-	}
-	err = wfc.archiveWorkflowAux(ctx, obj)
-	if err != nil {
-		logger.WithField("key", key).WithError(err).Error(ctx, "failed to archive workflow")
-	}
-}
-
-func (wfc *WorkflowController) archiveWorkflowAux(ctx context.Context, obj interface{}) error {
+func (wfc *WorkflowController) archiveWorkflowAux(ctx context.Context, obj any) error {
 	un, ok := obj.(*unstructured.Unstructured)
 	if !ok {
 		return nil
@@ -1069,7 +1388,7 @@ func (wfc *WorkflowController) archiveWorkflowAux(ctx context.Context, obj inter
 	if err != nil {
 		return fmt.Errorf("failed to archive workflow: %w", err)
 	}
-	data, err := json.Marshal(map[string]interface{}{
+	data, err := json.Marshal(map[string]any{
 		"metadata": metav1.ObjectMeta{
 			Labels: map[string]string{
 				common.LabelKeyWorkflowArchivingStatus: "Archived",
@@ -1092,7 +1411,7 @@ func (wfc *WorkflowController) archiveWorkflowAux(ctx context.Context, obj inter
 		if apierr.IsNotFound(err) {
 			return nil
 		}
-		return fmt.Errorf("failed to archive workflow: %w", err)
+		return fmt.Errorf("failed to mark the workflow archived: %w", err)
 	}
 	return nil
 }
@@ -1101,18 +1420,20 @@ func (wfc *WorkflowController) instanceIDReq() labels.Requirement {
 	return util.InstanceIDRequirement(wfc.Config.InstanceID)
 }
 
-func (wfc *WorkflowController) newConfigMapInformer(ctx context.Context) cache.SharedIndexInformer {
-	indexInformer := v1.NewFilteredConfigMapInformer(wfc.kubeclientset, wfc.GetManagedNamespace(), 20*time.Minute, cache.Indexers{
+func (wfc *WorkflowController) newTypedConfigMapInformer(ctx context.Context) cache.SharedIndexInformer {
+	indexInformer := v1.NewFilteredConfigMapInformer(wfc.kubeclientset, wfc.GetManagedNamespace(), configMapResyncPeriod, cache.Indexers{
 		indexes.ConfigMapLabelsIndex: indexes.ConfigMapIndexFunc,
 	}, func(opts *metav1.ListOptions) {
 		opts.LabelSelector = common.LabelKeyConfigMapType
 	})
+	//nolint:errcheck // the error only happens if the informer was already started, and it hasn't been
+	indexInformer.SetTransform(informerutil.StripManagedFields)
 	ctx, logger := logging.RequireLoggerFromContext(ctx).WithField("component", "config_map_informer").InContext(ctx)
 	logger.WithField("executorPlugins", wfc.executorPlugins != nil).Info(ctx, "Plugins")
 	if wfc.executorPlugins != nil {
 		//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)
 		indexInformer.AddEventHandler(cache.FilteringResourceEventHandler{
-			FilterFunc: func(obj interface{}) bool {
+			FilterFunc: func(obj any) bool {
 				cm, err := meta.Accessor(obj)
 				if err != nil {
 					return false
@@ -1120,7 +1441,7 @@ func (wfc *WorkflowController) newConfigMapInformer(ctx context.Context) cache.S
 				return cm.GetLabels()[common.LabelKeyConfigMapType] == common.LabelValueTypeConfigMapExecutorPlugin
 			},
 			Handler: cache.ResourceEventHandlerFuncs{
-				AddFunc: func(obj interface{}) {
+				AddFunc: func(obj any) {
 					cm := obj.(*apiv1.ConfigMap)
 					p, err := plugin.FromConfigMap(cm)
 					if err != nil {
@@ -1139,7 +1460,7 @@ func (wfc *WorkflowController) newConfigMapInformer(ctx context.Context) cache.S
 						"name":      cm.GetName(),
 					}).Info(ctx, "Executor plugin added")
 				},
-				UpdateFunc: func(_, obj interface{}) {
+				UpdateFunc: func(_, obj any) {
 					cm := obj.(*apiv1.ConfigMap)
 					p, err := plugin.FromConfigMap(cm)
 					if err != nil {
@@ -1156,7 +1477,7 @@ func (wfc *WorkflowController) newConfigMapInformer(ctx context.Context) cache.S
 						"name":      cm.GetName(),
 					}).Info(ctx, "Executor plugin updated")
 				},
-				DeleteFunc: func(obj interface{}) {
+				DeleteFunc: func(obj any) {
 					key, _ := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 					namespace, name, _ := cache.SplitMetaNamespaceKey(key)
 					delete(wfc.executorPlugins[namespace], name)
@@ -1200,18 +1521,18 @@ func (wfc *WorkflowController) getMaxStackDepth() int {
 	return maxAllowedStackDepth
 }
 
-func (wfc *WorkflowController) getMetricsServerConfig() *telemetry.Config {
+func (wfc *WorkflowController) getMetricsServerConfig() *telemetry.MetricsConfig {
 	// Metrics config
-	modifiers := make(map[string]telemetry.Modifier)
+	modifiers := make(map[string]telemetry.MetricsModifier)
 	for name, modifier := range wfc.Config.MetricsConfig.Modifiers {
-		modifiers[name] = telemetry.Modifier{
+		modifiers[name] = telemetry.MetricsModifier{
 			Disabled:           modifier.Disabled,
 			DisabledAttributes: modifier.DisabledAttributes,
 			HistogramBuckets:   modifier.HistogramBuckets,
 		}
 	}
 
-	metricsConfig := telemetry.Config{
+	metricsConfig := telemetry.MetricsConfig{
 		Enabled:      wfc.Config.MetricsConfig.Enabled == nil || *wfc.Config.MetricsConfig.Enabled,
 		Path:         wfc.Config.MetricsConfig.Path,
 		Port:         wfc.Config.MetricsConfig.Port,
@@ -1224,7 +1545,7 @@ func (wfc *WorkflowController) getMetricsServerConfig() *telemetry.Config {
 	return &metricsConfig
 }
 
-func (wfc *WorkflowController) releaseAllWorkflowLocks(ctx context.Context, obj interface{}) {
+func (wfc *WorkflowController) releaseAllWorkflowLocks(ctx context.Context, obj any) {
 	un, ok := obj.(*unstructured.Unstructured)
 	logger := logging.RequireLoggerFromContext(ctx)
 	if !ok {
@@ -1288,12 +1609,13 @@ func (wfc *WorkflowController) newWorkflowTaskSetInformer() wfextvv1alpha1.Workf
 		externalversions.WithTweakListOptions(func(x *metav1.ListOptions) {
 			r := util.InstanceIDRequirement(wfc.Config.InstanceID)
 			x.LabelSelector = r.String()
-		})).Argoproj().V1alpha1().WorkflowTaskSets()
+		}),
+		externalversions.WithTransform(informerutil.StripManagedFields)).Argoproj().V1alpha1().WorkflowTaskSets()
 	//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)
 	informer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
-			UpdateFunc: func(old, new interface{}) {
-				key, err := cache.MetaNamespaceKeyFunc(new)
+			UpdateFunc: func(old, newObj any) {
+				key, err := cache.MetaNamespaceKeyFunc(newObj)
 				if err == nil {
 					wfc.wfQueue.AddRateLimited(key)
 				}
@@ -1310,12 +1632,13 @@ func (wfc *WorkflowController) newArtGCTaskInformer() wfextvv1alpha1.WorkflowArt
 		externalversions.WithTweakListOptions(func(x *metav1.ListOptions) {
 			r := util.InstanceIDRequirement(wfc.Config.InstanceID)
 			x.LabelSelector = r.String()
-		})).Argoproj().V1alpha1().WorkflowArtifactGCTasks()
+		}),
+		externalversions.WithTransform(informerutil.StripManagedFields)).Argoproj().V1alpha1().WorkflowArtifactGCTasks()
 	//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)
 	informer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
-			UpdateFunc: func(old, new interface{}) {
-				key, err := cache.MetaNamespaceKeyFunc(new)
+			UpdateFunc: func(old, newObj any) {
+				key, err := cache.MetaNamespaceKeyFunc(newObj)
 				if err == nil {
 					wfc.wfQueue.AddRateLimited(key)
 				}
@@ -1327,4 +1650,24 @@ func (wfc *WorkflowController) newArtGCTaskInformer() wfextvv1alpha1.WorkflowArt
 func (wfc *WorkflowController) IsLeader() bool {
 	// the wfc.wfInformer is nil if it is not the leader
 	return wfc.wfInformer != nil
+}
+
+// isOutdated returns whether this copy of the workflow is older than the
+// version last written by this controller, and whether that version was the
+// completed or deleted state of the workflow.
+func (wfc *WorkflowController) isOutdated(ctx context.Context, wf metav1.Object) (outdated bool, completedWorkflow bool) {
+	wfc.lastWrittenVersions.mutex.RLock()
+	defer wfc.lastWrittenVersions.mutex.RUnlock()
+	last, ok := wfc.lastWrittenVersions.versions[wf.GetUID()]
+	// always process if not seen before
+	if !ok {
+		return false, false
+	}
+	cmp, err := resourceversion.CompareResourceVersion(wf.GetResourceVersion(), last.resourceVersion)
+	if err != nil {
+		// resourceVersions on this cluster are not comparable, so process everything
+		logging.RequireLoggerFromContext(ctx).WithError(err).WithField("name", wf.GetName()).Warn(ctx, "Cannot compare workflow resource versions")
+		return false, false
+	}
+	return cmp < 0, !last.completedAt.IsZero()
 }

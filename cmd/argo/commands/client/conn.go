@@ -2,17 +2,20 @@ package client
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net/http"
+	"net/url"
 	"os"
 
 	"github.com/spf13/cobra"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/argoproj/argo-workflows/v3"
-	"github.com/argoproj/argo-workflows/v3/pkg/apiclient"
-	"github.com/argoproj/argo-workflows/v3/util/kubeconfig"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4"
+	"github.com/argoproj/argo-workflows/v4/pkg/apiclient"
+	"github.com/argoproj/argo-workflows/v4/util/kubeconfig"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 var (
@@ -55,21 +58,38 @@ func AddAPIClientFlagsToCmd(cmd *cobra.Command) {
 }
 
 func NewAPIClient(ctx context.Context) (context.Context, apiclient.Client, error) {
+	// Reuse the explicit kubectl client certificate flags in server mode.
+	ArgoServerOpts.ClientCert = overrides.AuthInfo.ClientCertificate
+	ArgoServerOpts.ClientKey = overrides.AuthInfo.ClientKey
+	ArgoServerOpts.CACert = overrides.ClusterInfo.CertificateAuthority
+	if (ArgoServerOpts.ClientCert == "") != (ArgoServerOpts.ClientKey == "") {
+		return nil, nil, errors.New("--client-certificate and --client-key must be provided together")
+	}
+
+	var proxy func(*http.Request) (*url.URL, error)
+	if overrides.ClusterInfo.ProxyURL != "" {
+		proxyURL, err := url.Parse(overrides.ClusterInfo.ProxyURL)
+		if err != nil {
+			return nil, nil, err
+		}
+		proxy = http.ProxyURL(proxyURL)
+	}
 	return apiclient.NewClientFromOptsWithContext(ctx,
 		apiclient.Opts{
 			ArgoServerOpts: ArgoServerOpts,
 			InstanceID:     instanceID,
 			AuthSupplier: func() string {
-				authString, err := GetAuthString()
+				authString, err := GetAuthString(ctx)
 				if err != nil {
 					logger := logging.RequireLoggerFromContext(ctx)
 					logger.WithFatal().WithError(err).Error(ctx, "Failed to get auth string")
 				}
 				return authString
 			},
-			ClientConfigSupplier: func() clientcmd.ClientConfig { return GetConfig() },
+			ClientConfigSupplier: GetConfig,
 			Offline:              Offline,
 			OfflineFiles:         OfflineFiles,
+			Proxy:                proxy,
 		})
 }
 
@@ -92,7 +112,7 @@ func Namespace(ctx context.Context) string {
 	return namespace
 }
 
-func GetAuthString() (string, error) {
+func GetAuthString(ctx context.Context) (string, error) {
 	token, ok := os.LookupEnv("ARGO_TOKEN")
 	if ok {
 		return token, nil
@@ -103,7 +123,7 @@ func GetAuthString() (string, error) {
 	}
 	version := argo.GetVersion()
 	restConfig = restclient.AddUserAgent(restConfig, fmt.Sprintf("argo-workflows/%s argo-cli", version.Version))
-	authString, err := kubeconfig.GetAuthString(restConfig, explicitPath)
+	authString, err := kubeconfig.GetAuthString(ctx, restConfig, explicitPath)
 	if err != nil {
 		return "", err
 	}

@@ -1,0 +1,75 @@
+name: E2E cluster up
+description: >-
+  Shared E2E setup: free disk, install k3d and Tilt from the e2e-tools artifact,
+  create the k3d cluster, and set up /etc/hosts. Used by the e2e-tests and e2e-ui
+  jobs so their setup can't drift. The caller must run actions/checkout and
+  actions/setup-go first (this action references the repo and `go env GOPATH`).
+
+inputs:
+  k8s-version:
+    description: Key into hack/k8s-versions.sh (min|max).
+    default: max
+  cli-auth-kubeconfig:
+    description: >-
+      Append a `fake_token_user` to the kubeconfig, needed by the CLI auth e2e
+      tests (TestTokenArg). Only the Go e2e suite needs this.
+    default: "false"
+  kubeconfig:
+    description: Path k3d-up merges the cluster kubeconfig into.
+    default: /home/runner/.kube/config
+
+runs:
+  using: composite
+  steps:
+    - name: Free up unused disk space
+      shell: bash
+      run: |
+        printf "==> Available space before cleanup\n"
+        df -h
+        # these directories are not used by E2E tests
+        sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
+        printf "==> Available space after cleanup\n"
+        df -h
+    - name: Download k3d and Tilt
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      with:
+        name: e2e-tools
+        path: tools-bin
+    - name: Install k3d and Tilt onto PATH
+      # built once by the e2e-tools job; artifacts don't preserve the +x bit
+      shell: bash
+      run: install -m 0755 tools-bin/k3d tools-bin/tilt "$(go env GOPATH)/bin/"
+    - name: Install socat
+      # socat supports "kubectl port-forward": cri-dockerd needed it (https://github.com/k3s-io/cri-dockerd/blob/4995f339edcffdf890406b3f1477d34e38477f18/streaming/streaming_others.go#L46);
+      # k3d's k3s uses embedded containerd, which doesn't, so this is defensive and harmless.
+      shell: bash
+      run: sudo apt-get -y install socat
+    - name: Create k3d cluster
+      shell: bash
+      env:
+        KUBECONFIG: ${{ inputs.kubeconfig }}
+        # hack/tilt/k3d-up.sh maps this key via hack/k8s-versions.sh to a k3s image
+        K8S_VERSION: ${{ inputs.k8s-version }}
+        CLI_AUTH_KUBECONFIG: ${{ inputs.cli-auth-kubeconfig }}
+      run: |
+        # k3d and Tilt come from the e2e-tools artifact (installed above).
+        # k3d runs k3s with its embedded containerd (2.x in these k3s
+        # versions), which supports the Kubernetes image volumes the
+        # init-less pod layout uses to deliver argoexec.
+        make k3d-up
+        # tests and debug steps assume the argo namespace is the current context
+        kubectl config set-context --current --namespace=argo
+        # the CLI auth e2e tests (TestTokenArg) use this kubeconfig user
+        if [ "$CLI_AUTH_KUBECONFIG" = "true" ]; then
+          echo "- name: fake_token_user" >> "$KUBECONFIG"
+          echo "  user:" >> "$KUBECONFIG"
+          echo "    token: xxxxxx" >> "$KUBECONFIG"
+        fi
+    - name: Set-up /etc/hosts
+      shell: bash
+      run: |
+        echo '127.0.0.1 dex'      | sudo tee -a /etc/hosts
+        echo '127.0.0.1 minio'    | sudo tee -a /etc/hosts
+        echo '127.0.0.1 postgres' | sudo tee -a /etc/hosts
+        echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
+        echo '127.0.0.1 azurite'  | sudo tee -a /etc/hosts

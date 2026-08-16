@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 
-	"github.com/go-jose/go-jose/v3/jwt"
+	"github.com/go-jose/go-jose/v4/jwt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
@@ -19,15 +19,15 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo-workflows/v3/server/auth"
-	"github.com/argoproj/argo-workflows/v3/server/auth/types"
+	"github.com/argoproj/argo-workflows/v4/server/auth"
+	"github.com/argoproj/argo-workflows/v4/server/auth/types"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	argofake "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/creator"
-	hydratorfake "github.com/argoproj/argo-workflows/v3/workflow/hydrator/fake"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	argofake "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/creator"
+	hydratorfake "github.com/argoproj/argo-workflows/v4/workflow/hydrator/fake"
 )
 
 // TestSubmitDryRun
@@ -42,14 +42,14 @@ spec:
     entrypoint: whalesay
     templates:
     - name: whalesay
-      container: 
+      container:
         image: docker/whalesay:latest
         command: [cowsay]
         args: ["hello world"]
 `
 	wf := wfv1.MustUnmarshalWorkflow(workflowYaml)
 	newWf := wf.DeepCopy()
-	wfClientSet := argofake.NewSimpleClientset()
+	wfClientSet := argofake.NewClientset()
 	ctx := logging.TestContext(t.Context())
 	newWf, err := SubmitWorkflow(ctx, nil, wfClientSet, "test-namespace", newWf, nil, &wfv1.SubmitOpts{DryRun: true})
 	require.NoError(t, err)
@@ -103,6 +103,7 @@ func TestReadFromSingleorMultiplePath(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
 			dir := t.TempDir()
 			var filePaths []string
 			for i := range tc.fileNames {
@@ -114,7 +115,7 @@ func TestReadFromSingleorMultiplePath(t *testing.T) {
 					t.Error("Could not write to temporary file")
 				}
 			}
-			body, err := ReadFromFilePathsOrUrls(filePaths...)
+			body, err := ReadFromFilePathsOrUrls(ctx, filePaths...)
 			assert.Len(t, filePaths, len(body))
 			require.NoError(t, err)
 			for i := range body {
@@ -150,6 +151,7 @@ func TestReadFromSingleorMultiplePathErrorHandling(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
 			dir := t.TempDir()
 			var filePaths []string
 			for i := range tc.fileNames {
@@ -163,7 +165,7 @@ func TestReadFromSingleorMultiplePathErrorHandling(t *testing.T) {
 					}
 				}
 			}
-			body, err := ReadFromFilePathsOrUrls(filePaths...)
+			body, err := ReadFromFilePathsOrUrls(ctx, filePaths...)
 			require.Error(t, err)
 			assert.Empty(t, body)
 		})
@@ -183,19 +185,19 @@ metadata:
   selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/workflows/suspend
   uid: 4f08d325-dc5a-43a3-9986-259e259e6ea3
 spec:
-  
+
   entrypoint: suspend
   templates:
-  - 
+  -
     inputs: {}
     metadata: {}
     name: suspend
     outputs: {}
     steps:
-    - - 
+    - -
         name: approve
         template: approve
-  - 
+  -
     inputs: {}
     metadata: {}
     name: approve
@@ -246,7 +248,7 @@ status:
 
 func TestResumeWorkflowByNodeName(t *testing.T) {
 	t.Run("Withought user info", func(t *testing.T) {
-		wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
+		wfIf := argofake.NewClientset().ArgoprojV1alpha1().Workflows("")
 		origWf := wfv1.MustUnmarshalWorkflow(suspendedWf)
 
 		ctx := logging.TestContext(t.Context())
@@ -273,7 +275,7 @@ func TestResumeWorkflowByNodeName(t *testing.T) {
 	})
 
 	t.Run("With user info", func(t *testing.T) {
-		wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
+		wfIf := argofake.NewClientset().ArgoprojV1alpha1().Workflows("")
 		origWf := wfv1.MustUnmarshalWorkflow(suspendedWf)
 
 		ctx := logging.TestContext(t.Context())
@@ -305,7 +307,7 @@ func TestResumeWorkflowByNodeName(t *testing.T) {
 }
 
 func TestStopWorkflowByNodeName(t *testing.T) {
-	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
+	wfIf := argofake.NewClientset().ArgoprojV1alpha1().Workflows("")
 	origWf := wfv1.MustUnmarshalWorkflow(suspendedWf)
 
 	ctx := logging.TestContext(t.Context())
@@ -368,16 +370,16 @@ kind: Workflow
 metadata:
   name: suspend-template
 spec:
-  
+
   entrypoint: suspend
   templates:
-  - 
+  -
     inputs: {}
     metadata: {}
     name: suspend
     outputs: {}
     steps:
-    - - 
+    - -
         name: approve
         template: approve
     - - arguments:
@@ -386,7 +388,7 @@ spec:
             value: '{{steps.approve.outputs.parameters.message}}'
         name: release
         template: whalesay
-  - 
+  -
     inputs: {}
     metadata: {}
     name: approve
@@ -396,7 +398,7 @@ spec:
         valueFrom:
           supplied: {}
     suspend: {}
-  - 
+  -
     container:
       args:
       - '{{inputs.parameters.message}}'
@@ -464,7 +466,7 @@ status:
 `
 
 func TestUpdateSuspendedNode(t *testing.T) {
-	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
+	wfIf := argofake.NewClientset().ArgoprojV1alpha1().Workflows("")
 	origWf := wfv1.MustUnmarshalWorkflow(susWorkflow)
 
 	ctx := logging.TestContext(t.Context())
@@ -616,13 +618,14 @@ func TestApplySubmitOpts(t *testing.T) {
 }
 
 func TestReadParametersFile(t *testing.T) {
-	file, err := os.CreateTemp("", "")
+	ctx := logging.TestContext(t.Context())
+	file, err := os.CreateTemp(t.TempDir(), "")
 	require.NoError(t, err)
-	defer func() { _ = os.Remove(file.Name()) }()
+	file.Close()
 	err = os.WriteFile(file.Name(), []byte(`a: 81861780812`), 0o600)
 	require.NoError(t, err)
 	opts := &wfv1.SubmitOpts{}
-	err = ReadParametersFile(file.Name(), opts)
+	err = ReadParametersFile(ctx, file.Name(), opts)
 	require.NoError(t, err)
 	parameters := opts.Parameters
 	require.Len(t, parameters, 1)
@@ -715,7 +718,6 @@ func TestFormulateResubmitWorkflow(t *testing.T) {
 		assert.Emptyf(t, wf.Labels[common.LabelKeyCreator], "should not %s label when a workflow is resubmitted by an unauthenticated request", common.LabelKeyCreator)
 		assert.Emptyf(t, wf.Labels[common.LabelKeyCreatorEmail], "should not %s label when a workflow is resubmitted by an unauthenticated request", common.LabelKeyCreatorEmail)
 		assert.Emptyf(t, wf.Labels[common.LabelKeyCreatorPreferredUsername], "should not %s label when a workflow is resubmitted by an unauthenticated request", common.LabelKeyCreatorPreferredUsername)
-
 	})
 	t.Run("OverrideParams", func(t *testing.T) {
 		wf := &wfv1.Workflow{
@@ -746,22 +748,22 @@ metadata:
   selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/workflows/steps-9fkqc
   uid: 241a39ef-4ff1-487f-8461-98df5d2b50fb
 spec:
-  
+
   entrypoint: foo
   templates:
-  - 
+  -
     inputs: {}
     metadata: {}
     name: foo
     outputs: {}
     steps:
-    - - 
+    - -
         name: pass
         template: pass
-    - - 
+    - -
         name: fail
         template: fail
-  - 
+  -
     container:
       args:
       - exit 0
@@ -775,7 +777,7 @@ spec:
     metadata: {}
     name: pass
     outputs: {}
-  - 
+  -
     container:
       args:
       - exit 1
@@ -883,7 +885,7 @@ status:
 `
 
 func TestDeepDeleteNodes(t *testing.T) {
-	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
+	wfIf := argofake.NewClientset().ArgoprojV1alpha1().Workflows("")
 	origWf := wfv1.MustUnmarshalWorkflow(deepDeleteOfNodes)
 
 	ctx := logging.TestContext(t.Context())
@@ -915,7 +917,7 @@ spec:
       metadata: {}
       script:
         name: ''
-        image: python:alpine3.6
+        image: python:alpine3.23
         command:
           - python
         resources: {}
@@ -931,7 +933,7 @@ spec:
       metadata: {}
       container:
         name: ''
-        image: alpine:latest
+        image: alpine:3.23
         command:
           - sh
           - '-c'
@@ -1013,7 +1015,7 @@ status:
 `
 
 func TestRetryExitHandler(t *testing.T) {
-	wfIf := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
+	wfIf := argofake.NewClientset().ArgoprojV1alpha1().Workflows("")
 	origWf := wfv1.MustUnmarshalWorkflow(exitHandler)
 
 	ctx := logging.TestContext(t.Context())
@@ -1029,7 +1031,7 @@ func TestRetryExitHandler(t *testing.T) {
 
 func TestFormulateRetryWorkflow(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	wfClient := argofake.NewSimpleClientset().ArgoprojV1alpha1().Workflows("my-ns")
+	wfClient := argofake.NewClientset().ArgoprojV1alpha1().Workflows("my-ns")
 	t.Run("DAG", func(t *testing.T) {
 		wf := &wfv1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{
@@ -1155,7 +1157,6 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		wf, _, err := FormulateRetryWorkflow(logging.TestContext(t.Context()), wf, false, "", []string{"message=modified"})
 		require.NoError(t, err)
 		assert.Equal(t, "modified", wf.Spec.Arguments.Parameters[0].Value.String())
-
 	})
 
 	t.Run("OverrideParamsSubmitFromWfTmpl", func(t *testing.T) {
@@ -1184,7 +1185,6 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, "modified", wf.Spec.Arguments.Parameters[0].Value.String())
 		assert.Equal(t, "modified", wf.Status.StoredWorkflowSpec.Arguments.Parameters[0].Value.String())
-
 	})
 
 	t.Run("Fail on running workflow", func(t *testing.T) {
@@ -1508,7 +1508,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:latest
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs: {}
@@ -2292,7 +2292,6 @@ func TestStepsRetryWorkflow(t *testing.T) {
 			assert.Equal(wfv1.NodeSucceeded, node.Phase)
 		}
 	}
-
 }
 
 func TestDagConversion(t *testing.T) {
@@ -2372,7 +2371,7 @@ spec:
       command:
       - echo
       - '{{inputs.parameters.message}}'
-      image: alpine:3.7
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs:
@@ -3013,7 +3012,6 @@ func TestOnExitWorkflowRetry(t *testing.T) {
 			assert.Equal(wfv1.NodeSucceeded, node.Phase)
 		}
 	}
-
 }
 
 const onExitWorkflow = `
@@ -3045,7 +3043,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:3.18
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs: {}
@@ -3058,7 +3056,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:3.18
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs: {}
@@ -3158,7 +3156,6 @@ func TestOnExitWorkflow(t *testing.T) {
 	assert.Len(podsToDelete, 1)
 	assert.Len(newWf.Status.Nodes, 1)
 	assert.Equal(wfv1.NodeSucceeded, newWf.Status.Nodes["retry-workflow-with-failed-exit-handler"].Phase)
-
 }
 
 const nestedDAG = `apiVersion: argoproj.io/v1alpha1
@@ -3188,7 +3185,7 @@ spec:
       command:
       - echo
       - '{{inputs.parameters.message}}'
-      image: alpine:3.7
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs:
@@ -3884,9 +3881,8 @@ func TestNestedDAG(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(nestedDAG)
 
 	running := map[string]bool{
-		"dag-nested-zxlc2-1920344377":  true,
-		"dag-nested-zxlc2-1970677234 ": true,
-		"dag-nested-zxlc2":             true,
+		"dag-nested-zxlc2-1920344377": true,
+		"dag-nested-zxlc2":            true,
 	}
 	deleted := map[string]bool{
 		"dag-nested-zxlc2-744943701": true,
@@ -3915,7 +3911,6 @@ func TestNestedDAG(t *testing.T) {
 			assert.Equal(wfv1.NodeSucceeded, node.Phase)
 		}
 	}
-
 }
 
 const onExitPanic = `apiVersion: argoproj.io/v1alpha1
@@ -3948,7 +3943,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:latest
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs: {}
@@ -3978,7 +3973,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:latest
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs: {}
@@ -3991,7 +3986,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:latest
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs: {}
@@ -4004,7 +3999,7 @@ spec:
       command:
       - sh
       - -c
-      image: alpine:latest
+      image: alpine:3.23
       name: ""
       resources: {}
     inputs: {}
@@ -4180,5 +4175,1176 @@ func TestRegressions(t *testing.T) {
 		require.NoError(t, err)
 		// we can't really handle exit handlers granually yet
 		assert.Empty(t, newWf.Status.Nodes)
+	})
+}
+
+func TestFormulateRetryWorkflowWithParams(t *testing.T) {
+	// Test from issue #14769
+	ctx := logging.TestContext(t.Context())
+	wfClientSet := argofake.NewClientset()
+
+	// Use the workflow from out.yaml as test input
+	workflowYaml := `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  annotations:
+    workflows.argoproj.io/pod-name-format: v2
+  creationTimestamp: "2025-09-11T01:49:53Z"
+  generateName: subdag-iterate-
+  generation: 11
+  labels:
+    default-label: thisLabelIsFromWorkflowDefaults
+    workflows.argoproj.io/completed: "true"
+    workflows.argoproj.io/phase: Succeeded
+  name: subdag-iterate-jrfch
+  namespace: argo
+  resourceVersion: "23615"
+  uid: cb4f47aa-0433-47a9-be7f-0df86e723441
+spec:
+  activeDeadlineSeconds: 300
+  arguments:
+    parameters:
+    - name: msgs
+      value: '["foo","bar","baz"]'
+  entrypoint: main
+  podSpecPatch: |
+    terminationGracePeriodSeconds: 3
+  templates:
+  - dag:
+      tasks:
+      - arguments:
+          parameters:
+          - name: msg
+            value: '{{item}}'
+        name: echo-group
+        template: echo-subdag
+        withParam: '{{workflow.parameters.msgs}}'
+    inputs: {}
+    metadata: {}
+    name: main
+    outputs: {}
+  - dag:
+      tasks:
+      - arguments:
+          parameters:
+          - name: message
+            value: '{{inputs.parameters.msg}}'
+        name: echo-param
+        template: echo
+      - arguments:
+          parameters:
+          - name: message
+            value: bye
+        dependencies:
+        - echo-param
+        name: echo-bye
+        template: echo
+    inputs:
+      parameters:
+      - name: msg
+    metadata: {}
+    name: echo-subdag
+    outputs: {}
+  - container:
+      args:
+      - echo {{inputs.parameters.message}}
+      command:
+      - sh
+      - -c
+      image: busybox
+      name: ""
+      resources: {}
+    inputs:
+      parameters:
+      - name: message
+    metadata: {}
+    name: echo
+    outputs: {}
+  ttlStrategy:
+    secondsAfterCompletion: 7200
+  workflowMetadata:
+    labels:
+      default-label: thisLabelIsFromWorkflowDefaults
+status:
+  artifactGCStatus:
+    notSpecified: true
+  artifactRepositoryRef:
+    artifactRepository:
+      archiveLogs: true
+      s3:
+        accessKeySecret:
+          key: accesskey
+          name: my-minio-cred
+        bucket: my-bucket
+        endpoint: minio:9000
+        insecure: true
+        secretKeySecret:
+          key: secretkey
+          name: my-minio-cred
+    configMap: artifact-repositories
+    key: default-v1
+    namespace: argo
+  conditions:
+  - status: "False"
+    type: PodRunning
+  - status: "True"
+    type: Completed
+  finishedAt: "2025-09-11T01:51:08Z"
+  nodes:
+    subdag-iterate-jrfch:
+      children:
+      - subdag-iterate-jrfch-1869003913
+      displayName: subdag-iterate-jrfch
+      finishedAt: "2025-09-11T01:51:08Z"
+      id: subdag-iterate-jrfch
+      name: subdag-iterate-jrfch
+      outboundNodes:
+      - subdag-iterate-jrfch-1786915540
+      - subdag-iterate-jrfch-2240770818
+      - subdag-iterate-jrfch-656740947
+      phase: Succeeded
+      progress: 6/6
+      resourcesDuration:
+        cpu: 0
+        memory: 18
+      startedAt: "2025-09-11T01:49:53Z"
+      templateName: main
+      templateScope: local/subdag-iterate-jrfch
+      type: DAG
+    subdag-iterate-jrfch-656740947:
+      boundaryID: subdag-iterate-jrfch-851163487
+      displayName: echo-bye
+      finishedAt: "2025-09-11T01:51:05Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: subdag-iterate-jrfch-656740947
+      inputs:
+        parameters:
+        - name: message
+          value: bye
+      name: subdag-iterate-jrfch.echo-group(2:baz).echo-bye
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: subdag-iterate-jrfch/subdag-iterate-jrfch-echo-656740947/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 3
+      startedAt: "2025-09-11T01:50:59Z"
+      taskResultSynced: true
+      templateName: echo
+      templateScope: local/subdag-iterate-jrfch
+      type: Pod
+    subdag-iterate-jrfch-682257755:
+      boundaryID: subdag-iterate-jrfch-4005883592
+      children:
+      - subdag-iterate-jrfch-2240770818
+      displayName: echo-param
+      finishedAt: "2025-09-11T01:50:56Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: subdag-iterate-jrfch-682257755
+      inputs:
+        parameters:
+        - name: message
+          value: bar
+      name: subdag-iterate-jrfch.echo-group(1:bar).echo-param
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: subdag-iterate-jrfch/subdag-iterate-jrfch-echo-682257755/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 3
+      startedAt: "2025-09-11T01:49:53Z"
+      taskResultSynced: true
+      templateName: echo
+      templateScope: local/subdag-iterate-jrfch
+      type: Pod
+    subdag-iterate-jrfch-851163487:
+      boundaryID: subdag-iterate-jrfch
+      children:
+      - subdag-iterate-jrfch-4188005058
+      displayName: echo-group(2:baz)
+      finishedAt: "2025-09-11T01:51:08Z"
+      id: subdag-iterate-jrfch-851163487
+      inputs:
+        parameters:
+        - name: msg
+          value: baz
+      name: subdag-iterate-jrfch.echo-group(2:baz)
+      outboundNodes:
+      - subdag-iterate-jrfch-656740947
+      phase: Succeeded
+      progress: 2/2
+      resourcesDuration:
+        cpu: 0
+        memory: 6
+      startedAt: "2025-09-11T01:49:53Z"
+      templateName: echo-subdag
+      templateScope: local/subdag-iterate-jrfch
+      type: DAG
+    subdag-iterate-jrfch-1295605062:
+      boundaryID: subdag-iterate-jrfch
+      children:
+      - subdag-iterate-jrfch-3231869949
+      displayName: echo-group(0:foo)
+      finishedAt: "2025-09-11T01:51:08Z"
+      id: subdag-iterate-jrfch-1295605062
+      inputs:
+        parameters:
+        - name: msg
+          value: foo
+      name: subdag-iterate-jrfch.echo-group(0:foo)
+      outboundNodes:
+      - subdag-iterate-jrfch-1786915540
+      phase: Succeeded
+      progress: 2/2
+      resourcesDuration:
+        cpu: 0
+        memory: 6
+      startedAt: "2025-09-11T01:49:53Z"
+      templateName: echo-subdag
+      templateScope: local/subdag-iterate-jrfch
+      type: DAG
+    subdag-iterate-jrfch-1786915540:
+      boundaryID: subdag-iterate-jrfch-1295605062
+      displayName: echo-bye
+      finishedAt: "2025-09-11T01:51:05Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: subdag-iterate-jrfch-1786915540
+      inputs:
+        parameters:
+        - name: message
+          value: bye
+      name: subdag-iterate-jrfch.echo-group(0:foo).echo-bye
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: subdag-iterate-jrfch/subdag-iterate-jrfch-echo-1786915540/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 3
+      startedAt: "2025-09-11T01:50:59Z"
+      taskResultSynced: true
+      templateName: echo
+      templateScope: local/subdag-iterate-jrfch
+      type: Pod
+    subdag-iterate-jrfch-1869003913:
+      boundaryID: subdag-iterate-jrfch
+      children:
+      - subdag-iterate-jrfch-1295605062
+      - subdag-iterate-jrfch-4005883592
+      - subdag-iterate-jrfch-851163487
+      displayName: echo-group
+      finishedAt: "2025-09-11T01:51:08Z"
+      id: subdag-iterate-jrfch-1869003913
+      name: subdag-iterate-jrfch.echo-group
+      nodeFlag: {}
+      phase: Succeeded
+      progress: 6/6
+      resourcesDuration:
+        cpu: 0
+        memory: 18
+      startedAt: "2025-09-11T01:49:53Z"
+      templateName: echo-subdag
+      templateScope: local/subdag-iterate-jrfch
+      type: TaskGroup
+    subdag-iterate-jrfch-2240770818:
+      boundaryID: subdag-iterate-jrfch-4005883592
+      displayName: echo-bye
+      finishedAt: "2025-09-11T01:51:05Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: subdag-iterate-jrfch-2240770818
+      inputs:
+        parameters:
+        - name: message
+          value: bye
+      name: subdag-iterate-jrfch.echo-group(1:bar).echo-bye
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: subdag-iterate-jrfch/subdag-iterate-jrfch-echo-2240770818/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 3
+      startedAt: "2025-09-11T01:50:59Z"
+      taskResultSynced: true
+      templateName: echo
+      templateScope: local/subdag-iterate-jrfch
+      type: Pod
+    subdag-iterate-jrfch-3231869949:
+      boundaryID: subdag-iterate-jrfch-1295605062
+      children:
+      - subdag-iterate-jrfch-1786915540
+      displayName: echo-param
+      finishedAt: "2025-09-11T01:50:56Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: subdag-iterate-jrfch-3231869949
+      inputs:
+        parameters:
+        - name: message
+          value: foo
+      name: subdag-iterate-jrfch.echo-group(0:foo).echo-param
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: subdag-iterate-jrfch/subdag-iterate-jrfch-echo-3231869949/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 3
+      startedAt: "2025-09-11T01:49:53Z"
+      taskResultSynced: true
+      templateName: echo
+      templateScope: local/subdag-iterate-jrfch
+      type: Pod
+    subdag-iterate-jrfch-4005883592:
+      boundaryID: subdag-iterate-jrfch
+      children:
+      - subdag-iterate-jrfch-682257755
+      displayName: echo-group(1:bar)
+      finishedAt: "2025-09-11T01:51:08Z"
+      id: subdag-iterate-jrfch-4005883592
+      inputs:
+        parameters:
+        - name: msg
+          value: bar
+      name: subdag-iterate-jrfch.echo-group(1:bar)
+      outboundNodes:
+      - subdag-iterate-jrfch-2240770818
+      phase: Succeeded
+      progress: 2/2
+      resourcesDuration:
+        cpu: 0
+        memory: 6
+      startedAt: "2025-09-11T01:49:53Z"
+      templateName: echo-subdag
+      templateScope: local/subdag-iterate-jrfch
+      type: DAG
+    subdag-iterate-jrfch-4188005058:
+      boundaryID: subdag-iterate-jrfch-851163487
+      children:
+      - subdag-iterate-jrfch-656740947
+      displayName: echo-param
+      finishedAt: "2025-09-11T01:50:56Z"
+      hostNodeName: k3d-k3s-default-server-0
+      id: subdag-iterate-jrfch-4188005058
+      inputs:
+        parameters:
+        - name: message
+          value: baz
+      name: subdag-iterate-jrfch.echo-group(2:baz).echo-param
+      outputs:
+        artifacts:
+        - name: main-logs
+          s3:
+            key: subdag-iterate-jrfch/subdag-iterate-jrfch-echo-4188005058/main.log
+        exitCode: "0"
+      phase: Succeeded
+      progress: 1/1
+      resourcesDuration:
+        cpu: 0
+        memory: 3
+      startedAt: "2025-09-11T01:49:53Z"
+      taskResultSynced: true
+      templateName: echo
+      templateScope: local/subdag-iterate-jrfch
+      type: Pod
+  phase: Succeeded
+  progress: 6/6
+  resourcesDuration:
+    cpu: 0
+    memory: 18
+  startedAt: "2025-09-11T01:49:53Z"`
+
+	wf := wfv1.MustUnmarshalWorkflow(workflowYaml)
+
+	// Create the workflow in the fake clientset
+	_, err := wfClientSet.ArgoprojV1alpha1().Workflows("argo").Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	// Test parameters
+	nodeFieldSelector := "id=subdag-iterate-jrfch-1786915540"
+	restartSuccessful := true
+	parameters := []string{}
+
+	// Call FormulateRetryWorkflow
+	retryWf, podsToDelete, err := FormulateRetryWorkflow(ctx, wf, restartSuccessful, nodeFieldSelector, parameters)
+
+	// Key assertion: FormulateRetryWorkflow should succeed
+	require.NoError(t, err)
+	require.NotNil(t, retryWf)
+	require.NotNil(t, podsToDelete)
+
+	// Assertion 1: The targeted node "subdag-iterate-jrfch-1786915540" no longer exists in the workflow
+	_, targetNodeExists := retryWf.Status.Nodes["subdag-iterate-jrfch-1786915540"]
+	assert.False(t, targetNodeExists,
+		"Target node should be deleted from retry workflow")
+
+	// Assertion 2: The parent task group node should be in Running state
+	// The target node's parent task group is "subdag-iterate-jrfch-1295605062" (echo-group(0:foo))
+	parentTaskGroupNode, ok := retryWf.Status.Nodes["subdag-iterate-jrfch-1295605062"]
+	require.True(t, ok, "Parent task group node should exist")
+	assert.Equal(t, wfv1.NodeRunning, parentTaskGroupNode.Phase,
+		"Parent task group node should be in Running state")
+
+	// Assertion 3: Other nodes in different iterations should remain unchanged
+	// Check nodes from other iterations (bar and baz) remain succeeded
+	barIterationNode, ok := retryWf.Status.Nodes["subdag-iterate-jrfch-4005883592"] // echo-group(1:bar)
+	require.True(t, ok, "Bar iteration node should exist")
+	assert.Equal(t, wfv1.NodeSucceeded, barIterationNode.Phase,
+		"Bar iteration node should remain succeeded")
+
+	bazIterationNode, ok := retryWf.Status.Nodes["subdag-iterate-jrfch-851163487"] // echo-group(2:baz)
+	require.True(t, ok, "Baz iteration node should exist")
+	assert.Equal(t, wfv1.NodeSucceeded, bazIterationNode.Phase,
+		"Baz iteration node should remain succeeded")
+
+	// Check that nodes from other iterations' pods remain succeeded
+	barPodNode, ok := retryWf.Status.Nodes["subdag-iterate-jrfch-2240770818"] // bar echo-bye pod
+	require.True(t, ok, "Bar pod node should exist")
+	assert.Equal(t, wfv1.NodeSucceeded, barPodNode.Phase,
+		"Bar pod node should remain succeeded")
+
+	bazPodNode, ok := retryWf.Status.Nodes["subdag-iterate-jrfch-656740947"] // baz echo-bye pod
+	require.True(t, ok, "Baz pod node should exist")
+	assert.Equal(t, wfv1.NodeSucceeded, bazPodNode.Phase,
+		"Baz pod node should remain succeeded")
+
+	// Assertion 4: The returned pod deletion list should include the target node
+	assert.Contains(t, podsToDelete, "subdag-iterate-jrfch-echo-1786915540",
+		"Pod deletion list should contain the target node's pod")
+
+	// Assertion 5: Verify workflow integrity is maintained
+	// Check that the root workflow node is in Running state
+	rootNode, ok := retryWf.Status.Nodes["subdag-iterate-jrfch"]
+	require.True(t, ok, "Root workflow node should exist")
+	assert.Equal(t, wfv1.NodeRunning, rootNode.Phase,
+		"Root workflow node should be in Running state")
+
+	// Check that the main task group is in Running state
+	mainTaskGroupNode, ok := retryWf.Status.Nodes["subdag-iterate-jrfch-1869003913"]
+	require.True(t, ok, "Main task group node should exist")
+	assert.Equal(t, wfv1.NodeRunning, mainTaskGroupNode.Phase,
+		"Main task group node should be in Running state")
+
+	// Verify that the workflow phase is set to Running
+	assert.Equal(t, wfv1.WorkflowUnknown, retryWf.Status.Phase,
+		"Retry workflow should be in Running phase")
+
+	// Verify that completion labels are removed
+	assert.NotContains(t, retryWf.Labels, "workflows.argoproj.io/completed",
+		"Completed label should be removed from retry workflow")
+
+	// Additional verification: Check that the target node's sibling (echo-param) is NOT deleted
+	// since retrying echo-bye should only affect that specific node, not its siblings
+	siblingNode, ok := retryWf.Status.Nodes["subdag-iterate-jrfch-3231869949"] // foo echo-param pod
+	require.True(t, ok, "Sibling node should remain in the workflow")
+	assert.Equal(t, wfv1.NodeSucceeded, siblingNode.Phase,
+		"Sibling node should remain succeeded")
+
+	// Verify that the pod deletion list has the correct number of entries
+	assert.Len(t, podsToDelete, 1,
+		"Pod deletion list should contain 1 pod (only the target)")
+}
+
+// TestFormulateRetryWorkflowWithParamOverride tests issue #15802:
+// When retrying a workflow with withParam + retryStrategy and overriding
+// the workflow parameter to a different value, the stale expanded nodes
+// from the old parameter value should be cleaned up.
+//
+// Scenario:
+// - Workflow has wfparams=["pass","fail"], expanding to launch(0:pass) and launch(1:fail)
+// - launch(0:pass) succeeds, launch(1:fail) fails -> workflow Failed
+// - User retries with parameter override wfparams=["fail"]
+// - Expected: launch(0:pass) and its children are removed (stale nodes)
+// - Bug: launch(0:pass) survives and causes inconsistent node tree
+func TestFormulateRetryWorkflowWithParamOverride(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	workflowYaml := `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: workflow-retry
+  namespace: argo
+  labels:
+    workflows.argoproj.io/completed: "true"
+    workflows.argoproj.io/phase: Failed
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+      - name: wfparams
+        value: '["pass","fail"]'
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: launch
+            template: passfail
+            arguments:
+              parameters:
+                - name: pfparam
+                  value: "{{item}}"
+            withParam: "{{workflow.parameters.wfparams}}"
+    - name: passfail
+      retryStrategy:
+        limit: "0"
+      inputs:
+        parameters:
+          - name: pfparam
+      container:
+        image: alpine:3.15.4
+        command: [sh, -c]
+        args:
+          - |
+            if [ "{{inputs.parameters.pfparam}}" = "fail" ]; then exit 1; else exit 0; fi
+status:
+  phase: Failed
+  conditions:
+  - status: "True"
+    type: Completed
+  nodes:
+    workflow-retry:
+      id: workflow-retry
+      name: workflow-retry
+      displayName: workflow-retry
+      type: DAG
+      phase: Failed
+      templateName: main
+      templateScope: local/workflow-retry
+      startedAt: "2026-03-24T00:40:00Z"
+      finishedAt: "2026-03-24T00:42:32Z"
+      children:
+        - workflow-retry-2014360908
+      outboundNodes:
+        - workflow-retry-3976347509
+        - workflow-retry-1861571805
+    workflow-retry-2014360908:
+      id: workflow-retry-2014360908
+      name: workflow-retry.launch
+      displayName: launch
+      type: TaskGroup
+      phase: Failed
+      boundaryID: workflow-retry
+      templateName: passfail
+      templateScope: local/workflow-retry
+      startedAt: "2026-03-24T00:40:00Z"
+      finishedAt: "2026-03-24T00:42:22Z"
+      nodeFlag: {}
+      children:
+        - workflow-retry-816771446
+        - workflow-retry-1743784750
+    workflow-retry-816771446:
+      id: workflow-retry-816771446
+      name: workflow-retry.launch(0:pass)
+      displayName: launch(0:pass)
+      type: Retry
+      phase: Succeeded
+      boundaryID: workflow-retry
+      templateName: passfail
+      templateScope: local/workflow-retry
+      startedAt: "2026-03-24T00:40:00Z"
+      finishedAt: "2026-03-24T00:41:25Z"
+      nodeFlag:
+        retried: true
+      children:
+        - workflow-retry-3976347509
+    workflow-retry-3976347509:
+      id: workflow-retry-3976347509
+      name: workflow-retry.launch(0:pass)(0)
+      displayName: launch(0:pass)(0)
+      type: Pod
+      phase: Succeeded
+      boundaryID: workflow-retry
+      hostNodeName: node1
+      templateName: passfail
+      templateScope: local/workflow-retry
+      startedAt: "2026-03-24T00:40:00Z"
+      finishedAt: "2026-03-24T00:41:25Z"
+      taskResultSynced: true
+      inputs:
+        parameters:
+          - name: pfparam
+            value: pass
+      outputs:
+        exitCode: "0"
+    workflow-retry-1743784750:
+      id: workflow-retry-1743784750
+      name: workflow-retry.launch(1:fail)
+      displayName: launch(1:fail)
+      type: Retry
+      phase: Failed
+      boundaryID: workflow-retry
+      templateName: passfail
+      templateScope: local/workflow-retry
+      startedAt: "2026-03-24T00:40:00Z"
+      finishedAt: "2026-03-24T00:42:22Z"
+      message: No more retries left
+      nodeFlag:
+        retried: true
+      children:
+        - workflow-retry-1861571805
+    workflow-retry-1861571805:
+      id: workflow-retry-1861571805
+      name: workflow-retry.launch(1:fail)(0)
+      displayName: launch(1:fail)(0)
+      type: Pod
+      phase: Failed
+      boundaryID: workflow-retry
+      hostNodeName: node1
+      templateName: passfail
+      templateScope: local/workflow-retry
+      startedAt: "2026-03-24T00:40:00Z"
+      finishedAt: "2026-03-24T00:42:22Z"
+      taskResultSynced: true
+      inputs:
+        parameters:
+          - name: pfparam
+            value: fail
+      outputs:
+        exitCode: "1"
+  startedAt: "2026-03-24T00:40:00Z"
+  finishedAt: "2026-03-24T00:42:32Z"`
+
+	wf := wfv1.MustUnmarshalWorkflow(workflowYaml)
+
+	// Retry with parameter override: change wfparams to ["fail"]
+	parameters := []string{`wfparams=["fail"]`}
+	retryWf, podsToDelete, err := FormulateRetryWorkflow(ctx, wf, false, "", parameters)
+	require.NoError(t, err)
+	require.NotNil(t, retryWf)
+
+	// Verify the workflow parameter was overridden
+	for _, p := range retryWf.Spec.Arguments.Parameters {
+		if p.Name == "wfparams" {
+			assert.Equal(t, `["fail"]`, p.GetValue(),
+				"wfparams should be overridden to [\"fail\"]")
+		}
+	}
+
+	// BUG ASSERTION (issue #15802):
+	// The stale node launch(0:pass) from the old parameter expansion should NOT exist
+	// in the retry workflow, because the new parameter ["fail"] will expand differently.
+	// If it still exists, the controller will create launch(0:fail) alongside the stale
+	// launch(0:pass), resulting in two children in the TaskGroup and a stuck workflow.
+	_, staleNodeExists := retryWf.Status.Nodes["workflow-retry-816771446"] // launch(0:pass)
+	assert.False(t, staleNodeExists,
+		"Stale node launch(0:pass) should be deleted when parameter override changes withParam expansion")
+
+	_, stalePodExists := retryWf.Status.Nodes["workflow-retry-3976347509"] // launch(0:pass)(0)
+	assert.False(t, stalePodExists,
+		"Stale pod launch(0:pass)(0) should be deleted when parameter override changes withParam expansion")
+
+	// The failed nodes should be deleted (standard retry behavior)
+	_, failedRetryExists := retryWf.Status.Nodes["workflow-retry-1743784750"] // launch(1:fail)
+	assert.False(t, failedRetryExists,
+		"Failed retry node launch(1:fail) should be deleted")
+
+	_, failedPodExists := retryWf.Status.Nodes["workflow-retry-1861571805"] // launch(1:fail)(0)
+	assert.False(t, failedPodExists,
+		"Failed pod launch(1:fail)(0) should be deleted")
+
+	// The TaskGroup should be reset to Running
+	taskGroupNode, ok := retryWf.Status.Nodes["workflow-retry-2014360908"] // launch TaskGroup
+	require.True(t, ok, "TaskGroup node should exist")
+	assert.Equal(t, wfv1.NodeRunning, taskGroupNode.Phase,
+		"TaskGroup should be reset to Running")
+
+	// The TaskGroup should have NO children (all old expansion nodes should be cleaned up)
+	assert.Empty(t, taskGroupNode.Children,
+		"TaskGroup children should be empty after parameter override changes the expansion")
+
+	// The failed pod should be in the deletion list
+	assert.Contains(t, podsToDelete, "workflow-retry-passfail-1861571805",
+		"Failed pod should be in deletion list")
+
+	// The succeeded pod from the stale expansion should also be in the deletion list
+	assert.Contains(t, podsToDelete, "workflow-retry-passfail-3976347509",
+		"Stale succeeded pod should also be in deletion list")
+}
+
+// retryMultiParentTaskGroup is a diamond where the failed leaf X has two ancestry
+// branches: one through a plain pod (P) and one through a fan-out TaskGroup (G,
+// expanded into G0/G1). X therefore has more than one parent, and whether a retry
+// resets G depends on which branch resetPath walks up from X.
+const retryMultiParentTaskGroup = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  annotations:
+    workflows.argoproj.io/pod-name-format: v2
+  name: retry-multiparent
+  namespace: argo
+  labels:
+    workflows.argoproj.io/completed: "true"
+    workflows.argoproj.io/phase: Failed
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: P
+        template: echo
+      - name: G
+        template: echo
+        withItems: [a, b]
+      - name: X
+        template: echo
+        depends: P && G
+  - name: echo
+    container:
+      image: alpine:3.7
+      command: [echo]
+status:
+  phase: Failed
+  nodes:
+    retry-multiparent:
+      id: retry-multiparent
+      name: retry-multiparent
+      displayName: retry-multiparent
+      type: DAG
+      phase: Failed
+      templateName: main
+      children:
+      - retry-multiparent-P
+      - retry-multiparent-G
+    retry-multiparent-P:
+      id: retry-multiparent-P
+      name: retry-multiparent.P
+      displayName: P
+      type: Pod
+      phase: Succeeded
+      boundaryID: retry-multiparent
+      templateName: echo
+      children:
+      - retry-multiparent-X
+    retry-multiparent-G:
+      id: retry-multiparent-G
+      name: retry-multiparent.G
+      displayName: G
+      type: TaskGroup
+      phase: Succeeded
+      boundaryID: retry-multiparent
+      templateName: echo
+      nodeFlag: {}
+      children:
+      - retry-multiparent-G0
+      - retry-multiparent-G1
+    retry-multiparent-G0:
+      id: retry-multiparent-G0
+      name: retry-multiparent.G(0:a)
+      displayName: G(0:a)
+      type: Pod
+      phase: Succeeded
+      boundaryID: retry-multiparent
+      templateName: echo
+      children:
+      - retry-multiparent-X
+    retry-multiparent-G1:
+      id: retry-multiparent-G1
+      name: retry-multiparent.G(1:b)
+      displayName: G(1:b)
+      type: Pod
+      phase: Succeeded
+      boundaryID: retry-multiparent
+      templateName: echo
+      children:
+      - retry-multiparent-X
+    retry-multiparent-X:
+      id: retry-multiparent-X
+      name: retry-multiparent.X
+      displayName: X
+      type: Pod
+      phase: Failed
+      boundaryID: retry-multiparent
+      templateName: echo
+`
+
+// TestFormulateRetryWorkflowDeterministicReset guards against map-order dependence
+// in FormulateRetryWorkflow. A node with more than one parent is assigned a single
+// parent by newWorkflowsDag, and resetPath walks that one chain. If the parent is
+// chosen by Go map iteration order, retrying the same workflow can reset different
+// nodes from one call to the next. The set of nodes a retry resets must be stable.
+func TestFormulateRetryWorkflowDeterministicReset(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	resetNodeIDs := func() map[string]bool {
+		wf := wfv1.MustUnmarshalWorkflow(retryMultiParentTaskGroup)
+		newWf, _, err := FormulateRetryWorkflow(ctx, wf, false, "", nil)
+		require.NoError(t, err)
+		reset := make(map[string]bool)
+		for _, node := range newWf.Status.Nodes {
+			if node.Phase == wfv1.NodeRunning {
+				reset[node.ID] = true
+			}
+		}
+		return reset
+	}
+
+	want := resetNodeIDs()
+	for i := range 50 {
+		require.Equal(t, want, resetNodeIDs(), "reset set differed between retry invocations on iteration %d", i)
+	}
+}
+
+func TestOverrideArtifacts(t *testing.T) {
+	t.Run("Override artifact key in workflow arguments", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			Spec: wfv1.WorkflowSpec{
+				Arguments: wfv1.Arguments{
+					Artifacts: []wfv1.Artifact{
+						{
+							Name: "my-artifact",
+							ArtifactLocation: wfv1.ArtifactLocation{
+								S3: &wfv1.S3Artifact{
+									Key: "original-key",
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+
+		artifacts := []string{"my-artifact=new-key"}
+		err := overrideArtifacts(wf, artifacts)
+		require.NoError(t, err)
+
+		key, err := wf.Spec.Arguments.Artifacts[0].GetKey()
+		require.NoError(t, err)
+		assert.Equal(t, "new-key", key)
+	})
+
+	t.Run("Override multiple artifacts", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			Spec: wfv1.WorkflowSpec{
+				Arguments: wfv1.Arguments{
+					Artifacts: []wfv1.Artifact{
+						{
+							Name: "artifact1",
+							ArtifactLocation: wfv1.ArtifactLocation{
+								S3: &wfv1.S3Artifact{
+									Key: "key1",
+								},
+							},
+						},
+						{
+							Name: "artifact2",
+							ArtifactLocation: wfv1.ArtifactLocation{
+								S3: &wfv1.S3Artifact{
+									Key: "key2",
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+
+		artifacts := []string{"artifact1=new-key1", "artifact2=new-key2"}
+		err := overrideArtifacts(wf, artifacts)
+		require.NoError(t, err)
+
+		key1, err := wf.Spec.Arguments.Artifacts[0].GetKey()
+		require.NoError(t, err)
+		assert.Equal(t, "new-key1", key1)
+
+		key2, err := wf.Spec.Arguments.Artifacts[1].GetKey()
+		require.NoError(t, err)
+		assert.Equal(t, "new-key2", key2)
+	})
+
+	t.Run("Override with StoredWorkflowSpec", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			Spec: wfv1.WorkflowSpec{
+				Arguments: wfv1.Arguments{
+					Artifacts: []wfv1.Artifact{
+						{
+							Name: "my-artifact",
+							ArtifactLocation: wfv1.ArtifactLocation{
+								S3: &wfv1.S3Artifact{
+									Key: "original-key",
+								},
+							},
+						},
+					},
+				},
+			},
+			Status: wfv1.WorkflowStatus{
+				StoredWorkflowSpec: &wfv1.WorkflowSpec{
+					Arguments: wfv1.Arguments{
+						Artifacts: []wfv1.Artifact{
+							{
+								Name: "my-artifact",
+								ArtifactLocation: wfv1.ArtifactLocation{
+									S3: &wfv1.S3Artifact{
+										Key: "stored-key",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+
+		artifacts := []string{"my-artifact=new-key"}
+		err := overrideArtifacts(wf, artifacts)
+		require.NoError(t, err)
+
+		// Check main spec
+		key, err := wf.Spec.Arguments.Artifacts[0].GetKey()
+		require.NoError(t, err)
+		assert.Equal(t, "new-key", key)
+
+		// Check stored spec
+		storedKey, err := wf.Status.StoredWorkflowSpec.Arguments.Artifacts[0].GetKey()
+		require.NoError(t, err)
+		assert.Equal(t, "new-key", storedKey)
+	})
+
+	t.Run("Invalid format should return error", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			Spec: wfv1.WorkflowSpec{
+				Arguments: wfv1.Arguments{
+					Artifacts: []wfv1.Artifact{},
+				},
+			},
+		}
+
+		artifacts := []string{"invalid-format"}
+		err := overrideArtifacts(wf, artifacts)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "expected artifact of the form: NAME=KEY")
+	})
+
+	t.Run("Empty artifacts should not error", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			Spec: wfv1.WorkflowSpec{
+				Arguments: wfv1.Arguments{
+					Artifacts: []wfv1.Artifact{},
+				},
+			},
+		}
+
+		artifacts := []string{}
+		err := overrideArtifacts(wf, artifacts)
+		assert.NoError(t, err)
+	})
+}
+
+func TestParseArtifactOverrides(t *testing.T) {
+	t.Run("valid single override", func(t *testing.T) {
+		got, err := ParseArtifactOverrides([]string{"my-artifact=new-key"})
+		require.NoError(t, err)
+		assert.Equal(t, map[string]string{"my-artifact": "new-key"}, got)
+	})
+
+	t.Run("valid multiple overrides", func(t *testing.T) {
+		got, err := ParseArtifactOverrides([]string{"a=1", "b=2"})
+		require.NoError(t, err)
+		assert.Equal(t, map[string]string{"a": "1", "b": "2"}, got)
+	})
+
+	t.Run("empty input returns empty map", func(t *testing.T) {
+		got, err := ParseArtifactOverrides(nil)
+		require.NoError(t, err)
+		assert.Empty(t, got)
+	})
+
+	t.Run("duplicate name: last one wins", func(t *testing.T) {
+		got, err := ParseArtifactOverrides([]string{"a=1", "a=2"})
+		require.NoError(t, err)
+		assert.Equal(t, map[string]string{"a": "2"}, got)
+	})
+
+	t.Run("missing '=' is rejected", func(t *testing.T) {
+		_, err := ParseArtifactOverrides([]string{"no-equals-sign"})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "expected artifact of the form: NAME=KEY")
+	})
+
+	t.Run("empty name is rejected", func(t *testing.T) {
+		_, err := ParseArtifactOverrides([]string{"=key"})
+		require.Error(t, err)
+	})
+
+	t.Run("empty key is rejected", func(t *testing.T) {
+		_, err := ParseArtifactOverrides([]string{"name="})
+		require.Error(t, err)
+	})
+}
+
+func TestApplyOverridesToTemplateArtifacts(t *testing.T) {
+	templateArtifacts := []wfv1.Artifact{
+		{
+			Name: "artifact-a",
+			ArtifactLocation: wfv1.ArtifactLocation{
+				S3: &wfv1.S3Artifact{Key: "original-a"},
+			},
+		},
+		{
+			Name: "artifact-b",
+			ArtifactLocation: wfv1.ArtifactLocation{
+				S3: &wfv1.S3Artifact{Key: "original-b"},
+			},
+		},
+	}
+
+	t.Run("applies override key to matching artifact", func(t *testing.T) {
+		applied, err := ApplyOverridesToTemplateArtifacts(templateArtifacts, map[string]string{"artifact-a": "new-a"})
+		require.NoError(t, err)
+		require.Len(t, applied, 1)
+		key, err := applied[0].GetKey()
+		require.NoError(t, err)
+		assert.Equal(t, "new-a", key)
+	})
+
+	t.Run("unmatched override name is an error", func(t *testing.T) {
+		// A typo'd or stale override that matches no template artifact must surface as an
+		// error, not be silently dropped after the caller was told the upload succeeded.
+		_, err := ApplyOverridesToTemplateArtifacts(templateArtifacts, map[string]string{"no-such-artifact": "new-key"})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "no-such-artifact")
+	})
+
+	t.Run("empty overrides yields empty result", func(t *testing.T) {
+		applied, err := ApplyOverridesToTemplateArtifacts(templateArtifacts, map[string]string{})
+		require.NoError(t, err)
+		assert.Empty(t, applied)
+	})
+
+	t.Run("partial override applies only to matching artifacts, leaving original template untouched", func(t *testing.T) {
+		applied, err := ApplyOverridesToTemplateArtifacts(templateArtifacts, map[string]string{"artifact-b": "new-b"})
+		require.NoError(t, err)
+		require.Len(t, applied, 1)
+		assert.Equal(t, "artifact-b", applied[0].Name)
+		key, err := applied[0].GetKey()
+		require.NoError(t, err)
+		assert.Equal(t, "new-b", key)
+
+		// The pure function must not mutate its input.
+		originalKey, err := templateArtifacts[1].GetKey()
+		require.NoError(t, err)
+		assert.Equal(t, "original-b", originalKey)
+	})
+}
+
+func TestApplySubmitOptsWithArtifacts(t *testing.T) {
+	t.Run("Apply submit opts with artifact overrides", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			Spec: wfv1.WorkflowSpec{
+				Arguments: wfv1.Arguments{
+					Artifacts: []wfv1.Artifact{
+						{
+							Name: "input-artifact",
+							ArtifactLocation: wfv1.ArtifactLocation{
+								S3: &wfv1.S3Artifact{
+									Key: "default-key",
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+
+		opts := &wfv1.SubmitOpts{
+			Artifacts: []string{"input-artifact=uploads/new-key"},
+		}
+
+		err := ApplySubmitOpts(wf, opts)
+		require.NoError(t, err)
+
+		key, err := wf.Spec.Arguments.Artifacts[0].GetKey()
+		require.NoError(t, err)
+		assert.Equal(t, "uploads/new-key", key)
+	})
+
+	t.Run("Apply submit opts with parameters and artifacts", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			Spec: wfv1.WorkflowSpec{
+				Arguments: wfv1.Arguments{
+					Parameters: []wfv1.Parameter{
+						{Name: "message", Value: wfv1.AnyStringPtr("hello")},
+					},
+					Artifacts: []wfv1.Artifact{
+						{
+							Name: "input-artifact",
+							ArtifactLocation: wfv1.ArtifactLocation{
+								S3: &wfv1.S3Artifact{
+									Key: "default-key",
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+
+		opts := &wfv1.SubmitOpts{
+			Parameters: []string{"message=world"},
+			Artifacts:  []string{"input-artifact=uploads/new-key"},
+		}
+
+		err := ApplySubmitOpts(wf, opts)
+		require.NoError(t, err)
+
+		// Check parameter override
+		assert.Equal(t, "world", wf.Spec.Arguments.Parameters[0].Value.String())
+
+		// Check artifact override
+		key, err := wf.Spec.Arguments.Artifacts[0].GetKey()
+		require.NoError(t, err)
+		assert.Equal(t, "uploads/new-key", key)
+	})
+
+	t.Run("unmatched override on a self-contained workflow is an error", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			Spec: wfv1.WorkflowSpec{
+				Arguments: wfv1.Arguments{
+					Artifacts: []wfv1.Artifact{
+						{Name: "input-artifact", ArtifactLocation: wfv1.ArtifactLocation{S3: &wfv1.S3Artifact{Key: "default-key"}}},
+					},
+				},
+			},
+		}
+
+		err := ApplySubmitOpts(wf, &wfv1.SubmitOpts{Artifacts: []string{"typo=uploads/new-key"}})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "typo")
+	})
+
+	t.Run("unmatched override on a workflowTemplateRef workflow is deferred, not an error", func(t *testing.T) {
+		// A templateRef workflow has no artifacts of its own here; the overrides target the
+		// referenced template and are validated on the templateRef path instead, so this
+		// no-op must not error.
+		wf := &wfv1.Workflow{
+			Spec: wfv1.WorkflowSpec{
+				WorkflowTemplateRef: &wfv1.WorkflowTemplateRef{Name: "some-template"},
+			},
+		}
+
+		err := ApplySubmitOpts(wf, &wfv1.SubmitOpts{Artifacts: []string{"input-artifact=uploads/new-key"}})
+		require.NoError(t, err)
 	})
 }

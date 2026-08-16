@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3"
-	"github.com/argoproj/argo-workflows/v3/ui"
+	"github.com/argoproj/argo-workflows/v4"
+	"github.com/argoproj/argo-workflows/v4/ui"
 )
 
 type FilesServer struct {
@@ -29,7 +29,6 @@ func NewFilesServer(baseHRef string, hsts bool, xframeOpts string, corsAllowOrig
 }
 
 func (s *FilesServer) ServerFiles(w http.ResponseWriter, r *http.Request) {
-
 	if s.xframeOpts != "" {
 		w.Header().Set("X-Frame-Options", s.xframeOpts)
 	}

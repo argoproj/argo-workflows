@@ -8,30 +8,43 @@ import (
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
-	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/humanize"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/common"
+	workflowarchivepkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflowarchive"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/humanize"
 )
 
 func NewGetCommand() *cobra.Command {
-	var output = common.EnumFlagValue{
-		AllowedValues: []string{"json", "yaml", "wide"},
-		Value:         "wide",
-	}
+	var (
+		output = common.EnumFlagValue{
+			AllowedValues: []string{"json", "yaml", "wide"},
+			Value:         "wide",
+		}
+		forceName bool
+		forceUID  bool
+	)
 	command := &cobra.Command{
-		Use:   "get UID",
+		Use:   "get WORKFLOW",
 		Short: "get a workflow in the archive",
 		Args:  cobra.ExactArgs(1),
-		Example: `# Get information about an archived workflow by its UID:
-  argo archive get abc123-def456-ghi789-jkl012
+		Example: `# Get information about an archived workflow by name:
+  argo archive get my-workflow
+
+# Get information about an archived workflow by UID (auto-detected):
+  argo archive get a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11
 
 # Get information about an archived workflow in YAML format:
-  argo archive get abc123-def456-ghi789-jkl012 -o yaml
+  argo archive get my-workflow -o yaml
+
+# Get information about an archived workflow by name (forced):
+  argo archive get my-workflow --name
+
+# Get information about an archived workflow by UID (forced):
+  argo archive get a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11 --uid
 `,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			uid := args[0]
+			identifier := args[0]
 
 			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
 			if err != nil {
@@ -41,6 +54,13 @@ func NewGetCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
+
+			namespace := client.Namespace(ctx)
+			uid, err := resolveUID(ctx, serviceClient, identifier, namespace, forceUID, forceName)
+			if err != nil {
+				return fmt.Errorf("resolve UID: %w", err)
+			}
+
 			wf, err := serviceClient.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{Uid: uid})
 			if err != nil {
 				return err
@@ -50,11 +70,13 @@ func NewGetCommand() *cobra.Command {
 		},
 	}
 	command.Flags().VarP(&output, "output", "o", "Output format. "+output.Usage())
+	command.Flags().BoolVar(&forceName, "name", false, "force the argument to be treated as a name")
+	command.Flags().BoolVar(&forceUID, "uid", false, "force the argument to be treated as a UID")
+	command.MarkFlagsMutuallyExclusive("name", "uid")
 	return command
 }
 
 func printWorkflow(wf *wfv1.Workflow, output string) {
-
 	switch output {
 	case "json":
 		output, err := json.Marshal(wf)
@@ -96,5 +118,4 @@ func printWorkflow(wf *wfv1.Workflow, output string) {
 			fmt.Printf(fmtStr, "Duration:", humanize.RelativeDuration(wf.Status.StartedAt.Time, wf.Status.FinishedAt.Time))
 		}
 	}
-
 }

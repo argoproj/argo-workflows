@@ -29,7 +29,11 @@ import {WorkflowTemplateRow} from './workflow-template-row';
 
 import './workflow-template-list.scss';
 
-const learnMore = <a href='https://argo-workflows.readthedocs.io/en/latest/workflow-templates/'>Learn more</a>;
+const learnMore = (
+    <a href='https://argo-workflows.readthedocs.io/en/latest/workflow-templates/' target='_blank' rel='noreferrer'>
+        Learn more
+    </a>
+);
 
 export function WorkflowTemplateList({match, location, history}: RouteComponentProps<any>) {
     // boiler-plate
@@ -44,7 +48,13 @@ export function WorkflowTemplateList({match, location, history}: RouteComponentP
     const [namespace, setNamespace] = useState(nsUtils.getNamespace(match.params.namespace) || '');
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') === 'true');
     const [namePattern, setNamePattern] = useState('');
-    const [labels, setLabels] = useState([]);
+    const [labels, setLabels] = useState<string[]>(() => {
+        const savedOptions = storage.getItem('options', {});
+        const savedLabels = savedOptions.labels || [];
+        const labelQueryParam = queryParams.getAll('label');
+        return labelQueryParam.length > 0 ? labelQueryParam : savedLabels;
+    });
+
     const [pagination, setPagination] = useState<Pagination>({
         offset: queryParams.get('offset'),
         limit: parseLimit(queryParams.get('limit')) || savedOptions.paginationLimit || 500
@@ -58,18 +68,20 @@ export function WorkflowTemplateList({match, location, history}: RouteComponentP
     );
 
     useEffect(() => {
-        if (isFirstRender.current) {
-            isFirstRender.current = false;
-            return;
+        storage.setItem('options', {labels}, {});
+        const params = new URLSearchParams();
+        labels?.forEach(label => params.append('label', label));
+        if (sidePanel) {
+            params.append('sidePanel', 'true');
         }
-        history.push(
+        (isFirstRender.current ? history.replace : history.push)(
             historyUrl('workflow-templates' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {
                 namespace,
-                sidePanel
+                extraSearchParams: params
             })
         );
-    }, [namespace, sidePanel]);
-
+        isFirstRender.current = false;
+    }, [namespace, sidePanel, labels.toString()]);
     // internal state
     const [error, setError] = useState<Error>();
     const [templates, setTemplates] = useState<WorkflowTemplate[]>();

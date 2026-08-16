@@ -3,8 +3,18 @@
 package e2e
 
 import (
+	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/tls"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
+	"math/big"
+	"net"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,14 +24,18 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/peer"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/yaml"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	infopkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/info"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/test/e2e/fixtures"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 const (
@@ -303,7 +317,7 @@ func (s *CLISuite) TestLogs() {
 	})
 	s.Run("ContainerLogs", func() {
 		s.Given().
-			RunCli([]string{"logs", name, name, "-c", "wait"}, func(t *testing.T, output string, err error) {
+			RunCli([]string{"logs", name, name, "-c", fixtures.AuxContainerName()}, func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				assert.Contains(t, output, "Executor")
 			})
@@ -352,7 +366,7 @@ func (s *CLISuite) TestLogs() {
 
 func toLines(x string) []string {
 	var y []string
-	for _, s := range strings.Split(x, "\n") {
+	for s := range strings.SplitSeq(x, "\n") {
 		println("s=", s)
 		if s != "" && !strings.Contains(s, "argo=true") {
 			y = append(y, s)
@@ -706,6 +720,12 @@ func (s *CLISuite) TestWorkflowLint() {
 			assert.Contains(t, output, "no linting errors found")
 		})
 	})
+	s.Run("LintFileEmptyTemplateSteps", func() {
+		s.Given().RunCli([]string{"lint", "smoke/empty-template-steps.yaml"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+			assert.Contains(t, output, "no linting errors found")
+		})
+	})
 	s.Run("LintFileEmptyParamDAG", func() {
 		s.Given().RunCli([]string{"lint", "expectedfailures/empty-parameter-dag.yaml"}, func(t *testing.T, output string, err error) {
 			require.EqualError(t, err, "exit status 1")
@@ -716,6 +736,12 @@ func (s *CLISuite) TestWorkflowLint() {
 		s.Given().RunCli([]string{"lint", "expectedfailures/empty-parameter-steps.yaml"}, func(t *testing.T, output string, err error) {
 			require.EqualError(t, err, "exit status 1")
 			assert.Contains(t, output, "templates.abc.steps[0].a templates.whalesay inputs.parameters.message was not supplied")
+		})
+	})
+	s.Run("LintFileMisreferenceTemplate", func() {
+		s.Given().RunCli([]string{"lint", "expectedfailures/misreference-template-name.yaml"}, func(t *testing.T, output string, err error) {
+			require.EqualError(t, err, "exit status 1")
+			assert.Contains(t, output, "templates.steps-with-misreference.steps[1].hello2 template name 'hell0' undefined")
 		})
 	})
 	s.Run("LintFileWithTemplate", func() {
@@ -1677,11 +1703,11 @@ func (s *CLISuite) workflowCopyArtifactTests(workflowFileName string) {
 		Given().
 		RunCli([]string{"cp", "@latest", ".", "--path", "/{templateName}/{artifactName}/"}, func(t *testing.T, output string, err error) {
 			require.NoError(t, err)
-			//Assert everything was stored
+			// Assert everything was stored
 			assert.Contains(t, output, "Created \"main.log\"")
 			assert.Contains(t, output, "Created \"bye_world.tgz\"")
 			assert.Contains(t, output, "Created \"hello_world.tgz\"")
-			//Assert filepaths are correct
+			// Assert filepaths are correct
 			statStrip := func(f os.FileInfo, err error) error {
 				return err
 			}
@@ -1758,6 +1784,7 @@ func (s *CLISuite) TestAuthToken() {
 
 func (s *CLISuite) TestArchive() {
 	var uid types.UID
+	var name string
 	s.Given().
 		Workflow("@smoke/basic.yaml").
 		When().
@@ -1766,6 +1793,7 @@ func (s *CLISuite) TestArchive() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			uid = metadata.UID
+			name = metadata.Name
 		})
 	s.Run("List", func() {
 		s.Given().
@@ -1795,12 +1823,121 @@ func (s *CLISuite) TestArchive() {
 				assert.Contains(t, output, "Duration:")
 			})
 	})
+	s.Run("GetByUIDFlag", func() {
+		s.Given().
+			RunCli([]string{"archive", "get", "--uid", string(uid)}, func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				assert.Contains(t, output, "Name:")
+			})
+	})
+	s.Run("GetByNameFlag", func() {
+		s.Given().
+			RunCli([]string{"archive", "get", "--name", name}, func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				assert.Contains(t, output, "Name:")
+			})
+	})
+	s.Run("GetByNameFlagWithUID", func() {
+		s.Given().
+			RunCli([]string{"archive", "get", "--name", string(uid)}, func(t *testing.T, output string, err error) {
+				require.Error(t, err)
+				assert.Contains(t, output, "not found")
+			})
+	})
 	s.Run("Delete", func() {
 		s.Given().
 			RunCli([]string{"archive", "delete", string(uid)}, func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				assert.Contains(t, output, "Archived workflow")
 				assert.Contains(t, output, "deleted")
+			})
+	})
+}
+
+func (s *CLISuite) TestConfigMapSyncCLI() {
+	s.Given().
+		RunCli([]string{"sync", "create", "test-key", "--type", "configmap", "--cm-name", "test-sync-configmap", "--limit", "1000"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+			assert.Contains(t, output, "Sync limit created")
+			assert.Contains(t, output, "Key: test-key")
+			assert.Contains(t, output, "Type: configmap")
+			assert.Contains(t, output, "ConfigMap Name: test-sync-configmap")
+			assert.Contains(t, output, "Namespace: argo")
+			assert.Contains(t, output, "Limit: 1000")
+		})
+
+	s.Run("Get ConfigMap sync config", func() {
+		s.Given().
+			RunCli([]string{"sync", "get", "test-key", "--type", "configmap", "--cm-name", "test-sync-configmap"}, func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				assert.Contains(t, output, "Key: test-key")
+				assert.Contains(t, output, "Type: configmap")
+				assert.Contains(t, output, "ConfigMap Name: test-sync-configmap")
+				assert.Contains(t, output, "Namespace: argo")
+				assert.Contains(t, output, "Limit: 1000")
+			})
+	})
+
+	s.Run("Update ConfigMap sync configs", func() {
+		s.Given().
+			RunCli([]string{"sync", "update", "test-key", "--type", "configmap", "--cm-name", "test-sync-configmap", "--limit", "2000"}, func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				assert.Contains(t, output, "Key: test-key")
+				assert.Contains(t, output, "Type: configmap")
+				assert.Contains(t, output, "ConfigMap Name: test-sync-configmap")
+				assert.Contains(t, output, "Namespace: argo")
+				assert.Contains(t, output, "Limit: 2000")
+			})
+	})
+
+	s.Run("Delete ConfigMap sync config", func() {
+		s.Given().
+			RunCli([]string{"sync", "delete", "test-key", "--type", "configmap", "--cm-name", "test-sync-configmap"}, func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				assert.Contains(t, output, "Sync limit deleted")
+			})
+	})
+}
+
+func (s *CLISuite) TestDBSyncCLI() {
+	s.Given().
+		RunCli([]string{"sync", "create", "test-db-limit-key", "--type", "database", "--limit", "1000"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+			assert.Contains(t, output, "Sync limit created")
+			assert.Contains(t, output, "Key: test-db-limit-key")
+			assert.Contains(t, output, "Type: database")
+			assert.Contains(t, output, "Namespace: argo")
+			assert.Contains(t, output, "Limit: 1000")
+		})
+
+	s.Run("Get Database sync config", func() {
+		s.Given().
+			RunCli([]string{"sync", "get", "test-db-limit-key", "--type", "database"}, func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				assert.Contains(t, output, "Key: test-db-limit-key")
+				assert.Contains(t, output, "Type: database")
+				assert.Contains(t, output, "Namespace: argo")
+				assert.Contains(t, output, "Limit: 1000")
+			})
+	})
+
+	s.Run("Update Database sync configs", func() {
+		s.Given().
+			RunCli([]string{"sync", "update", "test-db-limit-key", "--type", "database", "--limit", "2000"}, func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				assert.Contains(t, output, "Sync limit updated")
+				assert.Contains(t, output, "Key: test-db-limit-key")
+				assert.Contains(t, output, "Type: database")
+				assert.Contains(t, output, "Namespace: argo")
+				assert.Contains(t, output, "Limit: 2000")
+			})
+	})
+
+	s.Run("Delete Database sync config", func() {
+		s.Given().
+			RunCli([]string{"sync", "delete", "test-db-limit-key", "--type", "database"}, func(t *testing.T, output string, err error) {
+				require.NoError(t, err)
+				assert.Contains(t, output, "Sync limit deleted")
 			})
 	})
 }
@@ -1935,6 +2072,304 @@ func (s *CLISuite) TestPluginStruct() {
 		})
 }
 
+func (s *CLISuite) TestWorkflowConvert() {
+	s.Run("ConvertCronWorkflowSchedule", func() {
+		s.Given().RunCli([]string{"convert", "testdata/convert/convert-legacy-cron.yaml"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+			// Check that schedule (singular) has been converted to schedules (plural)
+			assert.Contains(t, output, "schedules:")
+			assert.Contains(t, output, "- 0 0 * * *")
+			assert.NotContains(t, output, "schedule: \"0 0 * * *\"")
+		})
+	})
+	s.Run("ConvertSynchronization", func() {
+		s.Given().RunCli([]string{"convert", "testdata/convert/convert-legacy-sync.yaml"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+			// Check that semaphore (singular) has been converted to semaphores (plural)
+			assert.Contains(t, output, "semaphores:")
+			// Check that mutex (singular) has been converted to mutexes (plural)
+			assert.Contains(t, output, "mutexes:")
+			// Verify workflow-level conversions
+			assert.Contains(t, output, "name: my-config")
+			assert.Contains(t, output, "name: test-mutex")
+			// Verify template-level conversions
+			assert.Contains(t, output, "name: template-config")
+			assert.Contains(t, output, "name: template-mutex")
+		})
+	})
+	s.Run("ConvertJSON", func() {
+		s.Given().RunCli([]string{"convert", "-o", "json", "testdata/convert/convert-legacy-cron.yaml"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+			// Parse as JSON to verify it's valid JSON
+			var cronWf wfv1.CronWorkflow
+			lines := strings.Split(strings.TrimSpace(output), "\n")
+			require.NotEmpty(t, lines)
+			err = json.Unmarshal([]byte(lines[0]), &cronWf)
+			require.NoError(t, err)
+			// Verify conversion happened - legacy schedule field should be converted to schedules array
+			assert.Len(t, cronWf.Spec.Schedules, 1)
+			assert.Equal(t, "0 0 * * *", cronWf.Spec.Schedules[0])
+		})
+	})
+	s.Run("ConvertStdin", func() {
+		s.Given().RunCliStdin([]string{"convert", "-"}, "testdata/convert/convert-legacy-cron.yaml", func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+			assert.Contains(t, output, "schedules:")
+			assert.Contains(t, output, "- 0 0 * * *")
+		})
+	})
+	s.Run("ConvertPreservesNonLegacy", func() {
+		// Test that files already in the new format pass through unchanged (except for default/empty fields)
+		s.Given().RunCli([]string{"convert", "smoke/basic.yaml"}, func(t *testing.T, output string, err error) {
+			require.NoError(t, err)
+			// Should successfully parse and output the workflow
+			assert.Contains(t, output, "kind: Workflow")
+		})
+	})
+}
+
+func (s *CLISuite) TestClientCerts() {
+	s.Run("gRPC", func() {
+		tlsServerAddr, clientCertPath, clientKeyPath, caCertPath, receivedCertCh := s.startGRPCTLSServerWithClientAuth()
+		s.runCliWithClientCerts(tlsServerAddr, clientCertPath, clientKeyPath, caCertPath, []string{"version", "--argo-http1=false"}, receivedCertCh)
+	})
+	s.Run("HTTP1", func() {
+		tlsServerAddr, clientCertPath, clientKeyPath, caCertPath, receivedCertCh := s.startHTTP1TLSServerWithClientAuth()
+		s.runCliWithClientCerts(tlsServerAddr, clientCertPath, clientKeyPath, caCertPath, []string{"version", "--argo-http1"}, receivedCertCh)
+	})
+}
+
+func (s *CLISuite) startGRPCTLSServerWithClientAuth() (string, string, string, string, chan bool) {
+	s.T().Helper()
+	tlsConfig, clientCertPath, clientKeyPath, caCertPath, expectedSerialNumber := s.clientAuthTLSConfig()
+	var listenConfig net.ListenConfig
+	listener, err := listenConfig.Listen(s.T().Context(), "tcp", "localhost:0")
+	if err != nil {
+		s.T().Fatal(err)
+	}
+	receivedCertCh := make(chan bool, 1)
+	server := grpc.NewServer(grpc.Creds(credentials.NewTLS(tlsConfig)))
+	infopkg.RegisterInfoServiceServer(server, &clientCertInfoServer{
+		receivedCertCh:       receivedCertCh,
+		expectedSerialNumber: expectedSerialNumber,
+	})
+	go func() {
+		_ = server.Serve(listener)
+	}()
+	s.T().Cleanup(func() {
+		server.Stop()
+		_ = listener.Close()
+	})
+	return listener.Addr().String(), clientCertPath, clientKeyPath, caCertPath, receivedCertCh
+}
+
+func (s *CLISuite) startHTTP1TLSServerWithClientAuth() (string, string, string, string, chan bool) {
+	s.T().Helper()
+	tlsConfig, clientCertPath, clientKeyPath, caCertPath, expectedSerialNumber := s.clientAuthTLSConfig()
+	listener, err := tls.Listen("tcp", "localhost:0", tlsConfig)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+	receivedCertCh := make(chan bool, 1)
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		receivedCertCh <- hasExpectedClientCertificate(r.TLS.PeerCertificates, expectedSerialNumber)
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"version": "v0.0.0"}`))
+	})
+	server := &http.Server{Handler: handler}
+	go func() {
+		_ = server.Serve(listener)
+	}()
+	s.T().Cleanup(func() {
+		_ = server.Close()
+		_ = listener.Close()
+	})
+	return listener.Addr().String(), clientCertPath, clientKeyPath, caCertPath, receivedCertCh
+}
+
+func (s *CLISuite) clientAuthTLSConfig() (*tls.Config, string, string, string, *big.Int) {
+	s.T().Helper()
+	tmpDir := s.T().TempDir()
+	caCert, caKey, err := generateCert(nil, nil, true, "Test CA")
+	if err != nil {
+		s.T().Fatal(err)
+	}
+	serverCert, serverKey, err := generateCert(caCert, caKey, false, "localhost")
+	if err != nil {
+		s.T().Fatal(err)
+	}
+	clientCert, clientKey, err := generateCert(caCert, caKey, false, "client")
+	if err != nil {
+		s.T().Fatal(err)
+	}
+
+	caFile := filepath.Join(tmpDir, "ca.crt")
+	err = os.WriteFile(caFile, pemEncode(caCert, "CERTIFICATE"), 0o600)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+
+	serverCertFile := filepath.Join(tmpDir, "server.crt")
+	err = os.WriteFile(serverCertFile, pemEncode(serverCert, "CERTIFICATE"), 0o600)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+	serverKeyFile := filepath.Join(tmpDir, "server.key")
+	err = os.WriteFile(serverKeyFile, pemEncode(serverKey, "RSA PRIVATE KEY"), 0o600)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+
+	clientCertPath := filepath.Join(tmpDir, "client.crt")
+	err = os.WriteFile(clientCertPath, pemEncode(clientCert, "CERTIFICATE"), 0o600)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+	clientKeyPath := filepath.Join(tmpDir, "client.key")
+	err = os.WriteFile(clientKeyPath, pemEncode(clientKey, "RSA PRIVATE KEY"), 0o600)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+
+	certPool := x509.NewCertPool()
+	certPool.AddCert(caCert)
+
+	serverTLSCert, err := tls.LoadX509KeyPair(serverCertFile, serverKeyFile)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+
+	tlsConfig := &tls.Config{
+		Certificates: []tls.Certificate{serverTLSCert},
+		ClientAuth:   tls.RequireAndVerifyClientCert,
+		ClientCAs:    certPool,
+		NextProtos:   []string{"h2", "http/1.1"},
+		MinVersion:   tls.VersionTLS12,
+	}
+	return tlsConfig, clientCertPath, clientKeyPath, caFile, clientCert.SerialNumber
+}
+
+type clientCertInfoServer struct {
+	infopkg.UnimplementedInfoServiceServer
+	receivedCertCh       chan<- bool
+	expectedSerialNumber *big.Int
+}
+
+func (s *clientCertInfoServer) GetVersion(ctx context.Context, _ *infopkg.GetVersionRequest) (*wfv1.Version, error) {
+	peerInfo, ok := peer.FromContext(ctx)
+	if !ok {
+		s.receivedCertCh <- false
+		return &wfv1.Version{Version: "v0.0.0"}, nil
+	}
+	tlsInfo, ok := peerInfo.AuthInfo.(credentials.TLSInfo)
+	if !ok {
+		s.receivedCertCh <- false
+		return &wfv1.Version{Version: "v0.0.0"}, nil
+	}
+	s.receivedCertCh <- hasExpectedClientCertificate(tlsInfo.State.PeerCertificates, s.expectedSerialNumber)
+	return &wfv1.Version{Version: "v0.0.0"}, nil
+}
+
+func hasExpectedClientCertificate(certificates []*x509.Certificate, expectedSerialNumber *big.Int) bool {
+	return len(certificates) > 0 && certificates[0].SerialNumber.Cmp(expectedSerialNumber) == 0
+}
+
+func (s *CLISuite) runCliWithClientCerts(tlsServerAddr, clientCertPath, clientKeyPath, caCertPath string, args []string, receivedCertCh chan bool) {
+	s.T().Helper()
+
+	select {
+	case <-receivedCertCh:
+	default:
+	}
+
+	baseArgs := []string{
+		"--argo-server", tlsServerAddr,
+		"--client-certificate", clientCertPath,
+		"--client-key", clientKeyPath,
+		"--certificate-authority", caCertPath,
+		"--secure",
+	}
+
+	baseArgs = append(baseArgs, args...)
+
+	s.Given().RunCli(baseArgs, func(t *testing.T, output string, err error) {
+		require.NoError(t, err)
+	})
+
+	select {
+	case received := <-receivedCertCh:
+		s.True(received, "Server should have received client certificate")
+	case <-time.After(5 * time.Second):
+		s.Fail("Timed out waiting for request")
+	}
+}
+
 func TestCLISuite(t *testing.T) {
 	suite.Run(t, new(CLISuite))
+}
+
+func generateCert(caCert *x509.Certificate, caKey any, isCA bool, commonName string) (*x509.Certificate, *rsa.PrivateKey, error) {
+	priv, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	notBefore := time.Now()
+	notAfter := notBefore.Add(time.Hour)
+
+	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
+	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	template := x509.Certificate{
+		SerialNumber: serialNumber,
+		Subject: pkix.Name{
+			CommonName: commonName,
+		},
+		NotBefore:             notBefore,
+		NotAfter:              notAfter,
+		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
+		BasicConstraintsValid: true,
+	}
+
+	if isCA {
+		template.IsCA = true
+		template.KeyUsage |= x509.KeyUsageCertSign
+	} else {
+		template.IPAddresses = []net.IP{net.ParseIP("127.0.0.1")}
+		template.DNSNames = []string{"localhost"}
+	}
+
+	parent := &template
+	parentKey := priv
+	if caCert != nil {
+		parent = caCert
+		parentKey = caKey.(*rsa.PrivateKey)
+	}
+
+	derBytes, err := x509.CreateCertificate(rand.Reader, &template, parent, &priv.PublicKey, parentKey)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	cert, err := x509.ParseCertificate(derBytes)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return cert, priv, nil
+}
+
+func pemEncode(data any, typeStr string) []byte {
+	var bytes []byte
+	switch d := data.(type) {
+	case *x509.Certificate:
+		bytes = d.Raw
+	case *rsa.PrivateKey:
+		bytes = x509.MarshalPKCS1PrivateKey(d)
+	}
+	return pem.EncodeToMemory(&pem.Block{Type: typeStr, Bytes: bytes})
 }

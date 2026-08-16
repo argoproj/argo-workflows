@@ -5,9 +5,11 @@ Pipfile
 .DS_Store
 vendor/
 dist/
+.tilt/
 # delve debug binaries
 cmd/**/debug
 hack/**/debug
+hack/embeddoc/embeddoc
 hack/featuregen/featuregen
 /argo
 /argoexec
@@ -35,15 +37,14 @@ git-ask-pass.sh
 /pkg/apiclient/workflow/workflow.swagger.json
 /pkg/apiclient/workflowarchive/workflow-archive.swagger.json
 /pkg/apiclient/workflowtemplate/workflow-template.swagger.json
+/pkg/apiclient/sync/sync.swagger.json
 /site/
 /.brew_home
 /go-diagrams/
 /.run/
-sdks/python/client/dist/*
 /v3/
 /cmd/argoexec/commands/test.txt
 /db-dumps/
-.spelling.tmp
 
 # Do not commit rendered installation manifests since they are misleading to users.
 manifests/install.yaml
@@ -51,5 +52,16 @@ manifests/namespace-install.yaml
 /logs
 node_modules
 result
+
+# Playwright UI e2e tests
+/ui/playwright-report/
+/ui/test-results/
+/ui/e2e/.auth/
 .devenv
 .devenv.flake.nix
+.*-vendor
+proto_vendor
+.github.com
+.go/
+.goenv/
+.gocache/

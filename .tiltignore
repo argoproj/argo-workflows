@@ -1,0 +1,6 @@
+# Artifacts the Playwright suite writes under ui/ on every run. The image deps
+# include all of ui/, so without these ignores each test run triggers an image
+# rebuild and a rolling restart of argo-server mid-suite (seen as 503s).
+ui/e2e/.auth
+ui/test-results
+ui/playwright-report

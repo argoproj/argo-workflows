@@ -36,5 +36,4 @@ func TestPodNameV1(t *testing.T) {
 
 	name = GeneratePodName(longWfName, nodeName, longTemplateName, nodeID, PodNameV1)
 	assert.Equal(t, nodeID, name)
-
 }

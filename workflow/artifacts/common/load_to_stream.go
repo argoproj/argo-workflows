@@ -8,8 +8,8 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/rand"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 const loadToStreamPrefix = `wfstream-`
@@ -25,12 +25,12 @@ func (w selfDestructingFile) Close() error {
 	return err
 }
 
-// Use ArtifactDriver.Load() to get a stream, which we can use for all implementations of ArtifactDriver.OpenStream()
-// that aren't yet implemented the "right way" and/or for those that don't have a natural way of streaming
+// LoadToStream uses ArtifactDriver.Load() to get a stream, which can be used for all implementations of ArtifactDriver.OpenStream()
+// that aren't yet implemented the "right way" and/or for those that don't have a natural way of streaming.
 func LoadToStream(ctx context.Context, a *wfv1.Artifact, g ArtifactDriver) (io.ReadCloser, error) {
 	logger := logging.RequireLoggerFromContext(ctx)
 	logger.WithField("type", reflect.TypeOf(g)).Info(ctx, "Efficient artifact streaming is not supported")
-	filename := "/tmp/" + loadToStreamPrefix + rand.String(32)
+	filename := os.TempDir() + string(os.PathSeparator) + loadToStreamPrefix + rand.String(32)
 	if err := g.Load(ctx, a, filename); err != nil {
 		return nil, err
 	}

@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"path"
 	"path/filepath"
+	"slices"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -15,16 +17,18 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes/fake"
+	k8stesting "k8s.io/client-go/testing"
 
-	"github.com/argoproj/argo-workflows/v3/config"
-	"github.com/argoproj/argo-workflows/v3/errors"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/test/util"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	armocks "github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories/mocks"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	wfutil "github.com/argoproj/argo-workflows/v3/workflow/util"
+	"github.com/argoproj/argo-workflows/v4/config"
+	"github.com/argoproj/argo-workflows/v4/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/test/util"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	armocks "github.com/argoproj/argo-workflows/v4/workflow/artifactrepositories/mocks"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	wfutil "github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
 // Deprecated
@@ -62,7 +66,7 @@ spec:
         http:
           url: https://storage.googleapis.com/kubernetes-release/release/v1.8.0/bin/linux/amd64/kubectl
     script:
-      image: alpine:latest
+      image: alpine:3.23
       command: [sh]
       source: |
         ls /bin/kubectl
@@ -77,7 +81,7 @@ inputs:
     http:
       url: https://storage.googleapis.com/kubernetes-release/release/v1.8.0/bin/linux/amd64/kubectl
 script:
-  image: alpine:latest
+  image: alpine:3.23
   command: [sh]
   source: |
     ls /bin/kubectl
@@ -102,7 +106,7 @@ inputs:
     http:
         url: https://raw.githubusercontent.com/argoproj/argo-workflows/stable/manifests/install.yaml
 script:
-  image: alpine:latest
+  image: alpine:3.23
   command: [sh]
   source: |
     ls -al
@@ -121,7 +125,7 @@ script:
   volumeMounts:
   - mountPath: /manifest
     name: my-mount
-  image: alpine:latest
+  image: alpine:3.23
   command: [sh]
   source: |
     ls -al
@@ -512,7 +516,7 @@ func TestConditionalAddArchiveLocationArchiveLogs(t *testing.T) {
 			},
 			KeyFormat: "path/in/bucket",
 		},
-		ArchiveLogs: ptr.To(true),
+		ArchiveLogs: new(true),
 	})
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
@@ -584,12 +588,12 @@ func TestConditionalAddArchiveLocationTemplateArchiveLogs(t *testing.T) {
 			wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 			if tt.workflowArchiveLog != "" {
 				workflowArchiveLog, _ := strconv.ParseBool(tt.workflowArchiveLog)
-				wf.Spec.ArchiveLogs = ptr.To(workflowArchiveLog)
+				wf.Spec.ArchiveLogs = new(workflowArchiveLog)
 			}
 			if tt.templateArchiveLog != "" {
 				templateArchiveLog, _ := strconv.ParseBool(tt.templateArchiveLog)
 				wf.Spec.Templates[0].ArchiveLocation = &wfv1.ArtifactLocation{
-					ArchiveLogs: ptr.To(templateArchiveLog),
+					ArchiveLogs: new(templateArchiveLog),
 				}
 			}
 			ctx := logging.TestContext(t.Context())
@@ -597,7 +601,7 @@ func TestConditionalAddArchiveLocationTemplateArchiveLogs(t *testing.T) {
 			defer cancel()
 			woc := newWorkflowOperationCtx(ctx, wf, controller)
 			setArtifactRepository(woc.controller, &wfv1.ArtifactRepository{
-				ArchiveLogs: ptr.To(tt.controllerArchiveLog),
+				ArchiveLogs: new(tt.controllerArchiveLog),
 				S3: &wfv1.S3ArtifactRepository{
 					S3Bucket: wfv1.S3Bucket{
 						Bucket: "foo",
@@ -644,6 +648,88 @@ func Test_createWorkflowPod_rateLimited(t *testing.T) {
 	}
 }
 
+// Test_submitPod_activePods_accounting locks in the activePods accounting
+// contract: a genuinely fresh pod create increments activePods exactly once,
+// while the AlreadyExists-recovery path (pod already exists in the cluster, but
+// not in the informer) recovers the existing pod WITHOUT incrementing
+// activePods. Re-incrementing on recovery would over-count parallelism and is
+// the regression this test guards against.
+func Test_submitPod_activePods_accounting(t *testing.T) {
+	newSubmitPod := func(woc *wfOperationCtx) *apiv1.Pod {
+		return &apiv1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:        "test-active-pods-accounting",
+				Namespace:   woc.wf.Namespace,
+				Annotations: map[string]string{},
+				Labels:      map[string]string{},
+			},
+		}
+	}
+
+	t.Run("FreshCreateIncrements", func(t *testing.T) {
+		wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx, wf, defaultServiceAccount)
+		defer cancel()
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+		before := woc.activePods
+		pod, err := woc.submitPod(ctx, &podBuildResult{Pod: newSubmitPod(woc)}, "node", "node-id", woc.log)
+		require.NoError(t, err)
+		require.NotNil(t, pod)
+		assert.Equal(t, before+1, woc.activePods, "fresh create must increment activePods by exactly one")
+	})
+
+	t.Run("AlreadyExistsRecoveryDoesNotIncrement", func(t *testing.T) {
+		wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx, wf, defaultServiceAccount)
+		defer cancel()
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+		// Pre-create the pod directly in the fake cluster under the deterministic
+		// name. The informer store is NOT populated with it, so createPod hits
+		// AlreadyExists and recovers via a direct Get.
+		existing := newSubmitPod(woc)
+		_, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).Create(ctx, existing, metav1.CreateOptions{})
+		require.NoError(t, err)
+
+		before := woc.activePods
+		pod, err := woc.submitPod(ctx, &podBuildResult{Pod: newSubmitPod(woc)}, "node", "node-id", woc.log)
+		require.NoError(t, err)
+		require.NotNil(t, pod)
+		assert.Equal(t, before, woc.activePods, "AlreadyExists recovery must NOT increment activePods")
+	})
+}
+
+// Test_setNodeProgress covers both halves of the progress write that runs
+// after a successful pod create: an existing node gets the progress applied,
+// and a missing node is logged and skipped (no panic, no status mutation) —
+// the pod already exists at this point, so aborting the reconcile would be
+// worse than dropping a derivable progress value.
+func Test_setNodeProgress(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	woc := newWoc(ctx)
+
+	nodeID := "test-node-id"
+	woc.wf.Status.Nodes = wfv1.Nodes{nodeID: wfv1.NodeStatus{ID: nodeID, Name: "test-node"}}
+
+	// Existing node: progress lands on the node status.
+	woc.setNodeProgress(ctx, nodeID, wfv1.Progress("25/100"))
+	node, err := woc.wf.Status.Nodes.Get(nodeID)
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.Progress("25/100"), node.Progress)
+
+	// Missing node: logged and skipped without panicking or touching status.
+	assert.NotPanics(t, func() {
+		woc.setNodeProgress(ctx, "no-such-node", wfv1.Progress("50/100"))
+	})
+	assert.Len(t, woc.wf.Status.Nodes, 1)
+	node, err = woc.wf.Status.Nodes.Get(nodeID)
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.Progress("25/100"), node.Progress)
+}
+
 func Test_createWorkflowPod_containerName(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx)
@@ -655,7 +741,6 @@ func Test_createWorkflowPod_containerName(t *testing.T) {
 var emissaryCmd = []string{"/var/run/argo/argoexec", "emissary"}
 
 func Test_createWorkflowPod_emissary(t *testing.T) {
-
 	t.Run("NoCommand", func(t *testing.T) {
 		ctx := logging.TestContext(t.Context())
 		woc := newWoc(ctx)
@@ -812,10 +897,8 @@ func TestOutOfCluster(t *testing.T) {
 	verifyKubeConfigVolume := func(ctr apiv1.Container, volName, mountPath string) {
 		for _, vol := range ctr.VolumeMounts {
 			if vol.Name == volName && vol.MountPath == mountPath {
-				for _, arg := range ctr.Args {
-					if arg == fmt.Sprintf("--kubeconfig=%s", mountPath) {
-						return
-					}
+				if slices.Contains(ctr.Args, fmt.Sprintf("--kubeconfig=%s", mountPath)) {
+					return
 				}
 			}
 		}
@@ -888,6 +971,114 @@ func TestPriorityClass(t *testing.T) {
 	assert.Len(t, pods.Items, 1)
 	pod := pods.Items[0]
 	assert.Equal(t, "foo", pod.Spec.PriorityClassName)
+}
+
+// TestPodResources verifies pod-level resources are carried forward, with the
+// template-level value overriding the workflow-level one.
+func TestPodResources(t *testing.T) {
+	wfLevel := &apiv1.ResourceRequirements{
+		Limits: apiv1.ResourceList{apiv1.ResourceCPU: resource.MustParse("1")},
+	}
+	tmplLevel := &apiv1.ResourceRequirements{
+		Limits: apiv1.ResourceList{apiv1.ResourceCPU: resource.MustParse("2")},
+	}
+	for name, tt := range map[string]struct {
+		tmplResources *apiv1.ResourceRequirements
+		expected      *apiv1.ResourceRequirements
+	}{
+		"WorkflowLevel":          {nil, wfLevel},
+		"TemplateLevelOverrides": {tmplLevel, tmplLevel},
+	} {
+		t.Run(name, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			woc := newWoc(ctx)
+			woc.execWf.Spec.PodResources = wfLevel
+			woc.execWf.Spec.Templates[0].PodResources = tt.tmplResources
+			tmplCtx, err := woc.createTemplateContext(ctx, wfv1.ResourceScopeLocal, "")
+			require.NoError(t, err)
+			_, err = woc.executeContainer(ctx, woc.execWf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.execWf.Spec.Templates[0], &wfv1.WorkflowStep{}, &executeTemplateOpts{})
+			require.NoError(t, err)
+			pods, err := listPods(ctx, woc)
+			require.NoError(t, err)
+			assert.Len(t, pods.Items, 1)
+			assert.Equal(t, tt.expected, pods.Items[0].Spec.Resources)
+		})
+	}
+}
+
+func TestPodResourceClaims(t *testing.T) {
+	// Deliberately different names. With the same name at both levels, replacing
+	// the workflow list and merging over it by name produce the same pod, so the
+	// override case would pass either way. Here a merge would leave "shared"
+	// behind, and replacement drops it.
+	wfLevel := []apiv1.PodResourceClaim{
+		{Name: "shared", ResourceClaimName: new("workflow-shared")},
+	}
+	tmplLevel := []apiv1.PodResourceClaim{
+		{Name: "accelerator", ResourceClaimTemplateName: new("template-gpu")},
+	}
+	for name, tt := range map[string]struct {
+		tmplClaims []apiv1.PodResourceClaim
+		expected   []apiv1.PodResourceClaim
+	}{
+		"WorkflowLevel":          {nil, wfLevel},
+		"TemplateLevelOverrides": {tmplLevel, tmplLevel},
+		// An empty list cannot be told apart from an unset one once the spec has been
+		// through the API server, since the field is omitempty, so it inherits.
+		"TemplateLevelEmptyInherits": {[]apiv1.PodResourceClaim{}, wfLevel},
+	} {
+		t.Run(name, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			woc := newWoc(ctx)
+			woc.execWf.Spec.ResourceClaims = wfLevel
+			woc.execWf.Spec.Templates[0].ResourceClaims = tt.tmplClaims
+			tmplCtx, err := woc.createTemplateContext(ctx, wfv1.ResourceScopeLocal, "")
+			require.NoError(t, err)
+			_, err = woc.executeContainer(ctx, woc.execWf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.execWf.Spec.Templates[0], &wfv1.WorkflowStep{}, &executeTemplateOpts{})
+			require.NoError(t, err)
+			pods, err := listPods(ctx, woc)
+			require.NoError(t, err)
+			assert.Len(t, pods.Items, 1)
+			assert.Equal(t, tt.expected, pods.Items[0].Spec.ResourceClaims)
+		})
+	}
+}
+
+// TestPodResourceClaimsPodSpecPatch pins that podSpecPatch keeps its precedence over the
+// typed field. The patch merges into the PodSpec by claim name, so it can retarget an
+// existing claim and add a new one while leaving the rest alone. Swapping a claim to the
+// other source needs the old one set to null explicitly, as asserted below: without that
+// the merge would leave both sources set and the API server would reject the pod.
+func TestPodResourceClaimsPodSpecPatch(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	woc := newWoc(ctx)
+	woc.execWf.Spec.ResourceClaims = []apiv1.PodResourceClaim{
+		{Name: "accelerator", ResourceClaimTemplateName: new("gpu-template-a")},
+		{Name: "storage", ResourceClaimName: new("fast-disk")},
+	}
+	woc.execWf.Spec.Templates[0].PodSpecPatch = `{"resourceClaims":[{"name":"accelerator","resourceClaimTemplateName":null,"resourceClaimName":"shared-gpu"},{"name":"network","resourceClaimName":"shared-nic"}]}`
+
+	tmplCtx, err := woc.createTemplateContext(ctx, wfv1.ResourceScopeLocal, "")
+	require.NoError(t, err)
+	_, err = woc.executeContainer(ctx, woc.execWf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.execWf.Spec.Templates[0], &wfv1.WorkflowStep{}, &executeTemplateOpts{})
+	require.NoError(t, err)
+	pods, err := listPods(ctx, woc)
+	require.NoError(t, err)
+	require.Len(t, pods.Items, 1)
+
+	claims := pods.Items[0].Spec.ResourceClaims
+	require.Len(t, claims, 3)
+	byName := map[string]apiv1.PodResourceClaim{}
+	for _, c := range claims {
+		byName[c.Name] = c
+	}
+	accelerator := byName["accelerator"]
+	assert.Equal(t, new("shared-gpu"), accelerator.ResourceClaimName)
+	assert.Nil(t, accelerator.ResourceClaimTemplateName, "the patched claim must not keep both sources")
+	// A typed claim the patch does not mention survives, so the patch merges over the
+	// typed list rather than replacing it.
+	assert.Equal(t, new("fast-disk"), byName["storage"].ResourceClaimName)
+	assert.Equal(t, new("shared-nic"), byName["network"].ResourceClaimName)
 }
 
 // TestSchedulerName verifies the ability to carry forward schedulerName.
@@ -1238,7 +1429,7 @@ func Test_createSecretVolumesFromArtifactLocations_SSECUsed(t *testing.T) {
 		MountPath: path.Join(common.SecretVolMountPath, "enckey"),
 	}
 
-	err := woc.setExecWorkflow(ctx)
+	_, err := woc.setExecWorkflow(ctx)
 	require.NoError(t, err)
 	woc.operate(ctx)
 
@@ -1326,7 +1517,7 @@ func TestCreateSecretVolumesFromArtifactLocationsSessionToken(t *testing.T) {
 		MountPath: path.Join(common.SecretVolMountPath, "sessiontoken"),
 	}
 
-	err := woc.setExecWorkflow(ctx)
+	ctx, err := woc.setExecWorkflow(ctx)
 	require.NoError(t, err)
 	woc.operate(ctx)
 
@@ -1465,7 +1656,7 @@ func TestPodSpecPatch(t *testing.T) {
 	woc = newWoc(ctx, *wf)
 	mainCtr = woc.execWf.Spec.Templates[0].Container
 	pod, _ = woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
-	assert.Equal(t, ptr.To(true), pod.Spec.Containers[1].SecurityContext.RunAsNonRoot)
+	assert.Equal(t, new(true), pod.Spec.Containers[1].SecurityContext.RunAsNonRoot)
 	assert.Equal(t, apiv1.Capability("ALL"), pod.Spec.Containers[1].SecurityContext.Capabilities.Add[0])
 	assert.Equal(t, []apiv1.Capability(nil), pod.Spec.Containers[1].SecurityContext.Capabilities.Drop)
 
@@ -1584,7 +1775,6 @@ func TestMainContainerCustomization(t *testing.T) {
 		}
 		pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
 		assert.Equal(t, "0.900", pod.Spec.Containers[1].Resources.Limits.Cpu().AsDec().String())
-
 	})
 	// If script template has limits then they take precedence over config in controller
 	t.Run("ScriptPrecedence", func(t *testing.T) {
@@ -1862,7 +2052,7 @@ func TestPodMetadataWithWorkflowDefaults(t *testing.T) {
 
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
-	err := woc.setExecWorkflow(ctx)
+	_, err := woc.setExecWorkflow(ctx)
 	require.NoError(t, err)
 	mainCtr := woc.execWf.Spec.Templates[0].Container
 	pod, _ := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
@@ -1884,7 +2074,7 @@ func TestPodMetadataWithWorkflowDefaults(t *testing.T) {
 	}
 	wf = wfv1.MustUnmarshalWorkflow(wfWithPodMetadata)
 	woc = newWorkflowOperationCtx(ctx, wf, controller)
-	err = woc.setExecWorkflow(ctx)
+	ctx, err = woc.setExecWorkflow(ctx)
 	require.NoError(t, err)
 	mainCtr = woc.execWf.Spec.Templates[0].Container
 	pod, _ = woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
@@ -1902,7 +2092,8 @@ func TestPodExists(t *testing.T) {
 
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
-	err := woc.setExecWorkflow(ctx)
+	_, err := woc.setExecWorkflow(ctx)
+
 	require.NoError(t, err)
 	mainCtr := woc.execWf.Spec.Templates[0].Container
 	pod, err := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
@@ -1919,6 +2110,9 @@ func TestPodExists(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, existingPod)
 	assert.True(t, doesExist)
+	// the informer cache strips managedFields from the pod returned by the API
+	assert.Nil(t, existingPod.ManagedFields)
+	pod.ManagedFields = nil
 	assert.Equal(t, pod, existingPod)
 }
 
@@ -1930,7 +2124,8 @@ func TestPodFinalizerExits(t *testing.T) {
 
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
-	err := woc.setExecWorkflow(ctx)
+	_, err := woc.setExecWorkflow(ctx)
+
 	require.NoError(t, err)
 	mainCtr := woc.execWf.Spec.Templates[0].Container
 	pod, err := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
@@ -1948,7 +2143,7 @@ func TestPodFinalizerDoesNotExist(t *testing.T) {
 
 	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
-	err := woc.setExecWorkflow(ctx)
+	ctx, err := woc.setExecWorkflow(ctx)
 	require.NoError(t, err)
 	mainCtr := woc.execWf.Spec.Templates[0].Container
 	pod, err := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
@@ -1959,13 +2154,13 @@ func TestPodFinalizerDoesNotExist(t *testing.T) {
 }
 
 func TestProgressEnvVars(t *testing.T) {
-	setup := func(t *testing.T, options ...interface{}) (context.CancelFunc, *apiv1.Pod) {
+	setup := func(t *testing.T, options ...any) (context.CancelFunc, *apiv1.Pod) {
 		ctx := logging.TestContext(t.Context())
 		cancel, controller := newController(ctx, options...)
 
 		wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
-		err := woc.setExecWorkflow(ctx)
+		_, err := woc.setExecWorkflow(ctx)
 		require.NoError(t, err)
 		mainCtr := woc.execWf.Spec.Templates[0].Container
 		pod, err := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
@@ -2083,13 +2278,13 @@ spec:
 `
 
 func TestMergeEnvVars(t *testing.T) {
-	setup := func(t *testing.T, options ...interface{}) (context.CancelFunc, *apiv1.Pod) {
+	setup := func(t *testing.T, options ...any) (context.CancelFunc, *apiv1.Pod) {
 		ctx := logging.TestContext(t.Context())
 		cancel, controller := newController(ctx, options...)
 
 		wf := wfv1.MustUnmarshalWorkflow(helloWorldWfWithEnvReferSecret)
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
-		err := woc.setExecWorkflow(ctx)
+		_, err := woc.setExecWorkflow(ctx)
 		require.NoError(t, err)
 		mainCtrSpec := &apiv1.Container{
 			Name:            common.MainContainerName,
@@ -2137,4 +2332,485 @@ func TestMergeEnvVars(t *testing.T) {
 			},
 		})
 	})
+}
+
+func TestArtifactPluginSidecar(t *testing.T) {
+	t.Run("TestAddArtifactPluginSidecars", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+
+		tmpl := &wfv1.Template{
+			Name: "test-template",
+			Container: &apiv1.Container{
+				Image:   "hello-world",
+				Command: []string{"echo", "hello"},
+			},
+			Outputs: wfv1.Outputs{
+				Artifacts: []wfv1.Artifact{
+					{
+						Name: "result",
+						Path: "/tmp/result.txt",
+						ArtifactLocation: wfv1.ArtifactLocation{
+							Plugin: &wfv1.PluginArtifact{
+								Name: "test-plugin",
+							},
+						},
+					},
+					{
+						Name: "logs",
+						Path: "/tmp/logs.txt",
+						ArtifactLocation: wfv1.ArtifactLocation{
+							Plugin: &wfv1.PluginArtifact{
+								Name: "another-plugin",
+							},
+						},
+					},
+				},
+			},
+		}
+
+		pod := &apiv1.Pod{
+			Spec: apiv1.PodSpec{
+				Containers: []apiv1.Container{
+					{Name: common.WaitContainerName, Image: "wait-image"},
+					{Name: common.MainContainerName, Image: "main-image"},
+				},
+				Volumes: []apiv1.Volume{},
+			},
+		}
+
+		cfg := &config.Config{
+			ArtifactDrivers: []config.ArtifactDriver{
+				{
+					Name:  "test-plugin",
+					Image: "busybox",
+				},
+				{
+					Name:  "another-plugin",
+					Image: "alpine",
+				},
+			},
+			// Avoid Docker Hub image lookup by providing entrypoint
+			Images: map[string]config.Image{
+				"busybox": {
+					Entrypoint: []string{"/plugin-server"},
+				},
+				"alpine": {
+					Entrypoint: []string{"/plugin-server"},
+				},
+			},
+		}
+
+		cancel, controller := newController(ctx)
+		defer cancel()
+		controller.Config.ArtifactDrivers = cfg.ArtifactDrivers
+		controller.Config.Images = cfg.Images
+
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "test-workflow",
+				UID:  "test-uid",
+			},
+			Spec: wfv1.WorkflowSpec{
+				Entrypoint: "test-template",
+				Templates:  []wfv1.Template{*tmpl},
+			},
+		}
+
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+		ctx, err := woc.setExecWorkflow(ctx)
+		require.NoError(t, err)
+
+		err = woc.addArtifactPluginsLegacy(ctx, pod, tmpl, cfg)
+		require.NoError(t, err)
+
+		// Volumes are normally added in addOutputArtifactsVolumes
+		artifactVolumes := woc.createArtifactVolumeMounts(ctx, tmpl)
+		pod.Spec.Volumes = append(pod.Spec.Volumes, artifactVolumes...)
+
+		assert.Len(t, pod.Spec.Containers, 4) // wait + main + 2 plugin sidecars
+
+		// Test both plugin sidecar containers
+		var testPluginContainer, anotherPluginContainer *apiv1.Container
+		for _, c := range pod.Spec.Containers {
+			switch c.Name {
+			case common.ArtifactPluginSidecarPrefix + "test-plugin":
+				testPluginContainer = &c
+			case common.ArtifactPluginSidecarPrefix + "another-plugin":
+				anotherPluginContainer = &c
+			}
+		}
+		require.NotNil(t, testPluginContainer, "test-plugin sidecar container not found")
+		assert.Equal(t, "busybox", testPluginContainer.Image)
+
+		require.NotNil(t, anotherPluginContainer, "another-plugin sidecar container not found")
+		assert.Equal(t, "alpine", anotherPluginContainer.Image)
+
+		// Test both plugin volumes
+		testPluginVolume := wfv1.ArtifactPluginName("test-plugin").Volume()
+		anotherPluginVolume := wfv1.ArtifactPluginName("another-plugin").Volume()
+		assert.Contains(t, pod.Spec.Volumes, testPluginVolume)
+		assert.Contains(t, pod.Spec.Volumes, anotherPluginVolume)
+
+		// Test wait container has both plugin volume mounts
+		waitContainer := &pod.Spec.Containers[0]
+		testPluginMount := wfv1.ArtifactPluginName("test-plugin").VolumeMount()
+		anotherPluginMount := wfv1.ArtifactPluginName("another-plugin").VolumeMount()
+		assert.Contains(t, waitContainer.VolumeMounts, testPluginMount)
+		assert.Contains(t, waitContainer.VolumeMounts, anotherPluginMount)
+
+		// Test plugin names environment variable contains both plugins
+		var pluginNamesEnv *apiv1.EnvVar
+		for _, env := range waitContainer.Env {
+			if env.Name == common.EnvVarArtifactPluginNames {
+				pluginNamesEnv = &env
+				break
+			}
+		}
+		require.NotNil(t, pluginNamesEnv, "Plugin names env var not found")
+		assert.Contains(t, pluginNamesEnv.Value, common.ArtifactPluginSidecarPrefix+"test-plugin")
+		assert.Contains(t, pluginNamesEnv.Value, common.ArtifactPluginSidecarPrefix+"another-plugin")
+	})
+
+	t.Run("TestArtifactPluginInitContainers", func(t *testing.T) {
+		ctx := logging.TestContext(t.Context())
+
+		tmpl := &wfv1.Template{
+			Name: "test-template",
+			Container: &apiv1.Container{
+				Image:   "hello-world",
+				Command: []string{"echo", "hello"},
+			},
+			Inputs: wfv1.Inputs{
+				Artifacts: []wfv1.Artifact{
+					{
+						Name: "input-data",
+						Path: "/tmp/input.txt",
+						ArtifactLocation: wfv1.ArtifactLocation{
+							Plugin: &wfv1.PluginArtifact{
+								Name: "test-plugin",
+							},
+						},
+					},
+					{
+						Name: "config-data",
+						Path: "/tmp/config.json",
+						ArtifactLocation: wfv1.ArtifactLocation{
+							Plugin: &wfv1.PluginArtifact{
+								Name: "another-plugin",
+							},
+						},
+					},
+				},
+			},
+		}
+
+		cfg := &config.Config{
+			ArtifactDrivers: []config.ArtifactDriver{
+				{
+					Name:  "test-plugin",
+					Image: "busybox",
+				},
+				{
+					Name:  "another-plugin",
+					Image: "alpine",
+				},
+			},
+			Images: map[string]config.Image{
+				"busybox": {
+					Entrypoint: []string{"/plugin-server"},
+				},
+				"alpine": {
+					Entrypoint: []string{"/plugin-server"},
+				},
+			},
+		}
+
+		cancel, controller := newController(ctx)
+		defer cancel()
+		controller.Config.ArtifactDrivers = cfg.ArtifactDrivers
+		controller.Config.Images = cfg.Images
+
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "test-workflow",
+				UID:  "test-uid",
+			},
+			Spec: wfv1.WorkflowSpec{
+				Entrypoint: "test-template",
+				Templates:  []wfv1.Template{*tmpl},
+			},
+		}
+
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+		// Skip workflow validation by not calling setExecWorkflow
+		// Test plugin init container creation directly
+		initContainers, err := woc.newInitContainers(ctx, tmpl)
+		require.NoError(t, err)
+
+		// Should have standard init container plus 2 plugin init containers
+		assert.Len(t, initContainers, 3)
+
+		// Test both plugin init containers
+		var testPluginInit, anotherPluginInit *apiv1.Container
+		for _, c := range initContainers {
+			switch c.Name {
+			case common.ArtifactPluginInitPrefix + "test-plugin":
+				testPluginInit = &c
+			case common.ArtifactPluginInitPrefix + "another-plugin":
+				anotherPluginInit = &c
+			}
+		}
+
+		require.NotNil(t, testPluginInit, "test-plugin init container not found")
+		assert.Equal(t, "busybox", testPluginInit.Image)
+		assert.Contains(t, testPluginInit.Command, "artifact-plugin-init")
+		assert.Contains(t, testPluginInit.Command, "--plugin-name")
+		assert.Contains(t, testPluginInit.Command, "test-plugin")
+
+		require.NotNil(t, anotherPluginInit, "another-plugin init container not found")
+		assert.Equal(t, "alpine", anotherPluginInit.Image)
+		assert.Contains(t, anotherPluginInit.Command, "artifact-plugin-init")
+		assert.Contains(t, anotherPluginInit.Command, "--plugin-name")
+		assert.Contains(t, anotherPluginInit.Command, "another-plugin")
+
+		// Test addInputArtifactsVolumes directly with a mock pod
+		pod := &apiv1.Pod{
+			Spec: apiv1.PodSpec{
+				InitContainers: []apiv1.Container{
+					{Name: common.InitContainerName, Image: "init-image"},
+					{Name: common.ArtifactPluginInitPrefix + "test-plugin", Image: "busybox"},
+					{Name: common.ArtifactPluginInitPrefix + "another-plugin", Image: "alpine"},
+				},
+				Containers: []apiv1.Container{
+					{Name: common.MainContainerName, Image: "main-image"},
+				},
+				Volumes: []apiv1.Volume{},
+			},
+		}
+
+		err = woc.addInputArtifactsVolumes(ctx, pod, tmpl)
+		require.NoError(t, err)
+
+		// Should have input-artifacts volume
+		var inputArtifactsVolume *apiv1.Volume
+		for _, v := range pod.Spec.Volumes {
+			if v.Name == "input-artifacts" {
+				inputArtifactsVolume = &v
+				break
+			}
+		}
+		require.NotNil(t, inputArtifactsVolume, "input-artifacts volume not found")
+		assert.NotNil(t, inputArtifactsVolume.EmptyDir, "input-artifacts should be EmptyDir volume")
+
+		// Both plugin init containers should have input-artifacts volume mount
+		var testPluginMount, anotherPluginMount *apiv1.VolumeMount
+		for _, vm := range pod.Spec.InitContainers[1].VolumeMounts {
+			if vm.Name == "input-artifacts" {
+				testPluginMount = &vm
+				break
+			}
+		}
+		for _, vm := range pod.Spec.InitContainers[2].VolumeMounts {
+			if vm.Name == "input-artifacts" {
+				anotherPluginMount = &vm
+				break
+			}
+		}
+		require.NotNil(t, testPluginMount, "test-plugin init container should have input-artifacts volume mount")
+		assert.Equal(t, "/argo/inputs/artifacts", testPluginMount.MountPath)
+
+		require.NotNil(t, anotherPluginMount, "another-plugin init container should have input-artifacts volume mount")
+		assert.Equal(t, "/argo/inputs/artifacts", anotherPluginMount.MountPath)
+
+		// Main container should have artifact path volume mounts for both artifacts
+		var inputDataMount, configDataMount *apiv1.VolumeMount
+		for _, vm := range pod.Spec.Containers[0].VolumeMounts {
+			if vm.Name == "input-artifacts" && vm.MountPath == "/tmp/input.txt" {
+				inputDataMount = &vm
+			} else if vm.Name == "input-artifacts" && vm.MountPath == "/tmp/config.json" {
+				configDataMount = &vm
+			}
+		}
+		require.NotNil(t, inputDataMount, "Main container should have input-data artifact path volume mount")
+		assert.Equal(t, "input-data", inputDataMount.SubPath)
+
+		require.NotNil(t, configDataMount, "Main container should have config-data artifact path volume mount")
+		assert.Equal(t, "config-data", configDataMount.SubPath)
+	})
+}
+
+// TestContainerArgsOffloading verifies that container arguments exceeding 128KB are automatically
+// offloaded to a ConfigMap instead of being stored directly in the pod specification.
+func TestContainerArgsOffloading(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	// Create a large argument that exceeds 128KB threshold (131,072 bytes)
+	largeArg := strings.Repeat("x", 140000) // 140KB
+	args := []string{"--flag", largeArg, "--other"}
+
+	// Create a workflow with a container that has large args
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: test-large-args
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    container:
+      image: alpine:latest
+      command: ["/bin/sh"]
+`)
+
+	// Set large args on the template
+	wf.Spec.Templates[0].Container.Args = args
+
+	cancel, controller := newController(ctx, wf, defaultServiceAccount)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	// Create the main container with large args
+	mainCtr := apiv1.Container{
+		Name:    "main",
+		Image:   "alpine:latest",
+		Command: []string{"/bin/sh"},
+		Args:    args,
+	}
+
+	// Execute: Call createWorkflowPod
+	pod, err := woc.createWorkflowPod(ctx, wf.Spec.Templates[0].Name, []apiv1.Container{mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+	require.NoError(t, err)
+	require.NotNil(t, pod)
+
+	// Verify Concern 1: Args offloading when exceeding threshold
+	// Check that a ConfigMap was created
+	cms, err := controller.kubeclientset.CoreV1().ConfigMaps(wf.Namespace).List(ctx, metav1.ListOptions{
+		LabelSelector: common.LabelKeyWorkflow + "=" + wf.Name,
+	})
+	require.NoError(t, err)
+	assert.Len(t, cms.Items, 1, "Expected exactly one ConfigMap to be created")
+
+	// Verify Concern 2: Correct JSON unmarshaling from ConfigMap
+	cm := cms.Items[0]
+	assert.Contains(t, cm.Data, common.EnvVarContainerArgsFile, "ConfigMap should contain ARGO_CONTAINER_ARGS_FILE key")
+
+	// Unmarshal the JSON data back to verify it matches original args
+	var unmarshaledArgs []string
+	err = json.Unmarshal([]byte(cm.Data[common.EnvVarContainerArgsFile]), &unmarshaledArgs)
+	require.NoError(t, err, "Should be able to unmarshal ConfigMap data as JSON")
+	assert.Equal(t, args, unmarshaledArgs, "Unmarshaled args should match original args")
+
+	// Verify Concern 3: Container setup for file access
+	// Container args should be cleared (nil) after offloading
+	// Note: pod.Spec.Containers[0] is the wait container, main container is at index 1
+	require.Len(t, pod.Spec.Containers, 2, "Pod should have wait and main containers")
+	container := pod.Spec.Containers[1]
+	assert.Nil(t, container.Args, "Container args should be nil after offloading")
+
+	// Find and verify the environment variable
+	var foundEnvVar *apiv1.EnvVar
+	for i, env := range container.Env {
+		if env.Name == common.EnvVarContainerArgsFile {
+			foundEnvVar = &container.Env[i]
+			break
+		}
+	}
+	require.NotNil(t, foundEnvVar, "Container should have ARGO_CONTAINER_ARGS_FILE env var")
+	expectedPath := common.EnvConfigMountPath + "/" + common.EnvVarContainerArgsFile
+	assert.Equal(t, expectedPath, foundEnvVar.Value, "Env var should point to correct file path")
+
+	// Verify volume mount exists
+	var foundVolumeMount *apiv1.VolumeMount
+	for i, vm := range container.VolumeMounts {
+		if vm.MountPath == common.EnvConfigMountPath {
+			foundVolumeMount = &container.VolumeMounts[i]
+			break
+		}
+	}
+	require.NotNil(t, foundVolumeMount, "Container should have volume mount at /argo/config")
+
+	// Verify ConfigMap volume exists in pod spec
+	var foundVolume bool
+	for _, vol := range pod.Spec.Volumes {
+		if vol.ConfigMap != nil && vol.ConfigMap.Name == cm.Name {
+			foundVolume = true
+			break
+		}
+	}
+	assert.True(t, foundVolume, "Pod should have ConfigMap volume")
+}
+
+// TestPodResourceClaimsDroppedWarning pins that Argo says something when the API
+// server strips the claims, which is what happens with DynamicResourceAllocation
+// disabled. The pod then runs without the device it asked for, and nothing else
+// in the workflow reports it.
+func TestPodResourceClaimsDroppedWarning(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	woc := newWoc(ctx)
+	woc.execWf.Spec.ResourceClaims = []apiv1.PodResourceClaim{
+		{Name: "accelerator", ResourceClaimTemplateName: new("gpu-claim-template")},
+	}
+	woc.controller.kubeclientset.(*fake.Clientset).PrependReactor("create", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		pod := action.(k8stesting.CreateAction).GetObject().(*apiv1.Pod).DeepCopy()
+		pod.Spec.ResourceClaims = nil // what an API server without the feature gate returns
+		return true, pod, nil
+	})
+
+	tmplCtx, err := woc.createTemplateContext(ctx, wfv1.ResourceScopeLocal, "")
+	require.NoError(t, err)
+	_, err = woc.executeContainer(ctx, woc.execWf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.execWf.Spec.Templates[0], &wfv1.WorkflowStep{}, &executeTemplateOpts{})
+	require.NoError(t, err)
+
+	c := woc.controller.eventRecorderManager.(*testEventRecorderManager).eventRecorder.Events
+	var dropped bool
+	for len(c) > 0 {
+		if strings.Contains(<-c, "ResourceClaimsDropped") {
+			dropped = true
+		}
+	}
+	assert.True(t, dropped, "expected a ResourceClaimsDropped warning")
+}
+
+// TestPodResourceClaimsParameterSubstitution pins that a claim named through a
+// parameter reaches the pod resolved, at both levels. substitutePodParams
+// rewrites the whole pod, so the claims ride along with everything else, but
+// nothing else asserted that, and a claim left holding an expression would be
+// rejected by the API server rather than allocated.
+func TestPodResourceClaimsParameterSubstitution(t *testing.T) {
+	for name, atTemplateLevel := range map[string]bool{
+		"WorkflowLevel": false,
+		"TemplateLevel": true,
+	} {
+		t.Run(name, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			woc := newWoc(ctx)
+			woc.execWf.Spec.Arguments.Parameters = []wfv1.Parameter{
+				{Name: "gpu-template", Value: wfv1.AnyStringPtr("resolved-gpu-template")},
+			}
+			require.NoError(t, woc.setGlobalParameters(woc.execWf.Spec.Arguments))
+
+			claims := []apiv1.PodResourceClaim{
+				{Name: "accelerator", ResourceClaimTemplateName: new("{{workflow.parameters.gpu-template}}")},
+			}
+			if atTemplateLevel {
+				woc.execWf.Spec.Templates[0].ResourceClaims = claims
+			} else {
+				woc.execWf.Spec.ResourceClaims = claims
+			}
+
+			tmplCtx, err := woc.createTemplateContext(ctx, wfv1.ResourceScopeLocal, "")
+			require.NoError(t, err)
+			_, err = woc.executeContainer(ctx, woc.execWf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.execWf.Spec.Templates[0], &wfv1.WorkflowStep{}, &executeTemplateOpts{})
+			require.NoError(t, err)
+			pods, err := listPods(ctx, woc)
+			require.NoError(t, err)
+			require.Len(t, pods.Items, 1)
+			require.Len(t, pods.Items[0].Spec.ResourceClaims, 1)
+			assert.Equal(t, new("resolved-gpu-template"), pods.Items[0].Spec.ResourceClaims[0].ResourceClaimTemplateName)
+		})
+	}
 }

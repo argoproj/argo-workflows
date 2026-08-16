@@ -4,21 +4,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/xeipuuv/gojsonschema"
 	"sigs.k8s.io/yaml"
 )
-
-// https://stackoverflow.com/questions/10485743/contains-method-for-a-slice
-func contains(s []string, e string) bool {
-	for _, a := range s {
-		if a == e {
-			return true
-		}
-	}
-	return false
-}
 
 func ValidateArgoYamlRecursively(fromPath string, skipFileNames []string) (map[string][]string, error) {
 	schemaBytes, err := os.ReadFile("../api/jsonschema/schema.json")
@@ -34,8 +25,7 @@ func ValidateArgoYamlRecursively(fromPath string, skipFileNames []string) (map[s
 		if err != nil {
 			return err
 		}
-		if contains(skipFileNames, info.Name()) {
-			// fmt.Printf("skipping %+v \n", info.Name())
+		if slices.Contains(skipFileNames, info.Name()) {
 			return filepath.SkipDir
 		}
 		if info.IsDir() {

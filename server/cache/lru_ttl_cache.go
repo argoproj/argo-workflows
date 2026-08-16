@@ -18,7 +18,7 @@ type item struct {
 	value      any
 }
 
-func NewLRUTtlCache(timeout time.Duration, size int) *lruTTLCache {
+func NewLRUTtlCache(timeout time.Duration, size int) Interface {
 	return &lruTTLCache{
 		timeout: timeout,
 		cache:   lru.New(size),

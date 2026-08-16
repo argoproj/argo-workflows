@@ -5,10 +5,10 @@ import (
 
 	"google.golang.org/grpc"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
-	"github.com/argoproj/argo-workflows/v3/workflow/validate"
+	"github.com/argoproj/argo-workflows/v4/pkg/apiclient/cronworkflow"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/workflow/templateresolution"
+	"github.com/argoproj/argo-workflows/v4/workflow/validate"
 )
 
 type OfflineCronWorkflowServiceClient struct {
@@ -19,7 +19,7 @@ type OfflineCronWorkflowServiceClient struct {
 var _ cronworkflow.CronWorkflowServiceClient = &OfflineCronWorkflowServiceClient{}
 
 func (o OfflineCronWorkflowServiceClient) LintCronWorkflow(ctx context.Context, req *cronworkflow.LintCronWorkflowRequest, _ ...grpc.CallOption) (*v1alpha1.CronWorkflow, error) {
-	err := validate.ValidateCronWorkflow(ctx, o.namespacedWorkflowTemplateGetterMap.GetNamespaceGetter(req.Namespace), o.clusterWorkflowTemplateGetter, req.CronWorkflow, nil)
+	err := validate.CronWorkflow(ctx, o.namespacedWorkflowTemplateGetterMap.GetNamespaceGetter(req.Namespace), o.clusterWorkflowTemplateGetter, req.CronWorkflow, nil)
 	if err != nil {
 		return nil, err
 	}

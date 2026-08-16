@@ -1,11 +1,12 @@
 syntax = "proto3";
-option go_package = "github.com/argoproj/argo-workflows/pkg/apiclient/workflowarchive";
-
-import "google/api/annotations.proto";
-import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
-import "github.com/argoproj/argo-workflows/pkg/apis/workflow/v1alpha1/generated.proto";
 
 package workflowarchive;
+
+import "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1/generated.proto";
+import "google/api/annotations.proto";
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
+
+option go_package = "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflowarchive";
 
 message ListArchivedWorkflowsRequest {
   k8s.io.apimachinery.pkg.apis.meta.v1.ListOptions listOptions = 1;
@@ -22,9 +23,9 @@ message GetArchivedWorkflowRequest {
 message DeleteArchivedWorkflowRequest {
   string uid = 1;
   string namespace = 2;
+  string name = 3;
 }
-message ArchivedWorkflowDeletedResponse {
-}
+message ArchivedWorkflowDeletedResponse {}
 message ListArchivedWorkflowLabelKeysRequest {
   string namespace = 1;
 }
@@ -50,31 +51,31 @@ message ResubmitArchivedWorkflowRequest {
 }
 
 service ArchivedWorkflowService {
-  rpc ListArchivedWorkflows(ListArchivedWorkflowsRequest) returns (github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.WorkflowList) {
+  rpc ListArchivedWorkflows(ListArchivedWorkflowsRequest) returns (github.com.argoproj.argo_workflows.v4.pkg.apis.workflow.v1alpha1.WorkflowList) {
     option (google.api.http).get = "/api/v1/archived-workflows";
   }
-  rpc GetArchivedWorkflow(GetArchivedWorkflowRequest) returns (github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.Workflow) {
+  rpc GetArchivedWorkflow(GetArchivedWorkflowRequest) returns (github.com.argoproj.argo_workflows.v4.pkg.apis.workflow.v1alpha1.Workflow) {
     option (google.api.http).get = "/api/v1/archived-workflows/{uid}";
   }
   rpc DeleteArchivedWorkflow(DeleteArchivedWorkflowRequest) returns (ArchivedWorkflowDeletedResponse) {
     option (google.api.http).delete = "/api/v1/archived-workflows/{uid}";
   }
-  rpc ListArchivedWorkflowLabelKeys(ListArchivedWorkflowLabelKeysRequest) returns (github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.LabelKeys) {
+  rpc ListArchivedWorkflowLabelKeys(ListArchivedWorkflowLabelKeysRequest) returns (github.com.argoproj.argo_workflows.v4.pkg.apis.workflow.v1alpha1.LabelKeys) {
     option (google.api.http).get = "/api/v1/archived-workflows-label-keys";
   }
-  rpc ListArchivedWorkflowLabelValues(ListArchivedWorkflowLabelValuesRequest) returns (github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.LabelValues) {
+  rpc ListArchivedWorkflowLabelValues(ListArchivedWorkflowLabelValuesRequest) returns (github.com.argoproj.argo_workflows.v4.pkg.apis.workflow.v1alpha1.LabelValues) {
     option (google.api.http).get = "/api/v1/archived-workflows-label-values";
   }
-  rpc RetryArchivedWorkflow(RetryArchivedWorkflowRequest) returns (github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.Workflow) {
+  rpc RetryArchivedWorkflow(RetryArchivedWorkflowRequest) returns (github.com.argoproj.argo_workflows.v4.pkg.apis.workflow.v1alpha1.Workflow) {
     option (google.api.http) = {
-      put : "/api/v1/archived-workflows/{uid}/retry"
-      body : "*"
+      put: "/api/v1/archived-workflows/{uid}/retry"
+      body: "*"
     };
   }
-  rpc ResubmitArchivedWorkflow(ResubmitArchivedWorkflowRequest) returns (github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.Workflow) {
+  rpc ResubmitArchivedWorkflow(ResubmitArchivedWorkflowRequest) returns (github.com.argoproj.argo_workflows.v4.pkg.apis.workflow.v1alpha1.Workflow) {
     option (google.api.http) = {
-      put : "/api/v1/archived-workflows/{uid}/resubmit"
-      body : "*"
+      put: "/api/v1/archived-workflows/{uid}/resubmit"
+      body: "*"
     };
   }
 }

@@ -3,14 +3,16 @@ package apiclient
 import (
 	"context"
 	"net/http"
+	"net/url"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
-	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
-	"github.com/argoproj/argo-workflows/v3/pkg/apiclient/http1"
-	infopkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/info"
-	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
-	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
-	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
+	"github.com/argoproj/argo-workflows/v4/pkg/apiclient/clusterworkflowtemplate"
+	cronworkflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/cronworkflow"
+	"github.com/argoproj/argo-workflows/v4/pkg/apiclient/http1"
+	infopkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/info"
+	syncpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/sync"
+	workflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow"
+	workflowarchivepkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflowarchive"
+	workflowtemplatepkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflowtemplate"
 )
 
 type httpClient http1.Facade
@@ -41,6 +43,24 @@ func (h httpClient) NewInfoServiceClient() (infopkg.InfoServiceClient, error) {
 	return http1.InfoServiceClient(h), nil
 }
 
-func newHTTP1Client(ctx context.Context, baseURL string, auth string, insecureSkipVerify bool, headers []string, customHTTPClient *http.Client) (context.Context, Client, error) {
-	return ctx, httpClient(http1.NewFacade(baseURL, auth, insecureSkipVerify, headers, customHTTPClient)), nil
+func (h httpClient) NewSyncServiceClient(_ context.Context) (syncpkg.SyncServiceClient, error) {
+	return http1.SyncServiceClient(h), nil
+}
+
+func newHTTP1Client(ctx context.Context, opts ArgoServerOpts, auth string, proxy func(*http.Request) (*url.URL, error)) (context.Context, Client, error) {
+	facade, err := http1.NewFacade(http1.FacadeConfig{
+		BaseURL:            opts.GetURL(),
+		Authorization:      auth,
+		InsecureSkipVerify: opts.InsecureSkipVerify,
+		Headers:            opts.Headers,
+		HTTPClient:         opts.HTTP1Client,
+		Proxy:              proxy,
+		ClientCert:         opts.ClientCert,
+		ClientKey:          opts.ClientKey,
+		CACert:             opts.CACert,
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	return ctx, httpClient(facade), nil
 }

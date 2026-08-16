@@ -3,7 +3,7 @@ package sync
 import (
 	"context"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 type loggerFn func(context.Context) logging.Logger

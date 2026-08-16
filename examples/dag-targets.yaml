@@ -63,5 +63,5 @@ spec:
       parameters:
       - name: message
     container:
-      image: alpine:3.7
+      image: busybox
       command: [echo, "{{inputs.parameters.message}}"]

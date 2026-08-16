@@ -4,7 +4,7 @@ metadata:
   name: basic
 spec:
   workflowMetadata:
-    labels:
+    labels: {}
 
   entrypoint: main
   templates:

@@ -2,7 +2,7 @@
 
 # IoArgoprojWorkflowV1alpha1GitArtifact
 
-GitArtifact is the location of an git artifact
+GitArtifact is the location of a git artifact
 
 ## Properties
 

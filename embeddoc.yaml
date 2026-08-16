@@ -1,0 +1,3 @@
+includes:
+  - sdks/go
+  - docs

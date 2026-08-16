@@ -6,5 +6,7 @@ spec:
   ports:
   - name: http
     port: 5556
+  - name: https
+    port: 5554
   selector:
     app: dex

@@ -4,6 +4,8 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
+  labels:
+    workflows.argoproj.io/no-test: "environment"
   generateName: pod-gc-strategy-with-label-selector-
 spec:
   entrypoint: pod-gc-strategy-with-label-selector
@@ -40,7 +42,7 @@ spec:
         labels:
           should-be-deleted: "true"
       container:
-        image: alpine:3.7
+        image: alpine:3.23
         command: [sh, -c]
         args: ["exit 1"]
 
@@ -50,7 +52,7 @@ spec:
         labels:
           should-be-deleted: "true"
       container:
-        image: alpine:3.7
+        image: alpine:3.23
         command: [sh, -c]
         args: ["exit 0"]
 
@@ -60,6 +62,6 @@ spec:
         labels:
           should-be-deleted: "false"
       container:
-        image: alpine:3.7
+        image: alpine:3.23
         command: [ sh, -c ]
         args: [ "exit 0" ]

@@ -30,16 +30,17 @@ data:
               self.end_headers()
 
           def do_POST(self):
-              if self.headers.get("Authorization") != "Bearer " + token:
-                  self.forbidden()
-              elif self.path == '/api/v1/template.execute':
+              if self.path == '/api/v1/template.execute':
                   args = self.args()
                   if 'hello' in args['template'].get('plugin', {}):
+                      if self.headers.get("Authorization") != "Bearer " + token:
+                        self.forbidden()
+                        return
                       self.reply(
                           {'node': {'phase': 'Succeeded', 'message': 'Hello template!',
                                     'outputs': {'parameters': [{'name': 'foo', 'value': 'bar'}]}}})
                   else:
-                      self.reply({})
+                      self.reply(None)
               else:
                   self.unsupported()
 
@@ -50,7 +51,7 @@ data:
     command:
     - python
     - -c
-    image: python:alpine
+    image: python:alpine3.23
     name: hello-executor-plugin
     ports:
     - containerPort: 4355

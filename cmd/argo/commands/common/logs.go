@@ -2,12 +2,13 @@ package common
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 
 	corev1 "k8s.io/api/core/v1"
 
-	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
+	workflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow"
 )
 
 func LogWorkflow(ctx context.Context, serviceClient workflowpkg.WorkflowServiceClient, namespace, workflow, podName, grep, selector string, logOptions *corev1.PodLogOptions) error {
@@ -27,7 +28,7 @@ func LogWorkflow(ctx context.Context, serviceClient workflowpkg.WorkflowServiceC
 	// loop on log lines
 	for {
 		event, err := stream.Recv()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			return nil
 		}
 		if err != nil {

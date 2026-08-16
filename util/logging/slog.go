@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"maps"
 	"os"
 )
 
@@ -52,8 +53,6 @@ func NewSlogLoggerCustom(logLevel Level, format LogType, out io.Writer, hooks ..
 	}
 
 	switch format {
-	case JSON:
-		handler = slog.NewJSONHandler(out, &slog.HandlerOptions{Level: convertLevel(logLevel)})
 	case Text:
 		handler = slog.NewTextHandler(out, &slog.HandlerOptions{Level: convertLevel(logLevel)})
 	default:
@@ -68,7 +67,7 @@ func NewSlogLoggerCustom(logLevel Level, format LogType, out io.Writer, hooks ..
 		level:  logLevel,
 		hooks:  mappedHooks,
 	}
-	// nolint:contextcheck
+
 	emitInitLogs(context.Background(), &s)
 	return &s
 }
@@ -80,13 +79,9 @@ func (s *slogLogger) Level() Level {
 func (s *slogLogger) WithFields(fields Fields) Logger {
 	newFields := make(Fields)
 
-	for k, v := range s.fields {
-		newFields[k] = v
-	}
+	maps.Copy(newFields, s.fields)
 
-	for k, v := range fields {
-		newFields[k] = v
-	}
+	maps.Copy(newFields, fields)
 
 	return &slogLogger{
 		fields:    newFields,
@@ -101,9 +96,7 @@ func (s *slogLogger) WithFields(fields Fields) Logger {
 func (s *slogLogger) WithField(name string, value any) Logger {
 	newFields := make(Fields)
 
-	for k, v := range s.fields {
-		newFields[k] = v
-	}
+	maps.Copy(newFields, s.fields)
 
 	newFields[name] = value
 
@@ -170,11 +163,11 @@ func (s *slogLogger) commonLog(ctx context.Context, level Level, msg string) {
 	s.logger.LogAttrs(ctx, convertLevel(level), msg, fieldsToAttrs(s.fields)...)
 	switch {
 	case s.withFatal:
-		if exitFunc := GetExitFunc(); exitFunc != nil {
-			exitFunc(1)
-		} else {
+		exitFunc := GetExitFunc()
+		if exitFunc == nil {
 			os.Exit(1)
 		}
+		exitFunc(1)
 	case s.withPanic:
 		panic(msg)
 	}
@@ -201,8 +194,6 @@ func convertLevel(level Level) slog.Level {
 	switch level {
 	case Debug:
 		return slog.LevelDebug
-	case Info:
-		return slog.LevelInfo
 	case Warn:
 		return slog.LevelWarn
 	case Error:

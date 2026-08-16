@@ -1,7 +1,5 @@
 # Synchronization
 
-> v2.10 and after
-
 You can limit the parallel execution of Workflows or Templates:
 
 - You can use mutexes to restrict Workflows or Templates to only having a single concurrent execution.
@@ -70,7 +68,7 @@ spec:
 Multiple controllers can share locks using a database as an intermediary.
 This would normally be used to share locks across multiple clusters, but can also be used to share locks across multiple controllers in the same cluster.
 
-To configure multiple controller locks, you need to set up a database (either PostgreSQL or MySQL) and [configure it](#database-configuration) in the workflow-controller-configmap ConfigMap.
+To configure multiple controller locks, you need to set up a database (either PostgreSQL, MySQL, or MariaDB) and [configure it](#database-configuration) in the workflow-controller-configmap ConfigMap.
 All controllers which want to share locks must share all of these tables.
 If you do not configure the database you will get an error if you try to use database locks.
 
@@ -85,8 +83,8 @@ metadata:
 spec:
   synchronization:
     mutexes:
-      - database:
-          key: bar
+      - database: true
+        name: bar
 ```
 
 And a Workflow that uses a Workflow-level database semaphore would look like this:
@@ -299,6 +297,8 @@ In order to use multiple controller locks you need to configure the database in 
 This is done by setting up the [`SyncConfig` section](workflow-controller-configmap.md#syncconfig).
 
 If you try to use multiple controller locks without configuring the database you will get an error.
+
+For the list of SQL statements applied during migration, see [Database Migrations](database-migrations.md).
 
 ### Limit Table
 

@@ -5,9 +5,9 @@ import (
 
 	"google.golang.org/grpc"
 
-	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	grpcutil "github.com/argoproj/argo-workflows/v3/util/grpc"
+	workflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	grpcutil "github.com/argoproj/argo-workflows/v4/util/grpc"
 )
 
 type errorTranslatingWorkflowServiceClient struct {

@@ -1,6 +1,8 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
+  labels:
+    workflows.argoproj.io/no-test: "duration"
   generateName: parallelism-limit-
 spec:
   entrypoint: parallelism-limit
@@ -24,5 +26,5 @@ spec:
 
   - name: sleep
     container:
-      image: alpine:latest
+      image: busybox
       command: [sh, -c, sleep 10]

@@ -3,23 +3,22 @@ package fixtures
 import (
 	"context"
 
-	"github.com/upper/db/v4"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/argoproj/argo-workflows/v3/config"
-	persist "github.com/argoproj/argo-workflows/v3/persist/sqldb"
-	"github.com/argoproj/argo-workflows/v3/util/instanceid"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/util/sqldb"
+	"github.com/argoproj/argo-workflows/v4/config"
+	persist "github.com/argoproj/argo-workflows/v4/persist/sqldb"
+	"github.com/argoproj/argo-workflows/v4/util/instanceid"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/sqldb"
 )
 
 type Persistence struct {
 	WorkflowArchive       persist.WorkflowArchive
-	session               db.Session
-	offloadNodeStatusRepo persist.OffloadNodeStatusRepo
+	sessionProxy          *sqldb.SessionProxy
+	OffloadNodeStatusRepo persist.OffloadNodeStatusRepo
 }
 
-func newPersistence(ctx context.Context, kubeClient kubernetes.Interface, wcConfig *config.Config) *Persistence {
+func NewPersistence(ctx context.Context, kubeClient kubernetes.Interface, wcConfig *config.Config) *Persistence {
 	persistence := wcConfig.Persistence
 	if persistence != nil {
 		if persistence.PostgreSQL != nil {
@@ -28,7 +27,7 @@ func newPersistence(ctx context.Context, kubeClient kubernetes.Interface, wcConf
 		if persistence.MySQL != nil {
 			persistence.MySQL.Host = "localhost"
 		}
-		session, err := sqldb.CreateDBSession(ctx, kubeClient, Namespace, persistence.DBConfig)
+		session, _, err := sqldb.CreateDBSession(ctx, kubeClient, Namespace, persistence.DBConfig)
 		if err != nil {
 			panic(err)
 		}
@@ -37,25 +36,25 @@ func newPersistence(ctx context.Context, kubeClient kubernetes.Interface, wcConf
 			panic(err)
 		}
 		log := logging.RequireLoggerFromContext(ctx)
-		offloadNodeStatusRepo, err := persist.NewOffloadNodeStatusRepo(ctx, log, session, persistence.GetClusterName(), tableName)
+		sessionProxy := sqldb.NewSessionProxyFromSession(session, &persistence.DBConfig, "", "")
+		offloadNodeStatusRepo, err := persist.NewOffloadNodeStatusRepo(ctx, log, sessionProxy, persistence.GetClusterName(), tableName)
 		if err != nil {
 			panic(err)
 		}
 		instanceIDService := instanceid.NewService(wcConfig.InstanceID)
-		workflowArchive := persist.NewWorkflowArchive(session, persistence.GetClusterName(), Namespace, instanceIDService)
-		return &Persistence{workflowArchive, session, offloadNodeStatusRepo}
-	} else {
-		return &Persistence{offloadNodeStatusRepo: persist.ExplosiveOffloadNodeStatusRepo, WorkflowArchive: persist.NullWorkflowArchive}
+		workflowArchive := persist.NewWorkflowArchive(sessionProxy, persistence.GetClusterName(), Namespace, instanceIDService)
+		return &Persistence{workflowArchive, sessionProxy, offloadNodeStatusRepo}
 	}
+	return &Persistence{OffloadNodeStatusRepo: persist.ExplosiveOffloadNodeStatusRepo, WorkflowArchive: persist.NullWorkflowArchive}
 }
 
 func (s *Persistence) IsEnabled() bool {
-	return s.offloadNodeStatusRepo.IsEnabled()
+	return s.OffloadNodeStatusRepo.IsEnabled()
 }
 
 func (s *Persistence) Close() {
 	if s.IsEnabled() {
-		err := s.session.Close()
+		err := s.sessionProxy.Close()
 		if err != nil {
 			panic(err)
 		}

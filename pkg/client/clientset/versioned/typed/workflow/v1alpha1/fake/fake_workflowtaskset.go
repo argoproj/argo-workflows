@@ -3,124 +3,34 @@
 package fake
 
 import (
-	"context"
-
-	v1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
-	types "k8s.io/apimachinery/pkg/types"
-	watch "k8s.io/apimachinery/pkg/watch"
-	testing "k8s.io/client-go/testing"
+	v1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	workflowv1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	gentype "k8s.io/client-go/gentype"
 )
 
-// FakeWorkflowTaskSets implements WorkflowTaskSetInterface
-type FakeWorkflowTaskSets struct {
+// fakeWorkflowTaskSets implements WorkflowTaskSetInterface
+type fakeWorkflowTaskSets struct {
+	*gentype.FakeClientWithList[*v1alpha1.WorkflowTaskSet, *v1alpha1.WorkflowTaskSetList]
 	Fake *FakeArgoprojV1alpha1
-	ns   string
 }
 
-var workflowtasksetsResource = schema.GroupVersionResource{Group: "argoproj.io", Version: "v1alpha1", Resource: "workflowtasksets"}
-
-var workflowtasksetsKind = schema.GroupVersionKind{Group: "argoproj.io", Version: "v1alpha1", Kind: "WorkflowTaskSet"}
-
-// Get takes name of the workflowTaskSet, and returns the corresponding workflowTaskSet object, and an error if there is any.
-func (c *FakeWorkflowTaskSets) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.WorkflowTaskSet, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(workflowtasksetsResource, c.ns, name), &v1alpha1.WorkflowTaskSet{})
-
-	if obj == nil {
-		return nil, err
+func newFakeWorkflowTaskSets(fake *FakeArgoprojV1alpha1, namespace string) workflowv1alpha1.WorkflowTaskSetInterface {
+	return &fakeWorkflowTaskSets{
+		gentype.NewFakeClientWithList[*v1alpha1.WorkflowTaskSet, *v1alpha1.WorkflowTaskSetList](
+			fake.Fake,
+			namespace,
+			v1alpha1.SchemeGroupVersion.WithResource("workflowtasksets"),
+			v1alpha1.SchemeGroupVersion.WithKind("WorkflowTaskSet"),
+			func() *v1alpha1.WorkflowTaskSet { return &v1alpha1.WorkflowTaskSet{} },
+			func() *v1alpha1.WorkflowTaskSetList { return &v1alpha1.WorkflowTaskSetList{} },
+			func(dst, src *v1alpha1.WorkflowTaskSetList) { dst.ListMeta = src.ListMeta },
+			func(list *v1alpha1.WorkflowTaskSetList) []*v1alpha1.WorkflowTaskSet {
+				return gentype.ToPointerSlice(list.Items)
+			},
+			func(list *v1alpha1.WorkflowTaskSetList, items []*v1alpha1.WorkflowTaskSet) {
+				list.Items = gentype.FromPointerSlice(items)
+			},
+		),
+		fake,
 	}
-	return obj.(*v1alpha1.WorkflowTaskSet), err
-}
-
-// List takes label and field selectors, and returns the list of WorkflowTaskSets that match those selectors.
-func (c *FakeWorkflowTaskSets) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.WorkflowTaskSetList, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewListAction(workflowtasksetsResource, workflowtasksetsKind, c.ns, opts), &v1alpha1.WorkflowTaskSetList{})
-
-	if obj == nil {
-		return nil, err
-	}
-
-	label, _, _ := testing.ExtractFromListOptions(opts)
-	if label == nil {
-		label = labels.Everything()
-	}
-	list := &v1alpha1.WorkflowTaskSetList{ListMeta: obj.(*v1alpha1.WorkflowTaskSetList).ListMeta}
-	for _, item := range obj.(*v1alpha1.WorkflowTaskSetList).Items {
-		if label.Matches(labels.Set(item.Labels)) {
-			list.Items = append(list.Items, item)
-		}
-	}
-	return list, err
-}
-
-// Watch returns a watch.Interface that watches the requested workflowTaskSets.
-func (c *FakeWorkflowTaskSets) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
-	return c.Fake.
-		InvokesWatch(testing.NewWatchAction(workflowtasksetsResource, c.ns, opts))
-
-}
-
-// Create takes the representation of a workflowTaskSet and creates it.  Returns the server's representation of the workflowTaskSet, and an error, if there is any.
-func (c *FakeWorkflowTaskSets) Create(ctx context.Context, workflowTaskSet *v1alpha1.WorkflowTaskSet, opts v1.CreateOptions) (result *v1alpha1.WorkflowTaskSet, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(workflowtasksetsResource, c.ns, workflowTaskSet), &v1alpha1.WorkflowTaskSet{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1alpha1.WorkflowTaskSet), err
-}
-
-// Update takes the representation of a workflowTaskSet and updates it. Returns the server's representation of the workflowTaskSet, and an error, if there is any.
-func (c *FakeWorkflowTaskSets) Update(ctx context.Context, workflowTaskSet *v1alpha1.WorkflowTaskSet, opts v1.UpdateOptions) (result *v1alpha1.WorkflowTaskSet, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(workflowtasksetsResource, c.ns, workflowTaskSet), &v1alpha1.WorkflowTaskSet{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1alpha1.WorkflowTaskSet), err
-}
-
-// UpdateStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeWorkflowTaskSets) UpdateStatus(ctx context.Context, workflowTaskSet *v1alpha1.WorkflowTaskSet, opts v1.UpdateOptions) (*v1alpha1.WorkflowTaskSet, error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewUpdateSubresourceAction(workflowtasksetsResource, "status", c.ns, workflowTaskSet), &v1alpha1.WorkflowTaskSet{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1alpha1.WorkflowTaskSet), err
-}
-
-// Delete takes name of the workflowTaskSet and deletes it. Returns an error if one occurs.
-func (c *FakeWorkflowTaskSets) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
-	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(workflowtasksetsResource, c.ns, name), &v1alpha1.WorkflowTaskSet{})
-
-	return err
-}
-
-// DeleteCollection deletes a collection of objects.
-func (c *FakeWorkflowTaskSets) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(workflowtasksetsResource, c.ns, listOpts)
-
-	_, err := c.Fake.Invokes(action, &v1alpha1.WorkflowTaskSetList{})
-	return err
-}
-
-// Patch applies the patch and returns the patched workflowTaskSet.
-func (c *FakeWorkflowTaskSets) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.WorkflowTaskSet, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(workflowtasksetsResource, c.ns, name, pt, data, subresources...), &v1alpha1.WorkflowTaskSet{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1alpha1.WorkflowTaskSet), err
 }

@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/itchyny/gojq"
 	"github.com/tidwall/gjson"
@@ -26,11 +26,10 @@ import (
 	kubectlutil "k8s.io/kubectl/pkg/cmd/util"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	envutil "github.com/argoproj/argo-workflows/v3/util/env"
-	argoerr "github.com/argoproj/argo-workflows/v3/util/errors"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	argoerrors "github.com/argoproj/argo-workflows/v4/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	argoerr "github.com/argoproj/argo-workflows/v4/util/errors"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 // ExecResource will run kubectl action against a manifest
@@ -51,13 +50,14 @@ func (we *WorkflowExecutor) ExecResource(ctx context.Context, action string, man
 		return nil
 	})
 	if err != nil {
-		if exErr, ok := err.(*exec.ExitError); ok {
+		var exErr *exec.ExitError
+		if errors.As(err, &exErr) {
 			errMsg := strings.TrimSpace(string(exErr.Stderr))
-			err = errors.Wrap(err, errors.CodeBadRequest, errMsg)
+			err = argoerrors.Wrap(err, argoerrors.CodeBadRequest, errMsg)
 		} else {
-			err = errors.Wrap(err, errors.CodeBadRequest, err.Error())
+			err = argoerrors.Wrap(err, argoerrors.CodeBadRequest, err.Error())
 		}
-		err = errors.Wrap(err, errors.CodeBadRequest, "no more retries "+err.Error())
+		err = argoerrors.Wrap(err, argoerrors.CodeBadRequest, "no more retries "+err.Error())
 		return "", "", "", err
 	}
 	if action == "delete" {
@@ -75,7 +75,7 @@ func (we *WorkflowExecutor) ExecResource(ctx context.Context, action string, man
 	resourceName := obj.GetName()
 	resourceKind := obj.GroupVersionKind().Kind
 	if resourceName == "" || resourceKind == "" {
-		return "", "", "", errors.New(errors.CodeBadRequest, "Kind and name are both required but at least one of them is missing from the manifest")
+		return "", "", "", argoerrors.New(argoerrors.CodeBadRequest, "Kind and name are both required but at least one of them is missing from the manifest")
 	}
 	resourceFullName := fmt.Sprintf("%s.%s/%s", strings.ToLower(resourceKind), resourceGroup, resourceName)
 	selfLink := inferObjectSelfLink(obj)
@@ -113,10 +113,10 @@ func inferObjectSelfLink(obj unstructured.Unstructured) string {
 func (we *WorkflowExecutor) getKubectlArguments(action string, manifestPath string, flags []string) ([]string, error) {
 	buff, err := os.ReadFile(filepath.Clean(manifestPath))
 	if err != nil {
-		return []string{}, errors.New(errors.CodeBadRequest, err.Error())
+		return []string{}, argoerrors.New(argoerrors.CodeBadRequest, err.Error())
 	}
 	if len(buff) == 0 && len(flags) == 0 {
-		return []string{}, errors.New(errors.CodeBadRequest, "Must provide at least one of flags or manifest.")
+		return []string{}, argoerrors.New(argoerrors.CodeBadRequest, "Must provide at least one of flags or manifest.")
 	}
 
 	args := []string{
@@ -148,10 +148,10 @@ func (we *WorkflowExecutor) getKubectlArguments(action string, manifestPath stri
 		if mergeStrategy == "json" {
 			appendFileFlag = false
 		} else {
-			var obj map[string]interface{}
+			var obj map[string]any
 			err = yaml.Unmarshal(buff, &obj)
 			if err != nil {
-				return []string{}, errors.New(errors.CodeBadRequest, err.Error())
+				return []string{}, argoerrors.New(argoerrors.CodeBadRequest, err.Error())
 			}
 			if len(flags) != 0 && obj["kind"] == nil {
 				appendFileFlag = false
@@ -190,6 +190,12 @@ func (g gjsonLabels) Get(label string) string {
 	return gjson.GetBytes(g.json, label).String()
 }
 
+// Lookup returns the value for the provided label and whether it exists.
+func (g gjsonLabels) Lookup(label string) (string, bool) {
+	result := gjson.GetBytes(g.json, label)
+	return result.String(), result.Exists()
+}
+
 // WaitResource waits for a specific resource to satisfy either the success or failure condition
 func (we *WorkflowExecutor) WaitResource(ctx context.Context, resourceNamespace, resourceName, selfLink string) error {
 	logger := logging.RequireLoggerFromContext(ctx)
@@ -200,7 +206,7 @@ func (we *WorkflowExecutor) WaitResource(ctx context.Context, resourceNamespace,
 	if we.Template.Resource.SuccessCondition != "" {
 		successSelector, err := labels.Parse(we.Template.Resource.SuccessCondition)
 		if err != nil {
-			return errors.Errorf(errors.CodeBadRequest, "success condition '%s' failed to parse: %v", we.Template.Resource.SuccessCondition, err)
+			return argoerrors.Errorf(argoerrors.CodeBadRequest, "success condition '%s' failed to parse: %v", we.Template.Resource.SuccessCondition, err)
 		}
 		logger.WithField("conditions", successSelector).Info(ctx, "Waiting for conditions")
 		successReqs, _ = successSelector.Requirements()
@@ -210,12 +216,12 @@ func (we *WorkflowExecutor) WaitResource(ctx context.Context, resourceNamespace,
 	if we.Template.Resource.FailureCondition != "" {
 		failSelector, err := labels.Parse(we.Template.Resource.FailureCondition)
 		if err != nil {
-			return errors.Errorf(errors.CodeBadRequest, "fail condition '%s' failed to parse: %v", we.Template.Resource.FailureCondition, err)
+			return argoerrors.Errorf(argoerrors.CodeBadRequest, "fail condition '%s' failed to parse: %v", we.Template.Resource.FailureCondition, err)
 		}
 		logger.WithField("conditions", failSelector).Info(ctx, "Failing for conditions")
 		failReqs, _ = failSelector.Requirements()
 	}
-	err := wait.PollUntilContextCancel(ctx, envutil.LookupEnvDurationOr(ctx, "RESOURCE_STATE_CHECK_INTERVAL", time.Second*5),
+	err := wait.PollUntilContextCancel(ctx, we.resourceStateCheckInterval,
 		true,
 		func(ctx context.Context) (bool, error) {
 			isErrRetryable, err := we.checkResourceState(ctx, selfLink, successReqs, failReqs)
@@ -249,9 +255,9 @@ func (we *WorkflowExecutor) checkResourceState(ctx context.Context, selfLink str
 	stream, err := request.Stream(ctx)
 
 	if err != nil {
-		err = errors.Cause(err)
+		err = argoerrors.Cause(err)
 		if apierr.IsNotFound(err) {
-			return false, errors.Errorf(errors.CodeNotFound, "The resource has been deleted while its status was still being checked. Will not be retried: %v", err)
+			return false, argoerrors.Errorf(argoerrors.CodeNotFound, "The resource has been deleted while its status was still being checked. Will not be retried: %v", err)
 		}
 		return false, err
 	}
@@ -264,7 +270,7 @@ func (we *WorkflowExecutor) checkResourceState(ctx context.Context, selfLink str
 	jsonString := string(jsonBytes)
 	logging.RequireLoggerFromContext(ctx).Debug(ctx, jsonString)
 	if !gjson.Valid(jsonString) {
-		return false, errors.Errorf(errors.CodeNotFound, "Encountered invalid JSON response when checking resource status. Will not be retried: %q", jsonString)
+		return false, argoerrors.Errorf(argoerrors.CodeNotFound, "Encountered invalid JSON response when checking resource status. Will not be retried: %q", jsonString)
 	}
 	return matchConditions(ctx, jsonBytes, successReqs, failReqs)
 }
@@ -279,7 +285,7 @@ func matchConditions(ctx context.Context, jsonBytes []byte, successReqs labels.R
 		logger.Info(ctx, msg)
 		if failed {
 			// We return false here to not retry when failure conditions met.
-			return false, errors.Errorf(errors.CodeBadRequest, "%s", msg)
+			return false, argoerrors.Errorf(argoerrors.CodeBadRequest, "%s", msg)
 		}
 	}
 	numMatched := 0
@@ -295,7 +301,7 @@ func matchConditions(ctx context.Context, jsonBytes []byte, successReqs labels.R
 		return false, nil
 	}
 
-	return true, errors.Errorf(errors.CodeNotFound, "Neither success condition nor the failure condition has been matched. Retrying...")
+	return true, argoerrors.Errorf(argoerrors.CodeNotFound, "Neither success condition nor the failure condition has been matched. Retrying...")
 }
 
 // SaveResourceParameters will save any resource output parameters
@@ -318,12 +324,13 @@ func (we *WorkflowExecutor) SaveResourceParameters(ctx context.Context, resource
 			we.Template.Outputs.Parameters[i].Value = wfv1.AnyStringPtr(output)
 			continue
 		}
-		outputFormat := ""
-		if param.ValueFrom.JSONPath != "" {
+		var outputFormat string
+		switch {
+		case param.ValueFrom.JSONPath != "":
 			outputFormat = fmt.Sprintf("jsonpath=%s", param.ValueFrom.JSONPath)
-		} else if param.ValueFrom.JQFilter != "" {
+		case param.ValueFrom.JQFilter != "":
 			outputFormat = "json"
-		} else {
+		default:
 			continue
 		}
 		args := []string{"kubectl", "-n", resourceNamespace, "get", resourceName, "-o", outputFormat}
@@ -349,7 +356,7 @@ func (we *WorkflowExecutor) SaveResourceParameters(ctx context.Context, resource
 }
 
 func jqFilter(ctx context.Context, input []byte, filter string) (string, error) {
-	var v interface{}
+	var v any
 	if err := json.Unmarshal(input, &v); err != nil {
 		return "", err
 	}
@@ -392,7 +399,7 @@ func runKubectl(ctx context.Context, args ...string) ([]byte, error) {
 	var fatalErr error
 	// catch `os.Exit(1)` from kubectl
 	kubectlutil.BehaviorOnFatal(func(msg string, code int) {
-		fatalErr = errors.New(fmt.Sprint(code), msg)
+		fatalErr = argoerrors.New(fmt.Sprint(code), msg)
 	})
 
 	var buf bytes.Buffer

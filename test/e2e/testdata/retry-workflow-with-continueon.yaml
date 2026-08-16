@@ -17,21 +17,21 @@ spec:
             arguments:
               parameters:
                 - name: exitCode
-                  value: 0
+                  value: "0"
           - name: failure
             template: node-to-exit
             dependencies: [success]
             arguments:
               parameters:
                 - name: exitCode
-                  value: 1
+                  value: "1"
           - name: task-after-failure
             template: node-to-exit
             dependencies: [failure]
             arguments:
               parameters:
                 - name: exitCode
-                  value: 0
+                  value: "0"
           - name: continue
             template: node-to-exit
             continueOn:
@@ -40,14 +40,14 @@ spec:
             arguments:
               parameters:
                 - name: exitCode
-                  value: 2
+                  value: "2"
           - name: task-after-continue
             template: node-to-exit
             dependencies: [continue]
             arguments:
               parameters:
                 - name: exitCode
-                  value: 0
+                  value: "0"
 
     - name: node-to-exit
       inputs:

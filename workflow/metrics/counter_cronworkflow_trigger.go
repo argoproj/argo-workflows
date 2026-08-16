@@ -3,7 +3,7 @@ package metrics
 import (
 	"context"
 
-	"github.com/argoproj/argo-workflows/v3/util/telemetry"
+	"github.com/argoproj/argo-workflows/v4/util/telemetry"
 )
 
 func addCronWfTriggerCounter(_ context.Context, m *Metrics) error {
@@ -11,8 +11,5 @@ func addCronWfTriggerCounter(_ context.Context, m *Metrics) error {
 }
 
 func (m *Metrics) CronWfTrigger(ctx context.Context, name, namespace string) {
-	m.AddInt(ctx, telemetry.InstrumentCronworkflowsTriggeredTotal.Name(), 1, telemetry.InstAttribs{
-		{Name: telemetry.AttribCronWFName, Value: name},
-		{Name: telemetry.AttribCronWFNamespace, Value: namespace},
-	})
+	m.AddCronworkflowsTriggeredTotal(ctx, 1, name, namespace)
 }

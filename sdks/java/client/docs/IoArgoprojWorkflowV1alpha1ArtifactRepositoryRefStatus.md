@@ -2,6 +2,7 @@
 
 # IoArgoprojWorkflowV1alpha1ArtifactRepositoryRefStatus
 
+ArtifactRepositoryRefStatus is the resolved artifact repository reference with namespace io.argoproj.workflow.v1alpha1.
 
 ## Properties
 

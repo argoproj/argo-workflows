@@ -1,0 +1,60 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: artgc-template-plugin
+spec:
+  workflowMetadata:
+    labels:
+      workflows.argoproj.io/test: "true"
+  entrypoint: artgc-template-main
+  templates:
+  - name: artgc-template-main
+    container:
+      image: argoproj/argosay:v2
+      command:
+        - sh
+        - -c
+      args:
+        - |
+          echo "hello world"
+          echo "hello world" > /tmp/message
+    outputs:
+      artifacts:
+        - name: on-completion
+          path: /tmp/message
+          archive:
+            none: {}
+          plugin:
+            name: test
+            configuration: |
+              bucket: plugin-bucket
+              endpoint: minio:9000
+              insecure: true
+              accessKeySecret:
+                name: my-minio-cred
+                key: accesskey
+              secretKeySecret:
+                name: my-minio-cred
+                key: secretkey
+            key: on-completion
+          artifactGC:
+            strategy: OnWorkflowCompletion
+        - name: on-deletion
+          path: /tmp/message
+          archive:
+            none: {}
+          plugin:
+            name: test
+            configuration: |
+              bucket: plugin-bucket
+              endpoint: minio:9000
+              insecure: true
+              accessKeySecret:
+                name: my-minio-cred
+                key: accesskey
+              secretKeySecret:
+                name: my-minio-cred
+                key: secretkey
+            key: on-deletion
+          artifactGC:
+            strategy: OnWorkflowDeletion

@@ -12,3 +12,4 @@ patches:
 - path: workflow-controller-deployment.yaml
 - path: workflow-controller-cluster-workflow-template-rbac.yaml
 - path: minio-deployment.yaml
+- path: artifact-repositories-configmap.yaml

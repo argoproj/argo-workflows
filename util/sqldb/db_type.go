@@ -1,12 +1,6 @@
 package sqldb
 
-import (
-	"database/sql"
-
-	"github.com/go-sql-driver/mysql"
-	sqlite3 "github.com/mattn/go-sqlite3"
-	"github.com/upper/db/v4"
-)
+import "github.com/argoproj/argo-workflows/v4/config"
 
 type DBType string
 
@@ -14,21 +8,22 @@ const (
 	MySQL    DBType = "mysql"
 	Postgres DBType = "postgres"
 	SQLite   DBType = "sqlite"
+	Invalid  DBType = "invalid"
 )
-
-func DBTypeFor(session db.Session) DBType {
-	switch session.Driver().(*sql.DB).Driver().(type) {
-	case *mysql.MySQLDriver:
-		return MySQL
-	case *sqlite3.SQLiteDriver:
-		return SQLite
-	}
-	return Postgres
-}
 
 func (t DBType) IntType() string {
 	if t == MySQL {
 		return "signed"
 	}
 	return "int"
+}
+
+func dbTypeFromConfig(cfg *config.DBConfig) DBType {
+	if cfg.PostgreSQL != nil {
+		return Postgres
+	}
+	if cfg.MySQL != nil {
+		return MySQL
+	}
+	return Invalid
 }

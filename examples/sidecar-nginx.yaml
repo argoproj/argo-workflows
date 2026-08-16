@@ -7,7 +7,7 @@ spec:
   templates:
   - name: sidecar-nginx-example
     container:
-      image: appropriate/curl
+      image: curlimages/curl:latest
       command: [sh, -c]
       args: ["until `curl -G 'http://127.0.0.1/' >& /tmp/out`; do echo sleep && sleep 1; done && cat /tmp/out"]
     sidecars:

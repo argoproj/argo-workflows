@@ -21,18 +21,16 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/retry"
-	"k8s.io/utils/ptr"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	workflow "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	executorplugins "github.com/argoproj/argo-workflows/v3/pkg/plugins/executor"
-	"github.com/argoproj/argo-workflows/v3/util"
-	"github.com/argoproj/argo-workflows/v3/util/env"
-	"github.com/argoproj/argo-workflows/v3/util/errors"
-	"github.com/argoproj/argo-workflows/v3/util/expr/argoexpr"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	workflow "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	executorplugins "github.com/argoproj/argo-workflows/v4/pkg/plugins/executor"
+	"github.com/argoproj/argo-workflows/v4/util"
+	"github.com/argoproj/argo-workflows/v4/util/errors"
+	"github.com/argoproj/argo-workflows/v4/util/expr/argoexpr"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 type AgentExecutor struct {
@@ -44,11 +42,16 @@ type AgentExecutor struct {
 	Namespace         string
 	consideredTasks   *sync.Map
 	plugins           []executorplugins.TemplateExecutor
+	taskWorkers       int
+	requeueTime       time.Duration
 }
 
 type templateExecutor = func(ctx context.Context, tmpl wfv1.Template, result *wfv1.NodeResult) (time.Duration, error)
 
-func NewAgentExecutor(clientSet kubernetes.Interface, restClient rest.Interface, config *rest.Config, namespace, workflowName, workflowUID string, plugins []executorplugins.TemplateExecutor) *AgentExecutor {
+// NewAgentExecutor instantiates a new agent executor. taskWorkers and
+// requeueTime are parsed from the environment (ARGO_AGENT_TASK_WORKERS,
+// ARGO_AGENT_PATCH_RATE) at the composition root in cmd/argoexec.
+func NewAgentExecutor(clientSet kubernetes.Interface, restClient rest.Interface, config *rest.Config, namespace, workflowName, workflowUID string, plugins []executorplugins.TemplateExecutor, taskWorkers int, requeueTime time.Duration) *AgentExecutor {
 	return &AgentExecutor{
 		ClientSet:         clientSet,
 		RESTClient:        restClient,
@@ -58,6 +61,8 @@ func NewAgentExecutor(clientSet kubernetes.Interface, restClient rest.Interface,
 		WorkflowInterface: workflow.NewForConfigOrDie(config),
 		consideredTasks:   &sync.Map{},
 		plugins:           plugins,
+		taskWorkers:       taskWorkers,
+		requeueTime:       requeueTime,
 	}
 }
 
@@ -74,19 +79,17 @@ type response struct {
 func (ae *AgentExecutor) Agent(ctx context.Context) error {
 	defer runtimeutil.HandleCrashWithContext(ctx, runtimeutil.PanicHandlers...)
 
-	taskWorkers := env.LookupEnvIntOr(ctx, common.EnvAgentTaskWorkers, 16)
-	requeueTime := env.LookupEnvDurationOr(ctx, common.EnvAgentPatchRate, 10*time.Second)
 	logger := logging.RequireLoggerFromContext(ctx)
-	logger.WithField("taskWorkers", taskWorkers).
-		WithField("requeueTime", requeueTime).
+	logger.WithField("taskWorkers", ae.taskWorkers).
+		WithField("requeueTime", ae.requeueTime).
 		Info(ctx, "Starting Agent")
 
 	taskQueue := make(chan task)
 	responseQueue := make(chan response)
 	taskSetInterface := ae.WorkflowInterface.ArgoprojV1alpha1().WorkflowTaskSets(ae.Namespace)
 
-	go ae.patchWorker(ctx, taskSetInterface, responseQueue, requeueTime)
-	for i := 0; i < taskWorkers; i++ {
+	go ae.patchWorker(ctx, taskSetInterface, responseQueue, ae.requeueTime)
+	for range ae.taskWorkers {
 		go ae.taskWorker(ctx, taskQueue, responseQueue)
 	}
 
@@ -122,12 +125,13 @@ func (ae *AgentExecutor) Agent(ctx context.Context) error {
 
 func (ae *AgentExecutor) taskWorker(ctx context.Context, taskQueue chan task, responseQueue chan response) {
 	for {
-		task, ok := <-taskQueue
+		workTask, ok := <-taskQueue
 		if !ok {
 			break
 		}
-		nodeID, tmpl := task.NodeID, task.Template
-		ctx, logger := logging.RequireLoggerFromContext(ctx).WithField("nodeID", nodeID).InContext(ctx)
+		nodeID, tmpl := workTask.NodeID, workTask.Template
+		var logger logging.Logger
+		ctx, logger = logging.RequireLoggerFromContext(ctx).WithField("nodeID", nodeID).InContext(ctx)
 
 		// Do not work on tasks that have already been considered once, to prevent calling an endpoint more
 		// than once unintentionally.
@@ -160,7 +164,7 @@ func (ae *AgentExecutor) taskWorker(ctx context.Context, taskQueue chan task, re
 			time.AfterFunc(requeue, func() {
 				ae.consideredTasks.Delete(nodeID)
 
-				taskQueue <- task
+				taskQueue <- workTask
 			})
 		}
 	}
@@ -180,7 +184,7 @@ func (ae *AgentExecutor) patchWorker(ctx context.Context, taskSetInterface v1alp
 				continue
 			}
 
-			patch, err := json.Marshal(map[string]interface{}{"status": wfv1.WorkflowTaskSetStatus{Nodes: nodeResults}})
+			patch, err := json.Marshal(map[string]any{"status": wfv1.WorkflowTaskSetStatus{Nodes: nodeResults}})
 			if err != nil {
 				logger.WithError(err).Error(ctx, "Generating Patch Failed")
 				continue
@@ -194,11 +198,11 @@ func (ae *AgentExecutor) patchWorker(ctx context.Context, taskSetInterface v1alp
 				Jitter:   0.1,
 				Steps:    5,
 				Cap:      30 * time.Second,
-			}, func(err error) bool {
-				return errors.IsTransientErr(ctx, err)
+			}, func(retryErr error) bool {
+				return errors.IsTransientErr(ctx, retryErr)
 			}, func() error {
-				_, err := taskSetInterface.Patch(ctx, ae.WorkflowName, types.MergePatchType, patch, metav1.PatchOptions{}, "status")
-				return err
+				_, patchErr := taskSetInterface.Patch(ctx, ae.WorkflowName, types.MergePatchType, patch, metav1.PatchOptions{}, "status")
+				return patchErr
 			})
 
 			if err != nil && !errors.IsTransientErr(ctx, err) {
@@ -249,7 +253,13 @@ func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Temp
 	if tmpl.HTTP == nil {
 		return 0, nil
 	}
-
+	// Read response.Body after cancel(), sometimes it return a context canceled error
+	// For more detail  https://groups.google.com/g/golang-nuts/c/2FKwG6oEvos
+	var cancel context.CancelFunc
+	if tmpl.HTTP.TimeoutSeconds != nil {
+		ctx, cancel = context.WithTimeout(ctx, time.Duration(*tmpl.HTTP.TimeoutSeconds)*time.Second)
+		defer cancel()
+	}
 	response, err := ae.executeHTTPTemplateRequest(ctx, tmpl.HTTP)
 	if err != nil {
 		return 0, err
@@ -261,7 +271,7 @@ func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Temp
 		return 0, err
 	}
 
-	outputs := wfv1.Outputs{Result: ptr.To(string(bodyBytes))}
+	outputs := wfv1.Outputs{Result: new(string(bodyBytes))}
 	phase := wfv1.NodeSucceeded
 	message := ""
 	if tmpl.HTTP.SuccessCondition == "" {
@@ -272,15 +282,15 @@ func (ae *AgentExecutor) executeHTTPTemplate(ctx context.Context, tmpl wfv1.Temp
 			message = fmt.Sprintf("received non-2xx response code: %d", response.StatusCode)
 		}
 	} else {
-		evalScope := map[string]interface{}{
-			"request": map[string]interface{}{
+		evalScope := map[string]any{
+			"request": map[string]any{
 				"method":    tmpl.HTTP.Method,
 				"url":       tmpl.HTTP.URL,
 				"body":      tmpl.HTTP.Body,
 				"bodyBytes": tmpl.HTTP.GetBodyBytes(),
 				"headers":   tmpl.HTTP.Headers.ToHeader(),
 			},
-			"response": map[string]interface{}{
+			"response": map[string]any{
 				"statusCode": response.StatusCode,
 				"body":       string(bodyBytes),
 				"headers":    response.Header,
@@ -320,29 +330,21 @@ func (ae *AgentExecutor) executeHTTPTemplateRequest(ctx context.Context, httpTem
 	)
 	if httpTemplate.BodyFrom != nil {
 		if httpTemplate.BodyFrom.Bytes != nil {
-			request, err = http.NewRequest(httpTemplate.Method, httpTemplate.URL, bytes.NewBuffer(httpTemplate.BodyFrom.Bytes))
+			request, err = http.NewRequestWithContext(ctx, httpTemplate.Method, httpTemplate.URL, bytes.NewBuffer(httpTemplate.BodyFrom.Bytes))
 		}
 	} else {
-		request, err = http.NewRequest(httpTemplate.Method, httpTemplate.URL, bytes.NewBufferString(httpTemplate.Body))
+		request, err = http.NewRequestWithContext(ctx, httpTemplate.Method, httpTemplate.URL, bytes.NewBufferString(httpTemplate.Body))
 	}
 	if err != nil {
 		return nil, err
 	}
 
-	if httpTemplate.TimeoutSeconds != nil {
-		ctx, cancel := context.WithTimeout(ctx, time.Duration(*httpTemplate.TimeoutSeconds)*time.Second)
-		defer cancel()
-		request = request.WithContext(ctx)
-	} else {
-		request = request.WithContext(ctx)
-	}
-
 	for _, header := range httpTemplate.Headers {
 		value := header.Value
 		if header.ValueFrom != nil && header.ValueFrom.SecretKeyRef != nil {
-			secret, err := util.GetSecrets(ctx, ae.ClientSet, ae.Namespace, header.ValueFrom.SecretKeyRef.Name, header.ValueFrom.SecretKeyRef.Key)
-			if err != nil {
-				return nil, err
+			secret, secretErr := util.GetSecrets(ctx, ae.ClientSet, ae.Namespace, header.ValueFrom.SecretKeyRef.Name, header.ValueFrom.SecretKeyRef.Key)
+			if secretErr != nil {
+				return nil, secretErr
 			}
 			value = string(secret)
 		}

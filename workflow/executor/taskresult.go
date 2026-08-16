@@ -3,15 +3,14 @@ package executor
 import (
 	"context"
 	"encoding/json"
-	"os"
 
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 func (we *WorkflowExecutor) upsertTaskResult(ctx context.Context, result wfv1.NodeResult) error {
@@ -36,6 +35,8 @@ func (we *WorkflowExecutor) upsertTaskResult(ctx context.Context, result wfv1.No
 }
 
 func (we *WorkflowExecutor) patchTaskResult(ctx context.Context, result wfv1.NodeResult) error {
+	ctx, span := we.Tracing.StartPatchTaskResult(ctx)
+	defer span.End()
 	data, err := json.Marshal(&wfv1.WorkflowTaskResult{NodeResult: result})
 	if err != nil {
 		return err
@@ -50,6 +51,8 @@ func (we *WorkflowExecutor) patchTaskResult(ctx context.Context, result wfv1.Nod
 }
 
 func (we *WorkflowExecutor) patchTaskResultLabels(ctx context.Context, labels map[string]string) error {
+	ctx, span := we.Tracing.StartPatchTaskResultLabels(ctx)
+	defer span.End()
 	data, err := json.Marshal(&wfv1.WorkflowTaskResult{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: labels,
@@ -68,6 +71,8 @@ func (we *WorkflowExecutor) patchTaskResultLabels(ctx context.Context, labels ma
 }
 
 func (we *WorkflowExecutor) createTaskResult(ctx context.Context, result wfv1.NodeResult) error {
+	ctx, span := we.Tracing.StartCreateTaskResult(ctx)
+	defer span.End()
 	taskResult := &wfv1.WorkflowTaskResult{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: workflow.APIVersion,
@@ -89,17 +94,13 @@ func (we *WorkflowExecutor) createTaskResult(ctx context.Context, result wfv1.No
 		UID:        we.workflowUID,
 	}})
 
-	if v := os.Getenv(common.EnvVarInstanceID); v != "" {
-		taskResult.Labels[common.LabelKeyControllerInstanceID] = v
+	if we.instanceID != "" {
+		taskResult.Labels[common.LabelKeyControllerInstanceID] = we.instanceID
 	}
 	_, err := we.taskResultClient.Create(ctx,
 		taskResult,
 		metav1.CreateOptions{},
 	)
-	if err != nil && !apierr.IsAlreadyExists(err) {
-		we.taskResultCreated = false
-	} else {
-		we.taskResultCreated = true
-	}
+	we.taskResultCreated = err == nil || apierr.IsAlreadyExists(err)
 	return err
 }

@@ -9,28 +9,29 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo-workflows/v3"
-	persist "github.com/argoproj/argo-workflows/v3/persist/sqldb"
-	"github.com/argoproj/argo-workflows/v3/util/instanceid"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/util/sqldb"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifactrepositories"
-	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
+	"github.com/argoproj/argo-workflows/v4"
+	persist "github.com/argoproj/argo-workflows/v4/persist/sqldb"
+	"github.com/argoproj/argo-workflows/v4/util/instanceid"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/sqldb"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifactrepositories"
+	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
 )
 
 func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 	logger := logging.RequireLoggerFromContext(ctx)
-	bytes, err := yaml.Marshal(wfc.Config)
+	_, err := yaml.Marshal(wfc.Config)
 	if err != nil {
 		return err
 	}
-	logger.WithField("config", string(bytes)).Info(ctx, "Configuration")
+	logger.Info(ctx, "Configuration updated")
 	wfc.artifactRepositories = artifactrepositories.New(wfc.kubeclientset, wfc.namespace, &wfc.Config.ArtifactRepository)
 	wfc.offloadNodeStatusRepo = persist.ExplosiveOffloadNodeStatusRepo
 	wfc.wfArchive = persist.NullWorkflowArchive
 	wfc.archiveLabelSelector = labels.Everything()
 	if wfc.throttler != nil {
 		wfc.throttler.UpdateParallelism(wfc.Config.Parallelism)
+		wfc.throttler.UpdateNamespaceParallelismDefault(wfc.Config.NamespaceParallelism)
 	}
 
 	persistence := wfc.Config.Persistence
@@ -40,17 +41,21 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		if wfc.session == nil {
-			session, err := sqldb.CreateDBSession(ctx, wfc.kubeclientset, wfc.namespace, persistence.DBConfig)
-			if err != nil {
-				return err
+		if wfc.sessionProxy == nil {
+			sessionProxy, sessionErr := sqldb.NewSessionProxy(ctx, sqldb.SessionProxyConfig{
+				KubectlConfig: wfc.kubeclientset,
+				Namespace:     wfc.namespace,
+				DBConfig:      persistence.DBConfig,
+			})
+			if sessionErr != nil {
+				return sessionErr
 			}
 			logger.Info(ctx, "Persistence Session created successfully")
-			wfc.session = session
+			wfc.sessionProxy = sessionProxy
 		}
-		sqldb.ConfigureDBSession(wfc.session, persistence.ConnectionPool)
+		sqldb.ConfigureDBSession(wfc.sessionProxy.Session(), persistence.ConnectionPool)
 		if persistence.NodeStatusOffload {
-			wfc.offloadNodeStatusRepo, err = persist.NewOffloadNodeStatusRepo(ctx, logger, wfc.session, persistence.GetClusterName(), tableName)
+			wfc.offloadNodeStatusRepo, err = persist.NewOffloadNodeStatusRepo(ctx, logger, wfc.sessionProxy, persistence.GetClusterName(), tableName)
 			if err != nil {
 				return err
 			}
@@ -65,7 +70,7 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 			if err != nil {
 				return err
 			}
-			wfc.wfArchive = persist.NewWorkflowArchive(wfc.session, persistence.GetClusterName(), wfc.managedNamespace, instanceIDService)
+			wfc.wfArchive = persist.NewWorkflowArchive(wfc.sessionProxy, persistence.GetClusterName(), wfc.managedNamespace, instanceIDService)
 			logger.Info(ctx, "Workflow archiving is enabled")
 		} else {
 			logger.Info(ctx, "Workflow archiving is disabled")
@@ -82,6 +87,7 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 	logger.WithField("executorImage", wfc.executorImage()).
 		WithField("executorImagePullPolicy", wfc.executorImagePullPolicy()).
 		WithField("managedNamespace", wfc.GetManagedNamespace()).
+		WithField("initlessPod", wfc.isInitlessPodEnabled()).
 		Info(ctx, "")
 	return nil
 }
@@ -99,7 +105,7 @@ func (wfc *WorkflowController) initDB(ctx context.Context) error {
 		return err
 	}
 
-	return persist.Migrate(ctx, wfc.session, persistence.GetClusterName(), tableName)
+	return persist.Migrate(ctx, wfc.sessionProxy.Session(), persistence.GetClusterName(), tableName, wfc.sessionProxy.DBType())
 }
 
 func (wfc *WorkflowController) newRateLimiter() *rate.Limiter {
@@ -126,7 +132,14 @@ func (wfc *WorkflowController) executorLogFormat() string {
 func (wfc *WorkflowController) executorImagePullPolicy() apiv1.PullPolicy {
 	if wfc.cliExecutorImagePullPolicy != "" {
 		return apiv1.PullPolicy(wfc.cliExecutorImagePullPolicy)
-	} else {
-		return wfc.Config.GetExecutor().ImagePullPolicy
 	}
+	return wfc.Config.GetExecutor().ImagePullPolicy
+}
+
+// isInitlessPodEnabled reports whether this controller should produce init-less
+// workflow pods. Opt-in, controller-wide. Relies on the ImageVolume feature
+// (KEP-4639) to deliver the argoexec binary into `main` — Beta in K8s 1.33
+// behind a feature gate, GA in 1.36.
+func (wfc *WorkflowController) isInitlessPodEnabled() bool {
+	return wfc.Config.InitlessPod.IsEnabled()
 }

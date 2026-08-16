@@ -2,8 +2,6 @@ package cron
 
 import (
 	"context"
-	"fmt"
-	"reflect"
 	"sync"
 	"time"
 
@@ -72,24 +70,4 @@ func (f *cronFacade) AddJob(key, schedule string, cwoc *cronWfOperationCtx) (Sch
 		}
 		return t
 	}, nil
-}
-
-func (f *cronFacade) Load(key string) ([]*cronWfOperationCtx, error) {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	entryIDs, ok := f.entryIDs[key]
-	if !ok {
-		return nil, fmt.Errorf("entry ID for %s not found", key)
-	}
-	cwocs := make([]*cronWfOperationCtx, len(entryIDs))
-	for i, entryID := range entryIDs {
-		entry := f.cron.Entry(entryID).Job
-		cwoc, ok := entry.(*cronWfOperationCtx)
-		if !ok {
-			return nil, fmt.Errorf("job entry ID for %s was not a *cronWfOperationCtx, was %v", key, reflect.TypeOf(entry))
-		}
-		cwocs[i] = cwoc
-	}
-
-	return cwocs, nil
 }

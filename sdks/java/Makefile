@@ -1,4 +1,4 @@
-USE_NIX := false
+USE_NIX ?= false
 GIT_TAG               := $(shell git describe --exact-match --tags --abbrev=0 2> /dev/null || echo untagged)
 ifeq ($(GIT_TAG),untagged)
 # "SNAPSHOT" is "latest" for Java
@@ -12,11 +12,14 @@ endif
 WD                    := $(shell echo "`pwd`/client")
 
 DOCKER = docker run --rm --user $(shell id -u):$(shell id -g) -v $(WD):/wd --workdir /wd
-MVN = $(DOCKER) -v $(HOME)/.m2:/root/.m2 -e JAVA_SDK_MAVEN_PASSWORD=${JAVA_SDK_MAVEN_PASSWORD} maven:3-openjdk-8 mvn -s settings.xml
+MVN = $(DOCKER) -v $(HOME)/.m2:/tmp/.m2 -e JAVA_SDK_MAVEN_PASSWORD=${JAVA_SDK_MAVEN_PASSWORD} maven:3-openjdk-8 mvn -Duser.home=/tmp -s settings.xml
 CHOWN = chown -R $(shell id -u):$(shell id -g)
 
 publish: generate
 	# https://help.github.com/en/packages/using-github-packages-with-your-projects-ecosystem/configuring-apache-maven-for-use-with-github-packages
+	# $(HOME)/.m2 must exist before docker bind mounts it, otherwise docker
+	# creates it owned by root and maven cannot write to it
+	mkdir -p $(HOME)/.m2
 	$(MVN) deploy -DskipTests -DaltDeploymentRepository=github::default::https://maven.pkg.github.com/argoproj/argo-workflows
 
 generate:
@@ -25,6 +28,7 @@ ifeq ($(USE_NIX), true)
 	rm -rf $(WD)
 	nix build
 	cp -r result/data/client ./client
+	chmod -R u+w ./client
 else 
 	rm -Rf $(WD)
 	mkdir -p $(WD)

@@ -5,16 +5,23 @@ import (
 
 	"github.com/upper/db/v4"
 
-	"github.com/argoproj/argo-workflows/v3/server/utils"
-	"github.com/argoproj/argo-workflows/v3/util/sqldb"
+	"github.com/argoproj/argo-workflows/v4/server/utils"
+	"github.com/argoproj/argo-workflows/v4/util/sqldb"
 )
 
 func BuildArchivedWorkflowSelector(selector db.Selector, tableName, labelTableName string, t sqldb.DBType, options utils.ListOptions, count bool) (db.Selector, error) {
+	if options.NamespaceFilter == "NotEquals" {
+		selector = selector.And(namespaceNotEqual(options.Namespace))
+	} else {
+		selector = selector.And(namespaceEqual(options.Namespace))
+	}
+
 	selector = selector.
-		And(namespaceEqual(options.Namespace)).
 		And(namePrefixClause(options.NamePrefix)).
 		And(startedAtFromClause(options.MinStartedAt)).
-		And(startedAtToClause(options.MaxStartedAt))
+		And(startedAtToClause(options.MaxStartedAt)).
+		And(createdAfterClause(options.CreatedAfter)).
+		And(finishedBeforeClause(options.FinishedBefore))
 
 	if options.Name != "" {
 		nameFilter := options.NameFilter
@@ -29,6 +36,9 @@ func BuildArchivedWorkflowSelector(selector db.Selector, tableName, labelTableNa
 		}
 		if nameFilter == "Prefix" {
 			selector = selector.And(namePrefixClause(options.Name))
+		}
+		if nameFilter == "NotEquals" {
+			selector = selector.And(nameNotEqual(options.Name))
 		}
 	}
 
@@ -54,7 +64,11 @@ func BuildArchivedWorkflowSelector(selector db.Selector, tableName, labelTableNa
 func BuildWorkflowSelector(in string, inArgs []any, tableName, labelTableName string, t sqldb.DBType, options utils.ListOptions, count bool) (out string, outArgs []any, err error) {
 	var clauses []*db.RawExpr
 	if options.Namespace != "" {
-		clauses = append(clauses, db.Raw("namespace = ?", options.Namespace))
+		if options.NamespaceFilter == "NotEquals" {
+			clauses = append(clauses, db.Raw("namespace != ?", options.Namespace))
+		} else {
+			clauses = append(clauses, db.Raw("namespace = ?", options.Namespace))
+		}
 	}
 	if options.Name != "" {
 		nameFilter := options.NameFilter
@@ -69,6 +83,9 @@ func BuildWorkflowSelector(in string, inArgs []any, tableName, labelTableName st
 		}
 		if nameFilter == "Prefix" {
 			clauses = append(clauses, db.Raw("name like ?", options.Name+"%"))
+		}
+		if nameFilter == "NotEquals" {
+			clauses = append(clauses, db.Raw("name != ?", options.Name))
 		}
 	}
 	if !options.CreatedAfter.IsZero() {

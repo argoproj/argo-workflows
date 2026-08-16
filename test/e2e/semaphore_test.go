@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/test/e2e/fixtures"
 )
 
 type SemaphoreSuite struct {
@@ -86,16 +86,6 @@ func (s *SemaphoreSuite) TestSynchronizationMultiple() {
 		Workflow("@synchronization/multiple.yaml").
 		When().
 		CreateConfigMap("my-config", map[string]string{"workflow": "2"}, map[string]string{}).
-		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeSucceeded, 90*time.Second)
-}
-
-// Legacy CRD entries: mutex and semaphore
-func (s *SemaphoreSuite) TestSynchronizationLegacyMutexAndSemaphore() {
-	s.Given().
-		Workflow("@synchronization/legacy-mutex-semaphore.yaml").
-		When().
-		CreateConfigMap("my-config", map[string]string{"workflow": "1"}, map[string]string{}).
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded, 90*time.Second)
 }

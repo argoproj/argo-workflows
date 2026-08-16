@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"strings"
 
 	"github.com/expr-lang/expr"
@@ -13,28 +14,28 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/retry"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/server/auth"
-	errorsutil "github.com/argoproj/argo-workflows/v3/util/errors"
-	"github.com/argoproj/argo-workflows/v3/util/expr/argoexpr"
-	exprenv "github.com/argoproj/argo-workflows/v3/util/expr/env"
-	"github.com/argoproj/argo-workflows/v3/util/instanceid"
-	jsonutil "github.com/argoproj/argo-workflows/v3/util/json"
-	"github.com/argoproj/argo-workflows/v3/util/labels"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/creator"
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/server/auth"
+	errorsutil "github.com/argoproj/argo-workflows/v4/util/errors"
+	"github.com/argoproj/argo-workflows/v4/util/expr/argoexpr"
+	exprenv "github.com/argoproj/argo-workflows/v4/util/expr/env"
+	"github.com/argoproj/argo-workflows/v4/util/instanceid"
+	jsonutil "github.com/argoproj/argo-workflows/v4/util/json"
+	"github.com/argoproj/argo-workflows/v4/util/labels"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	waitutil "github.com/argoproj/argo-workflows/v4/util/wait"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/creator"
+	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
 type Operation struct {
-	// nolint: containedctx
+	//nolint: containedctx
 	ctx               context.Context
 	eventRecorder     record.EventRecorder
 	instanceIDService instanceid.Service
 	events            []wfv1.WorkflowEventBinding
-	env               map[string]interface{}
+	env               map[string]any
 }
 
 // Context returns the context associated with this operation
@@ -56,8 +57,8 @@ func NewOperation(ctx context.Context, instanceIDService instanceid.Service, eve
 	}, nil
 }
 
-// not to be converted with sutils, parent calling function should handle this
-// responsibility
+// Dispatch executes the event dispatch. It is not to be converted with sutils;
+// the parent calling function should handle that responsibility.
 func (o *Operation) Dispatch(ctx context.Context) error {
 	logger := logging.RequireLoggerFromContext(ctx)
 
@@ -95,7 +96,7 @@ func (o *Operation) dispatch(ctx context.Context, wfeb wfv1.WorkflowEventBinding
 	logger.WithFields(logging.Fields{"namespace": wfeb.Namespace, "event": wfeb.Name, "selector": selector, "matched": matched}).Debug(ctx, "Selector evaluation")
 	submit := wfeb.Spec.Submit
 	if matched && submit != nil {
-		// nolint: contextcheck
+		//nolint: contextcheck
 		client := auth.GetWfClient(o.ctx)
 		ref := wfeb.Spec.Submit.WorkflowTemplateRef
 		var tmpl wfv1.WorkflowSpecHolder
@@ -113,6 +114,18 @@ func (o *Operation) dispatch(ctx context.Context, wfeb wfv1.WorkflowEventBinding
 			return nil, fmt.Errorf("failed to validate workflow template instanceid: %w", err)
 		}
 		wf := common.NewWorkflowFromWorkflowTemplate(tmpl.GetName(), ref.ClusterScope)
+
+		// Apply workflowMetadata labels and annotations from the template
+		// at creation time, matching the CronWorkflow behavior.
+		// labelsFrom is left to the controller since it
+		// requires parameter evaluation at runtime.
+		if wmd := tmpl.GetWorkflowSpec().WorkflowMetadata; wmd != nil {
+			maps.Copy(wf.Labels, wmd.Labels)
+			if len(wmd.Annotations) > 0 {
+				maps.Copy(wf.Annotations, wmd.Annotations)
+			}
+		}
+
 		o.instanceIDService.Label(wf)
 		err = o.populateWorkflowMetadata(wf, &submit.ObjectMeta)
 		if err != nil {
@@ -125,7 +138,7 @@ func (o *Operation) dispatch(ctx context.Context, wfeb wfv1.WorkflowEventBinding
 
 		// users will always want to know why a workflow was submitted,
 		// so we label with creator (which is a standard) and the name of the triggering event
-		// nolint: contextcheck
+		//nolint: contextcheck
 		creator.LabelCreator(o.ctx, wf)
 		labels.Label(wf, common.LabelKeyWorkflowEventBinding, wfeb.Name)
 		if submit.Arguments != nil {
@@ -133,17 +146,17 @@ func (o *Operation) dispatch(ctx context.Context, wfeb wfv1.WorkflowEventBinding
 				if p.ValueFrom == nil {
 					return nil, fmt.Errorf("malformed workflow template parameter \"%s\": valueFrom is nil", p.Name)
 				}
-				program, err := expr.Compile(p.ValueFrom.Event, expr.Env(o.env))
-				if err != nil {
-					return nil, fmt.Errorf("failed to compile workflow template parameter %s expression: %w", p.Name, err)
+				program, compileErr := expr.Compile(p.ValueFrom.Event, expr.Env(o.env))
+				if compileErr != nil {
+					return nil, fmt.Errorf("failed to compile workflow template parameter %s expression: %w", p.Name, compileErr)
 				}
-				result, err := expr.Run(program, o.env)
-				if err != nil {
-					return nil, fmt.Errorf("failed to evaluate workflow template parameter \"%s\" expression: %w", p.Name, err)
+				result, runErr := expr.Run(program, o.env)
+				if runErr != nil {
+					return nil, fmt.Errorf("failed to evaluate workflow template parameter \"%s\" expression: %w", p.Name, runErr)
 				}
-				data, err := json.Marshal(result)
-				if err != nil {
-					return nil, fmt.Errorf("failed to convert result to JSON \"%s\" expression: %w", p.Name, err)
+				data, marshalErr := json.Marshal(result)
+				if marshalErr != nil {
+					return nil, fmt.Errorf("failed to convert result to JSON \"%s\" expression: %w", p.Name, marshalErr)
 				}
 				wf.Spec.Arguments.Parameters = append(wf.Spec.Arguments.Parameters, wfv1.Parameter{Name: p.Name, Value: wfv1.AnyStringPtr(wfv1.Item{Value: data})})
 			}
@@ -216,8 +229,8 @@ func (o *Operation) evaluateStringExpression(statement string, errorInfo string)
 	return v, nil
 }
 
-func expressionEnvironment(ctx context.Context, namespace, discriminator string, payload *wfv1.Item) (map[string]interface{}, error) {
-	src := map[string]interface{}{
+func expressionEnvironment(ctx context.Context, namespace, discriminator string, payload *wfv1.Item) (map[string]any, error) {
+	src := map[string]any{
 		"namespace":     namespace,
 		"discriminator": discriminator,
 		"metadata":      metaData(ctx),
@@ -226,8 +239,8 @@ func expressionEnvironment(ctx context.Context, namespace, discriminator string,
 	return jsonutil.Jsonify(src)
 }
 
-func metaData(ctx context.Context) map[string]interface{} {
-	meta := make(map[string]interface{})
+func metaData(ctx context.Context) map[string]any {
+	meta := make(map[string]any)
 	md, _ := metadata.FromIncomingContext(ctx)
 	for k, v := range md {
 		// only allow headers `X-`  headers, e.g. `X-Github-Action`

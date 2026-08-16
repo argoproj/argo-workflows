@@ -7,8 +7,9 @@ import (
 	"os"
 	"sort"
 	"strconv"
+	"strings"
 
-	"github.com/argoproj/argo-workflows/v3/util/secrets"
+	"github.com/argoproj/argo-workflows/v4/util/secrets"
 
 	events "github.com/argoproj/argo-events/pkg/client/clientset/versioned"
 	"google.golang.org/grpc"
@@ -21,17 +22,17 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	workflow "github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo-workflows/v3/server/auth/serviceaccount"
-	"github.com/argoproj/argo-workflows/v3/server/auth/sso"
-	authTypes "github.com/argoproj/argo-workflows/v3/server/auth/types"
-	"github.com/argoproj/argo-workflows/v3/server/cache"
-	servertypes "github.com/argoproj/argo-workflows/v3/server/types"
-	"github.com/argoproj/argo-workflows/v3/util/expr/argoexpr"
-	jsonutil "github.com/argoproj/argo-workflows/v3/util/json"
-	"github.com/argoproj/argo-workflows/v3/util/kubeconfig"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	workflow "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo-workflows/v4/server/auth/serviceaccount"
+	"github.com/argoproj/argo-workflows/v4/server/auth/sso"
+	authTypes "github.com/argoproj/argo-workflows/v4/server/auth/types"
+	"github.com/argoproj/argo-workflows/v4/server/cache"
+	servertypes "github.com/argoproj/argo-workflows/v4/server/types"
+	"github.com/argoproj/argo-workflows/v4/util/expr/argoexpr"
+	jsonutil "github.com/argoproj/argo-workflows/v4/util/json"
+	"github.com/argoproj/argo-workflows/v4/util/kubeconfig"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 type ContextKey string
@@ -45,7 +46,7 @@ const (
 )
 
 type Gatekeeper interface {
-	ContextWithRequest(ctx context.Context, req interface{}) (context.Context, error)
+	ContextWithRequest(ctx context.Context, req any) (context.Context, error)
 	Context(ctx context.Context) (context.Context, error)
 	UnaryServerInterceptor() grpc.UnaryServerInterceptor
 	StreamServerInterceptor() grpc.StreamServerInterceptor
@@ -82,11 +83,10 @@ func NewGatekeeper(modes Modes, clients *servertypes.Clients, restConfig *rest.C
 		namespaced,
 		cache,
 	}, nil
-
 }
 
 func (s *gatekeeper) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
-	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
 		ctx, err = s.ContextWithRequest(ctx, req)
 		if err != nil {
 			return nil, err
@@ -96,12 +96,12 @@ func (s *gatekeeper) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 }
 
 func (s *gatekeeper) StreamServerInterceptor() grpc.StreamServerInterceptor {
-	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+	return func(srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		return handler(srv, NewAuthorizingServerStream(ss, s))
 	}
 }
 
-func (s *gatekeeper) ContextWithRequest(ctx context.Context, req interface{}) (context.Context, error) {
+func (s *gatekeeper) ContextWithRequest(ctx context.Context, req any) (context.Context, error) {
 	clients, claims, err := s.getClients(ctx, req)
 	if err != nil {
 		return nil, err
@@ -116,10 +116,6 @@ func (s *gatekeeper) ContextWithRequest(ctx context.Context, req interface{}) (c
 
 func (s *gatekeeper) Context(ctx context.Context) (context.Context, error) {
 	return s.ContextWithRequest(ctx, nil)
-}
-
-func GetDynamicClient(ctx context.Context) dynamic.Interface {
-	return ctx.Value(DynamicKey).(dynamic.Interface)
 }
 
 func GetWfClient(ctx context.Context) workflow.Interface {
@@ -161,7 +157,7 @@ func getAuthHeaders(md metadata.MD) []string {
 	return authorizations
 }
 
-func (s *gatekeeper) getClients(ctx context.Context, req interface{}) (*servertypes.Clients, *authTypes.Claims, error) {
+func (s *gatekeeper) getClients(ctx context.Context, req any) (*servertypes.Clients, *authTypes.Claims, error) {
 	md, _ := metadata.FromIncomingContext(ctx)
 	authorizations := getAuthHeaders(md)
 	// Required for GetMode() with Server auth when no auth header specified
@@ -207,17 +203,16 @@ func (s *gatekeeper) getClients(ctx context.Context, req interface{}) (*serverty
 				return nil, nil, status.Error(codes.PermissionDenied, "not allowed")
 			}
 			return clients, claims, nil
-		} else {
-			// important! write an audit entry (i.e. log entry) so we know which user performed an operation
-			logger.WithFields(addClaimsLogFields(claims, nil)).Info(ctx, "using the default service account for user")
-			return s.clients, claims, nil
 		}
+		// important! write an audit entry (i.e. log entry) so we know which user performed an operation
+		logger.WithFields(addClaimsLogFields(claims, nil)).Info(ctx, "using the default service account for user")
+		return s.clients, claims, nil
 	default:
 		panic("this should never happen")
 	}
 }
 
-func getNamespace(req interface{}) string {
+func getNamespace(req any) string {
 	if req == nil {
 		return ""
 	}
@@ -265,7 +260,7 @@ func (s *gatekeeper) getServiceAccount(claims *authTypes.Claims, namespace strin
 	return nil, fmt.Errorf("no service account rule matches")
 }
 
-func (s *gatekeeper) canDelegateRBACToRequestNamespace(req interface{}) bool {
+func (s *gatekeeper) canDelegateRBACToRequestNamespace(req any) bool {
 	if s.namespaced || os.Getenv("SSO_DELEGATE_RBAC_TO_NAMESPACE") != "true" {
 		return false
 	}
@@ -287,11 +282,11 @@ func (s *gatekeeper) getClientsForServiceAccount(ctx context.Context, claims *au
 	return clients, nil
 }
 
-func (s *gatekeeper) rbacAuthorization(ctx context.Context, claims *authTypes.Claims, req interface{}) (*servertypes.Clients, error) {
+func (s *gatekeeper) rbacAuthorization(ctx context.Context, claims *authTypes.Claims, req any) (*servertypes.Clients, error) {
 	logger := logging.RequireLoggerFromContext(ctx)
 	ssoDelegationAllowed, ssoDelegated := false, false
 	loginAccount, err := s.getServiceAccount(claims, s.ssoNamespace)
-	if err != nil {
+	if err != nil && !strings.Contains(err.Error(), "no service account rule matches") {
 		return nil, err
 	}
 	delegatedAccount := loginAccount
@@ -300,20 +295,26 @@ func (s *gatekeeper) rbacAuthorization(ctx context.Context, claims *authTypes.Cl
 		namespaceAccount, err := s.getServiceAccount(claims, getNamespace(req))
 		if err != nil {
 			logger.WithError(err).Info(ctx, "Error while SSO Delegation")
-		} else if precedence(namespaceAccount) > precedence(loginAccount) {
+		} else if loginAccount == nil || precedence(namespaceAccount) > precedence(loginAccount) {
 			delegatedAccount = namespaceAccount
 			ssoDelegated = true
 		}
 	}
+	if delegatedAccount == nil {
+		return nil, fmt.Errorf("no service account rule matches")
+	}
 	// important! write an audit entry (i.e. log entry) so we know which user performed an operation
-	logger.WithFields(logging.Fields{
+	fields := logging.Fields{
 		"serviceAccount":       delegatedAccount.Name,
-		"loginServiceAccount":  loginAccount.Name,
 		"subject":              claims.Subject,
 		"email":                claims.Email,
 		"ssoDelegationAllowed": ssoDelegationAllowed,
 		"ssoDelegated":         ssoDelegated,
-	}).Info(ctx, "selected SSO RBAC service account for user")
+	}
+	if loginAccount != nil {
+		fields["loginServiceAccount"] = loginAccount.Name
+	}
+	logger.WithFields(fields).Info(ctx, "selected SSO RBAC service account for user")
 	return s.getClientsForServiceAccount(ctx, claims, delegatedAccount)
 }
 

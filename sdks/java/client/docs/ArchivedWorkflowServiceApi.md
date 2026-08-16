@@ -15,7 +15,7 @@ Method | HTTP request | Description
 
 <a name="archivedWorkflowServiceDeleteArchivedWorkflow"></a>
 # **archivedWorkflowServiceDeleteArchivedWorkflow**
-> Object archivedWorkflowServiceDeleteArchivedWorkflow(uid, namespace)
+> Object archivedWorkflowServiceDeleteArchivedWorkflow(uid, namespace, name)
 
 
 
@@ -43,8 +43,9 @@ public class Example {
     ArchivedWorkflowServiceApi apiInstance = new ArchivedWorkflowServiceApi(defaultClient);
     String uid = "uid_example"; // String | 
     String namespace = "namespace_example"; // String | 
+    String name = "name_example"; // String | 
     try {
-      Object result = apiInstance.archivedWorkflowServiceDeleteArchivedWorkflow(uid, namespace);
+      Object result = apiInstance.archivedWorkflowServiceDeleteArchivedWorkflow(uid, namespace, name);
       System.out.println(result);
     } catch (ApiException e) {
       System.err.println("Exception when calling ArchivedWorkflowServiceApi#archivedWorkflowServiceDeleteArchivedWorkflow");
@@ -63,6 +64,7 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **uid** | **String**|  |
  **namespace** | **String**|  | [optional]
+ **name** | **String**|  | [optional]
 
 ### Return type
 

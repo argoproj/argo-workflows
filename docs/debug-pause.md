@@ -57,7 +57,7 @@ spec:
 argo submit -n argo --watch pause-after.yaml
 ```
 
-Create a shell in the container of interest of create a ephemeral container in the pod, in this example ephemeral containers are used.
+Create a shell in the container of interest or create an ephemeral container in the pod; in this example ephemeral containers are used.
 
 ```bash
 kubectl debug -n argo -it POD_NAME --image=busybox --target=main --share-processes

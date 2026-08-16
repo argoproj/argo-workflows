@@ -2,8 +2,6 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: outputs-result-
-  labels:
-    workflows.argoproj.io/test: "true"
   annotations:
     workflows.argoproj.io/description: |
       This workflow demonstrates collecting outputs (specifically the stdout result) from a pod.
@@ -30,7 +28,7 @@ spec:
       containerSet:
         containers:
           - name: main
-            image: python:alpine3.6
+            image: python:alpine3.23
             command:
               - python
               - -c
@@ -43,7 +41,7 @@ spec:
         parameters:
           - name: x
       script:
-        image: python:alpine3.6
+        image: python:alpine3.23
         command:
           - python
         source: |

@@ -11,17 +11,16 @@ import (
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	k8stesting "k8s.io/client-go/testing"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 func TestRBAC_AccessClusterWorkflowTemplates(t *testing.T) {
-
 	t.Run("has full access", func(t *testing.T) {
 		kubeclientset := &kubefake.Clientset{}
 		allowedVerbs := []string{"get", "list", "watch"}
 		kubeclientset.AddReactor("create", "selfsubjectaccessreviews", reactionFuncWithAllowedVerbs(allowedVerbs))
 		ctx := logging.TestContext(t.Context())
-		allowed := HasAccessToClusterWorkflowTemplates(ctx, kubeclientset, "")
+		allowed := HasAccessToClusterWorkflowTemplates(ctx, kubeclientset)
 		assert.True(t, allowed)
 	})
 
@@ -30,7 +29,7 @@ func TestRBAC_AccessClusterWorkflowTemplates(t *testing.T) {
 		allowedVerbs := []string{"get", "list"}
 		kubeclientset.AddReactor("create", "selfsubjectaccessreviews", reactionFuncWithAllowedVerbs(allowedVerbs))
 		ctx := logging.TestContext(t.Context())
-		allowed := HasAccessToClusterWorkflowTemplates(ctx, kubeclientset, "")
+		allowed := HasAccessToClusterWorkflowTemplates(ctx, kubeclientset)
 		assert.False(t, allowed)
 	})
 
@@ -39,7 +38,7 @@ func TestRBAC_AccessClusterWorkflowTemplates(t *testing.T) {
 		allowedVerbs := []string{"get"}
 		kubeclientset.AddReactor("create", "selfsubjectaccessreviews", reactionFuncWithAllowedVerbs(allowedVerbs))
 		ctx := logging.TestContext(t.Context())
-		allowed := HasAccessToClusterWorkflowTemplates(ctx, kubeclientset, "")
+		allowed := HasAccessToClusterWorkflowTemplates(ctx, kubeclientset)
 		assert.False(t, allowed)
 	})
 }

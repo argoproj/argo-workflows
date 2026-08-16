@@ -5,10 +5,10 @@ import (
 
 	"google.golang.org/grpc"
 
-	clusterworkflowtmplpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
-	"github.com/argoproj/argo-workflows/v3/workflow/validate"
+	clusterworkflowtmplpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/clusterworkflowtemplate"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/workflow/templateresolution"
+	"github.com/argoproj/argo-workflows/v4/workflow/validate"
 )
 
 type OfflineClusterWorkflowTemplateServiceClient struct {
@@ -39,7 +39,7 @@ func (o OfflineClusterWorkflowTemplateServiceClient) DeleteClusterWorkflowTempla
 }
 
 func (o OfflineClusterWorkflowTemplateServiceClient) LintClusterWorkflowTemplate(ctx context.Context, req *clusterworkflowtmplpkg.ClusterWorkflowTemplateLintRequest, opts ...grpc.CallOption) (*v1alpha1.ClusterWorkflowTemplate, error) {
-	err := validate.ValidateClusterWorkflowTemplate(ctx, nil, o.clusterWorkflowTemplateGetter, req.Template, nil, validate.ValidateOpts{Lint: true})
+	err := validate.ClusterWorkflowTemplate(ctx, nil, o.clusterWorkflowTemplateGetter, req.Template, nil, validate.Opts{Lint: true})
 	if err != nil {
 		return nil, err
 	}

@@ -8,11 +8,11 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 
-	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v3/pkg/client/informers/externalversions/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/server/types"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/controller/informer"
-	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
+	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/client/informers/externalversions/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/server/types"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/controller/informer"
+	"github.com/argoproj/argo-workflows/v4/workflow/templateresolution"
 )
 
 const (
@@ -41,7 +41,7 @@ func NewInformer(restConfig *rest.Config, managedNamespace string) (*Informer, e
 	}, nil
 }
 
-// Start informer in separate go-routine and block until cache sync
+// Run starts the informer in a separate go-routine and blocks until cache sync.
 func (wti *Informer) Run(ctx context.Context, stopCh <-chan struct{}) {
 	go wti.informer.Informer().Run(stopCh)
 
@@ -53,7 +53,7 @@ func (wti *Informer) Run(ctx context.Context, stopCh <-chan struct{}) {
 	}
 }
 
-// if namespace contains empty string Lister will use the namespace provided during initialization
+// Getter returns a WorkflowTemplateNamespacedGetter. If namespace is empty, the Lister will use the namespace provided during initialization.
 func (wti *Informer) Getter(ctx context.Context, namespace string) templateresolution.WorkflowTemplateNamespacedGetter {
 	if wti.informer == nil {
 		logging.RequireLoggerFromContext(ctx).WithFatal().Error(ctx, "Template informer not started")

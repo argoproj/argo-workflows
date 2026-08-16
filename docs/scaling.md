@@ -15,6 +15,9 @@ You can scale the controller vertically in these ways:
 
 If you observe the Controller using its total CPU or memory requests, you should increase those.
 
+At scale the Controller's memory usage is dominated by its informer caches, which hold every live Workflow, Pod and related object it watches.
+Since v4.1 the Controller strips `metadata.managedFields` from objects before caching them, which reduces the memory needed per cached object; keep this in mind when comparing heap profiles across versions.
+
 ### Adding Goroutines to Increase Concurrency
 
 If you have sufficient CPU cores, you can take advantage of them with more goroutines:
@@ -108,11 +111,10 @@ Rather than running a single installation in your cluster, run one per namespace
 
 ### Instance ID
 
-Within a cluster can use instance ID to run N Argo instances within a cluster.
+Within a cluster you can use instance ID to run many Argo instances within a cluster.
+You can run each instance in a separate, or the same namespace.
 
-Create one namespace for each Argo, e.g. `argo-i1`, `argo-i2`:.
-
-Edit [`workflow-controller-configmap.yaml`](workflow-controller-configmap.yaml) for each namespace to set an instance ID.
+For each instance, edit the [`workflow-controller-configmap.yaml`](workflow-controller-configmap.yaml) to set an `instanceID`.
 
 ```yaml
 apiVersion: v1
@@ -123,13 +125,42 @@ data:
     instanceID: i1
 ```
 
-You may need to pass the instance ID to the CLI:
+#### CLI Usage
+
+When you are using the CLI, set the `--instanceid` to interact with a specific instance.
+For example, to submit a Workflow defined in `my-wf.yaml`:
 
 ```bash
 argo --instanceid i1 submit my-wf.yaml
 ```
 
-You do not need to have one instance ID per namespace, you could have many or few.
+#### Declarative Usage
+
+You can also declare which instance to use in the each of the Custom Resources. For example, on a `Workflow`:
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+    labels:
+        workflows.argoproj.io/controller-instanceid: i1
+```
+
+It can also be useful, when defining a `WorkflowTemplate` to use `templateDefaults`
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+    labels:
+        workflows.argoproj.io/controller-instanceid: i1
+    name: example
+spec:
+    templateDefaults:
+        metadata:
+            labels:
+                workflows.argoproj.io/controller-instanceid: i1
+```
 
 ### Maximum Recursion Depth
 

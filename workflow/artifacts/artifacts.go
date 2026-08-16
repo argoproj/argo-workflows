@@ -1,22 +1,24 @@
-package executor
+package artifacts
 
 import (
 	"context"
 	"fmt"
 	gohttp "net/http"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/azure"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/gcs"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/git"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/hdfs"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/http"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/oss"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/raw"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/resource"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/s3"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/azure"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/gcs"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/git"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/hdfs"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/http"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/oss"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/plugin"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/raw"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/resource"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/s3"
+	"github.com/argoproj/argo-workflows/v4/workflow/tracing"
 )
 
 var ErrUnsupportedDriver = fmt.Errorf("unsupported artifact driver")
@@ -30,8 +32,8 @@ func NewDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 		return nil, err
 	}
 	return logging.New(drv), nil
-
 }
+
 func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (common.ArtifactDriver, error) {
 	if art.S3 != nil {
 		var accessKey string
@@ -104,6 +106,7 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 			KmsEncryptionContext:  kmsEncryptionContext,
 			EnableEncryption:      enableEncryption,
 			ServerSideCustomerKey: serverSideCustomerKey,
+			AddressingStyle:       art.S3.AddressingStyle,
 		}
 
 		return &driver, nil
@@ -157,7 +160,8 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 		if client == nil {
 			client = &gohttp.Client{}
 		}
-		driver.Client = client
+		// Wrap HTTP client with OpenTelemetry tracing
+		driver.Client = tracing.WrapHTTPArtifactClient(client, "http")
 		return &driver, nil
 	}
 	if art.Git != nil {
@@ -202,10 +206,9 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 		driver := http.ArtifactDriver{
 			Username: usernameBytes,
 			Password: passwordBytes,
-			Client:   &gohttp.Client{},
+			Client:   tracing.WrapHTTPArtifactClient(&gohttp.Client{}, "artifactory"),
 		}
 		return &driver, nil
-
 	}
 	if art.HDFS != nil {
 		return hdfs.CreateDriver(ctx, ri, art.HDFS)
@@ -223,12 +226,12 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 			if err != nil {
 				return nil, err
 			}
-			accessKey = string(accessKeyBytes)
+			accessKey = accessKeyBytes
 			secretKeyBytes, err := ri.GetSecret(ctx, art.OSS.SecretKeySecret.Name, art.OSS.SecretKeySecret.Key)
 			if err != nil {
 				return nil, err
 			}
-			secretKey = string(secretKeyBytes)
+			secretKey = secretKeyBytes
 		}
 
 		driver := oss.ArtifactDriver{
@@ -248,7 +251,7 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 			if err != nil {
 				return nil, err
 			}
-			serviceAccountKey := string(serviceAccountKeyBytes)
+			serviceAccountKey := serviceAccountKeyBytes
 			driver.ServiceAccountKey = serviceAccountKey
 		}
 		// key is not set, assume it is using Workload Idendity
@@ -272,6 +275,16 @@ func newDriver(ctx context.Context, art *wfv1.Artifact, ri resource.Interface) (
 			UseSDKCreds: art.Azure.UseSDKCreds,
 		}
 		return &driver, nil
+	}
+
+	if art.Plugin != nil {
+		// Get the socket path from the driver configuration
+		// This would typically come from the workflow controller configuration
+		driver, err := plugin.NewDriver(ctx, art.Plugin.Name, art.Plugin.Name.SocketPath(), art.Plugin.ConnectionTimeout())
+		if err != nil {
+			return nil, fmt.Errorf("failed to create plugin driver for %s: %w", art.Plugin.Name, err)
+		}
+		return driver, nil
 	}
 
 	return nil, ErrUnsupportedDriver

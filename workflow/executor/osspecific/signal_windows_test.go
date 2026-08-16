@@ -8,9 +8,10 @@ import (
 	"syscall"
 	"testing"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 func TestKill(t *testing.T) {
@@ -21,14 +22,11 @@ func TestKill(t *testing.T) {
 	require.NoError(t, err)
 
 	var wg sync.WaitGroup
-	go func() {
-		wg.Add(1)
-		defer wg.Done()
-
+	wg.Go(func() {
 		err = cmd.Wait()
 		// we'll get an exit code
 		assert.Error(t, err)
-	}()
+	})
 
 	err = Kill(cmd.Process.Pid, syscall.SIGTERM)
 	require.NoError(t, err)

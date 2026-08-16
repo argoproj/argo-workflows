@@ -6,7 +6,7 @@ import (
 	"github.com/upper/db/v4"
 )
 
-// represent a straight forward change that is compatible with all database providers
+// AnsiSQLChange represents a straightforward change that is compatible with all database providers.
 type AnsiSQLChange string
 
 func (s AnsiSQLChange) Apply(ctx context.Context, session db.Session) error {

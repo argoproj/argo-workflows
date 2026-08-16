@@ -6,6 +6,8 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: resubmit-
+  labels:
+    workflows.argoproj.io/no-test: "environment"
 spec:
   entrypoint: rand-fail-dag
   templates:
@@ -41,6 +43,6 @@ spec:
   # fail with a 33% probability
   - name: random-fail
     container:
-      image: python:alpine3.6
+      image: python:alpine3.23
       command: ["python", -c]
       args: ["import random; import sys; exit_code = random.choice([0, 0, 1]); print('exiting with code {}'.format(exit_code)); sys.exit(exit_code)"]

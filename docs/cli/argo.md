@@ -109,6 +109,7 @@ argo [flags]
 * [argo auth](argo_auth.md)	 - manage authentication settings
 * [argo cluster-template](argo_cluster-template.md)	 - manipulate cluster workflow templates
 * [argo completion](argo_completion.md)	 - output shell completion code for the specified shell (bash, zsh or fish)
+* [argo convert](argo_convert.md)	 - convert workflow manifests from legacy format to current format
 * [argo cp](argo_cp.md)	 - copy artifacts from workflow
 * [argo cron](argo_cron.md)	 - manage cron workflows
 * [argo delete](argo_delete.md)	 - delete workflows
@@ -125,6 +126,7 @@ argo [flags]
 * [argo stop](argo_stop.md)	 - stop zero or more workflows allowing all exit handlers to run
 * [argo submit](argo_submit.md)	 - submit a workflow
 * [argo suspend](argo_suspend.md)	 - suspend zero or more workflows (opposite of resume)
+* [argo sync](argo_sync.md)	 - manage sync limits
 * [argo template](argo_template.md)	 - manipulate workflow templates
 * [argo terminate](argo_terminate.md)	 - terminate zero or more workflows immediately
 * [argo version](argo_version.md)	 - print version information

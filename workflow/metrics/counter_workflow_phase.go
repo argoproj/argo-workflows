@@ -3,8 +3,8 @@ package metrics
 import (
 	"context"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/telemetry"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/telemetry"
 )
 
 type MetricWorkflowPhase string
@@ -41,8 +41,5 @@ func addWorkflowPhaseCounter(_ context.Context, m *Metrics) error {
 }
 
 func (m *Metrics) ChangeWorkflowPhase(ctx context.Context, phase MetricWorkflowPhase, namespace string) {
-	m.AddInt(ctx, telemetry.InstrumentTotalCount.Name(), 1, telemetry.InstAttribs{
-		{Name: telemetry.AttribWorkflowPhase, Value: string(phase)},
-		{Name: telemetry.AttribWorkflowNamespace, Value: namespace},
-	})
+	m.AddTotalCount(ctx, 1, string(phase), namespace)
 }

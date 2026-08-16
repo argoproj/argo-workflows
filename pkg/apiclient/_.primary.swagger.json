@@ -292,10 +292,10 @@
     "io.k8s.apimachinery.pkg.runtime.Object": {
       "title": "This is a hack do deal with this problem: https://github.com/kubernetes/kube-openapi/issues/174"
     },
-    "github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.ParallelSteps": {
+    "github.com.argoproj.argo_workflows.v4.pkg.apis.workflow.v1alpha1.ParallelSteps": {
       "type": "array",
       "items": {
-        "$ref": "#/definitions/github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.WorkflowStep"
+        "$ref": "#/definitions/github.com.argoproj.argo_workflows.v4.pkg.apis.workflow.v1alpha1.WorkflowStep"
       }
     },
     "google.protobuf.Any": {

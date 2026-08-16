@@ -4,6 +4,8 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
+  labels:
+    workflows.argoproj.io/no-test: "environment"
   generateName: output-artifact-s3-
 spec:
   entrypoint: hello-world-to-file

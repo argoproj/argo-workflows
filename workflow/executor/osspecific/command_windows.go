@@ -5,7 +5,7 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 func StartCommand(ctx context.Context, cmd *exec.Cmd) (func(), error) {

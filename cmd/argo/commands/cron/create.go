@@ -6,11 +6,11 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/client"
-	"github.com/argoproj/argo-workflows/v3/cmd/argo/commands/common"
-	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/client"
+	"github.com/argoproj/argo-workflows/v4/cmd/argo/commands/common"
+	cronworkflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/cronworkflow"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
 type cliCreateOpts struct {
@@ -21,29 +21,29 @@ type cliCreateOpts struct {
 
 func NewCreateCommand() *cobra.Command {
 	var (
-		cliCreateOpts  = cliCreateOpts{output: common.NewPrintWorkflowOutputValue("")}
 		submitOpts     wfv1.SubmitOpts
 		parametersFile string
 	)
+	opts := cliCreateOpts{output: common.NewPrintWorkflowOutputValue("")}
 	command := &cobra.Command{
 		Use:   "create FILE1 FILE2...",
 		Short: "create a cron workflow",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if parametersFile != "" {
-				err := util.ReadParametersFile(parametersFile, &submitOpts)
+				err := util.ReadParametersFile(cmd.Context(), parametersFile, &submitOpts)
 				if err != nil {
 					return err
 				}
 			}
-			return CreateCronWorkflows(cmd.Context(), args, &cliCreateOpts, &submitOpts)
+			return CreateCronWorkflows(cmd.Context(), args, &opts, &submitOpts)
 		},
 	}
 
 	util.PopulateSubmitOpts(command, &submitOpts, &parametersFile, false)
-	command.Flags().VarP(&cliCreateOpts.output, "output", "o", "Output format. "+cliCreateOpts.output.Usage())
-	command.Flags().BoolVar(&cliCreateOpts.strict, "strict", true, "perform strict workflow validation")
-	command.Flags().StringVar(&cliCreateOpts.schedule, "schedule", "", "override cron workflow schedule")
+	command.Flags().VarP(&opts.output, "output", "o", "Output format. "+opts.output.Usage())
+	command.Flags().BoolVar(&opts.strict, "strict", true, "perform strict workflow validation")
+	command.Flags().StringVar(&opts.schedule, "schedule", "", "override cron workflow schedule")
 	return command
 }
 
@@ -61,7 +61,8 @@ func CreateCronWorkflows(ctx context.Context, filePaths []string, cliOpts *cliCr
 
 	for _, cronWf := range cronWorkflows {
 		if cliOpts.schedule != "" {
-			cronWf.Spec.Schedule = cliOpts.schedule
+			// This option replaces the schedule
+			cronWf.Spec.Schedules = []string{cliOpts.schedule}
 		}
 
 		newWf := wfv1.Workflow{Spec: cronWf.Spec.WorkflowSpec}
@@ -89,7 +90,7 @@ func CreateCronWorkflows(ctx context.Context, filePaths []string, cliOpts *cliCr
 			CronWorkflow: &cronWf,
 		})
 		if err != nil {
-			return fmt.Errorf("Failed to create cron workflow: %v", err)
+			return fmt.Errorf("failed to create cron workflow: %w", err)
 		}
 		fmt.Print(getCronWorkflowGet(ctx, created))
 	}

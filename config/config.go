@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"net/url"
+	"slices"
 	"time"
 
 	metricsdk "go.opentelemetry.io/otel/sdk/metric"
@@ -12,7 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
 type ResourceRateLimit struct {
@@ -26,10 +27,10 @@ type ResourceRateLimit struct {
 // as read from the ConfigMap called workflow-controller-configmap
 type Config struct {
 	// NodeEvents configures how node events are emitted
-	NodeEvents NodeEvents `json:"nodeEvents,omitempty"`
+	NodeEvents NodeEvents `json:"nodeEvents,omitzero"`
 
 	// WorkflowEvents configures how workflow events are emitted
-	WorkflowEvents WorkflowEvents `json:"workflowEvents,omitempty"`
+	WorkflowEvents WorkflowEvents `json:"workflowEvents,omitzero"`
 
 	// Executor holds container customizations for the executor to use when running pods
 	Executor *apiv1.Container `json:"executor,omitempty"`
@@ -41,7 +42,7 @@ type Config struct {
 	KubeConfig *KubeConfig `json:"kubeConfig,omitempty"`
 
 	// ArtifactRepository contains the default location of an artifact repository for container artifacts
-	ArtifactRepository wfv1.ArtifactRepository `json:"artifactRepository,omitempty"`
+	ArtifactRepository wfv1.ArtifactRepository `json:"artifactRepository,omitzero"`
 
 	// Namespace is a label selector filter to limit the controller's watch to a specific namespace
 	Namespace string `json:"namespace,omitempty"`
@@ -53,15 +54,16 @@ type Config struct {
 	// in order to support multiple controllers in a single cluster, and ultimately allows the
 	// controller itself to be bundled as part of a higher level application. If omitted, the
 	// controller watches workflows and pods that *are not* labeled with an instance id.
+	// See [Scaling - Instance ID](https://argo-workflows.readthedocs.io/en/latest/scaling/#instance-id) for more details.
 	InstanceID string `json:"instanceID,omitempty"`
 
 	// MetricsConfig specifies configuration for metrics emission. Metrics are enabled and emitted on localhost:9090/metrics
 	// by default.
-	MetricsConfig MetricsConfig `json:"metricsConfig,omitempty"`
+	MetricsConfig MetricsConfig `json:"metricsConfig,omitzero"`
 
 	// TelemetryConfig specifies configuration for telemetry emission. Telemetry is enabled and emitted in the same endpoint
 	// as metrics by default, but can be overridden using this config.
-	TelemetryConfig MetricsConfig `json:"telemetryConfig,omitempty"`
+	TelemetryConfig MetricsConfig `json:"telemetryConfig,omitzero"`
 
 	// Parallelism limits the max total parallel workflows that can execute at the same time
 	Parallelism int `json:"parallelism,omitempty"`
@@ -85,7 +87,7 @@ type Config struct {
 	WorkflowDefaults *wfv1.Workflow `json:"workflowDefaults,omitempty"`
 
 	// PodSpecLogStrategy enables the logging of podspec on controller log.
-	PodSpecLogStrategy PodSpecLogStrategy `json:"podSpecLogStrategy,omitempty"`
+	PodSpecLogStrategy PodSpecLogStrategy `json:"podSpecLogStrategy,omitzero"`
 
 	// PodGCGracePeriodSeconds specifies the duration in seconds before a terminating pod is forcefully killed.
 	// Value must be non-negative integer. A zero value indicates that the pod will be forcefully terminated immediately.
@@ -101,7 +103,7 @@ type Config struct {
 	WorkflowRestrictions *WorkflowRestrictions `json:"workflowRestrictions,omitempty"`
 
 	// Adds configurable initial delay (for K8S clusters with mutating webhooks) to prevent workflow getting modified by MWC.
-	InitialDelay metav1.Duration `json:"initialDelay,omitempty"`
+	InitialDelay metav1.Duration `json:"initialDelay,omitzero"`
 
 	// The command/args for each image, needed when the command is not specified and the emissary executor is used.
 	// https://argo-workflows.readthedocs.io/en/latest/workflow-executors/#emissary-emissary
@@ -114,10 +116,114 @@ type Config struct {
 	NavColor string `json:"navColor,omitempty"`
 
 	// SSO in settings for single-sign on
-	SSO SSOConfig `json:"sso,omitempty"`
+	SSO SSOConfig `json:"sso,omitzero"`
 
 	// Synchronization via databases config
 	Synchronization *SyncConfig `json:"synchronization,omitempty"`
+
+	// ArtifactDrivers lists artifact driver plugins we can use
+	ArtifactDrivers []ArtifactDriver `json:"artifactDrivers,omitempty"`
+
+	// FailedPodRestart configures automatic restart of pods that fail before entering Running state
+	// (e.g., due to Eviction, DiskPressure, Preemption). This allows recovery from transient
+	// infrastructure issues without requiring a retryStrategy on templates.
+	FailedPodRestart *FailedPodRestartConfig `json:"failedPodRestart,omitempty"`
+
+	// DisableAgentPodCreation disables the creation of agent pods for HTTP and Plugin templates.
+	// This is useful when external agents are responsible for executing these templates and the controller should not create agent pods.
+	// Note: when this is set to true, HTTP templates will not be reconciled and the controller will not attempt to create agent pods for them.
+	DisableAgentPodCreation bool `json:"disableAgentPodCreation,omitempty"`
+
+	// InitlessPod configures an opt-in pod layout that omits the argoexec init container.
+	// The argoexec binary is delivered to the main container via a Kubernetes image volume
+	// (KEP-4639 — Beta in K8s 1.33 behind a feature gate, GA in 1.36), and a new
+	// `supervisor` container replaces `wait`, taking on pre-main responsibilities
+	// (template write, script staging, input artifact download, readiness signaling) in
+	// addition to its existing post-main work.
+	InitlessPod *InitlessPodConfig `json:"initlessPod,omitempty"`
+}
+
+// InitlessPodConfig configures the init-less pod layout.
+//
+// BETA — off by default and may change in incompatible ways in future minor
+// releases before being promoted to stable. See Config.InitlessPod.
+type InitlessPodConfig struct {
+	// Enabled selects the init-less pod layout for all workflow pods scheduled by this controller.
+	// Default is false (legacy pod layout with argoexec init container).
+	Enabled bool `json:"enabled,omitempty"`
+}
+
+// IsEnabled returns true if the init-less pod layout is enabled.
+func (c *InitlessPodConfig) IsEnabled() bool {
+	return c != nil && c.Enabled
+}
+
+// FailedPodRestartConfig configures automatic restart of pods that fail before entering Running state.
+// This is useful for recovering from transient infrastructure issues like node eviction due to
+// DiskPressure or MemoryPressure without requiring a retryStrategy on every template.
+type FailedPodRestartConfig struct {
+	// Enabled enables automatic restart of pods that fail before entering Running state.
+	// When enabled, pods that fail due to infrastructure issues (like eviction) without ever
+	// running their main container will be automatically recreated.
+	// Default is false.
+	Enabled bool `json:"enabled,omitempty"`
+
+	// MaxRestarts is the maximum number of automatic restarts per node before giving up.
+	// This prevents infinite restart loops. Default is 3.
+	MaxRestarts *int32 `json:"maxRestarts,omitempty"`
+}
+
+// GetMaxRestarts returns the configured max restarts or the default value of 3.
+func (c *FailedPodRestartConfig) GetMaxRestarts() int32 {
+	if c == nil || c.MaxRestarts == nil {
+		return 3
+	}
+	return *c.MaxRestarts
+}
+
+// IsEnabled returns true if the feature is enabled.
+func (c *FailedPodRestartConfig) IsEnabled() bool {
+	return c != nil && c.Enabled
+}
+
+// ArtifactDriver is a plugin for an artifact driver
+type ArtifactDriver struct {
+	// Name is the name of the artifact driver plugin
+	Name wfv1.ArtifactPluginName `json:"name"`
+	// Image is the docker image of the artifact driver
+	Image string `json:"image"`
+	// ConnectionTimeoutSeconds is the timeout for the artifact driver connection, 5 seconds if not set
+	ConnectionTimeoutSeconds int32 `json:"connectionTimeoutSeconds,omitempty" protobuf:"varint,3,opt,name=connectionTimeoutSeconds"`
+}
+
+const defaultArtifactConnectionTimeout = time.Duration(5) * time.Second
+
+func (a ArtifactDriver) ConnectionTimeout() time.Duration {
+	if a.ConnectionTimeoutSeconds != 0 {
+		return time.Duration(a.ConnectionTimeoutSeconds) * time.Second
+	}
+	return defaultArtifactConnectionTimeout
+}
+
+func (c Config) GetArtifactDriver(name wfv1.ArtifactPluginName) (ArtifactDriver, error) {
+	for _, driver := range c.ArtifactDrivers {
+		if driver.Name == name {
+			return driver, nil
+		}
+	}
+	return ArtifactDriver{}, fmt.Errorf("artifact driver %s not found", name)
+}
+
+func (c Config) GetArtifactDrivers(plugins []wfv1.ArtifactPluginName) ([]ArtifactDriver, error) {
+	drivers := []ArtifactDriver{}
+	for _, plugin := range plugins {
+		driver, err := c.GetArtifactDriver(plugin)
+		if err != nil {
+			return nil, err
+		}
+		drivers = append(drivers, driver)
+	}
+	return drivers, nil
 }
 
 func (c Config) GetExecutor() *apiv1.Container {
@@ -146,10 +252,8 @@ func (c Config) GetPodGCDeleteDelayDuration() time.Duration {
 }
 
 func (c Config) ValidateProtocol(inputProtocol string, allowedProtocol []string) error {
-	for _, protocol := range allowedProtocol {
-		if inputProtocol == protocol {
-			return nil
-		}
+	if slices.Contains(allowedProtocol, inputProtocol) {
+		return nil
 	}
 	return fmt.Errorf("protocol %s is not allowed", inputProtocol)
 }
@@ -178,8 +282,8 @@ type PodSpecLogStrategy struct {
 	AllPods   bool `json:"allPods,omitempty"`
 }
 
-// KubeConfig is used for wait & init sidecar containers to communicate with a k8s apiserver by a outofcluster method,
-// it is used when the workflow controller is in a different cluster with the workflow workloads
+// KubeConfig is used for wait & init sidecar containers to communicate with a k8s apiserver by an out-of-cluster method;
+// it is used when the workflow controller is in a different cluster from the workflow workloads
 type KubeConfig struct {
 	// SecretName of the kubeconfig secret
 	// may not be empty if kuebConfig specified
@@ -201,6 +305,33 @@ type DBConfig struct {
 	MySQL *MySQLConfig `json:"mysql,omitempty"`
 	// Pooled connection settings for all types of database connections
 	ConnectionPool *ConnectionPool `json:"connectionPool,omitempty"`
+	// DBReconnectConfig are configuration options for database retries and reconnections
+	DBReconnectConfig *DBReconnectConfig `json:"reconnectionConfig,omitempty"`
+	// ConnectionTimeoutSeconds is the timeout in seconds for establishing a database connection, 5 seconds if not set.
+	ConnectionTimeoutSeconds int32 `json:"connectionTimeoutSeconds,omitempty"`
+}
+
+const defaultDBConnectionTimeout = 5 * time.Second
+
+// ConnectionTimeout returns the database connection-establishment timeout,
+// defaulting to 5s when unset.
+func (c DBConfig) ConnectionTimeout() time.Duration {
+	if c.ConnectionTimeoutSeconds != 0 {
+		return time.Duration(c.ConnectionTimeoutSeconds) * time.Second
+	}
+	return defaultDBConnectionTimeout
+}
+
+// DBReconnectConfig contains database reconnect settings
+type DBReconnectConfig struct {
+	// MaxRetries defines how many connection attempts should be made before we give up. Default: 5
+	MaxRetries int `json:"maxRetries"`
+	// BaseDelaySeconds delays retries by this amount multiplied by the retryMultiple, capped to `maxDelaySeconds`. Default: 0 (100ms)
+	BaseDelaySeconds int `json:"baseDelaySeconds"`
+	// MaxDelaySeconds the absolute upper limit to wait before retrying. Default: 30
+	MaxDelaySeconds int `json:"maxDelaySeconds"`
+	// RetryMultiple is the growth factor for `baseDelaySeconds`. Default: 2.0
+	RetryMultiple float64 `json:"retryMultiple"`
 }
 
 // PersistConfig contains workflow persistence configuration
@@ -238,6 +369,8 @@ func (c PersistConfig) GetClusterName() string {
 // SyncConfig contains synchronization configuration for database locks (semaphores and mutexes)
 type SyncConfig struct {
 	DBConfig
+	// EnableAPI enables the database synchronization API
+	EnableAPI bool `json:"enableAPI,omitempty"`
 	// ControllerName sets a unique name for this controller instance
 	ControllerName string `json:"controllerName"`
 	// SkipMigration skips database migration if needed
@@ -282,9 +415,9 @@ type DatabaseConfig struct {
 	// TableName is the name of the table to use, must be set
 	TableName string `json:"tableName,omitempty"`
 	// UsernameSecret references a secret containing the database username
-	UsernameSecret apiv1.SecretKeySelector `json:"userNameSecret,omitempty"`
+	UsernameSecret apiv1.SecretKeySelector `json:"userNameSecret,omitzero"`
 	// PasswordSecret references a secret containing the database password
-	PasswordSecret apiv1.SecretKeySelector `json:"passwordSecret,omitempty"`
+	PasswordSecret apiv1.SecretKeySelector `json:"passwordSecret,omitzero"`
 }
 
 func (c DatabaseConfig) GetHostname() string {
@@ -301,6 +434,24 @@ type PostgreSQLConfig struct {
 	SSL bool `json:"ssl,omitempty"`
 	// SSLMode specifies the SSL mode (disable, require, verify-ca, verify-full)
 	SSLMode string `json:"sslMode,omitempty"`
+	// AzureToken specifies if the password should be fetched as an Azure token
+	AzureToken *AzureTokenConfig `json:"azureToken,omitempty"`
+	// AWSRDSToken specifies if the password should be fetched as an AWS RDS IAM auth token
+	AWSRDSToken *AWSRDSTokenConfig `json:"awsRDSToken,omitempty"`
+}
+
+type AzureTokenConfig struct {
+	// Enabled enables Azure token fetching
+	Enabled bool `json:"enabled,omitempty"`
+	// Scope is the scope to request the token for. Defaults to "https://ossrdbms-aad.database.windows.net/.default" if empty.
+	Scope string `json:"scope,omitempty"`
+}
+
+type AWSRDSTokenConfig struct {
+	// Enabled enables AWS RDS IAM auth token fetching
+	Enabled bool `json:"enabled,omitempty"`
+	// Region is the AWS region of the RDS instance. Auto-detected if empty.
+	Region string `json:"region,omitempty"`
 }
 
 // MySQLConfig contains MySQL-specific database configuration
@@ -314,7 +465,7 @@ type MySQLConfig struct {
 type MetricModifier struct {
 	// Disabled disables the emission of this metric completely
 	Disabled bool `json:"disabled,omitempty"`
-	// DisabledAttributes lists labels for this metric to remove that attributes to save on cardinality
+	// DisabledAttributes lists labels for this metric to remove those attributes to save on cardinality
 	DisabledAttributes []string `json:"disabledAttributes"`
 	// HistogramBuckets allow configuring of the buckets used in a histogram
 	// Has no effect on non-histogram buckets
@@ -335,8 +486,9 @@ const (
 type MetricsConfig struct {
 	// Enabled controls metric emission. Default is true, set "enabled: false" to turn off
 	Enabled *bool `json:"enabled,omitempty"`
-	// DisableLegacy turns off legacy metrics
-	// DEPRECATED: Legacy metrics are now removed, this field is ignored
+	// DisableLegacy turns off legacy metrics.
+	//
+	// Deprecated: Legacy metrics are now removed, this field is ignored.
 	DisableLegacy bool `json:"disableLegacy,omitempty"`
 	// MetricsTTL sets how often custom metrics are cleared from memory
 	MetricsTTL TTL `json:"metricsTTL,omitempty"`

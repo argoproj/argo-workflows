@@ -2,6 +2,7 @@ package printer
 
 import (
 	"bytes"
+	"slices"
 	"testing"
 	"time"
 
@@ -9,9 +10,8 @@ import (
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
 func TestPrintWorkflows(t *testing.T) {
@@ -23,7 +23,7 @@ func TestPrintWorkflows(t *testing.T) {
 				Arguments: wfv1.Arguments{Parameters: []wfv1.Parameter{
 					{Name: "my-param", Value: wfv1.AnyStringPtr("my-value")},
 				}},
-				Priority: ptr.To(int32(2)),
+				Priority: new(int32(2)),
 				Templates: []wfv1.Template{
 					{Name: "t0", Container: &corev1.Container{}},
 				},
@@ -112,7 +112,7 @@ my-wf   Running   0s    3s         2          test-message   1/2/3   my-param=my
 
 func TestPrintWorkflowCostOptimizationNudges(t *testing.T) {
 	completedWorkflows := wfv1.Workflows{}
-	for i := 0; i < 101; i++ {
+	for range 101 {
 		completedWorkflows = append(completedWorkflows,
 			wfv1.Workflow{
 				Status: wfv1.WorkflowStatus{
@@ -121,7 +121,7 @@ func TestPrintWorkflowCostOptimizationNudges(t *testing.T) {
 			})
 	}
 	incompleteWorkflows := wfv1.Workflows{}
-	for i := 0; i < 101; i++ {
+	for range 101 {
 		incompleteWorkflows = append(incompleteWorkflows,
 			wfv1.Workflow{
 				Status: wfv1.WorkflowStatus{
@@ -129,7 +129,7 @@ func TestPrintWorkflowCostOptimizationNudges(t *testing.T) {
 				},
 			})
 	}
-	completedAndIncompleteWorkflows := append(completedWorkflows, incompleteWorkflows...)
+	completedAndIncompleteWorkflows := slices.Concat(completedWorkflows, incompleteWorkflows)
 
 	t.Run("CostOptimizationOnCompletedWorkflows", func(t *testing.T) {
 		var b bytes.Buffer

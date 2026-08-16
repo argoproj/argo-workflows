@@ -1,0 +1,52 @@
+# This example demonstrates the ability to pass artifacts
+# from one step to the next with an explicit artifact plugin
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: artifact-passing-
+spec:
+  entrypoint: artifact-example
+  templates:
+  - name: artifact-example
+    steps:
+    - - name: generate-artifact
+        template: hello-world-to-file
+    - - name: consume-artifact
+        template: print-message-from-file
+        arguments:
+          artifacts:
+          - name: message
+            from: "{{steps.generate-artifact.outputs.artifacts.hello-art}}"
+
+  - name: hello-world-to-file
+    container:
+      image: busybox
+      command: [sh, -c]
+      args: ["sleep 1; echo hello world | tee /tmp/hello_world.txt"]
+    outputs:
+      artifacts:
+      - name: hello-art
+        path: /tmp/hello_world.txt
+        plugin:
+          name: test
+          configuration: |
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            accessKeySecret:
+              name: my-minio-cred
+              key: accesskey
+            secretKeySecret:
+              name: my-minio-cred
+              key: secretkey
+          key: hi
+
+  - name: print-message-from-file
+    inputs:
+      artifacts:
+      - name: message
+        path: /tmp/message
+    container:
+      image: busybox
+      command: [sh, -c]
+      args: ["cat /tmp/message"]

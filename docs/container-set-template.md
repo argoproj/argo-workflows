@@ -148,7 +148,7 @@ spec:
         containers:
           # this container completes successfully, so it won't be retried.
           - name: success
-            image: python:alpine3.6
+            image: python:alpine3.23
             command:
               - python
               - -c
@@ -157,7 +157,7 @@ spec:
                 print("hi")
           # if fails, it will retry at most ten times.
           - name: fail-retry
-            image: python:alpine3.6
+            image: python:alpine3.23
             command: ["python", -c]
             # fail with a 66% probability
             args: ["import random; import sys; exit_code = random.choice([0, 1, 1]); sys.exit(exit_code)"]

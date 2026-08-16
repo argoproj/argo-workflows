@@ -13,6 +13,7 @@ Name | Type | Description | Notes
 **filter** | [**GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter**](GithubComArgoprojArgoEventsPkgApisEventsV1alpha1EventSourceFilter.md) |  |  [optional]
 **gerritBaseURL** | **String** |  |  [optional]
 **hookName** | **String** |  |  [optional]
+**maxTries** | **String** |  |  [optional]
 **metadata** | **Map&lt;String, String&gt;** |  |  [optional]
 **projects** | **List&lt;String&gt;** | List of project namespace paths like \&quot;whynowy/test\&quot;. |  [optional]
 **sslVerify** | **Boolean** |  |  [optional]

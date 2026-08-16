@@ -8,7 +8,6 @@ import (
 )
 
 func TestNewTimedCache(t *testing.T) {
-
 	t.Run("NewLRUTtlCache should return a new instance", func(t *testing.T) {
 		cache := NewLRUTtlCache(time.Second, 1)
 		assert.NotNil(t, cache)
@@ -54,11 +53,10 @@ func TestNewTimedCache(t *testing.T) {
 		assert.False(t, ok)
 		currentTime = tempCurrentTime
 	})
-
 }
 
-func getTimeFunc(min int, sec int) func() time.Time {
+func getTimeFunc(minutes int, sec int) func() time.Time {
 	return func() time.Time {
-		return time.Date(0, 0, 0, 0, min, sec, 0, time.UTC)
+		return time.Date(0, 0, 0, 0, minutes, sec, 0, time.UTC)
 	}
 }

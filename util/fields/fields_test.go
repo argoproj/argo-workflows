@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 )
 
 var sampleWorkflow = `
@@ -30,7 +30,6 @@ func TestCleaner_WillExclude(t *testing.T) {
 		assert.False(t, NewCleaner("foo").WillExclude("foo.bar"))
 		assert.True(t, NewCleaner("foo").WillExclude("bar"))
 		assert.False(t, NewCleaner("foo.bar.baz").WillExclude("foo.bar"))
-
 	})
 	t.Run("Exclude", func(t *testing.T) {
 		assert.True(t, NewCleaner("-foo").WillExclude("foo"))

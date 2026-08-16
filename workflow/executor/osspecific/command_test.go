@@ -11,15 +11,16 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 func TestSimpleStartCloser(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
 	shell := "sh"
 	if runtime.GOOS == "windows" {
 		shell = "pwsh.exe"
 	}
-	cmd := exec.Command(shell, "-c", `echo "A123456789B123456789C123456789D123456789E123456789\c"`)
+	cmd := exec.CommandContext(ctx, shell, "-c", `echo "A123456789B123456789C123456789D123456789E123456789\c"`)
 	var stdoutWriter bytes.Buffer
 	slowWriter := SlowWriter{
 		&stdoutWriter,
@@ -28,7 +29,7 @@ func TestSimpleStartCloser(t *testing.T) {
 	// Using SlowWriter causes the situation where the invoked command has exited but its outputs have not been written yet.
 	cmd.Stdout = slowWriter
 
-	closer, err := StartCommand(logging.TestContext(t.Context()), cmd)
+	closer, err := StartCommand(ctx, cmd)
 	require.NoError(t, err)
 	err = cmd.Wait()
 	require.NoError(t, err)

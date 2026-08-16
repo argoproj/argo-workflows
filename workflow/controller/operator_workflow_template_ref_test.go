@@ -7,11 +7,10 @@ import (
 	"github.com/stretchr/testify/require"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 func TestWorkflowTemplateRef(t *testing.T) {
@@ -26,8 +25,8 @@ func TestWorkflowTemplateRef(t *testing.T) {
 	// verify we copy these values
 	assert.Len(t, woc.volumes, 1, "volumes from workflow template")
 	// and these
-	assert.Equal(t, "my-sa", woc.globalParams["workflow.serviceAccountName"])
-	assert.Equal(t, "77", woc.globalParams["workflow.priority"])
+	assert.Equal(t, "my-sa", woc.globalParams()["workflow.serviceAccountName"])
+	assert.Equal(t, "77", woc.globalParams()["workflow.priority"])
 }
 
 func TestWorkflowTemplateRefWithArgs(t *testing.T) {
@@ -47,7 +46,7 @@ func TestWorkflowTemplateRefWithArgs(t *testing.T) {
 		defer cancel()
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		woc.operate(ctx)
-		assert.Equal(t, "test", woc.globalParams["workflow.parameters.param1"])
+		assert.Equal(t, "test", woc.globalParams()["workflow.parameters.param1"])
 	})
 }
 
@@ -68,7 +67,7 @@ func TestWorkflowTemplateRefWithWorkflowTemplateArgs(t *testing.T) {
 		defer cancel()
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		woc.operate(ctx)
-		assert.Equal(t, "test", woc.globalParams["workflow.parameters.param1"])
+		assert.Equal(t, "test", woc.globalParams()["workflow.parameters.param1"])
 	})
 
 	t.Run("CheckMergingWFDefaults", func(t *testing.T) {
@@ -442,7 +441,7 @@ func TestWorkflowTemplateRefWithShutdownAndSuspend(t *testing.T) {
 		wf1 := woc.wf.DeepCopy()
 		// Updating Pod state
 		makePodsPhase(ctx, woc, apiv1.PodPending)
-		wf1.Spec.Suspend = ptr.To(true)
+		wf1.Spec.Suspend = new(true)
 		woc1 := newWorkflowOperationCtx(ctx, wf1, controller)
 		woc1.operate(ctx)
 		assert.NotNil(t, woc1.wf.Status.StoredWorkflowSpec.Suspend)
@@ -595,7 +594,6 @@ spec:
 `
 
 func TestWorkflowTemplateUpdateScenario(t *testing.T) {
-
 	wf := wfv1.MustUnmarshalWorkflow(wfWithTmplRef)
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx, wf, wfv1.MustUnmarshalWorkflowTemplate(wfTmpl))

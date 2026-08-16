@@ -7,8 +7,8 @@ import (
 
 	"k8s.io/apimachinery/pkg/labels"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	sutils "github.com/argoproj/argo-workflows/v4/server/utils"
 )
 
 var NullWorkflowArchive WorkflowArchive = &nullWorkflowArchive{}
@@ -29,6 +29,10 @@ func (r *nullWorkflowArchive) ListWorkflows(ctx context.Context, options sutils.
 
 func (r *nullWorkflowArchive) CountWorkflows(ctx context.Context, options sutils.ListOptions) (int64, error) {
 	return 0, nil
+}
+
+func (r *nullWorkflowArchive) HasMoreWorkflows(ctx context.Context, options sutils.ListOptions) (bool, error) {
+	return false, nil
 }
 
 func (r *nullWorkflowArchive) GetWorkflow(ctx context.Context, uid string, namespace string, name string) (*wfv1.Workflow, error) {

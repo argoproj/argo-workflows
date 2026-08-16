@@ -2,21 +2,22 @@ package apiclient
 
 import (
 	"context"
-	"crypto/tls"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 
-	clusterworkflowtmplpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/clusterworkflowtemplate"
-	cronworkflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/cronworkflow"
-	infopkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/info"
-	workflowpkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflow"
-	workflowarchivepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowarchive"
-	workflowtemplatepkg "github.com/argoproj/argo-workflows/v3/pkg/apiclient/workflowtemplate"
-	grpcutil "github.com/argoproj/argo-workflows/v3/util/grpc"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	clusterworkflowtmplpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/clusterworkflowtemplate"
+	cronworkflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/cronworkflow"
+	infopkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/info"
+	syncpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/sync"
+	workflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow"
+	workflowarchivepkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflowarchive"
+	workflowtemplatepkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflowtemplate"
+	grpcutil "github.com/argoproj/argo-workflows/v4/util/grpc"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/tls"
 )
 
 const (
@@ -62,10 +63,18 @@ func (a *argoServerClient) NewInfoServiceClient() (infopkg.InfoServiceClient, er
 	return infopkg.NewInfoServiceClient(a.ClientConn), nil
 }
 
+func (a *argoServerClient) NewSyncServiceClient(_ context.Context) (syncpkg.SyncServiceClient, error) {
+	return syncpkg.NewSyncServiceClient(a.ClientConn), nil
+}
+
 func newClientConn(opts ArgoServerOpts) (*grpc.ClientConn, error) {
 	creds := grpc.WithTransportCredentials(insecure.NewCredentials())
 	if opts.Secure {
-		creds = grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{InsecureSkipVerify: opts.InsecureSkipVerify}))
+		tlsConfig, err := tls.GetClientTLSConfig(opts.ClientCert, opts.ClientKey, opts.CACert, opts.InsecureSkipVerify)
+		if err != nil {
+			return nil, err
+		}
+		creds = grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig))
 	}
 	conn, err := grpc.NewClient(opts.URL,
 		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(MaxClientGRPCMessageSize)),
@@ -79,7 +88,6 @@ func newClientConn(opts ArgoServerOpts) (*grpc.ClientConn, error) {
 }
 
 func newContext(ctx context.Context, auth string) context.Context {
-	// nolint:contextcheck
 	bgCtx := logging.RequireLoggerFromContext(ctx).NewBackgroundContext()
 	if auth == "" {
 		return ctx

@@ -6,7 +6,8 @@ metadata:
     workflows.argoproj.io/test: "true"
 spec:
   # run daily at 2am
-  schedule: "0 2 * * *"
+  schedules:
+    - "0 2 * * *"
   workflowSpec:
     workflowTemplateRef:
       name: job

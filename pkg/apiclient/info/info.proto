@@ -1,28 +1,26 @@
 syntax = "proto3";
-option go_package = "github.com/argoproj/argo-workflows/pkg/apiclient/info";
-
-import "google/api/annotations.proto";
-import "github.com/argoproj/argo-workflows/pkg/apis/workflow/v1alpha1/generated.proto";
 
 package info;
 
-message GetInfoRequest {
-}
+import "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1/generated.proto";
+import "google/api/annotations.proto";
+
+option go_package = "github.com/argoproj/argo-workflows/v4/pkg/apiclient/info";
+
+message GetInfoRequest {}
 
 message InfoResponse {
   string managedNamespace = 1;
-  repeated github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.Link links = 2;
+  repeated github.com.argoproj.argo_workflows.v4.pkg.apis.workflow.v1alpha1.Link links = 2;
   // which modals to show
   map<string, bool> modals = 3;
   string navColor = 4;
-  repeated github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.Column columns = 5;
+  repeated github.com.argoproj.argo_workflows.v4.pkg.apis.workflow.v1alpha1.Column columns = 5;
 }
 
-message GetVersionRequest {
-}
+message GetVersionRequest {}
 
-message GetUserInfoRequest {
-}
+message GetUserInfoRequest {}
 
 message GetUserInfoResponse {
   string issuer = 1;
@@ -39,14 +37,13 @@ message CollectEventRequest {
   string name = 1;
 }
 
-message CollectEventResponse {
-}
+message CollectEventResponse {}
 
 service InfoService {
   rpc GetInfo(GetInfoRequest) returns (InfoResponse) {
     option (google.api.http).get = "/api/v1/info";
   }
-  rpc GetVersion(GetVersionRequest) returns (github.com.argoproj.argo_workflows.v3.pkg.apis.workflow.v1alpha1.Version) {
+  rpc GetVersion(GetVersionRequest) returns (github.com.argoproj.argo_workflows.v4.pkg.apis.workflow.v1alpha1.Version) {
     option (google.api.http).get = "/api/v1/version";
   }
   rpc GetUserInfo(GetUserInfoRequest) returns (GetUserInfoResponse) {
@@ -54,8 +51,8 @@ service InfoService {
   }
   rpc CollectEvent(CollectEventRequest) returns (CollectEventResponse) {
     option (google.api.http) = {
-      post : "/api/v1/tracking/event"
-      body : "*"
+      post: "/api/v1/tracking/event"
+      body: "*"
     };
   }
 }

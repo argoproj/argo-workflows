@@ -8,7 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-// These are utility functions when using IntOrString to hold either an Int or an Argo Variable
+// Int extracts an int value from an IntOrString, which may hold either an Int or an Argo Variable.
 func Int(is *intstr.IntOrString) (*int, error) {
 	if is == nil {
 		return nil, nil
@@ -43,13 +43,11 @@ func Int64(is *intstr.IntOrString) (*int64, error) {
 }
 
 func IsValidIntOrArgoVariable(is *intstr.IntOrString) bool {
-	if is == nil {
+	if is == nil || is.Type == intstr.Int {
 		return true
-	} else if is.Type == intstr.Int {
-		return true
-	} else if _, err := strconv.Atoi(is.StrVal); err == nil {
-		return true
-	} else {
-		return strings.HasPrefix(is.StrVal, "{{") && strings.HasSuffix(is.StrVal, "}}")
 	}
+	if _, err := strconv.Atoi(is.StrVal); err == nil {
+		return true
+	}
+	return strings.HasPrefix(is.StrVal, "{{") && strings.HasSuffix(is.StrVal, "}}")
 }

@@ -3,19 +3,21 @@ package controller
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/expr/argoexpr"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/util/template"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	controllercache "github.com/argoproj/argo-workflows/v3/workflow/controller/cache"
-	"github.com/argoproj/argo-workflows/v3/workflow/templateresolution"
+	argoerrors "github.com/argoproj/argo-workflows/v4/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/expr/argoexpr"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/template"
+	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	controllercache "github.com/argoproj/argo-workflows/v4/workflow/controller/cache"
+	"github.com/argoproj/argo-workflows/v4/workflow/templateresolution"
 )
 
 // dagContext holds context information about this context's DAG
@@ -55,6 +57,11 @@ type dagContext struct {
 	// Because this resolved "depends" is computed using regex and regex is expensive, we cache the results so that they
 	// are only computed once per operation
 	dependsLogic map[string]string
+
+	// taskGroupsToComplete collects the names of TaskGroup nodes that assessDAGPhase
+	// found stuck Running with all of their children fulfilled, mapped to the phase
+	// they should complete with. executeDAG marks them once assessment is done.
+	taskGroupsToComplete map[string]wfv1.NodePhase
 
 	// used for logging in the dag
 	log logging.Logger
@@ -161,17 +168,30 @@ func (d *dagContext) assessDAGPhase(ctx context.Context, targetTasks []string, n
 		if err != nil {
 			// this is okay, this means that
 			// we are still running
+			//nolint: nilerr
 			return wfv1.NodeRunning, nil
 		}
 		// We need to store the current branchPhase to remember the last completed phase in this branch so that we can apply it to omitted nodes
 		branchPhase := curr.phase
 
 		if !node.Fulfilled() {
-			return wfv1.NodeRunning, nil
-		}
-
-		// Only overwrite the branchPhase if this node completed. (If it didn't we can just inherit our parent's branchPhase).
-		if node.Completed() {
+			// A fan-out TaskGroup can be left Running with every expanded child
+			// already fulfilled, for example when a retry resets the group but never
+			// re-runs it because its dependents have already completed. executeDAGTask
+			// only visits unfulfilled tasks, so it never revisits such a group, which
+			// would then hold the DAG Running forever. Complete it from its children
+			// instead of blocking here.
+			groupPhase, ok := completableTaskGroupPhase(node, nodes)
+			if !ok {
+				return wfv1.NodeRunning, nil
+			}
+			if d.taskGroupsToComplete == nil {
+				d.taskGroupsToComplete = make(map[string]wfv1.NodePhase)
+			}
+			d.taskGroupsToComplete[node.Name] = groupPhase
+			branchPhase = groupPhase
+		} else if node.Completed() {
+			// Only overwrite the branchPhase if this node completed. (If it didn't we can just inherit our parent's branchPhase).
 			branchPhase = node.Phase
 		}
 
@@ -225,21 +245,42 @@ func (d *dagContext) assessDAGPhase(ctx context.Context, targetTasks []string, n
 	return result, nil
 }
 
-func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmplCtx *templateresolution.TemplateContext, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
+// completableTaskGroupPhase reports whether node is a TaskGroup that is not yet
+// fulfilled even though all of its expanded children are, and if so the phase it
+// should complete with (Succeeded unless a child failed or errored, matching the
+// aggregation executeDAGTask uses). Such a group is never revisited by
+// executeDAGTask, so it must be completed during DAG assessment.
+func completableTaskGroupPhase(node *wfv1.NodeStatus, nodes wfv1.Nodes) (wfv1.NodePhase, bool) {
+	if node.Type != wfv1.NodeTypeTaskGroup || len(node.Children) == 0 {
+		return "", false
+	}
+	phase := wfv1.NodeSucceeded
+	for _, childID := range node.Children {
+		child, err := nodes.Get(childID)
+		if err != nil || !child.Fulfilled() {
+			return "", false
+		}
+		if child.FailedOrError() {
+			phase = child.Phase
+		}
+	}
+	return phase, true
+}
 
+func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmplCtx *templateresolution.TemplateContext, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	node, err := woc.wf.GetNodeByName(nodeName)
 	if err != nil {
-		node = woc.initializeExecutableNode(ctx, nodeName, wfv1.NodeTypeDAG, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodeRunning, opts.nodeFlag, true)
+		_, node = woc.initializeExecutableNode(ctx, nodeName, wfv1.NodeTypeDAG, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodeRunning, opts.nodeFlag, true)
 	}
 
 	defer func() {
-		node, err := woc.wf.Status.Nodes.Get(node.ID)
-		if err != nil {
+		deferNode, nodeErr := woc.wf.Status.Nodes.Get(node.ID)
+		if nodeErr != nil {
 			// CRITICAL ERROR IF THIS BRANCH IS REACHED -> PANIC
 			panic(fmt.Sprintf("expected node for %s due to preceded initializeExecutableNode but couldn't find it", node.ID))
 		}
-		if node.Fulfilled() {
-			woc.killDaemonedChildren(ctx, node.ID)
+		if deferNode.Fulfilled() {
+			woc.killDaemonedChildren(ctx, deferNode.ID)
 		}
 	}()
 
@@ -282,33 +323,31 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 	for _, taskName := range targetTasks {
 		woc.executeDAGTask(ctx, dagCtx, taskName)
 
-		// It is possible that target tasks are not reconsidered (i.e. executeDAGTask is not called on them) once they are
-		// complete (since the DAG itself will have succeeded). To ensure that their exit handlers are run we also run them here. Note that
-		// calls to runOnExitNode are idempotent: it is fine if they are called more than once for the same task.
+		// The exit hook for each target task is started by executeDAGTask -> processTask.
+		// We only inspect the onExit node's status here to decide whether the DAG can be
+		// considered complete; calling runOnExitNode (and therefore executeTemplate) a second
+		// time on the same onExit node would re-run checkParallelism against the count this
+		// very pass just bumped.
 		taskNode := dagCtx.getTaskNode(ctx, taskName)
 
 		if taskNode != nil {
 			task := dagCtx.GetTask(ctx, taskName)
-			scope, err := woc.buildLocalScopeFromTask(ctx, dagCtx, task)
-			if err != nil {
-				woc.markNodeError(ctx, node.Name, err)
-				return node, err
+			scope, scopeErr := woc.buildLocalScopeFromTask(ctx, dagCtx, task)
+			if scopeErr != nil {
+				woc.markNodeError(ctx, node.Name, scopeErr)
+				return node, scopeErr
 			}
-			scope.addParamToScope(fmt.Sprintf("tasks.%s.status", task.Name), string(taskNode.Phase))
-			_, err = woc.executeTmplLifeCycleHook(ctx, scope, dagCtx.GetTask(ctx, taskName).Hooks, taskNode, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName)
-			if err != nil {
-				woc.markNodeError(ctx, node.Name, err)
-				return node, err
+			varkeys.TasksNodeRef.Status.Set(scope.scope, string(taskNode.Phase), task.Name)
+			var hookErr error
+			_, hookErr = woc.executeTmplLifeCycleHook(ctx, scope, dagCtx.GetTask(ctx, taskName).Hooks, taskNode, dagCtx.boundaryID, dagCtx.tmplCtx, varkeys.TasksNodeRef, taskName)
+			if hookErr != nil {
+				woc.markNodeError(ctx, node.Name, hookErr)
+				return node, hookErr
 			}
-			if taskNode.Fulfilled() {
-				if taskNode.Completed() {
-					hasOnExitNode, onExitNode, err := woc.runOnExitNode(ctx, dagCtx.GetTask(ctx, taskName).GetExitHook(woc.execWf.Spec.Arguments), taskNode, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName, scope)
-					if err != nil {
-						return node, err
-					}
-					if hasOnExitNode && (onExitNode == nil || !onExitNode.Fulfilled()) {
-						onExitCompleted = false
-					}
+			if taskNode.Fulfilled() && taskNode.Completed() {
+				onExitNodeName := common.GenerateOnExitNodeName(taskNode.Name)
+				if onExitNode, onExitErr := woc.wf.GetNodeByName(onExitNodeName); onExitErr == nil && onExitNode != nil && !onExitNode.Fulfilled() {
+					onExitCompleted = false
 				}
 			}
 		}
@@ -316,9 +355,16 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 
 	// Check if we are still running any tasks in this dag and return early if we do
 	// We should wait for onExit nodes even if ShutdownStrategy is enabled.
-	dagPhase, err := dagCtx.assessDAGPhase(ctx, targetTasks, woc.wf.Status.Nodes, woc.GetShutdownStrategy().Enabled() && onExitCompleted)
+	dagPhase, err := dagCtx.assessDAGPhase(ctx, targetTasks, woc.wf.Status.Nodes, woc.GetShutdownStrategy().Enabled() && onExitCompleted && !dagCtx.onExitTemplate)
 	if err != nil {
 		return nil, err
+	}
+
+	// Complete any orphaned TaskGroups that assessment found stuck Running with all
+	// children fulfilled. Done regardless of the overall DAG phase so a group is
+	// healed even while other tasks are still legitimately running.
+	for name, phase := range dagCtx.taskGroupsToComplete {
+		woc.markNodePhase(ctx, name, phase)
 	}
 
 	switch dagPhase {
@@ -342,24 +388,26 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 			continue
 		}
 
-		prefix := fmt.Sprintf("tasks.%s", task.Name)
 		if taskNode.Type == wfv1.NodeTypeTaskGroup {
 			childNodes := make([]wfv1.NodeStatus, len(taskNode.Children))
 			for i, childID := range taskNode.Children {
-				childNode, err := woc.wf.Status.Nodes.Get(childID)
-				if err != nil {
+				childNode, childErr := woc.wf.Status.Nodes.Get(childID)
+				if childErr != nil {
 					woc.log.WithField("nodeID", childID).Error(ctx, "was unable to obtain node for nodeID")
-					return nil, fmt.Errorf("Critical error, unable to find %s", childID)
+					return nil, fmt.Errorf("critical error; unable to find %s", childID)
 				}
 				childNodes[i] = *childNode
 			}
-			err := woc.processAggregateNodeOutputs(scope, prefix, childNodes)
-			if err != nil {
+			aggErr := woc.processAggregateNodeOutputs(scope, varkeys.TasksAggregate, task.Name, childNodes)
+			if aggErr != nil {
 				woc.log.Error(ctx, "unable to processAggregateNodeOutputs")
-				return nil, errors.InternalWrapError(err)
+				return nil, argoerrors.InternalWrapError(aggErr)
 			}
 		}
-		woc.buildLocalScope(scope, prefix, taskNode)
+		woc.buildLocalScope(scope, varkeys.TasksNodeRef, task.Name, taskNode)
+		// Skipped/omitted tasks produced no Outputs; populate their declared output parameters so that
+		// DAG-level output aggregation (parameter refs and ValueFrom.Expression) can resolve them.
+		woc.addSkippedNodeOutputsToScope(ctx, dagCtx.tmplCtx, scope, varkeys.TasksNodeRef, task.Name, taskNode, &task, false)
 		woc.addOutputsToGlobalScope(ctx, taskNode.Outputs)
 	}
 	outputs, err := woc.getTemplateOutputsFromScope(ctx, tmpl, scope)
@@ -378,9 +426,9 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 	}
 	if node.MemoizationStatus != nil {
 		c := woc.controller.cacheFactory.GetCache(controllercache.ConfigMapCache, node.MemoizationStatus.CacheName)
-		err := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs)
-		if err != nil {
-			woc.log.WithField("nodeID", node.ID).WithError(err).Error(ctx, "Failed to save node outputs to cache")
+		saveErr := c.Save(ctx, node.MemoizationStatus.Key, node.ID, node.Outputs)
+		if saveErr != nil {
+			woc.log.WithField("nodeID", node.ID).WithError(saveErr).Error(ctx, "Failed to save node outputs to cache")
 			node.Phase = wfv1.NodeError
 		}
 	}
@@ -432,8 +480,8 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 			woc.markNodeError(ctx, node.Name, err)
 			return
 		}
-		scope.addParamToScope(fmt.Sprintf("tasks.%s.status", task.Name), string(node.Phase))
-		hookCompleted, err := woc.executeTmplLifeCycleHook(ctx, scope, dagCtx.GetTask(ctx, taskName).Hooks, node, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName)
+		varkeys.TasksNodeRef.Status.Set(scope.scope, string(node.Phase), task.Name)
+		hookCompleted, err := woc.executeTmplLifeCycleHook(ctx, scope, dagCtx.GetTask(ctx, taskName).Hooks, node, dagCtx.boundaryID, dagCtx.tmplCtx, varkeys.TasksNodeRef, taskName)
 		if err != nil {
 			woc.markNodeError(ctx, node.Name, err)
 		}
@@ -461,7 +509,7 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 			}
 		}
 
-		processedTmpl, err := common.ProcessArgs(ctx, tmpl, &task.Arguments, woc.globalParams, map[string]string{}, true, woc.wf.Namespace, woc.controller.configMapInformer.GetIndexer())
+		processedTmpl, err := common.ProcessArgs(ctx, tmpl, &task.Arguments, woc.globalParams(), map[string]string{}, true, woc.wf.Namespace, woc.controller.typedConfigMapInformer.GetIndexer())
 		if err != nil {
 			woc.markNodeError(ctx, node.Name, err)
 		}
@@ -477,11 +525,11 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 			log.WithError(err).Error(ctx, "Failed to build local scope from task")
 			return
 		}
-		scope.addParamToScope(fmt.Sprintf("tasks.%s.status", task.Name), string(node.Phase))
+		varkeys.TasksNodeRef.Status.Set(scope.scope, string(node.Phase), task.Name)
 
 		if node.Completed() {
 			// Run the node's onExit node, if any.
-			hasOnExitNode, onExitNode, err := woc.runOnExitNode(ctx, task.GetExitHook(woc.execWf.Spec.Arguments), node, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName, scope)
+			hasOnExitNode, onExitNode, err := woc.runOnExitNode(ctx, task.GetExitHook(woc.execWf.Spec.Arguments), node, dagCtx.boundaryID, dagCtx.tmplCtx, varkeys.TasksNodeRef, taskName, scope)
 			if hasOnExitNode && (onExitNode == nil || !onExitNode.Fulfilled() || err != nil) {
 				// The onExit node is either not complete or has errored out, return.
 				return
@@ -518,12 +566,12 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 				depNode := dagCtx.getTaskNode(ctx, depName)
 				outboundNodeIDs := woc.getOutboundNodes(ctx, depNode.ID)
 				for _, outNodeID := range outboundNodeIDs {
-					nodeName, err := woc.wf.Status.Nodes.GetName(outNodeID)
+					outNodeName, err := woc.wf.Status.Nodes.GetName(outNodeID)
 					if err != nil {
 						woc.log.WithField("nodeID", outNodeID).Error(ctx, "was unable to obtain node for nodeID")
 						return
 					}
-					woc.addChildNode(ctx, nodeName, taskNodeName)
+					woc.addChildNode(ctx, outNodeName, taskNodeName)
 				}
 			}
 		}
@@ -536,7 +584,7 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 		}
 		execute, proceed, err := dagCtx.evaluateDependsLogic(ctx, taskName)
 		if err != nil {
-			woc.initializeNode(ctx, nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, &wfv1.NodeFlag{}, true, err.Error())
+			_, _ = woc.initializeNode(ctx, nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, &wfv1.NodeFlag{}, true, err.Error())
 			connectDependencies(nodeName)
 			return
 		}
@@ -546,7 +594,7 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 		}
 		if !execute {
 			// Given the results of this node's dependencies, this node should not be executed. Mark it omitted
-			woc.initializeNode(ctx, nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeOmitted, &wfv1.NodeFlag{}, true, "omitted: depends condition not met")
+			_, _ = woc.initializeNode(ctx, nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeOmitted, &wfv1.NodeFlag{}, true, "omitted: depends condition not met")
 			connectDependencies(nodeName)
 			return
 		}
@@ -556,16 +604,25 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 	// First resolve/substitute params/artifacts from our dependencies
 	newTask, err := woc.resolveDependencyReferences(ctx, dagCtx, task)
 	if err != nil {
-		woc.initializeNode(ctx, nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, &wfv1.NodeFlag{}, true, err.Error())
+		if errors.Is(err, ErrRequeue) {
+			return
+		}
+		_, _ = woc.initializeNode(ctx, nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, &wfv1.NodeFlag{}, true, err.Error())
 		connectDependencies(nodeName)
 		return
 	}
 
 	// Next, expand the DAG's withItems/withParams/withSequence (if any). If there was none, then
 	// expandedTasks will be a single element list of the same task
-	expandedTasks, err := expandTask(ctx, *newTask)
+	scope, err := woc.buildLocalScopeFromTask(ctx, dagCtx, newTask)
 	if err != nil {
-		woc.initializeNode(ctx, nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, &wfv1.NodeFlag{}, true, err.Error())
+		_, _ = woc.initializeNode(ctx, nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, &wfv1.NodeFlag{}, true, err.Error())
+		connectDependencies(nodeName)
+		return
+	}
+	expandedTasks, err := expandTask(ctx, *newTask, scope.getParametersAny(woc.globalParams()))
+	if err != nil {
+		_, _ = woc.initializeNode(ctx, nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, &wfv1.NodeFlag{}, true, err.Error())
 		connectDependencies(nodeName)
 		return
 	}
@@ -577,11 +634,11 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 		// DAG task with empty withParams list should be skipped
 		if len(expandedTasks) == 0 {
 			skipReason := "Skipped, empty params"
-			woc.initializeNode(ctx, nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeSkipped, &wfv1.NodeFlag{}, true, skipReason)
+			_, _ = woc.initializeNode(ctx, nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeSkipped, &wfv1.NodeFlag{}, true, skipReason)
 			connectDependencies(nodeName)
 		} else if taskGroupNode == nil {
 			connectDependencies(nodeName)
-			taskGroupNode = woc.initializeNode(ctx, nodeName, wfv1.NodeTypeTaskGroup, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeRunning, &wfv1.NodeFlag{}, true, "")
+			_, taskGroupNode = woc.initializeNode(ctx, nodeName, wfv1.NodeTypeTaskGroup, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeRunning, &wfv1.NodeFlag{}, true, "")
 		}
 	}
 
@@ -594,14 +651,14 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 			connectDependencies(taskNodeName)
 
 			// Check the task's when clause to decide if it should execute
-			proceed, err := shouldExecute(t.When)
-			if err != nil {
-				woc.initializeNode(ctx, taskNodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, &wfv1.NodeFlag{}, true, err.Error())
+			proceed, whenErr := shouldExecute(t.When)
+			if whenErr != nil {
+				_, _ = woc.initializeNode(ctx, taskNodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, &wfv1.NodeFlag{}, true, whenErr.Error())
 				continue
 			}
 			if !proceed {
 				skipReason := fmt.Sprintf("when '%s' evaluated false", t.When)
-				woc.initializeNode(ctx, taskNodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeSkipped, &wfv1.NodeFlag{}, true, skipReason)
+				_, _ = woc.initializeNode(ctx, taskNodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeSkipped, &wfv1.NodeFlag{}, true, skipReason)
 				continue
 			}
 		}
@@ -609,16 +666,18 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 		// Finally execute the template
 		node, err = woc.executeTemplate(ctx, taskNodeName, &t, dagCtx.tmplCtx, t.Arguments, &executeTemplateOpts{boundaryID: dagCtx.boundaryID, onExitTemplate: dagCtx.onExitTemplate})
 		if err != nil {
-			switch err {
-			case ErrDeadlineExceeded:
+			switch {
+			case errors.Is(err, ErrDeadlineExceeded):
 				return
-			case ErrParallelismReached:
-			case ErrMaxDepthExceeded:
-			case ErrTimeout:
+			case errors.Is(err, ErrParallelismReached):
+				// continue
+			case errors.Is(err, ErrMaxDepthExceeded):
+				// continue
+			case errors.Is(err, ErrTimeout):
 				_ = woc.markNodePhase(ctx, taskNodeName, wfv1.NodeFailed, err.Error())
 				return
 			default:
-				_ = woc.markNodeError(ctx, taskNodeName, fmt.Errorf("task '%s' errored: %v", taskNodeName, err))
+				_ = woc.markNodeError(ctx, taskNodeName, fmt.Errorf("task '%s' errored: %w", taskNodeName, err))
 				return
 			}
 		}
@@ -631,9 +690,9 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 			if err != nil {
 				woc.markNodeError(ctx, node.Name, err)
 			}
-			scope.addParamToScope(fmt.Sprintf("tasks.%s.status", task.Name), string(node.Phase))
+			varkeys.TasksNodeRef.Status.Set(scope.scope, string(node.Phase), task.Name)
 			// if the node type is NodeTypeRetry, and its last child is completed, it will be completed after woc.executeTemplate;
-			hasOnExitNode, onExitNode, err := woc.runOnExitNode(ctx, task.GetExitHook(woc.execWf.Spec.Arguments), node, dagCtx.boundaryID, dagCtx.tmplCtx, "tasks."+taskName, scope)
+			hasOnExitNode, onExitNode, err := woc.runOnExitNode(ctx, task.GetExitHook(woc.execWf.Spec.Arguments), node, dagCtx.boundaryID, dagCtx.tmplCtx, varkeys.TasksNodeRef, taskName, scope)
 			if hasOnExitNode && (onExitNode == nil || !onExitNode.Fulfilled() || err != nil) {
 				// The onExit node is either not complete or has errored out, return.
 				return
@@ -660,15 +719,14 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 func (woc *wfOperationCtx) buildLocalScopeFromTask(ctx context.Context, dagCtx *dagContext, task *wfv1.DAGTask) (*wfScope, error) {
 	// build up the scope
 	scope := createScope(dagCtx.tmpl)
-	woc.addOutputsToLocalScope("workflow", woc.wf.Status.Outputs, scope)
+	woc.addWorkflowOutputsToLocalScope(woc.wf.Status.Outputs, scope)
 
 	ancestors := common.GetTaskAncestry(ctx, dagCtx, task.Name)
 	for _, ancestor := range ancestors {
 		ancestorNode := dagCtx.getTaskNode(ctx, ancestor)
 		if ancestorNode == nil {
-			return nil, errors.InternalErrorf("Ancestor task node %s not found", ancestor)
+			return nil, argoerrors.InternalErrorf("Ancestor task node %s not found", ancestor)
 		}
-		prefix := fmt.Sprintf("tasks.%s", ancestor)
 		if ancestorNode.Type == wfv1.NodeTypeTaskGroup {
 			var ancestorNodes []wfv1.NodeStatus
 			for _, node := range woc.wf.Status.Nodes {
@@ -678,20 +736,23 @@ func (woc *wfOperationCtx) buildLocalScopeFromTask(ctx context.Context, dagCtx *
 			}
 			_, _, templateStored, err := dagCtx.tmplCtx.ResolveTemplate(ctx, ancestorNode)
 			if err != nil {
-				return nil, errors.InternalWrapError(err)
+				return nil, argoerrors.InternalWrapError(err)
 			}
 			// A new template was stored during resolution, persist it
 			if templateStored {
 				woc.updated = true
 			}
 
-			err = woc.processAggregateNodeOutputs(scope, prefix, ancestorNodes)
+			err = woc.processAggregateNodeOutputs(scope, varkeys.TasksAggregate, ancestor, ancestorNodes)
 			if err != nil {
-				return nil, errors.InternalWrapError(err)
+				return nil, argoerrors.InternalWrapError(err)
 			}
-		} else {
-			woc.buildLocalScope(scope, prefix, ancestorNode)
 		}
+		woc.buildLocalScope(scope, varkeys.TasksNodeRef, ancestor, ancestorNode)
+
+		// For skipped/omitted ancestors that produced no outputs, populate scope with their template's
+		// declared output parameters so downstream references resolve instead of requeuing forever.
+		woc.addSkippedNodeOutputsToScope(ctx, dagCtx.tmplCtx, scope, varkeys.TasksNodeRef, ancestor, ancestorNode, dagCtx.GetTask(ctx, ancestor), false)
 	}
 	return scope, nil
 }
@@ -706,43 +767,90 @@ func (woc *wfOperationCtx) resolveDependencyReferences(ctx context.Context, dagC
 
 	// Perform replacement
 	// Replace woc.volumes
-	err = woc.substituteParamsInVolumes(ctx, scope.getParameters())
+	err = woc.substituteParamsInVolumes(ctx, scope.getParametersAny(nil))
 	if err != nil {
 		return nil, err
 	}
 
 	// Replace task's parameters
-	taskBytes, err := json.Marshal(task)
-	if err != nil {
-		return nil, errors.InternalWrapError(err)
+	// We shallow copy the task to avoid modifying the input pointer, and nil out Hooks to prevent
+	// premature resolution of self-references (e.g. {{tasks.self.outputs...}} in Exit Handlers).
+	tempTask := *task
+	originalHooks := tempTask.Hooks
+	tempTask.Hooks = nil
+
+	// nil-preserving view so expression tags can apply `??` fallbacks to skipped/omitted outputs
+	mergedParams := scope.getParametersAny(woc.globalParams())
+
+	// Resolve the "when" clause first to check if this task should execute before resolving the full task.
+	// This avoids unnecessary requeues when a task won't execute but other fields have unresolved references.
+	if tempTask.When != "" {
+		var whenBytes []byte
+		whenBytes, err = json.Marshal(tempTask.When)
+		if err != nil {
+			return nil, argoerrors.InternalWrapError(err)
+		}
+		var resolvedWhenStr string
+		resolvedWhenStr, err = template.ReplaceStrictAny(ctx, string(whenBytes), mergedParams, []string{"tasks", "steps"})
+		if err != nil {
+			if template.IsMissingVariableErr(err) {
+				woc.requeue()
+				return nil, ErrRequeue
+			}
+			return nil, err
+		}
+		var resolvedWhen string
+		err = json.Unmarshal([]byte(resolvedWhenStr), &resolvedWhen)
+		if err != nil {
+			return nil, argoerrors.InternalWrapError(err)
+		}
+		var proceed bool
+		proceed, err = shouldExecute(resolvedWhen)
+		if err != nil {
+			// If we got an error, it might be because our "when" clause contains a task-expansion parameter (e.g. {{item}}).
+			// Since we don't perform task-expansion until later and task-expansion parameters won't get resolved here,
+			// we continue execution as normal
+			if !tempTask.ShouldExpand() {
+				return nil, err
+			}
+		} else if !proceed {
+			// Task won't execute; return early without resolving the rest of the task
+			tempTask.When = resolvedWhen
+			tempTask.Hooks = originalHooks
+			return &tempTask, nil
+		}
 	}
-	newTaskStr, err := template.Replace(ctx, string(taskBytes), woc.globalParams.Merge(scope.getParameters()), true)
+
+	// Replace arguments that are pure references to a skipped/omitted dependency's output with no
+	// producer default with a sentinel BEFORE substitution; common.ProcessArgs interprets it as
+	// "unsupplied" at consumption time so the consumed template's input default applies (or fails
+	// terminally if it has none). When-false tasks returned early above and never execute.
+	scope.markAbsentOptionalArgs(&tempTask.Arguments)
+
+	taskBytes, err := json.Marshal(tempTask)
 	if err != nil {
+		return nil, argoerrors.InternalWrapError(err)
+	}
+	// We use ReplaceStrict to ensure that any references to dependencies (tasks.*, steps.*) are resolved.
+	// If they are not resolved, it indicates a missing output (e.g. due to race condition), and we should error out
+	// rather than leaving the tag unresolved (which would result in incorrect workflow execution).
+	// We allow other variables (like {{item}}) to remain unresolved for later expansion.
+	newTaskStr, err := template.ReplaceStrictAny(ctx, string(taskBytes), mergedParams, []string{"tasks", "steps"})
+	if err != nil {
+		if template.IsMissingVariableErr(err) {
+			woc.requeue()
+			woc.log.WithError(err).Warn(ctx, "was unable to find variable")
+			return nil, ErrRequeue
+		}
 		return nil, err
 	}
 	var newTask wfv1.DAGTask
 	err = json.Unmarshal([]byte(newTaskStr), &newTask)
 	if err != nil {
-		return nil, errors.InternalWrapError(err)
+		return nil, argoerrors.InternalWrapError(err)
 	}
-
-	// If we are not executing, don't attempt to resolve any artifact references. We only check if we are executing after
-	// the initial parameter resolution, since it's likely that the "when" clause will contain parameter references.
-	proceed, err := shouldExecute(newTask.When)
-	if err != nil {
-		// If we got an error, it might be because our "when" clause contains a task-expansion parameter (e.g. {{item}}).
-		// Since we don't perform task-expansion until later and task-expansion parameters won't get resolved here,
-		// we continue execution as normal
-		if newTask.ShouldExpand() {
-			proceed = true
-		} else {
-			return nil, err
-		}
-	}
-	if !proceed {
-		// We can simply return here; the fact that this task won't execute will be reconciled later on in execution
-		return &newTask, nil
-	}
+	// Restore Hooks
+	newTask.Hooks = originalHooks
 
 	artifacts := wfv1.Artifacts{}
 	// replace all artifact references
@@ -792,20 +900,21 @@ func (d *dagContext) findLeafTaskNames(ctx context.Context, tasks []wfv1.DAGTask
 // We want to be lazy with expanding. Unfortunately this is not quite possible as the When field might rely on
 // expansion to work with the shouldExecute function. To address this we apply a trick, we try to expand, if we fail, we then
 // check shouldExecute, if shouldExecute returns false, we continue on as normal else error out
-func expandTask(ctx context.Context, task wfv1.DAGTask) ([]wfv1.DAGTask, error) {
+func expandTask(ctx context.Context, task wfv1.DAGTask, globalScope map[string]any) ([]wfv1.DAGTask, error) {
 	var err error
 	var items []wfv1.Item
-	if len(task.WithItems) > 0 {
+	switch {
+	case len(task.WithItems) > 0:
 		items = task.WithItems
-	} else if task.WithParam != "" {
+	case task.WithParam != "":
 		err = json.Unmarshal([]byte(task.WithParam), &items)
 		if err != nil {
 			mustExec, mustExecErr := shouldExecute(task.When)
 			if mustExecErr != nil || mustExec {
-				return nil, errors.Errorf(errors.CodeBadRequest, "withParam value could not be parsed as a JSON list: %s: %v", strings.TrimSpace(task.WithParam), err)
+				return nil, argoerrors.Errorf(argoerrors.CodeBadRequest, "withParam value could not be parsed as a JSON list: %s: %v", strings.TrimSpace(task.WithParam), err)
 			}
 		}
-	} else if task.WithSequence != nil {
+	case task.WithSequence != nil:
 		items, err = expandSequence(task.WithSequence)
 		if err != nil {
 			mustExec, mustExecErr := shouldExecute(task.When)
@@ -813,13 +922,13 @@ func expandTask(ctx context.Context, task wfv1.DAGTask) ([]wfv1.DAGTask, error) 
 				return nil, err
 			}
 		}
-	} else {
+	default:
 		return []wfv1.DAGTask{task}, nil
 	}
 
 	taskBytes, err := json.Marshal(task)
 	if err != nil {
-		return nil, errors.InternalWrapError(err)
+		return nil, argoerrors.InternalWrapError(err)
 	}
 
 	// these fields can be very large (>100m) and marshalling 10k x 100m = 6GB of memory used and
@@ -835,7 +944,7 @@ func expandTask(ctx context.Context, task wfv1.DAGTask) ([]wfv1.DAGTask, error) 
 	expandedTasks := make([]wfv1.DAGTask, 0)
 	for i, item := range items {
 		var newTask wfv1.DAGTask
-		newTaskName, err := processItem(ctx, tmpl, task.Name, i, item, &newTask, task.When)
+		newTaskName, err := processItem(ctx, tmpl, task.Name, i, item, &newTask, task.When, globalScope)
 		if err != nil {
 			return nil, err
 		}
@@ -868,7 +977,6 @@ func (d *dagContext) evaluateDependsLogic(ctx context.Context, taskName string) 
 	evalScope := make(map[string]TaskResults)
 
 	for _, taskName := range d.GetTaskDependencies(ctx, taskName) {
-
 		// If the task is still running, we should not proceed.
 		depNode := d.getTaskNode(ctx, taskName)
 		if depNode == nil || !depNode.Fulfilled() || !common.CheckAllHooksFullfilled(depNode, d.wf.Status.Nodes) {
@@ -884,7 +992,6 @@ func (d *dagContext) evaluateDependsLogic(ctx context.Context, taskName string) 
 		allFailed := false
 
 		if depNode.Type == wfv1.NodeTypeTaskGroup {
-
 			allFailed = len(depNode.Children) > 0
 
 			for _, childNodeID := range depNode.Children {
@@ -914,7 +1021,7 @@ func (d *dagContext) evaluateDependsLogic(ctx context.Context, taskName string) 
 	evalLogic := strings.ReplaceAll(d.GetTaskDependsLogic(ctx, taskName), "-", "_")
 	execute, err := argoexpr.EvalBool(evalLogic, evalScope)
 	if err != nil {
-		return false, false, fmt.Errorf("unable to evaluate expression '%s': %s", evalLogic, err)
+		return false, false, fmt.Errorf("unable to evaluate expression '%s': %w", evalLogic, err)
 	}
 	return execute, true, nil
 }

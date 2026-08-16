@@ -6,8 +6,11 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+
+	"github.com/argoproj/argo-workflows/v4/cmd/argoexec/executor"
+	"github.com/argoproj/argo-workflows/v4/workflow/executor/tracing"
 )
 
 func NewResourceCommand() *cobra.Command {
@@ -18,7 +21,7 @@ func NewResourceCommand() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			err := execResource(cmd.Context(), args[0])
 			if err != nil {
-				return fmt.Errorf("%+v", err)
+				return fmt.Errorf("%w", err)
 			}
 			return nil
 		},
@@ -26,18 +29,25 @@ func NewResourceCommand() *cobra.Command {
 	return &command
 }
 
-// nolint: contextcheck
+//nolint:contextcheck
 func execResource(ctx context.Context, action string) error {
-	wfExecutor := initExecutor(ctx)
+	ctx = tracing.InjectTraceContext(ctx)
+	wfExecutor := executor.Init(ctx, clientConfig, varRunArgo)
+	defer func() {
+		if err := wfExecutor.Tracing.Shutdown(context.WithoutCancel(ctx)); err != nil {
+			logging.RequireLoggerFromContext(ctx).WithError(err).Error(ctx, "Failed to shutdown tracing")
+		}
+	}()
 
 	// Don't allow cancellation to impact capture of results, parameters, artifacts, or defers.
-	// nolint:contextcheck
-	bgCtx := logging.RequireLoggerFromContext(ctx).NewBackgroundContext()
+	//nolint:contextcheck
+	bgCtx := tracing.InjectTraceContext(logging.RequireLoggerFromContext(ctx).NewBackgroundContext())
 
 	wfExecutor.InitializeOutput(bgCtx)
-	defer wfExecutor.HandleError(bgCtx)
+	errHandler := wfExecutor.HandleError(bgCtx)
+	defer errHandler()
 	if !wfExecutor.Template.SaveLogsAsArtifact() {
-		defer wfExecutor.FinalizeOutput(bgCtx) //Ensures the LabelKeyReportOutputsCompleted is set to true.
+		defer wfExecutor.FinalizeOutput(bgCtx) // Ensures the LabelKeyReportOutputsCompleted is set to true.
 	}
 	err := wfExecutor.StageFiles(ctx)
 	if err != nil {

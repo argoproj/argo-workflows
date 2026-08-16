@@ -8,8 +8,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/server/utils"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/server/utils"
 	mock "github.com/stretchr/testify/mock"
 	"k8s.io/apimachinery/pkg/labels"
 )
@@ -428,6 +428,72 @@ func (_c *WorkflowArchive_GetWorkflowForEstimator_Call) Return(workflow *v1alpha
 }
 
 func (_c *WorkflowArchive_GetWorkflowForEstimator_Call) RunAndReturn(run func(ctx context.Context, namespace string, requirements []labels.Requirement) (*v1alpha1.Workflow, error)) *WorkflowArchive_GetWorkflowForEstimator_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// HasMoreWorkflows provides a mock function for the type WorkflowArchive
+func (_mock *WorkflowArchive) HasMoreWorkflows(ctx context.Context, options utils.ListOptions) (bool, error) {
+	ret := _mock.Called(ctx, options)
+
+	if len(ret) == 0 {
+		panic("no return value specified for HasMoreWorkflows")
+	}
+
+	var r0 bool
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, utils.ListOptions) (bool, error)); ok {
+		return returnFunc(ctx, options)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, utils.ListOptions) bool); ok {
+		r0 = returnFunc(ctx, options)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, utils.ListOptions) error); ok {
+		r1 = returnFunc(ctx, options)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// WorkflowArchive_HasMoreWorkflows_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'HasMoreWorkflows'
+type WorkflowArchive_HasMoreWorkflows_Call struct {
+	*mock.Call
+}
+
+// HasMoreWorkflows is a helper method to define mock.On call
+//   - ctx context.Context
+//   - options utils.ListOptions
+func (_e *WorkflowArchive_Expecter) HasMoreWorkflows(ctx interface{}, options interface{}) *WorkflowArchive_HasMoreWorkflows_Call {
+	return &WorkflowArchive_HasMoreWorkflows_Call{Call: _e.mock.On("HasMoreWorkflows", ctx, options)}
+}
+
+func (_c *WorkflowArchive_HasMoreWorkflows_Call) Run(run func(ctx context.Context, options utils.ListOptions)) *WorkflowArchive_HasMoreWorkflows_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 utils.ListOptions
+		if args[1] != nil {
+			arg1 = args[1].(utils.ListOptions)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *WorkflowArchive_HasMoreWorkflows_Call) Return(b bool, err error) *WorkflowArchive_HasMoreWorkflows_Call {
+	_c.Call.Return(b, err)
+	return _c
+}
+
+func (_c *WorkflowArchive_HasMoreWorkflows_Call) RunAndReturn(run func(ctx context.Context, options utils.ListOptions) (bool, error)) *WorkflowArchive_HasMoreWorkflows_Call {
 	_c.Call.Return(run)
 	return _c
 }

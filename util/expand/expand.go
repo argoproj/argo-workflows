@@ -7,7 +7,7 @@ import (
 	"github.com/doublerebel/bellows"
 )
 
-func Expand(m map[string]interface{}) map[string]interface{} {
+func Expand(m map[string]any) map[string]any {
 	return bellows.Expand(removeConflicts(m))
 }
 
@@ -15,9 +15,9 @@ func Expand(m map[string]interface{}) map[string]interface{} {
 // {"a.b": 1, "a": 2}
 // What should the result be? We remove the less-specific key.
 // {"a.b": 1, "a": 2} -> {"a.b": 1, "a": 2}
-func removeConflicts(m map[string]interface{}) map[string]interface{} {
+func removeConflicts(m map[string]any) map[string]any {
 	var keys []string
-	n := map[string]interface{}{}
+	n := map[string]any{}
 	for k, v := range m {
 		keys = append(keys, k)
 		n[k] = v

@@ -22,7 +22,7 @@ spec:
     - name: task
       container:
         name: ''
-        image: alpine:latest
+        image: alpine:3.23
         command:
           - sh
           - '-c'
@@ -31,7 +31,7 @@ spec:
     - name: exit-handler
       container:
         name: ''
-        image: alpine:latest
+        image: alpine:3.23
         command:
           - sh
           - '-c'
@@ -43,7 +43,7 @@ spec:
     - name: finish
       container:
         name: ''
-        image: alpine:latest
+        image: alpine:3.23
         command:
           - sh
           - '-c'

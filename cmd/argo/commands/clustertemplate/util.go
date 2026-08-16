@@ -8,15 +8,15 @@ import (
 
 	"sigs.k8s.io/yaml"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/humanize"
-	argoJson "github.com/argoproj/argo-workflows/v3/util/json"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/humanize"
+	argoJson "github.com/argoproj/argo-workflows/v4/util/json"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
 func generateClusterWorkflowTemplates(ctx context.Context, filePaths []string, strict bool) []wfv1.ClusterWorkflowTemplate {
-	fileContents, err := util.ReadManifest(filePaths...)
+	fileContents, err := util.ReadManifest(ctx, filePaths...)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -40,7 +40,7 @@ func generateClusterWorkflowTemplates(ctx context.Context, filePaths []string, s
 // unmarshalClusterWorkflowTemplates unmarshals the input bytes as either json or yaml
 func unmarshalClusterWorkflowTemplates(ctx context.Context, wfBytes []byte, strict bool) ([]wfv1.ClusterWorkflowTemplate, error) {
 	var cwft wfv1.ClusterWorkflowTemplate
-	var jsonOpts []argoJson.JSONOpt
+	var jsonOpts []argoJson.Opt
 	if strict {
 		jsonOpts = append(jsonOpts, argoJson.DisallowUnknownFields)
 	}

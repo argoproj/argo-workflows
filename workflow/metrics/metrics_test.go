@@ -9,11 +9,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
 	"k8s.io/client-go/util/workqueue"
-	"k8s.io/utils/ptr"
 
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/util/telemetry"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/telemetry"
 )
 
 func TestMetrics(t *testing.T) {
@@ -53,7 +52,7 @@ func TestErrors(t *testing.T) {
 }
 
 func TestMetricGC(t *testing.T) {
-	config := telemetry.Config{
+	config := telemetry.MetricsConfig{
 		Enabled: true,
 		Path:    telemetry.DefaultPrometheusServerPath,
 		Port:    telemetry.DefaultPrometheusServerPort,
@@ -97,7 +96,7 @@ func TestMetricGC(t *testing.T) {
 }
 
 func TestRealtimeMetricGC(t *testing.T) {
-	config := telemetry.Config{
+	config := telemetry.MetricsConfig{
 		Enabled: true,
 		Path:    telemetry.DefaultPrometheusServerPath,
 		Port:    telemetry.DefaultPrometheusServerPort,
@@ -118,7 +117,7 @@ func TestRealtimeMetricGC(t *testing.T) {
 		Labels: labels,
 		Help:   "None",
 		Gauge: &wfv1.Gauge{
-			Realtime: ptr.To(true),
+			Realtime: new(true),
 		}},
 		wfKey,
 		func() float64 { return 1.0 },
@@ -170,7 +169,7 @@ func TestWorkflowQueueMetrics(t *testing.T) {
 }
 
 func TestRealTimeMetricDeletion(t *testing.T) {
-	config := telemetry.Config{
+	config := telemetry.MetricsConfig{
 		Enabled: true,
 		Path:    telemetry.DefaultPrometheusServerPath,
 		Port:    telemetry.DefaultPrometheusServerPort,
@@ -196,7 +195,7 @@ func TestRealTimeMetricDeletion(t *testing.T) {
 		Help:   "hello",
 		Gauge: &wfv1.Gauge{
 			Value:     "1.0",
-			Realtime:  ptr.To(true),
+			Realtime:  new(true),
 			Operation: wfv1.GaugeOperationAdd,
 		},
 	}, "123", func() float64 { return 0.0 })
@@ -223,7 +222,7 @@ func TestRealTimeMetricDeletion(t *testing.T) {
 		Help:   "hello",
 		Gauge: &wfv1.Gauge{
 			Value:     "1.0",
-			Realtime:  ptr.To(true),
+			Realtime:  new(true),
 			Operation: wfv1.GaugeOperationAdd,
 		},
 	}, "456", nil)

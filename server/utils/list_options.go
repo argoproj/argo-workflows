@@ -15,6 +15,7 @@ import (
 type ListOptions struct {
 	Namespace, Name              string
 	NamePrefix, NameFilter       string
+	NamespaceFilter              string
 	MinStartedAt, MaxStartedAt   time.Time
 	CreatedAfter, FinishedBefore time.Time
 	LabelRequirements            labels.Requirements
@@ -73,6 +74,7 @@ func BuildListOptions(options metav1.ListOptions, ns, namePrefix, nameFilter, cr
 	// namespace is now specified as its own query parameter
 	// note that for backward compatibility, the field selector 'metadata.namespace' is also supported for now
 	namespace := ns // optional
+	namespaceFilter := ""
 	name := ""
 	minStartedAt := time.Time{}
 	maxStartedAt := time.Time{}
@@ -92,33 +94,52 @@ func BuildListOptions(options metav1.ListOptions, ns, namePrefix, nameFilter, cr
 		}
 	}
 	showRemainingItemCount := false
-	for _, selector := range strings.Split(options.FieldSelector, ",") {
+	for selector := range strings.SplitSeq(options.FieldSelector, ",") {
 		if len(selector) == 0 {
 			continue
 		}
-		if strings.HasPrefix(selector, "metadata.namespace=") {
-			// for backward compatibility, the field selector 'metadata.namespace' is supported for now despite the addition
-			// of the new 'namespace' query parameter, which is what the UI uses
-			fieldSelectedNamespace := strings.TrimPrefix(selector, "metadata.namespace=")
+		if after, ok := strings.CutPrefix(selector, "metadata.namespace!="); ok {
+			namespace = after
+			namespaceFilter = "NotEquals"
+		} else if after, ok := strings.CutPrefix(selector, "metadata.namespace=="); ok {
+			fieldSelectedNamespace := after
 			switch namespace {
 			case "":
 				namespace = fieldSelectedNamespace
 			case fieldSelectedNamespace:
-				break
+				// namespace matches, nothing to do
 			default:
 				return ListOptions{}, status.Errorf(codes.InvalidArgument,
 					"'namespace' query param (%q) and fieldselector 'metadata.namespace' (%q) are both specified and contradict each other", namespace, fieldSelectedNamespace)
 			}
-		} else if strings.HasPrefix(selector, "metadata.name=") {
-			name = strings.TrimPrefix(selector, "metadata.name=")
-		} else if strings.HasPrefix(selector, "spec.startedAt>") {
-			minStartedAt, err = time.Parse(time.RFC3339, strings.TrimPrefix(selector, "spec.startedAt>"))
+		} else if after, ok := strings.CutPrefix(selector, "metadata.namespace="); ok {
+			// for backward compatibility, the field selector 'metadata.namespace' is supported for now despite the addition
+			// of the new 'namespace' query parameter, which is what the UI uses
+			fieldSelectedNamespace := after
+			switch namespace {
+			case "":
+				namespace = fieldSelectedNamespace
+			case fieldSelectedNamespace:
+				// namespace matches, nothing to do
+			default:
+				return ListOptions{}, status.Errorf(codes.InvalidArgument,
+					"'namespace' query param (%q) and fieldselector 'metadata.namespace' (%q) are both specified and contradict each other", namespace, fieldSelectedNamespace)
+			}
+		} else if after, ok := strings.CutPrefix(selector, "metadata.name!="); ok {
+			name = after
+			nameFilter = "NotEquals"
+		} else if after, ok := strings.CutPrefix(selector, "metadata.name=="); ok {
+			name = after
+		} else if after, ok := strings.CutPrefix(selector, "metadata.name="); ok {
+			name = after
+		} else if after, ok := strings.CutPrefix(selector, "spec.startedAt>"); ok {
+			minStartedAt, err = time.Parse(time.RFC3339, after)
 			if err != nil {
 				// startedAt is populated by us, it should therefore be valid.
 				return ListOptions{}, ToStatusError(err, codes.Internal)
 			}
-		} else if strings.HasPrefix(selector, "spec.startedAt<") {
-			maxStartedAt, err = time.Parse(time.RFC3339, strings.TrimPrefix(selector, "spec.startedAt<"))
+		} else if after, ok := strings.CutPrefix(selector, "spec.startedAt<"); ok {
+			maxStartedAt, err = time.Parse(time.RFC3339, after)
 			if err != nil {
 				// no need to use sutils here
 				return ListOptions{}, ToStatusError(err, codes.Internal)
@@ -142,6 +163,7 @@ func BuildListOptions(options metav1.ListOptions, ns, namePrefix, nameFilter, cr
 		Name:                   name,
 		NamePrefix:             namePrefix,
 		NameFilter:             nameFilter,
+		NamespaceFilter:        namespaceFilter,
 		CreatedAfter:           createdAfterTime,
 		FinishedBefore:         finishedBeforeTime,
 		MinStartedAt:           minStartedAt,

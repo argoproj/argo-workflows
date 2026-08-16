@@ -4,6 +4,8 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: continue-on-fail-
+  labels:
+    workflows.argoproj.io/no-test: "expected-failure"
 spec:
   entrypoint: workflow-ignore
   parallelism: 1
@@ -29,6 +31,6 @@ spec:
 
   - name: intentional-fail
     container:
-      image: alpine:latest
+      image: busybox
       command: [sh, -c]
       args: ["echo intentional failure; exit 1"]

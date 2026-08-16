@@ -3,12 +3,11 @@ package commands
 import (
 	"context"
 	"fmt"
-	"time"
 
-	"github.com/argoproj/pkg/stats"
 	"github.com/spf13/cobra"
+	"go.opentelemetry.io/otel/trace"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	wfexecutor "github.com/argoproj/argo-workflows/v4/workflow/executor"
 )
 
 func NewWaitCommand() *cobra.Command {
@@ -18,7 +17,7 @@ func NewWaitCommand() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			err := waitContainer(cmd.Context())
 			if err != nil {
-				return fmt.Errorf("%+v", err)
+				return fmt.Errorf("%w", err)
 			}
 			return nil
 		},
@@ -26,64 +25,15 @@ func NewWaitCommand() *cobra.Command {
 	return &command
 }
 
-// nolint: contextcheck
 func waitContainer(ctx context.Context) error {
-	wfExecutor := initExecutor(ctx)
-
-	// Don't allow cancellation to impact capture of results, parameters, artifacts, or defers.
-	// nolint:contextcheck
-	bgCtx := logging.RequireLoggerFromContext(ctx).NewBackgroundContext()
-
-	defer wfExecutor.HandleError(bgCtx)    // Must be placed at the bottom of defers stack.
-	defer wfExecutor.FinalizeOutput(bgCtx) // Ensures the LabelKeyReportOutputsCompleted is set to true.
-	defer stats.LogStats()
-	stats.StartStatsTicker(5 * time.Minute)
-
-	// Create a new empty (placeholder) task result with LabelKeyReportOutputsCompleted set to false.
-	wfExecutor.InitializeOutput(bgCtx)
-
-	// Wait for main container to complete
-	err := wfExecutor.Wait(ctx)
-	if err != nil {
-		wfExecutor.AddError(ctx, err)
-	}
-
-	if wfExecutor.Template.Resource != nil {
-		// Save log artifacts for resource template
-		err = wfExecutor.ReportOutputsLogs(bgCtx)
-		if err != nil {
-			wfExecutor.AddError(ctx, err)
-		}
-		return wfExecutor.HasError()
-	}
-
-	// Capture output script result
-	err = wfExecutor.CaptureScriptResult(bgCtx)
-	if err != nil {
-		wfExecutor.AddError(ctx, err)
-	}
-
-	// Saving output parameters
-	err = wfExecutor.SaveParameters(bgCtx)
-	if err != nil {
-		wfExecutor.AddError(ctx, err)
-	}
-
-	// Saving output artifacts
-	artifacts, err := wfExecutor.SaveArtifacts(bgCtx)
-	if err != nil {
-		wfExecutor.AddError(ctx, err)
-	}
-
-	// Save log artifacts
-	logArtifacts := wfExecutor.SaveLogs(bgCtx)
-	artifacts = append(artifacts, logArtifacts...)
-
-	// Try to upsert TaskResult. If it fails, we will try to update the Pod's Annotations
-	err = wfExecutor.ReportOutputs(bgCtx, artifacts)
-	if err != nil {
-		wfExecutor.AddError(ctx, err)
-	}
-
-	return wfExecutor.HasError()
+	return runAuxiliaryContainer(ctx,
+		func(we *wfexecutor.WorkflowExecutor, ctx context.Context) (context.Context, trace.Span) {
+			return we.Tracing.StartRunWaitContainer(ctx, we.WorkflowName(), we.Namespace)
+		},
+		func(ctx, bgCtx context.Context, we *wfexecutor.WorkflowExecutor) error {
+			// Legacy wait: pre-main ran in the init container; if it failed
+			// the pod never got here. Always pass preMainFailed=false.
+			return we.PostMain(ctx, bgCtx, false)
+		},
+	)
 }

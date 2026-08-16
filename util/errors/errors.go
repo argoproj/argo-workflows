@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/url"
 	"os"
@@ -13,16 +14,9 @@ import (
 
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 
-	argoerrs "github.com/argoproj/argo-workflows/v3/errors"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	argoerrs "github.com/argoproj/argo-workflows/v4/errors"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
-
-func IgnoreContainerNotFoundErr(err error) error {
-	if err != nil && strings.Contains(err.Error(), "container not found") {
-		return nil
-	}
-	return err
-}
 
 // IsTransientErr reports whether the error is transient and logs it.
 func IsTransientErr(ctx context.Context, err error) bool {
@@ -54,11 +48,21 @@ func isTransientErr(err error) bool {
 		isResourceQuotaTimeoutErr(err) ||
 		isTransientNetworkErr(err) ||
 		apierr.IsServerTimeout(err) ||
+		apierr.IsTimeout(err) ||
 		apierr.IsServiceUnavailable(err) ||
 		isTransientEtcdErr(err) ||
+		isClientGoRateLimiterWaitErr(err) ||
 		matchTransientErrPattern(err) ||
 		errors.Is(err, NewErrTransient("")) ||
 		isTransientSqbErr(err)
+}
+
+// isClientGoRateLimiterWaitErr matches client-go's rest.Request error when the
+// client-side QPS limiter blocks until the request context would expire
+// ("rate: Wait(n=1) would exceed context deadline"). This is backpressure, not
+// a terminal failure; the controller should requeue (see createWorkflowPod).
+func isClientGoRateLimiterWaitErr(err error) bool {
+	return strings.Contains(generateErrorString(err), "client rate limiter Wait returned an error")
 }
 
 func matchTransientErrPattern(err error) bool {
@@ -86,52 +90,72 @@ func isResourceQuotaTimeoutErr(err error) bool {
 
 func isTransientEtcdErr(err error) bool {
 	// Some clusters expose these (transient) etcd errors to the caller
-	if strings.Contains(err.Error(), "etcdserver: leader changed") {
+	errStr := err.Error()
+	switch {
+	case strings.Contains(errStr, "etcdserver: leader changed"):
 		return true
-	} else if strings.Contains(err.Error(), "etcdserver: request timed out") {
+	case strings.Contains(errStr, "etcdserver: request timed out"):
 		return true
-	} else if strings.Contains(err.Error(), "etcdserver: too many requests") {
+	case strings.Contains(errStr, "etcdserver: too many requests"):
 		return true
+	default:
+		return false
 	}
-	return false
 }
 
 func isTransientNetworkErr(err error) bool {
-	switch err.(type) {
-	case *net.DNSError, *net.OpError, net.UnknownNetworkError:
+	if errors.Is(err, io.ErrUnexpectedEOF) {
+		return true
+	}
+
+	var dnsErr *net.DNSError
+	var opErr *net.OpError
+	var unknownNetErr net.UnknownNetworkError
+	if errors.As(err, &dnsErr) || errors.As(err, &opErr) || errors.As(err, &unknownNetErr) {
 		return true
 	}
 
 	errorString := generateErrorString(err)
-	if strings.Contains(errorString, "Connection closed by foreign host") {
+	switch {
+	case strings.Contains(errorString, "unexpected error when reading response body") ||
+		strings.Contains(errorString, "stream error when reading response body"):
+		// client-go rest.Request: body read failed mid-response; the message asks to retry.
+		return true
+	case strings.Contains(errorString, "Connection closed by foreign host"):
 		// For a URL error, where it replies back "connection closed"
 		// retry again.
 		return true
-	} else if strings.Contains(errorString, "net/http: TLS handshake timeout") {
+	case strings.Contains(errorString, "net/http: TLS handshake timeout"):
 		// If error is - tlsHandshakeTimeoutError, retry.
 		return true
-	} else if strings.Contains(errorString, "i/o timeout") {
+	case strings.Contains(errorString, "i/o timeout"):
 		// If error is - tcp timeoutError, retry.
 		return true
-	} else if strings.Contains(errorString, "connection timed out") {
+	case strings.Contains(errorString, "connection timed out"):
 		// If err is a net.Dial timeout, retry.
 		return true
-	} else if strings.Contains(errorString, "connection reset by peer") {
+	case strings.Contains(errorString, "connection reset by peer"):
 		// If err is a ECONNRESET, retry.
 		return true
-	} else if _, ok := err.(*url.Error); ok && strings.Contains(errorString, "EOF") {
-		// If err is EOF, retry.
-		return true
-	} else if strings.Contains(errorString, "http2: client connection lost") {
+	case strings.Contains(errorString, "http2: client connection lost"):
 		// If err is http2 transport ping timeout, retry.
 		return true
-	} else if strings.Contains(errorString, "http2: server sent GOAWAY and closed the connection") {
+	case strings.Contains(errorString, "http2: server sent GOAWAY and closed the connection"):
 		return true
-	} else if strings.Contains(errorString, "connect: connection refused") {
+	case strings.Contains(errorString, "request did not complete within requested timeout"):
+		// gRPC-go client deadline (often seen from apiserver Create); retry pod create on next reconcile.
+		return true
+	case strings.Contains(errorString, "connect: connection refused"):
 		// If err is connection refused, retry.
 		return true
-	} else if strings.Contains(errorString, "invalid connection") {
+	case strings.Contains(errorString, "invalid connection"):
 		// If err is invalid connection, retry.
+		return true
+	}
+
+	// If err is EOF, retry.
+	var urlErr *url.Error
+	if errors.As(err, &urlErr) && strings.Contains(errorString, "EOF") {
 		return true
 	}
 
@@ -140,7 +164,8 @@ func isTransientNetworkErr(err error) bool {
 
 func generateErrorString(err error) string {
 	errorString := err.Error()
-	if exitErr, ok := err.(*exec.ExitError); ok {
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
 		errorString = fmt.Sprintf("%s %s", errorString, exitErr.Stderr)
 	}
 	return errorString

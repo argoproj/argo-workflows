@@ -70,6 +70,9 @@ To access the UI, use one of the following:
 kubectl -n argo port-forward svc/argo-server 2746:2746
 ```
 
+!!! Note "Helm installations"
+    If you installed Argo Workflows using the [Helm chart](https://github.com/argoproj/argo-helm/tree/main/charts/argo-workflows), use `svc/argo-workflows-server` instead of `svc/argo-server`.
+
 Then visit: <https://localhost:2746>
 
 ### Expose a `LoadBalancer`
@@ -124,7 +127,7 @@ spec:
 ...
 ```
 
-Create a ingress, with the annotation `ingress.kubernetes.io/rewrite-target: /`:
+Create an ingress, with the annotation `ingress.kubernetes.io/rewrite-target: /`:
 
 >If TLS is enabled (which it is by default), the ingress controller must be told that the backend uses HTTPS.
 >The method depends on the ingress controller, e.g.
@@ -181,7 +184,3 @@ You can access additional information through the following headers.
 * `X-Rate-Limit-Remaining` - the number of requests left for the current rate-limit window.
 * `X-Rate-Limit-Reset` - the time at which the rate limit resets, specified in UTC time.
 * `Retry-After` - indicate when a client should retry requests (when the rate limit expires), in UTC time.
-
-### GRPC ALPN
-
-The grpc library wants to enforce ALPN, but we are not prepared for this so the argo-server binary is built with `GRPC_ENFORCE_ALPN_ENABLED` set to `false` in the docker image as a short term workaround, as documented in https://github.com/grpc/grpc-go/issues/434

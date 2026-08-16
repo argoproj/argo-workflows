@@ -5,16 +5,15 @@ import (
 
 	"github.com/upper/db/v4"
 
-	"github.com/argoproj/argo-workflows/v3/util/sqldb"
+	"github.com/argoproj/argo-workflows/v4/util/sqldb"
 )
 
 const (
 	versionTable = "schema_history"
 )
 
-func Migrate(ctx context.Context, session db.Session, clusterName, tableName string) (err error) {
-	dbType := sqldb.DBTypeFor(session)
-	return sqldb.Migrate(ctx, session, versionTable, []sqldb.Change{
+func MigrateChanges(clusterName, tableName string, dbType sqldb.DBType) []sqldb.Change {
+	return []sqldb.Change{
 		sqldb.AnsiSQLChange(`create table if not exists ` + tableName + ` (
     id varchar(128) ,
     name varchar(256),
@@ -23,7 +22,7 @@ func Migrate(ctx context.Context, session db.Session, clusterName, tableName str
     workflow text,
     startedat timestamp default CURRENT_TIMESTAMP,
     finishedat timestamp default CURRENT_TIMESTAMP,
-
+    creationtimestamp timestamp default CURRENT_TIMESTAMP,
     primary key (id, namespace)
 )`),
 		sqldb.AnsiSQLChange(`create unique index idx_name on ` + tableName + ` (name)`),
@@ -217,5 +216,24 @@ func Migrate(ctx context.Context, session db.Session, clusterName, tableName str
 			sqldb.Postgres: sqldb.AnsiSQLChange(`drop index argo_archived_workflows_i4`),
 		}),
 		sqldb.AnsiSQLChange(`create index argo_archived_workflows_i4 on argo_archived_workflows (clustername, startedat)`),
-	})
+		// add creationtimestamp column to argo_archived_workflows table
+		sqldb.AnsiSQLChange(`alter table argo_archived_workflows add column creationtimestamp timestamp null`),
+		sqldb.AnsiSQLChange(`update argo_archived_workflows set creationtimestamp = startedat where creationtimestamp is null`),
+		sqldb.ByType(dbType, sqldb.TypedChanges{
+			sqldb.MySQL:    sqldb.AnsiSQLChange(`alter table argo_archived_workflows modify column creationtimestamp timestamp not null default CURRENT_TIMESTAMP`),
+			sqldb.Postgres: sqldb.AnsiSQLChange(`alter table argo_archived_workflows alter column creationtimestamp set default CURRENT_TIMESTAMP`),
+		}),
+		// add index on creationtimestamp column
+		sqldb.AnsiSQLChange(`create index argo_archived_workflows_i5 on argo_archived_workflows (creationtimestamp)`),
+		// change argo_archived_workflows_i1 index to add startedat DESC to resolve MySQL out of sort memory issues. #14240
+		sqldb.ByType(dbType, sqldb.TypedChanges{
+			sqldb.MySQL:    sqldb.AnsiSQLChange(`drop index argo_archived_workflows_i1 on argo_archived_workflows`),
+			sqldb.Postgres: sqldb.AnsiSQLChange(`drop index argo_archived_workflows_i1`),
+		}),
+		sqldb.AnsiSQLChange(`create index argo_archived_workflows_i1 on argo_archived_workflows (clustername, instanceid, namespace, startedat DESC)`),
+	}
+}
+
+func Migrate(ctx context.Context, session db.Session, clusterName, tableName string, dbType sqldb.DBType) (err error) {
+	return sqldb.Migrate(ctx, session, dbType, versionTable, MigrateChanges(clusterName, tableName, dbType))
 }

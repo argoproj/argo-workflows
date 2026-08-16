@@ -4,12 +4,21 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
+// Heap is the interface for a GC heap (implements heap.Interface)
+type Heap interface {
+	Len() int
+	Less(i, j int) bool
+	Swap(i, j int)
+	Push(x any)
+	Pop() any
+}
+
 type gcHeap struct {
 	heap  []*unstructured.Unstructured
 	dedup map[string]bool
 }
 
-func NewHeap() *gcHeap {
+func NewHeap() Heap {
 	return &gcHeap{
 		heap:  make([]*unstructured.Unstructured, 0),
 		dedup: make(map[string]bool),
@@ -22,7 +31,7 @@ func (h *gcHeap) Less(i, j int) bool {
 }
 func (h *gcHeap) Swap(i, j int) { h.heap[i], h.heap[j] = h.heap[j], h.heap[i] }
 
-func (h *gcHeap) Push(x interface{}) {
+func (h *gcHeap) Push(x any) {
 	if _, ok := h.dedup[x.(*unstructured.Unstructured).GetName()]; ok {
 		return
 	}
@@ -30,7 +39,7 @@ func (h *gcHeap) Push(x interface{}) {
 	h.heap = append(h.heap, x.(*unstructured.Unstructured))
 }
 
-func (h *gcHeap) Pop() interface{} {
+func (h *gcHeap) Pop() any {
 	old := h.heap
 	n := len(old)
 	x := old[n-1]

@@ -5,12 +5,12 @@ package e2e
 import (
 	"testing"
 
-	"github.com/argoproj/argo-workflows/v3/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
 
 	"k8s.io/apimachinery/pkg/labels"
 
-	sutils "github.com/argoproj/argo-workflows/v3/server/utils"
-	"github.com/argoproj/argo-workflows/v3/test/e2e/fixtures"
+	sutils "github.com/argoproj/argo-workflows/v4/server/utils"
+	"github.com/argoproj/argo-workflows/v4/test/e2e/fixtures"
 )
 
 func BenchmarkWorkflowArchive(b *testing.B) {
@@ -21,7 +21,7 @@ func BenchmarkWorkflowArchive(b *testing.B) {
 	b.ResetTimer()
 
 	// Uncomment the following line to log queries to stdout
-	//db.LC().SetLevel(db.LogLevelDebug)
+	// db.LC().SetLevel(db.LogLevelDebug)
 
 	ctx := logging.TestContext(b.Context())
 

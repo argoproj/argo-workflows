@@ -20,15 +20,16 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
-	argoConfig "github.com/argoproj/argo-workflows/v3/config"
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/util/diff"
-	"github.com/argoproj/argo-workflows/v3/util/logging"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
-	"github.com/argoproj/argo-workflows/v3/workflow/controller/indexes"
-	"github.com/argoproj/argo-workflows/v3/workflow/metrics"
-	"github.com/argoproj/argo-workflows/v3/workflow/util"
+	argoConfig "github.com/argoproj/argo-workflows/v4/config"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/diff"
+	informerutil "github.com/argoproj/argo-workflows/v4/util/informer"
+	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/workflow/controller/indexes"
+	"github.com/argoproj/argo-workflows/v4/workflow/metrics"
+	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
 const (
@@ -72,7 +73,7 @@ func NewController(ctx context.Context, config *argoConfig.Config, restConfig *r
 	//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)
 	podController.podInformer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
+			AddFunc: func(obj any) {
 				pod, err := podFromObj(obj)
 				if err != nil {
 					log.WithError(err).Error(ctx, "object from informer wasn't a pod")
@@ -80,7 +81,7 @@ func NewController(ctx context.Context, config *argoConfig.Config, restConfig *r
 				}
 				podController.addPodEvent(ctx, pod)
 			},
-			UpdateFunc: func(old, newVal interface{}) {
+			UpdateFunc: func(old, newVal any) {
 				key, err := keyFunc(newVal)
 				if err != nil {
 					return
@@ -96,7 +97,7 @@ func NewController(ctx context.Context, config *argoConfig.Config, restConfig *r
 				}
 				podController.updatePodEvent(ctx, oldPod, newPod)
 			},
-			DeleteFunc: func(obj interface{}) {
+			DeleteFunc: func(obj any) {
 				podController.deletePodEvent(ctx, obj)
 			},
 		},
@@ -172,8 +173,8 @@ func (c *Controller) podOrphaned(ctx context.Context, pod *apiv1.Pod) bool {
 
 func podGCFromPod(pod *apiv1.Pod) wfv1.PodGC {
 	if val, ok := pod.Annotations[common.AnnotationKeyPodGCStrategy]; ok {
-		parts := strings.Split(val, "/")
-		return wfv1.PodGC{Strategy: wfv1.PodGCStrategy(parts[0]), DeleteDelayDuration: parts[1]}
+		strategy, delay, _ := strings.Cut(val, "/")
+		return wfv1.PodGC{Strategy: wfv1.PodGCStrategy(strategy), DeleteDelayDuration: delay}
 	}
 	return wfv1.PodGC{Strategy: wfv1.PodGCOnPodNone}
 }
@@ -200,7 +201,7 @@ func (c *Controller) commonPodEvent(ctx context.Context, pod *apiv1.Pod, deletin
 		if hasOurFinalizer(pod.Finalizers) {
 			c.log.WithFields(logging.Fields{"pod.Finalizers": pod.Finalizers}).Info(ctx, "Removing finalizers during a delete")
 			action = removeFinalizer
-			minimumDelay = time.Duration(2 * time.Minute)
+			minimumDelay = 2 * time.Minute
 		}
 	case c.podOrphaned(ctx, pod):
 		if hasOurFinalizer(pod.Finalizers) {
@@ -242,20 +243,22 @@ func (c *Controller) addPodEvent(ctx context.Context, pod *apiv1.Pod) {
 	if err != nil {
 		c.log.WithField("pod", pod.Name).Warn(ctx, "callback for pod add failed")
 	}
-	c.commonPodEvent(ctx, pod, false)
+	deleting := pod.DeletionTimestamp != nil
+	c.commonPodEvent(ctx, pod, deleting)
 }
 
-func (c *Controller) updatePodEvent(ctx context.Context, old *apiv1.Pod, new *apiv1.Pod) {
+func (c *Controller) updatePodEvent(ctx context.Context, old *apiv1.Pod, newPod *apiv1.Pod) {
 	// This is only called for actual updates, where there are "significant changes"
 	c.log.WithField("pod", old.Name).Info(ctx, "update pod event")
-	err := c.callBack(new)
+	err := c.callBack(newPod)
 	if err != nil {
-		c.log.WithField("pod", new.Name).Warn(ctx, "callback for pod update failed")
+		c.log.WithField("pod", newPod.Name).Warn(ctx, "callback for pod update failed")
 	}
-	c.commonPodEvent(ctx, new, false)
+	deleting := newPod.DeletionTimestamp != nil
+	c.commonPodEvent(ctx, newPod, deleting)
 }
 
-func (c *Controller) deletePodEvent(ctx context.Context, obj interface{}) {
+func (c *Controller) deletePodEvent(ctx context.Context, obj any) {
 	pod, err := podFromObj(obj)
 	if err != nil {
 		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
@@ -295,6 +298,10 @@ func newWorkflowPodWatch(ctx context.Context, clientSet kubernetes.Interface, in
 		options.Limit = podPaginationLimit
 		for {
 			options.Continue = continueTok
+			if options.Continue != "" {
+				options.ResourceVersion = ""
+				options.ResourceVersionMatch = ""
+			}
 			podList, err := c.List(ctx, options)
 			if err != nil {
 				return nil, err
@@ -317,18 +324,20 @@ func newWorkflowPodWatch(ctx context.Context, clientSet kubernetes.Interface, in
 
 func newInformer(ctx context.Context, clientSet kubernetes.Interface, instanceID, namespace *string) cache.SharedIndexInformer {
 	source := newWorkflowPodWatch(ctx, clientSet, instanceID, namespace)
-	informer := cache.NewSharedIndexInformer(source, &apiv1.Pod{}, podResyncPeriod, cache.Indexers{
+	informer := cache.NewSharedIndexInformer(cache.ToListWatcherWithWatchListSemantics(source, clientSet), &apiv1.Pod{}, podResyncPeriod, cache.Indexers{
 		indexes.WorkflowIndex: indexes.MetaWorkflowIndexFunc,
 		indexes.NodeIDIndex:   indexes.MetaNodeIDIndexFunc,
 		indexes.PodPhaseIndex: indexes.PodPhaseIndexFunc,
 	})
+	//nolint:errcheck // the error only happens if the informer was already started, and it hasn't been
+	informer.SetTransform(informerutil.StripManagedFields)
 	return informer
 }
 
-func podFromObj(obj interface{}) (*apiv1.Pod, error) {
+func podFromObj(obj any) (*apiv1.Pod, error) {
 	pod, ok := obj.(*apiv1.Pod)
 	if !ok {
-		return nil, fmt.Errorf("Object is not a pod")
+		return nil, fmt.Errorf("object is not a pod")
 	}
 	return pod, nil
 }

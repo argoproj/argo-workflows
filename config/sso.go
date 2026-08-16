@@ -24,7 +24,7 @@ type SSOConfig struct {
 	// additional scopes (on top of "openid")
 	Scopes []string `json:"scopes,omitempty"`
 	// SessionExpiry specifies how long user sessions last
-	SessionExpiry metav1.Duration `json:"sessionExpiry,omitempty"`
+	SessionExpiry metav1.Duration `json:"sessionExpiry,omitzero"`
 	// CustomGroupClaimName will override the groups claim name
 	CustomGroupClaimName string `json:"customGroupClaimName,omitempty"`
 	// UserInfoPath specifies the path to user info endpoint
@@ -33,6 +33,8 @@ type SSOConfig struct {
 	InsecureSkipVerify bool `json:"insecureSkipVerify,omitempty"`
 	// FilterGroupsRegex filters groups using regular expressions
 	FilterGroupsRegex []string `json:"filterGroupsRegex,omitempty"`
+	// custom PEM encoded CA certificate file contents
+	RootCA string `json:"rootCA,omitempty"`
 }
 
 func (c SSOConfig) GetSessionExpiry() time.Duration {

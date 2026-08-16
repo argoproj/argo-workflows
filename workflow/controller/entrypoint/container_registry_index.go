@@ -2,9 +2,11 @@ package entrypoint
 
 import (
 	"context"
+	"runtime"
 
 	"github.com/google/go-containerregistry/pkg/authn/k8schain"
 	"github.com/google/go-containerregistry/pkg/name"
+	pkgv1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
@@ -27,7 +29,11 @@ func (i *containerRegistryIndex) Lookup(ctx context.Context, image string, optio
 	if err != nil {
 		return nil, err
 	}
-	img, err := remote.Image(ref, remote.WithAuthFromKeychain(kc))
+	var defaultPlatform = pkgv1.Platform{
+		Architecture: runtime.GOARCH,
+		OS:           runtime.GOOS,
+	}
+	img, err := remote.Image(ref, remote.WithAuthFromKeychain(kc), remote.WithPlatform(defaultPlatform))
 	if err != nil {
 		return nil, err
 	}

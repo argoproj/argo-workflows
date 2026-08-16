@@ -6,9 +6,9 @@ import (
 	"io"
 	"os"
 
-	"github.com/argoproj/argo-workflows/v3/errors"
-	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
+	"github.com/argoproj/argo-workflows/v4/errors"
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/workflow/artifacts/common"
 )
 
 type ArtifactDriver struct{}
@@ -36,6 +36,11 @@ func (a *ArtifactDriver) OpenStream(ctx context.Context, art *wfv1.Artifact) (io
 
 // Save is unsupported for raw output artifacts
 func (a *ArtifactDriver) Save(ctx context.Context, path string, artifact *wfv1.Artifact) error {
+	return errors.Errorf(errors.CodeBadRequest, "Raw output artifacts unsupported")
+}
+
+// SaveStream is unsupported for raw output artifacts
+func (a *ArtifactDriver) SaveStream(ctx context.Context, reader io.Reader, artifact *wfv1.Artifact) error {
 	return errors.Errorf(errors.CodeBadRequest, "Raw output artifacts unsupported")
 }
 

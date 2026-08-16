@@ -5,8 +5,8 @@ import (
 	"hash/fnv"
 	"os"
 
-	"github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 const (
@@ -66,7 +66,6 @@ func GeneratePodName(workflowName, nodeName, templateName, nodeID string, versio
 	_, _ = h.Write([]byte(nodeName))
 
 	return fmt.Sprintf("%s-%v", prefix, h.Sum32())
-
 }
 
 func ensurePodNamePrefixLength(prefix string) string {

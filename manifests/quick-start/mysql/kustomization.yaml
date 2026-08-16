@@ -3,7 +3,7 @@ kind: Kustomization
 
 resources:
   - ../base
-  - ../../base/crds/minimal
+  - ../../base/crds/full
 
 components:
   - ../../components/mysql
