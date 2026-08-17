@@ -617,6 +617,20 @@ func (e *DAGEvaluator) SetRetryStrategy(taskName string, rs *wfv1.RetryStrategy)
 	e.retryStrategies[taskName] = rs
 }
 
+// retryStrategyFor returns the retry strategy registered for a task.
+// Strategies are registered under static task names, but expanded
+// withItems/withParam/withSequence children are looked up under their
+// expanded name (e.g. "A(0:x)"); those inherit the static task's strategy.
+func (e *DAGEvaluator) retryStrategyFor(taskName string) *wfv1.RetryStrategy {
+	if rs, ok := e.retryStrategies[taskName]; ok {
+		return rs
+	}
+	if i := strings.Index(taskName, "("); i > 0 {
+		return e.retryStrategies[taskName[:i]]
+	}
+	return nil
+}
+
 // nextRetryBackoff computes the delay until the next retry attempt based on
 // the strategy's Backoff config and the number of attempts already made.
 // Returns 0 if no backoff is configured, the duration cannot be parsed, or
@@ -726,7 +740,7 @@ func (e *DAGEvaluator) evaluateRetryNode(_ context.Context, taskName string, nod
 	// Last child skipped or omitted — check retry policy before giving up.
 	// RetryPolicyAlways should retry even Skipped children.
 	if lastChild.Phase == wfv1.NodeSkipped || lastChild.Phase == wfv1.NodeOmitted {
-		rs := e.retryStrategies[taskName]
+		rs := e.retryStrategyFor(taskName)
 		if rs != nil && rs.RetryPolicyActual() == wfv1.RetryPolicyAlways {
 			if rs.Limit != nil && len(children) > rs.Limit.IntValue() {
 				result.Action = ActionFail
@@ -757,7 +771,7 @@ func (e *DAGEvaluator) evaluateRetryNode(_ context.Context, taskName string, nod
 	// Propagate the child's actual phase (Error vs Failed) so downstream
 	// depends expressions (A.Errored vs A.Failed) work correctly.
 	if lastChild.FailedOrError() {
-		rs := e.retryStrategies[taskName]
+		rs := e.retryStrategyFor(taskName)
 		if rs == nil {
 			result.Action = ActionFail
 			result.ActionReason = "no retry strategy configured"
