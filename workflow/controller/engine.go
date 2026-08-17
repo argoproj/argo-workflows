@@ -115,9 +115,13 @@ func (e *Engine) Execute(ctx context.Context, tasks []dag.Task) {
 
 	e.reconcileExternalCompletions(ctx, tasks, executedTasks)
 
-	e.assessStepGroups(ctx)
-
 	results := e.createOmittedNodes(ctx, tasks)
+
+	// Assess step groups AFTER omitted nodes exist: when an early group fails,
+	// the downstream groups' step nodes are only materialized (as Omitted) by
+	// createOmittedNodes. Assessing first would leave those StepGroup nodes
+	// Running forever once the boundary goes terminal.
+	e.assessStepGroups(ctx)
 
 	if err := e.finalize(ctx, tasks, results, onExitCompleted); err != nil {
 		e.markBoundaryError(ctx, err)
