@@ -53,6 +53,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/retry"
 	argoruntime "github.com/argoproj/argo-workflows/v4/util/runtime"
 	"github.com/argoproj/argo-workflows/v4/util/secrets"
+	"github.com/argoproj/argo-workflows/v4/util/sqldb"
 	"github.com/argoproj/argo-workflows/v4/util/strftime"
 	"github.com/argoproj/argo-workflows/v4/util/template"
 	"github.com/argoproj/argo-workflows/v4/util/variables"
@@ -288,6 +289,20 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		lockSpan.SetAttributes(attribute.Bool("LockAcquired", acquired))
 		lockSpan.End()
 		if syncErr != nil {
+			if sqldb.IsSerializationConflict(syncErr) || errorsutil.IsTransientErr(ctx, syncErr) {
+				// Transient failure in the lock backend (e.g. a database
+				// serialization conflict that exhausted its in-place retries):
+				// leave the workflow pending and try again on a later
+				// reconcile instead of failing it.
+				woc.log.WithError(syncErr).WithField("lockName", failedLockName).Warn(ctx, "Transient failure acquiring the synchronization lock, requeueing")
+				phase := woc.wf.Status.Phase
+				if phase == wfv1.WorkflowUnknown {
+					phase = wfv1.WorkflowPending
+				}
+				ctx = woc.markWorkflowPhase(ctx, phase, fmt.Sprintf("Waiting to acquire the synchronization lock. %v", syncErr))
+				woc.requeue()
+				return
+			}
 			woc.log.WithField("lockName", failedLockName).Warn(ctx, "Failed to acquire the lock")
 			woc.markWorkflowFailed(ctx, fmt.Sprintf("Failed to acquire the synchronization lock. %s", syncErr.Error()))
 			return
@@ -2288,6 +2303,16 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		lockSpan.SetAttributes(attribute.Bool("LockAcquired", lockAcquired))
 		lockSpan.End()
 		if syncErr != nil {
+			if sqldb.IsSerializationConflict(syncErr) || errorsutil.IsTransientErr(ctx, syncErr) {
+				// Transient failure in the lock backend: leave the node pending
+				// and try again on a later reconcile instead of erroring it.
+				woc.requeue()
+				if node == nil {
+					_, node = woc.initializeExecutableNode(ctx, nodeName, wfutil.GetNodeType(processedTmpl), templateScope, processedTmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, opts.nodeFlag, false, syncErr.Error())
+					return node, nil
+				}
+				return woc.markNodePending(ctx, nodeName, syncErr), nil
+			}
 			errNode := woc.initializeNodeOrMarkError(ctx, node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, syncErr)
 			return errNode, syncErr
 		}
