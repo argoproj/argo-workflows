@@ -233,9 +233,12 @@ func (woc *wfOperationCtx) handleRetries(ctx context.Context, node *wfv1.NodeSta
 	}
 	localParams[varkeys.Retries.Template()] = strconv.Itoa(retryNum)
 
-	exitCode := ""
+	// The first attempt has no previous child to read lastRetry variables
+	// from; exitCode and duration must default to "0" so numeric expressions
+	// (e.g. asInt(lastRetry.exitCode)) resolve (#10364, #14450).
+	exitCode := "0"
 	status := ""
-	duration := ""
+	duration := "0"
 	message := ""
 
 	if lastChildNode != nil {
