@@ -226,7 +226,7 @@ func createPostGresDBSessionWithCreds(cfg *config.PostgreSQLConfig, persistPool 
 // opened from a DSN string, ParseDSN restored those defaults; NewConnector
 // consumes the config directly, so a bare literal would leave Loc nil and
 // panic ("missing Location in call to Time.In") on the first time.Time written.
-func buildMySQLConfig(cfg *config.MySQLConfig, username, password string, connectTimeout time.Duration) mysql.Config {
+func buildMySQLConfig(cfg *config.MySQLConfig, username, password string, connectTimeout time.Duration) (*mysql.Config, error) {
 	mysqlCfg := mysql.NewConfig()
 	mysqlCfg.User = username
 	mysqlCfg.Passwd = password
@@ -237,16 +237,29 @@ func buildMySQLConfig(cfg *config.MySQLConfig, username, password string, connec
 	mysqlCfg.AllowNativePasswords = true // Required for MariaDB which uses mysql_native_password by default
 	mysqlCfg.Params = cfg.Options
 	mysqlCfg.Timeout = connectTimeout
-	return *mysqlCfg
+	// cfg.Options mixes driver-level DSN options (tls, readTimeout, ...) with
+	// server system variables. NewConnector consumes the config directly, and the
+	// driver only interprets driver-level options when parsing a DSN — left in
+	// Params they would be sent to the server as SET statements instead (e.g.
+	// leaving TLS disabled). Round-trip through FormatDSN/ParseDSN so options are
+	// interpreted the same way DSN-opened sessions always interpreted them.
+	parsedCfg, err := mysql.ParseDSN(mysqlCfg.FormatDSN())
+	if err != nil {
+		return nil, fmt.Errorf("invalid MySQL config options: %w", err)
+	}
+	return parsedCfg, nil
 }
 
 func createMySQLDBSessionWithCreds(cfg *config.MySQLConfig, persistPool *config.ConnectionPool, username, password string, connectTimeout time.Duration) (db.Session, error) {
-	mysqlCfg := buildMySQLConfig(cfg, username, password, connectTimeout)
+	mysqlCfg, err := buildMySQLConfig(cfg, username, password, connectTimeout)
+	if err != nil {
+		return nil, err
+	}
 
 	// Wrap the MySQL connector so Connect (dial + handshake read) is bounded by
 	// connectTimeout, protecting against a half-open server the same way lib/pq's
 	// connect_timeout protects PostgreSQL.
-	connector, err := mysql.NewConnector(&mysqlCfg)
+	connector, err := mysql.NewConnector(mysqlCfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create mysql connector: %w", err)
 	}
