@@ -198,6 +198,14 @@ func (e *Engine) processHooks(ctx context.Context, tasks []dag.Task) (bool, erro
 			// Mark the offending task node Errored, not the boundary. Siblings
 			// continue to be processed in the same operate cycle.
 			e.woc.markNodeError(ctx, taskNode.Name, err)
+			// If the task node is already fulfilled (e.g. an exit hook errored
+			// after the task Succeeded), the phase state machine refuses the
+			// Error mark and the failure would be recorded nowhere: finalize
+			// gates on onExitCompleted and the boundary stays Running forever
+			// (#14031). Surface the error on the boundary instead.
+			if n, getErr := e.woc.wf.GetNodeByName(taskNode.Name); getErr == nil && n.Fulfilled() && n.Phase != wfv1.NodeError {
+				e.woc.markNodeError(ctx, e.nodeName, err)
+			}
 		},
 	)
 }
