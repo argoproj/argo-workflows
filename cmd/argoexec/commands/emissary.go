@@ -168,12 +168,12 @@ func runEmissary(ctx context.Context, containerName string, includeScriptOutput 
 	// ready-marker wait above). Only `main` runs this — ContainerSet
 	// children and sidecars don't get artifact paths symlinked in.
 	if waitForReady && containerName == common.MainContainerName {
-		if linkErr := linkInputArtifacts(ctx, template); linkErr != nil {
+		if stageErr := stageInputArtifacts(ctx, template); stageErr != nil {
 			// As above: propagate the sentinel as the process exit code so
 			// inferFailedReason attributes this to supervisor pre-main setup.
 			exitCode = common.ExitCodeSupervisorPreMainFailure
-			logger.WithError(linkErr).Error(ctx, "failed to stage input artifacts before main container started")
-			return argoerrors.NewExitErrWithCause(exitCode, linkErr)
+			logger.WithError(stageErr).Error(ctx, "failed to stage input artifacts before main container started")
+			return argoerrors.NewExitErrWithCause(exitCode, stageErr)
 		}
 	}
 
@@ -332,10 +332,39 @@ func readTemplateAt(filePath, offloadDir string) ([]byte, error) {
 	return common.ResolveTemplateEnvValue(envVal, offloadDir)
 }
 
-// linkInputArtifacts creates a symlink at each input artifact's path pointing
-// to the file that supervisor wrote under /argo/inputs/artifacts/<name>.
-// This replaces the legacy SubPath bind-mount-per-artifact scheme, which
-// can't be used in init-less mode because kubelet pre-creates SubPath
+func stageInputArtifacts(ctx context.Context, tmpl *wfv1.Template) error {
+	return stageInputArtifactsAt(ctx, common.ExecutorArtifactBaseDir, tmpl)
+}
+
+// stageInputArtifactsAt is the parameterized form used by tests; production
+// calls stageInputArtifacts with the constants. It links each input artifact
+// into place and re-enters the working directory afterwards, stepping off it
+// for the duration: linking replaces the cwd when an artifact's path is the
+// container's workingDir, Windows refuses to delete a directory in use as a
+// working directory, and a child forked with the deleted directory as cwd
+// would see getcwd() fail and relative paths resolve to nothing. The final
+// chdir follows the symlink to whatever now sits at the path.
+func stageInputArtifactsAt(ctx context.Context, baseDir string, tmpl *wfv1.Template) error {
+	origWd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to read working directory before staging input artifacts: %w", err)
+	}
+	if err := os.Chdir(varRunArgo); err != nil {
+		return fmt.Errorf("failed to leave working directory before staging input artifacts: %w", err)
+	}
+	if err := linkInputArtifactsAt(ctx, baseDir, tmpl); err != nil {
+		return err
+	}
+	if err := os.Chdir(origWd); err != nil {
+		return fmt.Errorf("failed to re-enter working directory %q after staging input artifacts (an input artifact staged at the workingDir path must be a directory): %w", origWd, err)
+	}
+	return nil
+}
+
+// linkInputArtifactsAt creates a symlink at each input artifact's path
+// pointing to the file that supervisor wrote under /argo/inputs/artifacts/
+// <name>. This replaces the legacy SubPath bind-mount-per-artifact scheme,
+// which can't be used in init-less mode because kubelet pre-creates SubPath
 // entries as empty directories before supervisor can write the real file.
 //
 // Behavior notes for workflow authors: in init-less mode art.Path is a
@@ -350,12 +379,6 @@ func readTemplateAt(filePath, offloadDir string) ([]byte, error) {
 // artifacts/<name>), so no entry appears in the input-artifacts directory
 // and we skip the symlink — main already sees the file at art.Path via
 // its user volume.
-func linkInputArtifacts(ctx context.Context, tmpl *wfv1.Template) error {
-	return linkInputArtifactsAt(ctx, common.ExecutorArtifactBaseDir, tmpl)
-}
-
-// linkInputArtifactsAt is the parameterized form used by tests; production calls
-// linkInputArtifacts with the constants.
 func linkInputArtifactsAt(ctx context.Context, baseDir string, tmpl *wfv1.Template) error {
 	logger := logging.RequireLoggerFromContext(ctx)
 	for _, art := range tmpl.Inputs.Artifacts {

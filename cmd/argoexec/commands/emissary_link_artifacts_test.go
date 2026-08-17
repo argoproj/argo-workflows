@@ -267,3 +267,63 @@ func TestLinkInputArtifacts_ReplacesImageSymlinkInRootfs(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "image-default", string(old), "the image symlink's old target must be untouched")
 }
+
+// TestStageInputArtifacts_ArtifactAtWorkingDir covers issue #16728: a
+// directory artifact staged at the container's workingDir.
+func TestStageInputArtifacts_ArtifactAtWorkingDir(t *testing.T) {
+	ctx := logging.WithLogger(context.Background(), logging.InitLogger())
+	dir := t.TempDir()
+	prevVarRunArgo := varRunArgo
+	varRunArgo = dir
+	t.Cleanup(func() { varRunArgo = prevVarRunArgo })
+	srcBase := filepath.Join(dir, "inputs")
+	require.NoError(t, os.MkdirAll(filepath.Join(srcBase, "source"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(srcBase, "source", "README"), []byte("hello"), 0o644))
+
+	// The runtime chdirs the emissary into workingDir before staging runs.
+	workDir := filepath.Join(dir, "workspace")
+	require.NoError(t, os.MkdirAll(workDir, 0o755))
+	t.Chdir(workDir)
+
+	tmpl := &wfv1.Template{
+		Inputs: wfv1.Inputs{
+			Artifacts: wfv1.Artifacts{{Name: "source", Path: workDir}},
+		},
+	}
+
+	require.NoError(t, stageInputArtifactsAt(ctx, srcBase, tmpl))
+
+	_, err := os.Getwd()
+	require.NoError(t, err, "cwd must be a live directory again")
+	data, err := os.ReadFile("README")
+	require.NoError(t, err, "relative paths must resolve to the staged artifact")
+	assert.Equal(t, "hello", string(data))
+}
+
+// TestStageInputArtifacts_FileArtifactAtWorkingDirFails: a *file* artifact
+// staged at the workingDir path leaves nothing to chdir into, so the step
+// must fail rather than start the user command with a deleted cwd.
+func TestStageInputArtifacts_FileArtifactAtWorkingDirFails(t *testing.T) {
+	ctx := logging.WithLogger(context.Background(), logging.InitLogger())
+	dir := t.TempDir()
+	prevVarRunArgo := varRunArgo
+	varRunArgo = dir
+	t.Cleanup(func() { varRunArgo = prevVarRunArgo })
+	srcBase := filepath.Join(dir, "inputs")
+	require.NoError(t, os.MkdirAll(srcBase, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(srcBase, "source"), []byte("just a file"), 0o644))
+
+	workDir := filepath.Join(dir, "workspace")
+	require.NoError(t, os.MkdirAll(workDir, 0o755))
+	t.Chdir(workDir)
+
+	tmpl := &wfv1.Template{
+		Inputs: wfv1.Inputs{
+			Artifacts: wfv1.Artifacts{{Name: "source", Path: workDir}},
+		},
+	}
+
+	err := stageInputArtifactsAt(ctx, srcBase, tmpl)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "must be a directory")
+}
