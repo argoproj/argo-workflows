@@ -1147,6 +1147,17 @@ func (e *Engine) assessDAGPhase(ctx context.Context, tasks []dag.Task, results m
 	// Build set of leaf tasks (tasks that no other task depends on).
 	leafTasks := e.findLeafTasks(ctx, tasks)
 
+	// When the DAG declares explicit targets, only the target tasks decide the
+	// phase: "we only succeed if all the target tasks have been considered"
+	// (#693, #3035). The graph leaves may have been pruned out of results
+	// entirely when a non-leaf target is declared.
+	if e.tmpl.DAG != nil && e.tmpl.DAG.Target != "" {
+		leafTasks = make(map[string]bool)
+		for _, name := range e.evaluator.GetTargetTasks(ctx) {
+			leafTasks[name] = true
+		}
+	}
+
 	// Build a map for quick result lookup
 	resultMap := make(map[string]wfv1.NodePhase, len(results))
 	for _, result := range results {
