@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	gosync "sync"
 	"sync/atomic"
@@ -14,11 +15,13 @@ import (
 	"github.com/stretchr/testify/require"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	apiv1 "k8s.io/api/core/v1"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
 	dynamicfake "k8s.io/client-go/dynamic/fake"
@@ -859,10 +862,11 @@ func TestWorkflowController_archivedWorkflowGarbageCollector(t *testing.T) {
 // to call archiveWorkflowAux a second time on the success path, archiving every
 // workflow twice.
 func TestWorkflowController_archiveWorkflowAux_ArchivesOnce(t *testing.T) {
-	wf := &wfv1.Workflow{
-		ObjectMeta: metav1.ObjectMeta{Name: "my-wf", Namespace: "argo"},
-		Status:     wfv1.WorkflowStatus{Phase: wfv1.WorkflowSucceeded},
-	}
+	// The shared fixture, not a bare object: without a uid and the archiving
+	// labels the conditional patch is refused, and this test would then be
+	// passing through the error-classification branch rather than the archive it
+	// is named for.
+	wf := pendingArchiveWorkflow()
 	ctx := logging.TestContext(t.Context())
 	archive := sqldbmocks.NewWorkflowArchive(t)
 	archive.EXPECT().ArchiveWorkflow(mock.Anything, mock.Anything).Return(nil)
@@ -915,6 +919,12 @@ func pendingArchiveWorkflow() *wfv1.Workflow {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "my-wf",
 			Namespace: "argo",
+			// Every real workflow has both, and the conditional patch tests them.
+			// The version matters in these tests because the informer and the
+			// typed clientset are separate fakes here; in production they are two
+			// views of one API server, so they have to be seeded to agree.
+			UID:             "my-wf-uid",
+			ResourceVersion: "100",
 			Labels: map[string]string{
 				common.LabelKeyCompleted:               "true",
 				common.LabelKeyWorkflowArchivingStatus: "Pending",
@@ -1008,6 +1018,10 @@ func TestWorkflowController_processNextArchiveItem_RejectsStaleInformerCopy(t *t
 	currentUn, err := util.ToUnstructured(current)
 	require.NoError(t, err)
 	require.NoError(t, controller.wfInformer.GetIndexer().Update(currentUn))
+	// The informer holds version 200 because that is what the API server has.
+	_, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).
+		Update(ctx, current, metav1.UpdateOptions{})
+	require.NoError(t, err)
 	assert.True(t, controller.processNextArchiveItem(ctx))
 	archive.AssertNumberOfCalls(t, "ArchiveWorkflow", 1)
 	assert.Equal(t, 0, controller.wfArchiveQueue.NumRequeues(key))
@@ -1913,4 +1927,388 @@ func TestExpireCompletedVersions(t *testing.T) {
 	assert.False(t, completedWf)
 	outdated, _ = controller.isOutdated(ctx, &metav1.ObjectMeta{UID: inFlight.UID, ResourceVersion: "99"})
 	assert.True(t, outdated, "in-flight records must not expire")
+}
+
+// TestWorkflowController_processNextArchiveItem_DoesNotLabelAnApiSideRetry pins
+// the guarantee the informer checks cannot give on their own.
+//
+// Eligibility is decided from the informer, which is eventually consistent and
+// identifies objects by namespace/name. A workflow argo-server has already
+// retried still reads here as completed and Pending until the watch arrives, and
+// isOutdated cannot see that write because it came from another component. The
+// worker therefore archives -- it has no way to know -- but the patch that marks
+// the workflow must not land on the one that is now running.
+func TestWorkflowController_processNextArchiveItem_DoesNotLabelAnApiSideRetry(t *testing.T) {
+	wf := pendingArchiveWorkflow()
+	ctx := logging.TestContext(t.Context())
+	archive := sqldbmocks.NewWorkflowArchive(t)
+	archive.EXPECT().ArchiveWorkflow(mock.Anything, mock.Anything).Return(nil).Once()
+	cancel, controller := newController(ctx, wf, func(wfc *WorkflowController) {
+		wfc.wfArchive = archive
+	})
+	defer cancel()
+	defer controller.wfArchiveQueue.ShutDown()
+
+	// The retry reaches the API server only. The informer keeps the old copy:
+	// the typed clientset and the informer's dynamic client are separate stores
+	// here, which is the lag this test needs and could not otherwise arrange.
+	retried := wf.DeepCopy()
+	delete(retried.Labels, common.LabelKeyCompleted)
+	delete(retried.Labels, common.LabelKeyWorkflowArchivingStatus)
+	retried.Status.Phase = wfv1.WorkflowUnknown
+	_, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).
+		Update(ctx, retried, metav1.UpdateOptions{})
+	require.NoError(t, err)
+
+	key, err := cache.MetaNamespaceKeyFunc(wf)
+	require.NoError(t, err)
+	controller.wfArchiveQueue.Add(key)
+	assert.True(t, controller.processNextArchiveItem(ctx))
+
+	current, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).
+		Get(ctx, wf.Name, metav1.GetOptions{})
+	require.NoError(t, err)
+	assert.NotContains(t, current.Labels, common.LabelKeyWorkflowArchivingStatus,
+		"the running workflow was marked archived")
+	assert.NotContains(t, current.Labels, common.LabelKeyCompleted)
+	assert.Equal(t, wfv1.WorkflowUnknown, current.Status.Phase)
+	// Terminal: the object moved on, so repeating the archive transaction would
+	// achieve nothing and the backoff should not be kept.
+	assert.Equal(t, 0, controller.wfArchiveQueue.NumRequeues(key))
+}
+
+// TestWorkflowController_processNextArchiveItem_DoesNotLabelASameNamedReplacement
+// covers the other half: the name is reused by a different object while the
+// archive transaction is in flight, so the uid is what distinguishes them.
+func TestWorkflowController_processNextArchiveItem_DoesNotLabelASameNamedReplacement(t *testing.T) {
+	wf := pendingArchiveWorkflow()
+	ctx := logging.TestContext(t.Context())
+	archive := sqldbmocks.NewWorkflowArchive(t)
+	started := make(chan struct{})
+	release := make(chan struct{})
+	archive.EXPECT().ArchiveWorkflow(mock.Anything, mock.Anything).
+		RunAndReturn(func(context.Context, *wfv1.Workflow) error {
+			close(started)
+			<-release
+			return nil
+		}).Once()
+	cancel, controller := newController(ctx, wf, func(wfc *WorkflowController) {
+		wfc.wfArchive = archive
+	})
+	defer cancel()
+	defer controller.wfArchiveQueue.ShutDown()
+
+	key, err := cache.MetaNamespaceKeyFunc(wf)
+	require.NoError(t, err)
+	controller.wfArchiveQueue.Add(key)
+
+	done := make(chan bool, 1)
+	go func() { done <- controller.processNextArchiveItem(ctx) }()
+
+	<-started
+	wfClient := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace)
+	require.NoError(t, wfClient.Delete(ctx, wf.Name, metav1.DeleteOptions{}))
+	// Eligible-looking in every respect except the uid: same name, same labels,
+	// completed and pending archiving. If it were missing the labels, the patch
+	// would fail on the absent path and the uid test would never be what stopped
+	// it, so this is the only shape that pins that operation.
+	replacement := pendingArchiveWorkflow()
+	replacement.UID = "a-different-uid"
+	_, err = wfClient.Create(ctx, replacement, metav1.CreateOptions{})
+	require.NoError(t, err)
+	close(release)
+	assert.True(t, <-done)
+
+	current, err := wfClient.Get(ctx, wf.Name, metav1.GetOptions{})
+	require.NoError(t, err)
+	assert.Equal(t, types.UID("a-different-uid"), current.UID)
+	assert.Equal(t, "Pending", current.Labels[common.LabelKeyWorkflowArchivingStatus],
+		"the replacement, which was never archived, was marked Archived")
+	assert.Equal(t, 0, controller.wfArchiveQueue.NumRequeues(key))
+}
+
+// TestWorkflowController_processNextArchiveItem_RetriesAPatchFailureOnAnEligibleWorkflow
+// pins the other side of that classification. A failed precondition and a
+// malformed patch are both a bare 422 with nothing in it to tell them apart, so
+// the decision is made by asking the API server what the object looks like now.
+// When it is still the one that was archived and still waiting to be marked, the
+// failure is something else and has to keep failing visibly rather than being
+// swallowed as "it moved on".
+func TestWorkflowController_processNextArchiveItem_RetriesAPatchFailureOnAnEligibleWorkflow(t *testing.T) {
+	wf := pendingArchiveWorkflow()
+	ctx := logging.TestContext(t.Context())
+	archive := sqldbmocks.NewWorkflowArchive(t)
+	archive.EXPECT().ArchiveWorkflow(mock.Anything, mock.Anything).Return(nil).Once()
+	cancel, controller := newController(ctx, wf, func(wfc *WorkflowController) {
+		wfc.wfArchive = archive
+	})
+	defer cancel()
+	defer controller.wfArchiveQueue.ShutDown()
+
+	controller.wfclientset.(*fakewfclientset.Clientset).PrependReactor(
+		"patch", "workflows",
+		func(k8stesting.Action) (bool, runtime.Object, error) {
+			return true, nil, apierr.NewInvalid(
+				schema.GroupKind{Group: "argoproj.io", Kind: "Workflow"}, wf.Name, nil)
+		})
+
+	key, err := cache.MetaNamespaceKeyFunc(wf)
+	require.NoError(t, err)
+	controller.wfArchiveQueue.Add(key)
+	assert.True(t, controller.processNextArchiveItem(ctx))
+
+	assert.Equal(t, 1, controller.wfArchiveQueue.NumRequeues(key),
+		"a patch failure on a workflow that is still eligible must be retried, not dropped")
+}
+
+// TestWorkflowController_processNextArchiveItem_DoesNotReMarkAnAlreadyArchivedWorkflow:
+// another attempt got there first. The label already holds the value the replace
+// would write, so the patch is refused on the version, and the key should be let
+// go rather than retried against a workflow nothing is waiting on.
+//
+// The version is set by hand. The fake clientset does not move it, so a copy
+// written through the client keeps the informer's version, the precondition
+// passes, and the patch this test is named after is never refused at all.
+func TestWorkflowController_processNextArchiveItem_DoesNotReMarkAnAlreadyArchivedWorkflow(t *testing.T) {
+	wf := pendingArchiveWorkflow()
+	ctx := logging.TestContext(t.Context())
+	archive := sqldbmocks.NewWorkflowArchive(t)
+	archive.EXPECT().ArchiveWorkflow(mock.Anything, mock.Anything).Return(nil).Once()
+	cancel, controller := newController(ctx, wf, func(wfc *WorkflowController) {
+		wfc.wfArchive = archive
+	})
+	defer cancel()
+	defer controller.wfArchiveQueue.ShutDown()
+
+	// Another attempt got there first and the informer has not caught up.
+	archived := wf.DeepCopy()
+	archived.ResourceVersion = "200"
+	archived.Labels[common.LabelKeyWorkflowArchivingStatus] = "Archived"
+	archived.Annotations = map[string]string{"marked-by": "the-other-attempt"}
+	_, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).
+		Update(ctx, archived, metav1.UpdateOptions{})
+	require.NoError(t, err)
+
+	key, err := cache.MetaNamespaceKeyFunc(wf)
+	require.NoError(t, err)
+	controller.wfArchiveQueue.Add(key)
+	assert.True(t, controller.processNextArchiveItem(ctx))
+
+	// The requeue count says which way the classification went, let go or
+	// retried. It does not say the patch was refused: the patch writes the value
+	// the label already holds and touches nothing else, so a refused one and an
+	// applied one leave the object identical, and the fake clientset does not
+	// move the version. PatchCarriesEveryPrecondition is what pins the refusal.
+	assert.Equal(t, 0, controller.wfArchiveQueue.NumRequeues(key),
+		"a workflow another attempt has already marked must be let go, not retried")
+
+	current, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).
+		Get(ctx, wf.Name, metav1.GetOptions{})
+	require.NoError(t, err)
+	assert.Equal(t, "the-other-attempt", current.Annotations["marked-by"])
+}
+
+// TestWorkflowController_archiveWorkflowAux_PatchCarriesEveryPrecondition pins
+// the shape of the patch alongside the outcomes the tests above pin, so that the
+// version being tested is visibly the version that was archived rather than any
+// value that happens to satisfy the API server.
+func TestWorkflowController_archiveWorkflowAux_PatchCarriesEveryPrecondition(t *testing.T) {
+	wf := pendingArchiveWorkflow()
+	// Not the fixture's version: a hardcoded value would be indistinguishable
+	// from reading it off the object being archived.
+	wf.ResourceVersion = "907314"
+	ctx := logging.TestContext(t.Context())
+	archive := sqldbmocks.NewWorkflowArchive(t)
+	archive.EXPECT().ArchiveWorkflow(mock.Anything, mock.Anything).Return(nil).Once()
+	cancel, controller := newController(ctx, wf, func(wfc *WorkflowController) {
+		wfc.wfArchive = archive
+	})
+	defer cancel()
+	defer controller.wfArchiveQueue.ShutDown()
+
+	var body []byte
+	var patchType types.PatchType
+	controller.wfclientset.(*fakewfclientset.Clientset).PrependReactor(
+		"patch", "workflows",
+		func(a k8stesting.Action) (bool, runtime.Object, error) {
+			patch := a.(k8stesting.PatchAction)
+			body = patch.GetPatch()
+			patchType = patch.GetPatchType()
+			return false, nil, nil // let the tracker apply it
+		})
+
+	un, err := util.ToUnstructured(wf)
+	require.NoError(t, err)
+	require.NoError(t, controller.archiveWorkflowAux(ctx, un))
+
+	assert.Equal(t, types.JSONPatchType, patchType)
+	var ops []map[string]any
+	require.NoError(t, json.Unmarshal(body, &ops))
+	require.Len(t, ops, 3)
+	assert.Equal(t, map[string]any{"op": "test", "path": "/metadata/uid", "value": "my-wf-uid"}, ops[0])
+	assert.Equal(t, "test", ops[1]["op"])
+	assert.Equal(t, "/metadata/resourceVersion", ops[1]["path"])
+	assert.Equal(t, un.GetResourceVersion(), ops[1]["value"], "the version tested must be the one archived")
+	assert.Equal(t, map[string]any{
+		"op":    "replace",
+		"path":  "/metadata/labels/workflows.argoproj.io~1workflow-archiving-status",
+		"value": "Archived",
+	}, ops[2])
+}
+
+// TestWorkflowController_processNextArchiveItem_DoesNotLabelASecondRunOfTheSameWorkflow
+// is the case the label preconditions cannot see.
+//
+// `argo retry` deletes both labels and reuses the uid, and when the second run
+// completes the controller writes both labels back with the same values. Every
+// value the patch tests has therefore returned, and a patch built from the first
+// run applies to the second one -- marking a run that was never archived, and
+// with it removing the only state that would have queued it.
+func TestWorkflowController_processNextArchiveItem_DoesNotLabelASecondRunOfTheSameWorkflow(t *testing.T) {
+	wf := pendingArchiveWorkflow()
+	wf.Annotations = map[string]string{"run": "1"}
+	ctx := logging.TestContext(t.Context())
+	archive := sqldbmocks.NewWorkflowArchive(t)
+	started := make(chan struct{})
+	release := make(chan struct{})
+	archive.EXPECT().ArchiveWorkflow(mock.Anything, mock.Anything).
+		RunAndReturn(func(context.Context, *wfv1.Workflow) error {
+			close(started)
+			<-release
+			return nil
+		}).Once()
+	cancel, controller := newController(ctx, wf, func(wfc *WorkflowController) {
+		wfc.wfArchive = archive
+	})
+	defer cancel()
+	defer controller.wfArchiveQueue.ShutDown()
+
+	key, err := cache.MetaNamespaceKeyFunc(wf)
+	require.NoError(t, err)
+	controller.wfArchiveQueue.Add(key)
+	done := make(chan bool, 1)
+	go func() { done <- controller.processNextArchiveItem(ctx) }()
+
+	<-started
+	// Retry, then completion of the second run: same uid, both labels written
+	// back with the values the first run had.
+	wfClient := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace)
+	secondRun := wf.DeepCopy()
+	secondRun.ResourceVersion = "200"
+	secondRun.Annotations = map[string]string{"run": "2"}
+	secondRun.Labels = map[string]string{
+		common.LabelKeyCompleted:               "true",
+		common.LabelKeyWorkflowArchivingStatus: "Pending",
+	}
+	_, err = wfClient.Update(ctx, secondRun, metav1.UpdateOptions{})
+	require.NoError(t, err)
+	close(release)
+	assert.True(t, <-done)
+
+	current, err := wfClient.Get(ctx, wf.Name, metav1.GetOptions{})
+	require.NoError(t, err)
+	assert.Equal(t, "2", current.Annotations["run"])
+	assert.Equal(t, "Pending", current.Labels[common.LabelKeyWorkflowArchivingStatus],
+		"the second run was marked Archived although only the first was archived, "+
+			"which also stops it ever being queued again")
+	// Leaving the second run alone is only half of it. Nothing else is waiting to
+	// queue this key, so if it does not come back the second run's snapshot never
+	// reaches the archive at all, and every assertion above still passes.
+	assert.Equal(t, 1, controller.wfArchiveQueue.NumRequeues(key),
+		"the second run is still waiting to be archived and has to come back for its own attempt")
+}
+
+// TestWorkflowController_processNextArchiveItem_DoesNotLabelARetryStillRunning
+// is the same race as the second-run case, caught one step earlier.
+//
+// Here the retry has not completed again by the time the patch is sent, so the
+// workflow is mid-run with both labels gone.
+//
+// What this pins is the classification, not the precondition. The patch fails,
+// the read that follows finds a workflow no longer waiting to be archived, and
+// the attempt ends instead of being requeued, because nothing is left for this
+// archive to mark. Removing the uid and version tests does not make it pass a
+// running workflow, since `replace` has no label to replace either; the case
+// where only the version can tell the two runs apart is the second-run test
+// above, where the labels have come back.
+func TestWorkflowController_processNextArchiveItem_DoesNotLabelARetryStillRunning(t *testing.T) {
+	wf := pendingArchiveWorkflow()
+	ctx := logging.TestContext(t.Context())
+	archive := sqldbmocks.NewWorkflowArchive(t)
+	started := make(chan struct{})
+	release := make(chan struct{})
+	archive.EXPECT().ArchiveWorkflow(mock.Anything, mock.Anything).
+		RunAndReturn(func(context.Context, *wfv1.Workflow) error {
+			close(started)
+			<-release
+			return nil
+		}).Once()
+	cancel, controller := newController(ctx, wf, func(wfc *WorkflowController) {
+		wfc.wfArchive = archive
+	})
+	defer cancel()
+	defer controller.wfArchiveQueue.ShutDown()
+
+	key, err := cache.MetaNamespaceKeyFunc(wf)
+	require.NoError(t, err)
+	controller.wfArchiveQueue.Add(key)
+	done := make(chan bool, 1)
+	go func() { done <- controller.processNextArchiveItem(ctx) }()
+
+	<-started
+	// `argo retry` while the archive is in flight: same uid, both labels
+	// removed, phase back to Unknown, and no second completion yet.
+	wfClient := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace)
+	retried := wf.DeepCopy()
+	retried.ResourceVersion = "200"
+	retried.Labels = map[string]string{}
+	retried.Status.Phase = wfv1.WorkflowUnknown
+	_, err = wfClient.Update(ctx, retried, metav1.UpdateOptions{})
+	require.NoError(t, err)
+	close(release)
+	assert.True(t, <-done)
+
+	current, err := wfClient.Get(ctx, wf.Name, metav1.GetOptions{})
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.WorkflowUnknown, current.Status.Phase)
+	assert.NotContains(t, current.Labels, common.LabelKeyWorkflowArchivingStatus,
+		"a workflow that is running again was marked Archived")
+	assert.NotContains(t, current.Labels, common.LabelKeyCompleted)
+	assert.Equal(t, 0, controller.wfArchiveQueue.NumRequeues(key),
+		"the workflow moved on, so there is nothing to retry")
+}
+
+// TestWorkflowController_processNextArchiveItem_RetriesWhenTheStateCannotBeRead
+// pins the branch that decides between "it moved on" and "something else went
+// wrong". If a failed read counted as moved on, a transient API error would drop
+// the key with the archive row already written and the workflow left Pending
+// forever, which is the failure #15780 was about.
+func TestWorkflowController_processNextArchiveItem_RetriesWhenTheStateCannotBeRead(t *testing.T) {
+	wf := pendingArchiveWorkflow()
+	ctx := logging.TestContext(t.Context())
+	archive := sqldbmocks.NewWorkflowArchive(t)
+	archive.EXPECT().ArchiveWorkflow(mock.Anything, mock.Anything).Return(nil).Once()
+	cancel, controller := newController(ctx, wf, func(wfc *WorkflowController) {
+		wfc.wfArchive = archive
+	})
+	defer cancel()
+	defer controller.wfArchiveQueue.ShutDown()
+
+	fake := controller.wfclientset.(*fakewfclientset.Clientset)
+	fake.PrependReactor("patch", "workflows",
+		func(k8stesting.Action) (bool, runtime.Object, error) {
+			return true, nil, apierr.NewInternalError(errors.New("etcdserver: request timed out"))
+		})
+	fake.PrependReactor("get", "workflows",
+		func(k8stesting.Action) (bool, runtime.Object, error) {
+			return true, nil, apierr.NewInternalError(errors.New("etcdserver: request timed out"))
+		})
+
+	key, err := cache.MetaNamespaceKeyFunc(wf)
+	require.NoError(t, err)
+	controller.wfArchiveQueue.Add(key)
+	assert.True(t, controller.processNextArchiveItem(ctx))
+
+	assert.Equal(t, 1, controller.wfArchiveQueue.NumRequeues(key),
+		"a failure that could not be classified must be retried, not dropped")
 }
