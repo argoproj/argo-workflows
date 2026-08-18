@@ -181,5 +181,6 @@ func CheckError(ctx context.Context, err error) {
 		logger := logging.RequireLoggerFromContext(ctx)
 		logger.WithError(err).Error(ctx, "An error occurred during execution")
 		logging.Exit(1)
+		return
 	}
 }

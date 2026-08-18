@@ -48,6 +48,7 @@ func (sm *Manager) WithMetrics(ctx context.Context, m *wfmetrics.Metrics) *Manag
 		if err := m.RegisterLockGauges(sm.LockMetrics); err != nil {
 			sm.log.WithError(err).Error(ctx, "failed to register lock gauge callbacks")
 			logging.Exit(1)
+			return nil
 		}
 	}
 	return sm

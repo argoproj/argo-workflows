@@ -137,6 +137,7 @@ func init() {
 	if err != nil {
 		logging.InitLogger().WithError(err).Error(context.Background(), "GRPC_MESSAGE_SIZE environment variable must be set as an integer")
 		logging.Exit(1)
+		return
 	}
 }
 
@@ -181,6 +182,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (Server, error) {
 	if err != nil {
 		log.Error(ctx, err.Error())
 		logging.Exit(1)
+		return nil, err
 	}
 
 	return &argoServer{
@@ -219,11 +221,13 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	if err != nil {
 		log.Error(ctx, err.Error())
 		logging.Exit(1)
+		return
 	}
 	err = config.Sanitize(as.allowedLinkProtocol)
 	if err != nil {
 		log.Error(ctx, err.Error())
 		logging.Exit(1)
+		return
 	}
 
 	// Rather than attempt to run CI with an artifact server alongside
@@ -233,12 +237,14 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		if validateErr := as.validateArtifactDriverImages(ctx, config); validateErr != nil {
 			log.WithError(validateErr).Error(ctx, "failed to validate artifact driver images")
 			logging.Exit(1)
+			return
 		}
 
 		// Validate artifact driver connections
 		if validateErr := as.validateArtifactDriverConnections(ctx, config); validateErr != nil {
 			log.WithError(validateErr).Error(ctx, "failed to validate artifact driver connections")
 			logging.Exit(1)
+			return
 		}
 	}
 
@@ -257,11 +263,13 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		if sessionErr != nil {
 			log.Error(ctx, sessionErr.Error())
 			logging.Exit(1)
+			return
 		}
 		tableName, tableErr := persist.GetTableName(persistence)
 		if tableErr != nil {
 			log.Error(ctx, tableErr.Error())
 			logging.Exit(1)
+			return
 		}
 		// we always enable node offload, as this is read-only for the Argo Server, i.e. you can turn it off if you
 		// like and the controller won't offload newly created workflows, but you can still read them
@@ -269,6 +277,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		if err != nil {
 			log.WithError(err).Error(ctx, err.Error())
 			logging.Exit(1)
+			return
 		}
 		// we always enable the archive for the Argo Server, as the Argo Server does not write records, so you can
 		// disable the archiving - and still read old records
@@ -279,6 +288,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	if err != nil {
 		log.Error(ctx, err.Error())
 		logging.Exit(1)
+		return
 	}
 	kubeclientset := kubernetes.NewForConfigOrDie(as.restConfig)
 	var cwftmplInformer clusterworkflowtemplate.Informer
@@ -287,6 +297,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		if err != nil {
 			log.Error(ctx, err.Error())
 			logging.Exit(1)
+			return
 		}
 	} else {
 		cwftmplInformer = clusterworkflowtemplate.NewNullClusterWorkflowTemplate()
@@ -302,6 +313,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	if err != nil {
 		log.Error(ctx, err.Error())
 		logging.Exit(1)
+		return
 	}
 	workflowServer := workflow.NewServer(ctx, instanceIDService, offloadRepo, wfArchive, as.clients.Workflow, wfStore, wfStore, wftmplStore, cwftmplInformer, config.WorkflowDefaults, &resourceCacheNamespace, artifactRepositories)
 	grpcServer := as.newGRPCServer(ctx, instanceIDService, workflowServer, wftmplStore, cwftmplInformer, wfArchiveServer, syncServer, eventServer, config.Links, config.Columns, config.NavColor, config.WorkflowDefaults)
@@ -427,6 +439,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	if err != nil {
 		log.Error(ctx, err.Error())
 		logging.Exit(1)
+		return nil
 	}
 
 	mux := http.NewServeMux()
@@ -634,4 +647,5 @@ func (as *argoServer) checkServeErr(ctx context.Context, name string, err error)
 	}
 	log.WithFields(nameField).WithError(err).Error(ctx, "server failure")
 	logging.Exit(1)
+	return
 }

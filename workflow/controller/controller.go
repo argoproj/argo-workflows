@@ -350,6 +350,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 			if !cache.WaitForCacheSync(ctx.Done(), handlerSynced) {
 				logger.Error(ctx, "Timed out waiting for controller config map to sync")
 				logging.Exit(1)
+				return
 			}
 		}
 	}
@@ -358,6 +359,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	if err := wfc.initDB(ctx); err != nil {
 		logger.WithError(err).Error(ctx, "Failed to init db")
 		logging.Exit(1)
+		return
 	}
 
 	defer wfc.wfQueue.ShutDown()
@@ -382,6 +384,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	if err != nil {
 		logger.WithError(err).Error(ctx, "Failed to create namespace informer")
 		logging.Exit(1)
+		return
 	}
 	wfc.nsInformer = nsInformer
 	wfc.wftmplInformer = informer.NewTolerantWorkflowTemplateInformer(wfc.dynamicInterface, workflowTemplateResyncPeriod, wfc.managedNamespace)
@@ -393,6 +396,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	if err != nil {
 		logger.WithError(err).Error(ctx, "Failed to add workflow informer handlers")
 		logging.Exit(1)
+		return
 	}
 	wfc.PodController = pod.NewController(ctx, &wfc.Config, wfc.restConfig, wfc.GetManagedNamespace(), wfc.kubeclientset, wfc.wfInformer, wfc.metrics, wfc.enqueueWfFromPodLabel)
 
@@ -406,6 +410,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	if err := wfc.initManagers(ctx); err != nil {
 		logger.WithError(err).Error(ctx, "Failed to init managers")
 		logging.Exit(1)
+		return
 	}
 
 	if os.Getenv("WATCH_CONTROLLER_SEMAPHORE_CONFIGMAPS") != "false" {
@@ -441,6 +446,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	) {
 		logger.Error(ctx, "Timed out waiting for caches to sync")
 		logging.Exit(1)
+		return
 	}
 	syncSpan.End()
 	span.End()
@@ -746,6 +752,7 @@ func (wfc *WorkflowController) createClusterWorkflowTemplateInformer(ctx context
 		) {
 			logger.Error(ctx, "Timed out waiting for ClusterWorkflowTemplate cache to sync")
 			logging.Exit(1)
+			return
 		}
 	} else {
 		logger.Warn(ctx, "Controller doesn't have RBAC access for ClusterWorkflowTemplates")
@@ -758,6 +765,7 @@ func (wfc *WorkflowController) UpdateConfig(ctx context.Context) {
 	if err != nil {
 		logger.WithError(err).Error(ctx, "Failed to register watch for controller config map")
 		logging.Exit(1)
+		return
 	}
 	wfc.applyConfig(ctx, c)
 }
@@ -772,6 +780,7 @@ func (wfc *WorkflowController) updateConfigFromConfigMap(ctx context.Context, cm
 	if err != nil {
 		logger.WithError(err).Error(ctx, "Failed to parse controller config map")
 		logging.Exit(1)
+		return
 	}
 	wfc.applyConfig(ctx, c)
 }
@@ -781,6 +790,7 @@ func (wfc *WorkflowController) applyConfig(ctx context.Context, c *config.Config
 	if err := wfc.updateConfig(ctx); err != nil {
 		logging.RequireLoggerFromContext(ctx).WithError(err).Error(ctx, "Failed to update config")
 		logging.Exit(1)
+		return
 	}
 }
 
