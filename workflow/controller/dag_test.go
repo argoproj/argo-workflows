@@ -4521,38 +4521,6 @@ func TestDAGWhenExprSkipEval(t *testing.T) {
 	assert.Equal(t, wfv1.NodeSkipped, nodeB.Phase)
 }
 
-// makePendingPodsPhase is like makePodsPhase but skips pods already in a terminal phase.
-func makePendingPodsPhase(ctx context.Context, woc *wfOperationCtx, phase v1.PodPhase) {
-	podcs := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace())
-	pods, err := podcs.List(ctx, metav1.ListOptions{})
-	if err != nil {
-		panic(err)
-	}
-	for _, pod := range pods.Items {
-		if pod.Status.Phase == v1.PodFailed || pod.Status.Phase == v1.PodSucceeded {
-			continue
-		}
-		if pod.Status.Phase == phase {
-			continue
-		}
-		pod.Status.Phase = phase
-		if phase == v1.PodFailed {
-			pod.Status.Message = "Pod failed"
-		}
-		updatedPod, err := podcs.Update(ctx, &pod, metav1.UpdateOptions{})
-		if err != nil {
-			panic(err)
-		}
-		if err = woc.controller.PodController.TestingPodInformer().GetStore().Update(updatedPod); err != nil {
-			panic(err)
-		}
-		if phase == v1.PodSucceeded {
-			nodeID := woc.nodeID(&pod)
-			woc.wf.Status.MarkTaskResultComplete(ctx, nodeID)
-		}
-	}
-}
-
 func TestDAGHookNonLeafSerialHeadFails(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow("@testdata/dag_hook_non_leaf_serial_head_fails.yaml")
 	ctx := logging.TestContext(t.Context())
@@ -4574,7 +4542,7 @@ func TestDAGHookNonLeafSerialHeadFails(t *testing.T) {
 	require.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 
 	// hook pod succeeds
-	makePendingPodsPhase(ctx, woc, v1.PodSucceeded)
+	makeNonTerminalPodsPhase(ctx, woc, v1.PodSucceeded)
 	woc.operate(ctx)
 
 	// hook succeeded, step-b omitted, workflow failed
@@ -4612,7 +4580,7 @@ func TestDAGHookNonLeafFanInBothFail(t *testing.T) {
 	require.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 
 	// both hook pods succeed
-	makePendingPodsPhase(ctx, woc, v1.PodSucceeded)
+	makeNonTerminalPodsPhase(ctx, woc, v1.PodSucceeded)
 	woc.operate(ctx)
 
 	// both hooks succeeded, step-c omitted, workflow failed
