@@ -696,12 +696,13 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 			// Re-evaluate hooks: executeTemplate may have transitioned this node from Running to
 			// a Completed phase (e.g. Failed) within this sweep, after the earlier hook
 			// evaluation ran. Note this block is gated on Completed(), not Fulfilled().
-			hookCompleted, err := woc.executeTmplLifeCycleHook(ctx, scope, task.Hooks, node, dagCtx.boundaryID, dagCtx.tmplCtx, varkeys.TasksNodeRef, taskName)
-			if err != nil {
+			// The Omit cascade is already held back by the CheckAllHooksFullfilled gate in
+			// evaluateDependsLogic (#12192): executeTmplLifeCycleHook links the hook node as a
+			// child before returning, so a dependent cannot proceed in this same sweep. No
+			// early return is needed here, and returning would abandon the remaining
+			// expandedTasks, the taskGroupNode phase marking below, and runOnExitNode.
+			if _, err := woc.executeTmplLifeCycleHook(ctx, scope, task.Hooks, node, dagCtx.boundaryID, dagCtx.tmplCtx, varkeys.TasksNodeRef, taskName); err != nil {
 				woc.markNodeError(ctx, node.Name, err)
-				return
-			}
-			if !hookCompleted {
 				return
 			}
 			// if the node type is NodeTypeRetry, and its last child is completed, it will be completed after woc.executeTemplate;
