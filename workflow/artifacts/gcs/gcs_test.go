@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"runtime"
 	"testing"
 
 	"google.golang.org/api/googleapi"
@@ -44,6 +45,29 @@ func TestIsTransientGCSErr(t *testing.T) {
 		got := isTransientGCSErr(ctx, test.err)
 		if got != test.shouldretry {
 			t.Errorf("%+v: got %v, want %v", test, got, test.shouldretry)
+		}
+	}
+}
+
+func TestNormalizeGCSKey(t *testing.T) {
+	// GCS object names always use "/"; normalizeGCSKey only converts "\" to "/" on
+	// Windows, since "\" is a valid filename character on other OSes.
+	for _, test := range []struct {
+		key      string
+		expected string
+	}{
+		{"utils\\p4", "utils/p4"},
+		{"some\\prefix\\some-file.exe", "some/prefix/some-file.exe"},
+		{"some/prefix/some-file.exe", "some/prefix/some-file.exe"},
+		{"no-separators", "no-separators"},
+	} {
+		expected := test.expected
+		if runtime.GOOS != "windows" {
+			expected = test.key
+		}
+		got := normalizeGCSKey(test.key)
+		if got != expected {
+			t.Errorf("normalizeGCSKey(%q): got %q, want %q", test.key, got, expected)
 		}
 	}
 }

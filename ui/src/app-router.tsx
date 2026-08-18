@@ -65,10 +65,13 @@ export function AppRouter({popupManager, history, notificationsManager}: {popupM
         return () => sub.unsubscribe();
     }, [popupManager]);
     useEffect(() => {
-        services.info.getUserInfo().then(userInfo => {
-            nsUtils.setUserNamespace(userInfo.serviceAccountNamespace);
-            setNamespace(nsUtils.getCurrentNamespace());
-        });
+        services.info
+            .getUserInfo()
+            .then(userInfo => {
+                nsUtils.setUserNamespace(userInfo.serviceAccountNamespace);
+                setNamespace(nsUtils.getCurrentNamespace());
+            })
+            .catch(setError);
         services.info
             .getInfo()
             .then(info => {

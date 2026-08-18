@@ -108,20 +108,20 @@ func testTryAcquireSemaphore(t *testing.T, factory semaphoreFactory) {
 	require.NoError(t, s.addToQueue(ctx, "default/wf-04", 0, now.Add(3*time.Second)))
 	// verify only the first in line is allowed to acquired the semaphore
 	var acquired bool
-	acquired, _ = s.tryAcquire(ctx, "default/wf-04", tx)
+	acquired, _, _ = s.tryAcquire(ctx, "default/wf-04", tx)
 	assert.False(t, acquired)
-	acquired, _ = s.tryAcquire(ctx, "default/wf-03", tx)
+	acquired, _, _ = s.tryAcquire(ctx, "default/wf-03", tx)
 	assert.False(t, acquired)
-	acquired, _ = s.tryAcquire(ctx, "default/wf-02", tx)
+	acquired, _, _ = s.tryAcquire(ctx, "default/wf-02", tx)
 	assert.False(t, acquired)
-	acquired, _ = s.tryAcquire(ctx, "default/wf-01", tx)
+	acquired, _, _ = s.tryAcquire(ctx, "default/wf-01", tx)
 	assert.True(t, acquired)
 	// now that wf-01 obtained it, wf-02 can
-	acquired, _ = s.tryAcquire(ctx, "default/wf-02", tx)
+	acquired, _, _ = s.tryAcquire(ctx, "default/wf-02", tx)
 	assert.True(t, acquired)
-	acquired, _ = s.tryAcquire(ctx, "default/wf-03", tx)
+	acquired, _, _ = s.tryAcquire(ctx, "default/wf-03", tx)
 	assert.False(t, acquired)
-	acquired, _ = s.tryAcquire(ctx, "default/wf-04", tx)
+	acquired, _, _ = s.tryAcquire(ctx, "default/wf-04", tx)
 	assert.False(t, acquired)
 }
 
@@ -155,7 +155,7 @@ func testNotifyWaitersAcquire(t *testing.T, factory semaphoreFactory) {
 	require.NoError(t, s.addToQueue(ctx, "default/wf-03", 0, now.Add(2*time.Second)))
 
 	tx := sessionProxy
-	acquired, _ := s.tryAcquire(ctx, "default/wf-01", tx)
+	acquired, _, _ := s.tryAcquire(ctx, "default/wf-01", tx)
 	assert.True(t, acquired)
 
 	assert.Len(t, notified, 2)
@@ -201,7 +201,7 @@ func testNotifyWorkflowFromTemplateSemaphore(t *testing.T, factory semaphoreFact
 	require.NoError(t, s.addToQueue(ctx, "foo/wf-02/nodeid-456", 0, now.Add(time.Second)))
 
 	tx := sessionProxy
-	acquired, _ := s.tryAcquire(ctx, "foo/wf-01/nodeid-123", tx)
+	acquired, _, _ := s.tryAcquire(ctx, "foo/wf-01/nodeid-123", tx)
 	assert.True(t, acquired)
 
 	assert.Len(t, notified, 1)
@@ -252,4 +252,94 @@ func TestCheckAcquireNotifiesCorrectKeyForTemplateSemaphore(t *testing.T) {
 			testCheckAcquireNotifiesCorrectKeyForTemplateSemaphore(t, factory)
 		})
 	}
+}
+
+// testTryAcquireRemovesAcquiringKeyFromQueue is a regression test: checkAcquire lets a
+// node acquire the lock while a sibling node of the same workflow is at the front of the
+// pending queue. tryAcquire used to pop the front entry rather than the acquiring one, so
+// the sibling was silently dropped from the queue - no later notifyWaiters iteration
+// included it - while the acquiring node's own entry was left behind as a stale
+// front-of-queue entry.
+func testTryAcquireRemovesAcquiringKeyFromQueue(t *testing.T, factory semaphoreFactory) {
+	t.Helper()
+	ctx := logging.TestContext(t.Context())
+	nextWorkflow := func(_ string) {}
+
+	s, sessionProxy, cleanup := factory(ctx, t, "bar", "foo", 1, nextWorkflow)
+	defer cleanup()
+
+	now := time.Now()
+	require.NoError(t, s.addToQueue(ctx, "foo/wf-01/node-aaa", 0, now))
+	require.NoError(t, s.addToQueue(ctx, "foo/wf-01/node-bbb", 0, now.Add(time.Second)))
+	require.NoError(t, s.addToQueue(ctx, "foo/wf-02/node-ccc", 0, now.Add(2*time.Second)))
+
+	tx := sessionProxy
+	// node-bbb isn't at the front, but node-aaa is and belongs to the same workflow,
+	// so node-bbb is allowed to acquire.
+	acquired, _, err := s.tryAcquire(ctx, "foo/wf-01/node-bbb", tx)
+	require.NoError(t, err)
+	require.True(t, acquired)
+
+	// Only node-bbb's entry may be gone: node-aaa is still waiting for its turn.
+	pending, err := s.getCurrentPending(ctx)
+	require.NoError(t, err)
+	assert.ElementsMatch(t, []string{"foo/wf-01/node-aaa", "foo/wf-02/node-ccc"}, pending)
+
+	s.release(ctx, "foo/wf-01/node-bbb")
+	require.NoError(t, s.removeFromQueue(ctx, "foo/wf-01/node-bbb"))
+
+	// node-aaa is still the front of the queue, so it takes the released lock.
+	acquired, _, err = s.tryAcquire(ctx, "foo/wf-01/node-aaa", tx)
+	require.NoError(t, err)
+	assert.True(t, acquired, "node-aaa should still be queued and acquire the released lock")
+}
+
+// TestTryAcquireRemovesAcquiringKeyFromQueue runs the queue removal test for all implementations
+func TestTryAcquireRemovesAcquiringKeyFromQueue(t *testing.T) {
+	for name, factory := range semaphoreFactories {
+		t.Run(name, func(t *testing.T) {
+			testTryAcquireRemovesAcquiringKeyFromQueue(t, factory)
+		})
+	}
+}
+
+// TestInternalSemaphoreReleaseWithLimitFetchFailure is a regression test: a transient
+// error fetching the ConfigMap limit during release() used to make getLimit return 0,
+// which release() mistook for a downward resize — the holder was removed from the map
+// but the weighted-semaphore slot was never freed, permanently leaking capacity until
+// controller restart.
+func TestInternalSemaphoreReleaseWithLimitFetchFailure(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	fail := false
+	getter := func(_ context.Context, _ string) (int, error) {
+		if fail {
+			return 0, fmt.Errorf("transient apiserver error")
+		}
+		return 1, nil
+	}
+	nextWorkflow := func(_ string) {}
+
+	// TTL 0 forces a live limit fetch on every getLimit call
+	sem, err := newInternalSemaphore(ctx, "default/ConfigMap/my-config/workflow", nextWorkflow, getter, 0)
+	require.NoError(t, err)
+
+	require.NoError(t, sem.addToQueue(ctx, "default/wf-a", 0, time.Now()))
+	acquired, _, err := sem.tryAcquire(ctx, "default/wf-a", nil)
+	require.NoError(t, err)
+	require.True(t, acquired, "wf-a should acquire the only slot")
+
+	// The limit fetch fails transiently while wf-a releases.
+	fail = true
+	sem.release(ctx, "default/wf-a")
+	fail = false
+
+	holders, err := sem.getCurrentHolders(ctx)
+	require.NoError(t, err)
+	assert.Empty(t, holders)
+
+	// wf-b must be able to acquire: limit is 1 and there are no holders.
+	require.NoError(t, sem.addToQueue(ctx, "default/wf-b", 0, time.Now()))
+	acquired, _, err = sem.tryAcquire(ctx, "default/wf-b", nil)
+	require.NoError(t, err)
+	assert.True(t, acquired, "wf-b should acquire the slot released by wf-a")
 }

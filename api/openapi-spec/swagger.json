@@ -8432,7 +8432,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.GitArtifact"
         },
         "globalName": {
-          "description": "GlobalName exports an output artifact to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts",
+          "description": "GlobalName exports an output artifact to the global scope, making it available as io.argoproj.workflow.v1alpha1.outputs.artifacts.XXXX and in workflow.status.outputs.artifacts",
           "type": "string"
         },
         "hdfs": {
@@ -8601,7 +8601,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.GitArtifact"
         },
         "globalName": {
-          "description": "GlobalName exports an output artifact to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts",
+          "description": "GlobalName exports an output artifact to the global scope, making it available as io.argoproj.workflow.v1alpha1.outputs.artifacts.XXXX and in workflow.status.outputs.artifacts",
           "type": "string"
         },
         "hdfs": {
@@ -9627,6 +9627,49 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.ExecutorPlugin": {
+      "description": "ExecutorPlugin describes workflow-level executor plugin",
+      "type": "object",
+      "required": [
+        "metadata",
+        "spec"
+      ],
+      "properties": {
+        "metadata": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
+        },
+        "spec": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ExecutorPluginSpec"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.ExecutorPluginSidecar": {
+      "type": "object",
+      "required": [
+        "container"
+      ],
+      "properties": {
+        "automountServiceAccountToken": {
+          "description": "AutomountServiceAccountToken enables mounting the service account token. The service account must be named \u003cplugin-name\u003e-executor-plugin.",
+          "type": "boolean"
+        },
+        "container": {
+          "description": "Container defines the Kubernetes container specification for the sidecar.",
+          "$ref": "#/definitions/io.k8s.api.core.v1.Container"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.ExecutorPluginSpec": {
+      "type": "object",
+      "required": [
+        "sidecar"
+      ],
+      "properties": {
+        "sidecar": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ExecutorPluginSidecar"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.GCSArtifact": {
       "description": "GCSArtifact is the location of a GCS artifact",
       "type": "object",
@@ -9949,6 +9992,10 @@
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Header"
           }
+        },
+        "saveStreamViaFile": {
+          "description": "SaveStreamViaFile buffers a streamed upload to a temporary file before sending it, so a 307/308 redirect (e.g. webHDFS) can be followed by re-sending the body. When false (the default) SaveStream sends the reader directly and cannot follow such a redirect, since a one-shot reader cannot be replayed.",
+          "type": "boolean"
         },
         "url": {
           "description": "URL of the artifact",
@@ -10737,7 +10784,7 @@
           }
         },
         "globalName": {
-          "description": "GlobalName exports an output parameter to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters",
+          "description": "GlobalName exports an output parameter to the global scope, making it available as io.argoproj.workflow.v1alpha1.outputs.parameters.XXXX and in workflow.status.outputs.parameters",
           "type": "string"
         },
         "name": {
@@ -11014,6 +11061,10 @@
           "description": "AccessKeySecret is the secret selector to the bucket's access key",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         },
+        "addressingStyle": {
+          "description": "AddressingStyle defines how buckets are addressed by the S3 client. This is required for some S3-compatible providers that only support virtual-hosted-style bucket addressing.\n\nValid values are: - \"\" (default, auto-detect) - \"path\" - \"virtual-hosted\"",
+          "type": "string"
+        },
         "bucket": {
           "description": "Bucket is the name of the bucket",
           "type": "string"
@@ -11070,6 +11121,10 @@
         "accessKeySecret": {
           "description": "AccessKeySecret is the secret selector to the bucket's access key",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "addressingStyle": {
+          "description": "AddressingStyle defines how buckets are addressed by the S3 client. This is required for some S3-compatible providers that only support virtual-hosted-style bucket addressing.\n\nValid values are: - \"\" (default, auto-detect) - \"path\" - \"virtual-hosted\"",
+          "type": "string"
         },
         "bucket": {
           "description": "Bucket is the name of the bucket",
@@ -11434,6 +11489,13 @@
           "description": "Annotations adds to metadata.labels",
           "type": "string"
         },
+        "artifacts": {
+          "description": "Artifacts overrides input artifact locations. Format: name=key",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
         "dryRun": {
           "description": "DryRun validates the workflow on the client-side without creating it. This option is not supported in API",
           "type": "boolean"
@@ -11682,9 +11744,17 @@
           "description": "Parallelism limits the max total parallel pods that can execute at the same time within the boundaries of this template invocation. If additional steps/dag templates are invoked, the pods created by those templates will not be counted towards this total.",
           "type": "integer"
         },
+        "pendingTimeout": {
+          "description": "PendingTimeout allows to set the maximum time spent in pending status counting from the node's start time. It is enforced by the controller, so a pod that starts running just as the timeout expires may still be failed. This duration may not be applied to Step or DAG templates.",
+          "type": "string"
+        },
         "plugin": {
           "description": "Plugin is a plugin template Note: the structure of a plugin template is free-form, so we need to have \"x-kubernetes-preserve-unknown-fields: true\" in the validation schema.",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Plugin"
+        },
+        "podResources": {
+          "description": "PodResources defines pod-level resource requests and limits for this template's pod. Overrides the workflow-level podResources. Requires the PodLevelResources feature gate to be enabled on the cluster (beta since Kubernetes v1.34).",
+          "$ref": "#/definitions/io.k8s.api.core.v1.ResourceRequirements"
         },
         "podSpecPatch": {
           "description": "PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).",
@@ -11697,6 +11767,14 @@
         "resource": {
           "description": "Resource template subtype which can run k8s resources",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ResourceTemplate"
+        },
+        "resourceClaims": {
+          "description": "ResourceClaims defines the ResourceClaims that must be allocated and reserved before this template's pod is allowed to start. Each entry names either an existing ResourceClaim or a ResourceClaimTemplate in the workflow's namespace, and containers ask for one by name through resources.claims. Replaces the workflow-level resourceClaims as a whole rather than merging with it. Not supported for a template that creates no pod: Steps, DAG and Suspend, which orchestrate other templates, and HTTP and Plugin, which run on the shared agent pod. A template reached through a templateRef keeps its own claims, and falls back to those of the workflow calling it rather than to the spec-level claims of the WorkflowTemplate it was defined in. Requires the DynamicResourceAllocation feature gate to be enabled on the cluster.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.PodResourceClaim"
+          },
+          "x-kubernetes-list-type": "atomic"
         },
         "retryStrategy": {
           "description": "RetryStrategy describes how to retry a template when it fails",
@@ -12010,7 +12088,7 @@
           "type": "string"
         },
         "parameter": {
-          "description": "Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. '{{steps.mystep.outputs.myparam}}')",
+          "description": "Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. steps.mystep.outputs.myparam)",
           "type": "string"
         },
         "path": {
@@ -12374,7 +12452,7 @@
           "type": "boolean"
         },
         "arguments": {
-          "description": "Arguments contain the parameters and artifacts sent to the workflow entrypoint Parameters are referencable globally using the 'workflow' variable prefix. e.g. {{io.argoproj.workflow.v1alpha1.parameters.myparam}}",
+          "description": "Arguments contain the parameters and artifacts sent to the workflow entrypoint Parameters are referencable globally using the 'workflow' variable prefix. e.g. io.argoproj.workflow.v1alpha1.parameters.myparam",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments"
         },
         "artifactGC": {
@@ -12404,6 +12482,13 @@
         "executor": {
           "description": "Executor holds configurations of executor containers of the io.argoproj.workflow.v1alpha1.",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ExecutorConfig"
+        },
+        "executorPlugins": {
+          "description": "Specifies executor plugins at the workflow level.\n\nThis field is effective only when the ARGO_WORKFLOW_LEVEL_EXECUTOR_PLUGINS feature gate is enabled.\n\nIf this field contains one or more executor plugins, executor plugin settings from the controller ConfigMap are ignored.\n\nIf this field is empty or not set, the controller falls back to the ConfigMap configuration.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ExecutorPlugin"
+          }
         },
         "hooks": {
           "description": "Hooks holds the lifecycle hook which is invoked at lifecycle of step, irrespective of the success, failure, or error status of the primary step",
@@ -12468,6 +12553,10 @@
           "description": "PriorityClassName to apply to workflow pods.",
           "type": "string"
         },
+        "podResources": {
+          "description": "PodResources defines pod-level resource requests and limits to apply to all workflow pods. Will be overridden if a template's podResources is set. Requires the PodLevelResources feature gate to be enabled on the cluster (beta since Kubernetes v1.34).",
+          "$ref": "#/definitions/io.k8s.api.core.v1.ResourceRequirements"
+        },
         "podSpecPatch": {
           "description": "PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).",
           "type": "string"
@@ -12475,6 +12564,14 @@
         "priority": {
           "description": "Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.",
           "type": "integer"
+        },
+        "resourceClaims": {
+          "description": "ResourceClaims defines the ResourceClaims that must be allocated and reserved before the pods running this workflow's templates are allowed to start. Each entry names either an existing ResourceClaim or a ResourceClaimTemplate in the workflow's namespace, and containers ask for one by name through resources.claims. The list is replaced as a whole rather than merged, so a template's resourceClaims, or a Workflow overriding a WorkflowTemplate, supersedes it entirely. Applies to the pods this workflow runs, including one whose template came through a templateRef, but not to the shared agent pod behind HTTP and Plugin templates. A referenced WorkflowTemplate's own spec-level resourceClaims do not come along with a templateRef; use workflowTemplateRef to inherit the referenced spec. Requires the DynamicResourceAllocation feature gate to be enabled on the cluster.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.PodResourceClaim"
+          },
+          "x-kubernetes-list-type": "atomic"
         },
         "retryStrategy": {
           "description": "RetryStrategy for all templates in the io.argoproj.workflow.v1alpha1.",
@@ -14783,6 +14880,27 @@
         },
         "value": {
           "description": "Value is this DNS resolver option's value.",
+          "type": "string"
+        }
+      }
+    },
+    "io.k8s.api.core.v1.PodResourceClaim": {
+      "description": "PodResourceClaim references exactly one ResourceClaim, either directly or by naming a ResourceClaimTemplate which is then turned into a ResourceClaim for the pod.\n\nIt adds a name to it that uniquely identifies the ResourceClaim inside the Pod. Containers that need access to the ResourceClaim reference it with this name.",
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "description": "Name uniquely identifies this resource claim inside the pod. This must be a DNS_LABEL.",
+          "type": "string"
+        },
+        "resourceClaimName": {
+          "description": "ResourceClaimName is the name of a ResourceClaim object in the same namespace as this pod.\n\nExactly one of ResourceClaimName and ResourceClaimTemplateName must be set.",
+          "type": "string"
+        },
+        "resourceClaimTemplateName": {
+          "description": "ResourceClaimTemplateName is the name of a ResourceClaimTemplate object in the same namespace as this pod.\n\nThe template will be used to create a new ResourceClaim, which will be bound to this pod. When this pod is deleted, the ResourceClaim will also be deleted. The pod name and resource name, along with a generated component, will be used to form a unique name for the ResourceClaim, which will be recorded in pod.status.resourceClaimStatuses.\n\nThis field is immutable and no changes will be made to the corresponding ResourceClaim by the control plane after creating the ResourceClaim.\n\nExactly one of ResourceClaimName and ResourceClaimTemplateName must be set.",
           "type": "string"
         }
       }

@@ -24,6 +24,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/diff"
+	informerutil "github.com/argoproj/argo-workflows/v4/util/informer"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/indexes"
@@ -297,6 +298,10 @@ func newWorkflowPodWatch(ctx context.Context, clientSet kubernetes.Interface, in
 		options.Limit = podPaginationLimit
 		for {
 			options.Continue = continueTok
+			if options.Continue != "" {
+				options.ResourceVersion = ""
+				options.ResourceVersionMatch = ""
+			}
 			podList, err := c.List(ctx, options)
 			if err != nil {
 				return nil, err
@@ -324,6 +329,8 @@ func newInformer(ctx context.Context, clientSet kubernetes.Interface, instanceID
 		indexes.NodeIDIndex:   indexes.MetaNodeIDIndexFunc,
 		indexes.PodPhaseIndex: indexes.PodPhaseIndexFunc,
 	})
+	//nolint:errcheck // the error only happens if the informer was already started, and it hasn't been
+	informer.SetTransform(informerutil.StripManagedFields)
 	return informer
 }
 

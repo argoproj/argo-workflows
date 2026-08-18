@@ -67,24 +67,24 @@ func TestWatchFile_FiresOnCreateAndWrite(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
-	var fires int32
+	var fires atomic.Int32
 	done := make(chan struct{})
 	go func() {
 		_ = WatchFile(ctx, path, func() {
-			atomic.AddInt32(&fires, 1)
+			fires.Add(1)
 		})
 		close(done)
 	}()
 
 	// Wait for the initial Stat callback to confirm the watcher is installed.
 	require.Eventually(t, func() bool {
-		return atomic.LoadInt32(&fires) >= 1
+		return fires.Load() >= 1
 	}, 2*time.Second, 10*time.Millisecond)
 
 	require.NoError(t, os.WriteFile(path, []byte("ab"), 0o644))
 
 	require.Eventually(t, func() bool {
-		return atomic.LoadInt32(&fires) >= 2
+		return fires.Load() >= 2
 	}, 2*time.Second, 10*time.Millisecond)
 
 	cancel()
@@ -99,17 +99,17 @@ func TestWatchFile_FiresWhenAlreadyExists(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
-	var fires int32
+	var fires atomic.Int32
 	done := make(chan struct{})
 	go func() {
 		_ = WatchFile(ctx, path, func() {
-			atomic.AddInt32(&fires, 1)
+			fires.Add(1)
 		})
 		close(done)
 	}()
 
 	require.Eventually(t, func() bool {
-		return atomic.LoadInt32(&fires) >= 1
+		return fires.Load() >= 1
 	}, 2*time.Second, 10*time.Millisecond)
 
 	cancel()
@@ -130,25 +130,25 @@ func TestWatchFilePoll_FiresOnCreateAndWrite(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
-	var fires int32
+	var fires atomic.Int32
 	done := make(chan struct{})
 	go func() {
 		_ = watchFilePoll(ctx, path, func() {
-			atomic.AddInt32(&fires, 1)
+			fires.Add(1)
 		})
 		close(done)
 	}()
 
 	require.NoError(t, os.WriteFile(path, []byte("a"), 0o644))
 	require.Eventually(t, func() bool {
-		return atomic.LoadInt32(&fires) >= 1
+		return fires.Load() >= 1
 	}, 5*time.Second, 50*time.Millisecond)
 
 	// Ensure a detectably-different mtime on filesystems with coarse timestamps.
 	time.Sleep(1100 * time.Millisecond)
 	require.NoError(t, os.WriteFile(path, []byte("ab-longer"), 0o644))
 	require.Eventually(t, func() bool {
-		return atomic.LoadInt32(&fires) >= 2
+		return fires.Load() >= 2
 	}, 5*time.Second, 50*time.Millisecond)
 
 	cancel()
@@ -163,17 +163,17 @@ func TestWatchFilePoll_FiresWhenAlreadyExists(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
-	var fires int32
+	var fires atomic.Int32
 	done := make(chan struct{})
 	go func() {
 		_ = watchFilePoll(ctx, path, func() {
-			atomic.AddInt32(&fires, 1)
+			fires.Add(1)
 		})
 		close(done)
 	}()
 
 	require.Eventually(t, func() bool {
-		return atomic.LoadInt32(&fires) >= 1
+		return fires.Load() >= 1
 	}, 1*time.Second, 10*time.Millisecond)
 
 	cancel()

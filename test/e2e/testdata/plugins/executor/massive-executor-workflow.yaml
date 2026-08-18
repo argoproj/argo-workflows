@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: massive-executor-
+spec:
+  entrypoint: main
+  parallelism: 6
+
+  templates:
+    - name: main
+      steps:
+        - - name: fanout
+            template: massive-plugin
+            withSequence:
+              count: "15"
+            arguments:
+              parameters:
+                - name: idx
+                  value: "{{item}}"
+
+    - name: massive-plugin
+      inputs:
+        parameters:
+          - name: idx
+      plugin:
+        massive: {}

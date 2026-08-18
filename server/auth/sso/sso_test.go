@@ -2,10 +2,14 @@ package sso
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
 	"testing"
 	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
+	"github.com/go-jose/go-jose/v4"
+	"github.com/go-jose/go-jose/v4/jwt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
@@ -13,6 +17,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
+	"github.com/argoproj/argo-workflows/v4/server/auth/types"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
@@ -91,6 +96,54 @@ func TestNewSsoWithIssuerAlias(t *testing.T) {
 	_, err := newSso(logging.TestContext(t.Context()), fakeOidcFactory, config, fakeClient, "/", false)
 	require.NoError(t, err)
 }
+
+func TestAuthorizeSignedEncryptedToken(t *testing.T) {
+	ssoObject := newTestSso(t)
+	raw, err := jwt.SignedAndEncrypted(ssoObject.signer, ssoObject.encrypter).Claims(newTestClaims()).Serialize()
+	require.NoError(t, err)
+
+	claims, err := ssoObject.Authorize(Prefix + raw)
+	require.NoError(t, err)
+	assert.Equal(t, "test-subject", claims.Subject)
+	assert.Equal(t, []string{"test-group"}, claims.Groups)
+}
+
+func TestAuthorizeLegacyEncryptedTokenFails(t *testing.T) {
+	ssoObject := newTestSso(t)
+	legacyEncrypter, err := jose.NewEncrypter(jose.A256GCM, jose.Recipient{Algorithm: jose.RSA_OAEP_256, Key: ssoObject.privateKey.(*rsa.PrivateKey).Public()}, &jose.EncrypterOptions{Compression: jose.DEFLATE})
+	require.NoError(t, err)
+	raw, err := jwt.Encrypted(legacyEncrypter).Claims(newTestClaims()).Serialize()
+	require.NoError(t, err)
+
+	claims, err := ssoObject.Authorize(Prefix + raw)
+	require.Error(t, err)
+	assert.Nil(t, claims)
+	assert.ErrorContains(t, err, "failed to parse signed token")
+}
+
+func newTestSso(t *testing.T) *sso {
+	t.Helper()
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
+	signer, err := jose.NewSigner(jose.SigningKey{Algorithm: jose.RS256, Key: privateKey}, nil)
+	require.NoError(t, err)
+	encrypterOptions := (&jose.EncrypterOptions{Compression: jose.DEFLATE}).WithContentType("JWT")
+	encrypter, err := jose.NewEncrypter(jose.A256GCM, jose.Recipient{Algorithm: jose.RSA_OAEP_256, Key: privateKey.Public()}, encrypterOptions)
+	require.NoError(t, err)
+	return &sso{privateKey: privateKey, signer: signer, encrypter: encrypter}
+}
+
+func newTestClaims() *types.Claims {
+	return &types.Claims{
+		Claims: jwt.Claims{
+			Issuer:  issuer,
+			Subject: "test-subject",
+			Expiry:  jwt.NewNumericDate(time.Now().Add(time.Hour)),
+		},
+		Groups: []string{"test-group"},
+	}
+}
+
 func TestLoadSsoClientIdFromDifferentSecret(t *testing.T) {
 	clientIDSecret := &apiv1.Secret{
 		ObjectMeta: metav1.ObjectMeta{

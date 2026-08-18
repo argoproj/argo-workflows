@@ -275,6 +275,13 @@ func (ossDriver *ArtifactDriver) Save(ctx context.Context, path string, outputAr
 	return err
 }
 
+// SaveStream saves an artifact from an io.Reader to OSS compliant storage
+func (ossDriver *ArtifactDriver) SaveStream(ctx context.Context, reader io.Reader, outputArtifact *wfv1.Artifact) error {
+	return common.SaveStreamViaTempFile(reader, "oss-upload-*", func(path string) error {
+		return ossDriver.Save(ctx, path, outputArtifact)
+	})
+}
+
 // Delete deletes an artifact from an OSS compliant storage
 func (ossDriver *ArtifactDriver) Delete(ctx context.Context, artifact *wfv1.Artifact) error {
 	err := waitutil.Backoff(defaultRetry,

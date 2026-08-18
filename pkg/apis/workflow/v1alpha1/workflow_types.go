@@ -25,6 +25,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 
+	execplugin "github.com/argoproj/argo-workflows/v4/pkg/plugins/spec"
+
 	argoerrs "github.com/argoproj/argo-workflows/v4/errors"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
@@ -310,7 +312,7 @@ type WorkflowSpec struct {
 
 	// Arguments contain the parameters and artifacts sent to the workflow entrypoint
 	// Parameters are referencable globally using the 'workflow' variable prefix.
-	// e.g. {{workflow.parameters.myparam}}
+	// e.g. workflow.parameters.myparam
 	Arguments Arguments `json:"arguments,omitempty" protobuf:"bytes,3,opt,name=arguments"`
 
 	// ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as.
@@ -467,6 +469,34 @@ type WorkflowSpec struct {
 	// ArtifactGC describes the strategy to use when deleting artifacts from completed or deleted workflows (applies to all output Artifacts
 	// unless Artifact.ArtifactGC is specified, which overrides this)
 	ArtifactGC *WorkflowLevelArtifactGC `json:"artifactGC,omitempty" protobuf:"bytes,43,opt,name=artifactGC"`
+
+	// Specifies executor plugins at the workflow level.
+	//
+	// This field is effective only when the ARGO_WORKFLOW_LEVEL_EXECUTOR_PLUGINS
+	// feature gate is enabled.
+	//
+	// If this field contains one or more executor plugins, executor plugin
+	// settings from the controller ConfigMap are ignored.
+	//
+	// If this field is empty or not set, the controller falls back to the
+	// ConfigMap configuration.
+	ExecutorPlugins []ExecutorPlugin `json:"executorPlugins,omitempty" protobuf:"bytes,44,rep,name=executorPlugins"`
+
+	// PodResources defines pod-level resource requests and limits to apply to all workflow pods.
+	// Will be overridden if a template's podResources is set.
+	// Requires the PodLevelResources feature gate to be enabled on the cluster (beta since Kubernetes v1.34).
+	// +optional
+	PodResources *apiv1.ResourceRequirements `json:"podResources,omitempty" protobuf:"bytes,45,opt,name=podResources"`
+
+	// ResourceClaims defines the ResourceClaims that must be allocated and reserved before the pods running this workflow's templates are allowed to start.
+	// Each entry names either an existing ResourceClaim or a ResourceClaimTemplate in the workflow's namespace, and containers ask for one by name through resources.claims.
+	// The list is replaced as a whole rather than merged, so a template's resourceClaims, or a Workflow overriding a WorkflowTemplate, supersedes it entirely.
+	// Applies to the pods this workflow runs, including one whose template came through a templateRef, but not to the shared agent pod behind HTTP and Plugin templates.
+	// A referenced WorkflowTemplate's own spec-level resourceClaims do not come along with a templateRef; use workflowTemplateRef to inherit the referenced spec.
+	// Requires the DynamicResourceAllocation feature gate to be enabled on the cluster.
+	// +listType=atomic
+	// +optional
+	ResourceClaims []apiv1.PodResourceClaim `json:"resourceClaims,omitempty" protobuf:"bytes,47,rep,name=resourceClaims"`
 }
 
 type LabelValueFrom struct {
@@ -519,6 +549,34 @@ func (wfs WorkflowSpec) GetArtifactGC() *ArtifactGC {
 
 func (wfs WorkflowSpec) GetTTLStrategy() *TTLStrategy {
 	return wfs.TTLStrategy
+}
+
+// AsExecutorPluginSpec maps proto models to v4/pkg/plugins/spec models.
+func (wfs WorkflowSpec) AsExecutorPluginSpec() ([]execplugin.Plugin, error) {
+	plugins := make([]execplugin.Plugin, 0, len(wfs.ExecutorPlugins))
+	for _, plugin := range wfs.ExecutorPlugins {
+		sidecar := execplugin.Sidecar{
+			AutomountServiceAccountToken: plugin.Spec.Sidecar.AutomountServiceAccountToken,
+			Container:                    plugin.Spec.Sidecar.Container,
+		}
+
+		if plugin.Name == "" {
+			return nil, fmt.Errorf("executor plugin metadata name is mandatory")
+		}
+		err := sidecar.Validate()
+		if err != nil {
+			return nil, err
+		}
+
+		spec := execplugin.PluginSpec{
+			Sidecar: sidecar,
+		}
+		plugins = append(plugins, execplugin.Plugin{
+			ObjectMeta: plugin.ObjectMeta,
+			Spec:       spec,
+		})
+	}
+	return plugins, nil
 }
 
 // GetSemaphoreKeys will return list of semaphore configmap keys which are configured in the workflow
@@ -798,6 +856,27 @@ type Template struct {
 
 	// Annotations is a list of annotations to add to the template at runtime
 	Annotations map[string]string `json:"annotations,omitempty" protobuf:"bytes,44,opt,name=annotations"`
+
+	// PendingTimeout allows to set the maximum time spent in pending status counting from the node's start time.
+	// It is enforced by the controller, so a pod that starts running just as the timeout expires may still be failed.
+	// This duration may not be applied to Step or DAG templates.
+	PendingTimeout string `json:"pendingTimeout,omitempty" protobuf:"bytes,45,opt,name=pendingTimeout"`
+
+	// PodResources defines pod-level resource requests and limits for this template's pod.
+	// Overrides the workflow-level podResources.
+	// Requires the PodLevelResources feature gate to be enabled on the cluster (beta since Kubernetes v1.34).
+	// +optional
+	PodResources *apiv1.ResourceRequirements `json:"podResources,omitempty" protobuf:"bytes,46,opt,name=podResources"`
+
+	// ResourceClaims defines the ResourceClaims that must be allocated and reserved before this template's pod is allowed to start.
+	// Each entry names either an existing ResourceClaim or a ResourceClaimTemplate in the workflow's namespace, and containers ask for one by name through resources.claims.
+	// Replaces the workflow-level resourceClaims as a whole rather than merging with it.
+	// Not supported for a template that creates no pod: Steps, DAG and Suspend, which orchestrate other templates, and HTTP and Plugin, which run on the shared agent pod.
+	// A template reached through a templateRef keeps its own claims, and falls back to those of the workflow calling it rather than to the spec-level claims of the WorkflowTemplate it was defined in.
+	// Requires the DynamicResourceAllocation feature gate to be enabled on the cluster.
+	// +listType=atomic
+	// +optional
+	ResourceClaims []apiv1.PodResourceClaim `json:"resourceClaims,omitempty" protobuf:"bytes,47,rep,name=resourceClaims"`
 }
 
 // SetType will set the template object based on template type.
@@ -1013,7 +1092,7 @@ type Parameter struct {
 	ValueFrom *ValueFrom `json:"valueFrom,omitempty" protobuf:"bytes,4,opt,name=valueFrom"`
 
 	// GlobalName exports an output parameter to the global scope, making it available as
-	// '{{workflow.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters
+	// workflow.outputs.parameters.XXXX and in workflow.status.outputs.parameters
 	GlobalName string `json:"globalName,omitempty" protobuf:"bytes,5,opt,name=globalName"`
 
 	// Enum holds a list of string values to choose from, for the actual value of the parameter
@@ -1039,7 +1118,7 @@ type ValueFrom struct {
 	Event string `json:"event,omitempty" protobuf:"bytes,7,opt,name=event"`
 
 	// Parameter reference to a step or dag task in which to retrieve an output parameter value from
-	// (e.g. '{{steps.mystep.outputs.myparam}}')
+	// (e.g. steps.mystep.outputs.myparam)
 	Parameter string `json:"parameter,omitempty" protobuf:"bytes,4,opt,name=parameter"`
 
 	// Supplied value to be filled in directly, either through the CLI, API, etc.
@@ -1095,7 +1174,7 @@ type Artifact struct {
 	ArtifactLocation `json:",inline" protobuf:"bytes,5,opt,name=artifactLocation"`
 
 	// GlobalName exports an output artifact to the global scope, making it available as
-	// '{{workflow.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts
+	// workflow.outputs.artifacts.XXXX and in workflow.status.outputs.artifacts
 	GlobalName string `json:"globalName,omitempty" protobuf:"bytes,6,opt,name=globalName"`
 
 	// Archive controls how the artifact will be saved to the artifact repository.
@@ -1214,6 +1293,24 @@ type WorkflowLevelArtifactGC struct {
 
 	// PodSpecPatch holds strategic merge patch to apply against the artgc pod spec.
 	PodSpecPatch string `json:"podSpecPatch,omitempty" protobuf:"bytes,3,opt,name=podSpecPatch"`
+}
+
+// ExecutorPlugin describes workflow-level executor plugin
+type ExecutorPlugin struct {
+	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,2,opt,name=metadata"`
+	Spec              ExecutorPluginSpec `json:"spec" protobuf:"bytes,1,opt,name=spec"`
+}
+
+type ExecutorPluginSpec struct {
+	Sidecar ExecutorPluginSidecar `json:"sidecar" protobuf:"bytes,1,opt,name=sidecar"`
+}
+
+type ExecutorPluginSidecar struct {
+	// AutomountServiceAccountToken enables mounting the service account token.
+	// The service account must be named <plugin-name>-executor-plugin.
+	AutomountServiceAccountToken bool `json:"automountServiceAccountToken,omitempty" protobuf:"varint,1,opt,name=automountServiceAccountToken"`
+	// Container defines the Kubernetes container specification for the sidecar.
+	Container apiv1.Container `json:"container" protobuf:"bytes,2,opt,name=container"`
 }
 
 // ArtifactGC describes how to delete artifacts from completed Workflows - this is embedded into the WorkflowLevelArtifactGC, and also used for individual Artifacts to override that as needed
@@ -2783,6 +2880,18 @@ type S3Bucket struct {
 
 	// CASecret specifies the secret that contains the CA, used to verify the TLS connection
 	CASecret *apiv1.SecretKeySelector `json:"caSecret,omitempty" protobuf:"bytes,11,opt,name=caSecret"`
+
+	// AddressingStyle defines how buckets are addressed by the S3 client.
+	// This is required for some S3-compatible providers that only support
+	// virtual-hosted-style bucket addressing.
+	//
+	// Valid values are:
+	// - "" (default, auto-detect)
+	// - "path"
+	// - "virtual-hosted"
+	//
+	// +kubebuilder:validation:Enum="";path;virtual-hosted
+	AddressingStyle string `json:"addressingStyle,omitempty" protobuf:"bytes,13,opt,name=addressingStyle"`
 }
 
 // S3EncryptionOptions used to determine encryption options during s3 operations
@@ -3104,6 +3213,12 @@ type HTTPArtifact struct {
 
 	// Auth contains information for client authentication
 	Auth *HTTPAuth `json:"auth,omitempty" protobuf:"bytes,3,opt,name=auth"`
+
+	// SaveStreamViaFile buffers a streamed upload to a temporary file before sending it,
+	// so a 307/308 redirect (e.g. webHDFS) can be followed by re-sending the body. When
+	// false (the default) SaveStream sends the reader directly and cannot follow such a
+	// redirect, since a one-shot reader cannot be replayed.
+	SaveStreamViaFile bool `json:"saveStreamViaFile,omitempty" protobuf:"varint,4,opt,name=saveStreamViaFile"`
 }
 
 func (h *HTTPArtifact) GetKey() (string, error) {

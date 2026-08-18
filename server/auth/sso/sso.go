@@ -15,8 +15,8 @@ import (
 	"github.com/argoproj/argo-workflows/v4/config"
 
 	"github.com/coreos/go-oidc/v3/oidc"
-	"github.com/go-jose/go-jose/v3"
-	"github.com/go-jose/go-jose/v3/jwt"
+	"github.com/go-jose/go-jose/v4"
+	"github.com/go-jose/go-jose/v4/jwt"
 	"golang.org/x/oauth2"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -59,6 +59,7 @@ type sso struct {
 	baseHRef          string
 	secure            bool
 	privateKey        crypto.PrivateKey
+	signer            jose.Signer
 	encrypter         jose.Encrypter
 	rbacConfig        *config.RBACConfig
 	expiry            time.Duration
@@ -190,7 +191,12 @@ func newSso(
 		Scopes:       append(c.Scopes, oidc.ScopeOpenID),
 	}
 	idTokenVerifier := provider.Verifier(&oidc.Config{ClientID: config.ClientID})
-	encrypter, err := jose.NewEncrypter(jose.A256GCM, jose.Recipient{Algorithm: jose.RSA_OAEP_256, Key: privateKey.Public()}, &jose.EncrypterOptions{Compression: jose.DEFLATE})
+	signer, err := jose.NewSigner(jose.SigningKey{Algorithm: jose.RS256, Key: privateKey}, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create JWT signer: %w", err)
+	}
+	encrypterOptions := (&jose.EncrypterOptions{Compression: jose.DEFLATE}).WithContentType("JWT")
+	encrypter, err := jose.NewEncrypter(jose.A256GCM, jose.Recipient{Algorithm: jose.RSA_OAEP_256, Key: privateKey.Public()}, encrypterOptions)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create JWT encrpytor: %w", err)
 	}
@@ -220,6 +226,7 @@ func newSso(
 		httpClient:        httpClient,
 		secure:            secure,
 		privateKey:        privateKey,
+		signer:            signer,
 		encrypter:         encrypter,
 		rbacConfig:        c.RBAC,
 		expiry:            c.GetSessionExpiry(),
@@ -340,14 +347,14 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		PreferredUsername:       c.PreferredUsername,
 		ServiceAccountNamespace: c.ServiceAccountNamespace,
 	}
-	raw, err := jwt.Encrypted(s.encrypter).Claims(argoClaims).CompactSerialize()
+	raw, err := jwt.SignedAndEncrypted(s.signer, s.encrypter).Claims(argoClaims).Serialize()
 	if err != nil {
 		s.logger.WithError(err).Error(r.Context(), "failed to encrypt and serialize the jwt token")
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 	value := Prefix + raw
-	s.logger.WithField("value", value).Debug(r.Context(), "handing oauth2 callback")
+	s.logger.Debug(r.Context(), "handing oauth2 callback")
 	http.SetCookie(w, &http.Cookie{
 		Value:    value,
 		Name:     "authorization",
@@ -387,19 +394,29 @@ func isValidFinalRedirectURL(redirect string) bool {
 
 // authorize verifies a bearer token and pulls user information form the claims.
 func (s *sso) Authorize(authorization string) (*types.Claims, error) {
-	tok, err := jwt.ParseEncrypted(strings.TrimPrefix(authorization, Prefix))
+	enc, err := jose.ParseEncrypted(strings.TrimPrefix(authorization, Prefix), []jose.KeyAlgorithm{jose.RSA_OAEP_256}, []jose.ContentEncryption{jose.A256GCM})
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse encrypted token: %w", err)
 	}
+
+	payload, err := enc.Decrypt(s.privateKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decrypt token: %w", err)
+	}
+
+	tok, err := jwt.ParseSigned(string(payload), []jose.SignatureAlgorithm{jose.RS256})
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse signed token: %w", err)
+	}
+
 	c := &types.Claims{}
-	if err := tok.Claims(s.privateKey, c); err != nil {
-		return nil, fmt.Errorf("failed to parse claims: %w", err)
+	if err := tok.Claims(s.privateKey.(*rsa.PrivateKey).Public(), c); err != nil {
+		return nil, fmt.Errorf("failed to verify signed token: %w", err)
 	}
 
 	if err := c.Validate(jwt.Expected{Issuer: issuer}); err != nil {
 		return nil, fmt.Errorf("failed to validate claims: %w", err)
 	}
-
 	return c, nil
 }
 

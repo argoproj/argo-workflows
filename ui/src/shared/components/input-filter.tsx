@@ -1,5 +1,5 @@
 import {Autocomplete} from 'argo-ui/src/components/autocomplete/autocomplete';
-import React, {useState} from 'react';
+import React, {useMemo, useState} from 'react';
 
 import './input-filter.scss';
 
@@ -10,11 +10,13 @@ interface InputProps {
     onChange: (input: string) => void;
     filterSuggestions?: boolean;
     autoHighlight?: boolean;
+    extraSuggestions?: string[];
 }
 
 export function InputFilter(props: InputProps) {
     const [value, setValue] = useState(props.value);
     const [localCache, setLocalCache] = useState((localStorage.getItem(props.name + '_inputs') || '').split(',').filter(item => item !== ''));
+    const items = useMemo(() => Array.from(new Set([...(props.extraSuggestions ?? []), ...localCache])), [localCache, props.extraSuggestions]);
 
     function setValueAndCache(newValue: string) {
         setLocalCache(currentCache => {
@@ -50,7 +52,7 @@ export function InputFilter(props: InputProps) {
     return (
         <div className='input-filter'>
             <Autocomplete
-                items={localCache}
+                items={items}
                 value={value}
                 onChange={(e, newValue) => setValue(newValue)}
                 onSelect={newValue => {

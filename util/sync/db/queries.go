@@ -24,6 +24,13 @@ type StateRecord struct {
 	Time       time.Time `db:"time"`     // timestamp of creation or last update
 }
 
+// StateCountRecord is an aggregate count of state rows for a lock, grouped by held/pending.
+type StateCountRecord struct {
+	Name  string `db:"name"`       // semaphore name identifier (as stored, e.g. "sem/<ns>/<resource>")
+	Held  bool   `db:"held"`       // true = held, false = pending
+	Count int64  `db:"lock_count"` // number of rows in this (name, held) group
+}
+
 type ControllerHealthRecord struct {
 	Controller string    `db:"controller"` // controller where the workflow is running
 	Time       time.Time `db:"time"`       // timestamp of creation or last update
@@ -63,6 +70,7 @@ type SyncQueries interface {
 	GetCurrentState(ctx context.Context, sessionProxy *sqldb.SessionProxy, semaphoreName string, held bool) ([]StateRecord, error)
 	GetCurrentHolders(ctx context.Context, sessionProxy *sqldb.SessionProxy, semaphoreName string) ([]StateRecord, error)
 	GetCurrentPending(ctx context.Context, semaphoreName string) ([]StateRecord, error)
+	GetStateCountsByController(ctx context.Context, controllerName string) ([]StateCountRecord, error)
 	GetOrderedQueue(ctx context.Context, sessionProxy *sqldb.SessionProxy, semaphoreName string, inactiveTimeout time.Duration) ([]StateRecord, error)
 	AddToQueue(ctx context.Context, record *StateRecord) error
 	RemoveFromQueue(ctx context.Context, semaphoreName, holderKey string) error
@@ -173,6 +181,24 @@ func (q *syncQueries) GetCurrentHolders(ctx context.Context, sessionProxy *sqldb
 
 func (q *syncQueries) GetCurrentPending(ctx context.Context, semaphoreName string) ([]StateRecord, error) {
 	return q.GetCurrentState(ctx, q.sessionProxy, semaphoreName, false)
+}
+
+// GetStateCountsByController returns, for every lock this controller currently holds or waits on,
+// the number of held and pending rows. It is a single aggregate query used to drive the
+// locks_held / locks_pending gauges: each controller reports only its own contribution, so
+// `sum by (lock_name)` across controllers yields the true global picture without double-counting.
+func (q *syncQueries) GetStateCountsByController(ctx context.Context, controllerName string) ([]StateCountRecord, error) {
+	var counts []StateCountRecord
+	err := q.sessionProxy.With(ctx, func(session db.Session) error {
+		counts = []StateCountRecord{}
+		return session.SQL().
+			Select(StateNameField, StateHeldField, db.Raw("COUNT(*) AS lock_count")).
+			From(q.config.StateTable).
+			Where(db.Cond{StateControllerField: controllerName}).
+			GroupBy(StateNameField, StateHeldField).
+			All(&counts)
+	})
+	return counts, err
 }
 
 func (q *syncQueries) GetOrderedQueue(ctx context.Context, sessionProxy *sqldb.SessionProxy, semaphoreName string, inactiveTimeout time.Duration) ([]StateRecord, error) {

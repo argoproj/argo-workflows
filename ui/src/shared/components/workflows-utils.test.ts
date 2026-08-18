@@ -14,5 +14,6 @@ describe('escapeInvalidMarkdown', () => {
         expect(escapeInvalidMarkdown('-# subheader')).toBe('subheader');
         expect(escapeInvalidMarkdown('\nthis\nis\ntext\nwith\nline\nbreaks\n')).toBe('this is text with line breaks');
         expect(escapeInvalidMarkdown('- list item\n* list item\n1. list item')).toBe('\\- list item \\* list item 1\\. list item');
+        expect(escapeInvalidMarkdown('**bold** notbold')).toBe('**bold** notbold');
     });
 });

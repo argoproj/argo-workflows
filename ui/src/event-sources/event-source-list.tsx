@@ -100,7 +100,7 @@ export function EventSourceList({match, location, history}: RouteComponentProps<
 
     return (
         <Page
-            title='EventSources'
+            title='Event Sources'
             toolbar={{
                 breadcrumbs: [
                     {title: 'Event Sources', path: uiUrl('event-sources')},
@@ -115,7 +115,7 @@ export function EventSourceList({match, location, history}: RouteComponentProps<
                         }
                     ]
                 },
-                tools: [<NamespaceFilter key='namespace-filter' value={namespace} onChange={setNamespace} />]
+                tools: [<NamespaceFilter key='namespace-filter' value={namespace} onChange={setNamespace} extraNamespaces={nsUtils.getUniqueNamespaces(eventSources)} />]
             }}>
             <ErrorNotice error={error} />
             {loading && <Loading />}

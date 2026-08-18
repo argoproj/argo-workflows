@@ -291,7 +291,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	if err != nil {
 		log.WithFatal().Error(ctx, err.Error())
 	}
-	workflowServer := workflow.NewServer(ctx, instanceIDService, offloadRepo, wfArchive, as.clients.Workflow, wfStore, wfStore, wftmplStore, cwftmplInformer, config.WorkflowDefaults, &resourceCacheNamespace)
+	workflowServer := workflow.NewServer(ctx, instanceIDService, offloadRepo, wfArchive, as.clients.Workflow, wfStore, wfStore, wftmplStore, cwftmplInformer, config.WorkflowDefaults, &resourceCacheNamespace, artifactRepositories)
 	grpcServer := as.newGRPCServer(ctx, instanceIDService, workflowServer, wftmplStore, cwftmplInformer, wfArchiveServer, syncServer, eventServer, config.Links, config.Columns, config.NavColor, config.WorkflowDefaults)
 	httpServer := as.newHTTPServer(ctx, port, artifactServer)
 
@@ -320,13 +320,25 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 
 	handler := grpcutil.NewMuxHandler(grpcServer, httpServer)
 
+	// Enable HTTP/1.1, HTTP/2 over TLS (via ALPN), and unencrypted HTTP/2 (h2c)
+	// so gRPC can be served alongside HTTP both with and without TLS. This
+	// replaces the deprecated h2c.NewHandler wrapper.
+	protocols := new(http.Protocols)
+	protocols.SetHTTP1(true)
+	protocols.SetHTTP2(true)
+	protocols.SetUnencryptedHTTP2(true)
+	muxServer := &http.Server{
+		Handler:   handler,
+		Protocols: protocols,
+	}
+
 	wftmplStore.Run(ctx, as.stopCh)
 	if cwftmplInformer != nil {
 		cwftmplInformer.Run(ctx, as.stopCh)
 	}
 	go eventServer.Run(ctx, as.stopCh)
 	go workflowServer.Run(as.stopCh)
-	go func() { as.checkServeErr(ctx, "httpServer", http.Serve(conn, handler)) }()
+	go func() { as.checkServeErr(ctx, "httpServer", muxServer.Serve(conn)) }()
 	url := "http://localhost" + address
 	if as.tlsConfig != nil {
 		url = "https://localhost" + address
@@ -456,6 +468,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 		mux.HandleFunc("/artifacts-by-uid/", artifactServer.GetOutputArtifactByUID)
 		mux.HandleFunc("/input-artifacts-by-uid/", artifactServer.GetInputArtifactByUID)
 		mux.HandleFunc("/artifact-files/", artifactServer.GetArtifactFile)
+		mux.HandleFunc("/upload-artifacts/", artifactServer.UploadInputArtifact)
 	}
 	mux.Handle("/oauth2/redirect", handlers.ProxyHeaders(http.HandlerFunc(as.oAuth2Service.HandleRedirect)))
 	mux.Handle("/oauth2/callback", handlers.ProxyHeaders(http.HandlerFunc(as.oAuth2Service.HandleCallback)))

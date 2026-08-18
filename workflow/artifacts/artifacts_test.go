@@ -64,3 +64,25 @@ func TestNewDriverS3(t *testing.T) {
 	assert.Equal(t, art.S3.SecretKeySecret.Key+"-secret", artDriver.SecretKey)
 	assert.Equal(t, art.S3.SessionTokenSecret.Key+"-secret", artDriver.SessionToken)
 }
+
+func TestNewDriverS3AddressingStyle(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	for _, style := range []string{"", "path", "virtual-hosted"} {
+		t.Run(style, func(t *testing.T) {
+			art := &wfv1.Artifact{
+				ArtifactLocation: wfv1.ArtifactLocation{S3: &wfv1.S3Artifact{
+					S3Bucket: wfv1.S3Bucket{
+						Endpoint:        "endpoint",
+						Bucket:          "bucket",
+						AddressingStyle: style,
+					},
+					Key: "art",
+				}},
+			}
+			got, err := newDriver(ctx, art, &mockResourceInterface{})
+			require.NoError(t, err)
+			artDriver := got.(*s3.ArtifactDriver)
+			assert.Equal(t, style, artDriver.AddressingStyle)
+		})
+	}
+}

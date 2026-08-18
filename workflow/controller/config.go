@@ -31,6 +31,7 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 	wfc.archiveLabelSelector = labels.Everything()
 	if wfc.throttler != nil {
 		wfc.throttler.UpdateParallelism(wfc.Config.Parallelism)
+		wfc.throttler.UpdateNamespaceParallelismDefault(wfc.Config.NamespaceParallelism)
 	}
 
 	persistence := wfc.Config.Persistence
@@ -86,6 +87,7 @@ func (wfc *WorkflowController) updateConfig(ctx context.Context) error {
 	logger.WithField("executorImage", wfc.executorImage()).
 		WithField("executorImagePullPolicy", wfc.executorImagePullPolicy()).
 		WithField("managedNamespace", wfc.GetManagedNamespace()).
+		WithField("initlessPod", wfc.isInitlessPodEnabled()).
 		Info(ctx, "")
 	return nil
 }
@@ -132,4 +134,12 @@ func (wfc *WorkflowController) executorImagePullPolicy() apiv1.PullPolicy {
 		return apiv1.PullPolicy(wfc.cliExecutorImagePullPolicy)
 	}
 	return wfc.Config.GetExecutor().ImagePullPolicy
+}
+
+// isInitlessPodEnabled reports whether this controller should produce init-less
+// workflow pods. Opt-in, controller-wide. Relies on the ImageVolume feature
+// (KEP-4639) to deliver the argoexec binary into `main` — Beta in K8s 1.33
+// behind a feature gate, GA in 1.36.
+func (wfc *WorkflowController) isInitlessPodEnabled() bool {
+	return wfc.Config.InitlessPod.IsEnabled()
 }

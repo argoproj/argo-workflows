@@ -25,8 +25,8 @@ func TestWorkflowTemplateRef(t *testing.T) {
 	// verify we copy these values
 	assert.Len(t, woc.volumes, 1, "volumes from workflow template")
 	// and these
-	assert.Equal(t, "my-sa", woc.globalParams["workflow.serviceAccountName"])
-	assert.Equal(t, "77", woc.globalParams["workflow.priority"])
+	assert.Equal(t, "my-sa", woc.globalParams()["workflow.serviceAccountName"])
+	assert.Equal(t, "77", woc.globalParams()["workflow.priority"])
 }
 
 func TestWorkflowTemplateRefWithArgs(t *testing.T) {
@@ -46,7 +46,7 @@ func TestWorkflowTemplateRefWithArgs(t *testing.T) {
 		defer cancel()
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		woc.operate(ctx)
-		assert.Equal(t, "test", woc.globalParams["workflow.parameters.param1"])
+		assert.Equal(t, "test", woc.globalParams()["workflow.parameters.param1"])
 	})
 }
 
@@ -67,7 +67,7 @@ func TestWorkflowTemplateRefWithWorkflowTemplateArgs(t *testing.T) {
 		defer cancel()
 		woc := newWorkflowOperationCtx(ctx, wf, controller)
 		woc.operate(ctx)
-		assert.Equal(t, "test", woc.globalParams["workflow.parameters.param1"])
+		assert.Equal(t, "test", woc.globalParams()["workflow.parameters.param1"])
 	})
 
 	t.Run("CheckMergingWFDefaults", func(t *testing.T) {

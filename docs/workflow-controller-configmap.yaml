@@ -267,6 +267,10 @@ data:
 
   # enable persistence using postgres
   persistence: |
+    # Timeout in seconds for establishing a database connection. Default 5s.
+    # Prevents the controller from hanging indefinitely when the DB is unreachable
+    # or half-open; on timeout it fails fast so Kubernetes can restart it.
+    connectionTimeoutSeconds: 5
     connectionPool:
       maxIdleConns: 100
       maxOpenConns: 0
@@ -332,6 +336,11 @@ data:
   synchronization: |
     # Enable or disable database synchronization API (default: false)
     enableAPI: false
+
+    # Timeout in seconds for establishing a database connection. Default 5s.
+    # Prevents the controller from hanging indefinitely when the DB is unreachable
+    # or half-open; on timeout it fails fast so Kubernetes can restart it.
+    connectionTimeoutSeconds: 5
 
     # Connection pool settings, similar to persistence connectionPool
     connectionPool:
@@ -486,3 +495,9 @@ data:
   #     Workflow cannot run an arbitrary Workflow, use this option.
   workflowRestrictions: |
     templateReferencing: Strict
+  
+  # disableAgentPodCreation disables the creation of agent pods for HTTP and Plugin templates. 
+  # This is useful when external agents are responsible for executing these templates and the controller should not create agent pods. 
+  # Note: when this is set to true, HTTP templates will not be reconciled and the controller will not attempt to create agent pods for them.
+  # Defaults to false
+  disableAgentPodCreation: "false"

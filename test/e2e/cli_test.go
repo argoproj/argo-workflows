@@ -3,8 +3,18 @@
 package e2e
 
 import (
+	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/tls"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
+	"math/big"
+	"net"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,11 +24,15 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/peer"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/yaml"
 
+	infopkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/info"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/test/e2e/fixtures"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
@@ -303,7 +317,7 @@ func (s *CLISuite) TestLogs() {
 	})
 	s.Run("ContainerLogs", func() {
 		s.Given().
-			RunCli([]string{"logs", name, name, "-c", "wait"}, func(t *testing.T, output string, err error) {
+			RunCli([]string{"logs", name, name, "-c", fixtures.AuxContainerName()}, func(t *testing.T, output string, err error) {
 				require.NoError(t, err)
 				assert.Contains(t, output, "Executor")
 			})
@@ -2114,6 +2128,248 @@ func (s *CLISuite) TestWorkflowConvert() {
 	})
 }
 
+func (s *CLISuite) TestClientCerts() {
+	s.Run("gRPC", func() {
+		tlsServerAddr, clientCertPath, clientKeyPath, caCertPath, receivedCertCh := s.startGRPCTLSServerWithClientAuth()
+		s.runCliWithClientCerts(tlsServerAddr, clientCertPath, clientKeyPath, caCertPath, []string{"version", "--argo-http1=false"}, receivedCertCh)
+	})
+	s.Run("HTTP1", func() {
+		tlsServerAddr, clientCertPath, clientKeyPath, caCertPath, receivedCertCh := s.startHTTP1TLSServerWithClientAuth()
+		s.runCliWithClientCerts(tlsServerAddr, clientCertPath, clientKeyPath, caCertPath, []string{"version", "--argo-http1"}, receivedCertCh)
+	})
+}
+
+func (s *CLISuite) startGRPCTLSServerWithClientAuth() (string, string, string, string, chan bool) {
+	s.T().Helper()
+	tlsConfig, clientCertPath, clientKeyPath, caCertPath, expectedSerialNumber := s.clientAuthTLSConfig()
+	var listenConfig net.ListenConfig
+	listener, err := listenConfig.Listen(s.T().Context(), "tcp", "localhost:0")
+	if err != nil {
+		s.T().Fatal(err)
+	}
+	receivedCertCh := make(chan bool, 1)
+	server := grpc.NewServer(grpc.Creds(credentials.NewTLS(tlsConfig)))
+	infopkg.RegisterInfoServiceServer(server, &clientCertInfoServer{
+		receivedCertCh:       receivedCertCh,
+		expectedSerialNumber: expectedSerialNumber,
+	})
+	go func() {
+		_ = server.Serve(listener)
+	}()
+	s.T().Cleanup(func() {
+		server.Stop()
+		_ = listener.Close()
+	})
+	return listener.Addr().String(), clientCertPath, clientKeyPath, caCertPath, receivedCertCh
+}
+
+func (s *CLISuite) startHTTP1TLSServerWithClientAuth() (string, string, string, string, chan bool) {
+	s.T().Helper()
+	tlsConfig, clientCertPath, clientKeyPath, caCertPath, expectedSerialNumber := s.clientAuthTLSConfig()
+	listener, err := tls.Listen("tcp", "localhost:0", tlsConfig)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+	receivedCertCh := make(chan bool, 1)
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		receivedCertCh <- hasExpectedClientCertificate(r.TLS.PeerCertificates, expectedSerialNumber)
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"version": "v0.0.0"}`))
+	})
+	server := &http.Server{Handler: handler}
+	go func() {
+		_ = server.Serve(listener)
+	}()
+	s.T().Cleanup(func() {
+		_ = server.Close()
+		_ = listener.Close()
+	})
+	return listener.Addr().String(), clientCertPath, clientKeyPath, caCertPath, receivedCertCh
+}
+
+func (s *CLISuite) clientAuthTLSConfig() (*tls.Config, string, string, string, *big.Int) {
+	s.T().Helper()
+	tmpDir := s.T().TempDir()
+	caCert, caKey, err := generateCert(nil, nil, true, "Test CA")
+	if err != nil {
+		s.T().Fatal(err)
+	}
+	serverCert, serverKey, err := generateCert(caCert, caKey, false, "localhost")
+	if err != nil {
+		s.T().Fatal(err)
+	}
+	clientCert, clientKey, err := generateCert(caCert, caKey, false, "client")
+	if err != nil {
+		s.T().Fatal(err)
+	}
+
+	caFile := filepath.Join(tmpDir, "ca.crt")
+	err = os.WriteFile(caFile, pemEncode(caCert, "CERTIFICATE"), 0o600)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+
+	serverCertFile := filepath.Join(tmpDir, "server.crt")
+	err = os.WriteFile(serverCertFile, pemEncode(serverCert, "CERTIFICATE"), 0o600)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+	serverKeyFile := filepath.Join(tmpDir, "server.key")
+	err = os.WriteFile(serverKeyFile, pemEncode(serverKey, "RSA PRIVATE KEY"), 0o600)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+
+	clientCertPath := filepath.Join(tmpDir, "client.crt")
+	err = os.WriteFile(clientCertPath, pemEncode(clientCert, "CERTIFICATE"), 0o600)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+	clientKeyPath := filepath.Join(tmpDir, "client.key")
+	err = os.WriteFile(clientKeyPath, pemEncode(clientKey, "RSA PRIVATE KEY"), 0o600)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+
+	certPool := x509.NewCertPool()
+	certPool.AddCert(caCert)
+
+	serverTLSCert, err := tls.LoadX509KeyPair(serverCertFile, serverKeyFile)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+
+	tlsConfig := &tls.Config{
+		Certificates: []tls.Certificate{serverTLSCert},
+		ClientAuth:   tls.RequireAndVerifyClientCert,
+		ClientCAs:    certPool,
+		NextProtos:   []string{"h2", "http/1.1"},
+		MinVersion:   tls.VersionTLS12,
+	}
+	return tlsConfig, clientCertPath, clientKeyPath, caFile, clientCert.SerialNumber
+}
+
+type clientCertInfoServer struct {
+	infopkg.UnimplementedInfoServiceServer
+	receivedCertCh       chan<- bool
+	expectedSerialNumber *big.Int
+}
+
+func (s *clientCertInfoServer) GetVersion(ctx context.Context, _ *infopkg.GetVersionRequest) (*wfv1.Version, error) {
+	peerInfo, ok := peer.FromContext(ctx)
+	if !ok {
+		s.receivedCertCh <- false
+		return &wfv1.Version{Version: "v0.0.0"}, nil
+	}
+	tlsInfo, ok := peerInfo.AuthInfo.(credentials.TLSInfo)
+	if !ok {
+		s.receivedCertCh <- false
+		return &wfv1.Version{Version: "v0.0.0"}, nil
+	}
+	s.receivedCertCh <- hasExpectedClientCertificate(tlsInfo.State.PeerCertificates, s.expectedSerialNumber)
+	return &wfv1.Version{Version: "v0.0.0"}, nil
+}
+
+func hasExpectedClientCertificate(certificates []*x509.Certificate, expectedSerialNumber *big.Int) bool {
+	return len(certificates) > 0 && certificates[0].SerialNumber.Cmp(expectedSerialNumber) == 0
+}
+
+func (s *CLISuite) runCliWithClientCerts(tlsServerAddr, clientCertPath, clientKeyPath, caCertPath string, args []string, receivedCertCh chan bool) {
+	s.T().Helper()
+
+	select {
+	case <-receivedCertCh:
+	default:
+	}
+
+	baseArgs := []string{
+		"--argo-server", tlsServerAddr,
+		"--client-certificate", clientCertPath,
+		"--client-key", clientKeyPath,
+		"--certificate-authority", caCertPath,
+		"--secure",
+	}
+
+	baseArgs = append(baseArgs, args...)
+
+	s.Given().RunCli(baseArgs, func(t *testing.T, output string, err error) {
+		require.NoError(t, err)
+	})
+
+	select {
+	case received := <-receivedCertCh:
+		s.True(received, "Server should have received client certificate")
+	case <-time.After(5 * time.Second):
+		s.Fail("Timed out waiting for request")
+	}
+}
+
 func TestCLISuite(t *testing.T) {
 	suite.Run(t, new(CLISuite))
+}
+
+func generateCert(caCert *x509.Certificate, caKey any, isCA bool, commonName string) (*x509.Certificate, *rsa.PrivateKey, error) {
+	priv, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	notBefore := time.Now()
+	notAfter := notBefore.Add(time.Hour)
+
+	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
+	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	template := x509.Certificate{
+		SerialNumber: serialNumber,
+		Subject: pkix.Name{
+			CommonName: commonName,
+		},
+		NotBefore:             notBefore,
+		NotAfter:              notAfter,
+		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
+		BasicConstraintsValid: true,
+	}
+
+	if isCA {
+		template.IsCA = true
+		template.KeyUsage |= x509.KeyUsageCertSign
+	} else {
+		template.IPAddresses = []net.IP{net.ParseIP("127.0.0.1")}
+		template.DNSNames = []string{"localhost"}
+	}
+
+	parent := &template
+	parentKey := priv
+	if caCert != nil {
+		parent = caCert
+		parentKey = caKey.(*rsa.PrivateKey)
+	}
+
+	derBytes, err := x509.CreateCertificate(rand.Reader, &template, parent, &priv.PublicKey, parentKey)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	cert, err := x509.ParseCertificate(derBytes)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return cert, priv, nil
+}
+
+func pemEncode(data any, typeStr string) []byte {
+	var bytes []byte
+	switch d := data.(type) {
+	case *x509.Certificate:
+		bytes = d.Raw
+	case *rsa.PrivateKey:
+		bytes = x509.MarshalPKCS1PrivateKey(d)
+	}
+	return pem.EncodeToMemory(&pem.Block{Type: typeStr, Bytes: bytes})
 }

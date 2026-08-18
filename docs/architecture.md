@@ -22,6 +22,10 @@ The internals of a Pod are also shown. Each Step and each DAG Task cause a Pod t
 
 Look in [`cmd/argoexec`](https://github.com/argoproj/argo-workflows/blob/main/cmd/argoexec) for this code.
 
+### Init-less pod layout (opt-in, beta)
+
+When the controller is configured with `initlessPod.enabled: true`, workflow pods use an alternate two-container layout with zero init containers. The `argoexec` binary is delivered into `main` via a Kubernetes image volume ([KEP-4639](https://kep.k8s.io/4639) — Beta in 1.33 behind a feature gate, GA in 1.36), and a new `supervisor` container takes over both the pre-main responsibilities of the legacy init container (template write, script staging, input artifact download) and the post-main responsibilities of the legacy `wait` container (observe main, capture outputs, save artifacts and logs). Artifact plugins run as regular sidecars rather than as init containers, and `supervisor` drives each sidecar for both Load (pre-main) and Save (post-main). See [Init-less Pod Layout](initless-pod.md) for details.
+
 ![diagram](assets/overview.jpeg)
 
 ---
@@ -36,7 +40,7 @@ The following diagram shows the process for reconciliation, whereby a set of wor
 
 ## Various configurations for Argo UI and Argo Server
 
-The top diagram below shows what happens if you run "make start UI=true" locally (recommended if you need the UI during local development). This runs a React application (`Webpack` HTTP server) locally which serves the `index.html` and typescript files from port 8080. From the typescript code there are calls made to the back end API (Argo Server) at port 2746. The `Webpack` HTTP server is configured for hot reload, meaning the UI will update automatically based on local code changes.
+The top diagram below shows what happens when you run "make start" locally. This runs a React application (`Webpack` HTTP server) locally which serves the `index.html` and typescript files from port 8080. From the typescript code there are calls made to the back end API (Argo Server) at port 2746. The `Webpack` HTTP server is configured for hot reload, meaning the UI will update automatically based on local code changes.
 
 The second diagram is an alternative approach for rare occasions that the React files are broken and you're doing local development. In this case, everything is served from the Argo Server at port 2746.
 

@@ -950,6 +950,74 @@ func (_c *SyncQueries_GetSemaphoreLimit_Call) RunAndReturn(run func(ctx context.
 	return _c
 }
 
+// GetStateCountsByController provides a mock function for the type SyncQueries
+func (_mock *SyncQueries) GetStateCountsByController(ctx context.Context, controllerName string) ([]db.StateCountRecord, error) {
+	ret := _mock.Called(ctx, controllerName)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetStateCountsByController")
+	}
+
+	var r0 []db.StateCountRecord
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) ([]db.StateCountRecord, error)); ok {
+		return returnFunc(ctx, controllerName)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) []db.StateCountRecord); ok {
+		r0 = returnFunc(ctx, controllerName)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]db.StateCountRecord)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, controllerName)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// SyncQueries_GetStateCountsByController_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetStateCountsByController'
+type SyncQueries_GetStateCountsByController_Call struct {
+	*mock.Call
+}
+
+// GetStateCountsByController is a helper method to define mock.On call
+//   - ctx context.Context
+//   - controllerName string
+func (_e *SyncQueries_Expecter) GetStateCountsByController(ctx interface{}, controllerName interface{}) *SyncQueries_GetStateCountsByController_Call {
+	return &SyncQueries_GetStateCountsByController_Call{Call: _e.mock.On("GetStateCountsByController", ctx, controllerName)}
+}
+
+func (_c *SyncQueries_GetStateCountsByController_Call) Run(run func(ctx context.Context, controllerName string)) *SyncQueries_GetStateCountsByController_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *SyncQueries_GetStateCountsByController_Call) Return(stateCountRecords []db.StateCountRecord, err error) *SyncQueries_GetStateCountsByController_Call {
+	_c.Call.Return(stateCountRecords, err)
+	return _c
+}
+
+func (_c *SyncQueries_GetStateCountsByController_Call) RunAndReturn(run func(ctx context.Context, controllerName string) ([]db.StateCountRecord, error)) *SyncQueries_GetStateCountsByController_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // InsertControllerHealth provides a mock function for the type SyncQueries
 func (_mock *SyncQueries) InsertControllerHealth(ctx context.Context, record *db.ControllerHealthRecord) error {
 	ret := _mock.Called(ctx, record)

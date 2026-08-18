@@ -132,7 +132,7 @@ definitions:
             globalName:
                 description: |-
                     GlobalName exports an output artifact to the global scope, making it available as
-                    '{{workflow.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts
+                    workflow.outputs.artifacts.XXXX and in workflow.status.outputs.artifacts
                 type: string
             hdfs:
                 $ref: '#/definitions/HDFSArtifact'
@@ -249,7 +249,7 @@ definitions:
             globalName:
                 description: |-
                     GlobalName exports an output artifact to the global scope, making it available as
-                    '{{workflow.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts
+                    workflow.outputs.artifacts.XXXX and in workflow.status.outputs.artifacts
                 type: string
             hdfs:
                 $ref: '#/definitions/HDFSArtifact'
@@ -1953,6 +1953,13 @@ definitions:
                 items:
                     $ref: '#/definitions/Header'
                 type: array
+            saveStreamViaFile:
+                description: |-
+                    SaveStreamViaFile buffers a streamed upload to a temporary file before sending it,
+                    so a 307/308 redirect (e.g. webHDFS) can be followed by re-sending the body. When
+                    false (the default) SaveStream sends the reader directly and cannot follow such a
+                    redirect, since a one-shot reader cannot be replayed.
+                type: boolean
             url:
                 description: URL of the artifact
                 type: string
@@ -2774,7 +2781,7 @@ definitions:
             globalName:
                 description: |-
                     GlobalName exports an output parameter to the global scope, making it available as
-                    '{{workflow.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters
+                    workflow.outputs.parameters.XXXX and in workflow.status.outputs.parameters
                 type: string
             name:
                 description: |-
@@ -3321,6 +3328,47 @@ definitions:
             when volume is mounted.
             +enum
         type: string
+    PodResourceClaim:
+        description: |-
+            It adds a name to it that uniquely identifies the ResourceClaim inside the Pod.
+            Containers that need access to the ResourceClaim reference it with this name.
+        properties:
+            name:
+                description: |-
+                    Name uniquely identifies this resource claim inside the pod.
+                    This must be a DNS_LABEL.
+                type: string
+            resourceClaimName:
+                description: |-
+                    ResourceClaimName is the name of a ResourceClaim object in the same
+                    namespace as this pod.
+
+                    Exactly one of ResourceClaimName and ResourceClaimTemplateName must
+                    be set.
+                type: string
+            resourceClaimTemplateName:
+                description: |-
+                    ResourceClaimTemplateName is the name of a ResourceClaimTemplate
+                    object in the same namespace as this pod.
+
+                    The template will be used to create a new ResourceClaim, which will
+                    be bound to this pod. When this pod is deleted, the ResourceClaim
+                    will also be deleted. The pod name and resource name, along with a
+                    generated component, will be used to form a unique name for the
+                    ResourceClaim, which will be recorded in pod.status.resourceClaimStatuses.
+
+                    This field is immutable and no changes will be made to the
+                    corresponding ResourceClaim by the control plane after creating the
+                    ResourceClaim.
+
+                    Exactly one of ResourceClaimName and ResourceClaimTemplateName must
+                    be set.
+                type: string
+        title: |-
+            PodResourceClaim references exactly one ResourceClaim, either directly
+            or by naming a ResourceClaimTemplate which is then turned into a ResourceClaim
+            for the pod.
+        type: object
     PodSELinuxChangePolicy:
         title: PodSELinuxChangePolicy defines how the container's SELinux label is applied to all volumes used by the Pod.
         type: string
@@ -3915,6 +3963,19 @@ definitions:
         properties:
             accessKeySecret:
                 $ref: '#/definitions/SecretKeySelector'
+            addressingStyle:
+                description: |-
+                    AddressingStyle defines how buckets are addressed by the S3 client.
+                    This is required for some S3-compatible providers that only support
+                    virtual-hosted-style bucket addressing.
+
+                    Valid values are:
+                    "" (default, auto-detect)
+                    "path"
+                    "virtual-hosted"
+
+                    +kubebuilder:validation:Enum="";path;virtual-hosted
+                type: string
             bucket:
                 description: Bucket is the name of the bucket
                 type: string
@@ -4746,8 +4807,16 @@ definitions:
                     +kubebuilder:validation:Minimum=1
                 format: int64
                 type: integer
+            pendingTimeout:
+                description: |-
+                    PendingTimeout allows to set the maximum time spent in pending status counting from the node's start time.
+                    It is enforced by the controller, so a pod that starts running just as the timeout expires may still be failed.
+                    This duration may not be applied to Step or DAG templates.
+                type: string
             plugin:
                 $ref: '#/definitions/Plugin'
+            podResources:
+                $ref: '#/definitions/ResourceRequirements'
             podSpecPatch:
                 description: |-
                     PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
@@ -4758,6 +4827,19 @@ definitions:
                 type: string
             resource:
                 $ref: '#/definitions/ResourceTemplate'
+            resourceClaims:
+                description: |-
+                    ResourceClaims defines the ResourceClaims that must be allocated and reserved before this template's pod is allowed to start.
+                    Each entry names either an existing ResourceClaim or a ResourceClaimTemplate in the workflow's namespace, and containers ask for one by name through resources.claims.
+                    Replaces the workflow-level resourceClaims as a whole rather than merging with it.
+                    Not supported for a template that creates no pod: Steps, DAG and Suspend, which orchestrate other templates, and HTTP and Plugin, which run on the shared agent pod.
+                    A template reached through a templateRef keeps its own claims, and falls back to those of the workflow calling it rather than to the spec-level claims of the WorkflowTemplate it was defined in.
+                    Requires the DynamicResourceAllocation feature gate to be enabled on the cluster.
+                    +listType=atomic
+                    +optional
+                items:
+                    $ref: '#/definitions/PodResourceClaim'
+                type: array
             retryStrategy:
                 $ref: '#/definitions/RetryStrategy'
             schedulerName:
@@ -5185,7 +5267,7 @@ definitions:
             parameter:
                 description: |-
                     Parameter reference to a step or dag task in which to retrieve an output parameter value from
-                    (e.g. '{{steps.mystep.outputs.myparam}}')
+                    (e.g. steps.mystep.outputs.myparam)
                 type: string
             path:
                 description: Path in the container to retrieve an output parameter value from in container templates

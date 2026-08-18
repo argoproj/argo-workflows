@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workflow-controller
+spec:
+  replicas: 1
+  template:
+    spec:
+      containers:
+        - name: workflow-controller
+          # Tilt imports freshly-built images into the k3d node before
+          # deploying, so the kubelet always finds them locally. IfNotPresent
+          # (rather than the e2e base's Never) avoids a terminal
+          # ErrImageNeverPull if a pod is ever scheduled ahead of an import.
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: ALWAYS_OFFLOAD_NODE_STATUS
+              value: "false"
+            - name: ARCHIVED_WORKFLOW_GC_PERIOD
+              value: 30s
+            - name: ARGO_LOGLEVEL
+              value: info
+            - name: ARGO_MANAGED_NAMESPACE
+              value: argo
+            - name: ARGO_NAMESPACE
+              value: argo
+            - name: ARGO_NAMESPACED
+              value: "true"
+            - name: ARGO_PROGRESS_PATCH_TICK_DURATION
+              value: 7s
+            - name: ARGO_REMOVE_PVC_PROTECTION_FINALIZER
+              value: "true"
+            - name: DEFAULT_REQUEUE_TIME
+              value: 1s
+            - name: OFFLOAD_NODE_STATUS_TTL
+              value: 30s
+            - name: UPPERIO_DB_DEBUG
+              value: "1"
+            - name: WORKFLOW_GC_PERIOD
+              value: 30s

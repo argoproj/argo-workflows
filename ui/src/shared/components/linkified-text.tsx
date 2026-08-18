@@ -1,4 +1,4 @@
-import LinkifyIt from 'linkify-it';
+import {LinkifyIt} from 'linkify-it';
 import React from 'react';
 
 interface Props {

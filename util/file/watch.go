@@ -113,7 +113,7 @@ func watchFilePoll(ctx context.Context, path string, onChange func()) error {
 				}
 				return err
 			}
-			if last == nil || fi.ModTime() != last.ModTime() || fi.Size() != last.Size() {
+			if last == nil || !fi.ModTime().Equal(last.ModTime()) || fi.Size() != last.Size() {
 				onChange()
 				last = fi
 			}

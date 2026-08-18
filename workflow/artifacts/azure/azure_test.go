@@ -157,3 +157,20 @@ func TestIsSASAccountKey(t *testing.T) {
 		})
 	}
 }
+
+// TestArtifactDriverMissingAccountKey tests that newAzureContainerClient — the
+// first step of SaveStream — fails without credentials
+func TestArtifactDriverMissingAccountKey(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	driver := ArtifactDriver{
+		AccountKey:  "", // No account key
+		Container:   "test",
+		Endpoint:    "http://127.0.0.1:10000/devstoreaccount1",
+		UseSDKCreds: false,
+	}
+
+	_, err := driver.newAzureContainerClient(ctx)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "accountKey secret is required")
+}

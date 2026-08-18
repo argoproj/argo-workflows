@@ -14,6 +14,7 @@ export const icons: {[type: string]: Icon} = {
     awsLambdaTrigger: compute,
     argoWorkflowTrigger: 'stream',
     azureEventsHubEventSource: storage,
+    azureQueueStorageEventSource: queue,
     bitbucketserverEventSource: git,
     calendarEventSource: 'clock',
     collapsed: 'ellipsis-h',

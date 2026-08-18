@@ -68,7 +68,7 @@ spec:
 Multiple controllers can share locks using a database as an intermediary.
 This would normally be used to share locks across multiple clusters, but can also be used to share locks across multiple controllers in the same cluster.
 
-To configure multiple controller locks, you need to set up a database (either PostgreSQL or MySQL) and [configure it](#database-configuration) in the workflow-controller-configmap ConfigMap.
+To configure multiple controller locks, you need to set up a database (either PostgreSQL, MySQL, or MariaDB) and [configure it](#database-configuration) in the workflow-controller-configmap ConfigMap.
 All controllers which want to share locks must share all of these tables.
 If you do not configure the database you will get an error if you try to use database locks.
 

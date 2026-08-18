@@ -1,0 +1,37 @@
+# Extra permissions for the in-cluster workflow controller. The old kit flow
+# ran the controller as a host process with the developer/CI kubeconfig
+# (cluster-admin), which masked these:
+# - memoization writes its cache to ConfigMaps; per docs/memoization.md the
+#   controller role must be extended with create/update to use it
+# - executor plugins: the controller prunes consumed nodes from the
+#   WorkflowTaskSet status
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: in-cluster-argo-extra
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - create
+      - update
+  - apiGroups:
+      - argoproj.io
+    resources:
+      - workflowtasksets/status
+    verbs:
+      - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: in-cluster-argo-extra
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: in-cluster-argo-extra
+subjects:
+  - kind: ServiceAccount
+    name: argo
