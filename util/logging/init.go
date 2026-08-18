@@ -24,23 +24,11 @@ type storage struct {
 	out      io.Writer // for testing purposes only
 }
 
-<<<<<<< HEAD
 var initStorage = &storage{
 	initLogs: make([]initLog, 0),
 	mutex:    sync.Mutex{},
-	fatal:    false,
 	out:      os.Stderr,
 }
-=======
-var (
-	initStorage = &storage{
-		initLogs: make([]initLog, 0),
-		mutex:    sync.Mutex{},
-		out:      os.Stderr,
-	}
-	setupOnce sync.Once
-)
->>>>>>> b3a1a02df (refactor: stop the logging module from being responsible for fatal)
 
 var _ Logger = &initLogger{}
 
