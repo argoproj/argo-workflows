@@ -708,7 +708,7 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 			// (docs/lifecyclehook.md); for an expanded task that single evaluation is the
 			// task-level one, done against the TaskGroup node below.
 			if !task.ShouldExpand() {
-				if _, err := woc.executeTmplLifeCycleHook(ctx, scope, task.Hooks, node, dagCtx.boundaryID, dagCtx.tmplCtx, varkeys.TasksNodeRef, taskName); err != nil {
+				if _, err = woc.executeTmplLifeCycleHook(ctx, scope, task.Hooks, node, dagCtx.boundaryID, dagCtx.tmplCtx, varkeys.TasksNodeRef, taskName); err != nil {
 					woc.markNodeError(ctx, node.Name, err)
 					return
 				}

@@ -4817,11 +4817,22 @@ func TestDAGHookWithItemsFiresOnce(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	woc := newWoc(ctx, *wf)
 
-	// Drive the workflow to completion, failing task pods and succeeding hook pods.
-	for i := 0; i < 8 && !woc.wf.Status.Phase.Completed(); i++ {
+	// Fail every expanded item, stopping as soon as the hook is scheduled so that the
+	// hook's own pod is not failed along with them.
+	var hookNode *wfv1.NodeStatus
+	for range 8 {
 		woc.operate(ctx)
+		if hookNode = woc.wf.Status.Nodes.FindByDisplayName("step-a.hooks.notify"); hookNode != nil {
+			break
+		}
 		makeNonTerminalPodsPhase(ctx, woc, v1.PodFailed)
 	}
+	require.NotNil(t, hookNode, "hook should be scheduled once the task group fails")
+
+	// Succeed the hook pod only; the item pods are already terminal.
+	makeNonTerminalPodsPhase(ctx, woc, v1.PodSucceeded)
+	woc.operate(ctx)
+	require.True(t, woc.wf.Status.Phase.Completed(), "workflow should have completed")
 
 	var hooked []string
 	for _, node := range woc.wf.Status.Nodes {
@@ -4830,11 +4841,18 @@ func TestDAGHookWithItemsFiresOnce(t *testing.T) {
 		}
 	}
 
-	assert.Len(t, hooked, 1, "hook must fire once for the whole task, got: %v", hooked)
-	if len(hooked) == 1 {
-		assert.Equal(t, "dag-hook-withitems-fires-once.step-a.hooks.notify", hooked[0],
-			"hook must be raised on the task node, not on an expanded item")
-	}
+	require.Len(t, hooked, 1, "hook must fire once for the whole task, got: %v", hooked)
+	assert.Equal(t, "dag-hook-withitems-fires-once.step-a.hooks.notify", hooked[0],
+		"hook must be raised on the task node, not on an expanded item")
+
+	hookNode = woc.wf.Status.Nodes.FindByDisplayName("step-a.hooks.notify")
+	require.NotNil(t, hookNode)
+	assert.Equal(t, wfv1.NodeSucceeded, hookNode.Phase)
+
+	stepB := woc.wf.Status.Nodes.FindByDisplayName("step-b")
+	require.NotNil(t, stepB)
+	assert.Equal(t, wfv1.NodeOmitted, stepB.Phase, "dependent must be omitted only after the hook")
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
 }
 
 // TestDAGHookRetryTaskOutbound verifies a succeeded lifecycle hook on a retrying task does

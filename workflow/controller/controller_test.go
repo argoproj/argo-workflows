@@ -566,8 +566,9 @@ func makePodsPhase(ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhas
 // makeNonTerminalPodsPhase is makePodsPhase but leaves pods that have already reached a terminal
 // phase alone. Use it when a later reconcile should only advance the pods created since the
 // previous one, e.g. succeeding a hook pod without reviving the task pods that failed earlier.
-func makeNonTerminalPodsPhase(ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhase, with ...with) {
-	setPodsPhase(ctx, woc, phase, true, with...)
+// Takes no `with` options: setPodsPhase still accepts them if a caller ever needs them here.
+func makeNonTerminalPodsPhase(ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhase) {
+	setPodsPhase(ctx, woc, phase, true)
 }
 
 func setPodsPhase(ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhase, skipTerminal bool, with ...with) {
