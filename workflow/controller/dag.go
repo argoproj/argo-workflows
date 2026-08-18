@@ -688,6 +688,7 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 		if node.Completed() {
 			scope, err := woc.buildLocalScopeFromTask(ctx, dagCtx, task)
 			if err != nil {
+				log.WithError(err).Error(ctx, "Failed to build local scope from task")
 				woc.markNodeError(ctx, node.Name, err)
 				return
 			}
