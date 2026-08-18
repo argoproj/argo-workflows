@@ -3387,9 +3387,21 @@ func (woc *wfOperationCtx) getOutboundNodes(ctx context.Context, nodeID string) 
 		}
 		return outboundNodes
 	case wfv1.NodeTypeRetry:
-		numChildren := len(node.Children)
-		if numChildren > 0 {
-			return []string{node.Children[numChildren-1]}
+		// Lifecycle hook nodes also become children of a retry node, but they are not retry
+		// attempts and must not be reported as the task's outbound node. A dependent task is
+		// wired beneath its dependency's outbound nodes, so a succeeded hook would become the
+		// parent of the dependents of a failed task, and assessDAGPhase would propagate the
+		// hook's phase down that branch - reporting a failed workflow as Succeeded.
+		// possiblyGetRetryChildNode and getRetryNodeChildrenIds filter hooked children for
+		// the same reason.
+		for i := range slices.Backward(node.Children) {
+			childNode := getChildNodeIndex(node, woc.wf.Status.Nodes, i)
+			if childNode == nil {
+				continue
+			}
+			if childNode.NodeFlag == nil || !childNode.NodeFlag.Hooked {
+				return []string{childNode.ID}
+			}
 		}
 	case wfv1.NodeTypeSteps, wfv1.NodeTypeDAG:
 		if node.MemoizationStatus != nil && node.MemoizationStatus.Hit {
