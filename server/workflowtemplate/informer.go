@@ -51,6 +51,7 @@ func (wti *Informer) Run(ctx context.Context, stopCh <-chan struct{}) {
 	) {
 		logging.RequireLoggerFromContext(ctx).Error(ctx, "Timed out waiting for caches to sync")
 		logging.Exit(1)
+		return
 	}
 }
 
@@ -59,6 +60,7 @@ func (wti *Informer) Getter(ctx context.Context, namespace string) templateresol
 	if wti.informer == nil {
 		logging.RequireLoggerFromContext(ctx).Error(ctx, "Template informer not started")
 		logging.Exit(1)
+		return nil
 	}
 	if namespace == "" {
 		namespace = wti.managedNamespace

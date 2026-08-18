@@ -70,6 +70,7 @@ func init() {
 	if err != nil {
 		logging.InitLogger().WithError(err).Error(context.Background(), "failed to parse time")
 		logging.Exit(1)
+		return
 	}
 	cronSyncPeriod = env.LookupEnvDurationOr(logging.InitLoggerInContext(), "CRON_SYNC_PERIOD", 10*time.Second)
 	logging.InitLogger().WithField("cronSyncPeriod", cronSyncPeriod).Info(context.Background(), "cron config")
@@ -115,6 +116,7 @@ func (cc *Controller) Run(ctx context.Context) {
 	if err != nil {
 		cc.logger.Error(ctx, err.Error())
 		logging.Exit(1)
+		return
 	}
 
 	wfInformer := util.NewWorkflowInformer(ctx, cc.dynamicInterface, cc.managedNamespace, cronWorkflowResyncPeriod,
