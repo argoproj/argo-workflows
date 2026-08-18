@@ -647,5 +647,4 @@ func (as *argoServer) checkServeErr(ctx context.Context, name string, err error)
 	}
 	log.WithFields(nameField).WithError(err).Error(ctx, "server failure")
 	logging.Exit(1)
-	return
 }
