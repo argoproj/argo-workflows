@@ -701,9 +701,17 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 			// child before returning, so a dependent cannot proceed in this same sweep. No
 			// early return is needed here, and returning would abandon the remaining
 			// expandedTasks, the taskGroupNode phase marking below, and runOnExitNode.
-			if _, err := woc.executeTmplLifeCycleHook(ctx, scope, task.Hooks, node, dagCtx.boundaryID, dagCtx.tmplCtx, varkeys.TasksNodeRef, taskName); err != nil {
-				woc.markNodeError(ctx, node.Name, err)
-				return
+			//
+			// Skip expanded tasks: `node` is the individual item here, so hooking it would
+			// create one hook node per item, and each would be fed the task-level hook spec
+			// rather than the item-substituted one in `t`. A LifecycleHook "executes once"
+			// (docs/lifecyclehook.md); for an expanded task that single evaluation is the
+			// task-level one, done against the TaskGroup node below.
+			if !task.ShouldExpand() {
+				if _, err := woc.executeTmplLifeCycleHook(ctx, scope, task.Hooks, node, dagCtx.boundaryID, dagCtx.tmplCtx, varkeys.TasksNodeRef, taskName); err != nil {
+					woc.markNodeError(ctx, node.Name, err)
+					return
+				}
 			}
 			// if the node type is NodeTypeRetry, and its last child is completed, it will be completed after woc.executeTemplate;
 			hasOnExitNode, onExitNode, err := woc.runOnExitNode(ctx, task.GetExitHook(woc.execWf.Spec.Arguments), node, dagCtx.boundaryID, dagCtx.tmplCtx, varkeys.TasksNodeRef, taskName, scope)
@@ -726,7 +734,25 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 				groupPhase = node.Phase
 			}
 		}
-		woc.markNodePhase(ctx, taskGroupNode.Name, groupPhase)
+		groupNode := woc.markNodePhase(ctx, taskGroupNode.Name, groupPhase)
+		// The TaskGroup only reaches its phase here, after the earlier hook evaluation ran, so
+		// re-evaluate against it for the same reason we do for a non-expanded task above. This
+		// is the task-level evaluation for an expanded task, so it fires exactly once, and it
+		// links the hook as a child of the TaskGroup, which holds back the Omit cascade via
+		// CheckAllHooksFullfilled in evaluateDependsLogic.
+		if groupNode != nil && groupNode.Completed() {
+			scope, err := woc.buildLocalScopeFromTask(ctx, dagCtx, task)
+			if err != nil {
+				log.WithError(err).Error(ctx, "Failed to build local scope from task")
+				woc.markNodeError(ctx, groupNode.Name, err)
+				return
+			}
+			varkeys.TasksNodeRef.Status.Set(scope.scope, string(groupNode.Phase), task.Name)
+			if _, err := woc.executeTmplLifeCycleHook(ctx, scope, task.Hooks, groupNode, dagCtx.boundaryID, dagCtx.tmplCtx, varkeys.TasksNodeRef, taskName); err != nil {
+				woc.markNodeError(ctx, groupNode.Name, err)
+				return
+			}
+		}
 	}
 }
 

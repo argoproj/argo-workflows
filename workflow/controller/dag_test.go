@@ -4809,3 +4809,30 @@ func TestOnExitDAGNotFailedOnShutdownStop(t *testing.T) {
 	// Workflow should NOT be completed yet — it should still be Running waiting for the exit handler.
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase, "workflow should still be Running while onExit handler is executing")
 }
+
+// TestDAGHookWithItemsFiresOnce verifies a lifecycle hook on an expanded (withItems) DAG
+// task fires exactly once, at task level, rather than once per expanded item.
+func TestDAGHookWithItemsFiresOnce(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/dag_hook_withitems_fires_once.yaml")
+	ctx := logging.TestContext(t.Context())
+	woc := newWoc(ctx, *wf)
+
+	// Drive the workflow to completion, failing task pods and succeeding hook pods.
+	for i := 0; i < 8 && !woc.wf.Status.Phase.Completed(); i++ {
+		woc.operate(ctx)
+		makeNonTerminalPodsPhase(ctx, woc, v1.PodFailed)
+	}
+
+	var hooked []string
+	for _, node := range woc.wf.Status.Nodes {
+		if node.NodeFlag != nil && node.NodeFlag.Hooked {
+			hooked = append(hooked, node.Name)
+		}
+	}
+
+	assert.Len(t, hooked, 1, "hook must fire once for the whole task, got: %v", hooked)
+	if len(hooked) == 1 {
+		assert.Equal(t, "dag-hook-withitems-fires-once.step-a.hooks.notify", hooked[0],
+			"hook must be raised on the task node, not on an expanded item")
+	}
+}
