@@ -693,7 +693,8 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 			}
 			varkeys.TasksNodeRef.Status.Set(scope.scope, string(node.Phase), task.Name)
 			// Re-evaluate hooks: executeTemplate may have transitioned this node from Running to
-			// Fulfilled within this sweep, after the earlier hook evaluation ran.
+			// a Completed phase (e.g. Failed) within this sweep, after the earlier hook
+			// evaluation ran. Note this block is gated on Completed(), not Fulfilled().
 			hookCompleted, err := woc.executeTmplLifeCycleHook(ctx, scope, task.Hooks, node, dagCtx.boundaryID, dagCtx.tmplCtx, varkeys.TasksNodeRef, taskName)
 			if err != nil {
 				woc.markNodeError(ctx, node.Name, err)
