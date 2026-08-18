@@ -4848,7 +4848,7 @@ func TestDAGHookRetryTaskOutbound(t *testing.T) {
 	// Fail every retry attempt, stopping as soon as the hook is scheduled so that the
 	// hook's own pod is not failed along with the attempts.
 	var hookNode *wfv1.NodeStatus
-	for i := 0; i < 6; i++ {
+	for range 6 {
 		woc.operate(ctx)
 		if hookNode = woc.wf.Status.Nodes.FindByDisplayName("step-a.hooks.notify"); hookNode != nil {
 			break
