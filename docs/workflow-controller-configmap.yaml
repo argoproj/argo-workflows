@@ -472,6 +472,7 @@ data:
     # be in the form <argo-server-root-url>/oauth2/callback. It must be
     # browser-accessible. If omitted, will be automatically generated.
     redirectUrl: https://argo-server/oauth2/callback
+    logoutRedirectUrl: https://example.com/logged-out
     # Additional scopes to request. Typically needed for SSO RBAC. >= v2.12
     scopes:
      - groups

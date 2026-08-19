@@ -5,6 +5,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	authcookie "github.com/argoproj/argo-workflows/v4/server/auth/cookie"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -19,7 +21,7 @@ func TestLogoutHandler(t *testing.T) {
 		clientID     string
 		wantRedirect string
 	}{
-		{name: "defaults to base href", baseHRef: "/argo/", wantRedirect: "/argo/"},
+		{name: "defaults to normalized base href", baseHRef: "/argo", wantRedirect: "/argo/"},
 		{name: "uses configured redirect URL", baseHRef: "/argo/", redirectURL: "https://example.com/", secure: true, wantRedirect: "https://example.com/"},
 		{name: "does not use the OIDC end-session endpoint with the default relative redirect", baseHRef: "/argo/", logoutURL: "https://idp.example.com/logout", clientID: "workflows", wantRedirect: "/argo/"},
 		{name: "redirects through the OIDC end-session endpoint", baseHRef: "/argo/", redirectURL: "https://example.com/", logoutURL: "https://idp.example.com/logout?foo=bar", clientID: "workflows", wantRedirect: "https://idp.example.com/logout?client_id=workflows&foo=bar&post_logout_redirect_uri=https%3A%2F%2Fexample.com%2F"},
@@ -28,7 +30,9 @@ func TestLogoutHandler(t *testing.T) {
 			recorder := httptest.NewRecorder()
 			request := httptest.NewRequestWithContext(t.Context(), http.MethodGet, LogoutEndpoint, nil)
 
-			NewHandler(tt.baseHRef, tt.redirectURL, tt.secure, tt.logoutURL, tt.clientID).ServeHTTP(recorder, request)
+			handler, err := NewHandler(tt.baseHRef, tt.redirectURL, tt.secure, tt.logoutURL, tt.clientID)
+			require.NoError(t, err)
+			handler.ServeHTTP(recorder, request)
 
 			response := recorder.Result()
 			assert.Equal(t, http.StatusSeeOther, response.StatusCode)
@@ -36,9 +40,9 @@ func TestLogoutHandler(t *testing.T) {
 			cookies := response.Cookies()
 			require.Len(t, cookies, 1)
 			cookie := cookies[0]
-			assert.Equal(t, "authorization", cookie.Name)
+			assert.Equal(t, authcookie.AuthorizationCookieName, cookie.Name)
 			assert.Empty(t, cookie.Value)
-			assert.Equal(t, tt.baseHRef, cookie.Path)
+			assert.Equal(t, normalizeBaseHRef(tt.baseHRef), cookie.Path)
 			assert.Equal(t, -1, cookie.MaxAge)
 			assert.Equal(t, tt.secure, cookie.Secure)
 			assert.True(t, cookie.HttpOnly)
@@ -48,26 +52,30 @@ func TestLogoutHandler(t *testing.T) {
 }
 
 func TestConstructLogoutURL(t *testing.T) {
-	assert.Equal(t, "https://example.com/", constructLogoutURL("", "client", "https://example.com/"))
-	assert.Equal(t, "https://example.com/logout?post_logout_redirect_uri=https%3A%2F%2Fapp.example.com%2F", constructLogoutURL("https://example.com/logout", "", "https://app.example.com/"))
-	assert.Equal(t, "https://example.com/", constructLogoutURL("://bad", "client", "https://example.com/"))
-	assert.Equal(t, "https://example.com/", constructLogoutURL("javascript://example.com/logout", "client", "https://example.com/"))
+	redirect, err := constructLogoutURL("", "client", "https://example.com/")
+	require.NoError(t, err)
+	assert.Equal(t, "https://example.com/", redirect)
+	redirect, err = constructLogoutURL("https://example.com/logout", "", "https://app.example.com/")
+	require.NoError(t, err)
+	assert.Equal(t, "https://example.com/logout?post_logout_redirect_uri=https%3A%2F%2Fapp.example.com%2F", redirect)
+	redirect, err = constructLogoutURL("://bad", "client", "https://example.com/")
+	require.Error(t, err)
+	assert.Equal(t, "https://example.com/", redirect)
+	redirect, err = constructLogoutURL("javascript://example.com/logout", "client", "https://example.com/")
+	require.EqualError(t, err, "oidc end-session endpoint must be an absolute HTTP(S) URL without a fragment: \"javascript://example.com/logout\"")
+	assert.Equal(t, "https://example.com/", redirect)
+	redirect, err = constructLogoutURL("https://example.com/logout#/signed-out", "client", "https://example.com/")
+	require.EqualError(t, err, "oidc end-session endpoint must be an absolute HTTP(S) URL without a fragment: \"https://example.com/logout#/signed-out\"")
+	assert.Equal(t, "https://example.com/", redirect)
 }
 
 func TestValidateRedirectURL(t *testing.T) {
 	assert.NoError(t, ValidateRedirectURL(""))
 	assert.NoError(t, ValidateRedirectURL("https://example.com/signed-out"))
 	assert.NoError(t, ValidateRedirectURL("HTTPS://example.com/signed-out"))
-	require.Error(t, ValidateRedirectURL("/signed-out"))
+	require.EqualError(t, ValidateRedirectURL("/signed-out"), "logout redirect URL must be an absolute HTTP(S) URL without a fragment: \"/signed-out\"")
 	require.Error(t, ValidateRedirectURL("//example.com/signed-out"))
 	require.Error(t, ValidateRedirectURL("javascript://example.com/signed-out"))
-	require.Error(t, ValidateRedirectURL("https://example.com/signed-out#fragment"))
+	require.EqualError(t, ValidateRedirectURL("https://example.com/signed-out#fragment"), "logout redirect URL must be an absolute HTTP(S) URL without a fragment: \"https://example.com/signed-out#fragment\"")
 	require.Error(t, ValidateRedirectURL("https://:443/signed-out"))
-}
-
-func TestValidateEndSessionURL(t *testing.T) {
-	assert.NoError(t, ValidateEndSessionURL(""))
-	assert.NoError(t, ValidateEndSessionURL("https://idp.example.com/logout?client=workflows"))
-	require.Error(t, ValidateEndSessionURL("/logout"))
-	require.Error(t, ValidateEndSessionURL("https://:443/logout"))
 }

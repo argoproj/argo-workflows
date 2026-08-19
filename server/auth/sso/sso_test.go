@@ -84,6 +84,7 @@ func TestLoadSsoClientIdFromSecret(t *testing.T) {
 		ClientID:             getSecretKeySelector("argo-sso-secret", "client-id"),
 		ClientSecret:         getSecretKeySelector("argo-sso-secret", "client-secret"),
 		RedirectURL:          "https://dummy",
+		LogoutRedirectURL:    "https://example.com/logged-out",
 		CustomGroupClaimName: "argo_groups",
 	}
 	ssoInterface, err := newSso(logging.TestContext(t.Context()), fakeOidcFactory, config, fakeClient, "/", false)
@@ -92,6 +93,7 @@ func TestLoadSsoClientIdFromSecret(t *testing.T) {
 	assert.Equal(t, "sso-client-id-value", ssoObject.config.ClientID)
 	assert.Equal(t, "sso-client-secret-value", ssoObject.config.ClientSecret)
 	assert.Equal(t, "argo_groups", ssoObject.customClaimName)
+	assert.Equal(t, "https://example.com/logged-out", ssoObject.LogoutRedirectURL())
 	assert.Empty(t, config.IssuerAlias)
 	assert.Equal(t, 10*time.Hour, ssoObject.expiry)
 }
@@ -102,12 +104,13 @@ func TestLoadSsoLogoutURLFromProviderMetadata(t *testing.T) {
 		Issuer:       "https://test-issuer",
 		ClientID:     getSecretKeySelector("argo-sso-secret", "client-id"),
 		ClientSecret: getSecretKeySelector("argo-sso-secret", "client-secret"),
-	}, fakeClient, "/", false)
+	}, fakeClient, "/argo", false)
 	require.NoError(t, err)
 
 	ssoObject := ssoInterface.(*sso)
 	assert.Equal(t, "https://idp.example.com/logout", ssoObject.LogoutURL())
 	assert.Equal(t, "sso-client-id-value", ssoObject.ClientID())
+	assert.Equal(t, "/argo/", ssoObject.baseHRef)
 }
 
 func TestNewSsoWithIssuerAlias(t *testing.T) {
@@ -276,6 +279,15 @@ func TestIsValidFinalRedirectURL(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			assert.Equal(t, tc.expected, isValidFinalRedirectURL(tc.url))
+		})
+	}
+}
+
+func TestNewSsoRejectsInvalidLogoutRedirectURL(t *testing.T) {
+	for _, redirectURL := range []string{"/signed-out", "javascript://example.com/logout", "https://example.com/logout#fragment"} {
+		t.Run(redirectURL, func(t *testing.T) {
+			_, err := newSso(logging.TestContext(t.Context()), fakeOidcFactory, Config{Issuer: "https://test-issuer", LogoutRedirectURL: redirectURL}, nil, "/", false)
+			require.EqualError(t, err, "invalid sso.logoutRedirectUrl: logout redirect URL must be an absolute HTTP(S) URL without a fragment: \""+redirectURL+"\"")
 		})
 	}
 }
