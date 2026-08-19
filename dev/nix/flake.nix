@@ -186,8 +186,8 @@
             overlays = [
               inputs.rust-overlay.overlays.default
               (self: super: {
-                go = super.go_1_24;
-                buildGoModule = super.buildGo124Module;
+                go = super.go_1_26;
+                buildGoModule = super.buildGo126Module;
               })
             ];
           };
