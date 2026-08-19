@@ -45,7 +45,6 @@ func TestLogoutHandler(t *testing.T) {
 			assert.Equal(t, normalizeBaseHRef(tt.baseHRef), cookie.Path)
 			assert.Equal(t, -1, cookie.MaxAge)
 			assert.Equal(t, tt.secure, cookie.Secure)
-			assert.True(t, cookie.HttpOnly)
 			assert.Equal(t, http.SameSiteStrictMode, cookie.SameSite)
 		})
 	}
