@@ -1262,6 +1262,42 @@ spec:
 		WaitForWorkflow(fixtures.ToBeSucceeded)
 }
 
+// TestGitArtifactAtWorkingDir covers issue #16728: an input artifact staged
+// at the container's workingDir must be visible through the inherited cwd.
+// Unlike TestGitArtifactDepthClone above, the script exits non-zero when it
+// isn't (`ls` succeeds even in a deleted cwd).
+func (s *ArtifactsSuite) TestGitArtifactAtWorkingDir() {
+	s.Given().
+		Workflow(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: git-workingdir-
+spec:
+  entrypoint: probe
+  templates:
+  - name: probe
+    inputs:
+      artifacts:
+      - name: source
+        path: /tmp/git
+        git:
+          repo: https://github.com/argoproj-labs/go-git.git
+          revision: master
+          depth: 1
+    script:
+      image: argoproj/argosay:v2
+      command: [sh]
+      workingDir: /tmp/git
+      source: |
+        set -eu
+        pwd
+        test -f README.md
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
 func (s *ArtifactsSuite) TestArtifactEphemeralVolume() {
 	s.Given().
 		Workflow(`apiVersion: argoproj.io/v1alpha1
