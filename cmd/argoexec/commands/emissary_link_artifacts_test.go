@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -15,7 +14,7 @@ import (
 )
 
 func TestLinkInputArtifacts_Normal(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.InitLogger())
+	ctx := logging.TestContext(t.Context())
 	dir := t.TempDir()
 	srcBase := filepath.Join(dir, "inputs")
 	require.NoError(t, os.MkdirAll(srcBase, 0o755))
@@ -43,7 +42,7 @@ func TestLinkInputArtifacts_Normal(t *testing.T) {
 }
 
 func TestLinkInputArtifacts_MissingSourceIsSkipped(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.InitLogger())
+	ctx := logging.TestContext(t.Context())
 	dir := t.TempDir()
 	srcBase := filepath.Join(dir, "inputs")
 	require.NoError(t, os.MkdirAll(srcBase, 0o755))
@@ -68,7 +67,7 @@ func TestLinkInputArtifacts_MissingSourceIsSkipped(t *testing.T) {
 // filesystem (no declared volume), must be replaced by the symlink — matching
 // what the legacy SubPath bind mount shadowed.
 func TestLinkInputArtifacts_OverwritesExistingFile(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.InitLogger())
+	ctx := logging.TestContext(t.Context())
 	dir := t.TempDir()
 	srcBase := filepath.Join(dir, "inputs")
 	require.NoError(t, os.MkdirAll(srcBase, 0o755))
@@ -97,7 +96,7 @@ func TestLinkInputArtifacts_OverwritesExistingFile(t *testing.T) {
 // (e.g. a git/directory artifact at /tmp/git): linking must replace it with the
 // symlink rather than failing. No declared volume → safe to clear.
 func TestLinkInputArtifacts_OverwritesExistingDirectory(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.InitLogger())
+	ctx := logging.TestContext(t.Context())
 	dir := t.TempDir()
 	srcBase := filepath.Join(dir, "inputs")
 	require.NoError(t, os.MkdirAll(srcBase, 0o755))
@@ -127,7 +126,7 @@ func TestLinkInputArtifacts_OverwritesExistingDirectory(t *testing.T) {
 
 // TestLinkInputArtifacts_EmptyPathSkipped covers art.Path == "".
 func TestLinkInputArtifacts_EmptyPathSkipped(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.InitLogger())
+	ctx := logging.TestContext(t.Context())
 	dir := t.TempDir()
 	srcBase := filepath.Join(dir, "inputs")
 	require.NoError(t, os.MkdirAll(srcBase, 0o755))
@@ -148,7 +147,7 @@ func TestLinkInputArtifacts_EmptyPathSkipped(t *testing.T) {
 // the symlink and destroy live volume data, so staging must refuse and leave the
 // volume untouched.
 func TestLinkInputArtifacts_RefusesOverwriteResolvingIntoVolume(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.InitLogger())
+	ctx := logging.TestContext(t.Context())
 	dir := t.TempDir()
 	srcBase := filepath.Join(dir, "inputs")
 	require.NoError(t, os.MkdirAll(srcBase, 0o755))
@@ -195,7 +194,7 @@ func TestLinkInputArtifacts_RefusesOverwriteResolvingIntoVolume(t *testing.T) {
 // there yet, staging creates the symlink anyway (the user asked for it). Creating
 // can never destroy data, so it is not gated.
 func TestLinkInputArtifacts_CreateResolvingIntoVolumeAllowed(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.InitLogger())
+	ctx := logging.TestContext(t.Context())
 	dir := t.TempDir()
 	srcBase := filepath.Join(dir, "inputs")
 	require.NoError(t, os.MkdirAll(srcBase, 0o755))
@@ -237,7 +236,7 @@ func TestLinkInputArtifacts_CreateResolvingIntoVolumeAllowed(t *testing.T) {
 // os.RemoveAll removes the symlink itself (it does not follow the final element),
 // so staging safely replaces it and the symlink's old target is untouched.
 func TestLinkInputArtifacts_ReplacesImageSymlinkInRootfs(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.InitLogger())
+	ctx := logging.TestContext(t.Context())
 	dir := t.TempDir()
 	srcBase := filepath.Join(dir, "inputs")
 	require.NoError(t, os.MkdirAll(srcBase, 0o755))
@@ -266,4 +265,64 @@ func TestLinkInputArtifacts_ReplacesImageSymlinkInRootfs(t *testing.T) {
 	old, err := os.ReadFile(oldTarget)
 	require.NoError(t, err)
 	assert.Equal(t, "image-default", string(old), "the image symlink's old target must be untouched")
+}
+
+// TestStageInputArtifacts_ArtifactAtWorkingDir covers issue #16728: a
+// directory artifact staged at the container's workingDir.
+func TestStageInputArtifacts_ArtifactAtWorkingDir(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	dir := t.TempDir()
+	prevVarRunArgo := varRunArgo
+	varRunArgo = dir
+	t.Cleanup(func() { varRunArgo = prevVarRunArgo })
+	srcBase := filepath.Join(dir, "inputs")
+	require.NoError(t, os.MkdirAll(filepath.Join(srcBase, "source"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(srcBase, "source", "README"), []byte("hello"), 0o644))
+
+	// The runtime chdirs the emissary into workingDir before staging runs.
+	workDir := filepath.Join(dir, "workspace")
+	require.NoError(t, os.MkdirAll(workDir, 0o755))
+	t.Chdir(workDir)
+
+	tmpl := &wfv1.Template{
+		Inputs: wfv1.Inputs{
+			Artifacts: wfv1.Artifacts{{Name: "source", Path: workDir}},
+		},
+	}
+
+	require.NoError(t, stageInputArtifactsAt(ctx, srcBase, tmpl))
+
+	_, err := os.Getwd()
+	require.NoError(t, err, "cwd must be a live directory again")
+	data, err := os.ReadFile("README")
+	require.NoError(t, err, "relative paths must resolve to the staged artifact")
+	assert.Equal(t, "hello", string(data))
+}
+
+// TestStageInputArtifacts_FileArtifactAtWorkingDirFails: a *file* artifact
+// staged at the workingDir path leaves nothing to chdir into, so the step
+// must fail rather than start the user command with a deleted cwd.
+func TestStageInputArtifacts_FileArtifactAtWorkingDirFails(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	dir := t.TempDir()
+	prevVarRunArgo := varRunArgo
+	varRunArgo = dir
+	t.Cleanup(func() { varRunArgo = prevVarRunArgo })
+	srcBase := filepath.Join(dir, "inputs")
+	require.NoError(t, os.MkdirAll(srcBase, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(srcBase, "source"), []byte("just a file"), 0o644))
+
+	workDir := filepath.Join(dir, "workspace")
+	require.NoError(t, os.MkdirAll(workDir, 0o755))
+	t.Chdir(workDir)
+
+	tmpl := &wfv1.Template{
+		Inputs: wfv1.Inputs{
+			Artifacts: wfv1.Artifacts{{Name: "source", Path: workDir}},
+		},
+	}
+
+	err := stageInputArtifactsAt(ctx, srcBase, tmpl)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "must be a directory")
 }
