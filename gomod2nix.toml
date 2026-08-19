@@ -812,8 +812,8 @@ schema = 3
     version = "v1.0.0"
     hash = "sha256-I9FPZ3kCNRB+o0dpMwBnwZ35Fj9+ThvITn8a3Jr8mAY="
   [mod."github.com/valyala/fasthttp"]
-    version = "v1.52.0"
-    hash = "sha256-Gmcd4N4VOqI7Pl9Trb2ifDhaCU/AjEpuVdyNGGww5zc="
+    version = "v1.70.0"
+    hash = "sha256-B/Dfh3Tw4danCjkdcYb+O7pxW9S3Dt+JC1yCqj8gJHM="
   [mod."github.com/valyala/fasttemplate"]
     version = "v1.2.2"
     hash = "sha256-gp+lNXE8zjO+qJDM/YbS6V43HFsYP6PKn4ux1qa5lZ0="
