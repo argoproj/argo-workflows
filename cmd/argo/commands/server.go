@@ -42,7 +42,6 @@ func NewServerCommand() *cobra.Command {
 		configMap                string
 		port                     int
 		baseHRef                 string
-		logoutRedirectURL        string
 		secure                   bool
 		tlsCertificateSecretName string
 		hsts                     bool
@@ -155,7 +154,6 @@ See %s`, help.ArgoServer()),
 
 			opts := apiserver.ArgoServerOpts{
 				BaseHRef:                 baseHRef,
-				LogoutRedirectURL:        logoutRedirectURL,
 				TLSConfig:                tlsConfig,
 				HSTS:                     hsts,
 				Namespaced:               namespaced,
@@ -196,7 +194,6 @@ See %s`, help.ArgoServer()),
 
 	command.Flags().IntVarP(&port, "port", "p", 2746, "Port to listen on")
 	command.Flags().StringVar(&baseHRef, "base-href", "/", "Value for base href in index.html. Used if the server is running behind reverse proxy under subpath different from /.")
-	command.Flags().StringVar(&logoutRedirectURL, "logout-redirect-url", "", "Absolute HTTP(S) URL to redirect to after logout and use for OIDC provider logout. When unset, provider logout is disabled and users are redirected locally to the base href.")
 	// "-e" for encrypt, like zip
 	command.Flags().BoolVarP(&secure, "secure", "e", true, "Whether or not we should listen on TLS.")
 	command.Flags().StringVar(&tlsCertificateSecretName, "tls-certificate-secret-name", "", "The name of a Kubernetes secret that contains the server certificates")

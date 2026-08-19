@@ -49,6 +49,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/server/apiserver/accesslog"
 	"github.com/argoproj/argo-workflows/v4/server/artifacts"
 	"github.com/argoproj/argo-workflows/v4/server/auth"
+	authcookie "github.com/argoproj/argo-workflows/v4/server/auth/cookie"
 	"github.com/argoproj/argo-workflows/v4/server/auth/sso"
 	"github.com/argoproj/argo-workflows/v4/server/auth/webhook"
 	"github.com/argoproj/argo-workflows/v4/server/cache"
@@ -89,7 +90,6 @@ type Server interface {
 
 type argoServer struct {
 	baseHRef          string
-	logoutRedirectURL string
 	// https://itnext.io/practical-guide-to-securing-grpc-connections-with-go-and-tls-part-1-f63058e9d6d1
 	tlsConfig                *tls.Config
 	hsts                     bool
@@ -98,7 +98,7 @@ type argoServer struct {
 	clients                  *types.Clients
 	gatekeeper               auth.Gatekeeper
 	oAuth2Service            sso.Interface
-	configController         config.Controller
+	serverConfig            *config.Config
 	stopCh                   chan struct{}
 	eventQueueSize           int
 	eventWorkerCount         int
@@ -113,7 +113,6 @@ type argoServer struct {
 
 type ArgoServerOpts struct {
 	BaseHRef          string
-	LogoutRedirectURL string
 	TLSConfig         *tls.Config
 	Namespaced        bool
 	Namespace         string
@@ -150,18 +149,15 @@ func getResourceCacheNamespace(managedNamespace string) string {
 }
 
 func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (Server, error) {
-	if err := logout.ValidateRedirectURL(opts.LogoutRedirectURL); err != nil {
-		return nil, err
-	}
 	configController := config.NewController(opts.Namespace, opts.ConfigName, opts.Clients.Kubernetes)
 	log := logging.RequireLoggerFromContext(ctx)
 	var resourceCache *cache.ResourceCache
-	ssoIf := sso.NullSSO
+	c, err := configController.Get(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var ssoIf sso.Interface
 	if opts.AuthModes[auth.SSO] {
-		c, err := configController.Get(ctx)
-		if err != nil {
-			return nil, err
-		}
 		ssoIf, err = sso.New(ctx, c.SSO, opts.Clients.Kubernetes.CoreV1().Secrets(opts.Namespace), opts.BaseHRef, opts.TLSConfig != nil)
 		if err != nil {
 			return nil, err
@@ -173,6 +169,10 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (Server, error) {
 		}
 		log.Info(ctx, "SSO enabled")
 	} else {
+		ssoIf, err = sso.NewNullSSO(c.SSO.LogoutRedirectURL)
+		if err != nil {
+			return nil, err
+		}
 		log.Info(ctx, "SSO disabled")
 	}
 	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.Clients, opts.RestConfig, ssoIf, auth.DefaultClientForAuthorization, opts.Namespace, opts.SSONamespace, opts.Namespaced, resourceCache)
@@ -189,7 +189,6 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (Server, error) {
 
 	return &argoServer{
 		baseHRef:                 opts.BaseHRef,
-		logoutRedirectURL:        opts.LogoutRedirectURL,
 		tlsConfig:                opts.TLSConfig,
 		hsts:                     opts.HSTS,
 		namespace:                opts.Namespace,
@@ -197,7 +196,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (Server, error) {
 		clients:                  opts.Clients,
 		gatekeeper:               gatekeeper,
 		oAuth2Service:            ssoIf,
-		configController:         configController,
+		serverConfig:             c,
 		stopCh:                   make(chan struct{}),
 		eventQueueSize:           opts.EventOperationQueueSize,
 		eventWorkerCount:         opts.EventWorkerCount,
@@ -220,12 +219,8 @@ var backoff = wait.Backoff{
 
 func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(string)) {
 	log := logging.RequireLoggerFromContext(ctx)
-	config, err := as.configController.Get(ctx)
-	if err != nil {
-		log.WithFatal().Error(ctx, err.Error())
-	}
-	err = config.Sanitize(as.allowedLinkProtocol)
-	if err != nil {
+	config := as.serverConfig
+	if err := config.Sanitize(as.allowedLinkProtocol); err != nil {
 		log.WithFatal().Error(ctx, err.Error())
 	}
 
@@ -264,9 +259,10 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		}
 		// we always enable node offload, as this is read-only for the Argo Server, i.e. you can turn it off if you
 		// like and the controller won't offload newly created workflows, but you can still read them
-		offloadRepo, err = persist.NewOffloadNodeStatusRepo(ctx, log, sessionProxy, persistence.GetClusterName(), tableName)
-		if err != nil {
-			log.WithError(err).WithFatal().Error(ctx, err.Error())
+		var offloadErr error
+		offloadRepo, offloadErr = persist.NewOffloadNodeStatusRepo(ctx, log, sessionProxy, persistence.GetClusterName(), tableName)
+		if offloadErr != nil {
+			log.WithError(offloadErr).WithFatal().Error(ctx, offloadErr.Error())
 		}
 		// we always enable the archive for the Argo Server, as the Argo Server does not write records, so you can
 		// disable the archiving - and still read old records
@@ -479,24 +475,17 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	}
 	mux.Handle("/oauth2/redirect", handlers.ProxyHeaders(http.HandlerFunc(as.oAuth2Service.HandleRedirect)))
 	mux.Handle("/oauth2/callback", handlers.ProxyHeaders(http.HandlerFunc(as.oAuth2Service.HandleCallback)))
-	var logoutURL, clientID string
-	if logoutConfig, ok := as.oAuth2Service.(interface {
-		LogoutURL() string
-		ClientID() string
-	}); ok {
-		logoutURL = logoutConfig.LogoutURL()
-		clientID = logoutConfig.ClientID()
-	}
-	if err := logout.ValidateEndSessionURL(logoutURL); err != nil {
+	logoutURL := as.oAuth2Service.LogoutURL()
+	logoutHandler, err := logout.NewHandler(as.baseHRef, as.oAuth2Service.LogoutRedirectURL(), as.tlsConfig != nil, logoutURL, as.oAuth2Service.ClientID())
+	if err != nil {
 		log.WithError(err).Warn(ctx, "Ignoring invalid OIDC end-session endpoint")
-		logoutURL = ""
 	}
-	mux.Handle(logout.LogoutEndpoint, logout.NewHandler(as.baseHRef, as.logoutRedirectURL, as.tlsConfig != nil, logoutURL, clientID))
+	mux.Handle(logout.LogoutEndpoint, handlers.ProxyHeaders(logoutHandler))
 	mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
 		if os.Getenv("ARGO_SERVER_METRICS_AUTH") != "false" {
-			md := metadata.New(map[string]string{"authorization": r.Header.Get("Authorization")})
+			md := metadata.New(map[string]string{authcookie.AuthorizationMetadataKey: r.Header.Get("Authorization")})
 			for _, c := range r.Cookies() {
-				if c.Name == "authorization" {
+				if c.Name == authcookie.AuthorizationCookieName {
 					md.Append("cookie", c.Value)
 				}
 			}

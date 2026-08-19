@@ -3,20 +3,49 @@ package apiserver
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
 	"github.com/argoproj/argo-workflows/v4/config"
+	"github.com/argoproj/argo-workflows/v4/server/auth"
 	"github.com/argoproj/argo-workflows/v4/server/types"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
-func TestNewArgoServerRejectsInvalidLogoutRedirectURL(t *testing.T) {
-	_, err := NewArgoServer(logging.TestContext(t.Context()), ArgoServerOpts{LogoutRedirectURL: "/signed-out"})
-	require.EqualError(t, err, `--logout-redirect-url must be an absolute HTTP(S) URL: "/signed-out"`)
+func TestNewArgoServerLoadsLogoutRedirectForClientAuth(t *testing.T) {
+	const namespace = "argo"
+	kube := fake.NewClientset(&corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{Name: common.ConfigMapName, Namespace: namespace},
+		Data:       map[string]string{"config": "sso:\n  logoutRedirectUrl: https://example.com/logged-out\n"},
+	})
+	server, err := NewArgoServer(logging.TestContext(t.Context()), ArgoServerOpts{
+		Namespace:  namespace,
+		ConfigName: common.ConfigMapName,
+		Clients:    &types.Clients{Kubernetes: kube},
+		AuthModes:  auth.Modes{auth.Client: true},
+	})
+	require.NoError(t, err)
+	as := server.(*argoServer)
+	assert.Equal(t, "https://example.com/logged-out", as.oAuth2Service.LogoutRedirectURL())
+}
+
+func TestNewArgoServerRejectsInvalidClientLogoutRedirect(t *testing.T) {
+	const namespace = "argo"
+	kube := fake.NewClientset(&corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{Name: common.ConfigMapName, Namespace: namespace},
+		Data:       map[string]string{"config": "sso:\n  logoutRedirectUrl: /logged-out\n"},
+	})
+	_, err := NewArgoServer(logging.TestContext(t.Context()), ArgoServerOpts{
+		Namespace:  namespace,
+		ConfigName: common.ConfigMapName,
+		Clients:    &types.Clients{Kubernetes: kube},
+		AuthModes:  auth.Modes{auth.Client: true},
+	})
+	require.EqualError(t, err, "invalid sso.logoutRedirectUrl: logout redirect URL must be an absolute HTTP(S) URL without a fragment: \"/logged-out\"")
 }
 
 func TestValidateArtifactDriverImages(t *testing.T) {
