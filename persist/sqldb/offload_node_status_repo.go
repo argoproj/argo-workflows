@@ -2,6 +2,7 @@ package sqldb
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
@@ -46,8 +47,18 @@ type nodesRecord struct {
 	UUIDVersion
 	Namespace string `db:"namespace"`
 	Nodes     string `db:"nodes"`
-	// Base64-encoded compressed node status; empty on legacy rows written before compression.
-	CompressedNodes string `db:"compressednodes"`
+	// Base64-encoded compressed node status. Nullable: an old replica can insert after
+	// the one-shot backfill (migrate.go:236-239), landing NULL rather than ''.
+	CompressedNodes sql.NullString `db:"compressednodes"`
+}
+
+// nodesJSON returns the node status as JSON. A NULL or empty compressednodes means a
+// legacy row written before compression, whose payload is in nodes.
+func (r nodesRecord) nodesJSON(ctx context.Context) (string, error) {
+	if r.CompressedNodes.String == "" {
+		return r.Nodes, nil
+	}
+	return file.DecodeDecompressString(ctx, r.CompressedNodes.String)
 }
 
 type nodeOffloadRepo struct {
@@ -89,7 +100,7 @@ func (wdc *nodeOffloadRepo) Save(ctx context.Context, uid, namespace string, nod
 		Namespace: namespace,
 		// nodes is json not null; payload actually lives in CompressedNodes.
 		Nodes:           "null",
-		CompressedNodes: file.CompressEncodeString(ctx, marshalled),
+		CompressedNodes: sql.NullString{String: file.CompressEncodeString(ctx, marshalled), Valid: true},
 	}
 
 	logCtx := wdc.log.WithFields(logging.Fields{"uid": uid, "version": version})
@@ -140,12 +151,9 @@ func (wdc *nodeOffloadRepo) Get(ctx context.Context, uid, version string) (wfv1.
 		if err != nil {
 			return err
 		}
-		nodesJSON := r.Nodes
-		if r.CompressedNodes != "" {
-			nodesJSON, err = file.DecodeDecompressString(ctx, r.CompressedNodes)
-			if err != nil {
-				return err
-			}
+		nodesJSON, err := r.nodesJSON(ctx)
+		if err != nil {
+			return err
 		}
 		n := &wfv1.Nodes{}
 		err = json.Unmarshal([]byte(nodesJSON), n)
@@ -178,12 +186,9 @@ func (wdc *nodeOffloadRepo) List(ctx context.Context, namespace string) (map[UUI
 
 		res = make(map[UUIDVersion]wfv1.Nodes)
 		for _, r := range records {
-			nodesJSON := r.Nodes
-			if r.CompressedNodes != "" {
-				nodesJSON, err = file.DecodeDecompressString(ctx, r.CompressedNodes)
-				if err != nil {
-					return err
-				}
+			nodesJSON, err := r.nodesJSON(ctx)
+			if err != nil {
+				return err
 			}
 			nodes := &wfv1.Nodes{}
 			err = json.Unmarshal([]byte(nodesJSON), nodes)

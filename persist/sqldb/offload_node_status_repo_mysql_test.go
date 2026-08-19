@@ -9,6 +9,7 @@ package sqldb
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -31,7 +32,7 @@ import (
 
 // setupOffloadRepo starts MySQL 8.4 with max_allowed_packet pinned to 16MB, migrates the
 // argo_workflows offload table, and returns the offload repo plus the session proxy.
-func setupOffloadRepo(ctx context.Context, t *testing.T) (OffloadNodeStatusRepo, *usqldb.SessionProxy) {
+func setupOffloadRepo(ctx context.Context, t testing.TB) (OffloadNodeStatusRepo, *usqldb.SessionProxy) {
 	t.Helper()
 
 	c, err := testmysql.Run(ctx,
@@ -121,14 +122,19 @@ func TestOffloadCompression_RoundTrip(t *testing.T) {
 
 	// Storage format: compressed payload present, raw nodes column is the placeholder.
 	r := fetchRow(ctx, t, proxy, uid, version)
-	assert.NotEmpty(t, r.CompressedNodes, "compressednodes should hold the compressed payload")
+	assert.NotEmpty(t, r.CompressedNodes.String, "compressednodes should hold the compressed payload")
 	assert.Equal(t, "null", r.Nodes, "nodes column should be the json null placeholder")
-	assert.Less(t, len(r.CompressedNodes), 13*mb, "stored compressed payload should be far smaller than raw")
+	assert.Less(t, len(r.CompressedNodes.String), 13*mb, "stored compressed payload should be far smaller than raw")
 }
 
-// TestOffloadCompression_BackwardCompat verifies that a legacy row (raw JSON in nodes,
-// empty compressednodes) still reads correctly via both Get and List after the change.
-func TestOffloadCompression_BackwardCompat(t *testing.T) {
+// TestOffloadCompression_LegacyRows covers both shapes a pre-compression row can have,
+// so an upgrade needs no data migration: the empty string the migration backfills, and a
+// genuine SQL NULL an old replica writes after that one-shot backfill has already run
+// (see the CompressedNodes field comment).
+//
+// Worth having on both engines rather than trusting one: the column is longtext here and
+// text on Postgres, and the two drivers scan NULL through different code.
+func TestOffloadCompression_LegacyRows(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	repo, proxy := setupOffloadRepo(ctx, t)
 
@@ -136,26 +142,51 @@ func TestOffloadCompression_BackwardCompat(t *testing.T) {
 	raw, err := json.Marshal(legacyNodes)
 	require.NoError(t, err)
 
-	uid, version := "uid-legacy", "fnv:legacy"
-	err = proxy.With(ctx, func(s db.Session) error {
-		_, insErr := s.Collection("argo_workflows").Insert(&nodesRecord{
-			ClusterName:     "test",
-			UUIDVersion:     UUIDVersion{UID: uid, Version: version},
-			Namespace:       "default",
-			Nodes:           string(raw),
-			CompressedNodes: "", // legacy: no compression
+	const version = "fnv:legacy"
+	for _, tc := range []struct {
+		name, uid string
+		wantValid bool
+		insert    func(db.Session, string) error
+	}{
+		{
+			name: "backfilled empty string", uid: "uid-legacy", wantValid: true,
+			insert: func(s db.Session, uid string) error {
+				_, insErr := s.Collection("argo_workflows").Insert(&nodesRecord{
+					ClusterName:     "test",
+					UUIDVersion:     UUIDVersion{UID: uid, Version: version},
+					Namespace:       "default",
+					Nodes:           string(raw),
+					CompressedNodes: sql.NullString{String: "", Valid: true},
+				})
+				return insErr
+			},
+		},
+		{
+			// Must be raw SQL: Insert(&nodesRecord{...}) always writes a non-NULL empty
+			// string, so it cannot reproduce the shape an old replica leaves behind.
+			name: "genuine SQL NULL", uid: "uid-null", wantValid: false,
+			insert: func(s db.Session, uid string) error {
+				_, execErr := s.SQL().Exec(
+					"insert into argo_workflows (clustername, uid, version, namespace, nodes) values (?, ?, ?, ?, ?)",
+					"test", uid, version, "default", string(raw))
+				return execErr
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			require.NoError(t, proxy.With(ctx, func(s db.Session) error { return tc.insert(s, tc.uid) }))
+			require.Equal(t, tc.wantValid, fetchRow(ctx, t, proxy, tc.uid, version).CompressedNodes.Valid,
+				"row must have the column shape this case claims to test")
+
+			got, err := repo.Get(ctx, tc.uid, version)
+			require.NoError(t, err, "Get must read legacy rows")
+			assert.Equal(t, legacyNodes, got)
+
+			list, err := repo.List(ctx, "default")
+			require.NoError(t, err, "List must read legacy rows")
+			assert.Equal(t, legacyNodes, list[UUIDVersion{UID: tc.uid, Version: version}])
 		})
-		return insErr
-	})
-	require.NoError(t, err)
-
-	got, err := repo.Get(ctx, uid, version)
-	require.NoError(t, err)
-	assert.Equal(t, legacyNodes, got, "Get must read legacy uncompressed rows")
-
-	list, err := repo.List(ctx, "default")
-	require.NoError(t, err)
-	assert.Equal(t, legacyNodes, list[UUIDVersion{UID: uid, Version: version}], "List must read legacy uncompressed rows")
+	}
 }
 
 func fetchRow(ctx context.Context, t *testing.T, proxy *usqldb.SessionProxy, uid, version string) nodesRecord {
