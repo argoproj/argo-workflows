@@ -89,7 +89,7 @@ type Server interface {
 }
 
 type argoServer struct {
-	baseHRef          string
+	baseHRef string
 	// https://itnext.io/practical-guide-to-securing-grpc-connections-with-go-and-tls-part-1-f63058e9d6d1
 	tlsConfig                *tls.Config
 	hsts                     bool
@@ -98,7 +98,7 @@ type argoServer struct {
 	clients                  *types.Clients
 	gatekeeper               auth.Gatekeeper
 	oAuth2Service            sso.Interface
-	serverConfig            *config.Config
+	serverConfig             *config.Config
 	stopCh                   chan struct{}
 	eventQueueSize           int
 	eventWorkerCount         int
@@ -112,13 +112,13 @@ type argoServer struct {
 }
 
 type ArgoServerOpts struct {
-	BaseHRef          string
-	TLSConfig         *tls.Config
-	Namespaced        bool
-	Namespace         string
-	Clients           *types.Clients
-	RestConfig        *rest.Config
-	AuthModes         auth.Modes
+	BaseHRef   string
+	TLSConfig  *tls.Config
+	Namespaced bool
+	Namespace  string
+	Clients    *types.Clients
+	RestConfig *rest.Config
+	AuthModes  auth.Modes
 	// config map name
 	ConfigName               string
 	ManagedNamespace         string
