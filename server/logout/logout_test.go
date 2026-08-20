@@ -26,6 +26,7 @@ func TestLogoutHandler(t *testing.T) {
 		{name: "uses configured redirect URL", baseHRef: "/argo/", redirectURL: "https://example.com/", secure: true, wantRedirect: "https://example.com/", wantPaths: []string{"/argo/", "/argo"}},
 		{name: "does not use the OIDC end-session endpoint with the default relative redirect", baseHRef: "/argo/", logoutURL: "https://idp.example.com/logout", clientID: "workflows", wantRedirect: "/argo/", wantPaths: []string{"/argo/", "/argo"}},
 		{name: "redirects through the OIDC end-session endpoint", baseHRef: "/argo/", redirectURL: "https://example.com/", logoutURL: "https://idp.example.com/logout?foo=bar", clientID: "workflows", wantRedirect: "https://idp.example.com/logout?client_id=workflows&foo=bar&post_logout_redirect_uri=https%3A%2F%2Fexample.com%2F", wantPaths: []string{"/argo/", "/argo"}},
+		{name: "normalizes an empty base href to the root cookie path", baseHRef: "", wantRedirect: "/", wantPaths: []string{"/"}},
 		{name: "only clears the root cookie path", baseHRef: "/", wantRedirect: "/", wantPaths: []string{"/"}},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
