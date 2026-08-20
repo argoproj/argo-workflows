@@ -13,7 +13,7 @@ import (
 const LogoutEndpoint = "/auth/logout"
 
 type Handler struct {
-	cookiePath  string
+	cookiePaths []string
 	redirectURL string
 	secure      bool
 }
@@ -22,12 +22,16 @@ type Handler struct {
 // If the provider end-session URL is invalid, the handler falls back to the local redirect and returns the validation error.
 func NewHandler(baseHRef, redirectURL string, secure bool, logoutURL, clientID string) (*Handler, error) {
 	baseHRef = normalizeBaseHRef(baseHRef)
+	cookiePaths := []string{baseHRef}
+	if legacyCookiePath := strings.TrimSuffix(baseHRef, "/"); legacyCookiePath != "" {
+		cookiePaths = append(cookiePaths, legacyCookiePath)
+	}
 	if redirectURL == "" {
 		redirectURL = baseHRef
 		logoutURL = ""
 	}
 	finalRedirectURL, err := constructLogoutURL(logoutURL, clientID, redirectURL)
-	return &Handler{cookiePath: baseHRef, redirectURL: finalRedirectURL, secure: secure}, err
+	return &Handler{cookiePaths: cookiePaths, redirectURL: finalRedirectURL, secure: secure}, err
 }
 
 func normalizeBaseHRef(baseHRef string) string {
@@ -82,6 +86,8 @@ func constructLogoutURL(logoutURL, clientID, redirectURL string) (string, error)
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	authcookie.ClearAuthCookie(w, h.cookiePath, h.secure)
+	for _, cookiePath := range h.cookiePaths {
+		authcookie.ClearAuthCookie(w, cookiePath, h.secure)
+	}
 	http.Redirect(w, r, h.redirectURL, http.StatusSeeOther)
 }

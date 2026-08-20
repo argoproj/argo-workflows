@@ -20,11 +20,13 @@ func TestLogoutHandler(t *testing.T) {
 		logoutURL    string
 		clientID     string
 		wantRedirect string
+		wantPaths    []string
 	}{
-		{name: "defaults to normalized base href", baseHRef: "/argo", wantRedirect: "/argo/"},
-		{name: "uses configured redirect URL", baseHRef: "/argo/", redirectURL: "https://example.com/", secure: true, wantRedirect: "https://example.com/"},
-		{name: "does not use the OIDC end-session endpoint with the default relative redirect", baseHRef: "/argo/", logoutURL: "https://idp.example.com/logout", clientID: "workflows", wantRedirect: "/argo/"},
-		{name: "redirects through the OIDC end-session endpoint", baseHRef: "/argo/", redirectURL: "https://example.com/", logoutURL: "https://idp.example.com/logout?foo=bar", clientID: "workflows", wantRedirect: "https://idp.example.com/logout?client_id=workflows&foo=bar&post_logout_redirect_uri=https%3A%2F%2Fexample.com%2F"},
+		{name: "defaults to normalized base href", baseHRef: "/argo", wantRedirect: "/argo/", wantPaths: []string{"/argo/", "/argo"}},
+		{name: "uses configured redirect URL", baseHRef: "/argo/", redirectURL: "https://example.com/", secure: true, wantRedirect: "https://example.com/", wantPaths: []string{"/argo/", "/argo"}},
+		{name: "does not use the OIDC end-session endpoint with the default relative redirect", baseHRef: "/argo/", logoutURL: "https://idp.example.com/logout", clientID: "workflows", wantRedirect: "/argo/", wantPaths: []string{"/argo/", "/argo"}},
+		{name: "redirects through the OIDC end-session endpoint", baseHRef: "/argo/", redirectURL: "https://example.com/", logoutURL: "https://idp.example.com/logout?foo=bar", clientID: "workflows", wantRedirect: "https://idp.example.com/logout?client_id=workflows&foo=bar&post_logout_redirect_uri=https%3A%2F%2Fexample.com%2F", wantPaths: []string{"/argo/", "/argo"}},
+		{name: "only clears the root cookie path", baseHRef: "/", wantRedirect: "/", wantPaths: []string{"/"}},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			recorder := httptest.NewRecorder()
@@ -38,14 +40,15 @@ func TestLogoutHandler(t *testing.T) {
 			assert.Equal(t, http.StatusSeeOther, response.StatusCode)
 			assert.Equal(t, tt.wantRedirect, response.Header.Get("Location"))
 			cookies := response.Cookies()
-			require.Len(t, cookies, 1)
-			cookie := cookies[0]
-			assert.Equal(t, authcookie.AuthorizationCookieName, cookie.Name)
-			assert.Empty(t, cookie.Value)
-			assert.Equal(t, normalizeBaseHRef(tt.baseHRef), cookie.Path)
-			assert.Equal(t, -1, cookie.MaxAge)
-			assert.Equal(t, tt.secure, cookie.Secure)
-			assert.Equal(t, http.SameSiteStrictMode, cookie.SameSite)
+			require.Len(t, cookies, len(tt.wantPaths))
+			for i, cookie := range cookies {
+				assert.Equal(t, authcookie.AuthorizationCookieName, cookie.Name)
+				assert.Empty(t, cookie.Value)
+				assert.Equal(t, tt.wantPaths[i], cookie.Path)
+				assert.Equal(t, -1, cookie.MaxAge)
+				assert.Equal(t, tt.secure, cookie.Secure)
+				assert.Equal(t, http.SameSiteStrictMode, cookie.SameSite)
+			}
 		})
 	}
 }
