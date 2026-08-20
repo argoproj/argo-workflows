@@ -45,28 +45,37 @@ All users will need to log in again. Sorry.
 
 ## Logout Redirect URL
 
-> v4.1 and after
+> v4.2 and after
 
 By default, logout clears the Argo session and redirects users directly to the UI base href.
 This behavior does not log users out of their identity provider.
 
 The `sso.logoutRedirectUrl` setting controls the post-logout redirect for every auth mode, including `client`; it is not limited to SSO authentication.
+Provider logout is attempted only when Argo Server runs with `--auth-mode sso`; in `client` and `server` modes, this setting controls the redirect but does not terminate the identity provider session.
+
+For example, to return users to the Argo login page after logout:
+
+```yaml
+sso:
+  logoutRedirectUrl: https://argo.example.com/login
+```
 
 OIDC provider logout is enabled only when both of the following are true:
 
 * The provider advertises an OIDC `end_session_endpoint`.
 * `sso.logoutRedirectUrl` is set to an absolute HTTP(S) URL without a fragment.
 
-Argo Server rejects an explicitly configured relative, fragment-bearing, or otherwise invalid URL at startup.
+Argo Server fails to start if `sso.logoutRedirectUrl` is relative, contains a fragment, or is otherwise invalid.
 For example, `https://example.com/#/signed-out` is rejected; use a path or query parameter instead.
 
 When provider logout is enabled, Argo Server redirects users through the discovered `end_session_endpoint`, passing the configured client ID and `sso.logoutRedirectUrl` as the `post_logout_redirect_uri`.
 Register the exact redirect URL as an allowed post-logout redirect URI with the identity provider before enabling this option.
 
 If provider logout is configured but the discovered `end_session_endpoint` is invalid, provider logout is disabled for that server.
-Argo Server logs `Ignoring invalid OIDC end-session endpoint` at warning level, clears the local cookie, and redirects directly to `sso.logoutRedirectUrl` (or the base href when it is unset).
+Argo Server logs `Ignoring invalid OIDC end-session endpoint` at warning level, clears the local cookie, and redirects directly to `sso.logoutRedirectUrl`.
 
-Argo Server does not send an `id_token_hint` in the logout request, so the identity provider may show the user a logout confirmation prompt.
+Provider logout is known to work with Keycloak 18 and later, which accepts the `client_id` and `post_logout_redirect_uri` parameters Argo Server sends.
+Okta provider logout is not supported because its end-session endpoint requires `id_token_hint`; Argo Server does not retain the raw ID token because it can exceed browser cookie size limits.
 
 ## SSO RBAC
 
