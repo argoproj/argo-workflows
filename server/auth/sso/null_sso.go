@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/argoproj/argo-workflows/v4/server/auth/types"
-	"github.com/argoproj/argo-workflows/v4/server/logout"
 )
 
 var NullSSO Interface = nullService{}
@@ -15,11 +14,8 @@ type nullService struct {
 }
 
 // NewNullSSO creates a non-SSO service with the configured local logout redirect.
-func NewNullSSO(logoutRedirectURL string) (Interface, error) {
-	if err := logout.ValidateRedirectURL(logoutRedirectURL); err != nil {
-		return nil, fmt.Errorf("invalid sso.logoutRedirectUrl: %w", err)
-	}
-	return nullService{logoutRedirectURL: logoutRedirectURL}, nil
+func NewNullSSO(logoutRedirectURL string) Interface {
+	return nullService{logoutRedirectURL: logoutRedirectURL}
 }
 
 func (n nullService) LogoutURL() string {
