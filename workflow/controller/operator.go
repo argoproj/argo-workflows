@@ -937,6 +937,15 @@ func (woc *wfOperationCtx) reapplyUpdate(ctx context.Context, wfClient v1alpha1.
 		if err != nil {
 			return nil, err
 		}
+		// The preceding UID-guarded Update only fails on conflict when the workflow has been
+		// deleted and recreated under the same name while the controller was mid-operation on it.
+		// IsConflict treats a UID precondition failure the same as an ordinary conflict, so without
+		// this check we would merge-patch the old instance's status delta onto the new object,
+		// silently corrupting it (e.g. creating unreachable nodes with empty fields).
+		// https://github.com/argoproj/argo-workflows/issues/16774
+		if currWf.UID != woc.wf.UID {
+			return nil, fmt.Errorf("workflow has been recreated, not updating(%s -> %s)", woc.wf.UID, currWf.UID)
+		}
 		// There is something about having informer indexers (introduced in v2.12) that means we are more likely to operate on the
 		// previous version of the workflow. This means under high load, a previously successful workflow could
 		// be operated on again. This can error (e.g. if any pod was deleted as part of clean-up). This check prevents that.
