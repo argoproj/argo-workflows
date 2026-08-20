@@ -95,6 +95,7 @@ func TestLoadSsoClientIdFromSecret(t *testing.T) {
 	assert.Equal(t, "sso-client-secret-value", ssoObject.config.ClientSecret)
 	assert.Equal(t, "argo_groups", ssoObject.customClaimName)
 	assert.Equal(t, "https://example.com/logged-out", ssoObject.LogoutRedirectURL())
+	assert.Empty(t, ssoObject.LogoutURL())
 	assert.Empty(t, config.IssuerAlias)
 	assert.Equal(t, 10*time.Hour, ssoObject.expiry)
 }
@@ -329,15 +330,6 @@ func TestIsValidFinalRedirectURL(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			assert.Equal(t, tc.expected, isValidFinalRedirectURL(tc.url))
-		})
-	}
-}
-
-func TestNewSsoRejectsInvalidLogoutRedirectURL(t *testing.T) {
-	for _, redirectURL := range []string{"/signed-out", "javascript://example.com/logout", "https://example.com/logout#fragment", "https://user:pass@idp.example.com/logout"} {
-		t.Run(redirectURL, func(t *testing.T) {
-			_, err := newSso(logging.TestContext(t.Context()), fakeOidcFactory, Config{Issuer: "https://test-issuer", LogoutRedirectURL: redirectURL}, nil, "/", false)
-			require.EqualError(t, err, "invalid sso.logoutRedirectUrl: logout redirect URL must be an absolute HTTP(S) URL without user info or a fragment: \""+redirectURL+"\"")
 		})
 	}
 }

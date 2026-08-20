@@ -25,7 +25,6 @@ import (
 
 	authcookie "github.com/argoproj/argo-workflows/v4/server/auth/cookie"
 	"github.com/argoproj/argo-workflows/v4/server/auth/types"
-	"github.com/argoproj/argo-workflows/v4/server/logout"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	pkgrand "github.com/argoproj/argo-workflows/v4/util/rand"
 )
@@ -123,9 +122,6 @@ func newSso(
 	secure bool,
 ) (Interface, error) {
 	baseHRef = authcookie.NormalizePath(baseHRef)
-	if err := logout.ValidateRedirectURL(c.LogoutRedirectURL); err != nil {
-		return nil, fmt.Errorf("invalid sso.logoutRedirectUrl: %w", err)
-	}
 	if c.Issuer == "" {
 		return nil, fmt.Errorf("issuer empty")
 	}
