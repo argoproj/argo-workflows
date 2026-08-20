@@ -1,6 +1,7 @@
 package cookie
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -29,32 +30,43 @@ func TestNormalizePath(t *testing.T) {
 	}
 }
 
-func TestAuthCookiesUseMatchingAttributes(t *testing.T) {
+func TestAuthCookiesUseExpectedAttributes(t *testing.T) {
 	const path = "/argo/"
 	const value = "Bearer v2:token"
-	expires := time.Now().Add(time.Hour)
+	expires := time.Date(2030, time.January, 2, 3, 4, 5, 0, time.UTC)
 
-	setRecorder := httptest.NewRecorder()
-	SetAuthCookie(setRecorder, value, path, expires, true)
-	setCookies := setRecorder.Result().Cookies()
-	require.Len(t, setCookies, 1)
-	setCookie := setCookies[0]
+	for _, secure := range []bool{false, true} {
+		t.Run(fmt.Sprintf("secure=%t", secure), func(t *testing.T) {
+			setRecorder := httptest.NewRecorder()
+			SetAuthCookie(setRecorder, value, path, expires, secure)
+			setCookies := setRecorder.Result().Cookies()
+			require.Len(t, setCookies, 1)
+			setCookie := setCookies[0]
 
-	clearRecorder := httptest.NewRecorder()
-	ClearAuthCookie(clearRecorder, path, true)
-	clearCookies := clearRecorder.Result().Cookies()
-	require.Len(t, clearCookies, 1)
-	clearCookie := clearCookies[0]
+			clearRecorder := httptest.NewRecorder()
+			ClearAuthCookie(clearRecorder, path, secure)
+			clearCookies := clearRecorder.Result().Cookies()
+			require.Len(t, clearCookies, 1)
+			clearCookie := clearCookies[0]
 
-	assert.Equal(t, AuthorizationCookieName, setCookie.Name)
-	assert.Equal(t, setCookie.Name, clearCookie.Name)
-	assert.Equal(t, path, setCookie.Path)
-	assert.Equal(t, setCookie.Path, clearCookie.Path)
-	assert.Equal(t, setCookie.Domain, clearCookie.Domain)
-	assert.Equal(t, http.SameSiteStrictMode, setCookie.SameSite)
-	assert.Equal(t, setCookie.SameSite, clearCookie.SameSite)
-	assert.True(t, setCookie.Secure)
-	assert.Equal(t, setCookie.Secure, clearCookie.Secure)
-	assert.Equal(t, setCookie.HttpOnly, clearCookie.HttpOnly)
-	assert.Equal(t, -1, clearCookie.MaxAge)
+			assert.Equal(t, AuthorizationCookieName, setCookie.Name)
+			assert.Equal(t, value, setCookie.Value)
+			assert.Equal(t, path, setCookie.Path)
+			assert.Empty(t, setCookie.Domain)
+			assert.True(t, expires.Equal(setCookie.Expires))
+			assert.Equal(t, http.SameSiteStrictMode, setCookie.SameSite)
+			assert.Equal(t, secure, setCookie.Secure)
+			assert.False(t, setCookie.HttpOnly)
+
+			assert.Equal(t, AuthorizationCookieName, clearCookie.Name)
+			assert.Empty(t, clearCookie.Value)
+			assert.Equal(t, path, clearCookie.Path)
+			assert.Empty(t, clearCookie.Domain)
+			assert.True(t, time.Unix(1, 0).Equal(clearCookie.Expires))
+			assert.Equal(t, -1, clearCookie.MaxAge)
+			assert.Equal(t, http.SameSiteStrictMode, clearCookie.SameSite)
+			assert.Equal(t, secure, clearCookie.Secure)
+			assert.False(t, clearCookie.HttpOnly)
+		})
+	}
 }
