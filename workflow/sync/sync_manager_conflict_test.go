@@ -64,7 +64,7 @@ func (s *stubLock) tryAcquire(_ context.Context, _ string, _ *sqldb.SessionProxy
 }
 
 // conflictErrForDBType returns the driver error a genuine transaction conflict
-// produces, with a message that matches none of isRetryableSyncError's
+// produces, with a message that matches none of IsRetryableSyncError's
 // substring fallbacks - retries and classification must work from the driver
 // type alone.
 func conflictErrForDBType(dbType sqldb.DBType) error {
@@ -78,12 +78,12 @@ func conflictErrForDBType(dbType sqldb.DBType) error {
 // driver-error classifier: a genuine conflict is retryable however its message
 // is worded, while the substring fallback still catches stringified errors.
 func TestIsRetryableSyncErrorTypedConflict(t *testing.T) {
-	assert.True(t, isRetryableSyncError(&pq.Error{Code: pqerror.TRSerializationFailure, Message: "concurrent update"}))
-	assert.True(t, isRetryableSyncError(&pq.Error{Code: pqerror.TRDeadlockDetected, Message: "processes are waiting"}))
-	assert.True(t, isRetryableSyncError(fmt.Errorf("commit: %w", &mysql.MySQLError{Number: 1213, Message: "chosen as victim"})))
-	assert.True(t, isRetryableSyncError(errors.New("ERROR: could not serialize access due to read/write dependencies among transactions")), "substring fallback must still work")
-	assert.False(t, isRetryableSyncError(errors.New("duplicate key value violates unique constraint")))
-	assert.False(t, isRetryableSyncError(nil))
+	assert.True(t, IsRetryableSyncError(&pq.Error{Code: pqerror.TRSerializationFailure, Message: "concurrent update"}))
+	assert.True(t, IsRetryableSyncError(&pq.Error{Code: pqerror.TRDeadlockDetected, Message: "processes are waiting"}))
+	assert.True(t, IsRetryableSyncError(fmt.Errorf("commit: %w", &mysql.MySQLError{Number: 1213, Message: "chosen as victim"})))
+	assert.True(t, IsRetryableSyncError(errors.New("ERROR: could not serialize access due to read/write dependencies among transactions")), "substring fallback must still work")
+	assert.False(t, IsRetryableSyncError(errors.New("duplicate key value violates unique constraint")))
+	assert.False(t, IsRetryableSyncError(nil))
 }
 
 // TestTryAcquireSurfacesSerializationConflict drives the database retry loop to

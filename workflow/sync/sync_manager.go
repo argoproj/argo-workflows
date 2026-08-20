@@ -497,7 +497,7 @@ func (sm *Manager) TryAcquire(ctx context.Context, wf *wfv1.Workflow, nodeName s
 		// failed as a stale hold on the next controller restart.
 		syncStatus := wf.Status.Synchronization.DeepCopy()
 		attempt := 0
-		err = retry.OnError(backoff, isRetryableSyncError, func() error {
+		err = retry.OnError(backoff, IsRetryableSyncError, func() error {
 			attempt++
 			sm.log.WithFields(logging.Fields{
 				"holderKey": holderKey,
@@ -514,7 +514,7 @@ func (sm *Manager) TryAcquire(ctx context.Context, wf *wfv1.Workflow, nodeName s
 					"holderKey": holderKey,
 					"attempt":   attempt,
 					"error":     txErr,
-					"retryable": isRetryableSyncError(txErr),
+					"retryable": IsRetryableSyncError(txErr),
 				}).Info(ctx, "TryAcquire - transaction failed")
 			}
 			return txErr
@@ -546,12 +546,12 @@ var dbRetryBackoff = wait.Backoff{
 	Cap:      600 * time.Millisecond,
 }
 
-// isRetryableSyncError reports whether a TryAcquire transaction failure should
+// IsRetryableSyncError reports whether a TryAcquire transaction failure should
 // be retried. A conflict reported by the database driver itself is always
 // retryable; the substring match against the driver's text (serialization
 // conflicts, deadlocks, explicit rollbacks) remains as a fallback for errors
 // that arrive with the driver type stringified away by an intermediate layer.
-func isRetryableSyncError(err error) bool {
+func IsRetryableSyncError(err error) bool {
 	if err == nil {
 		return false
 	}
