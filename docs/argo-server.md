@@ -52,10 +52,9 @@ environment variable.
 
 ### Logout Redirect URL
 
-> v4.1 and after
+> v4.2 and after
 
-Logout behavior and OIDC provider logout configuration are documented in [SSO Logout Redirect URL](argo-server-sso.md#logout-redirect-url).
-The `sso.logoutRedirectUrl` setting controls the post-logout redirect for every auth mode, including `client`; it is not limited to SSO authentication.
+See [Logout Redirect URL](argo-server-sso.md#logout-redirect-url).
 
 ### Transport Layer Security
 
