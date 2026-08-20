@@ -104,8 +104,8 @@ schema = 3
     version = "v3.0.2+incompatible"
     hash = "sha256-tGYo4iifYkG0EOOBix+O/utWhrzzT2Zk+jcnZZ06ZPk="
   [mod."github.com/aliyun/credentials-go"]
-    version = "v1.4.12"
-    hash = "sha256-08l5gD5IZpfiKZzjct/DD+R/+u6PgUTbcke0DLcFhjs="
+    version = "v1.4.13"
+    hash = "sha256-q6jzIuVZM23R4JSQfuBB0U4jRJAEdgexpunzhYpZ6Hw="
   [mod."github.com/andybalholm/brotli"]
     version = "v1.2.2"
     hash = "sha256-XVnD/ruaOOYmt1Eipv/kIzNStI9fqOYc3hJHJ7ao9Yg="
