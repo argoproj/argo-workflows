@@ -41,11 +41,11 @@ const nullIAMEndpoint = ""
 
 type Client interface {
 	// PutFile puts a single file to a bucket at the specified key
-	PutFile(bucket, key, path string) error
+	PutFile(bucket, key, path, storageClass string) error
 
 	// PutDirectory puts a complete directory into a bucket key prefix, with each file in the directory
 	// a separate key in the bucket.
-	PutDirectory(bucket, key, path string) error
+	PutDirectory(bucket, key, path, storageClass string) error
 
 	// GetFile downloads a file to a local file path
 	GetFile(bucket, key, path string) error
@@ -350,11 +350,11 @@ func saveS3Artifact(ctx context.Context, s3cli Client, path string, outputArtifa
 	}
 
 	if isDir {
-		if err = s3cli.PutDirectory(outputArtifact.S3.Bucket, outputArtifact.S3.Key, path); err != nil {
+		if err = s3cli.PutDirectory(outputArtifact.S3.Bucket, outputArtifact.S3.Key, path, outputArtifact.S3.StorageClass); err != nil {
 			return !isTransientS3Err(ctx, err), fmt.Errorf("failed to put directory: %w", err)
 		}
 	} else {
-		if err = s3cli.PutFile(outputArtifact.S3.Bucket, outputArtifact.S3.Key, path); err != nil {
+		if err = s3cli.PutFile(outputArtifact.S3.Bucket, outputArtifact.S3.Key, path, outputArtifact.S3.StorageClass); err != nil {
 			return !isTransientS3Err(ctx, err), fmt.Errorf("failed to put file: %w", err)
 		}
 	}
@@ -628,7 +628,7 @@ func (s *s3client) getCheckedPartSize(path string, configuredPartSizeMiB int64) 
 }
 
 // PutFile puts a single file to a bucket at the specified key
-func (s *s3client) PutFile(bucket, key, path string) error {
+func (s *s3client) PutFile(bucket, key, path, storageClass string) error {
 	logging.RequireLoggerFromContext(s.ctx).WithFields(logging.Fields{"endpoint": s.Endpoint, "bucket": bucket, "key": key, "path": path}).Info(s.ctx, "Saving file to s3")
 	// NOTE: minio will detect proper mime-type based on file extension
 
@@ -636,7 +636,11 @@ func (s *s3client) PutFile(bucket, key, path string) error {
 	if err != nil {
 		return err
 	}
-	opts := minio.PutObjectOptions{SendContentMd5: s.SendContentMd5, ServerSideEncryption: encOpts}
+	opts := minio.PutObjectOptions{
+		SendContentMd5:       s.SendContentMd5,
+		ServerSideEncryption: encOpts,
+		StorageClass:         storageClass,
+	}
 
 	// Enables better performance for parallel uploads (3 times faster in a benchmark of 4 threads 16MiB part size).
 	opts.ConcurrentStreamParts = true
@@ -718,9 +722,9 @@ func generatePutTasks(ctx context.Context, keyPrefix, rootPath string) chan uplo
 
 // PutDirectory puts a complete directory into a bucket key prefix, with each file in the directory
 // a separate key in the bucket.
-func (s *s3client) PutDirectory(bucket, key, path string) error {
+func (s *s3client) PutDirectory(bucket, key, path, storageClass string) error {
 	for putTask := range generatePutTasks(s.ctx, key, path) {
-		err := s.PutFile(bucket, putTask.key, putTask.path)
+		err := s.PutFile(bucket, putTask.key, putTask.path, storageClass)
 		if err != nil {
 			return err
 		}
