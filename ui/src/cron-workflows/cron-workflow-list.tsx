@@ -40,8 +40,14 @@ export function CronWorkflowList({match, location, history}: RouteComponentProps
     const isFirstRender = useRef(true);
     const [namespace, setNamespace] = useState<string>(nsUtils.getNamespace(match.params.namespace) || '');
     const [sidePanel, setSidePanel] = useState(queryParams.get('sidePanel') === 'true');
-    const [labels, setLabels] = useState<string[]>([]);
-    const [states, setStates] = useState(['Running', 'Suspended']); // check all by default
+    const [labels, setLabels] = useState<string[]>(() => {
+        const labelQueryParam = queryParams.getAll('label');
+        return labelQueryParam.length > 0 ? labelQueryParam : [];
+    });
+    const [states, setStates] = useState<string[]>(() => {
+        const stateQueryParam = queryParams.getAll('state');
+        return stateQueryParam.length > 0 ? stateQueryParam : ['Running', 'Suspended'];
+    });
 
     const [storedDisplayISOFormatCreation, setStoredDisplayISOFormatCreation] = useTimestamp(TIMESTAMP_KEYS.CRON_WORKFLOW_LIST_CREATION);
     const [storedDisplayISOFormatNextScheduled, setStoredDisplayISOFormatNextScheduled] = useTimestamp(TIMESTAMP_KEYS.CRON_WORKFLOW_LIST_NEXT_SCHEDULED);
@@ -55,14 +61,20 @@ export function CronWorkflowList({match, location, history}: RouteComponentProps
 
     // save history
     useEffect(() => {
+        const params = new URLSearchParams();
+        labels?.forEach(label => params.append('label', label));
+        states?.forEach(state => params.append('state', state));
+        if (sidePanel) {
+            params.append('sidePanel', 'true');
+        }
         (isFirstRender.current ? history.replace : history.push)(
             historyUrl('cron-workflows' + (nsUtils.getManagedNamespace() ? '' : '/{namespace}'), {
                 namespace,
-                sidePanel
+                extraSearchParams: params
             })
         );
         isFirstRender.current = false;
-    }, [namespace, sidePanel]);
+    }, [namespace, sidePanel, labels.toString(), states.toString()]);
 
     // internal state
     const [error, setError] = useState<Error>();
