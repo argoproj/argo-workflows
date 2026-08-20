@@ -49,6 +49,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/server/apiserver/accesslog"
 	"github.com/argoproj/argo-workflows/v4/server/artifacts"
 	"github.com/argoproj/argo-workflows/v4/server/auth"
+	"github.com/argoproj/argo-workflows/v4/server/auth/header"
 	"github.com/argoproj/argo-workflows/v4/server/auth/sso"
 	"github.com/argoproj/argo-workflows/v4/server/auth/webhook"
 	"github.com/argoproj/argo-workflows/v4/server/cache"
@@ -151,6 +152,19 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (Server, error) {
 	log := logging.RequireLoggerFromContext(ctx)
 	var resourceCache *cache.ResourceCache
 	ssoIf := sso.NullSSO
+	headerIf := header.New(config.HeaderConfig{})
+
+	if opts.AuthModes[auth.Header] {
+		c, err := configController.Get(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		headerIf = header.New(c.Header)
+		log.Info(ctx, "Trusted Header authentication enabled")
+	} else {
+		log.Info(ctx, "Trusted Header authentication disabled")
+	}
 	if opts.AuthModes[auth.SSO] {
 		c, err := configController.Get(ctx)
 		if err != nil {
@@ -169,7 +183,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (Server, error) {
 	} else {
 		log.Info(ctx, "SSO disabled")
 	}
-	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.Clients, opts.RestConfig, ssoIf, auth.DefaultClientForAuthorization, opts.Namespace, opts.SSONamespace, opts.Namespaced, resourceCache)
+	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.Clients, opts.RestConfig, ssoIf, headerIf, auth.DefaultClientForAuthorization, opts.Namespace, opts.SSONamespace, opts.Namespaced, resourceCache)
 	if err != nil {
 		return nil, err
 	}
