@@ -21,7 +21,7 @@ type Handler struct {
 // NewHandler creates a handler that clears the Argo Workflows authorization cookie and redirects the user.
 // If the provider end-session URL is invalid, the handler falls back to the local redirect and returns the validation error.
 func NewHandler(baseHRef, redirectURL string, secure bool, logoutURL, clientID string) (*Handler, error) {
-	baseHRef = normalizeBaseHRef(baseHRef)
+	baseHRef = authcookie.NormalizePath(baseHRef)
 	cookiePaths := []string{baseHRef}
 	if legacyCookiePath := strings.TrimSuffix(baseHRef, "/"); legacyCookiePath != "" {
 		cookiePaths = append(cookiePaths, legacyCookiePath)
@@ -34,18 +34,10 @@ func NewHandler(baseHRef, redirectURL string, secure bool, logoutURL, clientID s
 	return &Handler{cookiePaths: cookiePaths, redirectURL: finalRedirectURL, secure: secure}, err
 }
 
-func normalizeBaseHRef(baseHRef string) string {
-	trimmed := strings.Trim(baseHRef, "/")
-	if trimmed == "" {
-		return "/"
-	}
-	return "/" + trimmed + "/"
-}
-
 // ValidateRedirectURL validates the optional post-logout redirect URL supplied by an operator.
 func ValidateRedirectURL(redirectURL string) error {
 	if redirectURL != "" && !isAbsoluteHTTPURL(redirectURL) {
-		return fmt.Errorf("logout redirect URL must be an absolute HTTP(S) URL without a fragment: %q", redirectURL)
+		return fmt.Errorf("logout redirect URL must be an absolute HTTP(S) URL without user info or a fragment: %q", redirectURL)
 	}
 	return nil
 }
@@ -57,7 +49,7 @@ func isAbsoluteHTTPURL(rawURL string) bool {
 
 func parseAbsoluteHTTPURL(rawURL string) (*url.URL, bool) {
 	parsedURL, err := url.Parse(rawURL)
-	if err != nil || parsedURL.Hostname() == "" || parsedURL.Fragment != "" ||
+	if err != nil || parsedURL.Hostname() == "" || parsedURL.User != nil || parsedURL.Fragment != "" ||
 		(!strings.EqualFold(parsedURL.Scheme, "http") && !strings.EqualFold(parsedURL.Scheme, "https")) {
 		return nil, false
 	}
@@ -71,7 +63,7 @@ func constructLogoutURL(logoutURL, clientID, redirectURL string) (string, error)
 
 	parsedURL, ok := parseAbsoluteHTTPURL(logoutURL)
 	if !ok {
-		return redirectURL, fmt.Errorf("oidc end-session endpoint must be an absolute HTTP(S) URL without a fragment: %q", logoutURL)
+		return redirectURL, fmt.Errorf("oidc end-session endpoint must be an absolute HTTP(S) URL without user info or a fragment: %q", logoutURL)
 	}
 
 	query := parsedURL.Query()
@@ -86,6 +78,11 @@ func constructLogoutURL(logoutURL, clientID, redirectURL string) (string, error)
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.Header().Set("Allow", http.MethodGet)
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
 	for _, cookiePath := range h.cookiePaths {
 		authcookie.ClearAuthCookie(w, cookiePath, h.secure)
 	}

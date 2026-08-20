@@ -36,5 +36,5 @@ func TestNewNullSSO(t *testing.T) {
 	assert.Equal(t, "https://example.com/logged-out", configured.LogoutRedirectURL())
 
 	_, err = NewNullSSO("/logged-out")
-	require.EqualError(t, err, "invalid sso.logoutRedirectUrl: logout redirect URL must be an absolute HTTP(S) URL without a fragment: \"/logged-out\"")
+	require.EqualError(t, err, "invalid sso.logoutRedirectUrl: logout redirect URL must be an absolute HTTP(S) URL without user info or a fragment: \"/logged-out\"")
 }

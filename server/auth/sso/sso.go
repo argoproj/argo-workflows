@@ -54,14 +54,6 @@ type Interface interface {
 
 var _ Interface = &sso{}
 
-func normalizeBaseHRef(baseHRef string) string {
-	trimmed := strings.Trim(baseHRef, "/")
-	if trimmed == "" {
-		return "/"
-	}
-	return "/" + trimmed + "/"
-}
-
 type Config = config.SSOConfig
 
 type sso struct {
@@ -131,7 +123,7 @@ func newSso(
 	baseHRef string,
 	secure bool,
 ) (Interface, error) {
-	baseHRef = normalizeBaseHRef(baseHRef)
+	baseHRef = authcookie.NormalizePath(baseHRef)
 	if err := logout.ValidateRedirectURL(c.LogoutRedirectURL); err != nil {
 		return nil, fmt.Errorf("invalid sso.logoutRedirectUrl: %w", err)
 	}
