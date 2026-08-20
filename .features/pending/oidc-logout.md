@@ -6,7 +6,7 @@ Issues: 12389
 Argo Server can redirect SSO users to the OIDC provider's discovered `end_session_endpoint` when they log out.
 Provider logout is disabled by default, so existing SSO installations do not need to change their configuration when upgrading.
 To enable provider logout, configure `sso.logoutRedirectUrl` with an absolute HTTP(S) URL.
-Argo Server rejects relative or invalid values at startup.
+Argo Server fails to start if the configured logout redirect URL is relative, contains a fragment, or is otherwise invalid.
 Register the exact URL with the identity provider as an allowed post-logout redirect URI.
 Provider logout is known to work with Keycloak 18 and later, which accepts the `client_id` and `post_logout_redirect_uri` parameters Argo Server sends.
 Okta provider logout is not supported because its end-session endpoint requires `id_token_hint`; Argo Server does not retain the raw ID token because it can exceed browser cookie size limits.

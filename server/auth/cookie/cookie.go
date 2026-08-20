@@ -2,6 +2,7 @@ package cookie
 
 import (
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -11,6 +12,15 @@ const (
 	// AuthorizationMetadataKey is the lowercase gRPC metadata key for an Argo authorization token.
 	AuthorizationMetadataKey = "authorization"
 )
+
+// NormalizePath returns the canonical path used for Argo authorization cookies.
+func NormalizePath(path string) string {
+	trimmed := strings.Trim(path, "/")
+	if trimmed == "" {
+		return "/"
+	}
+	return "/" + trimmed + "/"
+}
 
 // SetAuthCookie writes the Argo authorization cookie.
 func SetAuthCookie(w http.ResponseWriter, value, path string, expires time.Time, secure bool) {

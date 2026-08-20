@@ -10,6 +10,25 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestNormalizePath(t *testing.T) {
+	for _, testCase := range []struct {
+		name string
+		path string
+		want string
+	}{
+		{name: "empty", path: "", want: "/"},
+		{name: "root", path: "/", want: "/"},
+		{name: "without slashes", path: "argo", want: "/argo/"},
+		{name: "without trailing slash", path: "/argo", want: "/argo/"},
+		{name: "with trailing slash", path: "/argo/", want: "/argo/"},
+		{name: "nested path", path: "//argo/workflows//", want: "/argo/workflows/"},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			assert.Equal(t, testCase.want, NormalizePath(testCase.path))
+		})
+	}
+}
+
 func TestAuthCookiesUseMatchingAttributes(t *testing.T) {
 	const path = "/argo/"
 	const value = "Bearer v2:token"

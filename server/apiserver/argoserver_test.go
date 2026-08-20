@@ -45,7 +45,7 @@ func TestNewArgoServerRejectsInvalidClientLogoutRedirect(t *testing.T) {
 		Clients:    &types.Clients{Kubernetes: kube},
 		AuthModes:  auth.Modes{auth.Client: true},
 	})
-	require.EqualError(t, err, "invalid sso.logoutRedirectUrl: logout redirect URL must be an absolute HTTP(S) URL without a fragment: \"/logged-out\"")
+	require.EqualError(t, err, "invalid sso.logoutRedirectUrl: logout redirect URL must be an absolute HTTP(S) URL without user info or a fragment: \"/logged-out\"")
 }
 
 func TestValidateArtifactDriverImages(t *testing.T) {

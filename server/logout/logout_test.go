@@ -53,6 +53,18 @@ func TestLogoutHandler(t *testing.T) {
 	}
 }
 
+func TestLogoutHandlerRejectsNonGet(t *testing.T) {
+	handler, err := NewHandler("/argo", "", false, "", "")
+	require.NoError(t, err)
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequestWithContext(t.Context(), http.MethodPost, LogoutEndpoint, nil)
+	handler.ServeHTTP(recorder, request)
+	assert.Equal(t, http.StatusMethodNotAllowed, recorder.Code)
+	assert.Equal(t, http.MethodGet, recorder.Header().Get("Allow"))
+	assert.Empty(t, recorder.Header().Values("Set-Cookie"))
+	assert.Empty(t, recorder.Header().Get("Location"))
+}
+
 func TestConstructLogoutURL(t *testing.T) {
 	redirect, err := constructLogoutURL("", "client", "https://example.com/")
 	require.NoError(t, err)
@@ -64,10 +76,13 @@ func TestConstructLogoutURL(t *testing.T) {
 	require.Error(t, err)
 	assert.Equal(t, "https://example.com/", redirect)
 	redirect, err = constructLogoutURL("javascript://example.com/logout", "client", "https://example.com/")
-	require.EqualError(t, err, "oidc end-session endpoint must be an absolute HTTP(S) URL without a fragment: \"javascript://example.com/logout\"")
+	require.EqualError(t, err, "oidc end-session endpoint must be an absolute HTTP(S) URL without user info or a fragment: \"javascript://example.com/logout\"")
 	assert.Equal(t, "https://example.com/", redirect)
 	redirect, err = constructLogoutURL("https://example.com/logout#/signed-out", "client", "https://example.com/")
-	require.EqualError(t, err, "oidc end-session endpoint must be an absolute HTTP(S) URL without a fragment: \"https://example.com/logout#/signed-out\"")
+	require.EqualError(t, err, "oidc end-session endpoint must be an absolute HTTP(S) URL without user info or a fragment: \"https://example.com/logout#/signed-out\"")
+	assert.Equal(t, "https://example.com/", redirect)
+	redirect, err = constructLogoutURL("https://user:pass@idp.example.com/logout", "client", "https://example.com/")
+	require.EqualError(t, err, "oidc end-session endpoint must be an absolute HTTP(S) URL without user info or a fragment: \"https://user:pass@idp.example.com/logout\"")
 	assert.Equal(t, "https://example.com/", redirect)
 }
 
@@ -75,9 +90,10 @@ func TestValidateRedirectURL(t *testing.T) {
 	assert.NoError(t, ValidateRedirectURL(""))
 	assert.NoError(t, ValidateRedirectURL("https://example.com/signed-out"))
 	assert.NoError(t, ValidateRedirectURL("HTTPS://example.com/signed-out"))
-	require.EqualError(t, ValidateRedirectURL("/signed-out"), "logout redirect URL must be an absolute HTTP(S) URL without a fragment: \"/signed-out\"")
+	require.EqualError(t, ValidateRedirectURL("/signed-out"), "logout redirect URL must be an absolute HTTP(S) URL without user info or a fragment: \"/signed-out\"")
 	require.Error(t, ValidateRedirectURL("//example.com/signed-out"))
 	require.Error(t, ValidateRedirectURL("javascript://example.com/signed-out"))
-	require.EqualError(t, ValidateRedirectURL("https://example.com/signed-out#fragment"), "logout redirect URL must be an absolute HTTP(S) URL without a fragment: \"https://example.com/signed-out#fragment\"")
+	require.EqualError(t, ValidateRedirectURL("https://example.com/signed-out#fragment"), "logout redirect URL must be an absolute HTTP(S) URL without user info or a fragment: \"https://example.com/signed-out#fragment\"")
 	require.Error(t, ValidateRedirectURL("https://:443/signed-out"))
+	require.EqualError(t, ValidateRedirectURL("https://user:pass@idp.example.com/signed-out"), "logout redirect URL must be an absolute HTTP(S) URL without user info or a fragment: \"https://user:pass@idp.example.com/signed-out\"")
 }

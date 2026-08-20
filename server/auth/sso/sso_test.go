@@ -334,10 +334,10 @@ func TestIsValidFinalRedirectURL(t *testing.T) {
 }
 
 func TestNewSsoRejectsInvalidLogoutRedirectURL(t *testing.T) {
-	for _, redirectURL := range []string{"/signed-out", "javascript://example.com/logout", "https://example.com/logout#fragment"} {
+	for _, redirectURL := range []string{"/signed-out", "javascript://example.com/logout", "https://example.com/logout#fragment", "https://user:pass@idp.example.com/logout"} {
 		t.Run(redirectURL, func(t *testing.T) {
 			_, err := newSso(logging.TestContext(t.Context()), fakeOidcFactory, Config{Issuer: "https://test-issuer", LogoutRedirectURL: redirectURL}, nil, "/", false)
-			require.EqualError(t, err, "invalid sso.logoutRedirectUrl: logout redirect URL must be an absolute HTTP(S) URL without a fragment: \""+redirectURL+"\"")
+			require.EqualError(t, err, "invalid sso.logoutRedirectUrl: logout redirect URL must be an absolute HTTP(S) URL without user info or a fragment: \""+redirectURL+"\"")
 		})
 	}
 }
