@@ -116,6 +116,31 @@ func Test_wfOperationCtx_reapplyUpdate(t *testing.T) {
 		_, err := woc.reapplyUpdate(ctx, controller.wfclientset.ArgoprojV1alpha1().Workflows(""), wf.Status.Nodes)
 		require.EqualError(t, err, "must never update completed node my-node")
 	})
+	// https://github.com/argoproj/argo-workflows/issues/16774
+	// If the workflow was deleted and recreated under the same name while the controller was
+	// mid-operation on it, the UID-guarded Update fails on the UID precondition, which IsConflict
+	// treats as an ordinary conflict. reapplyUpdate must detect the UID mismatch on the object it
+	// Gets by name and refuse to merge-patch the old instance's status delta onto the new object.
+	t.Run("ErrWorkflowRecreatedWithDifferentUID", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{Name: "my-wf", UID: "old-uid"},
+			Status:     wfv1.WorkflowStatus{Nodes: wfv1.Nodes{"foo": wfv1.NodeStatus{Name: "my-foo"}}},
+		}
+		// currWf simulates the recreated workflow: same name, different UID, no status.
+		currWf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{Name: "my-wf", UID: "new-uid"},
+		}
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx, currWf)
+		defer cancel()
+		controller.hydrator = hydratorfake.Always
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		require.NoError(t, controller.hydrator.Hydrate(ctx, wf))
+		nodes := wfv1.Nodes{"foo": wfv1.NodeStatus{Name: "my-foo", Phase: wfv1.NodeSucceeded}}
+
+		_, err := woc.reapplyUpdate(ctx, controller.wfclientset.ArgoprojV1alpha1().Workflows(""), nodes)
+		require.EqualError(t, err, "workflow has been recreated, not updating(old-uid -> new-uid)")
+	})
 }
 
 func TestResourcesDuration(t *testing.T) {
