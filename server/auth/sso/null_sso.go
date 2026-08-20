@@ -9,7 +9,26 @@ import (
 
 var NullSSO Interface = nullService{}
 
-type nullService struct{}
+type nullService struct {
+	logoutRedirectURL string
+}
+
+// NewNullSSO creates a non-SSO service with the configured local logout redirect.
+func NewNullSSO(logoutRedirectURL string) Interface {
+	return nullService{logoutRedirectURL: logoutRedirectURL}
+}
+
+func (n nullService) LogoutURL() string {
+	return ""
+}
+
+func (n nullService) LogoutRedirectURL() string {
+	return n.logoutRedirectURL
+}
+
+func (n nullService) ClientID() string {
+	return ""
+}
 
 func (n nullService) IsRBACEnabled() bool {
 	return false

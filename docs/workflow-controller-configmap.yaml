@@ -472,6 +472,10 @@ data:
     # be in the form <argo-server-root-url>/oauth2/callback. It must be
     # browser-accessible. If omitted, will be automatically generated.
     redirectUrl: https://argo-server/oauth2/callback
+    # Absolute URL to redirect to after logout. Enables OIDC provider logout when
+    # the provider advertises an end_session_endpoint. Must be registered with
+    # the provider as a post-logout redirect URI. (optional) >= v4.2.
+    logoutRedirectUrl: https://example.com/logged-out
     # Additional scopes to request. Typically needed for SSO RBAC. >= v2.12
     scopes:
      - groups

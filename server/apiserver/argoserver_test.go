@@ -3,16 +3,65 @@ package apiserver
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
 	"github.com/argoproj/argo-workflows/v4/config"
+	"github.com/argoproj/argo-workflows/v4/server/auth"
 	"github.com/argoproj/argo-workflows/v4/server/types"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
+
+func TestNewArgoServerLoadsLogoutRedirectForClientAuth(t *testing.T) {
+	const namespace = "argo"
+	kube := fake.NewClientset(&corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{Name: common.ConfigMapName, Namespace: namespace},
+		Data:       map[string]string{"config": "sso:\n  logoutRedirectUrl: https://example.com/logged-out\n"},
+	})
+	server, err := NewArgoServer(logging.TestContext(t.Context()), ArgoServerOpts{
+		Namespace:  namespace,
+		ConfigName: common.ConfigMapName,
+		Clients:    &types.Clients{Kubernetes: kube},
+		AuthModes:  auth.Modes{auth.Client: true},
+	})
+	require.NoError(t, err)
+	as := server.(*argoServer)
+	assert.Equal(t, "https://example.com/logged-out", as.oAuth2Service.LogoutRedirectURL())
+}
+
+func TestNewArgoServerRejectsInvalidClientLogoutRedirect(t *testing.T) {
+	const namespace = "argo"
+	kube := fake.NewClientset(&corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{Name: common.ConfigMapName, Namespace: namespace},
+		Data:       map[string]string{"config": "sso:\n  logoutRedirectUrl: /logged-out\n"},
+	})
+	_, err := NewArgoServer(logging.TestContext(t.Context()), ArgoServerOpts{
+		Namespace:  namespace,
+		ConfigName: common.ConfigMapName,
+		Clients:    &types.Clients{Kubernetes: kube},
+		AuthModes:  auth.Modes{auth.Client: true},
+	})
+	require.ErrorContains(t, err, "logout redirect URL must be an absolute HTTP(S) URL")
+}
+
+func TestNewArgoServerRejectsInvalidSSOLogoutRedirect(t *testing.T) {
+	const namespace = "argo"
+	kube := fake.NewClientset(&corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{Name: common.ConfigMapName, Namespace: namespace},
+		Data:       map[string]string{"config": "sso:\n  logoutRedirectUrl: /logged-out\n"},
+	})
+	_, err := NewArgoServer(logging.TestContext(t.Context()), ArgoServerOpts{
+		Namespace:  namespace,
+		ConfigName: common.ConfigMapName,
+		Clients:    &types.Clients{Kubernetes: kube},
+		AuthModes:  auth.Modes{auth.SSO: true},
+	})
+	require.ErrorContains(t, err, "logout redirect URL must be an absolute HTTP(S) URL")
+}
 
 func TestValidateArtifactDriverImages(t *testing.T) {
 	tests := []struct {

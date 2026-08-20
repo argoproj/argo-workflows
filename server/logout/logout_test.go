@@ -1,0 +1,100 @@
+package logout
+
+import (
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	authcookie "github.com/argoproj/argo-workflows/v4/server/auth/cookie"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestLogoutHandler(t *testing.T) {
+	for _, tt := range []struct {
+		name         string
+		baseHRef     string
+		redirectURL  string
+		secure       bool
+		logoutURL    string
+		clientID     string
+		wantRedirect string
+		wantPaths    []string
+	}{
+		{name: "defaults to normalized base href", baseHRef: "/argo", wantRedirect: "/argo/", wantPaths: []string{"/argo/", "/argo"}},
+		{name: "uses configured redirect URL", baseHRef: "/argo/", redirectURL: "https://example.com/", secure: true, wantRedirect: "https://example.com/", wantPaths: []string{"/argo/", "/argo"}},
+		{name: "does not use the OIDC end-session endpoint with the default relative redirect", baseHRef: "/argo/", logoutURL: "https://idp.example.com/logout", clientID: "workflows", wantRedirect: "/argo/", wantPaths: []string{"/argo/", "/argo"}},
+		{name: "redirects through the OIDC end-session endpoint", baseHRef: "/argo/", redirectURL: "https://example.com/", logoutURL: "https://idp.example.com/logout?foo=bar", clientID: "workflows", wantRedirect: "https://idp.example.com/logout?client_id=workflows&foo=bar&post_logout_redirect_uri=https%3A%2F%2Fexample.com%2F", wantPaths: []string{"/argo/", "/argo"}},
+		{name: "normalizes an empty base href to the root cookie path", baseHRef: "", wantRedirect: "/", wantPaths: []string{"/"}},
+		{name: "only clears the root cookie path", baseHRef: "/", wantRedirect: "/", wantPaths: []string{"/"}},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			recorder := httptest.NewRecorder()
+			request := httptest.NewRequestWithContext(t.Context(), http.MethodGet, LogoutEndpoint, nil)
+
+			handler, err := NewHandler(tt.baseHRef, tt.redirectURL, tt.secure, tt.logoutURL, tt.clientID)
+			require.NoError(t, err)
+			handler.ServeHTTP(recorder, request)
+
+			response := recorder.Result()
+			assert.Equal(t, http.StatusSeeOther, response.StatusCode)
+			assert.Equal(t, tt.wantRedirect, response.Header.Get("Location"))
+			cookies := response.Cookies()
+			require.Len(t, cookies, len(tt.wantPaths))
+			for i, cookie := range cookies {
+				assert.Equal(t, authcookie.AuthorizationCookieName, cookie.Name)
+				assert.Empty(t, cookie.Value)
+				assert.Equal(t, tt.wantPaths[i], cookie.Path)
+				assert.Equal(t, -1, cookie.MaxAge)
+				assert.Equal(t, tt.secure, cookie.Secure)
+				assert.Equal(t, http.SameSiteStrictMode, cookie.SameSite)
+			}
+		})
+	}
+}
+
+func TestLogoutHandlerRejectsNonGet(t *testing.T) {
+	handler, err := NewHandler("/argo", "", false, "", "")
+	require.NoError(t, err)
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequestWithContext(t.Context(), http.MethodPost, LogoutEndpoint, nil)
+	handler.ServeHTTP(recorder, request)
+	assert.Equal(t, http.StatusMethodNotAllowed, recorder.Code)
+	assert.Equal(t, http.MethodGet, recorder.Header().Get("Allow"))
+	assert.Empty(t, recorder.Header().Values("Set-Cookie"))
+	assert.Empty(t, recorder.Header().Get("Location"))
+}
+
+func TestConstructLogoutURL(t *testing.T) {
+	redirect, err := constructLogoutURL("", "client", "https://example.com/")
+	require.NoError(t, err)
+	assert.Equal(t, "https://example.com/", redirect)
+	redirect, err = constructLogoutURL("https://example.com/logout", "", "https://app.example.com/")
+	require.NoError(t, err)
+	assert.Equal(t, "https://example.com/logout?post_logout_redirect_uri=https%3A%2F%2Fapp.example.com%2F", redirect)
+	redirect, err = constructLogoutURL("://bad", "client", "https://example.com/")
+	require.Error(t, err)
+	assert.Equal(t, "https://example.com/", redirect)
+	redirect, err = constructLogoutURL("javascript://example.com/logout", "client", "https://example.com/")
+	require.EqualError(t, err, "oidc end-session endpoint must be an absolute HTTP(S) URL without user info or a fragment: \"javascript://example.com/logout\"")
+	assert.Equal(t, "https://example.com/", redirect)
+	redirect, err = constructLogoutURL("https://example.com/logout#/signed-out", "client", "https://example.com/")
+	require.EqualError(t, err, "oidc end-session endpoint must be an absolute HTTP(S) URL without user info or a fragment: \"https://example.com/logout#/signed-out\"")
+	assert.Equal(t, "https://example.com/", redirect)
+	redirect, err = constructLogoutURL("https://user:pass@idp.example.com/logout", "client", "https://example.com/")
+	require.EqualError(t, err, "oidc end-session endpoint must be an absolute HTTP(S) URL without user info or a fragment: \"https://user:pass@idp.example.com/logout\"")
+	assert.Equal(t, "https://example.com/", redirect)
+}
+
+func TestValidateRedirectURL(t *testing.T) {
+	assert.NoError(t, ValidateRedirectURL(""))
+	assert.NoError(t, ValidateRedirectURL("https://example.com/signed-out"))
+	assert.NoError(t, ValidateRedirectURL("HTTPS://example.com/signed-out"))
+	require.EqualError(t, ValidateRedirectURL("/signed-out"), "logout redirect URL must be an absolute HTTP(S) URL without user info or a fragment: \"/signed-out\"")
+	require.Error(t, ValidateRedirectURL("//example.com/signed-out"))
+	require.Error(t, ValidateRedirectURL("javascript://example.com/signed-out"))
+	require.EqualError(t, ValidateRedirectURL("https://example.com/signed-out#fragment"), "logout redirect URL must be an absolute HTTP(S) URL without user info or a fragment: \"https://example.com/signed-out#fragment\"")
+	require.Error(t, ValidateRedirectURL("https://:443/signed-out"))
+	require.EqualError(t, ValidateRedirectURL("https://user:pass@idp.example.com/signed-out"), "logout redirect URL must be an absolute HTTP(S) URL without user info or a fragment: \"https://user:pass@idp.example.com/signed-out\"")
+}

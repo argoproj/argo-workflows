@@ -49,6 +49,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/server/apiserver/accesslog"
 	"github.com/argoproj/argo-workflows/v4/server/artifacts"
 	"github.com/argoproj/argo-workflows/v4/server/auth"
+	authcookie "github.com/argoproj/argo-workflows/v4/server/auth/cookie"
 	"github.com/argoproj/argo-workflows/v4/server/auth/sso"
 	"github.com/argoproj/argo-workflows/v4/server/auth/webhook"
 	"github.com/argoproj/argo-workflows/v4/server/cache"
@@ -57,6 +58,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/server/event"
 	"github.com/argoproj/argo-workflows/v4/server/eventsource"
 	"github.com/argoproj/argo-workflows/v4/server/info"
+	"github.com/argoproj/argo-workflows/v4/server/logout"
 	"github.com/argoproj/argo-workflows/v4/server/sensor"
 	"github.com/argoproj/argo-workflows/v4/server/static"
 	serversync "github.com/argoproj/argo-workflows/v4/server/sync"
@@ -150,9 +152,19 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (Server, error) {
 	configController := config.NewController(opts.Namespace, opts.ConfigName, opts.Clients.Kubernetes)
 	log := logging.RequireLoggerFromContext(ctx)
 	var resourceCache *cache.ResourceCache
-	ssoIf := sso.NullSSO
-	if opts.AuthModes[auth.SSO] {
+	var ssoIf sso.Interface
+	loadConfig := func() (*config.Config, error) {
 		c, err := configController.Get(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if err := logout.ValidateRedirectURL(c.SSO.LogoutRedirectURL); err != nil {
+			return nil, fmt.Errorf("invalid sso.logoutRedirectUrl: %w", err)
+		}
+		return c, nil
+	}
+	if opts.AuthModes[auth.SSO] {
+		c, err := loadConfig()
 		if err != nil {
 			return nil, err
 		}
@@ -167,6 +179,11 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (Server, error) {
 		}
 		log.Info(ctx, "SSO enabled")
 	} else {
+		c, err := loadConfig()
+		if err != nil {
+			return nil, err
+		}
+		ssoIf = sso.NewNullSSO(c.SSO.LogoutRedirectURL)
 		log.Info(ctx, "SSO disabled")
 	}
 	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.Clients, opts.RestConfig, ssoIf, auth.DefaultClientForAuthorization, opts.Namespace, opts.SSONamespace, opts.Namespaced, resourceCache)
@@ -217,8 +234,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	if err != nil {
 		log.WithFatal().Error(ctx, err.Error())
 	}
-	err = config.Sanitize(as.allowedLinkProtocol)
-	if err != nil {
+	if err = config.Sanitize(as.allowedLinkProtocol); err != nil {
 		log.WithFatal().Error(ctx, err.Error())
 	}
 
@@ -472,11 +488,17 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	}
 	mux.Handle("/oauth2/redirect", handlers.ProxyHeaders(http.HandlerFunc(as.oAuth2Service.HandleRedirect)))
 	mux.Handle("/oauth2/callback", handlers.ProxyHeaders(http.HandlerFunc(as.oAuth2Service.HandleCallback)))
+	logoutURL := as.oAuth2Service.LogoutURL()
+	logoutHandler, err := logout.NewHandler(as.baseHRef, as.oAuth2Service.LogoutRedirectURL(), as.tlsConfig != nil, logoutURL, as.oAuth2Service.ClientID())
+	if err != nil {
+		log.WithError(err).Warn(ctx, "Ignoring invalid OIDC end-session endpoint")
+	}
+	mux.Handle(http.MethodGet+" "+logout.LogoutEndpoint, logoutHandler)
 	mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
 		if os.Getenv("ARGO_SERVER_METRICS_AUTH") != "false" {
-			md := metadata.New(map[string]string{"authorization": r.Header.Get("Authorization")})
+			md := metadata.New(map[string]string{authcookie.AuthorizationMetadataKey: r.Header.Get("Authorization")})
 			for _, c := range r.Cookies() {
-				if c.Name == "authorization" {
+				if c.Name == authcookie.AuthorizationCookieName {
 					md.Append("cookie", c.Value)
 				}
 			}
