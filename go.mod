@@ -83,7 +83,7 @@ require (
 	golang.org/x/sync v0.22.0
 	golang.org/x/time v0.15.0
 	google.golang.org/api v0.288.0
-	google.golang.org/genproto/googleapis/api v0.0.0-20260810153831-ec0a7760b754
+	google.golang.org/genproto/googleapis/api v0.0.0-20260818201246-1b0934165a6f
 	google.golang.org/grpc v1.83.1
 	k8s.io/api v0.35.4
 	k8s.io/apiextensions-apiserver v0.35.4
