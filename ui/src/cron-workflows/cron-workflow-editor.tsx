@@ -42,7 +42,7 @@ export function CronWorkflowEditor({
                           {
                               key: 'status',
                               title: 'Status',
-                              content: <CronWorkflowStatusViewer spec={cronWorkflow.spec} status={cronWorkflow.status} />
+                              content: <CronWorkflowStatusViewer cronWorkflow={cronWorkflow} />
                           }
                       ]
                     : []),

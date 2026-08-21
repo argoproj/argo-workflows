@@ -173,6 +173,33 @@ func (woc *cronWfOperationCtx) persistUpdate(ctx context.Context) {
 	woc.patch(ctx, map[string]any{"status": woc.cronWf.Status, "metadata": map[string]any{"annotations": woc.cronWf.Annotations, "labels": woc.cronWf.Labels}})
 }
 
+// persistResolvedSchedules records the schedules the CronWorkflow was scheduled on, so that the
+// schedules `H` (hash) tokens resolved to are visible on the resource itself
+func (woc *cronWfOperationCtx) persistResolvedSchedules(ctx context.Context) {
+	previous := woc.cronWf.Status.ResolvedSchedules
+	if !woc.cronWf.SetResolvedSchedules() {
+		return
+	}
+	resolved := woc.cronWf.Status.ResolvedSchedules
+	var patch any
+	if len(resolved) == 0 {
+		// no schedule uses a `H` anymore, drop the whole field instead of leaving an empty object
+		patch = nil
+	} else {
+		// a merge patch merges keys rather than replacing the map, so the schedules which are gone
+		// have to be nulled out explicitly
+		merge := map[string]any{}
+		for schedule := range previous {
+			merge[schedule] = nil
+		}
+		for schedule, expanded := range resolved {
+			merge[schedule] = expanded
+		}
+		patch = merge
+	}
+	woc.patch(ctx, map[string]any{"status": map[string]any{"resolvedSchedules": patch}})
+}
+
 func (woc *cronWfOperationCtx) persistCurrentWorkflowStatus(ctx context.Context) {
 	woc.patch(ctx, map[string]any{"status": map[string]any{"active": woc.cronWf.Status.Active, "succeeded": woc.cronWf.Status.Succeeded, "failed": woc.cronWf.Status.Failed, "phase": woc.cronWf.Status.Phase}})
 }
@@ -329,7 +356,7 @@ func (woc *cronWfOperationCtx) shouldOutstandingWorkflowsBeRun(ctx context.Conte
 	}
 	// If this CronWorkflow has been run before, check if we have missed any scheduled executions
 	if woc.cronWf.Status.LastScheduledTime != nil {
-		for _, schedule := range woc.cronWf.Spec.GetSchedulesWithTimezone() {
+		for _, schedule := range woc.cronWf.GetSchedulesWithTimezone() {
 			var now time.Time
 			var cronSchedule cron.Schedule
 			now = time.Now()
