@@ -61,8 +61,11 @@ export function Login({location, history}: RouteComponentProps<any>) {
                         <div>
                             <textarea id='token' className='token-input' rows={4} value={token} onChange={e => setToken(e.target.value)} />
                         </div>
+                        {token.trim() !== '' && !token.trim().startsWith('Bearer ') && !token.trim().startsWith('Basic ') && (
+                            <p className='login__token-hint'>Token should usually start with &quot;Bearer &quot; or &quot;Basic &quot;, including the prefix.</p>
+                        )}
                         <div>
-                            <a className='argo-button argo-button--base-o' href={uiUrl('')} onClick={() => setCookie('authorization', token)}>
+                            <a className='argo-button argo-button--base-o' href={uiUrl('')} onClick={() => setCookie('authorization', token.trim())}>
                                 <i className='fa fa-sign-in-alt' /> Login
                             </a>
                         </div>
