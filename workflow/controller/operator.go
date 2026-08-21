@@ -1380,6 +1380,15 @@ func (woc *wfOperationCtx) failNodesWithoutCreatedPodsAfterDeadlineOrShutdown(ct
 				woc.markNodePhase(ctx, node.Name, wfv1.NodeFailed, message)
 				continue
 			}
+			// fail pending nodes waiting for a synchronization lock when
+			// shutting down: their pod is only created once the lock is
+			// acquired, so pod reconciliation will never fail them, and
+			// without this the shutdown is ignored until the lock frees up
+			if node.Phase == wfv1.NodePending && node.SynchronizationStatus != nil && node.SynchronizationStatus.Waiting != "" {
+				message := fmt.Sprintf("Stopped with strategy '%s'", woc.GetShutdownStrategy())
+				woc.markNodePhase(ctx, node.Name, wfv1.NodeFailed, message)
+				continue
+			}
 			// fail retry wrapper nodes whose children are all fulfilled but the wrapper
 			// itself was left Running because processNodeRetries returned early while a
 			// child pod was still running at the moment of shutdown
