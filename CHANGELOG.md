@@ -1,5 +1,31 @@
 # Changelog
 
+## v4.1.2 (2026-08-21)
+
+Full Changelog: [v4.1.1...v4.1.2](https://github.com/argoproj/argo-workflows/compare/v4.1.1...v4.1.2)
+
+### Selected Changes
+
+* [16a52d67d](https://github.com/argoproj/argo-workflows/commit/16a52d67daf2f4a8a76fa8bec02a76a46aa46257) fix: fail nodes waiting for a sync lock on workflow shutdown (cherry-pick #16777 for 4.1) (#16787)
+* [3f106f1ac](https://github.com/argoproj/argo-workflows/commit/3f106f1acc4bcc085083f37a62b7f0be651b2892) fix: requeue workflow on transient sync lock errors instead of failing (cherry-pick #16745 for 4.1) (#16789)
+* [8736391d3](https://github.com/argoproj/argo-workflows/commit/8736391d3aaf36b9dde8aebee89f0cb491ef1721) fix(server): use symmetric encryption for SSO session tokens. Fixes #16744 (cherry-pick #16748 for 4.1) (#16788)
+* [eb4b3b4aa](https://github.com/argoproj/argo-workflows/commit/eb4b3b4aaac9bee15eafd0fde4e055a86d6245c4) fix: fail, not succeed, workflows terminated while pending on a sync lock (cherry-pick #16776 for 4.1) (#16786)
+* [f888616fe](https://github.com/argoproj/argo-workflows/commit/f888616fe4a3c0d5855adce9cb257c3bef7001f5) fix(controller): refuse reapplyUpdate when workflow UID has changed (cherry-pick #16775 for 4.1) (#16778)
+* [b632a7371](https://github.com/argoproj/argo-workflows/commit/b632a7371058acc4406ba997f4c8537f554d6799) fix: omit OpenTelemetry process owner detection (cherry-pick #16736 for 4.1) (#16765)
+* [b4b29c77f](https://github.com/argoproj/argo-workflows/commit/b4b29c77fed063252a93cafe26b94677d682bf0a) fix: re-enter workingDir after init-less input artifact staging. Fixes #16728 (cherry-pick #16738 for 4.1) (#16760)
+* [6e59f8782](https://github.com/argoproj/argo-workflows/commit/6e59f8782f2e2dc14e66d092da45cd729e1ab998) chore(deps): update module github.com/moby/go-archive to v0.3.0 [security] (release-4.1) (#16757)
+* [f97bd2db0](https://github.com/argoproj/argo-workflows/commit/f97bd2db07f61b9e72b933982586d87c4248f02d) chore(deps): update module github.com/google/cel-go to v0.30.0 [security] (release-4.1) (#16756)
+* [a60772796](https://github.com/argoproj/argo-workflows/commit/a607727961c94415c61b1b3608b3c5bb1f9b5931) chore(deps): update module github.com/valyala/fasthttp to v1.70.0 [security] (release-4.1) (#16758)
+* [9902c65c7](https://github.com/argoproj/argo-workflows/commit/9902c65c736be2968781cf88ebd277b5f06d60af) fix: apply MySQL driver-level options from persistence config. Fixes #16707 (cherry-pick #16725 for 4.1) (#16734)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Claude Fable 5
+* Nitin Moningi
+
+</details>
+
 ## v4.1.1 (2026-08-14)
 
 Full Changelog: [v4.1.0...v4.1.1](https://github.com/argoproj/argo-workflows/compare/v4.1.0...v4.1.1)
@@ -81,7 +107,7 @@ Full Changelog: [v4.1.0-rc1...v4.1.0-rc2](https://github.com/argoproj/argo-workf
 
 ## v4.1.0-rc1 (2026-07-23)
 
-Full Changelog: [v4.0.9...v4.1.0-rc1](https://github.com/argoproj/argo-workflows/compare/v4.0.9...v4.1.0-rc1)
+Full Changelog: [v4.0.10...v4.1.0-rc1](https://github.com/argoproj/argo-workflows/compare/v4.0.10...v4.1.0-rc1)
 
 ### Selected Changes
 
@@ -701,6 +727,28 @@ Full Changelog: [v4.0.9...v4.1.0-rc1](https://github.com/argoproj/argo-workflows
 * workflow-automation
 * Yu-Hong Shen
 * zvdy
+
+</details>
+
+## v4.0.10 (2026-08-21)
+
+Full Changelog: [v4.0.9...v4.0.10](https://github.com/argoproj/argo-workflows/compare/v4.0.9...v4.0.10)
+
+### Selected Changes
+
+* [2334ea9dd](https://github.com/argoproj/argo-workflows/commit/2334ea9dd8ccb0e5a6bfd1399fb84a114279e7d6) fix: fail, not succeed, workflows terminated while pending on a sync lock (cherry-pick #16776 for 4.0) (#16791)
+* [cbf8cfa47](https://github.com/argoproj/argo-workflows/commit/cbf8cfa4736ba2bf6407bc51b29777aad3a847f5) fix: requeue workflow on transient sync lock errors instead of failing (cherry-pick #16745 for 4.0) (#16792)
+* [1b1e5d958](https://github.com/argoproj/argo-workflows/commit/1b1e5d95841d6885f276cd69a36dcc5cd93b9817) fix: fail nodes waiting for a sync lock on workflow shutdown (cherry-pick #16777 for 4.0) (#16790)
+* [f2ab4b919](https://github.com/argoproj/argo-workflows/commit/f2ab4b9199d251a31e39324ff81d389f9c5a3b6f) fix(controller): refuse reapplyUpdate when workflow UID has changed (cherry-pick #16775 for 4.0) (#16779)
+* [c69e5a3bc](https://github.com/argoproj/argo-workflows/commit/c69e5a3bca66edc0052188f6d3fb375065aae123) chore(deps): update module github.com/moby/go-archive to v0.3.0 [security] (release-4.0) (#16754)
+* [ec0adcc47](https://github.com/argoproj/argo-workflows/commit/ec0adcc47e5bc8b3ea700d2256e7938b754ce3b9) chore(deps): update module github.com/google/cel-go to v0.30.0 [security] (release-4.0) (#16753)
+* [2faeff4a6](https://github.com/argoproj/argo-workflows/commit/2faeff4a605f35218a78ab42d664aa3dacdff440) chore(deps): update module github.com/valyala/fasthttp to v1.70.0 [security] (release-4.0) (#16755)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Claude Fable 5
+* Nitin Moningi
 
 </details>
 
