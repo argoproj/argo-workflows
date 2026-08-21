@@ -2,7 +2,7 @@
 
 > v2.4 and after
 
-Argo stores workflows as Kubernetes resources (i.e. within EtcD). This creates a limit to their size as resources must be under 1MB. Each resource includes the status of each node, which is stored in the `/status/nodes` field for the resource. This can be over 1MB. If this happens, we try and compress the node status and store it in `/status/compressedNodes`. If the status is still too large, we then try and store it in an SQL database.
+Argo stores workflows as Kubernetes resources (i.e. within EtcD). This creates a limit to their size as resources must be under 1MB. Each resource includes the status of each node, which is stored in the `/status/nodes` field for the resource. This can be over 1MB. If this happens, we try and compress the node status and store it in `/status/compressedNodes`. If the status is still too large, we then try and store it in an SQL database. The offloaded node status is itself stored compressed, which reduces the volume written to the database on every update of a large workflow.
 
 To enable this feature, configure a Postgres, MySQL, or MariaDB database under `persistence` in [your configuration](workflow-controller-configmap.yaml) and set `nodeStatusOffLoad: true`.
 
@@ -31,6 +31,15 @@ For context, measurements on synthetic node statuses (sizes are relative to the 
 Decompression speed is roughly equal for all three algorithms (about 9 milliseconds per MiB of JSON). Higher levels than those shown buy little: brotli 11 compresses best but is about 80 times slower than brotli 9, which matters because the controller re-compresses the status on every update of a large workflow. `zstd` 3 and `brotli` 9 are good choices when smaller statuses are worth slightly more controller CPU; they raise the effective node-count ceiling before offloading is required by roughly 20% and 50% respectively.
 
 These numbers are from synthetic data; real workflows may compress differently.
+
+### Offloaded Node Status
+
+> v4.2 and after
+
+Node status offloaded to the database is stored compressed in the `compressednodes` column of the `argo_workflows` table, using the algorithm selected above. Rows written before this version keep their uncompressed JSON in the `nodes` column and are read back unchanged, so no data migration is needed.
+
+!!! Warning
+    A row written by a controller with this support stores the placeholder `null` in the `nodes` column. A controller without it reads that row as an empty node status. Upgrade every controller sharing a database together, and do not roll back past this version while offloaded workflows are still live. See [Upgrading](upgrading.md#offloaded-node-status-is-stored-compressed).
 
 ## FAQ
 

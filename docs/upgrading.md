@@ -5,6 +5,20 @@ For the upgrading guide to a specific version of workflows change the documentat
 Breaking changes  typically (sometimes we don't realise they are breaking) have "!" in the commit message, as per
 the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summary).
 
+## Upgrading to v4.2
+
+### Offloaded node status is stored compressed
+
+When node status offloading is enabled, the controller now compresses the node status before writing it to the database, storing it in a new `compressednodes` column on the `argo_workflows` table ([#13290](https://github.com/argoproj/argo-workflows/issues/13290)).
+This reduces the volume written on every update of a large workflow, which is the dominant cost at scale.
+The migration adds the column; no existing data is rewritten.
+
+Rows written before the upgrade keep their uncompressed JSON in the `nodes` column and are read back unchanged, so a mixed table is fine and there is nothing to migrate.
+
+A row written *after* the upgrade stores the placeholder `null` in `nodes`, with the real payload in `compressednodes`.
+A controller that predates this change reads such a row as an empty node status.
+Upgrade every controller sharing a database at the same time, and do not roll back past this version while offloaded workflows are still live.
+
 ## Upgrading to v4.1
 
 ### Controller caches no longer store `managedFields`

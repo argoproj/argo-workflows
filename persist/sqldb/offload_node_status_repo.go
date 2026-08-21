@@ -2,6 +2,7 @@ package sqldb
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
@@ -12,6 +13,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/env"
+	"github.com/argoproj/argo-workflows/v4/util/file"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/sqldb"
 )
@@ -45,6 +47,18 @@ type nodesRecord struct {
 	UUIDVersion
 	Namespace string `db:"namespace"`
 	Nodes     string `db:"nodes"`
+	// Base64-encoded compressed node status. Nullable: an old replica can insert after
+	// the one-shot backfill (migrate.go:236-239), landing NULL rather than ''.
+	CompressedNodes sql.NullString `db:"compressednodes"`
+}
+
+// nodesJSON returns the node status as JSON. A NULL or empty compressednodes means a
+// legacy row written before compression, whose payload is in nodes.
+func (r nodesRecord) nodesJSON(ctx context.Context) (string, error) {
+	if r.CompressedNodes.String == "" {
+		return r.Nodes, nil
+	}
+	return file.DecodeDecompressString(ctx, r.CompressedNodes.String)
 }
 
 type nodeOffloadRepo struct {
@@ -84,7 +98,9 @@ func (wdc *nodeOffloadRepo) Save(ctx context.Context, uid, namespace string, nod
 			Version: version,
 		},
 		Namespace: namespace,
-		Nodes:     marshalled,
+		// nodes is json not null; payload actually lives in CompressedNodes.
+		Nodes:           "null",
+		CompressedNodes: sql.NullString{String: file.CompressEncodeString(ctx, marshalled), Valid: true},
 	}
 
 	logCtx := wdc.log.WithFields(logging.Fields{"uid": uid, "version": version})
@@ -135,8 +151,12 @@ func (wdc *nodeOffloadRepo) Get(ctx context.Context, uid, version string) (wfv1.
 		if err != nil {
 			return err
 		}
+		nodesJSON, err := r.nodesJSON(ctx)
+		if err != nil {
+			return err
+		}
 		n := &wfv1.Nodes{}
-		err = json.Unmarshal([]byte(r.Nodes), n)
+		err = json.Unmarshal([]byte(nodesJSON), n)
 		if err != nil {
 			return err
 		}
@@ -155,7 +175,7 @@ func (wdc *nodeOffloadRepo) List(ctx context.Context, namespace string) (map[UUI
 	err := wdc.sessionProxy.With(ctx, func(s db.Session) error {
 		var records []nodesRecord
 		err := s.SQL().
-			Select("uid", "version", "nodes").
+			Select("uid", "version", "nodes", "compressednodes").
 			From(wdc.tableName).
 			Where(db.Cond{"clustername": wdc.clusterName}).
 			And(namespaceEqual(namespace)).
@@ -166,8 +186,12 @@ func (wdc *nodeOffloadRepo) List(ctx context.Context, namespace string) (map[UUI
 
 		res = make(map[UUIDVersion]wfv1.Nodes)
 		for _, r := range records {
+			nodesJSON, err := r.nodesJSON(ctx)
+			if err != nil {
+				return err
+			}
 			nodes := &wfv1.Nodes{}
-			err = json.Unmarshal([]byte(r.Nodes), nodes)
+			err = json.Unmarshal([]byte(nodesJSON), nodes)
 			if err != nil {
 				return err
 			}
