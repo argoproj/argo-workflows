@@ -1,7 +1,7 @@
 // Orchestration for the PR Readiness Helper workflow. A single entry point,
 // run(), called from one actions/github-script step in pr-readiness.yaml:
 // resolve the PR, gate the author, classify checks, check the description
-// against the template, convert to draft if blocking, and render the sticky
+// against the template, sync the not-ready label, and render the sticky
 // comment (or the dry-run summary). All decision logic lives in the
 // unit-tested modules this file imports.
 
@@ -10,7 +10,7 @@ import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { classifySignals, diagnostics, decide, isExemptAuthor, findPullRequest, pickStepGuidance } from './classify.ts';
-import { MARKER, renderComment, parseState } from './comment.ts';
+import { MARKER, NOT_READY_LABEL, renderComment } from './comment.ts';
 import { checkTemplate } from './template.ts';
 import type { Config, JobStep } from './types.ts';
 
@@ -41,7 +41,11 @@ interface Octokit {
     actions: { getJobForWorkflowRun(params: Record<string, unknown>): Promise<{ data: { steps?: JobStep[] } }> };
     pulls: { list: unknown };
     checks: { listForRef: unknown };
-    issues: { listComments: unknown };
+    issues: {
+      listComments: unknown;
+      addLabels(params: Record<string, unknown>): Promise<unknown>;
+      removeLabel(params: Record<string, unknown>): Promise<unknown>;
+    };
   };
 }
 
@@ -104,14 +108,13 @@ export async function run({ github, context, core }: { github: Octokit; context:
     }
   }
 
-  // Find our existing sticky comment (if any) and recover its state blob.
-  // Author check matters: anyone can paste our marker into a comment, but
-  // only the actions bot's comment may be trusted as state.
+  // Find our existing sticky comment (if any). Author check matters: anyone
+  // can paste our marker into a comment, but only the actions bot's comment
+  // may be trusted as ours.
   const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number: pr.number, per_page: 100 });
   const existing = comments.find(
     (c) => c.user && c.user.login === 'github-actions[bot]' && typeof c.body === 'string' && c.body.includes(MARKER)
   );
-  const existingState = existing ? parseState(existing.body) : null;
 
   // Deterministic PR-description / template check (no model required).
   const template = fs.readFileSync('.github/pull_request_template.md', 'utf8');
@@ -120,55 +123,34 @@ export async function run({ github, context, core }: { github: Octokit; context:
   const decision = decide({
     signals,
     templateVerdict,
-    existingState,
     hasExistingComment: Boolean(existing),
-    pr: { draft: pr.draft, headSha },
   });
 
-  // Draft conversion: at most once per head SHA; undrafting is human-only.
-  // The default Actions token cannot toggle draft state ("Resource not
-  // accessible by integration"), so this requires the app token minted by
-  // the workflow. Best-effort: failure never blocks the comment.
-  let draftedNow = false;
-  if (decision.shouldDraft && !dryRun) {
-    const token = process.env.DRAFT_TOKEN;
-    if (!token) {
-      core.warning(
-        `PR #${pr.number} should be drafted, but no draft token is available ` +
-          '(PR_READINESS_APP_ID / PR_READINESS_APP_PRIVATE_KEY secrets not configured?)'
-      );
-    } else {
-      try {
-        const res = await fetch('https://api.github.com/graphql', {
-          method: 'POST',
-          headers: { authorization: `bearer ${token}`, 'content-type': 'application/json' },
-          body: JSON.stringify({
-            query: 'mutation($id: ID!) { convertPullRequestToDraft(input: {pullRequestId: $id}) { pullRequest { isDraft } } }',
-            variables: { id: pr.node_id },
-          }),
-        });
-        const result = (await res.json()) as { errors?: Array<{ message: string }> };
-        if (!res.ok || result.errors) {
-          throw new Error(result.errors ? result.errors.map((e) => e.message).join('; ') : `HTTP ${res.status}`);
-        }
-        draftedNow = true;
-      } catch (e) {
-        core.warning(`could not convert PR #${pr.number} to draft: ${errMessage(e)}`);
+  // Sync the not-ready label to the verdict: the bot owns the label, so it is
+  // applied while blocking and removed once not. Best-effort: a label API
+  // failure never blocks the comment.
+  const hadLabel = Array.isArray(pr.labels) && pr.labels.some((l: { name?: string }) => l.name === NOT_READY_LABEL);
+  let labeled = dryRun ? decision.blocking : hadLabel; // dry run previews the would-be state
+  if (!dryRun && decision.blocking !== hadLabel) {
+    try {
+      if (decision.blocking) {
+        await github.rest.issues.addLabels({ owner, repo, issue_number: pr.number, labels: [NOT_READY_LABEL] });
+      } else {
+        await github.rest.issues.removeLabel({ owner, repo, issue_number: pr.number, name: NOT_READY_LABEL });
       }
+      labeled = decision.blocking;
+    } catch (e) {
+      core.warning(`could not ${decision.blocking ? 'add' : 'remove'} label '${NOT_READY_LABEL}' on PR #${pr.number}: ${errMessage(e)}`);
     }
   }
 
-  const state = {
-    v: 1,
-    failing: decision.failing,
-    draftedSha: draftedNow ? headSha : (existingState && existingState.draftedSha) || null,
-  };
+  const state = { v: 1, failing: decision.failing };
 
   const commentBody = renderComment({
     variant: decision.variant,
     failures: signals.filter((s) => decision.failing.includes(s.id)),
     templateIssues: decision.templateBlocking ? templateVerdict.issues : null,
-    drafted: draftedNow,
+    labeled,
     state,
   });
 
@@ -180,7 +162,7 @@ export async function run({ github, context, core }: { github: Octokit; context:
     `PR #${pr.number} by ${pr.user.login} head=${headSha} | signals: ` +
       signals.map((s) => `${s.id}=${s.state}`).join(' ') +
       ` | template=${templateVerdict.compliant ? 'ok' : 'issues'}` +
-      ` | comment=${decision.shouldComment} variant=${decision.variant || 'n/a'} draft=${decision.shouldDraft} draftedNow=${draftedNow}`
+      ` | comment=${decision.shouldComment} variant=${decision.variant || 'n/a'} blocking=${decision.blocking} label: ${hadLabel} -> ${labeled}`
   );
   if (decision.shouldComment) {
     core.startGroup('rendered comment');
@@ -192,7 +174,7 @@ export async function run({ github, context, core }: { github: Octokit; context:
     core.summary
       .addHeading('PR Readiness Helper — dry run', 3)
       .addRaw(`PR: #${pr.number} · head: \`${headSha}\` · would comment: **${decision.shouldComment}**` +
-        ` (variant: ${decision.variant || 'n/a'}) · would draft: **${decision.shouldDraft}**\n\n`)
+        ` (variant: ${decision.variant || 'n/a'}) · label \`${NOT_READY_LABEL}\`: ${hadLabel} → would be ${decision.blocking}\n\n`)
       .addRaw(decision.shouldComment ? '#### Rendered comment\n\n' + commentBody + '\n' : '')
       .addTable([
         [{ data: 'signal', header: true }, { data: 'state', header: true }],

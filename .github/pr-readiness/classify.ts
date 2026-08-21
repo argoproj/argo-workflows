@@ -70,13 +70,13 @@ export function diagnostics(checkRuns: CheckRun[], config: Config): { unmapped: 
 interface DecideArgs {
   signals: ReadonlyArray<{ id: string; state: string }>;
   templateVerdict: { compliant: boolean } | null;
-  existingState: { draftedSha?: string | null } | null;
   hasExistingComment: boolean;
-  pr: { draft: boolean; headSha: string };
 }
 
-// The convergence rules. See README.md for the decision table.
-export function decide({ signals, templateVerdict, existingState, hasExistingComment, pr }: DecideArgs): Decision {
+// The convergence rules. See README.md for the decision table. `blocking`
+// drives the not-ready label: the bot owns it outright, so the label is simply
+// applied while blocking and removed once not (main.ts does the sync).
+export function decide({ signals, templateVerdict, hasExistingComment }: DecideArgs): Decision {
   const failing = signals.filter((s) => s.state === 'failure').map((s) => s.id);
   const templateBlocking = Boolean(templateVerdict && templateVerdict.compliant === false);
   const blocking = failing.length > 0 || templateBlocking;
@@ -92,10 +92,7 @@ export function decide({ signals, templateVerdict, existingState, hasExistingCom
     shouldComment = true;
   }
 
-  const alreadyDraftedThisSha = Boolean(existingState && existingState.draftedSha === pr.headSha);
-  const shouldDraft = blocking && !pr.draft && !alreadyDraftedThisSha;
-
-  return { variant, shouldComment, shouldDraft, failing, templateBlocking };
+  return { variant, shouldComment, blocking, failing, templateBlocking };
 }
 
 // OWNERS is a small YAML subset: three keys, each a list of logins.

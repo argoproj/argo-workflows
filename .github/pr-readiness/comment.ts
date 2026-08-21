@@ -5,6 +5,11 @@ import type { CommentVariant, State, TemplateIssue } from './types.ts';
 
 export const MARKER = '<!-- pr-readiness-bot -->';
 
+// Must match the label that exists in the repo (Settings → Labels):
+// "problem/bot-not-ready — Readiness bot declares this as not ready, see
+// comment by bot for why".
+export const NOT_READY_LABEL = 'problem/bot-not-ready';
+
 const FOOTER =
   '\n---\n<sub>🤖 Automated PR-readiness helper — it re-checks each time CI finishes. ' +
   'Unit/E2E test results are <b>not</b> covered here. ' +
@@ -25,11 +30,11 @@ interface RenderArgs {
   variant: CommentVariant | null;
   failures: ReadonlyArray<FailureItem>;
   templateIssues: TemplateIssue[] | null;
-  drafted: boolean;
+  labeled: boolean;
   state: State;
 }
 
-export function renderComment({ variant, failures, templateIssues, drafted, state }: RenderArgs): string {
+export function renderComment({ variant, failures, templateIssues, labeled, state }: RenderArgs): string {
   const head = [MARKER, stateLine(state), ''];
 
   if (variant === 'allclear') {
@@ -81,11 +86,11 @@ export function renderComment({ variant, failures, templateIssues, drafted, stat
     lines.push('', '_(A maintainer may waive this.)_', '</details>');
   }
 
-  if (drafted) {
+  if (labeled) {
     lines.push(
       '',
       '> [!NOTE]',
-      '> This PR has been moved to **draft** while the items above are addressed. Mark it **Ready for review** once they are fixed.'
+      `> This PR carries the \`${NOT_READY_LABEL}\` label while the items above are addressed. It is removed automatically once everything passes.`
     );
   }
 
