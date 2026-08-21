@@ -3,12 +3,15 @@ package sync
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/go-sql-driver/mysql"
+	"github.com/lib/pq"
 	"github.com/upper/db/v4"
 	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -57,6 +60,10 @@ type lockTypeName string
 const (
 	lockTypeSemaphore lockTypeName = "semaphore"
 	lockTypeMutex     lockTypeName = "mutex"
+
+	// dbRetryRequeueMsg is the status message shown while a workflow waits out
+	// database contention that exhausted the lock acquisition retries.
+	dbRetryRequeueMsg = "Waiting for lock: database contention, will retry"
 )
 
 // NewLockManager creates a new lock manager
@@ -498,6 +505,12 @@ func (sm *Manager) TryAcquire(ctx context.Context, wf *wfv1.Workflow, nodeName s
 			Jitter:   0.5,
 			Cap:      600 * time.Millisecond,
 		}
+		// tryAcquireImpl mutates wf.Status.Synchronization in memory (LockAcquired /
+		// LockWaiting) before the transaction commits. Snapshot it so an aborted
+		// attempt is rolled back in memory too - otherwise a commit abort leaves a
+		// Holding entry for a row the database rolled back, which gets persisted and
+		// is then failed as a stale hold on the next controller restart.
+		syncStatus := wf.Status.Synchronization.DeepCopy()
 		attempt := 0
 		err = retry.OnError(backoff, isRetryableSyncError, func() error {
 			attempt++
@@ -511,6 +524,7 @@ func (sm *Manager) TryAcquire(ctx context.Context, wf *wfv1.Workflow, nodeName s
 				return implErr
 			}, &sql.TxOptions{Isolation: sql.LevelSerializable, ReadOnly: false})
 			if txErr != nil {
+				wf.Status.Synchronization = syncStatus.DeepCopy()
 				sm.log.WithFields(logging.Fields{
 					"holderKey": holderKey,
 					"attempt":   attempt,
@@ -521,6 +535,35 @@ func (sm *Manager) TryAcquire(ctx context.Context, wf *wfv1.Workflow, nodeName s
 			return txErr
 		})
 		if err != nil {
+			// The queue row survives the abort (it is written outside this transaction)
+			// and the background notifier re-drives queued items on every poll, so the
+			// workflow will be retried regardless. For a genuine transaction conflict,
+			// requeue it ourselves for latency and report it as simply not having got
+			// the lock, rather than failing the workflow. Only a driver-reported
+			// conflict code qualifies: isRetryableSyncError's substring match is too
+			// loose to swallow errors on, and anything else must surface to the caller.
+			if isSerializationConflict(err) {
+				if failedLockName == "" && len(lockKeys) > 0 {
+					// A commit-time abort carries no lock attribution; callers
+					// need a name to mark what the node is waiting on.
+					failedLockName = lockKeys[0]
+				}
+				// prepAcquire queued this holder against every lock outside the
+				// aborted transaction, so those queue rows survive. The in-memory
+				// rollback above discarded the waiting entries that ReleaseAll
+				// walks to find them, so re-record them: otherwise a workflow
+				// released before a later attempt succeeds - the shutdown path
+				// does exactly that on this return - leaves its rows queued with
+				// nothing left to remove them.
+				updated = sm.recordWaiting(ctx, wf, holderKey, syncItems, lockKeys)
+				sm.log.WithFields(logging.Fields{
+					"holderKey": holderKey,
+					"attempts":  attempt,
+					"error":     err,
+				}).Info(ctx, "TryAcquire - retries exhausted, requeuing")
+				sm.nextWorkflow(workflowKey(holderKey))
+				return false, updated, dbRetryRequeueMsg, failedLockName, nil
+			}
 			return false, false, "", failedLockName, err
 		}
 		sm.recordAcquisitions(ctx, wf, newly)
@@ -546,6 +589,23 @@ func isRetryableSyncError(err error) bool {
 		strings.Contains(s, "dependencies") ||
 		strings.Contains(s, "deadlock") ||
 		strings.Contains(s, "rollback")
+}
+
+// isSerializationConflict reports whether err is a genuine transaction conflict
+// reported by the database driver: PostgreSQL serialization_failure (40001) or
+// deadlock_detected (40P01), or MySQL ER_LOCK_DEADLOCK (1213).
+// isRetryableSyncError's substring heuristic is deliberately loose - a false
+// positive there only costs extra retry attempts. This check decides whether an
+// error that exhausted those retries is swallowed and the workflow requeued
+// instead of failed, so it must be precise.
+func isSerializationConflict(err error) bool {
+	if pqErr, ok := errors.AsType[*pq.Error](err); ok {
+		return pqErr.Code == "40001" || pqErr.Code == "40P01"
+	}
+	if mysqlErr, ok := errors.AsType[*mysql.MySQLError](err); ok {
+		return mysqlErr.Number == 1213
+	}
+	return false
 }
 
 func (sm *Manager) prepAcquire(ctx context.Context, wf *wfv1.Workflow, holderKey string, syncItems []*syncItem, lockKeys []string) (bool, string, string, error) {
@@ -630,14 +690,14 @@ func (sm *Manager) tryAcquireImpl(ctx context.Context, wf *wfv1.Workflow, tx *sq
 				// retry loop) can decide whether it is retryable. Transient
 				// database errors like PostgreSQL SQLSTATE 40001 must reach
 				// the retry detector untouched.
-				return false, false, "", failedLockName, nil, acquireErr
+				return false, false, "", lockKey, nil, acquireErr
 			}
 			if !acquired {
 				return false, false, "", failedLockName, nil, fmt.Errorf("bug: failed to acquire something that should have been checked: %s", msg)
 			}
 			currentHolders, err := sm.getCurrentLockHolders(ctx, lockKey)
 			if err != nil {
-				return false, false, "", failedLockName, nil, fmt.Errorf("failed to get current lock holders: %w", err)
+				return false, false, "", lockKey, nil, fmt.Errorf("failed to get current lock holders: %w", err)
 			}
 			if wf.Status.Synchronization.GetStatus(syncItems[i].getType()).LockAcquired(holderKey, lockKey, currentHolders) {
 				updated = true
@@ -658,6 +718,28 @@ func (sm *Manager) tryAcquireImpl(ctx context.Context, wf *wfv1.Workflow, tx *sq
 		}
 		return false, updated, msg, failedLockName, nil, nil
 	}
+}
+
+// recordWaiting marks wf as waiting on every lock it has been queued against,
+// mirroring what tryAcquireImpl does when a lock is simply unavailable. It
+// reports whether the workflow status changed, so callers can have it persisted.
+func (sm *Manager) recordWaiting(ctx context.Context, wf *wfv1.Workflow, holderKey string, syncItems []*syncItem, lockKeys []string) bool {
+	updated := false
+	for i, lockKey := range lockKeys {
+		currentHolders, err := sm.getCurrentLockHolders(ctx, lockKey)
+		if err != nil {
+			// Best effort: the database has just aborted a transaction under us,
+			// so a follow-up query failing is expected. The queue row is still
+			// re-driven by the notifier poll.
+			sm.log.WithField("lockKey", lockKey).WithError(err).Warn(ctx, "Failed to get current lock holders while recording waiting status")
+			continue
+		}
+		ensureInit(wf, syncItems[i].getType())
+		if wf.Status.Synchronization.GetStatus(syncItems[i].getType()).LockWaiting(holderKey, lockKey, currentHolders) {
+			updated = true
+		}
+	}
+	return updated
 }
 
 func (sm *Manager) recordAcquisitions(ctx context.Context, wf *wfv1.Workflow, newly []*acquiredLock) {
