@@ -987,11 +987,32 @@ func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
 		wfTwo, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Patch(ctx, wfTwo.Name, types.MergePatchType, patch, metav1.PatchOptions{})
 		require.NoError(t, err)
 
-		// The pending workflow that's being shutdown should have succeeded and released the lock.
+		// The pending workflow that's being shutdown should have failed and released the lock.
 		wocTwo = newWorkflowOperationCtx(ctx, wfTwo, controller)
 		wocTwo.operate(ctx)
-		assert.Equal(t, wfv1.WorkflowSucceeded, wocTwo.execWf.Status.Phase)
+		assert.Equal(t, wfv1.WorkflowFailed, wocTwo.wf.Status.Phase)
+		assert.Equal(t, "Stopped with strategy 'Terminate'", wocTwo.wf.Status.Message)
 		assert.Nil(t, wocTwo.wf.Status.Synchronization)
+		// The workflow never ran, so no nodes should have been created for it.
+		assert.Empty(t, wocTwo.wf.Status.Nodes)
+
+		// Release the lock from the first workflow.
+		woc.wf.Status.Phase = wfv1.WorkflowSucceeded
+		woc.operate(ctx)
+		assert.Nil(t, woc.wf.Status.Synchronization)
+
+		// The terminated workflow must also have been removed from the lock's
+		// waiting queue, so a new workflow acquires the lock immediately.
+		wfThree := wf.DeepCopy()
+		wfThree.Name = "three-terminating"
+		wfThree, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wfThree, metav1.CreateOptions{})
+		require.NoError(t, err)
+		wocThree := newWorkflowOperationCtx(ctx, wfThree, controller)
+		wocThree.operate(ctx)
+		assert.Equal(t, wfv1.WorkflowRunning, wocThree.wf.Status.Phase)
+		require.NotNil(t, wocThree.wf.Status.Synchronization)
+		require.NotNil(t, wocThree.wf.Status.Synchronization.Mutex)
+		assert.Len(t, wocThree.wf.Status.Synchronization.Mutex.Holding, 1)
 	})
 
 	t.Run("PendingShuttingdownStoppingWf", func(t *testing.T) {
