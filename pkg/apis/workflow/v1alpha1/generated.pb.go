@@ -5982,6 +5982,11 @@ func (m *RetryNodeAntiAffinity) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	i -= len(m.Type)
+	copy(dAtA[i:], m.Type)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Type)))
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -11823,6 +11828,8 @@ func (m *RetryNodeAntiAffinity) Size() (n int) {
 	}
 	var l int
 	_ = l
+	l = len(m.Type)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -14658,6 +14665,7 @@ func (this *RetryNodeAntiAffinity) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&RetryNodeAntiAffinity{`,
+		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -33214,6 +33222,38 @@ func (m *RetryNodeAntiAffinity) Unmarshal(dAtA []byte) error {
 			return fmt.Errorf("proto: RetryNodeAntiAffinity: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Type = RetryNodeAntiAffinityType(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGenerated(dAtA[iNdEx:])
