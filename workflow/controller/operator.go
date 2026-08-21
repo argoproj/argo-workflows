@@ -292,8 +292,11 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 					phase = wfv1.WorkflowPending
 				}
 				woc.markWorkflowPhase(ctx, phase, msg)
-				return
 			}
+			// Whether the workflow remains queued or its locks were just
+			// released for shutdown, there is nothing more to do this
+			// reconcile.
+			return
 		}
 	}
 
@@ -564,7 +567,10 @@ func (woc *wfOperationCtx) releaseLocksForPendingShuttingdownWfs(ctx context.Con
 	if woc.GetShutdownStrategy().Enabled() && woc.wf.Status.Phase == wfv1.WorkflowPending && woc.GetShutdownStrategy() == wfv1.ShutdownStrategyTerminate {
 		if woc.controller.syncManager.ReleaseAll(ctx, woc.execWf) {
 			woc.log.WithFields(logging.Fields{"key": woc.execWf.Name}).Info(ctx, "Released all locks since this pending workflow is being shutdown")
-			woc.markWorkflowSuccess(ctx)
+			// The workflow never started: it was still waiting for its
+			// synchronization lock when it was terminated, so it completes as
+			// Failed, matching every other shutdown path.
+			woc.markWorkflowFailed(ctx, fmt.Sprintf("Stopped with strategy '%s'", woc.GetShutdownStrategy()))
 			return true
 		}
 	}
