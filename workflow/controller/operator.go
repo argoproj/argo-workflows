@@ -156,6 +156,7 @@ type failedNodeStatus struct {
 	Phase        string      `json:"phase"`
 	PodName      string      `json:"podName"`
 	FinishedAt   metav1.Time `json:"finishedAt"`
+	HostNodeName string      `json:"hostNodeName"`
 }
 
 // newWorkflowOperationCtx creates and initializes a new wfOperationCtx object.
@@ -449,6 +450,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 					Phase:        string(node.Phase),
 					PodName:      wfutil.GeneratePodName(woc.wf.Name, node.Name, wfutil.GetTemplateFromNode(node), node.ID, wfutil.GetPodNameVersion()),
 					FinishedAt:   node.FinishedAt,
+					HostNodeName: node.HostNodeName,
 				})
 		}
 	}
