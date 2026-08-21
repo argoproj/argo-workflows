@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
+	"fmt"
 	"testing"
 	"time"
 
@@ -97,9 +98,9 @@ func TestNewSsoWithIssuerAlias(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestAuthorizeSignedEncryptedToken(t *testing.T) {
+func TestAuthorizeEncryptedToken(t *testing.T) {
 	ssoObject := newTestSso(t)
-	raw, err := jwt.SignedAndEncrypted(ssoObject.signer, ssoObject.encrypter).Claims(newTestClaims()).Serialize()
+	raw, err := jwt.Encrypted(ssoObject.encrypter).Claims(newTestClaims()).Serialize()
 	require.NoError(t, err)
 
 	claims, err := ssoObject.Authorize(Prefix + raw)
@@ -108,29 +109,78 @@ func TestAuthorizeSignedEncryptedToken(t *testing.T) {
 	assert.Equal(t, []string{"test-group"}, claims.Groups)
 }
 
-func TestAuthorizeLegacyEncryptedTokenFails(t *testing.T) {
+// Tokens from v4.1.x used a nested RS256 JWS inside an RSA-OAEP-256 JWE
+// (and pre-4.1 an RSA-OAEP-256 JWE alone); both must be rejected at parse
+// so that stale cookies force a fresh login rather than a server error.
+func TestAuthorizeLegacyAsymmetricTokenFails(t *testing.T) {
 	ssoObject := newTestSso(t)
-	legacyEncrypter, err := jose.NewEncrypter(jose.A256GCM, jose.Recipient{Algorithm: jose.RSA_OAEP_256, Key: ssoObject.privateKey.(*rsa.PrivateKey).Public()}, &jose.EncrypterOptions{Compression: jose.DEFLATE})
-	require.NoError(t, err)
-	raw, err := jwt.Encrypted(legacyEncrypter).Claims(newTestClaims()).Serialize()
-	require.NoError(t, err)
-
-	claims, err := ssoObject.Authorize(Prefix + raw)
-	require.Error(t, err)
-	assert.Nil(t, claims)
-	assert.ErrorContains(t, err, "failed to parse signed token")
-}
-
-func newTestSso(t *testing.T) *sso {
-	t.Helper()
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	require.NoError(t, err)
 	signer, err := jose.NewSigner(jose.SigningKey{Algorithm: jose.RS256, Key: privateKey}, nil)
 	require.NoError(t, err)
 	encrypterOptions := (&jose.EncrypterOptions{Compression: jose.DEFLATE}).WithContentType("JWT")
-	encrypter, err := jose.NewEncrypter(jose.A256GCM, jose.Recipient{Algorithm: jose.RSA_OAEP_256, Key: privateKey.Public()}, encrypterOptions)
+	legacyEncrypter, err := jose.NewEncrypter(jose.A256GCM, jose.Recipient{Algorithm: jose.RSA_OAEP_256, Key: privateKey.Public()}, encrypterOptions)
 	require.NoError(t, err)
-	return &sso{privateKey: privateKey, signer: signer, encrypter: encrypter}
+	raw, err := jwt.SignedAndEncrypted(signer, legacyEncrypter).Claims(newTestClaims()).Serialize()
+	require.NoError(t, err)
+
+	claims, err := ssoObject.Authorize(Prefix + raw)
+	require.Error(t, err)
+	assert.Nil(t, claims)
+	assert.ErrorContains(t, err, "failed to parse encrypted token")
+}
+
+func TestAuthorizeTokenEncryptedWithOtherKeyFails(t *testing.T) {
+	ssoObject := newTestSso(t)
+	otherSso := newTestSso(t)
+	raw, err := jwt.Encrypted(otherSso.encrypter).Claims(newTestClaims()).Serialize()
+	require.NoError(t, err)
+
+	claims, err := ssoObject.Authorize(Prefix + raw)
+	require.Error(t, err)
+	assert.Nil(t, claims)
+	assert.ErrorContains(t, err, "failed to decrypt token")
+}
+
+// A large but realistic claims set (long email, many groups) must serialize
+// to a cookie under the 4096-byte browser limit (RFC 6265).
+// https://github.com/argoproj/argo-workflows/issues/16744
+func TestTokenFitsInCookie(t *testing.T) {
+	ssoObject := newTestSso(t)
+	groups := make([]string, 60)
+	for i := range groups {
+		groups[i] = fmt.Sprintf("department-%02d-engineering-owners@example-organization.com", i)
+	}
+	claims := &types.Claims{
+		Claims: jwt.Claims{
+			Issuer:  issuer,
+			Subject: "00u1abcdefghijklmnop5d7",
+			Expiry:  jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+		},
+		Groups:            groups,
+		Email:             "somebody.with-a-long-name@example-organization.com",
+		EmailVerified:     true,
+		Name:              "Somebody With-A-Long-Name",
+		PreferredUsername: "somebody.with-a-long-name@example-organization.com",
+	}
+	raw, err := jwt.Encrypted(ssoObject.encrypter).Claims(claims).Serialize()
+	require.NoError(t, err)
+	cookie := "authorization=" + Prefix + raw
+	assert.Less(t, len(cookie), 4096)
+
+	roundTripped, err := ssoObject.Authorize(Prefix + raw)
+	require.NoError(t, err)
+	assert.Equal(t, groups, roundTripped.Groups)
+}
+
+func newTestSso(t *testing.T) *sso {
+	t.Helper()
+	encryptionKey := make([]byte, 32)
+	_, err := rand.Read(encryptionKey)
+	require.NoError(t, err)
+	encrypter, err := jose.NewEncrypter(jose.A256GCM, jose.Recipient{Algorithm: jose.DIRECT, Key: encryptionKey}, &jose.EncrypterOptions{Compression: jose.DEFLATE})
+	require.NoError(t, err)
+	return &sso{encryptionKey: encryptionKey, encrypter: encrypter}
 }
 
 func newTestClaims() *types.Claims {
