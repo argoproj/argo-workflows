@@ -149,6 +149,11 @@ func lintData(ctx context.Context, src string, data []byte, opts *Options) *Resu
 
 	for i, pr := range common.ParseObjects(ctx, data, opts.Strict) {
 		obj, err := pr.Object, pr.Err
+		if err != nil {
+			res.Errs = append(res.Errs, err)
+			res.Linted = true
+			continue
+		}
 		if obj == nil {
 			continue // could not parse to kubernetes object
 		}
