@@ -1557,9 +1557,7 @@ func (wfc *WorkflowController) releaseAllWorkflowLocks(ctx context.Context, obj 
 		logger.WithField("key", obj).Warn(ctx, "Invalid workflow object")
 		return
 	}
-	if wf.Status.Synchronization != nil {
-		wfc.syncManager.ReleaseAll(ctx, wf)
-	}
+	wfc.syncManager.ReleaseAll(ctx, wf)
 }
 
 func (wfc *WorkflowController) isArchivable(wf *wfv1.Workflow) bool {
