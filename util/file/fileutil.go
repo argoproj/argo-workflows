@@ -224,7 +224,7 @@ func DecompressContent(ctx context.Context, content []byte) ([]byte, error) {
 
 // WalkManifests is based on filepath.Walk but will only walk through Kubernetes manifests
 func WalkManifests(ctx context.Context, root string, fn func(path string, data []byte) error) error {
-	return filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+	return filepath.Walk(root, func(path string, info os.FileInfo, err error) (retErr error) {
 		var r io.Reader
 		switch {
 		case path == "-":
@@ -239,7 +239,10 @@ func WalkManifests(ctx context.Context, root string, fn func(path string, data [
 			}
 			defer func() {
 				if closeErr := f.Close(); closeErr != nil {
-					logging.RequireLoggerFromContext(ctx).WithError(closeErr).WithField("path", path).WithFatal().Error(ctx, "Error closing file")
+					logging.RequireLoggerFromContext(ctx).WithError(closeErr).WithField("path", path).Error(ctx, "Error closing file")
+					if retErr == nil {
+						retErr = closeErr
+					}
 				}
 			}()
 			r = f

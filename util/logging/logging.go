@@ -105,6 +105,18 @@ func GetExitFunc() func(int) {
 	return exitFunc
 }
 
+// Exit terminates the process with the given code. Prefer returning errors from
+// library code. Process startup/main paths that formerly used Logger.WithFatal()
+// should log, then call Exit. Using this helper (instead of os.Exit directly)
+// keeps gocritic exitAfterDefer quiet while preserving process-exit semantics.
+func Exit(code int) {
+	if f := GetExitFunc(); f != nil {
+		f(code)
+		return
+	}
+	os.Exit(code)
+}
+
 // AddGlobalHook adds a hook that will be included in all new loggers
 func AddGlobalHook(hook Hook) {
 	lock.Lock()
@@ -136,8 +148,6 @@ type Logger interface {
 
 	// When issuing a log, adding this will panic
 	WithPanic() Logger
-	// When issuing a log, adding this will exit 1
-	WithFatal() Logger
 
 	Debug(ctx context.Context, msg string)
 

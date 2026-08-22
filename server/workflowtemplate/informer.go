@@ -49,14 +49,18 @@ func (wti *Informer) Run(ctx context.Context, stopCh <-chan struct{}) {
 		stopCh,
 		wti.informer.Informer().HasSynced,
 	) {
-		logging.RequireLoggerFromContext(ctx).WithFatal().Error(ctx, "Timed out waiting for caches to sync")
+		logging.RequireLoggerFromContext(ctx).Error(ctx, "Timed out waiting for caches to sync")
+		logging.Exit(1)
+		return
 	}
 }
 
 // Getter returns a WorkflowTemplateNamespacedGetter. If namespace is empty, the Lister will use the namespace provided during initialization.
 func (wti *Informer) Getter(ctx context.Context, namespace string) templateresolution.WorkflowTemplateNamespacedGetter {
 	if wti.informer == nil {
-		logging.RequireLoggerFromContext(ctx).WithFatal().Error(ctx, "Template informer not started")
+		logging.RequireLoggerFromContext(ctx).Error(ctx, "Template informer not started")
+		logging.Exit(1)
+		return nil
 	}
 	if namespace == "" {
 		namespace = wti.managedNamespace

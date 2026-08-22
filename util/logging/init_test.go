@@ -16,7 +16,6 @@ func resetInitStorage() {
 	initStorage.mutex.Lock()
 	defer initStorage.mutex.Unlock()
 	initStorage.initLogs = nil
-	initStorage.fatal = false
 }
 
 func TestInitLogger(t *testing.T) {
@@ -193,65 +192,6 @@ func TestInitLogger(t *testing.T) {
 		assert.Panics(t, func() {
 			initLogger.Level()
 		})
-	})
-
-	t.Run("WithFatal causes emit init logs and exit on error", func(t *testing.T) {
-		resetInitStorage()
-		var bufInit bytes.Buffer
-		var bufNormal bytes.Buffer
-		ctx := context.Background()
-
-		// Set up a custom exit function to capture the exit call
-		exitCalled := false
-		exitCode := 0
-		originalExitFunc := GetExitFunc()
-		defer SetExitFunc(originalExitFunc)
-
-		SetExitFunc(func(code int) {
-			exitCalled = true
-			exitCode = code
-		})
-
-		initStorage.out = &bufInit
-		// Log some messages first
-		InitLogger().Info(ctx, "info message before fatal")
-		InitLogger().WithField("key", "value").Warn(ctx, "warning before fatal")
-
-		// Create a logger with WithFatal and call Error
-		InitLogger().WithFatal().WithField("fatal_field", "fatal_value").Error(ctx, "fatal error message")
-
-		// Verify that exit was called with code 1
-		assert.True(t, exitCalled, "Exit function should have been called")
-		assert.Equal(t, 1, exitCode, "Exit should be called with code 1")
-
-		output := bufInit.String()
-		lines := strings.Split(strings.TrimSpace(output), "\n")
-		require.Len(t, lines, 3)
-
-		var logEntry map[string]any
-
-		err := json.Unmarshal([]byte(lines[0]), &logEntry)
-		require.NoError(t, err)
-		assert.Equal(t, "info message before fatal", logEntry["msg"])
-		assert.Equal(t, "INFO", logEntry["level"])
-
-		err = json.Unmarshal([]byte(lines[1]), &logEntry)
-		require.NoError(t, err)
-		assert.Equal(t, "warning before fatal", logEntry["msg"])
-		assert.Equal(t, "WARN", logEntry["level"])
-		assert.Equal(t, "value", logEntry["key"])
-
-		err = json.Unmarshal([]byte(lines[2]), &logEntry)
-		require.NoError(t, err)
-		assert.Equal(t, "fatal error message", logEntry["msg"])
-		assert.Equal(t, "ERROR", logEntry["level"])
-		assert.Equal(t, "fatal_value", logEntry["fatal_field"])
-
-		// Verify that init logs were emitted before exit, we should not see any logs
-		_ = NewSlogLoggerCustom(Info, JSON, &bufNormal)
-		output = bufNormal.String()
-		lines = strings.Split(strings.TrimSpace(output), "\n")
-		require.Len(t, lines, 1)
 	})
 
 	t.Run("concurrent access", func(t *testing.T) {

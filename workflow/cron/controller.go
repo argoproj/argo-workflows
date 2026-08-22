@@ -68,7 +68,9 @@ func init() {
 	// this make sure we support timezones
 	_, err := time.Parse(time.RFC822, "17 Oct 07 14:03 PST")
 	if err != nil {
-		logging.InitLogger().WithFatal().WithError(err).Error(context.Background(), "failed to parse time")
+		logging.InitLogger().WithError(err).Error(context.Background(), "failed to parse time")
+		logging.Exit(1)
+		return
 	}
 	cronSyncPeriod = env.LookupEnvDurationOr(logging.InitLoggerInContext(), "CRON_SYNC_PERIOD", 10*time.Second)
 	logging.InitLogger().WithField("cronSyncPeriod", cronSyncPeriod).Info(context.Background(), "cron config")
@@ -112,7 +114,9 @@ func (cc *Controller) Run(ctx context.Context) {
 	cc.cronWfInformer.Informer().SetTransform(informerutil.StripManagedFields)
 	err := cc.addCronWorkflowInformerHandler(ctx)
 	if err != nil {
-		cc.logger.WithFatal().Error(ctx, err.Error())
+		cc.logger.Error(ctx, err.Error())
+		logging.Exit(1)
+		return
 	}
 
 	wfInformer := util.NewWorkflowInformer(ctx, cc.dynamicInterface, cc.managedNamespace, cronWorkflowResyncPeriod,

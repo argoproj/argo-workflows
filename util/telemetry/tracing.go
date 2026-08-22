@@ -2,6 +2,7 @@ package telemetry
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strings"
 
@@ -125,7 +126,7 @@ func NewTracing(ctx context.Context, serviceName string, extraOpts ...tracesdk.T
 			}
 			options = append(options, tracesdk.WithBatcher(httpExporter))
 		default:
-			logger.WithFatal().WithField("protocol", otlpProtocol).Error(ctx, "OTEL tracing protocol invalid")
+			return nil, fmt.Errorf("invalid OTEL tracing protocol %q", otlpProtocol)
 		}
 	}
 

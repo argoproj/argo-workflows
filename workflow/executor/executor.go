@@ -231,10 +231,12 @@ func (we *WorkflowExecutor) HandleError(ctx context.Context) func() {
 	return func() {
 		if r := recover(); r != nil {
 			util.WriteTerminateMessage(fmt.Sprintf("%v", r))
-			logging.RequireLoggerFromContext(ctx).WithFatal().WithFields(logging.Fields{
+			logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{
 				"error": r,
 				"stack": debug.Stack(),
 			}).Error(ctx, "executor panic")
+			logging.Exit(1)
+			return
 		} else if len(we.errors) > 0 {
 			util.WriteTerminateMessage(we.errors[0].Error())
 		}
@@ -1091,7 +1093,7 @@ func (we *WorkflowExecutor) AddAnnotation(ctx context.Context, key, value string
 }
 
 // isTarball returns whether or not the file is a tarball
-func isTarball(ctx context.Context, filePath string) (bool, error) {
+func isTarball(ctx context.Context, filePath string) (ok bool, retErr error) {
 	logger := logging.RequireLoggerFromContext(ctx)
 	logger.WithField("path", filePath).Info(ctx, "Detecting if file is a tarball")
 	f, err := os.Open(filepath.Clean(filePath))
@@ -1100,7 +1102,10 @@ func isTarball(ctx context.Context, filePath string) (bool, error) {
 	}
 	defer func() {
 		if closeErr := f.Close(); closeErr != nil {
-			logger.WithFatal().WithField("path", filePath).WithError(closeErr).Error(ctx, "Error closing file")
+			logger.WithField("path", filePath).WithError(closeErr).Error(ctx, "Error closing file")
+			if retErr == nil {
+				retErr = closeErr
+			}
 		}
 	}()
 	gzr, err := gzip.NewReader(f)

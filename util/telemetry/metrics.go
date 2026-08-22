@@ -2,6 +2,7 @@ package telemetry
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strings"
 	"sync"
@@ -97,7 +98,7 @@ func NewMetrics(ctx context.Context, serviceName, prometheusName string, config 
 			}
 			options = append(options, metricsdk.WithReader(metricsdk.NewPeriodicReader(httpExporter)))
 		default:
-			logger.WithFatal().WithField("protocol", otlpProtocol).Error(ctx, "OTEL metric protocol invalid")
+			return nil, fmt.Errorf("invalid OTEL metric protocol %q", otlpProtocol)
 		}
 	}
 
