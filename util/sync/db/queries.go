@@ -80,6 +80,8 @@ type SyncQueries interface {
 	GetPendingInQueue(ctx context.Context, sessionProxy *sqldb.SessionProxy, semaphoreName, holderKey, controllerName string) ([]StateRecord, error)
 	ReleaseHeld(ctx context.Context, semaphoreName, key, controllerName string) error
 
+	ReleaseAllHeldByWorkflowKey(ctx context.Context, holderKey string) error
+
 	GetExistingLocks(ctx context.Context, lockName, controllerName string) ([]LockRecord, error)
 	InsertLock(ctx context.Context, record *LockRecord) error
 	DeleteLock(ctx context.Context, lockName string) error
@@ -303,6 +305,23 @@ func (q *syncQueries) ReleaseHeld(ctx context.Context, semaphoreName, key, contr
 			And(db.Cond{StateNameField: semaphoreName}).
 			And(db.Cond{StateKeyField: key}).
 			And(db.Cond{StateControllerField: controllerName}).
+			Exec()
+		return err
+	})
+}
+
+// ReleaseAllHeldByWorkflowKey releases every held state row that belongs to the
+// workflow, regardless of which semaphore or mutex it was acquired on. It is
+// the recovery path for workflows whose recorded synchronization status was
+// lost (e.g. the controller's database session broke after the row was written
+// but before Status.Synchronization was persisted): the workflow key is stored
+// in the row itself, so ownership can be re-derived without the status field.
+func (q *syncQueries) ReleaseAllHeldByWorkflowKey(ctx context.Context, holderKey string) error {
+	return q.sessionProxy.With(ctx, func(session db.Session) error {
+		_, err := session.SQL().
+			DeleteFrom(q.config.StateTable).
+			Where(db.Cond{StateHeldField: true}).
+			And(db.Cond{StateKeyField: holderKey}).
 			Exec()
 		return err
 	})
