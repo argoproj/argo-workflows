@@ -390,7 +390,7 @@ Or for simplicity use the Argo CLI `argo delete` command with flag `--force`, wh
 
 ### Release Versions >= 3.5
 
-A flag has been added to the Workflow Spec called `forceFinalizerRemoval` (see [here](../fields.md#workflowlevelartifactgc)) to force the finalizer's removal even if Artifact GC fails:
+A flag has been added to the Workflow Spec called `forceFinalizerRemoval` (see [here](../fields.md#workflowlevelartifactgc)) to force the finalizer's removal even if Artifact GC fails or there is nothing to GC:
 
 ```yaml
 spec:
