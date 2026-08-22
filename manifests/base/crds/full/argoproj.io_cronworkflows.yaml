@@ -1245,6 +1245,9 @@ spec:
                             deleted:
                               description: Has this been deleted?
                               type: boolean
+                            description:
+                              description: Description is the artifact description
+                              type: string
                             from:
                               description: From allows an artifact to reference an
                                 artifact from a previous step
@@ -4226,6 +4229,9 @@ spec:
                                   deleted:
                                     description: Has this been deleted?
                                     type: boolean
+                                  description:
+                                    description: Description is the artifact description
+                                    type: string
                                   from:
                                     description: From allows an artifact to reference
                                       an artifact from a previous step
@@ -8796,6 +8802,8 @@ spec:
                                             type: object
                                           deleted:
                                             type: boolean
+                                          description:
+                                            type: string
                                           from:
                                             type: string
                                           fromExpression:
@@ -9473,6 +9481,8 @@ spec:
                                                   type: object
                                                 deleted:
                                                   type: boolean
+                                                description:
+                                                  type: string
                                                 from:
                                                   type: string
                                                 fromExpression:
@@ -10217,6 +10227,8 @@ spec:
                                     type: object
                                   deleted:
                                     type: boolean
+                                  description:
+                                    type: string
                                   from:
                                     type: string
                                   fromExpression:
@@ -11629,6 +11641,8 @@ spec:
                                   type: object
                                 deleted:
                                   type: boolean
+                                description:
+                                  type: string
                                 from:
                                   type: string
                                 fromExpression:
@@ -12410,6 +12424,8 @@ spec:
                                   type: object
                                 deleted:
                                   type: boolean
+                                description:
+                                  type: string
                                 from:
                                   type: string
                                 fromExpression:
@@ -13137,6 +13153,8 @@ spec:
                                     type: object
                                   deleted:
                                     type: boolean
+                                  description:
+                                    type: string
                                   from:
                                     type: string
                                   fromExpression:
@@ -15341,6 +15359,8 @@ spec:
                                           type: object
                                         deleted:
                                           type: boolean
+                                        description:
+                                          type: string
                                         from:
                                           type: string
                                         fromExpression:
@@ -16011,6 +16031,8 @@ spec:
                                                 type: object
                                               deleted:
                                                 type: boolean
+                                              description:
+                                                type: string
                                               from:
                                                 type: string
                                               fromExpression:
@@ -22898,6 +22920,10 @@ spec:
                                             deleted:
                                               description: Has this been deleted?
                                               type: boolean
+                                            description:
+                                              description: Description is the artifact
+                                                description
+                                              type: string
                                             from:
                                               description: From allows an artifact
                                                 to reference an artifact from a previous
@@ -24309,6 +24335,10 @@ spec:
                                                   deleted:
                                                     description: Has this been deleted?
                                                     type: boolean
+                                                  description:
+                                                    description: Description is the
+                                                      artifact description
+                                                    type: string
                                                   from:
                                                     description: From allows an artifact
                                                       to reference an artifact from
@@ -25893,6 +25923,9 @@ spec:
                                     deleted:
                                       description: Has this been deleted?
                                       type: boolean
+                                    description:
+                                      description: Description is the artifact description
+                                      type: string
                                     from:
                                       description: From allows an artifact to reference
                                         an artifact from a previous step
@@ -28746,6 +28779,9 @@ spec:
                                   deleted:
                                     description: Has this been deleted?
                                     type: boolean
+                                  description:
+                                    description: Description is the artifact description
+                                    type: string
                                   from:
                                     description: From allows an artifact to reference
                                       an artifact from a previous step
@@ -30193,6 +30229,9 @@ spec:
                                   deleted:
                                     description: Has this been deleted?
                                     type: boolean
+                                  description:
+                                    description: Description is the artifact description
+                                    type: string
                                   from:
                                     description: From allows an artifact to reference
                                       an artifact from a previous step
@@ -31598,6 +31637,9 @@ spec:
                                     deleted:
                                       description: Has this been deleted?
                                       type: boolean
+                                    description:
+                                      description: Description is the artifact description
+                                      type: string
                                     from:
                                       description: From allows an artifact to reference
                                         an artifact from a previous step
@@ -36270,6 +36312,10 @@ spec:
                                           deleted:
                                             description: Has this been deleted?
                                             type: boolean
+                                          description:
+                                            description: Description is the artifact
+                                              description
+                                            type: string
                                           from:
                                             description: From allows an artifact to
                                               reference an artifact from a previous
@@ -37634,6 +37680,10 @@ spec:
                                                 deleted:
                                                   description: Has this been deleted?
                                                   type: boolean
+                                                description:
+                                                  description: Description is the
+                                                    artifact description
+                                                  type: string
                                                 from:
                                                   description: From allows an artifact
                                                     to reference an artifact from
