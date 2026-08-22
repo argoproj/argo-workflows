@@ -1,0 +1,60 @@
+# Regression test: a lifecycle hook on an expanded (withItems) DAG task must fire
+# exactly once, at task level, not once per expanded item.
+#
+# Topology: step-a (fail-inner, withItems: [foo, bar, baz]) -> step-b (succeed-inner)
+# step-a has a notify hook on failure, whose argument references {{item}}.
+# Expected: exactly one hook node, named "step-a.hooks.notify". Per-item hook nodes
+# ("step-a(0:foo).hooks.notify" and friends) must not exist - they would breach the
+# "executes once" contract in docs/lifecyclehook.md, and could not resolve {{item}}
+# because the task-level hook spec is not item-substituted.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-hook-withitems-fires-once
+  namespace: argo
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: step-a
+            template: fail-inner
+            withItems: ["foo", "bar", "baz"]
+            hooks:
+              notify:
+                template: echo
+                expression: tasks["step-a"].status == "Failed"
+          - name: step-b
+            template: succeed-inner
+            depends: step-a
+
+    - name: fail-inner
+      dag:
+        tasks:
+          - name: inner
+            template: fail-pod
+
+    - name: succeed-inner
+      dag:
+        tasks:
+          - name: inner
+            template: succeed-pod
+
+    - name: fail-pod
+      container:
+        image: alpine:3.23
+        command: [sh, -c]
+        args: ["exit 1"]
+
+    - name: succeed-pod
+      container:
+        image: alpine:3.23
+        command: [sh, -c]
+        args: ["echo done"]
+
+    - name: echo
+      container:
+        image: alpine:3.23
+        command: [echo]
+        args: ["hook fired"]
