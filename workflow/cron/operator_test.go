@@ -1,6 +1,7 @@
 package cron
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -8,6 +9,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	ktesting "k8s.io/client-go/testing"
+	"k8s.io/client-go/tools/record"
 
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
@@ -814,4 +818,171 @@ func TestEvaluateWhenUnresolvedOutside(t *testing.T) {
 	result, err := evalWhen(ctx, &cronWf)
 	require.NoError(t, err)
 	assert.True(t, result)
+}
+
+// failCreateWorkflowReactor makes every "create workflows" call on the fake clientset fail with the
+// supplied error, so the submission path in run() can be exercised without a real API server.
+func failCreateWorkflowReactor(err error) ktesting.ReactionFunc {
+	return func(action ktesting.Action) (bool, runtime.Object, error) {
+		return true, nil, err
+	}
+}
+
+// TestRunTransientSubmissionError: a transient submission error sets the transient condition, isn't counted as a failure, and emits a Warning event.
+func TestRunTransientSubmissionError(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	var cronWf v1alpha1.CronWorkflow
+	v1alpha1.MustUnmarshal([]byte(scheduledWf), &cronWf)
+
+	cs := fake.NewClientset()
+	// isTransientEtcdErr matches this substring, so the create is retried then reported as transient.
+	cs.PrependReactor("create", "workflows", failCreateWorkflowReactor(errors.New("etcdserver: leader changed")))
+	testMetrics, err := metrics.New(ctx, telemetry.TestScopeName, telemetry.TestScopeName, &telemetry.MetricsConfig{}, metrics.Callbacks{})
+	require.NoError(t, err)
+	recorder := record.NewFakeRecorder(64)
+	woc := &cronWfOperationCtx{
+		wfClientset:       cs,
+		wfClient:          cs.ArgoprojV1alpha1().Workflows(""),
+		cronWfIf:          cs.ArgoprojV1alpha1().CronWorkflows(""),
+		cronWf:            &cronWf,
+		log:               logging.RequireLoggerFromContext(ctx),
+		metrics:           testMetrics,
+		eventRecorder:     recorder,
+		scheduledTimeFunc: inferScheduledTime,
+		ctx:               ctx,
+	}
+	woc.Run()
+
+	assert.True(t, woc.cronWf.Status.Conditions.HasCondition(v1alpha1.ConditionTypeTransientSubmissionError))
+	assert.False(t, woc.cronWf.Status.Conditions.HasCondition(v1alpha1.ConditionTypeSubmissionError))
+	// Transient errors must not be counted as a workflow failure, otherwise they pollute Failed.
+	assert.Equal(t, int64(0), woc.cronWf.Status.Failed)
+
+	select {
+	case event := <-recorder.Events:
+		assert.Contains(t, event, string(v1alpha1.ConditionTypeTransientSubmissionError))
+		assert.Contains(t, event, "Warning")
+	default:
+		t.Fatal("expected a Warning event to be emitted for the transient submission error")
+	}
+}
+
+// TestRunPermanentSubmissionError: a permanent submission error sets the submission-error condition, increments Status.Failed, and emits a Warning event.
+func TestRunPermanentSubmissionError(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	var cronWf v1alpha1.CronWorkflow
+	v1alpha1.MustUnmarshal([]byte(scheduledWf), &cronWf)
+
+	cs := fake.NewClientset()
+	cs.PrependReactor("create", "workflows", failCreateWorkflowReactor(errors.New("some permanent failure")))
+	testMetrics, err := metrics.New(ctx, telemetry.TestScopeName, telemetry.TestScopeName, &telemetry.MetricsConfig{}, metrics.Callbacks{})
+	require.NoError(t, err)
+	recorder := record.NewFakeRecorder(64)
+	woc := &cronWfOperationCtx{
+		wfClientset:       cs,
+		wfClient:          cs.ArgoprojV1alpha1().Workflows(""),
+		cronWfIf:          cs.ArgoprojV1alpha1().CronWorkflows(""),
+		cronWf:            &cronWf,
+		log:               logging.RequireLoggerFromContext(ctx),
+		metrics:           testMetrics,
+		eventRecorder:     recorder,
+		scheduledTimeFunc: inferScheduledTime,
+		ctx:               ctx,
+	}
+	woc.Run()
+
+	assert.True(t, woc.cronWf.Status.Conditions.HasCondition(v1alpha1.ConditionTypeSubmissionError))
+	assert.False(t, woc.cronWf.Status.Conditions.HasCondition(v1alpha1.ConditionTypeTransientSubmissionError))
+	// Permanent errors are real failures and must be counted.
+	assert.Equal(t, int64(1), woc.cronWf.Status.Failed)
+
+	select {
+	case event := <-recorder.Events:
+		assert.Contains(t, event, string(v1alpha1.ConditionTypeSubmissionError))
+		assert.Contains(t, event, "Warning")
+	default:
+		t.Fatal("expected a Warning event to be emitted for the permanent submission error")
+	}
+}
+
+// TestSubmissionErrorConditionsClearedOnSuccess: a successful submission clears both submission-error conditions.
+func TestSubmissionErrorConditionsClearedOnSuccess(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	var cronWf v1alpha1.CronWorkflow
+	v1alpha1.MustUnmarshal([]byte(scheduledWf), &cronWf)
+
+	// Seed both conditions as if previous submissions had failed.
+	cronWf.Status.Conditions.UpsertCondition(v1alpha1.Condition{
+		Type:    v1alpha1.ConditionTypeSubmissionError,
+		Message: "old permanent error",
+		Status:  v1.ConditionTrue,
+	})
+	cronWf.Status.Conditions.UpsertCondition(v1alpha1.Condition{
+		Type:    v1alpha1.ConditionTypeTransientSubmissionError,
+		Message: "old transient error",
+		Status:  v1.ConditionTrue,
+	})
+
+	cs := fake.NewClientset() // no reactor: the create succeeds
+	testMetrics, err := metrics.New(ctx, telemetry.TestScopeName, telemetry.TestScopeName, &telemetry.MetricsConfig{}, metrics.Callbacks{})
+	require.NoError(t, err)
+	woc := &cronWfOperationCtx{
+		wfClientset:       cs,
+		wfClient:          cs.ArgoprojV1alpha1().Workflows(""),
+		cronWfIf:          cs.ArgoprojV1alpha1().CronWorkflows(""),
+		cronWf:            &cronWf,
+		log:               logging.RequireLoggerFromContext(ctx),
+		metrics:           testMetrics,
+		eventRecorder:     record.NewFakeRecorder(64),
+		scheduledTimeFunc: inferScheduledTime,
+		ctx:               ctx,
+	}
+	woc.Run()
+
+	assert.False(t, woc.cronWf.Status.Conditions.HasCondition(v1alpha1.ConditionTypeSubmissionError))
+	assert.False(t, woc.cronWf.Status.Conditions.HasCondition(v1alpha1.ConditionTypeTransientSubmissionError))
+
+	wsl, err := cs.ArgoprojV1alpha1().Workflows("").List(ctx, v1.ListOptions{})
+	require.NoError(t, err)
+	assert.Equal(t, 1, wsl.Items.Len())
+}
+
+// TestShouldRetryOutstandingWorkflowsOnTransientError: a transient condition forces a missed run to be retried even without StartingDeadlineSeconds.
+func TestShouldRetryOutstandingWorkflowsOnTransientError(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	newWoc := func() *cronWfOperationCtx {
+		var cronWf v1alpha1.CronWorkflow
+		v1alpha1.MustUnmarshal([]byte(scheduledWf), &cronWf)
+		// No deadline window, and a missed execution two minutes ago.
+		cronWf.Spec.StartingDeadlineSeconds = nil
+		cronWf.Status.LastScheduledTime = &v1.Time{Time: time.Now().Add(-2 * time.Minute)}
+		woc := &cronWfOperationCtx{
+			cronWf: &cronWf,
+			log:    logging.RequireLoggerFromContext(ctx),
+		}
+		woc.cronWf.SetSchedule(woc.cronWf.Spec.GetScheduleWithTimezoneString())
+		return woc
+	}
+
+	t.Run("WithoutTransientCondition", func(t *testing.T) {
+		// Without StartingDeadlineSeconds and no transient condition, the missed run is skipped.
+		woc := newWoc()
+		missedExecutionTime, err := woc.shouldOutstandingWorkflowsBeRun(ctx)
+		require.NoError(t, err)
+		assert.True(t, missedExecutionTime.IsZero())
+	})
+
+	t.Run("WithTransientCondition", func(t *testing.T) {
+		// The transient condition forces an unconditional retry of the missed run.
+		woc := newWoc()
+		woc.cronWf.Status.Conditions.UpsertCondition(v1alpha1.Condition{
+			Type:    v1alpha1.ConditionTypeTransientSubmissionError,
+			Message: "Failed to submit Workflow (transient, will retry)",
+			Status:  v1.ConditionTrue,
+		})
+		missedExecutionTime, err := woc.shouldOutstandingWorkflowsBeRun(ctx)
+		require.NoError(t, err)
+		assert.False(t, missedExecutionTime.IsZero())
+	})
 }
