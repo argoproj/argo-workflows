@@ -914,3 +914,23 @@ func TestArtifactGCPodWithPlugins(t *testing.T) {
 	assert.Contains(t, mainContainer.Args, "artifact")
 	assert.Contains(t, mainContainer.Args, "delete")
 }
+
+// TestProcessArtifactGCCompletionNoGCNeeded verifies that with forceFinalizerRemoval, the finalizer is removed
+// even when no GC pods were ever needed (nothing to delete).
+func TestProcessArtifactGCCompletionNoGCNeeded(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(artgcWorkflow)
+	wf.Spec.ArtifactGC.ForceFinalizerRemoval = true
+	wf.Status.Nodes = nil // no nodes, so no artifacts need GC
+
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.wf.Status.ArtifactGCStatus = &wfv1.ArtGCStatus{}
+
+	err := woc.processArtifactGCCompletion(ctx)
+	require.NoError(t, err)
+
+	assert.NotContains(t, woc.wf.Finalizers, common.FinalizerArtifactGC)
+}
