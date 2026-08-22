@@ -702,6 +702,7 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 
 	if taskGroupNode != nil {
 		groupPhase := wfv1.NodeSucceeded
+		allSkipped := true
 		for _, t := range expandedTasks {
 			// Add the child relationship from our dependency's outbound nodes to this node.
 			node := dagCtx.getTaskNode(ctx, t.Name)
@@ -711,6 +712,16 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 			if node.FailedOrError() {
 				groupPhase = node.Phase
 			}
+			if node.Phase != wfv1.NodeSkipped && node.Phase != wfv1.NodeOmitted {
+				allSkipped = false
+			}
+		}
+		// A task group whose every child was skipped/omitted (e.g. a withParam task whose
+		// when-clause filtered out every item) produced no outputs. Mark the group itself
+		// Skipped so addSkippedNodeOutputsToScope populates its declared output defaults
+		// and downstream references resolve instead of leaving the workflow stuck.
+		if allSkipped && len(expandedTasks) > 0 {
+			groupPhase = wfv1.NodeSkipped
 		}
 		woc.markNodePhase(ctx, taskGroupNode.Name, groupPhase)
 	}
