@@ -20,17 +20,17 @@ type GroupClaimSource struct {
 // HeaderConfig contains trusted header authentication configuration settings.
 type HeaderConfig struct {
 	// Issuer configures the issuer claim.
-	Issuer ClaimSource `json:"iss,omitempty"`
+	Issuer ClaimSource `json:"iss,omitzero"`
 
 	// Subject configures the subject claim.
-	Subject ClaimSource `json:"sub,omitempty"`
+	Subject ClaimSource `json:"sub,omitzero"`
 
 	// Email configures the email claim.
-	Email ClaimSource `json:"email,omitempty"`
+	Email ClaimSource `json:"email,omitzero"`
 
 	// PreferredUsername configures the preferred_username claim.
-	PreferredUsername ClaimSource `json:"preferred_username,omitempty"`
+	PreferredUsername ClaimSource `json:"preferred_username,omitzero"`
 
 	// Groups configures the groups claim.
-	Groups GroupClaimSource `json:"groups,omitempty"`
+	Groups GroupClaimSource `json:"groups,omitzero"`
 }
