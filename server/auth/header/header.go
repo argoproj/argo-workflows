@@ -1,6 +1,7 @@
 package header
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/argoproj/argo-workflows/v4/config"
@@ -10,7 +11,7 @@ import (
 
 type Interface interface {
 	Authorize(md metadata.MD) (*types.Claims, error)
-    IsRBACEnabled() bool
+	IsRBACEnabled() bool
 }
 
 type header struct {
@@ -18,7 +19,7 @@ type header struct {
 }
 
 func (h *header) IsRBACEnabled() bool {
-    return h.config.RBAC.IsEnabled()
+	return h.config.RBAC.IsEnabled()
 }
 
 func New(cfg config.HeaderConfig) Interface {
@@ -53,7 +54,18 @@ func resolveGroups(source config.GroupClaimSource, md metadata.MD) []string {
 		return []string{value}
 	}
 
-	return strings.Split(value, source.Delimiter)
+	groups := strings.Split(value, source.Delimiter)
+	result := make([]string, 0, len(groups))
+
+	for _, group := range groups {
+		group = strings.TrimSpace(group)
+		if group == "" {
+			continue
+		}
+		result = append(result, group)
+	}
+
+	return result
 }
 
 func (h *header) Authorize(md metadata.MD) (*types.Claims, error) {
@@ -61,6 +73,10 @@ func (h *header) Authorize(md metadata.MD) (*types.Claims, error) {
 
 	claims.Claims.Issuer = resolveClaim(h.config.Issuer, md)
 	claims.Claims.Subject = resolveClaim(h.config.Subject, md)
+
+	if claims.Subject == "" {
+		return nil, fmt.Errorf("subject claim is empty")
+	}
 
 	claims.Email = resolveClaim(h.config.Email, md)
 	claims.PreferredUsername = resolveClaim(h.config.PreferredUsername, md)

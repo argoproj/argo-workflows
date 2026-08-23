@@ -195,8 +195,16 @@ func (s *gatekeeper) getClients(ctx context.Context, req any) (*servertypes.Clie
 	// Trusted Header Authentication
 	//
 	if s.Modes[Header] {
-		return s.authenticateHeader(ctx, md, req)
+		clients, claims, err := s.authenticateHeader(ctx, md, req)
+		if err == nil {
+			return clients, claims, nil
+		}
+
+		if status.Code(err) != codes.Unauthenticated {
+			return nil, nil, err
+		}
 	}
+
 	if s.Modes[Server] {
 		return s.authenticateServer()
 	}
@@ -255,7 +263,7 @@ func (s *gatekeeper) authenticateClaims(
 	ctx context.Context,
 	claims *authTypes.Claims,
 	req any,
-    rbacEnabled bool,
+	rbacEnabled bool,
 ) (*servertypes.Clients, *authTypes.Claims, error) {
 	logger := logging.RequireLoggerFromContext(ctx)
 

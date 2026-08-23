@@ -63,6 +63,9 @@ func TestAuthorize(t *testing.T) {
 			name: "groups",
 
 			cfg: config.HeaderConfig{
+				Subject: config.ClaimSource{
+					Header: "X-Forwarded-User",
+				},
 				Groups: config.GroupClaimSource{
 					ClaimSource: config.ClaimSource{
 						Header: "X-Forwarded-Groups",
@@ -72,9 +75,40 @@ func TestAuthorize(t *testing.T) {
 			},
 
 			md: metadata.Pairs(
-				"x-forwarded-groups",
-				"admin,developer,argo",
+				"x-forwarded-user", "pradeep",
+				"x-forwarded-groups", "admin,developer,argo",
 			),
+
+			subject: "pradeep",
+
+			groups: []string{
+				"admin",
+				"developer",
+				"argo",
+			},
+		},
+
+		{
+			name: "groups with whitespace and empty entries",
+
+			cfg: config.HeaderConfig{
+				Subject: config.ClaimSource{
+					Header: "X-Forwarded-User",
+				},
+				Groups: config.GroupClaimSource{
+					ClaimSource: config.ClaimSource{
+						Header: "X-Forwarded-Groups",
+					},
+					Delimiter: ",",
+				},
+			},
+
+			md: metadata.Pairs(
+				"x-forwarded-user", "pradeep",
+				"x-forwarded-groups", "admin, developer,,argo, ",
+			),
+
+			subject: "pradeep",
 
 			groups: []string{
 				"admin",
@@ -134,4 +168,19 @@ func TestIsRBACEnabled(t *testing.T) {
 			assert.Equal(t, tt.want, h.IsRBACEnabled())
 		})
 	}
+}
+
+func TestAuthorizeMissingSubject(t *testing.T) {
+	cfg := config.HeaderConfig{
+		Subject: config.ClaimSource{
+			Header: "X-Forwarded-User",
+		},
+	}
+
+	h := New(cfg)
+
+	claims, err := h.Authorize(metadata.MD{})
+
+	assert.Nil(t, claims)
+	assert.EqualError(t, err, "subject claim is empty")
 }
