@@ -366,11 +366,11 @@ func TestNewSemaphoreWithZeroLimit(t *testing.T) {
 
 	for _, dbType := range testDBTypes {
 		t.Run("Database/"+string(dbType), func(t *testing.T) {
-			sem, _, deferfunc := createTestDatabaseSemaphore(ctx, t, "my-database-sem", "default", 0, 0, nextWorkflow, dbType)
+			sem, info, deferfunc := createTestDatabaseSemaphore(ctx, t, "my-database-sem", "default", 0, 0, nextWorkflow, dbType)
 			defer deferfunc()
 
 			require.NoError(t, sem.addToQueue(ctx, "default/wf-a", 0, time.Now()))
-			acquired, _, err := sem.tryAcquire(ctx, "default/wf-a", nil)
+			acquired, _, err := sem.tryAcquire(ctx, "default/wf-a", info.SessionProxy)
 			require.NoError(t, err)
 			assert.False(t, acquired, "no slots should be available while the limit is 0")
 		})
