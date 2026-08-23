@@ -242,7 +242,6 @@ func (s *gatekeeper) authenticateSSO(
 	}
 
 	return s.authenticateClaims(ctx, claims, req, s.ssoIf.IsRBACEnabled())
-
 }
 
 func (s *gatekeeper) authenticateHeader(
@@ -250,7 +249,6 @@ func (s *gatekeeper) authenticateHeader(
 	md metadata.MD,
 	req any,
 ) (*servertypes.Clients, *authTypes.Claims, error) {
-
 	claims, err := s.headerIf.Authorize(md)
 	if err != nil {
 		return nil, nil, status.Error(codes.Unauthenticated, err.Error())

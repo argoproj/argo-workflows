@@ -3,9 +3,11 @@ package header
 import (
 	"testing"
 
-	"github.com/argoproj/argo-workflows/v4/config"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/metadata"
+
+	"github.com/argoproj/argo-workflows/v4/config"
 )
 
 func TestAuthorize(t *testing.T) {
@@ -120,14 +122,13 @@ func TestAuthorize(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			h := New(tt.cfg)
 
 			claims, err := h.Authorize(tt.md)
 
-			assert.NoError(t, err)
-			assert.Equal(t, tt.issuer, claims.Claims.Issuer)
-			assert.Equal(t, tt.subject, claims.Claims.Subject)
+			require.NoError(t, err)
+			assert.Equal(t, tt.issuer, claims.Issuer)
+			assert.Equal(t, tt.subject, claims.Subject)
 			assert.Equal(t, tt.email, claims.Email)
 			assert.Equal(t, tt.groups, claims.Groups)
 		})

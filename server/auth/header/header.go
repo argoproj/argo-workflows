@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"strings"
 
+	"google.golang.org/grpc/metadata"
+
 	"github.com/argoproj/argo-workflows/v4/config"
 	"github.com/argoproj/argo-workflows/v4/server/auth/types"
-	"google.golang.org/grpc/metadata"
 )
 
 type Interface interface {
@@ -71,8 +72,8 @@ func resolveGroups(source config.GroupClaimSource, md metadata.MD) []string {
 func (h *header) Authorize(md metadata.MD) (*types.Claims, error) {
 	claims := &types.Claims{}
 
-	claims.Claims.Issuer = resolveClaim(h.config.Issuer, md)
-	claims.Claims.Subject = resolveClaim(h.config.Subject, md)
+	claims.Issuer = resolveClaim(h.config.Issuer, md)
+	claims.Subject = resolveClaim(h.config.Subject, md)
 
 	if claims.Subject == "" {
 		return nil, fmt.Errorf("subject claim is empty")

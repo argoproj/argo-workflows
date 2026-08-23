@@ -14,6 +14,9 @@ import (
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
 
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	fakewfclientset "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
 	headermocks "github.com/argoproj/argo-workflows/v4/server/auth/header/mocks"
 	ssomocks "github.com/argoproj/argo-workflows/v4/server/auth/sso/mocks"
@@ -22,8 +25,6 @@ import (
 	servertypes "github.com/argoproj/argo-workflows/v4/server/types"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 func TestServer_GetWFClient(t *testing.T) {
