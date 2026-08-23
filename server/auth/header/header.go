@@ -10,10 +10,15 @@ import (
 
 type Interface interface {
 	Authorize(md metadata.MD) (*types.Claims, error)
+    IsRBACEnabled() bool
 }
 
 type header struct {
 	config config.HeaderConfig
+}
+
+func (h *header) IsRBACEnabled() bool {
+    return h.config.RBAC.IsEnabled()
 }
 
 func New(cfg config.HeaderConfig) Interface {

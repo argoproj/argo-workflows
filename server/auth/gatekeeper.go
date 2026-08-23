@@ -233,7 +233,7 @@ func (s *gatekeeper) authenticateSSO(
 		return nil, nil, status.Error(codes.Unauthenticated, err.Error())
 	}
 
-	return s.authenticateClaims(ctx, claims, req)
+	return s.authenticateClaims(ctx, claims, req, s.ssoIf.IsRBACEnabled())
 
 }
 
@@ -248,17 +248,18 @@ func (s *gatekeeper) authenticateHeader(
 		return nil, nil, status.Error(codes.Unauthenticated, err.Error())
 	}
 
-	return s.authenticateClaims(ctx, claims, req)
+	return s.authenticateClaims(ctx, claims, req, s.headerIf.IsRBACEnabled())
 }
 
 func (s *gatekeeper) authenticateClaims(
 	ctx context.Context,
 	claims *authTypes.Claims,
 	req any,
+    rbacEnabled bool,
 ) (*servertypes.Clients, *authTypes.Claims, error) {
 	logger := logging.RequireLoggerFromContext(ctx)
 
-	if s.ssoIf.IsRBACEnabled() {
+	if rbacEnabled {
 		clients, err := s.rbacAuthorization(ctx, claims, req)
 		if err != nil {
 			logger.WithError(err).Error(ctx, "failed to perform RBAC authorization")

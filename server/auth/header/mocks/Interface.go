@@ -72,7 +72,7 @@ type Interface_Authorize_Call struct {
 
 // Authorize is a helper method to define mock.On call
 //   - md metadata.MD
-func (_e *Interface_Expecter) Authorize(md any) *Interface_Authorize_Call {
+func (_e *Interface_Expecter) Authorize(md interface{}) *Interface_Authorize_Call {
 	return &Interface_Authorize_Call{Call: _e.mock.On("Authorize", md)}
 }
 
@@ -95,6 +95,50 @@ func (_c *Interface_Authorize_Call) Return(claims *types.Claims, err error) *Int
 }
 
 func (_c *Interface_Authorize_Call) RunAndReturn(run func(md metadata.MD) (*types.Claims, error)) *Interface_Authorize_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// IsRBACEnabled provides a mock function for the type Interface
+func (_mock *Interface) IsRBACEnabled() bool {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for IsRBACEnabled")
+	}
+
+	var r0 bool
+	if returnFunc, ok := ret.Get(0).(func() bool); ok {
+		r0 = returnFunc()
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+	return r0
+}
+
+// Interface_IsRBACEnabled_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'IsRBACEnabled'
+type Interface_IsRBACEnabled_Call struct {
+	*mock.Call
+}
+
+// IsRBACEnabled is a helper method to define mock.On call
+func (_e *Interface_Expecter) IsRBACEnabled() *Interface_IsRBACEnabled_Call {
+	return &Interface_IsRBACEnabled_Call{Call: _e.mock.On("IsRBACEnabled")}
+}
+
+func (_c *Interface_IsRBACEnabled_Call) Run(run func()) *Interface_IsRBACEnabled_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *Interface_IsRBACEnabled_Call) Return(b bool) *Interface_IsRBACEnabled_Call {
+	_c.Call.Return(b)
+	return _c
+}
+
+func (_c *Interface_IsRBACEnabled_Call) RunAndReturn(run func() bool) *Interface_IsRBACEnabled_Call {
 	_c.Call.Return(run)
 	return _c
 }

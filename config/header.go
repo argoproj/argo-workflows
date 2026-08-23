@@ -33,4 +33,7 @@ type HeaderConfig struct {
 
 	// Groups configures the groups claim.
 	Groups GroupClaimSource `json:"groups,omitzero"`
+
+	//RBAC configures role-based access controls
+	RBAC *RBACConfig `json:"rbac,omitempty"`
 }

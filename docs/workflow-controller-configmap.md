@@ -362,6 +362,7 @@ HeaderConfig contains trusted header authentication configuration settings.
 | `Email`             | [`ClaimSource`](#claimsource)           | Email configures the email claim.                          |
 | `PreferredUsername` | [`ClaimSource`](#claimsource)           | PreferredUsername configures the preferred_username claim. |
 | `Groups`            | [`GroupClaimSource`](#groupclaimsource) | Groups configures the groups claim.                        |
+| `RBAC`              | [`RBACConfig`](#rbacconfig)             | RBAC configures role-based access controls                 |
 
 ## ClaimSource
 

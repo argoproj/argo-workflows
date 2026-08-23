@@ -174,9 +174,8 @@ func TestServer_GetWFClient(t *testing.T) {
 	t.Run("Header", func(t *testing.T) {
 		headerIf := &headermocks.Interface{}
 		headerIf.On("Authorize", mock.Anything).Return(&authTypes.Claims{Claims: jwt.Claims{Subject: "my-sub"}}, nil)
-		ssoIf := &ssomocks.Interface{}
-		ssoIf.On("IsRBACEnabled").Return(false)
-		g, err := NewGatekeeper(Modes{Header: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, headerIf, clientForAuthorization, "my-ns", "my-ns", true, resourceCache)
+		headerIf.On("IsRBACEnabled").Return(false)
+		g, err := NewGatekeeper(Modes{Header: true}, clients, &rest.Config{Username: "my-username"}, nil, headerIf, clientForAuthorization, "my-ns", "my-ns", true, resourceCache)
 		require.NoError(t, err)
 		ctx := metadata.NewIncomingContext(logging.TestContext(t.Context()), metadata.Pairs("x-forwarded-user", "pradeep"))
 		ctx, err = g.Context(ctx)
@@ -190,9 +189,8 @@ func TestServer_GetWFClient(t *testing.T) {
 	t.Run("Header+RBAC,precedence=1", func(t *testing.T) {
 		headerIf := &headermocks.Interface{}
 		headerIf.On("Authorize", mock.Anything).Return(&authTypes.Claims{Groups: []string{"my-group", "other-group"}}, nil)
-		ssoIf := &ssomocks.Interface{}
-		ssoIf.On("IsRBACEnabled").Return(true)
-		g, err := NewGatekeeper(Modes{Header: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, headerIf, clientForAuthorization, "my-ns", "my-ns", true, resourceCache)
+		headerIf.On("IsRBACEnabled").Return(true)
+		g, err := NewGatekeeper(Modes{Header: true}, clients, &rest.Config{Username: "my-username"}, nil, headerIf, clientForAuthorization, "my-ns", "my-ns", true, resourceCache)
 		require.NoError(t, err)
 		ctx := metadata.NewIncomingContext(logging.TestContext(t.Context()), metadata.Pairs("x-forwarded-user", "pradeep"))
 		ctx, err = g.Context(ctx)
@@ -207,9 +205,8 @@ func TestServer_GetWFClient(t *testing.T) {
 	t.Run("Header+RBAC,denied", func(t *testing.T) {
 		headerIf := &headermocks.Interface{}
 		headerIf.On("Authorize", mock.Anything).Return(&authTypes.Claims{Claims: jwt.Claims{Subject: "my-sub"}, Groups: []string{"unknown-group"}}, nil)
-		ssoIf := &ssomocks.Interface{}
-		ssoIf.On("IsRBACEnabled").Return(true)
-		g, err := NewGatekeeper(Modes{Header: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, headerIf, clientForAuthorization, "my-ns", "my-ns", true, resourceCache)
+		headerIf.On("IsRBACEnabled").Return(true)
+		g, err := NewGatekeeper(Modes{Header: true}, clients, &rest.Config{Username: "my-username"}, nil, headerIf, clientForAuthorization, "my-ns", "my-ns", true, resourceCache)
 		require.NoError(t, err)
 		ctx := metadata.NewIncomingContext(logging.TestContext(t.Context()), metadata.Pairs("x-forwarded-user", "pradeep"))
 		_, err = g.Context(ctx)

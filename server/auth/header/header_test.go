@@ -99,3 +99,39 @@ func TestAuthorize(t *testing.T) {
 		})
 	}
 }
+
+func TestIsRBACEnabled(t *testing.T) {
+	tests := []struct {
+		name string
+		cfg  config.HeaderConfig
+		want bool
+	}{
+		{
+			name: "RBAC not configured",
+			cfg:  config.HeaderConfig{},
+			want: false,
+		},
+		{
+			name: "RBAC disabled",
+			cfg: config.HeaderConfig{
+				RBAC: &config.RBACConfig{Enabled: false},
+			},
+			want: false,
+		},
+		{
+			name: "RBAC enabled",
+			cfg: config.HeaderConfig{
+				RBAC: &config.RBACConfig{Enabled: true},
+			},
+			want: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h := New(tt.cfg)
+
+			assert.Equal(t, tt.want, h.IsRBACEnabled())
+		})
+	}
+}
