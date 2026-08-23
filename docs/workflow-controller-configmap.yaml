@@ -486,6 +486,26 @@ data:
     # Note: If CA certificates are mounted to the system certificate directory (/etc/ssl/certs on Linux), this config is not needed.
     rootCA: ""
 
+  # Trusted Header configuration for the Argo server.
+  # You must also start argo server with `--auth-mode header`.
+  # Header authentication assumes that a trusted reverse proxy
+  # authenticates users and removes or overwrites client-supplied
+  # identity headers before forwarding requests to Argo Server.
+  header: |
+    # HTTP header containing the user's subject.
+    subject:
+      header: X-Forwarded-User
+    # HTTP header containing the user's email.
+    email:
+      header: X-Forwarded-Email
+    # HTTP header containing the user's preferred username.
+    preferred_username:
+      header: X-Forwarded-User
+    # HTTP header containing the user's groups.
+    groups:
+      header: X-Forwarded-Groups
+      delimiter: ","
+
   # workflowRestrictions restricts the Workflows that the controller will process.
   # Current options:
   #   Strict: Only Workflows using "workflowTemplateRef" will be processed. This allows the administrator of the controller
