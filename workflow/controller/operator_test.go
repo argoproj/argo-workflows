@@ -1988,6 +1988,9 @@ func TestAssessNodeStatus(t *testing.T) {
 			defer cancel()
 			woc := newWorkflowOperationCtx(ctx, wf, controller)
 			got := woc.assessNodeStatus(ctx, tt.pod, tt.node)
+			if got == nil {
+				got = tt.node // nil means the node is unchanged
+			}
 			assert.Equal(t, tt.wantPhase, got.Phase)
 			assert.Equal(t, tt.wantMessage, got.Message)
 		})
@@ -2015,9 +2018,10 @@ spec:
 `
 
 // TestAssessNodeStatusDaemonContainerSetTeardown verifies that when killDaemonedChildren has
-// stopped a daemon container set pod (marking its node Succeeded before terminating the pod),
-// the resulting PodFailed event neither fails the pod node nor the container child nodes,
-// while a container that genuinely failed beforehand keeps its Failed phase.
+// stopped a daemon container set pod (marking its node and unfinished container children
+// Succeeded before terminating the pod), the resulting PodFailed event and the containers'
+// kill exit codes neither fail the pod node nor the container child nodes, while a container
+// that genuinely failed beforehand keeps its Failed phase.
 // See https://github.com/argoproj/argo-workflows/issues/16397.
 func TestAssessNodeStatusDaemonContainerSetTeardown(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
@@ -2037,8 +2041,8 @@ func TestAssessNodeStatusDaemonContainerSetTeardown(t *testing.T) {
 	}
 	woc.wf.Status.Nodes.Set(ctx, podNode.ID, *podNode)
 	for name, phase := range map[string]wfv1.NodePhase{
-		"step-1": wfv1.NodeRunning, // killed by the controller's teardown
-		"step-2": wfv1.NodeFailed,  // genuinely failed before the teardown
+		"step-1": wfv1.NodeSucceeded, // completed by killDaemonedChildren during the teardown
+		"step-2": wfv1.NodeFailed,    // genuinely failed before the teardown
 	} {
 		childName := podNodeName + "." + name
 		woc.wf.Status.Nodes.Set(ctx, woc.wf.NodeID(childName), wfv1.NodeStatus{
@@ -2066,7 +2070,7 @@ func TestAssessNodeStatusDaemonContainerSetTeardown(t *testing.T) {
 
 	step1, err := woc.wf.GetNodeByName(podNodeName + ".step-1")
 	require.NoError(t, err)
-	assert.Equal(t, wfv1.NodeSucceeded, step1.Phase, "container killed by the teardown completes with the pod node")
+	assert.Equal(t, wfv1.NodeSucceeded, step1.Phase, "container completed by the teardown must not be failed by its kill exit code")
 
 	step2, err := woc.wf.GetNodeByName(podNodeName + ".step-2")
 	require.NoError(t, err)
@@ -2109,10 +2113,9 @@ spec:
 // that Kubernetes reports because the containers were SIGKILLed.
 //
 // This is the container-set-run-as-daemon case raised in review on
-// https://github.com/argoproj/argo-workflows/pull/16396: killDaemonedChildren only ever marks the
-// pod node (it filters on IsDaemoned, and only the pod node is Daemoned), so the container child
-// nodes are still Running when the event arrives and the ContainerStatuses loop in assessNodeStatus
-// would otherwise mark them Failed from their exit codes.
+// https://github.com/argoproj/argo-workflows/pull/16396: killDaemonedChildren completes the
+// container child nodes together with the pod node, and the ContainerStatuses loop in
+// assessNodeStatus must not then mark any of them Failed from the kill's exit codes.
 func TestDaemonContainerSetTeardownEndToEnd(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(daemonContainerSetStepsWf)
@@ -2139,8 +2142,11 @@ func TestDaemonContainerSetTeardownEndToEnd(t *testing.T) {
 				State: apiv1.ContainerState{Running: &apiv1.ContainerStateRunning{}},
 			})
 		}
-		_, updateErr := controller.kubeclientset.CoreV1().Pods(pod.Namespace).Update(ctx, &pod, metav1.UpdateOptions{})
+		updatedPod, updateErr := controller.kubeclientset.CoreV1().Pods(pod.Namespace).Update(ctx, &pod, metav1.UpdateOptions{})
 		require.NoError(t, updateErr)
+		// operate reads pods from the informer cache, which the fake clientset feeds
+		// asynchronously; update the store directly so the next operate sees the new status.
+		require.NoError(t, controller.PodController.TestingPodInformer().GetStore().Update(updatedPod))
 	}
 	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc.operate(ctx)
@@ -2149,8 +2155,8 @@ func TestDaemonContainerSetTeardownEndToEnd(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, daemonNode.IsDaemoned(), "daemon pod node should be Daemoned before teardown")
 
-	// The step group has completed, so the daemon is stopped. This marks the pod node Succeeded and
-	// signals the pod, but deliberately leaves the container children as they are.
+	// The step group has completed, so the daemon is stopped. This marks the pod node Succeeded,
+	// completes the unfinished container children, and signals the pod.
 	woc.killDaemonedChildren(ctx, daemonNode.BoundaryID)
 
 	daemonNode, err = woc.wf.GetNodeByName("daemon-cs-steps[0].daemon")
@@ -2159,8 +2165,8 @@ func TestDaemonContainerSetTeardownEndToEnd(t *testing.T) {
 	for _, ctr := range []string{"step-1", "step-2"} {
 		child, childErr := woc.wf.GetNodeByName("daemon-cs-steps[0].daemon." + ctr)
 		require.NoError(t, childErr)
-		require.Equal(t, wfv1.NodeRunning, child.Phase,
-			"precondition: killDaemonedChildren leaves container node %s Running", ctr)
+		require.Equal(t, wfv1.NodeSucceeded, child.Phase,
+			"killDaemonedChildren should complete container node %s with the pod node", ctr)
 	}
 
 	// Kubernetes now reports the pod Failed, its containers SIGKILLed by the teardown.
@@ -2180,11 +2186,14 @@ func TestDaemonContainerSetTeardownEndToEnd(t *testing.T) {
 		}
 	}
 
-	// assessNodeStatus returns nil when it made no change to the pod node, which is the intent here:
-	// the node was already Succeeded and must stay that way.
+	// Mirror podReconciliation's contract: store whatever assessNodeStatus returns (nil means no
+	// change), then assert on the stored node so the check runs regardless of the return value.
 	if updated := woc.assessNodeStatus(ctx, daemonPod, daemonNode); updated != nil {
-		assert.Equal(t, wfv1.NodeSucceeded, updated.Phase, "daemon pod node should stay Succeeded")
+		woc.wf.Status.Nodes.Set(ctx, updated.ID, *updated)
 	}
+	storedNode, err := woc.wf.GetNodeByName("daemon-cs-steps[0].daemon")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeSucceeded, storedNode.Phase, "daemon pod node should stay Succeeded")
 
 	// The container children must not be dragged to Failed by the teardown.
 	for _, ctr := range []string{"step-1", "step-2"} {

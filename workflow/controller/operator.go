@@ -1475,12 +1475,16 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		woc.log.Error(ctx, err.Error())
 		return nil
 	}
+	if tmpl == nil {
+		woc.log.WithFields(logging.Fields{"nodeName": old.Name, "templateName": old.TemplateName}).
+			Warn(ctx, "cannot resolve template for node; daemon teardown detection is disabled for it")
+	}
 	// The only way a daemon node becomes Succeeded while its pod is still alive is
 	// killDaemonedChildren, which marks the node and then requests pod termination.
 	// Any pod completion seen after that is the result of our own kill and must not
 	// overwrite the phase; a daemon that dies of its own accord is assessed normally
 	// (its node is still Running at that point) so retryStrategy still works.
-	stoppedDaemon := tmpl != nil && tmpl.IsDaemon() && old.Succeeded()
+	stoppedDaemon := tmpl.IsDaemon() && old.Succeeded()
 	switch pod.Status.Phase {
 	case apiv1.PodPending:
 		updated.Phase = wfv1.NodePending
@@ -1507,6 +1511,9 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 	case apiv1.PodFailed:
 		if stoppedDaemon {
 			woc.log.WithFields(logging.Fields{"displayName": old.DisplayName, "pod": pod.Name}).Info(ctx, "Ignoring pod failure of daemon stopped by the controller")
+			// killDaemonedChildren already cleared Daemoned when it marked the node Succeeded,
+			// but clear it here too so a stuck flag can never block workflow completion.
+			updated.Daemoned = nil
 			break
 		}
 		updated.Phase, updated.Message = woc.inferFailedReason(ctx, pod, tmpl)
@@ -1579,16 +1586,13 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 	// in this case need to update nodes according to container status
 	for _, c := range pod.Status.ContainerStatuses {
 		ctrNodeName := fmt.Sprintf("%s.%s", old.Name, c.Name)
-		ctrNode, err := woc.wf.GetNodeByName(ctrNodeName)
-		if err != nil {
+		if _, err := woc.wf.GetNodeByName(ctrNodeName); err != nil {
 			continue
 		}
 		if stoppedDaemon {
-			// The containers were killed by the controller, so their exit codes carry no
-			// failure meaning; complete any unfinished container nodes along with the pod node.
-			if !ctrNode.Fulfilled() {
-				woc.markNodePhase(ctx, ctrNodeName, wfv1.NodeSucceeded)
-			}
+			// killDaemonedChildren already completed the container child nodes when it stopped
+			// this daemon; the exit codes of our own kill carry no failure meaning, so leave
+			// the children untouched.
 			continue
 		}
 		switch {
