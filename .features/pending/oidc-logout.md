@@ -11,4 +11,6 @@ Register the exact URL with the identity provider as an allowed post-logout redi
 Provider logout is known to work with Keycloak 18 and later, which accepts the `client_id` and `post_logout_redirect_uri` parameters Argo Server sends.
 Okta provider logout is not supported because its end-session endpoint requires `id_token_hint`; Argo Server does not retain the raw ID token because it can exceed browser cookie size limits.
 
-Argo Server now normalizes `--base-href` values that omit the trailing slash. For an SSO deployment using `--base-href /argo`, the automatically resolved OIDC redirect URI changes from the malformed `https://<host>/argooauth2/callback` to `https://<host>/argo/oauth2/callback`. Register the corrected URI with the identity provider before upgrading.
+Separately, Argo Server now normalizes `--base-href` values that omit the trailing slash.
+For an SSO deployment using `--base-href /argo`, the automatically resolved OIDC redirect URI changes from the malformed `https://<host>/argooauth2/callback` to `https://<host>/argo/oauth2/callback`.
+If your identity provider has that malformed URI registered as a workaround, register the corrected URI before upgrading.
