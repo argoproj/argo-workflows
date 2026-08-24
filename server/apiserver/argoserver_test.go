@@ -16,36 +16,33 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
-func TestNewArgoServerLoadsLogoutRedirectForClientAuth(t *testing.T) {
-	const namespace = "argo"
-	kube := fake.NewClientset(&corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{Name: common.ConfigMapName, Namespace: namespace},
-		Data:       map[string]string{"config": "sso:\n  logoutRedirectUrl: https://example.com/logged-out\n"},
-	})
-	server, err := NewArgoServer(logging.TestContext(t.Context()), ArgoServerOpts{
-		Namespace:  namespace,
-		ConfigName: common.ConfigMapName,
-		Clients:    &types.Clients{Kubernetes: kube},
-		AuthModes:  auth.Modes{auth.Client: true},
-	})
-	require.NoError(t, err)
-	as := server.(*argoServer)
-	assert.Equal(t, "https://example.com/logged-out", as.oAuth2Service.LogoutRedirectURL())
-}
-
-func TestNewArgoServerRejectsInvalidClientLogoutRedirect(t *testing.T) {
-	const namespace = "argo"
-	kube := fake.NewClientset(&corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{Name: common.ConfigMapName, Namespace: namespace},
-		Data:       map[string]string{"config": "sso:\n  logoutRedirectUrl: /logged-out\n"},
-	})
-	_, err := NewArgoServer(logging.TestContext(t.Context()), ArgoServerOpts{
-		Namespace:  namespace,
-		ConfigName: common.ConfigMapName,
-		Clients:    &types.Clients{Kubernetes: kube},
-		AuthModes:  auth.Modes{auth.Client: true},
-	})
-	require.ErrorContains(t, err, "logout redirect URL must be an absolute HTTP(S) URL")
+func TestNewArgoServerIgnoresLogoutRedirectOutsideSSO(t *testing.T) {
+	for _, tt := range []struct {
+		name      string
+		authModes auth.Modes
+	}{
+		{name: "client", authModes: auth.Modes{auth.Client: true}},
+		{name: "server", authModes: auth.Modes{auth.Server: true}},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			const namespace = "argo"
+			kube := fake.NewClientset(&corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{Name: common.ConfigMapName, Namespace: namespace},
+				Data:       map[string]string{"config": "sso:\n  logoutRedirectUrl: /logged-out\n"},
+			})
+			server, err := NewArgoServer(logging.TestContext(t.Context()), ArgoServerOpts{
+				Namespace:  namespace,
+				ConfigName: common.ConfigMapName,
+				Clients:    &types.Clients{Kubernetes: kube},
+				AuthModes:  tt.authModes,
+			})
+			require.NoError(t, err)
+			as := server.(*argoServer)
+			assert.Empty(t, as.oAuth2Service.LogoutURL())
+			assert.Empty(t, as.oAuth2Service.LogoutRedirectURL())
+			assert.Empty(t, as.oAuth2Service.ClientID())
+		})
+	}
 }
 
 func TestNewArgoServerRejectsInvalidSSOLogoutRedirect(t *testing.T) {

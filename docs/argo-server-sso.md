@@ -50,8 +50,7 @@ All users will need to log in again. Sorry.
 By default, logout clears the Argo session and redirects users directly to the UI base href.
 This behavior does not log users out of their identity provider.
 
-The `sso.logoutRedirectUrl` setting controls the post-logout redirect for every auth mode, including `client`; it is not limited to SSO authentication.
-Provider logout is attempted only when Argo Server runs with `--auth-mode sso`; in `client` and `server` modes, this setting controls the redirect but does not terminate the identity provider session.
+The `sso.logoutRedirectUrl` setting configures the post-logout redirect and provider logout for SSO mode. In `client` and `server` modes, the setting is ignored; logout redirects to the UI base href.
 
 The Argo Server logout endpoint is `/auth/logout`; ensure any proxy or ingress routes this path to Argo Server.
 
@@ -67,7 +66,7 @@ OIDC provider logout is enabled only when both of the following are true:
 * The provider advertises an OIDC `end_session_endpoint`.
 * `sso.logoutRedirectUrl` is set to an absolute HTTP(S) URL without user info or a fragment.
 
-Argo Server fails to start if `sso.logoutRedirectUrl` is relative, contains a fragment, or is otherwise invalid.
+When running in SSO mode, Argo Server fails to start if `sso.logoutRedirectUrl` is relative, contains a fragment, or is otherwise invalid.
 For example, `https://example.com/#/signed-out` is rejected; use a path or query parameter instead.
 
 When provider logout is enabled, Argo Server redirects users through the discovered `end_session_endpoint`, passing the configured client ID and `sso.logoutRedirectUrl` as the `post_logout_redirect_uri`.

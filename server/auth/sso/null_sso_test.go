@@ -30,9 +30,8 @@ func Test_nullSSO_HandleRedirect(t *testing.T) {
 	assert.Equal(t, http.StatusNotImplemented, result.StatusCode)
 }
 
-func TestNewNullSSO(t *testing.T) {
-	configured := NewNullSSO("https://example.com/logged-out")
-	assert.Equal(t, "https://example.com/logged-out", configured.LogoutRedirectURL())
-	assert.Empty(t, configured.LogoutURL())
-	assert.Empty(t, configured.ClientID())
+func TestNullSSOLogoutMetadata(t *testing.T) {
+	assert.Empty(t, NullSSO.LogoutURL())
+	assert.Empty(t, NullSSO.LogoutRedirectURL())
+	assert.Empty(t, NullSSO.ClientID())
 }

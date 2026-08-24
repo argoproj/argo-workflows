@@ -152,21 +152,14 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (Server, error) {
 	configController := config.NewController(opts.Namespace, opts.ConfigName, opts.Clients.Kubernetes)
 	log := logging.RequireLoggerFromContext(ctx)
 	var resourceCache *cache.ResourceCache
-	var ssoIf sso.Interface
-	loadConfig := func() (*config.Config, error) {
+	ssoIf := sso.NullSSO
+	if opts.AuthModes[auth.SSO] {
 		c, err := configController.Get(ctx)
 		if err != nil {
 			return nil, err
 		}
 		if err := logout.ValidateRedirectURL(c.SSO.LogoutRedirectURL); err != nil {
 			return nil, fmt.Errorf("invalid sso.logoutRedirectUrl: %w", err)
-		}
-		return c, nil
-	}
-	if opts.AuthModes[auth.SSO] {
-		c, err := loadConfig()
-		if err != nil {
-			return nil, err
 		}
 		ssoIf, err = sso.New(ctx, c.SSO, opts.Clients.Kubernetes.CoreV1().Secrets(opts.Namespace), opts.BaseHRef, opts.TLSConfig != nil)
 		if err != nil {
@@ -179,11 +172,6 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (Server, error) {
 		}
 		log.Info(ctx, "SSO enabled")
 	} else {
-		c, err := loadConfig()
-		if err != nil {
-			return nil, err
-		}
-		ssoIf = sso.NewNullSSO(c.SSO.LogoutRedirectURL)
 		log.Info(ctx, "SSO disabled")
 	}
 	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.Clients, opts.RestConfig, ssoIf, auth.DefaultClientForAuthorization, opts.Namespace, opts.SSONamespace, opts.Namespaced, resourceCache)
