@@ -1880,6 +1880,18 @@ func (woc *wfOperationCtx) inferFailedReason(ctx context.Context, pod *apiv1.Pod
 			// the legacy init/wait paths do separately.
 			return wfv1.NodeError, msg
 		default:
+			if common.IsArtifactPluginSidecar(ctr.Name) {
+				// Artifact plugin sidecars are torn down by the wait/supervisor
+				// container after it has saved all outputs, so an aux container
+				// that exited 0 proves every save succeeded and the sidecar's own
+				// exit code carries no information about the node's outcome. The
+				// code can even be a phantom: a `kill` exec racing the sidecar's
+				// exit can make the container runtime record a non-zero status
+				// for a process that exited cleanly. Record it and let the
+				// main/wait verdict below decide the node's fate.
+				woc.log.WithFields(logging.Fields{"exitCode": t.ExitCode, "containerName": ctr.Name}).Info(ctx, "ignoring artifact plugin sidecar exit code")
+				continue
+			}
 			if t.ExitCode != 137 && t.ExitCode != 143 {
 				return wfv1.NodeFailed, msg
 			}

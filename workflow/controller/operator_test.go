@@ -13309,3 +13309,74 @@ func TestCheckTemplateTimeouts(t *testing.T) {
 	assert.Nil(t, pendingDeadline)
 	require.NoError(t, err)
 }
+
+// TestInferFailedReasonArtifactPluginSidecar ensures that a non-zero exit from
+// an artifact plugin sidecar does not fail a node whose main and wait
+// (or supervisor) containers completed successfully: the aux container tears
+// the sidecars down only after all saves succeeded, and the recorded exit code
+// can even be a phantom produced by a kill exec racing the sidecar's own exit.
+// Failures of main, the aux container, or user sidecars must still fail the
+// node as before.
+func TestInferFailedReasonArtifactPluginSidecar(t *testing.T) {
+	terminated := func(name string, exitCode int32) apiv1.ContainerStatus {
+		return apiv1.ContainerStatus{
+			Name:  name,
+			State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: exitCode, Reason: "Error"}},
+		}
+	}
+	tests := []struct {
+		name          string
+		ctrs          []apiv1.ContainerStatus
+		expectedPhase wfv1.NodePhase
+		expectedMsg   string
+	}{
+		{
+			name:          "PluginSidecarExitIgnoredLegacy",
+			ctrs:          []apiv1.ContainerStatus{terminated("main", 0), terminated("wait", 0), terminated("artifact-plugin-test", 2)},
+			expectedPhase: wfv1.NodeSucceeded,
+			expectedMsg:   "",
+		},
+		{
+			name:          "PluginSidecarExitIgnoredInitless",
+			ctrs:          []apiv1.ContainerStatus{terminated("main", 0), terminated("supervisor", 0), terminated("artifact-plugin-test", 2)},
+			expectedPhase: wfv1.NodeSucceeded,
+			expectedMsg:   "",
+		},
+		{
+			name:          "PluginSidecarSigtermExitIgnored",
+			ctrs:          []apiv1.ContainerStatus{terminated("main", 0), terminated("wait", 0), terminated("artifact-plugin-test", 143)},
+			expectedPhase: wfv1.NodeSucceeded,
+			expectedMsg:   "",
+		},
+		{
+			name:          "WaitFailureStillFails",
+			ctrs:          []apiv1.ContainerStatus{terminated("main", 0), terminated("wait", 1), terminated("artifact-plugin-test", 2)},
+			expectedPhase: wfv1.NodeError,
+			expectedMsg:   "wait: Error (exit code 1)",
+		},
+		{
+			name:          "MainFailureStillFails",
+			ctrs:          []apiv1.ContainerStatus{terminated("main", 1), terminated("wait", 0), terminated("artifact-plugin-test", 2)},
+			expectedPhase: wfv1.NodeFailed,
+			expectedMsg:   "main: Error (exit code 1)",
+		},
+		{
+			name:          "UserSidecarFailureStillFails",
+			ctrs:          []apiv1.ContainerStatus{terminated("main", 0), terminated("wait", 0), terminated("artifact-plugin-test", 2), terminated("user-sidecar", 1)},
+			expectedPhase: wfv1.NodeFailed,
+			expectedMsg:   "user-sidecar: Error (exit code 1)",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			pod := apiv1.Pod{
+				ObjectMeta: metav1.ObjectMeta{Name: "test-pod"},
+				Status:     apiv1.PodStatus{Phase: apiv1.PodFailed, ContainerStatuses: tt.ctrs},
+			}
+			phase, msg := newWoc(ctx).inferFailedReason(ctx, &pod, nil)
+			assert.Equal(t, tt.expectedPhase, phase)
+			assert.Equal(t, tt.expectedMsg, msg)
+		})
+	}
+}
