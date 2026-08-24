@@ -2,6 +2,7 @@ package sync
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"runtime"
 	"testing"
@@ -373,6 +374,34 @@ func TestNewSemaphoreWithZeroLimit(t *testing.T) {
 			acquired, _, err := sem.tryAcquire(ctx, "default/wf-a", info.SessionProxy)
 			require.NoError(t, err)
 			assert.False(t, acquired, "no slots should be available while the limit is 0")
+		})
+	}
+
+	// The other side of the regression this test guards against: a limit that
+	// genuinely can't be resolved must still fail initialization, not be silently
+	// treated as a valid limit of 0.
+	t.Run("Internal/MissingLimitFails", func(t *testing.T) {
+		wantErr := errors.New("configmap my-config not found")
+		getter := func(_ context.Context, _ string) (int, error) { return 0, wantErr }
+		sem, err := newInternalSemaphore(ctx, "default/ConfigMap/my-config/workflow", nextWorkflow, getter, 0)
+		require.Error(t, err)
+		require.ErrorIs(t, err, wantErr)
+		assert.Nil(t, sem)
+	})
+
+	for _, dbType := range testDBTypes {
+		t.Run("Database/"+string(dbType)+"/MissingLimitFails", func(t *testing.T) {
+			info, deferfunc, _, err := createTestDBSession(ctx, t, dbType)
+			require.NoError(t, err)
+			defer deferfunc()
+
+			// Deliberately skip inserting a sync_limit row for this key, so the
+			// limit lookup fails (no row found) and initialization must return an
+			// error rather than treating the missing row as a limit of 0.
+			dbKey := "default/missing-database-sem"
+			sem, err := newDatabaseSemaphore(ctx, "missing-database-sem", dbKey, nextWorkflow, info, 0)
+			require.Error(t, err)
+			assert.Nil(t, sem)
 		})
 	}
 }
