@@ -158,7 +158,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (Server, error) {
 		if err != nil {
 			return nil, err
 		}
-		if err := logout.ValidateRedirectURL(c.SSO.LogoutRedirectURL); err != nil {
+		if err = logout.ValidateRedirectURL(c.SSO.LogoutRedirectURL); err != nil {
 			return nil, fmt.Errorf("invalid sso.logoutRedirectUrl: %w", err)
 		}
 		ssoIf, err = sso.New(ctx, c.SSO, opts.Clients.Kubernetes.CoreV1().Secrets(opts.Namespace), opts.BaseHRef, opts.TLSConfig != nil)
