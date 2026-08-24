@@ -78,8 +78,8 @@ func constructLogoutURL(logoutURL, clientID, redirectURL string) (string, error)
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		w.Header().Set("Allow", http.MethodGet)
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
+		w.Header().Set("Allow", http.MethodGet+", "+http.MethodHead)
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
