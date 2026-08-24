@@ -135,8 +135,14 @@ func TestLoadSsoWithUnreadableProviderMetadata(t *testing.T) {
 	}, fakeClient, "/argo", false)
 	require.NoError(t, err)
 	assert.Empty(t, ssoInterface.LogoutURL())
-	require.NotNil(t, hook.LastEntry())
-	assert.Equal(t, "Failed to read OIDC provider metadata; provider logout disabled", hook.LastEntry().Msg)
+	foundWarning := false
+	for _, entry := range hook.AllEntries() {
+		if entry.Msg == "Failed to read OIDC provider metadata; provider logout disabled" {
+			foundWarning = true
+			assert.Equal(t, logging.Warn, entry.Level)
+		}
+	}
+	assert.True(t, foundWarning)
 }
 
 func TestNewSsoWithIssuerAlias(t *testing.T) {

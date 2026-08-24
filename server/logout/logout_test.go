@@ -54,16 +54,27 @@ func TestLogoutHandler(t *testing.T) {
 	}
 }
 
-func TestLogoutHandlerRejectsNonGet(t *testing.T) {
+func TestLogoutHandlerRejectsUnsupportedMethod(t *testing.T) {
 	handler, err := NewHandler("/argo", "", false, "", "")
 	require.NoError(t, err)
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequestWithContext(t.Context(), http.MethodPost, LogoutEndpoint, nil)
 	handler.ServeHTTP(recorder, request)
 	assert.Equal(t, http.StatusMethodNotAllowed, recorder.Code)
-	assert.Equal(t, http.MethodGet, recorder.Header().Get("Allow"))
+	assert.Equal(t, http.MethodGet+", "+http.MethodHead, recorder.Header().Get("Allow"))
 	assert.Empty(t, recorder.Header().Values("Set-Cookie"))
 	assert.Empty(t, recorder.Header().Get("Location"))
+}
+
+func TestLogoutHandlerAllowsHead(t *testing.T) {
+	handler, err := NewHandler("/argo", "", false, "", "")
+	require.NoError(t, err)
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequestWithContext(t.Context(), http.MethodHead, LogoutEndpoint, nil)
+	handler.ServeHTTP(recorder, request)
+	assert.Equal(t, http.StatusSeeOther, recorder.Code)
+	assert.Equal(t, "/argo/", recorder.Header().Get("Location"))
+	assert.Len(t, recorder.Result().Cookies(), 2)
 }
 
 func TestConstructLogoutURL(t *testing.T) {
