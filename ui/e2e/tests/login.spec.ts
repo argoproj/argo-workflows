@@ -24,8 +24,11 @@ test('logout clears the session', async ({page, context, loginPage}) => {
     const baseHRef = await page.locator('base').getAttribute('href');
     expect(baseHRef).not.toBeNull();
     const postLogoutURL = new URL(baseHRef!, page.url()).toString();
+    const logoutRedirect = page.waitForResponse(response => response.url().endsWith('/auth/logout'));
     await loginPage.logout();
-    await expect(page).toHaveURL(postLogoutURL);
+    const response = await logoutRedirect;
+    expect(response.status()).toBe(303);
+    expect(new URL(response.headers()['location'], response.url()).toString()).toBe(postLogoutURL);
     // Logout deletes the authorization cookie regardless of server auth mode.
     await expect.poll(hasAuthCookie).toBe(false);
 });
