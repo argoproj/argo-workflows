@@ -41,12 +41,14 @@ func newDatabaseSemaphore(ctx context.Context, name string, dbKey string, nextWo
 		isMutex:      false,
 	}
 	sem.limitGetter = newCachedLimit(sem.getLimitFromDB, syncLimitCacheTTL)
-	var err error
-	limit := sem.getLimit(ctx)
-	if limit == 0 {
-		err = fmt.Errorf("failed to initialize semaphore %s with limit", name)
+	// Resolve the limit directly through limitGetter rather than getLimit(), since
+	// getLimit() falls back to the cache's zero-value on a fetch error, which would
+	// make a genuine error indistinguishable from a semaphore that legitimately
+	// starts at limit 0 (e.g. an "approval gate" held closed until raised).
+	if _, _, err := sem.limitGetter.get(ctx, dbKey); err != nil {
+		return nil, fmt.Errorf("failed to initialize semaphore %s: %w", name, err)
 	}
-	return sem, err
+	return sem, nil
 }
 
 func (s *databaseSemaphore) longDBKey() string {
