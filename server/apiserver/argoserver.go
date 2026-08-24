@@ -481,7 +481,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	if err != nil {
 		log.WithError(err).Warn(ctx, "Ignoring invalid OIDC end-session endpoint")
 	}
-	mux.Handle(http.MethodGet+" "+logout.LogoutEndpoint, logoutHandler)
+	mux.Handle(logout.LogoutEndpoint, logoutHandler)
 	mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
 		if os.Getenv("ARGO_SERVER_METRICS_AUTH") != "false" {
 			md := metadata.New(map[string]string{authcookie.AuthorizationMetadataKey: r.Header.Get("Authorization")})
