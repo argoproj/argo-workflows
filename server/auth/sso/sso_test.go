@@ -126,13 +126,17 @@ func TestLoadSsoLogoutURLFromProviderMetadata(t *testing.T) {
 
 func TestLoadSsoWithUnreadableProviderMetadata(t *testing.T) {
 	fakeClient := fake.NewClientset(ssoConfigSecret).CoreV1().Secrets(testNamespace)
-	ssoInterface, err := newSso(logging.TestContext(t.Context()), fakeOidcFactoryWithClaimsError, Config{
+	hook := logging.NewTestHook()
+	ctx := logging.WithLogger(t.Context(), logging.NewTestLogger(logging.Warn, logging.Text, hook))
+	ssoInterface, err := newSso(ctx, fakeOidcFactoryWithClaimsError, Config{
 		Issuer:       "https://test-issuer",
 		ClientID:     getSecretKeySelector("argo-sso-secret", "client-id"),
 		ClientSecret: getSecretKeySelector("argo-sso-secret", "client-secret"),
 	}, fakeClient, "/argo", false)
 	require.NoError(t, err)
 	assert.Empty(t, ssoInterface.LogoutURL())
+	require.NotNil(t, hook.LastEntry())
+	assert.Equal(t, "Failed to read OIDC provider metadata; provider logout disabled", hook.LastEntry().Msg)
 }
 
 func TestNewSsoWithIssuerAlias(t *testing.T) {
