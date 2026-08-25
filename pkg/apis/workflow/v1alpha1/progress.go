@@ -20,23 +20,21 @@ func ParseProgress(s string) (Progress, bool) {
 	return v, v.IsValid()
 }
 
-func (in Progress) parts() []string {
-	parts := strings.SplitN(string(in), "/", 2)
-	if len(parts) < 2 {
-		// Input without a "/" separator is malformed. Pad the missing
-		// denominator so N()/M() never index out of range; IsValid() then
-		// rejects it because M() is 0.
-		return []string{parts[0], ""}
-	}
-	return parts
+func (in Progress) parts() (string, string) {
+	// Input without a "/" separator is malformed: m stays empty, so M()
+	// returns 0 and IsValid() rejects it.
+	n, m, _ := strings.Cut(string(in), "/")
+	return n, m
 }
 
 func (in Progress) N() int64 {
-	return parseInt64(in.parts()[0])
+	n, _ := in.parts()
+	return parseInt64(n)
 }
 
 func (in Progress) M() int64 {
-	return parseInt64(in.parts()[1])
+	_, m := in.parts()
+	return parseInt64(m)
 }
 
 func (in Progress) Add(x Progress) Progress {
