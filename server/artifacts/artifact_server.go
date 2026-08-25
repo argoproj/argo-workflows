@@ -25,6 +25,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/persist/sqldb"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/server/auth"
+	authcookie "github.com/argoproj/argo-workflows/v4/server/auth/cookie"
 	"github.com/argoproj/argo-workflows/v4/server/types"
 	sutils "github.com/argoproj/argo-workflows/v4/server/utils"
 	"github.com/argoproj/argo-workflows/v4/util/instanceid"
@@ -610,7 +611,7 @@ func (a *ArtifactServer) getArtifactByUID(w http.ResponseWriter, r *http.Request
 func (a *ArtifactServer) gateKeeping(r *http.Request, ns types.NamespacedRequest) (context.Context, error) {
 	token := r.Header.Get("Authorization")
 	if token == "" {
-		cookie, err := r.Cookie("authorization")
+		cookie, err := r.Cookie(authcookie.AuthorizationCookieName)
 		if err != nil {
 			if !errors.Is(err, http.ErrNoCookie) {
 				return nil, err
@@ -619,7 +620,7 @@ func (a *ArtifactServer) gateKeeping(r *http.Request, ns types.NamespacedRequest
 			token = cookie.Value
 		}
 	}
-	ctx := metadata.NewIncomingContext(r.Context(), metadata.MD{"authorization": []string{token}})
+	ctx := metadata.NewIncomingContext(r.Context(), metadata.MD{authcookie.AuthorizationMetadataKey: []string{token}})
 
 	// Ensure context has a logger for artifact operations
 	if logging.GetLoggerFromContextOrNil(ctx) == nil {

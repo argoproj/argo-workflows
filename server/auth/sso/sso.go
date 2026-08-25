@@ -23,6 +23,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
+	authcookie "github.com/argoproj/argo-workflows/v4/server/auth/cookie"
 	"github.com/argoproj/argo-workflows/v4/server/auth/types"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	pkgrand "github.com/argoproj/argo-workflows/v4/util/rand"
@@ -45,6 +46,9 @@ type Interface interface {
 	HandleRedirect(writer http.ResponseWriter, request *http.Request)
 	HandleCallback(writer http.ResponseWriter, request *http.Request)
 	IsRBACEnabled() bool
+	LogoutURL() string
+	LogoutRedirectURL() string
+	ClientID() string
 }
 
 var _ Interface = &sso{}
@@ -53,6 +57,8 @@ type Config = config.SSOConfig
 
 type sso struct {
 	config            *oauth2.Config
+	logoutURL         string
+	logoutRedirectURL string
 	issuer            string
 	idTokenVerifier   *oidc.IDTokenVerifier
 	httpClient        *http.Client
@@ -68,6 +74,21 @@ type sso struct {
 	logger            logging.Logger
 }
 
+// LogoutURL returns the OIDC end-session endpoint discovered from the provider.
+func (s *sso) LogoutURL() string {
+	return s.logoutURL
+}
+
+// LogoutRedirectURL returns the configured post-logout redirect URL.
+func (s *sso) LogoutRedirectURL() string {
+	return s.logoutRedirectURL
+}
+
+// ClientID returns the OIDC client identifier used by the SSO configuration.
+func (s *sso) ClientID() string {
+	return s.config.ClientID
+}
+
 func (s *sso) IsRBACEnabled() bool {
 	return s.rbacConfig.IsEnabled()
 }
@@ -79,6 +100,7 @@ func (s *sso) IsRBACEnabled() bool {
 type providerInterface interface {
 	Endpoint() oauth2.Endpoint
 	Verifier(config *oidc.Config) *oidc.IDTokenVerifier
+	Claims(v any) error
 }
 
 type providerFactory func(ctx context.Context, issuer string) (providerInterface, error)
@@ -99,6 +121,7 @@ func newSso(
 	baseHRef string,
 	secure bool,
 ) (Interface, error) {
+	baseHRef = authcookie.NormalizePath(baseHRef)
 	if c.Issuer == "" {
 		return nil, fmt.Errorf("issuer empty")
 	}
@@ -133,6 +156,17 @@ func newSso(
 	provider, err := factory(oidcContext, c.Issuer)
 	if err != nil {
 		return nil, err
+	}
+	// Claims is implemented by oidc.Provider and contains the discovery
+	// metadata, including the optional end_session_endpoint.
+	var providerMetadata struct {
+		EndSessionEndpoint string `json:"end_session_endpoint"`
+	}
+	var logoutURL string
+	if claimsErr := provider.Claims(&providerMetadata); claimsErr == nil {
+		logoutURL = providerMetadata.EndSessionEndpoint
+	} else {
+		logging.RequireLoggerFromContext(ctx).WithError(claimsErr).Warn(ctx, "Failed to read OIDC provider metadata; provider logout disabled")
 	}
 	var clientIDObj *apiv1.Secret
 	if c.ClientID.Name == c.ClientSecret.Name {
@@ -214,7 +248,7 @@ func newSso(
 		}
 	}
 
-	lf := logging.Fields{"redirectUrl": config.RedirectURL, "issuer": c.Issuer, "issuerAlias": "DISABLED", "clientId": c.ClientID, "scopes": config.Scopes, "insecureSkipVerify": c.InsecureSkipVerify, "filterGroupsRegex": c.FilterGroupsRegex, "rootCA": c.RootCA}
+	lf := logging.Fields{"redirectUrl": config.RedirectURL, "logoutRedirectUrl": c.LogoutRedirectURL, "issuer": c.Issuer, "issuerAlias": "DISABLED", "clientId": c.ClientID, "scopes": config.Scopes, "insecureSkipVerify": c.InsecureSkipVerify, "filterGroupsRegex": c.FilterGroupsRegex, "rootCA": c.RootCA}
 	if c.IssuerAlias != "" {
 		lf["issuerAlias"] = c.IssuerAlias
 	}
@@ -223,6 +257,8 @@ func newSso(
 
 	return &sso{
 		config:            config,
+		logoutURL:         logoutURL,
+		logoutRedirectURL: c.LogoutRedirectURL,
 		idTokenVerifier:   idTokenVerifier,
 		baseHRef:          baseHRef,
 		httpClient:        httpClient,
@@ -356,14 +392,7 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	}
 	value := Prefix + raw
 	s.logger.Debug(r.Context(), "handing oauth2 callback")
-	http.SetCookie(w, &http.Cookie{
-		Value:    value,
-		Name:     "authorization",
-		Path:     s.baseHRef,
-		Expires:  time.Now().Add(s.expiry),
-		SameSite: http.SameSiteStrictMode,
-		Secure:   s.secure,
-	})
+	authcookie.SetAuthCookie(w, value, s.baseHRef, time.Now().Add(s.expiry), s.secure)
 
 	finalRedirectURL := cookie.Value
 	if !isValidFinalRedirectURL(cookie.Value) {
