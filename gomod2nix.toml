@@ -773,8 +773,8 @@ schema = 3
     version = "v0.5.3"
     hash = "sha256-4s8d7MdRKq4r7QjkIFCdwjKehc6Hi5mS4xuZ2v2QYR8="
   [mod."github.com/stretchr/testify"]
-    version = "v1.11.1"
-    hash = "sha256-sWfjkuKJyDllDEtnM8sb/pdLzPQmUYWYtmeWz/5suUc="
+    version = "v1.12.1"
+    hash = "sha256-9MTDdVjZMh1MJ5EH3HmAFrm24YqZayeMBgKwtaURZCc="
   [mod."github.com/subosito/gotenv"]
     version = "v1.6.0"
     hash = "sha256-LspbjTniiq2xAICSXmgqP7carwlNaLqnCTQfw2pa80A="
@@ -869,8 +869,8 @@ schema = 3
     version = "v0.70.0"
     hash = "sha256-N6TsUbaJghFvP6Snk4voebP6ZyQcu/lG7Oxmqd7BgVI="
   [mod."go.opentelemetry.io/otel"]
-    version = "v1.45.0"
-    hash = "sha256-ORef6E6hxMrpVU8b+4vh311bMbv2zGbYAIJ9ZE8gXvc="
+    version = "v1.46.0"
+    hash = "sha256-2+xTacXn22hsJuMGGgXwazMbP/ZW5gkPRnf+rNUZgvQ="
   [mod."go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"]
     version = "v1.45.0"
     hash = "sha256-Iq87V3l7dDM0MVcRGzBVvm9mHGLuegxFBR4Y4cKyDz4="
@@ -890,17 +890,17 @@ schema = 3
     version = "v0.67.0"
     hash = "sha256-YgvJVSuqeaqJCFYxilbxvFnbGWWHF6Xxi8eu0c/2afU="
   [mod."go.opentelemetry.io/otel/metric"]
-    version = "v1.45.0"
-    hash = "sha256-Ec/v1Ghb8Ohb1NsdYQ6juggl/wJMrVA6ktPRPczGWMQ="
+    version = "v1.46.0"
+    hash = "sha256-cY1DXXzRfcP0kKh7oBzowbu6kbFr3jANiEVyMlD5Bt8="
   [mod."go.opentelemetry.io/otel/sdk"]
-    version = "v1.45.0"
-    hash = "sha256-VoyRt1cLW8apITGla1K1fqbSyJyRPr53+R3iisreE+4="
+    version = "v1.46.0"
+    hash = "sha256-bDS4r1NfK2jZmTx5KUcrPJpPC2Men1lOuEKhy3vkMxc="
   [mod."go.opentelemetry.io/otel/sdk/metric"]
-    version = "v1.45.0"
-    hash = "sha256-sjqCSECo+FNQ6IplnRrh2rFdCbYdS9/B6LgoxVjCNIo="
+    version = "v1.46.0"
+    hash = "sha256-7HyWcBj0lBc9V29f14gPFS3mBPrHZmC3TFuRsfIo7mI="
   [mod."go.opentelemetry.io/otel/trace"]
-    version = "v1.45.0"
-    hash = "sha256-LKrsYVdfPEzxXPEFSapjGIiw2e1C4Yq5HXtoYrN4FIY="
+    version = "v1.46.0"
+    hash = "sha256-zfj85gCR5Z3v1N+8nlOO+6+FVShaL/7Vb/3lXjdXnnw="
   [mod."go.opentelemetry.io/proto/otlp"]
     version = "v1.11.0"
     hash = "sha256-jBcVUiab9mWgLmPsrCYK7sC2j15AJ47QJM4prnqGGkE="
@@ -970,9 +970,6 @@ schema = 3
   [mod."gopkg.in/warnings.v0"]
     version = "v0.1.2"
     hash = "sha256-ATVL9yEmgYbkJ1DkltDGRn/auGAjqGOfjQyBYyUo8s8="
-  [mod."gopkg.in/yaml.v3"]
-    version = "v3.0.1"
-    hash = "sha256-FqL9TKYJ0XkNwJFnq9j0VvJ5ZUU1RvH/52h/f5bkYAU="
   [mod."k8s.io/api"]
     version = "v0.35.4"
     hash = "sha256-QiykPDGY9yD/uwEXd3P56VHgImHudLiE9Sag4+GY8f4="
