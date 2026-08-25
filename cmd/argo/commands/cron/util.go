@@ -96,27 +96,27 @@ func getCronWorkflowGet(ctx context.Context, cwf *v1alpha1.CronWorkflow) string 
 	const fmtStr = "%-30s %v\n"
 
 	var out strings.Builder
-	out.WriteString(fmt.Sprintf(fmtStr, "Name:", cwf.Name))
-	out.WriteString(fmt.Sprintf(fmtStr, "Namespace:", cwf.Namespace))
-	out.WriteString(fmt.Sprintf(fmtStr, "Created:", humanize.Timestamp(cwf.CreationTimestamp.Time)))
-	out.WriteString(fmt.Sprintf(fmtStr, "Schedules:", cwf.Spec.GetScheduleString()))
-	out.WriteString(fmt.Sprintf(fmtStr, "Suspended:", cwf.Spec.Suspend))
+	fmt.Fprintf(&out, fmtStr, "Name:", cwf.Name)
+	fmt.Fprintf(&out, fmtStr, "Namespace:", cwf.Namespace)
+	fmt.Fprintf(&out, fmtStr, "Created:", humanize.Timestamp(cwf.CreationTimestamp.Time))
+	fmt.Fprintf(&out, fmtStr, "Schedules:", cwf.Spec.GetScheduleString())
+	fmt.Fprintf(&out, fmtStr, "Suspended:", cwf.Spec.Suspend)
 	if cwf.Spec.Timezone != "" {
-		out.WriteString(fmt.Sprintf(fmtStr, "Timezone:", cwf.Spec.Timezone))
+		fmt.Fprintf(&out, fmtStr, "Timezone:", cwf.Spec.Timezone)
 	}
 	if cwf.Spec.StartingDeadlineSeconds != nil {
-		out.WriteString(fmt.Sprintf(fmtStr, "StartingDeadlineSeconds:", *cwf.Spec.StartingDeadlineSeconds))
+		fmt.Fprintf(&out, fmtStr, "StartingDeadlineSeconds:", *cwf.Spec.StartingDeadlineSeconds)
 	}
 	if cwf.Spec.ConcurrencyPolicy != "" {
-		out.WriteString(fmt.Sprintf(fmtStr, "ConcurrencyPolicy:", cwf.Spec.ConcurrencyPolicy))
+		fmt.Fprintf(&out, fmtStr, "ConcurrencyPolicy:", cwf.Spec.ConcurrencyPolicy)
 	}
 	if cwf.Status.LastScheduledTime != nil {
-		out.WriteString(fmt.Sprintf(fmtStr, "LastScheduledTime:", humanize.Timestamp(cwf.Status.LastScheduledTime.Time)))
+		fmt.Fprintf(&out, fmtStr, "LastScheduledTime:", humanize.Timestamp(cwf.Status.LastScheduledTime.Time))
 	}
 
 	next, err := GetNextRuntime(ctx, cwf)
 	if err == nil {
-		out.WriteString(fmt.Sprintf(fmtStr, "NextScheduledTime:", humanize.Timestamp(next)+" (assumes workflow-controller is in UTC)"))
+		fmt.Fprintf(&out, fmtStr, "NextScheduledTime:", humanize.Timestamp(next)+" (assumes workflow-controller is in UTC)")
 	}
 
 	if len(cwf.Status.Active) > 0 {
@@ -124,18 +124,18 @@ func getCronWorkflowGet(ctx context.Context, cwf *v1alpha1.CronWorkflow) string 
 		for _, activeWf := range cwf.Status.Active {
 			activeWfNames = append(activeWfNames, activeWf.Name)
 		}
-		out.WriteString(fmt.Sprintf(fmtStr, "Active Workflows:", strings.Join(activeWfNames, ", ")))
+		fmt.Fprintf(&out, fmtStr, "Active Workflows:", strings.Join(activeWfNames, ", "))
 	}
 	if len(cwf.Status.Conditions) > 0 {
 		out.WriteString(cwf.Status.Conditions.DisplayString(fmtStr, map[v1alpha1.ConditionType]string{v1alpha1.ConditionTypeSubmissionError: "✖"}))
 	}
 	if len(cwf.Spec.WorkflowSpec.Arguments.Parameters) > 0 {
-		out.WriteString(fmt.Sprintf(fmtStr, "Workflow Parameters:", ""))
+		fmt.Fprintf(&out, fmtStr, "Workflow Parameters:", "")
 		for _, param := range cwf.Spec.WorkflowSpec.Arguments.Parameters {
 			if !param.HasValue() {
 				continue
 			}
-			out.WriteString(fmt.Sprintf(fmtStr, "  "+param.Name+":", param.GetValue()))
+			fmt.Fprintf(&out, fmtStr, "  "+param.Name+":", param.GetValue())
 		}
 	}
 	return out.String()

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 )
 
+// Object represents a JSON object value.
 // +kubebuilder:validation:Type=object
 type Object struct {
 	Value json.RawMessage `json:"-" protobuf:"bytes,1,opt,name=value,casttype=encoding/json.RawMessage"`

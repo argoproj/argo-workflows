@@ -48,7 +48,7 @@ func GetSecrets(ctx context.Context, clientSet kubernetes.Interface, namespace, 
 	return val, nil
 }
 
-// Write the Terminate message in pod spec
+// WriteTerminateMessage writes the terminate message in the pod spec.
 func WriteTerminateMessage(message string) {
 	err := os.WriteFile("/dev/termination-log", []byte(message), 0o600)
 	if err != nil {
@@ -56,8 +56,8 @@ func WriteTerminateMessage(message string) {
 	}
 }
 
-// Merge the two parameters Slice
-// Merge the slices based on arguments order (first is high priority).
+// MergeParameters merges multiple parameter slices into one.
+// It merges based on argument order, where the first slice has the highest priority.
 func MergeParameters(params ...[]wfv1.Parameter) []wfv1.Parameter {
 	var resultParams []wfv1.Parameter
 	passedParams := make(map[string]bool)
@@ -123,7 +123,7 @@ func RecoverWorkflowNameFromSelectorStringIfAny(selector string) string {
 	return ""
 }
 
-// getDeletePropagation return the default or configured DeletePropagation policy
+// GetDeletePropagation returns the default or configured DeletePropagation policy.
 func GetDeletePropagation() *metav1.DeletionPropagation {
 	propagationPolicy := metav1.DeletePropagationBackground
 	envVal, ok := os.LookupEnv("WF_DEL_PROPAGATION_POLICY")

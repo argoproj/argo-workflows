@@ -1,0 +1,20 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Full observability stack for telemetry integration tests
+# Usage: PROFILE=telemetry-stack make start
+
+resources:
+- ../minimal
+- ../../../../manifests/quick-start/base/prometheus
+
+components:
+- ../../../../manifests/components/otel-collector
+- ../../../../manifests/components/tempo
+- ../../../../manifests/components/grafana
+
+patches:
+- path: workflow-controller-configmap-patch.yaml
+- path: prometheus-deployment-patch.yaml
+
+namespace: argo

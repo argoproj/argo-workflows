@@ -6,7 +6,6 @@ import (
 	"hash/fnv"
 	"maps"
 	"slices"
-	"strings"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -14,7 +13,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/env"
-	"k8s.io/utils/ptr"
 
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
@@ -493,7 +491,7 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 					{Name: common.EnvVarTemplate, Value: "{}"},
 					{Name: common.EnvVarDeadline, Value: time.Now().Format(time.RFC3339)},
 					{Name: common.EnvVarArtifactGCPodHash, Value: woc.artifactGCPodLabel(podName)},
-					{Name: common.EnvVarArtifactPluginNames, Value: strings.Join(artifactPluginSidecarNames, ",")},
+					{Name: common.EnvVarArtifactPluginNames, Value: common.JoinPluginNames(artifactPluginSidecarNames)},
 				},
 				// if this pod is breached by an attacker we:
 				// * prevent installation of any new packages
@@ -512,7 +510,7 @@ func (woc *wfOperationCtx) createArtifactGCPod(ctx context.Context, strategy wfv
 				},
 				VolumeMounts: volumeMounts,
 			}),
-			AutomountServiceAccountToken: ptr.To(true),
+			AutomountServiceAccountToken: new(true),
 			RestartPolicy:                corev1.RestartPolicyNever,
 		},
 	}

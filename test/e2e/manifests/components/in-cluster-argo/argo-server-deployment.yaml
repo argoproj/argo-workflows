@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argo-server
+spec:
+  replicas: 1
+  template:
+    spec:
+      containers:
+        - name: argo-server
+          # Tilt imports freshly-built images into the k3d node before
+          # deploying, so the kubelet always finds them locally. IfNotPresent
+          # (rather than the e2e base's Never) avoids a terminal
+          # ErrImageNeverPull if a pod is ever scheduled ahead of an import.
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: ARGO_LOGLEVEL
+              value: info
+            - name: ARGO_MANAGED_NAMESPACE
+              value: argo
+            - name: ARGO_NAMESPACE
+              value: argo
+            - name: ARGO_NAMESPACED
+              value: "true"
+            - name: ARGO_X_FRAME_OPTIONS
+              value: SAMEORIGIN
+            - name: UPPERIO_DB_DEBUG
+              value: "1"
+            - name: CI_ONLY_DISABLE_ARTIFACT_SERVER_CHECKS
+              value: "true"

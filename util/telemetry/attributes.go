@@ -28,6 +28,9 @@ const (
 	AttribErrorCause          string = `cause`
 	AttribLockAcquired        string = `acquired`
 	AttribLockName            string = `lock_name`
+	AttribLockNamespace       string = `namespace`
+	AttribLockStorage         string = `storage`
+	AttribLockType            string = `type`
 	AttribLogLevel            string = `level`
 	AttribMessage             string = `message`
 	AttribNodeID              string = `node_id`

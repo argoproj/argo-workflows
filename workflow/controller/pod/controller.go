@@ -24,6 +24,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/diff"
+	informerutil "github.com/argoproj/argo-workflows/v4/util/informer"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/indexes"
@@ -172,8 +173,8 @@ func (c *Controller) podOrphaned(ctx context.Context, pod *apiv1.Pod) bool {
 
 func podGCFromPod(pod *apiv1.Pod) wfv1.PodGC {
 	if val, ok := pod.Annotations[common.AnnotationKeyPodGCStrategy]; ok {
-		parts := strings.Split(val, "/")
-		return wfv1.PodGC{Strategy: wfv1.PodGCStrategy(parts[0]), DeleteDelayDuration: parts[1]}
+		strategy, delay, _ := strings.Cut(val, "/")
+		return wfv1.PodGC{Strategy: wfv1.PodGCStrategy(strategy), DeleteDelayDuration: delay}
 	}
 	return wfv1.PodGC{Strategy: wfv1.PodGCOnPodNone}
 }
@@ -297,6 +298,10 @@ func newWorkflowPodWatch(ctx context.Context, clientSet kubernetes.Interface, in
 		options.Limit = podPaginationLimit
 		for {
 			options.Continue = continueTok
+			if options.Continue != "" {
+				options.ResourceVersion = ""
+				options.ResourceVersionMatch = ""
+			}
 			podList, err := c.List(ctx, options)
 			if err != nil {
 				return nil, err
@@ -319,11 +324,13 @@ func newWorkflowPodWatch(ctx context.Context, clientSet kubernetes.Interface, in
 
 func newInformer(ctx context.Context, clientSet kubernetes.Interface, instanceID, namespace *string) cache.SharedIndexInformer {
 	source := newWorkflowPodWatch(ctx, clientSet, instanceID, namespace)
-	informer := cache.NewSharedIndexInformer(source, &apiv1.Pod{}, podResyncPeriod, cache.Indexers{
+	informer := cache.NewSharedIndexInformer(cache.ToListWatcherWithWatchListSemantics(source, clientSet), &apiv1.Pod{}, podResyncPeriod, cache.Indexers{
 		indexes.WorkflowIndex: indexes.MetaWorkflowIndexFunc,
 		indexes.NodeIDIndex:   indexes.MetaNodeIDIndexFunc,
 		indexes.PodPhaseIndex: indexes.PodPhaseIndexFunc,
 	})
+	//nolint:errcheck // the error only happens if the informer was already started, and it hasn't been
+	informer.SetTransform(informerutil.StripManagedFields)
 	return informer
 }
 

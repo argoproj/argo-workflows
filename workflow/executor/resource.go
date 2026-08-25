@@ -11,7 +11,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/itchyny/gojq"
 	"github.com/tidwall/gjson"
@@ -29,7 +28,6 @@ import (
 
 	argoerrors "github.com/argoproj/argo-workflows/v4/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
-	envutil "github.com/argoproj/argo-workflows/v4/util/env"
 	argoerr "github.com/argoproj/argo-workflows/v4/util/errors"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
@@ -192,6 +190,12 @@ func (g gjsonLabels) Get(label string) string {
 	return gjson.GetBytes(g.json, label).String()
 }
 
+// Lookup returns the value for the provided label and whether it exists.
+func (g gjsonLabels) Lookup(label string) (string, bool) {
+	result := gjson.GetBytes(g.json, label)
+	return result.String(), result.Exists()
+}
+
 // WaitResource waits for a specific resource to satisfy either the success or failure condition
 func (we *WorkflowExecutor) WaitResource(ctx context.Context, resourceNamespace, resourceName, selfLink string) error {
 	logger := logging.RequireLoggerFromContext(ctx)
@@ -217,7 +221,7 @@ func (we *WorkflowExecutor) WaitResource(ctx context.Context, resourceNamespace,
 		logger.WithField("conditions", failSelector).Info(ctx, "Failing for conditions")
 		failReqs, _ = failSelector.Requirements()
 	}
-	err := wait.PollUntilContextCancel(ctx, envutil.LookupEnvDurationOr(ctx, "RESOURCE_STATE_CHECK_INTERVAL", time.Second*5),
+	err := wait.PollUntilContextCancel(ctx, we.resourceStateCheckInterval,
 		true,
 		func(ctx context.Context) (bool, error) {
 			isErrRetryable, err := we.checkResourceState(ctx, selfLink, successReqs, failReqs)

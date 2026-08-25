@@ -1,0 +1,35 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-when-expr-skip-
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+      - name: data
+        value: ''
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: A
+            template: echo
+            arguments:
+              parameters:
+                - name: message
+                  value: A
+          - name: B
+            dependencies: [A]
+            when: "{{= workflow.parameters.data != '' }}"
+            template: echo
+            arguments:
+              parameters:
+                - name: message
+                  value: "{{= jsonpath(workflow.parameters.data, '$.id') }}"
+    - name: echo
+      inputs:
+        parameters:
+          - name: message
+      container:
+        image: argoproj/argosay:v2
+        args: ["echo", "{{inputs.parameters.message}}"]

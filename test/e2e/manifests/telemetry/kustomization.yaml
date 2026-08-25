@@ -10,5 +10,6 @@ resources:
 
 patches:
 - path: workflow-controller-configmap-patch.yaml
+- path: workflow-controller-otel-patch.yaml
 
 namespace: argo

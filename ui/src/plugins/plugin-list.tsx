@@ -35,10 +35,15 @@ export function PluginList({match, history}: RouteComponentProps<any>) {
             <ZeroState title='Plugins'>
                 <p>Plugins allow you to extend Argo Workflows with custom code.</p>
                 <p>To list plugins:</p>
-                <pre>kubectl get cm -l workflows.argoproj.io/configmap-type=ExecutorPlugin</pre>
+                <p>
+                    <code>kubectl get cm -l workflows.argoproj.io/configmap-type=ExecutorPlugin</code>
+                </p>
                 <br />
                 <p>
-                    <a href='https://argo-workflows.readthedocs.io/en/latest/plugins/'>Learn more</a>.
+                    <a href='https://argo-workflows.readthedocs.io/en/latest/plugins/' target='_blank' rel='noreferrer'>
+                        Learn more
+                    </a>
+                    .
                 </p>
             </ZeroState>
         </Page>

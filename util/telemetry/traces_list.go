@@ -65,8 +65,8 @@ func (t *Tracing) StartCaptureScriptResult(ctx context.Context) (context.Context
 	parent := trace.SpanFromContext(ctx)
 	if roParent, ok := parent.(sdktrace.ReadOnlySpan); ok {
 		parentName := roParent.Name()
-		if parentName != "runWaitContainer" {
-			logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"startMethod": "StartCaptureScriptResult", "expectedParents": "runWaitContainer", "actualParent": parentName}).Error(ctx, "incorrect trace parentage")
+		if parentName != "runWaitContainer" && parentName != "runSupervisorContainer" {
+			logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"startMethod": "StartCaptureScriptResult", "expectedParents": "runWaitContainer, runSupervisorContainer", "actualParent": parentName}).Error(ctx, "incorrect trace parentage")
 		}
 	}
 
@@ -82,8 +82,8 @@ func (t *Tracing) StartCreateTaskResult(ctx context.Context) (context.Context, t
 	parent := trace.SpanFromContext(ctx)
 	if roParent, ok := parent.(sdktrace.ReadOnlySpan); ok {
 		parentName := roParent.Name()
-		if parentName != "runWaitContainer" && parentName != "runMainContainer" {
-			logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"startMethod": "StartCreateTaskResult", "expectedParents": "runWaitContainer, runMainContainer", "actualParent": parentName}).Error(ctx, "incorrect trace parentage")
+		if parentName != "runWaitContainer" && parentName != "runMainContainer" && parentName != "runSupervisorContainer" {
+			logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"startMethod": "StartCreateTaskResult", "expectedParents": "runWaitContainer, runMainContainer, runSupervisorContainer", "actualParent": parentName}).Error(ctx, "incorrect trace parentage")
 		}
 	}
 
@@ -92,7 +92,7 @@ func (t *Tracing) StartCreateTaskResult(ctx context.Context) (context.Context, t
 
 var SpanCreateWorkflowPod = Span{
 	name:     "createWorkflowPod",
-	children: []*Span{&SpanRunInitContainer, &SpanRunMainContainer, &SpanRunWaitContainer},
+	children: []*Span{&SpanRunInitContainer, &SpanRunMainContainer, &SpanRunSupervisorContainer, &SpanRunWaitContainer},
 	attributes: []BuiltinAttribute{
 		{
 			name: AttribNodeID,
@@ -152,8 +152,8 @@ func (t *Tracing) StartLoadArtifacts(ctx context.Context) (context.Context, trac
 	parent := trace.SpanFromContext(ctx)
 	if roParent, ok := parent.(sdktrace.ReadOnlySpan); ok {
 		parentName := roParent.Name()
-		if parentName != "runInitContainer" {
-			logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"startMethod": "StartLoadArtifacts", "expectedParents": "runInitContainer", "actualParent": parentName}).Error(ctx, "incorrect trace parentage")
+		if parentName != "runInitContainer" && parentName != "runSupervisorContainer" {
+			logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"startMethod": "StartLoadArtifacts", "expectedParents": "runInitContainer, runSupervisorContainer", "actualParent": parentName}).Error(ctx, "incorrect trace parentage")
 		}
 	}
 
@@ -243,8 +243,8 @@ func (t *Tracing) StartPatchTaskResult(ctx context.Context) (context.Context, tr
 	parent := trace.SpanFromContext(ctx)
 	if roParent, ok := parent.(sdktrace.ReadOnlySpan); ok {
 		parentName := roParent.Name()
-		if parentName != "runWaitContainer" && parentName != "runMainContainer" {
-			logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"startMethod": "StartPatchTaskResult", "expectedParents": "runWaitContainer, runMainContainer", "actualParent": parentName}).Error(ctx, "incorrect trace parentage")
+		if parentName != "runWaitContainer" && parentName != "runMainContainer" && parentName != "runSupervisorContainer" {
+			logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"startMethod": "StartPatchTaskResult", "expectedParents": "runWaitContainer, runMainContainer, runSupervisorContainer", "actualParent": parentName}).Error(ctx, "incorrect trace parentage")
 		}
 	}
 
@@ -260,8 +260,8 @@ func (t *Tracing) StartPatchTaskResultLabels(ctx context.Context) (context.Conte
 	parent := trace.SpanFromContext(ctx)
 	if roParent, ok := parent.(sdktrace.ReadOnlySpan); ok {
 		parentName := roParent.Name()
-		if parentName != "runWaitContainer" && parentName != "runMainContainer" {
-			logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"startMethod": "StartPatchTaskResultLabels", "expectedParents": "runWaitContainer, runMainContainer", "actualParent": parentName}).Error(ctx, "incorrect trace parentage")
+		if parentName != "runWaitContainer" && parentName != "runMainContainer" && parentName != "runSupervisorContainer" {
+			logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"startMethod": "StartPatchTaskResultLabels", "expectedParents": "runWaitContainer, runMainContainer, runSupervisorContainer", "actualParent": parentName}).Error(ctx, "incorrect trace parentage")
 		}
 	}
 
@@ -444,6 +444,36 @@ func (t *Tracing) StartRunMainContainer(ctx context.Context, workflowName string
 	return t.tracer.Start(ctx, "runMainContainer", trace.WithAttributes(attribs...), trace.WithSpanKind(trace.SpanKindInternal))
 }
 
+var SpanRunSupervisorContainer = Span{
+	name:     "runSupervisorContainer",
+	children: []*Span{&SpanCaptureScriptResult, &SpanCreateTaskResult, &SpanLoadArtifacts, &SpanPatchTaskResult, &SpanPatchTaskResultLabels, &SpanSaveArtifacts, &SpanSaveLogs, &SpanStageFiles, &SpanWaitWorkload},
+	attributes: []BuiltinAttribute{
+		{
+			name: AttribWorkflowName,
+		},
+		{
+			name: AttribWorkflowNamespace,
+		},
+	},
+}
+
+// StartRunSupervisorContainer starts a run_supervisor_container span
+func (t *Tracing) StartRunSupervisorContainer(ctx context.Context, workflowName string, workflowNamespace string) (context.Context, trace.Span) {
+	parent := trace.SpanFromContext(ctx)
+	if roParent, ok := parent.(sdktrace.ReadOnlySpan); ok {
+		parentName := roParent.Name()
+		if parentName != "createWorkflowPod" {
+			logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"startMethod": "StartRunSupervisorContainer", "expectedParents": "createWorkflowPod", "actualParent": parentName}).Error(ctx, "incorrect trace parentage")
+		}
+	}
+	attribs := []attribute.KeyValue{
+		attribute.String(AttribWorkflowName, workflowName),
+		attribute.String(AttribWorkflowNamespace, workflowNamespace),
+	}
+
+	return t.tracer.Start(ctx, "runSupervisorContainer", trace.WithAttributes(attribs...), trace.WithSpanKind(trace.SpanKindInternal))
+}
+
 var SpanRunWaitContainer = Span{
 	name:     "runWaitContainer",
 	children: []*Span{&SpanCaptureScriptResult, &SpanCreateTaskResult, &SpanPatchTaskResult, &SpanPatchTaskResultLabels, &SpanSaveArtifacts, &SpanSaveLogs, &SpanWaitWorkload},
@@ -502,8 +532,8 @@ func (t *Tracing) StartSaveArtifacts(ctx context.Context) (context.Context, trac
 	parent := trace.SpanFromContext(ctx)
 	if roParent, ok := parent.(sdktrace.ReadOnlySpan); ok {
 		parentName := roParent.Name()
-		if parentName != "runWaitContainer" {
-			logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"startMethod": "StartSaveArtifacts", "expectedParents": "runWaitContainer", "actualParent": parentName}).Error(ctx, "incorrect trace parentage")
+		if parentName != "runWaitContainer" && parentName != "runSupervisorContainer" {
+			logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"startMethod": "StartSaveArtifacts", "expectedParents": "runWaitContainer, runSupervisorContainer", "actualParent": parentName}).Error(ctx, "incorrect trace parentage")
 		}
 	}
 
@@ -545,8 +575,8 @@ func (t *Tracing) StartSaveLogs(ctx context.Context) (context.Context, trace.Spa
 	parent := trace.SpanFromContext(ctx)
 	if roParent, ok := parent.(sdktrace.ReadOnlySpan); ok {
 		parentName := roParent.Name()
-		if parentName != "runWaitContainer" {
-			logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"startMethod": "StartSaveLogs", "expectedParents": "runWaitContainer", "actualParent": parentName}).Error(ctx, "incorrect trace parentage")
+		if parentName != "runWaitContainer" && parentName != "runSupervisorContainer" {
+			logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"startMethod": "StartSaveLogs", "expectedParents": "runWaitContainer, runSupervisorContainer", "actualParent": parentName}).Error(ctx, "incorrect trace parentage")
 		}
 	}
 
@@ -562,8 +592,8 @@ func (t *Tracing) StartStageFiles(ctx context.Context) (context.Context, trace.S
 	parent := trace.SpanFromContext(ctx)
 	if roParent, ok := parent.(sdktrace.ReadOnlySpan); ok {
 		parentName := roParent.Name()
-		if parentName != "runInitContainer" {
-			logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"startMethod": "StartStageFiles", "expectedParents": "runInitContainer", "actualParent": parentName}).Error(ctx, "incorrect trace parentage")
+		if parentName != "runInitContainer" && parentName != "runSupervisorContainer" {
+			logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"startMethod": "StartStageFiles", "expectedParents": "runInitContainer, runSupervisorContainer", "actualParent": parentName}).Error(ctx, "incorrect trace parentage")
 		}
 	}
 
@@ -681,8 +711,8 @@ func (t *Tracing) StartWaitWorkload(ctx context.Context) (context.Context, trace
 	parent := trace.SpanFromContext(ctx)
 	if roParent, ok := parent.(sdktrace.ReadOnlySpan); ok {
 		parentName := roParent.Name()
-		if parentName != "runWaitContainer" {
-			logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"startMethod": "StartWaitWorkload", "expectedParents": "runWaitContainer", "actualParent": parentName}).Error(ctx, "incorrect trace parentage")
+		if parentName != "runWaitContainer" && parentName != "runSupervisorContainer" {
+			logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"startMethod": "StartWaitWorkload", "expectedParents": "runWaitContainer, runSupervisorContainer", "actualParent": parentName}).Error(ctx, "incorrect trace parentage")
 		}
 	}
 

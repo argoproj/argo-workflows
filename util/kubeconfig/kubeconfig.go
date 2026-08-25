@@ -23,7 +23,7 @@ const (
 	BearerAuthScheme = "Bearer"
 )
 
-// get the default one from the filesystem
+// DefaultRestConfig returns the default REST config from the filesystem.
 func DefaultRestConfig() (*restclient.Config, error) {
 	rules := clientcmd.NewDefaultClientConfigLoadingRules()
 	config := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, &clientcmd.ConfigOverrides{})
@@ -54,7 +54,7 @@ func GetRestConfig(token string) (*restclient.Config, error) {
 	return nil, errors.New("unsupported authentication scheme")
 }
 
-// convert a basic token (username, password) into a REST config
+// GetBasicRestConfig converts a basic token (username, password) into a REST config.
 func GetBasicRestConfig(username, password string) (*restclient.Config, error) {
 	restConfig, err := restConfigWithoutAuth()
 	if err != nil {
@@ -65,7 +65,7 @@ func GetBasicRestConfig(username, password string) (*restclient.Config, error) {
 	return restConfig, nil
 }
 
-// convert a bearer token into a REST config
+// GetBearerRestConfig converts a bearer token into a REST config.
 func GetBearerRestConfig(token string) (*restclient.Config, error) {
 	restConfig, err := restConfigWithoutAuth()
 	if err != nil {
@@ -113,7 +113,7 @@ func restConfigWithoutAuth() (*restclient.Config, error) {
 	}, nil
 }
 
-// Return the AuthString include Auth type(Basic or Bearer)
+// GetAuthString returns the auth string including the auth type (Basic or Bearer).
 func GetAuthString(ctx context.Context, in *restclient.Config, explicitKubeConfigPath string) (string, error) {
 	// Checking Basic Auth
 	if in.Username != "" {
@@ -133,7 +133,7 @@ func GetBasicAuthToken(in *restclient.Config) (string, error) {
 	return encodeBasicAuthToken(in.Username, in.Password), nil
 }
 
-// convert the REST config into a bearer token
+// GetBearerToken converts the REST config into a bearer token.
 func GetBearerToken(ctx context.Context, in *restclient.Config, explicitKubeConfigPath string) (string, error) {
 	if len(in.BearerToken) > 0 {
 		return in.BearerToken, nil

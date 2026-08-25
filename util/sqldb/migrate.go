@@ -13,13 +13,24 @@ type Change interface {
 	Apply(ctx context.Context, session db.Session) error
 }
 
+// TypedChanges holds database-specific alternatives for a single migration step.
 type TypedChanges map[DBType]Change
 
-func ByType(dbType DBType, changes TypedChanges) Change {
-	if change, ok := changes[dbType]; ok {
-		return change
+// TypedChange wraps a TypedChanges with a resolved DBType so it can be applied.
+type TypedChange struct {
+	DBType  DBType
+	Changes TypedChanges
+}
+
+func (tc TypedChange) Apply(ctx context.Context, session db.Session) error {
+	if change, ok := tc.Changes[tc.DBType]; ok {
+		return change.Apply(ctx, session)
 	}
 	return nil
+}
+
+func ByType(dbType DBType, changes TypedChanges) Change {
+	return TypedChange{DBType: dbType, Changes: changes}
 }
 
 func Migrate(ctx context.Context, session db.Session, dbType DBType, versionTableName string, changes []Change) error {

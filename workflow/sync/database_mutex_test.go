@@ -13,7 +13,7 @@ import (
 )
 
 // createTestDatabaseMutex creates a database-backed mutex for testing
-func createTestDatabaseMutex(ctx context.Context, t *testing.T, name, namespace string, nextWorkflow NextWorkflow, dbType sqldb.DBType) (*databaseSemaphore, *transaction, func()) {
+func createTestDatabaseMutex(ctx context.Context, t *testing.T, name, namespace string, nextWorkflow NextWorkflow, dbType sqldb.DBType) (*databaseSemaphore, *sqldb.SessionProxy, func()) {
 	t.Helper()
 	info, deferfunc, _, err := createTestDBSession(ctx, t, dbType)
 	require.NoError(t, err)
@@ -23,8 +23,7 @@ func createTestDatabaseMutex(ctx context.Context, t *testing.T, name, namespace 
 	// Create a mutex (which is a semaphore with limit=1)
 	mutex := newDatabaseMutex(name, dbKey, nextWorkflow, info)
 	require.NotNil(t, mutex)
-	tx := &transaction{db: &info.Session}
-	return mutex, tx, deferfunc
+	return mutex, info.SessionProxy, deferfunc
 }
 
 // TestDatabaseMutexAcquireRelease tests basic acquire and release functionality
@@ -42,18 +41,21 @@ func TestDatabaseMutexAcquireRelease(t *testing.T) {
 			require.NoError(t, mutex.addToQueue(ctx, "default/workflow2", 0, now.Add(time.Second)))
 
 			// First acquisition should succeed
-			acquired, _ := mutex.tryAcquire(ctx, "default/workflow1", tx)
+			acquired, _, err := mutex.tryAcquire(ctx, "default/workflow1", tx)
+			require.NoError(t, err)
 			assert.True(t, acquired, "First acquisition should succeed")
 
 			// Second acquisition should fail
-			acquired, _ = mutex.tryAcquire(ctx, "default/workflow2", tx)
+			acquired, _, err = mutex.tryAcquire(ctx, "default/workflow2", tx)
+			require.NoError(t, err)
 			assert.False(t, acquired, "Second acquisition should fail")
 
 			// Release the mutex
 			mutex.release(ctx, "default/workflow1")
 
 			// Now acquisition should succeed again
-			acquired, _ = mutex.tryAcquire(ctx, "default/workflow2", tx)
+			acquired, _, err = mutex.tryAcquire(ctx, "default/workflow2", tx)
+			require.NoError(t, err)
 			assert.True(t, acquired, "Acquisition after release should succeed")
 		})
 	}
@@ -77,11 +79,13 @@ func TestDatabaseMutexQueueOrder(t *testing.T) {
 			require.NoError(t, mutex.addToQueue(ctx, "default/workflow1", 0, now))
 			require.NoError(t, mutex.addToQueue(ctx, "default/workflow2", 0, now.Add(time.Second)))
 
-			acquired, _ := mutex.tryAcquire(ctx, "default/workflow2", tx)
+			acquired, _, err := mutex.tryAcquire(ctx, "default/workflow2", tx)
+			require.NoError(t, err)
 			assert.False(t, acquired, "Second workflow should not acquire the mutex")
 
 			// Acquire the first one
-			acquired, _ = mutex.tryAcquire(ctx, "default/workflow1", tx)
+			acquired, _, err = mutex.tryAcquire(ctx, "default/workflow1", tx)
+			require.NoError(t, err)
 			assert.True(t, acquired, "First workflow should acquire the mutex")
 
 			// Release it - this should notify the next one

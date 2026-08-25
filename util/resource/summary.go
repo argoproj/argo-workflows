@@ -20,7 +20,7 @@ func (s Summary) age() time.Duration {
 	return 0
 }
 
-// map[containerName]Summary
+// Summaries is a map of container names to their Summary.
 type Summaries map[string]Summary
 
 func (ss Summaries) Duration() wfv1.ResourcesDuration {

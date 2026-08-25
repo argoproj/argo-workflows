@@ -23,6 +23,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	workflow "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
+	authcookie "github.com/argoproj/argo-workflows/v4/server/auth/cookie"
 	"github.com/argoproj/argo-workflows/v4/server/auth/serviceaccount"
 	"github.com/argoproj/argo-workflows/v4/server/auth/sso"
 	authTypes "github.com/argoproj/argo-workflows/v4/server/auth/types"
@@ -137,7 +138,7 @@ func GetClaims(ctx context.Context) *authTypes.Claims {
 
 func getAuthHeaders(md metadata.MD) []string {
 	// looks for the HTTP header `Authorization: Bearer ...`
-	for _, t := range md.Get("authorization") {
+	for _, t := range md.Get(authcookie.AuthorizationMetadataKey) {
 		return []string{t}
 	}
 	// check the HTTP cookie
@@ -149,7 +150,7 @@ func getAuthHeaders(md metadata.MD) []string {
 		request := http.Request{Header: header}
 		cookies := request.Cookies()
 		for _, c := range cookies {
-			if c.Name == "authorization" {
+			if c.Name == authcookie.AuthorizationCookieName {
 				authorizations = append(authorizations, c.Value)
 			}
 		}
@@ -295,7 +296,7 @@ func (s *gatekeeper) rbacAuthorization(ctx context.Context, claims *authTypes.Cl
 		namespaceAccount, err := s.getServiceAccount(claims, getNamespace(req))
 		if err != nil {
 			logger.WithError(err).Info(ctx, "Error while SSO Delegation")
-		} else if precedence(namespaceAccount) > precedence(loginAccount) {
+		} else if loginAccount == nil || precedence(namespaceAccount) > precedence(loginAccount) {
 			delegatedAccount = namespaceAccount
 			ssoDelegated = true
 		}
@@ -304,14 +305,17 @@ func (s *gatekeeper) rbacAuthorization(ctx context.Context, claims *authTypes.Cl
 		return nil, fmt.Errorf("no service account rule matches")
 	}
 	// important! write an audit entry (i.e. log entry) so we know which user performed an operation
-	logger.WithFields(logging.Fields{
+	fields := logging.Fields{
 		"serviceAccount":       delegatedAccount.Name,
-		"loginServiceAccount":  loginAccount.Name,
 		"subject":              claims.Subject,
 		"email":                claims.Email,
 		"ssoDelegationAllowed": ssoDelegationAllowed,
 		"ssoDelegated":         ssoDelegated,
-	}).Info(ctx, "selected SSO RBAC service account for user")
+	}
+	if loginAccount != nil {
+		fields["loginServiceAccount"] = loginAccount.Name
+	}
+	logger.WithFields(fields).Info(ctx, "selected SSO RBAC service account for user")
 	return s.getClientsForServiceAccount(ctx, claims, delegatedAccount)
 }
 

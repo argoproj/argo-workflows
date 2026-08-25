@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -20,7 +21,7 @@ import (
 )
 
 var (
-	wfClientset   = fakewfclientset.NewSimpleClientset()
+	wfClientset   = fakewfclientset.NewClientset()
 	wftmplGetter  = templateresolution.WrapWorkflowTemplateInterface(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault))
 	cwftmplGetter = templateresolution.WrapClusterWorkflowTemplateInterface(wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 )
@@ -281,6 +282,114 @@ func TestResolveOutputParameterPathPlaceholder(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	err := validate(ctx, outputParameterPath)
 	require.NoError(t, err)
+}
+
+func TestExecutorPluginsValidation(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	tests := []struct {
+		name      string
+		plugins   string
+		wantError string
+	}{
+		{
+			name: "EmptyList",
+			plugins: `
+  executorPlugins: []
+`,
+		},
+		{
+			name: "Valid",
+			plugins: `
+  executorPlugins:
+  - metadata:
+      name: workflow-level-hello-executor-plugin
+    spec:
+      sidecar:
+        container:
+          name: workflow-level-hello-executor-plugin
+          image: python:alpine3.23
+          ports:
+          - containerPort: 4356
+          resources:
+            limits:
+              cpu: 200m
+              memory: 64Mi
+            requests:
+              cpu: 100m
+              memory: 32Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+`,
+		},
+		{
+			name: "MissingName",
+			plugins: `
+  executorPlugins:
+  - spec:
+      sidecar:
+        container:
+          name: workflow-level-hello-executor-plugin
+          image: python:alpine3.23
+          ports:
+          - containerPort: 4356
+          resources:
+            limits:
+              cpu: 200m
+              memory: 64Mi
+            requests:
+              cpu: 100m
+              memory: 32Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+`,
+			wantError: "spec.executorPlugins: executor plugin metadata name is mandatory",
+		},
+		{
+			name: "InvalidSidecar",
+			plugins: `
+  executorPlugins:
+  - metadata:
+      name: workflow-level-hello-executor-plugin
+    spec:
+      sidecar:
+        container:
+          name: workflow-level-hello-executor-plugin
+          image: python:alpine3.23
+          resources:
+            limits:
+              cpu: 200m
+              memory: 64Mi
+            requests:
+              cpu: 100m
+              memory: 32Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+`,
+			wantError: "spec.executorPlugins: at least one port is mandatory",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validate(ctx, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: workflow-level-executor-plugin-
+spec:
+  entrypoint: main
+`+tt.plugins+`
+  templates:
+  - name: main
+    container:
+      image: busybox
+`)
+			if tt.wantError == "" {
+				require.NoError(t, err)
+				return
+			}
+			require.EqualError(t, err, tt.wantError)
+		})
+	}
 }
 
 var stepOutputReferences = `
@@ -1614,6 +1723,31 @@ func TestUndefinedTemplateRef(t *testing.T) {
 	require.ErrorContains(t, err, "not found")
 }
 
+// templateRefWithPlaceholderInName references a non-existent template whose
+// name contains the word "placeholder". Before the fix, the substring check
+// at validateTemplateHolder would silently skip validation for this reference
+// instead of returning a "not found" error.
+var templateRefWithPlaceholderInName = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: placeholder-name-ref-
+spec:
+  entrypoint: A
+  templates:
+  - name: A
+    steps:
+      - - name: call-A
+          templateRef:
+            name: foo
+            template: run-placeholder-task
+`
+
+func TestTemplateRefWithPlaceholderInNameIsNotSkipped(t *testing.T) {
+	err := validate(logging.TestContext(t.Context()), templateRefWithPlaceholderInName)
+	require.ErrorContains(t, err, "not found")
+}
+
 var validResourceWorkflow = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -2866,6 +3000,30 @@ func TestMaxLengthName(t *testing.T) {
 	require.EqualError(t, err, "cron workflow name \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\" must not be more than 52 characters long (currently 60)")
 }
 
+func TestCronWorkflowInvalidTimezoneRejected(t *testing.T) {
+	cwf := &wfv1.CronWorkflow{
+		ObjectMeta: metav1.ObjectMeta{Name: "my-cron-wf", Namespace: metav1.NamespaceDefault},
+		Spec: wfv1.CronWorkflowSpec{
+			Schedules: []string{"0 * * * *"},
+			Timezone:  "Not/A_Real_Timezone",
+			WorkflowSpec: wfv1.WorkflowSpec{
+				Entrypoint: "whalesay",
+				Templates: []wfv1.Template{
+					{
+						Name: "whalesay",
+						Container: &corev1.Container{
+							Image:   "docker/whalesay:latest",
+							Command: []string{"cowsay"},
+						},
+					},
+				},
+			},
+		},
+	}
+	err := CronWorkflow(logging.TestContext(t.Context()), wftmplGetter, cwftmplGetter, cwf, nil)
+	require.ErrorContains(t, err, `invalid timezone "Not/A_Real_Timezone"`)
+}
+
 var invalidContainerSetDependencyNotFound = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -2894,6 +3052,45 @@ spec:
 func TestInvalidContainerSetDependencyNotFound(t *testing.T) {
 	err := validate(logging.TestContext(t.Context()), invalidContainerSetDependencyNotFound)
 	require.ErrorContains(t, err, "templates.main.containerSet.containers.b dependency 'c' not defined")
+}
+
+func TestReservedAuxContainerNames(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	containerSetSupervisor := `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: workflow
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      containerSet:
+        containers:
+          - name: supervisor
+            image: argoproj/argosay:v2
+`
+	err := validate(ctx, containerSetSupervisor)
+	require.ErrorContains(t, err, "reserved Argo container name")
+
+	sidecarWait := `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: workflow
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+      sidecars:
+        - name: wait
+          image: argoproj/argosay:v2
+`
+	err = validate(ctx, sidecarWait)
+	require.ErrorContains(t, err, "reserved Argo container name")
 }
 
 func TestInvalidContainerSetNoMainContainer(t *testing.T) {
@@ -3436,6 +3633,277 @@ func TestDynamicWorkflowTemplateRef(t *testing.T) {
 	_ = deleteWorkflowTemplate(ctx, wftmplB.Name)
 }
 
+var inlineWorkflowTemplate14329 = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: test-inline-template-14329
+spec:
+  templates:
+  - inputs:
+      parameters:
+      - name: params1
+      - name: params2
+    name: main
+    steps:
+    - - name: inline-main
+        arguments:
+          parameters:
+          - name: params1
+            value: '{{inputs.parameters.params1}}'
+          - name: params2
+            value: '{{inputs.parameters.params2}}'
+        inline:
+          inputs:
+            parameters:
+            - name: params1
+            - name: params2
+          script:
+            command:
+            - sh
+            image: alpine:3.18
+            source: |
+              echo PARAM1={{inputs.parameters.params1}}
+              echo PARAM2={{inputs.parameters.params2}}
+`
+
+var inlineWorkflow14329 = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: test-inline-
+spec:
+  arguments:
+    parameters:
+    - name: params1
+      value: foo1
+    - name: params2
+      value: bar1
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - arguments:
+          parameters:
+          - name: params1
+            value: '{{workflow.parameters.params1}}'
+          - name: params2
+            value: '{{workflow.parameters.params2}}'
+        name: inline
+        templateRef:
+          name: test-inline-template-14329
+          template: main
+`
+
+func TestInlineTemplateNotContaminatedByPlaceholders(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wftmpl := wfv1.MustUnmarshalWorkflowTemplate(inlineWorkflowTemplate14329)
+	err := createWorkflowTemplate(ctx, wftmpl)
+	require.NoError(t, err)
+	defer func() { _ = deleteWorkflowTemplate(ctx, wftmpl.Name) }()
+
+	wf := wfv1.MustUnmarshalWorkflow(inlineWorkflow14329)
+	err = Workflow(ctx, wftmplGetter, cwftmplGetter, wf, nil, Opts{})
+	require.NoError(t, err)
+
+	for key, tmpl := range wf.Status.StoredTemplates {
+		if tmpl.Script != nil {
+			if strings.Contains(tmpl.Script.Source, "placeholder") {
+				t.Errorf("stored template %q has placeholder-contaminated script source: %s", key, tmpl.Script.Source)
+			}
+		}
+	}
+}
+
+var dynamicStepNameWorkflowTemplate15896 = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: test-dynamic-step-name-15896
+spec:
+  templates:
+  - name: day-loop
+    inputs:
+      parameters:
+      - name: date
+    steps:
+    - - name: run-{{inputs.parameters.date}}
+        template: worker
+        arguments:
+          parameters:
+          - name: date
+            value: "{{inputs.parameters.date}}"
+        continueOn:
+          failed: true
+    - - name: check-{{inputs.parameters.date}}
+        template: worker
+        arguments:
+          parameters:
+          - name: date
+            value: "{{inputs.parameters.date}}"
+        when: "{{steps.run-{{inputs.parameters.date}}.status}} != Succeeded"
+  - name: worker
+    inputs:
+      parameters:
+      - name: date
+    container:
+      image: busybox
+      command: [echo]
+      args: ["Processing {{inputs.parameters.date}}"]
+`
+
+var dynamicStepNameWorkflow15896 = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: test-dynamic-step-name-
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+    - name: date
+      value: "2024-01-15"
+  templates:
+  - name: main
+    steps:
+    - - name: process-day
+        arguments:
+          parameters:
+          - name: date
+            value: "{{workflow.parameters.date}}"
+        templateRef:
+          name: test-dynamic-step-name-15896
+          template: day-loop
+`
+
+var dynamicStepNameWorkflowLocal15896 = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: test-dynamic-step-name-
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+    - name: date
+      value: "2024-01-15"
+  templates:
+  - name: main
+    steps:
+    - - name: process-day
+        template: day-loop
+        arguments:
+          parameters:
+          - name: date
+            value: "{{workflow.parameters.date}}"
+  - name: day-loop
+    inputs:
+      parameters:
+      - name: date
+    steps:
+    - - name: run-{{inputs.parameters.date}}
+        template: worker
+        arguments:
+          parameters:
+          - name: date
+            value: "{{inputs.parameters.date}}"
+        continueOn:
+          failed: true
+    - - name: check-{{inputs.parameters.date}}
+        template: worker
+        arguments:
+          parameters:
+          - name: date
+            value: "{{inputs.parameters.date}}"
+        when: "{{steps.run-{{inputs.parameters.date}}.status}} != Succeeded"
+  - name: worker
+    inputs:
+      parameters:
+      - name: date
+    container:
+      image: busybox
+      command: [echo]
+      args: ["Processing {{inputs.parameters.date}}"]
+`
+
+// TestDynamicStepNameWithInputParameters verifies that using {{inputs.parameters.xxx}}
+// in step names does not cause validation errors due to placeholder contamination.
+// Regression test for https://github.com/argoproj/argo-workflows/issues/15896
+func TestDynamicStepNameWithInputParameters(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	// Test with templateRef (the original regression scenario)
+	t.Run("WithTemplateRef", func(t *testing.T) {
+		wftmpl := wfv1.MustUnmarshalWorkflowTemplate(dynamicStepNameWorkflowTemplate15896)
+		err := createWorkflowTemplate(ctx, wftmpl)
+		require.NoError(t, err)
+		defer func() { _ = deleteWorkflowTemplate(ctx, wftmpl.Name) }()
+
+		wf := wfv1.MustUnmarshalWorkflow(dynamicStepNameWorkflow15896)
+		err = Workflow(ctx, wftmplGetter, cwftmplGetter, wf, nil, Opts{})
+		require.NoError(t, err, "workflow with dynamic step names via templateRef should pass validation")
+	})
+
+	// Test with inline templates (local workflow, no templateRef)
+	t.Run("WithInlineSteps", func(t *testing.T) {
+		wf := wfv1.MustUnmarshalWorkflow(dynamicStepNameWorkflowLocal15896)
+		err := Workflow(ctx, wftmplGetter, cwftmplGetter, wf, nil, Opts{})
+		require.NoError(t, err, "workflow with dynamic step names in local templates should pass validation")
+	})
+}
+
+var dynamicStepNameInvalidSkeleton15896 = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: test-invalid-skeleton-
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+    - name: date
+      value: "2024-01-15"
+  templates:
+  - name: main
+    steps:
+    - - name: process-day
+        template: day-loop
+        arguments:
+          parameters:
+          - name: date
+            value: "{{workflow.parameters.date}}"
+  - name: day-loop
+    inputs:
+      parameters:
+      - name: date
+    steps:
+    - - name: run_{{inputs.parameters.date}}
+        template: worker
+        arguments:
+          parameters:
+          - name: date
+            value: "{{inputs.parameters.date}}"
+  - name: worker
+    inputs:
+      parameters:
+      - name: date
+    container:
+      image: busybox
+      command: [echo]
+      args: ["Processing {{inputs.parameters.date}}"]
+`
+
+// TestDynamicStepNameInvalidSkeletonStillFails verifies that an invalid literal
+// skeleton around a placeholder (here an underscore in "run_{{...}}") is still
+// rejected. The placeholder is replaced with a safe token for validation, so
+// the surrounding characters are still checked.
+func TestDynamicStepNameInvalidSkeletonStillFails(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(dynamicStepNameInvalidSkeleton15896)
+	err := Workflow(logging.TestContext(t.Context()), wftmplGetter, cwftmplGetter, wf, nil, Opts{})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "is invalid")
+}
+
 var parameterizedGlobalArtifactsWorkflow = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -3562,4 +4030,164 @@ func TestWorkflowWithoutParameterizedArtifactsFails(t *testing.T) {
 	err := validate(logging.TestContext(t.Context()), workflowWithoutParameterizedArtifacts)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to resolve {{workflow.outputs.artifacts.nonexistent}}")
+}
+
+var podResourcesInvalidResourceName = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: pod-resources-
+spec:
+  entrypoint: main
+  podResources:
+    limits:
+      nvidia.com/gpu: "1"
+  templates:
+  - name: main
+    container:
+      image: alpine:3.23
+`
+
+var podResourcesClaims = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: pod-resources-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    podResources:
+      claims:
+      - name: gpu
+    container:
+      image: alpine:3.23
+`
+
+var podResourcesOnHTTPTemplate = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: pod-resources-
+spec:
+  entrypoint: main
+  podResources:
+    limits:
+      cpu: "1"
+  templates:
+  - name: main
+    podResources:
+      limits:
+        cpu: "1"
+    http:
+      url: https://example.com
+`
+
+var podResourcesValid = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: pod-resources-
+spec:
+  entrypoint: main
+  podResources:
+    requests:
+      cpu: 100m
+      memory: 64Mi
+    limits:
+      cpu: "1"
+      memory: 256Mi
+  templates:
+  - name: main
+    podResources:
+      limits:
+        cpu: "2"
+        memory: 512Mi
+    container:
+      image: alpine:3.23
+`
+
+func TestPodResourcesValidation(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	err := validate(ctx, podResourcesInvalidResourceName)
+	require.ErrorContains(t, err, `spec.podResources: "nvidia.com/gpu" is not a valid pod-level resource`)
+	err = validate(ctx, podResourcesClaims)
+	require.ErrorContains(t, err, "templates.main.podResources.claims is not supported")
+	err = validate(ctx, podResourcesOnHTTPTemplate)
+	require.ErrorContains(t, err, "templates.main.podResources is not supported for HTTP templates")
+	err = validate(ctx, podResourcesValid)
+	require.NoError(t, err)
+}
+
+var resourceClaimsValid = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+spec:
+  entrypoint: main
+  resourceClaims:
+  - name: shared
+    resourceClaimName: existing-claim
+  templates:
+  - name: main
+    resourceClaims:
+    - name: accelerator
+      resourceClaimTemplateName: gpu-claim-template
+    container:
+      image: alpine:3.23
+      resources:
+        claims:
+        - name: accelerator
+`
+
+var resourceClaimsOnHTTPTemplate = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    resourceClaims:
+    - name: accelerator
+      resourceClaimTemplateName: gpu-claim-template
+    http:
+      url: https://example.com
+`
+
+var resourceClaimsOnStepsTemplate = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    resourceClaims:
+    - name: accelerator
+      resourceClaimTemplateName: gpu-claim-template
+    steps:
+    - - name: run
+        template: worker
+  - name: worker
+    container:
+      image: alpine:3.23
+`
+
+// TestPodResourceClaimsValidation: a claim is attached to the pod a template
+// runs, so a template that never creates one has nowhere to put it. Which kind
+// a template is can be written as a parameter, so this is asked of the
+// substituted template. Everything else about a claim is the API server's to
+// judge at pod admission.
+func TestPodResourceClaimsValidation(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	err := validate(ctx, resourceClaimsValid)
+	require.NoError(t, err)
+	err = validate(ctx, resourceClaimsOnHTTPTemplate)
+	require.ErrorContains(t, err, "templates.main.resourceClaims is not supported for HTTP templates")
+	err = validate(ctx, resourceClaimsOnStepsTemplate)
+	require.ErrorContains(t, err, "templates.main.resourceClaims is not supported for Steps templates, which do not create a pod")
 }

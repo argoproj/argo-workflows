@@ -3,6 +3,7 @@
 package e2e
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -118,8 +119,36 @@ func (s *SignalsSuite) TestSidecars() {
 
 // make sure Istio/Anthos and other sidecar injectors will work
 func (s *SignalsSuite) TestInjectedSidecar() {
+	// The podSpecPatch names the auxiliary executor container to pin container
+	// ordering (a strategic-merge list keyed on name). That container is "wait"
+	// in the legacy layout and "supervisor" in init-less mode, so template it via
+	// AuxContainerName() — hard-coding "wait" would add an imageless container in
+	// init-less mode and the pod would be rejected.
 	s.Given().
-		Workflow("@testdata/sidecar-injected-workflow.yaml").
+		Workflow(fmt.Sprintf(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: sidecar-injected-
+spec:
+  entrypoint: main
+  podSpecPatch: |
+    terminationGracePeriodSeconds: 3
+    containers:
+      - name: %s
+      - name: main
+      - name: sidecar
+        image: argoproj/argosay:v1
+        command:
+         - sh
+         - -c
+        args:
+          - "sleep 999"
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v1
+`, fixtures.AuxContainerName())).
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(fixtures.ToBeSucceeded, killDuration)

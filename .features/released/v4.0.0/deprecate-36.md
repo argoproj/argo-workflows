@@ -3,4 +3,4 @@ Authors: [Alan Clucas](https://github.com/Joibel)
 Component: General
 Issues: 14977
 
-Deprecation: remove singluar `mutex`, `semaphore` and `schedule` from the specs, all were replaced by the plural version in 3.6
+Deprecation: remove singular `mutex`, `semaphore` and `schedule` from the specs, all were replaced by the plural version in 3.6

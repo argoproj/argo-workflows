@@ -52,7 +52,8 @@ export const WorkflowsService = {
             'items.status.startedAt',
             'items.status.estimatedDuration',
             'items.status.progress',
-            'items.spec.suspend'
+            'items.spec.suspend',
+            'items.spec.arguments'
         ],
         name?: string,
         nameFilter?: NameFilterKeys,
@@ -113,7 +114,8 @@ export const WorkflowsService = {
             'result.type',
             'result.object.metadata.labels',
             'result.object.metadata.annotations',
-            'result.object.spec.suspend'
+            'result.object.spec.suspend',
+            'result.object.spec.arguments'
         ];
         params.push(`fields=${fields.join(',')}`);
         const url = `api/v1/workflow-events/${query.namespace || ''}?${params.join('&')}`;

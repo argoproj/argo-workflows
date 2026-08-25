@@ -28,7 +28,11 @@ import {EventsPanel} from '../workflows/components/events-panel';
 import {EventSourceCreator} from './event-source-creator';
 import {EventSourceLogsViewer} from './event-source-log-viewer';
 
-const learnMore = <a href='https://argoproj.github.io/argo-events/concepts/event_source/'>Learn more</a>;
+const learnMore = (
+    <a href='https://argoproj.github.io/argo-events/concepts/event_source/' target='_blank' rel='noreferrer'>
+        Learn more
+    </a>
+);
 
 export function EventSourceList({match, location, history}: RouteComponentProps<any>) {
     // boiler-plate
@@ -96,7 +100,7 @@ export function EventSourceList({match, location, history}: RouteComponentProps<
 
     return (
         <Page
-            title='EventSources'
+            title='Event Sources'
             toolbar={{
                 breadcrumbs: [
                     {title: 'Event Sources', path: uiUrl('event-sources')},
@@ -111,7 +115,7 @@ export function EventSourceList({match, location, history}: RouteComponentProps<
                         }
                     ]
                 },
-                tools: [<NamespaceFilter key='namespace-filter' value={namespace} onChange={setNamespace} />]
+                tools: [<NamespaceFilter key='namespace-filter' value={namespace} onChange={setNamespace} extraNamespaces={nsUtils.getUniqueNamespaces(eventSources)} />]
             }}>
             <ErrorNotice error={error} />
             {loading && <Loading />}

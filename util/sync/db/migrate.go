@@ -12,8 +12,8 @@ const (
 	versionTable = "sync_schema_history"
 )
 
-func migrate(ctx context.Context, session db.Session, dbType sqldb.DBType, config *Config) (err error) {
-	return sqldb.Migrate(ctx, session, dbType, versionTable, []sqldb.Change{
+func MigrateChanges(config *Config) []sqldb.Change {
+	return []sqldb.Change{
 		sqldb.AnsiSQLChange(`create table if not exists ` + config.LimitTable + ` (
     name varchar(256) not null,
     sizelimit int,
@@ -46,5 +46,9 @@ func migrate(ctx context.Context, session db.Session, dbType sqldb.DBType, confi
     primary key(name)
 )`),
 		sqldb.AnsiSQLChange(`create unique index ilock_name on ` + config.LockTable + ` (name)`),
-	})
+	}
+}
+
+func migrate(ctx context.Context, session db.Session, dbType sqldb.DBType, config *Config) (err error) {
+	return sqldb.Migrate(ctx, session, dbType, versionTable, MigrateChanges(config))
 }

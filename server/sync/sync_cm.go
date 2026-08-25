@@ -6,12 +6,14 @@ import (
 	"strconv"
 
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	syncpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/sync"
 	"github.com/argoproj/argo-workflows/v4/server/auth"
 	sutils "github.com/argoproj/argo-workflows/v4/server/utils"
+	authutil "github.com/argoproj/argo-workflows/v4/util/auth"
 )
 
 type configMapSyncProvider struct{}
@@ -21,6 +23,10 @@ var _ ConfigProvider = &configMapSyncProvider{}
 func (s *configMapSyncProvider) createSyncLimit(ctx context.Context, req *syncpkg.CreateSyncLimitRequest) (*syncpkg.SyncLimitResponse, error) {
 	if req.Limit <= 0 {
 		return nil, sutils.ToStatusError(fmt.Errorf("limit must be greater than zero"), codes.InvalidArgument)
+	}
+
+	if err := checkConfigMapPermission(ctx, "create", req.Namespace); err != nil {
+		return nil, err
 	}
 
 	kubeClient := auth.GetKubeClient(ctx)
@@ -67,6 +73,10 @@ func (s *configMapSyncProvider) createSyncLimit(ctx context.Context, req *syncpk
 }
 
 func (s *configMapSyncProvider) getSyncLimit(ctx context.Context, req *syncpkg.GetSyncLimitRequest) (*syncpkg.SyncLimitResponse, error) {
+	if err := checkConfigMapPermission(ctx, "get", req.Namespace); err != nil {
+		return nil, err
+	}
+
 	kubeClient := auth.GetKubeClient(ctx)
 
 	configmapGetter := kubeClient.CoreV1().ConfigMaps(req.Namespace)
@@ -100,10 +110,18 @@ func (s *configMapSyncProvider) updateSyncLimit(ctx context.Context, req *syncpk
 		return nil, sutils.ToStatusError(fmt.Errorf("limit must be greater than zero"), codes.InvalidArgument)
 	}
 
+	if err := checkConfigMapPermission(ctx, "update", req.Namespace); err != nil {
+		return nil, err
+	}
+
 	return s.handleUpdateSyncLimit(ctx, req, true)
 }
 
 func (s *configMapSyncProvider) deleteSyncLimit(ctx context.Context, req *syncpkg.DeleteSyncLimitRequest) (*syncpkg.DeleteSyncLimitResponse, error) {
+	if err := checkConfigMapPermission(ctx, "update", req.Namespace); err != nil {
+		return nil, err
+	}
+
 	kubeClient := auth.GetKubeClient(ctx)
 
 	configmapGetter := kubeClient.CoreV1().ConfigMaps(req.Namespace)
@@ -121,6 +139,18 @@ func (s *configMapSyncProvider) deleteSyncLimit(ctx context.Context, req *syncpk
 	}
 
 	return &syncpkg.DeleteSyncLimitResponse{}, nil
+}
+
+func checkConfigMapPermission(ctx context.Context, verb, namespace string) error {
+	kubeClient := auth.GetKubeClient(ctx)
+	allowed, err := authutil.CanI(ctx, kubeClient, []string{verb}, "", namespace, "configmaps")
+	if err != nil {
+		return sutils.ToStatusError(err, codes.Internal)
+	}
+	if !allowed {
+		return status.Error(codes.PermissionDenied, fmt.Sprintf("Permission denied, you are not allowed to %s configmaps in namespace %q.", verb, namespace))
+	}
+	return nil
 }
 
 func (s *configMapSyncProvider) handleUpdateSyncLimit(ctx context.Context, req *syncpkg.UpdateSyncLimitRequest, shouldFieldExist bool) (*syncpkg.SyncLimitResponse, error) {

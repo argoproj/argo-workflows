@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net"
 	"os/exec"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -393,7 +394,7 @@ func (c *OTELCollector) WaitForWorkflowSpan(ctx context.Context, timeout time.Du
 				return nil, nil, err
 			}
 			// Search from the end to find the most recent workflow span
-			for i := len(spans) - 1; i >= 0; i-- {
+			for i := range slices.Backward(spans) {
 				if spans[i].Name == "workflow" {
 					return &spans[i], spans, nil
 				}

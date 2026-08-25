@@ -3,9 +3,8 @@ package template
 import (
 	"testing"
 
-	"github.com/expr-lang/expr/file"
-	"github.com/expr-lang/expr/parser/lexer"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_hasVarInEnv(t *testing.T) {
@@ -100,29 +99,108 @@ func Test_hasVarInEnv(t *testing.T) {
 	})
 }
 
-func Test_hasVariableInExpression(t *testing.T) {
-	assert.True(t, hasVariableInExpression("retries", "retries"))
-	assert.True(t, hasVariableInExpression("retries + 1", "retries"))
-	assert.True(t, hasVariableInExpression("sprig(retries)", "retries"))
-	assert.True(t, hasVariableInExpression("sprig(retries + 1) * 64", "retries"))
-	assert.False(t, hasVariableInExpression("foo", "retries"))
-	assert.False(t, hasVariableInExpression("retriesCustom + 1", "retries"))
-	assert.True(t, hasVariableInExpression("item", "item"))
-	assert.False(t, hasVariableInExpression("foo", "item"))
-	assert.True(t, hasVariableInExpression("sprig.upper(item)", "item"))
+func Test_getIdentifiers(t *testing.T) {
+	tests := []struct {
+		name       string
+		expression string
+		want       []string
+	}{
+		{
+			name:       "plain member path is required",
+			expression: "item.requiredKey",
+			want:       []string{"item", "item.requiredKey"},
+		},
+		{
+			name:       "nil-coalescing guards the member path but keeps the base variable",
+			expression: "item.optionalKey ?? 'fallback'",
+			want:       []string{"item"},
+		},
+		{
+			name:       "nil-coalescing with bracket notation is guarded",
+			expression: "item['optionalKey'] ?? ''",
+			want:       []string{"item"},
+		},
+		{
+			name:       "optional chaining is guarded",
+			expression: "item?.optionalKey",
+			want:       []string{"item"},
+		},
+		{
+			name:       "optional chaining also guards the optional receiver",
+			expression: "item.a?.b",
+			want:       []string{"item"},
+		},
+		{
+			name:       "only the guarded member path is skipped",
+			expression: "item.requiredKey + (item.optionalKey ?? 'x')",
+			want:       []string{"item", "item.requiredKey"},
+		},
+		{
+			name:       "base variable stays required so requeue still works",
+			expression: "tasks.a.outputs.result ?? 'default'",
+			want:       []string{"tasks"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := getIdentifiers(tt.expression)
+			require.NoError(t, err)
+			assert.ElementsMatch(t, tt.want, got)
+		})
+	}
 }
 
-func Test_hasWorkflowParameters(t *testing.T) {
-	expression := `workflow.status == "Succeeded" ? "SUCCESSFUL" : "FAILED"`
-	exprToks, _ := lexer.Lex(file.NewSource(expression))
-	variableToks, _ := lexer.Lex(file.NewSource("workflow.status"))
-	variableToks = filterEOF(variableToks)
-	assert.True(t, searchTokens(exprToks, variableToks))
-	assert.True(t, hasVariableInExpression(expression, "workflow.status"))
+func Test_anyVarNotInEnv(t *testing.T) {
+	emptyEnv := map[string]any{}
+	missing := func(expression string) *string { return anyVarNotInEnv(expression, emptyEnv) }
 
-	assert.False(t, hasVariableInExpression(expression, "workflow status"))
-	assert.False(t, hasVariableInExpression(expression, "workflow .status"))
+	t.Run("late-binding variables detected when absent", func(t *testing.T) {
+		for _, expression := range []string{
+			"retries",
+			"retries + 1",
+			"sprig(retries)",
+			"sprig(retries + 1) * 64",
+			"item",
+			"sprig.upper(item)",
+			`workflow.status == "Succeeded" ? "SUCCESSFUL" : "FAILED"`,
+		} {
+			assert.NotNil(t, missing(expression), expression)
+		}
+	})
 
-	expression = `"workflow.status" == "Succeeded" ? "SUCCESSFUL" : "FAILED"`
-	assert.False(t, hasVariableInExpression(expression, "workflow .status"))
+	t.Run("unrelated identifiers do not match", func(t *testing.T) {
+		for _, expression := range []string{
+			"foo",
+			"retriesCustom + 1",
+		} {
+			assert.Nil(t, missing(expression), expression)
+		}
+	})
+
+	t.Run("string literal is not an identifier", func(t *testing.T) {
+		assert.Nil(t, missing(`"workflow.status" == "Succeeded" ? "SUCCESSFUL" : "FAILED"`))
+	})
+
+	t.Run("present in env is not reported", func(t *testing.T) {
+		env := map[string]any{"retries": 1}
+		assert.Nil(t, anyVarNotInEnv("retries + 1", env))
+	})
+}
+
+func Test_missingVarsInEnv(t *testing.T) {
+	t.Run("nil leaf counts as present", func(t *testing.T) {
+		env := map[string]any{"tasks": map[string]any{"a": map[string]any{"out": nil}}}
+		missing, err := missingVarsInEnv("tasks.a.out ?? 'x'", env)
+		require.NoError(t, err)
+		assert.Empty(t, missing)
+	})
+	t.Run("missing identifiers reported", func(t *testing.T) {
+		missing, err := missingVarsInEnv("foo + bar", map[string]any{"foo": "1"})
+		require.NoError(t, err)
+		assert.Equal(t, []string{"bar"}, missing)
+	})
+	t.Run("unparseable errors", func(t *testing.T) {
+		_, err := missingVarsInEnv("foo +", map[string]any{})
+		require.Error(t, err)
+	})
 }

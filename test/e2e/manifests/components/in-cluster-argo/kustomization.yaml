@@ -1,0 +1,9 @@
+# Component to run the workflow controller and argo server in-cluster (for Tilt).
+# Replaces the local-argo component used by the old kit host-process workflow.
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+resources:
+  - workflow-controller-rbac.yaml
+patches:
+  - path: workflow-controller-deployment.yaml
+  - path: argo-server-deployment.yaml

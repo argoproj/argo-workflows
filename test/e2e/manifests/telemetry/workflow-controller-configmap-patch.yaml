@@ -15,6 +15,12 @@ data:
         memory: 256Mi
     env:
     - name: OTEL_EXPORTER_OTLP_ENDPOINT
-      value: "http://otel-collector.argo.svc.cluster.local:4317"
+      value: "http://otel-collector.argo.svc.cluster.local:4318"
     - name: OTEL_EXPORTER_OTLP_PROTOCOL
-      value: "grpc"
+      value: "http/protobuf"
+  mainContainer: |
+    env:
+    - name: OTEL_EXPORTER_OTLP_ENDPOINT
+      value: "http://otel-collector.argo.svc.cluster.local:4318"
+    - name: OTEL_EXPORTER_OTLP_PROTOCOL
+      value: "http/protobuf"

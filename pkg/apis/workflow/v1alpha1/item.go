@@ -89,6 +89,7 @@ func (i *Item) DeepCopyInto(out *Item) {
 	}
 }
 
+// OpenAPISchemaType returns the OpenAPI schema type for Item.
 // See: https://github.com/kubernetes/kube-openapi/tree/master/pkg/generators
 func (i Item) OpenAPISchemaType() []string {
 	return nil
@@ -96,21 +97,21 @@ func (i Item) OpenAPISchemaType() []string {
 
 func (i Item) OpenAPISchemaFormat() string { return "" }
 
-// you MUST assert `GetType() == Map` before invocation as this does not return errors
+// GetMapVal returns the Item value as a map. You MUST assert `GetType() == Map` before invocation as this does not return errors.
 func (i *Item) GetMapVal() map[string]Item {
 	val := make(map[string]Item)
 	_ = json.Unmarshal(i.Value, &val)
 	return val
 }
 
-// you MUST assert `GetType() == List` before invocation as this does not return errors
+// GetListVal returns the Item value as a list. You MUST assert `GetType() == List` before invocation as this does not return errors.
 func (i *Item) GetListVal() []Item {
 	val := make([]Item, 0)
 	_ = json.Unmarshal(i.Value, &val)
 	return val
 }
 
-// you MUST assert `GetType() == String` before invocation as this does not return errors
+// GetStrVal returns the Item value as a string. You MUST assert `GetType() == String` before invocation as this does not return errors.
 func (i *Item) GetStrVal() string {
 	val := ""
 	_ = json.Unmarshal(i.Value, &val)

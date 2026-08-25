@@ -24,21 +24,21 @@ jobs:
             echo "is_feat=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         if: steps.check-type.outputs.is_feat == 'true'
         with:
-          go-version: "1.25"
+          go-version: "1.26"
           cache: true
       - name: Checkout
         if: steps.check-type.outputs.is_feat == 'true'
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 50
 
       - name: Ensure ./.features/pending/*.md addition(s)
         if: steps.check-type.outputs.is_feat == 'true'
         id: changed-files
-        uses: tj-actions/changed-files@7dee1b0c1557f278e5c7dc244927139d78c0e22a # v47.0.4
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
         with:
           files: |
             .features/pending/*.md
@@ -48,7 +48,7 @@ jobs:
         run: |
           echo "No feature description was added to the ./.features/pending/ directory for this feature PR."
           echo "Please add a .md file to the ./.features/pending/ directory."
-          echo "See docs/running-locally.md for more details."
+          echo "See docs/pull-requests.md for more details."
           false
 
       - name: Validate ./.features/*.md changes

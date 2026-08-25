@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apiv1 "k8s.io/api/core/v1"
-	"k8s.io/utils/ptr"
 
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
@@ -315,7 +314,7 @@ func TestArtifacts_GetPluginNames(t *testing.T) {
 				Name:          "log-plugin",
 				Configuration: `{"bucket": "log-bucket"}`,
 			},
-			ArchiveLogs: ptr.To(true),
+			ArchiveLogs: new(true),
 		}
 
 		pluginNames := artifacts.GetPluginNames(ctx, defaultRepo, IncludeLogs, nil)
@@ -340,7 +339,7 @@ func TestArtifacts_GetPluginNames(t *testing.T) {
 			S3: &S3ArtifactRepository{
 				S3Bucket: S3Bucket{Bucket: "log-bucket"},
 			},
-			ArchiveLogs: ptr.To(true),
+			ArchiveLogs: new(true),
 		}
 
 		pluginNames := artifacts.GetPluginNames(ctx, defaultRepo, ExcludeLogs, nil)
@@ -425,7 +424,7 @@ func TestArtifacts_GetPluginNames(t *testing.T) {
 				Name:          "default-plugin",
 				Configuration: `{"bucket": "default-bucket"}`,
 			},
-			ArchiveLogs: ptr.To(true),
+			ArchiveLogs: new(true),
 		}
 
 		pluginNames := artifacts.GetPluginNames(ctx, defaultRepo, IncludeLogs, nil)
@@ -473,7 +472,7 @@ func TestArtifacts_GetPluginNames(t *testing.T) {
 				Name:          "log-plugin",
 				Configuration: `{"endpoint": "https://logs.com"}`,
 			},
-			ArchiveLogs: ptr.To(true),
+			ArchiveLogs: new(true),
 		}
 
 		pluginNames := artifacts.GetPluginNames(ctx, defaultRepo, IncludeLogs, nil)
@@ -588,7 +587,7 @@ func TestArtifacts_GetPluginNames(t *testing.T) {
 				Name:          "default-plugin",
 				Configuration: `{"default": true}`,
 			},
-			ArchiveLogs: ptr.To(true),
+			ArchiveLogs: new(true),
 		}
 
 		pluginNames := artifacts.GetPluginNames(ctx, defaultRepo, IncludeLogs, nil)
@@ -786,7 +785,7 @@ func TestArtifacts_GetPluginNames(t *testing.T) {
 					Name:          "log-plugin",
 					Configuration: `{"bucket": "log-bucket"}`,
 				},
-				ArchiveLogs: ptr.To(true),
+				ArchiveLogs: new(true),
 			}
 
 			archiveLocation := &ArtifactLocation{

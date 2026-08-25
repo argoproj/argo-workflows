@@ -17,8 +17,8 @@ import (
 	"path/filepath"
 	"runtime/debug"
 	"slices"
-	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -45,7 +45,6 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/artifacts"
 	artifactcommon "github.com/argoproj/argo-workflows/v4/workflow/artifacts/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
-	executorretry "github.com/argoproj/argo-workflows/v4/workflow/executor/retry"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/tracing"
 )
 
@@ -71,10 +70,13 @@ type WorkflowExecutor struct {
 	RuntimeExecutor     ContainerRuntimeExecutor
 	Tracing             *tracing.Tracing
 
-	// memoized configmaps
+	// memoizedConfigMaps caches configmap lookups (used by some artifact
+	// drivers, e.g. HDFS for Kerberos config). memoizedMu guards it because
+	// init-less supervisor loads input artifacts concurrently across plugins
+	// via errgroup; legacy mode kept each plugin in its own init-container
+	// process, so no cross-goroutine race.
+	memoizedMu         sync.Mutex
 	memoizedConfigMaps map[string]string
-	// memoized secrets
-	memoizedSecrets map[string][]byte
 	// list of errors that occurred during execution.
 	// the first of these is used as the overall message of the node
 	errors []error
@@ -84,13 +86,71 @@ type WorkflowExecutor struct {
 
 	annotationPatchTickDuration  time.Duration
 	readProgressFileTickDuration time.Duration
+	progressFile                 string
+	instanceID                   string
+	terminationGracePeriod       time.Duration
+	artifactPluginNames          string
+	removeLocalArtPath           bool
+	initlessPod                  bool
+	retryBackoff                 wait.Backoff
+	resourceStateCheckInterval   time.Duration
 
 	// flag to indicate if the task result was created
 	taskResultCreated bool
 }
 
+// Config carries the data values a WorkflowExecutor is constructed from.
+// Every field is parsed from the environment (or derived from it) at the
+// composition root in cmd/argoexec; executor packages must not read the
+// environment themselves (enforced by the forbidigo linter rule), so that
+// they stay testable without env mutation and reusable outside the
+// one-task-per-process layout.
+type Config struct {
+	PodName                      string
+	PodUID                       types.UID
+	WorkflowName                 string
+	WorkflowUID                  types.UID
+	NodeID                       string
+	Namespace                    string
+	Template                     wfv1.Template
+	IncludeScriptOutput          bool
+	Deadline                     time.Time
+	AnnotationPatchTickDuration  time.Duration
+	ReadProgressFileTickDuration time.Duration
+	// ProgressFile is the file watched for progress reports (ARGO_PROGRESS_FILE).
+	ProgressFile string
+	// InstanceID labels task results with the controller instance (ARGO_INSTANCE_ID).
+	InstanceID string
+	// TerminationGracePeriod mirrors the pod spec's terminationGracePeriodSeconds
+	// (ARGO_TERMINATION_GRACE_PERIOD_SECONDS).
+	TerminationGracePeriod time.Duration
+	// ArtifactPluginNames is the comma-separated list written by the controller
+	// (ARGO_ARTIFACT_PLUGIN_NAMES); split with common.SplitPluginNames.
+	ArtifactPluginNames string
+	// RemoveLocalArtPath deletes local artifacts after upload to reduce peak
+	// disk usage (REMOVE_LOCAL_ART_PATH).
+	RemoveLocalArtPath bool
+	// InitlessPod reports whether the pod runs the init-less layout (ARGO_INITLESS_POD).
+	InitlessPod bool
+	// RetryBackoff is the backoff used when retrying transient failures
+	// (EXECUTOR_RETRY_BACKOFF_*, see util/retry.ExecutorRetry).
+	RetryBackoff wait.Backoff
+	// ResourceStateCheckInterval is the poll interval for resource template
+	// state checks (RESOURCE_STATE_CHECK_INTERVAL).
+	ResourceStateCheckInterval time.Duration
+}
+
 type Initializer interface {
 	Init(tmpl wfv1.Template) error
+}
+
+// TemplateWriter is implemented by runtime executors that can write the
+// template JSON to the shared volume without performing the full Init
+// sequence (e.g. without copying the argoexec binary). Used by the
+// init-less `supervisor` entrypoint, where the binary is delivered via
+// a Kubernetes image volume.
+type TemplateWriter interface {
+	WriteTemplate(tmpl wfv1.Template) error
 }
 
 // ContainerRuntimeExecutor is the interface for interacting with a container runtime
@@ -123,45 +183,43 @@ func NewExecutor(
 	clientset kubernetes.Interface,
 	taskResultClient argoprojv1.WorkflowTaskResultInterface,
 	restClient rest.Interface,
-	podName string,
-	podUID types.UID,
-	workflow string,
-	workflowUID types.UID,
-	nodeID, namespace string,
 	cre ContainerRuntimeExecutor,
-	template wfv1.Template,
-	includeScriptOutput bool,
-	deadline time.Time,
-	annotationPatchTickDuration, readProgressFileTickDuration time.Duration,
-) (WorkflowExecutor, error) {
-	retry := executorretry.ExecutorRetry(ctx)
+	cfg Config,
+) (*WorkflowExecutor, error) {
 	logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{
-		"Steps":    retry.Steps,
-		"Duration": retry.Duration,
-		"Factor":   retry.Factor,
-		"Jitter":   retry.Jitter,
+		"Steps":    cfg.RetryBackoff.Steps,
+		"Duration": cfg.RetryBackoff.Duration,
+		"Factor":   cfg.RetryBackoff.Factor,
+		"Jitter":   cfg.RetryBackoff.Jitter,
 	}).Info(ctx, "Using executor retry strategy")
 	tracing, err := tracing.New(ctx, `argoexec`)
-	return WorkflowExecutor{
-		PodName:                      podName,
-		podUID:                       podUID,
-		workflow:                     workflow,
-		workflowUID:                  workflowUID,
-		nodeID:                       nodeID,
+	return &WorkflowExecutor{
+		PodName:                      cfg.PodName,
+		podUID:                       cfg.PodUID,
+		workflow:                     cfg.WorkflowName,
+		workflowUID:                  cfg.WorkflowUID,
+		nodeID:                       cfg.NodeID,
 		ClientSet:                    clientset,
 		taskResultClient:             taskResultClient,
 		RESTClient:                   restClient,
-		Namespace:                    namespace,
+		Namespace:                    cfg.Namespace,
 		RuntimeExecutor:              cre,
-		Template:                     template,
-		IncludeScriptOutput:          includeScriptOutput,
-		Deadline:                     deadline,
+		Template:                     cfg.Template,
+		IncludeScriptOutput:          cfg.IncludeScriptOutput,
+		Deadline:                     cfg.Deadline,
 		Tracing:                      tracing,
 		memoizedConfigMaps:           map[string]string{},
-		memoizedSecrets:              map[string][]byte{},
 		errors:                       []error{},
-		annotationPatchTickDuration:  annotationPatchTickDuration,
-		readProgressFileTickDuration: readProgressFileTickDuration,
+		annotationPatchTickDuration:  cfg.AnnotationPatchTickDuration,
+		readProgressFileTickDuration: cfg.ReadProgressFileTickDuration,
+		progressFile:                 cfg.ProgressFile,
+		instanceID:                   cfg.InstanceID,
+		terminationGracePeriod:       cfg.TerminationGracePeriod,
+		artifactPluginNames:          cfg.ArtifactPluginNames,
+		removeLocalArtPath:           cfg.RemoveLocalArtPath,
+		initlessPod:                  cfg.InitlessPod,
+		retryBackoff:                 cfg.RetryBackoff,
+		resourceStateCheckInterval:   cfg.ResourceStateCheckInterval,
 	}, err
 }
 
@@ -213,7 +271,7 @@ func (we *WorkflowExecutor) loadArtifact(ctx context.Context, pluginName wfv1.Ar
 
 	if !art.HasLocationOrKey() {
 		if art.Optional {
-			logger.WithField("name", art.Name).Warn(ctx, "Ignoring optional artifact which was not supplied")
+			logger.WithField("name", art.Name).Info(ctx, "Ignoring optional artifact which was not supplied")
 			return nil
 		}
 		return argoerrs.Errorf(argoerrs.CodeNotFound, "required artifact '%s' not supplied", art.Name)
@@ -404,22 +462,23 @@ func (we *WorkflowExecutor) SaveArtifacts(ctx context.Context) (wfv1.Artifacts, 
 		return artifacts, argoerrs.InternalWrapError(err)
 	}
 
-	aggregateError := ""
+	var aggregateError strings.Builder
 	for _, art := range we.Template.Outputs.Artifacts {
 		span.AddEvent("upload artifact",
 			trace.WithAttributes(attribute.KeyValue{Key: "file", Value: attribute.StringValue(art.Name)}))
 		saved, err := we.saveArtifact(ctx, common.MainContainerName, &art)
 		if err != nil {
-			aggregateError += err.Error() + "; "
+			aggregateError.WriteString(err.Error())
+			aggregateError.WriteString("; ")
 		}
 		if saved {
 			artifacts = append(artifacts, art)
 		}
 	}
-	if aggregateError == "" {
+	if aggregateError.Len() == 0 {
 		return artifacts, nil
 	}
-	return artifacts, errors.New(aggregateError)
+	return artifacts, errors.New(aggregateError.String())
 }
 
 // save artifact
@@ -489,7 +548,7 @@ func (we *WorkflowExecutor) saveArtifactFromFile(ctx context.Context, art *wfv1.
 }
 
 func (we *WorkflowExecutor) maybeDeleteLocalArtPath(ctx context.Context, localArtPath string) {
-	if os.Getenv("REMOVE_LOCAL_ART_PATH") == "true" {
+	if we.removeLocalArtPath {
 		logger := logging.RequireLoggerFromContext(ctx)
 		logger.WithField("localArtPath", localArtPath).Info(ctx, "deleting local artifact")
 		// remove is best effort (the container will go away anyways).
@@ -652,10 +711,24 @@ func (we *WorkflowExecutor) isBaseImagePath(path string) bool {
 			if inArt.Optional && !inArt.HasLocationOrKey() {
 				return true
 			}
-			return false
+			// In init-less mode the input artifact is delivered as a symlink into
+			// the shared emptyDir rather than a per-artifact SubPath bind mount, and
+			// there is no /mainctrfs mirror for this path. A user that replaces the
+			// file — rm + recreate, or the idiomatic write-temp-then-rename — leaves
+			// a regular file in main's own filesystem while the emptyDir still holds
+			// the original input. Reading the emptyDir would silently upload the
+			// stale input as the output. The emissary, running inside main, has
+			// already tarred the live file to /var/run/argo/outputs/artifacts and
+			// the runtime executor reads it from there, so treat this as a base
+			// image path. (Legacy mode keeps reading the shared mount: there the
+			// SubPath bind mount makes main's writes land in the emptyDir, and rm
+			// fails with EBUSY, so the mount is always current.)
+			return we.initlessPod
 		}
 		if strings.HasPrefix(path, inArt.Path+"/") {
-			return false
+			// Output nested under an input artifact directory: the same init-less
+			// reasoning as the exact-match case above applies.
+			return we.initlessPod
 		}
 	}
 	return true
@@ -731,10 +804,20 @@ func (we *WorkflowExecutor) SaveLogs(ctx context.Context) []wfv1.Artifact {
 		for _, containerName := range containerNames {
 			// Saving logs
 			art, err := we.saveContainerLogs(ctx, tempLogsDir, containerName)
-			if err != nil {
-				we.AddError(ctx, err)
-			} else {
+			switch {
+			case err == nil:
 				logArtifacts = append(logArtifacts, *art)
+			case errors.Is(err, fs.ErrNotExist):
+				// The container produced no log file. This happens when it was
+				// killed before its command ran (e.g. a containerSet member whose
+				// dependency failed and was then SIGTERM'd). There are simply no
+				// logs to save, so skip it rather than failing the executor — in
+				// init-less mode a returned error crash-loops the supervisor and
+				// the pod never completes.
+				logging.RequireLoggerFromContext(ctx).WithField("container", containerName).
+					Warn(ctx, "no logs to save: container produced no output")
+			default:
+				we.AddError(ctx, err)
 			}
 		}
 	}
@@ -806,13 +889,18 @@ func (we *WorkflowExecutor) InitDriver(ctx context.Context, art *wfv1.Artifact) 
 	return driver, err
 }
 
-// GetConfigMapKey retrieves a configmap value and memoizes the result
+// GetConfigMapKey retrieves a configmap value and memoizes the result.
+// Safe to call concurrently from multiple plugin-load goroutines in init-less
+// mode; memoizedMu serializes map access.
 func (we *WorkflowExecutor) GetConfigMapKey(ctx context.Context, name, key string) (string, error) {
 	namespace := we.Namespace
 	cachedKey := fmt.Sprintf("%s/%s/%s", namespace, name, key)
+	we.memoizedMu.Lock()
 	if val, ok := we.memoizedConfigMaps[cachedKey]; ok {
+		we.memoizedMu.Unlock()
 		return val, nil
 	}
+	we.memoizedMu.Unlock()
 	configmapsIf := we.ClientSet.CoreV1().ConfigMaps(namespace)
 	var configmap *apiv1.ConfigMap
 	err := waitutil.Backoff(retry.DefaultRetry(ctx), func() (bool, error) {
@@ -825,23 +913,16 @@ func (we *WorkflowExecutor) GetConfigMapKey(ctx context.Context, name, key strin
 	}
 	// memoize all keys in the configmap since it's highly likely we will need to get a
 	// subsequent key in the configmap (e.g. username + password) and we can save an API call
+	we.memoizedMu.Lock()
 	for k, v := range configmap.Data {
 		we.memoizedConfigMaps[fmt.Sprintf("%s/%s/%s", namespace, name, k)] = v
 	}
 	val, ok := we.memoizedConfigMaps[cachedKey]
+	we.memoizedMu.Unlock()
 	if !ok {
 		return "", argoerrs.Errorf(argoerrs.CodeBadRequest, "configmap '%s' does not have the key '%s'", name, key)
 	}
 	return val, nil
-}
-
-// GetTerminationGracePeriodDuration returns the terminationGracePeriodSeconds of podSpec in Time.Duration format
-func GetTerminationGracePeriodDuration() time.Duration {
-	x, _ := strconv.ParseInt(os.Getenv(common.EnvVarTerminationGracePeriodSeconds), 10, 64)
-	if x > 0 {
-		return time.Duration(x) * time.Second
-	}
-	return 30 * time.Second
 }
 
 // CaptureScriptResult will add the stdout of a script template as output result
@@ -1278,17 +1359,17 @@ func (we *WorkflowExecutor) Wait(ctx context.Context) error {
 	containerNames := we.Template.GetMainContainerNames()
 	// only monitor progress if both tick durations are >0
 	if we.annotationPatchTickDuration != 0 && we.readProgressFileTickDuration != 0 {
-		go we.monitorProgress(ctx, os.Getenv(common.EnvVarProgressFile))
+		go we.monitorProgress(ctx, we.progressFile)
 	} else {
 		logger.WithField("annotationPatchTickDuration", we.annotationPatchTickDuration).WithField("readProgressFileTickDuration", we.readProgressFileTickDuration).Info(ctx, "monitoring progress disabled")
 	}
 
 	go we.monitorDeadline(ctx, containerNames)
 
-	err := retryutil.OnError(executorretry.ExecutorRetry(ctx), func(err error) bool {
+	err := retryutil.OnError(we.retryBackoff, func(err error) bool {
 		return errorsutil.IsTransientErr(ctx, err)
 	}, func() error {
-		return we.RuntimeExecutor.Wait(ctx, containerNames)
+		return we.waitMainContainers(ctx, containerNames)
 	})
 
 	logger.WithError(err).Info(ctx, "Main container completed")
@@ -1299,9 +1380,15 @@ func (we *WorkflowExecutor) Wait(ctx context.Context) error {
 	return nil
 }
 
+// waitMainContainers blocks until the given containers have completed, as
+// signalled by the emissary's per-container exit-code files.
+func (we *WorkflowExecutor) waitMainContainers(ctx context.Context, containerNames []string) error {
+	return we.RuntimeExecutor.Wait(ctx, containerNames)
+}
+
 // monitorProgress monitors for self-reported progress in the progressFile and patches the pod annotations with the parsed progress.
 //
-// The function reads the last line of the `progressFile` every `readFileTickDuration`.
+// The function watches the `progressFile` via inotify and re-parses the last line on every write.
 // If the line matches `N/M`, will set the progress annotation to the parsed progress value.
 // Every `annotationPatchTickDuration` the pod is patched with the updated annotations. This way the controller
 // gets notified of new self reported progress.
@@ -1309,11 +1396,52 @@ func (we *WorkflowExecutor) monitorProgress(ctx context.Context, progressFile st
 	logger := logging.RequireLoggerFromContext(ctx)
 	annotationPatchTicker := time.NewTicker(we.annotationPatchTickDuration)
 	defer annotationPatchTicker.Stop()
-	fileTicker := time.NewTicker(we.readProgressFileTickDuration)
-	defer fileTicker.Stop()
 
-	lastLine := ""
 	progressFile = filepath.Clean(progressFile)
+
+	// Ensure the parent directory exists so WatchFile can install its inotify
+	// watch. The progress file itself may never be created (the user's script
+	// is optional here), but its parent needs to be there for the watcher.
+	if err := os.MkdirAll(filepath.Dir(progressFile), 0o755); err != nil {
+		logger.WithError(err).WithField("file", progressFile).Info(ctx, "cannot create progress file parent dir, progress monitoring disabled")
+		return
+	}
+
+	// we.progress is read by the patch ticker (in this goroutine) and written
+	// by the inotify callback below (in another goroutine).
+	var mu sync.Mutex
+
+	go func() {
+		lastLine := ""
+		err := file.WatchFile(ctx, progressFile, func() {
+			data, readErr := os.ReadFile(progressFile)
+			if readErr != nil {
+				if !errors.Is(readErr, fs.ErrNotExist) {
+					logger.WithError(readErr).WithField("file", progressFile).Info(ctx, "unable to read progress file")
+				}
+				return
+			}
+			lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+			mostRecent := strings.TrimSpace(lines[len(lines)-1])
+
+			if mostRecent == "" || mostRecent == lastLine {
+				return
+			}
+			lastLine = mostRecent
+
+			if progress, ok := wfv1.ParseProgress(lastLine); ok {
+				logger.WithField("progress", progress).Info(ctx, "")
+				mu.Lock()
+				we.progress = progress
+				mu.Unlock()
+			} else {
+				logger.WithField("line", lastLine).Info(ctx, "unable to parse progress")
+			}
+		})
+		if err != nil && !errors.Is(err, context.Canceled) {
+			logger.WithError(err).WithField("file", progressFile).Info(ctx, "progress file watcher exited")
+		}
+	}()
 
 	for {
 		select {
@@ -1321,32 +1449,20 @@ func (we *WorkflowExecutor) monitorProgress(ctx context.Context, progressFile st
 			logger.WithError(ctx.Err()).Info(ctx, "stopping progress monitor (context done)")
 			return
 		case <-annotationPatchTicker.C:
-			if err := we.reportResult(ctx, wfv1.NodeResult{Progress: we.progress}); err != nil {
+			mu.Lock()
+			current := we.progress
+			mu.Unlock()
+			if current == "" {
+				continue
+			}
+			if err := we.reportResult(ctx, wfv1.NodeResult{Progress: current}); err != nil {
 				logger.WithError(err).Info(ctx, "failed to report progress")
 			} else {
-				we.progress = ""
-			}
-		case <-fileTicker.C:
-			data, err := os.ReadFile(progressFile)
-			if err != nil {
-				if !errors.Is(err, fs.ErrNotExist) {
-					logger.WithError(err).WithField("file", progressFile).Info(ctx, "unable to watch file")
+				mu.Lock()
+				if we.progress == current {
+					we.progress = ""
 				}
-				continue
-			}
-			lines := strings.Split(strings.TrimSpace(string(data)), "\n")
-			mostRecent := strings.TrimSpace(lines[len(lines)-1])
-
-			if mostRecent == "" || mostRecent == lastLine {
-				continue
-			}
-			lastLine = mostRecent
-
-			if progress, ok := wfv1.ParseProgress(lastLine); ok {
-				logger.WithField("progress", progress).Info(ctx, "")
-				we.progress = progress
-			} else {
-				logger.WithField("line", lastLine).Info(ctx, "unable to parse progress")
+				mu.Unlock()
 			}
 		}
 	}
@@ -1383,8 +1499,7 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerNames 
 func (we *WorkflowExecutor) killContainers(ctx context.Context, containerNames []string) {
 	logger := logging.RequireLoggerFromContext(ctx)
 	logger.WithField("containerNames", containerNames).Info(ctx, "Killing containers")
-	terminationGracePeriodDuration := GetTerminationGracePeriodDuration()
-	if err := we.RuntimeExecutor.Kill(ctx, containerNames, terminationGracePeriodDuration); err != nil {
+	if err := we.RuntimeExecutor.Kill(ctx, containerNames, we.terminationGracePeriod); err != nil {
 		logger.WithField("containerNames", containerNames).WithError(err).Warn(ctx, "Failed to kill")
 	}
 }
@@ -1396,16 +1511,25 @@ func (we *WorkflowExecutor) Init() error {
 	return nil
 }
 
+// WriteTemplate writes the template JSON to the shared volume without
+// copying the argoexec binary. Used by the init-less supervisor, where
+// the binary is delivered via a Kubernetes image volume.
+func (we *WorkflowExecutor) WriteTemplate() error {
+	if w, ok := we.RuntimeExecutor.(TemplateWriter); ok {
+		return w.WriteTemplate(we.Template)
+	}
+	return nil
+}
+
 func (we *WorkflowExecutor) KillArtifactSidecars(ctx context.Context) error {
 	logger := logging.RequireLoggerFromContext(ctx)
-	pluginNamesEnv := os.Getenv(common.EnvVarArtifactPluginNames)
-	if pluginNamesEnv == "" {
+	if we.artifactPluginNames == "" {
 		logger.Info(ctx, "no artifact sidecars to kill")
 		return nil
 	}
-	artifactSidecars := strings.Split(pluginNamesEnv, ",")
+	artifactSidecars := common.SplitPluginNames(we.artifactPluginNames)
 	logger.WithFields(logging.Fields{"numSidecars": len(artifactSidecars), "artifactSidecars": artifactSidecars}).Info(ctx, "killing artifact sidecars")
-	err := we.RuntimeExecutor.Kill(ctx, artifactSidecars, GetTerminationGracePeriodDuration())
+	err := we.RuntimeExecutor.Kill(ctx, artifactSidecars, we.terminationGracePeriod)
 	if err != nil {
 		logger.WithError(err).WithFields(logging.Fields{"artifactSidecars": artifactSidecars}).Error(ctx, "failed to kill artifact sidecars")
 		return err

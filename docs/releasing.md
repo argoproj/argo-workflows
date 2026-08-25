@@ -57,6 +57,10 @@ If you're releasing a version of Argo where the minor or major version is changi
 You must start with at least one release candidate.
 See [Release Cycle](releases.md#release-cycle) for information about release candidates.
 
+### Major releases
+
+Ensure all of the references to `argo-workflows/vX` are updated to `argo-workflows/vX+1` in Makefile and all the go files etc.
+
 ### Release candidates
 
 For release candidates you should tag `main` for the release.
@@ -83,6 +87,7 @@ Ensure you've run `make docs` and that docs/tested-kubernetes-versions.md is upd
 This must be done on the new branch (otherwise it won't generate a file) but can be pushed after the release is generated.
 
 Now you can add the branch to ["Read the Docs"](https://app.readthedocs.org/projects/argo-workflows/) and then the new branch should be built and published.
+Set the new branch as the "Default version".
 Close the release candidate GitHub issue and unpin it, and create a new issue for patches to this branch.
 
 Update `/renovate.json` with just the live branches being renovated.

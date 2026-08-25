@@ -76,7 +76,7 @@ func TestMultiInitWithWorkflows(t *testing.T) {
 	throttler := NewMultiThrottler(1, 1, func(key string) { queuedKey = key })
 	ctx := logging.TestContext(t.Context())
 
-	wfclientset := fakewfclientset.NewSimpleClientset(
+	wfclientset := fakewfclientset.NewClientset(
 		wfv1.MustUnmarshalWorkflow(`
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -207,12 +207,18 @@ func TestPriorityAcrossNamespaces(t *testing.T) {
 func TestParallelismUpdate(t *testing.T) {
 	assert := assert.New(t)
 	throttler := NewMultiThrottler(4, 0, func(Key) {})
-	throttler.Add("a/0", 0, time.Now())
-	throttler.Add("b/0", 0, time.Now())
-	throttler.Add("c/0", 0, time.Now())
-	throttler.Add("d/0", 0, time.Now())
-	throttler.Add("e/0", 0, time.Now())
-	throttler.Add("f/0", 0, time.Now())
+	// Each item is in its own namespace, so admission order is decided across
+	// namespaces by creationTime. Use strictly increasing times rather than
+	// time.Now() for every Add: on coarse-resolution clocks (e.g. Windows) the
+	// calls can return identical instants, and the resulting ties are broken by
+	// map-iteration order, making this test flaky.
+	now := time.Now()
+	throttler.Add("a/0", 0, now)
+	throttler.Add("b/0", 0, now.Add(1*time.Millisecond))
+	throttler.Add("c/0", 0, now.Add(2*time.Millisecond))
+	throttler.Add("d/0", 0, now.Add(3*time.Millisecond))
+	throttler.Add("e/0", 0, now.Add(4*time.Millisecond))
+	throttler.Add("f/0", 0, now.Add(5*time.Millisecond))
 
 	assert.True(throttler.Admit("a/0"))
 	assert.True(throttler.Admit("b/0"))
@@ -234,4 +240,23 @@ func TestNamespaceParallelismUpdate(t *testing.T) {
 	throttler.Add("argo/b", 0, time.Now())
 	assert.True(throttler.Admit("argo/a"))
 	assert.False(throttler.Admit("argo/b"))
+}
+
+// TestNamespaceParallelismDefaultUpdate verifies that raising the default namespace parallelism
+// at runtime admits a previously throttled workflow in a namespace without an explicit override.
+func TestNamespaceParallelismDefaultUpdate(t *testing.T) {
+	assert := assert.New(t)
+	throttler := NewMultiThrottler(4, 1, func(Key) {})
+	throttler.Add("default/a", 0, time.Now())
+	throttler.Add("default/b", 0, time.Now())
+	throttler.Add("default/c", 0, time.Now())
+	assert.True(throttler.Admit("default/a"))
+	assert.False(throttler.Admit("default/b"))
+	assert.False(throttler.Admit("default/c"))
+
+	// Raising the default limit must apply to namespaces without an explicit override,
+	// and must admit all newly eligible workflows at once, not just one.
+	throttler.UpdateNamespaceParallelismDefault(3)
+	assert.True(throttler.Admit("default/b"))
+	assert.True(throttler.Admit("default/c"))
 }

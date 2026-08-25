@@ -49,6 +49,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/server/apiserver/accesslog"
 	"github.com/argoproj/argo-workflows/v4/server/artifacts"
 	"github.com/argoproj/argo-workflows/v4/server/auth"
+	authcookie "github.com/argoproj/argo-workflows/v4/server/auth/cookie"
 	"github.com/argoproj/argo-workflows/v4/server/auth/sso"
 	"github.com/argoproj/argo-workflows/v4/server/auth/webhook"
 	"github.com/argoproj/argo-workflows/v4/server/cache"
@@ -57,6 +58,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/server/event"
 	"github.com/argoproj/argo-workflows/v4/server/eventsource"
 	"github.com/argoproj/argo-workflows/v4/server/info"
+	"github.com/argoproj/argo-workflows/v4/server/logout"
 	"github.com/argoproj/argo-workflows/v4/server/sensor"
 	"github.com/argoproj/argo-workflows/v4/server/static"
 	serversync "github.com/argoproj/argo-workflows/v4/server/sync"
@@ -156,6 +158,9 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (Server, error) {
 		if err != nil {
 			return nil, err
 		}
+		if err = logout.ValidateRedirectURL(c.SSO.LogoutRedirectURL); err != nil {
+			return nil, fmt.Errorf("invalid sso.logoutRedirectUrl: %w", err)
+		}
 		ssoIf, err = sso.New(ctx, c.SSO, opts.Clients.Kubernetes.CoreV1().Secrets(opts.Namespace), opts.BaseHRef, opts.TLSConfig != nil)
 		if err != nil {
 			return nil, err
@@ -217,8 +222,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	if err != nil {
 		log.WithFatal().Error(ctx, err.Error())
 	}
-	err = config.Sanitize(as.allowedLinkProtocol)
-	if err != nil {
+	if err = config.Sanitize(as.allowedLinkProtocol); err != nil {
 		log.WithFatal().Error(ctx, err.Error())
 	}
 
@@ -243,7 +247,11 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	wfArchive := persist.NullWorkflowArchive
 	persistence := config.Persistence
 	if persistence != nil {
-		session, dbType, sessionErr := sqldb.CreateDBSession(ctx, as.clients.Kubernetes, as.namespace, persistence.DBConfig)
+		sessionProxy, sessionErr := sqldb.NewSessionProxy(ctx, sqldb.SessionProxyConfig{
+			KubectlConfig: as.clients.Kubernetes,
+			Namespace:     as.namespace,
+			DBConfig:      persistence.DBConfig,
+		})
 		if sessionErr != nil {
 			log.WithFatal().Error(ctx, sessionErr.Error())
 		}
@@ -253,13 +261,13 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		}
 		// we always enable node offload, as this is read-only for the Argo Server, i.e. you can turn it off if you
 		// like and the controller won't offload newly created workflows, but you can still read them
-		offloadRepo, err = persist.NewOffloadNodeStatusRepo(ctx, log, session, persistence.GetClusterName(), tableName)
+		offloadRepo, err = persist.NewOffloadNodeStatusRepo(ctx, log, sessionProxy, persistence.GetClusterName(), tableName)
 		if err != nil {
 			log.WithError(err).WithFatal().Error(ctx, err.Error())
 		}
 		// we always enable the archive for the Argo Server, as the Argo Server does not write records, so you can
 		// disable the archiving - and still read old records
-		wfArchive = persist.NewWorkflowArchive(session, persistence.GetClusterName(), as.managedNamespace, instanceIDService, dbType)
+		wfArchive = persist.NewWorkflowArchive(sessionProxy, persistence.GetClusterName(), as.managedNamespace, instanceIDService)
 	}
 	resourceCacheNamespace := getResourceCacheNamespace(as.managedNamespace)
 	wftmplStore, err := workflowtemplate.NewInformer(as.restConfig, resourceCacheNamespace)
@@ -287,7 +295,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	if err != nil {
 		log.WithFatal().Error(ctx, err.Error())
 	}
-	workflowServer := workflow.NewServer(ctx, instanceIDService, offloadRepo, wfArchive, as.clients.Workflow, wfStore, wfStore, wftmplStore, cwftmplInformer, config.WorkflowDefaults, &resourceCacheNamespace)
+	workflowServer := workflow.NewServer(ctx, instanceIDService, offloadRepo, wfArchive, as.clients.Workflow, wfStore, wfStore, wftmplStore, cwftmplInformer, config.WorkflowDefaults, &resourceCacheNamespace, artifactRepositories)
 	grpcServer := as.newGRPCServer(ctx, instanceIDService, workflowServer, wftmplStore, cwftmplInformer, wfArchiveServer, syncServer, eventServer, config.Links, config.Columns, config.NavColor, config.WorkflowDefaults)
 	httpServer := as.newHTTPServer(ctx, port, artifactServer)
 
@@ -316,13 +324,25 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 
 	handler := grpcutil.NewMuxHandler(grpcServer, httpServer)
 
+	// Enable HTTP/1.1, HTTP/2 over TLS (via ALPN), and unencrypted HTTP/2 (h2c)
+	// so gRPC can be served alongside HTTP both with and without TLS. This
+	// replaces the deprecated h2c.NewHandler wrapper.
+	protocols := new(http.Protocols)
+	protocols.SetHTTP1(true)
+	protocols.SetHTTP2(true)
+	protocols.SetUnencryptedHTTP2(true)
+	muxServer := &http.Server{
+		Handler:   handler,
+		Protocols: protocols,
+	}
+
 	wftmplStore.Run(ctx, as.stopCh)
 	if cwftmplInformer != nil {
 		cwftmplInformer.Run(ctx, as.stopCh)
 	}
 	go eventServer.Run(ctx, as.stopCh)
 	go workflowServer.Run(as.stopCh)
-	go func() { as.checkServeErr(ctx, "httpServer", http.Serve(conn, handler)) }()
+	go func() { as.checkServeErr(ctx, "httpServer", muxServer.Serve(conn)) }()
 	url := "http://localhost" + address
 	if as.tlsConfig != nil {
 		url = "https://localhost" + address
@@ -452,14 +472,21 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 		mux.HandleFunc("/artifacts-by-uid/", artifactServer.GetOutputArtifactByUID)
 		mux.HandleFunc("/input-artifacts-by-uid/", artifactServer.GetInputArtifactByUID)
 		mux.HandleFunc("/artifact-files/", artifactServer.GetArtifactFile)
+		mux.HandleFunc("/upload-artifacts/", artifactServer.UploadInputArtifact)
 	}
 	mux.Handle("/oauth2/redirect", handlers.ProxyHeaders(http.HandlerFunc(as.oAuth2Service.HandleRedirect)))
 	mux.Handle("/oauth2/callback", handlers.ProxyHeaders(http.HandlerFunc(as.oAuth2Service.HandleCallback)))
+	logoutURL := as.oAuth2Service.LogoutURL()
+	logoutHandler, err := logout.NewHandler(as.baseHRef, as.oAuth2Service.LogoutRedirectURL(), as.tlsConfig != nil, logoutURL, as.oAuth2Service.ClientID())
+	if err != nil {
+		log.WithError(err).Warn(ctx, "Ignoring invalid OIDC end-session endpoint")
+	}
+	mux.Handle(logout.LogoutEndpoint, logoutHandler)
 	mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
 		if os.Getenv("ARGO_SERVER_METRICS_AUTH") != "false" {
-			md := metadata.New(map[string]string{"authorization": r.Header.Get("Authorization")})
+			md := metadata.New(map[string]string{authcookie.AuthorizationMetadataKey: r.Header.Get("Authorization")})
 			for _, c := range r.Cookies() {
-				if c.Name == "authorization" {
+				if c.Name == authcookie.AuthorizationCookieName {
 					md.Append("cookie", c.Value)
 				}
 			}

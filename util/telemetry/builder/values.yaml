@@ -51,7 +51,16 @@ attributes:
     type: bool
   - name: LockName
     displayName: lock_name
-    description: The name of the synchronization lock
+    description: "⚠️ The name of the synchronization lock"
+  - name: LockNamespace
+    displayName: namespace
+    description: The namespace of the lock
+  - name: LockStorage
+    displayName: storage
+    description: "The storage backend of the lock: `configmap` (in-memory) or `database` (persisted)"
+  - name: LockType
+    displayName: type
+    description: "The type of the lock: `mutex` or `semaphore`"
   - name: LogLevel
     displayName: level
     description: The log level of the message
@@ -223,6 +232,41 @@ metrics:
       - name: RequestVerb
       - name: RequestCode
     unit: "{request}"
+    type: Int64Counter
+  - name: LocksHeld
+    description: A gauge of the number of synchronization locks currently held
+    extendedDescription: |
+      Reports, per lock, how many holders currently hold the lock right now. For a mutex this is
+      `0` or `1`; for a semaphore it is between `0` and the semaphore limit. Sourced from the live
+      lock state at scrape time, so it is correct across controller restarts and leader failover.
+    attributes:
+      - name: LockType
+      - name: LockStorage
+      - name: LockName
+      - name: LockNamespace
+    unit: "{lock}"
+    type: Int64ObservableGauge
+  - name: LocksPending
+    description: A gauge of the number of pending synchronization lock requests
+    extendedDescription: |
+      Reports, per lock, how many workflows are currently waiting to acquire the lock. A sustained
+      non-zero value alongside a held lock is the clearest signal of lock contention or an
+      unreleased lock blocking other workflows.
+    attributes:
+      - name: LockType
+      - name: LockStorage
+      - name: LockName
+      - name: LockNamespace
+    unit: "{lock}"
+    type: Int64ObservableGauge
+  - name: LocksTakenTotal
+    description: A counter of the number of synchronization locks taken
+    attributes:
+      - name: LockType
+      - name: LockStorage
+      - name: LockName
+      - name: LockNamespace
+    unit: "{lock}"
     type: Int64Counter
   - name: LogMessages
     description: "A count of log messages emitted by the controller by log level: `error`, `warn` and `info`"
@@ -499,10 +543,10 @@ spans:
     parents: [SaveArtifact]
   - name: CaptureScriptResult
     description: Capturing script output as a result
-    parents: [RunWaitContainer]
+    parents: [RunWaitContainer, RunSupervisorContainer]
   - name: CreateTaskResult
     description: Creating the WorkflowTaskResult
-    parents: [RunWaitContainer, RunMainContainer]
+    parents: [RunWaitContainer, RunMainContainer, RunSupervisorContainer]
   - name: CreateWorkflowPod
     description: Creating a workflow pod for a node
     parents: [Node]
@@ -515,7 +559,7 @@ spans:
       - name: ArtifactPath
   - name: LoadArtifacts
     description: Load the artifacts
-    parents: [RunInitContainer]
+    parents: [RunInitContainer, RunSupervisorContainer]
   - name: Node
     description: One node in the DAG of a workflow
     attributes:
@@ -535,10 +579,10 @@ spans:
     kind: Producer
   - name: PatchTaskResult
     description: Patching the WorkflowTaskResult
-    parents: [RunWaitContainer, RunMainContainer]
+    parents: [RunWaitContainer, RunMainContainer, RunSupervisorContainer]
   - name: PatchTaskResultLabels
     description: Patching the labels of WorkflowTaskResult
-    parents: [RunWaitContainer, RunMainContainer]
+    parents: [RunWaitContainer, RunMainContainer, RunSupervisorContainer]
   - name: PersistUpdates
     description: Persisting workflow status updates to Kubernetes
     parents: [Workflow]
@@ -572,6 +616,12 @@ spans:
     attributes:
       - name: WorkflowName
       - name: WorkflowNamespace
+  - name: RunSupervisorContainer
+    description: Run the supervisor container of a workload (init-less mode)
+    parents: [CreateWorkflowPod]
+    attributes:
+      - name: WorkflowName
+      - name: WorkflowNamespace
   - name: RunWaitContainer
     description: Run the wait container of a workload
     parents: [CreateWorkflowPod]
@@ -589,7 +639,7 @@ spans:
     parents: [SaveArtifacts]
   - name: SaveArtifacts
     description: Save all the artifacts
-    parents: [RunWaitContainer]
+    parents: [RunWaitContainer, RunSupervisorContainer]
   - name: SaveContainerLogs
     description: Saving logs for a specific container
     parents: [SaveLogs]
@@ -597,10 +647,10 @@ spans:
       - name: ContainerName
   - name: SaveLogs
     description: Saving container logs as artifacts
-    parents: [RunWaitContainer]
+    parents: [RunWaitContainer, RunSupervisorContainer]
   - name: StageFiles
     description: Staging script or manifest files for execution
-    parents: [RunInitContainer]
+    parents: [RunInitContainer, RunSupervisorContainer]
   - name: StartupCacheSync
     description: Controllers informer caches have been synchronized
     parents: [StartupController]
@@ -627,7 +677,7 @@ spans:
       This is controlled by --qps and --burst on the workflow-controller
   - name: WaitWorkload
     description: Wait for the workload to finish
-    parents: [RunWaitContainer]
+    parents: [RunWaitContainer, RunSupervisorContainer]
   - name: Workflow
     description: The trace of the lifetime of a workflow
     attributes:

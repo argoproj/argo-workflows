@@ -26,7 +26,9 @@ const config = {
         path: __dirname + '/dist/app',
     },
 
-    devtool: isProd ? 'source-map' : 'eval',
+    // Enable source maps in production for easier debugging, but use faster eval-source-map in development for better performance
+    // Docs: https://webpack.js.org/configuration/devtool/
+    devtool: isProd ? 'source-map' : 'eval-source-map',
 
     resolve: {
         extensions: ['.ts', '.tsx', '.js', '.json', '.ttf'],
@@ -127,7 +129,7 @@ const config = {
         proxy: [
             {
                 // Proxy paths handled by the API server defined at https://github.com/argoproj/argo-workflows/blob/cb7ebd9393f3322abf455d906e39a3a976421b30/server/apiserver/argoserver.go#L413-L428
-                context: ['api/v1', 'artifact-files', 'artifacts', 'input-artifacts', 'artifacts-by-uid', 'input-artifacts-by-uid', 'oauth2']
+                context: ['api/v1', 'artifact-files', 'artifacts', 'input-artifacts', 'artifacts-by-uid', 'input-artifacts-by-uid', 'upload-artifacts', 'oauth2', 'auth']
                     .map(path => `${base}${path}`),
                 target: proxyTarget,
                 secure: false,

@@ -30,6 +30,74 @@ You should ensure that the credentials provided to your workflow limits access t
 
 Argo-workflows explicitly allows path traversal where a key containing "../" may allow users to traverse up the "directory structure".
 
+### Abandoned Upload Cleanup
+
+⚠️ When [uploading input artifacts from the UI](workflow-submitting-workflow.md), the uploaded file
+is written to `uploads/{namespace}/{uuid}/{filename}` in the artifact repository before the workflow
+is submitted. If the workflow is never submitted (the user navigates away, or the browser tab is
+closed), that object is not tied to any workflow's lifecycle and is not automatically deleted.
+
+Operators should configure a lifecycle/TTL rule on the `uploads/` prefix of their artifact bucket to
+reclaim these abandoned uploads.
+
+**S3**:
+
+```json
+{
+  "Rules": [
+    {
+      "ID": "expire-abandoned-uploads",
+      "Filter": { "Prefix": "uploads/" },
+      "Status": "Enabled",
+      "Expiration": { "Days": 7 }
+    }
+  ]
+}
+```
+
+```bash
+aws s3api put-bucket-lifecycle-configuration \
+  --bucket my-artifact-bucket \
+  --lifecycle-configuration file://lifecycle.json
+```
+
+**GCS**:
+
+```json
+{
+  "rule": [
+    {
+      "action": { "type": "Delete" },
+      "condition": { "age": 7, "matchesPrefix": ["uploads/"] }
+    }
+  ]
+}
+```
+
+```bash
+gcloud storage buckets update gs://my-artifact-bucket \
+  --lifecycle-file=lifecycle.json
+```
+
+**OSS (Alibaba Cloud)**:
+
+```json
+{
+  "Rule": [
+    {
+      "ID": "expire-abandoned-uploads",
+      "Prefix": "uploads/",
+      "Status": "Enabled",
+      "Expiration": { "Days": 7 }
+    }
+  ]
+}
+```
+
+```bash
+aliyun oss lifecycle --method put oss://my-artifact-bucket lifecycle.json
+```
+
 ## Configuring MinIO
 
 You can install MinIO into your cluster via Helm.
@@ -400,7 +468,7 @@ $ #create a ram user to access bucket.
 $ aliyun ram CreateUser --UserName $mybucket-user
 $ # create ram policy with the limit permission.
 $ aliyun ram CreatePolicy --PolicyName $mybucket-policy --PolicyDocument "$(cat policy.json)"
-$ # attch ram policy to the ram user.
+$ # attach ram policy to the ram user.
 $ aliyun ram AttachPolicyToUser --UserName $mybucket-user --PolicyName $mybucket-policy --PolicyType Custom
 $ # create access key and secret key for the ram user.
 $ aliyun ram CreateAccessKey --UserName $mybucket-user > access-key.json
@@ -670,10 +738,16 @@ data:
         name: my-minio-cred
         key: secretKey
       useSDKCreds: true               #tells argo to use AWS SDK's default provider chain, enable for things like IRSA support
+      addressingStyle: "virtual-hosted" #optional; "" (auto-detect, default), "path", or "virtual-hosted". Set for providers that only support virtual-hosted-style addressing
 ```
 
 The secrets are retrieved from the namespace you use to run your workflows. Note
 that you can specify a `keyFormat`.
+
+Some S3-compatible providers only support virtual-hosted-style bucket addressing
+and reject path-style requests. If you hit addressing errors, set `addressingStyle`
+to `virtual-hosted` (or `path` to force path-style). The default `""` lets the
+client auto-detect.
 
 ### Google Cloud Storage (GCS)
 

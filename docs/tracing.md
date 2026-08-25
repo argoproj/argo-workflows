@@ -47,6 +47,7 @@ flowchart TD
     ReconcileTaskResults[<a href='#reconcile_task_results'>reconcile_task_results</a>]
     RunInitContainer[<a href='#run_init_container'>run_init_container</a>]
     RunMainContainer[<a href='#run_main_container'>run_main_container</a>]
+    RunSupervisorContainer[<a href='#run_supervisor_container'>run_supervisor_container</a>]
     RunWaitContainer[<a href='#run_wait_container'>run_wait_container</a>]
     RunWorkload[<a href='#run_workload'>run_workload</a>]
     SaveArtifacts[<a href='#save_artifacts'>save_artifacts</a>]
@@ -76,20 +77,30 @@ flowchart TD
     ReconcileWorkflow --> ReconcileTaskResults
     CreateWorkflowPod --> RunInitContainer
     CreateWorkflowPod --> RunMainContainer
+    CreateWorkflowPod --> RunSupervisorContainer
     CreateWorkflowPod --> RunWaitContainer
     RunMainContainer --> RunWorkload
     RunWaitContainer --> SaveArtifacts
+    RunSupervisorContainer --> SaveArtifacts
     RunWaitContainer --> SaveLogs
+    RunSupervisorContainer --> SaveLogs
     RunInitContainer --> StageFiles
+    RunSupervisorContainer --> StageFiles
     RunWaitContainer --> WaitWorkload
+    RunSupervisorContainer --> WaitWorkload
     RunWaitContainer --> CaptureScriptResult
+    RunSupervisorContainer --> CaptureScriptResult
     RunWaitContainer --> CreateTaskResult
     RunMainContainer --> CreateTaskResult
+    RunSupervisorContainer --> CreateTaskResult
     RunInitContainer --> LoadArtifacts
+    RunSupervisorContainer --> LoadArtifacts
     RunWaitContainer --> PatchTaskResult
     RunMainContainer --> PatchTaskResult
+    RunSupervisorContainer --> PatchTaskResult
     RunWaitContainer --> PatchTaskResultLabels
     RunMainContainer --> PatchTaskResultLabels
+    RunSupervisorContainer --> PatchTaskResultLabels
     RunMainContainer --> ProcessDataTemplate
     ReconcileTaskResults --> ReconcileTaskResult
     SaveArtifacts --> SaveArtifact
@@ -231,6 +242,15 @@ Run the main container of a workload.
 | `name`      | The name of the workflow              |
 | `namespace` | The namespace that the Workflow is in |
 
+#### `run_supervisor_container`
+
+Run the supervisor container of a workload (init-less mode).
+
+|  attribute  |              explanation              |
+|-------------|---------------------------------------|
+| `name`      | The name of the workflow              |
+| `namespace` | The namespace that the Workflow is in |
+
 #### `run_wait_container`
 
 Run the wait container of a workload.
@@ -297,7 +317,7 @@ Attempting to acquire a synchronization lock.
 
 |  attribute  |                explanation                 |
 |-------------|--------------------------------------------|
-| `lock_name` | The name of the synchronization lock       |
+| `lock_name` | ⚠️ The name of the synchronization lock     |
 | `acquired`  | Whether the lock was successfully acquired |
 
 #### `unarchive_artifact`

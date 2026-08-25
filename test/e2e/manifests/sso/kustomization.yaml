@@ -4,6 +4,6 @@ kind: Kustomization
 components:
 - ../components/base
 - ../../../../manifests/components/sso
-- ../components/local-argo
+- ../components/in-cluster-argo
 
 namespace: argo

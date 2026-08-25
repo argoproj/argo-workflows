@@ -267,6 +267,10 @@ data:
 
   # enable persistence using postgres
   persistence: |
+    # Timeout in seconds for establishing a database connection. Default 5s.
+    # Prevents the controller from hanging indefinitely when the DB is unreachable
+    # or half-open; on timeout it fails fast so Kubernetes can restart it.
+    connectionTimeoutSeconds: 5
     connectionPool:
       maxIdleConns: 100
       maxOpenConns: 0
@@ -308,6 +312,10 @@ data:
       # azureToken:
       #   enabled: true
       #   scope: https://ossrdbms-aad.database.windows.net/.default
+      # awsRDSToken specifies if the password should be fetched as an AWS RDS IAM auth token
+      # awsRDSToken:
+      #   enabled: true
+      #   region: us-east-1
 
     # Optional config for mysql:
     # mysql:
@@ -328,6 +336,11 @@ data:
   synchronization: |
     # Enable or disable database synchronization API (default: false)
     enableAPI: false
+
+    # Timeout in seconds for establishing a database connection. Default 5s.
+    # Prevents the controller from hanging indefinitely when the DB is unreachable
+    # or half-open; on timeout it fails fast so Kubernetes can restart it.
+    connectionTimeoutSeconds: 5
 
     # Connection pool settings, similar to persistence connectionPool
     connectionPool:
@@ -376,6 +389,10 @@ data:
       # azureToken:
       #   enabled: true
       #   scope: https://ossrdbms-aad.database.windows.net/.default
+      # awsRDSToken specifies if the password should be fetched as an AWS RDS IAM auth token
+      # awsRDSToken:
+      #   enabled: true
+      #   region: us-east-1
 
     # MySQL database configuration (alternative to PostgreSQL)
     # mysql:
@@ -455,6 +472,11 @@ data:
     # be in the form <argo-server-root-url>/oauth2/callback. It must be
     # browser-accessible. If omitted, will be automatically generated.
     redirectUrl: https://argo-server/oauth2/callback
+    # Absolute URL to redirect to after logout in SSO mode. It additionally enables
+    # OIDC provider logout when the provider advertises an end_session_endpoint, and
+    # must be registered with the provider as a post-logout redirect URI. The server
+    # fails to start in SSO mode if it is not an absolute HTTP(S) URL. (optional) >= v4.2.
+    logoutRedirectUrl: https://argo-server/logged-out
     # Additional scopes to request. Typically needed for SSO RBAC. >= v2.12
     scopes:
      - groups
@@ -478,3 +500,9 @@ data:
   #     Workflow cannot run an arbitrary Workflow, use this option.
   workflowRestrictions: |
     templateReferencing: Strict
+  
+  # disableAgentPodCreation disables the creation of agent pods for HTTP and Plugin templates. 
+  # This is useful when external agents are responsible for executing these templates and the controller should not create agent pods. 
+  # Note: when this is set to true, HTTP templates will not be reconciled and the controller will not attempt to create agent pods for them.
+  # Defaults to false
+  disableAgentPodCreation: "false"

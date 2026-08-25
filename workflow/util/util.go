@@ -34,7 +34,6 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/informers/internalinterfaces"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo-workflows/v4/workflow/creator"
@@ -46,9 +45,11 @@ import (
 	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	cmdutil "github.com/argoproj/argo-workflows/v4/util/cmd"
 	errorsutil "github.com/argoproj/argo-workflows/v4/util/errors"
+	informerutil "github.com/argoproj/argo-workflows/v4/util/informer"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/retry"
 	unstructutil "github.com/argoproj/argo-workflows/v4/util/unstructured"
+	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
 	waitutil "github.com/argoproj/argo-workflows/v4/util/wait"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
@@ -78,6 +79,8 @@ func NewWorkflowInformer(ctx context.Context, dclient dynamic.Interface, ns stri
 		tweakListRequestListOptions,
 		tweakWatchRequestListOptions,
 	)
+	//nolint:errcheck // the error only happens if the informer was already started, and it hasn't been
+	informer.SetTransform(informerutil.StripManagedFields)
 	return informer
 }
 
@@ -240,7 +243,7 @@ func PopulateSubmitOpts(command *cobra.Command, submitOpts *wfv1.SubmitOpts, par
 	}
 }
 
-// Apply the Submit options into workflow object
+// ApplySubmitOpts applies the submit options to a workflow object.
 func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 	if wf == nil {
 		return fmt.Errorf("workflow cannot be nil")
@@ -290,6 +293,10 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 	if err != nil {
 		return err
 	}
+	err = overrideArtifacts(wf, opts.Artifacts)
+	if err != nil {
+		return err
+	}
 	if opts.GenerateName != "" {
 		wf.GenerateName = opts.GenerateName
 	}
@@ -327,6 +334,112 @@ func overrideParameters(wf *wfv1.Workflow, parameters []string) error {
 			wf.Status.StoredWorkflowSpec.Arguments.Parameters = newParams
 		}
 	}
+	return nil
+}
+
+// ParseArtifactOverrides parses "name=key" override strings into a map, keyed by artifact name.
+// Fails fast on the first malformed entry (no "=", or an empty name or key). If the same name
+// appears more than once, the last occurrence wins.
+func ParseArtifactOverrides(overrides []string) (map[string]string, error) {
+	result := make(map[string]string, len(overrides))
+	for _, artifactStr := range overrides {
+		parts := strings.SplitN(artifactStr, "=", 2)
+		if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+			return nil, fmt.Errorf("expected artifact of the form: NAME=KEY. Received: %s", artifactStr)
+		}
+		result[parts[0]] = parts[1]
+	}
+	return result, nil
+}
+
+// ApplyOverridesToTemplateArtifacts returns a deep copy of each artifact in templateArtifacts
+// whose name has an entry in overrides, with its key set to the override value. Artifacts
+// without a matching override are omitted from the result. Every override must match a
+// template artifact; an override naming an unknown artifact is an error rather than a silent
+// no-op, so a typo'd or stale override does not run the workflow with default settings after
+// the caller was told the upload succeeded. This is a pure function: it does not resolve
+// artifact repositories or mutate its inputs.
+func ApplyOverridesToTemplateArtifacts(templateArtifacts []wfv1.Artifact, overrides map[string]string) ([]wfv1.Artifact, error) {
+	applied := make([]wfv1.Artifact, 0, len(overrides))
+	consumed := make(map[string]bool, len(overrides))
+	for _, tmplArt := range templateArtifacts {
+		newKey, ok := overrides[tmplArt.Name]
+		if !ok {
+			continue
+		}
+		consumed[tmplArt.Name] = true
+		artCopy := tmplArt.DeepCopy()
+		if err := artCopy.SetKey(newKey); err != nil {
+			return nil, fmt.Errorf("failed to set key for artifact %s: %w", tmplArt.Name, err)
+		}
+		applied = append(applied, *artCopy)
+	}
+	if err := unmatchedOverridesError(overrides, consumed); err != nil {
+		return nil, err
+	}
+	return applied, nil
+}
+
+// unmatchedOverridesError names any override whose artifact name matched no artifact, so a
+// typo'd or stale override surfaces as an error instead of being silently dropped. Returns
+// nil when every override was consumed.
+func unmatchedOverridesError(overrides map[string]string, consumed map[string]bool) error {
+	unmatched := make([]string, 0)
+	for name := range overrides {
+		if !consumed[name] {
+			unmatched = append(unmatched, name)
+		}
+	}
+	if len(unmatched) == 0 {
+		return nil
+	}
+	slices.Sort(unmatched)
+	return fmt.Errorf("artifact override(s) matched no artifact: %s", strings.Join(unmatched, ", "))
+}
+
+func overrideArtifacts(wf *wfv1.Workflow, artifacts []string) error {
+	if len(artifacts) == 0 {
+		return nil
+	}
+
+	overrides, err := ParseArtifactOverrides(artifacts)
+	if err != nil {
+		return err
+	}
+
+	// Override artifact keys in workflow arguments
+	// Note: For workflowTemplateRef workflows, artifacts are handled in workflow_server.go
+	// which has access to the WorkflowTemplate to copy the full artifact configuration
+	consumed := make(map[string]bool, len(overrides))
+	for i, artifact := range wf.Spec.Arguments.Artifacts {
+		if newKey, ok := overrides[artifact.Name]; ok {
+			consumed[artifact.Name] = true
+			if err := wf.Spec.Arguments.Artifacts[i].SetKey(newKey); err != nil {
+				return fmt.Errorf("failed to set key for artifact %s: %w", artifact.Name, err)
+			}
+		}
+	}
+
+	// Also update StoredWorkflowSpec if present
+	if wf.Status.StoredWorkflowSpec != nil {
+		for i, artifact := range wf.Status.StoredWorkflowSpec.Arguments.Artifacts {
+			if newKey, ok := overrides[artifact.Name]; ok {
+				consumed[artifact.Name] = true
+				if err := wf.Status.StoredWorkflowSpec.Arguments.Artifacts[i].SetKey(newKey); err != nil {
+					return fmt.Errorf("failed to set key for artifact %s in stored spec: %w", artifact.Name, err)
+				}
+			}
+		}
+	}
+
+	// For workflowTemplateRef workflows the artifacts live in the template, not here, so
+	// unmatched overrides are expected and are validated on the templateRef path instead
+	// (ApplyOverridesToTemplateArtifacts). Only flag unmatched overrides when this workflow
+	// is the authority for its own artifacts.
+	if wf.Spec.WorkflowTemplateRef == nil {
+		return unmatchedOverridesError(overrides, consumed)
+	}
+
 	return nil
 }
 
@@ -374,7 +487,7 @@ func SuspendWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, workf
 			return false, errSuspendedCompletedWorkflow
 		}
 		if wf.Spec.Suspend == nil || !*wf.Spec.Suspend {
-			wf.Spec.Suspend = ptr.To(true)
+			wf.Spec.Suspend = new(true)
 			creator.LabelActor(ctx, wf, creator.ActionSuspend)
 			_, err := wfIf.Update(ctx, wf, metav1.UpdateOptions{})
 			if apierr.IsConflict(err) {
@@ -511,7 +624,7 @@ func AddParamToGlobalScope(ctx context.Context, wf *wfv1.Workflow, param wfv1.Pa
 	} else {
 		wf.Status.Outputs = &wfv1.Outputs{}
 	}
-	paramName := fmt.Sprintf("workflow.outputs.parameters.%s", param.GlobalName)
+	paramName := varkeys.WorkflowOutputsParameterByName.Concretize(param.GlobalName)
 	if index == -1 {
 		log.WithFields(logging.Fields{"paramName": paramName, "paramValue": param.Value}).Info(ctx, "setting param")
 		gParam := wfv1.Parameter{Name: param.GlobalName, Value: param.Value}
@@ -847,7 +960,12 @@ func newWorkflowsDag(wf *wfv1.Workflow) ([]*dagNode, error) {
 
 	// create mapping from node to parent
 	// as well as creating temp mappings from nodeID to node
-	for _, wfNode := range wf.Status.Nodes {
+	// A node may appear as a child of more than one node (e.g. a task that
+	// `depends` on several others). Only one parent is recorded, so iterate in a
+	// deterministic order to keep the resulting parent chain, and therefore the
+	// reset set computed by resetPath, stable across invocations.
+	for _, nodeID := range slices.Sorted(maps.Keys(wf.Status.Nodes)) {
+		wfNode := wf.Status.Nodes[nodeID]
 		n := dagNode{}
 		n.n = &wfNode
 		nodes[wfNode.ID] = &n
@@ -1178,7 +1296,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 		if node.FailedOrError() && isExecutionNodeType(node.Type) {
 			// Check its parent if current node is retry node
 			if node.NodeFlag != nil && node.NodeFlag.Retried {
-				node = *wf.Status.Nodes.FindByChild(nodeID)
+				node = *wf.Status.Nodes.FindRetryNodeByChild(nodeID)
 			}
 			if !isDescendantNodeSucceeded(ctx, wf, node, deleteNodesMap) {
 				failed[nodeID] = true
@@ -1232,6 +1350,27 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 		}
 		toReset = setUnion(toReset, pathToReset)
 		toDelete = setUnion(toDelete, pathToDelete)
+	}
+
+	// Delete children of TaskGroup/StepGroup nodes being reset when parameters are overridden,
+	// so the controller can re-expand them with the new values. Fixes #15802.
+	if len(parameters) > 0 {
+		for nodeID := range toReset {
+			if toDelete[nodeID] {
+				continue
+			}
+			n, ok := wf.Status.Nodes[nodeID]
+			if !ok {
+				continue
+			}
+			if n.Type == wfv1.NodeTypeTaskGroup || n.Type == wfv1.NodeTypeStepGroup {
+				if dagNode, okNode := nodesMap[nodeID]; okNode {
+					for childID := range getChildren(dagNode) {
+						toDelete[childID] = true
+					}
+				}
+			}
+		}
 	}
 
 	for nodeID := range toReset {
@@ -1451,7 +1590,7 @@ func SetWorkflow(ctx context.Context, wfClient v1alpha1.WorkflowInterface, hydra
 	return fmt.Errorf("'set' currently only targets suspend nodes, use a node field selector to target them")
 }
 
-// Reads from stdin
+// ReadFromStdin reads from stdin.
 func ReadFromStdin() ([]byte, error) {
 	reader := bufio.NewReader(os.Stdin)
 	body, err := io.ReadAll(reader)
@@ -1461,7 +1600,7 @@ func ReadFromStdin() ([]byte, error) {
 	return body, err
 }
 
-// Reads the content of a url
+// ReadFromURL reads the content of a URL.
 func ReadFromURL(ctx context.Context, url string) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
@@ -1611,4 +1750,16 @@ func FindWaitCtrIndex(pod *apiv1.Pod) (int, error) {
 		return -1, err
 	}
 	return waitCtrIndex, nil
+}
+
+// FindAuxiliaryCtrIndex returns the index of the auxiliary executor container
+// on the pod — wait in the legacy layout, supervisor in the init-less layout.
+// Returns -1 and an error if neither is found.
+func FindAuxiliaryCtrIndex(pod *apiv1.Pod) (int, error) {
+	for i, ctr := range pod.Spec.Containers {
+		if ctr.Name == common.WaitContainerName || ctr.Name == common.SupervisorContainerName {
+			return i, nil
+		}
+	}
+	return -1, errors.Errorf("-1", "Could not find wait or supervisor container in pod spec")
 }

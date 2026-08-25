@@ -1,9 +1,9 @@
 import {Ticker} from 'argo-ui/src/components/ticker';
-import {Tooltip} from 'argo-ui/src/components/tooltip/tooltip';
 import * as React from 'react';
 
 import {ago} from '../duration';
 import useTimestamp, {TIMESTAMP_KEYS} from '../use-timestamp';
+import {Tooltip} from './tooltip';
 
 interface Props {
     date: Date | string | number;

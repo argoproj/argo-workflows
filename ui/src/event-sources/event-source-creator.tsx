@@ -34,7 +34,7 @@ export function EventSourceCreator({onCreate, namespace}: {namespace: string; on
             <ErrorNotice error={error} />
             <EventSourceEditor eventSource={eventSource} serialization={serialization} lang={lang} onChange={setEventSource} onLangChange={setLang} onError={setError} />
             <p>
-                <a href='https://github.com/argoproj/argo-events/tree/stable/examples/event-sources'>
+                <a href='https://github.com/argoproj/argo-events/tree/stable/examples/event-sources' target='_blank' rel='noreferrer'>
                     Example event sources <i className='fa fa-external-link-alt' />
                 </a>
             </p>

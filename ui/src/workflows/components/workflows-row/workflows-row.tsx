@@ -39,7 +39,7 @@ export function WorkflowsRow(props: WorkflowsRowProps) {
     return (
         <div className='workflows-list__row-container'>
             <div className='row argo-table-list__row'>
-                <div className='columns small-1 workflows-list__status'>
+                <div className='columns small-1 workflows-list__status' data-testid='workflow-status'>
                     <input
                         type='checkbox'
                         className='workflows-list__status--checkbox'
