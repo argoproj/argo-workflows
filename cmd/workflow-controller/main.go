@@ -80,7 +80,8 @@ func NewRootCommand() *cobra.Command {
 			defer runtimeutil.HandleCrashWithContext(c.Context(), runtimeutil.PanicHandlers...)
 			ctx, log, err := cmdutil.ContextWithLogger(c, logLevel, logFormat)
 			if err != nil {
-				logging.InitLogger().WithError(err).WithFatal().Error(c.Context(), "Failed to create workflow-controller cmd logger")
+				logging.InitLogger().WithError(err).Error(c.Context(), "Failed to create workflow-controller cmd logger")
+				os.Exit(1)
 				return err
 			}
 
@@ -145,7 +146,8 @@ func NewRootCommand() *cobra.Command {
 			} else {
 				nodeID, ok := os.LookupEnv("LEADER_ELECTION_IDENTITY")
 				if !ok {
-					log.WithFatal().Error(ctx, "LEADER_ELECTION_IDENTITY must be set so that the workflow controllers can elect a leader")
+					log.Error(ctx, "LEADER_ELECTION_IDENTITY must be set so that the workflow controllers can elect a leader")
+					os.Exit(1)
 				}
 
 				leaderName := "workflow-controller"
@@ -224,7 +226,7 @@ func NewRootCommand() *cobra.Command {
 	command.Flags().BoolVar(&workflowLevelExecutorPlugins, "workflow-level-executor-plugins", false, "enable workflow-level executor plugins")
 	ctx, log, err := cmdutil.ContextWithLogger(&command, logLevel, logFormat)
 	if err != nil {
-		logging.InitLogger().WithError(err).WithFatal().Error(command.Context(), "Failed to create workflow-controller logger")
+		logging.InitLogger().WithError(err).Error(command.Context(), "Failed to create workflow-controller logger")
 		os.Exit(1)
 	}
 
@@ -234,14 +236,16 @@ func NewRootCommand() *cobra.Command {
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_", ".", "_"))
 	// bind flags to env vars (https://github.com/spf13/viper/tree/v1.17.0#working-with-flags)
 	if err := viper.BindPFlags(command.Flags()); err != nil {
-		log.WithFatal().WithError(err).Error(ctx, "failed to bind flags to env vars")
+		log.WithError(err).Error(ctx, "failed to bind flags to env vars")
+		os.Exit(1)
 	}
 	// workaround for handling required flags (https://github.com/spf13/viper/issues/397#issuecomment-544272457)
 	command.Flags().VisitAll(func(f *pflag.Flag) {
 		if !f.Changed && viper.IsSet(f.Name) {
 			val := viper.Get(f.Name)
 			if err := command.Flags().Set(f.Name, fmt.Sprintf("%v", val)); err != nil {
-				log.WithFatal().WithError(err).WithFields(logging.Fields{"flag": f.Name, "value": val}).Error(ctx, "failed to set flag")
+				log.WithError(err).WithFields(logging.Fields{"flag": f.Name, "value": val}).Error(ctx, "failed to set flag")
+				os.Exit(1)
 			}
 		}
 	})
