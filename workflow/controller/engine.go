@@ -1300,8 +1300,7 @@ func (e *Engine) parentNodeNames(ctx context.Context, taskName string) []string 
 // stepGroupNodeName extracts the StepGroup node name from a task name.
 // Task names for Steps are formatted as "[N].stepName" by StepAdapter.GetName().
 func (e *Engine) stepGroupNodeName(taskName string) string {
-	var groupIdx int
-	if n, _ := fmt.Sscanf(taskName, "[%d].", &groupIdx); n == 1 {
+	if groupIdx, ok := stepGroupIndexOf(taskName); ok {
 		return fmt.Sprintf("%s[%d]", e.nodeName, groupIdx)
 	}
 	return ""
@@ -1423,8 +1422,8 @@ func (e *Engine) buildLocalScopeFromTask(ctx context.Context, task dag.Task) (*w
 	// Step task names are formatted as "[N].stepName" by StepAdapter.GetName(), so we
 	// parse the group index from the name prefix.
 	if e.tmpl.GetType() == wfv1.TemplateTypeSteps {
-		var currentGroupIdx int
-		if n, _ := fmt.Sscanf(task.GetName(), "[%d].", &currentGroupIdx); n != 1 {
+		currentGroupIdx, ok := stepGroupIndexOf(task.GetName())
+		if !ok {
 			return nil, fmt.Errorf("failed to parse group index from step task name %q", task.GetName())
 		}
 		for i, stepGroup := range e.tmpl.Steps {
@@ -1432,7 +1431,7 @@ func (e *Engine) buildLocalScopeFromTask(ctx context.Context, task dag.Task) (*w
 				break
 			}
 			for _, step := range stepGroup.Steps {
-				stepTaskName := fmt.Sprintf("[%d].%s", i, step.Name)
+				stepTaskName := stepTaskNameFor(i, step.Name)
 				stepNode := e.getTaskNode(ctx, stepTaskName)
 				if stepNode == nil {
 					continue
@@ -1486,7 +1485,7 @@ func (e *Engine) setDAGOutputs(ctx context.Context) error {
 		for i, stepGroup := range e.tmpl.Steps {
 			for _, step := range stepGroup.Steps {
 				// Step nodes use the [i].name format for lookup, but steps.name for scope prefix.
-				taskName := fmt.Sprintf("[%d].%s", i, step.Name)
+				taskName := stepTaskNameFor(i, step.Name)
 				taskNode := e.getTaskNode(ctx, taskName)
 				if taskNode == nil {
 					continue
