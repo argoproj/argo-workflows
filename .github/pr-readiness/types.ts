@@ -80,3 +80,10 @@ export interface GitHubUser {
   login: string;
   type: string;
 }
+
+// The subset of a pull request needed to follow a stack of PRs to its base.
+export interface StackablePr {
+  number: number;
+  base: { ref: string; repo: { full_name: string } | null };
+  head: { ref: string; repo: { full_name: string } | null };
+}
