@@ -350,6 +350,16 @@ func TestProcessArgs_ArtifactWithFromOnly(t *testing.T) {
 	result, err := ProcessArgs(ctx, tmpl, args, nil, nil, false, true, "", nil)
 	require.NoError(t, err)
 	require.NotNil(t, result)
+	// The unresolved `from` reference must survive ProcessArgs: the DAG/Steps
+	// engine resolves it against the boundary scope afterwards.
+	require.Len(t, result.Inputs.Artifacts, 1)
+	assert.Equal(t, "{{steps.step1.outputs.artifacts.out}}", result.Inputs.Artifacts[0].From)
+	assert.Equal(t, "/tmp/art", result.Inputs.Artifacts[0].Path)
+
+	// With neither from, fromExpression nor a location, the artifact is still rejected.
+	noSource := &wfv1.Arguments{Artifacts: wfv1.Artifacts{{Name: "my-art"}}}
+	_, err = ProcessArgs(ctx, tmpl, noSource, nil, nil, false, true, "", nil)
+	require.ErrorContains(t, err, "inputs.artifacts.my-art missing location information")
 }
 
 func TestSubstituteParamsAllowUnresolvedFalse(t *testing.T) {
