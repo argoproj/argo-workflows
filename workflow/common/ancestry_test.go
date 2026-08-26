@@ -281,3 +281,31 @@ func TestGetTaskAncestryForGlobalArtifacts(t *testing.T) {
 		assert.Equal(t, tt.want, res)
 	}
 }
+
+func TestParseDepends(t *testing.T) {
+	refs, err := ParseDepends("A && (B.Failed || C.AnySucceeded) && !D")
+	require.NoError(t, err)
+	assert.Equal(t, []DependsRef{
+		{Task: "A", Start: 0, End: 1},
+		{Task: "B", Result: TaskResultFailed, Start: 6, End: 14},
+		{Task: "C", Result: TaskResultAnySucceeded, Start: 18, End: 32},
+		{Task: "D", Start: 38, End: 39},
+	}, refs)
+
+	rewritten := RewriteDepends("A && (B.Failed || C.AnySucceeded) && !D", refs, func(ref DependsRef) string {
+		if ref.Result == "" {
+			return "<" + ref.Task + ">"
+		}
+		return "<" + ref.Task + "." + string(ref.Result) + ">"
+	})
+	assert.Equal(t, "<A> && (<B.Failed> || <C.AnySucceeded>) && !<D>", rewritten)
+
+	refs, err = ParseDepends("A.Bogus && B")
+	assert.EqualError(t, err, "task result 'Bogus' for task 'A' is invalid")
+	assert.Len(t, refs, 2, "all references are still returned on error")
+
+	assert.Equal(t, "(dep.Succeeded || dep.Skipped || dep.Daemoned || dep.Failed)",
+		ExpandDependency("dep", &wfv1.ContinueOn{Failed: true}, func(name string) string { return name }))
+	assert.Equal(t, "(X.Succeeded || X.Skipped || X.Daemoned)",
+		ExpandDependency("dep", nil, func(string) string { return "X" }))
+}
