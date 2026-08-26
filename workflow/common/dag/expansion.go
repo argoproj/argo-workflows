@@ -13,6 +13,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v4/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util"
 	"github.com/argoproj/argo-workflows/v4/util/expr/argoexpr"
 )
 
@@ -240,41 +241,31 @@ func processItem(_ context.Context, taskBytes []byte, taskName string, i int, it
 	if substitutor != nil {
 		substScope := make(map[string]string)
 		maps.Copy(substScope, globalScope)
-		var raw any
-		err := json.Unmarshal(item.Value, &raw)
-		if err != nil {
-			// fallback to just the raw value
-			substScope["item"] = string(item.Value)
-		} else {
-			switch v := raw.(type) {
-			case string:
-				substScope["item"] = v
-			case float64:
-				substScope["item"] = strconv.FormatFloat(v, 'f', -1, 64)
-			case bool:
-				substScope["item"] = strconv.FormatBool(v)
-			default:
-				// For lists and maps, we use the raw JSON
-				substScope["item"] = string(item.Value)
-				// Check if it is a map to flatten keys
-				if m, ok := raw.(map[string]any); ok {
-					for k, v := range m {
-						switch val := v.(type) {
-						case string:
-							substScope["item."+k] = val
-						case float64:
-							substScope["item."+k] = strconv.FormatFloat(val, 'f', -1, 64)
-						case bool:
-							substScope["item."+k] = strconv.FormatBool(val)
-						default:
-							// For complex nested types, marshal to JSON
-							if nestedBytes, marshalErr := json.Marshal(val); marshalErr == nil {
-								substScope["item."+k] = string(nestedBytes)
-							}
-						}
-					}
-				}
+		// Item values are formatted through wfv1.Item exactly as the pre-Engine
+		// controller did: normalised JSON for maps and lists (not the raw text
+		// the user wrote), so substituted values are stable across whitespace
+		// and key order.
+		switch item.GetType() {
+		case wfv1.String:
+			substScope["item"] = item.GetStrVal()
+		case wfv1.Map:
+			mapVal := item.GetMapVal()
+			for k, v := range mapVal {
+				substScope["item."+k] = v.String()
 			}
+			b, err := json.Marshal(mapVal)
+			if err != nil {
+				return "", errors.InternalWrapError(err)
+			}
+			substScope["item"] = string(b)
+		case wfv1.List:
+			b, err := json.Marshal(item.GetListVal())
+			if err != nil {
+				return "", errors.InternalWrapError(err)
+			}
+			substScope["item"] = string(b)
+		default: // Number, Bool
+			substScope["item"] = item.String()
 		}
 		substScope["index"] = strconv.Itoa(i) // Marshal the new task, substitute, and unmarshal back
 		taskJSON, err := json.Marshal(newTask)
@@ -294,36 +285,29 @@ func processItem(_ context.Context, taskBytes []byte, taskName string, i int, it
 	if newTask.Name != "" && newTask.Name != taskName {
 		newTaskName = newTask.Name
 	} else {
-		var itemStr string
-		var raw any
-		err := json.Unmarshal(item.Value, &raw)
-		if err != nil {
-			itemStr = string(item.Value)
-		} else {
-			switch v := raw.(type) {
-			case string:
-				itemStr = v
-			case float64:
-				itemStr = strconv.FormatFloat(v, 'f', -1, 64)
-			case bool:
-				itemStr = strconv.FormatBool(v)
-			case map[string]any:
-				// Format as sorted "key:value,key2:value2" matching the old engine
-				vals := make([]string, 0, len(v))
-				for k, val := range v {
-					vals = append(vals, fmt.Sprintf("%s:%v", k, val))
-				}
-				sort.Strings(vals)
-				itemStr = strings.Join(vals, ",")
-			default:
-				itemStr = string(item.Value)
+		// Name text is formatted through wfv1.Item exactly as the pre-Engine
+		// controller did, so expanded node names (and hence node IDs) are
+		// unchanged: maps as sorted "key:value" pairs, lists as "[a b c]".
+		var itemText string
+		switch item.GetType() {
+		case wfv1.Map:
+			mapVal := item.GetMapVal()
+			vals := make([]string, 0, len(mapVal))
+			for k, v := range mapVal {
+				vals = append(vals, fmt.Sprintf("%s:%v", k, v))
 			}
+			sort.Strings(vals)
+			itemText = strings.Join(vals, ",")
+		case wfv1.List:
+			itemText = fmt.Sprint(item.GetListVal())
+		default:
+			itemText = item.String()
 		}
 		if item.Value != nil {
-			// Strip parentheses from item string to keep node names parseable
-			// (matching old engine's generateNodeName behavior)
-			replacer := strings.NewReplacer("(", "", ")", "")
-			newTaskName = fmt.Sprintf("%s(%d:%s)", taskName, i, replacer.Replace(itemStr))
+			newTaskName, err = expandedTaskName(taskName, i, itemText)
+			if err != nil {
+				return "", err
+			}
 		} else {
 			newTaskName = fmt.Sprintf("%s(%d)", taskName, i)
 		}
@@ -334,4 +318,17 @@ func processItem(_ context.Context, taskBytes []byte, taskName string, i int, it
 	// evaluator that correctly handles unquoted string comparisons (e.g., "odd == even").
 
 	return newTaskName, nil
+}
+
+// expandedTaskName names the index-th expansion of taskName for the given
+// item text: "task(index:item)". Parentheses are stripped from the item text
+// so the index can always be recovered from the name, which consumers such as
+// `argo get` rely on (util.RecoverIndexFromNodeName); that is verified here.
+func expandedTaskName(taskName string, index int, itemText string) (string, error) {
+	replacer := strings.NewReplacer("(", "", ")", "")
+	name := fmt.Sprintf("%s(%d:%s)", taskName, index, replacer.Replace(itemText))
+	if got := util.RecoverIndexFromNodeName(name); got != index {
+		return "", fmt.Errorf("expanded task name %q does not encode index %d (recovered %d)", name, index, got)
+	}
+	return name, nil
 }
