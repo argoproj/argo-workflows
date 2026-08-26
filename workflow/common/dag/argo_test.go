@@ -2238,11 +2238,11 @@ func TestHasExpansion(t *testing.T) {
 	t.Run("none of them", func(t *testing.T) {
 		assert.False(t, HasExpansion(&DAGTask{DAGTask: &wfv1.DAGTask{Name: "x"}}))
 	})
-	t.Run("empty withItems slice still counts", func(t *testing.T) {
-		// Distinguishes between nil (no expansion) and an empty slice (explicit empty
-		// expansion that should still skip via empty-expansion handling). Either way,
-		// the helper signals that this task uses one of the with* mechanisms.
-		assert.True(t, HasExpansion(&DAGTask{DAGTask: &wfv1.DAGTask{
+	t.Run("empty withItems slice is not an expansion", func(t *testing.T) {
+		// An explicit `withItems: []` is equivalent to omitting withItems: the
+		// task runs once (DAGTask.ShouldExpand, validation and ExpandTask all
+		// use len > 0). Only an expansion that yields zero items is skipped.
+		assert.False(t, HasExpansion(&DAGTask{DAGTask: &wfv1.DAGTask{
 			Name:      "x",
 			WithItems: []wfv1.Item{},
 		}}))
