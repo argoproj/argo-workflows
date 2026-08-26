@@ -222,6 +222,8 @@ spec:
 	require.Error(t, err,
 		"engine must surface a reconciler materialization failure when Reconcile returns nil but no task node exists")
 	assert.Nil(t, node)
+	require.ErrorIs(t, err, ErrReconcilerNoMaterialize,
+		"missing materialization must be reported with its own sentinel")
 	assert.NotErrorIs(t, err, ErrParallelismReached,
 		"missing materialization must not be reported as ordinary parallelism throttling")
 }
@@ -438,4 +440,73 @@ spec:
 	require.NoError(t, err)
 	assert.Equal(t, wfv1.NodeSucceeded, node.Phase,
 		"terminal node phase must not flip; got %s", node.Phase)
+}
+
+var dagRetryConsumerAbsentOptional = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-retry-absent-optional
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: stage-a
+            template: echo
+          - name: stage-b
+            template: produce
+            depends: "stage-a.Failed"
+          - name: stage-c
+            template: consume
+            depends: "stage-a && (stage-b || stage-b.Omitted)"
+            arguments:
+              parameters:
+                - name: msg
+                  value: "{{tasks.stage-b.outputs.parameters.output-message}}"
+    - name: echo
+      container:
+        image: argoproj/argosay:v2
+    - name: produce
+      outputs:
+        parameters:
+          - name: output-message
+            valueFrom:
+              path: /tmp/output.txt
+      container:
+        image: argoproj/argosay:v2
+    - name: consume
+      retryStrategy:
+        limit: "2"
+      inputs:
+        parameters:
+          - name: msg
+      container:
+        image: argoproj/argosay:v2
+`
+
+// TestBug_RetryPath_ToleratesLateTags is the end-to-end counterpart of
+// TestBug_Retry_AllowsUnresolvedTags: a retry-decorated task whose argument is
+// an unhandled absent optional must reach the engine's terminal "absent
+// optional" handling. If the retry path's SubstituteParams call forwarded a
+// strict allowUnresolved, it would fail first with a generic "failed to
+// resolve" error instead.
+func TestBug_RetryPath_ToleratesLateTags(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(dagRetryConsumerAbsentOptional)
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	for i := 0; i < 3 && !woc.wf.Status.Fulfilled(); i++ {
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+		woc.operate(ctx)
+	}
+	nodeC := woc.wf.Status.Nodes.FindByDisplayName("stage-c")
+	require.NotNil(t, nodeC, "stage-c must be materialized as a terminal node")
+	assert.Equal(t, wfv1.NodeError, nodeC.Phase)
+	assert.Contains(t, nodeC.Message, "absent optional")
+	assert.NotContains(t, nodeC.Message, "failed to resolve")
 }
