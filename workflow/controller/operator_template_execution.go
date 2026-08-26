@@ -295,7 +295,7 @@ func (woc *wfOperationCtx) handleRetries(ctx context.Context, node *wfv1.NodeSta
 	//
 	// allowUnresolved=true: late-resolved tags like {{pod.name}} (for non-pod
 	// retry-decorated templates) and {{tasks.X.outputs.*}} are substituted by
-	// later passes. Matches origin/main behavior; the previous opts.onExitTemplate
+	// later passes, as before the Engine; the previous opts.onExitTemplate
 	// value was a bool meaning "is this an onExit handler call?" and was
 	// semantically unrelated to allowUnresolved — for normal (non-exit) retries
 	// it evaluated to false and broke any retry-decorated template body with
