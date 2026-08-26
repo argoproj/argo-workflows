@@ -3,6 +3,7 @@ package dag
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,6 +13,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	intstrutil "github.com/argoproj/argo-workflows/v4/util/intstr"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 // testCtx returns a context with a test logger for Argo workflow operations.
@@ -769,40 +771,60 @@ func TestDAGEvaluator_DaemonedFailedNode(t *testing.T) {
 	assert.True(t, result.ShouldRun, "B should run because A is daemoned (Failed but non-Pending)")
 }
 
-func TestResolveDependencies_BooleanKeywords(t *testing.T) {
-	// "taskA.Succeeded || false" — "false" should NOT be treated as a task name
-	taskA := wfv1.DAGTask{Name: "taskA"}
-	provider := func(name string) Task {
-		if name == "taskA" {
-			return &DAGTask{DAGTask: &taskA}
-		}
-		return nil
-	}
-	deps, logic, err := resolveDependencies("taskA.Succeeded || false", provider)
-	require.NoError(t, err)
-	assert.Equal(t, []string{"taskA"}, deps)
-	assert.Contains(t, logic, "false")
-	assert.NotContains(t, logic, normalizeTaskName("false"))
-}
-
-func TestResolveDependencies_StepNames(t *testing.T) {
-	// Step tasks use "[groupIndex].stepName" naming (e.g., "[0].A").
-	// The ".A" suffix must NOT be interpreted as a result qualifier —
-	// it's part of the task name. The full "[0].A" should be treated
-	// as a bare task name and expanded via expandDependency.
-	taskA := wfv1.DAGTask{Name: "[0].A"}
+func TestResolveTaskDepends_StepNames(t *testing.T) {
+	// Steps tasks carry synthetic legacy dependencies named "[groupIndex].stepName".
+	// They are structured data, expanded directly and never parsed as an
+	// expression, so the ".A" suffix is never mistaken for a result qualifier.
+	stepA := wfv1.DAGTask{Name: "[0].A"}
+	stepB := wfv1.DAGTask{Name: "[1].B", Dependencies: []string{"[0].A"}}
 	provider := func(name string) Task {
 		if name == "[0].A" {
+			return &DAGTask{DAGTask: &stepA}
+		}
+		return nil
+	}
+	deps, logic, err := resolveTaskDepends(&DAGTask{DAGTask: &stepB}, provider)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"[0].A"}, deps)
+	assert.Equal(t, common.ExpandDependency("[0].A", nil, normalizeTaskName), logic)
+}
+
+func TestResolveTaskDepends_UsesValidationGrammar(t *testing.T) {
+	// A user-written depends is tokenized by common.ParseDepends, the same
+	// grammar validation applies, then task names are hex-normalized.
+	taskA := wfv1.DAGTask{Name: "A"}
+	taskC := wfv1.DAGTask{Name: "C", Depends: "A.Failed || B"}
+	provider := func(name string) Task {
+		if name == "A" {
 			return &DAGTask{DAGTask: &taskA}
 		}
 		return nil
 	}
-	deps, logic, err := resolveDependencies("[0].A", provider)
+	deps, logic, err := resolveTaskDepends(&DAGTask{DAGTask: &taskC}, provider)
 	require.NoError(t, err)
-	assert.Equal(t, []string{"[0].A"}, deps)
-	// Should be expanded like a bare task name, not split into [0] + A
-	assert.Contains(t, logic, "Succeeded")
-	assert.Contains(t, logic, "Skipped")
+	assert.Equal(t, []string{"A", "B"}, deps)
+	assert.Equal(t, normalizeTaskName("A")+".Failed || "+common.ExpandDependency("B", nil, normalizeTaskName), logic)
+
+	taskD := wfv1.DAGTask{Name: "D", Depends: "A.Bogus"}
+	_, _, err = resolveTaskDepends(&DAGTask{DAGTask: &taskD}, provider)
+	assert.EqualError(t, err, "task result 'Bogus' for task 'A' is invalid")
+}
+
+// The depends result qualifiers users may write are defined once, in
+// workflow/common; the evaluator's taskResult scope struct must expose
+// exactly that set so evaluation cannot drift from validation.
+func TestTaskResultFieldsMatchDependsVocabulary(t *testing.T) {
+	want := []string{
+		string(common.TaskResultSucceeded), string(common.TaskResultFailed), string(common.TaskResultErrored),
+		string(common.TaskResultSkipped), string(common.TaskResultOmitted), string(common.TaskResultDaemoned),
+		string(common.TaskResultAnySucceeded), string(common.TaskResultAllFailed),
+	}
+	rt := reflect.TypeFor[taskResult]()
+	var got []string
+	for i := range rt.NumField() {
+		got = append(got, rt.Field(i).Name)
+	}
+	assert.ElementsMatch(t, want, got)
 }
 
 func TestNormalizeTaskName_HexLikeNames(t *testing.T) {
