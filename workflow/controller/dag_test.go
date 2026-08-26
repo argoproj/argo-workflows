@@ -1537,7 +1537,21 @@ func TestEvaluateDependsLogicWhenDaemonFailed(t *testing.T) {
 	woc.operate(ctx)
 
 	bNode := woc.wf.Status.Nodes.FindByDisplayName("B")
-	assert.NotNil(t, bNode, "B should be scheduled when A is daemoned and running")
+	require.NotNil(t, bNode, "B should be scheduled when A is daemoned and running")
+
+	// A's daemon then fails while B is already running: B must be unaffected.
+	aNode = woc.wf.Status.Nodes.FindByDisplayName("A")
+	aNode.Phase = wfv1.NodeFailed
+	aNode.Daemoned = nil
+	woc.wf.Status.Nodes[aNode.ID] = *aNode
+	bNode.Phase = wfv1.NodeRunning
+	woc.wf.Status.Nodes[bNode.ID] = *bNode
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+	bNode = woc.wf.Status.Nodes.FindByDisplayName("B")
+	require.NotNil(t, bNode)
+	assert.Equal(t, wfv1.NodeRunning, bNode.Phase, "a running dependant is not affected by its daemon dependency failing")
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
 }
 
 var dagDaemonRetryTest = `
