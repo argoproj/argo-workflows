@@ -144,14 +144,11 @@ export async function run({ github, context, core }: { github: Octokit; context:
     }
   }
 
-  const state = { v: 1, failing: decision.failing };
-
   const commentBody = renderComment({
     variant: decision.variant,
     failures: signals.filter((s) => decision.failing.includes(s.id)),
     templateIssues: decision.templateBlocking ? templateVerdict.issues : null,
     labeled,
-    state,
   });
 
   for (const name of unmapped) {

@@ -1,7 +1,7 @@
 // Renders the sticky PR-readiness comment. One comment per PR, identified by
-// MARKER, edited in place. A hidden state blob carries data between runs.
+// MARKER, edited in place.
 
-import type { CommentVariant, State, TemplateIssue } from './types.ts';
+import type { CommentVariant, TemplateIssue } from './types.ts';
 
 export const MARKER = '<!-- pr-readiness-bot -->';
 
@@ -15,10 +15,6 @@ const FOOTER =
   'Unit/E2E test results are <b>not</b> covered here. ' +
   'Questions? See [the contributing guide](https://github.com/argoproj/argo-workflows/blob/main/docs/CONTRIBUTING.md) or ask a maintainer.</sub>';
 
-function stateLine(state: State): string {
-  return `<!-- state: ${JSON.stringify(state)} -->`;
-}
-
 interface FailureItem {
   title: string;
   guidance: string;
@@ -31,11 +27,10 @@ interface RenderArgs {
   failures: ReadonlyArray<FailureItem>;
   templateIssues: TemplateIssue[] | null;
   labeled: boolean;
-  state: State;
 }
 
-export function renderComment({ variant, failures, templateIssues, labeled, state }: RenderArgs): string {
-  const head = [MARKER, stateLine(state), ''];
+export function renderComment({ variant, failures, templateIssues, labeled }: RenderArgs): string {
+  const head = [MARKER, ''];
 
   if (variant === 'allclear') {
     return head
@@ -96,23 +91,4 @@ export function renderComment({ variant, failures, templateIssues, labeled, stat
 
   lines.push(FOOTER);
   return lines.join('\n');
-}
-
-// Returns the state object embedded in a bot comment, or null if the comment
-// is not ours / has no parsable state.
-export function parseState(body: string): State | null {
-  // includes, not startsWith: the sticky-comment action injects its own
-  // hidden header into the body it posts.
-  if (typeof body !== 'string' || !body.includes(MARKER)) {
-    return null;
-  }
-  const m = body.match(/<!-- state: (.*?) -->/);
-  if (!m) {
-    return null;
-  }
-  try {
-    return JSON.parse(m[1]) as State;
-  } catch {
-    return null;
-  }
 }

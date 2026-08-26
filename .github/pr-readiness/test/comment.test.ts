@@ -1,9 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { MARKER, NOT_READY_LABEL, renderComment, parseState } from '../comment.ts';
-import type { State } from '../types.ts';
-
-const baseState: State = { v: 1, failing: ['lint'] };
+import { MARKER, NOT_READY_LABEL, renderComment } from '../comment.ts';
 
 test('renderComment issues variant lists each failure with guidance and log link', () => {
   const body = renderComment({
@@ -14,7 +11,6 @@ test('renderComment issues variant lists each failure with guidance and log link
     ],
     templateIssues: null,
     labeled: false,
-    state: baseState,
   });
   assert.ok(body.startsWith(MARKER), 'starts with hidden marker');
   assert.ok(body.includes('**Lint**'));
@@ -30,7 +26,6 @@ test('renderComment includes template findings in a waivable details block', () 
     failures: [],
     templateIssues: [{ section: 'Motivation', problem: 'still contains the template placeholder' }],
     labeled: false,
-    state: baseState,
   });
   assert.ok(body.includes('<details>'));
   assert.ok(body.includes('Motivation'));
@@ -44,38 +39,26 @@ test('renderComment notes the not-ready label when labeled', () => {
     failures: [{ id: 'lint', title: 'Lint', guidance: 'g', url: 'u' }],
     templateIssues: null,
     labeled: true,
-    state: baseState,
   });
   assert.ok(body.includes(NOT_READY_LABEL));
   assert.ok(/removed automatically/i.test(body));
 });
 
 test('renderComment all-clear variant is short and positive', () => {
-  const body = renderComment({ variant: 'allclear', failures: [], templateIssues: null, labeled: false, state: { ...baseState, failing: [] } });
+  const body = renderComment({ variant: 'allclear', failures: [], templateIssues: null, labeled: false });
   assert.ok(body.startsWith(MARKER));
   assert.ok(body.includes('✅'));
   assert.ok(!body.includes('<details>'));
 });
 
 test('renderComment waiting variant mentions waiting for checks', () => {
-  const body = renderComment({ variant: 'waiting', failures: [], templateIssues: null, labeled: false, state: baseState });
+  const body = renderComment({ variant: 'waiting', failures: [], templateIssues: null, labeled: false });
   assert.ok(body.startsWith(MARKER));
   assert.ok(/waiting/i.test(body));
 });
 
 test('renderComment footer says tests are not covered and it is automated', () => {
-  const body = renderComment({ variant: 'issues', failures: [{ id: 'x', title: 'X', guidance: 'g', url: 'u' }], templateIssues: null, labeled: false, state: baseState });
+  const body = renderComment({ variant: 'issues', failures: [{ id: 'x', title: 'X', guidance: 'g', url: 'u' }], templateIssues: null, labeled: false });
   assert.ok(/unit\/e2e/i.test(body));
   assert.ok(/automated/i.test(body));
-});
-
-test('state round-trips through the rendered comment', () => {
-  const state: State = { v: 1, failing: ['lint', 'dco'] };
-  const body = renderComment({ variant: 'issues', failures: [{ id: 'lint', title: 'L', guidance: 'g', url: 'u' }], templateIssues: null, labeled: false, state });
-  assert.deepEqual(parseState(body), state);
-});
-
-test('parseState returns null for non-bot or malformed comments', () => {
-  assert.equal(parseState('just a human comment'), null);
-  assert.equal(parseState(MARKER + '\n<!-- state: {not json} -->'), null);
 });

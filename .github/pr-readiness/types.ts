@@ -55,11 +55,6 @@ export interface TemplateVerdict {
   issues: TemplateIssue[];
 }
 
-export interface State {
-  v: number;
-  failing: string[];
-}
-
 export type CommentVariant = 'issues' | 'waiting' | 'allclear';
 
 export interface Decision {
