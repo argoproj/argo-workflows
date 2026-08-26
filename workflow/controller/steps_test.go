@@ -697,10 +697,12 @@ func TestStepsStepGroupIDReference(t *testing.T) {
 	useIDNode := woc.wf.Status.Nodes.FindByDisplayName("use-id")
 	require.NotNil(t, useIDNode, "use-id node should be created when steps.fanout.id is resolvable")
 
-	// Verify the resolved value of steps.fanout.id matches the StepGroup node's ID
+	// For an expanded step, steps.<step>.id resolves to the enclosing StepGroup
+	// node (as it always has: Steps had no TaskGroup node before the Engine),
+	// not to the TaskGroup node the Engine now creates for the expansion.
 	require.NotNil(t, useIDNode.Inputs)
 	require.Len(t, useIDNode.Inputs.Parameters, 1)
-	assert.Equal(t, "steps-stepgroup-id-ref-3978234417", useIDNode.Inputs.Parameters[0].Value.String())
+	assert.Equal(t, woc.wf.NodeID("steps-stepgroup-id-ref[0]"), useIDNode.Inputs.Parameters[0].Value.String())
 }
 
 var stepsWhenSkipNoRequeue = `
