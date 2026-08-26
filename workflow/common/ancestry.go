@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"regexp"
-	"sort"
 	"strings"
 	"time"
 
@@ -32,15 +31,8 @@ const (
 
 var (
 	// TODO: This should use validate.workflowFieldNameFmt, but we can't import it here because an import cycle would be created
-	taskNameRegex   = regexp.MustCompile(`([a-zA-Z0-9][-a-zA-Z0-9]*?\.[A-Z][a-zA-Z]+)|([a-zA-Z0-9][-a-zA-Z0-9]*)`)
-	taskResultRegex = regexp.MustCompile(`([a-zA-Z0-9][-a-zA-Z0-9]*?\.[A-Z][a-zA-Z]+)`)
+	taskNameRegex = regexp.MustCompile(`([a-zA-Z0-9][-a-zA-Z0-9]*?\.[A-Z][a-zA-Z]+)|([a-zA-Z0-9][-a-zA-Z0-9]*)`)
 )
-
-type expansionMatch struct {
-	taskName string
-	start    int
-	end      int
-}
 
 type DependencyType int
 
@@ -49,42 +41,82 @@ const (
 	DependencyTypeItems
 )
 
-func GetTaskDependencies(ctx context.Context, task *wfv1.DAGTask, dctx DagContext) (map[string]DependencyType, string) {
-	depends := getTaskDependsLogic(ctx, task, dctx)
+// DependsRef is one task reference in a depends expression: "task.Result"
+// (Result set) or a bare "task" (Result empty). Start/End are the byte
+// offsets of the reference within the expression.
+type DependsRef struct {
+	Task   string
+	Result TaskResult
+	Start  int
+	End    int
+}
+
+// ParseDepends tokenizes a depends expression into its task references. It is
+// the single grammar for depends: workflow validation and the DAG evaluator
+// both use it, so an expression cannot pass validation and be read differently
+// at runtime. All references are returned even when an unrecognized result
+// qualifier is found; that qualifier is reported as the error.
+func ParseDepends(depends string) ([]DependsRef, error) {
 	matches := taskNameRegex.FindAllStringSubmatchIndex(depends, -1)
-	var expansionMatches []expansionMatch
-	dependencies := make(map[string]DependencyType)
-	for _, matchGroup := range matches {
-		// We have matched a taskName.TaskResult
-		if matchGroup[2] != -1 {
-			match := depends[matchGroup[2]:matchGroup[3]]
+	refs := make([]DependsRef, 0, len(matches))
+	var err error
+	for _, m := range matches {
+		switch {
+		case m[2] != -1: // taskName.TaskResult
+			match := depends[m[2]:m[3]]
 			split := strings.Split(match, ".")
-			if split[1] == string(TaskResultAnySucceeded) || split[1] == string(TaskResultAllFailed) {
-				dependencies[split[0]] = DependencyTypeItems
-			} else if _, ok := dependencies[split[0]]; !ok { // DependencyTypeItems takes precedence
-				dependencies[split[0]] = DependencyTypeTask
+			taskName, result := split[0], TaskResult(split[1])
+			switch result {
+			case TaskResultSucceeded, TaskResultFailed, TaskResultSkipped, TaskResultOmitted, TaskResultErrored, TaskResultDaemoned, TaskResultAnySucceeded, TaskResultAllFailed:
+			default:
+				if err == nil {
+					err = fmt.Errorf("task result '%s' for task '%s' is invalid", result, taskName)
+				}
 			}
-		} else if matchGroup[4] != -1 {
-			match := depends[matchGroup[4]:matchGroup[5]]
-			dependencies[match] = DependencyTypeTask
-			expansionMatches = append(expansionMatches, expansionMatch{taskName: match, start: matchGroup[4], end: matchGroup[5]})
+			refs = append(refs, DependsRef{Task: taskName, Result: result, Start: m[2], End: m[3]})
+		case m[4] != -1: // bare taskName
+			refs = append(refs, DependsRef{Task: depends[m[4]:m[5]], Start: m[4], End: m[5]})
 		}
 	}
+	return refs, err
+}
 
-	if len(expansionMatches) == 0 {
-		return dependencies, depends
+// RewriteDepends returns the expression with every reference replaced by
+// rewrite(ref). References are spliced right to left so offsets stay valid.
+func RewriteDepends(depends string, refs []DependsRef, rewrite func(DependsRef) string) string {
+	for i := len(refs) - 1; i >= 0; i-- {
+		ref := refs[i]
+		depends = depends[:ref.Start] + rewrite(ref) + depends[ref.End:]
 	}
+	return depends
+}
 
-	sort.Slice(expansionMatches, func(i, j int) bool {
-		// Sort in descending order
-		return expansionMatches[i].start > expansionMatches[j].start
+func GetTaskDependencies(ctx context.Context, task *wfv1.DAGTask, dctx DagContext) (map[string]DependencyType, string) {
+	depends := getTaskDependsLogic(ctx, task, dctx)
+	// Invalid result qualifiers are reported by ValidateTaskResults.
+	refs, _ := ParseDepends(depends)
+	dependencies := make(map[string]DependencyType)
+	for _, ref := range refs {
+		switch {
+		case ref.Result == "":
+			dependencies[ref.Task] = DependencyTypeTask
+		case ref.Result == TaskResultAnySucceeded || ref.Result == TaskResultAllFailed:
+			dependencies[ref.Task] = DependencyTypeItems
+		default:
+			if _, ok := dependencies[ref.Task]; !ok { // DependencyTypeItems takes precedence
+				dependencies[ref.Task] = DependencyTypeTask
+			}
+		}
+	}
+	// For backwards compatibility, a bare task reference expands to the task
+	// having completed in any non-failing way (plus continueOn allowances).
+	expanded := RewriteDepends(depends, refs, func(ref DependsRef) string {
+		if ref.Result != "" {
+			return depends[ref.Start:ref.End]
+		}
+		return expandDependency(ref.Task, dctx.GetTask(ctx, ref.Task))
 	})
-	for _, match := range expansionMatches {
-		matchTask := dctx.GetTask(ctx, match.taskName)
-		depends = depends[:match.start] + expandDependency(match.taskName, matchTask) + depends[match.end:]
-	}
-
-	return dependencies, depends
+	return dependencies, expanded
 }
 
 func ValidateTaskResults(dagTask *wfv1.DAGTask) error {
@@ -92,19 +124,8 @@ func ValidateTaskResults(dagTask *wfv1.DAGTask) error {
 	if dagTask.Depends == "" {
 		return nil
 	}
-
-	matches := taskResultRegex.FindAllStringSubmatch(dagTask.Depends, -1)
-	for _, matchGroup := range matches {
-		split := strings.Split(matchGroup[1], ".")
-		taskName, taskResult := split[0], TaskResult(split[1])
-		switch taskResult {
-		case TaskResultSucceeded, TaskResultFailed, TaskResultSkipped, TaskResultOmitted, TaskResultErrored, TaskResultDaemoned, TaskResultAnySucceeded, TaskResultAllFailed:
-			// Do nothing
-		default:
-			return fmt.Errorf("task result '%s' for task '%s' is invalid", taskResult, taskName)
-		}
-	}
-	return nil
+	_, err := ParseDepends(dagTask.Depends)
+	return err
 }
 
 func getTaskDependsLogic(ctx context.Context, dagTask *wfv1.DAGTask, dctx DagContext) string {
@@ -122,14 +143,28 @@ func getTaskDependsLogic(ctx context.Context, dagTask *wfv1.DAGTask, dctx DagCon
 }
 
 func expandDependency(depName string, depTask *wfv1.DAGTask) string {
-	resultForTask := func(result TaskResult) string { return fmt.Sprintf("%s.%s", depName, result) }
+	var continueOn *wfv1.ContinueOn
+	if depTask != nil {
+		continueOn = depTask.ContinueOn
+	}
+	return ExpandDependency(depName, continueOn, func(name string) string { return name })
+}
+
+// ExpandDependency expands a bare task reference into its default depends
+// expression: the task Succeeded, was Skipped or is Daemoned, plus Errored /
+// Failed when the dependency has the matching continueOn set. ident rewrites
+// the task name in the output (identity for validation; the DAG evaluator
+// encodes names into identifiers that are safe for expression evaluation).
+func ExpandDependency(depName string, continueOn *wfv1.ContinueOn, ident func(string) string) string {
+	name := ident(depName)
+	resultForTask := func(result TaskResult) string { return fmt.Sprintf("%s.%s", name, result) }
 
 	taskDepends := []string{resultForTask(TaskResultSucceeded), resultForTask(TaskResultSkipped), resultForTask(TaskResultDaemoned)}
-	if depTask.ContinueOn != nil {
-		if depTask.ContinueOn.Error {
+	if continueOn != nil {
+		if continueOn.Error {
 			taskDepends = append(taskDepends, resultForTask(TaskResultErrored))
 		}
-		if depTask.ContinueOn.Failed {
+		if continueOn.Failed {
 			taskDepends = append(taskDepends, resultForTask(TaskResultFailed))
 		}
 	}
