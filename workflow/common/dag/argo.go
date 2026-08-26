@@ -37,7 +37,17 @@ type DAGEvaluator struct {
 	// retryStrategies holds the resolved retry strategy for each task, registered
 	// by the engine after template resolution.
 	retryStrategies map[string]*wfv1.RetryStrategy
+	// retryDeciders holds the engine-provided retry decision for each task; see
+	// RetryDecider. Falls back to the built-in policy switch when absent.
+	retryDeciders map[string]RetryDecider
 }
+
+// RetryDecider reports whether the retry node's last child may be retried
+// under rs. The engine registers one per task so that the retry decision —
+// including transient-error classification and retryStrategy.expression,
+// which need controller context — has a single authority: the same logic
+// processNodeRetries applies when it actually drives the retry.
+type RetryDecider func(ctx context.Context, retryNode, lastChild *wfv1.NodeStatus, rs *wfv1.RetryStrategy) bool
 
 // NewDAGEvaluatorFromTasks creates a new DAGEvaluator for a workflow and a list of tasks.
 func NewDAGEvaluatorFromTasks(wf *wfv1.Workflow, tasks []Task, tmpl *wfv1.Template, boundaryID, boundaryName string) *DAGEvaluator {
@@ -49,6 +59,7 @@ func NewDAGEvaluatorFromTasks(wf *wfv1.Workflow, tasks []Task, tmpl *wfv1.Templa
 		tasks:           wTasks,
 		exprCache:       make(map[string]*vm.Program),
 		retryStrategies: make(map[string]*wfv1.RetryStrategy),
+		retryDeciders:   make(map[string]RetryDecider),
 		workflow:        wf,
 		tmpl:            tmpl,
 	}
@@ -617,18 +628,38 @@ func (e *DAGEvaluator) SetRetryStrategy(taskName string, rs *wfv1.RetryStrategy)
 	e.retryStrategies[taskName] = rs
 }
 
+// SetRetryDecider registers the retry decision for a task; see RetryDecider.
+func (e *DAGEvaluator) SetRetryDecider(taskName string, d RetryDecider) {
+	e.retryDeciders[taskName] = d
+}
+
+// staticTaskName strips the expansion suffix from an expanded
+// withItems/withParam/withSequence child name (e.g. "A(0:x)" -> "A").
+func staticTaskName(taskName string) string {
+	if i := strings.Index(taskName, "("); i > 0 {
+		return taskName[:i]
+	}
+	return taskName
+}
+
 // retryStrategyFor returns the retry strategy registered for a task.
 // Strategies are registered under static task names, but expanded
-// withItems/withParam/withSequence children are looked up under their
-// expanded name (e.g. "A(0:x)"); those inherit the static task's strategy.
+// children are looked up under their expanded name; those inherit
+// the static task's strategy.
 func (e *DAGEvaluator) retryStrategyFor(taskName string) *wfv1.RetryStrategy {
 	if rs, ok := e.retryStrategies[taskName]; ok {
 		return rs
 	}
-	if i := strings.Index(taskName, "("); i > 0 {
-		return e.retryStrategies[taskName[:i]]
+	return e.retryStrategies[staticTaskName(taskName)]
+}
+
+// retryDeciderFor returns the retry decider registered for a task, with the
+// same expanded-child fallback as retryStrategyFor.
+func (e *DAGEvaluator) retryDeciderFor(taskName string) RetryDecider {
+	if d, ok := e.retryDeciders[taskName]; ok {
+		return d
 	}
-	return nil
+	return e.retryDeciders[staticTaskName(taskName)]
 }
 
 // nextRetryBackoff computes the delay until the next retry attempt based on
@@ -678,7 +709,7 @@ func nextRetryBackoff(rs *wfv1.RetryStrategy, lastChild *wfv1.NodeStatus, attemp
 // evaluateRetryNode inspects a Retry node's children and returns what action
 // should be taken. This is the pure-assessment equivalent of processNodeRetries
 // in operator.go — it produces no side effects, only a result.
-func (e *DAGEvaluator) evaluateRetryNode(_ context.Context, taskName string, node *wfv1.NodeStatus) EvaluationResult {
+func (e *DAGEvaluator) evaluateRetryNode(ctx context.Context, taskName string, node *wfv1.NodeStatus) EvaluationResult {
 	result := EvaluationResult{
 		TaskName:     taskName,
 		CurrentPhase: node.Phase,
@@ -780,7 +811,7 @@ func (e *DAGEvaluator) evaluateRetryNode(_ context.Context, taskName string, nod
 			return result
 		}
 
-		if !e.shouldRetry(lastChild, rs) {
+		if !e.shouldRetry(ctx, taskName, node, lastChild, rs) {
 			result.Action = ActionFail
 			result.ActionReason = fmt.Sprintf("retry policy %s does not allow retry for phase %s", rs.RetryPolicyActual(), lastChild.Phase)
 			result.CurrentPhase = lastChild.Phase
@@ -916,9 +947,17 @@ func (e *DAGEvaluator) evaluateTaskGroupNode(ctx context.Context, taskName strin
 // shouldRetry determines if the retry policy allows retrying for the given
 // child's terminal phase. When no explicit policy is set, the default depends
 // on whether an expression is configured (see RetryPolicyActual).
-func (e *DAGEvaluator) shouldRetry(lastChild *wfv1.NodeStatus, rs *wfv1.RetryStrategy) bool {
-	policy := rs.RetryPolicyActual()
-	switch policy {
+//
+// When the engine registered a RetryDecider for the task, that decision is
+// authoritative: it applies the controller's transient-error classification
+// and retryStrategy.expression, which this package cannot evaluate. The
+// built-in switch below is only the fallback for evaluators used without an
+// engine (tests, tooling).
+func (e *DAGEvaluator) shouldRetry(ctx context.Context, taskName string, retryNode, lastChild *wfv1.NodeStatus, rs *wfv1.RetryStrategy) bool {
+	if decide := e.retryDeciderFor(taskName); decide != nil {
+		return decide(ctx, retryNode, lastChild, rs)
+	}
+	switch rs.RetryPolicyActual() {
 	case wfv1.RetryPolicyAlways:
 		return true
 	case wfv1.RetryPolicyOnFailure:
@@ -926,9 +965,8 @@ func (e *DAGEvaluator) shouldRetry(lastChild *wfv1.NodeStatus, rs *wfv1.RetryStr
 	case wfv1.RetryPolicyOnError:
 		return lastChild.Phase == wfv1.NodeError
 	case wfv1.RetryPolicyOnTransientError:
-		// Simplified: treat both Failed and Error as retryable.
-		// Full transient error detection requires error message inspection
-		// which is outside the evaluator's scope.
+		// Fallback only: transient-error detection needs the controller's
+		// classifier, provided via RetryDecider.
 		return lastChild.Phase == wfv1.NodeFailed || lastChild.Phase == wfv1.NodeError
 	default:
 		return false

@@ -2738,3 +2738,43 @@ func TestDAGEvaluator_EvaluateAll_TaskGroupChildren_EdgeCases(t *testing.T) {
 		assert.Equal(t, ActionExecute, first["client(0:0)"].Action, "first call must remain unchanged")
 	})
 }
+
+func TestEvaluateRetryNode_RetryDeciderIsAuthoritative(t *testing.T) {
+	wf := &wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "default"},
+		Status:     wfv1.WorkflowStatus{Nodes: wfv1.Nodes{}},
+	}
+
+	retryNodeID := wf.NodeID("dag.A")
+	childNodeID := wf.NodeID("dag.A(0)")
+
+	wf.Status.Nodes.Set(testCtx(), childNodeID, wfv1.NodeStatus{
+		ID:       childNodeID,
+		Name:     "dag.A(0)",
+		Phase:    wfv1.NodeFailed,
+		Type:     wfv1.NodeTypePod,
+		NodeFlag: &wfv1.NodeFlag{Retried: true},
+	})
+	wf.Status.Nodes.Set(testCtx(), retryNodeID, wfv1.NodeStatus{
+		ID:       retryNodeID,
+		Name:     "dag.A",
+		Phase:    wfv1.NodeRunning,
+		Type:     wfv1.NodeTypeRetry,
+		Children: []string{childNodeID},
+	})
+
+	tmpl := &wfv1.Template{DAG: &wfv1.DAGTemplate{
+		Tasks: []wfv1.DAGTask{{Name: "A", Template: "t"}},
+	}}
+	eval := NewDAGEvaluator(wf, tmpl, "", "dag")
+	// Policy Always would retry; the engine-provided decider says no (e.g. a
+	// retryStrategy.expression evaluated to false) and must win.
+	eval.SetRetryStrategy("A", &wfv1.RetryStrategy{Limit: intstrutil.ParsePtr("2"), RetryPolicy: wfv1.RetryPolicyAlways})
+	eval.SetRetryDecider("A", func(_ context.Context, _, _ *wfv1.NodeStatus, _ *wfv1.RetryStrategy) bool { return false })
+
+	result := eval.EvaluateTask(testCtx(), "A")
+
+	assert.Equal(t, ActionFail, result.Action)
+	assert.False(t, result.ShouldRun)
+	assert.True(t, result.FulfilledForDeps)
+}

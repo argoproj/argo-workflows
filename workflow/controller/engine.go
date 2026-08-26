@@ -157,8 +157,31 @@ func (e *Engine) populateRetryStrategies(ctx context.Context, tasks []dag.Task) 
 		rs := e.woc.retryStrategy(resolvedTmpl)
 		if rs != nil {
 			e.evaluator.SetRetryStrategy(task.GetName(), rs)
+			e.evaluator.SetRetryDecider(task.GetName(), e.woc.shouldRetryNode)
 		}
 	}
+}
+
+// shouldRetryNode is the Engine's dag.RetryDecider: the retry policy and
+// retryStrategy.expression checks are the ones processNodeRetries applies
+// when it actually drives the retry, so the evaluator's assessment and the
+// operator's decision cannot disagree.
+func (woc *wfOperationCtx) shouldRetryNode(ctx context.Context, retryNode, lastChild *wfv1.NodeStatus, rs *wfv1.RetryStrategy) bool {
+	retryOnFailed, retryOnError, err := retryPolicyAllows(ctx, lastChild, *rs)
+	if err != nil {
+		return false
+	}
+	if (lastChild.Phase == wfv1.NodeFailed && !retryOnFailed) || (lastChild.Phase == wfv1.NodeError && !retryOnError) {
+		return false
+	}
+	if rs.Expression != "" && len(retryNode.Children) > 0 {
+		allowed, err := woc.retryExpressionAllows(retryNode, *rs)
+		if err != nil {
+			return false
+		}
+		return allowed
+	}
+	return true
 }
 
 // reconcileDaemonedTasks re-executes any tasks whose pods are running as daemons.
