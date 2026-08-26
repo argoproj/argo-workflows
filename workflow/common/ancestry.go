@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -84,8 +85,7 @@ func ParseDepends(depends string) ([]DependsRef, error) {
 // RewriteDepends returns the expression with every reference replaced by
 // rewrite(ref). References are spliced right to left so offsets stay valid.
 func RewriteDepends(depends string, refs []DependsRef, rewrite func(DependsRef) string) string {
-	for i := len(refs) - 1; i >= 0; i-- {
-		ref := refs[i]
+	for _, ref := range slices.Backward(refs) {
 		depends = depends[:ref.Start] + rewrite(ref) + depends[ref.End:]
 	}
 	return depends
@@ -97,10 +97,10 @@ func GetTaskDependencies(ctx context.Context, task *wfv1.DAGTask, dctx DagContex
 	refs, _ := ParseDepends(depends)
 	dependencies := make(map[string]DependencyType)
 	for _, ref := range refs {
-		switch {
-		case ref.Result == "":
+		switch ref.Result {
+		case "":
 			dependencies[ref.Task] = DependencyTypeTask
-		case ref.Result == TaskResultAnySucceeded || ref.Result == TaskResultAllFailed:
+		case TaskResultAnySucceeded, TaskResultAllFailed:
 			dependencies[ref.Task] = DependencyTypeItems
 		default:
 			if _, ok := dependencies[ref.Task]; !ok { // DependencyTypeItems takes precedence

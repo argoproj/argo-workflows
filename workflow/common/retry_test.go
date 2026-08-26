@@ -13,8 +13,8 @@ import (
 )
 
 func TestRetryBackoffWait(t *testing.T) {
-	backoff := func(duration, factor, cap string) *wfv1.RetryStrategy {
-		rs := &wfv1.RetryStrategy{Backoff: &wfv1.Backoff{Duration: duration, Cap: cap}}
+	backoff := func(duration, factor, capValue string) *wfv1.RetryStrategy {
+		rs := &wfv1.RetryStrategy{Backoff: &wfv1.Backoff{Duration: duration, Cap: capValue}}
 		if factor != "" {
 			rs.Backoff.Factor = intstr.ParsePtr(factor)
 		}
@@ -45,7 +45,7 @@ func TestRetryBackoffWait(t *testing.T) {
 	}
 
 	_, err := RetryBackoffWait(&wfv1.RetryStrategy{Backoff: &wfv1.Backoff{}}, 1)
-	assert.EqualError(t, err, "no base duration specified for retryStrategy")
+	require.EqualError(t, err, "no base duration specified for retryStrategy")
 	_, err = RetryBackoffWait(backoff("nonsense", "", ""), 1)
 	assert.Error(t, err)
 }
