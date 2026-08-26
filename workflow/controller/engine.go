@@ -421,6 +421,22 @@ func (e *Engine) converge(ctx context.Context, tasks []dag.Task, results map[str
 	sort.Strings(keys)
 	for _, k := range keys {
 		result := results[k]
+		if result.Error != nil {
+			// The evaluator could not assess this task (e.g. its depends
+			// expression failed to evaluate). Record that as a terminal Error
+			// node so the boundary can assess it; left unrecorded, the task
+			// would stay Pending and the boundary would never complete.
+			taskNodeName := e.taskNodeName(result.TaskName)
+			if node, getErr := e.woc.wf.GetNodeByName(taskNodeName); getErr != nil {
+				e.woc.initializeNode(ctx, taskNodeName, wfv1.NodeTypeSkipped, e.tmplCtx.GetTemplateScope(), e.orgTmpl, e.boundaryID, wfv1.NodeError, &wfv1.NodeFlag{}, true, result.Error.Error())
+				e.addChildNode(ctx, result.TaskName, taskNodeName)
+				executedTasks[result.TaskName] = true
+			} else if !node.Fulfilled() {
+				e.woc.markNodeError(ctx, taskNodeName, result.Error)
+				executedTasks[result.TaskName] = true
+			}
+			continue
+		}
 		needsExecution := result.Action == dag.ActionExecute || result.ShouldRun ||
 			result.Action == dag.ActionSucceed || result.Action == dag.ActionFail
 
@@ -670,7 +686,11 @@ func (e *Engine) createOmittedNodes(ctx context.Context, tasks []dag.Task) map[s
 			continue
 		}
 		if result, ok := results[taskName]; ok && result.Skipped && !result.ShouldRun {
-			e.woc.initializeNode(ctx, taskNodeName, wfv1.NodeTypeSkipped, e.tmplCtx.GetTemplateScope(), e.orgTmpl, e.boundaryID, wfv1.NodeOmitted, &wfv1.NodeFlag{}, true, "omitted: depends condition not met")
+			reason := result.SkipReason
+			if reason == "" {
+				reason = "depends condition not met"
+			}
+			e.woc.initializeNode(ctx, taskNodeName, wfv1.NodeTypeSkipped, e.tmplCtx.GetTemplateScope(), e.orgTmpl, e.boundaryID, wfv1.NodeOmitted, &wfv1.NodeFlag{}, true, "omitted: "+reason)
 			e.addChildNode(ctx, task.GetName(), taskNodeName)
 		}
 	}
