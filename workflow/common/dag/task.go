@@ -32,9 +32,11 @@ type Task interface {
 }
 
 // HasExpansion reports whether the task uses withItems/withParam/withSequence
-// and therefore expands into a TaskGroup of per-item children.
+// and therefore expands into a TaskGroup of per-item children. An explicitly
+// empty withItems list is not an expansion (matching DAGTask.ShouldExpand and
+// validation): the task runs once, as if withItems had been omitted.
 func HasExpansion(t Task) bool {
-	return t.GetWithItems() != nil || t.GetWithParam() != "" || t.GetWithSequence() != nil
+	return len(t.GetWithItems()) > 0 || t.GetWithParam() != "" || t.GetWithSequence() != nil
 }
 
 // DAGTask adapts wfv1.DAGTask to the Task interface.
