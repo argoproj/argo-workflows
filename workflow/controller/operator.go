@@ -1177,25 +1177,9 @@ func (woc *wfOperationCtx) processNodeRetries(ctx context.Context, node *wfv1.No
 		node = woc.markNodePhase(ctx, node.Name, node.Phase, "")
 	}
 
-	var retryOnFailed bool
-	var retryOnError bool
-	switch retryStrategy.RetryPolicyActual() {
-	case wfv1.RetryPolicyAlways:
-		retryOnFailed = true
-		retryOnError = true
-	case wfv1.RetryPolicyOnError:
-		retryOnFailed = false
-		retryOnError = true
-	case wfv1.RetryPolicyOnTransientError:
-		if (lastChildNode.Phase == wfv1.NodeFailed || lastChildNode.Phase == wfv1.NodeError) && errorsutil.IsTransientErr(ctx, argoerrors.InternalError(lastChildNode.Message)) {
-			retryOnFailed = true
-			retryOnError = true
-		}
-	case wfv1.RetryPolicyOnFailure:
-		retryOnFailed = true
-		retryOnError = false
-	default:
-		return nil, false, fmt.Errorf("%s is not a valid RetryPolicy", retryStrategy.RetryPolicyActual())
+	retryOnFailed, retryOnError, err := retryPolicyAllows(ctx, lastChildNode, retryStrategy)
+	if err != nil {
+		return nil, false, err
 	}
 	woc.log.WithFields(logging.Fields{"policy": retryStrategy.RetryPolicyActual(), "onFailed": retryOnFailed, "onError": retryOnError}).Info(ctx, "Retry Policy")
 
@@ -1219,9 +1203,7 @@ func (woc *wfOperationCtx) processNodeRetries(ctx context.Context, node *wfv1.No
 	}
 
 	if retryStrategy.Expression != "" && len(childNodeIds) > 0 {
-		localScope := buildRetryStrategyLocalScope(node, woc.wf.Status.Nodes)
-		scope := env.GetFuncMap(localScope)
-		shouldContinue, err := argoexpr.EvalBool(retryStrategy.Expression, scope)
+		shouldContinue, err := woc.retryExpressionAllows(node, retryStrategy)
 		if err != nil {
 			return nil, false, err
 		}
@@ -1232,6 +1214,34 @@ func (woc *wfOperationCtx) processNodeRetries(ctx context.Context, node *wfv1.No
 
 	woc.log.WithFields(logging.Fields{"count": len(childNodeIds), "nodeName": node.Name}).Info(ctx, "child nodes failed, trying again")
 	return node, true, nil
+}
+
+// retryPolicyAllows reports whether the retry policy permits retrying a child
+// that ended in lastChild's phase. OnTransientError additionally requires the
+// child's message to classify as a transient error.
+func retryPolicyAllows(ctx context.Context, lastChild *wfv1.NodeStatus, retryStrategy wfv1.RetryStrategy) (retryOnFailed, retryOnError bool, err error) {
+	switch retryStrategy.RetryPolicyActual() {
+	case wfv1.RetryPolicyAlways:
+		return true, true, nil
+	case wfv1.RetryPolicyOnError:
+		return false, true, nil
+	case wfv1.RetryPolicyOnTransientError:
+		if (lastChild.Phase == wfv1.NodeFailed || lastChild.Phase == wfv1.NodeError) && errorsutil.IsTransientErr(ctx, argoerrors.InternalError(lastChild.Message)) {
+			return true, true, nil
+		}
+		return false, false, nil
+	case wfv1.RetryPolicyOnFailure:
+		return true, false, nil
+	default:
+		return false, false, fmt.Errorf("%s is not a valid RetryPolicy", retryStrategy.RetryPolicyActual())
+	}
+}
+
+// retryExpressionAllows evaluates retryStrategy.expression in the retry node's
+// scope (lastRetry.*, retries) and reports whether another attempt is allowed.
+func (woc *wfOperationCtx) retryExpressionAllows(retryNode *wfv1.NodeStatus, retryStrategy wfv1.RetryStrategy) (bool, error) {
+	localScope := buildRetryStrategyLocalScope(retryNode, woc.wf.Status.Nodes)
+	return argoexpr.EvalBool(retryStrategy.Expression, env.GetFuncMap(localScope))
 }
 
 // podReconciliation is the process by which a workflow will examine all its related

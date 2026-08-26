@@ -252,3 +252,47 @@ func TestAssessDAGPhaseDoesNotHangOnOmittedTasks(t *testing.T) {
 
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase, "workflow should be Succeeded")
 }
+
+// shouldRetryNode is the Engine's dag.RetryDecider; it must apply the same
+// policy and expression checks as processNodeRetries.
+func TestShouldRetryNodeMatchesOperatorPolicy(t *testing.T) {
+	t.Setenv("TRANSIENT_ERROR_PATTERN", "temporarily unavailable")
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: retry-decider
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    container:
+      image: alpine:3.23
+`)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	child := &wfv1.NodeStatus{ID: "retry-decider-1", Name: "retry-decider(0)", Type: wfv1.NodeTypePod, Phase: wfv1.NodeFailed}
+	woc.wf.Status.Nodes.Set(ctx, child.ID, *child)
+	retryNode := &wfv1.NodeStatus{ID: "retry-decider", Name: "retry-decider", Type: wfv1.NodeTypeRetry, Phase: wfv1.NodeRunning, Children: []string{child.ID}}
+
+	tests := []struct {
+		name      string
+		rs        wfv1.RetryStrategy
+		lastChild wfv1.NodeStatus
+		want      bool
+	}{
+		{"OnFailure retries Failed", wfv1.RetryStrategy{RetryPolicy: wfv1.RetryPolicyOnFailure}, wfv1.NodeStatus{Phase: wfv1.NodeFailed}, true},
+		{"OnFailure does not retry Error", wfv1.RetryStrategy{RetryPolicy: wfv1.RetryPolicyOnFailure}, wfv1.NodeStatus{Phase: wfv1.NodeError}, false},
+		{"OnTransientError ignores non-transient failure", wfv1.RetryStrategy{RetryPolicy: wfv1.RetryPolicyOnTransientError}, wfv1.NodeStatus{Phase: wfv1.NodeError, Message: "exit code 1"}, false},
+		{"OnTransientError retries transient failure", wfv1.RetryStrategy{RetryPolicy: wfv1.RetryPolicyOnTransientError}, wfv1.NodeStatus{Phase: wfv1.NodeError, Message: "backend temporarily unavailable"}, true},
+		{"expression false stops retrying", wfv1.RetryStrategy{RetryPolicy: wfv1.RetryPolicyAlways, Expression: "false"}, wfv1.NodeStatus{Phase: wfv1.NodeFailed}, false},
+		{"expression true keeps retrying", wfv1.RetryStrategy{RetryPolicy: wfv1.RetryPolicyAlways, Expression: "true"}, wfv1.NodeStatus{Phase: wfv1.NodeFailed}, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, woc.shouldRetryNode(ctx, retryNode, &tt.lastChild, &tt.rs))
+		})
+	}
+}
