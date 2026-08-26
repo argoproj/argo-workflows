@@ -878,30 +878,9 @@ func (e *Engine) executeTask(ctx context.Context, task dag.Task, addChild bool) 
 		return e.woc.markNodeError(ctx, taskNodeName, err), err
 	}
 
-	// Check the task's when clause to decide if it should execute.
-	proceed, err := e.evaluateWhenClause(ctx, task, scope)
-	if err != nil {
-		e.woc.initializeNode(ctx, taskNodeName, wfv1.NodeTypeSkipped, e.tmplCtx.GetTemplateScope(), e.orgTmpl, e.boundaryID, wfv1.NodeError, &wfv1.NodeFlag{}, true, err.Error())
-		if addChild {
-			e.addChildNode(ctx, taskName, taskNodeName)
-		}
-		// Mark only the failing task node here; the boundary node is assessed by
-		// the dispatch loop after every sibling has had its chance, so it rolls
-		// up to Failed rather than being clobbered to a terminal Error.
-		return e.woc.markNodeError(ctx, taskNodeName, err), err
-	}
-
-	if !proceed {
-		if _, err = e.woc.wf.GetNodeByName(taskNodeName); err != nil {
-			skipReason := fmt.Sprintf("when '%s' evaluated false", task.GetWhen())
-			e.log.WithFields(logging.Fields{"childNodeName": taskNodeName, "skipReason": skipReason}).Info(ctx, "Skipping")
-			e.woc.initializeNode(ctx, taskNodeName, wfv1.NodeTypeSkipped, e.tmplCtx.GetTemplateScope(), e.orgTmpl, e.boundaryID, wfv1.NodeSkipped, &wfv1.NodeFlag{}, true, skipReason)
-			if addChild {
-				e.addChildNode(ctx, taskName, taskNodeName)
-			}
-		}
-		return nil, nil
-	}
+	// The task's when clause is evaluated once, in createDesiredTask (which
+	// also handles expanded children, whose {{item}} references only resolve
+	// after expansion).
 
 	// Expand withItems if necessary
 	if dag.HasExpansion(task) {
@@ -1049,8 +1028,10 @@ func (e *Engine) createDesiredTask(ctx context.Context, task dag.Task, addChild 
 		for _, parent := range parentNodeNames {
 			e.woc.addChildNode(ctx, parent, taskNodeName)
 		}
+		// Mark only the failing task node; the boundary is assessed by the
+		// dispatch loop after every sibling has had its chance, so it rolls up
+		// to Failed rather than being clobbered to a terminal Error.
 		e.woc.markNodeError(ctx, taskNodeName, err)
-		e.woc.markNodeError(ctx, e.nodeName, err)
 		return nil, err
 	}
 
