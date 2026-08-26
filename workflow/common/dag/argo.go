@@ -349,9 +349,10 @@ func (e *DAGEvaluator) enumerateOutcomes(logic string, scope map[string]taskResu
 	return canBeTrue, canBeFalse
 }
 
-// evaluateAllStates evaluates all tasks and handles cascading omission.
-// Uses a fixed-point loop: if task A is omitted, downstream tasks whose
-// depends conditions can never be met are also omitted.
+// evaluateAllStates evaluates all tasks and handles cascading omission in a
+// single pass over the topological order: a task is evaluated after all of
+// its dependencies, so if task A is omitted, downstream tasks whose depends
+// conditions can never be met are omitted in the same pass.
 //
 // IMPORTANT: This method clears previously-set Omitted states at the start,
 // then re-evaluates from scratch. It must be called before any method that
