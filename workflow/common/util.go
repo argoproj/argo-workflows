@@ -241,6 +241,9 @@ func ProcessArgs(ctx context.Context, tmpl *wfv1.Template, args wfv1.ArgumentsPr
 			if argArt == nil {
 				return nil, errors.Errorf(errors.CodeBadRequest, "inputs.artifacts.%s was not supplied", inArt.Name)
 			}
+			// A `from`/`fromExpression` reference is an acceptable source here even
+			// though it is not yet a location: the DAG/Steps engine resolves it
+			// against the boundary scope after argument processing.
 			if (argArt.From == "" && argArt.FromExpression == "") && !argArt.HasLocationOrKey() && !validateOnly {
 				return nil, errors.Errorf(errors.CodeBadRequest, "inputs.artifacts.%s missing location information", inArt.Name)
 			}
