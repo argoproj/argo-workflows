@@ -199,7 +199,8 @@ export function WorkflowsList({match, location, history}: RouteComponentProps<an
             () => setError(null),
             newWorkflows => setWorkflows([...newWorkflows]),
             err => setError(err),
-            sortByYouth
+            sortByYouth,
+            pagination.limit
         );
         listWatch.start();
 
