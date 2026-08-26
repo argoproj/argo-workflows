@@ -819,10 +819,9 @@ func TestTaskResultFieldsMatchDependsVocabulary(t *testing.T) {
 		string(common.TaskResultSkipped), string(common.TaskResultOmitted), string(common.TaskResultDaemoned),
 		string(common.TaskResultAnySucceeded), string(common.TaskResultAllFailed),
 	}
-	rt := reflect.TypeFor[taskResult]()
 	var got []string
-	for i := range rt.NumField() {
-		got = append(got, rt.Field(i).Name)
+	for field := range reflect.TypeFor[taskResult]().Fields() {
+		got = append(got, field.Name)
 	}
 	assert.ElementsMatch(t, want, got)
 }
