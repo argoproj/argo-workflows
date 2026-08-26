@@ -371,11 +371,12 @@ func (woc *wfOperationCtx) postExecutionHandling(ctx context.Context, node *wfv1
 	}
 
 	// Task-result placeholder nodes have empty Type AND empty Phase — they are
-	// pre-synced outputs awaiting real node initialization. Return an error so
-	// the execution machinery (executeSteps/executeDAG) can assess the phase
-	// correctly. Do NOT call markWorkflowError here: when task results are still
-	// in progress, the workflow must stay Running; the callers will mark the
-	// appropriate phase.
+	// pre-synced outputs whose real node was never initialized (e.g. a workflow
+	// labelled completed while still Running, #12615). This error is fatal by
+	// design: the Engine records it on the DAG/Steps boundary and the workflow
+	// ends in Error rather than reconciling an uninitializable node forever
+	// (see TestWorkflowRunningButLabelCompleted). We only return the error —
+	// the callers, not this function, mark the boundary and workflow phase.
 	// Note: we check both Type=="" and Phase=="" to distinguish placeholders from
 	// legitimately initialized nodes that happen to have empty Type (e.g., nodes
 	// from FormulateResubmitWorkflow where the YAML didn't specify Type).
