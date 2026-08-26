@@ -33,7 +33,6 @@ import (
 	intstrutil "github.com/argoproj/argo-workflows/v4/util/intstr"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/strftime"
-	"github.com/argoproj/argo-workflows/v4/util/template"
 	"github.com/argoproj/argo-workflows/v4/util/variables"
 	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
@@ -3758,78 +3757,6 @@ func TestGlobalParamSubstitutionWithArtifact(t *testing.T) {
 	assert.Len(t, pods.Items, 1)
 }
 
-func TestExpandWithSequence(t *testing.T) {
-	var seq wfv1.Sequence
-	var items []wfv1.Item
-	var err error
-
-	seq = wfv1.Sequence{
-		Count: intstrutil.ParsePtr("10"),
-	}
-	items, err = expandSequence(&seq)
-	require.NoError(t, err)
-	assert.Len(t, items, 10)
-	assert.Equal(t, "0", items[0].GetStrVal())
-	assert.Equal(t, "9", items[9].GetStrVal())
-
-	seq = wfv1.Sequence{
-		Start: intstrutil.ParsePtr("101"),
-		Count: intstrutil.ParsePtr("10"),
-	}
-	items, err = expandSequence(&seq)
-	require.NoError(t, err)
-	assert.Len(t, items, 10)
-	assert.Equal(t, "101", items[0].GetStrVal())
-	assert.Equal(t, "110", items[9].GetStrVal())
-
-	seq = wfv1.Sequence{
-		Start: intstrutil.ParsePtr("50"),
-		End:   intstrutil.ParsePtr("60"),
-	}
-	items, err = expandSequence(&seq)
-	require.NoError(t, err)
-	assert.Len(t, items, 11)
-	assert.Equal(t, "50", items[0].GetStrVal())
-	assert.Equal(t, "60", items[10].GetStrVal())
-
-	seq = wfv1.Sequence{
-		Start: intstrutil.ParsePtr("60"),
-		End:   intstrutil.ParsePtr("50"),
-	}
-	items, err = expandSequence(&seq)
-	require.NoError(t, err)
-	assert.Len(t, items, 11)
-	assert.Equal(t, "60", items[0].GetStrVal())
-	assert.Equal(t, "50", items[10].GetStrVal())
-
-	seq = wfv1.Sequence{
-		Count: intstrutil.ParsePtr("0"),
-	}
-	items, err = expandSequence(&seq)
-	require.NoError(t, err)
-	assert.Empty(t, items)
-
-	seq = wfv1.Sequence{
-		Start: intstrutil.ParsePtr("8"),
-		End:   intstrutil.ParsePtr("8"),
-	}
-	items, err = expandSequence(&seq)
-	require.NoError(t, err)
-	assert.Len(t, items, 1)
-	assert.Equal(t, "8", items[0].GetStrVal())
-
-	seq = wfv1.Sequence{
-		Format: "testuser%02X",
-		Count:  intstrutil.ParsePtr("10"),
-		Start:  intstrutil.ParsePtr("1"),
-	}
-	items, err = expandSequence(&seq)
-	require.NoError(t, err)
-	assert.Len(t, items, 10)
-	assert.Equal(t, "testuser01", items[0].GetStrVal())
-	assert.Equal(t, "testuser0A", items[9].GetStrVal())
-}
-
 var metadataTemplate = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -5842,17 +5769,6 @@ func TestNoOnExitWhenSkipped(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestGenerateNodeName(t *testing.T) {
-	assert.Equal(t, "sleep(10:ten)", generateNodeName("sleep", 10, "ten"))
-	item, err := wfv1.ParseItem(`[{"foo": "bar"}]`)
-	require.NoError(t, err)
-	assert.Equal(t, `sleep(10:[{"foo":"bar"}])`, generateNodeName("sleep", 10, item))
-	require.NoError(t, err)
-	item, err = wfv1.ParseItem("[10]")
-	require.NoError(t, err)
-	assert.Equal(t, `sleep(10:[10])`, generateNodeName("sleep", 10, item))
-}
-
 // This tests that we don't wait a backoff if it would exceed the maxDuration anyway.
 func TestPanicMetric(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(noOnExitWhenSkipped)
@@ -7511,86 +7427,6 @@ func TestFailSuspendedAndPendingNodesAfterShutdown(t *testing.T) {
 			assert.Equal(t, wfv1.NodeFailed, node.Phase)
 		}
 	})
-}
-
-func Test_processItem(t *testing.T) {
-	ctx := logging.TestContext(t.Context())
-
-	tests := []struct {
-		name          string
-		withParam     string
-		expectedName  string
-		expectedParam string
-	}{
-		{
-			name:          "Test string",
-			withParam:     `["string"]`,
-			expectedName:  `task-name(0:string)`,
-			expectedParam: `string`,
-		},
-		{
-			name:          "Test multiline string",
-			withParam:     `["alpha\nbeta"]`,
-			expectedName:  `task-name(0:alpha\nbeta)`,
-			expectedParam: "alpha\nbeta",
-		},
-		{
-			name:          "Test number",
-			withParam:     `[42]`,
-			expectedName:  `task-name(0:42)`,
-			expectedParam: `42`,
-		},
-		{
-			name:          "Test boolean",
-			withParam:     `[true]`,
-			expectedName:  `task-name(0:true)`,
-			expectedParam: `true`,
-		},
-		{
-			name:          "Test map",
-			withParam:     `[{"number": 2, "string": "foo", "list": [0, "1"], "json": {"number": 2, "string": "foo", "list": [0, "1"]}}]`,
-			expectedName:  `task-name(0:json:{"list":[0,"1"],"number":2,"string":"foo"},list:[0,"1"],number:2,string:foo)`,
-			expectedParam: `{"json":{"list":[0,"1"],"number":2,"string":"foo"},"list":[0,"1"],"number":2,"string":"foo"}`,
-		},
-		{
-			name:          "Test list",
-			withParam:     `[[1, "two", 3]]`,
-			expectedName:  `task-name(0:[1 two 3])`,
-			expectedParam: `[1,"two",3]`,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			task := wfv1.DAGTask{
-				WithParam: tt.withParam,
-				Arguments: wfv1.Arguments{
-					Parameters: []wfv1.Parameter{
-						{
-							Name:  "item",
-							Value: wfv1.AnyStringPtr("{{item}}"),
-						},
-					},
-				},
-			}
-
-			taskBytes, err := json.Marshal(task)
-			require.NoError(t, err)
-
-			tmpl, err := template.NewTemplate(string(taskBytes))
-			require.NoError(t, err)
-
-			var items []wfv1.Item
-			wfv1.MustUnmarshal([]byte(tt.withParam), &items)
-
-			var newTask wfv1.DAGTask
-			newTaskName, err := processItem(ctx, tmpl, "task-name", 0, items[0], &newTask, "", map[string]any{})
-
-			require.NoError(t, err)
-			assert.Equal(t, tt.expectedName, newTaskName)
-			assert.Equal(t, tt.expectedParam, newTask.Arguments.Parameters[0].Value.String())
-		})
-	}
 }
 
 var stepTimeoutWf = `

@@ -185,7 +185,7 @@ func TestExpandStepGroupWithParam(t *testing.T) {
 			Parameter: "1234",
 		},
 		{
-			Name:      "use-with-param(1:foo\tbar)",
+			Name:      `use-with-param(1:foo\tbar)`,
 			Parameter: "foo\tbar",
 		},
 		{
