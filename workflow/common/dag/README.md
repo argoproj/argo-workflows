@@ -1,92 +1,110 @@
 # DAG Evaluation Package
 
-This package implements DAG dependency evaluation for Argo Workflows. It determines which tasks are ready to execute, which are waiting on dependencies, and which should be omitted because their depends conditions can never be satisfied.
-
-Both DAG and Steps template types use this package via the `Engine` in `workflow/controller/engine.go`.
+This package decides which tasks of a DAG or Steps template are ready to run, which are waiting on dependencies, which should be omitted because their `depends` condition can never be satisfied, and what a retry or task-group node's current state amounts to.
+It performs no side effects: the `Engine` in `workflow/controller/engine.go` reads its results and creates, dispatches and marks nodes.
+Both template types use it — Steps tasks are adapted to the same `Task` interface with synthetic dependencies on the previous step group.
 
 ## Files
 
 | File | Purpose |
 |------|---------|
-| `argo.go` | `DAGEvaluator` — main evaluator with readiness checking, cascading omission, and public API |
-| `topology.go` | `WorkflowTasks` — task collection, dependency resolution, depends expression parsing, topology caching |
-| `store.go` | `WorkflowStore` — maps task names to workflow nodes, tracks evaluator-managed state (e.g. Omitted) |
-| `task.go` | `Task` interface and `DAGTask` adapter for `wfv1.DAGTask` |
-| `types.go` | Shared types: `TaskState`, `ReadinessResult`, `TaskResult`, `EvaluationResult` |
-| `expansion.go` | WithItems/WithParam/WithSequence task expansion |
+| `argo.go` | `DAGEvaluator` — readiness evaluation, cascading omission, retry and task-group assessment, public API |
+| `topology.go` | `WorkflowTasks` — task collection, dependency resolution, topological order |
+| `store.go` | `workflowStore` — maps task names to workflow nodes; `TaskNodeName` / `TaskNameFromNodeName` naming convention |
+| `task.go` | `Task` interface and the `DAGTask` adapter for `wfv1.DAGTask` (`StepAdapter` lives in `workflow/controller/steps.go`) |
+| `types.go` | `EvaluationResult`, `Action`, and the `taskResult` scope struct |
+| `expansion.go` | `withItems` / `withParam` / `withSequence` expansion and expanded task naming |
+| `helpers_test.go` | Test-only conveniences (`NewDAGEvaluator`, `EvaluateTask`); production code does not use them |
 
-## How It Works
+## How it works
 
 ### 1. Construction
 
 ```go
-evaluator := dag.NewDAGEvaluator(wf, tmpl, boundaryID, boundaryName)
+evaluator := dag.NewDAGEvaluatorFromTasks(wf, tasks, tmpl, boundaryID, boundaryName)
+evaluator.SetRetryStrategy(taskName, retryStrategy) // per task with a retry strategy
+evaluator.SetRetryDecider(taskName, decider)        // the engine's retry policy/expression decision
 ```
 
-This creates:
-- A `WorkflowStore` that reads node state from `wf.Status.Nodes`
-- A `WorkflowTasks` that parses depends expressions and caches the dependency topology
+`tasks` is the boundary's task list as `dag.Task` values (`DAGTask` for DAG templates, `StepAdapter` for Steps).
+Construction builds a `workflowStore` over `wf.Status.Nodes` and a `WorkflowTasks` that resolves every task's dependencies once.
+A new evaluator is created every reconcile cycle, so nothing here is long-lived.
 
-### 2. Topology Caching
+### 2. Dependency resolution
 
-`WorkflowTasks` pre-computes the dependency graph (which tasks depend on which, and the normalized depends expressions) at construction time. Since a new `DAGEvaluator` is created each reconciliation cycle, the topology is recomputed each time.
+A user-written `depends` expression is tokenized with `common.ParseDepends` — the same grammar workflow validation uses, so an expression cannot pass validation and be read differently here.
+Legacy `dependencies` lists (and the synthetic dependencies of Steps tasks, named `[i].step`) are structured data and are expanded directly with `common.ExpandDependency`; they are never re-parsed as an expression.
 
-Task names are hex-encoded (e.g., `my-task` → `t6d792d7461736b`) so they're safe identifiers in expression evaluation.
+Task names are rewritten to hex-encoded identifiers (`my-task` → `t6d792d7461736b`) so they are valid, collision-free identifiers in the evaluated expression.
+The dependency graph is sorted topologically (Kahn's algorithm) once, at construction.
 
-### 3. Readiness Evaluation
+### 3. Readiness evaluation
 
-For each task, `evaluateDependsReadiness` builds an evaluation scope from dependency node states and evaluates the depends expression via `argoexpr.EvalBool()`:
+For each pending task, `evaluateDependsReadiness` builds a scope of dependency states — a `taskResult` per dependency with the fields `Succeeded`, `Failed`, `Errored`, `Skipped`, `Omitted`, `Daemoned`, `AnySucceeded`, `AllFailed` (the same vocabulary as `common.TaskResult*`) — and evaluates the normalized expression with a cached, compiled `expr` program:
 
-- **Ready**: Expression is true (or no depends expression and no pending deps)
-- **Waiting**: Expression is false but some deps are still pending — could become true later
-- **Omit**: Expression is false and either all deps are terminal, or even the best-case outcomes for pending deps can't satisfy it
+- **ready** — the expression is true, or is true under every possible outcome of the still-pending dependencies.
+- **waiting** — the expression is false, but some outcome of a pending dependency could still make it true.
+- **omit** — the expression is false and no realistic outcome of the pending dependencies can make it true.
 
-The "best-case" check is key: if dep A is Omitted and the expression requires `A.Succeeded`, we try setting all pending deps to all-true. If it's still false, the expression is structurally unsatisfiable → Omit.
+The "could it still become true" check enumerates the realistic outcome shapes of each pending dependency (`pendingDepOutcomes`, nine shapes, so negated references such as `!B.Failed` are handled correctly) for up to five pending dependencies (`maxEnumerationDeps`).
+With more pending dependencies than that, both outcomes are conservatively assumed possible and the task waits rather than being omitted.
 
-### 4. Cascading Omission
+### 4. Cascading omission
 
-`evaluateAllStates` runs a fixed-point loop:
-1. Clear previously-omitted states (conditions may have changed since last call)
-2. Evaluate all pending tasks
-3. If any are newly Omitted, loop again (downstream tasks may now be unreachable)
-4. Stop when no changes occur
+`evaluateAllStates` clears any previously computed Omitted state and evaluates every task in topological order in a single pass.
+Because a task is evaluated after all of its dependencies, an omission propagates in the same pass: A fails → B (`depends: A.Succeeded`) is omitted → C (`depends: B`) is omitted.
 
-This handles chains like: A fails → B (depends on A.Succeeded) is Omitted → C (depends on B) is Omitted.
+### 5. Retry and task-group nodes
 
-### 5. Public API
+`evaluateRetryNode` is the pure assessment counterpart of the controller's `processNodeRetries`: it inspects a retry node's attempts and reports whether to execute another attempt, wait (`RequeueAfter`, computed with `common.RetryBackoffWait` minus the time already elapsed), succeed, or fail.
+Whether the policy allows another attempt is decided by the engine-provided `RetryDecider`, so the evaluator and the operator cannot disagree.
+Retry strategies are registered under static task names; expanded children (`A(0:x)`) inherit their task's strategy.
 
-The `Engine` in `engine.go` uses these methods:
+`EvaluateAll` also emits a result per expanded child of a task group (`ParentTaskName` set), and `evaluateTaskGroupNode` derives the group's phase from its children.
+
+### 6. Public API
+
+What the `Engine` uses:
 
 ```go
-evaluator.GetTargetTasks(ctx)      // Leaf tasks or explicit DAG targets
-evaluator.EvaluateAll(ctx)         // Map of task → EvaluationResult
-evaluator.EvaluateTask(ctx, name)  // Evaluation result for a single task
-evaluator.GetDependencies(ctx, t)  // Dependencies for a specific task
+evaluator.EvaluateAll(ctx)              // map of task name → EvaluationResult (incl. expanded children)
+evaluator.GetTargetTasks(ctx)           // explicit dag.target tasks, or the leaves
+evaluator.FindLeafTaskNames(ctx)        // tasks nothing depends on
+evaluator.GetAncestors(ctx, task)       // transitive dependencies (unordered)
+evaluator.GetDependencies(ctx, task)    // direct dependencies
+evaluator.GetTask(name)                 // the Task by name
+dag.ExpandTask / dag.HasExpansion       // withItems/withParam/withSequence expansion
+dag.TaskNodeName / dag.TaskNameFromNodeName // task ↔ node name convention
 ```
 
-Each `EvaluationResult` contains:
-- `ShouldRun` — task is ready to execute
-- `Suspended` / `WaitingOn` — task is waiting for specific dependencies
-- `Skipped` / `SkipReason` — task will never run (depends condition unsatisfiable)
+Fields of `EvaluationResult` the engine acts on:
+
+- `Action` / `ActionReason` — what to do (`ActionExecute`, `ActionSucceed`, `ActionFail`, `ActionNone`); `ShouldRun` mirrors "execute".
+- `CurrentPhase` and `FulfilledForDeps` — for boundary phase assessment and dependency gating (a running daemon is fulfilled for its dependants).
+- `RequeueAfter` — retry backoff still to wait.
+- `Skipped` / `SkipReason` — the task will never run; the engine creates the Omitted node with this reason.
+- `Error` — the task could not be assessed; the engine records a terminal Error node.
+- `ParentTaskName` — set on expanded-child results so the engine can dispatch them without parsing the name.
+
+`Suspended` and `WaitingOn` are informational and not currently read by the engine.
 
 ## Architecture
 
 ```
-Engine (engine.go)
+Engine (workflow/controller/engine.go)
   │
   ├── DAGEvaluator (argo.go)
-  │     │
   │     ├── WorkflowTasks (topology.go)
-  │     │     ├── Dependency graph (pre-computed)
-  │     │     ├── Depends expression parsing
-  │     │     └── Task name normalization
-  │     │
-  │     └── WorkflowStore (store.go)
-  │           ├── Node lookup by task name
-  │           ├── State tracking (Omitted, etc.)
-  │           └── Hooks fulfillment checking
+  │     │     ├── common.ParseDepends / ExpandDependency (shared with validation)
+  │     │     ├── hex-encoded identifiers
+  │     │     └── topological order
+  │     ├── workflowStore (store.go)
+  │     │     ├── node lookup by task name (TaskNodeName)
+  │     │     ├── evaluator-managed state (Omitted)
+  │     │     └── hook-fulfilment checks
+  │     └── RetryDecider / RetryStrategy registered by the engine
   │
   └── Task interface (task.go)
-        ├── DAGTask (for DAG templates)
-        └── StepAdapter (in steps.go, for Steps templates)
+        ├── DAGTask   (DAG templates)
+        └── StepAdapter (Steps templates, workflow/controller/steps.go)
 ```
