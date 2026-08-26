@@ -80,16 +80,9 @@ func TestArtifactResolutionWhenSkipped(t *testing.T) {
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
-	// The engine cascades instant completions within a single Execute call,
-	// so skipped groups are processed without extra cycles. We loop here as
-	// a safety net in case future changes alter the batching behavior.
-	for range 10 {
-		woc.operate(ctx)
-		if woc.wf.Status.Phase == wfv1.WorkflowSucceeded {
-			break
-		}
-		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
-	}
+	// The engine cascades instant completions (skipped groups) within a
+	// single operate cycle, as the pre-Engine controller did.
+	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
