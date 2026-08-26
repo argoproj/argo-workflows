@@ -16,7 +16,7 @@ The controller has permission (via Kubernetes RBAC + its config map) with either
 * Create/get/delete pods, PVCs, and PDBs.
 * List/get template, config maps, service accounts, and secrets.
 
-See [`workflow-controller-cluster-role.yaml`](https://raw.githubusercontent.com/argoproj/argo-workflows/main/manifests/cluster-install/workflow-controller-rbac/workflow-controller-clusterrole.yaml) or [`workflow-controller-role.yaml`](https://raw.githubusercontent.com/argoproj/argo-workflows/main/manifests/namespace-install/workflow-controller-rbac/workflow-controller-role.yaml)
+See [`workflow-controller-cluster-role.yaml`](https://raw.githubusercontent.com/argoproj/argo-workflows/main/manifests/cluster-install-no-crds/workflow-controller-rbac/workflow-controller-clusterrole.yaml) or [`workflow-controller-role.yaml`](https://raw.githubusercontent.com/argoproj/argo-workflows/main/manifests/namespace-install/workflow-controller-rbac/workflow-controller-role.yaml)
 
 ### User Permissions
 
@@ -60,7 +60,7 @@ rules:
       - get
       - list
       - watch
-  # Argo APIs. See also https://github.com/argoproj/argo-workflows/blob/main/manifests/cluster-install/workflow-controller-rbac/workflow-aggregate-roles.yaml#L4
+  # Argo APIs. See also https://github.com/argoproj/argo-workflows/blob/main/manifests/cluster-install-no-crds/workflow-controller-rbac/workflow-aggregate-roles.yaml#L4
   - apiGroups:
       - argoproj.io
     resources:
