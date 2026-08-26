@@ -330,3 +330,43 @@ func TestConverge_EvaluatorErrorBecomesErrorNode(t *testing.T) {
 	assert.Empty(t, fake.calls)
 	assert.Empty(t, executed)
 }
+
+// An explicitly empty withItems list is not an expansion: the task runs once
+// as a plain pod (as in every release), not as a TaskGroup with no children.
+func TestDAGEmptyWithItemsRunsOnce(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-empty-withitems
+  namespace: argo
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: A
+        template: echo
+        withItems: []
+  - name: echo
+    container:
+      image: argoproj/argosay:v2
+`)
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	pods, err := listPods(ctx, woc)
+	require.NoError(t, err)
+	assert.Len(t, pods.Items, 1)
+	node := woc.wf.Status.Nodes.FindByDisplayName("A")
+	require.NotNil(t, node)
+	assert.Equal(t, wfv1.NodeTypePod, node.Type)
+	for _, n := range woc.wf.Status.Nodes {
+		assert.NotEqual(t, wfv1.NodeTypeTaskGroup, n.Type, "node %q must not be a TaskGroup", n.Name)
+	}
+}
