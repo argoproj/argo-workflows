@@ -136,8 +136,6 @@ type Logger interface {
 
 	// When issuing a log, adding this will panic
 	WithPanic() Logger
-	// When issuing a log, adding this will exit 1
-	WithFatal() Logger
 
 	Debug(ctx context.Context, msg string)
 

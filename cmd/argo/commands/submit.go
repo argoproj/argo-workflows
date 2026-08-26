@@ -112,7 +112,7 @@ func NewSubmitCommand() *cobra.Command {
 	logger := logging.RequireLoggerFromContext(ctx)
 	err = command.Flags().SetAnnotation("parameter-file", cobra.BashCompFilenameExt, []string{"json", "yaml", "yml"})
 	if err != nil {
-		logger.WithError(err).WithFatal().Error(ctx, "Failed to set annotation")
+		logger.WithError(err).Error(ctx, "Failed to set annotation")
 		os.Exit(1)
 	}
 	return command
@@ -274,7 +274,7 @@ func unmarshalWorkflows(ctx context.Context, wfBytes []byte, strict bool) []wfv1
 	if err == nil {
 		return yamlWfs
 	}
-	logging.RequireLoggerFromContext(ctx).WithError(err).WithFatal().Error(ctx, "Failed to parse workflow")
+	logging.RequireLoggerFromContext(ctx).WithError(err).Error(ctx, "Failed to parse workflow")
 	os.Exit(1)
 	return nil
 }
