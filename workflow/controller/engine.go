@@ -702,7 +702,10 @@ func (e *Engine) createOmittedNodes(ctx context.Context, tasks []dag.Task, resul
 func (e *Engine) finalize(ctx context.Context, tasks []dag.Task, results map[string]dag.EvaluationResult, onExitCompleted bool) error {
 	targetTasks := e.evaluator.GetTargetTasks(ctx)
 
-	dagPhase := e.assessDAGPhase(ctx, tasks, results, e.woc.GetShutdownStrategy().Enabled() && onExitCompleted)
+	// Under a Stop shutdown the boundary is failed once its exit handlers are
+	// done — unless this boundary IS an onExit handler, which must be allowed
+	// to complete (#16488).
+	dagPhase := e.assessDAGPhase(ctx, tasks, results, e.woc.GetShutdownStrategy().Enabled() && onExitCompleted && !e.onExitTemplate)
 
 	switch dagPhase {
 	case wfv1.NodeRunning:
