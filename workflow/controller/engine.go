@@ -1385,13 +1385,28 @@ func (e *Engine) addTaskNodeToScope(ctx context.Context, scope *wfScope, ref var
 			return fmt.Errorf("failed to aggregate outputs for %s: %w", taskName, err)
 		}
 	}
-	e.woc.buildLocalScope(scope, ref, refName, node)
+	e.woc.buildLocalScope(scope, ref, refName, e.scopeNodeForTask(taskName, node))
 	holder := wfv1.TemplateReferenceHolder(node)
 	if t := e.evaluator.GetTask(taskName); t != nil {
 		holder = t.GetTemplateReferenceHolder()
 	}
 	e.woc.addSkippedNodeOutputsToScope(ctx, e.tmplCtx, scope, ref, refName, node, holder, includeArtifacts)
 	return nil
+}
+
+// scopeNodeForTask returns the node whose fields ({{steps.X.id}}, .status, ...)
+// represent taskName in a scope. For an expanded Steps step the pre-Engine
+// controller exposed the enclosing StepGroup node — Steps had no TaskGroup
+// node — and that is preserved for compatibility: the TaskGroup node only
+// feeds the aggregate outputs. DAG tasks expose their own (TaskGroup) node.
+func (e *Engine) scopeNodeForTask(taskName string, node *wfv1.NodeStatus) *wfv1.NodeStatus {
+	if e.tmpl.GetType() != wfv1.TemplateTypeSteps || node.Type != wfv1.NodeTypeTaskGroup {
+		return node
+	}
+	if sgNode, err := e.woc.wf.GetNodeByName(e.stepGroupNodeName(taskName)); err == nil {
+		return sgNode
+	}
+	return node
 }
 
 // buildLocalScopeFromTask builds a local scope for a task.
@@ -1470,14 +1485,14 @@ func (e *Engine) setDAGOutputs(ctx context.Context) error {
 	scope := createScope(e.tmpl)
 
 	includeArtifacts := e.tmpl.GetType() == wfv1.TemplateTypeSteps
-	addNodeToScope := func(taskNode *wfv1.NodeStatus, ref varkeys.NodeRefKeys, agg varkeys.AggregateKeys, name string, tmplHolder wfv1.TemplateReferenceHolder) error {
+	addNodeToScope := func(taskName string, taskNode *wfv1.NodeStatus, ref varkeys.NodeRefKeys, agg varkeys.AggregateKeys, name string, tmplHolder wfv1.TemplateReferenceHolder) error {
 		if taskNode.Type == wfv1.NodeTypeTaskGroup {
 			childNodes := e.getChildNodes(taskNode)
 			if aggErr := e.woc.processAggregateNodeOutputs(scope, agg, name, childNodes); aggErr != nil {
 				return aggErr
 			}
 		}
-		e.woc.buildLocalScope(scope, ref, name, taskNode)
+		e.woc.buildLocalScope(scope, ref, name, e.scopeNodeForTask(taskName, taskNode))
 		// A skipped/omitted task's declared outputs (producer default, else nil) must be in the
 		// aggregation scope too, so the template's own output params — including
 		// ValueFrom.Expression `??` fallbacks — can resolve them instead of failing to traverse nil.
@@ -1492,7 +1507,7 @@ func (e *Engine) setDAGOutputs(ctx context.Context) error {
 			if taskNode == nil {
 				continue
 			}
-			if err = addNodeToScope(taskNode, varkeys.TasksNodeRef, varkeys.TasksAggregate, task.Name, &task); err != nil {
+			if err = addNodeToScope(task.Name, taskNode, varkeys.TasksNodeRef, varkeys.TasksAggregate, task.Name, &task); err != nil {
 				return err
 			}
 		}
@@ -1500,11 +1515,12 @@ func (e *Engine) setDAGOutputs(ctx context.Context) error {
 		for i, stepGroup := range e.tmpl.Steps {
 			for _, step := range stepGroup.Steps {
 				// Step nodes use the [i].name format for lookup, but steps.name for scope prefix.
-				taskNode := e.getTaskNode(ctx, fmt.Sprintf("[%d].%s", i, step.Name))
+				taskName := fmt.Sprintf("[%d].%s", i, step.Name)
+				taskNode := e.getTaskNode(ctx, taskName)
 				if taskNode == nil {
 					continue
 				}
-				if err = addNodeToScope(taskNode, varkeys.StepsNodeRef, varkeys.StepsAggregate, step.Name, &step); err != nil {
+				if err = addNodeToScope(taskName, taskNode, varkeys.StepsNodeRef, varkeys.StepsAggregate, step.Name, &step); err != nil {
 					return err
 				}
 			}
