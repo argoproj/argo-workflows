@@ -125,8 +125,8 @@ func (s *wfScope) markAbsentOptionalArgs(args *wfv1.Arguments) {
 // fails terminally rather than leaving the workflow stuck. No-op for any node
 // that actually produced outputs. includeArtifacts additionally registers empty placeholders for the
 // template's declared output artifacts: steps relies on this to keep artifact references resolvable,
-// while DAG deliberately leaves them unresolved (resolveDependencyReferences omits optional artifacts
-// and errors on required ones).
+// while DAG deliberately leaves them unresolved (the pre-Engine dependency resolution omitted optional
+// artifacts and errored on required ones).
 func (woc *wfOperationCtx) addSkippedNodeOutputsToScope(ctx context.Context, tmplCtx *templateresolution.TemplateContext, scope *wfScope, ref varkeys.NodeRefKeys, name string, node *wfv1.NodeStatus, tmplHolder wfv1.TemplateReferenceHolder, includeArtifacts bool) {
 	if node == nil || node.Outputs != nil {
 		return
@@ -220,8 +220,8 @@ func (s *wfScope) resolveArguments(ctx context.Context, args wfv1.Arguments, glo
 	s.markAbsentOptionalArgs(&args)
 
 	// Resolve parameter value references by JSON-marshaling the arguments,
-	// performing template replacement, then unmarshaling. This matches main's
-	// resolveDependencyReferences behavior: simpleReplace escapes values for
+	// performing template replacement, then unmarshaling, as the pre-Engine
+	// dependency resolution did: simpleReplace escapes values for
 	// JSON context, and the unmarshal step reverses the escaping. Doing direct
 	// string replacement would double-escape values containing quotes.
 	argsBytes, err := json.Marshal(args.Parameters)
@@ -255,7 +255,7 @@ func (s *wfScope) resolveArguments(ctx context.Context, args wfv1.Arguments, glo
 			if err != nil {
 				if art.Optional {
 					// Optional artifact that failed to resolve: drop it from
-					// arguments (matches legacy resolveDependencyReferences).
+					// arguments, as the pre-Engine dependency resolution did.
 					continue
 				}
 				return args, err

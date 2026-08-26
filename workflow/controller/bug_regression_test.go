@@ -1,9 +1,7 @@
 package controller
 
-// Regression tests documenting known bugs from the code review of
-// branch dag-refactor-engine-v4.  Each test asserts the CORRECT (post-fix)
-// behavior; all the documented bugs are now fixed, so these tests lock the
-// fixes in place.
+// Regression tests for bugs found while unifying DAG and Steps execution in
+// the Engine. Each test asserts the correct behavior and locks the fix in.
 
 import (
 	"testing"

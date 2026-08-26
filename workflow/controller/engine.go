@@ -344,13 +344,6 @@ func (e *Engine) assessStepGroups(ctx context.Context) {
 	}
 }
 
-// converge applies evaluation results by performing side effects.
-// Static DAG tasks route through executeTask; expanded TaskGroup children
-// (e.g. "client(0:0)") route through dispatchTaskGroupChild so each per-item
-// instance can be re-reconciled independently — needed when, say, a sync
-// lock is released and a queued sibling needs another TryAcquire.
-// The evaluator decides WHAT should happen; this layer just dispatches.
-
 // isThrottleErr reports whether err is a deliberate throttling signal from
 // the reconciler. These are not real failures — the caller should stop
 // dispatching new work this pass but must not treat the situation as fatal.
@@ -412,6 +405,12 @@ func (e *Engine) executableTaskSet(ctx context.Context) map[string]bool {
 	return set
 }
 
+// converge applies evaluation results by performing side effects.
+// Static DAG tasks route through executeTask; expanded TaskGroup children
+// (e.g. "client(0:0)") route through dispatchTaskGroupChild so each per-item
+// instance can be re-reconciled independently — needed when, say, a sync
+// lock is released and a queued sibling needs another TryAcquire.
+// The evaluator decides WHAT should happen; this layer just dispatches.
 func (e *Engine) converge(ctx context.Context, tasks []dag.Task, results map[string]dag.EvaluationResult) (map[string]bool, error) {
 	executedTasks := make(map[string]bool)
 	var firstErr error
@@ -520,11 +519,11 @@ func (e *Engine) dispatchTaskGroupChild(ctx context.Context, tasks []dag.Task, p
 // scope with steps/tasks strict (exactly as main's ReplaceStrictAny over the step body): a reference
 // to an absent optional (present-but-nil) is a terminal error. A genuinely missing variable
 // (IsMissingVariableErr) is left to the existing expansion path — dependency ordering means a real
-// producer output is already present by expansion time, and this preserves current branch behavior.
+// producer output is already present by expansion time.
 //
-// ponytail: validation gate only — the resolved text is discarded; for non-nil refs the existing
+// This is a validation gate only — the resolved text is discarded; for non-nil refs the existing
 // Expand re-resolves identically (those keys are present in both scope views). withItems values are
-// not covered (no test, unusual shape); add the field here if that ever needs main parity.
+// not covered (no test, unusual shape); add the field here if that ever needs the same treatment.
 func (e *Engine) gateExpansionAbsentOptional(ctx context.Context, task dag.Task, scope *wfScope) error {
 	if task.GetWithParam() == "" && task.GetWithSequence() == nil {
 		return nil
@@ -585,8 +584,8 @@ func (e *Engine) reconcileExpanded(ctx context.Context, expanded []dag.Task, par
 // (withItems/withParam/withSequence). The parent task can't be reconciled directly
 // because its arguments contain unresolved {{item.*}} tags. Instead, we walk each
 // child and run it through the reconciler so postExecutionHandling fires (which
-// releases sync locks and emits metrics). This matches main's behavior where
-// executeTemplate is called for every expanded child on every cycle.
+// releases sync locks and emits metrics), as the pre-Engine controller did by
+// calling executeTemplate for every expanded child on every cycle.
 func (e *Engine) reconcileExpandedChildren(ctx context.Context, task dag.Task) {
 	taskNode := e.getTaskNode(ctx, task.GetName())
 	if taskNode == nil || taskNode.Type != wfv1.NodeTypeTaskGroup {
@@ -711,8 +710,8 @@ func (e *Engine) finalize(ctx context.Context, tasks []dag.Task, results map[str
 	case wfv1.NodeError, wfv1.NodeFailed:
 		// Wait for any in-flight (non-fulfilled) hook child nodes before
 		// transitioning the boundary terminal. Errored hooks ARE fulfilled
-		// and don't block — that preserves the bug04 invariant (a single
-		// failed hook must not abort siblings). Only Running/Pending hook
+		// and don't block — per-task hook isolation: a single failed hook
+		// must not abort siblings. Only Running/Pending hook
 		// nodes gate the boundary. This is required because markWorkflowFailed
 		// sets the `completed=true` label, after which the controller's
 		// reconciliationNeeded filter (controller.go) skips future workqueue
@@ -1290,7 +1289,7 @@ func (e *Engine) inheritedBranchPhaseHelper(ctx context.Context, taskName string
 }
 
 // addChildNode adds a child node to the appropriate parent.
-// For Steps templates, step tasks are linked to their StepGroup node (restoring pre-refactor behavior).
+// For Steps templates, step tasks are linked to their StepGroup node.
 // For DAG templates, tasks are linked to their dependencies' outbound nodes or the DAG root.
 func (e *Engine) addChildNode(ctx context.Context, taskName string, childNodeName string) {
 	// For Steps templates, link task nodes to their StepGroup
@@ -1414,8 +1413,8 @@ func (e *Engine) buildLocalScopeFromTask(ctx context.Context, task dag.Task) (*w
 	scope := createScope(e.tmpl)
 	// Add all ancestor tasks' outputs to scope (transitive closure of dependencies).
 	// A task may reference outputs from any ancestor, not just direct dependencies
-	// (e.g., {{tasks.grandparent.ip}} in a DAG). This matches main's behavior which
-	// uses GetTaskAncestry to walk the full dependency graph.
+	// (e.g., {{tasks.grandparent.ip}} in a DAG), as the pre-Engine controller did
+	// with GetTaskAncestry.
 	ancestorNames, err := e.evaluator.GetAncestors(ctx, task.GetName())
 	if err != nil {
 		return nil, fmt.Errorf("failed to get ancestors for task %s: %w", task.GetName(), err)
