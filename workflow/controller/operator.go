@@ -1036,6 +1036,12 @@ func (woc *wfOperationCtx) Substitute(text string, scope map[string]string) (str
 	return t.Replace(ctx, replaceMap, true)
 }
 
+// deadlineExceeded reports whether this operation has run past its deadline.
+// A zero deadline (only possible for hand-built contexts) never expires.
+func (woc *wfOperationCtx) deadlineExceeded() bool {
+	return !woc.deadline.IsZero() && time.Now().UTC().After(woc.deadline)
+}
+
 // requeue this workflow onto the workqueue for later processing
 func (woc *wfOperationCtx) requeueAfter(afterDuration time.Duration) {
 	key, _ := cache.MetaNamespaceKeyFunc(woc.wf)
@@ -2259,7 +2265,7 @@ func (woc *wfOperationCtx) reconcileTemplate(ctx context.Context, nodeName strin
 	// the per-operate deadline has already been exceeded. Matches origin/main
 	// behavior; without this, deeply nested template chains can blow past the
 	// deadline mid-resolution.
-	if !woc.deadline.IsZero() && time.Now().UTC().After(woc.deadline) {
+	if woc.deadlineExceeded() {
 		woc.log.Warn(ctx, "Deadline exceeded")
 		woc.requeue()
 		return nil, ErrDeadlineExceeded
