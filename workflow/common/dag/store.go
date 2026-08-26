@@ -2,7 +2,6 @@ package dag
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"sync"
 
@@ -33,24 +32,27 @@ func newWorkflowStore(wf *wfv1.Workflow, boundaryID, boundaryName string) *workf
 	}
 }
 
-// taskNodeName computes the node name for a task (same as dagContext.taskNodeName).
-func (s *workflowStore) taskNodeName(taskName string) string {
+// TaskNodeName is the node name of a task within a DAG/Steps boundary: DAG
+// tasks are "<boundary>.<task>", Steps tasks (already named "[i].<step>") are
+// "<boundary>[i].<step>". It is the single definition of the convention: the
+// Engine creates nodes with it and the evaluator looks them up with it.
+func TaskNodeName(boundaryName, taskName string) string {
 	if strings.HasPrefix(taskName, "[") {
-		return fmt.Sprintf("%s%s", s.boundaryName, taskName)
+		return boundaryName + taskName
 	}
-	return fmt.Sprintf("%s.%s", s.boundaryName, taskName)
+	return boundaryName + "." + taskName
 }
 
-// taskNameFromNodeName is the inverse of taskNodeName: it strips the boundary
+// TaskNameFromNodeName is the inverse of TaskNodeName: it strips the boundary
 // prefix from a node name to recover the task name. Returns the input unchanged
 // if it doesn't look like a child of this boundary (no proper separator).
 //
-// taskNodeName always inserts "." (DAG) or "[" (Steps) between the boundary
+// TaskNodeName always inserts "." (DAG) or "[" (Steps) between the boundary
 // and the task name, so we require the same separator on the way back —
 // otherwise a node merely sharing the boundary as a string prefix (e.g.
 // "boundaryother") would be incorrectly truncated to "other".
-func (s *workflowStore) taskNameFromNodeName(nodeName string) string {
-	rest, ok := strings.CutPrefix(nodeName, s.boundaryName)
+func TaskNameFromNodeName(boundaryName, nodeName string) string {
+	rest, ok := strings.CutPrefix(nodeName, boundaryName)
 	if !ok || rest == "" {
 		return nodeName
 	}
@@ -64,10 +66,17 @@ func (s *workflowStore) taskNameFromNodeName(nodeName string) string {
 	}
 }
 
-// taskNodeID computes the node ID for a task (same as dagContext.taskNodeID).
+func (s *workflowStore) taskNodeName(taskName string) string {
+	return TaskNodeName(s.boundaryName, taskName)
+}
+
+func (s *workflowStore) taskNameFromNodeName(nodeName string) string {
+	return TaskNameFromNodeName(s.boundaryName, nodeName)
+}
+
+// taskNodeID computes the node ID for a task.
 func (s *workflowStore) taskNodeID(taskName string) string {
-	nodeName := s.taskNodeName(taskName)
-	return s.workflow.NodeID(nodeName)
+	return s.workflow.NodeID(s.taskNodeName(taskName))
 }
 
 // getPhase returns the current phase of a task.
