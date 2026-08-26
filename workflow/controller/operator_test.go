@@ -4443,14 +4443,10 @@ func TestStepsOnExitTimeout(t *testing.T) {
 	require.NoError(t, err)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 
-	// The engine may need multiple cycles to detect the timeout and create the onExit node.
-	for range 10 {
-		woc.operate(ctx)
-		if woc.wf.Status.Nodes.FindByDisplayName("exit-handlers.onExit") != nil {
-			break
-		}
-		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
-	}
+	woc.operate(ctx)
+
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
 
 	node := woc.wf.Status.Nodes.FindByDisplayName("exit-handlers.onExit")
 	require.NotNil(t, node)
