@@ -6784,6 +6784,7 @@ func TestGetOutboundNodesFromCacheHitSteps(t *testing.T) {
 			hitCache++
 			assert.NotNil(t, node.MemoizationStatus)
 			assert.True(t, node.MemoizationStatus.Hit)
+			assert.Len(t, node.Children, 1)
 		}
 	}
 	assert.Equal(t, 1, hitCache)
@@ -6830,6 +6831,7 @@ func TestGetOutboundNodesFromCacheHitDAG(t *testing.T) {
 			hitCache++
 			assert.NotNil(t, node.MemoizationStatus)
 			assert.True(t, node.MemoizationStatus.Hit)
+			assert.Len(t, node.Children, 1)
 		}
 	}
 	assert.Equal(t, 1, hitCache)
