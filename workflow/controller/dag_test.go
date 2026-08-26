@@ -3945,6 +3945,7 @@ func TestRetryTypeDagTaskRunExitNodeAfterCompleted(t *testing.T) {
 	woc.operate(ctx)
 	nextDAGTaskNode := woc.wf.Status.Nodes.FindByDisplayName("dependencyTesting")
 	require.NotNil(t, nextDAGTaskNode)
+	assert.Equal(t, wfv1.NodeRunning, nextDAGTaskNode.Phase)
 }
 
 func TestDagWftmplHookWithRetry(t *testing.T) {
