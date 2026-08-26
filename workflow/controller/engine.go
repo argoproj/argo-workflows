@@ -972,46 +972,9 @@ func (e *Engine) createDesiredTask(ctx context.Context, task dag.Task, addChild 
 		return nil, nil
 	}
 
-	// Determine Parent Nodes
 	var parentNodeNames []string
 	if addChild {
-		if e.tmpl.GetType() == wfv1.TemplateTypeSteps {
-			// For Steps templates, link to the StepGroup node
-			if sgName := e.stepGroupNodeName(taskName); sgName != "" {
-				parentNodeNames = []string{sgName}
-			} else {
-				parentNodeNames = []string{e.nodeName}
-			}
-		} else {
-			// DAG templates: use dependency outbound nodes
-			deps, err := e.evaluator.GetDependencies(ctx, taskName)
-			switch {
-			case err != nil:
-				e.log.WithFields(logging.Fields{"taskName": taskName, "error": err}).Warn(ctx, "failed to get dependencies")
-				parentNodeNames = []string{e.nodeName}
-			case len(deps) > 0:
-				for _, dep := range deps {
-					depNodeName := e.taskNodeName(dep)
-					depNodeID := e.woc.wf.NodeID(depNodeName)
-					// Dep may not yet be in status: a peer that will be Omitted
-					// but whose Omitted node is only created in createOmittedNodes,
-					// after the converge loop. Skip linkage here; the next operate
-					// cycle reconciles parent linkage once the Omitted node exists.
-					if _, getErr := e.woc.wf.Status.Nodes.Get(depNodeID); getErr != nil {
-						continue
-					}
-					outboundIDs := e.woc.getOutboundNodes(ctx, depNodeID)
-					for _, outID := range outboundIDs {
-						outNode, getErr := e.woc.wf.Status.Nodes.Get(outID)
-						if getErr == nil {
-							parentNodeNames = append(parentNodeNames, outNode.Name)
-						}
-					}
-				}
-			default:
-				parentNodeNames = []string{e.nodeName}
-			}
-		}
+		parentNodeNames = e.parentNodeNames(ctx, taskName)
 	}
 
 	// Build scope
@@ -1292,39 +1255,46 @@ func (e *Engine) inheritedBranchPhaseHelper(ctx context.Context, taskName string
 // For Steps templates, step tasks are linked to their StepGroup node.
 // For DAG templates, tasks are linked to their dependencies' outbound nodes or the DAG root.
 func (e *Engine) addChildNode(ctx context.Context, taskName string, childNodeName string) {
-	// For Steps templates, link task nodes to their StepGroup
+	for _, parent := range e.parentNodeNames(ctx, taskName) {
+		e.woc.addChildNode(ctx, parent, childNodeName)
+	}
+}
+
+// parentNodeNames returns the nodes a task's node hangs off in the graph.
+// Steps tasks are children of their StepGroup node. DAG tasks are children
+// of the outbound nodes of their dependencies, or of the boundary node when
+// they have none. A dependency with no node yet (a peer that will be Omitted,
+// whose node is only created after the converge loop) is skipped; linkage is
+// reconciled on the next operate cycle once that node exists.
+func (e *Engine) parentNodeNames(ctx context.Context, taskName string) []string {
 	if e.tmpl.GetType() == wfv1.TemplateTypeSteps {
 		if sgName := e.stepGroupNodeName(taskName); sgName != "" {
-			e.woc.addChildNode(ctx, sgName, childNodeName)
-			return
+			return []string{sgName}
 		}
+		return []string{e.nodeName}
 	}
 
 	deps, err := e.evaluator.GetDependencies(ctx, taskName)
 	if err != nil {
 		e.log.WithFields(logging.Fields{"taskName": taskName, "error": err}).Warn(ctx, "failed to get dependencies")
-		e.woc.addChildNode(ctx, e.nodeName, childNodeName)
-		return
+		return []string{e.nodeName}
 	}
-	if len(deps) > 0 {
-		for _, dep := range deps {
-			depNodeName := e.taskNodeName(dep)
-			depNodeID := e.woc.wf.NodeID(depNodeName)
-			// Dep may not yet be in status (see createDesiredTask). Skip.
-			if _, err := e.woc.wf.Status.Nodes.Get(depNodeID); err != nil {
-				continue
-			}
-			outboundIDs := e.woc.getOutboundNodes(ctx, depNodeID)
-			for _, outID := range outboundIDs {
-				outNode, err := e.woc.wf.Status.Nodes.Get(outID)
-				if err == nil {
-					e.woc.addChildNode(ctx, outNode.Name, childNodeName)
-				}
+	if len(deps) == 0 {
+		return []string{e.nodeName}
+	}
+	var parents []string
+	for _, dep := range deps {
+		depNodeID := e.woc.wf.NodeID(e.taskNodeName(dep))
+		if _, getErr := e.woc.wf.Status.Nodes.Get(depNodeID); getErr != nil {
+			continue
+		}
+		for _, outID := range e.woc.getOutboundNodes(ctx, depNodeID) {
+			if outNode, getErr := e.woc.wf.Status.Nodes.Get(outID); getErr == nil {
+				parents = append(parents, outNode.Name)
 			}
 		}
-	} else {
-		e.woc.addChildNode(ctx, e.nodeName, childNodeName)
 	}
+	return parents
 }
 
 // stepGroupNodeName extracts the StepGroup node name from a task name.
