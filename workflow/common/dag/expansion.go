@@ -106,8 +106,8 @@ func ExpandTask(ctx context.Context, task wfv1.DAGTask, scope map[string]string,
 // direct substitution would produce escaped JSON (e.g., [{\"key\":\"val\"}]).
 // To get the raw value, we wrap the withParam in a JSON string context, substitute
 // (where escaping is correct), then extract via JSON unmarshal (which reverses the escaping).
-// This matches the old resolveDependencyReferences approach that marshalled the entire task
-// to JSON before substitution.
+// This matches the pre-Engine controller, which marshalled the entire task to JSON before
+// substitution.
 func resolveWithParam(withParam string, scope map[string]string, substitutor Substitutor) (string, error) {
 	if substitutor == nil {
 		return withParam, nil

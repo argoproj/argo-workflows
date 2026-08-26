@@ -1,12 +1,8 @@
 package dag
 
-// Regression tests documenting known bugs from the code review of
-// branch dag-refactor-engine-v4.  Each test asserts the CORRECT (post-fix)
-// behavior and is expected to fail against the current code.
-//
-// Tests without t.Skip are active regressions. Tests that still need fault
-// injection or document design debt are kept skipped until the required fix
-// or injection point exists.
+// Regression tests for evaluator bugs found while unifying DAG and Steps
+// execution in the Engine. Each test asserts the correct behavior and locks
+// the fix in.
 
 import (
 	"testing"
