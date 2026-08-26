@@ -2255,15 +2255,16 @@ type executeTemplateOpts struct {
 	templateScope string
 }
 
-// executeTemplate executes the template with the given arguments and returns the created NodeStatus
+// reconcileTemplate resolves and processes a template for the given node and
+// arguments, then reconciles it as a single desired task, returning the
+// resulting NodeStatus.
 func (woc *wfOperationCtx) reconcileTemplate(ctx context.Context, nodeName string, orgTmpl wfv1.TemplateReferenceHolder, tmplCtx *templateresolution.TemplateContext, args wfv1.Arguments, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	// Note: maxStackDepth is checked in executeProcessedTemplate (called via the reconciler)
 	// so that both the reconcileTemplate path and the Engine path get the check.
 
 	// Early deadline gate: bail out before expensive template resolution when
-	// the per-operate deadline has already been exceeded. Matches origin/main
-	// behavior; without this, deeply nested template chains can blow past the
-	// deadline mid-resolution.
+	// the per-operate deadline has already been exceeded; without this, deeply
+	// nested template chains can blow past the deadline mid-resolution.
 	if woc.deadlineExceeded() {
 		woc.log.Warn(ctx, "Deadline exceeded")
 		woc.requeue()
@@ -4138,8 +4139,6 @@ func (woc *wfOperationCtx) includeScriptOutput(ctx context.Context, nodeName, bo
 	name := getStepOrDAGTaskName(nodeName)
 	return woc.hasOutputResultRef(ctx, name, parentTemplate), nil
 }
-
-// executeProcessedTemplate handles the execution of a template that has already been resolved and processed.
 
 func (woc *wfOperationCtx) fetchWorkflowSpec(ctx context.Context) (wfv1.WorkflowSpecHolder, error) {
 	if woc.wf.Spec.WorkflowTemplateRef == nil { // not-woc-misuse
