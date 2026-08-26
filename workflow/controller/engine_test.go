@@ -370,3 +370,22 @@ spec:
 		assert.NotEqual(t, wfv1.NodeTypeTaskGroup, n.Type, "node %q must not be a TaskGroup", n.Name)
 	}
 }
+
+// A TaskGroup's phase is the worst of its children's: Error outranks Failed
+// regardless of child order.
+func TestAssessTaskGroupPhase_WorstPhaseWins(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	engine, _, woc, _ := engineWithFakeReconciler(ctx, t)
+	markChildPhase(t, woc, "client(0:0)", wfv1.NodeError)
+	markChildPhase(t, woc, "client(1:1)", wfv1.NodeFailed)
+	markChildPhase(t, woc, "client(2:2)", wfv1.NodeSucceeded)
+
+	tgNode, err := woc.wf.GetNodeByName(engine.taskNodeName("client"))
+	require.NoError(t, err)
+	require.Equal(t, wfv1.NodeTypeTaskGroup, tgNode.Type)
+	engine.assessTaskGroupPhase(ctx, tgNode)
+
+	tgNode, err = woc.wf.GetNodeByName(engine.taskNodeName("client"))
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeError, tgNode.Phase)
+}
