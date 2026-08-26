@@ -1354,7 +1354,9 @@ func (e *Engine) assessTaskGroupPhase(ctx context.Context, tgNode *wfv1.NodeStat
 		if !childNode.Fulfilled() {
 			return // still waiting
 		}
-		if childNode.FailedOrError() {
+		// Worst phase wins: Error outranks Failed (as in the evaluator's
+		// task-group assessment), regardless of child order.
+		if childNode.Phase == wfv1.NodeError || (childNode.Phase == wfv1.NodeFailed && groupPhase != wfv1.NodeError) {
 			groupPhase = childNode.Phase
 		}
 	}
