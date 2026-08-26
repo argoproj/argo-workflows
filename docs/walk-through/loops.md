@@ -216,7 +216,7 @@ Please note: the output of each iteration _must_ be a **valid JSON**.
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
+kind: Workflow
 metadata:
   name: loop-test
 spec:
