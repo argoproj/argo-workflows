@@ -1130,10 +1130,7 @@ func (e *Engine) getTaskByName(tasks []dag.Task, name string) dag.Task {
 
 // taskNodeName formulates the nodeName for a dag task
 func (e *Engine) taskNodeName(taskName string) string {
-	if strings.HasPrefix(taskName, "[") {
-		return fmt.Sprintf("%s%s", e.nodeName, taskName)
-	}
-	return fmt.Sprintf("%s.%s", e.nodeName, taskName)
+	return dag.TaskNodeName(e.nodeName, taskName)
 }
 
 // taskNodeID formulates the node ID for a dag task
