@@ -40,7 +40,7 @@ func (woc *wfOperationCtx) prepareNode(ctx context.Context, nodeName string, tmp
 
 // checkConstraints checks deadline and parallelism.
 func (woc *wfOperationCtx) checkConstraints(ctx context.Context, nodeName string, node *wfv1.NodeStatus, processedTmpl *wfv1.Template, boundaryID string) error {
-	if time.Now().UTC().After(woc.deadline) {
+	if woc.deadlineExceeded() {
 		woc.log.Warn(ctx, "Deadline exceeded")
 		woc.requeue()
 		return ErrDeadlineExceeded
