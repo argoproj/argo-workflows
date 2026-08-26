@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -9,6 +10,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common/dag"
 )
 
 // TestEngineExecuteFullLifecycle exercises all branches in Engine.Execute using
@@ -295,4 +297,36 @@ spec:
 			assert.Equal(t, tt.want, woc.shouldRetryNode(ctx, retryNode, &tt.lastChild, &tt.rs))
 		})
 	}
+}
+
+// An evaluator error for a task must be recorded as a terminal Error node.
+// Left unrecorded, the task would stay Pending and the boundary would never
+// complete.
+func TestConverge_EvaluatorErrorBecomesErrorNode(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	engine, fake, _, tasks := engineWithFakeReconciler(ctx, t)
+
+	results := map[string]dag.EvaluationResult{
+		"client": {
+			TaskName:     "client",
+			CurrentPhase: wfv1.NodePending,
+			Error:        errors.New("depends expression failed to evaluate"),
+		},
+	}
+	fake.calls = nil
+	executed, err := engine.converge(ctx, tasks, results)
+	require.NoError(t, err)
+	assert.Empty(t, fake.calls, "an unassessable task must not be dispatched")
+	assert.True(t, executed["client"])
+
+	node, err := engine.woc.wf.GetNodeByName(engine.taskNodeName("client"))
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeError, node.Phase)
+	assert.Equal(t, "depends expression failed to evaluate", node.Message)
+
+	// Idempotent: a second pass neither re-creates nor re-dispatches.
+	executed, err = engine.converge(ctx, tasks, results)
+	require.NoError(t, err)
+	assert.Empty(t, fake.calls)
+	assert.Empty(t, executed)
 }
