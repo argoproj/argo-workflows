@@ -70,8 +70,8 @@ func runEmissary(ctx context.Context, containerName string, includeScriptOutput 
 
 	tracer, err := tracing.New(ctx, `argoexec`)
 	if err != nil {
-		logger.WithFatal().WithError(err).Error(ctx, "failed to initialize tracing")
-		return err
+		logger.WithError(err).Error(ctx, "failed to initialize tracing")
+		os.Exit(1) //nolint:gocritic // preserves the previous WithFatal behavior, which also skipped defers
 	}
 	defer func() {
 		if deferErr := tracer.Shutdown(context.WithoutCancel(ctx)); deferErr != nil {

@@ -97,7 +97,8 @@ func NewMetrics(ctx context.Context, serviceName, prometheusName string, config 
 			}
 			options = append(options, metricsdk.WithReader(metricsdk.NewPeriodicReader(httpExporter)))
 		default:
-			logger.WithFatal().WithField("protocol", otlpProtocol).Error(ctx, "OTEL metric protocol invalid")
+			logger.WithField("protocol", otlpProtocol).Error(ctx, "OTEL metric protocol invalid")
+			os.Exit(1)
 		}
 	}
 

@@ -21,14 +21,12 @@ type initLog struct {
 type storage struct {
 	initLogs []initLog
 	mutex    sync.Mutex
-	fatal    bool
 	out      io.Writer // for testing purposes only
 }
 
 var initStorage = &storage{
 	initLogs: make([]initLog, 0),
 	mutex:    sync.Mutex{},
-	fatal:    false,
 	out:      os.Stderr,
 }
 
@@ -67,14 +65,6 @@ func (i initLogger) add(level Level, message string) {
 
 func (i initLogger) Level() Level {
 	panic("not implemented, don't implement this")
-}
-
-func (i initLogger) WithFatal() Logger {
-	i.storage.mutex.Lock()
-	defer i.storage.mutex.Unlock()
-	i = deepCopy(i)
-	i.storage.fatal = true
-	return i
 }
 
 func (i initLogger) WithPanic() Logger {
@@ -123,21 +113,10 @@ func (i initLogger) Warn(ctx context.Context, message string) {
 	i.add(Warn, message)
 }
 
-//nolint:gocritic
 func (i initLogger) Error(ctx context.Context, message string) {
 	i.storage.mutex.Lock()
 	defer i.storage.mutex.Unlock()
 	i.add(Error, message)
-	if i.storage.fatal {
-		//nolint:contextcheck
-		emitInitLogs(ctx, NewSlogLoggerCustom(Debug, JSON, i.storage.out))
-		exitFunc := GetExitFunc()
-		if exitFunc == nil {
-			os.Exit(1)
-		}
-		exitFunc(1)
-		return
-	}
 }
 
 func emitInitLogs(ctx context.Context, logger Logger) {
