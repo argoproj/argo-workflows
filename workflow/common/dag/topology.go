@@ -3,12 +3,13 @@ package dag
 import (
 	"context"
 	"encoding/hex"
-	"fmt"
-	"reflect"
-	"regexp"
+	"maps"
 	"slices"
 	"sort"
 	"strings"
+
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 // dagTopology holds the immutable, pre-computed dependency graph for a set of tasks.
@@ -35,11 +36,8 @@ type WorkflowTasks struct {
 // newWorkflowTasks creates a new WorkflowTasks, computing the topology from the task definitions.
 func newWorkflowTasks(tasks []Task) *WorkflowTasks {
 	taskMap := make(map[string]Task, len(tasks))
-	normalizedToOriginal := make(map[string]string, len(tasks))
 	for i := range tasks {
-		name := tasks[i].GetName()
-		taskMap[name] = tasks[i]
-		normalizedToOriginal[normalizeTaskName(name)] = name
+		taskMap[tasks[i].GetName()] = tasks[i]
 	}
 
 	dependencies := make(map[string][]string, len(tasks))
@@ -50,23 +48,12 @@ func newWorkflowTasks(tasks []Task) *WorkflowTasks {
 
 	for _, task := range tasks {
 		name := task.GetName()
-		initialLogic := getTaskDependsLogic(task)
-		deps, normalizedLogic, err := resolveDependencies(initialLogic, taskProvider)
+		deps, logic, err := resolveTaskDepends(task, taskProvider)
 		if err != nil {
 			dependsErrors[name] = err
 		}
-
-		resolvedDeps := make([]string, len(deps))
-		for i, dep := range deps {
-			if original, ok := normalizedToOriginal[dep]; ok {
-				resolvedDeps[i] = original
-			} else {
-				resolvedDeps[i] = dep
-			}
-		}
-
-		dependencies[name] = resolvedDeps
-		dependsLogic[name] = normalizedLogic
+		dependencies[name] = deps
+		dependsLogic[name] = logic
 	}
 
 	// Compute topological order using Kahn's algorithm so that
@@ -188,112 +175,51 @@ func topologicalSort(dependencies map[string][]string) []string {
 }
 
 // --- Dependency resolution ---
-// Parses and normalizes "depends" expressions, extracting dependency names and
-// converting task names to hex-encoded identifiers for safe expression evaluation.
+// Depends expressions are tokenized with the grammar validation uses
+// (common.ParseDepends), then task names are rewritten to hex-encoded
+// identifiers so they are safe for expression evaluation.
 
-var (
-	// taskNameRegex matches task names in depends expressions.
-	// Supports expanded tasks like task(0) or task(0:item) and dotted results like task.Succeeded.
-	taskNameRegex = regexp.MustCompile(`[a-zA-Z0-9\[\]\.\-_]+(\([^)]*\))?`)
-
-	// exprKeywords are expression language keywords that should not be treated as task names.
-	exprKeywords = map[string]bool{
-		"true": true, "false": true,
-		"nil": true, "null": true,
-		"in": true, "not": true,
-		"and": true, "or": true,
+// resolveTaskDepends returns a task's dependency names (sorted, unique) and
+// its normalized depends expression.
+//
+// A legacy "dependencies" list (DAG tasks, and every Steps task, whose
+// synthetic dependencies are named "[i].step") is structured data: each entry
+// is expanded directly and never re-parsed as an expression. A user-written
+// "depends" (DAG tasks only) goes through common.ParseDepends, so an
+// expression cannot pass validation and be read differently here.
+func resolveTaskDepends(task Task, taskProvider func(string) Task) ([]string, string, error) {
+	continueOnFor := func(name string) *wfv1.ContinueOn {
+		if dep := taskProvider(name); dep != nil {
+			return dep.GetContinueOn()
+		}
+		return nil
 	}
 
-	// validResults are the recognized result qualifiers for taskName.Result expressions.
-	// Populated from taskResult struct fields via init().
-	validResults map[string]bool
-)
-
-func init() {
-	t := reflect.TypeFor[taskResult]()
-	validResults = make(map[string]bool, t.NumField())
-	for field := range t.Fields() {
-		validResults[field.Name] = true
+	if task.GetDepends() == "" {
+		deps := task.GetDependencies()
+		if len(deps) == 0 {
+			return nil, "", nil
+		}
+		terms := make([]string, len(deps))
+		for i, dep := range deps {
+			terms[i] = common.ExpandDependency(dep, continueOnFor(dep), normalizeTaskName)
+		}
+		return slices.Compact(slices.Sorted(slices.Values(deps))), strings.Join(terms, " && "), nil
 	}
-}
 
-// resolveDependencies parses a depends expression, extracts the unique dependency
-// task names, and returns the normalized expression with hex-encoded task names.
-// Returns an error if the expression contains an invalid result qualifier (e.g., "A.InvalidStatus").
-func resolveDependencies(logic string, taskProvider func(string) Task) ([]string, string, error) {
-	dependencySet := make(map[string]struct{})
-	var resolveErr error
-
-	newLogic := taskNameRegex.ReplaceAllStringFunc(logic, func(match string) string {
-		// Skip expression language keywords
-		if exprKeywords[match] {
-			return match
+	depends := task.GetDepends()
+	refs, err := common.ParseDepends(depends)
+	dependencySet := make(map[string]struct{}, len(refs))
+	for _, ref := range refs {
+		dependencySet[ref.Task] = struct{}{}
+	}
+	logic := common.RewriteDepends(depends, refs, func(ref common.DependsRef) string {
+		if ref.Result != "" {
+			return normalizeTaskName(ref.Task) + "." + string(ref.Result)
 		}
-		// Check if it's a taskName.Result (e.g., "task.Succeeded")
-		// Only the 8 known result qualifiers in validResults trigger the split.
-		lastDot := strings.LastIndex(match, ".")
-		if lastDot != -1 {
-			potentialResult := match[lastDot+1:]
-			if validResults[potentialResult] {
-				taskName := match[:lastDot]
-
-				dependencySet[taskName] = struct{}{}
-				return fmt.Sprintf("%s.%s", normalizeTaskName(taskName), potentialResult)
-			}
-			// The qualifier is not recognized. If the prefix is a known task name,
-			// this is an invalid qualifier reference (e.g., "A.InvalidStatus").
-			// If the prefix is not a known task, the whole string is likely a
-			// composite task name (e.g., "[0].A" for step tasks) — fall through.
-			taskName := match[:lastDot]
-			if taskProvider(taskName) != nil {
-				resolveErr = fmt.Errorf("invalid depends qualifier %q in expression %q: valid qualifiers are Succeeded, Failed, Errored, Skipped, Omitted, Daemoned, AnySucceeded, AllFailed", potentialResult, match)
-				return match
-			}
-		}
-
-		// Bare taskName (e.g., "task") — expand to default depends expression
-		taskName := match
-		dependencySet[taskName] = struct{}{}
-
-		task := taskProvider(taskName)
-		return expandDependency(taskName, task)
+		return common.ExpandDependency(ref.Task, continueOnFor(ref.Task), normalizeTaskName)
 	})
-
-	deps := make([]string, 0, len(dependencySet))
-	for dep := range dependencySet {
-		deps = append(deps, dep)
-	}
-	sort.Strings(deps)
-
-	return deps, newLogic, resolveErr
-}
-
-// expandDependency expands a bare task name into its default depends expression.
-// A bare "taskA" becomes "(taskA.Succeeded || taskA.Skipped || taskA.Daemoned)",
-// plus taskA.Errored/taskA.Failed if the task has continueOn set.
-func expandDependency(depName string, depTask Task) string {
-	normalizedName := normalizeTaskName(depName)
-	resultForTask := func(result string) string { return fmt.Sprintf("%s.%s", normalizedName, result) }
-
-	taskDepends := []string{
-		resultForTask("Succeeded"),
-		resultForTask("Skipped"),
-		resultForTask("Daemoned"),
-	}
-
-	if depTask != nil {
-		continueOn := depTask.GetContinueOn()
-		if continueOn != nil {
-			if continueOn.Error {
-				taskDepends = append(taskDepends, resultForTask("Errored"))
-			}
-			if continueOn.Failed {
-				taskDepends = append(taskDepends, resultForTask("Failed"))
-			}
-		}
-	}
-
-	return "(" + strings.Join(taskDepends, " || ") + ")"
+	return slices.Sorted(maps.Keys(dependencySet)), logic, err
 }
 
 // normalizeTaskName converts a task name to a safe expression identifier.
@@ -311,23 +237,4 @@ func getBaseTaskName(name string) string {
 		return before
 	}
 	return name
-}
-
-// getTaskDependsLogic returns the depends expression for a task.
-// If the task has an explicit "depends" field, it is returned directly.
-// Otherwise, legacy "dependencies" are converted to a conjunction of expanded expressions.
-func getTaskDependsLogic(task Task) string {
-	if task.GetDepends() != "" {
-		return task.GetDepends()
-	}
-
-	// For legacy dependencies, return raw task names joined with &&.
-	// resolveDependencies will handle expansion (via expandDependency) and
-	// normalization (via normalizeTaskName) in a single pass, avoiding
-	// the double-encoding that occurs if we expand here and normalize later.
-	deps := task.GetDependencies()
-	if len(deps) == 0 {
-		return ""
-	}
-	return strings.Join(deps, " && ")
 }
