@@ -129,14 +129,13 @@ func (e *Engine) Execute(ctx context.Context, tasks []dag.Task) {
 }
 
 // markBoundaryError marks the boundary node with an appropriate error phase.
-// For Steps templates, uses Failed (not Error) to match legacy behavior.
+// For Steps templates, uses Failed (not Error) to match legacy behavior; the
+// same convention is applied by finalize when it derives the phase from the
+// children. A boundary that is already fulfilled is left alone: terminal
+// phases have no valid transitions.
 func (e *Engine) markBoundaryError(ctx context.Context, err error) {
 	node, _ := e.woc.wf.GetNodeByName(e.nodeName)
 	if node != nil && node.Fulfilled() {
-		// Already fulfilled — remap Error→Failed for Steps if needed
-		if e.tmpl.GetType() == wfv1.TemplateTypeSteps && node.Phase == wfv1.NodeError {
-			e.woc.markNodePhase(ctx, e.nodeName, wfv1.NodeFailed, node.Message)
-		}
 		return
 	}
 	if e.tmpl.GetType() == wfv1.TemplateTypeSteps {
