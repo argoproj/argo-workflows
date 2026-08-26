@@ -45,6 +45,13 @@ Example:
 depends: "(task-2.Succeeded || task-2.Skipped) && !task-3.Failed"
 ```
 
+## When a task runs
+
+A task's `depends` expression is re-evaluated whenever a task it references changes state, and takes effect as soon as its result is settled — it does not wait for every referenced task to finish.
+The task runs once the expression is true under every possible outcome of the tasks still pending; for example `task-1 || task-2` runs as soon as either succeeds.
+It is marked `Omitted` once no possible outcome could make the expression true; for example `task-1.Succeeded && task-2` is omitted as soon as `task-1` fails, and its own dependants are then evaluated in turn.
+Otherwise it waits: `!task-3.Failed` waits for `task-3` to finish.
+
 If you depend on a task that uses `withItems`, you can use `.AnySucceeded` and `.AllFailed`. For example:
 
 ```yaml

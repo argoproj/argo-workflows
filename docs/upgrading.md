@@ -38,6 +38,17 @@ This variable controlled whether to write workflow updates back to the informer 
 Alternative mechanisms now prevent reprocessing, making both behaviors unnecessary.
 If you have this variable set, it can be safely removed from your configuration.
 
+### DAG `depends` expressions take effect as soon as they are settled
+
+Previously a DAG task's `depends` expression was only evaluated once every task it referenced had finished.
+It is now evaluated whenever a referenced task changes state and takes effect as soon as its result is settled.
+A task therefore runs as soon as its expression is true under every possible outcome of the tasks still pending (for example `task-1 || task-2` runs as soon as either succeeds, without waiting for the other), and is marked `Omitted` as soon as no possible outcome could make the expression true (for example `task-1.Succeeded && task-2` is omitted as soon as `task-1` fails).
+Expressions whose result still depends on a pending task, including negated references such as `!task-3.Failed`, wait exactly as before.
+
+If a task relied on `depends: "task-1 || task-2"` to wait for both tasks, list both explicitly: `depends: "(task-1 || task-1.Failed) && (task-2 || task-2.Failed)"`, or reference the result you actually need.
+
+See [When a task runs](enhanced-depends-logic.md#when-a-task-runs).
+
 ## Upgrading to v4.0.7 and v3.7.16
 
 ### Outputs of skipped and omitted steps and tasks now resolve
