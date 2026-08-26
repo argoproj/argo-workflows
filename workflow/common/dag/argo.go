@@ -11,6 +11,7 @@ import (
 	"github.com/expr-lang/expr/vm"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
 
 // DAGEvaluator provides a high-level API for evaluating DAG workflows.
@@ -662,48 +663,21 @@ func (e *DAGEvaluator) retryDeciderFor(taskName string) RetryDecider {
 	return e.retryDeciders[staticTaskName(taskName)]
 }
 
-// nextRetryBackoff computes the delay until the next retry attempt based on
-// the strategy's Backoff config and the number of attempts already made.
-// Returns 0 if no backoff is configured, the duration cannot be parsed, or
-// enough time has already elapsed since the last child finished.
+// nextRetryBackoff returns how much of the backoff window is still left before
+// the next retry attempt: common.RetryBackoffWait (the same formula the
+// operator enforces) minus the time elapsed since the last child finished.
+// Returns 0 if no backoff applies, the strategy is invalid (the operator
+// surfaces that error when it drives the retry), or the window has passed.
+// backoff.maxDuration is a deadline enforced by processNodeRetries, not a wait.
 func nextRetryBackoff(rs *wfv1.RetryStrategy, lastChild *wfv1.NodeStatus, attempts int) time.Duration {
-	if rs == nil || rs.Backoff == nil || rs.Backoff.Duration == "" {
+	delay, err := common.RetryBackoffWait(rs, attempts)
+	if err != nil || delay <= 0 {
 		return 0
 	}
-	base, err := time.ParseDuration(rs.Backoff.Duration)
-	if err != nil {
-		return 0
-	}
-	factor := int32(1)
-	if rs.Backoff.Factor != nil {
-		factor = max(rs.Backoff.Factor.IntVal, 1)
-	}
-	delay := base
-	// Each prior failed attempt multiplies the delay by `factor`.
-	// attempts is the number of children so far; the first retry uses the
-	// base delay (no prior backoff window), so we start the loop at 1.
-	for i := 1; i < attempts; i++ {
-		delay *= time.Duration(factor)
-	}
-	if rs.Backoff.Cap != "" {
-		if capD, err := time.ParseDuration(rs.Backoff.Cap); err == nil && delay > capD {
-			delay = capD
-		}
-	}
-	if rs.Backoff.MaxDuration != "" {
-		if maxD, err := time.ParseDuration(rs.Backoff.MaxDuration); err == nil && delay > maxD {
-			delay = maxD
-		}
-	}
-	// Subtract time already elapsed since the last child finished.
 	if lastChild != nil && !lastChild.FinishedAt.IsZero() {
-		elapsed := time.Since(lastChild.FinishedAt.Time)
-		delay -= elapsed
+		delay = time.Until(lastChild.FinishedAt.Add(delay))
 	}
-	if delay < 0 {
-		return 0
-	}
-	return delay
+	return max(delay, 0)
 }
 
 // evaluateRetryNode inspects a Retry node's children and returns what action
