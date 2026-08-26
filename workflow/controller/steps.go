@@ -17,7 +17,21 @@ type StepAdapter struct {
 }
 
 func (s *StepAdapter) GetName() string {
-	return fmt.Sprintf("[%d].%s", s.groupIndex, s.step.Name)
+	return stepTaskNameFor(s.groupIndex, s.step.Name)
+}
+
+// stepTaskNameFor is the task name of a step within a Steps template:
+// "[<group index>].<step name>". The group index is what orders the groups;
+// stepGroupIndexOf recovers it.
+func stepTaskNameFor(groupIndex int, stepName string) string {
+	return fmt.Sprintf("[%d].%s", groupIndex, stepName)
+}
+
+// stepGroupIndexOf recovers the step group index from a Steps task name
+// produced by stepTaskNameFor. ok is false for any other name.
+func stepGroupIndexOf(taskName string) (groupIndex int, ok bool) {
+	n, _ := fmt.Sscanf(taskName, "[%d].", &groupIndex)
+	return groupIndex, n == 1
 }
 
 func (s *StepAdapter) GetDisplayName() string {
