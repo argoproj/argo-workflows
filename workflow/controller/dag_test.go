@@ -262,7 +262,7 @@ func TestExpandTaskWithParam(t *testing.T) {
 			Parameter: "1234",
 		},
 		{
-			Name:      "fanout-param(1:foo\tbar)",
+			Name:      `fanout-param(1:foo\tbar)`,
 			Parameter: "foo\tbar",
 		},
 		{

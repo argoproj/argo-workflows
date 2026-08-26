@@ -1,6 +1,7 @@
 package dag
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
@@ -9,6 +10,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util"
+	"github.com/argoproj/argo-workflows/v4/util/template"
 )
 
 func intstrPtr(s string) *intstr.IntOrString {
@@ -100,4 +103,109 @@ func TestExpandSequence_ForwardCounting(t *testing.T) {
 		values = append(values, string(item.Value))
 	}
 	assert.Equal(t, []string{`"0"`, `"1"`, `"2"`}, values)
+}
+
+func TestExpandSequence_CountAndRange(t *testing.T) {
+	strVals := func(items []wfv1.Item) []string {
+		out := make([]string, len(items))
+		for i, item := range items {
+			out[i] = item.GetStrVal()
+		}
+		return out
+	}
+
+	items, err := expandSequence(&wfv1.Sequence{Count: intstrPtr("10")})
+	require.NoError(t, err)
+	require.Len(t, items, 10)
+	assert.Equal(t, "0", strVals(items)[0])
+	assert.Equal(t, "9", strVals(items)[9])
+
+	items, err = expandSequence(&wfv1.Sequence{Start: intstrPtr("101"), Count: intstrPtr("10")})
+	require.NoError(t, err)
+	require.Len(t, items, 10)
+	assert.Equal(t, "101", strVals(items)[0])
+	assert.Equal(t, "110", strVals(items)[9])
+
+	items, err = expandSequence(&wfv1.Sequence{Start: intstrPtr("50"), End: intstrPtr("60")})
+	require.NoError(t, err)
+	require.Len(t, items, 11)
+	assert.Equal(t, "50", strVals(items)[0])
+	assert.Equal(t, "60", strVals(items)[10])
+
+	items, err = expandSequence(&wfv1.Sequence{Start: intstrPtr("60"), End: intstrPtr("50")})
+	require.NoError(t, err)
+	require.Len(t, items, 11)
+	assert.Equal(t, "60", strVals(items)[0])
+	assert.Equal(t, "50", strVals(items)[10])
+
+	items, err = expandSequence(&wfv1.Sequence{Count: intstrPtr("0")})
+	require.NoError(t, err)
+	assert.Empty(t, items)
+}
+
+func TestExpandedTaskName(t *testing.T) {
+	name, err := expandedTaskName("sleep", 10, "ten")
+	require.NoError(t, err)
+	assert.Equal(t, "sleep(10:ten)", name)
+
+	// Parentheses in the item text are stripped so the index stays recoverable.
+	name, err = expandedTaskName("sleep", 3, "(a)")
+	require.NoError(t, err)
+	assert.Equal(t, "sleep(3:a)", name)
+	assert.Equal(t, 3, util.RecoverIndexFromNodeName(name))
+
+	_, err = expandedTaskName("bad(name", 1, "x")
+	require.Error(t, err)
+}
+
+// templateSubstitutor substitutes {{...}} tags with the argo template engine,
+// as the controller's wfOperationCtx does.
+type templateSubstitutor struct{}
+
+func (templateSubstitutor) Substitute(s string, scope map[string]string) (string, error) {
+	tmpl, err := template.NewTemplate(s)
+	if err != nil {
+		return "", err
+	}
+	replaceMap := make(map[string]any, len(scope))
+	for k, v := range scope {
+		replaceMap[k] = v
+	}
+	return tmpl.Replace(context.Background(), replaceMap, true)
+}
+
+// Expanded task names and substituted {{item}} values for each item shape,
+// as the pre-Engine controller produced them.
+func TestProcessItem_ItemShapes(t *testing.T) {
+	tests := []struct {
+		name          string
+		withParam     string
+		expectedName  string
+		expectedParam string
+	}{
+		{"number", `[42]`, `task-name(0:42)`, `42`},
+		{"boolean", `[true]`, `task-name(0:true)`, `true`},
+		{"map", `[{"number": 2, "string": "foo", "list": [0, "1"], "json": {"number": 2, "string": "foo", "list": [0, "1"]}}]`,
+			`task-name(0:json:{"list":[0,"1"],"number":2,"string":"foo"},list:[0,"1"],number:2,string:foo)`,
+			`{"json":{"list":[0,"1"],"number":2,"string":"foo"},"list":[0,"1"],"number":2,"string":"foo"}`},
+		{"list", `[[1, "two", 3]]`, `task-name(0:[1 two 3])`, `[1,"two",3]`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			task := wfv1.DAGTask{
+				Name:      "task-name",
+				Arguments: wfv1.Arguments{Parameters: []wfv1.Parameter{{Name: "item", Value: wfv1.AnyStringPtr("{{item}}")}}},
+			}
+			taskBytes, err := json.Marshal(task)
+			require.NoError(t, err)
+			var items []wfv1.Item
+			wfv1.MustUnmarshal([]byte(tt.withParam), &items)
+
+			var newTask wfv1.DAGTask
+			newTaskName, err := processItem(context.Background(), taskBytes, task.Name, 0, items[0], &newTask, nil, templateSubstitutor{})
+			require.NoError(t, err)
+			assert.Equal(t, tt.expectedName, newTaskName)
+			assert.Equal(t, tt.expectedParam, newTask.Arguments.Parameters[0].Value.String())
+		})
+	}
 }
