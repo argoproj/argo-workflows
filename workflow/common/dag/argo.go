@@ -139,6 +139,17 @@ func (e *DAGEvaluator) evaluateDependsReadiness(ctx context.Context, taskName st
 			pendingDepNames[depName] = true
 			continue
 		}
+		// A dependency whose lifecycle or exit hooks are still running is not
+		// ready for its dependants, whatever its own type or phase (#12192).
+		// Checked before the type-specific handling below so that retry nodes,
+		// whose assessment returns early, are gated too.
+		if !e.store.areHooksFulfilled(depName) {
+			evalTaskName := normalizeTaskName(depName)
+			evalScope[evalTaskName] = taskResult{}
+			hasPendingDeps = true
+			pendingDepNames[depName] = true
+			continue
+		}
 		// Daemoned and still running — fulfilled for dependency purposes, so skip
 		// the retry/not-fulfilled handling and fall through to evalScope building
 		// below (sets Daemoned: true). NOT marked as pending: explicit qualifiers
@@ -187,16 +198,6 @@ func (e *DAGEvaluator) evaluateDependsReadiness(ctx context.Context, taskName st
 				pendingDepNames[depName] = true
 				continue
 			}
-		}
-
-		if !e.store.areHooksFulfilled(depName) {
-			// Dep is fulfilled but its hooks are still running.
-			// Treat as pending — once hooks complete, dep will be fully ready.
-			evalTaskName := normalizeTaskName(depName)
-			evalScope[evalTaskName] = taskResult{}
-			hasPendingDeps = true
-			pendingDepNames[depName] = true
-			continue
 		}
 
 		evalTaskName := normalizeTaskName(depName)
