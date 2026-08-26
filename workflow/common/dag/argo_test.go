@@ -2800,3 +2800,17 @@ func TestEvaluateRetryNode_RetryDeciderIsAuthoritative(t *testing.T) {
 	assert.False(t, result.ShouldRun)
 	assert.True(t, result.FulfilledForDeps)
 }
+
+func TestTaskNodeName_RoundTrip(t *testing.T) {
+	for _, tt := range []struct{ boundary, task, node string }{
+		{"wf.dag", "build", "wf.dag.build"},
+		{"wf.dag", "build(0:x)", "wf.dag.build(0:x)"},
+		{"wf.steps", "[1].step-b", "wf.steps[1].step-b"},
+	} {
+		assert.Equal(t, tt.node, TaskNodeName(tt.boundary, tt.task))
+		assert.Equal(t, tt.task, TaskNameFromNodeName(tt.boundary, tt.node))
+	}
+	// A node that merely shares the boundary as a string prefix is not a child.
+	assert.Equal(t, "boundaryother", TaskNameFromNodeName("boundary", "boundaryother"))
+	assert.Equal(t, "elsewhere.x", TaskNameFromNodeName("boundary", "elsewhere.x"))
+}
