@@ -9,7 +9,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { classifySignals, diagnostics, decide, isExemptAuthor, findPullRequest, pickStepGuidance } from './classify.ts';
+import { classifySignals, diagnostics, decide, isExemptAuthor, findPullRequest, pickStepGuidance, targetsDefaultBranch } from './classify.ts';
 import { MARKER, renderComment, parseState } from './comment.ts';
 import { checkTemplate } from './template.ts';
 import type { Config, JobStep } from './types.ts';
@@ -32,7 +32,7 @@ interface Core {
 }
 interface RepoContext {
   repo: { owner: string; repo: string };
-  payload: { workflow_run: { head_sha: string } };
+  payload: { workflow_run: { head_sha: string }; repository: { default_branch: string } };
 }
 interface Octokit {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -61,6 +61,7 @@ function errMessage(e: unknown): string {
 export async function run({ github, context, core }: { github: Octokit; context: RepoContext; core: Core }): Promise<void> {
   const { owner, repo } = context.repo;
   const headSha = context.payload.workflow_run.head_sha;
+  const defaultBranch = context.payload.repository.default_branch;
   const dryRun = process.env.DRY_RUN === 'true';
   const stop = (reason: string): void => {
     core.info(`Skipping: ${reason}`);
@@ -74,6 +75,12 @@ export async function run({ github, context, core }: { github: Octokit; context:
   const pr = findPullRequest(openPrs, headSha);
   if (!pr) {
     return stop(`no open PR with head ${headSha} (superseded by a newer push, or closed)`);
+  }
+
+  // Only PRs bound for the default branch, directly or via a stack of open
+  // PRs. Backports to release branches follow their own process.
+  if (!targetsDefaultBranch(pr, openPrs, defaultBranch)) {
+    return stop(`PR #${pr.number} targets ${pr.base.ref}, which does not lead to ${defaultBranch}`);
   }
 
   // Maintainers and bots help themselves. OWNERS is read from the default

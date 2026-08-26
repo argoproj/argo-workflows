@@ -2,7 +2,7 @@
 // unit-tested (test/classify.test.ts); the API-calling orchestration lives in
 // main.ts.
 
-import type { CheckRun, Config, Decision, GitHubUser, JobStep, Signal, SignalMatch, SignalState } from './types.ts';
+import type { CheckRun, Config, Decision, GitHubUser, JobStep, Signal, SignalMatch, SignalState, StackablePr } from './types.ts';
 
 const FAILURE_CONCLUSIONS = new Set(['failure', 'timed_out', 'action_required']);
 const NOT_APPLICABLE_CONCLUSIONS = new Set(['skipped', 'cancelled']);
@@ -127,6 +127,25 @@ export function isExemptAuthor(user: GitHubUser, ownersYaml: string): boolean {
 
 export function findPullRequest<T extends { head: { sha: string } }>(openPrs: T[], headSha: string): T | null {
   return openPrs.find((pr) => pr.head.sha === headSha) ?? null;
+}
+
+// A PR is in scope when it targets the default branch, directly or through a
+// stack: a stacked PR targets the head branch of another open PR in the same
+// repository, which in turn targets the default branch (or another stacked
+// PR). Walk the chain of open PRs; a cycle or a dead end (e.g. a release
+// branch) means out of scope.
+export function targetsDefaultBranch<T extends StackablePr>(pr: T, openPrs: T[], defaultBranch: string): boolean {
+  const seen = new Set<number>();
+  let current: T | undefined = pr;
+  while (current && !seen.has(current.number)) {
+    if (current.base.ref === defaultBranch) {
+      return true;
+    }
+    seen.add(current.number);
+    const { ref, repo }: StackablePr['base'] = current.base;
+    current = openPrs.find((p) => p.head.ref === ref && p.head.repo != null && repo != null && p.head.repo.full_name === repo.full_name);
+  }
+  return false;
 }
 
 // For checks with per-step guidance (the feature-pr-handling job), pick the

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { classifySignals, diagnostics, decide, isExemptAuthor, parseOwners, findPullRequest, pickStepGuidance } from '../classify.ts';
+import { classifySignals, diagnostics, decide, isExemptAuthor, parseOwners, findPullRequest, pickStepGuidance, targetsDefaultBranch } from '../classify.ts';
 import type { CheckRun, Config, SignalState } from '../types.ts';
 
 const config = createRequire(import.meta.url)('../checks.config.json') as Config;
@@ -200,6 +200,54 @@ test('findPullRequest matches open PR by head sha', () => {
   ];
   assert.equal(findPullRequest(prs, 'bbb')!.number, 2);
   assert.equal(findPullRequest(prs, 'zzz'), null);
+});
+
+// --- targetsDefaultBranch: only PRs bound for the default branch, directly or stacked ---
+
+const UPSTREAM = { full_name: 'argoproj/argo-workflows' };
+const FORK = { full_name: 'someone/argo-workflows' };
+function pr(number: number, baseRef: string, headRef: string, headRepo = UPSTREAM) {
+  return { number, base: { ref: baseRef, repo: UPSTREAM }, head: { ref: headRef, repo: headRepo } };
+}
+
+test('targetsDefaultBranch accepts a PR targeting the default branch directly', () => {
+  const p = pr(1, 'main', 'feature', FORK);
+  assert.equal(targetsDefaultBranch(p, [p], 'main'), true);
+});
+
+test('targetsDefaultBranch rejects a PR targeting a release branch', () => {
+  const p = pr(1, 'release-4.0', 'backport-4.0', FORK);
+  assert.equal(targetsDefaultBranch(p, [p], 'main'), false);
+});
+
+test('targetsDefaultBranch follows a stack of open PRs up to the default branch', () => {
+  const bottom = pr(1, 'main', 'part-1');
+  const middle = pr(2, 'part-1', 'part-2');
+  const top = pr(3, 'part-2', 'part-3');
+  const open = [top, middle, bottom];
+  assert.equal(targetsDefaultBranch(top, open, 'main'), true);
+  assert.equal(targetsDefaultBranch(middle, open, 'main'), true);
+});
+
+test('targetsDefaultBranch rejects a stack that ends on a release branch or a closed PR', () => {
+  const bottom = pr(1, 'release-4.0', 'part-1');
+  const top = pr(2, 'part-1', 'part-2');
+  assert.equal(targetsDefaultBranch(top, [top, bottom], 'main'), false);
+  // bottom PR closed/merged: no open PR has head part-1
+  assert.equal(targetsDefaultBranch(top, [top], 'main'), false);
+});
+
+test('targetsDefaultBranch only follows heads in the base repository', () => {
+  // A fork PR whose head branch happens to share the name of the base ref is not part of the stack.
+  const forkPr = pr(1, 'main', 'part-1', FORK);
+  const top = pr(2, 'part-1', 'part-2');
+  assert.equal(targetsDefaultBranch(top, [top, forkPr], 'main'), false);
+});
+
+test('targetsDefaultBranch terminates on a cycle', () => {
+  const a = pr(1, 'b', 'a');
+  const b = pr(2, 'a', 'b');
+  assert.equal(targetsDefaultBranch(a, [a, b], 'main'), false);
 });
 
 // --- pickStepGuidance: choose per-step guidance for the features check ---
