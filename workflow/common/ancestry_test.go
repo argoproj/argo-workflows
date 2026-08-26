@@ -301,7 +301,7 @@ func TestParseDepends(t *testing.T) {
 	assert.Equal(t, "<A> && (<B.Failed> || <C.AnySucceeded>) && !<D>", rewritten)
 
 	refs, err = ParseDepends("A.Bogus && B")
-	assert.EqualError(t, err, "task result 'Bogus' for task 'A' is invalid")
+	require.EqualError(t, err, "task result 'Bogus' for task 'A' is invalid")
 	assert.Len(t, refs, 2, "all references are still returned on error")
 
 	assert.Equal(t, "(dep.Succeeded || dep.Skipped || dep.Daemoned || dep.Failed)",

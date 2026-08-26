@@ -253,28 +253,28 @@ func processItem(_ context.Context, taskBytes []byte, taskName string, i int, it
 			for k, v := range mapVal {
 				substScope["item."+k] = v.String()
 			}
-			b, err := json.Marshal(mapVal)
-			if err != nil {
-				return "", errors.InternalWrapError(err)
+			mapJSON, marshalErr := json.Marshal(mapVal)
+			if marshalErr != nil {
+				return "", errors.InternalWrapError(marshalErr)
 			}
-			substScope["item"] = string(b)
+			substScope["item"] = string(mapJSON)
 		case wfv1.List:
-			b, err := json.Marshal(item.GetListVal())
-			if err != nil {
-				return "", errors.InternalWrapError(err)
+			listJSON, marshalErr := json.Marshal(item.GetListVal())
+			if marshalErr != nil {
+				return "", errors.InternalWrapError(marshalErr)
 			}
-			substScope["item"] = string(b)
+			substScope["item"] = string(listJSON)
 		default: // Number, Bool
 			substScope["item"] = item.String()
 		}
 		substScope["index"] = strconv.Itoa(i) // Marshal the new task, substitute, and unmarshal back
-		taskJSON, err := json.Marshal(newTask)
-		if err != nil {
-			return "", errors.InternalWrapError(err)
+		taskJSON, marshalErr := json.Marshal(newTask)
+		if marshalErr != nil {
+			return "", errors.InternalWrapError(marshalErr)
 		}
-		substituted, err := substitutor.Substitute(string(taskJSON), substScope)
-		if err != nil {
-			return "", err
+		substituted, substErr := substitutor.Substitute(string(taskJSON), substScope)
+		if substErr != nil {
+			return "", substErr
 		}
 		err = json.Unmarshal([]byte(substituted), newTask)
 		if err != nil {
