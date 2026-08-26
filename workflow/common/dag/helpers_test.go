@@ -20,12 +20,10 @@ func NewDAGEvaluator(wf *wfv1.Workflow, tmpl *wfv1.Template, boundaryID, boundar
 	return NewDAGEvaluatorFromTasks(wf, dagTasks, tmpl, boundaryID, boundaryName)
 }
 
-// EvaluateTask evaluates a single task and returns its evaluation result.
-// Test-only convenience: production code evaluates the whole DAG via
-// EvaluateAll; this gives tests the same per-task view without building
-// the full result map.
+// EvaluateTask returns the evaluation result for one task.
+// Test-only convenience over EvaluateAll, so tests see exactly what the
+// engine sees — including the per-child results EvaluateAll emits for
+// expanded (withItems/withParam/withSequence) tasks.
 func (e *DAGEvaluator) EvaluateTask(ctx context.Context, taskName string) EvaluationResult {
-	// Run evaluateAllStates to handle cascading omission
-	e.evaluateAllStates(ctx)
-	return e.evaluateTaskResult(ctx, taskName)
+	return e.EvaluateAll(ctx)[taskName]
 }
