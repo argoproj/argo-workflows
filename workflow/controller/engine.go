@@ -115,7 +115,12 @@ func (e *Engine) Execute(ctx context.Context, tasks []dag.Task) {
 
 	e.reconcileExternalCompletions(ctx, tasks, executedTasks)
 
-	results := e.createOmittedNodes(ctx, tasks)
+	// Evaluate once more: the second hooks pass and external completions have
+	// changed node state since the converge loop's last evaluation, and both
+	// omitted-node creation and the final phase assessment must see that.
+	results := e.evaluateAll(ctx)
+
+	e.createOmittedNodes(ctx, tasks, results)
 
 	// Assess step groups AFTER omitted nodes exist: when an early group fails,
 	// the downstream groups' step nodes are only materialized (as Omitted) by
@@ -675,9 +680,7 @@ func (e *Engine) reconcileExternalCompletions(ctx context.Context, tasks []dag.T
 // createOmittedNodes creates Omitted workflow nodes for unreachable tasks.
 // The scheduler marks them Omitted internally; we create corresponding workflow nodes
 // so that downstream tasks and assessDAGPhase can see them.
-// Returns the evaluation results for use by finalize.
-func (e *Engine) createOmittedNodes(ctx context.Context, tasks []dag.Task) map[string]dag.EvaluationResult {
-	results := e.evaluateAll(ctx)
+func (e *Engine) createOmittedNodes(ctx context.Context, tasks []dag.Task, results map[string]dag.EvaluationResult) {
 	for _, task := range tasks {
 		taskName := task.GetName()
 		taskNodeName := e.taskNodeName(taskName)
@@ -693,7 +696,6 @@ func (e *Engine) createOmittedNodes(ctx context.Context, tasks []dag.Task) map[s
 			e.addChildNode(ctx, task.GetName(), taskNodeName)
 		}
 	}
-	return results
 }
 
 // finalize assesses the overall phase and, if terminal, sets outputs,
