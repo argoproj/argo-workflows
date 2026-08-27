@@ -301,21 +301,28 @@ func newController(ctx context.Context, options ...any) (context.CancelFunc, *Wo
 				S3Bucket: wfv1.S3Bucket{Endpoint: "my-endpoint", Bucket: "my-bucket"},
 			},
 		}),
-		cliExecutorLogFormat:      "text",
-		kubeclientset:             kube,
-		dynamicInterface:          dynamicClient,
-		metadataInterface:         metadataClient,
-		wfclientset:               wfclientset,
-		workflowKeyLock:           sync.NewKeyLock(),
-		wfArchive:                 sqldb.NullWorkflowArchive,
-		hydrator:                  hydratorfake.Noop,
-		estimatorFactory:          estimation.DummyEstimatorFactory,
-		eventRecorderManager:      &testEventRecorderManager{eventRecorder: record.NewFakeRecorder(64)},
-		archiveLabelSelector:      labels.Everything(),
-		cacheFactory:              controllercache.NewCacheFactory(kube, "default"),
-		progressPatchTickDuration: envutil.LookupEnvDurationOr(ctx, common.EnvVarProgressPatchTickDuration, 1*time.Minute),
-		progressFileTickDuration:  envutil.LookupEnvDurationOr(ctx, common.EnvVarProgressFileTickDuration, 3*time.Second),
-		maxStackDepth:             maxAllowedStackDepth,
+		cliExecutorLogFormat:       "text",
+		kubeclientset:              kube,
+		dynamicInterface:           dynamicClient,
+		metadataInterface:          metadataClient,
+		wfclientset:                wfclientset,
+		workflowKeyLock:            sync.NewKeyLock(),
+		wfArchive:                  sqldb.NullWorkflowArchive,
+		hydrator:                   hydratorfake.Noop,
+		estimatorFactory:           estimation.DummyEstimatorFactory,
+		eventRecorderManager:       &testEventRecorderManager{eventRecorder: record.NewFakeRecorder(64)},
+		archiveLabelSelector:       labels.Everything(),
+		cacheFactory:               controllercache.NewCacheFactory(kube, "default"),
+		progressPatchTickDuration:  envutil.LookupEnvDurationOr(ctx, common.EnvVarProgressPatchTickDuration, 1*time.Minute),
+		progressFileTickDuration:   envutil.LookupEnvDurationOr(ctx, common.EnvVarProgressFileTickDuration, 3*time.Second),
+		maxStackDepth:              maxAllowedStackDepth,
+		indexWorkflowSemaphoreKeys: true,
+		cacheGCPeriod:              0,
+		semaphoreNotifyDelay:       time.Second,
+		gcAfterNotHitDuration:      30 * time.Second,
+		healthzAge:                 5 * time.Minute,
+		maxOperationTime:           30 * time.Second,
+		requeueTime:                10 * time.Second,
 		lastWrittenVersions: lastWrittenVersions{
 			versions: make(map[types.UID]lastWrittenVersion),
 		},
@@ -342,7 +349,7 @@ func newController(ctx context.Context, options ...any) (context.CancelFunc, *Wo
 
 	// always compare to WorkflowController.Run to see what this block of code should be doing
 	{
-		wfc.wfInformer = util.NewWorkflowInformer(ctx, dynamicClient, "", 0, wfc.tweakListRequestListOptions, wfc.tweakWatchRequestListOptions, indexers)
+		wfc.wfInformer = util.NewWorkflowInformer(ctx, dynamicClient, "", 0, wfc.tweakListRequestListOptions, wfc.tweakWatchRequestListOptions, newIndexers(wfc.indexWorkflowSemaphoreKeys))
 		wfc.wfTaskSetInformer = informerFactory.Argoproj().V1alpha1().WorkflowTaskSets()
 		wfc.artGCTaskInformer = informerFactory.Argoproj().V1alpha1().WorkflowArtifactGCTasks()
 		wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer(ctx)
