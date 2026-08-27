@@ -136,3 +136,42 @@ func TestBuildPostgresDSNEscapesValues(t *testing.T) {
 	assert.Contains(t, dsn, `dbname=argo\ db`)
 	assert.Contains(t, dsn, `user=user\'s\ name`)
 }
+
+// Config fields that are unset must be omitted from the DSN entirely rather than emitted as a
+// bare `keyword=`, which lib/pq would send to the server as an empty setting.
+func TestBuildPostgresDSNOmitsEmptyValues(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		cfg     *config.PostgreSQLConfig
+		absent  string
+		present map[string]string
+	}{
+		{
+			name: "no database",
+			cfg: &config.PostgreSQLConfig{
+				DatabaseConfig: config.DatabaseConfig{Host: "db.example.com", Port: 5432},
+				SSL:            true,
+			},
+			absent:  "dbname",
+			present: map[string]string{"host": "db.example.com", "port": "5432"},
+		},
+		{
+			name: "no host",
+			cfg: &config.PostgreSQLConfig{
+				DatabaseConfig: config.DatabaseConfig{Port: 5432, Database: "argo"},
+				SSL:            true,
+			},
+			absent:  "host",
+			present: map[string]string{"port": "5432", "dbname": "argo"},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got := dsnKeys(t, buildPostgresDSN(tc.cfg, "argo_user", time.Second))
+
+			assert.NotContains(t, got, tc.absent)
+			for k, v := range tc.present {
+				assert.Equal(t, v, got[k])
+			}
+		})
+	}
+}
