@@ -32,7 +32,7 @@ var pqKeywords = map[string]bool{
 func dsnKeys(t *testing.T, dsn string) map[string]string {
 	t.Helper()
 	out := map[string]string{}
-	for _, field := range strings.Fields(dsn) {
+	for field := range strings.FieldsSeq(dsn) {
 		k, v, ok := strings.Cut(field, "=")
 		require.True(t, ok, "malformed DSN field %q in %q", field, dsn)
 		out[k] = v
