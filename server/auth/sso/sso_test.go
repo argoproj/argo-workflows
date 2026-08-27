@@ -4,6 +4,8 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -26,8 +28,10 @@ const testNamespace = "argo"
 
 type fakeOidcProvider struct {
 	//nolint:containedctx
-	Ctx    context.Context
-	Issuer string
+	Ctx       context.Context
+	Issuer    string
+	LogoutURL string
+	ClaimsErr error
 }
 
 func (fakeOidcProvider) Endpoint() oauth2.Endpoint {
@@ -38,8 +42,27 @@ func (fakeOidcProvider) Verifier(config *oidc.Config) *oidc.IDTokenVerifier {
 	return nil
 }
 
+func (p fakeOidcProvider) Claims(v any) error {
+	if p.ClaimsErr != nil {
+		return p.ClaimsErr
+	}
+	metadata, err := json.Marshal(map[string]string{"end_session_endpoint": p.LogoutURL})
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(metadata, v)
+}
+
 func fakeOidcFactory(ctx context.Context, issuer string) (providerInterface, error) {
-	return fakeOidcProvider{ctx, issuer}, nil
+	return fakeOidcProvider{Ctx: ctx, Issuer: issuer}, nil
+}
+
+func fakeOidcFactoryWithLogoutURL(ctx context.Context, issuer string) (providerInterface, error) {
+	return fakeOidcProvider{Ctx: ctx, Issuer: issuer, LogoutURL: "https://idp.example.com/logout"}, nil
+}
+
+func fakeOidcFactoryWithClaimsError(ctx context.Context, issuer string) (providerInterface, error) {
+	return fakeOidcProvider{Ctx: ctx, Issuer: issuer, ClaimsErr: errors.New("failed to read provider metadata")}, nil
 }
 
 func getSecretKeySelector(secret, key string) apiv1.SecretKeySelector {
@@ -71,6 +94,7 @@ func TestLoadSsoClientIdFromSecret(t *testing.T) {
 		ClientID:             getSecretKeySelector("argo-sso-secret", "client-id"),
 		ClientSecret:         getSecretKeySelector("argo-sso-secret", "client-secret"),
 		RedirectURL:          "https://dummy",
+		LogoutRedirectURL:    "https://example.com/logged-out",
 		CustomGroupClaimName: "argo_groups",
 	}
 	ssoInterface, err := newSso(logging.TestContext(t.Context()), fakeOidcFactory, config, fakeClient, "/", false)
@@ -79,8 +103,46 @@ func TestLoadSsoClientIdFromSecret(t *testing.T) {
 	assert.Equal(t, "sso-client-id-value", ssoObject.config.ClientID)
 	assert.Equal(t, "sso-client-secret-value", ssoObject.config.ClientSecret)
 	assert.Equal(t, "argo_groups", ssoObject.customClaimName)
+	assert.Equal(t, "https://example.com/logged-out", ssoObject.LogoutRedirectURL())
+	assert.Empty(t, ssoObject.LogoutURL())
 	assert.Empty(t, config.IssuerAlias)
 	assert.Equal(t, 10*time.Hour, ssoObject.expiry)
+}
+
+func TestLoadSsoLogoutURLFromProviderMetadata(t *testing.T) {
+	fakeClient := fake.NewClientset(ssoConfigSecret).CoreV1().Secrets(testNamespace)
+	ssoInterface, err := newSso(logging.TestContext(t.Context()), fakeOidcFactoryWithLogoutURL, Config{
+		Issuer:       "https://test-issuer",
+		ClientID:     getSecretKeySelector("argo-sso-secret", "client-id"),
+		ClientSecret: getSecretKeySelector("argo-sso-secret", "client-secret"),
+	}, fakeClient, "/argo", false)
+	require.NoError(t, err)
+
+	ssoObject := ssoInterface.(*sso)
+	assert.Equal(t, "https://idp.example.com/logout", ssoObject.LogoutURL())
+	assert.Equal(t, "sso-client-id-value", ssoObject.ClientID())
+	assert.Equal(t, "/argo/", ssoObject.baseHRef)
+}
+
+func TestLoadSsoWithUnreadableProviderMetadata(t *testing.T) {
+	fakeClient := fake.NewClientset(ssoConfigSecret).CoreV1().Secrets(testNamespace)
+	hook := logging.NewTestHook()
+	ctx := logging.WithLogger(t.Context(), logging.NewTestLogger(logging.Warn, logging.Text, hook))
+	ssoInterface, err := newSso(ctx, fakeOidcFactoryWithClaimsError, Config{
+		Issuer:       "https://test-issuer",
+		ClientID:     getSecretKeySelector("argo-sso-secret", "client-id"),
+		ClientSecret: getSecretKeySelector("argo-sso-secret", "client-secret"),
+	}, fakeClient, "/argo", false)
+	require.NoError(t, err)
+	assert.Empty(t, ssoInterface.LogoutURL())
+	foundWarning := false
+	for _, entry := range hook.AllEntries() {
+		if entry.Msg == "Failed to read OIDC provider metadata; provider logout disabled" {
+			foundWarning = true
+			assert.Equal(t, logging.Warn, entry.Level)
+		}
+	}
+	assert.True(t, foundWarning)
 }
 
 func TestNewSsoWithIssuerAlias(t *testing.T) {

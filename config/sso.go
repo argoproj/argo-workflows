@@ -19,6 +19,8 @@ type SSOConfig struct {
 	ClientSecret apiv1.SecretKeySelector `json:"clientSecret"`
 	// RedirectURL is the OIDC redirect URL
 	RedirectURL string `json:"redirectUrl"`
+	// LogoutRedirectURL is the absolute URL to redirect to after logout; it is also used as the post-logout redirect URI for OIDC provider logout
+	LogoutRedirectURL string `json:"logoutRedirectUrl,omitempty"`
 	// RBAC contains role-based access control settings
 	RBAC *RBACConfig `json:"rbac,omitempty"`
 	// additional scopes (on top of "openid")

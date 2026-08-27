@@ -50,6 +50,12 @@ If the server is running behind reverse proxy with a sub-path different from `/`
 `/argo`), you can set an alternative sub-path with the `--base-href` flag or the `ARGO_BASE_HREF`
 environment variable.
 
+### Logout Redirect URL
+
+> v4.2 and after
+
+See [Logout Redirect URL](argo-server-sso.md#logout-redirect-url).
+
 ### Transport Layer Security
 
 See [TLS](tls.md).

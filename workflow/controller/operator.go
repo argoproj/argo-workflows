@@ -143,12 +143,6 @@ var (
 	ErrRequeue = errors.New("requeue")
 )
 
-// maxOperationTime is the maximum time a workflow operation is allowed to run
-// for before requeuing the workflow onto the workqueue.
-var (
-	maxOperationTime = envutil.LookupEnvDurationOr(logging.InitLoggerInContext(), "MAX_OPERATION_TIME", 30*time.Second)
-)
-
 // failedNodeStatus is a subset of NodeStatus that is only used to Marshal certain fields into a JSON of failed nodes
 type failedNodeStatus struct {
 	DisplayName  string      `json:"displayName"`
@@ -180,7 +174,7 @@ func newWorkflowOperationCtx(ctx context.Context, wf *wfv1.Workflow, wfc *Workfl
 		controller:               wfc,
 		scope:                    variables.NewScope(),
 		volumes:                  wf.Spec.DeepCopy().Volumes,
-		deadline:                 time.Now().UTC().Add(maxOperationTime),
+		deadline:                 time.Now().UTC().Add(wfc.maxOperationTime),
 		eventRecorder:            wfc.eventRecorderManager.Get(ctx, wf.Namespace),
 		preExecutionNodeStatuses: make(map[string]wfv1.NodeStatus),
 		taskSet:                  make(map[string]wfv1.Template),
@@ -2912,7 +2906,12 @@ func (woc *wfOperationCtx) childrenFulfilled(node *wfv1.NodeStatus) bool {
 
 func (woc *wfOperationCtx) GetNodeTemplate(ctx context.Context, node *wfv1.NodeStatus) (*wfv1.Template, error) {
 	if node.TemplateRef != nil {
+		// Check storedTemplates first so that modifications to the CWT after the workflow
+		// started do not cause assessNodeStatus to spuriously mark the node as Error.
 		scope, name := node.GetTemplateScope()
+		if tmpl := woc.wf.GetStoredTemplate(scope, name, node); tmpl != nil {
+			return tmpl, nil
+		}
 		tmplCtx, err := woc.createTemplateContext(ctx, scope, name)
 		if err != nil {
 			woc.markNodeError(ctx, node.Name, err)
