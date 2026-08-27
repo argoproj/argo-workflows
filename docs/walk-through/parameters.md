@@ -87,3 +87,5 @@ spec:
 ```
 
 In this workflow, both steps `A` and `B` would have the same log-level set to `INFO` and can easily be changed between workflow submissions using the `-p` flag.
+
+`-p` is not restricted to the parameters a spec already lists. Any name you pass is added to `spec.arguments.parameters`, so a template can refer to `{{workflow.parameters.log-level}}` even when the workflow itself never declares `log-level`, as long as you supply a value every time you submit. If you forget one, submission fails validation with `failed to resolve {{workflow.parameters.log-level}}`, which is why declaring the parameter with a default is usually the better choice.

@@ -313,6 +313,8 @@ If you need to submit a `WorkflowTemplate` as a `Workflow` with parameters:
 argo submit --from workflowtemplate/workflow-template-submittable -p message=value1
 ```
 
+The parameters you pass this way do not have to be declared by the `WorkflowTemplate`. A template may reference `{{workflow.parameters.<name>}}` for a parameter it never declares, and you supply the value when you submit it.
+
 ### `kubectl`
 
 Using `kubectl apply -f` and `kubectl get wftmpl`
