@@ -18,7 +18,6 @@ import {CronWorkflow} from '../shared/models';
 import * as nsUtils from '../shared/namespaces';
 import {services} from '../shared/services';
 import {useCollectEvent} from '../shared/use-collect-event';
-import {useQueryParams} from '../shared/use-query-params';
 import useTimestamp, {TIMESTAMP_KEYS} from '../shared/use-timestamp';
 import {CronWorkflowCreator} from './cron-workflow-creator';
 import {CronWorkflowFilters} from './cron-workflow-filters';
@@ -52,12 +51,18 @@ export function CronWorkflowList({match, location, history}: RouteComponentProps
     const [storedDisplayISOFormatCreation, setStoredDisplayISOFormatCreation] = useTimestamp(TIMESTAMP_KEYS.CRON_WORKFLOW_LIST_CREATION);
     const [storedDisplayISOFormatNextScheduled, setStoredDisplayISOFormatNextScheduled] = useTimestamp(TIMESTAMP_KEYS.CRON_WORKFLOW_LIST_NEXT_SCHEDULED);
 
-    useEffect(
-        useQueryParams(history, p => {
+    useEffect(() => {
+        return history.listen((newLocation, action) => {
+            const p = new URLSearchParams(newLocation.search);
             setSidePanel(p.get('sidePanel') === 'true');
-        }),
-        [history]
-    );
+            // Only restore filters on Back/Forward so our own history.push does not loop.
+            if (action === 'POP') {
+                setLabels(p.getAll('label'));
+                const stateQueryParam = p.getAll('state');
+                setStates(stateQueryParam.length > 0 ? stateQueryParam : ['Running', 'Suspended']);
+            }
+        });
+    }, [history]);
 
     // save history
     useEffect(() => {
