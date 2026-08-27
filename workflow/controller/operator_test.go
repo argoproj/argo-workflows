@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -1748,6 +1749,21 @@ func TestAssessNodeStatus(t *testing.T) {
 		wantPhase:   wfv1.NodeSucceeded,
 		wantMessage: "",
 	}, {
+		// A live daemon that dies on its own must still be assessed normally: its node is Running
+		// and Daemoned, not Succeeded, so the teardown predicate must not swallow the failure --
+		// otherwise retryStrategy never sees the attempt fail.
+		name: "pod failed - daemoned, died on its own",
+		pod: &apiv1.Pod{
+			Status: apiv1.PodStatus{
+				Message: "died on its own",
+				Phase:   apiv1.PodFailed,
+			},
+		},
+		daemon:      true,
+		node:        &wfv1.NodeStatus{TemplateName: templateName, Phase: wfv1.NodeRunning, Daemoned: new(true)},
+		wantPhase:   wfv1.NodeFailed,
+		wantMessage: "died on its own",
+	}, {
 		// non-daemon node that previously Succeeded must still go through inferFailedReason.
 		name: "pod failed - not daemoned, previously succeeded",
 		pod: &apiv1.Pod{
@@ -2107,100 +2123,204 @@ spec:
       command: [sh, -c, "true"]
 `
 
-// TestDaemonContainerSetTeardownEndToEnd drives the whole teardown sequence through the real code
-// path, rather than hand-building node status: operate, bring the daemon pod up Running and Ready,
-// let killDaemonedChildren stop it when the step group completes, then deliver the PodFailed event
-// that Kubernetes reports because the containers were SIGKILLed.
+var daemonScriptStepsWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: daemon-script-steps
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: daemon
+        template: script
+    - - name: after
+        template: noop
+  - name: script
+    daemon: true
+    script:
+      image: alpine
+      command: [sh]
+      source: |
+        sleep 999999
+  - name: noop
+    container:
+      image: alpine
+      command: [sh, -c, "true"]
+`
+
+// injectPlaceholderTaskResult mirrors what the executor writes at pod start: a WorkflowTaskResult
+// labelled report-outputs-completed=false, before any output has been reported. Every pod with an
+// aux container has one from the moment it starts, and it is what flips a node's TaskResultSynced
+// to false. Without it a teardown test cannot tell whether a daemon node was initialized with
+// omitTaskResultSynced, because MarkTaskResultIncomplete leaves a nil TaskResultSynced alone.
+func injectPlaceholderTaskResult(ctx context.Context, t *testing.T, woc *wfOperationCtx, nodeID string) {
+	t.Helper()
+	result := &wfv1.WorkflowTaskResult{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: workflow.APIVersion,
+			Kind:       workflow.WorkflowTaskResultKind,
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      nodeID,
+			Namespace: woc.wf.Namespace,
+			Labels: map[string]string{
+				common.LabelKeyWorkflow:               woc.wf.Name,
+				common.LabelKeyReportOutputsCompleted: "false",
+			},
+		},
+	}
+	_, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskResults(woc.wf.Namespace).
+		Create(ctx, result, metav1.CreateOptions{})
+	require.NoError(t, err)
+	// The informer is fed asynchronously from the fake clientset; seed the indexer directly so the
+	// next operate's taskResultReconciliation sees the placeholder.
+	require.NoError(t, woc.controller.taskResultInformer.GetIndexer().Add(result))
+}
+
+// TestDaemonTeardownEndToEnd drives the whole teardown sequence through the real code path, rather
+// than hand-building node status: operate, bring the daemon pod up Running and Ready, let
+// killDaemonedChildren stop it when the step group completes, deliver the PodRunning event that is
+// still in flight at that moment, then the PodFailed event that Kubernetes reports because the
+// containers were SIGKILLed.
 //
-// This is the container-set-run-as-daemon case raised in review on
-// https://github.com/argoproj/argo-workflows/pull/16396: killDaemonedChildren completes the
-// container child nodes together with the pod node, and the ContainerStatuses loop in
-// assessNodeStatus must not then mark any of them Failed from the kill's exit codes.
-func TestDaemonContainerSetTeardownEndToEnd(t *testing.T) {
-	ctx := logging.TestContext(t.Context())
-	wf := wfv1.MustUnmarshalWorkflow(daemonContainerSetStepsWf)
-	cancel, controller := newController(ctx, wf)
-	defer cancel()
+// This is the daemon case raised in review on
+// https://github.com/argoproj/argo-workflows/pull/16396. Three things must hold at the end:
+// the pod node stays Succeeded, killDaemonedChildren's completed container children are not
+// dragged to Failed by the kill's exit codes, and no exit code from our own kill is recorded.
+//
+// The placeholder WorkflowTaskResult is what makes this test able to fail. Without it
+// TaskResultSynced never becomes false, the node stays Fulfilled through teardown, and the
+// PodRunning branch below never resurrects it -- so initializing the node without
+// omitTaskResultSynced would go unnoticed.
+func TestDaemonTeardownEndToEnd(t *testing.T) {
+	for _, tt := range []struct {
+		name       string
+		wf         string
+		daemonNode string
+		ctrNodes   []string
+	}{{
+		// a container set pod has no container called "main", so getExitCode never matches it
+		name:       "container set",
+		wf:         daemonContainerSetStepsWf,
+		daemonNode: "daemon-cs-steps[0].daemon",
+		ctrNodes:   []string{"step-1", "step-2"},
+	}, {
+		// a script pod does have a "main" container, so it is the case that can record an exit code
+		name:       "script",
+		wf:         daemonScriptStepsWf,
+		daemonNode: "daemon-script-steps[0].daemon",
+	}} {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			wf := wfv1.MustUnmarshalWorkflow(tt.wf)
+			cancel, controller := newController(ctx, wf)
+			defer cancel()
 
-	woc := newWorkflowOperationCtx(ctx, wf, controller)
-	woc.operate(ctx)
+			woc := newWorkflowOperationCtx(ctx, wf, controller)
+			woc.operate(ctx)
 
-	// Bring the daemon container-set pod up: Running with every container Ready, which is what makes
-	// assessNodeStatus mark the node Daemoned.
-	pods, err := listPods(ctx, woc)
-	require.NoError(t, err)
-	require.NotEmpty(t, pods.Items)
-	for _, p := range pods.Items {
-		pod := p
-		pod.Status.Phase = apiv1.PodRunning
-		// The fake client does not populate ContainerStatuses, so synthesize what a kubelet reports.
-		pod.Status.ContainerStatuses = nil
-		for _, c := range pod.Spec.Containers {
-			pod.Status.ContainerStatuses = append(pod.Status.ContainerStatuses, apiv1.ContainerStatus{
-				Name:  c.Name,
-				Ready: true,
-				State: apiv1.ContainerState{Running: &apiv1.ContainerStateRunning{}},
-			})
-		}
-		updatedPod, updateErr := controller.kubeclientset.CoreV1().Pods(pod.Namespace).Update(ctx, &pod, metav1.UpdateOptions{})
-		require.NoError(t, updateErr)
-		// operate reads pods from the informer cache, which the fake clientset feeds
-		// asynchronously; update the store directly so the next operate sees the new status.
-		require.NoError(t, controller.PodController.TestingPodInformer().GetStore().Update(updatedPod))
-	}
-	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
-	woc.operate(ctx)
+			daemonNode, err := woc.wf.GetNodeByName(tt.daemonNode)
+			require.NoError(t, err)
+			injectPlaceholderTaskResult(ctx, t, woc, daemonNode.ID)
 
-	daemonNode, err := woc.wf.GetNodeByName("daemon-cs-steps[0].daemon")
-	require.NoError(t, err)
-	require.True(t, daemonNode.IsDaemoned(), "daemon pod node should be Daemoned before teardown")
+			// Bring the daemon pod up: Running with every container Ready, which is what makes
+			// assessNodeStatus mark the node Daemoned.
+			pods, err := listPods(ctx, woc)
+			require.NoError(t, err)
+			require.NotEmpty(t, pods.Items)
+			for _, p := range pods.Items {
+				pod := p
+				pod.Status.Phase = apiv1.PodRunning
+				// The fake client does not populate ContainerStatuses, so synthesize what a kubelet reports.
+				pod.Status.ContainerStatuses = nil
+				for _, c := range pod.Spec.Containers {
+					pod.Status.ContainerStatuses = append(pod.Status.ContainerStatuses, apiv1.ContainerStatus{
+						Name:  c.Name,
+						Ready: true,
+						State: apiv1.ContainerState{Running: &apiv1.ContainerStateRunning{}},
+					})
+				}
+				updatedPod, updateErr := controller.kubeclientset.CoreV1().Pods(pod.Namespace).Update(ctx, &pod, metav1.UpdateOptions{})
+				require.NoError(t, updateErr)
+				// operate reads pods from the informer cache, which the fake clientset feeds
+				// asynchronously; update the store directly so the next operate sees the new status.
+				require.NoError(t, controller.PodController.TestingPodInformer().GetStore().Update(updatedPod))
+			}
+			woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+			woc.operate(ctx)
 
-	// The step group has completed, so the daemon is stopped. This marks the pod node Succeeded,
-	// completes the unfinished container children, and signals the pod.
-	woc.killDaemonedChildren(ctx, daemonNode.BoundaryID)
+			daemonNode, err = woc.wf.GetNodeByName(tt.daemonNode)
+			require.NoError(t, err)
+			require.True(t, daemonNode.IsDaemoned(), "daemon pod node should be Daemoned before teardown")
 
-	daemonNode, err = woc.wf.GetNodeByName("daemon-cs-steps[0].daemon")
-	require.NoError(t, err)
-	require.Equal(t, wfv1.NodeSucceeded, daemonNode.Phase, "killDaemonedChildren should mark the pod node Succeeded")
-	for _, ctr := range []string{"step-1", "step-2"} {
-		child, childErr := woc.wf.GetNodeByName("daemon-cs-steps[0].daemon." + ctr)
-		require.NoError(t, childErr)
-		require.Equal(t, wfv1.NodeSucceeded, child.Phase,
-			"killDaemonedChildren should complete container node %s with the pod node", ctr)
-	}
+			// The step group has completed, so the daemon is stopped. This marks the pod node Succeeded,
+			// completes the unfinished container children, and signals the pod.
+			woc.killDaemonedChildren(ctx, daemonNode.BoundaryID)
 
-	// Kubernetes now reports the pod Failed, its containers SIGKILLed by the teardown.
-	pods, err = listPods(ctx, woc)
-	require.NoError(t, err)
-	var daemonPod *apiv1.Pod
-	for i := range pods.Items {
-		if pods.Items[i].Annotations[common.AnnotationKeyNodeID] == daemonNode.ID {
-			daemonPod = &pods.Items[i]
-		}
-	}
-	require.NotNil(t, daemonPod, "daemon pod")
-	daemonPod.Status.Phase = apiv1.PodFailed
-	for i := range daemonPod.Status.ContainerStatuses {
-		daemonPod.Status.ContainerStatuses[i].State = apiv1.ContainerState{
-			Terminated: &apiv1.ContainerStateTerminated{ExitCode: 137, Reason: "Error"},
-		}
-	}
+			daemonNode, err = woc.wf.GetNodeByName(tt.daemonNode)
+			require.NoError(t, err)
+			require.Equal(t, wfv1.NodeSucceeded, daemonNode.Phase, "killDaemonedChildren should mark the pod node Succeeded")
+			for _, ctr := range tt.ctrNodes {
+				child, childErr := woc.wf.GetNodeByName(tt.daemonNode + "." + ctr)
+				require.NoError(t, childErr)
+				require.Equal(t, wfv1.NodeSucceeded, child.Phase,
+					"killDaemonedChildren should complete container node %s with the pod node", ctr)
+			}
 
-	// Mirror podReconciliation's contract: store whatever assessNodeStatus returns (nil means no
-	// change), then assert on the stored node so the check runs regardless of the return value.
-	if updated := woc.assessNodeStatus(ctx, daemonPod, daemonNode); updated != nil {
-		woc.wf.Status.Nodes.Set(ctx, updated.ID, *updated)
-	}
-	storedNode, err := woc.wf.GetNodeByName("daemon-cs-steps[0].daemon")
-	require.NoError(t, err)
-	assert.Equal(t, wfv1.NodeSucceeded, storedNode.Phase, "daemon pod node should stay Succeeded")
+			pods, err = listPods(ctx, woc)
+			require.NoError(t, err)
+			var daemonPod *apiv1.Pod
+			for i := range pods.Items {
+				if pods.Items[i].Annotations[common.AnnotationKeyNodeID] == daemonNode.ID {
+					daemonPod = &pods.Items[i]
+				}
+			}
+			require.NotNil(t, daemonPod, "daemon pod")
 
-	// The container children must not be dragged to Failed by the teardown.
-	for _, ctr := range []string{"step-1", "step-2"} {
-		child, childErr := woc.wf.GetNodeByName("daemon-cs-steps[0].daemon." + ctr)
-		require.NoError(t, childErr)
-		assert.Equal(t, wfv1.NodeSucceeded, child.Phase,
-			"container node %s must not be Failed by the intentional teardown", ctr)
+			// assessNodeStatus returns nil when nothing changed; mirror podReconciliation's contract
+			// and store whatever comes back, so every assertion below reads the stored node.
+			assess := func() *wfv1.NodeStatus {
+				old, getErr := woc.wf.GetNodeByName(tt.daemonNode)
+				require.NoError(t, getErr)
+				if updated := woc.assessNodeStatus(ctx, daemonPod, old); updated != nil {
+					woc.wf.Status.Nodes.Set(ctx, updated.ID, *updated)
+				}
+				stored, getErr := woc.wf.GetNodeByName(tt.daemonNode)
+				require.NoError(t, getErr)
+				return stored
+			}
+
+			// The kill is queued, not yet delivered: the pod is still Running when the next reconcile
+			// lands. This is where a node whose TaskResultSynced is false gets resurrected to
+			// Running+Daemoned, which makes the following PodFailed look like a spontaneous death.
+			require.Equal(t, wfv1.NodeSucceeded, assess().Phase, "a stopped daemon must not be resurrected to Running")
+
+			// Kubernetes now reports the pod Failed, its containers SIGKILLed by the teardown.
+			daemonPod.Status.Phase = apiv1.PodFailed
+			for i := range daemonPod.Status.ContainerStatuses {
+				daemonPod.Status.ContainerStatuses[i].State = apiv1.ContainerState{
+					Terminated: &apiv1.ContainerStateTerminated{ExitCode: 137, Reason: "Error"},
+				}
+			}
+
+			storedNode := assess()
+			assert.Equal(t, wfv1.NodeSucceeded, storedNode.Phase, "daemon pod node should stay Succeeded")
+			var exitCode *string
+			if storedNode.Outputs != nil {
+				exitCode = storedNode.Outputs.ExitCode
+			}
+			assert.Nil(t, exitCode, "a daemon stopped by the controller must not record our own kill's exit code")
+
+			// The container children must not be dragged to Failed by the teardown.
+			for _, ctr := range tt.ctrNodes {
+				child, childErr := woc.wf.GetNodeByName(tt.daemonNode + "." + ctr)
+				require.NoError(t, childErr)
+				assert.Equal(t, wfv1.NodeSucceeded, child.Phase,
+					"container node %s must not be Failed by the intentional teardown", ctr)
+			}
+		})
 	}
 }
 

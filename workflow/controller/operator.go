@@ -1477,7 +1477,7 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 	}
 	if tmpl == nil {
 		woc.log.WithFields(logging.Fields{"nodeName": old.Name, "templateName": old.TemplateName}).
-			Warn(ctx, "cannot resolve template for node; daemon teardown detection is disabled for it")
+			Debug(ctx, "no template resolved for node (expected for inline templates); daemon teardown detection is disabled for it")
 	}
 	// The only way a daemon node becomes Succeeded while its pod is still alive is
 	// killDaemonedChildren, which marks the node and then requests pod termination.
@@ -1632,7 +1632,9 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 	// We capture the exit-code after we look for the task-result.
 	// All other outputs are set by the executor, only the exit-code is set by the controller.
 	// By waiting, we avoid breaking the race-condition check.
-	if exitCode := getExitCode(pod); exitCode != nil {
+	// A daemon we stopped ourselves reports the exit code of our own signal, which says nothing
+	// about the node: recording it would contradict the Succeeded phase we just preserved.
+	if exitCode := getExitCode(pod); !stoppedDaemon && exitCode != nil {
 		if updated.Outputs == nil {
 			updated.Outputs = &wfv1.Outputs{}
 		}
@@ -3617,7 +3619,7 @@ loop:
 func (woc *wfOperationCtx) executeScript(ctx context.Context, nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	node, err := woc.wf.GetNodeByName(nodeName)
 	if err != nil {
-		ctx, node = woc.initializeExecutableNode(ctx, nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, opts.nodeFlag, false)
+		ctx, node = woc.initializeExecutableNode(ctx, nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, opts.nodeFlag, tmpl.IsDaemon())
 	} else if !node.Pending() {
 		return node, nil
 	}
