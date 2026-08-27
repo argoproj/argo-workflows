@@ -276,7 +276,7 @@ func (woc *wfOperationCtx) newPodBuilder(ctx context.Context, nodeName string, m
 			globalParams:              woc.globalParams(),
 			volumes:                   frozenVolumes,
 			artifactRepository:        woc.artifactRepository.DeepCopy(),
-			configMapIndexer:          wfc.configMapInformer.GetIndexer(),
+			configMapIndexer:          wfc.typedConfigMapInformer.GetIndexer(),
 			config:                    &wfc.Config,
 			instanceID:                wfc.Config.InstanceID,
 			mainContainerDefaults:     wfc.Config.MainContainer,
@@ -585,6 +585,16 @@ func (pb *podBuilder) build(ctx context.Context) (*podBuildResult, error) {
 		pod.Spec.Resources = tmpl.PodResources
 	} else if wfSpec.PodResources != nil {
 		pod.Spec.Resources = wfSpec.PodResources
+	}
+
+	// Set the DRA resource claims, the template level replacing the workflow level
+	// rather than merging with it. The list is cloned so the pod does not share the
+	// slice with the spec the builder was handed. podSpecPatch is applied after this
+	// and keeps its precedence, merging over these entries by claim name.
+	if len(tmpl.ResourceClaims) > 0 {
+		pod.Spec.ResourceClaims = slices.Clone(tmpl.ResourceClaims)
+	} else if len(wfSpec.ResourceClaims) > 0 {
+		pod.Spec.ResourceClaims = slices.Clone(wfSpec.ResourceClaims)
 	}
 
 	// Collect initial progress from pod metadata if exists. submitPod applies it

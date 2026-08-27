@@ -1,9 +1,9 @@
-#syntax=docker/dockerfile:1.25
+#syntax=docker/dockerfile:1.26
 ARG GIT_COMMIT=unknown
 ARG GIT_TAG=unknown
 ARG GIT_TREE_STATE=unknown
 
-FROM golang:1.26.1-alpine3.23 AS builder
+FROM golang:1.26.5-alpine3.23 AS builder
 
 # libc-dev to build openapi-gen
 RUN apk update && apk add --no-cache \
@@ -138,6 +138,20 @@ COPY hack/nsswitch.conf /etc/
 COPY --from=argocli-build /go/src/github.com/argoproj/argo-workflows/dist/argo /bin/
 
 ENTRYPOINT [ "argo" ]
+
+####################################################################################################
+
+FROM registry.k8s.io/kubectl:v1.36.3@sha256:6e4fce3c83651edb91b74bc67701c5cd263dd8aa3cd4254b1798d6425a5ab789 AS argo-workflows-crdinstaller
+
+USER 8737
+
+# The base image sets no HOME, so kubectl would put its discovery cache in
+# /.kube/cache, which UID 8737 cannot write. /tmp is world-writable (1777).
+ENV HOME=/tmp
+
+COPY manifests/base/crds/full/argoproj.io_*.yaml /crds/full/
+
+CMD [ "apply", "--server-side", "--force-conflicts", "-v=6", "-f", "/crds/full/" ]
 
 ####################################################################################################
 # Dev-only stages for Tilt. Small alpine base; NOT shipped to users. The

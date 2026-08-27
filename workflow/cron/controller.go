@@ -29,6 +29,7 @@ import (
 	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/client/informers/externalversions/workflow/v1alpha1"
 	wfctx "github.com/argoproj/argo-workflows/v4/util/context"
 	"github.com/argoproj/argo-workflows/v4/util/env"
+	informerutil "github.com/argoproj/argo-workflows/v4/util/informer"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/events"
@@ -55,22 +56,18 @@ type Controller struct {
 	eventRecorderManager events.EventRecorderManager
 	cronWorkflowWorkers  int
 	logger               logging.Logger
+	syncPeriod           time.Duration
 }
 
 const (
 	cronWorkflowResyncPeriod = 20 * time.Minute
 )
 
-var cronSyncPeriod time.Duration
-
 func init() {
 	// this make sure we support timezones
-	_, err := time.Parse(time.RFC822, "17 Oct 07 14:03 PST")
-	if err != nil {
-		logging.InitLogger().WithFatal().WithError(err).Error(context.Background(), "failed to parse time")
+	if _, err := time.Parse(time.RFC822, "17 Oct 07 14:03 PST"); err != nil {
+		panic(err)
 	}
-	cronSyncPeriod = env.LookupEnvDurationOr(logging.InitLoggerInContext(), "CRON_SYNC_PERIOD", 10*time.Second)
-	logging.InitLogger().WithField("cronSyncPeriod", cronSyncPeriod).Info(context.Background(), "cron config")
 }
 
 // NewCronController creates a new cron controller
@@ -78,6 +75,9 @@ func NewCronController(ctx context.Context, wfclientset versioned.Interface, dyn
 	eventRecorderManager events.EventRecorderManager, cronWorkflowWorkers int, wftmplInformer wfextvv1alpha1.WorkflowTemplateInformer, cwftmplInformer wfextvv1alpha1.ClusterWorkflowTemplateInformer, wfDefaults *v1alpha1.Workflow,
 ) *Controller {
 	ctx, logger := logging.RequireLoggerFromContext(ctx).WithField("component", "cron").InContext(ctx)
+
+	syncPeriod := env.LookupEnvDurationOr(ctx, "CRON_SYNC_PERIOD", 10*time.Second)
+	logger.WithField("cronSyncPeriod", syncPeriod).Info(ctx, "cron config")
 
 	return &Controller{
 		wfClientset:          wfclientset,
@@ -95,6 +95,7 @@ func NewCronController(ctx context.Context, wfclientset versioned.Interface, dyn
 		cwftmplInformer:      cwftmplInformer,
 		cronWorkflowWorkers:  cronWorkflowWorkers,
 		logger:               logger,
+		syncPeriod:           syncPeriod,
 	}
 }
 
@@ -107,6 +108,8 @@ func (cc *Controller) Run(ctx context.Context) {
 	cc.cronWfInformer = dynamicinformer.NewFilteredDynamicSharedInformerFactory(cc.dynamicInterface, cronWorkflowResyncPeriod, cc.managedNamespace, func(options *v1.ListOptions) {
 		cronWfInformerListOptionsFunc(options, cc.instanceID)
 	}).ForResource(schema.GroupVersionResource{Group: workflow.Group, Version: workflow.Version, Resource: workflow.CronWorkflowPlural})
+	//nolint:errcheck // the error only happens if the informer was already started, and it hasn't been
+	cc.cronWfInformer.Informer().SetTransform(informerutil.StripManagedFields)
 	err := cc.addCronWorkflowInformerHandler(ctx)
 	if err != nil {
 		cc.logger.WithFatal().Error(ctx, err.Error())
@@ -125,7 +128,7 @@ func (cc *Controller) Run(ctx context.Context) {
 
 	go cc.cronWfInformer.Informer().Run(ctx.Done())
 
-	go wait.UntilWithContext(ctx, cc.syncAll, cronSyncPeriod)
+	go wait.UntilWithContext(ctx, cc.syncAll, cc.syncPeriod)
 
 	for i := 0; i < cc.cronWorkflowWorkers; i++ {
 		go wait.UntilWithContext(ctx, cc.runCronWorker, time.Second)

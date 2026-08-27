@@ -154,6 +154,12 @@ An artifact path *inside* a declared mount (`path: /data/shared/file`) is the or
 
 When an input artifact path is **also an output artifact path** (read an artifact, transform it, write the result back to the same path), the produced output is captured correctly regardless of how `main` writes it — overwriting through the symlink, or replacing the symlink via `rm` + recreate or the idiomatic write-temp-then-`rename`. The emissary inside `main` stages the live file from `main`'s own filesystem before `supervisor` collects it, so the original input is never mistaken for the output.
 
+### `workingDir` at an input artifact path
+
+A directory artifact whose `path` is also the container's `workingDir` (e.g. a git artifact at `/workspace` with `workingDir: /workspace`) works; the one observable difference from legacy mode is that `pwd` / `getcwd()` report the resolved physical path (`/argo/inputs/artifacts/<name>`) rather than the declared `workingDir`.
+
+A **file** artifact at the `workingDir` path fails the step with a clear error before the user command runs. Legacy mode cannot run that configuration either — there, the `SubPath` file mount makes the runtime's own chdir fail at container create.
+
 ### `readOnlyRootFilesystem` is incompatible with init-less input artifacts
 
 Because init-less mode creates the symlink *inside `main`'s own filesystem* — it creates the parent directory and the symlink at the artifact's path (removing any pre-existing content first when it is replacing it) — those operations require the path to be on a **writable** filesystem. If `main`'s container sets `securityContext.readOnlyRootFilesystem: true` (a common Pod Security / policy hardening) and the artifact's path falls on the read-only root filesystem, the symlink step fails with `EROFS` and the step errors before the user command runs. The same workflow succeeds in legacy mode, because there kubelet establishes the input artifact's `SubPath` bind mount at the mount-namespace level before the container starts — independent of whether the container's root filesystem is read-only.

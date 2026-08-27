@@ -23,6 +23,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	workflow "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
+	authcookie "github.com/argoproj/argo-workflows/v4/server/auth/cookie"
 	"github.com/argoproj/argo-workflows/v4/server/auth/serviceaccount"
 	"github.com/argoproj/argo-workflows/v4/server/auth/sso"
 	authTypes "github.com/argoproj/argo-workflows/v4/server/auth/types"
@@ -137,7 +138,7 @@ func GetClaims(ctx context.Context) *authTypes.Claims {
 
 func getAuthHeaders(md metadata.MD) []string {
 	// looks for the HTTP header `Authorization: Bearer ...`
-	for _, t := range md.Get("authorization") {
+	for _, t := range md.Get(authcookie.AuthorizationMetadataKey) {
 		return []string{t}
 	}
 	// check the HTTP cookie
@@ -149,7 +150,7 @@ func getAuthHeaders(md metadata.MD) []string {
 		request := http.Request{Header: header}
 		cookies := request.Cookies()
 		for _, c := range cookies {
-			if c.Name == "authorization" {
+			if c.Name == authcookie.AuthorizationCookieName {
 				authorizations = append(authorizations, c.Value)
 			}
 		}

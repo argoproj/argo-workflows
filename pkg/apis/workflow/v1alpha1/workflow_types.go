@@ -487,6 +487,16 @@ type WorkflowSpec struct {
 	// Requires the PodLevelResources feature gate to be enabled on the cluster (beta since Kubernetes v1.34).
 	// +optional
 	PodResources *apiv1.ResourceRequirements `json:"podResources,omitempty" protobuf:"bytes,45,opt,name=podResources"`
+
+	// ResourceClaims defines the ResourceClaims that must be allocated and reserved before the pods running this workflow's templates are allowed to start.
+	// Each entry names either an existing ResourceClaim or a ResourceClaimTemplate in the workflow's namespace, and containers ask for one by name through resources.claims.
+	// The list is replaced as a whole rather than merged, so a template's resourceClaims, or a Workflow overriding a WorkflowTemplate, supersedes it entirely.
+	// Applies to the pods this workflow runs, including one whose template came through a templateRef, but not to the shared agent pod behind HTTP and Plugin templates.
+	// A referenced WorkflowTemplate's own spec-level resourceClaims do not come along with a templateRef; use workflowTemplateRef to inherit the referenced spec.
+	// Requires the DynamicResourceAllocation feature gate to be enabled on the cluster.
+	// +listType=atomic
+	// +optional
+	ResourceClaims []apiv1.PodResourceClaim `json:"resourceClaims,omitempty" protobuf:"bytes,47,rep,name=resourceClaims"`
 }
 
 type LabelValueFrom struct {
@@ -857,6 +867,16 @@ type Template struct {
 	// Requires the PodLevelResources feature gate to be enabled on the cluster (beta since Kubernetes v1.34).
 	// +optional
 	PodResources *apiv1.ResourceRequirements `json:"podResources,omitempty" protobuf:"bytes,46,opt,name=podResources"`
+
+	// ResourceClaims defines the ResourceClaims that must be allocated and reserved before this template's pod is allowed to start.
+	// Each entry names either an existing ResourceClaim or a ResourceClaimTemplate in the workflow's namespace, and containers ask for one by name through resources.claims.
+	// Replaces the workflow-level resourceClaims as a whole rather than merging with it.
+	// Not supported for a template that creates no pod: Steps, DAG and Suspend, which orchestrate other templates, and HTTP and Plugin, which run on the shared agent pod.
+	// A template reached through a templateRef keeps its own claims, and falls back to those of the workflow calling it rather than to the spec-level claims of the WorkflowTemplate it was defined in.
+	// Requires the DynamicResourceAllocation feature gate to be enabled on the cluster.
+	// +listType=atomic
+	// +optional
+	ResourceClaims []apiv1.PodResourceClaim `json:"resourceClaims,omitempty" protobuf:"bytes,47,rep,name=resourceClaims"`
 }
 
 // SetType will set the template object based on template type.

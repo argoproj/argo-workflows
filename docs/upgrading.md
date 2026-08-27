@@ -5,7 +5,31 @@ For the upgrading guide to a specific version of workflows change the documentat
 Breaking changes  typically (sometimes we don't realise they are breaking) have "!" in the commit message, as per
 the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summary).
 
+## Upgrading to v4.1.2
+
+### SSO users are logged out once on upgrade
+
+The SSO session token format has changed to fix the oversized `authorization` cookie that broke SSO login in v4.1.0 and v4.1.1 ([#16748](https://github.com/argoproj/argo-workflows/pull/16748)).
+Existing session cookies fail to validate after the upgrade, so users are redirected to log in again once; new sessions work as normal.
+CLI users who saved a token from `argo auth token` need to re-fetch it.
+No configuration or secret changes are required.
+
 ## Upgrading to v4.1
+
+### Controller caches no longer store `managedFields`
+
+The workflow-controller (and the parts of the argo-server that share its informers) now strips `metadata.managedFields` from objects before storing them in its informer caches ([#16563](https://github.com/argoproj/argo-workflows/pull/16563)).
+This reduces controller memory usage — As a rough guide `managedFields` might be about 20% of the memory usage of objects, and at scale informer objects use most of the controllers memory footprint.
+This is internal to the controller's caches; objects stored in the cluster are unaffected.
+
+### `argo archive` commands accept a workflow name as well as a UID
+
+The `argo archive get`, `delete`, `resubmit` and `retry` commands previously took a workflow UID as their argument.
+They now accept either a workflow name or a UID ([#15198](https://github.com/argoproj/argo-workflows/pull/15198)).
+An argument that matches the UUID format is treated as a UID; anything else is treated as a name, resolved within the selected namespace.
+If multiple archived workflows share the name, the command fails and lists the matching UIDs.
+You can force the interpretation with the new `--uid` or `--name` flags, for example if a workflow's name is itself formatted as a UUID.
+Existing scripts that pass UIDs continue to work unchanged.
 
 ### INFORMER_WRITE_BACK environment variable removed
 

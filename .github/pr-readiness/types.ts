@@ -55,23 +55,12 @@ export interface TemplateVerdict {
   issues: TemplateIssue[];
 }
 
-export interface State {
-  v: number;
-  failing: string[];
-  draftedSha?: string | null;
-}
-
-export interface PrRef {
-  draft: boolean;
-  headSha: string;
-}
-
 export type CommentVariant = 'issues' | 'waiting' | 'allclear';
 
 export interface Decision {
   variant: CommentVariant | null;
   shouldComment: boolean;
-  shouldDraft: boolean;
+  blocking: boolean;
   failing: string[];
   templateBlocking: boolean;
 }
