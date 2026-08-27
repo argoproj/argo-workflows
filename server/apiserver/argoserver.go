@@ -81,8 +81,6 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
 )
 
-var MaxGRPCMessageSize int
-
 // Server is the interface for the Argo API server
 type Server interface {
 	Run(ctx context.Context, port int, browserOpenFunc func(string))
@@ -109,6 +107,7 @@ type argoServer struct {
 	allowedLinkProtocol      []string
 	cache                    *cache.ResourceCache
 	restConfig               *rest.Config
+	maxGRPCMessageSize       int
 }
 
 type ArgoServerOpts struct {
@@ -131,14 +130,6 @@ type ArgoServerOpts struct {
 	AccessControlAllowOrigin string
 	APIRateLimit             uint64
 	AllowedLinkProtocol      []string
-}
-
-func init() {
-	var err error
-	MaxGRPCMessageSize, err = env.GetInt("GRPC_MESSAGE_SIZE", 100*1024*1024)
-	if err != nil {
-		logging.InitLogger().WithFatal().WithError(err).Error(context.Background(), "GRPC_MESSAGE_SIZE environment variable must be set as an integer")
-	}
 }
 
 func getResourceCacheNamespace(managedNamespace string) string {
@@ -186,6 +177,11 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (Server, error) {
 		log.WithFatal().Error(ctx, err.Error())
 	}
 
+	maxGRPCMessageSize, err := env.GetInt("GRPC_MESSAGE_SIZE", 100*1024*1024)
+	if err != nil {
+		return nil, fmt.Errorf("GRPC_MESSAGE_SIZE environment variable must be set as an integer: %w", err)
+	}
+
 	return &argoServer{
 		baseHRef:                 opts.BaseHRef,
 		tlsConfig:                opts.TLSConfig,
@@ -206,6 +202,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (Server, error) {
 		allowedLinkProtocol:      opts.AllowedLinkProtocol,
 		cache:                    resourceCache,
 		restConfig:               opts.RestConfig,
+		maxGRPCMessageSize:       maxGRPCMessageSize,
 	}, nil
 }
 
@@ -348,7 +345,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		url = "https://localhost" + address
 	}
 	log.WithFields(logging.Fields{
-		"GRPC_MESSAGE_SIZE": MaxGRPCMessageSize,
+		"GRPC_MESSAGE_SIZE": as.maxGRPCMessageSize,
 	}).Info(ctx, "GRPC Server Max Message Size, MaxGRPCMessageSize, is set")
 	log.WithField("url", url).Info(ctx, "Argo Server started successfully")
 	browserOpenFunc(url)
@@ -366,8 +363,8 @@ func (as *argoServer) newGRPCServer(ctx context.Context, instanceIDService insta
 		// Set both the send and receive the bytes limit to be 100MB or GRPC_MESSAGE_SIZE
 		// The proper way to achieve high performance is to have pagination
 		// while we work toward that, we can have high limit first
-		grpc.MaxRecvMsgSize(MaxGRPCMessageSize),
-		grpc.MaxSendMsgSize(MaxGRPCMessageSize),
+		grpc.MaxRecvMsgSize(as.maxGRPCMessageSize),
+		grpc.MaxSendMsgSize(as.maxGRPCMessageSize),
 		grpc.ConnectionTimeout(300 * time.Second),
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
 			grpc_prometheus.UnaryServerInterceptor,
@@ -424,7 +421,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	loggingInterceptor := accesslog.NewLoggingInterceptor(log)
 	handler := rateLimitMiddleware.Handle(loggingInterceptor.Interceptor(mux))
 	dialOpts := []grpc.DialOption{
-		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(MaxGRPCMessageSize)),
+		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(as.maxGRPCMessageSize)),
 	}
 	if as.tlsConfig != nil {
 		tlsConfig := as.tlsConfig.Clone()
