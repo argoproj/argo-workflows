@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Apply patches to vendored dependencies after `go mod vendor`.
+# Apply patches to vendored dependencies as part of `make vendor`.
 #
 # Kubernetes v1.35 (k8s.io/* v0.35) moved ProtoMessage() on generated types
 # behind the kubernetes_protomessage_one_more_release build tag; k8s v1.36
