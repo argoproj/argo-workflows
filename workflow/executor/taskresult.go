@@ -3,7 +3,6 @@ package executor
 import (
 	"context"
 	"encoding/json"
-	"os"
 
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -95,8 +94,8 @@ func (we *WorkflowExecutor) createTaskResult(ctx context.Context, result wfv1.No
 		UID:        we.workflowUID,
 	}})
 
-	if v := os.Getenv(common.EnvVarInstanceID); v != "" {
-		taskResult.Labels[common.LabelKeyControllerInstanceID] = v
+	if we.instanceID != "" {
+		taskResult.Labels[common.LabelKeyControllerInstanceID] = we.instanceID
 	}
 	_, err := we.taskResultClient.Create(ctx,
 		taskResult,

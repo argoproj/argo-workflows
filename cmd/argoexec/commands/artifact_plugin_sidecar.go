@@ -8,7 +8,9 @@ import (
 
 	"github.com/spf13/cobra"
 
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/osspecific"
 )
 
@@ -20,6 +22,8 @@ func NewArtifactPluginSidecarCommand() *cobra.Command {
 			exitCode := 64
 			ctx := cmd.Context()
 			logger := logging.RequireLoggerFromContext(ctx)
+			containerName := os.Getenv(common.EnvVarContainerName)
+			includeScriptOutput := os.Getenv(common.EnvVarIncludeScriptOutput) == "true"
 
 			osspecific.AllowGrantingAccessToEveryone()
 
@@ -31,7 +35,7 @@ func NewArtifactPluginSidecarCommand() *cobra.Command {
 			name, args := args[0], args[1:]
 			logger.WithFields(logging.Fields{"name": name, "args": args}).Debug(ctx, "starting command")
 
-			command, closer, err := startCommand(ctx, name, args, template)
+			command, closer, err := startCommand(ctx, name, args, &wfv1.Template{}, containerName, includeScriptOutput)
 			if err != nil {
 				logger.WithError(err).Error(ctx, "failed to start command")
 				return err
@@ -57,7 +61,7 @@ func NewArtifactPluginSidecarCommand() *cobra.Command {
 			// Use background context for signal handler so it responds to wait
 			// even after the plugin server process exits
 			signalCtx := logger.NewBackgroundContext()
-			startFileSignalHandler(signalCtx, command.Process.Pid)
+			startFileSignalHandler(signalCtx, command.Process.Pid, containerName)
 
 			cmdErr := osspecific.Wait(command.Process)
 			exitCode = exitCodeFromErr(cmdErr, exitCode)

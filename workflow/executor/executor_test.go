@@ -210,16 +210,16 @@ func TestIsBaseImagePathInitless(t *testing.T) {
 	})
 
 	t.Run("init-less mode reads the live emissary-staged output", func(t *testing.T) {
-		t.Setenv(common.EnvVarInitlessPod, "true")
 		we := newWe()
+		we.initlessPod = true
 		assert.True(t, we.isBaseImagePath("/samedir"))
 		we.Template.Outputs.Artifacts[0].Path = "/samedir/inner"
 		assert.True(t, we.isBaseImagePath("/samedir/inner"))
 	})
 
 	t.Run("init-less mode still reads user volumes from the mirror", func(t *testing.T) {
-		t.Setenv(common.EnvVarInitlessPod, "true")
 		we := newWe()
+		we.initlessPod = true
 		// A user-declared volume overlap is delivered into the real (shared) volume
 		// and the emissary intentionally skips staging it, so it must keep reading
 		// the mirror even in init-less mode.
@@ -252,13 +252,13 @@ func TestStageArchiveFileInitlessOverlap(t *testing.T) {
 	}
 
 	t.Run("init-less fetches the live output via the runtime executor", func(t *testing.T) {
-		t.Setenv(common.EnvVarInitlessPod, "true")
 		rt := &mocks.ContainerRuntimeExecutor{}
 		// CopyFile is the live-output path: the emissary inside main has already
 		// staged the current (possibly rm+recreated) file. Reading the input
 		// emptyDir instead would skip CopyFile and upload the stale input.
 		rt.On("CopyFile", mock.Anything, common.MainContainerName, "/samedir", mock.Anything, mock.Anything).Return(nil)
 		we := newWe(rt)
+		we.initlessPod = true
 		art := we.Template.Outputs.Artifacts[0]
 		fileName, localArtPath, err := we.stageArchiveFile(ctx, common.MainContainerName, &art)
 		require.NoError(t, err)
@@ -622,18 +622,20 @@ func TestMonitorProgress(t *testing.T) {
 		nil,
 		taskResults,
 		nil,
-		fakePodName,
-		fakePodUID,
-		fakeWorkflow,
-		fakeWorkflowUID,
-		fakeNodeID,
-		fakeNamespace,
 		&mocks.ContainerRuntimeExecutor{},
-		wfv1.Template{},
-		false,
-		time.Now(),
-		annotationPackTickDuration,
-		readProgressFileTickDuration,
+		Config{
+			PodName:                      fakePodName,
+			PodUID:                       fakePodUID,
+			WorkflowName:                 fakeWorkflow,
+			WorkflowUID:                  fakeWorkflowUID,
+			NodeID:                       fakeNodeID,
+			Namespace:                    fakeNamespace,
+			Template:                     wfv1.Template{},
+			IncludeScriptOutput:          false,
+			Deadline:                     time.Now(),
+			AnnotationPatchTickDuration:  annotationPackTickDuration,
+			ReadProgressFileTickDuration: readProgressFileTickDuration,
+		},
 	)
 	require.NoError(t, err)
 

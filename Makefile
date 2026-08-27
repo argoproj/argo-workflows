@@ -74,6 +74,8 @@ E2E_WAIT_TIMEOUT      ?= 90s # timeout for wait conditions
 E2E_PARALLEL          ?= 20
 E2E_SUITE_TIMEOUT     ?= 30m
 TEST_RETRIES          ?= 2
+# extra flags passed to `go test` for the unit `test` target (e.g. coverage flags in CI)
+GOTEST_FLAGS          ?=
 JSON_TEST_OUTPUT      := test/reports/json
 # gotest function: gotest(packages, name, parameters)
 # packages: passed to gotestsum via --packages parameter
@@ -181,7 +183,6 @@ TOOL_EMBEDDOC               := hack/embeddoc/embeddoc
 # npm bin -g will do this on later npms than we have
 NVM_BIN                     ?= $(shell npm config get prefix)/bin
 ifeq ($(USE_NIX), true)
-TOOL_CLANG_FORMAT           := clang-format
 TOOL_TYPOS                  := typos
 TOOL_CSPELL                 := cspell
 TOOL_MARKDOWN_LINK_CHECK    := markdown-link-check
@@ -189,7 +190,6 @@ TOOL_MARKDOWNLINT           := markdownlint
 TOOL_DEVCONTAINER           := devcontainer
 TOOL_PROPERDOCS             := properdocs
 else
-TOOL_CLANG_FORMAT           := /usr/local/bin/clang-format
 TOOL_TYPOS                  := $(GOPATH)/bin/typos
 TOOL_CSPELL                 := $(NVM_BIN)/cspell
 TOOL_MARKDOWN_LINK_CHECK    := $(NVM_BIN)/markdown-link-check
@@ -277,7 +277,7 @@ SWAGGER_FILES := pkg/apiclient/_.primary.swagger.json \
 	pkg/apiclient/workflowarchive/workflow-archive.swagger.json \
 	pkg/apiclient/workflowtemplate/workflow-template.swagger.json \
 	pkg/apiclient/sync/sync.swagger.json
-PROTO_BINARIES := $(TOOL_PROTOC_GEN_GOGO) $(TOOL_PROTOC_GEN_GOGOFAST) $(TOOL_GOIMPORTS) $(TOOL_PROTOC_GEN_GRPC_GATEWAY) $(TOOL_PROTOC_GEN_SWAGGER) $(TOOL_CLANG_FORMAT)
+PROTO_BINARIES := $(TOOL_PROTOC_GEN_GOGO) $(TOOL_PROTOC_GEN_GOGOFAST) $(TOOL_GOIMPORTS) $(TOOL_PROTOC_GEN_GRPC_GATEWAY) $(TOOL_PROTOC_GEN_SWAGGER) $(TOOL_BUF)
 ifneq ($(USE_NIX), true)
 pkg/apiclient/%.swagger.json: $(PROTO_BINARIES)
 endif
@@ -389,6 +389,7 @@ endif
 
 argoexec-image: ## Build the executor image
 argoexec-nonroot-image:
+argo-workflows-crdinstaller-image: ## Build the CRD installer image
 
 %-image:
 	[ ! -e dist/$* ] || mv dist/$* .
@@ -408,7 +409,11 @@ argoexec-nonroot-image:
 		--load \
 		.; \
 	[ ! -e $* ] || mv $* dist/; \
-	docker run --rm -t $$image_name version; \
+	if [ "$*" = "argo-workflows-crdinstaller" ]; then \
+		docker run --rm -t $$image_name version --client; \
+	else \
+		docker run --rm -t $$image_name version; \
+	fi; \
 	if [ $(K3D) = true ]; then \
 		k3d image import -c $(K3D_CLUSTER_NAME) $$image_name; \
 	fi; \
@@ -457,7 +462,7 @@ swagger: \
 $(TOOL_MOCKERY): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	GOTOOLCHAIN=go1.26.1 go install github.com/vektra/mockery/v3@v3.5.1
+	GOTOOLCHAIN=go1.26.5 go install github.com/vektra/mockery/v3@v3.5.1
 endif
 $(TOOL_CONTROLLER_GEN): Makefile
 # update this in Nix when upgrading it here
@@ -518,16 +523,6 @@ endif
 $(TOOL_EMBEDDOC): hack/embeddoc/main.go hack/embeddoc/go.mod
 	cd hack/embeddoc && go build -o embeddoc .
 
-$(TOOL_CLANG_FORMAT):
-ifeq (, $(shell which clang-format))
-ifeq ($(shell uname),Darwin)
-	brew install clang-format
-else
-	sudo apt update
-	sudo apt install -y clang-format
-endif
-endif
-
 # go-to-protobuf fails with mysterious errors on code that doesn't compile
 ifneq ($(USE_NIX), true)
 pkg/apis/workflow/v1alpha1/generated.proto: $(TOOL_GO_TO_PROTOBUF) $(PROTO_BINARIES)
@@ -538,10 +533,9 @@ pkg/apis/workflow/v1alpha1/generated.proto: $(TYPES) proto-vendor vendor/modules
 	[ -e github.com/argoproj/argo-workflows ] || ln -s ../.. github.com/argoproj/argo-workflows
 	[ -e v4 ] || ln -s . v4
 	# Format proto files. Formatting changes generated code, so we do it here, rather that at lint time.
-	# Why clang-format? Google uses it.
 	@echo "*** This will fail if your code has compilation errors, without reporting those as the cause."
 	@echo "*** So fix them first."
-	find pkg/apiclient -name '*.proto'|xargs clang-format -i
+	$(TOOL_BUF) format -w pkg/apiclient
 	GOFLAGS="$(GOFLAGS) -mod=vendor" $(TOOL_GO_TO_PROTOBUF) \
 		--go-header-file=$(CURDIR)/hack/custom-boilerplate.go.txt \
 		--packages=github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1 \
@@ -648,7 +642,7 @@ manifests-validate:
 	kubectl apply --server-side --validate=strict --dry-run=server -f 'manifests/*.yaml'
 
 $(TOOL_GOLANGCI_LINT): Makefile
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v2.11.3
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/v2.12.2/install.sh | sh -s -- -b `go env GOPATH`/bin v2.12.2
 
 .PHONY: lint lint-go lint-ui
 lint: lint-go lint-ui features-validate ## Lint the project
@@ -688,7 +682,7 @@ ifneq ($(USE_NIX), true)
 else
 	go build ./...
 endif
-	env KUBECONFIG=/dev/null $(call gotest,./...,unit,-p 20)
+	env KUBECONFIG=/dev/null $(call gotest,./...,unit,-p 20 $(GOTEST_FLAGS))
 	# marker file, based on it's modification time, we know how long ago this target was run
 	@mkdir -p dist
 	touch dist/test

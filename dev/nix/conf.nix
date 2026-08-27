@@ -6,7 +6,7 @@
 # This is only intended for quick developing at the moment, gradually more functionality will be pushed here. 
 rec {
   # Keep in sync with go.mod
-  goVersion = "1.26.1";
+  goVersion = "1.26.5";
   version = "latest";
   env = {
     DEFAULT_REQUEUE_TIME = "1s";

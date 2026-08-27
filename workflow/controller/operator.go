@@ -64,6 +64,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/indexes"
 	"github.com/argoproj/argo-workflows/v4/workflow/metrics"
 	"github.com/argoproj/argo-workflows/v4/workflow/progress"
+	wfsync "github.com/argoproj/argo-workflows/v4/workflow/sync"
 	"github.com/argoproj/argo-workflows/v4/workflow/templateresolution"
 	wfutil "github.com/argoproj/argo-workflows/v4/workflow/util"
 	"github.com/argoproj/argo-workflows/v4/workflow/validate"
@@ -142,12 +143,6 @@ var (
 	ErrRequeue = errors.New("requeue")
 )
 
-// maxOperationTime is the maximum time a workflow operation is allowed to run
-// for before requeuing the workflow onto the workqueue.
-var (
-	maxOperationTime = envutil.LookupEnvDurationOr(logging.InitLoggerInContext(), "MAX_OPERATION_TIME", 30*time.Second)
-)
-
 // failedNodeStatus is a subset of NodeStatus that is only used to Marshal certain fields into a JSON of failed nodes
 type failedNodeStatus struct {
 	DisplayName  string      `json:"displayName"`
@@ -179,7 +174,7 @@ func newWorkflowOperationCtx(ctx context.Context, wf *wfv1.Workflow, wfc *Workfl
 		controller:               wfc,
 		scope:                    variables.NewScope(),
 		volumes:                  wf.Spec.DeepCopy().Volumes,
-		deadline:                 time.Now().UTC().Add(maxOperationTime),
+		deadline:                 time.Now().UTC().Add(wfc.maxOperationTime),
 		eventRecorder:            wfc.eventRecorderManager.Get(ctx, wf.Namespace),
 		preExecutionNodeStatuses: make(map[string]wfv1.NodeStatus),
 		taskSet:                  make(map[string]wfv1.Template),
@@ -288,6 +283,20 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		lockSpan.SetAttributes(attribute.Bool("LockAcquired", acquired))
 		lockSpan.End()
 		if syncErr != nil {
+			if wfsync.IsRetryableSyncError(syncErr) || errorsutil.IsTransientErr(ctx, syncErr) {
+				// Transient failure in the lock backend (e.g. a database
+				// serialization conflict that exhausted its in-place retries):
+				// leave the workflow pending and try again on a later
+				// reconcile instead of failing it.
+				woc.log.WithError(syncErr).WithField("lockName", failedLockName).Warn(ctx, "Transient failure acquiring the synchronization lock, requeueing")
+				phase := woc.wf.Status.Phase
+				if phase == wfv1.WorkflowUnknown {
+					phase = wfv1.WorkflowPending
+				}
+				ctx = woc.markWorkflowPhase(ctx, phase, fmt.Sprintf("Waiting to acquire the synchronization lock. %v", syncErr))
+				woc.requeue()
+				return
+			}
 			woc.log.WithField("lockName", failedLockName).Warn(ctx, "Failed to acquire the lock")
 			woc.markWorkflowFailed(ctx, fmt.Sprintf("Failed to acquire the synchronization lock. %s", syncErr.Error()))
 			return
@@ -301,8 +310,11 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 					phase = wfv1.WorkflowPending
 				}
 				ctx = woc.markWorkflowPhase(ctx, phase, msg)
-				return
 			}
+			// Whether the workflow remains queued or its locks were just
+			// released for shutdown, there is nothing more to do this
+			// reconcile.
+			return
 		}
 	}
 
@@ -574,7 +586,10 @@ func (woc *wfOperationCtx) releaseLocksForPendingShuttingdownWfs(ctx context.Con
 	if woc.GetShutdownStrategy().Enabled() && woc.wf.Status.Phase == wfv1.WorkflowPending && woc.GetShutdownStrategy() == wfv1.ShutdownStrategyTerminate {
 		if woc.controller.syncManager.ReleaseAll(ctx, woc.execWf) {
 			woc.log.WithFields(logging.Fields{"key": woc.execWf.Name}).Info(ctx, "Released all locks since this pending workflow is being shutdown")
-			_ = woc.markWorkflowSuccess(ctx)
+			// The workflow never started: it was still waiting for its
+			// synchronization lock when it was terminated, so it completes as
+			// Failed, matching every other shutdown path.
+			_ = woc.markWorkflowFailed(ctx, fmt.Sprintf("Stopped with strategy '%s'", woc.GetShutdownStrategy()))
 			return true
 		}
 	}
@@ -936,6 +951,15 @@ func (woc *wfOperationCtx) reapplyUpdate(ctx context.Context, wfClient v1alpha1.
 		currWf, err := wfClient.Get(ctx, woc.wf.Name, metav1.GetOptions{})
 		if err != nil {
 			return nil, err
+		}
+		// The preceding UID-guarded Update only fails on conflict when the workflow has been
+		// deleted and recreated under the same name while the controller was mid-operation on it.
+		// IsConflict treats a UID precondition failure the same as an ordinary conflict, so without
+		// this check we would merge-patch the old instance's status delta onto the new object,
+		// silently corrupting it (e.g. creating unreachable nodes with empty fields).
+		// https://github.com/argoproj/argo-workflows/issues/16774
+		if currWf.UID != woc.wf.UID {
+			return nil, fmt.Errorf("workflow has been recreated, not updating(%s -> %s)", woc.wf.UID, currWf.UID)
 		}
 		// There is something about having informer indexers (introduced in v2.12) that means we are more likely to operate on the
 		// previous version of the workflow. This means under high load, a previously successful workflow could
@@ -1367,6 +1391,15 @@ func (woc *wfOperationCtx) failNodesWithoutCreatedPodsAfterDeadlineOrShutdown(ct
 		if woc.GetShutdownStrategy().Enabled() && !woc.GetShutdownStrategy().ShouldExecute(node.IsPartOfExitHandler(ctx, nodes)) {
 			// fail suspended nodes or taskset nodes when shutting down
 			if node.IsActiveSuspendNode() || node.IsTaskSetNode() {
+				message := fmt.Sprintf("Stopped with strategy '%s'", woc.GetShutdownStrategy())
+				woc.markNodePhase(ctx, node.Name, wfv1.NodeFailed, message)
+				continue
+			}
+			// fail pending nodes waiting for a synchronization lock when
+			// shutting down: their pod is only created once the lock is
+			// acquired, so pod reconciliation will never fail them, and
+			// without this the shutdown is ignored until the lock frees up
+			if node.Phase == wfv1.NodePending && node.SynchronizationStatus != nil && node.SynchronizationStatus.Waiting != "" {
 				message := fmt.Sprintf("Stopped with strategy '%s'", woc.GetShutdownStrategy())
 				woc.markNodePhase(ctx, node.Name, wfv1.NodeFailed, message)
 				continue
@@ -2288,6 +2321,15 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		lockSpan.SetAttributes(attribute.Bool("LockAcquired", lockAcquired))
 		lockSpan.End()
 		if syncErr != nil {
+			if wfsync.IsRetryableSyncError(syncErr) || errorsutil.IsTransientErr(ctx, syncErr) {
+				// Transient failure in the lock backend: leave the node pending
+				// and try again on a later reconcile instead of erroring it.
+				woc.requeue()
+				if node == nil {
+					_, node = woc.initializeExecutableNode(ctx, nodeName, wfutil.GetNodeType(processedTmpl), templateScope, processedTmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, opts.nodeFlag, false, syncErr.Error())
+				}
+				return node, nil
+			}
 			errNode := woc.initializeNodeOrMarkError(ctx, node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, syncErr)
 			return errNode, syncErr
 		}
@@ -2864,7 +2906,12 @@ func (woc *wfOperationCtx) childrenFulfilled(node *wfv1.NodeStatus) bool {
 
 func (woc *wfOperationCtx) GetNodeTemplate(ctx context.Context, node *wfv1.NodeStatus) (*wfv1.Template, error) {
 	if node.TemplateRef != nil {
+		// Check storedTemplates first so that modifications to the CWT after the workflow
+		// started do not cause assessNodeStatus to spuriously mark the node as Error.
 		scope, name := node.GetTemplateScope()
+		if tmpl := woc.wf.GetStoredTemplate(scope, name, node); tmpl != nil {
+			return tmpl, nil
+		}
 		tmplCtx, err := woc.createTemplateContext(ctx, scope, name)
 		if err != nil {
 			woc.markNodeError(ctx, node.Name, err)

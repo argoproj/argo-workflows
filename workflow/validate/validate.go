@@ -547,6 +547,18 @@ func (tctx *templateValidationCtx) validateTemplate(ctx context.Context, tmpl *w
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", tmpl.Name, err)
 	}
 
+	// Claims are attached to the pod a template runs, so a template that never
+	// creates one has nowhere to put them: Steps, DAG and Suspend orchestrate
+	// other templates, and HTTP and Plugin run on the shared agent pod.
+	//
+	// Which kind a template is can itself be written as a parameter, so this is
+	// asked of the substituted template rather than the one as written.
+	if len(tmpl.ResourceClaims) > 0 && !newTmpl.IsPodType() {
+		return errors.Errorf(errors.CodeBadRequest,
+			"templates.%s.resourceClaims is not supported for %s templates, which do not create a pod",
+			tmpl.Name, newTmpl.GetType())
+	}
+
 	if newTmpl.Timeout != "" {
 		if !newTmpl.IsLeaf() {
 			return fmt.Errorf("%s template doesn't support timeout field", newTmpl.GetType())

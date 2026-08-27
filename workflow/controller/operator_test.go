@@ -116,6 +116,31 @@ func Test_wfOperationCtx_reapplyUpdate(t *testing.T) {
 		_, err := woc.reapplyUpdate(ctx, controller.wfclientset.ArgoprojV1alpha1().Workflows(""), wf.Status.Nodes)
 		require.EqualError(t, err, "must never update completed node my-node")
 	})
+	// https://github.com/argoproj/argo-workflows/issues/16774
+	// If the workflow was deleted and recreated under the same name while the controller was
+	// mid-operation on it, the UID-guarded Update fails on the UID precondition, which IsConflict
+	// treats as an ordinary conflict. reapplyUpdate must detect the UID mismatch on the object it
+	// Gets by name and refuse to merge-patch the old instance's status delta onto the new object.
+	t.Run("ErrWorkflowRecreatedWithDifferentUID", func(t *testing.T) {
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{Name: "my-wf", UID: "old-uid"},
+			Status:     wfv1.WorkflowStatus{Nodes: wfv1.Nodes{"foo": wfv1.NodeStatus{Name: "my-foo"}}},
+		}
+		// currWf simulates the recreated workflow: same name, different UID, no status.
+		currWf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{Name: "my-wf", UID: "new-uid"},
+		}
+		ctx := logging.TestContext(t.Context())
+		cancel, controller := newController(ctx, currWf)
+		defer cancel()
+		controller.hydrator = hydratorfake.Always
+		woc := newWorkflowOperationCtx(ctx, wf, controller)
+		require.NoError(t, controller.hydrator.Hydrate(ctx, wf))
+		nodes := wfv1.Nodes{"foo": wfv1.NodeStatus{Name: "my-foo", Phase: wfv1.NodeSucceeded}}
+
+		_, err := woc.reapplyUpdate(ctx, controller.wfclientset.ArgoprojV1alpha1().Workflows(""), nodes)
+		require.EqualError(t, err, "workflow has been recreated, not updating(old-uid -> new-uid)")
+	})
 }
 
 func TestResourcesDuration(t *testing.T) {
@@ -1930,6 +1955,138 @@ func TestAssessNodeStatus(t *testing.T) {
 			assert.Equal(t, tt.wantMessage, got.Message)
 		})
 	}
+}
+
+// TestGetNodeTemplateUsesStoredTemplates verifies that GetNodeTemplate checks storedTemplates
+// before falling back to the live CWT informer cache. This prevents assessNodeStatus from
+// spuriously marking a node as Error when the CWT is modified after the workflow starts.
+func TestGetNodeTemplateUsesStoredTemplates(t *testing.T) {
+	// A minimal workflow whose storedTemplates holds a cluster-scoped template.
+	// The CWT passed to newController intentionally does NOT contain the template,
+	// simulating the template having been removed from the CWT mid-run.
+	const wfYAML = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: cwt-templateref-bug
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: hello-task
+        templateRef:
+          name: cwt-helper
+          template: say-hello
+          clusterScope: true
+status:
+  storedTemplates:
+    cluster/cwt-helper/say-hello:
+      name: say-hello
+      script:
+        image: alpine:3.18
+        command: [sh]
+        source: echo hello
+`
+	// CWT with the template removed (simulates post-creation mutation).
+	const cwftYAML = `
+apiVersion: argoproj.io/v1alpha1
+kind: ClusterWorkflowTemplate
+metadata:
+  name: cwt-helper
+spec:
+  templates: []
+`
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(wfYAML)
+	cwft := wfv1.MustUnmarshalClusterWorkflowTemplate(cwftYAML)
+
+	cancel, controller := newController(ctx, wf, cwft)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	node := &wfv1.NodeStatus{
+		Name:          "cwt-templateref-bug.hello-task",
+		TemplateScope: "cluster/cwt-helper",
+		TemplateRef: &wfv1.TemplateRef{
+			Name:         "cwt-helper",
+			Template:     "say-hello",
+			ClusterScope: true,
+		},
+	}
+
+	tmpl, err := woc.GetNodeTemplate(ctx, node)
+	require.NoError(t, err, "GetNodeTemplate should return template from storedTemplates, not fail because CWT no longer has it")
+	require.NotNil(t, tmpl)
+	assert.Equal(t, "say-hello", tmpl.Name)
+}
+
+// TestAssessNodeStatusWithTemplateRefUsesStoredTemplates verifies that assessNodeStatus
+// correctly resolves the phase from the pod when a cross-CWT templateRef node's template
+// has been removed from the CWT after pod creation. The node must not be marked Error.
+func TestAssessNodeStatusWithTemplateRefUsesStoredTemplates(t *testing.T) {
+	const wfYAML = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: cwt-templateref-bug
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: hello-task
+        templateRef:
+          name: cwt-helper
+          template: say-hello
+          clusterScope: true
+status:
+  storedTemplates:
+    cluster/cwt-helper/say-hello:
+      name: say-hello
+      script:
+        image: alpine:3.18
+        command: [sh]
+        source: echo hello
+`
+	const cwftYAML = `
+apiVersion: argoproj.io/v1alpha1
+kind: ClusterWorkflowTemplate
+metadata:
+  name: cwt-helper
+spec:
+  templates: []
+`
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(wfYAML)
+	cwft := wfv1.MustUnmarshalClusterWorkflowTemplate(cwftYAML)
+
+	cancel, controller := newController(ctx, wf, cwft)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	pod := &apiv1.Pod{
+		Status: apiv1.PodStatus{
+			Phase: apiv1.PodSucceeded,
+		},
+	}
+	node := &wfv1.NodeStatus{
+		Name:          "cwt-templateref-bug.hello-task",
+		TemplateScope: "cluster/cwt-helper",
+		TemplateRef: &wfv1.TemplateRef{
+			Name:         "cwt-helper",
+			Template:     "say-hello",
+			ClusterScope: true,
+		},
+	}
+
+	updated := woc.assessNodeStatus(ctx, pod, node)
+	require.NotNil(t, updated, "assessNodeStatus must not return nil when template is in storedTemplates")
+	assert.Equal(t, wfv1.NodeSucceeded, updated.Phase, "node should be Succeeded, not Error, when pod succeeded and template is in storedTemplates")
 }
 
 func getPodTemplate(pod *apiv1.Pod) (*wfv1.Template, error) {
@@ -11453,6 +11610,40 @@ func TestMemoizationTemplateLevelCacheWithStepWithCache(t *testing.T) {
 	assert.True(t, node.MemoizationStatus.Hit)
 	node = woc.wf.Status.Nodes.Find(nodeWithTemplateName("whalesay"))
 	require.Nil(t, node, "Whalesay step should not have been executed")
+}
+
+// TestMemoizationTemplateLevelCacheStepSavesOutputs ensures that the outputs of a memoized
+// steps template are written to the cache, so that a later cache hit can replay them.
+func TestMemoizationTemplateLevelCacheStepSavesOutputs(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(workflowWithTemplateLevelMemoizationAndChildStep)
+
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
+	defer cancel()
+
+	ctx := logging.TestContext(t.Context())
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+	woc.operate(ctx)
+
+	node := woc.wf.Status.Nodes.Find(nodeWithTemplateName("entrypoint"))
+	require.NotNil(t, node, "Entrypoint should exist")
+	require.Equal(t, wfv1.NodeSucceeded, node.Phase)
+
+	cm, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Get(ctx, "cache-top-entrypoint", metav1.GetOptions{})
+	require.NoError(t, err, "Memoization cache ConfigMap should have been created")
+
+	rawEntry, ok := cm.Data["entrypoint-key-1"]
+	require.True(t, ok, "Memoization cache should contain an entry for the memoize key")
+
+	var entry cache.Entry
+	require.NoError(t, json.Unmarshal([]byte(rawEntry), &entry))
+	require.NotNil(t, entry.Outputs, "Cached entry should contain the template outputs, got %s", rawEntry)
+	require.Len(t, entry.Outputs.Parameters, 1)
+	assert.Equal(t, "url", entry.Outputs.Parameters[0].Name)
+	assert.Contains(t, entry.Outputs.Parameters[0].Value.String(), "https://argo-workflows.company.com/workflows/namepace/")
 }
 
 var workflowWithTemplateLevelMemoizationAndChildDag = `

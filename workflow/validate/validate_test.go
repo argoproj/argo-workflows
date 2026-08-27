@@ -4118,3 +4118,76 @@ func TestPodResourcesValidation(t *testing.T) {
 	err = validate(ctx, podResourcesValid)
 	require.NoError(t, err)
 }
+
+var resourceClaimsValid = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+spec:
+  entrypoint: main
+  resourceClaims:
+  - name: shared
+    resourceClaimName: existing-claim
+  templates:
+  - name: main
+    resourceClaims:
+    - name: accelerator
+      resourceClaimTemplateName: gpu-claim-template
+    container:
+      image: alpine:3.23
+      resources:
+        claims:
+        - name: accelerator
+`
+
+var resourceClaimsOnHTTPTemplate = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    resourceClaims:
+    - name: accelerator
+      resourceClaimTemplateName: gpu-claim-template
+    http:
+      url: https://example.com
+`
+
+var resourceClaimsOnStepsTemplate = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: resource-claims-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    resourceClaims:
+    - name: accelerator
+      resourceClaimTemplateName: gpu-claim-template
+    steps:
+    - - name: run
+        template: worker
+  - name: worker
+    container:
+      image: alpine:3.23
+`
+
+// TestPodResourceClaimsValidation: a claim is attached to the pod a template
+// runs, so a template that never creates one has nowhere to put it. Which kind
+// a template is can be written as a parameter, so this is asked of the
+// substituted template. Everything else about a claim is the API server's to
+// judge at pod admission.
+func TestPodResourceClaimsValidation(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	err := validate(ctx, resourceClaimsValid)
+	require.NoError(t, err)
+	err = validate(ctx, resourceClaimsOnHTTPTemplate)
+	require.ErrorContains(t, err, "templates.main.resourceClaims is not supported for HTTP templates")
+	err = validate(ctx, resourceClaimsOnStepsTemplate)
+	require.ErrorContains(t, err, "templates.main.resourceClaims is not supported for Steps templates, which do not create a pod")
+}

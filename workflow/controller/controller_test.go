@@ -2,6 +2,8 @@ package controller
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	gosync "sync"
 	"sync/atomic"
 	"testing"
@@ -9,6 +11,7 @@ import (
 
 	"github.com/argoproj/pkg/sync"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	apiv1 "k8s.io/api/core/v1"
@@ -18,6 +21,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	kwait "k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	dynamicfake "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes"
@@ -30,6 +34,7 @@ import (
 
 	"github.com/argoproj/argo-workflows/v4/config"
 	"github.com/argoproj/argo-workflows/v4/persist/sqldb"
+	sqldbmocks "github.com/argoproj/argo-workflows/v4/persist/sqldb/mocks"
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
@@ -296,21 +301,28 @@ func newController(ctx context.Context, options ...any) (context.CancelFunc, *Wo
 				S3Bucket: wfv1.S3Bucket{Endpoint: "my-endpoint", Bucket: "my-bucket"},
 			},
 		}),
-		cliExecutorLogFormat:      "text",
-		kubeclientset:             kube,
-		dynamicInterface:          dynamicClient,
-		metadataInterface:         metadataClient,
-		wfclientset:               wfclientset,
-		workflowKeyLock:           sync.NewKeyLock(),
-		wfArchive:                 sqldb.NullWorkflowArchive,
-		hydrator:                  hydratorfake.Noop,
-		estimatorFactory:          estimation.DummyEstimatorFactory,
-		eventRecorderManager:      &testEventRecorderManager{eventRecorder: record.NewFakeRecorder(64)},
-		archiveLabelSelector:      labels.Everything(),
-		cacheFactory:              controllercache.NewCacheFactory(kube, "default"),
-		progressPatchTickDuration: envutil.LookupEnvDurationOr(ctx, common.EnvVarProgressPatchTickDuration, 1*time.Minute),
-		progressFileTickDuration:  envutil.LookupEnvDurationOr(ctx, common.EnvVarProgressFileTickDuration, 3*time.Second),
-		maxStackDepth:             maxAllowedStackDepth,
+		cliExecutorLogFormat:       "text",
+		kubeclientset:              kube,
+		dynamicInterface:           dynamicClient,
+		metadataInterface:          metadataClient,
+		wfclientset:                wfclientset,
+		workflowKeyLock:            sync.NewKeyLock(),
+		wfArchive:                  sqldb.NullWorkflowArchive,
+		hydrator:                   hydratorfake.Noop,
+		estimatorFactory:           estimation.DummyEstimatorFactory,
+		eventRecorderManager:       &testEventRecorderManager{eventRecorder: record.NewFakeRecorder(64)},
+		archiveLabelSelector:       labels.Everything(),
+		cacheFactory:               controllercache.NewCacheFactory(kube, "default"),
+		progressPatchTickDuration:  envutil.LookupEnvDurationOr(ctx, common.EnvVarProgressPatchTickDuration, 1*time.Minute),
+		progressFileTickDuration:   envutil.LookupEnvDurationOr(ctx, common.EnvVarProgressFileTickDuration, 3*time.Second),
+		maxStackDepth:              maxAllowedStackDepth,
+		indexWorkflowSemaphoreKeys: true,
+		cacheGCPeriod:              0,
+		semaphoreNotifyDelay:       time.Second,
+		gcAfterNotHitDuration:      30 * time.Second,
+		healthzAge:                 5 * time.Minute,
+		maxOperationTime:           30 * time.Second,
+		requeueTime:                10 * time.Second,
 		lastWrittenVersions: lastWrittenVersions{
 			versions: make(map[types.UID]lastWrittenVersion),
 		},
@@ -329,6 +341,7 @@ func newController(ctx context.Context, options ...any) (context.CancelFunc, *Wo
 		wfc.metrics, testExporter, _ = metrics.CreateDefaultTestMetrics(ctx)
 		wfc.entrypoint = entrypoint.New(kube, wfc.Config.Images)
 		wfc.wfQueue = workqueue.NewTypedRateLimitingQueue(workqueue.DefaultTypedControllerRateLimiter[string]())
+		wfc.wfArchiveQueue = workqueue.NewTypedRateLimitingQueue(workqueue.DefaultTypedControllerRateLimiter[string]())
 		wfc.throttler = wfc.newThrottler()
 		wfc.rateLimiter = wfc.newRateLimiter()
 	}
@@ -336,7 +349,7 @@ func newController(ctx context.Context, options ...any) (context.CancelFunc, *Wo
 
 	// always compare to WorkflowController.Run to see what this block of code should be doing
 	{
-		wfc.wfInformer = util.NewWorkflowInformer(ctx, dynamicClient, "", 0, wfc.tweakListRequestListOptions, wfc.tweakWatchRequestListOptions, indexers)
+		wfc.wfInformer = util.NewWorkflowInformer(ctx, dynamicClient, "", 0, wfc.tweakListRequestListOptions, wfc.tweakWatchRequestListOptions, newIndexers(wfc.indexWorkflowSemaphoreKeys))
 		wfc.wfTaskSetInformer = informerFactory.Argoproj().V1alpha1().WorkflowTaskSets()
 		wfc.artGCTaskInformer = informerFactory.Argoproj().V1alpha1().WorkflowArtifactGCTasks()
 		wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer(ctx)
@@ -487,7 +500,7 @@ func withOutputs(ctx context.Context, outputs wfv1.Outputs) with {
 				Outputs: &outputs,
 			},
 		}
-		_, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskResults(woc.wf.Namespace).
+		created, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskResults(woc.wf.Namespace).
 			Create(
 				ctx,
 				taskResult,
@@ -496,6 +509,38 @@ func withOutputs(ctx context.Context, outputs wfv1.Outputs) with {
 		if err != nil {
 			panic(err)
 		}
+		// wait for the informer to see the task result, so the next operate() is
+		// guaranteed to observe the outputs
+		waitForInformer(ctx, woc.controller.taskResultInformer, created, func(any) bool { return true })
+	}
+}
+
+// waitForInformer waits until the informer store contains obj (keyed by
+// namespace/name) and upToDate returns true for the stored copy. Test helpers
+// must not write to a running informer's store directly: the informer delivers
+// watch events from the fake clientset asynchronously, so a direct store write
+// races with the delivery of an earlier event, which would overwrite the store
+// with a stale copy of the object. Instead, write through the fake clientset
+// and use this to wait for the change to be reflected. If the informer is
+// stopped (e.g. newWoc cancels the controller), no events will ever arrive and
+// nothing races with us, so write the store directly.
+func waitForInformer(ctx context.Context, informer cache.SharedIndexInformer, obj any, upToDate func(obj any) bool) {
+	key, err := cache.MetaNamespaceKeyFunc(obj)
+	if err != nil {
+		panic(err)
+	}
+	err = kwait.PollUntilContextTimeout(ctx, time.Millisecond, 10*time.Second, true, func(context.Context) (bool, error) {
+		if informer.IsStopped() {
+			return true, informer.GetStore().Update(obj)
+		}
+		stored, exists, getErr := informer.GetStore().GetByKey(key)
+		if getErr != nil || !exists {
+			return false, getErr
+		}
+		return upToDate(stored), nil
+	})
+	if err != nil {
+		panic(fmt.Sprintf("informer did not catch up for %q: %v", key, err))
 	}
 }
 
@@ -574,10 +619,13 @@ func makePodsPhase(ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhas
 			if err != nil {
 				panic(err)
 			}
-			err = woc.controller.PodController.TestingPodInformer().GetStore().Update(updatedPod)
-			if err != nil {
-				panic(err)
-			}
+			// wait for the pod informer to deliver the update instead of writing
+			// to its store directly: a direct write races with the informer's
+			// async delivery of the pod's earlier create event, which would put
+			// the stale pod back in the store
+			waitForInformer(ctx, woc.controller.PodController.TestingPodInformer(), updatedPod, func(obj any) bool {
+				return obj.(*apiv1.Pod).Status.Phase == phase
+			})
 			if phase == apiv1.PodSucceeded {
 				nodeID := woc.nodeID(&pod)
 				woc.wf.Status.MarkTaskResultComplete(ctx, nodeID)
@@ -776,11 +824,281 @@ spec:
 	}
 }
 
+// A Running workflow that has been dropped from the throttler (e.g. an archive attempt
+// failed mid-flight after throttler.Remove) must not be postponed by the parallelism
+// limit: it must still be reconciled, or its pods are orphaned. Regression test for
+// #14123; the fix from #14606 was accidentally reverted by the slog refactor (#14527).
+func TestParallelismDoesNotPostponeRunningWorkflows(t *testing.T) {
+	for tt, f := range map[string]func(controller *WorkflowController){
+		"Parallelism": func(x *WorkflowController) {
+			x.Config.Parallelism = 1
+		},
+		"NamespaceParallelism": func(x *WorkflowController) {
+			x.Config.NamespaceParallelism = 1
+		},
+	} {
+		t.Run(tt, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			cancel, controller := newController(ctx,
+				wfv1.MustUnmarshalWorkflow(`
+metadata:
+  name: my-wf-0
+  labels:
+    workflows.argoproj.io/phase: Running
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: my-image
+status:
+  phase: Running
+`),
+				wfv1.MustUnmarshalWorkflow(`
+metadata:
+  name: my-wf-1
+  labels:
+    workflows.argoproj.io/phase: Running
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: my-image
+status:
+  phase: Running
+`),
+				f,
+			)
+			defer cancel()
+
+			// Both workflows are admitted at startup by throttler.Init. Simulate my-wf-1
+			// being dropped mid-life, as the archived-workflow path does.
+			controller.throttler.Remove("my-wf-1")
+
+			// my-wf-0 is still admitted and occupies the only slot.
+			assert.True(t, controller.processNextItem(ctx))
+
+			// my-wf-1 is Running but no longer admitted; it must be reconciled anyway,
+			// not postponed. Reconciliation creates its entrypoint node.
+			assert.True(t, controller.processNextItem(ctx))
+			expectWorkflow(ctx, controller, "my-wf-1", func(wf *wfv1.Workflow) {
+				require.NotNil(t, wf)
+				assert.Equal(t, wfv1.WorkflowRunning, wf.Status.Phase)
+				assert.NotEmpty(t, wf.Status.Nodes)
+			})
+		})
+	}
+}
+
 func TestWorkflowController_archivedWorkflowGarbageCollector(t *testing.T) {
 	cancel, controller := newController(logging.TestContext(t.Context()))
 	defer cancel()
 
 	controller.archivedWorkflowGarbageCollector(logging.TestContext(t.Context()))
+}
+
+// TestWorkflowController_archiveWorkflowAux_ArchivesOnce pins that a successfully
+// archived workflow is written to the archive exactly once. archiveWorkflow used
+// to call archiveWorkflowAux a second time on the success path, archiving every
+// workflow twice.
+func TestWorkflowController_archiveWorkflowAux_ArchivesOnce(t *testing.T) {
+	wf := &wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{Name: "my-wf", Namespace: "argo"},
+		Status:     wfv1.WorkflowStatus{Phase: wfv1.WorkflowSucceeded},
+	}
+	ctx := logging.TestContext(t.Context())
+	archive := sqldbmocks.NewWorkflowArchive(t)
+	archive.EXPECT().ArchiveWorkflow(mock.Anything, mock.Anything).Return(nil)
+	cancel, controller := newController(ctx, wf, func(wfc *WorkflowController) {
+		wfc.wfArchive = archive
+	})
+	defer cancel()
+
+	un, err := util.ToUnstructured(wf)
+	require.NoError(t, err)
+
+	err = controller.archiveWorkflowAux(ctx, un)
+	require.NoError(t, err)
+	archive.AssertNumberOfCalls(t, "ArchiveWorkflow", 1)
+}
+
+// TestWorkflowController_archiveWorkflowAux_ReturnsArchiveError pins that a failed
+// archive is attempted exactly once and that the error reaches the caller, so
+// processNextArchiveItem can requeue it. The retry added in #15780 never fired,
+// because a first-attempt failure returned nil and only the duplicate second
+// attempt could surface an error.
+func TestWorkflowController_archiveWorkflowAux_ReturnsArchiveError(t *testing.T) {
+	wf := &wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{Name: "my-wf", Namespace: "argo"},
+		Status:     wfv1.WorkflowStatus{Phase: wfv1.WorkflowSucceeded},
+	}
+	ctx := logging.TestContext(t.Context())
+	archive := sqldbmocks.NewWorkflowArchive(t)
+	// The transient failure #15780 was written for.
+	deadlock := errors.New("Error 1213 (40001): Deadlock found when trying to get lock; try restarting transaction")
+	archive.EXPECT().ArchiveWorkflow(mock.Anything, mock.Anything).Return(deadlock)
+	cancel, controller := newController(ctx, wf, func(wfc *WorkflowController) {
+		wfc.wfArchive = archive
+	})
+	defer cancel()
+
+	un, err := util.ToUnstructured(wf)
+	require.NoError(t, err)
+
+	err = controller.archiveWorkflowAux(ctx, un)
+	require.ErrorIs(t, err, deadlock)
+	archive.AssertNumberOfCalls(t, "ArchiveWorkflow", 1)
+}
+
+// pendingArchiveWorkflow returns a completed workflow labelled the way the
+// operator labels one it has queued for archiving, which is what the archive
+// queue's informer filter matches on.
+func pendingArchiveWorkflow() *wfv1.Workflow {
+	return &wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "my-wf",
+			Namespace: "argo",
+			Labels: map[string]string{
+				common.LabelKeyCompleted:               "true",
+				common.LabelKeyWorkflowArchivingStatus: "Pending",
+			},
+		},
+		Status: wfv1.WorkflowStatus{Phase: wfv1.WorkflowSucceeded},
+	}
+}
+
+// TestWorkflowController_processNextArchiveItem_RequeuesThenForgets pins the
+// other half of that retry: a failure requeues the key rate-limited rather than
+// dropping it until the controller restarts, and a later success clears the
+// backoff the rate limiter recorded, so its per-key state does not accumulate.
+func TestWorkflowController_processNextArchiveItem_RequeuesThenForgets(t *testing.T) {
+	wf := pendingArchiveWorkflow()
+	ctx := logging.TestContext(t.Context())
+	archive := sqldbmocks.NewWorkflowArchive(t)
+	archive.EXPECT().ArchiveWorkflow(mock.Anything, mock.Anything).
+		Return(errors.New("Error 1213 (40001): Deadlock found when trying to get lock; try restarting transaction")).Once()
+	archive.EXPECT().ArchiveWorkflow(mock.Anything, mock.Anything).Return(nil).Once()
+	cancel, controller := newController(ctx, wf, func(wfc *WorkflowController) {
+		wfc.wfArchive = archive
+	})
+	defer cancel()
+	defer controller.wfArchiveQueue.ShutDown()
+
+	key, err := cache.MetaNamespaceKeyFunc(wf)
+	require.NoError(t, err)
+	controller.wfArchiveQueue.Add(key)
+
+	// The deadlock puts the key back on the queue instead of dropping it.
+	assert.True(t, controller.processNextArchiveItem(ctx))
+	assert.Equal(t, 1, controller.wfArchiveQueue.NumRequeues(key))
+
+	// The requeued key archives cleanly, and its backoff is forgotten.
+	assert.True(t, controller.processNextArchiveItem(ctx))
+	assert.Equal(t, 0, controller.wfArchiveQueue.NumRequeues(key))
+
+	// The archive is only half the work: the workflow must also be labelled, or
+	// it stays Pending and is archived again on the next resync.
+	got, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Get(ctx, wf.Name, metav1.GetOptions{})
+	require.NoError(t, err)
+	assert.Equal(t, "Archived", got.Labels[common.LabelKeyWorkflowArchivingStatus])
+}
+
+// TestWorkflowController_processNextArchiveItem_RejectsStaleInformerCopy pins the
+// isOutdated guard on the archive path. The label check reads the informer, so a
+// copy that was Pending when written still looks Pending after the workflow has
+// moved on; processNextItem rejects such copies (#15090) and this worker has to
+// do the same, or an informer that regresses re-archives the workflow and
+// re-patches whatever currently holds that name.
+func TestWorkflowController_processNextArchiveItem_RejectsStaleInformerCopy(t *testing.T) {
+	wf := pendingArchiveWorkflow()
+	wf.UID = "uid-1"
+	wf.ResourceVersion = "100"
+	ctx := logging.TestContext(t.Context())
+	archive := sqldbmocks.NewWorkflowArchive(t)
+	cancel, controller := newController(ctx, wf, func(wfc *WorkflowController) {
+		wfc.wfArchive = archive
+	})
+	defer cancel()
+	defer controller.wfArchiveQueue.ShutDown()
+
+	// The controller has already written a newer version of this workflow.
+	// Recorded through the production helper rather than by writing the map:
+	// newController has started the workflow informer, whose FilterFunc calls
+	// recordWorkflowCompleted for a completed workflow, so an unguarded write
+	// here races that goroutine. Going through the helper also keeps this
+	// deterministic if the informer records resourceVersion 100 afterwards,
+	// since the helper never regresses the recorded version.
+	newer := wf.DeepCopy()
+	newer.ResourceVersion = "200"
+	controller.recordWorkflowCompleted(newer)
+
+	key, err := cache.MetaNamespaceKeyFunc(wf)
+	require.NoError(t, err)
+	controller.wfArchiveQueue.Add(key)
+	assert.True(t, controller.processNextArchiveItem(ctx))
+
+	// The mock has no ArchiveWorkflow expectation, so any call fails the test.
+	archive.AssertNotCalled(t, "ArchiveWorkflow")
+	// Requeued rather than dropped: the workflow still needs archiving once the
+	// informer catches up, and dropping it would wait for the next resync.
+	assert.Equal(t, 1, controller.wfArchiveQueue.NumRequeues(key))
+
+	// Once the informer holds a copy at least as new as the last write, the
+	// same key archives normally.
+	archive.EXPECT().ArchiveWorkflow(mock.Anything, mock.Anything).Return(nil).Once()
+	current := wf.DeepCopy()
+	current.ResourceVersion = "200"
+	currentUn, err := util.ToUnstructured(current)
+	require.NoError(t, err)
+	require.NoError(t, controller.wfInformer.GetIndexer().Update(currentUn))
+	assert.True(t, controller.processNextArchiveItem(ctx))
+	archive.AssertNumberOfCalls(t, "ArchiveWorkflow", 1)
+	assert.Equal(t, 0, controller.wfArchiveQueue.NumRequeues(key))
+}
+
+// TestWorkflowController_processNextArchiveItem_SkipsRetriedWorkflow pins that a
+// rate-limited key is re-checked against the current object before it is
+// archived. The queue holds only namespace/name, so between the failed attempt
+// and the retry the workflow can be retried, which removes the archiving-status
+// label and puts it back to Unknown. Archiving it then would write a running
+// workflow to the archive and label it Archived. The same applies to a
+// same-named workflow recreated after the original was deleted.
+func TestWorkflowController_processNextArchiveItem_SkipsRetriedWorkflow(t *testing.T) {
+	wf := pendingArchiveWorkflow()
+	ctx := logging.TestContext(t.Context())
+	archive := sqldbmocks.NewWorkflowArchive(t)
+	// The only archive attempt is the first one, which fails.
+	archive.EXPECT().ArchiveWorkflow(mock.Anything, mock.Anything).
+		Return(errors.New("Error 1213 (40001): Deadlock found when trying to get lock; try restarting transaction")).Once()
+	cancel, controller := newController(ctx, wf, func(wfc *WorkflowController) {
+		wfc.wfArchive = archive
+	})
+	defer cancel()
+	defer controller.wfArchiveQueue.ShutDown()
+
+	key, err := cache.MetaNamespaceKeyFunc(wf)
+	require.NoError(t, err)
+	controller.wfArchiveQueue.Add(key)
+	assert.True(t, controller.processNextArchiveItem(ctx))
+	assert.Equal(t, 1, controller.wfArchiveQueue.NumRequeues(key))
+
+	// `argo retry` on the same object: createNewRetryWorkflow drops both labels
+	// and resets the phase, so the informer now holds a running workflow under
+	// the key the archive queue is still holding.
+	retried := wf.DeepCopy()
+	delete(retried.Labels, common.LabelKeyCompleted)
+	delete(retried.Labels, common.LabelKeyWorkflowArchivingStatus)
+	retried.Status.Phase = wfv1.WorkflowUnknown
+	retriedUn, err := util.ToUnstructured(retried)
+	require.NoError(t, err)
+	require.NoError(t, controller.wfInformer.GetIndexer().Update(retriedUn))
+
+	// The delayed retry must drop the key instead of archiving the running
+	// workflow, and must clear the backoff rather than requeue forever.
+	assert.True(t, controller.processNextArchiveItem(ctx))
+	archive.AssertNumberOfCalls(t, "ArchiveWorkflow", 1)
+	assert.Equal(t, 0, controller.wfArchiveQueue.NumRequeues(key))
 }
 
 const wfWithTmplRef = `

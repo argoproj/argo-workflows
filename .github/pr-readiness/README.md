@@ -1,6 +1,6 @@
 # PR Readiness Helper
 
-A standalone bot ([`pr-readiness.yaml`](../workflows/pr-readiness.yaml)) that lowers maintainer burden: when CI finishes on a PR, it keeps **one sticky comment** telling the contributor exactly how to fix contributor-fixable problems, moves not-ready PRs to **draft**, and gets out of the way once everything is green.
+A standalone bot ([`pr-readiness.yaml`](../workflows/pr-readiness.yaml)) that lowers maintainer burden: when CI finishes on a PR, it keeps **one sticky comment** telling the contributor exactly how to fix contributor-fixable problems, flags not-ready PRs with the **`problem/bot-not-ready`** label, and gets out of the way (clearing the label) once everything is green.
 
 ## What it covers
 
@@ -25,8 +25,8 @@ Tune guidance, add or remove signals in [`checks.config.json`](checks.config.jso
 - Fires on `workflow_run: completed` of CI / Docs / PR Title Check / PR Feature Check. Title and feature checks re-run on PR `edited`, so title/description edits re-evaluate too. `/retest` re-runs CI and therefore re-evaluates.
 - **Never posts** on a PR that never had a covered issue.
 - While issues exist: one comment listing only the failing items, each with a fix command and a log link. Pending checks are not mentioned.
-- Blocking issues (any covered check failure, or a description that doesn't follow the template) also **convert the PR to draft**. The bot **never** marks ready-for-review — that's the contributor's call — and it drafts at most once per head SHA, so a human re-marking it ready is respected until new commits arrive.
-- Draft conversion needs a **GitHub App token**: the default Actions token cannot toggle draft state (`Resource not accessible by integration` — verified live). Provision an app with **Pull requests: Read & write** only (do not reuse the cherry-pick app, which can push code), install it on the repo, and set the `PR_READINESS_APP_ID` / `PR_READINESS_APP_PRIVATE_KEY` secrets — the same `actions/create-github-app-token` pattern as `cherry-pick-single.yml`. Without the secrets the bot comments but does not draft.
+- Blocking issues (any covered check failure, or a description that doesn't follow the template) also apply the **`problem/bot-not-ready`** label. The bot owns the label outright: it is applied while the verdict is blocking and **removed automatically** the moment it isn't (fix pushed, check re-run green, description fixed, or the description check waived by a maintainer editing it into compliance). No app token or extra secrets: labelling a PR works with the default Actions token under the `pull-requests: write` permission the sticky comment already needs. (An earlier version converted PRs to draft instead — that needed a dedicated GitHub App because the default token cannot toggle draft state, and undrafting semantics around human intent were messy. The label sidesteps both.)
+- Because the label mirrors the current verdict with no memory, a manually-removed label is re-applied on the next CI completion while checks still fail — maintainers who disagree with a covered failure can simply review anyway; the label is advisory, not a gate.
 - When issues are resolved but other covered checks are still running: the comment shows a short "waiting" state.
 - When everything is terminal and green: the comment is edited to a short ✅ all-clear.
 - Skipped: PRs by anyone in [`OWNERS`](../../OWNERS) (owners/approvers/reviewers) and by bots.
@@ -41,19 +41,20 @@ A deterministic check ([`template.ts`](template.ts)) compares the description ag
 
 - `workflow_run` workflows execute the **default branch's** definition with the base-repo token — a fork PR cannot alter what runs here.
 - The job **never checks out or executes PR-head code**; the checkout step takes the default branch only. Keep it that way.
-- `permissions: {}` at the top; the job grants only `pull-requests: write`, `contents: read`, `actions: read`. No secrets beyond `GITHUB_TOKEN` (and the optional draft-app secrets).
+- `permissions: {}` at the top; the job grants only `pull-requests: write`, `contents: read`, `actions: read`. No secrets beyond `GITHUB_TOKEN`.
 - `workflow_run.pull_requests` is empty for fork PRs, so the PR is found by matching `head_sha` against open PRs; no match → exit (a newer push superseded the run).
 - PR title/body/branch are attacker-controlled: they are only ever handled as data, never interpolated into shell or scripts. The comment never echoes contributor-supplied text — only the bot's own guidance, check titles/URLs, and template section names.
 - All actions are pinned to full commit SHAs (enforced by repo lint).
 
-## Dry run & rollout
+## Dry run
 
-`DRY_RUN: "true"` in the workflow renders the would-be comment and decisions to the job's **step summary** instead of commenting or drafting. Roll out: merge with dry-run on → watch summaries on real PRs (correct PR resolution, author gating, sensible text) → flip to `"false"`.
+Setting `DRY_RUN: "true"` in the workflow renders the would-be comment and decisions to the job's **step summary** instead of commenting or labelling. Use it to test changes to the bot against real PRs (correct PR resolution, author gating, sensible text) without posting.
 
 ## Maintenance notes
 
 - **Check renamed?** The signal silently stops matching (fail-safe — no false positives) and any failing unmapped check from a covered app is logged as a warning ("unmapped failing check") so you notice. Update `checks.config.json`.
 - **Workflow renamed?** Keep `on.workflow_run.workflows` in `pr-readiness.yaml` in sync with the `name:` fields of `ci-build.yaml`, `docs.yaml`, `pr.yaml`, `pr-feature.yaml`.
+- **Label renamed?** `NOT_READY_LABEL` in `comment.ts` must match the repo's `problem/bot-not-ready` label exactly — if the label is renamed in repo settings without updating the constant, the add-labels API quietly *recreates* the old name (with a default colour) rather than failing.
 - **Known limitation:** first-time contributors whose workflows need approval get no help until a maintainer approves the run (nothing completes, so nothing fires).
 
 ## Code & local development

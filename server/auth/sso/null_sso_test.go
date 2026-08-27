@@ -29,3 +29,9 @@ func Test_nullSSO_HandleRedirect(t *testing.T) {
 	defer result.Body.Close()
 	assert.Equal(t, http.StatusNotImplemented, result.StatusCode)
 }
+
+func TestNullSSOLogoutMetadata(t *testing.T) {
+	assert.Empty(t, NullSSO.LogoutURL())
+	assert.Empty(t, NullSSO.LogoutRedirectURL())
+	assert.Empty(t, NullSSO.ClientID())
+}

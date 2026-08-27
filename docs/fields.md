@@ -285,6 +285,10 @@ Workflow is the definition of a workflow resource
 
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/recursive-for-loop.yaml)
 
+- [`resource-claims-template-override.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-claims-template-override.yaml)
+
+- [`resource-claims.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-claims.yaml)
+
 - [`resource-delete-with-flags.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-delete-with-flags.yaml)
 
 - [`resource-flags.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-flags.yaml)
@@ -790,6 +794,10 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/recursive-for-loop.yaml)
 
+- [`resource-claims-template-override.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-claims-template-override.yaml)
+
+- [`resource-claims.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-claims.yaml)
+
 - [`resubmit.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resubmit.yaml)
 
 - [`retry-backoff.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-backoff.yaml)
@@ -937,6 +945,7 @@ WorkflowSpec is the specification of a Workflow.
 |`podResources`|[`ResourceRequirements`](#resourcerequirements)|PodResources defines pod-level resource requests and limits to apply to all workflow pods. Will be overridden if a template's podResources is set. Requires the PodLevelResources feature gate to be enabled on the cluster (beta since Kubernetes v1.34).|
 |`podSpecPatch`|`string`|PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).|
 |`priority`|`integer`|Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.|
+|`resourceClaims`|`Array<`[`PodResourceClaim`](#podresourceclaim)`>`|ResourceClaims defines the ResourceClaims that must be allocated and reserved before the pods running this workflow's templates are allowed to start. Each entry names either an existing ResourceClaim or a ResourceClaimTemplate in the workflow's namespace, and containers ask for one by name through resources.claims. The list is replaced as a whole rather than merged, so a template's resourceClaims, or a Workflow overriding a WorkflowTemplate, supersedes it entirely. Applies to the pods this workflow runs, including one whose template came through a templateRef, but not to the shared agent pod behind HTTP and Plugin templates. A referenced WorkflowTemplate's own spec-level resourceClaims do not come along with a templateRef; use workflowTemplateRef to inherit the referenced spec. Requires the DynamicResourceAllocation feature gate to be enabled on the cluster.|
 |`retryStrategy`|[`RetryStrategy`](#retrystrategy)|RetryStrategy for all templates in the io.argoproj.workflow.v1alpha1.|
 |`schedulerName`|`string`|Set scheduler name for all pods. Will be overridden if container/script template's scheduler name is set. Default scheduler will be used if neither specified.|
 |`securityContext`|[`PodSecurityContext`](#podsecuritycontext)|SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty. See type description for default values of each field.|
@@ -1273,6 +1282,10 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/pod-spec-yaml-patch.yaml)
 
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/recursive-for-loop.yaml)
+
+- [`resource-claims-template-override.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-claims-template-override.yaml)
+
+- [`resource-claims.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-claims.yaml)
 
 - [`resubmit.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resubmit.yaml)
 
@@ -2175,6 +2188,10 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/recursive-for-loop.yaml)
 
+- [`resource-claims-template-override.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-claims-template-override.yaml)
+
+- [`resource-claims.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-claims.yaml)
+
 - [`resubmit.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resubmit.yaml)
 
 - [`retry-backoff.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-backoff.yaml)
@@ -2316,6 +2333,7 @@ Template is a reusable and composable unit of execution in a workflow
 |`podSpecPatch`|`string`|PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).|
 |`priorityClassName`|`string`|PriorityClassName to apply to workflow pods.|
 |`resource`|[`ResourceTemplate`](#resourcetemplate)|Resource template subtype which can run k8s resources|
+|`resourceClaims`|`Array<`[`PodResourceClaim`](#podresourceclaim)`>`|ResourceClaims defines the ResourceClaims that must be allocated and reserved before this template's pod is allowed to start. Each entry names either an existing ResourceClaim or a ResourceClaimTemplate in the workflow's namespace, and containers ask for one by name through resources.claims. Replaces the workflow-level resourceClaims as a whole rather than merging with it. Not supported for a template that creates no pod: Steps, DAG and Suspend, which orchestrate other templates, and HTTP and Plugin, which run on the shared agent pod. A template reached through a templateRef keeps its own claims, and falls back to those of the workflow calling it rather than to the spec-level claims of the WorkflowTemplate it was defined in. Requires the DynamicResourceAllocation feature gate to be enabled on the cluster.|
 |`retryStrategy`|[`RetryStrategy`](#retrystrategy)|RetryStrategy describes how to retry a template when it fails|
 |`schedulerName`|`string`|If specified, the pod will be dispatched by specified scheduler. Or it will be dispatched by workflow scope scheduler if specified. If neither specified, the pod will be dispatched by default scheduler.|
 |`script`|[`ScriptTemplate`](#scripttemplate)|Script runs a portion of code against an interpreter|
@@ -3902,6 +3920,8 @@ WorkflowStep is a reference to a template to execute in a series of step Note: C
 - [`pod-resources-template-override.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/pod-resources-template-override.yaml)
 
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/recursive-for-loop.yaml)
+
+- [`resource-claims-template-override.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-claims-template-override.yaml)
 
 - [`resubmit.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resubmit.yaml)
 
@@ -5762,6 +5782,10 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/recursive-for-loop.yaml)
 
+- [`resource-claims-template-override.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-claims-template-override.yaml)
+
+- [`resource-claims.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-claims.yaml)
+
 - [`resubmit.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resubmit.yaml)
 
 - [`retry-backoff.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-backoff.yaml)
@@ -6000,6 +6024,10 @@ ResourceRequirements describes the compute resource requirements.
 
 - [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/pod-spec-yaml-patch.yaml)
 
+- [`resource-claims-template-override.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-claims-template-override.yaml)
+
+- [`resource-claims.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-claims.yaml)
+
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-pvc.yaml)
 
 - [`work-avoidance.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/work-avoidance.yaml)
@@ -6013,6 +6041,25 @@ ResourceRequirements describes the compute resource requirements.
 |`claims`|`Array<`[`ResourceClaim`](#resourceclaim)`>`|Claims lists the names of resources, defined in spec.resourceClaims, that are used by this container. This field depends on the DynamicResourceAllocation feature gate. This field is immutable. It can only be set for containers.|
 |`limits`|[`Quantity`](#quantity)|Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/|
 |`requests`|[`Quantity`](#quantity)|Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. Requests cannot exceed Limits. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/|
+
+## PodResourceClaim
+
+PodResourceClaim references exactly one ResourceClaim, either directly or by naming a ResourceClaimTemplate which is then turned into a ResourceClaim for the pod. It adds a name to it that uniquely identifies the ResourceClaim inside the Pod. Containers that need access to the ResourceClaim reference it with this name.
+
+<details markdown>
+<summary>Examples with this field (click to open)</summary>
+
+- [`resource-claims-template-override.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-claims-template-override.yaml)
+
+- [`resource-claims.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-claims.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`name`|`string`|Name uniquely identifies this resource claim inside the pod. This must be a DNS_LABEL.|
+|`resourceClaimName`|`string`|ResourceClaimName is the name of a ResourceClaim object in the same namespace as this pod. Exactly one of ResourceClaimName and ResourceClaimTemplateName must be set.|
+|`resourceClaimTemplateName`|`string`|ResourceClaimTemplateName is the name of a ResourceClaimTemplate object in the same namespace as this pod. The template will be used to create a new ResourceClaim, which will be bound to this pod. When this pod is deleted, the ResourceClaim will also be deleted. The pod name and resource name, along with a generated component, will be used to form a unique name for the ResourceClaim, which will be recorded in pod.status.resourceClaimStatuses. This field is immutable and no changes will be made to the corresponding ResourceClaim by the control plane after creating the ResourceClaim. Exactly one of ResourceClaimName and ResourceClaimTemplateName must be set.|
 
 ## PodSecurityContext
 
@@ -6467,6 +6514,10 @@ A single application container that you want to run within a pod.
 - [`pod-spec-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/pod-spec-patch.yaml)
 
 - [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/pod-spec-yaml-patch.yaml)
+
+- [`resource-claims-template-override.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-claims-template-override.yaml)
+
+- [`resource-claims.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-claims.yaml)
 
 - [`resubmit.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resubmit.yaml)
 
@@ -6947,6 +6998,14 @@ PodDNSConfigOption defines DNS resolver options of a pod.
 ## ResourceClaim
 
 ResourceClaim references one entry in PodSpec.ResourceClaims.
+
+<details markdown>
+<summary>Examples with this field (click to open)</summary>
+
+- [`resource-claims-template-override.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-claims-template-override.yaml)
+
+- [`resource-claims.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-claims.yaml)
+</details>
 
 ### Fields
 | Field Name | Field Type | Description   |
@@ -7565,6 +7624,10 @@ ImageVolumeSource represents a image volume resource.
 
 - [`recursive-for-loop.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/recursive-for-loop.yaml)
 
+- [`resource-claims-template-override.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-claims-template-override.yaml)
+
+- [`resource-claims.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-claims.yaml)
+
 - [`resubmit.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resubmit.yaml)
 
 - [`retry-backoff.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-backoff.yaml)
@@ -8146,6 +8209,10 @@ VolumeResourceRequirements describes the storage resource requirements for a vol
 - [`pod-spec-patch-wf-tmpl.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/pod-spec-patch-wf-tmpl.yaml)
 
 - [`pod-spec-yaml-patch.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/pod-spec-yaml-patch.yaml)
+
+- [`resource-claims-template-override.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-claims-template-override.yaml)
+
+- [`resource-claims.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/resource-claims.yaml)
 
 - [`volumes-pvc.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/volumes-pvc.yaml)
 

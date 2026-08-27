@@ -58,6 +58,7 @@ exclude_docs: |
   /proposals/
   /requirements.txt
   /tested-kubernetes-versions.md
+  /AGENTS.md
 
 nav:
   - Home: README.md
@@ -253,6 +254,7 @@ nav:
           - argo watch: cli/argo_watch.md
   - Operator Manual:
       - installation.md
+      - crd-installer.md
       - releases.md
       - upgrading.md
       - new-features.md
@@ -296,6 +298,7 @@ nav:
       - tracing.md
   - Developer Guide:
       - CONTRIBUTING.md
+      - pull-requests.md
       - running-nix.md
       - architecture.md
       - running-locally.md

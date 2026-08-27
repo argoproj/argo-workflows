@@ -17,7 +17,6 @@ import (
 	"path/filepath"
 	"runtime/debug"
 	"slices"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -46,7 +45,6 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/artifacts"
 	artifactcommon "github.com/argoproj/argo-workflows/v4/workflow/artifacts/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
-	executorretry "github.com/argoproj/argo-workflows/v4/workflow/executor/retry"
 	"github.com/argoproj/argo-workflows/v4/workflow/executor/tracing"
 )
 
@@ -88,9 +86,58 @@ type WorkflowExecutor struct {
 
 	annotationPatchTickDuration  time.Duration
 	readProgressFileTickDuration time.Duration
+	progressFile                 string
+	instanceID                   string
+	terminationGracePeriod       time.Duration
+	artifactPluginNames          string
+	removeLocalArtPath           bool
+	initlessPod                  bool
+	retryBackoff                 wait.Backoff
+	resourceStateCheckInterval   time.Duration
 
 	// flag to indicate if the task result was created
 	taskResultCreated bool
+}
+
+// Config carries the data values a WorkflowExecutor is constructed from.
+// Every field is parsed from the environment (or derived from it) at the
+// composition root in cmd/argoexec; executor packages must not read the
+// environment themselves (enforced by the forbidigo linter rule), so that
+// they stay testable without env mutation and reusable outside the
+// one-task-per-process layout.
+type Config struct {
+	PodName                      string
+	PodUID                       types.UID
+	WorkflowName                 string
+	WorkflowUID                  types.UID
+	NodeID                       string
+	Namespace                    string
+	Template                     wfv1.Template
+	IncludeScriptOutput          bool
+	Deadline                     time.Time
+	AnnotationPatchTickDuration  time.Duration
+	ReadProgressFileTickDuration time.Duration
+	// ProgressFile is the file watched for progress reports (ARGO_PROGRESS_FILE).
+	ProgressFile string
+	// InstanceID labels task results with the controller instance (ARGO_INSTANCE_ID).
+	InstanceID string
+	// TerminationGracePeriod mirrors the pod spec's terminationGracePeriodSeconds
+	// (ARGO_TERMINATION_GRACE_PERIOD_SECONDS).
+	TerminationGracePeriod time.Duration
+	// ArtifactPluginNames is the comma-separated list written by the controller
+	// (ARGO_ARTIFACT_PLUGIN_NAMES); split with common.SplitPluginNames.
+	ArtifactPluginNames string
+	// RemoveLocalArtPath deletes local artifacts after upload to reduce peak
+	// disk usage (REMOVE_LOCAL_ART_PATH).
+	RemoveLocalArtPath bool
+	// InitlessPod reports whether the pod runs the init-less layout (ARGO_INITLESS_POD).
+	InitlessPod bool
+	// RetryBackoff is the backoff used when retrying transient failures
+	// (EXECUTOR_RETRY_BACKOFF_*, see util/retry.ExecutorRetry).
+	RetryBackoff wait.Backoff
+	// ResourceStateCheckInterval is the poll interval for resource template
+	// state checks (RESOURCE_STATE_CHECK_INTERVAL).
+	ResourceStateCheckInterval time.Duration
 }
 
 type Initializer interface {
@@ -136,44 +183,43 @@ func NewExecutor(
 	clientset kubernetes.Interface,
 	taskResultClient argoprojv1.WorkflowTaskResultInterface,
 	restClient rest.Interface,
-	podName string,
-	podUID types.UID,
-	workflow string,
-	workflowUID types.UID,
-	nodeID, namespace string,
 	cre ContainerRuntimeExecutor,
-	template wfv1.Template,
-	includeScriptOutput bool,
-	deadline time.Time,
-	annotationPatchTickDuration, readProgressFileTickDuration time.Duration,
+	cfg Config,
 ) (*WorkflowExecutor, error) {
-	retry := executorretry.ExecutorRetry(ctx)
 	logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{
-		"Steps":    retry.Steps,
-		"Duration": retry.Duration,
-		"Factor":   retry.Factor,
-		"Jitter":   retry.Jitter,
+		"Steps":    cfg.RetryBackoff.Steps,
+		"Duration": cfg.RetryBackoff.Duration,
+		"Factor":   cfg.RetryBackoff.Factor,
+		"Jitter":   cfg.RetryBackoff.Jitter,
 	}).Info(ctx, "Using executor retry strategy")
 	tracing, err := tracing.New(ctx, `argoexec`)
 	return &WorkflowExecutor{
-		PodName:                      podName,
-		podUID:                       podUID,
-		workflow:                     workflow,
-		workflowUID:                  workflowUID,
-		nodeID:                       nodeID,
+		PodName:                      cfg.PodName,
+		podUID:                       cfg.PodUID,
+		workflow:                     cfg.WorkflowName,
+		workflowUID:                  cfg.WorkflowUID,
+		nodeID:                       cfg.NodeID,
 		ClientSet:                    clientset,
 		taskResultClient:             taskResultClient,
 		RESTClient:                   restClient,
-		Namespace:                    namespace,
+		Namespace:                    cfg.Namespace,
 		RuntimeExecutor:              cre,
-		Template:                     template,
-		IncludeScriptOutput:          includeScriptOutput,
-		Deadline:                     deadline,
+		Template:                     cfg.Template,
+		IncludeScriptOutput:          cfg.IncludeScriptOutput,
+		Deadline:                     cfg.Deadline,
 		Tracing:                      tracing,
 		memoizedConfigMaps:           map[string]string{},
 		errors:                       []error{},
-		annotationPatchTickDuration:  annotationPatchTickDuration,
-		readProgressFileTickDuration: readProgressFileTickDuration,
+		annotationPatchTickDuration:  cfg.AnnotationPatchTickDuration,
+		readProgressFileTickDuration: cfg.ReadProgressFileTickDuration,
+		progressFile:                 cfg.ProgressFile,
+		instanceID:                   cfg.InstanceID,
+		terminationGracePeriod:       cfg.TerminationGracePeriod,
+		artifactPluginNames:          cfg.ArtifactPluginNames,
+		removeLocalArtPath:           cfg.RemoveLocalArtPath,
+		initlessPod:                  cfg.InitlessPod,
+		retryBackoff:                 cfg.RetryBackoff,
+		resourceStateCheckInterval:   cfg.ResourceStateCheckInterval,
 	}, err
 }
 
@@ -502,7 +548,7 @@ func (we *WorkflowExecutor) saveArtifactFromFile(ctx context.Context, art *wfv1.
 }
 
 func (we *WorkflowExecutor) maybeDeleteLocalArtPath(ctx context.Context, localArtPath string) {
-	if os.Getenv("REMOVE_LOCAL_ART_PATH") == "true" {
+	if we.removeLocalArtPath {
 		logger := logging.RequireLoggerFromContext(ctx)
 		logger.WithField("localArtPath", localArtPath).Info(ctx, "deleting local artifact")
 		// remove is best effort (the container will go away anyways).
@@ -677,12 +723,12 @@ func (we *WorkflowExecutor) isBaseImagePath(path string) bool {
 			// image path. (Legacy mode keeps reading the shared mount: there the
 			// SubPath bind mount makes main's writes land in the emptyDir, and rm
 			// fails with EBUSY, so the mount is always current.)
-			return common.IsInitlessPod()
+			return we.initlessPod
 		}
 		if strings.HasPrefix(path, inArt.Path+"/") {
 			// Output nested under an input artifact directory: the same init-less
 			// reasoning as the exact-match case above applies.
-			return common.IsInitlessPod()
+			return we.initlessPod
 		}
 	}
 	return true
@@ -877,15 +923,6 @@ func (we *WorkflowExecutor) GetConfigMapKey(ctx context.Context, name, key strin
 		return "", argoerrs.Errorf(argoerrs.CodeBadRequest, "configmap '%s' does not have the key '%s'", name, key)
 	}
 	return val, nil
-}
-
-// GetTerminationGracePeriodDuration returns the terminationGracePeriodSeconds of podSpec in Time.Duration format
-func GetTerminationGracePeriodDuration() time.Duration {
-	x, _ := strconv.ParseInt(os.Getenv(common.EnvVarTerminationGracePeriodSeconds), 10, 64)
-	if x > 0 {
-		return time.Duration(x) * time.Second
-	}
-	return 30 * time.Second
 }
 
 // CaptureScriptResult will add the stdout of a script template as output result
@@ -1322,14 +1359,14 @@ func (we *WorkflowExecutor) Wait(ctx context.Context) error {
 	containerNames := we.Template.GetMainContainerNames()
 	// only monitor progress if both tick durations are >0
 	if we.annotationPatchTickDuration != 0 && we.readProgressFileTickDuration != 0 {
-		go we.monitorProgress(ctx, os.Getenv(common.EnvVarProgressFile))
+		go we.monitorProgress(ctx, we.progressFile)
 	} else {
 		logger.WithField("annotationPatchTickDuration", we.annotationPatchTickDuration).WithField("readProgressFileTickDuration", we.readProgressFileTickDuration).Info(ctx, "monitoring progress disabled")
 	}
 
 	go we.monitorDeadline(ctx, containerNames)
 
-	err := retryutil.OnError(executorretry.ExecutorRetry(ctx), func(err error) bool {
+	err := retryutil.OnError(we.retryBackoff, func(err error) bool {
 		return errorsutil.IsTransientErr(ctx, err)
 	}, func() error {
 		return we.waitMainContainers(ctx, containerNames)
@@ -1462,8 +1499,7 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, containerNames 
 func (we *WorkflowExecutor) killContainers(ctx context.Context, containerNames []string) {
 	logger := logging.RequireLoggerFromContext(ctx)
 	logger.WithField("containerNames", containerNames).Info(ctx, "Killing containers")
-	terminationGracePeriodDuration := GetTerminationGracePeriodDuration()
-	if err := we.RuntimeExecutor.Kill(ctx, containerNames, terminationGracePeriodDuration); err != nil {
+	if err := we.RuntimeExecutor.Kill(ctx, containerNames, we.terminationGracePeriod); err != nil {
 		logger.WithField("containerNames", containerNames).WithError(err).Warn(ctx, "Failed to kill")
 	}
 }
@@ -1487,14 +1523,13 @@ func (we *WorkflowExecutor) WriteTemplate() error {
 
 func (we *WorkflowExecutor) KillArtifactSidecars(ctx context.Context) error {
 	logger := logging.RequireLoggerFromContext(ctx)
-	pluginNamesEnv := os.Getenv(common.EnvVarArtifactPluginNames)
-	if pluginNamesEnv == "" {
+	if we.artifactPluginNames == "" {
 		logger.Info(ctx, "no artifact sidecars to kill")
 		return nil
 	}
-	artifactSidecars := common.SplitPluginNames(pluginNamesEnv)
+	artifactSidecars := common.SplitPluginNames(we.artifactPluginNames)
 	logger.WithFields(logging.Fields{"numSidecars": len(artifactSidecars), "artifactSidecars": artifactSidecars}).Info(ctx, "killing artifact sidecars")
-	err := we.RuntimeExecutor.Kill(ctx, artifactSidecars, GetTerminationGracePeriodDuration())
+	err := we.RuntimeExecutor.Kill(ctx, artifactSidecars, we.terminationGracePeriod)
 	if err != nil {
 		logger.WithError(err).WithFields(logging.Fields{"artifactSidecars": artifactSidecars}).Error(ctx, "failed to kill artifact sidecars")
 		return err

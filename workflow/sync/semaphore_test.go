@@ -2,6 +2,7 @@ package sync
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"runtime"
 	"testing"
@@ -254,6 +255,55 @@ func TestCheckAcquireNotifiesCorrectKeyForTemplateSemaphore(t *testing.T) {
 	}
 }
 
+// testTryAcquireRemovesAcquiringKeyFromQueue is a regression test: checkAcquire lets a
+// node acquire the lock while a sibling node of the same workflow is at the front of the
+// pending queue. tryAcquire used to pop the front entry rather than the acquiring one, so
+// the sibling was silently dropped from the queue - no later notifyWaiters iteration
+// included it - while the acquiring node's own entry was left behind as a stale
+// front-of-queue entry.
+func testTryAcquireRemovesAcquiringKeyFromQueue(t *testing.T, factory semaphoreFactory) {
+	t.Helper()
+	ctx := logging.TestContext(t.Context())
+	nextWorkflow := func(_ string) {}
+
+	s, sessionProxy, cleanup := factory(ctx, t, "bar", "foo", 1, nextWorkflow)
+	defer cleanup()
+
+	now := time.Now()
+	require.NoError(t, s.addToQueue(ctx, "foo/wf-01/node-aaa", 0, now))
+	require.NoError(t, s.addToQueue(ctx, "foo/wf-01/node-bbb", 0, now.Add(time.Second)))
+	require.NoError(t, s.addToQueue(ctx, "foo/wf-02/node-ccc", 0, now.Add(2*time.Second)))
+
+	tx := sessionProxy
+	// node-bbb isn't at the front, but node-aaa is and belongs to the same workflow,
+	// so node-bbb is allowed to acquire.
+	acquired, _, err := s.tryAcquire(ctx, "foo/wf-01/node-bbb", tx)
+	require.NoError(t, err)
+	require.True(t, acquired)
+
+	// Only node-bbb's entry may be gone: node-aaa is still waiting for its turn.
+	pending, err := s.getCurrentPending(ctx)
+	require.NoError(t, err)
+	assert.ElementsMatch(t, []string{"foo/wf-01/node-aaa", "foo/wf-02/node-ccc"}, pending)
+
+	s.release(ctx, "foo/wf-01/node-bbb")
+	require.NoError(t, s.removeFromQueue(ctx, "foo/wf-01/node-bbb"))
+
+	// node-aaa is still the front of the queue, so it takes the released lock.
+	acquired, _, err = s.tryAcquire(ctx, "foo/wf-01/node-aaa", tx)
+	require.NoError(t, err)
+	assert.True(t, acquired, "node-aaa should still be queued and acquire the released lock")
+}
+
+// TestTryAcquireRemovesAcquiringKeyFromQueue runs the queue removal test for all implementations
+func TestTryAcquireRemovesAcquiringKeyFromQueue(t *testing.T) {
+	for name, factory := range semaphoreFactories {
+		t.Run(name, func(t *testing.T) {
+			testTryAcquireRemovesAcquiringKeyFromQueue(t, factory)
+		})
+	}
+}
+
 // TestInternalSemaphoreReleaseWithLimitFetchFailure is a regression test: a transient
 // error fetching the ConfigMap limit during release() used to make getLimit return 0,
 // which release() mistook for a downward resize — the holder was removed from the map
@@ -293,4 +343,65 @@ func TestInternalSemaphoreReleaseWithLimitFetchFailure(t *testing.T) {
 	acquired, _, err = sem.tryAcquire(ctx, "default/wf-b", nil)
 	require.NoError(t, err)
 	assert.True(t, acquired, "wf-b should acquire the slot released by wf-a")
+}
+
+// TestNewSemaphoreWithZeroLimit is a regression test: newInternalSemaphore and
+// newDatabaseSemaphore used to reject a successfully resolved limit of 0, treating it
+// the same as a failure to resolve the limit at all. A limit of 0 is a valid initial
+// state (e.g. an "approval gate" that stays closed until an operator raises it), so
+// initialization must only fail when the limit genuinely can't be resolved.
+func TestNewSemaphoreWithZeroLimit(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	nextWorkflow := func(_ string) {}
+
+	t.Run("Internal", func(t *testing.T) {
+		getter := func(_ context.Context, _ string) (int, error) { return 0, nil }
+		sem, err := newInternalSemaphore(ctx, "default/ConfigMap/my-config/workflow", nextWorkflow, getter, 0)
+		require.NoError(t, err)
+
+		require.NoError(t, sem.addToQueue(ctx, "default/wf-a", 0, time.Now()))
+		acquired, _, err := sem.tryAcquire(ctx, "default/wf-a", nil)
+		require.NoError(t, err)
+		assert.False(t, acquired, "no slots should be available while the limit is 0")
+	})
+
+	for _, dbType := range testDBTypes {
+		t.Run("Database/"+string(dbType), func(t *testing.T) {
+			sem, info, deferfunc := createTestDatabaseSemaphore(ctx, t, "my-database-sem", "default", 0, 0, nextWorkflow, dbType)
+			defer deferfunc()
+
+			require.NoError(t, sem.addToQueue(ctx, "default/wf-a", 0, time.Now()))
+			acquired, _, err := sem.tryAcquire(ctx, "default/wf-a", info.SessionProxy)
+			require.NoError(t, err)
+			assert.False(t, acquired, "no slots should be available while the limit is 0")
+		})
+	}
+
+	// The other side of the regression this test guards against: a limit that
+	// genuinely can't be resolved must still fail initialization, not be silently
+	// treated as a valid limit of 0.
+	t.Run("Internal/MissingLimitFails", func(t *testing.T) {
+		wantErr := errors.New("configmap my-config not found")
+		getter := func(_ context.Context, _ string) (int, error) { return 0, wantErr }
+		sem, err := newInternalSemaphore(ctx, "default/ConfigMap/my-config/workflow", nextWorkflow, getter, 0)
+		require.Error(t, err)
+		require.ErrorIs(t, err, wantErr)
+		assert.Nil(t, sem)
+	})
+
+	for _, dbType := range testDBTypes {
+		t.Run("Database/"+string(dbType)+"/MissingLimitFails", func(t *testing.T) {
+			info, deferfunc, _, err := createTestDBSession(ctx, t, dbType)
+			require.NoError(t, err)
+			defer deferfunc()
+
+			// Deliberately skip inserting a sync_limit row for this key, so the
+			// limit lookup fails (no row found) and initialization must return an
+			// error rather than treating the missing row as a limit of 0.
+			dbKey := "default/missing-database-sem"
+			sem, err := newDatabaseSemaphore(ctx, "missing-database-sem", dbKey, nextWorkflow, info, 0)
+			require.Error(t, err)
+			assert.Nil(t, sem)
+		})
+	}
 }
