@@ -44,8 +44,7 @@ const defaultNodeSize = 64;
 // multiples of 10% (e.g. 90%, 100%, 110%) and can return to exactly 100%.
 const zoomStep = defaultNodeSize / 10;
 const minNodeSize = zoomStep; // 10% minimum zoom
-const normalizeNodeSize = (size: number) =>
-    Math.max(minNodeSize, defaultNodeSize + Math.round((size - defaultNodeSize) / zoomStep) * zoomStep);
+const normalizeNodeSize = (size: number) => Math.max(minNodeSize, defaultNodeSize + Math.round((size - defaultNodeSize) / zoomStep) * zoomStep);
 
 const merge = (a: {[key: string]: boolean}, b: {[key: string]: boolean}) => b && Object.assign(Object.assign({}, b), a);
 
