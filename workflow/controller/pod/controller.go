@@ -65,7 +65,7 @@ func NewController(ctx context.Context, config *argoConfig.Config, restConfig *r
 		kubeclientset: clientSet,
 		wfInformer:    wfInformer,
 		workqueue:     metrics.RateLimiterWithBusyWorkers(ctx, workqueue.DefaultTypedControllerRateLimiter[string](), "pod_cleanup_queue"),
-		podInformer:   newInformer(ctx, clientSet, &config.InstanceID, &namespace),
+		podInformer:   newInformer(clientSet, &config.InstanceID, &namespace),
 		log:           log,
 		callBack:      callback,
 		restConfig:    restConfig,
@@ -282,7 +282,7 @@ func (c *Controller) deletePodEvent(ctx context.Context, obj any) {
 	c.commonPodEvent(ctx, pod, true)
 }
 
-func newWorkflowPodWatch(ctx context.Context, clientSet kubernetes.Interface, instanceID, namespace *string) *cache.ListWatch {
+func newWorkflowPodWatch(clientSet kubernetes.Interface, instanceID, namespace *string) *cache.ListWatch {
 	c := clientSet.CoreV1().Pods(*namespace)
 	// completed=false
 	labelSelector := labels.NewSelector().
@@ -291,7 +291,7 @@ func newWorkflowPodWatch(ctx context.Context, clientSet kubernetes.Interface, in
 		Add(*incompleteReq).
 		Add(util.InstanceIDRequirement(*instanceID))
 
-	listFunc := func(options metav1.ListOptions) (runtime.Object, error) {
+	listFunc := func(ctx context.Context, options metav1.ListOptions) (runtime.Object, error) {
 		options.LabelSelector = labelSelector.String()
 		var allPods []apiv1.Pod
 		continueTok := ""
@@ -314,16 +314,16 @@ func newWorkflowPodWatch(ctx context.Context, clientSet kubernetes.Interface, in
 		}
 		return &apiv1.PodList{Items: allPods}, nil
 	}
-	watchFunc := func(options metav1.ListOptions) (watch.Interface, error) {
+	watchFunc := func(ctx context.Context, options metav1.ListOptions) (watch.Interface, error) {
 		options.Watch = true
 		options.LabelSelector = labelSelector.String()
 		return c.Watch(ctx, options)
 	}
-	return &cache.ListWatch{ListFunc: listFunc, WatchFunc: watchFunc}
+	return &cache.ListWatch{ListWithContextFunc: listFunc, WatchFuncWithContext: watchFunc}
 }
 
-func newInformer(ctx context.Context, clientSet kubernetes.Interface, instanceID, namespace *string) cache.SharedIndexInformer {
-	source := newWorkflowPodWatch(ctx, clientSet, instanceID, namespace)
+func newInformer(clientSet kubernetes.Interface, instanceID, namespace *string) cache.SharedIndexInformer {
+	source := newWorkflowPodWatch(clientSet, instanceID, namespace)
 	informer := cache.NewSharedIndexInformer(cache.ToListWatcherWithWatchListSemantics(source, clientSet), &apiv1.Pod{}, podResyncPeriod, cache.Indexers{
 		indexes.WorkflowIndex: indexes.MetaWorkflowIndexFunc,
 		indexes.NodeIDIndex:   indexes.MetaNodeIDIndexFunc,

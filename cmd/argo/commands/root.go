@@ -2,7 +2,6 @@ package commands
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -21,7 +20,6 @@ import (
 
 	cmdutil "github.com/argoproj/argo-workflows/v4/util/cmd"
 	grpcutil "github.com/argoproj/argo-workflows/v4/util/grpc"
-	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
 const (
@@ -140,8 +138,7 @@ If your server is behind an ingress with a path (running "argo server --base-hre
 		}
 		ctx, log, err := cmdutil.ContextWithLogger(cmd, logLevel, logFormat)
 		if err != nil {
-			logging.InitLogger().WithError(err).WithFatal().Error(ctx, "Failed to create argo pre-run logger")
-			os.Exit(1)
+			cmdutil.FatalBootstrap(logFormat, err, "Failed to create argo pre-run logger")
 		}
 
 		cmdutil.SetGLogLevel(glogLevel)
@@ -163,8 +160,7 @@ If your server is behind an ingress with a path (running "argo server --base-hre
 	command.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enabled verbose logging, i.e. --loglevel debug")
 	cctx, log, err := cmdutil.ContextWithLogger(command, logLevel, logFormat)
 	if err != nil {
-		logging.InitLogger().WithError(err).WithFatal().Error(cctx, "Failed to create argo logger")
-		os.Exit(1)
+		cmdutil.FatalBootstrap(logFormat, err, "Failed to create argo logger")
 	}
 	command.SetContext(cctx)
 

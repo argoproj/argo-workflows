@@ -10,18 +10,11 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo-workflows/v4/util/env"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	controllercache "github.com/argoproj/argo-workflows/v4/workflow/controller/cache"
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/indexes"
 )
-
-var gcAfterNotHitDuration = env.LookupEnvDurationOr(logging.InitLoggerInContext(), "CACHE_GC_AFTER_NOT_HIT_DURATION", 30*time.Second)
-
-func init() {
-	logging.InitLogger().WithField("gcAfterNotHitDuration", gcAfterNotHitDuration).Info(context.Background(), "Memoization caches will be garbage-collected if they have not been hit after")
-}
 
 // syncAllCacheForGC syncs all cache for GC
 func (wfc *WorkflowController) syncAllCacheForGC(ctx context.Context) {
@@ -52,8 +45,8 @@ func (wfc *WorkflowController) cleanupUnusedCache(ctx context.Context, cm *apiv1
 		if err := json.Unmarshal([]byte(rawEntry), &entry); err != nil {
 			return fmt.Errorf("malformed cache entry: could not unmarshal JSON; unable to parse: %w", err)
 		}
-		if time.Since(entry.LastHitTimestamp.Time) > gcAfterNotHitDuration {
-			logger.WithFields(logging.Fields{"key": key, "configMap": cm.Name, "gcAfterNotHitDuration": gcAfterNotHitDuration}).Info(ctx, "Deleting entry in ConfigMap since it's not been hit")
+		if time.Since(entry.LastHitTimestamp.Time) > wfc.gcAfterNotHitDuration {
+			logger.WithFields(logging.Fields{"key": key, "configMap": cm.Name, "gcAfterNotHitDuration": wfc.gcAfterNotHitDuration}).Info(ctx, "Deleting entry in ConfigMap since it's not been hit")
 			delete(cm.Data, key)
 			modified = true
 		}

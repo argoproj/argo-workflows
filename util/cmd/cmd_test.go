@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"reflect"
 	"testing"
 
@@ -173,4 +174,18 @@ func TestPrintVersionMismatchWarning(t *testing.T) {
 			hook.Reset()
 		})
 	}
+}
+
+func TestFatalBootstrap(t *testing.T) {
+	var code int
+	logging.SetExitFunc(func(c int) { code = c })
+	defer logging.SetExitFunc(nil)
+
+	FatalBootstrap("json", errors.New("boom"), "failed to create logger")
+	assert.Equal(t, 1, code)
+
+	// an unparseable format must fall back, not recurse or panic
+	code = 0
+	FatalBootstrap("not-a-format", errors.New("boom"), "failed to create logger")
+	assert.Equal(t, 1, code)
 }

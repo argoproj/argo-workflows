@@ -306,16 +306,10 @@ func (s *ArtifactsSuite) TestStoppedWorkflow() {
 			SubmitWorkflow().
 			WaitForWorkflow(
 				fixtures.WorkflowCompletionOkay(true),
-				fixtures.Condition(func(wf *wfv1.Workflow) (bool, string) {
-					condition := "for artifacts to exist"
-
+				fixtures.Condition(func(_ *wfv1.Workflow) (bool, string) {
 					_, err1 := c.StatObject(ctx, "my-bucket-3", "on-deletion-wf-stopped-1", minio.StatObjectOptions{})
 					_, err2 := c.StatObject(ctx, "my-bucket-3", "on-deletion-wf-stopped-2", minio.StatObjectOptions{})
-
-					if err1 == nil && err2 == nil {
-						return true, condition
-					}
-					return false, condition
+					return err1 == nil && err2 == nil, "for artifacts to exist"
 				}))
 
 		then = when.Then()
