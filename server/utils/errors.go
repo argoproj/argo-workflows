@@ -72,8 +72,7 @@ func ToStatusError(err error, code codes.Code) error {
 	if alreadyConverted {
 		return err
 	}
-	var argoerr argoerrors.ArgoError
-	if errors.As(err, &argoerr) {
+	if argoerr, ok := errors.AsType[argoerrors.ArgoError](err); ok {
 		converted, newErr := httpToStatusError(argoerr.HTTPCode(), err.Error())
 		if converted {
 			return newErr
