@@ -192,7 +192,7 @@ func (s *SignalsSuite) TestSignaledContainerSet() {
 
 			two := status.Nodes.FindByDisplayName("two")
 			require.NotNil(t, two)
-			assert.Equal(t, wfv1.NodeFailed, two.Phase)
+			assert.Equal(t, wfv1.NodeError, two.Phase)
 			assert.Contains(t, two.Message, "(exit code 64)")
 			assert.Contains(t, two.Message, "died without reporting exit code")
 		})
