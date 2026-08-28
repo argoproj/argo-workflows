@@ -1777,3 +1777,22 @@ func TestSemaphoreStatus_LockAcquired_RemovesFromWaiting(t *testing.T) {
 		assert.Len(t, waiting.Holders, 2)
 	})
 }
+
+func TestSynchronizationStatus_GetStatus(t *testing.T) {
+	t.Run("nil pointers yield a nil interface", func(t *testing.T) {
+		ss := &SynchronizationStatus{}
+		// A typed nil (*SemaphoreStatus)(nil) inside the interface would be != nil,
+		// so callers guarding with `if s != nil` would then panic in LockReleased.
+		assert.Nil(t, ss.GetStatus(SynchronizationTypeSemaphore))
+		assert.Nil(t, ss.GetStatus(SynchronizationTypeMutex))
+	})
+	t.Run("set pointers are returned", func(t *testing.T) {
+		ss := &SynchronizationStatus{Semaphore: &SemaphoreStatus{}, Mutex: &MutexStatus{}}
+		assert.Same(t, ss.Semaphore, ss.GetStatus(SynchronizationTypeSemaphore))
+		assert.Same(t, ss.Mutex, ss.GetStatus(SynchronizationTypeMutex))
+	})
+	t.Run("unknown type panics", func(t *testing.T) {
+		ss := &SynchronizationStatus{}
+		assert.Panics(t, func() { ss.GetStatus(SynchronizationTypeUnknown) })
+	})
+}
