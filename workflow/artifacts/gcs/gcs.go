@@ -45,8 +45,7 @@ func isTransientGCSErr(ctx context.Context, err error) bool {
 	if errors.Is(err, io.ErrUnexpectedEOF) || errutil.IsTransientErr(ctx, err) {
 		return true
 	}
-	var googleErr *googleapi.Error
-	if errors.As(err, &googleErr) {
+	if googleErr, ok := errors.AsType[*googleapi.Error](err); ok {
 		// Retry on 429 and 5xx, according to
 		// https://cloud.google.com/storage/docs/exponential-backoff.
 		return googleErr.Code == 429 || (googleErr.Code >= 500 && googleErr.Code < 600)

@@ -50,8 +50,7 @@ func (we *WorkflowExecutor) ExecResource(ctx context.Context, action string, man
 		return nil
 	})
 	if err != nil {
-		var exErr *exec.ExitError
-		if errors.As(err, &exErr) {
+		if exErr, ok := errors.AsType[*exec.ExitError](err); ok {
 			errMsg := strings.TrimSpace(string(exErr.Stderr))
 			err = argoerrors.Wrap(err, argoerrors.CodeBadRequest, errMsg)
 		} else {
