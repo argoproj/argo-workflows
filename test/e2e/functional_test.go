@@ -1710,10 +1710,10 @@ spec:
 
 // TestContainerSetSiblingRunsToCompletion asserts that when one container in a
 // containerSet exits non-zero, sibling containers are allowed to run to
-// completion rather than being terminated early. This currently fails because
-// podHasContainerNeedingTermination (workflow/controller/operator.go) treats
-// every containerSet container as a "main" container, so any non-zero exit
-// causes cleanUpPod -> TerminateContainers on the whole pod.
+// completion rather than being terminated early.
+// podHasContainerNeedingTermination (workflow/controller/operator.go) only
+// terminates the pod once every main container has exited, so a failed
+// sibling no longer triggers cleanUpPod -> TerminateContainers early.
 func (s *FunctionalSuite) TestContainerSetSiblingRunsToCompletion() {
 	s.Given().
 		Workflow(`

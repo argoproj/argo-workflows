@@ -111,6 +111,13 @@ func runEmissary(ctx context.Context, containerName string, includeScriptOutput 
 	// this process is OOM-killed or SIGKILLed before writing exitcode.
 	lockFile, err = osspecific.Acquire(filepath.Join(varRunArgo, "ctr", containerName, "lock"))
 	if err != nil {
+		// Dependents block on the ready marker before anything else, and the
+		// controller no longer terminates the pod while a sibling is still
+		// running, so without it they would hang. Publish it best-effort;
+		// they then read the exitcode written by the defer above.
+		if writeErr := os.WriteFile(filepath.Join(varRunArgo, "ctr", containerName, "ready"), nil, 0o644); writeErr != nil {
+			logger.WithError(writeErr).Error(ctx, "failed to write ready marker after lock failure")
+		}
 		return fmt.Errorf("failed to acquire container lock: %w", err)
 	}
 

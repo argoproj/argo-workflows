@@ -38,16 +38,26 @@ func Acquire(path string) (*os.File, error) {
 // On ctx cancel, CancelIoEx aborts the pending lock and ctx.Err() is
 // returned.
 func WaitForSharedLock(ctx context.Context, path string) error {
-	f, err := os.OpenFile(path, os.O_RDWR, 0)
+	p, err := windows.UTF16PtrFromString(path)
+	if err != nil {
+		return fmt.Errorf("lock file path %q: %w", path, err)
+	}
+	// The handle must be opened for overlapped I/O: on a synchronous handle
+	// (which is what os.OpenFile creates) a contended LockFileEx blocks inside
+	// the call instead of returning ERROR_IO_PENDING, so it can never be
+	// cancelled. Share mode must allow the exclusive holder's open too.
+	h, err := windows.CreateFile(p,
+		windows.GENERIC_READ|windows.GENERIC_WRITE,
+		windows.FILE_SHARE_READ|windows.FILE_SHARE_WRITE|windows.FILE_SHARE_DELETE,
+		nil, windows.OPEN_EXISTING, windows.FILE_ATTRIBUTE_NORMAL|windows.FILE_FLAG_OVERLAPPED, 0)
 	if err != nil {
 		return fmt.Errorf("open lock file %q: %w", path, err)
 	}
-	h := windows.Handle(f.Fd())
 
 	// Manual-reset event so overlapped I/O completion can be waited on.
 	event, err := windows.CreateEvent(nil, 1, 0, nil)
 	if err != nil {
-		_ = f.Close()
+		_ = windows.CloseHandle(h)
 		return fmt.Errorf("create event: %w", err)
 	}
 	ov := windows.Overlapped{HEvent: event}
@@ -57,7 +67,7 @@ func WaitForSharedLock(ctx context.Context, path string) error {
 	release := func() {
 		_ = windows.UnlockFileEx(h, 0, lockBytesLow, lockBytesHigh, &ov)
 		_ = windows.CloseHandle(event)
-		_ = f.Close()
+		_ = windows.CloseHandle(h)
 	}
 
 	if lockErr == nil {
@@ -66,14 +76,17 @@ func WaitForSharedLock(ctx context.Context, path string) error {
 	}
 	if !errors.Is(lockErr, windows.ERROR_IO_PENDING) {
 		_ = windows.CloseHandle(event)
-		_ = f.Close()
+		_ = windows.CloseHandle(h)
 		return fmt.Errorf("wait for shared lock on %q: %w", path, lockErr)
 	}
 
+	// GetOverlappedResult with wait=true blocks on ov.HEvent and reports the
+	// operation's own status, so an aborted lock surfaces as an error rather
+	// than as a signalled event.
 	done := make(chan error, 1)
 	go func() {
-		_, werr := windows.WaitForSingleObject(event, windows.INFINITE)
-		done <- werr
+		var n uint32
+		done <- windows.GetOverlappedResult(h, &ov, &n, true)
 	}()
 
 	select {
