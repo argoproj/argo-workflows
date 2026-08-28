@@ -4275,11 +4275,19 @@ const (
 	SynchronizationTypeUnknown   SynchronizationType = "Unknown"
 )
 
+// GetStatus returns the status for the given lock type, or a nil interface
+// (not a typed nil pointer) when that status has not been initialised.
 func (ss *SynchronizationStatus) GetStatus(syncType SynchronizationType) SynchronizationAction {
 	switch syncType {
 	case SynchronizationTypeSemaphore:
+		if ss.Semaphore == nil {
+			return nil
+		}
 		return ss.Semaphore
 	case SynchronizationTypeMutex:
+		if ss.Mutex == nil {
+			return nil
+		}
 		return ss.Mutex
 	default:
 		panic("invalid syncType in GetStatus")
