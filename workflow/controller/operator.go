@@ -2160,6 +2160,20 @@ func buildRetryStrategyLocalScope(node *wfv1.NodeStatus, nodes wfv1.Nodes) map[s
 	localScope[varkeys.RetriesLastDuration.Template()] = fmt.Sprint(lastChildNode.GetDuration().Seconds())
 	localScope[varkeys.RetriesLastMessage.Template()] = lastChildNode.Message
 
+	// Mirror the template-substitution scope: expose the exit codes of ALL previous
+	// attempts (oldest first, comma-separated) so retryStrategy.expression can reference
+	// lastRetry.exitCodes as well. Validation allows it in both scopes, so without this
+	// an expression using it passes validation but resolves to nothing at runtime.
+	lastRetryExitCodes := make([]string, 0, len(childNodeIds))
+	for _, childID := range childNodeIds {
+		if childNode, err := nodes.Get(childID); err == nil {
+			if childNode.Outputs != nil && childNode.Outputs.ExitCode != nil {
+				lastRetryExitCodes = append(lastRetryExitCodes, *childNode.Outputs.ExitCode)
+			}
+		}
+	}
+	localScope[varkeys.RetriesExitCodes.Template()] = strings.Join(lastRetryExitCodes, ",")
+
 	return localScope
 }
 
