@@ -4191,3 +4191,28 @@ func TestPodResourceClaimsValidation(t *testing.T) {
 	err = validate(ctx, resourceClaimsOnStepsTemplate)
 	require.ErrorContains(t, err, "templates.main.resourceClaims is not supported for Steps templates, which do not create a pod")
 }
+
+// A template with a retryStrategy that references lastRetry.exitCodes in an expression must validate:
+// this exercises the retry-variable registration in validateTemplate (localParams + scope), so removing
+// the lastRetry.exitCodes placeholder would make validation fail to resolve the variable.
+var lastRetryExitCodesInExpression = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: last-retry-exit-codes-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    retryStrategy:
+      retryPolicy: Always
+    container:
+      image: alpine:3.23
+      command: [echo]
+      args: ["{{= 2 + len(filter(split(lastRetry.exitCodes, ','), {# == '137'})) }}"]
+`
+
+func TestLastRetryExitCodesResolvesInValidation(t *testing.T) {
+	err := validate(logging.TestContext(t.Context()), lastRetryExitCodesInExpression)
+	require.NoError(t, err)
+}
