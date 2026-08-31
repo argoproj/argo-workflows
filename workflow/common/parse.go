@@ -25,7 +25,6 @@ type ParseResult struct {
 }
 
 func ParseObjects(ctx context.Context, body []byte, strict bool) []ParseResult {
-	log := logging.RequireLoggerFromContext(ctx)
 	var res []ParseResult
 	if jsonpkg.IsJSON(body) {
 		un := &unstructured.Unstructured{}
@@ -38,25 +37,37 @@ func ParseObjects(ctx context.Context, body []byte, strict bool) []ParseResult {
 		return append(res, ParseResult{v, err})
 	}
 
-	for i, text := range yamlSeparator.Split(string(body), -1) {
+	for _, text := range yamlSeparator.Split(string(body), -1) {
 		if strings.TrimSpace(text) == "" {
 			continue
 		}
 		un := &unstructured.Unstructured{}
 		err := yaml.Unmarshal([]byte(text), un)
 		if err != nil {
-			// Only return an error if this is a kubernetes object, otherwise, print the error
-			if un.GetKind() != "" {
-				res = append(res, ParseResult{nil, err})
-			} else {
-				log.WithField("index", i).WithError(err).Error(ctx, "yaml file is not valid")
-			}
+			// the document is not valid YAML at all; return the error and let the
+			// caller decide whether to report it (lint) or log and skip it (submit)
+			res = append(res, ParseResult{nil, err})
 			continue
 		}
 		v, err := toWorkflowTypeYAML([]byte(text), un.GetKind(), strict)
 		if v != nil {
 			// only append when this is a Kubernetes object
 			res = append(res, ParseResult{v, err})
+		} else if err != nil && un.GetKind() != "" {
+			// the strict pass failed on a document of a known Argo kind (e.g. duplicate
+			// keys, which the non-strict unmarshal above silently accepts); return a typed
+			// empty object with the error so callers surface it instead of dropping the
+			// document and reporting "no linting errors found!". The kind and identity
+			// fields are copied over so callers can name the object in their reports.
+			obj := objectForKind(un.GetKind())
+			obj.SetName(un.GetName())
+			obj.SetGenerateName(un.GetGenerateName())
+			obj.SetNamespace(un.GetNamespace())
+			res = append(res, ParseResult{obj, err})
+		} else if err != nil {
+			// strict-pass failure on a document of unknown kind; return it like any
+			// other unparseable document
+			res = append(res, ParseResult{nil, err})
 		}
 	}
 	return res
@@ -124,6 +135,13 @@ func SplitWorkflowYAMLFile(ctx context.Context, body []byte, strict bool) ([]wfv
 	manifests := make([]wfv1.Workflow, 0)
 	for _, res := range ParseObjects(ctx, body, strict) {
 		obj, err := res.Object, res.Err
+		if obj == nil {
+			// could not parse to a kubernetes object at all
+			if err != nil {
+				log.WithError(err).Warn(ctx, "Ignoring unparseable document")
+			}
+			continue
+		}
 		v, ok := obj.(*wfv1.Workflow)
 		if !ok {
 			log.WithField("name", obj.GetName()).Warn(ctx, "Object is not of kind Workflow. Ignoring...")
@@ -143,6 +161,13 @@ func SplitWorkflowTemplateYAMLFile(ctx context.Context, body []byte, strict bool
 	manifests := make([]wfv1.WorkflowTemplate, 0)
 	for _, res := range ParseObjects(ctx, body, strict) {
 		obj, err := res.Object, res.Err
+		if obj == nil {
+			// could not parse to a kubernetes object at all
+			if err != nil {
+				log.WithError(err).Warn(ctx, "Ignoring unparseable document")
+			}
+			continue
+		}
 		v, ok := obj.(*wfv1.WorkflowTemplate)
 		if !ok {
 			log.WithField("name", obj.GetName()).Warn(ctx, "Object is not of kind WorkflowTemplate. Ignoring...")
@@ -162,6 +187,13 @@ func SplitCronWorkflowYAMLFile(ctx context.Context, body []byte, strict bool) ([
 	manifests := make([]wfv1.CronWorkflow, 0)
 	for _, res := range ParseObjects(ctx, body, strict) {
 		obj, err := res.Object, res.Err
+		if obj == nil {
+			// could not parse to a kubernetes object at all
+			if err != nil {
+				log.WithError(err).Warn(ctx, "Ignoring unparseable document")
+			}
+			continue
+		}
 		v, ok := obj.(*wfv1.CronWorkflow)
 		if !ok {
 			log.WithField("name", obj.GetName()).Warn(ctx, "Object is not of kind CronWorkflow. Ignoring...")
@@ -181,6 +213,13 @@ func SplitClusterWorkflowTemplateYAMLFile(ctx context.Context, body []byte, stri
 	manifests := make([]wfv1.ClusterWorkflowTemplate, 0)
 	for _, res := range ParseObjects(ctx, body, strict) {
 		obj, err := res.Object, res.Err
+		if obj == nil {
+			// could not parse to a kubernetes object at all
+			if err != nil {
+				log.WithError(err).Warn(ctx, "Ignoring unparseable document")
+			}
+			continue
+		}
 		v, ok := obj.(*wfv1.ClusterWorkflowTemplate)
 		if !ok {
 			log.WithField("name", obj.GetName()).Warn(ctx, "Object is not of kind ClusterWorkflowTemplate. Ignoring...")

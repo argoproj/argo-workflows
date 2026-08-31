@@ -348,3 +348,78 @@ func TestGetObjectName(t *testing.T) {
 		})
 	}
 }
+
+// TestLintDirectoryWithInvalidFile verifies that when linting a directory containing
+// many files, a file with a YAML error is reported by name instead of the whole
+// directory passing with "no linting errors found!" (#9550).
+func TestLintDirectoryWithInvalidFile(t *testing.T) {
+	dir := t.TempDir()
+	valid := `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: good-
+spec:
+  entrypoint: hello
+  templates:
+  - name: hello
+    container:
+      image: busybox
+      command: [cowsay]
+`
+	invalid := `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: bad-
+spec:
+  entrypoint: hello
+  templates:
+  - name: hello
+    steps:
+    - - name: oops
+  templates:
+  - name: hello
+    container:
+      image: busybox
+`
+	require.NoError(t, os.WriteFile(dir+"/good.yaml", []byte(valid), 0o600))
+	require.NoError(t, os.WriteFile(dir+"/bad.yaml", []byte(invalid), 0o600))
+
+	wfMock := &workflowmocks.WorkflowServiceClient{}
+	wfMock.On("LintWorkflow", mock.Anything, mock.Anything).Return(nil, nil)
+
+	ctx := logging.TestContext(t.Context())
+	res, err := Lint(ctx, &Options{
+		Files:          []string{dir},
+		Strict:         true, // CLI default
+		ServiceClients: ServiceClients{WorkflowsClient: wfMock},
+		Formatter:      formatterSimple{},
+	})
+	require.NoError(t, err)
+	assert.False(t, res.Success, "lint must fail when one file has a YAML error")
+	assert.Contains(t, res.Msg(), "bad.yaml", "the error must name the offending file")
+	assert.Contains(t, res.Msg(), `key "templates" already set in map`)
+	assert.Contains(t, res.Msg(), `in "bad-" (Workflow)`, "the object name must be reported when available")
+}
+
+// TestLintFileWithUnparseableYAML verifies that a file which is not valid YAML at all
+// fails the lint with the file name, instead of being skipped silently (#9550).
+func TestLintFileWithUnparseableYAML(t *testing.T) {
+	dir := t.TempDir()
+	broken := `foo: [
+`
+	require.NoError(t, os.WriteFile(dir+"/broken.yaml", []byte(broken), 0o600))
+
+	wfMock := &workflowmocks.WorkflowServiceClient{}
+
+	ctx := logging.TestContext(t.Context())
+	res, err := Lint(ctx, &Options{
+		Files:          []string{dir},
+		Strict:         true, // CLI default
+		ServiceClients: ServiceClients{WorkflowsClient: wfMock},
+		Formatter:      formatterSimple{},
+	})
+	require.NoError(t, err)
+	assert.False(t, res.Success, "lint must fail when a file is not valid YAML")
+	assert.Contains(t, res.Msg(), "broken.yaml", "the error must name the offending file")
+	assert.Contains(t, res.Msg(), "did not find expected node content")
+}
