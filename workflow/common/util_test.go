@@ -139,7 +139,12 @@ func TestParseObjects(t *testing.T) {
 	require.EqualError(t, res[0].Err, "json: unknown field \"doesNotExist\"")
 
 	invalidObj := []byte(`<div class="blah" style="display: none; outline: none;" tabindex="0"></div>`)
-	assert.Empty(t, ParseObjects(ctx, invalidObj, false))
+	res = ParseObjects(ctx, invalidObj, false)
+	// the document cannot be parsed into a Kubernetes object, so it is returned
+	// with a nil object and the error instead of being logged and dropped (#9550)
+	assert.Len(t, res, 1)
+	assert.Nil(t, res[0].Object)
+	assert.Error(t, res[0].Err)
 }
 
 func TestGetTemplateHolderString(t *testing.T) {
@@ -449,4 +454,66 @@ func TestProcessArgsAbsentOptional(t *testing.T) {
 		// Must NOT match IsMissingVariableErr, which would requeue the node forever.
 		assert.False(t, template.IsMissingVariableErr(err))
 	})
+}
+
+// TestParseObjectsDuplicateKeyIsReported verifies that a document of a known Argo kind
+// whose strict parsing fails (here: a duplicate `templates` key, which the non-strict
+// unmarshal silently accepts) is returned with a typed object and the error, instead of
+// being silently dropped. Silently dropping it made `argo lint` report "no linting
+// errors found!" and `argo submit` find nothing to submit (#9550).
+func TestParseObjectsDuplicateKeyIsReported(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	duplicateKeyWf := []byte(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: duplicate-key-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    container:
+      image: busybox
+      command: [cowsay]
+  templates:
+  - name: other
+    container:
+      image: busybox
+      command: [cowsay]
+`)
+	res := ParseObjects(ctx, duplicateKeyWf, true)
+	require.Len(t, res, 1, "the document must not be silently dropped")
+	require.NotNil(t, res[0].Object, "a typed object must be returned so callers can name it")
+	require.ErrorContains(t, res[0].Err, `key "templates" already set in map`)
+	assert.Equal(t, "duplicate-key-", res[0].Object.GetGenerateName())
+
+	// the same body must be accepted when strict mode is off
+	res = ParseObjects(ctx, duplicateKeyWf, false)
+	require.Len(t, res, 1)
+	require.NoError(t, res[0].Err)
+
+	// SplitWorkflowYAMLFile must propagate the error instead of returning nothing
+	_, err := SplitWorkflowYAMLFile(ctx, duplicateKeyWf, true)
+	require.ErrorContains(t, err, `key "templates" already set in map`)
+}
+
+// TestParseObjectsUnparseableDocumentIsReported verifies that a document which cannot
+// be parsed into a Kubernetes object at all is returned with a nil object and the
+// error, so linters can report which file failed (previously only logged, and
+// swallowed entirely by strict lints) (#9550).
+func TestParseObjectsUnparseableDocumentIsReported(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	brokenYAML := []byte(`foo: [
+`)
+	res := ParseObjects(ctx, brokenYAML, true)
+	require.Len(t, res, 1)
+	assert.Nil(t, res[0].Object)
+	require.ErrorContains(t, res[0].Err, "did not find expected node content")
+
+	// the HTML snippet previously used as a non-YAML fixture is still returned with
+	// its error (no kind detected) instead of being logged and dropped
+	invalidObj := []byte(`<div class="blah" style="display: none; outline: none;" tabindex="0"></div>`)
+	res = ParseObjects(ctx, invalidObj, false)
+	require.Len(t, res, 1)
+	assert.Nil(t, res[0].Object)
+	require.Error(t, res[0].Err)
 }
