@@ -50,11 +50,11 @@ describe('Login', () => {
             const {getAllByText, getByRole} = render(LoginWithHistory(createMemoryHistory()));
 
             const button = getAllByText('Login')[1];
-            fireEvent.change(getByRole('textbox'), {target: {value: 'test-token'}});
+            fireEvent.change(getByRole('textbox'), {target: {value: 'Bearer test-token'}});
             fireEvent.click(button);
 
             expect(button.getAttribute('href')).toBe('/');
-            expect(setCookie).toHaveBeenCalledWith('authorization', 'test-token');
+            expect(setCookie).toHaveBeenCalledWith('authorization', 'Bearer test-token');
         });
 
         it('responds to click with custom <base>', () => {
@@ -62,11 +62,43 @@ describe('Login', () => {
             const {getAllByText, getByRole} = render(LoginWithHistory(createMemoryHistory()));
 
             const button = getAllByText('Login')[1];
-            fireEvent.change(getByRole('textbox'), {target: {value: 'test123'}});
+            fireEvent.change(getByRole('textbox'), {target: {value: 'Bearer test123'}});
             fireEvent.click(button);
 
             expect(button.getAttribute('href')).toBe('/test/argo');
-            expect(setCookie).toHaveBeenCalledWith('authorization', 'test123');
+            expect(setCookie).toHaveBeenCalledWith('authorization', 'Bearer test123');
+        });
+
+        it('trims leading/trailing whitespace and newlines before setting the cookie', () => {
+            const {getAllByText, getByRole} = render(LoginWithHistory(createMemoryHistory()));
+
+            const button = getAllByText('Login')[1];
+            fireEvent.change(getByRole('textbox'), {target: {value: '\n Bearer test-token \n'}});
+            fireEvent.click(button);
+
+            expect(setCookie).toHaveBeenCalledWith('authorization', 'Bearer test-token');
+        });
+
+        it('shows a hint when the token does not start with "Bearer " or "Basic "', () => {
+            const {getByRole, queryByText} = render(LoginWithHistory(createMemoryHistory()));
+
+            fireEvent.change(getByRole('textbox'), {target: {value: 'test-token'}});
+
+            expect(queryByText(/should usually start with/)).not.toBeNull();
+        });
+
+        it('does not show a hint when the token starts with "Bearer "', () => {
+            const {getByRole, queryByText} = render(LoginWithHistory(createMemoryHistory()));
+
+            fireEvent.change(getByRole('textbox'), {target: {value: 'Bearer test-token'}});
+
+            expect(queryByText(/should usually start with/)).toBeNull();
+        });
+
+        it('does not show a hint when the token is empty', () => {
+            const {queryByText} = render(LoginWithHistory(createMemoryHistory()));
+
+            expect(queryByText(/should usually start with/)).toBeNull();
         });
     });
 
