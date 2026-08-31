@@ -2140,6 +2140,10 @@ func getRetryNodeChildrenIds(node *wfv1.NodeStatus, nodes wfv1.Nodes) []string {
 	return childrenIds
 }
 
+// buildRetryStrategyLocalScope returns the lastRetry.* variables for a retry node — the retries index,
+// the last retried child's exit code, status, duration, and message, and the exit-code history of all
+// previous attempts — for use in retryStrategy.expression. It returns an empty scope when the node has
+// no retried children yet.
 func buildRetryStrategyLocalScope(node *wfv1.NodeStatus, nodes wfv1.Nodes) map[string]any {
 	localScope := make(map[string]any)
 

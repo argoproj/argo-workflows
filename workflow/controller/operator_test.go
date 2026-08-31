@@ -10195,6 +10195,8 @@ func TestOperatorRetryExpression(t *testing.T) {
 	assert.Equal(t, "retryStrategy.expression evaluated to false", retryNode.Message)
 }
 
+// TestBuildRetryStrategyLocalScope verifies buildRetryStrategyLocalScope populates the lastRetry.*
+// variables from a retry node's child attempts.
 func TestBuildRetryStrategyLocalScope(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(operatorRetryExpression)
 	retryNode, err := wf.GetNodeByName("retry-script-9z9pv[1].retry")

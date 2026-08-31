@@ -4212,6 +4212,8 @@ spec:
       args: ["{{= 2 + len(filter(split(lastRetry.exitCodes, ','), {# == '137'})) }}"]
 `
 
+// TestLastRetryExitCodesResolvesInValidation verifies that a retryStrategy template referencing
+// lastRetry.exitCodes in an expression passes validation — i.e. the variable is registered in scope.
 func TestLastRetryExitCodesResolvesInValidation(t *testing.T) {
 	err := validate(logging.TestContext(t.Context()), lastRetryExitCodesInExpression)
 	require.NoError(t, err)
