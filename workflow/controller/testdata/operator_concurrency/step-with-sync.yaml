@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: steps-jklcl
+  namespace: default
+spec:
+  entrypoint: hello-hello-hello
+  templates:
+  -
+    name: hello-hello-hello
+    steps:
+    - - arguments:
+          parameters:
+          - name: message
+            value: hello1
+        name: hello1
+        template: whalesay
+    synchronization:
+      semaphores:
+        - configMapKeyRef:
+            key: step
+            name: my-config
+  -
+    container:
+      args:
+      - '{{inputs.parameters.message}}'
+      command:
+      - cowsay
+      image: docker/whalesay
+    inputs:
+      parameters:
+      - name: message
+    name: whalesay
