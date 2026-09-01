@@ -691,3 +691,155 @@ spec:
 	require.NoError(t, err)
 	require.Len(t, cwfts, 1)
 }
+
+// TestParseObjectsJSONBodyAndStrictSuccess verifies the JSON input branch and a
+// successful strict parse of a valid workflow (#9550).
+func TestParseObjectsJSONBodyAndStrictSuccess(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	validJSON := []byte(`{"apiVersion":"argoproj.io/v1alpha1","kind":"Workflow","metadata":{"generateName":"json-"},"spec":{"entrypoint":"whalesay","templates":[{"name":"whalesay","container":{"image":"busybox","command":["cowsay"]}}]}}`)
+	res := ParseObjects(ctx, validJSON, true)
+	require.Len(t, res, 1)
+	require.NoError(t, res[0].Err)
+	assert.Equal(t, "json-", res[0].Object.GetGenerateName())
+
+	invalidJSON := []byte(`{"kind":"Workflow","spec": BROKEN`)
+	res = ParseObjects(ctx, invalidJSON, true)
+	require.Len(t, res, 1)
+	require.Error(t, res[0].Err)
+
+	// a leading empty document is skipped silently
+	leadingEmpty := []byte("---\n" + validJSONWf)
+	res = ParseObjects(ctx, leadingEmpty, true)
+	require.Len(t, res, 1)
+	require.NoError(t, res[0].Err)
+}
+
+// validJSONWf is the JSON form of a valid workflow, shared by JSON-branch tests.
+var validJSONWf = `{"apiVersion":"argoproj.io/v1alpha1","kind":"Workflow","metadata":{"generateName":"json-"},"spec":{"entrypoint":"whalesay","templates":[{"name":"whalesay","container":{"image":"busybox","command":["cowsay"]}}]}}`
+
+// TestParseObjectsRemainingBranches covers the remaining ParseObjects paths: a JSON
+// document that unmarshals to an error, empty YAML documents between separators, a
+// kindless document whose strict conversion fails, the WorkflowEventBinding and
+// WorkflowTaskSet kinds, and both strict JSON decoding error paths (#9550).
+func TestParseObjectsRemainingBranches(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	// JSON input that carries a kind but fails the typed decode: the empty typed
+	// object is returned together with the error (obj != nil, err != nil branch)
+	badTypedJSON := []byte(`{"kind":"Workflow","metadata":{"name":{"nested":"not a string"}}}`)
+	res := ParseObjects(ctx, badTypedJSON, true)
+	require.Len(t, res, 1)
+	require.NotNil(t, res[0].Object)
+	require.ErrorContains(t, res[0].Err, "cannot unmarshal object into Go struct field")
+
+	// a JSON document that fails to unmarshal at all: the lenient unstructured
+	// decode also fails, no kind is detected, and the document is returned as
+	// {nil, err} so the linter reports it (line 33-35 branch, #9550)
+	brokenJSON := []byte(`{"kind":"Workflow","spec":[[[`)
+	res = ParseObjects(ctx, brokenJSON, true)
+	require.Len(t, res, 1)
+	assert.Nil(t, res[0].Object)
+	require.Error(t, res[0].Err)
+
+	// a JSON document whose kind field itself is malformed: unmarshal errors
+	// with the kind unset, so it falls through to the strict conversion which
+	// surfaces the type clash as an ObjectMeta strict decoding error
+	clashingKind := []byte(`{"kind":{"nested":true}}`)
+	res = ParseObjects(ctx, clashingKind, true)
+	require.Len(t, res, 1)
+	require.NotNil(t, res[0].Object)
+	require.ErrorContains(t, res[0].Err, `unknown field "kind"`)
+
+	// a JSON document where the kind is set but the body fails to unmarshal
+	// into the typed object: the empty typed object travels with the error
+	// (obj != nil, err != nil), which Split helpers then reject by error
+	lateTypedFailure := []byte(`{"kind":"Workflow","apiVersion":123}`)
+	res = ParseObjects(ctx, lateTypedFailure, true)
+	require.Len(t, res, 1)
+	require.NotNil(t, res[0].Object)
+	require.Error(t, res[0].Err)
+	_, splitErr := SplitWorkflowYAMLFile(ctx, lateTypedFailure, true)
+	require.Error(t, splitErr)
+
+	// an empty document between separators is skipped silently
+	emptyMiddle := []byte(validWf + "\n---\n---\n" + validWf)
+	res = ParseObjects(ctx, emptyMiddle, true)
+	require.Len(t, res, 2)
+
+	// a kindless document whose strict conversion fails returns {nil, err};
+	// YAMLToJSONStrict silently accepts the duplicate key, and the error comes
+	// from decoding into an ObjectMeta shell, which requires a kind
+	kindlessDup := []byte("a: 1\na: 2\n")
+	res = ParseObjects(ctx, kindlessDup, true)
+	require.Len(t, res, 1)
+	assert.Nil(t, res[0].Object)
+	require.ErrorContains(t, res[0].Err, "Object 'Kind' is missing")
+
+	// the remaining kinds produce typed objects
+	eventBinding := []byte(`apiVersion: argoproj.io/v1alpha1
+kind: WorkflowEventBinding
+metadata:
+  name: web
+spec:
+  event:
+    selector: "true"
+`)
+	res = ParseObjects(ctx, eventBinding, true)
+	require.Len(t, res, 1)
+	require.NoError(t, res[0].Err)
+	assert.Equal(t, "web", res[0].Object.GetName())
+
+	taskSet := []byte(`apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTaskSet
+metadata:
+  name: tasks
+spec:
+  tasks:
+    a:
+      container:
+        image: busybox
+        command: [cowsay]
+`)
+	res = ParseObjects(ctx, taskSet, true)
+	require.Len(t, res, 1)
+	require.NoError(t, res[0].Err)
+	assert.Equal(t, "tasks", res[0].Object.GetName())
+
+	// a strict decoding type error (not a strictness error) still surfaces
+	badType := []byte(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: bad-type-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    container:
+      image: busybox
+      command: [cowsay]
+  scheduledTime: not-a-time
+`)
+	res = ParseObjects(ctx, badType, true)
+	require.Len(t, res, 1)
+	require.Error(t, res[0].Err)
+
+	// unknown fields in strict mode surface with the object
+	unknownField := []byte(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: unknown-field-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    container:
+      image: busybox
+      command: [cowsay]
+  doesNotExist: true
+`)
+	res = ParseObjects(ctx, unknownField, true)
+	require.Len(t, res, 1)
+	require.NotNil(t, res[0].Object)
+	require.ErrorContains(t, res[0].Err, "unknown field")
+}
