@@ -134,12 +134,12 @@ func toWorkflowTypeJSON(body []byte, kind string, strict bool) (metav1.Object, e
 func SplitWorkflowYAMLFile(ctx context.Context, body []byte, strict bool) ([]wfv1.Workflow, error) {
 	log := logging.RequireLoggerFromContext(ctx)
 	manifests := make([]wfv1.Workflow, 0)
-	for _, res := range ParseObjects(ctx, body, strict) {
+	for i, res := range ParseObjects(ctx, body, strict) {
 		obj, err := res.Object, res.Err
 		if obj == nil {
 			// could not parse to a kubernetes object at all
 			if err != nil {
-				log.WithError(err).Warn(ctx, "Ignoring unparseable document")
+				log.WithField("index", i).WithError(err).Error(ctx, "yaml file is not valid")
 			}
 			continue
 		}
@@ -160,12 +160,12 @@ func SplitWorkflowYAMLFile(ctx context.Context, body []byte, strict bool) ([]wfv
 func SplitWorkflowTemplateYAMLFile(ctx context.Context, body []byte, strict bool) ([]wfv1.WorkflowTemplate, error) {
 	log := logging.RequireLoggerFromContext(ctx)
 	manifests := make([]wfv1.WorkflowTemplate, 0)
-	for _, res := range ParseObjects(ctx, body, strict) {
+	for i, res := range ParseObjects(ctx, body, strict) {
 		obj, err := res.Object, res.Err
 		if obj == nil {
 			// could not parse to a kubernetes object at all
 			if err != nil {
-				log.WithError(err).Warn(ctx, "Ignoring unparseable document")
+				log.WithField("index", i).WithError(err).Error(ctx, "yaml file is not valid")
 			}
 			continue
 		}
@@ -186,12 +186,12 @@ func SplitWorkflowTemplateYAMLFile(ctx context.Context, body []byte, strict bool
 func SplitCronWorkflowYAMLFile(ctx context.Context, body []byte, strict bool) ([]wfv1.CronWorkflow, error) {
 	log := logging.RequireLoggerFromContext(ctx)
 	manifests := make([]wfv1.CronWorkflow, 0)
-	for _, res := range ParseObjects(ctx, body, strict) {
+	for i, res := range ParseObjects(ctx, body, strict) {
 		obj, err := res.Object, res.Err
 		if obj == nil {
 			// could not parse to a kubernetes object at all
 			if err != nil {
-				log.WithError(err).Warn(ctx, "Ignoring unparseable document")
+				log.WithField("index", i).WithError(err).Error(ctx, "yaml file is not valid")
 			}
 			continue
 		}
@@ -212,12 +212,12 @@ func SplitCronWorkflowYAMLFile(ctx context.Context, body []byte, strict bool) ([
 func SplitClusterWorkflowTemplateYAMLFile(ctx context.Context, body []byte, strict bool) ([]wfv1.ClusterWorkflowTemplate, error) {
 	log := logging.RequireLoggerFromContext(ctx)
 	manifests := make([]wfv1.ClusterWorkflowTemplate, 0)
-	for _, res := range ParseObjects(ctx, body, strict) {
+	for i, res := range ParseObjects(ctx, body, strict) {
 		obj, err := res.Object, res.Err
 		if obj == nil {
 			// could not parse to a kubernetes object at all
 			if err != nil {
-				log.WithError(err).Warn(ctx, "Ignoring unparseable document")
+				log.WithField("index", i).WithError(err).Error(ctx, "yaml file is not valid")
 			}
 			continue
 		}
