@@ -7,6 +7,7 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -760,6 +761,60 @@ spec:
             strategy: OnWorkflowCompletion
             serviceAccountName: artgc-role-test-sa
 `
+
+var skippedArtifactGCWorkflow = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: art-gc-skipped-
+spec:
+  entrypoint: main
+  artifactGC:
+    forceFinalizerRemoval: true
+  templates:
+  - name: main
+    steps:
+    - - name: produce
+        template: produce
+        when: "false"
+  - name: produce
+    container:
+      image: argoproj/argosay:v2
+      command:
+        - sh
+        - -c
+      args:
+        - |
+          echo "hello" > /tmp/temporary-artifact-on-completion.txt
+    outputs:
+      artifacts:
+        - name: temporary-artifact-on-completion
+          path: /tmp/temporary-artifact-on-completion.txt
+          s3:
+            key: temporary-artifact-on-completion-skipped.txt
+          artifactGC:
+            strategy: OnWorkflowCompletion
+`
+
+// A skipped artifact-producing step means HasArtifactGC() is true but no GC pod is ever created; the finalizer
+// must still be removed under forceFinalizerRemoval.
+func (s *ArtifactsSuite) TestForceFinalizerRemovalWithoutGCPod() {
+	s.Given().
+		Workflow(skippedArtifactGCWorkflow).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(
+			fixtures.WorkflowCompletionOkay(true),
+			fixtures.Condition(func(wf *wfv1.Workflow) (bool, string) {
+				return wf.Status.Phase == wfv1.WorkflowSucceeded &&
+						!slices.Contains(wf.Finalizers, common.FinalizerArtifactGC),
+					"for artifact GC finalizer to be removed without a GC pod"
+			})).
+		Then().
+		ExpectWorkflow(func(t *testing.T, meta *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.NotContains(t, meta.Finalizers, common.FinalizerArtifactGC)
+		})
+}
 
 // create a ServiceAccount which won't be tied to the artifactgc role and attempt to use that service account in the GC Pod
 // Want to verify that this causes the ArtifactGCError Condition in the Workflow
