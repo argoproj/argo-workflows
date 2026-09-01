@@ -1001,8 +1001,8 @@ schema = 3
     version = "v2.140.0"
     hash = "sha256-TbA5ZdLRzxa7WRnz3zgPPtTplgC33eY9yKKqVFDrPWU="
   [mod."k8s.io/kube-openapi"]
-    version = "v0.0.0-20260721132016-d427ff9ee9ad"
-    hash = "sha256-/ZpSQoKak2V16wkm3voqS4oow2zCP5vJ4znIQQLKsLY="
+    version = "v0.0.0-20260821135717-be32def86098"
+    hash = "sha256-JtWjyKiZdcZNIEAp+lug42AFkH6BQpk3VQ7eE42Lkmo="
   [mod."k8s.io/kubectl"]
     version = "v0.35.4"
     hash = "sha256-F5GQjWI/xxoOnfxVW6IRJuQI38aVlXXeMcVhPFAadgk="
