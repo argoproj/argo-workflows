@@ -1,5 +1,7 @@
 import * as models from '../models';
+import {Pagination} from '../pagination';
 import requests from './requests';
+import {queryParams} from './utils';
 
 export const ClusterWorkflowTemplateService = {
     create(template: models.ClusterWorkflowTemplate) {
@@ -9,11 +11,8 @@ export const ClusterWorkflowTemplateService = {
             .then(res => res.body as models.ClusterWorkflowTemplate);
     },
 
-    list() {
-        return requests
-            .get(`api/v1/cluster-workflow-templates`)
-            .then(res => res.body as models.ClusterWorkflowTemplateList)
-            .then(list => list.items || []);
+    list(pagination?: Pagination) {
+        return requests.get(`api/v1/cluster-workflow-templates?${queryParams({pagination}).join('&')}`).then(res => res.body as models.ClusterWorkflowTemplateList);
     },
 
     get(name: string) {
