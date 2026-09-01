@@ -22,117 +22,15 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/sync"
 )
 
-const configMap = `
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: my-config
-data:
-  workflow: "2"
-  template: "1"
-  step: "1"
-`
+const configMap = "@testdata/operator_concurrency/semaphore-configmap.yaml"
 
-const wfWithSemaphore = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: hello-world
-  namespace: default
-spec:
-  entrypoint: whalesay
-  templates:
-    -
-      synchronization:
-        semaphores:
-          - configMapKeyRef:
-              key: template
-              name: my-config
-      container:
-        args:
-          - "hello world"
-        command:
-          - cowsay
-        image: "docker/whalesay:latest"
-      name: whalesay
-`
+const wfWithSemaphore = "@testdata/operator_concurrency/wf-with-semaphore.yaml"
 
-const ScriptWfWithSemaphore = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: script-wf
-  namespace: default
-spec:
-  entrypoint: scriptTmpl
-  templates:
-  - name: scriptTmpl
-    synchronization:
-      semaphores:
-        - configMapKeyRef:
-            key: template
-            name: my-config
-    script:
-      image: python:alpine3.23
-      command: ["python"]
-      # fail with a 66% probability
-      source: |
-        import random;
-        import sys;
-        exit_code = random.choice([0, 1, 1]);
-        sys.exit(exit_code)
-`
+const ScriptWfWithSemaphore = "@testdata/operator_concurrency/script-wf-with-semaphore.yaml"
 
-const ScriptWfWithSemaphoreDifferentNamespace = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: script-wf
-  namespace: default
-spec:
-  entrypoint: scriptTmpl
-  templates:
-  - name: scriptTmpl
-    synchronization:
-      semaphores:
-        - namespace: other
-          configMapKeyRef:
-            key: template
-            name: my-config
-    script:
-      image: python:alpine3.23
-      command: ["python"]
-      # fail with a 66% probability
-      source: |
-        import random;
-        import sys;
-        exit_code = random.choice([0, 1, 1]);
-        sys.exit(exit_code)
-`
+const ScriptWfWithSemaphoreDifferentNamespace = "@testdata/operator_concurrency/script-wf-with-semaphore-different-namespace.yaml"
 
-const ResourceWfWithSemaphore = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: resource-wf
-  namespace: default
-spec:
-  entrypoint: resourceTmpl
-  templates:
-  - name: resourceTmpl
-    synchronization:
-      semaphores:
-        - configMapKeyRef:
-            key: template
-            name: my-config
-    resource:
-      action: create
-      manifest: |
-        apiVersion: v1
-        kind: ConfigMap
-        metadata:
-          name: workflow-controller-configmap1
-`
+const ResourceWfWithSemaphore = "@testdata/operator_concurrency/resource-wf-with-semaphore.yaml"
 
 var workflowExistenceFunc = func(key string) bool {
 	return true
@@ -167,7 +65,7 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc, false)
 	var cm apiv1.ConfigMap
-	wfv1.MustUnmarshal([]byte(configMap), &cm)
+	wfv1.MustUnmarshal(configMap, &cm)
 	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	require.NoError(t, err)
 
@@ -228,7 +126,7 @@ func TestSemaphoreScriptTmplLevel(t *testing.T) {
 	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc, false)
 	var cm apiv1.ConfigMap
-	wfv1.MustUnmarshal([]byte(configMap), &cm)
+	wfv1.MustUnmarshal(configMap, &cm)
 	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	require.NoError(t, err)
 
@@ -288,7 +186,7 @@ func TestSemaphoreScriptConfigMapInDifferentNamespace(t *testing.T) {
 	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc, false)
 	var cm apiv1.ConfigMap
-	wfv1.MustUnmarshal([]byte(configMap), &cm)
+	wfv1.MustUnmarshal(configMap, &cm)
 	_, err := controller.kubeclientset.CoreV1().ConfigMaps("other").Create(ctx, &cm, metav1.CreateOptions{})
 	require.NoError(t, err)
 
@@ -350,7 +248,7 @@ func TestSemaphoreResourceTmplLevel(t *testing.T) {
 	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc, false)
 	var cm apiv1.ConfigMap
-	wfv1.MustUnmarshal([]byte(configMap), &cm)
+	wfv1.MustUnmarshal(configMap, &cm)
 	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	require.NoError(t, err)
 
@@ -432,32 +330,7 @@ func TestSemaphoreWithOutConfigMap(t *testing.T) {
 	})
 }
 
-var DAGWithMutex = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
- name: dag-mutex
- namespace: default
-spec:
- entrypoint: diamond
- templates:
- - name: diamond
-   dag:
-     tasks:
-     - name: A
-       template: mutex
-     - name: B
-       depends: A
-       template: mutex
-
- - name: mutex
-   synchronization:
-     mutexes:
-       - name: welcome
-   container:
-     image: alpine:3.23
-     command: [sh, -c, "exit 0"]
-`
+const DAGWithMutex = "@testdata/operator_concurrency/dag-with-mutex.yaml"
 
 func TestMutexInDAG(t *testing.T) {
 	assert := assert.New(t)
@@ -492,44 +365,7 @@ func TestMutexInDAG(t *testing.T) {
 	})
 }
 
-var DAGWithInterpolatedMutex = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
- name: dag-mutex
- namespace: default
-spec:
- entrypoint: diamond
- templates:
- - name: diamond
-   dag:
-     tasks:
-     - name: A
-       template: mutex
-       arguments:
-         parameters:
-         - name: message
-           value: foo/bar
-
-     - name: B
-       depends: A
-       template: mutex
-       arguments:
-         parameters:
-         - name: message
-           value: foo/bar
-
- - name: mutex
-   synchronization:
-     mutexes:
-       - name: '{{=sprig.replace("/", "-", inputs.parameters.message)}}'
-   inputs:
-     parameters:
-     - name: message
-   container:
-     image: alpine:3.23
-     command: [sh, -c, "echo {{inputs.parameters.message}}"]
-`
+const DAGWithInterpolatedMutex = "@testdata/operator_concurrency/dag-with-interpolated-mutex.yaml"
 
 func TestMutexInDAGWithInterpolation(t *testing.T) {
 	assert := assert.New(t)
@@ -565,36 +401,7 @@ func TestMutexInDAGWithInterpolation(t *testing.T) {
 	})
 }
 
-const RetryWfWithSemaphore = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: script-wf
-  namespace: default
-spec:
-  entrypoint: step1
-  retryStrategy:
-    limit: 10
-  templates:
-    - name: step1
-      steps:
-        - - name: hello1
-            template: whalesay
-        - - name: hello2
-            template: whalesay
-    - name: whalesay
-      synchronization:
-        semaphores:
-          - configMapKeyRef:
-              key: template
-              name: my-config
-      container:
-        args:
-          - "hello world"
-        command:
-          - cowsay
-        image: "docker/whalesay:latest"
-`
+const RetryWfWithSemaphore = "@testdata/operator_concurrency/retry-wf-with-semaphore.yaml"
 
 func TestSynchronizationWithRetry(t *testing.T) {
 	assert := assert.New(t)
@@ -604,7 +411,7 @@ func TestSynchronizationWithRetry(t *testing.T) {
 	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc, false)
 	var cm apiv1.ConfigMap
-	wfv1.MustUnmarshal([]byte(configMap), &cm)
+	wfv1.MustUnmarshal(configMap, &cm)
 	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	require.NoError(t, err)
 	t.Run("WorkflowWithRetry", func(t *testing.T) {
@@ -644,165 +451,9 @@ func TestSynchronizationWithRetry(t *testing.T) {
 	})
 }
 
-const StepWithSync = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: steps-jklcl
-  namespace: default
-spec:
-  entrypoint: hello-hello-hello
-  templates:
-  -
-    name: hello-hello-hello
-    steps:
-    - - arguments:
-          parameters:
-          - name: message
-            value: hello1
-        name: hello1
-        template: whalesay
-    synchronization:
-      semaphores:
-        - configMapKeyRef:
-            key: step
-            name: my-config
-  -
-    container:
-      args:
-      - '{{inputs.parameters.message}}'
-      command:
-      - cowsay
-      image: docker/whalesay
-    inputs:
-      parameters:
-      - name: message
-    name: whalesay
-`
+const StepWithSync = "@testdata/operator_concurrency/step-with-sync.yaml"
 
-const StepWithSyncStatus = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: steps-jklcl
-  namespace: default
-spec:
-  entrypoint: hello-hello-hello
-  templates:
-  - inputs: {}
-    name: hello-hello-hello
-    steps:
-    - - arguments:
-          parameters:
-          - name: message
-            value: hello1
-        name: hello1
-        template: whalesay
-    synchronization:
-      semaphores:
-        - configMapKeyRef:
-            key: step
-            name: my-config
-  - container:
-      args:
-      - '{{inputs.parameters.message}}'
-      command:
-      - cowsay
-      image: docker/whalesay
-      resources: {}
-    inputs:
-      parameters:
-      - name: message
-    name: whalesay
-status:
-  artifactRepositoryRef:
-    configMap: artifact-repositories
-    key: default-v1
-    namespace: argo
-  conditions:
-  - status: "False"
-    type: PodRunning
-  - status: "True"
-    type: Completed
-  finishedAt: "2021-02-11T19:46:55Z"
-  nodes:
-    steps-jklcl:
-      children:
-      - steps-jklcl-3895081407
-      displayName: steps-jklcl
-      finishedAt: "2021-02-11T19:46:55Z"
-      id: steps-jklcl
-      name: steps-jklcl
-      outboundNodes:
-      - steps-jklcl-969694128
-      phase: Running
-      progress: 1/1
-      resourcesDuration:
-        cpu: 7
-        memory: 4
-      startedAt: "2021-02-11T19:46:33Z"
-      templateName: hello-hello-hello
-      templateScope: local/steps-jklcl
-      type: Steps
-    steps-jklcl-969694128:
-      boundaryID: steps-jklcl
-      displayName: hello1
-      finishedAt: "2021-02-11T19:46:44Z"
-      id: steps-jklcl-969694128
-      inputs:
-        parameters:
-        - name: message
-          value: hello1
-      name: steps-jklcl[0].hello1
-      outputs:
-        artifacts:
-        - archiveLogs: true
-          name: main-logs
-          s3:
-            accessKeySecret:
-              key: accesskey
-              name: my-minio-cred
-            bucket: my-bucket
-            endpoint: minio:9000
-            insecure: true
-            key: steps-jklcl/steps-jklcl-969694128/main.log
-            secretKeySecret:
-              key: secretkey
-              name: my-minio-cred
-        exitCode: "0"
-      phase: Succeeded
-      progress: 1/1
-      resourcesDuration:
-        cpu: 7
-        memory: 4
-      startedAt: "2021-02-11T19:46:33Z"
-      templateName: whalesay
-      templateScope: local/steps-jklcl
-      type: Pod
-    steps-jklcl-3895081407:
-      boundaryID: steps-jklcl
-      children:
-      - steps-jklcl-969694128
-      displayName: '[0]'
-      finishedAt: "2021-02-11T19:46:55Z"
-      id: steps-jklcl-3895081407
-      name: steps-jklcl[0]
-      phase: Succeeded
-      progress: 1/1
-      resourcesDuration:
-        cpu: 7
-        memory: 4
-      startedAt: "2021-02-11T19:46:33Z"
-      templateScope: local/steps-jklcl
-      type: StepGroup
-  phase: Succeeded
-  progress: 1/1
-  resourcesDuration:
-    cpu: 7
-    memory: 4
-  startedAt: "2021-02-11T19:46:33Z"
-
-`
+const StepWithSyncStatus = "@testdata/operator_concurrency/step-with-sync-status.yaml"
 
 func TestSynchronizationWithStep(t *testing.T) {
 	assert := assert.New(t)
@@ -812,7 +463,7 @@ func TestSynchronizationWithStep(t *testing.T) {
 	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc, false)
 	var cm apiv1.ConfigMap
-	wfv1.MustUnmarshal([]byte(configMap), &cm)
+	wfv1.MustUnmarshal(configMap, &cm)
 	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	require.NoError(t, err)
 
@@ -855,31 +506,7 @@ func TestSynchronizationWithStep(t *testing.T) {
 	})
 }
 
-const wfWithStepRetry = `apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: my-workflow-
-spec:
-  entrypoint: step-entry
-  templates:
-    - name: step-entry
-      steps:
-      - - name: step1
-          template: sleep
-
-    - name: sleep
-      retryStrategy:
-        limit: 5
-        retryPolicy: Always
-      synchronization:
-        semaphores:
-          - configMapKeyRef:
-              name: my-config
-              key: template
-      container:
-        image: alpine:3.23
-        command: [sh, -c]
-        args: ["sleep 300"]`
+const wfWithStepRetry = "@testdata/operator_concurrency/wf-with-step-retry.yaml"
 
 func TestSynchronizationWithStepRetry(t *testing.T) {
 	assert := assert.New(t)
@@ -889,7 +516,7 @@ func TestSynchronizationWithStepRetry(t *testing.T) {
 	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
 	}, workflowExistenceFunc, false)
 	var cm apiv1.ConfigMap
-	wfv1.MustUnmarshal([]byte(configMap), &cm)
+	wfv1.MustUnmarshal(configMap, &cm)
 	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
 	require.NoError(t, err)
 
@@ -927,23 +554,7 @@ func TestSynchronizationWithStepRetry(t *testing.T) {
 	})
 }
 
-const pendingWfWithShutdownStrategy = `apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: synchronization-wf-level
-  namespace: default
-spec:
-  entrypoint: whalesay
-  onExit: whalesay
-  synchronization:
-    mutexes:
-      - name:  test
-  templates:
-    - name: whalesay
-      container:
-        image: docker/whalesay:latest
-        command: [sh, -c]
-        args: ["sleep 99999"]`
+const pendingWfWithShutdownStrategy = "@testdata/operator_concurrency/pending-wf-with-shutdown-strategy.yaml"
 
 func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
 	cancel, controller := newController(logging.TestContext(t.Context()))
@@ -1070,48 +681,7 @@ func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
 }
 
 func TestWorkflowMemoizationWithMutex(t *testing.T) {
-	wf := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: example-steps-simple
-  namespace: default
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      steps:
-        - - name: job-1
-            template: sleep
-            arguments:
-              parameters:
-                - name: sleep_duration
-                  value: 10
-          - name: job-2
-            template: sleep
-            arguments:
-              parameters:
-                - name: sleep_duration
-                  value: 5
-
-    - name: sleep
-      synchronization:
-        mutexes:
-          - name: mutex-example-steps-simple
-      inputs:
-        parameters:
-          - name: sleep_duration
-      script:
-        image: alpine:3.23
-        command: [/bin/sh]
-        source: |
-          echo "Sleeping for {{ inputs.parameters.sleep_duration }}"
-          sleep {{ inputs.parameters.sleep_duration }}
-      memoize:
-        key: "memo-key-1"
-        cache:
-          configMap:
-            name: cache-example-steps-simple
-    `)
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/operator_concurrency/wf-memoization-with-mutex.yaml")
 	wf.Name = "example-steps-simple-gas12"
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx, wf)
@@ -1158,65 +728,11 @@ spec:
 	}
 }
 
-const bareWfWithTmplMutex = `apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: tmpl-mutex-bare
-  namespace: default
-spec:
-  entrypoint: whalesay
-  templates:
-    - name: whalesay
-      synchronization:
-        mutexes:
-          - name: tmpl-shutdown-test
-      container:
-        image: docker/whalesay:latest
-        command: [sh, -c]
-        args: ["sleep 99999"]`
+const bareWfWithTmplMutex = "@testdata/operator_concurrency/bare-wf-with-tmpl-mutex.yaml"
 
-const stepsWfWithTmplMutex = `apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: tmpl-mutex-steps
-  namespace: default
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      steps:
-        - - name: locked
-            template: whalesay
-    - name: whalesay
-      synchronization:
-        mutexes:
-          - name: tmpl-shutdown-test
-      container:
-        image: docker/whalesay:latest
-        command: [sh, -c]
-        args: ["sleep 99999"]`
+const stepsWfWithTmplMutex = "@testdata/operator_concurrency/steps-wf-with-tmpl-mutex.yaml"
 
-const dagWfWithTmplMutex = `apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: tmpl-mutex-dag
-  namespace: default
-spec:
-  entrypoint: main
-  templates:
-    - name: main
-      dag:
-        tasks:
-          - name: locked
-            template: whalesay
-    - name: whalesay
-      synchronization:
-        mutexes:
-          - name: tmpl-shutdown-test
-      container:
-        image: docker/whalesay:latest
-        command: [sh, -c]
-        args: ["sleep 99999"]`
+const dagWfWithTmplMutex = "@testdata/operator_concurrency/dag-wf-with-tmpl-mutex.yaml"
 
 // TestShutdownWaitingForTmplLevelLock ensures that shutting down a workflow
 // whose node is still waiting to acquire a template-level synchronization lock

@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: resource-wf
+  namespace: default
+spec:
+  entrypoint: resourceTmpl
+  templates:
+  - name: resourceTmpl
+    synchronization:
+      semaphores:
+        - configMapKeyRef:
+            key: template
+            name: my-config
+    resource:
+      action: create
+      manifest: |
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: workflow-controller-configmap1
