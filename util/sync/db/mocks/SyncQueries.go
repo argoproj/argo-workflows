@@ -1265,16 +1265,16 @@ func (_c *SyncQueries_ReleaseHeld_Call) RunAndReturn(run func(ctx context.Contex
 }
 
 // RemoveFromQueue provides a mock function for the type SyncQueries
-func (_mock *SyncQueries) RemoveFromQueue(ctx context.Context, semaphoreName string, holderKey string) error {
-	ret := _mock.Called(ctx, semaphoreName, holderKey)
+func (_mock *SyncQueries) RemoveFromQueue(ctx context.Context, semaphoreName string, holderKey string, controllerName string) error {
+	ret := _mock.Called(ctx, semaphoreName, holderKey, controllerName)
 
 	if len(ret) == 0 {
 		panic("no return value specified for RemoveFromQueue")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
-		r0 = returnFunc(ctx, semaphoreName, holderKey)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string) error); ok {
+		r0 = returnFunc(ctx, semaphoreName, holderKey, controllerName)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -1290,11 +1290,12 @@ type SyncQueries_RemoveFromQueue_Call struct {
 //   - ctx context.Context
 //   - semaphoreName string
 //   - holderKey string
-func (_e *SyncQueries_Expecter) RemoveFromQueue(ctx interface{}, semaphoreName interface{}, holderKey interface{}) *SyncQueries_RemoveFromQueue_Call {
-	return &SyncQueries_RemoveFromQueue_Call{Call: _e.mock.On("RemoveFromQueue", ctx, semaphoreName, holderKey)}
+//   - controllerName string
+func (_e *SyncQueries_Expecter) RemoveFromQueue(ctx interface{}, semaphoreName interface{}, holderKey interface{}, controllerName interface{}) *SyncQueries_RemoveFromQueue_Call {
+	return &SyncQueries_RemoveFromQueue_Call{Call: _e.mock.On("RemoveFromQueue", ctx, semaphoreName, holderKey, controllerName)}
 }
 
-func (_c *SyncQueries_RemoveFromQueue_Call) Run(run func(ctx context.Context, semaphoreName string, holderKey string)) *SyncQueries_RemoveFromQueue_Call {
+func (_c *SyncQueries_RemoveFromQueue_Call) Run(run func(ctx context.Context, semaphoreName string, holderKey string, controllerName string)) *SyncQueries_RemoveFromQueue_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -1308,10 +1309,15 @@ func (_c *SyncQueries_RemoveFromQueue_Call) Run(run func(ctx context.Context, se
 		if args[2] != nil {
 			arg2 = args[2].(string)
 		}
+		var arg3 string
+		if args[3] != nil {
+			arg3 = args[3].(string)
+		}
 		run(
 			arg0,
 			arg1,
 			arg2,
+			arg3,
 		)
 	})
 	return _c
@@ -1322,7 +1328,7 @@ func (_c *SyncQueries_RemoveFromQueue_Call) Return(err error) *SyncQueries_Remov
 	return _c
 }
 
-func (_c *SyncQueries_RemoveFromQueue_Call) RunAndReturn(run func(ctx context.Context, semaphoreName string, holderKey string) error) *SyncQueries_RemoveFromQueue_Call {
+func (_c *SyncQueries_RemoveFromQueue_Call) RunAndReturn(run func(ctx context.Context, semaphoreName string, holderKey string, controllerName string) error) *SyncQueries_RemoveFromQueue_Call {
 	_c.Call.Return(run)
 	return _c
 }
