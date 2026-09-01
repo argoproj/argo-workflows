@@ -517,3 +517,177 @@ func TestParseObjectsUnparseableDocumentIsReported(t *testing.T) {
 	assert.Nil(t, res[0].Object)
 	require.Error(t, res[0].Err)
 }
+
+// TestSplitHelpersUnparseableDocumentIsSkipped verifies that a document which cannot
+// be parsed into a Kubernetes object at all is logged-and-skipped by the Split helpers
+// instead of panicking on a nil object (#9550).
+func TestSplitHelpersUnparseableDocumentIsSkipped(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	mixed := []byte(`foo: [
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: mixed-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    container:
+      image: busybox
+      command: [cowsay]
+`)
+
+	wfs, err := SplitWorkflowYAMLFile(ctx, mixed, false)
+	require.NoError(t, err)
+	require.Len(t, wfs, 1)
+
+	wfts, err := SplitWorkflowTemplateYAMLFile(ctx, mixed, false)
+	require.NoError(t, err)
+	assert.Empty(t, wfts)
+
+	cwfs, err := SplitCronWorkflowYAMLFile(ctx, mixed, false)
+	require.NoError(t, err)
+	assert.Empty(t, cwfs)
+
+	cwfts, err := SplitClusterWorkflowTemplateYAMLFile(ctx, mixed, false)
+	require.NoError(t, err)
+	assert.Empty(t, cwfts)
+}
+
+// TestSplitWorkflowTemplateDuplicateKeyIsReported verifies the strict duplicate-key
+// error is propagated by every Split helper for its own kind (#9550).
+func TestSplitWorkflowTemplateDuplicateKeyIsReported(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	duplicateKeyWft := []byte(`apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: duplicate-key
+spec:
+  templates:
+  - name: a
+    container:
+      image: busybox
+      command: [cowsay]
+  templates:
+  - name: b
+    container:
+      image: busybox
+      command: [cowsay]
+`)
+	_, err := SplitWorkflowTemplateYAMLFile(ctx, duplicateKeyWft, true)
+	require.ErrorContains(t, err, `key "templates" already set in map`)
+
+	// non-strict mode accepts the document
+	wfts, err := SplitWorkflowTemplateYAMLFile(ctx, duplicateKeyWft, false)
+	require.NoError(t, err)
+	require.Len(t, wfts, 1)
+}
+
+// TestSplitCronWorkflowDuplicateKeyIsReported verifies the strict duplicate-key error
+// is propagated for CronWorkflows too (#9550).
+func TestSplitCronWorkflowDuplicateKeyIsReported(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	duplicateKeyCwf := []byte(`apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: duplicate-key
+spec:
+  schedule: "* * * * *"
+  concurrencyPolicy: Allow
+  workflowMetadata:
+    labels:
+      example: test
+  workflowSpec:
+    entrypoint: whalesay
+    templates:
+    - name: whalesay
+      container:
+        image: busybox
+        command: [cowsay]
+    templates:
+    - name: other
+      container:
+        image: busybox
+        command: [cowsay]
+`)
+	_, err := SplitCronWorkflowYAMLFile(ctx, duplicateKeyCwf, true)
+	require.ErrorContains(t, err, `key "templates" already set in map`)
+
+	cwfs, err := SplitCronWorkflowYAMLFile(ctx, duplicateKeyCwf, false)
+	require.NoError(t, err)
+	require.Len(t, cwfs, 1)
+}
+
+// TestParseObjectsUnknownKindStrictFailureIsReported verifies that a strict-pass
+// failure on a document whose kind is not an Argo kind returns an ObjectMeta shell
+// with the error; the Split helpers then skip it as a non-argo object (#9550).
+func TestParseObjectsUnknownKindStrictFailureIsReported(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	unknownKind := []byte(`apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: foo
+data:
+  key: value
+  key: duplicated
+`)
+	res := ParseObjects(ctx, unknownKind, true)
+	require.Len(t, res, 1)
+	require.ErrorContains(t, res[0].Err, `key "key" already set in map`)
+	obj, ok := res[0].Object.(*metav1.ObjectMeta)
+	require.True(t, ok, "a non-argo kind must surface as an ObjectMeta shell")
+	assert.Equal(t, "foo", obj.Name)
+
+	// Split helpers log-and-skip it as a non-argo object
+	wfs, err := SplitWorkflowYAMLFile(ctx, unknownKind, true)
+	require.NoError(t, err)
+	assert.Empty(t, wfs)
+}
+
+// TestParseObjectsKindlessDuplicateKeyIsReported verifies that a document without a
+// kind whose strict parse fails (duplicate keys) is returned with a nil object and
+// the error (#9550).
+func TestParseObjectsKindlessDuplicateKeyIsReported(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	kindlessDup := []byte(`metadata:
+  name: foo
+data:
+  key: value
+  key: duplicated
+`)
+	res := ParseObjects(ctx, kindlessDup, true)
+	require.Len(t, res, 1)
+	assert.Nil(t, res[0].Object)
+	// the strict JSON decode of an ObjectMeta shell fails on the missing kind
+	// before the duplicate-key check; the point is that the error surfaces
+	require.ErrorContains(t, res[0].Err, "Object 'Kind' is missing")
+}
+
+// TestSplitClusterWorkflowTemplateDuplicateKeyIsReported verifies the strict
+// duplicate-key error is propagated for ClusterWorkflowTemplates too (#9550).
+func TestSplitClusterWorkflowTemplateDuplicateKeyIsReported(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	duplicateKeyCwft := []byte(`apiVersion: argoproj.io/v1alpha1
+kind: ClusterWorkflowTemplate
+metadata:
+  name: duplicate-key
+spec:
+  templates:
+  - name: a
+    container:
+      image: busybox
+      command: [cowsay]
+  templates:
+  - name: b
+    container:
+      image: busybox
+      command: [cowsay]
+`)
+	_, err := SplitClusterWorkflowTemplateYAMLFile(ctx, duplicateKeyCwft, true)
+	require.ErrorContains(t, err, `key "templates" already set in map`)
+
+	cwfts, err := SplitClusterWorkflowTemplateYAMLFile(ctx, duplicateKeyCwft, false)
+	require.NoError(t, err)
+	require.Len(t, cwfts, 1)
+}
