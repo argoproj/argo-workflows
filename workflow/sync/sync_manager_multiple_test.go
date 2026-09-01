@@ -5,6 +5,7 @@ package sync
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -54,6 +55,12 @@ func checkCannotAcquire(ctx context.Context, t *testing.T, syncMgr *Manager, wf 
 }
 
 func setupMultipleLockManagers(t *testing.T, dbType sqldb.DBType, semaphoreSize int) (context.Context, func(), *Manager, *Manager) {
+	return setupMultipleLockManagersWithExistence(t, dbType, semaphoreSize, WorkflowExistenceFunc, WorkflowExistenceFunc)
+}
+
+// setupMultipleLockManagersWithExistence is setupMultipleLockManagers with control over what each
+// controller's informer reports, which garbage collection depends on.
+func setupMultipleLockManagersWithExistence(t *testing.T, dbType sqldb.DBType, semaphoreSize int, workflowExists1, workflowExists2 WorkflowExists) (context.Context, func(), *Manager, *Manager) {
 	ctx, cancel := context.WithCancel(logging.TestContext(t.Context()))
 	// Create a database session for the semaphore
 	info, deferfn, cfg, err := createTestDBSession(ctx, t, dbType)
@@ -69,12 +76,12 @@ func setupMultipleLockManagers(t *testing.T, dbType sqldb.DBType, semaphoreSize 
 	require.NoError(t, err)
 
 	// Create two sync managers with the same database session
-	syncMgr1 := createLockManager(ctx, info.SessionProxy, &cfg, func(_ context.Context, _ string) (int, error) { return 2, nil }, func(key string) {}, WorkflowExistenceFunc)
+	syncMgr1 := createLockManager(ctx, info.SessionProxy, &cfg, func(_ context.Context, _ string) (int, error) { return 2, nil }, func(key string) {}, workflowExists1)
 	require.NotNil(t, syncMgr1)
 	require.NotNil(t, syncMgr1.dbInfo.SessionProxy.Session())
 	// Second controller
 	cfg.ControllerName = "test2"
-	syncMgr2 := createLockManager(ctx, info.SessionProxy, &cfg, func(_ context.Context, _ string) (int, error) { return 2, nil }, func(key string) {}, WorkflowExistenceFunc)
+	syncMgr2 := createLockManager(ctx, info.SessionProxy, &cfg, func(_ context.Context, _ string) (int, error) { return 2, nil }, func(key string) {}, workflowExists2)
 	require.NotNil(t, syncMgr2)
 	require.NotNil(t, syncMgr2.dbInfo.SessionProxy.Session())
 	return ctx, deferfn2, syncMgr1, syncMgr2
@@ -233,6 +240,63 @@ func testSyncManagersContendingForSemaphore(t *testing.T, dbType sqldb.DBType) {
 	// Verify that at no point were multiple locks held
 	if maxLockCount > 1 {
 		t.Errorf("Multiple locks were held simultaneously: %d", maxLockCount)
+	}
+}
+
+// testGCKeepsOtherControllersPendingRowsForDB checks that one controller's queue garbage
+// collection leaves the pending rows of other controllers alone. The GC lists the shared state
+// table but validates each key against its own informer, where another controller's workflows
+// never appear, so without a controller condition on the delete it evicts their queue entries
+// every time it runs.
+func testGCKeepsOtherControllersPendingRowsForDB(t *testing.T, dbType sqldb.DBType) {
+	// Each controller's informer only knows about its own workflow.
+	onlyKnows := func(name string) WorkflowExists {
+		return func(key string) bool { return strings.Contains(key, name) }
+	}
+	ctx, deferfn, syncMgr1, syncMgr2 := setupMultipleLockManagersWithExistence(t, dbType, 1, onlyKnows("wf-01"), onlyKnows("wf-02"))
+	defer deferfn()
+
+	wf01 := wfv1.MustUnmarshalWorkflow(wfWithDatabaseSemaphore)
+	wf01.CreationTimestamp = metav1.Time{Time: time.Now().Add(-2 * time.Second)}
+	wf01.Name = "wf-01"
+	wf02 := wf01.DeepCopy()
+	wf02.CreationTimestamp = metav1.Time{Time: time.Now().Add(-1 * time.Second)}
+	wf02.Name = "wf-02"
+
+	// wf-01 holds the lock on controller test1, wf-02 waits on controller test2.
+	checkCanAcquire(ctx, t, syncMgr1, wf01)
+	checkCannotAcquire(ctx, t, syncMgr2, wf02)
+
+	require.Len(t, syncMgr1.syncLockMap, 1)
+	var lock semaphore
+	for _, l := range syncMgr1.syncLockMap {
+		lock = l
+	}
+
+	pending, err := lock.getCurrentPending(ctx)
+	require.NoError(t, err)
+	require.Len(t, pending, 1)
+
+	// test1's garbage collection sees wf-02 in the shared state table but not in its informer.
+	syncMgr1.CheckWorkflowExistence(ctx)
+
+	holders, err := lock.getCurrentHolders(ctx)
+	require.NoError(t, err)
+	assert.Len(t, holders, 1, "own held row should survive garbage collection")
+	pending, err = lock.getCurrentPending(ctx)
+	require.NoError(t, err)
+	assert.Len(t, pending, 1, "another controller's pending row should not be garbage collected")
+
+	// The waiter is still queued, so the lock is handed over on release.
+	syncMgr1.Release(ctx, wf01, wf01.Name, wf01.Spec.Synchronization)
+	checkCanAcquire(ctx, t, syncMgr2, wf02)
+}
+
+func TestGCKeepsOtherControllersPendingRows(t *testing.T) {
+	for _, dbType := range testDBTypes {
+		t.Run(string(dbType), func(t *testing.T) {
+			testGCKeepsOtherControllersPendingRowsForDB(t, dbType)
+		})
 	}
 }
 
