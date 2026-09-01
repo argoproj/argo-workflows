@@ -4521,6 +4521,81 @@ func TestDAGWhenExprSkipEval(t *testing.T) {
 	assert.Equal(t, wfv1.NodeSkipped, nodeB.Phase)
 }
 
+func TestDAGHookNonLeafSerialHeadFails(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/dag_hook_non_leaf_serial_head_fails.yaml")
+	ctx := logging.TestContext(t.Context())
+	woc := newWoc(ctx, *wf)
+
+	woc.operate(ctx)
+	require.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+
+	// step-a inner pod fails
+	makePodsPhase(ctx, woc, v1.PodFailed)
+	woc.operate(ctx)
+
+	// hook scheduled, step-b not yet omitted
+	hookNode := woc.wf.Status.Nodes.FindByDisplayName("step-a.hooks.notify")
+	require.NotNil(t, hookNode)
+	assert.True(t, hookNode.NodeFlag.Hooked)
+	assert.Equal(t, wfv1.NodePending, hookNode.Phase)
+	assert.Nil(t, woc.wf.Status.Nodes.FindByDisplayName("step-b"))
+	require.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+
+	// hook pod succeeds
+	makeNonTerminalPodsPhase(ctx, woc, v1.PodSucceeded)
+	woc.operate(ctx)
+
+	// hook succeeded, step-b omitted, workflow failed
+	hookNode = woc.wf.Status.Nodes.FindByDisplayName("step-a.hooks.notify")
+	require.NotNil(t, hookNode)
+	assert.Equal(t, wfv1.NodeSucceeded, hookNode.Phase)
+	stepB := woc.wf.Status.Nodes.FindByDisplayName("step-b")
+	require.NotNil(t, stepB)
+	assert.Equal(t, wfv1.NodeOmitted, stepB.Phase)
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+}
+
+func TestDAGHookNonLeafFanInBothFail(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/dag_hook_non_leaf_fanin_both_fail.yaml")
+	ctx := logging.TestContext(t.Context())
+	woc := newWoc(ctx, *wf)
+
+	woc.operate(ctx)
+	require.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+
+	// both inner pods fail
+	makePodsPhase(ctx, woc, v1.PodFailed)
+	woc.operate(ctx)
+
+	// both hooks scheduled, step-c not yet omitted
+	hookA := woc.wf.Status.Nodes.FindByDisplayName("step-a.hooks.notify")
+	require.NotNil(t, hookA)
+	assert.True(t, hookA.NodeFlag.Hooked)
+	assert.Equal(t, wfv1.NodePending, hookA.Phase)
+	hookB := woc.wf.Status.Nodes.FindByDisplayName("step-b.hooks.notify")
+	require.NotNil(t, hookB)
+	assert.True(t, hookB.NodeFlag.Hooked)
+	assert.Equal(t, wfv1.NodePending, hookB.Phase)
+	assert.Nil(t, woc.wf.Status.Nodes.FindByDisplayName("step-c"))
+	require.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+
+	// both hook pods succeed
+	makeNonTerminalPodsPhase(ctx, woc, v1.PodSucceeded)
+	woc.operate(ctx)
+
+	// both hooks succeeded, step-c omitted, workflow failed
+	hookA = woc.wf.Status.Nodes.FindByDisplayName("step-a.hooks.notify")
+	require.NotNil(t, hookA)
+	assert.Equal(t, wfv1.NodeSucceeded, hookA.Phase)
+	hookB = woc.wf.Status.Nodes.FindByDisplayName("step-b.hooks.notify")
+	require.NotNil(t, hookB)
+	assert.Equal(t, wfv1.NodeSucceeded, hookB.Phase)
+	stepC := woc.wf.Status.Nodes.FindByDisplayName("step-c")
+	require.NotNil(t, stepC)
+	assert.Equal(t, wfv1.NodeOmitted, stepC.Phase)
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+}
+
 var dagSkippedInlineExpressionFallback = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -4733,4 +4808,87 @@ func TestOnExitDAGNotFailedOnShutdownStop(t *testing.T) {
 
 	// Workflow should NOT be completed yet — it should still be Running waiting for the exit handler.
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase, "workflow should still be Running while onExit handler is executing")
+}
+
+// TestDAGHookWithItemsFiresOnce verifies a lifecycle hook on an expanded (withItems) DAG
+// task fires exactly once, at task level, rather than once per expanded item.
+func TestDAGHookWithItemsFiresOnce(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/dag_hook_withitems_fires_once.yaml")
+	ctx := logging.TestContext(t.Context())
+	woc := newWoc(ctx, *wf)
+
+	// Fail every expanded item, stopping as soon as the hook is scheduled so that the
+	// hook's own pod is not failed along with them.
+	var hookNode *wfv1.NodeStatus
+	for range 8 {
+		woc.operate(ctx)
+		if hookNode = woc.wf.Status.Nodes.FindByDisplayName("step-a.hooks.notify"); hookNode != nil {
+			break
+		}
+		makeNonTerminalPodsPhase(ctx, woc, v1.PodFailed)
+	}
+	require.NotNil(t, hookNode, "hook should be scheduled once the task group fails")
+
+	// Succeed the hook pod only; the item pods are already terminal.
+	makeNonTerminalPodsPhase(ctx, woc, v1.PodSucceeded)
+	woc.operate(ctx)
+	require.True(t, woc.wf.Status.Phase.Completed(), "workflow should have completed")
+
+	var hooked []string
+	for _, node := range woc.wf.Status.Nodes {
+		if node.NodeFlag != nil && node.NodeFlag.Hooked {
+			hooked = append(hooked, node.Name)
+		}
+	}
+
+	require.Len(t, hooked, 1, "hook must fire once for the whole task, got: %v", hooked)
+	assert.Equal(t, "dag-hook-withitems-fires-once.step-a.hooks.notify", hooked[0],
+		"hook must be raised on the task node, not on an expanded item")
+
+	hookNode = woc.wf.Status.Nodes.FindByDisplayName("step-a.hooks.notify")
+	require.NotNil(t, hookNode)
+	assert.Equal(t, wfv1.NodeSucceeded, hookNode.Phase)
+
+	stepB := woc.wf.Status.Nodes.FindByDisplayName("step-b")
+	require.NotNil(t, stepB)
+	assert.Equal(t, wfv1.NodeOmitted, stepB.Phase, "dependent must be omitted only after the hook")
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+}
+
+// TestDAGHookRetryTaskOutbound verifies a succeeded lifecycle hook on a retrying task does
+// not become that task's outbound node, which would otherwise let the hook's phase mask the
+// task's failure and report the workflow as Succeeded.
+func TestDAGHookRetryTaskOutbound(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow("@testdata/dag_hook_retry_task_outbound.yaml")
+	ctx := logging.TestContext(t.Context())
+	woc := newWoc(ctx, *wf)
+
+	// Fail every retry attempt, stopping as soon as the hook is scheduled so that the
+	// hook's own pod is not failed along with the attempts.
+	var hookNode *wfv1.NodeStatus
+	for range 6 {
+		woc.operate(ctx)
+		if hookNode = woc.wf.Status.Nodes.FindByDisplayName("step-a.hooks.notify"); hookNode != nil {
+			break
+		}
+		makePodsPhase(ctx, woc, v1.PodFailed)
+	}
+	require.NotNil(t, hookNode, "hook should be scheduled once the retry node fails")
+	assert.True(t, hookNode.NodeFlag.Hooked)
+
+	// Succeed the hook pod only; the attempt pods are already terminal.
+	makeNonTerminalPodsPhase(ctx, woc, v1.PodSucceeded)
+	woc.operate(ctx)
+
+	hookNode = woc.wf.Status.Nodes.FindByDisplayName("step-a.hooks.notify")
+	require.NotNil(t, hookNode)
+	assert.Equal(t, wfv1.NodeSucceeded, hookNode.Phase)
+
+	retryNode := woc.wf.Status.Nodes.FindByDisplayName("step-a")
+	require.NotNil(t, retryNode)
+	assert.Equal(t, wfv1.NodeFailed, retryNode.Phase)
+
+	// The succeeded hook must not be spliced in as step-b's parent, nor mask the failure.
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase,
+		"a succeeded hook must not mask the retrying task's failure")
 }
