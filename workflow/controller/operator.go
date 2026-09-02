@@ -1469,6 +1469,16 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		woc.log.Error(ctx, err.Error())
 		return nil
 	}
+	if tmpl == nil {
+		woc.log.WithFields(logging.Fields{"nodeName": old.Name, "templateName": old.TemplateName}).
+			Debug(ctx, "no template resolved for node (expected for inline templates); daemon teardown detection is disabled for it")
+	}
+	// The only way a daemon node becomes Succeeded while its pod is still alive is
+	// killDaemonedChildren, which marks the node and then requests pod termination.
+	// Any pod completion seen after that is the result of our own kill and must not
+	// overwrite the phase; a daemon that dies of its own accord is assessed normally
+	// (its node is still Running at that point) so retryStrategy still works.
+	stoppedDaemon := tmpl.IsDaemon() && old.Succeeded()
 	switch pod.Status.Phase {
 	case apiv1.PodPending:
 		updated.Phase = wfv1.NodePending
@@ -1482,7 +1492,8 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 	case apiv1.PodSucceeded:
 		// if the pod is succeeded, we need to check if it is a daemoned step or not
 		// if it is daemoned, we need to mark it as failed, since daemon pods should run indefinitely
-		if tmpl.IsDaemon() {
+		// (unless the controller stopped it itself, in which case it stays Succeeded)
+		if tmpl.IsDaemon() && !stoppedDaemon {
 			woc.log.WithField("podName", pod.Name).Debug(ctx, "Daemoned pod succeeded. Marking it as failed")
 			updated.Phase = wfv1.NodeFailed
 		} else {
@@ -1492,7 +1503,13 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		updated.Daemoned = nil
 		updated.RestartingPodUID = ""
 	case apiv1.PodFailed:
-		// ignore pod failure for daemoned steps
+		if stoppedDaemon {
+			woc.log.WithFields(logging.Fields{"displayName": old.DisplayName, "pod": pod.Name}).Info(ctx, "Ignoring pod failure of daemon stopped by the controller")
+			// killDaemonedChildren already cleared Daemoned when it marked the node Succeeded,
+			// but clear it here too so a stuck flag can never block workflow completion.
+			updated.Daemoned = nil
+			break
+		}
 		updated.Phase, updated.Message = woc.inferFailedReason(ctx, pod, tmpl)
 		woc.log.WithFields(logging.Fields{"message": updated.Message, "displayName": old.DisplayName, "templateName": wfutil.GetTemplateFromNode(*old), "pod": pod.Name}).Info(ctx, "Pod failed")
 		updated.Daemoned = nil
@@ -1566,6 +1583,12 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		if _, err := woc.wf.GetNodeByName(ctrNodeName); err != nil {
 			continue
 		}
+		if stoppedDaemon {
+			// killDaemonedChildren already completed the container child nodes when it stopped
+			// this daemon; the exit codes of our own kill carry no failure meaning, so leave
+			// the children untouched.
+			continue
+		}
 		switch {
 		case c.State.Terminated != nil:
 			exitCode := int(c.State.Terminated.ExitCode)
@@ -1603,7 +1626,9 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 	// We capture the exit-code after we look for the task-result.
 	// All other outputs are set by the executor, only the exit-code is set by the controller.
 	// By waiting, we avoid breaking the race-condition check.
-	if exitCode := getExitCode(pod); exitCode != nil {
+	// A daemon we stopped ourselves reports the exit code of our own signal, which says nothing
+	// about the node: recording it would contradict the Succeeded phase we just preserved.
+	if exitCode := getExitCode(pod); !stoppedDaemon && exitCode != nil {
 		if updated.Outputs == nil {
 			updated.Outputs = &wfv1.Outputs{}
 		}
@@ -3588,7 +3613,7 @@ loop:
 func (woc *wfOperationCtx) executeScript(ctx context.Context, nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	node, err := woc.wf.GetNodeByName(nodeName)
 	if err != nil {
-		ctx, node = woc.initializeExecutableNode(ctx, nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, opts.nodeFlag, false)
+		ctx, node = woc.initializeExecutableNode(ctx, nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, opts.nodeFlag, tmpl.IsDaemon())
 	} else if !node.Pending() {
 		return node, nil
 	}
