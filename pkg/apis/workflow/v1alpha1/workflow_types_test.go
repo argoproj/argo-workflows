@@ -871,6 +871,21 @@ func TestCronWorkflowConditions(t *testing.T) {
 	assert.Empty(t, cwfCond)
 }
 
+func TestConditionsHasCondition(t *testing.T) {
+	cwfCond := Conditions{}
+	// An empty set has no conditions.
+	assert.False(t, cwfCond.HasCondition(ConditionTypeSubmissionError))
+
+	cwfCond.UpsertCondition(Condition{
+		Type:    ConditionTypeTransientSubmissionError,
+		Message: "Failed to submit Workflow (transient, will retry)",
+		Status:  metav1.ConditionTrue,
+	})
+	// Present type matches, absent type does not.
+	assert.True(t, cwfCond.HasCondition(ConditionTypeTransientSubmissionError))
+	assert.False(t, cwfCond.HasCondition(ConditionTypeSubmissionError))
+}
+
 func TestDisplayConditions(t *testing.T) {
 	const fmtStr = "%-20s %v\n"
 	cwfCond := Conditions{}
