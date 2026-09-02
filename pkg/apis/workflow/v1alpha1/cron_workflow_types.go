@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"maps"
 	"strings"
 
 	v1 "k8s.io/api/core/v1"
@@ -8,6 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
+	"github.com/argoproj/argo-workflows/v4/util/cronhash"
 )
 
 // CronWorkflow is the definition of a scheduled workflow resource
@@ -66,7 +68,7 @@ type CronWorkflowSpec struct {
 	StopStrategy *StopStrategy `json:"stopStrategy,omitempty" protobuf:"bytes,10,opt,name=stopStrategy"`
 	// v3.6 and after: Schedules is a list of schedules to run the Workflow in Cron format
 	// +kubebuilder:validation:MinItems=1
-	// +kubebuilder:validation:items:Pattern=`^(@(yearly|annually|monthly|weekly|daily|midnight|hourly)|@every\s+([0-9]+(ns|us|µs|ms|s|m|h))+|([A-Za-z0-9*,/?-]+\s+){4}[A-Za-z0-9*,/?-]+)$`
+	// +kubebuilder:validation:items:Pattern=`^(@(yearly|annually|monthly|weekly|daily|midnight|hourly)|@every\s+([0-9]+(ns|us|µs|ms|s|m|h))+|([A-Za-z0-9*,/?()-]+\s+){4}[A-Za-z0-9*,/?()-]+)$`
 	Schedules []string `json:"schedules" protobuf:"bytes,11,opt,name=schedules"`
 	// v3.6 and after: When is an expression that determines if a run should be scheduled.
 	When string `json:"when,omitempty" protobuf:"bytes,12,opt,name=when"`
@@ -99,6 +101,10 @@ type CronWorkflowStatus struct {
 	// v3.6 and after: Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.expression is true
 	// +optional
 	Phase CronWorkflowPhase `json:"phase" protobuf:"varint,6,rep,name=phase"`
+	// ResolvedSchedules maps a schedule of the spec using a `H` (hash) token to what it resolved to.
+	// Set by the controller, schedules without a `H` are not listed
+	// +optional
+	ResolvedSchedules map[string]string `json:"resolvedSchedules,omitempty" protobuf:"bytes,7,rep,name=resolvedSchedules"`
 }
 
 type CronWorkflowPhase string
@@ -140,6 +146,28 @@ func (c *CronWorkflow) GetLatestSchedule() string {
 	return c.Annotations[annotationKeyLatestSchedule]
 }
 
+// SetResolvedSchedules records what the `H` (hash) tokens resolved to in the status, keyed by the
+// schedule of the spec so that a stale entry is never used for an edited schedule. It reports
+// whether the status changed.
+func (c *CronWorkflow) SetResolvedSchedules() bool {
+	var resolved map[string]string
+	for i, schedule := range c.Spec.Schedules {
+		expanded := c.getSchedule(i, false)
+		if expanded == schedule {
+			continue
+		}
+		if resolved == nil {
+			resolved = map[string]string{}
+		}
+		resolved[schedule] = expanded
+	}
+	if maps.Equal(c.Status.ResolvedSchedules, resolved) {
+		return false
+	}
+	c.Status.ResolvedSchedules = resolved
+	return true
+}
+
 // GetScheduleString returns the schedule expression without timezone. If multiple
 // expressions are configured it returns a comma separated list of cron expressions
 func (c *CronWorkflowSpec) GetScheduleString() string {
@@ -168,7 +196,41 @@ func (c *CronWorkflowSpec) getScheduleString(withTimezone bool) string {
 	return scheduleString
 }
 
+// GetSchedulesWithTimezone returns all schedules with a timezone and with `H` (hash) tokens
+// resolved. Prefer this over the CronWorkflowSpec method when handing schedules to a cron parser,
+// only this one knows the name and namespace to hash from.
+func (c *CronWorkflow) GetSchedulesWithTimezone() []string {
+	return c.getSchedules(true)
+}
+
+// GetSchedules returns all schedules with `H` (hash) tokens resolved, see GetSchedulesWithTimezone.
+func (c *CronWorkflow) GetSchedules() []string {
+	return c.getSchedules(false)
+}
+
+func (c *CronWorkflow) getSchedules(withTimezone bool) []string {
+	schedules := make([]string, len(c.Spec.Schedules))
+	for i := range c.Spec.Schedules {
+		schedules[i] = c.getSchedule(i, withTimezone)
+	}
+	return schedules
+}
+
+func (c *CronWorkflow) getSchedule(i int, withTimezone bool) string {
+	schedule := c.Spec.Schedules[i]
+	expanded, err := cronhash.Expand(schedule, c.Namespace, c.Name)
+	if err != nil {
+		// validation reports malformed schedules, keep the original so the cron parser does too
+		expanded = schedule
+	}
+	if withTimezone {
+		expanded = c.Spec.withTimezone(expanded)
+	}
+	return expanded
+}
+
 // GetSchedulesWithTimezone returns all schedules configured for the CronWorkflow with a timezone.
+// `H` (hash) tokens are left as configured, use CronWorkflow.GetSchedulesWithTimezone to resolve.
 func (c *CronWorkflowSpec) GetSchedulesWithTimezone() []string {
 	return c.getSchedules(true)
 }

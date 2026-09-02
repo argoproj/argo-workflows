@@ -3,15 +3,19 @@ import * as React from 'react';
 
 import {Timestamp} from '../shared/components/timestamp';
 import {ConditionsPanel} from '../shared/conditions-panel';
-import {CronWorkflowSpec, CronWorkflowStatus} from '../shared/models';
+import {getResolvedSchedules} from '../shared/cron';
+import {CronWorkflow} from '../shared/models';
 import {TIMESTAMP_KEYS} from '../shared/use-timestamp';
 import {WorkflowLink} from '../workflows/components/workflow-link';
 import {PrettySchedule} from './pretty-schedule';
 
-export function CronWorkflowStatusViewer({spec, status}: {spec: CronWorkflowSpec; status: CronWorkflowStatus}) {
+export function CronWorkflowStatusViewer({cronWorkflow}: {cronWorkflow: CronWorkflow}) {
+    const {spec, status} = cronWorkflow;
     if (status === null) {
         return null;
     }
+    // the schedules are shown as configured, with the schedules `H` resolved to next to them
+    const resolvedSchedules = getResolvedSchedules(cronWorkflow);
     return (
         <div className='white-box'>
             <div className='white-box__details'>
@@ -19,9 +23,16 @@ export function CronWorkflowStatusViewer({spec, status}: {spec: CronWorkflowSpec
                     {title: 'Active', value: status.active ? getCronWorkflowActiveWorkflowList(status.active) : <i>No Workflows Active</i>},
                     {
                         title: 'Schedules',
-                        value: spec.schedules.map(schedule => (
+                        value: spec.schedules.map((schedule, i) => (
                             <>
-                                <code>{schedule}</code> <PrettySchedule schedule={schedule} />
+                                <code>{schedule}</code>
+                                {resolvedSchedules[i] !== schedule && (
+                                    <>
+                                        {' → '}
+                                        <code>{resolvedSchedules[i]}</code>
+                                    </>
+                                )}{' '}
+                                <PrettySchedule schedule={resolvedSchedules[i]} />
                                 <br />
                             </>
                         ))
