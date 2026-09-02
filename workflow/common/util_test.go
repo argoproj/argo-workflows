@@ -139,7 +139,12 @@ func TestParseObjects(t *testing.T) {
 	require.EqualError(t, res[0].Err, "json: unknown field \"doesNotExist\"")
 
 	invalidObj := []byte(`<div class="blah" style="display: none; outline: none;" tabindex="0"></div>`)
-	assert.Empty(t, ParseObjects(ctx, invalidObj, false))
+	res = ParseObjects(ctx, invalidObj, false)
+	// the document cannot be parsed into a Kubernetes object, so it is returned
+	// with a nil object and the error instead of being logged and dropped (#9550)
+	assert.Len(t, res, 1)
+	assert.Nil(t, res[0].Object)
+	assert.Error(t, res[0].Err)
 }
 
 func TestGetTemplateHolderString(t *testing.T) {
@@ -449,4 +454,422 @@ func TestProcessArgsAbsentOptional(t *testing.T) {
 		// Must NOT match IsMissingVariableErr, which would requeue the node forever.
 		assert.False(t, template.IsMissingVariableErr(err))
 	})
+}
+
+// TestParseObjectsDuplicateKeyIsReported verifies that a document of a known Argo kind
+// whose strict parsing fails (here: a duplicate `templates` key, which the non-strict
+// unmarshal silently accepts) is returned with a typed object and the error, instead of
+// being silently dropped. Silently dropping it made `argo lint` report "no linting
+// errors found!" and `argo submit` find nothing to submit (#9550).
+func TestParseObjectsDuplicateKeyIsReported(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	duplicateKeyWf := []byte(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: duplicate-key-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    container:
+      image: busybox
+      command: [cowsay]
+  templates:
+  - name: other
+    container:
+      image: busybox
+      command: [cowsay]
+`)
+	res := ParseObjects(ctx, duplicateKeyWf, true)
+	require.Len(t, res, 1, "the document must not be silently dropped")
+	require.NotNil(t, res[0].Object, "a typed object must be returned so callers can name it")
+	require.ErrorContains(t, res[0].Err, `key "templates" already set in map`)
+	assert.Equal(t, "duplicate-key-", res[0].Object.GetGenerateName())
+
+	// the same body must be accepted when strict mode is off
+	res = ParseObjects(ctx, duplicateKeyWf, false)
+	require.Len(t, res, 1)
+	require.NoError(t, res[0].Err)
+
+	// SplitWorkflowYAMLFile must propagate the error instead of returning nothing.
+	// Both the strict (duplicate key) and non-strict (unknown field) failure paths
+	// surface through this branch.
+	_, err := SplitWorkflowYAMLFile(ctx, duplicateKeyWf, true)
+	require.ErrorContains(t, err, `key "templates" already set in map`)
+	_, err = SplitWorkflowYAMLFile(ctx, []byte(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: unknown-field-strict
+spec:
+  entrypoint: echo
+  templates:
+  - name: echo
+    container:
+      image: busybox
+      command: [cowsay]
+  doesNotExist: true`), true)
+	require.ErrorContains(t, err, "unknown field")
+}
+
+// TestParseObjectsUnparseableDocumentIsReported verifies that a document which cannot
+// be parsed into a Kubernetes object at all is returned with a nil object and the
+// error, so linters can report which file failed (previously only logged, and
+// swallowed entirely by strict lints) (#9550).
+func TestParseObjectsUnparseableDocumentIsReported(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	brokenYAML := []byte(`foo: [
+`)
+	res := ParseObjects(ctx, brokenYAML, true)
+	require.Len(t, res, 1)
+	assert.Nil(t, res[0].Object)
+	require.ErrorContains(t, res[0].Err, "did not find expected node content")
+
+	// the HTML snippet previously used as a non-YAML fixture is still returned with
+	// its error (no kind detected) instead of being logged and dropped
+	invalidObj := []byte(`<div class="blah" style="display: none; outline: none;" tabindex="0"></div>`)
+	res = ParseObjects(ctx, invalidObj, false)
+	require.Len(t, res, 1)
+	assert.Nil(t, res[0].Object)
+	require.Error(t, res[0].Err)
+}
+
+// TestSplitHelpersUnparseableDocumentIsSkipped verifies that a document which cannot
+// be parsed into a Kubernetes object at all is logged-and-skipped by the Split helpers
+// instead of panicking on a nil object (#9550).
+func TestSplitHelpersUnparseableDocumentIsSkipped(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	mixed := []byte(`foo: [
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: mixed-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    container:
+      image: busybox
+      command: [cowsay]
+`)
+
+	wfs, err := SplitWorkflowYAMLFile(ctx, mixed, false)
+	require.NoError(t, err)
+	require.Len(t, wfs, 1)
+
+	wfts, err := SplitWorkflowTemplateYAMLFile(ctx, mixed, false)
+	require.NoError(t, err)
+	assert.Empty(t, wfts)
+
+	cwfs, err := SplitCronWorkflowYAMLFile(ctx, mixed, false)
+	require.NoError(t, err)
+	assert.Empty(t, cwfs)
+
+	cwfts, err := SplitClusterWorkflowTemplateYAMLFile(ctx, mixed, false)
+	require.NoError(t, err)
+	assert.Empty(t, cwfts)
+}
+
+// TestSplitWorkflowTemplateDuplicateKeyIsReported verifies the strict duplicate-key
+// error is propagated by every Split helper for its own kind (#9550).
+func TestSplitWorkflowTemplateDuplicateKeyIsReported(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	duplicateKeyWft := []byte(`apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: duplicate-key
+spec:
+  templates:
+  - name: a
+    container:
+      image: busybox
+      command: [cowsay]
+  templates:
+  - name: b
+    container:
+      image: busybox
+      command: [cowsay]
+`)
+	_, err := SplitWorkflowTemplateYAMLFile(ctx, duplicateKeyWft, true)
+	require.ErrorContains(t, err, `key "templates" already set in map`)
+
+	// non-strict mode accepts the document
+	wfts, err := SplitWorkflowTemplateYAMLFile(ctx, duplicateKeyWft, false)
+	require.NoError(t, err)
+	require.Len(t, wfts, 1)
+}
+
+// TestSplitCronWorkflowDuplicateKeyIsReported verifies the strict duplicate-key error
+// is propagated for CronWorkflows too (#9550).
+func TestSplitCronWorkflowDuplicateKeyIsReported(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	duplicateKeyCwf := []byte(`apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: duplicate-key
+spec:
+  schedule: "* * * * *"
+  concurrencyPolicy: Allow
+  workflowMetadata:
+    labels:
+      example: test
+  workflowSpec:
+    entrypoint: whalesay
+    templates:
+    - name: whalesay
+      container:
+        image: busybox
+        command: [cowsay]
+    templates:
+    - name: other
+      container:
+        image: busybox
+        command: [cowsay]
+`)
+	_, err := SplitCronWorkflowYAMLFile(ctx, duplicateKeyCwf, true)
+	require.ErrorContains(t, err, `key "templates" already set in map`)
+
+	cwfs, err := SplitCronWorkflowYAMLFile(ctx, duplicateKeyCwf, false)
+	require.NoError(t, err)
+	require.Len(t, cwfs, 1)
+}
+
+// TestParseObjectsUnknownKindStrictFailureIsReported verifies that a strict-pass
+// failure on a document whose kind is not an Argo kind returns an ObjectMeta shell
+// with the error; the Split helpers then skip it as a non-argo object (#9550).
+func TestParseObjectsUnknownKindStrictFailureIsReported(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	unknownKind := []byte(`apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: foo
+data:
+  key: value
+  key: duplicated
+`)
+	res := ParseObjects(ctx, unknownKind, true)
+	require.Len(t, res, 1)
+	require.ErrorContains(t, res[0].Err, `key "key" already set in map`)
+	assert.Nil(t, res[0].Object, "a non-argo kind must return {nil, err} so linters report the file")
+
+	// Split helpers log-and-skip it as a non-argo object
+	wfs, err := SplitWorkflowYAMLFile(ctx, unknownKind, true)
+	require.NoError(t, err)
+	assert.Empty(t, wfs)
+
+	// a valid WorkflowTemplate document flows through SplitWorkflowYAMLFile's
+	// not-of-kind-Workflow skip path
+	wfts := []byte(`apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: wft-in-wf-split
+spec:
+  templates:
+  - name: echo
+    container:
+      image: busybox
+      command: [cowsay]
+`)
+	wfs, err = SplitWorkflowYAMLFile(ctx, wfts, true)
+	require.NoError(t, err)
+	assert.Empty(t, wfs)
+}
+
+// TestParseObjectsKindlessDuplicateKeyIsReported verifies that a document without a
+// kind whose strict parse fails (duplicate keys) is returned with a nil object and
+// the error (#9550).
+func TestParseObjectsKindlessDuplicateKeyIsReported(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	kindlessDup := []byte(`metadata:
+  name: foo
+data:
+  key: value
+  key: duplicated
+`)
+	res := ParseObjects(ctx, kindlessDup, true)
+	require.Len(t, res, 1)
+	assert.Nil(t, res[0].Object)
+	// the strict JSON decode of an ObjectMeta shell fails on the missing kind
+	// before the duplicate-key check; the point is that the error surfaces
+	require.ErrorContains(t, res[0].Err, "Object 'Kind' is missing")
+}
+
+// TestSplitClusterWorkflowTemplateDuplicateKeyIsReported verifies the strict
+// duplicate-key error is propagated for ClusterWorkflowTemplates too (#9550).
+func TestSplitClusterWorkflowTemplateDuplicateKeyIsReported(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	duplicateKeyCwft := []byte(`apiVersion: argoproj.io/v1alpha1
+kind: ClusterWorkflowTemplate
+metadata:
+  name: duplicate-key
+spec:
+  templates:
+  - name: a
+    container:
+      image: busybox
+      command: [cowsay]
+  templates:
+  - name: b
+    container:
+      image: busybox
+      command: [cowsay]
+`)
+	_, err := SplitClusterWorkflowTemplateYAMLFile(ctx, duplicateKeyCwft, true)
+	require.ErrorContains(t, err, `key "templates" already set in map`)
+
+	cwfts, err := SplitClusterWorkflowTemplateYAMLFile(ctx, duplicateKeyCwft, false)
+	require.NoError(t, err)
+	require.Len(t, cwfts, 1)
+}
+
+// TestParseObjectsJSONBodyAndStrictSuccess verifies the JSON input branch and a
+// successful strict parse of a valid workflow (#9550).
+func TestParseObjectsJSONBodyAndStrictSuccess(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	validJSON := []byte(`{"apiVersion":"argoproj.io/v1alpha1","kind":"Workflow","metadata":{"generateName":"json-"},"spec":{"entrypoint":"whalesay","templates":[{"name":"whalesay","container":{"image":"busybox","command":["cowsay"]}}]}}`)
+	res := ParseObjects(ctx, validJSON, true)
+	require.Len(t, res, 1)
+	require.NoError(t, res[0].Err)
+	assert.Equal(t, "json-", res[0].Object.GetGenerateName())
+
+	invalidJSON := []byte(`{"kind":"Workflow","spec": BROKEN`)
+	res = ParseObjects(ctx, invalidJSON, true)
+	require.Len(t, res, 1)
+	require.Error(t, res[0].Err)
+
+	// a leading empty document is skipped silently
+	leadingEmpty := []byte("---\n" + validJSONWf)
+	res = ParseObjects(ctx, leadingEmpty, true)
+	require.Len(t, res, 1)
+	require.NoError(t, res[0].Err)
+}
+
+// validJSONWf is the JSON form of a valid workflow, shared by JSON-branch tests.
+var validJSONWf = `{"apiVersion":"argoproj.io/v1alpha1","kind":"Workflow","metadata":{"generateName":"json-"},"spec":{"entrypoint":"whalesay","templates":[{"name":"whalesay","container":{"image":"busybox","command":["cowsay"]}}]}}`
+
+// TestParseObjectsRemainingBranches covers the remaining ParseObjects paths: a JSON
+// document that unmarshals to an error, empty YAML documents between separators, a
+// kindless document whose strict conversion fails, the WorkflowEventBinding and
+// WorkflowTaskSet kinds, and both strict JSON decoding error paths (#9550).
+func TestParseObjectsRemainingBranches(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	// JSON input that carries a kind but fails the typed decode: the empty typed
+	// object is returned together with the error (obj != nil, err != nil branch)
+	badTypedJSON := []byte(`{"kind":"Workflow","metadata":{"name":{"nested":"not a string"}}}`)
+	res := ParseObjects(ctx, badTypedJSON, true)
+	require.Len(t, res, 1)
+	require.NotNil(t, res[0].Object)
+	require.ErrorContains(t, res[0].Err, "cannot unmarshal object into Go struct field")
+
+	// a JSON document that fails to unmarshal at all: the lenient unstructured
+	// decode also fails, no kind is detected, and the document is returned as
+	// {nil, err} so the linter reports it (line 33-35 branch, #9550)
+	brokenJSON := []byte(`{"kind":"Workflow","spec":[[[`)
+	res = ParseObjects(ctx, brokenJSON, true)
+	require.Len(t, res, 1)
+	assert.Nil(t, res[0].Object)
+	require.Error(t, res[0].Err)
+
+	// a JSON document whose kind field itself is malformed: unmarshal errors
+	// with the kind unset, so it falls through to the strict conversion which
+	// surfaces the type clash as an ObjectMeta strict decoding error
+	clashingKind := []byte(`{"kind":{"nested":true}}`)
+	res = ParseObjects(ctx, clashingKind, true)
+	require.Len(t, res, 1)
+	require.NotNil(t, res[0].Object)
+	require.ErrorContains(t, res[0].Err, `unknown field "kind"`)
+
+	// a JSON document where the kind is set but the body fails to unmarshal
+	// into the typed object: the empty typed object travels with the error
+	// (obj != nil, err != nil), which Split helpers then reject by error
+	lateTypedFailure := []byte(`{"kind":"Workflow","apiVersion":123}`)
+	res = ParseObjects(ctx, lateTypedFailure, true)
+	require.Len(t, res, 1)
+	require.NotNil(t, res[0].Object)
+	require.Error(t, res[0].Err)
+	_, splitErr := SplitWorkflowYAMLFile(ctx, lateTypedFailure, true)
+	require.Error(t, splitErr)
+
+	// an empty document between separators is skipped silently
+	emptyMiddle := []byte(validWf + "\n---\n---\n" + validWf)
+	res = ParseObjects(ctx, emptyMiddle, true)
+	require.Len(t, res, 2)
+
+	// a kindless document whose strict conversion fails returns {nil, err};
+	// YAMLToJSONStrict silently accepts the duplicate key, and the error comes
+	// from decoding into an ObjectMeta shell, which requires a kind
+	kindlessDup := []byte("a: 1\na: 2\n")
+	res = ParseObjects(ctx, kindlessDup, true)
+	require.Len(t, res, 1)
+	assert.Nil(t, res[0].Object)
+	require.ErrorContains(t, res[0].Err, "Object 'Kind' is missing")
+
+	// the remaining kinds produce typed objects
+	eventBinding := []byte(`apiVersion: argoproj.io/v1alpha1
+kind: WorkflowEventBinding
+metadata:
+  name: web
+spec:
+  event:
+    selector: "true"
+`)
+	res = ParseObjects(ctx, eventBinding, true)
+	require.Len(t, res, 1)
+	require.NoError(t, res[0].Err)
+	assert.Equal(t, "web", res[0].Object.GetName())
+
+	taskSet := []byte(`apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTaskSet
+metadata:
+  name: tasks
+spec:
+  tasks:
+    a:
+      container:
+        image: busybox
+        command: [cowsay]
+`)
+	res = ParseObjects(ctx, taskSet, true)
+	require.Len(t, res, 1)
+	require.NoError(t, res[0].Err)
+	assert.Equal(t, "tasks", res[0].Object.GetName())
+
+	// a strict decoding type error (not a strictness error) still surfaces
+	badType := []byte(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: bad-type-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    container:
+      image: busybox
+      command: [cowsay]
+  scheduledTime: not-a-time
+`)
+	res = ParseObjects(ctx, badType, true)
+	require.Len(t, res, 1)
+	require.Error(t, res[0].Err)
+
+	// unknown fields in strict mode surface with the object
+	unknownField := []byte(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: unknown-field-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    container:
+      image: busybox
+      command: [cowsay]
+  doesNotExist: true
+`)
+	res = ParseObjects(ctx, unknownField, true)
+	require.Len(t, res, 1)
+	require.NotNil(t, res[0].Object)
+	require.ErrorContains(t, res[0].Err, "unknown field")
 }
