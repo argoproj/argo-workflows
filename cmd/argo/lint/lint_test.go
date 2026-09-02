@@ -423,3 +423,33 @@ func TestLintFileWithUnparseableYAML(t *testing.T) {
 	assert.Contains(t, res.Msg(), "broken.yaml", "the error must name the offending file")
 	assert.Contains(t, res.Msg(), "did not find expected node content")
 }
+
+// TestLintUnknownKindWithDuplicateKey verifies that a strict-invalid document whose
+// kind is NOT an Argo kind (e.g. a ConfigMap with duplicate keys) fails the lint
+// instead of being skipped as an unknown object (#9550, CodeRabbit review).
+func TestLintUnknownKindWithDuplicateKey(t *testing.T) {
+	dir := t.TempDir()
+	dupKeyConfigMap := `apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dup
+data:
+  key: value
+  key: duplicated
+`
+	require.NoError(t, os.WriteFile(dir+"/dupcm.yaml", []byte(dupKeyConfigMap), 0o600))
+
+	wfMock := &workflowmocks.WorkflowServiceClient{}
+
+	ctx := logging.TestContext(t.Context())
+	res, err := Lint(ctx, &Options{
+		Files:          []string{dir},
+		Strict:         true, // CLI default
+		ServiceClients: ServiceClients{WorkflowsClient: wfMock},
+		Formatter:      formatterSimple{},
+	})
+	require.NoError(t, err)
+	assert.False(t, res.Success, "lint must fail when a non-argo file has a YAML error")
+	assert.Contains(t, res.Msg(), "dupcm.yaml", "the error must name the offending file")
+	assert.Contains(t, res.Msg(), `key "key" already set in map`)
+}

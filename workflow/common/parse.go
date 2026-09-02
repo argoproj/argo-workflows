@@ -54,7 +54,7 @@ func ParseObjects(ctx context.Context, body []byte, strict bool) []ParseResult {
 		case v != nil:
 			// only append when this is a Kubernetes object
 			res = append(res, ParseResult{v, err})
-		case err != nil && un.GetKind() != "":
+		case err != nil && isArgoKind(un.GetKind()):
 			// the strict pass failed on a document of a known Argo kind (e.g. duplicate
 			// keys, which the non-strict unmarshal above silently accepts); return a typed
 			// empty object with the error so callers surface it instead of dropping the
@@ -67,11 +67,26 @@ func ParseObjects(ctx context.Context, body []byte, strict bool) []ParseResult {
 			res = append(res, ParseResult{obj, err})
 		case err != nil:
 			// strict-pass failure on a document of unknown kind; return it like any
-			// other unparseable document
+			// other unparseable document so the linter still reports the file
 			res = append(res, ParseResult{nil, err})
 		}
 	}
 	return res
+}
+
+// isArgoKind reports whether the kind is one of the Argo kinds known to objectForKind.
+func isArgoKind(kind string) bool {
+	switch kind {
+	case wf.CronWorkflowKind,
+		wf.ClusterWorkflowTemplateKind,
+		wf.WorkflowKind,
+		wf.WorkflowEventBindingKind,
+		wf.WorkflowTemplateKind,
+		wf.WorkflowTaskSetKind:
+		return true
+	default:
+		return false
+	}
 }
 
 func objectForKind(kind string) metav1.Object {

@@ -491,9 +491,24 @@ spec:
 	require.Len(t, res, 1)
 	require.NoError(t, res[0].Err)
 
-	// SplitWorkflowYAMLFile must propagate the error instead of returning nothing
+	// SplitWorkflowYAMLFile must propagate the error instead of returning nothing.
+	// Both the strict (duplicate key) and non-strict (unknown field) failure paths
+	// surface through this branch.
 	_, err := SplitWorkflowYAMLFile(ctx, duplicateKeyWf, true)
 	require.ErrorContains(t, err, `key "templates" already set in map`)
+	_, err = SplitWorkflowYAMLFile(ctx, []byte(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: unknown-field-strict
+spec:
+  entrypoint: echo
+  templates:
+  - name: echo
+    container:
+      image: busybox
+      command: [cowsay]
+  doesNotExist: true`), true)
+	require.ErrorContains(t, err, "unknown field")
 }
 
 // TestParseObjectsUnparseableDocumentIsReported verifies that a document which cannot
@@ -635,12 +650,27 @@ data:
 	res := ParseObjects(ctx, unknownKind, true)
 	require.Len(t, res, 1)
 	require.ErrorContains(t, res[0].Err, `key "key" already set in map`)
-	obj, ok := res[0].Object.(*metav1.ObjectMeta)
-	require.True(t, ok, "a non-argo kind must surface as an ObjectMeta shell")
-	assert.Equal(t, "foo", obj.Name)
+	assert.Nil(t, res[0].Object, "a non-argo kind must return {nil, err} so linters report the file")
 
 	// Split helpers log-and-skip it as a non-argo object
 	wfs, err := SplitWorkflowYAMLFile(ctx, unknownKind, true)
+	require.NoError(t, err)
+	assert.Empty(t, wfs)
+
+	// a valid WorkflowTemplate document flows through SplitWorkflowYAMLFile's
+	// not-of-kind-Workflow skip path
+	wfts := []byte(`apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: wft-in-wf-split
+spec:
+  templates:
+  - name: echo
+    container:
+      image: busybox
+      command: [cowsay]
+`)
+	wfs, err = SplitWorkflowYAMLFile(ctx, wfts, true)
 	require.NoError(t, err)
 	assert.Empty(t, wfs)
 }
