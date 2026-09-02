@@ -1020,6 +1020,37 @@ func (woc *wfOperationCtx) requeue() {
 	woc.controller.wfQueue.AddRateLimited(key)
 }
 
+type retryIneligibilityReason int
+
+const (
+	retryEligibilityUnknown retryIneligibilityReason = iota
+	retryEligible
+	retryIneligiblePolicy
+	retryIneligibleNode
+	retryIneligibleLimit
+	retryIneligibleExpression
+)
+
+type retryEligibilityEvaluationMode int
+
+const (
+	retryEligibilityForDecision retryEligibilityEvaluationMode = iota
+	retryEligibilityForMetric
+)
+
+type retryEligibility struct {
+	reason          retryIneligibilityReason
+	retryOnFailed   bool
+	retryOnError    bool
+	policyEvaluated bool
+	terminalPhase   wfv1.NodePhase
+	terminalMessage string
+}
+
+func (r retryEligibility) eligible() bool {
+	return r.reason == retryEligible
+}
+
 // processNodeRetries updates the retry node state based on the child node state and the retry strategy and returns the node.
 func (woc *wfOperationCtx) processNodeRetries(ctx context.Context, node *wfv1.NodeStatus, retryStrategy wfv1.RetryStrategy, opts *executeTemplateOpts) (*wfv1.NodeStatus, bool, error) {
 	if node.Phase.Fulfilled(node.TaskResultSynced) {
@@ -1067,6 +1098,15 @@ func (woc *wfOperationCtx) processNodeRetries(ctx context.Context, node *wfv1.No
 		woc.log.Info(ctx, message)
 		return woc.markNodePhase(ctx, node.Name, lastChildNode.Phase, message), true, nil
 	}
+	recordDurationTermination := func(reason metrics.RetryStrategyTerminationReason) {
+		evaluatedEligibility, err := woc.evaluateRetryEligibility(ctx, node, lastChildNode, childNodeIds, retryStrategy, retryEligibilityForMetric)
+		if err != nil {
+			woc.log.WithError(err).Warn(ctx, "Unable to determine whether retry would otherwise proceed; recording duration budget termination")
+		}
+		if err != nil || evaluatedEligibility.eligible() {
+			woc.controller.metrics.RecordRetryStrategyTermination(ctx, reason, woc.wf.Namespace)
+		}
+	}
 
 	if retryStrategy.Backoff != nil {
 		maxDurationDeadline := time.Time{}
@@ -1082,6 +1122,7 @@ func (woc *wfOperationCtx) processNodeRetries(ctx context.Context, node *wfv1.No
 			}
 			maxDurationDeadline = firstChildNode.StartedAt.Add(maxDuration)
 			if time.Now().After(maxDurationDeadline) {
+				recordDurationTermination(metrics.RetryStrategyTerminationReasonMaxDurationExceeded)
 				woc.log.Info(ctx, "Max duration limit exceeded. Failing...")
 				return woc.markNodePhase(ctx, node.Name, lastChildNode.Phase, "Max duration limit exceeded"), true, nil
 			}
@@ -1126,6 +1167,7 @@ func (woc *wfOperationCtx) processNodeRetries(ctx context.Context, node *wfv1.No
 
 		// If the waiting deadline is after the max duration deadline, then it's futile to wait until then. Stop early
 		if !maxDurationDeadline.IsZero() && waitingDeadline.After(maxDurationDeadline) {
+			recordDurationTermination(metrics.RetryStrategyTerminationReasonBackoffWouldExceedMaxDuration)
 			woc.log.Info(ctx, "Backoff would exceed max duration limit. Failing...")
 			return woc.markNodePhase(ctx, node.Name, lastChildNode.Phase, "Backoff would exceed max duration limit"), true, nil
 		}
@@ -1143,6 +1185,34 @@ func (woc *wfOperationCtx) processNodeRetries(ctx context.Context, node *wfv1.No
 		node = woc.markNodePhase(ctx, node.Name, node.Phase, "")
 	}
 
+	eligibility, err := woc.evaluateRetryEligibility(ctx, node, lastChildNode, childNodeIds, retryStrategy, retryEligibilityForDecision)
+	if eligibility.policyEvaluated {
+		woc.log.WithFields(logging.Fields{"policy": retryStrategy.RetryPolicyActual(), "onFailed": eligibility.retryOnFailed, "onError": eligibility.retryOnError}).Info(ctx, "Retry Policy")
+	}
+	if err != nil {
+		return nil, false, err
+	}
+
+	switch eligibility.reason {
+	case retryIneligiblePolicy:
+		woc.log.WithField("phase", lastChildNode.Phase).Info(ctx, "Node not set to be retried")
+	case retryIneligibleNode:
+		woc.log.Info(ctx, "Node cannot be retried, marking it failed")
+	case retryIneligibleLimit:
+		woc.log.Info(ctx, "No more retries left. Failing...")
+	}
+	if !eligibility.eligible() {
+		return woc.markNodePhase(ctx, node.Name, eligibility.terminalPhase, eligibility.terminalMessage), true, nil
+	}
+
+	woc.log.WithFields(logging.Fields{"count": len(childNodeIds), "nodeName": node.Name}).Info(ctx, "child nodes failed, trying again")
+	return node, true, nil
+}
+
+// evaluateRetryEligibility is the single source of truth for deciding whether
+// policy, node state, retry limit, and expression permit another attempt.
+func (woc *wfOperationCtx) evaluateRetryEligibility(ctx context.Context, node, lastChildNode *wfv1.NodeStatus, childNodeIDs []string, retryStrategy wfv1.RetryStrategy, mode retryEligibilityEvaluationMode) (retryEligibility, error) {
+	eligibility := retryEligibility{}
 	var retryOnFailed bool
 	var retryOnError bool
 	switch retryStrategy.RetryPolicyActual() {
@@ -1153,7 +1223,12 @@ func (woc *wfOperationCtx) processNodeRetries(ctx context.Context, node *wfv1.No
 		retryOnFailed = false
 		retryOnError = true
 	case wfv1.RetryPolicyOnTransientError:
-		if (lastChildNode.Phase == wfv1.NodeFailed || lastChildNode.Phase == wfv1.NodeError) && errorsutil.IsTransientErr(ctx, argoerrors.InternalError(lastChildNode.Message)) {
+		isTransientErr := errorsutil.IsTransientErr
+		if mode == retryEligibilityForMetric {
+			// Duration termination used to bypass policy evaluation, so avoid adding a non-transient warning on this metric-only path.
+			isTransientErr = errorsutil.IsTransientErrQuiet
+		}
+		if (lastChildNode.Phase == wfv1.NodeFailed || lastChildNode.Phase == wfv1.NodeError) && isTransientErr(ctx, argoerrors.InternalError(lastChildNode.Message)) {
 			retryOnFailed = true
 			retryOnError = true
 		}
@@ -1161,43 +1236,54 @@ func (woc *wfOperationCtx) processNodeRetries(ctx context.Context, node *wfv1.No
 		retryOnFailed = true
 		retryOnError = false
 	default:
-		return nil, false, fmt.Errorf("%s is not a valid RetryPolicy", retryStrategy.RetryPolicyActual())
+		return eligibility, fmt.Errorf("%s is not a valid RetryPolicy", retryStrategy.RetryPolicyActual())
 	}
-	woc.log.WithFields(logging.Fields{"policy": retryStrategy.RetryPolicyActual(), "onFailed": retryOnFailed, "onError": retryOnError}).Info(ctx, "Retry Policy")
+	eligibility.retryOnFailed = retryOnFailed
+	eligibility.retryOnError = retryOnError
+	eligibility.policyEvaluated = true
 
 	if ((lastChildNode.Phase == wfv1.NodeFailed || lastChildNode.IsDaemoned() && (lastChildNode.Phase == wfv1.NodeSucceeded)) && !retryOnFailed) || (lastChildNode.Phase == wfv1.NodeError && !retryOnError) {
-		woc.log.WithField("phase", lastChildNode.Phase).Info(ctx, "Node not set to be retried")
-		return woc.markNodePhase(ctx, node.Name, lastChildNode.Phase, lastChildNode.Message), true, nil
+		eligibility.reason = retryIneligiblePolicy
+		eligibility.terminalPhase = lastChildNode.Phase
+		eligibility.terminalMessage = lastChildNode.Message
+		return eligibility, nil
 	}
 
 	if !lastChildNode.CanRetry() {
-		woc.log.Info(ctx, "Node cannot be retried, marking it failed")
-		return woc.markNodePhase(ctx, node.Name, lastChildNode.Phase, lastChildNode.Message), true, nil
+		eligibility.reason = retryIneligibleNode
+		eligibility.terminalPhase = lastChildNode.Phase
+		eligibility.terminalMessage = lastChildNode.Message
+		return eligibility, nil
 	}
 
 	limit, err := intstr.Int32(retryStrategy.Limit)
 	if err != nil {
-		return nil, false, err
+		return eligibility, err
 	}
-	if retryStrategy.Limit != nil && limit != nil && int32(len(childNodeIds)) > *limit {
-		woc.log.Info(ctx, "No more retries left. Failing...")
-		return woc.markNodePhase(ctx, node.Name, lastChildNode.Phase, "No more retries left"), true, nil
+	if retryStrategy.Limit != nil && limit != nil && int32(len(childNodeIDs)) > *limit {
+		eligibility.reason = retryIneligibleLimit
+		eligibility.terminalPhase = lastChildNode.Phase
+		eligibility.terminalMessage = "No more retries left"
+		return eligibility, nil
 	}
 
-	if retryStrategy.Expression != "" && len(childNodeIds) > 0 {
+	if retryStrategy.Expression != "" && len(childNodeIDs) > 0 {
 		localScope := buildRetryStrategyLocalScope(node, woc.wf.Status.Nodes)
 		scope := env.GetFuncMap(localScope)
 		shouldContinue, err := argoexpr.EvalBool(retryStrategy.Expression, scope)
 		if err != nil {
-			return nil, false, err
+			return eligibility, err
 		}
 		if !shouldContinue && lastChildNode.Fulfilled() {
-			return woc.markNodePhase(ctx, node.Name, lastChildNode.Phase, "retryStrategy.expression evaluated to false"), true, nil
+			eligibility.reason = retryIneligibleExpression
+			eligibility.terminalPhase = lastChildNode.Phase
+			eligibility.terminalMessage = "retryStrategy.expression evaluated to false"
+			return eligibility, nil
 		}
 	}
 
-	woc.log.WithFields(logging.Fields{"count": len(childNodeIds), "nodeName": node.Name}).Info(ctx, "child nodes failed, trying again")
-	return node, true, nil
+	eligibility.reason = retryEligible
+	return eligibility, nil
 }
 
 // podReconciliation is the process by which a workflow will examine all its related
@@ -4361,14 +4447,36 @@ func (woc *wfOperationCtx) computeMetrics(ctx context.Context, metricList []*wfv
 }
 
 func (woc *wfOperationCtx) reportMetricEmissionError(ctx context.Context, errorString string) {
-	woc.wf.Status.Conditions.UpsertConditionMessage(
+	woc.log.Error(ctx, errorString)
+	for i := range woc.wf.Status.Conditions {
+		condition := &woc.wf.Status.Conditions[i]
+		if condition.Type != wfv1.ConditionTypeMetricsError {
+			continue
+		}
+		if condition.Status != metav1.ConditionTrue {
+			condition.Status = metav1.ConditionTrue
+			woc.updated = true
+		}
+		// Realtime metrics run on every reconciliation. Match at the existing
+		// message separator boundaries so repeated errors do not trigger more
+		// Workflow updates, while ordinary substrings remain distinct errors.
+		if !strings.Contains(", "+condition.Message+", ", ", "+errorString+", ") {
+			if condition.Message == "" {
+				condition.Message = errorString
+			} else {
+				condition.Message += ", " + errorString
+			}
+			woc.updated = true
+		}
+		return
+	}
+	woc.wf.Status.Conditions.UpsertCondition(
 		wfv1.Condition{
 			Status:  metav1.ConditionTrue,
 			Type:    wfv1.ConditionTypeMetricsError,
 			Message: errorString,
 		})
 	woc.updated = true
-	woc.log.Error(ctx, errorString)
 }
 
 func (woc *wfOperationCtx) createPDBResource(ctx context.Context) error {

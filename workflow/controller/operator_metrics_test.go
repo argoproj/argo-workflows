@@ -534,6 +534,94 @@ func TestRealtimeWorkflowMetric(t *testing.T) {
 	assert.InEpsilon(t, value2, value3, 0.001)
 }
 
+func TestRealtimeWorkflowMetricReservedNameIsIdempotent(t *testing.T) {
+	wf := v1alpha1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: reserved-metric
+spec:
+  entrypoint: suspend
+  metrics:
+    prometheus:
+      - name: retry_strategy_terminations_total
+        help: Duration of workflow
+        gauge:
+          realtime: true
+          value: "{{workflow.duration}}"
+  templates:
+    - name: suspend
+      suspend: {}
+status:
+  phase: Running
+  startedAt: "2026-01-01T00:00:00Z"
+`)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.setGlobalRuntimeParameters()
+	localScope, realTimeScope := woc.prepareDefaultMetricScope()
+	woc.computeMetrics(ctx, woc.execWf.Spec.Metrics.Prometheus, localScope, realTimeScope, true)
+	require.True(t, woc.updated)
+	require.Equal(t, v1alpha1.Conditions{{
+		Type:    v1alpha1.ConditionTypeMetricsError,
+		Status:  metav1.ConditionTrue,
+		Message: `could not construct metric 'retry_strategy_terminations_total': custom metric name "retry_strategy_terminations_total" is reserved for a controller metric; use a different name`,
+	}}, woc.wf.Status.Conditions)
+
+	// A fresh operation reads the persisted condition, as it would after the
+	// Workflow update is observed by the informer.
+	nextWoc := newWorkflowOperationCtx(ctx, woc.wf, controller)
+	nextWoc.setGlobalRuntimeParameters()
+	localScope, realTimeScope = nextWoc.prepareDefaultMetricScope()
+	nextWoc.computeMetrics(ctx, nextWoc.execWf.Spec.Metrics.Prometheus, localScope, realTimeScope, true)
+	assert.Equal(t, woc.wf.Status.Conditions, nextWoc.wf.Status.Conditions)
+	assert.False(t, nextWoc.updated, "the same metric error must not cause another Workflow update")
+	assert.Equal(t, v1alpha1.WorkflowRunning, nextWoc.wf.Status.Phase)
+}
+
+func TestReportMetricEmissionError(t *testing.T) {
+	for _, tc := range []struct {
+		name        string
+		previous    string
+		errorString string
+		wantMessage string
+		wantUpdated bool
+		status      metav1.ConditionStatus
+	}{
+		{name: "duplicate", previous: "first error", errorString: "first error", wantMessage: "first error"},
+		{name: "duplicate with commas", previous: "another error, invalid metric, expected gauge, final error", errorString: "invalid metric, expected gauge", wantMessage: "another error, invalid metric, expected gauge, final error"},
+		{name: "distinct error", previous: "first error", errorString: "second error", wantMessage: "first error, second error", wantUpdated: true},
+		{name: "distinct substring", previous: "invalid metric value", errorString: "metric", wantMessage: "invalid metric value, metric", wantUpdated: true},
+		{name: "empty message", errorString: "first error", wantMessage: "first error", wantUpdated: true},
+		{name: "restore true status", previous: "first error", errorString: "first error", wantMessage: "first error", wantUpdated: true, status: metav1.ConditionFalse},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			status := tc.status
+			if status == "" {
+				status = metav1.ConditionTrue
+			}
+			woc := &wfOperationCtx{
+				wf: &v1alpha1.Workflow{Status: v1alpha1.WorkflowStatus{Conditions: v1alpha1.Conditions{
+					{Type: v1alpha1.ConditionTypeMetricsError, Status: status, Message: tc.previous},
+				}}},
+				log: logging.RequireLoggerFromContext(ctx),
+			}
+			woc.reportMetricEmissionError(ctx, tc.errorString)
+			assert.Equal(t, v1alpha1.Conditions{{Type: v1alpha1.ConditionTypeMetricsError, Status: metav1.ConditionTrue, Message: tc.wantMessage}}, woc.wf.Status.Conditions)
+			assert.Equal(t, tc.wantUpdated, woc.updated)
+
+			// Reporting the error must also preserve unrelated pending changes.
+			woc.updated = true
+			woc.reportMetricEmissionError(ctx, tc.errorString)
+			assert.True(t, woc.updated)
+			assert.Equal(t, tc.wantMessage, woc.wf.Status.Conditions[0].Message)
+		})
+	}
+}
+
 var testRealtimeWorkflowMetricWithGlobalParameters = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow

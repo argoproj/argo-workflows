@@ -609,6 +609,8 @@ func (tctx *templateValidationCtx) validateTemplate(ctx context.Context, tmpl *w
 		}
 	}
 	if newTmpl.Metrics != nil {
+		// Controller metric name reservations are deliberately enforced by UpsertCustomMetric at emission time, not here.
+		// This lets stored Workflows accepted before an upgrade keep running and reports a collision as a non-fatal MetricsError.
 		for _, metric := range newTmpl.Metrics.Prometheus {
 			if !metrics.IsValidMetricName(metric.Name) {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s metric name '%s' is invalid. Metric names must contain alphanumeric characters or '_'", tmpl.Name, metric.Name)
