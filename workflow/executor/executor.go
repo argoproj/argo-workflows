@@ -344,17 +344,23 @@ func (we *WorkflowExecutor) loadArtifact(ctx context.Context, pluginName wfv1.Ar
 	}
 
 	logger.WithField("path", artPath).Info(ctx, "Successfully download file")
-	if art.Mode != nil {
+	switch {
+	case art.Mode != nil:
 		err = chmod(artPath, *art.Mode, art.RecurseMode)
 		if err != nil {
 			return err
 		}
-	} else if driverArt.Plugin != nil {
+	case driverArt.Plugin != nil:
 		// For plugin artifacts without explicit mode, ensure the file is writable
 		// by setting mode to 0666 so the main container can read/write it
 		err = chmod(artPath, 0666, art.RecurseMode)
 		if err != nil {
 			logger.WithError(err).Error(ctx, "Failed to chmod plugin artifact")
+			return err
+		}
+	default:
+		err = chmodDefault(artPath)
+		if err != nil {
 			return err
 		}
 	}
@@ -1327,6 +1333,51 @@ func unpack(srcPath string, destPath string, decompressor func(string, string) e
 		if err != nil {
 			return argoerrs.InternalWrapError(err)
 		}
+	}
+	return nil
+}
+
+const (
+	// defaultArtifactFileMode is applied to the files of an input artifact that does not
+	// set `mode`. It is world-readable rather than owner-only because an artifact-plugin
+	// output step reads the file from a separate sidecar container, which is not
+	// guaranteed to run as the same user as the container that loaded the artifact.
+	defaultArtifactFileMode = 0o644
+	// defaultArtifactDirMode is defaultArtifactFileMode with the execute bit added, as a
+	// directory has to be traversable to be of any use.
+	defaultArtifactDirMode = 0o755
+)
+
+// chmodDefault gives an input artifact that does not set `mode` a well known set of
+// permissions: defaultArtifactFileMode for its files and defaultArtifactDirMode for its
+// directories. Without it an artifact keeps whatever permissions its archive strategy
+// happened to carry - a tarball restores the modes recorded in its headers, while an
+// artifact stored as-is only has the modes its driver created the files with, as object
+// stores do not store permissions - so the same artifact arrives with different
+// permissions depending on how the template that produced it chose to store it.
+//
+// This covers the whole artifact rather than just its root, because an artifact stored
+// as-is can be a directory too. `recurseMode` is deliberately not consulted: it selects
+// how an explicit `mode` is applied, and these are the defaults for its absence.
+//
+// Symlinks are skipped, as os.Chmod follows them and untar preserves the symlinks within
+// an artifact, so following one could change the permissions of a file outside it.
+func chmodDefault(artPath string) error {
+	err := filepath.WalkDir(artPath, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		switch {
+		case d.IsDir():
+			return os.Chmod(path, defaultArtifactDirMode)
+		case d.Type().IsRegular():
+			return os.Chmod(path, defaultArtifactFileMode)
+		default:
+			return nil
+		}
+	})
+	if err != nil {
+		return argoerrs.InternalWrapError(err)
 	}
 	return nil
 }
