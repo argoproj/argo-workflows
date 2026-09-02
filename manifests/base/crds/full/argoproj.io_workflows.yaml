@@ -5712,6 +5712,16 @@ spec:
                       Limit is the maximum number of retry attempts when retrying a container. It does not include the original
                       container; the maximum number of total attempts will be `limit + 1`.
                     x-kubernetes-int-or-string: true
+                  maxExecutionDuration:
+                    description: |-
+                      MaxExecutionDuration is the maximum cumulative execution time of completed, pod-backed retry attempts.
+                      For each attempt, execution time spans the earliest observed main-container start through the latest main-container finish.
+                      If timestamps do not establish the latest main-container finish, execution time conservatively extends until Argo
+                      observes the attempt complete.
+                      Pending time, init containers, output processing, and retry backoff are otherwise excluded. The limit is checked only
+                      after a failed or errored attempt and never terminates an active or successful attempt. Parameterized values are
+                      resolved and captured when the retry sequence starts.
+                    type: string
                   retryPolicy:
                     description: RetryPolicy is a policy of NodePhase statuses that
                       will be retried
@@ -13531,6 +13541,8 @@ spec:
                         - type: integer
                         - type: string
                         x-kubernetes-int-or-string: true
+                      maxExecutionDuration:
+                        type: string
                       retryPolicy:
                         enum:
                         - Always
@@ -32194,6 +32206,16 @@ spec:
                             Limit is the maximum number of retry attempts when retrying a container. It does not include the original
                             container; the maximum number of total attempts will be `limit + 1`.
                           x-kubernetes-int-or-string: true
+                        maxExecutionDuration:
+                          description: |-
+                            MaxExecutionDuration is the maximum cumulative execution time of completed, pod-backed retry attempts.
+                            For each attempt, execution time spans the earliest observed main-container start through the latest main-container finish.
+                            If timestamps do not establish the latest main-container finish, execution time conservatively extends until Argo
+                            observes the attempt complete.
+                            Pending time, init containers, output processing, and retry backoff are otherwise excluded. The limit is checked only
+                            after a failed or errored attempt and never terminates an active or successful attempt. Parameterized values are
+                            resolved and captured when the retry sequence starts.
+                          type: string
                         retryPolicy:
                           description: RetryPolicy is a policy of NodePhase statuses
                             that will be retried
@@ -43254,6 +43276,16 @@ spec:
                       type: string
                     estimatedDuration:
                       type: integer
+                    executionContainerNames:
+                      items:
+                        type: string
+                      type: array
+                      x-kubernetes-list-type: atomic
+                    executionDuration:
+                      type: string
+                    executionStartedAt:
+                      format: date-time
+                      type: string
                     failedPodRestarts:
                       format: int32
                       type: integer
@@ -44611,6 +44643,8 @@ spec:
                         type: integer
                       type: object
                     restartingPodUID:
+                      type: string
+                    retryMaxExecutionDuration:
                       type: string
                     startedAt:
                       format: date-time

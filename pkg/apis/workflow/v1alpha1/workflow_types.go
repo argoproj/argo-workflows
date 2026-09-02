@@ -2386,6 +2386,15 @@ type RetryStrategy struct {
 	// Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not
 	// be retried and the retry strategy will be ignored
 	Expression string `json:"expression,omitempty" protobuf:"bytes,5,opt,name=expression"`
+
+	// MaxExecutionDuration is the maximum cumulative execution time of completed, pod-backed retry attempts.
+	// For each attempt, execution time spans the earliest observed main-container start through the latest main-container finish.
+	// If timestamps do not establish the latest main-container finish, execution time conservatively extends until Argo
+	// observes the attempt complete.
+	// Pending time, init containers, output processing, and retry backoff are otherwise excluded. The limit is checked only
+	// after a failed or errored attempt and never terminates an active or successful attempt. Parameterized values are
+	// resolved and captured when the retry sequence starts.
+	MaxExecutionDuration string `json:"maxExecutionDuration,omitempty" protobuf:"bytes,6,opt,name=maxExecutionDuration"`
 }
 
 // RetryPolicyActual gets the active retry policy for a strategy.
@@ -2646,6 +2655,26 @@ type NodeStatus struct {
 	// This prevents duplicate restart attempts when the controller processes the same failed pod multiple times.
 	// Cleared when the replacement pod starts running.
 	RestartingPodUID string `json:"restartingPodUID,omitempty" protobuf:"bytes,30,opt,name=restartingPodUID"`
+
+	// ExecutionStartedAt is the earliest observed main-container start for an active, pod-backed retry attempt
+	// whose retry strategy sets MaxExecutionDuration.
+	// It is cleared after ExecutionDuration is finalized.
+	ExecutionStartedAt *metav1.Time `json:"executionStartedAt,omitempty" protobuf:"bytes,31,opt,name=executionStartedAt"`
+
+	// ExecutionDuration is normally the wall-clock time a completed, pod-backed retry attempt whose retry strategy sets
+	// MaxExecutionDuration spent between its earliest observed main-container start and latest main-container finish.
+	// When timestamps do not establish that finish, it conservatively extends until Argo observes the attempt complete.
+	// The value is encoded as a duration string.
+	ExecutionDuration string `json:"executionDuration,omitempty" protobuf:"bytes,32,opt,name=executionDuration"`
+
+	// ExecutionContainerNames contains the main containers whose execution contributes to MaxExecutionDuration.
+	// It is populated while an opted-in retry attempt is active and cleared when its duration is finalized.
+	// +listType=atomic
+	ExecutionContainerNames []string `json:"executionContainerNames,omitempty" protobuf:"bytes,33,rep,name=executionContainerNames"`
+
+	// RetryMaxExecutionDuration is the resolved MaxExecutionDuration captured when a retry node starts.
+	// It keeps a parameterized execution budget stable for every attempt in that retry sequence.
+	RetryMaxExecutionDuration string `json:"retryMaxExecutionDuration,omitempty" protobuf:"bytes,34,opt,name=retryMaxExecutionDuration"`
 }
 
 // Completed is used to determine if this node can proceed

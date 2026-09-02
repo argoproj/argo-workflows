@@ -10463,6 +10463,22 @@
           "description": "EstimatedDuration in seconds.",
           "type": "integer"
         },
+        "executionContainerNames": {
+          "description": "ExecutionContainerNames contains the main containers whose execution contributes to MaxExecutionDuration. It is populated while an opted-in retry attempt is active and cleared when its duration is finalized.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "x-kubernetes-list-type": "atomic"
+        },
+        "executionDuration": {
+          "description": "ExecutionDuration is normally the wall-clock time a completed, pod-backed retry attempt whose retry strategy sets MaxExecutionDuration spent between its earliest observed main-container start and latest main-container finish. When timestamps do not establish that finish, it conservatively extends until Argo observes the attempt complete. The value is encoded as a duration string.",
+          "type": "string"
+        },
+        "executionStartedAt": {
+          "description": "ExecutionStartedAt is the earliest observed main-container start for an active, pod-backed retry attempt whose retry strategy sets MaxExecutionDuration. It is cleared after ExecutionDuration is finalized.",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time"
+        },
         "failedPodRestarts": {
           "description": "FailedPodRestarts tracks the number of times the pod for this node was restarted due to infrastructure failures before the main container started.",
           "type": "integer"
@@ -10532,6 +10548,10 @@
         },
         "restartingPodUID": {
           "description": "RestartingPodUID tracks the UID of the pod that is currently being restarted. This prevents duplicate restart attempts when the controller processes the same failed pod multiple times. Cleared when the replacement pod starts running.",
+          "type": "string"
+        },
+        "retryMaxExecutionDuration": {
+          "description": "RetryMaxExecutionDuration is the resolved MaxExecutionDuration captured when a retry node starts. It keeps a parameterized execution budget stable for every attempt in that retry sequence.",
           "type": "string"
         },
         "startedAt": {
@@ -11046,6 +11066,10 @@
         "limit": {
           "description": "Limit is the maximum number of retry attempts when retrying a container. It does not include the original container; the maximum number of total attempts will be `limit + 1`.",
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
+        },
+        "maxExecutionDuration": {
+          "description": "MaxExecutionDuration is the maximum cumulative execution time of completed, pod-backed retry attempts. For each attempt, execution time spans the earliest observed main-container start through the latest main-container finish. If timestamps do not establish the latest main-container finish, execution time conservatively extends until Argo observes the attempt complete. Pending time, init containers, output processing, and retry backoff are otherwise excluded. The limit is checked only after a failed or errored attempt and never terminates an active or successful attempt. Parameterized values are resolved and captured when the retry sequence starts.",
+          "type": "string"
         },
         "retryPolicy": {
           "description": "RetryPolicy is a policy of NodePhase statuses that will be retried",

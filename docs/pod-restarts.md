@@ -8,6 +8,7 @@ This feature handles transient failures like node evictions, disk pressure, or u
 When a pod fails before its main container enters the Running state, the workflow controller checks if the failure reason indicates an infrastructure issue.
 If so, the pod is automatically deleted and recreated, allowing the workflow to continue.
 For safety this mechanism only works on pods we know never started, for pods that might have started `retryStrategy` is the solution.
+If Kubernetes records a terminated main container in `status.containerStatuses[].lastState` with a non-zero `startedAt`, Argo treats the container as having run and will not automatically restart the Pod.
 
 This is different from [retryStrategy](retries.md), which handles application-level failures after the container has run.
 These are complementary mechanisms, in that both can occur.
@@ -29,7 +30,7 @@ The following pod failure reasons trigger automatic restarts:
 A pod qualifies for automatic restart when ALL of the following are true:
 
 1. The pod phase is `Failed`
-2. The main container never entered the `Running` state
+2. The main container has no current or previous state showing that it started
 3. The failure reason is one of the restartable reasons listed above
 4. The restart count for this pod hasn't exceeded the configured maximum
 

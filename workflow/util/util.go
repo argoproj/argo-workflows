@@ -831,6 +831,13 @@ func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized 
 	}
 	for _, node := range wf.Status.Nodes {
 		newNode := node.DeepCopy()
+		// A memoized resubmission starts a new retry sequence. Do not carry the
+		// captured execution budget or attempt accounting over from the previous
+		// Workflow.
+		newNode.ExecutionStartedAt = nil
+		newNode.ExecutionDuration = ""
+		newNode.ExecutionContainerNames = nil
+		newNode.RetryMaxExecutionDuration = ""
 		if strings.HasPrefix(node.Name, onExitNodeName) {
 			continue
 		}
@@ -1451,6 +1458,9 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 }
 
 func resetNode(node wfv1.NodeStatus) wfv1.NodeStatus {
+	// Pod attempt nodes do not reach resetNode: resetPath marks them for deletion,
+	// and deletion takes precedence over reset. Their per-attempt execution
+	// accounting is removed with the node rather than reset in place.
 	// The previously supplied parameters needed to be reset. Otherwise, `argo node reset` would not work as expected.
 	if node.Type == wfv1.NodeTypeSuspend {
 		if node.Outputs != nil {
@@ -1462,6 +1472,11 @@ func resetNode(node wfv1.NodeStatus) wfv1.NodeStatus {
 				}
 			}
 		}
+	}
+	if node.Type == wfv1.NodeTypeRetry {
+		// A manually retried workflow starts a new retry sequence, so resolve and
+		// capture its execution budget again from any updated parameters.
+		node.RetryMaxExecutionDuration = ""
 	}
 	if node.Phase == wfv1.NodeSkipped {
 		// The skipped nodes need to be kept as skipped. Otherwise, the workflow will be stuck on running.

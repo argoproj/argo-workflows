@@ -4757,6 +4757,45 @@ func (m *NodeStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	i -= len(m.RetryMaxExecutionDuration)
+	copy(dAtA[i:], m.RetryMaxExecutionDuration)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.RetryMaxExecutionDuration)))
+	i--
+	dAtA[i] = 0x2
+	i--
+	dAtA[i] = 0x92
+	if len(m.ExecutionContainerNames) > 0 {
+		for iNdEx := len(m.ExecutionContainerNames) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.ExecutionContainerNames[iNdEx])
+			copy(dAtA[i:], m.ExecutionContainerNames[iNdEx])
+			i = encodeVarintGenerated(dAtA, i, uint64(len(m.ExecutionContainerNames[iNdEx])))
+			i--
+			dAtA[i] = 0x2
+			i--
+			dAtA[i] = 0x8a
+		}
+	}
+	i -= len(m.ExecutionDuration)
+	copy(dAtA[i:], m.ExecutionDuration)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.ExecutionDuration)))
+	i--
+	dAtA[i] = 0x2
+	i--
+	dAtA[i] = 0x82
+	if m.ExecutionStartedAt != nil {
+		{
+			size, err := m.ExecutionStartedAt.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintGenerated(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x1
+		i--
+		dAtA[i] = 0xfa
+	}
 	i -= len(m.RestartingPodUID)
 	copy(dAtA[i:], m.RestartingPodUID)
 	i = encodeVarintGenerated(dAtA, i, uint64(len(m.RestartingPodUID)))
@@ -6005,6 +6044,11 @@ func (m *RetryStrategy) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	i -= len(m.MaxExecutionDuration)
+	copy(dAtA[i:], m.MaxExecutionDuration)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.MaxExecutionDuration)))
+	i--
+	dAtA[i] = 0x32
 	i -= len(m.Expression)
 	copy(dAtA[i:], m.Expression)
 	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Expression)))
@@ -11444,6 +11488,20 @@ func (m *NodeStatus) Size() (n int) {
 	n += 2 + sovGenerated(uint64(m.FailedPodRestarts))
 	l = len(m.RestartingPodUID)
 	n += 2 + l + sovGenerated(uint64(l))
+	if m.ExecutionStartedAt != nil {
+		l = m.ExecutionStartedAt.Size()
+		n += 2 + l + sovGenerated(uint64(l))
+	}
+	l = len(m.ExecutionDuration)
+	n += 2 + l + sovGenerated(uint64(l))
+	if len(m.ExecutionContainerNames) > 0 {
+		for _, s := range m.ExecutionContainerNames {
+			l = len(s)
+			n += 2 + l + sovGenerated(uint64(l))
+		}
+	}
+	l = len(m.RetryMaxExecutionDuration)
+	n += 2 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -11847,6 +11905,8 @@ func (m *RetryStrategy) Size() (n int) {
 		n += 1 + l + sovGenerated(uint64(l))
 	}
 	l = len(m.Expression)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.MaxExecutionDuration)
 	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
@@ -14381,6 +14441,10 @@ func (this *NodeStatus) String() string {
 		`TaskResultSynced:` + valueToStringGenerated(this.TaskResultSynced) + `,`,
 		`FailedPodRestarts:` + fmt.Sprintf("%v", this.FailedPodRestarts) + `,`,
 		`RestartingPodUID:` + fmt.Sprintf("%v", this.RestartingPodUID) + `,`,
+		`ExecutionStartedAt:` + strings.Replace(fmt.Sprintf("%v", this.ExecutionStartedAt), "Time", "v11.Time", 1) + `,`,
+		`ExecutionDuration:` + fmt.Sprintf("%v", this.ExecutionDuration) + `,`,
+		`ExecutionContainerNames:` + fmt.Sprintf("%v", this.ExecutionContainerNames) + `,`,
+		`RetryMaxExecutionDuration:` + fmt.Sprintf("%v", this.RetryMaxExecutionDuration) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -14672,6 +14736,7 @@ func (this *RetryStrategy) String() string {
 		`Backoff:` + strings.Replace(this.Backoff.String(), "Backoff", "Backoff", 1) + `,`,
 		`Affinity:` + strings.Replace(this.Affinity.String(), "RetryAffinity", "RetryAffinity", 1) + `,`,
 		`Expression:` + fmt.Sprintf("%v", this.Expression) + `,`,
+		`MaxExecutionDuration:` + fmt.Sprintf("%v", this.MaxExecutionDuration) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -30151,6 +30216,138 @@ func (m *NodeStatus) Unmarshal(dAtA []byte) error {
 			}
 			m.RestartingPodUID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
+		case 31:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ExecutionStartedAt", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ExecutionStartedAt == nil {
+				m.ExecutionStartedAt = &v11.Time{}
+			}
+			if err := m.ExecutionStartedAt.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 32:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ExecutionDuration", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ExecutionDuration = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 33:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ExecutionContainerNames", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ExecutionContainerNames = append(m.ExecutionContainerNames, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
+		case 34:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RetryMaxExecutionDuration", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.RetryMaxExecutionDuration = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGenerated(dAtA[iNdEx:])
@@ -33435,6 +33632,38 @@ func (m *RetryStrategy) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.Expression = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MaxExecutionDuration", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.MaxExecutionDuration = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

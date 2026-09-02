@@ -303,6 +303,8 @@ Workflow is the definition of a workflow resource
 
 - [`retry-container.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-container.yaml)
 
+- [`retry-max-execution-duration.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-max-execution-duration.yaml)
+
 - [`retry-on-error.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-on-error.yaml)
 
 - [`retry-script.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-script.yaml)
@@ -808,6 +810,8 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`retry-container.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-container.yaml)
 
+- [`retry-max-execution-duration.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-max-execution-duration.yaml)
+
 - [`retry-on-error.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-on-error.yaml)
 
 - [`retry-script.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-script.yaml)
@@ -1296,6 +1300,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`retry-container-to-completion.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-container-to-completion.yaml)
 
 - [`retry-container.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-container.yaml)
+
+- [`retry-max-execution-duration.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-max-execution-duration.yaml)
 
 - [`retry-on-error.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-on-error.yaml)
 
@@ -1847,6 +1853,8 @@ RetryStrategy provides controls on how to retry a workflow step
 
 - [`retry-container.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-container.yaml)
 
+- [`retry-max-execution-duration.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-max-execution-duration.yaml)
+
 - [`retry-on-error.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-on-error.yaml)
 
 - [`retry-script.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-script.yaml)
@@ -1869,6 +1877,7 @@ RetryStrategy provides controls on how to retry a workflow step
 |`backoff`|[`Backoff`](#backoff)|Backoff is a backoff strategy|
 |`expression`|`string`|Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not be retried and the retry strategy will be ignored|
 |`limit`|[`IntOrString`](#intorstring)|Limit is the maximum number of retry attempts when retrying a container. It does not include the original container; the maximum number of total attempts will be `limit + 1`.|
+|`maxExecutionDuration`|`string`|MaxExecutionDuration is the maximum cumulative execution time of completed, pod-backed retry attempts. For each attempt, execution time spans the earliest observed main-container start through the latest main-container finish. If timestamps do not establish the latest main-container finish, execution time conservatively extends until Argo observes the attempt complete. Pending time, init containers, output processing, and retry backoff are otherwise excluded. The limit is checked only after a failed or errored attempt and never terminates an active or successful attempt. Parameterized values are resolved and captured when the retry sequence starts.|
 |`retryPolicy`|`string`|RetryPolicy is a policy of NodePhase statuses that will be retried|
 
 ## Synchronization
@@ -2202,6 +2211,8 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`retry-container.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-container.yaml)
 
+- [`retry-max-execution-duration.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-max-execution-duration.yaml)
+
 - [`retry-on-error.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-on-error.yaml)
 
 - [`retry-script.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-script.yaml)
@@ -2475,6 +2486,9 @@ NodeStatus contains status information about an individual node in the workflow
 |`daemoned`|`boolean`|Daemoned tracks whether or not this node was daemoned and need to be terminated|
 |`displayName`|`string`|DisplayName is a human readable representation of the node. Unique within a template boundary|
 |`estimatedDuration`|`integer`|EstimatedDuration in seconds.|
+|`executionContainerNames`|`Array< string >`|ExecutionContainerNames contains the main containers whose execution contributes to MaxExecutionDuration. It is populated while an opted-in retry attempt is active and cleared when its duration is finalized.|
+|`executionDuration`|`string`|ExecutionDuration is normally the wall-clock time a completed, pod-backed retry attempt whose retry strategy sets MaxExecutionDuration spent between its earliest observed main-container start and latest main-container finish. When timestamps do not establish that finish, it conservatively extends until Argo observes the attempt complete. The value is encoded as a duration string.|
+|`executionStartedAt`|[`Time`](#time)|ExecutionStartedAt is the earliest observed main-container start for an active, pod-backed retry attempt whose retry strategy sets MaxExecutionDuration. It is cleared after ExecutionDuration is finalized.|
 |`failedPodRestarts`|`integer`|FailedPodRestarts tracks the number of times the pod for this node was restarted due to infrastructure failures before the main container started.|
 |`finishedAt`|[`Time`](#time)|Time at which this node completed|
 |`hostNodeName`|`string`|HostNodeName name of the Kubernetes node on which the Pod is running, if applicable|
@@ -2491,6 +2505,7 @@ NodeStatus contains status information about an individual node in the workflow
 |`progress`|`string`|Progress to completion|
 |`resourcesDuration`|`Map< integer , int64 >`|ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.|
 |`restartingPodUID`|`string`|RestartingPodUID tracks the UID of the pod that is currently being restarted. This prevents duplicate restart attempts when the controller processes the same failed pod multiple times. Cleared when the replacement pod starts running.|
+|`retryMaxExecutionDuration`|`string`|RetryMaxExecutionDuration is the resolved MaxExecutionDuration captured when a retry node starts. It keeps a parameterized execution budget stable for every attempt in that retry sequence.|
 |`startedAt`|[`Time`](#time)|Time at which this node started|
 |`synchronizationStatus`|[`NodeSynchronizationStatus`](#nodesynchronizationstatus)|SynchronizationStatus is the synchronization status of the node|
 |`taskResultSynced`|`boolean`|TaskResultSynced is used to determine if the node's output has been received|
@@ -4677,6 +4692,8 @@ ContainerSetRetryStrategy provides controls on how to retry a container set
 
 - [`retry-container.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-container.yaml)
 
+- [`retry-max-execution-duration.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-max-execution-duration.yaml)
+
 - [`retry-on-error.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-on-error.yaml)
 
 - [`retry-script.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-script.yaml)
@@ -5796,6 +5813,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`retry-container.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-container.yaml)
 
+- [`retry-max-execution-duration.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-max-execution-duration.yaml)
+
 - [`retry-on-error.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-on-error.yaml)
 
 - [`retry-script.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-script.yaml)
@@ -6257,6 +6276,8 @@ _No description available_
 
 - [`retry-container.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-container.yaml)
 
+- [`retry-max-execution-duration.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-max-execution-duration.yaml)
+
 - [`retry-on-error.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-on-error.yaml)
 
 - [`retry-script.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-script.yaml)
@@ -6526,6 +6547,8 @@ A single application container that you want to run within a pod.
 - [`retry-container-to-completion.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-container-to-completion.yaml)
 
 - [`retry-container.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-container.yaml)
+
+- [`retry-max-execution-duration.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-max-execution-duration.yaml)
 
 - [`retry-on-error.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-on-error.yaml)
 
@@ -7637,6 +7660,8 @@ ImageVolumeSource represents a image volume resource.
 - [`retry-container-to-completion.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-container-to-completion.yaml)
 
 - [`retry-container.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-container.yaml)
+
+- [`retry-max-execution-duration.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-max-execution-duration.yaml)
 
 - [`retry-on-error.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/retry-on-error.yaml)
 

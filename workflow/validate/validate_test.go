@@ -2,6 +2,7 @@ package validate
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 	"strings"
 	"testing"
@@ -4117,6 +4118,496 @@ func TestPodResourcesValidation(t *testing.T) {
 	require.ErrorContains(t, err, "templates.main.podResources is not supported for HTTP templates")
 	err = validate(ctx, podResourcesValid)
 	require.NoError(t, err)
+}
+
+func TestMaxExecutionDurationValidation(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	podWorkflow := func(duration string) string {
+		return fmt.Sprintf(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: max-execution-duration-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    retryStrategy:
+      maxExecutionDuration: %q
+    container:
+      image: alpine:3.23
+`, duration)
+	}
+
+	require.NoError(t, validate(ctx, podWorkflow("10m")))
+	require.NoError(t, validate(ctx, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: max-execution-duration-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    inputs:
+      parameters:
+      - name: budget
+        value: 10m
+    retryStrategy:
+      maxExecutionDuration: "{{inputs.parameters.budget}}"
+    container:
+      image: alpine:3.23
+`))
+	err := validate(ctx, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: max-execution-duration-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    inputs:
+      parameters:
+      - name: budget
+        value: invalid
+    retryStrategy:
+      maxExecutionDuration: "{{inputs.parameters.budget}}"
+    container:
+      image: alpine:3.23
+`)
+	require.ErrorContains(t, err, "retryStrategy.maxExecutionDuration is invalid")
+	err = validate(ctx, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: max-execution-duration-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    inputs:
+      parameters:
+      - name: budget
+        value: ""
+    retryStrategy:
+      maxExecutionDuration: "{{inputs.parameters.budget}}"
+    container:
+      image: alpine:3.23
+`)
+	require.ErrorContains(t, err, "retryStrategy.maxExecutionDuration must be greater than zero")
+
+	for _, duration := range []string{
+		"{{retries}}s",
+		"{{lastRetry.duration}}s",
+		"{{=sprig.int(retries) + 1}}s",
+		"{{=sprig.int(lastRetry.duration) + 1}}s",
+		"{{=1-retries}}s",
+		"{{=-retries}}s",
+		"{{=lastRetry.duration-1}}s",
+		"{{=`retries` + retries}}",
+		"{{=`lastRetry.duration` + lastRetry.duration}}",
+		"{{=`escaped ``retries`` literal` + retries}}",
+	} {
+		validationErr := validate(ctx, podWorkflow(duration))
+		require.ErrorContains(t, validationErr, "cannot reference retries or lastRetry")
+	}
+
+	for _, duration := range []string{
+		"{{workflow.parameters.retries}}",
+		"{{inputs.parameters.lastRetry}}",
+		"{{=workflow.parameters.retries}}",
+		"{{=inputs.parameters['retries']}}",
+		`{{=workflow.parameters["lastRetry"]}}`,
+		"{{=`retries`}}",
+		"{{=`lastRetry.duration`}}",
+		"{{=`escaped ``retries`` and lastRetry literal`}}",
+		"{{=`retries` + retriesTotal + lastRetryValue}}",
+	} {
+		require.NoError(t, validateMaxExecutionDuration("retryStrategy.maxExecutionDuration", duration))
+	}
+
+	err = validate(ctx, podWorkflow("not-a-duration"))
+	require.ErrorContains(t, err, "retryStrategy.maxExecutionDuration is invalid")
+
+	for _, duration := range []string{"0s", "-1s"} {
+		err = validate(ctx, podWorkflow(duration))
+		require.ErrorContains(t, err, "retryStrategy.maxExecutionDuration must be greater than zero")
+	}
+
+	for _, duration := range []string{"not-a-duration", "0s", "-1s", "18446744074"} {
+		err = validate(ctx, fmt.Sprintf(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: max-execution-duration-
+spec:
+  entrypoint: main
+  retryStrategy:
+    maxExecutionDuration: %q
+  templates:
+  - name: main
+    container:
+      image: alpine:3.23
+`, duration))
+		require.ErrorContains(t, err, "spec.retryStrategy.maxExecutionDuration")
+	}
+
+	for _, duration := range []string{"not-a-duration", "0s", "-1s", "18446744074"} {
+		err = validate(ctx, fmt.Sprintf(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: max-execution-duration-
+spec:
+  entrypoint: main
+  templateDefaults:
+    retryStrategy:
+      maxExecutionDuration: %q
+  templates:
+  - name: main
+    container:
+      image: alpine:3.23
+`, duration))
+		require.ErrorContains(t, err, "spec.templateDefaults.retryStrategy.maxExecutionDuration")
+	}
+
+	for _, strategy := range []string{
+		`  retryStrategy:
+    maxExecutionDuration: "{{workflow.parameters.budget}}"`,
+		`  templateDefaults:
+    retryStrategy:
+      maxExecutionDuration: "{{workflow.parameters.budget}}"`,
+	} {
+		err = validate(ctx, fmt.Sprintf(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: max-execution-duration-
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+    - name: budget
+      value: invalid
+%s
+  templates:
+  - name: main
+    container:
+      image: alpine:3.23
+`, strategy))
+		require.ErrorContains(t, err, "maxExecutionDuration is invalid")
+	}
+
+	err = validate(ctx, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: max-execution-duration-
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+    - name: budget
+      value: ""
+  retryStrategy:
+    maxExecutionDuration: "{{workflow.parameters.budget}}"
+  templates:
+  - name: main
+    container:
+      image: alpine:3.23
+`)
+	require.ErrorContains(t, err, "spec.retryStrategy.maxExecutionDuration must be greater than zero")
+
+	err = validate(ctx, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: max-execution-duration-
+spec:
+  entrypoint: main
+  retryStrategy:
+    maxExecutionDuration: "{{inputs.parameters.budget}}"
+  templates:
+  - name: main
+    container:
+      image: alpine:3.23
+`)
+	require.ErrorContains(t, err, "failed to resolve")
+
+	workflowTemplate := `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: max-execution-duration-ref
+  namespace: default
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+    - name: budget
+  retryStrategy:
+    maxExecutionDuration: "{{workflow.parameters.budget}}"
+  templates:
+  - name: main
+    container:
+      image: alpine:3.23
+`
+	require.NoError(t, validateWorkflowTemplate(ctx, workflowTemplate, Opts{}))
+	require.NoError(t, createWorkflowTemplateFromSpec(ctx, workflowTemplate))
+	defer func() { _ = deleteWorkflowTemplate(ctx, "max-execution-duration-ref") }()
+	err = validate(ctx, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: max-execution-duration-ref-
+spec:
+  workflowTemplateRef:
+    name: max-execution-duration-ref
+  arguments:
+    parameters:
+    - name: budget
+      value: invalid
+`)
+	require.ErrorContains(t, err, "workflowTemplateRef.spec.retryStrategy.maxExecutionDuration is invalid")
+
+	err = validate(ctx, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: max-execution-duration-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    retryStrategy:
+      maxExecutionDuration: 10m
+    steps:
+    - - name: run
+        template: worker
+  - name: worker
+    container:
+      image: alpine:3.23
+`)
+	require.ErrorContains(t, err, "Steps template doesn't support retryStrategy.maxExecutionDuration field")
+
+	// A workflow-level retry strategy is inherited by all templates. Non-pod wrappers
+	// ignore only this budget while retaining the rest of the inherited strategy.
+	err = validate(ctx, `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: max-execution-duration-
+spec:
+  entrypoint: main
+  retryStrategy:
+    maxExecutionDuration: 10m
+  templates:
+  - name: main
+    steps:
+    - - name: run
+        template: worker
+  - name: worker
+    container:
+      image: alpine:3.23
+`)
+	require.NoError(t, err)
+}
+
+func TestWorkflowDefaultsMaxExecutionDurationValidation(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	const (
+		refName         = "max-execution-duration-defaults-ref"
+		overrideRefName = "max-execution-duration-defaults-override-ref"
+	)
+	for _, wftmpl := range []*wfv1.WorkflowTemplate{
+		{
+			ObjectMeta: metav1.ObjectMeta{Name: refName, Namespace: metav1.NamespaceDefault},
+			Spec: wfv1.WorkflowSpec{
+				Entrypoint: "main",
+				Arguments: wfv1.Arguments{Parameters: []wfv1.Parameter{{
+					Name: "referenced-budget", Value: wfv1.AnyStringPtr("2m"),
+				}}},
+				Templates: []wfv1.Template{{Name: "main", Container: &corev1.Container{Image: "alpine:3.23"}}},
+			},
+		},
+		{
+			ObjectMeta: metav1.ObjectMeta{Name: overrideRefName, Namespace: metav1.NamespaceDefault},
+			Spec: wfv1.WorkflowSpec{
+				Entrypoint:    "main",
+				RetryStrategy: &wfv1.RetryStrategy{MaxExecutionDuration: "2m"},
+				TemplateDefaults: &wfv1.Template{RetryStrategy: &wfv1.RetryStrategy{
+					MaxExecutionDuration: "3m",
+				}},
+				Templates: []wfv1.Template{{Name: "main", Container: &corev1.Container{Image: "alpine:3.23"}}},
+			},
+		},
+	} {
+		require.NoError(t, createWorkflowTemplate(ctx, wftmpl))
+		name := wftmpl.Name
+		t.Cleanup(func() { _ = deleteWorkflowTemplate(ctx, name) })
+	}
+
+	refWorkflow := func(name string) *wfv1.Workflow {
+		return &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{Name: "max-execution-duration-defaults", Namespace: metav1.NamespaceDefault},
+			Spec:       wfv1.WorkflowSpec{WorkflowTemplateRef: &wfv1.WorkflowTemplateRef{Name: name}},
+		}
+	}
+	workflowDefaults := func(retryMax, templateDefaultMax string) *wfv1.Workflow {
+		defaults := &wfv1.Workflow{}
+		if retryMax != "" {
+			defaults.Spec.RetryStrategy = &wfv1.RetryStrategy{MaxExecutionDuration: retryMax}
+		}
+		if templateDefaultMax != "" {
+			defaults.Spec.TemplateDefaults = &wfv1.Template{
+				RetryStrategy: &wfv1.RetryStrategy{MaxExecutionDuration: templateDefaultMax},
+			}
+		}
+		return defaults
+	}
+	validateDefaults := func(wf, defaults *wfv1.Workflow) error {
+		return Workflow(ctx, wftmplGetter, cwftmplGetter, wf, defaults, Opts{})
+	}
+
+	t.Run("rejects effective workflow retry default", func(t *testing.T) {
+		err := validateDefaults(refWorkflow(refName), workflowDefaults("not-a-duration", ""))
+		require.ErrorContains(t, err, "workflowDefaults.spec.retryStrategy.maxExecutionDuration is invalid")
+	})
+
+	t.Run("rejects effective template retry default", func(t *testing.T) {
+		err := validateDefaults(refWorkflow(refName), workflowDefaults("", "0s"))
+		require.ErrorContains(t, err, "workflowDefaults.spec.templateDefaults.retryStrategy.maxExecutionDuration must be greater than zero")
+	})
+
+	t.Run("rejects attempt-scoped variables in defaults", func(t *testing.T) {
+		err := validateDefaults(refWorkflow(refName), workflowDefaults("{{retries}}s", ""))
+		require.ErrorContains(t, err, "workflowDefaults.spec.retryStrategy.maxExecutionDuration cannot reference retries or lastRetry")
+		err = validateDefaults(refWorkflow(refName), workflowDefaults("", "{{=lastRetry.duration}}"))
+		require.ErrorContains(t, err, "workflowDefaults.spec.templateDefaults.retryStrategy.maxExecutionDuration cannot reference retries or lastRetry")
+	})
+
+	t.Run("accepts static defaults", func(t *testing.T) {
+		require.NoError(t, validateDefaults(refWorkflow(refName), workflowDefaults("2m", "3m")))
+	})
+
+	t.Run("resolves workflow parameter from submitted workflow", func(t *testing.T) {
+		wf := refWorkflow(refName)
+		wf.Spec.Arguments.Parameters = []wfv1.Parameter{{Name: "budget", Value: wfv1.AnyStringPtr("2m")}}
+		require.NoError(t, validateDefaults(wf, workflowDefaults("{{workflow.parameters.budget}}", "")))
+	})
+
+	t.Run("resolves workflow parameter from referenced template", func(t *testing.T) {
+		require.NoError(t, validateDefaults(refWorkflow(refName), workflowDefaults("{{workflow.parameters.referenced-budget}}", "")))
+	})
+
+	t.Run("resolves workflow parameter from workflow defaults", func(t *testing.T) {
+		defaults := workflowDefaults("{{workflow.parameters.budget}}", "")
+		defaults.Spec.Arguments.Parameters = []wfv1.Parameter{{Name: "budget", Value: wfv1.AnyStringPtr("2m")}}
+		require.NoError(t, validateDefaults(refWorkflow(refName), defaults))
+	})
+
+	t.Run("rejects invalid resolved workflow parameter", func(t *testing.T) {
+		wf := refWorkflow(refName)
+		wf.Spec.Arguments.Parameters = []wfv1.Parameter{{Name: "budget", Value: wfv1.AnyStringPtr("invalid")}}
+		err := validateDefaults(wf, workflowDefaults("{{workflow.parameters.budget}}", ""))
+		require.ErrorContains(t, err, "workflowDefaults.spec.retryStrategy.maxExecutionDuration is invalid")
+	})
+
+	t.Run("allows template input in template default", func(t *testing.T) {
+		require.NoError(t, validateDefaults(refWorkflow(refName), workflowDefaults("", "{{inputs.parameters.budget}}")))
+	})
+
+	t.Run("does not validate overridden defaults", func(t *testing.T) {
+		defaults := workflowDefaults("not-a-duration", "also-invalid")
+		require.NoError(t, validateDefaults(refWorkflow(overrideRefName), defaults))
+	})
+
+	t.Run("submitted parameter overrides default parameter", func(t *testing.T) {
+		wf := refWorkflow(refName)
+		wf.Spec.Arguments.Parameters = []wfv1.Parameter{{Name: "budget", Value: wfv1.AnyStringPtr("2m")}}
+		defaults := workflowDefaults("{{workflow.parameters.budget}}", "")
+		defaults.Spec.Arguments.Parameters = []wfv1.Parameter{{Name: "budget", Value: wfv1.AnyStringPtr("invalid")}}
+		require.NoError(t, validateDefaults(wf, defaults))
+	})
+
+	t.Run("referenced parameter overrides default parameter", func(t *testing.T) {
+		defaults := workflowDefaults("{{workflow.parameters.referenced-budget}}", "")
+		defaults.Spec.Arguments.Parameters = []wfv1.Parameter{{Name: "referenced-budget", Value: wfv1.AnyStringPtr("invalid")}}
+		require.NoError(t, validateDefaults(refWorkflow(refName), defaults))
+	})
+}
+
+func TestMaxExecutionDurationDefaultParameterScope(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	newWorkflow := func() *wfv1.Workflow {
+		return &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{Name: "default-parameter-scope", Namespace: metav1.NamespaceDefault},
+			Spec: wfv1.WorkflowSpec{
+				Entrypoint: "main",
+				Templates:  []wfv1.Template{{Name: "main", Container: &corev1.Container{Image: "alpine:3.23"}}},
+			},
+		}
+	}
+	newDefaults := func() *wfv1.Workflow {
+		return &wfv1.Workflow{Spec: wfv1.WorkflowSpec{
+			Arguments: wfv1.Arguments{Parameters: []wfv1.Parameter{{Name: "budget", Value: wfv1.AnyStringPtr("2m")}}},
+		}}
+	}
+
+	for _, source := range []string{"workflow", "referenced template", "workflow defaults"} {
+		for _, templateDefault := range []bool{false, true} {
+			field := "retryStrategy.maxExecutionDuration"
+			if templateDefault {
+				field = "templateDefaults." + field
+			}
+			t.Run(source+"/"+field, func(t *testing.T) {
+				wf, defaults := newWorkflow(), newDefaults()
+				budgetSpec := &wf.Spec
+				if source == "workflow defaults" {
+					budgetSpec = &defaults.Spec
+				}
+				strategy := &wfv1.RetryStrategy{MaxExecutionDuration: "{{workflow.parameters.budget}}"}
+				if templateDefault {
+					budgetSpec.TemplateDefaults = &wfv1.Template{RetryStrategy: strategy}
+				} else {
+					budgetSpec.RetryStrategy = strategy
+				}
+				if source == "referenced template" {
+					wftmpl := &wfv1.WorkflowTemplate{ObjectMeta: wf.ObjectMeta, Spec: wf.Spec}
+					require.NoError(t, createWorkflowTemplate(ctx, wftmpl))
+					t.Cleanup(func() { _ = deleteWorkflowTemplate(ctx, wftmpl.Name) })
+					wf.Spec = wfv1.WorkflowSpec{WorkflowTemplateRef: &wfv1.WorkflowTemplateRef{Name: wftmpl.Name}}
+				}
+				require.NoError(t, Workflow(ctx, wftmplGetter, cwftmplGetter, wf, defaults, Opts{}))
+				defaults.Spec.Arguments.Parameters[0].Value = wfv1.AnyStringPtr("invalid")
+				err := Workflow(ctx, wftmplGetter, cwftmplGetter, wf, defaults, Opts{})
+				require.ErrorContains(t, err, field+" is invalid")
+			})
+		}
+	}
+
+	for _, budget := range []string{"", "{{workflow.parameters.budget}}"} {
+		t.Run("ordinary template keeps original parameter scope/budget="+budget, func(t *testing.T) {
+			wf, defaults := newWorkflow(), newDefaults()
+			if budget != "" {
+				wf.Spec.RetryStrategy = &wfv1.RetryStrategy{MaxExecutionDuration: budget}
+			}
+			wf.Spec.Templates[0].Container.Args = []string{"{{workflow.parameters.budget}}"}
+			err := Workflow(ctx, wftmplGetter, cwftmplGetter, wf, defaults, Opts{})
+			require.ErrorContains(t, err, "failed to resolve {{workflow.parameters.budget}}")
+		})
+	}
+
+	t.Run("template-local budget keeps original parameter scope", func(t *testing.T) {
+		wf, defaults := newWorkflow(), newDefaults()
+		wf.Spec.Templates[0].RetryStrategy = &wfv1.RetryStrategy{MaxExecutionDuration: "{{workflow.parameters.budget}}"}
+		err := Workflow(ctx, wftmplGetter, cwftmplGetter, wf, defaults, Opts{})
+		require.ErrorContains(t, err, "failed to resolve {{workflow.parameters.budget}}")
+
+		wf.Spec.Arguments.Parameters = []wfv1.Parameter{{Name: "budget", Value: wfv1.AnyStringPtr("3m")}}
+		require.NoError(t, Workflow(ctx, wftmplGetter, cwftmplGetter, wf, defaults, Opts{}))
+	})
 }
 
 var resourceClaimsValid = `

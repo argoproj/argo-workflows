@@ -30,6 +30,10 @@ func TestRecordRetryStrategyTermination(t *testing.T) {
 			name:   "backoff would exceed max duration",
 			reason: RetryStrategyTerminationReasonBackoffWouldExceedMaxDuration,
 		},
+		{
+			name:   "max execution duration exceeded",
+			reason: RetryStrategyTerminationReasonMaxExecutionDurationExceeded,
+		},
 	}
 
 	for _, tt := range tests {

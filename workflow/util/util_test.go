@@ -731,6 +731,58 @@ func TestFormulateResubmitWorkflow(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, "modified", wf.Spec.Arguments.Parameters[0].Value.String())
 	})
+	t.Run("Memoized resubmit resets retry execution accounting", func(t *testing.T) {
+		const (
+			workflowID = "retry-budget"
+			attemptID  = "retry-budget-attempt"
+		)
+		executionStartedAt := metav1.Now()
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{Name: workflowID},
+			Spec: wfv1.WorkflowSpec{Arguments: wfv1.Arguments{Parameters: []wfv1.Parameter{
+				{Name: "budget", Value: wfv1.AnyStringPtr("10s")},
+			}}},
+			Status: wfv1.WorkflowStatus{
+				Phase: wfv1.WorkflowFailed,
+				Nodes: wfv1.Nodes{
+					workflowID: {
+						ID:                        workflowID,
+						Name:                      workflowID,
+						Type:                      wfv1.NodeTypeRetry,
+						Phase:                     wfv1.NodeFailed,
+						Children:                  []string{attemptID},
+						RetryMaxExecutionDuration: "10s",
+					},
+					attemptID: {
+						ID:                      attemptID,
+						Name:                    workflowID + "(0)",
+						Type:                    wfv1.NodeTypePod,
+						Phase:                   wfv1.NodeFailed,
+						NodeFlag:                &wfv1.NodeFlag{Retried: true},
+						ExecutionStartedAt:      &executionStartedAt,
+						ExecutionDuration:       "30s",
+						ExecutionContainerNames: []string{common.MainContainerName},
+					},
+				},
+			},
+		}
+
+		resubmitted, err := FormulateResubmitWorkflow(logging.TestContext(t.Context()), wf, true, []string{"budget=20s"})
+		require.NoError(t, err)
+		assert.Equal(t, "20s", resubmitted.Spec.Arguments.Parameters[0].Value.String())
+
+		retryNode, err := resubmitted.GetNodeByName(resubmitted.Name)
+		require.NoError(t, err)
+		assert.Equal(t, wfv1.NodePending, retryNode.Phase)
+		assert.Empty(t, retryNode.RetryMaxExecutionDuration)
+
+		attemptNode, err := resubmitted.GetNodeByName(resubmitted.Name + "(0)")
+		require.NoError(t, err)
+		assert.Equal(t, wfv1.NodePending, attemptNode.Phase)
+		assert.Nil(t, attemptNode.ExecutionStartedAt)
+		assert.Empty(t, attemptNode.ExecutionDuration)
+		assert.Empty(t, attemptNode.ExecutionContainerNames)
+	})
 }
 
 var deepDeleteOfNodes = `
@@ -1157,6 +1209,53 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		wf, _, err := FormulateRetryWorkflow(logging.TestContext(t.Context()), wf, false, "", []string{"message=modified"})
 		require.NoError(t, err)
 		assert.Equal(t, "modified", wf.Spec.Arguments.Parameters[0].Value.String())
+	})
+	t.Run("Retry execution budget is recaptured after parameter override", func(t *testing.T) {
+		const (
+			workflowID = "retry-budget"
+			attemptID  = "retry-budget-attempt"
+		)
+		executionStartedAt := metav1.Now()
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{Name: workflowID, Labels: map[string]string{}},
+			Spec: wfv1.WorkflowSpec{Arguments: wfv1.Arguments{Parameters: []wfv1.Parameter{
+				{Name: "budget", Value: wfv1.AnyStringPtr("1m")},
+			}}},
+			Status: wfv1.WorkflowStatus{
+				Phase: wfv1.WorkflowFailed,
+				Nodes: wfv1.Nodes{
+					workflowID: {
+						ID:                        workflowID,
+						Name:                      workflowID,
+						Type:                      wfv1.NodeTypeRetry,
+						Phase:                     wfv1.NodeFailed,
+						Children:                  []string{attemptID},
+						RetryMaxExecutionDuration: "1m",
+					},
+					attemptID: {
+						// Populate every tracking field to prove that no attempt state
+						// survives deletion into the new retry sequence.
+						ID:                      attemptID,
+						Name:                    workflowID + "(0)",
+						Type:                    wfv1.NodeTypePod,
+						Phase:                   wfv1.NodeFailed,
+						NodeFlag:                &wfv1.NodeFlag{Retried: true},
+						ExecutionStartedAt:      &executionStartedAt,
+						ExecutionDuration:       "30s",
+						ExecutionContainerNames: []string{common.MainContainerName},
+					},
+				},
+			},
+		}
+
+		retryWf, _, err := FormulateRetryWorkflow(ctx, wf, false, "", []string{"budget=2m"})
+		require.NoError(t, err)
+		assert.Equal(t, "2m", retryWf.Spec.Arguments.Parameters[0].Value.String())
+		retryNode, ok := retryWf.Status.Nodes[workflowID]
+		require.True(t, ok)
+		assert.Equal(t, wfv1.NodeRunning, retryNode.Phase)
+		assert.Empty(t, retryNode.RetryMaxExecutionDuration)
+		assert.NotContains(t, retryWf.Status.Nodes, attemptID)
 	})
 
 	t.Run("OverrideParamsSubmitFromWfTmpl", func(t *testing.T) {

@@ -156,6 +156,7 @@ func Workflow(ctx context.Context, wftmplGetter templateresolution.WorkflowTempl
 	tmplCtx := templateresolution.NewContext(wftmplGetter, cwftmplGetter, wf, wf, logging.RequireLoggerFromContext(ctx))
 	var wfSpecHolder wfv1.WorkflowSpecHolder
 	var wfTmplRef *wfv1.TemplateRef
+	var referencedSpec *wfv1.WorkflowSpec
 	var err error
 
 	if len(wf.Name) > maxCharsInObjectName {
@@ -182,8 +183,36 @@ func Workflow(ctx context.Context, wftmplGetter templateresolution.WorkflowTempl
 		if entrypoint == "" {
 			entrypoint = wfSpecHolder.GetWorkflowSpec().Entrypoint
 		}
+		referencedSpec = wfSpecHolder.GetWorkflowSpec()
 		wfTmplRef = wf.Spec.WorkflowTemplateRef.ToTemplateRef(entrypoint)
 	}
+
+	retryMaxExecutionDuration := func(spec *wfv1.WorkflowSpec) string {
+		if spec == nil || spec.RetryStrategy == nil {
+			return ""
+		}
+		return spec.RetryStrategy.MaxExecutionDuration
+	}
+	templateDefaultsMaxExecutionDuration := func(spec *wfv1.WorkflowSpec) string {
+		if spec == nil || spec.TemplateDefaults == nil || spec.TemplateDefaults.RetryStrategy == nil {
+			return ""
+		}
+		return spec.TemplateDefaults.RetryStrategy.MaxExecutionDuration
+	}
+	var wfDefaultSpec *wfv1.WorkflowSpec
+	if wfDefaults != nil {
+		wfDefaultSpec = &wfDefaults.Spec
+	}
+	// Workflow defaults have the lowest merge precedence. Validate a default
+	// only when neither the submitted Workflow nor its referenced template
+	// supplies that field.
+	wfDefaultRetryMaxExecutionDuration := retryMaxExecutionDuration(wfDefaultSpec)
+	wfDefaultRetryMaxExecutionDurationIsEffective := wfDefaultRetryMaxExecutionDuration != "" &&
+		retryMaxExecutionDuration(&wf.Spec) == "" && retryMaxExecutionDuration(referencedSpec) == ""
+	wfDefaultTemplateMaxExecutionDuration := templateDefaultsMaxExecutionDuration(wfDefaultSpec)
+	wfDefaultTemplateMaxExecutionDurationIsEffective := wfDefaultTemplateMaxExecutionDuration != "" &&
+		templateDefaultsMaxExecutionDuration(&wf.Spec) == "" && templateDefaultsMaxExecutionDuration(referencedSpec) == ""
+
 	err = validateWorkflowFieldNames(wf.Spec.Templates)
 
 	wfArgs := wf.Spec.Arguments
@@ -197,6 +226,26 @@ func Workflow(ctx context.Context, wftmplGetter templateresolution.WorkflowTempl
 	}
 	if err = validateExecutorPlugins(wf.Spec); err != nil {
 		return err
+	}
+	if wf.Spec.RetryStrategy != nil {
+		if err = validateMaxExecutionDuration("spec.retryStrategy.maxExecutionDuration", wf.Spec.RetryStrategy.MaxExecutionDuration); err != nil {
+			return err
+		}
+	}
+	if wf.Spec.TemplateDefaults != nil && wf.Spec.TemplateDefaults.RetryStrategy != nil {
+		if err = validateMaxExecutionDuration("spec.templateDefaults.retryStrategy.maxExecutionDuration", wf.Spec.TemplateDefaults.RetryStrategy.MaxExecutionDuration); err != nil {
+			return err
+		}
+	}
+	if wfDefaultRetryMaxExecutionDurationIsEffective {
+		if err = validateMaxExecutionDuration("workflowDefaults.spec.retryStrategy.maxExecutionDuration", wfDefaultRetryMaxExecutionDuration); err != nil {
+			return err
+		}
+	}
+	if wfDefaultTemplateMaxExecutionDurationIsEffective {
+		if err = validateMaxExecutionDuration("workflowDefaults.spec.templateDefaults.retryStrategy.maxExecutionDuration", wfDefaultTemplateMaxExecutionDuration); err != nil {
+			return err
+		}
 	}
 
 	// if we are linting, we don't care if spec.arguments.parameters.XXX doesn't have an
@@ -219,6 +268,58 @@ func Workflow(ctx context.Context, wftmplGetter templateresolution.WorkflowTempl
 			} else {
 				tctx.globalParams[varkeys.WorkflowParametersByName.Concretize(param.Name)] = placeholderGenerator.NextPlaceholder()
 			}
+		}
+	}
+	maxExecutionDurationParams := tctx.globalParams
+	if wfDefaults != nil && len(wfDefaults.Spec.Arguments.Parameters) > 0 {
+		// Default parameters may supply execution budgets, but must not change
+		// the parameter scope used to validate the rest of the workflow.
+		maxExecutionDurationParams = maps.Clone(tctx.globalParams)
+		maxExecutionDurationParams[varkeys.WorkflowParametersAll.Template()] = placeholderGenerator.NextPlaceholder()
+		maxExecutionDurationParams[varkeys.WorkflowParametersJSON.Template()] = placeholderGenerator.NextPlaceholder()
+		for _, param := range wfDefaults.Spec.Arguments.Parameters {
+			key := varkeys.WorkflowParametersByName.Concretize(param.Name)
+			if _, exists := maxExecutionDurationParams[key]; param.Name == "" || exists {
+				continue
+			}
+			if param.Value != nil {
+				maxExecutionDurationParams[key] = param.Value.String()
+			} else {
+				maxExecutionDurationParams[key] = placeholderGenerator.NextPlaceholder()
+			}
+		}
+	}
+	allowUnresolvedWorkflowParameters := opts.WorkflowTemplateValidation && !opts.Submit
+	if wf.Spec.RetryStrategy != nil {
+		if err = resolveAndValidateMaxExecutionDuration(ctx, "spec.retryStrategy.maxExecutionDuration", wf.Spec.RetryStrategy.MaxExecutionDuration, maxExecutionDurationParams, allowUnresolvedWorkflowParameters); err != nil {
+			return err
+		}
+	}
+	if wf.Spec.TemplateDefaults != nil && wf.Spec.TemplateDefaults.RetryStrategy != nil {
+		if err = resolveAndValidateMaxExecutionDuration(ctx, "spec.templateDefaults.retryStrategy.maxExecutionDuration", wf.Spec.TemplateDefaults.RetryStrategy.MaxExecutionDuration, maxExecutionDurationParams, true); err != nil {
+			return err
+		}
+	}
+	if hasWorkflowTemplateRef {
+		if referencedSpec.RetryStrategy != nil {
+			if err = resolveAndValidateMaxExecutionDuration(ctx, "workflowTemplateRef.spec.retryStrategy.maxExecutionDuration", referencedSpec.RetryStrategy.MaxExecutionDuration, maxExecutionDurationParams, allowUnresolvedWorkflowParameters); err != nil {
+				return err
+			}
+		}
+		if referencedSpec.TemplateDefaults != nil && referencedSpec.TemplateDefaults.RetryStrategy != nil {
+			if err = resolveAndValidateMaxExecutionDuration(ctx, "workflowTemplateRef.spec.templateDefaults.retryStrategy.maxExecutionDuration", referencedSpec.TemplateDefaults.RetryStrategy.MaxExecutionDuration, maxExecutionDurationParams, true); err != nil {
+				return err
+			}
+		}
+	}
+	if wfDefaultRetryMaxExecutionDurationIsEffective {
+		if err = resolveAndValidateMaxExecutionDuration(ctx, "workflowDefaults.spec.retryStrategy.maxExecutionDuration", wfDefaultRetryMaxExecutionDuration, maxExecutionDurationParams, allowUnresolvedWorkflowParameters); err != nil {
+			return err
+		}
+	}
+	if wfDefaultTemplateMaxExecutionDurationIsEffective {
+		if err = resolveAndValidateMaxExecutionDuration(ctx, "workflowDefaults.spec.templateDefaults.retryStrategy.maxExecutionDuration", wfDefaultTemplateMaxExecutionDuration, maxExecutionDurationParams, true); err != nil {
+			return err
 		}
 	}
 
@@ -396,6 +497,101 @@ func validateExecutorPlugins(wfSpec wfv1.WorkflowSpec) error {
 	return nil
 }
 
+var (
+	templateTagPattern             = regexp.MustCompile(`(?s){{\s*(.*?)\s*}}`)
+	retryAttemptExpressionVariable = regexp.MustCompile(`(^|[^a-zA-Z0-9_.])(retries|lastRetry)([^a-zA-Z0-9_]|$)`)
+)
+
+func referencesRetryAttemptVariable(value string) bool {
+	for _, match := range templateTagPattern.FindAllStringSubmatch(value, -1) {
+		tag := strings.TrimSpace(match[1])
+		if tag == varkeys.Retries.Template() || strings.HasPrefix(tag, "lastRetry.") {
+			return true
+		}
+		if expression, ok := strings.CutPrefix(tag, "="); ok && retryAttemptExpressionVariable.MatchString(maskExpressionStringLiterals(expression)) {
+			return true
+		}
+	}
+	return false
+}
+
+func maskExpressionStringLiterals(expression string) string {
+	masked := []byte(expression)
+	var quote byte
+	escaped := false
+	for i := 0; i < len(masked); i++ {
+		char := masked[i]
+		if quote == 0 {
+			if char == '\'' || char == '"' || char == '`' {
+				quote = char
+				masked[i] = ' '
+			}
+			continue
+		}
+		masked[i] = ' '
+		if quote == '`' {
+			if char == '`' {
+				// Expr raw strings escape a backtick by doubling it.
+				if i+1 < len(masked) && masked[i+1] == '`' {
+					masked[i+1] = ' '
+					i++
+				} else {
+					quote = 0
+				}
+			}
+			continue
+		}
+		switch {
+		case escaped:
+			escaped = false
+		case char == '\\':
+			escaped = true
+		case char == quote:
+			quote = 0
+		}
+	}
+	return string(masked)
+}
+
+func validateMaxExecutionDuration(fieldPath, value string) error {
+	if referencesRetryAttemptVariable(value) {
+		return fmt.Errorf("%s cannot reference retries or lastRetry because it is resolved before the first attempt", fieldPath)
+	}
+	if value == "" || strings.Contains(value, "{{") || strings.Contains(value, template.PlaceholderPrefix) {
+		return nil
+	}
+	duration, err := wfv1.ParseStringToDuration(value)
+	if err != nil {
+		return fmt.Errorf("%s is invalid: %w", fieldPath, err)
+	}
+	if duration <= 0 {
+		return fmt.Errorf("%s must be greater than zero", fieldPath)
+	}
+	return nil
+}
+
+func resolveAndValidateMaxExecutionDuration(ctx context.Context, fieldPath, value string, params map[string]string, allowUnresolved bool) error {
+	if value == "" {
+		return nil
+	}
+	encoded, err := json.Marshal(value)
+	if err != nil {
+		return fmt.Errorf("%s is invalid: %w", fieldPath, err)
+	}
+	replaced, err := template.Replace(ctx, string(encoded), template.ToAnyMap(params), allowUnresolved)
+	if err != nil {
+		return fmt.Errorf("%s is invalid: %w", fieldPath, err)
+	}
+	var resolved string
+	if err := json.Unmarshal([]byte(replaced), &resolved); err != nil {
+		return fmt.Errorf("%s is invalid: %w", fieldPath, err)
+	}
+	if resolved == "" {
+		return fmt.Errorf("%s must be greater than zero", fieldPath)
+	}
+	return validateMaxExecutionDuration(fieldPath, resolved)
+}
+
 // WorkflowTemplate accepts a workflow template and performs validation against it.
 func WorkflowTemplate(ctx context.Context, wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wftmpl *wfv1.WorkflowTemplate, wfDefaults *wfv1.Workflow, opts Opts) error {
 	if len(wftmpl.Name) > maxCharsInObjectName {
@@ -528,6 +724,17 @@ func (tctx *templateValidationCtx) validateTemplate(ctx context.Context, tmpl *w
 		scope[varkeys.RetriesLastStatus.Template()] = placeholderGenerator.NextPlaceholder()
 		scope[varkeys.RetriesLastDuration.Template()] = placeholderGenerator.NextPlaceholder()
 		scope[varkeys.RetriesLastMessage.Template()] = placeholderGenerator.NextPlaceholder()
+		if maxExecutionDuration := tmpl.RetryStrategy.MaxExecutionDuration; maxExecutionDuration != "" {
+			if !tmpl.IsPodType() {
+				return fmt.Errorf("%s template doesn't support retryStrategy.maxExecutionDuration field", tmpl.GetType())
+			}
+			// Reject invalid literals and attempt-scoped variables before substitution.
+			// Resolved parameter values are checked below and again by the controller
+			// before it creates the first attempt.
+			if validationErr := validateMaxExecutionDuration("retryStrategy.maxExecutionDuration", maxExecutionDuration); validationErr != nil {
+				return fmt.Errorf("%s: %w", tmpl.Name, validationErr)
+			}
+		}
 	}
 	if tmpl.IsLeaf() {
 		for _, art := range tmpl.Outputs.Artifacts {
@@ -545,6 +752,18 @@ func (tctx *templateValidationCtx) validateTemplate(ctx context.Context, tmpl *w
 	newTmpl, err := common.ProcessArgs(ctx, tmpl, args, tctx.globalParams, localParams, true, "", nil)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", tmpl.Name, err)
+	}
+	if tmpl.RetryStrategy != nil && tmpl.RetryStrategy.MaxExecutionDuration != "" {
+		resolvedMaxExecutionDuration := ""
+		if newTmpl.RetryStrategy != nil {
+			resolvedMaxExecutionDuration = newTmpl.RetryStrategy.MaxExecutionDuration
+		}
+		if resolvedMaxExecutionDuration == "" {
+			return fmt.Errorf("%s: retryStrategy.maxExecutionDuration must be greater than zero", newTmpl.Name)
+		}
+		if validationErr := validateMaxExecutionDuration("retryStrategy.maxExecutionDuration", resolvedMaxExecutionDuration); validationErr != nil {
+			return fmt.Errorf("%s: %w", newTmpl.Name, validationErr)
+		}
 	}
 
 	// Claims are attached to the pod a template runs, so a template that never

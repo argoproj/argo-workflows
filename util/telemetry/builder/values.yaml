@@ -479,6 +479,7 @@ metrics:
 
       - `MaxDurationExceeded`: The retry strategy's wall-clock `maxDuration` deadline elapsed.
       - `BackoffWouldExceedMaxDuration`: Waiting for the next backoff would pass the retry strategy's wall-clock `maxDuration` deadline.
+      - `MaxExecutionDurationExceeded`: Completed attempts consumed the retry strategy's cumulative `maxExecutionDuration` budget.
 
       The counter is not incremented when retry policy, node state, `limit`, or `expression` would independently prevent another attempt.
       An eligibility evaluation error is conservatively counted as a duration-budget termination because the duration budget has already stopped the retry.

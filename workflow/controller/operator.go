@@ -1108,6 +1108,25 @@ func (woc *wfOperationCtx) processNodeRetries(ctx context.Context, node *wfv1.No
 		}
 	}
 
+	if retryStrategy.MaxExecutionDuration != "" {
+		maxExecutionDuration, err := parseMaxExecutionDuration(retryStrategy.MaxExecutionDuration)
+		if err != nil {
+			return nil, false, err
+		}
+		executionDuration, err := cumulativeRetryExecutionDuration(childNodeIds, woc.wf.Status.Nodes, maxExecutionDuration)
+		if err != nil {
+			return nil, false, err
+		}
+		if executionDuration >= maxExecutionDuration {
+			recordDurationTermination(metrics.RetryStrategyTerminationReasonMaxExecutionDurationExceeded)
+			woc.log.WithFields(logging.Fields{
+				"executionDuration":    executionDuration,
+				"maxExecutionDuration": maxExecutionDuration,
+			}).Info(ctx, "Max execution duration limit exceeded. Failing...")
+			return woc.markNodePhase(ctx, node.Name, lastChildNode.Phase, "Max execution duration limit exceeded"), true, nil
+		}
+	}
+
 	if retryStrategy.Backoff != nil {
 		maxDurationDeadline := time.Time{}
 		// Process max duration limit
@@ -1286,6 +1305,44 @@ func (woc *wfOperationCtx) evaluateRetryEligibility(ctx context.Context, node, l
 	return eligibility, nil
 }
 
+func parseMaxExecutionDuration(value string) (time.Duration, error) {
+	if value == "" {
+		return 0, fmt.Errorf("maxExecutionDuration must be greater than zero")
+	}
+	maxExecutionDuration, err := wfv1.ParseStringToDuration(value)
+	if err != nil {
+		return 0, err
+	}
+	if maxExecutionDuration <= 0 {
+		return 0, fmt.Errorf("maxExecutionDuration must be greater than zero")
+	}
+	return maxExecutionDuration, nil
+}
+
+// cumulativeRetryExecutionDuration returns the cumulative execution duration of pod-backed
+// retry attempts. The value is capped at maxDuration to avoid overflowing time.Duration.
+func cumulativeRetryExecutionDuration(childNodeIDs []string, nodes wfv1.Nodes, maxDuration time.Duration) (time.Duration, error) {
+	total := time.Duration(0)
+	for _, childNodeID := range childNodeIDs {
+		childNode, err := nodes.Get(childNodeID)
+		if err != nil || childNode.Type != wfv1.NodeTypePod || childNode.ExecutionDuration == "" {
+			continue
+		}
+		duration, err := wfv1.ParseStringToDuration(childNode.ExecutionDuration)
+		if err != nil {
+			return 0, fmt.Errorf("invalid executionDuration for retry node %q: %w", childNode.Name, err)
+		}
+		if duration <= 0 {
+			continue
+		}
+		if duration >= maxDuration-total {
+			return maxDuration, nil
+		}
+		total += duration
+	}
+	return total, nil
+}
+
 // podReconciliation is the process by which a workflow will examine all its related
 // pods and update the node state before continuing the evaluation of the workflow.
 // Records all pods which were observed completed, which will be labeled completed=true
@@ -1416,6 +1473,16 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (bool, error) 
 
 			if node.Daemoned != nil && *node.Daemoned {
 				node.Daemoned = nil
+				woc.updated = true
+			}
+			executionStatusChanged := finishRetryAttemptExecution(&node, time.Now().UTC())
+			if node.ExecutionDuration == "" && node.ExecutionStartedAt == nil && len(node.ExecutionContainerNames) > 0 {
+				// The missing attempt never reached a tracked main-container start.
+				node.ExecutionContainerNames = nil
+				executionStatusChanged = true
+			}
+			if executionStatusChanged {
+				woc.wf.Status.Nodes.Set(ctx, node.ID, node)
 				woc.updated = true
 			}
 			woc.markNodeError(ctx, node.Name, argoerrors.New("", "pod deleted"))
@@ -1756,6 +1823,32 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		updated.FinishedAt = getLatestFinishedAt(pod)
 		updated.ResourcesDuration = resource.DurationForPod(pod)
 	}
+	trackExecutionDuration := len(updated.ExecutionContainerNames) > 0
+	if trackExecutionDuration && updated.ExecutionDuration == "" {
+		if executionStartedAt := getPodExecutionStartedAt(pod, updated.ExecutionContainerNames); executionStartedAt != nil &&
+			(updated.ExecutionStartedAt == nil || executionStartedAt.Before(updated.ExecutionStartedAt)) {
+			updated.ExecutionStartedAt = executionStartedAt
+		}
+		if updated.Phase.Completed() {
+			if executionDuration := getPodExecutionDuration(pod, updated.ExecutionContainerNames); executionDuration != nil {
+				// ContainerStatus only retains the current and immediately preceding
+				// container states. Preserve an earlier start observed before multiple
+				// in-place container restarts instead of under-counting the attempt.
+				_, latestFinishedAt := getPodExecutionBounds(pod, updated.ExecutionContainerNames)
+				if updated.ExecutionStartedAt != nil && latestFinishedAt.After(updated.ExecutionStartedAt.Time) {
+					executionDuration.Duration = latestFinishedAt.Sub(updated.ExecutionStartedAt.Time)
+				}
+				updated.ExecutionDuration = executionDuration.Duration.String()
+				updated.ExecutionStartedAt = nil
+				updated.ExecutionContainerNames = nil
+			} else if updated.ExecutionStartedAt != nil {
+				finishRetryAttemptExecution(updated, time.Now().UTC())
+			} else {
+				// The attempt completed before any tracked main container started.
+				updated.ExecutionContainerNames = nil
+			}
+		}
+	}
 
 	if !reflect.DeepEqual(old, updated) {
 		woc.log.WithField("nodeID", old.ID).
@@ -1831,6 +1924,86 @@ func getLatestFinishedAt(pod *apiv1.Pod) metav1.Time {
 		}
 	}
 	return latest
+}
+
+func getPodExecutionBounds(pod *apiv1.Pod, executionContainerNames []string) (time.Time, time.Time) {
+	earliestStartedAt := time.Time{}
+	latestFinishedAt := time.Time{}
+	for _, containerStatus := range pod.Status.ContainerStatuses {
+		if !slices.Contains(executionContainerNames, containerStatus.Name) {
+			continue
+		}
+		if running := containerStatus.State.Running; running != nil && !running.StartedAt.IsZero() &&
+			(earliestStartedAt.IsZero() || running.StartedAt.Time.Before(earliestStartedAt)) {
+			earliestStartedAt = running.StartedAt.Time
+		}
+		terminatedStates := []*apiv1.ContainerStateTerminated{
+			containerStatus.LastTerminationState.Terminated,
+			containerStatus.State.Terminated,
+		}
+		for _, terminated := range terminatedStates {
+			if terminated == nil {
+				continue
+			}
+			if !terminated.StartedAt.IsZero() && (earliestStartedAt.IsZero() || terminated.StartedAt.Time.Before(earliestStartedAt)) {
+				earliestStartedAt = terminated.StartedAt.Time
+			}
+			if !terminated.FinishedAt.IsZero() && terminated.FinishedAt.After(latestFinishedAt) {
+				latestFinishedAt = terminated.FinishedAt.Time
+			}
+		}
+	}
+	return earliestStartedAt, latestFinishedAt
+}
+
+func getPodExecutionStartedAt(pod *apiv1.Pod, executionContainerNames []string) *metav1.Time {
+	earliestStartedAt, _ := getPodExecutionBounds(pod, executionContainerNames)
+	if earliestStartedAt.IsZero() {
+		return nil
+	}
+	return &metav1.Time{Time: earliestStartedAt}
+}
+
+// getPodExecutionDuration returns the elapsed wall-clock interval from the earliest
+// main-container start to the latest main-container finish. This is an attempt-level
+// interval rather than a sum, so parallel ContainerSet containers are not double-counted.
+func getPodExecutionDuration(pod *apiv1.Pod, executionContainerNames []string) *metav1.Duration {
+	observedContainerNames := make(map[string]bool, len(executionContainerNames))
+	for _, containerStatus := range pod.Status.ContainerStatuses {
+		if !slices.Contains(executionContainerNames, containerStatus.Name) {
+			continue
+		}
+		observedContainerNames[containerStatus.Name] = true
+		if containerStatus.State.Running != nil {
+			return nil
+		}
+		terminated := containerStatus.State.Terminated
+		if terminated == nil || terminated.FinishedAt.IsZero() {
+			return nil
+		}
+	}
+	for _, containerName := range executionContainerNames {
+		if !observedContainerNames[containerName] {
+			return nil
+		}
+	}
+	earliestStartedAt, latestFinishedAt := getPodExecutionBounds(pod, executionContainerNames)
+	if earliestStartedAt.IsZero() || latestFinishedAt.Before(earliestStartedAt) {
+		return nil
+	}
+	return &metav1.Duration{Duration: latestFinishedAt.Sub(earliestStartedAt)}
+}
+
+// finishRetryAttemptExecution conservatively finalizes an opted-in retry attempt when its
+// Pod disappears or terminal container timestamps are incomplete.
+func finishRetryAttemptExecution(node *wfv1.NodeStatus, finishedAt time.Time) bool {
+	if node.ExecutionDuration != "" || node.ExecutionStartedAt == nil || !finishedAt.After(node.ExecutionStartedAt.Time) {
+		return false
+	}
+	node.ExecutionDuration = finishedAt.Sub(node.ExecutionStartedAt.Time).String()
+	node.ExecutionStartedAt = nil
+	node.ExecutionContainerNames = nil
+	return true
 }
 
 func getPendingReason(pod *apiv1.Pod) string {
@@ -2002,6 +2175,18 @@ func (woc *wfOperationCtx) shouldAutoRestartPod(ctx context.Context, pod *apiv1.
 		woc.log.WithFields(logging.Fields{
 			"podName": pod.Name,
 		}).Debug(ctx, "Pod restart check: feature not enabled")
+		return false
+	}
+
+	// For attempts tracked by maxExecutionDuration, ExecutionStartedAt is durable
+	// evidence that the main container ran even if ContainerStatus lost older
+	// state. mainContainerNeverStarted checks current and last termination state
+	// for all Pods.
+	if node.ExecutionStartedAt != nil {
+		woc.log.WithFields(logging.Fields{
+			"podName": pod.Name,
+			"nodeID":  node.ID,
+		}).Info(ctx, "Pod restart check: main container was previously observed running")
 		return false
 	}
 
@@ -2331,12 +2516,33 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	}
 
 	localParams[varkeys.NodeName.Template()] = nodeName
+	maxExecutionDurationConfigured := false
+	if node != nil && node.Type == wfv1.NodeTypeRetry && node.RetryMaxExecutionDuration != "" {
+		// Restore the captured value before resolving template parameters. This
+		// keeps a retry sequence independent of later edits to, or removal of,
+		// the parameter that originally supplied its execution budget.
+		woc.setRetryMaxExecutionDuration(resolvedTmpl, node.RetryMaxExecutionDuration)
+		maxExecutionDurationConfigured = true
+	} else if retryStrategy := woc.retryStrategy(resolvedTmpl); retryStrategy != nil && retryStrategy.MaxExecutionDuration != "" {
+		maxExecutionDurationConfigured = true
+	}
 
 	// Inputs has been processed with arguments already, so pass empty arguments.
 	processedTmpl, err := common.ProcessArgs(ctx, resolvedTmpl, &args, woc.globalParams(), localParams, false, woc.wf.Namespace, woc.controller.typedConfigMapInformer.GetIndexer())
 	if err != nil {
 		errNode := woc.initializeNodeOrMarkError(ctx, node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err)
 		return errNode, err
+	}
+	resolvedMaxExecutionDuration, validateMaxExecutionDuration := retryMaxExecutionDuration(node, woc.retryStrategy(processedTmpl), maxExecutionDurationConfigured)
+	if validateMaxExecutionDuration {
+		if node != nil && node.RetryMaxExecutionDuration != "" {
+			woc.setRetryMaxExecutionDuration(processedTmpl, resolvedMaxExecutionDuration)
+		}
+		if _, validationErr := parseMaxExecutionDuration(resolvedMaxExecutionDuration); validationErr != nil {
+			validationErr = fmt.Errorf("retryStrategy.maxExecutionDuration is invalid: %w", validationErr)
+			errNode := woc.initializeNodeOrMarkError(ctx, node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, validationErr)
+			return errNode, validationErr
+		}
 	}
 
 	// Update displayName from processedTmpl
@@ -2412,7 +2618,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 				// and try again on a later reconcile instead of erroring it.
 				woc.requeue()
 				if node == nil {
-					_, node = woc.initializeExecutableNode(ctx, nodeName, wfutil.GetNodeType(processedTmpl), templateScope, processedTmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, opts.nodeFlag, false, syncErr.Error())
+					_, node = woc.initializeExecutableNode(ctx, nodeName, woc.effectiveNodeType(processedTmpl), templateScope, processedTmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, opts.nodeFlag, false, syncErr.Error())
 				}
 				return node, nil
 			}
@@ -2421,7 +2627,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		}
 		if !lockAcquired {
 			if node == nil {
-				_, node = woc.initializeExecutableNode(ctx, nodeName, wfutil.GetNodeType(processedTmpl), templateScope, processedTmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, opts.nodeFlag, false, msg)
+				_, node = woc.initializeExecutableNode(ctx, nodeName, woc.effectiveNodeType(processedTmpl), templateScope, processedTmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, opts.nodeFlag, false, msg)
 			}
 			woc.log.WithField("lockName", failedLockName).Info(ctx, "Could not acquire lock")
 			return woc.markNodeWaitingForLock(ctx, node.Name, failedLockName, msg)
@@ -2484,7 +2690,7 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 					_, node = woc.initializeCacheHitNode(ctx, nodeName, processedTmpl, templateScope, orgTmpl, opts.boundaryID, outputs, memoizationStatus, opts.nodeFlag)
 				} else {
 					woc.log.WithField("nodeName", nodeName).Info(ctx, "Node is using mutex with memoize. Cache is hit.")
-					woc.updateAsCacheHitNode(ctx, node, outputs, memoizationStatus)
+					woc.updateAsCacheHitNode(ctx, node, processedTmpl, outputs, memoizationStatus)
 				}
 			} else {
 				if node == nil {
@@ -2529,6 +2735,12 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		if retryParentNode == nil {
 			woc.log.WithField("nodeName", retryNodeName).Debug(ctx, "Inject a retry node")
 			_, retryParentNode = woc.initializeExecutableNode(ctx, retryNodeName, wfv1.NodeTypeRetry, templateScope, processedTmpl, orgTmpl, opts.boundaryID, wfv1.NodeRunning, opts.nodeFlag, true)
+		}
+		if retryStrategy := woc.retryStrategy(processedTmpl); retryStrategy != nil &&
+			retryStrategy.MaxExecutionDuration != "" && retryParentNode.RetryMaxExecutionDuration == "" {
+			retryParentNode.RetryMaxExecutionDuration = retryStrategy.MaxExecutionDuration
+			woc.wf.Status.Nodes.Set(ctx, retryParentNode.ID, *retryParentNode)
+			woc.updated = true
 		}
 		if opts.nodeFlag == nil {
 			opts.nodeFlag = &wfv1.NodeFlag{}
@@ -2624,6 +2836,10 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			errNode := woc.initializeNodeOrMarkError(ctx, node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err)
 			return errNode, err
 		}
+	}
+	if woc.ensureRetryExecutionTracking(node, processedTmpl) {
+		woc.wf.Status.Nodes.Set(ctx, node.ID, *node)
+		woc.updated = true
 	}
 
 	switch processedTmpl.GetType() {
@@ -3040,6 +3256,7 @@ var (
 // Returns the context with the node span and the node status.
 func (woc *wfOperationCtx) initializeExecutableNode(ctx context.Context, nodeName string, nodeType wfv1.NodeType, templateScope string, executeTmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, phase wfv1.NodePhase, nodeFlag *wfv1.NodeFlag, omitTaskResultSycned bool, messages ...string) (context.Context, *wfv1.NodeStatus) {
 	nodeCtx, node := woc.initializeNode(ctx, nodeName, nodeType, templateScope, orgTmpl, boundaryID, phase, nodeFlag, omitTaskResultSycned)
+	woc.ensureRetryExecutionTracking(node, executeTmpl)
 
 	// Refine node type from structural (e.g. "Pod") to template type (e.g. "Container"/"Script"/"Data")
 	trace.SpanFromContext(nodeCtx).SetAttributes(attribute.String("NodeType", string(executeTmpl.GetType())))
@@ -3074,6 +3291,22 @@ func (woc *wfOperationCtx) initializeExecutableNode(ctx context.Context, nodeNam
 	return nodeCtx, node
 }
 
+// ensureRetryExecutionTracking initializes the accounting marker for an opted-in
+// Pod retry attempt. Existing Pending attempts can be reused after a memoized
+// resubmission, so this must be safe to call after node initialization as well.
+func (woc *wfOperationCtx) ensureRetryExecutionTracking(node *wfv1.NodeStatus, tmpl *wfv1.Template) bool {
+	if node == nil || tmpl == nil || node.Type != wfv1.NodeTypePod || node.NodeFlag == nil || !node.NodeFlag.Retried ||
+		node.ExecutionDuration != "" || len(node.ExecutionContainerNames) > 0 {
+		return false
+	}
+	retryStrategy := woc.retryStrategy(tmpl)
+	if retryStrategy == nil || retryStrategy.MaxExecutionDuration == "" {
+		return false
+	}
+	node.ExecutionContainerNames = tmpl.GetMainContainerNames()
+	return len(node.ExecutionContainerNames) > 0
+}
+
 // initializeNodeOrMarkError initializes an error node or mark a node if it already exists.
 func (woc *wfOperationCtx) initializeNodeOrMarkError(ctx context.Context, node *wfv1.NodeStatus, nodeName string, templateScope string, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, nodeFlag *wfv1.NodeFlag, err error) *wfv1.NodeStatus {
 	if node != nil {
@@ -3099,7 +3332,14 @@ func (woc *wfOperationCtx) initializeCacheNode(ctx context.Context, nodeName str
 	},
 	).Debug(ctx, "Initializing cached node")
 
-	nodeCtx, node := woc.initializeExecutableNode(ctx, nodeName, wfutil.GetNodeType(resolvedTmpl), templateScope, resolvedTmpl, orgTmpl, boundaryID, wfv1.NodePending, nodeFlag, false, messages...)
+	nodeType := woc.effectiveNodeType(resolvedTmpl)
+	if memStat.Hit {
+		// A cache hit represents the completed template itself, not a retry
+		// sequence. Keeping its structural type also allows memoized resubmission
+		// to reuse successful Pod nodes.
+		nodeType = structuralNodeType(resolvedTmpl)
+	}
+	nodeCtx, node := woc.initializeExecutableNode(ctx, nodeName, nodeType, templateScope, resolvedTmpl, orgTmpl, boundaryID, wfv1.NodePending, nodeFlag, false, messages...)
 	node.MemoizationStatus = memStat
 	return nodeCtx, node
 }
@@ -3187,7 +3427,13 @@ func (woc *wfOperationCtx) updateAsCacheNode(ctx context.Context, node *wfv1.Nod
 }
 
 // Update a node status that has been cached and marked as finished
-func (woc *wfOperationCtx) updateAsCacheHitNode(ctx context.Context, node *wfv1.NodeStatus, outputs *wfv1.Outputs, memStat *wfv1.MemoizationStatus, message ...string) {
+func (woc *wfOperationCtx) updateAsCacheHitNode(ctx context.Context, node *wfv1.NodeStatus, resolvedTmpl *wfv1.Template, outputs *wfv1.Outputs, memStat *wfv1.MemoizationStatus, message ...string) {
+	node.Type = structuralNodeType(resolvedTmpl)
+	if executable(node.Type) {
+		node.TaskResultSynced = new(true)
+	} else {
+		node.TaskResultSynced = nil
+	}
 	node.Phase = wfv1.NodeSucceeded
 	node.Outputs = outputs
 	node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
@@ -4580,10 +4826,69 @@ func (woc *wfOperationCtx) fetchWorkflowSpec(ctx context.Context) (wfv1.Workflow
 }
 
 func (woc *wfOperationCtx) retryStrategy(tmpl *wfv1.Template) *wfv1.RetryStrategy {
+	var retryStrategy *wfv1.RetryStrategy
 	if tmpl != nil && tmpl.RetryStrategy != nil {
-		return tmpl.RetryStrategy
+		retryStrategy = tmpl.RetryStrategy
+	} else {
+		retryStrategy = woc.execWf.Spec.RetryStrategy
 	}
-	return woc.execWf.Spec.RetryStrategy
+	if retryStrategy == nil || tmpl == nil || tmpl.IsPodType() || retryStrategy.MaxExecutionDuration == "" {
+		return retryStrategy
+	}
+
+	// Execution budgets apply only to Pod templates. Preserve any other retry
+	// controls for non-Pod templates, but do not create an unbounded strategy
+	// when only Pod-specific fields remain. An originally empty retry strategy
+	// returns above and retains its retry-until-completion semantics.
+	retryStrategy = retryStrategy.DeepCopy()
+	retryStrategy.MaxExecutionDuration = ""
+	// Retry affinity changes Pod placement and has no effect on a structural
+	// Steps or DAG retry. The Pod children still inherit the unmodified global
+	// or default strategy when they execute.
+	retryStrategy.Affinity = nil
+	if retryStrategy.Limit == nil && retryStrategy.RetryPolicy == "" && retryStrategy.Backoff == nil && retryStrategy.Expression == "" {
+		return nil
+	}
+	return retryStrategy
+}
+
+func (woc *wfOperationCtx) effectiveNodeType(tmpl *wfv1.Template) wfv1.NodeType {
+	if woc.retryStrategy(tmpl) != nil {
+		return wfv1.NodeTypeRetry
+	}
+	return structuralNodeType(tmpl)
+}
+
+func structuralNodeType(tmpl *wfv1.Template) wfv1.NodeType {
+	if tmpl == nil {
+		return ""
+	}
+	tmplWithoutRetry := *tmpl
+	tmplWithoutRetry.RetryStrategy = nil
+	return wfutil.GetNodeType(&tmplWithoutRetry)
+}
+
+func (woc *wfOperationCtx) setRetryMaxExecutionDuration(tmpl *wfv1.Template, value string) {
+	retryStrategy := woc.retryStrategy(tmpl)
+	if retryStrategy == nil {
+		tmpl.RetryStrategy = &wfv1.RetryStrategy{MaxExecutionDuration: value}
+		return
+	}
+	tmpl.RetryStrategy = retryStrategy.DeepCopy()
+	tmpl.RetryStrategy.MaxExecutionDuration = value
+}
+
+func retryMaxExecutionDuration(node *wfv1.NodeStatus, retryStrategy *wfv1.RetryStrategy, configured bool) (string, bool) {
+	if node != nil && node.Type == wfv1.NodeTypeRetry && node.RetryMaxExecutionDuration != "" {
+		return node.RetryMaxExecutionDuration, true
+	}
+	if !configured {
+		return "", false
+	}
+	if retryStrategy == nil {
+		return "", true
+	}
+	return retryStrategy.MaxExecutionDuration, true
 }
 
 func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) (context.Context, error) {
@@ -4760,6 +5065,21 @@ func (woc *wfOperationCtx) mergedTemplateDefaultsInto(originalTmpl *wfv1.Templat
 
 	originalTmplType := originalTmpl.GetType()
 	applicableDefaults := woc.execWf.Spec.TemplateDefaults.DeepCopy()
+	if !originalTmpl.IsPodType() && applicableDefaults.RetryStrategy != nil && applicableDefaults.RetryStrategy.MaxExecutionDuration != "" {
+		// Execution duration and retry affinity both describe Pod attempts. Do
+		// not let those defaults create an otherwise empty retry strategy on a
+		// structural template. Defaults without an execution budget retain their
+		// existing retry behavior. Any explicit retryStrategy on originalTmpl is
+		// preserved by the merge, including an intentionally empty strategy.
+		applicableDefaults.RetryStrategy.MaxExecutionDuration = ""
+		applicableDefaults.RetryStrategy.Affinity = nil
+		if applicableDefaults.RetryStrategy.Limit == nil &&
+			applicableDefaults.RetryStrategy.RetryPolicy == "" &&
+			applicableDefaults.RetryStrategy.Backoff == nil &&
+			applicableDefaults.RetryStrategy.Expression == "" {
+			applicableDefaults.RetryStrategy = nil
+		}
+	}
 
 	v := reflect.ValueOf(applicableDefaults).Elem()
 	for i := 0; i < v.NumField(); i++ {

@@ -627,13 +627,432 @@ func TestProcessNodeRetries(t *testing.T) {
 	assert.Equal(t, wfv1.NodeFailed, n.Phase)
 }
 
+func TestProcessNodeRetriesMaxExecutionDuration(t *testing.T) {
+	type attempt struct {
+		nodeType          wfv1.NodeType
+		phase             wfv1.NodePhase
+		executionDuration string
+	}
+	duration := func(value time.Duration) string {
+		return value.String()
+	}
+	testCases := []struct {
+		name         string
+		maxDuration  string
+		attempts     []attempt
+		backoff      *wfv1.Backoff
+		wantPhase    wfv1.NodePhase
+		wantMessage  string
+		wantError    string
+		wantContinue *bool
+	}{
+		{
+			name:        "multiple failed attempts equal budget",
+			maxDuration: "10s",
+			attempts: []attempt{
+				{nodeType: wfv1.NodeTypePod, phase: wfv1.NodeFailed, executionDuration: duration(4 * time.Second)},
+				{nodeType: wfv1.NodeTypePod, phase: wfv1.NodeError, executionDuration: duration(6 * time.Second)},
+			},
+			wantPhase:   wfv1.NodeError,
+			wantMessage: "Max execution duration limit exceeded",
+		},
+		{
+			name:        "exhausted pod budget with a later pre-execution error",
+			maxDuration: "1s",
+			attempts: []attempt{
+				{nodeType: wfv1.NodeTypePod, phase: wfv1.NodeFailed, executionDuration: duration(time.Second)},
+				{nodeType: wfv1.NodeTypeSkipped, phase: wfv1.NodeError},
+			},
+			wantPhase:   wfv1.NodeError,
+			wantMessage: "Max execution duration limit exceeded",
+		},
+		{
+			name:        "pre-execution errors do not consume the remaining pod budget",
+			maxDuration: "2s",
+			attempts: []attempt{
+				{nodeType: wfv1.NodeTypePod, phase: wfv1.NodeFailed, executionDuration: duration(time.Second)},
+				{nodeType: wfv1.NodeTypeSkipped, phase: wfv1.NodeError},
+			},
+			wantPhase: wfv1.NodeRunning,
+		},
+		{
+			name:        "exhausted budget terminates before configured backoff",
+			maxDuration: "1s",
+			attempts: []attempt{
+				{nodeType: wfv1.NodeTypePod, phase: wfv1.NodeFailed, executionDuration: duration(time.Second)},
+			},
+			backoff:      &wfv1.Backoff{Duration: "1h"},
+			wantPhase:    wfv1.NodeFailed,
+			wantMessage:  "Max execution duration limit exceeded",
+			wantContinue: new(true),
+		},
+		{
+			name:        "failed attempts under budget",
+			maxDuration: "10s",
+			attempts: []attempt{
+				{nodeType: wfv1.NodeTypePod, phase: wfv1.NodeFailed, executionDuration: duration(4 * time.Second)},
+				{nodeType: wfv1.NodeTypePod, phase: wfv1.NodeFailed, executionDuration: duration(5 * time.Second)},
+			},
+			wantPhase: wfv1.NodeRunning,
+		},
+		{
+			name:        "pending and inter-attempt gaps are excluded",
+			maxDuration: "3s",
+			attempts: []attempt{
+				{nodeType: wfv1.NodeTypePod, phase: wfv1.NodeFailed, executionDuration: duration(time.Second)},
+				{nodeType: wfv1.NodeTypePod, phase: wfv1.NodeFailed, executionDuration: duration(time.Second)},
+			},
+			wantPhase: wfv1.NodeRunning,
+		},
+		{
+			name:        "never-started attempt consumes no budget",
+			maxDuration: "1s",
+			attempts: []attempt{
+				{nodeType: wfv1.NodeTypePod, phase: wfv1.NodeError},
+			},
+			wantPhase: wfv1.NodeRunning,
+		},
+		{
+			name:        "running attempt is untouched",
+			maxDuration: "1s",
+			attempts: []attempt{
+				{nodeType: wfv1.NodeTypePod, phase: wfv1.NodeRunning, executionDuration: duration(time.Hour)},
+			},
+			wantPhase: wfv1.NodeRunning,
+		},
+		{
+			name:        "successful attempt is accepted",
+			maxDuration: "1s",
+			attempts: []attempt{
+				{nodeType: wfv1.NodeTypePod, phase: wfv1.NodeFailed, executionDuration: duration(time.Hour)},
+				{nodeType: wfv1.NodeTypePod, phase: wfv1.NodeSucceeded, executionDuration: duration(time.Hour)},
+			},
+			wantPhase: wfv1.NodeSucceeded,
+		},
+		{
+			name:        "workflow-level budget is a no-op for non-pod attempts",
+			maxDuration: "1s",
+			attempts: []attempt{
+				{nodeType: wfv1.NodeTypeDAG, phase: wfv1.NodeFailed, executionDuration: duration(time.Hour)},
+			},
+			wantPhase: wfv1.NodeRunning,
+		},
+		{
+			name:        "invalid duration",
+			maxDuration: "invalid",
+			attempts: []attempt{
+				{nodeType: wfv1.NodeTypePod, phase: wfv1.NodeFailed, executionDuration: duration(time.Second)},
+			},
+			wantPhase: wfv1.NodeRunning,
+			wantError: "unable to parse invalid as a duration",
+		},
+		{
+			name:        "invalid persisted execution duration",
+			maxDuration: "1s",
+			attempts: []attempt{
+				{nodeType: wfv1.NodeTypePod, phase: wfv1.NodeFailed, executionDuration: "invalid"},
+			},
+			wantPhase: wfv1.NodeRunning,
+			wantError: `invalid executionDuration for retry node "test-node(0)"`,
+		},
+		{
+			name:        "non-positive duration",
+			maxDuration: "0s",
+			attempts: []attempt{
+				{nodeType: wfv1.NodeTypePod, phase: wfv1.NodeFailed, executionDuration: duration(time.Second)},
+			},
+			wantPhase: wfv1.NodeRunning,
+			wantError: "maxExecutionDuration must be greater than zero",
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			cancel, controller := newController(ctx)
+			defer cancel()
+			wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+			woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+			const nodeName = "test-node"
+			woc.initializeNode(ctx, nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{}, true)
+			for i, attempt := range testCase.attempts {
+				childName := fmt.Sprintf("%s(%d)", nodeName, i)
+				_, childNode := woc.initializeNode(ctx, childName, attempt.nodeType, "", &wfv1.WorkflowStep{}, "", attempt.phase, &wfv1.NodeFlag{Retried: true}, true)
+				childNode.ExecutionDuration = attempt.executionDuration
+				// A deliberately large node lifetime proves that only the persisted
+				// main-container execution duration contributes to the budget.
+				childNode.StartedAt = metav1.NewTime(time.Now().Add(-24 * time.Hour))
+				childNode.FinishedAt = metav1.Now()
+				woc.wf.Status.Nodes.Set(ctx, childNode.ID, *childNode)
+				woc.addChildNode(ctx, nodeName, childName)
+			}
+
+			retryNode, err := woc.wf.GetNodeByName(nodeName)
+			require.NoError(t, err)
+			strategy := wfv1.RetryStrategy{
+				Limit:                intstrutil.ParsePtr("10"),
+				RetryPolicy:          wfv1.RetryPolicyAlways,
+				MaxExecutionDuration: testCase.maxDuration,
+				Backoff:              testCase.backoff,
+			}
+			result, continueExecution, err := woc.processNodeRetries(ctx, retryNode, strategy, &executeTemplateOpts{})
+			if testCase.wantError != "" {
+				require.ErrorContains(t, err, testCase.wantError)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, testCase.wantPhase, result.Phase)
+			assert.Equal(t, testCase.wantMessage, result.Message)
+			if testCase.wantContinue != nil {
+				assert.Equal(t, *testCase.wantContinue, continueExecution)
+			}
+		})
+	}
+}
+
+func TestRetryStrategyScopesMaxExecutionDurationToPodTemplates(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	wf.Spec.RetryStrategy = &wfv1.RetryStrategy{MaxExecutionDuration: "1m"}
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	podStrategy := woc.retryStrategy(&wfv1.Template{Container: &apiv1.Container{}})
+	require.NotNil(t, podStrategy)
+	assert.Equal(t, "1m", podStrategy.MaxExecutionDuration)
+	assert.Nil(t, woc.retryStrategy(&wfv1.Template{Steps: []wfv1.ParallelSteps{}}))
+
+	woc.execWf.Spec.RetryStrategy.Limit = intstrutil.ParsePtr("2")
+	nonPodStrategy := woc.retryStrategy(&wfv1.Template{DAG: &wfv1.DAGTemplate{}})
+	require.NotNil(t, nonPodStrategy)
+	assert.Empty(t, nonPodStrategy.MaxExecutionDuration)
+	require.NotNil(t, nonPodStrategy.Limit)
+	assert.Equal(t, 2, nonPodStrategy.Limit.IntValue())
+
+	// Template defaults are merged into the effective template before retry
+	// handling. A maxExecutionDuration-only default must not wrap a non-Pod
+	// template in an otherwise unbounded retry node.
+	woc.execWf.Spec.RetryStrategy = nil
+	woc.execWf.Spec.TemplateDefaults = &wfv1.Template{
+		RetryStrategy: &wfv1.RetryStrategy{
+			MaxExecutionDuration: "1m",
+			Affinity:             &wfv1.RetryAffinity{NodeAntiAffinity: &wfv1.RetryNodeAntiAffinity{}},
+		},
+	}
+	nonPodWithDefaults := &wfv1.Template{Steps: []wfv1.ParallelSteps{}}
+	require.NoError(t, woc.mergedTemplateDefaultsInto(nonPodWithDefaults))
+	assert.Nil(t, woc.retryStrategy(nonPodWithDefaults))
+	assert.Equal(t, wfv1.NodeTypeSteps, woc.effectiveNodeType(nonPodWithDefaults))
+
+	nonPodWithExplicitEmptyStrategy := &wfv1.Template{
+		RetryStrategy: &wfv1.RetryStrategy{},
+		Steps:         []wfv1.ParallelSteps{},
+	}
+	require.NoError(t, woc.mergedTemplateDefaultsInto(nonPodWithExplicitEmptyStrategy))
+	require.NotNil(t, nonPodWithExplicitEmptyStrategy.RetryStrategy)
+	assert.NotNil(t, woc.retryStrategy(nonPodWithExplicitEmptyStrategy))
+	assert.Equal(t, wfv1.NodeTypeRetry, woc.effectiveNodeType(nonPodWithExplicitEmptyStrategy))
+
+	for name, retryStrategy := range map[string]*wfv1.RetryStrategy{
+		"execution budget only": {
+			MaxExecutionDuration: "1m",
+		},
+		"execution budget and affinity only": {
+			MaxExecutionDuration: "1m",
+			Affinity:             &wfv1.RetryAffinity{NodeAntiAffinity: &wfv1.RetryNodeAntiAffinity{}},
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			tmpl := &wfv1.Template{
+				RetryStrategy: retryStrategy,
+				DAG:           &wfv1.DAGTemplate{},
+			}
+			assert.Nil(t, woc.retryStrategy(tmpl))
+			assert.Equal(t, wfv1.NodeTypeDAG, woc.effectiveNodeType(tmpl))
+		})
+	}
+
+	for name, retryStrategy := range map[string]*wfv1.RetryStrategy{
+		"affinity-only defaults": {
+			Affinity: &wfv1.RetryAffinity{NodeAntiAffinity: &wfv1.RetryNodeAntiAffinity{}},
+		},
+		"empty defaults": {},
+	} {
+		t.Run(name, func(t *testing.T) {
+			woc.execWf.Spec.TemplateDefaults = &wfv1.Template{RetryStrategy: retryStrategy}
+			tmpl := &wfv1.Template{DAG: &wfv1.DAGTemplate{}}
+			require.NoError(t, woc.mergedTemplateDefaultsInto(tmpl))
+			assert.Equal(t, retryStrategy, woc.retryStrategy(tmpl))
+			assert.Equal(t, wfv1.NodeTypeRetry, woc.effectiveNodeType(tmpl))
+		})
+	}
+}
+
+func TestMaxExecutionDurationIsResolvedBeforeFirstAttempt(t *testing.T) {
+	for _, budget := range []string{"invalid", ""} {
+		t.Run(fmt.Sprintf("budget %q", budget), func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			wf := wfv1.MustUnmarshalWorkflow(fmt.Sprintf(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: max-execution-duration-runtime-validation
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    inputs:
+      parameters:
+      - name: budget
+        value: %q
+    retryStrategy:
+      maxExecutionDuration: "{{inputs.parameters.budget}}"
+    container:
+      image: alpine:3.23
+`, budget))
+			cancel, controller := newController(ctx, wf)
+			defer cancel()
+			woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+			woc.operate(ctx)
+
+			pods, err := listPods(ctx, woc)
+			require.NoError(t, err)
+			assert.Empty(t, pods.Items)
+			assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+			assert.Contains(t, woc.wf.Status.Message, "maxExecutionDuration")
+		})
+	}
+}
+
+func TestTemplateDefaultMaxExecutionDurationIsValidatedBeforeFirstAttempt(t *testing.T) {
+	for _, budget := range []string{"invalid", ""} {
+		t.Run(fmt.Sprintf("budget %q", budget), func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			wf := wfv1.MustUnmarshalWorkflow(fmt.Sprintf(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: max-execution-duration-default-runtime-validation
+  namespace: default
+spec:
+  entrypoint: main
+  templateDefaults:
+    retryStrategy:
+      maxExecutionDuration: "{{inputs.parameters.budget}}"
+  templates:
+  - name: main
+    inputs:
+      parameters:
+      - name: budget
+        value: %q
+    container:
+      image: alpine:3.23
+`, budget))
+			cancel, controller := newController(ctx, wf)
+			defer cancel()
+			woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+			woc.operate(ctx)
+
+			pods, err := listPods(ctx, woc)
+			require.NoError(t, err)
+			assert.Empty(t, pods.Items)
+			assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+			assert.Contains(t, woc.wf.Status.Message, "maxExecutionDuration")
+		})
+	}
+}
+
+func TestMaxExecutionDurationIsCapturedOnRetryNode(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: max-execution-duration-snapshot
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    inputs:
+      parameters:
+      - name: budget
+        value: 1m
+    retryStrategy:
+      maxExecutionDuration: "{{inputs.parameters.budget}}"
+    container:
+      image: alpine:3.23
+      command: [sh, -c]
+      args: [exit 1]
+`)
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	woc.operate(ctx)
+
+	retryNode := woc.wf.Status.Nodes.Find(func(node wfv1.NodeStatus) bool {
+		return node.Type == wfv1.NodeTypeRetry
+	})
+	require.NotNil(t, retryNode)
+	assert.Equal(t, "1m", retryNode.RetryMaxExecutionDuration)
+
+	// A retry sequence keeps using the captured value even if a later workflow
+	// edit removes the parameter that originally supplied it.
+	makePodsPhase(ctx, woc, apiv1.PodPending)
+	nextWf := woc.wf.DeepCopy()
+	nextWf.Spec.Templates[0].Inputs.Parameters = nil
+	nextWf.Spec.Templates[0].RetryStrategy.MaxExecutionDuration = "{{inputs.parameters.removed}}"
+	nextWoc := newWorkflowOperationCtx(ctx, nextWf, controller)
+	nextWoc.operate(ctx)
+
+	assert.Equal(t, wfv1.WorkflowRunning, nextWoc.wf.Status.Phase)
+	retryNode = nextWoc.wf.Status.Nodes.Find(func(node wfv1.NodeStatus) bool {
+		return node.Type == wfv1.NodeTypeRetry
+	})
+	require.NotNil(t, retryNode)
+	assert.Equal(t, "1m", retryNode.RetryMaxExecutionDuration)
+}
+
+func TestRetryMaxExecutionDurationPrefersCapturedValue(t *testing.T) {
+	node := &wfv1.NodeStatus{
+		Type:                      wfv1.NodeTypeRetry,
+		RetryMaxExecutionDuration: "1m",
+	}
+	value, configured := retryMaxExecutionDuration(node, &wfv1.RetryStrategy{}, false)
+	assert.True(t, configured)
+	assert.Equal(t, "1m", value)
+
+	value, configured = retryMaxExecutionDuration(nil, &wfv1.RetryStrategy{}, true)
+	assert.True(t, configured)
+	assert.Empty(t, value)
+
+	value, configured = retryMaxExecutionDuration(nil, nil, false)
+	assert.False(t, configured)
+	assert.Empty(t, value)
+}
+
 func TestProcessNodeRetriesRecordsTerminationMetrics(t *testing.T) {
 	testCases := []struct {
-		name           string
-		strategy       wfv1.RetryStrategy
-		childStartedAt time.Time
-		reason         wfmetrics.RetryStrategyTerminationReason
+		name              string
+		strategy          wfv1.RetryStrategy
+		childStartedAt    time.Time
+		executionDuration string
+		reason            wfmetrics.RetryStrategyTerminationReason
 	}{
+		{
+			name: "max execution duration exceeded",
+			strategy: wfv1.RetryStrategy{
+				MaxExecutionDuration: "1s",
+			},
+			executionDuration: "2s",
+			reason:            wfmetrics.RetryStrategyTerminationReasonMaxExecutionDurationExceeded,
+		},
 		{
 			name: "max duration exceeded",
 			strategy: wfv1.RetryStrategy{
@@ -675,8 +1094,11 @@ func TestProcessNodeRetriesRecordsTerminationMetrics(t *testing.T) {
 			const nodeName = "test-node"
 			woc.initializeNode(ctx, nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{}, true)
 			_, childNode := woc.initializeNode(ctx, nodeName+"(0)", wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeFailed, &wfv1.NodeFlag{Retried: true}, true)
-			childNode.StartedAt = metav1.NewTime(testCase.childStartedAt)
+			if !testCase.childStartedAt.IsZero() {
+				childNode.StartedAt = metav1.NewTime(testCase.childStartedAt)
+			}
 			childNode.FinishedAt = metav1.Now()
+			childNode.ExecutionDuration = testCase.executionDuration
 			woc.wf.Status.Nodes.Set(ctx, childNode.ID, *childNode)
 			woc.addChildNode(ctx, nodeName, childNode.Name)
 
@@ -760,6 +1182,31 @@ func TestProcessNodeRetriesDoesNotRecordDurationTerminationWhenRetryIsIneligible
 		{
 			name: "retry limit already exhausted",
 			strategy: wfv1.RetryStrategy{
+				Limit:                intstrutil.ParsePtr("0"),
+				RetryPolicy:          wfv1.RetryPolicyAlways,
+				MaxExecutionDuration: "1s",
+			},
+		},
+		{
+			name: "retry policy rejects failed attempt",
+			strategy: wfv1.RetryStrategy{
+				Limit:                intstrutil.ParsePtr("10"),
+				RetryPolicy:          wfv1.RetryPolicyOnError,
+				MaxExecutionDuration: "1s",
+			},
+		},
+		{
+			name: "retry expression rejects attempt",
+			strategy: wfv1.RetryStrategy{
+				Limit:                intstrutil.ParsePtr("10"),
+				RetryPolicy:          wfv1.RetryPolicyAlways,
+				Expression:           "false",
+				MaxExecutionDuration: "1s",
+			},
+		},
+		{
+			name: "wall clock budget elapsed after retry limit exhausted",
+			strategy: wfv1.RetryStrategy{
 				Limit:       intstrutil.ParsePtr("0"),
 				RetryPolicy: wfv1.RetryPolicyAlways,
 				Backoff:     &wfv1.Backoff{Duration: "1s", MaxDuration: "1s"},
@@ -811,8 +1258,11 @@ func TestProcessNodeRetriesDoesNotRecordDurationTerminationWhenRetryIsIneligible
 			const nodeName = "test-node"
 			woc.initializeNode(ctx, nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{}, true)
 			_, childNode := woc.initializeNode(ctx, nodeName+"(0)", wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeFailed, &wfv1.NodeFlag{Retried: true}, true)
-			childNode.StartedAt = metav1.NewTime(testCase.childStartedAt)
+			if !testCase.childStartedAt.IsZero() {
+				childNode.StartedAt = metav1.NewTime(testCase.childStartedAt)
+			}
 			childNode.FinishedAt = metav1.Now()
+			childNode.ExecutionDuration = "2s"
 			woc.wf.Status.Nodes.Set(ctx, childNode.ID, *childNode)
 			woc.addChildNode(ctx, nodeName, childNode.Name)
 
@@ -822,6 +1272,7 @@ func TestProcessNodeRetriesDoesNotRecordDurationTerminationWhenRetryIsIneligible
 			require.NoError(t, err)
 
 			for _, reason := range []wfmetrics.RetryStrategyTerminationReason{
+				wfmetrics.RetryStrategyTerminationReasonMaxExecutionDurationExceeded,
 				wfmetrics.RetryStrategyTerminationReasonMaxDurationExceeded,
 				wfmetrics.RetryStrategyTerminationReasonBackoffWouldExceedMaxDuration,
 			} {
@@ -2166,6 +2617,520 @@ func TestAssessNodeStatus(t *testing.T) {
 			assert.Equal(t, tt.wantMessage, got.Message)
 		})
 	}
+}
+
+func TestGetPodExecutionDuration(t *testing.T) {
+	base := time.Date(2026, time.January, 2, 3, 4, 5, 0, time.UTC)
+	mainContainerNames := []string{common.MainContainerName}
+	terminated := func(start, finish time.Duration) apiv1.ContainerState {
+		return apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{
+			StartedAt:  metav1.NewTime(base.Add(start)),
+			FinishedAt: metav1.NewTime(base.Add(finish)),
+		}}
+	}
+
+	t.Run("never started", func(t *testing.T) {
+		pod := &apiv1.Pod{Status: apiv1.PodStatus{ContainerStatuses: []apiv1.ContainerStatus{{
+			Name:  common.MainContainerName,
+			State: apiv1.ContainerState{Waiting: &apiv1.ContainerStateWaiting{Reason: "ImagePullBackOff"}},
+		}}}}
+		assert.Nil(t, getPodExecutionDuration(pod, mainContainerNames))
+	})
+
+	t.Run("running main container exposes a durable start without a completed duration", func(t *testing.T) {
+		pod := &apiv1.Pod{Status: apiv1.PodStatus{ContainerStatuses: []apiv1.ContainerStatus{{
+			Name: common.MainContainerName,
+			State: apiv1.ContainerState{Running: &apiv1.ContainerStateRunning{
+				StartedAt: metav1.NewTime(base.Add(2 * time.Second)),
+			}},
+		}}}}
+		require.Equal(t, base.Add(2*time.Second), getPodExecutionStartedAt(pod, mainContainerNames).Time)
+		assert.Nil(t, getPodExecutionDuration(pod, mainContainerNames))
+	})
+
+	t.Run("terminal main container with missing finish preserves start for fallback", func(t *testing.T) {
+		pod := &apiv1.Pod{Status: apiv1.PodStatus{ContainerStatuses: []apiv1.ContainerStatus{{
+			Name: common.MainContainerName,
+			State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{
+				StartedAt: metav1.NewTime(base.Add(2 * time.Second)),
+			}},
+		}}}}
+		require.Equal(t, base.Add(2*time.Second), getPodExecutionStartedAt(pod, mainContainerNames).Time)
+		assert.Nil(t, getPodExecutionDuration(pod, mainContainerNames))
+	})
+
+	t.Run("excludes init and auxiliary containers", func(t *testing.T) {
+		pod := &apiv1.Pod{Status: apiv1.PodStatus{
+			InitContainerStatuses: []apiv1.ContainerStatus{{Name: common.InitContainerName, State: terminated(-time.Minute, 0)}},
+			ContainerStatuses: []apiv1.ContainerStatus{
+				{Name: common.MainContainerName, State: terminated(2*time.Second, 7*time.Second)},
+				{Name: common.WaitContainerName, State: terminated(0, time.Minute)},
+			},
+		}}
+		executionDuration := getPodExecutionDuration(pod, mainContainerNames)
+		require.NotNil(t, executionDuration)
+		assert.Equal(t, 5*time.Second, executionDuration.Duration)
+	})
+
+	containerSetTemplate := &wfv1.Template{ContainerSet: &wfv1.ContainerSetTemplate{Containers: []wfv1.ContainerNode{
+		{Container: apiv1.Container{Name: "a"}},
+		{Container: apiv1.Container{Name: "b"}},
+	}}}
+	for _, testCase := range []struct {
+		name     string
+		statuses []apiv1.ContainerStatus
+		want     time.Duration
+	}{
+		{
+			name: "parallel containers use elapsed envelope",
+			statuses: []apiv1.ContainerStatus{
+				{Name: "a", State: terminated(0, 8*time.Second)},
+				{Name: "b", State: terminated(2*time.Second, 10*time.Second)},
+			},
+			want: 10 * time.Second,
+		},
+		{
+			name: "sequential containers include elapsed gap without summing runtimes",
+			statuses: []apiv1.ContainerStatus{
+				{Name: "a", State: terminated(0, 2*time.Second)},
+				{Name: "b", State: terminated(7*time.Second, 10*time.Second)},
+			},
+			want: 10 * time.Second,
+		},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			executionDuration := getPodExecutionDuration(&apiv1.Pod{Status: apiv1.PodStatus{ContainerStatuses: testCase.statuses}}, containerSetTemplate.GetMainContainerNames())
+			require.NotNil(t, executionDuration)
+			assert.Equal(t, testCase.want, executionDuration.Duration)
+		})
+	}
+
+	t.Run("ContainerSet with an incomplete finish uses the conservative fallback", func(t *testing.T) {
+		pod := &apiv1.Pod{Status: apiv1.PodStatus{ContainerStatuses: []apiv1.ContainerStatus{
+			{
+				Name: "a",
+				State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{
+					StartedAt: metav1.NewTime(base),
+				}},
+			},
+			{Name: "b", State: terminated(2*time.Second, 5*time.Second)},
+		}}}
+		assert.Nil(t, getPodExecutionDuration(pod, containerSetTemplate.GetMainContainerNames()))
+	})
+
+	t.Run("ContainerSet with missing terminal bounds uses the conservative fallback", func(t *testing.T) {
+		pod := &apiv1.Pod{Status: apiv1.PodStatus{ContainerStatuses: []apiv1.ContainerStatus{
+			{
+				Name:  "a",
+				State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{}},
+			},
+			{Name: "b", State: terminated(2*time.Second, 5*time.Second)},
+		}}}
+		assert.Nil(t, getPodExecutionDuration(pod, containerSetTemplate.GetMainContainerNames()))
+	})
+
+	t.Run("ContainerSet with a missing main container status uses the conservative fallback", func(t *testing.T) {
+		pod := &apiv1.Pod{Status: apiv1.PodStatus{ContainerStatuses: []apiv1.ContainerStatus{
+			{Name: "a", State: terminated(2*time.Second, 5*time.Second)},
+		}}}
+		assert.Nil(t, getPodExecutionDuration(pod, containerSetTemplate.GetMainContainerNames()))
+	})
+
+	t.Run("a previous termination does not establish the current container finish", func(t *testing.T) {
+		pod := &apiv1.Pod{Status: apiv1.PodStatus{ContainerStatuses: []apiv1.ContainerStatus{
+			{
+				Name:                 common.MainContainerName,
+				State:                apiv1.ContainerState{Waiting: &apiv1.ContainerStateWaiting{Reason: "CrashLoopBackOff"}},
+				LastTerminationState: terminated(2*time.Second, 5*time.Second),
+			},
+		}}}
+		assert.Nil(t, getPodExecutionDuration(pod, mainContainerNames))
+	})
+}
+
+func TestAssessNodeStatusPersistsRetryExecutionDurationFromTerminalPod(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	wf.Spec.Templates[0].RetryStrategy = &wfv1.RetryStrategy{MaxExecutionDuration: "1m"}
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	startedAt := metav1.NewTime(time.Now().UTC().Add(-5 * time.Second))
+	finishedAt := metav1.NewTime(startedAt.Add(3 * time.Second))
+	node := &wfv1.NodeStatus{
+		ID:                      wf.NodeID("hello-world(0)"),
+		Name:                    "hello-world(0)",
+		Type:                    wfv1.NodeTypePod,
+		TemplateName:            "whalesay",
+		Phase:                   wfv1.NodePending,
+		NodeFlag:                &wfv1.NodeFlag{Retried: true},
+		ExecutionContainerNames: []string{common.MainContainerName},
+	}
+	pod := &apiv1.Pod{Status: apiv1.PodStatus{
+		Phase: apiv1.PodFailed,
+		ContainerStatuses: []apiv1.ContainerStatus{
+			{
+				Name: common.MainContainerName,
+				State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{
+					ExitCode:   1,
+					StartedAt:  startedAt,
+					FinishedAt: finishedAt,
+				}},
+			},
+		},
+	}}
+
+	updated := woc.assessNodeStatus(ctx, pod, node)
+	require.NotNil(t, updated)
+	assert.Equal(t, "3s", updated.ExecutionDuration)
+	assert.Nil(t, updated.ExecutionStartedAt)
+	assert.Empty(t, updated.ExecutionContainerNames)
+
+	// Workflow status, rather than the Pod, is the durable source used after a
+	// controller restart or after PodGC removes the completed Pod.
+	wf.Status.Nodes = wfv1.Nodes{updated.ID: *updated}
+	restored := wfv1.MustUnmarshalWorkflow(wfv1.MustMarshallJSON(wf))
+	assert.Equal(t, "3s", restored.Status.Nodes[updated.ID].ExecutionDuration)
+}
+
+func TestAssessNodeStatusPersistsZeroRetryExecutionDurationFromTerminalPod(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	wf.Spec.Templates[0].RetryStrategy = &wfv1.RetryStrategy{MaxExecutionDuration: "1m"}
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	startedAt := metav1.NewTime(time.Now().UTC().Add(-5 * time.Second))
+	node := &wfv1.NodeStatus{
+		ID:                      wf.NodeID("hello-world(0)"),
+		Name:                    "hello-world(0)",
+		Type:                    wfv1.NodeTypePod,
+		TemplateName:            "whalesay",
+		Phase:                   wfv1.NodePending,
+		NodeFlag:                &wfv1.NodeFlag{Retried: true},
+		ExecutionContainerNames: []string{common.MainContainerName},
+	}
+	pod := &apiv1.Pod{Status: apiv1.PodStatus{
+		Phase: apiv1.PodFailed,
+		ContainerStatuses: []apiv1.ContainerStatus{
+			{
+				Name: common.MainContainerName,
+				State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{
+					ExitCode:   1,
+					StartedAt:  startedAt,
+					FinishedAt: startedAt,
+				}},
+			},
+		},
+	}}
+
+	updated := woc.assessNodeStatus(ctx, pod, node)
+	require.NotNil(t, updated)
+	assert.Equal(t, "0s", updated.ExecutionDuration)
+	assert.Nil(t, updated.ExecutionStartedAt)
+	assert.Empty(t, updated.ExecutionContainerNames)
+}
+
+func TestAssessNodeStatusTracksRetryExecutionFromTemplateDefaults(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	wf.Spec.TemplateDefaults = &wfv1.Template{
+		RetryStrategy: &wfv1.RetryStrategy{MaxExecutionDuration: "1m"},
+	}
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	startedAt := metav1.NewTime(time.Now().UTC().Add(-5 * time.Second))
+	finishedAt := metav1.NewTime(startedAt.Add(3 * time.Second))
+	effectiveTmpl := wf.Spec.Templates[0].DeepCopy()
+	require.NoError(t, woc.mergedTemplateDefaultsInto(effectiveTmpl))
+	holder := &wfv1.WorkflowStep{Name: "whalesay", Template: "whalesay"}
+	_, node := woc.initializeExecutableNode(ctx, "hello-world(0)", wfv1.NodeTypePod, "", effectiveTmpl, holder, "", wfv1.NodePending, &wfv1.NodeFlag{Retried: true}, false)
+	require.Equal(t, []string{common.MainContainerName}, node.ExecutionContainerNames)
+	pod := &apiv1.Pod{Status: apiv1.PodStatus{
+		Phase: apiv1.PodFailed,
+		ContainerStatuses: []apiv1.ContainerStatus{{
+			Name: common.MainContainerName,
+			State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{
+				ExitCode:   1,
+				StartedAt:  startedAt,
+				FinishedAt: finishedAt,
+			}},
+		}},
+	}}
+
+	updated := woc.assessNodeStatus(ctx, pod, node)
+	require.NotNil(t, updated)
+	assert.Equal(t, "3s", updated.ExecutionDuration)
+	assert.Nil(t, updated.ExecutionStartedAt)
+	assert.Empty(t, updated.ExecutionContainerNames)
+}
+
+func TestAssessNodeStatusTracksInlineContainerSetRetryExecution(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	inlineTmpl := &wfv1.Template{
+		RetryStrategy: &wfv1.RetryStrategy{MaxExecutionDuration: "1m"},
+		ContainerSet: &wfv1.ContainerSetTemplate{Containers: []wfv1.ContainerNode{
+			{Container: apiv1.Container{Name: "a"}},
+			{Container: apiv1.Container{Name: "b"}},
+		}},
+	}
+	holder := &wfv1.WorkflowStep{Name: "inline", Inline: inlineTmpl}
+	_, node := woc.initializeExecutableNode(ctx, "hello-world(0)", wfv1.NodeTypePod, "", inlineTmpl, holder, "", wfv1.NodePending, &wfv1.NodeFlag{Retried: true}, false)
+	assert.Empty(t, node.TemplateName)
+	require.Equal(t, []string{"a", "b"}, node.ExecutionContainerNames)
+
+	startedAt := time.Now().UTC().Add(-12 * time.Second)
+	pod := &apiv1.Pod{Status: apiv1.PodStatus{
+		Phase: apiv1.PodFailed,
+		ContainerStatuses: []apiv1.ContainerStatus{
+			{
+				Name: "a",
+				State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{
+					ExitCode:   1,
+					StartedAt:  metav1.NewTime(startedAt),
+					FinishedAt: metav1.NewTime(startedAt.Add(8 * time.Second)),
+				}},
+			},
+			{
+				Name: "b",
+				State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{
+					ExitCode:   1,
+					StartedAt:  metav1.NewTime(startedAt.Add(2 * time.Second)),
+					FinishedAt: metav1.NewTime(startedAt.Add(10 * time.Second)),
+				}},
+			},
+		},
+	}}
+
+	updated := woc.assessNodeStatus(ctx, pod, node)
+	require.NotNil(t, updated)
+	assert.Equal(t, "10s", updated.ExecutionDuration)
+	assert.Nil(t, updated.ExecutionStartedAt)
+	assert.Empty(t, updated.ExecutionContainerNames)
+}
+
+func TestAssessNodeStatusUsesCompletionObservationForIncompleteContainerSetFinish(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	startedAt := metav1.NewTime(time.Now().UTC().Add(-10 * time.Second))
+	node := &wfv1.NodeStatus{
+		ID:                      wf.NodeID("hello-world(0)"),
+		Name:                    "hello-world(0)",
+		Type:                    wfv1.NodeTypePod,
+		TemplateName:            "whalesay",
+		Phase:                   wfv1.NodePending,
+		NodeFlag:                &wfv1.NodeFlag{Retried: true},
+		ExecutionStartedAt:      &startedAt,
+		ExecutionContainerNames: []string{"a", "b"},
+	}
+	pod := &apiv1.Pod{Status: apiv1.PodStatus{
+		Phase: apiv1.PodFailed,
+		ContainerStatuses: []apiv1.ContainerStatus{
+			{
+				Name: "a",
+				State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{
+					ExitCode:  1,
+					StartedAt: startedAt,
+				}},
+			},
+			{
+				Name: "b",
+				State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{
+					ExitCode:   1,
+					StartedAt:  metav1.NewTime(startedAt.Add(time.Second)),
+					FinishedAt: metav1.NewTime(startedAt.Add(2 * time.Second)),
+				}},
+			},
+		},
+	}}
+
+	updated := woc.assessNodeStatus(ctx, pod, node)
+	require.NotNil(t, updated)
+	executionDuration, err := wfv1.ParseStringToDuration(updated.ExecutionDuration)
+	require.NoError(t, err)
+	assert.GreaterOrEqual(t, executionDuration, 10*time.Second)
+	assert.Less(t, executionDuration, 15*time.Second)
+	assert.Nil(t, updated.ExecutionStartedAt)
+	assert.Empty(t, updated.ExecutionContainerNames)
+}
+
+func TestAssessNodeStatusPersistsRetryExecutionStart(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	wf.Spec.Templates[0].RetryStrategy = &wfv1.RetryStrategy{MaxExecutionDuration: "1m"}
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	startedAt := metav1.NewTime(time.Now().UTC().Add(-3 * time.Second))
+	node := &wfv1.NodeStatus{
+		ID:                      wf.NodeID("hello-world(0)"),
+		Name:                    "hello-world(0)",
+		Type:                    wfv1.NodeTypePod,
+		TemplateName:            "whalesay",
+		Phase:                   wfv1.NodePending,
+		NodeFlag:                &wfv1.NodeFlag{Retried: true},
+		ExecutionContainerNames: []string{common.MainContainerName},
+	}
+	pod := &apiv1.Pod{Status: apiv1.PodStatus{
+		Phase: apiv1.PodRunning,
+		ContainerStatuses: []apiv1.ContainerStatus{{
+			Name: common.MainContainerName,
+			State: apiv1.ContainerState{Running: &apiv1.ContainerStateRunning{
+				StartedAt: startedAt,
+			}},
+		}},
+	}}
+
+	updated := woc.assessNodeStatus(ctx, pod, node)
+	require.NotNil(t, updated)
+	require.NotNil(t, updated.ExecutionStartedAt)
+	assert.Equal(t, startedAt, *updated.ExecutionStartedAt)
+	assert.Empty(t, updated.ExecutionDuration)
+}
+
+func TestAssessNodeStatusPreservesExecutionStartAcrossContainerRestarts(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	wf.Spec.Templates[0].RetryStrategy = &wfv1.RetryStrategy{MaxExecutionDuration: "1m"}
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	firstStartedAt := metav1.NewTime(time.Now().UTC().Add(-10 * time.Second))
+	node := &wfv1.NodeStatus{
+		ID:                      wf.NodeID("hello-world(0)"),
+		Name:                    "hello-world(0)",
+		Type:                    wfv1.NodeTypePod,
+		TemplateName:            "whalesay",
+		Phase:                   wfv1.NodeRunning,
+		NodeFlag:                &wfv1.NodeFlag{Retried: true},
+		ExecutionStartedAt:      &firstStartedAt,
+		ExecutionContainerNames: []string{common.MainContainerName},
+	}
+
+	// Simulate a later terminal observation after Kubernetes has discarded an
+	// older container state. The persisted start must still bound the attempt.
+	restartedAt := metav1.NewTime(firstStartedAt.Add(5 * time.Second))
+	finishedAt := metav1.NewTime(firstStartedAt.Add(8 * time.Second))
+	pod := &apiv1.Pod{Status: apiv1.PodStatus{
+		Phase: apiv1.PodFailed,
+		ContainerStatuses: []apiv1.ContainerStatus{{
+			Name: common.MainContainerName,
+			State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{
+				ExitCode:   1,
+				StartedAt:  restartedAt,
+				FinishedAt: finishedAt,
+			}},
+		}},
+	}}
+
+	updated := woc.assessNodeStatus(ctx, pod, node)
+	require.NotNil(t, updated)
+	assert.Equal(t, "8s", updated.ExecutionDuration)
+	assert.Nil(t, updated.ExecutionStartedAt)
+	assert.Empty(t, updated.ExecutionContainerNames)
+}
+
+func TestShouldAutoRestartPodRejectsPersistedExecutionStart(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+	controller.Config.FailedPodRestart = &config.FailedPodRestartConfig{Enabled: true}
+	woc := newWorkflowOperationCtx(ctx, wfv1.MustUnmarshalWorkflow(helloWorldWf), controller)
+
+	startedAt := metav1.Now()
+	node := &wfv1.NodeStatus{
+		ID:                 "retry-attempt",
+		ExecutionStartedAt: &startedAt,
+	}
+	pod := &apiv1.Pod{
+		ObjectMeta: metav1.ObjectMeta{Name: "retry-attempt"},
+		Status: apiv1.PodStatus{
+			Phase:  apiv1.PodFailed,
+			Reason: "Evicted",
+			ContainerStatuses: []apiv1.ContainerStatus{{
+				Name: common.MainContainerName,
+				State: apiv1.ContainerState{Waiting: &apiv1.ContainerStateWaiting{
+					Reason: "ContainerStatusUnknown",
+				}},
+			}},
+		},
+	}
+
+	assert.False(t, woc.shouldAutoRestartPod(ctx, pod, &wfv1.Template{Container: &apiv1.Container{}}, node))
+}
+
+func TestPodReconciliationFinalizesExecutionDurationForMissingRetryPod(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	now := time.Now().UTC()
+	nodeID := wf.NodeID("hello-world(0)")
+	wf.Status.Nodes = wfv1.Nodes{nodeID: {
+		ID:                      nodeID,
+		Name:                    "hello-world(0)",
+		Type:                    wfv1.NodeTypePod,
+		TemplateName:            "whalesay",
+		Phase:                   wfv1.NodeRunning,
+		StartedAt:               metav1.NewTime(now.Add(-time.Hour)),
+		NodeFlag:                &wfv1.NodeFlag{Retried: true},
+		ExecutionStartedAt:      &metav1.Time{Time: now.Add(-5 * time.Second)},
+		ExecutionContainerNames: []string{common.MainContainerName},
+	}}
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	_, err := woc.podReconciliation(ctx)
+	require.NoError(t, err)
+	updated := woc.wf.Status.Nodes[nodeID]
+	assert.Equal(t, wfv1.NodeError, updated.Phase)
+	executionDuration, err := wfv1.ParseStringToDuration(updated.ExecutionDuration)
+	require.NoError(t, err)
+	assert.GreaterOrEqual(t, executionDuration, 5*time.Second)
+	assert.Less(t, executionDuration, 10*time.Second)
+	assert.Nil(t, updated.ExecutionStartedAt)
+	assert.Empty(t, updated.ExecutionContainerNames)
+}
+
+func TestPodReconciliationClearsExecutionTrackingForMissingNeverStartedRetryPod(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	nodeID := wf.NodeID("hello-world(0)")
+	wf.Status.Nodes = wfv1.Nodes{nodeID: {
+		ID:                      nodeID,
+		Name:                    "hello-world(0)",
+		Type:                    wfv1.NodeTypePod,
+		TemplateName:            "whalesay",
+		Phase:                   wfv1.NodeRunning,
+		StartedAt:               metav1.NewTime(time.Now().UTC().Add(-time.Hour)),
+		NodeFlag:                &wfv1.NodeFlag{Retried: true},
+		ExecutionContainerNames: []string{common.MainContainerName},
+	}}
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	_, err := woc.podReconciliation(ctx)
+	require.NoError(t, err)
+	updated := woc.wf.Status.Nodes[nodeID]
+	assert.Equal(t, wfv1.NodeError, updated.Phase)
+	assert.Empty(t, updated.ExecutionDuration)
+	assert.Nil(t, updated.ExecutionStartedAt)
+	assert.Empty(t, updated.ExecutionContainerNames)
 }
 
 // TestGetNodeTemplateUsesStoredTemplates verifies that GetNodeTemplate checks storedTemplates
@@ -6424,6 +7389,44 @@ func TestConfigMapCacheLoadOperate(t *testing.T) {
 	}
 }
 
+func TestConfigMapCacheMissUsesInheritedRetryNodeType(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(workflowCached)
+	wf.Spec.Arguments.Parameters = append(wf.Spec.Arguments.Parameters, wfv1.Parameter{
+		Name:  "budget",
+		Value: wfv1.AnyStringPtr("1m"),
+	})
+	wf.Spec.RetryStrategy = &wfv1.RetryStrategy{MaxExecutionDuration: "{{workflow.parameters.budget}}"}
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	retryNode, err := woc.wf.GetNodeByName(wf.Name)
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeTypeRetry, retryNode.Type)
+	assert.Equal(t, "1m", retryNode.RetryMaxExecutionDuration)
+	require.NotNil(t, retryNode.MemoizationStatus)
+	assert.False(t, retryNode.MemoizationStatus.Hit)
+	require.Len(t, retryNode.Children, 1)
+	attempt, err := woc.wf.Status.Nodes.Get(retryNode.Children[0])
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeTypePod, attempt.Type)
+	assert.Equal(t, []string{common.MainContainerName}, attempt.ExecutionContainerNames)
+
+	for i := range woc.wf.Spec.Arguments.Parameters {
+		if woc.wf.Spec.Arguments.Parameters[i].Name == "budget" {
+			woc.wf.Spec.Arguments.Parameters[i].Value = wfv1.AnyStringPtr("2m")
+		}
+	}
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+	retryNode, err = woc.wf.GetNodeByName(wf.Name)
+	require.NoError(t, err)
+	assert.Equal(t, "1m", retryNode.RetryMaxExecutionDuration)
+}
+
 var workflowCachedNoOutputs = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -6967,6 +7970,119 @@ func TestDAGConfigMapCacheCreateWhenHaveRetryStrategy(t *testing.T) {
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
+func TestDAGMemoizedRetryCacheHitPreservesFanOutGraph(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: memoized-retry-fan-out
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: cached
+        template: memoized
+      - name: consumer-a
+        depends: cached.Succeeded
+        template: run
+      - name: consumer-b
+        depends: cached.Succeeded
+        template: run
+  - name: memoized
+    retryStrategy:
+      limit: "1"
+    memoize:
+      key: hit
+      cache:
+        configMap:
+          name: memoization-test-cache
+    container:
+      image: alpine:3.23
+      command: [sh, -c]
+      args: ["exit 0"]
+  - name: run
+    container:
+      image: alpine:3.23
+      command: [sh, -c]
+      args: ["exit 1"]
+`)
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &apiv1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "memoization-test-cache",
+			Namespace: "default",
+			Labels: map[string]string{
+				common.LabelKeyConfigMapType: common.LabelValueTypeConfigMapCache,
+			},
+		},
+		Data: map[string]string{
+			"hit": `{"nodeID":"previous-node","outputs":null,"creationTimestamp":"2026-01-01T00:00:00Z"}`,
+		},
+	}, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	cached := woc.wf.Status.Nodes.FindByDisplayName("cached")
+	require.NotNil(t, cached)
+	require.NotNil(t, cached.MemoizationStatus)
+	assert.True(t, cached.MemoizationStatus.Hit)
+	assert.Equal(t, wfv1.NodeTypePod, cached.Type)
+	consumerA := woc.wf.Status.Nodes.FindByDisplayName("consumer-a")
+	require.NotNil(t, consumerA)
+	consumerB := woc.wf.Status.Nodes.FindByDisplayName("consumer-b")
+	require.NotNil(t, consumerB)
+	assert.ElementsMatch(t, []string{consumerA.ID, consumerB.ID}, cached.Children)
+
+	// A malformed parent graph makes manual workflow retry fail before it can
+	// determine which nodes should be reset.
+	retryInput := woc.wf.DeepCopy()
+	retryInput.Status.Phase = wfv1.WorkflowFailed
+	for _, consumerID := range []string{consumerA.ID, consumerB.ID} {
+		failedConsumer := retryInput.Status.Nodes[consumerID]
+		failedConsumer.Phase = wfv1.NodeFailed
+		retryInput.Status.Nodes.Set(ctx, failedConsumer.ID, failedConsumer)
+	}
+	_, _, err = util.FormulateRetryWorkflow(ctx, retryInput, false, "", nil)
+	require.NoError(t, err)
+
+	resubmitted, err := util.FormulateResubmitWorkflow(ctx, retryInput, true, nil)
+	require.NoError(t, err)
+	resubmittedCached := resubmitted.Status.Nodes.FindByDisplayName("cached")
+	require.NotNil(t, resubmittedCached)
+	assert.Equal(t, wfv1.NodeTypeSkipped, resubmittedCached.Type)
+	assert.Equal(t, wfv1.NodeSkipped, resubmittedCached.Phase)
+
+	resubmitCancel, resubmitController := newController(ctx, resubmitted)
+	defer resubmitCancel()
+	resubmitWoc := newWorkflowOperationCtx(ctx, resubmitted, resubmitController)
+	resubmitWoc.operate(ctx)
+
+	resubmittedCached = resubmitWoc.wf.Status.Nodes.FindByDisplayName("cached")
+	require.NotNil(t, resubmittedCached)
+	assert.Equal(t, wfv1.NodeTypeSkipped, resubmittedCached.Type)
+	assert.Equal(t, wfv1.NodeSkipped, resubmittedCached.Phase)
+	resubmittedConsumerA := resubmitWoc.wf.Status.Nodes.FindByDisplayName("consumer-a")
+	require.NotNil(t, resubmittedConsumerA)
+	resubmittedConsumerB := resubmitWoc.wf.Status.Nodes.FindByDisplayName("consumer-b")
+	require.NotNil(t, resubmittedConsumerB)
+	assert.ElementsMatch(t, []string{resubmittedConsumerA.ID, resubmittedConsumerB.ID}, resubmittedCached.Children)
+
+	pods, err := listPods(ctx, resubmitWoc)
+	require.NoError(t, err)
+	require.Len(t, pods.Items, 2)
+	for _, pod := range pods.Items {
+		assert.NotContains(t, pod.Annotations[common.AnnotationKeyNodeName], ".cached(")
+	}
+}
+
 func TestConfigMapCacheLoadNoLabels(t *testing.T) {
 	sampleConfigMapCacheEntry := apiv1.ConfigMap{
 		Data: map[string]string{
@@ -7243,6 +8359,103 @@ status:
 	list, err := listPods(ctx, woc)
 	require.NoError(t, err)
 	assert.Len(t, list.Items, 1)
+}
+
+func TestMemoizedResubmitRecapturesRetryExecutionBudget(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: retry-budget-resubmit
+  namespace: default
+spec:
+  arguments:
+    parameters:
+    - name: budget
+      value: 10s
+  entrypoint: main
+  templates:
+  - name: main
+    retryStrategy:
+      limit: "2"
+      maxExecutionDuration: "{{workflow.parameters.budget}}"
+    container:
+      image: alpine:3.23
+      command: [sh, -c]
+      args: ["exit 1"]
+status:
+  phase: Failed
+`)
+	retryNodeID := wf.NodeID(wf.Name)
+	attemptName := wf.Name + "(0)"
+	attemptNodeID := wf.NodeID(attemptName)
+	executionStartedAt := metav1.NewTime(time.Now().UTC().Add(-time.Minute))
+	wf.Status.Nodes = wfv1.Nodes{
+		retryNodeID: {
+			ID:                        retryNodeID,
+			Name:                      wf.Name,
+			TemplateName:              "main",
+			Type:                      wfv1.NodeTypeRetry,
+			Phase:                     wfv1.NodeFailed,
+			Children:                  []string{attemptNodeID},
+			RetryMaxExecutionDuration: "10s",
+		},
+		attemptNodeID: {
+			ID:                      attemptNodeID,
+			Name:                    attemptName,
+			TemplateName:            "main",
+			Type:                    wfv1.NodeTypePod,
+			Phase:                   wfv1.NodeFailed,
+			NodeFlag:                &wfv1.NodeFlag{Retried: true},
+			ExecutionStartedAt:      &executionStartedAt,
+			ExecutionDuration:       "30s",
+			ExecutionContainerNames: []string{common.MainContainerName},
+		},
+	}
+
+	resubmitted, err := util.FormulateResubmitWorkflow(ctx, wf, true, []string{"budget=20s"})
+	require.NoError(t, err)
+	cancel, controller := newController(ctx, resubmitted)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, resubmitted, controller)
+	woc.operate(ctx)
+
+	retryNode, err := woc.wf.GetNodeByName(resubmitted.Name)
+	require.NoError(t, err)
+	assert.Equal(t, "20s", retryNode.RetryMaxExecutionDuration)
+	attemptNode, err := woc.wf.GetNodeByName(resubmitted.Name + "(0)")
+	require.NoError(t, err)
+	assert.Empty(t, attemptNode.ExecutionDuration)
+	assert.Equal(t, []string{common.MainContainerName}, attemptNode.ExecutionContainerNames)
+	pods, err := listPods(ctx, woc)
+	require.NoError(t, err)
+	require.Len(t, pods.Items, 1)
+
+	startedAt := metav1.NewTime(time.Now().UTC().Add(-3 * time.Second))
+	finishedAt := metav1.NewTime(startedAt.Add(2 * time.Second))
+	makePodsPhase(ctx, woc, apiv1.PodFailed, func(pod *apiv1.Pod, _ *wfOperationCtx) {
+		pod.Status.ContainerStatuses = []apiv1.ContainerStatus{{
+			Name: common.MainContainerName,
+			State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{
+				ExitCode:   1,
+				StartedAt:  startedAt,
+				FinishedAt: finishedAt,
+			}},
+		}}
+	})
+	woc.operate(ctx)
+
+	retryNode, err = woc.wf.GetNodeByName(resubmitted.Name)
+	require.NoError(t, err)
+	require.Len(t, retryNode.Children, 2)
+	firstAttempt, err := woc.wf.Status.Nodes.Get(retryNode.Children[0])
+	require.NoError(t, err)
+	assert.Equal(t, "2s", firstAttempt.ExecutionDuration)
+	assert.NotContains(t, retryNode.Message, "Max execution duration limit exceeded")
+	pods, err = listPods(ctx, woc)
+	require.NoError(t, err)
+	assert.Len(t, pods.Items, 2)
 }
 
 func TestResubmitParamsOverride(t *testing.T) {
@@ -9903,6 +11116,107 @@ func TestMutexWfPendingWithNoPod(t *testing.T) {
 	woc.controller.syncManager.Release(ctx, wf, "test", &wfv1.Synchronization{Mutexes: []*wfv1.Mutex{{Name: "welcome"}}})
 	woc.operate(ctx)
 	assert.Empty(t, woc.wf.Status.Nodes.FindByDisplayName("hello-world-mpdht").Message)
+}
+
+func TestMutexWaitUsesInheritedRetryNodeType(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(wfPendingWithSync)
+	wf.Status = wfv1.WorkflowStatus{}
+	wf.Spec.Arguments.Parameters = append(wf.Spec.Arguments.Parameters, wfv1.Parameter{
+		Name:  "budget",
+		Value: wfv1.AnyStringPtr("1m"),
+	})
+	wf.Spec.RetryStrategy = &wfv1.RetryStrategy{MaxExecutionDuration: "{{workflow.parameters.budget}}"}
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(string) {}, workflowExistenceFunc, false)
+
+	lock := &wfv1.Synchronization{Mutexes: []*wfv1.Mutex{{Name: "welcome"}}}
+	_, _, _, _, err := controller.syncManager.TryAcquire(ctx, wf, "test", lock)
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	retryNode, err := woc.wf.GetNodeByName(wf.Name)
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeTypeRetry, retryNode.Type)
+	assert.Equal(t, wfv1.NodePending, retryNode.Phase)
+	assert.Empty(t, retryNode.RetryMaxExecutionDuration)
+
+	controller.syncManager.Release(ctx, wf, "test", lock)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+	retryNode, err = woc.wf.GetNodeByName(wf.Name)
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeTypeRetry, retryNode.Type)
+	assert.Equal(t, "1m", retryNode.RetryMaxExecutionDuration)
+
+	for i := range woc.wf.Spec.Arguments.Parameters {
+		if woc.wf.Spec.Arguments.Parameters[i].Name == "budget" {
+			woc.wf.Spec.Arguments.Parameters[i].Value = wfv1.AnyStringPtr("2m")
+		}
+	}
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+	retryNode, err = woc.wf.GetNodeByName(wf.Name)
+	require.NoError(t, err)
+	assert.Equal(t, "1m", retryNode.RetryMaxExecutionDuration)
+}
+
+func TestMutexWaitCacheHitRestoresStructuralNodeType(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(wfPendingWithSync)
+	wf.Status = wfv1.WorkflowStatus{}
+	wf.Spec.RetryStrategy = &wfv1.RetryStrategy{MaxExecutionDuration: "1m"}
+	wf.Spec.Templates[0].Memoize = &wfv1.Memoize{
+		Key: "hit",
+		Cache: &wfv1.Cache{ConfigMap: &apiv1.LocalObjectReference{
+			Name: "memoization-test-cache",
+		}},
+	}
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(string) {}, workflowExistenceFunc, false)
+	_, err := controller.kubeclientset.CoreV1().ConfigMaps("default").Create(ctx, &apiv1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "memoization-test-cache",
+			Namespace: "default",
+			Labels: map[string]string{
+				common.LabelKeyConfigMapType: common.LabelValueTypeConfigMapCache,
+			},
+		},
+		Data: map[string]string{
+			"hit": `{"nodeID":"previous-node","outputs":null,"creationTimestamp":"2026-01-01T00:00:00Z"}`,
+		},
+	}, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	lock := &wfv1.Synchronization{Mutexes: []*wfv1.Mutex{{Name: "welcome"}}}
+	_, _, _, _, err = controller.syncManager.TryAcquire(ctx, wf, "test", lock)
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	node, err := woc.wf.GetNodeByName(wf.Name)
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeTypeRetry, node.Type)
+	assert.Equal(t, wfv1.NodePending, node.Phase)
+
+	controller.syncManager.Release(ctx, wf, "test", lock)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	node, err = woc.wf.GetNodeByName(wf.Name)
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeTypePod, node.Type)
+	assert.Equal(t, wfv1.NodeSucceeded, node.Phase)
+	require.NotNil(t, node.MemoizationStatus)
+	assert.True(t, node.MemoizationStatus.Hit)
+	require.NotNil(t, node.TaskResultSynced)
+	assert.True(t, *node.TaskResultSynced)
+	pods, err := listPods(ctx, woc)
+	require.NoError(t, err)
+	assert.Empty(t, pods.Items)
 }
 
 var wfGlobalArtifactNil = `apiVersion: argoproj.io/v1alpha1

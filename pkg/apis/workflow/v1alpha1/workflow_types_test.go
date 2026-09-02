@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -804,6 +805,42 @@ func TestInputs_NoArtifacts(t *testing.T) {
 	assert.Nil(t, inArt)
 	outArt := s.Outputs.GetArtifactByName("test-artifact")
 	assert.Nil(t, outArt)
+}
+
+func TestNodeStatusExecutionDurationJSON(t *testing.T) {
+	emptyStatus := MustMarshallJSON(NodeStatus{})
+	assert.NotContains(t, emptyStatus, "executionContainerNames")
+	assert.NotContains(t, emptyStatus, "executionStartedAt")
+	assert.NotContains(t, emptyStatus, "executionDuration")
+	assert.NotContains(t, emptyStatus, "retryMaxExecutionDuration")
+	status := NodeStatus{
+		ExecutionContainerNames:   []string{"a", "b"},
+		ExecutionDuration:         (1500 * time.Millisecond).String(),
+		RetryMaxExecutionDuration: "10s",
+	}
+	assert.Contains(t, MustMarshallJSON(status), `"executionContainerNames":["a","b"]`)
+	assert.Contains(t, MustMarshallJSON(status), `"executionDuration":"1.5s"`)
+	assert.Contains(t, MustMarshallJSON(status), `"retryMaxExecutionDuration":"10s"`)
+}
+
+func TestNodeStatusExecutionDurationProtobuf(t *testing.T) {
+	startedAt := metav1.NewTime(time.Date(2026, time.January, 2, 3, 4, 5, 0, time.UTC))
+	original := &NodeStatus{
+		ExecutionStartedAt:        &startedAt,
+		ExecutionDuration:         "1.5s",
+		ExecutionContainerNames:   []string{"a", "b"},
+		RetryMaxExecutionDuration: "10s",
+	}
+	data, err := proto.Marshal(original)
+	require.NoError(t, err)
+
+	restored := &NodeStatus{}
+	require.NoError(t, proto.Unmarshal(data, restored))
+	require.NotNil(t, restored.ExecutionStartedAt)
+	assert.True(t, restored.ExecutionStartedAt.Time.Equal(startedAt.Time))
+	assert.Equal(t, original.ExecutionDuration, restored.ExecutionDuration)
+	assert.Equal(t, original.ExecutionContainerNames, restored.ExecutionContainerNames)
+	assert.Equal(t, original.RetryMaxExecutionDuration, restored.RetryMaxExecutionDuration)
 }
 
 func TestResourcesDuration_String(t *testing.T) {

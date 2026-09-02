@@ -15,6 +15,7 @@ const (
 	// add another reason without introducing a separate metric.
 	RetryStrategyTerminationReasonMaxDurationExceeded           RetryStrategyTerminationReason = "MaxDurationExceeded"
 	RetryStrategyTerminationReasonBackoffWouldExceedMaxDuration RetryStrategyTerminationReason = "BackoffWouldExceedMaxDuration"
+	RetryStrategyTerminationReasonMaxExecutionDurationExceeded  RetryStrategyTerminationReason = "MaxExecutionDurationExceeded"
 )
 
 func addRetryStrategyTerminationsCounter(_ context.Context, m *Metrics) error {

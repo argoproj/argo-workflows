@@ -3420,6 +3420,7 @@ cause implementors to also use a fixed point implementation.
 | backoff | [Backoff](#backoff)| `Backoff` |  | |  |  |
 | expression | string| `string` |  | | Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not</br>be retried and the retry strategy will be ignored |  |
 | limit | [IntOrString](#int-or-string)| `IntOrString` |  | |  |  |
+| maxExecutionDuration | string| `string` |  | | MaxExecutionDuration is the maximum cumulative execution time of completed, pod-backed retry attempts.</br>For each attempt, execution time spans the earliest observed main-container start through the latest main-container finish.</br>If timestamps do not establish the latest main-container finish, execution time conservatively extends until Argo</br>observes the attempt complete.</br>Pending time, init containers, output processing, and retry backoff are otherwise excluded. The limit is checked only</br>after a failed or errored attempt and never terminates an active or successful attempt. Parameterized values are</br>resolved and captured when the retry sequence starts. |  |
 | retryPolicy | [RetryPolicy](#retry-policy)| `RetryPolicy` |  | |  |  |
 
 
