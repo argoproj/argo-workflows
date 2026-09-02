@@ -1264,6 +1264,63 @@ func (_c *SyncQueries_ReleaseHeld_Call) RunAndReturn(run func(ctx context.Contex
 	return _c
 }
 
+// ReleaseAllHeldByWorkflowKey provides a mock function for the type SyncQueries
+func (_mock *SyncQueries) ReleaseAllHeldByWorkflowKey(ctx context.Context, holderKey string) error {
+	ret := _mock.Called(ctx, holderKey)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ReleaseAllHeldByWorkflowKey")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = returnFunc(ctx, holderKey)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// SyncQueries_ReleaseAllHeldByWorkflowKey_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ReleaseAllHeldByWorkflowKey'
+type SyncQueries_ReleaseAllHeldByWorkflowKey_Call struct {
+	*mock.Call
+}
+
+// ReleaseAllHeldByWorkflowKey is a helper method to define mock.On call
+//   - ctx context.Context
+//   - holderKey string
+func (_e *SyncQueries_Expecter) ReleaseAllHeldByWorkflowKey(ctx interface{}, holderKey interface{}) *SyncQueries_ReleaseAllHeldByWorkflowKey_Call {
+	return &SyncQueries_ReleaseAllHeldByWorkflowKey_Call{Call: _e.mock.On("ReleaseAllHeldByWorkflowKey", ctx, holderKey)}
+}
+
+func (_c *SyncQueries_ReleaseAllHeldByWorkflowKey_Call) Run(run func(ctx context.Context, holderKey string)) *SyncQueries_ReleaseAllHeldByWorkflowKey_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *SyncQueries_ReleaseAllHeldByWorkflowKey_Call) Return(err error) *SyncQueries_ReleaseAllHeldByWorkflowKey_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *SyncQueries_ReleaseAllHeldByWorkflowKey_Call) RunAndReturn(run func(ctx context.Context, holderKey string) error) *SyncQueries_ReleaseAllHeldByWorkflowKey_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // RemoveFromQueue provides a mock function for the type SyncQueries
 func (_mock *SyncQueries) RemoveFromQueue(ctx context.Context, semaphoreName string, holderKey string) error {
 	ret := _mock.Called(ctx, semaphoreName, holderKey)
