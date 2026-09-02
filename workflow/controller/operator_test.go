@@ -9218,6 +9218,204 @@ func TestStepsFailFast(t *testing.T) {
 	assert.Equal(t, wfv1.NodeFailed, node.Phase)
 }
 
+const stepsFailFastRunningRetry = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: issue-16849
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    failFast: true
+    parallelism: 1
+    steps:
+    - - name: retry
+        template: fail
+        withParam: '["a", "b"]'
+  - name: fail
+    retryStrategy:
+      limit: 2
+      backoff:
+        duration: 1h
+    container:
+      image: alpine
+      command: [sh, -c]
+      args: [exit 1]
+`
+
+func TestStepsFailFastTerminatesRunningRetry(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(stepsFailFastRunningRetry)
+	startedAt := metav1.Now()
+	wf.Status.Phase = wfv1.WorkflowRunning
+	wf.Status.StartedAt = startedAt
+	wf.Status.Nodes = wfv1.Nodes{}
+	taskResultSynced := true
+
+	rootName := wf.Name
+	groupName := rootName + "[0]"
+	failedRetryName := groupName + ".retry(0:a)"
+	runningRetryName := groupName + ".retry(1:b)"
+
+	nodeID := func(name string) string { return wf.NodeID(name) }
+	failedPod := func(name, displayName, boundaryID string) wfv1.NodeStatus {
+		return wfv1.NodeStatus{
+			ID:               nodeID(name),
+			Name:             name,
+			DisplayName:      displayName,
+			Type:             wfv1.NodeTypePod,
+			TemplateName:     "fail",
+			TemplateScope:    "local/issue-16849",
+			BoundaryID:       boundaryID,
+			Phase:            wfv1.NodeFailed,
+			NodeFlag:         &wfv1.NodeFlag{Retried: true},
+			StartedAt:        startedAt,
+			FinishedAt:       startedAt,
+			TaskResultSynced: &taskResultSynced,
+		}
+	}
+
+	failedRetryChildren := []string{}
+	for attempt := range 3 {
+		name := fmt.Sprintf("%s(%d)", failedRetryName, attempt)
+		id := nodeID(name)
+		failedRetryChildren = append(failedRetryChildren, id)
+		wf.Status.Nodes[id] = failedPod(name, fmt.Sprintf("retry(0:a)(%d)", attempt), nodeID(rootName))
+	}
+	runningAttemptName := runningRetryName + "(0)"
+	runningAttemptID := nodeID(runningAttemptName)
+	wf.Status.Nodes[runningAttemptID] = failedPod(runningAttemptName, "retry(1:b)(0)", nodeID(rootName))
+
+	wf.Status.Nodes[nodeID(failedRetryName)] = wfv1.NodeStatus{
+		ID:            nodeID(failedRetryName),
+		Name:          failedRetryName,
+		DisplayName:   "retry(0:a)",
+		Type:          wfv1.NodeTypeRetry,
+		TemplateName:  "fail",
+		TemplateScope: "local/issue-16849",
+		BoundaryID:    nodeID(rootName),
+		Phase:         wfv1.NodeFailed,
+		StartedAt:     startedAt,
+		FinishedAt:    startedAt,
+		Children:      failedRetryChildren,
+	}
+	wf.Status.Nodes[nodeID(runningRetryName)] = wfv1.NodeStatus{
+		ID:            nodeID(runningRetryName),
+		Name:          runningRetryName,
+		DisplayName:   "retry(1:b)",
+		Type:          wfv1.NodeTypeRetry,
+		TemplateName:  "fail",
+		TemplateScope: "local/issue-16849",
+		BoundaryID:    nodeID(rootName),
+		Phase:         wfv1.NodeRunning,
+		StartedAt:     startedAt,
+		Children:      []string{runningAttemptID},
+	}
+	wf.Status.Nodes[nodeID(groupName)] = wfv1.NodeStatus{
+		ID:            nodeID(groupName),
+		Name:          groupName,
+		DisplayName:   "[0]",
+		Type:          wfv1.NodeTypeStepGroup,
+		TemplateScope: "local/issue-16849",
+		BoundaryID:    nodeID(rootName),
+		Phase:         wfv1.NodeRunning,
+		StartedAt:     startedAt,
+		Children:      []string{nodeID(failedRetryName), nodeID(runningRetryName)},
+	}
+	wf.Status.Nodes[nodeID(rootName)] = wfv1.NodeStatus{
+		ID:            nodeID(rootName),
+		Name:          rootName,
+		DisplayName:   rootName,
+		Type:          wfv1.NodeTypeSteps,
+		TemplateName:  "main",
+		TemplateScope: "local/issue-16849",
+		Phase:         wfv1.NodeRunning,
+		StartedAt:     startedAt,
+		Children:      []string{nodeID(groupName)},
+	}
+
+	for _, node := range wf.Status.Nodes {
+		if node.Type == wfv1.NodeTypePod {
+			assert.True(t, node.Phase.Fulfilled(node.TaskResultSynced), "pod %s must not be active", node.Name)
+		}
+	}
+
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	retryNode := woc.wf.Status.Nodes.FindByDisplayName("retry(1:b)")
+	require.NotNil(t, retryNode)
+	assert.Equal(t, wfv1.NodeFailed, retryNode.Phase)
+	assert.False(t, retryNode.FinishedAt.IsZero())
+	assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Nodes[nodeID(rootName)].Phase)
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+}
+
+func TestTerminateStrandedRetryNodesLeavesActiveRetryRunning(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: active-retry
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps: []
+`)
+	startedAt := metav1.Now()
+	boundaryName := wf.Name
+	retryName := boundaryName + "[0].retry"
+	attemptName := retryName + "(0)"
+	boundaryID := wf.NodeID(boundaryName)
+	retryID := wf.NodeID(retryName)
+	attemptID := wf.NodeID(attemptName)
+	wf.Status.Nodes = wfv1.Nodes{
+		boundaryID: {
+			ID:        boundaryID,
+			Name:      boundaryName,
+			Type:      wfv1.NodeTypeSteps,
+			Phase:     wfv1.NodeRunning,
+			StartedAt: startedAt,
+			Children:  []string{retryID},
+		},
+		retryID: {
+			ID:         retryID,
+			Name:       retryName,
+			Type:       wfv1.NodeTypeRetry,
+			Phase:      wfv1.NodeRunning,
+			StartedAt:  startedAt,
+			BoundaryID: boundaryID,
+			Children:   []string{attemptID},
+		},
+		attemptID: {
+			ID:         attemptID,
+			Name:       attemptName,
+			Type:       wfv1.NodeTypePod,
+			Phase:      wfv1.NodeRunning,
+			StartedAt:  startedAt,
+			BoundaryID: boundaryID,
+		},
+	}
+
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	retryNode := woc.wf.Status.Nodes[retryID]
+	assert.Equal(t, wfv1.NodeRunning, retryNode.Phase)
+	assert.True(t, retryNode.FinishedAt.IsZero())
+	woc.terminateStrandedRetryNodes(ctx, boundaryID, failFastMessage)
+
+	retryNode = woc.wf.Status.Nodes[retryID]
+	assert.Equal(t, wfv1.NodeRunning, retryNode.Phase)
+	assert.True(t, retryNode.FinishedAt.IsZero())
+}
+
 func TestGetStepOrDAGTaskName(t *testing.T) {
 	assert.Equal(t, "generate-artifact", getStepOrDAGTaskName("data-transformation-gjrt8[0].generate-artifact(2:foo/script.py)"))
 	assert.Equal(t, "generate-artifact", getStepOrDAGTaskName("data-transformation-gjrt8[0].generate-artifact(2:foo/scrip[t.py)"))

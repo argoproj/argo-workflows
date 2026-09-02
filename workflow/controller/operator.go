@@ -129,6 +129,8 @@ type wfOperationCtx struct {
 	currentStackDepth int
 }
 
+const failFastMessage = "template has failed or errored children and failFast enabled"
+
 var (
 	// ErrDeadlineExceeded indicates the operation exceeded its deadline for execution
 	ErrDeadlineExceeded = argoerrors.New(argoerrors.CodeTimeout, "Deadline exceeded")
@@ -2310,6 +2312,11 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 
 	// Check if we exceeded template or workflow parallelism and immediately return if we did
 	if parallelismErr := woc.checkParallelism(ctx, processedTmpl, node, opts.boundaryID); parallelismErr != nil {
+		if errors.Is(parallelismErr, ErrParallelismReached) && node != nil {
+			if updatedNode, getErr := woc.wf.GetNodeByName(nodeName); getErr == nil && updatedNode.Fulfilled() && updatedNode.Message == failFastMessage {
+				return updatedNode, nil
+			}
+		}
 		return node, parallelismErr
 	}
 
@@ -2904,6 +2911,23 @@ func (woc *wfOperationCtx) childrenFulfilled(node *wfv1.NodeStatus) bool {
 	return woc.childrenFulfilledHelper(node, m)
 }
 
+func (woc *wfOperationCtx) terminateStrandedRetryNodes(ctx context.Context, boundaryID, message string) {
+	descendants, err := woc.wf.Status.Nodes.NestedChildrenStatus(boundaryID)
+	if err != nil {
+		woc.log.WithError(err).WithField("boundaryID", boundaryID).Warn(ctx, "was unable to obtain descendants for failFast retry cleanup")
+		return
+	}
+	for _, node := range descendants {
+		if node.Type != wfv1.NodeTypeRetry || node.Fulfilled() || !woc.childrenFulfilled(&node) {
+			continue
+		}
+		_, lastChildNode := getChildNodeIdsAndLastRetriedNode(&node, woc.wf.Status.Nodes)
+		if lastChildNode != nil && lastChildNode.Fulfilled() {
+			woc.markNodePhase(ctx, node.Name, lastChildNode.Phase, message)
+		}
+	}
+}
+
 func (woc *wfOperationCtx) GetNodeTemplate(ctx context.Context, node *wfv1.NodeStatus) (*wfv1.Template, error) {
 	if node.TemplateRef != nil {
 		// Check storedTemplates first so that modifications to the CWT after the workflow
@@ -3305,12 +3329,13 @@ func (woc *wfOperationCtx) checkParallelism(ctx context.Context, tmpl *wfv1.Temp
 		// Check failFast
 		if tmpl.IsFailFast() && woc.getUnsuccessfulChildren(node.ID) > 0 {
 			if woc.getActivePods(node.ID) == 0 {
+				woc.terminateStrandedRetryNodes(ctx, node.ID, failFastMessage)
 				if tmpl.GetType() == wfv1.TemplateTypeSteps {
 					if leafStepGroupNode := woc.findLeafNodeWithType(ctx, node.ID, wfv1.NodeTypeStepGroup); leafStepGroupNode != nil {
-						woc.markNodePhase(ctx, leafStepGroupNode.Name, wfv1.NodeFailed, "template has failed or errored children and failFast enabled")
+						woc.markNodePhase(ctx, leafStepGroupNode.Name, wfv1.NodeFailed, failFastMessage)
 					}
 				}
-				woc.markNodePhase(ctx, node.Name, wfv1.NodeFailed, "template has failed or errored children and failFast enabled")
+				woc.markNodePhase(ctx, node.Name, wfv1.NodeFailed, failFastMessage)
 			}
 			return ErrParallelismReached
 		}
@@ -3341,12 +3366,13 @@ func (woc *wfOperationCtx) checkParallelism(ctx context.Context, tmpl *wfv1.Temp
 		// Check failFast
 		if boundaryTemplate != nil && boundaryTemplate.IsFailFast() && woc.getUnsuccessfulChildren(boundaryID) > 0 {
 			if woc.getActivePods(boundaryID) == 0 {
+				woc.terminateStrandedRetryNodes(ctx, boundaryID, failFastMessage)
 				if boundaryTemplate.GetType() == wfv1.TemplateTypeSteps {
 					if leafStepGroupNode := woc.findLeafNodeWithType(ctx, boundaryID, wfv1.NodeTypeStepGroup); leafStepGroupNode != nil {
-						woc.markNodePhase(ctx, leafStepGroupNode.Name, wfv1.NodeFailed, "template has failed or errored children and failFast enabled")
+						woc.markNodePhase(ctx, leafStepGroupNode.Name, wfv1.NodeFailed, failFastMessage)
 					}
 				}
-				woc.markNodePhase(ctx, boundaryNode.Name, wfv1.NodeFailed, "template has failed or errored children and failFast enabled")
+				woc.markNodePhase(ctx, boundaryNode.Name, wfv1.NodeFailed, failFastMessage)
 			}
 			return ErrParallelismReached
 		}
