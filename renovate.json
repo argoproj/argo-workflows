@@ -23,9 +23,83 @@
         "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)( versioning=(?<versioning>\\S+))?\\s+\\w+\\s*\\??=\\s*\"?(?<currentValue>[^\\s\"]+)\"?"
       ],
       "extractVersionTemplate": "^v(?<version>.+)$"
+    },
+    {
+      "description": "k8s.io/code-generator pins in Makefile (go install and go list)",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^Makefile$/"
+      ],
+      "matchStrings": [
+        "go install k8s\\.io/code-generator/cmd/go-to-protobuf@(?<currentValue>v\\d+\\.\\d+\\.\\d+)",
+        "go list -mod=mod -m -f '\\{\\{\\.Dir\\}\\}' k8s\\.io/code-generator@(?<currentValue>v\\d+\\.\\d+\\.\\d+)"
+      ],
+      "depNameTemplate": "k8s.io/code-generator",
+      "datasourceTemplate": "go"
+    },
+    {
+      "description": "protoc plugin pins in Makefile",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^Makefile$/"
+      ],
+      "matchStrings": [
+        "go install (?<depName>google\\.golang\\.org/protobuf)/cmd/protoc-gen-go@(?<currentValue>v[\\d.]+)",
+        "go install (?<depName>google\\.golang\\.org/grpc/cmd/protoc-gen-go-grpc)@(?<currentValue>v[\\d.]+)",
+        "go install (?<depName>github\\.com/grpc-ecosystem/grpc-gateway/v2)/protoc-gen-grpc-gateway@(?<currentValue>v[\\d.]+)",
+        "go install (?<depName>github\\.com/grpc-ecosystem/grpc-gateway/v2)/protoc-gen-openapiv2@(?<currentValue>v[\\d.]+)"
+      ],
+      "datasourceTemplate": "go"
+    },
+    {
+      "description": "Kubernetes OpenAPI spec version in Makefile",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^Makefile$/"
+      ],
+      "matchStrings": [
+        "kubernetes/kubernetes/(?<currentValue>v\\d+\\.\\d+\\.\\d+)/api/openapi-spec"
+      ],
+      "depNameTemplate": "kubernetes/kubernetes",
+      "datasourceTemplate": "github-tags"
+    },
+    {
+      "description": "k8s.io proto vendor refs in argo-proto.yaml",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^argo-proto\\.yaml$/"
+      ],
+      "matchStrings": [
+        "owner: kubernetes\\s+name: (?<depName>api|apimachinery)\\s+ref: (?<currentValue>v\\d+\\.\\d+\\.\\d+)"
+      ],
+      "depNameTemplate": "k8s.io/{{{depName}}}",
+      "datasourceTemplate": "go"
+    },
+    {
+      "description": "Tool pins annotated with `# renovate:` in the nix dev env (kept in lockstep with the Makefile pins)",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^dev/nix/flake\\.nix$/",
+        "/^devenv\\.nix$/"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\n\\s*\\w+ = \"(?<currentValue>[^\"]+)\";",
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\n\\s*\"[^\"@]+@(?<currentValue>[^\"]+)\""
+      ],
+      "extractVersionTemplate": "^v?(?<version>.+)$"
     }
   ],
   "packageRules": [
+    {
+      "description": "Group k8s.io code-generator, proto vendor, and OpenAPI spec versions",
+      "matchPackageNames": [
+        "k8s.io/code-generator",
+        "k8s.io/api",
+        "k8s.io/apimachinery",
+        "kubernetes/kubernetes"
+      ],
+      "groupName": "k8s.io codegen and proto deps"
+    },
     {
       "description": "Disable argo updates (maintained separately)",
       "matchPackageNames": [
@@ -67,10 +141,16 @@
     },
     {
       "description": "Group and automerge distroless base image digest updates",
-      "matchDatasources": ["docker"],
-      "matchPackageNames": ["gcr.io/distroless/static-debian13"],
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "gcr.io/distroless/static-debian13"
+      ],
       "groupName": "distroless base image",
-      "matchUpdateTypes": ["digest"],
+      "matchUpdateTypes": [
+        "digest"
+      ],
       "automerge": true
     },
     {
@@ -83,6 +163,14 @@
         "lockFileMaintenance"
       ],
       "enabled": false
+    },
+    {
+      "description": "Nix pins need manual fetch/vendor hash updates in the same PR, never automerge",
+      "matchFileNames": [
+        "dev/nix/**",
+        "devenv.nix"
+      ],
+      "automerge": false
     }
   ],
   "platformAutomerge": true,

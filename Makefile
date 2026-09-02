@@ -1,7 +1,15 @@
 export SHELL:=bash
 export SHELLOPTS:=$(if $(SHELLOPTS),$(SHELLOPTS):)pipefail:errexit
-# k8s v0.35 moved ProtoMessage() behind a build tag. We need it unconditionally
-# for gogo protobuf + grpc-gateway v1 compatibility (gRPC codec requires proto.Message).
+# Kubernetes v1.35 (k8s.io/* v0.35) moved ProtoMessage() behind this build tag;
+# k8s v1.36 removes it entirely. With the tag, k8s types keep satisfying
+# protoiface.MessageV1, so the protoadapt legacy bridge works. This export only
+# reaches builds driven through make — plain `go build`/`go test`/gopls get no
+# tag and instead rely on the patched vendor tree from hack/vendor-patches.sh
+# (which `make vendor` maintains; plain `go mod vendor` silently reverts it).
+# Module consumers of pkg/apiclient get neither: see the compatibility probe in
+# pkg/apiclient/protocompat.go and docs/upgrading.md.
+# Note: because Go takes the last -tags flag, a caller-supplied GOFLAGS=-tags=x
+# is overridden by this append for make-driven builds.
 export GOFLAGS += -tags=kubernetes_protomessage_one_more_release
 
 .PHONY: help
@@ -152,9 +160,10 @@ TOOL_MOCKERY                := mockery
 TOOL_CONTROLLER_GEN         := controller-gen
 TOOL_GO_TO_PROTOBUF         := go-to-protobuf
 TOOL_PROTOC_GEN_GOGO        := protoc-gen-gogo
-TOOL_PROTOC_GEN_GOGOFAST    := protoc-gen-gogofast
+TOOL_PROTOC_GEN_GO          := protoc-gen-go
+TOOL_PROTOC_GEN_GO_GRPC     := protoc-gen-go-grpc
 TOOL_PROTOC_GEN_GRPC_GATEWAY:= protoc-gen-grpc-gateway
-TOOL_PROTOC_GEN_SWAGGER     := protoc-gen-swagger
+TOOL_PROTOC_GEN_OPENAPIV2   := protoc-gen-openapiv2
 TOOL_OPENAPI_GEN            := openapi-gen
 TOOL_SWAGGER                := swagger
 TOOL_GOIMPORTS              := goimports
@@ -166,9 +175,10 @@ TOOL_MOCKERY                := $(GOPATH)/bin/mockery
 TOOL_CONTROLLER_GEN         := $(GOPATH)/bin/controller-gen
 TOOL_GO_TO_PROTOBUF         := $(GOPATH)/bin/go-to-protobuf
 TOOL_PROTOC_GEN_GOGO        := $(GOPATH)/bin/protoc-gen-gogo
-TOOL_PROTOC_GEN_GOGOFAST    := $(GOPATH)/bin/protoc-gen-gogofast
+TOOL_PROTOC_GEN_GO          := $(GOPATH)/bin/protoc-gen-go
+TOOL_PROTOC_GEN_GO_GRPC     := $(GOPATH)/bin/protoc-gen-go-grpc
 TOOL_PROTOC_GEN_GRPC_GATEWAY:= $(GOPATH)/bin/protoc-gen-grpc-gateway
-TOOL_PROTOC_GEN_SWAGGER     := $(GOPATH)/bin/protoc-gen-swagger
+TOOL_PROTOC_GEN_OPENAPIV2   := $(GOPATH)/bin/protoc-gen-openapiv2
 TOOL_OPENAPI_GEN            := $(GOPATH)/bin/openapi-gen
 TOOL_SWAGGER                := $(GOPATH)/bin/swagger
 TOOL_GOIMPORTS              := $(GOPATH)/bin/goimports
@@ -231,6 +241,11 @@ proto_vendor: argo-proto.yaml
 
 .PHONY: proto-vendor
 proto-vendor: proto_vendor
+
+.PHONY: vendor
+vendor:
+	go mod vendor
+	hack/vendor-patches.sh
 override LDFLAGS += \
   -X github.com/argoproj/argo-workflows/v4.version=$(VERSION) \
   -X github.com/argoproj/argo-workflows/v4.buildDate=$(BUILD_DATE) \
@@ -277,7 +292,7 @@ SWAGGER_FILES := pkg/apiclient/_.primary.swagger.json \
 	pkg/apiclient/workflowarchive/workflow-archive.swagger.json \
 	pkg/apiclient/workflowtemplate/workflow-template.swagger.json \
 	pkg/apiclient/sync/sync.swagger.json
-PROTO_BINARIES := $(TOOL_PROTOC_GEN_GOGO) $(TOOL_PROTOC_GEN_GOGOFAST) $(TOOL_GOIMPORTS) $(TOOL_PROTOC_GEN_GRPC_GATEWAY) $(TOOL_PROTOC_GEN_SWAGGER) $(TOOL_BUF)
+PROTO_BINARIES := $(TOOL_PROTOC_GEN_GO) $(TOOL_PROTOC_GEN_GO_GRPC) $(TOOL_GOIMPORTS) $(TOOL_PROTOC_GEN_GRPC_GATEWAY) $(TOOL_PROTOC_GEN_OPENAPIV2) $(TOOL_BUF)
 ifneq ($(USE_NIX), true)
 pkg/apiclient/%.swagger.json: $(PROTO_BINARIES)
 endif
@@ -287,7 +302,7 @@ GENERATED_DOCS := $(QUICK_GENERATED_DOCS) docs/fields.md docs/cli/argo.md docs/w
 # `go mod vendor` rewrites vendor/modules.txt on every run
 # so depend on vendor/modules.txt in places where we want it up to date
 vendor/modules.txt: go.mod go.sum
-	go mod vendor
+	$(MAKE) vendor
 	@touch $@
 
 # Targets generated via $(call protoc) need a fresh vendor tree.
@@ -298,18 +313,37 @@ $(filter-out pkg/apiclient/_.%,$(SWAGGER_FILES)) pkg/apiclient/artifact/artifact
 define protoc
 	# protoc $(1)
     [ -e ./proto_vendor ] || $(MAKE) proto-vendor
-    mkdir -p $(GOPATH)/src github.com/argoproj
+    mkdir -p github.com/argoproj
     [ -e github.com/argoproj/argo-workflows ] || ln -s ../.. github.com/argoproj/argo-workflows
     [ -e v4 ] || ln -s . v4
+    # require_unimplemented_servers=false: production server structs implement
+    # the full service interface explicitly instead of embedding
+    # UnimplementedXServer, so adding an RPC is a deliberate compile break
+    # rather than a silent 501. (Test fakes may still embed the stub.)
     protoc \
       -I /usr/local/include \
       -I $(CURDIR) \
       -I $(CURDIR)/proto_vendor \
-      --gogofast_out=plugins=grpc:$(GOPATH)/src \
-      --grpc-gateway_out=logtostderr=true:$(GOPATH)/src \
-      --swagger_out=logtostderr=true,fqn_for_swagger_name=true:. \
+      --go_out=paths=source_relative:. \
+      --go-grpc_out=require_unimplemented_servers=false,paths=source_relative:. \
+      --grpc-gateway_out=paths=source_relative:. \
+      --openapiv2_out=openapi_naming_strategy=fqn:. \
       $(1)
-    perl -i -pe 's|argoproj/argo-workflows/(?!v4/)|argoproj/argo-workflows/v4/|g' `echo "$(1)" | sed 's/proto/pb.go/g'`
+    # Bridge gogo-generated v1alpha1 types (which lack ProtoReflect) to the
+    # proto.Message return type grpc-gateway v2 requires. gateway.MessageV2Of also
+    # preserves the encoding/json wire format of the original message — a bare
+    # protoadapt wrapper has no exported fields and would serialize as {}.
+    # The guards fail this rule loudly if a grpc-gateway upgrade changes the
+    # generated code: every unary return must be wrapped (none left unwrapped),
+    # and goimports keeps the injected import gofmt-clean.
+    gw=`echo "$(1)" | sed 's/\.proto$$/.pb.gw.go/'` && \
+      [ -f $$gw ] || { echo "$$gw was not generated — did the proto lose its google.api.http annotations?" >&2; exit 1; } && \
+      perl -i -pe 's/return msg, metadata, err/return gateway.MessageV2Of(msg), metadata, err/g' $$gw && \
+      grep -q 'gateway\.MessageV2Of(msg)' $$gw && \
+      ! grep -q 'return msg, metadata, err' $$gw && \
+      perl -i -pe 's|"google.golang.org/protobuf/proto"|"google.golang.org/protobuf/proto"\n\t"github.com/argoproj/argo-workflows/v4/util/grpc/gateway"|' $$gw && \
+      grep -q 'util/grpc/gateway' $$gw && \
+      $(TOOL_GOIMPORTS) -w $$gw
     rm -rf github.com v4
 endef
 
@@ -472,27 +506,36 @@ endif
 $(TOOL_GO_TO_PROTOBUF): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	go install k8s.io/code-generator/cmd/go-to-protobuf@v0.35.1
+	go install k8s.io/code-generator/cmd/go-to-protobuf@v0.35.4
 endif
+# go-to-protobuf shells out to `protoc --gogo_out`, so protoc-gen-gogo is still
+# required to generate the (gogo-based) pkg/apis/workflow/v1alpha1 types, even
+# though pkg/apiclient codegen no longer uses gogo. gogo/protobuf is archived;
+# this pin is final.
 $(TOOL_PROTOC_GEN_GOGO): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
 	go install github.com/gogo/protobuf/protoc-gen-gogo@v1.3.2
 endif
-$(TOOL_PROTOC_GEN_GOGOFAST): Makefile
+$(TOOL_PROTOC_GEN_GO): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	go install github.com/gogo/protobuf/protoc-gen-gogofast@v1.3.2
+	go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.6
+endif
+$(TOOL_PROTOC_GEN_GO_GRPC): Makefile
+# update this in Nix when upgrading it here
+ifneq ($(USE_NIX), true)
+	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1
 endif
 $(TOOL_PROTOC_GEN_GRPC_GATEWAY): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	go install github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway@v1.16.0
+	go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@v2.29.0
 endif
-$(TOOL_PROTOC_GEN_SWAGGER): Makefile
+$(TOOL_PROTOC_GEN_OPENAPIV2): Makefile
 # update this in Nix when upgrading it here
 ifneq ($(USE_NIX), true)
-	go install github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger@v1.16.0
+	go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@v2.29.0
 endif
 $(TOOL_OPENAPI_GEN): Makefile
 # update this in Nix when upgrading it here
@@ -525,7 +568,7 @@ $(TOOL_EMBEDDOC): hack/embeddoc/main.go hack/embeddoc/go.mod
 
 # go-to-protobuf fails with mysterious errors on code that doesn't compile
 ifneq ($(USE_NIX), true)
-pkg/apis/workflow/v1alpha1/generated.proto: $(TOOL_GO_TO_PROTOBUF) $(PROTO_BINARIES)
+pkg/apis/workflow/v1alpha1/generated.proto: $(TOOL_GO_TO_PROTOBUF) $(TOOL_PROTOC_GEN_GOGO) $(PROTO_BINARIES)
 endif
 pkg/apis/workflow/v1alpha1/generated.proto: $(TYPES) proto-vendor vendor/modules.txt
 	# These files are generated on a v4/ folder by the tool. Link them to the root folder
@@ -546,10 +589,11 @@ pkg/apis/workflow/v1alpha1/generated.proto: $(TYPES) proto-vendor vendor/modules
 	# behind a build tag. Strip it so codegen tools (mockery, etc.) can compile without
 	# requiring the tag. Runtime builds use GOFLAGS for k8s vendor types instead.
 	perl -i -ne 'print unless /kubernetes_protomessage_one_more_release/' pkg/apis/workflow/v1alpha1/generated.protomessage.pb.go
+	! grep -q kubernetes_protomessage_one_more_release pkg/apis/workflow/v1alpha1/generated.protomessage.pb.go
 	# Delete the link and created k8s.io directory
 	rm -rf github.com v4 k8s.io
 	# Restore vendor if go-to-protobuf deleted files
-	go mod vendor
+	$(MAKE) vendor
 	touch $@
 
 # this target will also create a .pb.go and a .pb.gw.go file, but in Make 3 we cannot use _grouped target_, instead we must choose
@@ -574,7 +618,6 @@ pkg/apiclient/sensor/sensor.swagger.json: $(TYPES) pkg/apiclient/sensor/sensor.p
 
 pkg/apiclient/workflow/workflow.swagger.json: $(TYPES) pkg/apiclient/workflow/workflow.proto
 	$(call protoc,pkg/apiclient/workflow/workflow.proto)
-	perl -i -pe 's/return resp\.Recv\(\) \}, mux\.GetForwardResponseOptions\(\)\.\.\.\)/return wrapEventAsProtoMessage(resp.Recv()) }, mux.GetForwardResponseOptions()...)/ if /forward_WorkflowService_WatchEvents_0/' pkg/apiclient/workflow/workflow.pb.gw.go
 
 pkg/apiclient/workflowarchive/workflow-archive.swagger.json: $(TYPES) pkg/apiclient/workflowarchive/workflow-archive.proto
 	$(call protoc,pkg/apiclient/workflowarchive/workflow-archive.proto)
@@ -659,7 +702,7 @@ endif
 	go mod tidy
 ifneq ($(USE_NIX), true)
 	# Re-vendor if tidy changed go.mod or go.sum, so the lint below sees a consistent tree
-	[ vendor/modules.txt -nt go.mod ] && [ vendor/modules.txt -nt go.sum ] || go mod vendor
+	[ vendor/modules.txt -nt go.mod ] && [ vendor/modules.txt -nt go.sum ] || $(MAKE) vendor
 endif
 	# Lint Go files (with auto-discovered build tags)
 	$(TOOL_GOLANGCI_LINT) run --fix --verbose --build-tags="$(GO_BUILD_TAGS)"
@@ -677,7 +720,7 @@ test: $(TOOL_GOTESTSUM) $(TOOL_BUF)
 endif
 test: ui/dist/app/index.html $(JSON_TEST_OUTPUT) ## Run tests
 ifneq ($(USE_NIX), true)
-	go mod vendor
+	$(MAKE) vendor
 	go build -mod=vendor ./...
 else
 	go build ./...
@@ -883,7 +926,7 @@ ifneq ($(USE_NIX), true)
 pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TOOL_GO_TO_PROTOBUF)
 endif
 pkg/apis/workflow/v1alpha1/zz_generated.deepcopy.go: $(TYPES) vendor/modules.txt
-	CODEGEN_DIR=$$(go list -mod=mod -m -f '{{.Dir}}' k8s.io/code-generator@v0.35.1); \
+	CODEGEN_DIR=$$(go list -mod=mod -m -f '{{.Dir}}' k8s.io/code-generator@v0.35.4); \
 	bash -c "source $$CODEGEN_DIR/kube_codegen.sh && \
 		kube::codegen::gen_helpers \
 			--boilerplate ./hack/custom-boilerplate.go.txt \
@@ -901,7 +944,7 @@ dist/kubernetes.swagger.json: Makefile
 	@mkdir -p dist
 	# recurl will only fetch if the file doesn't exist, so delete it
 	rm -f $@
-	./hack/recurl.sh $@ https://raw.githubusercontent.com/kubernetes/kubernetes/v1.35.1/api/openapi-spec/swagger.json
+	./hack/recurl.sh $@ https://raw.githubusercontent.com/kubernetes/kubernetes/v1.35.4/api/openapi-spec/swagger.json
 
 pkg/apiclient/_.secondary.swagger.json: hack/api/swagger/secondaryswaggergen.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
 	# We have `hack/api/swagger` so that most hack script do not depend on the whole code base and are therefore slow.

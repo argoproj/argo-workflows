@@ -476,7 +476,7 @@ func (_c *WorkflowServiceClient_ListWorkflows_Call) RunAndReturn(run func(ctx co
 }
 
 // PodLogs provides a mock function for the type WorkflowServiceClient
-func (_mock *WorkflowServiceClient) PodLogs(ctx context.Context, in *workflow.WorkflowLogRequest, opts ...grpc.CallOption) (workflow.WorkflowService_PodLogsClient, error) {
+func (_mock *WorkflowServiceClient) PodLogs(ctx context.Context, in *workflow.WorkflowLogRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[workflow.LogEntry], error) {
 	// grpc.CallOption
 	_va := make([]interface{}, len(opts))
 	for _i := range opts {
@@ -491,16 +491,16 @@ func (_mock *WorkflowServiceClient) PodLogs(ctx context.Context, in *workflow.Wo
 		panic("no return value specified for PodLogs")
 	}
 
-	var r0 workflow.WorkflowService_PodLogsClient
+	var r0 grpc.ServerStreamingClient[workflow.LogEntry]
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *workflow.WorkflowLogRequest, ...grpc.CallOption) (workflow.WorkflowService_PodLogsClient, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *workflow.WorkflowLogRequest, ...grpc.CallOption) (grpc.ServerStreamingClient[workflow.LogEntry], error)); ok {
 		return returnFunc(ctx, in, opts...)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *workflow.WorkflowLogRequest, ...grpc.CallOption) workflow.WorkflowService_PodLogsClient); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *workflow.WorkflowLogRequest, ...grpc.CallOption) grpc.ServerStreamingClient[workflow.LogEntry]); ok {
 		r0 = returnFunc(ctx, in, opts...)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(workflow.WorkflowService_PodLogsClient)
+			r0 = ret.Get(0).(grpc.ServerStreamingClient[workflow.LogEntry])
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, *workflow.WorkflowLogRequest, ...grpc.CallOption) error); ok {
@@ -552,12 +552,12 @@ func (_c *WorkflowServiceClient_PodLogs_Call) Run(run func(ctx context.Context, 
 	return _c
 }
 
-func (_c *WorkflowServiceClient_PodLogs_Call) Return(workflowService_PodLogsClient workflow.WorkflowService_PodLogsClient, err error) *WorkflowServiceClient_PodLogs_Call {
-	_c.Call.Return(workflowService_PodLogsClient, err)
+func (_c *WorkflowServiceClient_PodLogs_Call) Return(serverStreamingClient grpc.ServerStreamingClient[workflow.LogEntry], err error) *WorkflowServiceClient_PodLogs_Call {
+	_c.Call.Return(serverStreamingClient, err)
 	return _c
 }
 
-func (_c *WorkflowServiceClient_PodLogs_Call) RunAndReturn(run func(ctx context.Context, in *workflow.WorkflowLogRequest, opts ...grpc.CallOption) (workflow.WorkflowService_PodLogsClient, error)) *WorkflowServiceClient_PodLogs_Call {
+func (_c *WorkflowServiceClient_PodLogs_Call) RunAndReturn(run func(ctx context.Context, in *workflow.WorkflowLogRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[workflow.LogEntry], error)) *WorkflowServiceClient_PodLogs_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -1259,7 +1259,7 @@ func (_c *WorkflowServiceClient_TerminateWorkflow_Call) RunAndReturn(run func(ct
 }
 
 // WatchEvents provides a mock function for the type WorkflowServiceClient
-func (_mock *WorkflowServiceClient) WatchEvents(ctx context.Context, in *workflow.WatchEventsRequest, opts ...grpc.CallOption) (workflow.WorkflowService_WatchEventsClient, error) {
+func (_mock *WorkflowServiceClient) WatchEvents(ctx context.Context, in *workflow.WatchEventsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[workflow.EventWatchEvent], error) {
 	// grpc.CallOption
 	_va := make([]interface{}, len(opts))
 	for _i := range opts {
@@ -1274,16 +1274,16 @@ func (_mock *WorkflowServiceClient) WatchEvents(ctx context.Context, in *workflo
 		panic("no return value specified for WatchEvents")
 	}
 
-	var r0 workflow.WorkflowService_WatchEventsClient
+	var r0 grpc.ServerStreamingClient[workflow.EventWatchEvent]
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *workflow.WatchEventsRequest, ...grpc.CallOption) (workflow.WorkflowService_WatchEventsClient, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *workflow.WatchEventsRequest, ...grpc.CallOption) (grpc.ServerStreamingClient[workflow.EventWatchEvent], error)); ok {
 		return returnFunc(ctx, in, opts...)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *workflow.WatchEventsRequest, ...grpc.CallOption) workflow.WorkflowService_WatchEventsClient); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *workflow.WatchEventsRequest, ...grpc.CallOption) grpc.ServerStreamingClient[workflow.EventWatchEvent]); ok {
 		r0 = returnFunc(ctx, in, opts...)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(workflow.WorkflowService_WatchEventsClient)
+			r0 = ret.Get(0).(grpc.ServerStreamingClient[workflow.EventWatchEvent])
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, *workflow.WatchEventsRequest, ...grpc.CallOption) error); ok {
@@ -1335,18 +1335,18 @@ func (_c *WorkflowServiceClient_WatchEvents_Call) Run(run func(ctx context.Conte
 	return _c
 }
 
-func (_c *WorkflowServiceClient_WatchEvents_Call) Return(workflowService_WatchEventsClient workflow.WorkflowService_WatchEventsClient, err error) *WorkflowServiceClient_WatchEvents_Call {
-	_c.Call.Return(workflowService_WatchEventsClient, err)
+func (_c *WorkflowServiceClient_WatchEvents_Call) Return(serverStreamingClient grpc.ServerStreamingClient[workflow.EventWatchEvent], err error) *WorkflowServiceClient_WatchEvents_Call {
+	_c.Call.Return(serverStreamingClient, err)
 	return _c
 }
 
-func (_c *WorkflowServiceClient_WatchEvents_Call) RunAndReturn(run func(ctx context.Context, in *workflow.WatchEventsRequest, opts ...grpc.CallOption) (workflow.WorkflowService_WatchEventsClient, error)) *WorkflowServiceClient_WatchEvents_Call {
+func (_c *WorkflowServiceClient_WatchEvents_Call) RunAndReturn(run func(ctx context.Context, in *workflow.WatchEventsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[workflow.EventWatchEvent], error)) *WorkflowServiceClient_WatchEvents_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // WatchWorkflows provides a mock function for the type WorkflowServiceClient
-func (_mock *WorkflowServiceClient) WatchWorkflows(ctx context.Context, in *workflow.WatchWorkflowsRequest, opts ...grpc.CallOption) (workflow.WorkflowService_WatchWorkflowsClient, error) {
+func (_mock *WorkflowServiceClient) WatchWorkflows(ctx context.Context, in *workflow.WatchWorkflowsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[workflow.WorkflowWatchEvent], error) {
 	// grpc.CallOption
 	_va := make([]interface{}, len(opts))
 	for _i := range opts {
@@ -1361,16 +1361,16 @@ func (_mock *WorkflowServiceClient) WatchWorkflows(ctx context.Context, in *work
 		panic("no return value specified for WatchWorkflows")
 	}
 
-	var r0 workflow.WorkflowService_WatchWorkflowsClient
+	var r0 grpc.ServerStreamingClient[workflow.WorkflowWatchEvent]
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *workflow.WatchWorkflowsRequest, ...grpc.CallOption) (workflow.WorkflowService_WatchWorkflowsClient, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *workflow.WatchWorkflowsRequest, ...grpc.CallOption) (grpc.ServerStreamingClient[workflow.WorkflowWatchEvent], error)); ok {
 		return returnFunc(ctx, in, opts...)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *workflow.WatchWorkflowsRequest, ...grpc.CallOption) workflow.WorkflowService_WatchWorkflowsClient); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *workflow.WatchWorkflowsRequest, ...grpc.CallOption) grpc.ServerStreamingClient[workflow.WorkflowWatchEvent]); ok {
 		r0 = returnFunc(ctx, in, opts...)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(workflow.WorkflowService_WatchWorkflowsClient)
+			r0 = ret.Get(0).(grpc.ServerStreamingClient[workflow.WorkflowWatchEvent])
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, *workflow.WatchWorkflowsRequest, ...grpc.CallOption) error); ok {
@@ -1422,18 +1422,18 @@ func (_c *WorkflowServiceClient_WatchWorkflows_Call) Run(run func(ctx context.Co
 	return _c
 }
 
-func (_c *WorkflowServiceClient_WatchWorkflows_Call) Return(workflowService_WatchWorkflowsClient workflow.WorkflowService_WatchWorkflowsClient, err error) *WorkflowServiceClient_WatchWorkflows_Call {
-	_c.Call.Return(workflowService_WatchWorkflowsClient, err)
+func (_c *WorkflowServiceClient_WatchWorkflows_Call) Return(serverStreamingClient grpc.ServerStreamingClient[workflow.WorkflowWatchEvent], err error) *WorkflowServiceClient_WatchWorkflows_Call {
+	_c.Call.Return(serverStreamingClient, err)
 	return _c
 }
 
-func (_c *WorkflowServiceClient_WatchWorkflows_Call) RunAndReturn(run func(ctx context.Context, in *workflow.WatchWorkflowsRequest, opts ...grpc.CallOption) (workflow.WorkflowService_WatchWorkflowsClient, error)) *WorkflowServiceClient_WatchWorkflows_Call {
+func (_c *WorkflowServiceClient_WatchWorkflows_Call) RunAndReturn(run func(ctx context.Context, in *workflow.WatchWorkflowsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[workflow.WorkflowWatchEvent], error)) *WorkflowServiceClient_WatchWorkflows_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // WorkflowLogs provides a mock function for the type WorkflowServiceClient
-func (_mock *WorkflowServiceClient) WorkflowLogs(ctx context.Context, in *workflow.WorkflowLogRequest, opts ...grpc.CallOption) (workflow.WorkflowService_WorkflowLogsClient, error) {
+func (_mock *WorkflowServiceClient) WorkflowLogs(ctx context.Context, in *workflow.WorkflowLogRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[workflow.LogEntry], error) {
 	// grpc.CallOption
 	_va := make([]interface{}, len(opts))
 	for _i := range opts {
@@ -1448,16 +1448,16 @@ func (_mock *WorkflowServiceClient) WorkflowLogs(ctx context.Context, in *workfl
 		panic("no return value specified for WorkflowLogs")
 	}
 
-	var r0 workflow.WorkflowService_WorkflowLogsClient
+	var r0 grpc.ServerStreamingClient[workflow.LogEntry]
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *workflow.WorkflowLogRequest, ...grpc.CallOption) (workflow.WorkflowService_WorkflowLogsClient, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *workflow.WorkflowLogRequest, ...grpc.CallOption) (grpc.ServerStreamingClient[workflow.LogEntry], error)); ok {
 		return returnFunc(ctx, in, opts...)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *workflow.WorkflowLogRequest, ...grpc.CallOption) workflow.WorkflowService_WorkflowLogsClient); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *workflow.WorkflowLogRequest, ...grpc.CallOption) grpc.ServerStreamingClient[workflow.LogEntry]); ok {
 		r0 = returnFunc(ctx, in, opts...)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(workflow.WorkflowService_WorkflowLogsClient)
+			r0 = ret.Get(0).(grpc.ServerStreamingClient[workflow.LogEntry])
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, *workflow.WorkflowLogRequest, ...grpc.CallOption) error); ok {
@@ -1509,12 +1509,12 @@ func (_c *WorkflowServiceClient_WorkflowLogs_Call) Run(run func(ctx context.Cont
 	return _c
 }
 
-func (_c *WorkflowServiceClient_WorkflowLogs_Call) Return(workflowService_WorkflowLogsClient workflow.WorkflowService_WorkflowLogsClient, err error) *WorkflowServiceClient_WorkflowLogs_Call {
-	_c.Call.Return(workflowService_WorkflowLogsClient, err)
+func (_c *WorkflowServiceClient_WorkflowLogs_Call) Return(serverStreamingClient grpc.ServerStreamingClient[workflow.LogEntry], err error) *WorkflowServiceClient_WorkflowLogs_Call {
+	_c.Call.Return(serverStreamingClient, err)
 	return _c
 }
 
-func (_c *WorkflowServiceClient_WorkflowLogs_Call) RunAndReturn(run func(ctx context.Context, in *workflow.WorkflowLogRequest, opts ...grpc.CallOption) (workflow.WorkflowService_WorkflowLogsClient, error)) *WorkflowServiceClient_WorkflowLogs_Call {
+func (_c *WorkflowServiceClient_WorkflowLogs_Call) RunAndReturn(run func(ctx context.Context, in *workflow.WorkflowLogRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[workflow.LogEntry], error)) *WorkflowServiceClient_WorkflowLogs_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"google.golang.org/grpc/metadata"
-	v1 "k8s.io/api/core/v1"
 
 	workflowpkg "github.com/argoproj/argo-workflows/v4/pkg/apiclient/workflow"
 )
@@ -41,15 +40,15 @@ func newWorkflowWatchIntermediary(ctx context.Context) *workflowWatchIntermediar
 
 type eventWatchIntermediary struct {
 	abstractIntermediary
-	events chan *v1.Event
+	events chan *workflowpkg.EventWatchEvent
 }
 
-func (w eventWatchIntermediary) Send(e *v1.Event) error {
+func (w eventWatchIntermediary) Send(e *workflowpkg.EventWatchEvent) error {
 	w.events <- e
 	return nil
 }
 
-func (w eventWatchIntermediary) Recv() (*v1.Event, error) {
+func (w eventWatchIntermediary) Recv() (*workflowpkg.EventWatchEvent, error) {
 	select {
 	case e := <-w.error:
 		return nil, e
@@ -66,5 +65,5 @@ func (w *eventWatchIntermediary) SendHeader(metadata.MD) error {
 }
 
 func newEventWatchIntermediary(ctx context.Context) *eventWatchIntermediary {
-	return &eventWatchIntermediary{newAbstractIntermediary(ctx), make(chan *v1.Event)}
+	return &eventWatchIntermediary{newAbstractIntermediary(ctx), make(chan *workflowpkg.EventWatchEvent)}
 }

@@ -28,13 +28,21 @@
           myyarn = pkgs.yarn.override { inherit nodejs; };
           filter = inputs.nix-filter.lib;
           # Keep these aligned with the matching go install targets in the Makefile.
+          # The `# renovate:` annotations let Renovate propose bumps in lockstep
+          # with the Makefile pins; the fetch/vendor hashes below still need a
+          # manual update in the same PR (Renovate cannot compute them).
           toolVersions = {
             kubeauto = "0.0.7";
             mockery = "3.5.1";
             controllerTools = "0.18.0";
-            codeGenerator = "0.35.1";
-            gogoProtobuf = "1.3.2";
-            grpcGateway = "1.16.0";
+            # renovate: datasource=go depName=k8s.io/code-generator
+            codeGenerator = "0.35.4";
+            # renovate: datasource=go depName=google.golang.org/protobuf
+            protocGenGo = "1.36.6";
+            # renovate: datasource=go depName=google.golang.org/grpc/cmd/protoc-gen-go-grpc
+            protocGenGoGrpc = "1.5.1";
+            # renovate: datasource=go depName=github.com/grpc-ecosystem/grpc-gateway/v2
+            grpcGateway = "2.29.0";
             kubeOpenapi = "0.0.0-20220124234850-424119656bbf";
             goSwagger = "0.33.1";
             goimports = "0.35.0";
@@ -216,18 +224,33 @@
               doCheck = false;
             });
 
-            protoc-gen-gogo-all = pkgs.buildGoModule rec {
-              pname = "protoc-gen-gogo";
-              version = toolVersions.gogoProtobuf;
+            protoc-gen-go = pkgs.buildGoModule rec {
+              pname = "protoc-gen-go";
+              version = toolVersions.protocGenGo;
 
               src = pkgs.fetchFromGitHub {
-                owner = "gogo";
-                repo = "protobuf";
+                owner = "protocolbuffers";
+                repo = "protobuf-go";
                 rev = "v${version}";
-                sha256 = "sha256-CoUqgLFnLNCS9OxKFS7XwjE17SlH6iL1Kgv+0uEK2zU=";
+                sha256 = "sha256-6Wx1XoHZS1RM0hpgVE85U7huVS4IK+AroTE2zpZR4VI=";
               };
+              subPackages = [ "cmd/protoc-gen-go" ];
               doCheck = false;
-              vendorHash = "sha256-nOL2Ulo9VlOHAqJgZuHl7fGjz/WFAaWPdemplbQWcak=";
+              vendorHash = "sha256-nGI/Bd6eMEoY0sBwWEtyhFowHVvwLKjbT4yfzFz6Z3E=";
+            };
+            protoc-gen-go-grpc = pkgs.buildGoModule rec {
+              pname = "protoc-gen-go-grpc";
+              version = toolVersions.protocGenGoGrpc;
+
+              src = pkgs.fetchFromGitHub {
+                owner = "grpc";
+                repo = "grpc-go";
+                rev = "cmd/protoc-gen-go-grpc/v${version}";
+                sha256 = "sha256-PAUM0chkZCb4hGDQtCgHF3omPm0jP1sSDolx4EuOwXo=";
+              };
+              modRoot = "cmd/protoc-gen-go-grpc";
+              doCheck = false;
+              vendorHash = "sha256-yn6jo6Ku/bnbSX8FL0B/Uu3Knn59r1arjhsVUkZ0m9g=";
             };
             grpc-ecosystem = pkgs.buildGoModule rec {
               pname = "grpc-ecosystem";
@@ -237,10 +260,11 @@
                 owner = "grpc-ecosystem";
                 repo = "grpc-gateway";
                 rev = "v${version}";
-                sha256 = "sha256-jJWqkMEBAJq50KaXccVpmgx/hwTdKgTtNkz8/xYO+Dc=";
+                sha256 = "sha256-d9OIIGttyMBSNgpS6mbR5JEIm13qGu2gFHJazJAexdw=";
               };
+              subPackages = [ "protoc-gen-grpc-gateway" "protoc-gen-openapiv2" ];
               doCheck = false;
-              vendorHash = "sha256-jVOb2uHjPley+K41pV+iMPNx67jtb75Rb/ENhw+ZMoM=";
+              vendorHash = "sha256-p51yD+v8+rPs+ztlX7r0VQ4XlwUkxu+PxgknKEvH00k=";
             };
 
             go-swagger = pkgs.go-swagger.overrideAttrs (old: rec {
@@ -273,9 +297,9 @@
                 owner = "kubernetes";
                 repo = "code-generator";
                 rev = "v${version}";
-                sha256 = "sha256-NhWD09Uy8QZLov74qhBmhqXGkxWalSjOMe/1He/fHns=";
+                sha256 = "sha256-rbwVqLeXE42gQPm53YAmz1BbSVQsMVe6BzGiIquGjYk=";
               };
-              vendorHash = "sha256-eQuiQ8sCOE9wyVIBRmSQ1PkdvRIIw9I3GwSpHDPEE/I=";
+              vendorHash = "sha256-H+ujA7hpzGqbRP+BuqNALg+RzwnB2vaS9Vf7kHOeHKg=";
               doCheck = false;
             };
 
@@ -399,7 +423,8 @@
               packages = with pkgs; [
                 (rust-bin.selectLatestNightlyWith (toolchain: toolchain.default))
                 config.packages.mockery
-                config.packages.protoc-gen-gogo-all
+                config.packages.protoc-gen-go
+                config.packages.protoc-gen-go-grpc
                 config.packages.grpc-ecosystem
                 config.packages.go-swagger
                 config.packages.controller-tools
@@ -445,7 +470,8 @@
                   # This is your devenv configuration
                   packages = with pkgs; [
                     config.packages.mockery
-                    config.packages.protoc-gen-gogo-all
+                    config.packages.protoc-gen-go
+                    config.packages.protoc-gen-go-grpc
                     config.packages.grpc-ecosystem
                     config.packages.go-swagger
                     config.packages.controller-tools
