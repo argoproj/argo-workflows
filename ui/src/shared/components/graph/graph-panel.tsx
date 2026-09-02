@@ -40,12 +40,17 @@ interface Props {
 }
 
 const defaultNodeSize = 64;
+// zoomStep is 10% of the default node size, so zoom always lands on exact
+// multiples of 10% (e.g. 90%, 100%, 110%) and can return to exactly 100%.
+const zoomStep = defaultNodeSize / 10;
+const minNodeSize = zoomStep; // 10% minimum zoom
+const normalizeNodeSize = (size: number) => Math.max(minNodeSize, defaultNodeSize + Math.round((size - defaultNodeSize) / zoomStep) * zoomStep);
 
 const merge = (a: {[key: string]: boolean}, b: {[key: string]: boolean}) => b && Object.assign(Object.assign({}, b), a);
 
 export function GraphPanel(props: Props) {
     const storage = new ScopedLocalStorage('graph/' + props.storageScope);
-    const [nodeSize, setNodeSize] = useState<number>(storage.getItem('nodeSize', props.nodeSize || defaultNodeSize));
+    const [nodeSize, setNodeSize] = useState<number>(() => normalizeNodeSize(storage.getItem('nodeSize', props.nodeSize || defaultNodeSize)));
     const [horizontal, setHorizontal] = useState<boolean>(storage.getItem('horizontal', !!props.horizontal));
     const [fast, setFast] = useState<boolean>(storage.getItem('fast', false));
     const [nodeGenres, setNodeGenres] = useState<INodeSelectionMap>(storage.getItem('nodeGenres', props.nodeGenres));
@@ -183,12 +188,15 @@ export function GraphPanel(props: Props) {
                     <a onClick={() => setHorizontal(s => !s)} title='Horizontal/vertical layout'>
                         <i className={`fa ${horizontal ? 'fa-long-arrow-alt-right' : 'fa-long-arrow-alt-down'} fa-fw`} />
                     </a>
-                    <a onClick={() => setNodeSize(s => s * 1.2)} title='Zoom in'>
-                        <i className='fa fa-search-plus fa-fw' />
-                    </a>
-                    <a onClick={() => setNodeSize(s => s / 1.2)} title='Zoom out'>
-                        <i className='fa fa-search-minus fa-fw' />
-                    </a>
+                    <button type='button' onClick={() => setNodeSize(s => s + zoomStep)} title='Zoom in' aria-label='Zoom in'>
+                        <i className='fa fa-search-plus fa-fw' aria-hidden='true' />
+                    </button>
+                    <span className='zoom-percentage' title='Current zoom level'>
+                        {Math.round((nodeSize / defaultNodeSize) * 100)}%
+                    </span>
+                    <button type='button' onClick={() => setNodeSize(s => Math.max(minNodeSize, s - zoomStep))} title='Zoom out' aria-label='Zoom out'>
+                        <i className='fa fa-search-minus fa-fw' aria-hidden='true' />
+                    </button>
                     <a onClick={() => setFast(s => !s)} title='Use faster, but less pretty renderer' className={fast ? 'active' : ''}>
                         <i className='fa fa-bolt fa-fw' />
                     </a>
