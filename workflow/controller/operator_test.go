@@ -1635,6 +1635,66 @@ func TestLastRetryVariableInPodSpecPatch(t *testing.T) {
 	assert.ElementsMatch(t, actual, expected)
 }
 
+var lastRetryExitCodesInPodSpecPatchTemplate = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: whalesay
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    retryStrategy:
+      limit: 10
+    podSpecPatch: |
+      containers:
+        - name: main
+          resources:
+            limits:
+              memory: "{{= (1 + len(filter(split(lastRetry.exitCodes, ','), {# == '137'}))) * 100}}Mi"
+    container:
+      image: python:alpine3.23
+      command: ["python", -c]
+      args: ["import sys; sys.exit(1)"]
+`
+
+// TestLastRetryExitCodesInPodSpecPatch verifies that lastRetry.exitCodes exposes the full history
+// of previous attempts' exit codes, so a podSpecPatch can grow memory once per prior OOM (137) and
+// HOLD it across non-OOM (here exit 1) retries — behavior lastRetry.exitCode (the last attempt
+// alone) cannot express.
+func TestLastRetryExitCodesInPodSpecPatch(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(lastRetryExitCodesInPodSpecPatchTemplate)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
+	defer cancel()
+	ctx := logging.TestContext(t.Context())
+	// Iteration i fails the (single, still-Pending) attempt created at iteration i-1.
+	// Applied exit codes per attempt: 137, 1, 137, 1 (the 5th attempt stays Pending).
+	exitCodeByIteration := map[int]int32{2: 137, 3: 1, 4: 137, 5: 1}
+	iterations := 5
+	var woc *wfOperationCtx
+	for i := 1; i <= iterations; i++ {
+		woc = newWorkflowOperationCtx(ctx, wf, controller)
+		if code, ok := exitCodeByIteration[i]; ok {
+			makePodsPhase(ctx, woc, apiv1.PodFailed, withExitCode(code))
+		}
+		woc.operate(ctx)
+		wf = woc.wf
+	}
+
+	pods, err := listPods(ctx, woc)
+	require.NoError(t, err)
+	assert.Len(t, pods.Items, iterations)
+	// count of prior 137s by attempt: 0,1,1,2,2 -> memory (1+count)*100Mi. The two "held" values
+	// (200Mi after the exit-1 retry, 300Mi after the second exit-1 retry) are the point of the test.
+	expected := []string{"100Mi", "200Mi", "200Mi", "300Mi", "300Mi"}
+	actual := []string{}
+	for i := range iterations {
+		actual = append(actual, pods.Items[i].Spec.Containers[1].Resources.Limits.Memory().String())
+	}
+	// ordering not preserved
+	assert.ElementsMatch(t, actual, expected)
+}
+
 var stepsRetriesVariableTemplate = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -10135,6 +10195,8 @@ func TestOperatorRetryExpression(t *testing.T) {
 	assert.Equal(t, "retryStrategy.expression evaluated to false", retryNode.Message)
 }
 
+// TestBuildRetryStrategyLocalScope verifies buildRetryStrategyLocalScope populates the lastRetry.*
+// variables from a retry node's child attempts.
 func TestBuildRetryStrategyLocalScope(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(operatorRetryExpression)
 	retryNode, err := wf.GetNodeByName("retry-script-9z9pv[1].retry")
@@ -10142,12 +10204,14 @@ func TestBuildRetryStrategyLocalScope(t *testing.T) {
 
 	localScope := buildRetryStrategyLocalScope(retryNode, wf.Status.Nodes)
 
-	assert.Len(t, localScope, 5)
+	assert.Len(t, localScope, 6)
 	assert.Equal(t, "1", localScope[varkeys.Retries.Template()])
 	assert.Equal(t, "1", localScope[varkeys.RetriesLastExitCode.Template()])
 	assert.Equal(t, string(wfv1.NodeFailed), localScope[varkeys.RetriesLastStatus.Template()])
 	assert.Equal(t, "6", localScope[varkeys.RetriesLastDuration.Template()])
 	assert.Equal(t, "Error (exit code 1)", localScope[varkeys.RetriesLastMessage.Template()])
+	// All previous attempts, oldest first: retry(0) exited 2, retry(1) exited 1.
+	assert.Equal(t, "2,1", localScope[varkeys.RetriesExitCodes.Template()])
 }
 
 const operatorRetryExpressionError = `

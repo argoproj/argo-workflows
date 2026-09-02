@@ -2140,6 +2140,10 @@ func getRetryNodeChildrenIds(node *wfv1.NodeStatus, nodes wfv1.Nodes) []string {
 	return childrenIds
 }
 
+// buildRetryStrategyLocalScope returns the lastRetry.* variables for a retry node — the retries index,
+// the last retried child's exit code, status, duration, and message, and the exit-code history of all
+// previous attempts — for use in retryStrategy.expression. It returns an empty scope when the node has
+// no retried children yet.
 func buildRetryStrategyLocalScope(node *wfv1.NodeStatus, nodes wfv1.Nodes) map[string]any {
 	localScope := make(map[string]any)
 
@@ -2159,6 +2163,20 @@ func buildRetryStrategyLocalScope(node *wfv1.NodeStatus, nodes wfv1.Nodes) map[s
 	localScope[varkeys.RetriesLastStatus.Template()] = string(lastChildNode.Phase)
 	localScope[varkeys.RetriesLastDuration.Template()] = fmt.Sprint(lastChildNode.GetDuration().Seconds())
 	localScope[varkeys.RetriesLastMessage.Template()] = lastChildNode.Message
+
+	// Mirror the template-substitution scope: expose the exit codes of ALL previous
+	// attempts (oldest first, comma-separated) so retryStrategy.expression can reference
+	// lastRetry.exitCodes as well. Validation allows it in both scopes, so without this
+	// an expression using it passes validation but resolves to nothing at runtime.
+	lastRetryExitCodes := make([]string, 0, len(childNodeIds))
+	for _, childID := range childNodeIds {
+		if childNode, err := nodes.Get(childID); err == nil {
+			if childNode.Outputs != nil && childNode.Outputs.ExitCode != nil {
+				lastRetryExitCodes = append(lastRetryExitCodes, *childNode.Outputs.ExitCode)
+			}
+		}
+	}
+	localScope[varkeys.RetriesExitCodes.Template()] = strings.Join(lastRetryExitCodes, ",")
 
 	return localScope
 }
@@ -2530,6 +2548,21 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		localParams[varkeys.RetriesLastDuration.Template()] = lastRetryDuration
 		localParams[varkeys.RetriesLastStatus.Template()] = lastRetryStatus
 		localParams[varkeys.RetriesLastMessage.Template()] = lastRetryMessage
+
+		// Inject the exit codes of ALL previous attempts (oldest first, comma-separated) so an
+		// expression can escalate resources cumulatively per failure type — e.g. grow memory once
+		// per prior OOM and hold it across non-OOM retries — which lastRetry.exitCode (the last
+		// attempt alone) cannot express. Empty on the first attempt.
+		lastRetryExitCodes := make([]string, 0, len(childNodeIDs))
+		for _, childID := range childNodeIDs {
+			if childNode, getErr := woc.wf.Status.Nodes.Get(childID); getErr == nil {
+				if childNode.Outputs != nil && childNode.Outputs.ExitCode != nil {
+					lastRetryExitCodes = append(lastRetryExitCodes, *childNode.Outputs.ExitCode)
+				}
+			}
+		}
+		localParams[varkeys.RetriesExitCodes.Template()] = strings.Join(lastRetryExitCodes, ",")
+
 		processedTmpl, err = common.SubstituteParams(ctx, processedTmpl, woc.globalParams(), localParams)
 		if errorsutil.IsTransientErr(ctx, err) {
 			return node, err
