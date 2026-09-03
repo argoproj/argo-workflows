@@ -17,6 +17,9 @@ func TestAuthorize(t *testing.T) {
 		cfg config.HeaderConfig
 		md  metadata.MD
 
+		sharedSecret         string
+		trustUnauthenticated bool
+
 		issuer  string
 		subject string
 		email   string
@@ -35,6 +38,8 @@ func TestAuthorize(t *testing.T) {
 			},
 
 			md: metadata.MD{},
+
+			trustUnauthenticated: true,
 
 			issuer:  "oauth2-proxy",
 			subject: "pradeep",
@@ -57,6 +62,8 @@ func TestAuthorize(t *testing.T) {
 				"x-forwarded-email", "abc@test.com",
 			),
 
+			trustUnauthenticated: true,
+
 			subject: "pradeep",
 			email:   "abc@test.com",
 		},
@@ -72,7 +79,6 @@ func TestAuthorize(t *testing.T) {
 					ClaimSource: config.ClaimSource{
 						Header: "X-Forwarded-Groups",
 					},
-					Delimiter: ",",
 				},
 			},
 
@@ -81,13 +87,33 @@ func TestAuthorize(t *testing.T) {
 				"x-forwarded-groups", "admin,developer,argo",
 			),
 
-			subject: "pradeep",
+			trustUnauthenticated: true,
 
+			subject: "pradeep",
 			groups: []string{
 				"admin",
 				"developer",
 				"argo",
 			},
+		},
+
+		{
+			name: "multiple values for same header",
+
+			cfg: config.HeaderConfig{
+				Subject: config.ClaimSource{
+					Header: "X-Forwarded-User",
+				},
+			},
+
+			md: metadata.Pairs(
+				"x-forwarded-user", "pradeep",
+				"x-forwarded-user", "admin",
+			),
+
+			trustUnauthenticated: true,
+
+			subject: "pradeep,admin",
 		},
 
 		{
@@ -101,7 +127,6 @@ func TestAuthorize(t *testing.T) {
 					ClaimSource: config.ClaimSource{
 						Header: "X-Forwarded-Groups",
 					},
-					Delimiter: ",",
 				},
 			},
 
@@ -110,19 +135,44 @@ func TestAuthorize(t *testing.T) {
 				"x-forwarded-groups", "admin, developer,,argo, ",
 			),
 
-			subject: "pradeep",
+			trustUnauthenticated: true,
 
+			subject: "pradeep",
 			groups: []string{
 				"admin",
-				"developer",
+				" developer",
+				"",
 				"argo",
+				" ",
 			},
+		},
+
+		{
+			name: "shared secret authentication",
+
+			cfg: config.HeaderConfig{
+				SharedSecret: &config.SharedSecretHeader{
+					Header: "X-Proxy-Auth",
+				},
+				Subject: config.ClaimSource{
+					Header: "X-Forwarded-User",
+				},
+			},
+
+			md: metadata.Pairs(
+				"x-proxy-auth", "secret",
+				"x-forwarded-user", "pradeep",
+			),
+
+			sharedSecret: "secret",
+
+			subject: "pradeep",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			h := New(tt.cfg)
+			h := New(tt.cfg, tt.sharedSecret, tt.trustUnauthenticated)
 
 			claims, err := h.Authorize(tt.md)
 
@@ -164,7 +214,7 @@ func TestIsRBACEnabled(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			h := New(tt.cfg)
+			h := New(tt.cfg, "", true)
 
 			assert.Equal(t, tt.want, h.IsRBACEnabled())
 		})
@@ -178,10 +228,149 @@ func TestAuthorizeMissingSubject(t *testing.T) {
 		},
 	}
 
-	h := New(cfg)
+	h := New(cfg, "", true)
 
 	claims, err := h.Authorize(metadata.MD{})
 
 	assert.Nil(t, claims)
 	assert.EqualError(t, err, "subject claim is empty")
+}
+
+
+func TestAuthenticateProxy(t *testing.T) {
+	tests := []struct {
+		name          string
+		cfg           config.HeaderConfig
+		sharedSecret  string
+		md            metadata.MD
+		expectedError string
+	}{
+		{
+			name: "valid secret",
+			cfg: config.HeaderConfig{
+				SharedSecret: &config.SharedSecretHeader{
+					Header: "X-Proxy-Auth",
+				},
+			},
+			sharedSecret: "secret",
+			md: metadata.Pairs(
+				"x-proxy-auth", "secret",
+			),
+		},
+		{
+			name: "invalid secret",
+			cfg: config.HeaderConfig{
+				SharedSecret: &config.SharedSecretHeader{
+					Header: "X-Proxy-Auth",
+				},
+			},
+			sharedSecret: "secret",
+			md: metadata.Pairs(
+				"x-proxy-auth", "wrong-secret",
+			),
+			expectedError: "trusted proxy authentication failed",
+		},
+		{
+			name: "missing authentication header",
+			cfg: config.HeaderConfig{
+				SharedSecret: &config.SharedSecretHeader{
+					Header: "X-Proxy-Auth",
+				},
+			},
+			sharedSecret:  "secret",
+			md:            metadata.MD{},
+			expectedError: "trusted proxy authentication header is missing",
+		},
+		{
+			name:          "shared secret not configured",
+			cfg:           config.HeaderConfig{},
+			sharedSecret:  "secret",
+			md:            metadata.Pairs("x-proxy-auth", "secret"),
+			expectedError: "shared secret authentication is not configured",
+		},
+		{
+			name: "one of multiple authentication headers matches",
+			cfg: config.HeaderConfig{
+				SharedSecret: &config.SharedSecretHeader{
+					Header: "X-Proxy-Auth",
+				},
+			},
+			sharedSecret: "secret",
+			md: metadata.Pairs(
+				"x-proxy-auth", "wrong-secret",
+				"x-proxy-auth", "secret",
+			),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h := New(tt.cfg, tt.sharedSecret, false)
+
+			err := h.(*header).authenticateProxy(tt.md)
+
+			if tt.expectedError != "" {
+				require.EqualError(t, err, tt.expectedError)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestAuthorizeProxyAuthentication(t *testing.T) {
+	cfg := config.HeaderConfig{
+		SharedSecret: &config.SharedSecretHeader{
+			Header: "X-Proxy-Auth",
+		},
+		Subject: config.ClaimSource{
+			Header: "X-Forwarded-User",
+		},
+	}
+
+	t.Run("secure mode requires valid proxy secret", func(t *testing.T) {
+		h := New(cfg, "secret", false)
+
+		claims, err := h.Authorize(metadata.Pairs(
+			"x-proxy-auth", "secret",
+			"x-forwarded-user", "pradeep",
+		))
+
+		require.NoError(t, err)
+		assert.Equal(t, "pradeep", claims.Subject)
+	})
+
+	t.Run("secure mode rejects invalid proxy secret", func(t *testing.T) {
+		h := New(cfg, "secret", false)
+
+		claims, err := h.Authorize(metadata.Pairs(
+			"x-proxy-auth", "wrong-secret",
+			"x-forwarded-user", "pradeep",
+		))
+
+		assert.Nil(t, claims)
+		require.EqualError(t, err, "trusted proxy authentication failed")
+	})
+
+	t.Run("secure mode rejects missing proxy secret", func(t *testing.T) {
+		h := New(cfg, "secret", false)
+
+		claims, err := h.Authorize(metadata.Pairs(
+			"x-forwarded-user", "pradeep",
+		))
+
+		assert.Nil(t, claims)
+		require.EqualError(t, err, "trusted proxy authentication header is missing")
+	})
+
+	t.Run("insecure mode skips proxy authentication", func(t *testing.T) {
+		h := New(cfg, "", true)
+
+		claims, err := h.Authorize(metadata.Pairs(
+			"x-forwarded-user", "pradeep",
+		))
+
+		require.NoError(t, err)
+		assert.Equal(t, "pradeep", claims.Subject)
+	})
 }

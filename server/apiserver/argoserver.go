@@ -29,6 +29,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/utils/env"
 
@@ -113,13 +114,14 @@ type argoServer struct {
 }
 
 type ArgoServerOpts struct {
-	BaseHRef   string
-	TLSConfig  *tls.Config
-	Namespaced bool
-	Namespace  string
-	Clients    *types.Clients
-	RestConfig *rest.Config
-	AuthModes  auth.Modes
+	BaseHRef                            string
+	TLSConfig                           *tls.Config
+	Namespaced                          bool
+	Namespace                           string
+	Clients                             *types.Clients
+	RestConfig                          *rest.Config
+	AuthModes                           auth.Modes
+	InsecureTrustUnauthenticatedHeaders bool
 	// config map name
 	ConfigName               string
 	ManagedNamespace         string
@@ -149,12 +151,53 @@ func getResourceCacheNamespace(managedNamespace string) string {
 	return v1.NamespaceAll
 }
 
+func getHeaderSharedSecret(
+	ctx context.Context,
+	secretsIf corev1.SecretInterface,
+	cfg *config.SharedSecretHeader,
+) (string, error) {
+	if cfg == nil {
+		return "", fmt.Errorf("shared secret authentication is not configured")
+	}
+	if cfg.Header == "" {
+		return "", fmt.Errorf("shared secret header is empty")
+	}
+	secretRef := cfg.RequiredValue
+	if secretRef.Name == "" || secretRef.Key == "" {
+		return "", fmt.Errorf("shared secret reference is empty")
+	}
+
+	secret, err := secretsIf.Get(ctx, secretRef.Name, metav1.GetOptions{})
+	if err != nil {
+		return "", fmt.Errorf("failed to get shared secret: %w", err)
+	}
+
+	value, ok := secret.Data[secretRef.Key]
+	if !ok {
+		return "", fmt.Errorf(
+			"key %s missing in secret %s",
+			secretRef.Key,
+			secretRef.Name,
+		)
+	}
+
+	if len(value) == 0 {
+		return "", fmt.Errorf("shared secret value is empty")
+	}
+
+	return string(value), nil
+}
+
 func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (Server, error) {
 	configController := config.NewController(opts.Namespace, opts.ConfigName, opts.Clients.Kubernetes)
 	log := logging.RequireLoggerFromContext(ctx)
 	var resourceCache *cache.ResourceCache
 	ssoIf := sso.NullSSO
-	headerIf := header.New(config.HeaderConfig{})
+	headerIf := header.New(
+		config.HeaderConfig{},
+		"",
+		opts.InsecureTrustUnauthenticatedHeaders,
+	)
 
 	if opts.AuthModes[auth.Header] {
 		c, err := configController.Get(ctx)
@@ -162,7 +205,25 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (Server, error) {
 			return nil, err
 		}
 
-		headerIf = header.New(c.Header)
+		var sharedSecret string
+
+		if !opts.InsecureTrustUnauthenticatedHeaders {
+			sharedSecret, err = getHeaderSharedSecret(
+				ctx,
+				opts.Clients.Kubernetes.CoreV1().Secrets(opts.Namespace),
+				c.Header.SharedSecret,
+			)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		headerIf = header.New(
+			c.Header,
+			sharedSecret,
+			opts.InsecureTrustUnauthenticatedHeaders,
+		)
+
 		log.Info(ctx, "Trusted Header authentication enabled")
 	} else {
 		log.Info(ctx, "Trusted Header authentication disabled")

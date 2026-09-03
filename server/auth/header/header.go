@@ -16,16 +16,20 @@ type Interface interface {
 }
 
 type header struct {
-	config config.HeaderConfig
+	config               config.HeaderConfig
+	sharedSecret         string
+	trustUnauthenticated bool
 }
 
 func (h *header) IsRBACEnabled() bool {
 	return h.config.RBAC.IsEnabled()
 }
 
-func New(cfg config.HeaderConfig) Interface {
+func New(cfg config.HeaderConfig, sharedSecret string, trustUnauthenticated bool) Interface {
 	return &header{
-		config: cfg,
+		config:               cfg,
+		sharedSecret:         sharedSecret,
+		trustUnauthenticated: trustUnauthenticated,
 	}
 }
 
@@ -37,7 +41,7 @@ func resolveClaim(source config.ClaimSource, md metadata.MD) string {
 	if source.Header != "" {
 		values := md.Get(strings.ToLower(source.Header))
 		if len(values) > 0 {
-			return values[0]
+			return strings.Join(values, ",")
 		}
 	}
 
@@ -51,25 +55,15 @@ func resolveGroups(source config.GroupClaimSource, md metadata.MD) []string {
 		return nil
 	}
 
-	if source.Delimiter == "" {
-		return []string{value}
-	}
-
-	groups := strings.Split(value, source.Delimiter)
-	result := make([]string, 0, len(groups))
-
-	for _, group := range groups {
-		group = strings.TrimSpace(group)
-		if group == "" {
-			continue
-		}
-		result = append(result, group)
-	}
-
-	return result
+	return strings.Split(value, ",")
 }
 
 func (h *header) Authorize(md metadata.MD) (*types.Claims, error) {
+	if !h.trustUnauthenticated {
+		if err := h.authenticateProxy(md); err != nil {
+			return nil, err
+		}
+	}
 	claims := &types.Claims{}
 
 	claims.Issuer = resolveClaim(h.config.Issuer, md)
@@ -84,4 +78,23 @@ func (h *header) Authorize(md metadata.MD) (*types.Claims, error) {
 	claims.Groups = resolveGroups(h.config.Groups, md)
 
 	return claims, nil
+}
+
+func (h *header) authenticateProxy(md metadata.MD) error {
+	if h.config.SharedSecret == nil {
+		return fmt.Errorf("shared secret authentication is not configured")
+	}
+
+	values := md.Get(strings.ToLower(h.config.SharedSecret.Header))
+	if len(values) == 0 {
+		return fmt.Errorf("trusted proxy authentication header is missing")
+	}
+
+	for _, value := range values {
+		if value == h.sharedSecret {
+			return nil
+		}
+	}
+
+	return fmt.Errorf("trusted proxy authentication failed")
 }

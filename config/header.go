@@ -1,5 +1,7 @@
 package config
 
+import apiv1 "k8s.io/api/core/v1"
+
 // ClaimSource specifies how to populate a claim.
 type ClaimSource struct {
 	// Header specifies the HTTP header containing the claim value.
@@ -12,9 +14,17 @@ type ClaimSource struct {
 // GroupClaimSource specifies how to populate the groups claim.
 type GroupClaimSource struct {
 	ClaimSource
+}
 
-	// Delimiter separates multiple groups in the header value.
-	Delimiter string `json:"delimiter,omitempty"`
+// SharedSecretHeader configures a shared secret used to authenticate
+// the trusted authentication proxy.
+type SharedSecretHeader struct {
+	// Header specifies the HTTP header containing the shared secret.
+	Header string `json:"header,omitempty"`
+
+	// RequiredValue references the Kubernetes Secret containing the
+	// expected shared secret value.
+	RequiredValue apiv1.SecretKeySelector `json:"requiredValue,omitzero"`
 }
 
 // HeaderConfig contains trusted header authentication configuration settings.
@@ -33,6 +43,9 @@ type HeaderConfig struct {
 
 	// Groups configures the groups claim.
 	Groups GroupClaimSource `json:"groups,omitzero"`
+
+	// SharedSecret configures authentication of the trusted proxy.
+	SharedSecret *SharedSecretHeader `json:"sharedSecret,omitempty"`
 
 	// RBAC configures role-based access controls
 	RBAC *RBACConfig `json:"rbac,omitempty"`

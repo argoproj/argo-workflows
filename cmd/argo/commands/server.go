@@ -38,27 +38,28 @@ import (
 
 func NewServerCommand() *cobra.Command {
 	var (
-		authModes                []string
-		configMap                string
-		port                     int
-		baseHRef                 string
-		secure                   bool
-		tlsCertificateSecretName string
-		hsts                     bool
-		namespaced               bool   // --namespaced
-		managedNamespace         string // --managed-namespace
-		enableOpenBrowser        bool
-		eventOperationQueueSize  int
-		eventWorkerCount         int
-		eventAsyncDispatch       bool
-		frameOptions             string
-		accessControlAllowOrigin string
-		apiRateLimit             uint64
-		kubeAPIQPS               float32
-		kubeAPIBurst             int
-		allowedLinkProtocol      []string
-		logFormat                string // --log-format
-		logLevel                 string // --loglevel
+		authModes                           []string
+		insecureTrustUnauthenticatedHeaders bool
+		configMap                           string
+		port                                int
+		baseHRef                            string
+		secure                              bool
+		tlsCertificateSecretName            string
+		hsts                                bool
+		namespaced                          bool   // --namespaced
+		managedNamespace                    string // --managed-namespace
+		enableOpenBrowser                   bool
+		eventOperationQueueSize             int
+		eventWorkerCount                    int
+		eventAsyncDispatch                  bool
+		frameOptions                        string
+		accessControlAllowOrigin            string
+		apiRateLimit                        uint64
+		kubeAPIQPS                          float32
+		kubeAPIBurst                        int
+		allowedLinkProtocol                 []string
+		logFormat                           string // --log-format
+		logLevel                            string // --loglevel
 	)
 
 	command := cobra.Command{
@@ -153,24 +154,25 @@ See %s`, help.ArgoServer()),
 			}
 
 			opts := apiserver.ArgoServerOpts{
-				BaseHRef:                 baseHRef,
-				TLSConfig:                tlsConfig,
-				HSTS:                     hsts,
-				Namespaced:               namespaced,
-				Namespace:                namespace,
-				Clients:                  clients,
-				RestConfig:               config,
-				AuthModes:                modes,
-				ManagedNamespace:         managedNamespace,
-				SSONamespace:             ssoNamespace,
-				ConfigName:               configMap,
-				EventOperationQueueSize:  eventOperationQueueSize,
-				EventWorkerCount:         eventWorkerCount,
-				EventAsyncDispatch:       eventAsyncDispatch,
-				XFrameOptions:            frameOptions,
-				AccessControlAllowOrigin: accessControlAllowOrigin,
-				APIRateLimit:             apiRateLimit,
-				AllowedLinkProtocol:      allowedLinkProtocol,
+				BaseHRef:                            baseHRef,
+				TLSConfig:                           tlsConfig,
+				HSTS:                                hsts,
+				Namespaced:                          namespaced,
+				Namespace:                           namespace,
+				Clients:                             clients,
+				RestConfig:                          config,
+				AuthModes:                           modes,
+				InsecureTrustUnauthenticatedHeaders: insecureTrustUnauthenticatedHeaders,
+				ManagedNamespace:                    managedNamespace,
+				SSONamespace:                        ssoNamespace,
+				ConfigName:                          configMap,
+				EventOperationQueueSize:             eventOperationQueueSize,
+				EventWorkerCount:                    eventWorkerCount,
+				EventAsyncDispatch:                  eventAsyncDispatch,
+				XFrameOptions:                       frameOptions,
+				AccessControlAllowOrigin:            accessControlAllowOrigin,
+				APIRateLimit:                        apiRateLimit,
+				AllowedLinkProtocol:                 allowedLinkProtocol,
 			}
 			browserOpenFunc := func(url string) {}
 			if enableOpenBrowser {
@@ -199,6 +201,7 @@ See %s`, help.ArgoServer()),
 	command.Flags().StringVar(&tlsCertificateSecretName, "tls-certificate-secret-name", "", "The name of a Kubernetes secret that contains the server certificates")
 	command.Flags().BoolVar(&hsts, "hsts", true, "Whether or not we should add a HTTP Secure Transport Security header. This only has effect if secure is enabled.")
 	command.Flags().StringArrayVar(&authModes, "auth-mode", []string{"client"}, "API server authentication mode. Any 1 or more length permutation of: client,server,sso,header")
+	command.Flags().BoolVar(&insecureTrustUnauthenticatedHeaders, "insecure-trust-unauthenticated-headers", false, "Trust unauthenticated headers without authenticating the reverse proxy.")
 	command.Flags().StringVar(&configMap, "configmap", common.ConfigMapName, "Name of K8s configmap to retrieve workflow controller configuration")
 	command.Flags().BoolVar(&namespaced, "namespaced", false, "run as namespaced mode")
 	command.Flags().StringVar(&managedNamespace, "managed-namespace", "", "namespace that watches, default to the installation namespace")
