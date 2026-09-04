@@ -236,7 +236,6 @@ func TestAuthorizeMissingSubject(t *testing.T) {
 	assert.EqualError(t, err, "subject claim is empty")
 }
 
-
 func TestAuthenticateProxy(t *testing.T) {
 	tests := []struct {
 		name          string

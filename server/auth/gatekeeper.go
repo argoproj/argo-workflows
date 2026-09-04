@@ -169,10 +169,6 @@ func (s *gatekeeper) getClients(ctx context.Context, req any) (*servertypes.Clie
 	authorizations := getAuthHeaders(md)
 	if len(authorizations) > 0 {
 		for _, authorization := range authorizations {
-			if authorization == "" {
-				continue
-			}
-
 			if s.Modes[SSO] && strings.HasPrefix(authorization, sso.Prefix) {
 				clients, claims, err := s.authenticateSSO(ctx, authorization, req)
 				if err == nil {
@@ -225,7 +221,7 @@ func (s *gatekeeper) getClients(ctx context.Context, req any) (*servertypes.Clie
 
 	return nil, nil, status.Error(
 		codes.Unauthenticated,
-		"token not valid. see https://argo-workflows.readthedocs.io/en/latest/faq/",
+		"no active authentication mode matched the request",
 	)
 }
 

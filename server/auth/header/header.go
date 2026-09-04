@@ -2,6 +2,7 @@ package header
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"google.golang.org/grpc/metadata"
@@ -90,10 +91,8 @@ func (h *header) authenticateProxy(md metadata.MD) error {
 		return fmt.Errorf("trusted proxy authentication header is missing")
 	}
 
-	for _, value := range values {
-		if value == h.sharedSecret {
-			return nil
-		}
+	if slices.Contains(values, h.sharedSecret) {
+		return nil
 	}
 
 	return fmt.Errorf("trusted proxy authentication failed")

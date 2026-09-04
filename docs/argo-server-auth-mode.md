@@ -15,3 +15,4 @@ To configure the Server's auth modes, use one or multiple `--auth-mode` flags. F
 
 ```bash
 argo server --auth-mode=sso --auth-mode=client
+```
