@@ -174,19 +174,32 @@ func (s *gatekeeper) getClients(ctx context.Context, req any) (*servertypes.Clie
 			}
 
 			if s.Modes[SSO] && strings.HasPrefix(authorization, sso.Prefix) {
-				return s.authenticateSSO(ctx, authorization, req)
+				clients, claims, err := s.authenticateSSO(ctx, authorization, req)
+				if err == nil {
+					return clients, claims, nil
+				}
+
+				if status.Code(err) != codes.Unauthenticated {
+					return nil, nil, err
+				}
+
+				continue
 			}
 
 			if s.Modes[Client] &&
 				(strings.HasPrefix(authorization, "Bearer ") ||
 					strings.HasPrefix(authorization, "Basic ")) {
-				return s.authenticateClient(authorization)
-			}
+				clients, claims, err := s.authenticateClient(authorization)
+				if err == nil {
+					return clients, claims, nil
+				}
 
-			return nil, nil, status.Error(
-				codes.Unauthenticated,
-				"token not valid. see https://argo-workflows.readthedocs.io/en/latest/faq/",
-			)
+				if status.Code(err) != codes.Unauthenticated {
+					return nil, nil, err
+				}
+
+				continue
+			}
 		}
 
 		// All Authorization headers were empty.
