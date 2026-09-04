@@ -356,14 +356,15 @@ HeaderConfig contains trusted header authentication configuration settings.
 
 ### Fields
 
-|     Field Name      |               Field Type                |                        Description                         |
-|---------------------|-----------------------------------------|------------------------------------------------------------|
-| `Issuer`            | [`ClaimSource`](#claimsource)           | Issuer configures the issuer claim.                        |
-| `Subject`           | [`ClaimSource`](#claimsource)           | Subject configures the subject claim.                      |
-| `Email`             | [`ClaimSource`](#claimsource)           | Email configures the email claim.                          |
-| `PreferredUsername` | [`ClaimSource`](#claimsource)           | PreferredUsername configures the preferred_username claim. |
-| `Groups`            | [`GroupClaimSource`](#groupclaimsource) | Groups configures the groups claim.                        |
-| `RBAC`              | [`RBACConfig`](#rbacconfig)             | RBAC configures role-based access controls                 |
+|     Field Name      |                 Field Type                  |                         Description                          |
+|---------------------|---------------------------------------------|--------------------------------------------------------------|
+| `Issuer`            | [`ClaimSource`](#claimsource)               | Issuer configures the issuer claim.                          |
+| `Subject`           | [`ClaimSource`](#claimsource)               | Subject configures the subject claim.                        |
+| `Email`             | [`ClaimSource`](#claimsource)               | Email configures the email claim.                            |
+| `PreferredUsername` | [`ClaimSource`](#claimsource)               | PreferredUsername configures the preferred_username claim.   |
+| `Groups`            | [`GroupClaimSource`](#groupclaimsource)     | Groups configures the groups claim.                          |
+| `SharedSecret`      | [`SharedSecretHeader`](#sharedsecretheader) | SharedSecret configures authentication of the trusted proxy. |
+| `RBAC`              | [`RBACConfig`](#rbacconfig)                 | RBAC configures role-based access controls                   |
 
 ## ClaimSource
 
@@ -382,11 +383,21 @@ GroupClaimSource specifies how to populate the groups claim.
 
 ### Fields
 
-| Field Name  | Field Type |                         Description                          |
-|-------------|------------|--------------------------------------------------------------|
-| `Header`    | `string`   | Header specifies the HTTP header containing the claim value. |
-| `Value`     | `string`   | Value specifies a static value for the claim.                |
-| `Delimiter` | `string`   | Delimiter separates multiple groups in the header value.     |
+| Field Name | Field Type |                         Description                          |
+|------------|------------|--------------------------------------------------------------|
+| `Header`   | `string`   | Header specifies the HTTP header containing the claim value. |
+| `Value`    | `string`   | Value specifies a static value for the claim.                |
+
+## SharedSecretHeader
+
+SharedSecretHeader configures a shared secret used to authenticate the trusted authentication proxy.
+
+### Fields
+
+|   Field Name    |                                                         Field Type                                                          |                                         Description                                         |
+|-----------------|-----------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|
+| `Header`        | `string`                                                                                                                    | Header specifies the HTTP header containing the shared secret.                              |
+| `RequiredValue` | [`apiv1.SecretKeySelector`](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#secretkeyselector-v1-core) | RequiredValue references the Kubernetes Secret containing the expected shared secret value. |
 
 ## SyncConfig
 

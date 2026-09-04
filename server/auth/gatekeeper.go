@@ -23,8 +23,8 @@ import (
 	"k8s.io/client-go/rest"
 
 	workflow "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo-workflows/v4/server/auth/header"
 	authcookie "github.com/argoproj/argo-workflows/v4/server/auth/cookie"
+	"github.com/argoproj/argo-workflows/v4/server/auth/header"
 	"github.com/argoproj/argo-workflows/v4/server/auth/serviceaccount"
 	"github.com/argoproj/argo-workflows/v4/server/auth/sso"
 	authTypes "github.com/argoproj/argo-workflows/v4/server/auth/types"
