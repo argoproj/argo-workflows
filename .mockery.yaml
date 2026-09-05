@@ -22,6 +22,9 @@ packages:
   github.com/argoproj/argo-workflows/v4/server/auth/sso:
     interfaces:
       Interface: {}
+  github.com/argoproj/argo-workflows/v4/server/auth/header:
+    interfaces:
+      Interface: {}
   github.com/argoproj/argo-workflows/v4/workflow/artifactrepositories:
     interfaces:
       Interface: {}

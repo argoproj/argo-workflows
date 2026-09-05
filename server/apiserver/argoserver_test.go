@@ -1,6 +1,7 @@
 package apiserver
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -274,6 +275,144 @@ func TestValidateArtifactDriverImages(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 			}
+		})
+	}
+}
+
+func TestGetHeaderSharedSecret(t *testing.T) {
+	tests := []struct {
+		name          string
+		cfg           *config.SharedSecretHeader
+		secret        *corev1.Secret
+		expected      string
+		expectedError string
+	}{
+		{
+			name: "valid secret",
+			cfg: &config.SharedSecretHeader{
+				Header: "X-Proxy-Auth",
+				RequiredValue: corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "argo-header-auth",
+					},
+					Key: "proxy-secret",
+				},
+			},
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "argo-header-auth",
+				},
+				Data: map[string][]byte{
+					"proxy-secret": []byte("secret"),
+				},
+			},
+			expected: "secret",
+		},
+		{
+			name:          "shared secret not configured",
+			cfg:           nil,
+			expectedError: "shared secret authentication is not configured",
+		},
+		{
+			name: "secret reference is empty",
+			cfg: &config.SharedSecretHeader{
+				Header: "X-Proxy-Auth",
+			},
+			expectedError: "shared secret reference is empty",
+		},
+		{
+			name: "secret does not exist",
+			cfg: &config.SharedSecretHeader{
+				Header: "X-Proxy-Auth",
+				RequiredValue: corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "missing-secret",
+					},
+					Key: "proxy-secret",
+				},
+			},
+			expectedError: `failed to get shared secret: secrets "missing-secret" not found`,
+		},
+		{
+			name: "shared secret header is empty",
+			cfg: &config.SharedSecretHeader{
+				RequiredValue: corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "argo-header-auth",
+					},
+					Key: "proxy-secret",
+				},
+			},
+			expectedError: "shared secret header is empty",
+		},
+		{
+			name: "secret value is empty",
+			cfg: &config.SharedSecretHeader{
+				Header: "X-Proxy-Auth",
+				RequiredValue: corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "argo-header-auth",
+					},
+					Key: "proxy-secret",
+				},
+			},
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "argo-header-auth",
+				},
+				Data: map[string][]byte{
+					"proxy-secret": {},
+				},
+			},
+			expectedError: "shared secret value is empty",
+		},
+		{
+			name: "secret key is missing",
+			cfg: &config.SharedSecretHeader{
+				Header: "X-Proxy-Auth",
+				RequiredValue: corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "argo-header-auth",
+					},
+					Key: "proxy-secret",
+				},
+			},
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "argo-header-auth",
+				},
+				Data: map[string][]byte{
+					"other-key": []byte("secret"),
+				},
+			},
+			expectedError: "key proxy-secret missing in secret argo-header-auth",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			clientset := fake.NewSimpleClientset()
+
+			if tt.secret != nil {
+				_, err := clientset.CoreV1().
+					Secrets("default").
+					Create(context.Background(), tt.secret, metav1.CreateOptions{})
+				require.NoError(t, err)
+			}
+
+			got, err := getHeaderSharedSecret(
+				context.Background(),
+				clientset.CoreV1().Secrets("default"),
+				tt.cfg,
+			)
+
+			if tt.expectedError != "" {
+				require.EqualError(t, err, tt.expectedError)
+				return
+			}
+
+			require.NoError(t, err)
+			require.Equal(t, tt.expected, got)
 		})
 	}
 }

@@ -95,6 +95,7 @@ Config contains the root of the configuration settings for the workflow controll
 | `RetentionPolicy`          | [`RetentionPolicy`](#retentionpolicy)                                                                       | Workflow retention by number of workflows                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `NavColor`                 | `string`                                                                                                    | NavColor is an ui navigation bar background color                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `SSO`                      | [`SSOConfig`](#ssoconfig)                                                                                   | SSO in settings for single-sign on                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `Header`                   | [`HeaderConfig`](#headerconfig)                                                                             | Header in settings for trusted header authentication                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `Synchronization`          | [`SyncConfig`](#syncconfig)                                                                                 | Synchronization via databases config                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `ArtifactDrivers`          | `Array<`[`ArtifactDriver`](#artifactdriver)`>`                                                              | ArtifactDrivers lists artifact driver plugins we can use                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `FailedPodRestart`         | [`FailedPodRestartConfig`](#failedpodrestartconfig)                                                         | FailedPodRestart configures automatic restart of pods that fail before entering Running state (e.g., due to Eviction, DiskPressure, Preemption). This allows recovery from transient infrastructure issues without requiring a retryStrategy on templates.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
@@ -348,6 +349,55 @@ RBACConfig contains role-based access control configuration
 | Field Name | Field Type |               Description                |
 |------------|------------|------------------------------------------|
 | `Enabled`  | `bool`     | Enabled controls whether RBAC is enabled |
+
+## HeaderConfig
+
+HeaderConfig contains trusted header authentication configuration settings.
+
+### Fields
+
+|     Field Name      |                 Field Type                  |                         Description                          |
+|---------------------|---------------------------------------------|--------------------------------------------------------------|
+| `Issuer`            | [`ClaimSource`](#claimsource)               | Issuer configures the issuer claim.                          |
+| `Subject`           | [`ClaimSource`](#claimsource)               | Subject configures the subject claim.                        |
+| `Email`             | [`ClaimSource`](#claimsource)               | Email configures the email claim.                            |
+| `PreferredUsername` | [`ClaimSource`](#claimsource)               | PreferredUsername configures the preferred_username claim.   |
+| `Groups`            | [`GroupClaimSource`](#groupclaimsource)     | Groups configures the groups claim.                          |
+| `SharedSecret`      | [`SharedSecretHeader`](#sharedsecretheader) | SharedSecret configures authentication of the trusted proxy. |
+| `RBAC`              | [`RBACConfig`](#rbacconfig)                 | RBAC configures role-based access controls                   |
+
+## ClaimSource
+
+ClaimSource specifies how to populate a claim.
+
+### Fields
+
+| Field Name | Field Type |                         Description                          |
+|------------|------------|--------------------------------------------------------------|
+| `Header`   | `string`   | Header specifies the HTTP header containing the claim value. |
+| `Value`    | `string`   | Value specifies a static value for the claim.                |
+
+## GroupClaimSource
+
+GroupClaimSource specifies how to populate the groups claim.
+
+### Fields
+
+| Field Name | Field Type |                         Description                          |
+|------------|------------|--------------------------------------------------------------|
+| `Header`   | `string`   | Header specifies the HTTP header containing the claim value. |
+| `Value`    | `string`   | Value specifies a static value for the claim.                |
+
+## SharedSecretHeader
+
+SharedSecretHeader configures a shared secret used to authenticate the trusted authentication proxy.
+
+### Fields
+
+|   Field Name    |                                                         Field Type                                                          |                                         Description                                         |
+|-----------------|-----------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|
+| `Header`        | `string`                                                                                                                    | Header specifies the HTTP header containing the shared secret.                              |
+| `RequiredValue` | [`apiv1.SecretKeySelector`](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#secretkeyselector-v1-core) | RequiredValue references the Kubernetes Secret containing the expected shared secret value. |
 
 ## SyncConfig
 
