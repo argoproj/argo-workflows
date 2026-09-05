@@ -3,9 +3,11 @@ package executor
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"path"
 	"runtime"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -256,6 +258,24 @@ const resourceJSON = `{
   "spec": {"containers": [{"name": "a"}, {"name": "b"}]}
 }`
 
+// fakeKubectl simulates `kubectl get -o json`, which omits managedFields unless
+// --show-managed-fields=true is passed. The read gating depends on that behaviour, so the fake has
+// to honour the flag rather than always returning the same body. Every call is recorded in calls.
+func fakeKubectl(calls *[][]string) kubectlRunner {
+	return func(_ context.Context, args ...string) ([]byte, error) {
+		*calls = append(*calls, args)
+		if slices.Contains(args, "--show-managed-fields=true") {
+			return []byte(resourceJSON), nil
+		}
+		obj := &unstructured.Unstructured{}
+		if err := json.Unmarshal([]byte(resourceJSON), obj); err != nil {
+			return nil, err
+		}
+		obj.SetManagedFields(nil)
+		return obj.MarshalJSON()
+	}
+}
+
 func Test_jsonPathFilter(t *testing.T) {
 	obj := &unstructured.Unstructured{}
 	require.NoError(t, json.Unmarshal([]byte(resourceJSON), obj))
@@ -275,7 +295,15 @@ func Test_jsonPathFilter(t *testing.T) {
 		{expression: "{.metadata.nope}", want: ""},
 		// managedFields are still visible, as they were with `-o jsonpath=`.
 		{expression: "{.metadata.managedFields[0].manager}", want: "kubectl"},
+		// Whitespace in the template is part of the output. `-o jsonpath=` emits it verbatim, and
+		// jqFilter's TrimSpace must not be copied here: `{range}`-style expressions rely on the
+		// trailing newline surviving. Without these two cases, adding strings.TrimSpace to
+		// jsonPathFilter leaves the whole table green.
+		{expression: "{.metadata.name}{\"\\n\"}", want: "my-pod\n"},
+		{expression: "{range .spec.containers[*]}{.name}{\"\\n\"}{end}", want: "a\nb\n"},
 		{expression: "{unparseable", wantErr: true},
+		// A valid template that cannot be executed against this object.
+		{expression: "{.spec.containers[9].name}", wantErr: true},
 	} {
 		t.Run(tc.expression, func(t *testing.T) {
 			got, err := jsonPathFilter(obj, tc.expression)
@@ -314,12 +342,8 @@ func Test_saveResourceParameters(t *testing.T) {
 			param("jq", &wfv1.ValueFrom{JQFilter: ".spec.containers[].name"}),
 		)
 		var calls [][]string
-		kubectl := func(_ context.Context, args ...string) ([]byte, error) {
-			calls = append(calls, args)
-			return []byte(resourceJSON), nil
-		}
 		ctx := logging.TestContext(t.Context())
-		require.NoError(t, we.saveResourceParameters(ctx, "my-ns", "pod./my-pod", kubectl))
+		require.NoError(t, we.saveResourceParameters(ctx, "my-ns", "pod./my-pod", fakeKubectl(&calls)))
 
 		require.Len(t, calls, 1, "the resource must be read exactly once, not once per parameter")
 		assert.Equal(t, []string{"kubectl", "-n", "my-ns", "get", "pod./my-pod", "-o", "json", "--show-managed-fields=true"}, calls[0])
@@ -330,48 +354,212 @@ func Test_saveResourceParameters(t *testing.T) {
 		assert.Equal(t, "a\nb", out[2].Value.String())
 	})
 
-	t.Run("jqFilter does not see managedFields", func(t *testing.T) {
-		we := newExecutor(param("keys", &wfv1.ValueFrom{JQFilter: ".metadata | keys | join(\",\")"}))
-		kubectl := func(_ context.Context, _ ...string) ([]byte, error) { return []byte(resourceJSON), nil }
-		ctx := logging.TestContext(t.Context())
-		require.NoError(t, we.saveResourceParameters(ctx, "my-ns", "pod./my-pod", kubectl))
-		assert.Equal(t, "labels,name,namespace", we.Template.Outputs.Parameters[0].Value.String())
-	})
-
-	t.Run("no read when no parameter needs the resource", func(t *testing.T) {
-		we := newExecutor(param("supplied", &wfv1.ValueFrom{Supplied: &wfv1.SuppliedValueFrom{}}))
-		calls := 0
-		kubectl := func(_ context.Context, _ ...string) ([]byte, error) {
-			calls++
-			return []byte(resourceJSON), nil
+	// managedFields are asked for only when a jsonPath expression could read them. A jqFilter never
+	// sees them, so requesting them for a jqFilter-only template would inflate the response and then
+	// throw the extra away - the opposite of what this change is for.
+	t.Run("managedFields are requested only when a jsonPath parameter needs them", func(t *testing.T) {
+		for _, tc := range []struct {
+			name      string
+			valueFrom *wfv1.ValueFrom
+			want      bool
+		}{
+			{"jsonPath only", &wfv1.ValueFrom{JSONPath: "{.metadata.name}"}, true},
+			{"jqFilter only", &wfv1.ValueFrom{JQFilter: ".metadata.name"}, false},
+			{"jsonPath wins when a parameter sets both", &wfv1.ValueFrom{JSONPath: "{.metadata.name}", JQFilter: ".metadata.name"}, true},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				we := newExecutor(param("p", tc.valueFrom))
+				var calls [][]string
+				ctx := logging.TestContext(t.Context())
+				require.NoError(t, we.saveResourceParameters(ctx, "my-ns", "pod./my-pod", fakeKubectl(&calls)))
+				require.Len(t, calls, 1)
+				assert.Equal(t, tc.want, slices.Contains(calls[0], "--show-managed-fields=true"))
+			})
 		}
-		ctx := logging.TestContext(t.Context())
-		require.NoError(t, we.saveResourceParameters(ctx, "my-ns", "pod./my-pod", kubectl))
-		assert.Equal(t, 0, calls)
 	})
 
-	// SaveResourceParameters must keep short-circuiting before ReportOutputs when the template has
-	// no output parameters, otherwise every resource template would start writing a task result.
-	t.Run("no output parameters reports nothing", func(t *testing.T) {
-		we := newExecutor()
-		argoClientset := argofake.NewClientset()
-		we.taskResultClient = argoClientset.ArgoprojV1alpha1().WorkflowTaskResults(fakeNamespace)
+	// Whichever way the resource was fetched, a jqFilter must see it without managedFields, exactly
+	// as it did when it was fed plain `kubectl get -o json`.
+	t.Run("jqFilter does not see managedFields", func(t *testing.T) {
+		for _, tc := range []struct {
+			name   string
+			params []wfv1.Parameter
+			at     int
+		}{
+			{"jqFilter alone", []wfv1.Parameter{
+				param("keys", &wfv1.ValueFrom{JQFilter: ".metadata | keys | join(\",\")"}),
+			}, 0},
+			// Here the response does carry managedFields, because the jsonPath parameter asked for
+			// them; they have to be stripped back out before the jqFilter runs.
+			{"jqFilter alongside a jsonPath parameter", []wfv1.Parameter{
+				param("name", &wfv1.ValueFrom{JSONPath: "{.metadata.name}"}),
+				param("keys", &wfv1.ValueFrom{JQFilter: ".metadata | keys | join(\",\")"}),
+			}, 1},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				we := newExecutor(tc.params...)
+				var calls [][]string
+				ctx := logging.TestContext(t.Context())
+				require.NoError(t, we.saveResourceParameters(ctx, "my-ns", "pod./my-pod", fakeKubectl(&calls)))
+				assert.Equal(t, "labels,name,namespace", we.Template.Outputs.Parameters[tc.at].Value.String())
+			})
+		}
+	})
+
+	// A valueFrom that names neither jsonPath nor jqFilter resolves to nothing, so it neither
+	// triggers a read nor overwrites the value the parameter already has.
+	t.Run("parameter with neither jsonPath nor jqFilter is left alone", func(t *testing.T) {
+		we := newExecutor(wfv1.Parameter{
+			Name:      "untouched",
+			Value:     wfv1.AnyStringPtr("keep me"),
+			ValueFrom: &wfv1.ValueFrom{Default: wfv1.AnyStringPtr("unused")},
+		})
+		var calls [][]string
 		ctx := logging.TestContext(t.Context())
-		require.NoError(t, we.SaveResourceParameters(ctx, "my-ns", "pod./my-pod"))
-		assert.Empty(t, argoClientset.Actions(), "no task result should be written when there are no output parameters")
+		require.NoError(t, we.saveResourceParameters(ctx, "my-ns", "pod./my-pod", fakeKubectl(&calls)))
+		assert.Empty(t, calls)
+		assert.Equal(t, "keep me", we.Template.Outputs.Parameters[0].Value.String())
+	})
+
+	// A parameter with a literal value and no valueFrom is the honest fixture for "nothing to read":
+	// validateOutputParameter rejects Supplied for resource templates, so it never reaches here.
+	t.Run("no read when no parameter needs the resource", func(t *testing.T) {
+		we := newExecutor(wfv1.Parameter{Name: "literal", Value: wfv1.AnyStringPtr("hello")})
+		var calls [][]string
+		ctx := logging.TestContext(t.Context())
+		require.NoError(t, we.saveResourceParameters(ctx, "my-ns", "pod./my-pod", fakeKubectl(&calls)))
+		assert.Empty(t, calls)
+		assert.Equal(t, "hello", we.Template.Outputs.Parameters[0].Value.String())
 	})
 
 	t.Run("no resource falls back to the default", func(t *testing.T) {
 		we := newExecutor(param("name", &wfv1.ValueFrom{JSONPath: "{.metadata.name}", Default: wfv1.AnyStringPtr("fallback")}))
-		calls := 0
-		kubectl := func(_ context.Context, _ ...string) ([]byte, error) {
-			calls++
-			return []byte(resourceJSON), nil
-		}
+		var calls [][]string
 		ctx := logging.TestContext(t.Context())
-		require.NoError(t, we.saveResourceParameters(ctx, "", "", kubectl))
-		assert.Equal(t, 0, calls)
+		require.NoError(t, we.saveResourceParameters(ctx, "", "", fakeKubectl(&calls)))
+		assert.Empty(t, calls)
 		assert.Equal(t, "fallback", we.Template.Outputs.Parameters[0].Value.String())
+	})
+
+	t.Run("errors are returned, not swallowed", func(t *testing.T) {
+		for _, tc := range []struct {
+			name    string
+			param   wfv1.Parameter
+			kubectl kubectlRunner
+			wantErr string
+		}{
+			{
+				name:    "kubectl fails",
+				param:   param("name", &wfv1.ValueFrom{JSONPath: "{.metadata.name}"}),
+				kubectl: func(context.Context, ...string) ([]byte, error) { return nil, errors.New("boom") },
+				wantErr: "boom",
+			},
+			{
+				// New failure mode: a jsonPath-only template never JSON-decoded kubectl's output
+				// before this change, because raw stdout was the value. #3037 exists because
+				// `kubectl get` can exit 0 with empty stdout.
+				name:    "kubectl exits 0 with empty stdout",
+				param:   param("name", &wfv1.ValueFrom{JSONPath: "{.metadata.name}"}),
+				kubectl: func(context.Context, ...string) ([]byte, error) { return nil, nil },
+				wantErr: "unexpected end of JSON input",
+			},
+			{
+				name:    "kubectl exits 0 with output that is not JSON",
+				param:   param("name", &wfv1.ValueFrom{JSONPath: "{.metadata.name}"}),
+				kubectl: func(context.Context, ...string) ([]byte, error) { return []byte("No resources found"), nil },
+				wantErr: "invalid character",
+			},
+			{
+				name:    "jsonPath cannot be parsed",
+				param:   param("name", &wfv1.ValueFrom{JSONPath: "{unparseable"}),
+				wantErr: "error parsing jsonpath",
+			},
+			{
+				name:    "jqFilter cannot be parsed",
+				param:   param("name", &wfv1.ValueFrom{JQFilter: "{{"}),
+				wantErr: "unexpected token",
+			},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				we := newExecutor(tc.param)
+				kubectl := tc.kubectl
+				if kubectl == nil {
+					var calls [][]string
+					kubectl = fakeKubectl(&calls)
+				}
+				ctx := logging.TestContext(t.Context())
+				err := we.saveResourceParameters(ctx, "my-ns", "pod./my-pod", kubectl)
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.wantErr)
+			})
+		}
+	})
+}
+
+// SaveResourceParameters owns the wiring that saveResourceParameters does not: the short-circuit on
+// a template with no output parameters, and the ReportOutputs call. Neither is reachable from
+// saveResourceParameters, so both are pinned here - without this, deleting the ReportOutputs call
+// passes the whole unit suite.
+func TestSaveResourceParameters(t *testing.T) {
+	tracingObj, err := tracing.New(logging.TestContext(t.Context()), `argoexec`)
+	require.NoError(t, err)
+	newExecutor := func(params ...wfv1.Parameter) (*WorkflowExecutor, *argofake.Clientset) {
+		argoClientset := argofake.NewClientset()
+		we := &WorkflowExecutor{
+			PodName:          fakePodName,
+			Namespace:        fakeNamespace,
+			nodeID:           fakeNodeID,
+			ClientSet:        fake.NewClientset(),
+			RuntimeExecutor:  &mocks.ContainerRuntimeExecutor{},
+			Tracing:          tracingObj,
+			Template:         wfv1.Template{Outputs: wfv1.Outputs{Parameters: params}},
+			taskResultClient: argoClientset.ArgoprojV1alpha1().WorkflowTaskResults(fakeNamespace),
+		}
+		return we, argoClientset
+	}
+
+	t.Run("reports the resolved output parameters", func(t *testing.T) {
+		we, argoClientset := newExecutor(wfv1.Parameter{
+			Name:      "name",
+			ValueFrom: &wfv1.ValueFrom{JSONPath: "{.metadata.name}"},
+		})
+		var calls [][]string
+		original := kubectlRunnerFn
+		kubectlRunnerFn = fakeKubectl(&calls)
+		t.Cleanup(func() { kubectlRunnerFn = original })
+
+		ctx := logging.TestContext(t.Context())
+		require.NoError(t, we.SaveResourceParameters(ctx, "my-ns", "pod./my-pod"))
+
+		require.Len(t, calls, 1)
+		assert.Equal(t, "my-pod", we.Template.Outputs.Parameters[0].Value.String())
+		assert.NotEmpty(t, argoClientset.Actions(), "the resolved parameters must be reported")
+	})
+
+	// A failure to resolve the parameters must propagate and must not report a partial result.
+	t.Run("resolution failure propagates and reports nothing", func(t *testing.T) {
+		we, argoClientset := newExecutor(wfv1.Parameter{
+			Name:      "name",
+			ValueFrom: &wfv1.ValueFrom{JSONPath: "{.metadata.name}"},
+		})
+		original := kubectlRunnerFn
+		kubectlRunnerFn = func(context.Context, ...string) ([]byte, error) { return nil, errors.New("boom") }
+		t.Cleanup(func() { kubectlRunnerFn = original })
+
+		ctx := logging.TestContext(t.Context())
+		err := we.SaveResourceParameters(ctx, "my-ns", "pod./my-pod")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "boom")
+		assert.Empty(t, argoClientset.Actions(), "nothing should be reported when resolution failed")
+	})
+
+	// Must keep short-circuiting before ReportOutputs when the template has no output parameters,
+	// otherwise every resource template would start writing a task result.
+	t.Run("no output parameters reports nothing", func(t *testing.T) {
+		we, argoClientset := newExecutor()
+		ctx := logging.TestContext(t.Context())
+		require.NoError(t, we.SaveResourceParameters(ctx, "my-ns", "pod./my-pod"))
+		assert.Empty(t, argoClientset.Actions(), "no task result should be written when there are no output parameters")
 	})
 }
 

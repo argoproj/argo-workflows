@@ -13,6 +13,19 @@ The workflow-controller (and the parts of the argo-server that share its informe
 This reduces controller memory usage — As a rough guide `managedFields` might be about 20% of the memory usage of objects, and at scale informer objects use most of the controllers memory footprint.
 This is internal to the controller's caches; objects stored in the cluster are unaffected.
 
+### Resource template output parameters no longer log the resource body at info level
+
+A resource template with output parameters previously ran `kubectl get` once per parameter, and logged each response body in the executor log at info level.
+It now reads the resource once for all of its output parameters, and logs only the arguments and the response size at info level ([#16602](https://github.com/argoproj/argo-workflows/pull/16602)).
+
+The body is still logged, at debug level, which matches how the resource JSON in `checkResourceState` has been logged since [#6100](https://github.com/argoproj/argo-workflows/pull/6100).
+If you relied on reading that body in executor logs at info level, raise the executor's log level to debug.
+
+Note that on earlier versions those info-level logs contained the whole resource, including the `data` or `stringData` of any `Secret` or `ConfigMap` a resource template read.
+If your log retention covers those versions, that content is in your stored executor logs.
+
+Output parameter values are unchanged: `jsonPath` expressions still see `managedFields` and `jqFilter` still does not.
+
 ### `argo archive` commands accept a workflow name as well as a UID
 
 The `argo archive get`, `delete`, `resubmit` and `retry` commands previously took a workflow UID as their argument.

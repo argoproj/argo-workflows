@@ -310,13 +310,18 @@ func matchConditions(ctx context.Context, jsonBytes []byte, successReqs labels.R
 // substitute runKubectl, which needs a cluster.
 type kubectlRunner func(ctx context.Context, args ...string) ([]byte, error)
 
+// kubectlRunnerFn is the runner used in production. It is a variable rather than a parameter of
+// SaveResourceParameters so that tests can reach that function's own wiring - it is the only
+// caller of ReportOutputs.
+var kubectlRunnerFn kubectlRunner = runKubectl
+
 // SaveResourceParameters will save any resource output parameters
 func (we *WorkflowExecutor) SaveResourceParameters(ctx context.Context, resourceNamespace string, resourceName string) error {
 	if len(we.Template.Outputs.Parameters) == 0 {
 		logging.RequireLoggerFromContext(ctx).Info(ctx, "No output parameters")
 		return nil
 	}
-	if err := we.saveResourceParameters(ctx, resourceNamespace, resourceName, runKubectl); err != nil {
+	if err := we.saveResourceParameters(ctx, resourceNamespace, resourceName, kubectlRunnerFn); err != nil {
 		return err
 	}
 	return we.ReportOutputs(ctx, nil)
@@ -331,28 +336,49 @@ func (we *WorkflowExecutor) saveResourceParameters(ctx context.Context, resource
 
 	// obj is the resource as `kubectl get -o jsonpath=` used to see it; jsonBytes is the same
 	// resource as `kubectl get -o json` used to print it for jqFilter, i.e. without managedFields.
+	// Each is built only if some output parameter is actually resolved that way.
 	var obj *unstructured.Unstructured
 	var jsonBytes []byte
-	if (resourceNamespace != "" || resourceName != "") && slices.ContainsFunc(we.Template.Outputs.Parameters, needsResourceRead) {
-		// --show-managed-fields so that jsonPath expressions still see the whole object: unlike
-		// `-o json`, `-o jsonpath=` never stripped managedFields.
-		args := []string{"kubectl", "-n", resourceNamespace, "get", resourceName, "-o", "json", "--show-managed-fields=true"}
+	needsJSONPath := slices.ContainsFunc(we.Template.Outputs.Parameters, needsJSONPathRead)
+	needsJQ := slices.ContainsFunc(we.Template.Outputs.Parameters, needsJQRead)
+	if (resourceNamespace != "" || resourceName != "") && (needsJSONPath || needsJQ) {
+		args := []string{"kubectl", "-n", resourceNamespace, "get", resourceName, "-o", "json"}
+		if needsJSONPath {
+			// Ask for managedFields only when a jsonPath expression might read them: unlike
+			// `-o json`, `-o jsonpath=` never stripped them, so dropping them here would change
+			// what those expressions see. A jqFilter never sees them, so for a template whose
+			// parameters are all jqFilter this would only inflate the response for nothing.
+			args = append(args, "--show-managed-fields=true")
+		}
 		out, err := kubectl(ctx, args...)
-		// Deliberately not logging `out`: this reads the whole resource, including managedFields and
-		// any Secret/ConfigMap data, so the body must not reach the executor log at Info.
+		// The body goes to Debug, never to Info: it is the whole resource, including managedFields
+		// and any Secret or ConfigMap data. Same treatment as the resource JSON in
+		// checkResourceState, which #6100 moved to Debug for the same reason.
 		logger.WithError(err).WithField("args", args).WithField("bytes", len(out)).Info(ctx, "kubectl")
+		logger.WithField("out", string(out)).Debug(ctx, "kubectl output")
 		if err != nil {
 			return err
 		}
-		obj = &unstructured.Unstructured{}
-		if err = json.Unmarshal(out, obj); err != nil {
-			return err
+		if needsJSONPath {
+			obj = &unstructured.Unstructured{}
+			if err = json.Unmarshal(out, obj); err != nil {
+				return err
+			}
 		}
-		withoutManagedFields := obj.DeepCopy()
-		withoutManagedFields.SetManagedFields(nil)
-		jsonBytes, err = withoutManagedFields.MarshalJSON()
-		if err != nil {
-			return err
+		if needsJQ {
+			if needsJSONPath {
+				// The response carries managedFields because a jsonPath parameter asked for them.
+				// Strip them so that jqFilter still sees exactly what plain `-o json` gave it.
+				withoutManagedFields := obj.DeepCopy()
+				withoutManagedFields.SetManagedFields(nil)
+				jsonBytes, err = withoutManagedFields.MarshalJSON()
+				if err != nil {
+					return err
+				}
+			} else {
+				// `-o json` without --show-managed-fields already omits them.
+				jsonBytes = out
+			}
 		}
 	}
 
@@ -390,9 +416,15 @@ func (we *WorkflowExecutor) saveResourceParameters(ctx context.Context, resource
 	return nil
 }
 
-// needsResourceRead reports whether resolving this output parameter requires reading the resource.
-func needsResourceRead(param wfv1.Parameter) bool {
-	return param.ValueFrom != nil && (param.ValueFrom.JSONPath != "" || param.ValueFrom.JQFilter != "")
+// needsJSONPathRead and needsJQRead report which form of the resource resolving this output
+// parameter requires. They mirror the switch below, where JSONPath wins if a parameter sets both,
+// so that a parameter is only counted against the form that actually resolves it.
+func needsJSONPathRead(param wfv1.Parameter) bool {
+	return param.ValueFrom != nil && param.ValueFrom.JSONPath != ""
+}
+
+func needsJQRead(param wfv1.Parameter) bool {
+	return param.ValueFrom != nil && param.ValueFrom.JSONPath == "" && param.ValueFrom.JQFilter != ""
 }
 
 // jsonPathFilter evaluates a JSONPath expression against obj exactly as
