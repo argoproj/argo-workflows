@@ -2,6 +2,7 @@ package sqldb
 
 import (
 	"context"
+	"net"
 	"net/netip"
 	"runtime"
 	"testing"
@@ -129,4 +130,72 @@ func TestSessionReconnect(t *testing.T) {
 	assert.Equal(t, cfg.PostgreSQL.Port, newDBConfig.PostgreSQL.Port)
 	<-doneChan
 	cancel()
+}
+
+// TestNewSessionProxyInitialConnection verifies that the initial connection is
+// retried with backoff when the database is not yet reachable, so components
+// don't crash-loop while waiting for the database to start.
+// https://github.com/argoproj/argo-workflows/issues/8797
+func TestNewSessionProxyInitialConnection(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	t.Run("retries transient connection errors with backoff", func(t *testing.T) {
+		if runtime.GOOS == "windows" {
+			t.Skip("Windows reports refused connections with a different error (\"connectex: ...actively refused it\") that isNetworkError does not classify as transient")
+		}
+
+		// Reserve a port with no listener so connection attempts are refused.
+		listener, err := (&net.ListenConfig{}).Listen(ctx, "tcp", "127.0.0.1:0")
+		require.NoError(t, err)
+		port := listener.Addr().(*net.TCPAddr).Port
+		require.NoError(t, listener.Close())
+
+		start := time.Now()
+		_, err = NewSessionProxy(ctx, SessionProxyConfig{
+			DBConfig: config.DBConfig{
+				DBReconnectConfig: &config.DBReconnectConfig{
+					MaxRetries:    2,
+					RetryMultiple: 2.0,
+				},
+				PostgreSQL: &config.PostgreSQLConfig{
+					DatabaseConfig: config.DatabaseConfig{
+						Database: dbName,
+						Host:     "127.0.0.1",
+						Port:     port,
+					},
+				},
+			},
+			Username: userName,
+			Password: password,
+		})
+		elapsed := time.Since(start)
+
+		require.Error(t, err)
+		require.ErrorContains(t, err, "connection refused")
+		// With the default 100ms base delay, maxRetries=2 and retryMultiple=2.0,
+		// the proxy waits 200ms and then 400ms between the three attempts.
+		assert.GreaterOrEqual(t, elapsed, 500*time.Millisecond)
+	})
+
+	t.Run("does not retry non-transient errors", func(t *testing.T) {
+		start := time.Now()
+		_, err := NewSessionProxy(ctx, SessionProxyConfig{
+			// No database is configured, which is not a network error.
+			DBConfig: config.DBConfig{
+				DBReconnectConfig: &config.DBReconnectConfig{
+					MaxRetries:       3,
+					BaseDelaySeconds: 5,
+				},
+			},
+			Username: userName,
+			Password: password,
+		})
+		elapsed := time.Since(start)
+
+		require.Error(t, err)
+		require.ErrorContains(t, err, "no databases are configured")
+		// The first retry would only happen after a multi-second delay, so a
+		// fast failure proves the error was not retried.
+		assert.Less(t, elapsed, 5*time.Second)
+	})
 }
