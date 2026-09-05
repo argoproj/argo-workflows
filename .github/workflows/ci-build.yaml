@@ -254,9 +254,11 @@ jobs:
           - test: test-api
             profile: mysql
             use-api: true
+            auth-mode: client,header
           - test: test-api
             profile: postgres
             use-api: true
+            auth-mode: client,header
           - test: test-metrics
             profile: mysql
             use-api: true
@@ -353,7 +355,7 @@ jobs:
           tilt up --stream -- --mode=ci --profile=${{matrix.profile}} \
             --api=${{matrix.use-api}} \
             --secure=${{matrix.secure || 'false'}} \
-            --auth-mode=client \
+            --auth-mode=${{matrix.auth-mode || 'client'}} \
             --initless=${{matrix.initless || 'false'}} \
             --pod-status-capture-finalizer=true > /tmp/tilt.log 2>&1 &
           # resources only register once the Tiltfile finishes evaluating; wait
