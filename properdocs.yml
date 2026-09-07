@@ -129,6 +129,7 @@ nav:
           - variables.md
           - Variable catalog: variable-flow/variables.md
           - retries.md
+          - multi-cluster-workflows.md
           - lifecyclehook.md
           - synchronization.md
           - memoization.md
