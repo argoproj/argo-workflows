@@ -947,11 +947,11 @@ schema = 3
     version = "v0.0.0-20260519071638-aa98bba5eb94"
     hash = "sha256-RVGF5xfos6LnKy4O+vBB3ubi34+bTJbwqEg5enLB89c="
   [mod."google.golang.org/genproto/googleapis/api"]
-    version = "v0.0.0-20260819154853-08b0e4226688"
-    hash = "sha256-x471Es3eGzAXtx3AsSze2J7P2ys2jpQI8oStVNzIMRw="
+    version = "v0.0.0-20260831171406-18b4a7587f8a"
+    hash = "sha256-HsiQRzrEh75fqhA8zb+eKHj6HH9du/qgGOMAZpdVTkM="
   [mod."google.golang.org/genproto/googleapis/rpc"]
-    version = "v0.0.0-20260818201246-1b0934165a6f"
-    hash = "sha256-ldJTTb7hhj1mdmzTn9IEkQVwCoj3KRlENZtUSEKHABU="
+    version = "v0.0.0-20260825221802-da73d73af1c5"
+    hash = "sha256-CQdjYGIrgAnEDfWW3DIJF9Orf7oJdhx3G9rGg6fow88="
   [mod."google.golang.org/grpc"]
     version = "v1.83.1"
     hash = "sha256-FpEi28U8I4/pzzfS+Gv4PySLcxkjVTy1pqtRlEDZJ54="
