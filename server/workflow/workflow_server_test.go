@@ -1458,7 +1458,7 @@ func TestSubmitWorkflowTemplateFromOtherInstanceRejected(t *testing.T) {
 			})
 			require.Error(t, err)
 			assert.Equal(t, tt.code, status.Code(err))
-			assertNoSubmittedWorkflows(t, ctx, "test-ns")
+			assertNoSubmittedWorkflows(ctx, t, "test-ns")
 		})
 	}
 }
@@ -1561,7 +1561,7 @@ func getWorkflowServerWithInstanceID(t *testing.T, template runtime.Object, defa
 	return server, ctx
 }
 
-func assertNoSubmittedWorkflows(t *testing.T, ctx context.Context, namespace string) {
+func assertNoSubmittedWorkflows(ctx context.Context, t *testing.T, namespace string) {
 	t.Helper()
 	workflows, err := auth.GetWfClient(ctx).ArgoprojV1alpha1().Workflows(namespace).List(ctx, metav1.ListOptions{})
 	require.NoError(t, err)
