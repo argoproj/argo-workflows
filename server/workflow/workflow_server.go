@@ -791,6 +791,37 @@ func (s *workflowServer) validateWorkflow(wf *wfv1.Workflow) error {
 	return sutils.ToStatusError(s.instanceIDService.Validate(wf), codes.InvalidArgument)
 }
 
+func (s *workflowServer) validateWorkflowTemplateInstanceID(ctx context.Context, wfClient versioned.Interface, namespace string, ref *wfv1.WorkflowTemplateRef) error {
+	if ref == nil {
+		return nil
+	}
+	var (
+		tmpl         metav1.Object
+		resourceKind string
+		err          error
+	)
+	if ref.ClusterScope {
+		resourceKind = "ClusterWorkflowTemplate"
+		tmpl, err = wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates().Get(ctx, ref.Name, metav1.GetOptions{})
+	} else {
+		resourceKind = "WorkflowTemplate"
+		tmpl, err = wfClient.ArgoprojV1alpha1().WorkflowTemplates(namespace).Get(ctx, ref.Name, metav1.GetOptions{})
+	}
+	if err != nil {
+		return sutils.ToStatusError(err, codes.Internal)
+	}
+	if _, ok := tmpl.GetLabels()[common.LabelKeyControllerInstanceID]; !ok {
+		return nil
+	}
+	if err := s.instanceIDService.Validate(tmpl); err != nil {
+		if s.instanceIDService.InstanceID() == "" {
+			return sutils.ToStatusError(err, codes.InvalidArgument)
+		}
+		return sutils.ToStatusError(fmt.Errorf("%s %q not found", resourceKind, ref.Name), codes.NotFound)
+	}
+	return nil
+}
+
 func getLatestWorkflow(ctx context.Context, wfClient versioned.Interface, namespace string) (*wfv1.Workflow, error) {
 	wfList, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
@@ -828,6 +859,9 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 		return nil, err
 	}
 
+	if err := s.validateWorkflowTemplateInstanceID(ctx, wfClient, req.Namespace, wf.Spec.WorkflowTemplateRef); err != nil {
+		return nil, err
+	}
 	s.instanceIDService.Label(wf)
 	creator.LabelCreator(ctx, wf)
 
@@ -862,21 +896,12 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 			if getErr != nil {
 				return nil, sutils.ToStatusError(fmt.Errorf("failed to get ClusterWorkflowTemplate for artifact override: %w", getErr), codes.Internal)
 			}
-			// This Get bypasses the instance-ID-filtered template store, so enforce the
-			// instance-ID boundary here to avoid copying artifact config from a template
-			// managed by a different Argo Server instance.
-			if validateErr := s.instanceIDService.Validate(cwftmpl); validateErr != nil {
-				return nil, sutils.ToStatusError(fmt.Errorf("ClusterWorkflowTemplate %q not found", wf.Spec.WorkflowTemplateRef.Name), codes.NotFound)
-			}
 			tmplArtifacts = cwftmpl.Spec.Arguments.Artifacts
 			artifactRepositoryRef = cwftmpl.Spec.ArtifactRepositoryRef
 		} else {
 			wftmpl, getErr := wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace).Get(ctx, wf.Spec.WorkflowTemplateRef.Name, metav1.GetOptions{})
 			if getErr != nil {
 				return nil, sutils.ToStatusError(fmt.Errorf("failed to get WorkflowTemplate for artifact override: %w", getErr), codes.Internal)
-			}
-			if validateErr := s.instanceIDService.Validate(wftmpl); validateErr != nil {
-				return nil, sutils.ToStatusError(fmt.Errorf("WorkflowTemplate %q not found", wf.Spec.WorkflowTemplateRef.Name), codes.NotFound)
 			}
 			tmplArtifacts = wftmpl.Spec.Arguments.Artifacts
 			artifactRepositoryRef = wftmpl.Spec.ArtifactRepositoryRef

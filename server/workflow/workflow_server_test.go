@@ -1392,12 +1392,7 @@ func TestSubmitWorkflowWithArtifactOverride_MalformedOverride(t *testing.T) {
 	}
 }
 
-// TestSubmitWorkflowWithArtifactOverride_OtherInstanceRejected tests that the artifact-override
-// path does not copy artifact config from a WorkflowTemplate managed by a different Argo Server
-// instance. The override branch Gets the template via the raw client, bypassing the
-// instance-ID-filtered store, so it must enforce the instance-ID boundary itself and return
-// NotFound for a template labeled with another instance ID.
-func TestSubmitWorkflowWithArtifactOverride_OtherInstanceRejected(t *testing.T) {
+func TestSubmitWorkflowTemplateFromOtherInstanceRejected(t *testing.T) {
 	wftOtherInstance := &v1alpha1.WorkflowTemplate{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "test-ns",
@@ -1428,19 +1423,44 @@ func TestSubmitWorkflowWithArtifactOverride_OtherInstanceRejected(t *testing.T) 
 			},
 		},
 	}
-
-	server, ctx := getWorkflowServerWithArtifacts(t, wftOtherInstance, nil)
-
-	_, err := server.SubmitWorkflow(ctx, &workflowpkg.WorkflowSubmitRequest{
-		Namespace:    "test-ns",
-		ResourceKind: "WorkflowTemplate",
-		ResourceName: "wft-with-artifact",
-		SubmitOptions: &v1alpha1.SubmitOpts{
-			Artifacts: []string{"input-artifact=uploads/test-ns/12345678-1234-4234-8234-123456789012/uploaded-file.zip"},
+	cwftOtherInstance := &v1alpha1.ClusterWorkflowTemplate{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   "cwft-with-artifact",
+			Labels: map[string]string{common.LabelKeyControllerInstanceID: "other-instanceid"},
 		},
-	})
-	require.Error(t, err)
-	assert.Equal(t, codes.NotFound, status.Code(err))
+		Spec: wftOtherInstance.Spec,
+	}
+
+	tests := []struct {
+		name          string
+		template      runtime.Object
+		instanceID    string
+		resourceKind  string
+		resourceName  string
+		submitOptions *v1alpha1.SubmitOpts
+		code          codes.Code
+	}{
+		{"without a client instance ID", wftOtherInstance, "", "WorkflowTemplate", "wft-with-artifact", nil, codes.InvalidArgument},
+		{"without artifact overrides", wftOtherInstance, "my-instanceid", "WorkflowTemplate", "wft-with-artifact", nil, codes.NotFound},
+		{"cluster template", cwftOtherInstance, "my-instanceid", "ClusterWorkflowTemplate", "cwft-with-artifact", nil, codes.NotFound},
+		{"with artifact overrides", wftOtherInstance, "my-instanceid", "WorkflowTemplate", "wft-with-artifact", &v1alpha1.SubmitOpts{
+			Artifacts: []string{"input-artifact=uploads/test-ns/12345678-1234-4234-8234-123456789012/uploaded-file.zip"},
+		}, codes.NotFound},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server, ctx := getWorkflowServerWithInstanceID(t, tt.template, nil, tt.instanceID)
+			_, err := server.SubmitWorkflow(ctx, &workflowpkg.WorkflowSubmitRequest{
+				Namespace:     "test-ns",
+				ResourceKind:  tt.resourceKind,
+				ResourceName:  tt.resourceName,
+				SubmitOptions: tt.submitOptions,
+			})
+			require.Error(t, err)
+			assert.Equal(t, tt.code, status.Code(err))
+			assertNoSubmittedWorkflows(t, ctx, "test-ns")
+		})
+	}
 }
 
 // TestSubmitWorkflowWithArtifactOverride_UnmatchedRejected tests that an override whose
@@ -1497,6 +1517,10 @@ func TestSubmitWorkflowWithArtifactOverride_UnmatchedRejected(t *testing.T) {
 // Pass either a *v1alpha1.WorkflowTemplate or *v1alpha1.ClusterWorkflowTemplate (or both)
 // so the same helper can back namespaced- and cluster-scoped tests.
 func getWorkflowServerWithArtifacts(t *testing.T, template runtime.Object, defaultRepo *v1alpha1.ArtifactRepository) (workflowpkg.WorkflowServiceServer, context.Context) {
+	return getWorkflowServerWithInstanceID(t, template, defaultRepo, "my-instanceid")
+}
+
+func getWorkflowServerWithInstanceID(t *testing.T, template runtime.Object, defaultRepo *v1alpha1.ArtifactRepository, instanceID string) (workflowpkg.WorkflowServiceServer, context.Context) {
 	t.Helper()
 
 	offloadNodeStatusRepo := &mocks.OffloadNodeStatusRepo{}
@@ -1520,7 +1544,7 @@ func getWorkflowServerWithArtifacts(t *testing.T, template runtime.Object, defau
 	ctx = context.WithValue(ctx, auth.KubeKey, kubeClientSet)
 	ctx = context.WithValue(ctx, auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}})
 
-	wfStore, err := store.NewSQLiteStore(instanceid.NewService("my-instanceid"))
+	wfStore, err := store.NewSQLiteStore(instanceid.NewService(instanceID))
 	require.NoError(t, err)
 
 	wftmplStore := workflowtemplate.NewClientStore()
@@ -1532,7 +1556,14 @@ func getWorkflowServerWithArtifacts(t *testing.T, template runtime.Object, defau
 	}
 
 	namespaceAll := metav1.NamespaceAll
-	server := NewServer(ctx, instanceid.NewService("my-instanceid"), offloadNodeStatusRepo, archivedRepo, wfClientset, wfStore, wfStore, wftmplStore, cwftmplStore, nil, &namespaceAll, artifactRepos)
+	server := NewServer(ctx, instanceid.NewService(instanceID), offloadNodeStatusRepo, archivedRepo, wfClientset, wfStore, wfStore, wftmplStore, cwftmplStore, nil, &namespaceAll, artifactRepos)
 
 	return server, ctx
+}
+
+func assertNoSubmittedWorkflows(t *testing.T, ctx context.Context, namespace string) {
+	t.Helper()
+	workflows, err := auth.GetWfClient(ctx).ArgoprojV1alpha1().Workflows(namespace).List(ctx, metav1.ListOptions{})
+	require.NoError(t, err)
+	assert.Empty(t, workflows.Items)
 }
