@@ -42,6 +42,10 @@ func assertNodeIDInvariant(t *testing.T, wf *wfv1.Workflow) {
 		found, err := wf.GetNodeByName(n.Name)
 		require.NoError(t, err, "node %s not found by name", n.Name)
 		assert.Equal(t, n.ID, found.ID, "lookup of %s returned a different node", n.Name)
+		for _, childID := range n.Children {
+			_, err := wf.Status.Nodes.Get(childID)
+			require.NoError(t, err, "node %s has a child edge to %s, which does not exist", n.Name, childID)
+		}
 	}
 }
 
@@ -216,4 +220,74 @@ func TestNodeIDCollisionSubtree(t *testing.T) {
 	woc.operate(ctx)
 	assertAcyclic(t, woc.wf)
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+}
+
+// Two colliding DAG tasks where one is deferred by parallelism. The edge for
+// the deferred task must not be persisted before its node exists: the
+// colliding sibling would claim the predicted slot on a later reconcile,
+// leaving the DAG boundary holding an edge to a node that is not its child.
+var nodeIDCollisionDeferredDAGWorkflow = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: collide
+  namespace: default
+spec:
+  entrypoint: main
+  parallelism: 1
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: filler
+        template: leaf
+      - name: t2335786
+        template: leaf
+        depends: filler
+      - name: t3074240
+        template: leaf
+  - name: leaf
+    container:
+      image: argoproj/argosay:v2
+`
+
+func TestNodeIDCollisionDeferredDAGTask(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(nodeIDCollisionDeferredDAGWorkflow)
+	a, b := "collide.t2335786", "collide.t3074240"
+	require.Equal(t, wf.NodeID(a), wf.NodeID(b), "the names this test relies on must collide")
+
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
+	defer cancel()
+	ctx := logging.TestContext(t.Context())
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	for range 12 {
+		woc.operate(ctx)
+		if woc.wf.Status.Fulfilled() {
+			break
+		}
+		makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	}
+
+	assertAcyclic(t, woc.wf)
+	assertNodeIDInvariant(t, woc.wf)
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+
+	filler, err := woc.wf.GetNodeByName("collide.filler")
+	require.NoError(t, err)
+	taskA, err := woc.wf.GetNodeByName(a)
+	require.NoError(t, err)
+	taskB, err := woc.wf.GetNodeByName(b)
+	require.NoError(t, err)
+	assert.NotEqual(t, taskA.ID, taskB.ID)
+	assert.ElementsMatch(t, []int32{0, 1}, []int32{taskA.HashSuffix, taskB.HashSuffix})
+
+	// filler and t3074240 have no dependencies, so they are the DAG boundary's
+	// children; t2335786 depends on filler, so it hangs off filler alone
+	boundary, err := woc.wf.Status.Nodes.Get(woc.wf.Name)
+	require.NoError(t, err)
+	assert.ElementsMatch(t, []string{filler.ID, taskB.ID}, boundary.Children, "DAG boundary children")
+	assert.Equal(t, []string{taskA.ID}, filler.Children, "filler children")
+	assert.Empty(t, taskA.Children)
+	assert.Empty(t, taskB.Children)
 }

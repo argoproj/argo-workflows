@@ -2499,10 +2499,10 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			node = lastChildNode
 			retryNum = len(childNodeIDs) - 1
 		} else {
-			// Create a new child node and append it to the retry node.
+			// Create a new child node; it is linked to the retry node just
+			// before the dispatch below creates it.
 			retryNum = len(childNodeIDs)
 			nodeName = fmt.Sprintf("%s(%d)", retryNodeName, retryNum)
-			woc.addChildNode(ctx, retryNodeName, nodeName)
 			node = nil
 		}
 
@@ -2539,6 +2539,14 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			errNode := woc.initializeNodeOrMarkError(ctx, node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err)
 			return errNode, err
 		}
+	}
+
+	// Link a new retry attempt only now that nothing can return before the
+	// dispatch below creates its node: an edge persisted for a node that is
+	// never created (the parameter substitution above can return on transient
+	// errors) can later be claimed by a colliding name (#16376).
+	if retryNodeName != "" && node == nil {
+		woc.addChildNode(ctx, retryNodeName, nodeName)
 	}
 
 	switch processedTmpl.GetType() {
