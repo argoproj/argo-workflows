@@ -6,7 +6,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"k8s.io/client-go/kubernetes/fake"
 
+	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
 
@@ -165,6 +167,53 @@ func TestNeedDBSession(t *testing.T) {
 				require.NoError(t, err)
 			}
 			assert.Equalf(t, tt.want, got, "needDBS(%v)", tt.lockKeys)
+		})
+	}
+}
+
+func TestTryAcquireLockWithoutName(t *testing.T) {
+	tests := []struct {
+		name    string
+		sync    string
+		wantErr bool
+	}{
+		{"mutex", "mutexes:\n      - namespace: default", true},
+		{"semaphoreConfigMapName", "semaphores:\n      - configMapKeyRef:\n          key: workflow", true},
+		{"semaphoreConfigMapKey", "semaphores:\n      - configMapKeyRef:\n          name: my-config", true},
+		{"semaphoreDatabase", "semaphores:\n      - database: {}", true},
+		{"namedMutexStillWorks", "mutexes:\n      - name: test", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			kube := fake.NewClientset()
+			syncManager, err := NewLockManager(ctx, kube, "", nil, GetSyncLimitFunc(kube), func(string) {}, WorkflowExistenceFunc, false)
+			require.NoError(t, err)
+
+			wf := wfv1.MustUnmarshalWorkflow(fmt.Sprintf(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: one
+  namespace: default
+spec:
+  entrypoint: whalesay
+  synchronization:
+    %s
+  templates:
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+`, tt.sync))
+
+			require.NotPanics(t, func() {
+				_, _, _, _, err = syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
+			})
+			if tt.wantErr {
+				require.ErrorContains(t, err, "requested configuration is invalid")
+			} else {
+				require.NoError(t, err)
+			}
 		})
 	}
 }
