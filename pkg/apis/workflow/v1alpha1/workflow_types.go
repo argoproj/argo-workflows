@@ -3881,11 +3881,13 @@ func (w *Workflow) GetNodeByName(nodeName string) (*NodeStatus, error) {
 // is stored under NodeID(name+"~1") (or "~2", ...) with HashSuffix set, so
 // that the pure NodeID function stays usable in both directions.
 //
-// The walk stops at the first empty slot, looking one slot further in case
-// the node that held it has since been deleted. A chain with two consecutive
-// emptied slots ahead of a survivor would not find that survivor; that needs
-// three names sharing one hash and two of them deleted, and is not handled.
+// The walk ends at two consecutive empty slots, so it tolerates any lone
+// hole a deletion punches in the chain, and a new node fills the first
+// hole. A survivor behind two consecutive emptied slots would not be found;
+// that needs three names sharing one hash and two of them deleted, and is
+// not handled.
 func (w *Workflow) ResolveNode(name string) (*NodeStatus, int32) {
+	free := int32(-1)
 	for k := int32(0); ; k++ {
 		if n, ok := w.Status.Nodes[w.NodeID(name+hashSuffixString(k))]; ok {
 			if n.Name == name && n.HashSuffix == k {
@@ -3894,14 +3896,12 @@ func (w *Workflow) ResolveNode(name string) (*NodeStatus, int32) {
 			// slot held by a different name, keep walking
 			continue
 		}
-		// Slot k is empty. A retry can delete the node that held it while a
-		// suffixed node survives, and a resubmit renames every node so the
-		// original collision no longer holds. Peek one further before
-		// concluding the node does not exist.
-		if n, ok := w.Status.Nodes[w.NodeID(name+hashSuffixString(k+1))]; ok && n.Name == name && n.HashSuffix == k+1 {
-			return &n, k + 1
+		if free == -1 {
+			free = k
 		}
-		return nil, k
+		if _, ok := w.Status.Nodes[w.NodeID(name+hashSuffixString(k+1))]; !ok {
+			return nil, free
+		}
 	}
 }
 

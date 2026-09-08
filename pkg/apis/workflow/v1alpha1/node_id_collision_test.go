@@ -119,6 +119,28 @@ func TestResolveNode(t *testing.T) {
 		assert.Equal(t, int32(2), suffix)
 	})
 
+	t.Run("walk past a hole followed by a foreign slot", func(t *testing.T) {
+		// A single deletion can empty a slot while a different name still
+		// holds the next one; the survivor behind them must still be found.
+		wf := newCollidingWorkflow()
+		name := "custom-job-thbh7[0].third"
+		wf.Status.Nodes[wf.NodeID(name+"~1")] = NodeStatus{Name: collidingLeafName, HashSuffix: 1}
+		third := wf.plant(name, 2)
+		node, suffix := wf.ResolveNode(name)
+		require.NotNil(t, node)
+		assert.Equal(t, third.ID, node.ID)
+		assert.Equal(t, int32(2), suffix)
+	})
+
+	t.Run("a hole is reused for allocation", func(t *testing.T) {
+		wf := newCollidingWorkflow()
+		name := "custom-job-thbh7[0].third"
+		wf.Status.Nodes[wf.NodeID(name+"~1")] = NodeStatus{Name: collidingLeafName, HashSuffix: 1}
+		node, suffix := wf.ResolveNode(name)
+		assert.Nil(t, node)
+		assert.Equal(t, int32(0), suffix)
+	})
+
 	t.Run("matches on name and suffix separately", func(t *testing.T) {
 		// Hook names are not charset validated, so a spec-derived name can
 		// itself end in "~1". It must never satisfy a lookup for the name
