@@ -39,6 +39,11 @@ Since the user defines Workflows in Argo, the user is responsible for emitting m
 
 Currently, custom metrics and their labels must be valid Prometheus and OpenTelemetry metric names, which limits them to alphanumeric characters and `_`.
 This applies even if you're only using OpenTelemetry for metrics.
+Custom metric names must not match a name in the [Default Controller Metrics](#default-controller-metrics) list because controller and custom metrics share an instrument namespace.
+Controller metric names are reserved, and later releases can add to that list.
+Use an organization- or application-specific prefix for custom metric names to reduce the risk of a name collision during an upgrade.
+If a release introduces a controller metric with the same name as an existing custom metric, rename the custom metric before upgrading because the two metrics cannot coexist under one name.
+A name collision does not reject the Workflow; when emission is attempted, Argo skips the conflicting custom metric and adds a non-fatal `MetricsError` condition to the Workflow.
 
 ### What is and isn't a Prometheus metric
 
@@ -466,6 +471,25 @@ This rate limiter is not on by default
 This metric has no attributes.
 
 Default bucket sizes: 0, 0.1, 0.5, 1, 5, 10, 30, 60, 180
+
+#### `retry_strategy_terminations_total`
+
+A counter of otherwise eligible retry attempts suppressed by a retry strategy duration budget.
+
+|  attribute  |                                  explanation                                   |
+|-------------|--------------------------------------------------------------------------------|
+| `reason`    | The duration-budget reason that suppressed an otherwise eligible retry attempt |
+| `namespace` | The namespace that the Workflow is in                                          |
+
+`reason` is a bounded, controller-defined value. It will be one of:
+
+- `MaxDurationExceeded`: The retry strategy's wall-clock `maxDuration` deadline elapsed.
+- `BackoffWouldExceedMaxDuration`: Waiting for the next backoff would pass the retry strategy's wall-clock `maxDuration` deadline.
+- `MaxExecutionDurationExceeded`: Completed attempts consumed the retry strategy's cumulative `maxExecutionDuration` budget.
+
+The counter is not incremented when retry policy, node state, `limit`, or `expression` would independently prevent another attempt.
+An eligibility evaluation error is conservatively counted as a duration-budget termination because the duration budget has already stopped the retry.
+This counter is best effort: if Workflow status persistence fails after an increment, repeated reconciliation can count the same termination more than once.
 
 #### `total_count`
 

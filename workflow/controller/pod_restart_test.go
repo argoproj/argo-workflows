@@ -113,6 +113,28 @@ func TestMainContainerNeverStarted(t *testing.T) {
 			expected: true,
 		},
 		{
+			name: "main container waiting after a prior terminated run",
+			pod: &apiv1.Pod{
+				Status: apiv1.PodStatus{
+					Phase: apiv1.PodFailed,
+					ContainerStatuses: []apiv1.ContainerStatus{
+						{
+							Name: common.MainContainerName,
+							State: apiv1.ContainerState{Waiting: &apiv1.ContainerStateWaiting{
+								Reason: "ContainerStatusUnknown",
+							}},
+							LastTerminationState: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{
+								StartedAt:  metav1.Now(),
+								FinishedAt: metav1.Now(),
+							}},
+						},
+					},
+				},
+			},
+			tmpl:     nil,
+			expected: false,
+		},
+		{
 			name: "main container terminated but never had startedAt",
 			pod: &apiv1.Pod{
 				Status: apiv1.PodStatus{

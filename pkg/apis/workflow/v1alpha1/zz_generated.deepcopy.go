@@ -2239,6 +2239,15 @@ func (in *NodeStatus) DeepCopyInto(out *NodeStatus) {
 		*out = new(bool)
 		**out = **in
 	}
+	if in.ExecutionStartedAt != nil {
+		in, out := &in.ExecutionStartedAt, &out.ExecutionStartedAt
+		*out = (*in).DeepCopy()
+	}
+	if in.ExecutionContainerNames != nil {
+		in, out := &in.ExecutionContainerNames, &out.ExecutionContainerNames
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	return
 }
 

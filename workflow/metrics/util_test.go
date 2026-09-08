@@ -24,3 +24,9 @@ func TestMetricNames(t *testing.T) {
 		assert.False(t, IsValidMetricName(name), name)
 	}
 }
+
+func TestReservedMetricNames(t *testing.T) {
+	assert.True(t, IsReservedMetricName("retry_strategy_terminations_total"))
+	assert.False(t, IsReservedMetricName("RETRY_STRATEGY_TERMINATIONS_TOTAL"))
+	assert.False(t, IsReservedMetricName("my_company_retry_strategy_terminations_total"))
+}

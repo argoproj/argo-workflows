@@ -7448,6 +7448,8 @@ spec:
                           - type: integer
                           - type: string
                           x-kubernetes-int-or-string: true
+                        maxExecutionDuration:
+                          type: string
                         retryPolicy:
                           enum:
                           - Always

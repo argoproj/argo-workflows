@@ -1,0 +1,22 @@
+# This example limits cumulative execution time across pod-backed retry attempts.
+# Pod Pending time and retry backoff do not consume maxExecutionDuration.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: retry-max-execution-duration-
+  labels:
+    workflows.argoproj.io/no-test: "expected-failure"
+  annotations:
+    workflows.argoproj.io/no-test-reasons: |
+      This example intentionally fails after exhausting its execution-time budget.
+spec:
+  entrypoint: retry-with-execution-budget
+  templates:
+  - name: retry-with-execution-budget
+    retryStrategy:
+      limit: "10"
+      maxExecutionDuration: "5s"
+    container:
+      image: alpine:3.23
+      command: [sh, -c]
+      args: ["sleep 2; exit 1"]

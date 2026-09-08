@@ -123,6 +123,30 @@ The `expression` result will be logical *and* with the `retryPolicy`. Both must 
 
 Boolean operators can be used to combine multiple conditions. See [example](https://raw.githubusercontent.com/argoproj/argo-workflows/main/examples/retry-conditional.yaml) for usage.
 
+## Maximum execution duration
+
+Use `retryStrategy.maxExecutionDuration` to limit the cumulative execution time of failed or errored Pod attempts without charging Pod startup latency or retry back-off against the limit.
+
+```yaml
+retryStrategy:
+  limit: "5"
+  maxExecutionDuration: 30m
+```
+
+For each completed attempt, Argo measures one wall-clock interval from the earliest observed main-container start to the latest main-container finish.
+If the available timestamps do not establish that finish, Argo conservatively counts through the time it marks the attempt complete.
+For a ContainerSet template, this interval spans all main containers, so overlapping containers are not counted more than once and gaps between their executions do count.
+Pod scheduling and Pending time, init-container time, post-main output processing, and retry back-off waits (the idle delays between attempts) do not count.
+`maxExecutionDuration` does not bound how long a Pod may remain Pending, so set the template-level `pendingTimeout` if startup also needs a wall-clock limit.
+In init-less mode, the main container is `argoexec`, so any in-container wait before the user command starts counts.
+Argo evaluates the cumulative duration only after an attempt fails or errors and before it starts another retry.
+It does not terminate an active attempt, and a successful attempt is accepted even if its execution causes the cumulative duration to reach or exceed the limit.
+Attempts that fail before any main container starts do not consume this budget.
+Argo resolves a parameterized value when the retry sequence starts and keeps that value for every attempt; `retries` and `lastRetry` variables are therefore not supported in this field.
+`maxExecutionDuration` is supported only for Pod-backed templates (`container`, `script`, `containerSet`, `resource`, and `data`) and is independent of `backoff.maxDuration`; when both are set, whichever prevents the next retry first takes effect.
+When inherited from a workflow-level strategy or `templateDefaults`, this budget is ignored for non-Pod templates while the other retry settings still apply.
+Monitor exhausted execution budgets with the [`retry_strategy_terminations_total`](metrics.md#retry_strategy_terminations_total) controller metric and its `MaxExecutionDurationExceeded` reason.
+
 ## Back-Off
 
 You can configure the delay between retries with `backoff`. See [example](https://raw.githubusercontent.com/argoproj/argo-workflows/main/examples/retry-backoff.yaml) for usage.

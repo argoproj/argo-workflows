@@ -4518,6 +4518,46 @@ func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) 
 							Format:      "",
 						},
 					},
+					"executionStartedAt": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ExecutionStartedAt is the earliest observed main-container start for an active, pod-backed retry attempt whose retry strategy sets MaxExecutionDuration. It is cleared after ExecutionDuration is finalized.",
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
+						},
+					},
+					"executionDuration": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ExecutionDuration is normally the wall-clock time a completed, pod-backed retry attempt whose retry strategy sets MaxExecutionDuration spent between its earliest observed main-container start and latest main-container finish. When timestamps do not establish that finish, it conservatively extends until Argo observes the attempt complete. The value is encoded as a duration string.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"executionContainerNames": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "ExecutionContainerNames contains the main containers whose execution contributes to MaxExecutionDuration. It is populated while an opted-in retry attempt is active and cleared when its duration is finalized.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+					"retryMaxExecutionDuration": {
+						SchemaProps: spec.SchemaProps{
+							Description: "RetryMaxExecutionDuration is the resolved MaxExecutionDuration captured when a retry node starts. It keeps a parameterized execution budget stable for every attempt in that retry sequence.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"id", "name", "type"},
 			},
@@ -5418,6 +5458,13 @@ func schema_pkg_apis_workflow_v1alpha1_RetryStrategy(ref common.ReferenceCallbac
 					"expression": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Expression is a condition expression for when a node will be retried. If it evaluates to false, the node will not be retried and the retry strategy will be ignored",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"maxExecutionDuration": {
+						SchemaProps: spec.SchemaProps{
+							Description: "MaxExecutionDuration is the maximum cumulative execution time of completed, pod-backed retry attempts. For each attempt, execution time spans the earliest observed main-container start through the latest main-container finish. If timestamps do not establish the latest main-container finish, execution time conservatively extends until Argo observes the attempt complete. Pending time, init containers, output processing, and retry backoff are otherwise excluded. The limit is checked only after a failed or errored attempt and never terminates an active or successful attempt. Parameterized values are resolved and captured when the retry sequence starts.",
 							Type:        []string{"string"},
 							Format:      "",
 						},

@@ -43,6 +43,9 @@ func mainContainerNeverStarted(pod *apiv1.Pod, tmpl *wfv1.Template) bool {
 			if status.State.Terminated != nil && !status.State.Terminated.StartedAt.IsZero() {
 				return false
 			}
+			if status.LastTerminationState.Terminated != nil && !status.LastTerminationState.Terminated.StartedAt.IsZero() {
+				return false
+			}
 		}
 	}
 

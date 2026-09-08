@@ -3955,6 +3955,16 @@ definitions:
                 type: string
             limit:
                 $ref: '#/definitions/IntOrString'
+            maxExecutionDuration:
+                description: |-
+                    MaxExecutionDuration is the maximum cumulative execution time of completed, pod-backed retry attempts.
+                    For each attempt, execution time spans the earliest observed main-container start through the latest main-container finish.
+                    If timestamps do not establish the latest main-container finish, execution time conservatively extends until Argo
+                    observes the attempt complete.
+                    Pending time, init containers, output processing, and retry backoff are otherwise excluded. The limit is checked only
+                    after a failed or errored attempt and never terminates an active or successful attempt. Parameterized values are
+                    resolved and captured when the retry sequence starts.
+                type: string
             retryPolicy:
                 $ref: '#/definitions/RetryPolicy'
         type: object
