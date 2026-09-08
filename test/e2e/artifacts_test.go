@@ -32,6 +32,21 @@ type ArtifactsSuite struct {
 	fixtures.E2ESuite
 }
 
+// artifactGCPodsRecouped counts the GC pods that have finished and been recouped. Pods are recorded in the status
+// when they are created, so the size of the map alone says nothing about whether they have run.
+func artifactGCPodsRecouped(wf *wfv1.Workflow) int {
+	if wf.Status.ArtifactGCStatus == nil {
+		return 0
+	}
+	recouped := 0
+	for _, done := range wf.Status.ArtifactGCStatus.PodsRecouped {
+		if done {
+			recouped++
+		}
+	}
+	return recouped
+}
+
 func (s *ArtifactsSuite) TestInputOnMount() {
 	s.Given().
 		Workflow("@testdata/input-on-mount-workflow.yaml").
@@ -667,7 +682,7 @@ func (s *ArtifactsSuite) TestArtifactGC() {
 				WaitForWorkflow(
 					fixtures.WorkflowCompletionOkay(true),
 					fixtures.Condition(func(wf *wfv1.Workflow) (bool, string) {
-						return (len(wf.Status.ArtifactGCStatus.PodsRecouped) >= tt.expectedGCPodsOnWFCompletion) || (tt.expectedGCPodsOnWFCompletion == 0),
+						return (artifactGCPodsRecouped(wf) >= tt.expectedGCPodsOnWFCompletion) || (tt.expectedGCPodsOnWFCompletion == 0),
 							fmt.Sprintf("for all %d pods to have been recouped", tt.expectedGCPodsOnWFCompletion)
 					}))
 
@@ -819,8 +834,7 @@ func (s *ArtifactsSuite) TestInsufficientRole() {
 		when.WaitForWorkflow(
 			fixtures.WorkflowCompletionOkay(true),
 			fixtures.Condition(func(wf *wfv1.Workflow) (bool, string) {
-				return wf.Status.ArtifactGCStatus != nil &&
-					len(wf.Status.ArtifactGCStatus.PodsRecouped) == 1, "for pod to have been recouped"
+				return artifactGCPodsRecouped(wf) == 1, "for pod to have been recouped"
 			})).
 			Then().
 			ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
