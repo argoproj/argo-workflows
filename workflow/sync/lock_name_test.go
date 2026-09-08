@@ -181,6 +181,7 @@ func TestTryAcquireLockWithoutName(t *testing.T) {
 		{"semaphoreConfigMapName", "semaphores:\n      - configMapKeyRef:\n          key: workflow", true},
 		{"semaphoreConfigMapKey", "semaphores:\n      - configMapKeyRef:\n          name: my-config", true},
 		{"semaphoreDatabase", "semaphores:\n      - database: {}", true},
+		{"semaphoreNoRef", "semaphores:\n      - {}", true},
 		{"namedMutexStillWorks", "mutexes:\n      - name: test", false},
 	}
 	for _, tt := range tests {
