@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -1060,4 +1061,63 @@ func TestStepsWhenFalseSkipsDropPass(t *testing.T) {
 	}
 	assert.NotEqual(t, wfv1.WorkflowError, woc.wf.Status.Phase)
 	assert.NotEqual(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+}
+
+// An empty group's graph edge to its successor must not make it wait for that successor.
+func TestEmptyStepGroupCompletes(t *testing.T) {
+	for _, emptyGroups := range []int{1, 2} {
+		for _, phase := range []wfv1.NodePhase{wfv1.NodeSucceeded, wfv1.NodeFailed} {
+			t.Run(fmt.Sprintf("%dEmptyGroups/%s", emptyGroups, phase), func(t *testing.T) {
+				ctx := logging.TestContext(t.Context())
+				wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: empty-step-group
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: hello
+        template: pause
+  - name: pause
+    suspend: {}
+`)
+				main := &wf.Spec.Templates[0]
+				main.Steps = append(make([]wfv1.ParallelSteps, emptyGroups), main.Steps...)
+				woc := newWoc(ctx, *wf)
+				woc.operate(ctx)
+				require.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+				childName := fmt.Sprintf("%s[%d].hello", wf.Name, emptyGroups)
+				child, err := woc.wf.GetNodeByName(childName)
+				require.NoError(t, err)
+				require.Equal(t, wfv1.NodeRunning, child.Phase)
+
+				// Reconcile again while the real step is still running. This used to reopen
+				// the empty group, blocking all subsequent progress through the template.
+				for range 2 {
+					woc = newWorkflowOperationCtx(ctx, woc.wf, woc.controller)
+					woc.operate(ctx)
+					require.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+					for i := range emptyGroups {
+						group, err := woc.wf.GetNodeByName(fmt.Sprintf("%s[%d]", wf.Name, i))
+						require.NoError(t, err)
+						assert.Equal(t, wfv1.NodeSucceeded, group.Phase)
+						assert.Equal(t, []string{wf.NodeID(fmt.Sprintf("%s[%d]", wf.Name, i+1))}, group.Children)
+					}
+				}
+
+				woc.markNodePhase(ctx, childName, phase)
+				woc = newWorkflowOperationCtx(ctx, woc.wf, woc.controller)
+				woc.operate(ctx)
+				expected := wfv1.WorkflowSucceeded
+				if phase == wfv1.NodeFailed {
+					expected = wfv1.WorkflowFailed
+				}
+				assert.Equal(t, expected, woc.wf.Status.Phase)
+				assert.False(t, woc.wf.Status.FinishedAt.IsZero())
+			})
+		}
+	}
 }

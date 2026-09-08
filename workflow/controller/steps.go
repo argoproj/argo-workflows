@@ -239,6 +239,11 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 	if err != nil {
 		return nil, err
 	}
+	// An empty group's Children can contain the next StepGroup for graph continuity.
+	// That successor is not work in this group and must not block its completion.
+	if len(stepGroup) == 0 {
+		return woc.markNodePhase(ctx, sgNodeName, wfv1.NodeSucceeded), nil
+	}
 	if node.Fulfilled() && woc.childrenFulfilled(node) {
 		woc.log.WithField("node", node).Debug(ctx, "Step group node already marked completed")
 		return node, nil
