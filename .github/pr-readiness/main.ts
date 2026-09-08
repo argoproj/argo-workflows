@@ -80,11 +80,10 @@ export async function run({ github, context, core }: { github: Octokit; context:
     return stop(`no open PR with head ${headSha} (superseded by a newer push, or closed)`);
   }
 
-  // Maintainers and bots help themselves. OWNERS is read from the default
-  // branch (the workflow only ever checks out the default branch).
-  const ownersYaml = fs.readFileSync('OWNERS', 'utf8');
-  if (isExemptAuthor(pr.user, ownersYaml)) {
-    return stop(`author ${pr.user.login} is exempt (OWNERS member or bot)`);
+  // Maintainers and bots help themselves. The exempt maintainer list is
+  // configured in checks.config.json (kept in sync with argoproj/.project).
+  if (isExemptAuthor(pr.user, config.exemptAuthors)) {
+    return stop(`author ${pr.user.login} is exempt (maintainer or bot)`);
   }
 
   // Classify all check runs on the head SHA (covers CI, Docs, title, feature

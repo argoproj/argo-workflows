@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { classifySignals, diagnostics, decide, isExemptAuthor, parseOwners, findPullRequest, pickStepGuidance } from '../classify.ts';
+import { classifySignals, diagnostics, decide, isExemptAuthor, findPullRequest, pickStepGuidance } from '../classify.ts';
 import type { CheckRun, Config, SignalState } from '../types.ts';
 
 const config = createRequire(import.meta.url)('../checks.config.json') as Config;
@@ -133,21 +133,17 @@ test('decide: blocking follows the current verdict, so a failure at a new head r
 
 // --- author gating ---
 
-const ownersYaml = ['owners:', '- joibel', '', 'approvers:', '- alexec', '', 'reviewers:', '- blkperl', ''].join('\n');
+const exemptAuthors = ['Joibel', 'alexec', 'blkperl'];
 
-test('parseOwners extracts all three lists', () => {
-  assert.deepEqual(parseOwners(ownersYaml), ['joibel', 'alexec', 'blkperl']);
-});
-
-test('isExemptAuthor: OWNERS members, bots and Bot-type users are exempt (case-insensitive)', () => {
-  assert.equal(isExemptAuthor({ login: 'Joibel', type: 'User' }, ownersYaml), true);
-  assert.equal(isExemptAuthor({ login: 'blkperl', type: 'User' }, ownersYaml), true);
-  assert.equal(isExemptAuthor({ login: 'dependabot[bot]', type: 'Bot' }, ownersYaml), true);
-  assert.equal(isExemptAuthor({ login: 'renovate[bot]', type: 'User' }, ownersYaml), true);
+test('isExemptAuthor: configured maintainers, bots and Bot-type users are exempt (case-insensitive)', () => {
+  assert.equal(isExemptAuthor({ login: 'Joibel', type: 'User' }, exemptAuthors), true);
+  assert.equal(isExemptAuthor({ login: 'blkperl', type: 'User' }, exemptAuthors), true);
+  assert.equal(isExemptAuthor({ login: 'dependabot[bot]', type: 'Bot' }, exemptAuthors), true);
+  assert.equal(isExemptAuthor({ login: 'renovate[bot]', type: 'User' }, exemptAuthors), true);
   // the repo's cherry-pick automation must never burn model quota
-  assert.equal(isExemptAuthor({ login: 'argo-cd-cherry-pick-bot[bot]', type: 'Bot' }, ownersYaml), true);
-  assert.equal(isExemptAuthor({ login: 'github-actions[bot]', type: 'Bot' }, ownersYaml), true);
-  assert.equal(isExemptAuthor({ login: 'random-contributor', type: 'User' }, ownersYaml), false);
+  assert.equal(isExemptAuthor({ login: 'argo-cd-cherry-pick-bot[bot]', type: 'Bot' }, exemptAuthors), true);
+  assert.equal(isExemptAuthor({ login: 'github-actions[bot]', type: 'Bot' }, exemptAuthors), true);
+  assert.equal(isExemptAuthor({ login: 'random-contributor', type: 'User' }, exemptAuthors), false);
 });
 
 // --- PR resolution ---

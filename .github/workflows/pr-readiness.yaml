@@ -37,7 +37,7 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       pull-requests: write # sticky comment + not-ready label
-      contents: read # checkout of the default branch (scripts, OWNERS, template)
+      contents: read # checkout of the default branch (scripts, template)
       actions: read # job/step conclusions for the feature check
     steps:
       # Default branch only — never the PR head.

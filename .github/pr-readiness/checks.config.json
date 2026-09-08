@@ -68,5 +68,24 @@
     "Get changed files",
     "review"
   ],
-  "coveredApps": ["github-actions", "dco"]
+  "coveredApps": ["github-actions", "dco"],
+  "exemptAuthorsComment": "Argo Workflows maintainers (leads/approvers/reviewers) who skip the PR readiness gate. Keep in sync with the argo-workflows-* groups in argoproj/.project maintainers.yaml.",
+  "exemptAuthors": [
+    "Joibel",
+    "terrytangyuan",
+    "sarabala1979",
+    "alexec",
+    "alexmt",
+    "edlee2121",
+    "isubasinghe",
+    "jessesuen",
+    "juliev0",
+    "tczhao",
+    "MasonM",
+    "tico24",
+    "jswxstw",
+    "shuangkun",
+    "blkperl",
+    "eduardodbr"
+  ]
 }
