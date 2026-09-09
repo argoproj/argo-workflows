@@ -112,6 +112,10 @@ type Config struct {
 	// Workflow retention by number of workflows
 	RetentionPolicy *RetentionPolicy `json:"retentionPolicy,omitempty"`
 
+	// WorkflowActionTTL is how long a WorkflowAction is retained after it reaches a terminal
+	// phase before the controller deletes it. Defaults to 24h. 0 deletes immediately.
+	WorkflowActionTTL *TTL `json:"workflowActionTTL,omitempty"`
+
 	// NavColor is an ui navigation bar background color
 	NavColor string `json:"navColor,omitempty"`
 
@@ -249,6 +253,14 @@ func (c Config) GetPodGCDeleteDelayDuration() time.Duration {
 	}
 
 	return c.PodGCDeleteDelayDuration.Duration
+}
+
+// GetWorkflowActionTTL returns the TTL for terminal WorkflowActions, defaulting to 24h
+func (c Config) GetWorkflowActionTTL() time.Duration {
+	if c.WorkflowActionTTL == nil {
+		return 24 * time.Hour
+	}
+	return time.Duration(*c.WorkflowActionTTL)
 }
 
 func (c Config) ValidateProtocol(inputProtocol string, allowedProtocol []string) error {

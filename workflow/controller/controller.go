@@ -181,6 +181,9 @@ type WorkflowController struct {
 	wfTaskSetInformer          wfextvv1alpha1.WorkflowTaskSetInformer
 	artGCTaskInformer          wfextvv1alpha1.WorkflowArtifactGCTaskInformer
 	taskResultInformer         cache.SharedIndexInformer
+	wfActionInformer           cache.SharedIndexInformer
+	wfActionQueue              workqueue.TypedRateLimitingInterface[string]
+	wfActionGCQueue            workqueue.TypedDelayingInterface[string]
 
 	// progressPatchTickDuration defines how often the executor will patch pod annotations if an updated progress is found.
 	// Default is 1m and can be configured using the env var ARGO_PROGRESS_PATCH_TICK_DURATION.
@@ -291,6 +294,8 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 	wfc.wfQueue = wfc.metrics.RateLimiterWithBusyWorkers(ctx, &fixedItemIntervalRateLimiter{requeueTime: wfc.requeueTime}, "workflow_queue")
 	wfc.throttler = wfc.newThrottler()
 	wfc.wfArchiveQueue = wfc.metrics.RateLimiterWithBusyWorkers(ctx, workqueue.DefaultTypedControllerRateLimiter[string](), "workflow_archive_queue")
+	wfc.wfActionQueue = wfc.metrics.RateLimiterWithBusyWorkers(ctx, workqueue.DefaultTypedControllerRateLimiter[string](), "workflow_action_queue")
+	wfc.wfActionGCQueue = workqueue.NewTypedDelayingQueueWithConfig(workqueue.TypedDelayingQueueConfig[string]{Name: "workflow_action_gc_queue"})
 
 	return &wfc, nil
 }
@@ -380,6 +385,8 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	// The archive workers block in Get() until the queue shuts down, so
 	// cancelling their context alone does not release them.
 	defer wfc.wfArchiveQueue.ShutDown()
+	defer wfc.wfActionQueue.ShutDown()
+	defer wfc.wfActionGCQueue.ShutDown()
 
 	logger.WithFields(argo.GetVersion().Fields()).WithFields(logging.Fields{
 		"instanceID":         wfc.Config.InstanceID,
@@ -404,6 +411,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	wfc.wfTaskSetInformer = wfc.newWorkflowTaskSetInformer()
 	wfc.artGCTaskInformer = wfc.newArtGCTaskInformer()
 	wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer(ctx)
+	wfc.wfActionInformer = wfc.newWorkflowActionInformer(ctx)
 	err = wfc.addWorkflowInformerHandlers(ctx)
 	if err != nil {
 		logger.WithError(err).WithFatal().Error(ctx, "Failed to add workflow informer handlers")
@@ -435,6 +443,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	go wfc.wfTaskSetInformer.Informer().Run(ctx.Done())
 	go wfc.artGCTaskInformer.Informer().Run(ctx.Done())
 	go wfc.taskResultInformer.Run(ctx.Done())
+	go wfc.wfActionInformer.Run(ctx.Done())
 	wfc.createClusterWorkflowTemplateInformer(ctx)
 	go wfc.runPodController(ctx, podCleanupWorkers)
 
@@ -451,6 +460,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		wfc.wfTaskSetInformer.Informer().HasSynced,
 		wfc.artGCTaskInformer.Informer().HasSynced,
 		wfc.taskResultInformer.HasSynced,
+		wfc.wfActionInformer.HasSynced,
 	) {
 		logger.WithFatal().Error(ctx, "Timed out waiting for caches to sync")
 	}
@@ -475,6 +485,12 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	for range wfArchiveWorkers {
 		go wait.UntilWithContext(archiveCtx, wfc.runArchiveWorker, time.Second)
 	}
+
+	actionCtx, _ := logger.WithField("component", "workflow_action_worker").InContext(ctx)
+	for range 2 {
+		go wait.UntilWithContext(actionCtx, wfc.runActionWorker, time.Second)
+	}
+	go wait.UntilWithContext(actionCtx, wfc.runActionGCWorker, time.Second)
 	if wfc.cacheGCPeriod != 0 {
 		go wait.JitterUntilWithContext(ctx, wfc.syncAllCacheForGC, wfc.cacheGCPeriod, 0.0, true)
 	}

@@ -342,6 +342,8 @@ func newController(ctx context.Context, options ...any) (context.CancelFunc, *Wo
 		wfc.entrypoint = entrypoint.New(kube, wfc.Config.Images)
 		wfc.wfQueue = workqueue.NewTypedRateLimitingQueue(workqueue.DefaultTypedControllerRateLimiter[string]())
 		wfc.wfArchiveQueue = workqueue.NewTypedRateLimitingQueue(workqueue.DefaultTypedControllerRateLimiter[string]())
+		wfc.wfActionQueue = workqueue.NewTypedRateLimitingQueue(workqueue.DefaultTypedControllerRateLimiter[string]())
+		wfc.wfActionGCQueue = workqueue.NewTypedDelayingQueue[string]()
 		wfc.throttler = wfc.newThrottler()
 		wfc.rateLimiter = wfc.newRateLimiter()
 	}
@@ -353,6 +355,7 @@ func newController(ctx context.Context, options ...any) (context.CancelFunc, *Wo
 		wfc.wfTaskSetInformer = informerFactory.Argoproj().V1alpha1().WorkflowTaskSets()
 		wfc.artGCTaskInformer = informerFactory.Argoproj().V1alpha1().WorkflowArtifactGCTasks()
 		wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer(ctx)
+		wfc.wfActionInformer = wfc.newWorkflowActionInformer(ctx)
 		wfc.wftmplInformer = informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
 		_ = wfc.addWorkflowInformerHandlers(ctx)
 		wfc.PodController = pod.NewController(ctx, &wfc.Config, wfc.restConfig, "", wfc.kubeclientset, wfc.wfInformer, wfc.metrics, wfc.enqueueWfFromPodLabel)
@@ -367,6 +370,7 @@ func newController(ctx context.Context, options ...any) (context.CancelFunc, *Wo
 		go wfc.wfTaskSetInformer.Informer().Run(ctx.Done())
 		go wfc.artGCTaskInformer.Informer().Run(ctx.Done())
 		go wfc.taskResultInformer.Run(ctx.Done())
+		go wfc.wfActionInformer.Run(ctx.Done())
 		wfc.cwftmplInformer = informerFactory.Argoproj().V1alpha1().ClusterWorkflowTemplates()
 		go wfc.cwftmplInformer.Informer().Run(ctx.Done())
 		go wfc.typedConfigMapInformer.Run(ctx.Done())
@@ -379,6 +383,7 @@ func newController(ctx context.Context, options ...any) (context.CancelFunc, *Wo
 			wfc.wfTaskSetInformer.Informer(),
 			wfc.artGCTaskInformer.Informer(),
 			wfc.taskResultInformer,
+			wfc.wfActionInformer,
 			wfc.typedConfigMapInformer,
 		} {
 			for !c.HasSynced() {
