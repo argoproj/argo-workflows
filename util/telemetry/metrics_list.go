@@ -503,6 +503,21 @@ var InstrumentWorkflowCondition = BuiltinInstrument{
 	},
 }
 
+var InstrumentWorkflowactionsProcessedTotal = BuiltinInstrument{
+	name:        "workflowactions_processed_total",
+	description: "A counter of the total number of WorkflowActions processed by the controller",
+	unit:        "{workflowaction}",
+	instType:    Int64Counter,
+	attributes: []BuiltinAttribute{
+		{
+			name: AttribWorkflowActionType,
+		},
+		{
+			name: AttribWorkflowActionOutcome,
+		},
+	},
+}
+
 var InstrumentWorkflowtemplateRuntime = BuiltinInstrument{
 	name:        "workflowtemplate_runtime",
 	description: "A histogram of the runtime of workflows using `workflowTemplateRef` only",
