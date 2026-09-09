@@ -275,7 +275,9 @@ func (woc *wfOperationCtx) applyAction(ctx context.Context, a *wfv1.WorkflowActi
 		if woc.execWf.Spec.Suspend != nil && *woc.execWf.Spec.Suspend {
 			return false, nil
 		}
-		woc.wf.Spec.Suspend = new(true)
+		// the suspend must be persisted on the Workflow object itself, not just the merged
+		// execWf view, exactly as the server's direct patch used to do
+		woc.wf.Spec.Suspend = new(true) //nolint:forbidigo // not-woc-misuse
 		woc.execWf.Spec.Suspend = new(true)
 		woc.copyActorLabels(a)
 		return true, nil
