@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -559,6 +560,99 @@ func (s *workflowServer) ResubmitWorkflow(ctx context.Context, req *workflowpkg.
 	return created, nil
 }
 
+// workflowActionTimeout is how long the action endpoints wait for the controller to perform a
+// requested action before returning DeadlineExceeded.
+const workflowActionTimeout = 30 * time.Second
+
+// performAction requests a workflow lifecycle action by creating a WorkflowAction (using the
+// caller's own client, so RBAC maps to the requester) and watching it until the controller
+// records a terminal phase. On success the freshly updated Workflow is returned, preserving the
+// endpoints' existing response shape.
+func (s *workflowServer) performAction(ctx context.Context, wf *wfv1.Workflow, spec wfv1.WorkflowActionSpec, action creator.ActionType) (*wfv1.Workflow, error) {
+	wfClient := auth.GetWfClient(ctx)
+	a := &wfv1.WorkflowAction{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: actionGenerateName(wf.Name, spec.Action),
+			Namespace:    wf.Namespace,
+			Labels:       map[string]string{common.LabelKeyWorkflow: wf.Name},
+		},
+		Spec: spec,
+	}
+	creator.LabelActor(ctx, a, action)
+	s.instanceIDService.Label(a)
+	created, err := wfClient.ArgoprojV1alpha1().WorkflowActions(wf.Namespace).Create(ctx, a, metav1.CreateOptions{})
+	if err != nil {
+		return nil, sutils.ToStatusError(err, codes.Internal)
+	}
+	ctx, cancel := context.WithTimeout(ctx, workflowActionTimeout)
+	defer cancel()
+	w, err := wfClient.ArgoprojV1alpha1().WorkflowActions(wf.Namespace).Watch(ctx, metav1.ListOptions{
+		FieldSelector:   "metadata.name=" + created.Name,
+		ResourceVersion: created.ResourceVersion,
+	})
+	if err != nil {
+		return nil, sutils.ToStatusError(err, codes.Internal)
+	}
+	defer w.Stop()
+	// The controller may have recorded a terminal phase between the create and the watch
+	// starting; check once so that case cannot wait out the timeout.
+	if latest, getErr := wfClient.ArgoprojV1alpha1().WorkflowActions(wf.Namespace).Get(ctx, created.Name, metav1.GetOptions{}); getErr == nil && latest.Status.Fulfilled() {
+		return s.actionOutcome(ctx, wfClient, wf, latest)
+	}
+	for {
+		select {
+		case <-ctx.Done():
+			return nil, status.Errorf(codes.DeadlineExceeded,
+				"timed out waiting for the workflow controller to perform %s; the request is recorded as WorkflowAction %q and may still be applied", spec.Action, created.Name)
+		case ev, ok := <-w.ResultChan():
+			if !ok {
+				return nil, status.Error(codes.Internal, "watch on WorkflowAction closed unexpectedly")
+			}
+			got, ok := ev.Object.(*wfv1.WorkflowAction)
+			if !ok || got.Name != created.Name || !got.Status.Fulfilled() {
+				continue
+			}
+			return s.actionOutcome(ctx, wfClient, wf, got)
+		}
+	}
+}
+
+func (s *workflowServer) actionOutcome(ctx context.Context, wfClient versioned.Interface, wf *wfv1.Workflow, a *wfv1.WorkflowAction) (*wfv1.Workflow, error) {
+	if a.Status.Phase == wfv1.WorkflowActionFailed {
+		return nil, actionFailureError(a)
+	}
+	return s.getWorkflow(ctx, wfClient, wf.Namespace, wf.Name, "", metav1.GetOptions{})
+}
+
+// actionFailureError maps a Failed WorkflowAction to the closest gRPC code the direct-mutation
+// implementation used to return.
+func actionFailureError(a *wfv1.WorkflowAction) error {
+	msg := a.Status.Message
+	if msg == "" {
+		msg = a.Status.Reason
+	}
+	switch a.Status.Reason {
+	case wfv1.WorkflowActionReasonWorkflowNotFound:
+		return status.Error(codes.NotFound, msg)
+	case wfv1.WorkflowActionReasonWorkflowCompleted:
+		return status.Error(codes.FailedPrecondition, msg)
+	default:
+		return status.Error(codes.InvalidArgument, msg)
+	}
+}
+
+func actionGenerateName(wfName string, action wfv1.WorkflowActionType) string {
+	prefix := fmt.Sprintf("%s-%s-", wfName, strings.ToLower(string(action)))
+	if len(prefix) > 240 {
+		prefix = prefix[:240]
+	}
+	return prefix
+}
+
+func actionRef(wf *wfv1.Workflow) wfv1.WorkflowActionRef {
+	return wfv1.WorkflowActionRef{Name: wf.Name}
+}
+
 func (s *workflowServer) ResumeWorkflow(ctx context.Context, req *workflowpkg.WorkflowResumeRequest) (*wfv1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
 	wf, err := s.getWorkflow(ctx, wfClient, req.Namespace, req.Name, "", metav1.GetOptions{})
@@ -571,18 +665,16 @@ func (s *workflowServer) ResumeWorkflow(ctx context.Context, req *workflowpkg.Wo
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
 	}
 
-	err = util.ResumeWorkflow(ctx, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), s.hydrator, wf.Name, req.NodeFieldSelector)
+	spec := wfv1.WorkflowActionSpec{WorkflowRef: actionRef(wf), Action: wfv1.ActionTypeResume}
+	if req.NodeFieldSelector != "" {
+		spec.Resume = &wfv1.ResumeAction{NodeFieldSelector: req.NodeFieldSelector}
+	}
+	wf, err = s.performAction(ctx, wf, spec, creator.ActionResume)
 	if err != nil {
 		logger := logging.RequireLoggerFromContext(ctx)
-		logger.WithFields(logging.Fields{"name": wf.Name}).WithError(err).Warn(ctx, "Failed to resume")
-		return nil, sutils.ToStatusError(err, codes.Internal)
+		logger.WithFields(logging.Fields{"name": req.Name}).WithError(err).Warn(ctx, "Failed to resume")
+		return nil, err
 	}
-
-	wf, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Get(ctx, wf.Name, metav1.GetOptions{})
-	if err != nil {
-		return nil, sutils.ToStatusError(err, codes.Internal)
-	}
-
 	return wf, nil
 }
 
@@ -599,17 +691,7 @@ func (s *workflowServer) SuspendWorkflow(ctx context.Context, req *workflowpkg.W
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
 	}
 
-	err = util.SuspendWorkflow(ctx, wfClient.ArgoprojV1alpha1().Workflows(wf.Namespace), wf.Name)
-	if err != nil {
-		return nil, sutils.ToStatusError(err, codes.Internal)
-	}
-
-	wf, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Get(ctx, wf.Name, metav1.GetOptions{})
-	if err != nil {
-		return nil, sutils.ToStatusError(err, codes.Internal)
-	}
-
-	return wf, nil
+	return s.performAction(ctx, wf, wfv1.WorkflowActionSpec{WorkflowRef: actionRef(wf), Action: wfv1.ActionTypeSuspend}, creator.ActionSuspend)
 }
 
 func (s *workflowServer) TerminateWorkflow(ctx context.Context, req *workflowpkg.WorkflowTerminateRequest) (*wfv1.Workflow, error) {
@@ -625,16 +707,7 @@ func (s *workflowServer) TerminateWorkflow(ctx context.Context, req *workflowpkg
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
 	}
 
-	err = util.TerminateWorkflow(ctx, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wf.Name)
-	if err != nil {
-		return nil, sutils.ToStatusError(err, codes.Internal)
-	}
-
-	wf, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Get(ctx, wf.Name, metav1.GetOptions{})
-	if err != nil {
-		return nil, sutils.ToStatusError(err, codes.Internal)
-	}
-	return wf, nil
+	return s.performAction(ctx, wf, wfv1.WorkflowActionSpec{WorkflowRef: actionRef(wf), Action: wfv1.ActionTypeTerminate}, creator.ActionTerminate)
 }
 
 func (s *workflowServer) StopWorkflow(ctx context.Context, req *workflowpkg.WorkflowStopRequest) (*wfv1.Workflow, error) {
@@ -647,16 +720,11 @@ func (s *workflowServer) StopWorkflow(ctx context.Context, req *workflowpkg.Work
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
 	}
-	err = util.StopWorkflow(ctx, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), s.hydrator, wf.Name, req.NodeFieldSelector, req.Message)
-	if err != nil {
-		return nil, sutils.ToStatusError(err, codes.Internal)
+	spec := wfv1.WorkflowActionSpec{WorkflowRef: actionRef(wf), Action: wfv1.ActionTypeStop}
+	if req.NodeFieldSelector != "" || req.Message != "" {
+		spec.Stop = &wfv1.StopAction{Message: req.Message, NodeFieldSelector: req.NodeFieldSelector}
 	}
-
-	wf, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Get(ctx, wf.Name, metav1.GetOptions{})
-	if err != nil {
-		return nil, sutils.ToStatusError(err, codes.Internal)
-	}
-	return wf, nil
+	return s.performAction(ctx, wf, spec, creator.ActionStop)
 }
 
 func (s *workflowServer) SetWorkflow(ctx context.Context, req *workflowpkg.WorkflowSetRequest) (*wfv1.Workflow, error) {
