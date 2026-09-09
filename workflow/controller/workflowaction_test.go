@@ -126,6 +126,208 @@ func TestPendingActionsForOrdering(t *testing.T) {
 	assert.False(t, wfc.hasPendingTerminateAction("argo/other-wf"))
 }
 
+// actionTargetWf is a valid running workflow with one active suspend node ("approve"),
+// adapted from workflow/util's suspend fixture. Tests may prepend modifications via
+// MustUnmarshalWorkflow and direct field edits.
+var actionTargetWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: suspend
+  namespace: argo
+  labels:
+    workflows.argoproj.io/phase: Running
+spec:
+  entrypoint: suspend
+  templates:
+  - name: suspend
+    steps:
+    - - name: approve
+        template: approve
+  - name: approve
+    suspend: {}
+status:
+  phase: Running
+  startedAt: "2020-04-10T15:21:23Z"
+  finishedAt: null
+  nodes:
+    suspend:
+      children:
+      - suspend-1186457231
+      displayName: suspend
+      finishedAt: null
+      id: suspend
+      name: suspend
+      phase: Running
+      startedAt: "2020-04-10T15:21:23Z"
+      templateName: suspend
+      templateScope: local/suspend
+      type: Steps
+    suspend-1186457231:
+      boundaryID: suspend
+      children:
+      - suspend-3422888088
+      displayName: '[0]'
+      finishedAt: null
+      id: suspend-1186457231
+      name: suspend[0]
+      phase: Running
+      startedAt: "2020-04-10T15:21:23Z"
+      templateScope: local/suspend
+      type: StepGroup
+    suspend-3422888088:
+      boundaryID: suspend
+      displayName: approve
+      finishedAt: null
+      id: suspend-3422888088
+      name: suspend[0].approve
+      phase: Running
+      startedAt: "2020-04-10T15:21:23Z"
+      templateName: approve
+      templateScope: local/suspend
+      type: Suspend
+`
+
+func TestActionReconciliationTerminate(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(actionTargetWf)
+	action := newTestAction("t1", "suspend", wfv1.ActionTypeTerminate, func(a *wfv1.WorkflowAction) {
+		a.Labels = map[string]string{"workflows.argoproj.io/action": "terminate"}
+	})
+	cancel, controller := newController(ctx, wf, action)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	assert.Equal(t, wfv1.ShutdownStrategyTerminate, woc.wf.Status.Shutdown)
+	assert.Contains(t, woc.wf.Status.AppliedActions, "uid-t1")
+	assert.Equal(t, "terminate", woc.wf.Labels["workflows.argoproj.io/action"])
+	a := getTestAction(t, controller, "t1")
+	assert.Equal(t, wfv1.WorkflowActionSucceeded, a.Status.Phase)
+}
+
+func TestActionReconciliationSuspend(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(actionTargetWf)
+	cancel, controller := newController(ctx, wf, newTestAction("s1", "suspend", wfv1.ActionTypeSuspend))
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	require.NotNil(t, woc.wf.Spec.Suspend)
+	assert.True(t, *woc.wf.Spec.Suspend)
+	a := getTestAction(t, controller, "s1")
+	assert.Equal(t, wfv1.WorkflowActionSucceeded, a.Status.Phase)
+}
+
+func TestActionReconciliationResume(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(actionTargetWf)
+	wf.Spec.Suspend = new(true)
+	cancel, controller := newController(ctx, wf, newTestAction("r1", "suspend", wfv1.ActionTypeResume))
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	assert.Nil(t, woc.wf.Spec.Suspend)
+	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Nodes.FindByDisplayName("approve").Phase)
+	a := getTestAction(t, controller, "r1")
+	assert.Equal(t, wfv1.WorkflowActionSucceeded, a.Status.Phase)
+}
+
+func TestActionReconciliationStopSelector(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(actionTargetWf)
+	action := newTestAction("st1", "suspend", wfv1.ActionTypeStop, func(a *wfv1.WorkflowAction) {
+		a.Spec.Stop = &wfv1.StopAction{Message: "stop it", NodeFieldSelector: "displayName=approve"}
+	})
+	cancel, controller := newController(ctx, wf, action)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	node := woc.wf.Status.Nodes.FindByDisplayName("approve")
+	assert.Equal(t, wfv1.NodeFailed, node.Phase)
+	assert.Equal(t, "stop it", node.Message)
+	assert.Equal(t, wfv1.ShutdownStrategyNone, woc.wf.Status.Shutdown)
+	a := getTestAction(t, controller, "st1")
+	assert.Equal(t, wfv1.WorkflowActionSucceeded, a.Status.Phase)
+}
+
+func TestActionReconciliationResumeSelectorNoMatch(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(actionTargetWf)
+	action := newTestAction("r2", "suspend", wfv1.ActionTypeResume, func(a *wfv1.WorkflowAction) {
+		a.Spec.Resume = &wfv1.ResumeAction{NodeFieldSelector: "displayName=nonexistent"}
+	})
+	cancel, controller := newController(ctx, wf, action)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	assert.Empty(t, woc.wf.Status.AppliedActions)
+	a := getTestAction(t, controller, "r2")
+	assert.Equal(t, wfv1.WorkflowActionFailed, a.Status.Phase)
+	assert.Equal(t, wfv1.WorkflowActionReasonInvalidAction, a.Status.Reason)
+	assert.Contains(t, a.Status.Message, "no suspend nodes matching")
+}
+
+func TestActionReconciliationOrdering(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(actionTargetWf)
+	suspend := newTestAction("o-suspend", "suspend", wfv1.ActionTypeSuspend, func(a *wfv1.WorkflowAction) {
+		a.CreationTimestamp = metav1.Time{Time: time.Now().Add(-2 * time.Hour)}
+	})
+	terminate := newTestAction("o-terminate", "suspend", wfv1.ActionTypeTerminate, func(a *wfv1.WorkflowAction) {
+		a.CreationTimestamp = metav1.Time{Time: time.Now().Add(-time.Hour)}
+	})
+	cancel, controller := newController(ctx, wf, suspend, terminate)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	assert.Equal(t, wfv1.ShutdownStrategyTerminate, woc.wf.Status.Shutdown)
+	require.NotNil(t, woc.wf.Spec.Suspend)
+	assert.True(t, *woc.wf.Spec.Suspend)
+	for _, name := range []string{"o-suspend", "o-terminate"} {
+		a := getTestAction(t, controller, name)
+		assert.Equal(t, wfv1.WorkflowActionSucceeded, a.Status.Phase, name)
+	}
+}
+
+func TestAppliedActionsPrune(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(actionTargetWf)
+	wf.Status.AppliedActions = []string{"uid-p1"}
+	done := newTestAction("p1", "suspend", wfv1.ActionTypeSuspend, func(a *wfv1.WorkflowAction) {
+		a.Status = wfv1.WorkflowActionStatus{Phase: wfv1.WorkflowActionSucceeded}
+	})
+	cancel, controller := newController(ctx, wf, done)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	assert.Empty(t, woc.wf.Status.AppliedActions)
+}
+
+func TestGetShutdownStrategyPrefersStatus(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(actionTargetWf)
+	wf.Status.Shutdown = wfv1.ShutdownStrategyStop
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	assert.Equal(t, wfv1.ShutdownStrategyStop, woc.GetShutdownStrategy())
+}
+
 func TestWorkflowActionGC(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	completed := metav1.Time{Time: time.Now().Add(-time.Minute)}
