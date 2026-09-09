@@ -65,3 +65,12 @@ rules:
       - update
       - patch
       - delete
+  - apiGroups:
+      - argoproj.io
+    resources:
+      - workflowactions
+    verbs:
+      - create
+      - get
+      - list
+      - watch
