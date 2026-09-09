@@ -947,10 +947,10 @@ schema = 3
     version = "v0.0.0-20260519071638-aa98bba5eb94"
     hash = "sha256-RVGF5xfos6LnKy4O+vBB3ubi34+bTJbwqEg5enLB89c="
   [mod."google.golang.org/genproto/googleapis/api"]
-    version = "v0.0.0-20260831171406-18b4a7587f8a"
-    hash = "sha256-HsiQRzrEh75fqhA8zb+eKHj6HH9du/qgGOMAZpdVTkM="
+    version = "v0.0.0-20260908043556-f8649ddbbfe6"
+    hash = "sha256-A27dbKgvssN+k3s3C3GpR6VXiAlgRJd+hfOkdzJHzzM="
   [mod."google.golang.org/genproto/googleapis/rpc"]
-    version = "v0.0.0-20260825221802-da73d73af1c5"
+    version = "v0.0.0-20260904194346-d0f1323225a4"
     hash = "sha256-CQdjYGIrgAnEDfWW3DIJF9Orf7oJdhx3G9rGg6fow88="
   [mod."google.golang.org/grpc"]
     version = "v1.83.2"
