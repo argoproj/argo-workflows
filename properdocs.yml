@@ -108,6 +108,7 @@ nav:
           - workflow-templates.md
           - cluster-workflow-templates.md
           - cron-workflows.md
+          - workflow-actions.md
       - Template Types:
           - http-template.md
           - container-set-template.md
