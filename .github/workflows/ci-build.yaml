@@ -555,7 +555,9 @@ jobs:
         uses: zgosalvez/github-actions-ensure-sha-pinned-actions@62574f011e0d1967d555a862bd28a7abba8684fe # v5.0.9
 
   ui:
-    name: UI
+    # the e2e-ui job covers the UI's behaviour; this only checks it builds and
+    # its unit tests and lint pass
+    name: UI build and unit tests
     needs: [ changed-files ]
     if: ${{ needs.changed-files.outputs.ui == 'true' }}
     runs-on: ubuntu-24.04
