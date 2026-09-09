@@ -215,6 +215,8 @@ func (*RawArtifact) ProtoMessage() {}
 
 func (*ResourceTemplate) ProtoMessage() {}
 
+func (*ResumeAction) ProtoMessage() {}
+
 func (*RetryAffinity) ProtoMessage() {}
 
 func (*RetryNodeAntiAffinity) ProtoMessage() {}
@@ -238,6 +240,8 @@ func (*SemaphoreRef) ProtoMessage() {}
 func (*SemaphoreStatus) ProtoMessage() {}
 
 func (*Sequence) ProtoMessage() {}
+
+func (*StopAction) ProtoMessage() {}
 
 func (*StopStrategy) ProtoMessage() {}
 
@@ -274,6 +278,16 @@ func (*Version) ProtoMessage() {}
 func (*VolumeClaimGC) ProtoMessage() {}
 
 func (*Workflow) ProtoMessage() {}
+
+func (*WorkflowAction) ProtoMessage() {}
+
+func (*WorkflowActionList) ProtoMessage() {}
+
+func (*WorkflowActionRef) ProtoMessage() {}
+
+func (*WorkflowActionSpec) ProtoMessage() {}
+
+func (*WorkflowActionStatus) ProtoMessage() {}
 
 func (*WorkflowArtifactGCTask) ProtoMessage() {}
 

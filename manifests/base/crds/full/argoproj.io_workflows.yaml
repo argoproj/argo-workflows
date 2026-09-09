@@ -42884,6 +42884,10 @@ spec:
               WorkflowStatus contains overall status information about a workflow.
               All nested field descriptions have been dropped due to Kubernetes size limitations.
             properties:
+              appliedActions:
+                items:
+                  type: string
+                type: array
               artifactGCStatus:
                 properties:
                   notSpecified:
@@ -46132,6 +46136,8 @@ spec:
                   format: int64
                   type: integer
                 type: object
+              shutdown:
+                type: string
               startedAt:
                 format: date-time
                 type: string
