@@ -538,27 +538,9 @@ func ResumeWorkflow(ctx context.Context, wfIf v1alpha1.WorkflowInterface, hydrat
 			return true, err
 		}
 
-		workflowUpdated := false
-		if wf.Spec.Suspend != nil && *wf.Spec.Suspend {
-			wf.Spec.Suspend = nil
-			workflowUpdated = true
-		}
-
-		// To resume a workflow with a suspended node we simply mark the node as Successful
-		for nodeID, node := range wf.Status.Nodes {
-			if node.IsActiveSuspendNode() {
-				if err := OverrideOutputParametersWithDefault(node.Outputs); err != nil {
-					return false, err
-				}
-				node.Phase = wfv1.NodeSucceeded
-				if node.Message != "" {
-					uiMsg = node.Message + "; " + uiMsg
-				}
-				node.Message = uiMsg
-				node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
-				wf.Status.Nodes.Set(ctx, nodeID, node)
-				workflowUpdated = true
-			}
+		workflowUpdated, err := ApplyResume(ctx, wf, uiMsg)
+		if err != nil {
+			return false, err
 		}
 
 		if workflowUpdated {
@@ -641,12 +623,102 @@ func AddParamToGlobalScope(ctx context.Context, wf *wfv1.Workflow, param wfv1.Pa
 	return wfUpdated
 }
 
-func updateSuspendedNode(ctx context.Context, wfIf v1alpha1.WorkflowInterface, hydrator hydrator.Interface, workflowName string, nodeFieldSelector string, values SetOperationValues, action creator.ActionType) error {
+// ApplyResume clears spec.suspend and marks every active suspend node of a hydrated, in-memory
+// workflow as succeeded, defaulting any unset raw output parameters. uiMsg is recorded as the
+// resumed nodes' message. It is shared by the client-side ResumeWorkflow and the controller's
+// WorkflowAction handling, and reports whether the workflow was changed.
+func ApplyResume(ctx context.Context, wf *wfv1.Workflow, uiMsg string) (bool, error) {
+	workflowUpdated := false
+	if wf.Spec.Suspend != nil && *wf.Spec.Suspend {
+		wf.Spec.Suspend = nil
+		workflowUpdated = true
+	}
+
+	// To resume a workflow with a suspended node we simply mark the node as Successful
+	for nodeID, node := range wf.Status.Nodes {
+		if node.IsActiveSuspendNode() {
+			if err := OverrideOutputParametersWithDefault(node.Outputs); err != nil {
+				return false, err
+			}
+			node.Phase = wfv1.NodeSucceeded
+			msg := uiMsg
+			if node.Message != "" {
+				msg = node.Message + "; " + uiMsg
+			}
+			node.Message = msg
+			node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
+			wf.Status.Nodes.Set(ctx, nodeID, node)
+			workflowUpdated = true
+		}
+	}
+	return workflowUpdated, nil
+}
+
+// ApplySuspendedNodeSetOperation applies values to the active suspend nodes of a hydrated,
+// in-memory workflow that match nodeFieldSelector. It is shared by the client-side operation
+// wrappers and the controller's WorkflowAction handling, and reports whether any node changed.
+func ApplySuspendedNodeSetOperation(ctx context.Context, wf *wfv1.Workflow, nodeFieldSelector string, values SetOperationValues) (bool, error) {
 	selector, err := fields.ParseSelector(nodeFieldSelector)
 	if err != nil {
-		return err
+		return false, err
 	}
-	err = waitutil.Backoff(retry.DefaultRetry(ctx), func() (bool, error) {
+	nodeUpdated := false
+	for nodeID, node := range wf.Status.Nodes {
+		if node.IsActiveSuspendNode() {
+			if SelectorMatchesNode(selector, node) {
+				// Update phase
+				if values.Phase != "" {
+					node.Phase = values.Phase
+					if values.Phase.Fulfilled(node.TaskResultSynced) {
+						node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
+					}
+					nodeUpdated = true
+				}
+
+				// Update message
+				if values.Message != "" {
+					node.Message = values.Message
+					nodeUpdated = true
+				}
+
+				// Update output parameters
+				if len(values.OutputParameters) > 0 {
+					if node.Outputs == nil {
+						return false, fmt.Errorf("cannot set output parameters because node is not expecting any raw parameters")
+					}
+					for name, val := range values.OutputParameters {
+						hit := false
+						for i, param := range node.Outputs.Parameters {
+							if param.Name == name {
+								if param.ValueFrom == nil || param.ValueFrom.Supplied == nil {
+									return false, fmt.Errorf("cannot set output parameter '%s' because it does not use valueFrom.raw or it was already set", param.Name)
+								}
+								node.Outputs.Parameters[i].Value = wfv1.AnyStringPtr(val)
+								node.Outputs.Parameters[i].ValueFrom = nil
+								nodeUpdated = true
+								hit = true
+								AddParamToGlobalScope(ctx, wf, node.Outputs.Parameters[i])
+								break
+							}
+						}
+						if !hit {
+							return false, fmt.Errorf("node is not expecting output parameter '%s'", name)
+						}
+					}
+				}
+				wf.Status.Nodes.Set(ctx, nodeID, node)
+			}
+		}
+	}
+
+	if !nodeUpdated {
+		return false, fmt.Errorf("currently, set only targets suspend nodes: no suspend nodes matching nodeFieldSelector: %s", nodeFieldSelector)
+	}
+	return true, nil
+}
+
+func updateSuspendedNode(ctx context.Context, wfIf v1alpha1.WorkflowInterface, hydrator hydrator.Interface, workflowName string, nodeFieldSelector string, values SetOperationValues, action creator.ActionType) error {
+	err := waitutil.Backoff(retry.DefaultRetry(ctx), func() (bool, error) {
 		wf, getErr := wfIf.Get(ctx, workflowName, metav1.GetOptions{})
 		if getErr != nil {
 			return !errorsutil.IsTransientErr(ctx, getErr), getErr
@@ -657,60 +729,11 @@ func updateSuspendedNode(ctx context.Context, wfIf v1alpha1.WorkflowInterface, h
 			return false, hydrateErr
 		}
 
-		nodeUpdated := false
-		for nodeID, node := range wf.Status.Nodes {
-			if node.IsActiveSuspendNode() {
-				if SelectorMatchesNode(selector, node) {
-					// Update phase
-					if values.Phase != "" {
-						node.Phase = values.Phase
-						if values.Phase.Fulfilled(node.TaskResultSynced) {
-							node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
-						}
-						nodeUpdated = true
-					}
-
-					// Update message
-					if values.Message != "" {
-						node.Message = values.Message
-						nodeUpdated = true
-					}
-
-					// Update output parameters
-					if len(values.OutputParameters) > 0 {
-						if node.Outputs == nil {
-							return true, fmt.Errorf("cannot set output parameters because node is not expecting any raw parameters")
-						}
-						for name, val := range values.OutputParameters {
-							hit := false
-							for i, param := range node.Outputs.Parameters {
-								if param.Name == name {
-									if param.ValueFrom == nil || param.ValueFrom.Supplied == nil {
-										return true, fmt.Errorf("cannot set output parameter '%s' because it does not use valueFrom.raw or it was already set", param.Name)
-									}
-									node.Outputs.Parameters[i].Value = wfv1.AnyStringPtr(val)
-									node.Outputs.Parameters[i].ValueFrom = nil
-									nodeUpdated = true
-									hit = true
-									AddParamToGlobalScope(ctx, wf, node.Outputs.Parameters[i])
-									break
-								}
-							}
-							if !hit {
-								return true, fmt.Errorf("node is not expecting output parameter '%s'", name)
-							}
-						}
-					}
-					wf.Status.Nodes.Set(ctx, nodeID, node)
-				}
-			}
+		if _, applyErr := ApplySuspendedNodeSetOperation(ctx, wf, nodeFieldSelector, values); applyErr != nil {
+			return true, applyErr
 		}
 
-		if !nodeUpdated {
-			return true, fmt.Errorf("currently, set only targets suspend nodes: no suspend nodes matching nodeFieldSelector: %s", nodeFieldSelector)
-		}
-
-		err = hydrator.Dehydrate(ctx, wf)
+		err := hydrator.Dehydrate(ctx, wf)
 		if err != nil {
 			return true, fmt.Errorf("unable to compress or offload workflow nodes: %w", err)
 		}

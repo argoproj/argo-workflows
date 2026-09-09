@@ -5348,3 +5348,37 @@ func TestApplySubmitOptsWithArtifacts(t *testing.T) {
 		require.NoError(t, err)
 	})
 }
+
+func TestApplyResumeInMemory(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(suspendedWf)
+	changed, err := ApplyResume(ctx, wf, "Resumed by: tester")
+	require.NoError(t, err)
+	assert.True(t, changed)
+	assert.Nil(t, wf.Spec.Suspend)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByDisplayName("approve").Phase)
+	assert.Contains(t, wf.Status.Nodes.FindByDisplayName("approve").Message, "Resumed by: tester")
+
+	// second call is an idempotent no-op
+	changed, err = ApplyResume(ctx, wf, "again")
+	require.NoError(t, err)
+	assert.False(t, changed)
+}
+
+func TestApplySuspendedNodeSetOperationNoMatch(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(suspendedWf)
+	_, err := ApplySuspendedNodeSetOperation(ctx, wf, "displayName=does-not-exist", SetOperationValues{Phase: wfv1.NodeFailed})
+	require.ErrorContains(t, err, "no suspend nodes matching nodeFieldSelector")
+}
+
+func TestApplySuspendedNodeSetOperationStop(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(suspendedWf)
+	changed, err := ApplySuspendedNodeSetOperation(ctx, wf, "displayName=approve", SetOperationValues{Phase: wfv1.NodeFailed, Message: "stopped"})
+	require.NoError(t, err)
+	assert.True(t, changed)
+	node := wf.Status.Nodes.FindByDisplayName("approve")
+	assert.Equal(t, wfv1.NodeFailed, node.Phase)
+	assert.Equal(t, "stopped", node.Message)
+}
