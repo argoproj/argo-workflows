@@ -26,6 +26,7 @@ import (
 // Regression for #16771: a failed reconnect must not disable later operations
 // after the database recovers, even when the entire retry budget was exhausted.
 func TestSessionRecoveryAfterFailedReconnect(t *testing.T) {
+	testcontainers.SkipIfProviderIsNotHealthy(t)
 	for _, canceled := range []bool{false, true} {
 		name := "ExhaustedRetries"
 		if canceled {
@@ -48,10 +49,8 @@ func TestSessionRecoveryAfterFailedReconnect(t *testing.T) {
 				testcontainers.WithWaitStrategy(wait.ForLog("database system is ready to accept connections").
 					WithOccurrence(2).WithStartupTimeout(30*time.Second)),
 			)
+			testcontainers.CleanupContainer(t, postgres)
 			require.NoError(t, err)
-			t.Cleanup(func() {
-				assert.NoError(t, testcontainers.TerminateContainer(postgres))
-			})
 			host, err := postgres.Host(ctx)
 			require.NoError(t, err)
 			mappedPort, err := postgres.MappedPort(ctx, "5432/tcp")

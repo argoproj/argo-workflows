@@ -191,6 +191,7 @@ func (sp *SessionProxy) connect(ctx context.Context) error {
 
 	err = sess.Ping()
 	if err != nil {
+		sess.Close()
 		return err
 	}
 	sp.closed = false

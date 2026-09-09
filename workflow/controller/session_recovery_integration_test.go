@@ -32,6 +32,7 @@ import (
 // after the proxy exhausts its reconnect budget. Kubernetes is a fake client here;
 // this checks the archive path and TTL eligibility, not deletion by a live cluster.
 func TestWorkflowController_ArchiveRecoversAfterDatabaseOutage(t *testing.T) {
+	testcontainers.SkipIfProviderIsNotHealthy(t)
 	ctx := logging.TestContext(t.Context())
 	postgres, err := testpostgres.Run(ctx, "postgres:17.4-alpine",
 		testpostgres.WithDatabase("archive_recovery"),
@@ -48,8 +49,8 @@ func TestWorkflowController_ArchiveRecoversAfterDatabaseOutage(t *testing.T) {
 		testcontainers.WithWaitStrategy(wait.ForLog("database system is ready to accept connections").
 			WithOccurrence(2).WithStartupTimeout(30*time.Second)),
 	)
+	testcontainers.CleanupContainer(t, postgres)
 	require.NoError(t, err)
-	t.Cleanup(func() { assert.NoError(t, testcontainers.TerminateContainer(postgres)) })
 	host, err := postgres.Host(ctx)
 	require.NoError(t, err)
 	mappedPort, err := postgres.MappedPort(ctx, "5432/tcp")
