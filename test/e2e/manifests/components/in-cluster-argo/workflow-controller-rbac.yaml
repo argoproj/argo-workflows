@@ -23,6 +23,14 @@ rules:
       - workflowtasksets/status
     verbs:
       - patch
+  # the artifact-workflow-stopped fixture runs `argo stop` inside a pod under this service
+  # account; stopping now creates a WorkflowAction and watches it to completion
+  - apiGroups:
+      - argoproj.io
+    resources:
+      - workflowactions
+    verbs:
+      - create
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
