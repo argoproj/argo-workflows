@@ -515,6 +515,9 @@ var InstrumentWorkflowactionsProcessedTotal = BuiltinInstrument{
 		{
 			name: AttribWorkflowActionOutcome,
 		},
+		{
+			name: AttribWorkflowNamespace,
+		},
 	},
 }
 

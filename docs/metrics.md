@@ -524,10 +524,11 @@ This will tell you the number of workflows with running pods.
 A counter of the total number of WorkflowActions processed by the controller.
 `outcome` is the action's terminal phase: `Succeeded` if the controller applied it, `Failed` if it could not be applied.
 
-| attribute |                               explanation                               |
-|-----------|-------------------------------------------------------------------------|
-| `action`  | The requested action, one of `Suspend`, `Resume`, `Stop` or `Terminate` |
-| `outcome` | The terminal phase of the WorkflowAction, `Succeeded` or `Failed`       |
+|  attribute  |                               explanation                               |
+|-------------|-------------------------------------------------------------------------|
+| `action`    | The requested action, one of `Suspend`, `Resume`, `Stop` or `Terminate` |
+| `outcome`   | The terminal phase of the WorkflowAction, `Succeeded` or `Failed`       |
+| `namespace` | The namespace that the Workflow is in                                   |
 
 #### `workflowtemplate_runtime`
 

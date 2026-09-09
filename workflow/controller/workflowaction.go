@@ -166,7 +166,7 @@ func (wfc *WorkflowController) recordActionOutcome(ctx context.Context, a *wfv1.
 			}
 			return !errorsutil.IsTransientErr(ctx, updateErr), updateErr
 		}
-		wfc.metrics.WorkflowActionProcessed(ctx, string(a.Spec.Action), string(phase))
+		wfc.metrics.WorkflowActionProcessed(ctx, string(a.Spec.Action), string(phase), a.Namespace)
 		wfc.enqueueActionGC(updated)
 		return true, nil
 	})
