@@ -10,6 +10,6 @@ func addWorkflowActionCounter(_ context.Context, m *Metrics) error {
 	return m.CreateBuiltinInstrument(telemetry.InstrumentWorkflowactionsProcessedTotal)
 }
 
-func (m *Metrics) WorkflowActionProcessed(ctx context.Context, action, outcome string) {
-	m.AddWorkflowactionsProcessedTotal(ctx, 1, action, outcome)
+func (m *Metrics) WorkflowActionProcessed(ctx context.Context, action, outcome, namespace string) {
+	m.AddWorkflowactionsProcessedTotal(ctx, 1, action, outcome, namespace)
 }
