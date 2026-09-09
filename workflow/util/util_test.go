@@ -1032,6 +1032,30 @@ func TestRetryExitHandler(t *testing.T) {
 func TestFormulateRetryWorkflow(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wfClient := argofake.NewClientset().ArgoprojV1alpha1().Workflows("my-ns")
+	t.Run("StatusShutdownCleared", func(t *testing.T) {
+		// a shutdown accepted from a WorkflowAction lives in status.shutdown and supersedes
+		// spec.shutdown, so retry must clear both or the retried workflow shuts down again
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:   "my-terminated-wf",
+				Labels: map[string]string{},
+			},
+			Spec: wfv1.WorkflowSpec{Shutdown: wfv1.ShutdownStrategyTerminate},
+			Status: wfv1.WorkflowStatus{
+				Phase:    wfv1.WorkflowFailed,
+				Shutdown: wfv1.ShutdownStrategyTerminate,
+				Nodes: map[string]wfv1.NodeStatus{
+					"my-terminated-wf": {Phase: wfv1.NodeFailed, Type: wfv1.NodeTypeDAG, Name: "my-terminated-wf", ID: "my-terminated-wf"}},
+			},
+		}
+		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
+		require.NoError(t, err)
+		wf, _, err = FormulateRetryWorkflow(ctx, wf, false, "", nil)
+		require.NoError(t, err)
+		assert.Equal(t, wfv1.ShutdownStrategyNone, wf.Spec.Shutdown)
+		assert.Equal(t, wfv1.ShutdownStrategyNone, wf.Status.Shutdown)
+		assert.Equal(t, wfv1.ShutdownStrategyNone, wf.EffectiveShutdown())
+	})
 	t.Run("DAG", func(t *testing.T) {
 		wf := &wfv1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{

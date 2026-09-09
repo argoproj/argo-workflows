@@ -953,6 +953,9 @@ func createNewRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, parameters [
 		newWF.Status.StoredWorkflowSpec.Shutdown = ""
 	}
 	newWF.Spec.Shutdown = ""
+	// a shutdown accepted from a WorkflowAction is recorded in status and supersedes spec, so it
+	// must be cleared too or the retried workflow will immediately shut itself down again
+	newWF.Status.Shutdown = ""
 	newWF.Status.PersistentVolumeClaims = []apiv1.Volume{}
 	if newWF.Spec.ActiveDeadlineSeconds != nil && *newWF.Spec.ActiveDeadlineSeconds == 0 {
 		// if it was terminated, unset the deadline
