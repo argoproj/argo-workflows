@@ -395,8 +395,8 @@ schema = 3
     version = "v6.4.0"
     hash = "sha256-kii4Lhr2JYfBb+iInphVi6ThpctpGivWF2rG5DN4hLQ="
   [mod."github.com/go-sql-driver/mysql"]
-    version = "v1.10.0"
-    hash = "sha256-ACqtLSMzQXWYSDegGS8AYAggcrEG6VDDrF3gDQ7z/ww="
+    version = "v1.10.1"
+    hash = "sha256-DxIBpw6nLDbVdhj+/jNKaqc+J6v6aKlkDLNNhR1cbco="
   [mod."github.com/go-viper/mapstructure/v2"]
     version = "v2.5.0"
     hash = "sha256-LbrCBANBprVI84M0CWrXc7rriJL5ac5VKbh58LBTw7U="
