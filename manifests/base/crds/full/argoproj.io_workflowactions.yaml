@@ -1,0 +1,141 @@
+# This is an auto-generated file. DO NOT EDIT
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: workflowactions.argoproj.io
+spec:
+  group: argoproj.io
+  names:
+    kind: WorkflowAction
+    listKind: WorkflowActionList
+    plural: workflowactions
+    shortNames:
+    - wfa
+    singular: workflowaction
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.workflowRef.name
+      name: Target
+      type: string
+    - jsonPath: .spec.action
+      name: Action
+      type: string
+    - jsonPath: .status.phase
+      name: Phase
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: |-
+          WorkflowAction requests the workflow controller to perform a lifecycle action on a Workflow.
+          The controller applies the action during reconciliation and reports the outcome on status.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: WorkflowActionSpec is the requested action. It is immutable
+              after creation.
+            properties:
+              action:
+                description: Action to perform on the target
+                enum:
+                - Suspend
+                - Resume
+                - Stop
+                - Terminate
+                type: string
+              resume:
+                description: 'Resume parameters, only for action: Resume'
+                properties:
+                  nodeFieldSelector:
+                    description: NodeFieldSelector selects suspended nodes to resume.
+                      Empty resumes the whole workflow.
+                    type: string
+                  outputParameters:
+                    additionalProperties:
+                      type: string
+                    description: OutputParameters sets raw output parameters on the
+                      resumed suspend nodes
+                    type: object
+                type: object
+              stop:
+                description: 'Stop parameters, only for action: Stop'
+                properties:
+                  message:
+                    description: Message set on stopped nodes
+                    type: string
+                  nodeFieldSelector:
+                    description: NodeFieldSelector selects suspended nodes to fail
+                      instead of stopping the whole workflow
+                    type: string
+                type: object
+              workflowRef:
+                description: WorkflowRef is the target Workflow
+                properties:
+                  name:
+                    description: Name of the target Workflow in the same namespace
+                    type: string
+                  uid:
+                    description: UID optionally pins the target across name reuse.
+                      Reserved for archived targets (retry).
+                    type: string
+                required:
+                - name
+                type: object
+            required:
+            - action
+            - workflowRef
+            type: object
+            x-kubernetes-validations:
+            - message: spec is immutable
+              rule: self == oldSelf
+            - message: 'resume parameters require action: Resume'
+              rule: '!has(self.resume) || self.action == ''Resume'''
+            - message: 'stop parameters require action: Stop'
+              rule: '!has(self.stop) || self.action == ''Stop'''
+          status:
+            description: WorkflowActionStatus is the observed outcome of the action
+            properties:
+              completionTime:
+                description: CompletionTime is when the action reached a terminal
+                  phase
+                format: date-time
+                type: string
+              message:
+                description: Message is a human-readable elaboration of Reason
+                type: string
+              phase:
+                description: 'Phase of the action: Pending, Succeeded or Failed. Empty
+                  means Pending.'
+                type: string
+              reason:
+                description: Reason is a machine-readable reason for a Failed phase
+                type: string
+            type: object
+        required:
+        - metadata
+        - spec
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

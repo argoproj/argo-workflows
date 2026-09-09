@@ -8,6 +8,7 @@ WorkflowStatus contains overall status information about a workflow
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**appliedActions** | **List&lt;String&gt;** | AppliedActions records the UIDs of WorkflowActions whose effects have been persisted on this workflow but whose own status may not have been written yet (a write-ahead record for crash recovery). Entries are pruned once the action&#39;s status is recorded. |  [optional]
 **artifactGCStatus** | [**IoArgoprojWorkflowV1alpha1ArtGCStatus**](IoArgoprojWorkflowV1alpha1ArtGCStatus.md) |  |  [optional]
 **artifactRepositoryRef** | [**IoArgoprojWorkflowV1alpha1ArtifactRepositoryRefStatus**](IoArgoprojWorkflowV1alpha1ArtifactRepositoryRefStatus.md) |  |  [optional]
 **compressedNodes** | **String** | Compressed and base64 decoded Nodes map |  [optional]
@@ -22,6 +23,7 @@ Name | Type | Description | Notes
 **phase** | **String** | Phase a simple, high-level summary of where the workflow is in its lifecycle. Will be \&quot;\&quot; (Unknown), \&quot;Pending\&quot;, or \&quot;Running\&quot; before the workflow is completed, and \&quot;Succeeded\&quot;, \&quot;Failed\&quot; or \&quot;Error\&quot; once the workflow has completed. |  [optional]
 **progress** | **String** | Progress to completion |  [optional]
 **resourcesDuration** | **Map&lt;String, Long&gt;** | ResourcesDuration is the total for the workflow |  [optional]
+**shutdown** | **String** | Shutdown is the shutdown strategy the controller accepted from a Stop or Terminate WorkflowAction. When set it supersedes spec.shutdown. |  [optional]
 **startedAt** | **java.time.Instant** |  |  [optional]
 **storedTemplates** | [**Map&lt;String, IoArgoprojWorkflowV1alpha1Template&gt;**](IoArgoprojWorkflowV1alpha1Template.md) | StoredTemplates is a mapping between a template ref and the node&#39;s status. |  [optional]
 **storedWorkflowTemplateSpec** | [**IoArgoprojWorkflowV1alpha1WorkflowSpec**](IoArgoprojWorkflowV1alpha1WorkflowSpec.md) |  |  [optional]
