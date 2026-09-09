@@ -970,6 +970,7 @@ WorkflowStatus contains overall status information about a workflow
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
+|`appliedActions`|`Array< string >`|AppliedActions records the UIDs of WorkflowActions whose effects have been persisted on this workflow but whose own status may not have been written yet (a write-ahead record for crash recovery). Entries are pruned once the action's status is recorded.|
 |`artifactGCStatus`|[`ArtGCStatus`](#artgcstatus)|ArtifactGCStatus maintains the status of Artifact Garbage Collection|
 |`artifactRepositoryRef`|[`ArtifactRepositoryRefStatus`](#artifactrepositoryrefstatus)|ArtifactRepositoryRef is used to cache the repository to use so we do not need to determine it everytime we reconcile.|
 |`compressedNodes`|`string`|Compressed and base64 decoded Nodes map|
@@ -984,6 +985,7 @@ WorkflowStatus contains overall status information about a workflow
 |`phase`|`string`|Phase a simple, high-level summary of where the workflow is in its lifecycle. Will be "" (Unknown), "Pending", or "Running" before the workflow is completed, and "Succeeded", "Failed" or "Error" once the workflow has completed.|
 |`progress`|`string`|Progress to completion|
 |`resourcesDuration`|`Map< integer , int64 >`|ResourcesDuration is the total for the workflow|
+|`shutdown`|`string`|Shutdown is the shutdown strategy the controller accepted from a Stop or Terminate WorkflowAction. When set it supersedes spec.shutdown.|
 |`startedAt`|[`Time`](#time)|Time at which this workflow started|
 |`storedTemplates`|[`Template`](#template)|StoredTemplates is a mapping between a template ref and the node's status.|
 |`storedWorkflowTemplateSpec`|[`WorkflowSpec`](#workflowspec)|StoredWorkflowSpec stores the WorkflowTemplate spec for future execution.|

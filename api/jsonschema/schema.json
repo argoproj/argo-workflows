@@ -8387,6 +8387,13 @@
     "io.argoproj.workflow.v1alpha1.WorkflowStatus": {
       "description": "WorkflowStatus contains overall status information about a workflow",
       "properties": {
+        "appliedActions": {
+          "description": "AppliedActions records the UIDs of WorkflowActions whose effects have been persisted on this workflow but whose own status may not have been written yet (a write-ahead record for crash recovery). Entries are pruned once the action's status is recorded.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
         "artifactGCStatus": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtGCStatus",
           "description": "ArtifactGCStatus maintains the status of Artifact Garbage Collection"
@@ -8455,6 +8462,10 @@
           },
           "description": "ResourcesDuration is the total for the workflow",
           "type": "object"
+        },
+        "shutdown": {
+          "description": "Shutdown is the shutdown strategy the controller accepted from a Stop or Terminate WorkflowAction. When set it supersedes spec.shutdown.",
+          "type": "string"
         },
         "startedAt": {
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time",

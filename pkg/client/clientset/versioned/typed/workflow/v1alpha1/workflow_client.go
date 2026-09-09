@@ -15,6 +15,7 @@ type ArgoprojV1alpha1Interface interface {
 	ClusterWorkflowTemplatesGetter
 	CronWorkflowsGetter
 	WorkflowsGetter
+	WorkflowActionsGetter
 	WorkflowArtifactGCTasksGetter
 	WorkflowEventBindingsGetter
 	WorkflowTaskResultsGetter
@@ -37,6 +38,10 @@ func (c *ArgoprojV1alpha1Client) CronWorkflows(namespace string) CronWorkflowInt
 
 func (c *ArgoprojV1alpha1Client) Workflows(namespace string) WorkflowInterface {
 	return newWorkflows(c, namespace)
+}
+
+func (c *ArgoprojV1alpha1Client) WorkflowActions(namespace string) WorkflowActionInterface {
+	return newWorkflowActions(c, namespace)
 }
 
 func (c *ArgoprojV1alpha1Client) WorkflowArtifactGCTasks(namespace string) WorkflowArtifactGCTaskInterface {
