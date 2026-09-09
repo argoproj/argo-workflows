@@ -262,7 +262,9 @@ func (s *databaseSemaphore) checkAcquire(ctx context.Context, holderKey string, 
 		}).Info(ctx, "CheckAcquire - already held")
 		return false, true, ""
 	}
-	waitingMsg := fmt.Sprintf("Waiting for %s lock (%s). Lock status: %d/%d", s.name, s.longDBKey(), len(holders), limit)
+	// Available slots over limit, the convention the in-memory locks have
+	// used since 3.0, so "0/1" reads the same for both lock types.
+	waitingMsg := fmt.Sprintf("Waiting for %s lock (%s). Lock status: %d/%d", s.name, s.longDBKey(), limit-len(holders), limit)
 
 	if len(holders) >= limit {
 		logger.WithFields(logging.Fields{
