@@ -3,6 +3,7 @@ package workflow
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/go-jose/go-jose/v4/jwt"
@@ -645,6 +646,7 @@ func getWorkflowServer(t *testing.T) (workflowpkg.WorkflowServiceServer, context
 	})
 	wfClientset := v1alpha.NewClientset(&unlabelledObj, &wfObj1, &wfObj2, &wfObj3, &wfObj4, &wfObj5, &failedWfObj, &wftmpl, &cronwfObj, &cwfTmpl)
 	wfClientset.PrependReactor("create", "workflows", generateNameReactor)
+	wfClientset.PrependReactor("create", "workflowactions", generateNameActionReactor)
 	ctx := logging.TestContext(t.Context())
 	ctx = context.WithValue(context.WithValue(context.WithValue(ctx, auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet), auth.ClaimsKey, &types.Claims{Claims: jwt.Claims{Subject: "my-sub"}, Email: "my-sub@your.org"})
 	listOptions := &metav1.ListOptions{}
@@ -667,7 +669,83 @@ func getWorkflowServer(t *testing.T) (workflowpkg.WorkflowServiceServer, context
 	wftmplStore := workflowtemplate.NewClientStore()
 	cwftmplStore := clusterworkflowtemplate.NewClientStore()
 	server := NewServer(ctx, instanceIDSvc, offloadNodeStatusRepo, archivedRepo, wfClientset, wfStore, wfStore, wftmplStore, cwftmplStore, nil, &namespaceAll, nil)
+	startFakeActionController(ctx, t, wfClientset)
 	return server, ctx
+}
+
+// startFakeActionController simulates the workflow controller's WorkflowAction handling against
+// the fake clientset: it watches actions and immediately records a terminal phase, applying the
+// action's effect to the workflow the way the real controller's drain does.
+func startFakeActionController(ctx context.Context, t *testing.T, clientset *v1alpha.Clientset) {
+	t.Helper()
+	w, err := clientset.ArgoprojV1alpha1().WorkflowActions(metav1.NamespaceAll).Watch(ctx, metav1.ListOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	go func() {
+		defer w.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case ev, ok := <-w.ResultChan():
+				if !ok {
+					return
+				}
+				a, ok := ev.Object.(*v1alpha1.WorkflowAction)
+				if !ok || a.Status.Fulfilled() {
+					continue
+				}
+				a = a.DeepCopy()
+				wfIf := clientset.ArgoprojV1alpha1().Workflows(a.Namespace)
+				wf, err := wfIf.Get(ctx, a.Spec.WorkflowRef.Name, metav1.GetOptions{})
+				switch {
+				case err != nil:
+					a.Status = v1alpha1.WorkflowActionStatus{Phase: v1alpha1.WorkflowActionFailed, Reason: v1alpha1.WorkflowActionReasonWorkflowNotFound, Message: "workflow not found"}
+				case wf.Status.Fulfilled():
+					a.Status = v1alpha1.WorkflowActionStatus{Phase: v1alpha1.WorkflowActionFailed, Reason: v1alpha1.WorkflowActionReasonWorkflowCompleted, Message: "workflow is completed"}
+				default:
+					switch a.Spec.Action {
+					case v1alpha1.ActionTypeTerminate:
+						wf.Status.Shutdown = v1alpha1.ShutdownStrategyTerminate
+					case v1alpha1.ActionTypeStop:
+						wf.Status.Shutdown = v1alpha1.ShutdownStrategyStop
+					case v1alpha1.ActionTypeSuspend:
+						wf.Spec.Suspend = new(true)
+					case v1alpha1.ActionTypeResume:
+						wf.Spec.Suspend = nil
+					}
+					// the real controller copies the actor labels from the action to the workflow
+					for k, v := range a.Labels {
+						if k == common.LabelKeyAction || strings.HasPrefix(k, common.LabelKeyActor) {
+							if wf.Labels == nil {
+								wf.Labels = map[string]string{}
+							}
+							wf.Labels[k] = v
+						}
+					}
+					if _, err := wfIf.Update(ctx, wf, metav1.UpdateOptions{}); err != nil {
+						a.Status = v1alpha1.WorkflowActionStatus{Phase: v1alpha1.WorkflowActionFailed, Reason: v1alpha1.WorkflowActionReasonInvalidAction, Message: err.Error()}
+					} else {
+						a.Status = v1alpha1.WorkflowActionStatus{Phase: v1alpha1.WorkflowActionSucceeded}
+					}
+				}
+				now := metav1.Now()
+				a.Status.CompletionTime = &now
+				//nolint:errcheck // best-effort in tests; assertions read the resulting state
+				clientset.ArgoprojV1alpha1().WorkflowActions(a.Namespace).UpdateStatus(ctx, a, metav1.UpdateOptions{})
+			}
+		}
+	}()
+}
+
+// generateNameActionReactor is generateNameReactor for WorkflowActions.
+func generateNameActionReactor(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+	a := action.(ktesting.CreateAction).GetObject().(*v1alpha1.WorkflowAction)
+	if a.Name == "" && a.GenerateName != "" {
+		a.Name = fmt.Sprintf("%s%s", a.GenerateName, rand.String(5))
+	}
+	return false, nil, nil
 }
 
 // generateNameReactor implements the logic required for the GenerateName field to work when using
@@ -947,7 +1025,7 @@ func TestTerminateWorkflow(t *testing.T) {
 	}
 	wf, err = server.TerminateWorkflow(ctx, &rsmWfReq)
 	assert.NotNil(t, wf)
-	assert.Equal(t, v1alpha1.ShutdownStrategyTerminate, wf.Spec.Shutdown)
+	assert.Equal(t, v1alpha1.ShutdownStrategyTerminate, wf.Status.Shutdown)
 	assert.Contains(t, wf.Labels, common.LabelKeyActor)
 	assert.Equal(t, string(creator.ActionTerminate), wf.Labels[common.LabelKeyAction])
 	assert.Equal(t, userEmailLabel, wf.Labels[common.LabelKeyActorEmail])
@@ -971,9 +1049,21 @@ func TestStopWorkflow(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, wf)
 	assert.Equal(t, v1alpha1.WorkflowRunning, wf.Status.Phase)
+	assert.Equal(t, v1alpha1.ShutdownStrategyStop, wf.Status.Shutdown)
 	assert.Contains(t, wf.Labels, common.LabelKeyActor)
 	assert.Equal(t, string(creator.ActionStop), wf.Labels[common.LabelKeyAction])
 	assert.Equal(t, userEmailLabel, wf.Labels[common.LabelKeyActorEmail])
+}
+
+func TestTerminateCompletedWorkflow(t *testing.T) {
+	server, ctx := getWorkflowServer(t)
+	wf, err := server.TerminateWorkflow(ctx, &workflowpkg.WorkflowTerminateRequest{
+		Name:      "failed",
+		Namespace: "workflows",
+	})
+	assert.Nil(t, wf)
+	require.Error(t, err)
+	assert.Equal(t, codes.FailedPrecondition, status.Code(err))
 }
 
 func TestResubmitWorkflow(t *testing.T) {
