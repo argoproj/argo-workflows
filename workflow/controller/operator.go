@@ -113,6 +113,9 @@ type wfOperationCtx struct {
 	// terminate the workflow.
 	workflowDeadline *time.Time
 	eventRecorder    record.EventRecorder
+	// pendingActionResults holds drained WorkflowAction outcomes to be recorded on the actions
+	// after their workflow effects have been persisted (see actionReconciliation)
+	pendingActionResults []actionResult
 	// preExecutionNodeStatuses contains the phases of all the nodes before the current operation. Necessary to infer
 	// changes in phase for metric emission
 	preExecutionNodeStatuses map[string]wfv1.NodeStatus
@@ -261,6 +264,9 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 	// Reconciliation of Outputs (Artifacts). See ReportOutputs() of executor.go.
 	woc.taskResultReconciliation(reconcileCtx)
+
+	// Drain pending WorkflowActions so they are applied serially with reconciliation.
+	woc.actionReconciliation(reconcileCtx)
 
 	// Do artifact GC if task result reconciliation is complete.
 	if woc.wf.Status.Fulfilled() {
@@ -477,7 +483,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		woc.markNodeError(ctx, node.Name, err)
 	}
 	// Reconcile TaskSet and Agent for HTTP/Plugin templates when is not shutdown
-	if !woc.execWf.Spec.Shutdown.Enabled() {
+	if !woc.GetShutdownStrategy().Enabled() {
 		woc.taskSetReconciliation(ctx)
 	}
 
@@ -786,6 +792,9 @@ func (woc *wfOperationCtx) markInMemoryReapplyFailed() {
 // the fake CRD clientset which makes unit testing extremely difficult.
 func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	if !woc.updated {
+		// a drain of pure no-op actions changes nothing on the workflow, but their outcomes
+		// must still be recorded
+		woc.reportActionOutcomes(ctx)
 		return
 	}
 
@@ -852,6 +861,9 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	}
 
 	woc.controller.recordWorkflowWrite(woc.wf)
+	// The effects (and the status.appliedActions write-ahead record) are now persisted, so the
+	// drained WorkflowActions' outcomes can be recorded.
+	woc.reportActionOutcomes(ctx)
 	// The workflow returned from wfClient.Update doesn't have a TypeMeta associated
 	// with it, so copy from the original workflow.
 	woc.wf.TypeMeta = woc.orig.TypeMeta
@@ -4587,6 +4599,9 @@ func (woc *wfOperationCtx) workflowDurationSeconds() float64 {
 }
 
 func (woc *wfOperationCtx) GetShutdownStrategy() wfv1.ShutdownStrategy {
+	if woc.wf.Status.Shutdown.Enabled() {
+		return woc.wf.Status.Shutdown
+	}
 	return woc.execWf.Spec.Shutdown
 }
 

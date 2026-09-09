@@ -1003,12 +1003,15 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	// Check the parallelism limit before building the operation context: newWorkflowOperationCtx
 	// deep-copies the entire Workflow, and for a workflow that is postponed that copy is discarded
 	// immediately. Only read from wf on this path, never mutate it.
-	shutdownStrategy := wf.Spec.Shutdown
+	// A Terminate must never be postponed, whether it arrived via the (deprecated for runtime
+	// use) spec.shutdown, the controller-accepted status.shutdown, or a still-pending
+	// Terminate WorkflowAction that operate() has yet to drain.
+	terminating := wf.EffectiveShutdown() == wfv1.ShutdownStrategyTerminate || wfc.hasPendingTerminateAction(key)
 
 	// A Running workflow must never be postponed, even if the throttler no longer admits
 	// it (e.g. it was removed when an archive attempt failed mid-flight): skipping
 	// reconciliation would orphan its pods (#14123).
-	if (!shutdownStrategy.Enabled() || shutdownStrategy != wfv1.ShutdownStrategyTerminate) && !wfc.throttler.Admit(key) && wf.Status.Phase != wfv1.WorkflowRunning {
+	if !terminating && !wfc.throttler.Admit(key) && wf.Status.Phase != wfv1.WorkflowRunning {
 		logger.WithFields(logging.Fields{"workflow": wf.Name, "namespace": wf.Namespace, "key": key}).
 			Info(ctx, "Workflow processing has been postponed due to max parallelism limit")
 		if wf.Status.Phase == wfv1.WorkflowUnknown {
