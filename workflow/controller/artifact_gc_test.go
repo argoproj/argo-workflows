@@ -12,6 +12,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/fake"
 	k8stesting "k8s.io/client-go/testing"
 
@@ -947,6 +948,31 @@ func failTaskCreates(controller *WorkflowController) func() {
 	return func() { wfclient.ReactionChain = wfclient.ReactionChain[1:] }
 }
 
+// assignTaskUIDs makes the fake workflow client give every created WorkflowArtifactGCTask a UID, as the API server
+// would, so that owner references built from stored tasks can be told apart from ones built from unsaved objects.
+func assignTaskUIDs(controller *WorkflowController) {
+	wfclient := controller.wfclientset.(*fakewfclientset.Clientset)
+	wfclient.PrependReactor("create", "workflowartifactgctasks", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		task := action.(k8stesting.CreateAction).GetObject().(*wfv1.WorkflowArtifactGCTask)
+		task.UID = types.UID("uid-" + task.Name)
+		return false, nil, nil
+	})
+}
+
+// every GC pod must be owned by the stored tasks, otherwise the API server rejects it for an empty owner UID
+func assertArtGCPodsOwnedByStoredTasks(t *testing.T, woc *wfOperationCtx) {
+	t.Helper()
+	ctx := logging.TestContext(t.Context())
+	pods, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).List(ctx, metav1.ListOptions{})
+	require.NoError(t, err)
+	for _, pod := range pods.Items {
+		require.NotEmpty(t, pod.OwnerReferences, pod.Name)
+		for _, owner := range pod.OwnerReferences {
+			assert.Equal(t, types.UID("uid-"+owner.Name), owner.UID, "pod %s owner %s", pod.Name, owner.Name)
+		}
+	}
+}
+
 func artGCErrorCondition(woc *wfOperationCtx) *wfv1.Condition {
 	for i, condition := range woc.wf.Status.Conditions {
 		if condition.Type == wfv1.ConditionTypeArtifactGCError {
@@ -974,6 +1000,7 @@ func newArtGCRetryWoc(t *testing.T, finishedAgo time.Duration) (*wfOperationCtx,
 	ctx := logging.TestContext(t.Context())
 	cancel, controller := newController(ctx, wf)
 	controller.artifactGCRetryWindow = time.Hour
+	assignTaskUIDs(controller)
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.wf.Status.ArtifactGCStatus = &wfv1.ArtGCStatus{}
 	return woc, cancel
@@ -1001,6 +1028,7 @@ func TestArtifactGCStrategyRetriedAfterPodCreateFailure(t *testing.T) {
 	pods, tasks := countArtGCPodsAndTasks(t, woc)
 	assert.Equal(t, 2, pods)
 	assert.Equal(t, 2, tasks, "retry must not create duplicate tasks")
+	assertArtGCPodsOwnedByStoredTasks(t, woc)
 }
 
 func TestArtifactGCStrategyRetriedAfterTaskCreateFailure(t *testing.T) {
@@ -1022,6 +1050,7 @@ func TestArtifactGCStrategyRetriedAfterTaskCreateFailure(t *testing.T) {
 	pods, tasks = countArtGCPodsAndTasks(t, woc)
 	assert.Equal(t, 2, pods)
 	assert.Equal(t, 2, tasks)
+	assertArtGCPodsOwnedByStoredTasks(t, woc)
 }
 
 func TestArtifactGCStrategyPartialFailureRetriesOnlyTheMissingPod(t *testing.T) {
@@ -1047,6 +1076,7 @@ func TestArtifactGCStrategyPartialFailureRetriesOnlyTheMissingPod(t *testing.T) 
 	pods, tasks := countArtGCPodsAndTasks(t, woc)
 	assert.Equal(t, 2, pods)
 	assert.Equal(t, 2, tasks)
+	assertArtGCPodsOwnedByStoredTasks(t, woc)
 }
 
 func TestArtifactGCStrategyAbandonedAfterRetryWindow(t *testing.T) {

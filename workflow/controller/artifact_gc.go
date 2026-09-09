@@ -427,16 +427,23 @@ func (woc *wfOperationCtx) createWorkflowArtifactGCTask(ctx context.Context, tas
 		return nil, err
 	}
 	if foundTask != nil {
+		// return the stored object: the Pod's owner reference needs its UID
 		woc.log.WithField("task", task.Name).Debug(ctx, "Artifact GC Task already exists")
-	} else {
-		woc.log.WithField("task", task.Name).Info(ctx, "Creating Artifact GC Task")
-
-		task, err = woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowArtifactGCTasks(woc.wf.Namespace).Create(ctx, task, metav1.CreateOptions{})
-		if err != nil {
-			return nil, fmt.Errorf("failed to Create WorkflowArtifactGCTask %q for Garbage Collection: %w", task.Name, err)
-		}
+		return foundTask, nil
 	}
-	return task, nil
+
+	woc.log.WithField("task", task.Name).Info(ctx, "Creating Artifact GC Task")
+	tasks := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowArtifactGCTasks(woc.wf.Namespace)
+	created, err := tasks.Create(ctx, task, metav1.CreateOptions{})
+	if apierr.IsAlreadyExists(err) {
+		// created by an earlier attempt that the informer has not caught up with yet
+		woc.log.WithField("task", task.Name).Debug(ctx, "Artifact GC Task already exists, informer not yet synced")
+		created, err = tasks.Get(ctx, task.Name, metav1.GetOptions{})
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to Create WorkflowArtifactGCTask %q for Garbage Collection: %w", task.Name, err)
+	}
+	return created, nil
 }
 
 // create the Pod which will do the deletions
