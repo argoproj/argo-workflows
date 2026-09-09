@@ -346,6 +346,15 @@ func (m *Metrics) ObserveWorkflowCondition(ctx context.Context, o metric.Observe
 	inst.ObserveInt(ctx, o, val, attribs)
 }
 
+// AddWorkflowactionsProcessedTotal adds a value to the workflowactions_processed_total counter
+func (m *Metrics) AddWorkflowactionsProcessedTotal(ctx context.Context, val int64, workflowActionType string, workflowActionOutcome string) {
+	attribs := Attributes{
+		{Name: AttribWorkflowActionType, Value: workflowActionType},
+		{Name: AttribWorkflowActionOutcome, Value: workflowActionOutcome},
+	}
+	m.AddInt(ctx, InstrumentWorkflowactionsProcessedTotal.Name(), val, attribs)
+}
+
 // RecordWorkflowtemplateRuntime records a value to the workflowtemplate_runtime histogram
 func (m *Metrics) RecordWorkflowtemplateRuntime(ctx context.Context, val float64, templateName string, templateNamespace string, templateCluster bool) {
 	attribs := Attributes{
