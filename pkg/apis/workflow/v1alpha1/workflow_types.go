@@ -2243,6 +2243,15 @@ type WorkflowStatus struct {
 
 	// TaskResultsCompletionStatus tracks task result completion status (mapped by node ID). Used to prevent premature archiving and garbage collection.
 	TaskResultsCompletionStatus map[string]bool `json:"taskResultsCompletionStatus,omitempty" protobuf:"bytes,20,opt,name=taskResultsCompletionStatus"`
+
+	// Shutdown is the shutdown strategy the controller accepted from a Stop or Terminate
+	// WorkflowAction. When set it supersedes spec.shutdown.
+	Shutdown ShutdownStrategy `json:"shutdown,omitempty" protobuf:"bytes,21,opt,name=shutdown,casttype=ShutdownStrategy"`
+
+	// AppliedActions records the UIDs of WorkflowActions whose effects have been persisted on this
+	// workflow but whose own status may not have been written yet (a write-ahead record for crash
+	// recovery). Entries are pruned once the action's status is recorded.
+	AppliedActions []string `json:"appliedActions,omitempty" protobuf:"bytes,22,rep,name=appliedActions"`
 }
 
 // MarkTaskResultIncomplete sets either the task results completion field
@@ -2718,6 +2727,15 @@ func (n NodeStatus) Fulfilled() bool {
 
 func (in *WorkflowStatus) AnyActiveSuspendNode() bool {
 	return in.Nodes.Any(func(node NodeStatus) bool { return node.IsActiveSuspendNode() })
+}
+
+// EffectiveShutdown returns the shutdown strategy in force: the controller-accepted
+// status.shutdown when set, otherwise the (deprecated for runtime use) spec.shutdown.
+func (w *Workflow) EffectiveShutdown() ShutdownStrategy {
+	if w.Status.Shutdown.Enabled() {
+		return w.Status.Shutdown
+	}
+	return w.Spec.Shutdown
 }
 
 func (in *WorkflowStatus) GetDuration() time.Duration {

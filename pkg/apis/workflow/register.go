@@ -38,4 +38,9 @@ const (
 	WorkflowArtifactGCTaskPlural     string = "workflowartifactgctasks"
 	WorkflowArtifactGCTaskShortName  string = "wfat"
 	WorkflowArtifactGCTaskFullName   string = WorkflowArtifactGCTaskPlural + "." + Group
+	WorkflowActionKind               string = "WorkflowAction"
+	WorkflowActionSingular           string = "workflowaction"
+	WorkflowActionPlural             string = "workflowactions"
+	WorkflowActionShortName          string = "wfa"
+	WorkflowActionFullName           string = WorkflowActionPlural + "." + Group
 )
