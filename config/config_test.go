@@ -22,6 +22,17 @@ func TestDBConfigConnectionTimeout(t *testing.T) {
 	assert.Equal(t, 12*time.Second, DBConfig{ConnectionTimeoutSeconds: 12}.ConnectionTimeout())
 }
 
+func TestGetWorkflowActionTTL(t *testing.T) {
+	// Defaults to 24h when unset.
+	assert.Equal(t, 24*time.Hour, Config{}.GetWorkflowActionTTL())
+	// Honors an explicit value.
+	oneHour := TTL(time.Hour)
+	assert.Equal(t, time.Hour, Config{WorkflowActionTTL: &oneHour}.GetWorkflowActionTTL())
+	// Explicit zero means delete immediately.
+	zero := TTL(0)
+	assert.Equal(t, time.Duration(0), Config{WorkflowActionTTL: &zero}.GetWorkflowActionTTL())
+}
+
 func TestSanitize(t *testing.T) {
 	tests := []struct {
 		c   Config
