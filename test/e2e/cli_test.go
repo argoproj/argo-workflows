@@ -2053,7 +2053,9 @@ spec:
 
 			nodeStatus = status.Nodes.FindByDisplayName("approve")
 			require.NotNil(t, nodeStatus)
-			assert.Equal(t, "Test message; Resumed by: map[User:system:serviceaccount:argo:argo-server]", nodeStatus.Message)
+			// the resume is applied by the controller from a WorkflowAction whose generated
+			// name is unpredictable, so only assert the stable parts of the message
+			assert.Contains(t, nodeStatus.Message, "Test message; Resumed by WorkflowAction")
 		})
 }
 
