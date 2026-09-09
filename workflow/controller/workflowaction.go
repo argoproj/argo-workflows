@@ -7,6 +7,7 @@ import (
 	"sort"
 	"time"
 
+	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -22,6 +23,7 @@ import (
 	waitutil "github.com/argoproj/argo-workflows/v4/util/wait"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/indexes"
+	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
 // newWorkflowActionInformer returns an informer over WorkflowActions, indexed by target
@@ -211,6 +213,169 @@ func (wfc *WorkflowController) hasPendingTerminateAction(key string) bool {
 		}
 	}
 	return false
+}
+
+// actionResult is a drained action outcome awaiting persistence of its workflow effect.
+type actionResult struct {
+	action  *wfv1.WorkflowAction
+	phase   wfv1.WorkflowActionPhase
+	reason  string
+	message string
+}
+
+// actionReconciliation drains the pending WorkflowActions targeting this workflow, applying each
+// in creationTimestamp order to the in-memory workflow. Effects are persisted through the normal
+// persistUpdates path, with the applied action UIDs recorded in status.appliedActions in the same
+// write (a write-ahead record); the actions' own statuses are written afterwards by
+// reportActionOutcomes. Validation failures touch nothing and are reported immediately.
+func (woc *wfOperationCtx) actionReconciliation(ctx context.Context) {
+	actions := woc.controller.pendingActionsFor(woc.wf.Namespace, woc.wf.Name)
+	if len(actions) == 0 && len(woc.wf.Status.AppliedActions) == 0 {
+		return
+	}
+	woc.pruneAppliedActions()
+	for _, a := range actions {
+		if slices.Contains(woc.wf.Status.AppliedActions, string(a.UID)) {
+			// crash recovery: the effect is already persisted, only the action status is missing
+			woc.pendingActionResults = append(woc.pendingActionResults, actionResult{action: a, phase: wfv1.WorkflowActionSucceeded})
+			continue
+		}
+		if woc.wf.Status.Fulfilled() {
+			// the binder normally fails these before we get here; defense for races
+			woc.controller.failActionOutcome(ctx, a, wfv1.WorkflowActionReasonWorkflowCompleted,
+				fmt.Sprintf("cannot perform %s on completed workflow %q", a.Spec.Action, woc.wf.Name))
+			continue
+		}
+		changed, err := woc.applyAction(ctx, a)
+		if err != nil {
+			woc.controller.failActionOutcome(ctx, a, wfv1.WorkflowActionReasonInvalidAction, err.Error())
+			continue
+		}
+		if changed {
+			woc.wf.Status.AppliedActions = append(woc.wf.Status.AppliedActions, string(a.UID))
+			woc.updated = true
+		}
+		woc.pendingActionResults = append(woc.pendingActionResults, actionResult{action: a, phase: wfv1.WorkflowActionSucceeded})
+	}
+}
+
+// applyAction applies one action to the in-memory workflow, returning whether it changed anything.
+// An error means the action was invalid and nothing was changed.
+func (woc *wfOperationCtx) applyAction(ctx context.Context, a *wfv1.WorkflowAction) (bool, error) {
+	switch a.Spec.Action {
+	case wfv1.ActionTypeTerminate:
+		return woc.applyShutdown(a, wfv1.ShutdownStrategyTerminate), nil
+	case wfv1.ActionTypeStop:
+		if a.Spec.Stop != nil && a.Spec.Stop.NodeFieldSelector != "" {
+			return woc.applyNodeSet(ctx, a, a.Spec.Stop.NodeFieldSelector, util.SetOperationValues{Phase: wfv1.NodeFailed, Message: a.Spec.Stop.Message})
+		}
+		return woc.applyShutdown(a, wfv1.ShutdownStrategyStop), nil
+	case wfv1.ActionTypeSuspend:
+		if woc.execWf.Spec.Suspend != nil && *woc.execWf.Spec.Suspend {
+			return false, nil
+		}
+		woc.wf.Spec.Suspend = new(true)
+		woc.execWf.Spec.Suspend = new(true)
+		woc.copyActorLabels(a)
+		return true, nil
+	case wfv1.ActionTypeResume:
+		if a.Spec.Resume != nil && a.Spec.Resume.NodeFieldSelector != "" {
+			return woc.applyNodeSet(ctx, a, a.Spec.Resume.NodeFieldSelector, util.SetOperationValues{Phase: wfv1.NodeSucceeded, Message: resumeMessage(a), OutputParameters: a.Spec.Resume.OutputParameters})
+		}
+		changed, err := util.ApplyResume(ctx, woc.wf, resumeMessage(a))
+		if err != nil {
+			return false, err
+		}
+		woc.execWf.Spec.Suspend = nil
+		if changed {
+			woc.copyActorLabels(a)
+		}
+		return changed, nil
+	default:
+		return false, fmt.Errorf("unsupported action %q", a.Spec.Action)
+	}
+}
+
+func (woc *wfOperationCtx) applyShutdown(a *wfv1.WorkflowAction, strategy wfv1.ShutdownStrategy) bool {
+	if woc.wf.EffectiveShutdown() == strategy {
+		return false
+	}
+	woc.wf.Status.Shutdown = strategy
+	woc.copyActorLabels(a)
+	return true
+}
+
+func (woc *wfOperationCtx) applyNodeSet(ctx context.Context, a *wfv1.WorkflowAction, nodeFieldSelector string, values util.SetOperationValues) (bool, error) {
+	changed, err := util.ApplySuspendedNodeSetOperation(ctx, woc.wf, nodeFieldSelector, values)
+	if err != nil {
+		return false, err
+	}
+	if changed {
+		woc.copyActorLabels(a)
+	}
+	return changed, nil
+}
+
+// copyActorLabels carries the requester's identity from the action onto the workflow, preserving
+// the audit labels the server used to patch directly (#14102).
+func (woc *wfOperationCtx) copyActorLabels(a *wfv1.WorkflowAction) {
+	for _, k := range []string{common.LabelKeyAction, common.LabelKeyActor, common.LabelKeyActorEmail, common.LabelKeyActorPreferredUsername} {
+		if v, ok := a.Labels[k]; ok {
+			if woc.wf.Labels == nil {
+				woc.wf.Labels = map[string]string{}
+			}
+			woc.wf.Labels[k] = v
+			woc.updated = true
+		}
+	}
+}
+
+func resumeMessage(a *wfv1.WorkflowAction) string {
+	msg := "Resumed by WorkflowAction " + a.Name
+	if actor := a.Labels[common.LabelKeyActorEmail]; actor != "" {
+		msg += " (" + actor + ")"
+	}
+	return msg
+}
+
+// pruneAppliedActions drops write-ahead entries whose action has a recorded terminal status, or
+// no longer exists, keeping status.appliedActions bounded.
+func (woc *wfOperationCtx) pruneAppliedActions() {
+	if len(woc.wf.Status.AppliedActions) == 0 {
+		return
+	}
+	pendingUIDs := map[string]bool{}
+	objs, err := woc.controller.wfActionInformer.GetIndexer().ByIndex(indexes.WorkflowActionIndex, indexes.WorkflowIndexValue(woc.wf.Namespace, woc.wf.Name))
+	if err != nil {
+		return
+	}
+	for _, obj := range objs {
+		if a, ok := obj.(*wfv1.WorkflowAction); ok && !a.Status.Fulfilled() {
+			pendingUIDs[string(a.UID)] = true
+		}
+	}
+	kept := woc.wf.Status.AppliedActions[:0:0]
+	for _, uid := range woc.wf.Status.AppliedActions {
+		if pendingUIDs[uid] {
+			kept = append(kept, uid)
+		}
+	}
+	if len(kept) != len(woc.wf.Status.AppliedActions) {
+		woc.wf.Status.AppliedActions = kept
+		woc.updated = true
+	}
+}
+
+// reportActionOutcomes records the status of actions whose effects have been persisted. It is
+// called from persistUpdates after a successful write (and on the no-op path, for actions that
+// changed nothing).
+func (woc *wfOperationCtx) reportActionOutcomes(ctx context.Context) {
+	for _, r := range woc.pendingActionResults {
+		woc.controller.recordActionOutcome(ctx, r.action, r.phase, r.reason, r.message)
+		woc.eventRecorder.Event(woc.wf, apiv1.EventTypeNormal, "WorkflowActionApplied",
+			fmt.Sprintf("%s requested by WorkflowAction %s", r.action.Spec.Action, r.action.Name))
+	}
+	woc.pendingActionResults = nil
 }
 
 // enqueueActionGC schedules a terminal action for deletion once its TTL expires.
