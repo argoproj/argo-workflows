@@ -525,6 +525,7 @@ metrics:
     attributes:
       - name: WorkflowActionType
       - name: WorkflowActionOutcome
+      - name: WorkflowNamespace
     unit: "{workflowaction}"
     type: Int64Counter
   - name: WorkflowtemplateRuntime

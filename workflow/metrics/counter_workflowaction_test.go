@@ -16,13 +16,14 @@ func TestWorkflowActionProcessedCounter(t *testing.T) {
 	m, te, err := createTestMetrics(ctx, &telemetry.MetricsConfig{}, Callbacks{})
 	require.NoError(t, err)
 
-	m.WorkflowActionProcessed(ctx, "Terminate", "Succeeded")
-	m.WorkflowActionProcessed(ctx, "Terminate", "Succeeded")
-	m.WorkflowActionProcessed(ctx, "Resume", "Failed")
+	m.WorkflowActionProcessed(ctx, "Terminate", "Succeeded", "argo")
+	m.WorkflowActionProcessed(ctx, "Terminate", "Succeeded", "argo")
+	m.WorkflowActionProcessed(ctx, "Resume", "Failed", "other")
 
 	attribs := attribute.NewSet(
 		attribute.String("action", "Terminate"),
 		attribute.String("outcome", "Succeeded"),
+		attribute.String("namespace", "argo"),
 	)
 	val, err := te.GetInt64CounterValue(ctx, telemetry.InstrumentWorkflowactionsProcessedTotal.Name(), &attribs)
 	require.NoError(t, err)
@@ -31,6 +32,7 @@ func TestWorkflowActionProcessedCounter(t *testing.T) {
 	attribs = attribute.NewSet(
 		attribute.String("action", "Resume"),
 		attribute.String("outcome", "Failed"),
+		attribute.String("namespace", "other"),
 	)
 	val, err = te.GetInt64CounterValue(ctx, telemetry.InstrumentWorkflowactionsProcessedTotal.Name(), &attribs)
 	require.NoError(t, err)
