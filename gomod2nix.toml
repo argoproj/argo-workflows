@@ -914,8 +914,8 @@ schema = 3
     version = "v3.0.5"
     hash = "sha256-ygho+GU5kE7vPMx+dZYyNfCaeMjNxj66XmrcVf3afFE="
   [mod."golang.org/x/crypto"]
-    version = "v0.55.0"
-    hash = "sha256-99uV/ESeqhaDEwqbXxDpePuwzO0JoEHGhqZXZVHq/H4="
+    version = "v0.56.0"
+    hash = "sha256-B4el+S5mIq9f5uvCjMQ4Fh3EAxxo7Cb0yeXoxJXuyF8="
   [mod."golang.org/x/exp"]
     version = "v0.0.0-20260410095643-746e56fc9e2f"
     hash = "sha256-JaDJGLIRoJjjvsg3dgfFuo7XApEJO2V4kUDmd58qTLI="
