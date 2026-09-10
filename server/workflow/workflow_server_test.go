@@ -1110,6 +1110,59 @@ func TestSubmitWorkflowFromResource(t *testing.T) {
 		assert.Equal(t, codes.NotFound, status.Code(err))
 		assert.Contains(t, err.Error(), "not found")
 	})
+	t.Run("SubmitFromWorkflowTemplateMetadataInstanceIDOverwrittenByTemplateInstanceID", func(t *testing.T) {
+		wftmplConflictingMeta := &v1alpha1.WorkflowTemplate{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "wftmpl-conflicting-meta",
+				Namespace: "workflows",
+				Labels:    map[string]string{common.LabelKeyControllerInstanceID: "my-instanceid"},
+			},
+			Spec: v1alpha1.WorkflowSpec{
+				WorkflowMetadata: &v1alpha1.WorkflowMetadata{
+					Labels: map[string]string{common.LabelKeyControllerInstanceID: "other-instanceid"},
+				},
+				Entrypoint: "main",
+				Templates:  []v1alpha1.Template{{Name: "main", Container: &corev1.Container{Image: "argoproj/argosay:v2"}}},
+			},
+		}
+		wfClient := auth.GetWfClient(ctx)
+		_, err := wfClient.ArgoprojV1alpha1().WorkflowTemplates("workflows").Create(ctx, wftmplConflictingMeta, metav1.CreateOptions{})
+		require.NoError(t, err)
+
+		wf, err := server.SubmitWorkflow(ctx, &workflowpkg.WorkflowSubmitRequest{
+			Namespace:    "workflows",
+			ResourceKind: "workflowtemplate",
+			ResourceName: "wftmpl-conflicting-meta",
+		})
+		require.NoError(t, err)
+		assert.Equal(t, "my-instanceid", wf.Labels[common.LabelKeyControllerInstanceID])
+	})
+	t.Run("SubmitFromClusterWorkflowTemplateMetadataInstanceIDOverwrittenByTemplateInstanceID", func(t *testing.T) {
+		cwftmplConflictingMeta := &v1alpha1.ClusterWorkflowTemplate{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:   "cwftmpl-conflicting-meta",
+				Labels: map[string]string{common.LabelKeyControllerInstanceID: "my-instanceid"},
+			},
+			Spec: v1alpha1.WorkflowSpec{
+				WorkflowMetadata: &v1alpha1.WorkflowMetadata{
+					Labels: map[string]string{common.LabelKeyControllerInstanceID: "other-instanceid"},
+				},
+				Entrypoint: "main",
+				Templates:  []v1alpha1.Template{{Name: "main", Container: &corev1.Container{Image: "argoproj/argosay:v2"}}},
+			},
+		}
+		wfClient := auth.GetWfClient(ctx)
+		_, err := wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates().Create(ctx, cwftmplConflictingMeta, metav1.CreateOptions{})
+		require.NoError(t, err)
+
+		wf, err := server.SubmitWorkflow(ctx, &workflowpkg.WorkflowSubmitRequest{
+			Namespace:    "workflows",
+			ResourceKind: "ClusterWorkflowTemplate",
+			ResourceName: "cwftmpl-conflicting-meta",
+		})
+		require.NoError(t, err)
+		assert.Equal(t, "my-instanceid", wf.Labels[common.LabelKeyControllerInstanceID])
+	})
 }
 
 func TestCreateWorkflowInstanceIDValidation(t *testing.T) {

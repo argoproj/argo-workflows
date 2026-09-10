@@ -954,6 +954,10 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 	wftmplGetter := s.wftmplStore.Getter(ctx, req.Namespace)
 	cwftmplGetter := s.cwftmplStore.Getter(ctx)
 
+	if err := s.instanceIDService.Validate(wf); err != nil {
+		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
+	}
+
 	err = validate.Workflow(ctx, wftmplGetter, cwftmplGetter, wf, s.wfDefaults, validate.Opts{Submit: true})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
