@@ -8693,6 +8693,16 @@ func (m *WorkflowSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	i--
+	if m.StartSuspended {
+		dAtA[i] = 1
+	} else {
+		dAtA[i] = 0
+	}
+	i--
+	dAtA[i] = 0x3
+	i--
+	dAtA[i] = 0x80
 	if len(m.ResourceClaims) > 0 {
 		for iNdEx := len(m.ResourceClaims) - 1; iNdEx >= 0; iNdEx-- {
 			{
@@ -9262,6 +9272,16 @@ func (m *WorkflowStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	i--
+	if m.Suspended {
+		dAtA[i] = 1
+	} else {
+		dAtA[i] = 0
+	}
+	i--
+	dAtA[i] = 0x1
+	i--
+	dAtA[i] = 0xb8
 	if len(m.AppliedActions) > 0 {
 		for iNdEx := len(m.AppliedActions) - 1; iNdEx >= 0; iNdEx-- {
 			i -= len(m.AppliedActions[iNdEx])
@@ -13312,6 +13332,7 @@ func (m *WorkflowSpec) Size() (n int) {
 			n += 2 + l + sovGenerated(uint64(l))
 		}
 	}
+	n += 3
 	return n
 }
 
@@ -13410,6 +13431,7 @@ func (m *WorkflowStatus) Size() (n int) {
 			n += 2 + l + sovGenerated(uint64(l))
 		}
 	}
+	n += 3
 	return n
 }
 
@@ -15955,6 +15977,7 @@ func (this *WorkflowSpec) String() string {
 		`ExecutorPlugins:` + repeatedStringForExecutorPlugins + `,`,
 		`PodResources:` + strings.Replace(fmt.Sprintf("%v", this.PodResources), "ResourceRequirements", "v1.ResourceRequirements", 1) + `,`,
 		`ResourceClaims:` + repeatedStringForResourceClaims + `,`,
+		`StartSuspended:` + fmt.Sprintf("%v", this.StartSuspended) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -16035,6 +16058,7 @@ func (this *WorkflowStatus) String() string {
 		`TaskResultsCompletionStatus:` + mapStringForTaskResultsCompletionStatus + `,`,
 		`Shutdown:` + fmt.Sprintf("%v", this.Shutdown) + `,`,
 		`AppliedActions:` + fmt.Sprintf("%v", this.AppliedActions) + `,`,
+		`Suspended:` + fmt.Sprintf("%v", this.Suspended) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -43786,6 +43810,26 @@ func (m *WorkflowSpec) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 48:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field StartSuspended", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.StartSuspended = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGenerated(dAtA[iNdEx:])
@@ -44879,6 +44923,26 @@ func (m *WorkflowStatus) Unmarshal(dAtA []byte) error {
 			}
 			m.AppliedActions = append(m.AppliedActions, string(dAtA[iNdEx:postIndex]))
 			iNdEx = postIndex
+		case 23:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Suspended", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Suspended = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGenerated(dAtA[iNdEx:])

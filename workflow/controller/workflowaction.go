@@ -16,6 +16,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/client/informers/externalversions/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/deprecation"
 	errorsutil "github.com/argoproj/argo-workflows/v4/util/errors"
 	informerutil "github.com/argoproj/argo-workflows/v4/util/informer"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
@@ -272,13 +273,14 @@ func (woc *wfOperationCtx) applyAction(ctx context.Context, a *wfv1.WorkflowActi
 		}
 		return woc.applyShutdown(a, wfv1.ShutdownStrategyStop), nil
 	case wfv1.ActionTypeSuspend:
-		if woc.execWf.Spec.Suspend != nil && *woc.execWf.Spec.Suspend {
+		if woc.ShouldSuspend() {
 			return false, nil
 		}
-		// the suspend must be persisted on the Workflow object itself, not just the merged
-		// execWf view, exactly as the server's direct patch used to do
+		// spec.suspend is written alongside status.suspended so that older clients can still
+		// resume this workflow; suspendReconciliation keeps the two mirrored
 		woc.wf.Spec.Suspend = new(true) //nolint:forbidigo // not-woc-misuse
 		woc.execWf.Spec.Suspend = new(true)
+		woc.wf.Status.Suspended = true
 		woc.copyActorLabels(a)
 		return true, nil
 	case wfv1.ActionTypeResume:
@@ -317,6 +319,34 @@ func (woc *wfOperationCtx) applyNodeSet(ctx context.Context, a *wfv1.WorkflowAct
 		woc.copyActorLabels(a)
 	}
 	return changed, nil
+}
+
+// suspendReconciliation keeps status.suspended, the controller-owned suspension state, mirrored
+// from the client-owned spec.suspend. The controller always writes the two together (Suspend
+// action, startSuspended), so a mismatch means a client changed the deprecated spec.suspend:
+// a toggle into suspension is counted on the deprecated_feature metric, and a cleared
+// spec.suspend (an old client's resume) unsuspends the workflow, preserving compatibility.
+// spec.startSuspended is honoured exactly once, before anything has run (StartedAt is stamped
+// on the first phase transition, later in this same reconcile).
+func (woc *wfOperationCtx) suspendReconciliation(ctx context.Context) {
+	if woc.wf.Status.StartedAt.IsZero() && woc.execWf.Spec.StartSuspended && !woc.ShouldSuspend() {
+		// mirrored into spec.suspend so that older clients can still resume it
+		woc.wf.Spec.Suspend = new(true) //nolint:forbidigo // not-woc-misuse
+		woc.execWf.Spec.Suspend = new(true)
+		woc.wf.Status.Suspended = true
+		woc.updated = true
+		return
+	}
+	specSuspended := woc.execWf.Spec.Suspend != nil && *woc.execWf.Spec.Suspend
+	if specSuspended == woc.wf.Status.Suspended {
+		return
+	}
+	if specSuspended {
+		// a client suspended the workflow by setting the deprecated spec.suspend
+		deprecation.Record(ctx, deprecation.WorkflowSpecSuspend)
+	}
+	woc.wf.Status.Suspended = specSuspended
+	woc.updated = true
 }
 
 // copyActorLabels carries the requester's identity from the action onto the workflow, preserving

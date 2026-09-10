@@ -8370,7 +8370,14 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 					},
 					"suspend": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Suspend will suspend the workflow and prevent execution of any future steps in the workflow",
+							Description: "Suspend will suspend the workflow and prevent execution of any future steps in the workflow. Deprecated: create the Workflow with startSuspended instead, and suspend or resume a running Workflow with a WorkflowAction.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"startSuspended": {
+						SchemaProps: spec.SchemaProps{
+							Description: "StartSuspended creates the workflow in the suspended state. It is honored exactly once, when the workflow is first reconciled, before anything has run; changing it on a started workflow has no effect. Resume the workflow with a WorkflowAction.",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
@@ -8875,6 +8882,13 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallba
 									},
 								},
 							},
+						},
+					},
+					"suspended": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Suspended is the workflow-level suspension state the controller accepted from spec.startSuspended or a Suspend WorkflowAction. The deprecated spec.suspend also suspends a workflow; either being set means the workflow is suspended.",
+							Type:        []string{"boolean"},
+							Format:      "",
 						},
 					},
 				},
