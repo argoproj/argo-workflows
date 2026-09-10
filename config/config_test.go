@@ -30,6 +30,8 @@ func TestSanitize(t *testing.T) {
 		{Config{Links: []*wfv1.Link{{URL: "javascript:foo"}}}, "protocol javascript is not allowed"},
 		{Config{Links: []*wfv1.Link{{URL: "javASCRipt: //foo"}}}, "protocol javascript is not allowed"},
 		{Config{Links: []*wfv1.Link{{URL: "http://foo.bar/?foo=<script>abc</script>bar"}}}, ""},
+		{Config{Links: []*wfv1.Link{{URL: "http://${metadata.name}.logging-facility?podName=${metadata.name}"}}}, ""},
+		{Config{Links: []*wfv1.Link{{URL: "javascript:${metadata.name}"}}}, "protocol javascript is not allowed"},
 	}
 	for _, tt := range tests {
 		err := tt.c.Sanitize([]string{"http", "https"})
