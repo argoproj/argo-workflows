@@ -5957,9 +5957,17 @@ spec:
                 description: Shutdown will shutdown the workflow according to its
                   ShutdownStrategy
                 type: string
+              startSuspended:
+                description: |-
+                  StartSuspended creates the workflow in the suspended state. It is honored exactly once, when
+                  the workflow is first reconciled, before anything has run; changing it on a started workflow
+                  has no effect. Resume the workflow with a WorkflowAction.
+                type: boolean
               suspend:
-                description: Suspend will suspend the workflow and prevent execution
-                  of any future steps in the workflow
+                description: |-
+                  Suspend will suspend the workflow and prevent execution of any future steps in the workflow.
+                  Deprecated: create the Workflow with startSuspended instead, and suspend or resume a running
+                  Workflow with a WorkflowAction.
                 type: boolean
               synchronization:
                 description: Synchronization holds synchronization lock configuration
@@ -49005,9 +49013,17 @@ spec:
                     description: Shutdown will shutdown the workflow according to
                       its ShutdownStrategy
                     type: string
+                  startSuspended:
+                    description: |-
+                      StartSuspended creates the workflow in the suspended state. It is honored exactly once, when
+                      the workflow is first reconciled, before anything has run; changing it on a started workflow
+                      has no effect. Resume the workflow with a WorkflowAction.
+                    type: boolean
                   suspend:
-                    description: Suspend will suspend the workflow and prevent execution
-                      of any future steps in the workflow
+                    description: |-
+                      Suspend will suspend the workflow and prevent execution of any future steps in the workflow.
+                      Deprecated: create the Workflow with startSuspended instead, and suspend or resume a running
+                      Workflow with a WorkflowAction.
                     type: boolean
                   synchronization:
                     description: Synchronization holds synchronization lock configuration
@@ -95117,9 +95133,17 @@ spec:
                 description: Shutdown will shutdown the workflow according to its
                   ShutdownStrategy
                 type: string
+              startSuspended:
+                description: |-
+                  StartSuspended creates the workflow in the suspended state. It is honored exactly once, when
+                  the workflow is first reconciled, before anything has run; changing it on a started workflow
+                  has no effect. Resume the workflow with a WorkflowAction.
+                type: boolean
               suspend:
-                description: Suspend will suspend the workflow and prevent execution
-                  of any future steps in the workflow
+                description: |-
+                  Suspend will suspend the workflow and prevent execution of any future steps in the workflow.
+                  Deprecated: create the Workflow with startSuspended instead, and suspend or resume a running
+                  Workflow with a WorkflowAction.
                 type: boolean
               synchronization:
                 description: Synchronization holds synchronization lock configuration
@@ -135296,6 +135320,8 @@ spec:
                 type: object
                 x-kubernetes-map-type: atomic
                 x-kubernetes-preserve-unknown-fields: true
+              suspended:
+                type: boolean
               synchronization:
                 properties:
                   mutex:
@@ -155098,9 +155124,17 @@ spec:
                 description: Shutdown will shutdown the workflow according to its
                   ShutdownStrategy
                 type: string
+              startSuspended:
+                description: |-
+                  StartSuspended creates the workflow in the suspended state. It is honored exactly once, when
+                  the workflow is first reconciled, before anything has run; changing it on a started workflow
+                  has no effect. Resume the workflow with a WorkflowAction.
+                type: boolean
               suspend:
-                description: Suspend will suspend the workflow and prevent execution
-                  of any future steps in the workflow
+                description: |-
+                  Suspend will suspend the workflow and prevent execution of any future steps in the workflow.
+                  Deprecated: create the Workflow with startSuspended instead, and suspend or resume a running
+                  Workflow with a WorkflowAction.
                 type: boolean
               synchronization:
                 description: Synchronization holds synchronization lock configuration

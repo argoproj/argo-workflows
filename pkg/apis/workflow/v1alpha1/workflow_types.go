@@ -342,8 +342,15 @@ type WorkflowSpec struct {
 	// ArtifactRepositoryRef specifies the configMap name and key containing the artifact repository config.
 	ArtifactRepositoryRef *ArtifactRepositoryRef `json:"artifactRepositoryRef,omitempty" protobuf:"bytes,8,opt,name=artifactRepositoryRef"`
 
-	// Suspend will suspend the workflow and prevent execution of any future steps in the workflow
+	// Suspend will suspend the workflow and prevent execution of any future steps in the workflow.
+	// Deprecated: create the Workflow with startSuspended instead, and suspend or resume a running
+	// Workflow with a WorkflowAction.
 	Suspend *bool `json:"suspend,omitempty" protobuf:"bytes,9,opt,name=suspend"`
+
+	// StartSuspended creates the workflow in the suspended state. It is honored exactly once, when
+	// the workflow is first reconciled, before anything has run; changing it on a started workflow
+	// has no effect. Resume the workflow with a WorkflowAction.
+	StartSuspended bool `json:"startSuspended,omitempty" protobuf:"varint,48,opt,name=startSuspended"`
 
 	// NodeSelector is a selector which will result in all pods of the workflow
 	// to be scheduled on the selected node(s). This is able to be overridden by
@@ -2252,6 +2259,11 @@ type WorkflowStatus struct {
 	// workflow but whose own status may not have been written yet (a write-ahead record for crash
 	// recovery). Entries are pruned once the action's status is recorded.
 	AppliedActions []string `json:"appliedActions,omitempty" protobuf:"bytes,22,rep,name=appliedActions"`
+
+	// Suspended is the workflow-level suspension state the controller accepted from
+	// spec.startSuspended or a Suspend WorkflowAction. The deprecated spec.suspend also
+	// suspends a workflow; either being set means the workflow is suspended.
+	Suspended bool `json:"suspended,omitempty" protobuf:"varint,23,opt,name=suspended"`
 }
 
 // MarkTaskResultIncomplete sets either the task results completion field

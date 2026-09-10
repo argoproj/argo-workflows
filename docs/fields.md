@@ -951,7 +951,8 @@ WorkflowSpec is the specification of a Workflow.
 |`securityContext`|[`PodSecurityContext`](#podsecuritycontext)|SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty. See type description for default values of each field.|
 |`serviceAccountName`|`string`|ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as.|
 |`shutdown`|`string`|Shutdown will shutdown the workflow according to its ShutdownStrategy|
-|`suspend`|`boolean`|Suspend will suspend the workflow and prevent execution of any future steps in the workflow|
+|`startSuspended`|`boolean`|StartSuspended creates the workflow in the suspended state. It is honored exactly once, when the workflow is first reconciled, before anything has run; changing it on a started workflow has no effect. Resume the workflow with a WorkflowAction.|
+|`suspend`|`boolean`|Suspend will suspend the workflow and prevent execution of any future steps in the io.argoproj.workflow.v1alpha1. Deprecated: create the Workflow with startSuspended instead, and suspend or resume a running Workflow with a WorkflowAction.|
 |`synchronization`|[`Synchronization`](#synchronization)|Synchronization holds synchronization lock configuration for this Workflow|
 |`templateDefaults`|[`Template`](#template)|TemplateDefaults holds default template values that will apply to all templates in the Workflow, unless overridden on the template-level|
 |`templates`|`Array<`[`Template`](#template)`>`|Templates is a list of workflow templates used in a workflow MaxItems is an artificial limit to limit CEL validation costs - see note at top of file|
@@ -989,6 +990,7 @@ WorkflowStatus contains overall status information about a workflow
 |`startedAt`|[`Time`](#time)|Time at which this workflow started|
 |`storedTemplates`|[`Template`](#template)|StoredTemplates is a mapping between a template ref and the node's status.|
 |`storedWorkflowTemplateSpec`|[`WorkflowSpec`](#workflowspec)|StoredWorkflowSpec stores the WorkflowTemplate spec for future execution.|
+|`suspended`|`boolean`|Suspended is the workflow-level suspension state the controller accepted from spec.startSuspended or a Suspend WorkflowAction. The deprecated spec.suspend also suspends a workflow; either being set means the workflow is suspended.|
 |`synchronization`|[`SynchronizationStatus`](#synchronizationstatus)|Synchronization stores the status of synchronization locks|
 |`taskResultsCompletionStatus`|`Map< boolean , string >`|TaskResultsCompletionStatus tracks task result completion status (mapped by node ID). Used to prevent premature archiving and garbage collection.|
 

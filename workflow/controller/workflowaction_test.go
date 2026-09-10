@@ -219,6 +219,8 @@ func TestActionReconciliationSuspend(t *testing.T) {
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 
+	assert.True(t, woc.wf.Status.Suspended)
+	// mirrored into spec.suspend so older clients can resume it
 	require.NotNil(t, woc.wf.Spec.Suspend)
 	assert.True(t, *woc.wf.Spec.Suspend)
 	a := getTestAction(t, controller, "s1")
@@ -236,6 +238,7 @@ func TestActionReconciliationResume(t *testing.T) {
 	woc.operate(ctx)
 
 	assert.Nil(t, woc.wf.Spec.Suspend)
+	assert.False(t, woc.wf.Status.Suspended)
 	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Nodes.FindByDisplayName("approve").Phase)
 	a := getTestAction(t, controller, "r1")
 	assert.Equal(t, wfv1.WorkflowActionSucceeded, a.Status.Phase)
@@ -296,8 +299,7 @@ func TestActionReconciliationOrdering(t *testing.T) {
 	woc.operate(ctx)
 
 	assert.Equal(t, wfv1.ShutdownStrategyTerminate, woc.wf.Status.Shutdown)
-	require.NotNil(t, woc.wf.Spec.Suspend)
-	assert.True(t, *woc.wf.Spec.Suspend)
+	assert.True(t, woc.wf.Status.Suspended)
 	for _, name := range []string{"o-suspend", "o-terminate"} {
 		a := getTestAction(t, controller, name)
 		assert.Equal(t, wfv1.WorkflowActionSucceeded, a.Status.Phase, name)
@@ -329,6 +331,107 @@ func TestGetShutdownStrategyPrefersStatus(t *testing.T) {
 
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	assert.Equal(t, wfv1.ShutdownStrategyStop, woc.GetShutdownStrategy())
+}
+
+const freshWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: fresh
+  namespace: argo
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+`
+
+func deprecationCount(t *testing.T, feature string) (int64, error) {
+	t.Helper()
+	ctx := logging.TestContext(t.Context())
+	attribs := attribute.NewSet(attribute.String("feature", feature))
+	return testExporter.GetInt64CounterValue(ctx, telemetry.InstrumentDeprecatedFeature.Name(), &attribs)
+}
+
+func TestStartSuspended(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(freshWf)
+	wf.Spec.StartSuspended = true
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	deprecation.Initialize(controller.metrics.DeprecatedFeature)
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	assert.True(t, woc.wf.Status.Suspended)
+	// mirrored into spec.suspend so older clients can resume it
+	require.NotNil(t, woc.wf.Spec.Suspend)
+	assert.True(t, *woc.wf.Spec.Suspend)
+	assert.Empty(t, woc.wf.Status.Nodes)
+	// a controller-made suspension is not a deprecated spec.suspend use
+	_, err := deprecationCount(t, "workflow spec.suspend")
+	assert.Error(t, err)
+}
+
+func TestStartSuspendedIgnoredAfterStart(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(actionTargetWf)
+	wf.Spec.StartSuspended = true
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	// the workflow already started, so flipping startSuspended does nothing
+	assert.False(t, woc.wf.Status.Suspended)
+	assert.Nil(t, woc.wf.Spec.Suspend)
+}
+
+func TestSpecSuspendDeprecationCounted(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	// the controller writes spec.suspend and status.suspended together, so a mismatch is a
+	// client toggling the deprecated field; the mirror counts it once per toggle
+	wf := wfv1.MustUnmarshalWorkflow(actionTargetWf)
+	wf.Spec.Suspend = new(true)
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	deprecation.Initialize(controller.metrics.DeprecatedFeature)
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	val, err := deprecationCount(t, "workflow spec.suspend")
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), val)
+	assert.True(t, woc.wf.Status.Suspended)
+
+	// mirrored now, so the same suspension episode is not recounted
+	woc2 := newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc2.operate(ctx)
+	val, err = deprecationCount(t, "workflow spec.suspend")
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), val)
+}
+
+func TestOldClientResumeMirrors(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	// an old client resumes by clearing spec.suspend; the mirror follows it down so the
+	// workflow actually resumes, without counting deprecated use
+	wf := wfv1.MustUnmarshalWorkflow(actionTargetWf)
+	wf.Status.Suspended = true
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	deprecation.Initialize(controller.metrics.DeprecatedFeature)
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	assert.False(t, woc.wf.Status.Suspended)
+	_, err := deprecationCount(t, "workflow spec.suspend")
+	assert.Error(t, err)
 }
 
 func TestSpecShutdownDeprecationMetric(t *testing.T) {

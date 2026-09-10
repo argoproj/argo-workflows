@@ -633,6 +633,10 @@ func ApplyResume(ctx context.Context, wf *wfv1.Workflow, uiMsg string) (bool, er
 		wf.Spec.Suspend = nil
 		workflowUpdated = true
 	}
+	if wf.Status.Suspended {
+		wf.Status.Suspended = false
+		workflowUpdated = true
+	}
 
 	// To resume a workflow with a suspended node we simply mark the node as Successful
 	for nodeID, node := range wf.Status.Nodes {
@@ -1531,7 +1535,7 @@ var errSuspendedCompletedWorkflow = errors.Errorf(errors.CodeBadRequest, "cannot
 
 // IsWorkflowSuspended returns whether or not a workflow is considered suspended
 func IsWorkflowSuspended(wf *wfv1.Workflow) bool {
-	if wf.Spec.Suspend != nil && *wf.Spec.Suspend {
+	if wf.Status.Suspended || (wf.Spec.Suspend != nil && *wf.Spec.Suspend) {
 		return true
 	}
 	for _, node := range wf.Status.Nodes {

@@ -67,6 +67,7 @@ status:
 | `Failed` | `InvalidAction` | The action could not be applied, for example a `nodeFieldSelector` matching no suspended nodes; `message` has the details. |
 
 A Stop or Terminate accepted by the controller is recorded in the Workflow's `status.shutdown`, which supersedes `spec.shutdown`.
+The Workflow's `status.suspended` records the suspension state accepted by the controller, mirrored with the deprecated `spec.suspend` so older clients can still suspend and resume; Resume clears both.
 The requester's identity labels on the action (set by the Argo Server) are copied to the Workflow when the action is applied.
 
 ## Garbage collection
@@ -103,6 +104,6 @@ spec:
 
 ## Compatibility
 
-Directly setting `spec.shutdown` or `spec.suspend` on a running Workflow still works in this release, and is deprecated for removal in a later release.
-`spec.suspend` set at creation time ("start suspended") remains supported.
+Directly setting `spec.shutdown` or `spec.suspend` on a Workflow still works in this release, and is deprecated for removal in a later release; the [`deprecated_feature`](metrics.md#deprecated_feature) metric counts remaining uses.
+To create a Workflow that starts in the suspended state, set `spec.startSuspended: true` instead of `spec.suspend`.
 An Argo Server from this release requires a workflow controller from this release to perform actions; against an older controller the action endpoints time out after 30 seconds.

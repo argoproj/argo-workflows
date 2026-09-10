@@ -712,8 +712,10 @@ func startFakeActionController(ctx context.Context, t *testing.T, clientset *v1a
 						wf.Status.Shutdown = v1alpha1.ShutdownStrategyStop
 					case v1alpha1.ActionTypeSuspend:
 						wf.Spec.Suspend = new(true)
+						wf.Status.Suspended = true
 					case v1alpha1.ActionTypeResume:
 						wf.Spec.Suspend = nil
+						wf.Status.Suspended = false
 					}
 					// the real controller copies the actor labels from the action to the workflow
 					for k, v := range a.Labels {
@@ -982,7 +984,7 @@ func TestSuspendResumeWorkflow(t *testing.T) {
 	wf, err := server.SuspendWorkflow(ctx, &workflowpkg.WorkflowSuspendRequest{Name: "hello-world-9tql2-run", Namespace: "workflows"})
 	require.NoError(t, err)
 	assert.NotNil(t, wf)
-	assert.True(t, *wf.Spec.Suspend)
+	assert.True(t, wf.Status.Suspended)
 	assert.Contains(t, wf.Labels, common.LabelKeyActor)
 	assert.Equal(t, string(creator.ActionSuspend), wf.Labels[common.LabelKeyAction])
 	assert.Equal(t, userEmailLabel, wf.Labels[common.LabelKeyActorEmail])
@@ -993,6 +995,7 @@ func TestSuspendResumeWorkflow(t *testing.T) {
 	assert.Equal(t, string(creator.ActionResume), wf.Labels[common.LabelKeyAction])
 	assert.Equal(t, userEmailLabel, wf.Labels[common.LabelKeyActorEmail])
 	assert.Nil(t, wf.Spec.Suspend)
+	assert.False(t, wf.Status.Suspended)
 }
 
 func TestSuspendResumeWorkflowWithNotFound(t *testing.T) {

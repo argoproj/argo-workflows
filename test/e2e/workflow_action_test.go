@@ -61,7 +61,7 @@ func (s *WorkflowActionSuite) TestSuspendResumeViaAction() {
 		CreateWorkflowAction(wfv1.WorkflowActionSpec{Action: wfv1.ActionTypeSuspend}).
 		WaitForWorkflowAction(30*time.Second, actionSucceeded).
 		WaitForWorkflow(fixtures.Condition(func(wf *wfv1.Workflow) (bool, string) {
-			return wf.Spec.Suspend != nil && *wf.Spec.Suspend, "workflow suspended"
+			return wf.Status.Suspended, "workflow suspended"
 		})).
 		CreateWorkflowAction(wfv1.WorkflowActionSpec{Action: wfv1.ActionTypeResume}).
 		WaitForWorkflowAction(30*time.Second, actionSucceeded).
