@@ -584,8 +584,12 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 func (woc *wfOperationCtx) releaseLocksForPendingShuttingdownWfs(ctx context.Context) bool {
 	if woc.GetShutdownStrategy().Enabled() && woc.wf.Status.Phase == wfv1.WorkflowPending && woc.GetShutdownStrategy() == wfv1.ShutdownStrategyTerminate {
-		if woc.controller.syncManager.ReleaseAll(ctx, woc.execWf) {
-			woc.log.WithFields(logging.Fields{"key": woc.execWf.Name}).Info(ctx, "Released all locks since this pending workflow is being shutdown")
+		// Release against woc.wf, not woc.execWf: for workflowTemplateRef
+		// workflows execWf is rebuilt from Status.StoredWorkflowSpec with an
+		// empty Status, so ReleaseAll would early-return without removing the
+		// wait-queue entry that TryAcquire recorded on woc.wf (#16924).
+		if woc.controller.syncManager.ReleaseAll(ctx, woc.wf) {
+			woc.log.WithFields(logging.Fields{"key": woc.wf.Name}).Info(ctx, "Released all locks since this pending workflow is being shutdown")
 			// The workflow never started: it was still waiting for its
 			// synchronization lock when it was terminated, so it completes as
 			// Failed, matching every other shutdown path.

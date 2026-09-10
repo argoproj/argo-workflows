@@ -1014,6 +1014,103 @@ func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
 		assert.Len(t, wocThree.wf.Status.Synchronization.Mutex.Holding, 1)
 	})
 
+	t.Run("PendingShuttingdownTerminatingWfWithStoredSpec", func(t *testing.T) {
+		// The waiter references a WorkflowTemplate, so setExecWorkflow rebuilds
+		// execWf from Status.StoredWorkflowSpec with an empty Status, while
+		// TryAcquire queues on woc.wf. This is the shape that leaked the
+		// wait-queue entry in #16924.
+		wftmpl := wfv1.MustUnmarshalWorkflowTemplate(`apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: stored-spec-template
+  namespace: default
+spec:
+  entrypoint: whalesay
+  synchronization:
+    mutexes:
+      - name: stored-spec-test
+  templates:
+    - name: whalesay
+      container:
+        image: docker/whalesay:latest
+        command: [sh, -c]
+        args: ["sleep 99999"]`)
+		cancelRef, refController := newController(ctx, wftmpl)
+		defer cancelRef()
+		refController.syncManager, _ = sync.NewLockManager(ctx, refController.kubeclientset, refController.namespace, nil, getSyncLimitFunc(ctx, refController.kubeclientset), func(key string) {
+		}, workflowExistenceFunc, false)
+
+		// Holder acquires the lock.
+		wf := wfv1.MustUnmarshalWorkflow(pendingWfWithShutdownStrategy)
+		wf.Name = "one-stored-spec"
+		wf.Spec.Synchronization.Mutexes[0].Name = "stored-spec-test"
+		wf, err := refController.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wf, metav1.CreateOptions{})
+		require.NoError(t, err)
+		woc := newWorkflowOperationCtx(ctx, wf, refController)
+		woc.operate(ctx)
+		require.NotNil(t, woc.wf.Status.Synchronization)
+		require.NotNil(t, woc.wf.Status.Synchronization.Mutex)
+		require.Len(t, woc.wf.Status.Synchronization.Mutex.Holding, 1)
+
+		// Waiter queues on the same mutex through the template ref.
+		wfTwo := wfv1.MustUnmarshalWorkflow(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: two-stored-spec
+  namespace: default
+spec:
+  workflowTemplateRef:
+    name: stored-spec-template`)
+		wfTwo, err = refController.wfclientset.ArgoprojV1alpha1().Workflows(wfTwo.Namespace).Create(ctx, wfTwo, metav1.CreateOptions{})
+		require.NoError(t, err)
+		wocTwo := newWorkflowOperationCtx(ctx, wfTwo, refController)
+		wocTwo.operate(ctx)
+		assert.Equal(t, wfv1.WorkflowPending, wocTwo.wf.Status.Phase)
+		require.NotNil(t, wocTwo.wf.Status.Synchronization)
+		require.NotNil(t, wocTwo.wf.Status.Synchronization.Mutex)
+		require.Len(t, wocTwo.wf.Status.Synchronization.Mutex.Waiting, 1)
+
+		// Shutdown the pending waiter. Call the release path directly rather
+		// than the full operate(): operate's deferred persistUpdates would run
+		// the completion-path ReleaseAll(woc.wf) as well and mask whether
+		// releaseLocksForPendingShuttingdownWfs itself removed the queue entry.
+		patchObj := map[string]any{
+			"spec": map[string]any{
+				"shutdown": wfv1.ShutdownStrategyTerminate,
+			},
+		}
+		patch, err := json.Marshal(patchObj)
+		require.NoError(t, err)
+		wfTwo, err = refController.wfclientset.ArgoprojV1alpha1().Workflows(wfTwo.Namespace).Patch(ctx, wfTwo.Name, types.MergePatchType, patch, metav1.PatchOptions{})
+		require.NoError(t, err)
+		wocTwo = newWorkflowOperationCtx(ctx, wfTwo, refController)
+		_, err = wocTwo.setExecWorkflow(ctx)
+		require.NoError(t, err)
+		require.True(t, wocTwo.releaseLocksForPendingShuttingdownWfs(ctx))
+		assert.Equal(t, wfv1.WorkflowFailed, wocTwo.wf.Status.Phase)
+
+		// Release the lock from the holder.
+		woc.wf.Status.Phase = wfv1.WorkflowSucceeded
+		woc.operate(ctx)
+		assert.Nil(t, woc.wf.Status.Synchronization)
+
+		// The terminated waiter's queue entry must be gone, so a new workflow
+		// acquires the lock immediately. Before the fix the stale entry kept
+		// the lock blocked until a controller restart.
+		wfThree := wf.DeepCopy()
+		wfThree.Name = "three-stored-spec"
+		wfThree.ResourceVersion = ""
+		wfThree.Status = wfv1.WorkflowStatus{}
+		wfThree, err = refController.wfclientset.ArgoprojV1alpha1().Workflows(wfThree.Namespace).Create(ctx, wfThree, metav1.CreateOptions{})
+		require.NoError(t, err)
+		wocThree := newWorkflowOperationCtx(ctx, wfThree, refController)
+		wocThree.operate(ctx)
+		assert.Equal(t, wfv1.WorkflowRunning, wocThree.wf.Status.Phase)
+		require.NotNil(t, wocThree.wf.Status.Synchronization)
+		require.NotNil(t, wocThree.wf.Status.Synchronization.Mutex)
+		assert.Len(t, wocThree.wf.Status.Synchronization.Mutex.Holding, 1)
+	})
+
 	t.Run("PendingShuttingdownStoppingWf", func(t *testing.T) {
 		if githubActions, ok := os.LookupEnv(`GITHUB_ACTIONS`); ok && githubActions == "true" {
 			t.Skip("This test regularly fails in Github Actions CI")
