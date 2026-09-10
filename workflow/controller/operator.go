@@ -814,7 +814,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	}
 
 	// Release all acquired lock for completed workflow
-	if woc.wf.Status.Synchronization != nil && woc.wf.Status.Fulfilled() {
+	if woc.wf.Status.Fulfilled() {
 		if woc.controller.syncManager.ReleaseAll(ctx, woc.wf) {
 			woc.log.WithFields(logging.Fields{"key": woc.wf.Name}).Info(ctx, "Released all acquired locks")
 		}

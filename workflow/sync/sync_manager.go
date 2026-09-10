@@ -736,6 +736,22 @@ func (sm *Manager) ReleaseAll(ctx context.Context, wf *wfv1.Workflow) bool {
 	sm.lock.Lock()
 	defer sm.lock.Unlock()
 
+	// Always release persisted database rows owned by this workflow first: the
+	// workflow key is stored in the row itself, so ownership can be re-derived
+	// even when the recorded synchronization status was lost. This is the
+	// recovery path for leaked held rows - when the controller's database
+	// session breaks after a row was written but before
+	// Status.Synchronization was persisted, the workflow ends up with a nil
+	// status yet still owns held rows, and neither the in-memory walk below
+	// nor the nil-status early return would ever remove them.
+	if sm.dbInfo.SessionProxy != nil {
+		if key := getHolderKey(wf, ""); key != "" {
+			if err := sm.queries.ReleaseAllHeldByWorkflowKey(ctx, key); err != nil {
+				sm.log.WithField("key", key).WithError(err).Error(ctx, "Failed to release held locks by workflow key")
+			}
+		}
+	}
+
 	if wf.Status.Synchronization == nil {
 		return true
 	}
