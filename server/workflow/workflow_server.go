@@ -115,7 +115,15 @@ func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.Wo
 		req.Workflow.Namespace = req.Namespace
 	}
 
+	if _, ok := req.Workflow.GetLabels()[common.LabelKeyControllerInstanceID]; ok {
+		if err := s.instanceIDService.Validate(req.Workflow); err != nil {
+			return nil, sutils.ToStatusError(err, codes.InvalidArgument)
+		}
+	}
 	s.instanceIDService.Label(req.Workflow)
+	if err := s.instanceIDService.Validate(req.Workflow); err != nil {
+		return nil, sutils.ToStatusError(err, codes.InvalidArgument)
+	}
 	creator.LabelCreator(ctx, req.Workflow)
 
 	wftmplGetter := s.wftmplStore.Getter(ctx, req.Workflow.Namespace)
@@ -817,11 +825,28 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 		if err != nil {
 			return nil, sutils.ToStatusError(err, codes.Internal)
 		}
+		if err := s.instanceIDService.Validate(cronWf); err != nil {
+			return nil, sutils.ToStatusError(err, codes.InvalidArgument)
+		}
 		wf = common.ConvertCronWorkflowToWorkflow(cronWf)
 	case workflow.WorkflowTemplateKind, workflow.WorkflowTemplateSingular, workflow.WorkflowTemplatePlural, workflow.WorkflowTemplateShortName:
-		wf = common.NewWorkflowFromWorkflowTemplate(req.ResourceName, false)
+		wftmpl, err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace).Get(ctx, req.ResourceName, metav1.GetOptions{})
+		if err != nil {
+			return nil, sutils.ToStatusError(err, codes.Internal)
+		}
+		if err := s.instanceIDService.Validate(wftmpl); err != nil {
+			return nil, sutils.ToStatusError(fmt.Errorf("WorkflowTemplate %q not found", req.ResourceName), codes.NotFound)
+		}
+		wf = common.ConvertWorkflowTemplateToWorkflow(wftmpl)
 	case workflow.ClusterWorkflowTemplateKind, workflow.ClusterWorkflowTemplateSingular, workflow.ClusterWorkflowTemplatePlural, workflow.ClusterWorkflowTemplateShortName:
-		wf = common.NewWorkflowFromWorkflowTemplate(req.ResourceName, true)
+		cwftmpl, err := wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates().Get(ctx, req.ResourceName, metav1.GetOptions{})
+		if err != nil {
+			return nil, sutils.ToStatusError(err, codes.Internal)
+		}
+		if err := s.instanceIDService.Validate(cwftmpl); err != nil {
+			return nil, sutils.ToStatusError(fmt.Errorf("ClusterWorkflowTemplate %q not found", req.ResourceName), codes.NotFound)
+		}
+		wf = common.ConvertClusterWorkflowTemplateToWorkflow(cwftmpl)
 	default:
 		err := errors.Errorf(errors.CodeBadRequest, "Resource kind '%s' is not supported for submitting", req.ResourceKind)
 		err = sutils.ToStatusError(err, codes.InvalidArgument)

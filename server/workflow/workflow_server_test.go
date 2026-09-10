@@ -595,6 +595,9 @@ func getWorkflowServer(t *testing.T) (workflowpkg.WorkflowServiceServer, context
 	v1alpha1.MustUnmarshal(workflowtmpl, &wftmpl)
 	v1alpha1.MustUnmarshal(cronwf, &cronwfObj)
 	v1alpha1.MustUnmarshal(clusterworkflowtmpl, &cwfTmpl)
+	instanceid.NewService("my-instanceid").Label(&wftmpl)
+	instanceid.NewService("my-instanceid").Label(&cronwfObj)
+	instanceid.NewService("my-instanceid").Label(&cwfTmpl)
 
 	offloadNodeStatusRepo := &mocks.OffloadNodeStatusRepo{}
 	offloadNodeStatusRepo.On("IsEnabled", mock.Anything).Return(true)
@@ -1080,6 +1083,56 @@ func TestSubmitWorkflowFromResource(t *testing.T) {
 		assert.Contains(t, wf.Labels, common.LabelKeyControllerInstanceID)
 		assert.Contains(t, wf.Labels, common.LabelKeyCreator)
 		assert.Equal(t, userEmailLabel, wf.Labels[common.LabelKeyCreatorEmail])
+	})
+	t.Run("SubmitFromWorkflowTemplateMismatchedInstanceID", func(t *testing.T) {
+		// Server instanceID is "my-instanceid" from getWorkflowServer setup
+		// Add a workflow template with a mismatched instance ID
+		wftmplMismatched := &v1alpha1.WorkflowTemplate{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "wftmpl-other-instance",
+				Namespace: "workflows",
+				Labels:    map[string]string{common.LabelKeyControllerInstanceID: "other-instance"},
+			},
+			Spec: v1alpha1.WorkflowSpec{
+				Entrypoint: "main",
+				Templates:  []v1alpha1.Template{{Name: "main", Container: &corev1.Container{Image: "argoproj/argosay:v2"}}},
+			},
+		}
+		wfClient := auth.GetWfClient(ctx)
+		_, err := wfClient.ArgoprojV1alpha1().WorkflowTemplates("workflows").Create(ctx, wftmplMismatched, metav1.CreateOptions{})
+		require.NoError(t, err)
+
+		_, err = server.SubmitWorkflow(ctx, &workflowpkg.WorkflowSubmitRequest{
+			Namespace:    "workflows",
+			ResourceKind: "workflowtemplate",
+			ResourceName: "wftmpl-other-instance",
+		})
+		assert.Equal(t, codes.NotFound, status.Code(err))
+		assert.Contains(t, err.Error(), "not found")
+	})
+}
+
+func TestCreateWorkflowInstanceIDValidation(t *testing.T) {
+	server, ctx := getWorkflowServer(t)
+	// getWorkflowServer has instanceID "my-instanceid"
+	t.Run("CreateWorkflowMismatchedInstanceID", func(t *testing.T) {
+		wf := &v1alpha1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "wf-mismatched-instance",
+				Namespace: "workflows",
+				Labels:    map[string]string{common.LabelKeyControllerInstanceID: "other-instance"},
+			},
+			Spec: v1alpha1.WorkflowSpec{
+				Entrypoint: "main",
+				Templates:  []v1alpha1.Template{{Name: "main", Container: &corev1.Container{Image: "argoproj/argosay:v2"}}},
+			},
+		}
+		_, err := server.CreateWorkflow(ctx, &workflowpkg.WorkflowCreateRequest{
+			Namespace: "workflows",
+			Workflow:  wf,
+		})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "is not managed by the current Argo Server")
 	})
 }
 

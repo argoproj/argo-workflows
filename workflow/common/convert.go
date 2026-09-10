@@ -79,6 +79,34 @@ func NewWorkflowFromWorkflowTemplate(templateName string, clusterScope bool) *wf
 	return wf
 }
 
+func ConvertWorkflowTemplateToWorkflow(wftmpl *wfv1.WorkflowTemplate) *wfv1.Workflow {
+	wf := NewWorkflowFromWorkflowTemplate(wftmpl.Name, false)
+	if instanceID, ok := wftmpl.GetLabels()[LabelKeyControllerInstanceID]; ok {
+		wf.GetLabels()[LabelKeyControllerInstanceID] = instanceID
+	}
+	if wftmpl.Spec.WorkflowMetadata != nil {
+		maps.Copy(wf.Labels, wftmpl.Spec.WorkflowMetadata.Labels)
+		if len(wftmpl.Spec.WorkflowMetadata.Annotations) > 0 {
+			maps.Copy(wf.Annotations, wftmpl.Spec.WorkflowMetadata.Annotations)
+		}
+	}
+	return wf
+}
+
+func ConvertClusterWorkflowTemplateToWorkflow(cwftmpl *wfv1.ClusterWorkflowTemplate) *wfv1.Workflow {
+	wf := NewWorkflowFromWorkflowTemplate(cwftmpl.Name, true)
+	if instanceID, ok := cwftmpl.GetLabels()[LabelKeyControllerInstanceID]; ok {
+		wf.GetLabels()[LabelKeyControllerInstanceID] = instanceID
+	}
+	if cwftmpl.Spec.WorkflowMetadata != nil {
+		maps.Copy(wf.Labels, cwftmpl.Spec.WorkflowMetadata.Labels)
+		if len(cwftmpl.Spec.WorkflowMetadata.Annotations) > 0 {
+			maps.Copy(wf.Annotations, cwftmpl.Spec.WorkflowMetadata.Annotations)
+		}
+	}
+	return wf
+}
+
 func toWorkflow(cronWf wfv1.CronWorkflow, objectMeta metav1.ObjectMeta) *wfv1.Workflow {
 	wf := &wfv1.Workflow{
 		TypeMeta: metav1.TypeMeta{
