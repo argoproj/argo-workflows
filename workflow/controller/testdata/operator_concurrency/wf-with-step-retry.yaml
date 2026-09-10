@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: my-workflow-
+spec:
+  entrypoint: step-entry
+  templates:
+    - name: step-entry
+      steps:
+      - - name: step1
+          template: sleep
+
+    - name: sleep
+      retryStrategy:
+        limit: 5
+        retryPolicy: Always
+      synchronization:
+        semaphores:
+          - configMapKeyRef:
+              name: my-config
+              key: template
+      container:
+        image: alpine:3.23
+        command: [sh, -c]
+        args: ["sleep 300"]
