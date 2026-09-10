@@ -488,6 +488,9 @@ type WorkflowSpec struct {
 	// +optional
 	PodResources *apiv1.ResourceRequirements `json:"podResources,omitempty" protobuf:"bytes,45,opt,name=podResources"`
 
+	// ArchiveSystemContainerLogs indicates if the system container logs should be archived (init/wait in legacy Pods, supervisor in init-less Pods)
+	ArchiveSystemContainerLogs *bool `json:"archiveSystemContainerLogs,omitempty" protobuf:"varint,46,opt,name=archiveSystemContainerLogs"`
+
 	// ResourceClaims defines the ResourceClaims that must be allocated and reserved before the pods running this workflow's templates are allowed to start.
 	// Each entry names either an existing ResourceClaim or a ResourceClaimTemplate in the workflow's namespace, and containers ask for one by name through resources.claims.
 	// The list is replaced as a whole rather than merged, so a template's resourceClaims, or a Workflow overriding a WorkflowTemplate, supersedes it entirely.
@@ -1415,6 +1418,9 @@ type ArtifactLocation struct {
 
 	// Plugin contains plugin artifact location details
 	Plugin *PluginArtifact `json:"plugin,omitempty" protobuf:"bytes,11,opt,name=plugin"`
+
+	// ArchiveSystemContainerLogs indicates if the system container logs should be archived (init/wait in legacy Pods, supervisor in init-less Pods)
+	ArchiveSystemContainerLogs *bool `json:"archiveSystemContainerLogs,omitempty" protobuf:"varint,12,opt,name=archiveSystemContainerLogs"`
 }
 
 func (a *ArtifactLocation) Get() (ArtifactLocationType, error) {
@@ -1527,6 +1533,10 @@ func (a *ArtifactLocation) HasLocation() bool {
 
 func (a *ArtifactLocation) IsArchiveLogs() bool {
 	return a != nil && a.ArchiveLogs != nil && *a.ArchiveLogs
+}
+
+func (a *ArtifactLocation) IsArchiveSystemContainerLogs() bool {
+	return a != nil && a.ArchiveSystemContainerLogs != nil && *a.ArchiveSystemContainerLogs
 }
 
 func (a *ArtifactLocation) GetKey() (string, error) {
@@ -3572,6 +3582,11 @@ func (tmpl *Template) IsDaemon() bool {
 // SaveLogsAsArtifact reports whether logs should be saved as an artifact.
 func (tmpl *Template) SaveLogsAsArtifact() bool {
 	return tmpl != nil && tmpl.ArchiveLocation.IsArchiveLogs()
+}
+
+// SaveSystemContainerLogsAsArtifact reports whether the system container logs should be saved as an artifact.
+func (tmpl *Template) SaveSystemContainerLogsAsArtifact() bool {
+	return tmpl != nil && tmpl.ArchiveLocation.IsArchiveSystemContainerLogs()
 }
 
 func (tmpl *Template) GetRetryStrategy() (wait.Backoff, error) {

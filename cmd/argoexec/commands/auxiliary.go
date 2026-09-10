@@ -32,10 +32,19 @@ import (
 //nolint:contextcheck
 func runAuxiliaryContainer(
 	ctx context.Context,
+	containerName string,
 	startSpan func(we *wfexecutor.WorkflowExecutor, ctx context.Context) (context.Context, trace.Span),
 	body func(ctx, bgCtx context.Context, we *wfexecutor.WorkflowExecutor) error,
 ) error {
 	ctx = tracing.InjectTraceContext(ctx)
+
+	ctx, closer, err := teeContainerLogs(ctx, varRunArgo, containerName)
+	if err != nil {
+		logging.RequireLoggerFromContext(ctx).WithError(err).Error(ctx, "Failed to set up log tee")
+	} else {
+		defer closer()
+	}
+
 	wfExecutor := argoexecexecutor.Init(ctx, clientConfig, varRunArgo)
 	defer func() {
 		if err := wfExecutor.Tracing.Shutdown(context.WithoutCancel(ctx)); err != nil {
