@@ -601,12 +601,27 @@ func syncPodsInformer(ctx context.Context, woc *wfOperationCtx, podObjs ...apiv1
 
 // makePodsPhase acts like a pod controller and simulates the transition of pods transitioning into a specified state
 func makePodsPhase(ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhase, with ...with) {
+	setPodsPhase(ctx, woc, phase, false, with...)
+}
+
+// makeNonTerminalPodsPhase is makePodsPhase but leaves pods that have already reached a terminal
+// phase alone. Use it when a later reconcile should only advance the pods created since the
+// previous one, e.g. succeeding a hook pod without reviving the task pods that failed earlier.
+// Takes no `with` options: setPodsPhase still accepts them if a caller ever needs them here.
+func makeNonTerminalPodsPhase(ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhase) {
+	setPodsPhase(ctx, woc, phase, true)
+}
+
+func setPodsPhase(ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhase, skipTerminal bool, with ...with) {
 	podcs := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace())
 	pods, err := podcs.List(ctx, metav1.ListOptions{})
 	if err != nil {
 		panic(err)
 	}
 	for _, pod := range pods.Items {
+		if skipTerminal && (pod.Status.Phase == apiv1.PodFailed || pod.Status.Phase == apiv1.PodSucceeded) {
+			continue
+		}
 		if pod.Status.Phase != phase {
 			pod.Status.Phase = phase
 			if phase == apiv1.PodFailed {

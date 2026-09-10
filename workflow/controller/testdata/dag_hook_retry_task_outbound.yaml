@@ -1,0 +1,52 @@
+# Regression test: a succeeded lifecycle hook on a retrying DAG task must not mask the
+# task's failure.
+#
+# Hook nodes become children of the Retry node, and getOutboundNodes reports a retry
+# node's last child as its outbound node. If hooked children are not filtered out, the
+# succeeded hook becomes step-a's outbound node and therefore the parent of the omitted
+# step-b, so assessDAGPhase propagates Succeeded up and the workflow reports Succeeded
+# even though step-a failed every attempt.
+#
+# Topology: step-a (fail-pod, retryStrategy limit 1) -> step-b (succeed-pod)
+# Expected: notify hook fires and succeeds, step-b Omitted, workflow Failed.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-hook-retry-task-outbound
+  namespace: argo
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: step-a
+            template: fail-pod
+            hooks:
+              notify:
+                template: echo
+                expression: tasks["step-a"].status == "Failed"
+          - name: step-b
+            template: succeed-pod
+            depends: step-a
+
+    - name: fail-pod
+      retryStrategy:
+        limit: "1"
+        retryPolicy: Always
+      container:
+        image: alpine:3.23
+        command: [sh, -c]
+        args: ["exit 1"]
+
+    - name: succeed-pod
+      container:
+        image: alpine:3.23
+        command: [sh, -c]
+        args: ["echo done"]
+
+    - name: echo
+      container:
+        image: alpine:3.23
+        command: [echo]
+        args: ["hook fired"]
