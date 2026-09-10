@@ -2243,8 +2243,15 @@ message WorkflowSpec {
   // ArtifactRepositoryRef specifies the configMap name and key containing the artifact repository config.
   optional ArtifactRepositoryRef artifactRepositoryRef = 8;
 
-  // Suspend will suspend the workflow and prevent execution of any future steps in the workflow
+  // Suspend will suspend the workflow and prevent execution of any future steps in the workflow.
+  // Deprecated: create the Workflow with startSuspended instead, and suspend or resume a running
+  // Workflow with a WorkflowAction.
   optional bool suspend = 9;
+
+  // StartSuspended creates the workflow in the suspended state. It is honored exactly once, when
+  // the workflow is first reconciled, before anything has run; changing it on a started workflow
+  // has no effect. Resume the workflow with a WorkflowAction.
+  optional bool startSuspended = 48;
 
   // NodeSelector is a selector which will result in all pods of the workflow
   // to be scheduled on the selected node(s). This is able to be overridden by
@@ -2471,6 +2478,11 @@ message WorkflowStatus {
   // workflow but whose own status may not have been written yet (a write-ahead record for crash
   // recovery). Entries are pruned once the action's status is recorded.
   repeated string appliedActions = 22;
+
+  // Suspended is the workflow-level suspension state the controller accepted from
+  // spec.startSuspended or a Suspend WorkflowAction. The deprecated spec.suspend also
+  // suspends a workflow; either being set means the workflow is suspended.
+  optional bool suspended = 23;
 }
 
 // WorkflowStep is a reference to a template to execute in a series of step
