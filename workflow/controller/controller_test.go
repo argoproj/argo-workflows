@@ -824,6 +824,55 @@ spec:
 	}
 }
 
+// A workflow that is still postponed on a later requeue is decided entirely from the
+// unstructured object: it is already Pending, so it is neither converted nor persisted
+// again. Refs #16568.
+func TestParallelismPostponedWorkflowIsStableAcrossRequeues(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx,
+		wfv1.MustUnmarshalWorkflow(`
+metadata:
+  name: my-wf-0
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: my-image
+`),
+		wfv1.MustUnmarshalWorkflow(`
+metadata:
+  name: my-wf-1
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: my-image
+`),
+		func(x *WorkflowController) { x.Config.Parallelism = 1 },
+	)
+	defer cancel()
+
+	assert.True(t, controller.processNextItem(ctx))
+	assert.True(t, controller.processNextItem(ctx))
+
+	expectWorkflow(ctx, controller, "my-wf-1", func(wf *wfv1.Workflow) {
+		require.NotNil(t, wf)
+		assert.Equal(t, wfv1.WorkflowPending, wf.Status.Phase)
+	})
+
+	// Requeue the postponed workflow: it stays Pending and is still not reconciled.
+	controller.wfQueue.Add("my-wf-1")
+	assert.True(t, controller.processNextItem(ctx))
+
+	expectWorkflow(ctx, controller, "my-wf-1", func(wf *wfv1.Workflow) {
+		require.NotNil(t, wf)
+		assert.Equal(t, wfv1.WorkflowPending, wf.Status.Phase)
+		assert.Empty(t, wf.Status.Nodes)
+	})
+}
+
 // A Running workflow that has been dropped from the throttler (e.g. an archive attempt
 // failed mid-flight after throttler.Remove) must not be postponed by the parallelism
 // limit: it must still be reconciled, or its pods are orphaned. Regression test for
