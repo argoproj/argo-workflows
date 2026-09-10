@@ -1,6 +1,6 @@
 import {Autocomplete} from 'argo-ui/src/components/autocomplete/autocomplete';
 import * as React from 'react';
-import {useContext, useEffect, useState} from 'react';
+import {useContext, useEffect, useRef, useState} from 'react';
 import {Observable} from 'rxjs';
 import {map, publishReplay, refCount} from 'rxjs/operators';
 
@@ -145,8 +145,12 @@ export function WorkflowLogsViewer({workflow, initialNodeId, initialPodName, con
         //   publishReplay(),
         //   refCount()
         // );
+        logsRef.current = [];
         const subscription = source.subscribe(
-            () => setLoaded(true),
+            (log: string) => {
+                logsRef.current.push(log);
+                setLoaded(true);
+            },
             setError,
             () => setLoaded(true)
         );
@@ -214,6 +218,8 @@ export function WorkflowLogsViewer({workflow, initialNodeId, initialPodName, con
         )
     ];
     const [candidateContainer, setCandidateContainer] = useState(container);
+    const [logsCopied, setLogsCopied] = useState(false);
+    const logsRef = useRef<string[]>([]);
     const filteredTimezones = timezones.filter(tz => tz.startsWith(uiTimezone) || uiTimezone === '');
 
     async function popupJsonFieldSelector() {
@@ -272,6 +278,16 @@ export function WorkflowLogsViewer({workflow, initialNodeId, initialPodName, con
                 />
                 <Button onClick={popupJsonFieldSelector} icon={'exchange-alt'}>
                     Log Fields
+                </Button>
+                <Button
+                    onClick={() => {
+                        const text = logsRef.current.join('');
+                        navigator.clipboard.writeText(text);
+                        setLogsCopied(true);
+                        setTimeout(() => setLogsCopied(false), 2000);
+                    }}
+                    icon={logsCopied ? 'check' : 'clipboard'}>
+                    {logsCopied ? 'Copied' : 'Copy'}
                 </Button>
                 <span className='fa-pull-right'>
                     <div className='log-menu'>
