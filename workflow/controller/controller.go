@@ -7,6 +7,7 @@ import (
 	"os"
 	"slices"
 	"strconv"
+	"strings"
 	gosync "sync"
 	"time"
 
@@ -1387,6 +1388,33 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 	return nil
 }
 
+// archivingLabelPath is a JSON Pointer to a label, with the `/` in the key
+// escaped as `~1` (RFC 6901).
+func archivingLabelPath(label string) string {
+	return "/metadata/labels/" + strings.ReplaceAll(strings.ReplaceAll(label, "~", "~0"), "/", "~1")
+}
+
+// archivedWorkflowMovedOn reports whether the workflow now under this name is no
+// longer the one that was archived, or is no longer waiting to be marked.
+//
+// Read from the API server rather than the informer: the informer is what could
+// not be trusted here in the first place.
+func (wfc *WorkflowController) archivedWorkflowMovedOn(ctx context.Context, namespace, name string, uid types.UID) (bool, error) {
+	current, err := wfc.wfclientset.ArgoprojV1alpha1().Workflows(namespace).Get(ctx, name, metav1.GetOptions{})
+	if apierr.IsNotFound(err) {
+		return true, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	if current.UID != uid {
+		return true, nil
+	}
+	labels := current.GetLabels()
+	return labels[common.LabelKeyCompleted] != "true" ||
+		labels[common.LabelKeyWorkflowArchivingStatus] != "Pending", nil
+}
+
 func (wfc *WorkflowController) archiveWorkflowAux(ctx context.Context, obj any) error {
 	un, ok := obj.(*unstructured.Unstructured)
 	if !ok {
@@ -1406,12 +1434,31 @@ func (wfc *WorkflowController) archiveWorkflowAux(ctx context.Context, obj any) 
 	if err != nil {
 		return fmt.Errorf("failed to archive workflow: %w", err)
 	}
-	data, err := json.Marshal(map[string]any{
-		"metadata": metav1.ObjectMeta{
-			Labels: map[string]string{
-				common.LabelKeyWorkflowArchivingStatus: "Archived",
-			},
-		},
+	// Conditional, not a blind merge patch by name. Eligibility was decided from
+	// the informer, which is eventually consistent and identifies objects by
+	// namespace/name -- uid is not part of that identity. A workflow that
+	// argo-server has already retried can still read here as completed and
+	// Pending until the watch event arrives, and `isOutdated` cannot see that
+	// write because it came from another component. An unconditional patch would
+	// then label a running workflow, or a same-named replacement, as Archived.
+	//
+	// The test is on the version, not on the state. Testing the labels would not
+	// be enough: `argo retry` deletes both and keeps the uid, and when the second
+	// run completes the controller writes them back with the same values, so
+	// every value a state test could check has returned and a patch built from
+	// the first run applies to the second. That would mark a run that was never
+	// archived, and the Pending label is what would otherwise queue it, so it
+	// would never be archived at all.
+	//
+	// resourceVersion identifies the exact object this archive was taken from, so
+	// it subsumes the label checks: if it matches, the labels are the ones the
+	// worker read. The uid is kept alongside it because a workflow deleted and
+	// recreated under the same name is a different object whose version counter
+	// says nothing about this one.
+	data, err := json.Marshal([]map[string]any{
+		{"op": "test", "path": "/metadata/uid", "value": string(wf.UID)},
+		{"op": "test", "path": "/metadata/resourceVersion", "value": un.GetResourceVersion()},
+		{"op": "replace", "path": archivingLabelPath(common.LabelKeyWorkflowArchivingStatus), "value": "Archived"},
 	})
 	if err != nil {
 		return fmt.Errorf("failed to marshal patch: %w", err)
@@ -1419,7 +1466,7 @@ func (wfc *WorkflowController) archiveWorkflowAux(ctx context.Context, obj any) 
 	_, err = wfc.wfclientset.ArgoprojV1alpha1().Workflows(un.GetNamespace()).Patch(
 		ctx,
 		un.GetName(),
-		types.MergePatchType,
+		types.JSONPatchType,
 		data,
 		metav1.PatchOptions{},
 	)
@@ -1427,6 +1474,35 @@ func (wfc *WorkflowController) archiveWorkflowAux(ctx context.Context, obj any) 
 		// from this point on we have successfully archived the workflow, and it is possible for the workflow to have actually
 		// been deleted, so it's not a problem to get a `IsNotFound` error
 		if apierr.IsNotFound(err) {
+			return nil
+		}
+		// A failed test operation comes back as a bare 422 Invalid whose message
+		// and details say nothing about which operation failed, so the reason
+		// cannot be read off the error. Ask the API server what the object looks
+		// like now instead: if it has moved on, there is nothing left to mark and
+		// retrying would only repeat the archive transaction.
+		//
+		// Deliberately not treating "the version advanced" as moved on. The
+		// object may have advanced into a state that still needs archiving -- a
+		// second run that has just completed -- and the right answer there is to
+		// retry, so the next attempt reads that version and archives it. A
+		// workflow that merely gained an annotation lands in the same branch and
+		// is likewise retried. If nothing has moved on, the error is returned and
+		// the queue retries it, so a malformed patch keeps failing visibly rather
+		// than being swallowed.
+		wfLogger := logger.WithFields(logging.Fields{
+			"namespace": un.GetNamespace(), "workflow": un.GetName(), "uid": wf.UID,
+		})
+		movedOn, checkErr := wfc.archivedWorkflowMovedOn(ctx, un.GetNamespace(), un.GetName(), wf.UID)
+		switch {
+		case checkErr != nil:
+			// Retried either way, but say why the question could not be answered:
+			// otherwise the only trace is the patch error, which looks the same
+			// whether the workflow is still eligible or the API server could not
+			// be reached to find out.
+			wfLogger.WithError(checkErr).Warn(ctx, "Could not read the workflow back to see whether it had moved on")
+		case movedOn:
+			wfLogger.Info(ctx, "Workflow is no longer the one that was archived; leaving it alone")
 			return nil
 		}
 		return fmt.Errorf("failed to mark the workflow archived: %w", err)
