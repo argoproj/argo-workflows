@@ -343,8 +343,9 @@ type WorkflowSpec struct {
 	ArtifactRepositoryRef *ArtifactRepositoryRef `json:"artifactRepositoryRef,omitempty" protobuf:"bytes,8,opt,name=artifactRepositoryRef"`
 
 	// Suspend will suspend the workflow and prevent execution of any future steps in the workflow.
-	// Deprecated: create the Workflow with startSuspended instead, and suspend or resume a running
-	// Workflow with a WorkflowAction.
+	// This field is deprecated: create the Workflow with startSuspended instead, and suspend or
+	// resume a running Workflow with a WorkflowAction. It is still honored for now, and the
+	// controller keeps it in sync with status.suspended.
 	Suspend *bool `json:"suspend,omitempty" protobuf:"bytes,9,opt,name=suspend"`
 
 	// StartSuspended creates the workflow in the suspended state. It is honored exactly once, when
