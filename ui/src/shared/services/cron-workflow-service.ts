@@ -35,8 +35,9 @@ export const CronWorkflowService = {
             .then(res => normalizeSchedules(res.body));
     },
 
-    delete(name: string, namespace: string) {
-        return requests.delete(`api/v1/cron-workflows/${namespace}/${name}`);
+    delete(name: string, namespace: string, keepWorkflows = false) {
+        const deleteOptions = keepWorkflows ? '?deleteOptions.propagationPolicy=Orphan' : '';
+        return requests.delete(`api/v1/cron-workflows/${namespace}/${name}${deleteOptions}`);
     },
 
     suspend(name: string, namespace: string) {
