@@ -8370,7 +8370,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 					},
 					"suspend": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Suspend will suspend the workflow and prevent execution of any future steps in the workflow. Deprecated: create the Workflow with startSuspended instead, and suspend or resume a running Workflow with a WorkflowAction.",
+							Description: "Suspend will suspend the workflow and prevent execution of any future steps in the workflow. This field is deprecated: create the Workflow with startSuspended instead, and suspend or resume a running Workflow with a WorkflowAction. It is still honored for now, and the controller keeps it in sync with status.suspended.",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},

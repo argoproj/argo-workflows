@@ -12598,7 +12598,7 @@
           "type": "boolean"
         },
         "suspend": {
-          "description": "Suspend will suspend the workflow and prevent execution of any future steps in the io.argoproj.workflow.v1alpha1. Deprecated: create the Workflow with startSuspended instead, and suspend or resume a running Workflow with a WorkflowAction.",
+          "description": "Suspend will suspend the workflow and prevent execution of any future steps in the io.argoproj.workflow.v1alpha1. This field is deprecated: create the Workflow with startSuspended instead, and suspend or resume a running Workflow with a WorkflowAction. It is still honored for now, and the controller keeps it in sync with status.suspended.",
           "type": "boolean"
         },
         "synchronization": {

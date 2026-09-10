@@ -347,10 +347,10 @@ spec:
         image: argoproj/argosay:v2
 `
 
-func deprecationCount(t *testing.T, feature string) (int64, error) {
+func deprecationCount(t *testing.T) (int64, error) {
 	t.Helper()
 	ctx := logging.TestContext(t.Context())
-	attribs := attribute.NewSet(attribute.String("feature", feature))
+	attribs := attribute.NewSet(attribute.String("feature", "workflow spec.suspend"))
 	return testExporter.GetInt64CounterValue(ctx, telemetry.InstrumentDeprecatedFeature.Name(), &attribs)
 }
 
@@ -371,7 +371,7 @@ func TestStartSuspended(t *testing.T) {
 	assert.True(t, *woc.wf.Spec.Suspend)
 	assert.Empty(t, woc.wf.Status.Nodes)
 	// a controller-made suspension is not a deprecated spec.suspend use
-	_, err := deprecationCount(t, "workflow spec.suspend")
+	_, err := deprecationCount(t)
 	assert.Error(t, err)
 }
 
@@ -403,7 +403,7 @@ func TestSpecSuspendDeprecationCounted(t *testing.T) {
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 
-	val, err := deprecationCount(t, "workflow spec.suspend")
+	val, err := deprecationCount(t)
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), val)
 	assert.True(t, woc.wf.Status.Suspended)
@@ -411,7 +411,7 @@ func TestSpecSuspendDeprecationCounted(t *testing.T) {
 	// mirrored now, so the same suspension episode is not recounted
 	woc2 := newWorkflowOperationCtx(ctx, woc.wf, controller)
 	woc2.operate(ctx)
-	val, err = deprecationCount(t, "workflow spec.suspend")
+	val, err = deprecationCount(t)
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), val)
 }
@@ -430,7 +430,7 @@ func TestOldClientResumeMirrors(t *testing.T) {
 	woc.operate(ctx)
 
 	assert.False(t, woc.wf.Status.Suspended)
-	_, err := deprecationCount(t, "workflow spec.suspend")
+	_, err := deprecationCount(t)
 	assert.Error(t, err)
 }
 

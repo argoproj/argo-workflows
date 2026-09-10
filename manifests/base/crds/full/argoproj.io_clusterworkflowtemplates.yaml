@@ -5966,8 +5966,9 @@ spec:
               suspend:
                 description: |-
                   Suspend will suspend the workflow and prevent execution of any future steps in the workflow.
-                  Deprecated: create the Workflow with startSuspended instead, and suspend or resume a running
-                  Workflow with a WorkflowAction.
+                  This field is deprecated: create the Workflow with startSuspended instead, and suspend or
+                  resume a running Workflow with a WorkflowAction. It is still honored for now, and the
+                  controller keeps it in sync with status.suspended.
                 type: boolean
               synchronization:
                 description: Synchronization holds synchronization lock configuration
