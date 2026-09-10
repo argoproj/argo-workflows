@@ -33,6 +33,9 @@ func NewCronWorkflowServer(instanceIDService instanceid.Service, wftmplStore ser
 }
 
 func (c *cronWorkflowServiceServer) LintCronWorkflow(ctx context.Context, req *cronworkflowpkg.LintCronWorkflowRequest) (*v1alpha1.CronWorkflow, error) {
+	if req.CronWorkflow == nil {
+		return nil, sutils.ToStatusError(fmt.Errorf("cron workflow was not found in the request body"), codes.InvalidArgument)
+	}
 	wftmplGetter := c.wftmplStore.Getter(ctx, req.Namespace)
 	cwftmplGetter := c.cwftmplStore.Getter(ctx)
 	c.instanceIDService.Label(req.CronWorkflow)
@@ -86,6 +89,9 @@ func (c *cronWorkflowServiceServer) GetCronWorkflow(ctx context.Context, req *cr
 }
 
 func (c *cronWorkflowServiceServer) UpdateCronWorkflow(ctx context.Context, req *cronworkflowpkg.UpdateCronWorkflowRequest) (*v1alpha1.CronWorkflow, error) {
+	if req.CronWorkflow == nil {
+		return nil, sutils.ToStatusError(fmt.Errorf("cron workflow was not found in the request body"), codes.InvalidArgument)
+	}
 	_, err := c.getCronWorkflowAndValidate(ctx, req.Namespace, req.CronWorkflow.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
