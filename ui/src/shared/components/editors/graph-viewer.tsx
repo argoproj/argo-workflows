@@ -118,6 +118,7 @@ export function populateGraphFromWorkflow(workflow: Workflow | WorkflowTemplate 
 
     function processDAGTemplate(template: Template, parentNodeName: string) {
         createNode(parentNodeName, getStringAfterDelimiter(parentNodeName), 'DAG');
+        const taskMap = new Map<string, DAGTask>(template.dag.tasks.map(t => [t.name, t]));
         template.dag.tasks.forEach((task: DAGTask) => {
             let nodeLabel = task.name;
             const nodeName = `${parentNodeName}.${task.name}`;
@@ -141,7 +142,9 @@ export function populateGraphFromWorkflow(workflow: Workflow | WorkflowTemplate 
                 const dependencyLabel = task.depends ? task.depends : task.dependencies.join(' && ');
                 dependencies.forEach((dep: string) => {
                     let dependancyName = `${parentNodeName}.${dep}`;
-                    if (graph.nodes.get(dependancyName).genre == 'Pod') {
+                    const depTask = taskMap.get(dep);
+                    const depGenre = depTask ? getTaskGenre(depTask) : undefined;
+                    if (depGenre == 'Pod') {
                         if (retryStrategy) {
                             createEdge(dependancyName, retryNodeName);
                             dependancyName = retryNodeName;
