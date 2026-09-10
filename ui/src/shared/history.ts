@@ -7,14 +7,20 @@ import * as nsUtils from './namespaces';
  */
 export function historyUrl(path: string, params: {[key: string]: any}) {
     const queryParams = new URLSearchParams();
+    let extraSearchParams: URLSearchParams | undefined;
+
+    // Process named params first so that the namespace dedup check below works
+    // regardless of key order in the params object.
     Object.entries(params)
         .filter(([, v]) => v !== null)
         .forEach(([k, v]) => {
+            if (k === 'extraSearchParams') {
+                extraSearchParams = v as URLSearchParams;
+                return;
+            }
             const searchValue = '{' + k + '}';
             if (path.includes(searchValue)) {
                 path = path.replace(searchValue, v != null ? v : '');
-            } else if (k === 'extraSearchParams') {
-                (v as URLSearchParams).forEach((value, key) => queryParams.set(key, value));
             } else if (v) {
                 queryParams.set(k, v);
             }
@@ -22,6 +28,16 @@ export function historyUrl(path: string, params: {[key: string]: any}) {
                 nsUtils.setCurrentNamespace(v);
             }
         });
+
+    // Append extraSearchParams after named params. Skip namespace if it was
+    // already set as a named query param to prevent duplicate ?namespace= entries.
+    // Repeated values for the same key within extraSearchParams are preserved
+    // (e.g. multiple phase= or label=).
+    extraSearchParams?.forEach((value, key) => {
+        if (key !== 'namespace' || !queryParams.has('namespace')) {
+            queryParams.append(key, value);
+        }
+    });
 
     return uiUrl(path.replace(/{[^}]*}/g, '')) + '?' + queryParams.toString();
 }
