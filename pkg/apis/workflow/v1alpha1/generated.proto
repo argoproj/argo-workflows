@@ -2244,8 +2244,9 @@ message WorkflowSpec {
   optional ArtifactRepositoryRef artifactRepositoryRef = 8;
 
   // Suspend will suspend the workflow and prevent execution of any future steps in the workflow.
-  // Deprecated: create the Workflow with startSuspended instead, and suspend or resume a running
-  // Workflow with a WorkflowAction.
+  // This field is deprecated: create the Workflow with startSuspended instead, and suspend or
+  // resume a running Workflow with a WorkflowAction. It is still honored for now, and the
+  // controller keeps it in sync with status.suspended.
   optional bool suspend = 9;
 
   // StartSuspended creates the workflow in the suspended state. It is honored exactly once, when
