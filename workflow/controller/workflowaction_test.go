@@ -6,12 +6,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/attribute"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/argoproj/argo-workflows/v4/config"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/deprecation"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/telemetry"
 )
 
 func newTestAction(name, wfName string, action wfv1.WorkflowActionType, opts ...func(*wfv1.WorkflowAction)) *wfv1.WorkflowAction {
@@ -326,6 +329,40 @@ func TestGetShutdownStrategyPrefersStatus(t *testing.T) {
 
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	assert.Equal(t, wfv1.ShutdownStrategyStop, woc.GetShutdownStrategy())
+}
+
+func TestSpecShutdownDeprecationMetric(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(actionTargetWf)
+	wf.Spec.Shutdown = wfv1.ShutdownStrategyStop
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	deprecation.Initialize(controller.metrics.DeprecatedFeature)
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	attribs := attribute.NewSet(attribute.String("feature", "workflow spec.shutdown"))
+	val, err := testExporter.GetInt64CounterValue(ctx, telemetry.InstrumentDeprecatedFeature.Name(), &attribs)
+	require.NoError(t, err)
+	assert.GreaterOrEqual(t, val, int64(1))
+}
+
+func TestActionShutdownNotCountedAsDeprecated(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(actionTargetWf)
+	cancel, controller := newController(ctx, wf, newTestAction("d1", "suspend", wfv1.ActionTypeTerminate))
+	defer cancel()
+	deprecation.Initialize(controller.metrics.DeprecatedFeature)
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	// shutdown arrived via a WorkflowAction (status.shutdown), so the deprecated
+	// spec.shutdown path must not be counted
+	attribs := attribute.NewSet(attribute.String("feature", "workflow spec.shutdown"))
+	_, err := testExporter.GetInt64CounterValue(ctx, telemetry.InstrumentDeprecatedFeature.Name(), &attribs)
+	assert.Error(t, err)
 }
 
 func TestWorkflowActionGC(t *testing.T) {

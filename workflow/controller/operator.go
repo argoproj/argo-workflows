@@ -39,6 +39,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util"
+	"github.com/argoproj/argo-workflows/v4/util/deprecation"
 	"github.com/argoproj/argo-workflows/v4/util/diff"
 	envutil "github.com/argoproj/argo-workflows/v4/util/env"
 	errorsutil "github.com/argoproj/argo-workflows/v4/util/errors"
@@ -267,6 +268,12 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 
 	// Drain pending WorkflowActions so they are applied serially with reconciliation.
 	woc.actionReconciliation(reconcileCtx)
+
+	// Shutting down by setting spec.shutdown directly is deprecated in favour of
+	// WorkflowActions; count uses so operators can find remaining old-path clients.
+	if woc.execWf.Spec.Shutdown.Enabled() && !woc.wf.Status.Shutdown.Enabled() {
+		deprecation.Record(reconcileCtx, deprecation.WorkflowSpecShutdown)
+	}
 
 	// Do artifact GC if task result reconciliation is complete.
 	if woc.wf.Status.Fulfilled() {
