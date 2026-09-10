@@ -137,6 +137,7 @@ Deprecated features are [explained here](deprecations.md).
 - [`synchronization mutex`](deprecations.md#synchronization-mutex)
 - [`synchronization semaphore`](deprecations.md#synchronization-semaphore)
 - [`workflow podpriority`](deprecations.md#workflow-podpriority)
+- [`workflow spec.shutdown`](deprecations.md#workflow-specshutdown)
 
 #### `error_count`
 

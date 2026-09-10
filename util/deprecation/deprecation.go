@@ -25,12 +25,15 @@ type Type int
 
 const (
 	Undefined Type = iota
+	WorkflowSpecShutdown
 )
 
 func (t *Type) asString() string {
 	switch *t {
 	case Undefined:
 		return `undefined`
+	case WorkflowSpecShutdown:
+		return `workflow spec.shutdown`
 	default:
 		return `unknown`
 	}
