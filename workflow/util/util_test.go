@@ -4882,6 +4882,160 @@ status:
 		"Stale succeeded pod should also be in deletion list")
 }
 
+// retrySucceededTaskGroupUpstream is a linear DAG where the only path from the root to
+// the failed leaf `target` runs through a fan-out TaskGroup that succeeded in full:
+//
+//	produce (Succeeded) -> fanout (TaskGroup, Succeeded) -> fanout(0:0) (Succeeded) -> target (Failed)
+//
+// Retrying `target` therefore has to walk up through `fanout`, which puts the TaskGroup
+// on the reset path even though nothing inside it needs to be rerun.
+const retrySucceededTaskGroupUpstream = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  annotations:
+    workflows.argoproj.io/pod-name-format: v2
+  name: archive-retry-repro
+  namespace: argo
+  labels:
+    workflows.argoproj.io/completed: "true"
+    workflows.argoproj.io/phase: Failed
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+    - name: worker_image
+      value: busybox:1.36
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: produce
+        template: produce
+      - name: fanout
+        template: fanout
+        depends: produce.Succeeded
+        withParam: "{{tasks.produce.outputs.parameters.items}}"
+      - name: target
+        template: target
+        depends: fanout.Succeeded
+  - name: produce
+    script:
+      image: busybox:1.36
+      command: [sh]
+      source: 'printf "[\"0\"]" > /tmp/items.json'
+    outputs:
+      parameters:
+      - name: items
+        valueFrom:
+          path: /tmp/items.json
+  - name: fanout
+    container:
+      image: "{{workflow.parameters.worker_image}}"
+      command: [sh, -c]
+      args: ["echo fanout-success"]
+  - name: target
+    container:
+      image: "{{workflow.parameters.worker_image}}"
+      command: [sh, -c]
+      args: ["echo target-fails; exit 1"]
+status:
+  phase: Failed
+  nodes:
+    archive-retry-repro:
+      id: archive-retry-repro
+      name: archive-retry-repro
+      displayName: archive-retry-repro
+      type: DAG
+      phase: Failed
+      templateName: main
+      children:
+      - archive-retry-repro-produce
+      outboundNodes:
+      - archive-retry-repro-target
+    archive-retry-repro-produce:
+      id: archive-retry-repro-produce
+      name: archive-retry-repro.produce
+      displayName: produce
+      type: Pod
+      phase: Succeeded
+      boundaryID: archive-retry-repro
+      templateName: produce
+      children:
+      - archive-retry-repro-fanout
+    archive-retry-repro-fanout:
+      id: archive-retry-repro-fanout
+      name: archive-retry-repro.fanout
+      displayName: fanout
+      type: TaskGroup
+      phase: Succeeded
+      boundaryID: archive-retry-repro
+      templateName: fanout
+      nodeFlag: {}
+      children:
+      - archive-retry-repro-fanout-0
+    archive-retry-repro-fanout-0:
+      id: archive-retry-repro-fanout-0
+      name: archive-retry-repro.fanout(0:0)
+      displayName: fanout(0:0)
+      type: Pod
+      phase: Succeeded
+      boundaryID: archive-retry-repro
+      templateName: fanout
+      children:
+      - archive-retry-repro-target
+    archive-retry-repro-target:
+      id: archive-retry-repro-target
+      name: archive-retry-repro.target
+      displayName: target
+      type: Pod
+      phase: Failed
+      boundaryID: archive-retry-repro
+      templateName: target
+`
+
+// TestFormulateRetryWorkflowWithParamOverrideKeepsSucceededTaskGroup covers issue #16879:
+// overriding a parameter on retry must not recreate the children of a fan-out TaskGroup
+// that already succeeded. Such a TaskGroup is only on the reset path because a node
+// downstream of it is being retried, so its expansion still matches the recorded state
+// and its pods must be left alone.
+func TestFormulateRetryWorkflowWithParamOverrideKeepsSucceededTaskGroup(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(retrySucceededTaskGroupUpstream)
+
+	retryWf, podsToDelete, err := FormulateRetryWorkflow(ctx, wf, false, "", []string{"worker_image=busybox:1.37"})
+	require.NoError(t, err)
+	require.NotNil(t, retryWf)
+
+	// The parameter override is applied.
+	assert.Equal(t, "busybox:1.37", retryWf.Spec.Arguments.Parameters[0].GetValue())
+
+	// The failed node is the only one recreated.
+	assert.False(t, retryWf.Status.Nodes.Has("archive-retry-repro-target"),
+		"the failed target node should be deleted so it is recreated")
+	require.Len(t, podsToDelete, 1, "only the failed target's pod should be deleted")
+	assert.True(t, strings.HasPrefix(podsToDelete[0], "archive-retry-repro-target-"),
+		"expected the target's pod, got %q", podsToDelete[0])
+
+	// The successful fan-out child survives untouched.
+	fanoutChild, err := retryWf.Status.Nodes.Get("archive-retry-repro-fanout-0")
+	require.NoError(t, err, "the succeeded fan-out child should be kept")
+	assert.Equal(t, wfv1.NodeSucceeded, fanoutChild.Phase, "the succeeded fan-out child should not be rerun")
+	assert.Equal(t, wf.Status.Nodes["archive-retry-repro-fanout-0"].StartedAt, fanoutChild.StartedAt,
+		"the succeeded fan-out child should keep its original start time")
+
+	// The TaskGroup is reset so the controller re-evaluates it, but it keeps its expansion.
+	fanout, err := retryWf.Status.Nodes.Get("archive-retry-repro-fanout")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeRunning, fanout.Phase)
+	assert.Equal(t, []string{"archive-retry-repro-fanout-0"}, fanout.Children,
+		"the succeeded TaskGroup should keep its expanded children")
+
+	// The unrelated upstream node is untouched too.
+	produce, err := retryWf.Status.Nodes.Get("archive-retry-repro-produce")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeSucceeded, produce.Phase)
+}
+
 // retryMultiParentTaskGroup is a diamond where the failed leaf X has two ancestry
 // branches: one through a plain pod (P) and one through a fan-out TaskGroup (G,
 // expanded into G0/G1). X therefore has more than one parent, and whether a retry
