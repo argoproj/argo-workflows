@@ -3144,7 +3144,6 @@ func (woc *wfOperationCtx) markNodePhase(ctx context.Context, nodeName string, p
 	if node.Fulfilled() && node.FinishedAt.IsZero() {
 		node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
 		woc.log.WithFields(logging.Fields{"node": node.ID, "finishedAt": node.FinishedAt}).Info(ctx, "node finished")
-		woc.controller.tracing.EndNode(ctx, namespacedName, node.ID, node.Phase)
 		woc.updated = true
 	}
 	woc.wf.Status.Nodes.Set(ctx, node.ID, *node)
