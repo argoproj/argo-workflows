@@ -49,12 +49,34 @@ func TestWorkflowActionBinderWorkflowNotFound(t *testing.T) {
 	cancel, wfc := newController(ctx, newTestAction("a1", "does-not-exist", wfv1.ActionTypeTerminate))
 	defer cancel()
 
-	assert.True(t, wfc.processNextActionItem(ctx))
+	// a missing target is requeued a bounded number of times (the workflow informer may lag)
+	// before the action is failed as not found
+	for range actionBindRetries + 1 {
+		require.True(t, wfc.processNextActionItem(ctx))
+	}
 
 	a := getTestAction(t, wfc, "a1")
 	assert.Equal(t, wfv1.WorkflowActionFailed, a.Status.Phase)
 	assert.Equal(t, wfv1.WorkflowActionReasonWorkflowNotFound, a.Status.Reason)
 	assert.NotNil(t, a.Status.CompletionTime)
+}
+
+func TestWorkflowActionBinderUIDMismatch(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(actionTargetWf)
+	wf.UID = "current-uid"
+	action := newTestAction("u1", "suspend", wfv1.ActionTypeTerminate, func(a *wfv1.WorkflowAction) {
+		a.Spec.WorkflowRef.UID = "stale-uid"
+	})
+	cancel, wfc := newController(ctx, wf, action)
+	defer cancel()
+
+	assert.True(t, wfc.processNextActionItem(ctx))
+
+	a := getTestAction(t, wfc, "u1")
+	assert.Equal(t, wfv1.WorkflowActionFailed, a.Status.Phase)
+	assert.Equal(t, wfv1.WorkflowActionReasonWorkflowNotFound, a.Status.Reason)
+	assert.Contains(t, a.Status.Message, "uid")
 }
 
 func TestWorkflowActionBinderWorkflowCompleted(t *testing.T) {
