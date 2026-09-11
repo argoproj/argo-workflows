@@ -74,6 +74,7 @@ type E2ESuite struct {
 	wfebClient        v1alpha1.WorkflowEventBindingInterface
 	wfTemplateClient  v1alpha1.WorkflowTemplateInterface
 	wftsClient        v1alpha1.WorkflowTaskSetInterface
+	actionClient      v1alpha1.WorkflowActionInterface
 	cwfTemplateClient v1alpha1.ClusterWorkflowTemplateInterface
 	cronClient        v1alpha1.CronWorkflowInterface
 	KubeClient        kubernetes.Interface
@@ -99,6 +100,7 @@ func (s *E2ESuite) SetupSuite() {
 	s.wfTemplateClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowTemplates(Namespace)
 	s.wftsClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowTaskSets(Namespace)
 	s.cronClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().CronWorkflows(Namespace)
+	s.actionClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowActions(Namespace)
 	s.Persistence = NewPersistence(ctx, s.KubeClient, s.Config)
 	s.hydrator = hydrator.New(s.Persistence.OffloadNodeStatusRepo)
 	s.cwfTemplateClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().ClusterWorkflowTemplates()
@@ -269,6 +271,7 @@ func (s *E2ESuite) Given() *Given {
 		wftsClient:        s.wftsClient,
 		cwfTemplateClient: s.cwfTemplateClient,
 		cronClient:        s.cronClient,
+		actionClient:      s.actionClient,
 		hydrator:          s.hydrator,
 		kubeClient:        s.KubeClient,
 		bearerToken:       bearerToken,

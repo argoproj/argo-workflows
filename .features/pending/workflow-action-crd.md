@@ -1,7 +1,7 @@
 Description: WorkflowAction CRD: stop, terminate, suspend and resume are performed by the workflow controller
 Authors: [Alan Clucas](https://github.com/Joibel)
 Component: General
-Issues: 16741 2942 12538 12863
+Issues: 16741 2942 12863
 
 Lifecycle actions on a Workflow can be requested by creating a WorkflowAction resource, with `kubectl` or through the Argo Server.
 The workflow controller performs the action inside its reconciliation loop and reports the outcome on the WorkflowAction's `status`, so a lost or invalid request is visible instead of silently ignored.
