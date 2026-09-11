@@ -90,8 +90,8 @@ func (woc *wfOperationCtx) executeSteps(ctx context.Context, nodeName string, tm
 				return nil, prevErr
 			}
 			if len(prevStepGroupNode.Children) == 0 {
-				// corner case which connects an empty StepGroup (e.g. due to empty withParams) to
-				// the previous StepGroup node
+				// Connect a literal empty StepGroup (- []) to its successor for graph continuity.
+				// An empty withParam expansion has a Skipped child and does not reach this branch.
 				woc.addChildNode(ctx, prevStepGroupName, sgNodeName)
 			} else {
 				for _, childID := range prevStepGroupNode.Children {
@@ -329,6 +329,10 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 			woc.log.Error(ctx, errorMsg)
 			return nil, fmt.Errorf("%s", errorMsg)
 		}
+		// A StepGroup child is a successor edge, not work belonging to this group.
+		if childNode.Type == wfv1.NodeTypeStepGroup {
+			continue
+		}
 		step := nodeSteps[childNode.Name]
 		varkeys.StepsNodeRef.Status.Set(stepsCtx.scope.scope, string(childNode.Phase), childNode.DisplayName)
 		hookCompleted, err := woc.executeTmplLifeCycleHook(ctx, stepsCtx.scope, step.Hooks, childNode, stepsCtx.boundaryID, stepsCtx.tmplCtx, varkeys.StepsNodeRef, step.Name)
@@ -368,6 +372,9 @@ func (woc *wfOperationCtx) executeStepGroup(ctx context.Context, stepGroup []wfv
 		childNode, err := woc.wf.Status.Nodes.Get(childNodeID)
 		if err != nil {
 			woc.log.WithField("nodeID", childNodeID).WithPanic().Error(ctx, "Couldn't obtain child for nodeID, panicking")
+		}
+		if childNode.Type == wfv1.NodeTypeStepGroup {
+			continue
 		}
 		step := nodeSteps[childNode.Name]
 		if childNode.FailedOrError() && !step.ContinuesOn(childNode.Phase) {
