@@ -416,6 +416,8 @@ CronWorkflow is the definition of a scheduled workflow resource
 
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cron-backfill.yaml)
 
+- [`cron-hash-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cron-hash-workflow.yaml)
+
 - [`cron-when.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cron-when.yaml)
 
 - [`cron-workflow-multiple-schedules.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cron-workflow-multiple-schedules.yaml)
@@ -579,6 +581,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/continue-on-fail.yaml)
 
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cron-backfill.yaml)
+
+- [`cron-hash-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cron-hash-workflow.yaml)
 
 - [`cron-when.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cron-when.yaml)
 
@@ -1069,6 +1073,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cron-backfill.yaml)
 
+- [`cron-hash-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cron-hash-workflow.yaml)
+
 - [`cron-when.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cron-when.yaml)
 
 - [`cron-workflow-multiple-schedules.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cron-workflow-multiple-schedules.yaml)
@@ -1431,6 +1437,7 @@ CronWorkflowStatus is the status of a CronWorkflow
 |`failed`|`integer`|v3.6 and after: Failed counts how many times child workflows failed|
 |`lastScheduledTime`|[`Time`](#time)|LastScheduleTime is the last time the CronWorkflow was scheduled|
 |`phase`|`string`|v3.6 and after: Phase is an enum of Active or Stopped. It changes to Stopped when stopStrategy.expression is true|
+|`resolvedSchedules`|`Map< string , string >`|ResolvedSchedules maps a schedule of the spec using a `H` (hash) token to what it resolved to. Set by the controller, schedules without a `H` are not listed|
 |`succeeded`|`integer`|v3.6 and after: Succeeded counts how many times child workflows succeeded|
 
 ## WorkflowEventBindingSpec
@@ -1975,6 +1982,8 @@ Template is a reusable and composable unit of execution in a workflow
 - [`continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/continue-on-fail.yaml)
 
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cron-backfill.yaml)
+
+- [`cron-hash-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cron-hash-workflow.yaml)
 
 - [`cron-when.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cron-when.yaml)
 
@@ -4009,6 +4018,8 @@ SuspendTemplate is a template subtype to suspend a workflow at a predetermined p
 <details markdown>
 <summary>Examples with this field (click to open)</summary>
 
+- [`cron-hash-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cron-hash-workflow.yaml)
+
 - [`cron-workflow-multiple-schedules.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cron-workflow-multiple-schedules.yaml)
 
 - [`cron-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cron-workflow.yaml)
@@ -5568,6 +5579,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cron-backfill.yaml)
 
+- [`cron-hash-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cron-hash-workflow.yaml)
+
 - [`cron-when.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cron-when.yaml)
 
 - [`cron-workflow-multiple-schedules.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cron-workflow-multiple-schedules.yaml)
@@ -6330,6 +6343,8 @@ A single application container that you want to run within a pod.
 - [`conditionals.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/conditionals.yaml)
 
 - [`continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/continue-on-fail.yaml)
+
+- [`cron-hash-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cron-hash-workflow.yaml)
 
 - [`cron-when.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cron-when.yaml)
 
@@ -7421,6 +7436,8 @@ ImageVolumeSource represents a image volume resource.
 - [`continue-on-fail.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/continue-on-fail.yaml)
 
 - [`cron-backfill.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cron-backfill.yaml)
+
+- [`cron-hash-workflow.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cron-hash-workflow.yaml)
 
 - [`cron-when.yaml`](https://github.com/argoproj/argo-workflows/blob/main/examples/cron-when.yaml)
 

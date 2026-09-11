@@ -22,6 +22,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util"
+	"github.com/argoproj/argo-workflows/v4/util/cronhash"
 	"github.com/argoproj/argo-workflows/v4/util/intstr"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/sorting"
@@ -446,7 +447,11 @@ func CronWorkflow(ctx context.Context, wftmplGetter templateresolution.WorkflowT
 	}
 
 	for _, schedule := range cronWf.Spec.GetSchedules() {
-		if _, err := cron.ParseStandard(schedule); err != nil {
+		expanded, err := cronhash.Expand(schedule, cronWf.Namespace, cronWf.Name)
+		if err != nil {
+			return errors.Errorf(errors.CodeBadRequest, "cron schedule %s is malformed: %s", schedule, err)
+		}
+		if _, err := cron.ParseStandard(expanded); err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "cron schedule %s is malformed: %s", schedule, err)
 		}
 	}
