@@ -53,7 +53,7 @@ func (cwti *informerImpl) Run(ctx context.Context, stopCh <-chan struct{}) {
 		stopCh,
 		cwti.informer.Informer().HasSynced,
 	) {
-		logging.RequireLoggerFromContext(ctx).WithFatal().Error(ctx, "Timed out waiting for caches to sync")
+		logging.RequireLoggerFromContext(ctx).Error(ctx, "Timed out waiting for caches to sync")
 		os.Exit(1)
 	}
 }

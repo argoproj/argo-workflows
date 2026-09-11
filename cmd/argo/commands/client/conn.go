@@ -82,7 +82,8 @@ func NewAPIClient(ctx context.Context) (context.Context, apiclient.Client, error
 				authString, err := GetAuthString(ctx)
 				if err != nil {
 					logger := logging.RequireLoggerFromContext(ctx)
-					logger.WithFatal().WithError(err).Error(ctx, "Failed to get auth string")
+					logger.WithError(err).Error(ctx, "Failed to get auth string")
+					os.Exit(1)
 				}
 				return authString
 			},
@@ -107,7 +108,8 @@ func Namespace(ctx context.Context) string {
 	namespace, _, err := GetConfig().Namespace()
 	if err != nil {
 		logger := logging.RequireLoggerFromContext(ctx)
-		logger.WithFatal().WithError(err).Error(ctx, "Failed to get namespace")
+		logger.WithError(err).Error(ctx, "Failed to get namespace")
+		os.Exit(1)
 	}
 	return namespace
 }
