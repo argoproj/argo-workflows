@@ -20,6 +20,7 @@ export interface Config {
   signals: SignalConfig[];
   ignoreChecks: string[];
   coveredApps: string[];
+  exemptAuthors: string[];
 }
 
 export interface CheckRun {

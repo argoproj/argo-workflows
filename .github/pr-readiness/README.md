@@ -29,7 +29,7 @@ Tune guidance, add or remove signals in [`checks.config.json`](checks.config.jso
 - Because the label mirrors the current verdict with no memory, a manually-removed label is re-applied on the next CI completion while checks still fail — maintainers who disagree with a covered failure can simply review anyway; the label is advisory, not a gate.
 - When issues are resolved but other covered checks are still running: the comment shows a short "waiting" state.
 - When everything is terminal and green: the comment is edited to a short ✅ all-clear.
-- Skipped: PRs by anyone in [`OWNERS`](../../OWNERS) (owners/approvers/reviewers) and by bots.
+- Skipped: PRs by any maintainer listed in `exemptAuthors` in [`checks.config.json`](./checks.config.json) and by bots.
 
 ## PR description check
 

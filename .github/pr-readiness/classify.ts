@@ -95,31 +95,16 @@ export function decide({ signals, templateVerdict, hasExistingComment }: DecideA
   return { variant, shouldComment, blocking, failing, templateBlocking };
 }
 
-// OWNERS is a small YAML subset: three keys, each a list of logins.
-export function parseOwners(yamlText: string): string[] {
-  const sections = new Set(['owners', 'approvers', 'reviewers']);
-  const logins: string[] = [];
-  let current: string | null = null;
-  for (const line of yamlText.split('\n')) {
-    const key = line.match(/^(\w+):/);
-    if (key) {
-      current = key[1];
-      continue;
-    }
-    const item = line.match(/^-\s*(\S+)/);
-    if (item && current !== null && sections.has(current)) {
-      logins.push(item[1]);
-    }
-  }
-  return logins;
-}
-
-export function isExemptAuthor(user: GitHubUser, ownersYaml: string): boolean {
+// Exempt authors are maintainers (configured in checks.config.json's
+// `exemptAuthors`) and bots. The maintainer roster is centralized in
+// argoproj/.project; keep `exemptAuthors` in sync with the argo-workflows
+// groups there.
+export function isExemptAuthor(user: GitHubUser, exemptAuthors: string[]): boolean {
   if (user.type === 'Bot' || /\[bot\]$/i.test(user.login)) {
     return true;
   }
   const login = user.login.toLowerCase();
-  return parseOwners(ownersYaml).some((l) => l.toLowerCase() === login);
+  return exemptAuthors.some((l) => l.toLowerCase() === login);
 }
 
 export function findPullRequest<T extends { head: { sha: string } }>(openPrs: T[], headSha: string): T | null {
