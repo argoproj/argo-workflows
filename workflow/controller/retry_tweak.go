@@ -29,11 +29,15 @@ func RetryOnDifferentHost(retryNodeName string) RetryTweak {
 		if retryStrategy.Affinity == nil {
 			return
 		}
-		if retryStrategy.Affinity.NodeAntiAffinity != nil {
+		if nodeAntiAffinity := retryStrategy.Affinity.NodeAntiAffinity; nodeAntiAffinity != nil {
 			hostNames := wfretry.GetFailHosts(nodes, retryNodeName)
 			hostLabel := env.GetString("RETRY_HOST_NAME_LABEL_KEY", "kubernetes.io/hostname")
 			if hostLabel != "" && len(hostNames) > 0 {
-				pod.Spec.Affinity = wfretry.AddHostnamesToAffinity(hostLabel, hostNames, pod.Spec.Affinity)
+				if nodeAntiAffinity.Type == wfv1.RetryNodeAntiAffinityPreferred {
+					pod.Spec.Affinity = wfretry.AddHostnamesToPreferredAffinity(hostLabel, hostNames, pod.Spec.Affinity)
+				} else {
+					pod.Spec.Affinity = wfretry.AddHostnamesToAffinity(hostLabel, hostNames, pod.Spec.Affinity)
+				}
 			}
 		}
 	}
