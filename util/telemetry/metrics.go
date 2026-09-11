@@ -13,8 +13,6 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 	"go.opentelemetry.io/otel/metric"
 	metricsdk "go.opentelemetry.io/otel/sdk/metric"
-	"go.opentelemetry.io/otel/sdk/resource"
-	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
 
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
@@ -65,13 +63,8 @@ func (m *Metrics) IterateROInstruments(fn func(i *Instrument)) {
 }
 
 func NewMetrics(ctx context.Context, serviceName, prometheusName string, config *Config, extraOpts ...metricsdk.Option) (*Metrics, error) {
-	res := resource.NewWithAttributes(
-		semconv.SchemaURL,
-		semconv.ServiceName(serviceName),
-	)
-
 	options := make([]metricsdk.Option, 0)
-	options = append(options, metricsdk.WithResource(res))
+	options = append(options, metricsdk.WithResource(workflowsResource(ctx, serviceName)))
 	logger := logging.RequireLoggerFromContext(ctx)
 
 	if endpoint := resolveOTLPEndpoint(otlpMetricsEndpointEnv); endpoint != "" {
