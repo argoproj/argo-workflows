@@ -821,55 +821,81 @@ func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized 
 		return &newWF, nil
 	}
 
-	// Iterate the previous nodes.
-	replaceRegexp := regexp.MustCompile("^" + wf.Name)
-	newWF.Status.Nodes = make(map[string]wfv1.NodeStatus)
-	onExitNodeName := wf.Name + ".onExit"
-	var err = packer.DecompressWorkflow(ctx, wf)
+	err := packer.DecompressWorkflow(ctx, wf)
 	if err != nil {
 		log.WithPanic().WithError(err).Error(ctx, "Failed to decompress workflow")
 	}
-	for _, node := range wf.Status.Nodes {
-		newNode := node.DeepCopy()
-		if strings.HasPrefix(node.Name, onExitNodeName) {
+
+	// Decide what to keep, reset and delete exactly as a retry of the original
+	// workflow would. Doing so gives memoized resubmit the same handling of
+	// fan-out TaskGroups, retry nodes and parameter overrides as retry, instead
+	// of a parallel implementation that has to be fixed separately.
+	plan, err := planReset(ctx, wf, false, "", len(parameters) > 0)
+	if err != nil {
+		return nil, err
+	}
+
+	// Copy the surviving nodes across under the new workflow name. Node IDs are
+	// derived from node names, which start with the workflow name, so every
+	// name, ID and reference has to be rewritten.
+	replaceRegexp := regexp.MustCompile("^" + wf.Name)
+	newWF.Status.Nodes = make(wfv1.Nodes)
+	onExitNodeName := wf.Name + ".onExit"
+	now := metav1.Time{Time: time.Now().UTC()}
+	for id, node := range wf.Status.Nodes {
+		if plan.toDelete[id] || strings.HasPrefix(node.Name, onExitNodeName) {
 			continue
 		}
+		if isExecutionNodeType(node.Type) && (plan.toReset[id] || !node.Phase.Completed()) {
+			// The pod belongs to the original workflow, so an execution node
+			// that did not finish, or that a retry would restart in place,
+			// cannot be re-used here. Drop it so the controller creates a new
+			// one under the new workflow.
+			continue
+		}
+		newNode := node.DeepCopy()
 		originalID := node.ID
 		newNode.Name = replaceRegexp.ReplaceAllString(node.Name, newWF.Name)
 		newNode.ID = newWF.NodeID(newNode.Name)
 		if node.BoundaryID != "" {
 			newNode.BoundaryID = convertNodeID(&newWF, replaceRegexp, node.BoundaryID, wf.Status.Nodes)
 		}
-		if newNode.FailedOrError() && newNode.Type == wfv1.NodeTypePod {
-			newNode.StartedAt = metav1.Time{}
-			newNode.FinishedAt = metav1.Time{}
-		} else {
-			newNode.StartedAt = metav1.Time{Time: time.Now().UTC()}
-			newNode.FinishedAt = newNode.StartedAt
-		}
-		newChildren := make([]string, len(node.Children))
+		newNode.Children = make([]string, len(node.Children))
 		for i, childID := range node.Children {
-			newChildren[i] = convertNodeID(&newWF, replaceRegexp, childID, wf.Status.Nodes)
+			newNode.Children[i] = convertNodeID(&newWF, replaceRegexp, childID, wf.Status.Nodes)
 		}
-		newNode.Children = newChildren
-		newOutboundNodes := make([]string, len(node.OutboundNodes))
+		newNode.OutboundNodes = make([]string, len(node.OutboundNodes))
 		for i, outboundID := range node.OutboundNodes {
-			newOutboundNodes[i] = convertNodeID(&newWF, replaceRegexp, outboundID, wf.Status.Nodes)
+			newNode.OutboundNodes[i] = convertNodeID(&newWF, replaceRegexp, outboundID, wf.Status.Nodes)
 		}
-		newNode.OutboundNodes = newOutboundNodes
-		switch {
-		case !newNode.FailedOrError() && newNode.Type == wfv1.NodeTypePod:
-			newNode.Phase = wfv1.NodeSkipped
-			newNode.Type = wfv1.NodeTypeSkipped
-			newNode.Message = fmt.Sprintf("original pod: %s", originalID)
-		case newNode.Type == wfv1.NodeTypeSkipped && !isDescendantNodeSucceeded(ctx, wf, node, make(map[string]bool)):
-			newWF.Status.Nodes.Delete(ctx, newNode.ID)
-			continue
-		default:
-			newNode.Phase = wfv1.NodePending
-			newNode.Message = ""
+		if plan.toReset[id] {
+			*newNode = resetNode(*newNode)
+		} else {
+			newNode.StartedAt = now
+			newNode.FinishedAt = now
+			if newNode.Type == wfv1.NodeTypePod && !newNode.FailedOrError() {
+				// A completed pod is memoized: keep its outputs but point at
+				// the pod of the original workflow rather than expecting one
+				// here.
+				newNode.Phase = wfv1.NodeSkipped
+				newNode.Type = wfv1.NodeTypeSkipped
+				newNode.Message = fmt.Sprintf("original pod: %s", originalID)
+			}
 		}
 		newWF.Status.Nodes.Set(ctx, newNode.ID, *newNode)
+	}
+
+	// Deleted nodes may still be referenced as children or outbound nodes of
+	// the nodes that were kept, most commonly by the leaf nodes of a nested DAG
+	// or Steps template whose dependant was deleted. The DAG phase assessment
+	// follows those references and treats a missing node as still running, so
+	// a dangling reference would leave the nested template, and with it the
+	// whole workflow, Running forever. Drop them; the controller re-creates the
+	// links when it re-creates the nodes.
+	for id, node := range newWF.Status.Nodes {
+		node.Children = keepExistingNodeIDs(newWF.Status.Nodes, node.Children)
+		node.OutboundNodes = keepExistingNodeIDs(newWF.Status.Nodes, node.OutboundNodes)
+		newWF.Status.Nodes.Set(ctx, id, node)
 	}
 
 	newWF.Status.StoredTemplates = make(map[string]wfv1.Template)
@@ -879,6 +905,18 @@ func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized 
 	newWF.Status.Phase = wfv1.WorkflowUnknown
 
 	return &newWF, nil
+}
+
+// keepExistingNodeIDs returns ids without any that are not present in nodes,
+// preserving order.
+func keepExistingNodeIDs(nodes wfv1.Nodes, ids []string) []string {
+	var kept []string
+	for _, id := range ids {
+		if nodes.Has(id) {
+			kept = append(kept, id)
+		}
+	}
+	return kept
 }
 
 // convertNodeID converts an old nodeID to a new nodeID
@@ -1256,39 +1294,38 @@ func dagSortedNodes(nodes []*dagNode, rootNodeName string) []*dagNode {
 	return sortedNodes
 }
 
-// FormulateRetryWorkflow attempts to retry a workflow
+// resetPlan lists the nodes that must be touched for the failed parts of a
+// workflow to run again. Nodes in toReset are kept but returned to Running so
+// the controller revisits them. Nodes in toDelete are removed so the controller
+// re-creates them from scratch.
+type resetPlan struct {
+	toReset  map[string]bool
+	toDelete map[string]bool
+}
+
+// planReset works out which nodes of wf a retry has to reset and which it has
+// to delete. It is shared by FormulateRetryWorkflow, which applies the plan to
+// the same workflow object, and by the memoized mode of
+// FormulateResubmitWorkflow, which applies it to a renamed copy.
+//
 // The logic is as follows:
 // create a DAG
 // topological sort
 // iterate through all must delete nodes: iterator $node
 // obtain singular path to each $node
 // reset all "reset points" to $node
-func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string, parameters []string) (*wfv1.Workflow, []string, error) {
-	switch wf.Status.Phase {
-	case wfv1.WorkflowFailed, wfv1.WorkflowError:
-	case wfv1.WorkflowSucceeded:
-		if !restartSuccessful || len(nodeFieldSelector) == 0 {
-			return nil, nil, errors.Errorf(errors.CodeBadRequest, "To retry a succeeded workflow, set the options restartSuccessful and nodeFieldSelector")
-		}
-	default:
-		return nil, nil, errors.Errorf(errors.CodeBadRequest, "Cannot retry a workflow in phase %s", wf.Status.Phase)
+//
+// Nodes matched by nodeFieldSelector are restarted even if they succeeded when
+// restartSuccessful is set. When parametersOverridden is set, the expanded
+// children of every TaskGroup and StepGroup being reset are deleted too, so
+// the controller re-expands them with the new parameter values.
+func planReset(ctx context.Context, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string, parametersOverridden bool) (resetPlan, error) {
+	if len(wf.Status.Nodes) > 0 && !wf.Status.Nodes.Has(wf.Name) {
+		return resetPlan{}, fmt.Errorf("workflow %s has nodes but no root node, cannot work out what to reset", wf.Name)
 	}
-
-	onExitNodeName := wf.Name + ".onExit"
-	var err error
-	err = packer.DecompressWorkflow(ctx, wf)
-	if err != nil {
-		logging.RequireLoggerFromContext(ctx).WithPanic().WithError(err).Error(ctx, "Failed to decompress workflow")
-	}
-
-	newWf, err := createNewRetryWorkflow(ctx, wf, parameters)
-	if err != nil {
-		return nil, nil, err
-	}
-
 	deleteNodesMap, err := getNodeIDsToReset(restartSuccessful, nodeFieldSelector, wf.Status.Nodes)
 	if err != nil {
-		return nil, nil, err
+		return resetPlan{}, err
 	}
 
 	failed := make(map[string]bool)
@@ -1309,7 +1346,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 
 	nodes, err := newWorkflowsDag(wf)
 	if err != nil {
-		return nil, nil, err
+		return resetPlan{}, err
 	}
 
 	toReset := make(map[string]bool)
@@ -1346,7 +1383,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 		}
 		pathToReset, pathToDelete, err := resetPath(nodes, currNode.n.ID)
 		if err != nil {
-			return nil, nil, err
+			return resetPlan{}, err
 		}
 		toReset = setUnion(toReset, pathToReset)
 		toDelete = setUnion(toDelete, pathToDelete)
@@ -1354,7 +1391,7 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 
 	// Delete children of TaskGroup/StepGroup nodes being reset when parameters are overridden,
 	// so the controller can re-expand them with the new values. Fixes #15802.
-	if len(parameters) > 0 {
+	if parametersOverridden {
 		for nodeID := range toReset {
 			if toDelete[nodeID] {
 				continue
@@ -1372,6 +1409,40 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 			}
 		}
 	}
+
+	return resetPlan{toReset: toReset, toDelete: toDelete}, nil
+}
+
+// FormulateRetryWorkflow attempts to retry a workflow in place, see planReset
+// for how the nodes to reset and delete are chosen.
+func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string, parameters []string) (*wfv1.Workflow, []string, error) {
+	switch wf.Status.Phase {
+	case wfv1.WorkflowFailed, wfv1.WorkflowError:
+	case wfv1.WorkflowSucceeded:
+		if !restartSuccessful || len(nodeFieldSelector) == 0 {
+			return nil, nil, errors.Errorf(errors.CodeBadRequest, "To retry a succeeded workflow, set the options restartSuccessful and nodeFieldSelector")
+		}
+	default:
+		return nil, nil, errors.Errorf(errors.CodeBadRequest, "Cannot retry a workflow in phase %s", wf.Status.Phase)
+	}
+
+	onExitNodeName := wf.Name + ".onExit"
+	var err error
+	err = packer.DecompressWorkflow(ctx, wf)
+	if err != nil {
+		logging.RequireLoggerFromContext(ctx).WithPanic().WithError(err).Error(ctx, "Failed to decompress workflow")
+	}
+
+	newWf, err := createNewRetryWorkflow(ctx, wf, parameters)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	plan, err := planReset(ctx, wf, restartSuccessful, nodeFieldSelector, len(parameters) > 0)
+	if err != nil {
+		return nil, nil, err
+	}
+	toReset, toDelete := plan.toReset, plan.toDelete
 
 	for nodeID := range toReset {
 		// avoid resetting nodes that are marked for deletion

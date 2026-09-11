@@ -7373,7 +7373,9 @@ status:
   phase: Failed
   nodes:
     my-wf:
+      id: my-wf
       name: my-wf
+      type: Pod
       phase: Failed
 `)
 	ctx := logging.TestContext(t.Context())
@@ -7420,7 +7422,9 @@ status:
   phase: Failed
   nodes:
     my-wf:
+      id: my-wf
       name: my-wf
+      type: Pod
       phase: Failed
 `)
 	ctx := logging.TestContext(t.Context())
