@@ -12,6 +12,7 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/variables"
+	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
 )
 
 // TestStepsFailedRetries ensures a steps template will recognize exhausted retries
@@ -80,6 +81,28 @@ func TestArtifactResolutionWhenSkipped(t *testing.T) {
 
 	woc.operate(ctx)
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+}
+
+func TestResolveReferencesSkipsOptionalArtifactFromSkippedStep(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	woc := newWoc(ctx, wfv1.Workflow{})
+	scope := createScope(nil)
+	varkeys.StepsNodeRef.OutputsArtifactByName.Set(scope.scope, wfv1.Artifact{}, "generate", "message")
+	stepGroup := []wfv1.WorkflowStep{{
+		Name:     "consume",
+		Template: "consumer",
+		Arguments: wfv1.Arguments{Artifacts: wfv1.Artifacts{{
+			Name:     "message",
+			From:     "{{steps.generate.outputs.artifacts.message}}",
+			Optional: true,
+		}}},
+	}}
+
+	resolvedSteps, err := woc.resolveReferences(ctx, stepGroup, scope)
+
+	require.NoError(t, err)
+	require.Len(t, resolvedSteps, 1)
+	assert.Empty(t, resolvedSteps[0].Arguments.Artifacts)
 }
 
 var stepsWithParamAndGlobalParam = `

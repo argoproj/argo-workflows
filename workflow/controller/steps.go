@@ -535,6 +535,9 @@ func (woc *wfOperationCtx) resolveReferences(ctx context.Context, stepGroup []wf
 				}
 				return fmt.Errorf("unable to resolve references: %w", err)
 			}
+			if art.Optional && !resolvedArt.HasLocationOrKey() {
+				continue
+			}
 			resolvedArt.Name = art.Name
 			artifacts = append(artifacts, *resolvedArt)
 		}
