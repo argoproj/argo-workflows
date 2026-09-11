@@ -879,8 +879,7 @@ func (s *s3client) ListDirectory(bucket, keyPrefix string) ([]string, error) {
 
 // IsS3ErrCode returns if the supplied error is of a specific S3 error code
 func IsS3ErrCode(err error, code string) bool {
-	var minioErr minio.ErrorResponse
-	if errors.As(err, &minioErr) {
+	if minioErr, ok := errors.AsType[minio.ErrorResponse](err); ok {
 		return minioErr.Code == code
 	}
 	return false

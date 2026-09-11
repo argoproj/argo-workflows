@@ -504,13 +504,13 @@ export function WorkflowDetails({history, location, match}: RouteComponentProps<
                             {workflow && workflow.status.conditions && hasWarningConditionBadge(workflow.status.conditions) && <span className='badge' />}
                         </a>
                         <a className={classNames({active: tab === 'events'})} onClick={() => setTab('events')} title='Events'>
-                            <i className='fa argo-icon-notification' />
+                            <i className='argo-icon-notification' />
                         </a>
                         <a className={classNames({active: tab === 'timeline'})} onClick={() => setTab('timeline')} title='Timeline'>
-                            <i className='fa argo-icon-timeline' />
+                            <i className='argo-icon-timeline' />
                         </a>
                         <a className={classNames({active: tab === 'workflow'})} onClick={() => setTab('workflow')} title='Workflow'>
-                            <i className='fa argo-icon-workflow' />
+                            <i className='argo-icon-workflow' />
                         </a>
                     </div>
                 )

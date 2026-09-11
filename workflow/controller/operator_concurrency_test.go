@@ -986,11 +986,32 @@ func TestSynchronizationForPendingShuttingdownWfs(t *testing.T) {
 		wfTwo, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Patch(ctx, wfTwo.Name, types.MergePatchType, patch, metav1.PatchOptions{})
 		require.NoError(t, err)
 
-		// The pending workflow that's being shutdown should have succeeded and released the lock.
+		// The pending workflow that's being shutdown should have failed and released the lock.
 		wocTwo = newWorkflowOperationCtx(ctx, wfTwo, controller)
 		wocTwo.operate(ctx)
-		assert.Equal(t, wfv1.WorkflowSucceeded, wocTwo.execWf.Status.Phase)
+		assert.Equal(t, wfv1.WorkflowFailed, wocTwo.wf.Status.Phase)
+		assert.Equal(t, "Stopped with strategy 'Terminate'", wocTwo.wf.Status.Message)
 		assert.Nil(t, wocTwo.wf.Status.Synchronization)
+		// The workflow never ran, so no nodes should have been created for it.
+		assert.Empty(t, wocTwo.wf.Status.Nodes)
+
+		// Release the lock from the first workflow.
+		woc.wf.Status.Phase = wfv1.WorkflowSucceeded
+		woc.operate(ctx)
+		assert.Nil(t, woc.wf.Status.Synchronization)
+
+		// The terminated workflow must also have been removed from the lock's
+		// waiting queue, so a new workflow acquires the lock immediately.
+		wfThree := wf.DeepCopy()
+		wfThree.Name = "three-terminating"
+		wfThree, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(ctx, wfThree, metav1.CreateOptions{})
+		require.NoError(t, err)
+		wocThree := newWorkflowOperationCtx(ctx, wfThree, controller)
+		wocThree.operate(ctx)
+		assert.Equal(t, wfv1.WorkflowRunning, wocThree.wf.Status.Phase)
+		require.NotNil(t, wocThree.wf.Status.Synchronization)
+		require.NotNil(t, wocThree.wf.Status.Synchronization.Mutex)
+		assert.Len(t, wocThree.wf.Status.Synchronization.Mutex.Holding, 1)
 	})
 
 	t.Run("PendingShuttingdownStoppingWf", func(t *testing.T) {
@@ -1135,4 +1156,165 @@ spec:
 			assert.True(t, node.MemoizationStatus.Hit)
 		}
 	}
+}
+
+const bareWfWithTmplMutex = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: tmpl-mutex-bare
+  namespace: default
+spec:
+  entrypoint: whalesay
+  templates:
+    - name: whalesay
+      synchronization:
+        mutexes:
+          - name: tmpl-shutdown-test
+      container:
+        image: docker/whalesay:latest
+        command: [sh, -c]
+        args: ["sleep 99999"]`
+
+const stepsWfWithTmplMutex = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: tmpl-mutex-steps
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: locked
+            template: whalesay
+    - name: whalesay
+      synchronization:
+        mutexes:
+          - name: tmpl-shutdown-test
+      container:
+        image: docker/whalesay:latest
+        command: [sh, -c]
+        args: ["sleep 99999"]`
+
+const dagWfWithTmplMutex = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: tmpl-mutex-dag
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: locked
+            template: whalesay
+    - name: whalesay
+      synchronization:
+        mutexes:
+          - name: tmpl-shutdown-test
+      container:
+        image: docker/whalesay:latest
+        command: [sh, -c]
+        args: ["sleep 99999"]`
+
+// TestShutdownWaitingForTmplLevelLock ensures that shutting down a workflow
+// whose node is still waiting to acquire a template-level synchronization lock
+// fails that node immediately instead of silently ignoring the shutdown until
+// the lock becomes available.
+func TestShutdownWaitingForTmplLevelLock(t *testing.T) {
+	tests := []struct {
+		name       string
+		waiterYAML string
+		strategy   wfv1.ShutdownStrategy
+	}{
+		{"BareTerminate", bareWfWithTmplMutex, wfv1.ShutdownStrategyTerminate},
+		{"StepsTerminate", stepsWfWithTmplMutex, wfv1.ShutdownStrategyTerminate},
+		{"DAGTerminate", dagWfWithTmplMutex, wfv1.ShutdownStrategyTerminate},
+		{"BareStop", bareWfWithTmplMutex, wfv1.ShutdownStrategyStop},
+		{"StepsStop", stepsWfWithTmplMutex, wfv1.ShutdownStrategyStop},
+		{"DAGStop", dagWfWithTmplMutex, wfv1.ShutdownStrategyStop},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			cancel, controller := newController(ctx)
+			defer cancel()
+			controller.syncManager, _ = sync.NewLockManager(ctx, controller.kubeclientset, controller.namespace, nil, getSyncLimitFunc(ctx, controller.kubeclientset), func(key string) {
+			}, workflowExistenceFunc, false)
+			mutexName := "tmpl-shutdown-" + strings.ToLower(tt.name)
+
+			// The holder acquires the mutex and keeps it for the duration of the test.
+			holder := wfv1.MustUnmarshalWorkflow(bareWfWithTmplMutex)
+			holder.Name = "holder-" + strings.ToLower(tt.name)
+			holder.Spec.Templates[0].Synchronization.Mutexes[0].Name = mutexName
+			holder, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(holder.Namespace).Create(ctx, holder, metav1.CreateOptions{})
+			require.NoError(t, err)
+			wocHolder := newWorkflowOperationCtx(ctx, holder, controller)
+			wocHolder.operate(ctx)
+			require.NotNil(t, wocHolder.wf.Status.Synchronization)
+			require.Len(t, wocHolder.wf.Status.Synchronization.Mutex.Holding, 1)
+
+			// The waiter's node blocks waiting for the mutex.
+			waiter := wfv1.MustUnmarshalWorkflow(tt.waiterYAML)
+			waiter.Name = "waiter-" + strings.ToLower(tt.name)
+			for i := range waiter.Spec.Templates {
+				if waiter.Spec.Templates[i].Synchronization != nil {
+					waiter.Spec.Templates[i].Synchronization.Mutexes[0].Name = mutexName
+				}
+			}
+			waiter, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(waiter.Namespace).Create(ctx, waiter, metav1.CreateOptions{})
+			require.NoError(t, err)
+			wocWaiter := newWorkflowOperationCtx(ctx, waiter, controller)
+			wocWaiter.operate(ctx)
+			waitingNode := findWaitingSyncNode(wocWaiter.wf)
+			require.NotNil(t, waitingNode, "expected a node waiting for the lock")
+			require.Equal(t, wfv1.NodePending, waitingNode.Phase)
+
+			// Shut the waiter down while it is still waiting for the lock.
+			patch, err := json.Marshal(map[string]any{"spec": map[string]any{"shutdown": tt.strategy}})
+			require.NoError(t, err)
+			// Persist the waiter's status from the first operate before patching.
+			wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(waiter.Namespace).Get(ctx, waiter.Name, metav1.GetOptions{})
+			require.NoError(t, err)
+			wf.Status = wocWaiter.wf.Status
+			wf, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Update(ctx, wf, metav1.UpdateOptions{})
+			require.NoError(t, err)
+			wf, err = controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Patch(ctx, wf.Name, types.MergePatchType, patch, metav1.PatchOptions{})
+			require.NoError(t, err)
+
+			wocWaiter = newWorkflowOperationCtx(ctx, wf, controller)
+			wocWaiter.operate(ctx)
+
+			message := fmt.Sprintf("Stopped with strategy '%s'", tt.strategy)
+			node := findWaitingSyncNodeByID(wocWaiter.wf, waitingNode.ID)
+			require.NotNil(t, node)
+			assert.Equal(t, wfv1.NodeFailed, node.Phase)
+			assert.Equal(t, message, node.Message)
+			// No node may be left behind unfulfilled: the shutdown must
+			// propagate to the whole tree.
+			for _, n := range wocWaiter.wf.Status.Nodes {
+				assert.NotEqual(t, wfv1.NodePending, n.Phase, "node %s left pending after shutdown", n.Name)
+			}
+			assert.Equal(t, wfv1.WorkflowFailed, wocWaiter.wf.Status.Phase)
+		})
+	}
+}
+
+func findWaitingSyncNode(wf *wfv1.Workflow) *wfv1.NodeStatus {
+	for _, node := range wf.Status.Nodes {
+		if node.SynchronizationStatus != nil && node.SynchronizationStatus.Waiting != "" {
+			return &node
+		}
+	}
+	return nil
+}
+
+func findWaitingSyncNodeByID(wf *wfv1.Workflow, id string) *wfv1.NodeStatus {
+	for _, node := range wf.Status.Nodes {
+		if node.ID == id {
+			return &node
+		}
+	}
+	return nil
 }

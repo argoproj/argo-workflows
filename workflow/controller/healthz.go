@@ -11,14 +11,9 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v4/util/env"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/util"
-)
-
-var (
-	age = env.LookupEnvDurationOr(logging.InitLoggerInContext(), "HEALTHZ_AGE", 5*time.Minute)
 )
 
 func LogMiddleware(logger logging.Logger, next http.Handler) http.Handler {
@@ -74,7 +69,7 @@ func (wfc *WorkflowController) Healthz(w http.ResponseWriter, r *http.Request) {
 		var firstExceededWorkflow *wfv1.Workflow
 
 		for _, wf := range unreconciledWorkflows {
-			if time.Since(wf.GetCreationTimestamp().Time) > age {
+			if time.Since(wf.GetCreationTimestamp().Time) > wfc.healthzAge {
 				unreconciledExceedAge = true
 				firstExceededWorkflow = wf
 				break
@@ -110,7 +105,7 @@ func (wfc *WorkflowController) Healthz(w http.ResponseWriter, r *http.Request) {
 				"managedNamespace": wfc.managedNamespace,
 				"instanceID":       instanceID,
 				"labelSelector":    labelSelector,
-				"age":              age,
+				"age":              wfc.healthzAge,
 			}).
 			Info(r.Context(), "healthz")
 		w.WriteHeader(http.StatusInternalServerError)

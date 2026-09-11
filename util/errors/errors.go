@@ -164,8 +164,7 @@ func isTransientNetworkErr(err error) bool {
 
 func generateErrorString(err error) string {
 	errorString := err.Error()
-	var exitErr *exec.ExitError
-	if errors.As(err, &exitErr) {
+	if exitErr, ok := errors.AsType[*exec.ExitError](err); ok {
 		errorString = fmt.Sprintf("%s %s", errorString, exitErr.Stderr)
 	}
 	return errorString

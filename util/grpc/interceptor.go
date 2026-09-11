@@ -181,6 +181,6 @@ func getClientIP(ctx context.Context) string {
 		return ""
 	}
 	address := p.Addr.String()
-	ip := strings.Split(address, ":")[0]
+	ip, _, _ := strings.Cut(address, ":")
 	return ip
 }

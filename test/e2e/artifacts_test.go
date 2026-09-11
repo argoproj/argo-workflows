@@ -306,16 +306,10 @@ func (s *ArtifactsSuite) TestStoppedWorkflow() {
 			SubmitWorkflow().
 			WaitForWorkflow(
 				fixtures.WorkflowCompletionOkay(true),
-				fixtures.Condition(func(wf *wfv1.Workflow) (bool, string) {
-					condition := "for artifacts to exist"
-
+				fixtures.Condition(func(_ *wfv1.Workflow) (bool, string) {
 					_, err1 := c.StatObject(ctx, "my-bucket-3", "on-deletion-wf-stopped-1", minio.StatObjectOptions{})
 					_, err2 := c.StatObject(ctx, "my-bucket-3", "on-deletion-wf-stopped-2", minio.StatObjectOptions{})
-
-					if err1 == nil && err2 == nil {
-						return true, condition
-					}
-					return false, condition
+					return err1 == nil && err2 == nil, "for artifacts to exist"
 				}))
 
 		then = when.Then()
@@ -1256,6 +1250,42 @@ spec:
       command: [sh, -c]
       args: ["ls -l"]
       workingDir: /tmp/git
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeSucceeded)
+}
+
+// TestGitArtifactAtWorkingDir covers issue #16728: an input artifact staged
+// at the container's workingDir must be visible through the inherited cwd.
+// Unlike TestGitArtifactDepthClone above, the script exits non-zero when it
+// isn't (`ls` succeeds even in a deleted cwd).
+func (s *ArtifactsSuite) TestGitArtifactAtWorkingDir() {
+	s.Given().
+		Workflow(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: git-workingdir-
+spec:
+  entrypoint: probe
+  templates:
+  - name: probe
+    inputs:
+      artifacts:
+      - name: source
+        path: /tmp/git
+        git:
+          repo: https://github.com/argoproj-labs/go-git.git
+          revision: master
+          depth: 1
+    script:
+      image: argoproj/argosay:v2
+      command: [sh]
+      workingDir: /tmp/git
+      source: |
+        set -eu
+        pwd
+        test -f README.md
 `).
 		When().
 		SubmitWorkflow().

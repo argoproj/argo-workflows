@@ -63,30 +63,26 @@ test('diagnostics reports unmapped failing checks from covered apps for drift de
 
 const S = (id: string, state: SignalState) => ({ id, state, title: id, guidance: 'g', url: 'u' });
 
-test('decide: failures present -> issues comment, draft requested', () => {
+test('decide: failures present -> issues comment, blocking (label applied)', () => {
   const d = decide({
     signals: [S('lint', 'failure'), S('docs', 'pending')],
     templateVerdict: null,
-    existingState: null,
     hasExistingComment: false,
-    pr: { draft: false, headSha: 'sha1' },
   });
   assert.equal(d.variant, 'issues');
   assert.equal(d.shouldComment, true);
-  assert.equal(d.shouldDraft, true);
+  assert.equal(d.blocking, true);
   assert.deepEqual(d.failing, ['lint']);
 });
 
-test('decide: a non-compliant template alone is blocking -> issues + draft', () => {
+test('decide: a non-compliant template alone is blocking', () => {
   const d = decide({
     signals: [S('lint', 'success')],
     templateVerdict: { compliant: false },
-    existingState: null,
     hasExistingComment: false,
-    pr: { draft: false, headSha: 'sha1' },
   });
   assert.equal(d.variant, 'issues');
-  assert.equal(d.shouldDraft, true);
+  assert.equal(d.blocking, true);
 });
 
 test('decide: never post when no failures and no existing comment', () => {
@@ -94,82 +90,45 @@ test('decide: never post when no failures and no existing comment', () => {
     const d = decide({
       signals: [S('lint', state)],
       templateVerdict: { compliant: true },
-      existingState: null,
       hasExistingComment: false,
-      pr: { draft: false, headSha: 'sha1' },
     });
     assert.equal(d.shouldComment, false, `state=${state}`);
-    assert.equal(d.shouldDraft, false);
+    assert.equal(d.blocking, false);
   }
 });
 
-test('decide: existing comment + no failures + pending -> waiting variant', () => {
+test('decide: existing comment + no failures + pending -> waiting, not blocking (label cleared)', () => {
   const d = decide({
     signals: [S('lint', 'success'), S('docs', 'pending')],
     templateVerdict: null,
-    existingState: { draftedSha: null },
     hasExistingComment: true,
-    pr: { draft: false, headSha: 'sha1' },
   });
   assert.equal(d.variant, 'waiting');
   assert.equal(d.shouldComment, true);
-  assert.equal(d.shouldDraft, false);
+  assert.equal(d.blocking, false);
 });
 
-test('decide: existing comment + all terminal green -> all-clear', () => {
+test('decide: existing comment + all terminal green -> all-clear, not blocking (label cleared)', () => {
   const d = decide({
     signals: [S('lint', 'success'), S('ui', 'not-applicable')],
     templateVerdict: { compliant: true },
-    existingState: { draftedSha: null },
     hasExistingComment: true,
-    pr: { draft: false, headSha: 'sha1' },
   });
   assert.equal(d.variant, 'allclear');
   assert.equal(d.shouldComment, true);
-  assert.equal(d.shouldDraft, false);
+  assert.equal(d.blocking, false);
 });
 
-test('decide: does not draft a PR that is already a draft', () => {
+test('decide: blocking follows the current verdict, so a failure at a new head re-asserts the label', () => {
+  // The bot owns the label outright: blocking mirrors the live check state,
+  // with no per-SHA memory. A fresh failing run is blocking again even after
+  // an all-clear pass cleared the label.
   const d = decide({
     signals: [S('lint', 'failure')],
     templateVerdict: null,
-    existingState: null,
-    hasExistingComment: false,
-    pr: { draft: true, headSha: 'sha1' },
-  });
-  assert.equal(d.shouldDraft, false);
-  assert.equal(d.shouldComment, true);
-});
-
-test('decide: drafts at most once per head SHA (human undraft is respected)', () => {
-  const d = decide({
-    signals: [S('lint', 'failure')],
-    templateVerdict: null,
-    existingState: { draftedSha: 'sha1' },
     hasExistingComment: true,
-    pr: { draft: false, headSha: 'sha1' },
   });
-  assert.equal(d.shouldDraft, false);
-  // but a new head re-asserts
-  const d2 = decide({
-    signals: [S('lint', 'failure')],
-    templateVerdict: null,
-    existingState: { draftedSha: 'sha1' },
-    hasExistingComment: true,
-    pr: { draft: false, headSha: 'sha2' },
-  });
-  assert.equal(d2.shouldDraft, true);
-});
-
-test('decide: no failures and a compliant template never drafts', () => {
-  const d = decide({
-    signals: [S('lint', 'success')],
-    templateVerdict: { compliant: true },
-    existingState: { draftedSha: null },
-    hasExistingComment: true,
-    pr: { draft: false, headSha: 'sha1' },
-  });
-  assert.equal(d.shouldDraft, false);
+  assert.equal(d.blocking, true);
 });
 
 // --- author gating ---

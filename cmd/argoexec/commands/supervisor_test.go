@@ -79,7 +79,7 @@ func TestStatusMarker_Success(t *testing.T) {
 }
 
 func TestStatusMarker_FailureCapturesCause(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.InitLogger())
+	ctx := logging.WithLogger(context.Background(), logging.NewTestLogger(logging.Info, logging.Text))
 	dir := t.TempDir()
 	statusPath := filepath.Join(dir, "status")
 
@@ -94,7 +94,7 @@ func TestStatusMarker_FailureCapturesCause(t *testing.T) {
 }
 
 func TestStatusMarker_FailureWithEmptyCauseStillSignalsFailure(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.InitLogger())
+	ctx := logging.WithLogger(context.Background(), logging.NewTestLogger(logging.Info, logging.Text))
 	dir := t.TempDir()
 	statusPath := filepath.Join(dir, "status")
 
@@ -109,7 +109,7 @@ func TestStatusMarker_FailureWithEmptyCauseStillSignalsFailure(t *testing.T) {
 }
 
 func TestStatusMarker_BestEffortOnUnwritable(t *testing.T) {
-	ctx := logging.WithLogger(context.Background(), logging.InitLogger())
+	ctx := logging.WithLogger(context.Background(), logging.NewTestLogger(logging.Info, logging.Text))
 	// Path under a directory that doesn't exist — write fails, but the
 	// helper must not panic; supervisor's pre-main error still propagates
 	// via PostMain even if the marker write itself fails.

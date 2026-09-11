@@ -40,12 +40,14 @@ func newDatabaseSemaphore(ctx context.Context, name string, dbKey string, nextWo
 		isMutex:      false,
 	}
 	sem.limitGetter = newCachedLimit(sem.getLimitFromDB, syncLimitCacheTTL)
-	var err error
-	limit := sem.getLimit(ctx)
-	if limit == 0 {
-		err = fmt.Errorf("failed to initialize semaphore %s with limit", name)
+	// Resolve the limit directly through limitGetter rather than getLimit(), since
+	// getLimit() falls back to the cache's zero-value on a fetch error, which would
+	// make a genuine error indistinguishable from a semaphore that legitimately
+	// starts at limit 0 (e.g. an "approval gate" held closed until raised).
+	if _, _, err := sem.limitGetter.get(ctx, dbKey); err != nil {
+		return nil, fmt.Errorf("failed to initialize semaphore %s: %w", name, err)
 	}
-	return sem, err
+	return sem, nil
 }
 
 func (s *databaseSemaphore) longDBKey() string {
@@ -260,7 +262,9 @@ func (s *databaseSemaphore) checkAcquire(ctx context.Context, holderKey string, 
 		}).Info(ctx, "CheckAcquire - already held")
 		return false, true, ""
 	}
-	waitingMsg := fmt.Sprintf("Waiting for %s lock (%s). Lock status: %d/%d", s.name, s.longDBKey(), len(holders), limit)
+	// Available slots over limit, the convention the in-memory locks have
+	// used since 3.0, so "0/1" reads the same for both lock types.
+	waitingMsg := fmt.Sprintf("Waiting for %s lock (%s). Lock status: %d/%d", s.name, s.longDBKey(), limit-len(holders), limit)
 
 	if len(holders) >= limit {
 		logger.WithFields(logging.Fields{

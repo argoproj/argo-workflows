@@ -222,7 +222,7 @@ See %s`, help.ArgoServer()),
 	// bind flags to env vars (https://github.com/spf13/viper/tree/v1.17.0#working-with-flags)
 	ctx, logger, err := cmdutil.ContextWithLogger(&command, logLevel, logFormat)
 	if err != nil {
-		logging.InitLogger().WithError(err).WithFatal().Error(ctx, "Failed to create server logger")
+		cmdutil.FatalBootstrap(logFormat, err, "Failed to create server logger")
 	}
 	if err := viper.BindPFlags(command.Flags()); err != nil {
 		logger.WithError(err).WithFatal().Error(ctx, "Failed to bind flags to env vars")

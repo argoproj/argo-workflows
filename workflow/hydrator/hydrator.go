@@ -28,17 +28,15 @@ type Interface interface {
 }
 
 func New(offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo) Interface {
-	return &hydrator{offloadNodeStatusRepo}
-}
-
-var alwaysOffloadNodeStatus = os.Getenv("ALWAYS_OFFLOAD_NODE_STATUS") == "true"
-
-func init() {
-	logging.InitLogger().WithField("alwaysOffloadNodeStatus", alwaysOffloadNodeStatus).Debug(context.Background(), "Hydrator config")
+	return &hydrator{
+		offloadNodeStatusRepo:   offloadNodeStatusRepo,
+		alwaysOffloadNodeStatus: os.Getenv("ALWAYS_OFFLOAD_NODE_STATUS") == "true",
+	}
 }
 
 type hydrator struct {
-	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
+	offloadNodeStatusRepo   sqldb.OffloadNodeStatusRepo
+	alwaysOffloadNodeStatus bool
 }
 
 func (h hydrator) IsHydrated(wf *wfv1.Workflow) bool {
@@ -100,14 +98,14 @@ func (h hydrator) Dehydrate(ctx context.Context, wf *wfv1.Workflow) error {
 	log := logging.RequireLoggerFromContext(ctx)
 	var err error
 	log.WithField("Workflow Size", wf.Size()).Info(ctx, "Workflow to be dehydrated")
-	if !alwaysOffloadNodeStatus {
+	if !h.alwaysOffloadNodeStatus {
 		err = packer.CompressWorkflowIfNeeded(ctx, wf)
 		if err == nil {
 			wf.Status.OffloadNodeStatusVersion = ""
 			return nil
 		}
 	}
-	if packer.IsTooLargeError(err) || alwaysOffloadNodeStatus {
+	if packer.IsTooLargeError(err) || h.alwaysOffloadNodeStatus {
 		var offloadVersion string
 		var errMsg string
 		if err != nil {

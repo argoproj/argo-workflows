@@ -85,10 +85,10 @@ func NewServer(ctx context.Context, instanceIDService instanceid.Service, offloa
 	}
 	if wfStore != nil && namespace != nil {
 		lw := &cache.ListWatch{
-			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+			ListWithContextFunc: func(ctx context.Context, options metav1.ListOptions) (runtime.Object, error) {
 				return wfClientSet.ArgoprojV1alpha1().Workflows(*namespace).List(ctx, options)
 			},
-			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+			WatchFuncWithContext: func(ctx context.Context, options metav1.ListOptions) (watch.Interface, error) {
 				return wfClientSet.ArgoprojV1alpha1().Workflows(*namespace).Watch(ctx, options)
 			},
 		}

@@ -7,6 +7,11 @@ ignore:
 - "pkg/apis/client/.*"
 - "pkg/client/.*"
 - "vendor/.*"
+flags:
+  unit-tests:
+    carryforward: true
+  unit-tests-windows:
+    carryforward: true
 coverage:
   status:
     # we've found this not to be useful

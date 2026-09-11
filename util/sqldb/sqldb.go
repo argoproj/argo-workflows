@@ -5,8 +5,11 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"fmt"
+	"net"
 	"net/url"
+	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/XSAM/otelsql"
@@ -108,25 +111,62 @@ func createMySQLDBSession(ctx context.Context, kubectlConfig kubernetes.Interfac
 	return createMySQLDBSessionWithCreds(cfg, persistPool, string(userNameByte), string(passwordByte), connectTimeout)
 }
 
-// buildPostgresDSN constructs a PostgreSQL DSN from config and username, with SSL options
-// and a connection-establishment timeout configured.
+// postgresSSLMode returns the lib/pq sslmode to use for the given configuration. Shared by every
+// PostgreSQL session builder so the password and token paths cannot drift apart.
+func postgresSSLMode(cfg *config.PostgreSQLConfig) string {
+	switch {
+	case !cfg.SSL:
+		return "disable"
+	case cfg.SSLMode != "":
+		return cfg.SSLMode
+	default:
+		// Preserve the default behavior of the upper/db postgresql adapter,
+		// which used sslmode=prefer. lib/pq defaults to sslmode=require.
+		return "prefer"
+	}
+}
+
+// pqDSNValueEscaper escapes a value for lib/pq's keyword/value DSN format, in which a space
+// separates parameters, a single quote delimits a value, and a backslash escapes either.
+var pqDSNValueEscaper = strings.NewReplacer(`\`, `\\`, `'`, `\'`, ` `, `\ `)
+
+// buildPostgresDSN constructs a lib/pq keyword/value DSN from config and username, with SSL
+// options and a connection-establishment timeout configured. The token-based connectors append
+// `password='<token>'` to the result, so it has to stay in keyword/value form.
+//
+// This intentionally does not use postgresqladp.ConnectionURL. That builder targets pgx and
+// unconditionally appends default_query_exec_mode, which lib/pq does not recognise and therefore
+// forwards to the server as a runtime parameter, so every connection made by the Azure and AWS RDS
+// token connectors fails with:
+//
+//	pq: unrecognized configuration parameter "default_query_exec_mode" (SQLSTATE 42704)
 func buildPostgresDSN(cfg *config.PostgreSQLConfig, username string, connectTimeout time.Duration) string {
-	settings := postgresqladp.ConnectionURL{
-		User:     username,
-		Host:     cfg.GetHostname(),
-		Database: cfg.Database,
+	params := [][2]string{
+		{"user", username},
+		{"dbname", cfg.Database},
+		{"sslmode", postgresSSLMode(cfg)},
+		// connect_timeout limits connection setup (dial + handshake) to ensure fast failure if the
+		// DB is unreachable. lib/pq resets this deadline afterward, leaving subsequent queries
+		// unaffected.
+		{"connect_timeout", strconv.Itoa(int(connectTimeout.Seconds()))},
 	}
 
-	// connect_timeout limits connection setup (dial + handshake) to ensure fast failure if the DB is unreachable.
-	// lib/pq resets this deadline afterward, leaving subsequent queries unaffected.
-	settings.Options = map[string]string{
-		"connect_timeout": strconv.Itoa(int(connectTimeout.Seconds())),
-	}
-	if cfg.SSL && cfg.SSLMode != "" {
-		settings.Options["sslmode"] = cfg.SSLMode
+	if host, port, err := net.SplitHostPort(cfg.GetHostname()); err == nil {
+		params = append(params, [2]string{"host", host}, [2]string{"port", port})
+	} else {
+		params = append(params, [2]string{"host", cfg.GetHostname()})
 	}
 
-	return settings.String()
+	pairs := make([]string, 0, len(params))
+	for _, p := range params {
+		if p[1] == "" {
+			continue
+		}
+		pairs = append(pairs, p[0]+"="+pqDSNValueEscaper.Replace(p[1]))
+	}
+	sort.Strings(pairs)
+
+	return strings.Join(pairs, " ")
 }
 
 // createPostGresDBSessionWithConnector creates a PostgreSQL session using the provided connector.
@@ -192,16 +232,7 @@ func createPostGresDBSessionWithCreds(cfg *config.PostgreSQLConfig, persistPool 
 		Path:   cfg.Database,
 	}
 	query := url.Values{}
-	switch {
-	case !cfg.SSL:
-		query.Set("sslmode", "disable")
-	case cfg.SSLMode != "":
-		query.Set("sslmode", cfg.SSLMode)
-	default:
-		// Preserve the default behavior of the upper/db postgresql adapter,
-		// which used sslmode=prefer. lib/pq defaults to sslmode=require.
-		query.Set("sslmode", "prefer")
-	}
+	query.Set("sslmode", postgresSSLMode(cfg))
 	// connect_timeout limits connection setup (dial + handshake) to ensure fast failure if the DB is unreachable.
 	// lib/pq resets this deadline afterward, leaving subsequent queries unaffected.
 	query.Set("connect_timeout", strconv.Itoa(int(connectTimeout.Seconds())))
@@ -226,7 +257,7 @@ func createPostGresDBSessionWithCreds(cfg *config.PostgreSQLConfig, persistPool 
 // opened from a DSN string, ParseDSN restored those defaults; NewConnector
 // consumes the config directly, so a bare literal would leave Loc nil and
 // panic ("missing Location in call to Time.In") on the first time.Time written.
-func buildMySQLConfig(cfg *config.MySQLConfig, username, password string, connectTimeout time.Duration) mysql.Config {
+func buildMySQLConfig(cfg *config.MySQLConfig, username, password string, connectTimeout time.Duration) (*mysql.Config, error) {
 	mysqlCfg := mysql.NewConfig()
 	mysqlCfg.User = username
 	mysqlCfg.Passwd = password
@@ -237,16 +268,29 @@ func buildMySQLConfig(cfg *config.MySQLConfig, username, password string, connec
 	mysqlCfg.AllowNativePasswords = true // Required for MariaDB which uses mysql_native_password by default
 	mysqlCfg.Params = cfg.Options
 	mysqlCfg.Timeout = connectTimeout
-	return *mysqlCfg
+	// cfg.Options mixes driver-level DSN options (tls, readTimeout, ...) with
+	// server system variables. NewConnector consumes the config directly, and the
+	// driver only interprets driver-level options when parsing a DSN — left in
+	// Params they would be sent to the server as SET statements instead (e.g.
+	// leaving TLS disabled). Round-trip through FormatDSN/ParseDSN so options are
+	// interpreted the same way DSN-opened sessions always interpreted them.
+	parsedCfg, err := mysql.ParseDSN(mysqlCfg.FormatDSN())
+	if err != nil {
+		return nil, fmt.Errorf("invalid MySQL config options: %w", err)
+	}
+	return parsedCfg, nil
 }
 
 func createMySQLDBSessionWithCreds(cfg *config.MySQLConfig, persistPool *config.ConnectionPool, username, password string, connectTimeout time.Duration) (db.Session, error) {
-	mysqlCfg := buildMySQLConfig(cfg, username, password, connectTimeout)
+	mysqlCfg, err := buildMySQLConfig(cfg, username, password, connectTimeout)
+	if err != nil {
+		return nil, err
+	}
 
 	// Wrap the MySQL connector so Connect (dial + handshake read) is bounded by
 	// connectTimeout, protecting against a half-open server the same way lib/pq's
 	// connect_timeout protects PostgreSQL.
-	connector, err := mysql.NewConnector(&mysqlCfg)
+	connector, err := mysql.NewConnector(mysqlCfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create mysql connector: %w", err)
 	}

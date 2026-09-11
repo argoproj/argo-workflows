@@ -27,6 +27,14 @@ export class ApiClient {
         return name;
     }
 
+    /**
+     * Registers a workflow this client did not submit — one the browser created,
+     * whose name the server generated — so teardown cleans it up too.
+     */
+    track(name: string): void {
+        this.created.push(name);
+    }
+
     async getWorkflow(name: string): Promise<any> {
         const res = await this.request.get(`api/v1/workflows/${this.namespace}/${name}`, {headers: this.headers});
         expect(res.ok(), `get ${name} failed: ${res.status()}`).toBeTruthy();

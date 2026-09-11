@@ -128,6 +128,28 @@ type WorkflowController struct {
 	// woc.executeTemplate and decreased when such calls return. This is used to prevent infinite recursion
 	maxStackDepth int
 
+	// indexWorkflowSemaphoreKeys enables the bySemaphoreConfigMap informer index (INDEX_WORKFLOW_SEMAPHORE_KEYS)
+	indexWorkflowSemaphoreKeys bool
+
+	// cacheGCPeriod controls how often memoization caches are GC'd; 0 disables GC (CACHE_GC_PERIOD)
+	cacheGCPeriod time.Duration
+	// semaphoreNotifyDelay is a slight delay when notifying/enqueueing workflows to the workqueue
+	// that are waiting on a semaphore. This value is passed to AddAfter(). We delay adding the next
+	// workflow because if we add immediately with AddRateLimited(), the next workflow will likely
+	// be reconciled at a point in time before we have finished the current workflow reconciliation
+	// as well as incrementing the semaphore counter availability, and so the next workflow will
+	// believe it cannot run. By delaying for 1s, we would have finished the semaphore counter
+	// updates, and the next workflow will see the updated availability. (SEMAPHORE_NOTIFY_DELAY)
+	semaphoreNotifyDelay time.Duration
+	// gcAfterNotHitDuration is how long a memoization cache entry may go unhit before GC removes it (CACHE_GC_AFTER_NOT_HIT_DURATION)
+	gcAfterNotHitDuration time.Duration
+	// healthzAge is the max age a workflow may go unreconciled before /healthz reports failure (HEALTHZ_AGE)
+	healthzAge time.Duration
+	// maxOperationTime is the maximum time a workflow operation is allowed to run for before requeuing the workflow onto the workqueue (MAX_OPERATION_TIME)
+	maxOperationTime time.Duration
+	// requeueTime is the default requeue interval for the workflow workqueue (DEFAULT_REQUEUE_TIME)
+	requeueTime time.Duration
+
 	// datastructures to support the processing of workflows and workflow pods
 	wfInformer      cache.SharedIndexInformer
 	nsInformer      cache.SharedIndexInformer
@@ -184,25 +206,6 @@ const (
 	configMapResyncPeriod               = 20 * time.Minute
 )
 
-var (
-	cacheGCPeriod = env.LookupEnvDurationOr(logging.InitLoggerInContext(), "CACHE_GC_PERIOD", 0)
-
-	// semaphoreNotifyDelay is a slight delay when notifying/enqueueing workflows to the workqueue
-	// that are waiting on a semaphore. This value is passed to AddAfter(). We delay adding the next
-	// workflow because if we add immediately with AddRateLimited(), the next workflow will likely
-	// be reconciled at a point in time before we have finished the current workflow reconciliation
-	// as well as incrementing the semaphore counter availability, and so the next workflow will
-	// believe it cannot run. By delaying for 1s, we would have finished the semaphore counter
-	// updates, and the next workflow will see the updated availability.
-	semaphoreNotifyDelay = env.LookupEnvDurationOr(logging.InitLoggerInContext(), "SEMAPHORE_NOTIFY_DELAY", time.Second)
-)
-
-func init() {
-	if cacheGCPeriod != 0 {
-		logging.InitLogger().WithField("cacheGCPeriod", cacheGCPeriod).Info(context.Background(), "GC for memoization caches will be performed every")
-	}
-}
-
 // NewWorkflowController instantiates a new WorkflowController
 func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, namespace, managedNamespace, executorImage, executorImagePullPolicy, executorLogFormat, configMap string, executorPlugins bool, workflowLevelExecutorPlugins bool) (*WorkflowController, error) {
 	dynamicInterface, err := dynamic.NewForConfig(restConfig)
@@ -236,11 +239,24 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		eventRecorderManager:       events.NewEventRecorderManager(kubeclientset),
 		progressPatchTickDuration:  env.LookupEnvDurationOr(ctx, common.EnvVarProgressPatchTickDuration, 1*time.Minute),
 		progressFileTickDuration:   env.LookupEnvDurationOr(ctx, common.EnvVarProgressFileTickDuration, 3*time.Second),
+		indexWorkflowSemaphoreKeys: os.Getenv("INDEX_WORKFLOW_SEMAPHORE_KEYS") != "false",
+		cacheGCPeriod:              env.LookupEnvDurationOr(ctx, "CACHE_GC_PERIOD", 0),
+		semaphoreNotifyDelay:       env.LookupEnvDurationOr(ctx, "SEMAPHORE_NOTIFY_DELAY", time.Second),
+		gcAfterNotHitDuration:      env.LookupEnvDurationOr(ctx, "CACHE_GC_AFTER_NOT_HIT_DURATION", 30*time.Second),
+		healthzAge:                 env.LookupEnvDurationOr(ctx, "HEALTHZ_AGE", 5*time.Minute),
+		maxOperationTime:           env.LookupEnvDurationOr(ctx, "MAX_OPERATION_TIME", 30*time.Second),
+		requeueTime:                env.LookupEnvDurationOr(ctx, common.EnvVarDefaultRequeueTime, 10*time.Second),
 		lastWrittenVersions: lastWrittenVersions{
 			versions: make(map[types.UID]lastWrittenVersion),
 			mutex:    gosync.RWMutex{},
 		},
 	}
+	logger := logging.RequireLoggerFromContext(ctx)
+	logger.WithField("indexWorkflowSemaphoreKeys", wfc.indexWorkflowSemaphoreKeys).Info(ctx, "index config")
+	if wfc.cacheGCPeriod != 0 {
+		logger.WithField("cacheGCPeriod", wfc.cacheGCPeriod).Info(ctx, "GC for memoization caches will be performed every")
+	}
+	logger.WithField("gcAfterNotHitDuration", wfc.gcAfterNotHitDuration).Info(ctx, "Memoization caches will be garbage-collected if they have not been hit after")
 
 	if executorPlugins {
 		wfc.executorPlugins = map[string]map[string]*spec.Plugin{}
@@ -272,7 +288,7 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 	wfc.entrypoint = entrypoint.New(kubeclientset, wfc.Config.Images)
 
 	workqueue.SetProvider(wfc.metrics) // must execute SetProvider before we create the queues
-	wfc.wfQueue = wfc.metrics.RateLimiterWithBusyWorkers(ctx, &fixedItemIntervalRateLimiter{}, "workflow_queue")
+	wfc.wfQueue = wfc.metrics.RateLimiterWithBusyWorkers(ctx, &fixedItemIntervalRateLimiter{requeueTime: wfc.requeueTime}, "workflow_queue")
 	wfc.throttler = wfc.newThrottler()
 	wfc.wfArchiveQueue = wfc.metrics.RateLimiterWithBusyWorkers(ctx, workqueue.DefaultTypedControllerRateLimiter[string](), "workflow_archive_queue")
 
@@ -307,15 +323,17 @@ func (wfc *WorkflowController) runCronController(ctx context.Context, cronWorkfl
 	cronController.Run(ctx)
 }
 
-var indexers = cache.Indexers{
-	indexes.ClusterWorkflowTemplateIndex: indexes.MetaNamespaceLabelIndexFunc(common.LabelKeyClusterWorkflowTemplate),
-	indexes.CronWorkflowIndex:            indexes.MetaNamespaceLabelIndexFunc(common.LabelKeyCronWorkflow),
-	indexes.WorkflowTemplateIndex:        indexes.MetaNamespaceLabelIndexFunc(common.LabelKeyWorkflowTemplate),
-	indexes.SemaphoreConfigIndexName:     indexes.WorkflowSemaphoreKeysIndexFunc(),
-	indexes.WorkflowPhaseIndex:           indexes.MetaWorkflowPhaseIndexFunc(),
-	indexes.ConditionsIndex:              indexes.ConditionsIndexFunc,
-	indexes.UIDIndex:                     indexes.MetaUIDFunc,
-	cache.NamespaceIndex:                 cache.MetaNamespaceIndexFunc,
+func newIndexers(semaphoreKeysEnabled bool) cache.Indexers {
+	return cache.Indexers{
+		indexes.ClusterWorkflowTemplateIndex: indexes.MetaNamespaceLabelIndexFunc(common.LabelKeyClusterWorkflowTemplate),
+		indexes.CronWorkflowIndex:            indexes.MetaNamespaceLabelIndexFunc(common.LabelKeyCronWorkflow),
+		indexes.WorkflowTemplateIndex:        indexes.MetaNamespaceLabelIndexFunc(common.LabelKeyWorkflowTemplate),
+		indexes.SemaphoreConfigIndexName:     indexes.WorkflowSemaphoreKeysIndexFunc(semaphoreKeysEnabled),
+		indexes.WorkflowPhaseIndex:           indexes.MetaWorkflowPhaseIndexFunc(),
+		indexes.ConditionsIndex:              indexes.ConditionsIndexFunc,
+		indexes.UIDIndex:                     indexes.MetaUIDFunc,
+		cache.NamespaceIndex:                 cache.MetaNamespaceIndexFunc,
+	}
 }
 
 // ShutdownTracing flushes any remaining spans and shuts down the trace provider.
@@ -365,7 +383,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 
 	logger.WithFields(argo.GetVersion().Fields()).WithFields(logging.Fields{
 		"instanceID":         wfc.Config.InstanceID,
-		"defaultRequeueTime": GetRequeueTime(),
+		"defaultRequeueTime": wfc.requeueTime,
 	}).Info(ctx, "Starting Workflow Controller")
 	logger.WithFields(logging.Fields{
 		"workflowWorkers":     wfWorkers,
@@ -375,7 +393,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		"workflowArchive":     wfArchiveWorkers,
 	}).Info(ctx, "Current Worker Numbers")
 
-	wfc.wfInformer = util.NewWorkflowInformer(ctx, wfc.dynamicInterface, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListRequestListOptions, wfc.tweakWatchRequestListOptions, indexers)
+	wfc.wfInformer = util.NewWorkflowInformer(ctx, wfc.dynamicInterface, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListRequestListOptions, wfc.tweakWatchRequestListOptions, newIndexers(wfc.indexWorkflowSemaphoreKeys))
 	nsInformer, err := wfc.newNamespaceInformer(ctx, wfc.kubeclientset)
 	if err != nil {
 		logger.WithError(err).WithFatal().Error(ctx, "Failed to create namespace informer")
@@ -457,8 +475,8 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	for range wfArchiveWorkers {
 		go wait.UntilWithContext(archiveCtx, wfc.runArchiveWorker, time.Second)
 	}
-	if cacheGCPeriod != 0 {
-		go wait.JitterUntilWithContext(ctx, wfc.syncAllCacheForGC, cacheGCPeriod, 0.0, true)
+	if wfc.cacheGCPeriod != 0 {
+		go wait.JitterUntilWithContext(ctx, wfc.syncAllCacheForGC, wfc.cacheGCPeriod, 0.0, true)
 	}
 	<-ctx.Done()
 }
@@ -493,7 +511,7 @@ func (wfc *WorkflowController) createSynchronizationManager(ctx context.Context)
 	}
 
 	nextWorkflow := func(key string) {
-		wfc.wfQueue.AddAfter(key, semaphoreNotifyDelay)
+		wfc.wfQueue.AddAfter(key, wfc.semaphoreNotifyDelay)
 	}
 
 	workflowExists := func(key string) bool {

@@ -68,7 +68,6 @@ func NewSlogLoggerCustom(logLevel Level, format LogType, out io.Writer, hooks ..
 		hooks:  mappedHooks,
 	}
 
-	emitInitLogs(context.Background(), &s)
 	return &s
 }
 

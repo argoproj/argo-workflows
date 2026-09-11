@@ -3,12 +3,12 @@ import {useState} from 'react';
 import {RouteComponentProps} from 'react-router';
 
 import {uiUrl, uiUrlWithParams} from '../shared/base';
-import {deleteCookie, setCookie} from '../shared/cookie';
+import {setCookie} from '../shared/cookie';
 import {useCollectEvent} from '../shared/use-collect-event';
 
 import './login.scss';
 
-export function Login({location, history}: RouteComponentProps<any>) {
+export function Login({location}: RouteComponentProps<any>) {
     const urlParams = new URLSearchParams(location.search);
     const redirect = new URLSearchParams({redirect: urlParams.get('redirect') ?? uiUrl('workflows')});
     const [token, setToken] = useState('');
@@ -69,12 +69,7 @@ export function Login({location, history}: RouteComponentProps<any>) {
                     </div>
                     <div className='white-box login__logout-section'>
                         <p>Something wrong? Try logging out and logging back in:</p>
-                        <a
-                            className='argo-button argo-button--base-o'
-                            onClick={() => {
-                                deleteCookie('authorization');
-                                history.go(0);
-                            }}>
+                        <a className='argo-button argo-button--base-o' href={uiUrl('auth/logout')}>
                             <i className='fa fa-sign-out-alt' /> Logout
                         </a>
                     </div>

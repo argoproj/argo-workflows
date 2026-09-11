@@ -64,6 +64,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/indexes"
 	"github.com/argoproj/argo-workflows/v4/workflow/metrics"
 	"github.com/argoproj/argo-workflows/v4/workflow/progress"
+	wfsync "github.com/argoproj/argo-workflows/v4/workflow/sync"
 	"github.com/argoproj/argo-workflows/v4/workflow/templateresolution"
 	wfutil "github.com/argoproj/argo-workflows/v4/workflow/util"
 	"github.com/argoproj/argo-workflows/v4/workflow/validate"
@@ -142,12 +143,6 @@ var (
 	ErrRequeue = errors.New("requeue")
 )
 
-// maxOperationTime is the maximum time a workflow operation is allowed to run
-// for before requeuing the workflow onto the workqueue.
-var (
-	maxOperationTime = envutil.LookupEnvDurationOr(logging.InitLoggerInContext(), "MAX_OPERATION_TIME", 30*time.Second)
-)
-
 // failedNodeStatus is a subset of NodeStatus that is only used to Marshal certain fields into a JSON of failed nodes
 type failedNodeStatus struct {
 	DisplayName  string      `json:"displayName"`
@@ -179,7 +174,7 @@ func newWorkflowOperationCtx(ctx context.Context, wf *wfv1.Workflow, wfc *Workfl
 		controller:               wfc,
 		scope:                    variables.NewScope(),
 		volumes:                  wf.Spec.DeepCopy().Volumes,
-		deadline:                 time.Now().UTC().Add(maxOperationTime),
+		deadline:                 time.Now().UTC().Add(wfc.maxOperationTime),
 		eventRecorder:            wfc.eventRecorderManager.Get(ctx, wf.Namespace),
 		preExecutionNodeStatuses: make(map[string]wfv1.NodeStatus),
 		taskSet:                  make(map[string]wfv1.Template),
@@ -288,6 +283,20 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		lockSpan.SetAttributes(attribute.Bool("LockAcquired", acquired))
 		lockSpan.End()
 		if syncErr != nil {
+			if wfsync.IsRetryableSyncError(syncErr) || errorsutil.IsTransientErr(ctx, syncErr) {
+				// Transient failure in the lock backend (e.g. a database
+				// serialization conflict that exhausted its in-place retries):
+				// leave the workflow pending and try again on a later
+				// reconcile instead of failing it.
+				woc.log.WithError(syncErr).WithField("lockName", failedLockName).Warn(ctx, "Transient failure acquiring the synchronization lock, requeueing")
+				phase := woc.wf.Status.Phase
+				if phase == wfv1.WorkflowUnknown {
+					phase = wfv1.WorkflowPending
+				}
+				ctx = woc.markWorkflowPhase(ctx, phase, fmt.Sprintf("Waiting to acquire the synchronization lock. %v", syncErr))
+				woc.requeue()
+				return
+			}
 			woc.log.WithField("lockName", failedLockName).Warn(ctx, "Failed to acquire the lock")
 			woc.markWorkflowFailed(ctx, fmt.Sprintf("Failed to acquire the synchronization lock. %s", syncErr.Error()))
 			return
@@ -301,8 +310,11 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 					phase = wfv1.WorkflowPending
 				}
 				ctx = woc.markWorkflowPhase(ctx, phase, msg)
-				return
 			}
+			// Whether the workflow remains queued or its locks were just
+			// released for shutdown, there is nothing more to do this
+			// reconcile.
+			return
 		}
 	}
 
@@ -574,7 +586,10 @@ func (woc *wfOperationCtx) releaseLocksForPendingShuttingdownWfs(ctx context.Con
 	if woc.GetShutdownStrategy().Enabled() && woc.wf.Status.Phase == wfv1.WorkflowPending && woc.GetShutdownStrategy() == wfv1.ShutdownStrategyTerminate {
 		if woc.controller.syncManager.ReleaseAll(ctx, woc.execWf) {
 			woc.log.WithFields(logging.Fields{"key": woc.execWf.Name}).Info(ctx, "Released all locks since this pending workflow is being shutdown")
-			_ = woc.markWorkflowSuccess(ctx)
+			// The workflow never started: it was still waiting for its
+			// synchronization lock when it was terminated, so it completes as
+			// Failed, matching every other shutdown path.
+			_ = woc.markWorkflowFailed(ctx, fmt.Sprintf("Stopped with strategy '%s'", woc.GetShutdownStrategy()))
 			return true
 		}
 	}
@@ -936,6 +951,15 @@ func (woc *wfOperationCtx) reapplyUpdate(ctx context.Context, wfClient v1alpha1.
 		currWf, err := wfClient.Get(ctx, woc.wf.Name, metav1.GetOptions{})
 		if err != nil {
 			return nil, err
+		}
+		// The preceding UID-guarded Update only fails on conflict when the workflow has been
+		// deleted and recreated under the same name while the controller was mid-operation on it.
+		// IsConflict treats a UID precondition failure the same as an ordinary conflict, so without
+		// this check we would merge-patch the old instance's status delta onto the new object,
+		// silently corrupting it (e.g. creating unreachable nodes with empty fields).
+		// https://github.com/argoproj/argo-workflows/issues/16774
+		if currWf.UID != woc.wf.UID {
+			return nil, fmt.Errorf("workflow has been recreated, not updating(%s -> %s)", woc.wf.UID, currWf.UID)
 		}
 		// There is something about having informer indexers (introduced in v2.12) that means we are more likely to operate on the
 		// previous version of the workflow. This means under high load, a previously successful workflow could
@@ -1371,6 +1395,15 @@ func (woc *wfOperationCtx) failNodesWithoutCreatedPodsAfterDeadlineOrShutdown(ct
 				woc.markNodePhase(ctx, node.Name, wfv1.NodeFailed, message)
 				continue
 			}
+			// fail pending nodes waiting for a synchronization lock when
+			// shutting down: their pod is only created once the lock is
+			// acquired, so pod reconciliation will never fail them, and
+			// without this the shutdown is ignored until the lock frees up
+			if node.Phase == wfv1.NodePending && node.SynchronizationStatus != nil && node.SynchronizationStatus.Waiting != "" {
+				message := fmt.Sprintf("Stopped with strategy '%s'", woc.GetShutdownStrategy())
+				woc.markNodePhase(ctx, node.Name, wfv1.NodeFailed, message)
+				continue
+			}
 			// fail retry wrapper nodes whose children are all fulfilled but the wrapper
 			// itself was left Running because processNodeRetries returned early while a
 			// child pod was still running at the moment of shutdown
@@ -1436,6 +1469,16 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		woc.log.Error(ctx, err.Error())
 		return nil
 	}
+	if tmpl == nil {
+		woc.log.WithFields(logging.Fields{"nodeName": old.Name, "templateName": old.TemplateName}).
+			Debug(ctx, "no template resolved for node (expected for inline templates); daemon teardown detection is disabled for it")
+	}
+	// The only way a daemon node becomes Succeeded while its pod is still alive is
+	// killDaemonedChildren, which marks the node and then requests pod termination.
+	// Any pod completion seen after that is the result of our own kill and must not
+	// overwrite the phase; a daemon that dies of its own accord is assessed normally
+	// (its node is still Running at that point) so retryStrategy still works.
+	stoppedDaemon := tmpl.IsDaemon() && old.Succeeded()
 	switch pod.Status.Phase {
 	case apiv1.PodPending:
 		updated.Phase = wfv1.NodePending
@@ -1449,7 +1492,8 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 	case apiv1.PodSucceeded:
 		// if the pod is succeeded, we need to check if it is a daemoned step or not
 		// if it is daemoned, we need to mark it as failed, since daemon pods should run indefinitely
-		if tmpl.IsDaemon() {
+		// (unless the controller stopped it itself, in which case it stays Succeeded)
+		if tmpl.IsDaemon() && !stoppedDaemon {
 			woc.log.WithField("podName", pod.Name).Debug(ctx, "Daemoned pod succeeded. Marking it as failed")
 			updated.Phase = wfv1.NodeFailed
 		} else {
@@ -1459,7 +1503,13 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		updated.Daemoned = nil
 		updated.RestartingPodUID = ""
 	case apiv1.PodFailed:
-		// ignore pod failure for daemoned steps
+		if stoppedDaemon {
+			woc.log.WithFields(logging.Fields{"displayName": old.DisplayName, "pod": pod.Name}).Info(ctx, "Ignoring pod failure of daemon stopped by the controller")
+			// killDaemonedChildren already cleared Daemoned when it marked the node Succeeded,
+			// but clear it here too so a stuck flag can never block workflow completion.
+			updated.Daemoned = nil
+			break
+		}
 		updated.Phase, updated.Message = woc.inferFailedReason(ctx, pod, tmpl)
 		woc.log.WithFields(logging.Fields{"message": updated.Message, "displayName": old.DisplayName, "templateName": wfutil.GetTemplateFromNode(*old), "pod": pod.Name}).Info(ctx, "Pod failed")
 		updated.Daemoned = nil
@@ -1533,6 +1583,12 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		if _, err := woc.wf.GetNodeByName(ctrNodeName); err != nil {
 			continue
 		}
+		if stoppedDaemon {
+			// killDaemonedChildren already completed the container child nodes when it stopped
+			// this daemon; the exit codes of our own kill carry no failure meaning, so leave
+			// the children untouched.
+			continue
+		}
 		switch {
 		case c.State.Terminated != nil:
 			exitCode := int(c.State.Terminated.ExitCode)
@@ -1570,7 +1626,9 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 	// We capture the exit-code after we look for the task-result.
 	// All other outputs are set by the executor, only the exit-code is set by the controller.
 	// By waiting, we avoid breaking the race-condition check.
-	if exitCode := getExitCode(pod); exitCode != nil {
+	// A daemon we stopped ourselves reports the exit code of our own signal, which says nothing
+	// about the node: recording it would contradict the Succeeded phase we just preserved.
+	if exitCode := getExitCode(pod); !stoppedDaemon && exitCode != nil {
 		if updated.Outputs == nil {
 			updated.Outputs = &wfv1.Outputs{}
 		}
@@ -1841,6 +1899,18 @@ func (woc *wfOperationCtx) inferFailedReason(ctx context.Context, pod *apiv1.Pod
 			// the legacy init/wait paths do separately.
 			return wfv1.NodeError, msg
 		default:
+			if common.IsArtifactPluginSidecar(ctr.Name) {
+				// Artifact plugin sidecars are torn down by the wait/supervisor
+				// container after it has saved all outputs, so an aux container
+				// that exited 0 proves every save succeeded and the sidecar's own
+				// exit code carries no information about the node's outcome. The
+				// code can even be a phantom: a `kill` exec racing the sidecar's
+				// exit can make the container runtime record a non-zero status
+				// for a process that exited cleanly. Record it and let the
+				// main/wait verdict below decide the node's fate.
+				woc.log.WithFields(logging.Fields{"exitCode": t.ExitCode, "containerName": ctr.Name}).Info(ctx, "ignoring artifact plugin sidecar exit code")
+				continue
+			}
 			if t.ExitCode != 137 && t.ExitCode != 143 {
 				return wfv1.NodeFailed, msg
 			}
@@ -2288,6 +2358,15 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		lockSpan.SetAttributes(attribute.Bool("LockAcquired", lockAcquired))
 		lockSpan.End()
 		if syncErr != nil {
+			if wfsync.IsRetryableSyncError(syncErr) || errorsutil.IsTransientErr(ctx, syncErr) {
+				// Transient failure in the lock backend: leave the node pending
+				// and try again on a later reconcile instead of erroring it.
+				woc.requeue()
+				if node == nil {
+					_, node = woc.initializeExecutableNode(ctx, nodeName, wfutil.GetNodeType(processedTmpl), templateScope, processedTmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, opts.nodeFlag, false, syncErr.Error())
+				}
+				return node, nil
+			}
 			errNode := woc.initializeNodeOrMarkError(ctx, node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, syncErr)
 			return errNode, syncErr
 		}
@@ -2679,11 +2758,11 @@ func (woc *wfOperationCtx) checkTemplateTimeouts(tmpl *wfv1.Template, node *wfv1
 func (woc *wfOperationCtx) recordWorkflowPhaseChange(ctx context.Context) {
 	phase := metrics.ConvertWorkflowPhase(woc.wf.Status.Phase)
 	woc.controller.metrics.ChangeWorkflowPhase(ctx, phase, woc.wf.Namespace)
-	if woc.wf.Spec.WorkflowTemplateRef != nil { // not-woc-misuse
-		woc.controller.metrics.CountWorkflowTemplate(ctx, phase, woc.wf.Spec.WorkflowTemplateRef.Name, woc.wf.Namespace, woc.wf.Spec.WorkflowTemplateRef.ClusterScope) // not-woc-misuse
+	if woc.wf.Spec.WorkflowTemplateRef != nil { //nolint:forbidigo // not-woc-misuse
+		woc.controller.metrics.CountWorkflowTemplate(ctx, phase, woc.wf.Spec.WorkflowTemplateRef.Name, woc.wf.Namespace, woc.wf.Spec.WorkflowTemplateRef.ClusterScope) //nolint:forbidigo // not-woc-misuse
 		if woc.wf.Status.Phase.Completed() {
 			duration := time.Since(woc.wf.Status.StartedAt.Time)
-			woc.controller.metrics.RecordWorkflowTemplateTime(ctx, duration, woc.wf.Spec.WorkflowTemplateRef.Name, woc.wf.Namespace, woc.wf.Spec.WorkflowTemplateRef.ClusterScope) // not-woc-misuse
+			woc.controller.metrics.RecordWorkflowTemplateTime(ctx, duration, woc.wf.Spec.WorkflowTemplateRef.Name, woc.wf.Namespace, woc.wf.Spec.WorkflowTemplateRef.ClusterScope) //nolint:forbidigo // not-woc-misuse
 			woc.log.Info(ctx, "Recording template time")
 		}
 	}
@@ -2864,7 +2943,12 @@ func (woc *wfOperationCtx) childrenFulfilled(node *wfv1.NodeStatus) bool {
 
 func (woc *wfOperationCtx) GetNodeTemplate(ctx context.Context, node *wfv1.NodeStatus) (*wfv1.Template, error) {
 	if node.TemplateRef != nil {
+		// Check storedTemplates first so that modifications to the CWT after the workflow
+		// started do not cause assessNodeStatus to spuriously mark the node as Error.
 		scope, name := node.GetTemplateScope()
+		if tmpl := woc.wf.GetStoredTemplate(scope, name, node); tmpl != nil {
+			return tmpl, nil
+		}
 		tmplCtx, err := woc.createTemplateContext(ctx, scope, name)
 		if err != nil {
 			woc.markNodeError(ctx, node.Name, err)
@@ -3541,7 +3625,7 @@ loop:
 func (woc *wfOperationCtx) executeScript(ctx context.Context, nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	node, err := woc.wf.GetNodeByName(nodeName)
 	if err != nil {
-		ctx, node = woc.initializeExecutableNode(ctx, nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, opts.nodeFlag, false)
+		ctx, node = woc.initializeExecutableNode(ctx, nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, opts.nodeFlag, tmpl.IsDaemon())
 	} else if !node.Pending() {
 		return node, nil
 	}
@@ -4400,23 +4484,23 @@ func (woc *wfOperationCtx) includeScriptOutput(ctx context.Context, nodeName, bo
 }
 
 func (woc *wfOperationCtx) fetchWorkflowSpec(ctx context.Context) (wfv1.WorkflowSpecHolder, error) {
-	if woc.wf.Spec.WorkflowTemplateRef == nil { // not-woc-misuse
+	if woc.wf.Spec.WorkflowTemplateRef == nil { //nolint:forbidigo // not-woc-misuse
 		return nil, fmt.Errorf("cannot fetch workflow spec without workflowTemplateRef")
 	}
 
 	var specHolder wfv1.WorkflowSpecHolder
 	var err error
 	// Logic for workflow refers Workflow template
-	if woc.wf.Spec.WorkflowTemplateRef.ClusterScope { // not-woc-misuse
+	if woc.wf.Spec.WorkflowTemplateRef.ClusterScope { //nolint:forbidigo // not-woc-misuse
 		if woc.controller.cwftmplInformer == nil {
 			woc.log.WithError(err).Error(ctx, "clusterWorkflowTemplate RBAC is missing")
 			return nil, fmt.Errorf("cannot get resource clusterWorkflowTemplate at cluster scope")
 		}
-		woc.controller.metrics.CountWorkflowTemplate(ctx, metrics.WorkflowNew, woc.wf.Spec.WorkflowTemplateRef.Name, woc.wf.Namespace, true) // not-woc-misuse
-		specHolder, err = woc.controller.cwftmplInformer.Lister().Get(woc.wf.Spec.WorkflowTemplateRef.Name)                                  // not-woc-misuse
+		woc.controller.metrics.CountWorkflowTemplate(ctx, metrics.WorkflowNew, woc.wf.Spec.WorkflowTemplateRef.Name, woc.wf.Namespace, true) //nolint:forbidigo // not-woc-misuse
+		specHolder, err = woc.controller.cwftmplInformer.Lister().Get(woc.wf.Spec.WorkflowTemplateRef.Name)                                  //nolint:forbidigo // not-woc-misuse
 	} else {
-		woc.controller.metrics.CountWorkflowTemplate(ctx, metrics.WorkflowNew, woc.wf.Spec.WorkflowTemplateRef.Name, woc.wf.Namespace, false)  // not-woc-misuse
-		specHolder, err = woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace).Get(woc.wf.Spec.WorkflowTemplateRef.Name) // not-woc-misuse
+		woc.controller.metrics.CountWorkflowTemplate(ctx, metrics.WorkflowNew, woc.wf.Spec.WorkflowTemplateRef.Name, woc.wf.Namespace, false)  //nolint:forbidigo // not-woc-misuse
+		specHolder, err = woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace).Get(woc.wf.Spec.WorkflowTemplateRef.Name) //nolint:forbidigo // not-woc-misuse
 	}
 	if err != nil {
 		return nil, err
@@ -4433,12 +4517,12 @@ func (woc *wfOperationCtx) retryStrategy(tmpl *wfv1.Template) *wfv1.RetryStrateg
 
 func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) (context.Context, error) {
 	switch {
-	case woc.wf.Spec.WorkflowTemplateRef != nil: // not-woc-misuse
+	case woc.wf.Spec.WorkflowTemplateRef != nil: //nolint:forbidigo // not-woc-misuse
 		// When workflow restrictions require template referencing (Strict/Secure mode),
 		// reject workflows that set any non-allowed fields, as they could override
 		// security settings defined in the WorkflowTemplate.
 		if woc.controller.Config.WorkflowRestrictions.MustUseReference() { // not-woc-misuse: intentionally checking the user-submitted spec
-			if err := wfutil.ValidateUserOverrides(&woc.wf.Spec); err != nil { // not-woc-misuse
+			if err := wfutil.ValidateUserOverrides(&woc.wf.Spec); err != nil { //nolint:forbidigo // not-woc-misuse
 				ctx = woc.markWorkflowError(ctx, err)
 				return ctx, err
 			}
@@ -4461,7 +4545,7 @@ func (woc *wfOperationCtx) setExecWorkflow(ctx context.Context) (context.Context
 			ctx = woc.markWorkflowError(ctx, err)
 			return ctx, err
 		}
-		woc.volumes = woc.wf.Spec.DeepCopy().Volumes // not-woc-misuse
+		woc.volumes = woc.wf.Spec.DeepCopy().Volumes //nolint:forbidigo // not-woc-misuse
 	}
 
 	// Perform one-time workflow validation
@@ -4539,9 +4623,9 @@ func (woc *wfOperationCtx) needsStoredWfSpecUpdate() bool {
 	// woc.wf.Status.StoredWorkflowSpec.Entrypoint == "" check is mainly to support  backward compatible with 2.11.x workflow to 2.12.x
 	// Need to recalculate StoredWorkflowSpec in 2.12.x format.
 	// This check can be removed once all user migrated from 2.11.x to 2.12.x
-	return woc.wf.Status.StoredWorkflowSpec == nil || (woc.wf.Spec.Entrypoint != "" && woc.wf.Status.StoredWorkflowSpec.Entrypoint == "") || // not-woc-misuse
-		(woc.wf.Spec.Suspend != woc.wf.Status.StoredWorkflowSpec.Suspend) || // not-woc-misuse
-		(woc.wf.Spec.Shutdown != woc.wf.Status.StoredWorkflowSpec.Shutdown) // not-woc-misuse
+	return woc.wf.Status.StoredWorkflowSpec == nil || (woc.wf.Spec.Entrypoint != "" && woc.wf.Status.StoredWorkflowSpec.Entrypoint == "") || //nolint:forbidigo // not-woc-misuse
+		(woc.wf.Spec.Suspend != woc.wf.Status.StoredWorkflowSpec.Suspend) || //nolint:forbidigo // not-woc-misuse
+		(woc.wf.Spec.Shutdown != woc.wf.Status.StoredWorkflowSpec.Shutdown) //nolint:forbidigo // not-woc-misuse
 }
 
 func (woc *wfOperationCtx) setStoredWfSpec(ctx context.Context) error {
@@ -4566,9 +4650,9 @@ func (woc *wfOperationCtx) setStoredWfSpec(ctx context.Context) error {
 	if woc.needsStoredWfSpecUpdate() {
 		// In reference mode, sanitize the user spec before merging so that
 		// only allow-listed fields participate in the strategic merge patch.
-		userSpec := &woc.wf.Spec // not-woc-misuse
+		userSpec := &woc.wf.Spec //nolint:forbidigo // not-woc-misuse
 		if woc.controller.Config.WorkflowRestrictions.MustUseReference() {
-			userSpec = wfutil.SanitizeUserWorkflowSpec(&woc.wf.Spec) // not-woc-misuse
+			userSpec = wfutil.SanitizeUserWorkflowSpec(&woc.wf.Spec) //nolint:forbidigo // not-woc-misuse
 		}
 		// Join workflow, workflow template, and workflow default metadata to workflow spec.
 		mergedWf, err := wfutil.JoinWorkflowSpec(userSpec, workflowTemplateSpec, &wfDefault.Spec)
@@ -4582,9 +4666,9 @@ func (woc *wfOperationCtx) setStoredWfSpec(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		userSpec := &woc.wf.Spec // not-woc-misuse
+		userSpec := &woc.wf.Spec //nolint:forbidigo // not-woc-misuse
 		if woc.controller.Config.WorkflowRestrictions.MustUseReference() {
-			userSpec = wfutil.SanitizeUserWorkflowSpec(&woc.wf.Spec) // not-woc-misuse
+			userSpec = wfutil.SanitizeUserWorkflowSpec(&woc.wf.Spec) //nolint:forbidigo // not-woc-misuse
 		}
 		mergedWf, err := wfutil.JoinWorkflowSpec(userSpec, wftHolder.GetWorkflowSpec(), &wfDefault.Spec)
 		if err != nil {

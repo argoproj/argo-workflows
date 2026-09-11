@@ -43,6 +43,41 @@ kubectl delete secret sso
 
 All users will need to log in again. Sorry.
 
+## Logout Redirect URL
+
+> v4.2 and after
+
+By default, logout clears the Argo session and redirects users directly to the UI base href.
+This behavior does not log users out of their identity provider.
+
+The `sso.logoutRedirectUrl` setting configures the post-logout redirect and provider logout for SSO mode. In `client` and `server` modes, the setting is ignored; logout redirects to the UI base href.
+
+The Argo Server logout endpoint is `/auth/logout`; ensure any proxy or ingress routes this path to Argo Server.
+
+For example, to return users to the Argo login page after logout:
+
+```yaml
+sso:
+  logoutRedirectUrl: https://argo.example.com/login
+```
+
+OIDC provider logout is enabled only when both of the following are true:
+
+* The provider advertises an OIDC `end_session_endpoint`.
+* `sso.logoutRedirectUrl` is set to an absolute HTTP(S) URL without user info or a fragment.
+
+When running in SSO mode, Argo Server fails to start if `sso.logoutRedirectUrl` is relative, contains a fragment, or is otherwise invalid.
+For example, `https://example.com/#/signed-out` is rejected; use a path or query parameter instead.
+
+When provider logout is enabled, Argo Server redirects users through the discovered `end_session_endpoint`, passing the configured client ID and `sso.logoutRedirectUrl` as the `post_logout_redirect_uri`.
+Register the exact redirect URL as an allowed post-logout redirect URI with the identity provider before enabling this option.
+
+If provider logout is configured but the discovered `end_session_endpoint` is invalid, provider logout is disabled for that server.
+Argo Server logs `Ignoring invalid OIDC end-session endpoint` at warning level, clears the local cookie, and redirects directly to `sso.logoutRedirectUrl`.
+
+Provider logout is known to work with Keycloak 18 and later, which accepts the `client_id` and `post_logout_redirect_uri` parameters Argo Server sends.
+Okta provider logout is not supported because its end-session endpoint requires `id_token_hint`; Argo Server does not retain the raw ID token because it can exceed browser cookie size limits.
+
 ## SSO RBAC
 
 > v2.12 and after
@@ -200,8 +235,8 @@ workflows.argoproj.io/rbac-rule: "'argo_admins' in groups"
 
 You can configure `filterGroupsRegex` to filter the groups returned by the OIDC provider. Some use-cases for this include:
 
-- You have multiple applications using the same OIDC provider, and you only want to use groups that are relevant to Argo Workflows.
-- You have many groups and exceed the [4KB cookie size limit](https://chromestatus.com/feature/4946713618939904) (cookies are used to store authentication tokens). If this occurs, login will fail.
+* You have multiple applications using the same OIDC provider, and you only want to use groups that are relevant to Argo Workflows.
+* You have many groups and exceed the [4KB cookie size limit](https://chromestatus.com/feature/4946713618939904) (cookies are used to store authentication tokens). If this occurs, login will fail.
 
 ```yaml
 sso:
@@ -226,7 +261,7 @@ You can specify a custom CA certificate in several ways:
 
 **Explicit configuration** - You can also explicitly specify custom CA certificates:
 
-- **Inline PEM content** - Provide the CA certificate content directly in the configuration:
+* **Inline PEM content** - Provide the CA certificate content directly in the configuration:
 
 ```yaml
 sso:

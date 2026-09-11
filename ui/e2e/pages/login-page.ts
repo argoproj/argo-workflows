@@ -10,8 +10,7 @@ export class LoginPage {
     constructor(private readonly page: Page) {
         this.tokenInput = page.locator('#token');
         this.loginButton = page.locator('.login__token-section').getByRole('link', {name: 'Login'});
-        // The logout anchor has no href, so it has no `link` role — match by text.
-        this.logoutButton = page.locator('.login__logout-section').getByText('Logout');
+        this.logoutButton = page.locator('.login__logout-section').getByRole('link', {name: 'Logout'});
     }
 
     async goto(): Promise<void> {

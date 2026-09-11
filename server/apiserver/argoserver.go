@@ -49,6 +49,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/server/apiserver/accesslog"
 	"github.com/argoproj/argo-workflows/v4/server/artifacts"
 	"github.com/argoproj/argo-workflows/v4/server/auth"
+	authcookie "github.com/argoproj/argo-workflows/v4/server/auth/cookie"
 	"github.com/argoproj/argo-workflows/v4/server/auth/sso"
 	"github.com/argoproj/argo-workflows/v4/server/auth/webhook"
 	"github.com/argoproj/argo-workflows/v4/server/cache"
@@ -57,6 +58,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/server/event"
 	"github.com/argoproj/argo-workflows/v4/server/eventsource"
 	"github.com/argoproj/argo-workflows/v4/server/info"
+	"github.com/argoproj/argo-workflows/v4/server/logout"
 	"github.com/argoproj/argo-workflows/v4/server/sensor"
 	"github.com/argoproj/argo-workflows/v4/server/static"
 	serversync "github.com/argoproj/argo-workflows/v4/server/sync"
@@ -78,8 +80,6 @@ import (
 	"github.com/argoproj/argo-workflows/v4/workflow/events"
 	"github.com/argoproj/argo-workflows/v4/workflow/hydrator"
 )
-
-var MaxGRPCMessageSize int
 
 // Server is the interface for the Argo API server
 type Server interface {
@@ -107,6 +107,7 @@ type argoServer struct {
 	allowedLinkProtocol      []string
 	cache                    *cache.ResourceCache
 	restConfig               *rest.Config
+	maxGRPCMessageSize       int
 }
 
 type ArgoServerOpts struct {
@@ -131,14 +132,6 @@ type ArgoServerOpts struct {
 	AllowedLinkProtocol      []string
 }
 
-func init() {
-	var err error
-	MaxGRPCMessageSize, err = env.GetInt("GRPC_MESSAGE_SIZE", 100*1024*1024)
-	if err != nil {
-		logging.InitLogger().WithFatal().WithError(err).Error(context.Background(), "GRPC_MESSAGE_SIZE environment variable must be set as an integer")
-	}
-}
-
 func getResourceCacheNamespace(managedNamespace string) string {
 	if managedNamespace != "" {
 		return managedNamespace
@@ -155,6 +148,9 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (Server, error) {
 		c, err := configController.Get(ctx)
 		if err != nil {
 			return nil, err
+		}
+		if err = logout.ValidateRedirectURL(c.SSO.LogoutRedirectURL); err != nil {
+			return nil, fmt.Errorf("invalid sso.logoutRedirectUrl: %w", err)
 		}
 		ssoIf, err = sso.New(ctx, c.SSO, opts.Clients.Kubernetes.CoreV1().Secrets(opts.Namespace), opts.BaseHRef, opts.TLSConfig != nil)
 		if err != nil {
@@ -181,6 +177,11 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (Server, error) {
 		log.WithFatal().Error(ctx, err.Error())
 	}
 
+	maxGRPCMessageSize, err := env.GetInt("GRPC_MESSAGE_SIZE", 100*1024*1024)
+	if err != nil {
+		return nil, fmt.Errorf("GRPC_MESSAGE_SIZE environment variable must be set as an integer: %w", err)
+	}
+
 	return &argoServer{
 		baseHRef:                 opts.BaseHRef,
 		tlsConfig:                opts.TLSConfig,
@@ -201,6 +202,7 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (Server, error) {
 		allowedLinkProtocol:      opts.AllowedLinkProtocol,
 		cache:                    resourceCache,
 		restConfig:               opts.RestConfig,
+		maxGRPCMessageSize:       maxGRPCMessageSize,
 	}, nil
 }
 
@@ -217,8 +219,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	if err != nil {
 		log.WithFatal().Error(ctx, err.Error())
 	}
-	err = config.Sanitize(as.allowedLinkProtocol)
-	if err != nil {
+	if err = config.Sanitize(as.allowedLinkProtocol); err != nil {
 		log.WithFatal().Error(ctx, err.Error())
 	}
 
@@ -344,7 +345,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		url = "https://localhost" + address
 	}
 	log.WithFields(logging.Fields{
-		"GRPC_MESSAGE_SIZE": MaxGRPCMessageSize,
+		"GRPC_MESSAGE_SIZE": as.maxGRPCMessageSize,
 	}).Info(ctx, "GRPC Server Max Message Size, MaxGRPCMessageSize, is set")
 	log.WithField("url", url).Info(ctx, "Argo Server started successfully")
 	browserOpenFunc(url)
@@ -362,8 +363,8 @@ func (as *argoServer) newGRPCServer(ctx context.Context, instanceIDService insta
 		// Set both the send and receive the bytes limit to be 100MB or GRPC_MESSAGE_SIZE
 		// The proper way to achieve high performance is to have pagination
 		// while we work toward that, we can have high limit first
-		grpc.MaxRecvMsgSize(MaxGRPCMessageSize),
-		grpc.MaxSendMsgSize(MaxGRPCMessageSize),
+		grpc.MaxRecvMsgSize(as.maxGRPCMessageSize),
+		grpc.MaxSendMsgSize(as.maxGRPCMessageSize),
 		grpc.ConnectionTimeout(300 * time.Second),
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
 			grpc_prometheus.UnaryServerInterceptor,
@@ -420,7 +421,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	loggingInterceptor := accesslog.NewLoggingInterceptor(log)
 	handler := rateLimitMiddleware.Handle(loggingInterceptor.Interceptor(mux))
 	dialOpts := []grpc.DialOption{
-		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(MaxGRPCMessageSize)),
+		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(as.maxGRPCMessageSize)),
 	}
 	if as.tlsConfig != nil {
 		tlsConfig := as.tlsConfig.Clone()
@@ -472,11 +473,17 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	}
 	mux.Handle("/oauth2/redirect", handlers.ProxyHeaders(http.HandlerFunc(as.oAuth2Service.HandleRedirect)))
 	mux.Handle("/oauth2/callback", handlers.ProxyHeaders(http.HandlerFunc(as.oAuth2Service.HandleCallback)))
+	logoutURL := as.oAuth2Service.LogoutURL()
+	logoutHandler, err := logout.NewHandler(as.baseHRef, as.oAuth2Service.LogoutRedirectURL(), as.tlsConfig != nil, logoutURL, as.oAuth2Service.ClientID())
+	if err != nil {
+		log.WithError(err).Warn(ctx, "Ignoring invalid OIDC end-session endpoint")
+	}
+	mux.Handle(logout.LogoutEndpoint, logoutHandler)
 	mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
 		if os.Getenv("ARGO_SERVER_METRICS_AUTH") != "false" {
-			md := metadata.New(map[string]string{"authorization": r.Header.Get("Authorization")})
+			md := metadata.New(map[string]string{authcookie.AuthorizationMetadataKey: r.Header.Get("Authorization")})
 			for _, c := range r.Cookies() {
-				if c.Name == "authorization" {
+				if c.Name == authcookie.AuthorizationCookieName {
 					md.Append("cookie", c.Value)
 				}
 			}
