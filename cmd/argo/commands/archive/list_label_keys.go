@@ -13,6 +13,8 @@ func NewListLabelKeyCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "list-label-keys",
 		Short: "list workflows label keys in the archive",
+		Example: `# List workflows label keys in the archive:
+		argo archive list-label-keys`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx, apiClient, err := client.NewAPIClient(cmd.Context())
 			if err != nil {
