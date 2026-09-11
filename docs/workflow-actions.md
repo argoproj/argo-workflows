@@ -100,6 +100,15 @@ spec:
         object.spec.action != 'Terminate' ||
         !('developers' in request.userInfo.groups)
       message: developers may not terminate workflows
+---
+# a policy does nothing until a binding enforces it
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: deny-terminate-for-devs
+spec:
+  policyName: deny-terminate-for-devs
+  validationActions: [Deny]
 ```
 
 ## Compatibility

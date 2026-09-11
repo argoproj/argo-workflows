@@ -990,7 +990,7 @@ WorkflowStatus contains overall status information about a workflow
 |`startedAt`|[`Time`](#time)|Time at which this workflow started|
 |`storedTemplates`|[`Template`](#template)|StoredTemplates is a mapping between a template ref and the node's status.|
 |`storedWorkflowTemplateSpec`|[`WorkflowSpec`](#workflowspec)|StoredWorkflowSpec stores the WorkflowTemplate spec for future execution.|
-|`suspended`|`boolean`|Suspended is the workflow-level suspension state the controller accepted from spec.startSuspended or a Suspend WorkflowAction. The deprecated spec.suspend also suspends a workflow; either being set means the workflow is suspended.|
+|`suspended`|`boolean`|Suspended is the workflow-level suspension state the controller accepted from spec.startSuspended or a Suspend WorkflowAction. The deprecated spec.suspend also suspends the workflow when its value is true; the workflow is suspended if either is in effect.|
 |`synchronization`|[`SynchronizationStatus`](#synchronizationstatus)|Synchronization stores the status of synchronization locks|
 |`taskResultsCompletionStatus`|`Map< boolean , string >`|TaskResultsCompletionStatus tracks task result completion status (mapped by node ID). Used to prevent premature archiving and garbage collection.|
 

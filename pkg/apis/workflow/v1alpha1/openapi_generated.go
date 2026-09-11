@@ -7791,7 +7791,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowActionRef(ref common.ReferenceCal
 					},
 					"uid": {
 						SchemaProps: spec.SchemaProps{
-							Description: "UID optionally pins the target across name reuse. Reserved for archived targets (retry).",
+							Description: "UID optionally pins the target across name reuse: when set, the action fails if the named workflow's UID differs. Leave empty to target whichever workflow currently holds the name.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -8886,7 +8886,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallba
 					},
 					"suspended": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Suspended is the workflow-level suspension state the controller accepted from spec.startSuspended or a Suspend WorkflowAction. The deprecated spec.suspend also suspends a workflow; either being set means the workflow is suspended.",
+							Description: "Suspended is the workflow-level suspension state the controller accepted from spec.startSuspended or a Suspend WorkflowAction. The deprecated spec.suspend also suspends the workflow when its value is true; the workflow is suspended if either is in effect.",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},

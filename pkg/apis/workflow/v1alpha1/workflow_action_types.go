@@ -52,7 +52,8 @@ type WorkflowAction struct {
 type WorkflowActionRef struct {
 	// Name of the target Workflow in the same namespace
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
-	// UID optionally pins the target across name reuse. Reserved for archived targets (retry).
+	// UID optionally pins the target across name reuse: when set, the action fails if the named
+	// workflow's UID differs. Leave empty to target whichever workflow currently holds the name.
 	UID types.UID `json:"uid,omitempty" protobuf:"bytes,2,opt,name=uid,casttype=k8s.io/apimachinery/pkg/types.UID"`
 }
 
@@ -73,6 +74,7 @@ type WorkflowActionSpec struct {
 }
 
 // ResumeAction parameterizes a Resume action
+// +kubebuilder:validation:XValidation:rule="!has(self.outputParameters) || (has(self.nodeFieldSelector) && size(self.nodeFieldSelector) > 0)",message="outputParameters requires a nodeFieldSelector"
 type ResumeAction struct {
 	// NodeFieldSelector selects suspended nodes to resume. Empty resumes the whole workflow.
 	NodeFieldSelector string `json:"nodeFieldSelector,omitempty" protobuf:"bytes,1,opt,name=nodeFieldSelector"`
