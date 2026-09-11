@@ -60,14 +60,13 @@ func (m *Metrics) Shutdown(ctx context.Context) error {
 	return nil
 }
 
+// NewMetrics creates a metrics provider configured with the enabled OTLP and Prometheus exporters.
 func NewMetrics(ctx context.Context, serviceName, prometheusName string, config *MetricsConfig, extraOpts ...metricsdk.Option) (*Metrics, error) {
 	options := make([]metricsdk.Option, 0)
 	options = append(options, metricsdk.WithResource(workflowsResource(ctx, serviceName)))
-	_, otlpEnabled := os.LookupEnv(`OTEL_EXPORTER_OTLP_ENDPOINT`)
-	_, otlpMetricsEnabled := os.LookupEnv(`OTEL_EXPORTER_OTLP_METRICS_ENDPOINT`)
 	logger := logging.RequireLoggerFromContext(ctx)
 
-	if otlpEnabled || otlpMetricsEnabled {
+	if endpoint := resolveOTLPEndpoint(otlpMetricsEndpointEnv); endpoint != "" {
 		// NOTE: The OTel SDK default changed from gRPC to http/protobuf. For backwards compatibility,
 		// gRPC is preserved as the default in workflows controller, but http/protobuf can be opted-in
 		// to by setting the _PROTOCOL env var explicitly.
@@ -76,11 +75,6 @@ func NewMetrics(ctx context.Context, serviceName, prometheusName string, config 
 		if otlpProtocol == "" {
 			otlpProtocol = os.Getenv(`OTEL_EXPORTER_OTLP_PROTOCOL`)
 		}
-		endpoint := os.Getenv(`OTEL_EXPORTER_OTLP_METRICS_ENDPOINT`)
-		if endpoint == "" {
-			endpoint = os.Getenv(`OTEL_EXPORTER_OTLP_ENDPOINT`)
-		}
-
 		switch {
 		case otlpProtocol == "" || otlpProtocol == "grpc":
 			logger.WithFields(logging.Fields{"protocol": "grpc", "endpoint": endpoint}).Info(ctx, "Starting OTLP metrics exporter")
