@@ -2262,8 +2262,8 @@ type WorkflowStatus struct {
 	AppliedActions []string `json:"appliedActions,omitempty" protobuf:"bytes,22,rep,name=appliedActions"`
 
 	// Suspended is the workflow-level suspension state the controller accepted from
-	// spec.startSuspended or a Suspend WorkflowAction. The deprecated spec.suspend also
-	// suspends a workflow; either being set means the workflow is suspended.
+	// spec.startSuspended or a Suspend WorkflowAction. The deprecated spec.suspend also suspends
+	// the workflow when its value is true; the workflow is suspended if either is in effect.
 	Suspended bool `json:"suspended,omitempty" protobuf:"varint,23,opt,name=suspended"`
 }
 

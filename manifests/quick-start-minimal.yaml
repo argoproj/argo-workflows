@@ -86563,6 +86563,10 @@ spec:
                       resumed suspend nodes
                     type: object
                 type: object
+                x-kubernetes-validations:
+                - message: outputParameters requires a nodeFieldSelector
+                  rule: '!has(self.outputParameters) || (has(self.nodeFieldSelector)
+                    && size(self.nodeFieldSelector) > 0)'
               stop:
                 description: 'Stop parameters, only for action: Stop'
                 properties:
@@ -86581,8 +86585,9 @@ spec:
                     description: Name of the target Workflow in the same namespace
                     type: string
                   uid:
-                    description: UID optionally pins the target across name reuse.
-                      Reserved for archived targets (retry).
+                    description: |-
+                      UID optionally pins the target across name reuse: when set, the action fails if the named
+                      workflow's UID differs. Leave empty to target whichever workflow currently holds the name.
                     type: string
                 required:
                 - name

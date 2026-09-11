@@ -80,9 +80,16 @@ func (wfc *WorkflowController) runActionWorker(ctx context.Context) {
 	}
 }
 
+// actionBindRetries bounds how many times a WorkflowAction is requeued while its target workflow
+// is missing from the workflow informer, before it is failed as WorkflowNotFound. The workflow
+// informer is a separate watch stream from the action informer, so an action created immediately
+// after its workflow can be processed before the workflow appears in the cache.
+const actionBindRetries = 5
+
 // processNextActionItem binds a pending action to its target workflow: actions whose target is
-// missing or completed fail immediately (no reattempt); otherwise the target workflow is enqueued
-// and the action is drained inside operate(), serialized with reconciliation.
+// completed fail immediately, and a target missing from the cache is retried a bounded number of
+// times before failing (no reattempt after that); otherwise the target workflow is enqueued and
+// the action is drained inside operate(), serialized with reconciliation.
 func (wfc *WorkflowController) processNextActionItem(ctx context.Context) bool {
 	key, quit := wfc.wfActionQueue.Get()
 	if quit {
@@ -92,30 +99,50 @@ func (wfc *WorkflowController) processNextActionItem(ctx context.Context) bool {
 
 	obj, exists, err := wfc.wfActionInformer.GetStore().GetByKey(key)
 	if err != nil || !exists {
+		wfc.wfActionQueue.Forget(key)
 		return true
 	}
 	a, ok := obj.(*wfv1.WorkflowAction)
 	if !ok {
+		wfc.wfActionQueue.Forget(key)
 		return true
 	}
 	if a.Status.Fulfilled() {
+		wfc.wfActionQueue.Forget(key)
 		wfc.enqueueActionGC(a)
 		return true
 	}
 	wfKey := a.Namespace + "/" + a.Spec.WorkflowRef.Name
 	wfObj, wfExists, err := wfc.wfInformer.GetStore().GetByKey(wfKey)
 	if err != nil {
+		wfc.wfActionQueue.AddRateLimited(key)
 		return true
 	}
 	log := logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"workflowaction": key, "workflow": wfKey})
 	if !wfExists {
+		// the workflow informer may lag the action informer, so retry a bounded number of
+		// times before declaring the target genuinely missing
+		if wfc.wfActionQueue.NumRequeues(key) < actionBindRetries {
+			wfc.wfActionQueue.AddRateLimited(key)
+			return true
+		}
+		wfc.wfActionQueue.Forget(key)
 		log.Info(ctx, "Failing workflow action: target workflow not found")
 		wfc.failActionOutcome(ctx, a, wfv1.WorkflowActionReasonWorkflowNotFound,
 			fmt.Sprintf("workflow %q not found", wfKey))
 		return true
 	}
+	wfc.wfActionQueue.Forget(key)
 	un, ok := wfObj.(*unstructured.Unstructured)
 	if !ok {
+		return true
+	}
+	// A pinned UID that no longer matches means the named workflow was recreated: the intended
+	// target is gone, so fail rather than act on its replacement.
+	if a.Spec.WorkflowRef.UID != "" && un.GetUID() != a.Spec.WorkflowRef.UID {
+		log.Info(ctx, "Failing workflow action: target workflow UID mismatch")
+		wfc.failActionOutcome(ctx, a, wfv1.WorkflowActionReasonWorkflowNotFound,
+			fmt.Sprintf("workflow %q with uid %q not found (current uid %q)", wfKey, a.Spec.WorkflowRef.UID, un.GetUID()))
 		return true
 	}
 	// WAL recovery first: an already-applied action must succeed even if the workflow since completed
@@ -287,10 +314,14 @@ func (woc *wfOperationCtx) applyAction(ctx context.Context, a *wfv1.WorkflowActi
 		if a.Spec.Resume != nil && a.Spec.Resume.NodeFieldSelector != "" {
 			return woc.applyNodeSet(ctx, a, a.Spec.Resume.NodeFieldSelector, util.SetOperationValues{Phase: wfv1.NodeSucceeded, Message: resumeMessage(a), OutputParameters: a.Spec.Resume.OutputParameters})
 		}
-		changed, err := util.ApplyResume(ctx, woc.wf, resumeMessage(a))
+		// ApplyResume mutates the workflow incrementally and can error partway, so apply it to a
+		// copy and commit only on success — a failed action must leave no partial effect.
+		wfCopy := woc.wf.DeepCopy()
+		changed, err := util.ApplyResume(ctx, wfCopy, resumeMessage(a))
 		if err != nil {
 			return false, err
 		}
+		woc.wf = wfCopy
 		woc.execWf.Spec.Suspend = nil
 		if changed {
 			woc.copyActorLabels(a)
@@ -311,10 +342,14 @@ func (woc *wfOperationCtx) applyShutdown(a *wfv1.WorkflowAction, strategy wfv1.S
 }
 
 func (woc *wfOperationCtx) applyNodeSet(ctx context.Context, a *wfv1.WorkflowAction, nodeFieldSelector string, values util.SetOperationValues) (bool, error) {
-	changed, err := util.ApplySuspendedNodeSetOperation(ctx, woc.wf, nodeFieldSelector, values)
+	// ApplySuspendedNodeSetOperation writes node phase, message and global parameters and can then
+	// fail on an unknown output parameter, so apply it to a copy and commit only on success.
+	wfCopy := woc.wf.DeepCopy()
+	changed, err := util.ApplySuspendedNodeSetOperation(ctx, wfCopy, nodeFieldSelector, values)
 	if err != nil {
 		return false, err
 	}
+	woc.wf = wfCopy
 	if changed {
 		woc.copyActorLabels(a)
 	}

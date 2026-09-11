@@ -12761,7 +12761,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowSpec"
         },
         "suspended": {
-          "description": "Suspended is the workflow-level suspension state the controller accepted from spec.startSuspended or a Suspend WorkflowAction. The deprecated spec.suspend also suspends a workflow; either being set means the workflow is suspended.",
+          "description": "Suspended is the workflow-level suspension state the controller accepted from spec.startSuspended or a Suspend WorkflowAction. The deprecated spec.suspend also suspends the workflow when its value is true; the workflow is suspended if either is in effect.",
           "type": "boolean"
         },
         "synchronization": {
