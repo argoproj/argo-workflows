@@ -1790,3 +1790,30 @@ func TestSynchronizationStatus_GetStatus(t *testing.T) {
 		assert.Panics(t, func() { ss.GetStatus(SynchronizationTypeUnknown) })
 	})
 }
+
+func TestArtGCStatusPods(t *testing.T) {
+	t.Run("nothing recorded counts as all recouped", func(t *testing.T) {
+		gcStatus := &ArtGCStatus{}
+		assert.True(t, gcStatus.AllArtifactGCPodsRecouped())
+	})
+	t.Run("recorded pod awaits recoup", func(t *testing.T) {
+		gcStatus := &ArtGCStatus{}
+		gcStatus.RecordArtifactGCPod("pod-a")
+		assert.False(t, gcStatus.IsArtifactGCPodRecouped("pod-a"))
+		assert.False(t, gcStatus.AllArtifactGCPodsRecouped())
+		gcStatus.SetArtifactGCPodRecouped("pod-a", true)
+		assert.True(t, gcStatus.AllArtifactGCPodsRecouped())
+	})
+	t.Run("recording again does not reset a recouped pod", func(t *testing.T) {
+		gcStatus := &ArtGCStatus{}
+		gcStatus.SetArtifactGCPodRecouped("pod-a", true)
+		gcStatus.RecordArtifactGCPod("pod-a")
+		assert.True(t, gcStatus.IsArtifactGCPodRecouped("pod-a"))
+	})
+	t.Run("one outstanding pod blocks", func(t *testing.T) {
+		gcStatus := &ArtGCStatus{}
+		gcStatus.SetArtifactGCPodRecouped("pod-a", true)
+		gcStatus.RecordArtifactGCPod("pod-b")
+		assert.False(t, gcStatus.AllArtifactGCPodsRecouped())
+	})
+}

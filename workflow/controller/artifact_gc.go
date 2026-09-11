@@ -6,6 +6,7 @@ import (
 	"hash/fnv"
 	"maps"
 	"slices"
+	"strings"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -23,6 +24,9 @@ import (
 )
 
 const artifactGCComponent = "artifact-gc"
+
+// how long to wait before retrying a strategy that could not be started
+const artifactGCRetryDelay = 1 * time.Minute
 
 // artifactGCEnabled is a feature flag to globally disabled artifact GC in case of emergency
 var artifactGCEnabled, _ = env.GetBool("ARGO_ARTIFACT_GC_ENABLED", true)
@@ -63,7 +67,7 @@ func (woc *wfOperationCtx) garbageCollectArtifacts(ctx context.Context) error {
 	for strategy := range strategies {
 		woc.log.WithField("strategy", strategy).Debug(ctx, "processing Artifact GC Strategy")
 		err := woc.processArtifactGCStrategy(ctx, strategy)
-		if err != nil {
+		if err != nil && !woc.artifactGCStrategyFailed(ctx, strategy, err) {
 			return err
 		}
 	}
@@ -124,12 +128,9 @@ func (woc *wfOperationCtx) artifactGCStrategiesReady() map[wfv1.ArtifactGCStrate
 type templatesToArtifacts map[string]wfv1.ArtifactSearchResults
 
 // Artifact GC Strategy is ready: start up Pods to handle it
+// The strategy is only marked processed once every Task and Pod it needs exists; an error leaves it unprocessed so
+// that it is attempted again on a later reconcile (see artifactGCStrategyFailed).
 func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strategy wfv1.ArtifactGCStrategy) error {
-	defer func() {
-		woc.wf.Status.ArtifactGCStatus.SetArtifactGCStrategyProcessed(strategy, true)
-		woc.updated = true
-	}()
-
 	var err error
 
 	woc.log.WithField("strategy", strategy).Debug(ctx, "processing Artifact GC Strategy")
@@ -138,6 +139,7 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 	artifactSearchResults := woc.findArtifactsToGC(strategy)
 	if len(artifactSearchResults) == 0 {
 		woc.log.WithField("strategy", strategy).Debug(ctx, "No Artifact Search Results returned from strategy")
+		woc.markArtifactGCStrategyProcessed(strategy)
 		return nil
 	}
 
@@ -224,10 +226,73 @@ func (woc *wfOperationCtx) processArtifactGCStrategy(ctx context.Context, strate
 			if err != nil {
 				return err
 			}
+			woc.wf.Status.ArtifactGCStatus.RecordArtifactGCPod(podName)
+			woc.updated = true
 		}
 	}
 
+	woc.markArtifactGCStrategyProcessed(strategy)
 	return nil
+}
+
+func (woc *wfOperationCtx) markArtifactGCStrategyProcessed(strategy wfv1.ArtifactGCStrategy) {
+	woc.wf.Status.ArtifactGCStatus.SetArtifactGCStrategyProcessed(strategy, true)
+	woc.clearArtifactGCStartFailure(strategy)
+	woc.updated = true
+}
+
+// the message prefix that marks an ArtifactGCError condition as a failure to start this strategy, as opposed to a
+// failure reported by a GC Pod
+func artifactGCStartFailurePrefix(strategy wfv1.ArtifactGCStrategy) string {
+	return fmt.Sprintf("%s: ", strategy)
+}
+
+func (woc *wfOperationCtx) hasArtifactGCStartFailure(strategy wfv1.ArtifactGCStrategy) bool {
+	for _, condition := range woc.wf.Status.Conditions {
+		if condition.Type == wfv1.ConditionTypeArtifactGCError && strings.HasPrefix(condition.Message, artifactGCStartFailurePrefix(strategy)) {
+			return true
+		}
+	}
+	return false
+}
+
+func (woc *wfOperationCtx) clearArtifactGCStartFailure(strategy wfv1.ArtifactGCStrategy) {
+	if woc.hasArtifactGCStartFailure(strategy) {
+		woc.wf.Status.Conditions.RemoveCondition(wfv1.ConditionTypeArtifactGCError)
+	}
+}
+
+// the time from which the retry window for a strategy is measured: when the strategy first became ready
+func (woc *wfOperationCtx) artifactGCStrategyReadyTime(strategy wfv1.ArtifactGCStrategy) time.Time {
+	if strategy == wfv1.ArtifactGCOnWorkflowDeletion && woc.wf.DeletionTimestamp != nil {
+		return woc.wf.DeletionTimestamp.Time
+	}
+	return woc.wf.Status.FinishedAt.Time
+}
+
+// artifactGCStrategyFailed records that a strategy could not be started. The strategy is left unprocessed so that it
+// is retried on later reconciles, until it has failed at least once and the retry window measured from the time it
+// became ready has passed. It is then abandoned: marked processed, with the condition retained, so that
+// forceFinalizerRemoval can release the workflow. Returns true when the strategy has been abandoned.
+func (woc *wfOperationCtx) artifactGCStrategyFailed(ctx context.Context, strategy wfv1.ArtifactGCStrategy, err error) bool {
+	readyTime := woc.artifactGCStrategyReadyTime(strategy)
+	pastWindow := !readyTime.IsZero() && time.Since(readyTime) > woc.controller.artifactGCRetryWindow
+	if woc.hasArtifactGCStartFailure(strategy) && pastWindow {
+		msg := fmt.Sprintf("%sabandoned after retrying for %s: %v", artifactGCStartFailurePrefix(strategy), woc.controller.artifactGCRetryWindow, err)
+		woc.log.WithField("strategy", strategy).WithError(err).Error(ctx, "abandoning Artifact GC Strategy after repeated failures to start it")
+		woc.wf.Status.ArtifactGCStatus.SetArtifactGCStrategyProcessed(strategy, true)
+		woc.addArtGCCondition(msg)
+		woc.addArtGCEvent(msg)
+		woc.updated = true
+		return true
+	}
+	msg := fmt.Sprintf("%s%v", artifactGCStartFailurePrefix(strategy), err)
+	woc.log.WithField("strategy", strategy).WithError(err).Warn(ctx, "failed to start Artifact GC Strategy, will retry")
+	woc.addArtGCCondition(msg)
+	woc.addArtGCEvent(msg)
+	woc.updated = true
+	woc.requeueAfter(artifactGCRetryDelay)
+	return false
 }
 
 type podInfo struct {
@@ -362,16 +427,23 @@ func (woc *wfOperationCtx) createWorkflowArtifactGCTask(ctx context.Context, tas
 		return nil, err
 	}
 	if foundTask != nil {
+		// return the stored object: the Pod's owner reference needs its UID
 		woc.log.WithField("task", task.Name).Debug(ctx, "Artifact GC Task already exists")
-	} else {
-		woc.log.WithField("task", task.Name).Info(ctx, "Creating Artifact GC Task")
-
-		task, err = woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowArtifactGCTasks(woc.wf.Namespace).Create(ctx, task, metav1.CreateOptions{})
-		if err != nil {
-			return nil, fmt.Errorf("failed to Create WorkflowArtifactGCTask %q for Garbage Collection: %w", task.Name, err)
-		}
+		return foundTask, nil
 	}
-	return task, nil
+
+	woc.log.WithField("task", task.Name).Info(ctx, "Creating Artifact GC Task")
+	tasks := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowArtifactGCTasks(woc.wf.Namespace)
+	created, err := tasks.Create(ctx, task, metav1.CreateOptions{})
+	if apierr.IsAlreadyExists(err) {
+		// created by an earlier attempt that the informer has not caught up with yet
+		woc.log.WithField("task", task.Name).Debug(ctx, "Artifact GC Task already exists, informer not yet synced")
+		created, err = tasks.Get(ctx, task.Name, metav1.GetOptions{})
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to Create WorkflowArtifactGCTask %q for Garbage Collection: %w", task.Name, err)
+	}
+	return created, nil
 }
 
 // create the Pod which will do the deletions
@@ -587,7 +659,8 @@ func (woc *wfOperationCtx) processArtifactGCCompletion(ctx context.Context) erro
 	var removeFinalizer bool
 	forceFinalizerRemoval := woc.execWf.Spec.ArtifactGC != nil && woc.execWf.Spec.ArtifactGC.ForceFinalizerRemoval
 	if forceFinalizerRemoval {
-		removeFinalizer = woc.wf.Status.ArtifactGCStatus.AllArtifactGCPodsRecouped()
+		// only once every strategy that is currently due has been started, otherwise there may still be Pods to create
+		removeFinalizer = len(woc.artifactGCStrategiesReady()) == 0 && woc.wf.Status.ArtifactGCStatus.AllArtifactGCPodsRecouped()
 	} else {
 		// check if all artifacts have been deleted and if so remove Finalizer
 		removeFinalizer = woc.allArtifactsDeleted()
