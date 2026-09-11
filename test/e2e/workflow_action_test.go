@@ -72,34 +72,29 @@ func (s *WorkflowActionSuite) TestSuspendResumeViaAction() {
 		})
 }
 
-func (s *WorkflowActionSuite) TestTerminateViaAction() {
-	s.Given().
-		Workflow(actionSleepWf).
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeRunning).
-		CreateWorkflowAction(wfv1.WorkflowActionSpec{Action: wfv1.ActionTypeTerminate}).
-		WaitForWorkflowAction(30*time.Second, actionSucceeded).
-		WaitForWorkflow(fixtures.ToBeFailed).
-		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.ShutdownStrategyTerminate, status.Shutdown)
+func (s *WorkflowActionSuite) TestShutdownViaAction() {
+	for _, tt := range []struct {
+		action   wfv1.WorkflowActionType
+		strategy wfv1.ShutdownStrategy
+	}{
+		{wfv1.ActionTypeTerminate, wfv1.ShutdownStrategyTerminate},
+		{wfv1.ActionTypeStop, wfv1.ShutdownStrategyStop},
+	} {
+		s.Run(string(tt.action), func() {
+			s.Given().
+				Workflow(actionSleepWf).
+				When().
+				SubmitWorkflow().
+				WaitForWorkflow(fixtures.ToBeRunning).
+				CreateWorkflowAction(wfv1.WorkflowActionSpec{Action: tt.action}).
+				WaitForWorkflowAction(30*time.Second, actionSucceeded).
+				WaitForWorkflow(fixtures.ToBeFailed).
+				Then().
+				ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+					assert.Equal(t, tt.strategy, status.Shutdown)
+				})
 		})
-}
-
-func (s *WorkflowActionSuite) TestStopViaAction() {
-	s.Given().
-		Workflow(actionSleepWf).
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(fixtures.ToBeRunning).
-		CreateWorkflowAction(wfv1.WorkflowActionSpec{Action: wfv1.ActionTypeStop}).
-		WaitForWorkflowAction(30*time.Second, actionSucceeded).
-		WaitForWorkflow(fixtures.ToBeFailed).
-		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.ShutdownStrategyStop, status.Shutdown)
-		})
+	}
 }
 
 func (s *WorkflowActionSuite) TestActionOnMissingWorkflow() {

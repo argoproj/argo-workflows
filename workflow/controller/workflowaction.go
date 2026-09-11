@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"slices"
 	"sort"
+	"strings"
 	"time"
 
 	apiv1 "k8s.io/api/core/v1"
@@ -18,7 +19,6 @@ import (
 	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/client/informers/externalversions/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/deprecation"
 	errorsutil "github.com/argoproj/argo-workflows/v4/util/errors"
-	informerutil "github.com/argoproj/argo-workflows/v4/util/informer"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/retry"
 	waitutil "github.com/argoproj/argo-workflows/v4/util/wait"
@@ -31,34 +31,16 @@ import (
 // workflow. Unlike task results, actions carry no mandatory workflow label (kubectl users
 // create them bare), so only the instance ID is filtered and indexing reads the spec ref.
 func (wfc *WorkflowController) newWorkflowActionInformer(ctx context.Context) cache.SharedIndexInformer {
-	log := logging.RequireLoggerFromContext(ctx)
 	labelSelector := labels.NewSelector().
 		Add(wfc.instanceIDReq()).
 		String()
-	log.WithField("labelSelector", labelSelector).
-		Info(ctx, "Watching workflow actions")
-
-	// This is a generated function, so we can't change the context.
-	//nolint:contextcheck
-	informer := wfextvv1alpha1.NewFilteredWorkflowActionInformer(
-		wfc.wfclientset,
-		wfc.GetManagedNamespace(),
-		20*time.Minute,
-		cache.Indexers{
-			indexes.WorkflowActionIndex: indexes.WorkflowActionIndexFunc,
-		},
-		func(options *metav1.ListOptions) {
-			options.LabelSelector = labelSelector
-			// `ResourceVersion=0` does not honor the `limit` in API calls, which results in making significant List calls
-			// without `limit`. For details, see https://github.com/argoproj/argo-workflows/pull/11343
-			// Check if ResourceVersion is "0" and reset it to empty string to avoid missing watch event.
-			if options.ResourceVersion == "0" {
-				options.ResourceVersion = ""
-			}
-		},
-	)
-	//nolint:errcheck // the error only happens if the informer was already started, and it hasn't been
-	informer.SetTransform(informerutil.StripManagedFields)
+	informer := wfc.newFilteredInformer(ctx, "workflow actions", labelSelector,
+		// This is a generated function, so we can't change the context.
+		//nolint:contextcheck
+		func(namespace string, resync time.Duration, tweak func(*metav1.ListOptions)) cache.SharedIndexInformer {
+			return wfextvv1alpha1.NewFilteredWorkflowActionInformer(wfc.wfclientset, namespace, resync,
+				cache.Indexers{indexes.WorkflowActionIndex: indexes.WorkflowActionIndexFunc}, tweak)
+		})
 	//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started
 	informer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
@@ -71,7 +53,8 @@ func (wfc *WorkflowController) newWorkflowActionInformer(ctx context.Context) ca
 func (wfc *WorkflowController) enqueueAction(obj any) {
 	key, err := cache.MetaNamespaceKeyFunc(obj)
 	if err == nil {
-		wfc.wfActionQueue.AddRateLimited(key)
+		// Add, not AddRateLimited: the queue's requeue count must only count genuine retries
+		wfc.wfActionQueue.Add(key)
 	}
 }
 
@@ -80,16 +63,18 @@ func (wfc *WorkflowController) runActionWorker(ctx context.Context) {
 	}
 }
 
-// actionBindRetries bounds how many times a WorkflowAction is requeued while its target workflow
-// is missing from the workflow informer, before it is failed as WorkflowNotFound. The workflow
-// informer is a separate watch stream from the action informer, so an action created immediately
-// after its workflow can be processed before the workflow appears in the cache.
-const actionBindRetries = 5
+// actionBindGracePeriod is how long after its creation a WorkflowAction whose target workflow is
+// missing from the workflow informer keeps being retried before it is failed as WorkflowNotFound.
+// The workflow informer is a separate watch stream from the action informer and can lag it by
+// seconds under load, so an action created immediately after its workflow can be processed before
+// the workflow appears in the cache.
+const actionBindGracePeriod = 10 * time.Second
 
 // processNextActionItem binds a pending action to its target workflow: actions whose target is
-// completed fail immediately, and a target missing from the cache is retried a bounded number of
-// times before failing (no reattempt after that); otherwise the target workflow is enqueued and
-// the action is drained inside operate(), serialized with reconciliation.
+// completed fail immediately, and a target missing from the cache is retried until the grace
+// period since the action's creation has elapsed, then failed (no reattempt after that);
+// otherwise the target workflow is enqueued and the action is drained inside operate(),
+// serialized with reconciliation.
 func (wfc *WorkflowController) processNextActionItem(ctx context.Context) bool {
 	key, quit := wfc.wfActionQueue.Get()
 	if quit {
@@ -112,7 +97,7 @@ func (wfc *WorkflowController) processNextActionItem(ctx context.Context) bool {
 		wfc.enqueueActionGC(a)
 		return true
 	}
-	wfKey := a.Namespace + "/" + a.Spec.WorkflowRef.Name
+	wfKey := indexes.WorkflowIndexValue(a.Namespace, a.Spec.WorkflowRef.Name)
 	wfObj, wfExists, err := wfc.wfInformer.GetStore().GetByKey(wfKey)
 	if err != nil {
 		wfc.wfActionQueue.AddRateLimited(key)
@@ -120,9 +105,9 @@ func (wfc *WorkflowController) processNextActionItem(ctx context.Context) bool {
 	}
 	log := logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"workflowaction": key, "workflow": wfKey})
 	if !wfExists {
-		// the workflow informer may lag the action informer, so retry a bounded number of
-		// times before declaring the target genuinely missing
-		if wfc.wfActionQueue.NumRequeues(key) < actionBindRetries {
+		// the workflow informer may lag the action informer, so keep retrying (with backoff)
+		// for a grace period before declaring the target genuinely missing
+		if time.Since(a.CreationTimestamp.Time) < actionBindGracePeriod {
 			wfc.wfActionQueue.AddRateLimited(key)
 			return true
 		}
@@ -152,12 +137,36 @@ func (wfc *WorkflowController) processNextActionItem(ctx context.Context) bool {
 	}
 	if un.GetLabels()[common.LabelKeyCompleted] == "true" {
 		log.Info(ctx, "Failing workflow action: target workflow is completed")
-		wfc.failActionOutcome(ctx, a, wfv1.WorkflowActionReasonWorkflowCompleted,
-			fmt.Sprintf("cannot perform %s on completed workflow %q", a.Spec.Action, wfKey))
+		wfc.failActionOutcome(ctx, a, wfv1.WorkflowActionReasonWorkflowCompleted, completedWorkflowMessage(a))
 		return true
 	}
-	wfc.wfQueue.AddRateLimited(wfKey)
+	// Add, not AddRateLimited: the workflow queue's limiter is a fixed requeue interval, which
+	// would delay every action by that interval; the target is validated, reconcile it now.
+	wfc.wfQueue.Add(wfKey)
 	return true
+}
+
+// settlePendingActions records a terminal outcome for every pending action targeting a workflow
+// that can no longer be reconciled (it completed, or was deleted, after the binder enqueued it),
+// so they do not sit Pending until the next informer resync. An action whose UID is in the
+// workflow's write-ahead record already took effect and succeeds; the rest fail with reason.
+func (wfc *WorkflowController) settlePendingActions(ctx context.Context, un *unstructured.Unstructured, reason string) {
+	applied, _, _ := unstructured.NestedStringSlice(un.Object, "status", "appliedActions")
+	for _, a := range wfc.pendingActionsFor(un.GetNamespace(), un.GetName()) {
+		if slices.Contains(applied, string(a.UID)) {
+			wfc.recordActionOutcome(ctx, a, wfv1.WorkflowActionSucceeded, "", "")
+			continue
+		}
+		message := completedWorkflowMessage(a)
+		if reason == wfv1.WorkflowActionReasonWorkflowNotFound {
+			message = fmt.Sprintf("workflow %q was deleted", un.GetName())
+		}
+		wfc.failActionOutcome(ctx, a, reason, message)
+	}
+}
+
+func completedWorkflowMessage(a *wfv1.WorkflowAction) string {
+	return fmt.Sprintf("cannot perform %s on completed workflow %q", a.Spec.Action, a.Spec.WorkflowRef.Name)
 }
 
 func (wfc *WorkflowController) failActionOutcome(ctx context.Context, a *wfv1.WorkflowAction, reason, message string) {
@@ -167,7 +176,8 @@ func (wfc *WorkflowController) failActionOutcome(ctx context.Context, a *wfv1.Wo
 // recordActionOutcome writes a terminal phase to the action's status, retrying conflicts, and
 // schedules the action for TTL deletion. It is a no-op for actions that are already terminal.
 func (wfc *WorkflowController) recordActionOutcome(ctx context.Context, a *wfv1.WorkflowAction, phase wfv1.WorkflowActionPhase, reason, message string) {
-	log := logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"workflowaction": a.Namespace + "/" + a.Name, "phase": phase, "reason": reason})
+	key, _ := cache.MetaNamespaceKeyFunc(a)
+	log := logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"workflowaction": key, "phase": phase, "reason": reason})
 	actionIf := wfc.wfclientset.ArgoprojV1alpha1().WorkflowActions(a.Namespace)
 	err := waitutil.Backoff(retry.DefaultRetry(ctx), func() (bool, error) {
 		latest, getErr := actionIf.Get(ctx, a.Name, metav1.GetOptions{})
@@ -195,12 +205,26 @@ func (wfc *WorkflowController) recordActionOutcome(ctx context.Context, a *wfv1.
 			return !errorsutil.IsTransientErr(ctx, updateErr), updateErr
 		}
 		wfc.metrics.WorkflowActionProcessed(ctx, string(a.Spec.Action), string(phase), a.Namespace)
+		wfc.recordActionEvent(ctx, updated)
 		wfc.enqueueActionGC(updated)
 		return true, nil
 	})
 	if err != nil {
 		log.WithError(err).Error(ctx, "Failed to record workflow action outcome")
 	}
+}
+
+// recordActionEvent emits a Kubernetes Event on the action itself, so `kubectl describe wfa`
+// shows why it failed without needing access to the controller logs or the target workflow.
+func (wfc *WorkflowController) recordActionEvent(ctx context.Context, a *wfv1.WorkflowAction) {
+	recorder := wfc.eventRecorderManager.Get(ctx, a.Namespace)
+	if a.Status.Phase == wfv1.WorkflowActionFailed {
+		recorder.Event(a, apiv1.EventTypeWarning, "WorkflowActionFailed",
+			fmt.Sprintf("%s of workflow %s failed: %s", a.Spec.Action, a.Spec.WorkflowRef.Name, a.Status.Message))
+		return
+	}
+	recorder.Event(a, apiv1.EventTypeNormal, "WorkflowActionSucceeded",
+		fmt.Sprintf("%s of workflow %s applied", a.Spec.Action, a.Spec.WorkflowRef.Name))
 }
 
 // pendingActionsFor returns the pending actions targeting a workflow, oldest first.
@@ -225,23 +249,24 @@ func (wfc *WorkflowController) pendingActionsFor(namespace, name string) []*wfv1
 	return actions
 }
 
+// pendingActionsForKey is pendingActionsFor keyed by "namespace/name".
+func (wfc *WorkflowController) pendingActionsForKey(key string) []*wfv1.WorkflowAction {
+	namespace, name, err := cache.SplitMetaNamespaceKey(key)
+	if err != nil {
+		return nil
+	}
+	return wfc.pendingActionsFor(namespace, name)
+}
+
 // hasPendingTerminateAction reports whether a pending Terminate action targets the workflow with
 // the given "namespace/name" key. It backs the throttler admission check: a Terminate must never
 // be postponed by the parallelism limit.
 func (wfc *WorkflowController) hasPendingTerminateAction(key string) bool {
-	if wfc.wfActionInformer == nil {
-		return false
-	}
-	objs, err := wfc.wfActionInformer.GetIndexer().ByIndex(indexes.WorkflowActionIndex, key)
-	if err != nil {
-		return false
-	}
-	for _, obj := range objs {
-		if a, ok := obj.(*wfv1.WorkflowAction); ok && !a.Status.Fulfilled() && a.Spec.Action == wfv1.ActionTypeTerminate {
-			return true
-		}
-	}
-	return false
+	return hasPendingTerminate(wfc.pendingActionsForKey(key))
+}
+
+func hasPendingTerminate(actions []*wfv1.WorkflowAction) bool {
+	return slices.ContainsFunc(actions, func(a *wfv1.WorkflowAction) bool { return a.Spec.Action == wfv1.ActionTypeTerminate })
 }
 
 // actionResult is a drained action outcome awaiting persistence of its workflow effect.
@@ -262,7 +287,7 @@ func (woc *wfOperationCtx) actionReconciliation(ctx context.Context) {
 	if len(actions) == 0 && len(woc.wf.Status.AppliedActions) == 0 {
 		return
 	}
-	woc.pruneAppliedActions()
+	woc.pruneAppliedActions(actions)
 	for _, a := range actions {
 		if slices.Contains(woc.wf.Status.AppliedActions, string(a.UID)) {
 			// crash recovery: the effect is already persisted, only the action status is missing
@@ -271,8 +296,7 @@ func (woc *wfOperationCtx) actionReconciliation(ctx context.Context) {
 		}
 		if woc.wf.Status.Fulfilled() {
 			// the binder normally fails these before we get here; defense for races
-			woc.controller.failActionOutcome(ctx, a, wfv1.WorkflowActionReasonWorkflowCompleted,
-				fmt.Sprintf("cannot perform %s on completed workflow %q", a.Spec.Action, woc.wf.Name))
+			woc.controller.failActionOutcome(ctx, a, wfv1.WorkflowActionReasonWorkflowCompleted, completedWorkflowMessage(a))
 			continue
 		}
 		changed, err := woc.applyAction(ctx, a)
@@ -303,11 +327,7 @@ func (woc *wfOperationCtx) applyAction(ctx context.Context, a *wfv1.WorkflowActi
 		if woc.ShouldSuspend() {
 			return false, nil
 		}
-		// spec.suspend is written alongside status.suspended so that older clients can still
-		// resume this workflow; suspendReconciliation keeps the two mirrored
-		woc.wf.Spec.Suspend = new(true) //nolint:forbidigo // not-woc-misuse
-		woc.execWf.Spec.Suspend = new(true)
-		woc.wf.Status.Suspended = true
+		woc.setSuspended()
 		woc.copyActorLabels(a)
 		return true, nil
 	case wfv1.ActionTypeResume:
@@ -321,7 +341,7 @@ func (woc *wfOperationCtx) applyAction(ctx context.Context, a *wfv1.WorkflowActi
 		if err != nil {
 			return false, err
 		}
-		woc.wf = wfCopy
+		woc.commitWorkflowCopy(wfCopy)
 		woc.execWf.Spec.Suspend = nil
 		if changed {
 			woc.copyActorLabels(a)
@@ -349,45 +369,71 @@ func (woc *wfOperationCtx) applyNodeSet(ctx context.Context, a *wfv1.WorkflowAct
 	if err != nil {
 		return false, err
 	}
-	woc.wf = wfCopy
+	woc.commitWorkflowCopy(wfCopy)
 	if changed {
 		woc.copyActorLabels(a)
 	}
 	return changed, nil
 }
 
+// commitWorkflowCopy replaces the in-memory workflow with a successfully mutated copy. Unless a
+// stored spec is in use (workflowTemplateRef), execWf aliases wf, so the alias must follow the
+// swap or the rest of the reconcile would read a stale spec through execWf.
+func (woc *wfOperationCtx) commitWorkflowCopy(wfCopy *wfv1.Workflow) {
+	if woc.execWf == woc.wf {
+		woc.execWf = wfCopy
+	}
+	woc.wf = wfCopy
+}
+
 // suspendReconciliation keeps status.suspended, the controller-owned suspension state, mirrored
 // from the client-owned spec.suspend. The controller always writes the two together (Suspend
-// action, startSuspended), so a mismatch means a client changed the deprecated spec.suspend:
-// a toggle into suspension is counted on the deprecated_feature metric, and a cleared
+// action, startSuspended), so a mismatch means a client changed spec.suspend: a toggle into
+// suspension on a started workflow is counted on the deprecated_feature metric (setting
+// spec.suspend at creation time, "start suspended", is still supported), and a cleared
 // spec.suspend (an old client's resume) unsuspends the workflow, preserving compatibility.
-// spec.startSuspended is honoured exactly once, before anything has run (StartedAt is stamped
-// on the first phase transition, later in this same reconcile).
+// spec.startSuspended is honoured exactly once, on the reconcile that first moves the workflow
+// out of the Unknown phase: every path that leaves Unknown (operate, or the parallelism
+// postponement in processNextItem) runs this first. StartedAt cannot serve as the marker
+// because a workflow parked Pending on a synchronization lock has none, and a Resume in that
+// state must not be undone on the next reconcile.
 func (woc *wfOperationCtx) suspendReconciliation(ctx context.Context) {
-	if woc.wf.Status.StartedAt.IsZero() && woc.execWf.Spec.StartSuspended && !woc.ShouldSuspend() {
-		// mirrored into spec.suspend so that older clients can still resume it
-		woc.wf.Spec.Suspend = new(true) //nolint:forbidigo // not-woc-misuse
-		woc.execWf.Spec.Suspend = new(true)
-		woc.wf.Status.Suspended = true
-		woc.updated = true
+	firstReconcile := woc.wf.Status.Phase == wfv1.WorkflowUnknown
+	if firstReconcile && woc.execWf.Spec.StartSuspended && !woc.ShouldSuspend() {
+		woc.setSuspended()
 		return
 	}
-	specSuspended := woc.execWf.Spec.Suspend != nil && *woc.execWf.Spec.Suspend
+	specSuspended := woc.execWf.Spec.SuspendRequested()
 	if specSuspended == woc.wf.Status.Suspended {
 		return
 	}
-	if specSuspended {
-		// a client suspended the workflow by setting the deprecated spec.suspend
+	if specSuspended && !firstReconcile {
+		// a client suspended a started workflow by setting the deprecated spec.suspend
 		deprecation.Record(ctx, deprecation.WorkflowSpecSuspend)
 	}
 	woc.wf.Status.Suspended = specSuspended
 	woc.updated = true
 }
 
+// setSuspended marks the workflow suspended. status.suspended is the controller-owned state;
+// it is mirrored into spec.suspend so that older clients can still resume the workflow.
+func (woc *wfOperationCtx) setSuspended() {
+	woc.wf.Spec.Suspend = new(true) //nolint:forbidigo // not-woc-misuse
+	woc.execWf.Spec.Suspend = new(true)
+	woc.wf.Status.Suspended = true
+	woc.updated = true
+}
+
 // copyActorLabels carries the requester's identity from the action onto the workflow, preserving
-// the audit labels the server used to patch directly (#14102).
+// the audit labels the server used to patch directly (#14102). As with creator.LabelActor, the
+// labels describe the latest action: any actor labels from an earlier action are removed first,
+// so an action without identity (created with kubectl) does not keep the previous requester's.
 func (woc *wfOperationCtx) copyActorLabels(a *wfv1.WorkflowAction) {
 	for _, k := range []string{common.LabelKeyAction, common.LabelKeyActor, common.LabelKeyActorEmail, common.LabelKeyActorPreferredUsername} {
+		if _, had := woc.wf.Labels[k]; had {
+			delete(woc.wf.Labels, k)
+			woc.updated = true
+		}
 		if v, ok := a.Labels[k]; ok {
 			if woc.wf.Labels == nil {
 				woc.wf.Labels = map[string]string{}
@@ -398,36 +444,31 @@ func (woc *wfOperationCtx) copyActorLabels(a *wfv1.WorkflowAction) {
 	}
 }
 
+// resumeMessage is recorded on resumed nodes for auditing (#11763): it names the action and, when
+// the action carries them, the requester's subject, preferred username and email.
 func resumeMessage(a *wfv1.WorkflowAction) string {
 	msg := "Resumed by WorkflowAction " + a.Name
-	if actor := a.Labels[common.LabelKeyActorEmail]; actor != "" {
-		msg += " (" + actor + ")"
+	var who []string
+	for _, k := range []string{common.LabelKeyActor, common.LabelKeyActorPreferredUsername, common.LabelKeyActorEmail} {
+		if v := a.Labels[k]; v != "" {
+			who = append(who, v)
+		}
+	}
+	if len(who) > 0 {
+		msg += " (" + strings.Join(who, ", ") + ")"
 	}
 	return msg
 }
 
-// pruneAppliedActions drops write-ahead entries whose action has a recorded terminal status, or
-// no longer exists, keeping status.appliedActions bounded.
-func (woc *wfOperationCtx) pruneAppliedActions() {
+// pruneAppliedActions drops write-ahead entries whose action is no longer pending (it has a
+// recorded terminal status, or no longer exists), keeping status.appliedActions bounded.
+func (woc *wfOperationCtx) pruneAppliedActions(pending []*wfv1.WorkflowAction) {
 	if len(woc.wf.Status.AppliedActions) == 0 {
 		return
 	}
-	pendingUIDs := map[string]bool{}
-	objs, err := woc.controller.wfActionInformer.GetIndexer().ByIndex(indexes.WorkflowActionIndex, indexes.WorkflowIndexValue(woc.wf.Namespace, woc.wf.Name))
-	if err != nil {
-		return
-	}
-	for _, obj := range objs {
-		if a, ok := obj.(*wfv1.WorkflowAction); ok && !a.Status.Fulfilled() {
-			pendingUIDs[string(a.UID)] = true
-		}
-	}
-	kept := woc.wf.Status.AppliedActions[:0:0]
-	for _, uid := range woc.wf.Status.AppliedActions {
-		if pendingUIDs[uid] {
-			kept = append(kept, uid)
-		}
-	}
+	kept := slices.DeleteFunc(slices.Clone(woc.wf.Status.AppliedActions), func(uid string) bool {
+		return !slices.ContainsFunc(pending, func(a *wfv1.WorkflowAction) bool { return string(a.UID) == uid })
+	})
 	if len(kept) != len(woc.wf.Status.AppliedActions) {
 		woc.wf.Status.AppliedActions = kept
 		woc.updated = true
@@ -455,14 +496,16 @@ func (wfc *WorkflowController) enqueueActionGC(a *wfv1.WorkflowAction) {
 	if err != nil {
 		return
 	}
+	wfc.wfActionGCQueue.AddAfter(key, wfc.actionTTLRemaining(a))
+}
+
+// actionTTLRemaining is how long until a terminal action's TTL expires (zero if it already has).
+func (wfc *WorkflowController) actionTTLRemaining(a *wfv1.WorkflowAction) time.Duration {
 	remaining := wfc.Config.GetWorkflowActionTTL()
 	if a.Status.CompletionTime != nil {
 		remaining -= time.Since(a.Status.CompletionTime.Time)
 	}
-	if remaining < 0 {
-		remaining = 0
-	}
-	wfc.wfActionGCQueue.AddAfter(key, remaining)
+	return max(remaining, 0)
 }
 
 func (wfc *WorkflowController) runActionGCWorker(ctx context.Context) {
@@ -485,11 +528,9 @@ func (wfc *WorkflowController) processNextActionGCItem(ctx context.Context) bool
 	if !ok || !a.Status.Fulfilled() {
 		return true
 	}
-	if a.Status.CompletionTime != nil {
-		if remaining := wfc.Config.GetWorkflowActionTTL() - time.Since(a.Status.CompletionTime.Time); remaining > 0 {
-			wfc.wfActionGCQueue.AddAfter(key, remaining)
-			return true
-		}
+	if remaining := wfc.actionTTLRemaining(a); remaining > 0 {
+		wfc.wfActionGCQueue.AddAfter(key, remaining)
+		return true
 	}
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {

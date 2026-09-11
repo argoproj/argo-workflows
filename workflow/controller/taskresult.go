@@ -14,8 +14,6 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	wfextvv1alpha1 "github.com/argoproj/argo-workflows/v4/pkg/client/informers/externalversions/workflow/v1alpha1"
 	envutil "github.com/argoproj/argo-workflows/v4/util/env"
-	informerutil "github.com/argoproj/argo-workflows/v4/util/informer"
-	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/indexes"
 )
@@ -25,35 +23,17 @@ var (
 )
 
 func (wfc *WorkflowController) newWorkflowTaskResultInformer(ctx context.Context) cache.SharedIndexInformer {
-	log := logging.RequireLoggerFromContext(ctx)
 	labelSelector := labels.NewSelector().
 		Add(*workflowReq).
 		Add(wfc.instanceIDReq()).
 		String()
-	log.WithField("labelSelector", labelSelector).
-		Info(ctx, "Watching task results")
-
-	// This is a generated function, so we can't change the context.
-	//nolint:contextcheck
-	informer := wfextvv1alpha1.NewFilteredWorkflowTaskResultInformer(
-		wfc.wfclientset,
-		wfc.GetManagedNamespace(),
-		20*time.Minute,
-		cache.Indexers{
-			indexes.WorkflowIndex: indexes.MetaWorkflowIndexFunc,
-		},
-		func(options *metav1.ListOptions) {
-			options.LabelSelector = labelSelector
-			// `ResourceVersion=0` does not honor the `limit` in API calls, which results in making significant List calls
-			// without `limit`. For details, see https://github.com/argoproj/argo-workflows/pull/11343
-			// Check if ResourceVersion is "0" and reset it to empty string to avoid missing watch event.
-			if options.ResourceVersion == "0" {
-				options.ResourceVersion = ""
-			}
-		},
-	)
-	//nolint:errcheck // the error only happens if the informer was already started, and it hasn't been
-	informer.SetTransform(informerutil.StripManagedFields)
+	informer := wfc.newFilteredInformer(ctx, "task results", labelSelector,
+		// This is a generated function, so we can't change the context.
+		//nolint:contextcheck
+		func(namespace string, resync time.Duration, tweak func(*metav1.ListOptions)) cache.SharedIndexInformer {
+			return wfextvv1alpha1.NewFilteredWorkflowTaskResultInformer(wfc.wfclientset, namespace, resync,
+				cache.Indexers{indexes.WorkflowIndex: indexes.MetaWorkflowIndexFunc}, tweak)
+		})
 	//nolint:errcheck // the error only happens if the informer was stopped, and it hasn't even started (https://github.com/kubernetes/client-go/blob/46588f2726fa3e25b1704d6418190f424f95a990/tools/cache/shared_informer.go#L580)
 	informer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{

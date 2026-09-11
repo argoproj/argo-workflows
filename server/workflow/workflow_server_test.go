@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/go-jose/go-jose/v4/jwt"
 	"github.com/stretchr/testify/assert"
@@ -581,6 +582,13 @@ const userEmailLabel = "my-sub.at.your.org"
 
 func getWorkflowServer(t *testing.T) (workflowpkg.WorkflowServiceServer, context.Context) {
 	t.Helper()
+	return newWorkflowServer(t, true)
+}
+
+// newWorkflowServer builds the test server; withController also starts the simulated workflow
+// controller that settles WorkflowActions.
+func newWorkflowServer(t *testing.T, withController bool) (workflowpkg.WorkflowServiceServer, context.Context) {
+	t.Helper()
 	var unlabelledObj, wfObj1, wfObj2, wfObj3, wfObj4, wfObj5, failedWfObj v1alpha1.Workflow
 	var wftmpl v1alpha1.WorkflowTemplate
 	var cwfTmpl v1alpha1.ClusterWorkflowTemplate
@@ -669,7 +677,9 @@ func getWorkflowServer(t *testing.T) (workflowpkg.WorkflowServiceServer, context
 	wftmplStore := workflowtemplate.NewClientStore()
 	cwftmplStore := clusterworkflowtemplate.NewClientStore()
 	server := NewServer(ctx, instanceIDSvc, offloadNodeStatusRepo, archivedRepo, wfClientset, wfStore, wfStore, wftmplStore, cwftmplStore, nil, &namespaceAll, nil)
-	startFakeActionController(ctx, t, wfClientset)
+	if withController {
+		startFakeActionController(ctx, t, wfClientset)
+	}
 	return server, ctx
 }
 
@@ -996,6 +1006,70 @@ func TestSuspendResumeWorkflow(t *testing.T) {
 	assert.Equal(t, userEmailLabel, wf.Labels[common.LabelKeyActorEmail])
 	assert.Nil(t, wf.Spec.Suspend)
 	assert.False(t, wf.Status.Suspended)
+}
+
+func TestActionTimesOutWithoutController(t *testing.T) {
+	previous := workflowActionTimeout
+	workflowActionTimeout = 200 * time.Millisecond
+	t.Cleanup(func() { workflowActionTimeout = previous })
+	server, ctx := newWorkflowServer(t, false)
+
+	_, err := server.SuspendWorkflow(ctx, &workflowpkg.WorkflowSuspendRequest{Name: "hello-world-9tql2-run", Namespace: "workflows"})
+	require.Error(t, err)
+	assert.Equal(t, codes.DeadlineExceeded, status.Code(err))
+	assert.Contains(t, err.Error(), "recorded as WorkflowAction")
+
+	// the request was recorded, pinned to the workflow the caller looked at, and is left for the
+	// controller to apply
+	wfClient := auth.GetWfClient(ctx)
+	wf, err := wfClient.ArgoprojV1alpha1().Workflows("workflows").Get(ctx, "hello-world-9tql2-run", metav1.GetOptions{})
+	require.NoError(t, err)
+	actions, err := wfClient.ArgoprojV1alpha1().WorkflowActions("workflows").List(ctx, metav1.ListOptions{})
+	require.NoError(t, err)
+	require.Len(t, actions.Items, 1)
+	a := actions.Items[0]
+	assert.Equal(t, v1alpha1.ActionTypeSuspend, a.Spec.Action)
+	assert.Equal(t, wf.Name, a.Spec.WorkflowRef.Name)
+	assert.Equal(t, wf.UID, a.Spec.WorkflowRef.UID)
+	assert.False(t, a.Status.Fulfilled())
+	assert.Equal(t, "my-instanceid", a.Labels[common.LabelKeyControllerInstanceID])
+}
+
+func TestStopActionCarriesRequestParameters(t *testing.T) {
+	previous := workflowActionTimeout
+	workflowActionTimeout = 100 * time.Millisecond
+	t.Cleanup(func() { workflowActionTimeout = previous })
+	server, ctx := newWorkflowServer(t, false)
+
+	_, err := server.StopWorkflow(ctx, &workflowpkg.WorkflowStopRequest{Name: "hello-world-9tql2-run", Namespace: "workflows", Message: "enough", NodeFieldSelector: "displayName=approve"})
+	require.Error(t, err)
+	assert.Equal(t, codes.DeadlineExceeded, status.Code(err))
+
+	// the simulated controller ignores the parameter blocks, so assert them on the action itself
+	actions, err := auth.GetWfClient(ctx).ArgoprojV1alpha1().WorkflowActions("workflows").List(ctx, metav1.ListOptions{})
+	require.NoError(t, err)
+	require.Len(t, actions.Items, 1)
+	a := actions.Items[0]
+	assert.Equal(t, v1alpha1.ActionTypeStop, a.Spec.Action)
+	require.NotNil(t, a.Spec.Stop)
+	assert.Equal(t, "enough", a.Spec.Stop.Message)
+	assert.Equal(t, "displayName=approve", a.Spec.Stop.NodeFieldSelector)
+	assert.Equal(t, "my-sub", a.Labels[common.LabelKeyActor])
+	assert.Equal(t, string(creator.ActionStop), a.Labels[common.LabelKeyAction])
+}
+
+func TestActionCancelledByCaller(t *testing.T) {
+	server, ctx := newWorkflowServer(t, false)
+	ctx, cancel := context.WithCancel(ctx)
+	go func() {
+		time.Sleep(50 * time.Millisecond)
+		cancel()
+	}()
+
+	_, err := server.SuspendWorkflow(ctx, &workflowpkg.WorkflowSuspendRequest{Name: "hello-world-9tql2-run", Namespace: "workflows"})
+	require.Error(t, err)
+	// a caller going away is not a controller timeout
+	assert.Equal(t, codes.Canceled, status.Code(err))
 }
 
 func TestSuspendResumeWorkflowWithNotFound(t *testing.T) {

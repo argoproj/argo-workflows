@@ -13,13 +13,17 @@ If the metric is not present or no longer increasing are no longer using the mon
 
 ### `workflow spec.shutdown`
 
+> v4.2 and after
+
 Stopping or terminating a running Workflow by setting `spec.shutdown` directly is deprecated in favour of creating a [WorkflowAction](workflow-actions.md).
-The `argo` CLI, the Argo Server and the UI already use WorkflowActions; this only affects clients that patch the Workflow themselves, and older versions of the CLI and Server.
+The `argo` CLI, the Argo Server, the UI and the CronWorkflow `Replace` concurrency policy already use WorkflowActions; this only affects clients that patch the Workflow themselves, and older versions of the CLI and Server.
 
 ### `workflow spec.suspend`
 
-Suspending a Workflow by setting `spec.suspend` directly is deprecated.
-To create a Workflow that starts in the suspended state, set `spec.startSuspended: true` instead; it is honored exactly once, before anything has run, and changing it on a started Workflow has no effect.
+> v4.2 and after
+
+Suspending a running Workflow by setting `spec.suspend` directly is deprecated.
+Setting `spec.suspend` at creation time, to start a Workflow suspended, is still supported and not counted by the metric; `spec.startSuspended: true` does the same and is preferred.
 To suspend or resume a running Workflow, use a [WorkflowAction](workflow-actions.md).
 
 ## Removed features

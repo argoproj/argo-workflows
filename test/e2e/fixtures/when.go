@@ -22,7 +22,6 @@ import (
 
 	"github.com/argoproj/argo-workflows/v4/config"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/sqldb"
@@ -43,6 +42,7 @@ type When struct {
 	wftsClient        v1alpha1.WorkflowTaskSetInterface
 	cwfTemplateClient v1alpha1.ClusterWorkflowTemplateInterface
 	cronClient        v1alpha1.CronWorkflowInterface
+	actionClient      v1alpha1.WorkflowActionInterface
 	hydrator          hydrator.Interface
 	kubeClient        kubernetes.Interface
 	bearerToken       string
@@ -887,10 +887,6 @@ func (w *When) setCronWorkflowSuspend(suspend bool) *When {
 	return w
 }
 
-func (w *When) actionClient() v1alpha1.WorkflowActionInterface {
-	return versioned.NewForConfigOrDie(w.restConfig).ArgoprojV1alpha1().WorkflowActions(Namespace)
-}
-
 // CreateWorkflowAction creates a WorkflowAction. When spec.workflowRef.name is empty it targets
 // the workflow last submitted by this When. The created action's name is remembered for
 // WaitForWorkflowAction.
@@ -907,7 +903,7 @@ func (w *When) CreateWorkflowAction(spec wfv1.WorkflowActionSpec) *When {
 		},
 		Spec: spec,
 	}
-	created, err := w.actionClient().Create(ctx, a, metav1.CreateOptions{})
+	created, err := w.actionClient.Create(ctx, a, metav1.CreateOptions{})
 	if err != nil {
 		w.t.Fatal(err)
 	}
@@ -921,7 +917,7 @@ func (w *When) WaitForWorkflowAction(timeout time.Duration, condition func(a *wf
 	ctx := logging.TestContext(w.t.Context())
 	deadline := time.Now().Add(timeout)
 	for {
-		a, err := w.actionClient().Get(ctx, w.actionName, metav1.GetOptions{})
+		a, err := w.actionClient.Get(ctx, w.actionName, metav1.GetOptions{})
 		if err != nil {
 			w.t.Fatal(err)
 		}

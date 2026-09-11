@@ -80,6 +80,7 @@ rules:
     resources:
       - workflowactions
     verbs:
+      - create
       - get
       - list
       - watch
@@ -90,7 +91,6 @@ rules:
       - workflowactions/status
     verbs:
       - update
-      - patch
   - apiGroups:
       - ""
     resources:

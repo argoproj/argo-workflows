@@ -342,10 +342,11 @@ type WorkflowSpec struct {
 	// ArtifactRepositoryRef specifies the configMap name and key containing the artifact repository config.
 	ArtifactRepositoryRef *ArtifactRepositoryRef `json:"artifactRepositoryRef,omitempty" protobuf:"bytes,8,opt,name=artifactRepositoryRef"`
 
-	// Suspend will suspend the workflow and prevent execution of any future steps in the workflow.
-	// This field is deprecated: create the Workflow with startSuspended instead, and suspend or
-	// resume a running Workflow with a WorkflowAction. It is still honored for now, and the
-	// controller keeps it in sync with status.suspended.
+	// Suspend will suspend the workflow and prevent execution of any future steps in it.
+	// Setting it on a started Workflow is deprecated: suspend or resume a running Workflow with a
+	// WorkflowAction instead. Setting it at creation time ("start suspended") remains supported,
+	// as does startSuspended. It is still honored for now, and the controller keeps it in sync
+	// with status.suspended.
 	Suspend *bool `json:"suspend,omitempty" protobuf:"bytes,9,opt,name=suspend"`
 
 	// StartSuspended creates the workflow in the suspended state. It is honored exactly once, when
@@ -705,6 +706,11 @@ func (p ParallelSteps) OpenAPISchemaType() []string {
 }
 
 func (p ParallelSteps) OpenAPISchemaFormat() string { return "" }
+
+// SuspendRequested reports whether spec.suspend is set.
+func (wfs *WorkflowSpec) SuspendRequested() bool {
+	return wfs.Suspend != nil && *wfs.Suspend
+}
 
 func (wfs *WorkflowSpec) HasPodSpecPatch() bool {
 	return wfs.PodSpecPatch != ""
