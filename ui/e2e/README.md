@@ -54,7 +54,10 @@ and point the tests at it with `ARGO_UI_BASE_URL`.
 - **Auth** (`e2e/global-setup.ts`): reads the `argo-server` service-account token
   (the same secret the Go e2e suite uses) and writes a Playwright storage state
   containing the `authorization` cookie, so tests start logged in. Override the
-  token with `ARGO_TOKEN`, or point at a different UI with `ARGO_UI_BASE_URL`.
+  token with `ARGO_TOKEN`, or point at a different UI with `ARGO_UI_BASE_URL`,
+  which may include a base href (`http://localhost:8080/argo/` for a stack
+  started with `make start BASE_HREF=/argo/`): every path in the suite is
+  relative to it.
 - **Backend state** (`e2e/fixtures/api.ts`): tests seed workflows over the REST
   API and wait for a terminal phase *before* asserting on the rendered page, so
   rendering never races the controller. Created workflows are cleaned up on
@@ -65,3 +68,22 @@ and point the tests at it with `ARGO_UI_BASE_URL`.
 
 Timeouts scale by `E2E_ENV_FACTOR` (set to `2` in CI) to absorb runner
 contention.
+
+## What CI runs
+
+The `e2e-ui` job runs the suite three times, so both the bundle users get and
+the dev server contributors use are covered:
+
+- against the **production bundle** argo-server embeds, served by argo-server
+  itself at `:2746`;
+- against the **webpack dev server** at `:8080`, whose proxy forwards API,
+  artifact and auth routes to argo-server — the `devServer` block in
+  `webpack.config.js`, including the server-sent-events streams the logs and
+  live-update tests depend on;
+- against the dev server again under a **base href** (`/argo/`), with
+  argo-server started with `--base-href=/argo/` to match. The dev server's
+  `pathRewrite` is then the prefix-stripping proxy a sub-path deployment needs
+  in front of argo-server, which serves its API at `/api/` regardless.
+
+`E2E_RUN` names each pass so results and reports land in their own
+sub-directory of `test-results/` and `playwright-report/`.

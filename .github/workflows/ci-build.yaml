@@ -509,7 +509,9 @@ jobs:
         uses: zgosalvez/github-actions-ensure-sha-pinned-actions@60e3a74c7b74a319e8e53e46bc455205f7173e1a # v5.0.8
 
   ui:
-    name: UI
+    # the e2e-ui job covers the UI's behaviour; this only checks it builds and
+    # its unit tests and lint pass
+    name: UI build and unit tests
     needs: [ changed-files ]
     if: ${{ needs.changed-files.outputs.ui == 'true' }}
     runs-on: ubuntu-24.04
@@ -531,25 +533,32 @@ jobs:
       # if lint or deduplicate make changes that are not in the PR, fail the build
       - name: Check if lint & deduplicate made changes not present in the PR
         run: git diff --exit-code
-      # check to see if it'll start (but not if it'll render)
-      - run: yarn --cwd ui start &
-      - run: until curl http://localhost:8080 > /dev/null ; do sleep 10s ; done
-        timeout-minutes: 1
 
   e2e-ui:
-    name: E2E UI
+    name: E2E UI (${{ matrix.name }})
     needs: [ changed-files, e2e-tools ]
     if: ${{ needs.changed-files.outputs.ui == 'true' || needs.changed-files.outputs.e2e-tests == 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        # Each entry runs the Playwright suite against the webpack dev server
+        # (what `make start` gives every contributor), and the root entry also
+        # against the production bundle argo-server embeds. The sub-path entry
+        # can only go through the dev server: argo-server serves its API at
+        # /api/ whatever its --base-href, so a sub-path deployment needs a
+        # prefix-stripping proxy in front, which is what the dev server's
+        # pathRewrite is.
+        include:
+          - name: root
+            base-href: /
+          - name: base-href
+            base-href: /argo/
     env:
       KUBECONFIG: /home/runner/.kube/config
       E2E_ENV_FACTOR: 2
       NODE_OPTIONS: --max-old-space-size=4096
-      # In CI, Tilt (--mode=ci) runs no webpack dev server; the in-cluster
-      # argo-server serves the production UI bundle at :2746. Point Playwright
-      # there — this also gives production-bundle coverage.
-      ARGO_UI_BASE_URL: http://localhost:2746
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
@@ -574,6 +583,7 @@ jobs:
           tilt up --stream -- --mode=ci --profile=minimal \
             --api=true \
             --auth-mode=client \
+            --base-href=${{ matrix.base-href }} \
             --pod-status-capture-finalizer=true > /tmp/tilt.log 2>&1 &
           # resources only register once the Tiltfile finishes evaluating; wait
           # for one we know is always defined before trusting `--all`
@@ -587,16 +597,39 @@ jobs:
             sleep 5
           done
         timeout-minutes: 15
-      - name: Wait for UI server
+      - name: Wait for argo-server
+        # Tilt (--mode=ci) keeps its argo-server port-forward on :2746 serving
+        # through the test steps below.
         run: until curl -fs http://localhost:2746 > /dev/null ; do sleep 5s ; done
         timeout-minutes: 3
-      - name: Run UI E2E tests
+      - name: Run UI E2E tests (production bundle)
+        # The bundle argo-server embeds, served by argo-server itself.
+        if: ${{ matrix.base-href == '/' }}
+        env:
+          E2E_RUN: production
+          ARGO_UI_BASE_URL: http://localhost:2746/
+        run: make test-ui-e2e
+      - name: Start the webpack dev server
+        # `yarn start` on :8080, proxying API, artifact and auth routes to
+        # argo-server on :2746 (the devServer block in ui/webpack.config.js).
+        # The dev server answers the first request only once the bundle has
+        # compiled, so this wait also covers the compile.
+        env:
+          ARGO_BASE_HREF: ${{ matrix.base-href }}
+        run: |
+          yarn --cwd ui start > /tmp/webpack-dev-server.log 2>&1 &
+          until curl -fs http://localhost:8080${{ matrix.base-href }} > /dev/null ; do sleep 5s ; done
+        timeout-minutes: 5
+      - name: Run UI E2E tests (dev server)
+        env:
+          E2E_RUN: dev-server
+          ARGO_UI_BASE_URL: http://localhost:8080${{ matrix.base-href }}
         run: make test-ui-e2e
       - name: Upload Playwright report
         if: ${{ failure() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.name }}
           path: |
             ui/playwright-report/
             ui/test-results/
@@ -604,6 +637,9 @@ jobs:
           retention-days: 10
 
       # failure debugging below
+      - name: Failure debug - webpack dev server log
+        if: ${{ failure() }}
+        run: tail -n 200 /tmp/webpack-dev-server.log || true
       - name: Failure debug - logs
         if: ${{ failure() }}
         uses: ./.github/actions/e2e-failure-debug
