@@ -98,6 +98,7 @@ func NewSubmitCommand() *cobra.Command {
 	command.Flags().BoolVar(&cliSubmitOpts.Watch, "watch", false, "watch the workflow until it completes")
 	command.Flags().BoolVar(&cliSubmitOpts.Log, "log", false, "log the workflow until it completes")
 	command.Flags().BoolVar(&cliSubmitOpts.Strict, "strict", true, "perform strict workflow validation")
+	command.Flags().BoolVar(&common.NoColor, "no-color", false, "Disable colorized output")
 	command.Flags().Int32Var(&priority, "priority", 0, "workflow priority")
 	command.Flags().StringVar(&from, "from", "", "Submit from an existing `kind/name` E.g., --from=cronwf/hello-world-cwf")
 	command.Flags().StringVar(&cliSubmitOpts.GetArgs.Status, "status", "", "Filter by status (Pending, Running, Succeeded, Skipped, Failed, Error). Should only be used with --watch.")
