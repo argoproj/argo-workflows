@@ -90,24 +90,28 @@ func TestServer_GetWFClient(t *testing.T) {
 		},
 		&corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-secret", Namespace: "my-ns"},
+			Type:       corev1.SecretTypeServiceAccountToken,
 			Data: map[string][]byte{
 				"token": {},
 			},
 		},
 		&corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{Name: "user-secret", Namespace: "user1-ns"},
+			Type:       corev1.SecretTypeServiceAccountToken,
 			Data: map[string][]byte{
 				"token": {},
 			},
 		},
 		&corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{Name: "user-secret", Namespace: "user2-ns"},
+			Type:       corev1.SecretTypeServiceAccountToken,
 			Data: map[string][]byte{
 				"token": {},
 			},
 		},
 		&corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{Name: "user-secret", Namespace: "user3-ns"},
+			Type:       corev1.SecretTypeServiceAccountToken,
 			Data: map[string][]byte{
 				"token": {},
 			},
