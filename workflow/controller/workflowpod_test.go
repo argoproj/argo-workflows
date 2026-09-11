@@ -2814,3 +2814,32 @@ func TestPodResourceClaimsParameterSubstitution(t *testing.T) {
 		})
 	}
 }
+
+// TestPodEnvVarsNotDuplicated ensures every container gets each standard env
+// var exactly once; the API server warns about duplicate env names.
+func TestPodEnvVarsNotDuplicated(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	_, err := woc.setExecWorkflow(ctx)
+	require.NoError(t, err)
+	mainCtr := woc.execWf.Spec.Templates[0].Container
+	pod, err := woc.createWorkflowPod(ctx, wf.Name, []apiv1.Container{*mainCtr}, &wf.Spec.Templates[0], &createWorkflowPodOpts{})
+	require.NoError(t, err)
+
+	ctrs := append(append([]apiv1.Container{}, pod.Spec.InitContainers...), pod.Spec.Containers...)
+	require.NotEmpty(t, ctrs)
+	for _, c := range ctrs {
+		seen := map[string]int{}
+		for _, env := range c.Env {
+			seen[env.Name]++
+		}
+		for name, n := range seen {
+			assert.Equal(t, 1, n, "container %q has env var %q %d times", c.Name, name, n)
+		}
+		assert.Equal(t, 1, seen[common.EnvVarWorkflowName], "container %q should have %s once", c.Name, common.EnvVarWorkflowName)
+	}
+}
