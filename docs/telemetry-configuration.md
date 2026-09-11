@@ -16,7 +16,7 @@ To enable the OpenTelemetry protocol you must set the environment variable `OTEL
 This must be set on the workflow-controller, and ideally on all the containers (`main`, `init`, and `wait`) in the workload.
 You can use the [OpenTelemetry operator](https://opentelemetry.io/docs/kubernetes/operator/) to setup the collector and instrument the workflow-controller.
 The OpenTelemetry operator can also instrument your workload pods so that they emit spans as part of workflow tracing and this is the recommended setup.
-It will not be enabled if left blank, unlike some other implementations.
+It will not be enabled unless `OTEL_EXPORTER_OTLP_ENDPOINT` or the applicable signal-specific endpoint is configured and non-empty.
 
 You can configure the protocol using the environment variables documented in the [OpenTelemetry standard environment variables](https://opentelemetry.io/docs/languages/sdk-configuration/otlp-exporter/).
 
