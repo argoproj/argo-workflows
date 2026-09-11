@@ -29,6 +29,11 @@ When defining a `histogram`, `buckets` must also be provided (see below).
 [Argo variables](variables.md) can be included anywhere in the metric spec, such as in `labels`, `name`, `help`, `when`, etc.
 
 Metric names can only contain alphanumeric characters and `_` for compatibility with both Prometheus and OpenTelemetry, even if only one of these protocols is in use.
+Custom metric names must not match a [controller metric](metrics.md#default-controller-metrics) name because both kinds of metrics share an instrument namespace.
+Controller metric names are reserved, and later releases can add to that list.
+Use an organization- or application-specific prefix for custom metric names to reduce the risk of a name collision during an upgrade.
+If a release introduces a controller metric with the same name as an existing custom metric, rename the custom metric before upgrading because the two metrics cannot coexist under one name.
+A name collision does not reject the Workflow; when emission is attempted, Argo skips the conflicting custom metric and adds a non-fatal `MetricsError` condition to the Workflow.
 
 ### Metric Spec
 

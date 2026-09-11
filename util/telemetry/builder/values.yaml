@@ -104,6 +104,9 @@ attributes:
   - name: RequestVerb
     displayName: verb
     description: "The verb of the request, such as `Get` or `List`"
+  - name: RetryStrategyTerminationReason
+    displayName: reason
+    description: The duration-budget reason that suppressed an otherwise eligible retry attempt
   - name: TaskResultCompleted
     displayName: completed
     description: "True if the task result is marked completed"
@@ -469,6 +472,22 @@ metrics:
     unit: s
     type: Float64Histogram
     defaultBuckets: [0.0, 0.1, 0.5, 1.0, 5.0, 10.0, 30.0, 60.0, 180.0]
+  - name: RetryStrategyTerminationsTotal
+    description: A counter of otherwise eligible retry attempts suppressed by a retry strategy duration budget
+    notes: |
+      `reason` is a bounded, controller-defined value. It will be one of:
+
+      - `MaxDurationExceeded`: The retry strategy's wall-clock `maxDuration` deadline elapsed.
+      - `BackoffWouldExceedMaxDuration`: Waiting for the next backoff would pass the retry strategy's wall-clock `maxDuration` deadline.
+
+      The counter is not incremented when retry policy, node state, `limit`, or `expression` would independently prevent another attempt.
+      An eligibility evaluation error is conservatively counted as a duration-budget termination because the duration budget has already stopped the retry.
+      This counter is best effort: if Workflow status persistence fails after an increment, repeated reconciliation can count the same termination more than once.
+    attributes:
+      - name: RetryStrategyTerminationReason
+      - name: WorkflowNamespace
+    unit: "{retry_strategy}"
+    type: Int64Counter
   - name: TotalCount
     description: A counter of workflows that have entered each phase for tracking them through their life-cycle, by namespace
     attributes:

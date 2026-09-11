@@ -12,6 +12,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
+	"github.com/argoproj/argo-workflows/v4/util/telemetry"
 )
 
 type dummyObserver struct {
@@ -20,6 +21,20 @@ type dummyObserver struct {
 
 func (d *dummyObserver) ObserveFloat64(metric.Float64Observable, float64, ...metric.ObserveOption) {}
 func (d *dummyObserver) ObserveInt64(metric.Int64Observable, int64, ...metric.ObserveOption)       {}
+
+func TestUpsertCustomMetricRejectsReservedControllerMetricName(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	m, _, err := CreateDefaultTestMetrics(ctx)
+	require.NoError(t, err)
+
+	metricName := telemetry.InstrumentRetryStrategyTerminationsTotal.Name()
+	err = m.UpsertCustomMetric(ctx, &wfv1.Prometheus{
+		Name:    metricName,
+		Help:    "A pre-existing custom metric",
+		Counter: &wfv1.Counter{Value: "1"},
+	}, "owner", nil)
+	require.EqualError(t, err, `custom metric name "retry_strategy_terminations_total" is reserved for a controller metric; use a different name`)
+}
 
 func TestUpsertCustomMetric_Concurrency(t *testing.T) {
 	ctx := logging.TestContext(t.Context())

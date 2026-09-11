@@ -8,6 +8,7 @@ import (
 	"github.com/prometheus/common/model"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v4/util/telemetry"
 )
 
 var (
@@ -18,6 +19,13 @@ var (
 func IsValidMetricName(name string) bool {
 	// Use promtheus's metric name checker, despite perhaps not using prometheus
 	return model.LegacyValidation.IsValidMetricName(string(model.LabelValue(name))) && !strings.Contains(name, `:`)
+}
+
+// IsReservedMetricName reports whether name belongs to a controller metric.
+// Controller and custom metrics share an instrument namespace, so they cannot
+// safely use the same name.
+func IsReservedMetricName(name string) bool {
+	return telemetry.IsBuiltinInstrumentName(name)
 }
 
 func ValidateMetricValues(metric *wfv1.Prometheus) error {
