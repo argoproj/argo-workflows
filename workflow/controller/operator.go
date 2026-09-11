@@ -4617,7 +4617,7 @@ func (woc *wfOperationCtx) GetShutdownStrategy() wfv1.ShutdownStrategy {
 }
 
 func (woc *wfOperationCtx) ShouldSuspend() bool {
-	return woc.wf.Status.Suspended || (woc.execWf.Spec.Suspend != nil && *woc.execWf.Spec.Suspend)
+	return woc.wf.Status.Suspended || woc.execWf.Spec.SuspendRequested()
 }
 
 func (woc *wfOperationCtx) needsStoredWfSpecUpdate() bool {

@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/deprecation"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/telemetry"
+	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
 func newTestAction(name, wfName string, action wfv1.WorkflowActionType, opts ...func(*wfv1.WorkflowAction)) *wfv1.WorkflowAction {
@@ -46,19 +48,35 @@ func getTestAction(t *testing.T, wfc *WorkflowController, name string) *wfv1.Wor
 
 func TestWorkflowActionBinderWorkflowNotFound(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	cancel, wfc := newController(ctx, newTestAction("a1", "does-not-exist", wfv1.ActionTypeTerminate))
+	// created before the grace period: the workflow informer has had every chance to catch up
+	stale := newTestAction("a1", "does-not-exist", wfv1.ActionTypeTerminate, func(a *wfv1.WorkflowAction) {
+		a.CreationTimestamp = metav1.Time{Time: time.Now().Add(-2 * actionBindGracePeriod)}
+	})
+	cancel, wfc := newController(ctx, stale)
 	defer cancel()
 
-	// a missing target is requeued a bounded number of times (the workflow informer may lag)
-	// before the action is failed as not found
-	for range actionBindRetries + 1 {
-		require.True(t, wfc.processNextActionItem(ctx))
-	}
+	require.True(t, wfc.processNextActionItem(ctx))
 
 	a := getTestAction(t, wfc, "a1")
 	assert.Equal(t, wfv1.WorkflowActionFailed, a.Status.Phase)
 	assert.Equal(t, wfv1.WorkflowActionReasonWorkflowNotFound, a.Status.Reason)
 	assert.NotNil(t, a.Status.CompletionTime)
+}
+
+func TestWorkflowActionBinderRetriesWhileWorkflowInformerLags(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	// a just-created action whose workflow is not (yet) in the cache is requeued, not failed
+	fresh := newTestAction("a1", "not-yet-visible", wfv1.ActionTypeTerminate, func(a *wfv1.WorkflowAction) {
+		a.CreationTimestamp = metav1.Now()
+	})
+	cancel, wfc := newController(ctx, fresh)
+	defer cancel()
+
+	require.True(t, wfc.processNextActionItem(ctx))
+
+	a := getTestAction(t, wfc, "a1")
+	assert.Empty(t, a.Status.Phase)
+	assert.Equal(t, 1, wfc.wfActionQueue.NumRequeues("argo/a1"))
 }
 
 func TestWorkflowActionBinderUIDMismatch(t *testing.T) {
@@ -306,26 +324,208 @@ func TestActionReconciliationResumeSelectorNoMatch(t *testing.T) {
 }
 
 func TestActionReconciliationOrdering(t *testing.T) {
+	// Suspend and Resume are order-sensitive: the end state tells which was applied last, so a
+	// drain that ignored creationTimestamp would be caught. Names sort against the timestamps.
+	for name, tt := range map[string]struct {
+		first, second wfv1.WorkflowActionType
+		suspended     bool
+	}{
+		"SuspendThenResume": {wfv1.ActionTypeSuspend, wfv1.ActionTypeResume, false},
+		"ResumeThenSuspend": {wfv1.ActionTypeResume, wfv1.ActionTypeSuspend, true},
+	} {
+		t.Run(name, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			wf := wfv1.MustUnmarshalWorkflow(actionTargetWf)
+			older := newTestAction("z-first", "suspend", tt.first, func(a *wfv1.WorkflowAction) {
+				a.CreationTimestamp = metav1.Time{Time: time.Now().Add(-2 * time.Hour)}
+			})
+			newer := newTestAction("a-second", "suspend", tt.second, func(a *wfv1.WorkflowAction) {
+				a.CreationTimestamp = metav1.Time{Time: time.Now().Add(-time.Hour)}
+			})
+			cancel, controller := newController(ctx, wf, newer, older)
+			defer cancel()
+
+			woc := newWorkflowOperationCtx(ctx, wf, controller)
+			woc.operate(ctx)
+
+			assert.Equal(t, tt.suspended, woc.wf.Status.Suspended)
+			for _, name := range []string{"z-first", "a-second"} {
+				a := getTestAction(t, controller, name)
+				assert.Equal(t, wfv1.WorkflowActionSucceeded, a.Status.Phase, name)
+			}
+		})
+	}
+}
+
+func TestActionReconciliationWALReplay(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
+	// The effect was persisted (status.shutdown and the write-ahead record) but the controller
+	// crashed before writing the action's status: the pending action must be reported as
+	// Succeeded on replay, without being re-applied, and its record kept until it is terminal.
 	wf := wfv1.MustUnmarshalWorkflow(actionTargetWf)
-	suspend := newTestAction("o-suspend", "suspend", wfv1.ActionTypeSuspend, func(a *wfv1.WorkflowAction) {
-		a.CreationTimestamp = metav1.Time{Time: time.Now().Add(-2 * time.Hour)}
-	})
-	terminate := newTestAction("o-terminate", "suspend", wfv1.ActionTypeTerminate, func(a *wfv1.WorkflowAction) {
-		a.CreationTimestamp = metav1.Time{Time: time.Now().Add(-time.Hour)}
-	})
-	cancel, controller := newController(ctx, wf, suspend, terminate)
+	wf.Status.Shutdown = wfv1.ShutdownStrategyTerminate
+	wf.Status.AppliedActions = []string{"uid-rp1"}
+	cancel, controller := newController(ctx, wf, newTestAction("rp1", "suspend", wfv1.ActionTypeTerminate))
 	defer cancel()
 
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
 	woc.operate(ctx)
 
-	assert.Equal(t, wfv1.ShutdownStrategyTerminate, woc.wf.Status.Shutdown)
-	assert.True(t, woc.wf.Status.Suspended)
-	for _, name := range []string{"o-suspend", "o-terminate"} {
-		a := getTestAction(t, controller, name)
-		assert.Equal(t, wfv1.WorkflowActionSucceeded, a.Status.Phase, name)
-	}
+	a := getTestAction(t, controller, "rp1")
+	assert.Equal(t, wfv1.WorkflowActionSucceeded, a.Status.Phase)
+	assert.Equal(t, []string{"uid-rp1"}, woc.wf.Status.AppliedActions)
+}
+
+func TestActionReconciliationReplacesActorLabels(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	// the actor labels describe the latest action (#14102): an action without identity (created
+	// with kubectl) must not leave the previous requester's labels behind
+	wf := wfv1.MustUnmarshalWorkflow(actionTargetWf)
+	wf.Labels["workflows.argoproj.io/action"] = "suspend"
+	wf.Labels["workflows.argoproj.io/actor"] = "alice"
+	wf.Labels["workflows.argoproj.io/actor-email"] = "alice.at.example.com"
+	cancel, controller := newController(ctx, wf, newTestAction("bare", "suspend", wfv1.ActionTypeTerminate))
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	assert.NotContains(t, woc.wf.Labels, "workflows.argoproj.io/action")
+	assert.NotContains(t, woc.wf.Labels, "workflows.argoproj.io/actor")
+	assert.NotContains(t, woc.wf.Labels, "workflows.argoproj.io/actor-email")
+}
+
+func TestResumeMessageIdentity(t *testing.T) {
+	a := newTestAction("r", "wf", wfv1.ActionTypeResume, func(a *wfv1.WorkflowAction) {
+		a.Labels = map[string]string{
+			"workflows.argoproj.io/actor":                    "system.serviceaccount.argo.argo-server",
+			"workflows.argoproj.io/actor-preferred-username": "alice",
+		}
+	})
+	// the subject is present even when there is no email claim (client and server auth modes)
+	assert.Equal(t, "Resumed by WorkflowAction r (system.serviceaccount.argo.argo-server, alice)", resumeMessage(a))
+	assert.Equal(t, "Resumed by WorkflowAction bare", resumeMessage(newTestAction("bare", "wf", wfv1.ActionTypeResume)))
+}
+
+func TestSettlePendingActionsWorkflowCompletedAfterBind(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	// The binder saw the workflow incomplete and enqueued it, but it completed before the
+	// workflow worker got to it: operate() never runs, so processNextItem itself must settle
+	// the actions, succeeding one already recorded as applied and failing the rest.
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: raced-wf
+  namespace: argo
+  labels:
+    workflows.argoproj.io/completed: "true"
+status:
+  phase: Succeeded
+  appliedActions:
+  - uid-applied
+`)
+	cancel, wfc := newController(ctx, wf,
+		newTestAction("applied", "raced-wf", wfv1.ActionTypeSuspend),
+		newTestAction("late", "raced-wf", wfv1.ActionTypeSuspend))
+	defer cancel()
+
+	// completed workflows are filtered from the informer handlers, so enqueue as the binder would
+	wfc.wfQueue.Add("argo/raced-wf")
+	require.True(t, wfc.processNextItem(ctx))
+
+	assert.Equal(t, wfv1.WorkflowActionSucceeded, getTestAction(t, wfc, "applied").Status.Phase)
+	late := getTestAction(t, wfc, "late")
+	assert.Equal(t, wfv1.WorkflowActionFailed, late.Status.Phase)
+	assert.Equal(t, wfv1.WorkflowActionReasonWorkflowCompleted, late.Status.Reason)
+}
+
+func TestSettlePendingActionsWorkflowDeleted(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(actionTargetWf)
+	cancel, wfc := newController(ctx, wf, newTestAction("orphan", "suspend", wfv1.ActionTypeStop))
+	defer cancel()
+
+	un, err := util.ToUnstructured(wf)
+	require.NoError(t, err)
+	wfc.settlePendingActions(ctx, un, wfv1.WorkflowActionReasonWorkflowNotFound)
+
+	a := getTestAction(t, wfc, "orphan")
+	assert.Equal(t, wfv1.WorkflowActionFailed, a.Status.Phase)
+	assert.Equal(t, wfv1.WorkflowActionReasonWorkflowNotFound, a.Status.Reason)
+	assert.Contains(t, a.Status.Message, "deleted")
+}
+
+func TestPostponedWorkflowDrainsActions(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	// my-wf-1 is postponed by the parallelism limit and never reaches operate(); a Suspend
+	// requested against it must still be applied (and reported) while it waits.
+	cancel, controller := newController(ctx,
+		wfv1.MustUnmarshalWorkflow(freshWf),
+		wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: queued
+  namespace: argo
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+`),
+		newTestAction("q-suspend", "queued", wfv1.ActionTypeSuspend),
+		func(x *WorkflowController) { x.Config.Parallelism = 1 },
+	)
+	defer cancel()
+
+	assert.True(t, controller.processNextItem(ctx))
+	assert.True(t, controller.processNextItem(ctx))
+
+	expectNamespacedWorkflow(ctx, controller, "argo", "fresh", func(wf *wfv1.Workflow) {
+		assert.Equal(t, wfv1.WorkflowRunning, wf.Status.Phase)
+	})
+	expectNamespacedWorkflow(ctx, controller, "argo", "queued", func(wf *wfv1.Workflow) {
+		assert.Equal(t, wfv1.WorkflowPending, wf.Status.Phase)
+		assert.True(t, wf.Status.Suspended)
+		assert.Empty(t, wf.Status.Nodes, "a postponed workflow must not start")
+	})
+	assert.Equal(t, wfv1.WorkflowActionSucceeded, getTestAction(t, controller, "q-suspend").Status.Phase)
+}
+
+func TestPendingTerminateActionBypassesParallelism(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	// like spec.shutdown: Terminate (TestParallelism), a pending Terminate action is never
+	// postponed by the parallelism limit
+	cancel, controller := newController(ctx,
+		wfv1.MustUnmarshalWorkflow(freshWf),
+		wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: doomed
+  namespace: argo
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      container:
+        image: argoproj/argosay:v2
+`),
+		newTestAction("d-terminate", "doomed", wfv1.ActionTypeTerminate),
+		func(x *WorkflowController) { x.Config.Parallelism = 1 },
+	)
+	defer cancel()
+
+	assert.True(t, controller.processNextItem(ctx))
+	assert.True(t, controller.processNextItem(ctx))
+
+	expectNamespacedWorkflow(ctx, controller, "argo", "doomed", func(wf *wfv1.Workflow) {
+		assert.Equal(t, wfv1.WorkflowFailed, wf.Status.Phase)
+		assert.Equal(t, wfv1.ShutdownStrategyTerminate, wf.Status.Shutdown)
+	})
+	assert.Equal(t, wfv1.WorkflowActionSucceeded, getTestAction(t, controller, "d-terminate").Status.Phase)
 }
 
 func TestAppliedActionsPrune(t *testing.T) {
@@ -347,6 +547,7 @@ func TestAppliedActionsPrune(t *testing.T) {
 func TestGetShutdownStrategyPrefersStatus(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(actionTargetWf)
+	wf.Spec.Shutdown = wfv1.ShutdownStrategyTerminate
 	wf.Status.Shutdown = wfv1.ShutdownStrategyStop
 	cancel, controller := newController(ctx, wf)
 	defer cancel()
@@ -393,6 +594,43 @@ func TestStartSuspended(t *testing.T) {
 	assert.True(t, *woc.wf.Spec.Suspend)
 	assert.Empty(t, woc.wf.Status.Nodes)
 	// a controller-made suspension is not a deprecated spec.suspend use
+	_, err := deprecationCount(t)
+	assert.Error(t, err)
+}
+
+func TestStartSuspendedNotReappliedWhilePending(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	// A startSuspended workflow parked Pending (e.g. on a synchronization lock) has no
+	// StartedAt; after a Resume cleared the suspension, the next reconcile must not re-apply
+	// startSuspended, which is honoured only on the reconcile that leaves the Unknown phase.
+	wf := wfv1.MustUnmarshalWorkflow(freshWf)
+	wf.Spec.StartSuspended = true
+	wf.Status.Phase = wfv1.WorkflowPending
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	assert.False(t, woc.wf.Status.Suspended)
+	assert.Nil(t, woc.wf.Spec.Suspend)
+}
+
+func TestCreationTimeSpecSuspendNotCountedAsDeprecated(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	// spec.suspend set at creation time ("start suspended") remains supported: it is mirrored
+	// into status.suspended without counting on the deprecated_feature metric
+	wf := wfv1.MustUnmarshalWorkflow(freshWf)
+	wf.Spec.Suspend = new(true)
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	deprecation.Initialize(controller.metrics.DeprecatedFeature)
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	assert.True(t, woc.wf.Status.Suspended)
+	assert.Empty(t, woc.wf.Status.Nodes)
 	_, err := deprecationCount(t)
 	assert.Error(t, err)
 }
@@ -508,6 +746,28 @@ func TestWorkflowActionGC(t *testing.T) {
 	assert.True(t, wfc.processNextActionGCItem(ctx))
 
 	_, err := wfc.wfclientset.ArgoprojV1alpha1().WorkflowActions("argo").Get(ctx, "gc-me", metav1.GetOptions{})
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "not found")
+	assert.True(t, apierr.IsNotFound(err))
+}
+
+func TestWorkflowActionGCWaitsForTTL(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	completed := metav1.Now()
+	done := newTestAction("keep-me", "gone-wf", wfv1.ActionTypeTerminate, func(a *wfv1.WorkflowAction) {
+		a.Status = wfv1.WorkflowActionStatus{Phase: wfv1.WorkflowActionSucceeded, CompletionTime: &completed}
+	})
+	hour := config.TTL(time.Hour)
+	cancel, wfc := newController(ctx, done, func(wfc *WorkflowController) {
+		wfc.Config.WorkflowActionTTL = &hour
+	})
+	defer cancel()
+
+	remaining := wfc.actionTTLRemaining(done)
+	assert.Greater(t, remaining, 59*time.Minute)
+	assert.LessOrEqual(t, remaining, time.Hour)
+
+	// the GC worker re-schedules an action whose TTL has not expired instead of deleting it
+	wfc.wfActionGCQueue.Add("argo/keep-me")
+	assert.True(t, wfc.processNextActionGCItem(ctx))
+	_, err := wfc.wfclientset.ArgoprojV1alpha1().WorkflowActions("argo").Get(ctx, "keep-me", metav1.GetOptions{})
+	require.NoError(t, err)
 }
