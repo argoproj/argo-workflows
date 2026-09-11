@@ -27,7 +27,7 @@ The OpenTelemetry collector can export metrics to Prometheus via [the Prometheus
 ### OpenTelemetry protocol
 
 To enable the OpenTelemetry protocol you must set the environment variable `OTEL_EXPORTER_OTLP_ENDPOINT` or `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT`.
-It will not be enabled if left blank, unlike some other implementations.
+It will not be enabled unless `OTEL_EXPORTER_OTLP_ENDPOINT` or `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT` is configured and non-empty, unlike some other implementations.
 
 You can configure the protocol using the environment variables documented in [standard environment variables](https://opentelemetry.io/docs/languages/sdk-configuration/otlp-exporter/).
 
