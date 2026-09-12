@@ -3,6 +3,7 @@ import {History} from 'history';
 import React, {useContext, useEffect, useMemo, useState} from 'react';
 
 import {uiUrl} from '../../shared/base';
+import {ArbitraryParameter, ArbitraryParametersInput} from '../../shared/components/arbitrary-parameters-input';
 import {ArtifactsInput, ArtifactUploadResponse} from '../../shared/components/artifacts-input';
 import {ErrorNotice} from '../../shared/components/error-notice';
 import {getValueFromParameter, ParametersInput} from '../../shared/components/parameters-input';
@@ -38,11 +39,13 @@ export function SubmitWorkflowPanel(props: Props) {
     const [entrypoint, setEntrypoint] = useState(props.entrypoint || workflowEntrypoint);
     const [parameters, setParameters] = useState<Parameter[]>([]);
     const [workflowParameters, setWorkflowParameters] = useState<Parameter[]>(JSON.parse(JSON.stringify(props.workflowParameters)));
+    const [arbitraryParameters, setArbitraryParameters] = useState<ArbitraryParameter[]>([]);
     const [labels, setLabels] = useState(['submit-from-ui=true']);
     const [error, setError] = useState<Error>();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [uploadedArtifacts, setUploadedArtifacts] = useState<Record<string, ArtifactUploadResponse>>({});
     const [uploadingArtifacts, setUploadingArtifacts] = useState<Set<string>>(new Set());
+    const hasIncompleteArbitraryParameter = arbitraryParameters.some(parameter => parameter.name.length === 0);
 
     const handleArtifactUploadStart = (artifactName: string) => {
         setUploadingArtifacts(prev => new Set(prev).add(artifactName));
@@ -102,7 +105,8 @@ export function SubmitWorkflowPanel(props: Props) {
                 entryPoint: entrypoint === workflowEntrypoint ? null : entrypoint,
                 parameters: [
                     ...workflowParameters.filter(p => getValueFromParameter(p) !== undefined).map(p => p.name + '=' + getValueFromParameter(p)),
-                    ...parameters.filter(p => getValueFromParameter(p) !== undefined).map(p => p.name + '=' + getValueFromParameter(p))
+                    ...parameters.filter(p => getValueFromParameter(p) !== undefined).map(p => p.name + '=' + getValueFromParameter(p)),
+                    ...arbitraryParameters.map(parameter => `${parameter.name}=${parameter.value}`)
                 ],
                 labels: labels.join(','),
                 artifacts: artifactOverrides.length > 0 ? artifactOverrides : undefined
@@ -144,7 +148,7 @@ export function SubmitWorkflowPanel(props: Props) {
                     <label>Parameters</label>
                     {workflowParameters.length > 0 && <ParametersInput parameters={workflowParameters} onChange={setWorkflowParameters} />}
                     {parameters.length > 0 && <ParametersInput parameters={parameters} onChange={setParameters} />}
-                    {workflowParameters.length === 0 && parameters.length === 0 ? (
+                    {workflowParameters.length === 0 && parameters.length === 0 && arbitraryParameters.length === 0 ? (
                         <>
                             <br />
                             <label>No parameters</label>
@@ -152,6 +156,7 @@ export function SubmitWorkflowPanel(props: Props) {
                     ) : (
                         <></>
                     )}
+                    <ArbitraryParametersInput parameters={arbitraryParameters} onChange={setArbitraryParameters} />
                 </div>
                 {props.workflowArtifacts && props.workflowArtifacts.length > 0 && (
                     <div key='artifacts' style={{marginBottom: 25}}>
@@ -177,7 +182,7 @@ export function SubmitWorkflowPanel(props: Props) {
                     <TagsInput tags={labels} onChange={setLabels} />
                 </div>
                 <div key='submit'>
-                    <button onClick={submit} className='argo-button argo-button--base' disabled={isSubmitting || uploadingArtifacts.size > 0}>
+                    <button onClick={submit} className='argo-button argo-button--base' disabled={isSubmitting || uploadingArtifacts.size > 0 || hasIncompleteArbitraryParameter}>
                         <i className='fa fa-plus' /> {isSubmitting ? 'Loading...' : uploadingArtifacts.size > 0 ? 'Uploading...' : 'Submit'}
                     </button>
                 </div>
