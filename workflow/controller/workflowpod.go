@@ -756,7 +756,10 @@ func (pb *podBuilder) build(ctx context.Context) (*podBuildResult, error) {
 			if len(c.Command) == 0 {
 				var x *entrypoint.Image
 				x, err = pb.deps.lookupImage(ctx, c.Image, entrypoint.Options{
-					Namespace: pb.in.namespace, ServiceAccountName: pb.in.execWfSpec.ServiceAccountName, ImagePullSecrets: pb.in.execWfSpec.ImagePullSecrets,
+					Namespace:          pb.in.namespace,
+					ServiceAccountName: pb.in.execWfSpec.ServiceAccountName,
+					ImagePullSecrets:   pb.in.execWfSpec.ImagePullSecrets,
+					ImagePullPolicy:    c.ImagePullPolicy,
 				})
 				if err != nil {
 					return nil, fmt.Errorf("failed to look-up entrypoint/cmd for image %q, you must either explicitly specify the command, or list the image's command in the index: https://argo-workflows.readthedocs.io/en/latest/workflow-executors/#emissary-emissary: %w", c.Image, err)
