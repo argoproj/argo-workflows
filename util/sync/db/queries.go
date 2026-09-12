@@ -73,7 +73,7 @@ type SyncQueries interface {
 	GetStateCountsByController(ctx context.Context, controllerName string) ([]StateCountRecord, error)
 	GetOrderedQueue(ctx context.Context, sessionProxy *sqldb.SessionProxy, semaphoreName string, inactiveTimeout time.Duration) ([]StateRecord, error)
 	AddToQueue(ctx context.Context, record *StateRecord) error
-	RemoveFromQueue(ctx context.Context, semaphoreName, holderKey string) error
+	RemoveFromQueue(ctx context.Context, semaphoreName, holderKey, controllerName string) error
 	CheckQueueExists(ctx context.Context, semaphoreName, holderKey, controllerName string) ([]StateRecord, error)
 	UpdateStateToHeld(ctx context.Context, sessionProxy *sqldb.SessionProxy, semaphoreName, holderKey, controllerName string) error
 	InsertHeldState(ctx context.Context, sessionProxy *sqldb.SessionProxy, record *StateRecord) error
@@ -232,12 +232,17 @@ func (q *syncQueries) AddToQueue(ctx context.Context, record *StateRecord) error
 	})
 }
 
-func (q *syncQueries) RemoveFromQueue(ctx context.Context, semaphoreName, holderKey string) error {
+// RemoveFromQueue deletes a pending row. The controller condition matters because the state
+// table is shared: without it a controller's queue garbage collection, which validates keys
+// against its own informer, would delete the pending rows of every other controller sharing
+// the database. All callers only ever pass keys belonging to their own controller.
+func (q *syncQueries) RemoveFromQueue(ctx context.Context, semaphoreName, holderKey, controllerName string) error {
 	return q.sessionProxy.With(ctx, func(session db.Session) error {
 		_, err := session.SQL().
 			DeleteFrom(q.config.StateTable).
 			Where(db.Cond{StateNameField: semaphoreName}).
 			And(db.Cond{StateKeyField: holderKey}).
+			And(db.Cond{StateControllerField: controllerName}).
 			And(db.Cond{StateHeldField: false}).
 			Exec()
 		return err
