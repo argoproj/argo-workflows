@@ -498,7 +498,7 @@ data:
   # identity headers before forwarding requests to Argo Server.
   header: |
     # HTTP header containing the user's subject.
-    subject:
+    sub:
       header: X-Forwarded-User
     # HTTP header containing the user's email.
     email:
