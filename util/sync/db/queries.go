@@ -212,7 +212,9 @@ func (q *syncQueries) GetOrderedQueue(ctx context.Context, sessionProxy *sqldb.S
 			And(db.Cond{ControllerTimeField + " >": since})
 
 		return session.SQL().
-			Select(StateKeyField, StateControllerField).
+			// Priority and time are needed by the caller, which orders the
+			// queue in Go (see workflow/sync queueLess).
+			Select(StateKeyField, StateControllerField, StatePriorityField, StateTimeField).
 			From(q.config.StateTable).
 			Where(db.Cond{StateNameField: semaphoreName}).
 			And(db.Cond{StateHeldField: false}).

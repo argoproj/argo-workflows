@@ -855,6 +855,10 @@ func TestResizeSemaphoreSize(t *testing.T) {
 		wf.CreationTimestamp = metav1.Time{Time: time.Now()}
 		wf1 := wf.DeepCopy()
 		wf2 := wf.DeepCopy()
+		// Distinct creation times so the queue order is the submission order
+		// this test walks through; tied times are ordered by name.
+		wf1.CreationTimestamp = metav1.Time{Time: wf.CreationTimestamp.Add(time.Second)}
+		wf2.CreationTimestamp = metav1.Time{Time: wf.CreationTimestamp.Add(2 * time.Second)}
 		status, wfUpdate, msg, failedLockName, err := syncManager.TryAcquire(ctx, wf, "", wf.Spec.Synchronization)
 		require.NoError(t, err)
 		assert.Empty(t, msg)
