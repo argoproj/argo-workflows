@@ -14,6 +14,7 @@ import (
 	"runtime"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -2646,6 +2647,24 @@ type NodeStatus struct {
 	// This prevents duplicate restart attempts when the controller processes the same failed pod multiple times.
 	// Cleared when the replacement pod starts running.
 	RestartingPodUID string `json:"restartingPodUID,omitempty" protobuf:"bytes,30,opt,name=restartingPodUID"`
+
+	// HashSuffix is appended to Name (as "~<n>") when computing this node's ID.
+	// It is zero unless the node's name hashed to an ID already held by a
+	// different node.
+	HashSuffix int32 `json:"hashSuffix,omitempty" protobuf:"varint,31,opt,name=hashSuffix"`
+}
+
+func hashSuffixString(k int32) string {
+	if k == 0 {
+		return ""
+	}
+	return "~" + strconv.Itoa(int(k))
+}
+
+// HashName returns the string this node's ID is the hash of: Name plus the
+// collision suffix, if any. Invariant: node.ID == wf.NodeID(node.HashName()).
+func (n NodeStatus) HashName() string {
+	return n.Name + hashSuffixString(n.HashSuffix)
 }
 
 // Completed is used to determine if this node can proceed
@@ -3847,8 +3866,50 @@ func (w *Workflow) GetTemplateByName(name string) *Template {
 }
 
 func (w *Workflow) GetNodeByName(nodeName string) (*NodeStatus, error) {
-	nodeID := w.NodeID(nodeName)
-	return w.Status.Nodes.Get(nodeID)
+	node, _ := w.ResolveNode(nodeName)
+	if node == nil {
+		return nil, fmt.Errorf("key was not found for %s", nodeName)
+	}
+	return node, nil
+}
+
+// ResolveNode walks the ID collision chain for a spec-derived node name.
+// It returns the existing node if there is one. Otherwise it returns nil and
+// the HashSuffix a node with this name must be created with.
+//
+// Distinct names can hash to the same ID. A node whose name loses that race
+// is stored under NodeID(name+"~1") (or "~2", ...) with HashSuffix set, so
+// that the pure NodeID function stays usable in both directions.
+//
+// The walk ends at two consecutive empty slots, so it tolerates any lone
+// hole a deletion punches in the chain, and a new node fills the first
+// hole. A survivor behind two consecutive emptied slots would not be found;
+// that needs three names sharing one hash and two of them deleted, and is
+// not handled.
+func (w *Workflow) ResolveNode(name string) (*NodeStatus, int32) {
+	free := int32(-1)
+	for k := int32(0); ; k++ {
+		if n, ok := w.Status.Nodes[w.NodeID(name+hashSuffixString(k))]; ok {
+			if n.Name == name && n.HashSuffix == k {
+				return &n, k
+			}
+			// slot held by a different name, keep walking
+			continue
+		}
+		if free == -1 {
+			free = k
+		}
+		if _, ok := w.Status.Nodes[w.NodeID(name+hashSuffixString(k+1))]; !ok {
+			return nil, free
+		}
+	}
+}
+
+// ResolveNodeID returns the ID of the node with this spec-derived name, or
+// the ID it will be created with if it does not exist yet.
+func (w *Workflow) ResolveNodeID(name string) string {
+	_, k := w.ResolveNode(name)
+	return w.NodeID(name + hashSuffixString(k))
 }
 
 // GetResourceScope returns the template scope of workflow.

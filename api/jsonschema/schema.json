@@ -6174,6 +6174,10 @@
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time",
           "description": "Time at which this node completed"
         },
+        "hashSuffix": {
+          "description": "HashSuffix is appended to Name (as \"~\u003cn\u003e\") when computing this node's ID. It is zero unless the node's name hashed to an ID already held by a different node.",
+          "type": "integer"
+        },
         "hostNodeName": {
           "description": "HostNodeName name of the Kubernetes node on which the Pod is running, if applicable",
           "type": "string"

@@ -19,10 +19,10 @@ export function getPodName(workflow: Workflow, node: NodeStatus): string {
     }
 
     const workflowName = workflow.metadata.name;
-    // convert containerSet node name to its corresponding pod node name by removing the ".<containerName>" postfix
+    // a containerSet container node runs in the pod of the node it is bounded by
     // this part is from workflow/controller/container_set_template.go#executeContainerSet; the inverse never happens in the back-end, so is unique to the front-end
-    const podNodeName = node.type == 'Container' ? node.name.replace(/\.[^/.]+$/, '') : node.name;
-    if (workflowName === podNodeName) {
+    const podNodeId = (node.type == 'Container' ? node.boundaryID : node.id) ?? node.id;
+    if (workflowName === podNodeId) {
         return workflowName;
     }
 
@@ -33,7 +33,10 @@ export function getPodName(workflow: Workflow, node: NodeStatus): string {
     }
     prefix = ensurePodNamePrefixLength(prefix);
 
-    const hash = createFNVHash(podNodeName);
+    // the node ID is the workflow name followed by the hash of the node name (with any collision suffix),
+    // so take the hash from there rather than rehashing the node name, which would put colliding nodes in the same pod
+    const idPrefix = `${workflowName}-`;
+    const hash = podNodeId?.startsWith(idPrefix) ? podNodeId.substring(idPrefix.length) : createFNVHash(node.name);
     return `${prefix}-${hash}`;
 }
 

@@ -30,11 +30,11 @@ func (e *estimator) EstimateNodeDuration(ctx context.Context, nodeName string) w
 	if e.baselineWF == nil {
 		return 0
 	}
-	oldNodeID := e.baselineWF.NodeID(strings.Replace(nodeName, e.wf.Name, e.baselineWF.Name, 1))
-	node, err := e.baselineWF.Status.Nodes.Get(oldNodeID)
+	oldNodeName := strings.Replace(nodeName, e.wf.Name, e.baselineWF.Name, 1)
+	node, err := e.baselineWF.GetNodeByName(oldNodeName)
 	if err != nil {
 		logger := logging.RequireLoggerFromContext(ctx)
-		logger.WithField("nodeID", oldNodeID).Error(ctx, "was unable to obtain node for nodeID")
+		logger.WithField("nodeName", oldNodeName).Error(ctx, "was unable to obtain node for nodeName")
 		// inacurate but not going to break anything
 		return 0
 	}

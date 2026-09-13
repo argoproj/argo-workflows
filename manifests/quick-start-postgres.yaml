@@ -132266,6 +132266,9 @@ spec:
                     finishedAt:
                       format: date-time
                       type: string
+                    hashSuffix:
+                      format: int32
+                      type: integer
                     hostNodeName:
                       type: string
                     id:

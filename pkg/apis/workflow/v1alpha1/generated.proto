@@ -1211,6 +1211,11 @@ message NodeStatus {
   // This prevents duplicate restart attempts when the controller processes the same failed pod multiple times.
   // Cleared when the replacement pod starts running.
   optional string restartingPodUID = 30;
+
+  // HashSuffix is appended to Name (as "~<n>") when computing this node's ID.
+  // It is zero unless the node's name hashed to an ID already held by a
+  // different node.
+  optional int32 hashSuffix = 31;
 }
 
 // NodeSynchronizationStatus stores the status of a node

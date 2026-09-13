@@ -4757,6 +4757,11 @@ func (m *NodeStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	i = encodeVarintGenerated(dAtA, i, uint64(m.HashSuffix))
+	i--
+	dAtA[i] = 0x1
+	i--
+	dAtA[i] = 0xf8
 	i -= len(m.RestartingPodUID)
 	copy(dAtA[i:], m.RestartingPodUID)
 	i = encodeVarintGenerated(dAtA, i, uint64(len(m.RestartingPodUID)))
@@ -11444,6 +11449,7 @@ func (m *NodeStatus) Size() (n int) {
 	n += 2 + sovGenerated(uint64(m.FailedPodRestarts))
 	l = len(m.RestartingPodUID)
 	n += 2 + l + sovGenerated(uint64(l))
+	n += 2 + sovGenerated(uint64(m.HashSuffix))
 	return n
 }
 
@@ -14381,6 +14387,7 @@ func (this *NodeStatus) String() string {
 		`TaskResultSynced:` + valueToStringGenerated(this.TaskResultSynced) + `,`,
 		`FailedPodRestarts:` + fmt.Sprintf("%v", this.FailedPodRestarts) + `,`,
 		`RestartingPodUID:` + fmt.Sprintf("%v", this.RestartingPodUID) + `,`,
+		`HashSuffix:` + fmt.Sprintf("%v", this.HashSuffix) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -30151,6 +30158,25 @@ func (m *NodeStatus) Unmarshal(dAtA []byte) error {
 			}
 			m.RestartingPodUID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
+		case 31:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field HashSuffix", wireType)
+			}
+			m.HashSuffix = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.HashSuffix |= int32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGenerated(dAtA[iNdEx:])

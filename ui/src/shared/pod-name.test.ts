@@ -55,10 +55,14 @@ describe('pod names', () => {
         }
     });
 
+    // a node's ID is <workflow name>-<fnv32a(node name)>; the pod name takes the hash from there,
+    // so the expected values below must match rehashing the node name as the pre-existing implementation did
+    const nodeId = (wfName: string, nodeName: string) => `${wfName}-${createFNVHash(nodeName)}`;
+
     test('getPodName', () => {
         const node = {
             name: 'nodename',
-            id: '1',
+            id: nodeId(shortWfName, 'nodename'),
             templateName: shortTemplateName
         } as unknown as NodeStatus;
         const wf = {
@@ -80,9 +84,18 @@ describe('pod names', () => {
         expect(getPodName(wf, node)).toEqual(v2podName);
         delete wf.metadata.annotations;
         expect(getPodName(wf, node)).toEqual(v2podName);
-        expect(getPodName(wf, {...node, name: node.name + '.mycontainername', type: 'Container'})).toEqual(v2podName); // containerSet node check
+        expect(
+            getPodName(wf, {...node, name: node.name + '.mycontainername', id: nodeId(shortWfName, node.name + '.mycontainername'), type: 'Container', boundaryID: node.id})
+        ).toEqual(v2podName); // containerSet node check
+
+        // a node that lost an ID collision carries the suffix in its ID, and so in its pod name, while its name is unchanged
+        expect(getPodName(wf, {...node, id: nodeId(shortWfName, 'nodename~1')})).toEqual(`${shortWfName}-${shortTemplateName}-${createFNVHash('nodename~1')}`);
+
+        // an ID that is not <workflow name>-<hash> falls back to hashing the node name
+        expect(getPodName(wf, {...node, id: 'unrelated'})).toEqual(v2podName);
 
         wf.metadata.name = longWfName;
+        node.id = nodeId(longWfName, node.name);
         node.templateName = longTemplateName;
         const name = getPodName(wf, node);
         expect(name.length).toEqual(maxK8sResourceNameLength);
@@ -95,7 +108,7 @@ describe('pod names', () => {
 
         const node = {
             name: multibyteNodeName,
-            id: '1',
+            id: nodeId(multibyteWfName, multibyteNodeName),
             templateName: multibyteTemplateName
         } as unknown as NodeStatus;
 
@@ -115,13 +128,14 @@ describe('pod names', () => {
         const longMultibyteTemplateName = 'こちらも非常に長いテンプレート名でマルチバイト文字をたくさん使っています全角スペースも　含まれています';
 
         wf.metadata.name = longMultibyteWfName;
+        node.id = nodeId(longMultibyteWfName, multibyteNodeName);
         node.templateName = longMultibyteTemplateName;
 
         const name = getPodName(wf, node);
         expect(name.length).toBeLessThanOrEqual(maxK8sResourceNameLength);
 
         const containerSetNodeName = `${multibyteNodeName}.コンテナ名`;
-        expect(getPodName(wf, {...node, name: containerSetNodeName, type: 'Container'})).toEqual(
+        expect(getPodName(wf, {...node, name: containerSetNodeName, id: nodeId(longMultibyteWfName, containerSetNodeName), type: 'Container', boundaryID: node.id})).toEqual(
             `${ensurePodNamePrefixLength(`${longMultibyteWfName}-${longMultibyteTemplateName}`)}-${createFNVHash(multibyteNodeName)}`
         );
     });

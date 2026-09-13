@@ -2477,6 +2477,7 @@ NodeStatus contains status information about an individual node in the workflow
 |`estimatedDuration`|`integer`|EstimatedDuration in seconds.|
 |`failedPodRestarts`|`integer`|FailedPodRestarts tracks the number of times the pod for this node was restarted due to infrastructure failures before the main container started.|
 |`finishedAt`|[`Time`](#time)|Time at which this node completed|
+|`hashSuffix`|`integer`|HashSuffix is appended to Name (as "~<n>") when computing this node's ID. It is zero unless the node's name hashed to an ID already held by a different node.|
 |`hostNodeName`|`string`|HostNodeName name of the Kubernetes node on which the Pod is running, if applicable|
 |`id`|`string`|ID is a unique identifier of a node within the worklow It is implemented as a hash of the node name, which makes the ID deterministic|
 |`inputs`|[`Inputs`](#inputs)|Inputs captures input parameter values and artifact locations supplied to this template invocation|

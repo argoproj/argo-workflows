@@ -836,7 +836,7 @@ func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized 
 		}
 		originalID := node.ID
 		newNode.Name = replaceRegexp.ReplaceAllString(node.Name, newWF.Name)
-		newNode.ID = newWF.NodeID(newNode.Name)
+		newNode.ID = newWF.NodeID(newNode.HashName())
 		if node.BoundaryID != "" {
 			newNode.BoundaryID = convertNodeID(&newWF, replaceRegexp, node.BoundaryID, wf.Status.Nodes)
 		}
@@ -884,8 +884,8 @@ func FormulateResubmitWorkflow(ctx context.Context, wf *wfv1.Workflow, memoized 
 // convertNodeID converts an old nodeID to a new nodeID
 func convertNodeID(newWf *wfv1.Workflow, regex *regexp.Regexp, oldNodeID string, oldNodes map[string]wfv1.NodeStatus) string {
 	node := oldNodes[oldNodeID]
-	newNodeName := regex.ReplaceAllString(node.Name, newWf.Name)
-	return newWf.NodeID(newNodeName)
+	node.Name = regex.ReplaceAllString(node.Name, newWf.Name)
+	return newWf.NodeID(node.HashName())
 }
 
 func isDescendantNodeSucceeded(ctx context.Context, wf *wfv1.Workflow, node wfv1.NodeStatus, nodeIDsToReset map[string]bool) bool {

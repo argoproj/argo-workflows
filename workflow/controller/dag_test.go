@@ -301,7 +301,7 @@ func TestEvaluateDependsLogic(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{Name: "test-wf"},
 		Status: wfv1.WorkflowStatus{
 			Nodes: map[string]wfv1.NodeStatus{
-				d.taskNodeID("A"): {Phase: wfv1.NodeRunning},
+				d.taskNodeID("A"): {Name: d.taskNodeName("A"), Phase: wfv1.NodeRunning},
 			},
 		},
 	}
@@ -313,7 +313,7 @@ func TestEvaluateDependsLogic(t *testing.T) {
 	assert.False(t, execute)
 
 	// Task A succeeded
-	d.wf.Status.Nodes[d.taskNodeID("A")] = wfv1.NodeStatus{Phase: wfv1.NodeSucceeded}
+	d.wf.Status.Nodes[d.taskNodeID("A")] = wfv1.NodeStatus{Name: d.taskNodeName("A"), Phase: wfv1.NodeSucceeded}
 
 	// Task B and C should proceed and execute
 	execute, proceed, err = d.evaluateDependsLogic(ctx, "B")
@@ -331,8 +331,8 @@ func TestEvaluateDependsLogic(t *testing.T) {
 	assert.False(t, execute)
 
 	// Tasks B succeeded, C failed
-	d.wf.Status.Nodes[d.taskNodeID("B")] = wfv1.NodeStatus{Phase: wfv1.NodeSucceeded}
-	d.wf.Status.Nodes[d.taskNodeID("C")] = wfv1.NodeStatus{Phase: wfv1.NodeFailed}
+	d.wf.Status.Nodes[d.taskNodeID("B")] = wfv1.NodeStatus{Name: d.taskNodeName("B"), Phase: wfv1.NodeSucceeded}
+	d.wf.Status.Nodes[d.taskNodeID("C")] = wfv1.NodeStatus{Name: d.taskNodeName("C"), Phase: wfv1.NodeFailed}
 
 	// Tasks should-execute-1 and should-execute-2 should proceed and execute
 	execute, proceed, err = d.evaluateDependsLogic(ctx, "should-execute-1")
@@ -350,9 +350,9 @@ func TestEvaluateDependsLogic(t *testing.T) {
 	assert.False(t, execute)
 
 	// Tasks should-execute-1 and should-execute-2 succeeded, should-not-execute skipped
-	d.wf.Status.Nodes[d.taskNodeID("should-execute-1")] = wfv1.NodeStatus{Phase: wfv1.NodeSucceeded}
-	d.wf.Status.Nodes[d.taskNodeID("should-execute-2")] = wfv1.NodeStatus{Phase: wfv1.NodeSucceeded}
-	d.wf.Status.Nodes[d.taskNodeID("should-not-execute")] = wfv1.NodeStatus{Phase: wfv1.NodeSkipped}
+	d.wf.Status.Nodes[d.taskNodeID("should-execute-1")] = wfv1.NodeStatus{Name: d.taskNodeName("should-execute-1"), Phase: wfv1.NodeSucceeded}
+	d.wf.Status.Nodes[d.taskNodeID("should-execute-2")] = wfv1.NodeStatus{Name: d.taskNodeName("should-execute-2"), Phase: wfv1.NodeSucceeded}
+	d.wf.Status.Nodes[d.taskNodeID("should-not-execute")] = wfv1.NodeStatus{Name: d.taskNodeName("should-not-execute"), Phase: wfv1.NodeSkipped}
 
 	// Tasks should-execute-3 should proceed and execute
 	execute, proceed, err = d.evaluateDependsLogic(ctx, "should-execute-3")
@@ -403,13 +403,13 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{Name: "test-wf"},
 		Status: wfv1.WorkflowStatus{
 			Nodes: map[string]wfv1.NodeStatus{
-				d.taskNodeID("A"): {
+				d.taskNodeID("A"): {Name: d.taskNodeName("A"),
 					Phase:    wfv1.NodeRunning,
 					Type:     wfv1.NodeTypeTaskGroup,
 					Children: []string{d.taskNodeID("A-1"), d.taskNodeID("A-2")},
 				},
-				d.taskNodeID("A-1"): {Phase: wfv1.NodeRunning},
-				d.taskNodeID("A-2"): {Phase: wfv1.NodeRunning},
+				d.taskNodeID("A-1"): {Name: d.taskNodeName("A-1"), Phase: wfv1.NodeRunning},
+				d.taskNodeID("A-2"): {Name: d.taskNodeName("A-2"), Phase: wfv1.NodeRunning},
 			},
 		},
 	}
@@ -421,7 +421,7 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 	assert.False(t, execute)
 
 	// Task A succeeded
-	d.wf.Status.Nodes[d.taskNodeID("A")] = wfv1.NodeStatus{
+	d.wf.Status.Nodes[d.taskNodeID("A")] = wfv1.NodeStatus{Name: d.taskNodeName("A"),
 		Phase:    wfv1.NodeSucceeded,
 		Type:     wfv1.NodeTypeTaskGroup,
 		Children: []string{d.taskNodeID("A-1"), d.taskNodeID("A-2")},
@@ -434,7 +434,7 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 	assert.False(t, execute)
 
 	// Task A-2 succeeded
-	d.wf.Status.Nodes[d.taskNodeID("A-2")] = wfv1.NodeStatus{Phase: wfv1.NodeSucceeded}
+	d.wf.Status.Nodes[d.taskNodeID("A-2")] = wfv1.NodeStatus{Name: d.taskNodeName("A-2"), Phase: wfv1.NodeSucceeded}
 
 	// Task B should now proceed and execute
 	execute, proceed, err = d.evaluateDependsLogic(ctx, "B")
@@ -443,12 +443,12 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 	assert.True(t, execute)
 
 	// Task B succeeds and B-1 fails
-	d.wf.Status.Nodes[d.taskNodeID("B")] = wfv1.NodeStatus{
+	d.wf.Status.Nodes[d.taskNodeID("B")] = wfv1.NodeStatus{Name: d.taskNodeName("B"),
 		Phase:    wfv1.NodeSucceeded,
 		Type:     wfv1.NodeTypeTaskGroup,
 		Children: []string{d.taskNodeID("B-1"), d.taskNodeID("B-2")},
 	}
-	d.wf.Status.Nodes[d.taskNodeID("B-1")] = wfv1.NodeStatus{Phase: wfv1.NodeFailed}
+	d.wf.Status.Nodes[d.taskNodeID("B-1")] = wfv1.NodeStatus{Name: d.taskNodeName("B-1"), Phase: wfv1.NodeFailed}
 
 	// Task C should proceed, but not execute as not all of B's children have failed yet
 	execute, proceed, err = d.evaluateDependsLogic(ctx, "C")
@@ -456,7 +456,7 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 	assert.True(t, proceed)
 	assert.False(t, execute)
 
-	d.wf.Status.Nodes[d.taskNodeID("B-2")] = wfv1.NodeStatus{Phase: wfv1.NodeFailed}
+	d.wf.Status.Nodes[d.taskNodeID("B-2")] = wfv1.NodeStatus{Name: d.taskNodeName("B-2"), Phase: wfv1.NodeFailed}
 
 	// Task C should now proceed and execute as all of B's children have failed
 	execute, proceed, err = d.evaluateDependsLogic(ctx, "C")
@@ -492,7 +492,7 @@ func TestEvaluateDependsLogicWhenDaemonFailed(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{Name: "test-wf"},
 		Status: wfv1.WorkflowStatus{
 			Nodes: map[string]wfv1.NodeStatus{
-				d.taskNodeID("A"): {Phase: wfv1.NodeRunning, Daemoned: &daemon},
+				d.taskNodeID("A"): {Name: d.taskNodeName("A"), Phase: wfv1.NodeRunning, Daemoned: &daemon},
 			},
 		},
 	}
@@ -504,10 +504,10 @@ func TestEvaluateDependsLogicWhenDaemonFailed(t *testing.T) {
 	assert.True(t, execute)
 
 	// Task B running
-	d.wf.Status.Nodes[d.taskNodeID("B")] = wfv1.NodeStatus{Phase: wfv1.NodeRunning}
+	d.wf.Status.Nodes[d.taskNodeID("B")] = wfv1.NodeStatus{Name: d.taskNodeName("B"), Phase: wfv1.NodeRunning}
 
 	// Task A failed or error
-	d.wf.Status.Nodes[d.taskNodeID("A")] = wfv1.NodeStatus{Phase: wfv1.NodeFailed}
+	d.wf.Status.Nodes[d.taskNodeID("A")] = wfv1.NodeStatus{Name: d.taskNodeName("A"), Phase: wfv1.NodeFailed}
 
 	// Task B should proceed and execute
 	execute, proceed, err = d.evaluateDependsLogic(ctx, "B")
@@ -542,7 +542,7 @@ func TestEvaluateDependsLogicWhenTaskOmitted(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{Name: "test-wf"},
 		Status: wfv1.WorkflowStatus{
 			Nodes: map[string]wfv1.NodeStatus{
-				d.taskNodeID("A"): {Phase: wfv1.NodeOmitted},
+				d.taskNodeID("A"): {Name: d.taskNodeName("A"), Phase: wfv1.NodeOmitted},
 			},
 		},
 	}
@@ -590,7 +590,7 @@ func TestAllEvaluateDependsLogic(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{Name: "test-wf"},
 			Status: wfv1.WorkflowStatus{
 				Nodes: map[string]wfv1.NodeStatus{
-					d.taskNodeID("same"): {Phase: statusMap[status]},
+					d.taskNodeID("same"): {Name: d.taskNodeName("same"), Phase: statusMap[status]},
 				},
 			},
 		}

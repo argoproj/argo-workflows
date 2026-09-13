@@ -15,6 +15,7 @@ Name | Type | Description | Notes
 **estimatedDuration** | **Integer** | EstimatedDuration in seconds. |  [optional]
 **failedPodRestarts** | **Integer** | FailedPodRestarts tracks the number of times the pod for this node was restarted due to infrastructure failures before the main container started. |  [optional]
 **finishedAt** | **java.time.Instant** |  |  [optional]
+**hashSuffix** | **Integer** | HashSuffix is appended to Name (as \&quot;~&lt;n&gt;\&quot;) when computing this node&#39;s ID. It is zero unless the node&#39;s name hashed to an ID already held by a different node. |  [optional]
 **hostNodeName** | **String** | HostNodeName name of the Kubernetes node on which the Pod is running, if applicable |  [optional]
 **id** | **String** | ID is a unique identifier of a node within the worklow It is implemented as a hash of the node name, which makes the ID deterministic | 
 **inputs** | [**IoArgoprojWorkflowV1alpha1Inputs**](IoArgoprojWorkflowV1alpha1Inputs.md) |  |  [optional]

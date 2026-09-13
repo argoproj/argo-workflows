@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"hash/fnv"
 	"os"
+	"strings"
 
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
@@ -62,9 +63,14 @@ func GeneratePodName(workflowName, nodeName, templateName, nodeID string, versio
 	}
 	prefix = ensurePodNamePrefixLength(prefix)
 
+	// The node ID is the workflow name followed by the hash of the node name
+	// (with any collision suffix), so take the hash from there rather than
+	// rehashing nodeName, which would put colliding nodes in the same pod.
+	if hash, ok := strings.CutPrefix(nodeID, workflowName+"-"); ok {
+		return fmt.Sprintf("%s-%s", prefix, hash)
+	}
 	h := fnv.New32a()
 	_, _ = h.Write([]byte(nodeName))
-
 	return fmt.Sprintf("%s-%v", prefix, h.Sum32())
 }
 

@@ -4518,6 +4518,13 @@ func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) 
 							Format:      "",
 						},
 					},
+					"hashSuffix": {
+						SchemaProps: spec.SchemaProps{
+							Description: "HashSuffix is appended to Name (as \"~<n>\") when computing this node's ID. It is zero unless the node's name hashed to an ID already held by a different node.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
 				},
 				Required: []string{"id", "name", "type"},
 			},
