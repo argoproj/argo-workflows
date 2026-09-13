@@ -5957,9 +5957,19 @@ spec:
                 description: Shutdown will shutdown the workflow according to its
                   ShutdownStrategy
                 type: string
+              startSuspended:
+                description: |-
+                  StartSuspended creates the workflow in the suspended state. It is honored exactly once, when
+                  the workflow is first reconciled, before anything has run; changing it on a started workflow
+                  has no effect. Resume the workflow with a WorkflowAction.
+                type: boolean
               suspend:
-                description: Suspend will suspend the workflow and prevent execution
-                  of any future steps in the workflow
+                description: |-
+                  Suspend will suspend the workflow and prevent execution of any future steps in it.
+                  Setting it on a started Workflow is deprecated: suspend or resume a running Workflow with a
+                  WorkflowAction instead. Setting it at creation time ("start suspended") remains supported,
+                  as does startSuspended. It is still honored for now, and the controller keeps it in sync
+                  with status.suspended.
                 type: boolean
               synchronization:
                 description: Synchronization holds synchronization lock configuration
@@ -49005,9 +49015,19 @@ spec:
                     description: Shutdown will shutdown the workflow according to
                       its ShutdownStrategy
                     type: string
+                  startSuspended:
+                    description: |-
+                      StartSuspended creates the workflow in the suspended state. It is honored exactly once, when
+                      the workflow is first reconciled, before anything has run; changing it on a started workflow
+                      has no effect. Resume the workflow with a WorkflowAction.
+                    type: boolean
                   suspend:
-                    description: Suspend will suspend the workflow and prevent execution
-                      of any future steps in the workflow
+                    description: |-
+                      Suspend will suspend the workflow and prevent execution of any future steps in it.
+                      Setting it on a started Workflow is deprecated: suspend or resume a running Workflow with a
+                      WorkflowAction instead. Setting it at creation time ("start suspended") remains supported,
+                      as does startSuspended. It is still honored for now, and the controller keeps it in sync
+                      with status.suspended.
                     type: boolean
                   synchronization:
                     description: Synchronization holds synchronization lock configuration
@@ -86470,6 +86490,152 @@ spec:
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
+  name: workflowactions.argoproj.io
+spec:
+  group: argoproj.io
+  names:
+    kind: WorkflowAction
+    listKind: WorkflowActionList
+    plural: workflowactions
+    shortNames:
+    - wfa
+    singular: workflowaction
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.workflowRef.name
+      name: Target
+      type: string
+    - jsonPath: .spec.action
+      name: Action
+      type: string
+    - jsonPath: .status.phase
+      name: Phase
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: |-
+          WorkflowAction requests the workflow controller to perform a lifecycle action on a Workflow.
+          The controller applies the action during reconciliation and reports the outcome on status.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: WorkflowActionSpec is the requested action. It is immutable
+              after creation.
+            properties:
+              action:
+                description: Action to perform on the target
+                enum:
+                - Suspend
+                - Resume
+                - Stop
+                - Terminate
+                type: string
+              resume:
+                description: 'Resume parameters, only for action: Resume'
+                properties:
+                  nodeFieldSelector:
+                    description: NodeFieldSelector selects suspended nodes to resume.
+                      Empty resumes the whole workflow.
+                    type: string
+                  outputParameters:
+                    additionalProperties:
+                      type: string
+                    description: OutputParameters sets raw output parameters on the
+                      resumed suspend nodes
+                    type: object
+                type: object
+                x-kubernetes-validations:
+                - message: outputParameters requires a nodeFieldSelector
+                  rule: '!has(self.outputParameters) || (has(self.nodeFieldSelector)
+                    && size(self.nodeFieldSelector) > 0)'
+              stop:
+                description: 'Stop parameters, only for action: Stop'
+                properties:
+                  message:
+                    description: Message set on stopped nodes
+                    type: string
+                  nodeFieldSelector:
+                    description: NodeFieldSelector selects suspended nodes to fail
+                      instead of stopping the whole workflow
+                    type: string
+                type: object
+              workflowRef:
+                description: WorkflowRef is the target Workflow
+                properties:
+                  name:
+                    description: Name of the target Workflow in the same namespace
+                    type: string
+                  uid:
+                    description: |-
+                      UID optionally pins the target across name reuse: when set, the action fails if the named
+                      workflow's UID differs. Leave empty to target whichever workflow currently holds the name.
+                    type: string
+                required:
+                - name
+                type: object
+            required:
+            - action
+            - workflowRef
+            type: object
+            x-kubernetes-validations:
+            - message: spec is immutable
+              rule: self == oldSelf
+            - message: 'resume parameters require action: Resume'
+              rule: '!has(self.resume) || self.action == ''Resume'''
+            - message: 'stop parameters require action: Stop'
+              rule: '!has(self.stop) || self.action == ''Stop'''
+          status:
+            description: WorkflowActionStatus is the observed outcome of the action
+            properties:
+              completionTime:
+                description: CompletionTime is when the action reached a terminal
+                  phase
+                format: date-time
+                type: string
+              message:
+                description: Message is a human-readable elaboration of Reason
+                type: string
+              phase:
+                description: 'Phase of the action: Pending, Succeeded or Failed. Empty
+                  means Pending.'
+                type: string
+              reason:
+                description: Reason is a machine-readable reason for a Failed phase
+                type: string
+            type: object
+        required:
+        - metadata
+        - spec
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
   name: workflowartifactgctasks.argoproj.io
 spec:
   group: argoproj.io
@@ -94976,9 +95142,19 @@ spec:
                 description: Shutdown will shutdown the workflow according to its
                   ShutdownStrategy
                 type: string
+              startSuspended:
+                description: |-
+                  StartSuspended creates the workflow in the suspended state. It is honored exactly once, when
+                  the workflow is first reconciled, before anything has run; changing it on a started workflow
+                  has no effect. Resume the workflow with a WorkflowAction.
+                type: boolean
               suspend:
-                description: Suspend will suspend the workflow and prevent execution
-                  of any future steps in the workflow
+                description: |-
+                  Suspend will suspend the workflow and prevent execution of any future steps in it.
+                  Setting it on a started Workflow is deprecated: suspend or resume a running Workflow with a
+                  WorkflowAction instead. Setting it at creation time ("start suspended") remains supported,
+                  as does startSuspended. It is still honored for now, and the controller keeps it in sync
+                  with status.suspended.
                 type: boolean
               synchronization:
                 description: Synchronization holds synchronization lock configuration
@@ -131890,6 +132066,10 @@ spec:
               WorkflowStatus contains overall status information about a workflow.
               All nested field descriptions have been dropped due to Kubernetes size limitations.
             properties:
+              appliedActions:
+                items:
+                  type: string
+                type: array
               artifactGCStatus:
                 properties:
                   notSpecified:
@@ -135138,6 +135318,8 @@ spec:
                   format: int64
                   type: integer
                 type: object
+              shutdown:
+                type: string
               startedAt:
                 format: date-time
                 type: string
@@ -135149,6 +135331,8 @@ spec:
                 type: object
                 x-kubernetes-map-type: atomic
                 x-kubernetes-preserve-unknown-fields: true
+              suspended:
+                type: boolean
               synchronization:
                 properties:
                   mutex:
@@ -154951,9 +155135,19 @@ spec:
                 description: Shutdown will shutdown the workflow according to its
                   ShutdownStrategy
                 type: string
+              startSuspended:
+                description: |-
+                  StartSuspended creates the workflow in the suspended state. It is honored exactly once, when
+                  the workflow is first reconciled, before anything has run; changing it on a started workflow
+                  has no effect. Resume the workflow with a WorkflowAction.
+                type: boolean
               suspend:
-                description: Suspend will suspend the workflow and prevent execution
-                  of any future steps in the workflow
+                description: |-
+                  Suspend will suspend the workflow and prevent execution of any future steps in it.
+                  Setting it on a started Workflow is deprecated: suspend or resume a running Workflow with a
+                  WorkflowAction instead. Setting it at creation time ("start suspended") remains supported,
+                  as does startSuspended. It is still honored for now, and the controller keeps it in sync
+                  with status.suspended.
                 type: boolean
               synchronization:
                 description: Synchronization holds synchronization lock configuration
@@ -192050,6 +192244,8 @@ rules:
   - workflowtasksets/finalizers
   - workflowtaskresults
   - workflowtaskresults/finalizers
+  - workflowactions
+  - workflowactions/finalizers
   verbs:
   - create
   - delete
@@ -192082,6 +192278,8 @@ rules:
   - clusterworkflowtemplates/finalizers
   - workflowtaskresults
   - workflowtaskresults/finalizers
+  - workflowactions
+  - workflowactions/finalizers
   verbs:
   - create
   - delete
@@ -192114,6 +192312,8 @@ rules:
   - clusterworkflowtemplates/finalizers
   - workflowtaskresults
   - workflowtaskresults/finalizers
+  - workflowactions
+  - workflowactions/finalizers
   verbs:
   - get
   - list
@@ -192191,6 +192391,22 @@ rules:
   - list
   - watch
   - deletecollection
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflowactions
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - delete
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflowactions/status
+  verbs:
+  - update
 - apiGroups:
   - ""
   resources:
@@ -192316,6 +192532,14 @@ rules:
   - update
   - patch
   - delete
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflowactions
+  verbs:
+  - create
+  - get
+  - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole

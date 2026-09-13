@@ -120,6 +120,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Prometheus":                    schema_pkg_apis_workflow_v1alpha1_Prometheus(ref),
 		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.RawArtifact":                   schema_pkg_apis_workflow_v1alpha1_RawArtifact(ref),
 		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ResourceTemplate":              schema_pkg_apis_workflow_v1alpha1_ResourceTemplate(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ResumeAction":                  schema_pkg_apis_workflow_v1alpha1_ResumeAction(ref),
 		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.RetryAffinity":                 schema_pkg_apis_workflow_v1alpha1_RetryAffinity(ref),
 		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.RetryNodeAntiAffinity":         schema_pkg_apis_workflow_v1alpha1_RetryNodeAntiAffinity(ref),
 		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.RetryStrategy":                 schema_pkg_apis_workflow_v1alpha1_RetryStrategy(ref),
@@ -132,6 +133,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.SemaphoreRef":                  schema_pkg_apis_workflow_v1alpha1_SemaphoreRef(ref),
 		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.SemaphoreStatus":               schema_pkg_apis_workflow_v1alpha1_SemaphoreStatus(ref),
 		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Sequence":                      schema_pkg_apis_workflow_v1alpha1_Sequence(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.StopAction":                    schema_pkg_apis_workflow_v1alpha1_StopAction(ref),
 		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.StopStrategy":                  schema_pkg_apis_workflow_v1alpha1_StopStrategy(ref),
 		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Submit":                        schema_pkg_apis_workflow_v1alpha1_Submit(ref),
 		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.SubmitOpts":                    schema_pkg_apis_workflow_v1alpha1_SubmitOpts(ref),
@@ -150,6 +152,11 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Version":                       schema_pkg_apis_workflow_v1alpha1_Version(ref),
 		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.VolumeClaimGC":                 schema_pkg_apis_workflow_v1alpha1_VolumeClaimGC(ref),
 		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.Workflow":                      schema_pkg_apis_workflow_v1alpha1_Workflow(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowAction":                schema_pkg_apis_workflow_v1alpha1_WorkflowAction(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowActionList":            schema_pkg_apis_workflow_v1alpha1_WorkflowActionList(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowActionRef":             schema_pkg_apis_workflow_v1alpha1_WorkflowActionRef(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowActionSpec":            schema_pkg_apis_workflow_v1alpha1_WorkflowActionSpec(ref),
+		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowActionStatus":          schema_pkg_apis_workflow_v1alpha1_WorkflowActionStatus(ref),
 		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowArtifactGCTask":        schema_pkg_apis_workflow_v1alpha1_WorkflowArtifactGCTask(ref),
 		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowArtifactGCTaskList":    schema_pkg_apis_workflow_v1alpha1_WorkflowArtifactGCTaskList(ref),
 		"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowEventBinding":          schema_pkg_apis_workflow_v1alpha1_WorkflowEventBinding(ref),
@@ -5352,6 +5359,42 @@ func schema_pkg_apis_workflow_v1alpha1_ResourceTemplate(ref common.ReferenceCall
 	}
 }
 
+func schema_pkg_apis_workflow_v1alpha1_ResumeAction(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "ResumeAction parameterizes a Resume action",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"nodeFieldSelector": {
+						SchemaProps: spec.SchemaProps{
+							Description: "NodeFieldSelector selects suspended nodes to resume. Empty resumes the whole workflow.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"outputParameters": {
+						SchemaProps: spec.SchemaProps{
+							Description: "OutputParameters sets raw output parameters on the resumed suspend nodes",
+							Type:        []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
 func schema_pkg_apis_workflow_v1alpha1_RetryAffinity(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -6268,6 +6311,33 @@ func schema_pkg_apis_workflow_v1alpha1_Sequence(ref common.ReferenceCallback) co
 		},
 		Dependencies: []string{
 			"k8s.io/apimachinery/pkg/util/intstr.IntOrString"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_StopAction(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "StopAction parameterizes a Stop action",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"message": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Message set on stopped nodes",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"nodeFieldSelector": {
+						SchemaProps: spec.SchemaProps{
+							Description: "NodeFieldSelector selects suspended nodes to fail instead of stopping the whole workflow",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+			},
+		},
 	}
 }
 
@@ -7607,6 +7677,217 @@ func schema_pkg_apis_workflow_v1alpha1_Workflow(ref common.ReferenceCallback) co
 	}
 }
 
+func schema_pkg_apis_workflow_v1alpha1_WorkflowAction(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "WorkflowAction requests the workflow controller to perform a lifecycle action on a Workflow. The controller applies the action during reconciliation and reports the outcome on status.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"kind": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"apiVersion": {
+						SchemaProps: spec.SchemaProps{
+							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"metadata": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+						},
+					},
+					"spec": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowActionSpec"),
+						},
+					},
+					"status": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowActionStatus"),
+						},
+					},
+				},
+				Required: []string{"metadata", "spec"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowActionSpec", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowActionStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_WorkflowActionList(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "WorkflowActionList is a list of WorkflowAction resources.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"kind": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"apiVersion": {
+						SchemaProps: spec.SchemaProps{
+							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"metadata": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
+						},
+					},
+					"items": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowAction"),
+									},
+								},
+							},
+						},
+					},
+				},
+				Required: []string{"metadata", "items"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowAction", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_WorkflowActionRef(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "WorkflowActionRef identifies the target Workflow",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"name": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Name of the target Workflow in the same namespace",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"uid": {
+						SchemaProps: spec.SchemaProps{
+							Description: "UID optionally pins the target across name reuse: when set, the action fails if the named workflow's UID differs. Leave empty to target whichever workflow currently holds the name.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+				Required: []string{"name"},
+			},
+		},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_WorkflowActionSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "WorkflowActionSpec is the requested action. It is immutable after creation.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"workflowRef": {
+						SchemaProps: spec.SchemaProps{
+							Description: "WorkflowRef is the target Workflow",
+							Default:     map[string]interface{}{},
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowActionRef"),
+						},
+					},
+					"action": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Action to perform on the target",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"resume": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Resume parameters, only for action: Resume",
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ResumeAction"),
+						},
+					},
+					"stop": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Stop parameters, only for action: Stop",
+							Ref:         ref("github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.StopAction"),
+						},
+					},
+				},
+				Required: []string{"workflowRef", "action"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.ResumeAction", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.StopAction", "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1.WorkflowActionRef"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_WorkflowActionStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "WorkflowActionStatus is the observed outcome of the action",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"phase": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Phase of the action: Pending, Succeeded or Failed. Empty means Pending.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"reason": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Reason is a machine-readable reason for a Failed phase",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"message": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Message is a human-readable elaboration of Reason",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"completionTime": {
+						SchemaProps: spec.SchemaProps{
+							Description: "CompletionTime is when the action reached a terminal phase",
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
+	}
+}
+
 func schema_pkg_apis_workflow_v1alpha1_WorkflowArtifactGCTask(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -8089,7 +8370,14 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 					},
 					"suspend": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Suspend will suspend the workflow and prevent execution of any future steps in the workflow",
+							Description: "Suspend will suspend the workflow and prevent execution of any future steps in it. Setting it on a started Workflow is deprecated: suspend or resume a running Workflow with a WorkflowAction instead. Setting it at creation time (\"start suspended\") remains supported, as does startSuspended. It is still honored for now, and the controller keeps it in sync with status.suspended.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"startSuspended": {
+						SchemaProps: spec.SchemaProps{
+							Description: "StartSuspended creates the workflow in the suspended state. It is honored exactly once, when the workflow is first reconciled, before anything has run; changing it on a started workflow has no effect. Resume the workflow with a WorkflowAction.",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
@@ -8572,6 +8860,35 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallba
 									},
 								},
 							},
+						},
+					},
+					"shutdown": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Shutdown is the shutdown strategy the controller accepted from a Stop or Terminate WorkflowAction. When set it supersedes spec.shutdown.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"appliedActions": {
+						SchemaProps: spec.SchemaProps{
+							Description: "AppliedActions records the UIDs of WorkflowActions whose effects have been persisted on this workflow but whose own status may not have been written yet (a write-ahead record for crash recovery). Entries are pruned once the action's status is recorded.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+					"suspended": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Suspended is the workflow-level suspension state the controller accepted from spec.startSuspended or a Suspend WorkflowAction. The deprecated spec.suspend also suspends the workflow when its value is true; the workflow is suspended if either is in effect.",
+							Type:        []string{"boolean"},
+							Format:      "",
 						},
 					},
 				},

@@ -2,10 +2,8 @@ package util
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/argoproj/argo-workflows/v4/util/logging"
@@ -26,7 +24,6 @@ import (
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	argofake "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
-	"github.com/argoproj/argo-workflows/v4/workflow/creator"
 	hydratorfake "github.com/argoproj/argo-workflows/v4/workflow/hydrator/fake"
 )
 
@@ -246,97 +243,34 @@ status:
   startedAt: "2020-04-10T15:21:23Z"
 `
 
-func TestResumeWorkflowByNodeName(t *testing.T) {
-	t.Run("Withought user info", func(t *testing.T) {
-		wfIf := argofake.NewClientset().ArgoprojV1alpha1().Workflows("")
-		origWf := wfv1.MustUnmarshalWorkflow(suspendedWf)
+func TestApplySuspendedNodeSetOperationByNodeName(t *testing.T) {
+	// the node-level Resume and Stop of the WorkflowAction drain: a selector matching no suspend
+	// node is an error that changes nothing; a match sets the phase and message
+	for name, tt := range map[string]struct {
+		phase   wfv1.NodePhase
+		message string
+	}{
+		"Resume":            {wfv1.NodeSucceeded, ""},
+		"ResumeWithMessage": {wfv1.NodeSucceeded, "Resumed by WorkflowAction x (tester)"},
+		"Stop":              {wfv1.NodeFailed, "error occurred"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			wf := wfv1.MustUnmarshalWorkflow(suspendedWf)
+			values := SetOperationValues{Phase: tt.phase, Message: tt.message}
 
-		ctx := logging.TestContext(t.Context())
-		_, err := wfIf.Create(ctx, origWf, metav1.CreateOptions{})
-		require.NoError(t, err)
+			changed, err := ApplySuspendedNodeSetOperation(ctx, wf, "displayName=nonexistant", values)
+			require.Error(t, err)
+			assert.False(t, changed)
+			assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByDisplayName("approve").Phase)
 
-		// will return error as displayName does not match any nodes
-		err = ResumeWorkflow(ctx, wfIf, hydratorfake.Noop, "suspend", "displayName=nonexistant")
-		require.Error(t, err)
-
-		// displayName didn't match suspend node so should still be running
-		wf, err := wfIf.Get(ctx, "suspend", metav1.GetOptions{})
-		require.NoError(t, err)
-		assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByDisplayName("approve").Phase)
-
-		err = ResumeWorkflow(ctx, wfIf, hydratorfake.Noop, "suspend", "displayName=approve")
-		require.NoError(t, err)
-
-		// displayName matched node so has succeeded
-		wf, err = wfIf.Get(ctx, "suspend", metav1.GetOptions{})
-		require.NoError(t, err)
-		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByDisplayName("approve").Phase)
-		assert.Empty(t, wf.Status.Nodes.FindByDisplayName("approve").Message)
-	})
-
-	t.Run("With user info", func(t *testing.T) {
-		wfIf := argofake.NewClientset().ArgoprojV1alpha1().Workflows("")
-		origWf := wfv1.MustUnmarshalWorkflow(suspendedWf)
-
-		ctx := logging.TestContext(t.Context())
-		ctx = context.WithValue(ctx, auth.ClaimsKey,
-			&types.Claims{Claims: jwt.Claims{Subject: strings.Repeat("x", 63) + "y"}, Email: "my@email", PreferredUsername: "username"})
-		uim := creator.UserInfoMap(ctx)
-
-		_, err := wfIf.Create(ctx, origWf, metav1.CreateOptions{})
-		require.NoError(t, err)
-
-		// will return error as displayName does not match any nodes
-		err = ResumeWorkflow(ctx, wfIf, hydratorfake.Noop, "suspend", "displayName=nonexistant")
-		require.Error(t, err)
-
-		// displayName didn't match suspend node so should still be running
-		wf, err := wfIf.Get(ctx, "suspend", metav1.GetOptions{})
-		require.NoError(t, err)
-		assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByDisplayName("approve").Phase)
-
-		err = ResumeWorkflow(ctx, wfIf, hydratorfake.Noop, "suspend", "displayName=approve")
-		require.NoError(t, err)
-
-		// displayName matched node so has succeeded
-		wf, err = wfIf.Get(ctx, "suspend", metav1.GetOptions{})
-		require.NoError(t, err)
-		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByDisplayName("approve").Phase)
-		assert.Equal(t, fmt.Sprintf("Resumed by: %v", uim), wf.Status.Nodes.FindByDisplayName("approve").Message)
-	})
-}
-
-func TestStopWorkflowByNodeName(t *testing.T) {
-	wfIf := argofake.NewClientset().ArgoprojV1alpha1().Workflows("")
-	origWf := wfv1.MustUnmarshalWorkflow(suspendedWf)
-
-	ctx := logging.TestContext(t.Context())
-	_, err := wfIf.Create(ctx, origWf, metav1.CreateOptions{})
-	require.NoError(t, err)
-
-	// will return error as displayName does not match any nodes
-	err = StopWorkflow(ctx, wfIf, hydratorfake.Noop, "suspend", "displayName=nonexistant", "error occurred")
-	require.Error(t, err)
-
-	// displayName didn't match suspend node so should still be running
-	wf, err := wfIf.Get(ctx, "suspend", metav1.GetOptions{})
-	require.NoError(t, err)
-	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByDisplayName("approve").Phase)
-
-	err = StopWorkflow(ctx, wfIf, hydratorfake.Noop, "suspend", "displayName=approve", "error occurred")
-	require.NoError(t, err)
-
-	// displayName matched node so has succeeded
-	wf, err = wfIf.Get(ctx, "suspend", metav1.GetOptions{})
-	require.NoError(t, err)
-	assert.Equal(t, wfv1.NodeFailed, wf.Status.Nodes.FindByDisplayName("approve").Phase)
-
-	origWf.Status = wfv1.WorkflowStatus{Phase: wfv1.WorkflowSucceeded}
-	origWf.Name = "succeeded-wf"
-	_, err = wfIf.Create(ctx, origWf, metav1.CreateOptions{})
-	require.NoError(t, err)
-	err = StopWorkflow(ctx, wfIf, hydratorfake.Noop, "succeeded-wf", "", "")
-	require.EqualError(t, err, "cannot shutdown a completed workflow: workflow: \"succeeded-wf\", namespace: \"\"")
+			changed, err = ApplySuspendedNodeSetOperation(ctx, wf, "displayName=approve", values)
+			require.NoError(t, err)
+			assert.True(t, changed)
+			assert.Equal(t, tt.phase, wf.Status.Nodes.FindByDisplayName("approve").Phase)
+			assert.Equal(t, tt.message, wf.Status.Nodes.FindByDisplayName("approve").Message)
+		})
+	}
 }
 
 // Regression test for #6478
@@ -472,15 +406,15 @@ func TestUpdateSuspendedNode(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	_, err := wfIf.Create(ctx, origWf, metav1.CreateOptions{})
 	require.NoError(t, err)
-	err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "does-not-exist", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}}, creator.ActionNone)
+	err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "does-not-exist", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}})
 	require.EqualError(t, err, "workflows.argoproj.io \"does-not-exist\" not found")
-	err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "displayName=does-not-exists", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}}, creator.ActionNone)
+	err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "displayName=does-not-exists", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}})
 	require.EqualError(t, err, "currently, set only targets suspend nodes: no suspend nodes matching nodeFieldSelector: displayName=does-not-exists")
-	err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"does-not-exist": "Hello World"}}, creator.ActionNone)
+	err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"does-not-exist": "Hello World"}})
 	require.EqualError(t, err, "node is not expecting output parameter 'does-not-exist'")
-	err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}}, creator.ActionNone)
+	err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}})
 	require.NoError(t, err)
-	err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "name=suspend-template-kgfn7[0].approve", SetOperationValues{OutputParameters: map[string]string{"message2": "Hello World 2"}}, creator.ActionNone)
+	err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template", "name=suspend-template-kgfn7[0].approve", SetOperationValues{OutputParameters: map[string]string{"message2": "Hello World 2"}})
 	require.NoError(t, err)
 
 	// make sure global variable was updated
@@ -495,7 +429,7 @@ func TestUpdateSuspendedNode(t *testing.T) {
 	noSpaceWf.Status.Nodes["suspend-template-kgfn7-2667278707"] = node
 	_, err = wfIf.Create(ctx, noSpaceWf, metav1.CreateOptions{})
 	require.NoError(t, err)
-	err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template-no-outputs", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}}, creator.ActionNone)
+	err = updateSuspendedNode(ctx, wfIf, hydratorfake.Noop, "suspend-template-no-outputs", "displayName=approve", SetOperationValues{OutputParameters: map[string]string{"message": "Hello World"}})
 	require.EqualError(t, err, "cannot set output parameters because node is not expecting any raw parameters")
 }
 
@@ -1032,6 +966,30 @@ func TestRetryExitHandler(t *testing.T) {
 func TestFormulateRetryWorkflow(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wfClient := argofake.NewClientset().ArgoprojV1alpha1().Workflows("my-ns")
+	t.Run("StatusShutdownCleared", func(t *testing.T) {
+		// a shutdown accepted from a WorkflowAction lives in status.shutdown and supersedes
+		// spec.shutdown, so retry must clear both or the retried workflow shuts down again
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:   "my-terminated-wf",
+				Labels: map[string]string{},
+			},
+			Spec: wfv1.WorkflowSpec{Shutdown: wfv1.ShutdownStrategyTerminate},
+			Status: wfv1.WorkflowStatus{
+				Phase:    wfv1.WorkflowFailed,
+				Shutdown: wfv1.ShutdownStrategyTerminate,
+				Nodes: map[string]wfv1.NodeStatus{
+					"my-terminated-wf": {Phase: wfv1.NodeFailed, Type: wfv1.NodeTypeDAG, Name: "my-terminated-wf", ID: "my-terminated-wf"}},
+			},
+		}
+		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
+		require.NoError(t, err)
+		wf, _, err = FormulateRetryWorkflow(ctx, wf, false, "", nil)
+		require.NoError(t, err)
+		assert.Equal(t, wfv1.ShutdownStrategyNone, wf.Spec.Shutdown)
+		assert.Equal(t, wfv1.ShutdownStrategyNone, wf.Status.Shutdown)
+		assert.Equal(t, wfv1.ShutdownStrategyNone, wf.EffectiveShutdown())
+	})
 	t.Run("DAG", func(t *testing.T) {
 		wf := &wfv1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{
@@ -5371,4 +5329,38 @@ func TestApplySubmitOptsWithArtifacts(t *testing.T) {
 		err := ApplySubmitOpts(wf, &wfv1.SubmitOpts{Artifacts: []string{"input-artifact=uploads/new-key"}})
 		require.NoError(t, err)
 	})
+}
+
+func TestApplyResumeInMemory(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(suspendedWf)
+	changed, err := ApplyResume(ctx, wf, "Resumed by: tester")
+	require.NoError(t, err)
+	assert.True(t, changed)
+	assert.Nil(t, wf.Spec.Suspend)
+	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByDisplayName("approve").Phase)
+	assert.Contains(t, wf.Status.Nodes.FindByDisplayName("approve").Message, "Resumed by: tester")
+
+	// second call is an idempotent no-op
+	changed, err = ApplyResume(ctx, wf, "again")
+	require.NoError(t, err)
+	assert.False(t, changed)
+}
+
+func TestApplySuspendedNodeSetOperationNoMatch(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(suspendedWf)
+	_, err := ApplySuspendedNodeSetOperation(ctx, wf, "displayName=does-not-exist", SetOperationValues{Phase: wfv1.NodeFailed})
+	require.ErrorContains(t, err, "no suspend nodes matching nodeFieldSelector")
+}
+
+func TestApplySuspendedNodeSetOperationStop(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(suspendedWf)
+	changed, err := ApplySuspendedNodeSetOperation(ctx, wf, "displayName=approve", SetOperationValues{Phase: wfv1.NodeFailed, Message: "stopped"})
+	require.NoError(t, err)
+	assert.True(t, changed)
+	node := wf.Status.Nodes.FindByDisplayName("approve")
+	assert.Equal(t, wfv1.NodeFailed, node.Phase)
+	assert.Equal(t, "stopped", node.Message)
 }

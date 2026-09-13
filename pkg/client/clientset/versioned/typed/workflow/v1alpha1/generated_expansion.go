@@ -8,6 +8,8 @@ type CronWorkflowExpansion interface{}
 
 type WorkflowExpansion interface{}
 
+type WorkflowActionExpansion interface{}
+
 type WorkflowArtifactGCTaskExpansion interface{}
 
 type WorkflowEventBindingExpansion interface{}

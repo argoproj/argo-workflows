@@ -31,6 +31,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/config"
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	typedwfv1 "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	intstrutil "github.com/argoproj/argo-workflows/v4/util/intstr"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/strftime"
@@ -2966,6 +2967,32 @@ func TestSidecarResourceLimits(t *testing.T) {
 	assert.Len(t, waitCtr.Resources.Requests, 2)
 }
 
+// editWorkflow fetches a stored workflow, applies edit to it (as the controller's WorkflowAction
+// drain does to the in-memory workflow) and writes it back.
+func editWorkflow(ctx context.Context, wfcset typedwfv1.WorkflowInterface, name string, edit func(wf *wfv1.Workflow) error) error {
+	wf, err := wfcset.Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	if editErr := edit(wf); editErr != nil {
+		return editErr
+	}
+	_, err = wfcset.Update(ctx, wf, metav1.UpdateOptions{})
+	return err
+}
+
+func resumeWorkflow(ctx context.Context, wfcset typedwfv1.WorkflowInterface, name, nodeFieldSelector string) error {
+	return editWorkflow(ctx, wfcset, name, func(wf *wfv1.Workflow) error {
+		var err error
+		if nodeFieldSelector != "" {
+			_, err = util.ApplySuspendedNodeSetOperation(ctx, wf, nodeFieldSelector, util.SetOperationValues{Phase: wfv1.NodeSucceeded})
+		} else {
+			_, err = util.ApplyResume(ctx, wf, "")
+		}
+		return err
+	})
+}
+
 // TestSuspendResume tests the suspend and resume feature
 func TestSuspendResume(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(stepsTemplateParallelismLimit)
@@ -2975,7 +3002,10 @@ func TestSuspendResume(t *testing.T) {
 
 	// suspend the workflow
 	ctx := logging.TestContext(t.Context())
-	err := util.SuspendWorkflow(ctx, wfcset, wf.Name)
+	err := editWorkflow(ctx, wfcset, wf.Name, func(wf *wfv1.Workflow) error {
+		wf.Spec.Suspend = new(true)
+		return nil
+	})
 	require.NoError(t, err)
 	wf, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
 	require.NoError(t, err)
@@ -2989,7 +3019,7 @@ func TestSuspendResume(t *testing.T) {
 	assert.Empty(t, pods.Items)
 
 	// resume the workflow and operate again. two pods should be able to be scheduled
-	err = util.ResumeWorkflow(ctx, wfcset, controller.hydrator, wf.Name, "")
+	err = resumeWorkflow(ctx, wfcset, wf.Name, "")
 	require.NoError(t, err)
 	wf, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
 	require.NoError(t, err)
@@ -3363,7 +3393,7 @@ func TestSuspendTemplate(t *testing.T) {
 	assert.Empty(t, pods.Items)
 
 	// resume the workflow. verify resume workflow edits nodestatus correctly
-	err = util.ResumeWorkflow(ctx, wfcset, controller.hydrator, wf.Name, "")
+	err = resumeWorkflow(ctx, wfcset, wf.Name, "")
 	require.NoError(t, err)
 	wf, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
 	require.NoError(t, err)
@@ -3401,7 +3431,10 @@ func TestSuspendTemplateWithFailedResume(t *testing.T) {
 	assert.Empty(t, pods.Items)
 
 	// resume the workflow. verify resume workflow edits nodestatus correctly
-	err = util.StopWorkflow(ctx, wfcset, controller.hydrator, wf.Name, "inputs.parameters.param1.value=value1", "Step failed!")
+	err = editWorkflow(ctx, wfcset, wf.Name, func(wf *wfv1.Workflow) error {
+		_, applyErr := util.ApplySuspendedNodeSetOperation(ctx, wf, "inputs.parameters.param1.value=value1", util.SetOperationValues{Phase: wfv1.NodeFailed, Message: "Step failed!"})
+		return applyErr
+	})
 	require.NoError(t, err)
 	wf, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
 	require.NoError(t, err)
@@ -3440,7 +3473,7 @@ func TestSuspendTemplateWithFilteredResume(t *testing.T) {
 	assert.Empty(t, pods.Items)
 
 	// resume the workflow, but with non-matching selector
-	err = util.ResumeWorkflow(ctx, wfcset, controller.hydrator, wf.Name, "inputs.paramaters.param1.value=value2")
+	err = resumeWorkflow(ctx, wfcset, wf.Name, "inputs.paramaters.param1.value=value2")
 	require.Error(t, err)
 
 	// operate the workflow. nothing should have happened
@@ -3452,7 +3485,7 @@ func TestSuspendTemplateWithFilteredResume(t *testing.T) {
 	assert.True(t, util.IsWorkflowSuspended(wf))
 
 	// resume the workflow, but with matching selector
-	err = util.ResumeWorkflow(ctx, wfcset, controller.hydrator, wf.Name, "inputs.parameters.param1.value=value1")
+	err = resumeWorkflow(ctx, wfcset, wf.Name, "inputs.parameters.param1.value=value1")
 	require.NoError(t, err)
 	wf, err = wfcset.Get(ctx, wf.Name, metav1.GetOptions{})
 	require.NoError(t, err)

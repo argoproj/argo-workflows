@@ -7,7 +7,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/rand"
+	ktesting "k8s.io/client-go/testing"
 
 	"github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
@@ -814,4 +819,44 @@ func TestEvaluateWhenUnresolvedOutside(t *testing.T) {
 	result, err := evalWhen(ctx, &cronWf)
 	require.NoError(t, err)
 	assert.True(t, result)
+}
+
+func TestTerminateOutstandingWorkflowsCreatesActions(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	var cronWf v1alpha1.CronWorkflow
+	v1alpha1.MustUnmarshal([]byte(specError), &cronWf)
+	cronWf.Namespace = "argo"
+	cronWf.Labels = map[string]string{common.LabelKeyControllerInstanceID: "my-instance"}
+	cronWf.Status.Active = []corev1.ObjectReference{{Name: "hello-world-1", UID: "uid-1"}, {Name: "hello-world-2", UID: "uid-2"}}
+
+	cs := fake.NewClientset()
+	cs.PrependReactor("create", "workflowactions", func(action ktesting.Action) (bool, runtime.Object, error) {
+		a := action.(ktesting.CreateAction).GetObject().(*v1alpha1.WorkflowAction)
+		if a.Name == "" && a.GenerateName != "" {
+			a.Name = a.GenerateName + rand.String(5)
+		}
+		return false, nil, nil
+	})
+	woc := &cronWfOperationCtx{
+		wfClientset: cs,
+		wfClient:    cs.ArgoprojV1alpha1().Workflows("argo"),
+		cronWfIf:    cs.ArgoprojV1alpha1().CronWorkflows("argo"),
+		cronWf:      &cronWf,
+		log:         logging.RequireLoggerFromContext(ctx),
+	}
+
+	// Replace no longer patches spec.shutdown (a second writer of the workflow, and deprecated):
+	// it requests a Terminate WorkflowAction per active workflow, pinned by UID and carrying the
+	// instance ID so the controller's filtered informer sees it
+	require.NoError(t, woc.terminateOutstandingWorkflows(ctx))
+
+	actions, err := cs.ArgoprojV1alpha1().WorkflowActions("argo").List(ctx, v1.ListOptions{})
+	require.NoError(t, err)
+	require.Len(t, actions.Items, 2)
+	for _, a := range actions.Items {
+		assert.Equal(t, v1alpha1.ActionTypeTerminate, a.Spec.Action)
+		assert.Equal(t, "my-instance", a.Labels[common.LabelKeyControllerInstanceID])
+		assert.Equal(t, "hello-world", a.Labels[common.LabelKeyCronWorkflow])
+		assert.Equal(t, types.UID("uid-"+a.Spec.WorkflowRef.Name[len("hello-world-"):]), a.Spec.WorkflowRef.UID)
+	}
 }
