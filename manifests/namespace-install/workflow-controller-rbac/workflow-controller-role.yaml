@@ -72,8 +72,13 @@ rules:
     resources:
       - workflowtaskresults
     verbs:
+      - get
       - list
+      - create
+      - update
+      - patch
       - watch
+      - delete
       - deletecollection
   - apiGroups:
       - ""
