@@ -1137,6 +1137,30 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["2"].Phase)
 		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes["3"].Phase)
 	})
+	t.Run("Orphaned Retried Node Flag", func(t *testing.T) {
+		// A node can be flagged NodeFlag.Retried=true without a corresponding NodeTypeRetry
+		// node listing it as a direct child (e.g. the flag was inherited from an ancestor's
+		// retryStrategy several levels up). FormulateRetryWorkflow must not panic in that case.
+		wf := &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:   "wf-with-orphaned-retried-flag",
+				Labels: map[string]string{},
+			},
+			Status: wfv1.WorkflowStatus{
+				Phase: wfv1.WorkflowFailed,
+				Nodes: map[string]wfv1.NodeStatus{
+					"wf-with-orphaned-retried-flag": {ID: "wf-with-orphaned-retried-flag", Name: "wf-with-orphaned-retried-flag", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypeDAG, Children: []string{"orphan"}},
+					"orphan":                        {ID: "orphan", Phase: wfv1.NodeFailed, Type: wfv1.NodeTypePod, BoundaryID: "wf-with-orphaned-retried-flag", NodeFlag: &wfv1.NodeFlag{Retried: true}},
+				},
+			},
+		}
+		_, err := wfClient.Create(ctx, wf, metav1.CreateOptions{})
+		require.NoError(t, err)
+		require.NotPanics(t, func() {
+			_, _, err = FormulateRetryWorkflow(ctx, wf, false, "", nil)
+		})
+		require.NoError(t, err)
+	})
 	t.Run("OverrideParams", func(t *testing.T) {
 		wf := &wfv1.Workflow{
 			ObjectMeta: metav1.ObjectMeta{
