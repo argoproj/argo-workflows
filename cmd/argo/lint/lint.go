@@ -150,6 +150,12 @@ func lintData(ctx context.Context, src string, data []byte, opts *Options) *Resu
 	for i, pr := range common.ParseObjects(ctx, data, opts.Strict) {
 		obj, err := pr.Object, pr.Err
 		if obj == nil {
+			if err != nil {
+				// report parse errors even when the document could not be converted
+				// to a Kubernetes object, so users learn which file failed and why
+				res.Linted = true // the file was processed and found broken
+				res.Errs = append(res.Errs, fmt.Errorf("in object #%d: %w", i+1, err))
+			}
 			continue // could not parse to kubernetes object
 		}
 		// we should prefer the object's namespace
