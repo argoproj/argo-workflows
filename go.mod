@@ -363,7 +363,7 @@ require (
 	k8s.io/component-helpers v0.35.4 // indirect
 	k8s.io/metrics v0.35.4 // indirect
 	moul.io/http2curl/v2 v2.3.0 // indirect
-	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730
+	sigs.k8s.io/json v0.0.0-20260909141634-11ed52e25bc5
 	sigs.k8s.io/kustomize/api v0.20.1 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.20.1 // indirect
 )

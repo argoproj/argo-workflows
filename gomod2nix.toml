@@ -1040,8 +1040,8 @@ schema = 3
     version = "v2.3.0"
     hash = "sha256-0wUWQPmDa8wlP18TKrLtuY6Sakh3KkNqDq+FIbE+AHo="
   [mod."sigs.k8s.io/json"]
-    version = "v0.0.0-20250730193827-2d320260d730"
-    hash = "sha256-y3vUPJYL6oxu/8c0j4vgX6fzqHtVPSCjfyuWkZYf6+I="
+    version = "v0.0.0-20260909141634-11ed52e25bc5"
+    hash = "sha256-Dj5Vcvq3ETZtUpMO1ALu93zwG5ltne7LjMS7lzBL9KY="
   [mod."sigs.k8s.io/kustomize/api"]
     version = "v0.20.1"
     hash = "sha256-kcZREdlFsFC7xaMRzvwkE+93lQJBTanImDJjgYMyzRU="
