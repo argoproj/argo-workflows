@@ -5970,9 +5970,19 @@ spec:
                 description: Shutdown will shutdown the workflow according to its
                   ShutdownStrategy
                 type: string
+              startSuspended:
+                description: |-
+                  StartSuspended creates the workflow in the suspended state. It is honored exactly once, when
+                  the workflow is first reconciled, before anything has run; changing it on a started workflow
+                  has no effect. Resume the workflow with a WorkflowAction.
+                type: boolean
               suspend:
-                description: Suspend will suspend the workflow and prevent execution
-                  of any future steps in the workflow
+                description: |-
+                  Suspend will suspend the workflow and prevent execution of any future steps in it.
+                  Setting it on a started Workflow is deprecated: suspend or resume a running Workflow with a
+                  WorkflowAction instead. Setting it at creation time ("start suspended") remains supported,
+                  as does startSuspended. It is still honored for now, and the controller keeps it in sync
+                  with status.suspended.
                 type: boolean
               synchronization:
                 description: Synchronization holds synchronization lock configuration
@@ -42884,6 +42894,10 @@ spec:
               WorkflowStatus contains overall status information about a workflow.
               All nested field descriptions have been dropped due to Kubernetes size limitations.
             properties:
+              appliedActions:
+                items:
+                  type: string
+                type: array
               artifactGCStatus:
                 properties:
                   notSpecified:
@@ -46132,6 +46146,8 @@ spec:
                   format: int64
                   type: integer
                 type: object
+              shutdown:
+                type: string
               startedAt:
                 format: date-time
                 type: string
@@ -46143,6 +46159,8 @@ spec:
                 type: object
                 x-kubernetes-map-type: atomic
                 x-kubernetes-preserve-unknown-fields: true
+              suspended:
+                type: boolean
               synchronization:
                 properties:
                   mutex:

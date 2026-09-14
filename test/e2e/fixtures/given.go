@@ -28,6 +28,7 @@ func NewGiven(
 	wftsClient v1alpha1.WorkflowTaskSetInterface,
 	cwfTemplateClient v1alpha1.ClusterWorkflowTemplateInterface,
 	cronClient v1alpha1.CronWorkflowInterface,
+	actionClient v1alpha1.WorkflowActionInterface,
 	hydrator hydrator.Interface,
 	kubeClient kubernetes.Interface,
 	bearerToken string,
@@ -42,6 +43,7 @@ func NewGiven(
 		wftsClient:        wftsClient,
 		cwfTemplateClient: cwfTemplateClient,
 		cronClient:        cronClient,
+		actionClient:      actionClient,
 		hydrator:          hydrator,
 		kubeClient:        kubeClient,
 		bearerToken:       bearerToken,
@@ -58,6 +60,7 @@ type Given struct {
 	wftsClient        v1alpha1.WorkflowTaskSetInterface
 	cwfTemplateClient v1alpha1.ClusterWorkflowTemplateInterface
 	cronClient        v1alpha1.CronWorkflowInterface
+	actionClient      v1alpha1.WorkflowActionInterface
 	hydrator          hydrator.Interface
 	wf                *wfv1.Workflow
 	wfeb              *wfv1.WorkflowEventBinding
@@ -307,6 +310,7 @@ func (g *Given) When() *When {
 		wftsClient:        g.wftsClient,
 		cwfTemplateClient: g.cwfTemplateClient,
 		cronClient:        g.cronClient,
+		actionClient:      g.actionClient,
 		hydrator:          g.hydrator,
 		kubeClient:        g.kubeClient,
 		bearerToken:       g.bearerToken,

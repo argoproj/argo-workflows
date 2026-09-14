@@ -5,6 +5,21 @@ For the upgrading guide to a specific version of workflows change the documentat
 Breaking changes  typically (sometimes we don't realise they are breaking) have "!" in the commit message, as per
 the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summary).
 
+## Upgrading to v4.2
+
+### Workflow actions go through a `WorkflowAction` resource
+
+Stop, terminate, suspend and resume are now performed by the workflow controller from a new namespaced `WorkflowAction` custom resource ([#16920](https://github.com/argoproj/argo-workflows/pull/16920), see [Workflow Actions](workflow-actions.md)).
+Install the updated CRDs (they include `workflowactions.argoproj.io`) and upgrade the workflow controller before, or together with, the Argo Server: a new server against an old controller (or a cluster without the CRD) cannot perform these actions.
+The same applies to the `argo` CLI when used without an Argo Server, which now also needs a running controller for these four commands.
+
+If you maintain your own RBAC rather than using the bundled roles: the workflow controller needs `create`, `get`, `list`, `watch` and `delete` on `workflowactions` and `update` on `workflowactions/status`; the Argo Server needs `create`, `get` and `watch` on `workflowactions`.
+In `client` and `sso` auth modes the action is created with the caller's identity, so roles bound to users or SSO service accounts that could `patch` `workflows` need `create`, `get` and `watch` on `workflowactions` too, or the four endpoints fail with a permission error.
+Roles that use a resource wildcard in the `argoproj.io` group silently gain the ability to create actions.
+
+The four endpoints now wait up to 30 seconds for the controller to apply the action and return `DeadlineExceeded` if it has not; the action is still recorded and applied later.
+Setting `spec.shutdown` or `spec.suspend` on a running Workflow directly is [deprecated](deprecations.md).
+
 ## Upgrading to v4.1.2
 
 ### SSO users are logged out once on upgrade

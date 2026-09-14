@@ -1473,6 +1473,16 @@ message ResourceTemplate {
   repeated string flags = 7;
 }
 
+// ResumeAction parameterizes a Resume action
+// +kubebuilder:validation:XValidation:rule="!has(self.outputParameters) || (has(self.nodeFieldSelector) && size(self.nodeFieldSelector) > 0)",message="outputParameters requires a nodeFieldSelector"
+message ResumeAction {
+  // NodeFieldSelector selects suspended nodes to resume. Empty resumes the whole workflow.
+  optional string nodeFieldSelector = 1;
+
+  // OutputParameters sets raw output parameters on the resumed suspend nodes
+  map<string, string> outputParameters = 2;
+}
+
 // RetryAffinity prevents running steps on the same host.
 message RetryAffinity {
   optional RetryNodeAntiAffinity nodeAntiAffinity = 1;
@@ -1641,6 +1651,15 @@ message Sequence {
 
   // Format is a printf format string to format the value in the sequence
   optional string format = 4;
+}
+
+// StopAction parameterizes a Stop action
+message StopAction {
+  // Message set on stopped nodes
+  optional string message = 1;
+
+  // NodeFieldSelector selects suspended nodes to fail instead of stopping the whole workflow
+  optional string nodeFieldSelector = 2;
 }
 
 // StopStrategy defines if the CronWorkflow should stop scheduling based on an expression. v3.6 and after
@@ -2032,6 +2051,76 @@ message Workflow {
   optional WorkflowStatus status = 3;
 }
 
+// WorkflowAction requests the workflow controller to perform a lifecycle action on a Workflow.
+// The controller applies the action during reconciliation and reports the outcome on status.
+// +genclient
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:resource:shortName=wfa
+// +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="Target",type=string,JSONPath=`.spec.workflowRef.name`
+// +kubebuilder:printcolumn:name="Action",type=string,JSONPath=`.spec.action`
+// +kubebuilder:printcolumn:name="Phase",type=string,JSONPath=`.status.phase`
+// +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
+message WorkflowAction {
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+
+  optional WorkflowActionSpec spec = 2;
+
+  optional WorkflowActionStatus status = 3;
+}
+
+// WorkflowActionList is a list of WorkflowAction resources.
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+message WorkflowActionList {
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+
+  repeated WorkflowAction items = 2;
+}
+
+// WorkflowActionRef identifies the target Workflow
+message WorkflowActionRef {
+  // Name of the target Workflow in the same namespace
+  optional string name = 1;
+
+  // UID optionally pins the target across name reuse: when set, the action fails if the named
+  // workflow's UID differs. Leave empty to target whichever workflow currently holds the name.
+  optional string uid = 2;
+}
+
+// WorkflowActionSpec is the requested action. It is immutable after creation.
+// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="spec is immutable"
+// +kubebuilder:validation:XValidation:rule="!has(self.resume) || self.action == 'Resume'",message="resume parameters require action: Resume"
+// +kubebuilder:validation:XValidation:rule="!has(self.stop) || self.action == 'Stop'",message="stop parameters require action: Stop"
+message WorkflowActionSpec {
+  // WorkflowRef is the target Workflow
+  optional WorkflowActionRef workflowRef = 1;
+
+  // Action to perform on the target
+  // +kubebuilder:validation:Enum=Suspend;Resume;Stop;Terminate
+  optional string action = 2;
+
+  // Resume parameters, only for action: Resume
+  optional ResumeAction resume = 3;
+
+  // Stop parameters, only for action: Stop
+  optional StopAction stop = 4;
+}
+
+// WorkflowActionStatus is the observed outcome of the action
+message WorkflowActionStatus {
+  // Phase of the action: Pending, Succeeded or Failed. Empty means Pending.
+  optional string phase = 1;
+
+  // Reason is a machine-readable reason for a Failed phase
+  optional string reason = 2;
+
+  // Message is a human-readable elaboration of Reason
+  optional string message = 3;
+
+  // CompletionTime is when the action reached a terminal phase
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.Time completionTime = 4;
+}
+
 // WorkflowArtifactGCTask specifies the Artifacts that need to be deleted as well as the status of deletion
 // +genclient
 // +kubebuilder:resource:shortName=wfat
@@ -2156,8 +2245,17 @@ message WorkflowSpec {
   // ArtifactRepositoryRef specifies the configMap name and key containing the artifact repository config.
   optional ArtifactRepositoryRef artifactRepositoryRef = 8;
 
-  // Suspend will suspend the workflow and prevent execution of any future steps in the workflow
+  // Suspend will suspend the workflow and prevent execution of any future steps in it.
+  // Setting it on a started Workflow is deprecated: suspend or resume a running Workflow with a
+  // WorkflowAction instead. Setting it at creation time ("start suspended") remains supported,
+  // as does startSuspended. It is still honored for now, and the controller keeps it in sync
+  // with status.suspended.
   optional bool suspend = 9;
+
+  // StartSuspended creates the workflow in the suspended state. It is honored exactly once, when
+  // the workflow is first reconciled, before anything has run; changing it on a started workflow
+  // has no effect. Resume the workflow with a WorkflowAction.
+  optional bool startSuspended = 48;
 
   // NodeSelector is a selector which will result in all pods of the workflow
   // to be scheduled on the selected node(s). This is able to be overridden by
@@ -2375,6 +2473,20 @@ message WorkflowStatus {
 
   // TaskResultsCompletionStatus tracks task result completion status (mapped by node ID). Used to prevent premature archiving and garbage collection.
   map<string, bool> taskResultsCompletionStatus = 20;
+
+  // Shutdown is the shutdown strategy the controller accepted from a Stop or Terminate
+  // WorkflowAction. When set it supersedes spec.shutdown.
+  optional string shutdown = 21;
+
+  // AppliedActions records the UIDs of WorkflowActions whose effects have been persisted on this
+  // workflow but whose own status may not have been written yet (a write-ahead record for crash
+  // recovery). Entries are pruned once the action's status is recorded.
+  repeated string appliedActions = 22;
+
+  // Suspended is the workflow-level suspension state the controller accepted from
+  // spec.startSuspended or a Suspend WorkflowAction. The deprecated spec.suspend also suspends
+  // the workflow when its value is true; the workflow is suspended if either is in effect.
+  optional bool suspended = 23;
 }
 
 // WorkflowStep is a reference to a template to execute in a series of step

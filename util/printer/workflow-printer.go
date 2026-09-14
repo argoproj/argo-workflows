@@ -183,7 +183,7 @@ func WorkflowStatus(wf *wfv1.Workflow) string {
 			return "Running (Suspended)"
 		}
 	case wfv1.WorkflowFailed:
-		if wf.Spec.Shutdown != "" {
+		if wf.EffectiveShutdown() != "" {
 			return "Failed (Terminated)"
 		}
 	case wfv1.WorkflowUnknown, wfv1.WorkflowPending:

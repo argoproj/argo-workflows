@@ -181,6 +181,9 @@ type WorkflowController struct {
 	wfTaskSetInformer          wfextvv1alpha1.WorkflowTaskSetInformer
 	artGCTaskInformer          wfextvv1alpha1.WorkflowArtifactGCTaskInformer
 	taskResultInformer         cache.SharedIndexInformer
+	wfActionInformer           cache.SharedIndexInformer
+	wfActionQueue              workqueue.TypedRateLimitingInterface[string]
+	wfActionGCQueue            workqueue.TypedDelayingInterface[string]
 
 	// progressPatchTickDuration defines how often the executor will patch pod annotations if an updated progress is found.
 	// Default is 1m and can be configured using the env var ARGO_PROGRESS_PATCH_TICK_DURATION.
@@ -291,6 +294,8 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 	wfc.wfQueue = wfc.metrics.RateLimiterWithBusyWorkers(ctx, &fixedItemIntervalRateLimiter{requeueTime: wfc.requeueTime}, "workflow_queue")
 	wfc.throttler = wfc.newThrottler()
 	wfc.wfArchiveQueue = wfc.metrics.RateLimiterWithBusyWorkers(ctx, workqueue.DefaultTypedControllerRateLimiter[string](), "workflow_archive_queue")
+	wfc.wfActionQueue = wfc.metrics.RateLimiterWithBusyWorkers(ctx, workqueue.DefaultTypedControllerRateLimiter[string](), "workflow_action_queue")
+	wfc.wfActionGCQueue = workqueue.NewTypedDelayingQueueWithConfig(workqueue.TypedDelayingQueueConfig[string]{Name: "workflow_action_gc_queue"})
 
 	return &wfc, nil
 }
@@ -380,6 +385,8 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	// The archive workers block in Get() until the queue shuts down, so
 	// cancelling their context alone does not release them.
 	defer wfc.wfArchiveQueue.ShutDown()
+	defer wfc.wfActionQueue.ShutDown()
+	defer wfc.wfActionGCQueue.ShutDown()
 
 	logger.WithFields(argo.GetVersion().Fields()).WithFields(logging.Fields{
 		"instanceID":         wfc.Config.InstanceID,
@@ -404,6 +411,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	wfc.wfTaskSetInformer = wfc.newWorkflowTaskSetInformer()
 	wfc.artGCTaskInformer = wfc.newArtGCTaskInformer()
 	wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer(ctx)
+	wfc.wfActionInformer = wfc.newWorkflowActionInformer(ctx)
 	err = wfc.addWorkflowInformerHandlers(ctx)
 	if err != nil {
 		logger.WithError(err).WithFatal().Error(ctx, "Failed to add workflow informer handlers")
@@ -435,6 +443,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	go wfc.wfTaskSetInformer.Informer().Run(ctx.Done())
 	go wfc.artGCTaskInformer.Informer().Run(ctx.Done())
 	go wfc.taskResultInformer.Run(ctx.Done())
+	go wfc.wfActionInformer.Run(ctx.Done())
 	wfc.createClusterWorkflowTemplateInformer(ctx)
 	go wfc.runPodController(ctx, podCleanupWorkers)
 
@@ -451,6 +460,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 		wfc.wfTaskSetInformer.Informer().HasSynced,
 		wfc.artGCTaskInformer.Informer().HasSynced,
 		wfc.taskResultInformer.HasSynced,
+		wfc.wfActionInformer.HasSynced,
 	) {
 		logger.WithFatal().Error(ctx, "Timed out waiting for caches to sync")
 	}
@@ -475,6 +485,12 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, workflowTTLWo
 	for range wfArchiveWorkers {
 		go wait.UntilWithContext(archiveCtx, wfc.runArchiveWorker, time.Second)
 	}
+
+	actionCtx, _ := logger.WithField("component", "workflow_action_worker").InContext(ctx)
+	for range 2 {
+		go wait.UntilWithContext(actionCtx, wfc.runActionWorker, time.Second)
+	}
+	go wait.UntilWithContext(actionCtx, wfc.runActionGCWorker, time.Second)
 	if wfc.cacheGCPeriod != 0 {
 		go wait.JitterUntilWithContext(ctx, wfc.syncAllCacheForGC, wfc.cacheGCPeriod, 0.0, true)
 	}
@@ -968,6 +984,9 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 
 	if !reconciliationNeeded(un) {
 		logger.WithField("key", key).Debug(ctx, "Won't process Workflow since it's completed")
+		// The action binder enqueues a workflow it saw as incomplete; if it completed in the
+		// meantime, operate() never runs and nothing else would settle those actions.
+		wfc.settlePendingActions(ctx, un, wfv1.WorkflowActionReasonWorkflowCompleted)
 		return true
 	}
 
@@ -987,20 +1006,32 @@ func (wfc *WorkflowController) processNextItem(ctx context.Context) bool {
 	// Check the parallelism limit before building the operation context: newWorkflowOperationCtx
 	// deep-copies the entire Workflow, and for a workflow that is postponed that copy is discarded
 	// immediately. Only read from wf on this path, never mutate it.
-	shutdownStrategy := wf.Spec.Shutdown
+	// A Terminate must never be postponed, whether it arrived via the (deprecated for runtime
+	// use) spec.shutdown, the controller-accepted status.shutdown, or a still-pending
+	// Terminate WorkflowAction that operate() has yet to drain.
+	pendingActions := wfc.pendingActionsForKey(key)
+	terminating := wf.EffectiveShutdown() == wfv1.ShutdownStrategyTerminate || hasPendingTerminate(pendingActions)
 
 	// A Running workflow must never be postponed, even if the throttler no longer admits
 	// it (e.g. it was removed when an archive attempt failed mid-flight): skipping
 	// reconciliation would orphan its pods (#14123).
-	if (!shutdownStrategy.Enabled() || shutdownStrategy != wfv1.ShutdownStrategyTerminate) && !wfc.throttler.Admit(key) && wf.Status.Phase != wfv1.WorkflowRunning {
+	if !terminating && !wfc.throttler.Admit(key) && wf.Status.Phase != wfv1.WorkflowRunning {
 		logger.WithFields(logging.Fields{"workflow": wf.Name, "namespace": wf.Namespace, "key": key}).
 			Info(ctx, "Workflow processing has been postponed due to max parallelism limit")
-		if wf.Status.Phase == wfv1.WorkflowUnknown {
+		if wf.Status.Phase == wfv1.WorkflowUnknown || len(pendingActions) > 0 {
 			// Only this branch mutates and persists the workflow, so only it needs the deep copy.
-			// It runs once per workflow, the first time that workflow is postponed.
+			// It runs the first time a workflow is postponed, and whenever WorkflowActions are
+			// pending against a postponed workflow: those cannot wait for admission (a Suspend
+			// or Stop of a queued workflow is a normal request), so they are drained here, on
+			// the same queue key as operate() and therefore serialized with it. Nothing else
+			// runs, so no pods are created for the postponed workflow.
 			woc := newWorkflowOperationCtx(ctx, wf, wfc)
 			ctx = logging.WithLogger(ctx, woc.log)
-			ctx = woc.markWorkflowPhase(ctx, wfv1.WorkflowPending, "Workflow processing has been postponed because too many workflows are already running")
+			woc.suspendReconciliation(ctx)
+			woc.actionReconciliation(ctx)
+			if wf.Status.Phase == wfv1.WorkflowUnknown {
+				ctx = woc.markWorkflowPhase(ctx, wfv1.WorkflowPending, "Workflow processing has been postponed because too many workflows are already running")
+			}
 			woc.persistUpdates(ctx)
 		}
 		return true
@@ -1150,13 +1181,33 @@ func (wfc *WorkflowController) enqueueWfFromPodLabel(pod *apiv1.Pod) error {
 func (wfc *WorkflowController) tweakListRequestListOptions(options *metav1.ListOptions) {
 	labelSelector := labels.NewSelector().
 		Add(util.InstanceIDRequirement(wfc.Config.InstanceID))
-	options.LabelSelector = labelSelector.String()
-	// `ResourceVersion=0` does not honor the `limit` in API calls, which results in making significant List calls
-	// without `limit`. For details, see https://github.com/argoproj/argo-workflows/pull/11343
-	// Check if ResourceVersion is "0" and reset it to empty string to ensure proper pagination behavior
+	tweakListOptions(labelSelector.String(), options)
+}
+
+// tweakListOptions applies the list-option adjustments every controller informer needs: the
+// label selector, and a reset of `ResourceVersion=0`, which does not honor the `limit` in API
+// calls and results in significant List calls without `limit` (and can miss watch events).
+// For details, see https://github.com/argoproj/argo-workflows/pull/11343
+func tweakListOptions(labelSelector string, options *metav1.ListOptions) {
+	options.LabelSelector = labelSelector
 	if options.ResourceVersion == "0" {
 		options.ResourceVersion = ""
 	}
+}
+
+// newFilteredInformer builds one of the controller's secondary informers (task results, actions)
+// from a generated NewFiltered*Informer constructor: filtered by labelSelector with the standard
+// list-option tweaks, resyncing every 20 minutes, with managedFields stripped from the cache.
+func (wfc *WorkflowController) newFilteredInformer(ctx context.Context, what, labelSelector string,
+	newInformer func(namespace string, resync time.Duration, tweak func(*metav1.ListOptions)) cache.SharedIndexInformer,
+) cache.SharedIndexInformer {
+	logging.RequireLoggerFromContext(ctx).WithField("labelSelector", labelSelector).Info(ctx, "Watching "+what)
+	informer := newInformer(wfc.GetManagedNamespace(), 20*time.Minute, func(options *metav1.ListOptions) {
+		tweakListOptions(labelSelector, options)
+	})
+	//nolint:errcheck // the error only happens if the informer was already started, and it hasn't been
+	informer.SetTransform(informerutil.StripManagedFields)
+	return informer
 }
 
 func (wfc *WorkflowController) tweakWatchRequestListOptions(options *metav1.ListOptions) {
@@ -1326,7 +1377,10 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers(ctx context.Context) 
 						// no need to add to the queue - this workflow is done
 						wfc.throttler.Remove(key)
 					}
-					wfc.recordWorkflowCompleted(obj.(*unstructured.Unstructured))
+					un := obj.(*unstructured.Unstructured)
+					wfc.recordWorkflowCompleted(un)
+					// actions bound to this workflow can never be drained now
+					wfc.settlePendingActions(ctx, un, wfv1.WorkflowActionReasonWorkflowNotFound)
 				},
 			},
 		},

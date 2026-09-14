@@ -85,3 +85,9 @@ func MustUnmarshalWorkflowArtifactGCTask(text any) *WorkflowArtifactGCTask {
 	MustUnmarshal(text, &x)
 	return x
 }
+
+func MustUnmarshalWorkflowAction(text any) *WorkflowAction {
+	x := &WorkflowAction{}
+	MustUnmarshal(text, &x)
+	return x
+}

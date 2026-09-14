@@ -123,6 +123,12 @@ attributes:
     description: The namespace that the WorkflowTemplate is in
   - name: WorkerType
     description: The type of queue
+  - name: WorkflowActionOutcome
+    displayName: outcome
+    description: "The terminal phase of the WorkflowAction, `Succeeded` or `Failed`"
+  - name: WorkflowActionType
+    displayName: action
+    description: "The requested action, one of `Suspend`, `Resume`, `Stop` or `Terminate`"
   - name: WorkflowName
     displayName: name
     description: The name of the workflow
@@ -178,6 +184,8 @@ metrics:
       - [`synchronization mutex`](deprecations.md#synchronization-mutex)
       - [`synchronization semaphore`](deprecations.md#synchronization-semaphore)
       - [`workflow podpriority`](deprecations.md#workflow-podpriority)
+      - [`workflow spec.shutdown`](deprecations.md#workflow-specshutdown)
+      - [`workflow spec.suspend`](deprecations.md#workflow-specsuspend)
     attributes:
       - name: DeprecatedFeature
       - name: WorkflowNamespace
@@ -513,6 +521,15 @@ metrics:
       - name: WorkflowStatus
     unit: "{workflow}"
     type: Int64ObservableGauge
+  - name: WorkflowactionsProcessedTotal
+    description: A counter of the total number of WorkflowActions processed by the controller
+    extendedDescription: "`outcome` is the action's terminal phase: `Succeeded` if the controller applied it, `Failed` if it could not be applied."
+    attributes:
+      - name: WorkflowActionType
+      - name: WorkflowActionOutcome
+      - name: WorkflowNamespace
+    unit: "{workflowaction}"
+    type: Int64Counter
   - name: WorkflowtemplateRuntime
     description: A histogram of the runtime of workflows using `workflowTemplateRef` only
     extendedDescription: |

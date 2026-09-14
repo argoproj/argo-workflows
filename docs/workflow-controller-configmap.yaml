@@ -424,6 +424,11 @@ data:
   # adds initial delay (for K8S clusters with mutating webhooks) to prevent workflow getting modified by MWC.
   # initialDelay: 5s
 
+  # WorkflowActionTTL is how long a WorkflowAction is kept after it reaches a terminal phase before the
+  # controller deletes it. A zero value deletes it immediately.
+  # Defaults to 24 hours.
+  workflowActionTTL: 24h
+
   # Workflow retention by number of workflows
   # retentionPolicy: |
   #   completed: 10

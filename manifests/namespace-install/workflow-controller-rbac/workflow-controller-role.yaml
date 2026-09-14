@@ -76,6 +76,22 @@ rules:
       - watch
       - deletecollection
   - apiGroups:
+      - argoproj.io
+    resources:
+      - workflowactions
+    verbs:
+      - create
+      - get
+      - list
+      - watch
+      - delete
+  - apiGroups:
+      - argoproj.io
+    resources:
+      - workflowactions/status
+    verbs:
+      - update
+  - apiGroups:
       - ""
     resources:
       - serviceaccounts
