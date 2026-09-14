@@ -29,6 +29,8 @@ export interface CronWorkflowStatus {
     active: kubernetes.ObjectReference[];
     lastScheduledTime: kubernetes.Time;
     conditions?: Condition[];
+    // maps a schedule of the spec using a `H` (hash) token to what it resolved to, set by the controller
+    resolvedSchedules?: {[schedule: string]: string};
 }
 
 export interface CronWorkflowList {
