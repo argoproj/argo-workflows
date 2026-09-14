@@ -659,8 +659,12 @@ func (woc *wfOperationCtx) processArtifactGCCompletion(ctx context.Context) erro
 	var removeFinalizer bool
 	forceFinalizerRemoval := woc.execWf.Spec.ArtifactGC != nil && woc.execWf.Spec.ArtifactGC.ForceFinalizerRemoval
 	if forceFinalizerRemoval {
-		// only once every strategy that is currently due has been started, otherwise there may still be Pods to create
-		removeFinalizer = len(woc.artifactGCStrategiesReady()) == 0 && woc.wf.Status.ArtifactGCStatus.AllArtifactGCPodsRecouped()
+		// only once every strategy that is currently due has been started (otherwise there may still be Pods to
+		// create) and no strategy is still to come: OnWorkflowDeletion artifacts must keep the finalizer until the
+		// workflow is actually deleted, or deletion-time GC would never run
+		removeFinalizer = len(woc.artifactGCStrategiesReady()) == 0 &&
+			woc.wf.Status.ArtifactGCStatus.AllArtifactGCPodsRecouped() &&
+			!woc.artifactGCAwaitingDeletion()
 	} else {
 		// check if all artifacts have been deleted and if so remove Finalizer
 		removeFinalizer = woc.allArtifactsDeleted()
@@ -672,6 +676,15 @@ func (woc *wfOperationCtx) processArtifactGCCompletion(ctx context.Context) erro
 		woc.updated = true
 	}
 	return nil
+}
+
+// artifactGCAwaitingDeletion is true while undeleted artifacts are waiting for the OnWorkflowDeletion strategy to
+// become due: the workflow has not been deleted yet and the strategy has not been processed (or abandoned)
+func (woc *wfOperationCtx) artifactGCAwaitingDeletion() bool {
+	if woc.wf.DeletionTimestamp != nil || woc.wf.Status.ArtifactGCStatus.IsArtifactGCStrategyProcessed(wfv1.ArtifactGCOnWorkflowDeletion) {
+		return false
+	}
+	return len(woc.findArtifactsToGC(wfv1.ArtifactGCOnWorkflowDeletion)) > 0
 }
 
 func (woc *wfOperationCtx) allArtifactsDeleted() bool {

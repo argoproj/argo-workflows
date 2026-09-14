@@ -3,6 +3,7 @@ package controller
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -1095,19 +1096,80 @@ func TestArtifactGCStrategyAbandonedAfterRetryWindow(t *testing.T) {
 			assert.False(t, gcStatus.IsArtifactGCStrategyProcessed(wfv1.ArtifactGCOnWorkflowCompletion))
 			assert.Contains(t, woc.wf.Finalizers, common.FinalizerArtifactGC)
 
-			// the second failure, past the window, abandons the strategy
+			// the second failure, past the window, abandons the strategy; the finalizer stays either way,
+			// because the fixture has an OnWorkflowDeletion artifact whose GC has not had its chance yet
 			require.NoError(t, woc.garbageCollectArtifacts(ctx))
 			assert.True(t, gcStatus.IsArtifactGCStrategyProcessed(wfv1.ArtifactGCOnWorkflowCompletion))
 			assert.Empty(t, gcStatus.PodsRecouped)
 			require.NotNil(t, artGCErrorCondition(woc))
 			assert.Contains(t, artGCErrorCondition(woc).Message, "OnWorkflowCompletion: abandoned after retrying for 1h0m0s: failed to create pod: pod creation denied")
+			assert.Contains(t, woc.wf.Finalizers, common.FinalizerArtifactGC)
+
+			// deletion makes the deletion strategy due; it fails, retries, and is abandoned in turn
+			deleted := metav1.NewTime(time.Now().Add(-2 * time.Hour))
+			woc.wf.DeletionTimestamp = &deleted
+			require.Error(t, woc.garbageCollectArtifacts(ctx), "first deletion-strategy failure must retry")
+			assert.False(t, gcStatus.IsArtifactGCStrategyProcessed(wfv1.ArtifactGCOnWorkflowDeletion))
+			assert.Contains(t, woc.wf.Finalizers, common.FinalizerArtifactGC)
+
+			require.NoError(t, woc.garbageCollectArtifacts(ctx))
+			assert.True(t, gcStatus.IsArtifactGCStrategyProcessed(wfv1.ArtifactGCOnWorkflowDeletion))
 			if force {
-				assert.NotContains(t, woc.wf.Finalizers, common.FinalizerArtifactGC)
+				assert.NotContains(t, woc.wf.Finalizers, common.FinalizerArtifactGC, "force must release the workflow once every strategy has been abandoned")
 			} else {
 				assert.Contains(t, woc.wf.Finalizers, common.FinalizerArtifactGC)
 			}
 		})
 	}
+}
+
+// A workflow whose artifacts all use OnWorkflowDeletion must keep the finalizer at completion, even with
+// forceFinalizerRemoval: nothing has failed, deletion GC just hasn't had its chance yet (#16897 review)
+func TestArtifactGCDeletionOnlyKeepsFinalizerUntilDeletion(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(strings.ReplaceAll(artgcWorkflow, "OnWorkflowCompletion", "OnWorkflowDeletion"))
+	wf.Status.FinishedAt = metav1.NewTime(time.Now().Add(-time.Minute))
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	controller.artifactGCRetryWindow = time.Hour
+	assignTaskUIDs(controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.wf.Status.ArtifactGCStatus = &wfv1.ArtGCStatus{}
+	woc.execWf.Spec.ArtifactGC.ForceFinalizerRemoval = true
+
+	// completion: the completion strategy finds nothing and is marked processed, but the finalizer must survive
+	require.NoError(t, woc.garbageCollectArtifacts(ctx))
+	assert.True(t, woc.wf.Status.ArtifactGCStatus.IsArtifactGCStrategyProcessed(wfv1.ArtifactGCOnWorkflowCompletion))
+	pods, _ := countArtGCPodsAndTasks(t, woc)
+	assert.Equal(t, 0, pods)
+	assert.Contains(t, woc.wf.Finalizers, common.FinalizerArtifactGC)
+
+	// deletion: the deletion strategy becomes due and its pods are created
+	deleted := metav1.Now()
+	woc.wf.DeletionTimestamp = &deleted
+	require.NoError(t, woc.garbageCollectArtifacts(ctx))
+	assert.True(t, woc.wf.Status.ArtifactGCStatus.IsArtifactGCStrategyProcessed(wfv1.ArtifactGCOnWorkflowDeletion))
+	pods, _ = countArtGCPodsAndTasks(t, woc)
+	assert.Positive(t, pods, "deletion GC must actually run")
+	assert.Contains(t, woc.wf.Finalizers, common.FinalizerArtifactGC, "kept until the pods are recouped")
+}
+
+// With mixed strategies, recouping the completion pods must not let force remove the finalizer while
+// OnWorkflowDeletion artifacts still await deletion (pre-existing hole, fixed alongside the above)
+func TestArtifactGCMixedStrategiesKeepFinalizerUntilDeletion(t *testing.T) {
+	woc, cancel := newArtGCRetryWoc(t, time.Minute)
+	defer cancel()
+	woc.execWf.Spec.ArtifactGC.ForceFinalizerRemoval = true
+	ctx := logging.TestContext(t.Context())
+
+	require.NoError(t, woc.garbageCollectArtifacts(ctx))
+	require.NotEmpty(t, woc.wf.Status.ArtifactGCStatus.PodsRecouped)
+	for podName := range woc.wf.Status.ArtifactGCStatus.PodsRecouped {
+		woc.wf.Status.ArtifactGCStatus.SetArtifactGCPodRecouped(podName, true)
+	}
+
+	require.NoError(t, woc.processArtifactGCCompletion(ctx))
+	assert.Contains(t, woc.wf.Finalizers, common.FinalizerArtifactGC, "deletion artifact still awaits deletion")
 }
 
 func TestArtifactGCForceFinalizerRemovalWaitsForDueStrategies(t *testing.T) {
