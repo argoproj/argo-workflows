@@ -130,17 +130,15 @@ func buildChildrenMap(spans *spansList) map[string][]string {
 
 var spanStartTmpl = template.Must(template.New("start").Funcs(funcMap).Parse(`// {{.MethodName}} starts a {{.DisplayName}} span
 func (t *Tracing) {{.MethodName}}({{.Params}}) (context.Context, trace.Span) {
+{{if .Parents -}}
     parent := trace.SpanFromContext(ctx)
     if roParent, ok := parent.(sdktrace.ReadOnlySpan); ok {
         parentName := roParent.Name()
-{{if .Parents -}}
         if {{range $i, $p := .Parents}}{{if $i}} && {{end}}parentName != "{{$p}}"{{end}} {
             logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"startMethod": "{{.MethodName}}", "expectedParents": "{{.ParentsStr}}", "actualParent": parentName}).Error(ctx, "incorrect trace parentage")
         }
-{{else -}}
-        logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{"startMethod": "{{.MethodName}}", "actualParent": parentName}).Info(ctx, "trace parent") // TODO remove
-{{end -}}
     }
+{{end -}}
     {{.Attribs}}
     return {{.Call}}
 }
