@@ -168,6 +168,19 @@ func (s *databaseSemaphore) queueOrdered(ctx context.Context, sessionProxy *sqld
 		logger.WithError(err).Error(ctx, "Failed to get ordered queue for semaphore notification")
 		return nil, err
 	}
+	// Re-sort in Go so ties are broken exactly as the in-memory queue breaks
+	// them. A holder needs the front of every queue it is in, and database
+	// text collation does not necessarily match Go string ordering.
+	slices.SortStableFunc(queue, func(a, b syncdb.StateRecord) int {
+		switch {
+		case queueLess(a.Priority, a.Time, a.Key, b.Priority, b.Time, b.Key):
+			return -1
+		case queueLess(b.Priority, b.Time, b.Key, a.Priority, a.Time, a.Key):
+			return 1
+		default:
+			return 0
+		}
+	})
 	return queue, nil
 }
 
