@@ -269,10 +269,27 @@ func (pq *priorityQueue) remove(key Key) {
 func (pq priorityQueue) Len() int { return len(pq.items) }
 
 func (pq priorityQueue) Less(i, j int) bool {
-	if pq.items[i].priority == pq.items[j].priority {
-		return pq.items[i].creationTime.Before(pq.items[j].creationTime)
+	a, b := pq.items[i], pq.items[j]
+	return queueLess(a.priority, a.creationTime, a.key, b.priority, b.creationTime, b.key)
+}
+
+// queueLess is the single ordering rule for every lock queue: higher priority
+// first, then earlier creation time, then holder key in byte order. The key is
+// the tie-break because creation time comes from the Kubernetes
+// creationTimestamp, which has second resolution, so workflows submitted in
+// the same second and every node of a template-level lock tie on it. A holder
+// must be at the front of the queue of every lock it requests, and the
+// in-memory heap and the database each keep their own queue, so both must
+// resolve ties identically or two waiters can each be blocked by the other
+// forever. Keep this in sync with the ORDER BY in syncdb.GetOrderedQueue.
+func queueLess(aPriority int32, aTime time.Time, aKey string, bPriority int32, bTime time.Time, bKey string) bool {
+	if aPriority != bPriority {
+		return aPriority > bPriority
 	}
-	return pq.items[i].priority > pq.items[j].priority
+	if !aTime.Equal(bTime) {
+		return aTime.Before(bTime)
+	}
+	return aKey < bKey
 }
 
 func (pq priorityQueue) Swap(i, j int) {
