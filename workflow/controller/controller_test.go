@@ -601,35 +601,44 @@ func syncPodsInformer(ctx context.Context, woc *wfOperationCtx, podObjs ...apiv1
 
 // makePodsPhase acts like a pod controller and simulates the transition of pods transitioning into a specified state
 func makePodsPhase(ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhase, with ...with) {
+	setPodPhases(ctx, woc, func(*wfv1.NodeStatus) apiv1.PodPhase { return phase }, with...)
+}
+
+// setPodPhases acts like a pod controller, but decides the phase per pod from the node it belongs to.
+// Returning an empty phase leaves the pod alone.
+func setPodPhases(ctx context.Context, woc *wfOperationCtx, decide func(node *wfv1.NodeStatus) apiv1.PodPhase, with ...with) {
 	podcs := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace())
 	pods, err := podcs.List(ctx, metav1.ListOptions{})
 	if err != nil {
 		panic(err)
 	}
 	for _, pod := range pods.Items {
-		if pod.Status.Phase != phase {
-			pod.Status.Phase = phase
-			if phase == apiv1.PodFailed {
-				pod.Status.Message = "Pod failed"
-			}
-			for _, w := range with {
-				w(&pod, woc)
-			}
-			updatedPod, err := podcs.Update(ctx, &pod, metav1.UpdateOptions{})
-			if err != nil {
-				panic(err)
-			}
-			// wait for the pod informer to deliver the update instead of writing
-			// to its store directly: a direct write races with the informer's
-			// async delivery of the pod's earlier create event, which would put
-			// the stale pod back in the store
-			waitForInformer(ctx, woc.controller.PodController.TestingPodInformer(), updatedPod, func(obj any) bool {
-				return obj.(*apiv1.Pod).Status.Phase == phase
-			})
-			if phase == apiv1.PodSucceeded {
-				nodeID := woc.nodeID(&pod)
-				woc.wf.Status.MarkTaskResultComplete(ctx, nodeID)
-			}
+		nodeID := woc.nodeID(&pod)
+		node := woc.wf.Status.Nodes[nodeID]
+		phase := decide(&node)
+		if phase == "" || pod.Status.Phase == phase {
+			continue
+		}
+		pod.Status.Phase = phase
+		if phase == apiv1.PodFailed {
+			pod.Status.Message = "Pod failed"
+		}
+		for _, w := range with {
+			w(&pod, woc)
+		}
+		updatedPod, err := podcs.Update(ctx, &pod, metav1.UpdateOptions{})
+		if err != nil {
+			panic(err)
+		}
+		// wait for the pod informer to deliver the update instead of writing
+		// to its store directly: a direct write races with the informer's
+		// async delivery of the pod's earlier create event, which would put
+		// the stale pod back in the store
+		waitForInformer(ctx, woc.controller.PodController.TestingPodInformer(), updatedPod, func(obj any) bool {
+			return obj.(*apiv1.Pod).Status.Phase == phase
+		})
+		if phase == apiv1.PodSucceeded {
+			woc.wf.Status.MarkTaskResultComplete(ctx, nodeID)
 		}
 	}
 }

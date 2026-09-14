@@ -5,63 +5,30 @@ package controller
 // memoized resubmit exactly as the API server does, and then drives the new workflow to completion.
 
 import (
+	"cmp"
 	"context"
 	"fmt"
-	"sort"
+	"slices"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	apiv1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
 
-// setPodPhases acts like a pod controller, but decides the phase per pod from the node it belongs to.
-// Returning an empty phase leaves the pod alone.
-func setPodPhases(ctx context.Context, woc *wfOperationCtx, decide func(node *wfv1.NodeStatus) apiv1.PodPhase) {
-	podcs := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace())
-	pods, err := podcs.List(ctx, metav1.ListOptions{})
-	if err != nil {
-		panic(err)
-	}
-	for _, pod := range pods.Items {
-		nodeID := woc.nodeID(&pod)
-		node := woc.wf.Status.Nodes[nodeID]
-		phase := decide(&node)
-		if phase == "" || pod.Status.Phase == phase {
-			continue
-		}
-		pod.Status.Phase = phase
-		if phase == apiv1.PodFailed {
-			pod.Status.Message = "Pod failed"
-		}
-		updatedPod, err := podcs.Update(ctx, &pod, metav1.UpdateOptions{})
-		if err != nil {
-			panic(err)
-		}
-		waitForInformer(ctx, woc.controller.PodController.TestingPodInformer(), updatedPod, func(obj any) bool {
-			return obj.(*apiv1.Pod).Status.Phase == phase
-		})
-		if phase == apiv1.PodSucceeded {
-			woc.wf.Status.MarkTaskResultComplete(ctx, nodeID)
-		}
-	}
-}
-
 func dumpNodes(t *testing.T, label string, wf *wfv1.Workflow) {
 	t.Helper()
-	names := make([]string, 0, len(wf.Status.Nodes))
+	nodes := make([]wfv1.NodeStatus, 0, len(wf.Status.Nodes))
 	for _, n := range wf.Status.Nodes {
-		names = append(names, n.Name)
+		nodes = append(nodes, n)
 	}
-	sort.Strings(names)
+	slices.SortFunc(nodes, func(a, b wfv1.NodeStatus) int { return cmp.Compare(a.Name, b.Name) })
 	t.Logf("---- %s: workflow phase=%s", label, wf.Status.Phase)
-	for _, name := range names {
-		n, _ := wf.GetNodeByName(name)
+	for _, n := range nodes {
 		t.Logf("  %-40s type=%-10s phase=%-9s children=%d msg=%q", n.Name, n.Type, n.Phase, len(n.Children), n.Message)
 	}
 }
@@ -75,19 +42,26 @@ func podNames(ctx context.Context, woc *wfOperationCtx) []string {
 	for _, p := range list.Items {
 		names = append(names, p.Name)
 	}
-	sort.Strings(names)
+	slices.Sort(names)
 	return names
 }
 
 // runToCompletion operates the workflow until it completes, deciding each pod's fate with decide.
+// A workflow that has not completed after maxOperateIterations is taken to be stuck, which is the
+// failure mode these tests exist to catch.
 func runToCompletion(ctx context.Context, t *testing.T, controller *WorkflowController, wf *wfv1.Workflow, decide func(node *wfv1.NodeStatus) apiv1.PodPhase) *wfOperationCtx {
 	t.Helper()
+	const maxOperateIterations = 10
 	woc := newWorkflowOperationCtx(ctx, wf, controller)
-	for i := 0; i < 10 && !woc.wf.Status.Phase.Completed(); i++ {
+	for i := 0; i < maxOperateIterations && !woc.wf.Status.Phase.Completed(); i++ {
 		woc.operate(ctx)
 		t.Logf("iteration %d: phase=%s pods=%v", i, woc.wf.Status.Phase, podNames(ctx, woc))
 		setPodPhases(ctx, woc, decide)
 		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	}
+	if !woc.wf.Status.Phase.Completed() {
+		dumpNodes(t, "stuck", woc.wf)
+		require.Fail(t, "workflow did not complete", "still %s after %d iterations", woc.wf.Status.Phase, maxOperateIterations)
 	}
 	return woc
 }
@@ -295,8 +269,8 @@ func TestMemoizedResubmitNestedFanout(t *testing.T) {
 	requireNoDanglingReferences(t, woc.wf)
 }
 
-// A "when"-skipped fanout item followed by a failed dependant. The skipped item is deleted from the
-// memoized status and must be re-evaluated (and skipped again) rather than run.
+// A "when"-skipped fanout item followed by a failed dependant. The skipped item is off the failed
+// path, so it is carried over as Skipped rather than re-evaluated or run.
 const memoizedWhenFanoutWf = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -346,7 +320,11 @@ func TestMemoizedResubmitFanoutWhenSkipped(t *testing.T) {
 	woc := runToCompletion(ctx, t, controller, newWf, allSucceed)
 	dumpNodes(t, "resubmitted run finished", woc.wf)
 	require.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
-	require.Len(t, podNames(ctx, woc), 1, "only 'after' should run; fan(0:a) must stay skipped")
+	require.Len(t, podNames(ctx, woc), 1, "only 'after' should run")
+	skipped, err := woc.wf.GetNodeByName(newWf.Name + ".fan(0:a)")
+	require.NoError(t, err)
+	require.Equal(t, wfv1.NodeSkipped, skipped.Phase, "fan(0:a) must stay skipped")
+	require.Equal(t, wfv1.NodeTypeSkipped, skipped.Type)
 }
 
 // The same fanout expressed as steps with withItems, failing item b.
