@@ -82,6 +82,28 @@ func TestArtifactResolutionWhenSkipped(t *testing.T) {
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 }
 
+func TestResolveReferencesSkipsOptionalArtifactFromSkippedStep(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	woc := newWoc(ctx, wfv1.Workflow{})
+	scope := createScope(nil)
+	scope.addArtifactToScope("steps.generate.outputs.artifacts.message", wfv1.Artifact{})
+	stepGroup := []wfv1.WorkflowStep{{
+		Name:     "consume",
+		Template: "consumer",
+		Arguments: wfv1.Arguments{Artifacts: wfv1.Artifacts{{
+			Name:     "message",
+			From:     "{{steps.generate.outputs.artifacts.message}}",
+			Optional: true,
+		}}},
+	}}
+
+	resolvedSteps, err := woc.resolveReferences(ctx, stepGroup, scope)
+
+	require.NoError(t, err)
+	require.Len(t, resolvedSteps, 1)
+	assert.Empty(t, resolvedSteps[0].Arguments.Artifacts)
+}
+
 var stepsWithParamAndGlobalParam = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
