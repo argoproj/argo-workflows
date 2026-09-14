@@ -276,6 +276,100 @@ func NewEmissaryCommand() *cobra.Command {
 	}
 }
 
+// waitForDependencies blocks on each of the current container's
+// containerSet dependencies. SIGTERM and SIGKILL received during the wait
+// cancel it and produce exit code 143 or 137 respectively.
+func waitForDependencies(ctx context.Context, logger logging.Logger, template *wfv1.Template, containerName string, signals <-chan os.Signal) error {
+	var deps []string
+	for _, x := range template.ContainerSet.GetGraph() {
+		if x.Name == containerName {
+			deps = x.Dependencies
+			break
+		}
+	}
+	if len(deps) == 0 {
+		return nil
+	}
+
+	depCtx, cancelDepWait := context.WithCancel(ctx)
+	defer cancelDepWait()
+
+	signalDone := make(chan struct{})
+	depSignalExitCode := make(chan int, 1)
+	go func() {
+		for {
+			select {
+			case <-signalDone:
+				return
+			case s, ok := <-signals:
+				if !ok {
+					return
+				}
+				if osspecific.CanIgnoreSignal(s) {
+					continue
+				}
+				switch s {
+				case osspecific.Term:
+					depSignalExitCode <- 143
+					cancelDepWait()
+					return
+				case os.Kill:
+					depSignalExitCode <- 137
+					cancelDepWait()
+					return
+				}
+			}
+		}
+	}()
+
+	var depErr error
+	for _, y := range deps {
+		logger.WithField("dependency", y).Info(ctx, "waiting for dependency")
+		if err := waitForDependency(depCtx, y); err != nil {
+			depErr = err
+			break
+		}
+	}
+
+	close(signalDone)
+	select {
+	case ec := <-depSignalExitCode:
+		return argoerrors.NewExitErr(ec)
+	default:
+	}
+	return depErr
+}
+
+// waitForDependency blocks until depName's ready marker exists, its lock is
+// released (i.e. its process has exited for any reason), and then reads its
+// exitcode file. A missing exitcode means the dep died without reporting.
+func waitForDependency(ctx context.Context, depName string) error {
+	depDir := filepath.Clean(varRunArgo + "/ctr/" + depName)
+	// Pre-create in case the dep container hasn't started yet, so fsnotify
+	// has a directory to watch.
+	if err := os.MkdirAll(depDir, 0o777); err != nil {
+		return fmt.Errorf("failed to create dependency dir: %w", err)
+	}
+	if err := file.WaitForCreate(ctx, filepath.Join(depDir, "ready")); err != nil {
+		return err
+	}
+	if err := osspecific.WaitForSharedLock(ctx, filepath.Join(depDir, "lock")); err != nil {
+		return err
+	}
+	data, readErr := os.ReadFile(filepath.Join(depDir, "exitcode"))
+	if readErr != nil {
+		return fmt.Errorf("dependency %q died without reporting exit code", depName)
+	}
+	code, parseErr := strconv.Atoi(strings.TrimSpace(string(data)))
+	if parseErr != nil {
+		return fmt.Errorf("dependency %q died without reporting exit code", depName)
+	}
+	if code != 0 {
+		return fmt.Errorf("dependency %q exited with non-zero code: %d", depName, code)
+	}
+	return nil
+}
+
 func startCommand(ctx context.Context, name string, args []string, template *wfv1.Template) (*exec.Cmd, func(), error) {
 	logger := logging.RequireLoggerFromContext(ctx)
 
