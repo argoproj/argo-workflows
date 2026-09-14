@@ -82,14 +82,24 @@ func getMutexLockName(mtx *v1alpha1.Mutex, wfNamespace string) *lockName {
 }
 
 func (i *syncItem) lockName(wfNamespace string) (*lockName, error) {
+	var ln *lockName
+	var err error
 	switch {
 	case i.semaphore != nil:
-		return getSemaphoreLockName(i.semaphore, wfNamespace)
+		ln, err = getSemaphoreLockName(i.semaphore, wfNamespace)
 	case i.mutex != nil:
-		return getMutexLockName(i.mutex, wfNamespace), nil
+		ln = getMutexLockName(i.mutex, wfNamespace)
 	default:
 		return nil, fmt.Errorf("cannot get lockName if not semaphore or mutex")
 	}
+	if err != nil {
+		return nil, err
+	}
+	// String encodes a name DecodeLockName must accept, and panics when it does not.
+	if err := ln.validate(); err != nil {
+		return nil, err
+	}
+	return ln, nil
 }
 
 func DecodeLockName(ctx context.Context, name string) (LockName, error) {
