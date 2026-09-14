@@ -1356,6 +1356,8 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 
 	// Delete children of TaskGroup/StepGroup nodes being reset when parameters are overridden,
 	// so the controller can re-expand them with the new values. Fixes #15802.
+	// A group that already succeeded is only on the reset path because a node downstream of it
+	// is being retried, so its expansion is kept as-is rather than rerun. Fixes #16879.
 	if len(parameters) > 0 {
 		for nodeID := range toReset {
 			if toDelete[nodeID] {
@@ -1363,6 +1365,9 @@ func FormulateRetryWorkflow(ctx context.Context, wf *wfv1.Workflow, restartSucce
 			}
 			n, ok := wf.Status.Nodes[nodeID]
 			if !ok {
+				continue
+			}
+			if n.Phase == wfv1.NodeSucceeded {
 				continue
 			}
 			if n.Type == wfv1.NodeTypeTaskGroup || n.Type == wfv1.NodeTypeStepGroup {
