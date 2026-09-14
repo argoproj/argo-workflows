@@ -786,7 +786,7 @@ start: tilt k3d-up ## Start the dev stack in-cluster via Tilt
 	# via the container IP in a devcontainer (the devcontainer CLI doesn't
 	# forward ports). The argo server/UI/metrics forwards bind 0.0.0.0 too.
 	tilt up --host=0.0.0.0 -- --profile=$(PROFILE) --auth-mode=$(AUTH_MODE) \
-		--secure=$(SECURE) --api=$(API) --initless=$(INITLESS) \
+		--secure=$(SECURE) --api=$(API) --initless=$(INITLESS) --base-href=$(BASE_HREF) \
 		--pod-status-capture-finalizer=$(POD_STATUS_CAPTURE_FINALIZER) \
 		$(if $(DEBUG),--debug=$(DEBUG))
 
