@@ -38,6 +38,8 @@ Cross-cutting invariants: the executor never writes the Workflow object — outp
 
 `argoexec emissary` is PID 1 wrapping the user command in every container: writes `/var/run/argo/ctr/<name>/exitcode`, waits on ContainerSet dependencies, reads the template from `/var/run/argo/template`. `init`/`wait` (legacy pod layout) or `supervisor` (init-less beta) stage input artifacts before main and run the shared `PostMain` capture sequence after (script result → parameters/artifacts/logs → report outputs). Output capture deliberately uses a background context so termination doesn't lose outputs.
 
+A task's flow is a `Plan` of three phases (Prepare, Run, Collect) over named `Stage`s. Every stage is declared in `workflow/executor/stages.go` (the registry, enforced by a test) and plans are selected per template in `workflow/executor/plan.go`. New executor behaviour is a new stage or a new plan, not a new hand-written sequence in a command.
+
 ### Server (`server/`)
 
 `server/apiserver` serves gRPC and grpc-gateway HTTP on one port; artifact up/download endpoints and the embedded UI (`ui/embed.go`) are mounted directly. Auth (`server/auth`) is chosen per-request from the Authorization header: `client` (caller's k8s token, their RBAC), `server` (server's service account), `sso` (OIDC claims mapped to service accounts via RBAC labels); gatekeeper interceptors stash per-request clients in ctx (`auth.GetWfClient(ctx)`). Workflow archive lives in `server/workflowarchive` over `persist/sqldb` (Postgres/MySQL).

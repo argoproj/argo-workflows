@@ -102,6 +102,17 @@ type WorkflowExecutor struct {
 	IncludeScriptOutput bool
 	Deadline            time.Time
 	progressFile        string
+	// inputArtifactPluginNames lists the artifact plugins the Prepare phase
+	// loads input artifacts from, one parallel stage each.
+	inputArtifactPluginNames []wfv1.ArtifactPluginName
+
+	// plan is the task's flow; nil until selectedPlan() derives it from the
+	// template.
+	plan *Plan
+
+	// savedArtifacts carries the output and log artifacts produced by the
+	// save-artifacts and save-logs stages across to report-outputs.
+	savedArtifacts []wfv1.Artifact
 
 	// outputs is the task's captured outputs: a copy of Template.Outputs
 	// that the capture stages (script result, output parameters, resource
@@ -166,6 +177,9 @@ type TaskConfig struct {
 	Deadline            time.Time
 	// ProgressFile is the file watched for progress reports (ARGO_PROGRESS_FILE).
 	ProgressFile string
+	// InputArtifactPluginNames lists the artifact plugins that serve this
+	// task's input artifacts (see common.EnvVarInputArtifactPluginNames).
+	InputArtifactPluginNames []wfv1.ArtifactPluginName
 }
 
 type Initializer interface {
@@ -253,15 +267,16 @@ func NewProcess(
 // once per task.
 func (p *Process) NewExecutor(cfg TaskConfig) *WorkflowExecutor {
 	return &WorkflowExecutor{
-		Process:             p,
-		workflow:            cfg.WorkflowName,
-		workflowUID:         cfg.WorkflowUID,
-		nodeID:              cfg.NodeID,
-		Template:            cfg.Template,
-		IncludeScriptOutput: cfg.IncludeScriptOutput,
-		Deadline:            cfg.Deadline,
-		progressFile:        cfg.ProgressFile,
-		errors:              []error{},
+		Process:                  p,
+		workflow:                 cfg.WorkflowName,
+		workflowUID:              cfg.WorkflowUID,
+		nodeID:                   cfg.NodeID,
+		Template:                 cfg.Template,
+		IncludeScriptOutput:      cfg.IncludeScriptOutput,
+		Deadline:                 cfg.Deadline,
+		progressFile:             cfg.ProgressFile,
+		inputArtifactPluginNames: cfg.InputArtifactPluginNames,
+		errors:                   []error{},
 	}
 }
 
