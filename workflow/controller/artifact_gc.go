@@ -247,6 +247,16 @@ func artifactGCStartFailurePrefix(strategy wfv1.ArtifactGCStrategy) string {
 	return fmt.Sprintf("%s: ", strategy)
 }
 
+// hasArtGCConditionMessage reports whether the ArtifactGCError condition already carries exactly this message
+func (woc *wfOperationCtx) hasArtGCConditionMessage(msg string) bool {
+	for _, condition := range woc.wf.Status.Conditions {
+		if condition.Type == wfv1.ConditionTypeArtifactGCError && condition.Message == msg {
+			return true
+		}
+	}
+	return false
+}
+
 func (woc *wfOperationCtx) hasArtifactGCStartFailure(strategy wfv1.ArtifactGCStrategy) bool {
 	for _, condition := range woc.wf.Status.Conditions {
 		if condition.Type == wfv1.ConditionTypeArtifactGCError && strings.HasPrefix(condition.Message, artifactGCStartFailurePrefix(strategy)) {
@@ -288,9 +298,13 @@ func (woc *wfOperationCtx) artifactGCStrategyFailed(ctx context.Context, strateg
 	}
 	msg := fmt.Sprintf("%s%v", artifactGCStartFailurePrefix(strategy), err)
 	woc.log.WithField("strategy", strategy).WithError(err).Warn(ctx, "failed to start Artifact GC Strategy, will retry")
-	woc.addArtGCCondition(msg)
-	woc.addArtGCEvent(msg)
-	woc.updated = true
+	// A repeat of an identical failure writes nothing: leaving woc.updated unset keeps persistUpdates from
+	// writing the Workflow and scheduling its own 5s requeue, so the requeue below sets the retry cadence.
+	if !woc.hasArtGCConditionMessage(msg) {
+		woc.addArtGCCondition(msg)
+		woc.addArtGCEvent(msg)
+		woc.updated = true
+	}
 	woc.requeueAfter(artifactGCRetryDelay)
 	return false
 }

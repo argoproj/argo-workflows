@@ -1123,6 +1123,31 @@ func TestArtifactGCStrategyAbandonedAfterRetryWindow(t *testing.T) {
 	}
 }
 
+// A repeat of an identical start failure must be write-free: no updated flag, no new event, condition untouched.
+// Anything else lets persistUpdates' unconditional 5s finalizer requeue outrun artifactGCRetryDelay, retrying the
+// failing create every few seconds instead of once per delay (#16897 review)
+func TestArtifactGCRepeatFailureIsWriteFree(t *testing.T) {
+	woc, cancel := newArtGCRetryWoc(t, time.Minute)
+	defer cancel()
+	ctx := logging.TestContext(t.Context())
+	failPodCreates(woc.controller, func(string) bool { return true })
+	events := woc.controller.eventRecorderManager.(*testEventRecorderManager).eventRecorder.Events
+
+	// the first failure records the condition and one event, and must be persisted
+	require.Error(t, woc.garbageCollectArtifacts(ctx))
+	assert.True(t, woc.updated)
+	assert.Len(t, events, 1)
+	first := *artGCErrorCondition(woc)
+
+	// the next reconcile fails identically: nothing to write, only the delayed requeue
+	<-events
+	woc.updated = false
+	require.Error(t, woc.garbageCollectArtifacts(ctx))
+	assert.False(t, woc.updated, "an identical failure must not trigger a Workflow update")
+	assert.Empty(t, events)
+	assert.Equal(t, first, *artGCErrorCondition(woc))
+}
+
 // A workflow whose artifacts all use OnWorkflowDeletion must keep the finalizer at completion, even with
 // forceFinalizerRemoval: nothing has failed, deletion GC just hasn't had its chance yet (#16897 review)
 func TestArtifactGCDeletionOnlyKeepsFinalizerUntilDeletion(t *testing.T) {
