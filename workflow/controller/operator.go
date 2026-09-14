@@ -304,7 +304,9 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		woc.updated = woc.updated || wfUpdate
 		if !acquired {
 			if !woc.releaseLocksForPendingShuttingdownWfs(ctx) {
-				woc.log.Warn(ctx, "Workflow processing has been postponed due to concurrency limit")
+				if woc.wf.Status.Message != msg {
+					woc.log.Info(ctx, "Workflow processing has been postponed due to concurrency limit")
+				}
 				phase := woc.wf.Status.Phase
 				if phase == wfv1.WorkflowUnknown {
 					phase = wfv1.WorkflowPending
@@ -827,7 +829,7 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 	}
 
 	if wf, err := wfClient.Update(ctx, woc.wf, metav1.UpdateOptions{}); err != nil {
-		woc.log.WithField("error", err).WithField("reason", apierr.ReasonForError(err)).Warn(ctx, "Error updating workflow")
+		woc.log.WithField("error", err).WithField("reason", apierr.ReasonForError(err)).Info(ctx, "Error updating workflow")
 		if argokubeerr.IsRequestEntityTooLargeErr(err) {
 			woc.persistWorkflowSizeLimitErr(ctx, wfClient, err)
 			return
@@ -1654,9 +1656,11 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 				// Mark its taskResult as completed directly since the aux container did not exit normally,
 				// and it will never have a chance to report taskResult correctly.
 				nodeID := woc.nodeID(pod)
-				woc.log.WithFields(logging.Fields{"nodeID": nodeID, "container": c.Name, "exitCode": c.State.Terminated.ExitCode, "reason": c.State.Terminated.Reason}).
-					Warn(ctx, "marking its taskResult as completed since aux container did not exit normally")
-				woc.wf.Status.MarkTaskResultComplete(ctx, nodeID)
+				if woc.wf.Status.IsTaskResultIncomplete(nodeID) {
+					woc.log.WithFields(logging.Fields{"nodeID": nodeID, "container": c.Name, "exitCode": c.State.Terminated.ExitCode, "reason": c.State.Terminated.Reason}).
+						Warn(ctx, "marking its taskResult as completed since aux container did not exit normally")
+					woc.wf.Status.MarkTaskResultComplete(ctx, nodeID)
+				}
 			}
 		}
 	}
@@ -1664,9 +1668,11 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		// Mark its taskResult as completed directly since the aux container has been cleaned up because of pod evicted,
 		// and it will never have a chance to report taskResult correctly.
 		nodeID := woc.nodeID(pod)
-		woc.log.WithFields(logging.Fields{"nodeID": nodeID}).
-			Warn(ctx, "marking its taskResult as completed since aux container has been cleaned up.")
-		woc.wf.Status.MarkTaskResultComplete(ctx, nodeID)
+		if woc.wf.Status.IsTaskResultIncomplete(nodeID) {
+			woc.log.WithFields(logging.Fields{"nodeID": nodeID}).
+				Warn(ctx, "marking its taskResult as completed since aux container has been cleaned up.")
+			woc.wf.Status.MarkTaskResultComplete(ctx, nodeID)
+		}
 	}
 
 	// If the node template has outputs Parameters/Artifacts/Result, we should not change the phase to Succeeded until the outputs are set.
@@ -2230,11 +2236,8 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	// Set templateScope from which the template resolution starts.
 	templateScope := tmplCtx.GetTemplateScope()
 
-	node, err = woc.wf.GetNodeByName(nodeName)
-	if err != nil {
-		// Will be initialized via woc.initializeNodeOrMarkError
-		woc.log.Info(ctx, "Node was nil, will be initialized as type Skipped")
-	}
+	// A missing node will be initialized via woc.initializeNodeOrMarkError
+	node, _ = woc.wf.GetNodeByName(nodeName)
 
 	if node != nil {
 		if node.DisplayName == "dependencyTesting" {
@@ -2776,7 +2779,6 @@ func (woc *wfOperationCtx) recordWorkflowPhaseChange(ctx context.Context) {
 		if woc.wf.Status.Phase.Completed() {
 			duration := time.Since(woc.wf.Status.StartedAt.Time)
 			woc.controller.metrics.RecordWorkflowTemplateTime(ctx, duration, woc.wf.Spec.WorkflowTemplateRef.Name, woc.wf.Namespace, woc.wf.Spec.WorkflowTemplateRef.ClusterScope) //nolint:forbidigo // not-woc-misuse
-			woc.log.Info(ctx, "Recording template time")
 		}
 	}
 }
@@ -3133,7 +3135,7 @@ func (woc *wfOperationCtx) initializeNode(ctx context.Context, nodeName string, 
 			node.DisplayName = stepsOrDagSeparator.ReplaceAllString(node.DisplayName, "")
 		}
 	} else {
-		woc.log.WithField("boundaryID", boundaryID).Info(ctx, "was unable to obtain node, letting display name to be nodeName")
+		woc.log.WithField("boundaryID", boundaryID).Debug(ctx, "was unable to obtain node, letting display name to be nodeName")
 		node.DisplayName = nodeName
 	}
 

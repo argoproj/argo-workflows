@@ -240,11 +240,9 @@ func (woc *wfOperationCtx) newPodBuilder(ctx context.Context, nodeName string, m
 	// workflow status. Deep-copying it into the snapshot keeps build pure: it
 	// reads scheduling constraints from a frozen value instead of reaching back
 	// into live woc.wf during the build. A nil/unresolvable boundary template is
-	// expected (e.g. top-level nodes) and is surfaced only as a warning.
+	// expected (e.g. top-level nodes).
 	var boundaryTemplate *wfv1.Template
-	if bt, err := woc.GetBoundaryTemplate(ctx, nodeName); err != nil {
-		woc.log.WithField("nodeName", nodeName).Warn(ctx, "couldn't get boundaryTemplate")
-	} else {
+	if bt, err := woc.GetBoundaryTemplate(ctx, nodeName); err == nil {
 		boundaryTemplate = bt.DeepCopy()
 	}
 	// Deep-copy mainCtrs into the snapshot so build owns a frozen value: build
@@ -1205,7 +1203,6 @@ func (woc *wfOperationCtx) buildPluginSidecars(ctx context.Context, tmpl *wfv1.T
 
 func (woc *wfOperationCtx) getExecutorLogOpts(ctx context.Context) []string {
 	log := logging.RequireLoggerFromContext(ctx)
-	log.WithField("loglevel", string(log.Level())).Info(ctx, "getExecutorLogOpts")
 	return []string{"--loglevel", string(log.Level()), "--log-format", woc.controller.executorLogFormat(), "--gloglevel", cmdutil.GetGLogLevel()}
 }
 
