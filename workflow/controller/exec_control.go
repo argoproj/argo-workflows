@@ -121,5 +121,13 @@ func (woc *wfOperationCtx) killDaemonedChildren(ctx context.Context, nodeID stri
 		childNode.Daemoned = nil
 		woc.wf.Status.Nodes.Set(ctx, childNode.ID, childNode)
 		woc.updated = true
+		// A daemoned containerSet also has container child nodes under the pod node. They are
+		// stopped along with the pod, so complete any that have not already finished on their
+		// own; their exit codes carry no failure meaning because the controller is killing them.
+		for _, ctrNode := range woc.wf.Status.Nodes {
+			if ctrNode.BoundaryID == childNode.ID && ctrNode.Type == wfv1.NodeTypeContainer && !ctrNode.Fulfilled() {
+				woc.markNodePhase(ctx, ctrNode.Name, wfv1.NodeSucceeded)
+			}
+		}
 	}
 }
