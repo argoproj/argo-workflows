@@ -2892,6 +2892,9 @@ type S3Bucket struct {
 	//
 	// +kubebuilder:validation:Enum="";path;virtual-hosted
 	AddressingStyle string `json:"addressingStyle,omitempty" protobuf:"bytes,13,opt,name=addressingStyle"`
+
+	// StorageClass specifies the storage class used when uploading objects.
+	StorageClass string `json:"storageClass,omitempty" protobuf:"bytes,14,opt,name=storageClass"`
 }
 
 // S3EncryptionOptions used to determine encryption options during s3 operations
