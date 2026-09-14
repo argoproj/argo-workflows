@@ -228,7 +228,7 @@ func (s *databaseSemaphore) addToQueue(ctx context.Context, holderKey string, pr
 }
 
 func (s *databaseSemaphore) removeFromQueue(ctx context.Context, holderKey string) error {
-	err := s.queries.RemoveFromQueue(ctx, s.longDBKey(), holderKey)
+	err := s.queries.RemoveFromQueue(ctx, s.longDBKey(), holderKey, s.info.Config.ControllerName)
 	return err
 }
 

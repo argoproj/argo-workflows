@@ -12,6 +12,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/sqldb"
 	syncdb "github.com/argoproj/argo-workflows/v4/util/sync/db"
+	syncdbmocks "github.com/argoproj/argo-workflows/v4/util/sync/db/mocks"
 )
 
 var testDBTypes []sqldb.DBType
@@ -25,6 +26,26 @@ func init() {
 	default:
 		testDBTypes = []sqldb.DBType{sqldb.Postgres, sqldb.MySQL}
 	}
+}
+
+func TestDatabaseSemaphoreRemoveFromQueueScopesController(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	queries := syncdbmocks.NewSyncQueries(t)
+	controllerName := "controller-a"
+	semaphore := &databaseSemaphore{
+		shortDBKey: "namespace/semaphore",
+		info: syncdb.Info{
+			Config: syncdb.Config{ControllerName: controllerName},
+		},
+		queries: queries,
+	}
+
+	queries.EXPECT().
+		RemoveFromQueue(ctx, "sem/namespace/semaphore", "namespace/workflow", controllerName).
+		Return(nil).
+		Once()
+
+	require.NoError(t, semaphore.removeFromQueue(ctx, "namespace/workflow"))
 }
 
 // TestInactiveControllerDBSemaphore tests that a semaphore can't be acquired if the controller is not marked as responding
