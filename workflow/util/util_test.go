@@ -103,6 +103,10 @@ metadata:
   name: wf
 spec:
   entrypoint: main
+  arguments:
+    parameters:
+    - name: items
+      value: "[a, b, c]"
   templates:
   - name: main
     dag:
@@ -112,7 +116,7 @@ spec:
       - name: fan
         template: inner
         dependencies: [gen]
-        withItems: [a, b, c]
+        withParam: "{{workflow.parameters.items}}"
       - name: after
         template: run
         dependencies: [fan]
@@ -285,7 +289,6 @@ func TestFormulateResubmitWorkflowMemoized(t *testing.T) {
 func TestFormulateResubmitWorkflowMemoizedParameterOverride(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := wfv1.MustUnmarshalWorkflow(memoizedResubmitFixture)
-	wf.Spec.Arguments.Parameters = []wfv1.Parameter{{Name: "items", Value: wfv1.AnyStringPtr("[a,b,c]")}}
 	newWf, err := FormulateResubmitWorkflow(ctx, wf, true, []string{"items=[x]"})
 	require.NoError(t, err)
 
@@ -314,9 +317,17 @@ spec:
   - name: main
     steps:
     - - name: a
-        template: run
+        template: set
       - name: b
         template: run
+  - name: set
+    containerSet:
+      containers:
+      - name: one
+        image: busybox
+      - name: two
+        image: busybox
+        dependencies: [one]
   - name: run
     container:
       image: busybox
@@ -342,6 +353,20 @@ status:
       type: Pod
       boundaryID: wf
       phase: Running
+      children: [wf-a-one]
+    wf-a-one:
+      id: wf-a-one
+      name: wf[0].a.one
+      type: Container
+      boundaryID: wf-a
+      phase: Succeeded
+      children: [wf-a-two]
+    wf-a-two:
+      id: wf-a-two
+      name: wf[0].a.two
+      type: Container
+      boundaryID: wf-a
+      phase: Running
     wf-b:
       id: wf-b
       name: wf[0].b
@@ -351,13 +376,182 @@ status:
 `)
 	newWf, err := FormulateResubmitWorkflow(ctx, wf, true, nil)
 	require.NoError(t, err)
-	// A pod that never finished cannot be memoized, its pod belongs to the old workflow.
-	assert.False(t, newWf.Status.Nodes.Has(newWf.NodeID(newWf.Name+"[0].a")))
-	assert.False(t, newWf.Status.Nodes.Has(newWf.NodeID(newWf.Name+"[0].b")))
+	// A pod that never finished cannot be memoized, its pod belongs to the old workflow, and
+	// neither can anything under it, even a container that had already succeeded.
+	for _, suffix := range []string{"[0].a", "[0].a.one", "[0].a.two", "[0].b"} {
+		assert.False(t, newWf.Status.Nodes.Has(newWf.NodeID(newWf.Name+suffix)), "%s should have been dropped", suffix)
+	}
 	sg, err := newWf.Status.Nodes.Get(newWf.NodeID(newWf.Name + "[0]"))
 	require.NoError(t, err)
 	assert.Equal(t, wfv1.NodeRunning, sg.Phase)
 	assert.Empty(t, sg.Children)
+}
+
+// A failure that no execution node owns: the fan-out's withParam could not be expanded, which the
+// controller records as a Skipped node in Error. Memoized resubmit must still reset the path to it.
+const nonPodFailureFixture = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wf
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: gen
+        template: run
+      - name: fan
+        template: run
+        dependencies: [gen]
+        withParam: "{{tasks.gen.outputs.result}}"
+  - name: run
+    container:
+      image: busybox
+status:
+  phase: Error
+  nodes:
+    wf:
+      id: wf
+      name: wf
+      type: DAG
+      phase: Error
+      children: [wf-gen]
+    wf-gen:
+      id: wf-gen
+      name: wf.gen
+      type: Pod
+      boundaryID: wf
+      phase: Succeeded
+      outputs:
+        result: not json
+      children: [wf-fan]
+    wf-fan:
+      id: wf-fan
+      name: wf.fan
+      type: Skipped
+      boundaryID: wf
+      phase: Error
+      message: "withParam value could not be parsed as a JSON list"
+`
+
+func TestFormulateResubmitWorkflowMemoizedNonPodFailure(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(nonPodFailureFixture)
+	newWf, err := FormulateResubmitWorkflow(ctx, wf, true, nil)
+	require.NoError(t, err)
+	root, err := newWf.Status.Nodes.Get(newWf.Name)
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeRunning, root.Phase, "the root must be revisited, not carried over as Error")
+	assert.False(t, newWf.Status.Nodes.Has(newWf.NodeID(newWf.Name+".fan")), "the failed node must be re-created")
+	gen, err := newWf.Status.Nodes.Get(newWf.NodeID(newWf.Name + ".gen"))
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeTypeSkipped, gen.Type, "the succeeded pod is still memoized")
+}
+
+func TestFormulateRetryWorkflowNonPodFailure(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(nonPodFailureFixture)
+	newWf, _, err := FormulateRetryWorkflow(ctx, wf, false, "", nil)
+	require.NoError(t, err)
+	root, err := newWf.Status.Nodes.Get("wf")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeRunning, root.Phase)
+	assert.False(t, newWf.Status.Nodes.Has("wf-fan"))
+	assert.True(t, newWf.Status.Nodes.Has("wf-gen"))
+}
+
+// A pod that failed but was carried past with continueOn is memoized as a failed placeholder; it
+// must not be re-run, and it must not claim a pod under the new workflow.
+func TestFormulateResubmitWorkflowMemoizedContinueOn(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wf
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: flaky
+        template: run
+        continueOn: {failed: true}
+      - name: after
+        template: run
+        dependencies: [flaky]
+      - name: broken
+        template: run
+  - name: run
+    container:
+      image: busybox
+status:
+  phase: Failed
+  nodes:
+    wf:
+      id: wf
+      name: wf
+      type: DAG
+      phase: Failed
+      children: [wf-flaky, wf-broken]
+    wf-flaky:
+      id: wf-flaky
+      name: wf.flaky
+      type: Pod
+      boundaryID: wf
+      phase: Failed
+      message: "exit code 1"
+      children: [wf-after]
+    wf-after:
+      id: wf-after
+      name: wf.after
+      type: Pod
+      boundaryID: wf
+      phase: Succeeded
+    wf-broken:
+      id: wf-broken
+      name: wf.broken
+      type: Pod
+      boundaryID: wf
+      phase: Failed
+      message: "exit code 2"
+`)
+	newWf, err := FormulateResubmitWorkflow(ctx, wf, true, nil)
+	require.NoError(t, err)
+	flaky, err := newWf.Status.Nodes.Get(newWf.NodeID(newWf.Name + ".flaky"))
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeFailed, flaky.Phase)
+	assert.Equal(t, wfv1.NodeTypeSkipped, flaky.Type, "no pod exists for it under the new workflow")
+	assert.Equal(t, "original pod: wf-flaky: exit code 1", flaky.Message)
+	assert.False(t, newWf.Status.Nodes.Has(newWf.NodeID(newWf.Name+".broken")), "the real failure is re-run")
+}
+
+// A workflow left behind by the memoized resubmit of an older version can reference nodes that no
+// longer exist. It must still be resubmittable.
+func TestFormulateResubmitWorkflowMemoizedDanglingInput(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(memoizedResubmitFixture)
+	gen := wf.Status.Nodes["wf-gen"]
+	gen.Children = append(gen.Children, "wf-gone")
+	wf.Status.Nodes.Set(ctx, "wf-gen", gen)
+	newWf, err := FormulateResubmitWorkflow(ctx, wf, true, nil)
+	require.NoError(t, err)
+	for _, node := range newWf.Status.Nodes {
+		for _, child := range node.Children {
+			assert.True(t, newWf.Status.Nodes.Has(child), "node %s still references %s", node.Name, child)
+		}
+	}
+}
+
+func TestFormulateResubmitWorkflowMemoizedNoRootNode(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(memoizedResubmitFixture)
+	wf.Status.Nodes.Delete(ctx, "wf")
+	_, err := FormulateResubmitWorkflow(ctx, wf, true, nil)
+	require.ErrorContains(t, err, "no root node")
 }
 
 func TestFormulateResubmitWorkflowMemoizedNoNodes(t *testing.T) {
@@ -1346,7 +1540,9 @@ func TestFormulateRetryWorkflow(t *testing.T) {
 		require.NoError(t, err)
 		wf, _, err = FormulateRetryWorkflow(ctx, wf, false, "", nil)
 		require.NoError(t, err)
-		assert.Len(t, wf.Status.Nodes, 1)
+		// The root failed on its own, with nothing beneath it to blame, so it is
+		// the failure and is re-created rather than carried over as Failed.
+		assert.Empty(t, wf.Status.Nodes)
 	})
 	t.Run("Skipped and Suspended Nodes", func(t *testing.T) {
 		wf := &wfv1.Workflow{
