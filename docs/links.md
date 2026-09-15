@@ -36,3 +36,16 @@ For example, one may find it useful to define a custom label in the workflow and
 
 We can also access workflow fields in a pod link. For example, `${workflow.metadata.name}` returns
 the name of the workflow instead of the name of the pod. If the field doesn't exist on the workflow then the value will be an empty string.
+
+> v4.2 and after
+
+You can configure a link with a relative URL instead of an absolute one.
+The UI prefixes a relative link with the base UI URL, so you do not have to hard-code the server's address in each link.
+This is convenient for links that point back into the UI, such as a button that opens the workflow list with a preset filter:
+
+```yaml
+links:
+  - name: Failed workflows
+    scope: workflow-list
+    url: "?namespace=argo-events&phase=Failed&phase=Error&limit=50"
+```
