@@ -54,23 +54,33 @@ func Test_archivedWorkflowServer(t *testing.T) {
 			},
 		}, nil
 	})
+	// Mock workflows with StartedAt and UID for cursor-based pagination tests
+	wf1 := v1alpha1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{UID: "uid-1"},
+		Status:     v1alpha1.WorkflowStatus{StartedAt: metav1.Time{Time: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)}},
+	}
+	wf2 := v1alpha1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{UID: "uid-2"},
+		Status:     v1alpha1.WorkflowStatus{StartedAt: metav1.Time{Time: time.Date(2020, 1, 1, 1, 0, 0, 0, time.UTC)}},
+	}
 	// two pages of results for limit 1
-	repo.On("ListWorkflows", mock.Anything, sutils.ListOptions{Limit: 2, Offset: 0}).Return(v1alpha1.Workflows{{}, {}}, nil)
-	repo.On("ListWorkflows", mock.Anything, sutils.ListOptions{Limit: 2, Offset: 1}).Return(v1alpha1.Workflows{{}}, nil)
+	cursor1 := sutils.EncodeArchivedWorkflowCursor(wf1.Status.StartedAt.Time, string(wf1.UID))
+	repo.On("ListWorkflows", mock.Anything, sutils.ListOptions{Limit: 2, Offset: 0}).Return(v1alpha1.Workflows{wf1, wf2}, nil)
+	repo.On("ListWorkflows", mock.Anything, sutils.ListOptions{Limit: 2, Offset: 0, CursorStartedAt: wf1.Status.StartedAt.Time, CursorUID: string(wf1.UID)}).Return(v1alpha1.Workflows{wf2}, nil)
 	minStartAt, _ := time.Parse(time.RFC3339, "2020-01-01T00:00:00Z")
 	maxStartAt, _ := time.Parse(time.RFC3339, "2020-01-02T00:00:00Z")
 	createdTime := metav1.Time{Time: time.Now().UTC()}
 	finishedTime := metav1.Time{Time: createdTime.Add(time.Second * 2)}
-	repo.On("ListWorkflows", mock.Anything, sutils.ListOptions{Namespace: "", Name: "", NamePrefix: "", MinStartedAt: minStartAt, MaxStartedAt: maxStartAt, Limit: 2, Offset: 0}).Return(v1alpha1.Workflows{{}}, nil)
-	repo.On("ListWorkflows", mock.Anything, sutils.ListOptions{Namespace: "", Name: "my-name", NamePrefix: "", MinStartedAt: minStartAt, MaxStartedAt: maxStartAt, Limit: 2, Offset: 0}).Return(v1alpha1.Workflows{{}}, nil)
-	repo.On("ListWorkflows", mock.Anything, sutils.ListOptions{Namespace: "", Name: "", NamePrefix: "my-", MinStartedAt: minStartAt, MaxStartedAt: maxStartAt, Limit: 2, Offset: 0}).Return(v1alpha1.Workflows{{}}, nil)
-	repo.On("ListWorkflows", mock.Anything, sutils.ListOptions{Namespace: "", Name: "my-name", NamePrefix: "my-", MinStartedAt: minStartAt, MaxStartedAt: maxStartAt, Limit: 2, Offset: 0}).Return(v1alpha1.Workflows{{}}, nil)
-	repo.On("ListWorkflows", mock.Anything, sutils.ListOptions{Namespace: "", Name: "my-name", NamePrefix: "my-", MinStartedAt: minStartAt, MaxStartedAt: maxStartAt, Limit: 2, Offset: 0, ShowRemainingItemCount: true}).Return(v1alpha1.Workflows{{}}, nil)
-	repo.On("ListWorkflows", mock.Anything, sutils.ListOptions{Namespace: "", Name: "excluded-name", NameFilter: "NotEquals", MinStartedAt: minStartAt, MaxStartedAt: maxStartAt, Limit: 2, Offset: 0}).Return(v1alpha1.Workflows{{}}, nil)
-	repo.On("ListWorkflows", mock.Anything, sutils.ListOptions{Namespace: "", Name: "exact-name", NameFilter: "", MinStartedAt: minStartAt, MaxStartedAt: maxStartAt, Limit: 2, Offset: 0}).Return(v1alpha1.Workflows{{}}, nil)
-	repo.On("ListWorkflows", mock.Anything, sutils.ListOptions{Namespace: "excluded-ns", NamespaceFilter: "NotEquals", Name: "", NamePrefix: "", MinStartedAt: time.Time{}, MaxStartedAt: time.Time{}, Limit: 2, Offset: 0}).Return(v1alpha1.Workflows{{}, {}}, nil)
-	repo.On("ListWorkflows", mock.Anything, sutils.ListOptions{Namespace: "user-ns", Name: "", NamePrefix: "", MinStartedAt: time.Time{}, MaxStartedAt: time.Time{}, Limit: 1, Offset: 0}).Return(v1alpha1.Workflows{{}}, nil)
-	repo.On("ListWorkflows", mock.Anything, sutils.ListOptions{Namespace: "user-ns", Name: "", NamePrefix: "", MinStartedAt: time.Time{}, MaxStartedAt: time.Time{}, Limit: 2, Offset: 0}).Return(v1alpha1.Workflows{{}, {}}, nil)
+	repo.On("ListWorkflows", mock.Anything, sutils.ListOptions{Namespace: "", Name: "", NamePrefix: "", MinStartedAt: minStartAt, MaxStartedAt: maxStartAt, Limit: 2, Offset: 0}).Return(v1alpha1.Workflows{wf1}, nil)
+	repo.On("ListWorkflows", mock.Anything, sutils.ListOptions{Namespace: "", Name: "my-name", NamePrefix: "", MinStartedAt: minStartAt, MaxStartedAt: maxStartAt, Limit: 2, Offset: 0}).Return(v1alpha1.Workflows{wf1}, nil)
+	repo.On("ListWorkflows", mock.Anything, sutils.ListOptions{Namespace: "", Name: "", NamePrefix: "my-", MinStartedAt: minStartAt, MaxStartedAt: maxStartAt, Limit: 2, Offset: 0}).Return(v1alpha1.Workflows{wf1}, nil)
+	repo.On("ListWorkflows", mock.Anything, sutils.ListOptions{Namespace: "", Name: "my-name", NamePrefix: "my-", MinStartedAt: minStartAt, MaxStartedAt: maxStartAt, Limit: 2, Offset: 0}).Return(v1alpha1.Workflows{wf1}, nil)
+	repo.On("ListWorkflows", mock.Anything, sutils.ListOptions{Namespace: "", Name: "my-name", NamePrefix: "my-", MinStartedAt: minStartAt, MaxStartedAt: maxStartAt, Limit: 2, Offset: 0, ShowRemainingItemCount: true}).Return(v1alpha1.Workflows{wf1}, nil)
+	repo.On("ListWorkflows", mock.Anything, sutils.ListOptions{Namespace: "", Name: "excluded-name", NameFilter: "NotEquals", MinStartedAt: minStartAt, MaxStartedAt: maxStartAt, Limit: 2, Offset: 0}).Return(v1alpha1.Workflows{wf1}, nil)
+	repo.On("ListWorkflows", mock.Anything, sutils.ListOptions{Namespace: "", Name: "exact-name", NameFilter: "", MinStartedAt: minStartAt, MaxStartedAt: maxStartAt, Limit: 2, Offset: 0}).Return(v1alpha1.Workflows{wf1}, nil)
+	repo.On("ListWorkflows", mock.Anything, sutils.ListOptions{Namespace: "excluded-ns", NamespaceFilter: "NotEquals", Name: "", NamePrefix: "", MinStartedAt: time.Time{}, MaxStartedAt: time.Time{}, Limit: 2, Offset: 0}).Return(v1alpha1.Workflows{wf1, wf2}, nil)
+	repo.On("ListWorkflows", mock.Anything, sutils.ListOptions{Namespace: "user-ns", Name: "", NamePrefix: "", MinStartedAt: time.Time{}, MaxStartedAt: time.Time{}, Limit: 1, Offset: 0}).Return(v1alpha1.Workflows{wf1}, nil)
+	repo.On("ListWorkflows", mock.Anything, sutils.ListOptions{Namespace: "user-ns", Name: "", NamePrefix: "", MinStartedAt: time.Time{}, MaxStartedAt: time.Time{}, Limit: 2, Offset: 0}).Return(v1alpha1.Workflows{wf1, wf2}, nil)
 	repo.On("CountWorkflows", mock.Anything, sutils.ListOptions{Namespace: "", Name: "my-name", NamePrefix: "my-", MinStartedAt: minStartAt, MaxStartedAt: maxStartAt, Limit: 2, Offset: 0}).Return(int64(5), nil)
 	repo.On("CountWorkflows", mock.Anything, sutils.ListOptions{Namespace: "", Name: "my-name", NamePrefix: "my-", MinStartedAt: minStartAt, MaxStartedAt: maxStartAt, Limit: 2, Offset: 0, ShowRemainingItemCount: true}).Return(int64(5), nil)
 	repo.On("GetWorkflow", mock.Anything, "", "", "").Return(nil, nil)
@@ -143,8 +153,8 @@ func Test_archivedWorkflowServer(t *testing.T) {
 		resp, err := w.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{ListOptions: &metav1.ListOptions{Limit: 1}})
 		require.NoError(t, err)
 		assert.Len(t, resp.Items, 1)
-		assert.Equal(t, "1", resp.Continue)
-		resp, err = w.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{ListOptions: &metav1.ListOptions{Continue: "1", Limit: 1}})
+		assert.Equal(t, cursor1, resp.Continue)
+		resp, err = w.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{ListOptions: &metav1.ListOptions{Continue: cursor1, Limit: 1}})
 		require.NoError(t, err)
 		assert.Len(t, resp.Items, 1)
 		assert.Empty(t, resp.Continue)
@@ -183,18 +193,18 @@ func Test_archivedWorkflowServer(t *testing.T) {
 		resp, err = w.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{Namespace: "user-ns", ListOptions: &metav1.ListOptions{Limit: 1}})
 		require.NoError(t, err)
 		assert.Len(t, resp.Items, 1)
-		assert.Equal(t, "1", resp.Continue)
+		assert.Equal(t, cursor1, resp.Continue)
 		// pass namespace as field selector and not query parameter
 		resp, err = w.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{ListOptions: &metav1.ListOptions{Limit: 1, FieldSelector: "metadata.namespace=user-ns"}})
 		require.NoError(t, err)
 		assert.Len(t, resp.Items, 1)
-		assert.Equal(t, "1", resp.Continue)
+		assert.Equal(t, cursor1, resp.Continue)
 
 		// pass namespace as field selector and query parameter both, where both match
 		resp, err = w.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{Namespace: "user-ns", ListOptions: &metav1.ListOptions{Limit: 1, FieldSelector: "metadata.namespace=user-ns"}})
 		require.NoError(t, err)
 		assert.Len(t, resp.Items, 1)
-		assert.Equal(t, "1", resp.Continue)
+		assert.Equal(t, cursor1, resp.Continue)
 
 		// pass namespace as field selector and query parameter both, where they don't match
 		_, err = w.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{Namespace: "user-ns", ListOptions: &metav1.ListOptions{Limit: 1, FieldSelector: "metadata.namespace=other-ns"}})
@@ -204,13 +214,13 @@ func Test_archivedWorkflowServer(t *testing.T) {
 		resp, err = w.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{ListOptions: &metav1.ListOptions{Limit: 1, FieldSelector: "metadata.namespace!=excluded-ns"}})
 		require.NoError(t, err)
 		assert.Len(t, resp.Items, 1)
-		assert.Equal(t, "1", resp.Continue)
+		assert.Equal(t, cursor1, resp.Continue)
 
 		// namespace DoubleEquals
 		resp, err = w.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{ListOptions: &metav1.ListOptions{Limit: 1, FieldSelector: "metadata.namespace==user-ns"}})
 		require.NoError(t, err)
 		assert.Len(t, resp.Items, 1)
-		assert.Equal(t, "1", resp.Continue)
+		assert.Equal(t, cursor1, resp.Continue)
 	})
 	t.Run("GetArchivedWorkflow", func(t *testing.T) {
 		allowed = false

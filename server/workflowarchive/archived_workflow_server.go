@@ -62,7 +62,6 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 	}
 
 	limit := options.Limit
-	offset := options.Offset
 	// When the zero value is passed, we should treat this as returning all results
 	// to align ourselves with the behavior of the `List` endpoints in the Kubernetes API
 	loadAll := limit == 0
@@ -85,7 +84,7 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 		if err != nil {
 			return nil, sutils.ToStatusError(err, codes.Internal)
 		}
-		count := total - int64(offset) - int64(items.Len())
+		count := total - int64(options.Offset) - int64(items.Len())
 		if len(items) > limit {
 			count++
 		}
@@ -97,7 +96,11 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 
 	if !loadAll && len(items) > limit {
 		items = items[0:limit]
-		meta.Continue = fmt.Sprintf("%v", offset+limit)
+		// Use keyset cursor for pagination instead of offset. The cursor
+		// encodes the startedat and uid of the last item, enabling
+		// constant-time pagination regardless of page depth.
+		lastItem := items[len(items)-1]
+		meta.Continue = sutils.EncodeArchivedWorkflowCursor(lastItem.Status.StartedAt.Time, string(lastItem.UID))
 	}
 
 	sort.Sort(items)
