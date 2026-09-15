@@ -509,7 +509,6 @@ data:
     # HTTP header containing the user's groups.
     groups:
       header: X-Forwarded-Groups
-      delimiter: ","
 
   # workflowRestrictions restricts the Workflows that the controller will process.
   # Current options:
