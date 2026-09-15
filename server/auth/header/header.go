@@ -144,7 +144,7 @@ func (h *header) authenticateProxy(md metadata.MD) error {
 
 	values := md.Get(h.config.SharedSecret.Header)
 	if len(values) == 0 {
-		return fmt.Errorf("trusted proxy authentication header is missing")
+		return types.ErrNoCredentials
 	}
 
 	providedSecret := strings.Join(values, ",")

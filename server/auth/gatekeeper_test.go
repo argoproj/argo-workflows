@@ -230,18 +230,14 @@ func TestServer_GetWFClient(t *testing.T) {
 		assert.Equal(t, "sso-user", GetClaims(ctx).Subject)
 		headerIf.AssertNotCalled(t, "Authorize", mock.Anything)
 	})
-	t.Run("Header+Server, Header unauthenticated falls through to Server", func(t *testing.T) {
+	t.Run("Header+Server, Header no credentials falls through to Server", func(t *testing.T) {
 		headerIf := &headermocks.Interface{}
-		headerIf.On("Authorize", mock.Anything).
-			Return(nil, status.Error(codes.Unauthenticated, "subject claim is empty"))
-
+		headerIf.On("Authorize", mock.Anything).Return(nil, authTypes.ErrNoCredentials)
 		g, err := NewGatekeeper(Modes{Header: true, Server: true}, clients, &rest.Config{Username: "my-username"}, nil, headerIf, clientForAuthorization, "my-ns", "my-ns", true, resourceCache)
 		require.NoError(t, err)
-
 		ctx := metadata.NewIncomingContext(logging.TestContext(t.Context()), metadata.Pairs("x-forwarded-user", ""))
 		ctx, err = g.Context(ctx)
 		require.NoError(t, err)
-
 		assert.Equal(t, wfClient, GetWfClient(ctx))
 		assert.Equal(t, kubeClient, GetKubeClient(ctx))
 		assert.NotNil(t, GetClaims(ctx))

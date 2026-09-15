@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -175,11 +176,11 @@ func (s *gatekeeper) getClients(ctx context.Context, req any) (*servertypes.Clie
 					return clients, claims, nil
 				}
 
-				if status.Code(err) != codes.Unauthenticated {
-					return nil, nil, err
+				if errors.Is(err, authTypes.ErrNoCredentials) {
+					continue
 				}
 
-				continue
+				return nil, nil, err
 			}
 
 			if s.Modes[Client] &&
@@ -190,11 +191,11 @@ func (s *gatekeeper) getClients(ctx context.Context, req any) (*servertypes.Clie
 					return clients, claims, nil
 				}
 
-				if status.Code(err) != codes.Unauthenticated {
-					return nil, nil, err
+				if errors.Is(err, authTypes.ErrNoCredentials) {
+					continue
 				}
 
-				continue
+				return nil, nil, err
 			}
 		}
 
@@ -210,7 +211,7 @@ func (s *gatekeeper) getClients(ctx context.Context, req any) (*servertypes.Clie
 			return clients, claims, nil
 		}
 
-		if status.Code(err) != codes.Unauthenticated {
+		if !errors.Is(err, authTypes.ErrNoCredentials) {
 			return nil, nil, err
 		}
 	}
@@ -248,6 +249,9 @@ func (s *gatekeeper) authenticateSSO(
 	claims, err := s.ssoIf.Authorize(authorization)
 
 	if err != nil {
+		if errors.Is(err, authTypes.ErrNoCredentials) {
+			return nil, nil, err
+		}
 		return nil, nil, status.Error(codes.Unauthenticated, err.Error())
 	}
 
@@ -261,6 +265,9 @@ func (s *gatekeeper) authenticateHeader(
 ) (*servertypes.Clients, *authTypes.Claims, error) {
 	claims, err := s.headerIf.Authorize(md)
 	if err != nil {
+		if errors.Is(err, authTypes.ErrNoCredentials) {
+			return nil, nil, err
+		}
 		return nil, nil, status.Error(codes.Unauthenticated, err.Error())
 	}
 

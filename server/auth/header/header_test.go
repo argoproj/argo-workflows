@@ -12,6 +12,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 
 	"github.com/argoproj/argo-workflows/v4/config"
+	"github.com/argoproj/argo-workflows/v4/server/auth/types"
 )
 
 func TestAuthorize(t *testing.T) {
@@ -287,10 +288,11 @@ func TestAuthorizeMissingSubject(t *testing.T) {
 
 func TestAuthenticateProxy(t *testing.T) {
 	tests := []struct {
-		name          string
-		cfg           config.HeaderConfig
-		md            metadata.MD
-		expectedError string
+		name                  string
+		cfg                   config.HeaderConfig
+		md                    metadata.MD
+		expectedError         string
+		expectedNoCredentials bool
 	}{
 		{
 			name: "valid secret",
@@ -340,8 +342,8 @@ func TestAuthenticateProxy(t *testing.T) {
 					},
 				},
 			},
-			md:            metadata.MD{},
-			expectedError: "trusted proxy authentication header is missing",
+			md:                    metadata.MD{},
+			expectedNoCredentials: true,
 		},
 		{
 			name: "multiple authentication headers",
@@ -394,9 +396,12 @@ func TestAuthenticateProxy(t *testing.T) {
 
 			err = h.(*header).authenticateProxy(tt.md)
 
-			if tt.expectedError != "" {
+			switch {
+			case tt.expectedNoCredentials:
+				require.ErrorIs(t, err, types.ErrNoCredentials)
+			case tt.expectedError != "":
 				require.EqualError(t, err, tt.expectedError)
-			} else {
+			default:
 				require.NoError(t, err)
 			}
 		})
@@ -523,7 +528,7 @@ func TestAuthorizeProxyAuthentication(t *testing.T) {
 		))
 
 		assert.Nil(t, claims)
-		require.EqualError(t, err, "trusted proxy authentication header is missing")
+		require.ErrorIs(t, err, types.ErrNoCredentials)
 	})
 
 	t.Run("insecure mode skips proxy authentication", func(t *testing.T) {
