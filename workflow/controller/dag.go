@@ -63,6 +63,15 @@ type dagContext struct {
 	// they should complete with. executeDAG marks them once assessment is done.
 	taskGroupsToComplete map[string]wfv1.NodePhase
 
+	// expandingTaskGroups collects the TaskGroup nodes executeDAGTask expanded
+	// this reconcile. Completing these is the job of executeDAGTask's own
+	// end-of-loop check, which knows the full expanded item list; assessDAGPhase
+	// must not complete them from their created children alone, because an early
+	// return out of the expandedTasks loop (parallelism, a pending exit hook, a
+	// deadline) can leave later items not yet created while every created child
+	// is already fulfilled.
+	expandingTaskGroups map[string]bool
+
 	// used for logging in the dag
 	log logging.Logger
 }
@@ -182,7 +191,7 @@ func (d *dagContext) assessDAGPhase(ctx context.Context, targetTasks []string, n
 			// would then hold the DAG Running forever. Complete it from its children
 			// instead of blocking here.
 			groupPhase, ok := completableTaskGroupPhase(node, nodes)
-			if !ok {
+			if !ok || d.expandingTaskGroups[node.Name] {
 				return wfv1.NodeRunning, nil
 			}
 			if d.taskGroupsToComplete == nil {
@@ -550,6 +559,15 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 	if taskGroupNode != nil && taskGroupNode.Type != wfv1.NodeTypeTaskGroup {
 		taskGroupNode = nil
 	}
+	markExpandingTaskGroup := func() {
+		if dagCtx.expandingTaskGroups == nil {
+			dagCtx.expandingTaskGroups = make(map[string]bool)
+		}
+		dagCtx.expandingTaskGroups[nodeName] = true
+	}
+	if taskGroupNode != nil {
+		markExpandingTaskGroup()
+	}
 	// connectDependencies is a helper to connect our dependencies to current task as children
 	connectDependencies := func(taskNodeName string) {
 		if len(taskDependencies) == 0 || taskGroupNode != nil {
@@ -644,6 +662,7 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 			// between.
 			connectDependencies(nodeName)
 			_, taskGroupNode = woc.initializeNode(ctx, nodeName, wfv1.NodeTypeTaskGroup, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeRunning, &wfv1.NodeFlag{}, true, "")
+			markExpandingTaskGroup()
 		}
 	}
 
@@ -675,7 +694,7 @@ func (woc *wfOperationCtx) executeDAGTask(ctx context.Context, dagCtx *dagContex
 		// creation (parallelism, transient errors), and an edge persisted for
 		// a node that is never created can later be claimed by a colliding
 		// name (#16376).
-		if nodeIsNew && dagCtx.getTaskNode(ctx, t.Name) != nil {
+		if nodeIsNew && woc.wf.Status.Nodes.Has(dagCtx.taskNodeID(t.Name)) {
 			connectDependencies(taskNodeName)
 		}
 		if err != nil {

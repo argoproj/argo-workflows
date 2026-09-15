@@ -1227,7 +1227,11 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (bool, error) 
 			woc.updateAgentPodStatus(ctx, pod)
 			return
 		}
+		// nodeID's fallback for pods without the node-id annotation resolves
+		// against Status.Nodes, so it must run under the nodes lock
+		wfNodesLock.RLock()
 		nodeID := woc.nodeID(pod)
+		wfNodesLock.RUnlock()
 		seenPodLock.Lock()
 		seenPods[nodeID] = pod
 		seenPodLock.Unlock()
@@ -2537,6 +2541,11 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		}
 		if err != nil {
 			errNode := woc.initializeNodeOrMarkError(ctx, node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err)
+			if node == nil {
+				// the attempt node was just created; link it or the next
+				// reconcile re-derives the same attempt name and panics
+				woc.addChildNode(ctx, retryNodeName, nodeName)
+			}
 			return errNode, err
 		}
 	}

@@ -4734,3 +4734,55 @@ func TestOnExitDAGNotFailedOnShutdownStop(t *testing.T) {
 	// Workflow should NOT be completed yet — it should still be Running waiting for the exit handler.
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase, "workflow should still be Running while onExit handler is executing")
 }
+
+var dagTaskGroupDeferredItems = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: taskgroup-defer
+  namespace: default
+spec:
+  entrypoint: main
+  parallelism: 1
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: g
+        template: leaf
+        onExit: leaf
+        withItems: [1, 2]
+  - name: leaf
+    container:
+      image: argoproj/argosay:v2
+`
+
+// A TaskGroup's completion belongs to executeDAGTask's end-of-loop check,
+// which knows the full expanded item list. assessDAGPhase must not complete
+// it from its created children alone: with parallelism deferring one item and
+// an exit hook forcing an early return out of the expandedTasks loop, the
+// group briefly holds only fulfilled children while an item is still to be
+// created.
+func TestDAGTaskGroupWithDeferredItems(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(dagTaskGroupDeferredItems)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
+	defer cancel()
+	ctx := logging.TestContext(t.Context())
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	for range 12 {
+		woc.operate(ctx)
+		if woc.wf.Status.Fulfilled() {
+			break
+		}
+		makePodsPhase(ctx, woc, v1.PodSucceeded)
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	}
+
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	for _, item := range []string{"taskgroup-defer.g(0:1)", "taskgroup-defer.g(1:2)"} {
+		node, err := woc.wf.GetNodeByName(item)
+		if assert.NoError(t, err, "%s must have been run", item) {
+			assert.Equal(t, wfv1.NodeSucceeded, node.Phase, item)
+		}
+	}
+}

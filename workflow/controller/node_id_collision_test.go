@@ -32,6 +32,9 @@ func assertAcyclic(t *testing.T, wf *wfv1.Workflow) {
 		}
 	}
 	walk(wf.Name, nil)
+	// every node must also be reachable from the root, or a mislinked edge
+	// could orphan part of the graph without failing any assertion
+	require.Len(t, visited, len(wf.Status.Nodes), "unreachable nodes in the graph")
 }
 
 func assertNodeIDInvariant(t *testing.T, wf *wfv1.Workflow) {
