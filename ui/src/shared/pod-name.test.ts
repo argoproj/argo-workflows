@@ -88,8 +88,9 @@ describe('pod names', () => {
             getPodName(wf, {...node, name: node.name + '.mycontainername', id: nodeId(shortWfName, node.name + '.mycontainername'), type: 'Container', boundaryID: node.id})
         ).toEqual(v2podName); // containerSet node check
 
-        // a node that lost an ID collision carries the suffix in its ID, and so in its pod name, while its name is unchanged
-        expect(getPodName(wf, {...node, id: nodeId(shortWfName, 'nodename~1')})).toEqual(`${shortWfName}-${shortTemplateName}-${createFNVHash('nodename~1')}`);
+        // a node that lost an ID collision carries the widened 64-bit hash in its ID, and so in its pod name, while its name is unchanged
+        const wideHash = '12345678901234567890';
+        expect(getPodName(wf, {...node, id: `${shortWfName}-${wideHash}`})).toEqual(`${shortWfName}-${shortTemplateName}-${wideHash}`);
 
         // an ID that is not <workflow name>-<hash> falls back to hashing the node name
         expect(getPodName(wf, {...node, id: 'unrelated'})).toEqual(v2podName);

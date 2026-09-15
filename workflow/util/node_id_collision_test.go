@@ -12,29 +12,33 @@ import (
 
 // A workflow whose node names collide, see
 // https://github.com/argoproj/argo-workflows/issues/16376. The leaf lost the
-// collision and carries HashSuffix 1.
+// collision and carries the widened 64-bit ID.
 func collidingWorkflow(t *testing.T) *wfv1.Workflow {
 	t.Helper()
 	wf := &wfv1.Workflow{}
 	wf.Name = "custom-job-thbh7"
 	wf.Status.Phase = wfv1.WorkflowFailed
 	wf.Status.Nodes = wfv1.Nodes{}
-	plant := func(name string, suffix int32, typ wfv1.NodeType, children ...string) *wfv1.NodeStatus {
-		n := wfv1.NodeStatus{Name: name, HashSuffix: suffix, Type: typ, Phase: wfv1.NodeFailed, Children: children}
-		n.ID = wf.NodeID(n.HashName())
+	plant := func(name string, wide bool, typ wfv1.NodeType, children ...string) *wfv1.NodeStatus {
+		n := wfv1.NodeStatus{Name: name, Type: typ, Phase: wfv1.NodeFailed, Children: children}
+		if wide {
+			n.ID = wf.NodeID64(name)
+		} else {
+			n.ID = wf.NodeID(name)
+		}
 		wf.Status.Nodes[n.ID] = n
 		return &n
 	}
-	leaf := plant("custom-job-thbh7[0].custom-job[0].custom-job-main", 1, wfv1.NodeTypePod)
-	innerSG := plant("custom-job-thbh7[0].custom-job[0]", 0, wfv1.NodeTypeStepGroup, leaf.ID)
-	steps := plant("custom-job-thbh7[0].custom-job", 0, wfv1.NodeTypeSteps, innerSG.ID)
-	outerSG := plant("custom-job-thbh7[0]", 0, wfv1.NodeTypeStepGroup, steps.ID)
-	plant("custom-job-thbh7", 0, wfv1.NodeTypeSteps, outerSG.ID)
+	leaf := plant("custom-job-thbh7[0].custom-job[0].custom-job-main", true, wfv1.NodeTypePod)
+	innerSG := plant("custom-job-thbh7[0].custom-job[0]", false, wfv1.NodeTypeStepGroup, leaf.ID)
+	steps := plant("custom-job-thbh7[0].custom-job", false, wfv1.NodeTypeSteps, innerSG.ID)
+	outerSG := plant("custom-job-thbh7[0]", false, wfv1.NodeTypeStepGroup, steps.ID)
+	plant("custom-job-thbh7", false, wfv1.NodeTypeSteps, outerSG.ID)
 	require.Equal(t, wf.NodeID(outerSG.Name), wf.NodeID(leaf.Name), "names must collide")
 	return wf
 }
 
-func TestFormulateResubmitWorkflowKeepsHashSuffix(t *testing.T) {
+func TestFormulateResubmitWorkflowWithCollision(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := collidingWorkflow(t)
 
@@ -43,22 +47,23 @@ func TestFormulateResubmitWorkflowKeepsHashSuffix(t *testing.T) {
 	require.NotEqual(t, wf.Name, newWf.Name)
 	assert.Len(t, newWf.Status.Nodes, len(wf.Status.Nodes))
 
+	// the rename changes the hash input, so the old collision dissolves and
+	// every node goes back to its 32-bit slot
 	leafName := newWf.Name + "[0].custom-job[0].custom-job-main"
 	leaf, err := newWf.GetNodeByName(leafName)
 	require.NoError(t, err)
-	assert.Equal(t, int32(1), leaf.HashSuffix)
-	assert.Equal(t, newWf.NodeID(leafName+"~1"), leaf.ID)
+	assert.Equal(t, newWf.NodeID(leafName), leaf.ID)
 
 	innerSG, err := newWf.GetNodeByName(newWf.Name + "[0].custom-job[0]")
 	require.NoError(t, err)
-	assert.Equal(t, []string{leaf.ID}, innerSG.Children, "child references must be converted with the suffix")
+	assert.Equal(t, []string{leaf.ID}, innerSG.Children, "child references must be converted")
 
 	for _, n := range newWf.Status.Nodes {
-		assert.Equal(t, newWf.NodeID(n.HashName()), n.ID)
+		assert.Equal(t, newWf.NodeID(n.Name), n.ID)
 	}
 }
 
-func TestFormulateRetryWorkflowKeepsHashSuffix(t *testing.T) {
+func TestFormulateRetryWorkflowWithCollision(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
 	wf := collidingWorkflow(t)
 	leafName := "custom-job-thbh7[0].custom-job[0].custom-job-main"
@@ -67,14 +72,14 @@ func TestFormulateRetryWorkflowKeepsHashSuffix(t *testing.T) {
 	require.NoError(t, err)
 
 	// retry drops the failed pod node so it is re-run; the step group that
-	// won the base slot is kept, so the leaf must resolve to the suffixed slot
-	// again when it is recreated
+	// won the 32-bit slot is kept, so the leaf must resolve to the widened
+	// slot again when it is recreated
 	_, err = newWf.GetNodeByName("custom-job-thbh7[0]")
 	require.NoError(t, err)
-	leaf, suffix := newWf.ResolveNode(leafName)
+	leaf, id := newWf.ResolveNode(leafName)
 	assert.Nil(t, leaf)
-	assert.Equal(t, int32(1), suffix)
+	assert.Equal(t, newWf.NodeID64(leafName), id)
 	for _, n := range newWf.Status.Nodes {
-		assert.Equal(t, newWf.NodeID(n.HashName()), n.ID)
+		assert.Contains(t, []string{newWf.NodeID(n.Name), newWf.NodeID64(n.Name)}, n.ID)
 	}
 }

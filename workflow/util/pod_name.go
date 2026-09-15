@@ -67,6 +67,11 @@ func GeneratePodName(workflowName, nodeName, templateName, nodeID string, versio
 	// (with any collision suffix), so take the hash from there rather than
 	// rehashing nodeName, which would put colliding nodes in the same pod.
 	if hash, ok := strings.CutPrefix(nodeID, workflowName+"-"); ok {
+		// a widened 64-bit node ID can exceed the k8sNamingHashLength budget
+		// ensurePodNamePrefixLength reserves; shorten the prefix, not the hash
+		if excess := len(prefix) + 1 + len(hash) - maxK8sResourceNameLength; excess > 0 {
+			prefix = prefix[:len(prefix)-excess]
+		}
 		return fmt.Sprintf("%s-%s", prefix, hash)
 	}
 	h := fnv.New32a()

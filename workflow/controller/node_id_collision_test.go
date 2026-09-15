@@ -38,7 +38,7 @@ func assertNodeIDInvariant(t *testing.T, wf *wfv1.Workflow) {
 	t.Helper()
 	for id, n := range wf.Status.Nodes {
 		assert.Equal(t, id, n.ID)
-		assert.Equal(t, wf.NodeID(n.HashName()), n.ID, "node %s", n.Name)
+		assert.Contains(t, []string{wf.NodeID(n.Name), wf.NodeID64(n.Name)}, n.ID, "node %s", n.Name)
 		found, err := wf.GetNodeByName(n.Name)
 		require.NoError(t, err, "node %s not found by name", n.Name)
 		assert.Equal(t, n.ID, found.ID, "lookup of %s returned a different node", n.Name)
@@ -126,12 +126,11 @@ func TestNodeIDCollisionIssue16376(t *testing.T) {
 	winner, err := woc.wf.GetNodeByName(outerSG)
 	require.NoError(t, err)
 	assert.Equal(t, wfv1.NodeTypeStepGroup, winner.Type)
-	assert.Equal(t, int32(0), winner.HashSuffix)
+	assert.Equal(t, wf.NodeID(outerSG), winner.ID)
 	leaf, err := woc.wf.GetNodeByName(leafName)
 	require.NoError(t, err)
 	assert.Equal(t, wfv1.NodeTypePod, leaf.Type)
-	assert.Equal(t, int32(1), leaf.HashSuffix)
-	assert.Equal(t, wf.NodeID(leafName+"~1"), leaf.ID)
+	assert.Equal(t, wf.NodeID64(leafName), leaf.ID, "the loser must carry the widened ID")
 	assert.NotEqual(t, winner.ID, leaf.ID)
 
 	pods, err := listPods(ctx, woc)
@@ -197,16 +196,16 @@ func TestNodeIDCollisionSubtree(t *testing.T) {
 	assert.Len(t, woc.wf.Status.Nodes, 8)
 
 	winner, loser := a, b
-	if n, err := woc.wf.GetNodeByName(a); assert.NoError(t, err) && n.HashSuffix != 0 {
+	if n, err := woc.wf.GetNodeByName(a); assert.NoError(t, err) && n.ID != woc.wf.NodeID(a) {
 		winner, loser = b, a
 	}
 	for _, rel := range []string{"", "[0]", "[0].x"} {
 		w, err := woc.wf.GetNodeByName(winner + rel)
 		require.NoError(t, err)
-		assert.Equal(t, int32(0), w.HashSuffix, w.Name)
+		assert.Equal(t, woc.wf.NodeID(winner+rel), w.ID, w.Name)
 		l, err := woc.wf.GetNodeByName(loser + rel)
 		require.NoError(t, err)
-		assert.Equal(t, int32(1), l.HashSuffix, l.Name)
+		assert.Equal(t, woc.wf.NodeID64(loser+rel), l.ID, "the loser subtree must carry widened IDs")
 		assert.NotEqual(t, w.ID, l.ID)
 	}
 
@@ -280,7 +279,13 @@ func TestNodeIDCollisionDeferredDAGTask(t *testing.T) {
 	taskB, err := woc.wf.GetNodeByName(b)
 	require.NoError(t, err)
 	assert.NotEqual(t, taskA.ID, taskB.ID)
-	assert.ElementsMatch(t, []int32{0, 1}, []int32{taskA.HashSuffix, taskB.HashSuffix})
+	// whichever was created first holds the shared 32-bit slot; the other is widened
+	if taskA.ID == woc.wf.NodeID(a) {
+		assert.Equal(t, woc.wf.NodeID64(b), taskB.ID)
+	} else {
+		assert.Equal(t, woc.wf.NodeID64(a), taskA.ID)
+		assert.Equal(t, woc.wf.NodeID(b), taskB.ID)
+	}
 
 	// filler and t3074240 have no dependencies, so they are the DAG boundary's
 	// children; t2335786 depends on filler, so it hangs off filler alone

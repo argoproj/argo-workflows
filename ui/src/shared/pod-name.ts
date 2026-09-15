@@ -36,7 +36,12 @@ export function getPodName(workflow: Workflow, node: NodeStatus): string {
     // the node ID is the workflow name followed by the hash of the node name (with any collision suffix),
     // so take the hash from there rather than rehashing the node name, which would put colliding nodes in the same pod
     const idPrefix = `${workflowName}-`;
-    const hash = podNodeId?.startsWith(idPrefix) ? podNodeId.substring(idPrefix.length) : createFNVHash(node.name);
+    const hash = `${podNodeId?.startsWith(idPrefix) ? podNodeId.substring(idPrefix.length) : createFNVHash(node.name)}`;
+    // a widened 64-bit node ID can exceed the hash-length budget ensurePodNamePrefixLength reserves; shorten the prefix, not the hash
+    const excess = prefix.length + 1 + hash.length - maxK8sResourceNameLength;
+    if (excess > 0) {
+        prefix = prefix.substring(0, prefix.length - excess);
+    }
     return `${prefix}-${hash}`;
 }
 

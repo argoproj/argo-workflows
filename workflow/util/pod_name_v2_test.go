@@ -68,10 +68,17 @@ func TestPodNameV2(t *testing.T) {
 	assert.Equal(t, expectedPodName, name)
 	assert.LessOrEqual(t, len(name), maxK8sResourceNameLength)
 
-	// a node that lost an ID collision carries the suffix in its ID, and so in
-	// its pod name, while its name is unchanged
-	name = GeneratePodName(shortWfName, nodeName, shortTemplateName, nodeID(shortWfName, nodeName+"~1"), PodNameV2)
-	h = fnv.New32a()
-	_, _ = h.Write([]byte(nodeName + "~1"))
-	assert.Equal(t, fmt.Sprintf("wfname-templatename-%v", h.Sum32()), name)
+	// a node that lost an ID collision carries the widened 64-bit hash in its
+	// ID, and so in its pod name, while its name is unchanged
+	h64 := fnv.New64a()
+	_, _ = h64.Write([]byte(nodeName))
+	wideID := fmt.Sprintf("%s-%v", shortWfName, h64.Sum64())
+	name = GeneratePodName(shortWfName, nodeName, shortTemplateName, wideID, PodNameV2)
+	assert.Equal(t, fmt.Sprintf("wfname-templatename-%v", h64.Sum64()), name)
+
+	// a widened hash on a maximum-length prefix shortens the prefix, not the hash
+	longWideID := fmt.Sprintf("%s-%v", longWfName, h64.Sum64())
+	name = GeneratePodName(longWfName, nodeName, longTemplateName, longWideID, PodNameV2)
+	assert.LessOrEqual(t, len(name), maxK8sResourceNameLength)
+	assert.Contains(t, name, fmt.Sprintf("-%v", h64.Sum64()))
 }

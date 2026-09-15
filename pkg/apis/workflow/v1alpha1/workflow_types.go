@@ -14,7 +14,6 @@ import (
 	"runtime"
 	"slices"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
@@ -2647,24 +2646,6 @@ type NodeStatus struct {
 	// This prevents duplicate restart attempts when the controller processes the same failed pod multiple times.
 	// Cleared when the replacement pod starts running.
 	RestartingPodUID string `json:"restartingPodUID,omitempty" protobuf:"bytes,30,opt,name=restartingPodUID"`
-
-	// HashSuffix is appended to Name (as "~<n>") when computing this node's ID.
-	// It is zero unless the node's name hashed to an ID already held by a
-	// different node.
-	HashSuffix int32 `json:"hashSuffix,omitempty" protobuf:"varint,31,opt,name=hashSuffix"`
-}
-
-func hashSuffixString(k int32) string {
-	if k == 0 {
-		return ""
-	}
-	return "~" + strconv.Itoa(int(k))
-}
-
-// HashName returns the string this node's ID is the hash of: Name plus the
-// collision suffix, if any. Invariant: node.ID == wf.NodeID(node.HashName()).
-func (n NodeStatus) HashName() string {
-	return n.Name + hashSuffixString(n.HashSuffix)
 }
 
 // Completed is used to determine if this node can proceed
@@ -3873,43 +3854,41 @@ func (w *Workflow) GetNodeByName(nodeName string) (*NodeStatus, error) {
 	return node, nil
 }
 
-// ResolveNode walks the ID collision chain for a spec-derived node name.
-// It returns the existing node if there is one. Otherwise it returns nil and
-// the HashSuffix a node with this name must be created with.
+// ResolveNode finds the node for a spec-derived node name, tolerating node
+// ID collisions. It returns the existing node and its ID if there is one.
+// Otherwise it returns nil and the ID a node with this name must be created
+// with.
 //
-// Distinct names can hash to the same ID. A node whose name loses that race
-// is stored under NodeID(name+"~1") (or "~2", ...) with HashSuffix set, so
-// that the pure NodeID function stays usable in both directions.
-//
-// The walk ends at two consecutive empty slots, so it tolerates any lone
-// hole a deletion punches in the chain, and a new node fills the first
-// hole. A survivor behind two consecutive emptied slots would not be found;
-// that needs three names sharing one hash and two of them deleted, and is
-// not handled.
-func (w *Workflow) ResolveNode(name string) (*NodeStatus, int32) {
-	free := int32(-1)
-	for k := int32(0); ; k++ {
-		if n, ok := w.Status.Nodes[w.NodeID(name+hashSuffixString(k))]; ok {
-			if n.Name == name && n.HashSuffix == k {
-				return &n, k
-			}
-			// slot held by a different name, keep walking
-			continue
-		}
-		if free == -1 {
-			free = k
-		}
-		if _, ok := w.Status.Nodes[w.NodeID(name+hashSuffixString(k+1))]; !ok {
-			return nil, free
-		}
+// Distinct names can hash to the same 32-bit ID. A node whose name loses
+// that race is stored under the widened NodeID64(name) instead, so lookups
+// try the 32-bit slot and fall back to the 64-bit slot, comparing the stored
+// Name. The 64-bit slot is also tried when the 32-bit slot is empty, because
+// a retry can delete the node that held it while the widened node survives.
+// There is no third level: a 64-bit collision between names that also
+// collide at 32 bits is not resolved, and initializeNode refuses to create
+// the node.
+func (w *Workflow) ResolveNode(name string) (*NodeStatus, string) {
+	id32 := w.NodeID(name)
+	n32, ok32 := w.Status.Nodes[id32]
+	if ok32 && n32.Name == name {
+		return &n32, id32
 	}
+	id64 := w.NodeID64(name)
+	if n64, ok := w.Status.Nodes[id64]; ok && n64.Name == name {
+		return &n64, id64
+	}
+	if ok32 {
+		// the 32-bit slot is held by a different name: widen
+		return nil, id64
+	}
+	return nil, id32
 }
 
 // ResolveNodeID returns the ID of the node with this spec-derived name, or
 // the ID it will be created with if it does not exist yet.
 func (w *Workflow) ResolveNodeID(name string) string {
-	_, k := w.ResolveNode(name)
-	return w.NodeID(name + hashSuffixString(k))
+	_, id := w.ResolveNode(name)
+	return id
 }
 
 // GetResourceScope returns the template scope of workflow.
@@ -3935,6 +3914,19 @@ func (w *Workflow) NodeID(name string) string {
 	h := fnv.New32a()
 	_, _ = h.Write([]byte(name))
 	return fmt.Sprintf("%s-%v", w.Name, h.Sum32())
+}
+
+// NodeID64 creates the widened node ID a node is stored under when its name
+// collides with a different name under NodeID. FNV-1a has no finalisation
+// step, so a 32-bit collision carries over to every common extension of the
+// two names, but their 64-bit hashes are independent of it.
+func (w *Workflow) NodeID64(name string) string {
+	if name == w.Name {
+		return w.Name
+	}
+	h := fnv.New64a()
+	_, _ = h.Write([]byte(name))
+	return fmt.Sprintf("%s-%v", w.Name, h.Sum64())
 }
 
 // GetStoredTemplate retrieves a template from stored templates of the workflow.

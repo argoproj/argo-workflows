@@ -3051,14 +3051,18 @@ func executable(nodeType wfv1.NodeType) bool {
 func (woc *wfOperationCtx) initializeNode(ctx context.Context, nodeName string, nodeType wfv1.NodeType, templateScope string, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, phase wfv1.NodePhase, nodeFlag *wfv1.NodeFlag, omitTaskResultSynced bool, messages ...string) (context.Context, *wfv1.NodeStatus) {
 	woc.log.WithFields(logging.Fields{"nodeName": nodeName, "template": common.GetTemplateHolderString(orgTmpl), "boundaryID": boundaryID}).Debug(ctx, "Initializing node")
 
-	existing, hashSuffix := woc.wf.ResolveNode(nodeName)
+	existing, nodeID := woc.wf.ResolveNode(nodeName)
 	if existing != nil {
 		panic(fmt.Sprintf("node %s already initialized", nodeName))
 	}
+	if woc.wf.Status.Nodes.Has(nodeID) {
+		// both the 32-bit and the widened 64-bit slot are held by other names
+		panic(fmt.Sprintf("node ID collision for %s could not be resolved", nodeName))
+	}
 
 	node := wfv1.NodeStatus{
+		ID:                nodeID,
 		Name:              nodeName,
-		HashSuffix:        hashSuffix,
 		TemplateName:      orgTmpl.GetTemplateName(),
 		TemplateRef:       orgTmpl.GetTemplateRef(),
 		TemplateScope:     templateScope,
@@ -3069,13 +3073,12 @@ func (woc *wfOperationCtx) initializeNode(ctx context.Context, nodeName string, 
 		StartedAt:         metav1.Time{Time: time.Now().UTC()},
 		EstimatedDuration: woc.estimateNodeDuration(ctx, nodeName),
 	}
-	node.ID = woc.wf.NodeID(node.HashName())
-	if hashSuffix != 0 {
-		fields := logging.Fields{"nodeName": nodeName, "nodeID": node.ID, "hashSuffix": hashSuffix}
+	if nodeID != woc.wf.NodeID(nodeName) {
+		fields := logging.Fields{"nodeName": nodeName, "nodeID": nodeID}
 		if colliding, err := woc.wf.Status.Nodes.Get(woc.wf.NodeID(nodeName)); err == nil {
 			fields["collidesWith"] = colliding.Name
 		}
-		woc.log.WithFields(fields).Info(ctx, "node name hash collision, using suffixed node ID")
+		woc.log.WithFields(fields).Info(ctx, "node name hash collision, using 64-bit node ID")
 	}
 
 	if executable(nodeType) && !omitTaskResultSynced {
