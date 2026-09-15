@@ -145,17 +145,32 @@ for o in objs:
         # manifest reshuffle drops them (a silent no-op here would deploy a
         # server with the wrong auth/TLS mode)
         args = container.get('args', [])
-        replaced = {'--auth-mode=': False, '--secure=': False}
-        values = {'--auth-mode=': auth_mode, '--secure=': secure}
-        for i in range(len(args)):
-            for prefix in replaced.keys():
-                if args[i].startswith(prefix):
-                    args[i] = prefix + values[prefix]
-                    replaced[prefix] = True
-        for prefix in replaced.keys():
-            if not replaced[prefix]:
-                args.append(prefix + values[prefix])
-        container['args'] = args
+        auth_modes = auth_mode.split(',')
+        new_args = []
+        auth_mode_written = False
+        secure_replaced = False
+        for arg in args:
+            if arg.startswith('--auth-mode='):
+                if not auth_mode_written:
+                    for mode in auth_modes:
+                        new_args.append('--auth-mode=' + mode)
+                    auth_mode_written = True
+                continue
+
+            if arg.startswith('--secure='):
+                new_args.append('--secure=' + secure)
+                secure_replaced = True
+                continue
+
+            new_args.append(arg)
+
+        if not auth_mode_written:
+            for mode in auth_modes:
+                new_args.append('--auth-mode=' + mode)
+
+        if not secure_replaced:
+            new_args.append('--secure=' + secure)
+        container['args'] = new_args
         if secure == 'true':
             # the e2e base probes over HTTP; a TLS server needs an HTTPS probe
             probe = container.get('readinessProbe', {})
