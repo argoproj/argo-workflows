@@ -34,12 +34,14 @@ import (
 	intstrutil "github.com/argoproj/argo-workflows/v4/util/intstr"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/util/strftime"
+	"github.com/argoproj/argo-workflows/v4/util/telemetry"
 	"github.com/argoproj/argo-workflows/v4/util/template"
 	"github.com/argoproj/argo-workflows/v4/util/variables"
 	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/controller/cache"
 	hydratorfake "github.com/argoproj/argo-workflows/v4/workflow/hydrator/fake"
+	wfmetrics "github.com/argoproj/argo-workflows/v4/workflow/metrics"
 	"github.com/argoproj/argo-workflows/v4/workflow/sync"
 	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
@@ -624,6 +626,215 @@ func TestProcessNodeRetries(t *testing.T) {
 	n, _, err = woc.processNodeRetries(ctx, n, retries, &executeTemplateOpts{})
 	require.NoError(t, err)
 	assert.Equal(t, wfv1.NodeFailed, n.Phase)
+}
+
+func TestProcessNodeRetriesRecordsTerminationMetrics(t *testing.T) {
+	testCases := []struct {
+		name           string
+		strategy       wfv1.RetryStrategy
+		childStartedAt time.Time
+		reason         wfmetrics.RetryStrategyTerminationReason
+	}{
+		{
+			name: "max duration exceeded",
+			strategy: wfv1.RetryStrategy{
+				Backoff: &wfv1.Backoff{Duration: "1s", MaxDuration: "1s"},
+			},
+			childStartedAt: time.Now().Add(-time.Hour),
+			reason:         wfmetrics.RetryStrategyTerminationReasonMaxDurationExceeded,
+		},
+		{
+			name: "max duration exceeded with invalid expression",
+			strategy: wfv1.RetryStrategy{
+				Expression: "invalid(",
+				Backoff:    &wfv1.Backoff{Duration: "1s", MaxDuration: "1s"},
+			},
+			childStartedAt: time.Now().Add(-time.Hour),
+			reason:         wfmetrics.RetryStrategyTerminationReasonMaxDurationExceeded,
+		},
+		{
+			name: "backoff would exceed max duration",
+			strategy: wfv1.RetryStrategy{
+				Backoff: &wfv1.Backoff{Duration: "2h", MaxDuration: "1h"},
+			},
+			childStartedAt: time.Now(),
+			reason:         wfmetrics.RetryStrategyTerminationReasonBackoffWouldExceedMaxDuration,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+			wf.Namespace = "argo"
+			cancel, controller := newController(ctx, wf)
+			exporter := testExporter
+			defer cancel()
+			require.NotNil(t, exporter)
+			woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+			const nodeName = "test-node"
+			woc.initializeNode(ctx, nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{}, true)
+			_, childNode := woc.initializeNode(ctx, nodeName+"(0)", wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeFailed, &wfv1.NodeFlag{Retried: true}, true)
+			childNode.StartedAt = metav1.NewTime(testCase.childStartedAt)
+			childNode.FinishedAt = metav1.Now()
+			woc.wf.Status.Nodes.Set(ctx, childNode.ID, *childNode)
+			woc.addChildNode(ctx, nodeName, childNode.Name)
+
+			retryNode, err := woc.wf.GetNodeByName(nodeName)
+			require.NoError(t, err)
+			testCase.strategy.Limit = intstrutil.ParsePtr("10")
+			testCase.strategy.RetryPolicy = wfv1.RetryPolicyAlways
+			_, _, err = woc.processNodeRetries(ctx, retryNode, testCase.strategy, &executeTemplateOpts{})
+			require.NoError(t, err)
+
+			attributes := attribute.NewSet(
+				attribute.String(telemetry.AttribRetryStrategyTerminationReason, string(testCase.reason)),
+				attribute.String(telemetry.AttribWorkflowNamespace, wf.Namespace),
+			)
+			value, err := exporter.GetInt64CounterValue(ctx, telemetry.InstrumentRetryStrategyTerminationsTotal.Name(), &attributes)
+			require.NoError(t, err)
+			assert.Equal(t, int64(1), value)
+		})
+	}
+}
+
+func TestProcessNodeRetriesPreservesExpressionErrors(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+	const nodeName = "test-node"
+	woc.initializeNode(ctx, nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{}, true)
+	_, childNode := woc.initializeNode(ctx, nodeName+"(0)", wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeFailed, &wfv1.NodeFlag{Retried: true}, true)
+	childNode.StartedAt = metav1.NewTime(time.Now().Add(-time.Minute))
+	childNode.FinishedAt = metav1.Now()
+	woc.wf.Status.Nodes.Set(ctx, childNode.ID, *childNode)
+	woc.addChildNode(ctx, nodeName, childNode.Name)
+
+	retryNode, err := woc.wf.GetNodeByName(nodeName)
+	require.NoError(t, err)
+	strategy := wfv1.RetryStrategy{
+		Limit:       intstrutil.ParsePtr("10"),
+		RetryPolicy: wfv1.RetryPolicyAlways,
+		Expression:  "invalid(",
+	}
+	_, _, err = woc.processNodeRetries(ctx, retryNode, strategy, &executeTemplateOpts{})
+	require.Error(t, err)
+}
+
+func TestRetryEligibilityZeroValueIsNotEligible(t *testing.T) {
+	assert.False(t, (retryEligibility{}).eligible())
+}
+
+func TestRetryEligibilityMetricEvaluationDoesNotWarnForNonTransientError(t *testing.T) {
+	hook := logging.NewTestHook()
+	logger := logging.NewTestLogger(logging.Info, logging.Text, hook)
+	ctx := logging.WithLogger(t.Context(), logger)
+	woc := &wfOperationCtx{wf: &wfv1.Workflow{}}
+	node := &wfv1.NodeStatus{}
+	lastChildNode := &wfv1.NodeStatus{Phase: wfv1.NodeFailed, Message: "permanent failure"}
+	retryStrategy := wfv1.RetryStrategy{RetryPolicy: wfv1.RetryPolicyOnTransientError}
+
+	eligibility, err := woc.evaluateRetryEligibility(ctx, node, lastChildNode, []string{"child"}, retryStrategy, retryEligibilityForMetric)
+	require.NoError(t, err)
+	assert.False(t, eligibility.eligible())
+	assert.Empty(t, hook.AllEntries())
+
+	hook.Reset()
+	eligibility, err = woc.evaluateRetryEligibility(ctx, node, lastChildNode, []string{"child"}, retryStrategy, retryEligibilityForDecision)
+	require.NoError(t, err)
+	assert.False(t, eligibility.eligible())
+	require.Len(t, hook.AllEntries(), 1)
+	assert.Equal(t, logging.Warn, hook.LastEntry().Level)
+	assert.Equal(t, "Non-transient error", hook.LastEntry().Msg)
+}
+
+func TestProcessNodeRetriesDoesNotRecordDurationTerminationWhenRetryIsIneligible(t *testing.T) {
+	testCases := []struct {
+		name           string
+		strategy       wfv1.RetryStrategy
+		childStartedAt time.Time
+	}{
+		{
+			name: "retry limit already exhausted",
+			strategy: wfv1.RetryStrategy{
+				Limit:       intstrutil.ParsePtr("0"),
+				RetryPolicy: wfv1.RetryPolicyAlways,
+				Backoff:     &wfv1.Backoff{Duration: "1s", MaxDuration: "1s"},
+			},
+			childStartedAt: time.Now().Add(-time.Hour),
+		},
+		{
+			name: "retry limit already exhausted before backoff would exceed max duration",
+			strategy: wfv1.RetryStrategy{
+				Limit:       intstrutil.ParsePtr("0"),
+				RetryPolicy: wfv1.RetryPolicyAlways,
+				Backoff:     &wfv1.Backoff{Duration: "2h", MaxDuration: "1h"},
+			},
+			childStartedAt: time.Now(),
+		},
+		{
+			name: "retry policy rejects failed attempt",
+			strategy: wfv1.RetryStrategy{
+				Limit:       intstrutil.ParsePtr("10"),
+				RetryPolicy: wfv1.RetryPolicyOnError,
+				Backoff:     &wfv1.Backoff{Duration: "1s", MaxDuration: "1s"},
+			},
+			childStartedAt: time.Now().Add(-time.Hour),
+		},
+		{
+			name: "retry expression rejects attempt",
+			strategy: wfv1.RetryStrategy{
+				Limit:       intstrutil.ParsePtr("10"),
+				RetryPolicy: wfv1.RetryPolicyAlways,
+				Expression:  "false",
+				Backoff:     &wfv1.Backoff{Duration: "1s", MaxDuration: "1s"},
+			},
+			childStartedAt: time.Now().Add(-time.Hour),
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			ctx := logging.TestContext(t.Context())
+			wf := wfv1.MustUnmarshalWorkflow(helloWorldWf)
+			wf.Namespace = strings.ReplaceAll(testCase.name, " ", "-")
+			cancel, controller := newController(ctx, wf)
+			exporter := testExporter
+			defer cancel()
+			require.NotNil(t, exporter)
+			require.NotNil(t, controller.metrics.GetInstrument(telemetry.InstrumentRetryStrategyTerminationsTotal.Name()))
+			woc := newWorkflowOperationCtx(ctx, wf, controller)
+
+			const nodeName = "test-node"
+			woc.initializeNode(ctx, nodeName, wfv1.NodeTypeRetry, "", &wfv1.WorkflowStep{}, "", wfv1.NodeRunning, &wfv1.NodeFlag{}, true)
+			_, childNode := woc.initializeNode(ctx, nodeName+"(0)", wfv1.NodeTypePod, "", &wfv1.WorkflowStep{}, "", wfv1.NodeFailed, &wfv1.NodeFlag{Retried: true}, true)
+			childNode.StartedAt = metav1.NewTime(testCase.childStartedAt)
+			childNode.FinishedAt = metav1.Now()
+			woc.wf.Status.Nodes.Set(ctx, childNode.ID, *childNode)
+			woc.addChildNode(ctx, nodeName, childNode.Name)
+
+			retryNode, err := woc.wf.GetNodeByName(nodeName)
+			require.NoError(t, err)
+			_, _, err = woc.processNodeRetries(ctx, retryNode, testCase.strategy, &executeTemplateOpts{})
+			require.NoError(t, err)
+
+			for _, reason := range []wfmetrics.RetryStrategyTerminationReason{
+				wfmetrics.RetryStrategyTerminationReasonMaxDurationExceeded,
+				wfmetrics.RetryStrategyTerminationReasonBackoffWouldExceedMaxDuration,
+			} {
+				attributes := attribute.NewSet(
+					attribute.String(telemetry.AttribRetryStrategyTerminationReason, string(reason)),
+					attribute.String(telemetry.AttribWorkflowNamespace, wf.Namespace),
+				)
+				_, err = exporter.GetInt64CounterValue(ctx, telemetry.InstrumentRetryStrategyTerminationsTotal.Name(), &attributes)
+				require.Error(t, err)
+			}
+		})
+	}
 }
 
 // TestProcessNodeRetries tests retrying when RetryOn.Error is enabled

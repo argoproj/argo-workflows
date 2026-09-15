@@ -24,6 +24,18 @@ func writeMetricsListGo(filename string, metrics *metricsList) error {
 	fmt.Fprintf(f, "//\n")
 	fmt.Fprintf(f, "//go:generate go run ./builder --metricsListGo %s\n", filepath.Base(filename))
 	fmt.Fprintf(f, "package telemetry\n\n")
+	fmt.Fprintln(f, "var builtinInstrumentNames = map[string]struct{}{")
+	for _, metric := range *metrics {
+		fmt.Fprintf(f, "\t\"%s\": {},\n", metric.displayName())
+	}
+	fmt.Fprintln(f, "}")
+	fmt.Fprintln(f)
+	fmt.Fprintln(f, "// IsBuiltinInstrumentName reports whether name is reserved for a built-in telemetry instrument.")
+	fmt.Fprintln(f, "func IsBuiltinInstrumentName(name string) bool {")
+	fmt.Fprintln(f, "\t_, ok := builtinInstrumentNames[name]")
+	fmt.Fprintln(f, "\treturn ok")
+	fmt.Fprintln(f, "}")
+	fmt.Fprintln(f)
 	for _, metric := range *metrics {
 		fmt.Fprintf(f, "var Instrument%s = BuiltinInstrument{\n", metric.Name)
 		fmt.Fprintf(f, "\tname: \"%s\",\n", metric.displayName())
