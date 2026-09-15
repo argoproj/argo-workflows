@@ -845,6 +845,16 @@ func (m *ArtifactLocation) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if m.ArchiveSystemContainerLogs != nil {
+		i--
+		if *m.ArchiveSystemContainerLogs {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x60
+	}
 	if m.Plugin != nil {
 		{
 			size, err := m.Plugin.MarshalToSizedBuffer(dAtA[:i])
@@ -1095,6 +1105,16 @@ func (m *ArtifactRepository) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if m.ArchiveSystemContainerLogs != nil {
+		i--
+		if *m.ArchiveSystemContainerLogs {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x48
+	}
 	if m.Plugin != nil {
 		{
 			size, err := m.Plugin.MarshalToSizedBuffer(dAtA[:i])
@@ -8364,6 +8384,18 @@ func (m *WorkflowSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA[i] = 0xfa
 		}
 	}
+	if m.ArchiveSystemContainerLogs != nil {
+		i--
+		if *m.ArchiveSystemContainerLogs {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x2
+		i--
+		dAtA[i] = 0xf0
+	}
 	if m.PodResources != nil {
 		{
 			size, err := m.PodResources.MarshalToSizedBuffer(dAtA[:i])
@@ -9994,6 +10026,9 @@ func (m *ArtifactLocation) Size() (n int) {
 		l = m.Plugin.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
+	if m.ArchiveSystemContainerLogs != nil {
+		n += 2
+	}
 	return n
 }
 
@@ -10066,6 +10101,9 @@ func (m *ArtifactRepository) Size() (n int) {
 	if m.Plugin != nil {
 		l = m.Plugin.Size()
 		n += 1 + l + sovGenerated(uint64(l))
+	}
+	if m.ArchiveSystemContainerLogs != nil {
+		n += 2
 	}
 	return n
 }
@@ -12826,6 +12864,9 @@ func (m *WorkflowSpec) Size() (n int) {
 		l = m.PodResources.Size()
 		n += 2 + l + sovGenerated(uint64(l))
 	}
+	if m.ArchiveSystemContainerLogs != nil {
+		n += 3
+	}
 	if len(m.ResourceClaims) > 0 {
 		for _, e := range m.ResourceClaims {
 			l = e.Size()
@@ -13297,6 +13338,7 @@ func (this *ArtifactLocation) String() string {
 		`GCS:` + strings.Replace(this.GCS.String(), "GCSArtifact", "GCSArtifact", 1) + `,`,
 		`Azure:` + strings.Replace(this.Azure.String(), "AzureArtifact", "AzureArtifact", 1) + `,`,
 		`Plugin:` + strings.Replace(this.Plugin.String(), "PluginArtifact", "PluginArtifact", 1) + `,`,
+		`ArchiveSystemContainerLogs:` + valueToStringGenerated(this.ArchiveSystemContainerLogs) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -13345,6 +13387,7 @@ func (this *ArtifactRepository) String() string {
 		`GCS:` + strings.Replace(this.GCS.String(), "GCSArtifactRepository", "GCSArtifactRepository", 1) + `,`,
 		`Azure:` + strings.Replace(this.Azure.String(), "AzureArtifactRepository", "AzureArtifactRepository", 1) + `,`,
 		`Plugin:` + strings.Replace(this.Plugin.String(), "PluginArtifactRepository", "PluginArtifactRepository", 1) + `,`,
+		`ArchiveSystemContainerLogs:` + valueToStringGenerated(this.ArchiveSystemContainerLogs) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -15369,6 +15412,7 @@ func (this *WorkflowSpec) String() string {
 		`ArtifactGC:` + strings.Replace(this.ArtifactGC.String(), "WorkflowLevelArtifactGC", "WorkflowLevelArtifactGC", 1) + `,`,
 		`ExecutorPlugins:` + repeatedStringForExecutorPlugins + `,`,
 		`PodResources:` + strings.Replace(fmt.Sprintf("%v", this.PodResources), "ResourceRequirements", "v1.ResourceRequirements", 1) + `,`,
+		`ArchiveSystemContainerLogs:` + valueToStringGenerated(this.ArchiveSystemContainerLogs) + `,`,
 		`ResourceClaims:` + repeatedStringForResourceClaims + `,`,
 		`}`,
 	}, "")
@@ -17641,6 +17685,27 @@ func (m *ArtifactLocation) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 12:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ArchiveSystemContainerLogs", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			b := bool(v != 0)
+			m.ArchiveSystemContainerLogs = &b
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGenerated(dAtA[iNdEx:])
@@ -18262,6 +18327,27 @@ func (m *ArtifactRepository) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 9:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ArchiveSystemContainerLogs", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			b := bool(v != 0)
+			m.ArchiveSystemContainerLogs = &b
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGenerated(dAtA[iNdEx:])
@@ -42093,6 +42179,27 @@ func (m *WorkflowSpec) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 46:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ArchiveSystemContainerLogs", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			b := bool(v != 0)
+			m.ArchiveSystemContainerLogs = &b
 		case 47:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ResourceClaims", wireType)
