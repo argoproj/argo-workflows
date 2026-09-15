@@ -59,6 +59,9 @@ func (woc *wfOperationCtx) executeWfLifeCycleHook(ctx context.Context, tmplCtx *
 func (woc *wfOperationCtx) executeTmplLifeCycleHook(ctx context.Context, scope *wfScope, lifeCycleHooks wfv1.LifecycleHooks, parentNode *wfv1.NodeStatus, boundaryID string, tmplCtx *templateresolution.TemplateContext, ref varkeys.NodeRefKeys, name string) (bool, error) {
 	var hookNodes []*wfv1.NodeStatus
 	for hookName, hook := range lifeCycleHooks {
+		if parentNode.Omitted() {
+			continue
+		}
 		// exit hook will be executed in runOnExitNode
 		if hookName == wfv1.ExitLifecycleEvent {
 			continue
