@@ -335,7 +335,10 @@ func hasVarInEnv(env map[string]any, parameter string) bool {
 		case reflect.Map:
 			val := rVal.MapIndex(reflect.ValueOf(part))
 			if !val.IsValid() {
-				return false
+				// A missing leaf may be intentionally guarded by an expression such as
+				// `"key" in item`. Let the expression evaluator decide; nested
+				// missing paths still need to be requeued as unresolved.
+				return i == len(remainingParts)-1
 			}
 			current = val.Interface()
 		case reflect.Struct:
