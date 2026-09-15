@@ -251,7 +251,7 @@ func (s *gatekeeper) getServiceAccount(claims *authTypes.Claims, namespace strin
 		}
 		allow, err := argoexpr.EvalBool(rule, v)
 		if err != nil {
-			return nil, fmt.Errorf("failed to evaluate rule: %w", err)
+			continue
 		}
 		if !allow {
 			continue
