@@ -18,7 +18,7 @@ func (s Summary) age() time.Duration {
 		// A container can be terminated before it ever starts (for example when
 		// image setup fails). Do not turn an unset or invalid interval into an
 		// enormous or negative resource duration.
-		if terminated.StartedAt.IsZero() || terminated.FinishedAt.IsZero() || terminated.FinishedAt.Before(terminated.StartedAt.Time) {
+		if terminated.StartedAt.IsZero() || terminated.FinishedAt.IsZero() || terminated.FinishedAt.Time.Before(terminated.StartedAt.Time) {
 			return 0
 		}
 		return terminated.FinishedAt.Sub(terminated.StartedAt.Time)
