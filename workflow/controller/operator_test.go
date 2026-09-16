@@ -9629,6 +9629,134 @@ func TestStepsFailFast(t *testing.T) {
 	assert.Equal(t, wfv1.NodeFailed, node.Phase)
 }
 
+const stepsFailFastRetryBackoff = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: failfast-retry
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: loop
+        template: loop
+  - name: loop
+    failFast: true
+    parallelism: 1
+    steps:
+    - - name: iter
+        template: iter
+  - name: iter
+    retryStrategy:
+      limit: 2
+      retryPolicy: Always
+      backoff:
+        duration: 1h
+    container:
+      image: alpine
+      command: [sh, -c]
+      args: ["exit 1"]
+`
+
+// When failFast fires on a Steps template while a step's retry node is still
+// waiting for its next attempt, the StepGroup and Steps nodes are failed but
+// nothing ever re-assesses the retry node: it stays Running forever and holds
+// any DAG ancestor (and the workflow) Running with it.
+// See https://github.com/argoproj/argo-workflows/issues/16849
+func TestStepsFailFastTerminatesRetryNodeWaitingForBackoff(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(stepsFailFastRetryBackoff)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
+	defer cancel()
+	ctx := logging.TestContext(t.Context())
+
+	// First pass creates the pod for retry attempt 0.
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	wf = woc.wf
+
+	// Attempt 0 fails. The next pass runs failFast while the retry node waits
+	// for its 1h backoff, so no pod is active under the Steps node.
+	makePodsPhase(ctx, woc, apiv1.PodFailed)
+	woc = newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	wf = woc.wf
+
+	var retryNode *wfv1.NodeStatus
+	for _, n := range wf.Status.Nodes {
+		if n.Type == wfv1.NodeTypeRetry {
+			node := n
+			retryNode = &node
+			break
+		}
+	}
+	require.NotNil(t, retryNode, "retry node should exist")
+	assert.Equal(t, wfv1.NodeFailed, retryNode.Phase, "failFast must terminate the retry node instead of leaving it Running")
+
+	stepsNode := wf.Status.Nodes.FindByDisplayName("loop")
+	require.NotNil(t, stepsNode)
+	assert.Equal(t, wfv1.NodeFailed, stepsNode.Phase)
+
+	assert.Equal(t, wfv1.WorkflowFailed, wf.Status.Phase, "workflow must complete as Failed instead of staying Running forever")
+}
+
+// A workflow stuck before the failFast fix — Steps and StepGroup failed while
+// the retry node was left Running — must be healed by the DAG assessment
+// instead of staying Running forever (issue #16849).
+func TestDAGAssessmentHealsRetryNodeOrphanedByFailFast(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(stepsFailFastRetryBackoff)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
+	defer cancel()
+	ctx := logging.TestContext(t.Context())
+
+	now := metav1.NewTime(time.Now().UTC())
+	wf.Status.Nodes = make(wfv1.Nodes)
+	wf.Status.Phase = wfv1.WorkflowRunning
+	wf.Status.StartedAt = now
+
+	dagID := wf.NodeID("failfast-retry")
+	stepsID := wf.NodeID("failfast-retry.loop")
+	groupID := wf.NodeID("failfast-retry.loop[0]")
+	retryID := wf.NodeID("failfast-retry.loop[0].iter")
+	podID := wf.NodeID("failfast-retry.loop[0].iter(0)")
+
+	setNode := func(id, name, displayName, tmplName string, typ wfv1.NodeType, phase wfv1.NodePhase, boundaryID string, children ...string) {
+		node := wfv1.NodeStatus{
+			ID:            id,
+			Name:          name,
+			DisplayName:   displayName,
+			TemplateName:  tmplName,
+			TemplateScope: "local/failfast-retry",
+			Type:          typ,
+			Phase:         phase,
+			BoundaryID:    boundaryID,
+			Children:      children,
+			StartedAt:     now,
+		}
+		if phase.Fulfilled(nil) {
+			node.FinishedAt = now
+		}
+		wf.Status.Nodes.Set(ctx, id, node)
+	}
+	// failFast already failed the Steps and StepGroup nodes; the retry node was
+	// waiting for its backoff and got orphaned Running with a failed attempt pod.
+	setNode(podID, "failfast-retry.loop[0].iter(0)", "iter(0)", "iter", wfv1.NodeTypePod, wfv1.NodeFailed, stepsID)
+	setNode(retryID, "failfast-retry.loop[0].iter", "iter", "iter", wfv1.NodeTypeRetry, wfv1.NodeRunning, stepsID, podID)
+	setNode(groupID, "failfast-retry.loop[0]", "[0]", "", wfv1.NodeTypeStepGroup, wfv1.NodeFailed, stepsID, retryID)
+	setNode(stepsID, "failfast-retry.loop", "loop", "loop", wfv1.NodeTypeSteps, wfv1.NodeFailed, dagID, groupID)
+	setNode(dagID, "failfast-retry", "failfast-retry", "main", wfv1.NodeTypeDAG, wfv1.NodeRunning, "", stepsID)
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	wf = woc.wf
+
+	retryNode, err := wf.Status.Nodes.Get(retryID)
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeFailed, retryNode.Phase, "orphaned retry node should be healed to Failed")
+	assert.Equal(t, wfv1.WorkflowFailed, wf.Status.Phase, "workflow should complete as Failed instead of staying Running forever")
+}
+
 func TestGetStepOrDAGTaskName(t *testing.T) {
 	assert.Equal(t, "generate-artifact", getStepOrDAGTaskName("data-transformation-gjrt8[0].generate-artifact(2:foo/script.py)"))
 	assert.Equal(t, "generate-artifact", getStepOrDAGTaskName("data-transformation-gjrt8[0].generate-artifact(2:foo/scrip[t.py)"))

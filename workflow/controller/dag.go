@@ -58,10 +58,12 @@ type dagContext struct {
 	// are only computed once per operation
 	dependsLogic map[string]string
 
-	// taskGroupsToComplete collects the names of TaskGroup nodes that assessDAGPhase
-	// found stuck Running with all of their children fulfilled, mapped to the phase
-	// they should complete with. executeDAG marks them once assessment is done.
-	taskGroupsToComplete map[string]wfv1.NodePhase
+	// orphanedNodesToComplete collects the names of nodes that assessDAGPhase found
+	// stuck Running although nothing will execute them again — TaskGroups whose
+	// children are all fulfilled, or retry nodes orphaned by failFast — mapped to
+	// the phase they should complete with. executeDAG marks them once assessment is
+	// done.
+	orphanedNodesToComplete map[string]wfv1.NodePhase
 
 	// used for logging in the dag
 	log logging.Logger
@@ -181,15 +183,24 @@ func (d *dagContext) assessDAGPhase(ctx context.Context, targetTasks []string, n
 			// only visits unfulfilled tasks, so it never revisits such a group, which
 			// would then hold the DAG Running forever. Complete it from its children
 			// instead of blocking here.
-			groupPhase, ok := completableTaskGroupPhase(node, nodes)
+			completePhase, ok := completableTaskGroupPhase(node, nodes)
 			if !ok {
-				return wfv1.NodeRunning, nil
+				// A retry node can be orphaned Running when failFast failed its parent
+				// Steps/DAG node while the retry was waiting for its next attempt. The
+				// parent is terminal, so nothing executes the retry node ever again and
+				// it would hold the DAG Running forever. Such a node is only reachable
+				// here through an already failed branch; complete it as Failed instead
+				// of blocking (issue #16849).
+				if !orphanedRetryNode(node, nodes, branchPhase) {
+					return wfv1.NodeRunning, nil
+				}
+				completePhase = wfv1.NodeFailed
 			}
-			if d.taskGroupsToComplete == nil {
-				d.taskGroupsToComplete = make(map[string]wfv1.NodePhase)
+			if d.orphanedNodesToComplete == nil {
+				d.orphanedNodesToComplete = make(map[string]wfv1.NodePhase)
 			}
-			d.taskGroupsToComplete[node.Name] = groupPhase
-			branchPhase = groupPhase
+			d.orphanedNodesToComplete[node.Name] = completePhase
+			branchPhase = completePhase
 		} else if node.Completed() {
 			// Only overwrite the branchPhase if this node completed. (If it didn't we can just inherit our parent's branchPhase).
 			branchPhase = node.Phase
@@ -265,6 +276,23 @@ func completableTaskGroupPhase(node *wfv1.NodeStatus, nodes wfv1.Nodes) (wfv1.No
 		}
 	}
 	return phase, true
+}
+
+// orphanedRetryNode reports whether an unfulfilled retry node was orphaned by
+// failFast: it is reached through an already failed branch and every attempt it
+// made is fulfilled, so no future pass will ever execute or complete it
+// (issue #16849).
+func orphanedRetryNode(node *wfv1.NodeStatus, nodes wfv1.Nodes, branchPhase wfv1.NodePhase) bool {
+	if node.Type != wfv1.NodeTypeRetry || !branchPhase.FailedOrError() {
+		return false
+	}
+	for _, childID := range node.Children {
+		child, err := nodes.Get(childID)
+		if err != nil || !child.Fulfilled() {
+			return false
+		}
+	}
+	return true
 }
 
 func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmplCtx *templateresolution.TemplateContext, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
@@ -360,10 +388,10 @@ func (woc *wfOperationCtx) executeDAG(ctx context.Context, nodeName string, tmpl
 		return nil, err
 	}
 
-	// Complete any orphaned TaskGroups that assessment found stuck Running with all
-	// children fulfilled. Done regardless of the overall DAG phase so a group is
-	// healed even while other tasks are still legitimately running.
-	for name, phase := range dagCtx.taskGroupsToComplete {
+	// Complete any orphaned nodes that assessment found stuck Running although
+	// nothing will execute them again. Done regardless of the overall DAG phase so a
+	// node is healed even while other tasks are still legitimately running.
+	for name, phase := range dagCtx.orphanedNodesToComplete {
 		woc.markNodePhase(ctx, name, phase)
 	}
 
