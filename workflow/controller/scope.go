@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"encoding/json"
+	"regexp"
 	"strings"
 
 	"github.com/expr-lang/expr"
@@ -24,6 +25,37 @@ import (
 type wfScope struct {
 	tmpl  *wfv1.Template
 	scope *variables.Scope
+}
+
+// missingVarNodeRefRe picks the step/task names out of the messages IsMissingVariableErr matches:
+// `failed to resolve {{steps.name.outputs.parameters.p}}` from a simple tag, and
+// `failed to evaluate expression: tasks.name.outputs is missing` (or tasks['name']) from an expression.
+var missingVarNodeRefRe = regexp.MustCompile(`\b(steps|tasks)(?:\.([A-Za-z0-9_-]+)|\[['"]([^'"\]]+)['"]\])`)
+
+// referencedNodesFulfilled reports whether every step/task named in a missing-variable error is
+// already fulfilled, i.e. its status is in scope. Only fulfilled nodes are added to the scope, so a
+// variable of such a node that is still missing can never appear and waiting for it is pointless.
+// It is false when no node can be identified from the error.
+func (s *wfScope) referencedNodesFulfilled(err error) bool {
+	matches := missingVarNodeRefRe.FindAllStringSubmatch(err.Error(), -1)
+	if len(matches) == 0 {
+		return false
+	}
+	params := s.scope.AsAnyMap()
+	for _, m := range matches {
+		ref := varkeys.StepsNodeRef
+		if m[1] == "tasks" {
+			ref = varkeys.TasksNodeRef
+		}
+		name := m[2]
+		if name == "" {
+			name = m[3]
+		}
+		if _, ok := params[ref.Status.Concretize(name)]; !ok {
+			return false
+		}
+	}
+	return true
 }
 
 func createScope(tmpl *wfv1.Template) *wfScope {

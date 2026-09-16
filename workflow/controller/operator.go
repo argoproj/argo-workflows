@@ -1020,6 +1020,19 @@ func (woc *wfOperationCtx) requeue() {
 	woc.controller.wfQueue.AddRateLimited(key)
 }
 
+// missingVariableErr decides what to do when template resolution could not find a steps./tasks.
+// variable. If the node it refers to is already fulfilled the variable can never appear, so the
+// original error is returned for the caller to fail the node with. Otherwise the workflow is
+// requeued to try again once that node has finished.
+func (woc *wfOperationCtx) missingVariableErr(ctx context.Context, scope *wfScope, err error) error {
+	if scope.referencedNodesFulfilled(err) {
+		woc.log.WithError(err).Warn(ctx, "referenced node is fulfilled but the variable is missing, failing instead of requeueing")
+		return err
+	}
+	woc.requeue()
+	return ErrRequeue
+}
+
 // processNodeRetries updates the retry node state based on the child node state and the retry strategy and returns the node.
 func (woc *wfOperationCtx) processNodeRetries(ctx context.Context, node *wfv1.NodeStatus, retryStrategy wfv1.RetryStrategy, opts *executeTemplateOpts) (*wfv1.NodeStatus, bool, error) {
 	if node.Phase.Fulfilled(node.TaskResultSynced) {

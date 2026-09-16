@@ -1,0 +1,49 @@
+# A step whose pod was killed by the workflow deadline before it ran fails with no outputs.
+# continueOn lets the step group succeed; the next step then references an output that will
+# never exist. The workflow must fail rather than requeue forever.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: steps-failed-output-ref-
+spec:
+  entrypoint: main
+  # Short deadline so the producer is still Pending when it fires. A pod killed before its wait
+  # container reports has no outputs at all, not even the declared default.
+  activeDeadlineSeconds: 10
+  templates:
+  - name: main
+    steps:
+    - - name: producer
+        template: producer
+        continueOn:
+          failed: true
+          error: true
+    - - name: consumer
+        template: print
+        when: '{{steps.producer.status}} == Succeeded && "{{steps.producer.outputs.parameters.flag}}" == "true"'
+        arguments:
+          parameters:
+          - name: msg
+            value: "producer said {{steps.producer.outputs.parameters.flag}}"
+  - name: producer
+    retryStrategy:
+      limit: "1"
+    outputs:
+      parameters:
+      - name: flag
+        valueFrom:
+          path: /tmp/flag
+          default: "false"
+    # Unschedulable on purpose so the pod never starts.
+    nodeSelector:
+      does-not-exist: "true"
+    container:
+      image: argoproj/argosay:v2
+      args: [echo, "true", /tmp/flag]
+  - name: print
+    inputs:
+      parameters:
+      - name: msg
+    container:
+      image: argoproj/argosay:v2
+      args: [echo, "{{inputs.parameters.msg}}"]

@@ -794,8 +794,7 @@ func (woc *wfOperationCtx) resolveDependencyReferences(ctx context.Context, dagC
 		resolvedWhenStr, err = template.ReplaceStrictAny(ctx, string(whenBytes), mergedParams, []string{"tasks", "steps"})
 		if err != nil {
 			if template.IsMissingVariableErr(err) {
-				woc.requeue()
-				return nil, ErrRequeue
+				return nil, woc.missingVariableErr(ctx, scope, err)
 			}
 			return nil, err
 		}
@@ -838,9 +837,8 @@ func (woc *wfOperationCtx) resolveDependencyReferences(ctx context.Context, dagC
 	newTaskStr, err := template.ReplaceStrictAny(ctx, string(taskBytes), mergedParams, []string{"tasks", "steps"})
 	if err != nil {
 		if template.IsMissingVariableErr(err) {
-			woc.requeue()
 			woc.log.WithError(err).Warn(ctx, "was unable to find variable")
-			return nil, ErrRequeue
+			return nil, woc.missingVariableErr(ctx, scope, err)
 		}
 		return nil, err
 	}

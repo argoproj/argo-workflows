@@ -465,8 +465,7 @@ func (woc *wfOperationCtx) resolveReferences(ctx context.Context, stepGroup []wf
 			resolvedWhenStr, err := template.ReplaceStrictAny(ctx, string(whenBytes), mergedParams, []string{"steps", "tasks"})
 			if err != nil {
 				if template.IsMissingVariableErr(err) {
-					woc.requeue()
-					return ErrRequeue
+					return woc.missingVariableErr(ctx, scope, err)
 				}
 				return err
 			}
@@ -506,9 +505,8 @@ func (woc *wfOperationCtx) resolveReferences(ctx context.Context, stepGroup []wf
 		newStepStr, err := template.ReplaceStrictAny(ctx, string(stepBytes), mergedParams, []string{"steps", "tasks"})
 		if err != nil {
 			if template.IsMissingVariableErr(err) {
-				woc.requeue()
 				woc.log.WithError(err).Warn(ctx, "was unable to find variable")
-				return ErrRequeue
+				return woc.missingVariableErr(ctx, scope, err)
 			}
 			return err
 		}
