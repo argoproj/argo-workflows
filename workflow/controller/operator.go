@@ -3354,6 +3354,19 @@ func (woc *wfOperationCtx) findLeafNodeWithType(ctx context.Context, boundaryID 
 	return leafNode
 }
 
+// failOrphanedRetryNodes terminates the retry nodes directly under the given
+// boundary that are still waiting for another attempt. Once failFast fails
+// their parent Steps/DAG node, nothing executes those retry nodes anymore, and
+// leaving them Running would keep the workflow and any DAG ancestor Running
+// forever (issue #16849).
+func (woc *wfOperationCtx) failOrphanedRetryNodes(ctx context.Context, boundaryID string, message string) {
+	for _, node := range woc.wf.Status.Nodes {
+		if node.BoundaryID == boundaryID && node.Type == wfv1.NodeTypeRetry && !node.Fulfilled() {
+			woc.markNodePhase(ctx, node.Name, wfv1.NodeFailed, message)
+		}
+	}
+}
+
 // checkParallelism checks if the given template is able to be executed, considering the current active pods and workflow/template parallelism
 func (woc *wfOperationCtx) checkParallelism(ctx context.Context, tmpl *wfv1.Template, node *wfv1.NodeStatus, boundaryID string) error {
 	if woc.execWf.Spec.Parallelism != nil && woc.activePods >= *woc.execWf.Spec.Parallelism {
@@ -3372,6 +3385,7 @@ func (woc *wfOperationCtx) checkParallelism(ctx context.Context, tmpl *wfv1.Temp
 					}
 				}
 				woc.markNodePhase(ctx, node.Name, wfv1.NodeFailed, "template has failed or errored children and failFast enabled")
+				woc.failOrphanedRetryNodes(ctx, node.ID, "template has failed or errored children and failFast enabled")
 			}
 			return ErrParallelismReached
 		}
@@ -3408,6 +3422,7 @@ func (woc *wfOperationCtx) checkParallelism(ctx context.Context, tmpl *wfv1.Temp
 					}
 				}
 				woc.markNodePhase(ctx, boundaryNode.Name, wfv1.NodeFailed, "template has failed or errored children and failFast enabled")
+				woc.failOrphanedRetryNodes(ctx, boundaryID, "template has failed or errored children and failFast enabled")
 			}
 			return ErrParallelismReached
 		}
