@@ -264,7 +264,7 @@ func (woc *wfOperationCtx) newPodBuilder(ctx context.Context, nodeName string, m
 	return &podBuilder{
 		in: podBuilderInputs{
 			nodeName:                  nodeName,
-			nodeID:                    woc.wf.NodeID(nodeName),
+			nodeID:                    woc.wf.ResolveNodeID(nodeName),
 			namespace:                 woc.wf.Namespace,
 			wfName:                    woc.wf.Name,
 			ownerRef:                  *metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
@@ -348,7 +348,7 @@ func (woc *wfOperationCtx) createWorkflowPod(ctx context.Context, nodeName strin
 	// pod-spec rebuild) are expensive, so the podExists and shutdown guards run
 	// first — using values cheaply derived from woc — and reconciles of existing
 	// pods (and shutdown-skips) return without constructing the snapshot at all.
-	nodeID := woc.wf.NodeID(nodeName)
+	nodeID := woc.wf.ResolveNodeID(nodeName)
 
 	// (a) podExists pre-check. We must check rather than optimistically creating
 	// and relying on AlreadyExists, because we won't get that error if there are
