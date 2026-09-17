@@ -107,7 +107,7 @@ func resolveGroups(source config.GroupClaimSource, md metadata.MD) []string {
 	value := resolveClaim(source.ClaimSource, md)
 
 	if value == "" {
-		return nil
+		return []string{}
 	}
 
 	return strings.Split(value, ",")

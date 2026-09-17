@@ -47,6 +47,7 @@ func TestAuthorize(t *testing.T) {
 
 			issuer:  "oauth2-proxy",
 			subject: "pradeep",
+			groups:  []string{},
 		},
 
 		{
@@ -70,6 +71,7 @@ func TestAuthorize(t *testing.T) {
 
 			subject: "pradeep",
 			email:   "abc@test.com",
+			groups:  []string{},
 		},
 
 		{
@@ -100,7 +102,29 @@ func TestAuthorize(t *testing.T) {
 				"argo",
 			},
 		},
+		{
+			name: "no groups header",
 
+			cfg: config.HeaderConfig{
+				Subject: config.ClaimSource{
+					Header: "X-Forwarded-User",
+				},
+				Groups: config.GroupClaimSource{
+					ClaimSource: config.ClaimSource{
+						Header: "X-Forwarded-Groups",
+					},
+				},
+			},
+
+			md: metadata.Pairs(
+				"x-forwarded-user", "pradeep",
+			),
+
+			trustUnauthenticated: true,
+
+			subject: "pradeep",
+			groups:  []string{},
+		},
 		{
 			name: "multiple values for same header",
 
@@ -118,6 +142,7 @@ func TestAuthorize(t *testing.T) {
 			trustUnauthenticated: true,
 
 			subject: "pradeep,admin",
+			groups:  []string{},
 		},
 
 		{
@@ -175,6 +200,7 @@ func TestAuthorize(t *testing.T) {
 			),
 
 			subject: "pradeep",
+			groups:  []string{},
 		},
 	}
 
