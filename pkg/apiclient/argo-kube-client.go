@@ -112,7 +112,7 @@ func newArgoKubeClient(ctx context.Context, opts ArgoKubeOpts, clientConfig clie
 		Kubernetes: kubeClient,
 		Workflow:   wfClient,
 	}
-	gatekeeper, err := auth.NewGatekeeper(auth.Modes{auth.Server: true}, clients, restConfig, nil, auth.DefaultClientForAuthorization, "unused", "unused", false, nil)
+	gatekeeper, err := auth.NewGatekeeper(auth.Modes{auth.Server: true}, clients, restConfig, nil, nil, auth.DefaultClientForAuthorization, "unused", "unused", false, nil)
 	if err != nil {
 		return nil, nil, err
 	}

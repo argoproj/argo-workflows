@@ -50,6 +50,7 @@ import (
 	"github.com/argoproj/argo-workflows/v4/server/artifacts"
 	"github.com/argoproj/argo-workflows/v4/server/auth"
 	authcookie "github.com/argoproj/argo-workflows/v4/server/auth/cookie"
+	"github.com/argoproj/argo-workflows/v4/server/auth/header"
 	"github.com/argoproj/argo-workflows/v4/server/auth/sso"
 	"github.com/argoproj/argo-workflows/v4/server/auth/webhook"
 	"github.com/argoproj/argo-workflows/v4/server/cache"
@@ -111,13 +112,14 @@ type argoServer struct {
 }
 
 type ArgoServerOpts struct {
-	BaseHRef   string
-	TLSConfig  *tls.Config
-	Namespaced bool
-	Namespace  string
-	Clients    *types.Clients
-	RestConfig *rest.Config
-	AuthModes  auth.Modes
+	BaseHRef                            string
+	TLSConfig                           *tls.Config
+	Namespaced                          bool
+	Namespace                           string
+	Clients                             *types.Clients
+	RestConfig                          *rest.Config
+	AuthModes                           auth.Modes
+	InsecureTrustUnauthenticatedHeaders bool
 	// config map name
 	ConfigName               string
 	ManagedNamespace         string
@@ -144,6 +146,28 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (Server, error) {
 	log := logging.RequireLoggerFromContext(ctx)
 	var resourceCache *cache.ResourceCache
 	ssoIf := sso.NullSSO
+	headerIf := header.NullHeaderAuth
+
+	if opts.AuthModes[auth.Header] {
+		c, err := configController.Get(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		headerIf, err = header.New(
+			ctx,
+			c.Header,
+			opts.Clients.Kubernetes.CoreV1().Secrets(opts.Namespace),
+			opts.InsecureTrustUnauthenticatedHeaders,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		log.Info(ctx, "Trusted Header authentication enabled")
+	} else {
+		log.Info(ctx, "Trusted Header authentication disabled")
+	}
 	if opts.AuthModes[auth.SSO] {
 		c, err := configController.Get(ctx)
 		if err != nil {
@@ -156,16 +180,15 @@ func NewArgoServer(ctx context.Context, opts ArgoServerOpts) (Server, error) {
 		if err != nil {
 			return nil, err
 		}
-		if ssoIf.IsRBACEnabled() {
-			// resourceCache is only used for SSO RBAC
-			resourceCache = cache.NewResourceCache(opts.Clients.Kubernetes, getResourceCacheNamespace(opts.ManagedNamespace))
-			resourceCache.Run(ctx.Done())
-		}
 		log.Info(ctx, "SSO enabled")
 	} else {
 		log.Info(ctx, "SSO disabled")
 	}
-	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.Clients, opts.RestConfig, ssoIf, auth.DefaultClientForAuthorization, opts.Namespace, opts.SSONamespace, opts.Namespaced, resourceCache)
+	if ssoIf.IsRBACEnabled() || headerIf.IsRBACEnabled() {
+		resourceCache = cache.NewResourceCache(opts.Clients.Kubernetes, getResourceCacheNamespace(opts.ManagedNamespace))
+		resourceCache.Run(ctx.Done())
+	}
+	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.Clients, opts.RestConfig, ssoIf, headerIf, auth.DefaultClientForAuthorization, opts.Namespace, opts.SSONamespace, opts.Namespaced, resourceCache)
 	if err != nil {
 		return nil, err
 	}
