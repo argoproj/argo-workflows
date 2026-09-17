@@ -115,6 +115,8 @@ metadata:
     # * `groups` - an array of the OIDC groups
     # * `iss` - the issuer ("argo-server")
     # * `sub` - the subject (typically the username)
+    # Any other claim of the ID token can be used too, e.g. a provider specific
+    # `user_name` claim: "user_name == 'my-user'".
     # Must evaluate to a boolean.
     # If you want an account to be the default to use, this rule can be "true".
     # Details of the expression language are available in
@@ -130,6 +132,23 @@ metadata:
 ```
 
 If no rule matches, we deny the user access.
+
+### Custom claims
+
+Every claim of the ID token is available in the rule, not just the ones listed above.
+This is useful for providers that identify users with a custom claim, for example:
+
+```yaml
+metadata:
+  name: my-user
+  annotations:
+    workflows.argoproj.io/rbac-rule: "user_name == 'my-user'"
+```
+
+!!! Note
+    The claims that Argo Server normalizes itself take precedence over the raw ones.
+    In particular `groups` is always the normalized value, which may be derived from
+    `customGroupClaimName` or `userInfoPath`.
 
 Tip: You'll probably want to configure a default account to use if no other rule matches, e.g. a read-only account, you can do this as follows:
 

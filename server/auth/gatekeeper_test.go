@@ -88,6 +88,16 @@ func TestServer_GetWFClient(t *testing.T) {
 			},
 			Secrets: []corev1.ObjectReference{{Name: "user-secret"}},
 		},
+		&corev1.ServiceAccount{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "custom-claim-sa", Namespace: "custom-claim-ns",
+				Annotations: map[string]string{
+					common.AnnotationKeyRBACRule:           "user_name == 'my-user'",
+					common.AnnotationKeyRBACRulePrecedence: "2",
+				},
+			},
+			Secrets: []corev1.ObjectReference{{Name: "user-secret"}},
+		},
 		&corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-secret", Namespace: "my-ns"},
 			Data: map[string][]byte{
@@ -108,6 +118,12 @@ func TestServer_GetWFClient(t *testing.T) {
 		},
 		&corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{Name: "user-secret", Namespace: "user3-ns"},
+			Data: map[string][]byte{
+				"token": {},
+			},
+		},
+		&corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{Name: "user-secret", Namespace: "custom-claim-ns"},
 			Data: map[string][]byte{
 				"token": {},
 			},
@@ -182,6 +198,23 @@ func TestServer_GetWFClient(t *testing.T) {
 		assert.Equal(t, []string{"my-group", "other-group"}, claims.Groups)
 		assert.Equal(t, "my-sa", claims.ServiceAccountName)
 		assert.Equal(t, "my-ns", claims.ServiceAccountNamespace)
+	})
+	t.Run("SSO+RBAC, custom claim", func(t *testing.T) {
+		t.Setenv("SSO_DELEGATE_RBAC_TO_NAMESPACE", "true")
+		ssoIf := &ssomocks.Interface{}
+		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&authTypes.Claims{
+			Groups:   []string{"my-group"},
+			RawClaim: map[string]any{"user_name": "my-user"},
+		}, nil)
+		ssoIf.On("IsRBACEnabled").Return(true)
+		g, err := NewGatekeeper(Modes{SSO: true}, clients, &rest.Config{Username: "my-username"}, ssoIf, clientForAuthorization, "my-ns", "my-ns", false, resourceCache)
+		require.NoError(t, err)
+		ctx, err := g.ContextWithRequest(x(logging.TestContext(t.Context()), "Bearer v2:whatever"), servertypes.NamespaceHolder("custom-claim-ns"))
+		require.NoError(t, err)
+		claims := GetClaims(ctx)
+		require.NotNil(t, claims)
+		assert.Equal(t, "custom-claim-sa", claims.ServiceAccountName)
+		assert.Equal(t, "custom-claim-ns", claims.ServiceAccountNamespace)
 	})
 	t.Run("SSO+RBAC, Namespace delegation ON, precedence=2, Delegated", func(t *testing.T) {
 		t.Setenv("SSO_DELEGATE_RBAC_TO_NAMESPACE", "true")
