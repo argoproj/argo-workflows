@@ -147,8 +147,7 @@ metadata:
 
 !!! Note
     The claims that Argo Server normalizes itself take precedence over the raw ones.
-    In particular `groups` is always the normalized value, which may be derived from
-    `customGroupClaimName` or `userInfoPath`.
+    In particular `groups` is always the normalized value, which may be derived from `customGroupClaimName` or `userInfoPath`.
 
 Tip: You'll probably want to configure a default account to use if no other rule matches, e.g. a read-only account, you can do this as follows:
 
