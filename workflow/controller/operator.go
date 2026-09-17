@@ -794,8 +794,12 @@ func (woc *wfOperationCtx) persistUpdates(ctx context.Context) {
 
 	diff.LogChanges(ctx, woc.orig, woc.wf)
 
-	resource.UpdateResourceDurations(ctx, woc.wf)
-	progress.UpdateProgress(ctx, woc.wf)
+	// Aggregates are recomputed from Status.Nodes; if node status was never loaded they
+	// would be computed from an empty map and clobber the real values.
+	if woc.controller.hydrator.IsHydrated(woc.wf) {
+		resource.UpdateResourceDurations(ctx, woc.wf)
+		progress.UpdateProgress(ctx, woc.wf)
+	}
 	// You MUST not call `persistUpdates` twice.
 	// * Fails the `reapplyUpdate` cannot work unless resource versions are different.
 	// * It will double the number of Kubernetes API requests.
