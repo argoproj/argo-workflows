@@ -39,4 +39,5 @@ var (
 	RetriesLastStatus   = retry("lastRetry.status", "Phase of the previous attempt (or empty on first)")
 	RetriesLastDuration = retry("lastRetry.duration", "Duration of the previous attempt in seconds")
 	RetriesLastMessage  = retry("lastRetry.message", "Message of the previous attempt")
+	RetriesExitCodes    = retry("lastRetry.exitCodes", "Comma-separated exit codes of all previous attempts, oldest first (empty on the first attempt)")
 )
