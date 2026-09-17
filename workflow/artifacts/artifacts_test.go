@@ -107,5 +107,5 @@ func TestExpirationTime(t *testing.T) {
 
 	artDriver := got.(*s3.ArtifactDriver)
 	assert.NotNil(t, artDriver.TokenExpiration)
-	assert.Equal(t, *artDriver.TokenExpiration, time.Hour)
+	assert.Equal(t, time.Hour, *artDriver.TokenExpiration)
 }
