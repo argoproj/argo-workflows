@@ -2892,6 +2892,9 @@ type S3Bucket struct {
 	//
 	// +kubebuilder:validation:Enum="";path;virtual-hosted
 	AddressingStyle string `json:"addressingStyle,omitempty" protobuf:"bytes,13,opt,name=addressingStyle"`
+
+	// TokenExpirationInMinutes specifies the expiration time for the obtained token when it is possible to use it
+	TokenExpirationInMinutes *int32 `json:"tokenExpirationInMinutes,omitempty" protobuf:"varint,14,opt,name=tokenExpirationInMinutes"`
 }
 
 // S3EncryptionOptions used to determine encryption options during s3 operations

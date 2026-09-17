@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/stretchr/testify/assert"
@@ -764,6 +765,180 @@ func TestDisallowedComboOptions(t *testing.T) {
 		_, err := NewClient(ctx, opts)
 		assert.Error(t, err)
 	})
+}
+
+func TestGetCredentialsTokenExpirationBounds(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	roleARN := "arn:aws:iam::123456789012:role/test"
+
+	tests := []struct {
+		name          string
+		expiration    *time.Duration
+		wantBoundsErr bool
+	}{
+		{
+			name:          "nil – uses STS default, no validation error",
+			expiration:    nil,
+			wantBoundsErr: false,
+		},
+		{
+			name:          "below minimum (14m)",
+			expiration:    new(14 * time.Minute),
+			wantBoundsErr: true,
+		},
+		{
+			name:          "zero duration",
+			expiration:    new(time.Duration(0)),
+			wantBoundsErr: true,
+		},
+		{
+			name:          "exactly minimum (15m) – valid",
+			expiration:    new(minTokenExpiration),
+			wantBoundsErr: false,
+		},
+		{
+			name:          "valid mid-range (1h)",
+			expiration:    new(1 * time.Hour),
+			wantBoundsErr: false,
+		},
+		{
+			name:          "exactly maximum (12h) – valid",
+			expiration:    new(maxTokenExpiration),
+			wantBoundsErr: false,
+		},
+		{
+			name:          "above maximum (13h)",
+			expiration:    new(13 * time.Hour),
+			wantBoundsErr: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			opts := ClientOpts{
+				RoleARN:         roleARN,
+				TokenExpiration: tc.expiration,
+			}
+			_, err := GetCredentials(ctx, opts)
+			if tc.wantBoundsErr {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), "outside the AWS STS allowed range")
+			} else if err != nil {
+				// Bounds check passed; the call will fail because there are no real AWS
+				// credentials in the test environment – that is expected.
+				assert.NotContains(t, err.Error(), "outside the AWS STS allowed range")
+			}
+		})
+	}
+}
+
+// TestIsWebIdentityConfigured verifies detection of web identity environment variables.
+func TestIsWebIdentityConfigured(t *testing.T) {
+	tests := []struct {
+		name       string
+		roleARN    string
+		tokenFile  string
+		wantResult bool
+	}{
+		{"both set", "arn:aws:iam::123:role/r", "/var/token", true},
+		{"only role ARN", "arn:aws:iam::123:role/r", "", false},
+		{"only token file", "", "/var/token", false},
+		{"neither set", "", "", false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv(envWebIdentityRoleARN, tc.roleARN)
+			t.Setenv(envWebIdentityTokenFile, tc.tokenFile)
+			assert.Equal(t, tc.wantResult, isWebIdentityConfigured())
+		})
+	}
+}
+
+// TestGetCredentialsWebIdentityTokenExpirationBounds verifies that the same
+// [15m, 12h] bounds check applies to the UseSDKCreds + web identity path.
+func TestGetCredentialsWebIdentityTokenExpirationBounds(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	// Set the web identity env vars so the web identity path is taken.
+	// The token file does not need to exist for the bounds check (which happens before
+	// any network or file I/O).
+	t.Setenv(envWebIdentityRoleARN, "arn:aws:iam::123456789012:role/test")
+	t.Setenv(envWebIdentityTokenFile, "/tmp/nonexistent-token")
+
+	tests := []struct {
+		name          string
+		expiration    *time.Duration
+		wantBoundsErr bool
+	}{
+		{
+			name:          "nil – no validation error",
+			expiration:    nil,
+			wantBoundsErr: false,
+		},
+		{
+			name:          "below minimum (14m)",
+			expiration:    new(14 * time.Minute),
+			wantBoundsErr: true,
+		},
+		{
+			name:          "exactly minimum (15m) – valid",
+			expiration:    new(minTokenExpiration),
+			wantBoundsErr: false,
+		},
+		{
+			name:          "valid mid-range (1h)",
+			expiration:    new(1 * time.Hour),
+			wantBoundsErr: false,
+		},
+		{
+			name:          "exactly maximum (12h) – valid",
+			expiration:    new(maxTokenExpiration),
+			wantBoundsErr: false,
+		},
+		{
+			name:          "above maximum (13h)",
+			expiration:    new(13 * time.Hour),
+			wantBoundsErr: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			opts := ClientOpts{
+				UseSDKCreds:     true,
+				TokenExpiration: tc.expiration,
+			}
+			_, err := GetCredentials(ctx, opts)
+			if tc.wantBoundsErr {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), "outside the AWS STS allowed range")
+			} else if err != nil {
+				// Bounds check passed; the STS call itself will fail (no real token file /
+				// no real AWS), but not with a bounds error.
+				assert.NotContains(t, err.Error(), "outside the AWS STS allowed range")
+			}
+		})
+	}
+}
+
+// TestGetCredentialsWebIdentityFallthrough verifies that when web identity env vars
+// are absent, UseSDKCreds falls through to the regular SDK credential chain.
+func TestGetCredentialsWebIdentityFallthrough(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+
+	// Ensure web identity vars are NOT set.
+	t.Setenv(envWebIdentityRoleARN, "")
+	t.Setenv(envWebIdentityTokenFile, "")
+
+	opts := ClientOpts{
+		UseSDKCreds:     true,
+		TokenExpiration: new(14 * time.Minute), // out-of-range but should NOT be validated
+	}
+	// No bounds error expected because the web identity path is not taken.
+	_, err := GetCredentials(ctx, opts)
+	if err != nil {
+		assert.NotContains(t, err.Error(), "outside the AWS STS allowed range")
+	}
 }
 
 func TestParseAddressingStyle(t *testing.T) {
