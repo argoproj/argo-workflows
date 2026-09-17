@@ -21,6 +21,7 @@ Name | Type | Description | Notes
 **roleARN** | **String** | RoleARN is the Amazon Resource Name (ARN) of the role to assume. |  [optional]
 **secretKeySecret** | [**io.kubernetes.client.openapi.models.V1SecretKeySelector**](io.kubernetes.client.openapi.models.V1SecretKeySelector.md) |  |  [optional]
 **sessionTokenSecret** | [**io.kubernetes.client.openapi.models.V1SecretKeySelector**](io.kubernetes.client.openapi.models.V1SecretKeySelector.md) |  |  [optional]
+**tokenExpirationInMinutes** | **Integer** | TokenExpirationInMinutes specifies the expiration time for the obtained token when it is possible to use it |  [optional]
 **useSDKCreds** | **Boolean** | UseSDKCreds tells the driver to figure out credentials based on sdk defaults. |  [optional]
 
 

@@ -4408,6 +4408,7 @@ S3Artifact is the location of an S3 artifact
 |`roleARN`|`string`|RoleARN is the Amazon Resource Name (ARN) of the role to assume.|
 |`secretKeySecret`|[`SecretKeySelector`](#secretkeyselector)|SecretKeySecret is the secret selector to the bucket's secret key|
 |`sessionTokenSecret`|[`SecretKeySelector`](#secretkeyselector)|SessionTokenSecret is used for ephemeral credentials like an IAM assume role or S3 access grant|
+|`tokenExpirationInMinutes`|`integer`|TokenExpirationInMinutes specifies the expiration time for the obtained token when it is possible to use it|
 |`useSDKCreds`|`boolean`|UseSDKCreds tells the driver to figure out credentials based on sdk defaults.|
 
 ## ValueFrom
@@ -5178,6 +5179,7 @@ S3ArtifactRepository defines the controller configuration for an S3 artifact rep
 |`roleARN`|`string`|RoleARN is the Amazon Resource Name (ARN) of the role to assume.|
 |`secretKeySecret`|[`SecretKeySelector`](#secretkeyselector)|SecretKeySecret is the secret selector to the bucket's secret key|
 |`sessionTokenSecret`|[`SecretKeySelector`](#secretkeyselector)|SessionTokenSecret is used for ephemeral credentials like an IAM assume role or S3 access grant|
+|`tokenExpirationInMinutes`|`integer`|TokenExpirationInMinutes specifies the expiration time for the obtained token when it is possible to use it|
 |`useSDKCreds`|`boolean`|UseSDKCreds tells the driver to figure out credentials based on sdk defaults.|
 
 ## MutexHolding

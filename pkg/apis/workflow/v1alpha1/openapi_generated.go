@@ -5521,6 +5521,13 @@ func schema_pkg_apis_workflow_v1alpha1_S3Artifact(ref common.ReferenceCallback) 
 							Format:      "",
 						},
 					},
+					"tokenExpirationInMinutes": {
+						SchemaProps: spec.SchemaProps{
+							Description: "TokenExpirationInMinutes specifies the expiration time for the obtained token when it is possible to use it",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
 					"key": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Key is the key in the bucket where the artifact resides",
@@ -5625,6 +5632,13 @@ func schema_pkg_apis_workflow_v1alpha1_S3ArtifactRepository(ref common.Reference
 							Description: "AddressingStyle defines how buckets are addressed by the S3 client. This is required for some S3-compatible providers that only support virtual-hosted-style bucket addressing.\n\nValid values are: - \"\" (default, auto-detect) - \"path\" - \"virtual-hosted\"",
 							Type:        []string{"string"},
 							Format:      "",
+						},
+					},
+					"tokenExpirationInMinutes": {
+						SchemaProps: spec.SchemaProps{
+							Description: "TokenExpirationInMinutes specifies the expiration time for the obtained token when it is possible to use it",
+							Type:        []string{"integer"},
+							Format:      "int32",
 						},
 					},
 					"keyFormat": {
@@ -5738,6 +5752,13 @@ func schema_pkg_apis_workflow_v1alpha1_S3Bucket(ref common.ReferenceCallback) co
 							Description: "AddressingStyle defines how buckets are addressed by the S3 client. This is required for some S3-compatible providers that only support virtual-hosted-style bucket addressing.\n\nValid values are: - \"\" (default, auto-detect) - \"path\" - \"virtual-hosted\"",
 							Type:        []string{"string"},
 							Format:      "",
+						},
+					},
+					"tokenExpirationInMinutes": {
+						SchemaProps: spec.SchemaProps{
+							Description: "TokenExpirationInMinutes specifies the expiration time for the obtained token when it is possible to use it",
+							Type:        []string{"integer"},
+							Format:      "int32",
 						},
 					},
 				},
