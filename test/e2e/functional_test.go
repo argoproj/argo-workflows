@@ -496,6 +496,29 @@ func (s *FunctionalSuite) TestDAGOmittedOutputRef() {
 // TestDAGSkippedOutputRef tests that referencing an output parameter of a skipped task with no
 // producer valueFrom.default and no consumer input default fails the consuming task terminally
 // rather than requeuing forever.
+// A task that failed without producing outputs (here: killed by the workflow deadline before it
+// ran) must not make a dependant's reference to its output requeue forever.
+func (s *FunctionalSuite) TestDAGFailedOutputRef() {
+	s.Given().
+		Workflow("@functional/dag-failed-output-ref.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeErrored).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			producer := status.Nodes.FindByDisplayName("producer")
+			if assert.NotNil(t, producer) {
+				assert.Equal(t, wfv1.NodeFailed, producer.Phase)
+				assert.Nil(t, producer.Outputs)
+			}
+			consumer := status.Nodes.FindByDisplayName("consumer")
+			if assert.NotNil(t, consumer) {
+				assert.Equal(t, wfv1.NodeError, consumer.Phase)
+				assert.Contains(t, consumer.Message, "failed to resolve {{tasks.producer.outputs.parameters.flag}}")
+			}
+		})
+}
+
 func (s *FunctionalSuite) TestDAGSkippedOutputRef() {
 	s.Given().
 		Workflow("@functional/dag-skipped-output-ref.yaml").
@@ -681,6 +704,30 @@ func (s *FunctionalSuite) TestStepsSkippedWithParamRef() {
 // skipped step with no producer valueFrom.default fails the step group terminally rather than
 // requeuing forever. NodeOmitted is not exercised here because that phase arises in DAG templates,
 // not steps; both phases share the same code path.
+// A step that failed without producing outputs (here: killed by the workflow deadline before it
+// ran) must not make a later reference to its output requeue forever.
+func (s *FunctionalSuite) TestStepsFailedOutputRef() {
+	s.Given().
+		Workflow("@functional/steps-failed-output-ref.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(fixtures.ToBeFailed).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			producer := status.Nodes.FindByDisplayName("producer")
+			if assert.NotNil(t, producer) {
+				assert.Equal(t, wfv1.NodeFailed, producer.Phase)
+				assert.Nil(t, producer.Outputs)
+			}
+			stepGroup := status.Nodes.FindByDisplayName("[1]")
+			if assert.NotNil(t, stepGroup) {
+				assert.Equal(t, wfv1.NodeError, stepGroup.Phase)
+				assert.Contains(t, stepGroup.Message, "failed to resolve {{steps.producer.outputs.parameters.flag}}")
+			}
+			assert.Nil(t, status.Nodes.FindByDisplayName("consumer"))
+		})
+}
+
 func (s *FunctionalSuite) TestStepsSkippedOutputRef() {
 	s.Given().
 		Workflow("@functional/steps-skipped-output-ref.yaml").

@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
@@ -1060,4 +1061,74 @@ func TestStepsWhenFalseSkipsDropPass(t *testing.T) {
 	}
 	assert.NotEqual(t, wfv1.WorkflowError, woc.wf.Status.Phase)
 	assert.NotEqual(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+}
+
+var stepsFailedOutputRef = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: steps-failed-output-ref
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: producer
+        template: producer
+        continueOn:
+          failed: true
+    - - name: consumer
+        template: echo-with-param
+        when: '{{steps.producer.status}} == Succeeded && "{{steps.producer.outputs.parameters.flag}}" == "true"'
+        arguments:
+          parameters:
+          - name: msg
+            value: "{{steps.producer.outputs.parameters.flag}}"
+  - name: producer
+    outputs:
+      parameters:
+      - name: flag
+        valueFrom:
+          path: /tmp/flag
+          default: "false"
+    container:
+      image: alpine:3.23
+      command: [sh, -c, "exit 1"]
+  - name: echo-with-param
+    inputs:
+      parameters:
+      - name: msg
+    container:
+      image: alpine:3.23
+      command: [echo, "{{inputs.parameters.msg}}"]
+`
+
+// TestStepsFailedOutputRef verifies that referencing an output of a step that failed without
+// producing any outputs fails the workflow instead of requeueing it forever: the producer is
+// fulfilled, so the variable can never appear.
+func TestStepsFailedOutputRef(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	wf := wfv1.MustUnmarshalWorkflow(stepsFailedOutputRef)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, apiv1.PodFailed)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	producer := woc.wf.Status.Nodes.FindByDisplayName("producer")
+	require.NotNil(t, producer)
+	assert.Equal(t, wfv1.NodeFailed, producer.Phase)
+	assert.Nil(t, producer.Outputs)
+	assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+	stepGroup := woc.wf.Status.Nodes.FindByDisplayName("[1]")
+	require.NotNil(t, stepGroup)
+	assert.Equal(t, wfv1.NodeError, stepGroup.Phase)
+	assert.Contains(t, stepGroup.Message, "failed to resolve {{steps.producer.outputs.parameters.flag}}")
+	assert.Nil(t, woc.wf.Status.Nodes.FindByDisplayName("consumer"))
 }

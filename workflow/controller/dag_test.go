@@ -4734,3 +4734,75 @@ func TestOnExitDAGNotFailedOnShutdownStop(t *testing.T) {
 	// Workflow should NOT be completed yet — it should still be Running waiting for the exit handler.
 	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase, "workflow should still be Running while onExit handler is executing")
 }
+
+var dagFailedOutputRef = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-failed-output-ref
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: producer
+        template: producer
+        continueOn:
+          failed: true
+      - name: consumer
+        template: echo-with-param
+        dependencies: [producer]
+        when: '{{tasks.producer.status}} == Succeeded && "{{tasks.producer.outputs.parameters.flag}}" == "true"'
+        arguments:
+          parameters:
+          - name: msg
+            value: "{{tasks.producer.outputs.parameters.flag}}"
+  - name: producer
+    outputs:
+      parameters:
+      - name: flag
+        valueFrom:
+          path: /tmp/flag
+          default: "false"
+    container:
+      image: alpine:3.23
+      command: [sh, -c, "exit 1"]
+  - name: echo-with-param
+    inputs:
+      parameters:
+      - name: msg
+    container:
+      image: alpine:3.23
+      command: [echo, "{{inputs.parameters.msg}}"]
+`
+
+// TestDAGFailedOutputRef verifies that referencing an output of a task that failed without
+// producing any outputs fails the workflow instead of requeueing it forever: the producer is
+// fulfilled, so the variable can never appear.
+func TestDAGFailedOutputRef(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx)
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	wf := wfv1.MustUnmarshalWorkflow(dagFailedOutputRef)
+	wf, err := wfcset.Create(ctx, wf, metav1.CreateOptions{})
+	require.NoError(t, err)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	makePodsPhase(ctx, woc, v1.PodFailed)
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	producer := woc.wf.Status.Nodes.FindByDisplayName("producer")
+	require.NotNil(t, producer)
+	assert.Equal(t, wfv1.NodeFailed, producer.Phase)
+	assert.Nil(t, producer.Outputs)
+	// an errored task rolls up to the DAG, and the workflow, as Error
+	assert.Equal(t, wfv1.WorkflowError, woc.wf.Status.Phase)
+	consumer := woc.wf.Status.Nodes.FindByDisplayName("consumer")
+	require.NotNil(t, consumer)
+	assert.Equal(t, wfv1.NodeError, consumer.Phase)
+	assert.Contains(t, consumer.Message, "failed to resolve {{tasks.producer.outputs.parameters.flag}}")
+}

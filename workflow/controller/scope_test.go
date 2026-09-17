@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -358,4 +359,21 @@ func TestAbsentOptionalRefRequiresTag(t *testing.T) {
 	assert.False(t, scope.absentOptionalRef("{{outer-{{"+ref+"}}}}"), "nested tags are not pure references")
 	assert.False(t, scope.absentOptionalRef("{{tasks.real.outputs.parameters.msg}}"), "a reference to a produced value is not absent")
 	assert.False(t, scope.absentOptionalRef("{{tasks.unknown.outputs.parameters.msg}}"), "an unknown key is unresolved, not absent")
+}
+
+func TestReferencedNodesFulfilled(t *testing.T) {
+	scope := createScope(nil)
+	varkeys.StepsNodeRef.Status.Set(scope.scope, "Failed", "producer")
+	varkeys.TasksNodeRef.Status.Set(scope.scope, "Failed", "my-task")
+	for msg, want := range map[string]bool{
+		"failed to resolve {{steps.producer.outputs.parameters.flag}}":       true,
+		"failed to resolve {{ steps.producer.outputs.parameters.flag }}":     true,
+		"failed to evaluate expression: tasks.my-task.outputs is missing":    true,
+		"failed to evaluate expression: tasks['my-task'].outputs is missing": true,
+		"failed to resolve {{steps.other.outputs.parameters.flag}}":          false, // not in scope: not finished yet
+		"failed to resolve {{tasks.producer.outputs.parameters.flag}}":       false, // wrong kind of node
+		"variable not in env": false, // no node named
+	} {
+		assert.Equal(t, want, scope.referencedNodesFulfilled(errors.New(msg)), msg)
+	}
 }
