@@ -1181,8 +1181,6 @@ func resetPath(allNodes []*dagNode, startNode string) (map[string]bool, map[stri
 				return nil, nil, err
 			}
 			continue
-		case curr.n.Type == wfv1.NodeTypeRetry && curr.n.FailedOrError():
-			addToReset(curr.n.ID)
 		case curr.n.Type == wfv1.NodeTypeContainer:
 			curr, err = resetPod(curr, addToReset, addToDelete)
 			if err != nil {
@@ -1191,7 +1189,16 @@ func resetPath(allNodes []*dagNode, startNode string) (map[string]bool, map[stri
 			continue
 		}
 
-		curr = curr.parent
+		if curr.n.Type == wfv1.NodeTypeRetry && curr.n.FailedOrError() {
+			addToReset(curr.n.ID)
+		}
+		// Parent edges also connect completed predecessors to downstream tasks.
+		// Reset the task's containing boundaries, not groups encountered along
+		// the dependency path (which may belong to an already completed DAG).
+		curr, err = resetBoundaries(curr, addToReset)
+		if err != nil {
+			return nil, nil, err
+		}
 	}
 	return nodesToReset, nodesToDelete, nil
 }
