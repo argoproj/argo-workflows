@@ -3,6 +3,7 @@ package artifacts
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 
@@ -85,4 +86,26 @@ func TestNewDriverS3AddressingStyle(t *testing.T) {
 			assert.Equal(t, style, artDriver.AddressingStyle)
 		})
 	}
+}
+
+func TestExpirationTime(t *testing.T) {
+	art := &wfv1.Artifact{
+		ArtifactLocation: wfv1.ArtifactLocation{S3: &wfv1.S3Artifact{
+			S3Bucket: wfv1.S3Bucket{
+				Endpoint:                 "endpoint",
+				Bucket:                   "bucket",
+				Region:                   "us-east-1",
+				RoleARN:                  "role-arn-test",
+				TokenExpirationInMinutes: new(int32(60)), // One hour
+			},
+			Key: "art",
+		}},
+	}
+
+	got, err := newDriver(logging.TestContext(t.Context()), art, &mockResourceInterface{})
+	require.NoError(t, err)
+
+	artDriver := got.(*s3.ArtifactDriver)
+	assert.NotNil(t, artDriver.TokenExpiration)
+	assert.Equal(t, *artDriver.TokenExpiration, time.Hour)
 }
