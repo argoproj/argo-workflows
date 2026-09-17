@@ -1,4 +1,3 @@
-<!-- Required: All of these fields are required, including at least one issue -->
 Description: Added S3 token expiration time to use when available
 Authors: [Jose M. Abuin](https://github.com/jmabuin)
 Component: General
