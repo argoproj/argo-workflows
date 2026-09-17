@@ -20,8 +20,10 @@ func (woc *wfOperationCtx) applyExecutionControl(ctx context.Context, pod *apiv1
 		return
 	}
 
-	nodeID := woc.nodeID(pod)
+	// nodeID's fallback for pods without the node-id annotation resolves
+	// against Status.Nodes, so it must run under the nodes lock
 	wfNodesLock.RLock()
+	nodeID := woc.nodeID(pod)
 	node, err := woc.wf.Status.Nodes.Get(nodeID)
 	wfNodesLock.RUnlock()
 	if err != nil {
