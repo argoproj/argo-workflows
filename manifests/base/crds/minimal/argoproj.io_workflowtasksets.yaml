@@ -7425,6 +7425,13 @@ spec:
                         affinity:
                           properties:
                             nodeAntiAffinity:
+                              properties:
+                                type:
+                                  enum:
+                                  - ""
+                                  - Required
+                                  - Preferred
+                                  type: string
                               type: object
                           type: object
                         backoff:
