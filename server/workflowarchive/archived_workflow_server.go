@@ -109,22 +109,29 @@ func (w *archivedWorkflowServer) GetArchivedWorkflow(ctx context.Context, req *w
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
-	if wf == nil {
-		// no need to call ToStatusError since it is already a status
-		return nil, status.Error(codes.NotFound, "not found")
+	// Authorize before revealing whether the workflow exists. Answering "not found" without an
+	// authorization check would let a caller without permission enumerate archived workflow
+	// names from the difference between "not found" and "permission denied".
+	namespace, name := req.Namespace, req.Name
+	if wf != nil {
+		namespace, name = wf.Namespace, wf.Name
 	}
-	allowed, err := auth.CanI(ctx, "get", workflow.WorkflowPlural, wf.Namespace, wf.Name)
+	allowed, err := auth.CanI(ctx, "get", workflow.WorkflowPlural, namespace, name)
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
 	if !allowed {
 		return nil, status.Error(codes.PermissionDenied, "permission denied")
 	}
+	if wf == nil {
+		// no need to call ToStatusError since it is already a status
+		return nil, status.Error(codes.NotFound, "not found")
+	}
 	return wf, nil
 }
 
 func (w *archivedWorkflowServer) DeleteArchivedWorkflow(ctx context.Context, req *workflowarchivepkg.DeleteArchivedWorkflowRequest) (*workflowarchivepkg.ArchivedWorkflowDeletedResponse, error) {
-	wf, err := w.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{Uid: req.Uid})
+	wf, err := w.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{Uid: req.Uid, Namespace: req.Namespace})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
@@ -197,7 +204,7 @@ func (w *archivedWorkflowServer) ListArchivedWorkflowLabelValues(ctx context.Con
 func (w *archivedWorkflowServer) ResubmitArchivedWorkflow(ctx context.Context, req *workflowarchivepkg.ResubmitArchivedWorkflowRequest) (*wfv1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
 
-	wf, err := w.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{Uid: req.Uid})
+	wf, err := w.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{Uid: req.Uid, Namespace: req.Namespace})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
@@ -219,7 +226,7 @@ func (w *archivedWorkflowServer) RetryArchivedWorkflow(ctx context.Context, req 
 	wfClient := auth.GetWfClient(ctx)
 	kubeClient := auth.GetKubeClient(ctx)
 
-	wf, err := w.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{Uid: req.Uid})
+	wf, err := w.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{Uid: req.Uid, Namespace: req.Namespace})
 	if err != nil {
 		return nil, sutils.ToStatusError(err, codes.Internal)
 	}
