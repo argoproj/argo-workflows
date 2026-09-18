@@ -233,7 +233,13 @@ func Test_archivedWorkflowServer(t *testing.T) {
 		allowed = false
 		_, err := w.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{Uid: "my-uid"})
 		assert.Equal(t, err, status.Error(codes.PermissionDenied, "permission denied"))
+		// a caller without permission gets the same answer whether or not the workflow exists
+		repo.On("GetWorkflow", mock.Anything, "", "my-ns", "missing").Return(nil, nil)
+		_, err = w.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{Namespace: "my-ns", Name: "missing"})
+		assert.Equal(t, err, status.Error(codes.PermissionDenied, "permission denied"))
 		allowed = true
+		_, err = w.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{Namespace: "my-ns", Name: "missing"})
+		assert.Equal(t, err, status.Error(codes.NotFound, "not found"))
 		_, err = w.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{})
 		assert.Equal(t, err, status.Error(codes.NotFound, "not found"))
 		wf, err := w.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{Uid: "my-uid"})
@@ -256,6 +262,8 @@ func Test_archivedWorkflowServer(t *testing.T) {
 	t.Run("DeleteArchivedWorkflow", func(t *testing.T) {
 		allowed = false
 		_, err := w.DeleteArchivedWorkflow(ctx, &workflowarchivepkg.DeleteArchivedWorkflowRequest{Uid: "my-uid"})
+		assert.Equal(t, err, status.Error(codes.PermissionDenied, "permission denied"))
+		_, err = w.DeleteArchivedWorkflow(ctx, &workflowarchivepkg.DeleteArchivedWorkflowRequest{Namespace: "my-ns", Name: "missing"})
 		assert.Equal(t, err, status.Error(codes.PermissionDenied, "permission denied"))
 		allowed = true
 		_, err = w.DeleteArchivedWorkflow(ctx, &workflowarchivepkg.DeleteArchivedWorkflowRequest{Uid: "my-uid"})
