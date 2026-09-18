@@ -155,11 +155,13 @@ func downloadObjects(ctx context.Context, client *storage.Client, bucket, key, p
 // download an object from the bucket
 func downloadObject(ctx context.Context, client *storage.Client, bucket, key, objName, path string) error {
 	objPrefix := normalizeGCSKey(filepath.Clean(key))
-	relObjPath := strings.TrimPrefix(objName, objPrefix)
-	localPath := filepath.Join(path, relObjPath)
+	localPath, err := common.LocalPathForObject(path, objPrefix, objName)
+	if err != nil {
+		return err
+	}
 	objectDir, _ := filepath.Split(localPath)
 	if objectDir != "" {
-		if err := os.MkdirAll(objectDir, 0o700); err != nil {
+		if err = os.MkdirAll(objectDir, 0o700); err != nil {
 			return fmt.Errorf("mkdir %s: %w", objectDir, err)
 		}
 	}
