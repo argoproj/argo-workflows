@@ -7726,12 +7726,10 @@ react-markdown@^8.0.7:
     unist-util-visit "^4.0.0"
     vfile "^5.0.0"
 
-react-monaco-editor@^0.50.1:
-  version "0.50.1"
-  resolved "https://registry.yarnpkg.com/react-monaco-editor/-/react-monaco-editor-0.50.1.tgz#3b68ce03e4b316f435b9bcd8ec13ffd4c050c605"
-  integrity sha512-qvYdJhQdkPIrPDMxCrEl0T2x9TfBB+aUbrpFv69FwoTybeyfAjxgJ219MYSsgn3c/g06BgyLX4ENrXM4niZ9ag==
-  dependencies:
-    prop-types "^15.8.1"
+react-monaco-editor@^0.59.0:
+  version "0.59.0"
+  resolved "https://registry.yarnpkg.com/react-monaco-editor/-/react-monaco-editor-0.59.0.tgz#a3cdef4a47fd0cb899f412c9d66b365c51a76096"
+  integrity sha512-SggqfZCdUauNk7GI0388bk5n25zYsQ1ai1i+VhxAgwbCH+MTGl7L1fBNTJ6V+oXeUApf+bpzikprHJEZm9J/zA==
 
 react-onclickoutside@^6.13.0:
   version "6.13.0"
