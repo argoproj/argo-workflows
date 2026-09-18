@@ -6155,6 +6155,11 @@ func (m *S3Bucket) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	i -= len(m.StorageClass)
+	copy(dAtA[i:], m.StorageClass)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.StorageClass)))
+	i--
+	dAtA[i] = 0x72
 	i -= len(m.AddressingStyle)
 	copy(dAtA[i:], m.AddressingStyle)
 	i = encodeVarintGenerated(dAtA, i, uint64(len(m.AddressingStyle)))
@@ -11923,6 +11928,8 @@ func (m *S3Bucket) Size() (n int) {
 	}
 	l = len(m.AddressingStyle)
 	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.StorageClass)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -14717,6 +14724,7 @@ func (this *S3Bucket) String() string {
 		`CASecret:` + strings.Replace(fmt.Sprintf("%v", this.CASecret), "SecretKeySelector", "v1.SecretKeySelector", 1) + `,`,
 		`SessionTokenSecret:` + strings.Replace(fmt.Sprintf("%v", this.SessionTokenSecret), "SecretKeySelector", "v1.SecretKeySelector", 1) + `,`,
 		`AddressingStyle:` + fmt.Sprintf("%v", this.AddressingStyle) + `,`,
+		`StorageClass:` + fmt.Sprintf("%v", this.StorageClass) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -34164,6 +34172,38 @@ func (m *S3Bucket) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.AddressingStyle = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 14:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field StorageClass", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.StorageClass = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
