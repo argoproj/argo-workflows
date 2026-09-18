@@ -30,7 +30,7 @@
           # Keep these aligned with the matching go install targets in the Makefile.
           toolVersions = {
             kubeauto = "0.0.7";
-            mockery = "3.5.1";
+            mockery = "3.8.0";
             controllerTools = "0.18.0";
             codeGenerator = "0.35.1";
             gogoProtobuf = "1.3.2";
@@ -210,9 +210,12 @@
                 owner = "vektra";
                 repo = "mockery";
                 rev = "v${version}";
-                sha256 = "sha256-x7WniZ4wpnuzUHM2ZC2P7Ns67bIp4V4F9f4xQEJONEk=";
+                sha256 = "sha256-T+z1IWpMUJr0729Q7bhHPu2hfxWxqjlUFLx143Ko58g=";
               };
-              vendorHash = "sha256-cNMknwlU7ENwN67CtyU1YgYIXCJbh4b7Z3oUK7kkEkk=";
+              vendorHash = "sha256-lNeRQwoCC3fOhF6uUhPZfccikzuPkRCXf0FkFaL9Gg4=";
+              # nixpkgs' prePatch rewrites Taskfile.yml test targets that no longer exist in v3.8.0;
+              # tests are disabled so the patching is unnecessary.
+              prePatch = "";
               doCheck = false;
             });
 
