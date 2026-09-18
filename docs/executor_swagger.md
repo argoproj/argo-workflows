@@ -219,6 +219,7 @@ It will marshall back to string - marshalling is not symmetric.
 | artifactory | [ArtifactoryArtifact](#artifactory-artifact)| `ArtifactoryArtifact` |  | |  |  |
 | azure | [AzureArtifact](#azure-artifact)| `AzureArtifact` |  | |  |  |
 | deleted | boolean| `bool` |  | | Has this been deleted? |  |
+| description | [AnyString](#any-string)| `AnyString` |  | |  |  |
 | from | string| `string` |  | | From allows an artifact to reference an artifact from a previous step |  |
 | fromExpression | string| `string` |  | | FromExpression, if defined, is evaluated to specify the value for the artifact |  |
 | gcs | [GCSArtifact](#g-c-s-artifact)| `GCSArtifact` |  | |  |  |
@@ -320,6 +321,7 @@ of a single workflow step, which the executor will use as a default location to 
 | artifactory | [ArtifactoryArtifact](#artifactory-artifact)| `ArtifactoryArtifact` |  | |  |  |
 | azure | [AzureArtifact](#azure-artifact)| `AzureArtifact` |  | |  |  |
 | deleted | boolean| `bool` |  | | Has this been deleted? |  |
+| description | [AnyString](#any-string)| `AnyString` |  | |  |  |
 | from | string| `string` |  | | From allows an artifact to reference an artifact from a previous step |  |
 | fromExpression | string| `string` |  | | FromExpression, if defined, is evaluated to specify the value for the artifact |  |
 | gcs | [GCSArtifact](#g-c-s-artifact)| `GCSArtifact` |  | |  |  |
