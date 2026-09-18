@@ -5,7 +5,7 @@ go 1.26.5
 replace github.com/argoproj/argo-workflows/v4 => ../../..
 
 require (
-	github.com/argoproj/argo-workflows/v4 v4.1.3
+	github.com/argoproj/argo-workflows/v4 v4.1.4
 	k8s.io/api v0.35.4
 	k8s.io/apimachinery v0.35.4
 	k8s.io/client-go v0.35.4
@@ -50,7 +50,7 @@ require (
 	golang.org/x/text v0.41.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
 	google.golang.org/genproto v0.0.0-20260519071638-aa98bba5eb94 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20260908043556-f8649ddbbfe6 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20260917231906-eeb232e0883d // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260904194346-d0f1323225a4 // indirect
 	google.golang.org/grpc v1.83.2 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
@@ -58,7 +58,7 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	k8s.io/klog/v2 v2.140.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20260821135717-be32def86098 // indirect
-	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
+	sigs.k8s.io/json v0.0.0-20260909141634-11ed52e25bc5 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v6 v6.4.1 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect
