@@ -3,6 +3,7 @@ package cron
 import (
 	"context"
 	"fmt"
+	"os"
 	"reflect"
 	"time"
 
@@ -112,7 +113,8 @@ func (cc *Controller) Run(ctx context.Context) {
 	cc.cronWfInformer.Informer().SetTransform(informerutil.StripManagedFields)
 	err := cc.addCronWorkflowInformerHandler(ctx)
 	if err != nil {
-		cc.logger.WithFatal().Error(ctx, err.Error())
+		cc.logger.Error(ctx, err.Error())
+		os.Exit(1) //nolint:gocritic // preserves the previous WithFatal behavior, which also skipped defers
 	}
 
 	wfInformer := util.NewWorkflowInformer(ctx, cc.dynamicInterface, cc.managedNamespace, cronWorkflowResyncPeriod,
