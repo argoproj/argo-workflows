@@ -798,10 +798,15 @@ func (sm *Manager) ReleaseAll(ctx context.Context, wf *wfv1.Workflow) bool {
 
 	for _, node := range wf.Status.Nodes {
 		if node.SynchronizationStatus != nil && node.SynchronizationStatus.Waiting != "" {
-			lock, ok := sm.syncLockMap[node.SynchronizationStatus.Waiting]
-			if ok {
-				if err := lock.removeFromQueue(ctx, getHolderKey(wf, node.ID)); err != nil {
-					sm.log.WithField("key", getHolderKey(wf, node.ID)).WithError(err).Warn(ctx, "Error removing from queue")
+			// NodeSynchronizationStatus.Waiting only ever records the first lock that
+			// failed to acquire, but a template can declare several locks (e.g. a
+			// semaphore and a mutex) and the node may have been enqueued on all of
+			// them. Sweep every known lock so none of them leak a wait-queue entry
+			// for this node.
+			holderKey := getHolderKey(wf, node.ID)
+			for _, lock := range sm.syncLockMap {
+				if err := lock.removeFromQueue(ctx, holderKey); err != nil {
+					sm.log.WithField("key", holderKey).WithError(err).Warn(ctx, "Error removing from queue")
 				}
 			}
 			node.SynchronizationStatus = nil
