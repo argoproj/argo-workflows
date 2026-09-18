@@ -135,6 +135,7 @@ data:
 | `ARGO_PPROF`                               | `bool`   | `false` | Enable [`pprof`](https://go.dev/blog/pprof) endpoints
 | `ARGO_SERVER_MAX_ARTIFACT_UPLOAD_BYTES`    | `int`    | `1073741824` | Maximum total request body size accepted by the input artifact upload endpoint, in bytes. Requests over this size receive `413 Request Entity Too Large`.  |
 | `ARGO_SERVER_METRICS_AUTH`                 | `bool`   | `true`  | Enable auth on the `/metrics` endpoint
+| `ARGO_SERVER_TOKEN_REVIEW_CACHE_TTL`       | `time.Duration` | `1m` | How long a successful `SelfSubjectReview` of a `client` auth mode token is remembered before the API server is consulted again. `0` disables the cache. |
 | `CI_ONLY_DISABLE_ARTIFACT_SERVER_CHECKS`   | `bool`   | `false` | Disable validation checks for artifact plugin sidecars. For CI/testing use only.                                        |
 | `DISABLE_VALUE_LIST_RETRIEVAL_KEY_PATTERN` | `string` | `""`    | Disable the retrieval of the list of label values for keys based on this regular expression.                            |
 | `FIRST_TIME_USER_MODAL`                    | `bool`   | `true`  | Show this modal.                                                                                                        |
