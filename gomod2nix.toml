@@ -878,8 +878,8 @@ schema = 3
     version = "v1.44.0"
     hash = "sha256-8O6Yzt4wWuSWXDYujDBBA/eDZ2IltRtWFNLqE05A+4U="
   [mod."go.opentelemetry.io/otel/exporters/otlp/otlptrace"]
-    version = "v1.44.0"
-    hash = "sha256-hqgoY2kWcu58Vdq+DrBZCT0g5bs/cnVLCcwYYWfinu4="
+    version = "v1.45.0"
+    hash = "sha256-+q9AqsCDxlrXTmELo5IJwR5yNiHzCk/dk7mtxxmqCf8="
   [mod."go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"]
     version = "v1.44.0"
     hash = "sha256-hQeEeRqWCiMr2m1GHWlIOSbA6YTHgW6EW+M3e26lDn0="
@@ -902,8 +902,8 @@ schema = 3
     version = "v1.45.0"
     hash = "sha256-LKrsYVdfPEzxXPEFSapjGIiw2e1C4Yq5HXtoYrN4FIY="
   [mod."go.opentelemetry.io/proto/otlp"]
-    version = "v1.10.0"
-    hash = "sha256-IEnbR38ucFLTcuC2FA+gRvZNq2loUqXgDskSqP3+LUM="
+    version = "v1.11.0"
+    hash = "sha256-jBcVUiab9mWgLmPsrCYK7sC2j15AJ47QJM4prnqGGkE="
   [mod."go.uber.org/mock"]
     version = "v0.6.0"
     hash = "sha256-m11cxIbrvOowa6xj11AztzfFk86DwR6SNO1lStcKzvo="
