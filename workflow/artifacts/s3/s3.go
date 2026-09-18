@@ -792,14 +792,18 @@ func (s *s3client) Delete(bucket, key string) error {
 // GetDirectory downloads a s3 directory to a local path
 func (s *s3client) GetDirectory(bucket, keyPrefix, path string) error {
 	logging.RequireLoggerFromContext(s.ctx).WithFields(logging.Fields{"endpoint": s.Endpoint, "bucket": bucket, "key": keyPrefix, "path": path}).Info(s.ctx, "Getting directory from s3")
+	// trim the same prefix that ListDirectory lists under, so the remainder is relative to it
+	keyPrefix = keyPrefixForListing(keyPrefix)
 	keys, err := s.ListDirectory(bucket, keyPrefix)
 	if err != nil {
 		return err
 	}
 
 	for _, objKey := range keys {
-		relKeyPath := strings.TrimPrefix(objKey, keyPrefix)
-		localPath := filepath.Join(path, relKeyPath)
+		localPath, err := artifactscommon.LocalPathForObject(path, keyPrefix, objKey)
+		if err != nil {
+			return err
+		}
 
 		encOpts, err := s.EncryptOpts.buildServerSideEnc(bucket, objKey)
 		if err != nil {
@@ -814,18 +818,24 @@ func (s *s3client) GetDirectory(bucket, keyPrefix, path string) error {
 	return nil
 }
 
-// IsDirectory tests if the key is acting like a s3 directory. This just means it has at least one
-// object which is prefixed with the given key
-func (s *s3client) IsDirectory(bucket, keyPrefix string) (bool, error) {
-	doneCh := make(chan struct{})
-	defer close(doneCh)
-
+// keyPrefixForListing normalizes a key prefix to the form used to list the objects under it
+func keyPrefixForListing(keyPrefix string) string {
 	if keyPrefix != "" {
 		keyPrefix = filepath.Clean(keyPrefix) + "/"
 		if os.PathSeparator == '\\' {
 			keyPrefix = strings.ReplaceAll(keyPrefix, "\\", "/")
 		}
 	}
+	return keyPrefix
+}
+
+// IsDirectory tests if the key is acting like a s3 directory. This just means it has at least one
+// object which is prefixed with the given key
+func (s *s3client) IsDirectory(bucket, keyPrefix string) (bool, error) {
+	doneCh := make(chan struct{})
+	defer close(doneCh)
+
+	keyPrefix = keyPrefixForListing(keyPrefix)
 
 	listOpts := minio.ListObjectsOptions{
 		Prefix:    keyPrefix,
@@ -844,12 +854,7 @@ func (s *s3client) IsDirectory(bucket, keyPrefix string) (bool, error) {
 func (s *s3client) ListDirectory(bucket, keyPrefix string) ([]string, error) {
 	logging.RequireLoggerFromContext(s.ctx).WithFields(logging.Fields{"endpoint": s.Endpoint, "bucket": bucket, "key": keyPrefix}).Info(s.ctx, "Listing directory from s3")
 
-	if keyPrefix != "" {
-		keyPrefix = filepath.Clean(keyPrefix) + "/"
-		if os.PathSeparator == '\\' {
-			keyPrefix = strings.ReplaceAll(keyPrefix, "\\", "/")
-		}
-	}
+	keyPrefix = keyPrefixForListing(keyPrefix)
 
 	doneCh := make(chan struct{})
 	defer close(doneCh)
