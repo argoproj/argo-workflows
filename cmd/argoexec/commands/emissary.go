@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"go.opentelemetry.io/contrib/propagators/envcar"
 	"go.opentelemetry.io/otel/propagation"
 	"k8s.io/client-go/util/retry"
 
@@ -34,13 +35,34 @@ import (
 // varRunArgo is a var, not a const, so tests can point it at a temp dir.
 var varRunArgo = common.VarRunArgoPath
 
-func injectTraceParent(ctx context.Context) {
-	carrier := propagation.MapCarrier{}
+// injectTraceParent returns env with the W3C trace context of ctx set,
+// replacing any value inherited from the pod spec. The controller injects a
+// TRACEPARENT naming the pod-level span; the user command should instead see
+// the main-container span started here as its parent.
+//
+// This only rewrites the environment handed to the child. argoexec does not
+// touch its own context variables, which the OpenTelemetry environment carrier
+// specification asks to be treated as immutable process-startup input.
+func injectTraceParent(ctx context.Context, env []string) []string {
+	carrier := &envcar.Carrier{SetEnvFunc: func(key, value string) {
+		env = setEnvVar(env, key, value)
+	}}
 	propagation.TraceContext{}.Inject(ctx, carrier)
+	return env
+}
 
-	for k, v := range carrier {
-		os.Setenv(strings.ToUpper(k), v)
+// setEnvVar replaces the value of key in env, or appends the pair if key is
+// absent. env is in the "KEY=value" form of os.Environ, and is modified in
+// place.
+func setEnvVar(env []string, key, value string) []string {
+	prefix := key + "="
+	for i, kv := range env {
+		if strings.HasPrefix(kv, prefix) {
+			env[i] = prefix + value
+			return env
+		}
 	}
+	return append(env, prefix+value)
 }
 
 func NewEmissaryCommand() *cobra.Command {
@@ -94,7 +116,6 @@ func runEmissary(ctx context.Context, containerName string, includeScriptOutput 
 	namespace, _ := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
 	ctx, span := tracer.StartRunMainContainer(ctx, workflowName, string(namespace))
 	defer span.End()
-	injectTraceParent(ctx)
 
 	osspecific.AllowGrantingAccessToEveryone()
 
@@ -685,7 +706,7 @@ func startCommand(ctx context.Context, name string, args []string, template *wfv
 	logger := logging.RequireLoggerFromContext(ctx)
 
 	command := exec.CommandContext(ctx, name, args...)
-	command.Env = os.Environ()
+	command.Env = injectTraceParent(ctx, os.Environ())
 
 	var closer = func() {}
 	var stdout io.Writer = os.Stdout
