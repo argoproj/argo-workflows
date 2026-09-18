@@ -9205,10 +9205,10 @@ typedarray-to-buffer@^3.1.5:
   dependencies:
     is-typedarray "^1.0.0"
 
-types-ramda@0.29.4:
-  version "0.29.4"
-  resolved "https://registry.yarnpkg.com/types-ramda/-/types-ramda-0.29.4.tgz#8d9b51df2e550a05cedab541cc75dcd72972c625"
-  integrity sha512-XO/820iRsCDwqLjE8XE+b57cVGPyk1h+U9lBGpDWvbEky+NQChvHVwaKM05WnW1c5z3EVQh8NhXFmh2E/1YazQ==
+types-ramda@0.32.0:
+  version "0.32.0"
+  resolved "https://registry.yarnpkg.com/types-ramda/-/types-ramda-0.32.0.tgz#ea4ca5f9e0753f1f0ee20f72cb294a4db2d3db0a"
+  integrity sha512-iZtriSUdsDqOlip/wUaDNcoiskbVf5RdcqLNpQdUcOM1JKFClochCvPZCDjn/cc9HzoBzi4DEB4iPr1PbrhN1w==
   dependencies:
     ts-toolbelt "^9.6.0"
 
