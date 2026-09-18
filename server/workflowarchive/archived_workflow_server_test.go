@@ -38,9 +38,16 @@ func Test_archivedWorkflowServer(t *testing.T) {
 	offloadNodeStatusRepo.On("List", mock.Anything).Return(map[sqldb.UUIDVersion]v1alpha1.Nodes{}, nil)
 	w := NewWorkflowArchiveServer(repo, offloadNodeStatusRepo, nil)
 	allowed := true
+	// when set, only access reviews for this namespace are allowed, whatever allowed says
+	allowedNamespace := ""
 	kubeClient.AddReactor("create", "selfsubjectaccessreviews", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+		ok := allowed
+		if allowedNamespace != "" {
+			sar := action.(k8stesting.CreateAction).GetObject().(*authorizationv1.SelfSubjectAccessReview)
+			ok = sar.Spec.ResourceAttributes != nil && sar.Spec.ResourceAttributes.Namespace == allowedNamespace
+		}
 		return true, &authorizationv1.SelfSubjectAccessReview{
-			Status: authorizationv1.SubjectAccessReviewStatus{Allowed: allowed},
+			Status: authorizationv1.SubjectAccessReviewStatus{Allowed: ok},
 		}, nil
 	})
 	kubeClient.AddReactor("create", "selfsubjectrulesreviews", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
@@ -211,6 +218,16 @@ func Test_archivedWorkflowServer(t *testing.T) {
 		require.NoError(t, err)
 		assert.Len(t, resp.Items, 1)
 		assert.Equal(t, "1", resp.Continue)
+	})
+	t.Run("ListArchivedWorkflowsNamespaceNotEquals", func(t *testing.T) {
+		// a caller allowed only in user-ns must not read every other namespace by negating it
+		allowedNamespace = "user-ns"
+		defer func() { allowedNamespace = "" }()
+		_, err := w.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{ListOptions: &metav1.ListOptions{Limit: 1, FieldSelector: "metadata.namespace!=user-ns"}})
+		assert.Equal(t, err, status.Error(codes.PermissionDenied, "Permission denied, you are not allowed to list workflows in namespace \"\". Maybe you want to specify a namespace with query parameter `.namespace=`?"))
+		resp, err := w.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{ListOptions: &metav1.ListOptions{Limit: 1, FieldSelector: "metadata.namespace=user-ns"}})
+		require.NoError(t, err)
+		assert.Len(t, resp.Items, 1)
 	})
 	t.Run("GetArchivedWorkflow", func(t *testing.T) {
 		allowed = false
