@@ -1015,6 +1015,9 @@ spec:
                               - key
                               type: object
                               x-kubernetes-map-type: atomic
+                            tokenExpirationInMinutes:
+                              format: int32
+                              type: integer
                             useSDKCreds:
                               type: boolean
                           type: object
@@ -3103,6 +3106,9 @@ spec:
                                               - key
                                               type: object
                                               x-kubernetes-map-type: atomic
+                                            tokenExpirationInMinutes:
+                                              format: int32
+                                              type: integer
                                             useSDKCreds:
                                               type: boolean
                                           type: object
@@ -3770,6 +3776,9 @@ spec:
                                                     - key
                                                     type: object
                                                     x-kubernetes-map-type: atomic
+                                                  tokenExpirationInMinutes:
+                                                    format: int32
+                                                    type: integer
                                                   useSDKCreds:
                                                     type: boolean
                                                 type: object
@@ -4491,6 +4500,9 @@ spec:
                                       - key
                                       type: object
                                       x-kubernetes-map-type: atomic
+                                    tokenExpirationInMinutes:
+                                      format: int32
+                                      type: integer
                                     useSDKCreds:
                                       type: boolean
                                   type: object
@@ -5895,6 +5907,9 @@ spec:
                                     - key
                                     type: object
                                     x-kubernetes-map-type: atomic
+                                  tokenExpirationInMinutes:
+                                    format: int32
+                                    type: integer
                                   useSDKCreds:
                                     type: boolean
                                 type: object
@@ -6663,6 +6678,9 @@ spec:
                                     - key
                                     type: object
                                     x-kubernetes-map-type: atomic
+                                  tokenExpirationInMinutes:
+                                    format: int32
+                                    type: integer
                                   useSDKCreds:
                                     type: boolean
                                 type: object
@@ -7382,6 +7400,9 @@ spec:
                                       - key
                                       type: object
                                       x-kubernetes-map-type: atomic
+                                    tokenExpirationInMinutes:
+                                      format: int32
+                                      type: integer
                                     useSDKCreds:
                                       type: boolean
                                   type: object
@@ -9577,6 +9598,9 @@ spec:
                                                 - key
                                                 type: object
                                                 x-kubernetes-map-type: atomic
+                                              tokenExpirationInMinutes:
+                                                format: int32
+                                                type: integer
                                               useSDKCreds:
                                                 type: boolean
                                             type: object
@@ -10238,6 +10262,9 @@ spec:
                                                       - key
                                                       type: object
                                                       x-kubernetes-map-type: atomic
+                                                    tokenExpirationInMinutes:
+                                                      format: int32
+                                                      type: integer
                                                     useSDKCreds:
                                                       type: boolean
                                                   type: object
@@ -12371,6 +12398,12 @@ spec:
                                     - key
                                     type: object
                                     x-kubernetes-map-type: atomic
+                                  tokenExpirationInMinutes:
+                                    description: TokenExpirationInMinutes specifies
+                                      the expiration time for the obtained token when
+                                      it is possible to use it
+                                    format: int32
+                                    type: integer
                                   useSDKCreds:
                                     description: UseSDKCreds tells the driver to figure
                                       out credentials based on sdk defaults.

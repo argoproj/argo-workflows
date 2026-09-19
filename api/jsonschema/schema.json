@@ -6816,6 +6816,10 @@
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
           "description": "SessionTokenSecret is used for ephemeral credentials like an IAM assume role or S3 access grant"
         },
+        "tokenExpirationInMinutes": {
+          "description": "TokenExpirationInMinutes specifies the expiration time for the obtained token when it is possible to use it",
+          "type": "integer"
+        },
         "useSDKCreds": {
           "description": "UseSDKCreds tells the driver to figure out credentials based on sdk defaults.",
           "type": "boolean"
@@ -6880,6 +6884,10 @@
         "sessionTokenSecret": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
           "description": "SessionTokenSecret is used for ephemeral credentials like an IAM assume role or S3 access grant"
+        },
+        "tokenExpirationInMinutes": {
+          "description": "TokenExpirationInMinutes specifies the expiration time for the obtained token when it is possible to use it",
+          "type": "integer"
         },
         "useSDKCreds": {
           "description": "UseSDKCreds tells the driver to figure out credentials based on sdk defaults.",
