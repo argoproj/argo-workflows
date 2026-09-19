@@ -8,6 +8,7 @@ import {Event, isWorkflowInCluster, LogEntry, NodeStatus, Workflow, WorkflowList
 import {ResubmitOpts, RetryOpts} from '../models';
 import {SubmitOpts} from '../models/submit-opts';
 import {Pagination} from '../pagination';
+import {getMainContainerNames} from '../template-resolution';
 import requests from './requests';
 import {WorkflowDeleteResponse} from './responses';
 import {queryParams} from './utils';
@@ -22,7 +23,7 @@ function isNodePendingOrRunning(node: NodeStatus) {
 
 function hasArtifactLogs(workflow: Workflow, nodeId: string, container: string) {
     const node = workflow.status.nodes[nodeId];
-    return node?.outputs?.artifacts?.some(a => a.name === `${container}-logs`);
+    return !!node && getMainContainerNames(workflow, node).includes(container) && node.outputs?.artifacts?.some(a => a.name === `${container}-logs`);
 }
 
 export const WorkflowsService = {
@@ -210,8 +211,8 @@ export const WorkflowsService = {
                 // that the connection to the server was interrupted while the node is still pending or running, this is not
                 // correct since we actually want the EventSource to re-connect and continue streaming logs.  In the event
                 // that the pod has completed, then we want to allow the unsubscribe to happen since no additional logs exist.
-                return from(this.isWorkflowNodePendingOrRunning(workflow, podName)).pipe(
-                    switchMap(isPendingOrRunning => {
+                return from(this.getWorkflowNodePendingOrRunning(workflow, podName)).pipe(
+                    switchMap(({isPendingOrRunning}) => {
                         if (isPendingOrRunning) {
                             return this.getContainerLogsFromCluster(workflow, podName, container, grep);
                         }
@@ -225,15 +226,15 @@ export const WorkflowsService = {
         );
     },
 
-    async isWorkflowNodePendingOrRunning(workflow: Workflow, nodeId?: string) {
+    async getWorkflowNodePendingOrRunning(workflow: Workflow, nodeId?: string) {
         // We always refresh the workflow rather than inspecting the state locally since it doubles
         // as a check to determine whether or not the API is currently reachable
         const updatedWorkflow = await this.get(workflow.metadata.namespace, workflow.metadata.name);
         const node = updatedWorkflow.status.nodes[nodeId];
         if (!node) {
-            return !updatedWorkflow.status || ['Pending', 'Running'].includes(updatedWorkflow.status.phase);
+            return {workflow: updatedWorkflow, isPendingOrRunning: !updatedWorkflow.status || ['Pending', 'Running'].includes(updatedWorkflow.status.phase)};
         }
-        return isNodePendingOrRunning(node);
+        return {workflow: updatedWorkflow, isPendingOrRunning: isNodePendingOrRunning(node)};
     },
 
     getContainerLogsFromArtifact(workflow: Workflow, nodeId: string, container: string, grep: string, archived: boolean): Observable<LogEntry> {
@@ -255,7 +256,7 @@ export const WorkflowsService = {
     },
 
     getContainerLogs(workflow: Workflow, podName: string, nodeId: string, container: string, grep: string, archived: boolean): Observable<LogEntry> {
-        const getLogsFromArtifact = () => this.getContainerLogsFromArtifact(workflow, nodeId, container, grep, archived);
+        const getLogsFromArtifact = (targetWorkflow = workflow) => this.getContainerLogsFromArtifact(targetWorkflow, nodeId, container, grep, archived);
         const getLogsFromCluster = () => this.getContainerLogsFromCluster(workflow, podName, container, grep);
 
         // If our workflow was deleted, try to get logs from artifacts.
@@ -263,13 +264,13 @@ export const WorkflowsService = {
             return getLogsFromArtifact();
         }
 
-        // return archived log if main container is finished and has artifact
-        return from(this.isWorkflowNodePendingOrRunning(workflow, nodeId)).pipe(
-            switchMap(isPendingOrRunning => {
-                if (!isPendingOrRunning && hasArtifactLogs(workflow, nodeId, container) && container === 'main') {
-                    return getLogsFromArtifact().pipe(catchError(getLogsFromCluster));
+        // Return archived logs when the container is finished and has an artifact.
+        return from(this.getWorkflowNodePendingOrRunning(workflow, nodeId)).pipe(
+            switchMap(({workflow: updatedWorkflow, isPendingOrRunning}) => {
+                if (!isPendingOrRunning && hasArtifactLogs(updatedWorkflow, nodeId, container)) {
+                    return getLogsFromArtifact(updatedWorkflow).pipe(catchError(getLogsFromCluster));
                 }
-                return getLogsFromCluster().pipe(catchError(getLogsFromArtifact));
+                return getLogsFromCluster().pipe(catchError(() => getLogsFromArtifact(updatedWorkflow)));
             })
         );
     },
