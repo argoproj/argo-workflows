@@ -115,14 +115,21 @@ func TaskConfigFromEnv(varRunArgo string) executor.TaskConfig {
 	deadline, err := time.Parse(time.RFC3339, os.Getenv(common.EnvVarDeadline))
 	CheckErr(err)
 
+	raw := common.SplitPluginNames(os.Getenv(common.EnvVarInputArtifactPluginNames))
+	inputPlugins := make([]wfv1.ArtifactPluginName, 0, len(raw))
+	for _, p := range raw {
+		inputPlugins = append(inputPlugins, wfv1.ArtifactPluginName(p))
+	}
+
 	return executor.TaskConfig{
-		WorkflowName:        os.Getenv(common.EnvVarWorkflowName),
-		WorkflowUID:         types.UID(os.Getenv(common.EnvVarWorkflowUID)),
-		NodeID:              os.Getenv(common.EnvVarNodeID),
-		Template:            *tmpl,
-		IncludeScriptOutput: os.Getenv(common.EnvVarIncludeScriptOutput) == "true",
-		Deadline:            deadline,
-		ProgressFile:        os.Getenv(common.EnvVarProgressFile),
+		WorkflowName:             os.Getenv(common.EnvVarWorkflowName),
+		WorkflowUID:              types.UID(os.Getenv(common.EnvVarWorkflowUID)),
+		NodeID:                   os.Getenv(common.EnvVarNodeID),
+		Template:                 *tmpl,
+		IncludeScriptOutput:      os.Getenv(common.EnvVarIncludeScriptOutput) == "true",
+		Deadline:                 deadline,
+		ProgressFile:             os.Getenv(common.EnvVarProgressFile),
+		InputArtifactPluginNames: inputPlugins,
 	}
 }
 
