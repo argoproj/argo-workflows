@@ -127,6 +127,10 @@ type WorkflowController struct {
 	// woc.executeTemplate and decreased when such calls return. This is used to prevent infinite recursion
 	maxStackDepth int
 
+	// artifactGCRetryWindow is how long after a workflow completes (or is deleted) a failed attempt to start
+	// artifact GC keeps being retried before it is abandoned (ARGO_ARTIFACT_GC_RETRY_WINDOW)
+	artifactGCRetryWindow time.Duration
+
 	// datastructures to support the processing of workflows and workflow pods
 	wfInformer      cache.SharedIndexInformer
 	nsInformer      cache.SharedIndexInformer
@@ -233,6 +237,7 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		eventRecorderManager:       events.NewEventRecorderManager(kubeclientset),
 		progressPatchTickDuration:  env.LookupEnvDurationOr(ctx, common.EnvVarProgressPatchTickDuration, 1*time.Minute),
 		progressFileTickDuration:   env.LookupEnvDurationOr(ctx, common.EnvVarProgressFileTickDuration, 3*time.Second),
+		artifactGCRetryWindow:      env.LookupEnvDurationOr(ctx, "ARGO_ARTIFACT_GC_RETRY_WINDOW", 60*time.Minute),
 		lastWrittenVersions: lastWrittenVersions{
 			versions: make(map[types.UID]lastWrittenVersion),
 			mutex:    gosync.RWMutex{},
