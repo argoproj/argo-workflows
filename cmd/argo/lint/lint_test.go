@@ -348,3 +348,247 @@ func TestGetObjectName(t *testing.T) {
 		})
 	}
 }
+
+// TestLintDirectoryWithInvalidFile verifies that when linting a directory containing
+// many files, a file with a YAML error is reported by name instead of the whole
+// directory passing with "no linting errors found!" (#9550).
+func TestLintDirectoryWithInvalidFile(t *testing.T) {
+	dir := t.TempDir()
+	valid := `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: good-
+spec:
+  entrypoint: hello
+  templates:
+  - name: hello
+    container:
+      image: busybox
+      command: [cowsay]
+`
+	invalid := `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: bad-
+spec:
+  entrypoint: hello
+  templates:
+  - name: hello
+    steps:
+    - - name: oops
+  templates:
+  - name: hello
+    container:
+      image: busybox
+`
+	require.NoError(t, os.WriteFile(dir+"/good.yaml", []byte(valid), 0o600))
+	require.NoError(t, os.WriteFile(dir+"/bad.yaml", []byte(invalid), 0o600))
+
+	wfMock := &workflowmocks.WorkflowServiceClient{}
+	wfMock.On("LintWorkflow", mock.Anything, mock.Anything).Return(nil, nil)
+
+	ctx := logging.TestContext(t.Context())
+	res, err := Lint(ctx, &Options{
+		Files:          []string{dir},
+		Strict:         true, // CLI default
+		ServiceClients: ServiceClients{WorkflowsClient: wfMock},
+		Formatter:      formatterSimple{},
+	})
+	require.NoError(t, err)
+	assert.False(t, res.Success, "lint must fail when one file has a YAML error")
+	assert.Contains(t, res.Msg(), "bad.yaml", "the error must name the offending file")
+	assert.Contains(t, res.Msg(), `key "templates" already set in map`)
+	assert.Contains(t, res.Msg(), `in "bad-" (Workflow)`, "the object name must be reported when available")
+}
+
+// TestLintFileWithUnparseableYAML verifies that a file which is not valid YAML at all
+// fails the lint with the file name, instead of being skipped silently (#9550).
+func TestLintFileWithUnparseableYAML(t *testing.T) {
+	dir := t.TempDir()
+	broken := `foo: [
+`
+	require.NoError(t, os.WriteFile(dir+"/broken.yaml", []byte(broken), 0o600))
+
+	wfMock := &workflowmocks.WorkflowServiceClient{}
+
+	ctx := logging.TestContext(t.Context())
+	res, err := Lint(ctx, &Options{
+		Files:          []string{dir},
+		Strict:         true, // CLI default
+		ServiceClients: ServiceClients{WorkflowsClient: wfMock},
+		Formatter:      formatterSimple{},
+	})
+	require.NoError(t, err)
+	assert.False(t, res.Success, "lint must fail when a file is not valid YAML")
+	assert.Contains(t, res.Msg(), "broken.yaml", "the error must name the offending file")
+	assert.Contains(t, res.Msg(), "did not find expected node content")
+}
+
+// TestLintUnknownKindWithDuplicateKey verifies that a strict-invalid document whose
+// kind is NOT an Argo kind (e.g. a ConfigMap with duplicate keys) fails the lint
+// instead of being skipped as an unknown object (#9550, CodeRabbit review).
+func TestLintUnknownKindWithDuplicateKey(t *testing.T) {
+	dir := t.TempDir()
+	dupKeyConfigMap := `apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dup
+data:
+  key: value
+  key: duplicated
+`
+	require.NoError(t, os.WriteFile(dir+"/dupcm.yaml", []byte(dupKeyConfigMap), 0o600))
+
+	wfMock := &workflowmocks.WorkflowServiceClient{}
+
+	ctx := logging.TestContext(t.Context())
+	res, err := Lint(ctx, &Options{
+		Files:          []string{dir},
+		Strict:         true, // CLI default
+		ServiceClients: ServiceClients{WorkflowsClient: wfMock},
+		Formatter:      formatterSimple{},
+	})
+	require.NoError(t, err)
+	assert.False(t, res.Success, "lint must fail when a non-argo file has a YAML error")
+	assert.Contains(t, res.Msg(), "dupcm.yaml", "the error must name the offending file")
+	assert.Contains(t, res.Msg(), `key "key" already set in map`)
+}
+
+// TestLintKindNotRequestedWithDuplicateKey verifies that a strict-invalid document of a
+// known Argo kind is still reported when that kind's client is not initialized, i.e. when
+// the kind was not requested through --kinds. The document is broken whichever kinds are
+// being linted, so the preserved parse error must not be dropped (#9550, CodeRabbit review).
+func TestLintKindNotRequestedWithDuplicateKey(t *testing.T) {
+	dir := t.TempDir()
+	validWf := `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: good-
+spec:
+  entrypoint: hello
+  templates:
+  - name: hello
+    container:
+      image: busybox
+`
+	dupKeyCron := `apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: bad-cron
+spec:
+  schedules:
+  - "* * * * *"
+  workflowSpec:
+    entrypoint: hello
+    templates:
+    - name: hello
+      container:
+        image: busybox
+  schedules:
+  - "0 * * * *"
+`
+	require.NoError(t, os.WriteFile(dir+"/good.yaml", []byte(validWf), 0o600))
+	require.NoError(t, os.WriteFile(dir+"/badcron.yaml", []byte(dupKeyCron), 0o600))
+
+	wfMock := &workflowmocks.WorkflowServiceClient{}
+	wfMock.On("LintWorkflow", mock.Anything, mock.Anything).Return(nil, nil)
+
+	ctx := logging.TestContext(t.Context())
+	// only the Workflow client is set, as `argo lint --kinds=workflows` would do
+	res, err := Lint(ctx, &Options{
+		Files:          []string{dir},
+		Strict:         true, // CLI default
+		ServiceClients: ServiceClients{WorkflowsClient: wfMock},
+		Formatter:      formatterSimple{},
+	})
+	require.NoError(t, err)
+	assert.False(t, res.Success, "lint must fail when a file of a non-requested kind has a YAML error")
+	assert.Contains(t, res.Msg(), "badcron.yaml", "the error must name the offending file")
+	assert.Contains(t, res.Msg(), `in "bad-cron" (CronWorkflow)`, "the object name must be reported")
+	assert.Contains(t, res.Msg(), `key "schedules" already set in map`)
+	wfMock.AssertNumberOfCalls(t, "LintWorkflow", 1)
+}
+
+// TestLintKindNotRequestedStaysIgnored verifies the counterpart of the case above: a valid
+// document whose kind was not requested is still ignored, so reporting parse errors does
+// not turn --kinds into a no-op.
+func TestLintKindNotRequestedStaysIgnored(t *testing.T) {
+	dir := t.TempDir()
+	validWf := `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: good-
+spec:
+  entrypoint: hello
+  templates:
+  - name: hello
+    container:
+      image: busybox
+`
+	validCron := `apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: good-cron
+spec:
+  schedules:
+  - "* * * * *"
+  workflowSpec:
+    entrypoint: hello
+    templates:
+    - name: hello
+      container:
+        image: busybox
+`
+	require.NoError(t, os.WriteFile(dir+"/good.yaml", []byte(validWf), 0o600))
+	require.NoError(t, os.WriteFile(dir+"/goodcron.yaml", []byte(validCron), 0o600))
+
+	wfMock := &workflowmocks.WorkflowServiceClient{}
+	wfMock.On("LintWorkflow", mock.Anything, mock.Anything).Return(nil, nil)
+
+	ctx := logging.TestContext(t.Context())
+	res, err := Lint(ctx, &Options{
+		Files:          []string{dir},
+		Strict:         true, // CLI default
+		ServiceClients: ServiceClients{WorkflowsClient: wfMock},
+		Formatter:      formatterSimple{},
+	})
+	require.NoError(t, err)
+	assert.True(t, res.Success, "a valid object of a non-requested kind must stay ignored")
+	assert.NotContains(t, res.Msg(), "goodcron.yaml")
+	wfMock.AssertNumberOfCalls(t, "LintWorkflow", 1)
+}
+
+// TestLintWorkflowEventBindingWithDuplicateKey verifies that a strict-invalid
+// WorkflowEventBinding is reported, even though there is no lint endpoint for that kind.
+func TestLintWorkflowEventBindingWithDuplicateKey(t *testing.T) {
+	dir := t.TempDir()
+	dupKeyWeb := `apiVersion: argoproj.io/v1alpha1
+kind: WorkflowEventBinding
+metadata:
+  name: bad-binding
+spec:
+  event:
+    selector: payload.message != ""
+  submit:
+    workflowTemplateRef:
+      name: my-wf-tmpl
+  event:
+    selector: "true"
+`
+	require.NoError(t, os.WriteFile(dir+"/badweb.yaml", []byte(dupKeyWeb), 0o600))
+
+	wfMock := &workflowmocks.WorkflowServiceClient{}
+
+	ctx := logging.TestContext(t.Context())
+	res, err := Lint(ctx, &Options{
+		Files:          []string{dir},
+		Strict:         true, // CLI default
+		ServiceClients: ServiceClients{WorkflowsClient: wfMock},
+		Formatter:      formatterSimple{},
+	})
+	require.NoError(t, err)
+	assert.False(t, res.Success, "lint must fail when a WorkflowEventBinding has a YAML error")
+	assert.Contains(t, res.Msg(), "badweb.yaml", "the error must name the offending file")
+	assert.Contains(t, res.Msg(), `in "bad-binding" (WorkflowEventBinding)`)
+	assert.Contains(t, res.Msg(), `key "event" already set in map`)
+}
