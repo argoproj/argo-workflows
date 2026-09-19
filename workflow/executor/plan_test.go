@@ -3,6 +3,7 @@ package executor
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -129,8 +130,8 @@ func TestPostMain_RecordsErrorsAndContinues(t *testing.T) {
 	assert.Len(t, we.errors, 2)
 }
 
-func TestPlanFor_ContainerTemplate(t *testing.T) {
-	plan := planFor(&wfv1.Template{Container: &apiv1.Container{}}, []wfv1.ArtifactPluginName{"s3", "gcs"})
+func TestPlanFor_InitlessLayout(t *testing.T) {
+	plan := planFor(&wfv1.Template{Container: &apiv1.Container{}}, true, []wfv1.ArtifactPluginName{"s3", "gcs"})
 
 	assert.Equal(t, []string{
 		"write-template",
@@ -141,14 +142,26 @@ func TestPlanFor_ContainerTemplate(t *testing.T) {
 	assert.Equal(t, []string{"capture-script-result", "save-parameters", "save-artifacts", "save-logs", "report-outputs"}, stageNames(plan.Collect))
 }
 
-func TestPlanFor_NoPlugins(t *testing.T) {
-	plan := planFor(&wfv1.Template{Container: &apiv1.Container{}}, nil)
+func TestPlanFor_InitlessNoPlugins(t *testing.T) {
+	plan := planFor(&wfv1.Template{Container: &apiv1.Container{}}, true, nil)
 	assert.Equal(t, "parallel(load-artifacts)", plan.Prepare[2].Name)
 }
 
+// The legacy layout installs the binary and never loads plugin artifacts in
+// this container: each plugin has its own artifact-plugin-init container.
+func TestPlanFor_LegacyLayout(t *testing.T) {
+	plan := planFor(&wfv1.Template{Container: &apiv1.Container{}}, false, []wfv1.ArtifactPluginName{"s3"})
+
+	assert.Equal(t, []string{"install-argoexec", "stage-files", "load-artifacts"}, stageNames(plan.Prepare))
+	assert.Equal(t, []string{"initialize-output", "wait"}, stageNames(plan.Run))
+	assert.Equal(t, []string{"capture-script-result", "save-parameters", "save-artifacts", "save-logs", "report-outputs"}, stageNames(plan.Collect))
+}
+
 func TestPlanFor_ResourceTemplateCollectsLogsOnly(t *testing.T) {
-	plan := planFor(&wfv1.Template{Resource: &wfv1.ResourceTemplate{Action: "get"}}, nil)
-	assert.Equal(t, []string{"report-logs"}, stageNames(plan.Collect))
+	for _, initless := range []bool{false, true} {
+		plan := planFor(&wfv1.Template{Resource: &wfv1.ResourceTemplate{Action: "get"}}, initless, nil)
+		assert.Equal(t, []string{"report-logs"}, stageNames(plan.Collect), "initless=%v", initless)
+	}
 }
 
 // TestPlansAreWellFormed is the plan validation: every selectable plan has
@@ -161,21 +174,23 @@ func TestPlansAreWellFormed(t *testing.T) {
 		"resource":  {Resource: &wfv1.ResourceTemplate{}},
 	}
 	for name, tmpl := range templates {
-		t.Run(name, func(t *testing.T) {
-			plan := planFor(tmpl, []wfv1.ArtifactPluginName{"s3"})
-			seen := map[string]bool{}
-			for phase, stages := range map[string][]Stage{"Prepare": plan.Prepare, "Run": plan.Run, "Collect": plan.Collect} {
-				require.NotEmpty(t, stages, "phase %s has no stages", phase)
-				for _, s := range stages {
-					assert.NotEmpty(t, s.Name, "phase %s has an unnamed stage", phase)
-					assert.NotNil(t, s.Run, "stage %s has no Run", s.Name)
-					assert.False(t, seen[s.Name], "stage %s appears twice", s.Name)
-					seen[s.Name] = true
-					if s.NeedsMainOutputs {
-						assert.Equal(t, "Collect", phase, "stage %s needs main outputs but is in %s", s.Name, phase)
+		for _, initless := range []bool{false, true} {
+			t.Run(fmt.Sprintf("%s/initless=%v", name, initless), func(t *testing.T) {
+				plan := planFor(tmpl, initless, []wfv1.ArtifactPluginName{"s3"})
+				seen := map[string]bool{}
+				for phase, stages := range map[string][]Stage{"Prepare": plan.Prepare, "Run": plan.Run, "Collect": plan.Collect} {
+					require.NotEmpty(t, stages, "phase %s has no stages", phase)
+					for _, s := range stages {
+						assert.NotEmpty(t, s.Name, "phase %s has an unnamed stage", phase)
+						assert.NotNil(t, s.Run, "stage %s has no Run", s.Name)
+						assert.False(t, seen[s.Name], "stage %s appears twice", s.Name)
+						seen[s.Name] = true
+						if s.NeedsMainOutputs {
+							assert.Equal(t, "Collect", phase, "stage %s needs main outputs but is in %s", s.Name, phase)
+						}
 					}
 				}
-			}
-		})
+			})
+		}
 	}
 }

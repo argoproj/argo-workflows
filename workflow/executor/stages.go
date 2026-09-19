@@ -18,6 +18,13 @@ import (
 
 // Prepare-phase stages.
 var (
+	// installArgoexec copies the argoexec binary into the shared volume and
+	// writes the template: the legacy init container's job. The init-less
+	// layout delivers the binary via an image volume and needs only
+	// writeTemplate.
+	installArgoexec = Stage{Name: "install-argoexec", Run: func(_ context.Context, we *WorkflowExecutor) error {
+		return we.Init()
+	}}
 	writeTemplate = Stage{Name: "write-template", Run: func(_ context.Context, we *WorkflowExecutor) error {
 		return we.WriteTemplate()
 	}}
