@@ -212,6 +212,9 @@ func (m *Metrics) UpsertCustomMetric(ctx context.Context, metricSpec *wfv1.Prome
 	if !IsValidMetricName(metricSpec.Name) {
 		return fmt.Errorf("%s", invalidMetricNameError)
 	}
+	if IsReservedMetricName(metricSpec.Name) {
+		return fmt.Errorf("custom metric name %q is reserved for a controller metric; use a different name", metricSpec.Name)
+	}
 	baseMetric, err := m.ensureBaseMetric(metricSpec, ownerKey)
 	if err != nil {
 		return err

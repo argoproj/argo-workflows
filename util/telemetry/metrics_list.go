@@ -3,6 +3,49 @@
 //go:generate go run ./builder --metricsListGo metrics_list.go
 package telemetry
 
+var builtinInstrumentNames = map[string]struct{}{
+	"client_rate_limiter_latency":               {},
+	"cronworkflows_concurrencypolicy_triggered": {},
+	"cronworkflows_triggered_total":             {},
+	"deprecated_feature":                        {},
+	"error_count":                               {},
+	"gauge":                                     {},
+	"is_leader":                                 {},
+	"k8s_request_duration":                      {},
+	"k8s_request_total":                         {},
+	"locks_held":                                {},
+	"locks_pending":                             {},
+	"locks_taken_total":                         {},
+	"log_messages":                              {},
+	"operation_duration_seconds":                {},
+	"pod_missing":                               {},
+	"pod_pending_count":                         {},
+	"pod_restarts_total":                        {},
+	"pods_gauge":                                {},
+	"pods_total_count":                          {},
+	"queue_adds_count":                          {},
+	"queue_depth_gauge":                         {},
+	"queue_duration":                            {},
+	"queue_latency":                             {},
+	"queue_longest_running":                     {},
+	"queue_retries":                             {},
+	"queue_unfinished_work":                     {},
+	"resource_rate_limiter_latency":             {},
+	"retry_strategy_terminations_total":         {},
+	"total_count":                               {},
+	"version":                                   {},
+	"workers_busy_count":                        {},
+	"workflow_condition":                        {},
+	"workflowtemplate_runtime":                  {},
+	"workflowtemplate_triggered_total":          {},
+}
+
+// IsBuiltinInstrumentName reports whether name is reserved for a built-in telemetry instrument.
+func IsBuiltinInstrumentName(name string) bool {
+	_, ok := builtinInstrumentNames[name]
+	return ok
+}
+
 var InstrumentClientRateLimiterLatency = BuiltinInstrument{
 	name:        "client_rate_limiter_latency",
 	description: "A histogram of the time spent waiting for the client-side rate limiter",
@@ -425,6 +468,21 @@ var InstrumentResourceRateLimiterLatency = BuiltinInstrument{
 		30.000000,
 		60.000000,
 		180.000000,
+	},
+}
+
+var InstrumentRetryStrategyTerminationsTotal = BuiltinInstrument{
+	name:        "retry_strategy_terminations_total",
+	description: "A counter of otherwise eligible retry attempts suppressed by a retry strategy duration budget",
+	unit:        "{retry_strategy}",
+	instType:    Int64Counter,
+	attributes: []BuiltinAttribute{
+		{
+			name: AttribRetryStrategyTerminationReason,
+		},
+		{
+			name: AttribWorkflowNamespace,
+		},
 	},
 }
 
