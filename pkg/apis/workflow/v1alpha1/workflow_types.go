@@ -1641,10 +1641,20 @@ func (gcStatus *ArtGCStatus) IsArtifactGCPodRecouped(podName string) bool {
 	return false
 }
 
-func (gcStatus *ArtGCStatus) AllArtifactGCPodsRecouped() bool {
+// RecordArtifactGCPod records that a GC Pod has been created and is awaiting recoup. A Pod that has already been
+// recouped is left as is, so it is safe to call again when a strategy is retried.
+func (gcStatus *ArtGCStatus) RecordArtifactGCPod(podName string) {
 	if gcStatus.PodsRecouped == nil {
-		return false
+		gcStatus.PodsRecouped = make(map[string]bool)
 	}
+	if _, found := gcStatus.PodsRecouped[podName]; !found {
+		gcStatus.PodsRecouped[podName] = false
+	}
+}
+
+// AllArtifactGCPodsRecouped is true when no recorded GC Pod is still awaiting recoup. Pods are recorded when they
+// are created, so an empty map means there is nothing outstanding.
+func (gcStatus *ArtGCStatus) AllArtifactGCPodsRecouped() bool {
 	for _, recouped := range gcStatus.PodsRecouped {
 		if !recouped {
 			return false
