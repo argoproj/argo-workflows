@@ -213,12 +213,14 @@ func TestTracingLoadArtifactsIntegration(t *testing.T) {
 	require.NoError(t, err)
 
 	we := WorkflowExecutor{
+		Process: &Process{
+			Tracing: tr,
+		},
 		Template: wfv1.Template{
 			Inputs: wfv1.Inputs{
 				Artifacts: []wfv1.Artifact{},
 			},
 		},
-		Tracing: tr,
 	}
 
 	// Create parent span and call actual executor method

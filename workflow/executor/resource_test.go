@@ -36,11 +36,13 @@ func TestResourceFlags(t *testing.T) {
 	}
 
 	we := WorkflowExecutor{
-		PodName:         fakePodName,
-		Template:        template,
-		ClientSet:       fakeClientset,
-		Namespace:       fakeNamespace,
-		RuntimeExecutor: &mockRuntimeExecutor,
+		Process: &Process{
+			PodName:         fakePodName,
+			ClientSet:       fakeClientset,
+			Namespace:       fakeNamespace,
+			RuntimeExecutor: &mockRuntimeExecutor,
+		},
+		Template: template,
 	}
 	args, err := we.getKubectlArguments("fake", manifestPath, fakeFlags)
 	require.NoError(t, err)
@@ -112,11 +114,13 @@ func TestResourcePatchFlags(t *testing.T) {
 				},
 			}
 			we := WorkflowExecutor{
-				PodName:         fakePodName,
-				Template:        template,
-				ClientSet:       fakeClientset,
-				Namespace:       fakeNamespace,
-				RuntimeExecutor: &mockRuntimeExecutor,
+				Process: &Process{
+					PodName:         fakePodName,
+					ClientSet:       fakeClientset,
+					Namespace:       fakeNamespace,
+					RuntimeExecutor: &mockRuntimeExecutor,
+				},
+				Template: template,
 			}
 			args, err := we.getKubectlArguments("patch", tt.manifestPath, fakeFlags)
 
@@ -202,11 +206,13 @@ func TestInferSelfLink(t *testing.T) {
 // TestResourceExecRetry tests whether Exec retries transitive errors
 func TestResourceExecRetry(t *testing.T) {
 	we := WorkflowExecutor{
-		PodName:         fakePodName,
-		Template:        wfv1.Template{},
-		ClientSet:       fake.NewClientset(),
-		Namespace:       fakeNamespace,
-		RuntimeExecutor: &mocks.ContainerRuntimeExecutor{},
+		Process: &Process{
+			PodName:         fakePodName,
+			ClientSet:       fake.NewClientset(),
+			Namespace:       fakeNamespace,
+			RuntimeExecutor: &mocks.ContainerRuntimeExecutor{},
+		},
+		Template: wfv1.Template{},
 	}
 
 	_, filename, _, _ := runtime.Caller(0)
