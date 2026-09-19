@@ -435,3 +435,84 @@ func TestDuplicates(t *testing.T) {
 		assert.Error(t, err)
 	})
 }
+
+// TestReleaseAllRemovesNodeFromEveryLockQueue covers a node whose template
+// declares more than one lock (a mutex and a semaphore): if it fails to
+// acquire one lock, NodeSynchronizationStatus.Waiting only ever records that
+// first one, even though prepAcquire enqueues the node on every lock in the
+// template. Before this fix, ReleaseAll only removed the node's wait-queue
+// entry from the recorded lock, leaking its entry in the others forever.
+func TestReleaseAllRemovesNodeFromEveryLockQueue(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	kube := fake.NewClientset()
+	var cm v1.ConfigMap
+	wfv1.MustUnmarshal([]byte(multipleConfigMap), &cm)
+	_, err := kube.CoreV1().ConfigMaps("default").Create(ctx, &cm, metav1.CreateOptions{})
+	require.NoError(t, err)
+
+	syncLimitFunc := GetSyncLimitFunc(kube)
+	syncManager, err := NewLockManager(ctx, kube, "", nil, syncLimitFunc, func(key string) {},
+		WorkflowExistenceFunc, false)
+	require.NoError(t, err)
+
+	// Take both semaphore slots so the victim's template-level acquire fails.
+	holder1 := templatedWorkflow("holder1", `    semaphores:
+       - configMapKeyRef:
+           key: double
+           name: my-config
+`)
+	holder2 := templatedWorkflow("holder2", `    semaphores:
+       - configMapKeyRef:
+           key: double
+           name: my-config
+`)
+	for _, holder := range []*wfv1.Workflow{holder1, holder2} {
+		var status bool
+		status, _, _, _, err = syncManager.TryAcquire(ctx, holder, "", holder.Spec.Synchronization)
+		require.NoError(t, err)
+		require.True(t, status)
+	}
+
+	// The victim's template requires the (now full) semaphore and a free mutex.
+	victim := templatedWorkflow("victim", "")
+	victimSync := &wfv1.Synchronization{
+		Semaphores: []*wfv1.SemaphoreRef{
+			{ConfigMapKeyRef: &v1.ConfigMapKeySelector{
+				LocalObjectReference: v1.LocalObjectReference{Name: "my-config"},
+				Key:                  "double",
+			}},
+		},
+		Mutexes: []*wfv1.Mutex{{Name: "free"}},
+	}
+	nodeID := "victim-node"
+	status, wfUpdate, msg, failedLockName, err := syncManager.TryAcquire(ctx, victim, nodeID, victimSync)
+	require.NoError(t, err)
+	assert.False(t, status)
+	assert.True(t, wfUpdate)
+	assert.NotEmpty(t, msg)
+	assert.Equal(t, "default/ConfigMap/my-config/double", failedLockName)
+
+	holderKey := getHolderKey(victim, nodeID)
+	freeLock, ok := syncManager.syncLockMap["default/Mutex/free"]
+	require.True(t, ok)
+	pending, err := freeLock.getCurrentPending(ctx)
+	require.NoError(t, err)
+	assert.Contains(t, pending, holderKey, "victim should be queued on the mutex it never acquired")
+
+	// Mirror markNodeWaitingForLock: only the first failed lock is recorded on the node.
+	victim.Status.Nodes = wfv1.Nodes{
+		nodeID: wfv1.NodeStatus{
+			ID:   nodeID,
+			Name: nodeID,
+			SynchronizationStatus: &wfv1.NodeSynchronizationStatus{
+				Waiting: failedLockName,
+			},
+		},
+	}
+
+	syncManager.ReleaseAll(ctx, victim)
+
+	pending, err = freeLock.getCurrentPending(ctx)
+	require.NoError(t, err)
+	assert.NotContains(t, pending, holderKey, "ReleaseAll must remove the node from every lock it was queued on, not only the recorded one")
+}
