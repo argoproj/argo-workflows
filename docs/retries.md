@@ -126,3 +126,13 @@ Boolean operators can be used to combine multiple conditions. See [example](http
 ## Back-Off
 
 You can configure the delay between retries with `backoff`. See [example](https://raw.githubusercontent.com/argoproj/argo-workflows/main/examples/retry-backoff.yaml) for usage.
+
+### Maximum retry duration
+
+`backoff.maxDuration` limits the overall retry window; it is not the maximum individual back-off delay.
+Argo calculates an absolute deadline from the time it initializes the first attempt's node, before Kubernetes schedules its Pod or starts any containers.
+For Pod templates, scheduling, image pulls, initialization, attempt execution, and back-off waits therefore consume the retry window.
+After an attempt fails or errors, Argo stops retrying if the deadline has passed (`Max duration limit exceeded`) or if the next back-off would end after it (`Backoff would exceed max duration limit`), even when `limit` permits more attempts.
+Later retry Pods also receive this absolute execution deadline.
+`maxDuration` is not a hard timeout for the first attempt, and a successful attempt is accepted even if the retry deadline has passed.
+On busy clusters, size `maxDuration` for worst-case wall-clock latency or omit it and bound retries with `limit` alone.
