@@ -218,6 +218,43 @@ func TestGetCustomGroup(t *testing.T) {
 	})
 }
 
+func TestExprEnv(t *testing.T) {
+	t.Run("CustomClaimsAreAvailable", func(t *testing.T) {
+		claims := &Claims{
+			Email: "test-user@argoproj.github.io",
+			RawClaim: map[string]any{
+				"email":     "test-user@argoproj.github.io",
+				"user_name": "test-user",
+				"roles":     []any{"my-role"},
+			},
+		}
+		env, err := claims.ExprEnv()
+		require.NoError(t, err)
+		assert.Equal(t, "test-user", env["user_name"])
+		assert.Equal(t, []any{"my-role"}, env["roles"])
+		assert.Equal(t, "test-user@argoproj.github.io", env["email"])
+	})
+	t.Run("NormalizedClaimsTakePrecedence", func(t *testing.T) {
+		claims := &Claims{
+			Groups: []string{"my-group"},
+			RawClaim: map[string]any{
+				// the raw token may contain a "groups" claim that Argo replaced,
+				// e.g. because customGroupClaimName or userInfoPath is configured
+				"groups": []any{"raw-group"},
+			},
+		}
+		env, err := claims.ExprEnv()
+		require.NoError(t, err)
+		assert.Equal(t, []string{"my-group"}, env["groups"])
+	})
+	t.Run("NoRawClaims", func(t *testing.T) {
+		claims := &Claims{Groups: []string{"my-group"}}
+		env, err := claims.ExprEnv()
+		require.NoError(t, err)
+		assert.Equal(t, []string{"my-group"}, env["groups"])
+	})
+}
+
 type HTTPClientMock struct {
 	StatusCode int
 	Body       io.ReadCloser
