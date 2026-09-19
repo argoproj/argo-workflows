@@ -13,6 +13,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 
+	"go.opentelemetry.io/contrib/propagators/envcar"
 	"go.opentelemetry.io/otel/propagation"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,7 +26,6 @@ import (
 	cmdutil "github.com/argoproj/argo-workflows/v4/util/cmd"
 	"github.com/argoproj/argo-workflows/v4/util/intstr"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
-	"github.com/argoproj/argo-workflows/v4/util/telemetry"
 	"github.com/argoproj/argo-workflows/v4/util/template"
 	varkeys "github.com/argoproj/argo-workflows/v4/util/variables/keys"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
@@ -648,7 +648,7 @@ func (pb *podBuilder) build(ctx context.Context) (*podBuildResult, error) {
 		{Name: common.EnvVarWorkflowName, Value: pb.in.wfName},
 	}
 
-	carrier := telemetry.Carrier{SetEnvFunc: func(key, value string) {
+	carrier := &envcar.Carrier{SetEnvFunc: func(key, value string) {
 		envVars = append(envVars, apiv1.EnvVar{Name: key, Value: value})
 	}}
 	prop := propagation.TraceContext{}
