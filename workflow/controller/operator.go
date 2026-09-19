@@ -1229,7 +1229,11 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (bool, error) 
 			woc.updateAgentPodStatus(ctx, pod)
 			return
 		}
+		// nodeID's fallback for pods without the node-id annotation resolves
+		// against Status.Nodes, so it must run under the nodes lock
+		wfNodesLock.RLock()
 		nodeID := woc.nodeID(pod)
+		wfNodesLock.RUnlock()
 		seenPodLock.Lock()
 		seenPods[nodeID] = pod
 		seenPodLock.Unlock()
@@ -1345,7 +1349,7 @@ func (woc *wfOperationCtx) podReconciliation(ctx context.Context) (bool, error) 
 func (woc *wfOperationCtx) nodeID(pod *apiv1.Pod) string {
 	nodeID, ok := pod.Annotations[common.AnnotationKeyNodeID]
 	if !ok {
-		nodeID = woc.wf.NodeID(pod.Annotations[common.AnnotationKeyNodeName])
+		nodeID = woc.wf.ResolveNodeID(pod.Annotations[common.AnnotationKeyNodeName])
 	}
 	return nodeID
 }
@@ -1471,6 +1475,16 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		woc.log.Error(ctx, err.Error())
 		return nil
 	}
+	if tmpl == nil {
+		woc.log.WithFields(logging.Fields{"nodeName": old.Name, "templateName": old.TemplateName}).
+			Debug(ctx, "no template resolved for node (expected for inline templates); daemon teardown detection is disabled for it")
+	}
+	// The only way a daemon node becomes Succeeded while its pod is still alive is
+	// killDaemonedChildren, which marks the node and then requests pod termination.
+	// Any pod completion seen after that is the result of our own kill and must not
+	// overwrite the phase; a daemon that dies of its own accord is assessed normally
+	// (its node is still Running at that point) so retryStrategy still works.
+	stoppedDaemon := tmpl.IsDaemon() && old.Succeeded()
 	switch pod.Status.Phase {
 	case apiv1.PodPending:
 		updated.Phase = wfv1.NodePending
@@ -1484,7 +1498,8 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 	case apiv1.PodSucceeded:
 		// if the pod is succeeded, we need to check if it is a daemoned step or not
 		// if it is daemoned, we need to mark it as failed, since daemon pods should run indefinitely
-		if tmpl.IsDaemon() {
+		// (unless the controller stopped it itself, in which case it stays Succeeded)
+		if tmpl.IsDaemon() && !stoppedDaemon {
 			woc.log.WithField("podName", pod.Name).Debug(ctx, "Daemoned pod succeeded. Marking it as failed")
 			updated.Phase = wfv1.NodeFailed
 		} else {
@@ -1494,7 +1509,13 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		updated.Daemoned = nil
 		updated.RestartingPodUID = ""
 	case apiv1.PodFailed:
-		// ignore pod failure for daemoned steps
+		if stoppedDaemon {
+			woc.log.WithFields(logging.Fields{"displayName": old.DisplayName, "pod": pod.Name}).Info(ctx, "Ignoring pod failure of daemon stopped by the controller")
+			// killDaemonedChildren already cleared Daemoned when it marked the node Succeeded,
+			// but clear it here too so a stuck flag can never block workflow completion.
+			updated.Daemoned = nil
+			break
+		}
 		updated.Phase, updated.Message = woc.inferFailedReason(ctx, pod, tmpl)
 		woc.log.WithFields(logging.Fields{"message": updated.Message, "displayName": old.DisplayName, "templateName": wfutil.GetTemplateFromNode(*old), "pod": pod.Name}).Info(ctx, "Pod failed")
 		updated.Daemoned = nil
@@ -1568,6 +1589,12 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 		if _, err := woc.wf.GetNodeByName(ctrNodeName); err != nil {
 			continue
 		}
+		if stoppedDaemon {
+			// killDaemonedChildren already completed the container child nodes when it stopped
+			// this daemon; the exit codes of our own kill carry no failure meaning, so leave
+			// the children untouched.
+			continue
+		}
 		switch {
 		case c.State.Terminated != nil:
 			exitCode := int(c.State.Terminated.ExitCode)
@@ -1605,7 +1632,9 @@ func (woc *wfOperationCtx) assessNodeStatus(ctx context.Context, pod *apiv1.Pod,
 	// We capture the exit-code after we look for the task-result.
 	// All other outputs are set by the executor, only the exit-code is set by the controller.
 	// By waiting, we avoid breaking the race-condition check.
-	if exitCode := getExitCode(pod); exitCode != nil {
+	// A daemon we stopped ourselves reports the exit code of our own signal, which says nothing
+	// about the node: recording it would contradict the Succeeded phase we just preserved.
+	if exitCode := getExitCode(pod); !stoppedDaemon && exitCode != nil {
 		if updated.Outputs == nil {
 			updated.Outputs = &wfv1.Outputs{}
 		}
@@ -1718,15 +1747,10 @@ func getExitCode(pod *apiv1.Pod) *int32 {
 }
 
 func podHasContainerNeedingTermination(pod *apiv1.Pod, tmpl wfv1.Template) bool {
-	// pod needs to be terminated if any of the following are true:
-	// 1. any main container has exited with non-zero exit code
-	// 2. all main containers have exited
-	// pod termination will cause the wait container to finish
-	for _, c := range pod.Status.ContainerStatuses {
-		if tmpl.IsMainContainerName(c.Name) && c.State.Terminated != nil && c.State.Terminated.ExitCode != 0 {
-			return true
-		}
-	}
+	// Terminate the pod once every main container has exited so the wait
+	// container (which blocks on pod termination) can finish. We must NOT
+	// terminate while any main is still running — in a containerSet, a
+	// failed sibling must not cause still-running siblings to be killed.
 	for _, c := range pod.Status.ContainerStatuses {
 		if tmpl.IsMainContainerName(c.Name) && c.State.Terminated == nil {
 			return false
@@ -1880,6 +1904,18 @@ func (woc *wfOperationCtx) inferFailedReason(ctx context.Context, pod *apiv1.Pod
 			// the legacy init/wait paths do separately.
 			return wfv1.NodeError, msg
 		default:
+			if common.IsArtifactPluginSidecar(ctr.Name) {
+				// Artifact plugin sidecars are torn down by the wait/supervisor
+				// container after it has saved all outputs, so an aux container
+				// that exited 0 proves every save succeeded and the sidecar's own
+				// exit code carries no information about the node's outcome. The
+				// code can even be a phantom: a `kill` exec racing the sidecar's
+				// exit can make the container runtime record a non-zero status
+				// for a process that exited cleanly. Record it and let the
+				// main/wait verdict below decide the node's fate.
+				woc.log.WithFields(logging.Fields{"exitCode": t.ExitCode, "containerName": ctr.Name}).Info(ctx, "ignoring artifact plugin sidecar exit code")
+				continue
+			}
 			if t.ExitCode != 137 && t.ExitCode != 143 {
 				return wfv1.NodeFailed, msg
 			}
@@ -2319,8 +2355,9 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 	unlockedNode := false
 
 	if processedTmpl.Synchronization != nil {
-		lockCtx, lockSpan := woc.controller.tracing.StartTryAcquireLock(ctx, woc.wf.NodeID(nodeName), false)
-		lockAcquired, wfUpdated, msg, failedLockName, syncErr := woc.controller.syncManager.TryAcquire(lockCtx, woc.wf, woc.wf.NodeID(nodeName), processedTmpl.Synchronization)
+		lockNodeID := woc.wf.ResolveNodeID(nodeName)
+		lockCtx, lockSpan := woc.controller.tracing.StartTryAcquireLock(ctx, lockNodeID, false)
+		lockAcquired, wfUpdated, msg, failedLockName, syncErr := woc.controller.syncManager.TryAcquire(lockCtx, woc.wf, lockNodeID, processedTmpl.Synchronization)
 		lockSpan.SetAttributes(attribute.Bool("LockAcquired", lockAcquired))
 		lockSpan.End()
 		if syncErr != nil {
@@ -2501,10 +2538,10 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 			node = lastChildNode
 			retryNum = len(childNodeIDs) - 1
 		} else {
-			// Create a new child node and append it to the retry node.
+			// Create a new child node; it is linked to the retry node just
+			// before the dispatch below creates it.
 			retryNum = len(childNodeIDs)
 			nodeName = fmt.Sprintf("%s(%d)", retryNodeName, retryNum)
-			woc.addChildNode(ctx, retryNodeName, nodeName)
 			node = nil
 		}
 
@@ -2539,8 +2576,21 @@ func (woc *wfOperationCtx) executeTemplate(ctx context.Context, nodeName string,
 		}
 		if err != nil {
 			errNode := woc.initializeNodeOrMarkError(ctx, node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err)
+			if node == nil {
+				// the attempt node was just created; link it or the next
+				// reconcile re-derives the same attempt name and panics
+				woc.addChildNode(ctx, retryNodeName, nodeName)
+			}
 			return errNode, err
 		}
+	}
+
+	// Link a new retry attempt only now that nothing can return before the
+	// dispatch below creates its node: an edge persisted for a node that is
+	// never created (the parameter substitution above can return on transient
+	// errors) can later be claimed by a colliding name (#16376).
+	if retryNodeName != "" && node == nil {
+		woc.addChildNode(ctx, retryNodeName, nodeName)
 	}
 
 	switch processedTmpl.GetType() {
@@ -3044,10 +3094,13 @@ func executable(nodeType wfv1.NodeType) bool {
 func (woc *wfOperationCtx) initializeNode(ctx context.Context, nodeName string, nodeType wfv1.NodeType, templateScope string, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, phase wfv1.NodePhase, nodeFlag *wfv1.NodeFlag, omitTaskResultSynced bool, messages ...string) (context.Context, *wfv1.NodeStatus) {
 	woc.log.WithFields(logging.Fields{"nodeName": nodeName, "template": common.GetTemplateHolderString(orgTmpl), "boundaryID": boundaryID}).Debug(ctx, "Initializing node")
 
-	nodeID := woc.wf.NodeID(nodeName)
-	ok := woc.wf.Status.Nodes.Has(nodeID)
-	if ok {
+	existing, nodeID := woc.wf.ResolveNode(nodeName)
+	if existing != nil {
 		panic(fmt.Sprintf("node %s already initialized", nodeName))
+	}
+	if woc.wf.Status.Nodes.Has(nodeID) {
+		// both the 32-bit and the widened 64-bit slot are held by other names
+		panic(fmt.Sprintf("node ID collision for %s could not be resolved", nodeName))
 	}
 
 	node := wfv1.NodeStatus{
@@ -3062,6 +3115,13 @@ func (woc *wfOperationCtx) initializeNode(ctx context.Context, nodeName string, 
 		NodeFlag:          nodeFlag,
 		StartedAt:         metav1.Time{Time: time.Now().UTC()},
 		EstimatedDuration: woc.estimateNodeDuration(ctx, nodeName),
+	}
+	if nodeID != woc.wf.NodeID(nodeName) {
+		fields := logging.Fields{"nodeName": nodeName, "nodeID": nodeID}
+		if colliding, err := woc.wf.Status.Nodes.Get(woc.wf.NodeID(nodeName)); err == nil {
+			fields["collidesWith"] = colliding.Name
+		}
+		woc.log.WithFields(fields).Info(ctx, "node name hash collision, using 64-bit node ID")
 	}
 
 	if executable(nodeType) && !omitTaskResultSynced {
@@ -3087,7 +3147,7 @@ func (woc *wfOperationCtx) initializeNode(ctx context.Context, nodeName string, 
 		message = fmt.Sprintf(" (message: %s)", messages[0])
 		node.Message = messages[0]
 	}
-	woc.wf.Status.Nodes.Set(ctx, nodeID, node)
+	woc.wf.Status.Nodes.Set(ctx, node.ID, node)
 	woc.log.WithFields(logging.Fields{"node": node.ID, "phase": node.Phase, "message": message}).Info(ctx, "node initialized")
 	woc.updated = true
 	nodeCtx := woc.controller.tracing.RecordStartNode(ctx, woc.wf.Name, woc.wf.Namespace, node.ID, string(nodeType), phase, node.Message)
@@ -3146,7 +3206,6 @@ func (woc *wfOperationCtx) markNodePhase(ctx context.Context, nodeName string, p
 	if node.Fulfilled() && node.FinishedAt.IsZero() {
 		node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
 		woc.log.WithFields(logging.Fields{"node": node.ID, "finishedAt": node.FinishedAt}).Info(ctx, "node finished")
-		woc.controller.tracing.EndNode(ctx, namespacedName, node.ID, node.Phase)
 		woc.updated = true
 	}
 	woc.wf.Status.Nodes.Set(ctx, node.ID, *node)
@@ -3590,7 +3649,7 @@ loop:
 func (woc *wfOperationCtx) executeScript(ctx context.Context, nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	node, err := woc.wf.GetNodeByName(nodeName)
 	if err != nil {
-		ctx, node = woc.initializeExecutableNode(ctx, nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, opts.nodeFlag, false)
+		ctx, node = woc.initializeExecutableNode(ctx, nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, opts.nodeFlag, tmpl.IsDaemon())
 	} else if !node.Pending() {
 		return node, nil
 	}
@@ -3908,8 +3967,8 @@ func (woc *wfOperationCtx) addArtifactToGlobalScope(ctx context.Context, art wfv
 // addChildNode adds a nodeID as a child to a parent
 // parent and child are both node names
 func (woc *wfOperationCtx) addChildNode(ctx context.Context, parent string, child string) {
-	parentID := woc.wf.NodeID(parent)
-	childID := woc.wf.NodeID(child)
+	parentID := woc.wf.ResolveNodeID(parent)
+	childID := woc.wf.ResolveNodeID(child)
 	node, err := woc.wf.Status.Nodes.Get(parentID)
 	if err != nil {
 		woc.log.WithPanic().WithField("nodeID", parentID).Error(ctx, "was unable to obtain node for nodeID")
@@ -4720,7 +4779,7 @@ func (woc *wfOperationCtx) substituteGlobalVariables(ctx context.Context, params
 // POD_NAMES environment variable
 func (woc *wfOperationCtx) getPodName(nodeName, templateName string) string {
 	version := wfutil.GetWorkflowPodNameVersion(woc.wf)
-	return wfutil.GeneratePodName(woc.wf.Name, nodeName, templateName, woc.wf.NodeID(nodeName), version)
+	return wfutil.GeneratePodName(woc.wf.Name, nodeName, templateName, woc.wf.ResolveNodeID(nodeName), version)
 }
 
 func (woc *wfOperationCtx) getServiceAccountTokenName(ctx context.Context, name string) (string, error) {

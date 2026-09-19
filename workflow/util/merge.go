@@ -73,7 +73,7 @@ func parseUserOverrideAllowlist(env string) ([]string, error) {
 	goName := map[string]string{}
 	t := reflect.TypeFor[wfv1.WorkflowSpec]()
 	for field := range t.Fields() {
-		name := strings.Split(field.Tag.Get("json"), ",")[0]
+		name, _, _ := strings.Cut(field.Tag.Get("json"), ",")
 		if name == "" || name == "-" {
 			name = field.Name // ponytail: fall back to Go name for any untagged field
 		}

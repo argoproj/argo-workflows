@@ -1,6 +1,7 @@
 package e2e
 
 import (
+	"context"
 	"crypto/tls"
 	"net"
 	"net/http"
@@ -19,8 +20,9 @@ var http2Client = &http.Client{
 	Transport: &http2.Transport{
 		AllowHTTP: true,
 		// Skip TLS dial
-		DialTLS: func(netw, addr string, cfg *tls.Config) (net.Conn, error) {
-			return net.Dial(netw, addr)
+		DialTLSContext: func(ctx context.Context, netw, addr string, cfg *tls.Config) (net.Conn, error) {
+			var d net.Dialer
+			return d.DialContext(ctx, netw, addr)
 		},
 	},
 	CheckRedirect: httpClient.CheckRedirect,

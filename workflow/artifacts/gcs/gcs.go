@@ -45,8 +45,7 @@ func isTransientGCSErr(ctx context.Context, err error) bool {
 	if errors.Is(err, io.ErrUnexpectedEOF) || errutil.IsTransientErr(ctx, err) {
 		return true
 	}
-	var googleErr *googleapi.Error
-	if errors.As(err, &googleErr) {
+	if googleErr, ok := errors.AsType[*googleapi.Error](err); ok {
 		// Retry on 429 and 5xx, according to
 		// https://cloud.google.com/storage/docs/exponential-backoff.
 		return googleErr.Code == 429 || (googleErr.Code >= 500 && googleErr.Code < 600)
@@ -156,11 +155,13 @@ func downloadObjects(ctx context.Context, client *storage.Client, bucket, key, p
 // download an object from the bucket
 func downloadObject(ctx context.Context, client *storage.Client, bucket, key, objName, path string) error {
 	objPrefix := normalizeGCSKey(filepath.Clean(key))
-	relObjPath := strings.TrimPrefix(objName, objPrefix)
-	localPath := filepath.Join(path, relObjPath)
+	localPath, err := common.LocalPathForObject(path, objPrefix, objName)
+	if err != nil {
+		return err
+	}
 	objectDir, _ := filepath.Split(localPath)
 	if objectDir != "" {
-		if err := os.MkdirAll(objectDir, 0o700); err != nil {
+		if err = os.MkdirAll(objectDir, 0o700); err != nil {
 			return fmt.Errorf("mkdir %s: %w", objectDir, err)
 		}
 	}

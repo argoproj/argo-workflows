@@ -86,14 +86,13 @@ type Tracing struct {
 	tracer   trace.Tracer
 }
 
+// NewTracing creates a tracing provider configured with the enabled OTLP exporter.
 func NewTracing(ctx context.Context, serviceName string, extraOpts ...tracesdk.TracerProviderOption) (*Tracing, error) {
 	options := make([]tracesdk.TracerProviderOption, 0)
 	options = append(options, tracesdk.WithResource(workflowsResource(ctx, serviceName)))
 	options = append(options, extraOpts...)
-	_, otlpEnabled := os.LookupEnv(`OTEL_EXPORTER_OTLP_ENDPOINT`)
-	_, otlpTracingEnabled := os.LookupEnv(`OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`)
 
-	if otlpEnabled || otlpTracingEnabled {
+	if endpoint := resolveOTLPEndpoint(otlpTracesEndpointEnv); endpoint != "" {
 		// NOTE: The OTel SDK default changed from gRPC to http/protobuf. For alignment with metrics
 		// gRPC is preserved as the default in workflows controller, but http/protobuf can be opted-in
 		// to by setting the _PROTOCOL env var explicitly.
@@ -104,11 +103,6 @@ func NewTracing(ctx context.Context, serviceName string, extraOpts ...tracesdk.T
 		}
 
 		logger := logging.RequireLoggerFromContext(ctx)
-		endpoint := os.Getenv(`OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`)
-		if endpoint == "" {
-			endpoint = os.Getenv(`OTEL_EXPORTER_OTLP_ENDPOINT`)
-		}
-
 		switch {
 		case otlpProtocol == "" || otlpProtocol == "grpc":
 			logger.WithFields(logging.Fields{"protocol": "grpc", "endpoint": endpoint}).Info(ctx, "Starting OTLP tracing exporter")

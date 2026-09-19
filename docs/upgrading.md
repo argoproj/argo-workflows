@@ -5,6 +5,23 @@ For the upgrading guide to a specific version of workflows change the documentat
 Breaking changes  typically (sometimes we don't realise they are breaking) have "!" in the commit message, as per
 the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summary).
 
+## Upgrading to v4.2
+
+### ContainerSet siblings are no longer terminated when one container fails
+
+Previously, as soon as any container in a `containerSet` exited with a non-zero exit code, the controller terminated the whole pod, killing any sibling containers that were still running.
+This effectively made every `containerSet` fail fast.
+It was an unintended side effect of a rule added for single-container templates and was never a documented feature ([#16000](https://github.com/argoproj/argo-workflows/pull/16000)).
+
+The pod is now only terminated once all main containers have exited.
+Siblings of a failed container run to completion, and containers that depend on a failed container still fail once that dependency has exited.
+The node is still marked as failed once all containers have finished.
+
+There is no configuration option to restore the previous fail-fast behavior.
+If your `containerSet` relied on a failing container stopping its siblings early, add explicit `dependencies` so those containers wait for it, or have the containers detect and act on the failure themselves.
+
+Additionally, a container whose dependency is killed before it can report an exit code now ends with exit code 64 and the message `died without reporting exit code`, and the node is marked `Error` rather than `Failed`.
+
 ## Upgrading to v4.1.2
 
 ### SSO users are logged out once on upgrade

@@ -161,8 +161,7 @@ func (a *ArtifactServer) UploadInputArtifact(w http.ResponseWriter, r *http.Requ
 
 	// Parse multipart form (max 32MB in memory, rest on disk)
 	if parseErr := r.ParseMultipartForm(32 << 20); parseErr != nil {
-		var maxBytesErr *http.MaxBytesError
-		if errors.As(parseErr, &maxBytesErr) {
+		if _, ok := errors.AsType[*http.MaxBytesError](parseErr); ok {
 			http.Error(w, http.StatusText(http.StatusRequestEntityTooLarge), http.StatusRequestEntityTooLarge)
 			return
 		}
@@ -658,8 +657,7 @@ func (a *ArtifactServer) httpFromError(ctx context.Context, err error, w http.Re
 		statusCode = int(e.Status().Code)
 	} else {
 		// check if it's an internal ArgoError
-		var argoerr argoerrors.ArgoError
-		if errors.As(err, &argoerr) {
+		if argoerr, ok := errors.AsType[argoerrors.ArgoError](err); ok {
 			statusCode = argoerr.HTTPCode()
 		}
 	}

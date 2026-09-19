@@ -12,12 +12,22 @@ on:
 permissions:
   contents: write
 
+env:
+  # a workaround to disable harden runner
+  STEP_SECURITY_HARDEN_RUNNER: ${{ vars.disable_harden_runner }}
+
 jobs:
   gomod2nix:
     runs-on: ubuntu-latest
     env:
       HAS_APP: ${{ secrets.GOMOD2NIX_APP_ID != '' }}
     steps:
+      - name: Harden the runner (Audit all outbound calls)
+        if: ${{ vars.disable_harden_runner != 'true' }}
+        uses: step-security/harden-runner@f808768d1510423e83855289c910610ca9b43176 # v2.17.0
+        with:
+          egress-policy: audit
+
       - name: Generate a token
         id: generate-token
         # Pushing with GITHUB_TOKEN leaves the PR's CI runs stuck in an

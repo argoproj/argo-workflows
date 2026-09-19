@@ -299,8 +299,7 @@ func (woc *cronWfOperationCtx) terminateOutstandingWorkflows(ctx context.Context
 				woc.log.WithField("name", wfObjectRef.Name).Warn(ctx, "workflow not found when trying to terminate outstanding workflows")
 				continue
 			}
-			var alreadyShutdownErr util.AlreadyShutdownError
-			if errors.As(err, &alreadyShutdownErr) {
+			if alreadyShutdownErr, ok := errors.AsType[util.AlreadyShutdownError](err); ok {
 				woc.log.Warn(ctx, alreadyShutdownErr.Error())
 				continue
 			}
