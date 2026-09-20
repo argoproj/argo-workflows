@@ -30,7 +30,6 @@ type XHubConfig struct {
 // This provides a generic webhook authentication that works with any platform following
 // the standard X-Hub-Signature format (Gitea, Forgejo, and others).
 func xHubMatch(secret string, r *http.Request, config *XHubConfig) bool {
-
 	if len(secret) == 0 {
 		return false
 	}
@@ -99,5 +98,4 @@ func xHubMatch(secret string, r *http.Request, config *XHubConfig) bool {
 	}
 
 	return hmac.Equal(signatureBytes, expectedMAC)
-
 }
