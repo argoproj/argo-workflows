@@ -7373,7 +7373,9 @@ status:
   phase: Failed
   nodes:
     my-wf:
+      id: my-wf
       name: my-wf
+      type: Pod
       phase: Failed
 `)
 	ctx := logging.TestContext(t.Context())
@@ -7420,7 +7422,9 @@ status:
   phase: Failed
   nodes:
     my-wf:
+      id: my-wf
       name: my-wf
+      type: Pod
       phase: Failed
 `)
 	ctx := logging.TestContext(t.Context())
@@ -8884,6 +8888,50 @@ func TestPodHasContainerNeedingTermination(t *testing.T) {
 		},
 	}
 	assert.True(t, podHasContainerNeedingTermination(&pod, tmpl))
+
+	// containerSet: a failed container must not cause a still-running
+	// sibling to be terminated early.
+	containerSetTmpl := wfv1.Template{
+		ContainerSet: &wfv1.ContainerSetTemplate{
+			Containers: []wfv1.ContainerNode{
+				{Container: apiv1.Container{Name: "c1"}},
+				{Container: apiv1.Container{Name: "c2"}},
+			},
+		},
+	}
+	pod = apiv1.Pod{
+		Status: apiv1.PodStatus{
+			ContainerStatuses: []apiv1.ContainerStatus{
+				{
+					Name:  "c1",
+					State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 1}},
+				},
+				{
+					Name:  "c2",
+					State: apiv1.ContainerState{Running: &apiv1.ContainerStateRunning{}},
+				},
+			},
+		},
+	}
+	assert.False(t, podHasContainerNeedingTermination(&pod, containerSetTmpl))
+
+	// containerSet: once every sibling has exited (regardless of code) the
+	// pod must be terminated so the wait container finishes.
+	pod = apiv1.Pod{
+		Status: apiv1.PodStatus{
+			ContainerStatuses: []apiv1.ContainerStatus{
+				{
+					Name:  "c1",
+					State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 1}},
+				},
+				{
+					Name:  "c2",
+					State: apiv1.ContainerState{Terminated: &apiv1.ContainerStateTerminated{ExitCode: 0}},
+				},
+			},
+		},
+	}
+	assert.True(t, podHasContainerNeedingTermination(&pod, containerSetTmpl))
 }
 
 func TestRetryOnDiffHost(t *testing.T) {

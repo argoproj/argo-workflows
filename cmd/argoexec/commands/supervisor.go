@@ -9,9 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"go.opentelemetry.io/otel/trace"
-	"golang.org/x/sync/errgroup"
 
-	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	wfexecutor "github.com/argoproj/argo-workflows/v4/workflow/executor"
@@ -76,7 +74,12 @@ func supervisorContainer(ctx context.Context) error {
 				return we.PostMain(ctx, bgCtx, true)
 			}
 
-			preMainErr := supervisorPreMain(ctx, we)
+			// Zero umask so files/dirs created by Prepare are accessible to main
+			// when it runs as a different uid. The legacy init container does the
+			// same. A stale marker from a prior attempt needs no explicit cleanup:
+			// the heartbeat's initial RUNNING write has already overwritten it.
+			osspecific.AllowGrantingAccessToEveryone()
+			preMainErr := we.Prepare(ctx)
 			stopHeartbeat()
 
 			preMainFailed := false
@@ -111,69 +114,6 @@ func supervisorContainer(ctx context.Context) error {
 			return we.PostMain(ctx, bgCtx, preMainFailed)
 		},
 	)
-}
-
-// preMainStages is the subset of WorkflowExecutor that supervisorPreMain
-// drives. Carved out so the orchestration (umask, marker cleanup, sequence,
-// parallel artifact loading, errgroup cancellation) can be tested without a
-// full WorkflowExecutor.
-type preMainStages interface {
-	WriteTemplate() error
-	StageFiles(ctx context.Context) error
-	LoadArtifactsWithoutPlugins(ctx context.Context) error
-	LoadArtifactsFromPlugin(ctx context.Context, pluginName wfv1.ArtifactPluginName) error
-}
-
-// supervisorPreMain runs the pre-main phase: template write, script staging,
-// and input artifact download (non-plugin and per-plugin in parallel).
-func supervisorPreMain(ctx context.Context, wfExecutor *wfexecutor.WorkflowExecutor) error {
-	// Zero umask so files/dirs created here are accessible to main when it
-	// runs as a different uid. The legacy init container does the same.
-	osspecific.AllowGrantingAccessToEveryone()
-
-	// A stale marker from a prior attempt needs no explicit cleanup: the
-	// heartbeat's initial RUNNING write (startStatusHeartbeat, before we get
-	// here) has already overwritten it with a fresh mtime.
-	return runSupervisorPreMain(ctx, wfExecutor, inputArtifactPluginNames())
-}
-
-// runSupervisorPreMain is the testable core of supervisorPreMain. Takes
-// the plugin name list explicitly so tests don't have to mutate env vars.
-func runSupervisorPreMain(ctx context.Context, stages preMainStages, pluginNames []wfv1.ArtifactPluginName) error {
-	if err := stages.WriteTemplate(); err != nil {
-		return fmt.Errorf("failed to write template: %w", err)
-	}
-	if err := stages.StageFiles(ctx); err != nil {
-		return fmt.Errorf("failed to stage files: %w", err)
-	}
-
-	g, gctx := errgroup.WithContext(ctx)
-	g.Go(func() error {
-		if err := stages.LoadArtifactsWithoutPlugins(gctx); err != nil {
-			return fmt.Errorf("failed to load non-plugin input artifacts: %w", err)
-		}
-		return nil
-	})
-	for _, name := range pluginNames {
-		g.Go(func() error {
-			if err := stages.LoadArtifactsFromPlugin(gctx, name); err != nil {
-				return fmt.Errorf("failed to load input artifacts from plugin %q: %w", name, err)
-			}
-			return nil
-		})
-	}
-	return g.Wait()
-}
-
-// inputArtifactPluginNames reads the controller-supplied list of input
-// artifact plugin names from the supervisor's environment.
-func inputArtifactPluginNames() []wfv1.ArtifactPluginName {
-	raw := common.SplitPluginNames(os.Getenv(common.EnvVarInputArtifactPluginNames))
-	names := make([]wfv1.ArtifactPluginName, 0, len(raw))
-	for _, p := range raw {
-		names = append(names, wfv1.ArtifactPluginName(p))
-	}
-	return names
 }
 
 // startStatusHeartbeat writes an initial RUNNING status, then rewrites it every

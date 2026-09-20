@@ -1,5 +1,35 @@
 # Changelog
 
+## v4.1.4 (2026-09-18)
+
+Full Changelog: [v4.1.3...v4.1.4](https://github.com/argoproj/argo-workflows/compare/v4.1.3...v4.1.4)
+
+### Selected Changes
+
+* [b5b4d665e](https://github.com/argoproj/argo-workflows/commit/b5b4d665e9be9b87c115f943584c3e0ae96fe073) Merge commit from fork
+* [17bd099b5](https://github.com/argoproj/argo-workflows/commit/17bd099b5ac4e63df8142f74aea6049842cbd81e) Merge commit from fork
+* [a40972386](https://github.com/argoproj/argo-workflows/commit/a40972386c097ddf816d2e60e13f058bedca53d9) Merge commit from fork
+* [3f2825c1b](https://github.com/argoproj/argo-workflows/commit/3f2825c1b9bc250a9c60d73973832b4865c4fdeb) Merge commit from fork
+* [a9740dd9e](https://github.com/argoproj/argo-workflows/commit/a9740dd9e8e1302f0f217b959df84d99fecd9a7d) chore(deps): update module go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc to v1.45.0 [security] (release-4.1) (#16996)
+* [aae1375c0](https://github.com/argoproj/argo-workflows/commit/aae1375c0ccce5fe9a550b8507df0b5d10da0f20) chore(deps): update module go.opentelemetry.io/otel/exporters/otlp/otlptrace to v1.45.0 [security] (release-4.1) (#17002)
+* [9db4dfb53](https://github.com/argoproj/argo-workflows/commit/9db4dfb53070ba3bd8e001d45b6cbf25cf0b4d91) chore(deps): update module go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp to v1.45.0 [security] (release-4.1) (#16997)
+* [83bc3de75](https://github.com/argoproj/argo-workflows/commit/83bc3de75d8aa8db7127185d00f4397b0c8c9f21) chore(deps): update module go.opentelemetry.io/otel/sdk to v1.45.0 [security] (release-4.1) (#16998)
+* [49e529123](https://github.com/argoproj/argo-workflows/commit/49e529123bca4bc6b424ac8ea4673492fd96b148) fix(controller): resolve node ID hash collisions instead of corrupting the graph (cherry-pick #16883 for 4.1) (#16986)
+* [f0342ba21](https://github.com/argoproj/argo-workflows/commit/f0342ba215ba60230baee7358c8c00f053fe3de9) fix(sync): break lock queue ties identically in memory and in the database (cherry-pick #16880 for 4.1) (#16951)
+* [6f62eaf01](https://github.com/argoproj/argo-workflows/commit/6f62eaf01005936b851b3ed0028ccf11a9bf229f) fix(controller): skip empty optional step artifacts (cherry-pick #16839 for 4.1) (#16944)
+* [e69872804](https://github.com/argoproj/argo-workflows/commit/e6987280415d9eeaa45b6aed85320e3e77d1f037) fix: guard nil pointer deref in FormulateRetryWorkflow when retry parent node is missing (cherry-pick #16926 for 4.1) (#16947)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Claude Fable 5
+* Claude Fable 5.1
+* Claude Opus 5 (1M context)
+* Nepoxx
+* Raymond Wong
+
+</details>
+
 ## v4.1.3 (2026-09-11)
 
 Full Changelog: [v4.1.2...v4.1.3](https://github.com/argoproj/argo-workflows/compare/v4.1.2...v4.1.3)
@@ -147,7 +177,7 @@ Full Changelog: [v4.1.0-rc1...v4.1.0-rc2](https://github.com/argoproj/argo-workf
 
 ## v4.1.0-rc1 (2026-07-23)
 
-Full Changelog: [v4.0.11...v4.1.0-rc1](https://github.com/argoproj/argo-workflows/compare/v4.0.11...v4.1.0-rc1)
+Full Changelog: [v4.0.12...v4.1.0-rc1](https://github.com/argoproj/argo-workflows/compare/v4.0.12...v4.1.0-rc1)
 
 ### Selected Changes
 
@@ -767,6 +797,31 @@ Full Changelog: [v4.0.11...v4.1.0-rc1](https://github.com/argoproj/argo-workflow
 * workflow-automation
 * Yu-Hong Shen
 * zvdy
+
+</details>
+
+## v4.0.12 (2026-09-18)
+
+Full Changelog: [v4.0.11...v4.0.12](https://github.com/argoproj/argo-workflows/compare/v4.0.11...v4.0.12)
+
+### Selected Changes
+
+* [d087979df](https://github.com/argoproj/argo-workflows/commit/d087979dfac1f6b1f8a57b44c2ccd6bd55f1d696) Merge commit from fork
+* [510a9f8e4](https://github.com/argoproj/argo-workflows/commit/510a9f8e44bad39128e308d6fb2f3ac74c9940d1) Merge commit from fork
+* [aa939696a](https://github.com/argoproj/argo-workflows/commit/aa939696a966457d53483ac6be93c51e5ad8daa8) Merge commit from fork
+* [4a0d30a2e](https://github.com/argoproj/argo-workflows/commit/4a0d30a2e68fe974c10b16c83f1957e43eb49ee5) chore(deps): update module go.opentelemetry.io/otel/sdk to v1.45.0 [security] (release-4.0) (#17001)
+* [86ef3c9a2](https://github.com/argoproj/argo-workflows/commit/86ef3c9a2e4dad9effd404668f37935bfcd175c5) fix(controller): resolve node ID hash collisions instead of corrupting the graph (cherry-pick #16883 for 4.0) (#16988)
+* [423e591b5](https://github.com/argoproj/argo-workflows/commit/423e591b50e3421c1b382cb86b1b11b3f818b528) chore(deps): update module go.opentelemetry.io/otel/sdk to v1.45.0 [security] (release-4.0) (#16995)
+* [56f5427fb](https://github.com/argoproj/argo-workflows/commit/56f5427fbe8f5983f111806248efbdf175d5b20f) fix(sync): break lock queue ties identically in memory and in the database (cherry-pick #16880 for 4.0) (#16954)
+* [4f1cfae03](https://github.com/argoproj/argo-workflows/commit/4f1cfae03002e2e22d0be8c80fa4e1499c021fa9) fix(controller): skip empty optional step artifacts (cherry-pick #16839 for 4.0) (#16950)
+* [157bf0e48](https://github.com/argoproj/argo-workflows/commit/157bf0e482df9d860ccb03dc32592619e855d533) fix: guard nil pointer deref in FormulateRetryWorkflow when retry parent node is missing (cherry-pick #16926 for 4.0) (#16948)
+
+<details><summary><h3>Contributors</h3></summary>
+
+* Alan Clucas
+* Claude Fable 5.1
+* Nepoxx
+* Raymond Wong
 
 </details>
 

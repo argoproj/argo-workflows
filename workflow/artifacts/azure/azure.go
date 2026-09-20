@@ -215,8 +215,10 @@ func (azblobDriver *ArtifactDriver) DownloadDirectory(ctx context.Context, conta
 			continue
 		}
 
-		relKeyPath := strings.TrimPrefix(file, artifact.Azure.Blob)
-		localPath := filepath.Join(path, relKeyPath)
+		localPath, err := artifactscommon.LocalPathForObject(path, artifact.Azure.Blob, file)
+		if err != nil {
+			return err
+		}
 
 		err = DownloadFile(ctx, containerClient, file, localPath)
 		if err != nil {

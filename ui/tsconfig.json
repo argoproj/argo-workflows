@@ -13,6 +13,12 @@
         "noUnusedLocals": true,
         "declaration": false,
         "downlevelIteration": true,
+        "baseUrl": ".",
+        "paths": {
+            // uuid@11 (forced via resolutions for GHSA-w5hq-g745-h8pq) ships type
+            // declarations that need TypeScript >= 5.0; use @types/uuid instead
+            "uuid": ["node_modules/@types/uuid"]
+        },
         "lib": [
             "es2017",
             "dom"

@@ -143,6 +143,9 @@ type WorkflowController struct {
 	semaphoreNotifyDelay time.Duration
 	// gcAfterNotHitDuration is how long a memoization cache entry may go unhit before GC removes it (CACHE_GC_AFTER_NOT_HIT_DURATION)
 	gcAfterNotHitDuration time.Duration
+	// artifactGCRetryWindow is how long after a workflow completes (or is deleted) a failed attempt to start
+	// artifact GC keeps being retried before it is abandoned (ARGO_ARTIFACT_GC_RETRY_WINDOW)
+	artifactGCRetryWindow time.Duration
 	// healthzAge is the max age a workflow may go unreconciled before /healthz reports failure (HEALTHZ_AGE)
 	healthzAge time.Duration
 	// maxOperationTime is the maximum time a workflow operation is allowed to run for before requeuing the workflow onto the workqueue (MAX_OPERATION_TIME)
@@ -243,6 +246,7 @@ func NewWorkflowController(ctx context.Context, restConfig *rest.Config, kubecli
 		cacheGCPeriod:              env.LookupEnvDurationOr(ctx, "CACHE_GC_PERIOD", 0),
 		semaphoreNotifyDelay:       env.LookupEnvDurationOr(ctx, "SEMAPHORE_NOTIFY_DELAY", time.Second),
 		gcAfterNotHitDuration:      env.LookupEnvDurationOr(ctx, "CACHE_GC_AFTER_NOT_HIT_DURATION", 30*time.Second),
+		artifactGCRetryWindow:      env.LookupEnvDurationOr(ctx, "ARGO_ARTIFACT_GC_RETRY_WINDOW", 60*time.Minute),
 		healthzAge:                 env.LookupEnvDurationOr(ctx, "HEALTHZ_AGE", 5*time.Minute),
 		maxOperationTime:           env.LookupEnvDurationOr(ctx, "MAX_OPERATION_TIME", 30*time.Second),
 		requeueTime:                env.LookupEnvDurationOr(ctx, common.EnvVarDefaultRequeueTime, 10*time.Second),
