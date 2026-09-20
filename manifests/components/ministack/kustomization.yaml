@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+
+resources:
+  - ministack-deployment.yaml
+  - ministack-service.yaml
+
+patches:
+  - path: overlays/minio-deployment-delete.yaml
+  - path: overlays/minio-service-delete.yaml
+  - path: overlays/artifact-repositories-configmap.yaml
+  - path: overlays/workflow-controller-configmap.yaml
