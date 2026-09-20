@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
-	"k8s.io/klog/v2"
 
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 )
@@ -15,13 +14,6 @@ const (
 	logrDebugLevel = 1 // Debug level starts at 1 in logr
 	logrMaxLevel   = 4 // Maximum supported debug level
 )
-
-// setupKlogAdapter configures klog to use our logging system
-func setupKlogAdapter(ctx context.Context) {
-	logger := logging.RequireLoggerFromContext(ctx)
-	sink := &logrSink{logger: logger}
-	klog.SetLogger(logr.New(sink))
-}
 
 // logrSink adapts our logging system to logr's LogSink interface
 type logrSink struct {
