@@ -286,6 +286,7 @@ func (e *Engine) assessStepGroups(ctx context.Context) {
 		isRunning := false
 		isFailed := false
 		isSucceeded := true
+		allOmitted := len(stepGroup.Steps) > 0
 		// Track first failing child ID to surface in the StepGroup's failure
 		// message, matching pre-refactor executeStepGroup semantics. The message
 		// `child '<id>' failed` bubbles up through the Steps node to the workflow
@@ -299,7 +300,11 @@ func (e *Engine) assessStepGroups(ctx context.Context) {
 			if err != nil {
 				isPending = true
 				isSucceeded = false
+				allOmitted = false
 				continue
+			}
+			if childNode.Phase != wfv1.NodeOmitted {
+				allOmitted = false
 			}
 
 			switch childNode.Phase {
@@ -344,6 +349,14 @@ func (e *Engine) assessStepGroups(ctx context.Context) {
 			}
 		} else if isSucceeded && !isPending && !isRunning {
 			newPhase = wfv1.NodeSucceeded
+			if allOmitted {
+				// A group whose every step was omitted because an earlier group
+				// failed never ran, so it is Omitted rather than Succeeded. Retry
+				// and memoized resubmit rely on this: they refuse to reset a
+				// failed node with a Succeeded descendant, and this group hangs
+				// off the failed group's outbound nodes.
+				newPhase = wfv1.NodeOmitted
+			}
 		}
 
 		if sgNode.Phase != newPhase {
