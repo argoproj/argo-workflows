@@ -85,9 +85,9 @@ require (
 	google.golang.org/api v0.288.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20260918162117-cecb64721679
 	google.golang.org/grpc v1.83.2
-	k8s.io/api v0.35.4
+	k8s.io/api v0.37.0
 	k8s.io/apiextensions-apiserver v0.35.4
-	k8s.io/apimachinery v0.35.4
+	k8s.io/apimachinery v0.37.0
 	k8s.io/cli-runtime v0.35.4
 	k8s.io/client-go v0.35.4
 	k8s.io/gengo v0.0.0-20260408192533-25e2208e0dc3
