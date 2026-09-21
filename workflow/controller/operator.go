@@ -374,7 +374,7 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		}
 	}
 
-	if woc.ShouldSuspend() {
+	if woc.ShouldSuspend() && !woc.GetShutdownStrategy().Enabled() {
 		woc.log.Info(ctx, "workflow suspended")
 		return
 	}
@@ -2867,6 +2867,10 @@ func (woc *wfOperationCtx) markWorkflowPhase(ctx context.Context, phase wfv1.Wor
 
 	switch phase {
 	case wfv1.WorkflowSucceeded, wfv1.WorkflowFailed, wfv1.WorkflowError:
+		if woc.GetShutdownStrategy().Enabled() && woc.execWf.Spec.Suspend != nil && *woc.execWf.Spec.Suspend {
+			woc.execWf.Spec.Suspend = nil
+			woc.updated = true
+		}
 		woc.log.Info(ctx, "Marking workflow completed")
 		woc.wf.Status.FinishedAt = metav1.Time{Time: time.Now().UTC()}
 		varkeys.WorkflowDuration.Set(woc.scope, fmt.Sprintf("%f", woc.workflowDurationSeconds()))

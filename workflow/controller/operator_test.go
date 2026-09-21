@@ -3001,6 +3001,49 @@ func TestSuspendResume(t *testing.T) {
 	assert.Len(t, pods.Items, 2)
 }
 
+var suspendedWorkflow = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: suspended-workflow
+spec:
+  entrypoint: main
+  suspend: true
+  templates:
+  - name: main
+    container:
+      image: busybox
+      command: [sh, -c]
+      args: ["sleep 60"]
+`
+
+func TestShutdownWorkflowLevelSuspendedWorkflow(t *testing.T) {
+	for _, strategy := range []wfv1.ShutdownStrategy{wfv1.ShutdownStrategyStop, wfv1.ShutdownStrategyTerminate} {
+		t.Run(string(strategy), func(t *testing.T) {
+			wf := wfv1.MustUnmarshalWorkflow(suspendedWorkflow)
+			wf.Spec.Shutdown = strategy
+			cancel, controller := newController(logging.TestContext(t.Context()), wf)
+			defer cancel()
+
+			ctx := logging.TestContext(t.Context())
+			woc := newWorkflowOperationCtx(ctx, wf, controller)
+			woc.operate(ctx)
+
+			assert.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+			assert.Equal(t, fmt.Sprintf("Stopped with strategy '%s'", strategy), woc.wf.Status.Message)
+			persistedWf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Get(ctx, wf.Name, metav1.GetOptions{})
+			require.NoError(t, err)
+			assert.Nil(t, persistedWf.Spec.Suspend)
+			node := woc.wf.Status.Nodes.FindByDisplayName("suspended-workflow")
+			require.NotNil(t, node)
+			assert.Equal(t, wfv1.NodeFailed, node.Phase)
+			pods, err := listPods(ctx, woc)
+			require.NoError(t, err)
+			assert.Empty(t, pods.Items)
+		})
+	}
+}
+
 var suspendTemplateWithDeadline = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
