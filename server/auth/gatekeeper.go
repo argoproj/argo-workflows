@@ -2,9 +2,9 @@ package auth
 
 import (
 	"context"
-	"errors"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -261,8 +261,8 @@ func (s *gatekeeper) authenticateClient(ctx context.Context, authorization strin
 		return nil, nil, status.Error(codes.Unauthenticated, err.Error())
 	}
 	if err := s.reviewToken(ctx, authorization, clients.Kubernetes); err != nil {
-			return nil, nil, status.Errorf(codes.Unauthenticated, "token not valid: %v", err)
-		}
+		return nil, nil, status.Errorf(codes.Unauthenticated, "token not valid: %v", err)
+	}
 	claims, _ := serviceaccount.ClaimSetFor(restConfig)
 	return clients, claims, nil
 }
