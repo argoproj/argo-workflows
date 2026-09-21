@@ -1,17 +1,25 @@
 package controller
 
 import (
+	"errors"
 	"fmt"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/kubernetes/fake"
+	k8stesting "k8s.io/client-go/testing"
 
 	"github.com/argoproj/argo-workflows/v4/config"
 	wfv1 "github.com/argoproj/argo-workflows/v4/pkg/apis/workflow/v1alpha1"
+	fakewfclientset "github.com/argoproj/argo-workflows/v4/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 )
@@ -393,6 +401,10 @@ func TestProcessArtifactGCStrategy(t *testing.T) {
 	//  verify ServiceAccount and Annotations
 	//  verify that the right volume mounts get created
 	//  verify patched pod spec
+	// both Pods are recorded as awaiting recoup and the strategy is now processed
+	assert.Equal(t, map[string]bool{pod1.Name: false, pod2.Name: false}, woc.wf.Status.ArtifactGCStatus.PodsRecouped)
+	assert.True(t, woc.wf.Status.ArtifactGCStatus.IsArtifactGCStrategyProcessed(wfv1.ArtifactGCOnWorkflowCompletion))
+
 	assert.Equal(t, "default", pod1.Spec.ServiceAccountName)
 	assert.Contains(t, pod1.Annotations, "annotation-key-1")
 	assert.Equal(t, "annotation-value-1", pod1.Annotations["annotation-key-1"])
@@ -913,4 +925,285 @@ func TestArtifactGCPodWithPlugins(t *testing.T) {
 	// Verify main container has artifact delete command
 	assert.Contains(t, mainContainer.Args, "artifact")
 	assert.Contains(t, mainContainer.Args, "delete")
+}
+
+// failPodCreates makes the fake kube client reject creation of pods whose name matches. The returned func lifts the
+// rejection again.
+func failPodCreates(controller *WorkflowController, match func(name string) bool) func() {
+	kube := controller.kubeclientset.(*fake.Clientset)
+	kube.PrependReactor("create", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		pod := action.(k8stesting.CreateAction).GetObject().(*corev1.Pod)
+		if match(pod.Name) {
+			return true, nil, errors.New("pod creation denied")
+		}
+		return false, nil, nil
+	})
+	return func() { kube.ReactionChain = kube.ReactionChain[1:] }
+}
+
+func failTaskCreates(controller *WorkflowController) func() {
+	wfclient := controller.wfclientset.(*fakewfclientset.Clientset)
+	wfclient.PrependReactor("create", "workflowartifactgctasks", func(k8stesting.Action) (bool, runtime.Object, error) {
+		return true, nil, errors.New("task creation denied")
+	})
+	return func() { wfclient.ReactionChain = wfclient.ReactionChain[1:] }
+}
+
+// assignTaskUIDs makes the fake workflow client give every created WorkflowArtifactGCTask a UID, as the API server
+// would, so that owner references built from stored tasks can be told apart from ones built from unsaved objects.
+func assignTaskUIDs(controller *WorkflowController) {
+	wfclient := controller.wfclientset.(*fakewfclientset.Clientset)
+	wfclient.PrependReactor("create", "workflowartifactgctasks", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		task := action.(k8stesting.CreateAction).GetObject().(*wfv1.WorkflowArtifactGCTask)
+		task.UID = types.UID("uid-" + task.Name)
+		return false, nil, nil
+	})
+}
+
+// every GC pod must be owned by the stored tasks, otherwise the API server rejects it for an empty owner UID
+func assertArtGCPodsOwnedByStoredTasks(t *testing.T, woc *wfOperationCtx) {
+	t.Helper()
+	ctx := logging.TestContext(t.Context())
+	pods, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).List(ctx, metav1.ListOptions{})
+	require.NoError(t, err)
+	for _, pod := range pods.Items {
+		require.NotEmpty(t, pod.OwnerReferences, pod.Name)
+		for _, owner := range pod.OwnerReferences {
+			assert.Equal(t, types.UID("uid-"+owner.Name), owner.UID, "pod %s owner %s", pod.Name, owner.Name)
+		}
+	}
+}
+
+func artGCErrorCondition(woc *wfOperationCtx) *wfv1.Condition {
+	for i, condition := range woc.wf.Status.Conditions {
+		if condition.Type == wfv1.ConditionTypeArtifactGCError {
+			return &woc.wf.Status.Conditions[i]
+		}
+	}
+	return nil
+}
+
+func countArtGCPodsAndTasks(t *testing.T, woc *wfOperationCtx) (int, int) {
+	t.Helper()
+	ctx := logging.TestContext(t.Context())
+	pods, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).List(ctx, metav1.ListOptions{})
+	require.NoError(t, err)
+	tasks, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowArtifactGCTasks(woc.wf.Namespace).List(ctx, metav1.ListOptions{})
+	require.NoError(t, err)
+	return len(pods.Items), len(tasks.Items)
+}
+
+// a completed artgcWorkflow whose completion strategy is due, with the retry window still open
+func newArtGCRetryWoc(t *testing.T, finishedAgo time.Duration) (*wfOperationCtx, func()) {
+	t.Helper()
+	wf := wfv1.MustUnmarshalWorkflow(artgcWorkflow)
+	wf.Status.FinishedAt = metav1.NewTime(time.Now().Add(-finishedAgo))
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
+	controller.artifactGCRetryWindow = time.Hour
+	assignTaskUIDs(controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.wf.Status.ArtifactGCStatus = &wfv1.ArtGCStatus{}
+	return woc, cancel
+}
+
+func TestArtifactGCStrategyRetriedAfterPodCreateFailure(t *testing.T) {
+	woc, cancel := newArtGCRetryWoc(t, time.Minute)
+	defer cancel()
+	ctx := logging.TestContext(t.Context())
+	allow := failPodCreates(woc.controller, func(string) bool { return true })
+
+	require.Error(t, woc.garbageCollectArtifacts(ctx))
+	gcStatus := woc.wf.Status.ArtifactGCStatus
+	assert.False(t, gcStatus.IsArtifactGCStrategyProcessed(wfv1.ArtifactGCOnWorkflowCompletion), "strategy must stay unprocessed after a failure")
+	assert.Empty(t, gcStatus.PodsRecouped)
+	require.NotNil(t, artGCErrorCondition(woc))
+	assert.Contains(t, artGCErrorCondition(woc).Message, "OnWorkflowCompletion: failed to create pod: pod creation denied")
+	assert.Contains(t, woc.wf.Finalizers, common.FinalizerArtifactGC)
+
+	allow()
+	require.NoError(t, woc.garbageCollectArtifacts(ctx))
+	assert.True(t, gcStatus.IsArtifactGCStrategyProcessed(wfv1.ArtifactGCOnWorkflowCompletion))
+	assert.Len(t, gcStatus.PodsRecouped, 2)
+	assert.Nil(t, artGCErrorCondition(woc), "start failure condition must be cleared once the strategy starts")
+	pods, tasks := countArtGCPodsAndTasks(t, woc)
+	assert.Equal(t, 2, pods)
+	assert.Equal(t, 2, tasks, "retry must not create duplicate tasks")
+	assertArtGCPodsOwnedByStoredTasks(t, woc)
+}
+
+func TestArtifactGCStrategyRetriedAfterTaskCreateFailure(t *testing.T) {
+	woc, cancel := newArtGCRetryWoc(t, time.Minute)
+	defer cancel()
+	ctx := logging.TestContext(t.Context())
+	allow := failTaskCreates(woc.controller)
+
+	require.Error(t, woc.garbageCollectArtifacts(ctx))
+	assert.False(t, woc.wf.Status.ArtifactGCStatus.IsArtifactGCStrategyProcessed(wfv1.ArtifactGCOnWorkflowCompletion))
+	assert.Contains(t, artGCErrorCondition(woc).Message, "task creation denied")
+	pods, tasks := countArtGCPodsAndTasks(t, woc)
+	assert.Equal(t, 0, pods)
+	assert.Equal(t, 0, tasks)
+
+	allow()
+	require.NoError(t, woc.garbageCollectArtifacts(ctx))
+	assert.True(t, woc.wf.Status.ArtifactGCStatus.IsArtifactGCStrategyProcessed(wfv1.ArtifactGCOnWorkflowCompletion))
+	pods, tasks = countArtGCPodsAndTasks(t, woc)
+	assert.Equal(t, 2, pods)
+	assert.Equal(t, 2, tasks)
+	assertArtGCPodsOwnedByStoredTasks(t, woc)
+}
+
+func TestArtifactGCStrategyPartialFailureRetriesOnlyTheMissingPod(t *testing.T) {
+	woc, cancel := newArtGCRetryWoc(t, time.Minute)
+	defer cancel()
+	ctx := logging.TestContext(t.Context())
+	const failing = "two-artgc-8tcvt-artgc-wfcomp-3953780960"
+	allow := failPodCreates(woc.controller, func(name string) bool { return name == failing })
+
+	require.Error(t, woc.garbageCollectArtifacts(ctx))
+	gcStatus := woc.wf.Status.ArtifactGCStatus
+	assert.False(t, gcStatus.IsArtifactGCStrategyProcessed(wfv1.ArtifactGCOnWorkflowCompletion))
+	assert.NotContains(t, gcStatus.PodsRecouped, failing)
+	// pods are created in map order, so the other pod may or may not have been created before the failure
+	pods, _ := countArtGCPodsAndTasks(t, woc)
+	assert.LessOrEqual(t, pods, 1)
+	assert.Len(t, gcStatus.PodsRecouped, pods, "every created pod must be recorded")
+
+	allow()
+	require.NoError(t, woc.garbageCollectArtifacts(ctx))
+	assert.True(t, gcStatus.IsArtifactGCStrategyProcessed(wfv1.ArtifactGCOnWorkflowCompletion))
+	assert.Len(t, gcStatus.PodsRecouped, 2)
+	pods, tasks := countArtGCPodsAndTasks(t, woc)
+	assert.Equal(t, 2, pods)
+	assert.Equal(t, 2, tasks)
+	assertArtGCPodsOwnedByStoredTasks(t, woc)
+}
+
+func TestArtifactGCStrategyAbandonedAfterRetryWindow(t *testing.T) {
+	for _, force := range []bool{false, true} {
+		t.Run(fmt.Sprintf("forceFinalizerRemoval=%v", force), func(t *testing.T) {
+			// finished long before the window, so the first failure is past the window already
+			woc, cancel := newArtGCRetryWoc(t, 2*time.Hour)
+			defer cancel()
+			woc.execWf.Spec.ArtifactGC.ForceFinalizerRemoval = force
+			ctx := logging.TestContext(t.Context())
+			defer failPodCreates(woc.controller, func(string) bool { return true })()
+			gcStatus := woc.wf.Status.ArtifactGCStatus
+
+			// the first failure is never abandoned, however old the workflow is: there has been no real attempt yet
+			require.Error(t, woc.garbageCollectArtifacts(ctx))
+			assert.False(t, gcStatus.IsArtifactGCStrategyProcessed(wfv1.ArtifactGCOnWorkflowCompletion))
+			assert.Contains(t, woc.wf.Finalizers, common.FinalizerArtifactGC)
+
+			// the second failure, past the window, abandons the strategy; the finalizer stays either way,
+			// because the fixture has an OnWorkflowDeletion artifact whose GC has not had its chance yet
+			require.NoError(t, woc.garbageCollectArtifacts(ctx))
+			assert.True(t, gcStatus.IsArtifactGCStrategyProcessed(wfv1.ArtifactGCOnWorkflowCompletion))
+			assert.Empty(t, gcStatus.PodsRecouped)
+			require.NotNil(t, artGCErrorCondition(woc))
+			assert.Contains(t, artGCErrorCondition(woc).Message, "OnWorkflowCompletion: abandoned after retrying for 1h0m0s: failed to create pod: pod creation denied")
+			assert.Contains(t, woc.wf.Finalizers, common.FinalizerArtifactGC)
+
+			// deletion makes the deletion strategy due; it fails, retries, and is abandoned in turn
+			deleted := metav1.NewTime(time.Now().Add(-2 * time.Hour))
+			woc.wf.DeletionTimestamp = &deleted
+			require.Error(t, woc.garbageCollectArtifacts(ctx), "first deletion-strategy failure must retry")
+			assert.False(t, gcStatus.IsArtifactGCStrategyProcessed(wfv1.ArtifactGCOnWorkflowDeletion))
+			assert.Contains(t, woc.wf.Finalizers, common.FinalizerArtifactGC)
+
+			require.NoError(t, woc.garbageCollectArtifacts(ctx))
+			assert.True(t, gcStatus.IsArtifactGCStrategyProcessed(wfv1.ArtifactGCOnWorkflowDeletion))
+			if force {
+				assert.NotContains(t, woc.wf.Finalizers, common.FinalizerArtifactGC, "force must release the workflow once every strategy has been abandoned")
+			} else {
+				assert.Contains(t, woc.wf.Finalizers, common.FinalizerArtifactGC)
+			}
+		})
+	}
+}
+
+// A repeat of an identical start failure must be write-free: no updated flag, no new event, condition untouched.
+// Anything else lets persistUpdates' unconditional 5s finalizer requeue outrun artifactGCRetryDelay, retrying the
+// failing create every few seconds instead of once per delay (#16897 review)
+func TestArtifactGCRepeatFailureIsWriteFree(t *testing.T) {
+	woc, cancel := newArtGCRetryWoc(t, time.Minute)
+	defer cancel()
+	ctx := logging.TestContext(t.Context())
+	failPodCreates(woc.controller, func(string) bool { return true })
+	events := woc.controller.eventRecorderManager.(*testEventRecorderManager).eventRecorder.Events
+
+	// the first failure records the condition and one event, and must be persisted
+	require.Error(t, woc.garbageCollectArtifacts(ctx))
+	assert.True(t, woc.updated)
+	assert.Len(t, events, 1)
+	first := *artGCErrorCondition(woc)
+
+	// the next reconcile fails identically: nothing to write, only the delayed requeue
+	<-events
+	woc.updated = false
+	require.Error(t, woc.garbageCollectArtifacts(ctx))
+	assert.False(t, woc.updated, "an identical failure must not trigger a Workflow update")
+	assert.Empty(t, events)
+	assert.Equal(t, first, *artGCErrorCondition(woc))
+}
+
+// A workflow whose artifacts all use OnWorkflowDeletion must keep the finalizer at completion, even with
+// forceFinalizerRemoval: nothing has failed, deletion GC just hasn't had its chance yet (#16897 review)
+func TestArtifactGCDeletionOnlyKeepsFinalizerUntilDeletion(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(strings.ReplaceAll(artgcWorkflow, "OnWorkflowCompletion", "OnWorkflowDeletion"))
+	wf.Status.FinishedAt = metav1.NewTime(time.Now().Add(-time.Minute))
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+	controller.artifactGCRetryWindow = time.Hour
+	assignTaskUIDs(controller)
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.wf.Status.ArtifactGCStatus = &wfv1.ArtGCStatus{}
+	woc.execWf.Spec.ArtifactGC.ForceFinalizerRemoval = true
+
+	// completion: the completion strategy finds nothing and is marked processed, but the finalizer must survive
+	require.NoError(t, woc.garbageCollectArtifacts(ctx))
+	assert.True(t, woc.wf.Status.ArtifactGCStatus.IsArtifactGCStrategyProcessed(wfv1.ArtifactGCOnWorkflowCompletion))
+	pods, _ := countArtGCPodsAndTasks(t, woc)
+	assert.Equal(t, 0, pods)
+	assert.Contains(t, woc.wf.Finalizers, common.FinalizerArtifactGC)
+
+	// deletion: the deletion strategy becomes due and its pods are created
+	deleted := metav1.Now()
+	woc.wf.DeletionTimestamp = &deleted
+	require.NoError(t, woc.garbageCollectArtifacts(ctx))
+	assert.True(t, woc.wf.Status.ArtifactGCStatus.IsArtifactGCStrategyProcessed(wfv1.ArtifactGCOnWorkflowDeletion))
+	pods, _ = countArtGCPodsAndTasks(t, woc)
+	assert.Positive(t, pods, "deletion GC must actually run")
+	assert.Contains(t, woc.wf.Finalizers, common.FinalizerArtifactGC, "kept until the pods are recouped")
+}
+
+// With mixed strategies, recouping the completion pods must not let force remove the finalizer while
+// OnWorkflowDeletion artifacts still await deletion (pre-existing hole, fixed alongside the above)
+func TestArtifactGCMixedStrategiesKeepFinalizerUntilDeletion(t *testing.T) {
+	woc, cancel := newArtGCRetryWoc(t, time.Minute)
+	defer cancel()
+	woc.execWf.Spec.ArtifactGC.ForceFinalizerRemoval = true
+	ctx := logging.TestContext(t.Context())
+
+	require.NoError(t, woc.garbageCollectArtifacts(ctx))
+	require.NotEmpty(t, woc.wf.Status.ArtifactGCStatus.PodsRecouped)
+	for podName := range woc.wf.Status.ArtifactGCStatus.PodsRecouped {
+		woc.wf.Status.ArtifactGCStatus.SetArtifactGCPodRecouped(podName, true)
+	}
+
+	require.NoError(t, woc.processArtifactGCCompletion(ctx))
+	assert.Contains(t, woc.wf.Finalizers, common.FinalizerArtifactGC, "deletion artifact still awaits deletion")
+}
+
+func TestArtifactGCForceFinalizerRemovalWaitsForDueStrategies(t *testing.T) {
+	woc, cancel := newArtGCRetryWoc(t, time.Minute)
+	defer cancel()
+	woc.execWf.Spec.ArtifactGC.ForceFinalizerRemoval = true
+	ctx := logging.TestContext(t.Context())
+
+	// completion strategy is due but has not been started, so nothing has been recorded yet
+	require.NoError(t, woc.processArtifactGCCompletion(ctx))
+	assert.Contains(t, woc.wf.Finalizers, common.FinalizerArtifactGC)
 }
