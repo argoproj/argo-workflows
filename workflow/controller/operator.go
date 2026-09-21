@@ -374,7 +374,8 @@ func (woc *wfOperationCtx) operate(ctx context.Context) {
 		}
 	}
 
-	if woc.ShouldSuspend() {
+	// Shutdown must take precedence over suspension so the workflow can complete.
+	if woc.ShouldSuspend() && !woc.GetShutdownStrategy().Enabled() {
 		woc.log.Info(ctx, "workflow suspended")
 		return
 	}

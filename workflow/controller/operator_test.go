@@ -9318,6 +9318,99 @@ func TestWorkflowInterpolatesNodeNameField(t *testing.T) {
 	assert.True(t, foundPod)
 }
 
+func TestShutdownSuspendedWorkflow(t *testing.T) {
+	for _, tt := range []struct {
+		name     string
+		strategy wfv1.ShutdownStrategy
+		onExit   bool
+	}{
+		{"Stop", wfv1.ShutdownStrategyStop, false},
+		{"Terminate", wfv1.ShutdownStrategyTerminate, false},
+		{"StopWithExitHandler", wfv1.ShutdownStrategyStop, true},
+		{"TerminateWithExitHandler", wfv1.ShutdownStrategyTerminate, true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			wf := wfv1.MustUnmarshalWorkflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: suspended-workflow
+  namespace: default
+spec:
+  entrypoint: main
+  suspend: true
+  templates:
+  - name: main
+    container:
+      image: busybox
+      command: [sh, -c]
+      args: ["sleep 60"]
+  - name: exit-handler
+    container:
+      image: busybox
+      command: [sh, -c]
+      args: ["echo cleanup"]
+`)
+			if tt.onExit {
+				wf.Spec.OnExit = "exit-handler"
+			}
+			ctx := logging.TestContext(t.Context())
+			cancel, controller := newController(ctx, wf)
+			defer cancel()
+			wfClient := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace)
+			woc := newWorkflowOperationCtx(ctx, wf, controller)
+			woc.operate(ctx)
+
+			// Suspension alone must keep the workflow running without starting any nodes or pods.
+			require.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+			require.Empty(t, woc.wf.Status.Nodes)
+			pods, err := listPods(ctx, woc)
+			require.NoError(t, err)
+			require.Empty(t, pods.Items)
+
+			// Request shutdown without clearing spec.suspend, as the CLI and API do.
+			if tt.strategy == wfv1.ShutdownStrategyTerminate {
+				require.NoError(t, util.TerminateWorkflow(ctx, wfClient, wf.Name))
+			} else {
+				require.NoError(t, util.StopWorkflow(ctx, wfClient, controller.hydrator, wf.Name, "", ""))
+			}
+			wf, err = wfClient.Get(ctx, wf.Name, metav1.GetOptions{})
+			require.NoError(t, err)
+			woc = newWorkflowOperationCtx(ctx, wf, controller)
+			woc.operate(ctx)
+
+			node, err := woc.wf.GetNodeByName(wf.Name)
+			require.NoError(t, err)
+			assert.Equal(t, wfv1.NodeFailed, node.Phase)
+			pods, err = listPods(ctx, woc)
+			require.NoError(t, err)
+			if tt.onExit && tt.strategy == wfv1.ShutdownStrategyStop {
+				require.Len(t, pods.Items, 1)
+				assert.Equal(t, "true", pods.Items[0].Labels[common.LabelKeyOnExit])
+				assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+
+				makePodsPhase(ctx, woc, apiv1.PodSucceeded)
+				woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+				woc.operate(ctx)
+				exitNode, err := woc.wf.GetNodeByName(common.GenerateOnExitNodeName(wf.Name))
+				require.NoError(t, err)
+				assert.Equal(t, wfv1.NodeSucceeded, exitNode.Phase)
+			} else {
+				assert.Empty(t, pods.Items)
+				assert.Len(t, woc.wf.Status.Nodes, 1)
+			}
+
+			wf, err = wfClient.Get(ctx, wf.Name, metav1.GetOptions{})
+			require.NoError(t, err)
+			assert.Equal(t, wfv1.WorkflowFailed, wf.Status.Phase)
+			assert.Equal(t, fmt.Sprintf("Stopped with strategy '%s'", tt.strategy), wf.Status.Message)
+			assert.False(t, wf.Status.FinishedAt.IsZero())
+			require.NotNil(t, wf.Spec.Suspend)
+			assert.True(t, *wf.Spec.Suspend)
+		})
+	}
+}
+
 func TestWorkflowShutdownStrategy(t *testing.T) {
 	wf := wfv1.MustUnmarshalWorkflow(`
 apiVersion: argoproj.io/v1alpha1
