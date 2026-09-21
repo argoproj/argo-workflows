@@ -66,11 +66,12 @@ type metric struct {
 
 type span struct {
 	common
-	Kind      string   `json:"kind,omitempty"` // Internal if not supplied
-	Root      bool     `json:"root,omitempty"`
-	AnyParent bool     `json:"anyParent,omitempty"`
-	Parents   []string `json:"parents,omitempty"` // Required if not a root span or anyParent
-	DocsOnly  bool     `json:"docsOnly,omitempty"`
+	Kind          string   `json:"kind,omitempty"` // Internal if not supplied
+	Root          bool     `json:"root,omitempty"`
+	AnyParent     bool     `json:"anyParent,omitempty"`
+	Parents       []string `json:"parents,omitempty"` // Required if not a root span or anyParent
+	DocsOnly      bool     `json:"docsOnly,omitempty"`
+	Deterministic bool     `json:"deterministic"`
 }
 
 type hasCommon interface {
