@@ -13886,7 +13886,7 @@ func TestInferFailedReasonArtifactPluginSidecar(t *testing.T) {
 
 func TestSubstitute(t *testing.T) {
 	ctx := logging.TestContext(t.Context())
-	woc := newWorkflowOperationCtx(ctx, &wfv1.Workflow{}, nil)
+	woc := newWoc(ctx)
 	scope := map[string]string{
 		"inputs.parameters.foo": "bar",
 		"inputs.parameters.baz": "qux",

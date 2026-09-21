@@ -263,6 +263,12 @@ func (s *wfScope) resolveArguments(ctx context.Context, args wfv1.Arguments, glo
 			if resolvedArt == nil {
 				continue
 			}
+			if art.Optional && !resolvedArt.HasLocationOrKey() {
+				// An optional artifact from a skipped or omitted step resolves
+				// to an empty placeholder; passing it on would fail the pod
+				// with an unresolvable input (#16839).
+				continue
+			}
 			resolvedArt.Name = art.Name
 			resolvedArtifacts = append(resolvedArtifacts, *resolvedArt)
 		}

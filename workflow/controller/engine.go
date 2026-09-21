@@ -34,21 +34,29 @@ type Engine struct {
 	log            logging.Logger
 	reconciler     TaskReconciler
 	hooks          *hookHandler
+	// expandingTaskGroups collects the TaskGroup nodes whose expanded items
+	// have not all materialized this reconcile. assessTaskGroups must leave
+	// them alone: an early return out of the reconciler (parallelism, a
+	// deadline, a pending exit hook) can leave later items not yet created
+	// while every created child is already fulfilled, and the group's phase
+	// can only be assessed against the full expanded item list.
+	expandingTaskGroups map[string]bool
 }
 
 // NewEngine creates a new Engine.
 func NewEngine(woc *wfOperationCtx, nodeName string, tmplCtx *templateresolution.TemplateContext, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, onExitTemplate bool) *Engine {
 	return &Engine{
-		woc:            woc,
-		nodeName:       nodeName,
-		tmplCtx:        tmplCtx,
-		tmpl:           tmpl,
-		orgTmpl:        orgTmpl,
-		boundaryID:     boundaryID,
-		onExitTemplate: onExitTemplate,
-		log:            woc.log,
-		reconciler:     NewK8sTaskReconciler(woc, tmplCtx, nodeName),
-		hooks:          newHookHandler(woc, tmplCtx, boundaryID, tmpl, woc.log),
+		woc:                 woc,
+		expandingTaskGroups: make(map[string]bool),
+		nodeName:            nodeName,
+		tmplCtx:             tmplCtx,
+		tmpl:                tmpl,
+		orgTmpl:             orgTmpl,
+		boundaryID:          boundaryID,
+		onExitTemplate:      onExitTemplate,
+		log:                 woc.log,
+		reconciler:          NewK8sTaskReconciler(woc, tmplCtx, nodeName),
+		hooks:               newHookHandler(woc, tmplCtx, boundaryID, tmpl, woc.log),
 	}
 }
 
@@ -250,7 +258,7 @@ func (e *Engine) assessTaskGroups(ctx context.Context, tasks []dag.Task) {
 		}
 		taskNodeName := e.taskNodeName(task.GetName())
 		tgNode, err := e.woc.wf.GetNodeByName(taskNodeName)
-		if err != nil || tgNode.Type != wfv1.NodeTypeTaskGroup || tgNode.Fulfilled() {
+		if err != nil || tgNode.Type != wfv1.NodeTypeTaskGroup || tgNode.Fulfilled() || e.expandingTaskGroups[taskNodeName] {
 			continue
 		}
 		e.assessTaskGroupPhase(ctx, tgNode)
@@ -505,9 +513,23 @@ func (e *Engine) dispatchTaskGroupChild(ctx context.Context, tasks []dag.Task, p
 	if err != nil {
 		return err
 	}
-	return e.reconcileExpanded(ctx, expanded, "", func(t dag.Task) bool {
+	err = e.reconcileExpanded(ctx, expanded, "", func(t dag.Task) bool {
 		return t.GetName() == childTaskName
 	})
+	e.noteExpansionProgress(ctx, e.taskNodeName(parentTaskName), expanded)
+	return err
+}
+
+// noteExpansionProgress records whether every expanded item of a TaskGroup has
+// a node yet, so assessTaskGroups knows which groups are still expanding.
+func (e *Engine) noteExpansionProgress(ctx context.Context, tgNodeName string, expanded []dag.Task) {
+	for _, et := range expanded {
+		if e.getTaskNode(ctx, et.GetName()) == nil {
+			e.expandingTaskGroups[tgNodeName] = true
+			return
+		}
+	}
+	delete(e.expandingTaskGroups, tgNodeName)
 }
 
 // gateExpansionAbsentOptional reproduces main's resolveReferences nil semantics for the
@@ -916,7 +938,9 @@ func (e *Engine) executeTask(ctx context.Context, task dag.Task, addChild bool) 
 			}
 		}
 
-		if err = e.reconcileExpanded(ctx, expandedTasks, tgNode.Name, nil); err != nil {
+		err = e.reconcileExpanded(ctx, expandedTasks, tgNode.Name, nil)
+		e.noteExpansionProgress(ctx, tgNode.Name, expandedTasks)
+		if err != nil {
 			return nil, err
 		}
 		return tgNode, nil
@@ -1103,7 +1127,7 @@ func (e *Engine) taskNodeName(taskName string) string {
 // taskNodeID formulates the node ID for a dag task
 func (e *Engine) taskNodeID(taskName string) string {
 	nodeName := e.taskNodeName(taskName)
-	return e.woc.wf.NodeID(nodeName)
+	return e.woc.wf.ResolveNodeID(nodeName)
 }
 
 // getTaskNode returns the node status of a task.
@@ -1287,7 +1311,7 @@ func (e *Engine) parentNodeNames(ctx context.Context, taskName string) []string 
 	}
 	var parents []string
 	for _, dep := range deps {
-		depNodeID := e.woc.wf.NodeID(e.taskNodeName(dep))
+		depNodeID := e.taskNodeID(dep)
 		if _, getErr := e.woc.wf.Status.Nodes.Get(depNodeID); getErr != nil {
 			continue
 		}

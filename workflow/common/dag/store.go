@@ -76,7 +76,7 @@ func (s *workflowStore) taskNameFromNodeName(nodeName string) string {
 
 // taskNodeID computes the node ID for a task.
 func (s *workflowStore) taskNodeID(taskName string) string {
-	return s.workflow.NodeID(s.taskNodeName(taskName))
+	return s.workflow.ResolveNodeID(s.taskNodeName(taskName))
 }
 
 // getPhase returns the current phase of a task.

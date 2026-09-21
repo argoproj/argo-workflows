@@ -22,10 +22,8 @@ import (
 
 // prepareNode initializes or updates the node status and sets the display name.
 func (woc *wfOperationCtx) prepareNode(ctx context.Context, nodeName string, tmplCtx *templateresolution.TemplateContext, processedTmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, nodeFlag *wfv1.NodeFlag) (*wfv1.NodeStatus, error) {
-	node, err := woc.wf.GetNodeByName(nodeName)
-	if err != nil {
-		woc.log.Warn(ctx, "Node was nil, will be initialized as type Skipped")
-	}
+	// A missing node will be initialized via woc.initializeNodeOrMarkError
+	node, _ := woc.wf.GetNodeByName(nodeName)
 
 	if displayName := processedTmpl.GetDisplayName(); node != nil && displayName != "" {
 		if !displayNameRegex.MatchString(displayName) {
@@ -84,8 +82,9 @@ func (woc *wfOperationCtx) handleSynchronization(ctx context.Context, nodeName s
 		return false, node, nil
 	}
 
-	lockCtx, lockSpan := woc.controller.tracing.StartTryAcquireLock(ctx, woc.wf.NodeID(nodeName), false)
-	lockAcquired, wfUpdated, msg, failedLockName, err := woc.controller.syncManager.TryAcquire(lockCtx, woc.wf, woc.wf.NodeID(nodeName), processedTmpl.Synchronization)
+	lockNodeID := woc.wf.ResolveNodeID(nodeName)
+	lockCtx, lockSpan := woc.controller.tracing.StartTryAcquireLock(ctx, lockNodeID, false)
+	lockAcquired, wfUpdated, msg, failedLockName, err := woc.controller.syncManager.TryAcquire(lockCtx, woc.wf, lockNodeID, processedTmpl.Synchronization)
 	lockSpan.SetAttributes(attribute.Bool("LockAcquired", lockAcquired))
 	lockSpan.End()
 	if err != nil {
@@ -247,10 +246,6 @@ func (woc *wfOperationCtx) handleRetries(ctx context.Context, node *wfv1.NodeSta
 		nodeName = fmt.Sprintf("%s(%d)", retryNodeName, retryNum)
 		// We need to check if the node already exists in case we are re-processing
 		node, _ = woc.wf.GetNodeByName(nodeName)
-		// Register the child with the retry parent BEFORE dispatching so that
-		// FindRetryNode (used by scheduleOnDifferentHost for nodeAntiAffinity)
-		// can locate the retry parent during pod creation.
-		woc.addChildNode(ctx, retryNodeName, nodeName)
 	}
 
 	localParams := make(map[string]string)
@@ -305,7 +300,23 @@ func (woc *wfOperationCtx) handleRetries(ctx context.Context, node *wfv1.NodeSta
 		return node, err
 	}
 	if err != nil {
-		return woc.initializeNodeOrMarkError(ctx, node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err), err
+		errNode := woc.initializeNodeOrMarkError(ctx, node, nodeName, templateScope, orgTmpl, opts.boundaryID, opts.nodeFlag, err)
+		if node == nil {
+			// the attempt node was just created; link it or the next
+			// reconcile re-derives the same attempt name and panics
+			woc.addChildNode(ctx, retryNodeName, nodeName)
+		}
+		return errNode, err
+	}
+
+	// Link a new retry attempt only now that nothing can return before the
+	// dispatch below creates its node: an edge persisted for a node that is
+	// never created (the parameter substitution above can return on transient
+	// errors) can later be claimed by a colliding name (#16376). It still
+	// precedes dispatch so FindRetryNode (used by scheduleOnDifferentHost for
+	// nodeAntiAffinity) can locate the retry parent during pod creation.
+	if node == nil {
+		woc.addChildNode(ctx, retryNodeName, nodeName)
 	}
 
 	childNode, err := next(ctx, nodeName, processedTmpl, orgTmpl, opts)

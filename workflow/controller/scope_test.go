@@ -427,3 +427,23 @@ func TestCreateScope_NilParamValue(t *testing.T) {
 		assert.Equal(t, "default-val", scope.scope.AsAnyMap()["inputs.parameters.no-value"])
 	})
 }
+
+// TestResolveArgumentsSkipsOptionalArtifactFromSkippedStep verifies that an
+// optional artifact whose source resolves to an empty placeholder (the output of
+// a skipped or omitted step) is dropped from the arguments rather than passed on
+// as an input with no location (#16839).
+func TestResolveArgumentsSkipsOptionalArtifactFromSkippedStep(t *testing.T) {
+	ctx := logging.TestContext(t.Context())
+	scope := createScope(nil)
+	varkeys.StepsNodeRef.OutputsArtifactByName.Set(scope.scope, wfv1.Artifact{}, "generate", "message")
+	args := wfv1.Arguments{Artifacts: wfv1.Artifacts{{
+		Name:     "message",
+		From:     "{{steps.generate.outputs.artifacts.message}}",
+		Optional: true,
+	}}}
+
+	resolved, err := scope.resolveArguments(ctx, args, common.Parameters{})
+
+	require.NoError(t, err)
+	assert.Empty(t, resolved.Artifacts)
+}
