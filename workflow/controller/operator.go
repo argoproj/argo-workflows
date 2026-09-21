@@ -2882,13 +2882,19 @@ func (woc *wfOperationCtx) initializeNode(ctx context.Context, nodeName string, 
 	woc.log.WithFields(logging.Fields{"nodeName": nodeName, "template": common.GetTemplateHolderString(orgTmpl), "boundaryID": boundaryID}).Debug(ctx, "Initializing node")
 
 	existing, nodeID := woc.wf.ResolveNode(nodeName)
-	if existing != nil {
-		// Task-result placeholders have empty Type — allow overwriting them
-		// with the real node. Any other collision is a programming error.
-		if existing.Type != "" {
-			panic(fmt.Sprintf("node %s already initialized", nodeName))
+	if existing == nil {
+		// Task-result placeholders have empty Type (and no Name, so ResolveNode
+		// does not claim them). One in the 32-bit slot belongs to this node:
+		// overwrite it with the real node rather than widening past it.
+		if slot, err := woc.wf.Status.Nodes.Get(woc.wf.NodeID(nodeName)); err == nil && slot.Type == "" {
+			existing, nodeID = slot, woc.wf.NodeID(nodeName)
 		}
-	} else if woc.wf.Status.Nodes.Has(nodeID) {
+	}
+	if existing != nil && existing.Type != "" {
+		// Any collision other than a placeholder is a programming error.
+		panic(fmt.Sprintf("node %s already initialized", nodeName))
+	}
+	if existing == nil && woc.wf.Status.Nodes.Has(nodeID) {
 		// both the 32-bit and the widened 64-bit slot are held by other names
 		panic(fmt.Sprintf("node ID collision for %s could not be resolved", nodeName))
 	}

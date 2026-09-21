@@ -328,7 +328,7 @@ func TestEvaluateDependsLogic(t *testing.T) {
 
 	// Task A is running
 	nodeID := wf.NodeID("test.A")
-	wf.Status.Nodes[nodeID] = wfv1.NodeStatus{Phase: wfv1.NodeRunning}
+	wf.Status.Nodes[nodeID] = wfv1.NodeStatus{Name: "test.A", Phase: wfv1.NodeRunning}
 
 	// Task B should not proceed, task A is still running
 	result := evaluator.EvaluateAll(ctx)["B"]
@@ -337,7 +337,7 @@ func TestEvaluateDependsLogic(t *testing.T) {
 	assert.False(t, result.ShouldRun)
 
 	// Task A succeeded
-	wf.Status.Nodes[nodeID] = wfv1.NodeStatus{Phase: wfv1.NodeSucceeded}
+	wf.Status.Nodes[nodeID] = wfv1.NodeStatus{Name: "test.A", Phase: wfv1.NodeSucceeded}
 
 	// Task B and C should proceed and execute
 	result = evaluator.EvaluateAll(ctx)["B"]
@@ -355,8 +355,8 @@ func TestEvaluateDependsLogic(t *testing.T) {
 	assert.False(t, result.ShouldRun)
 
 	// Tasks B succeeded, C failed
-	wf.Status.Nodes[wf.NodeID("test.B")] = wfv1.NodeStatus{Phase: wfv1.NodeSucceeded}
-	wf.Status.Nodes[wf.NodeID("test.C")] = wfv1.NodeStatus{Phase: wfv1.NodeFailed}
+	wf.Status.Nodes[wf.NodeID("test.B")] = wfv1.NodeStatus{Name: "test.B", Phase: wfv1.NodeSucceeded}
+	wf.Status.Nodes[wf.NodeID("test.C")] = wfv1.NodeStatus{Name: "test.C", Phase: wfv1.NodeFailed}
 
 	// Tasks should-execute-1 and should-execute-2 should proceed and execute
 	result = evaluator.EvaluateAll(ctx)["should-execute-1"]
@@ -374,9 +374,9 @@ func TestEvaluateDependsLogic(t *testing.T) {
 	assert.False(t, result.ShouldRun)
 
 	// Tasks should-execute-1 and should-execute-2 succeeded, should-not-execute skipped
-	wf.Status.Nodes[wf.NodeID("test.should-execute-1")] = wfv1.NodeStatus{Phase: wfv1.NodeSucceeded}
-	wf.Status.Nodes[wf.NodeID("test.should-execute-2")] = wfv1.NodeStatus{Phase: wfv1.NodeSucceeded}
-	wf.Status.Nodes[wf.NodeID("test.should-not-execute")] = wfv1.NodeStatus{Phase: wfv1.NodeSkipped}
+	wf.Status.Nodes[wf.NodeID("test.should-execute-1")] = wfv1.NodeStatus{Name: "test.should-execute-1", Phase: wfv1.NodeSucceeded}
+	wf.Status.Nodes[wf.NodeID("test.should-execute-2")] = wfv1.NodeStatus{Name: "test.should-execute-2", Phase: wfv1.NodeSucceeded}
+	wf.Status.Nodes[wf.NodeID("test.should-not-execute")] = wfv1.NodeStatus{Name: "test.should-not-execute", Phase: wfv1.NodeSkipped}
 
 	// Tasks should-execute-3 should proceed and execute
 	result = evaluator.EvaluateAll(ctx)["should-execute-3"]
@@ -427,13 +427,13 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 	evaluator := newDAGEvaluator(wf, tmpl, "test", "test")
 
 	// Task A is still running, A-1 succeeded but A-2 failed
-	wf.Status.Nodes[wf.NodeID("test.A")] = wfv1.NodeStatus{
+	wf.Status.Nodes[wf.NodeID("test.A")] = wfv1.NodeStatus{Name: "test.A",
 		Phase:    wfv1.NodeRunning,
 		Type:     wfv1.NodeTypeTaskGroup,
 		Children: []string{wf.NodeID("test.A-1"), wf.NodeID("test.A-2")},
 	}
-	wf.Status.Nodes[wf.NodeID("test.A-1")] = wfv1.NodeStatus{Phase: wfv1.NodeRunning}
-	wf.Status.Nodes[wf.NodeID("test.A-2")] = wfv1.NodeStatus{Phase: wfv1.NodeRunning}
+	wf.Status.Nodes[wf.NodeID("test.A-1")] = wfv1.NodeStatus{Name: "test.A-1", Phase: wfv1.NodeRunning}
+	wf.Status.Nodes[wf.NodeID("test.A-2")] = wfv1.NodeStatus{Name: "test.A-2", Phase: wfv1.NodeRunning}
 
 	// Task B should not proceed as task A is still running
 	result := evaluator.EvaluateAll(ctx)["B"]
@@ -442,7 +442,7 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 	assert.False(t, result.ShouldRun)
 
 	// Task A succeeded
-	wf.Status.Nodes[wf.NodeID("test.A")] = wfv1.NodeStatus{
+	wf.Status.Nodes[wf.NodeID("test.A")] = wfv1.NodeStatus{Name: "test.A",
 		Phase:    wfv1.NodeSucceeded,
 		Type:     wfv1.NodeTypeTaskGroup,
 		Children: []string{wf.NodeID("test.A-1"), wf.NodeID("test.A-2")},
@@ -455,7 +455,7 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 	assert.False(t, result.ShouldRun)
 
 	// Task A-2 succeeded
-	wf.Status.Nodes[wf.NodeID("test.A-2")] = wfv1.NodeStatus{Phase: wfv1.NodeSucceeded}
+	wf.Status.Nodes[wf.NodeID("test.A-2")] = wfv1.NodeStatus{Name: "test.A-2", Phase: wfv1.NodeSucceeded}
 
 	// Task B should now proceed and execute
 	result = evaluator.EvaluateAll(ctx)["B"]
@@ -464,12 +464,12 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 	assert.True(t, result.ShouldRun)
 
 	// Task B succeeds and B-1 fails
-	wf.Status.Nodes[wf.NodeID("test.B")] = wfv1.NodeStatus{
+	wf.Status.Nodes[wf.NodeID("test.B")] = wfv1.NodeStatus{Name: "test.B",
 		Phase:    wfv1.NodeSucceeded,
 		Type:     wfv1.NodeTypeTaskGroup,
 		Children: []string{wf.NodeID("test.B-1"), wf.NodeID("test.B-2")},
 	}
-	wf.Status.Nodes[wf.NodeID("test.B-1")] = wfv1.NodeStatus{Phase: wfv1.NodeFailed}
+	wf.Status.Nodes[wf.NodeID("test.B-1")] = wfv1.NodeStatus{Name: "test.B-1", Phase: wfv1.NodeFailed}
 
 	// Task C should proceed, but not execute as not all of B's children have failed yet
 	result = evaluator.EvaluateAll(ctx)["C"]
@@ -477,7 +477,7 @@ func TestEvaluateAnyAllDependsLogic(t *testing.T) {
 	assert.False(t, result.Suspended)
 	assert.False(t, result.ShouldRun)
 
-	wf.Status.Nodes[wf.NodeID("test.B-2")] = wfv1.NodeStatus{Phase: wfv1.NodeFailed}
+	wf.Status.Nodes[wf.NodeID("test.B-2")] = wfv1.NodeStatus{Name: "test.B-2", Phase: wfv1.NodeFailed}
 
 	// Task C should now proceed and execute as all of B's children have failed
 	result = evaluator.EvaluateAll(ctx)["C"]
@@ -512,7 +512,7 @@ func TestEvaluateDependsLogicWhenTaskOmitted(t *testing.T) {
 	evaluator := newDAGEvaluator(wf, tmpl, "test", "test")
 
 	// Task A is running
-	wf.Status.Nodes[wf.NodeID("test.A")] = wfv1.NodeStatus{Phase: wfv1.NodeOmitted}
+	wf.Status.Nodes[wf.NodeID("test.A")] = wfv1.NodeStatus{Name: "test.A", Phase: wfv1.NodeOmitted}
 
 	// Task B should proceed and execute
 	result := evaluator.EvaluateAll(ctx)["B"]
@@ -558,7 +558,7 @@ func TestAllEvaluateDependsLogic(t *testing.T) {
 		evaluator := newDAGEvaluator(wf, tmpl, "test", "test")
 
 		// Task A is running
-		wf.Status.Nodes[wf.NodeID("test.same")] = wfv1.NodeStatus{Phase: statusMap[status]}
+		wf.Status.Nodes[wf.NodeID("test.same")] = wfv1.NodeStatus{Name: "test.same", Phase: statusMap[status]}
 
 		result := evaluator.EvaluateAll(ctx)["Run"]
 		require.NoError(t, result.Error)
@@ -611,9 +611,9 @@ func TestDAGEnhancedDependsWithFailureIntegration(t *testing.T) {
 	}
 
 	// Set up: A succeeded, B succeeded, C failed
-	wf.Status.Nodes[wf.NodeID("test.A")] = wfv1.NodeStatus{Phase: wfv1.NodeSucceeded}
-	wf.Status.Nodes[wf.NodeID("test.B")] = wfv1.NodeStatus{Phase: wfv1.NodeSucceeded}
-	wf.Status.Nodes[wf.NodeID("test.C")] = wfv1.NodeStatus{Phase: wfv1.NodeFailed}
+	wf.Status.Nodes[wf.NodeID("test.A")] = wfv1.NodeStatus{Name: "test.A", Phase: wfv1.NodeSucceeded}
+	wf.Status.Nodes[wf.NodeID("test.B")] = wfv1.NodeStatus{Name: "test.B", Phase: wfv1.NodeSucceeded}
+	wf.Status.Nodes[wf.NodeID("test.C")] = wfv1.NodeStatus{Name: "test.C", Phase: wfv1.NodeFailed}
 
 	evaluator := newDAGEvaluator(wf, tmpl, "test", "test")
 
@@ -663,7 +663,7 @@ func TestDAGAssessPhaseWithPendingTasks(t *testing.T) {
 	}
 
 	// C has failed
-	wf.Status.Nodes[wf.NodeID("test.C")] = wfv1.NodeStatus{Phase: wfv1.NodeFailed}
+	wf.Status.Nodes[wf.NodeID("test.C")] = wfv1.NodeStatus{Name: "test.C", Phase: wfv1.NodeFailed}
 
 	evaluator := newDAGEvaluator(wf, tmpl, "test", "test")
 
@@ -8581,6 +8581,63 @@ func TestDAGTaskGroupWithDeferredItems(t *testing.T) {
 
 	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
 	for _, item := range []string{"taskgroup-defer.g(0:1)", "taskgroup-defer.g(1:2)"} {
+		node, err := woc.wf.GetNodeByName(item)
+		if assert.NoError(t, err, "%s must have been run", item) {
+			assert.Equal(t, wfv1.NodeSucceeded, node.Phase, item)
+		}
+	}
+}
+
+// A TaskGroup whose created children are all fulfilled while later items are
+// still deferred by parallelism must stay Running: the group's phase can only
+// be assessed against the full expanded item list, not the children created
+// so far. Here item 0 is skipped by its when clause (an instantly fulfilled
+// child) and items 1 and 2 need pods that the workflow parallelism defers.
+var dagTaskGroupSkippedThenDeferredItems = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: taskgroup-skip-defer
+  namespace: default
+spec:
+  entrypoint: main
+  parallelism: 1
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: first
+        template: leaf
+      - name: g
+        template: leaf
+        when: "{{item}} != 0"
+        withItems: [0, 1, 2]
+  - name: leaf
+    container:
+      image: argoproj/argosay:v2
+`
+
+func TestDAGTaskGroupSkippedThenDeferredItems(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(dagTaskGroupSkippedThenDeferredItems)
+	cancel, controller := newController(logging.TestContext(t.Context()), wf)
+	defer cancel()
+	ctx := logging.TestContext(t.Context())
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	for range 12 {
+		woc.operate(ctx)
+		if woc.wf.Status.Fulfilled() {
+			break
+		}
+		makePodsPhase(ctx, woc, v1.PodSucceeded)
+		woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	}
+
+	assert.Equal(t, wfv1.WorkflowSucceeded, woc.wf.Status.Phase)
+	skipped, err := woc.wf.GetNodeByName("taskgroup-skip-defer.g(0:0)")
+	if assert.NoError(t, err) {
+		assert.Equal(t, wfv1.NodeSkipped, skipped.Phase)
+	}
+	for _, item := range []string{"taskgroup-skip-defer.g(1:1)", "taskgroup-skip-defer.g(2:2)"} {
 		node, err := woc.wf.GetNodeByName(item)
 		if assert.NoError(t, err, "%s must have been run", item) {
 			assert.Equal(t, wfv1.NodeSucceeded, node.Phase, item)
