@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"errors"
+	"fmt"
 	gosync "sync"
 	"sync/atomic"
 	"testing"
@@ -20,6 +21,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	kwait "k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	dynamicfake "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes"
@@ -299,21 +301,28 @@ func newController(ctx context.Context, options ...any) (context.CancelFunc, *Wo
 				S3Bucket: wfv1.S3Bucket{Endpoint: "my-endpoint", Bucket: "my-bucket"},
 			},
 		}),
-		cliExecutorLogFormat:      "text",
-		kubeclientset:             kube,
-		dynamicInterface:          dynamicClient,
-		metadataInterface:         metadataClient,
-		wfclientset:               wfclientset,
-		workflowKeyLock:           sync.NewKeyLock(),
-		wfArchive:                 sqldb.NullWorkflowArchive,
-		hydrator:                  hydratorfake.Noop,
-		estimatorFactory:          estimation.DummyEstimatorFactory,
-		eventRecorderManager:      &testEventRecorderManager{eventRecorder: record.NewFakeRecorder(64)},
-		archiveLabelSelector:      labels.Everything(),
-		cacheFactory:              controllercache.NewCacheFactory(kube, "default"),
-		progressPatchTickDuration: envutil.LookupEnvDurationOr(ctx, common.EnvVarProgressPatchTickDuration, 1*time.Minute),
-		progressFileTickDuration:  envutil.LookupEnvDurationOr(ctx, common.EnvVarProgressFileTickDuration, 3*time.Second),
-		maxStackDepth:             maxAllowedStackDepth,
+		cliExecutorLogFormat:       "text",
+		kubeclientset:              kube,
+		dynamicInterface:           dynamicClient,
+		metadataInterface:          metadataClient,
+		wfclientset:                wfclientset,
+		workflowKeyLock:            sync.NewKeyLock(),
+		wfArchive:                  sqldb.NullWorkflowArchive,
+		hydrator:                   hydratorfake.Noop,
+		estimatorFactory:           estimation.DummyEstimatorFactory,
+		eventRecorderManager:       &testEventRecorderManager{eventRecorder: record.NewFakeRecorder(64)},
+		archiveLabelSelector:       labels.Everything(),
+		cacheFactory:               controllercache.NewCacheFactory(kube, "default"),
+		progressPatchTickDuration:  envutil.LookupEnvDurationOr(ctx, common.EnvVarProgressPatchTickDuration, 1*time.Minute),
+		progressFileTickDuration:   envutil.LookupEnvDurationOr(ctx, common.EnvVarProgressFileTickDuration, 3*time.Second),
+		maxStackDepth:              maxAllowedStackDepth,
+		indexWorkflowSemaphoreKeys: true,
+		cacheGCPeriod:              0,
+		semaphoreNotifyDelay:       time.Second,
+		gcAfterNotHitDuration:      30 * time.Second,
+		healthzAge:                 5 * time.Minute,
+		maxOperationTime:           30 * time.Second,
+		requeueTime:                10 * time.Second,
 		lastWrittenVersions: lastWrittenVersions{
 			versions: make(map[types.UID]lastWrittenVersion),
 		},
@@ -340,7 +349,7 @@ func newController(ctx context.Context, options ...any) (context.CancelFunc, *Wo
 
 	// always compare to WorkflowController.Run to see what this block of code should be doing
 	{
-		wfc.wfInformer = util.NewWorkflowInformer(ctx, dynamicClient, "", 0, wfc.tweakListRequestListOptions, wfc.tweakWatchRequestListOptions, indexers)
+		wfc.wfInformer = util.NewWorkflowInformer(ctx, dynamicClient, "", 0, wfc.tweakListRequestListOptions, wfc.tweakWatchRequestListOptions, newIndexers(wfc.indexWorkflowSemaphoreKeys))
 		wfc.wfTaskSetInformer = informerFactory.Argoproj().V1alpha1().WorkflowTaskSets()
 		wfc.artGCTaskInformer = informerFactory.Argoproj().V1alpha1().WorkflowArtifactGCTasks()
 		wfc.taskResultInformer = wfc.newWorkflowTaskResultInformer(ctx)
@@ -491,7 +500,7 @@ func withOutputs(ctx context.Context, outputs wfv1.Outputs) with {
 				Outputs: &outputs,
 			},
 		}
-		_, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskResults(woc.wf.Namespace).
+		created, err := woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTaskResults(woc.wf.Namespace).
 			Create(
 				ctx,
 				taskResult,
@@ -500,6 +509,38 @@ func withOutputs(ctx context.Context, outputs wfv1.Outputs) with {
 		if err != nil {
 			panic(err)
 		}
+		// wait for the informer to see the task result, so the next operate() is
+		// guaranteed to observe the outputs
+		waitForInformer(ctx, woc.controller.taskResultInformer, created, func(any) bool { return true })
+	}
+}
+
+// waitForInformer waits until the informer store contains obj (keyed by
+// namespace/name) and upToDate returns true for the stored copy. Test helpers
+// must not write to a running informer's store directly: the informer delivers
+// watch events from the fake clientset asynchronously, so a direct store write
+// races with the delivery of an earlier event, which would overwrite the store
+// with a stale copy of the object. Instead, write through the fake clientset
+// and use this to wait for the change to be reflected. If the informer is
+// stopped (e.g. newWoc cancels the controller), no events will ever arrive and
+// nothing races with us, so write the store directly.
+func waitForInformer(ctx context.Context, informer cache.SharedIndexInformer, obj any, upToDate func(obj any) bool) {
+	key, err := cache.MetaNamespaceKeyFunc(obj)
+	if err != nil {
+		panic(err)
+	}
+	err = kwait.PollUntilContextTimeout(ctx, time.Millisecond, 10*time.Second, true, func(context.Context) (bool, error) {
+		if informer.IsStopped() {
+			return true, informer.GetStore().Update(obj)
+		}
+		stored, exists, getErr := informer.GetStore().GetByKey(key)
+		if getErr != nil || !exists {
+			return false, getErr
+		}
+		return upToDate(stored), nil
+	})
+	if err != nil {
+		panic(fmt.Sprintf("informer did not catch up for %q: %v", key, err))
 	}
 }
 
@@ -560,32 +601,44 @@ func syncPodsInformer(ctx context.Context, woc *wfOperationCtx, podObjs ...apiv1
 
 // makePodsPhase acts like a pod controller and simulates the transition of pods transitioning into a specified state
 func makePodsPhase(ctx context.Context, woc *wfOperationCtx, phase apiv1.PodPhase, with ...with) {
+	setPodPhases(ctx, woc, func(*wfv1.NodeStatus) apiv1.PodPhase { return phase }, with...)
+}
+
+// setPodPhases acts like a pod controller, but decides the phase per pod from the node it belongs to.
+// Returning an empty phase leaves the pod alone.
+func setPodPhases(ctx context.Context, woc *wfOperationCtx, decide func(node *wfv1.NodeStatus) apiv1.PodPhase, with ...with) {
 	podcs := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.GetNamespace())
 	pods, err := podcs.List(ctx, metav1.ListOptions{})
 	if err != nil {
 		panic(err)
 	}
 	for _, pod := range pods.Items {
-		if pod.Status.Phase != phase {
-			pod.Status.Phase = phase
-			if phase == apiv1.PodFailed {
-				pod.Status.Message = "Pod failed"
-			}
-			for _, w := range with {
-				w(&pod, woc)
-			}
-			updatedPod, err := podcs.Update(ctx, &pod, metav1.UpdateOptions{})
-			if err != nil {
-				panic(err)
-			}
-			err = woc.controller.PodController.TestingPodInformer().GetStore().Update(updatedPod)
-			if err != nil {
-				panic(err)
-			}
-			if phase == apiv1.PodSucceeded {
-				nodeID := woc.nodeID(&pod)
-				woc.wf.Status.MarkTaskResultComplete(ctx, nodeID)
-			}
+		nodeID := woc.nodeID(&pod)
+		node := woc.wf.Status.Nodes[nodeID]
+		phase := decide(&node)
+		if phase == "" || pod.Status.Phase == phase {
+			continue
+		}
+		pod.Status.Phase = phase
+		if phase == apiv1.PodFailed {
+			pod.Status.Message = "Pod failed"
+		}
+		for _, w := range with {
+			w(&pod, woc)
+		}
+		updatedPod, err := podcs.Update(ctx, &pod, metav1.UpdateOptions{})
+		if err != nil {
+			panic(err)
+		}
+		// wait for the pod informer to deliver the update instead of writing
+		// to its store directly: a direct write races with the informer's
+		// async delivery of the pod's earlier create event, which would put
+		// the stale pod back in the store
+		waitForInformer(ctx, woc.controller.PodController.TestingPodInformer(), updatedPod, func(obj any) bool {
+			return obj.(*apiv1.Pod).Status.Phase == phase
+		})
+		if phase == apiv1.PodSucceeded {
+			woc.wf.Status.MarkTaskResultComplete(ctx, nodeID)
 		}
 	}
 }

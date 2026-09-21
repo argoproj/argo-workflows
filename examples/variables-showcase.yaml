@@ -31,6 +31,9 @@ metadata:
     # Used to demonstrate workflow.labels / .labels.json / .labels.<name>.
     app: variables-demo
     tier: example
+    # This example runs a deep sequential chain and can exceed the default
+    # E2E_WAIT_TIMEOUT on loaded CI runners.
+    workflows.argoproj.io/test-timeout: 3m
 spec:
   entrypoint: main
   serviceAccountName: default               # → workflow.serviceAccountName (executor role bound)

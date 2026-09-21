@@ -19,10 +19,19 @@ func NewWorkflowServiceClient(t interface {
 	mock.TestingT
 	Cleanup(func())
 }) *WorkflowServiceClient {
+	if helper, ok := t.(interface{ Helper() }); ok {
+		helper.Helper()
+	}
+
 	mock := &WorkflowServiceClient{}
 	mock.Mock.Test(t)
 
-	t.Cleanup(func() { mock.AssertExpectations(t) })
+	t.Cleanup(func() {
+		if helper, ok := t.(interface{ Helper() }); ok {
+			helper.Helper()
+		}
+		mock.AssertExpectations(t)
+	})
 
 	return mock
 }
@@ -43,11 +52,11 @@ func (_m *WorkflowServiceClient) EXPECT() *WorkflowServiceClient_Expecter {
 // CreateWorkflow provides a mock function for the type WorkflowServiceClient
 func (_mock *WorkflowServiceClient) CreateWorkflow(ctx context.Context, in *workflow.WorkflowCreateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
 	// grpc.CallOption
-	_va := make([]interface{}, len(opts))
+	_va := make([]any, len(opts))
 	for _i := range opts {
 		_va[_i] = opts[_i]
 	}
-	var _ca []interface{}
+	var _ca []any
 	_ca = append(_ca, ctx, in)
 	_ca = append(_ca, _va...)
 	ret := _mock.Called(_ca...)
@@ -85,9 +94,9 @@ type WorkflowServiceClient_CreateWorkflow_Call struct {
 //   - ctx context.Context
 //   - in *workflow.WorkflowCreateRequest
 //   - opts ...grpc.CallOption
-func (_e *WorkflowServiceClient_Expecter) CreateWorkflow(ctx interface{}, in interface{}, opts ...interface{}) *WorkflowServiceClient_CreateWorkflow_Call {
+func (_e *WorkflowServiceClient_Expecter) CreateWorkflow(ctx any, in any, opts ...any) *WorkflowServiceClient_CreateWorkflow_Call {
 	return &WorkflowServiceClient_CreateWorkflow_Call{Call: _e.mock.On("CreateWorkflow",
-		append([]interface{}{ctx, in}, opts...)...)}
+		append([]any{ctx, in}, opts...)...)}
 }
 
 func (_c *WorkflowServiceClient_CreateWorkflow_Call) Run(run func(ctx context.Context, in *workflow.WorkflowCreateRequest, opts ...grpc.CallOption)) *WorkflowServiceClient_CreateWorkflow_Call {
@@ -130,11 +139,11 @@ func (_c *WorkflowServiceClient_CreateWorkflow_Call) RunAndReturn(run func(ctx c
 // DeleteWorkflow provides a mock function for the type WorkflowServiceClient
 func (_mock *WorkflowServiceClient) DeleteWorkflow(ctx context.Context, in *workflow.WorkflowDeleteRequest, opts ...grpc.CallOption) (*workflow.WorkflowDeleteResponse, error) {
 	// grpc.CallOption
-	_va := make([]interface{}, len(opts))
+	_va := make([]any, len(opts))
 	for _i := range opts {
 		_va[_i] = opts[_i]
 	}
-	var _ca []interface{}
+	var _ca []any
 	_ca = append(_ca, ctx, in)
 	_ca = append(_ca, _va...)
 	ret := _mock.Called(_ca...)
@@ -172,9 +181,9 @@ type WorkflowServiceClient_DeleteWorkflow_Call struct {
 //   - ctx context.Context
 //   - in *workflow.WorkflowDeleteRequest
 //   - opts ...grpc.CallOption
-func (_e *WorkflowServiceClient_Expecter) DeleteWorkflow(ctx interface{}, in interface{}, opts ...interface{}) *WorkflowServiceClient_DeleteWorkflow_Call {
+func (_e *WorkflowServiceClient_Expecter) DeleteWorkflow(ctx any, in any, opts ...any) *WorkflowServiceClient_DeleteWorkflow_Call {
 	return &WorkflowServiceClient_DeleteWorkflow_Call{Call: _e.mock.On("DeleteWorkflow",
-		append([]interface{}{ctx, in}, opts...)...)}
+		append([]any{ctx, in}, opts...)...)}
 }
 
 func (_c *WorkflowServiceClient_DeleteWorkflow_Call) Run(run func(ctx context.Context, in *workflow.WorkflowDeleteRequest, opts ...grpc.CallOption)) *WorkflowServiceClient_DeleteWorkflow_Call {
@@ -217,11 +226,11 @@ func (_c *WorkflowServiceClient_DeleteWorkflow_Call) RunAndReturn(run func(ctx c
 // GetWorkflow provides a mock function for the type WorkflowServiceClient
 func (_mock *WorkflowServiceClient) GetWorkflow(ctx context.Context, in *workflow.WorkflowGetRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
 	// grpc.CallOption
-	_va := make([]interface{}, len(opts))
+	_va := make([]any, len(opts))
 	for _i := range opts {
 		_va[_i] = opts[_i]
 	}
-	var _ca []interface{}
+	var _ca []any
 	_ca = append(_ca, ctx, in)
 	_ca = append(_ca, _va...)
 	ret := _mock.Called(_ca...)
@@ -259,9 +268,9 @@ type WorkflowServiceClient_GetWorkflow_Call struct {
 //   - ctx context.Context
 //   - in *workflow.WorkflowGetRequest
 //   - opts ...grpc.CallOption
-func (_e *WorkflowServiceClient_Expecter) GetWorkflow(ctx interface{}, in interface{}, opts ...interface{}) *WorkflowServiceClient_GetWorkflow_Call {
+func (_e *WorkflowServiceClient_Expecter) GetWorkflow(ctx any, in any, opts ...any) *WorkflowServiceClient_GetWorkflow_Call {
 	return &WorkflowServiceClient_GetWorkflow_Call{Call: _e.mock.On("GetWorkflow",
-		append([]interface{}{ctx, in}, opts...)...)}
+		append([]any{ctx, in}, opts...)...)}
 }
 
 func (_c *WorkflowServiceClient_GetWorkflow_Call) Run(run func(ctx context.Context, in *workflow.WorkflowGetRequest, opts ...grpc.CallOption)) *WorkflowServiceClient_GetWorkflow_Call {
@@ -304,11 +313,11 @@ func (_c *WorkflowServiceClient_GetWorkflow_Call) RunAndReturn(run func(ctx cont
 // LintWorkflow provides a mock function for the type WorkflowServiceClient
 func (_mock *WorkflowServiceClient) LintWorkflow(ctx context.Context, in *workflow.WorkflowLintRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
 	// grpc.CallOption
-	_va := make([]interface{}, len(opts))
+	_va := make([]any, len(opts))
 	for _i := range opts {
 		_va[_i] = opts[_i]
 	}
-	var _ca []interface{}
+	var _ca []any
 	_ca = append(_ca, ctx, in)
 	_ca = append(_ca, _va...)
 	ret := _mock.Called(_ca...)
@@ -346,9 +355,9 @@ type WorkflowServiceClient_LintWorkflow_Call struct {
 //   - ctx context.Context
 //   - in *workflow.WorkflowLintRequest
 //   - opts ...grpc.CallOption
-func (_e *WorkflowServiceClient_Expecter) LintWorkflow(ctx interface{}, in interface{}, opts ...interface{}) *WorkflowServiceClient_LintWorkflow_Call {
+func (_e *WorkflowServiceClient_Expecter) LintWorkflow(ctx any, in any, opts ...any) *WorkflowServiceClient_LintWorkflow_Call {
 	return &WorkflowServiceClient_LintWorkflow_Call{Call: _e.mock.On("LintWorkflow",
-		append([]interface{}{ctx, in}, opts...)...)}
+		append([]any{ctx, in}, opts...)...)}
 }
 
 func (_c *WorkflowServiceClient_LintWorkflow_Call) Run(run func(ctx context.Context, in *workflow.WorkflowLintRequest, opts ...grpc.CallOption)) *WorkflowServiceClient_LintWorkflow_Call {
@@ -391,11 +400,11 @@ func (_c *WorkflowServiceClient_LintWorkflow_Call) RunAndReturn(run func(ctx con
 // ListWorkflows provides a mock function for the type WorkflowServiceClient
 func (_mock *WorkflowServiceClient) ListWorkflows(ctx context.Context, in *workflow.WorkflowListRequest, opts ...grpc.CallOption) (*v1alpha1.WorkflowList, error) {
 	// grpc.CallOption
-	_va := make([]interface{}, len(opts))
+	_va := make([]any, len(opts))
 	for _i := range opts {
 		_va[_i] = opts[_i]
 	}
-	var _ca []interface{}
+	var _ca []any
 	_ca = append(_ca, ctx, in)
 	_ca = append(_ca, _va...)
 	ret := _mock.Called(_ca...)
@@ -433,9 +442,9 @@ type WorkflowServiceClient_ListWorkflows_Call struct {
 //   - ctx context.Context
 //   - in *workflow.WorkflowListRequest
 //   - opts ...grpc.CallOption
-func (_e *WorkflowServiceClient_Expecter) ListWorkflows(ctx interface{}, in interface{}, opts ...interface{}) *WorkflowServiceClient_ListWorkflows_Call {
+func (_e *WorkflowServiceClient_Expecter) ListWorkflows(ctx any, in any, opts ...any) *WorkflowServiceClient_ListWorkflows_Call {
 	return &WorkflowServiceClient_ListWorkflows_Call{Call: _e.mock.On("ListWorkflows",
-		append([]interface{}{ctx, in}, opts...)...)}
+		append([]any{ctx, in}, opts...)...)}
 }
 
 func (_c *WorkflowServiceClient_ListWorkflows_Call) Run(run func(ctx context.Context, in *workflow.WorkflowListRequest, opts ...grpc.CallOption)) *WorkflowServiceClient_ListWorkflows_Call {
@@ -478,11 +487,11 @@ func (_c *WorkflowServiceClient_ListWorkflows_Call) RunAndReturn(run func(ctx co
 // PodLogs provides a mock function for the type WorkflowServiceClient
 func (_mock *WorkflowServiceClient) PodLogs(ctx context.Context, in *workflow.WorkflowLogRequest, opts ...grpc.CallOption) (workflow.WorkflowService_PodLogsClient, error) {
 	// grpc.CallOption
-	_va := make([]interface{}, len(opts))
+	_va := make([]any, len(opts))
 	for _i := range opts {
 		_va[_i] = opts[_i]
 	}
-	var _ca []interface{}
+	var _ca []any
 	_ca = append(_ca, ctx, in)
 	_ca = append(_ca, _va...)
 	ret := _mock.Called(_ca...)
@@ -520,9 +529,9 @@ type WorkflowServiceClient_PodLogs_Call struct {
 //   - ctx context.Context
 //   - in *workflow.WorkflowLogRequest
 //   - opts ...grpc.CallOption
-func (_e *WorkflowServiceClient_Expecter) PodLogs(ctx interface{}, in interface{}, opts ...interface{}) *WorkflowServiceClient_PodLogs_Call {
+func (_e *WorkflowServiceClient_Expecter) PodLogs(ctx any, in any, opts ...any) *WorkflowServiceClient_PodLogs_Call {
 	return &WorkflowServiceClient_PodLogs_Call{Call: _e.mock.On("PodLogs",
-		append([]interface{}{ctx, in}, opts...)...)}
+		append([]any{ctx, in}, opts...)...)}
 }
 
 func (_c *WorkflowServiceClient_PodLogs_Call) Run(run func(ctx context.Context, in *workflow.WorkflowLogRequest, opts ...grpc.CallOption)) *WorkflowServiceClient_PodLogs_Call {
@@ -565,11 +574,11 @@ func (_c *WorkflowServiceClient_PodLogs_Call) RunAndReturn(run func(ctx context.
 // ResubmitWorkflow provides a mock function for the type WorkflowServiceClient
 func (_mock *WorkflowServiceClient) ResubmitWorkflow(ctx context.Context, in *workflow.WorkflowResubmitRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
 	// grpc.CallOption
-	_va := make([]interface{}, len(opts))
+	_va := make([]any, len(opts))
 	for _i := range opts {
 		_va[_i] = opts[_i]
 	}
-	var _ca []interface{}
+	var _ca []any
 	_ca = append(_ca, ctx, in)
 	_ca = append(_ca, _va...)
 	ret := _mock.Called(_ca...)
@@ -607,9 +616,9 @@ type WorkflowServiceClient_ResubmitWorkflow_Call struct {
 //   - ctx context.Context
 //   - in *workflow.WorkflowResubmitRequest
 //   - opts ...grpc.CallOption
-func (_e *WorkflowServiceClient_Expecter) ResubmitWorkflow(ctx interface{}, in interface{}, opts ...interface{}) *WorkflowServiceClient_ResubmitWorkflow_Call {
+func (_e *WorkflowServiceClient_Expecter) ResubmitWorkflow(ctx any, in any, opts ...any) *WorkflowServiceClient_ResubmitWorkflow_Call {
 	return &WorkflowServiceClient_ResubmitWorkflow_Call{Call: _e.mock.On("ResubmitWorkflow",
-		append([]interface{}{ctx, in}, opts...)...)}
+		append([]any{ctx, in}, opts...)...)}
 }
 
 func (_c *WorkflowServiceClient_ResubmitWorkflow_Call) Run(run func(ctx context.Context, in *workflow.WorkflowResubmitRequest, opts ...grpc.CallOption)) *WorkflowServiceClient_ResubmitWorkflow_Call {
@@ -652,11 +661,11 @@ func (_c *WorkflowServiceClient_ResubmitWorkflow_Call) RunAndReturn(run func(ctx
 // ResumeWorkflow provides a mock function for the type WorkflowServiceClient
 func (_mock *WorkflowServiceClient) ResumeWorkflow(ctx context.Context, in *workflow.WorkflowResumeRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
 	// grpc.CallOption
-	_va := make([]interface{}, len(opts))
+	_va := make([]any, len(opts))
 	for _i := range opts {
 		_va[_i] = opts[_i]
 	}
-	var _ca []interface{}
+	var _ca []any
 	_ca = append(_ca, ctx, in)
 	_ca = append(_ca, _va...)
 	ret := _mock.Called(_ca...)
@@ -694,9 +703,9 @@ type WorkflowServiceClient_ResumeWorkflow_Call struct {
 //   - ctx context.Context
 //   - in *workflow.WorkflowResumeRequest
 //   - opts ...grpc.CallOption
-func (_e *WorkflowServiceClient_Expecter) ResumeWorkflow(ctx interface{}, in interface{}, opts ...interface{}) *WorkflowServiceClient_ResumeWorkflow_Call {
+func (_e *WorkflowServiceClient_Expecter) ResumeWorkflow(ctx any, in any, opts ...any) *WorkflowServiceClient_ResumeWorkflow_Call {
 	return &WorkflowServiceClient_ResumeWorkflow_Call{Call: _e.mock.On("ResumeWorkflow",
-		append([]interface{}{ctx, in}, opts...)...)}
+		append([]any{ctx, in}, opts...)...)}
 }
 
 func (_c *WorkflowServiceClient_ResumeWorkflow_Call) Run(run func(ctx context.Context, in *workflow.WorkflowResumeRequest, opts ...grpc.CallOption)) *WorkflowServiceClient_ResumeWorkflow_Call {
@@ -739,11 +748,11 @@ func (_c *WorkflowServiceClient_ResumeWorkflow_Call) RunAndReturn(run func(ctx c
 // RetryWorkflow provides a mock function for the type WorkflowServiceClient
 func (_mock *WorkflowServiceClient) RetryWorkflow(ctx context.Context, in *workflow.WorkflowRetryRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
 	// grpc.CallOption
-	_va := make([]interface{}, len(opts))
+	_va := make([]any, len(opts))
 	for _i := range opts {
 		_va[_i] = opts[_i]
 	}
-	var _ca []interface{}
+	var _ca []any
 	_ca = append(_ca, ctx, in)
 	_ca = append(_ca, _va...)
 	ret := _mock.Called(_ca...)
@@ -781,9 +790,9 @@ type WorkflowServiceClient_RetryWorkflow_Call struct {
 //   - ctx context.Context
 //   - in *workflow.WorkflowRetryRequest
 //   - opts ...grpc.CallOption
-func (_e *WorkflowServiceClient_Expecter) RetryWorkflow(ctx interface{}, in interface{}, opts ...interface{}) *WorkflowServiceClient_RetryWorkflow_Call {
+func (_e *WorkflowServiceClient_Expecter) RetryWorkflow(ctx any, in any, opts ...any) *WorkflowServiceClient_RetryWorkflow_Call {
 	return &WorkflowServiceClient_RetryWorkflow_Call{Call: _e.mock.On("RetryWorkflow",
-		append([]interface{}{ctx, in}, opts...)...)}
+		append([]any{ctx, in}, opts...)...)}
 }
 
 func (_c *WorkflowServiceClient_RetryWorkflow_Call) Run(run func(ctx context.Context, in *workflow.WorkflowRetryRequest, opts ...grpc.CallOption)) *WorkflowServiceClient_RetryWorkflow_Call {
@@ -826,11 +835,11 @@ func (_c *WorkflowServiceClient_RetryWorkflow_Call) RunAndReturn(run func(ctx co
 // SetWorkflow provides a mock function for the type WorkflowServiceClient
 func (_mock *WorkflowServiceClient) SetWorkflow(ctx context.Context, in *workflow.WorkflowSetRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
 	// grpc.CallOption
-	_va := make([]interface{}, len(opts))
+	_va := make([]any, len(opts))
 	for _i := range opts {
 		_va[_i] = opts[_i]
 	}
-	var _ca []interface{}
+	var _ca []any
 	_ca = append(_ca, ctx, in)
 	_ca = append(_ca, _va...)
 	ret := _mock.Called(_ca...)
@@ -868,9 +877,9 @@ type WorkflowServiceClient_SetWorkflow_Call struct {
 //   - ctx context.Context
 //   - in *workflow.WorkflowSetRequest
 //   - opts ...grpc.CallOption
-func (_e *WorkflowServiceClient_Expecter) SetWorkflow(ctx interface{}, in interface{}, opts ...interface{}) *WorkflowServiceClient_SetWorkflow_Call {
+func (_e *WorkflowServiceClient_Expecter) SetWorkflow(ctx any, in any, opts ...any) *WorkflowServiceClient_SetWorkflow_Call {
 	return &WorkflowServiceClient_SetWorkflow_Call{Call: _e.mock.On("SetWorkflow",
-		append([]interface{}{ctx, in}, opts...)...)}
+		append([]any{ctx, in}, opts...)...)}
 }
 
 func (_c *WorkflowServiceClient_SetWorkflow_Call) Run(run func(ctx context.Context, in *workflow.WorkflowSetRequest, opts ...grpc.CallOption)) *WorkflowServiceClient_SetWorkflow_Call {
@@ -913,11 +922,11 @@ func (_c *WorkflowServiceClient_SetWorkflow_Call) RunAndReturn(run func(ctx cont
 // StopWorkflow provides a mock function for the type WorkflowServiceClient
 func (_mock *WorkflowServiceClient) StopWorkflow(ctx context.Context, in *workflow.WorkflowStopRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
 	// grpc.CallOption
-	_va := make([]interface{}, len(opts))
+	_va := make([]any, len(opts))
 	for _i := range opts {
 		_va[_i] = opts[_i]
 	}
-	var _ca []interface{}
+	var _ca []any
 	_ca = append(_ca, ctx, in)
 	_ca = append(_ca, _va...)
 	ret := _mock.Called(_ca...)
@@ -955,9 +964,9 @@ type WorkflowServiceClient_StopWorkflow_Call struct {
 //   - ctx context.Context
 //   - in *workflow.WorkflowStopRequest
 //   - opts ...grpc.CallOption
-func (_e *WorkflowServiceClient_Expecter) StopWorkflow(ctx interface{}, in interface{}, opts ...interface{}) *WorkflowServiceClient_StopWorkflow_Call {
+func (_e *WorkflowServiceClient_Expecter) StopWorkflow(ctx any, in any, opts ...any) *WorkflowServiceClient_StopWorkflow_Call {
 	return &WorkflowServiceClient_StopWorkflow_Call{Call: _e.mock.On("StopWorkflow",
-		append([]interface{}{ctx, in}, opts...)...)}
+		append([]any{ctx, in}, opts...)...)}
 }
 
 func (_c *WorkflowServiceClient_StopWorkflow_Call) Run(run func(ctx context.Context, in *workflow.WorkflowStopRequest, opts ...grpc.CallOption)) *WorkflowServiceClient_StopWorkflow_Call {
@@ -1000,11 +1009,11 @@ func (_c *WorkflowServiceClient_StopWorkflow_Call) RunAndReturn(run func(ctx con
 // SubmitWorkflow provides a mock function for the type WorkflowServiceClient
 func (_mock *WorkflowServiceClient) SubmitWorkflow(ctx context.Context, in *workflow.WorkflowSubmitRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
 	// grpc.CallOption
-	_va := make([]interface{}, len(opts))
+	_va := make([]any, len(opts))
 	for _i := range opts {
 		_va[_i] = opts[_i]
 	}
-	var _ca []interface{}
+	var _ca []any
 	_ca = append(_ca, ctx, in)
 	_ca = append(_ca, _va...)
 	ret := _mock.Called(_ca...)
@@ -1042,9 +1051,9 @@ type WorkflowServiceClient_SubmitWorkflow_Call struct {
 //   - ctx context.Context
 //   - in *workflow.WorkflowSubmitRequest
 //   - opts ...grpc.CallOption
-func (_e *WorkflowServiceClient_Expecter) SubmitWorkflow(ctx interface{}, in interface{}, opts ...interface{}) *WorkflowServiceClient_SubmitWorkflow_Call {
+func (_e *WorkflowServiceClient_Expecter) SubmitWorkflow(ctx any, in any, opts ...any) *WorkflowServiceClient_SubmitWorkflow_Call {
 	return &WorkflowServiceClient_SubmitWorkflow_Call{Call: _e.mock.On("SubmitWorkflow",
-		append([]interface{}{ctx, in}, opts...)...)}
+		append([]any{ctx, in}, opts...)...)}
 }
 
 func (_c *WorkflowServiceClient_SubmitWorkflow_Call) Run(run func(ctx context.Context, in *workflow.WorkflowSubmitRequest, opts ...grpc.CallOption)) *WorkflowServiceClient_SubmitWorkflow_Call {
@@ -1087,11 +1096,11 @@ func (_c *WorkflowServiceClient_SubmitWorkflow_Call) RunAndReturn(run func(ctx c
 // SuspendWorkflow provides a mock function for the type WorkflowServiceClient
 func (_mock *WorkflowServiceClient) SuspendWorkflow(ctx context.Context, in *workflow.WorkflowSuspendRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
 	// grpc.CallOption
-	_va := make([]interface{}, len(opts))
+	_va := make([]any, len(opts))
 	for _i := range opts {
 		_va[_i] = opts[_i]
 	}
-	var _ca []interface{}
+	var _ca []any
 	_ca = append(_ca, ctx, in)
 	_ca = append(_ca, _va...)
 	ret := _mock.Called(_ca...)
@@ -1129,9 +1138,9 @@ type WorkflowServiceClient_SuspendWorkflow_Call struct {
 //   - ctx context.Context
 //   - in *workflow.WorkflowSuspendRequest
 //   - opts ...grpc.CallOption
-func (_e *WorkflowServiceClient_Expecter) SuspendWorkflow(ctx interface{}, in interface{}, opts ...interface{}) *WorkflowServiceClient_SuspendWorkflow_Call {
+func (_e *WorkflowServiceClient_Expecter) SuspendWorkflow(ctx any, in any, opts ...any) *WorkflowServiceClient_SuspendWorkflow_Call {
 	return &WorkflowServiceClient_SuspendWorkflow_Call{Call: _e.mock.On("SuspendWorkflow",
-		append([]interface{}{ctx, in}, opts...)...)}
+		append([]any{ctx, in}, opts...)...)}
 }
 
 func (_c *WorkflowServiceClient_SuspendWorkflow_Call) Run(run func(ctx context.Context, in *workflow.WorkflowSuspendRequest, opts ...grpc.CallOption)) *WorkflowServiceClient_SuspendWorkflow_Call {
@@ -1174,11 +1183,11 @@ func (_c *WorkflowServiceClient_SuspendWorkflow_Call) RunAndReturn(run func(ctx 
 // TerminateWorkflow provides a mock function for the type WorkflowServiceClient
 func (_mock *WorkflowServiceClient) TerminateWorkflow(ctx context.Context, in *workflow.WorkflowTerminateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
 	// grpc.CallOption
-	_va := make([]interface{}, len(opts))
+	_va := make([]any, len(opts))
 	for _i := range opts {
 		_va[_i] = opts[_i]
 	}
-	var _ca []interface{}
+	var _ca []any
 	_ca = append(_ca, ctx, in)
 	_ca = append(_ca, _va...)
 	ret := _mock.Called(_ca...)
@@ -1216,9 +1225,9 @@ type WorkflowServiceClient_TerminateWorkflow_Call struct {
 //   - ctx context.Context
 //   - in *workflow.WorkflowTerminateRequest
 //   - opts ...grpc.CallOption
-func (_e *WorkflowServiceClient_Expecter) TerminateWorkflow(ctx interface{}, in interface{}, opts ...interface{}) *WorkflowServiceClient_TerminateWorkflow_Call {
+func (_e *WorkflowServiceClient_Expecter) TerminateWorkflow(ctx any, in any, opts ...any) *WorkflowServiceClient_TerminateWorkflow_Call {
 	return &WorkflowServiceClient_TerminateWorkflow_Call{Call: _e.mock.On("TerminateWorkflow",
-		append([]interface{}{ctx, in}, opts...)...)}
+		append([]any{ctx, in}, opts...)...)}
 }
 
 func (_c *WorkflowServiceClient_TerminateWorkflow_Call) Run(run func(ctx context.Context, in *workflow.WorkflowTerminateRequest, opts ...grpc.CallOption)) *WorkflowServiceClient_TerminateWorkflow_Call {
@@ -1261,11 +1270,11 @@ func (_c *WorkflowServiceClient_TerminateWorkflow_Call) RunAndReturn(run func(ct
 // WatchEvents provides a mock function for the type WorkflowServiceClient
 func (_mock *WorkflowServiceClient) WatchEvents(ctx context.Context, in *workflow.WatchEventsRequest, opts ...grpc.CallOption) (workflow.WorkflowService_WatchEventsClient, error) {
 	// grpc.CallOption
-	_va := make([]interface{}, len(opts))
+	_va := make([]any, len(opts))
 	for _i := range opts {
 		_va[_i] = opts[_i]
 	}
-	var _ca []interface{}
+	var _ca []any
 	_ca = append(_ca, ctx, in)
 	_ca = append(_ca, _va...)
 	ret := _mock.Called(_ca...)
@@ -1303,9 +1312,9 @@ type WorkflowServiceClient_WatchEvents_Call struct {
 //   - ctx context.Context
 //   - in *workflow.WatchEventsRequest
 //   - opts ...grpc.CallOption
-func (_e *WorkflowServiceClient_Expecter) WatchEvents(ctx interface{}, in interface{}, opts ...interface{}) *WorkflowServiceClient_WatchEvents_Call {
+func (_e *WorkflowServiceClient_Expecter) WatchEvents(ctx any, in any, opts ...any) *WorkflowServiceClient_WatchEvents_Call {
 	return &WorkflowServiceClient_WatchEvents_Call{Call: _e.mock.On("WatchEvents",
-		append([]interface{}{ctx, in}, opts...)...)}
+		append([]any{ctx, in}, opts...)...)}
 }
 
 func (_c *WorkflowServiceClient_WatchEvents_Call) Run(run func(ctx context.Context, in *workflow.WatchEventsRequest, opts ...grpc.CallOption)) *WorkflowServiceClient_WatchEvents_Call {
@@ -1348,11 +1357,11 @@ func (_c *WorkflowServiceClient_WatchEvents_Call) RunAndReturn(run func(ctx cont
 // WatchWorkflows provides a mock function for the type WorkflowServiceClient
 func (_mock *WorkflowServiceClient) WatchWorkflows(ctx context.Context, in *workflow.WatchWorkflowsRequest, opts ...grpc.CallOption) (workflow.WorkflowService_WatchWorkflowsClient, error) {
 	// grpc.CallOption
-	_va := make([]interface{}, len(opts))
+	_va := make([]any, len(opts))
 	for _i := range opts {
 		_va[_i] = opts[_i]
 	}
-	var _ca []interface{}
+	var _ca []any
 	_ca = append(_ca, ctx, in)
 	_ca = append(_ca, _va...)
 	ret := _mock.Called(_ca...)
@@ -1390,9 +1399,9 @@ type WorkflowServiceClient_WatchWorkflows_Call struct {
 //   - ctx context.Context
 //   - in *workflow.WatchWorkflowsRequest
 //   - opts ...grpc.CallOption
-func (_e *WorkflowServiceClient_Expecter) WatchWorkflows(ctx interface{}, in interface{}, opts ...interface{}) *WorkflowServiceClient_WatchWorkflows_Call {
+func (_e *WorkflowServiceClient_Expecter) WatchWorkflows(ctx any, in any, opts ...any) *WorkflowServiceClient_WatchWorkflows_Call {
 	return &WorkflowServiceClient_WatchWorkflows_Call{Call: _e.mock.On("WatchWorkflows",
-		append([]interface{}{ctx, in}, opts...)...)}
+		append([]any{ctx, in}, opts...)...)}
 }
 
 func (_c *WorkflowServiceClient_WatchWorkflows_Call) Run(run func(ctx context.Context, in *workflow.WatchWorkflowsRequest, opts ...grpc.CallOption)) *WorkflowServiceClient_WatchWorkflows_Call {
@@ -1435,11 +1444,11 @@ func (_c *WorkflowServiceClient_WatchWorkflows_Call) RunAndReturn(run func(ctx c
 // WorkflowLogs provides a mock function for the type WorkflowServiceClient
 func (_mock *WorkflowServiceClient) WorkflowLogs(ctx context.Context, in *workflow.WorkflowLogRequest, opts ...grpc.CallOption) (workflow.WorkflowService_WorkflowLogsClient, error) {
 	// grpc.CallOption
-	_va := make([]interface{}, len(opts))
+	_va := make([]any, len(opts))
 	for _i := range opts {
 		_va[_i] = opts[_i]
 	}
-	var _ca []interface{}
+	var _ca []any
 	_ca = append(_ca, ctx, in)
 	_ca = append(_ca, _va...)
 	ret := _mock.Called(_ca...)
@@ -1477,9 +1486,9 @@ type WorkflowServiceClient_WorkflowLogs_Call struct {
 //   - ctx context.Context
 //   - in *workflow.WorkflowLogRequest
 //   - opts ...grpc.CallOption
-func (_e *WorkflowServiceClient_Expecter) WorkflowLogs(ctx interface{}, in interface{}, opts ...interface{}) *WorkflowServiceClient_WorkflowLogs_Call {
+func (_e *WorkflowServiceClient_Expecter) WorkflowLogs(ctx any, in any, opts ...any) *WorkflowServiceClient_WorkflowLogs_Call {
 	return &WorkflowServiceClient_WorkflowLogs_Call{Call: _e.mock.On("WorkflowLogs",
-		append([]interface{}{ctx, in}, opts...)...)}
+		append([]any{ctx, in}, opts...)...)}
 }
 
 func (_c *WorkflowServiceClient_WorkflowLogs_Call) Run(run func(ctx context.Context, in *workflow.WorkflowLogRequest, opts ...grpc.CallOption)) *WorkflowServiceClient_WorkflowLogs_Call {

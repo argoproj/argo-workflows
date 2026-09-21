@@ -243,8 +243,7 @@ func (sp *SessionProxy) isNetworkError(err error) bool {
 	}
 
 	// Check for specific error types
-	var netErr net.Error
-	if errors.As(err, &netErr) {
+	if netErr, ok := errors.AsType[net.Error](err); ok {
 		return netErr.Timeout()
 	}
 

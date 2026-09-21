@@ -3,12 +3,15 @@ package auth
 import (
 	"context"
 	"errors"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"net/http"
 	"os"
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/argoproj/argo-workflows/v4/util/secrets"
 
@@ -17,7 +20,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	authenticationv1 "k8s.io/api/authentication/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
@@ -70,9 +75,15 @@ type gatekeeper struct {
 	ssoNamespace string
 	namespaced   bool
 	cache        *cache.ResourceCache
+	// successful client-mode token reviews, keyed by a digest of the authorization header
+	tokenReviewCache cache.Interface
 }
 
-func NewGatekeeper(modes Modes, clients *servertypes.Clients, restConfig *rest.Config, ssoIf sso.Interface, headerIf header.Interface, clientForAuthorization ClientForAuthorization, namespace string, ssoNamespace string, namespaced bool, cache *cache.ResourceCache) (Gatekeeper, error) {
+// tokenReviewCacheSize bounds the number of distinct client-mode tokens whose successful
+// SelfSubjectReview is remembered.
+const tokenReviewCacheSize = 1000
+
+func NewGatekeeper(modes Modes, clients *servertypes.Clients, restConfig *rest.Config, ssoIf sso.Interface, headerIf header.Interface, clientForAuthorization ClientForAuthorization, namespace string, ssoNamespace string, namespaced bool, resourceCache *cache.ResourceCache, tokenReviewCacheTTL time.Duration) (Gatekeeper, error) {
 	if len(modes) == 0 {
 		return nil, fmt.Errorf("must specify at least one auth mode")
 	}
@@ -86,8 +97,26 @@ func NewGatekeeper(modes Modes, clients *servertypes.Clients, restConfig *rest.C
 		namespace,
 		ssoNamespace,
 		namespaced,
-		cache,
+		resourceCache,
+		cache.NewLRUTtlCache(tokenReviewCacheTTL, tokenReviewCacheSize),
 	}, nil
+}
+
+// reviewToken validates the caller's credentials with the API server via a SelfSubjectReview.
+// Endpoints that never call Kubernetes would otherwise accept any token that merely looks like a
+// bearer token. Successful reviews are remembered for tokenReviewCacheTTL so that the API server
+// is not consulted on every request; failures are never cached.
+func (s *gatekeeper) reviewToken(ctx context.Context, authorization string, kubeClient kubernetes.Interface) error {
+	digest := sha256.Sum256([]byte(authorization))
+	key := hex.EncodeToString(digest[:])
+	if _, ok := s.tokenReviewCache.Get(key); ok {
+		return nil
+	}
+	if _, err := kubeClient.AuthenticationV1().SelfSubjectReviews().Create(ctx, &authenticationv1.SelfSubjectReview{}, metav1.CreateOptions{}); err != nil {
+		return err
+	}
+	s.tokenReviewCache.Add(key, struct{}{})
+	return nil
 }
 
 func (s *gatekeeper) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
@@ -186,7 +215,7 @@ func (s *gatekeeper) getClients(ctx context.Context, req any) (*servertypes.Clie
 			if s.Modes[Client] &&
 				(strings.HasPrefix(authorization, "Bearer ") ||
 					strings.HasPrefix(authorization, "Basic ")) {
-				clients, claims, err := s.authenticateClient(authorization)
+				clients, claims, err := s.authenticateClient(ctx, authorization)
 				if err == nil {
 					return clients, claims, nil
 				}
@@ -226,12 +255,14 @@ func (s *gatekeeper) getClients(ctx context.Context, req any) (*servertypes.Clie
 	)
 }
 
-func (s *gatekeeper) authenticateClient(authorization string) (*servertypes.Clients, *authTypes.Claims, error) {
+func (s *gatekeeper) authenticateClient(ctx context.Context, authorization string) (*servertypes.Clients, *authTypes.Claims, error) {
 	restConfig, clients, err := s.clientForAuthorization(authorization, s.restConfig)
 	if err != nil {
 		return nil, nil, status.Error(codes.Unauthenticated, err.Error())
 	}
-
+	if err := s.reviewToken(ctx, authorization, clients.Kubernetes); err != nil {
+			return nil, nil, status.Errorf(codes.Unauthenticated, "token not valid: %v", err)
+		}
 	claims, _ := serviceaccount.ClaimSetFor(restConfig)
 	return clients, claims, nil
 }

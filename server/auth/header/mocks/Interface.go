@@ -16,10 +16,19 @@ func NewInterface(t interface {
 	mock.TestingT
 	Cleanup(func())
 }) *Interface {
+	if helper, ok := t.(interface{ Helper() }); ok {
+		helper.Helper()
+	}
+
 	mock := &Interface{}
 	mock.Mock.Test(t)
 
-	t.Cleanup(func() { mock.AssertExpectations(t) })
+	t.Cleanup(func() {
+		if helper, ok := t.(interface{ Helper() }); ok {
+			helper.Helper()
+		}
+		mock.AssertExpectations(t)
+	})
 
 	return mock
 }
@@ -72,7 +81,7 @@ type Interface_Authorize_Call struct {
 
 // Authorize is a helper method to define mock.On call
 //   - md metadata.MD
-func (_e *Interface_Expecter) Authorize(md interface{}) *Interface_Authorize_Call {
+func (_e *Interface_Expecter) Authorize(md any) *Interface_Authorize_Call {
 	return &Interface_Authorize_Call{Call: _e.mock.On("Authorize", md)}
 }
 

@@ -44,9 +44,9 @@ linters:
     - whitespace
   settings:
     forbidigo:
-      # Patterns are grouped by their msg prefix ("executor-env:", ...) so that
-      # exclusion rules below can scope each group to a set of paths via `text`
-      # matching. If a use is genuinely correct, mark the line:
+      # Patterns are grouped by their msg prefix ("executor-env:", "woc:", ...)
+      # so that exclusion rules below can scope each group to a set of paths via
+      # `text` matching. If a use is genuinely correct, mark the line:
       # //nolint:forbidigo // <reason>
       forbid:
         # Executor packages must not read the environment: parse env at the
@@ -59,6 +59,12 @@ linters:
         # matches literal source text, so each alias needs its own pattern).
         - pattern: ^env(util)?\.Lookup\w+Or$
           msg: "executor-env: executor packages must not read the environment; parse env at the composition root (cmd/argoexec) and pass values in"
+        # The controller reads the spec from execWf (which may come from a
+        # WorkflowTemplate) and the status from wf.
+        - pattern: woc\.wf\.Spec.*
+          msg: "woc: woc.wf.Spec won't work with WorkflowTemplate; use woc.execWf.Spec instead"
+        - pattern: woc\.execWf\.Status.*
+          msg: "woc: woc.execWf.Status won't work with WorkflowTemplate; use woc.wf.Status instead"
     revive:
       rules:
         # defaults
@@ -219,6 +225,14 @@ linters:
     presets:
       - std-error-handling
     rules:
+      # The "woc:" forbidigo patterns only guard misuse in the non-test workflow
+      # controller code (see the forbidigo settings above).
+      - linters: [forbidigo]
+        text: "woc:"
+        path-except: ^workflow/controller/
+      - linters: [forbidigo]
+        text: "woc:"
+        path: '_test\.go$'
       # Selectively suppress revive comment rules (large fix count — PRs welcome)
       - linters: [revive]
         text: "exported (.+) should have comment( \\(or a comment on this block\\))? or be unexported"

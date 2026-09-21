@@ -1,18 +1,19 @@
 // Renders the sticky PR-readiness comment. One comment per PR, identified by
-// MARKER, edited in place. A hidden state blob carries data between runs.
+// MARKER, edited in place.
 
-import type { CommentVariant, State, TemplateIssue } from './types.ts';
+import type { CommentVariant, TemplateIssue } from './types.ts';
 
 export const MARKER = '<!-- pr-readiness-bot -->';
+
+// Must match the label that exists in the repo (Settings → Labels):
+// "problem/bot-not-ready — Readiness bot declares this as not ready, see
+// comment by bot for why".
+export const NOT_READY_LABEL = 'problem/bot-not-ready';
 
 const FOOTER =
   '\n---\n<sub>🤖 Automated PR-readiness helper — it re-checks each time CI finishes. ' +
   'Unit/E2E test results are <b>not</b> covered here. ' +
   'Questions? See [the contributing guide](https://github.com/argoproj/argo-workflows/blob/main/docs/CONTRIBUTING.md) or ask a maintainer.</sub>';
-
-function stateLine(state: State): string {
-  return `<!-- state: ${JSON.stringify(state)} -->`;
-}
 
 interface FailureItem {
   title: string;
@@ -25,12 +26,11 @@ interface RenderArgs {
   variant: CommentVariant | null;
   failures: ReadonlyArray<FailureItem>;
   templateIssues: TemplateIssue[] | null;
-  drafted: boolean;
-  state: State;
+  labeled: boolean;
 }
 
-export function renderComment({ variant, failures, templateIssues, drafted, state }: RenderArgs): string {
-  const head = [MARKER, stateLine(state), ''];
+export function renderComment({ variant, failures, templateIssues, labeled }: RenderArgs): string {
+  const head = [MARKER, ''];
 
   if (variant === 'allclear') {
     return head
@@ -81,33 +81,14 @@ export function renderComment({ variant, failures, templateIssues, drafted, stat
     lines.push('', '_(A maintainer may waive this.)_', '</details>');
   }
 
-  if (drafted) {
+  if (labeled) {
     lines.push(
       '',
       '> [!NOTE]',
-      '> This PR has been moved to **draft** while the items above are addressed. Mark it **Ready for review** once they are fixed.'
+      `> This PR carries the \`${NOT_READY_LABEL}\` label while the items above are addressed. It is removed automatically once everything passes.`
     );
   }
 
   lines.push(FOOTER);
   return lines.join('\n');
-}
-
-// Returns the state object embedded in a bot comment, or null if the comment
-// is not ours / has no parsable state.
-export function parseState(body: string): State | null {
-  // includes, not startsWith: the sticky-comment action injects its own
-  // hidden header into the body it posts.
-  if (typeof body !== 'string' || !body.includes(MARKER)) {
-    return null;
-  }
-  const m = body.match(/<!-- state: (.*?) -->/);
-  if (!m) {
-    return null;
-  }
-  try {
-    return JSON.parse(m[1]) as State;
-  } catch {
-    return null;
-  }
 }

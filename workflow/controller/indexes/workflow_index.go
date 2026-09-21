@@ -1,25 +1,13 @@
 package indexes
 
 import (
-	"context"
-	"os"
-
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/tools/cache"
 
-	"github.com/argoproj/argo-workflows/v4/util/logging"
 	"github.com/argoproj/argo-workflows/v4/workflow/common"
 	"github.com/argoproj/argo-workflows/v4/workflow/util"
 )
-
-var (
-	indexWorkflowSemaphoreKeys = os.Getenv("INDEX_WORKFLOW_SEMAPHORE_KEYS") != "false"
-)
-
-func init() {
-	logging.InitLogger().WithField("indexWorkflowSemaphoreKeys", indexWorkflowSemaphoreKeys).Info(context.Background(), "index config")
-}
 
 func MetaWorkflowIndexFunc(obj any) ([]string, error) {
 	m, err := meta.Accessor(obj)
@@ -52,8 +40,8 @@ func WorkflowIndexValue(namespace, name string) string {
 	return namespace + "/" + name
 }
 
-func WorkflowSemaphoreKeysIndexFunc() cache.IndexFunc {
-	if !indexWorkflowSemaphoreKeys {
+func WorkflowSemaphoreKeysIndexFunc(enabled bool) cache.IndexFunc {
+	if !enabled {
 		return func(obj any) ([]string, error) {
 			return nil, nil
 		}

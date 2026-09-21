@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
@@ -132,6 +133,16 @@ func TestExampleWorkflows(t *testing.T) {
 				if noTextLabelExists {
 					t.Skip(fmt.Sprintf("Impossible to run this example: %s", noTestKeyword))
 				}
+				// Examples that legitimately take longer than E2E_WAIT_TIMEOUT can
+				// override their wait timeout with this label, e.g. "3m".
+				waitOpts := []any{fixtures.ToBeSucceeded}
+				if v, ok := wf.GetLabels()["workflows.argoproj.io/test-timeout"]; ok {
+					d, err := time.ParseDuration(v)
+					if err != nil {
+						t.Fatalf("invalid workflows.argoproj.io/test-timeout label %q: %v", v, err)
+					}
+					waitOpts = append(waitOpts, d)
+				}
 				fixtures.NewGiven(
 					t,
 					versioned.NewForConfigOrDie(restConfig).ArgoprojV1alpha1().Workflows(fixtures.Namespace),
@@ -148,7 +159,7 @@ func TestExampleWorkflows(t *testing.T) {
 					ExampleWorkflow(&wf).
 					When().
 					SubmitWorkflow().
-					WaitForWorkflow(fixtures.ToBeSucceeded)
+					WaitForWorkflow(waitOpts...)
 			})
 		}
 		return nil

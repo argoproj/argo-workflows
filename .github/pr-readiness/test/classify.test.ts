@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { classifySignals, diagnostics, decide, isExemptAuthor, parseOwners, findPullRequest, pickStepGuidance } from '../classify.ts';
+import { classifySignals, diagnostics, decide, isExemptAuthor, parseOwners, findPullRequest, pickStepGuidance, targetsDefaultBranch } from '../classify.ts';
 import type { CheckRun, Config, SignalState } from '../types.ts';
 
 const config = createRequire(import.meta.url)('../checks.config.json') as Config;
@@ -63,30 +63,26 @@ test('diagnostics reports unmapped failing checks from covered apps for drift de
 
 const S = (id: string, state: SignalState) => ({ id, state, title: id, guidance: 'g', url: 'u' });
 
-test('decide: failures present -> issues comment, draft requested', () => {
+test('decide: failures present -> issues comment, blocking (label applied)', () => {
   const d = decide({
     signals: [S('lint', 'failure'), S('docs', 'pending')],
     templateVerdict: null,
-    existingState: null,
     hasExistingComment: false,
-    pr: { draft: false, headSha: 'sha1' },
   });
   assert.equal(d.variant, 'issues');
   assert.equal(d.shouldComment, true);
-  assert.equal(d.shouldDraft, true);
+  assert.equal(d.blocking, true);
   assert.deepEqual(d.failing, ['lint']);
 });
 
-test('decide: a non-compliant template alone is blocking -> issues + draft', () => {
+test('decide: a non-compliant template alone is blocking', () => {
   const d = decide({
     signals: [S('lint', 'success')],
     templateVerdict: { compliant: false },
-    existingState: null,
     hasExistingComment: false,
-    pr: { draft: false, headSha: 'sha1' },
   });
   assert.equal(d.variant, 'issues');
-  assert.equal(d.shouldDraft, true);
+  assert.equal(d.blocking, true);
 });
 
 test('decide: never post when no failures and no existing comment', () => {
@@ -94,82 +90,45 @@ test('decide: never post when no failures and no existing comment', () => {
     const d = decide({
       signals: [S('lint', state)],
       templateVerdict: { compliant: true },
-      existingState: null,
       hasExistingComment: false,
-      pr: { draft: false, headSha: 'sha1' },
     });
     assert.equal(d.shouldComment, false, `state=${state}`);
-    assert.equal(d.shouldDraft, false);
+    assert.equal(d.blocking, false);
   }
 });
 
-test('decide: existing comment + no failures + pending -> waiting variant', () => {
+test('decide: existing comment + no failures + pending -> waiting, not blocking (label cleared)', () => {
   const d = decide({
     signals: [S('lint', 'success'), S('docs', 'pending')],
     templateVerdict: null,
-    existingState: { draftedSha: null },
     hasExistingComment: true,
-    pr: { draft: false, headSha: 'sha1' },
   });
   assert.equal(d.variant, 'waiting');
   assert.equal(d.shouldComment, true);
-  assert.equal(d.shouldDraft, false);
+  assert.equal(d.blocking, false);
 });
 
-test('decide: existing comment + all terminal green -> all-clear', () => {
+test('decide: existing comment + all terminal green -> all-clear, not blocking (label cleared)', () => {
   const d = decide({
     signals: [S('lint', 'success'), S('ui', 'not-applicable')],
     templateVerdict: { compliant: true },
-    existingState: { draftedSha: null },
     hasExistingComment: true,
-    pr: { draft: false, headSha: 'sha1' },
   });
   assert.equal(d.variant, 'allclear');
   assert.equal(d.shouldComment, true);
-  assert.equal(d.shouldDraft, false);
+  assert.equal(d.blocking, false);
 });
 
-test('decide: does not draft a PR that is already a draft', () => {
+test('decide: blocking follows the current verdict, so a failure at a new head re-asserts the label', () => {
+  // The bot owns the label outright: blocking mirrors the live check state,
+  // with no per-SHA memory. A fresh failing run is blocking again even after
+  // an all-clear pass cleared the label.
   const d = decide({
     signals: [S('lint', 'failure')],
     templateVerdict: null,
-    existingState: null,
-    hasExistingComment: false,
-    pr: { draft: true, headSha: 'sha1' },
-  });
-  assert.equal(d.shouldDraft, false);
-  assert.equal(d.shouldComment, true);
-});
-
-test('decide: drafts at most once per head SHA (human undraft is respected)', () => {
-  const d = decide({
-    signals: [S('lint', 'failure')],
-    templateVerdict: null,
-    existingState: { draftedSha: 'sha1' },
     hasExistingComment: true,
-    pr: { draft: false, headSha: 'sha1' },
   });
-  assert.equal(d.shouldDraft, false);
-  // but a new head re-asserts
-  const d2 = decide({
-    signals: [S('lint', 'failure')],
-    templateVerdict: null,
-    existingState: { draftedSha: 'sha1' },
-    hasExistingComment: true,
-    pr: { draft: false, headSha: 'sha2' },
-  });
-  assert.equal(d2.shouldDraft, true);
-});
-
-test('decide: no failures and a compliant template never drafts', () => {
-  const d = decide({
-    signals: [S('lint', 'success')],
-    templateVerdict: { compliant: true },
-    existingState: { draftedSha: null },
-    hasExistingComment: true,
-    pr: { draft: false, headSha: 'sha1' },
-  });
-  assert.equal(d.shouldDraft, false);
+  assert.equal(d.blocking, true);
 });
 
 // --- author gating ---
@@ -200,6 +159,54 @@ test('findPullRequest matches open PR by head sha', () => {
   ];
   assert.equal(findPullRequest(prs, 'bbb')!.number, 2);
   assert.equal(findPullRequest(prs, 'zzz'), null);
+});
+
+// --- targetsDefaultBranch: only PRs bound for the default branch, directly or stacked ---
+
+const UPSTREAM = { full_name: 'argoproj/argo-workflows' };
+const FORK = { full_name: 'someone/argo-workflows' };
+function pr(number: number, baseRef: string, headRef: string, headRepo = UPSTREAM) {
+  return { number, base: { ref: baseRef, repo: UPSTREAM }, head: { ref: headRef, repo: headRepo } };
+}
+
+test('targetsDefaultBranch accepts a PR targeting the default branch directly', () => {
+  const p = pr(1, 'main', 'feature', FORK);
+  assert.equal(targetsDefaultBranch(p, [p], 'main'), true);
+});
+
+test('targetsDefaultBranch rejects a PR targeting a release branch', () => {
+  const p = pr(1, 'release-4.0', 'backport-4.0', FORK);
+  assert.equal(targetsDefaultBranch(p, [p], 'main'), false);
+});
+
+test('targetsDefaultBranch follows a stack of open PRs up to the default branch', () => {
+  const bottom = pr(1, 'main', 'part-1');
+  const middle = pr(2, 'part-1', 'part-2');
+  const top = pr(3, 'part-2', 'part-3');
+  const open = [top, middle, bottom];
+  assert.equal(targetsDefaultBranch(top, open, 'main'), true);
+  assert.equal(targetsDefaultBranch(middle, open, 'main'), true);
+});
+
+test('targetsDefaultBranch rejects a stack that ends on a release branch or a closed PR', () => {
+  const bottom = pr(1, 'release-4.0', 'part-1');
+  const top = pr(2, 'part-1', 'part-2');
+  assert.equal(targetsDefaultBranch(top, [top, bottom], 'main'), false);
+  // bottom PR closed/merged: no open PR has head part-1
+  assert.equal(targetsDefaultBranch(top, [top], 'main'), false);
+});
+
+test('targetsDefaultBranch only follows heads in the base repository', () => {
+  // A fork PR whose head branch happens to share the name of the base ref is not part of the stack.
+  const forkPr = pr(1, 'main', 'part-1', FORK);
+  const top = pr(2, 'part-1', 'part-2');
+  assert.equal(targetsDefaultBranch(top, [top, forkPr], 'main'), false);
+});
+
+test('targetsDefaultBranch terminates on a cycle', () => {
+  const a = pr(1, 'b', 'a');
+  const b = pr(2, 'a', 'b');
+  assert.equal(targetsDefaultBranch(a, [a, b], 'main'), false);
 });
 
 // --- pickStepGuidance: choose per-step guidance for the features check ---

@@ -18,10 +18,19 @@ func NewThrottler(t interface {
 	mock.TestingT
 	Cleanup(func())
 }) *Throttler {
+	if helper, ok := t.(interface{ Helper() }); ok {
+		helper.Helper()
+	}
+
 	mock := &Throttler{}
 	mock.Mock.Test(t)
 
-	t.Cleanup(func() { mock.AssertExpectations(t) })
+	t.Cleanup(func() {
+		if helper, ok := t.(interface{ Helper() }); ok {
+			helper.Helper()
+		}
+		mock.AssertExpectations(t)
+	})
 
 	return mock
 }
@@ -54,7 +63,7 @@ type Throttler_Add_Call struct {
 //   - key sync.Key
 //   - priority int32
 //   - creationTime time.Time
-func (_e *Throttler_Expecter) Add(key interface{}, priority interface{}, creationTime interface{}) *Throttler_Add_Call {
+func (_e *Throttler_Expecter) Add(key any, priority any, creationTime any) *Throttler_Add_Call {
 	return &Throttler_Add_Call{Call: _e.mock.On("Add", key, priority, creationTime)}
 }
 
@@ -115,7 +124,7 @@ type Throttler_Admit_Call struct {
 
 // Admit is a helper method to define mock.On call
 //   - key sync.Key
-func (_e *Throttler_Expecter) Admit(key interface{}) *Throttler_Admit_Call {
+func (_e *Throttler_Expecter) Admit(key any) *Throttler_Admit_Call {
 	return &Throttler_Admit_Call{Call: _e.mock.On("Admit", key)}
 }
 
@@ -166,7 +175,7 @@ type Throttler_Init_Call struct {
 
 // Init is a helper method to define mock.On call
 //   - wfs []v1alpha1.Workflow
-func (_e *Throttler_Expecter) Init(wfs interface{}) *Throttler_Init_Call {
+func (_e *Throttler_Expecter) Init(wfs any) *Throttler_Init_Call {
 	return &Throttler_Init_Call{Call: _e.mock.On("Init", wfs)}
 }
 
@@ -206,7 +215,7 @@ type Throttler_Remove_Call struct {
 
 // Remove is a helper method to define mock.On call
 //   - key sync.Key
-func (_e *Throttler_Expecter) Remove(key interface{}) *Throttler_Remove_Call {
+func (_e *Throttler_Expecter) Remove(key any) *Throttler_Remove_Call {
 	return &Throttler_Remove_Call{Call: _e.mock.On("Remove", key)}
 }
 
@@ -246,7 +255,7 @@ type Throttler_ResetNamespaceParallelism_Call struct {
 
 // ResetNamespaceParallelism is a helper method to define mock.On call
 //   - namespace string
-func (_e *Throttler_Expecter) ResetNamespaceParallelism(namespace interface{}) *Throttler_ResetNamespaceParallelism_Call {
+func (_e *Throttler_Expecter) ResetNamespaceParallelism(namespace any) *Throttler_ResetNamespaceParallelism_Call {
 	return &Throttler_ResetNamespaceParallelism_Call{Call: _e.mock.On("ResetNamespaceParallelism", namespace)}
 }
 
@@ -287,7 +296,7 @@ type Throttler_UpdateNamespaceParallelism_Call struct {
 // UpdateNamespaceParallelism is a helper method to define mock.On call
 //   - namespace string
 //   - limit int
-func (_e *Throttler_Expecter) UpdateNamespaceParallelism(namespace interface{}, limit interface{}) *Throttler_UpdateNamespaceParallelism_Call {
+func (_e *Throttler_Expecter) UpdateNamespaceParallelism(namespace any, limit any) *Throttler_UpdateNamespaceParallelism_Call {
 	return &Throttler_UpdateNamespaceParallelism_Call{Call: _e.mock.On("UpdateNamespaceParallelism", namespace, limit)}
 }
 
@@ -332,7 +341,7 @@ type Throttler_UpdateNamespaceParallelismDefault_Call struct {
 
 // UpdateNamespaceParallelismDefault is a helper method to define mock.On call
 //   - limit int
-func (_e *Throttler_Expecter) UpdateNamespaceParallelismDefault(limit interface{}) *Throttler_UpdateNamespaceParallelismDefault_Call {
+func (_e *Throttler_Expecter) UpdateNamespaceParallelismDefault(limit any) *Throttler_UpdateNamespaceParallelismDefault_Call {
 	return &Throttler_UpdateNamespaceParallelismDefault_Call{Call: _e.mock.On("UpdateNamespaceParallelismDefault", limit)}
 }
 
@@ -372,7 +381,7 @@ type Throttler_UpdateParallelism_Call struct {
 
 // UpdateParallelism is a helper method to define mock.On call
 //   - limit int
-func (_e *Throttler_Expecter) UpdateParallelism(limit interface{}) *Throttler_UpdateParallelism_Call {
+func (_e *Throttler_Expecter) UpdateParallelism(limit any) *Throttler_UpdateParallelism_Call {
 	return &Throttler_UpdateParallelism_Call{Call: _e.mock.On("UpdateParallelism", limit)}
 }
 

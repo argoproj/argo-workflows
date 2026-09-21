@@ -53,22 +53,19 @@ const (
 	tempOutArtDir = "/tmp/argo/outputs/artifacts"
 )
 
-// WorkflowExecutor is program which runs as the init/wait container
-type WorkflowExecutor struct {
-	PodName             string
-	podUID              types.UID
-	workflow            string
-	workflowUID         types.UID
-	nodeID              string
-	Template            wfv1.Template
-	IncludeScriptOutput bool
-	Deadline            time.Time
-	ClientSet           kubernetes.Interface
-	taskResultClient    argoprojv1.WorkflowTaskResultInterface
-	RESTClient          rest.Interface
-	Namespace           string
-	RuntimeExecutor     ContainerRuntimeExecutor
-	Tracing             *tracing.Tracing
+// Process holds the state shared by every task an argoexec process runs:
+// API clients, the container runtime, tracing and pod-scoped settings. It
+// is built once per process by NewProcess; the per-task state lives in the
+// WorkflowExecutor that Process.NewExecutor derives from it.
+type Process struct {
+	PodName          string
+	podUID           types.UID
+	ClientSet        kubernetes.Interface
+	taskResultClient argoprojv1.WorkflowTaskResultInterface
+	RESTClient       rest.Interface
+	Namespace        string
+	RuntimeExecutor  ContainerRuntimeExecutor
+	Tracing          *tracing.Tracing
 
 	// memoizedConfigMaps caches configmap lookups (used by some artifact
 	// drivers, e.g. HDFS for Kerberos config). memoizedMu guards it because
@@ -77,16 +74,9 @@ type WorkflowExecutor struct {
 	// process, so no cross-goroutine race.
 	memoizedMu         sync.Mutex
 	memoizedConfigMaps map[string]string
-	// list of errors that occurred during execution.
-	// the first of these is used as the overall message of the node
-	errors []error
-
-	// current progress which is synced every `annotationPatchTickDuration` to the pods annotations.
-	progress wfv1.Progress
 
 	annotationPatchTickDuration  time.Duration
 	readProgressFileTickDuration time.Duration
-	progressFile                 string
 	instanceID                   string
 	terminationGracePeriod       time.Duration
 	artifactPluginNames          string
@@ -94,31 +84,65 @@ type WorkflowExecutor struct {
 	initlessPod                  bool
 	retryBackoff                 wait.Backoff
 	resourceStateCheckInterval   time.Duration
+}
+
+// WorkflowExecutor runs one task (one template on one node) within a
+// Process. Everything specific to that task lives here — identity,
+// template, captured outputs, errors, progress and the task result — so a
+// Process can run tasks one after another without state leaking between
+// them. In the classic pod layout it is the program that runs as the
+// init/wait container.
+type WorkflowExecutor struct {
+	*Process
+
+	workflow            string
+	workflowUID         types.UID
+	nodeID              string
+	Template            wfv1.Template
+	IncludeScriptOutput bool
+	Deadline            time.Time
+	progressFile        string
+	// inputArtifactPluginNames lists the artifact plugins the Prepare phase
+	// loads input artifacts from, one parallel stage each.
+	inputArtifactPluginNames []wfv1.ArtifactPluginName
+
+	// plan is the task's flow; nil until selectedPlan() derives it from the
+	// template.
+	plan *Plan
+
+	// savedArtifacts carries the output and log artifacts produced by the
+	// save-artifacts and save-logs stages across to report-outputs.
+	savedArtifacts []wfv1.Artifact
+
+	// outputs is the task's captured outputs: a copy of Template.Outputs
+	// that the capture stages (script result, output parameters, resource
+	// parameters, data) fill in, leaving Template itself untouched. Access
+	// it through capturedOutputs(), which makes the copy on first use.
+	outputs *wfv1.Outputs
+
+	// list of errors that occurred during execution.
+	// the first of these is used as the overall message of the node
+	errors []error
+
+	// current progress which is synced every `annotationPatchTickDuration` to the pods annotations.
+	progress wfv1.Progress
 
 	// flag to indicate if the task result was created
 	taskResultCreated bool
 }
 
-// Config carries the data values a WorkflowExecutor is constructed from.
-// Every field is parsed from the environment (or derived from it) at the
-// composition root in cmd/argoexec; executor packages must not read the
+// ProcessConfig carries the process-wide values a Process is constructed
+// from. Every field is parsed from the environment (or derived from it) at
+// the composition root in cmd/argoexec; executor packages must not read the
 // environment themselves (enforced by the forbidigo linter rule), so that
 // they stay testable without env mutation and reusable outside the
 // one-task-per-process layout.
-type Config struct {
+type ProcessConfig struct {
 	PodName                      string
 	PodUID                       types.UID
-	WorkflowName                 string
-	WorkflowUID                  types.UID
-	NodeID                       string
 	Namespace                    string
-	Template                     wfv1.Template
-	IncludeScriptOutput          bool
-	Deadline                     time.Time
 	AnnotationPatchTickDuration  time.Duration
 	ReadProgressFileTickDuration time.Duration
-	// ProgressFile is the file watched for progress reports (ARGO_PROGRESS_FILE).
-	ProgressFile string
 	// InstanceID labels task results with the controller instance (ARGO_INSTANCE_ID).
 	InstanceID string
 	// TerminationGracePeriod mirrors the pod spec's terminationGracePeriodSeconds
@@ -138,6 +162,24 @@ type Config struct {
 	// ResourceStateCheckInterval is the poll interval for resource template
 	// state checks (RESOURCE_STATE_CHECK_INTERVAL).
 	ResourceStateCheckInterval time.Duration
+}
+
+// TaskConfig carries the per-task values a WorkflowExecutor is constructed
+// from. In the one-task-per-process pod layout the composition root reads
+// them from the pod's environment exactly like ProcessConfig; a long-lived
+// worker would instead receive a fresh TaskConfig for each task it runs.
+type TaskConfig struct {
+	WorkflowName        string
+	WorkflowUID         types.UID
+	NodeID              string
+	Template            wfv1.Template
+	IncludeScriptOutput bool
+	Deadline            time.Time
+	// ProgressFile is the file watched for progress reports (ARGO_PROGRESS_FILE).
+	ProgressFile string
+	// InputArtifactPluginNames lists the artifact plugins that serve this
+	// task's input artifacts (see common.EnvVarInputArtifactPluginNames).
+	InputArtifactPluginNames []wfv1.ArtifactPluginName
 }
 
 type Initializer interface {
@@ -177,15 +219,17 @@ func (we *WorkflowExecutor) WorkflowName() string {
 	return we.workflow
 }
 
-// NewExecutor instantiates a new workflow executor
-func NewExecutor(
+// NewProcess instantiates the process-wide executor state. It logs the
+// retry strategy and initialises tracing, both of which happen once per
+// process.
+func NewProcess(
 	ctx context.Context,
 	clientset kubernetes.Interface,
 	taskResultClient argoprojv1.WorkflowTaskResultInterface,
 	restClient rest.Interface,
 	cre ContainerRuntimeExecutor,
-	cfg Config,
-) (*WorkflowExecutor, error) {
+	cfg ProcessConfig,
+) (*Process, error) {
 	logging.RequireLoggerFromContext(ctx).WithFields(logging.Fields{
 		"Steps":    cfg.RetryBackoff.Steps,
 		"Duration": cfg.RetryBackoff.Duration,
@@ -193,26 +237,21 @@ func NewExecutor(
 		"Jitter":   cfg.RetryBackoff.Jitter,
 	}).Info(ctx, "Using executor retry strategy")
 	tracing, err := tracing.New(ctx, `argoexec`)
-	return &WorkflowExecutor{
+	if err != nil {
+		return nil, err
+	}
+	return &Process{
 		PodName:                      cfg.PodName,
 		podUID:                       cfg.PodUID,
-		workflow:                     cfg.WorkflowName,
-		workflowUID:                  cfg.WorkflowUID,
-		nodeID:                       cfg.NodeID,
 		ClientSet:                    clientset,
 		taskResultClient:             taskResultClient,
 		RESTClient:                   restClient,
 		Namespace:                    cfg.Namespace,
 		RuntimeExecutor:              cre,
-		Template:                     cfg.Template,
-		IncludeScriptOutput:          cfg.IncludeScriptOutput,
-		Deadline:                     cfg.Deadline,
 		Tracing:                      tracing,
 		memoizedConfigMaps:           map[string]string{},
-		errors:                       []error{},
 		annotationPatchTickDuration:  cfg.AnnotationPatchTickDuration,
 		readProgressFileTickDuration: cfg.ReadProgressFileTickDuration,
-		progressFile:                 cfg.ProgressFile,
 		instanceID:                   cfg.InstanceID,
 		terminationGracePeriod:       cfg.TerminationGracePeriod,
 		artifactPluginNames:          cfg.ArtifactPluginNames,
@@ -220,7 +259,34 @@ func NewExecutor(
 		initlessPod:                  cfg.InitlessPod,
 		retryBackoff:                 cfg.RetryBackoff,
 		resourceStateCheckInterval:   cfg.ResourceStateCheckInterval,
-	}, err
+	}, nil
+}
+
+// NewExecutor derives the executor for one task from the process-wide
+// state. It has no process-level side effects, so a Process may call it
+// once per task.
+func (p *Process) NewExecutor(cfg TaskConfig) *WorkflowExecutor {
+	return &WorkflowExecutor{
+		Process:                  p,
+		workflow:                 cfg.WorkflowName,
+		workflowUID:              cfg.WorkflowUID,
+		nodeID:                   cfg.NodeID,
+		Template:                 cfg.Template,
+		IncludeScriptOutput:      cfg.IncludeScriptOutput,
+		Deadline:                 cfg.Deadline,
+		progressFile:             cfg.ProgressFile,
+		inputArtifactPluginNames: cfg.InputArtifactPluginNames,
+		errors:                   []error{},
+	}
+}
+
+// capturedOutputs returns the task's output set, copying it from the
+// template on first use so that Template is never mutated by capture.
+func (we *WorkflowExecutor) capturedOutputs() *wfv1.Outputs {
+	if we.outputs == nil {
+		we.outputs = we.Template.Outputs.DeepCopy()
+	}
+	return we.outputs
 }
 
 // HandleError is a helper to annotate the pod with the error message upon a unexpected executor panic or error.
@@ -737,12 +803,13 @@ func (we *WorkflowExecutor) isBaseImagePath(path string) bool {
 // SaveParameters will save the content in the specified file path as output parameter value
 func (we *WorkflowExecutor) SaveParameters(ctx context.Context) error {
 	logger := logging.RequireLoggerFromContext(ctx)
-	if len(we.Template.Outputs.Parameters) == 0 {
+	outputs := we.capturedOutputs()
+	if len(outputs.Parameters) == 0 {
 		logger.Info(ctx, "No output parameters")
 		return nil
 	}
 	logger.Info(ctx, "Saving output parameters")
-	for i, param := range we.Template.Outputs.Parameters {
+	for i, param := range outputs.Parameters {
 		logger.WithField("name", param.Name).Info(ctx, "Saving path output parameter")
 		// Determine the file path of where to find the parameter
 		if param.ValueFrom == nil || param.ValueFrom.Path == "" {
@@ -779,7 +846,7 @@ func (we *WorkflowExecutor) SaveParameters(ctx context.Context) error {
 
 		// Trims off a single newline for user convenience
 		output = wfv1.AnyStringPtr(strings.TrimSuffix(output.String(), "\n"))
-		we.Template.Outputs.Parameters[i].Value = output
+		outputs.Parameters[i].Value = output
 		logger.WithField("name", param.Name).Info(ctx, "Successfully saved output parameter")
 	}
 	return nil
@@ -963,7 +1030,7 @@ func (we *WorkflowExecutor) CaptureScriptResult(ctx context.Context) error {
 		out = out[len(out)-maxAnnotationSize:]
 	}
 
-	we.Template.Outputs.Result = &out
+	we.capturedOutputs().Result = &out
 	return nil
 }
 
@@ -1024,7 +1091,7 @@ func (we *WorkflowExecutor) InitializeOutput(ctx context.Context) {
 
 // ReportOutputs updates the WorkflowTaskResult (or falls back to annotate the Pod)
 func (we *WorkflowExecutor) ReportOutputs(ctx context.Context, artifacts []wfv1.Artifact) error {
-	outputs := we.Template.Outputs.DeepCopy()
+	outputs := we.capturedOutputs().DeepCopy()
 	outputs.Artifacts = artifacts
 	return we.reportResult(ctx, wfv1.NodeResult{Outputs: outputs})
 }
