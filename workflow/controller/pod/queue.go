@@ -179,14 +179,14 @@ func (c *Controller) processNextPodCleanupItem(ctx context.Context) bool {
 }
 
 func (c *Controller) queuePodForCleanup(ctx context.Context, namespace string, podName string, action podCleanupAction) {
-	c.log.WithFields(logging.Fields{"namespace": namespace, "podName": podName, "action": action}).Info(ctx, "queueing pod for cleanup")
+	c.log.WithFields(logging.Fields{"namespace": namespace, "podName": podName, "action": action}).Debug(ctx, "queueing pod for cleanup")
 	c.workqueue.AddRateLimited(newPodCleanupKey(namespace, podName, action))
 }
 
 func (c *Controller) queuePodForCleanupAfter(ctx context.Context, namespace string, podName string, action podCleanupAction, duration time.Duration) {
 	logCtx := c.log.WithFields(logging.Fields{"namespace": namespace, "podName": podName, "action": action, "after": duration})
 	if duration > 0 {
-		logCtx.Info(ctx, "queueing pod for cleanup after")
+		logCtx.Debug(ctx, "queueing pod for cleanup after")
 		c.workqueue.AddAfter(newPodCleanupKey(namespace, podName, action), duration)
 	} else {
 		logCtx.Warn(ctx, "queueing pod for cleanup now, rather than delayed")
