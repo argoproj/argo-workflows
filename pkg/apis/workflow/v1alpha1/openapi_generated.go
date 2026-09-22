@@ -5523,7 +5523,7 @@ func schema_pkg_apis_workflow_v1alpha1_S3Artifact(ref common.ReferenceCallback) 
 					},
 					"tokenExpirationInMinutes": {
 						SchemaProps: spec.SchemaProps{
-							Description: "TokenExpirationInMinutes specifies the expiration time, in minutes, for the token obtained via AWS STS. It only applies to STS assumed-role credentials (when RoleARN is set) and STS web-identity credentials (when UseSDKCreds is set and web-identity environment variables are configured, e.g. EKS IRSA); it is forwarded as the STS DurationSeconds and must be between 15 and 720 minutes, matching the AWS STS allowed range, otherwise the request is rejected. It has no effect on static credentials or other SDK-resolved credential providers. other SDK-resolved credential providers. minimum: 15 maximum: 720",
+							Description: "TokenExpirationInMinutes specifies the expiration time, in minutes, for the token obtained via AWS STS. It only applies to STS assumed-role credentials (when RoleARN is set) and STS web-identity credentials (when UseSDKCreds is set and web-identity environment variables are configured, e.g. EKS IRSA); it is forwarded as the STS DurationSeconds and must be between 15 and 720 minutes, matching the AWS STS allowed range, otherwise the request is rejected. It has no effect on static credentials or other SDK-resolved credential providers. minimum: 15 maximum: 720",
 							Type:        []string{"integer"},
 							Format:      "int32",
 						},
@@ -5636,7 +5636,7 @@ func schema_pkg_apis_workflow_v1alpha1_S3ArtifactRepository(ref common.Reference
 					},
 					"tokenExpirationInMinutes": {
 						SchemaProps: spec.SchemaProps{
-							Description: "TokenExpirationInMinutes specifies the expiration time, in minutes, for the token obtained via AWS STS. It only applies to STS assumed-role credentials (when RoleARN is set) and STS web-identity credentials (when UseSDKCreds is set and web-identity environment variables are configured, e.g. EKS IRSA); it is forwarded as the STS DurationSeconds and must be between 15 and 720 minutes, matching the AWS STS allowed range, otherwise the request is rejected. It has no effect on static credentials or other SDK-resolved credential providers. other SDK-resolved credential providers. minimum: 15 maximum: 720",
+							Description: "TokenExpirationInMinutes specifies the expiration time, in minutes, for the token obtained via AWS STS. It only applies to STS assumed-role credentials (when RoleARN is set) and STS web-identity credentials (when UseSDKCreds is set and web-identity environment variables are configured, e.g. EKS IRSA); it is forwarded as the STS DurationSeconds and must be between 15 and 720 minutes, matching the AWS STS allowed range, otherwise the request is rejected. It has no effect on static credentials or other SDK-resolved credential providers. minimum: 15 maximum: 720",
 							Type:        []string{"integer"},
 							Format:      "int32",
 						},
@@ -5756,7 +5756,7 @@ func schema_pkg_apis_workflow_v1alpha1_S3Bucket(ref common.ReferenceCallback) co
 					},
 					"tokenExpirationInMinutes": {
 						SchemaProps: spec.SchemaProps{
-							Description: "TokenExpirationInMinutes specifies the expiration time, in minutes, for the token obtained via AWS STS. It only applies to STS assumed-role credentials (when RoleARN is set) and STS web-identity credentials (when UseSDKCreds is set and web-identity environment variables are configured, e.g. EKS IRSA); it is forwarded as the STS DurationSeconds and must be between 15 and 720 minutes, matching the AWS STS allowed range, otherwise the request is rejected. It has no effect on static credentials or other SDK-resolved credential providers. other SDK-resolved credential providers. minimum: 15 maximum: 720",
+							Description: "TokenExpirationInMinutes specifies the expiration time, in minutes, for the token obtained via AWS STS. It only applies to STS assumed-role credentials (when RoleARN is set) and STS web-identity credentials (when UseSDKCreds is set and web-identity environment variables are configured, e.g. EKS IRSA); it is forwarded as the STS DurationSeconds and must be between 15 and 720 minutes, matching the AWS STS allowed range, otherwise the request is rejected. It has no effect on static credentials or other SDK-resolved credential providers. minimum: 15 maximum: 720",
 							Type:        []string{"integer"},
 							Format:      "int32",
 						},
