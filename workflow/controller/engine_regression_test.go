@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -592,4 +594,362 @@ func TestRegression_ThrottledExitHookIsNotAnError(t *testing.T) {
 	hook, err := woc.wf.GetNodeByName("reg-throttle.b-nested.onExit")
 	require.NoError(t, err, "the hook runs once a slot is free")
 	assert.Equal(t, wfv1.NodeSucceeded, hook.Phase)
+}
+
+// 12. Item expansion must see workflow-level globals (#14718): an expression
+// tag that mixes {{item}} with a workflow parameter is resolved at expansion.
+var regExpansionGlobals = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: reg-glob
+  namespace: default
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+    - name: suffix
+      value: "-x"
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: a
+        template: echo
+        withItems: [alpha, beta]
+        arguments:
+          parameters:
+          - name: v
+            value: "{{= item + workflow.parameters.suffix }}"
+  - name: echo
+    inputs:
+      parameters:
+      - name: v
+    container:
+      image: argoproj/argosay:v2
+`
+
+func TestRegression_ExpansionSeesWorkflowParameters(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(regExpansionGlobals)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+
+	item, err := woc.wf.GetNodeByName("reg-glob.a(0:alpha)")
+	require.NoError(t, err)
+	require.NotNil(t, item.Inputs)
+	require.Len(t, item.Inputs.Parameters, 1)
+	assert.Equal(t, "alpha-x", item.Inputs.Parameters[0].Value.String())
+}
+
+// 13a. A {{item.<key>}} reference against an item that turns out to be a
+// plain string is an expansion error (#7950), not a literal that reaches the
+// pod. Only withParam can carry this past validation, which cannot see the
+// items' shape.
+var regItemKeyOnString = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: reg-itemkey
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: gen
+        template: echo
+      - name: a
+        template: consume
+        depends: gen
+        withParam: "{{tasks.gen.outputs.result}}"
+        arguments:
+          parameters:
+          - name: v
+            value: "{{item.name}}"
+  - name: echo
+    container:
+      image: argoproj/argosay:v2
+  - name: consume
+    inputs:
+      parameters:
+      - name: v
+    container:
+      image: argoproj/argosay:v2
+`
+
+func TestRegression_UnresolvedItemKeyIsAnError(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(regItemKeyOnString)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	items := `["alpha","beta"]`
+	makePodsPhase(ctx, woc, apiv1.PodSucceeded, withOutputs(ctx, wfv1.Outputs{Result: &items}))
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	a, err := woc.wf.GetNodeByName("reg-itemkey.a")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeError, a.Phase)
+	assert.Contains(t, a.Message, "item.name")
+	pods, err := listPods(ctx, woc)
+	require.NoError(t, err)
+	assert.Len(t, pods.Items, 1, "no pod is created for an unresolvable item reference")
+}
+
+// 13b. A reference to a dependency output that is not (yet) in scope requeues
+// the workflow (#15513) instead of running the task with the literal tag. A
+// container's result passes validation but is only present once captured.
+var regMissingOutputRequeues = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: reg-requeue
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: a
+        template: echo
+      - name: b
+        template: consume
+        depends: a
+        arguments:
+          parameters:
+          - name: v
+            value: "{{tasks.a.outputs.result}}"
+  - name: echo
+    container:
+      image: argoproj/argosay:v2
+  - name: consume
+    inputs:
+      parameters:
+      - name: v
+    container:
+      image: argoproj/argosay:v2
+`
+
+func TestRegression_MissingDependencyOutputRequeues(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(regMissingOutputRequeues)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc = operateUntilFulfilled(t, woc, apiv1.PodSucceeded, 4)
+
+	assert.Equal(t, wfv1.WorkflowRunning, woc.wf.Status.Phase)
+	assert.False(t, nodeExists(woc, "reg-requeue.b"), "b must not run with an unresolved dependency reference")
+}
+
+// 14. A lifecycle hook node hanging off a TaskGroup is not an item: it must
+// not make the group AnySucceeded when every item failed. Unlike the other
+// tests here this also fails at base: main counted every child of the
+// TaskGroup too. It is fixed as a bug, not as a regression.
+var regHookNotAnItem = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: reg-hookitem
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: a
+        template: echo
+        withItems: [alpha, beta]
+        hooks:
+          running:
+            expression: "true"
+            template: instant
+      - name: b
+        template: echo
+        depends: a.AnySucceeded
+      - name: c
+        template: echo
+        depends: a.AllFailed
+  - name: instant
+    dag:
+      tasks:
+      - name: never
+        template: echo
+        when: "false"
+  - name: echo
+    container:
+      image: argoproj/argosay:v2
+`
+
+func TestRegression_HookChildIsNotAnItem(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(regHookNotAnItem)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc = operateUntilFulfilled(t, woc, apiv1.PodFailed, 6)
+
+	hook, err := woc.wf.GetNodeByName("reg-hookitem.a.hooks.running")
+	require.NoError(t, err, "the running hook fires on the group")
+	assert.Equal(t, wfv1.NodeSucceeded, hook.Phase)
+	b, err := woc.wf.GetNodeByName("reg-hookitem.b")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeOmitted, b.Phase, "no item succeeded")
+	c, err := woc.wf.GetNodeByName("reg-hookitem.c")
+	require.NoError(t, err)
+	assert.NotEqual(t, wfv1.NodeOmitted, c.Phase, "every item failed")
+}
+
+// 15. A partially failed group is a real outcome: "a.Failed && a.AnySucceeded"
+// waits for the group and then runs, rather than being omitted up front.
+var regPartialGroup = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: reg-partial
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: a
+        template: echo
+        withItems: [alpha, beta]
+      - name: b
+        template: echo
+        depends: a.Failed && a.AnySucceeded
+  - name: echo
+    container:
+      image: argoproj/argosay:v2
+`
+
+func TestRegression_PartiallyFailedGroupCanSatisfyDepends(t *testing.T) {
+	wf := wfv1.MustUnmarshalWorkflow(regPartialGroup)
+	ctx := logging.TestContext(t.Context())
+	cancel, controller := newController(ctx, wf)
+	defer cancel()
+
+	woc := newWorkflowOperationCtx(ctx, wf, controller)
+	woc.operate(ctx)
+	if b, err := woc.wf.GetNodeByName("reg-partial.b"); err == nil {
+		assert.NotEqual(t, wfv1.NodeOmitted, b.Phase, "b is undecided while a runs")
+	}
+
+	setPodPhases(ctx, woc, func(node *wfv1.NodeStatus) apiv1.PodPhase {
+		if node.Name == "reg-partial.a(0:alpha)" {
+			return apiv1.PodFailed
+		}
+		return apiv1.PodSucceeded
+	})
+	woc = newWorkflowOperationCtx(ctx, woc.wf, controller)
+	woc.operate(ctx)
+
+	a, err := woc.wf.GetNodeByName("reg-partial.a")
+	require.NoError(t, err)
+	assert.Equal(t, wfv1.NodeFailed, a.Phase)
+	b, err := woc.wf.GetNodeByName("reg-partial.b")
+	require.NoError(t, err, "b runs once a is partially failed")
+	assert.NotEqual(t, wfv1.NodeOmitted, b.Phase)
+}
+
+// 17. The failure message on a boundary is deterministic: for Steps it names
+// the failing child of the group that stopped execution, and a DAG never
+// names a retry attempt.
+var regStepsMessage = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: reg-msg
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: a
+        template: echo
+        continueOn:
+          failed: true
+    - - name: b
+        template: echo
+  - name: echo
+    container:
+      image: argoproj/argosay:v2
+`
+
+var regDAGMessage = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: reg-dagmsg
+  namespace: default
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    dag:
+      failFast: false
+      tasks:
+      - name: a
+        template: retried
+      - name: b
+        template: echo
+      - name: c
+        template: echo
+  - name: retried
+    retryStrategy:
+      limit: 1
+    container:
+      image: argoproj/argosay:v2
+  - name: echo
+    container:
+      image: argoproj/argosay:v2
+`
+
+func TestRegression_BoundaryFailureMessageIsDeterministic(t *testing.T) {
+	runToFailure := func(manifest string) *wfOperationCtx {
+		ctx := logging.TestContext(t.Context())
+		wf := wfv1.MustUnmarshalWorkflow(manifest)
+		cancel, controller := newController(ctx, wf)
+		defer cancel()
+		woc := operateUntilFulfilled(t, newWorkflowOperationCtx(ctx, wf, controller), apiv1.PodFailed, 8)
+		require.Equal(t, wfv1.WorkflowFailed, woc.wf.Status.Phase)
+		return woc
+	}
+	messageRE := regexp.MustCompile(`^child '(.+)' failed$`)
+
+	for range 6 {
+		woc := runToFailure(regStepsMessage)
+		assert.Equal(t, fmt.Sprintf("child '%s' failed", woc.wf.NodeID("reg-msg[1].b")), woc.wf.Status.Message,
+			"the group that stopped the Steps template names its failing child")
+	}
+
+	var seen []string
+	for range 6 {
+		woc := runToFailure(regDAGMessage)
+		msg := woc.wf.Status.Message
+		seen = append(seen, msg)
+		if m := messageRE.FindStringSubmatch(msg); m != nil {
+			named, err := woc.wf.Status.Nodes.Get(m[1])
+			require.NoError(t, err)
+			assert.False(t, named.NodeFlag != nil && named.NodeFlag.Retried, "a retry attempt is never named: %s", msg)
+		}
+	}
+	for _, msg := range seen[1:] {
+		assert.Equal(t, seen[0], msg, "the DAG failure message does not vary between runs")
+	}
 }
