@@ -487,11 +487,11 @@ func (e *Engine) converge(ctx context.Context, tasks []dag.Task, results map[str
 						// Deliberate throttling — don't fail, just stop dispatching this pass.
 						return executedTasks, nil
 					}
-					// Per-task errors are already marked on the failing task node
-					// by postExecutionHandling / markNodeError. Remember the first
-					// error so the caller can mark the boundary AFTER every sibling
-					// has had its chance to dispatch in this converge pass.
-					if firstErr == nil {
+					// A per-task error that is already recorded as a terminal phase
+					// on the child's node is that child's outcome and rolls up
+					// through phase assessment; only an error that left no node
+					// behind is escalated to the boundary after this pass.
+					if firstErr == nil && !e.errRecordedOnNode(ctx, result.TaskName) {
 						firstErr = err
 					}
 					e.log.WithError(err).WithField("task", result.TaskName).Warn(ctx, "task group child dispatch failed; continuing to allow sibling tasks")
@@ -502,7 +502,7 @@ func (e *Engine) converge(ctx context.Context, tasks []dag.Task, results map[str
 					if isThrottleErr(err) {
 						return executedTasks, nil
 					}
-					if firstErr == nil {
+					if firstErr == nil && !e.errRecordedOnNode(ctx, result.TaskName) {
 						firstErr = err
 					}
 					e.log.WithError(err).WithField("task", result.TaskName).Warn(ctx, "task execution failed; continuing to allow sibling tasks")
@@ -516,6 +516,19 @@ func (e *Engine) converge(ctx context.Context, tasks []dag.Task, results map[str
 		}
 	}
 	return executedTasks, firstErr
+}
+
+// errRecordedOnNode reports whether a dispatch error has already been recorded
+// as a terminal phase on the task's node (argument resolution, template
+// resolution, an invalid when clause, a failed pod creation, ...). Such an
+// error is the task's own outcome: its siblings keep running and the boundary
+// is assessed from its children once they are done, as the pre-Engine
+// executeDAGTask did. Escalating it would end a failFast: false DAG while
+// other branches are still in flight, and for Steps would skip the group
+// assessment and leave StepGroup nodes Running forever.
+func (e *Engine) errRecordedOnNode(ctx context.Context, taskName string) bool {
+	node := e.getTaskNode(ctx, taskName)
+	return node != nil && node.FailedOrError()
 }
 
 // dispatchTaskGroupChild reconciles a single expanded TaskGroup child by
