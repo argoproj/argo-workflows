@@ -91,6 +91,13 @@ func (e *Engine) Execute(ctx context.Context, tasks []dag.Task) {
 	hooksDone := true
 	for {
 		results := e.evaluateAll(ctx)
+		// Materialize the tasks this evaluation found unreachable BEFORE
+		// dispatching: a task whose dependency was omitted in the same pass is
+		// ready now, and its node hangs off that dependency's Omitted node.
+		// Dispatching first would create it with no parent (parentNodeNames
+		// skips dependencies that have no node yet), which is permanent for a
+		// task that completes in the pass that created it.
+		e.createOmittedNodes(ctx, tasks, results)
 		newExecuted, err := e.converge(ctx, tasks, results)
 		if err != nil {
 			e.markBoundaryError(ctx, err)
