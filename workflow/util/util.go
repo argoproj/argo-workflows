@@ -1145,11 +1145,12 @@ func resetBoundaries(n *dagNode, resetFunc resetFn) (*dagNode, error) {
 			resetFunc(curr.parent.n.ID)
 			curr = curr.parent
 		}
-		if curr.parent != nil && curr.parent.n.Type == wfv1.NodeTypeStepGroup {
-			resetFunc(curr.parent.n.ID)
-		}
-		if curr.parent != nil && curr.parent.n.Type == wfv1.NodeTypeTaskGroup {
-			resetFunc(curr.parent.n.ID)
+		// Reset every enclosing group node between here and the boundary. A
+		// group keeps a terminal phase of its own, so leaving one out would
+		// strand it (e.g. a Failed StepGroup above a re-run TaskGroup child of
+		// an expanded step): the re-run succeeds but the group stays Failed.
+		for p := curr.parent; p != nil && (p.n.Type == wfv1.NodeTypeStepGroup || p.n.Type == wfv1.NodeTypeTaskGroup); p = p.parent {
+			resetFunc(p.n.ID)
 		}
 		seekingBoundaryID := curr.n.BoundaryID
 		if seekingBoundaryID == "" {
