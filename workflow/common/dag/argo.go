@@ -303,7 +303,11 @@ var pendingDepOutcomes = []taskResult{
 	{Succeeded: true, AnySucceeded: true},
 	{Failed: true},
 	{Failed: true, AllFailed: true},
+	// A group with both failed and succeeded items is Failed (or Errored)
+	// with AnySucceeded set: "A.Failed && A.AnySucceeded" is satisfiable.
+	{Failed: true, AnySucceeded: true},
 	{Errored: true},
+	{Errored: true, AnySucceeded: true},
 	{Skipped: true},
 	{Omitted: true},
 	{Daemoned: true},
