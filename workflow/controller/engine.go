@@ -872,14 +872,31 @@ func (e *Engine) hasPendingTaskHooks(ctx context.Context, tasks []dag.Task) bool
 		if taskNode == nil {
 			continue
 		}
+		if e.hasPendingHooks(taskNode) {
+			return true
+		}
+		if taskNode.Type != wfv1.NodeTypeTaskGroup {
+			continue
+		}
+		// An expanded task's exit hooks hang off its item nodes.
 		for _, childID := range taskNode.Children {
-			childNode, err := e.woc.wf.Status.Nodes.Get(childID)
-			if err != nil {
-				continue
-			}
-			if childNode.NodeFlag != nil && childNode.NodeFlag.Hooked && !childNode.Fulfilled() {
+			if childNode, err := e.woc.wf.Status.Nodes.Get(childID); err == nil && e.hasPendingHooks(childNode) {
 				return true
 			}
+		}
+	}
+	return false
+}
+
+// hasPendingHooks reports whether node has a hook child that is not fulfilled.
+func (e *Engine) hasPendingHooks(node *wfv1.NodeStatus) bool {
+	for _, childID := range node.Children {
+		childNode, err := e.woc.wf.Status.Nodes.Get(childID)
+		if err != nil {
+			continue
+		}
+		if childNode.NodeFlag != nil && childNode.NodeFlag.Hooked && !childNode.Fulfilled() {
+			return true
 		}
 	}
 	return false
@@ -1397,8 +1414,8 @@ func (e *Engine) assessTaskGroupPhase(ctx context.Context, tgNode *wfv1.NodeStat
 		if childNode.NodeFlag != nil && (childNode.NodeFlag.Hooked || childNode.NodeFlag.Retried) {
 			continue // hooks and retry placeholders don't affect group phase
 		}
-		if !childNode.Fulfilled() {
-			return // still waiting
+		if !childNode.Fulfilled() || e.hasPendingHooks(childNode) {
+			return // still waiting (an item's exit hook counts, as in executeDAGTask)
 		}
 		// Worst phase wins: Error outranks Failed (as in the evaluator's
 		// task-group assessment), regardless of child order.

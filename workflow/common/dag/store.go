@@ -187,12 +187,27 @@ func (s *workflowStore) getTaskGroupChildren(taskName string) []*wfv1.NodeStatus
 }
 
 // areHooksFulfilled checks if all lifecycle hooks for a task are fulfilled.
+// An expanded task's exit hooks run per item and hang off its item nodes, so
+// for a TaskGroup the item nodes' hooks are checked too.
 func (s *workflowStore) areHooksFulfilled(taskName string) bool {
 	node := s.getNode(taskName)
 	if node == nil {
 		return true
 	}
+	if !s.nodeHooksFulfilled(node) {
+		return false
+	}
+	if node.Type == wfv1.NodeTypeTaskGroup {
+		for _, child := range s.getTaskGroupChildren(taskName) {
+			if !s.nodeHooksFulfilled(child) {
+				return false
+			}
+		}
+	}
+	return true
+}
 
+func (s *workflowStore) nodeHooksFulfilled(node *wfv1.NodeStatus) bool {
 	for _, childID := range node.Children {
 		childNode, err := s.nodes.Get(childID)
 		if err != nil {
@@ -202,6 +217,5 @@ func (s *workflowStore) areHooksFulfilled(taskName string) bool {
 			return false
 		}
 	}
-
 	return true
 }
