@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	stderrors "errors"
 	"fmt"
+	"maps"
 	"sort"
 	"strings"
 
@@ -614,7 +615,20 @@ func (e *Engine) expandTask(ctx context.Context, parentTask dag.Task) ([]dag.Tas
 	if err != nil {
 		return nil, err
 	}
-	return parentTask.Expand(ctx, scope.getParameters(), e.woc)
+	return parentTask.Expand(ctx, e.expansionScope(scope), e.woc)
+}
+
+// expansionScope is the string scope items are substituted against: the
+// workflow globals under the task's own scope, as expandTask and expandStep
+// passed before the Engine. Globals are needed here because an expression tag
+// that mixes {{item}} with {{workflow.parameters.x}} can only be evaluated
+// once the item is known (#14718); simple global tags were substituted at
+// operate start.
+func (e *Engine) expansionScope(scope *wfScope) map[string]string {
+	params := make(map[string]string)
+	maps.Copy(params, e.woc.globalParams())
+	maps.Copy(params, scope.getParameters())
+	return params
 }
 
 // reconcileExpanded turns each accepted expansion into a DesiredTask and hands
@@ -974,7 +988,7 @@ func (e *Engine) executeTask(ctx context.Context, task dag.Task, addChild bool) 
 		if err = e.gateExpansionAbsentOptional(ctx, task, scope); err != nil {
 			return e.woc.markNodeError(ctx, taskNodeName, err), err
 		}
-		expandedTasks, expandErr := task.Expand(ctx, scope.getParameters(), e.woc)
+		expandedTasks, expandErr := task.Expand(ctx, e.expansionScope(scope), e.woc)
 		if expandErr != nil {
 			return e.woc.markNodeError(ctx, taskNodeName, expandErr), expandErr
 		}
