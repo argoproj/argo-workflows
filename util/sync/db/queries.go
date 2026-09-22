@@ -237,7 +237,9 @@ func (q *syncQueries) AddToQueue(ctx context.Context, record *StateRecord) error
 // RemoveFromQueue deletes a pending row. The controller condition matters because the state
 // table is shared: without it a controller's queue garbage collection, which validates keys
 // against its own informer, would delete the pending rows of every other controller sharing
-// the database. All callers only ever pass keys belonging to their own controller.
+// the database. controllerName is always the caller's own, but the garbage collection does pass
+// other controllers' keys, because it reads them from GetCurrentState, which is not filtered by
+// controller. Such a delete now matches nothing instead of evicting their queue entry.
 func (q *syncQueries) RemoveFromQueue(ctx context.Context, semaphoreName, holderKey, controllerName string) error {
 	return q.sessionProxy.With(ctx, func(session db.Session) error {
 		_, err := session.SQL().

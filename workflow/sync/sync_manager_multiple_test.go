@@ -243,11 +243,23 @@ func testSyncManagersContendingForSemaphore(t *testing.T, dbType sqldb.DBType) {
 	}
 }
 
+// hasKeyFor reports whether any state key belongs to the named workflow.
+func hasKeyFor(keys []string, wfName string) bool {
+	for _, k := range keys {
+		if strings.Contains(k, wfName) {
+			return true
+		}
+	}
+	return false
+}
+
 // testGCKeepsOtherControllersPendingRowsForDB checks that one controller's queue garbage
-// collection leaves the pending rows of other controllers alone. The GC lists the shared state
-// table but validates each key against its own informer, where another controller's workflows
-// never appear, so without a controller condition on the delete it evicts their queue entries
-// every time it runs.
+// collection leaves the pending rows of other controllers alone, while still collecting its
+// own. The GC lists the shared state table but validates each key against its own informer,
+// where another controller's workflows never appear, so without a controller condition on the
+// delete it evicts their queue entries every time it runs. The condition has to be narrow
+// rather than merely present: scoping the delete to the wrong controller, or to none, would
+// stop the GC collecting the stale rows it exists to collect, so both directions are asserted.
 func testGCKeepsOtherControllersPendingRowsForDB(t *testing.T, dbType sqldb.DBType) {
 	// Each controller's informer only knows about its own workflow.
 	onlyKnows := func(name string) WorkflowExists {
@@ -257,15 +269,21 @@ func testGCKeepsOtherControllersPendingRowsForDB(t *testing.T, dbType sqldb.DBTy
 	defer deferfn()
 
 	wf01 := wfv1.MustUnmarshalWorkflow(wfWithDatabaseSemaphore)
-	wf01.CreationTimestamp = metav1.Time{Time: time.Now().Add(-2 * time.Second)}
+	wf01.CreationTimestamp = metav1.Time{Time: time.Now().Add(-3 * time.Second)}
 	wf01.Name = "wf-01"
 	wf02 := wf01.DeepCopy()
-	wf02.CreationTimestamp = metav1.Time{Time: time.Now().Add(-1 * time.Second)}
+	wf02.CreationTimestamp = metav1.Time{Time: time.Now().Add(-2 * time.Second)}
 	wf02.Name = "wf-02"
+	// wf-03 runs on test1, whose informer does not know it, so it is the stale row the
+	// garbage collection is supposed to remove.
+	wf03 := wf01.DeepCopy()
+	wf03.CreationTimestamp = metav1.Time{Time: time.Now().Add(-1 * time.Second)}
+	wf03.Name = "wf-03"
 
-	// wf-01 holds the lock on controller test1, wf-02 waits on controller test2.
+	// wf-01 holds the lock on controller test1. wf-02 waits on test2, wf-03 waits on test1.
 	checkCanAcquire(ctx, t, syncMgr1, wf01)
 	checkCannotAcquire(ctx, t, syncMgr2, wf02)
+	checkCannotAcquire(ctx, t, syncMgr1, wf03)
 
 	require.Len(t, syncMgr1.syncLockMap, 1)
 	var lock semaphore
@@ -275,9 +293,12 @@ func testGCKeepsOtherControllersPendingRowsForDB(t *testing.T, dbType sqldb.DBTy
 
 	pending, err := lock.getCurrentPending(ctx)
 	require.NoError(t, err)
-	require.Len(t, pending, 1)
+	require.Len(t, pending, 2)
+	require.True(t, hasKeyFor(pending, "wf-02"))
+	require.True(t, hasKeyFor(pending, "wf-03"))
 
-	// test1's garbage collection sees wf-02 in the shared state table but not in its informer.
+	// test1's garbage collection sees both pending keys in the shared state table and neither
+	// in its informer, so it attempts to delete both.
 	syncMgr1.CheckWorkflowExistence(ctx)
 
 	holders, err := lock.getCurrentHolders(ctx)
@@ -285,11 +306,9 @@ func testGCKeepsOtherControllersPendingRowsForDB(t *testing.T, dbType sqldb.DBTy
 	assert.Len(t, holders, 1, "own held row should survive garbage collection")
 	pending, err = lock.getCurrentPending(ctx)
 	require.NoError(t, err)
-	assert.Len(t, pending, 1, "another controller's pending row should not be garbage collected")
-
-	// The waiter is still queued, so the lock is handed over on release.
-	syncMgr1.Release(ctx, wf01, wf01.Name, wf01.Spec.Synchronization)
-	checkCanAcquire(ctx, t, syncMgr2, wf02)
+	assert.True(t, hasKeyFor(pending, "wf-02"), "another controller's pending row should not be garbage collected")
+	assert.False(t, hasKeyFor(pending, "wf-03"), "own stale pending row should still be garbage collected")
+	assert.Len(t, pending, 1)
 }
 
 func TestGCKeepsOtherControllersPendingRows(t *testing.T) {
